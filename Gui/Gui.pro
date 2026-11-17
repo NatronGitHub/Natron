@@ -1,6 +1,6 @@
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <https://natrongithub.github.io/>,
-# (C) 2018-2021 The Natron developers
+# (C) 2018-2023 The Natron developers
 # (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
 #
 # Natron is free software: you can redistribute it and/or modify
@@ -22,8 +22,12 @@ TEMPLATE = lib
 CONFIG += staticlib
 CONFIG += moc rcc
 CONFIG += boost opengl qt cairo python shiboken pyside 
-QT += gui core opengl network
-greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
+QT += gui core network concurrent widgets
+# QOpenGLWidget moved to its own module in Qt6; CMake already appends it.
+equals(QT_MAJOR_VERSION, 6): QT += openglwidgets
+
+GUI_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronGui
+ENGINE_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronEngine
 
 CONFIG += glad-flags
 
@@ -50,7 +54,7 @@ DEPENDPATH += $$PWD/../Engine
 DEPENDPATH += $$PWD/../Global
 
 INCLUDEPATH += $$PWD/../Engine
-INCLUDEPATH += $$PWD/../Engine/NatronEngine
+INCLUDEPATH += $$PWD/../Engine/$$ENGINE_WRAPPER_DIR
 INCLUDEPATH += $$PWD/../Global
 
 #qhttpserver
@@ -80,6 +84,7 @@ SOURCES += \
     ChannelsComboBox.cpp \
     ClickableLabel.cpp \
     ColoredFrame.cpp \
+    ColorSelectorWidget.cpp \
     ComboBox.cpp \
     CurveEditor.cpp \
     CurveEditorUndoRedo.cpp \
@@ -183,6 +188,7 @@ SOURCES += \
     PropertiesBinWrapper.cpp \
     PyGuiApp.cpp \
     PythonPanels.cpp \
+    QtColorTriangle.cpp \
     QtEnumConvert.cpp \
     RenderStatsDialog.cpp \
     ResizableMessageBox.cpp \
@@ -201,6 +207,7 @@ SOURCES += \
     TabGroup.cpp \
     TabWidget.cpp \
     TableModelView.cpp \
+    TaskBar.cpp \
     TextRenderer.cpp \
     TimeLineGui.cpp \
     ToolButton.cpp \
@@ -216,13 +223,7 @@ SOURCES += \
     ViewerTabPrivate.cpp \
     ViewerToolButton.cpp \
     ticks.cpp \
-    NatronGui/guiapp_wrapper.cpp \
-    NatronGui/pyguiapplication_wrapper.cpp \
-    NatronGui/pymodaldialog_wrapper.cpp \
-    NatronGui/pypanel_wrapper.cpp \
-    NatronGui/pytabwidget_wrapper.cpp \
-    NatronGui/pyviewer_wrapper.cpp \
-    NatronGui/natrongui_module_wrapper.cpp \
+    $${GUI_WRAPPER_DIR}/natrongui_module_wrapper.cpp \
 
 HEADERS += \
     AboutWindow.h \
@@ -235,6 +236,7 @@ HEADERS += \
     ChannelsComboBox.h \
     ClickableLabel.h \
     ColoredFrame.h \
+    ColorSelectorWidget.h \
     ComboBox.h \
     CurveEditor.h \
     CurveEditorUndoRedo.h \
@@ -322,8 +324,8 @@ HEADERS += \
     PropertiesBinWrapper.h \
     PyGlobalGui.h \
     PyGuiApp.h \
-    Pyside_Gui_Python.h \
     PythonPanels.h \
+    QtColorTriangle.h \
     QtEnumConvert.h \
     RegisteredTabs.h \
     RenderStatsDialog.h \
@@ -343,6 +345,7 @@ HEADERS += \
     TabGroup.h \
     TabWidget.h \
     TableModelView.h \
+    TaskBar.h \
     TextRenderer.h \
     TimeLineGui.h \
     ToolButton.h \
@@ -377,13 +380,20 @@ HEADERS += \
     ../libs/OpenFX/include/nuke/fnPublicOfxExtensions.h \
     ../libs/OpenFX/include/tuttle/ofxReadWrite.h \
     ../libs/OpenFX_extensions/ofxhParametricParam.h \
-    NatronGui/guiapp_wrapper.h \
-    NatronGui/natrongui_python.h \
-    NatronGui/pyguiapplication_wrapper.h \
-    NatronGui/pymodaldialog_wrapper.h \
-    NatronGui/pypanel_wrapper.h \
-    NatronGui/pytabwidget_wrapper.h \
-    NatronGui/pyviewer_wrapper.h
+    $${GUI_WRAPPER_DIR}/natrongui_python.h \
+
+GUI_GENERATED_SOURCES = \
+    guiapp_wrapper \
+    pyguiapplication_wrapper \
+    pymodaldialog_wrapper \
+    pypanel_wrapper \
+    pytabwidget_wrapper \
+    pyviewer_wrapper
+
+for(name, GUI_GENERATED_SOURCES) {
+    SOURCES += $${GUI_WRAPPER_DIR}/$${name}.cpp
+    HEADERS += $${GUI_WRAPPER_DIR}/$${name}.h
+}
 
 RESOURCES += \
     GuiResources.qrc
@@ -407,6 +417,8 @@ OTHER_FILES += \
     Resources/Images/splashscreen.svg
 
 macx {
+HEADERS += TaskBarMac.h
 OBJECTIVE_SOURCES += \
-    $$PWD/../Gui/QtMac.mm
+    $$PWD/../Gui/QtMac.mm \
+    $$PWD/../Gui/TaskBarMac.mm
 }

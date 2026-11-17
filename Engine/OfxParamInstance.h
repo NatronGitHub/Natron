@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,15 +32,9 @@
 #include <string>
 #include <vector>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
-#include <QtCore/QStringList>
-#include <QtCore/QMutex>
+#include <QStringList>
+#include <QMutex>
 CLANG_DIAG_ON(deprecated)
 
 
@@ -147,7 +141,7 @@ public:
     }
 
     template <typename TYPE>
-    boost::shared_ptr<TYPE>checkIfKnobExistsWithNameOrCreate(const std::string& scriptName,
+    std::shared_ptr<TYPE>checkIfKnobExistsWithNameOrCreate(const std::string& scriptName,
                                                              OFX::Host::Param::Instance* param,
                                                              int dimension)
     {
@@ -155,7 +149,7 @@ public:
 
         assert(holder);
 #ifdef NATRON_ENABLE_IO_META_NODES
-        boost::shared_ptr<TYPE> isType = holder->getKnobByNameAndType<TYPE>(scriptName);
+        std::shared_ptr<TYPE> isType = holder->getKnobByNameAndType<TYPE>(scriptName);
         if (isType) {
             //Remove from the parent if it exists, because it will be added again afterwards
             isType->resetParent();
@@ -165,7 +159,7 @@ public:
 #else
         Q_UNUSED(scriptName);
 #endif
-        boost::shared_ptr<TYPE> ret = AppManager::createKnob<TYPE>(holder.get(), getParamLabel(param), dimension);
+        std::shared_ptr<TYPE> ret = AppManager::createKnob<TYPE>(holder.get(), getParamLabel(param), dimension);
         ret->setName(scriptName);
 
         return ret;
@@ -844,7 +838,7 @@ private:
      **/
     void projectEnvVar_setProxy(std::string& str) const;
 
-    boost::scoped_ptr<OfxStringInstancePrivate> _imp;
+    std::unique_ptr<OfxStringInstancePrivate> _imp;
 };
 
 struct OfxCustomInstancePrivate;
@@ -908,7 +902,7 @@ private:
     void getCustomParamAtTime(double time, std::string &str) const;
 
 
-    boost::scoped_ptr<OfxCustomInstancePrivate> _imp;
+    std::unique_ptr<OfxCustomInstancePrivate> _imp;
 };
 
 

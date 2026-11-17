@@ -1,0 +1,11 @@
+--- ./src/SeExpr2/ExprFunc.cpp.orig	2021-11-29 19:49:06.000000000 -0800
++++ ./src/SeExpr2/ExprFunc.cpp	2021-11-29 19:49:21.000000000 -0800
+@@ -203,7 +203,7 @@
+ #ifndef SEEXPR_WIN32
+ 
+ #if defined(__APPLE__) && !defined(__MAC_10_9)
+-static int MatchPluginName(const struct dirent* dir)
++static int MatchPluginName(struct dirent* dir)
+ #else
+ static int MatchPluginName(const struct dirent* dir)
+ #endif

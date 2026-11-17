@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,13 +30,7 @@
 #include <cstring> // for std::memcpy, std::memset
 #include <stdexcept>
 
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/math/special_functions/fpclassify.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
-#include <QtCore/QDebug>
+#include <QDebug>
 
 #include "Engine/AppManager.h"
 #include "Engine/ViewIdx.h"
@@ -219,9 +213,7 @@ minimalNonMarkedRects_internal(const RectI & roi,
 {
     assert(ret.empty());
     ///Any out of bounds portion is pushed to the rectangles to render
-    RectI intersection;
-
-    roi.intersect(_bounds, &intersection);
+    const RectI intersection = roi.intersect(_bounds);
     if (roi != intersection) {
         if ( (_bounds.x1 > roi.x1) && (_bounds.y2 > _bounds.y1) ) {
             RectI left(roi.x1, _bounds.y1, _bounds.x1, _bounds.y2);
@@ -470,31 +462,29 @@ minimalNonMarkedRects_internal(const RectI & roi,
 RectI
 Bitmap::minimalNonMarkedBbox(const RectI & roi) const
 {
+    RectI realRoi = roi;
     if (_dirtyZoneSet) {
-        RectI realRoi;
-        if ( !roi.intersect(_dirtyZone, &realRoi) ) {
+        realRoi.clip(_dirtyZone);
+        if (realRoi.isNull()) {
             return RectI();
         }
-
-        return minimalNonMarkedBbox_internal<0>(realRoi, _bounds, _map, NULL);
-    } else {
-        return minimalNonMarkedBbox_internal<0>(roi, _bounds, _map, NULL);
     }
+
+    return minimalNonMarkedBbox_internal<0>(realRoi, _bounds, _map, NULL);
 }
 
 void
 Bitmap::minimalNonMarkedRects(const RectI & roi,
                               std::list<RectI>& ret) const
 {
+    RectI realRoi = roi;
     if (_dirtyZoneSet) {
-        RectI realRoi;
-        if ( !roi.intersect(_dirtyZone, &realRoi) ) {
+        realRoi.clip(_dirtyZone);
+        if (realRoi.isNull()) {
             return;
         }
-        minimalNonMarkedRects_internal<0>(realRoi, _bounds, _map, ret, NULL);
-    } else {
-        minimalNonMarkedRects_internal<0>(roi, _bounds, _map, ret, NULL);
     }
+    minimalNonMarkedRects_internal<0>(realRoi, _bounds, _map, ret, NULL);
 }
 
 #if NATRON_ENABLE_TRIMAP
@@ -502,18 +492,16 @@ RectI
 Bitmap::minimalNonMarkedBbox_trimap(const RectI & roi,
                                     bool* isBeingRenderedElsewhere) const
 {
+    RectI realRoi = roi;
     if (_dirtyZoneSet) {
-        RectI realRoi;
-        if ( !roi.intersect(_dirtyZone, &realRoi) ) {
+        realRoi.clip(_dirtyZone);
+        if (realRoi.isNull()) {
             *isBeingRenderedElsewhere = false;
-
             return RectI();
         }
-
-        return minimalNonMarkedBbox_internal<1>(realRoi, _bounds, _map, isBeingRenderedElsewhere);
-    } else {
-        return minimalNonMarkedBbox_internal<1>(roi, _bounds, _map, isBeingRenderedElsewhere);
     }
+
+    return minimalNonMarkedBbox_internal<1>(realRoi, _bounds, _map, isBeingRenderedElsewhere);
 }
 
 void
@@ -521,17 +509,15 @@ Bitmap::minimalNonMarkedRects_trimap(const RectI & roi,
                                      std::list<RectI>& ret,
                                      bool* isBeingRenderedElsewhere) const
 {
+    RectI realRoi = roi;
     if (_dirtyZoneSet) {
-        RectI realRoi;
-        if ( !roi.intersect(_dirtyZone, &realRoi) ) {
+        realRoi.clip(_dirtyZone);
+        if (realRoi.isNull()) {
             *isBeingRenderedElsewhere = false;
-
             return;
         }
-        minimalNonMarkedRects_internal<1>(realRoi, _bounds, _map, ret, isBeingRenderedElsewhere);
-    } else {
-        minimalNonMarkedRects_internal<1>(roi, _bounds, _map, ret, isBeingRenderedElsewhere);
     }
+    minimalNonMarkedRects_internal<1>(realRoi, _bounds, _map, ret, isBeingRenderedElsewhere);
 }
 
 #endif
@@ -720,7 +706,7 @@ Image::Image(const ImageKey & key,
 Image::Image(const ImagePlaneDesc& components,
              const RectD & regionOfDefinition, //!< rod in canonical coordinates
              const RectI & bounds, //!< bounds in pixel coordinates
-             unsigned int mipMapLevel,
+             unsigned int mipmapLevel,
              double par,
              ImageBitDepthEnum bitdepth,
              ImagePremultiplicationEnum premult,
@@ -735,7 +721,7 @@ Image::Image(const ImagePlaneDesc& components,
 #ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
                   ImageParamsPtr( new ImageParams(regionOfDefinition,
                                                                   par,
-                                                                  mipMapLevel,
+                                                                  mipmapLevel,
                                                                   bounds,
                                                                   bitdepth,
                                                                   fielding,
@@ -745,9 +731,9 @@ Image::Image(const ImagePlaneDesc& components,
                                                                   storage,
                                                                   textureTarget) ),
 #else
-                  boost::make_shared<ImageParams>(regionOfDefinition,
+                  std::make_shared<ImageParams>(regionOfDefinition,
                                                   par,
-                                                  mipMapLevel,
+                                                  mipmapLevel,
                                                   bounds,
                                                   bitdepth,
                                                   fielding,
@@ -819,7 +805,7 @@ Image::makeKey(const CacheEntryHolder* holder,
 ImageParamsPtr
 Image::makeParams(const RectD & rod,
                   const double par,
-                  unsigned int mipMapLevel,
+                  unsigned int mipmapLevel,
                   bool isRoDProjectFormat,
                   const ImagePlaneDesc& components,
                   ImageBitDepthEnum bitdepth,
@@ -828,14 +814,12 @@ Image::makeParams(const RectD & rod,
                   StorageModeEnum storage,
                   U32 textureTarget)
 {
-    RectI bounds;
-
-    rod.toPixelEnclosing(mipMapLevel, par, &bounds);
+    const RectI bounds = rod.toPixelEnclosing(mipmapLevel, par);
 
 #ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
     return ImageParamsPtr( new ImageParams(rod,
                                                            par,
-                                                           mipMapLevel,
+                                                           mipmapLevel,
                                                            bounds,
                                                            bitdepth,
                                                            fielding,
@@ -845,9 +829,9 @@ Image::makeParams(const RectD & rod,
                                                            storage,
                                                            textureTarget) );
 #else
-    return boost::make_shared<ImageParams>(rod,
+    return std::make_shared<ImageParams>(rod,
                                            par,
-                                           mipMapLevel,
+                                           mipmapLevel,
                                            bounds,
                                            bitdepth,
                                            fielding,
@@ -863,7 +847,7 @@ ImageParamsPtr
 Image::makeParams(const RectD & rod,    // the image rod in canonical coordinates
                   const RectI& bounds,
                   const double par,
-                  unsigned int mipMapLevel,
+                  unsigned int mipmapLevel,
                   bool isRoDProjectFormat,
                   const ImagePlaneDesc& components,
                   ImageBitDepthEnum bitdepth,
@@ -873,8 +857,7 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
                   U32 textureTarget)
 {
 #ifdef DEBUG
-    RectI pixelRod;
-    rod.toPixelEnclosing(mipMapLevel, par, &pixelRod);
+    const RectI pixelRod = rod.toPixelEnclosing(mipmapLevel, par);
     assert( bounds.left() >= pixelRod.left() && bounds.right() <= pixelRod.right() &&
             bounds.bottom() >= pixelRod.bottom() && bounds.top() <= pixelRod.top() );
 #endif
@@ -882,7 +865,7 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
 #ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
     return ImageParamsPtr( new ImageParams(rod,
                                                            par,
-                                                           mipMapLevel,
+                                                           mipmapLevel,
                                                            bounds,
                                                            bitdepth,
                                                            fielding,
@@ -892,9 +875,9 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
                                                            storage,
                                                            textureTarget) );
 #else
-    return boost::make_shared<ImageParams>(rod,
+    return std::make_shared<ImageParams>(rod,
                                            par,
-                                           mipMapLevel,
+                                           mipmapLevel,
                                            bounds,
                                            bitdepth,
                                            fielding,
@@ -921,7 +904,7 @@ Image::pasteFromForDepth(const Image & srcImg,
     // NOTE: before removing the following asserts, please explain why an empty image may happen
 
     QWriteLocker k(&_entryLock);
-    boost::scoped_ptr<QReadLocker> k2;
+    std::unique_ptr<QReadLocker> k2;
     if (takeSrcLock && &srcImg != this) {
         k2.reset( new QReadLocker(&srcImg._entryLock) );
     }
@@ -933,15 +916,10 @@ Image::pasteFromForDepth(const Image & srcImg,
     assert( !srcBounds.isNull() );
 
     // only copy the intersection of roi, bounds and otherBounds
-    RectI roi = srcRoi;
-    bool doInteresect = roi.intersect(bounds, &roi);
-    if (!doInteresect) {
-        // no intersection between roi and the bounds of this image
-        return;
-    }
-    doInteresect = roi.intersect(srcBounds, &roi);
-    if (!doInteresect) {
-        // no intersection between roi and the bounds of the other image
+    const RectI roi = srcRoi.intersect(bounds).intersect(srcBounds);
+    if (roi.isNull()) {
+        // no intersection between srcRoi and the bounds of this image or
+        // the bounds of the other image.
         return;
     }
 
@@ -964,6 +942,12 @@ Image::pasteFromForDepth(const Image & srcImg,
          src += srcRowElements,
          dst += dstRowElements) {
         std::memcpy(dst, src, roi.width() * sizeof(PIX) * _nbComponents);
+#ifdef DEBUG_NAN
+        for (int i = 0; i < roi.width() * _nbComponents; ++i) {
+            assert( !std::isnan(src[i]) ); // check for NaN
+            assert( !std::isnan(dst[i]) ); // check for NaN
+        }
+#endif
     }
 } // Image::pasteFromForDepth
 
@@ -987,19 +971,19 @@ Image::resizeInternal(const Image* srcImg,
 {
     ///Allocate to resized image
     if (!createInCache) {
-        *outputImage = boost::make_shared<Image>( srcImg->getComponents(),
+        *outputImage = std::make_shared<Image>( srcImg->getComponents(),
                                        srcImg->getRoD(),
                                        merge,
-                                       srcImg->getMipMapLevel(),
+                                       srcImg->getMipmapLevel(),
                                        srcImg->getPixelAspectRatio(),
                                        srcImg->getBitDepth(),
                                        srcImg->getPremultiplication(),
                                        srcImg->getFieldingOrder(),
                                        srcImg->usesBitMap() );
     } else {
-        ImageParamsPtr params = boost::make_shared<ImageParams>( *srcImg->getParams() );
+        ImageParamsPtr params = std::make_shared<ImageParams>( *srcImg->getParams() );
         params->setBounds(merge);
-        *outputImage = boost::make_shared<Image>( srcImg->getKey(), params, srcImg->getCacheAPI() );
+        *outputImage = std::make_shared<Image>( srcImg->getKey(), params, srcImg->getCacheAPI() );
         (*outputImage)->allocateMemory();
     }
     ImageBitDepthEnum depth = srcImg->getBitDepth();
@@ -1047,7 +1031,7 @@ Image::resizeInternal(const Image* srcImg,
         if ( !aRect.isNull() ) {
             char* pix = (char*)wacc.pixelAt(aRect.x1, aRect.y1);
             assert(pix);
-            double a = aRect.area();
+            U64 a = aRect.area();
             std::size_t memsize = a * pixelSize;
             std::memset(pix, 0, memsize);
             if ( setBitmapTo1 && (*outputImage)->usesBitMap() ) {
@@ -1059,7 +1043,7 @@ Image::resizeInternal(const Image* srcImg,
         if ( !cRect.isNull() ) {
             char* pix = (char*)wacc.pixelAt(cRect.x1, cRect.y1);
             assert(pix);
-            double a = cRect.area();
+            U64 a = cRect.area();
             std::size_t memsize = a * pixelSize;
             std::memset(pix, 0, memsize);
             if ( setBitmapTo1 && (*outputImage)->usesBitMap() ) {
@@ -1253,19 +1237,14 @@ Image::pasteFrom(const Image & src,
         glCheckError();
     } else if ( (thisStorage == eStorageModeGLTex) && (otherStorage != eStorageModeGLTex) ) {
         // RAM image to OpenGL texture
-        RectI dstBounds = getBounds();
-        RectI srcBounds = src.getBounds();
+        const RectI& dstBounds = getBounds();
+        const RectI& srcBounds = src.getBounds();
 
         // only copy the intersection of roi, bounds and otherBounds
-        RectI roi = srcRoi;
-        bool doInteresect = roi.intersect(dstBounds, &roi);
-        if (!doInteresect) {
-            // no intersection between roi and the bounds of this image
-            return;
-        }
-        doInteresect = roi.intersect(srcBounds, &roi);
-        if (!doInteresect) {
-            // no intersection between roi and the bounds of the other image
+        const RectI roi = srcRoi.intersect(dstBounds).intersect(srcBounds);
+        if (roi.isNull()) {
+            // no intersection between srcRoi and the bounds of this image or
+            // the bounds of the other image
             return;
         }
         GLuint pboID = glContext->getPBOId();
@@ -1294,7 +1273,7 @@ Image::pasteFrom(const Image & src,
 #ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
             ImagePtr tmpImg( new Image( ImagePlaneDesc::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
 #else
-            ImagePtr tmpImg = boost::make_shared<Image>( ImagePlaneDesc::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM);
+            ImagePtr tmpImg = std::make_shared<Image>( ImagePlaneDesc::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM);
 #endif
             tmpImg->pasteFrom(src, roi);
 
@@ -1327,19 +1306,14 @@ Image::pasteFrom(const Image & src,
     } else if ( (thisStorage != eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
         // OpenGL texture to RAM image
 
-        RectI dstBounds = getBounds();
-        RectI srcBounds = src.getBounds();
+        const RectI& dstBounds = getBounds();
+        const RectI& srcBounds = src.getBounds();
 
         // only copy the intersection of roi, bounds and otherBounds
-        RectI roi = srcRoi;
-        bool doInteresect = roi.intersect(dstBounds, &roi);
-        if (!doInteresect) {
-            // no intersection between roi and the bounds of this image
-            return;
-        }
-        doInteresect = roi.intersect(srcBounds, &roi);
-        if (!doInteresect) {
-            // no intersection between roi and the bounds of the other image
+        const RectI roi = srcRoi.intersect(dstBounds).intersect(srcBounds);
+        if (roi.isNull()) {
+            // no intersection between srcRoi and the bounds of this image or
+            // the bounds of the other image
             return;
         }
 
@@ -1361,7 +1335,7 @@ Image::pasteFrom(const Image & src,
 #ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
         ImagePtr tmpImg( new Image( ImagePlaneDesc::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM) );
 #else
-        ImagePtr tmpImg = boost::make_shared<Image>( ImagePlaneDesc::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM);
+        ImagePtr tmpImg = std::make_shared<Image>( ImagePlaneDesc::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM);
 #endif
 
         {
@@ -1413,9 +1387,8 @@ Image::fillForDepthForComponents(const RectI & roi_,
 {
     assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
 
-    RectI roi = roi_;
-    bool doInteresect = roi.intersect(_bounds, &roi);
-    if (!doInteresect) {
+    const RectI roi = roi_.intersect(_bounds);
+    if (roi.isNull()) {
         // no intersection between roi and the bounds of the image
         return;
     }
@@ -1432,6 +1405,9 @@ Image::fillForDepthForComponents(const RectI & roi_,
         for (int j = 0; j < roi.width(); ++j, dst += nComps) {
             for (int k = 0; k < nComps; ++k) {
                 dst[k] = fillValue[k];
+#ifdef DEBUG_NAN
+                assert( !std::isnan(dst[k]) ); // check for NaN
+#endif
             }
         }
     }
@@ -1480,9 +1456,8 @@ Image::fill(const RectI & roi,
     QWriteLocker k(&_entryLock);
 
     if (getStorageMode() == eStorageModeGLTex) {
-        RectI realRoI = roi;
-        bool doInteresect = roi.intersect(_bounds, &realRoI);
-        if (!doInteresect) {
+        const RectI realRoI = roi.intersect(_bounds);
+        if (realRoI.isNull()) {
             // no intersection between roi and the bounds of the image
             return;
         }
@@ -1549,9 +1524,9 @@ Image::fillZero(const RectI& roi,
     }
 
     QWriteLocker k(&_entryLock);
-    RectI intersection;
+    const RectI intersection = roi.intersect(_bounds);
 
-    if ( !roi.intersect(_bounds, &intersection) ) {
+    if (intersection.isNull()) {
         return;
     }
 
@@ -1815,6 +1790,7 @@ Image::halveRoIForDepth(const RectI & roi,
                         bool copyBitMap,
                         Image* output) const
 {
+    assert( _bounds.contains(roi) );
     assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) ||
             (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) ||
             (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
@@ -1850,9 +1826,10 @@ Image::halveRoIForDepth(const RectI & roi,
     assert( getComponents() == output->getComponents() );
 
     RectI dstRoI;
-    RectI srcRoI = roi;
-    srcRoI.intersect(srcBounds, &srcRoI); // intersect srcRoI with the region of definition
-
+    const RectI srcRoI = roi.intersect(srcBounds); // intersect RoI with the region of definition
+#ifdef DEBUG_NAN
+    assert(!checkForNaNsNoLock(srcRoI));
+#endif
     dstRoI.x1 = (srcRoI.x1 + 1) / 2; // equivalent to ceil(srcRoI.x1/2.0)
     dstRoI.y1 = (srcRoI.y1 + 1) / 2; // equivalent to ceil(srcRoI.y1/2.0)
     dstRoI.x2 = srcRoI.x2 / 2; // equivalent to floor(srcRoI.x2/2.0)
@@ -1922,7 +1899,12 @@ Image::halveRoIForDepth(const RectI & roi,
                 const PIX b = (pickNextCol && pickThisRow) ? *(srcPixStart + k + _nbComponents) : 0;
                 const PIX c = (pickThisCol && pickNextRow) ? *(srcPixStart + k + srcRowSize) : 0;
                 const PIX d = (pickNextCol && pickNextRow) ? *(srcPixStart + k + srcRowSize  + _nbComponents)  : 0;
-
+#ifdef DEBUG_NAN
+                assert( !std::isnan(a) ); // check for NaN
+                assert( !std::isnan(b) ); // check for NaN
+                assert( !std::isnan(c) ); // check for NaN
+                assert( !std::isnan(d) ); // check for NaN
+#endif
                 assert( sumW == 2 || ( sumW == 1 && ( (a == 0 && c == 0) || (b == 0 && d == 0) ) ) );
                 assert( sumH == 2 || ( sumH == 1 && ( (a == 0 && b == 0) || (c == 0 && d == 0) ) ) );
                 dstPixStart[k] = (a + b + c + d) / sum;
@@ -1971,6 +1953,7 @@ Image::halveRoI(const RectI & roi,
                 bool copyBitMap,
                 Image* output) const
 {
+    assert( _bounds.contains(roi) );
     switch ( getBitDepth() ) {
     case eImageBitDepthByte:
         halveRoIForDepth<unsigned char, 255>(roi, copyBitMap,  output);
@@ -2000,6 +1983,7 @@ Image::halve1DImageForDepth(const RectI & roi,
 
     assert(width == 1 || height == 1); /// must be 1D
     assert( output->getComponents() == getComponents() );
+    assert( _bounds.contains(roi) );
 
     /// Take the lock for both bitmaps since we're about to read/write from them!
     QWriteLocker k1(&output->_entryLock);
@@ -2022,7 +2006,15 @@ Image::halve1DImageForDepth(const RectI & roi,
         assert(src && dst);
         for (int x = 0; x < halfWidth; ++x) {
             for (int k = 0; k < _nbComponents; ++k) {
-                *dst++ = PIX( (float)( *src + *(src + _nbComponents) ) / 2. );
+#ifdef DEBUG_NAN
+                assert( !std::isnan(*src) ); // check for NaN
+                assert( !std::isnan(*(src + _nbComponents)) ); // check for NaN
+#endif
+                *dst = PIX( (float)( *src + *(src + _nbComponents) ) / 2. );
+#ifdef DEBUG_NAN
+                assert( !std::isnan(*dst) ); // check for NaN
+#endif
+                ++dst;
                 ++src;
             }
             src += _nbComponents;
@@ -2034,7 +2026,15 @@ Image::halve1DImageForDepth(const RectI & roi,
         assert(src && dst);
         for (int y = 0; y < halfHeight; ++y) {
             for (int k = 0; k < _nbComponents; ++k) {
-                *dst++ = PIX( (float)( *src + (*src + rowSize) ) / 2. );
+#ifdef DEBUG_NAN
+                assert( !std::isnan(*src) ); // check for NaN
+                assert( !std::isnan(*(src + rowSize)) ); // check for NaN
+#endif
+                *dst = PIX( (float)( *src + (*src + rowSize) ) / 2. );
+#ifdef DEBUG_NAN
+                assert( !std::isnan(*dst) ); // check for NaN
+#endif
+                ++dst;
                 ++src;
             }
             src += rowSize;
@@ -2067,7 +2067,7 @@ Image::halve1DImage(const RectI & roi,
 
 // code proofread and fixed by @devernay on 8/8/2014
 void
-Image::downscaleMipMap(const RectD& dstRod,
+Image::downscaleMipmap(const RectD& dstRod,
                        const RectI & roi,
                        unsigned int fromLevel,
                        unsigned int toLevel,
@@ -2079,21 +2079,16 @@ Image::downscaleMipMap(const RectD& dstRod,
     ///You should not call this function with a level equal to 0.
     assert(toLevel >  fromLevel);
 
-    assert(_bounds.x1 <= roi.x1 && roi.x2 <= _bounds.x2 &&
-           _bounds.y1 <= roi.y1 && roi.y2 <= _bounds.y2);
+    assert(_bounds.contains(roi));
     double par = getPixelAspectRatio();
-//    RectD roiCanonical;
-//    roi.toCanonical(fromLevel, par , dstRod, &roiCanonical);
-//    RectI dstRoI;
-//    roiCanonical.toPixelEnclosing(toLevel, par , &dstRoI);
     unsigned int downscaleLvls = toLevel - fromLevel;
 
     assert( !copyBitMap || _bitmap.getBitmap() );
 
     RectI dstRoI  = roi.downscalePowerOfTwoSmallestEnclosing(downscaleLvls);
-    ImagePtr tmpImg = boost::make_shared<Image>( getComponents(), dstRod, dstRoI, toLevel, par, getBitDepth(), getPremultiplication(), getFieldingOrder(), true);
+    ImagePtr tmpImg = std::make_shared<Image>( getComponents(), dstRod, dstRoI, toLevel, par, getBitDepth(), getPremultiplication(), getFieldingOrder(), true);
 
-    buildMipMapLevel( dstRod, roi, downscaleLvls, copyBitMap, tmpImg.get() );
+    buildMipmapLevel( dstRod, roi, downscaleLvls, copyBitMap, tmpImg.get() );
 
     // check that the downscaled mipmap is inside the output image (it may not be equal to it)
     assert(dstRoI.x1 >= output->_bounds.x1);
@@ -2106,7 +2101,7 @@ Image::downscaleMipMap(const RectD& dstRod,
 }
 
 bool
-Image::checkForNaNs(const RectI& roi)
+Image::checkForNaNsAndFix(const RectI& roi)
 {
     if (getBitDepth() != eImageBitDepthFloat) {
         return false;
@@ -2125,8 +2120,43 @@ Image::checkForNaNs(const RectI& roi)
         for (; pix < end; ++pix) {
             // we remove NaNs, but infinity values should pose no problem
             // (if they do, please explain here which ones)
-            if ( (boost::math::isnan)(*pix) ) { // check for NaN ((boost::math::isnan)(x) is not slower than x != x and works with -Ofast)
+#ifdef DEBUG_NAN
+            assert( !std::isnan(*pix) ); // check for NaN
+#endif
+            if ( std::isnan(*pix) ) { // check for NaN (std::isnan(x) is not slower than x != x and works with -Ofast)
                 *pix = 1.;
+                hasnan = true;
+            }
+        }
+    }
+
+    return hasnan;
+}
+
+bool
+Image::checkForNaNsNoLock(const RectI& roi) const
+{
+    if (getBitDepth() != eImageBitDepthFloat) {
+        return false;
+    }
+    if (getStorageMode() == eStorageModeGLTex) {
+        return false;
+    }
+
+    //QWriteLocker k(&_entryLock);
+    unsigned int compsCount = getComponentsCount();
+    bool hasnan = false;
+    for (int y = roi.y1; y < roi.y2; ++y) {
+        float* pix = (float*)pixelAt(roi.x1, y);
+        float* const end = pix +  compsCount * roi.width();
+
+        for (; pix < end; ++pix) {
+            // we remove NaNs, but infinity values should pose no problem
+            // (if they do, please explain here which ones)
+#ifdef DEBUG_NAN
+            assert( !std::isnan(*pix) ); // check for NaN
+#endif
+            if ( std::isnan(*pix) ) { // check for NaN (std::isnan(x) is not slower than x != x and works with -Ofast)
                 hasnan = true;
             }
         }
@@ -2138,7 +2168,7 @@ Image::checkForNaNs(const RectI& roi)
 // code proofread and fixed by @devernay on 8/8/2014
 template <typename PIX, int maxValue>
 void
-Image::upscaleMipMapForDepth(const RectI & roi,
+Image::upscaleMipmapForDepth(const RectI & roi,
                              unsigned int fromLevel,
                              unsigned int toLevel,
                              Image* output) const
@@ -2152,15 +2182,10 @@ Image::upscaleMipMapForDepth(const RectI & roi,
     assert(roi.x1 <= _bounds.x1 && _bounds.x2 <= roi.x2 &&
            roi.y1 <= _bounds.y1 && _bounds.y2 <= roi.y2);
 
-    ///The source rectangle, intersected to this image region of definition in pixels
-    RectD roiCanonical;
-    roi.toCanonical(fromLevel, _par, getRoD(), &roiCanonical);
-    RectI dstRoi;
-    roiCanonical.toPixelEnclosing(toLevel, _par, &dstRoi);
-
     const RectI & srcRoi = roi;
-
-    dstRoi.intersect(output->_bounds, &dstRoi); //output may be a bit smaller than the upscaled RoI
+    // The source rectangle, intersected to this image region of definition in pixels and the output bounds.
+    RectI dstRoi = roi.toNewMipmapLevel(fromLevel, toLevel, _par, getRoD());
+    dstRoi.clipIfOverlaps(output->_bounds); //output may be a bit smaller than the upscaled RoI
     int scale = 1 << (fromLevel - toLevel);
 
     assert( output->getComponents() == getComponents() );
@@ -2203,22 +2228,28 @@ Image::upscaleMipMapForDepth(const RectI & roi,
                 assert( ( dstPix - (PIX*)output->pixelAt(dstRoi.x1, dstRoi.y1) ) % _nbComponents == 0 );
                 assert(dstPix >= (PIX*)output->pixelAt(xo, yo) && dstPix < (PIX*)output->pixelAt(xo, yo) + xcount * _nbComponents);
                 for (int c = 0; c < _nbComponents; ++c) {
+#ifdef DEBUG_NAN
+                    assert( !std::isnan(srcPix[c]) ); // check for NaN
+#endif
                     dstPix[c] = srcPix[c];
                 }
             }
             //assert(dstPix == dstPixFirst + xcount*components);
         }
+        assert(dstLineBatchStart == (PIX*)output->pixelAt(dstRoi.x1, yo));
         PIX * dstLineStart = dstLineBatchStart + dstRowSize; // first line was filled already
         // now replicate the line as many times as necessary
         for (int i = 1; i < ycount; ++i, dstLineStart += dstRowSize) {
+            assert(dstLineStart == (PIX*)output->pixelAt(dstRoi.x1, yo+i));
+            assert(dstLineStart + dstRowSize == (PIX*)output->pixelAt(dstRoi.x2 - 1, yo+i) + _nbComponents);
             std::copy(dstLineBatchStart, dstLineBatchStart + dstRowSize, dstLineStart);
         }
     }
-} // upscaleMipMapForDepth
+} // upscaleMipmapForDepth
 
 // code proofread and fixed by @devernay on 8/8/2014
 void
-Image::upscaleMipMap(const RectI & roi,
+Image::upscaleMipmap(const RectI & roi,
                      unsigned int fromLevel,
                      unsigned int toLevel,
                      Image* output) const
@@ -2227,16 +2258,16 @@ Image::upscaleMipMap(const RectI & roi,
 
     switch ( getBitDepth() ) {
     case eImageBitDepthByte:
-        upscaleMipMapForDepth<unsigned char, 255>(roi, fromLevel, toLevel, output);
+        upscaleMipmapForDepth<unsigned char, 255>(roi, fromLevel, toLevel, output);
         break;
     case eImageBitDepthShort:
-        upscaleMipMapForDepth<unsigned short, 65535>(roi, fromLevel, toLevel, output);
+        upscaleMipmapForDepth<unsigned short, 65535>(roi, fromLevel, toLevel, output);
         break;
     case eImageBitDepthHalf:
         assert(false);
         break;
     case eImageBitDepthFloat:
-        upscaleMipMapForDepth<float, 1>(roi, fromLevel, toLevel, output);
+        upscaleMipmapForDepth<float, 1>(roi, fromLevel, toLevel, output);
         break;
     case eImageBitDepthNone:
         break;
@@ -2245,12 +2276,14 @@ Image::upscaleMipMap(const RectI & roi,
 
 // code proofread and fixed by @devernay on 8/8/2014
 void
-Image::buildMipMapLevel(const RectD& dstRoD,
+Image::buildMipmapLevel(const RectD& dstRoD,
                         const RectI & roi,
                         unsigned int level,
                         bool copyBitMap,
                         Image* output) const
 {
+    assert(_bounds.contains(roi));
+
     ///The last mip map level we will make with closestPo2
     RectI lastLevelRoI = roi.downscalePowerOfTwoSmallestEnclosing(level);
 
@@ -2276,7 +2309,7 @@ Image::buildMipMapLevel(const RectD& dstRoD,
         RectI halvedRoI = previousRoI.downscalePowerOfTwoSmallestEnclosing(1);
 
         ///Allocate an image with half the size of the source image
-        dstImg = new Image( getComponents(), dstRoD, halvedRoI, getMipMapLevel() + i, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), true);
+        dstImg = new Image( getComponents(), dstRoD, halvedRoI, getMipmapLevel() + i, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), true);
 
         ///Half the source image into dstImg.
         ///We pass the closestPo2 roi which might not be the entire size of the source image
@@ -2303,13 +2336,7 @@ Image::buildMipMapLevel(const RectD& dstRoD,
     if (mustFreeSrc) {
         delete srcImg;
     }
-} // buildMipMapLevel
-
-double
-Image::getScaleFromMipMapLevel(unsigned int level)
-{
-    return 1. / (1 << level);
-}
+} // buildMipmapLevel
 
 #ifndef M_LN2
 #define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
@@ -2343,6 +2370,7 @@ Bitmap::copyRowPortion(int x1,
     char* dstBitmap = getBitmapAt(x1, y);
     const char* end = dstBitmap + (x2 - x1);
 
+    assert(srcBitmap && dstBitmap);
     while (dstBitmap < end) {
         *dstBitmap = /**srcBitmap == PIXEL_UNAVAILABLE ? 0 : */ *srcBitmap;
         ++dstBitmap;
@@ -2388,9 +2416,7 @@ void
 Image::premultInternal(const RectI& roi)
 {
     WriteAccess acc(this);
-    RectI renderWindow;
-
-    roi.intersect(_bounds, &renderWindow);
+    const RectI renderWindow = roi.intersect(_bounds);
 
     assert(getComponentsCount() == 4);
 
@@ -2398,7 +2424,13 @@ Image::premultInternal(const RectI& roi)
     PIX* dstPix = (PIX*)acc.pixelAt(renderWindow.x1, renderWindow.y1);
     for ( int y = renderWindow.y1; y < renderWindow.y2; ++y, dstPix += (srcRowElements - (renderWindow.x2 - renderWindow.x1) * 4) ) {
         for (int x = renderWindow.x1; x < renderWindow.x2; ++x, dstPix += 4) {
+#ifdef DEBUG_NAN
+            assert( !std::isnan(dstPix[3]) ); // check for NaN
+#endif
             for (int c = 0; c < 3; ++c) {
+#ifdef DEBUG_NAN
+                assert( !std::isnan(dstPix[c]) ); // check for NaN
+#endif
                 if (doPremult) {
                     dstPix[c] = PIX(float(dstPix[c]) * dstPix[3]);
                 } else {
@@ -2406,6 +2438,9 @@ Image::premultInternal(const RectI& roi)
                         dstPix[c] = PIX( dstPix[c] / float(dstPix[3]) );
                     }
                 }
+#ifdef DEBUG_NAN
+                assert( !std::isnan(dstPix[c]) ); // check for NaN
+#endif
             }
         }
     }

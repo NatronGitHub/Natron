@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,9 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#endif
 #include "Engine/OverlaySupport.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
@@ -63,7 +60,6 @@ public:
     virtual bool isGuiFrozenForPlayback() const = 0;
     virtual void saveOpenGLContext() OVERRIDE = 0;
     virtual void restoreOpenGLContext() OVERRIDE = 0;
-    virtual unsigned int getCurrentRenderScale() const OVERRIDE { return 0; }
 
     virtual CurvePtr getCurve(ViewSpec view, int dimension) const = 0;
     virtual bool getAllDimensionsVisible() const = 0;

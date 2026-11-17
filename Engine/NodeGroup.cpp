@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,15 +27,15 @@
 
 #include <set>
 #include <locale>
-#include <cfloat>
+#include <limits>
 #include <algorithm> // min, max
 #include <cassert>
 #include <stdexcept>
 #include <sstream> // stringstream
 #include <limits>
 
-#include <QtCore/QCoreApplication>
-#include <QtCore/QTextStream>
+#include <QCoreApplication>
+#include <QTextStream>
 
 #include "Engine/AppInstance.h"
 #include "Engine/Bezier.h"
@@ -511,7 +511,7 @@ NodeCollection::checkNodeName(const Node* node,
         foundNodeWithName = false;
         QMutexLocker l(&_imp->nodesMutex);
         for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-            if ( (it->get() != node) && ( (*it)->getScriptName_mt_safe() == *nodeName ) ) {
+            if ( (it->get() != node) && (*it)->isActivated() && ( (*it)->getScriptName_mt_safe() == *nodeName ) ) {
                 foundNodeWithName = true;
                 break;
             }
@@ -760,7 +760,7 @@ NodeCollectionPrivate::findNodeInternal(const std::string& name,
     QMutexLocker k(&nodesMutex);
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->getScriptName_mt_safe() == name ) {
+        if ( (*it)->isActivated() && (*it)->getScriptName_mt_safe() == name ) {
             if ( !recurseName.empty() ) {
                 NodeGroup* isGrp = (*it)->isEffectGroup();
                 if (isGrp) {
@@ -769,7 +769,7 @@ NodeCollectionPrivate::findNodeInternal(const std::string& name,
                     NodesList children;
                     (*it)->getChildrenMultiInstance(&children);
                     for (NodesList::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
-                        if ( (*it2)->getScriptName_mt_safe() == recurseName ) {
+                        if ( (*it2)->isActivated() && (*it2)->getScriptName_mt_safe() == recurseName ) {
                             return *it2;
                         }
                     }
@@ -924,7 +924,7 @@ NodeCollection::checkIfNodeLabelExists(const std::string & n,
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (it->get() != caller) && ( (*it)->getLabel_mt_safe() == n ) ) {
+        if ( (it->get() != caller) && (*it)->isActivated() && ( (*it)->getLabel_mt_safe() == n ) ) {
             return true;
         }
     }
@@ -939,7 +939,7 @@ NodeCollection::checkIfNodeNameExists(const std::string & n,
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (it->get() != caller) && ( (*it)->getScriptName_mt_safe() == n ) ) {
+        if ( (it->get() != caller) && (*it)->isActivated() && ( (*it)->getScriptName_mt_safe() == n ) ) {
             return true;
         }
     }
@@ -960,10 +960,10 @@ recomputeFrameRangeForAllReadersInternal(NodeCollection* group,
             if ( (*it)->getEffectInstance()->isReader() ) {
                 double thisFirst, thislast;
                 (*it)->getEffectInstance()->getFrameRange_public( (*it)->getHashValue(), &thisFirst, &thislast );
-                if (thisFirst != INT_MIN) {
+                if (thisFirst != std::numeric_limits<int>::min()) {
                     *firstFrame = setFrameRange ? thisFirst : std::min(*firstFrame, (int)thisFirst);
                 }
-                if (thislast != INT_MAX) {
+                if (thislast != std::numeric_limits<int>::max()) {
                     *lastFrame = setFrameRange ? thislast : std::max(*lastFrame, (int)thislast);
                 }
             } else {
@@ -1055,7 +1055,8 @@ NodeCollection::getParallelRenderArgs(std::map<NodePtr, ParallelRenderArgsPtr>& 
 
 struct NodeGroupPrivate
 {
-    mutable QMutex nodesLock; // protects inputs & outputs
+    mutable QRecursiveMutex nodesLock;
+
     std::vector<NodeWPtr> inputs, guiInputs;
     NodesWList outputs, guiOutputs;
     bool isDeactivatingGroup;
@@ -1064,7 +1065,7 @@ struct NodeGroupPrivate
     KnobButtonPtr exportAsTemplate, convertToGroup;
 
     NodeGroupPrivate()
-    : nodesLock(QMutex::Recursive)
+    : nodesLock()
     , inputs()
     , guiInputs()
     , outputs()
@@ -1165,7 +1166,7 @@ NodeGroup::getInputLabel(int inputNb) const
         ///If the input name starts with "input" remove it, otherwise keep the full name
 
         input = _imp->inputs[inputNb].lock();
-        if (!input) {
+        if (!input || !input->isActivated()) {
             return std::string();
         }
     }
@@ -1322,6 +1323,32 @@ NodeGroup::initializeKnobs()
 
 }
 
+// Call onInputChanged() on every input of every output node that is connected to groupNode.
+// An output node appears once per link in getOutputs(), and may be connected to groupNode
+// through several of its inputs.
+static void
+notifyGroupOutputsInputChanged(const NodePtr& groupNode)
+{
+    std::set<NodePtr> outputs;
+    {
+        const NodesWList& outputsList = groupNode->getOutputs();
+        for (NodesWList::const_iterator it = outputsList.begin(); it != outputsList.end(); ++it) {
+            NodePtr output = it->lock();
+            if (output) {
+                outputs.insert(output);
+            }
+        }
+    }
+    for (std::set<NodePtr>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        int nInputs = (*it)->getNInputs();
+        for (int idx = 0; idx < nInputs; ++idx) {
+            if ( (*it)->getRealInput(idx) == groupNode ) {
+                (*it)->onInputChanged(idx);
+            }
+        }
+    }
+}
+
 void
 NodeGroup::notifyNodeDeactivated(const NodePtr& node)
 {
@@ -1367,16 +1394,7 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
     }
 
     ///Notify outputs of the group nodes that their inputs may have changed
-    const NodesWList& outputs = thisNode->getOutputs();
-    for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        NodePtr output = it->lock();
-        if (!output) {
-            continue;
-        }
-        int idx = output->getInputIndex( thisNode.get() );
-        assert(idx != -1);
-        output->onInputChanged(idx);
-    }
+    notifyGroupOutputsInputChanged(thisNode);
 } // NodeGroup::notifyNodeDeactivated
 
 void
@@ -1403,16 +1421,7 @@ NodeGroup::notifyNodeActivated(const NodePtr& node)
         }
     }
     ///Notify outputs of the group nodes that their inputs may have changed
-    const NodesWList& outputs = thisNode->getOutputs();
-    for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        NodePtr output = it->lock();
-        if (!output) {
-            continue;
-        }
-        int idx = output->getInputIndex( thisNode.get() );
-        assert(idx != -1);
-        output->onInputChanged(idx);
-    }
+    notifyGroupOutputsInputChanged(thisNode);
 }
 
 void
@@ -1653,7 +1662,9 @@ escapeString(const QString& str)
         } else {
 #if PY_MAJOR_VERSION >= 3
             // Python 3 strings are unicode
-            ret.append(QString::fromUTF8("\\u%1").arg(str[i].unicode(), 4, 16, QLatin1Char('0')));
+            // QChar::unicode() returns char16_t on Qt6, which arg() has no
+            // overload for, and ushort on Qt5, where the cast does nothing.
+            ret.append(QString::fromUtf8("\\u%1").arg(ushort(str[i].unicode()), 4, 16, QLatin1Char('0')));
 #else
             // Python 2: convert to Utf8
             QByteArray utf8 = QString(str[i]).toUtf8();
@@ -2014,19 +2025,19 @@ exportUserKnob(int indentLevel,
             int max = isInt->getMaximum(i);
             int dMin = isInt->getDisplayMinimum(i);
             int dMax = isInt->getDisplayMaximum(i);
-            if (min != INT_MIN) {
+            if (min != std::numeric_limits<int>::min()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setMinimum(") + NUM_INT(min) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
-            if (max != INT_MAX) {
+            if (max != std::numeric_limits<int>::max()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setMaximum(") + NUM_INT(max) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
-            if (dMin != INT_MIN) {
+            if (dMin != std::numeric_limits<int>::min()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDisplayMinimum(") + NUM_INT(dMin) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
-            if (dMax != INT_MAX) {
+            if (dMax != std::numeric_limits<int>::max()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDisplayMaximum(") + NUM_INT(dMax) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
@@ -2060,19 +2071,19 @@ exportUserKnob(int indentLevel,
             double max = isDouble->getMaximum(i);
             double dMin = isDouble->getDisplayMinimum(i);
             double dMax = isDouble->getDisplayMaximum(i);
-            if (min != -DBL_MAX) {
+            if (min != std::numeric_limits<double>::lowest()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setMinimum(") + NUM_VALUE(min) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
-            if (max != DBL_MAX) {
+            if (max != std::numeric_limits<double>::max()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setMaximum(") + NUM_VALUE(max) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
-            if (dMin != -DBL_MAX) {
+            if (dMin != std::numeric_limits<double>::lowest()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDisplayMinimum(") + NUM_VALUE(dMin) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
-            if (dMax != DBL_MAX) {
+            if (dMax != std::numeric_limits<double>::max()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDisplayMaximum(") + NUM_VALUE(dMax) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
@@ -2141,19 +2152,19 @@ exportUserKnob(int indentLevel,
             double max = isColor->getMaximum(i);
             double dMin = isColor->getDisplayMinimum(i);
             double dMax = isColor->getDisplayMaximum(i);
-            if (min != -DBL_MAX) {
+            if (min != std::numeric_limits<double>::lowest()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setMinimum(") + NUM_VALUE(min) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
-            if (max != DBL_MAX) {
+            if (max != std::numeric_limits<double>::max()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setMaximum(") + NUM_VALUE(max) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
-            if (dMin != -DBL_MAX) {
+            if (dMin != std::numeric_limits<double>::lowest()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDisplayMinimum(") + NUM_VALUE(dMin) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
-            if (dMax != DBL_MAX) {
+            if (dMax != std::numeric_limits<double>::max()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDisplayMaximum(") + NUM_VALUE(dMax) + QString::fromUtf8(", ") +
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
@@ -2356,8 +2367,8 @@ exportRotoLayer(int indentLevel,
     QString parentLayerName = QString::fromUtf8( layer->getScriptName().c_str() ) + QString::fromUtf8("_layer");
 
     for (std::list<RotoItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
-        RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
-        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+        RotoLayerPtr isLayer = std::dynamic_pointer_cast<RotoLayer>(*it);
+        BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(*it);
 
         if (isBezier) {
             double time;
@@ -2835,12 +2846,12 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     WRITE_STATIC_LINE(NATRON_PYPLUG_MAGIC);
     QString descline = QString( QString::fromUtf8(NATRON_PYPLUG_GENERATED "%1 PyPlug exporter version %2.") ).arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg(NATRON_PYPLUG_EXPORTER_VERSION);
     WRITE_STRING(descline);
-    WRITE_STATIC_LINE();
+    WRITE_STATIC_LINE("");
     QString handWrittenStr = QString::fromUtf8("# Hand-written code should be added in a separate file named %1.py").arg(extModule);
     WRITE_STRING(handWrittenStr);
     WRITE_STATIC_LINE("# See http://natron.readthedocs.org/en/master/devel/groups.html#adding-hand-written-code-callbacks-etc");
     WRITE_STATIC_LINE("# Note that Viewers are never exported");
-    WRITE_STATIC_LINE();
+    WRITE_STATIC_LINE("");
     WRITE_STATIC_LINE("import " NATRON_ENGINE_PYTHON_MODULE_NAME);
     WRITE_STATIC_LINE("import sys");
     WRITE_STATIC_LINE("");

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,12 +32,12 @@
 #include <sstream> // stringstream
 #include <cctype> // isspace
 
-#include <QtCore/QDataStream>
-#include <QtCore/QDateTime>
-#include <QtCore/QByteArray>
-#include <QtCore/QCoreApplication>
-#include <QtCore/QThread>
-#include <QtCore/QDebug>
+#include <QDataStream>
+#include <QDateTime>
+#include <QByteArray>
+#include <QCoreApplication>
+#include <QThread>
+#include <QDebug>
 
 #include "Global/GlobalDefines.h"
 
@@ -260,10 +260,8 @@ KnobI::restoreLinks(const NodesList & allNodes,
                     const std::map<std::string, std::string>& oldNewScriptNamesMapping,
                     bool throwOnFailure)
 {
-    int i = 0;
     KnobIPtr thisKnob = shared_from_this();
     for (std::vector<Link>::const_iterator l = _links.begin(); l != _links.end(); ++l) {
-
         KnobIPtr linkedKnob = findMaster(thisKnob, allNodes, l->nodeNameFull, l->nodeName, l->trackName, l->knobName, oldNewScriptNamesMapping);
         if (!linkedKnob) {
             if (throwOnFailure) {
@@ -287,7 +285,8 @@ KnobI::restoreLinks(const NodesList & allNodes,
        } else if (l->dimension == -1) {
             setKnobAsAliasOfThis(linkedKnob, true);
         } else {
-            slaveTo(i, linkedKnob, l->dimension);
+            assert(l->slaveDimension >= 0);
+            slaveTo(l->slaveDimension, linkedKnob, l->dimension);
         }
     }
     _links.clear();
@@ -348,7 +347,7 @@ KnobI::getTopLevelPage() const
     }
 
     ////find in which page the knob should be
-    KnobPagePtr isTopLevelParentAPage = boost::dynamic_pointer_cast<KnobPage>(parentKnobTmp);
+    KnobPagePtr isTopLevelParentAPage = std::dynamic_pointer_cast<KnobPage>(parentKnobTmp);
 
     return isTopLevelParentAPage;
 }
@@ -382,7 +381,7 @@ struct KnobHelperPrivate
     KnobHelper* publicInterface;
 
 #ifdef DEBUG
-#pragma message WARN("This should be a weak_ptr")
+//#pragma message WARN("This should be a weak_ptr")
 #endif
     KnobHolder* holder;
     mutable QMutex labelMutex;
@@ -462,7 +461,7 @@ struct KnobHelperPrivate
     mutable U32 lastRandomHash;
 
     ///Used to prevent recursive calls for expressions
-    boost::shared_ptr<TLSHolder<KnobHelper::KnobTLSData> > tlsData;
+    std::shared_ptr<TLSHolder<KnobHelper::KnobTLSData> > tlsData;
     mutable QMutex hasModificationsMutex;
     std::vector<bool> hasModifications;
     mutable QMutex valueChangedBlockedMutex;
@@ -536,7 +535,7 @@ struct KnobHelperPrivate
         , listenersNotificationBlocked(0)
         , isClipPreferenceSlave(false)
     {
-        tlsData = boost::make_shared<TLSHolder<KnobHelper::KnobTLSData> >();
+        tlsData = std::make_shared<TLSHolder<KnobHelper::KnobTLSData> >();
         if ( holder && !holder->canKnobsAnimate() ) {
             isAnimationEnabled = false;
         }
@@ -755,7 +754,7 @@ void
 KnobHelper::populate()
 {
     KnobIPtr thisKnob = shared_from_this();
-    KnobSignalSlotHandlerPtr handler = boost::make_shared<KnobSignalSlotHandler>(thisKnob);
+    KnobSignalSlotHandlerPtr handler = std::make_shared<KnobSignalSlotHandler>(thisKnob);
 
     setSignalSlotHandler(handler);
 
@@ -772,7 +771,7 @@ KnobHelper::populate()
     for (int i = 0; i < _imp->dimension; ++i) {
         _imp->enabled[i] = true;
         if ( canAnimate() ) {
-            _imp->curves[i] = boost::make_shared<Curve>(this, i);
+            _imp->curves[i] = std::make_shared<Curve>(this, i);
         }
         _imp->animationLevel[i] = eAnimationLevelNone;
 
@@ -2413,21 +2412,21 @@ KnobHelperPrivate::declarePythonVariables(bool addTab,
         throw std::runtime_error("This parameter cannot have an expression");
     }
 
-    EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
-    if (!effect) {
-        throw std::runtime_error("This parameter cannot have an expression");
-    }
-
-    NodePtr node = effect->getNode();
-    assert(node);
-
-    NodeCollectionPtr collection = node->getGroup();
-    if (!collection) {
-        throw std::runtime_error("This parameter cannot have an expression");
-    }
-    NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>( collection.get() );
-    std::string appID = node->getApp()->getAppIDString();
+    std::string appID = holder->getApp()->getAppIDString();
     std::string tabStr = addTab ? "    " : "";
+    EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+    NodeCollectionPtr collection;
+    NodeGroup* isParentGrp = nullptr;
+    if (effect) {
+        NodePtr node = effect->getNode();
+        assert(node);
+
+        collection = node->getGroup();
+        if (!collection) {
+            throw std::runtime_error("This parameter cannot have an expression");
+        }
+        isParentGrp = dynamic_cast<NodeGroup*>( collection.get() );
+    }
     std::stringstream ss;
     if (appID != "app") {
         ss << tabStr << "app = " << appID << "\n";
@@ -2438,27 +2437,29 @@ KnobHelperPrivate::declarePythonVariables(bool addTab,
 
 
     //Define all nodes in the same group reachable by their bare script-name
-    NodesList siblings = collection->getNodes();
     std::string collectionScriptName;
     if (isParentGrp) {
         collectionScriptName = isParentGrp->getNode()->getFullyQualifiedName();
     } else {
         collectionScriptName = appID;
     }
-    for (NodesList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
-        if ( (*it)->isActivated() && !(*it)->getParentMultiInstance() ) {
-            std::string scriptName = (*it)->getScriptName_mt_safe();
-            if ( NATRON_PYTHON_NAMESPACE::isKeyword(scriptName) ) {
-                throw std::runtime_error(scriptName + " is a Python keyword");
-            }
-            std::string fullName = appID + "." + (*it)->getFullyQualifiedName();
-            ss << tabStr << "if hasattr(";
-            if (isParentGrp) {
-                ss << appID << ".";
-            }
-            ss << collectionScriptName << ",\"" <<  scriptName << "\"):\n";
+    if (collection) {
+        NodesList siblings = collection->getNodes();
+        for (NodesList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
+            if ( (*it)->isActivated() && !(*it)->getParentMultiInstance() ) {
+                std::string scriptName = (*it)->getScriptName_mt_safe();
+                if ( NATRON_PYTHON_NAMESPACE::isKeyword(scriptName) ) {
+                    throw std::runtime_error(scriptName + " is a Python keyword");
+                }
+                std::string fullName = appID + "." + (*it)->getFullyQualifiedName();
+                ss << tabStr << "if hasattr(";
+                if (isParentGrp) {
+                    ss << appID << ".";
+                }
+                ss << collectionScriptName << ",\"" <<  scriptName << "\"):\n";
 
-            ss << tabStr << "    " << scriptName << " = " << fullName << "\n";
+                ss << tabStr << "    " << scriptName << " = " << fullName << "\n";
+            }
         }
     }
 
@@ -2467,13 +2468,17 @@ KnobHelperPrivate::declarePythonVariables(bool addTab,
     } else {
         ss << tabStr << "thisGroup = " << appID << "\n";
     }
-    ss << tabStr << "thisNode = " << node->getScriptName_mt_safe() <<  "\n";
+    if (effect) {
+        NodePtr node = effect->getNode();
+        assert(node);
+        ss << tabStr << "thisNode = " << node->getScriptName_mt_safe() <<  "\n";
+        ss << tabStr << "thisParam = thisNode." << name << "\n";
+        ///Now define the variables in the scope
+        ss << tabStr << "random = thisParam.random\n";
+        ss << tabStr << "randomInt = thisParam.randomInt\n";
+        ss << tabStr << "curve = thisParam.curve\n";
+    }
 
-    ///Now define the variables in the scope
-    ss << tabStr << "thisParam = thisNode." << name << "\n";
-    ss << tabStr << "random = thisParam.random\n";
-    ss << tabStr << "randomInt = thisParam.randomInt\n";
-    ss << tabStr << "curve = thisParam.curve\n";
     if (dimension != -1) {
         ss << tabStr << "dimension = " << dim << "\n";
     }
@@ -2623,17 +2628,19 @@ KnobHelper::validateExpression(const std::string& expression,
         throw std::runtime_error("This parameter cannot have an expression");
     }
 
+    std::string appID = getHolder()->getApp()->getAppIDString();
+    std::string exprFuncPrefix;
     EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
-    if (!effect) {
-        throw std::runtime_error("This parameter cannot have an expression");
+    if (effect) {
+        NodePtr node = effect->getNode();
+        assert(node);
+        std::string nodeName = node->getFullyQualifiedName();
+        std::string nodeFullName = appID + "." + nodeName;
+        exprFuncPrefix = nodeFullName + "." + getName() + ".";
+    } else {
+        exprFuncPrefix = appID + "." + getName() + ".";
     }
 
-    NodePtr node = effect->getNode();
-    assert(node);
-    std::string appID = getHolder()->getApp()->getAppIDString();
-    std::string nodeName = node->getFullyQualifiedName();
-    std::string nodeFullName = appID + "." + nodeName;
-    std::string exprFuncPrefix = nodeFullName + "." + getName() + ".";
     std::string exprFuncName;
     {
         std::stringstream tmpSs;
@@ -2696,14 +2703,14 @@ KnobHelper::validateExpression(const std::string& expression,
             *resultAsString = r ? "True" : "False";
         } else {
             assert(isString);
-            if (PyUnicode_Check(ret) || PyString_Check(ret)) {
+            if (PyUnicode_Check(ret) || PyBytes_Check(ret)) {
                 *resultAsString = isString->pyObjectToType<std::string>(ret);
             } else {
                 int index = 0;
                 if ( PyFloat_Check(ret) ) {
                     index = std::floor( (double)PyFloat_AsDouble(ret) + 0.5 );
                 } else if ( PyLong_Check(ret) ) {
-                    index = (int)PyInt_AsLong(ret);
+                    index = (int)PyLong_AsLong(ret);
                 } else if (PyObject_IsTrue(ret) == 1) {
                     index = 1;
                 }
@@ -2786,7 +2793,7 @@ KnobHelper::setExpressionInvalid(int dimension,
     }
     if ( getHolder() && getHolder()->getApp() ) {
         if (wasValid && !valid) {
-            getHolder()->getApp()->addInvalidExpressionKnob( boost::const_pointer_cast<KnobI>( shared_from_this() ) );
+            getHolder()->getApp()->addInvalidExpressionKnob( std::const_pointer_cast<KnobI>( shared_from_this() ) );
             if (_signalSlotHandler) {
                 _signalSlotHandler->s_expressionChanged(dimension);
             }
@@ -3059,6 +3066,8 @@ catchErrors(PyObject* mainModule,
     return true;
 }
 
+///The return value must be Py_DECRREF
+/// The Python GIL must be held before calling this, so the the PyObject remains valid.
 bool
 KnobHelper::executeExpression(double time,
                               ViewIdx view,
@@ -3079,12 +3088,17 @@ KnobHelper::executeExpression(double time,
 }
 
 
+/// The return value must be Py_DECRREF
+/// The expression must put its result in the Python variable named "ret"
+/// The Python GIL must be held before calling this, so the the PyObject remains valid.
 bool
 KnobHelper::executeExpression(const std::string& expr,
                               PyObject** ret,
                               std::string* error)
 {
-    PythonGILLocker pgl;
+#if PY_VERSION_HEX >= 0x030400F0
+    assert(PyGILState_Check());  // Not available prior to Python 3.4
+#endif
 
     //returns a new ref, this function's documentation is not clear onto what it returns...
     //https://docs.python.org/2/c-api/veryhigh.html
@@ -4552,7 +4566,7 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
             if (userPages.empty()) {
                 destPage = otherIsEffect->getOrCreateUserPageKnob();
             } else {
-                destPage = boost::dynamic_pointer_cast<KnobPage>(userPages.front()->shared_from_this());
+                destPage = std::dynamic_pointer_cast<KnobPage>(userPages.front()->shared_from_this());
             }
 
         }
@@ -4888,7 +4902,7 @@ struct KnobHolder::KnobHolderPrivate
         , isDequeingValuesSet(false)
         , paramsEditLevel(eMultipleParamsEditOff)
         , paramsEditRecursionLevel(0)
-        , evaluationBlockedMutex(QMutex::Recursive)
+        , evaluationBlockedMutex()
         , evaluationBlocked(0)
         , canCurrentlySetValue(true)
         , knobChanged()
@@ -4916,7 +4930,7 @@ struct KnobHolder::KnobHolderPrivate
     , isDequeingValuesSet(other.isDequeingValuesSet)
     , paramsEditLevel(other.paramsEditLevel)
     , paramsEditRecursionLevel(other.paramsEditRecursionLevel)
-    , evaluationBlockedMutex(QMutex::Recursive)
+    , evaluationBlockedMutex()
     , evaluationBlocked(0)
     , canCurrentlySetValue(other.canCurrentlySetValue)
     , knobChanged()
@@ -5293,7 +5307,7 @@ KnobHolder::getUserPageKnob() const
             if (!(*it)->isUserKnob()) {
                 continue;
             }
-            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
+            KnobPagePtr isPage = std::dynamic_pointer_cast<KnobPage>(*it);
             if (isPage) {
                 return isPage;
             }
@@ -5333,7 +5347,7 @@ KnobHolder::createIntKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobInt>(existingKnob);
+        return std::dynamic_pointer_cast<KnobInt>(existingKnob);
     }
     KnobIntPtr ret = AppManager::createKnob<KnobInt>(this, label, dimension, false);
     ret->setName(name);
@@ -5357,7 +5371,7 @@ KnobHolder::createDoubleKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobDouble>(existingKnob);
+        return std::dynamic_pointer_cast<KnobDouble>(existingKnob);
     }
     KnobDoublePtr ret = AppManager::createKnob<KnobDouble>(this, label, dimension, false);
     ret->setName(name);
@@ -5381,7 +5395,7 @@ KnobHolder::createColorKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobColor>(existingKnob);
+        return std::dynamic_pointer_cast<KnobColor>(existingKnob);
     }
     KnobColorPtr ret = AppManager::createKnob<KnobColor>(this, label, dimension, false);
     ret->setName(name);
@@ -5404,7 +5418,7 @@ KnobHolder::createBoolKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobBool>(existingKnob);
+        return std::dynamic_pointer_cast<KnobBool>(existingKnob);
     }
     KnobBoolPtr ret = AppManager::createKnob<KnobBool>(this, label, 1, false);
     ret->setName(name);
@@ -5427,7 +5441,7 @@ KnobHolder::createChoiceKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobChoice>(existingKnob);
+        return std::dynamic_pointer_cast<KnobChoice>(existingKnob);
     }
     KnobChoicePtr ret = AppManager::createKnob<KnobChoice>(this, label, 1, false);
     ret->setName(name);
@@ -5450,7 +5464,7 @@ KnobHolder::createButtonKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobButton>(existingKnob);
+        return std::dynamic_pointer_cast<KnobButton>(existingKnob);
     }
     KnobButtonPtr ret = AppManager::createKnob<KnobButton>(this, label, 1, false);
     ret->setName(name);
@@ -5473,7 +5487,7 @@ KnobHolder::createSeparatorKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobSeparator>(existingKnob);
+        return std::dynamic_pointer_cast<KnobSeparator>(existingKnob);
     }
     KnobSeparatorPtr ret = AppManager::createKnob<KnobSeparator>(this, label, 1, false);
     ret->setName(name);
@@ -5497,7 +5511,7 @@ KnobHolder::createStringKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobString>(existingKnob);
+        return std::dynamic_pointer_cast<KnobString>(existingKnob);
     }
     KnobStringPtr ret = AppManager::createKnob<KnobString>(this, label, 1, false);
     ret->setName(name);
@@ -5520,7 +5534,7 @@ KnobHolder::createFileKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobFile>(existingKnob);
+        return std::dynamic_pointer_cast<KnobFile>(existingKnob);
     }
     KnobFilePtr ret = AppManager::createKnob<KnobFile>(this, label, 1, false);
     ret->setName(name);
@@ -5543,7 +5557,7 @@ KnobHolder::createOuptutFileKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobOutputFile>(existingKnob);
+        return std::dynamic_pointer_cast<KnobOutputFile>(existingKnob);
     }
     KnobOutputFilePtr ret = AppManager::createKnob<KnobOutputFile>(this, label, 1, false);
     ret->setName(name);
@@ -5566,7 +5580,7 @@ KnobHolder::createPathKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobPath>(existingKnob);
+        return std::dynamic_pointer_cast<KnobPath>(existingKnob);
     }
     KnobPathPtr ret = AppManager::createKnob<KnobPath>(this, label, 1, false);
     ret->setName(name);
@@ -5589,7 +5603,7 @@ KnobHolder::createGroupKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobGroup>(existingKnob);
+        return std::dynamic_pointer_cast<KnobGroup>(existingKnob);
     }
     KnobGroupPtr ret = AppManager::createKnob<KnobGroup>(this, label, 1, false);
     ret->setName(name);
@@ -5612,7 +5626,7 @@ KnobHolder::createPageKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobPage>(existingKnob);
+        return std::dynamic_pointer_cast<KnobPage>(existingKnob);
     }
     KnobPagePtr ret = AppManager::createKnob<KnobPage>(this, label, 1, false);
     ret->setName(name);
@@ -5636,7 +5650,7 @@ KnobHolder::createParametricKnob(const std::string& name,
     KnobIPtr existingKnob = getKnobByName(name);
 
     if (existingKnob) {
-        return boost::dynamic_pointer_cast<KnobParametric>(existingKnob);
+        return std::dynamic_pointer_cast<KnobParametric>(existingKnob);
     }
     KnobParametricPtr ret = AppManager::createKnob<KnobParametric>(this, label, nbCurves, false);
     ret->setName(name);

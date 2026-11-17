@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,12 +30,7 @@
 
 #include "Global/GlobalDefines.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#endif
-
-#include <QtCore/QObject>
+#include <QObject>
 
 #include "Engine/EngineFwd.h"
 
@@ -57,14 +52,14 @@ NATRON_NAMESPACE_ENTER
 struct AbortableRenderInfoPrivate;
 class AbortableRenderInfo
     : public QObject
-    , public boost::enable_shared_from_this<AbortableRenderInfo>
+    , public std::enable_shared_from_this<AbortableRenderInfo>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 private:
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
 
     /**
      * @brief Create new infos for a specific render that can be aborted with the given age.
@@ -151,7 +146,7 @@ Q_SIGNALS:
 
 private:
 
-    boost::scoped_ptr<AbortableRenderInfoPrivate> _imp;
+    std::unique_ptr<AbortableRenderInfoPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

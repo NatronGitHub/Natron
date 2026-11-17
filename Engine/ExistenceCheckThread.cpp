@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,10 +30,10 @@
 #include <stdexcept>
 #include <iostream>
 
-#include <QtNetwork/QLocalSocket>
-#include <QtCore/QMutex>
-#include <QtCore/QWaitCondition>
-#include <QtCore/QDebug>
+#include <QLocalSocket>
+#include <QMutex>
+#include <QWaitCondition>
+#include <QDebug>
 
 #ifdef DEBUG
 #include "Global/FloatingPointExceptions.h"
@@ -51,7 +51,7 @@ NATRON_NAMESPACE_ENTER
 
 struct ExistenceCheckerThreadPrivate
 {
-    boost::shared_ptr<QLocalSocket> socket;
+    std::shared_ptr<QLocalSocket> socket;
     QString comServerPipePath;
     QString checkMessage;
     QString acknowledgementMessage;
@@ -97,7 +97,7 @@ ExistenceCheckerThread::quitThread()
         assert(!_imp->mustQuit);
         _imp->mustQuit = true;
         while (_imp->mustQuit) {
-            _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
+            _imp->mustQuitCond.wait(k.mutex());
         }
     }
     wait();

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -34,9 +34,6 @@
  **/
 
 #include <list>
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#endif
 
 #include "Engine/ImagePlaneDesc.h"
 #include "Engine/Knob.h" // KnobI
@@ -203,7 +200,7 @@ public:
     void refreshUserParamsGUI();
 
     virtual bool onKnobValueChanged(KnobI* k,
-                                    NATRON_NAMESPACE::ValueChangedReasonEnum reason,
+                                    Natron::ValueChangedReasonEnum reason,
                                     double time,
                                     ViewSpec view,
                                     bool originatedFromMainThread)
@@ -386,8 +383,8 @@ public:
 
     double getPixelAspectRatio() const;
 
-    NATRON_NAMESPACE::ImageBitDepthEnum getBitDepth() const;
-    NATRON_NAMESPACE::ImagePremultiplicationEnum getPremult() const;
+    Natron::ImageBitDepthEnum getBitDepth() const;
+    Natron::ImagePremultiplicationEnum getPremult() const;
 
     void setPagesOrder(const QStringList& pages);
 };

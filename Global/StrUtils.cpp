@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,12 +26,13 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #else
-#include <cstdlib>
 #include <climits>
+#include <cstdlib>
 #endif
 
 #include <vector>
 #include <algorithm>
+#include <locale>
 
 
 
@@ -421,6 +422,38 @@ namespace StrUtils {
             }
         }
         return ret;
+    }
+
+    bool iequals(const std::string& lhs, const std::string& rhs)
+    {
+        return std::equal(
+            lhs.begin(),
+            lhs.end(),
+            rhs.begin(),
+            rhs.end(),
+            [](char l, char r) { return std::tolower(l, std::locale()) == std::tolower(r, std::locale()); });
+    }
+
+    void replace_first(std::string& inout, const std::string& search, const std::string& fmt)
+    {
+        std::string::size_type occur = inout.find(search);
+        if (occur == std::string::npos) {
+            return;
+        }
+
+        inout.replace(occur, search.size(), fmt);
+    }
+
+    std::string trim_copy(const std::string& input)
+    {
+        std::string::size_type leading = input.find_first_not_of(" \t\r\n\v\f");
+        if (leading == std::string::npos) {
+            return std::string();
+        }
+
+        std::string::size_type trailing = input.find_last_not_of(" \t\r\n\v\f");
+
+        return input.substr(leading, trailing - leading + 1);
     }
 
 } // StrUtils

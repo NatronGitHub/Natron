@@ -30,7 +30,7 @@ This is very useful for matching color of one shot to another, or adding custom 
 
 Optionally, the RGB histogram or a color ramp can be displayed in the background of the lookup curves.
 
-See also: http://opticalenquiry.com/nuke/index.php?title=ColorLookup
+See also: https://web.archive.org/web/20221208230906/http://opticalenquiry.com/nuke/index.php?title=ColorLookup
 
 Inputs
 ------

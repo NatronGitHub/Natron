@@ -1,3 +1,4 @@
+*.pkg.tar.*
 *.tar.xz
 *.tar.gz
 *.tar.bz2
@@ -21,4 +22,7 @@ google-breakpad
 seexpr
 x264
 oiio-images
+opencolorio
+osmesa-install
+repo
 

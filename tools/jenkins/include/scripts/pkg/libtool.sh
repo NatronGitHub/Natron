@@ -2,8 +2,8 @@
 
 # install libtool
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/libtool.html
-LIBTOOL_VERSION=2.4.6
-LIBTOOL_TAR="libtool-${LIBTOOL_VERSION}.tar.gz"
+LIBTOOL_VERSION=2.4.7
+LIBTOOL_TAR="libtool-${LIBTOOL_VERSION}.tar.xz"
 LIBTOOL_SITE="http://ftp.gnu.org/pub/gnu/libtool"
 if download_step; then
     download "$LIBTOOL_SITE" "$LIBTOOL_TAR"

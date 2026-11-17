@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,6 +30,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// clang-format off
 GCC_DIAG_OFF(unused-parameter)
 #include <boost/archive/basic_archive.hpp>
 #include <boost/serialization/base_object.hpp>
@@ -40,6 +41,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/map.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
+// clang-format on
 #endif
 
 #include "Engine/AppManager.h"
@@ -138,15 +140,15 @@ private:
                 ar & ::boost::serialization::make_nvp("Type", type);
             }
             if (type == 0) {
-                BezierSerializationPtr b = boost::make_shared<BezierSerialization>();
+                BezierSerializationPtr b = std::make_shared<BezierSerialization>();
                 ar & ::boost::serialization::make_nvp("Item", *b);
                 children.push_back(b);
             } else if (type == 1) {
-                RotoStrokeItemSerializationPtr b = boost::make_shared<RotoStrokeItemSerialization>();
+                RotoStrokeItemSerializationPtr b = std::make_shared<RotoStrokeItemSerialization>();
                 ar & ::boost::serialization::make_nvp("Item", *b);
                 children.push_back(b);
             } else {
-                RotoLayerSerializationPtr l = boost::make_shared<RotoLayerSerialization>();
+                RotoLayerSerializationPtr l = std::make_shared<RotoLayerSerialization>();
                 ar & ::boost::serialization::make_nvp("Item", *l);
                 children.push_back(l);
             }

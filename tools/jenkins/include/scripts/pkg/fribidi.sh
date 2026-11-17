@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Install fribidi (for libass and ffmpeg)
-# see http://www.linuxfromscratch.org/blfs/view/cvs/general/fribidi.html
-FRIBIDI_VERSION=1.0.9
+# see http://www.linuxfromscratch.org/blfs/view/svn/general/fribidi.html
+FRIBIDI_VERSION=1.0.12
 FRIBIDI_TAR="fribidi-${FRIBIDI_VERSION}.tar.xz"
 FRIBIDI_SITE="https://github.com/fribidi/fribidi/releases/download/v${FRIBIDI_VERSION}"
 if download_step; then

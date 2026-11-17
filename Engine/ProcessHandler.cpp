@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,16 +28,16 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QtCore/QtGlobal> // for Q_OS_*
-#include <QtCore/QProcess>
-#include <QtNetwork/QLocalServer>
-#include <QtNetwork/QLocalSocket>
-#include <QtCore/QCoreApplication>
-#include <QtCore/QTemporaryFile>
-#include <QtCore/QWaitCondition>
-#include <QtCore/QMutex>
-#include <QtCore/QDir>
-#include <QtCore/QDebug>
+#include <QtGlobal> // for Q_OS_*
+#include <QProcess>
+#include <QLocalServer>
+#include <QLocalSocket>
+#include <QCoreApplication>
+#include <QTemporaryFile>
+#include <QWaitCondition>
+#include <QMutex>
+#include <QDir>
+#include <QDebug>
 
 #ifdef DEBUG
 #include "Global/FloatingPointExceptions.h"
@@ -292,6 +292,7 @@ ProcessInputChannel::ProcessInputChannel(const QString & mainProcessServerName)
 ProcessInputChannel::~ProcessInputChannel()
 {
     if ( isRunning() ) {
+        assert( !_mustQuitMutex.tryLock() );
         assert(!_mustQuit);
         _mustQuit = true;
         while (_mustQuit) {

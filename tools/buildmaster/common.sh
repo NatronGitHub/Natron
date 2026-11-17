@@ -172,13 +172,26 @@ fi
 
 # The version of Python used by the SDK and to build Natron
 # Python 2 or 3, NOTE! v3 is probably broken, been untested for a long while
-PYV=2
-if [ "$PYV" = "3" ]; then
-    PYVER=3.4
-else
-    PYVER=2.7
+# To default to Python 3, move the Python 2 section below the Python 3 section
+if [[ $(type -P python2) ]]; then
+    PY2VER="$(python2 -c "import platform; print('.'.join(platform.python_version_tuple()[:2]))")"
+    PY2VERNODOT=$(echo ${PY2VER:-}| sed 's/\.//')
+    if [ -z "${PYV:-}" ]; then
+        # default to Python 2 if present
+        PYV=2
+        PYVER="${PY2VER}"
+        PYVERNODOT="${PY2VERNODOT}"
+    fi
 fi
-PYVERNODOT=$(echo ${PYVER:-}| sed 's/\.//')
+if [[ $(type -P python3) ]]; then
+    PY3VER="$(python3 -c "import platform; print('.'.join(platform.python_version_tuple()[:2]))")"
+    PY3VERNODOT=$(echo ${PY3VER:-}| sed 's/\.//')
+    if [ -z "${PYV:-}" ]; then
+        PYV=3
+        PYVER="${PY3VER}"
+        PYVERNODOT="${PY3VERNODOT}"
+    fi
+fi
 
 QT_VERSION_MAJOR=4
 
@@ -288,7 +301,14 @@ elif [ "$PKGOS" = "OSX" ]; then
     fi
 fi
 
-if [ -d "$SDK_HOME/osmesa" ]; then
+if [ -n "${OSMESA_PREFIX:-}" ] && [ -z "${LLVM_PREFIX:-}" ]; then
+    # an OSMesa install needs the LLVM it was built with (e.g. Mesa 25.0.7 needs LLVM >= 15)
+    (>&2 echo "Error: OSMESA_PREFIX=$OSMESA_PREFIX is set, so LLVM_PREFIX must be set too (e.g. /opt/llvm-19.1.7)")
+    exit 1
+fi
+if [ -n "${OSMESA_PREFIX:-}" ]; then
+    OSMESA_PATH="${OSMESA_PREFIX}"
+elif [ -d "$SDK_HOME/osmesa" ]; then
     OSMESA_PATH="$SDK_HOME/osmesa"
 elif [ -d "/opt/osmesa" ]; then
     OSMESA_PATH="/opt/osmesa"
@@ -298,7 +318,9 @@ else
     OSMESA_PATH="$SDK_HOME/osmesa"
 fi
 
-if [ -d "$SDK_HOME/llvm" ]; then
+if [ -n "${LLVM_PREFIX:-}" ]; then
+    LLVM_PATH="${LLVM_PREFIX}"
+elif [ -d "$SDK_HOME/llvm" ]; then
     LLVM_PATH="$SDK_HOME/llvm"
 elif [ -d "/opt/llvm" ]; then
     LLVM_PATH="/opt/llvm"

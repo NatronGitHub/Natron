@@ -2,6 +2,11 @@
 
 PortSystem                  1.0
 PortGroup                   conflicts_build 1.0
+PortGroup                   github 1.0
+PortGroup                   legacysupport 1.1
+
+# TARGET_OS_IOS, TARGET_OS_WATCH, TARGET_OS_TV missing in TargetConditionals.h:
+legacysupport.newest_darwin_requires_legacy 11
 
 # Keep relevant lines in sync between ImageMagick and p5-perlmagick.
 
@@ -9,24 +14,30 @@ PortGroup                   conflicts_build 1.0
 # PHP Warning:  Version warning: Imagick was compiled against Image Magick version XXXX but version YYYY is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
 
 name                        ImageMagick
-# 6.9.11-61 changes the major version of libMagickCore which will
-# require increasing the revision of all ports that link with it.
-version                     6.9.11-60
+github.setup                ImageMagick ImageMagick6 6.9.13-59
 revision                    0
-checksums                   rmd160  1c293ba06fd43833be35efb4476e559bf137ccef \
-                            sha256  ba0fa683b0721d1f22b0ccb364e4092e9a7a34ffd3bd6348c82b50fd93b1d7ba \
-                            size    9167220
+
+github.tarball_from         releases
+distname                    ${name}-${version}
+use_xz                      yes
+
+checksums                   rmd160  7ccfaf3cfc355b75aa8b872c757a4cc93f6acd67 \
+                            sha256  1673e5400a345f6c9c52d65eac4127cb9bd474a8ff29a4816f2f03ef2810949c \
+                            size    8665508
 
 categories                  graphics devel
-maintainers                 {ryandesign @ryandesign}
+maintainers                 {@Dave-Allured noaa.gov:dave.allured} \
+                            {ryandesign @ryandesign} \
+                            openmaintainer
 license                     Apache-2
-use_xz                      yes
-platforms                   darwin
-use_parallel_build          yes
 
 description                 Tools and libraries to manipulate images in many formats
 
-long_description            ImageMagick is a robust collection of tools and \
+long_description            This is the legacy ImageMagick version 6.  For the \
+                            modern ImageMagick version 7, please go to port \
+                            ImageMagick7. \
+                            \
+                            ImageMagick is a robust collection of tools and \
                             libraries to create, edit and compose bitmap images \
                             in a wide variety of formats. You can crop, resize, \
                             rotate, sharpen, color reduce or add effects or text \
@@ -41,10 +52,6 @@ long_description            ImageMagick is a robust collection of tools and \
                             PhotoCD and TIFF.
 
 homepage                    https://legacy.imagemagick.org
-master_sites                https://download.imagemagick.org/ImageMagick/download/releases/ \
-                            http://mirror.checkdomain.de/imagemagick/releases/ \
-                            ftp://ftp.u-aizu.ac.jp/pub/graphics/image/ImageMagick/imagemagick.org/releases/ \
-                            ftp://sunsite.icm.edu.pl/packages/ImageMagick/releases/
 
 depends_lib                 port:bzip2 \
                             port:djvulibre \
@@ -64,15 +71,20 @@ depends_lib                 port:bzip2 \
                             port:libiconv \
                             port:libtool \
                             port:openjpeg \
-                            port:openexr \
                             port:expat \
                             port:libxml2 \
                             port:libheif
 
 # Magick-config etc. use pkg-config
-depends_lib-append          port:pkgconfig
+depends_lib-append          path:bin/pkg-config:pkgconfig
 
-depends_run                 port:urw-fonts
+# see ${prefix}/local/etc/ImageMagick-6/delegates.xml
+depends_run                 port:jxrlib \
+                            port:libbpg \
+                            port:urw-fonts \
+                            port:xdg-utils
+
+compiler.c_standard         2011
 
 configure.ccache            no
 
@@ -80,11 +92,11 @@ configure.args              --enable-shared \
                             --enable-static \
                             --disable-silent-rules \
                             --with-frozenpaths \
-                            --with-openexr \
                             --disable-hdri \
                             --with-dps \
                             --with-bzlib \
                             --with-djvu \
+                            --with-fftw \
                             --with-fontconfig \
                             --with-gslib \
                             --with-jbig \
@@ -104,8 +116,10 @@ configure.args              --enable-shared \
                             --without-wmf \
                             --without-gvc \
                             --without-rsvg \
+                            --without-openexr \
                             --without-lqr \
                             --without-pango \
+                            --without-raqm \
                             --without-x \
                             --without-zstd \
                             --with-gs-font-dir=${prefix}/share/fonts/urw-fonts \
@@ -121,6 +135,9 @@ if {${os.platform} eq "darwin" && ${os.major} < 11} {
         conflicts_build         cryptlib
     }
 }
+
+# https://trac.macports.org/wiki/WimplicitFunctionDeclaration#strchr
+configure.checks.implicit_function_declaration.whitelist-append strchr
 
 test.run                    yes
 test.target                 check
@@ -139,13 +156,18 @@ variant lqr description {Support Liquid Rescale (experimental)} {
     configure.args-replace  --without-lqr --with-lqr
 }
 
+variant openexr description {Support OpenEXR} {
+    depends_lib-append      port:openexr
+    configure.args-replace  --without-openexr --with-openexr
+}
+
 variant pango description {Support Pango} {
     depends_lib-append      path:lib/pkgconfig/pango.pc:pango
     configure.args-replace  --without-pango --with-pango
 }
 
 variant rsvg description {Support SVG using librsvg} {
-    depends_lib-append      port:librsvg
+    depends_lib-append      path:lib/pkgconfig/librsvg-2.0.pc:librsvg
     configure.args-replace  --without-rsvg --with-rsvg
 }
 
@@ -161,8 +183,4 @@ variant x11 {
     configure.args-replace  --without-x --with-x
 }
 
-default_variants            +x11
-
-livecheck.type              regex
-livecheck.url               [lindex ${master_sites} 0]
-livecheck.regex             ${name}-(6(?:\\.\\d+)+(?:-\\d+)?)\.tar
+default_variants            +openexr +x11

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,7 +29,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QDebug>
+#include <QDebug>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -236,7 +236,7 @@ TransformUndoCommand::TransformUndoCommand(const RotoPaintInteractPtr& roto,
     , _originalPoints()
     , _selectedPoints()
 {
-    _matrix = boost::make_shared<Transform::Matrix3x3>();
+    _matrix = std::make_shared<Transform::Matrix3x3>();
 
     std::list<std::pair<BezierCPPtr, BezierCPPtr> > selected;
 
@@ -421,7 +421,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(const RotoPaintInteractPtr& roto,
     int indexToRemove = curve->getControlPointIndex(cp);
     desc.curveRemoved = false; //set in the redo()
     desc.parentLayer =
-        boost::dynamic_pointer_cast<RotoLayer>( roto->getContext()->getItemByName( curve->getParentLayer()->getScriptName() ) );
+        std::dynamic_pointer_cast<RotoLayer>( roto->getContext()->getItemByName( curve->getParentLayer()->getScriptName() ) );
     assert(desc.parentLayer);
     desc.curve = curve;
     desc.points.push_back(indexToRemove);
@@ -445,7 +445,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(const RotoPaintInteractPtr& roto,
             cp = it->first;
         }
         assert( cp && cp->getBezier() && roto && roto->getContext() );
-        BezierPtr curve = boost::dynamic_pointer_cast<Bezier>( roto->getContext()->getItemByName( cp->getBezier()->getScriptName() ) );
+        BezierPtr curve = std::dynamic_pointer_cast<Bezier>( roto->getContext()->getItemByName( cp->getBezier()->getScriptName() ) );
         assert(curve);
         RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( curve.get() );
         std::list<CurveDesc >::iterator foundCurve = _curves.end();
@@ -465,7 +465,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(const RotoPaintInteractPtr& roto,
             CurveDesc curveDesc;
             curveDesc.curveRemoved = false; //set in the redo()
             curveDesc.parentLayer =
-                boost::dynamic_pointer_cast<RotoLayer>( roto->getContext()->getItemByName( cp->getBezier()->getParentLayer()->getScriptName() ) );
+                std::dynamic_pointer_cast<RotoLayer>( roto->getContext()->getItemByName( cp->getBezier()->getParentLayer()->getScriptName() ) );
             assert(curveDesc.parentLayer);
             curveDesc.points.push_back(indexToRemove);
             curveDesc.curve = curve;
@@ -532,7 +532,7 @@ RemovePointUndoCommand::redo()
 
     std::list<BezierPtr> toRemove;
     for (std::list<CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
-        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(it->curve);
+        BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(it->curve);
         if (!isBezier) {
             continue;
         }
@@ -577,7 +577,7 @@ RemoveCurveUndoCommand::RemoveCurveUndoCommand(const RotoPaintInteractPtr& roto,
     for (std::list<RotoDrawableItemPtr>::const_iterator it = curves.begin(); it != curves.end(); ++it) {
         RemovedCurve r;
         r.curve = *it;
-        r.layer = boost::dynamic_pointer_cast<RotoLayer>( roto->getContext()->getItemByName( (*it)->getParentLayer()->getScriptName() ) );
+        r.layer = std::dynamic_pointer_cast<RotoLayer>( roto->getContext()->getItemByName( (*it)->getParentLayer()->getScriptName() ) );
         assert(r.layer);
         r.indexInLayer = r.layer->getChildIndex(*it);
         assert(r.indexInLayer != -1);
@@ -602,7 +602,7 @@ RemoveCurveUndoCommand::undo()
 
     for (std::list<RemovedCurve>::iterator it = _curves.begin(); it != _curves.end(); ++it) {
         roto->getContext()->addItem(it->layer, it->indexInLayer, it->curve, RotoItem::eSelectionReasonOverlayInteract);
-        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(it->curve);
+        BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(it->curve);
         if (isBezier) {
             selection.push_back(isBezier);
         }
@@ -834,7 +834,8 @@ dragTangent(double time,
             const Transform::Matrix3x3& transform,
             double dx,
             double dy,
-            bool left,
+            bool both, //< should both tangents be moved symmetrically?
+            bool left, //< which one is being controlled
             bool autoKeying,
             bool breakTangents,
             bool draggedPointIsFeather)
@@ -846,10 +847,18 @@ dragTangent(double time,
     getDeltaForPoint(fp, time, transform, dx, dy, left, breakTangents, &otherFpDiffX, &otherFpDiffY, &isOnKeyframe);
 
     if (autoKeying || isOnKeyframe) {
-        if (left) {
-            cp.getBezier()->movePointLeftAndRightIndex(cp, fp, time, dx, dy, otherDiffX, otherDiffY, dx, dy, otherFpDiffX, otherFpDiffY, breakTangents, draggedPointIsFeather);
+        if (both) {
+            if (!left) {
+                dx = -dx;
+                dy = -dy;
+            }
+            cp.getBezier()->movePointLeftAndRightIndex(cp, fp, time, dx, dy, -dx, -dy, dx, dy, -dx, -dy, breakTangents, draggedPointIsFeather);
         } else {
-            cp.getBezier()->movePointLeftAndRightIndex(cp, fp, time, otherDiffX, otherDiffY, dx, dy, otherFpDiffX, otherFpDiffY, dx, dy, breakTangents, draggedPointIsFeather);
+            if (left) {
+                cp.getBezier()->movePointLeftAndRightIndex(cp, fp, time, dx, dy, otherDiffX, otherDiffY, dx, dy, otherFpDiffX, otherFpDiffY, breakTangents, draggedPointIsFeather);
+            } else {
+                cp.getBezier()->movePointLeftAndRightIndex(cp, fp, time, otherDiffX, otherDiffY, dx, dy, otherFpDiffX, otherFpDiffY, dx, dy, breakTangents, draggedPointIsFeather);
+            }
         }
     }
 }
@@ -922,7 +931,7 @@ MoveTangentUndoCommand::redo()
     bool autoKeying = roto->getContext()->isAutoKeyingEnabled();
 
 
-    dragTangent( _time, *cp, *fp, transform, _dx, _dy, _left, autoKeying, _breakTangents, _tangentBeingDragged->isFeatherPoint() );
+    dragTangent( _time, *cp, *fp, transform, _dx, _dy, false, _left, autoKeying, _breakTangents, _tangentBeingDragged->isFeatherPoint() );
 
 
     if (_firstRedoCalled) {
@@ -973,7 +982,7 @@ MoveFeatherBarUndoCommand::MoveFeatherBarUndoCommand(const RotoPaintInteractPtr&
     , _oldPoint()
     , _newPoint(point)
 {
-    _curve = boost::dynamic_pointer_cast<Bezier>( roto->getContext()->getItemByName( point.first->getBezier()->getScriptName() ) );
+    _curve = std::dynamic_pointer_cast<Bezier>( roto->getContext()->getItemByName( point.first->getBezier()->getScriptName() ) );
     assert(_curve);
     _oldPoint.first.reset( new BezierCP(*_newPoint.first) );
     _oldPoint.second.reset( new BezierCP(*_newPoint.second) );
@@ -1459,8 +1468,12 @@ MakeBezierUndoCommand::redo()
             int lastIndex = _newCurve->getControlPointsCount() - 1;
             assert(lastIndex >= 0);
             _lastPointAdded = lastIndex;
-            _newCurve->moveLeftBezierPoint(lastIndex, _time, -_dx, -_dy);
-            _newCurve->moveRightBezierPoint(lastIndex, _time, _dx, _dy);
+            Transform::Matrix3x3 transform;
+            _newCurve->getTransformAtTime(_time, &transform);
+            BezierCPPtr cp = _newCurve->getControlPointAtIndex(lastIndex);
+            BezierCPPtr fp = _newCurve->getFeatherPointAtIndex(lastIndex);
+
+            dragTangent(_time, *cp, *fp, transform, _dx, _dy, true, false, false, false, false);
         }
 
         RotoItemPtr parentItem;
@@ -1468,7 +1481,7 @@ MakeBezierUndoCommand::redo()
             parentItem =  roto->getContext()->getItemByName( _newCurve->getParentLayer()->getScriptName() );
         }
         if (parentItem) {
-            _parentLayer = boost::dynamic_pointer_cast<RotoLayer>(parentItem);
+            _parentLayer = std::dynamic_pointer_cast<RotoLayer>(parentItem);
             _indexInLayer = _parentLayer->getChildIndex(_newCurve);
         }
     } else {
@@ -1482,7 +1495,13 @@ MakeBezierUndoCommand::redo()
     BezierCPPtr cp = _newCurve->getControlPointAtIndex(_lastPointAdded);
     BezierCPPtr fp = _newCurve->getFeatherPointAtIndex(_lastPointAdded);
     roto->setSelection( _newCurve, std::make_pair(cp, fp) );
-    roto->autoSaveAndRedraw();
+    if (_firstRedoCalled) {
+        // Redo after an undo: the point is back, so the node must be rendered again (undo() evaluates too).
+        roto->evaluate(true);
+    } else {
+        // First redo, while the user is drawing: the node is evaluated on pen up (see RotoPaint::onOverlayPenUp()).
+        roto->autoSaveAndRedraw();
+    }
     _firstRedoCalled = true;
 } // redo
 
@@ -1639,7 +1658,7 @@ MakeEllipseUndoCommand::redo()
 
         RotoItemPtr parentItem =  roto->getContext()->getItemByName( _curve->getParentLayer()->getScriptName() );
         if (parentItem) {
-            _parentLayer = boost::dynamic_pointer_cast<RotoLayer>(parentItem);
+            _parentLayer = std::dynamic_pointer_cast<RotoLayer>(parentItem);
             _indexInLayer = _parentLayer->getChildIndex(_curve);
         }
     }
@@ -1771,7 +1790,7 @@ MakeRectangleUndoCommand::redo()
         }
         RotoItemPtr parentItem =  roto->getContext()->getItemByName( _curve->getParentLayer()->getScriptName() );
         if (parentItem) {
-            _parentLayer = boost::dynamic_pointer_cast<RotoLayer>(parentItem);
+            _parentLayer = std::dynamic_pointer_cast<RotoLayer>(parentItem);
             _indexInLayer = _parentLayer->getChildIndex(_curve);
         }
     }

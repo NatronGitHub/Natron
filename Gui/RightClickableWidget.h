@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -39,6 +39,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
+#include "Global/QtCompat.h"
 
 #include "Engine/DockablePanelI.h"
 
@@ -80,7 +81,7 @@ Q_SIGNALS:
 
 private:
 
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
 };

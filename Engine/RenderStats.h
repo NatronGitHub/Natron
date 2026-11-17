@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -33,12 +33,6 @@
 #include <set>
 #include <string>
 #include <bitset>
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
 
 #include "Global/GlobalDefines.h"
 
@@ -79,8 +73,8 @@ public:
     void addIdentityRectangle(const NodePtr& identity, const RectI& rectangle);
     std::list<std::pair<RectI, NodePtr> > getIdentityRectangles() const;
 
-    void addMipMapLevelRendered(unsigned int level);
-    const std::set<unsigned int>& getMipMapLevelsRendered() const;
+    void addMipmapLevelRendered(unsigned int level);
+    const std::set<unsigned int>& getMipmapLevelsRendered() const;
 
     void addPlaneRendered(const std::string& plane);
     const std::set<std::string>& getPlanesRendered() const;
@@ -102,7 +96,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<NodeRenderStatsPrivate> _imp;
+    std::unique_ptr<NodeRenderStatsPrivate> _imp;
 };
 
 /**
@@ -147,7 +141,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<RenderStatsPrivate> _imp;
+    std::unique_ptr<RenderStatsPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

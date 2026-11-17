@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -176,13 +176,7 @@ NodeGraph::event(QEvent* e)
         QKeyEvent* ke = dynamic_cast<QKeyEvent*>(e);
         assert(ke);
         if (ke && (ke->key() == Qt::Key_Tab) && _imp->_nodeCreationShortcutEnabled) {
-            NodeCreationDialog* nodeCreation = new NodeCreationDialog(_imp->_lastNodeCreatedName, this);
-
-            ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
-            ///it closes it.
-            QObject::connect( nodeCreation, SIGNAL(dialogFinished(bool)), this, SLOT(onNodeCreationDialogFinished(bool)) );
-            nodeCreation->show();
-
+            popCreateNodeDialog();
             takeClickFocus();
             ke->accept();
 
@@ -194,7 +188,18 @@ NodeGraph::event(QEvent* e)
 }
 
 void
-NodeGraph::onNodeCreationDialogFinished(bool accepted)
+NodeGraph::popCreateNodeDialog()
+{
+    NodeCreationDialog* nodeCreation = new NodeCreationDialog(_imp->_lastNodeCreatedName, this);
+
+    ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
+    ///it closes it.
+    QObject::connect( nodeCreation, SIGNAL(dialogFinished(bool)), this, SLOT(onCreateNodeDialogFinished(bool)) );
+    nodeCreation->show();
+}
+
+void
+NodeGraph::onCreateNodeDialogFinished(bool accepted)
 {
     NodeCreationDialog* dialog = qobject_cast<NodeCreationDialog*>( sender() );
 
@@ -316,7 +321,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                 NodePtr firstOutput = outputs.front().lock();
                 if (firstOutput) {
                     NodeGuiIPtr output_i = firstOutput->getNodeGui();
-                    NodeGuiPtr output = boost::dynamic_pointer_cast<NodeGui>(output_i);
+                    NodeGuiPtr output = std::dynamic_pointer_cast<NodeGui>(output_i);
                     if (output) {
                         if ( output->getIsSelected() && modCASIsShift(e) ) {
                             NodesGuiList::iterator found = std::find(_imp->_selection.begin(),
@@ -376,6 +381,9 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         toggleAutoHideInputs(true);
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
         popFindDialog( QCursor::pos() );
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateNode, modifiers, key) ) {
+        assert(false && "Should never be reached (caught in NodeGraph::event())");
+        popCreateNodeDialog();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, modifiers, key) ) {
         renameNode();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExtractNode, modifiers, key) ) {
@@ -383,10 +391,10 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphTogglePreview, modifiers, key) ) {
         togglePreviewsForSelectedNodes();
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomIn, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
-        QWheelEvent e(mapFromGlobal( QCursor::pos() ), 120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
+        QWheelEvent e(mapFromGlobal( QCursor::pos() ), QCursor::pos(), QPoint(), QPoint(0, 120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
         wheelEvent(&e);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
-        QWheelEvent e(mapFromGlobal( QCursor::pos() ), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
+        QWheelEvent e(mapFromGlobal( QCursor::pos() ), QCursor::pos(), QPoint(), QPoint(0, -120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
         wheelEvent(&e);
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphOpenNodePanel, modifiers, key) ) {
         if (_imp->_selection.size() == 1) {

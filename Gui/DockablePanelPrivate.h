@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,14 +30,9 @@
 
 #include <map>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/weak_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QMutex>
+#include <QMutex>
 #include <QFrame>
 #include <QTabWidget>
 #include <QDialog>
@@ -98,7 +93,8 @@ struct DockablePanelPrivate
 
     ///THe visibility of the knobs before the hide/show unmodified button is clicked
     ///to show only the knobs that need to afterwards
-    std::map<KnobGuiWPtr, bool> _knobsVisibilityBeforeHideModif;
+    typedef std::map<KnobGuiWPtr, bool, std::owner_less<KnobGuiWPtr>> KnobGuisMap;
+    KnobGuisMap _knobsVisibilityBeforeHideModif;
     KnobHolder* _holder;
     bool _useScrollAreasForTabs;
     DockablePanel::HeaderModeEnum _mode;

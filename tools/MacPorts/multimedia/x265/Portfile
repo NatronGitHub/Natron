@@ -2,56 +2,74 @@
 
 PortSystem          1.0
 
-PortGroup           muniversal 1.0
+PortGroup           bitbucket 1.0
 PortGroup           cmake 1.1
+PortGroup           muniversal 1.0
 PortGroup           xcode_workaround 1.0
-PortGroup           github 1.0
 
 # https://trac.macports.org/ticket/59875
-PortGroup           legacysupport 1.0
+PortGroup           legacysupport 1.1
 
 legacysupport.newest_darwin_requires_legacy 9
 
-github.setup        videolan x265 3.4
-revision            1
-
-checksums           rmd160  e614c4a03134a67e79efe8d3dd64d54c3990b99a \
-                    sha256  544d147bf146f8994a7bf8521ed878c93067ea1c7c6e93ab602389be3117eaaf \
-                    size    1530200
+name                x265
+bitbucket.setup     multicoreware x265_git 4.2
+checksums           rmd160  b20a6fa7247ef4567769dab054610a9c044c6362 \
+                    sha256  40b1ea0453e0309f0eba934e0ddf533f8f6295966679e8894e8f1c1c8d5e1210 \
+                    size    1833442
+revision            100
 
 categories          multimedia
-platforms           darwin
 license             GPL-2+
 maintainers         nomaintainer
-
-# exclude pre-release versions
-github.livecheck.regex  {([0-9.]+)}
 
 description         H.265 encoder
 long_description    x265 is a free software library and application for \
                     encoding video streams into the H.265/MPEG-H HEVC \
-                    compression format, and is released under the terms of the \
-                    GNU GPL.
+                    compression format.
+
 homepage            https://www.videolan.org/developers/x265.html
-github.tarball_from archive
-worksrcdir          ${name}-${version}/source
+bitbucket.tarball_from \
+                    downloads
+
+distname            ${name}_${version}
+worksrcdir          ${worksrcdir}/source
 
 # allow overriding system processor detection
 patchfiles          patch-cmakelists-override-processor.diff
 
-depends_build-append port:gmake
+# Altivec uses instructions unsupported on Darwin: https://trac.macports.org/ticket/64781
+patchfiles-append   patch-ppc.diff
+
+depends_build-append \
+                    port:gmake
+
+# x265.pc and the shared library are not installed if git is not found.
+# https://bitbucket.org/multicoreware/x265_git/issues/960
+depends_build-append \
+                    bin:git:git
 
 compiler.blacklist-append *llvm-gcc-4.2
 
 # https://trac.macports.org/ticket/59246
 xcode_workaround.fixed_xcode_version 11.2
 
-if {![info exists universal_possible]} {
-    set universal_possible [expr {${os.universal_supported} && [llength ${configure.universal_archs}] >= 2}]
+post-destroot {
+    # Sanity check.
+    # https://bitbucket.org/multicoreware/x265_git/issues/960
+    if {![file exists ${destroot}${prefix}/lib/pkgconfig/${name}.pc]} {
+        return -code error "${name}.pc did not get installed"
+    }
 }
 
-if {${universal_possible} && [variant_isset universal]} {
+platform darwin 10 {
+    # Rosetta build has to override CMAKE_SYSTEM_PROCESSOR: https://trac.macports.org/ticket/64528
+    if {${build_arch} eq "ppc"} {
+        configure.args-append -DOVERRIDE_SYSTEM_PROCESSOR="ppc"
+    }
+}
 
+if {${universal_possible} && [variant_isset universal] && ![variant_isset highdepth]} {
     if {"x86_64" in ${configure.universal_archs} || "i386" in ${configure.universal_archs}} {
         depends_build-append port:nasm
         set merger_configure_env(i386)      NASM_EXECUTABLE=${prefix}/bin/nasm
@@ -72,16 +90,15 @@ if {${universal_possible} && [variant_isset universal]} {
         lappend merger_build_env(${arch}) ARCH=${arch}
     }
 } else {
+    if {${configure.build_arch} in {i386 x86_64}} {
+        depends_build-append port:nasm
+        configure.env       NASM_EXECUTABLE=${prefix}/bin/nasm
+    }
 
-	if {${configure.build_arch} in {i386 x86_64}} {
-		depends_build-append port:nasm
-		configure.env       NASM_EXECUTABLE=${prefix}/bin/nasm
-	}
-
-	if {${configure.build_arch} eq "i386"} {
+    if {${configure.build_arch} eq "i386"} {
         # error: illegal text-relocation to '_x265_pw_1'
-		configure.ldflags-append -Wl,-read_only_relocs,suppress
-	}
+        configure.ldflags-append -Wl,-read_only_relocs,suppress
+    }
     configure.env-append CONFIGURE=${configure.cmd} BUILD=${build.cmd} ARCH='${build_arch}'
     build.env-append BUILD=${build.cmd} ARCH='${build_arch}'
 }

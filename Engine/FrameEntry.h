@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,13 +31,9 @@
 #include <list>
 #include <string>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
-#include <QtCore/QObject>
-#include <QtCore/QMutex>
+#include <QObject>
+#include <QMutex>
 CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"

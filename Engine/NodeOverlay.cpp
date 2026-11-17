@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -25,7 +25,7 @@
 
 #include "NodePrivate.h"
 
-#include <QtCore/QThread>
+#include <QThread>
 
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
@@ -300,7 +300,7 @@ Node::addPositionInteract(const KnobDoublePtr& position,
         return;
     }
 
-    HostOverlayKnobsPositionPtr knobs = boost::make_shared<HostOverlayKnobsPosition>();
+    HostOverlayKnobsPositionPtr knobs = std::make_shared<HostOverlayKnobsPosition>();
     knobs->addKnob(position, HostOverlayKnobsPosition::eKnobsEnumerationPosition);
     if (interactive) {
         knobs->addKnob(interactive, HostOverlayKnobsPosition::eKnobsEnumerationInteractive);
@@ -331,7 +331,7 @@ Node::addTransformInteract(const KnobDoublePtr& translate,
         return;
     }
 
-    HostOverlayKnobsTransformPtr knobs = boost::make_shared<HostOverlayKnobsTransform>();
+    HostOverlayKnobsTransformPtr knobs = std::make_shared<HostOverlayKnobsTransform>();
     knobs->addKnob(translate, HostOverlayKnobsTransform::eKnobsEnumerationTranslate);
     knobs->addKnob(scale, HostOverlayKnobsTransform::eKnobsEnumerationScale);
     knobs->addKnob(scaleUniform, HostOverlayKnobsTransform::eKnobsEnumerationUniform);
@@ -376,7 +376,7 @@ Node::addCornerPinInteract(const KnobDoublePtr& from1,
     if ( appPTR->isBackground() ) {
         return;
     }
-    HostOverlayKnobsCornerPinPtr knobs = boost::make_shared<HostOverlayKnobsCornerPin>();
+    HostOverlayKnobsCornerPinPtr knobs = std::make_shared<HostOverlayKnobsCornerPin>();
     knobs->addKnob(from1, HostOverlayKnobsCornerPin::eKnobsEnumerationFrom1);
     knobs->addKnob(from2, HostOverlayKnobsCornerPin::eKnobsEnumerationFrom2);
     knobs->addKnob(from3, HostOverlayKnobsCornerPin::eKnobsEnumerationFrom3);

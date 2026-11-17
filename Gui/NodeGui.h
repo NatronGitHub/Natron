@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -34,24 +34,17 @@
 #include <vector>
 #include <utility>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QRectF>
-#include <QtCore/QMutex>
-#include <QtCore/QSize>
+#include <QRectF>
+#include <QMutex>
+#include <QSize>
 GCC_ONLY_DIAG_OFF(class-memaccess)
-#include <QtCore/QVector>
+#include <QVector>
 GCC_ONLY_DIAG_ON(class-memaccess)
 #include <QGraphicsItem>
 #include <QDialog>
-#include <QtCore/QMutex>
+#include <QMutex>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -92,7 +85,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<NodeGuiIndicatorPrivate> _imp;
+    std::unique_ptr<NodeGuiIndicatorPrivate> _imp;
 };
 
 ///A richer text item which allows text alignmenent
@@ -130,7 +123,7 @@ class NodeGui
     : public QObject
       , public QGraphicsItem
       , public NodeGuiI
-      , public boost::enable_shared_from_this<NodeGui>
+      , public std::enable_shared_from_this<NodeGui>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -143,7 +136,7 @@ public:
 
 public:
     // TODO: enable_shared_from_this
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
 
     NodeGui(QGraphicsItem *parent = 0);
 
@@ -453,6 +446,10 @@ public Q_SLOTS:
 
     void onSettingsPanelClosed(bool closed);
 
+    void onSettingsPanelMinimized();
+
+    void onSettingsPanelMaximized();
+
     void onSettingsPanelColorChanged(const QColor & color);
 
     void togglePreview();
@@ -542,6 +539,10 @@ Q_SIGNALS:
     void positionChanged(int x, int y);
 
     void settingsPanelClosed(bool b);
+
+    void settingsPanelMinimized();
+
+    void settingsPanelMaximized();
 
     void previewImageComputed();
 
@@ -667,7 +668,7 @@ private:
         LinkArrow* arrow;
     };
 
-    typedef std::map<NodeWPtr, LinkedDim> KnobGuiLinks;
+    typedef std::map<NodeWPtr, LinkedDim, std::owner_less<NodeWPtr>> KnobGuiLinks;
     KnobGuiLinks _knobsLinks;
     NodeGuiIndicatorPtr _expressionIndicator;
     QPoint _magnecEnabled; //<enabled in X or/and Y
@@ -689,7 +690,7 @@ private:
     NodeGuiIndicatorPtr _passThroughIndicator;
     NodeWPtr _identityInput;
     bool identityStateSet;
-    NATRON_PYTHON_NAMESPACE::PyModalDialogPtr _activeNodeCustomModalDialog;
+    NATRON_PYTHON_NAMESPACE::PyModalDialog* _activeNodeCustomModalDialog;
 };
 
 NATRON_NAMESPACE_EXIT

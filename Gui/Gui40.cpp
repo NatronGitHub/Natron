@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,18 +28,17 @@
 #include <cassert>
 #include <algorithm> // min, max
 #include <map>
+#include <limits>
 #include <list>
 #include <utility>
 #include <stdexcept>
 
-#include <QtCore/QDebug>
-#include <QtCore/QDir>
-#include <QtCore/QFileInfo>
-#include <QtCore/QSettings>
+#include <QDebug>
+#include <QDir>
+#include <QFileInfo>
+#include <QSettings>
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-#include <QtGui/QScreen>
-#endif
+#include <QScreen>
 
 #include <QAction>
 #include <QApplication> // qApp
@@ -183,7 +182,7 @@ Gui::updateRecentFileActions()
     assert(files.size() <= (int)NATRON_MAX_RECENT_FILES);
     assert(files.size() == fileNames.size());
     assert(dirNames.size() == fileNames.size());
-    int numRecentFiles = std::min(fileNames.size(), (int)NATRON_MAX_RECENT_FILES);
+    int numRecentFiles = std::min((int)fileNames.size(), (int)NATRON_MAX_RECENT_FILES);
 
     // the dirname can be the same too. for each fileName with count > 1, collect the indices of the identical filenames. if dirname and directory up-level is the same for at least two files, raise the directory level up until the two dirnames are different
     for (std::map<QString,QStringList>::const_iterator it = allDirNames.begin(); it != allDirNames.end(); ++it) {
@@ -193,11 +192,11 @@ Gui::updateRecentFileActions()
             // split each dir, and find the common part of all dirs.
             std::vector<QStringList> dirParts(dirs.size());
             for (int i = 0; i < dirs.size(); ++i) {
-                dirParts[i] = QDir::toNativeSeparators(dirs.at(i)).split(QDir::separator(), QString::SkipEmptyParts);
+                dirParts[i] = QDir::toNativeSeparators(dirs.at(i)).split(QDir::separator(), Qt::SkipEmptyParts);
             }
             int minComps = dirParts[0].size();
             for (int i = 1; i < dirs.size(); ++i) {
-                minComps = std::min(minComps, dirParts[i].size());
+                minComps = std::min( minComps, (int)dirParts[i].size() );
             }
             // count the number of elements to remove
             int commonComps = 0;
@@ -219,7 +218,7 @@ Gui::updateRecentFileActions()
             // remove the n first element to each dirName corresponding to this filename, and recompose
                 for (int i = 0; i < numRecentFiles; ++i) {
                     if (fileNames[i] == it->first) {
-                        dirNames[i] = QStringList(QDir::toNativeSeparators(dirNames.at(i)).split(QDir::separator(), QString::SkipEmptyParts).mid(commonComps)).join(QDir::separator());
+                        dirNames[i] = QStringList(QDir::toNativeSeparators(dirNames.at(i)).split(QDir::separator(), Qt::SkipEmptyParts).mid(commonComps)).join(QDir::separator());
                     }
                 }
             }
@@ -245,16 +244,7 @@ Gui::updateRecentFileActions()
 QPixmap
 Gui::screenShot(QWidget* w)
 {
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    if ( w->objectName() == QString::fromUtf8("CurveEditor") ) {
-        return QPixmap::grabWidget(w);
-    }
-
-    return QPixmap::grabWindow( w->winId() );
-#else
-
     return QApplication::primaryScreen()->grabWindow( w->winId() );
-#endif
 }
 
 void
@@ -539,6 +529,9 @@ Gui::isDraggingPanel() const
 NodeGraph*
 Gui::getNodeGraph() const
 {
+    if (!_imp) {
+        return nullptr;
+    }
     return _imp->_nodeGraphArea;
 }
 
@@ -630,7 +623,8 @@ Gui::debugImage(const Image* image,
     if ( roi.isNull() ) {
         renderWindow = bounds;
     } else {
-        if ( !roi.intersect(bounds, &renderWindow) ) {
+        renderWindow = roi.intersect(bounds);
+        if ( renderWindow.isNull() ) {
             qDebug() << "The RoI does not intersect the bounds of the image.";
 
             return;
@@ -864,9 +858,9 @@ Gui::renderSelectedNode()
                 AppInstance::RenderWork w;
                 w.writer = dynamic_cast<OutputEffectInstance*>( effect.get() );
                 assert(w.writer);
-                w.firstFrame = INT_MIN;
-                w.lastFrame = INT_MAX;
-                w.frameStep = INT_MIN;
+                w.firstFrame = std::numeric_limits<int>::min();
+                w.lastFrame = std::numeric_limits<int>::max();
+                w.frameStep = std::numeric_limits<int>::min();
                 w.useRenderStats = useStats;
                 workList.push_back(w);
             }
@@ -887,9 +881,9 @@ Gui::renderSelectedNode()
                     AppInstance::RenderWork w;
                     w.writer = dynamic_cast<OutputEffectInstance*>( writer->getEffectInstance().get() );
                     assert(w.writer);
-                    w.firstFrame = INT_MIN;
-                    w.lastFrame = INT_MAX;
-                    w.frameStep = INT_MIN;
+                    w.firstFrame = std::numeric_limits<int>::min();
+                    w.lastFrame = std::numeric_limits<int>::max();
+                    w.frameStep = std::numeric_limits<int>::min();
                     w.useRenderStats = useStats;
                     workList.push_back(w);
                 }

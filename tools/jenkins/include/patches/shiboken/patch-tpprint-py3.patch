@@ -1,0 +1,12 @@
+--- libshiboken/sbkenum.cpp	2015-10-14 20:12:33.000000000 +0200
++++ libshiboken/sbkenum.cpp	2020-10-20 05:08:31.000000000 +0200
+@@ -529,7 +529,9 @@
+     ::memset(type, 0, sizeof(SbkEnumType));
+     Py_TYPE(type) = &SbkEnumType_Type;
+     type->tp_basicsize = sizeof(SbkEnumObject);
++#ifndef IS_PY3K
+     type->tp_print = &SbkEnumObject_print;
++#endif
+     type->tp_repr = &SbkEnumObject_repr;
+     type->tp_str = &SbkEnumObject_repr;
+     type->tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_CHECKTYPES;

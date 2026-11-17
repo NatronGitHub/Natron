@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,15 +28,15 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+// Include order matters here to keep shiboken happy.
+#include <QWidget>
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+
+#include "Global/QtCompat.h"
 
 #include "Engine/PyNode.h"
 #include "Engine/ScriptObject.h"
@@ -76,11 +76,11 @@ private:
     virtual void initializeKnobs() OVERRIDE FINAL {}
 
     virtual bool onKnobValueChanged(KnobI* k,
-                                    ValueChangedReasonEnum reason,
+                                    Natron::ValueChangedReasonEnum reason,
                                     double time,
                                     ViewSpec view,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
-    boost::scoped_ptr<DialogParamHolderPrivate> _imp;
+    std::unique_ptr<DialogParamHolderPrivate> _imp;
 };
 
 
@@ -93,7 +93,7 @@ class PyModalDialog
 public:
 
     PyModalDialog( Gui* gui,
-                   StandardButtons defaultButtons = StandardButtons(eStandardButtonOk | eStandardButtonCancel) );
+                   Natron::StandardButtons defaultButtons = Natron::StandardButtons(Natron::StandardButtonEnum::eStandardButtonOk | Natron::StandardButtonEnum::eStandardButtonCancel) );
 
     virtual ~PyModalDialog();
 
@@ -105,11 +105,15 @@ public:
 
     void addWidget(QWidget* widget);
 
+    virtual QSize minimumSizeHint() const OVERRIDE FINAL;
+
+    virtual QSize sizeHint() const OVERRIDE FINAL;
+
     DialogParamHolder* getKnobsHolder() const;
 
 private:
 
-    boost::scoped_ptr<PyModalDialogPrivate> _imp;
+    std::unique_ptr<PyModalDialogPrivate> _imp;
 };
 
 
@@ -155,12 +159,12 @@ protected:
 
     void onUserDataChanged();
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE;
-    virtual void enterEvent(QEvent* e) OVERRIDE;
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE;
     virtual void leaveEvent(QEvent* e) OVERRIDE;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
 
 private:
-    boost::scoped_ptr<PyPanelPrivate> _imp;
+    std::unique_ptr<PyPanelPrivate> _imp;
 };
 
 

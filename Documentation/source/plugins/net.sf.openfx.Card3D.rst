@@ -18,7 +18,7 @@ This effect applies a transform that corresponds to projection the source image 
 
 This plugin concatenates transforms.
 
-http://opticalenquiry.com/nuke/index.php?title=Card3D
+See also https://web.archive.org/web/20210727235824/opticalenquiry.com/nuke/index.php?title=Card3D
 
 Inputs
 ------

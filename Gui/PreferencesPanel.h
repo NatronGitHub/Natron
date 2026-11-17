@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -116,7 +116,7 @@ private:
     virtual void refreshUndoRedoButtonsEnabledNess(bool canUndo, bool canRedo) OVERRIDE FINAL;
     virtual void setPagesOrder(const std::list<KnobPageGuiPtr>& order, const KnobPageGuiPtr& curPage, bool restorePageIndex) OVERRIDE FINAL;
     virtual void onPageLabelChanged(const KnobPageGuiPtr& page) OVERRIDE FINAL;
-    boost::scoped_ptr<PreferencesPanelPrivate> _imp;
+    std::unique_ptr<PreferencesPanelPrivate> _imp;
 };
 
 

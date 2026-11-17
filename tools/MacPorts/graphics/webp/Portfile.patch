@@ -1,0 +1,11 @@
+--- Portfile.orig	2024-12-28 09:00:49
++++ Portfile	2024-12-28 09:00:59
+@@ -31,7 +31,7 @@
+ homepage                https://developers.google.com/speed/webp/
+ master_sites            http://downloads.webmproject.org/releases/webp/
+ 
+-depends_lib             port:giflib \
++depends_lib             port:giflib5 \
+                         path:include/turbojpeg.h:libjpeg-turbo \
+                         port:libpng \
+                         port:tiff

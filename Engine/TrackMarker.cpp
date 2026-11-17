@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -25,7 +25,7 @@
 
 #include "TrackMarker.h"
 
-#include <QtCore/QCoreApplication>
+#include <QCoreApplication>
 
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/CreateNodeArgs.h"
@@ -131,7 +131,7 @@ struct TrackMarkerPrivate
 
 TrackMarker::TrackMarker(const TrackerContextPtr& context)
     : NamedKnobHolder( context->getNode()->getApp() )
-    , boost::enable_shared_from_this<TrackMarker>()
+    , std::enable_shared_from_this<TrackMarker>()
     , _imp( new TrackMarkerPrivate(this, context) )
 {
 }
@@ -149,7 +149,7 @@ struct TrackMarker::MakeSharedEnabler: public TrackMarker
 TrackMarkerPtr
 TrackMarker::create(const TrackerContextPtr& context)
 {
-    return boost::make_shared<TrackMarker::MakeSharedEnabler>(context);
+    return std::make_shared<TrackMarker::MakeSharedEnabler>(context);
 }
 
 TrackMarker::~TrackMarker()
@@ -366,7 +366,7 @@ TrackMarker::save(TrackSerialization* serialization) const
     serialization->_scriptName = _imp->trackScriptName;
     KnobsVec knobs = getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        KnobSerializationPtr s = boost::make_shared<KnobSerialization>(*it);
+        KnobSerializationPtr s = std::make_shared<KnobSerialization>(*it);
         serialization->_knobs.push_back(s);
     }
     for (std::set<int>::const_iterator it = _imp->userKeyframes.begin(); it != _imp->userKeyframes.end(); ++it) {
@@ -439,7 +439,7 @@ prependGroupNameRecursive(const NodePtr& group,
     name.insert(0, ".");
     name.insert( 0, group->getScriptName_mt_safe() );
     NodeCollectionPtr hasParentGroup = group->getGroup();
-    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
+    NodeGroupPtr isGrp = std::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
     if (isGrp) {
         prependGroupNameRecursive(isGrp->getNode(), name);
     }
@@ -582,7 +582,7 @@ TrackMarker::getPreviousKeyframe(int time) const
         }
     }
 
-    return INT_MIN;
+    return std::numeric_limits<int>::min();
 }
 
 int
@@ -596,7 +596,7 @@ TrackMarker::getNextKeyframe( int time) const
         }
     }
 
-    return INT_MAX;
+    return std::numeric_limits<int>::max();
 }
 
 void
@@ -743,11 +743,9 @@ TrackMarker::resetCenter()
     NodePtr input = context->getNode()->getInput(0);
     if (input) {
         SequenceTime time = input->getApp()->getTimeLine()->currentFrame();
-        RenderScale scale;
-        scale.x = scale.y = 1;
         RectD rod;
         bool isProjectFormat;
-        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(), time, scale, ViewIdx(0), &rod, &isProjectFormat);
+        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(), time, RenderScale::identity, ViewIdx(0), &rod, &isProjectFormat);
         Point center;
         center.x = 0;
         center.y = 0;
@@ -1152,15 +1150,12 @@ TrackMarker::getMarkerImageRoI(int time) const
     roiCanonical.x2 = swTr->getValueAtTime(time, 0) + center.x + offset.x;
     roiCanonical.y2 = swTr->getValueAtTime(time, 1) + center.y + offset.y;
 
-    RectI roi;
     NodePtr node = getContext()->getNode();
     NodePtr input = node->getInput(0);
     if (!input) {
         return RectI();
     }
-    roiCanonical.toPixelEnclosing(mipmapLevel, input ? input->getEffectInstance()->getAspectRatio(-1) : 1., &roi);
-
-    return roi;
+    return roiCanonical.toPixelEnclosing(mipmapLevel, input ? input->getEffectInstance()->getAspectRatio(-1) : 1.);
 }
 
 std::pair<ImagePtr, RectI>
@@ -1200,10 +1195,8 @@ TrackMarker::getMarkerImage(int time,
                                               true, //isAnalysis
                                               false, //draftMode
                                               RenderStatsPtr() );
-    RenderScale scale;
-    scale.x = scale.y = 1.;
     EffectInstance::RenderRoIArgs args( time,
-                                        scale,
+                                        RenderScale::identity,
                                         mipmapLevel, //mipmaplevel
                                         ViewIdx(0),
                                         false,
@@ -1257,7 +1250,7 @@ struct TrackMarkerPM::MakeSharedEnabler: public TrackMarkerPM
 TrackMarkerPtr
 TrackMarkerPM::create(const TrackerContextPtr& context)
 {
-    return boost::make_shared<TrackMarkerPM::MakeSharedEnabler>(context);
+    return std::make_shared<TrackMarkerPM::MakeSharedEnabler>(context);
 }
 
 
@@ -1372,7 +1365,7 @@ TrackMarkerPM::trackMarker(bool forward,
 } // TrackMarkerPM::trackMarker
 
 template <typename T>
-boost::shared_ptr<T>
+std::shared_ptr<T>
 getNodeKnob(const NodePtr& node,
             const std::string& scriptName)
 {
@@ -1380,9 +1373,9 @@ getNodeKnob(const NodePtr& node,
 
     assert(knob);
     if (!knob) {
-        return boost::shared_ptr<T>();
+        return std::shared_ptr<T>();
     }
-    boost::shared_ptr<T> ret = boost::dynamic_pointer_cast<T>(knob);
+    std::shared_ptr<T> ret = std::dynamic_pointer_cast<T>(knob);
     assert(ret);
 
     return ret;

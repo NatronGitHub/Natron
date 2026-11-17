@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,12 +31,7 @@
 
 #include <list>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
-#include <QtCore/QtGlobal> // for Q_OS_*
+#include <QtGlobal> // for Q_OS_*
 
 #include "Engine/AppManager.h"
 #include "Engine/Variant.h"
@@ -105,15 +100,15 @@ public:
         return false;
     }
 
-    void getIcon(PixmapEnum e, QPixmap* pix) const;
-    void getIcon(PixmapEnum e, int size, QPixmap* pix) const;
+    void getIcon(Natron::PixmapEnum e, QPixmap* pix) const;
+    void getIcon(Natron::PixmapEnum e, int size, QPixmap* pix) const;
 
-    void setKnobClipBoard(KnobClipBoardType type,
+    void setKnobClipBoard(Natron::KnobClipBoardType type,
                           const KnobIPtr& serialization,
                           int dimension);
 
 
-    void getKnobClipBoard(KnobClipBoardType *type,
+    void getKnobClipBoard(Natron::KnobClipBoardType *type,
                           KnobIPtr* serialization,
                           int *dimension) const;
 
@@ -194,7 +189,7 @@ public:
 
     int getDocumentationServerPort();
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
     void onClickOnDock();
 #endif
 
@@ -208,7 +203,7 @@ public Q_SLOTS:
     void onFontconfigCacheUpdateFinished();
     void onFontconfigTimerTriggered();
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
 Q_SIGNALS:
     void dockClicked();
 #endif
@@ -238,7 +233,7 @@ private:
 
     void populateShortcuts();
 
-    boost::scoped_ptr<GuiApplicationManagerPrivate> _imp;
+    std::unique_ptr<GuiApplicationManagerPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

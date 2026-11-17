@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,7 +26,9 @@
 
 #include "RotoPaintInteract.h"
 
-#include <QtCore/QLineF>
+#include <limits>
+
+#include <QLineF>
 
 #include "Global/GLIncludes.h"
 #include "Engine/KnobTypes.h"
@@ -103,7 +105,7 @@ struct RotoPaintInteract::MakeSharedEnabler: public RotoPaintInteract
 RotoPaintInteractPtr
 RotoPaintInteract::create(RotoPaintPrivate* p)
 {
-    return boost::make_shared<RotoPaintInteract::MakeSharedEnabler>(p);
+    return std::make_shared<RotoPaintInteract::MakeSharedEnabler>(p);
 }
 
 
@@ -207,7 +209,6 @@ RotoPaintInteract::drawSelectedCp(double time,
 
     bool drawLeftHandle = leftDeriv.x != x || leftDeriv.y != y;
     bool drawRightHandle = rightDeriv.y != x || rightDeriv.y != y;
-    glEnable(GL_POINT_SMOOTH);
     glBegin(GL_POINTS);
     if (drawLeftHandle) {
         if (colorLeftTangent) {
@@ -238,7 +239,6 @@ RotoPaintInteract::drawSelectedCp(double time,
         glVertex2d(rightDeriv.x, rightDeriv.y);
     }
     glEnd();
-    glDisable(GL_POINT_SMOOTH);
 } // drawSelectedCp
 
 void
@@ -278,7 +278,7 @@ RotoPaintInteract::drawArrow(double centerX,
                              bool hovered,
                              const std::pair<double, double> & pixelScale)
 {
-    GLProtectMatrix p(GL_MODELVIEW);
+    GLProtectMatrix pm(GL_MODELVIEW);
 
     if (hovered) {
         glColor3f(0., 1., 0.);
@@ -295,6 +295,8 @@ RotoPaintInteract::drawArrow(double centerX,
     QPointF bottom(0., -arrowLenght);
     QPointF top(0, arrowLenght);
     ///the arrow head is 4 pixels long and kTransformArrowWidth * 2 large
+    double screenPixelRatio = p->publicInterface->getCurrentViewportForOverlays()->getScreenPixelRatio();
+    glLineWidth(1 * screenPixelRatio);
     glBegin(GL_LINES);
     glVertex2f( top.x(), top.y() );
     glVertex2f( bottom.x(), bottom.y() );
@@ -376,13 +378,14 @@ RotoPaintInteract::drawSelectedCpsBBOX()
         QPointF topLeft = selectedCpsBbox.topLeft();
         QPointF btmRight = selectedCpsBbox.bottomRight();
 
-        glLineWidth(1.5);
+        double screenPixelRatio = p->publicInterface->getCurrentViewportForOverlays()->getScreenPixelRatio();
 
         if (hoverState == eHoverStateBbox) {
             glColor4f(0.9, 0.5, 0, 1.);
         } else {
             glColor4f(0.8, 0.8, 0.8, 1.);
         }
+        glLineWidth(1.5 * screenPixelRatio);
         glBegin(GL_LINE_LOOP);
         glVertex2f( topLeft.x(), btmRight.y() );
         glVertex2f( topLeft.x(), topLeft.y() );
@@ -399,6 +402,7 @@ RotoPaintInteract::drawSelectedCpsBBOX()
         QLineF selectedCpsCrossVertLine;
         selectedCpsCrossVertLine.setLine(midX, midY - xHairMidSizeY, midX, midY + xHairMidSizeY);
 
+        glLineWidth(1.5 * screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2f( std::max( selectedCpsCrossHorizLine.p1().x(), topLeft.x() ), selectedCpsCrossHorizLine.p1().y() );
         glVertex2f( std::min( selectedCpsCrossHorizLine.p2().x(), btmRight.x() ), selectedCpsCrossHorizLine.p2().y() );
@@ -415,7 +419,7 @@ RotoPaintInteract::drawSelectedCpsBBOX()
         QPointF midLeft(topLeft.x(), ( topLeft.y() + btmRight.y() ) / 2.);
 
         ///draw the 4 corners points and the 4 mid points
-        glPointSize(5.f);
+        glPointSize(5.f * screenPixelRatio);
         glBegin(GL_POINTS);
         glVertex2f( topLeft.x(), topLeft.y() );
         glVertex2f( btmRight.x(), topLeft.y() );
@@ -693,6 +697,7 @@ RotoPaintInteract::onRoleChangedInternal(const KnobGroupPtr& roleGroup)
     hardnessSpinbox.lock()->setInViewerContextSecret(!isPaintRole);
     pressureHardnessButton.lock()->setInViewerContextSecret(!isPaintRole);
     buildUpButton.lock()->setInViewerContextSecret(!isPaintRole);
+    autoConnectViewerButton.lock()->setInViewerContextSecret(!isPaintRole);
     effectSpinBox.lock()->setInViewerContextSecret(!isPaintRole);
     timeOffsetSpinBox.lock()->setInViewerContextSecret(!isPaintRole);
     timeOffsetModeChoice.lock()->setInViewerContextSecret(!isPaintRole);
@@ -748,14 +753,25 @@ RotoPaintInteract::onToolChangedInternal(const KnobButtonPtr& actionButton)
     if ( (selectedRole == eRotoRoleBezierEdition) &&
          ( ( selectedTool == eRotoToolDrawBezier) || ( selectedTool == eRotoToolOpenBezier) ) &&
          builtBezier &&
+         !builtBezier->isCurveFinished() &&
          ( tool != selectedTool ) ) {
         builtBezier->setCurveFinished(true);
+        // The curve is finished: it is not being built anymore. Keeping it would make the next tool change
+        // (e.g. from an undo/redo command) evaluate the node again, and the next click with a bezier tool
+        // switch to the selection tool instead of starting a new curve.
+        builtBezier.reset();
         clearSelection();
+
+        // The curve is now finished, so it has to be rendered. Changing the tool alone does not evaluate the node
+        // (the tool buttons do not evaluate on change), so the frame where the curve was drawn would keep its stale
+        // cached image until something else changes the node. Evaluate here, as the other finish paths do.
+        // See https://github.com/NatronGitHub/Natron/issues/510
+        evaluate(true);
     }
     selectedToolAction = actionButton;
     {
         KnobIPtr parentKnob = actionButton->getParentKnob();
-        KnobGroupPtr parentGroup = boost::dynamic_pointer_cast<KnobGroup>(parentKnob);
+        KnobGroupPtr parentGroup = std::dynamic_pointer_cast<KnobGroup>(parentKnob);
         assert(parentGroup);
         selectedToolRole = parentGroup;
     }
@@ -787,7 +803,7 @@ RotoPaintInteract::setCurrentTool(const KnobButtonPtr& tool)
         return;
     }
     KnobIPtr parentKnob = tool->getParentKnob();
-    KnobGroupPtr parentGroup = boost::dynamic_pointer_cast<KnobGroup>(parentKnob);
+    KnobGroupPtr parentGroup = std::dynamic_pointer_cast<KnobGroup>(parentKnob);
     assert(parentGroup);
     if (!parentGroup) {
         return;
@@ -837,7 +853,8 @@ RotoPaintInteract::computeSelectedCpsBBOX()
 
     double time = p->publicInterface->getCurrentTime();
 
-    double l = INT_MAX, r = INT_MIN, b = INT_MAX, t = INT_MIN;
+    double l = std::numeric_limits<int>::max(), r = std::numeric_limits<int>::min();
+    double b = std::numeric_limits<int>::max(), t = std::numeric_limits<int>::min();
     for (SelectedCPs::iterator it = selectedCps.begin(); it != selectedCps.end(); ++it) {
         handleControlPointMaximum(time, *(it->first), &l, &b, &r, &t);
         if (it->second) {
@@ -915,6 +932,7 @@ RotoPaintInteract::handleControlPointSelection(const std::pair<BezierCPPtr,
 
     cpBeingDragged = p;
     state = eEventStateDraggingControlPoint;
+    evaluateOnPenUp = true; // so that color is restored to normal on pen up, even if there's no motion
 }
 
 void
@@ -1014,6 +1032,9 @@ isBranchConnectedToRotoNodeRecursive(Node* node,
 void
 RotoPaintInteract::checkViewersAreDirectlyConnected()
 {
+    if (!autoConnectViewerButton.lock()->getValue()) {
+        return;
+    }
     NodePtr rotoNode = p->publicInterface->getNode();
     std::list<ViewerInstance*> viewers;
 
@@ -1697,7 +1718,7 @@ RotoPaintInteract::smoothSelectedCurve()
         }
     } else {
         for (SelectedItems::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
-            BezierPtr bezier = boost::dynamic_pointer_cast<Bezier>(*it);
+            BezierPtr bezier = std::dynamic_pointer_cast<Bezier>(*it);
             if (bezier) {
                 SmoothCuspUndoCommand::SmoothCuspCurveData data;
                 data.curve = bezier;
@@ -1739,7 +1760,7 @@ RotoPaintInteract::cuspSelectedCurve()
         }
     } else {
         for (SelectedItems::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
-            BezierPtr bezier = boost::dynamic_pointer_cast<Bezier>(*it);
+            BezierPtr bezier = std::dynamic_pointer_cast<Bezier>(*it);
             if (bezier) {
                 SmoothCuspUndoCommand::SmoothCuspCurveData data;
                 data.curve = bezier;
@@ -1776,7 +1797,7 @@ RotoPaintInteract::removeFeatherForSelectedCurve()
         }
     } else {
         for (SelectedItems::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
-            BezierPtr bezier = boost::dynamic_pointer_cast<Bezier>(*it);
+            BezierPtr bezier = std::dynamic_pointer_cast<Bezier>(*it);
             if (bezier) {
                 RemoveFeatherUndoCommand::RemoveFeatherData data;
                 data.curve = bezier;
@@ -1821,7 +1842,7 @@ RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
         points = selectedCps;
     } else {
         for (SelectedItems::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
-            BezierPtr bezier = boost::dynamic_pointer_cast<Bezier>(*it);
+            BezierPtr bezier = std::dynamic_pointer_cast<Bezier>(*it);
             if (bezier) {
                 const std::list<BezierCPPtr> & cps = bezier->getControlPoints();
                 const std::list<BezierCPPtr> & fps = bezier->getFeatherPoints();
@@ -1857,8 +1878,8 @@ void
 RotoPaintInteract::onCurveLockedChangedRecursive(const RotoItemPtr & item,
                                                  bool* ret)
 {
-    BezierPtr b = boost::dynamic_pointer_cast<Bezier>(item);
-    RotoLayerPtr layer = boost::dynamic_pointer_cast<RotoLayer>(item);
+    BezierPtr b = std::dynamic_pointer_cast<Bezier>(item);
+    RotoLayerPtr layer = std::dynamic_pointer_cast<RotoLayer>(item);
 
     if (b) {
         if ( item->isLockedRecursive() ) {

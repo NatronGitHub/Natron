@@ -1,0 +1,225 @@
+name: Build Installer
+
+# Installers are release artifacts: built on demand or for (pre-)release tags only.
+on:
+  workflow_dispatch: {}
+  push:
+    tags:
+    - 'v*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+permissions:
+  contents: read
+
+env:
+  NATRON_BUILD_WORKSPACE: 'D:/nbw'
+  CI: 'True'
+
+jobs:
+  win-installer:
+    name: Windows Installer
+    runs-on: windows-2022
+    timeout-minutes: 300
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4.1.1
+        with:
+          submodules: recursive
+
+      - name: Install Windows system packages
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw64
+          update: true
+          install: git mingw-w64-x86_64-wget unzip diffutils
+
+      - name: Install Natron pacman repository
+        run: |
+          ${GITHUB_WORKSPACE}/.github/workflows/install_natron_pacman_repo.sh ${GITHUB_WORKSPACE} ${GITHUB_WORKSPACE}/natron_pacman_repo
+          pacman -S --needed --noconfirm --overwrite "*" mingw-w64-x86_64-natron-build-deps-qt5
+          # With --noconfirm, pacman silently skips a target whose dependencies
+          # cannot be resolved and exits 0: check that it was really installed.
+          if ! pacman -Q mingw-w64-x86_64-natron-build-deps-qt5; then
+            echo "::error::mingw-w64-x86_64-natron-build-deps-qt5 could not be installed (unresolvable dependencies, see above)"
+            exit 1
+          fi
+
+      - name: Build
+        id: build
+        run: |
+          NATRON_BUILD_WORKSPACE_UNIX=$(cygpath -u ${NATRON_BUILD_WORKSPACE})
+          mkdir ${NATRON_BUILD_WORKSPACE_UNIX}
+
+          cd tools/jenkins
+
+          WORKSPACE=${NATRON_BUILD_WORKSPACE_UNIX} BUILD_NAME=natron BUILD_NUMBER=1 BITS=64 NATRON_LICENSE=GPL GIT_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git GIT_URL_IS_NATRON=1 SNAPSHOT_BRANCH=${GITHUB_REF_NAME} QT_VERSION_MAJOR=5 DISABLE_BREAKPAD=1 NOUPDATE=1 MKJOBS=$(nproc) MINIMIZE_DISK_USAGE=1 UNIT_TESTS=true ./launchBuildMain.sh
+
+          ARCHIVE_DIR=${NATRON_BUILD_WORKSPACE_UNIX}/builds_archive/natron/1
+          INSTALLER_ZIP_UNIX=$(ls ${ARCHIVE_DIR}/Natron*Windows-x86_64.zip)
+
+          # Unzip installer zip for artifact upload so we don't get a zipped zip file.
+          cd ${ARCHIVE_DIR}
+          INSTALLER_DIR="${ARCHIVE_DIR}/i"
+          INSTALLER_NAME=$(basename ${INSTALLER_ZIP_UNIX} .zip)
+          mkdir -p ${INSTALLER_DIR}
+          cd ${INSTALLER_DIR}
+          unzip ${INSTALLER_ZIP_UNIX}
+
+          echo "INSTALLER_NAME=${INSTALLER_NAME}" >> $GITHUB_OUTPUT
+          echo "INSTALLER_DIR=$(cygpath -m ${INSTALLER_DIR})" >> $GITHUB_OUTPUT
+
+          TEST_RESULTS_FILE="${ARCHIVE_DIR}/${INSTALLER_NAME}-tests.txt"
+          TEST_RESULTS_NAME="${INSTALLER_NAME}-tests"
+          echo "TEST_RESULTS_NAME=${TEST_RESULTS_NAME}" >> $GITHUB_OUTPUT
+          echo "TEST_RESULTS_FILE=$(cygpath -m ${TEST_RESULTS_FILE})" >> $GITHUB_OUTPUT
+
+          TEST_FAILURES_DIR="${ARCHIVE_DIR}/${INSTALLER_NAME}-unit_tests_failures"
+          TEST_FAILURES_NAME="${INSTALLER_NAME}-unit_tests_failures"
+          echo "TEST_FAILURES_NAME=${TEST_FAILURES_NAME}" >> $GITHUB_OUTPUT
+          echo "TEST_FAILURES_DIR=$(cygpath -m ${TEST_FAILURES_DIR})" >> $GITHUB_OUTPUT
+
+      - name: Build verify_plugin_loads binary
+        run: |
+          g++ -DWINDOWS -o verify_plugin_loads .github/workflows/verify_plugin_loads.cpp libs/OpenFX/HostSupport/src/ofxhBinary.cpp libs/OpenFX/HostSupport/src/ofxhUtilities.cpp -I libs/OpenFX/HostSupport/include/ -I libs/OpenFX/include/
+
+      - name: Uninstall Natron dependencies
+        run: |
+          pacman -Rs --noconfirm mingw-w64-x86_64-natron-build-deps-qt5
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name:  ${{ steps.build.outputs.INSTALLER_NAME }}
+          path:  ${{ steps.build.outputs.INSTALLER_DIR }}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name:  ${{ steps.build.outputs.TEST_RESULTS_NAME }}
+          path:  ${{ steps.build.outputs.TEST_RESULTS_FILE }}
+
+      - name: Upload test failures
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name:  ${{ steps.build.outputs.TEST_FAILURES_NAME }}
+          path:  ${{ steps.build.outputs.TEST_FAILURES_DIR }}
+
+      - name: Verify plugin loading
+        run: |
+          INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
+          for x in $(find ${INSTALLER_DIR}/Plugins -name *.ofx); do
+            echo "Testing $(basename ${x}) ..."
+            PATH=${INSTALLER_DIR}/bin ./verify_plugin_loads.exe "${x}"
+          done
+
+      - name: Verify passing tests match 2.5.0 release
+        run: |
+          wget https://github.com/NatronGitHub/Natron/releases/download/v2.5.0/Natron-2.5.0-Windows-x86_64-tests.txt
+          if diff Natron-2.5.0-Windows-x86_64-tests.txt ${{ steps.build.outputs.TEST_RESULTS_FILE }}; then
+            echo "Test results match 2.5.0 release : PASS"
+          else
+            echo "Test results match 2.5.0 release : FAILED"
+            exit 1
+          fi
+
+  win-installer-breakpad:
+    name: Windows Installer (with Breakpad crash reporting)
+    runs-on: windows-2022
+    timeout-minutes: 300
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4.1.1
+        with:
+          submodules: recursive
+
+      - name: Install Windows system packages
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw64
+          update: true
+          install: git mingw-w64-x86_64-wget unzip
+
+      - name: Install Natron pacman repository
+        run: |
+          ${GITHUB_WORKSPACE}/.github/workflows/install_natron_pacman_repo.sh ${GITHUB_WORKSPACE} ${GITHUB_WORKSPACE}/natron_pacman_repo
+          pacman -S --needed --noconfirm --overwrite "*" mingw-w64-x86_64-natron-build-deps-qt5
+          # With --noconfirm, pacman silently skips a target whose dependencies
+          # cannot be resolved and exits 0: check that it was really installed.
+          if ! pacman -Q mingw-w64-x86_64-natron-build-deps-qt5; then
+            echo "::error::mingw-w64-x86_64-natron-build-deps-qt5 could not be installed (unresolvable dependencies, see above)"
+            exit 1
+          fi
+
+      - name: Build
+        id: build
+        run: |
+          NATRON_BUILD_WORKSPACE_UNIX=$(cygpath -u ${NATRON_BUILD_WORKSPACE})
+          mkdir ${NATRON_BUILD_WORKSPACE_UNIX}
+
+          cd tools/jenkins
+
+          WORKSPACE=${NATRON_BUILD_WORKSPACE_UNIX} BUILD_NAME=natron BUILD_NUMBER=1 BITS=64 NATRON_LICENSE=GPL GIT_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git GIT_URL_IS_NATRON=1 SNAPSHOT_BRANCH=${GITHUB_REF_NAME} QT_VERSION_MAJOR=5 NOUPDATE=1 MKJOBS=$(nproc) MINIMIZE_DISK_USAGE=1 ./launchBuildMain.sh
+
+          ARCHIVE_DIR=${NATRON_BUILD_WORKSPACE_UNIX}/builds_archive/natron/1
+          INSTALLER_ZIP_UNIX=$(ls ${ARCHIVE_DIR}/Natron*-breakpad.zip)
+
+          set -x
+          # Unzip installer zip for artifact upload so we don't get a zipped zip file.
+          cd ${ARCHIVE_DIR}
+          INSTALLER_DIR="${ARCHIVE_DIR}/i"
+          INSTALLER_NAME=$(basename ${INSTALLER_ZIP_UNIX} .zip)
+          mkdir -p ${INSTALLER_DIR}
+          cd ${INSTALLER_DIR}
+          unzip ${INSTALLER_ZIP_UNIX}
+
+          echo "INSTALLER_NAME=${INSTALLER_NAME}" >> $GITHUB_OUTPUT
+          echo "INSTALLER_DIR=$(cygpath -m ${INSTALLER_DIR})" >> $GITHUB_OUTPUT
+
+          SYMBOLS_NAME="${INSTALLER_NAME}-symbols"
+          SYMBOLS_DIR="${ARCHIVE_DIR}/s"
+          cd ${ARCHIVE_DIR}
+          mv symbols ${SYMBOLS_NAME}
+          mkdir ${SYMBOLS_DIR}
+          mv ${SYMBOLS_NAME} ${SYMBOLS_DIR}
+
+          echo "SYMBOLS_NAME=${SYMBOLS_NAME}" >> $GITHUB_OUTPUT
+          echo "SYMBOLS_DIR=$(cygpath -m ${SYMBOLS_DIR})" >> $GITHUB_OUTPUT
+
+      - name: Build verify_plugin_loads binary
+        run: |
+          g++ -DWINDOWS -o verify_plugin_loads .github/workflows/verify_plugin_loads.cpp libs/OpenFX/HostSupport/src/ofxhBinary.cpp libs/OpenFX/HostSupport/src/ofxhUtilities.cpp -I libs/OpenFX/HostSupport/include/ -I libs/OpenFX/include/
+
+      - name: Uninstall Natron dependencies
+        run: |
+          pacman -Rs --noconfirm mingw-w64-x86_64-natron-build-deps-qt5
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name:  ${{ steps.build.outputs.INSTALLER_NAME }}
+          path:  ${{ steps.build.outputs.INSTALLER_DIR }}
+
+      - name: Upload symbols
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name:  ${{ steps.build.outputs.SYMBOLS_NAME }}
+          path:  ${{ steps.build.outputs.SYMBOLS_DIR }}
+
+      - name: Verify plugin loading
+        run: |
+          INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
+          for x in $(find ${INSTALLER_DIR}/Plugins -name *.ofx); do
+            echo "Testing $(basename ${x}) ..."
+            PATH=${INSTALLER_DIR}/bin ./verify_plugin_loads.exe "${x}"
+          done

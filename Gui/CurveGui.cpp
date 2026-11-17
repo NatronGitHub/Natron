@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,12 +27,13 @@
 
 #include <cmath>
 #include <algorithm> // min, max
+#include <limits>
 #include <stdexcept>
 
-#include <QtCore/QThread>
-#include <QtCore/QObject>
-#include <QtCore/QCoreApplication>
-#include <QtCore/QDebug>
+#include <QThread>
+#include <QObject>
+#include <QCoreApplication>
+#include <QDebug>
 
 #include "Engine/Bezier.h"
 #include "Engine/Knob.h"
@@ -44,6 +45,8 @@
 #include "Gui/CurveWidget.h"
 #include "Gui/CurveWidgetPrivate.h"
 #include "Gui/KnobGui.h"
+
+#include <QOpenGLContext>
 
 NATRON_NAMESPACE_ENTER
 
@@ -289,7 +292,8 @@ drawLineStrip(const std::vector<float>& vertices,
 
 void
 CurveGui::drawCurve(int curveIndex,
-                    int curvesCount)
+                    int curvesCount,
+                    double screenPixelRatio)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -298,7 +302,7 @@ CurveGui::drawCurve(int curveIndex,
         return;
     }
 
-    assert( QGLContext::currentContext() == _curveWidget->context() );
+    assert( QOpenGLContext::currentContext() == _curveWidget->context() );
 
     std::vector<float> vertices, exprVertices;
     double x1 = 0;
@@ -380,13 +384,14 @@ CurveGui::drawCurve(int curveIndex,
         if (!isBezier && _selected) {
             ///Draw y min/max axis so the user understands why the curve is clamped
             Curve::YRange curveYRange = getCurveYRange();
-            if (curveYRange.min != INT_MIN &&
+            if (curveYRange.min != std::numeric_limits<int>::min() &&
                 curveYRange.min != -std::numeric_limits<double>::infinity() &&
-                curveYRange.max != INT_MAX &&
+                curveYRange.max != std::numeric_limits<int>::max() &&
                 curveYRange.max != std::numeric_limits<double>::infinity() ) {
                 QColor minMaxColor;
                 minMaxColor.setRgbF(0.398979, 0.398979, 0.398979);
                 glColor4d(minMaxColor.redF(), minMaxColor.greenF(), minMaxColor.blueF(), 1.);
+                glLineWidth(1.5f * screenPixelRatio);
                 glBegin(GL_LINES);
                 glVertex2d(btmLeft.x(), curveYRange.min);
                 glVertex2d(topRight.x(), curveYRange.min);
@@ -404,12 +409,12 @@ CurveGui::drawCurve(int curveIndex,
 
 
         glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
-        glPointSize(_thickness);
+        glPointSize(_thickness * screenPixelRatio);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_LINE_SMOOTH);
         glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-        glLineWidth(1.5);
+        glLineWidth(1.5 * screenPixelRatio);
         glCheckError();
         if (hasDrawnExpr) {
             drawLineStrip(exprVertices, btmLeft, topRight);
@@ -443,7 +448,6 @@ CurveGui::drawCurve(int curveIndex,
         glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
 
         //draw keyframes
-        glPointSize(7.f);
         glEnable(GL_POINT_SMOOTH);
 
         const SelectedKeys & selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
@@ -482,6 +486,7 @@ CurveGui::drawCurve(int curveIndex,
 
             double x = key.getTime();
             double y = key.getValue();
+            glPointSize(7.f * screenPixelRatio);
             glBegin(GL_POINTS);
             glVertex2f(x, y);
             glEnd();
@@ -496,6 +501,7 @@ CurveGui::drawCurve(int curveIndex,
                     glLineStipple(2, 0xAAAA);
                     glEnable(GL_LINE_STIPPLE);
                 }
+                glLineWidth(1.5f * screenPixelRatio);
                 glBegin(GL_LINES);
                 glColor4f(1., 0.35, 0.35, 1.);
                 glVertex2f( isSelected->leftTan.first, isSelected->leftTan.second );
@@ -537,6 +543,7 @@ CurveGui::drawCurve(int curveIndex,
                     _curveWidget->renderText( x, _curveWidget->toZoomCoordinates(0, yWidgetCoord).y(),
                                               coordStr, QColor(240, 240, 240), _curveWidget->getFont() );
                 }
+                glPointSize(7.f * screenPixelRatio);
                 glBegin(GL_POINTS);
                 glVertex2f( isSelected->leftTan.first, isSelected->leftTan.second );
                 glVertex2f( isSelected->rightTan.first, isSelected->rightTan.second );

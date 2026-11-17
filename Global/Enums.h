@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -22,16 +22,16 @@
 
 #include "Global/Macros.h"
 
-#include <QtCore/QFlags>
+#include <QFlags>
 CLANG_DIAG_OFF(deprecated)
-#include <QtCore/QMetaType>
+#include <QMetaType>
 CLANG_DIAG_ON(deprecated)
 
 NATRON_NAMESPACE_ENTER
 #ifdef SBK_RUN
 // shiboken doesn't generate SbkNatronEngine_StandardButtonEnum_as_number unless it is put in a class or namespace
 NATRON_NAMESPACE_EXIT
-namespace NATRON_NAMESPACE {
+namespace Natron {
 #endif
 
 enum ScaleTypeEnum
@@ -441,7 +441,8 @@ enum ViewerColorSpaceEnum
 {
     eViewerColorSpaceSRGB = 0,
     eViewerColorSpaceLinear,
-    eViewerColorSpaceRec709
+    eViewerColorSpaceRec709,
+    eViewerColorSpaceBT1886
 };
 
 enum ImageBitDepthEnum
@@ -692,7 +693,7 @@ NATRON_NAMESPACE_ENTER
 
 NATRON_NAMESPACE_EXIT
 
-Q_DECLARE_METATYPE(NATRON_NAMESPACE::StandardButtons)
+Q_DECLARE_METATYPE(Natron::StandardButtons)
 
 
 #endif // NATRON_GLOBAL_ENUMS_H

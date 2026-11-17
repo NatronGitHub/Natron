@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,9 +30,9 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QtGlobal> // for Q_OS_*
-#include <QtCore/QDebug>
-#include <QtCore/QSettings>
+#include <QtGlobal> // for Q_OS_*
+#include <QDebug>
+#include <QSettings>
 #include <QPixmapCache>
 #include <QApplication>
 #include <QFontDatabase>
@@ -57,7 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/DocumentationManager.h"
 
 //All fixed sizes were calculated for a 96 dpi screen
-#ifndef Q_OS_MAC
+#ifndef Q_OS_DARWIN
 #define NATRON_PIXELS_FOR_DPI_DEFAULT 96.
 #else
 #define NATRON_PIXELS_FOR_DPI_DEFAULT 72.
@@ -851,15 +851,6 @@ GuiApplicationManager::initGui(const CLArgs& args)
 {
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
-#ifdef __NATRON_UNIX__
-#ifndef __NATRON_OSX__
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    // workaround for issues with KDE4
-    QApplication::setStyle( QString::fromUtf8("plastique") );
-#endif
-#endif
-#endif
-
     //load custom fonts
     QString fontResource = QString::fromUtf8(":/Resources/Fonts/%1.ttf");
     QStringList fontFilenames;
@@ -904,7 +895,7 @@ GuiApplicationManager::initGui(const CLArgs& args)
             qDebug() << "Not an exact match, got: " << fi.family() << fi.pointSize();
         }
         QApplication::setFont(font);
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
         // https://bugreports.qt.io/browse/QTBUG-32789
         QFont::insertSubstitution(QString::fromUtf8(".Lucida Grande UI"), fontFamily /*"Lucida Grande"*/);
         // https://bugreports.qt.io/browse/QTBUG-40833
@@ -955,7 +946,9 @@ GuiApplicationManager::initGui(const CLArgs& args)
     QObject::connect( &_imp->updateSplashscreenTimer, SIGNAL(timeout()), this, SLOT(onFontconfigTimerTriggered()) );
     _imp->updateSplashscreenTimer.start(1000);
 
-    _imp->fontconfigUpdateWatcher->setFuture( QtConcurrent::run(_imp.get(), &GuiApplicationManagerPrivate::updateFontConfigCache) );
+    // Qt6 dropped the run(object, memberFunction) overload; a lambda is the one
+    // spelling both versions accept.
+    _imp->fontconfigUpdateWatcher->setFuture( QtConcurrent::run( [p = _imp.get()]() { p->updateFontConfigCache(); } ) );
 
     Gui::loadStyleSheet();
 
@@ -1092,7 +1085,7 @@ GuiApplicationManager::hideSplashScreen()
     if (_imp->_splashScreen) {
         _imp->_splashScreen->hide();
         _imp->_splashScreen->close();
-        delete _imp->_splashScreen;
+        _imp->_splashScreen->deleteLater();
         _imp->_splashScreen = 0;
     }
 }

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,13 +28,7 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/make_shared.hpp>
-#endif
-
-#include <QtCore/QCoreApplication>
+#include <QCoreApplication>
 
 #include "Gui/GuiFwd.h"
 
@@ -44,13 +38,13 @@
 NATRON_NAMESPACE_ENTER
 
 struct KnobWidgetDnDPrivate;
-class KnobWidgetDnD : public boost::enable_shared_from_this<KnobWidgetDnD>
+class KnobWidgetDnD : public std::enable_shared_from_this<KnobWidgetDnD>
 {
     Q_DECLARE_TR_FUNCTIONS(KnobWidgetDnD)
 
     struct MakeSharedEnabler;
 
-    // used by boost::make_shared
+    // used by std::make_shared
     KnobWidgetDnD(const KnobGuiPtr& knob,
                   int dimension,
                   QWidget* widget);
@@ -83,7 +77,7 @@ public:
 private:
     void startDrag();
 
-    boost::scoped_ptr<KnobWidgetDnDPrivate> _imp;
+    std::unique_ptr<KnobWidgetDnDPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

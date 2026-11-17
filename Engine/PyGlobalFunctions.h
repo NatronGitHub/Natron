@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -38,6 +38,13 @@
 #include "Engine/PyAppInstance.h"
 
 #include "Engine/EngineFwd.h"
+
+// Both build systems pass this on the command line, where it wins over the
+// fallback below. shiboken parses this header without those defines, so give
+// it a value rather than failing binding generation.
+#ifndef NATRON_BUILD_NUMBER
+#define NATRON_BUILD_NUMBER 0
+#endif
 
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
@@ -230,12 +237,5 @@ public:
 
 NATRON_PYTHON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_EXIT;
-
-#if defined(PYSIDE_H) && defined(PYSIDE_OLD)
-namespace PySide {
-PYSIDE_API PyObject* getWrapperForQObject(QObject* cppSelf, SbkObjectType* sbk_type);
-}
-#endif
-
 
 #endif // GLOBALFUNCTIONSWRAPPER_H

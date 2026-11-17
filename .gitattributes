@@ -24,6 +24,7 @@
 CMakeLists.txt text whitespace=tab-in-indent,trail,space
 
 *.sh            eol=lf
+PKGBUILD eol=lf
 
 # Declare files that will always have CRLF line endings on checkout.
 # VS 20xx files
@@ -60,3 +61,6 @@ CMakeLists.txt text whitespace=tab-in-indent,trail,space
 
 *.xml -text
 *.yml -text
+*.patch -text
+*.diff -text
+*.pc -text

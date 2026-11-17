@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,9 +30,9 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
-#include <QtCore/QStringList>
-#include <QtCore/QMutexLocker>
-#include <QtCore/QDebug>
+#include <QStringList>
+#include <QMutexLocker>
+#include <QDebug>
 
 #include "Engine/EffectInstance.h"
 #include "Engine/Transform.h"

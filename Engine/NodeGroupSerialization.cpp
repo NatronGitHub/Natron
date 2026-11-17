@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,8 +28,8 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QtCore/QDateTime>
-#include <QtCore/QFileInfo>
+#include <QDateTime>
+#include <QFileInfo>
 
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
@@ -54,7 +54,7 @@ NodeCollectionSerialization::initialize(const NodeCollection& group)
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( !(*it)->getParentMultiInstance() && (*it)->isPartOfProject() ) {
-            NodeSerializationPtr state = boost::make_shared<NodeSerialization>(*it);
+            NodeSerializationPtr state = std::make_shared<NodeSerialization>(*it);
             _serializedNodes.push_back(state);
         }
     }
@@ -299,7 +299,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
             NodeGroup* isGrp = n->isEffectGroup();
             if (isGrp) {
                 EffectInstancePtr sharedEffect = isGrp->shared_from_this();
-                NodeGroupPtr sharedGrp = boost::dynamic_pointer_cast<NodeGroup>(sharedEffect);
+                NodeGroupPtr sharedGrp = std::dynamic_pointer_cast<NodeGroup>(sharedEffect);
                 NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp, !usingPythonModule, moduleUpdatesProcessed);
             } else {
                 ///For multi-instances, wait for the group to be entirely created then load the sub-tracks in a separate loop.

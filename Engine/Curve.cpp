@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,13 +27,9 @@
 
 #include <algorithm>
 #include <cassert>
+#include <limits>
 #include <stdexcept>
 
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/math/special_functions/fpclassify.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
 #include "Engine/AppManager.h"
 
 #include "Engine/CurvePrivate.h"
@@ -97,10 +93,10 @@ KeyFrame::KeyFrame(double time,
     , _rightDerivative(rightDerivative)
     , _interpolation(interpolation)
 {
-    assert( !(boost::math::isnan)(_time) && !(boost::math::isinf)(_time) );
-    assert( !(boost::math::isnan)(_value) && !(boost::math::isinf)(_value) );
-    assert( !(boost::math::isnan)(_leftDerivative) && !(boost::math::isinf)(_leftDerivative) );
-    assert( !(boost::math::isnan)(_rightDerivative) && !(boost::math::isinf)(_rightDerivative) );
+    assert( !std::isnan(_time) && !std::isinf(_time) );
+    assert( !std::isnan(_value) && !std::isinf(_value) );
+    assert( !std::isnan(_leftDerivative) && !std::isinf(_leftDerivative) );
+    assert( !std::isnan(_rightDerivative) && !std::isinf(_rightDerivative) );
 }
 
 KeyFrame::KeyFrame(const KeyFrame & other)
@@ -110,10 +106,10 @@ KeyFrame::KeyFrame(const KeyFrame & other)
     , _rightDerivative(other._rightDerivative)
     , _interpolation(other._interpolation)
 {
-    assert( !(boost::math::isnan)(_time) && !(boost::math::isinf)(_time) );
-    assert( !(boost::math::isnan)(_value) && !(boost::math::isinf)(_value) );
-    assert( !(boost::math::isnan)(_leftDerivative) && !(boost::math::isinf)(_leftDerivative) );
-    assert( !(boost::math::isnan)(_rightDerivative) && !(boost::math::isinf)(_rightDerivative) );
+    assert( !std::isnan(_time) && !std::isinf(_time) );
+    assert( !std::isnan(_value) && !std::isinf(_value) );
+    assert( !std::isnan(_leftDerivative) && !std::isinf(_leftDerivative) );
+    assert( !std::isnan(_rightDerivative) && !std::isinf(_rightDerivative) );
 }
 
 void
@@ -124,10 +120,10 @@ KeyFrame::operator=(const KeyFrame & o)
     _leftDerivative = o._leftDerivative;
     _rightDerivative = o._rightDerivative;
     _interpolation = o._interpolation;
-    assert( !(boost::math::isnan)(_time) && !(boost::math::isinf)(_time) );
-    assert( !(boost::math::isnan)(_value) && !(boost::math::isinf)(_value) );
-    assert( !(boost::math::isnan)(_leftDerivative) && !(boost::math::isinf)(_leftDerivative) );
-    assert( !(boost::math::isnan)(_rightDerivative) && !(boost::math::isinf)(_rightDerivative) );
+    assert( !std::isnan(_time) && !std::isinf(_time) );
+    assert( !std::isnan(_value) && !std::isinf(_value) );
+    assert( !std::isnan(_leftDerivative) && !std::isinf(_leftDerivative) );
+    assert( !std::isnan(_rightDerivative) && !std::isinf(_rightDerivative) );
 }
 
 KeyFrame::~KeyFrame()
@@ -138,28 +134,28 @@ void
 KeyFrame::setLeftDerivative(double leftDerivative)
 {
     _leftDerivative = leftDerivative;
-    assert( !(boost::math::isnan)(_leftDerivative) && !(boost::math::isinf)(_leftDerivative) );
+    assert( !std::isnan(_leftDerivative) && !std::isinf(_leftDerivative) );
 }
 
 void
 KeyFrame::setRightDerivative(double rightDerivative)
 {
     _rightDerivative = rightDerivative;
-    assert( !(boost::math::isnan)(_rightDerivative) && !(boost::math::isinf)(_rightDerivative) );
+    assert( !std::isnan(_rightDerivative) && !std::isinf(_rightDerivative) );
 }
 
 void
 KeyFrame::setValue(double value)
 {
     _value = value;
-    assert( !(boost::math::isnan)(_value) && !(boost::math::isinf)(_value) );
+    assert( !std::isnan(_value) && !std::isinf(_value) );
 }
 
 void
 KeyFrame::setTime(double time)
 {
     _time = time;
-    assert( !(boost::math::isnan)(_time) && !(boost::math::isinf)(_time) );
+    assert( !std::isnan(_time) && !std::isinf(_time) );
 }
 
 void
@@ -1166,11 +1162,11 @@ Curve::getCurveDisplayYRange() const
     KnobIntBase* isInt = dynamic_cast<KnobIntBase*>(_imp->owner);
     if (isDouble) {
         double min = isDouble->getDisplayMinimum(_imp->dimensionInOwner);
-        if (min <= -DBL_MAX) {
+        if (min <= std::numeric_limits<double>::lowest()) {
             min = -std::numeric_limits<double>::infinity();
         }
         double max = isDouble->getDisplayMaximum(_imp->dimensionInOwner);
-        if (max >= DBL_MAX) {
+        if (max >= std::numeric_limits<double>::max()) {
             max = std::numeric_limits<double>::infinity();
         }
 
@@ -1200,11 +1196,11 @@ Curve::YRange Curve::getCurveYRange() const
     KnobIntBase* isInt = dynamic_cast<KnobIntBase*>(_imp->owner);
     if (isDouble) {
         double min = isDouble->getMinimum(_imp->dimensionInOwner);
-        if (min <= -DBL_MAX) {
+        if (min <= std::numeric_limits<double>::lowest()) {
             min = -std::numeric_limits<double>::infinity();
         }
         double max = isDouble->getMaximum(_imp->dimensionInOwner);
-        if (max >= DBL_MAX) {
+        if (max >= std::numeric_limits<double>::max()) {
             max = std::numeric_limits<double>::infinity();
         }
 

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,7 +29,7 @@
 #include <cmath>
 #include <stdexcept>
 
-#include <QtCore/QSize>
+#include <QSize>
 #include <QPainter>
 #include <QApplication>
 #include <QGraphicsScene>
@@ -487,7 +487,8 @@ Edge::initLine()
 
     if (dest) {
         for (int i = 0; i < 4; ++i) {
-            QLineF::IntersectType type = dstEdges[i].intersect(line(), &dstIntersection);
+            QLineF::IntersectionType type = dstEdges[i].intersects(line(), &dstIntersection);
+
             if (type == QLineF::BoundedIntersection) {
                 setLine( QLineF( dstIntersection, line().p2() ) );
                 foundDstIntersection = true;
@@ -502,7 +503,8 @@ Edge::initLine()
         if (foundDstIntersection) {
             ///Find the intersection with the source bbox
             for (int i = 0; i < 4; ++i) {
-                QLineF::IntersectType type = srcEdges[i].intersect(line(), &srcInteresect);
+                QLineF::IntersectionType type = srcEdges[i].intersects(line(), &srcInteresect);
+
                 if (type == QLineF::BoundedIntersection) {
                     foundSrcIntersection = true;
                     break;
@@ -528,7 +530,8 @@ Edge::initLine()
                 _imp->label->setPos(pos);
                 QFontMetrics fm( _imp->label->font() );
                 int fontHeight = fm.height();
-                double txtWidth = fm.width( _imp->label->text() );
+                double txtWidth = fm.horizontalAdvance( _imp->label->text() );
+
                 if ( (visibleLength < fontHeight * 2) || (visibleLength < txtWidth) ) {
                     _imp->label->hide();
                     _imp->enoughSpaceToShowLabel = false;
@@ -544,7 +547,8 @@ Edge::initLine()
         QPointF intersection;
         bool foundIntersection = false;
         for (int i = 0; i < 4; ++i) {
-            QLineF::IntersectType type = dstEdges[i].intersect(line(), &intersection);
+            QLineF::IntersectionType type = dstEdges[i].intersects(line(), &intersection);
+
             if (type == QLineF::BoundedIntersection) {
                 setLine( QLineF( intersection, line().p2() ) );
                 foundIntersection = true;
@@ -567,7 +571,7 @@ Edge::initLine()
                 double cosinus = std::cos(_imp->angle);
                 int yOffset = 0;
                 if (cosinus < 0) {
-                    yOffset = -fm.width( _imp->label->text() );
+                    yOffset = -fm.horizontalAdvance( _imp->label->text() );
                 } else if ( (cosinus >= -0.01) && (cosinus <= 0.01) ) {
                     yOffset = +5;
                 } else {
@@ -884,7 +888,7 @@ LinkArrow::refreshPosition()
     QPointF slaveIntersect;
     bool foundIntersection = false;
     for (int i = 0; i < 4; ++i) {
-        QLineF::IntersectType type = slaveEdges[i].intersect(line(), &slaveIntersect);
+        QLineF::IntersectionType type = slaveEdges[i].intersects(line(), &slaveIntersect);
         if (type == QLineF::BoundedIntersection) {
             foundIntersection = true;
             break;
@@ -900,7 +904,7 @@ LinkArrow::refreshPosition()
 
     foundIntersection = false;
     for (int i = 0; i < 4; ++i) {
-        QLineF::IntersectType type = masterEdges[i].intersect(line(), &masterIntersect);
+        QLineF::IntersectionType type = masterEdges[i].intersects(line(), &masterIntersect);
         if (type == QLineF::BoundedIntersection) {
             foundIntersection = true;
             break;

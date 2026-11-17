@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -94,8 +94,8 @@ FrameEntry::copy(const FrameEntry& other)
     srcBoundsRect.x2 = srcBounds.x2;
     srcBoundsRect.y1 = srcBounds.y1;
     srcBoundsRect.y2 = srcBounds.y2;
-    RectI roi;
-    if ( !dstBounds.intersect(srcBoundsRect, &roi) ) {
+    const RectI roi = dstBounds.intersect(srcBoundsRect);
+    if (roi.isNull()) {
         return;
     }
 

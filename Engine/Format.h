@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@
 #include <string>
 
 CLANG_DIAG_OFF(deprecated)
-#include <QtCore/QMetaType>
+#include <QMetaType>
 CLANG_DIAG_ON(deprecated)
 
 #include "Engine/RectD.h"
@@ -116,11 +116,7 @@ public:
 
     RectD toCanonicalFormat() const
     {
-        RectD ret;
-
-        toCanonical_noClipping(0, _par, &ret);
-
-        return ret;
+        return toCanonical_noClipping(0, _par);
     }
 
     Format & operator=(const Format & other)

@@ -1,0 +1,38 @@
+--- Source/JavaScriptCore/heap/MachineStackMarker.cpp
++++ Source/JavaScriptCore/heap/MachineStackMarker.cpp
+@@ -301,7 +301,7 @@
+ typedef ppc_thread_state_t PlatformThreadRegisters;
+ #elif CPU(PPC64)
+ typedef ppc_thread_state64_t PlatformThreadRegisters;
+-#elif CPU(ARM)
++#elif CPU(ARM) || CPU(ARM64)
+ typedef arm_thread_state_t PlatformThreadRegisters;
+ #else
+ #error Unknown Architecture
+@@ -333,7 +333,7 @@
+ #elif CPU(PPC64)
+     unsigned user_count = PPC_THREAD_STATE64_COUNT;
+     thread_state_flavor_t flavor = PPC_THREAD_STATE64;
+-#elif CPU(ARM)
++#elif CPU(ARM) || CPU(ARM64)
+     unsigned user_count = ARM_THREAD_STATE_COUNT;
+     thread_state_flavor_t flavor = ARM_THREAD_STATE;
+ #else
+@@ -396,7 +396,7 @@
+     return reinterpret_cast<void*>(regs.__rsp);
+ #elif CPU(PPC) || CPU(PPC64)
+     return reinterpret_cast<void*>(regs.__r1);
+-#elif CPU(ARM)
++#elif CPU(ARM) || CPU(ARM64)
+     return reinterpret_cast<void*>(regs.__sp);
+ #else
+ #error Unknown Architecture
+@@ -410,6 +410,8 @@
+     return reinterpret_cast<void*>(regs.rsp);
+ #elif CPU(PPC) || CPU(PPC64)
+     return reinterpret_cast<void*>(regs.r1);
++#elif CPU(ARM) || CPU(ARM64)
++    return reinterpret_cast<void*>(regs.__sp);
+ #else
+ #error Unknown Architecture
+ #endif

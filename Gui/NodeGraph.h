@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -33,12 +33,6 @@
 #include <set>
 #include <utility>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/noncopyable.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QGraphicsView>
@@ -47,6 +41,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
+#include "Global/QtCompat.h"
 
 #include "Engine/NodeGraphI.h"
 #include "Engine/EngineFwd.h"
@@ -59,7 +54,7 @@ NATRON_NAMESPACE_ENTER
 class NodeGraphPrivate;
 
 class NodeGraph
-    : public QGraphicsView, public NodeGraphI, public PanelWidget, public boost::noncopyable
+    : public QGraphicsView, public NodeGraphI, public PanelWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -226,7 +221,9 @@ public Q_SLOTS:
 
     void toggleHideInputs();
 
-    void onNodeCreationDialogFinished(bool accepted);
+    void popCreateNodeDialog();
+
+    void onCreateNodeDialogFinished(bool accepted);
 
     void popFindDialog( const QPoint& pos = QPoint(0, 0) );
 
@@ -248,6 +245,10 @@ public Q_SLOTS:
 
 private:
 
+    NodeGraph(const NodeGraph&) = delete;
+
+    NodeGraph& operator=(const NodeGraph&) = delete;
+
     void showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode);
 
     void checkForHints(bool shiftdown, bool controlDown, const NodeGuiPtr& selectedNode, const QRectF& visibleSceneR);
@@ -260,7 +261,7 @@ private:
 
     bool isNearbyNavigator(const QPoint& widgetPos, QPointF& scenePos) const;
 
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
@@ -298,7 +299,7 @@ private:
 
     void wheelEventInternal(bool ctrlDown, double delta);
 
-    boost::scoped_ptr<NodeGraphPrivate> _imp;
+    std::unique_ptr<NodeGraphPrivate> _imp;
 };
 
 
@@ -333,7 +334,7 @@ private:
 
     virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    boost::scoped_ptr<FindNodeDialogPrivate> _imp;
+    std::unique_ptr<FindNodeDialogPrivate> _imp;
 };
 
 struct EditNodeNameDialogPrivate;
@@ -359,7 +360,7 @@ private:
 
     virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    boost::scoped_ptr<EditNodeNameDialogPrivate> _imp;
+    std::unique_ptr<EditNodeNameDialogPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

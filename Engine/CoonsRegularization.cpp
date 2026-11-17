@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -55,9 +55,6 @@
 #include <algorithm> // min, max
 #include <cassert>
 #include <stdexcept>
-
-#include <boost/make_shared.hpp>
-
 
 #include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
@@ -476,7 +473,7 @@ makeBezierCPFromPoint(const Point& p,
                       const Point& left,
                       const Point& right)
 {
-    BezierCPPtr ret = boost::make_shared<BezierCP>();
+    BezierCPPtr ret = std::make_shared<BezierCP>();
 
     ret->setStaticPosition(false, p.x, p.y);
     ret->setLeftBezierStaticPosition(false, left.x, left.y);
@@ -1130,7 +1127,7 @@ orient2dadapt(const Point &pa,
 
     /* 2^ceiling(p/2) + 1.  Used to split floats in half. */
     double epsilon = std::numeric_limits<double>::epsilon() * 0.5;
-    static const double splitter = std::sqrt( (DBL_MANT_DIG % 2 ? 2.0 : 1.0) / epsilon ) + 1.0;
+    static const double splitter = std::sqrt( (std::numeric_limits<double>::digits % 2 ? 2.0 : 1.0) / epsilon ) + 1.0;
     static const double ccwerrboundB = (2.0 + 12.0 * epsilon) * epsilon;
     static const double ccwerrboundC = (9.0 + 64.0 * epsilon) * epsilon * epsilon;
     static const double resulterrbound = (3.0 + 8.0 * epsilon) * epsilon;
@@ -1354,7 +1351,7 @@ computeWindingNumber(const BezierCPs& patch,
 {
     assert(patch.size() >= 3);
 
-    static const int undefined = INT_MAX % 2 ? INT_MAX : INT_MAX - 1;
+    static const int undefined = std::numeric_limits<int>::max() % 2 ? std::numeric_limits<int>::max() : std::numeric_limits<int>::max() - 1;
     const unsigned maxdepth = DBL_MANT_DIG;
     int count = 0;
     BezierCPs::const_iterator it = patch.begin();

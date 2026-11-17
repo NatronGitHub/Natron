@@ -1,6 +1,6 @@
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <https://natrongithub.github.io/>,
-# (C) 2018-2021 The Natron developers
+# (C) 2018-2023 The Natron developers
 # (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
 #
 # Natron is free software: you can redistribute it and/or modify
@@ -23,8 +23,8 @@ CONFIG -= app_bundle
 CONFIG += moc rcc
 CONFIG += boost boost-serialization-lib opengl qt cairo python shiboken pyside 
 CONFIG += static-gui static-engine static-host-support static-breakpadclient static-libmv static-openmvg static-ceres static-libtess
-QT += gui core opengl network
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
+QT += gui core opengl network widgets concurrent
+equals(QT_MAJOR_VERSION, 6): QT += openglwidgets
 
 CONFIG += openmvg-flags glad-flags
 
@@ -44,11 +44,14 @@ SOURCES += \
     google-test/src/gtest-all.cc \
     google-mock/src/gmock-all.cc \
     BaseTest.cpp \
+    Curve_Test.cpp \
+    FileSystemModel_Test.cpp \
     Hash64_Test.cpp \
     Image_Test.cpp \
-    Lut_Test.cpp \
     KnobFile_Test.cpp \
-    Curve_Test.cpp \
+    Lut_Test.cpp \
+    OSGLContext_Test.cpp \
+    RotoPaint_Test.cpp \
     Tracker_Test.cpp \
     wmain.cpp
 

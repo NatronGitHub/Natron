@@ -1,7 +1,7 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
+ * Copyright (C) 2018-2023 The Natron developers
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
- * Copyright (C) 2018-2021 The Natron developers
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,14 +31,11 @@
 //#include "Gui/KnobUndoCommand.h"
 
 #include <cassert>
-#include <climits>
 #include <cfloat>
 #include <stdexcept>
 #include <map>
-#include <boost/weak_ptr.hpp>
 
-
-#include <QtCore/QString>
+#include <QString>
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QFormLayout>
@@ -53,7 +50,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QColorDialog>
 #include <QGroupBox>
-#include <QtGui/QVector4D>
+#include <QVector4D>
 #include <QStyleFactory>
 #include <QComboBox>
 #include <QDialogButtonBox>
@@ -113,7 +110,7 @@ struct KnobGuiPrivate
     QHBoxLayout* fieldLayout; //< the layout containing the widgets of the knob
 
     ////A vector of all other knobs on the same line.
-    std::vector< boost::weak_ptr< KnobI > > knobsOnSameLine;
+    std::vector< std::weak_ptr< KnobI > > knobsOnSameLine;
     QWidget* field;
     QWidget* labelContainer;
     KnobClickableLabel* descriptionLabel;
@@ -121,7 +118,7 @@ struct KnobGuiPrivate
     std::map<KnobGui::KnobWarningEnum, QString> warningsMapping;
     bool isOnNewLine;
     CustomParamInteract* customInteract;
-    std::vector< boost::shared_ptr<Curve> > guiCurves;
+    std::vector< std::shared_ptr<Curve> > guiCurves;
     bool guiRemoved;
 
     // True if this KnobGui is used in the viewer
@@ -129,7 +126,7 @@ struct KnobGuiPrivate
 
     KnobGuiPrivate(KnobGuiContainerI* container);
 
-    void removeFromKnobsOnSameLineVector(const boost::shared_ptr<KnobI>& knob);
+    void removeFromKnobsOnSameLineVector(const std::shared_ptr<KnobI>& knob);
 };
 
 NATRON_NAMESPACE_EXIT;

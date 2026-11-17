@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -23,7 +23,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <QtCore/QtGlobal> // for Q_OS_*
+#include <QtGlobal> // for Q_OS_*
 #if defined(Q_OS_UNIX)
 #include <sys/time.h>     // for getrlimit on linux
 #include <sys/resource.h> // for getrlimit
@@ -67,23 +67,43 @@ int main(int argc, char *argv[])
     boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
                                                            boost_adaptbx::floating_point::exception_trapping::invalid |
                                                            boost_adaptbx::floating_point::exception_trapping::overflow);
-    assert(boost_adaptbx::floating_point::is_invalid_trapped());
 #endif
 
 #ifdef Q_OS_WIN
     // Setup Windows console output
-    bool hasConsole = false;
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
     bool enableConsoleWindow = settings.value( QString::fromUtf8("enableConsoleWindow"), false ).toBool();
-    if (enableConsoleWindow) { // output to console window
-        hasConsole = ( AttachConsole(ATTACH_PARENT_PROCESS) || AllocConsole() );
-    } else { // output to parent console
-        hasConsole = AttachConsole(ATTACH_PARENT_PROCESS);
+    HANDLE stdOutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (stdOutHandle == INVALID_HANDLE_VALUE) {
+        // Already having an invalid handle when starting likely means something is terribly wrong.
+        OutputDebugStringA("Invalid STD_OUTPUT_HANDLE.");
+        return 1;
     }
-    if (hasConsole) {
-        freopen("CONOUT$", "w", stdout);
-        freopen("CONOUT$", "w", stderr);
+    if (stdOutHandle == NULL) {
+        // A console is not already attached to this process. Try attaching to our parent's console.
+        bool hasConsole = AttachConsole(ATTACH_PARENT_PROCESS);
+        if (!hasConsole && enableConsoleWindow) {
+            // Failed to attach to the parent console. Try creating a console window.
+            hasConsole = AllocConsole();
+        }
+
+        if (hasConsole) {
+            // Reopen stdout & stderr streams so that writing to
+            // them will display on the attached/allocated console.
+            freopen("CONOUT$", "w", stdout);
+            freopen("CONOUT$", "w", stderr);
+        }
     }
+#if QT_VERSION < QT_VERSION_CHECK(6, 5, 0)
+    // Set window title bar color based on dark/light theme
+    // https://www.qt.io/blog/dark-mode-on-windows-11-with-qt-6.5
+    // https://learn.microsoft.com/en-us/answers/questions/1161597/how-to-detect-windows-application-dark-mode
+    QSettings registry(QString::fromUtf8("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"),
+                       QSettings::NativeFormat);
+    if (registry.value(QString::fromUtf8("AppsUseLightTheme"), 0).toInt() == 0) {
+        qputenv("QT_QPA_PLATFORM", "windows:darkmode=1");
+    }
+#endif
 #endif
 
 #if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
@@ -119,8 +139,9 @@ int main(int argc, char *argv[])
     CLArgs::printBackGroundWelcomeMessage();
     CLArgs args(argc, argv, false);
 
-    if (args.getError() > 0) {
-        return 1;
+    const auto error = args.getError();
+    if (error) {
+        return error.value();
     }
 
     if ( args.isBackgroundMode() ) {

@@ -1,0 +1,15 @@
+From cb90ec4d5e519f00a44e48eb4d5144bb054926ee Mon Sep 17 00:00:00 2001
+From: Sergey Fedorov <barracuda@macos-powerpc.org>
+Date: Sun, 17 Nov 2024 13:35:57 +0800
+Subject: [PATCH] meson.build: do not hardcode libc++ on darwin
+--- meson.build
++++ meson.build
+@@ -105,7 +105,7 @@ if ['linux', 'android', 'ios', 'darwin'].contains(system)
+     error('FIXME: unhandled CPU family @0@ for @1@'.format(cpu_family, system))
+   endif
+ 
+-  if ['ios', 'darwin', 'android'].contains(system)
++  if ['ios', 'android'].contains(system)
+     cpp_lib = '-lc++'
+   endif
+ elif system == 'windows'

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -171,14 +171,10 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 namespace Smooth1D {
 
 
-    void iir_gaussianFilter1D(std::vector<float>& curve, int smoothingKernelSize)
+    void iir_gaussianFilter1D(std::vector<float>& curve, double sigma)
     {
         if (curve.size() < 3) {
             return;
-        }
-        double sigma = 5.;
-        if (smoothingKernelSize > 1) {
-            sigma *= smoothingKernelSize;
         }
 
         double filter[7];

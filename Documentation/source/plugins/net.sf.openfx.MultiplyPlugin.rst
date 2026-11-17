@@ -16,7 +16,7 @@ Description
 
 Multiply the selected channels by a constant.
 
-See also: http://opticalenquiry.com/nuke/index.php?title=Multiply
+See also: https://web.archive.org/web/20220627015945/http://www.opticalenquiry.com/nuke/index.php?title=Multiply
 
 Inputs
 ------

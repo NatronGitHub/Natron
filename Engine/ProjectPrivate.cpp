@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,11 +30,13 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
-#include <QtCore/QDebug>
-#include <QtCore/QTimer>
-#include <QtCore/QDateTime>
-#include <QtCore/QFile>
-#include <QtCore/QDir>
+#include <QDebug>
+#include <QTimer>
+#include <QDateTime>
+#include <QFile>
+#include <QDir>
+
+#include "Global/PythonUtils.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -62,7 +64,7 @@ ProjectPrivate::ProjectPrivate(Project* project)
     , projectCreationTime(ageSinceLastSave)
     , builtinFormats()
     , additionalFormats()
-    , formatMutex(QMutex::Recursive)
+    , formatMutex()
     , envVars()
     , projectName()
     , projectPath()
@@ -162,7 +164,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                                 std::string optionID = choiceData->_choiceString;
                                 // first, try to get the id the easy way ( see choiceMatch() )
                                 int id = isChoice->choiceRestorationId(choiceSerialized, optionID);
-#pragma message WARN("TODO: choice id filters")
+//#pragma message WARN("TODO: choice id filters")
                                 //if (id < 0) {
                                 //    // no luck, try the filters
                                 //    filterKnobChoiceOptionCompat(getPluginID(), serialization.getPluginMajorVersion(), serialization.getPluginMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, projectInfos.vRev, serializedName, &optionID);

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -33,7 +33,8 @@
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QApplication> // qApp
-#include <QtOpenGL/QGLShaderProgram>
+
+#include <QOpenGLShaderProgram>
 
 #include "Engine/Lut.h" // Color
 #include "Engine/Settings.h"
@@ -43,6 +44,8 @@
 #include "Gui/GuiApplicationManager.h" // appFont
 #include "Gui/Menu.h"
 #include "Gui/ViewerTab.h"
+
+#include <QOpenGLContext>
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -82,7 +85,8 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , textRenderingColor(200, 200, 200, 255)
     , displayWindowOverlayColor(125, 125, 125, 255)
     , rodOverlayColor(100, 100, 100, 255)
-    , textFont(appFont, appFontSize)
+    , _screenPixelRatio(0.)
+    , _textFont()
     , overlay(true)
     , updatingTexture(false)
     , clearColor(0, 0, 0, 255)
@@ -94,6 +98,8 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , lastMousePosition()
     , lastDragStartPos()
     , hasMovedSincePress(false)
+    , setColorPickerCursor(false)
+    , setOverlayCursor(false)
     , currentViewerInfo_btmLeftBBOXoverlay()
     , currentViewerInfo_topRightBBOXoverlay()
     , currentViewerInfo_resolutionOverlay()
@@ -219,14 +225,14 @@ static const GLubyte triangleStrip[28] = {
 // |/  |/  |/  |
 // 12--13--14--15
 void
-ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
+ViewerGL::Implementation::drawRenderingVAO(unsigned int mipmapLevel,
                                            int textureIndex,
                                            ViewerGL::DrawPolygonModeEnum polygonMode,
                                            bool background)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == _this->context() );
+    assert( QOpenGLContext::currentContext() == _this->context() );
 
     bool useShader = _this->getBitDepth() != eImageBitDepthByte;
 
@@ -239,11 +245,8 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
     ///This is the coordinates in the image being rendered where datas are valid, this is in pixel coordinates
     ///at the time we initialize it but we will convert it later to canonical coordinates. See 1)
     const double par = roiRounded.par;
-    RectD canonicalRoIRoundedToTileSize;
-    roiRounded.toCanonical_noClipping(mipMapLevel, par /*, rod*/, &canonicalRoIRoundedToTileSize);
-
-    RectD canonicalRoINotRounded;
-    roiNotRounded.toCanonical_noClipping(mipMapLevel, par, &canonicalRoINotRounded);
+    const RectD canonicalRoIRoundedToTileSize = roiRounded.toCanonical_noClipping(mipmapLevel, par);
+    const RectD canonicalRoINotRounded = roiNotRounded.toCanonical_noClipping(mipmapLevel, par);
 
     ///the RoD of the image in canonical coords.
     RectD rod = _this->getRoD(textureIndex);
@@ -254,12 +257,12 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
         clipToDisplayWindow = this->clipToDisplayWindow;
     }
     RectD rectClippedToRoI(canonicalRoIRoundedToTileSize);
-    rectClippedToRoI.intersect(rod, &rectClippedToRoI);
+    rectClippedToRoI.clipIfOverlaps(rod);
 
 
     if (clipToDisplayWindow) {
-        rod.intersect(this->displayTextures[textureIndex].format, &rod);
-        rectClippedToRoI.intersect(this->displayTextures[textureIndex].format, &rectClippedToRoI);
+        rod.clipIfOverlaps(this->displayTextures[textureIndex].format);
+        rectClippedToRoI.clipIfOverlaps(this->displayTextures[textureIndex].format);
     }
 
     
@@ -286,11 +289,12 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
         {
             QMutexLocker l(&this->userRoIMutex);
             //if the userRoI isn't intersecting the rod, just don't render anything
-            if ( !rod.intersect(this->userRoI, &rod) ) {
+            rod.clip(this->userRoI);
+            if ( rod.isNull() ) {
                 return;
             }
         }
-        rectClippedToRoI.intersect(rod, &rectClippedToRoI);
+        rectClippedToRoI.clipIfOverlaps(rod);
         //clipTexCoords<RectD>(canonicalTexRect,rectClippedToRoI,texBottom,texTop,texLeft,texRight);
     }
 
@@ -470,8 +474,8 @@ ViewerGL::Implementation::initAndCheckGlExtensions()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == _this->context() );
-    assert( QGLShaderProgram::hasOpenGLShaderPrograms( _this->context() ) );
+    assert( QOpenGLContext::currentContext() == _this->context() );
+    assert( QOpenGLShaderProgram::hasOpenGLShaderPrograms( _this->context() ) );
 
     return true;
 }
@@ -563,7 +567,8 @@ ViewerGL::Implementation::getWipePolygon(const RectD & texRectClipped,
     if (crossProd11 * crossProd21 < 0) {
         QLineF e(texRectClipped.x1, texRectClipped.y1, texRectClipped.x2, texRectClipped.y1);
         QPointF p;
-        QLineF::IntersectType t = inter.intersect(e, &p);
+        QLineF::IntersectionType t = inter.intersects(e, &p);
+
         if (t == QLineF::BoundedIntersection) {
             *polygonPoints << p;
         }
@@ -574,7 +579,7 @@ ViewerGL::Implementation::getWipePolygon(const RectD & texRectClipped,
     if (crossProd21 * crossProd22 < 0) {
         QLineF e(texRectClipped.x2, texRectClipped.y1, texRectClipped.x2, texRectClipped.y2);
         QPointF p;
-        QLineF::IntersectType t = inter.intersect(e, &p);
+        QLineF::IntersectionType t = inter.intersects(e, &p);
         if (t == QLineF::BoundedIntersection) {
             *polygonPoints << p;
         }
@@ -585,7 +590,7 @@ ViewerGL::Implementation::getWipePolygon(const RectD & texRectClipped,
     if (crossProd22 * crossProd12 < 0) {
         QLineF e(texRectClipped.x2, texRectClipped.y2, texRectClipped.x1, texRectClipped.y2);
         QPointF p;
-        QLineF::IntersectType t = inter.intersect(e, &p);
+        QLineF::IntersectionType t = inter.intersects(e, &p);
         if (t == QLineF::BoundedIntersection) {
             *polygonPoints << p;
         }
@@ -596,7 +601,7 @@ ViewerGL::Implementation::getWipePolygon(const RectD & texRectClipped,
     if (crossProd12 * crossProd11 < 0) {
         QLineF e(texRectClipped.x1, texRectClipped.y2, texRectClipped.x1, texRectClipped.y1);
         QPointF p;
-        QLineF::IntersectType t = inter.intersect(e, &p);
+        QLineF::IntersectionType t = inter.intersects(e, &p);
         if (t == QLineF::BoundedIntersection) {
             *polygonPoints << p;
         }
@@ -697,6 +702,7 @@ ViewerGL::Implementation::unbindTextureAndReleaseShader(bool useShader)
 void
 ViewerGL::Implementation::drawSelectionRectangle()
 {
+    double screenPixelRatio = _this->getScreenPixelRatio();
     {
         GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 
@@ -717,8 +723,7 @@ ViewerGL::Implementation::drawSelectionRectangle()
         glEnd();
 
 
-        glLineWidth(1.5);
-
+        glLineWidth(1.5 * screenPixelRatio);
         glBegin(GL_LINE_LOOP);
         glVertex2f( topLeft.x(), btmRight.y() );
         glVertex2f( topLeft.x(), topLeft.y() );

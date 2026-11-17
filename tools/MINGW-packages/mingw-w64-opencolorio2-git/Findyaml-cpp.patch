@@ -1,0 +1,22 @@
+diff --git a/share/cmake/modules/Findyaml-cpp.cmake b/share/cmake/modules/Findyaml-cpp.cmake
+index 1dd81055..13f58c54 100644
+--- a/share/cmake/modules/Findyaml-cpp.cmake
++++ b/share/cmake/modules/Findyaml-cpp.cmake
+@@ -34,7 +34,7 @@ if(NOT OCIO_INSTALL_EXT_PACKAGES STREQUAL ALL)
+     endif()
+ 
+     if(yaml-cpp_FOUND)
+-        get_target_property(yaml-cpp_LIBRARY yaml-cpp LOCATION)
++        get_target_property(yaml-cpp_LIBRARY yaml-cpp::yaml-cpp LOCATION)
+     else()
+ 
+         # As yaml-cpp-config.cmake search fails, search an installed library
+@@ -114,7 +114,7 @@ endif()
+ ###############################################################################
+ ### Create target (if previous 'find_package' call hasn't) ###
+ 
+-if(NOT TARGET yaml-cpp)
++if(NOT TARGET yaml-cpp::yaml-cpp)
+     add_library(yaml-cpp UNKNOWN IMPORTED GLOBAL)
+     set(_yaml-cpp_TARGET_CREATE TRUE)
+ endif()

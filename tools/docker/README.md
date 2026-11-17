@@ -4,6 +4,11 @@ This directory contains tools to build Natron using docker images (requires [Doc
 
 These docker images are based on CentOS6 for a maximum compatibility accross all Linux distributions (CentOS6 will receive maintenance updates until November 30th, 2020). This can be modified by changing the value of `DOCKER_BASE` in `tools/jenkins/insclude/scripts/build-Linux-sdk.sh`.
 
+## Debugging a docker build that fails
+
+See [this github issue comment](https://github.com/moby/buildkit/issues/1472#issuecomment-941628522): just add `FROM intermediate` before the RUN line that fails, and relaunch the build with `docker builtx build --load --target itermediate -t arch .`. Now `docker run --rm -it arch sh` gives you a shell before the fail.
+
+
 ## Downloading the pre-built Natron SDK images
 
 The `natrongithub/natron-sdk` docker image is available from [Docker Hub], and it is an alias to `natrongithub/natron-sdk-centos7` and ``natrongithub/natron-sdk-centos7-dts8`.
@@ -40,10 +45,15 @@ docker run -it --rm --mount src="$(pwd)/builds",target=/home/builds_archive,type
 
 `GIT_URL`, `GIT_BRANCH`, and `GIT_COMMIT` can be set to launch a build from a specific git repository, branch, and/or commit.
 
-If `GIT_URL` is not an official Natron repository (as listed in [gitRepositories.sh](https://github.com/NatronGitHub/Natron/blob/master/tools/jenkins/gitRepositories.sh)), `GIT_URL_IS_NATRON=1` can be used to force a Natron build, as in the following example, which launches a build from branch `SetDefaultProjectFormat` of repository `https://github.com/rodlie/Natron.git`.
+For example, to launch a snapshot build on branch `RB-2.4`:
+```
+docker run -it --rm --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind --env GIT_BRANCH=RB-2.4 natrongithub/natron-sdk:latest
+```
+
+If `GIT_URL` is not an official Natron repository (as listed in [gitRepositories.sh](https://github.com/NatronGitHub/Natron/blob/master/tools/jenkins/gitRepositories.sh)), `GIT_URL_IS_NATRON=1` can be used to force a Natron build, as in the following example, which launches a build from branch `my-feature-branch` of repository `https://github.com/mygithubaccount/Natron.git`.
 
 ```
-docker run -it --rm --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind --env GIT_URL_IS_NATRON=1 --env GIT_URL=https://github.com/rodlie/Natron.git --env GIT_BRANCH=SetDefaultProjectFormat natrongithub/natron-sdk:latest
+docker run -it --rm --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind --env GIT_URL_IS_NATRON=1 --env GIT_URL=https://github.com/mygithubaccount/Natron.git --env GIT_BRANCH=my-feature-branch natrongithub/natron-sdk:latest
 ```
 
 
@@ -54,7 +64,7 @@ To launch a release, the Natron and plugins repositories must have the appropria
 When launching the build, `RELEASE_TAG` must be set to the version number (eg "2.4.1") and `NATRON_BUILD_NUMBER` must be set to an integer value (typically 1 for the first build, and increment for each new build after fixing issues). See [launchBuildMain.sh](https://github.com/NatronGitHub/Natron/blob/master/tools/jenkins/launchBuildMain.sh#L340) for more details.
 
 ```
-docker run -it --rm --env RELEASE_TAG=2.4.1 --env NATRON_BUILD_NUMBER=1 --env NATRON_DEV_STATUS=STABLE --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind natrongithub/natron-sdk:latest
+docker run -it --rm --env RELEASE_TAG=2.4.4 --env NATRON_BUILD_NUMBER=1 --env NATRON_DEV_STATUS=STABLE --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind natrongithub/natron-sdk:latest
 ```
 
 

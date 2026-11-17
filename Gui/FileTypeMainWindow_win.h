@@ -47,6 +47,15 @@
 
 NATRON_NAMESPACE_ENTER
 
+// QWidget::nativeEvent hands back a long* on Qt5 and a qintptr* on Qt6. Those
+// are distinct types on Windows, so an override naming the wrong one would
+// quietly become a new virtual; OVERRIDE makes that a compile error.
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+typedef qintptr NativeEventResult;
+#else
+typedef long NativeEventResult;
+#endif
+
 // —— local includes —————————————————————————-
 // —— pre defines ——————————————————————————-
 
@@ -121,7 +130,7 @@ public:
      * Creates a DocumentWindow with a given @arg parent and @arg flags.
      */
     explicit DocumentWindow(QWidget* parent = 0,
-                            Qt::WindowFlags flags = 0);
+                            Qt::WindowFlags flags = Qt::WindowFlags());
 
     /**
      * Destructor
@@ -138,7 +147,7 @@ protected:
     /**
      * reimpl as DDE events come as windows events and are not translated by Qt.
      */
-    virtual bool winEvent(MSG *message, long *result);
+    virtual bool nativeEvent(const QByteArray& eventType, void* message, NativeEventResult* result) OVERRIDE;
 
     // —— helpers for the file registration ——————————————————
     /**
@@ -226,8 +235,8 @@ protected:
      */
     void registerCommand(const QString& command,
                          const QString& documentId,
-                         const QString cmdLineArg = QString::null,
-                         const QString ddeCommand = QString::null);
+                         const QString cmdLineArg = QString(),
+                         const QString ddeCommand = QString());
 
     /**
      * Call this method to enable the user to open data files associated with your application
@@ -243,22 +252,22 @@ private:
     /**
      * implementation of the WM_DDE_INITIATE windows message
      */
-    bool ddeInitiate(MSG* message, long* result);
+    bool ddeInitiate(MSG* message, NativeEventResult* result);
 
     /**
      * implementation of the WM_DDE_EXECUTE windows message
      */
-    bool ddeExecute(MSG* message, long* result);
+    bool ddeExecute(MSG* message, NativeEventResult* result);
 
     /**
      * implementation of the WM_DDE_TERMINATE windows message
      */
-    bool ddeTerminate(MSG* message, long* result);
+    bool ddeTerminate(MSG* message, NativeEventResult* result);
 
     /**
      * Sets specified value in the registry under HKCU\Software\Classes, which is mapped to HKCR then.
      */
-    bool SetHkcrUserRegKey(QString key, const QString& value, const QString& valueName = QString::null);
+    bool SetHkcrUserRegKey(QString key, const QString& value, const QString& valueName = QString());
 
     /**
      * this method is called to do the DDE command handling. It does argument splitting and then calls

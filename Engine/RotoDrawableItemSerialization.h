@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,6 +30,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// clang-format off
 GCC_DIAG_OFF(unused-parameter)
 #include <boost/archive/basic_archive.hpp>
 #include <boost/serialization/base_object.hpp>
@@ -40,6 +41,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/map.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
+// clang-format on
 #endif
 
 #include "Engine/AppManager.h"
@@ -112,28 +114,28 @@ private:
             );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoItemSerialization);
         if (version < ROTO_DRAWABLE_ITEM_CHANGES_TO_LIST) {
-            KnobSerializationPtr activated = boost::make_shared<KnobSerialization>();
+            KnobSerializationPtr activated = std::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("Activated", *activated);
             _knobs.push_back(activated);
-            KnobSerializationPtr opacity = boost::make_shared<KnobSerialization>();
+            KnobSerializationPtr opacity = std::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("Opacity", *opacity);
             _knobs.push_back(opacity);
-            KnobSerializationPtr feather = boost::make_shared<KnobSerialization>();
+            KnobSerializationPtr feather = std::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("Feather", *feather);
             _knobs.push_back(feather);
-            KnobSerializationPtr falloff = boost::make_shared<KnobSerialization>();
+            KnobSerializationPtr falloff = std::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("FallOff", *falloff);
             _knobs.push_back(falloff);
             if (version < ROTO_DRAWABLE_ITEM_REMOVES_INVERTED) {
-                KnobSerializationPtr inverted = boost::make_shared<KnobSerialization>();
+                KnobSerializationPtr inverted = std::make_shared<KnobSerialization>();
                 ar & ::boost::serialization::make_nvp("Inverted", *inverted);
                 _knobs.push_back(inverted);
             }
             if (version >= ROTO_DRAWABLE_ITEM_INTRODUCES_COMPOSITING) {
-                KnobSerializationPtr color = boost::make_shared<KnobSerialization>();
+                KnobSerializationPtr color = std::make_shared<KnobSerialization>();
                 ar & ::boost::serialization::make_nvp("Color", *color);
                 _knobs.push_back(color);
-                KnobSerializationPtr comp = boost::make_shared<KnobSerialization>();
+                KnobSerializationPtr comp = std::make_shared<KnobSerialization>();
                 ar & ::boost::serialization::make_nvp("CompOP", *comp);
                 _knobs.push_back(comp);
             }
@@ -141,7 +143,7 @@ private:
             int nKnobs;
             ar & ::boost::serialization::make_nvp("NbItems", nKnobs);
             for (int i = 0; i < nKnobs; ++i) {
-                KnobSerializationPtr k = boost::make_shared<KnobSerialization>();
+                KnobSerializationPtr k = std::make_shared<KnobSerialization>();
                 ar & ::boost::serialization::make_nvp("Item", *k);
                 _knobs.push_back(k);
             }

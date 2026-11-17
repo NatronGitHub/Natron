@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,23 +31,12 @@
 
 #include <ofxNatron.h>
 
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/algorithm/string/predicate.hpp> // iequals
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
-#include <QtCore/QDateTime>
-#include <QtCore/QDebug>
+#include <QDateTime>
+#include <QDebug>
 
 #include <ofxNatron.h>
 
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/algorithm/string/predicate.hpp> // iequals
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
+#include "Global/StrUtils.h"
 
 #include "Engine/Knob.h"
 #include "Engine/Curve.h"
@@ -157,35 +146,35 @@ KnobSerialization::createKnob(const std::string & typeName,
     KnobIPtr ret;
 
     if ( typeName == KnobInt::typeNameStatic() ) {
-        ret = boost::make_shared<KnobInt>((KnobHolder*)NULL, std::string(), dimension, false);
+        ret = std::make_shared<KnobInt>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobBool::typeNameStatic() ) {
-        ret = boost::make_shared<KnobBool>((KnobHolder*)NULL, std::string(), dimension, false);
+        ret = std::make_shared<KnobBool>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobDouble::typeNameStatic() ) {
-        ret = boost::make_shared<KnobDouble>((KnobHolder*)NULL, std::string(), dimension, false);
+        ret = std::make_shared<KnobDouble>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobChoice::typeNameStatic() ) {
-        ret = boost::make_shared<KnobChoice>((KnobHolder*)NULL, std::string(), dimension, false);
+        ret = std::make_shared<KnobChoice>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobString::typeNameStatic() ) {
-        ret = boost::make_shared<KnobString>((KnobHolder*)NULL, std::string(), dimension, false);
+        ret = std::make_shared<KnobString>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobParametric::typeNameStatic() ) {
-        ret = boost::make_shared<KnobParametric>((KnobHolder*)NULL, std::string(), dimension, false);
+        ret = std::make_shared<KnobParametric>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobColor::typeNameStatic() ) {
-        ret = boost::make_shared<KnobColor>((KnobHolder*)NULL, std::string(), dimension, false);
+        ret = std::make_shared<KnobColor>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobPath::typeNameStatic() ) {
-        ret = boost::make_shared<KnobPath>((KnobHolder*)NULL, std::string(), dimension, false);
+        ret = std::make_shared<KnobPath>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobLayers::typeNameStatic() ) {
-        ret = boost::make_shared<KnobLayers>((KnobHolder*)NULL, std::string(), dimension, false);
+        ret = std::make_shared<KnobLayers>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobFile::typeNameStatic() ) {
-        ret = boost::make_shared<KnobFile>((KnobHolder*)NULL, std::string(), dimension, false);
+        ret = std::make_shared<KnobFile>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobOutputFile::typeNameStatic() ) {
-        ret = boost::make_shared<KnobOutputFile>((KnobHolder*)NULL, std::string(), dimension, false);
+        ret = std::make_shared<KnobOutputFile>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobButton::typeNameStatic() ) {
-        ret = boost::make_shared<KnobButton>((KnobHolder*)NULL, std::string(), dimension, false);
+        ret = std::make_shared<KnobButton>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobSeparator::typeNameStatic() ) {
-        ret = boost::make_shared<KnobSeparator>((KnobHolder*)NULL, std::string(), dimension, false);
+        ret = std::make_shared<KnobSeparator>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobGroup::typeNameStatic() ) {
-        ret = boost::make_shared<KnobGroup>((KnobHolder*)NULL, std::string(), dimension, false);
+        ret = std::make_shared<KnobGroup>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobPage::typeNameStatic() ) {
-        ret = boost::make_shared<KnobPage>((KnobHolder*)NULL, std::string(), dimension, false);
+        ret = std::make_shared<KnobPage>((KnobHolder*)NULL, std::string(), dimension, false);
     }
 
     if (ret) {
@@ -199,8 +188,6 @@ KnobSerialization::createKnob(const std::string & typeName,
 void
 KnobSerialization::storeKnobLinks(const KnobIPtr & knob)
 {
-    int i = 0;
-
     if (_masterIsAlias) {
         /*
          * _masters can be empty for example if we expand a group: the slaved knobs are no longer slaves
@@ -210,14 +197,15 @@ KnobSerialization::storeKnobLinks(const KnobIPtr & knob)
             const std::string& aliasNodeName = _masters.front().masterNodeName;
             const std::string& masterTrackName  = _masters.front().masterTrackName;
             const std::string& aliasKnobName = _masters.front().masterKnobName;
-            knob->storeLink(aliasNodeNameFull, aliasNodeName, masterTrackName, aliasKnobName, -1);
+            knob->storeLink(-1, aliasNodeNameFull, aliasNodeName, masterTrackName, aliasKnobName, -1);
         }
     } else {
-        for (std::list<MasterSerialization>::iterator it = _masters.begin(); it != _masters.end(); ++it) {
+        assert(_masters.size() == _dimension);
+        int slaveDim = 0;
+        for (std::list<MasterSerialization>::iterator it = _masters.begin(); it != _masters.end(); ++it, ++slaveDim) {
             if (it->masterDimension != -1) {
-                knob->storeLink(it->masterNodeNameFull, it->masterNodeName, it->masterTrackName, it->masterKnobName, it->masterDimension);
+                knob->storeLink(slaveDim, it->masterNodeNameFull, it->masterNodeName, it->masterTrackName, it->masterKnobName, it->masterDimension);
             }
-            ++i;
         }
     }
 }
@@ -293,7 +281,7 @@ equalsStringCaseSensitive(const std::string& str1, const std::string& str2)
 static bool
 equalsStringCaseInsensitive(const std::string& str1, const std::string& str2)
 {
-    return boost::iequals(str1, str2);
+    return StrUtils::iequals(str1, str2);
 }
 
 typedef bool (*stringFuncPtr)(const std::string&,const std::string&);

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -86,7 +86,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
 
     InspectorNodePtr v;
     if (lastUsedViewer) {
-        v = boost::dynamic_pointer_cast<InspectorNode>( lastUsedViewer->
+        v = std::dynamic_pointer_cast<InspectorNode>( lastUsedViewer->
                                                         getInternalNode()->getNode() );
     } else {
         CreateNodeArgs args( PLUGINID_NATRON_VIEWER,
@@ -96,7 +96,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
         if (!viewerNode) {
             return;
         }
-        v = boost::dynamic_pointer_cast<InspectorNode>(viewerNode);
+        v = std::dynamic_pointer_cast<InspectorNode>(viewerNode);
     }
 
     if (!v) {
@@ -110,7 +110,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
 
     ///get a ptr to the NodeGui
     NodeGuiIPtr gui_i = v->getNodeGui();
-    NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+    NodeGuiPtr gui = std::dynamic_pointer_cast<NodeGui>(gui_i);
     assert(gui);
     ///if there's no selected node or the viewer is selected, then try refreshing that input nb if it is connected.
     bool viewerAlreadySelected = std::find(_imp->_selection.begin(), _imp->_selection.end(), gui) != _imp->_selection.end();
@@ -139,7 +139,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
 } // connectCurrentViewerToSelection
 
 void
-NodeGraph::enterEvent(QEvent* e)
+NodeGraph::enterEvent(QtCompat::QEnterEvent* e)
 {
     enterEventBase();
     QGraphicsView::enterEvent(e);
@@ -179,7 +179,6 @@ NodeGraph::wheelEventInternal(bool ctrlDown,
         _imp->_accumDelta += delta;
         if (std::abs(_imp->_accumDelta) > 60) {
             scaleFactor = pow( NATRON_WHEEL_ZOOM_PER_DELTA, _imp->_accumDelta );
-            // setSceneRect(NATRON_SCENE_MIN,NATRON_SCENE_MIN,NATRON_SCENE_MAX,NATRON_SCENE_MAX);
             scale(scaleFactor, scaleFactor);
             _imp->_accumDelta = 0;
         }
@@ -190,11 +189,11 @@ NodeGraph::wheelEventInternal(bool ctrlDown,
 void
 NodeGraph::wheelEvent(QWheelEvent* e)
 {
-    if (e->orientation() != Qt::Vertical) {
+    if (e->angleDelta().x() != 0) {
         return;
     }
-    wheelEventInternal( modCASIsControl(e), e->delta() );
-    _imp->_lastMousePos = e->pos();
+    wheelEventInternal( modCASIsControl(e), e->angleDelta().y() );
+    _imp->_lastMousePos = QPoint(e->position().x(), e->position().y());
     update();
 }
 

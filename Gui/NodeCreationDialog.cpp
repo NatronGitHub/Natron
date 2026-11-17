@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,21 +30,21 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
-#include <QtCore/QStringList>
+#include <QStringList>
 #include <QKeyEvent>
 #include <QAbstractItemView>
-#include <QtCore/QTimer>
+#include <QTimer>
 #include <QApplication>
 #include <QListView>
 #include <QSettings>
-#include <QDesktopWidget>
-#include <QtCore/QRegExp>
+#include <QRegularExpression>
 #include <QApplication>
 #include <QStringListModel>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/AppManager.h"
+#include "Global/QtCompat.h"
 #include "Engine/Plugin.h"
 #include "Gui/LineEdit.h"
 #include "Gui/GuiApplicationManager.h"
@@ -145,19 +145,29 @@ CompleterLineEdit::filterText(const QString & txt)
             sl.push_front(it->second.second);
         }
     } else {
-        QString pattern;
+        // Match the typed characters in order, with anything in between, as the
+        // QRegExp::WildcardUnix pattern "*g*r*d*" did: the typed characters are
+        // themselves wildcards ('*', '?', "[...]").
+        QString wildcard;
         for (int i = 0; i < txt.size(); ++i) {
-            pattern.push_back( QLatin1Char('*') );
-            pattern.push_back(txt[i]);
+            if ( !txt[i].isLowSurrogate() ) { // keep surrogate pairs (e.g. emoji) together
+                wildcard.push_back( QLatin1Char('*') );
+            }
+            wildcard.push_back(txt[i]);
         }
-        pattern.push_back( QLatin1Char('*') );
-        QRegExp expr(pattern, Qt::CaseInsensitive, QRegExp::WildcardUnix);
+        wildcard.push_back( QLatin1Char('*') );
+        // anchored: matching the whole label is the same as the old contains()
+        const QString pattern = QtCompat::wildcardToRegularExpression(wildcard);
+        QRegularExpression expr(pattern, QRegularExpression::CaseInsensitiveOption);
 
 #ifdef NODE_TAB_DIALOG_USE_MATCHED_LENGTH
         std::map<int, QStringList> matchOrdered;
+        // exactMatch() used to match the whole name.
+        const QRegularExpression& exprWhole = expr; // already anchored
         for (PluginsNamesMap::iterator it = _imp->names.begin(); it != _imp->names.end(); ++it) {
-            if ( expr.exactMatch(it->second.first) ) {
-                QStringList& matchedForLength =  matchOrdered[expr.matchedLength()];
+            QRegularExpressionMatch match = exprWhole.match(it->second.first);
+            if ( match.hasMatch() ) {
+                QStringList& matchedForLength =  matchOrdered[match.capturedLength()];
                 matchedForLength.push_front(it->second.second);
             }
         }

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -19,8 +19,8 @@
 
 #include "Gui/Gui.h"
 
-#include <QtCore/QtGlobal> // for Q_OS_*
-#ifdef Q_OS_MAC
+#include <QtGlobal> // for Q_OS_*
+#ifdef Q_OS_DARWIN
 
 #include <AppKit/NSView.h>
 #include <AppKit/NSWindow.h>
@@ -87,16 +87,6 @@ static NSString* const NSBackingPropertyOldScaleFactorKey =
 #endif  // MAC_OS_X_VERSION_10_7
 
 NATRON_NAMESPACE_ENTER
-
-bool
-QtMac::isHighDPIInternal(const QWidget* w) {
-    NSView* view = reinterpret_cast<NSView*>(w->winId());
-    CGFloat scaleFactor = 1.0;
-    if ([[view window] respondsToSelector: @selector(backingScaleFactor)])
-        scaleFactor = [[view window] backingScaleFactor];
-    
-    return (scaleFactor > 1.0);
-}
 
 #if OBJC_OLD_DISPATCH_PROTOTYPES != 1
 void

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,19 +31,16 @@
 #include <vector> // KnobGuiInt
 #include <list>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QObject>
+#include <QObject>
 #include <QStyledItemDelegate>
 #include <QTextEdit>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
+#include "Global/QtCompat.h"
 
 #include "Engine/Singleton.h"
 #include "Engine/Knob.h"
@@ -113,7 +110,7 @@ private:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE;
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
@@ -144,7 +141,7 @@ private:
 
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;

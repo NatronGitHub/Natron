@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,10 +26,6 @@
 #include "ManageUserParamsDialog.h"
 
 #include <stdexcept>
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#endif
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -618,7 +614,7 @@ ManageUserParamsDialog::onUpClicked()
             QItemSelectionModel* model = _imp->tree->selectionModel();
             model->select(_imp->tree->indexFromItemPublic(item), QItemSelectionModel::ClearAndSelect);
 
-            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
+            KnobPagePtr isPage = std::dynamic_pointer_cast<KnobPage>(knob);
             if (isPage) {
                 _imp->panel->setPageActiveIndex(isPage);
             }
@@ -688,7 +684,7 @@ ManageUserParamsDialog::onDownClicked()
             QItemSelectionModel* model = _imp->tree->selectionModel();
             model->select(_imp->tree->indexFromItemPublic(item), QItemSelectionModel::ClearAndSelect);
 
-            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
+            KnobPagePtr isPage = std::dynamic_pointer_cast<KnobPage>(knob);
             if (isPage) {
                 _imp->panel->setPageActiveIndex(isPage);
             }

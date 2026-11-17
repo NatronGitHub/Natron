@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,12 +29,13 @@
 #include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
-#include <QtCore/QVariant>
-#include <QtCore/QMetaType>
-#include <QtCore/QDataStream>
-#include <QtCore/QByteArray>
-#include <QtCore/QString>
-#include <QtCore/QStringList>
+#include <QVariant>
+#include <QMetaType>
+#include <QDebug>
+#include <QDataStream>
+#include <QByteArray>
+#include <QString>
+#include <QStringList>
 CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
@@ -213,6 +214,21 @@ Variant::setValue(const char* const & str)
 {
     QVariant::setValue( QString::fromUtf8(str) );
 }
+
+#ifndef QT_NO_DEBUG_STREAM
+// Qt6 turned QVariant's debug operator into a hidden friend template
+// constrained to std::is_same_v<T, QVariant>, so T deduces to the derived
+// class here, the constraint fails and no conversion to the base is ever
+// considered. Qt5 declared a plain operator<<(QDebug, const QVariant &),
+// which a derived class bound to. Only a debug build notices: everywhere
+// else QT_NO_DEBUG_OUTPUT makes qDebug() a QNoDebug that swallows any type.
+inline QDebug
+operator<<(QDebug dbg,
+           const Variant & v)
+{
+    return dbg << static_cast<const QVariant &>(v);
+}
+#endif // QT_NO_DEBUG_STREAM
 
 NATRON_NAMESPACE_EXIT
 

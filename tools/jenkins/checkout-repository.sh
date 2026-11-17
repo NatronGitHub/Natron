@@ -37,22 +37,38 @@ function checkoutRepository() {
         mkdir -p "$TMP_PATH"
     fi
     cd "$TMP_PATH"
+    if [ -z "$REPO_COMMIT" ]; then
+        branch="$REPO_BRANCH"
+    else
+        branch="$REPO_COMMIT"
+    fi
+    echo branch=$branch BRANCH=$REPO_BRANCH COMMIT=$REPO_COMMIT
+    deep=false
     if [ ! -d "$REPO_LOCAL_DIRNAME" ]; then
-        $TIMEOUT 1800 $GIT clone "$REPO_URL" "$REPO_LOCAL_DIRNAME"
+        # slow version:
+        if "$deep" && [ -z "$REPO_COMMIT" ]; then
+            $TIMEOUT 1800 $GIT clone "$REPO_URL" -b "${REPO_BRANCH}" "$REPO_LOCAL_DIRNAME"
+        else
+            # fast version (depth=1):
+            $TIMEOUT 1800 $GIT clone --depth 1 -b "${branch#tags/}" "$REPO_URL" "$REPO_LOCAL_DIRNAME"
+        fi
     fi
 
     cd "$REPO_LOCAL_DIRNAME"
 
     if [ -z "$REPO_COMMIT" ]; then
-        $GIT checkout "$REPO_BRANCH"
         REPO_COMMIT=$(git rev-parse HEAD)
+        echo "done, got commit $REPO_COMMIT"
     else
         $GIT checkout "$REPO_COMMIT"
     fi
 
 
     # the snapshot are always built with latest version
-    $TIMEOUT 1800 $GIT submodule update -i --recursive --remote
+    # slow version:
+    #$TIMEOUT 1800 $GIT submodule update --init --recursive --remote
+    # fast version (depth=1):
+    $TIMEOUT 1800 $GIT submodule update --depth 1 --init --recursive --remote
 
     # copy tarball of sources pruned of git files
     if [ "${TAR_SOURCES:-}" = "1" ]; then

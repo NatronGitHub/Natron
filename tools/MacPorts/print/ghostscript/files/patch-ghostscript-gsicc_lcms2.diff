@@ -1,0 +1,15 @@
+Undefined symbols for architecture x86_64: 
+  "_gscms_transformm_color_const", referenced from:
+     _gscms_transform_color in gsicc_lcms2.o
+http://git.ghostscript.com/?p=ghostpdl.git;a=commit;f=base/gsicc_lcms2.c;h=830afae5454dea3bff903869d82022306890a96c
+--- base/gsicc_lcms2.c.orig	2022-01-21 15:53:42.000000000 -0500
++++ base/gsicc_lcms2.c	2022-01-21 15:54:00.000000000 -0500
+@@ -462,7 +462,7 @@
+ gscms_transform_color(gx_device *dev, gsicc_link_t *icclink, void *inputcolor,
+                              void *outputcolor, int num_bytes)
+ {
+-    return gscms_transformm_color_const(dev, icclink, inputcolor, outputcolor, num_bytes);
++    return gscms_transform_color_const(dev, icclink, inputcolor, outputcolor, num_bytes);
+ }
+ 
+ int

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,23 +28,16 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 
-#include <QtCore/QtGlobal>
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-#include <QtWidgets/QWidget>
-#else
-#include <QtGui/QWidget>
-#endif
+#include <QtGlobal>
+#include <QWidget>
 
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+
+#include "Global/QtCompat.h"
 
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
@@ -131,12 +124,12 @@ public:
 
 private:
 
-    virtual void enterEvent(QEvent *e) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent *e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent *e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual QUndoStack* getUndoStack() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    boost::scoped_ptr<DopeSheetEditorPrivate> _imp;
+    std::unique_ptr<DopeSheetEditorPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

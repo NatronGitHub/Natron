@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,16 +29,16 @@
 
 #include <QApplication> // qApp
 #include <QColorDialog>
-#include <QtCore/QSize>
-#include <QtCore/QTimer>
+#include <QSize>
+#include <QTimer>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QHBoxLayout>
 #include <QVBoxLayout>
-#include <QtCore/QFile>
-#include <QtCore/QTextStream>
+#include <QFile>
+#include <QTextStream>
 #include <QDesktopServices>
 #include <QTextDocument>
 
@@ -1079,7 +1079,7 @@ DockablePanel::setClosedInternal(bool c)
                 for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
                     NodeGuiIPtr gui_i = (*it)->getNodeGui();
                     assert(gui_i);
-                    NodeGuiPtr childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+                    NodeGuiPtr childGui = std::dynamic_pointer_cast<NodeGui>(gui_i);
                     assert(childGui);
                     gui->addNodeGuiToCurveEditor(childGui);
                     gui->addNodeGuiToDopeSheetEditor(childGui);
@@ -1093,7 +1093,7 @@ DockablePanel::setClosedInternal(bool c)
                 for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
                     NodeGuiIPtr gui_i = (*it)->getNodeGui();
                     assert(gui_i);
-                    NodeGuiPtr childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+                    NodeGuiPtr childGui = std::dynamic_pointer_cast<NodeGui>(gui_i);
                     assert(childGui);
                     gui->removeNodeGuiFromCurveEditor(childGui);
                     gui->removeNodeGuiFromDopeSheetEditor(childGui);
@@ -1159,6 +1159,33 @@ DockablePanel::closePanel()
 void
 DockablePanel::minimizeOrMaximize(bool toggled)
 {
+    Gui* gui = getGui();
+    bool redraw = false;
+    NodeGuiPtr nodeGui;
+    if (gui) {
+        gui->buildTabFocusOrderPropertiesBin();
+
+        NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+        if (nodePanel) {
+            nodeGui = nodePanel->getNode();
+        }
+
+        if (toggled && nodeGui) {
+            NodePtr node = nodeGui->getNode();
+            if (node) {
+                NodesList overlayNodes;
+
+                gui->getNodesEntitledForOverlays(overlayNodes);
+                NodesList::iterator found = std::find(overlayNodes.begin(), overlayNodes.end(), node);
+                if ( found != overlayNodes.end() ) {
+                    redraw = true;
+                    // qDebug() << "redraw (minimized)";
+                    // assert(toggled);
+                }
+            }
+        }
+    }
+
     _imp->_minimized = toggled;
     if (_imp->_minimized) {
         Q_EMIT minimized();
@@ -1176,9 +1203,28 @@ DockablePanel::minimizeOrMaximize(bool toggled)
     for (U32 i = 0; i < _panels.size(); ++i) {
         _imp->_container->addWidget(_panels[i]);
     }
-    Gui* gui = getGui();
+
     if (gui) {
+        if (!toggled && nodeGui) {
+            NodePtr node = nodeGui->getNode();
+            if (node) {
+                NodesList overlayNodes;
+
+                gui->getNodesEntitledForOverlays(overlayNodes);
+                NodesList::iterator found = std::find(overlayNodes.begin(), overlayNodes.end(), node);
+                if ( found != overlayNodes.end() ) {
+                    redraw = true;
+                    // qDebug() << "redraw (maximized)";
+                    // assert(!toggled);
+                }
+            }
+        }
+
         gui->buildTabFocusOrderPropertiesBin();
+
+        if (redraw) {
+            gui->getApp()->redrawAllViewers();
+        }
     }
     update();
 }
@@ -1825,7 +1871,7 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
             (*it)->hide();
         }
     } else {
-        for (std::map<KnobGuiWPtr, bool>::iterator it = _imp->_knobsVisibilityBeforeHideModif.begin();
+        for (DockablePanelPrivate::KnobGuisMap::iterator it = _imp->_knobsVisibilityBeforeHideModif.begin();
              it != _imp->_knobsVisibilityBeforeHideModif.end(); ++it) {
             KnobGuiPtr knobGui = it->first.lock();
             if (!it->second && knobGui) {

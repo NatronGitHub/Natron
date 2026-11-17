@@ -1,5 +1,5 @@
---- oiio-Release-2.0.8/src/libtexture/imagecache.cpp.orig	2019-07-09 09:14:23.000000000 +0200
-+++ oiio-Release-2.0.8/src/libtexture/imagecache.cpp	2019-07-09 09:14:54.000000000 +0200
+--- src/libtexture/imagecache.cpp.orig	2019-07-09 09:14:23.000000000 +0200
++++ src/libtexture/imagecache.cpp	2019-07-09 09:14:54.000000000 +0200
 @@ -350,7 +350,7 @@
  std::shared_ptr<ImageInput>
  ImageCacheFile::get_imageinput(ImageCachePerThreadInfo* thread_info)

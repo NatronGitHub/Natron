@@ -1,0 +1,26 @@
+--- src/core/CMakeLists.txt.orig	2024-04-04 00:00:07
++++ src/core/CMakeLists.txt	2024-04-04 00:00:20
+@@ -23,8 +23,6 @@
+     if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+         set(EXTERNAL_COMPILE_FLAGS "${EXTERNAL_COMPILE_FLAGS} /WX")
+     endif()
+-else()
+-    set(EXTERNAL_COMPILE_FLAGS "${EXTERNAL_COMPILE_FLAGS} -Werror")
+ endif()
+ 
+ # SHARED
+--- src/pyglue/CMakeLists.txt.orig	2024-04-04 00:01:06
++++ src/pyglue/CMakeLists.txt	2024-04-04 00:01:20
+@@ -20,12 +20,6 @@
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4275")
+ endif()
+ 
+-# Process all warnings as errors
+-# Unfortunately Windows still has a warning
+-if(UNIX)
+-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+-endif()
+-
+ find_package(PythonLibs)
+ if(NOT PYTHONLIBS_FOUND)
+     message(FATAL "Python libraries were not found, exiting.")

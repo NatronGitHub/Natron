@@ -1,18 +1,18 @@
 # Maintainer: ole.andre.rodlie@gmail.com
 
 _realname=seexpr
-pkgbase=mingw-w64-${_realname}-git
-pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-git"
+pkgbase=mingw-w64-natron_${_realname}-git
+pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}-git"
 gitcommit=a5f02bb #v1-2.11
 pkgver=86.a5f02bb
-pkgrel=2
+pkgrel=4
 pkgdesc="Arithmetic expression language"
 arch=('any')
 url="https://github.com/wdas/SeExpr"
 license=('Apache2')
 provides=("${MINGW_PACKAGE_PREFIX}-${_realname}")
 conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}")
-makedepends=("${MINGW_PACKAGE_PREFIX}-cmake" "git")
+makedepends=("${MINGW_PACKAGE_PREFIX}-cmake" "${MINGW_PACKAGE_PREFIX}-cc" "git")
 options=('strip')
 source=(
         "${_realname}"::"git+https://github.com/wdas/SeExpr#commit=${gitcommit}"
@@ -21,6 +21,7 @@ source=(
         0003-seexpr-2.11-fix-dll-installation.patch
         0004-seexpr-2.11-c++98.patch
         0005-seexpr-2.11-noeditordemos.patch
+        0006-seexpr-2.11-cmake_version.patch
        )
 sha256sums=(
             'SKIP'
@@ -29,6 +30,7 @@ sha256sums=(
             'caa6576737ee72bb3961d299b7479a4a6629a90e5dde0e220ba57cef62624242'
             '534c27b14e8bfa4e840ed2e96ed37d784cad4b8640039a362a5f85aef1a1e339'
             '2c04c23ad2777c0c7dcb11696863a269984a032edd7ab10117dd7c30ef09d0ca'
+            'd1953182418af85977fa906ee88986b2843c6cb0fbdba1f799d642d476658ba0'
            )
 
 pkgver() {
@@ -43,6 +45,7 @@ prepare() {
   patch -p1 -i ${srcdir}/0003-seexpr-2.11-fix-dll-installation.patch
   patch -p1 -i ${srcdir}/0004-seexpr-2.11-c++98.patch
   patch -p1 -i ${srcdir}/0005-seexpr-2.11-noeditordemos.patch
+  patch -p1 -i ${srcdir}/0006-seexpr-2.11-cmake_version.patch
 }
 
 build() {

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,26 +29,26 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <boost/make_shared.hpp>
-
 #ifdef __NATRON_WIN32__
 #include <windows.h>
 #endif
 
 #include "Global/Macros.h"
+#include "Global/QtCompat.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QtGlobal> // for Q_OS_*
-#include <QtCore/QMutex>
-#include <QtCore/QWaitCondition>
-#include <QtCore/QFileSystemWatcher>
-#include <QtCore/QFileInfo>
-#include <QtCore/QDateTime>
-#include <QtCore/QCoreApplication>
-#include <QtCore/QDebug>
-#include <QtCore/QUrl>
-#include <QtCore/QMimeData>
+#include <QtGlobal> // for Q_OS_*
+#include <QMutex>
+#include <QWaitCondition>
+#include <QFileSystemWatcher>
+#include <QFileInfo>
+#include <QDateTime>
+#include <QCoreApplication>
+#include <QDebug>
+#include <QUrl>
+#include <QMimeData>
+#include <QRegularExpression>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -58,44 +58,122 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/FloatingPointExceptions.h"
 #endif
 
+#include "AppManager.h" // appPTR & StrUtils
+
+
 NATRON_NAMESPACE_ENTER
 
-static QStringList
-getSplitPath(const QString& path)
+static int
+getDriveNameSize(const QString& name)
+{
+#ifdef __NATRON_WIN32__
+    if (name.size() < 3) {
+        return 0;
+    }
+
+    if (name.at(0).isLetter() && name.at(1) == QLatin1Char(':') && ( name.at(2) == QLatin1Char('/') || name.at(2) == QLatin1Char('\\') ) ) {
+        // Drive path. (e.g. C:/ or C:\)
+        return 3;
+    }
+
+    if (((name.at(0) == QLatin1Char('/') && name.at(1) == QLatin1Char('/')) ||
+         (name.at(0) == QLatin1Char('\\') && name.at(1) == QLatin1Char('\\'))) && name.at(2).isLetterOrNumber()) {
+        // Possible Network share. (e.g. //SomeHost/ShareName)
+
+        // Search for end of hostname.
+        int idx = name.indexOf(QLatin1Char('/'), 2);
+        if (idx == -1) {
+            idx = name.indexOf(QLatin1Char('\\'), 2);
+        }
+
+        if (idx == -1) {
+            // Hostname only without a trailing slash. (e.g. //SomeHost).
+            // Do not consider this valid, just like "C:" is not considered a valid drive.
+            return 0;
+        }
+
+        ++idx; // Move beyond slash.
+        return idx;
+    }
+#else
+    if (name.startsWith(QDir::rootPath())) {
+        return QDir::rootPath().size();
+    }
+#endif
+
+    return 0;
+}
+
+#ifdef __NATRON_WIN32__
+// Ensures that drive names and network share hostnames are always upper case.
+static QString
+ensureCanonicalDriveAndShareNames(const QString& path)
+{
+    if (path.isEmpty() || !FileSystemModel::startsWithDriveName(path)) {
+        return path;
+    }
+
+    if (path.size() < 3) {
+        return path;
+    }
+
+    // Assume that any path that reaches this point has already had backslashes converted
+    // to forward slashes.
+    assert(path.indexOf(QLatin1Char('\\')) == -1);
+
+    QString ret = path;
+    if (path[0] == QLatin1Char('/') && path[1] == QLatin1Char('/') && path[2].isLetterOrNumber()) {
+        // Network share name.
+
+        int idx = path.indexOf(QLatin1Char('/'), 2);
+        ret.truncate(2); // keep starting slashes.
+        if (idx == -1) {
+            // No trailing slash. Hostname only case.
+            // Change the hostname to upper case and add the trailing slash.
+            ret.append(path.mid(2).toUpper());
+            ret.append(QLatin1Char('/')); // Add a trailing slash.
+        } else {
+            // Hostname with slash and possible path components.
+            const QString hostname = path.mid(2, idx - 2);
+
+            // Change hostname to upper case and append any path components that may remain.
+            ret.append(hostname.toUpper());
+            ret.append(path.mid(idx));
+        }
+    } else if (path[0].isLetter() && path[1] == QLatin1Char(':') && path[2] == QLatin1Char('/')) {
+        // Drive name.
+        // Force drive letter to be upper case.
+        ret[0] = ret[0].toUpper();
+    }
+
+    return ret;
+}
+#endif // __NATRON_WIN32__
+
+QStringList
+FileSystemModel::getSplitPath(const QString& path)
 {
     if ( path.isEmpty() ) {
         return QStringList();
     }
     QString pathCpy = path;
-    bool isdriveOrRoot;
-#ifdef __NATRON_WIN32__
-    QString startPath = pathCpy.mid(0, 3);
-    isdriveOrRoot = FileSystemModel::isDriveName(startPath);
-    if (isdriveOrRoot) {
-        pathCpy = pathCpy.remove(0, 3);
-    }
-    if ( (pathCpy.size() > 0) && ( pathCpy[pathCpy.size() - 1] == QChar::fromLatin1('/') ) ) {
-        pathCpy = pathCpy.mid(0, pathCpy.size() - 1);
-    }
-    QStringList splitPath = pathCpy.split( QChar::fromLatin1('/') );
-    if (isdriveOrRoot) {
-        splitPath.prepend( startPath.mid(0, 3) );
+
+    int driveNameSize = getDriveNameSize(path);
+    if (driveNameSize > 0) {
+        // Remove the drive name from pathCpy.
+        pathCpy = pathCpy.remove(0, driveNameSize);
     }
 
-#else
-    isdriveOrRoot = pathCpy.startsWith( QChar::fromLatin1('/') );
-    if (isdriveOrRoot) {
-        pathCpy = pathCpy.remove(0, 1);
-    }
+    // Remove trailing slash.
     if ( (pathCpy.size() > 0) && ( pathCpy[pathCpy.size() - 1] == QChar::fromLatin1('/') ) ) {
-        pathCpy = pathCpy.mid(0, pathCpy.size() - 1);
-    }
-    QStringList splitPath = pathCpy.split( QChar::fromLatin1('/') );
-    if (isdriveOrRoot) {
-        splitPath.prepend( QChar::fromLatin1('/') );
+         pathCpy = pathCpy.mid(0, pathCpy.size() - 1);
     }
 
-#endif
+    QStringList splitPath = pathCpy.split( QChar::fromLatin1('/') );
+    if (driveNameSize > 0) {
+        // Put the drive name at the beginning of the list.
+        splitPath.prepend(path.mid(0, driveNameSize));
+    }
 
     return splitPath;
 }
@@ -106,10 +184,10 @@ struct FileSystemModelPrivate
     SortableViewI* view;
 
     ///A background thread that fetches info about the file-system and reports when done
-    boost::scoped_ptr<FileGathererThread> gatherer;
+    std::unique_ptr<FileGathererThread> gatherer;
 
     ///The watcher watches the current root path
-    boost::scoped_ptr<QFileSystemWatcher> watcher;
+    std::unique_ptr<QFileSystemWatcher> watcher;
 
     ///The root of the file-system: "MyComputer" for Windows or '/' for Unix
     FileSystemItemPtr rootItem;
@@ -117,7 +195,7 @@ struct FileSystemModelPrivate
     QStringList headers;
     QDir::Filters filters;
     QString encodedRegexps;
-    std::list<QRegExp> regexps;
+    std::list<QRegularExpression> regexps;
     mutable QMutex filtersMutex;
     mutable QMutex sequenceModeEnabledMutex;
     bool sequenceModeEnabled;
@@ -166,9 +244,7 @@ generateChildAbsoluteName(FileSystemItem* parent,
 {
     QString childName = parent->absoluteFilePath();
 
-    if ( !childName.endsWith( QChar::fromLatin1('/') ) ) {
-        childName.append( QChar::fromLatin1('/') );
-    }
+    StrUtils::ensureLastPathSeparator(childName);
     childName.append(name);
 
     return childName;
@@ -276,7 +352,7 @@ FileSystemItem::create( const FileSystemModelPtr& model,
                                          quint64 size,
                                          const FileSystemItemPtr& parent)
 {
-    return boost::make_shared<FileSystemItem::MakeSharedEnabler>(model, isDir, filename, userFriendlySequenceName, sequence, dateModified, size, parent);
+    return std::make_shared<FileSystemItem::MakeSharedEnabler>(model, isDir, filename, userFriendlySequenceName, sequence, dateModified, size, parent);
 }
 FileSystemItem::~FileSystemItem()
 {
@@ -436,7 +512,7 @@ FileSystemItem::addChild(const SequenceParsing::SequenceFromFilesPtr& sequence,
 
 
     ///Create the child
-    FileSystemItemPtr child = boost::make_shared<FileSystemItem::MakeSharedEnabler>( model,
+    FileSystemItemPtr child = std::make_shared<FileSystemItem::MakeSharedEnabler>( model,
                                                                                                     isDir,
                                                                                                     filename,
                                                                                                     userFriendlyFilename,
@@ -614,25 +690,57 @@ FileSystemModel::getSharedItemPtr(FileSystemItem* item) const
 bool
 FileSystemModel::isDriveName(const QString& name)
 {
-#ifdef __NATRON_WIN32__
-
-    return name.size() == 3 && name.at(0).isLetter() && name.at(1) == QLatin1Char(':') && ( name.at(2) == QLatin1Char('/') || name.at(2) == QLatin1Char('\\') );
-#else
-
-    return name == QDir::rootPath();
-#endif
+    return !name.isEmpty() && getDriveNameSize(name) == name.size();
 }
 
 bool
 FileSystemModel::startsWithDriveName(const QString& name)
 {
+    return getDriveNameSize(name) > 0;
+}
+
+QString FileSystemModel::cleanPath(const QString& path) {
+    if (path.isEmpty()) {
+        return path;
+    }
+
+    QString newPath = path;
+
 #ifdef __NATRON_WIN32__
-
-    return name.size() >= 3 && name.at(0).isLetter() && name.at(1) == QLatin1Char(':') && ( name.at(2) == QLatin1Char('/') || name.at(2) == QLatin1Char('\\') );
-#else
-
-    return name.startsWith( QDir::rootPath() );
+    // Replace backslashes with slashes.
+    newPath.replace( QLatin1Char('\\'), QLatin1Char('/') );
 #endif
+
+    bool startedWithDriveName = startsWithDriveName(newPath);
+
+    // Resolve and remove '.' and "..".
+    newPath = QDir::cleanPath(newPath);
+
+    if (newPath.isEmpty()) {
+        return newPath;
+    }
+
+    // QDir::cleanPath() strips the trailing slash for network shares
+    // (e.g. //SomeHost/) , but not for drives (e.g. C:/). The trailing
+    // slash is required for network shares to behave the same way as
+    // drives elsewhere in the code so we need to put back the trailing
+    // slash.
+    if (startedWithDriveName && !startsWithDriveName(newPath)) {
+        // The path no longer starts with a drive name after cleaning.
+        // See if appending a trailing slash fixes it.
+        const QString newPathWithTrailingSlash = newPath + QLatin1Char('/');
+        if (startsWithDriveName(newPathWithTrailingSlash)) {
+            newPath = newPathWithTrailingSlash;
+        }
+    }
+
+#ifdef __NATRON_WIN32__
+    // Make sure drive letters and share hostnames are upper case so they get properly
+    // collapsed together in the UI and other path matching.
+    newPath = ensureCanonicalDriveAndShareNames(newPath);
+#endif
+
+    return newPath;
 }
 
 QVariant
@@ -663,7 +771,7 @@ Qt::ItemFlags
 FileSystemModel::flags(const QModelIndex &index) const
 {
     if ( !index.isValid() ) {
-        return 0;
+        return Qt::ItemFlags();
     }
 
     // Our model is read only.
@@ -736,7 +844,7 @@ FileSystemModel::data(const QModelIndex &index,
         data = item->fileExtension();
         break;
     case DateModified:
-        data = item->getLastModified().toString(Qt::LocalDate);
+        data = QLocale().toString(item->getLastModified(), QLocale::ShortFormat);
         break;
     default:
         break;
@@ -893,24 +1001,6 @@ FileSystemModel::rootPath() const
     return _imp->currentRootPath;
 }
 
-QVariant
-FileSystemModel::myComputer(int /*role*/) const
-{
-//    switch (role) {
-//        case Qt::DisplayRole:
-#ifdef Q_OS_WIN
-
-    return tr("Computer");
-#else
-
-    return tr("Computer");
-#endif
-//        case Qt::DecorationRole:
-//            return d->fileInfoGatherer.iconProvider()->icon(QFileIconProvider::Computer);
-//    }
-//    return QVariant();
-}
-
 void
 FileSystemModel::setFilter(const QDir::Filters& filters)
 {
@@ -953,7 +1043,8 @@ FileSystemModel::setRegexpFilters(const QString& filters)
                 ++i;
             }
             if ( regExp != QString( QLatin1Char('*') ) ) {
-                QRegExp rx(regExp, Qt::CaseInsensitive, QRegExp::Wildcard);
+                QRegularExpression rx(QtCompat::wildcardToRegularExpression(regExp),
+                                      QRegularExpression::CaseInsensitiveOption);
                 if ( rx.isValid() ) {
                     _imp->regexps.push_back(rx);
                 }
@@ -994,8 +1085,8 @@ FileSystemModel::isAcceptedByRegexps(const QString & path) const
         return true;
     }
 
-    for (std::list<QRegExp>::const_iterator it = _imp->regexps.begin(); it != _imp->regexps.end(); ++it) {
-        if ( it->exactMatch(path) ) {
+    for (std::list<QRegularExpression>::const_iterator it = _imp->regexps.begin(); it != _imp->regexps.end(); ++it) {
+        if ( it->match(path).hasMatch() ) {
             return true;
         }
     }
@@ -1190,7 +1281,7 @@ FileSystemModelPrivate::getItemFromPath(const QString &path) const
     if ( path.isEmpty() || !rootItem ) {
         return rootItem;
     }
-    QStringList splitPath = getSplitPath(path);
+    QStringList splitPath = FileSystemModel::getSplitPath(path);
 
     return rootItem->matchPath( splitPath, 0 );
 }
@@ -1202,11 +1293,8 @@ FileSystemModel::setRootPath(const QString& path)
 
 
     ///Check if the path exists
-    if ( !path.isEmpty() ) {
-        QDir dir(path);
-        if ( !dir.exists() ) {
-            return false;
-        }
+    if ( !path.isEmpty() && !QDir(path).exists()) {
+        return false;
     }
 
     _imp->currentRootPath = path;
@@ -1307,8 +1395,7 @@ FileSystemModel::onWatchedDirectoryChanged(const QString& directory)
         }
     }
 
-    QDir dir(_imp->currentRootPath);
-    if ( !dir.exists() ) {
+    if ( !QDir(_imp->currentRootPath).exists() ) {
         ///The current directory has changed its name or was deleted.. just fallback the filesystem to the root-path
         setRootPath( QDir::rootPath() );
     } else {
@@ -1463,7 +1550,7 @@ FileGathererThread::abortGathering()
     QMutexLocker k(&_imp->abortRequestsMutex);
     ++_imp->abortRequests;
     while (_imp->abortRequests > 0) {
-        _imp->abortRequestsCond.wait(&_imp->abortRequestsMutex);
+        _imp->abortRequestsCond.wait(k.mutex());
     }
 }
 
@@ -1487,7 +1574,7 @@ FileGathererThread::quitGatherer()
     {
         QMutexLocker k(&_imp->mustQuitMutex);
         while (_imp->mustQuit) {
-            _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
+            _imp->mustQuitCond.wait(k.mutex());
         }
     }
 }
@@ -1544,7 +1631,7 @@ FileGathererThread::run()
         {
             QMutexLocker l(&_imp->startCountMutex);
             while (_imp->startCount <= 0) {
-                _imp->startCountCond.wait(&_imp->startCountMutex);
+                _imp->startCountCond.wait(l.mutex());
             }
             _imp->startCount = 0;
         }
@@ -1682,7 +1769,7 @@ FileGathererThread::gatheringKernel(const FileSystemItemPtr& item)
             }
 
             if (!foundMatchingSequence) {
-                SequenceParsing::SequenceFromFilesPtr newSequence = boost::make_shared<SequenceParsing::SequenceFromFiles>(fileContent, true);
+                SequenceParsing::SequenceFromFilesPtr newSequence = std::make_shared<SequenceParsing::SequenceFromFiles>(fileContent, true);
                 sequences.push_back( std::make_pair(newSequence, all[i]) );
             }
         }

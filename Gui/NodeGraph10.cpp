@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,7 +32,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QMouseEvent>
-#include <QtCore/QString>
+#include <QString>
 #include <QAction>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -246,7 +246,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                 isGroup->getNode()->setPyPlugEdited(true);
                 NodesList nodes = isGroup->getNodes();
                 for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-                    NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( (*it)->getNodeGui() );
+                    NodeGuiPtr nodeUi = std::dynamic_pointer_cast<NodeGui>( (*it)->getNodeGui() );
                     if (nodeUi) {
                         NodeSettingsPanel* panel = nodeUi->getSettingPanel();
                         if (panel) {
@@ -273,7 +273,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 
     if ( ( (nearbyItemCode == eNearbyItemNode) || (nearbyItemCode == eNearbyItemBackdropFrame) ) && groupEdited ) {
         assert(nearbyNode);
-#pragma message WARN("TODO: if control is held, select all the nodes above, see https://github.com/MrKepzie/Natron/issues/497")
+//#pragma message WARN("TODO: if control is held, select all the nodes above, see https://github.com/NatronGitHub/Natron/issues/97")
         NodeGuiPtr selectedNode = nearbyNode->shared_from_this();
 
         didSomething = true;
@@ -321,8 +321,9 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         ///disconnect previous connection
         NodePtr outputNode = nearbyEdge->getDest()->getNode();
         assert(outputNode);
-        int inputNb = outputNode->inputIndex(inputNode);
-        if (inputNb == -1) {
+        // Use the edge's own input: inputNode may be connected to several inputs of outputNode.
+        int inputNb = nearbyEdge->getInputNumber();
+        if ( (inputNb == -1) || (outputNode->getRealInput(inputNb) != inputNode) ) {
             return;
         }
 
@@ -334,7 +335,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         NodePtr dotNode = getGui()->getApp()->createNode(args);
         assert(dotNode);
         NodeGuiIPtr dotNodeGui_i = dotNode->getNodeGui();
-        NodeGuiPtr dotNodeGui = boost::dynamic_pointer_cast<NodeGui>(dotNodeGui_i);
+        NodeGuiPtr dotNodeGui = std::dynamic_pointer_cast<NodeGui>(dotNodeGui_i);
         assert(dotNodeGui);
 
         NodesGuiList nodesList;
@@ -346,7 +347,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         assert(guiApp);
         ProjectPtr project = guiApp->getProject();
         assert(project);
-        bool ok = project->disconnectNodes(inputNode, outputNode);
+        bool ok = outputNode->disconnectInput(inputNb) != -1;
         if (!ok) {
             return;
         }

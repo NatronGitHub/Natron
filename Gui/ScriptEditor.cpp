@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,14 +31,14 @@
 #include <QVBoxLayout>
 #include <QUndoStack>
 #include <QUndoCommand>
-#include <QtCore/QFile>
-#include <QtCore/QTextStream>
+#include <QFile>
+#include <QTextStream>
 #include <QTextCursor>
-#include <QtCore/QThread>
+#include <QThread>
 #include <QApplication>
 #include <QSplitter>
-#include <QtCore/QTimer>
-#include <QtCore/QMutex>
+#include <QTimer>
+#include <QMutex>
 #include <QFont>
 #include <QScrollBar>
 #include <QKeyEvent>
@@ -132,7 +132,7 @@ ScriptEditor::ScriptEditor(Gui* gui)
     appPTR->getIcon(NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &saveScriptPix);
 
     _imp->undoB = new Button(QIcon(undoPix), QString(), _imp->buttonsContainer);
-    QKeySequence undoSeq(Qt::CTRL + Qt::Key_BracketLeft);
+    QKeySequence undoSeq(Qt::CTRL | Qt::Key_BracketLeft);
     _imp->undoB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->undoB->setIconSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
     _imp->undoB->setFocusPolicy(Qt::NoFocus);
@@ -141,7 +141,7 @@ ScriptEditor::ScriptEditor(Gui* gui)
     QObject::connect( _imp->undoB, SIGNAL(clicked(bool)), this, SLOT(onUndoClicked()) );
 
     _imp->redoB = new Button(QIcon(redoPix), QString(), _imp->buttonsContainer);
-    QKeySequence redoSeq(Qt::CTRL + Qt::Key_BracketRight);
+    QKeySequence redoSeq(Qt::CTRL | Qt::Key_BracketRight);
     _imp->redoB->setFocusPolicy(Qt::NoFocus);
     _imp->redoB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->redoB->setIconSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
@@ -180,7 +180,7 @@ ScriptEditor::ScriptEditor(Gui* gui)
     QObject::connect( _imp->saveScriptB, SIGNAL(clicked(bool)), this, SLOT(onSaveScriptClicked()) );
 
     _imp->execScriptB = new Button(QIcon(execScriptPix), QString(), _imp->buttonsContainer);
-    QKeySequence execSeq(Qt::CTRL + Qt::Key_Return);
+    QKeySequence execSeq(Qt::CTRL | Qt::Key_Return);
     _imp->execScriptB->setFocusPolicy(Qt::NoFocus);
     _imp->execScriptB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->execScriptB->setIconSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
@@ -201,7 +201,7 @@ ScriptEditor::ScriptEditor(Gui* gui)
     QObject::connect( _imp->showHideOutputB, SIGNAL(clicked(bool)), this, SLOT(onShowHideOutputClicked(bool)) );
 
     _imp->clearOutputB = new Button(QIcon(clearOutpoutPix), QString(), _imp->buttonsContainer);
-    QKeySequence clearSeq(Qt::CTRL + Qt::Key_Backspace);
+    QKeySequence clearSeq(Qt::CTRL | Qt::Key_Backspace);
     _imp->clearOutputB->setFocusPolicy(Qt::NoFocus);
     _imp->clearOutputB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->clearOutputB->setIconSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
@@ -249,8 +249,8 @@ ScriptEditor::ScriptEditor(Gui* gui)
     _imp->inputEdit = new InputScriptTextEdit(gui, this);
     QObject::connect( _imp->inputEdit, SIGNAL(textChanged()), this, SLOT(onInputScriptTextChanged()) );
     QFontMetrics fm = _imp->inputEdit->fontMetrics();
-    _imp->inputEdit->setTabStopWidth(fm.width( QLatin1Char(' ') ) * 4);
-    _imp->outputEdit->setTabStopWidth(fm.width( QLatin1Char(' ') ) * 4);
+    _imp->inputEdit->setTabStopDistance(fm.horizontalAdvance( QLatin1Char(' ') ) * 4);
+    _imp->outputEdit->setTabStopDistance(fm.horizontalAdvance( QLatin1Char(' ') ) * 4);
 
     _imp->mainLayout->addWidget(_imp->buttonsContainer);
     splitter->addWidget(_imp->outputEdit);
@@ -442,6 +442,7 @@ InputScriptCommand::InputScriptCommand(ScriptEditor* editor,
     , _script(script)
     , _firstRedoCalled(false)
 {
+    setText( tr("Execute script") );
 }
 
 void
@@ -451,14 +452,12 @@ InputScriptCommand::redo()
         _editor->setInputScript(_script);
     }
     _firstRedoCalled = true;
-    setText( tr("Exec script") );
 }
 
 void
 InputScriptCommand::undo()
 {
     _editor->setInputScript(_script);
-    setText( tr("Exec script") );
 }
 
 void
@@ -622,7 +621,7 @@ ScriptEditor::printAutoDeclaredVariable(const QString& str)
 }
 
 void
-ScriptEditor::enterEvent(QEvent *e)
+ScriptEditor::enterEvent(QtCompat::QEnterEvent *e)
 {
     enterEventBase();
     QWidget::enterEvent(e);

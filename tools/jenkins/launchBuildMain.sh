@@ -88,6 +88,10 @@ else
     BUILD_6=false
 fi
 
+if [ -n "${BUILD_FROM:+z}" ] || [ -n "${BUILD_TO:+z}" ]; then
+    DEBUG_SCRIPTS=${DEBUG_SCRIPTS:-1}
+fi
+
 echo "-----------------------------------------------------------------------"
 echo "NATRON JENKINS BUILDMASTER"
 echo "-----------------------------------------------------------------------"
@@ -149,6 +153,32 @@ source common.sh
 source manageBuildOptions.sh
 source manageLog.sh
 
+echo "CC                                : \"${CC:-}\""
+echo "CXX                               : \"${CXX:-}\""
+echo "OBJECTIVE_CC                      : \"${OBJECTIVE_CC:-}\""
+echo "OBJECTIVE_CXX                     : \"${OBJECTIVE_CXX:-}\""
+echo "-----------------------------------------------------------------------"
+
+# --- Early macOS packaging-dependency check ---------------------------------
+# Packaging (build-OSX-installer.sh) runs late in the build. Verify the extra
+# macOS packaging tools now so we fail fast instead of after a multi-hour build.
+# Any NEW macOS build dependency should be added here and documented in
+# INSTALL_MACOS.md ("macOS packaging tools").
+if [ "${PKGOS:-}" = "OSX" ]; then
+    macos_missing=""
+    for macos_tool in dmgbuild oiiotool identify; do
+        command -v "$macos_tool" >/dev/null 2>&1 || macos_missing="$macos_missing $macos_tool"
+    done
+    if [ -n "$macos_missing" ]; then
+        echo "Error: missing required macOS packaging tool(s):$macos_missing"
+        echo "  dmgbuild -> sudo port install py310-dmgbuild && sudo ln -s dmgbuild-3.10 /opt/local/bin/dmgbuild  (or: python3 -m pip install dmgbuild; writes the DMG .DS_Store layout without Finder/TCC)"
+        echo "  oiiotool -> sudo port install openimageio    (DMG background processing)"
+        echo "  identify -> sudo port install ImageMagick    (DMG background dimensions)"
+        echo "See INSTALL_MACOS.md, section 'macOS packaging tools'."
+        exit 1
+    fi
+fi
+
 # Source known git repositories
 source gitRepositories.sh
 
@@ -163,6 +193,17 @@ if [ -f "$HOME/.ssh/id_rsa_build_master" ]; then
     fi
 fi
 
+echo "Python config:"
+echo "PYV=${PYV}"
+echo "PYVER=${PYVER}"
+echo "PYVERNODOT=${PYVERNODOT}"
+echo "PYTHON_ABIFLAGS=${PYTHON_ABIFLAGS}"
+echo "PYTHON_HOME=${PYTHON_HOME}"
+
+echo "Qt config:"
+echo "QT_VERSION_MAJOR=${QT_VERSION_MAJOR}"
+echo "QTDIR=${QTDIR}"
+
 # check that TIMEOUT works
 $TIMEOUT 1 true && echo "$TIMEOUT works"
 #check that SED works
@@ -170,6 +211,11 @@ echo "Testing $GSED"
 echo "$GSED does not work" | $GSED -e "s/does not work/works/"
 # check that curl works
 $CURL --silent --head http://www.google.com > /dev/null && echo "$CURL works"
+
+if [ "$QT_VERSION_MAJOR" = 5 ] && [ "$system" = "Darwin" ]; then
+    # Check for a missing link in the MacPorts package
+    [ ! -f ${PYTHON_HOME}/lib/python${PYVER}/site-packages/shiboken2_generator/shiboken2-${PYVER} ] && (echo "Error: broken MacPort install"; echo "Please execute:"; echo "sudo ln -s shiboken2 ${PYTHON_HOME}/lib/python${PYVER}/site-packages/shiboken2_generator/shiboken2-${PYVER}"; echo "and relaunch."; exit 1)
+fi
 
 if [ -n "${GIT_BRANCH:+}" ]; then
     GIT_BRANCH=$(echo "$GIT_BRANCH" | sed 's#origin/##')
@@ -231,6 +277,7 @@ if [ ! -d "$TMP_PATH" ]; then
 else
 # Clean-up any build file
 if [ "${DEBUG_SCRIPTS:-}" != "1" ]; then
+    chmod -R u+w "${TMP_PATH:?}" || true
     rm -rf "${TMP_PATH:?}"/* || true
 fi
 fi
@@ -434,31 +481,31 @@ if [ "${GIT_URL_IS_NATRON:-}" = "1" ]; then
     fi
 
     if [ "$FAIL" != "1" ]; then
-    NATRON_MAJOR=$(echo "NATRON_VERSION_MAJOR" | $CC -E -P -include "$TMP_PATH/Natron/Global/Macros.h" - | tail -1)
-    NATRON_MINOR=$(echo "NATRON_VERSION_MINOR" | $CC -E -P -include "$TMP_PATH/Natron/Global/Macros.h" - | tail -1)
-    NATRON_REVISION=$(echo "NATRON_VERSION_REVISION" | $CC -E -P -include "$TMP_PATH/Natron/Global/Macros.h" - | tail -1)
+        NATRON_MAJOR=$(echo "NATRON_VERSION_MAJOR" | $CC -E -P -include "$TMP_PATH/Natron/Global/Macros.h" - | tail -1)
+        NATRON_MINOR=$(echo "NATRON_VERSION_MINOR" | $CC -E -P -include "$TMP_PATH/Natron/Global/Macros.h" - | tail -1)
+        NATRON_REVISION=$(echo "NATRON_VERSION_REVISION" | $CC -E -P -include "$TMP_PATH/Natron/Global/Macros.h" - | tail -1)
 
-    setBuildOption "NATRON_VERSION_MAJOR" "$NATRON_MAJOR"
-    setBuildOption "NATRON_VERSION_MINOR" "$NATRON_MINOR"
-    setBuildOption "NATRON_VERSION_REVISION" "$NATRON_REVISION"
+        setBuildOption "NATRON_VERSION_MAJOR" "$NATRON_MAJOR"
+        setBuildOption "NATRON_VERSION_MINOR" "$NATRON_MINOR"
+        setBuildOption "NATRON_VERSION_REVISION" "$NATRON_REVISION"
 
-    setBuildOption "NATRON_VERSION_SHORT" "${NATRON_MAJOR}.${NATRON_MINOR}"
-    setBuildOption "NATRON_VERSION_FULL" "${NATRON_MAJOR}.${NATRON_MINOR}.${NATRON_REVISION}"
+        setBuildOption "NATRON_VERSION_SHORT" "${NATRON_MAJOR}.${NATRON_MINOR}"
+        setBuildOption "NATRON_VERSION_FULL" "${NATRON_MAJOR}.${NATRON_MINOR}.${NATRON_REVISION}"
     fi
     cd "$CWD"
-    # Update build scripts, except launchBuildMain.sh, which is being executed
-    # That way, the SDK doesn't need to be updated when eg build-plugins.sh or buil-Linux-installer.sh is updated
-    if [ "$TMP_PATH/Natron/tools/jenkins/launchBuildMain.sh" -nt "launchBuildMain.sh" ] && ! cmp "$TMP_PATH/Natron/tools/jenkins/launchBuildMain.sh" "launchBuildMain.sh" >/dev/null 2>&1 && [ -z "${LAUNCHBUILDMAIN_UPDATED+x}" ]; then
-        echo "Warning: launchBuildMain.sh has changed since the last SDK build. SDK may need to be rebuilt. Restarting after a 5s pause."
-        sleep 5
-        if [ -f ./launchBuildMain.sh.orig ]; then
-            rm -f ./launchBuildMain.sh.orig || true
-        fi
-        mv ./launchBuildMain.sh ./launchBuildMain.sh.orig || true
-        cp "$TMP_PATH/Natron/tools/jenkins/launchBuildMain.sh" ./launchBuildMain.sh || true
-        exec env LAUNCHBUILDMAIN_UPDATED=1 ./launchBuildMain.sh "$*"
-    fi
     if [ -z "${NOUPDATE:+x}" ]; then
+        # Update build scripts, except launchBuildMain.sh, which is being executed
+        # That way, the SDK doesn't need to be updated when eg build-plugins.sh or buil-Linux-installer.sh is updated
+        if [ "$TMP_PATH/Natron/tools/jenkins/launchBuildMain.sh" -nt "launchBuildMain.sh" ] && ! cmp "$TMP_PATH/Natron/tools/jenkins/launchBuildMain.sh" "launchBuildMain.sh" >/dev/null 2>&1 && [ -z "${LAUNCHBUILDMAIN_UPDATED+x}" ]; then
+            echo "Warning: launchBuildMain.sh has changed since the last SDK build. SDK may need to be rebuilt. Restarting after a 5s pause."
+            sleep 5
+            if [ -f ./launchBuildMain.sh.orig ]; then
+                rm -f ./launchBuildMain.sh.orig || true
+            fi
+            mv ./launchBuildMain.sh ./launchBuildMain.sh.orig || true
+            cp "$TMP_PATH/Natron/tools/jenkins/launchBuildMain.sh" ./launchBuildMain.sh || true
+            exec env LAUNCHBUILDMAIN_UPDATED=1 ./launchBuildMain.sh "$*"
+        fi
         (cd "$TMP_PATH/Natron/tools/jenkins"; tar --exclude launchBuildMain.sh -cf - .) | tar xf -
     fi
 fi
@@ -515,7 +562,62 @@ if [ "$NATRON_BUILD_CONFIG" = "SNAPSHOT" ]; then
     INSTALLER_BASENAME="${INSTALLER_BASENAME}-${NATRON_GIT_BRANCH}-${CURRENT_DATE}"
 fi
 
-INSTALLER_BASENAME="${INSTALLER_BASENAME}-${NATRON_VERSION_STRING}-${PKGOS}-${BITS}"
+INSTALLER_OS="${PKGOS}"
+INSTALLER_ARCH="${BITS}"
+if [ "${INSTALLER_OS}" = "OSX" ]; then
+    case "$(sw_vers -productVersion)" in
+        10.5.*) INSTALLER_OS="MacOSX105";; 
+        10.6.*) INSTALLER_OS="MacOSX106";; 
+        10.7.*) INSTALLER_OS="MacOSX107";; 
+        10.8.*) INSTALLER_OS="OSX108";; 
+        10.9.*) INSTALLER_OS="OSX109";; 
+        10.10.*) INSTALLER_OS="OSX1010";; 
+        10.11.*) INSTALLER_OS="OSX1011";; 
+        10.12.*) INSTALLER_OS="macOS1012";; 
+        10.13.*) INSTALLER_OS="macOS1013";; 
+        10.14.*) INSTALLER_OS="macOS1014";; 
+        10.15.*) INSTALLER_OS="macOS1015";; 
+        11.*) INSTALLER_OS="macOS11";;
+        12.*) INSTALLER_OS="macOS12";;
+        13.*) INSTALLER_OS="macOS13";;
+        14.*) INSTALLER_OS="macOS14";;
+        15.*) INSTALLER_OS="macOS15";;
+        16.*) INSTALLER_OS="macOS16";;
+        # Apple switched to year-based version numbers with macOS 26 (Tahoe, 2025);
+        # there is no macOS 17..25. List a few future years explicitly.
+        26.*) INSTALLER_OS="macOS26";;
+        27.*) INSTALLER_OS="macOS27";;
+        28.*) INSTALLER_OS="macOS28";;
+        29.*) INSTALLER_OS="macOS29";;
+        30.*) INSTALLER_OS="macOS30";;
+        # Fallback for any unlisted/future release: use macOS<major>.
+        *) INSTALLER_OS="macOS$(sw_vers -productVersion | cut -d. -f1)";;
+    esac
+
+    case "${BITS}" in
+        32) INSTALLER_ARCH="$(uname -p)";; 
+        64) INSTALLER_ARCH="$(uname -m)";;
+        Universal) INSTALLER_ARCH="Universal-i386-x86_64";;  # TODO: support Universal-x86_64-arm64
+    esac
+fi
+
+if [ "${INSTALLER_OS}" = "Linux" ] || [ "${INSTALLER_OS}" = "FreeBSD" ]; then
+    # Target is always the build arch
+    INSTALLER_ARCH="$(uname -m)"
+fi
+
+if [ "${INSTALLER_OS}" = "Windows" ]; then
+    case "${BITS}" in
+        32) INSTALLER_ARCH="i386";; 
+        64) INSTALLER_ARCH="x86_64";;
+    esac
+fi
+
+INSTALLER_BASENAME="${INSTALLER_BASENAME}-${NATRON_VERSION_STRING}-${INSTALLER_OS}-${INSTALLER_ARCH}"
+
+if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
+    INSTALLER_BASENAME="${INSTALLER_BASENAME}-breakpad"
+fi
 
 if [ "$COMPILE_TYPE" = "debug" ]; then
     INSTALLER_BASENAME="${INSTALLER_BASENAME}-debug"

@@ -1,0 +1,69 @@
+From 1d29d95bf4732a2d6f46547aa2773c9e742ad52e Mon Sep 17 00:00:00 2001
+From: Anu Aliyas <anu.aliyas@qt.io>
+Date: Tue, 15 Jul 2025 14:57:56 +0200
+Subject: [PATCH] [Backport] [zlib][build] Remove fdopen #defines in zutil.h
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The latest version of Clang changed what macros it predefines on Apple
+targets, causing errors about predefined macros in zlib.
+
+See:
+https://github.com/madler/zlib/commit/4bd9a71f3539b5ce47f0c67ab5e01f3196dc8ef9
+
+Bug: 1519899
+Change-Id: Ie75ef4078f2c86d89ba6c036ddd13e768a40ccbb
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5237020
+Reviewed-by: Adenilson Cavalcanti <cavalcantii@chromium.org>
+Commit-Queue: Hans Wennborg <hans@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1253252}
+Task-number: QTBUG-138486
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/661289
+Reviewed-by: Michael Brüning <michael.bruning@qt.io>
+---
+ chromium/third_party/zlib/zutil.h | 23 +----------------------
+ 1 file changed, 1 insertion(+), 22 deletions(-)
+
+diff --git a/chromium/third_party/zlib/zutil.h b/chromium/third_party/zlib/zutil.h
+index 6980a5f4ea34464e38040e5cfad5443b6f3684a4..2e2f57665bba81636d27f6fcc7797f424382d1bf 100644
+--- src/3rdparty/chromium/third_party/zlib/zutil.h.orig
++++ src/3rdparty/chromium/third_party/zlib/zutil.h
+@@ -152,17 +152,8 @@ extern z_const char * const z_errmsg[10]; /* indexed by 2-zlib_error */
+ #  endif
+ #endif
+
+-#if defined(MACOS) || defined(TARGET_OS_MAC)
++#if defined(MACOS)
+ #  define OS_CODE  7
+-#  ifndef Z_SOLO
+-#    if defined(__MWERKS__) && __dest_os != __be_os && __dest_os != __win32_os
+-#      include <unix.h> /* for fdopen */
+-#    else
+-#      ifndef fdopen
+-#        define fdopen(fd,mode) NULL /* No fdopen() */
+-#      endif
+-#    endif
+-#  endif
+ #endif
+
+ #ifdef __acorn
+@@ -185,18 +176,6 @@ extern z_const char * const z_errmsg[10]; /* indexed by 2-zlib_error */
+ #  define OS_CODE 19
+ #endif
+
+-#if defined(_BEOS_) || defined(RISCOS)
+-#  define fdopen(fd,mode) NULL /* No fdopen() */
+-#endif
+-
+-#if (defined(_MSC_VER) && (_MSC_VER > 600)) && !defined __INTERIX
+-#  if defined(_WIN32_WCE)
+-#    define fdopen(fd,mode) NULL /* No fdopen() */
+-#  else
+-#    define fdopen(fd,type)  _fdopen(fd,type)
+-#  endif
+-#endif
+-
+ #if defined(__BORLANDC__) && !defined(MSDOS)
+   #pragma warn -8004
+   #pragma warn -8008

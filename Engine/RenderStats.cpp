@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,7 +29,7 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QtCore/QMutex>
+#include <QMutex>
 
 #include "Engine/Node.h"
 #include "Engine/Timer.h"
@@ -207,13 +207,13 @@ NodeRenderStats::getIdentityRectangles() const
 }
 
 void
-NodeRenderStats::addMipMapLevelRendered(unsigned int level)
+NodeRenderStats::addMipmapLevelRendered(unsigned int level)
 {
     _imp->mipmapLevelsAccessed.insert(level);
 }
 
 const std::set<unsigned int>&
-NodeRenderStats::getMipMapLevelsRendered() const
+NodeRenderStats::getMipmapLevelsRendered() const
 {
     return _imp->mipmapLevelsAccessed;
 }
@@ -312,7 +312,7 @@ struct RenderStatsPrivate
     //When true in-depth profiling will be enabled for all Nodes with detailed infos
     bool doNodesProfiling;
 
-    typedef std::map<NodeWPtr, NodeRenderStats > NodeInfosMap;
+    typedef std::map<NodeWPtr, NodeRenderStats, std::owner_less<NodeWPtr>> NodeInfosMap;
     NodeInfosMap nodeInfos;
 
 
@@ -397,7 +397,7 @@ RenderStats::setGlobalRenderInfosForNode(const NodePtr& node,
     stats.setOutputPremult(outputPremult);
     stats.setTilesSupported(tilesSupported);
     stats.setRenderScaleSupported(renderScaleSupported);
-    stats.addMipMapLevelRendered(mipmapLevel);
+    stats.addMipmapLevelRendered(mipmapLevel);
     stats.setChannelsRendered(channelsRendered);
     stats.setRoD(rod);
 }

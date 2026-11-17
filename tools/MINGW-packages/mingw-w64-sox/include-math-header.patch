@@ -1,0 +1,11 @@
+diff -ur a/src/sox_sample_test.h b/src/sox_sample_test.h
+--- a/src/sox_sample_test.h	2012-01-23 14:27:33.000000000 -0800
++++ b/src/sox_sample_test.h	2024-05-16 14:11:33.908971100 -0700
+@@ -19,6 +19,7 @@
+ #undef NDEBUG /* Must undef above assert.h or other that might include it. */
+ #endif
+ #include <assert.h>
++#include <math.h>
+ #include "sox.h"
+ 
+ #define TEST_UINT(bits) \

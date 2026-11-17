@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,13 +32,8 @@
 #include <vector>
 #include <map>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
-
-#include <QtCore/QPointF>
-#include <QtCore/QCoreApplication>
+#include <QPointF>
+#include <QCoreApplication>
 #include <QUndoCommand>
 
 #include "Global/GlobalDefines.h"
@@ -423,13 +418,16 @@ private:
 
     NodeGraph* _graph;
     std::list<NodeGuiWPtr> _originalNodes;
+    // outputNode had its input inputIdx connected to inputNode.
+    // An output node may have several such links, hence a list.
     struct OutputLink
     {
+        NodeWPtr outputNode;
         int inputIdx;
         NodeWPtr inputNode;
     };
-    typedef std::map<NodeWPtr, OutputLink> OutputLinksMap;
-    OutputLinksMap _outputLinks;
+    typedef std::list<OutputLink> OutputLinks;
+    OutputLinks _outputLinks;
     NodeGuiWPtr _group;
     bool _firstRedoCalled;
     bool _isRedone;
@@ -452,10 +450,12 @@ public:
 
 private:
 
+    typedef std::map<NodeGuiWPtr, int32_t, std::owner_less<NodeGuiWPtr>> NodeGuisMap;
+
     struct NodeToConnect
     {
         NodeGuiWPtr input;
-        std::map<NodeGuiWPtr, int> outputs;
+        NodeGuisMap outputs;
     };
 
     struct InlinedGroup

@@ -12,7 +12,6 @@ CONFIG += glog-flags gflags-flags
 
 include(../../global.pri)
 include(../../libs.pri)
-include(../../config.pri)
 
 CONFIG -= warn_on
 # disable preprocessor warnings (-Wno-macro-redefined just appeared in recent compilers)
@@ -21,6 +20,11 @@ CONFIG -= warn_on
 }
 *clang* | *xcode* {
   QMAKE_CXXFLAGS += -Wp,-w
+}
+
+win32-g++ {
+    # Needed for localtime_r
+    DEFINES += _POSIX_C_SOURCE
 }
 
 win32 {

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,7 +30,7 @@
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QtGlobal> // for Q_OS_*
+#include <QtGlobal> // for Q_OS_*
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QStyle>
@@ -38,7 +38,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QCheckBox>
 #include <QTextEdit>
 #include <QApplication>
-#include <QDesktopWidget>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -98,11 +97,13 @@ MessageBox::init(const QString & title,
                  const StandardButtons& buttons,
                  StandardButtonEnum defaultButton)
 {
+    setMinimumSize(400, 150);
     if (message.size() < 1000) {
         _imp->label = new Label(message);
         _imp->label->setTextInteractionFlags( Qt::TextInteractionFlags( style()->styleHint(QStyle::SH_MessageBox_TextInteractionFlags, 0, this) ) );
         _imp->label->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
         _imp->label->setOpenExternalLinks(true);
+        _imp->label->setWordWrap(true);
 #if defined(Q_WS_MAC)
         _imp->label->setContentsMargins(16, 0, 0, 0);
 #elif !defined(Q_WS_QWS)
@@ -112,11 +113,17 @@ MessageBox::init(const QString & title,
         //QFont f(appFont,appFontSize);
         //_imp->label->setFont(f);
     } else {
+        setSizeGripEnabled(true);
         _imp->infoEdit = new QTextEdit;
         _imp->infoEdit->setFocusPolicy(Qt::NoFocus);
         _imp->infoEdit->setReadOnly(true);
         _imp->infoEdit->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
-        _imp->infoEdit->append(message);
+        _imp->infoEdit->setWordWrapMode(QTextOption::WordWrap);
+        if ( Qt::mightBeRichText(message) ) {
+            _imp->infoEdit->setHtml(message);
+        } else {
+            _imp->infoEdit->setPlainText(message);
+        }
         //QFont f(appFont,appFontSize);
         //_imp->infoEdit->setFont(f);
     }
@@ -133,7 +140,7 @@ MessageBox::init(const QString & title,
             pixType = QStyle::SP_MessageBoxWarning;
             break;
         case eMessageBoxTypeInformation:
-            pixType = QStyle::SP_MessageBoxWarning;
+            pixType = QStyle::SP_MessageBoxInformation;
             break;
         case eMessageBoxTypeQuestion:
             pixType = QStyle::SP_MessageBoxQuestion;
@@ -170,12 +177,12 @@ MessageBox::init(const QString & title,
     if (_imp->label) {
         grid->addWidget(_imp->label, 0, preferredTextColumn, 1, 1);
     } else if (_imp->infoEdit) {
-        grid->addWidget(_imp->label, 0, preferredTextColumn, 1, 1);
+        grid->addWidget(_imp->infoEdit, 0, preferredTextColumn, 1, 1);
     }
     // -- leave space for information label --
     grid->addWidget(_imp->buttonBox, 2, 0, 1, 2);
 #else
-    grid->setMargin(0);
+    grid->setContentsMargins(0, 0, 0, 0);
     grid->setVerticalSpacing(8);
     grid->setHorizontalSpacing(0);
     setContentsMargins(24, 15, 24, 20);
@@ -208,82 +215,11 @@ MessageBox::init(const QString & title,
     //retranslateStrings();
 
     _imp->grid = grid;
-    updateSize();
 } // MessageBox::init
 
 MessageBox::~MessageBox()
 {
 }
-
-void
-MessageBox::updateSize()
-{
-    if (_imp->label) {
-        _imp->label->setWordWrap(true);
-    } else if (_imp->infoEdit) {
-        _imp->infoEdit->setWordWrapMode(QTextOption::WordWrap);
-    }
-
-    setFixedSize(400, 150);
-//    if (!isVisible())
-//        return;
-//
-//    QSize screenSize = QApplication::desktop()->availableGeometry(QCursor::pos()).size();
-//#if defined(Q_WS_QWS) || defined(Q_WS_WINCE) || defined(Q_OS_SYMBIAN)
-//    // the width of the screen, less the window border.
-//    int hardLimit = screenSize.width() - (q->frameGeometry().width() - q->geometry().width());
-//#else
-//    int hardLimit = qMin(screenSize.width() - 480, 1000); // can never get bigger than this
-//    // on small screens allows the messagebox be the same size as the screen
-//    if (screenSize.width() <= 1024)
-//        hardLimit = screenSize.width();
-//#endif
-//#ifdef Q_WS_MAC
-//    int softLimit = qMin(screenSize.width()/2, 420);
-//#elif defined(Q_WS_QWS)
-//    int softLimit = qMin(hardLimit, 500);
-//#else
-//    // note: ideally on windows, hard and soft limits but it breaks compat
-//#ifndef Q_WS_WINCE
-//    int softLimit = qMin(screenSize.width()/2, 500);
-//#else
-//    int softLimit = qMin(screenSize.width() * 3 / 4, 500);
-//#endif //Q_WS_WINCE
-//#endif
-//
-//
-//    _imp->label->setWordWrap(false); // makes the label return min size
-//    int width = _imp->layoutMinimumWidth();
-//    _imp->label->setWordWrap(true);
-//
-//    if (width > softLimit) {
-//        width = qMax(softLimit, _imp->layoutMinimumWidth());
-//
-////        if (width > hardLimit) {
-////            _imp->label->d_func()->ensureTextControl();
-////            if (QTextControl *control = label->d_func()->control) {
-////                QTextOption opt = control->document()->defaultTextOption();
-////                opt.setWrapMode(QTextOption::WrapAnywhere);
-////                control->document()->setDefaultTextOption(opt);
-////            }
-////            width = hardLimit;
-////        }
-//    }
-//
-//    QFontMetrics fm(QApplication::font("QWorkspaceTitleBar"));
-//    int windowTitleWidth = qMin(fm.width(windowTitle()) + 50, hardLimit);
-//    if (windowTitleWidth > width)
-//        width = windowTitleWidth;
-//
-//    _imp->grid->activate();
-//    int height = (_imp->grid->hasHeightForWidth())
-//    ? _imp->grid->totalHeightForWidth(width)
-//    : _imp->grid->totalMinimumSize().height();
-//
-//
-//    setFixedSize(width, height);
-//    QCoreApplication::removePostedEvents(this, QEvent::LayoutRequest);
-} // MessageBox::updateSize
 
 StandardButtonEnum
 MessageBox::getReply() const
@@ -324,22 +260,6 @@ MessageBox::onButtonClicked(QAbstractButton* button)
 {
     _imp->clickedButton = button;
     accept();
-}
-
-bool
-MessageBox::event(QEvent* e)
-{
-    bool result = QDialog::event(e);
-
-    switch ( e->type() ) {
-    case QEvent::LayoutRequest:
-        updateSize();
-        break;
-    default:
-        break;
-    }
-
-    return result;
 }
 
 NATRON_NAMESPACE_EXIT

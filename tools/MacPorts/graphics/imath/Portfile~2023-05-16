@@ -1,0 +1,32 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem              1.0
+PortGroup               github 1.0
+PortGroup               cmake 1.0
+#PortGroup               legacysupport 1.1
+
+# CLOCK_MONOTONIC (in ImathTest)
+#legacysupport.newest_darwin_requires_legacy 10
+
+github.setup            AcademySoftwareFoundation Imath 3.1.3 v
+# please set revision in subports
+categories              graphics
+license                 BSD
+maintainers             {mcalhoun @MarcusCalhoun-Lopez} openmaintainer
+description             Library of 2D and 3D vector, matrix, and math operations
+long_description        Library of 2D and 3D vector, matrix, and math operations.
+homepage                https://www.openexr.com
+platforms               darwin
+conflicts               ilmbase
+
+compiler.cxx_standard   2014
+
+# Only allow numbers, to avoid pre-release versions
+github.livecheck.regex  {([0-9.]+)}
+
+checksums           rmd160  13219b122106146eb119e819a8a23ac9b5245b95 \
+                    sha256  48b2b234226f00fd15c78f5c9f2e3498fa5a8814a29ba541ba84a57c20c65035 \
+                    size    571023
+
+# ImathTest requires CLOCK_MONOTONIC
+configure.args-append -DBUILD_TESTING=OFF

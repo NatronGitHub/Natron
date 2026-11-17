@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,14 +32,10 @@
 #include <map>
 #include <list>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
-
 #include "Global/GlobalDefines.h"
 
 #include "Engine/RectD.h"
+#include "Engine/RenderScale.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
@@ -54,7 +50,7 @@ NATRON_NAMESPACE_ENTER
 typedef std::map<EffectInstancePtr, RectD> RoIMap; // RoIs are in canonical coordinates
 typedef std::map<ViewIdx, std::vector<RangeD> > FrameRangesMap;
 typedef std::map<int, FrameRangesMap> FramesNeededMap;
-typedef boost::shared_ptr<FramesNeededMap> FramesNeededMapPtr;
+typedef std::shared_ptr<FramesNeededMap> FramesNeededMapPtr;
 
 struct InputMatrix
 {
@@ -64,7 +60,7 @@ struct InputMatrix
 };
 
 typedef std::map<int, InputMatrix> InputMatrixMap;
-typedef boost::shared_ptr<InputMatrixMap> InputMatrixMapPtr;
+typedef std::shared_ptr<InputMatrixMap> InputMatrixMapPtr;
 
 
 class NodeFrameRequest;
@@ -168,7 +164,7 @@ struct FrameViewRequestGlobalData
 {
     ///The transforms associated to each input branch, set on first request
     InputMatrixMapPtr transforms;
-    boost::shared_ptr<std::map<int, EffectInstancePtr> > reroutesMap;
+    std::shared_ptr<std::map<int, EffectInstancePtr> > reroutesMap;
 
     ///The required frame/views in input, set on first request
     FramesNeededMap frameViewsNeeded;
@@ -248,7 +244,7 @@ typedef std::map<NodePtr, NodeFrameRequestPtr> FrameRequestMap;
 
 class ParallelRenderArgsSetter
 {
-    boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr> > argsMap;
+    std::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr> > argsMap;
     NodesList nodes;
 
 protected:
@@ -277,7 +273,7 @@ public:
                              bool draftMode,
                              const RenderStatsPtr& stats);
 
-    ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr> >& args);
+    ParallelRenderArgsSetter(const std::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr> >& args);
 
     void updateNodesRequest(const FrameRequestMap& request);
 

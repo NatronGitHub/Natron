@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -20,43 +20,40 @@
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#undef Py_LIMITED_API  // Needed for PyRun_SimpleString
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
 #include "AppInstance.h"
 
 #include <fstream>
+#include <limits>
 #include <list>
 #include <cassert>
 #include <stdexcept>
 #include <sstream> // stringstream
 
-#include <QtCore/QCoreApplication>
-#include <QtCore/QDir>
-#include <QtCore/QTextStream>
+#include <QCoreApplication>
+#include <QDir>
+#include <QTextStream>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
-#include <QtCore/QUrl>
-#include <QtCore/QFileInfo>
-#include <QtCore/QEventLoop>
-#include <QtCore/QSettings>
-#include <QtNetwork/QNetworkReply>
-
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind/bind.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
+#include <QUrl>
+#include <QFileInfo>
+#include <QEventLoop>
+#include <QSettings>
+#include <QNetworkReply>
 
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
+// clang-format off
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 #include <ofxhImageEffect.h>
 CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
+// clang-format on
 
 #include "Global/QtCompat.h" // removeFileExtension
+#include "Global/PythonUtils.h"
 
 #include "Engine/BlockingBackgroundRender.h"
 #include "Engine/CLArgs.h"
@@ -73,8 +70,6 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
 #include "Engine/WriteNode.h"
-
-using namespace boost::placeholders;
 
 NATRON_NAMESPACE_ENTER
 
@@ -519,7 +514,7 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,
                 requests.push_back(r);
             }
         } else {
-            AppInstance::RenderWork r( effect, INT_MIN, INT_MAX, INT_MIN, cl.areRenderStatsEnabled() );
+            AppInstance::RenderWork r( effect, std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), std::numeric_limits<int>::min(), cl.areRenderStatsEnabled() );
             requests.push_back(r);
         }
     }
@@ -1038,7 +1033,7 @@ AppInstance::createWriter(const std::string& filename,
     CreateNodeArgs args(QString::fromUtf8( found->second.c_str() ), reason, collection);
 #endif
     args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
-    if ( (firstFrame != INT_MIN) && (lastFrame != INT_MAX) ) {
+    if ( (firstFrame != std::numeric_limits<int>::min()) && (lastFrame != std::numeric_limits<int>::max()) ) {
         args.addParamDefaultValue<int>("frameRange", 2);
         args.addParamDefaultValue<int>("firstFrame", firstFrame);
         args.addParamDefaultValue<int>("lastFrame", lastFrame);
@@ -1243,9 +1238,9 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     bool useInspector = isEntitledForInspector(plugin, ofxDesc);
 
     if (!useInspector) {
-        node = boost::make_shared<Node>(shared_from_this(), argsGroup, plugin);
+        node = std::make_shared<Node>(shared_from_this(), argsGroup, plugin);
     } else {
-        node = boost::make_shared<InspectorNode>(shared_from_this(), argsGroup, plugin);
+        node = std::make_shared<InspectorNode>(shared_from_this(), argsGroup, plugin);
     }
 
 
@@ -1256,7 +1251,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     {
         ///Furnace plug-ins don't handle using the thread pool
         SettingsPtr settings = appPTR->getCurrentSettings();
-        if ( !isSilentCreation && boost::starts_with(foundPluginID, "uk.co.thefoundry.furnace") &&
+        if ( !isSilentCreation && foundPluginID.rfind("uk.co.thefoundry.furnace", 0) != std::string::npos &&
              ( settings->useGlobalThreadPool() || ( settings->getNumberOfParallelRenders() != 1) ) ) {
             StandardButtonEnum reply = Dialogs::questionDialog(tr("Warning").toStdString(),
                                                                tr("The settings of the application are currently set to use "
@@ -1340,7 +1335,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         }
     }
 
-    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
+    NodeGroupPtr isGrp = std::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
 
     if (isGrp) {
         bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
@@ -1724,7 +1719,7 @@ AppInstance::startWritersRenderingFromNames(bool enableRenderStats,
                 }
 
                 if ( frameRanges.empty() ) {
-                    RenderWork r(effect, INT_MIN, INT_MAX, INT_MIN, enableRenderStats);
+                    RenderWork r(effect, std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), std::numeric_limits<int>::min(), enableRenderStats);
                     renderers.push_back(r);
                 }
             }
@@ -1748,7 +1743,7 @@ AppInstance::startWritersRenderingFromNames(bool enableRenderStats,
                 }
 
                 if ( frameRanges.empty() ) {
-                    RenderWork r(*it2, INT_MIN, INT_MAX, INT_MIN, enableRenderStats);
+                    RenderWork r(*it2, std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), std::numeric_limits<int>::min(), enableRenderStats);
                     renderers.push_back(r);
                 }
             }
@@ -1792,7 +1787,7 @@ AppInstance::startWritersRendering(bool doBlockingRender,
         item.savePath = savePath;
 
         if (renderInSeparateProcess) {
-            item.process = boost::make_shared<ProcessHandler>(savePath, item.work.writer);
+            item.process = std::make_shared<ProcessHandler>(savePath, item.work.writer);
             QObject::connect( item.process.get(), SIGNAL(processFinished(int)), this, SLOT(onBackgroundRenderProcessFinished()) );
         } else {
             QObject::connect(item.work.writer->getRenderEngine().get(), SIGNAL(renderFinished(int)), this, SLOT(onQueuedRenderFinished(int)), Qt::UniqueConnection);
@@ -1813,7 +1808,9 @@ AppInstance::startWritersRendering(bool doBlockingRender,
 
     if (appPTR->isBackground() || doBlockingRender) {
         //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
-        QtConcurrent::blockingMap( itemsToQueue, boost::bind(&AppInstancePrivate::startRenderingFullSequence, _imp.get(), true, _1) );
+        QtConcurrent::blockingMap( itemsToQueue, [&](RenderQueueItem item) {
+            _imp->startRenderingFullSequence(true, item);
+        });
     } else {
         bool isQueuingEnabled = appPTR->getCurrentSettings()->isRenderQueuingEnabled();
         if (isQueuingEnabled) {
@@ -1873,10 +1870,10 @@ AppInstancePrivate::validateRenderOptions(const AppInstance::RenderWork& w,
                                           int* frameStep)
 {
     ///validate the frame range to render
-    if ( (w.firstFrame == INT_MIN) || (w.lastFrame == INT_MAX) ) {
+    if ( (w.firstFrame == std::numeric_limits<int>::min()) || (w.lastFrame == std::numeric_limits<int>::max()) ) {
         double firstFrameD, lastFrameD;
         w.writer->getFrameRange_public(w.writer->getHash(), &firstFrameD, &lastFrameD, true);
-        if ( (firstFrameD == INT_MIN) || (lastFrameD == INT_MAX) ) {
+        if ( (firstFrameD == std::numeric_limits<int>::min()) || (lastFrameD == std::numeric_limits<int>::max()) ) {
             _publicInterface->getFrameRange(&firstFrameD, &lastFrameD);
         }
 
@@ -1893,7 +1890,7 @@ AppInstancePrivate::validateRenderOptions(const AppInstance::RenderWork& w,
         *lastFrame = w.lastFrame;
     }
 
-    if ( (w.frameStep == INT_MAX) || (w.frameStep == INT_MIN) ) {
+    if ( (w.frameStep == std::numeric_limits<int>::max()) || (w.frameStep == std::numeric_limits<int>::min()) ) {
         ///Get the frame step from the frame step parameter of the Writer
         *frameStep = w.writer->getNode()->getFrameStepKnobValue();
     } else {

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -25,22 +25,18 @@
 
 #include "OfxParamInstance.h"
 
+#include <array>
 #include <iostream>
 #include <cassert>
 #include <cfloat>
 #include <stdexcept>
-
-#include <boost/scoped_array.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/math/special_functions/fpclassify.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
 #include <ofxParametricParam.h>
 #include <ofxNatron.h>
 
-#include <QtCore/QDebug>
+#include <QDebug>
 
 #include "Global/GlobalDefines.h"
 #include "Engine/AppManager.h"
@@ -2766,10 +2762,10 @@ OfxInteger2DInstance::OfxInteger2DInstance(const OfxEffectInstancePtr& node,
         iKnob->setAsRectangle();
     }
 
-    std::vector<int> increment(ofxDims);
-    boost::scoped_array<int> def(new int[ofxDims]);
+    std::array<int, 2> increment;
+    std::array<int, 2> def;
 
-    properties.getIntPropertyN(kOfxParamPropDefault, &def[0], ofxDims);
+    properties.getIntPropertyN(kOfxParamPropDefault, def.data(), ofxDims);
     for (int i = 0; i < ofxDims; ++i) {
         increment[i] = 1; // kOfxParamPropIncrement only exists for Double
         std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel, i);
@@ -3771,7 +3767,7 @@ struct OfxStringInstancePrivate
     KnobOutputFileWPtr outputFileKnob;
     KnobStringWPtr stringKnob;
     KnobPathWPtr pathKnob;
-    boost::shared_ptr<TLSHolder<OfxParamToKnob::OfxParamTLSData> > tlsData;
+    std::shared_ptr<TLSHolder<OfxParamToKnob::OfxParamTLSData> > tlsData;
 
     OfxStringInstancePrivate()
         : fileKnob()
@@ -4213,9 +4209,9 @@ OfxStringInstance::getNumKeys(unsigned int &nKeys) const
     KnobIPtr knob;
 
     if ( _imp->stringKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
+        knob = std::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
     } else if ( _imp->fileKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
+        knob = std::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
     } else {
         return nKeys = 0;
     }
@@ -4230,9 +4226,9 @@ OfxStringInstance::getKeyTime(int nth,
     KnobIPtr knob;
 
     if ( _imp->stringKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
+        knob = std::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
     } else if ( _imp->fileKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
+        knob = std::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
     } else {
         return kOfxStatErrBadIndex;
     }
@@ -4248,9 +4244,9 @@ OfxStringInstance::getKeyIndex(OfxTime time,
     KnobIPtr knob;
 
     if ( _imp->stringKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
+        knob = std::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
     } else if ( _imp->fileKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
+        knob = std::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
     } else {
         return kOfxStatFailed;
     }
@@ -4264,9 +4260,9 @@ OfxStringInstance::deleteKey(OfxTime time)
     KnobIPtr knob;
 
     if ( _imp->stringKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
+        knob = std::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
     } else if ( _imp->fileKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
+        knob = std::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
     } else {
         return kOfxStatErrBadIndex;
     }
@@ -4280,9 +4276,9 @@ OfxStringInstance::deleteAllKeys()
     KnobIPtr knob;
 
     if ( _imp->stringKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
+        knob = std::dynamic_pointer_cast<KnobI>( _imp->stringKnob.lock() );
     } else if ( _imp->fileKnob.lock() ) {
-        knob = boost::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
+        knob = std::dynamic_pointer_cast<KnobI>( _imp->fileKnob.lock() );
     } else {
         return kOfxStatOK;
     }
@@ -4322,7 +4318,7 @@ struct OfxCustomInstancePrivate
 {
     KnobStringWPtr knob;
     OfxCustomInstance::customParamInterpolationV1Entry_t customParamInterpolationV1Entry;
-    boost::shared_ptr<TLSHolder<OfxParamToKnob::OfxParamTLSData> > tlsData;
+    std::shared_ptr<TLSHolder<OfxParamToKnob::OfxParamTLSData> > tlsData;
 
     OfxCustomInstancePrivate()
         : knob()
@@ -4817,12 +4813,12 @@ OfxParametricInstance::addControlPoint(int curveIndex,
                                        double value,
                                        bool /* addAnimationKey*/)
 {
-    if ( (boost::math::isnan)(time) || // check for NaN
-         (boost::math::isinf)(time) ||
-         (boost::math::isnan)(key) || // check for NaN
-         (boost::math::isinf)(key) ||
-         (boost::math::isnan)(value) || // check for NaN
-         (boost::math::isinf)(value) ) {
+    if ( std::isnan(time) || // check for NaN
+         std::isinf(time) ||
+         std::isnan(key) || // check for NaN
+         std::isinf(key) ||
+         std::isnan(value) || // check for NaN
+         std::isinf(value) ) {
         return kOfxStatFailed;
     }
 
@@ -4835,7 +4831,7 @@ OfxParametricInstance::addControlPoint(int curveIndex,
     KeyframeTypeEnum interpolation = eKeyframeTypeSmooth; // a reasonable default
     // The initial curve for some plugins may be better with a specific interpolation. Unfortunately, the kOfxParametricSuiteV1 doesn't offer different interpolation methods
 #ifdef DEBUG
-#pragma message WARN("This is a hack, we should extend the parametric suite to add derivatives infos")
+//#pragma message WARN("This is a hack, we should extend the parametric suite to add derivatives infos")
 #endif
     if (effect) {
         if ( (effect->getPluginID() == PLUGINID_OFX_COLORCORRECT) || (effect->getPluginID() == PLUGINID_OFX_TIMEDISSOLVE) ) {

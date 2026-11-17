@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,6 +30,7 @@
 
 #include <cstddef>
 #include <list>
+#include <memory>
 
 NATRON_NAMESPACE_ENTER
 
@@ -60,7 +61,7 @@ public:
     virtual std::size_t sizeInRAM() const = 0;
 };
 
-typedef boost::shared_ptr<BufferableObject> BufferableObjectPtr;
+typedef std::shared_ptr<BufferableObject> BufferableObjectPtr;
 
 typedef std::list<BufferableObjectPtr> BufferableObjectPtrList;
 

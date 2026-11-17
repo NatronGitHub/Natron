@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,20 +28,17 @@
 
 #include "Global/Macros.h"
 
+#include <limits>
 #include <vector>
 #include <utility>
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 
-#include <QtCore/QSize>
-CLANG_DIAG_OFF(deprecated)
-CLANG_DIAG_OFF(uninitialized)
-#include <QtOpenGL/QGLWidget>
-CLANG_DIAG_ON(deprecated)
-CLANG_DIAG_ON(uninitialized)
+#include <QSize>
+
+#include <QOpenGLWidget>
+
+#include "Global/QtCompat.h"
 
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/ViewIdx.h"
@@ -58,7 +55,7 @@ NATRON_NAMESPACE_ENTER
  * OpenGL related code as well as user events.
  **/
 class ViewerGL
-    : public QGLWidget, public OpenGLViewerI
+    : public QOpenGLWidget, public OpenGLViewerI
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -72,16 +69,13 @@ public:
        can pass a pointer to the 1st viewer you created. It allows the viewers to share the same OpenGL context.
      */
     explicit ViewerGL(ViewerTab* parent,
-                      const QGLWidget* shareWidget = NULL);
+                      const QOpenGLWidget* shareWidget = NULL);
 
 
     virtual ~ViewerGL() OVERRIDE;
 
     virtual QSize sizeHint() const OVERRIDE FINAL;
     const QFont & textFont() const;
-
-    void setTextFont(const QFont & f);
-
 
     /**
      *@returns Returns true if the viewer is displaying something.
@@ -110,7 +104,7 @@ public:
 
     /**
      *@brief Hack to allow the resizeEvent to be publicly used elsewhere.
-     * It calls QGLWidget::resizeEvent(QResizeEvent*).
+     * It calls QOpenGLWidget::resizeEvent(QResizeEvent*).
      **/
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
 
@@ -132,9 +126,9 @@ public:
     /**
      * @brief Returns the rectangle of the image displayed by the viewer
      **/
-    virtual RectI getImageRectangleDisplayed(const RectI & imageRoD, const double par, unsigned int mipMapLevel) OVERRIDE FINAL;
-    virtual RectI getExactImageRectangleDisplayed(int texIndex, const RectD & rod, const double par, unsigned int mipMapLevel) OVERRIDE FINAL;
-    virtual RectI getImageRectangleDisplayedRoundedToTileSize(int texIndex, const RectD & rod, const double par, unsigned int mipMapLevel, std::vector<RectI>* tiles, std::vector<RectI>* tilesRounded, int *tileSize, RectI* roiNotRounded) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual RectI getImageRectangleDisplayed(const RectI & imageRoD, const double par, unsigned int mipmapLevel) OVERRIDE FINAL;
+    virtual RectI getExactImageRectangleDisplayed(int texIndex, const RectD & rod, const double par, unsigned int mipmapLevel) OVERRIDE FINAL;
+    virtual RectI getImageRectangleDisplayedRoundedToTileSize(int texIndex, const RectD & rod, const double par, unsigned int mipmapLevel, std::vector<RectI>* tiles, std::vector<RectI>* tilesRounded, int *tileSize, RectI* roiNotRounded) OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
      *@brief Set the pointer to the InfoViewerWidget. This is called once after creation
      * of the ViewerGL.
@@ -185,7 +179,7 @@ public:
                                                const RectD& rod,
                                                double par,
                                                ImageBitDepthEnum depth,
-                                               unsigned int mipMapLevel,
+                                               unsigned int mipmapLevel,
                                                ImagePremultiplicationEnum premult,
                                                double gain,
                                                double gamma,
@@ -249,7 +243,7 @@ public Q_SLOTS:
     void setRegionOfDefinition(const RectD & rod, double par, int textureIndex);
     void setFormat(const std::string& formatName, const RectD& format, double par, int textureIndex);
 
-    virtual void updateColorPicker(int textureIndex, int x = INT_MAX, int y = INT_MAX) OVERRIDE FINAL;
+    virtual void updateColorPicker(int textureIndex, int x = std::numeric_limits<int>::max(), int y = std::numeric_limits<int>::max()) OVERRIDE FINAL;
 
     void clearColorBuffer(double r = 0., double g = 0., double b = 0., double a = 1.);
 
@@ -430,7 +424,7 @@ public:
      **/
     ImagePtr getLastRenderedImage(int textureIndex) const;
 
-    ImagePtr getLastRenderedImageByMipMapLevel(int textureIndex, unsigned int mipMapLevel) const;
+    ImagePtr getLastRenderedImageByMipmapLevel(int textureIndex, unsigned int mipmapLevel) const;
 
     /**
      * @brief Get the color of the currently displayed image at position x,y.
@@ -441,17 +435,17 @@ public:
      * @return true if the point is inside the image and colors were set
      **/
     bool getColorAt(double x, double y, bool forceLinear, int textureIndex, float* r,
-                    float* g, float* b, float* a, unsigned int* mipMapLevel) WARN_UNUSED_RETURN;
+                    float* g, float* b, float* a, unsigned int* mipmapLevel) WARN_UNUSED_RETURN;
 
     // same as getColor, but computes the mean over a given rectangle
     bool getColorAtRect(const RectD &rect, // rectangle in canonical coordinates
-                        bool forceLinear, int textureIndex, float* r, float* g, float* b, float* a, unsigned int* mipMapLevel);
+                        bool forceLinear, int textureIndex, float* r, float* g, float* b, float* a, unsigned int* mipmapLevel);
 
 
-    virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL;
+    virtual unsigned int getCurrentMipmapLevel() const OVERRIDE FINAL;
 
-    ///same as getMipMapLevel but with the zoomFactor taken into account
-    int getMipMapLevelCombinedToZoomFactor() const WARN_UNUSED_RETURN;
+    ///same as getMipmapLevel but with the zoomFactor taken into account
+    unsigned int getMipmapLevelCombinedToZoomFactor() const WARN_UNUSED_RETURN;
 
     virtual int getCurrentlyDisplayedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
@@ -467,6 +461,14 @@ public:
     {
         Q_EMIT selectionCleared();
     }
+
+public:
+    /**
+     * @brief Show the cursor requested by the OpenFX overlays (see ViewerTab::getOverlaysCursor()),
+     * or restore the viewer's cursor if they all request the default one.
+     * Called after each pen event dispatched to the overlays, unless the viewer shows its own cursor.
+     **/
+    void updateOverlayCursor();
 
 Q_SIGNALS:
 
@@ -502,7 +504,7 @@ private:
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void tabletEvent(QTabletEvent* e) OVERRIDE FINAL;
 
@@ -566,18 +568,18 @@ private:
     /**
      *@brief Called inside paintGL(). It will draw all the overlays.
      **/
-    void drawOverlay(unsigned int mipMapLevel);
+    void drawOverlay(unsigned int mipmapLevel);
 
     /**
      * @brief Called by drawOverlay to draw the user region of interest.
      **/
-    void drawUserRoI();
+    void drawUserRoI(double screenPixelRatio);
 
-    void drawPickerRectangle();
+    void drawPickerRectangle(double screenPixelRatio);
 
-    void drawPickerPixel();
+    void drawPickerPixel(double screenPixelRatio);
 
-    void drawWipeControl();
+    void drawWipeControl(double screenPixelRatio);
 
     /**
      *@brief Draws the persistent message if it is on.
@@ -636,7 +638,7 @@ private:
 
 private:
     struct Implementation;
-    boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
+    std::unique_ptr<Implementation> _imp; // PIMPL: hide implementation details
 };
 
 NATRON_NAMESPACE_EXIT

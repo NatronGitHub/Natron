@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,6 +32,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// clang-format off
 GCC_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
@@ -45,6 +46,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/version.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
+// clang-format on
 #endif
 
 #include "Global/GitVersion.h"
@@ -58,6 +60,8 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/NodeGroupSerialization.h"
 #include "Engine/ProjectPrivate.h"
 #include "Engine/Project.h"
+#include "Engine/RectDSerialization.h"
+#include "Engine/RectISerialization.h"
 #include "Engine/TimeLine.h"
 
 #include "Engine/EngineFwd.h"
@@ -266,7 +270,7 @@ public:
             int nodesCount;
             ar & ::boost::serialization::make_nvp("NodesCount", nodesCount);
             for (int i = 0; i < nodesCount; ++i) {
-                NodeSerializationPtr ns = boost::make_shared<NodeSerialization>();
+                NodeSerializationPtr ns = std::make_shared<NodeSerialization>();
                 ar & ::boost::serialization::make_nvp("item", *ns);
                 _nodes.addNodeSerialization(ns);
             }
@@ -278,7 +282,7 @@ public:
         ar & ::boost::serialization::make_nvp("ProjectKnobsCount", knobsCount);
 
         for (int i = 0; i < knobsCount; ++i) {
-            KnobSerializationPtr ks = boost::make_shared<KnobSerialization>();
+            KnobSerializationPtr ks = std::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("item", *ks);
             _projectKnobs.push_back(ks);
         }

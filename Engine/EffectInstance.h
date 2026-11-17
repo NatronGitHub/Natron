@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,13 +31,6 @@
 #include <list>
 #include <bitset>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#endif
-
 #include "Global/GlobalDefines.h"
 #include "Global/KeySymbols.h"
 
@@ -46,6 +39,7 @@
 #include "Engine/Knob.h" // for KnobHolder
 #include "Engine/RectD.h"
 #include "Engine/RectI.h"
+#include "Engine/RenderScale.h"
 #include "Engine/RenderStats.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/ParallelRenderArgs.h"
@@ -122,7 +116,7 @@ NATRON_NAMESPACE_ENTER
 class EffectInstance
     : public NamedKnobHolder
       , public LockManagerI<Image>
-      , public boost::enable_shared_from_this<EffectInstance>
+      , public std::enable_shared_from_this<EffectInstance>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -131,7 +125,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
     typedef std::map<int, std::list<ImagePtr> > InputImagesMap;
     typedef std::map<int, std::list<ImagePlaneDesc> > ComponentsNeededMap;
-    typedef boost::shared_ptr<ComponentsNeededMap> ComponentsNeededMapPtr;
+    typedef std::shared_ptr<ComponentsNeededMap> ComponentsNeededMapPtr;
 
     struct RenderRoIArgs
     {
@@ -140,7 +134,7 @@ public:
 
         double time; //< the time at which to render
         RenderScale scale; //< the scale at which to render
-        unsigned int mipMapLevel; //< the mipmap level (redundant with the scale, stored here to avoid refetching it everytimes)
+        unsigned int mipmapLevel; //< the mipmap level (redundant with the scale, stored here to avoid refetching it everytimes)
         ViewIdx view; //< the view to render
         RectI roi; //< the renderWindow (in pixel coordinates) , watch out OpenFX action getRegionsOfInterest expects canonical coords!
         RectD preComputedRoD; //<  pre-computed region of definition in canonical coordinates for this effect to speed-up the call to renderRoi
@@ -165,8 +159,8 @@ public:
 
         RenderRoIArgs()
             : time(0)
-            , scale(1.)
-            , mipMapLevel(0)
+            , scale()
+            , mipmapLevel(0)
             , view(0)
             , roi()
             , preComputedRoD()
@@ -184,7 +178,7 @@ public:
 
         RenderRoIArgs( double time_,
                        const RenderScale & scale_,
-                       unsigned int mipMapLevel_,
+                       unsigned int mipmapLevel_,
                        ViewIdx view_,
                        bool byPassCache_,
                        const RectI & roi_,
@@ -198,7 +192,7 @@ public:
                        const EffectInstance::InputImagesMap & inputImages = EffectInstance::InputImagesMap() )
             : time(time_)
             , scale(scale_)
-            , mipMapLevel(mipMapLevel_)
+            , mipmapLevel(mipmapLevel_)
             , view(view_)
             , roi(roi_)
             , preComputedRoD(preComputedRoD_)
@@ -224,7 +218,7 @@ public:
 
 public:
     // TODO: enable_shared_from_this
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
 
     /**
      * @brief Constructor used once for each node created. Its purpose is to create the "live instance".
@@ -586,7 +580,7 @@ public:
                                              StorageModeEnum storage,
                                              StorageModeEnum returnStorage,
                                              const ImageKey & key,
-                                             unsigned int mipMapLevel,
+                                             unsigned int mipmapLevel,
                                              const RectI* boundsParam,
                                              const RectD* rodParam,
                                              const RectI& roi,
@@ -632,7 +626,7 @@ public:
 
         ~NotifyRenderingStarted_RAII();
     };
-    typedef boost::shared_ptr<NotifyRenderingStarted_RAII> NotifyRenderingStarted_RAIIPtr;
+    typedef std::shared_ptr<NotifyRenderingStarted_RAII> NotifyRenderingStarted_RAIIPtr;
 
     class NotifyInputNRenderingStarted_RAII
     {
@@ -647,7 +641,7 @@ public:
 
         ~NotifyInputNRenderingStarted_RAII();
     };
-    typedef boost::shared_ptr<NotifyInputNRenderingStarted_RAII> NotifyInputNRenderingStarted_RAIIPtr;
+    typedef std::shared_ptr<NotifyInputNRenderingStarted_RAII> NotifyInputNRenderingStarted_RAIIPtr;
 
 
 
@@ -693,7 +687,7 @@ public:
     static StatusEnum getInputsRoIsFunctor(bool useTransforms,
                                            double time,
                                            ViewIdx view,
-                                           unsigned originalMipMapLevel,
+                                           unsigned originalMipmapLevel,
                                            const NodePtr & node,
                                            const NodePtr& callerNode,
                                            const NodePtr & treeRoot,
@@ -707,7 +701,7 @@ public:
      **/
     static StatusEnum computeRequestPass(double time,
                                          ViewIdx view,
-                                         unsigned int mipMapLevel,
+                                         unsigned int mipmapLevel,
                                          const RectD & renderWindow,
                                          const NodePtr & treeRoot,
                                          FrameRequestMap & request);
@@ -720,7 +714,7 @@ public:
                                                                const InputMatrixMapPtr & reroutesMap,
                                                                bool useTransforms,         // roi functor specific
                                                                StorageModeEnum renderStorageMode, // The storage of the image returned by the current Render
-                                                               unsigned int originalMipMapLevel,         // roi functor specific
+                                                               unsigned int originalMipmapLevel,         // roi functor specific
                                                                double time,
                                                                ViewIdx view,
                                                                const NodePtr & treeRoot,
@@ -855,9 +849,9 @@ public:
     ///////////////////////End Metadatas related////////////////////////
 
 
-    virtual void lock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
-    virtual bool tryLock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
-    virtual void unlock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
+    virtual void lock(const std::shared_ptr<Image> & entry) OVERRIDE FINAL;
+    virtual bool tryLock(const std::shared_ptr<Image> & entry) OVERRIDE FINAL;
+    virtual void unlock(const std::shared_ptr<Image> & entry) OVERRIDE FINAL;
     virtual bool canSetValue() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void abortAnyEvaluation(bool keepOldestRender = true) OVERRIDE FINAL;
     virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
@@ -950,7 +944,8 @@ public:
         }
     };
 
-    typedef boost::shared_ptr<OpenGLContextEffectData> OpenGLContextEffectDataPtr;
+    typedef std::shared_ptr<OpenGLContextEffectData> OpenGLContextEffectDataPtr;
+    typedef std::map<OSGLContextWPtr, OpenGLContextEffectDataPtr, std::owner_less<OSGLContextWPtr>> OpenGLContextEffectsMap;
 
 
     struct RenderActionArgs
@@ -1133,6 +1128,14 @@ protected:
      **/
     virtual void getFrameRange(double *first, double *last);
 
+    /**
+     * @brief Returns true if the value of renderScale is supported for the given the value of supportsRS.
+     **/
+    static bool isSupportedRenderScale(SupportsEnum supportsRS, const RenderScale renderScale)
+    {
+        return (supportsRS != eSupportsNo) || (renderScale == RenderScale::identity);
+    }
+
 public:
 
     StatusEnum getRegionOfDefinition_public(U64 hash,
@@ -1159,7 +1162,7 @@ public:
                                      ViewIdx view,
                                      RoIMap* ret);
 
-    FramesNeededMap getFramesNeeded_public(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel) WARN_UNUSED_RETURN;
+    FramesNeededMap getFramesNeeded_public(U64 hash, double time, ViewIdx view, unsigned int mipmapLevel) WARN_UNUSED_RETURN;
 
     void getFrameRange_public(U64 hash, double *first, double *last, bool bypasscache = false);
 
@@ -1328,11 +1331,6 @@ public:
         return ePluginOpenGLRenderSupportNone;
     }
 
-    virtual void onEnableOpenGLKnobValueChanged(bool /*activated*/)
-    {
-
-    }
-
     /**
      * @brief If this effect is a writer then the file path corresponding to the output images path will be fed
      * with the content of pattern.
@@ -1445,7 +1443,7 @@ public:
         }
     };
 
-    typedef boost::shared_ptr<ImagePlanesToRender> ImagePlanesToRenderPtr;
+    typedef std::shared_ptr<ImagePlanesToRender> ImagePlanesToRenderPtr;
 
     /**
      * @brief If the caller thread is currently rendering an image, it will return a pointer to it
@@ -1663,6 +1661,23 @@ public:
         return false;
     }
 
+    /**
+     * @brief The cursor currently requested by the overlay interact of this effect
+     * (OFX interact cursors, NatronGitHub/openfx#4).
+     * Returns false if the overlay requests the default cursor (or there is no overlay).
+     * If customImage is not empty, it is the name (without directory) of a PNG file in the plug-in
+     * resources, and hotSpotX/Y are in pixels of the 1x image; otherwise cursor is set.
+     * The viewer polls this after each event dispatched to the overlays: unlike change
+     * notifications, this also works when several overlays or viewers share the cursor.
+     **/
+    virtual bool getOverlayCursor(CursorEnum* /*cursor*/,
+                                  std::string* /*customImage*/,
+                                  int* /*hotSpotX*/,
+                                  int* /*hotSpotY*/) const
+    {
+        return false;
+    }
+
     virtual void redrawOverlayInteract();
 
     /**
@@ -1741,7 +1756,7 @@ public:
 
     /**
      * @brief Must return whether the plug-in handles concurrent OpenGL renders or not.
-     * By default the OpenFX OpenGL render suite cannot support concurrent OpenGL renders, but version 2 specified by natron allows to do so.
+     * By default the OpenFX OpenGL render suite cannot support concurrent OpenGL renders, but version 2 specified by Natron allows for this.
      **/
     virtual bool supportsConcurrentOpenGLRenders() const { return true; }
 
@@ -1937,7 +1952,7 @@ public:
         }
     };
 
-    typedef boost::shared_ptr<EffectTLSData> EffectTLSDataPtr;
+    typedef std::shared_ptr<EffectTLSData> EffectTLSDataPtr;
 
 protected:
 
@@ -2106,7 +2121,7 @@ protected:
 private:
 
     class Implementation;
-    boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
+    std::unique_ptr<Implementation> _imp; // PIMPL: hide implementation details
 
     friend class ReadNode;
     friend class WriteNode;
@@ -2125,7 +2140,7 @@ private:
      * @brief The internal of renderRoI, mainly it calls render and handles the thread safety of the effect.
      * @param time The time at which to render
      * @param scale The scale at which to render
-     * @param mipMapLevel Redundant with scale
+     * @param mipmapLevel Redundant with scale
      * @param view The view on which to render
      * @param renderWindow The rectangle to render of the image, in pixel coordinates
      * @param cachedImgParams The parameters of the image to render as they are in the cache.
@@ -2150,7 +2165,7 @@ private:
                                                  double time,
                                                  const ParallelRenderArgsPtr & frameArgs,
                                                  RenderSafetyEnum safety,
-                                                 unsigned int mipMapLevel,
+                                                 unsigned int mipmapLevel,
                                                  ViewIdx view,
                                                  const RectD & rod, //!< rod in canonical coordinates
                                                  const double par,
@@ -2175,7 +2190,7 @@ private:
                                              const RectD & rod,
                                              const RectD & canonicalRenderWindow,
                                              const InputMatrixMapPtr & transformMatrix,
-                                             unsigned int mipMapLevel,
+                                             unsigned int mipmapLevel,
                                              const RenderScale & renderMappedScale,
                                              bool useScaleOneInputImages,
                                              bool byPassCache,

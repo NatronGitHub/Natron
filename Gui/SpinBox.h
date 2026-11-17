@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,11 +27,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
+#include "Global/QtCompat.h"
 
 #include "Gui/LineEdit.h"
 #include "Gui/GuiFwd.h"
@@ -158,7 +154,7 @@ protected:
 
 private:
 
-    boost::scoped_ptr<SpinBoxPrivate> _imp;
+    std::unique_ptr<SpinBoxPrivate> _imp;
 };
 
 class KnobSpinBox
@@ -176,7 +172,7 @@ public:
 private:
 
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;

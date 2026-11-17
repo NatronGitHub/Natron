@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,8 +29,7 @@
 #include <algorithm> // min, max
 #include <vector>
 #include <stdexcept>
-#include <climits>
-#include <cfloat>
+#include <limits>
 
 #include <QApplication>
 #include <QHeaderView>
@@ -918,16 +917,21 @@ ExpandingLineEdit::updateMinimumWidth()
 {
     int left, right;
 
-    getTextMargins(&left, 0, &right, 0);
-    int width = left + right + 4 /*horizontalMargin in qlineedit.cpp*/;
-    getContentsMargins(&left, 0, &right, 0);
-    width += left + right;
+    QMargins textMargin = textMargins();
+    int width = textMargin.left() + textMargin.right() + 4;
+    QMargins contentMargin = contentsMargins();
+    width += contentMargin.left() + contentMargin.right();
 
-    QStyleOptionFrameV2 opt;
+    QStyleOptionFrame opt;
     initStyleOption(&opt);
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     int minWidth = style()->sizeFromContents(QStyle::CT_LineEdit, &opt, QSize(width, 0).
                                              expandedTo( QApplication::globalStrut() ), this).width();
+#else
+    // QApplication::globalStrut() was removed in Qt6.
+    int minWidth = style()->sizeFromContents(QStyle::CT_LineEdit, &opt, QSize(width, 0), this).width();
+#endif
     setMinimumWidth(minWidth);
 }
 
@@ -941,7 +945,7 @@ ExpandingLineEdit::resizeToContents()
     }
     if ( QWidget * parent = parentWidget() ) {
         QPoint position = pos();
-        int hintWidth = minimumWidth() + fontMetrics().width( displayText() );
+        int hintWidth = minimumWidth() + fontMetrics().horizontalAdvance( displayText() );
         int parentWidth = parent->width();
         int maxWidth = isRightToLeft() ? position.x() + oldWidth : parentWidth - position.x();
         int newWidth = qBound(originalWidth, hintWidth, maxWidth);
@@ -955,29 +959,23 @@ ExpandingLineEdit::resizeToContents()
     }
 }
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-QWidget*
-TableItemEditorFactory::createEditor(QVariant::Type userType,
-                                     QWidget *parent) const
-#else
 QWidget*
 TableItemEditorFactory::createEditor(int userType,
                                      QWidget *parent) const
-#endif
 {
     switch (userType) {
     case QVariant::UInt: {
         SpinBox *sb = new SpinBox(parent, SpinBox::eSpinBoxTypeInt);
         sb->setFrame(false);
-        sb->setMaximum(INT_MAX);
+        sb->setMaximum(std::numeric_limits<int>::max());
 
         return sb;
     }
     case QVariant::Int: {
         SpinBox *sb = new SpinBox(parent, SpinBox::eSpinBoxTypeInt);
         sb->setFrame(false);
-        sb->setMinimum(INT_MIN);
-        sb->setMaximum(INT_MAX);
+        sb->setMinimum(std::numeric_limits<int>::min());
+        sb->setMaximum(std::numeric_limits<int>::max());
 
         return sb;
     }
@@ -987,8 +985,8 @@ TableItemEditorFactory::createEditor(int userType,
     case QVariant::Double: {
         SpinBox *sb = new SpinBox(parent, SpinBox::eSpinBoxTypeDouble);
         sb->setFrame(false);
-        sb->setMinimum(-DBL_MAX);
-        sb->setMaximum(DBL_MAX);
+        sb->setMinimum(std::numeric_limits<double>::lowest());
+        sb->setMaximum(std::numeric_limits<double>::max());
 
         return sb;
     }
@@ -1008,13 +1006,8 @@ TableItemEditorFactory::createEditor(int userType,
     return 0;
 }
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-QByteArray
-TableItemEditorFactory::valuePropertyName(QVariant::Type userType) const
-#else
 QByteArray
 TableItemEditorFactory::valuePropertyName(int userType) const
-#endif
 {
     switch (userType) {
     case QVariant::UInt:

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -25,22 +25,23 @@
 
 #include "ProgressPanel.h"
 
+#include <limits>
 #include <map>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QMutex>
+#include <QMutex>
 #include <QProgressBar>
 #include <QVBoxLayout>
 #include <QKeyEvent>
 #include <QItemSelectionModel>
 #include <QTextEdit>
 #include <QApplication>
-#include <QtCore/QThread>
+#include <QThread>
 #include <QHeaderView>
 #include <QCheckBox>
 #include <QCursor>
-#include <QtCore/QTimer>
+#include <QTimer>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -77,7 +78,7 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER
 
-typedef std::map<NodeWPtr, ProgressTaskInfoPtr> TasksMap;
+typedef std::map<NodeWPtr, ProgressTaskInfoPtr, std::owner_less<NodeWPtr>> TasksMap;
 typedef std::vector<ProgressTaskInfoPtr> TasksOrdered;
 struct ProgressPanelPrivate
 {
@@ -147,7 +148,10 @@ ProgressPanel::ProgressPanel(Gui* gui)
     : QWidget(gui)
     , PanelWidget(this, gui)
     , _imp( new ProgressPanelPrivate() )
+    , _taskbar(0)
 {
+    _taskbar = new TaskBar(this);
+
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
     _imp->mainLayout->setSpacing(0);
@@ -295,7 +299,7 @@ ProgressPanel::keyReleaseEvent(QKeyEvent* e)
 }
 
 void
-ProgressPanel::enterEvent(QEvent* e)
+ProgressPanel::enterEvent(QtCompat::QEnterEvent* e)
 {
     enterEventBase();
     QWidget::enterEvent(e);
@@ -408,7 +412,7 @@ ProgressPanel::doProgressStartOnMainThread(const NodePtr& node,
                                            const QString & /*messageid*/,
                                            bool canCancel)
 {
-    startTask(node, INT_MIN, INT_MAX, 1, false, canCancel, message);
+    startTask(node, std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), 1, false, canCancel, message);
 }
 
 void
@@ -442,7 +446,7 @@ ProgressPanel::startTask(const NodePtr& node,
     if (!node) {
         return;
     }
-    assert( (canPause && firstFrame != INT_MIN && lastFrame != INT_MAX) || !canPause );
+    assert( (canPause && firstFrame != std::numeric_limits<int>::min() && lastFrame != std::numeric_limits<int>::max()) || !canPause );
 
     ProgressTaskInfoPtr task;
     {
@@ -466,6 +470,7 @@ ProgressPanel::startTask(const NodePtr& node,
                                      canCancel,
                                      message, process) );
 
+    task->setTaskBar(_taskbar);
 
     if ( canPause || node->getEffectInstance()->isOutput() ) {
         task->createItems();

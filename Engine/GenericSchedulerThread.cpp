@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -25,13 +25,11 @@
 
 #include "GenericSchedulerThread.h"
 
-#include <boost/make_shared.hpp>
-
-#include <QtCore/QCoreApplication>
-#include <QtCore/QMutex>
-#include <QtCore/QWaitCondition>
-#include <QtCore/QMetaType>
-#include <QtCore/QDebug>
+#include <QCoreApplication>
+#include <QMutex>
+#include <QWaitCondition>
+#include <QMetaType>
+#include <QDebug>
 
 #ifdef DEBUG
 #include "Global/FloatingPointExceptions.h"
@@ -96,7 +94,7 @@ struct GenericSchedulerThreadPrivate
     QMutex executingOnMainThreadMutex;
 
     // Only used on the main-thread
-    boost::scoped_ptr<GenericSchedulerThreadWatcher> blockingOperationWatcher;
+    std::unique_ptr<GenericSchedulerThreadWatcher> blockingOperationWatcher;
 
     GenericSchedulerThreadPrivate(GenericSchedulerThread* p)
         : _p(p)
@@ -184,7 +182,7 @@ GenericSchedulerThread::quitThread(bool allowRestarts)
     {
         QMutexLocker k(&_imp->enqueuedTasksMutex);
         _imp->enqueuedTasks.clear();
-        GenericThreadStartArgsPtr stubArgs = boost::make_shared<GenericThreadStartArgs>(true);
+        GenericThreadStartArgsPtr stubArgs = std::make_shared<GenericThreadStartArgs>(true);
         _imp->enqueuedTasks.push_back(stubArgs);
     }
 
@@ -231,7 +229,7 @@ GenericSchedulerThreadPrivate::waitForThreadsToQuit_internal(bool allowBlockingF
     {
         QMutexLocker k(&mustQuitMutex);
         while (mustQuit) {
-            mustQuitCond.wait(&mustQuitMutex);
+            mustQuitCond.wait(k.mutex());
         }
     }
 
@@ -408,7 +406,7 @@ GenericSchedulerThreadPrivate::waitForAbortToComplete_internal(bool allowBlockin
         QMutexLocker k(&abortRequestedMutex);
 
         while (abortRequested > 0) {
-            abortRequestedCond.wait(&abortRequestedMutex);
+            abortRequestedCond.wait(k.mutex());
         }
     }
     _p->onWaitForAbortCompleted();
@@ -575,7 +573,7 @@ GenericSchedulerThread::run()
         {
             QMutexLocker l(&_imp->startRequestsMutex);
             while (_imp->startRequests <= 0) {
-                _imp->startRequestsCond.wait(&_imp->startRequestsMutex);
+                _imp->startRequestsCond.wait(l.mutex());
             }
             ///We got the request
             if (_imp->startRequests > 0) {
@@ -602,7 +600,7 @@ GenericSchedulerThread::requestExecutionOnMainThread(const GenericThreadExecOnMa
     Q_EMIT executionOnMainThreadRequested(inArgs);
 
     while (_imp->executingOnMainThread) {
-        _imp->executingOnMainThreadCond.wait(&_imp->executingOnMainThreadMutex);
+        _imp->executingOnMainThreadCond.wait(processLocker.mutex());
     }
 }
 

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,14 +28,10 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
 #include <map>
 #include <vector>
 
+#include <QDebug>
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QUndoCommand>
@@ -49,6 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/TimeLine.h"
 #include "Engine/Curve.h"
 #include "Engine/Knob.h"
+#include "Engine/Node.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
 
@@ -160,7 +157,12 @@ private:
 
             if ( knob->getHolder()->getApp() ) {
                 if (_valueChangedReturnCode[i] == 1) { //the value change also added a keyframe
-                    knobUI->removeKeyFrame( _newKeys[i].getTime(), dimension, ViewIdx(0) );
+                    try {
+                        knobUI->removeKeyFrame( _newKeys[i].getTime(), dimension, ViewIdx(0) );
+                    } catch (std::exception&) {
+                        qDebug() << "KnobUndoCommand::undo: could not remove keyframe from knob" << knob->getName().c_str() << "at time" << _newKeys[i].getTime() << "dimension" << dimension;
+                        // ignore
+                    }
                     modifiedKeyFrame = true;
                 } else if (_valueChangedReturnCode[i] == 2) {
                     //the value change moved a keyframe
@@ -184,8 +186,13 @@ private:
             knobUI->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeysAndUpdate();
         }
 
-        setText( tr("Set value of %1")
-                 .arg( QString::fromUtf8( knob->getLabel().c_str() ) ) );
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+        QString holderName;
+        if (effect) {
+            holderName = QString::fromUtf8( effect->getNode()->getLabel().c_str() );
+        }
+
+        setText( tr("Set value of %1.%2").arg(holderName).arg( QString::fromUtf8( knob->getLabel().c_str() ) ) );
     } // undo
 
     virtual void redo() OVERRIDE FINAL
@@ -263,8 +270,13 @@ private:
             knobUI->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeysAndUpdate();
         }
 
-        setText( tr("Set value of %1")
-                 .arg( QString::fromUtf8( knob->getLabel().c_str() ) ) );
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+        QString holderName;
+        if (effect) {
+            holderName = QString::fromUtf8( effect->getNode()->getLabel().c_str() );
+        }
+
+        setText( tr("Set value of %1.%2").arg(holderName).arg( QString::fromUtf8( knob->getLabel().c_str() ) ) );
 
         _firstRedoCalled = true;
     } // redo
@@ -328,7 +340,7 @@ private:
     };
 
     ///For each knob, the second member points to a clone of the knob before the first redo() call was made
-    typedef std::map < KnobGuiWPtr, std::list<ValueToSet> >  ParamsMap;
+    typedef std::map<KnobGuiWPtr, std::list<ValueToSet>, std::owner_less<KnobGuiWPtr>> ParamsMap;
     ParamsMap knobs;
     bool createNew;
     bool firstRedoCalled;
@@ -365,7 +377,7 @@ class PasteUndoCommand
     Q_DECLARE_TR_FUNCTIONS(PasteUndoCommand)
 
 private:
-    boost::scoped_ptr<PasteUndoCommandPrivate> _imp;
+    std::unique_ptr<PasteUndoCommandPrivate> _imp;
 
 public:
 
@@ -402,7 +414,8 @@ private:
 
     bool _isNodeReset;
     int _targetDim;
-    std::list<KnobIWPtr> _knobs, _clones;
+    std::list<KnobIWPtr> _knobs;
+    std::list<KnobIPtr> _clones;  // owned by this
 };
 
 class SetExpressionCommand

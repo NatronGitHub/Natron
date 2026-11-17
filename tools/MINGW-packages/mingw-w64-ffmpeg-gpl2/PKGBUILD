@@ -3,17 +3,16 @@
 # Contributer: wirx6 <wirx654@gmail.com>
 
 _realname=ffmpeg
-pkgbase="mingw-w64-${_realname}-gpl2"
-pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-gpl2"
-pkgver=4.4
-pkgrel=1
+pkgbase="mingw-w64-natron_${_realname}-gpl2"
+pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}-gpl2"
+pkgver=4.4.3
+pkgrel=99.1
 pkgdesc="Complete and free Internet live audio and video broadcasting solution (mingw-w64)"
 arch=('any')
 url="https://ffmpeg.org/"
 license=('GPL')
 options=('staticlibs' 'strip')
 depends=("${MINGW_PACKAGE_PREFIX}-bzip2"
-         "${MINGW_PACKAGE_PREFIX}-celt"
          "${MINGW_PACKAGE_PREFIX}-fontconfig"
          "${MINGW_PACKAGE_PREFIX}-gnutls"
          "${MINGW_PACKAGE_PREFIX}-gsm"
@@ -38,20 +37,25 @@ depends=("${MINGW_PACKAGE_PREFIX}-bzip2"
          "${MINGW_PACKAGE_PREFIX}-speex"
          "${MINGW_PACKAGE_PREFIX}-srt"
          #"${MINGW_PACKAGE_PREFIX}-wavpack"
-         "${MINGW_PACKAGE_PREFIX}-x264"
+         "${MINGW_PACKAGE_PREFIX}-natron_x264"
          "${MINGW_PACKAGE_PREFIX}-x265"
          "${MINGW_PACKAGE_PREFIX}-xvidcore"
 	 "${MINGW_PACKAGE_PREFIX}-dav1d"
+	 "${MINGW_PACKAGE_PREFIX}-aom"
          "${MINGW_PACKAGE_PREFIX}-zlib")
 makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-pkg-config"
-             "${MINGW_PACKAGE_PREFIX}-nasm"
-             "${MINGW_PACKAGE_PREFIX}-aom")
-source=(https://ffmpeg.org/releases/${_realname}-${pkgver}.tar.xz)
-sha256sums=('06b10a183ce5371f915c6bb15b7b1fffbe046e8275099c96affc29e17645d909')
+	     "${MINGW_PACKAGE_PREFIX}-nasm")
+source=(https://ffmpeg.org/releases/${_realname}-${pkgver}.tar.xz
+        https://github.com/FFmpeg/FFmpeg/commit/effadce6c756247ea8bae32dc13bb3e6f464f0eb.patch)
+sha256sums=('6c5b6c195e61534766a0b5fe16acc919170c883362612816d0a1c7f4f947006e'
+            '8fad5f253bcda7a17523dbfcbfcfd60b3db23783dcdb65998005cddc7c7776c3')
 
 prepare() {
   cd "${srcdir}/${_realname}-${pkgver}"
+
+  # https://github.com/msys2/MINGW-packages/issues/17946
+  patch -Nbp1 -i "${srcdir}"/effadce6c756247ea8bae32dc13bb3e6f464f0eb.patch
 }
 
 build() {
@@ -81,7 +85,6 @@ build() {
     --enable-libass \
     --enable-libbluray \
     --enable-libcaca \
-    --enable-libcelt \
     --enable-libfreetype \
     --enable-libgsm \
     --enable-libmfx \

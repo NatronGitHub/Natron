@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,10 +29,6 @@
 #include "Global/Macros.h"
 
 #include <list>
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#endif
 
 #include "Gui/GuiFwd.h"
 
@@ -84,10 +80,10 @@ public:
         int nNodes;
         ar & ::boost::serialization::make_nvp("NbNodes", nNodes);
         for (int i = 0; i < nNodes; ++i) {
-            NodeSerializationPtr nS = boost::make_shared<NodeSerialization>();
+            NodeSerializationPtr nS = std::make_shared<NodeSerialization>();
             ar & ::boost::serialization::make_nvp("Node", *nS);
             nodes.push_back(nS);
-            NodeGuiSerializationPtr nGui = boost::make_shared<NodeGuiSerialization>();
+            NodeGuiSerializationPtr nGui = std::make_shared<NodeGuiSerialization>();
             ar & ::boost::serialization::make_nvp("NodeUI", *nGui);
             nodesUI.push_back(nGui);
         }

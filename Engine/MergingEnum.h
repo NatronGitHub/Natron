@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -43,7 +43,7 @@ namespace Merge {
  * Keep this in sync with the Merge node's operators otherwise everything will fall apart.
  **/
 inline std::string
-getOperatorString(MergingFunctionEnum operation)
+getOperatorString(Natron::MergingFunctionEnum operation)
 {
     switch (operation) {
     case eMergeATop:
@@ -169,7 +169,7 @@ getOperatorString(MergingFunctionEnum operation)
 } // getOperationString
 
 inline std::string
-getOperatorHelpString(MergingFunctionEnum operation)
+getOperatorHelpString(Natron::MergingFunctionEnum operation)
 {
     switch (operation) {
     case eMergeATop:
@@ -295,8 +295,8 @@ getOperatorHelpString(MergingFunctionEnum operation)
 } // getOperationHelpString
 
 inline
-PixmapEnum
-getOperatorPixmap(MergingFunctionEnum operation)
+Natron::PixmapEnum
+getOperatorPixmap(Natron::MergingFunctionEnum operation)
 {
     switch (operation) {
     case eMergeATop:

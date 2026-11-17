@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,10 +27,6 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
 
 #include "Gui/GuiFwd.h"
 #include "Gui/KnobGui.h"
@@ -112,7 +108,7 @@ private:
 
     virtual bool shouldAddStretch() const OVERRIDE FINAL { return false; }
 
-    boost::scoped_ptr<KnobGuiTablePrivate> _imp;
+    std::unique_ptr<KnobGuiTablePrivate> _imp;
 };
 
 class KnobGuiLayers

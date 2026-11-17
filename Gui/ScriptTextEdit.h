@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,19 +28,17 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QSize>
+#include <QSize>
 #include <QTextEdit>
 #include <QPlainTextEdit>
 #include <QSyntaxHighlighter>
+#include <QRegularExpression>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+
+#include "Global/QtCompat.h"
 
 #include "Gui/GuiFwd.h"
 
@@ -62,9 +60,9 @@ public:
 private:
 
     virtual void highlightBlock(const QString &text) OVERRIDE FINAL;
-    bool matchMultiline(const QString &text, const QRegExp &delimiter, const int inState, const QTextCharFormat &style);
+    bool matchMultiline(const QString &text, const QRegularExpression &delimiter, const int inState, const QTextCharFormat &style);
 
-    boost::scoped_ptr<PySyntaxHighlighterPrivate> _imp;
+    std::unique_ptr<PySyntaxHighlighterPrivate> _imp;
 };
 
 class LineNumberWidget;
@@ -103,7 +101,7 @@ private:
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent *event) OVERRIDE FINAL;
     virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
 
 private:

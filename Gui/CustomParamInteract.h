@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,19 +28,10 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include "Global/GlobalDefines.h"
 
-CLANG_DIAG_OFF(deprecated)
-CLANG_DIAG_OFF(uninitialized)
-#include <QGLWidget>
-CLANG_DIAG_ON(deprecated)
-CLANG_DIAG_ON(uninitialized)
+#include <QOpenGLWidget>
 
 #include "Engine/OverlaySupport.h"
 
@@ -50,7 +41,7 @@ NATRON_NAMESPACE_ENTER
 
 struct CustomParamInteractPrivate;
 class CustomParamInteract
-    : public QGLWidget, public OverlaySupport
+    : public QOpenGLWidget, public OverlaySupport
 {
 public:
     CustomParamInteract(const KnobGuiPtr& knob,
@@ -89,7 +80,6 @@ public:
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
-    virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL { return 0; }
 
     virtual RectD getViewportRect() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
@@ -127,7 +117,7 @@ private:
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
-    boost::scoped_ptr<CustomParamInteractPrivate> _imp;
+    std::unique_ptr<CustomParamInteractPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

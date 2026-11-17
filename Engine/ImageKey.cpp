@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -36,7 +36,7 @@ ImageKey::ImageKey()
     : KeyHelper<U64>()
     , _nodeHashKey(0)
     , _time(0)
-//, _mipMapLevel(0)
+//, _mipmapLevel(0)
     , _pixelAspect(1)
     , _view(0)
     , _draftMode(false)
@@ -49,7 +49,7 @@ ImageKey::ImageKey(const CacheEntryHolder* holder,
                    U64 nodeHashKey,
                    bool frameVaryingOrAnimated,
                    double time,
-                   //unsigned int mipMapLevel, //< Store different mipmapLevels under the same key
+                   //unsigned int mipmapLevel, //< Store different mipmapLevels under the same key
                    ViewIdx view,
                    double pixelAspect,
                    bool draftMode,

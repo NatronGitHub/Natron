@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,8 +28,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <boost/scoped_ptr.hpp>
-
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppManager.h"
 #include "Engine/Settings.h"
@@ -53,7 +51,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                    const InputMatrixMapPtr& reroutesMap,
                                    bool useTransforms, // roi functor specific
                                    StorageModeEnum renderStorageMode, // if the render of this node is in OpenGL
-                                   unsigned int originalMipMapLevel, // roi functor specific
+                                   unsigned int originalMipmapLevel, // roi functor specific
                                    double time,
                                    ViewIdx view,
                                    const NodePtr& treeRoot,
@@ -173,11 +171,20 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
             if ( foundInputRoI == inputRois.end() ) {
                 continue;
             }
+            // It's OK to have an infinite RoI, since we intersect with the source RoD in the end,
+            // and it actually happens quite often when composing Transforms,
+            // see getInputsRoIsFunctor(),
+            // which calls transformInputRois(),
+            // which calls Transform::transformRegionFromRoD(),
+            // which calls Transform::transformRegionFromPoints(),
+            // which sets the input RoI to infinite.
+            /*
             if ( foundInputRoI->second.isInfinite() ) {
                 effect->setPersistentMessage( eMessageTypeError, tr("%1 asked for an infinite region of interest upstream.").arg( QString::fromUtf8( node->getScriptName_mt_safe().c_str() ) ).toStdString() );
 
                 return EffectInstance::eRenderRoIRetCodeFailed;
             }
+            */
 
             if ( foundInputRoI->second.isNull() ) {
                 continue;
@@ -225,7 +232,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                 StatusEnum stat = EffectInstance::getInputsRoIsFunctor(useTransforms,
                                                                                        f,
                                                                                        viewIt->first,
-                                                                                       originalMipMapLevel,
+                                                                                       originalMipmapLevel,
                                                                                        inputNode,
                                                                                        node,
                                                                                        treeRoot,
@@ -239,9 +246,6 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                 ///Do not count frames pre-fetched in RoI functor mode, it is harmless and may
                                 ///limit calculations that will be done later on anyway.
                             } else {
-                                RenderScale scaleOne(1.);
-                                RenderScale scale( Image::getScaleFromMipMapLevel(originalMipMapLevel) );
-
                                 ///Render the input image with the bit depth of its preference
                                 ImageBitDepthEnum inputPrefDepth = inputEffect->getBitDepth(-1);
 
@@ -253,17 +257,16 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                     frameArgs->request->getFrameViewCanonicalRoI(f, viewIt->first, &roi);
                                 }
 
-                                RectI inputRoIPixelCoords;
-                                const unsigned int upstreamMipMapLevel = useScaleOneInputs ? 0 : originalMipMapLevel;
-                                const RenderScale & upstreamScale = useScaleOneInputs ? scaleOne : scale;
-                                roi.toPixelEnclosing(upstreamMipMapLevel, inputPar, &inputRoIPixelCoords);
+                                const unsigned int upstreamMipmapLevel = useScaleOneInputs ? 0 : originalMipmapLevel;
+                                const RenderScale upstreamScale = useScaleOneInputs ? RenderScale::identity : RenderScale::fromMipmapLevel(originalMipmapLevel);
+                                const RectI inputRoIPixelCoords = roi.toPixelEnclosing(upstreamMipmapLevel, inputPar);
 
                                 std::map<ImagePlaneDesc, ImagePtr> inputImgs;
                                 {
-                                    boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
+                                    std::unique_ptr<EffectInstance::RenderRoIArgs> renderArgs;
                                     renderArgs.reset( new EffectInstance::RenderRoIArgs( f, //< time
                                                                                          upstreamScale, //< scale
-                                                                                         upstreamMipMapLevel, //< mipmapLevel (redundant with the scale)
+                                                                                         upstreamMipmapLevel, //< mipmapLevel (redundant with the scale)
                                                                                          viewIt->first, //< view
                                                                                          byPassCache,
                                                                                          inputRoIPixelCoords, //< roi in pixel coordinates
@@ -308,7 +311,7 @@ StatusEnum
 EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                      double time,
                                      ViewIdx view,
-                                     unsigned originalMipMapLevel,
+                                     unsigned originalMipmapLevel,
                                      const NodePtr& node,
                                      const NodePtr& /*callerNode*/,
                                      const NodePtr& treeRoot,
@@ -330,15 +333,15 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
     assert(effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsNo ||
            effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes);
     bool supportsRs = effect->supportsRenderScale();
-    unsigned int mappedLevel = supportsRs ? originalMipMapLevel : 0;
+    unsigned int mappedLevel = supportsRs ? originalMipmapLevel : 0;
     FrameRequestMap::iterator foundNode = requests.find(node);
     if ( foundNode != requests.end() ) {
         nodeRequest = foundNode->second;
     } else {
         ///Setup global data for the node for the whole frame render
 
-        NodeFrameRequestPtr tmp = boost::make_shared<NodeFrameRequest>();
-        tmp->mappedScale.x = tmp->mappedScale.y = Image::getScaleFromMipMapLevel(mappedLevel);
+        NodeFrameRequestPtr tmp = std::make_shared<NodeFrameRequest>();
+        tmp->mappedScale = RenderScale::fromMipmapLevel(mappedLevel);
         tmp->nodeHash = effect->getRenderHash();
 
         std::pair<FrameRequestMap::iterator, bool> ret = requests.insert( std::make_pair(node, tmp) );
@@ -374,8 +377,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         fvRequest->globalData.identityView = view;
 
 
-        RectI identityRegionPixel;
-        canonicalRenderWindow.toPixelEnclosing(mappedLevel, par, &identityRegionPixel);
+        const RectI identityRegionPixel = canonicalRenderWindow.toPixelEnclosing(mappedLevel, par);
 
         if ( (view != 0) && (viewInvariance == eViewInvarianceAllViewsInvariant) ) {
             fvRequest->globalData.isIdentity = true;
@@ -406,8 +408,8 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
 
         ///Concatenate transforms if needed
         if (useTransforms) {
-            fvRequest->globalData.transforms = boost::make_shared<InputMatrixMap>();
-#pragma message WARN("TODO: can set draftRender properly here?")
+            fvRequest->globalData.transforms = std::make_shared<InputMatrixMap>();
+//#pragma message WARN("TODO: can set draftRender properly here?")
             effect->tryConcatenateTransforms( time, /*draftRender=*/false, view, nodeRequest->mappedScale, fvRequest->globalData.transforms.get() );
         }
 
@@ -439,7 +441,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
             StatusEnum stat = getInputsRoIsFunctor(useTransforms,
                                                    fvRequest->globalData.inputIdentityTime,
                                                    inputView,
-                                                   originalMipMapLevel,
+                                                   originalMipmapLevel,
                                                    node,
                                                    node,
                                                    treeRoot,
@@ -460,7 +462,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
             StatusEnum stat = getInputsRoIsFunctor(useTransforms,
                                                    fvRequest->globalData.inputIdentityTime,
                                                    fvRequest->globalData.identityView,
-                                                   originalMipMapLevel,
+                                                   originalMipmapLevel,
                                                    inputIdentityNode,
                                                    node,
                                                    treeRoot,
@@ -518,7 +520,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                                               fvRequest->globalData.transforms,
                                                               useTransforms,
                                                               eStorageModeRAM /*returnStorage*/,
-                                                              originalMipMapLevel,
+                                                              originalMipmapLevel,
                                                               time,
                                                               view,
                                                               treeRoot,
@@ -537,7 +539,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
 StatusEnum
 EffectInstance::computeRequestPass(double time,
                                    ViewIdx view,
-                                   unsigned int mipMapLevel,
+                                   unsigned int mipmapLevel,
                                    const RectD& renderWindow,
                                    const NodePtr& treeRoot,
                                    FrameRequestMap& request)
@@ -546,7 +548,7 @@ EffectInstance::computeRequestPass(double time,
     StatusEnum stat = getInputsRoIsFunctor(doTransforms,
                                            time,
                                            view,
-                                           mipMapLevel,
+                                           mipmapLevel,
                                            treeRoot,
                                            treeRoot,
                                            treeRoot,
@@ -816,7 +818,7 @@ ParallelRenderArgsSetter::updateNodesRequest(const FrameRequestMap& request)
     }
 }
 
-ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr> >& args)
+ParallelRenderArgsSetter::ParallelRenderArgsSetter(const std::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr> >& args)
     : argsMap(args)
 {
     // Ensure this thread gets an OpenGL context for the render of the frame

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,13 +28,13 @@
 
 #include <cassert>
 #include <stdexcept>
-#include <QtCore/QDebug>
+#include <QDebug>
 
 #include <QApplication>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
-#include <QtGui/QKeyEvent>
-#include <QtCore/QTimer>
+#include <QKeyEvent>
+#include <QTimer>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/Node.h"
@@ -76,6 +76,8 @@ ViewerTab::onColorSpaceComboBoxChanged(int v)
         colorspace = eViewerColorSpaceSRGB;
     } else if (v == 2) {
         colorspace = eViewerColorSpaceRec709;
+    } else if (v == 3) {
+        colorspace = eViewerColorSpaceBT1886;
     } else {
         assert(false);
         throw std::logic_error("ViewerTab::onColorSpaceComboBoxChanged(): unknown colorspace");
@@ -530,7 +532,7 @@ ViewerTab::~ViewerTab()
 {
     Gui* gui = getGui();
     if (gui) {
-        NodeGraph* graph = 0;
+        NodeGraph* graph = nullptr;
         if (_imp->viewerNode) {
             NodeCollectionPtr collection = _imp->viewerNode->getNode()->getGroup();
             if (collection) {
@@ -549,7 +551,6 @@ ViewerTab::~ViewerTab()
         } else {
             graph = gui->getNodeGraph();
         }
-        assert(graph);
         GuiAppInstancePtr app = gui->getApp();
         if ( app && !app->isClosing() && graph && (graph->getLastSelectedViewer() == this) ) {
             graph->setLastSelectedViewer(0);
@@ -588,7 +589,7 @@ ViewerTab::previousLayer()
 }
 
 void
-ViewerTab::enterEvent(QEvent* e)
+ViewerTab::enterEvent(QtCompat::QEnterEvent* e)
 {
     enterEventBase();
     QWidget::enterEvent(e);
@@ -618,11 +619,13 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     bool accept = true;
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)Gui::handleNativeKeys( e->key(), e->nativeScanCode(), e->nativeVirtualKey() );
-    double scale = 1. / ( 1 << _imp->viewer->getCurrentRenderScale() );
 
-    if ( e->isAutoRepeat() && notifyOverlaysKeyRepeat(RenderScale(scale), e) ) {
-        update();
-    } else if ( notifyOverlaysKeyDown(RenderScale(scale), e) ) {
+    const unsigned int mipmapLevel = _imp->viewer->getCurrentMipmapLevel();
+    // the overlays may change their cursor on a key event, even when they don't catch it
+    bool overlaysCaught = e->isAutoRepeat() ? notifyOverlaysKeyRepeat(RenderScale::fromMipmapLevel(mipmapLevel), e)
+                                             : notifyOverlaysKeyDown(RenderScale::fromMipmapLevel(mipmapLevel), e);
+    _imp->viewer->updateOverlayCursor();
+    if (overlaysCaught) {
         update();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
@@ -857,10 +860,10 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideTop, modifiers, key) ) {
         toggleTopToolbarVisibility();
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomIn, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
-        QWheelEvent e(mapFromGlobal( QCursor::pos() ), 120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
+        QWheelEvent e(mapFromGlobal( QCursor::pos() ), QCursor::pos(), QPoint(), QPoint(0, 120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
         wheelEvent(&e);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
-        QWheelEvent e(mapFromGlobal( QCursor::pos() ), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
+        QWheelEvent e(mapFromGlobal( QCursor::pos() ), QCursor::pos(), QPoint(), QPoint(0, -120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
         wheelEvent(&e);
     } else if (key == Qt::Key_Escape) {
         _imp->viewer->s_selectionCleared();
@@ -894,8 +897,10 @@ ViewerTab::keyReleaseEvent(QKeyEvent* e)
     if ( !getGui() ) {
         return QWidget::keyPressEvent(e);
     }
-    double scale = 1. / ( 1 << _imp->viewer->getCurrentRenderScale() );
-    if ( notifyOverlaysKeyUp(RenderScale(scale), e) ) {
+    const unsigned int mipmapLevel = _imp->viewer->getCurrentMipmapLevel();
+    bool overlaysCaught = notifyOverlaysKeyUp(RenderScale::fromMipmapLevel(mipmapLevel), e);
+    _imp->viewer->updateOverlayCursor();
+    if (overlaysCaught) {
         _imp->viewer->redraw();
     } else {
         handleUnCaughtKeyUpEvent(e);
@@ -956,7 +961,7 @@ ViewerTab::eventFilter(QObject *target,
             if (app) {
                 NodeGuiIPtr nodegui_i = _imp->viewerNode->getNode()->getNodeGui();
                 assert(nodegui_i);
-                NodeGuiPtr nodegui = boost::dynamic_pointer_cast<NodeGui>(nodegui_i);
+                NodeGuiPtr nodegui = std::dynamic_pointer_cast<NodeGui>(nodegui_i);
                 if (nodegui) {
                     gui->selectNode(nodegui);
                 }

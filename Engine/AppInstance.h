@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,19 +32,12 @@
 #include <list>
 #include <string>
 #include <utility>
-#include <climits>              // for INT_MAX, INT_MIN
+#include <limits>
 #include <cstddef>              // for NULL
 
-#include <QtCore/QtGlobal>      // for Q_UNUSED
-#include <QtCore/QObject>  // for Q_OBJECT, Q_SIGNALS, Q_SLOTS
-#include <QtCore/QMutex>
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
+#include <QtGlobal>      // for Q_UNUSED
+#include <QObject>  // for Q_OBJECT, Q_SIGNALS, Q_SLOTS
+#include <QMutex>
 
 #include "Global/GlobalDefines.h"
 #include "Engine/RectD.h"
@@ -91,8 +84,7 @@ public:
 
 class AppInstance
     : public QObject
-    , public boost::noncopyable
-    , public boost::enable_shared_from_this<AppInstance>
+    , public std::enable_shared_from_this<AppInstance>
     , public TimeLineKeyFrames
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -101,7 +93,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     // TODO: enable_shared_from_this
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
 
     AppInstance(int appID);
 
@@ -151,6 +143,10 @@ public:
 
 protected:
 
+    AppInstance(const AppInstance&) = delete;
+
+    AppInstance& operator=(const AppInstance&) = delete;
+
     virtual void loadInternal(const CLArgs& cl, bool makeEmptyInstance);
 
     void executeCommandLinePythonCommands(const CLArgs& args);
@@ -170,7 +166,7 @@ public:
 
     NodePtr createWriter(const std::string& filename,
                          CreateNodeArgs& args,
-                         int firstFrame = INT_MIN, int lastFrame = INT_MAX);
+                         int firstFrame = std::numeric_limits<int>::min(), int lastFrame = std::numeric_limits<int>::max());
 
     NodePtr getNodeByFullySpecifiedName(const std::string & name) const;
 
@@ -197,22 +193,22 @@ public:
     virtual void warningDialog(const std::string & title, const std::string & message, bool* stopAsking, bool useHtml) const;
     virtual void informationDialog(const std::string & title, const std::string & message, bool useHtml) const;
     virtual void informationDialog(const std::string & title, const std::string & message, bool* stopAsking, bool useHtml) const;
-    virtual StandardButtonEnum questionDialog(const std::string & title,
+    virtual Natron::StandardButtonEnum questionDialog(const std::string & title,
                                               const std::string & message,
                                               bool useHtml,
-                                              StandardButtons buttons =
-                                                  StandardButtons(eStandardButtonYes | eStandardButtonNo),
-                                              StandardButtonEnum defaultButton = eStandardButtonNoButton) const WARN_UNUSED_RETURN;
+                                              Natron::StandardButtons buttons =
+                                                  Natron::StandardButtons(Natron::StandardButtonEnum::eStandardButtonYes | Natron::StandardButtonEnum::eStandardButtonNo),
+                                              Natron::StandardButtonEnum defaultButton = Natron::StandardButtonEnum::eStandardButtonNoButton) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Asks a question to the user and returns the reply.
      * @param stopAsking Set to true if the user do not want Natron to ask the question again.
      **/
-    virtual StandardButtonEnum questionDialog(const std::string & /*title*/,
+    virtual Natron::StandardButtonEnum questionDialog(const std::string & /*title*/,
                                               const std::string & /*message*/,
                                               bool /*useHtml*/,
-                                              StandardButtons /*buttons*/,
-                                              StandardButtonEnum /*defaultButton*/,
+                                              Natron::StandardButtons /*buttons*/,
+                                              Natron::StandardButtonEnum /*defaultButton*/,
                                               bool* /*stopAsking*/)
     {
         return eStandardButtonYes;
@@ -285,7 +281,7 @@ public:
     {
     }
 
-    ViewerColorSpaceEnum getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const;
+    Natron::ViewerColorSpaceEnum getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) const;
 
     double getProjectFrameRate() const;
 
@@ -357,7 +353,7 @@ public:
 
     virtual void updateProjectLoadStatus(const QString& /*str*/) {}
 
-    virtual void closeLoadPRojectSplashScreen() {}
+    virtual void closeLoadProjectSplashScreen() {}
 
     std::string getAppIDString() const;
     const std::list<NodePtr>& getNodesBeingCreated() const;
@@ -474,7 +470,7 @@ private:
     NodePtr createNodeFromPythonModule(Plugin* plugin,
                                        const CreateNodeArgs& args);
 
-    boost::scoped_ptr<AppInstancePrivate> _imp;
+    std::unique_ptr<AppInstancePrivate> _imp;
 };
 
 class CreatingNodeTreeFlag_RAII

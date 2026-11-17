@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -34,13 +34,16 @@
 #include <QFont>
 #include <QStyleOption>
 #include <QFontMetrics>
-#include <QtCore/QDebug>
+#include <QDebug>
 #include <QPainter>
+#include <QPainterPath>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
+// clang-format off
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 #include <QMouseEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_ON(deprecated-register)
+// clang-format on
 
 #include "Engine/Settings.h"
 #include "Engine/KnobTypes.h"
@@ -103,7 +106,7 @@ ComboBox::ComboBox(QWidget* parent)
     , _currentDelta(0)
     , ignoreWheelEvent(false)
 {
-    _rootNode = boost::make_shared<ComboBoxMenuNode>();
+    _rootNode = std::make_shared<ComboBoxMenuNode>();
 
     setFrameShape(QFrame::Box);
 
@@ -136,7 +139,7 @@ ComboBox::sizeForWidth(int w) const
     int hextra = DROP_DOWN_ICON_SIZE * 2, vextra = 0;
 
     ///Indent of 1 character
-    int indent = fm.width( QLatin1Char('x') );
+    int indent = fm.horizontalAdvance( QLatin1Char('x') );
 
     if (indent > 0) {
         if ( (align & Qt::AlignLeft) || (align & Qt::AlignRight) ) {
@@ -236,7 +239,7 @@ ComboBox::layoutRect() const
 {
     QRect cr = contentsRect();
     Qt::Alignment align = QStyle::visualAlignment( Qt::LeftToRight, QFlag(_align) );
-    int indent = fontMetrics().width( QLatin1Char('x') ) / 2;
+    int indent = fontMetrics().horizontalAdvance( QLatin1Char('x') ) / 2;
 
     if (indent > 0) {
         if (align & Qt::AlignLeft) {
@@ -403,7 +406,7 @@ ComboBox::wheelEvent(QWheelEvent *e)
         return;
     }
     // a standard wheel click is 120
-    _currentDelta += e->delta();
+    _currentDelta += e->angleDelta().y();
 
     if ( (_currentDelta <= -120) || (120 <= _currentDelta) ) {
         int c = count();
@@ -524,7 +527,7 @@ ComboBox::insertItem(int index,
     }
 
     growMaximumWidthFromText(item);
-    ComboBoxMenuNodePtr node = boost::make_shared<ComboBoxMenuNode>();
+    ComboBoxMenuNodePtr node = std::make_shared<ComboBoxMenuNode>();
     node->text = item;
     node->isLeaf = action;
     node->parent = _rootNode.get();
@@ -550,7 +553,7 @@ ComboBox::addActionPrivate(QAction* action)
 
     growMaximumWidthFromText(text);
     action->setParent(this);
-    ComboBoxMenuNodePtr node = boost::make_shared<ComboBoxMenuNode>();
+    ComboBoxMenuNodePtr node = std::make_shared<ComboBoxMenuNode>();
     node->text = text;
     node->isLeaf = action;
     node->parent = _rootNode.get();
@@ -641,7 +644,7 @@ ComboBox::addItem(const QString & item,
             if (found) {
                 menuToFind = found;
             } else {
-                ComboBoxMenuNodePtr node = boost::make_shared<ComboBoxMenuNode>();
+                ComboBoxMenuNodePtr node = std::make_shared<ComboBoxMenuNode>();
                 node->text = realSplits[i];
                 node->parent = menuToFind;
                 menuToFind->children.push_back(node);
@@ -718,7 +721,7 @@ ComboBox::setCurrentText_internal(const QString & text)
     }
 
     if (_sizePolicy.horizontalPolicy() != QSizePolicy::Fixed) {
-        int w = m.width(str) + 2 * DROP_DOWN_ICON_SIZE;
+        int w = m.horizontalAdvance(str) + 2 * DROP_DOWN_ICON_SIZE;
         setMinimumWidth(w);
     }
 
@@ -738,7 +741,7 @@ ComboBox::setMaximumWidthFromText(const QString & str)
     if (_sizePolicy.horizontalPolicy() == QSizePolicy::Fixed) {
         return;
     }
-    int w = fontMetrics().width(str);
+    int w = fontMetrics().horizontalAdvance(str);
     setMaximumWidth(w + DROP_DOWN_ICON_SIZE * 2);
 }
 
@@ -748,8 +751,7 @@ ComboBox::growMaximumWidthFromText(const QString & str)
     if (_sizePolicy.horizontalPolicy() == QSizePolicy::Fixed) {
         return;
     }
-    int w = fontMetrics().width(str) + 2 * DROP_DOWN_ICON_SIZE;
-
+    int w = fontMetrics().horizontalAdvance(str) + 2 * DROP_DOWN_ICON_SIZE;
     if ( w > maximumWidth() ) {
         setMaximumWidth(w);
     }
@@ -838,7 +840,7 @@ ComboBox::setCurrentIndex_internal(int index)
 
     if (_sizePolicy.horizontalPolicy() != QSizePolicy::Fixed) {
         QFontMetrics m = fontMetrics();
-        int w = m.width(str) + 2 * DROP_DOWN_ICON_SIZE;
+        int w = m.horizontalAdvance(str) + 2 * DROP_DOWN_ICON_SIZE;
         setMinimumWidth(w);
     }
 

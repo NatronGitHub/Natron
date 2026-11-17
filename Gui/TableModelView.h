@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,21 +30,16 @@
 
 #include <vector>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
-
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 GCC_ONLY_DIAG_OFF(class-memaccess)
-#include <QtCore/QVector>
+#include <QVector>
 GCC_ONLY_DIAG_ON(class-memaccess)
 #include <QTreeView>
 #include <QAbstractItemModel>
 #include <QItemEditorFactory>
-#include <QtCore/QMetaType>
-#include <QtCore/QSize>
+#include <QMetaType>
+#include <QSize>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -164,12 +159,12 @@ public:
 
     inline QColor backgroundColor() const
     {
-        return qvariant_cast<QColor>( data(Qt::BackgroundColorRole) );
+        return qvariant_cast<QColor>( data(Qt::BackgroundRole) );
     }
 
     inline void setBackgroundColor(const QColor &color)
     {
-        setData(Qt::BackgroundColorRole, color);
+        setData(Qt::BackgroundRole, color);
     }
 
     inline QBrush background() const
@@ -184,12 +179,12 @@ public:
 
     inline QColor textColor() const
     {
-        return qvariant_cast<QColor>( data(Qt::TextColorRole) );
+        return qvariant_cast<QColor>( data(Qt::ForegroundRole) );
     }
 
     inline void setTextColor(const QColor &color)
     {
-        setData(Qt::TextColorRole, color);
+        setData(Qt::ForegroundRole, color);
     }
 
     inline QBrush foreground() const
@@ -270,13 +265,8 @@ public:
     {
     }
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    virtual QWidget * createEditor(QVariant::Type type, QWidget *parent) const OVERRIDE FINAL;
-    virtual QByteArray valuePropertyName(QVariant::Type type) const OVERRIDE FINAL;
-#else
     virtual QWidget * createEditor(int userType, QWidget *parent) const OVERRIDE FINAL;
     virtual QByteArray valuePropertyName(int userType) const OVERRIDE FINAL;
-#endif
 };
 
 
@@ -380,7 +370,7 @@ private:
 
     void rebuildDraggedItemsFromSelection();
 
-    boost::scoped_ptr<TableViewPrivate> _imp;
+    std::unique_ptr<TableViewPrivate> _imp;
 };
 
 struct TableModelPrivate;
@@ -467,7 +457,7 @@ Q_SIGNALS:
 
 private:
 
-    boost::scoped_ptr<TableModelPrivate> _imp;
+    std::unique_ptr<TableModelPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

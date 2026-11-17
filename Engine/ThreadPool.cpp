@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,10 +28,10 @@
 #include <string>
 #include <sstream> // stringstream
 
-#include <QtCore/QAtomicInt>
-#include <QtCore/QMutex>
-#include <QtCore/QThread>
-#include <QtCore/QThreadPool>
+#include <QAtomicInt>
+#include <QMutex>
+#include <QThread>
+#include <QThreadPool>
 
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/Node.h"

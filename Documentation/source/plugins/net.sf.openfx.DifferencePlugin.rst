@@ -18,7 +18,7 @@ Produce a rough matte from the difference of two input images.
 
 A is the background without the subject (clean plate). B is the subject with the background. RGB is copied from B, the difference is output to alpha, after applying offset and gain.
 
-See also: http://opticalenquiry.com/nuke/index.php?title=The_Keyer_Nodes#Difference and http://opticalenquiry.com/nuke/index.php?title=Keying_Tips
+See also: https://web.archive.org/web/20220524000628/http://www.opticalenquiry.com/nuke/index.php?title=The_Keyer_Nodes#Difference and https://web.archive.org/web/20211023071843/http://opticalenquiry.com/nuke/index.php?title=Keying_Tips
 
 Inputs
 ------

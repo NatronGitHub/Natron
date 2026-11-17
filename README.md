@@ -1,5 +1,6 @@
 # Natron
-[![GPL2 License](http://img.shields.io/:license-gpl2-blue.svg?)](https://github.com/NatronGitHub/Natron/blob/master/LICENSE.txt) [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v1.4%20adopted-ff69b4.svg)](CODE_OF_CONDUCT.md) [![Build Status](https://api.travis-ci.org/NatronGitHub/Natron.svg?branch=RB-2.4)](https://travis-ci.org/NatronGitHub/Natron) [![Coverage Status](https://coveralls.io/repos/NatronGitHub/Natron/badge.svg?branch=master)](https://coveralls.io/r/NatronGitHub/Natron?branch=master) [![Documentation Status](https://readthedocs.org/projects/natron/badge/?version=rb-2.4)](http://natron.readthedocs.io/en/rb-2.4/) [![Packaging status](https://repology.org/badge/tiny-repos/natron.svg)](https://repology.org/project/natron/badges) [![BountySource Status](https://api.bountysource.com/badge/team?team_id=271309)](https://www.bountysource.com/teams/natrongithub/issues?utm_source=Mozilla&utm_medium=shield&utm_campaign=bounties_received) [![OpenHub](https://www.openhub.net/p/natron/widgets/project_thin_badge?format=gif&ref=Thin+badge)](https://www.openhub.net/p/Natron)
+
+[![GPL2 License](http://img.shields.io/:license-gpl2-blue.svg?)](https://github.com/NatronGitHub/Natron/blob/master/LICENSE.txt) [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v1.4%20adopted-ff69b4.svg)](CODE_OF_CONDUCT.md) [![Build Status](https://api.travis-ci.org/NatronGitHub/Natron.svg?branch=RB-2.4)](https://travis-ci.org/NatronGitHub/Natron) [![Coverage Status](https://coveralls.io/repos/NatronGitHub/Natron/badge.svg?branch=master)](https://coveralls.io/r/NatronGitHub/Natron?branch=master) [![Documentation Status](https://readthedocs.org/projects/natron/badge/?version=rb-2.4)](http://natron.readthedocs.io/en/rb-2.4/) [![Packaging status](https://repology.org/badge/tiny-repos/natron.svg)](https://repology.org/project/natron/badges) [![OpenHub](https://www.openhub.net/p/natron/widgets/project_thin_badge?format=gif&ref=Thin+badge)](https://www.openhub.net/p/Natron)
 
 ---
 
@@ -8,7 +9,7 @@ Natron is a free, open-source (GPLv2 license) video compositor, similar in funct
 - Website: https://natrongithub.github.io
 - Source code: https://github.com/NatronGitHub/Natron
 - Forum: https://discuss.pixls.us/c/software/natron
-- Discord: https://discordapp.com/invite/xWAQzPF
+- Discord: https://discord.gg/cpMj5p3Fv5
 - User documentation: https://natron.readthedocs.io/
 
 ## Help wanted
@@ -18,9 +19,9 @@ Natron is looking for developers and maintainers! You can help develop and maint
 - [Git](https://en.wikipedia.org/wiki/Git) and [GitHub](https://en.wikipedia.org/wiki/GitHub)
 - [C++](https://en.wikipedia.org/wiki/C%2B%2B) (Natron source is still C++98, but switching to [C++11](https://en.wikipedia.org/wiki/C%2B%2B11) or [C++14](https://en.wikipedia.org/wiki/C%2B%2B11) should be straightforward if needed)
 - [Design patterns](https://en.wikipedia.org/wiki/Software_design_pattern)
-- [Qt](https://www.qt.io/) (Natron still uses Qt4 because of the lack of [PySide support in Qt5](https://wiki.qt.io/Qt_for_Python_Development_Notes), which should be integrated shortly after [Qt 5.12](https://wiki.qt.io/Qt_5.12_Release) is released)
+- [Qt](https://www.qt.io/) (Natron builds with Qt4 or Qt5, but does not yet support Qt6)
 - Basic knowledge of [OpenGL](https://en.wikipedia.org/wiki/OpenGL)
-- Basic knowledge of [Python](https://en.wikipedia.org/wiki/Python_(programming_language))
+- Basic knowledge of [Python](<https://en.wikipedia.org/wiki/Python_(programming_language)>)
 
 For more information, see the "Contributing" section below.
 
@@ -29,46 +30,30 @@ If you are willing to help, please contact the development team on the [pixls.us
 ## Features
 
 - 32-bit floating-point linear color processing pipeline.
-
 - Color management handled by [OpenColorIO](https://opencolorio.org/).
-
-- Dozens of file formats supported: EXR, DPX, TIFF, JPG, PNG through [OpenImageIO](https://github.com/OpenImageIO/oiio) and [FFmpeg](https://ffmpeg.org/).
-
-- Support for many free, open-source, and commercial OpenFX plugins—currently almost all features of OpenFX v1.4 are supported.
-  - [TuttleOFX](https://sites.google.com/site/tuttleofx/)
-  - [OpenFX-IO](https://github.com/NatronGitHub/openfx-io) to read anything else than standard 8-bits images
-  - [OpenFX-Misc](https://github.com/NatronGitHub/openfx-misc)
-  - [OpenFX-Vegas SDK samples](https://github.com/NatronGitHub/openfx-vegas)
-  - [OpenFX samples](https://github.com/NatronGitHub/openfx) (in the Support and Examples directories)
+- Dozens of video and image formats supported such as: H264, DNxHR, EXR, DPX, TIFF, JPG, PNG through [OpenImageIO](https://github.com/OpenImageIO/oiio) and [FFmpeg](https://ffmpeg.org/).
+- Support for many free, open-source, and commercial OpenFX plugins—currently almost all features of OpenFX v1.4 are supported. Those marked with (+) are included in the binary releases.
+  - [OpenFX-IO](https://github.com/NatronGitHub/openfx-io) (+)
+  - [OpenFX-Misc](https://github.com/NatronGitHub/openfx-misc) (+)
+  - [OpenFX-G'MIC](https://github.com/NatronGitHub/openfx-gmic) (+)
+  - [OpenFX-Arena](https://github.com/NatronGitHub/openfx-arena) (+)
   - [All OFX products from RevisionFX](http://www.revisionfx.com)
+  - [Boris FX](https://borisfx.com/) OpenFX plugins, including Sapphire
   - [Furnace by The Foundry](http://www.thefoundry.co.uk/products/furnace/)
-  - [GenArts Sapphire](http://www.genarts.com/software/sapphire/overview)
-  - [Other GenArts products](http://www.genarts.com/software/other-vfx-products)
   - ...And many more! Please tell us if you successfully tested other commercial plugins.
-
 - Intuitive user interface: Natron aims not to break habits by providing an intuitive and familiar user interface. It is possible to customize and separate the graphical user interface on any number of screens. You can re-use your layouts and share your layout files (.nl).
-
 - Performance: In Natron, anything you do produces real-time feedback in the viewer thanks to the optimized multi-threaded rendering pipeline and support for proxy rendering (computing at a lower resolution to speed up rendering).
-
 - Multi-task: Natron can render multiple graphs at the same time. It can also be used as a background process in headless mode.
-
 - Recover easily from bugs: Natron's auto-save system detects inactivity and saves your work for yourself. Natron is also able to render frames in a separate process, meaning that any crash in the main application would not crash the ongoing render (and the other way around).
-
 - Project files saved in XML and easily editable by humans.
-
 - Fast & interactive viewer - Smooth & accurate zooming/panning even for very large image sizes (tested on 27k x 30k images).
-
 - Real-time playback: Natron offers real-time playback with excellent performance thanks to its RAM/Disk cache. Once a frame is rendered it can be reproduced instantly afterward, even for large image sizes.
-
 - Animate your visual effects: Natron offers a simple and efficient way to deal with keyframes with a very accurate and intuitive Curve Editor as well as a Dope Sheet to quickly edit your motion graphics.
-
 - Command-line rendering: Natron is capable of running without a GUI for batch rendering with scripts or on a render farm.
-
 - Rotoscoping, rotopainting, and tracking support
-
 - Multi-view workflow: Natron saves time by keeping all the views in the same stream. You can separate the views at any time with the OneView node.
+- Python scripting integration:
 
-- Python 2 scripting integration:
   - Parameters expressions
   - User-defined parameters
   - Nodes groups as Python scripts
@@ -100,24 +85,27 @@ The following graphics cards are supported for hardware-accelerated rendering:
 
 On Windows and Linux you can enable software rendering. On Linux, enable the environment variable LIBGL_ALWAYS_SOFTWARE=1 before running Natron. On Windows, enable the legacy hardware package in the installer.
 
-
 ## Installing
 
 ### Binary distribution
 
 Standalone binary distributions of Natron are available for GNU/Linux, Windows, and macOS on [GitHub](https://github.com/NatronGitHub/Natron/releases), or from [the Natron web site](https://natrongithub.github.io/#download). These distributions contain Natron and four included sets of OpenFX plugins:
+
 - [openfx-io](https://github.com/NatronGitHub/openfx-io/)
 - [openfx-misc](https://github.com/NatronGitHub/openfx-misc)
 - [openfx-arena](https://github.com/NatronGitHub/openfx-arena)
 - [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic)
+
+Alternatively, on Linux systems you can install Natron through flatpak: ``` flatpak install fr.natron.Natron ```
 
 For each architecture / operating system, you can either download a stable release, a release candidate (if available), or one of the latest snapshots. Note that snapshots contain the latest features and bug fixes, but may be unstable.
 
 ### Building and installing from source
 
 There are instructions for building Natron and the basic plugins from source is this directory on various architectures / operating systems:
+
 - [GNU/Linux](INSTALL_LINUX.md)
-- [macOS](INSTALL_MACOS.md)
+- [macOS](INSTALL_MACOS.md) (on an Apple Silicon Mac, [tools/tart](tools/tart/README.md) also builds the macOS 15 arm64 DMG automatically in a VM)
 - [FreeBSD](INSTALL_FREEBSD.md)
 - [Windows](INSTALL_WINDOWS.md)
 
@@ -146,11 +134,11 @@ You should start contributing to the Natron project by first picking an easy tas
 
 We coordinate development through the [GitHub issue tracker](https://github.com/NatronGitHub/Natron/issues).
 
-The main development branch is called ["master"](https://github.com/NatronGitHub/Natron/tree/master). The stable version is on branch RB-2.4.
+The main development branch is called ["master"](https://github.com/NatronGitHub/Natron/tree/master). The stable version is on branch RB-2.5.
 
 Additionally, each stable release supported has a branch on its own. For example, the stable release of the v1.0. and all its bug fixes should go into that branch. At some point, a version that is no longer supported will get removed from GitHub's branches and only a release tag will be available to get the source code at that point.
 
-Feel free to report bugs, discuss tasks, or pick up work there. If you want to make changes, please fork, edit, and [send us a pull request](https://github.com/NatronGitHub/Natron/pull/new/RB-2.4), preferably on the ["RB-2.4"](https://github.com/NatronGitHub/Natron/tree/RB-2.4) branch.
+Feel free to report bugs, discuss tasks, or pick up work there. If you want to make changes, please fork, edit, and [send us a pull request](https://github.com/NatronGitHub/Natron/pull/new/RB-2.5), preferably on the ["RB-2.5"](https://github.com/NatronGitHub/Natron/tree/RB-2.5) branch.
 
 There's a `.git-hooks` directory in the root. This contains a `pre-commit` hook that verifies code styling before accepting changes. You can add this to your local repository's `.git/hooks/` directory by doing the following:
 

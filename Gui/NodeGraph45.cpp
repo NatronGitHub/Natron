@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -33,11 +33,12 @@
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QThread>
+#include <QThread>
 #include <QVBoxLayout>
 #include <QKeyEvent>
 #include <QApplication>
 #include <QCheckBox>
+#include <QRegularExpression>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -368,14 +369,18 @@ FindNodeDialog::updateFindResults(const QString& filter)
     }
     Qt::CaseSensitivity sensitivity = _imp->caseSensitivity->isChecked() ? Qt::CaseSensitive : Qt::CaseInsensitive;
     const NodesGuiList& activeNodes = _imp->graph->getAllActiveNodes();
-    QRegExp exp(_imp->matchWhole->isChecked() ? filter :
-                ( QChar::fromLatin1('*') + filter + QChar::fromLatin1('*') ),
-                sensitivity,
-                QRegExp::Wildcard);
+    // QtCompat::wildcardToRegularExpression() anchors, which is what
+    // exactMatch() did, and lets '*' match '/', unlike Qt's function.
+    QRegularExpression exp(QtCompat::wildcardToRegularExpression(
+                               _imp->matchWhole->isChecked() ? filter :
+                               ( QChar::fromLatin1('*') + filter + QChar::fromLatin1('*') ) ),
+                           sensitivity == Qt::CaseInsensitive ?
+                           QRegularExpression::CaseInsensitiveOption :
+                           QRegularExpression::NoPatternOption);
 
     if ( exp.isValid() ) {
         for (NodesGuiList::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-            if ( (*it)->isVisible() && exp.exactMatch( QString::fromUtf8( (*it)->getNode()->getLabel().c_str() ) ) ) {
+            if ( (*it)->isVisible() && exp.match( QString::fromUtf8( (*it)->getNode()->getLabel().c_str() ) ).hasMatch() ) {
                 _imp->nodeResults.push_back(*it);
             }
         }

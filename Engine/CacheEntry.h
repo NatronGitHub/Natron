@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -45,17 +45,11 @@
 #include <windows.h>
 #endif
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/utility.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
-#include <QtCore/QFile>
-#include <QtCore/QMutex>
-#include <QtCore/QReadWriteLock>
-#include <QtCore/QDir>
-#include <QtCore/QDebug>
+#include <QFile>
+#include <QMutex>
+#include <QReadWriteLock>
+#include <QDir>
+#include <QDebug>
 
 #ifdef DEBUG
 #include <SequenceParsing.h> // for removePath
@@ -150,11 +144,28 @@ public:
 // This is a cache file with a fixed size that is a multiple of the tileByteSize.
 // A bitset represents the allocated tiles in the file.
 // A value of true means that a tile is used by a cache entry.
+// tileByteSize is the size of the tiles of this file. It is set when the file is
+// created and never changes afterwards, so it can be read without locking. It may differ
+// from the current tile size of the cache if the tile size was changed while some
+// entries were still using tiles of this file.
 class TileCacheFile
 {
 public:
+    TileCacheFile()
+        : file()
+        , usedTiles()
+        , tileByteSize(0)
+    {
+    }
+
+    bool hasUsedTiles() const
+    {
+        return std::find(usedTiles.begin(), usedTiles.end(), true) != usedTiles.end();
+    }
+
     MemoryFilePtr file;
     std::vector<bool> usedTiles;
+    std::size_t tileByteSize;
 };
 
 typedef TileCacheFilePtr TileCacheFilePtr;
@@ -313,7 +324,7 @@ public:
     }
 };
 
-class AbstractCacheEntryBase : boost::noncopyable
+class AbstractCacheEntryBase
 {
 public:
 
@@ -337,6 +348,12 @@ public:
     virtual U64 getElementsCountFromParams() const = 0;
 
     virtual void syncBackingFile() const = 0;
+
+protected:
+
+    AbstractCacheEntryBase(const AbstractCacheEntryBase&) = delete;
+
+    AbstractCacheEntryBase& operator=(const AbstractCacheEntryBase&) = delete;
 };
 
 
@@ -494,6 +511,14 @@ public:
         _entry = entry;
         try {
             _cacheFile = entry->allocTile(&_cacheFileDataOffset);
+            if (entry->getElementsCountFromParams() * sizeof(DataType) > _cacheFile->tileByteSize) {
+                // The tile size of the cache changed after this entry was created
+                // (e.g. the viewer tile size or depth setting changed during a render):
+                // the data would not fit in the tile, so fall back on RAM storage.
+                entry->freeTile(_cacheFile, _cacheFileDataOffset);
+                _cacheFile.reset();
+                throw std::length_error("Cache entry does not fit in a tile");
+            }
             _path = _cacheFile->file->path();
         } catch (...) {
             allocateRAM(entry->getElementsCountFromParams());
@@ -602,7 +627,7 @@ public:
         if (_backingFile) {
             _backingFile->flush(MemoryFile::eFlushTypeAsync, 0, 0);
         } else if (_cacheFile && _entry) {
-            _cacheFile->file->flush(MemoryFile::eFlushTypeAsync, _cacheFile->file->data() + _cacheFileDataOffset, _entry->getCacheTileSizeBytes());
+            _cacheFile->file->flush(MemoryFile::eFlushTypeAsync, _cacheFile->file->data() + _cacheFileDataOffset, _cacheFile->tileByteSize);
         }
     }
 
@@ -636,8 +661,8 @@ public:
             if (_backingFile) {
                 return _backingFile->size();
             } else if (_cacheFile) {
-                assert(_entry);
-                return _entry->getCacheTileSizeBytes();
+                // Use the tile size of the file, which may differ from the current tile size of the cache
+                return _cacheFile->tileByteSize;
             } else {
                 return 0;
             }
@@ -722,11 +747,11 @@ public:
 private:
 
     std::string _path;
-    boost::scoped_ptr<RamBuffer<DataType> > _buffer;
+    std::unique_ptr<RamBuffer<DataType> > _buffer;
 
     /*mutable so the reOpenFileMapping function can reopen the mapped file. It doesn't
        change the underlying data*/
-    mutable boost::scoped_ptr<MemoryFile> _backingFile;
+    mutable std::unique_ptr<MemoryFile> _backingFile;
 
     // Set if the cache is a tile cache
     AbstractCacheEntryBase* _entry;
@@ -734,7 +759,7 @@ private:
     std::size_t _cacheFileDataOffset;
 
     // Used when we store images as OpenGL textures
-    boost::scoped_ptr<Texture> _glTexture;
+    std::unique_ptr<Texture> _glTexture;
     StorageModeEnum _storageMode;
 };
 
@@ -758,7 +783,7 @@ public:
     typedef DataType data_t;
     typedef KeyType key_t;
     typedef ParamsType param_t;
-    typedef boost::shared_ptr<ParamsType> ParamsTypePtr;
+    typedef std::shared_ptr<ParamsType> ParamsTypePtr;
 
     /**
      * @brief Ctor

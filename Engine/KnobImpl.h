@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,27 +30,17 @@
 
 #include "Knob.h"
 
-#include <cfloat>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <algorithm> // min, max
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/math/special_functions/fpclassify.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
+#include <QString>
+#include <QDebug>
+#include <QCoreApplication>
+#include <QThread>
 
-#include <QtCore/QString>
-#include <QtCore/QDebug>
-#include <QtCore/QCoreApplication>
-#include <QtCore/QThread>
-
-CLANG_DIAG_OFF(mismatched-tags)
-GCC_DIAG_OFF(unused-parameter)
-#include <shiboken.h>
-CLANG_DIAG_ON(mismatched-tags)
-GCC_DIAG_ON(unused-parameter)
+#include "Global/PythonUtils.h"
 
 #include "Engine/Curve.h"
 #include "Engine/AppInstance.h"
@@ -78,10 +68,10 @@ void
 KnobDoubleBase::initMinMax()
 {
     for (int i = 0; i < getDimension(); ++i) {
-        _minimums[i] = -DBL_MAX;
-        _maximums[i] = DBL_MAX;
-        _displayMins[i] = -DBL_MAX;
-        _displayMaxs[i] = DBL_MAX;
+        _minimums[i] = std::numeric_limits<double>::lowest();
+        _maximums[i] = std::numeric_limits<double>::max();
+        _displayMins[i] = std::numeric_limits<double>::lowest();
+        _displayMaxs[i] = std::numeric_limits<double>::max();
     }
 }
 
@@ -90,10 +80,10 @@ void
 KnobIntBase::initMinMax()
 {
     for (int i = 0; i < getDimension(); ++i) {
-        _minimums[i] = INT_MIN;
-        _maximums[i] = INT_MAX;
-        _displayMins[i] = INT_MIN;
-        _displayMaxs[i] = INT_MAX;
+        _minimums[i] = std::numeric_limits<int>::min();
+        _maximums[i] = std::numeric_limits<int>::max();
+        _displayMins[i] = std::numeric_limits<int>::min();
+        _displayMaxs[i] = std::numeric_limits<int>::max();
     }
 }
 
@@ -103,19 +93,19 @@ Knob<T>::Knob(KnobHolder*  holder,
               int dimension,
               bool declaredByPlugin )
     : KnobHelper(holder, description, dimension, declaredByPlugin)
-    , _valueMutex(QMutex::Recursive)
+    , _valueMutex()
     , _values(dimension)
     , _guiValues(dimension)
     , _defaultValues(dimension)
     , _exprRes(dimension)
-    , _minMaxMutex(QReadWriteLock::Recursive)
+    , _minMaxMutex()
     , _minimums(dimension)
     , _maximums(dimension)
     , _displayMins(dimension)
     , _displayMaxs(dimension)
     , _setValuesQueueMutex()
     , _setValuesQueue()
-    , _setValueRecursionLevelMutex(QMutex::Recursive)
+    , _setValueRecursionLevelMutex()
     , _setValueRecursionLevel(0)
 {
     initMinMax();
@@ -348,7 +338,12 @@ template <>
 int
 KnobHelper::pyObjectToType(PyObject* o)
 {
-    return (int)PyInt_AsLong(o);
+    if (PyLong_Check(o)) {
+        return (int)PyLong_AsLong(o);
+    } else if (PyFloat_Check(o)) {
+        return (int)PyFloat_AsDouble(o);
+    }
+    return 0;
 }
 
 template <>
@@ -366,26 +361,19 @@ template <>
 double
 KnobHelper::pyObjectToType(PyObject* o)
 {
-    return (double)PyFloat_AsDouble(o);
+    if (PyLong_Check(o)) {
+        return (double)PyLong_AsLong(o);
+    } else if (PyFloat_Check(o)) {
+        return PyFloat_AsDouble(o);
+    }
+    return 0.;
 }
 
 template <>
 std::string
 KnobHelper::pyObjectToType(PyObject* o)
 {
-    if ( PyUnicode_Check(o) ) {
-        std::string ret;
-        PyObject* utf8pyobj = PyUnicode_AsUTF8String(o); // newRef
-        if (utf8pyobj) {
-            char* cstr = PyBytes_AS_STRING(utf8pyobj); // Borrowed pointer
-            ret.append(cstr);
-            Py_DECREF(utf8pyobj);
-        }
-
-        return ret;
-    }
-    char* s = PyString_Check(o) ? PyString_AsString(o) : NULL;
-    return s != NULL ? std::string(s) : std::string();
+    return NATRON_PYTHON_NAMESPACE::PyStringToStdString(o);
 }
 
 inline unsigned int
@@ -461,11 +449,9 @@ Knob<T>::evaluateExpression_pod(double time,
     }
 
     if ( PyFloat_Check(ret) ) {
-        *value =  (double)PyFloat_AsDouble(ret);
-    } else if ( PyInt_Check(ret) ) {
-        *value = (int)PyInt_AsLong(ret);
+        *value =  PyFloat_AsDouble(ret);
     } else if ( PyLong_Check(ret) ) {
-        *value = (int)PyLong_AsLong(ret);
+        *value = (double)PyLong_AsLong(ret);
     } else if (PyObject_IsTrue(ret) == 1) {
         *value = 1;
     } else {
@@ -1171,7 +1157,7 @@ Knob<T>::setValue(const T & v,
             returnValue =  eValueChangedReturnCodeNoKeyframeAdded;
         }
 
-        QueuedSetValuePtr qv = boost::make_shared<QueuedSetValue>( view, dimension, v, k, returnValue != eValueChangedReturnCodeNoKeyframeAdded, reason, isValueChangesBlocked() );
+        QueuedSetValuePtr qv = std::make_shared<QueuedSetValue>( view, dimension, v, k, returnValue != eValueChangedReturnCodeNoKeyframeAdded, reason, isValueChangesBlocked() );
 #ifdef DEBUG
         debugHook();
 #endif
@@ -1418,7 +1404,7 @@ Knob<T>::makeKeyFrame(Curve* curve,
     } else {
         keyFrameValue = (double)v;
     }
-    if ( (keyFrameValue != keyFrameValue) || (boost::math::isinf)(keyFrameValue) ) { // check for NaN or infinity
+    if ( std::isnan(keyFrameValue) || std::isinf(keyFrameValue) ) { // check for NaN or infinity
         *key = KeyFrame( (double)time, getMaximum(0) );
     } else {
         *key = KeyFrame( (double)time, keyFrameValue );
@@ -1542,7 +1528,7 @@ Knob<T>::setValueAtTime(double time,
             holder->abortAnyEvaluation();
         }
 
-        QueuedSetValueAtTimePtr qv = boost::make_shared<QueuedSetValueAtTime>( time, view, dimension, v, *newKey, reason, isValueChangesBlocked() );
+        QueuedSetValueAtTimePtr qv = std::make_shared<QueuedSetValueAtTime>( time, view, dimension, v, *newKey, reason, isValueChangesBlocked() );
 #ifdef DEBUG
         debugHook();
 #endif
@@ -1768,7 +1754,7 @@ Knob<T>::unSlaveInternal(int dimension,
         return;
     }
     std::pair<int, KnobIPtr> master = getMaster(dimension);
-    KnobHelperPtr masterHelper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
+    KnobHelperPtr masterHelper = std::dynamic_pointer_cast<KnobHelper>(master.second);
 
     if (masterHelper->getSignalSlotHandler() && _signalSlotHandler) {
         QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL( keyFrameSet(double, ViewSpec, int, int, bool) ),
@@ -2602,9 +2588,10 @@ Knob<T>::copyValueForTypeAndCheckIfChanged(Knob<OTHERTYPE>* other,
         int dimMin = std::min( getDimension(), other->getDimension() );
         std::vector<OTHERTYPE> v = other->getValueForEachDimension_mt_safe_vector();
         for (int i = 0; i < dimMin; ++i) {
-            if (_values[i] != v[i]) {
-                _values[i] = v[i];
-                _guiValues[i] = v[i];
+            const T convertedV = static_cast<T>(v[i]);
+            if (_values[i] != convertedV) {
+                _values[i] = convertedV;
+                _guiValues[i] = convertedV;
                 ret = true;
             }
         }

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -23,7 +23,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <QtCore/QtGlobal> // for Q_OS_*
+#include <QtGlobal> // for Q_OS_*
 #if defined(Q_OS_UNIX)
 #include <sys/time.h>     // for getrlimit on linux
 #include <sys/resource.h> // for getrlimit
@@ -36,7 +36,7 @@
 #include <cstdlib> // exit
 #include <iostream>
 
-#include <QtCore/QCoreApplication>
+#include <QCoreApplication>
 
 #ifdef DEBUG
 #include "Global/FloatingPointExceptions.h"
@@ -59,9 +59,8 @@ extern "C" {
 {
 #ifdef DEBUG
     boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
-                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           //boost_adaptbx::floating_point::exception_trapping::invalid | // crashes on macOS
                                                            boost_adaptbx::floating_point::exception_trapping::overflow);
-    assert(boost_adaptbx::floating_point::is_invalid_trapped());
 #endif
 #if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
     /*
@@ -95,8 +94,9 @@ extern "C" {
 
     CLArgs args(argc, argv, true);
 
-    if (args.getError() > 0) {
-        return 1;
+    const auto error = args.getError();
+    if (error) {
+        return error.value();
     }
 
     AppManager manager;

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,13 +28,8 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
-#include <QtCore/QObject>
+#include <QObject>
 CLANG_DIAG_ON(deprecated)
 
 #include "Engine/ViewIdx.h"
@@ -49,14 +44,14 @@ struct NodeViewerContextPrivate;
 class NodeViewerContext
     : public QObject
     , public KnobGuiContainerI
-    , public boost::enable_shared_from_this<NodeViewerContext>
+    , public std::enable_shared_from_this<NodeViewerContext>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 private:
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
 
     NodeViewerContext(const NodeGuiPtr& node,
                       ViewerTab* viewer);
@@ -138,9 +133,13 @@ public Q_SLOTS:
 
     void onNodeSettingsPanelClosed(bool closed);
 
+    void onNodeSettingsPanelMinimized();
+
+    void onNodeSettingsPanelMaximized();
+
 private:
 
-    boost::scoped_ptr<NodeViewerContextPrivate> _imp;
+    std::unique_ptr<NodeViewerContextPrivate> _imp;
 };
 
 

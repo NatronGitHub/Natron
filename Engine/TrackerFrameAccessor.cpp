@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -25,8 +25,7 @@
 
 #include "TrackerFrameAccessor.h"
 
-#include <boost/utility.hpp>
-
+// clang-format off
 GCC_DIAG_OFF(unused-function)
 GCC_DIAG_OFF(unused-parameter)
 #include <libmv/image/array_nd.h>
@@ -34,8 +33,9 @@ GCC_DIAG_OFF(unused-parameter)
 #include <libmv/logging/logging.h>
 GCC_DIAG_ON(unused-function)
 GCC_DIAG_ON(unused-parameter)
+// clang-format on
 
-#include <QtCore/QDebug>
+#include <QDebug>
 
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppInstance.h"
@@ -52,7 +52,7 @@ namespace  {
 struct FrameAccessorCacheKey
 {
     int frame;
-    int mipMapLevel;
+    unsigned int mipmapLevel;
     mv::FrameAccessor::InputMode mode;
 };
 
@@ -66,9 +66,9 @@ struct CacheKey_compare_less
         } else if (lhs.frame > rhs.frame) {
             return false;
         } else {
-            if (lhs.mipMapLevel < rhs.mipMapLevel) {
+            if (lhs.mipmapLevel < rhs.mipmapLevel) {
                 return true;
-            } else if (lhs.mipMapLevel > rhs.mipMapLevel) {
+            } else if (lhs.mipmapLevel > rhs.mipmapLevel) {
                 return false;
             } else {
                 if ( (int)lhs.mode < (int)rhs.mode ) {
@@ -112,7 +112,7 @@ public:
     }
 };
 
-typedef boost::shared_ptr<MvFloatImage> MvFloatImagePtr;
+typedef std::shared_ptr<MvFloatImage> MvFloatImagePtr;
 
 struct FrameAccessorCacheEntry
 {
@@ -292,10 +292,10 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     // other case(s) when they get integrated into libmv.
     assert(input_mode == mv::FrameAccessor::MONO);
 
-
+    const unsigned int mipmapLevel = static_cast<unsigned int>(downscale);
     FrameAccessorCacheKey key;
     key.frame = frame;
-    key.mipMapLevel = downscale;
+    key.mipmapLevel = mipmapLevel;
     key.mode = input_mode;
 
     /*
@@ -335,8 +335,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     }
 
     // Not in accessor cache, call renderRoI
-    RenderScale scale;
-    scale.y = scale.x = Image::getScaleFromMipMapLevel( (unsigned int)downscale );
+    const RenderScale scale = RenderScale::fromMipmapLevel(mipmapLevel);
 
 
     RectD precomputedRoD;
@@ -347,7 +346,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
             return (mv::FrameAccessor::Key)0;
         }
         double par = effect->getAspectRatio(-1);
-        precomputedRoD.toPixelEnclosing( (unsigned int)downscale, par, &roi );
+        roi = precomputedRoD.toPixelEnclosing(mipmapLevel, par);
     }
 
     std::list<ImagePlaneDesc> components;
@@ -375,7 +374,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
                                               RenderStatsPtr() ); // Stats
     EffectInstance::RenderRoIArgs args( frame,
                                         scale,
-                                        downscale,
+                                        mipmapLevel,
                                         ViewIdx(0),
                                         false,
                                         roi,
@@ -400,8 +399,8 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     assert( !planes.empty() );
     const ImagePtr& sourceImage = planes.begin()->second;
     RectI sourceBounds = sourceImage->getBounds();
-    RectI intersectedRoI;
-    if ( !roi.intersect(sourceBounds, &intersectedRoI) ) {
+    const RectI intersectedRoI = roi.intersect(sourceBounds);
+    if ( intersectedRoI.isNull() ) {
 #ifdef TRACE_LIB_MV
         qDebug() << QThread::currentThread() << "FrameAccessor::GetImage():" << "RoI does not intersect the source image bounds (RoI x1="
                  << roi.x1 << "y1=" << roi.y1 << "x2=" << roi.x2 << "y2=" << roi.y2 << ")";
@@ -419,7 +418,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
        Copy the Natron image to the LivMV float image
      */
     FrameAccessorCacheEntry entry;
-    entry.image = boost::make_shared<MvFloatImage>( intersectedRoI.height(), intersectedRoI.width() );
+    entry.image = std::make_shared<MvFloatImage>( intersectedRoI.height(), intersectedRoI.width() );
     entry.bounds = intersectedRoI;
     entry.referenceCount = 1;
     natronImageToLibMvFloatImage(_imp->enabledChannels,
@@ -494,7 +493,7 @@ TrackerFrameAccessor::GetMaskForTrack(int clip,
     // https://developer.blender.org/rBb0015686e2e48a384a0b2a03a75f6daaad7271c0
     //
 
-#pragma message WARN("TODO: implement TrackerFrameAccessor::GetMaskForTrack")
+//#pragma message WARN("TODO: implement TrackerFrameAccessor::GetMaskForTrack")
 
     return NULL;
 }

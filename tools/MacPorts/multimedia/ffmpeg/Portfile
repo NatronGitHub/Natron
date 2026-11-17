@@ -3,7 +3,6 @@
 PortSystem          1.0
 PortGroup           xcodeversion 1.0
 PortGroup           muniversal 1.0
-PortGroup           compiler_blacklist_versions 1.0
 PortGroup           active_variants 1.1
 
 # For 'TARGET_OS_OSX', 'TARGET_CPU_ARM64' macros
@@ -14,18 +13,20 @@ PortGroup           legacysupport 1.1
 PortGroup           xcode_workaround 1.0
 
 name                ffmpeg
+set my_name         ffmpeg
 conflicts           ffmpeg-devel
+
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
+version             9.0.2
+revision            3
 epoch               1
-version             4.4
-revision            0
+
 license             LGPL-2.1+
 categories          multimedia
-maintainers         {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
+maintainers         {mascguy @mascguy} {devans @dbevans} {jeremyhu @jeremyhu} openmaintainer
 
 description         FFmpeg is a complete solution to play, record, convert and \
                     stream audio and video.
-
 long_description    FFmpeg is a complete solution to record, convert and \
                     stream audio and video. It includes libavcodec, the \
                     leading audio/video codec library. \
@@ -53,70 +54,94 @@ long_description    FFmpeg is a complete solution to record, convert and \
                     \
                     libavformat is a library containing parsers and \
                     generators for all common audio/video formats.
-
-platforms           darwin
 homepage            https://ffmpeg.org/
-master_sites        ${homepage}releases/
 
+master_sites        ${homepage}releases/
+distname            ${my_name}-${version}
+dist_subdir         ${my_name}
 use_xz              yes
 
-checksums           rmd160  0169ae4eb185de3a851a9926bc0b3289512c4be0 \
-                    sha256  06b10a183ce5371f915c6bb15b7b1fffbe046e8275099c96affc29e17645d909 \
-                    size    9557868
+checksums           rmd160  e4eb22bca3395ecb499dd6fd256e16e7d74cd4ce \
+                    sha256  8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e \
+                    size    12040788
 
-depends_build       port:pkgconfig \
+depends_build-append \
+                    port:cctools \
                     port:gmake \
-                    port:ld64 \
+                    path:bin/pkg-config:pkgconfig \
                     port:texinfo
 
-depends_lib         port:lame \
-                    port:libiconv \
-                    port:libvorbis \
-                    port:libopus \
-                    port:libogg \
-                    port:librsvg \
-                    port:libtheora \
-                    port:libmodplug \
-                    port:libass \
-                    port:libbluray \
-                    port:libvpx \
-                    port:gnutls \
-                    port:openh264 \
-                    port:snappy \
-                    port:openjpeg \
+depends_lib-append \
+                    port:bzip2 \
+                    path:lib/pkgconfig/cairo.pc:cairo \
+                    port:dav1d \
                     port:fontconfig \
                     port:freetype \
                     port:fribidi \
-                    path:lib/libspeex.dylib:speex \
+                    path:lib/pkgconfig/gdk-pixbuf-2.0.pc:gdk-pixbuf2 \
+                    port:gettext-runtime \
+                    path:lib/pkgconfig/glib-2.0.pc:glib2 \
+                    path:lib/pkgconfig/gnutls.pc:gnutls \
+                    path:lib/pkgconfig/harfbuzz.pc:harfbuzz \
+                    port:lame \
+                    port:lcms2 \
+                    path:lib/pkgconfig/libass.pc:libass \
+                    port:libbluray \
+                    port:libiconv \
+                    port:libmodplug \
+                    port:libogg \
+                    port:libopus \
+                    port:libpng \
+                    path:lib/pkgconfig/librsvg-2.0.pc:librsvg \
+                    port:libtheora \
+                    port:libvorbis \
+                    path:lib/pkgconfig/vpx.pc:libvpx \
+                    port:openjpeg \
+                    port:openh264 \
+                    port:snappy \
                     port:soxr \
-                    port:bzip2 \
+                    path:lib/libspeex.dylib:speex \
+                    port:webp \
                     port:xz \
-                    port:zlib
+                    port:zimg \
+                    port:zlib \
+                    port:zvbi
 
-patchfiles          patch-libavcodec-audiotoolboxenc.c.diff
+patchfiles-append   patch-libavcodec-audiotoolboxenc.c.diff
 
-# work around vec_xl intrinsic does not exist on older PowerPC processors
-# https://trac.ffmpeg.org/ticket/8750
-patchfiles-append   patch-ffmpeg-powerpc-yuv2rgb-altivec-fix.diff
+# Additional fixes related to use of '__builtin_available'
+# TODO: Submit patches to upstream
+patchfiles-append   patch-libavcodec-profvidworkflow.diff
 
-#
+# add retina resolution capabilities via -movflags write_pixeldensity flag
+# this patch is by daniel kaiser who posted on the ffmpeg bugtracker:
+# https://fftrac-bg.ffmpeg.org/ticket/7045
+# but he never formally submitted it to the FFMpeg mailing list, which i did
+# https://ffmpeg.org/pipermail/ffmpeg-devel/2024-July/331470.html
+# so the FFMpeg team does not seem to care to include this functionality
+patchfiles-append   patch-add-pixeldensity.diff
+
+# Typedef AVMediaType to NSString* on older systems
+# Patch submitted to upstream, remove once upstream has included it
+if {${os.platform} eq "darwin" && ${os.major} < 17} {
+    patchfiles-append   patch-libavdevice-avfoundation.diff
+}
+
+# error: call to undeclared function 'VTRegisterProfessionalVideoWorkflowVideoEncoders' on 10.9
+patchfiles-append   patch-libavcodec-videotoolboxenc.c.diff
+
 # enable auto configure of asm optimizations
 # requires Xcode 3.1 or better on Leopard
-#
 minimum_xcodeversions {9 3.1}
 
 # requires a C11 compiler
 compiler.c_standard 2011
 
-if {[lsearch [get_canonical_archs] i386] != -1} {
-    # clang-3.1 hits https://trac.macports.org/ticket/30137 (<rdar://problem/11542429>)
-    # clang-139 hits https://trac.macports.org/ticket/38141
-    compiler.blacklist-append {clang < 422.1.7}
-}
-
+# clang-3.1 hits https://trac.macports.org/ticket/30137 (<rdar://problem/11542429>)
+# clang-139 hits https://trac.macports.org/ticket/38141
 # warning: unknown warning option '-Werror=partial-availability'; did you mean '-Werror=availability'? [-Wunknown-warning-option]
 # warning: unknown warning option '-Wno-bool-operation'; did you mean '-Wno-bool-conversion'? [-Wunknown-warning-option]
-compiler.blacklist-append {clang < 800}
+compiler.blacklist-append {clang < 900}
 
 # gcc > 4.2 is required, https://trac.ffmpeg.org/ticket/1464
 # WARNING: gcc 4.2 is outdated and may miscompile FFmpeg. Please use a newer compiler.
@@ -127,111 +152,240 @@ compiler.blacklist-append \
 # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
 default_variants-append +gpl2
 
-configure.cflags-append -DHAVE_LRINTF ${configure.cppflags}
-configure.args      --enable-swscale \
-                    --enable-avfilter \
-                    --enable-avresample \
-                    --enable-libmp3lame \
-                    --enable-libvorbis \
-                    --enable-libopus \
-                    --enable-librsvg \
-                    --enable-libtheora \
-                    --enable-libopenjpeg \
-                    --enable-libopenh264 \
-                    --enable-libsnappy \
-                    --enable-libmodplug \
-                    --enable-libvpx \
-                    --enable-libsoxr \
-                    --enable-libspeex \
-                    --enable-libass \
-                    --enable-libbluray \
-                    --enable-lzma \
-                    --enable-gnutls \
-                    --enable-fontconfig \
-                    --enable-libfreetype \
-                    --enable-libfribidi \
-                    --disable-libaom \
+if {[tbool configure.ccache]} {
+    set ccache_path ${prefix}/bin/ccache
+
+    configure.cc-prepend \
+                    ${ccache_path}
+    configure.cxx-prepend \
+                    ${ccache_path}
+}
+
+configure.cflags-append \
+                    -DHAVE_LRINTF \
+                    -Wno-deprecated-declarations \
+                    ${configure.cppflags}
+
+set port_sharedir   ${prefix}/share
+set port_docdir     ${port_sharedir}/doc/${my_name}
+
+configure.pre_args-append \
+                    --cxx="${configure.cxx}" \
+                    --cc="${configure.cc}"
+
+configure.args-append \
+                    --disable-audiotoolbox \
+                    --disable-indev=jack \
                     --disable-libjack \
                     --disable-libopencore-amrnb \
                     --disable-libopencore-amrwb \
+                    --disable-libplacebo \
+                    --disable-libvmaf \
                     --disable-libxcb \
-                    --disable-libxcb-shm \
-                    --disable-libxcb-xfixes \
-                    --disable-xlib \
-                    --disable-indev=jack \
+                    --disable-metal \
                     --disable-opencl \
-                    --disable-outdev=xv \
-                    --disable-audiotoolbox \
-                    --disable-videotoolbox \
                     --disable-sdl2 \
                     --disable-securetransport \
-                    --mandir=${prefix}/share/man \
-                    --enable-shared --enable-pthreads \
-                    --cxx=${configure.cxx} \
-                    --cc=${configure.cc}
+                    --disable-videotoolbox \
+                    --disable-xlib \
+                    --enable-avfilter \
+                    --enable-fontconfig \
+                    --enable-gnutls \
+                    --enable-lcms2 \
+                    --enable-libass \
+                    --enable-libbluray \
+                    --enable-libdav1d \
+                    --enable-libfreetype \
+                    --enable-libfribidi \
+                    --enable-libharfbuzz \
+                    --enable-libmodplug \
+                    --enable-libmp3lame \
+                    --enable-libopenjpeg \
+                    --enable-libopenh264 \
+                    --enable-libsnappy \
+                    --enable-libopus \
+                    --enable-librsvg \
+                    --enable-libsoxr \
+                    --enable-libspeex \
+                    --enable-libtheora \
+                    --enable-libvorbis \
+                    --enable-libvpx \
+                    --enable-libwebp \
+                    --enable-libzimg \
+                    --enable-libzvbi \
+                    --enable-lzma \
+                    --enable-pthreads \
+                    --enable-shared \
+                    --enable-swscale \
+                    --enable-zlib
 
+post-extract {
+    # fix file perms; tarball contents deny group and world read
+    system "find ${worksrcpath} -type d -print0 | xargs -0 chmod a+rx"
+    system "find ${worksrcpath} -type f -print0 | xargs -0 chmod a+r"
+}
+
+platform darwin 8 {
+    post-patch {
+        reinplace "s:,-compatibility_version,$\(LIBMAJOR\)::" ${worksrcpath}/configure
+    }
+}
 
 platform darwin {
     # disable asm on Tiger
     # libblueray doesn't build on Tiger so disable for now (#39442)
     if {${os.major} < 9} {
-        depends_lib-delete    port:libbluray
-        configure.args-replace --enable-libbluray --disable-libbluray
-        configure.args-append --disable-asm
+        depends_lib-delete \
+                    port:libbluray
+        configure.args-replace \
+                    --enable-libbluray \
+                    --disable-libbluray
+        configure.args-append \
+                    --disable-asm
     }
 
     # as of 1.6.0 libvpx only supports darwin 10 or later
     if {${os.major} < 10} {
-        depends_lib-delete port:libvpx
-        configure.args-replace --enable-libvpx --disable-libvpx
+        depends_lib-delete \
+                    path:lib/pkgconfig/vpx.pc:libvpx
+        configure.args-replace \
+                    --enable-libvpx \
+                    --disable-libvpx
     }
 
     # filters coreimage and coreimagesrc don't build on 10.6
     # and earlier due to use of bridged casts in Objective C (#51823)
     if {${os.major} < 11} {
-        configure.args-append --disable-filter=coreimage \
-                              --disable-filter=coreimagesrc
+        configure.args-append \
+                    --disable-filter=coreimage \
+                    --disable-filter=coreimagesrc
     }
 
     # AudioToolbox support requires CoreMedia Framework available on 10.7+
     if {${os.major} > 10} {
-        configure.args-replace --disable-audiotoolbox --enable-audiotoolbox
+        configure.args-replace \
+                    --disable-audiotoolbox \
+                    --enable-audiotoolbox
     }
 
-    if {${os.major} > 9} {
-        # libsdl2 requires minimum Xcode 10.7 SDK to build successfully
-        # but builds on Snow Leopard
-        configure.args-replace --disable-sdl2 --enable-sdl2
-        depends_lib-append     port:libsdl2
-
-        # Dav1d: 10.6+ No PowerPC or Apple Silicon (for now)
-        if {![regexp -all (arm64|ppc*) [get_canonical_archs]]} {
-            configure.args-append   --enable-libdav1d
-            depends_lib-append      port:dav1d
-        }
+    if {${os.major} > 9 || ${configure.build_arch} in [list ppc ppc64]} {
+        # libsdl2 uses X11 backend on PowerPC and builds on 10.4+.
+        configure.args-replace \
+                    --disable-sdl2 \
+                    --enable-sdl2
+        depends_lib-append \
+                    port:libsdl2
     }
 
     # VideoToolbox, a new hardware acceleration framework, is supported on 10.8+ and "here to stay".
-    # It provides support for H264, H263, MPEG1, MPEG2 and MPEG4.
+    # It provides support for H265, H264, H263, MPEG1, MPEG2 and MPEG4.
     if {${os.major} > 11} {
-        configure.args-replace --disable-videotoolbox --enable-videotoolbox
+        configure.args-replace \
+                    --disable-videotoolbox \
+                    --enable-videotoolbox
     }
 
     # OpenCL support requires version 1.2 available 10.8+
     if {${os.major} > 11} {
-        configure.args-replace --disable-opencl --enable-opencl
+        configure.args-replace \
+                    --disable-opencl \
+                    --enable-opencl
     }
 
     # Apple GCC has problems with SIMD intrinsics and -Werror=no-missing-prototypes.
     if {${os.major} < 11} {
-        patchfiles-append patch-configure-no-error-on-missing-prototypes.diff
+        patchfiles-append \
+                    patch-configure-no-error-on-missing-prototypes.diff
     }
 
     # avfoundation is only available on 10.7+
     # as of ffmpeg 3.4.1 build fails on 10.7 as well
     # libavdevice/avfoundation.m:207:14: error: expected method to read dictionary element not found on object of type 'NSDictionary *'
     if {${os.major} < 12} {
-        configure.args-append --disable-indev=avfoundation
+        configure.args-append \
+                    --disable-indev=avfoundation
+    }
+
+    # av1 codecs, available on 10.5+
+    if {${os.major} >= 9} {
+        configure.args-append \
+                    --enable-libaom \
+                    --enable-libsvtav1
+        depends_lib-append \
+                    port:aom \
+                    port:svt-av1
+    }
+
+    # rav1e available on 10.6+
+    if {(${os.major} < 10) || (${configure.build_arch} eq "ppc")} {
+        if {[variant_isset rav1e]} {
+            error "Variant rav1e not supported for macOS 10.5 and earlier, or PPC"
+        }
+    }
+}
+
+platform powerpc {
+    # absence of altivec is not automatically detected
+    if {[catch {sysctl hw.vectorunit} result] || $result == 0} {
+        configure.args-append \
+                    --disable-altivec
+
+        # as this machine is a G3, force a local build so we don't download a buildbot-built
+        # version possibly built on a G4+ or cross-compiled from an Intel system
+        archive_sites
+    }
+
+    # might be needed for any gcc build...
+    #Undefined symbols:
+    #  "___atomic_fetch_sub_8", referenced from:
+    #      _fifo_thread_dispatch_message.part.4 in fifo.o
+    configure.ldflags-append \
+                    -latomic
+}
+
+# libavcodec/pcm-bluray.c: error: passing argument 2 of 'bytestream2_get_buffer' from incompatible pointer type [-Wincompatible-pointer-types]
+configure.cflags-append \
+                    -Wno-error=incompatible-pointer-types
+
+# configure isn't autoconf and they do use a dep cache
+configure.universal_args-delete \
+                    --disable-dependency-tracking
+
+if {${universal_possible} && [variant_isset universal]} {
+    # the following is inspired by the icu Portfile
+    # if we can't run executables for the target arch, mark it as a cross-compile
+    foreach arch ${configure.universal_archs} {
+        if {((${os.major} < 9 || [sysctl hw.cpu64bit_capable] == 0) && ($arch == "x86_64" || $arch == "ppc64"))
+            || (${os.arch} == "powerpc" && ($arch == "x86_64" || $arch == "i386"))
+            || (${os.arch} == "i386" && ($arch == "ppc" || $arch == "ppc64"))} {
+            set merger_configure_args($arch) "--enable-cross-compile --target-os=${os.platform}"
+        }
+    }
+    foreach arch ${configure.universal_archs} {
+        set merger_host($arch) ""
+        lappend merger_configure_args($arch) \
+                    --arch=${arch}
+        lappend merger_configure_env($arch) \
+                    "ASFLAGS=-arch ${arch}"
+    }
+    if {[string match "*86*" ${configure.universal_archs}]} {
+        depends_build-append \
+                    port:nasm
+    }
+    lappend merger_configure_args(i386) \
+                    --enable-x86asm
+    lappend merger_configure_args(x86_64) \
+                    --enable-x86asm
+} else {
+    configure.args-append \
+                    --arch=${configure.build_arch}
+    configure.env-append \
+                    ASFLAGS=[get_canonical_archflags]
+    if {${build_arch} eq "i386" || ${build_arch} eq "x86_64"} {
+        depends_build-append \
+                    port:nasm
+        configure.args-append \
+                    --enable-x86asm
     }
 }
 
@@ -241,10 +395,6 @@ build.env-append    V=1
 test.run            yes
 
 destroot.env-append V=1
-
-#
-# configure isn't autoconf and they do use a dep cache
-#
 
 post-extract {
     if {${configure.cxx_stdlib} eq "libc++"} {
@@ -265,78 +415,15 @@ post-configure {
 }
 
 post-destroot {
-    file mkdir ${destroot}${prefix}/share/doc/ffmpeg
-    file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
+    # Copy docs
+    file mkdir ${destroot}${port_docdir}
+    file copy ${worksrcpath}/doc/APIchanges ${destroot}${port_docdir}
     foreach f [glob ${worksrcpath}/doc/*.txt] {
-        file copy $f ${destroot}${prefix}/share/doc/ffmpeg
+        file copy $f ${destroot}${port_docdir}
     }
 }
 
-platform powerpc {
-    # absence of altivec is not automatically detected
-    if {[catch {sysctl hw.vectorunit} result] || $result == 0} {
-        configure.args-append --disable-altivec
-    }
-}
-
-platform darwin 8 {
-    post-patch {
-        reinplace "s:,-compatibility_version,$\(LIBMAJOR\)::" ${worksrcpath}/configure
-    }
-}
-
-configure.universal_args-delete --disable-dependency-tracking
-
-if {![info exists universal_possible]} {
-    set universal_possible [expr {${os.universal_supported} && [llength ${configure.universal_archs}] >= 2}]
-}
-if {${universal_possible} && [variant_isset universal]} {
-    # the following is inspired by the icu Portfile
-    # if we can't run executables for the target arch, mark it as a cross-compile
-    foreach arch ${configure.universal_archs} {
-        if {((${os.major} < 9 || [sysctl hw.cpu64bit_capable] == 0) && ($arch == "x86_64" || $arch == "ppc64")) 
-            || (${os.arch} == "powerpc" && ($arch == "x86_64" || $arch == "i386"))
-            || (${os.arch} == "i386" && ($arch == "ppc" || $arch == "ppc64"))} {
-            set merger_configure_args($arch) "--enable-cross-compile --target-os=${os.platform}"
-        }
-    }
-    foreach arch ${configure.universal_archs} {
-        set merger_host($arch) ""
-        lappend merger_configure_args($arch) --arch=${arch}
-        lappend merger_configure_env($arch)  ASFLAGS='-arch ${arch}'
-    }
-    if {[string match "*86*" ${configure.universal_archs}]} {
-        depends_build-append port:nasm
-    }
-    lappend merger_configure_args(i386) --enable-x86asm
-    lappend merger_configure_args(x86_64) --enable-x86asm
-} else {
-    configure.args-append --arch=${configure.build_arch}
-    configure.env-append  ASFLAGS=[get_canonical_archflags]
-    if {${build_arch} eq "i386" || ${build_arch} eq "x86_64"} {
-        depends_build-append port:nasm
-        configure.args-append --enable-x86asm
-    }
-}
-
-variant x11 {
-#
-# enable x11grab_xcb input device
-#
-    depends_lib-append      port:xorg-libxcb \
-                            port:xorg-libXext \
-                            port:xorg-libX11 \
-                            port:xorg-libXfixes
-
-    configure.args-delete   --disable-libxcb \
-                            --disable-libxcb-shm \
-                            --disable-libxcb-xfixes \
-                            --disable-xlib \
-
-    configure.args-append   --enable-xlib
-}
-
-variant natronmini requires highbitdepth aom conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
+variant natronmini requires highbitdepth conflicts x11 vmaf description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display, VMAF support.} {
 
     depends_lib-delete \
                     port:libiconv \
@@ -346,7 +433,8 @@ variant natronmini requires highbitdepth aom conflicts x11 description {Minimal 
                     port:fontconfig \
                     port:freetype \
                     port:fribidi \
-                    port:libsdl2
+                    port:libsdl2 \
+                    port:zimg
 
     configure.args-delete \
                     --enable-libass \
@@ -356,6 +444,7 @@ variant natronmini requires highbitdepth aom conflicts x11 description {Minimal 
                     --enable-libfreetype \
                     --enable-libfribidi \
                     --enable-sdl2 \
+                    --enable-libzimg \
                     --cc=${configure.cc} \
                     --cxx=${configure.cxx}
 
@@ -374,15 +463,33 @@ variant natronmini requires highbitdepth aom conflicts x11 description {Minimal 
 
 }
 
-if {[variant_isset x11]} {
-    require_active_variants libsdl2 x11
-} else {
-    require_active_variants libsdl2 "" x11
+variant x11 {
+    # enable x11grab_xcb input device
+    depends_lib-append \
+                    port:xorg-libxcb \
+                    port:xorg-libX11 \
+                    port:xorg-libXext \
+                    port:xorg-libXv
+    configure.args-delete \
+                    --disable-xlib \
+                    --disable-libxcb
+}
+
+# On PowerPC libsdl2 is a stub for libsdl2-powerpc, which is always built
+# with X11 backend. It is meaningless to require it as a variant there.
+if {${configure.build_arch} ni [list ppc ppc64]} {
+    if {[variant_isset x11]} {
+        require_active_variants libsdl2 x11
+    } else {
+        require_active_variants libsdl2 "" x11
+    }
 }
 
 variant libdc1394 description {Enable IIDC-1394 frame grabbing using libdc1394 (experimental)} {
-    depends_lib-append port:libdc1394
-    configure.args-append --enable-libdc1394
+    depends_lib-append \
+                    port:libdc1394
+    configure.args-append \
+                    --enable-libdc1394
 }
 
 # Allow use of librtmp instead of ffmpeg's internal rtmp implementation
@@ -390,40 +497,32 @@ variant libdc1394 description {Enable IIDC-1394 frame grabbing using libdc1394 (
 # https://trac.macports.org/ticket/32219
 # https://groups.google.com/forum/#!topic/c-rtmp-server/ywQPjvciPgc
 # https://trac.ffmpeg.org/ticket/1700
-
 variant librtmp description {Use librtmp (from rtmpdump) as rtmp[t][es]:// protocol handler} {
-    configure.args-append   --enable-librtmp
-
-    depends_lib-append      port:rtmpdump
-}
-
-# x265 currently does not support OS X < 10.6 (#48336, #48338)
-# only enable libx265 support on 10.6 or greater
-
-platform darwin {
-    if {${os.major} > 9 && [variant_isset gpl2]} {
-        configure.args-append   --enable-libx265
-        depends_lib-append      port:x265
-    }
+    configure.args-append \
+                    --enable-librtmp
+    depends_lib-append \
+                    port:rtmpdump
 }
 
 variant jack description {Enable jack library and indev support} {
-# jack will autoconfigure if not disabled
-    depends_lib-append      port:jack
-    configure.args-delete   --disable-libjack \
-                            --disable-indev=jack
+    # jack will autoconfigure if not disabled
+    depends_lib-append \
+                    port:jack
+    configure.args-replace \
+                    --disable-libjack \
+                    --enable-libjack
+    configure.args-replace \
+                    --disable-indev=jack \
+                    --enable-indev=jack
 }
 
 variant darwinssl description {Enable https support using Apple built-in TLS library instead of GNU TLS} {
-    configure.args-delete   --disable-securetransport
-    configure.args-delete   --enable-gnutls
-    depends_lib-delete      port:gnutls
-}
-
-variant aom description {Enable Alliance for Open Media AV1 Codec} {
-    depends_lib-append      port:aom
-    configure.args-delete   --disable-libaom
-    configure.args-append   --enable-libaom
+    configure.args-delete \
+                    --disable-securetransport
+    configure.args-delete \
+                    --enable-gnutls
+    depends_lib-delete \
+                    path:lib/pkgconfig/gnutls.pc:gnutls
 }
 
 variant highbitdepth description {Build using libvpx with 10/12-bit output} {}
@@ -435,106 +534,106 @@ if {[variant_isset highbitdepth]} {
 }
 
 variant gpl2 description {Enable GPL code, license will be GPL-2+} {
-    configure.args-append   --enable-gpl \
-                            --enable-postproc \
-                            --enable-libx264 \
-                            --enable-libxvid
-    depends_lib-append      port:XviD \
-                            port:x264
+    license         GPL-2+
 
-    license                 GPL-2+
+    configure.args-append \
+                    --enable-gpl \
+                    --enable-libvidstab \
+                    --enable-libx264 \
+                    --enable-libx265 \
+                    --enable-libxvid
+    depends_lib-append \
+                    port:libvidstab \
+                    port:x264 \
+                    port:x265 \
+                    port:XviD
 }
 
 variant gpl3 requires gpl2 description {Enable GPL code, license will be GPL-3+} {
-    configure.args-append   --enable-version3 \
-                            --enable-libsmbclient
+    license         GPL-3+
 
-    depends_lib-append      port:samba3
-
-    license                 GPL-3+
-
-    # samba3 cannot be built universal (http://trac.macports.org/ticket/34558)
-    if {[variant_isset universal]} {
-        depends_lib-delete    port:samba3
-        configure.args-delete --enable-libsmbclient
-    }
+    configure.args-append \
+                    --enable-libaribb24 \
+                    --enable-libsmbclient \
+                    --enable-version3
+    depends_lib-append \
+                    port:libaribb24 \
+                    path:lib/pkgconfig/smbclient.pc:samba4
 }
 
 # the build server uses the default variants, and we want distributable binaries
 # nonfree code is disabled by default but can be enabled using the +nonfree variant
-
 variant nonfree description {enable nonfree code, libraries and binaries will not be redistributable} {
-    configure.args-append   --enable-nonfree \
-                            --enable-libfdk-aac
-    depends_lib-append      port:libfdk-aac
-    license                 Restrictive
+    license         Restrictive
+
+    configure.args-append \
+                    --enable-libfdk-aac \
+                    --enable-nonfree
+    depends_lib-append \
+                    port:libfdk-aac
+}
+
+variant rav1e description {Enable codec rav1e} {
+    configure.args-append \
+                    --enable-librav1e
+    depends_lib-append \
+                    port:rav1e
+}
+
+variant flite description {Enable flite audio source} {
+    configure.args-append \
+                    --enable-libflite
+    depends_lib-append \
+                    port:flite
+}
+
+variant vmaf description {Enable VMAF perceptual video quality assessment} {
+    configure.args-append \
+                    --enable-libvmaf
+    depends_lib-append \
+                    port:libvmaf
+}
+
+# Natron: +natronmini doesn't bundle libvmaf
+if {![variant_isset natronmini]} {
+    default_variants-append \
+                    +vmaf
+}
+
+if {![variant_isset rav1e]} {
+    notes-append "Support for rav1e now disabled by default; enable via +rav1e"
 }
 
 if {[variant_isset nonfree]} {
-notes "
-*******
-******* This build of ${name} includes nonfree code as follows:
-*******
-*******     libfdk-aac
-*******
-******* The following libraries and binaries may not be redistributed:
-*******
-*******     ffmpeg
-*******     libavcodec
-*******     libavdevice
-*******     libavfilter
-*******     libavformat
-*******     libavutil
-*******
-******* To remove this restriction remove the variant +nonfree
-*******
+notes-append "
+This build of ${name} includes nonfree code as follows:
+  libfdk-aac
+The following libraries and binaries may not be redistributed:
+  ffmpeg libavcodec libavdevice libavfilter libavformat libavutil
+To remove this restriction remove the variant +nonfree
 "
 } elseif {[variant_isset gpl3]} {
-notes "
-*******
-******* This build of ${name} includes GPLed code and
-******* is therefore licensed under GPL v3 or later.
-*******
-******* The following modules are GPLed:
-*******
-*******      postproc
-*******      libsambaclient
-*******      libx264
-*******      libx265
-*******      libxvid
-*******
-******* To include all nonfree, GPLed and LGPL code use variant +nonfree.
-******* To remove nonfree and GPLed code leaving only LGPL code remove the
-******* +gpl2 and +gpl3 variants.
-*******
+notes-append "
+This build of ${name} includes GPLed code and is therefore licensed under GPL v3 or later.\
+The following modules are GPLed:
+  libsambaclient libvidstab libx264 libx265 libxvid postproc
+To include all nonfree, GPLed and LGPL code use variant +nonfree.\
+To remove nonfree and GPLed code leaving only LGPL code remove the +gpl2 and +gpl3 variants.
 "
 } elseif {[variant_isset gpl2]} {
-notes "
-*******
-******* This build of ${name} includes GPLed code and
-******* is therefore licensed under GPL v2 or later.
-*******
-******* The following modules are GPLed:
-*******
-*******      postproc
-*******      libx264
-*******      libx265
-*******      libxvid
-*******
-******* To include all nonfree, GPLed and LGPL code use variant +nonfree.
-******* To remove nonfree and GPLed code leaving only LGPL code remove the
-******* +gpl2 variant.
-*******
+notes-append "
+This build of ${name} includes GPLed code and is therefore licensed under GPL v2 or later.\
+The following modules are GPLed:
+  libvidstab libx264 libx265 libxvid postproc
+To include all nonfree, GPLed and LGPL code use variant +nonfree.\
+To remove nonfree and GPLed code leaving only LGPL code remove the +gpl2 variant.
 "
 } else {
-notes "
-*******
-******* This build of ${name} includes no GPLed or nonfree
-******* code and is therefore licensed under LGPL v2.1 or later.
-*******
+notes-append "
+This build of ${name} includes no GPLed or nonfree code and is therefore licensed under LGPL v2.1 or later.
 "
 }
 
 livecheck.type      regex
 livecheck.url       ${master_sites}
-livecheck.regex     "${name}-(\\d+(?:\\.\\d+)*)${extract.suffix}"
+livecheck.regex     "${my_name}-(\\d+(?:\\.\\d+)*)${extract.suffix}"

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,13 +27,16 @@
 
 #include <stdexcept>
 
-#include <QtCore/QSize>
-#include <QtCore/QThread>
-#include <QtCore/QCoreApplication>
+#include <QSize>
+#include <QThread>
+#include <QCoreApplication>
 #include <QMouseEvent>
-#include <QtCore/QByteArray>
+#include <QByteArray>
+
+#include <QWindow>
 
 #include "Gui/KnobGui.h"
+#include "Gui/Gui.h"
 #include "Gui/QtEnumConvert.h"
 #include "Gui/GuiApplicationManager.h"
 
@@ -41,6 +44,8 @@
 #include "Engine/Knob.h"
 #include "Engine/AppInstance.h"
 #include "Engine/TimeLine.h"
+
+#include <QOpenGLContext>
 
 
 NATRON_NAMESPACE_ENTER
@@ -80,7 +85,7 @@ CustomParamInteract::CustomParamInteract(const KnobGuiPtr& knob,
                                          void* ofxParamHandle,
                                          const OfxParamOverlayInteractPtr & entryPoint,
                                          QWidget* parent)
-    : QGLWidget(parent)
+    : QOpenGLWidget(parent)
     , _imp( new CustomParamInteractPrivate(knob, ofxParamHandle, entryPoint) )
 {
     double minW, minH;
@@ -98,7 +103,7 @@ CustomParamInteract::paintGL()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     if ( !appPTR->isOpenGLLoaded() ) {
         return;
@@ -144,7 +149,7 @@ CustomParamInteract::resizeGL(int w,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     if ( !appPTR->isOpenGLLoaded() ) {
         return;
@@ -166,7 +171,7 @@ CustomParamInteract::sizeHint() const
 void
 CustomParamInteract::swapOpenGLBuffers()
 {
-    swapBuffers();
+    update();
 }
 
 void
@@ -195,11 +200,7 @@ CustomParamInteract::getPixelScale(double & xScale,
 double
 CustomParamInteract::getScreenPixelRatio() const
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    return windowHandle()->devicePixelRatio()
-#else
-    return 1.;
-#endif
+    return devicePixelRatio();
 }
 #endif
 
@@ -285,7 +286,7 @@ CustomParamInteract::getWidgetFontHeight() const
 int
 CustomParamInteract::getStringWidthForCurrentFont(const std::string& string) const
 {
-    return fontMetrics().width( QString::fromUtf8( string.c_str() ) );
+    return fontMetrics().horizontalAdvance( QString::fromUtf8( string.c_str() ) );
 }
 
 RectD

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,23 +29,23 @@
 #include <sstream> // stringstream
 
 CLANG_DIAG_OFF(deprecated)
-#include <QtCore/QThread>
+#include <QThread>
 #include <QLayout>
 #include <QMenu>
 #include <QApplication>
-#include <QtGui/QImage>
-#include <QtGui/QPixmap>
-#include <QtGui/QIcon>
-#include <QtCore/QMimeData>
-#include <QtGui/QDrag>
+#include <QImage>
+#include <QPixmap>
+#include <QIcon>
+#include <QMimeData>
+#include <QDrag>
 #include <QStyle>
-#include <QtCore/QDebug>
+#include <QDebug>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
-#include <QtGui/QDragEnterEvent>
+#include <QDragEnterEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-#include <QtGui/QDragLeaveEvent>
-#include <QtGui/QPaintEvent>
+#include <QDragLeaveEvent>
+#include <QPaintEvent>
 #include <QScrollArea>
 #include <QSplitter>
 CLANG_DIAG_ON(deprecated)
@@ -1061,7 +1061,7 @@ TabWidget::insertTab(int index,
     insertTab(index, QIcon(), widget, object);
 }
 
-PanelWidget*
+void
 TabWidget::removeTab(int index,
                      bool userAction)
 {
@@ -1070,12 +1070,13 @@ TabWidget::removeTab(int index,
 
     tabAt(index, &tab, &obj);
     if (!tab || !obj) {
-        return 0;
+        return;
     }
 
     ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
     Histogram* isHisto = dynamic_cast<Histogram*>(tab);
     NodeGraph* isGraph = dynamic_cast<NodeGraph*>(tab);
+    Natron::Python::PyPanel* isPyPanel = dynamic_cast<Natron::Python::PyPanel*>(tab);
     int newIndex = -1;
     if (isGraph) {
         /*
@@ -1142,8 +1143,17 @@ TabWidget::removeTab(int index,
         //tab->setParent(_imp->gui);
     }
 
-
+    // Note: The tab may get destroyed inside this call if the python variable on the app
+    // object that removeTabToPython() deletes is the only reference to the tab and the
+    // tab is a PyPanel created by Python code.
     _imp->removeTabToPython( tab, obj->getScriptName() );
+
+    if (isPyPanel) {
+        // At this point tab might have been destroyed if it was a PyPanel
+        // and no other python code has a reference to it.
+        // tab, w, and obj are all likely invalid now so just return.
+        return;
+    }
 
     if (userAction) {
         if (isViewer && _imp->gui) {
@@ -1154,7 +1164,7 @@ TabWidget::removeTab(int index,
             _imp->gui->removeHistogram(isHisto);
 
             //Return because at this point isHisto is invalid
-            return tab;
+            return;
         } else {
             ///Do not delete unique widgets such as the properties bin, node graph or curve editor
             w->setVisible(false);
@@ -1167,8 +1177,6 @@ TabWidget::removeTab(int index,
     }
     w->setParent(_imp->gui);
 
-
-    return tab;
 } // TabWidget::removeTab
 
 void
@@ -1188,9 +1196,7 @@ TabWidget::removeTab(PanelWidget* widget,
     }
 
     if (index != -1) {
-        PanelWidget* tab = removeTab(index, userAction);
-        assert(tab == widget);
-        Q_UNUSED(tab);
+        removeTab(index, userAction);
     }
 }
 
@@ -1324,7 +1330,7 @@ TabWidget::paintEvent(QPaintEvent* e)
         QString text = tr("(Viewer Pane)");
         QFontMetrics fm(f);
         QPointF pos(width() / 2., height() / 2.);
-        pos.rx() -= (fm.width(text) / 2.);
+        pos.rx() -= (fm.horizontalAdvance(text) / 2.);
         pos.ry() -= (fm.height() / 2.);
         p.drawText(pos, text);
     }
@@ -1521,11 +1527,7 @@ TabBar::makePixmapForDrag(int index)
     addTab(tabs[index].second, tabs[index].first);
 
     QPixmap currentTabPixmap =  Gui::screenShot( _tabWidget->tabAt(index)->getWidget() );
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    QPixmap tabBarPixmap = QPixmap::grabWidget(this);
-#else
     QPixmap tabBarPixmap = grab();
-#endif
 
     ///re-insert all the tabs into the tab bar
     removeTab(0);
@@ -1537,15 +1539,6 @@ TabBar::makePixmapForDrag(int index)
 
     QImage tabBarImg = tabBarPixmap.toImage();
     QImage currentTabImg = currentTabPixmap.toImage();
-
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    ///Prevent a bug with grabWidget and retina display on Qt4
-    bool isHighDPI = _tabWidget->getGui()->isHighDPI();
-    if (isHighDPI) {
-        tabBarImg = tabBarImg.scaled(tabBarImg.width() / 2., tabBarImg.height() / 2.);
-        currentTabImg = currentTabImg.scaled(currentTabImg.width() / 2., currentTabImg.height() / 2.);
-    }
-#endif
 
     //now we just put together the 2 pixmaps and set it with mid transparency
     QImage ret(currentTabImg.width(), currentTabImg.height() + tabBarImg.height(), QImage::Format_ARGB32_Premultiplied);
@@ -2077,7 +2070,7 @@ TabWidget::leaveEvent(QEvent* e)
 }
 
 void
-TabWidget::enterEvent(QEvent* e)
+TabWidget::enterEvent(QtCompat::QEnterEvent* e)
 {
     if (_imp->gui) {
         _imp->gui->setLastEnteredTabWidget(this);

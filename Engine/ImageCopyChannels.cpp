@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,23 +28,19 @@
 #include <cassert>
 #include <stdexcept>
 
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/math/special_functions/fpclassify.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
-#include <QtCore/QDebug>
+#include <QDebug>
 
 #include "Engine/OSGLContext.h"
 #include "Engine/GLShader.h"
 
 
 // disable some warnings due to unused parameters
+// clang-format off
 GCC_DIAG_OFF(unused-parameter)
 # if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 406
 GCC_DIAG_OFF(unused-but-set-variable) // only on gcc >= 4.6
 #endif
+// clang-format on
 
 // NATRON_COPY_CHANNELS_UNPREMULT:
 // Repremult R G and B if output is premult and alpha was modified.
@@ -77,8 +73,8 @@ Image::copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
             const PIX* src_pixels = originalImage ? (const PIX*)acc.pixelAt(x, y) : 0;
             PIX srcA = src_pixels ? maxValue : 0; /* be opaque for anything that doesn't contain alpha */
             if ( ( (srcNComps == 1) || (srcNComps == 4) ) && src_pixels ) {
-#             ifdef DEBUG
-                assert( !(boost::math::isnan)(src_pixels[srcNComps - 1]) ); // check for NaN
+#             ifdef DEBUG_NAN
+                assert( !std::isnan(src_pixels[srcNComps - 1]) ); // check for NaN
 #             endif
                 srcA = src_pixels[srcNComps - 1];
             }
@@ -130,41 +126,41 @@ Image::copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
 #         endif // !NATRON_COPY_CHANNELS_UNPREMULT
 
             if ( (dstNComps == 1) || (dstNComps == 4) ) {
-#             ifdef DEBUG
-                assert(  !(boost::math::isnan)(dst_pixels[dstNComps - 1]) ); // check for NaN
+#             ifdef DEBUG_NAN
+                assert(  !std::isnan(dst_pixels[dstNComps - 1]) ); // check for NaN
 #             endif
 #             ifdef NATRON_COPY_CHANNELS_UNPREMULT
                 dstAorig = dst_pixels[dstNComps - 1];
 #             endif // NATRON_COPY_CHANNELS_UNPREMULT
             }
             if (doR) {
-#             ifdef DEBUG
-                assert(!src_pixels ||  !(boost::math::isnan)(src_pixels[0]) ); // check for NaN
-                assert(  !(boost::math::isnan)(dst_pixels[0]) ); // check for NaN
+#             ifdef DEBUG_NAN
+                assert(!src_pixels ||  !std::isnan(src_pixels[0]) ); // check for NaN
+                assert(  !std::isnan(dst_pixels[0]) ); // check for NaN
 #             endif
                 DOCHANNEL(0);
-#             ifdef DEBUG
-                assert(  !(boost::math::isnan)(dst_pixels[0]) ); // check for NaN
+#             ifdef DEBUG_NAN
+                assert(  !std::isnan(dst_pixels[0]) ); // check for NaN
 #             endif
             }
             if (doG) {
-#             ifdef DEBUG
-                assert(!src_pixels ||  !(boost::math::isnan)(src_pixels[1]) ); // check for NaN
-                assert( !(boost::math::isnan)(dst_pixels[1]) ); // check for NaN
+#             ifdef DEBUG_NAN
+                assert(!src_pixels ||  !std::isnan(src_pixels[1]) ); // check for NaN
+                assert( !std::isnan(dst_pixels[1]) ); // check for NaN
 #             endif
                 DOCHANNEL(1);
-#             ifdef DEBUG
-                assert( !(boost::math::isnan)(dst_pixels[1]) ); // check for NaN
+#             ifdef DEBUG_NAN
+                assert( !std::isnan(dst_pixels[1]) ); // check for NaN
 #             endif
             }
             if (doB) {
-#             ifdef DEBUG
-                assert(!src_pixels ||  !(boost::math::isnan)(src_pixels[2]) ); // check for NaN
-                assert( !(boost::math::isnan)(dst_pixels[2]) ); // check for NaN
+#             ifdef DEBUG_NAN
+                assert(!src_pixels ||  !std::isnan(src_pixels[2]) ); // check for NaN
+                assert( !std::isnan(dst_pixels[2]) ); // check for NaN
 #             endif
                 DOCHANNEL(2);
-#             ifdef DEBUG
-                assert( !(boost::math::isnan)(dst_pixels[2]) ); // check for NaN
+#             ifdef DEBUG_NAN
+                assert( !std::isnan(dst_pixels[2]) ); // check for NaN
 #             endif
             }
             if (doA) {
@@ -174,20 +170,20 @@ Image::copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
                         // unpremult, then premult
                         if ( (dstNComps >= 2) && !doR ) {
                             dst_pixels[0] = (dst_pixels[0] / (float)dstAorig) * srcA;
-#                         ifdef DEBUG
-                            assert( !(boost::math::isnan)(dst_pixels[0]) ); // check for NaN
+#                         ifdef DEBUG_NAN
+                            assert( !std::isnan(dst_pixels[0]) ); // check for NaN
 #                         endif
                         }
                         if ( (dstNComps >= 2) && !doG ) {
                             dst_pixels[1] = (dst_pixels[1] / (float)dstAorig) * srcA;
-#                         ifdef DEBUG
-                            assert( !(boost::math::isnan)(dst_pixels[1]) ); // check for NaN
+#                         ifdef DEBUG_NAN
+                            assert( !std::isnan(dst_pixels[1]) ); // check for NaN
 #                         endif
                         }
                         if ( (dstNComps >= 2) && !doB ) {
                             dst_pixels[2] = (dst_pixels[2] / (float)dstAorig) * srcA;
-#                         ifdef DEBUG
-                            assert( !(boost::math::isnan)(dst_pixels[2]) ); // check for NaN
+#                         ifdef DEBUG_NAN
+                            assert( !std::isnan(dst_pixels[2]) ); // check for NaN
 #                         endif
                         }
                     }
@@ -195,8 +191,8 @@ Image::copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
 #             endif // NATRON_COPY_CHANNELS_UNPREMULT
                 if ( (dstNComps == 1) || (dstNComps == 4) ) {
                     dst_pixels[dstNComps - 1] = srcA;
-#                 ifdef DEBUG
-                    assert( !(boost::math::isnan)(dst_pixels[dstNComps - 1]) ); // check for NaN
+#                 ifdef DEBUG_NAN
+                    assert( !std::isnan(dst_pixels[dstNComps - 1]) ); // check for NaN
 #                 endif
                 }
             }
@@ -231,8 +227,8 @@ Image::copyUnProcessedChannelsForPremult(const bool premult,
             const PIX* src_pixels = originalImage ? (const PIX*)acc.pixelAt(x, y) : 0;
             PIX srcA = src_pixels ? maxValue : 0; /* be opaque for anything that doesn't contain alpha */
             if ( ( (srcNComps == 1) || (srcNComps == 4) ) && src_pixels ) {
-#             ifdef DEBUG
-                assert( !(boost::math::isnan)(src_pixels[srcNComps - 1]) ); // check for NaN
+#             ifdef DEBUG_NAN
+                assert( !std::isnan(src_pixels[srcNComps - 1]) ); // check for NaN
 #             endif
                 srcA = src_pixels[srcNComps - 1];
             }
@@ -240,41 +236,41 @@ Image::copyUnProcessedChannelsForPremult(const bool premult,
             PIX dstAorig = maxValue;
 #         endif
             if ( (dstNComps == 1) || (dstNComps == 4) ) {
-#             ifdef DEBUG
-                assert( !(boost::math::isnan)(dst_pixels[dstNComps - 1]) ); // check for NaN
+#             ifdef DEBUG_NAN
+                assert( !std::isnan(dst_pixels[dstNComps - 1]) ); // check for NaN
 #             endif
 #             ifdef NATRON_COPY_CHANNELS_UNPREMULT
                 dstAorig = dst_pixels[dstNComps - 1];
 #             endif
             }
             if (doR) {
-#             ifdef DEBUG
-                assert(!src_pixels || !(boost::math::isnan)(src_pixels[0]) ); // check for NaN
-                assert( !(boost::math::isnan)(dst_pixels[0]) ); // check for NaN
+#             ifdef DEBUG_NAN
+                assert(!src_pixels || !std::isnan(src_pixels[0]) ); // check for NaN
+                assert( !std::isnan(dst_pixels[0]) ); // check for NaN
 #             endif
                 DOCHANNEL(0);
-#             ifdef DEBUG
-                assert( !(boost::math::isnan)(dst_pixels[0]) ); // check for NaN
+#             ifdef DEBUG_NAN
+                assert( !std::isnan(dst_pixels[0]) ); // check for NaN
 #             endif
             }
             if (doG) {
-#             ifdef DEBUG
-                assert(!src_pixels || !(boost::math::isnan)(src_pixels[1]) ); // check for NaN
-                assert( !(boost::math::isnan)(dst_pixels[1]) ); // check for NaN
+#             ifdef DEBUG_NAN
+                assert(!src_pixels || !std::isnan(src_pixels[1]) ); // check for NaN
+                assert( !std::isnan(dst_pixels[1]) ); // check for NaN
 #             endif
                 DOCHANNEL(1);
-#             ifdef DEBUG
-                assert( !(boost::math::isnan)(dst_pixels[1]) ); // check for NaN
+#             ifdef DEBUG_NAN
+                assert( !std::isnan(dst_pixels[1]) ); // check for NaN
 #             endif
             }
             if (doB) {
-#             ifdef DEBUG
-                assert(!src_pixels || !(boost::math::isnan)(src_pixels[2]) ); // check for NaN
-                assert( !(boost::math::isnan)(dst_pixels[2]) ); // check for NaN
+#             ifdef DEBUG_NAN
+                assert(!src_pixels || !std::isnan(src_pixels[2]) ); // check for NaN
+                assert( !std::isnan(dst_pixels[2]) ); // check for NaN
 #             endif
                 DOCHANNEL(2);
-#             ifdef DEBUG
-                assert( !(boost::math::isnan)(dst_pixels[2]) ); // check for NaN
+#             ifdef DEBUG_NAN
+                assert( !std::isnan(dst_pixels[2]) ); // check for NaN
 #             endif
             }
             if (doA) {
@@ -284,20 +280,20 @@ Image::copyUnProcessedChannelsForPremult(const bool premult,
                         // unpremult, then premult
                         if ( (dstNComps >= 2) && !doR ) {
                             dst_pixels[0] = (dst_pixels[0] / (float)dstAorig) * srcA;
-#                         ifdef DEBUG
-                            assert( !(boost::math::isnan)(dst_pixels[0]) ); // check for NaN
+#                         ifdef DEBUG_NAN
+                            assert( !std::isnan(dst_pixels[0]) ); // check for NaN
 #                         endif
                         }
                         if ( (dstNComps >= 2) && !doG ) {
                             dst_pixels[1] = (dst_pixels[1] / (float)dstAorig) * srcA;
-#                         ifdef DEBUG
-                            assert( !(boost::math::isnan)(dst_pixels[1]) ); // check for NaN
+#                         ifdef DEBUG_NAN
+                            assert( !std::isnan(dst_pixels[1]) ); // check for NaN
 #                         endif
                         }
                         if ( (dstNComps >= 2) && !doB ) {
                             dst_pixels[2] = (dst_pixels[2] / (float)dstAorig) * srcA;
-#                         ifdef DEBUG
-                            assert( !(boost::math::isnan)(dst_pixels[2]) ); // check for NaN
+#                         ifdef DEBUG_NAN
+                            assert( !std::isnan(dst_pixels[2]) ); // check for NaN
 #                         endif
                         }
                     }
@@ -305,8 +301,8 @@ Image::copyUnProcessedChannelsForPremult(const bool premult,
 #              endif // NATRON_COPY_CHANNELS_UNPREMULT
                 // coverity[dead_error_line]
                 dst_pixels[dstNComps - 1] = srcA;
-#              ifdef DEBUG
-                assert( !(boost::math::isnan)(dst_pixels[dstNComps - 1]) ); // check for NaN
+#              ifdef DEBUG_NAN
+                assert( !std::isnan(dst_pixels[dstNComps - 1]) ); // check for NaN
 #              endif
             }
         }
@@ -613,8 +609,8 @@ Image::copyUnProcessedChannels(const RectI& roi,
     }
 
 
-    if ( originalImage && ( getMipMapLevel() != originalImage->getMipMapLevel() ) ) {
-        qDebug() << "WARNING: attempting to call copyUnProcessedChannels on images with different mipMapLevel";
+    if ( originalImage && ( getMipmapLevel() != originalImage->getMipmapLevel() ) ) {
+        qDebug() << "WARNING: attempting to call copyUnProcessedChannels on images with different mipmapLevel";
 
         return;
     }
@@ -623,8 +619,7 @@ Image::copyUnProcessedChannels(const RectI& roi,
     assert( !originalImage || getBitDepth() == originalImage->getBitDepth() );
 
 
-    RectI srcRoi;
-    roi.intersect(_bounds, &srcRoi);
+    const RectI srcRoi = roi.intersect(_bounds);
 
     if (getStorageMode() == eStorageModeGLTex) {
         assert(glContext);

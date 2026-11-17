@@ -26,7 +26,7 @@ If no source is connected, this effect behaves like a generator. Its region of d
 
 - The selected extent plus a one-pixel border if Color0 is black and transparent.
 
-See also: http://opticalenquiry.com/nuke/index.php?title=Rectangle
+See also: https://web.archive.org/web/20220807191757/http://www.opticalenquiry.com/nuke/index.php?title=Rectangle
 
 Inputs
 ------
@@ -86,6 +86,8 @@ Controls
 | Size / ``size``                      | Double  | w: 1 h: 1           | Width and height of the size rectangle.                                                                                                                    |
 +--------------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Interactive Update / ``interactive`` | Boolean | Off                 | If checked, update the parameter values during interaction with the image viewer, else update the values when pen is released.                             |
++--------------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| HiDPI / ``hidpi``                    | Boolean | Off                 | Should be checked when the display area is High-DPI (a.k.a Retina). Draws OpenGL overlays twice larger.                                                    |
 +--------------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Frame Range / ``frameRange``         | Integer | min: 1 max: 1       | Time domain.                                                                                                                                               |
 +--------------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+

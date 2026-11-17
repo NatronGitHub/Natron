@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,20 +29,18 @@
 #include <algorithm> // min, max
 #include <stdexcept>
 
-#include <boost/scoped_array.hpp>
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QDebug>
+#include <QDebug>
 #include <QLayout>
 #include <QAction>
-#include <QtCore/QThread>
+#include <QThread>
 #include <QFontMetrics>
 #include <QTextBlockFormat>
 #include <QTextCursor>
 #include <QGridLayout>
 #include <QCursor>
-#include <QtCore/QFile>
+#include <QFile>
 #include <QApplication>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -434,6 +432,8 @@ NodeGui::ensurePanelCreated(bool minimized, bool hideUnmodified)
     if (_settingsPanel) {
         QObject::connect( _settingsPanel, SIGNAL(nameChanged(QString)), this, SLOT(setName(QString)) );
         QObject::connect( _settingsPanel, SIGNAL(closeChanged(bool)), this, SLOT(onSettingsPanelClosed(bool)) );
+        QObject::connect( _settingsPanel, SIGNAL(minimized()), this, SLOT(onSettingsPanelMinimized()) );
+        QObject::connect( _settingsPanel, SIGNAL(maximized()), this, SLOT(onSettingsPanelMaximized()) );
         QObject::connect( _settingsPanel, SIGNAL(colorChanged(QColor)), this, SLOT(onSettingsPanelColorChanged(QColor)) );
 
         _graph->getGui()->setNodeViewerInterface(thisShared);
@@ -495,6 +495,32 @@ NodeGui::onSettingsPanelClosed(bool closed)
         }
     }
     Q_EMIT settingsPanelClosed(closed);
+}
+
+void
+NodeGui::onSettingsPanelMinimized()
+{
+    NodePtr internalNode = getNode();
+    if (internalNode && internalNode->hasAnyPersistentMessage()) {
+        const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
+        for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+            (*it)->getViewer()->updatePersistentMessage();
+        }
+    }
+    Q_EMIT settingsPanelMinimized();
+}
+
+void
+NodeGui::onSettingsPanelMaximized()
+{
+    NodePtr internalNode = getNode();
+    if (internalNode && internalNode->hasAnyPersistentMessage()) {
+        const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
+        for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+            (*it)->getViewer()->updatePersistentMessage();
+        }
+    }
+    Q_EMIT settingsPanelMaximized();
 }
 
 NodeSettingsPanel*
@@ -632,7 +658,7 @@ NodeGui::createGui()
     _persistentMessage = new NodeGraphSimpleTextItem(getDagGui(), this, false);
     _persistentMessage->setZValue(depth + 3);
     QFont f = _persistentMessage->font();
-    f.setPixelSize(25);
+    f.setPointSize(25);
     bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
     if (!antialias) {
         f.setStyleStrategy(QFont::NoAntialias);
@@ -985,7 +1011,7 @@ NodeGui::resize(int width,
     QString persistentMessage = _persistentMessage->text();
     f.setPixelSize(25);
     metrics = QFontMetrics(f, 0);
-    int pMWidth = metrics.width(persistentMessage);
+    int pMWidth = metrics.horizontalAdvance(persistentMessage);
     int midNodeX = topLeft.x() + iconWidth + (width - iconWidth) / 2;
     QPointF bitDepthPos(midNodeX, 0);
     _streamIssuesWarning->refreshPosition(bitDepthPos);
@@ -1263,7 +1289,7 @@ NodeGui::refreshEdges()
             if (!nodeInputGui_i) {
                 continue;
             }
-            NodeGuiPtr node = boost::dynamic_pointer_cast<NodeGui>(nodeInputGui_i);
+            NodeGuiPtr node = std::dynamic_pointer_cast<NodeGui>(nodeInputGui_i);
             if (_inputEdges[i]->getSource() != node) {
                 _inputEdges[i]->setSource(node);
             } else {
@@ -1499,7 +1525,7 @@ NodeGui::initializeInputs()
         if (input) {
             NodeGuiIPtr gui_i = input->getNodeGui();
             assert(gui_i);
-            NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+            NodeGuiPtr gui = std::dynamic_pointer_cast<NodeGui>(gui_i);
             assert(gui);
             edge->setSource(gui);
         }
@@ -1802,7 +1828,7 @@ NodeGui::connectEdge(int edgeNumber)
     NodePtr input = inputs[edgeNumber].lock();
     if (input) {
         NodeGuiIPtr ngi = input->getNodeGui();
-        src = boost::dynamic_pointer_cast<NodeGui>(ngi);
+        src = std::dynamic_pointer_cast<NodeGui>(ngi);
     }
 
     _inputEdges[edgeNumber]->setSource(src);
@@ -1868,7 +1894,8 @@ NodeGui::hasEdgeNearbyRect(const QRectF & rect)
         edgeLine.setP1( (*it)->mapToScene( edgeLine.p1() ) );
         edgeLine.setP2( (*it)->mapToScene( edgeLine.p2() ) );
         for (int j = 0; j < 4; ++j) {
-            if (edgeLine.intersect(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
+            QLineF::IntersectionType intersectType = edgeLine.intersects(rectEdges[j], &intersection);
+            if (intersectType == QLineF::BoundedIntersection) {
                 if (!closest) {
                     closest = *it;
                     closestSquareDist = ( intersection.x() - middleRect.x() ) * ( intersection.x() - middleRect.x() )
@@ -1895,7 +1922,8 @@ NodeGui::hasEdgeNearbyRect(const QRectF & rect)
             edgeLine.setP1( (_outputEdge)->mapToScene( edgeLine.p1() ) );
             edgeLine.setP2( (_outputEdge)->mapToScene( edgeLine.p2() ) );
             for (int j = 0; j < 4; ++j) {
-                if (edgeLine.intersect(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
+                QLineF::IntersectionType intersectType = edgeLine.intersects(rectEdges[j], &intersection);
+                if (intersectType == QLineF::BoundedIntersection) {
                     return _outputEdge;
                 }
             }
@@ -2102,23 +2130,23 @@ NodeGui::setVisibleSettingsPanel(bool b, bool m, bool h)
     }
     if (_settingsPanel) {
         _settingsPanel->setClosed(!b);
+        if (b) {
+            // also maximize (but don't minimize when closing)
+            _settingsPanel->minimizeOrMaximize(false);
+        }
     }
 }
 
 bool
 NodeGui::isSettingsPanelVisible() const
 {
-    if (_settingsPanel) {
-        return !_settingsPanel->isClosed();
-    } else {
-        return false;
-    }
+    return _settingsPanel && !_settingsPanel->isClosed() && !_settingsPanel->isMinimized();
 }
 
 bool
 NodeGui::isSettingsPanelMinimized() const
 {
-    return _settingsPanel ? _settingsPanel->isMinimized() : false;
+    return _settingsPanel && _settingsPanel->isMinimized();
 }
 
 void
@@ -2233,6 +2261,13 @@ NodeGui::restoreInternal(const NodeGuiPtr& thisShared,
 void
 NodeGui::copyFrom(const NodeGuiSerialization & obj)
 {
+    float r, g, b;
+    double overlayR, overlayB, overlayG;
+    obj.getColor(&r, &g, &b);
+    setCurrentColor( QColor::fromRgbF(r, g, b) );
+    if (obj.getOverlayColor(&overlayR, &overlayG, &overlayB)) {
+        setOverlayColor( QColor::fromRgbF(overlayR, overlayB, overlayG) );
+    }
     setPos_mt_safe( QPointF( obj.getX(), obj.getY() ) );
     NodePtr node = getNode();
     assert(node);
@@ -2422,7 +2457,7 @@ NodeGui::onAllKnobsSlaved(bool b)
         assert(masterNode);
         NodeGuiIPtr masterNodeGui_i = masterNode->getNodeGui();
         assert(masterNodeGui_i);
-        NodeGuiPtr masterNodeGui = boost::dynamic_pointer_cast<NodeGui>(masterNodeGui_i);
+        NodeGuiPtr masterNodeGui = std::dynamic_pointer_cast<NodeGui>(masterNodeGui_i);
         _masterNodeGui = masterNodeGui;
         assert(!_slaveMasterLink);
 
@@ -2586,7 +2621,7 @@ NodeGui::onKnobsLinksChanged()
             ///There's no link to the master node yet
             if ( masterNode && (masterNode->getNodeGui().get() != this) && ( masterNode->getGroup() == node->getGroup() ) ) {
                 NodeGuiIPtr master_i = masterNode->getNodeGui();
-                NodeGuiPtr master = boost::dynamic_pointer_cast<NodeGui>(master_i);
+                NodeGuiPtr master = std::dynamic_pointer_cast<NodeGui>(master_i);
                 assert(master);
 
                 LinkArrow* arrow = new LinkArrow( master, thisShared, parentItem() );
@@ -2866,11 +2901,7 @@ struct NodeGuiIndicatorPrivate
 
         textItem->setBrush(textColor);
         textItem->setZValue(depth);
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-        textItem->scale(0.8, 0.8);
-#else
         textItem->setScale(0.8);
-#endif
     }
 };
 
@@ -3548,7 +3579,8 @@ NodeGui::drawHostOverlay(double time,
                          ViewIdx view)
 {
     if (_hostOverlay) {
-        NatronOverlayInteractSupport::OGLContextSaver s( _hostOverlay->getLastCallingViewport() );
+        OverlaySupport* overlaySupport = _hostOverlay->getLastCallingViewport();
+        NatronOverlayInteractSupport::OGLContextSaver s( overlaySupport );
         _hostOverlay->draw(time, renderScale, view);
     }
 }
@@ -4051,8 +4083,6 @@ GroupKnobDialog::GroupKnobDialog(Gui* gui,
     refreshUserParamsGUI();
 }
 
-typedef boost::shared_ptr<GroupKnobDialog> GroupKnobDialogPtr;
-
 void
 NodeGui::showGroupKnobAsDialog(KnobGroup* group)
 {
@@ -4060,18 +4090,18 @@ NodeGui::showGroupKnobAsDialog(KnobGroup* group)
     assert(group);
     bool showDialog = group->getValue();
     if (showDialog) {
-        assert(!_activeNodeCustomModalDialog);
-        GroupKnobDialogPtr dialog( new GroupKnobDialog(getDagGui()->getGui(), group) );
-        _activeNodeCustomModalDialog = dialog;
-        dialog->move( QCursor::pos() );
-        int accepted = dialog->exec();
+        _activeNodeCustomModalDialog = new GroupKnobDialog(getDagGui()->getGui(), group);
+        _activeNodeCustomModalDialog->move( QCursor::pos() );
+        int accepted = _activeNodeCustomModalDialog->exec();
         Q_UNUSED(accepted);
         // Notify dialog closed
         group->onValueChanged(false, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
-        _activeNodeCustomModalDialog.reset();
-    } else {
+        _activeNodeCustomModalDialog->deleteLater();
+        _activeNodeCustomModalDialog = 0;
+    } else if (_activeNodeCustomModalDialog) {
         _activeNodeCustomModalDialog->close();
-        _activeNodeCustomModalDialog.reset();
+        _activeNodeCustomModalDialog->deleteLater();
+        _activeNodeCustomModalDialog = 0;
     }
 }
 

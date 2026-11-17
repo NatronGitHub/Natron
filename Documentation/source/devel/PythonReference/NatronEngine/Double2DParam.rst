@@ -43,7 +43,7 @@ that the user can select and drag.
 
     :param enabled: :class:`bool`
 
-Sets whether all dimensions should be presented as a single vakue/slider whenever they are equal.
+Sets whether all dimensions should be presented as a single value/slider whenever they are equal.
 
 
 .. method:: NatronEngine.Double2DParam.get()

@@ -3,9 +3,8 @@
 #file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #Created by Alexandre GAUTHIER-FOICHAT on 01/27/2015.
 
-#PySide is already imported by Natron, but we remove the cumbersome PySide.QtGui and PySide.QtCore prefix
-from PySide.QtGui import *
-from PySide.QtCore import *
+from qtpy.QtGui import *
+from qtpy.QtCore import *
 
 #To import the variable "natron"
 from NatronGui import *

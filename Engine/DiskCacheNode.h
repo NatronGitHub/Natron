@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,10 +27,6 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
 
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/ViewIdx.h"
@@ -90,7 +86,7 @@ public:
         return tr("This node caches all images of the connected input node onto the disk with full 32bit floating point raw data. "
                   "When an image is found in the cache, %1 will then not request the input branch to render out that image. "
                   "The DiskCache node only caches full images and does not split up the images in chunks.  "
-                  "The DiskCache node is useful if working with a large and complex node tree: this allows to break the tree into smaller "
+                  "The DiskCache node is useful if working with a large and complex node tree: this allows one to break the tree into smaller "
                   "branches and cache any branch that you're no longer working on. The cached images are saved by default in the same directory that is used "
                   "for the viewer cache but you can set its location and size in the preferences. A solid state drive disk is recommended for efficiency of this node. "
                   "By default all images that pass into the node are cached but they depend on the zoom-level of the viewer. For convenience you can cache "
@@ -152,7 +148,7 @@ private:
                              bool originatedFromMainThread) OVERRIDE FINAL;
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
     virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view, int visitsCount) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    boost::scoped_ptr<DiskCacheNodePrivate> _imp;
+    std::unique_ptr<DiskCacheNodePrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

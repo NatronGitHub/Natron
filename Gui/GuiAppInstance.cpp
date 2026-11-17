@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,10 +28,10 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
-#include <QtCore/QDir>
+#include <QDir>
 #include <QSettings>
-#include <QtCore/QMutex>
-#include <QtCore/QCoreApplication>
+#include <QMutex>
+#include <QCoreApplication>
 
 #include "Engine/CLArgs.h"
 #include "Engine/Project.h"
@@ -156,7 +156,7 @@ struct GuiAppInstancePrivate
         , timelineUserKeys()
         , knobDnd()
     {
-        _previewProvider = boost::make_shared<FileDialogPreviewProvider>();
+        _previewProvider = std::make_shared<FileDialogPreviewProvider>();
         rotoData.turboAlreadyActiveBeforePainting = false;
     }
 
@@ -177,7 +177,7 @@ void
 GuiAppInstance::resetPreviewProvider()
 {
     deletePreviewProvider();
-    _imp->_previewProvider = boost::make_shared<FileDialogPreviewProvider>();
+    _imp->_previewProvider = std::make_shared<FileDialogPreviewProvider>();
 }
 
 void
@@ -228,11 +228,9 @@ GuiAppInstance::aboutToQuit()
         AppInstance::aboutToQuit();
 
         _imp->_isClosing = true;
+        _imp->_gui->hide();
         _imp->_gui->close();
-        //delete _imp->_gui;
         _imp->_gui->deleteLater();
-
-
 
         // Make sure all events are processed
         qApp->processEvents();
@@ -280,7 +278,7 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
         throw std::runtime_error( e.what() );
     }
 
-    GuiAppInstancePtr thisShared = boost::dynamic_pointer_cast<GuiAppInstance>( shared_from_this() );
+    GuiAppInstancePtr thisShared = std::dynamic_pointer_cast<GuiAppInstance>( shared_from_this() );
     assert(thisShared);
     _imp->_gui = new Gui(thisShared);
     _imp->_gui->createGui();
@@ -501,7 +499,7 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
 
         NodeGuiIPtr parentNodeGui_i = parentMultiInstance->getNodeGui();
         assert(parentNodeGui_i);
-        nodegui->setParentMultiInstance( boost::dynamic_pointer_cast<NodeGui>(parentNodeGui_i) );
+        nodegui->setParentMultiInstance( std::dynamic_pointer_cast<NodeGui>(parentNodeGui_i) );
     }
 
     bool isViewer = node->isEffectViewer() != 0;
@@ -538,9 +536,9 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
         if ( selectedNodes.empty() || serialization) {
             autoConnect = false;
         }
-        double xPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 0);
-        double yPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 1);
-        if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && (!autoConnect) ) {
+        double xPosHint = serialization ? std::numeric_limits<int>::min() : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 0);
+        double yPosHint = serialization ? std::numeric_limits<int>::min() : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 1);
+        if ( (xPosHint != std::numeric_limits<int>::min()) && (yPosHint != std::numeric_limits<int>::min()) && (!autoConnect) ) {
             QPointF pos = nodegui->mapToParent( nodegui->mapFromScene( QPointF(xPosHint, yPosHint) ) );
             nodegui->refreshPosition( pos.x(), pos.y(), true );
         } else {
@@ -1011,6 +1009,7 @@ GuiAppInstance::declareCurrentAppVariable_Python()
 void
 GuiAppInstance::createLoadProjectSplashScreen(const QString& projectFile)
 {
+    QCoreApplication::processEvents();
     if (_imp->loadProjectSplash) {
         return;
     }
@@ -1028,11 +1027,12 @@ GuiAppInstance::updateProjectLoadStatus(const QString& str)
 }
 
 void
-GuiAppInstance::closeLoadPRojectSplashScreen()
+GuiAppInstance::closeLoadProjectSplashScreen()
 {
     if (_imp->loadProjectSplash) {
+        _imp->loadProjectSplash->hide();
         _imp->loadProjectSplash->close();
-        delete _imp->loadProjectSplash;
+        _imp->loadProjectSplash->deleteLater();
         _imp->loadProjectSplash = 0;
     }
 }
@@ -1114,7 +1114,7 @@ GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
                 selectedNode.reset();
             }
         }
-        NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
+        NodeGuiPtr nodeGui = std::dynamic_pointer_cast<NodeGui>(node_gui_i);
         graph->moveNodesForIdealPosition(nodeGui, selectedNode, true);
     }
  

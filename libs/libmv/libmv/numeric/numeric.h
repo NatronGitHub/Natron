@@ -293,19 +293,23 @@ void MeanAndVarianceAlongRows(const Mat &A,
   // TODO(bomboze): un-#if this for both platforms once tested under Windows
   /* This solution was extensively discussed here
      http://forum.kde.org/viewtopic.php?f=74&t=61940 */
-  #define SUM_OR_DYNAMIC(x, y) (x == Eigen::Dynamic || y == Eigen::Dynamic) ? Eigen::Dynamic : (x+y)
+  // The operands are Eigen enumerators, and adding two different enumeration
+  // types is deprecated in C++20 and ill-formed in C++23, so widen them first.
+  // openMVG/numeric/numeric.h defines its own SUM_OR_DYNAMIC, and both headers
+  // can be included together, so use a libmv-specific name and #undef it below.
+  #define LIBMV_SUM_OR_DYNAMIC(x, y) (x == Eigen::Dynamic || y == Eigen::Dynamic) ? Eigen::Dynamic : (int(x)+int(y))
 
   template<typename Derived1, typename Derived2>
   struct hstack_return {
     typedef typename Derived1::Scalar Scalar;
     enum {
          RowsAtCompileTime = Derived1::RowsAtCompileTime,
-         ColsAtCompileTime = SUM_OR_DYNAMIC(Derived1::ColsAtCompileTime,
-                                            Derived2::ColsAtCompileTime),
+         ColsAtCompileTime = LIBMV_SUM_OR_DYNAMIC(Derived1::ColsAtCompileTime,
+                                                  Derived2::ColsAtCompileTime),
          Options = Derived1::Flags&Eigen::RowMajorBit ? Eigen::RowMajor : 0,
          MaxRowsAtCompileTime = Derived1::MaxRowsAtCompileTime,
-         MaxColsAtCompileTime = SUM_OR_DYNAMIC(Derived1::MaxColsAtCompileTime,
-                                               Derived2::MaxColsAtCompileTime)
+         MaxColsAtCompileTime = LIBMV_SUM_OR_DYNAMIC(Derived1::MaxColsAtCompileTime,
+                                                     Derived2::MaxColsAtCompileTime)
     };
     typedef Eigen::Matrix<Scalar,
                 RowsAtCompileTime,
@@ -330,12 +334,12 @@ void MeanAndVarianceAlongRows(const Mat &A,
   struct vstack_return {
     typedef typename Derived1::Scalar Scalar;
     enum {
-         RowsAtCompileTime = SUM_OR_DYNAMIC(Derived1::RowsAtCompileTime,
-                                            Derived2::RowsAtCompileTime),
+         RowsAtCompileTime = LIBMV_SUM_OR_DYNAMIC(Derived1::RowsAtCompileTime,
+                                                  Derived2::RowsAtCompileTime),
          ColsAtCompileTime = Derived1::ColsAtCompileTime,
          Options = Derived1::Flags&Eigen::RowMajorBit ? Eigen::RowMajor : 0,
-         MaxRowsAtCompileTime = SUM_OR_DYNAMIC(Derived1::MaxRowsAtCompileTime,
-                                               Derived2::MaxRowsAtCompileTime),
+         MaxRowsAtCompileTime = LIBMV_SUM_OR_DYNAMIC(Derived1::MaxRowsAtCompileTime,
+                                                     Derived2::MaxRowsAtCompileTime),
          MaxColsAtCompileTime = Derived1::MaxColsAtCompileTime
     };
     typedef Eigen::Matrix<Scalar,
@@ -355,6 +359,7 @@ void MeanAndVarianceAlongRows(const Mat &A,
     res << lhs, rhs;
     return res;
   };
+  #undef LIBMV_SUM_OR_DYNAMIC
 
 
 #else  // _WIN32

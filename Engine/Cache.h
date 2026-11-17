@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -44,18 +44,14 @@
 #include "Global/StrUtils.h"
 
 GCC_DIAG_OFF(deprecated)
-#include <QtCore/QMutex>
-#include <QtCore/QThread>
-#include <QtCore/QWaitCondition>
-#include <QtCore/QMutexLocker>
-#include <QtCore/QObject>
-#include <QtCore/QBuffer>
-#include <QtCore/QRunnable>
+#include <QMutex>
+#include <QThread>
+#include <QWaitCondition>
+#include <QMutexLocker>
+#include <QObject>
+#include <QBuffer>
+#include <QRunnable>
 GCC_DIAG_ON(deprecated)
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
-#endif
 
 #include "Engine/AppManager.h" //for access to settings
 #include "Engine/CacheEntry.h"
@@ -86,7 +82,7 @@ class DeleterThread
     : public QThread
 {
     mutable QMutex _entriesQueueMutex;
-    std::list<boost::shared_ptr<T> >_entriesQueue;
+    std::list<std::shared_ptr<T> >_entriesQueue;
     QWaitCondition _entriesQueueNotEmptyCond;
     CacheAPI* cache;
     QMutex mustQuitMutex;
@@ -112,7 +108,7 @@ public:
     {
     }
 
-    void appendToQueue(const std::list<boost::shared_ptr<T> > & entriesToDelete)
+    void appendToQueue(const std::list<std::shared_ptr<T> > & entriesToDelete)
     {
         if ( entriesToDelete.empty() ) {
             return;
@@ -141,11 +137,11 @@ public:
 
         {
             QMutexLocker k2(&_entriesQueueMutex);
-            _entriesQueue.push_back( boost::shared_ptr<T>() );
+            _entriesQueue.push_back( std::shared_ptr<T>() );
             _entriesQueueNotEmptyCond.wakeOne();
         }
         while (mustQuit) {
-            mustQuitCond.wait(&mustQuitMutex);
+            mustQuitCond.wait(k.mutex());
         }
     }
 
@@ -168,12 +164,12 @@ private:
             }
 
             {
-                boost::shared_ptr<T> front;
+                std::shared_ptr<T> front;
                 {
                     QMutexLocker k(&_entriesQueueMutex);
                     if ( quit && _entriesQueue.empty() ) {
-                        _entriesQueueMutex.unlock();
-                        QMutexLocker k(&mustQuitMutex);
+                        k.unlock();
+                        QMutexLocker k2(&mustQuitMutex);
                         assert(mustQuit);
                         mustQuit = false;
                         mustQuitCond.wakeOne();
@@ -181,7 +177,7 @@ private:
                         return;
                     }
                     while ( _entriesQueue.empty() ) {
-                        _entriesQueueNotEmptyCond.wait(&_entriesQueueMutex);
+                        _entriesQueueNotEmptyCond.wait(k.mutex());
                     }
 
                     assert( !_entriesQueue.empty() );
@@ -275,7 +271,7 @@ public:
             _requestsQueueNotEmptyCond.wakeOne();
         }
         while (mustQuit) {
-            mustQuitCond.wait(&mustQuitMutex);
+            mustQuitCond.wait(k.mutex());
         }
     }
 
@@ -302,8 +298,8 @@ private:
                 {
                     QMutexLocker k(&_requestQueueMutex);
                     if ( quit && _requestsQueues.empty() ) {
-                        _requestQueueMutex.unlock();
-                        QMutexLocker k(&mustQuitMutex);
+                        k.unlock();
+                        QMutexLocker k2(&mustQuitMutex);
                         assert(mustQuit);
                         mustQuit = false;
                         mustQuitCond.wakeOne();
@@ -311,7 +307,7 @@ private:
                         return;
                     }
                     while ( _requestsQueues.empty() ) {
-                        _requestsQueueNotEmptyCond.wait(&_requestQueueMutex);
+                        _requestsQueueNotEmptyCond.wait(k.mutex());
                     }
 
                     assert( !_requestsQueues.empty() );
@@ -393,8 +389,8 @@ public:
     typedef typename EntryType::data_t data_t;
     typedef typename EntryType::key_t key_t;
     typedef typename EntryType::param_t param_t;
-    typedef boost::shared_ptr<param_t> ParamsTypePtr;
-    typedef boost::shared_ptr<EntryType> EntryTypePtr;
+    typedef std::shared_ptr<param_t> ParamsTypePtr;
+    typedef std::shared_ptr<EntryType> EntryTypePtr;
 
     struct SerializedEntry;
 
@@ -417,6 +413,10 @@ public:
     {
         return it->second;
     }
+    static const std::list<CachedValue> &  getValueFromIterator(ConstCacheIterator it)
+    {
+        return it->second;
+    }
 
 #else // cache use STL
 
@@ -428,6 +428,10 @@ public:
     typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
     typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
     static std::list<EntryTypePtr> &  getValueFromIterator(CacheIterator it)
+    {
+        return it->second;
+    }
+    static const std::list<EntryTypePtr> &  getValueFromIterator(ConstCacheIterator it)
     {
         return it->second;
     }
@@ -448,6 +452,10 @@ public:
     {
         return it->second;
     }
+    static const std::list<EntryTypePtr> &  getValueFromIterator(ConstCacheIterator it)
+    {
+        return it->second;
+    }
 
 #else // cache use STL and tree (std map)
 
@@ -455,6 +463,10 @@ public:
     typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
     typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
     static std::list<EntryTypePtr> &   getValueFromIterator(CacheIterator it)
+    {
+        return it->second.first;
+    }
+    static const std::list<EntryTypePtr> &   getValueFromIterator(ConstCacheIterator it)
     {
         return it->second.first;
     }
@@ -512,6 +524,10 @@ private:
     // When set these are used for fast search of a free tile
     TileCacheFileWPtr _nextAvailableCacheFile;
     int _nextAvailableCacheFileIndex;
+
+    // Index used to name the next tile cache file, protected by _tileCacheMutex.
+    // It only increases, so that a new file never reuses the name of an existing one.
+    int _nextCacheFileIndex;
 public:
 
 
@@ -545,8 +561,9 @@ public:
         , _cacheFiles()
         , _nextAvailableCacheFile()
         , _nextAvailableCacheFileIndex(-1)
+        , _nextCacheFileIndex(0)
     {
-        _signalEmitter = boost::make_shared<CacheSignalEmitter>();
+        _signalEmitter = std::make_shared<CacheSignalEmitter>();
     }
 
     virtual ~Cache()
@@ -578,6 +595,26 @@ public:
     void setTiled(bool tiled, std::size_t tileByteSize)
     {
         QMutexLocker k(&_tileCacheMutex);
+        if (tileByteSize != _tileByteSize) {
+            // Tiles of the previous size can no longer be allocated (see allocTile()).
+            // Delete the files that have no tile in use. The files that still have tiles used by
+            // live entries are kept, so that these entries remain valid, and they are deleted
+            // when their last tile is freed (see freeTile()).
+            for (std::set<TileCacheFilePtr>::iterator it = _cacheFiles.begin(); it != _cacheFiles.end();) {
+                if ( !(*it)->hasUsedTiles() ) {
+                    try {
+                        (*it)->file->remove();
+                    } catch (const std::exception& e) {
+                        qDebug() << "Cache: could not delete an unused tile file:" << e.what();
+                    }
+                    _cacheFiles.erase(it++);
+                } else {
+                    ++it;
+                }
+            }
+            _nextAvailableCacheFile.reset();
+            _nextAvailableCacheFileIndex = -1;
+        }
         _isTiled = tiled;
         _tileByteSize = tileByteSize;
     }
@@ -625,11 +662,16 @@ private:
         }
         for (std::set<TileCacheFilePtr>::iterator it = _cacheFiles.begin(); it != _cacheFiles.end(); ++it) {
             if ((*it)->file->path() == filepath) {
-                int index = dataOffset / _tileByteSize;
+                std::size_t index = dataOffset / (*it)->tileByteSize;
 
-                // The dataOffset should be a multiple of the tile size
-                assert(_tileByteSize * index == dataOffset);
-                assert(!(*it)->usedTiles[index]);
+                // The dataOffset should be a multiple of the tile size, and the tile
+                // must not be used by another entry (this could happen with a cache
+                // written by an older version, where two files could share a name).
+                if ( (*it)->tileByteSize * index != dataOffset ||
+                     index >= (*it)->usedTiles.size() ||
+                     (*it)->usedTiles[index] ) {
+                    return TileCacheFilePtr();
+                }
                 (*it)->usedTiles[index] = true;
                 return *it;
             }
@@ -637,16 +679,22 @@ private:
         if (!fileExists(filepath)) {
             return TileCacheFilePtr();
         } else {
-            TileCacheFilePtr ret = boost::make_shared<TileCacheFile>();
-            ret->file = boost::make_shared<MemoryFile>(filepath, MemoryFile::eFileOpenModeEnumIfExistsKeepElseFail);
             std::size_t nTilesPerFile = std::floor( ( (double)NATRON_TILE_CACHE_FILE_SIZE_BYTES ) / _tileByteSize );
-            ret->usedTiles.resize(nTilesPerFile, false);
-            int index = dataOffset / _tileByteSize;
+            std::size_t index = dataOffset / _tileByteSize;
 
             // The dataOffset should be a multiple of the tile size
-            assert(_tileByteSize * index == dataOffset);
-            assert(index >= 0 && index < (int)ret->usedTiles.size());
-            assert(!ret->usedTiles[index]);
+            if (_tileByteSize * index != dataOffset || index >= nTilesPerFile) {
+                return TileCacheFilePtr();
+            }
+            TileCacheFilePtr ret = std::make_shared<TileCacheFile>();
+            ret->file = std::make_shared<MemoryFile>(filepath, MemoryFile::eFileOpenModeEnumIfExistsKeepElseFail);
+            ret->tileByteSize = _tileByteSize;
+            // Make sure that all tiles of the file are mapped, since any of them may be handed out by allocTile()
+            std::size_t cacheFileSize = nTilesPerFile * _tileByteSize;
+            if (ret->file->size() < cacheFileSize) {
+                ret->file->resize(cacheFileSize);
+            }
+            ret->usedTiles.resize(nTilesPerFile, false);
             ret->usedTiles[index] = true;
             _cacheFiles.insert(ret);
             return ret;
@@ -678,7 +726,10 @@ private:
         int foundTileIndex = -1;
         {
             foundAvailableFile = _nextAvailableCacheFile.lock();
-            if (_nextAvailableCacheFileIndex != -1 && foundAvailableFile) {
+            if (_nextAvailableCacheFileIndex != -1 && foundAvailableFile &&
+                foundAvailableFile->tileByteSize == _tileByteSize &&
+                _nextAvailableCacheFileIndex < (int)foundAvailableFile->usedTiles.size() &&
+                !foundAvailableFile->usedTiles[_nextAvailableCacheFileIndex]) {
                 foundTileIndex = _nextAvailableCacheFileIndex;
                 *dataOffset = foundTileIndex * _tileByteSize;
                 _nextAvailableCacheFileIndex = -1;
@@ -686,10 +737,17 @@ private:
             } else {
                 foundTileIndex = -1;
                 foundAvailableFile.reset();
+                _nextAvailableCacheFileIndex = -1;
+                _nextAvailableCacheFile.reset();
             }
         }
         if (foundTileIndex == -1) {
             for (std::set<TileCacheFilePtr>::iterator it = _cacheFiles.begin(); it != _cacheFiles.end(); ++it) {
+                // Files with tiles of another size (the tile size changed) are only kept
+                // until their last tile is freed: never allocate in them.
+                if ( (*it)->tileByteSize != _tileByteSize ) {
+                    continue;
+                }
                 for (std::size_t i = 0; i < (*it)->usedTiles.size(); ++i) {
                     if (!(*it)->usedTiles[i])  {
                         foundTileIndex = i;
@@ -706,16 +764,46 @@ private:
 
         if (!foundAvailableFile) {
             // Create a file if all space is taken
-            foundAvailableFile = boost::make_shared<TileCacheFile>();
-            int nCacheFiles = (int)_cacheFiles.size();
-            std::stringstream cacheFilePathSs;
-            cacheFilePathSs << getCachePath().toStdString() << "/CachePart" << nCacheFiles;
-            std::string cacheFilePath = cacheFilePathSs.str();
-            foundAvailableFile->file = boost::make_shared<MemoryFile>(cacheFilePath, MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate);
+            foundAvailableFile = std::make_shared<TileCacheFile>();
+            foundAvailableFile->tileByteSize = _tileByteSize;
+            // Pick a name that is not used by any file of the cache nor by any file on disk:
+            // reopening an existing file would hand out tiles that are still used by
+            // other entries. The number of files cannot be used as an index, since
+            // there may be gaps in the numbering (files are removed individually).
+            // The file is created exclusively, so it fails if the file exists.
+            std::string cachePath = getCachePath().toStdString();
+            for (;;) {
+                std::stringstream cacheFilePathSs;
+                cacheFilePathSs << cachePath << "/CachePart" << _nextCacheFileIndex;
+                ++_nextCacheFileIndex;
+                std::string cacheFilePath = cacheFilePathSs.str();
+                bool nameUsed = false;
+                for (std::set<TileCacheFilePtr>::iterator it = _cacheFiles.begin(); it != _cacheFiles.end(); ++it) {
+                    if ( (*it)->file->path() == cacheFilePath ) {
+                        nameUsed = true;
+                        break;
+                    }
+                }
+                if ( nameUsed || fileExists(cacheFilePath) ) {
+                    continue;
+                }
+                // This throws if the file could not be created; allocateTileCache() then falls back on RAM
+                foundAvailableFile->file = std::make_shared<MemoryFile>(cacheFilePath, MemoryFile::eFileOpenModeEnumIfExistsFailElseCreate);
+                break;
+            }
 
             std::size_t nTilesPerFile = std::floor(((double)NATRON_TILE_CACHE_FILE_SIZE_BYTES) / _tileByteSize);
             std::size_t cacheFileSize = nTilesPerFile * _tileByteSize;
-            foundAvailableFile->file->resize(cacheFileSize);
+            try {
+                foundAvailableFile->file->resize(cacheFileSize);
+            } catch (...) {
+                // e.g. disk full: don't leave an unlisted file behind
+                try {
+                    foundAvailableFile->file->remove();
+                } catch (...) {
+                }
+                throw;
+            }
             foundAvailableFile->usedTiles.resize(nTilesPerFile, false);
             *dataOffset = 0;
             foundTileIndex = 0;
@@ -745,13 +833,33 @@ private:
         if (foundTileFile == _cacheFiles.end()) {
             return;
         }
-        int index = dataOffset / _tileByteSize;
+        // Use the tile size of the file, which may differ from the current tile size of the cache
+        const std::size_t fileTileByteSize = (*foundTileFile)->tileByteSize;
+        int index = dataOffset / fileTileByteSize;
 
         // The dataOffset should be a multiple of the tile size
-        assert(_tileByteSize * index == dataOffset);
+        assert(fileTileByteSize * index == dataOffset);
         assert(index >= 0 && index < (int)(*foundTileFile)->usedTiles.size());
         assert((*foundTileFile)->usedTiles[index]);
+        if ( index < 0 || index >= (int)(*foundTileFile)->usedTiles.size() ) {
+            return;
+        }
         (*foundTileFile)->usedTiles[index] = false;
+
+        if (fileTileByteSize != _tileByteSize) {
+            // The tile size changed since this file was created: its tiles can not be reused.
+            // Delete the file once none of its tiles is used anymore.
+            if ( !(*foundTileFile)->hasUsedTiles() ) {
+                try {
+                    (*foundTileFile)->file->remove();
+                } catch (const std::exception& e) {
+                    qDebug() << "Cache: could not delete an old tile file:" << e.what();
+                }
+                _cacheFiles.erase(foundTileFile);
+            }
+
+            return;
+        }
 
         // If the file does not have any tile associated, remove it
         // A use_count of 2 means that the tile file is only referenced by the cache itself and the entry calling
@@ -763,7 +871,7 @@ private:
                 _cacheFiles.erase(foundTileFile);
             } else {
                 // Invalidate this portion of the cache
-                (*foundTileFile)->file->flush(MemoryFile::eFlushTypeInvalidate, (*foundTileFile)->file->data() + dataOffset, _tileByteSize);
+                (*foundTileFile)->file->flush(MemoryFile::eFlushTypeInvalidate, (*foundTileFile)->file->data() + dataOffset, fileTileByteSize);
             }
         } else {
             _nextAvailableCacheFile = *foundTileFile;
@@ -839,7 +947,7 @@ private:
             //_memoryCacheSize member will get updated while images are being destroyed by the parallel thread.
             //we wait for cache memory occupation to be < 100% to be sure we don't hit swap here
             while ( occupationPercentage >= 1. && _deleterThread.isWorking() ) {
-                _memoryFullCondition.wait(&_sizeLock);
+                _memoryFullCondition.wait(k.mutex());
                 occupationPercentage =  _maximumCacheSize == 0 ? 0.99 : (double)_memoryCacheSize / _maximumCacheSize;
             }
         }
@@ -888,8 +996,9 @@ private:
                 *returnValue = EntryTypePtr();
             }
 
-            // For a tiled cache, all entries must have the same size
-            assert(!_isTiled || (*returnValue)->getSizeInBytesFromParams() == _tileByteSize);
+            // For a tiled cache, entries normally have the cache's tile size. A render that started before a change of
+            // the tile size (see setTiled()) may still create an entry of the previous size: allocateTileCache() then
+            // gives the tile back and stores the entry in RAM if it does not fit (#1126).
 
             if (*returnValue) {
 
@@ -1579,26 +1688,26 @@ public:
         std::string holderID = holder->getCacheID();
         QMutexLocker locker(&_lock);
 
-        for (CacheIterator memIt = _memoryCache.begin(); memIt != _memoryCache.end(); ++memIt) {
-            std::list<EntryTypePtr> & entries = getValueFromIterator(memIt);
+        for (ConstCacheIterator memIt = _memoryCache.begin(); memIt != _memoryCache.end(); ++memIt) {
+            const std::list<EntryTypePtr> & entries = getValueFromIterator(memIt);
             if ( !entries.empty() ) {
                 const EntryTypePtr & front = entries.front();
 
                 if (front->getKey().getCacheHolderID() == holderID) {
-                    for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
+                    for (typename std::list<EntryTypePtr>::const_iterator it = entries.begin(); it != entries.end(); ++it) {
                         *ramOccupied += (*it)->size();
                     }
                 }
             }
         }
 
-        for (CacheIterator memIt = _diskCache.begin(); memIt != _diskCache.end(); ++memIt) {
-            std::list<EntryTypePtr> & entries = getValueFromIterator(memIt);
+        for (ConstCacheIterator memIt = _diskCache.begin(); memIt != _diskCache.end(); ++memIt) {
+            const std::list<EntryTypePtr> & entries = getValueFromIterator(memIt);
             if ( !entries.empty() ) {
                 const EntryTypePtr & front = entries.front();
 
                 if (front->getKey().getCacheHolderID() == holderID) {
-                    for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
+                    for (typename std::list<EntryTypePtr>::const_iterator it = entries.begin(); it != entries.end(); ++it) {
                         *diskOccupied += (*it)->size();
                     }
                 }
@@ -1617,14 +1726,14 @@ private:
         {
             QMutexLocker locker(&_lock);
 
-            for (CacheIterator memIt = _memoryCache.begin(); memIt != _memoryCache.end(); ++memIt) {
-                std::list<EntryTypePtr> & entries = getValueFromIterator(memIt);
+            for (ConstCacheIterator memIt = _memoryCache.begin(); memIt != _memoryCache.end(); ++memIt) {
+                const std::list<EntryTypePtr> & entries = getValueFromIterator(memIt);
                 if ( !entries.empty() ) {
                     const EntryTypePtr & front = entries.front();
 
                     if ( (front->getKey().getCacheHolderID() == holderID) &&
                          ( ( front->getKey().getTreeVersion() != nodeHash) || removeAll ) ) {
-                        for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
+                        for (typename std::list<EntryTypePtr>::const_iterator it = entries.begin(); it != entries.end(); ++it) {
                             toDelete.push_back(*it);
                         }
                     } else {
@@ -1634,14 +1743,14 @@ private:
                 }
             }
 
-            for (CacheIterator dIt = _diskCache.begin(); dIt != _diskCache.end(); ++dIt) {
-                std::list<EntryTypePtr> & entries = getValueFromIterator(dIt);
+            for (ConstCacheIterator dIt = _diskCache.begin(); dIt != _diskCache.end(); ++dIt) {
+                const std::list<EntryTypePtr> & entries = getValueFromIterator(dIt);
                 if ( !entries.empty() ) {
                     const EntryTypePtr & front = entries.front();
 
                     if ( (front->getKey().getCacheHolderID() == holderID) &&
                          ( ( front->getKey().getTreeVersion() != nodeHash) || removeAll ) ) {
-                        for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
+                        for (typename std::list<EntryTypePtr>::const_iterator it = entries.begin(); it != entries.end(); ++it) {
                             toDelete.push_back(*it);
                         }
                     } else {

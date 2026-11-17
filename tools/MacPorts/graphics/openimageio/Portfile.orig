@@ -2,13 +2,10 @@
 
 PortSystem              1.0
 PortGroup               github 1.0
-PortGroup               qt5 1.0
 PortGroup               cmake 1.1
+PortGroup               ffmpeg 1.0
 PortGroup               active_variants 1.1
-PortGroup               compiler_blacklist_versions 1.0
 
-github.setup            OpenImageIO oiio 2.1.17.0
-revision                2
 name                    openimageio
 categories              graphics
 license                 BSD
@@ -16,23 +13,102 @@ maintainers             {mcalhoun @MarcusCalhoun-Lopez} openmaintainer
 description             a library for reading and writing images
 long_description        OpenImageIO is a library for reading and writing images, and a bunch of \
                         related classes, utilities, and applications.
-platforms               darwin
 
-checksums               rmd160  0df79ff10e8151b8a11d23ac56a60d3b73057147 \
-                        sha256  6f20536226f1da4fbf0d522815de47eef60a443f9b67a15705b96c34cc8921a7 \
-                        size    29052379
+# Keep this condition the same in the opencolorio, openimageio, and osl ports.
+set port_latest [expr {${os.platform} ne "darwin" || ${os.major} >= 20}]
 
-compiler.cxx_standard   2011
+if {${port_latest}} {
+    github.setup        AcademySoftwareFoundation OpenImageIO 3.1.17.0 v
+    revision            3
+    checksums           rmd160  9bbafd99f5825d38a22293d4eeeaf88011721792 \
+                        sha256  92a26c0af4ffc6676d72d9dfe0e991eb45fdf3192abee3d0855a24d6c721b013 \
+                        size    56133013
+} else {
+    github.setup        AcademySoftwareFoundation OpenImageIO 2.1.20.0 v
+    revision            21
+    checksums           rmd160  7f241baddcc6e731a29fb37090e4582953560f38 \
+                        sha256  0ad46bda55d6357a3c474b8c8ccbb41d9732313247cffaf4a65fc50e6aad9e78 \
+                        size    29116032
+
+    livecheck.type      none
+}
+
+github.tarball_from     archive
+
+if {${port_latest}} {
+    depends_lib-append  port:imath \
+                        port:libxml2 \
+                        port:openexr \
+                        port:openvdb \
+                        port:onetbb \
+                        port:OpenJPH \
+                        port:tcp_wrappers \
+                        path:lib/libssl.dylib:openssl
+
+    ffmpeg.version      8
+
+    set port_libfmt         libfmt12
+    cmake.prefix_path-prepend \
+                            ${prefix}/lib/${port_libfmt}/cmake
+    depends_lib-append      port:${port_libfmt}
+} else {
+    PortGroup           boost 1.0
+
+    patchfiles-append   patch-FindOpenJpeg.cmake.diff
+    patchfiles-append   patch-libraw-0.21.0.diff
+    patchfiles-append   patch-2.1.20-cmake-disable-wall-werror.diff
+
+    depends_lib-append  port:field3d \
+                        port:openexr2 \
+                        port:squish \
+                        port:tbb
+
+    configure.pkg_config_path-prepend \
+                        ${prefix}/libexec/openexr2/lib/pkgconfig
+
+    # https://trac.macports.org/ticket/69842
+    configure.args-append       -DUSE_OPENVDB=OFF
+
+    #configure.args-append       -DUSE_TBB=OFF
+    configure.args-append       -DTBB_ROOT=${prefix}/libexec/tbb
+
+    #configure.args-append       -DUSE_FFMPEG=OFF
+    depends_lib-append          path:lib/libavcodec.dylib:ffmpeg
+
+    # NOTE: Ensure we prepend 'libfmt9', to include it before 'openexr2'
+    set port_libfmt         libfmt9
+    cmake.prefix_path-prepend \
+                            ${prefix}/lib/${port_libfmt}/cmake
+    configure.args-append   -DFMT_INCLUDE_DIR=${prefix}/include/${port_libfmt}
+    depends_lib-append      port:${port_libfmt}
+}
+
 # error: multiple overloads of 'address' instantiate to the same signature 'const_pointer (const_reference) const noexcept'
 # http://lists.llvm.org/pipermail/llvm-bugs/2013-November/031552.html
 # Seen on OSX 10.9 and older.
 compiler.blacklist-append {clang < 700}
 
+# OpenVDB header files use C++17 features
+compiler.cxx_standard   2017
+configure.args-append   -DCMAKE_CXX_STANDARD=17
+
 compiler.thread_local_storage yes
 
-github.master_sites     ${github.homepage}/archive
-distname                Release-${version}
-worksrcdir              oiio-Release-${version}
+# Use OpenGL framework instead of mesa
+configure.pre_args-delete   -DCMAKE_FIND_FRAMEWORK=LAST
+
+configure.cxxflags-append \
+                        -Wno-deprecated-declarations \
+                        -Wno-unknown-warning-option
+
+if {[string match *clang* ${configure.compiler}]} {
+    # This is a clang-specific flag:
+    configure.cxxflags-append \
+                        -Wno-error=unknown-warning-option
+}
+
+# Don't treat clang warnings as errors
+configure.args-append   -DSTOP_ON_WARNINGS=OFF
 
 # avoid
 #    ccache: error: Failed to create directory ${prefix}/var/macports/build/.ccache/tmp: Operation not permitted
@@ -42,27 +118,33 @@ configure.args-append   -DUSE_CCACHE=OFF
 configure.args-append   -DBUILD_MISSING_DEPS=OFF \
                         -DBUILD_MISSING_FMT=OFF
 
-depends_lib-append      port:robin-map \
-                        port:zlib \
+depends_build-append    port:robin-map
+
+depends_lib-append      port:zlib \
                         port:bzip2 \
-                        port:boost \
-                        path:include/turbojpeg.h:libjpeg-turbo \
                         port:libpng \
-                        port:tiff \
-                        port:ilmbase \
-                        port:openexr \
-                        port:squish \
-                        port:libfmt
+                        port:tiff
 
 # optional components
 
-#configure.args-append   -DUSE_OPENGL=OFF \
-#                        -DUSE_QT=OFF
-qt5.min_version         5.6
+if {${os.platform} eq "darwin" && ${os.major} < 11} {
+    configure.args-append \
+                        -DUSE_QT=OFF
+    # configure.args-append -DUSE_OPENGL=OFF
+} else {
+    PortGroup           qt6 1.0
+
+}
+
+if {[string match *gcc* ${configure.compiler}] \
+    && ${configure.build_arch} in [list i386 ppc]} {
+    configure.ldflags-append \
+                        -latomic
+}
 
 configure.args-append   -DUSE_PYTHON=OFF
 
-set pythons_suffixes    {27 36 37 38}
+set pythons_suffixes    {310 311 312 313 314}
 
 set pythons_ports       {}
 foreach s ${pythons_suffixes} {
@@ -71,7 +153,7 @@ foreach s ${pythons_suffixes} {
 
 foreach s ${pythons_suffixes} {
     set p python${s}
-    set v [string index ${s} 0].[string index ${s} 1]
+    set v [string index ${s} 0].[string range ${s} 1 end]
     set i [lsearch -exact ${pythons_ports} ${p}]
     set c [lreplace ${pythons_ports} ${i} ${i}]
     variant ${p} description "Build the Python ${v} bindings" conflicts {*}${c} "
@@ -96,33 +178,34 @@ foreach s ${pythons_suffixes} {
 # this default version should stay synchronized with python_get_default_version
 #    in the python PortGroup
 if {${set_python_default}} {
-    default_variants        +python38
+    default_variants        +python314
 }
 
-#configure.args-append       -DUSE_FIELD3D=OFF
-depends_lib-append          port:field3d
-
-#configure.args-append       -DUSE_FFMPEG=OFF
-depends_lib-append          port:ffmpeg
-
-# conflicts with jpeg
-configure.args-append       -DUSE_JPEGTURBO=OFF
-#depends_lib-append          port:libjpeg-turbo
+#configure.args-append       -DUSE_JPEGTURBO=OFF
+depends_lib-append          path:include/turbojpeg.h:libjpeg-turbo \
 
 #configure.args-append       -DUSE_OPENJPEG=OFF
 depends_lib-append          port:openjpeg
+configure.args-append       -DOpenJpeg_ROOT=${prefix}
 
 #configure.args-append       -DUSE_OCIO=OFF
 depends_lib-append          port:opencolorio
 
-#configure.args-append       -DUSE_OPENCV=OFF
-depends_lib-append          port:opencv
+set opencv_ver 4
+if {${os.platform} eq "darwin" && ${os.major} < 11} {
+    # opencv4 does not build on 10.6 and earlier.
+    configure.args-append   -DUSE_OPENCV=OFF
+} else {
+    depends_lib-append      path:lib/opencv${opencv_ver}/libopencv_core.dylib:opencv${opencv_ver}
+    configure.args-append   -DOpenCV_INCLUDE_DIR=${prefix}/include/opencv${opencv_ver} \
+                            -DOpenCV_ROOT=${prefix}/lib/opencv${opencv_ver}
+}
 
 #configure.args-append       -DUSE_FREETYPE=OFF
 depends_lib-append          port:freetype
 
-#configure.args-append       -DUSE_GIF=OFF
-depends_lib-append          port:giflib
+configure.args-append       -DUSE_GIF=OFF
+# depends_lib-append          port:giflib
 
 #configure.args-append       -DUSE_HEIF=OFF
 depends_lib-append          port:libheif
@@ -133,18 +216,16 @@ depends_lib-append          port:ptex
 #configure.args-append       -DUSE_LIBRAW=OFF
 depends_lib-append          port:libraw
 
-#configure.args-append       -DUSE_TBB=OFF \
-#                            -DUSE_OPENVDB=OFF
-depends_lib-append          port:tbb \
-                            port:openvdb
-
 # not in MacPorts
 configure.args-append       -DUSE_NUKE=OFF
 
 #configure.args-append       -DUSE_DICOM=OFF
 depends_lib-append          port:dcmtk
 
-#configure.args-append       -DUSE_WEBP=OFF
-depends_lib-append          port:webp
+configure.args-append       -DUSE_WEBP=OFF
+# depends_lib-append          port:webp
 
-livecheck.regex             archive/Release-(\\d+(?:\\.\\d+)*)${extract.suffix}
+# TODO: Add this functionality to github portgroup
+livecheck.url               https://api.github.com/repos/${github.author}/${github.project}/tags?per_page=200
+livecheck.curloptions
+livecheck.regex             "\"name\": \"v(\[0-9\.\]+)\","

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,8 +29,8 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QtCore/QMutex>
-#include <QtCore/QWaitCondition>
+#include <QMutex>
+#include <QWaitCondition>
 
 #ifdef DEBUG
 #include "Global/FloatingPointExceptions.h"
@@ -88,7 +88,7 @@ struct FinishedHistogram
     int binsCount;
     int pixelsCount;
     double vmin, vmax;
-    unsigned int mipMapLevel;
+    unsigned int mipmapLevel;
 
     FinishedHistogram()
         : histogram1()
@@ -99,12 +99,12 @@ struct FinishedHistogram
         , pixelsCount(0)
         , vmin(0)
         , vmax(0)
-        , mipMapLevel(0)
+        , mipmapLevel(0)
     {
     }
 };
 
-typedef boost::shared_ptr<FinishedHistogram> FinishedHistogramPtr;
+typedef std::shared_ptr<FinishedHistogram> FinishedHistogramPtr;
 
 struct HistogramCPUPrivate
 {
@@ -177,7 +177,7 @@ HistogramCPU::quitAnyComputation()
         computeHistogram(0, ImagePtr(), RectI(), 0, 0, 0, 0);
         l.relock();
         while (_imp->mustQuit) {
-            _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
+            _imp->mustQuitCond.wait(l.mutex());
         }
     }
 }
@@ -199,7 +199,7 @@ HistogramCPU::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
                                                int* mode,
                                                double* vmin,
                                                double* vmax,
-                                               unsigned int* mipMapLevel)
+                                               unsigned int* mipmapLevel)
 {
     assert(histogram1 && histogram2 && histogram3 && binsCount && pixelsCount && mode && vmin && vmax);
 
@@ -218,7 +218,7 @@ HistogramCPU::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
     *mode = h->mode;
     *vmin = h->vmin;
     *vmax = h->vmax;
-    *mipMapLevel = h->mipMapLevel;
+    *mipmapLevel = h->mipmapLevel;
     _imp->produced.pop_back();
 
     return true;
@@ -392,7 +392,7 @@ HistogramCPU::run()
         {
             QMutexLocker l(&_imp->requestMutex);
             while ( _imp->requests.empty() ) {
-                _imp->requestCond.wait(&_imp->requestMutex);
+                _imp->requestCond.wait(l.mutex());
             }
 
             ///get the last request
@@ -412,12 +412,12 @@ HistogramCPU::run()
                 return;
             }
         }
-        FinishedHistogramPtr ret = boost::make_shared<FinishedHistogram>();
+        FinishedHistogramPtr ret = std::make_shared<FinishedHistogram>();
         ret->binsCount = request.binsCount;
         ret->mode = request.mode;
         ret->vmin = request.vmin;
         ret->vmax = request.vmax;
-        ret->mipMapLevel = request.image->getMipMapLevel();
+        ret->mipmapLevel = request.image->getMipmapLevel();
 
 
         switch (request.mode) {

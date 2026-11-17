@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,16 +27,16 @@
 #include "BezierCP.h"
 
 #include <algorithm> // min, max
-#include <limits> // INT_MAX
+#include <limits>
 #include <set>
 #include <list>
 #include <utility>
 #include <cassert>
 #include <stdexcept>
 
-#include <QtCore/QThread>
-#include <QtCore/QCoreApplication>
-#include <QtCore/QDebug>
+#include <QThread>
+#include <QCoreApplication>
+#include <QDebug>
 
 #include "Engine/Bezier.h"
 #include "Engine/KnobTypes.h"
@@ -556,7 +556,7 @@ BezierCP::getKeyframeTime(bool useGuiCurves,
     if (ok) {
         return k.getTime();
     } else {
-        return INT_MAX;
+        return std::numeric_limits<int>::max();
     }
 }
 

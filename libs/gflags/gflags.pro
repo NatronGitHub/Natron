@@ -12,7 +12,6 @@ CONFIG += gflags-flags
 
 include(../../global.pri)
 include(../../libs.pri)
-include(../../config.pri)
 
 CONFIG -= warn_on
 # disable preprocessor warnings (-Wno-macro-redefined just appeared in recent compilers)

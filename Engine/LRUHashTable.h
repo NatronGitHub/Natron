@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -47,6 +47,7 @@
 #include <list>
 #include <utility>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+// clang-format off
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(redeclared-class-member)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
@@ -56,6 +57,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/bimap.hpp>
 CLANG_DIAG_ON(redeclared-class-member)
 CLANG_DIAG_ON(unknown-pragmas)
+// clang-format on
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 

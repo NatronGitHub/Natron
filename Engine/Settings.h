@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -179,6 +179,8 @@ public:
 
     bool isAutoSaveEnabledForUnsavedProjects() const;
 
+    int saveVersions() const;
+
     bool isSnapToNodeEnabled() const;
 
     bool isCheckForUpdatesEnabled() const;
@@ -250,9 +252,10 @@ public:
     void getCheckerboardColor2(double* r, double* g, double* b, double* a) const;
     bool isAutoWipeEnabled() const;
     bool isAutoProxyEnabled() const;
-    unsigned int getAutoProxyMipMapLevel() const;
+    unsigned int getAutoProxyMipmapLevel() const;
     int getMaxOpenedNodesViewerContext() const;
-    bool isViewerKeysEnabled() const;
+    bool viewerNumberKeys() const;
+    bool viewerOverlaysPath() const;
     ///////////////////////////////////////////////////////
 
     bool areRGBPixelComponentsSupported() const;
@@ -263,7 +266,7 @@ public:
 
     /**
      * @brief If the OCIO startup check parameter is set to true, warn the user if the OCIO config is different
-     * from the default value held by NATRON_CUSTOM_OCIO_CONFIG_NAME
+     * from the default one, and offer to switch to it. A custom config whose file exists is never questioned.
      * This can only be called once the 1st AppInstance has been loaded otherwise dialogs could not be created.
      **/
     void doOCIOStartupCheckIfNeeded();
@@ -430,6 +433,7 @@ private:
 #endif
     KnobBoolPtr _autoSaveUnSavedProjects;
     KnobIntPtr _autoSaveDelay;
+    KnobIntPtr _saveVersions;
     KnobChoicePtr _hostName;
     KnobStringPtr _customHostName;
 
@@ -533,7 +537,8 @@ private:
     KnobBoolPtr _autoProxyWhenScrubbingTimeline;
     KnobChoicePtr _autoProxyLevel;
     KnobIntPtr _maximumNodeViewerUIOpened;
-    KnobBoolPtr _viewerKeys;
+    KnobBoolPtr _viewerNumberKeys;
+    KnobBoolPtr _viewerOverlaysPath;
 
     // Nodegraph
     KnobPagePtr _nodegraphTab;

@@ -24,7 +24,7 @@ In order to set the output format without transforming the image content, use th
 
 This plugin concatenates transforms.
 
-See also: http://opticalenquiry.com/nuke/index.php?title=Reformat
+See also: https://web.archive.org/web/20220627014216/http://www.opticalenquiry.com/nuke/index.php?title=Reformat
 
 Inputs
 ------

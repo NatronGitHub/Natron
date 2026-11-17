@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,17 +30,9 @@
 
 #include <map>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#endif
-#include <QtCore/QThread>
-#include <QtCore/QAbstractItemModel>
-#include <QtCore/QDir>
-
-
+#include <QThread>
+#include <QAbstractItemModel>
+#include <QDir>
 
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
@@ -50,11 +42,11 @@ NATRON_NAMESPACE_ENTER
 class FileSystemModel;
 struct FileSystemItemPrivate;
 class FileSystemItem
-    : public boost::enable_shared_from_this<FileSystemItem>
+    : public std::enable_shared_from_this<FileSystemItem>
 {
     struct MakeSharedEnabler;
 
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
     FileSystemItem( const FileSystemModelPtr& model,
                     bool isDir,
                     const QString& filename,
@@ -69,7 +61,7 @@ public:
     // Note: when switching to C++11, we can add variadic templates:
     //template<typename ... T>
     //static FileSystemItemPtr create( T&& ... all ) {
-    //    return boost::make_shared<FileSystemItem>( std::forward<T>(all)... );
+    //    return std::make_shared<FileSystemItem>( std::forward<T>(all)... );
     //}
     static FileSystemItemPtr create( const FileSystemModelPtr& model,
                                                      bool isDir,
@@ -137,7 +129,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<FileSystemItemPrivate> _imp;
+    std::unique_ptr<FileSystemItemPrivate> _imp;
 };
 
 class FileSystemModel;
@@ -172,7 +164,7 @@ private:
 
     void gatheringKernel(const FileSystemItemPtr& item);
 
-    boost::scoped_ptr<FileGathererThreadPrivate> _imp;
+    std::unique_ptr<FileGathererThreadPrivate> _imp;
 };
 
 
@@ -204,7 +196,7 @@ public:
 struct FileSystemModelPrivate;
 class FileSystemModel
     : public QAbstractItemModel
-    , public boost::enable_shared_from_this<FileSystemModel>
+    , public std::enable_shared_from_this<FileSystemModel>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -244,6 +236,8 @@ public:
 
     static bool isDriveName(const QString& name);
     static bool startsWithDriveName(const QString& name);
+    static QStringList getSplitPath(const QString& path);
+    static QString cleanPath(const QString& path);
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual Qt::ItemFlags flags(const QModelIndex &index) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int columnCount(const QModelIndex & parent) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -278,8 +272,6 @@ public:
      * has gathered all info.
      **/
     bool setRootPath(const QString& path);
-
-    QVariant myComputer(int role = Qt::DisplayRole) const WARN_UNUSED_RETURN;
 
     void setFilter(const QDir::Filters& filters);
 
@@ -357,7 +349,7 @@ private:
 
     friend class FileSystemItem;
 
-    boost::scoped_ptr<FileSystemModelPrivate> _imp;
+    std::unique_ptr<FileSystemModelPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

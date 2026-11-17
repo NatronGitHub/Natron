@@ -11,10 +11,11 @@ Natron is an open source video compositing and special effects software for Wind
 This guide will help you getting started using Natron for compositing and visual effects.
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    intro
    getstarted
    compositing
+   thenodes
    tutorials
 

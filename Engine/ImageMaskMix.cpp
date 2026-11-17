@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -200,16 +200,15 @@ Image::applyMaskMix(const RectI& roi,
     }
 
     QWriteLocker k(&_entryLock);
-    boost::scoped_ptr<QReadLocker> originalLock;
-    boost::scoped_ptr<QReadLocker> maskLock;
+    std::unique_ptr<QReadLocker> originalLock;
+    std::unique_ptr<QReadLocker> maskLock;
     if (originalImg) {
         originalLock.reset( new QReadLocker(&originalImg->_entryLock) );
     }
     if (maskImg) {
         maskLock.reset( new QReadLocker(&maskImg->_entryLock) );
     }
-    RectI realRoI;
-    roi.intersect(_bounds, &realRoI);
+    const RectI realRoI = roi.intersect(_bounds);
 
     assert( !originalImg || getBitDepth() == originalImg->getBitDepth() );
     assert( !masked || !maskImg || maskImg->getComponents() == ImagePlaneDesc::getAlphaComponents() );

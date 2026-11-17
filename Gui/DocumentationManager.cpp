@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -25,10 +25,10 @@
 
 #include "DocumentationManager.h"
 
-#include <QtCore/QFile>
-#include <QtCore/QFileInfo>
+#include <QFile>
+#include <QFileInfo>
 GCC_ONLY_DIAG_OFF(class-memaccess)
-#include <QtCore/QVector>
+#include <QVector>
 GCC_ONLY_DIAG_ON(class-memaccess)
 
 #include <iostream>
@@ -197,7 +197,7 @@ DocumentationManager::handler(QHttpRequest *req,
         }
     }
     if ( !staticPage.isEmpty() ) {
-        QFileInfo staticFileInfo = docDir + staticPage;
+        QFileInfo staticFileInfo(docDir + staticPage);
         if ( ( isStatic && !staticFileInfo.exists() ) ||
              ( !isStatic && staticFileInfo.exists() ) ) {
             // must redirect
@@ -229,11 +229,11 @@ DocumentationManager::handler(QHttpRequest *req,
     // get options
     QStringList options;
     if ( page.contains( QString::fromUtf8("?") ) ) {
-        QStringList split = page.split(QString::fromUtf8("?"), QString::SkipEmptyParts);
+        QStringList split = page.split(QString::fromUtf8("?"), Qt::SkipEmptyParts);
         page = split.takeFirst();
         if (split.length() > 0) {
             QString rawOptions = split.takeLast();
-            options = rawOptions.split(QString::fromUtf8("&"), QString::SkipEmptyParts);
+            options = rawOptions.split(QString::fromUtf8("&"), Qt::SkipEmptyParts);
         }
     }
 
@@ -336,7 +336,7 @@ DocumentationManager::handler(QHttpRequest *req,
         html = parser(html, docDir);
         body = html.toUtf8();
     } else if ( page == QString::fromUtf8("_group.html") ) {
-#pragma message WARN("TODO: produce HTML from file templates")
+//#pragma message WARN("TODO: produce HTML from file templates")
         // TODO: we should really read and parse _group.html or _groupChannel.html and just replace the relevant sections
         QString html;
         QString group;
@@ -368,7 +368,8 @@ DocumentationManager::handler(QHttpRequest *req,
                                               "</div>");
         for (int i = 0; i < options.size(); ++i) {
             if ( options.at(i).contains( QString::fromUtf8("id=") ) ) {
-                QStringList split = options.at(i).split(QString::fromUtf8("="), QString::SkipEmptyParts);
+                QStringList split = options.at(i).split(QString::fromUtf8("="), Qt::SkipEmptyParts);
+
                 if (split.length() > 0) {
                     QString groupID = split.takeLast();
                     group = groupID;
@@ -509,9 +510,9 @@ DocumentationManager::handler(QHttpRequest *req,
         QFileInfo staticFileInfo;
 
         if ( page.startsWith( QString::fromUtf8("LOCAL_FILE/") ) ) {
-            staticFileInfo = page.replace( QString::fromUtf8("LOCAL_FILE/"), QString::fromUtf8("") ).replace( QString::fromUtf8("%2520"), QString::fromUtf8(" ") ).replace( QString::fromUtf8("%20"), QString::fromUtf8(" ") );
+            staticFileInfo.setFile( page.replace( QString::fromUtf8("LOCAL_FILE/"), QString::fromUtf8("") ).replace( QString::fromUtf8("%2520"), QString::fromUtf8(" ") ).replace( QString::fromUtf8("%20"), QString::fromUtf8(" ") ) );
         } else {
-            staticFileInfo = docDir + page;
+            staticFileInfo.setFile(docDir + page);
         }
 #ifdef DEBUG
         qDebug() << "www client requested page" << page << "->file" << staticFileInfo.absoluteFilePath();

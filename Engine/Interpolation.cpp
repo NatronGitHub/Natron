@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,17 +27,10 @@
 
 #include <cassert>
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 #include <vector>
 #include <algorithm> // min, max
-
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-#include <boost/math/special_functions/fpclassify.hpp>
-// boost/optional/optional.hpp:1254:53: warning: unused parameter 'out' [-Wunused-parameter]
-#include <boost/math/special_functions/cbrt.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -45,7 +38,7 @@ GCC_DIAG_ON(unused-parameter)
 
 NATRON_NAMESPACE_ENTER
 
-using boost::math::cbrt;
+using std::cbrt;
 using std::sqrt;
 using std::cos;
 using std::acos;
@@ -768,11 +761,11 @@ Interpolation::integrate_clamp(double tcur,
     // solve cubic = vmax
     double tmax[3];
     int omax[3];
-    int nmax = (vmax < DBL_MAX) ? Interpolation::solveCubic(c0 - vmax, c1, c2, c3, tmax, omax) : 0;
+    int nmax = (vmax < std::numeric_limits<double>::max()) ? Interpolation::solveCubic(c0 - vmax, c1, c2, c3, tmax, omax) : 0;
     // solve cubic = vmin
     double tmin[3];
     int omin[3];
-    int nmin = (vmin > -DBL_MAX) ? Interpolation::solveCubic(c0 - vmin, c1, c2, c3, tmin, omin) : 0;
+    int nmin = (vmin > std::numeric_limits<double>::lowest()) ? Interpolation::solveCubic(c0 - vmin, c1, c2, c3, tmin, omin) : 0;
 
     // now, find out on which intervals the function is constant/clamped, and on which intervals it is a cubic.
     // ignore the solutions with an order of 2 (which means the tangent is horizontal and the polynomial doesn't change sign)
@@ -1109,7 +1102,7 @@ Interpolation::autoComputeDerivatives(KeyframeTypeEnum interpPrev,
 
     *vcurDerivRight = P0pr / (tnext - tcur); // denormalize for t \in [tcur,tnext]
     *vcurDerivLeft = Q3pl / (tcur - tprev); // denormalize for t \in [tprev,tcur]
-    assert( !(boost::math::isnan)(*vcurDerivRight) && !(boost::math::isnan)(*vcurDerivLeft) );
+    assert( !std::isnan(*vcurDerivRight) && !(std::isnan)(*vcurDerivLeft) );
 } // autoComputeDerivatives
 
 NATRON_NAMESPACE_EXIT

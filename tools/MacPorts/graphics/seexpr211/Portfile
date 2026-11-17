@@ -1,0 +1,52 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id$
+
+PortSystem          1.0
+PortGroup           cmake 1.0
+PortGroup           github 1.0
+
+name                seexpr211
+github.setup        wdas SeExpr 2.11 v
+# GitHub tarballs extract to <author>-<project>-<hash>; tarball_from enables
+# extract.rename so the source is renamed to ${worksrcdir} (else patch runs in
+# the wrong directory: "No file to patch").
+github.tarball_from tarball
+license             Apache-2
+categories          graphics
+maintainers         nomaintainer
+description         SeExpr is a simple expression language.
+long_description    ${description}
+homepage            http://www.disneyanimation.com/technology/seexpr.html
+platforms           darwin
+
+#master_sites        ${homepage}
+#distname            ${version}
+#dist_subdir         ${name}/${version}_3
+#use_bzip2           yes
+#master_sites        https://github.com/wdas/SeExpr/archive/
+#distname            v${version}
+
+checksums           sha1    7c8113209c68a2dc0da17e2e96108dbda1d9ccaf \
+                    rmd160  d09e65813b39fefe25332c1ffd0812bd38b4eb94 \
+                    sha256  63f30b984ca8bc600ca6611c6dc30ac387420b649b75f5247860f9e475a6d870 \
+                    size    709414
+worksrcdir          SeExpr-${version}
+
+depends_lib         port:libpng
+depends_build       port:doxygen
+
+patchfiles          0001-seexpr-2.11-fix-cxxflags.patch \
+                    0002-seexpr-2.11-fix-inline-error.patch \
+                    0004-seexpr-2.11-c++98.patch \
+                    0006-seexpr-2.11-cstylecast.patch
+#patch.cmd           "git apply -v"
+patch.pre_args      -p1
+
+build.target-append doc
+
+# SeExpr 2.11 gates the x86-only flag -msse4.1 behind USE_SSE41 (see
+# 0001-seexpr-2.11-fix-cxxflags.patch). Force it off on non-x86 archs so the
+# arm64 build does not receive -msse4.1 ("unsupported option" from clang).
+if {${configure.build_arch} ni {i386 x86_64}} {
+    configure.args-append -DUSE_SSE41:BOOL=FALSE
+}

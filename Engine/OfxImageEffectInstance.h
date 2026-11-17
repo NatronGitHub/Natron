@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,22 +31,19 @@
 #include <string>
 #include <cstdarg>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QCoreApplication>
+#include <QCoreApplication>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+// clang-format off
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(tautological-undefined-compare)
 #include <ofxhImageEffect.h>
 CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
+// clang-format on
 
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
@@ -252,7 +249,12 @@ public:
     bool getInputsHoldingTransform(std::list<int>* inputs) const;
 
     const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& getClips() const;
+    /// convert an OFX interact cursor name (kOfxInteractCursor*, CSS names) to a Natron cursor
     static bool ofxCursorToNatronCursor(const std::string& ofxCursor, CursorEnum* cursor);
+
+    /// the OFX interact cursor names Natron can display (kOfxInteractHostPropSupportedCursors),
+    /// not including kOfxInteractCursorCustom
+    static void getSupportedOfxCursors(std::vector<std::string>* cursors);
     static const OFX::Host::Property::PropSpec* getOfxParamOverlayInteractDescProps();
 
 private:

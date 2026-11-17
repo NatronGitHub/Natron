@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,21 +26,17 @@
 #include "EditScriptDialog.h"
 
 #include <cassert>
-#include <climits>
 #include <cfloat>
 #include <stdexcept>
 
-#include <boost/weak_ptr.hpp>
-
-
-#include <QtCore/QString>
+#include <QString>
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QFormLayout>
 #include <QFileDialog>
 #include <QTextEdit>
 #include <QStyle> // in QtGui on Qt4, in QtWidgets on Qt5
-#include <QtCore/QTimer>
+#include <QTimer>
 
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -48,7 +44,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QColorDialog>
 #include <QGroupBox>
-#include <QtGui/QVector4D>
+#include <QVector4D>
 #include <QStyleFactory>
 #include <QCompleter>
 
@@ -230,7 +226,7 @@ EditScriptDialog::create(const QString& initialScript,
         _imp->resultEdit->setFont(font);
     }
     QFontMetrics fm = _imp->expressionEdit->fontMetrics();
-    _imp->expressionEdit->setTabStopWidth( 4 * fm.width( QLatin1Char(' ') ) );
+    _imp->expressionEdit->setTabStopDistance( 4 * fm.horizontalAdvance( QLatin1Char(' ') ) );
 } // EditScriptDialog::create
 
 void

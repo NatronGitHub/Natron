@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,8 +29,8 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QTextStream>
-#include <QtCore/QRegExp>
+#include <QTextStream>
+#include <QRegularExpression>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -79,7 +79,7 @@ QString
 Markdown::parseCustomLinksForHTML(const QString& markdown)
 {
     QString result = markdown;
-    QRegExp rx( QString::fromUtf8("(\\|html::[^|]*\\|)\\|rst::[^|]*\\|") );
+    QRegularExpression rx( QString::fromUtf8("(\\|html::[^|]*\\|)\\|rst::[^|]*\\|") );
     result.replace( rx, QString::fromUtf8("\\1") );
 
     return result;
@@ -105,9 +105,9 @@ Markdown::fixSettingsHTML(const QString &html)
     QStringList list = html.split( QString::fromUtf8("\n") );
     Q_FOREACH(const QString &line, list) {
         if ( line.startsWith(QString::fromUtf8("<h2>")) ) {
-            QRegExp rx( QString::fromUtf8("<h2>(.*)</h2>") );
-            rx.indexIn(line);
-            QString header = rx.cap(1);
+            QRegularExpression rx( QString::fromUtf8("<h2>(.*)</h2>") );
+            QRegularExpressionMatch match = rx.match(line);
+            QString header = match.captured(1);
             QString headerLink = header.toLower();
             headerLink.replace( QString::fromUtf8(" "), QString::fromUtf8("-") );
             result.append(QString::fromUtf8("<h2 id=\"%1\">%2</h2>").arg(headerLink).arg(header));

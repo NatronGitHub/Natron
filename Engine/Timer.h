@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -35,15 +35,15 @@
 //----------------------------------------------------------------------------
 
 #if defined(__NATRON_WIN32__) && !defined(__NATRON_MINGW__)
-#include <windows.h>
+#include <winsock2.h>
 #else
 #include <sys/time.h>
 #endif
 
 
-#include <QtCore/QString>
-#include <QtCore/QObject>
-#include <QtCore/QMutex>
+#include <QString>
+#include <QObject>
+#include <QMutex>
 
 #include "Engine/EngineFwd.h"
 

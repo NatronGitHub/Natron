@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,14 +28,12 @@
 #include <map>
 #include <stdexcept>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/make_shared.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
-#include <QDesktopWidget>
+
+#include <QScreen>
+
 #include <QApplication>
 #include <QKeyEvent>
 #include <QDesktopServices>
@@ -44,10 +42,12 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QStyledItemDelegate>
 #include <QHeaderView>
 #include <QPainter>
+#include <QRegularExpression>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/KnobTypes.h"
+#include "Global/QtCompat.h"
 #include "Engine/Settings.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
@@ -518,11 +518,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
     treeHeader->setText( COL_GL_ENABLED, tr("OpenGL") );
     _imp->pluginsView->setHeaderItem(treeHeader);
     _imp->pluginsView->setSelectionMode(QAbstractItemView::NoSelection);
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    _imp->pluginsView->header()->setResizeMode(QHeaderView::ResizeToContents);
-#else
     _imp->pluginsView->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
-#endif
     _imp->pluginsView->setSortingEnabled(true);
     const PluginsMap& plugins = appPTR->getPluginsList();
 
@@ -710,7 +706,7 @@ PreferencesPanel::createShortcutEditor(QTreeWidgetItem* uiPageTreeItem)
     _imp->shortcutButtonsLayout->addWidget(_imp->restoreShortcutsDefaultsButton);
     _imp->shortcutButtonsLayout->addStretch();
 
-    KnobPageGuiPtr page = boost::make_shared<KnobPageGui>();
+    KnobPageGuiPtr page = std::make_shared<KnobPageGui>();
     page->gridLayout = 0;
     page->tab = _imp->shortcutsFrame;
     PreferenceTab tab;
@@ -763,7 +759,7 @@ PreferencesPanel::createGui()
             uiTabTreeItem = _imp->tabs[i].treeItem;
         }
         QString label = QString::fromUtf8( pageKnob->getLabel().c_str() );
-        int w = fm.width(label);
+        int w = fm.horizontalAdvance(label);
         maxLength = std::max(w, maxLength);
     }
     assert(pluginsFrameLayout);
@@ -819,13 +815,20 @@ PreferencesPanel::filterPlugins(const QString & txt)
             it->item->setExpanded(false);
         }
     } else {
-        QString pattern;
+        // Match the typed characters in order, with anything in between, as the
+        // QRegExp::WildcardUnix pattern "*g*r*d*" did: the typed characters are
+        // themselves wildcards ('*', '?', "[...]").
+        QString wildcard;
         for (int i = 0; i < txt.size(); ++i) {
-            pattern.push_back( QLatin1Char('*') );
-            pattern.push_back(txt[i]);
+            if ( !txt[i].isLowSurrogate() ) { // keep surrogate pairs (e.g. emoji) together
+                wildcard.push_back( QLatin1Char('*') );
+            }
+            wildcard.push_back(txt[i]);
         }
-        pattern.push_back( QLatin1Char('*') );
-        QRegExp expr(pattern, Qt::CaseInsensitive, QRegExp::WildcardUnix);
+        wildcard.push_back( QLatin1Char('*') );
+        // anchored: matching the whole label is the same as the old contains()
+        const QString pattern = QtCompat::wildcardToRegularExpression(wildcard);
+        QRegularExpression expr(pattern, QRegularExpression::CaseInsensitiveOption);
         std::list<QTreeWidgetItem*> itemsToDisplay;
         for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
             if ( it->plugin && it->plugin->getLabelWithoutSuffix().contains(expr) ) {
@@ -1053,7 +1056,7 @@ PreferencesPanelPrivate::createPreferenceTab(const KnobPageGuiPtr& page,
         KnobIPtr hasParent = pageKnob->getParentKnob();
         KnobPagePtr parentPage;
         if (hasParent) {
-            parentPage = boost::dynamic_pointer_cast<KnobPage>(hasParent);
+            parentPage = std::dynamic_pointer_cast<KnobPage>(hasParent);
             if (parentPage) {
                 // look in the tabs if it is created
                 for (std::size_t i = 0; i < tabs.size(); ++i) {
@@ -1206,8 +1209,8 @@ PreferencesPanel::saveChangesAndClose()
 void
 PreferencesPanel::showEvent(QShowEvent* /*e*/)
 {
-    QDesktopWidget* desktop = QApplication::desktop();
-    const QRect rect = desktop->screenGeometry();
+    QScreen* desktop = QGuiApplication::primaryScreen();
+    const QRect rect = desktop->availableGeometry();
 
     move( QPoint(rect.width() / 2 - width() / 2, rect.height() / 2 - height() / 2) );
 
@@ -1390,15 +1393,15 @@ ShortcutDelegate::paint(QPainter * painter,
 
     if (isTopLevel) {
         font.setBold(true);
-        font.setPixelSize(13);
-        pen.setColor(Qt::black);
+        font.setPointSize(13);
+        pen.setColor(Qt::gray);
     } else {
         font.setBold(false);
-        font.setPixelSize(11);
+        font.setPointSize(11);
         if ( item->isDisabled() ) {
-            pen.setColor(Qt::black);
+            pen.setColor(Qt::gray);
         } else {
-            pen.setColor( QColor(200, 200, 200) );
+            pen.setColor(Qt::lightGray);
         }
     }
     painter->setFont(font);

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,11 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 
 #include "Gui/CurveEditorUndoRedo.h" // MoveTangentCommand
@@ -43,7 +38,7 @@
 #include "Gui/GuiFwd.h"
 #include "Engine/OfxOverlayInteract.h"
 
-#include <QtCore/QSize>
+#include <QSize>
 
 #define CURVEWIDGET_DERIVATIVE_ROUND_PRECISION 3
 
@@ -85,16 +80,16 @@ public:
 
     ~CurveWidgetPrivate();
 
-    void drawSelectionRectangle();
+    void drawSelectionRectangle(double screenPixelRatio);
 
     void refreshTimelinePositions();
 
-    void drawTimelineMarkers();
+    void drawTimelineMarkers(double screenPixelRatio);
 
-    void drawCurves();
+    void drawCurves(double screenPixelRatio);
 
-    void drawScale();
-    void drawSelectedKeyFramesBbox();
+    void drawScale(double screenPixelRatio);
+    void drawSelectedKeyFramesBbox(double screenPixelRatio);
 
     /**
      * @brief Returns whether the click at position pt is nearby the curve.
@@ -161,7 +156,8 @@ public:
     QColor _selectedCurveColor;
     QColor _nextCurveAddedColor;
     TextRenderer textRenderer;
-    QFont* _font;
+    double _screenPixelRatio;
+    std::unique_ptr<QFont> _textFont;
     Curves _curves;
     SelectedKeys _selectedKeyFrames;
     bool _mustSetDragOrientation;
@@ -179,7 +175,7 @@ public:
     std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> _selectedDerivative;
     bool _evaluateOnPenUp; //< true if we must re-evaluate the nodes associated to the selected keyframes on penup
     QPointF _keyDragLastMovement;
-    boost::scoped_ptr<QUndoStack> _undoStack;
+    std::unique_ptr<QUndoStack> _undoStack;
     Gui* _gui;
     GLuint savedTexture;
     QSize sizeH;

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,10 +32,10 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QtCore/QReadWriteLock>
-#include <QtCore/QCoreApplication>
-#include <QtCore/QThread>
-#include <QtCore/QRegExp>
+#include <QReadWriteLock>
+#include <QCoreApplication>
+#include <QThread>
+#include <QRegularExpression>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 
@@ -268,7 +268,7 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
         std::size_t foundHash = pattern.find_first_of("#");
         if (foundHash == std::string::npos) {
             // Look for printf style numbering
-            QRegExp exp(QString::fromUtf8("%[0-9]*d"));
+            QRegularExpression exp( QString::fromUtf8("%[0-9]*d") );
             QString qp(QString::fromUtf8(pattern.c_str()));
             if (!qp.contains(exp)) {
                 QString message = tr("You are trying to render the frame range [%1 - %2] but you did not specify any hash ('#') character(s) or printf-like format ('%d') for the padding. This will result in the same image being overwritten multiple times.").arg(first).arg(last);
@@ -387,7 +387,7 @@ OutputEffectInstance::initializeData()
 RenderEngine*
 OutputEffectInstance::createRenderEngine()
 {
-    OutputEffectInstancePtr thisShared = boost::dynamic_pointer_cast<OutputEffectInstance>( shared_from_this() );
+    OutputEffectInstancePtr thisShared = std::dynamic_pointer_cast<OutputEffectInstance>( shared_from_this() );
 
     assert(thisShared);
 
@@ -491,7 +491,7 @@ OutputEffectInstance::reportStats(int time,
         ofile << std::endl;
 
         ofile << "Mipmap level(s) rendered: ";
-        for (std::set<unsigned int>::const_iterator it2 = it->second.getMipMapLevelsRendered().begin(); it2 != it->second.getMipMapLevelsRendered().end(); ++it2) {
+        for (std::set<unsigned int>::const_iterator it2 = it->second.getMipmapLevelsRendered().begin(); it2 != it->second.getMipmapLevelsRendered().end(); ++it2) {
             ofile << *it2 << ' ';
         }
         ofile << std::endl;

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -33,13 +33,8 @@
 #include <cstring> // for std::memcpy
 #include <stdexcept>
 
-#include <QtCore/QLineF>
-#include <QtCore/QDebug>
-
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/shared_ptr.hpp>
-#include <boost/math/special_functions/fpclassify.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#include <QLineF>
+#include <QDebug>
 
 #include "Engine/RotoContextPrivate.h"
 
@@ -133,7 +128,7 @@ RotoDrawableItem::addKnob(const KnobIPtr& knob)
 void
 RotoDrawableItem::setNodesThreadSafetyForRotopainting()
 {
-    assert( boost::dynamic_pointer_cast<RotoStrokeItem>( boost::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() ) ) );
+    assert( std::dynamic_pointer_cast<RotoStrokeItem>( std::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() ) ) );
 
     getContext()->getNode()->setRenderThreadSafety(eRenderSafetyInstanceSafe);
     getContext()->setWhileCreatingPaintStrokeOnMergeNodes(true);
@@ -176,9 +171,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
 
     QString pluginId;
     RotoStrokeType type;
-    RotoDrawableItemPtr thisShared = boost::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() );
+    RotoDrawableItemPtr thisShared = std::dynamic_pointer_cast<RotoDrawableItem>( shared_from_this() );
     assert(thisShared);
-    RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(thisShared);
+    RotoStrokeItemPtr isStroke = std::dynamic_pointer_cast<RotoStrokeItem>(thisShared);
 
     if (isStroke) {
         type = isStroke->getBrushType();
@@ -907,7 +902,7 @@ RotoDrawableItem::save(RotoItemSerialization *obj) const
         throw std::logic_error("RotoDrawableItem::save()");
     }
     for (std::list<KnobIPtr>::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        KnobSerializationPtr k = boost::make_shared<KnobSerialization>(*it);
+        KnobSerializationPtr k = std::make_shared<KnobSerialization>(*it);
         serializeRotoKnob( *it, k.get() );
         s->_knobs.push_back(k);
     }

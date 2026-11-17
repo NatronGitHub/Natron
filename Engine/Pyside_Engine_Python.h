@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -16,6 +16,9 @@
  * You should have received a copy of the GNU General Public License
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
+
+//Defined to avoid including some headers when running shiboken which may crash shiboken (particularly boost headers)
+#define SBK_RUN
 
 #ifndef PYSIDE_ENGINE_PYTHON_H
 #define PYSIDE_ENGINE_PYTHON_H
@@ -33,10 +36,11 @@
  * Do not include it when compiling Natron.
  **/
 
-//Defined to avoid including some headers when running shiboken which may crash shiboken (particularly boost headers)
-#define SBK_RUN
-
-#include <pyside_global.h>
+#ifdef SBK2_RUN
+#include <pyside2_global.h>
+#else
+#include <pyside6_global.h>
+#endif
 #include <string>
 //Global
 #include <GlobalDefines.h>

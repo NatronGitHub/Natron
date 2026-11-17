@@ -1,0 +1,91 @@
+diff --git libavformat/movenc.c libavformat/movenc.c
+index a961390..c5eb12d 100644
+--- libavformat/movenc.c
++++ libavformat/movenc.c	2024-11-08 18:08:40.000000000 -0700
+@@ -109,6 +109,7 @@
+       { "skip_sidx", "Skip writing of sidx atom", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_SKIP_SIDX}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, .unit = "movflags" },
+       { "skip_trailer", "Skip writing the mfra/tfra/mfro trailer for fragmented files", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_SKIP_TRAILER}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, .unit = "movflags" },
+       { "use_metadata_tags", "Use mdta atom for metadata.", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_USE_MDTA}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, .unit = "movflags" },
++      { "write_pixeldensity", "Write pixeldensity metdata for HiDPI videos in QT", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_PIXELDENSITY}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+       { "write_colr", "Write colr atom even if the color info is unspecified (Experimental, may be renamed or changed, do not use from scripts)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_WRITE_COLR}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, .unit = "movflags" },
+       { "write_gama", "Write deprecated gama atom", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_WRITE_GAMA}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, .unit = "movflags" },
+     { "min_frag_duration", "Minimum fragment duration", offsetof(MOVMuxContext, min_fragment_duration), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
+@@ -4008,6 +4009,56 @@
+     return size;
+ }
+ 
++static int mov_write_pixeldensity_meta_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *track, AVFormatContext *s)
++{
++    int size = 0;
++    int64_t pos = avio_tell(pb);
++    avio_wb32(pb, 0); /* meta atom size */
++    ffio_wfourcc(pb, "meta");
++
++    /* Metadata atom information as described in
++     * https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW9
++     */
++    avio_wb32(pb, 33); /* hdlr atom size: size (4) + 'hdlr' (4) + version/flags (4) + predefined (4) + 'mdta' (4) +
++                          reserved (3*4) + name (1) = 33 */
++    ffio_wfourcc(pb, "hdlr");
++    avio_wb32(pb, 0); /* version (1 Byte) and flags (3 Bytes), must be zero */
++    avio_wb32(pb, 0); /* "predefined", must be zero */
++    ffio_wfourcc(pb, "mdta");
++    avio_wb32(pb, 0); /* Reseverved, uint32_t[3] */
++    avio_wb32(pb, 0);
++    avio_wb32(pb, 0);
++    avio_w8(pb, 0); /* Empty name (NULL-terminated) */
++
++    avio_wb32(pb, 56); /* keys atom size: size (4) + 'keys' (4) + version/flasgs (4) + entry_count (4) +
++                          keys (32+8) = 56 */
++    ffio_wfourcc(pb, "keys");
++    avio_wb32(pb, 0);      /* version (1 Byte) and flags (3 Bytes), must be zero */
++    avio_wb32(pb, 1);      /* entry count */
++    avio_wb32(pb, 32 + 8); /* key size: size (4) + 'mdta' (4) + strlen(key) */
++    ffio_wfourcc(pb, "mdta");
++    avio_write(pb, "com.apple.quicktime.pixeldensity", 32);
++
++    avio_wb32(pb, 48); /* ilst atom size: size (4) + 'ilst' (4) + value atom size (40) = 48 */
++    ffio_wfourcc(pb, "ilst");
++    avio_wb32(pb, 40); /* value atom size: size (4) + key (4) + data atom (32) = 40 */
++    avio_wb32(pb, 1);  /* metadata key index */
++
++    avio_wb32(pb, 32); /* data atom size: size (4) + 'data' (4) + data_type (4) + locale (4) + value (4 * 4) = 32 */
++    ffio_wfourcc(pb, "data");
++    avio_wb32(pb, 0x1e); /* data type */
++    avio_wb32(pb, 0);    /* locale */
++
++    /* actual data (value): consisting of 4 uint32_t: pixel width, pixel height, display width, display height */
++    avio_wb32(pb, track->par->width);
++    avio_wb32(pb, track->par->height);
++    avio_wb32(pb, track->par->width / 2);
++    avio_wb32(pb, track->par->height / 2);
++
++    size = update_size(pb, pos);
++    return size;
++}
++
+ static int mov_write_trak_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext *mov,
+                               MOVTrack *track, AVStream *st)
+ {
+@@ -4067,6 +4118,9 @@
+     if (mov->flags & FF_MOV_FLAG_PIXELDENSITY) {
+          mov_write_pixeldensity_meta_tag(pb, mov, track, st);
+     }
++    if (mov->flags & FF_MOV_FLAG_PIXELDENSITY) {
++         mov_write_pixeldensity_meta_tag(pb, mov, track, st);
++    }
+     mov_write_track_udta_tag(pb, mov, st);
+     track->entry = entry_backup;
+     track->chunkCount = chunk_backup;
+diff --git libavformat/movenc.h libavformat/movenc.h
+index 68d6f23..ed7ea41 100644
+--- libavformat/movenc.h
++++ libavformat/movenc.h
+@@ -284,6 +284,7 @@
+ #define FF_MOV_FLAG_CMAF                  (1 << 22)
+ #define FF_MOV_FLAG_PREFER_ICC            (1 << 23)
+ #define FF_MOV_FLAG_HYBRID_FRAGMENTED     (1 << 24)
++#define FF_MOV_FLAG_PIXELDENSITY          (1 << 25)
+ 
+ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
+ 

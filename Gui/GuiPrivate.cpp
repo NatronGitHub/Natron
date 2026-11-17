@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,22 +30,19 @@
 #include <algorithm> // min, max
 #include <stdexcept>
 
-#include <QtCore/QTextStream>
-#include <QtCore/QWaitCondition>
-#include <QtCore/QMutex>
-#include <QtCore/QCoreApplication>
+#include <QTextStream>
+#include <QWaitCondition>
+#include <QMutex>
+#include <QCoreApplication>
 #include <QAction>
 #include <QSettings>
-#include <QtCore/QDebug>
-#include <QtCore/QThread>
+#include <QDebug>
+#include <QThread>
 #include <QCheckBox>
-#include <QtCore/QTimer>
+#include <QTimer>
 #include <QTextEdit>
 
-
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QScreen>
-#endif
 #include <QUndoGroup>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -55,7 +52,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QGraphicsScene>
 #include <QApplication>
 #include <QMenuBar>
-#include <QDesktopWidget>
+
 #include <QToolBar>
 #include <QKeySequence>
 #include <QScrollArea>
@@ -67,16 +64,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include <cairo/cairo.h>
 
-#include <boost/version.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
-// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
-
 #include "Global/ProcInfo.h"
+#include "Global/QtCompat.h"
 
 #include "Engine/Image.h"
 #include "Engine/KnobFile.h"
@@ -198,7 +187,7 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
     , _lastPluginDir()
     , _nextViewerTabPlace(0)
     , _leftRightSplitter(0)
-    , _viewerTabsMutex(QMutex::Recursive) // Gui::createNodeViewerInterface() may cause a resizeEvent, which calls Gui:redrawAllViewers()
+    , _viewerTabsMutex()
     , _viewerTabs()
     , _masterSyncViewer(0)
     , _activeViewer(0)
@@ -535,7 +524,7 @@ private:
         }
     }
 
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE FINAL
     {
         AutoRaiseToolButton* btn = dynamic_cast<AutoRaiseToolButton*>( _gui->getToolButtonMenuOpened() );
 
@@ -605,7 +594,7 @@ GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,
         qint64 curPid = (qint64)QCoreApplication::applicationPid();
         if (lockPID != curPid) {
             QString appFilePath = QCoreApplication::applicationFilePath();
-            if ( ProcInfo::checkIfProcessIsRunning(appFilePath.toStdString().c_str(), (Q_PID)lockPID) ) {
+            if ( ProcInfo::checkIfProcessIsRunning(appFilePath.toStdString().c_str(), lockPID) ) {
                 StandardButtonEnum rep = Dialogs::questionDialog( tr("Project").toStdString(),
                                                                   tr("This project may be open in another instance of Natron "
                                                                      "running on %1 as process ID %2, "
@@ -643,8 +632,8 @@ GuiPrivate::restoreGuiGeometry()
         _gui->resize(size);
     } else {
         ///No window size serialized, give some appropriate default value according to the screen size
-        QDesktopWidget* desktop = QApplication::desktop();
-        QRect screen = desktop->screenGeometry();
+        QScreen* desktop = QGuiApplication::primaryScreen();
+        QRect screen = desktop->availableGeometry();
         _gui->resize( (int)( 0.93 * screen.width() ), (int)( 0.93 * screen.height() ) ); // leave some space
     }
     if ( settings.contains( QString::fromUtf8("maximized")) ) {

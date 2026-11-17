@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,14 +31,7 @@
 #include <omp.h>
 #endif
 
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind/bind.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
-#include <QtCore/QThreadPool>
+#include <QThreadPool>
 
 #include "Engine/AppInstance.h"
 #include "Engine/Curve.h"
@@ -51,8 +44,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/TrackerContext.h"
-
-using namespace boost::placeholders;
 
 
 #ifdef DEBUG
@@ -68,7 +59,7 @@ NATRON_NAMESPACE_ENTER
  **/
 
 template <typename KNOBTYPE>
-boost::shared_ptr<KNOBTYPE>
+std::shared_ptr<KNOBTYPE>
 createDuplicateKnob( const std::string& knobName,
                      const NodePtr& internalNode,
                      const EffectInstancePtr& effect,
@@ -79,7 +70,7 @@ createDuplicateKnob( const std::string& knobName,
     KnobIPtr internalNodeKnob = internalNode->getKnobByName(knobName);
 
     if (!internalNodeKnob) {
-        return boost::shared_ptr<KNOBTYPE>();
+        return std::shared_ptr<KNOBTYPE>();
     }
     assert(internalNodeKnob);
     KnobIPtr duplicateKnob = internalNodeKnob->createDuplicateOnHolder(effect.get(), page, group, -1, true, internalNodeKnob->getName(), internalNodeKnob->getLabel(), internalNodeKnob->getHintToolTip(), false, false);
@@ -92,7 +83,7 @@ createDuplicateKnob( const std::string& knobName,
         }
     }
 
-    return boost::dynamic_pointer_cast<KNOBTYPE>(duplicateKnob);
+    return std::dynamic_pointer_cast<KNOBTYPE>(duplicateKnob);
 }
 
 TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
@@ -125,7 +116,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     QObject::connect( &scheduler, SIGNAL(trackingStarted(int)), _publicInterface, SLOT(onSchedulerTrackingStarted(int)) );
     QObject::connect( &scheduler, SIGNAL(trackingFinished()), _publicInterface, SLOT(onSchedulerTrackingFinished()) );
     QObject::connect( &scheduler, SIGNAL(trackingProgress(double)), _publicInterface, SLOT(onSchedulerTrackingProgress(double)) );
-    TrackerNodePtr isTrackerNode = boost::dynamic_pointer_cast<TrackerNode>(effect);
+    TrackerNodePtr isTrackerNode = std::dynamic_pointer_cast<TrackerNode>(effect);
     QString fixedNamePrefix = QString::fromUtf8( node->getScriptName_mt_safe().c_str() );
 
     fixedNamePrefix.append( QLatin1Char('_') );
@@ -1204,7 +1195,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr>& markers,
             (*it)->setEnabledAtTime(start, true);
         }
         
-        TrackMarkerAndOptionsPtr t = boost::make_shared<TrackMarkerAndOptions>();
+        TrackMarkerAndOptionsPtr t = std::make_shared<TrackMarkerAndOptions>();
         t->natronMarker = *it;
 
         // Set a keyframe on the marker to initialize its position
@@ -1508,7 +1499,7 @@ TrackerContextPrivate::getInputRoDAtTime(double time) const
     if (!input) {
         useProjFormat = true;
     } else {
-        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(), time, RenderScale(1.), ViewIdx(0), &ret, 0);
+        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(), time, RenderScale::identity, ViewIdx(0), &ret, 0);
         if (stat == eStatusFailed) {
             useProjFormat = true;
         } else {
@@ -2395,10 +2386,18 @@ TrackerContextPrivate::computeCornerParamsFromTracks()
 {
 #ifndef TRACKER_GENERATE_DATA_SEQUENTIALLY
     lastSolveRequest.tWatcher.reset();
-    lastSolveRequest.cpWatcher.reset( new QFutureWatcher<TrackerContextPrivate::CornerPinData>() );
+    lastSolveRequest.cpWatcher.reset( new QFutureWatcher<CornerPinData>() );
     QObject::connect( lastSolveRequest.cpWatcher.get(), SIGNAL(finished()), this, SLOT(onCornerPinSolverWatcherFinished()) );
     QObject::connect( lastSolveRequest.cpWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onCornerPinSolverWatcherProgress(int)) );
-    lastSolveRequest.cpWatcher->setFuture( QtConcurrent::mapped( lastSolveRequest.keyframes, boost::bind(&TrackerContextPrivate::computeCornerPinParamsFromTracksAtTime, this, lastSolveRequest.refTime, _1, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, lastSolveRequest.allMarkers) ) );
+    std::function<CornerPinData (const double&)> compute = [=](const double &keyframe) {
+        return computeCornerPinParamsFromTracksAtTime(lastSolveRequest.refTime,
+                                                      keyframe,
+                                                      lastSolveRequest.jitterPeriod,
+                                                      lastSolveRequest.jitterAdd,
+                                                      lastSolveRequest.robustModel,
+                                                      lastSolveRequest.allMarkers);
+    };
+    lastSolveRequest.cpWatcher->setFuture( QtConcurrent::mapped( lastSolveRequest.keyframes, compute ) );
 #else
     NodePtr thisNode = node.lock();
     QList<CornerPinData> validResults;
@@ -2597,10 +2596,18 @@ TrackerContextPrivate::computeTransformParamsFromTracks()
 {
 #ifndef TRACKER_GENERATE_DATA_SEQUENTIALLY
     lastSolveRequest.cpWatcher.reset();
-    lastSolveRequest.tWatcher.reset( new QFutureWatcher<TrackerContextPrivate::TransformData>() );
+    lastSolveRequest.tWatcher.reset( new QFutureWatcher<TransformData>() );
     QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL(finished()), this, SLOT(onTransformSolverWatcherFinished()) );
     QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onTransformSolverWatcherProgress(int)) );
-    lastSolveRequest.tWatcher->setFuture( QtConcurrent::mapped( lastSolveRequest.keyframes, boost::bind(&TrackerContextPrivate::computeTransformParamsFromTracksAtTime, this, lastSolveRequest.refTime, _1, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, lastSolveRequest.allMarkers) ) );
+    std::function<TransformData (const double&)> compute = [=](const double &keyframe) {
+        return computeTransformParamsFromTracksAtTime(lastSolveRequest.refTime,
+                                                      keyframe,
+                                                      lastSolveRequest.jitterPeriod,
+                                                      lastSolveRequest.jitterAdd,
+                                                      lastSolveRequest.robustModel,
+                                                      lastSolveRequest.allMarkers);
+    };
+    lastSolveRequest.tWatcher->setFuture( QtConcurrent::mapped( lastSolveRequest.keyframes, compute ) );
 #else
     NodePtr thisNode = node.lock();
     QList<TransformData> validResults;

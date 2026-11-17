@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,6 +30,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// clang-format off
 GCC_DIAG_OFF(unused-parameter)
 #include <boost/archive/basic_archive.hpp>
 #include <boost/serialization/base_object.hpp>
@@ -39,6 +40,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/version.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
+// clang-format on
 #endif
 
 #include "Engine/KnobSerialization.h"
@@ -113,7 +115,7 @@ private:
         int nbItems;
         ar & boost::serialization::make_nvp("NbItems", nbItems);
         for (int i = 0; i < nbItems; ++i) {
-            KnobSerializationPtr s = boost::make_shared<KnobSerialization>();
+            KnobSerializationPtr s = std::make_shared<KnobSerialization>();
             ar & boost::serialization::make_nvp("Item", *s);
             _knobs.push_back(s);
         }

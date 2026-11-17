@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,6 +26,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <cstdint>
 #include <utility>
 #if defined(_WIN32)
 #include <string>
@@ -47,46 +48,32 @@
 #undef isalpha
 #undef isalnum
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/cstdint.hpp>
-#endif
-#include <QtCore/QtGlobal>
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-#include <QtCore/QForeachContainer>
-#endif
-#include <QtCore/QString>
+#include <QtGlobal>
+#include <QString>
 CLANG_DIAG_OFF(deprecated)
-#include <QtCore/QMetaType>
+#include <QMetaType>
 CLANG_DIAG_ON(deprecated)
 #include "Global/Enums.h"
 
+
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 3)
+#error "Qt versions earlier than 5.15.3 are not supported."
+#endif
 
 // boost and C++11 also have a foreach. this breaks it. DON'T UNCOMMENT THIS.
 //#undef foreach
 //#define foreach Q_FOREACH
 
 
-typedef boost::uint32_t U32;
-typedef boost::uint64_t U64;
-typedef boost::uint8_t U8;
-typedef boost::uint16_t U16;
+typedef std::uint32_t U32;
+typedef std::uint64_t U64;
+typedef std::uint8_t U8;
+typedef std::uint16_t U16;
 
 
 NATRON_NAMESPACE_ENTER
 
 typedef int SequenceTime;
-
-struct RenderScale
-    : public OfxPointD
-{
-    RenderScale() { x = y = 1.; }
-
-    RenderScale(double scale) { x = y = scale; }
-
-    RenderScale(double scaleX,
-                double scaleY) { x = scaleX; y = scaleY; }
-};
-
 typedef OfxPointD Point;
 typedef OfxRGBAColourF RGBAColourF;
 typedef OfxRGBAColourD RGBAColourD;
@@ -107,7 +94,7 @@ typedef OfxRangeD RangeD;
 #define kBgProcessServerCreatedShort "--bg_server_created"
 
 //Increment this to wipe all disk cache structure and ensure that the user has a clean cache when starting the next version of Natron
-#define NATRON_CACHE_VERSION 4
+#define NATRON_CACHE_VERSION 5 // 5: viewer tile files could share tiles before #1125/#1126
 #define kNatronCacheVersionSettingsKey "NatronCacheVersionSettingsKey"
 
 

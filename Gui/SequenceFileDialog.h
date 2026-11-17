@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -35,26 +35,20 @@
 #include <set>
 #include <list>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QtGlobal> // for Q_OS_*
+#include <QtGlobal> // for Q_OS_*
 #include <QStyledItemDelegate>
 #include <QTreeView>
 #include <QDialog>
-#include <QtCore/QByteArray>
-#include <QtGui/QStandardItemModel>
-#include <QtCore/QString>
-#include <QtCore/QStringList>
-#include <QtCore/QDir>
-#include <QtCore/QUrl>
-#include <QtCore/QRegExp>
-#include <QtCore/QLatin1Char>
-#include <QtCore/QSize>
+#include <QByteArray>
+#include <QStandardItemModel>
+#include <QString>
+#include <QStringList>
+#include <QDir>
+#include <QUrl>
+#include <QLatin1Char>
+#include <QSize>
 #include <QComboBox>
 #include <QListView>
 CLANG_DIAG_ON(deprecated)
@@ -125,11 +119,11 @@ private:
     void changed(const QString &path);
     void addIndexToWatch(const QString &path, const QModelIndex &index);
 
-    QString mapUrlToDisplayName(const QString& originalName);
+    QString mapPathToDisplayName(const QString& originalName);
 
     QFileSystemModel *fileSystemModel;
     std::vector<std::pair<QModelIndex, QString> > watching;
-    std::vector<QUrl> invalidUrls;
+    std::set<QUrl> invalidUrls;
     std::map<std::string, std::string> envVars;
 };
 
@@ -547,18 +541,21 @@ private:
 
     void getSequenceFromFilesForFole(const QString & file, SequenceParsing::SequenceFromFiles* sequence) const;
 
+    void updateFileExtensionCombo(const QString& extension);
+    void updateUpButton(const QString &newPath);
+
 private:
     // FIXME: PIMPL
 
     QStringList _filters;
     SequenceDialogView* _view;
-    boost::scoped_ptr<SequenceItemDelegate> _itemDelegate;
+    std::unique_ptr<SequenceItemDelegate> _itemDelegate;
     FileSystemModelPtr _model;
 
     ///The favorite view and the dialog view don't share the same model as they don't have
     ///the same icon provider
-    boost::scoped_ptr<QFileSystemModel> _favoriteViewModel;
-    boost::scoped_ptr<QFileSystemModel> _lookinViewModel;
+    std::unique_ptr<QFileSystemModel> _favoriteViewModel;
+    std::unique_ptr<QFileSystemModel> _lookinViewModel;
     QVBoxLayout* _mainLayout;
     QString _requestedDir;
     Label* _lookInLabel;
@@ -570,7 +567,6 @@ private:
     Button* _openButton;
     Button* _cancelButton;
     Button* _addFavoriteButton;
-    Button* _editFavoriteButton;
     Button* _removeFavoriteButton;
     FileDialogLineEdit* _selectionLineEdit;
     Label* _relativeLabel;

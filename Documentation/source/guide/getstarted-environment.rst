@@ -17,8 +17,7 @@ Generic Description
 ###################
 The purpose of Natron is to process video images using elementary "effect" bricks called nodes.
 
-for more details see:
-:doc:`Main concepts <getstarted-about-mainconcepts>`
+See: :doc:`Main concepts <getstarted-about-mainconcepts>`
 
 The image is processed in order passing through each node. The nodes are connected with links that define the order of the processing.
 These connected nodes are called the node graph.
@@ -26,7 +25,7 @@ These connected nodes are called the node graph.
 Each node has parameters allowing to customize the effect produced on the incoming image.
 
 
-The Toolbar 
+The Toolbar
 ###########
 .. image:: _images/toolbar_02.jpg
  :width: 600px
@@ -35,13 +34,17 @@ It is the list of icons on the left-hand side of Natron.
 
 Each icon is a menu giving access to different categories of nodes (ie. image processing tools) that Natron offers to process or create images.
 
-The Menu bar 
+See :doc:`the Toolbar section<getstarted-environment-toolbar>`
+
+
+The Menu bar
 ##############
 .. image:: _images/menubar_01.jpg
  :width: 600px
 
 Located on top of Natron window, it gives acces to various actions other than adding nodes to the node graph.
 Most actions are done on the whole project like saving, rendering...
+
 
 The Viewer panel
 #################
@@ -65,22 +68,35 @@ The Node graph
 
 This panel is were connections are made between the nodes to define the processing order of the image.
 
+See: :doc:`Nodes <getstarted-environment-nodes>` for informations on using nodes one by one.
+
+See: :doc:`Nodegraph <getstarted-environment-nodegraph>` for informations on creating a Node Graph to process your images
+
 The Curve editor
 #################
 .. image:: _images/curve_editor_01.png
  :width: 600px
 
-This panel allows to edit graphically the changes intime of the parameters of the nodes (these are the same as the numerical values shown in the Properties editor).
+This panel allows one to graphically edit the changes in-time of the parameters of the nodes (these are the same as the numerical values shown in the Properties editor).
 
 The Dopesheet
 ################
 .. image:: _images/dopesheet_01.png
  :width: 600px
 
-This panel allows to quickly edit the timing of the animations but without access to the actual values. Each little box correspond to a keyframe set on a parameter from one the nodes.
+This panel allows one to quickly edit the timing of the animations but without access to the actual values. Each little box correspond to a keyframe set on a parameter from one the nodes.
+
+The File Browser
+################
+.. image:: _images/compositing-Read_node02.png
+ :width: 600px
+
+This panel allows one to choose where to write or read an image to/from the disk. It is opened from the properties of a read or write node
+
+See :doc:`The File Browser <getstarted-environment-fileselect>` section for more informations.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    getstarted-environment-menus
    getstarted-environment-toolbar

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,11 +30,6 @@
 
 #include <string>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
@@ -55,7 +50,7 @@ public:
     UpdateViewerParamsPtr params;
     RenderingFlagSetterPtr isRenderingFlag;
     bool draftModeEnabled;
-    unsigned int mipMapLevelWithDraft, mipmapLevelWithoutDraft;
+    unsigned int mipmapLevelWithDraft, mipmapLevelWithoutDraft;
     bool autoContrast;
     DisplayChannelsEnum channels;
     bool userRoIEnabled;
@@ -153,7 +148,7 @@ private:
 
 
     /**
-     * @brief Get the RoI from the Viewer and lookup the cache for a texture at the given mipMapLevel.
+     * @brief Get the RoI from the Viewer and lookup the cache for a texture at the given mipmapLevel.
      * setupMinimalUpdateViewerParams(...) MUST have been called before.
      * When returning this function, the UpdateViewerParams will have been filled entirely
      * and if the texture was found in the cache, the shared pointer outArgs->params->cachedFrame will be valid.
@@ -236,9 +231,9 @@ public:
 
     double getGain() const WARN_UNUSED_RETURN;
 
-    int getMipMapLevel() const WARN_UNUSED_RETURN;
+    unsigned int getMipmapLevel() const WARN_UNUSED_RETURN;
 
-    int getMipMapLevelFromZoomFactor() const WARN_UNUSED_RETURN;
+    unsigned int getMipmapLevelFromZoomFactor() const WARN_UNUSED_RETURN;
 
     DisplayChannelsEnum getChannels(int texIndex) const WARN_UNUSED_RETURN;
 
@@ -331,12 +326,10 @@ public:
 
     bool isViewerPaused(int texIndex) const;
 
-    unsigned int getViewerMipMapLevel() const;
-
 public Q_SLOTS:
 
 
-    void onMipMapLevelChanged(int level);
+    void onMipmapLevelChanged(unsigned int level);
 
 
     /**
@@ -444,7 +437,7 @@ private:
 
 private:
 
-    boost::scoped_ptr<ViewerInstancePrivate> _imp;
+    std::unique_ptr<ViewerInstancePrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,14 +26,15 @@
 #include "Settings.h"
 
 #include <cassert>
+#include <limits>
 #include <stdexcept>
 
-#include <QtCore/QDebug>
-#include <QtCore/QDir>
-#include <QtCore/QSettings>
-#include <QtCore/QThreadPool>
-#include <QtCore/QThread>
-#include <QtCore/QTextStream>
+#include <QDebug>
+#include <QDir>
+#include <QSettings>
+#include <QThreadPool>
+#include <QThread>
+#include <QTextStream>
 
 #ifdef WINDOWS
 #include <tchar.h>
@@ -193,6 +194,18 @@ Settings::initializeKnobsGeneral()
                                                  "Disabling this will no longer save un-saved project.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _generalTab->addKnob(_autoSaveUnSavedProjects);
 
+    _saveVersions = AppManager::createKnob<KnobInt>( this, tr("Save versions") );
+    _saveVersions->setName("saveVersions");
+    _saveVersions->disableSlider();
+    _saveVersions->setMinimum(0);
+    _saveVersions->setMaximum(32);
+    _saveVersions->setHintToolTip( tr("Number of versions created (for backup) when saving newer versions of a file.\n"
+                                      "This option keeps saved versions of your file in the same directory, adding "
+                                      ".~1~, .~2~, etc., with the number increasing to the number of versions you specify.\n"
+                                      "Older files will be named with a higher number. E.g. with the default setting of 2, "
+                                      "you will have three versions of your file: *.ntp (last saved), *.ntp.~1~ (second "
+                                      "last saved), *.~2~ (third last saved).") );
+    _generalTab->addKnob(_saveVersions);
 
     _hostName = AppManager::createKnob<KnobChoice>( this, tr("Appear to plug-ins as") );
     _hostName->setName("pluginHostName");
@@ -282,7 +295,7 @@ Settings::initializeKnobsThreading()
 
     QString numberOfThreadsToolTip = tr("Controls how many threads %1 should use to render. \n"
                                         "-1: Disable multithreading totally (useful for debugging) \n"
-                                        "0: Guess the thread count from the number of cores. The ideal threads count for this hardware is %2.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QThread::idealThreadCount() );
+                                        "0: Guess the thread count from the number of cores and the available memory (min(num_cores,memory/3.5Gb)). The ideal threads count for this hardware is %2.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QThread::idealThreadCount() );
     _numberOfThreads->setHintToolTip( numberOfThreadsToolTip.toStdString() );
     _numberOfThreads->disableSlider();
     _numberOfThreads->setMinimum(-1);
@@ -291,7 +304,7 @@ Settings::initializeKnobsThreading()
 
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     _numberOfParallelRenders = AppManager::createKnob<KnobInt>( this, tr("Number of parallel renders (0=\"guess\")") );
-    _numberOfParallelRenders->setHintToolTip( tr("Controls the number of parallel frame that will be rendered at the same time by the renderer."
+    _numberOfParallelRenders->setHintToolTip( tr("Controls the number of parallel frame that will be rendered at the same time by the renderer. "
                                                  "A value of 0 indicate that %1 should automatically determine "
                                                  "the best number of parallel renders to launch given your CPU activity. "
                                                  "Setting a value different than 0 should be done only if you know what you're doing and can lead "
@@ -319,7 +332,7 @@ Settings::initializeKnobsThreading()
     _nThreadsPerEffect->setName("nThreadsPerEffect");
     _nThreadsPerEffect->setHintToolTip( tr("Controls how many threads a specific effect can use at most to do its processing. "
                                            "A high value will allow 1 effect to spawn lots of thread and might not be efficient because "
-                                           "the time spent to launch all the threads might exceed the time spent actually processing."
+                                           "the time spent to launch all the threads might exceed the time spent actually processing. "
                                            "By default (0) the renderer applies an heuristic to determine what's the best number of threads "
                                            "for an effect.") );
 
@@ -589,7 +602,7 @@ Settings::initializeKnobsUserInterface()
     _maxPanelsOpened = AppManager::createKnob<KnobInt>( this, tr("Maximum number of open settings panels (0=\"unlimited\")") );
     _maxPanelsOpened->setName("maxPanels");
     _maxPanelsOpened->setHintToolTip( tr("This property holds the maximum number of settings panels that can be "
-                                         "held by the properties dock at the same time."
+                                         "held by the properties dock at the same time. "
                                          "The special value of 0 indicates there can be an unlimited number of panels opened.") );
     _maxPanelsOpened->disableSlider();
     _maxPanelsOpened->setMinimum(0);
@@ -872,14 +885,14 @@ Settings::initializeKnobsNodeGraphColors()
 
     _usePluginIconsInNodeGraph = AppManager::createKnob<KnobBool>( this, tr("Display plug-in icon on node-graph") );
     _usePluginIconsInNodeGraph->setName("usePluginIcons");
-    _usePluginIconsInNodeGraph->setHintToolTip( tr("When checked, each node that has a plug-in icon will display it in the node-graph."
+    _usePluginIconsInNodeGraph->setHintToolTip( tr("When checked, each node that has a plug-in icon will display it in the node-graph. "
                                                    "Changing this option will not affect already existing nodes, unless a restart of Natron is made.") );
     _usePluginIconsInNodeGraph->setAddNewLine(false);
     _nodegraphColorsTab->addKnob(_usePluginIconsInNodeGraph);
 
     _useAntiAliasing = AppManager::createKnob<KnobBool>( this, tr("Anti-Aliasing") );
     _useAntiAliasing->setName("antiAliasing");
-    _useAntiAliasing->setHintToolTip( tr("When checked, the node graph will be painted using anti-aliasing. Unchecking it may increase performances."
+    _useAntiAliasing->setHintToolTip( tr("When checked, the node graph will be painted using anti-aliasing. Unchecking it may increase performance. "
                                          " Changing this requires a restart of Natron") );
     _nodegraphColorsTab->addKnob(_useAntiAliasing);
 
@@ -1061,8 +1074,8 @@ Settings::initializeKnobsViewers()
     _texturesMode->populateChoices(textureModes);
 
 
-    _texturesMode->setHintToolTip( tr("Bit depth of the viewer textures used for rendering."
-                                      " Hover each option with the mouse for a detailed description.") );
+    _texturesMode->setHintToolTip( tr("Bit depth of the viewer textures used for rendering. "
+                                      "Hover each option with the mouse for a detailed description.") );
     _viewersTab->addKnob(_texturesMode);
 
     _powerOf2Tiling = AppManager::createKnob<KnobInt>( this, tr("Viewer tile size is 2 to the power of...") );
@@ -1128,15 +1141,23 @@ Settings::initializeKnobsViewers()
     _maximumNodeViewerUIOpened->setHintToolTip( tr("Controls the maximum amount of nodes that can have their interface showing up at the same time in the viewer") );
     _viewersTab->addKnob(_maximumNodeViewerUIOpened);
 
-    _viewerKeys = AppManager::createKnob<KnobBool>( this, tr("Use number keys for the viewer") );
-    _viewerKeys->setName("viewerNumberKeys");
-    _viewerKeys->setHintToolTip( tr("When enabled, the row of number keys on the keyboard "
+    _viewerNumberKeys = AppManager::createKnob<KnobBool>( this, tr("Use number keys for the viewer") );
+    _viewerNumberKeys->setName("viewerNumberKeys");
+    _viewerNumberKeys->setHintToolTip( tr("When enabled, the row of number keys on the keyboard "
                                     "is used for switching input (<key> connects input to A side, "
                                     "<shift-key> connects input to B side), even if the corresponding "
                                     "character in the current keyboard layout is not a number.\n"
                                     "This may have to be disabled when using a remote display connection "
                                     "to Linux from a different OS.") );
-    _viewersTab->addKnob(_viewerKeys);
+    _viewersTab->addKnob(_viewerNumberKeys);
+
+    _viewerOverlaysPath = AppManager::createKnob<KnobBool>( this, tr("Only display overlays for the viewer render path") );
+    _viewerOverlaysPath->setName("viewerOverlaysPath");
+    _viewerOverlaysPath->setHintToolTip( tr("When disabled, overlays for all the non-minimized open "
+                                            "properties panels are displayed. When enabled, overlays are "
+                                            "displayed only for the render path for the current viewer "
+                                            "inputs.") );
+    _viewersTab->addKnob(_viewerOverlaysPath);
 } // Settings::initializeKnobsViewers
 
 void
@@ -1283,7 +1304,7 @@ Settings::initializeKnobsCaching()
     QString diskCacheTt( tr("WARNING: Changing this parameter requires a restart of the application. \n"
                             "This points to the location where %1 on-disk caches will be. "
                             "This variable should point to your fastest disk. This parameter can be "
-                            "overriden by the value of the environment variable %2.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_DISK_CACHE_PATH_ENV_VAR) ) );
+                            "overridden by the value of the environment variable %2.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_DISK_CACHE_PATH_ENV_VAR) ) );
 
     QString diskCacheTt2( tr("If the parameter is left empty or the location set is invalid, "
                              "the default location will be used. The default location is: %1").arg(defaultLocation) );
@@ -1447,6 +1468,7 @@ Settings::setDefaultValues()
 #endif
     _autoSaveUnSavedProjects->setDefaultValue(true);
     _autoSaveDelay->setDefaultValue(5, 0);
+    _saveVersions->setDefaultValue(1);
     _hostName->setDefaultValue(0);
     _customHostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
 
@@ -1533,7 +1555,8 @@ Settings::setDefaultValues()
     _autoProxyWhenScrubbingTimeline->setDefaultValue(true);
     _autoProxyLevel->setDefaultValue(1);
     _maximumNodeViewerUIOpened->setDefaultValue(2);
-    _viewerKeys->setDefaultValue(true);
+    _viewerNumberKeys->setDefaultValue(true);
+    _viewerOverlaysPath->setDefaultValue(true);
 
     // Nodegraph
     _autoScroll->setDefaultValue(false);
@@ -1953,7 +1976,7 @@ Settings::saveSettings(const std::vector<KnobI*>& knobs,
                         }
                     } else {
                         int newValue = isInt->getValue(j);
-                        int oldValue = settings.value( dimensionName, QVariant(INT_MIN) ).toInt();
+                        int oldValue = settings.value( dimensionName, QVariant(std::numeric_limits<int>::min()) ).toInt();
                         if (newValue != oldValue) {
                             changedKnobs.push_back(knobs[i]);
                         }
@@ -1961,7 +1984,7 @@ Settings::saveSettings(const std::vector<KnobI*>& knobs,
                     }
                 } else if (isDouble) {
                     double newValue = isDouble->getValue(j);
-                    double oldValue = settings.value( dimensionName, QVariant(INT_MIN) ).toDouble();
+                    double oldValue = settings.value( dimensionName, QVariant(std::numeric_limits<int>::min()) ).toDouble();
                     if (newValue != oldValue) {
                         changedKnobs.push_back(knobs[i]);
                     }
@@ -2119,7 +2142,7 @@ Settings::restoreSettings(bool useDefault)
     try {
         _settingsExisted = _natronSettingsExist->getValue();
 
-        if (!_settingsExisted) {
+        if (!_settingsExisted && !useDefault) {
             _natronSettingsExist->setValue(true);
             saveSetting( _natronSettingsExist.get() );
         }
@@ -2215,7 +2238,7 @@ Settings::tryLoadOpenColorIOConfig()
     qDebug() << "setting OCIO=" << configFile;
 #endif
     std::string stdConfigFile = configFile.toStdString();
-#if 0 //def __NATRON_WIN32__
+#if 0 //def __NATRON_WIN32__ // commented out in https://github.com/NatronGitHub/Natron/commit/3445d671f15fbd97bca164b53ceb41cef47c61c3
     _wputenv_s(L"OCIO", StrUtils::utf8_to_utf16(stdConfigFile).c_str());
 #else
     qputenv( NATRON_OCIO_ENV_VAR_NAME, stdConfigFile.c_str() );
@@ -2279,7 +2302,11 @@ Settings::onKnobValueChanged(KnobI* k,
             QThreadPool::globalInstance()->setMaxThreadCount(1);
             appPTR->abortAnyProcessing();
         } else if (nbThreads == 0) {
-            QThreadPool::globalInstance()->setMaxThreadCount( QThread::idealThreadCount() );
+            // See https://github.com/NatronGitHub/Natron/issues/554
+            // min(num_cores, RAM/3.5Gb)
+            int maxThread = getSystemTotalRAM() / ( (3ULL * 1024ULL + 512ULL) * 1024ULL * 1024ULL );
+            maxThread = std::min( std::max(1, maxThread), QThread::idealThreadCount() );
+            QThreadPool::globalInstance()->setMaxThreadCount(maxThread);
         } else {
             QThreadPool::globalInstance()->setMaxThreadCount(nbThreads);
         }
@@ -2464,7 +2491,7 @@ Settings::isAutoProxyEnabled() const
 }
 
 unsigned int
-Settings::getAutoProxyMipMapLevel() const
+Settings::getAutoProxyMipmapLevel() const
 {
     return (unsigned int)_autoProxyLevel->getValue() + 1;
 }
@@ -2476,9 +2503,15 @@ Settings::getMaxOpenedNodesViewerContext() const
 }
 
 bool
-Settings::isViewerKeysEnabled() const
+Settings::viewerNumberKeys() const
 {
-    return _viewerKeys->getValue();
+    return _viewerNumberKeys->getValue();
+}
+
+bool
+Settings::viewerOverlaysPath() const
+{
+    return _viewerOverlaysPath->getValue();
 }
 
 ///////////////////////////////////////////////////////
@@ -2738,7 +2771,7 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         "<hr/>\n"
         "<div role=\"contentinfo\">\n"
         "<p>\n"
-        "&copy; Copyright 2013-2021 The Natron documentation authors, licensed under CC BY-SA 4.0\n"
+        "&copy; Copyright 2013-2023 The Natron documentation authors, licensed under CC BY-SA 4.0\n"
         "</p>\n"
         "</div>\n"
         "Built with <a href=\"http://sphinx-doc.org/\">Sphinx</a> using a <a href=\"https://github.com/rtfd/sphinx_rtd_theme\">theme</a> provided by <a href=\"https://readthedocs.org\">Read the Docs</a>.\n"
@@ -2872,6 +2905,13 @@ Settings::isAutoSaveEnabledForUnsavedProjects() const
 {
     return _autoSaveUnSavedProjects->getValue();
 }
+
+int
+Settings::saveVersions() const
+{
+    return _saveVersions->getValue();
+}
+
 
 bool
 Settings::isSnapToNodeEnabled() const
@@ -3220,18 +3260,68 @@ Settings::doOCIOStartupCheckIfNeeded()
         int entry_i = _ocioConfigKnob->getValue();
         std::vector<ChoiceOption> entries = _ocioConfigKnob->getEntries_mt_safe();
         std::string warnText;
+        // When the selected config is invalid or unusable (custom config without an existing file),
+        // switching to the default config loses nothing, so Yes is the default answer. Otherwise the
+        // user chose a non-default config on purpose: only replace it if they explicitly answer Yes.
+        StandardButtonEnum defaultButton = eStandardButtonNo;
+        // the default config, if it is bundled with this installation
+        int defaultIndex = -1;
+        for (unsigned i = 0; i < entries.size(); ++i) {
+            if (entries[i].id == NATRON_DEFAULT_OCIO_CONFIG_NAME) {
+                defaultIndex = i;
+                break;
+            }
+        }
         if ( (entry_i < 0) || ( entry_i >= (int)entries.size() ) ) {
             warnText = tr("The current OCIO config selected in the preferences is invalid, would you like to set it to the default config (%1)?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
+            defaultButton = eStandardButtonYes;
+        } else if (entries[entry_i].id == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
+            // A custom config file was explicitly selected: don't ask if that file exists.
+            std::string file;
+            try {
+                file = _customOcioConfigFile->getValue();
+            } catch (...) {
+                // ignore exceptions
+            }
+            QString customFile = QString::fromUtf8( file.c_str() );
+            if ( !customFile.isEmpty() && QFile::exists(customFile) ) {
+                return;
+            }
+            if ( customFile.isEmpty() ) {
+                warnText = tr("\"%1\" is selected as the OCIO config in the preferences, but no custom OpenColorIO configuration file is set. "
+                              "Would you like to set it to the default config (%2)?").arg( QString::fromUtf8(NATRON_CUSTOM_OCIO_CONFIG_NAME), QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
+            } else {
+                warnText = tr("The custom OpenColorIO configuration file selected in the preferences does not exist:\n%1\n"
+                              "Would you like to set the OCIO config to the default config (%2)? "
+                              "The custom file path is kept in the preferences.").arg( customFile, QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
+            }
+            defaultButton = eStandardButtonYes;
         } else if (entries[entry_i].id != NATRON_DEFAULT_OCIO_CONFIG_NAME) {
-            warnText = tr("The current OCIO config selected in the preferences is not the default one (%1), would you like to set it to the default config?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
+            warnText = tr("The current OCIO config selected in the preferences (%1) is not the default one (%2), would you like to set it to the default config?\n"
+                          "Answer No to keep the current config.").arg( QString::fromUtf8( entries[entry_i].id.c_str() ), QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
         } else {
+            return;
+        }
+
+        if ( (defaultIndex == -1) && (defaultButton == eStandardButtonNo) ) {
+            // a usable non-default config is selected and the default one isn't available: nothing to offer
+            return;
+        }
+        if (defaultIndex == -1) {
+            // the default config isn't bundled (e.g. a build without the OpenColorIO-Configs folder):
+            // switching to it is impossible, so don't ask, just tell the user what to do
+            Dialogs::warningDialog( "OCIO config", tr("%1\n\n"
+                                                      "The %2 OCIO config could not be found, probably because the OpenColorIO-Configs folder "
+                                                      "that should be bundled with %3 is missing. Set a custom OpenColorIO configuration file "
+                                                      "in the Color Management preferences.").arg( QString::fromUtf8( warnText.c_str() ), QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
+
             return;
         }
 
         bool stopAsking = false;
         StandardButtonEnum reply = mainInstance->questionDialog("OCIO config", warnText, false,
                                                                 StandardButtons(eStandardButtonYes | eStandardButtonNo),
-                                                                eStandardButtonYes,
+                                                                defaultButton,
                                                                 &stopAsking);
         if (stopAsking != !docheck) {
             _ocioStartupCheck->setValue(!stopAsking);
@@ -3239,20 +3329,13 @@ Settings::doOCIOStartupCheckIfNeeded()
         }
 
         if (reply == eStandardButtonYes) {
-            int defaultIndex = -1;
-            for (unsigned i = 0; i < entries.size(); ++i) {
-                if (entries[i].id.find(NATRON_DEFAULT_OCIO_CONFIG_NAME) != std::string::npos) {
-                    defaultIndex = i;
-                    break;
-                }
-            }
             if (defaultIndex != -1) {
                 _ocioConfigKnob->setValue(defaultIndex);
                 saveSetting( _ocioConfigKnob.get() );
             } else {
                 Dialogs::warningDialog( "OCIO config", tr("The %2 OCIO config could not be found.\n"
                                                           "This is probably because you're not using the OpenColorIO-Configs folder that should "
-                                                          "be bundled with your %1 installation.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString() );
+                                                          "be bundled with your %1 installation.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME), QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString() );
             }
         }
     }

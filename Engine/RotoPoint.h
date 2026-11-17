@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,11 +32,13 @@
 #include <set>
 #include <string>
 
+// clang-format off
 CLANG_DIAG_OFF(deprecated-declarations)
-#include <QtCore/QObject>
-#include <QtCore/QMutex>
-#include <QtCore/QMetaType>
+#include <QObject>
+#include <QMutex>
+#include <QMetaType>
 CLANG_DIAG_ON(deprecated-declarations)
+// clang-format on
 
 #include "Global/GlobalDefines.h"
 #include "Engine/FitCurve.h"

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,9 +26,29 @@
 #include "Global/StrUtils.h"
 #include "Global/ProcInfo.h"
 #include "Global/PythonUtils.h"
+#include "Global/StrUtils.h"
 
 #include <vector>
 
+// OSX 10.6 Snow Leopard is missing wcsdup
+#if (__APPLE__ && __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 1070)
+#include <sys/cdefs.h>
+#include <stdlib.h>
+#include <wchar.h>
+
+static wchar_t *
+wcsdup(const wchar_t *s)
+{
+	wchar_t *copy;
+	size_t len;
+
+	len = wcslen(s) + 1;
+	if ( (copy = (wchar_t *)malloc(len * sizeof(wchar_t))) == NULL ) {
+		return (NULL);
+    }
+	return wmemcpy(copy, s, len);
+}
+#endif
 
 
 
@@ -49,11 +69,11 @@ extern "C" {
         return 1;
     }
 
-    NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::setupPythonEnv(commandLineArgsUtf8[0].c_str());
+    std::string binPath = NATRON_NAMESPACE::ProcInfo::applicationDirPath(commandLineArgsUtf8[0].c_str());
+    binPath = NATRON_NAMESPACE::StrUtils::toNativeSeparators(binPath);
+    NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::setupPythonEnv(binPath);
 
 
-#if PY_MAJOR_VERSION >= 3
-    // Python 3
     std::vector<wchar_t*> wideArgs(argc);
     for (int i = 0; i < argc; ++i) {
         std::wstring utf16 = NATRON_NAMESPACE::StrUtils::utf8_to_utf16(commandLineArgsUtf8[i]);
@@ -61,14 +81,6 @@ extern "C" {
     }
     int ret = Py_Main(commandLineArgsUtf8.size(), &wideArgs[0]);
     return ret;
-#else
-    std::vector<char*> utf8Args(argc);
-    for (int i = 0; i < argc; ++i) {
-        utf8Args[i] = strdup(commandLineArgsUtf8[i].c_str());
-    }
-    int ret = Py_Main(commandLineArgsUtf8.size(), &utf8Args[0]);
-    return ret;
-#endif
 } //main
 #ifdef __NATRON_WIN32__
 } // extern "C"

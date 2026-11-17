@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,18 +30,12 @@
 #include <cassert>
 #include <stdexcept>
 
-#ifndef NDEBUG
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/math/special_functions/fpclassify.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
-#include <QtGui/QPaintEvent>
+#include <QPaintEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-#include <QtGui/QMouseEvent>
-#include <QtGui/QPainter>
+#include <QMouseEvent>
+#include <QPainter>
 #include <QApplication>
 #include <QStyleOption>
 
@@ -73,6 +67,7 @@ struct ScaleSliderQWidgetPrivate
     bool dragging;
     QFont font;
     QColor sliderColor;
+    QColor customSliderColor;
     bool initialized;
     bool mustInitializeSliderPosition;
     bool readOnly;
@@ -82,6 +77,7 @@ struct ScaleSliderQWidgetPrivate
     ScaleSliderQWidget::DataTypeEnum dataType;
     bool altered;
     bool useLineColor;
+    bool useSliderColor;
     QColor lineColor;
     bool allowDraftModeSetting;
 
@@ -112,11 +108,12 @@ struct ScaleSliderQWidgetPrivate
         , dataType(dataType)
         , altered(false)
         , useLineColor(false)
+        , useSliderColor(false)
         , lineColor(Qt::black)
         , allowDraftModeSetting(allowDraftModeSetting)
     {
         font.setPointSize( (font.pointSize() * NATRON_FONT_SIZE_10) / NATRON_FONT_SIZE_13 );
-        assert( boost::math::isfinite(minimum) && boost::math::isfinite(maximum) && boost::math::isfinite(initialPos) );
+        assert( std::isfinite(minimum) && std::isfinite(maximum) && std::isfinite(initialPos) );
     }
 };
 
@@ -280,7 +277,7 @@ ScaleSliderQWidget::zoomRange()
 }
 
 void
-ScaleSliderQWidget::enterEvent(QEvent* e)
+ScaleSliderQWidget::enterEvent(QtCompat::QEnterEvent* e)
 {
     if ( Gui::isFocusStealingPossible() ) {
         setFocus();
@@ -361,7 +358,7 @@ ScaleSliderQWidget::keyReleaseEvent(QKeyEvent* e)
 void
 ScaleSliderQWidget::seekScalePosition(double v)
 {
-    assert( boost::math::isfinite(v) );
+    assert( std::isfinite(v) );
     if (v < _imp->minimum) {
         v = _imp->minimum;
     }
@@ -382,7 +379,7 @@ ScaleSliderQWidget::seekScalePosition(double v)
 void
 ScaleSliderQWidget::seekInternal(double v)
 {
-    assert( boost::math::isfinite(v) );
+    assert( std::isfinite(v) );
     if (v < _imp->minimum) {
         v = _imp->minimum;
     }
@@ -403,7 +400,7 @@ void
 ScaleSliderQWidget::setMinimumAndMaximum(double min,
                                          double max)
 {
-    assert(boost::math::isfinite(min) && boost::math::isfinite(max) && min < max);
+    assert(std::isfinite(min) && std::isfinite(max) && min < max);
     _imp->minimum = min;
     _imp->maximum = max;
     if (_imp->minimum < _imp->maximum) {
@@ -415,7 +412,7 @@ void
 ScaleSliderQWidget::centerOn(double left,
                              double right)
 {
-    assert(boost::math::isfinite(left) && boost::math::isfinite(right) && left < right);
+    assert(std::isfinite(left) && std::isfinite(right) && left < right);
     if ( (_imp->zoomCtx.screenHeight() == 0) || (_imp->zoomCtx.screenWidth() == 0) || (left >= right) ) {
         return;
     }
@@ -451,7 +448,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
 
     ///fill the background with the appropriate style color
     QStyleOption opt;
-    opt.init(this);
+    opt.initFrom(this);
     QPainter p(this);
     p.setOpacity(1);
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
@@ -513,7 +510,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
     const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
     const double largestTickSize = range * largestTickSizePixel / rangePixel;
-    const double minTickSizeTextPixel = fontM.width( QLatin1String("00") ); // AXIS-SPECIFIC
+    const double minTickSizeTextPixel = fontM.horizontalAdvance( QLatin1String("00") ); // AXIS-SPECIFIC
     const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
     for (int i = m1; i <= m2; ++i) {
         double value = i * smallTickSize + offset;
@@ -540,7 +537,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
         if ( renderFloating && (tickSize > minTickSizeText) ) {
             const int tickSizePixel = rangePixel * tickSize / range;
             const QString s = QString::number(value);
-            const int sSizePixel =  fontM.width(s);
+            const int sSizePixel =  fontM.horizontalAdvance(s);
             if (tickSizePixel > sSizePixel) {
                 const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
                 double alphaText = 1.0; //alpha;
@@ -549,7 +546,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
                     // draw it with a lower alpha
                     alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
                 }
-                alphaText = std::min(alphaText, alpha); // don't draw more opaque than tcks
+                //alphaText = std::min(alphaText, alpha); // don't draw more opaque than ticks
                 QColor c = _imp->readOnly || !isEnabled() ? Qt::black : textColor;
                 c.setAlphaF(alphaText);
                 p.setFont(_imp->font);
@@ -557,7 +554,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
 
                 QPointF textPos = _imp->zoomCtx.toWidgetCoordinates( value, btmLeft.y() );
 
-                int textWidth = fontM.width(s);
+                int textWidth = fontM.horizontalAdvance(s);
                 int textX = std::floor(textPos.x() + 0.5);
                 int textY = std::floor(textPos.y() + 0.5);
                 // center the text, and make sure it fits
@@ -572,9 +569,13 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     double positionValue = _imp->zoomCtx.toWidgetCoordinates(_imp->value, 0).x();
 
     SettingsPtr settings = appPTR->getCurrentSettings();
-    double sliderColorRGB[3];
-    settings->getSliderColor(&sliderColorRGB[0], &sliderColorRGB[1], &sliderColorRGB[2]);
-    _imp->sliderColor.setRgbF(sliderColorRGB[0], sliderColorRGB[1], sliderColorRGB[2]);
+    if (!_imp->useSliderColor) {
+        double sliderColorRGB[3];
+        settings->getSliderColor(&sliderColorRGB[0], &sliderColorRGB[1], &sliderColorRGB[2]);
+        _imp->sliderColor.setRgbF(sliderColorRGB[0], sliderColorRGB[1], sliderColorRGB[2]);
+    } else {
+        _imp->sliderColor = _imp->customSliderColor;
+    }
 
     double selectionColorRGB[3];
     settings->getSelectionColor(&selectionColorRGB[0], &selectionColorRGB[1], &selectionColorRGB[2]);
@@ -649,6 +650,15 @@ ScaleSliderQWidget::setUseLineColor(bool use,
 {
     _imp->useLineColor = use;
     _imp->lineColor = color;
+    update();
+}
+
+void
+ScaleSliderQWidget::setUseSliderColor(bool use,
+                                      const QColor &color)
+{
+    _imp->useSliderColor = use;
+    _imp->customSliderColor = color;
     update();
 }
 

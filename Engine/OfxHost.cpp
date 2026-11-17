@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -38,23 +38,21 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+// clang-format off
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
-#include <QtCore/QDateTime>
-#include <QtCore/QDir>
-#include <QtCore/QMutex>
-#include <QtCore/QThreadPool>
-#include <QtCore/QCoreApplication>
-#include <QtCore/QDebug>
-#include <QtCore/QTemporaryFile>
+#include <QDateTime>
+#include <QDir>
+#include <QMutex>
+#include <QThreadPool>
+#include <QCoreApplication>
+#include <QDebug>
+#include <QTemporaryFile>
 CLANG_DIAG_ON(deprecated-register)
+// clang-format on
 #ifdef OFX_SUPPORTS_MULTITHREAD
-#include <QtCore/QThread>
-#include <QtCore/QThreadStorage>
+#include <QThread>
+#include <QThreadStorage>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind/bind.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -65,16 +63,19 @@ CLANG_DIAG_ON(uninitialized)
 #ifdef OFX_EXTENSIONS_NUKE
 #include <nuke/fnOfxExtensions.h>
 #endif
+#include <ofxInteract.h>
 #include <ofxNatron.h>
 
 //ofx host support
 #include <ofxhPluginAPICache.h>
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
+// clang-format off
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 #include <ofxhImageEffect.h>
 CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
+// clang-format on
 #include <ofxhPluginCache.h>
 #include <ofxhImageEffectAPI.h>
 #include <ofxhHost.h>
@@ -110,8 +111,6 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/StandardPaths.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/ThreadPool.h"
-
-using namespace boost::placeholders;
 
 //An effect may not use more than this amount of threads
 #define NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU 4
@@ -152,7 +151,7 @@ string_format(const std::string fmt,
 struct OfxHostPrivate
 {
     OFX::Host::ImageEffect::PluginCachePtr imageEffectPluginCache;
-    boost::shared_ptr<TLSHolder<OfxHost::OfxHostTLSData> > tlsData;
+    std::shared_ptr<TLSHolder<OfxHost::OfxHostTLSData> > tlsData;
 
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
     std::list<QMutex*> pluginsMutexes;
@@ -179,7 +178,12 @@ struct OfxHostPrivate
 OfxHost::OfxHost()
     : _imp( new OfxHostPrivate() )
 {
-    _imp->imageEffectPluginCache = boost::make_shared<OFX::Host::ImageEffect::PluginCache>((OFX::Host::ImageEffect::Host*)this);
+    // Plug-in writes to properties that are read-only for plug-ins (e.g. a clip's
+    // kOfxImageClipPropDepth in contexts where Natron can't handle multiple depths) were
+    // silently accepted before openfx #91: warn instead of failing the action, so that
+    // existing third-party plug-ins keep working.
+    OFX::Host::Property::setPluginReadOnlyPolicy(OFX::Host::Property::ePluginReadOnlyWarn);
+    _imp->imageEffectPluginCache = std::make_shared<OFX::Host::ImageEffect::PluginCache>((OFX::Host::ImageEffect::Host*)this);
 }
 
 OfxHost::~OfxHost()
@@ -333,26 +337,16 @@ OfxHost::setProperties()
 
     _properties.setIntProperty(kNatronOfxPropDescriptionIsMarkdown, 1);
 
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxArrowCursor, 0);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxUpArrowCursor, 1);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxCrossCursor, 2);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxIBeamCursor, 3);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxWaitCursor, 4);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxBusyCursor, 5);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxForbiddenCursor, 6);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxPointingHandCursor, 7);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxWhatsThisCursor, 8);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSizeVerCursor, 9);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSizeHorCursor, 10);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSizeBDiagCursor, 11);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSizeFDiagCursor, 12);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSizeAllCursor, 13);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSplitVCursor, 14);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSplitHCursor, 15);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxOpenHandCursor, 16);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxClosedHandCursor, 17);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxBlankCursor, 18);
-    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxDefaultCursor, 19);
+    // interact cursors (NatronGitHub/openfx#4): the CSS cursor names Natron can display,
+    // plus custom PNG cursors from the plug-in resources
+    {
+        std::vector<std::string> cursors;
+        OfxImageEffectInstance::getSupportedOfxCursors(&cursors);
+        cursors.push_back(kOfxInteractCursorCustom);
+        for (std::size_t i = 0; i < cursors.size(); ++i) {
+            _properties.setStringProperty(kOfxInteractHostPropSupportedCursors, cursors[i], (int)i);
+        }
+    }
 #endif
 } // OfxHost::setProperties
 
@@ -870,14 +864,16 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     OFX::Host::PluginCache* pluginCache = OFX::Host::PluginCache::getPluginCache();
     assert(pluginCache);
     /// set the version label in the global cache
-    pluginCache->setCacheVersion(NATRON_APPLICATION_NAME "OFXCachev1");
+    // v2: HostSupport of openfx 4476791d (read-only properties, bundle architecture folders): describe the plug-ins again
+    pluginCache->setCacheVersion(NATRON_APPLICATION_NAME "OFXCachev2");
 
     /// register the image effect cache with the global plugin cache
     _imp->imageEffectPluginCache->registerInCache( *pluginCache );
 
-
-    pluginCache->setPluginHostPath(NATRON_APPLICATION_NAME);
-    pluginCache->setPluginHostPath("Nuke"); // most Nuke OFX plugins are compatible
+    if (useStdOFXPluginsLocation) {
+        pluginCache->setPluginHostPath(NATRON_APPLICATION_NAME);
+        pluginCache->setPluginHostPath("Nuke"); // most Nuke OFX plugins are compatible
+    }
     std::list<std::string> extraPluginsSearchPaths;
     settings->getOpenFXPluginsSearchPaths(&extraPluginsSearchPaths);
     for (std::list<std::string>::iterator it = extraPluginsSearchPaths.begin(); it != extraPluginsSearchPaths.end(); ++it) {
@@ -1123,12 +1119,9 @@ OfxHost::clearPluginsLoadedCache()
     if ( QFile::exists(oldOfxCache) ) {
         QFile::remove(oldOfxCache);
     }
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    QtCompat::removeRecursively( getOFXCacheDirPath() );
-#else
+
     QDir OFXCacheDir( getOFXCacheDirPath() );
     OFXCacheDir.removeRecursively();
-#endif
 }
 
 void
@@ -1236,7 +1229,7 @@ threadFunctionWrapper(OfxThreadFunctionV1 func,
     try {
 #ifdef DEBUG
         // Uncomment if using plugins that generate FP exceptions
-        // boost_adaptbx::floating_point::exception_trapping trap(0);
+        boost_adaptbx::floating_point::exception_trapping trap(0);
 #endif
         func(threadIndex, threadMax, customArg);
     } catch (const std::bad_alloc & ba) {
@@ -1361,14 +1354,17 @@ OfxHost::multiThread(OfxThreadFunctionV1 func,
     bool useThreadPool = appPTR->getUseThreadPool();
 
     if (useThreadPool) {
-        std::vector<unsigned int> threadIndexes(nThreads);
-        for (unsigned int i = 0; i < nThreads; ++i) {
+        std::vector<uint32_t> threadIndexes(nThreads);
+        for (uint32_t i = 0; i < nThreads; ++i) {
             threadIndexes[i] = i;
         }
 
         /// DON'T set the maximum thread count, this is a global application setting, and see the documentation excerpt above
         //QThreadPool::globalInstance()->setMaxThreadCount(nThreads);
-        QFuture<OfxStatus> future = QtConcurrent::mapped( threadIndexes, boost::bind(threadFunctionWrapper, func, _1, nThreads, spawnerThread, customArg) );
+        std::function<OfxStatus (const uint32_t&)> process = [&](const uint32_t tid) {
+            return threadFunctionWrapper(func, tid, nThreads, spawnerThread, customArg);
+        };
+        QFuture<OfxStatus> future = QtConcurrent::mapped( threadIndexes, process );
         future.waitForFinished();
         ///DON'T reset back to the original value the maximum thread count
         //QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());
@@ -1533,7 +1529,8 @@ OfxHost::mutexCreate(OfxMutexHandle *mutex,
 
     // suite functions should not throw
     try {
-        QMutex* m = new QMutex(QMutex::Recursive);
+        QRecursiveMutex* m = new QRecursiveMutex();
+
         for (int i = 0; i < lockCount; ++i) {
             m->lock();
         }

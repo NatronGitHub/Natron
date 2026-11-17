@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,12 +28,12 @@
 #include <cstdlib>
 #include <stdexcept>
 
-#include <QtGui/QImage>
+#include <QImage>
 #include <QHBoxLayout>
-#include <QtCore/QThread>
+#include <QThread>
 #include <QPaintEvent>
 #include <QPainter>
-#include <QtCore/QCoreApplication>
+#include <QCoreApplication>
 
 #include "Engine/ViewerInstance.h"
 #include "Engine/Lut.h"
@@ -98,20 +98,20 @@ InfoViewerWidget::InfoViewerWidget(const QString & description,
         descriptionText.append( QString::fromUtf8("</font>") );
         descriptionLabel->setText(descriptionText);
         QFontMetrics fm = descriptionLabel->fontMetrics();
-        int width = fm.width( QString::fromUtf8("A:") );
+        int width = fm.horizontalAdvance( QString::fromUtf8("A:") );
         descriptionLabel->setMinimumWidth(width);
     }
     imageFormat = new Label(this);
     {
         QFontMetrics fm = imageFormat->fontMetrics();
-        int width = fm.width( QString::fromUtf8("backward.motion32f") );
+        int width = fm.horizontalAdvance( QString::fromUtf8("backward.motion32f") );
         imageFormat->setMinimumWidth(width);
     }
 
     resolution = new Label(this);
     {
         QFontMetrics fm = resolution->fontMetrics();
-        int width = fm.width( QString::fromUtf8("2K_Super_35(full-ap) 00000x00000:0.00") );
+        int width = fm.horizontalAdvance( QString::fromUtf8("2K_Super_35(full-ap) 00000x00000:0.00") );
         resolution->setMinimumWidth(width);
     }
 
@@ -119,7 +119,7 @@ InfoViewerWidget::InfoViewerWidget(const QString & description,
     coordDispWindow = new Label(this);
     {
         QFontMetrics fm = coordDispWindow->fontMetrics();
-        int width = fm.width( QString::fromUtf8("RoD: 000 000 0000 0000") );
+        int width = fm.horizontalAdvance( QString::fromUtf8("RoD: 000 000 0000 0000") );
         coordDispWindow->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         coordDispWindow->setMinimumWidth(width);
     }
@@ -127,7 +127,7 @@ InfoViewerWidget::InfoViewerWidget(const QString & description,
     _fpsLabel = new Label(this);
     {
         QFontMetrics fm = _fpsLabel->fontMetrics();
-        int width = fm.width( QString::fromUtf8("100 fps") );
+        int width = fm.horizontalAdvance( QString::fromUtf8("100 fps") );
         _fpsLabel->setMinimumWidth(width);
         _fpsLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         _fpsLabel->hide();
@@ -136,14 +136,14 @@ InfoViewerWidget::InfoViewerWidget(const QString & description,
     coordMouse = new Label(this);
     {
         QFontMetrics fm = coordMouse->fontMetrics();
-        int width = fm.width( QString::fromUtf8("x=00000 y=00000") );
+        int width = fm.horizontalAdvance( QString::fromUtf8("x=00000 y=00000") );
         coordMouse->setMinimumWidth(width);
     }
 
     rgbaValues = new Label(this);
     {
         QFontMetrics fm = rgbaValues->fontMetrics();
-        int width = fm.width( QString::fromUtf8("0.00000 0.00000 0.00000 ~ ") );
+        int width = fm.horizontalAdvance( QString::fromUtf8("0.00000 0.00000 0.00000 ~ ") );
         rgbaValues->setMinimumWidth(width);
     }
 
@@ -153,7 +153,7 @@ InfoViewerWidget::InfoViewerWidget(const QString & description,
     hvl_lastOption = new Label(this);
     {
         QFontMetrics fm = hvl_lastOption->fontMetrics();
-        int width = fm.width( QString::fromUtf8("H:000 S:0.00 V:0.00 L:0.00000") );
+        int width = fm.horizontalAdvance( QString::fromUtf8("H:000 S:0.00 V:0.00 L:0.00000") );
         hvl_lastOption->setMinimumWidth(width);
     }
 

@@ -201,8 +201,8 @@ This is used internally by :func:`moveTab(tab,pane)<NatronGui.GuiApp.moveTab>`.
 
     :param index: :class:`int`
 
-Same as :func:`removeTab(tab)<NatronGui.PyTabWidget.removeTab>` but the *index* of a tab
-is given instead.
+Similar to :func:`removeTab(tab)<NatronGui.PyTabWidget.removeTab>` but the *index* of a tab
+is given instead. The tab may be destroyed if this object has the only reference to the tab.
 
 
 .. method:: NatronGui.PyTabWidget.setCurrentIndex(index)

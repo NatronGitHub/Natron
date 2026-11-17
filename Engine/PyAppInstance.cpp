@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,7 +29,7 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
-#include <QtCore/QDebug>
+#include <QDebug>
 
 #include "Engine/AppInstance.h"
 #include "Engine/CreateNodeArgs.h"
@@ -74,22 +74,22 @@ App::getCollectionFromGroup(Group* group) const
         App* isApp = dynamic_cast<App*>(group);
         Effect* isEffect = dynamic_cast<Effect*>(group);
         if (isApp) {
-            collection = boost::dynamic_pointer_cast<NodeCollection>( isApp->getInternalApp()->getProject() );
+            collection = std::dynamic_pointer_cast<NodeCollection>( isApp->getInternalApp()->getProject() );
         } else if (isEffect) {
             NodePtr node = isEffect->getInternalNode();
             assert(node);
-            NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
+            NodeGroupPtr isGrp = std::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
             if (!isGrp) {
                 qDebug() << "The group passed to createNode() is not a group, defaulting to the project root.";
             } else {
-                collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);
+                collection = std::dynamic_pointer_cast<NodeCollection>(isGrp);
                 assert(collection);
             }
         }
     }
 
     if (!collection) {
-        collection = boost::dynamic_pointer_cast<NodeCollection>( getInternalApp()->getProject() );
+        collection = std::dynamic_pointer_cast<NodeCollection>( getInternalApp()->getProject() );
     }
 
     return collection;
@@ -334,6 +334,9 @@ App::renderInternal(bool forceBlocking,
 
     std::list<AppInstance::RenderWork> l;
     l.push_back(w);
+
+    PythonGILUnlocker pgl;
+
     getInternalApp()->startWritersRendering(forceBlocking, l);
 }
 
@@ -378,6 +381,9 @@ App::renderInternal(bool forceBlocking,
 
         l.push_back(w);
     }
+
+    PythonGILUnlocker pgl;
+
     getInternalApp()->startWritersRendering(forceBlocking, l);
 }
 
@@ -416,13 +422,23 @@ App::saveTempProject(const QString& filename)
 bool
 App::saveProject(const QString& filename)
 {
-    return getInternalApp()->save( filename.toStdString() );
+    std::string outFile = filename.toStdString();
+    std::map<std::string, std::string> env;
+    getInternalApp()->getProject()->getEnvironmentVariables(env);
+    Project::expandVariable(env, outFile);
+
+    return getInternalApp()->save(outFile);
 }
 
 bool
 App::saveProjectAs(const QString& filename)
 {
-    return getInternalApp()->saveAs( filename.toStdString() );
+    std::string outFile = filename.toStdString();
+    std::map<std::string, std::string> env;
+    getInternalApp()->getProject()->getEnvironmentVariables(env);
+    Project::expandVariable(env, outFile);
+
+    return getInternalApp()->saveAs(outFile);
 }
 
 App*

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -25,8 +25,9 @@
 
 #include "NodePrivate.h"
 
-#include <QtCore/QTextStream>
-#include <QtCore/QFile>
+#include <QTextStream>
+#include <QFile>
+#include <QRegularExpression>
 
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
@@ -409,7 +410,9 @@ Node::makeDocumentation(bool genHTML) const
             pluginDescription = NATRON_NAMESPACE::convertFromPlainText(pluginDescription, NATRON_NAMESPACE::WhiteSpaceNormal);
 
             // replace URLs with links
-            QRegExp re( QString::fromUtf8("((http|ftp|https)://([\\w_-]+(?:(?:\\.[\\w_-]+)+))([\\w.,@?^=%&:/~+#-]*[\\w@?^=%&/~+#-])?)") );
+            // (UseUnicodePropertiesOption: \w is ASCII-only in PCRE, it was Unicode in QRegExp)
+            QRegularExpression re( QString::fromUtf8("((http|ftp|https)://([\\w_-]+(?:(?:\\.[\\w_-]+)+))([\\w.,@?^=%&:/~+#-]*[\\w@?^=%&/~+#-])?)"),
+                                   QRegularExpression::UseUnicodePropertiesOption );
             pluginDescription.replace( re, QString::fromUtf8("<a href=\"\\1\">\\1</a>") );
         } else {
             pluginDescription = convertFromPlainTextToMarkdown(pluginDescription, genHTML, false);
@@ -567,7 +570,7 @@ OUTPUT:
         "<hr/>\n"
         "<div role=\"contentinfo\">\n"
         "<p>\n"
-        "&copy; Copyright 2013-2021 The Natron documentation authors, licensed under CC BY-SA 4.0\n"
+        "&copy; Copyright 2013-2023 The Natron documentation authors, licensed under CC BY-SA 4.0\n"
         "</p>\n"
         "</div>\n"
         "Built with <a href=\"http://sphinx-doc.org/\">Sphinx</a> using a <a href=\"https://github.com/rtfd/sphinx_rtd_theme\">theme</a> provided by <a href=\"https://readthedocs.org\">Read the Docs</a>.\n"

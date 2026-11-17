@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,21 +32,18 @@
 #include <list>
 
 CLANG_DIAG_OFF(deprecated)
-#include <QtCore/QMutex>
+#include <QMutex>
 CLANG_DIAG_ON(deprecated)
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
 
 //ofx
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
+// clang-format off
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 #include <ofxhImageEffect.h>
 CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
+// clang-format on
 #include <ofxPixels.h>
 
 #include "Global/GlobalDefines.h"
@@ -252,7 +249,7 @@ public:
         }
     };
 
-    typedef boost::shared_ptr<RenderActionData> RenderActionDataPtr;
+    typedef std::shared_ptr<RenderActionData> RenderActionDataPtr;
 
     //These are per-clip thread-local data
     struct ClipTLSData
@@ -264,7 +261,7 @@ public:
         //View may be involved in a recursive action
         std::list<ViewIdx> view;
         //mipmaplevel may be involved in a recursive action
-        std::list<unsigned int> mipMapLevel;
+        std::list<unsigned int> mipmapLevel;
 
         //////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////
@@ -282,7 +279,7 @@ public:
 
         ClipTLSData()
             : view()
-            , mipMapLevel()
+            , mipmapLevel()
             , componentsPresent()
             , unmappedComponents()
         {
@@ -290,20 +287,20 @@ public:
 
         ClipTLSData(const ClipTLSData& other)
             : view(other.view)
-            , mipMapLevel(other.mipMapLevel)
+            , mipmapLevel(other.mipmapLevel)
             , renderData()
             , componentsPresent(other.componentsPresent)
             , unmappedComponents(other.unmappedComponents)
         {
             for (std::list<RenderActionDataPtr>::const_iterator it = other.renderData.begin();
                  it != other.renderData.end(); ++it) {
-                RenderActionDataPtr d = boost::make_shared<RenderActionData>(**it);
+                RenderActionDataPtr d = std::make_shared<RenderActionData>(**it);
                 renderData.push_back(d);
             }
         }
     };
 
-    typedef boost::shared_ptr<ClipTLSData> ClipDataTLSPtr;
+    typedef std::shared_ptr<ClipTLSData> ClipDataTLSPtr;
 
 private:
     EffectInstancePtr getEffectHolder() const;
@@ -317,7 +314,7 @@ private:
 
 private:
     friend struct OfxClipInstancePrivate;
-    boost::scoped_ptr<OfxClipInstancePrivate> _imp;
+    std::unique_ptr<OfxClipInstancePrivate> _imp;
 };
 
 struct OfxImageCommonPrivate;
@@ -341,7 +338,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<OfxImageCommonPrivate> _imp;
+    std::unique_ptr<OfxImageCommonPrivate> _imp;
 };
 
 class OfxImage

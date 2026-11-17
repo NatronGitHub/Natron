@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -33,20 +33,15 @@
 #include <utility>
 #include <stdexcept>
 
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/algorithm/string/case_conv.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
-#include <QtCore/QtGlobal> // for Q_OS_*
-#include <QtCore/QDebug>
-#include <QtCore/QThread>
-#include <QtCore/QTimer>
+#include <QtGlobal> // for Q_OS_*
+#include <QDebug>
+#include <QThread>
+#include <QTimer>
 
 #include <QApplication> // qApp
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
+#include <QMimeData>
 #include <QKeyEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QMenuBar>
@@ -62,6 +57,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QCursor>
 #include <QCheckBox>
 #include <QTreeView>
+#ifdef Q_WS_X11
+#include <QX11Info>
+#endif
 
 #include "Global/QtCompat.h"
 
@@ -103,6 +101,12 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/Histogram.h"
+
+#if defined(Q_OS_WIN)
+#include <winuser.h>
+#include <wingdi.h>
+#endif
+
 
 NATRON_NAMESPACE_ENTER
 
@@ -356,11 +360,11 @@ Gui::handleNativeKeys(int key,
                       quint32 nativeVirtualKey)
 {
     //qDebug() << "scancode=" << nativeScanCode << "virtualkey=" << nativeVirtualKey;
-    if ( !appPTR->getCurrentSettings()->isViewerKeysEnabled() ) {
+    if ( !appPTR->getCurrentSettings()->viewerNumberKeys() ) {
         return key;
     }
 
-#ifdef Q_WS_MAC
+#ifdef Q_OS_DARWIN
     // OS X virtual key codes, from
     // MacOSX10.11.sdk/System/Library/Frameworks/Carbon.framework/Frameworks/HIToolbox.framework/Headers/Events.h
     // kVK_ANSI_1                    = 0x12,
@@ -407,7 +411,7 @@ Gui::handleNativeKeys(int key,
         return Qt::Key_0;
     }
 #endif
-#ifdef Q_WS_WIN
+#ifdef Q_OS_WIN
     // https://msdn.microsoft.com/en-us/library/aa299374%28v=vs.60%29.aspx
     //  48   0x30   (VK_0)              | 0 key
     //  49   0x31   (VK_1)              | 1 key
@@ -454,7 +458,7 @@ Gui::handleNativeKeys(int key,
         return Qt::Key_9;
     }
 #endif
-#if defined(Q_WS_X11) && defined(Q_OS_LINUX)
+#if defined(Q_OS_LINUX)
     // probably only possible on Linux, since scancodes are OS-dependent
     // https://www.win.tue.nl/~aeb/linux/kbd/scancodes-1.html
     Q_UNUSED(nativeVirtualKey);
@@ -1057,7 +1061,6 @@ Gui::ddeOpenFile(const QString& filePath)
 
 #endif
 
-
 bool
 Gui::isFocusStealingPossible()
 {
@@ -1123,7 +1126,7 @@ Gui::fileSequencesFromUrls(const QList<QUrl>& urls,
     QStringList filesList;
 
     for (int i = 0; i < urls.size(); ++i) {
-        const QUrl rl = QtCompat::toLocalFileUrlFixed( urls.at(i) );
+        const QUrl rl = urls.at(i);
         QString path = rl.toLocalFile();
 
 #ifdef __NATRON_WIN32__
@@ -1236,7 +1239,7 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
         ///find a decoder for this file type
         //std::string ext = sequence->fileExtension();
         std::string extLower = sequence->fileExtension();
-        boost::to_lower(extLower);
+        std::transform(extLower.begin(), extLower.end(), extLower.begin(), [](char c) { return std::tolower(c, std::locale()); });
         if (extLower == NATRON_PROJECT_FILE_EXT) {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
             assert( !content.empty() );

@@ -1,11 +1,11 @@
---- Makefile.orig	2018-10-18 08:27:51.000000000 -0500
-+++ Makefile	2018-11-02 08:49:31.000000000 -0500
-@@ -120,7 +120,7 @@
+--- Makefile.dist.orig	2024-09-18 00:56:40.000000000 -0500
++++ Makefile.dist	2024-09-22 13:57:59.000000000 -0500
+@@ -64,7 +64,7 @@
  
- ca-bundle: lib/mk-ca-bundle.pl
+ ca-bundle: scripts/mk-ca-bundle.pl
  	@echo "generate a fresh ca-bundle.crt"
 -	@perl $< -b -l -u lib/ca-bundle.crt
 +	@perl $< -n lib/ca-bundle.crt
  
- ca-firefox: lib/firefox-db2pem.sh
+ ca-firefox: scripts/firefox-db2pem.sh
  	@echo "generate a fresh ca-bundle.crt"

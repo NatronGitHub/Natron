@@ -6,7 +6,7 @@
    
 Evaluating Script Structure
 ===========================
-tutorials-compositing-projects-setup
+
 Natron is a very 'adult' application that lets you handle your material in any way that you wish.
 It will not give you a warning beep or forbid you from doing anything.
 For this reason it is very easy to accidentally do things in the 'wrong' way. 
@@ -26,7 +26,7 @@ Folders and files should be well managed: consistently and rationally named.
 
 The format once set (see :ref:`compositing-projects-setup`) , will determine all default formats after that.
 This is very important as a wrongly set format can cause the format of all default nodes to be set to something other than the format that you are working in.
-This can be infuriating and make script maintains every difficult.
+This can be infuriating and make script maintains very difficult.
 
 
 
@@ -36,7 +36,8 @@ Manage folders and files
 **Donʼt use absolute file paths**
 
 An absolute path is one that specifies the location of the file with respect to the computer 
-e.g.``My_Computer/school/lesson_one/asset.jpg``.
+e.g.
+``My_Computer/school/lesson_one/asset.jpg``.
 A relative path is one that defines the location relative to a file or a folder.
 
 An absolute path 'breaks' when the project folder is moved to a new computer, and each filepath will then have to be manually repaired.

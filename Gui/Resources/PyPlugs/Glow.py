@@ -1548,6 +1548,9 @@ def createInstance(app,group):
     param.setExpression("thisGroup.isolateHighlights.get()", False, 2)
     param.setExpression("thisGroup.isolateHighlights.get()", False, 3)
     del param
+    param = groupMerge4.getParam("disableNode")
+    param.setExpression("thisGroup.getInput(1) is None", False, 0)
+    del param
     param = groupPostGrade.getParam("NatronOfxParamProcessA")
     param.setExpression("thisGroup.alpha.get()", False, 0)
     del param

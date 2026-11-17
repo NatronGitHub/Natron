@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,22 +30,19 @@
 
 #include <list>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
-#include <QtOpenGL/QGLWidget>
-#include <QtCore/QList>
-#include <QtCore/QPointF>
-#include <QtCore/QSize>
+#include <QList>
+#include <QPointF>
+#include <QSize>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include <QOpenGLWidget>
+
 #include "Global/GlobalDefines.h"
+#include "Global/QtCompat.h"
 
 #include "Gui/GuiFwd.h"
 
@@ -54,7 +51,7 @@ NATRON_NAMESPACE_ENTER
 struct TimelineGuiPrivate;
 
 class TimeLineGui
-    : public QGLWidget
+    : public QOpenGLWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -170,7 +167,7 @@ private:
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
 
@@ -180,7 +177,7 @@ Q_SIGNALS:
 
 private:
 
-    boost::scoped_ptr<TimelineGuiPrivate> _imp;
+    std::unique_ptr<TimelineGuiPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

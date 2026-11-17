@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,16 +26,12 @@
 #include "DopeSheet.h"
 
 #include <algorithm>
+#include <limits>
 #include <stdexcept>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
 // Qt includes
-#include <QtCore/QDebug>
-#include <QtCore/QSize>
+#include <QDebug>
+#include <QSize>
 #include <QtEvents>
 #include <QTreeWidget>
 #include <QUndoStack>
@@ -163,7 +159,7 @@ public:
     DopeSheet *q_ptr;
     DSTreeItemNodeMap treeItemNodeMap;
     DopeSheetSelectionModel *selectionModel;
-    boost::scoped_ptr<QUndoStack> undoStack;
+    std::unique_ptr<QUndoStack> undoStack;
     std::vector<DopeSheetKey> keyframesClipboard;
     TimeLinePtr timeline;
     DopeSheetEditor* editor;
@@ -504,14 +500,14 @@ DSKnobPtr DopeSheet::findDSKnob(const KnobGui* knobGui) const
 bool
 DopeSheet::isPartOfGroup(DSNode *dsNode) const
 {
-    NodeGroupPtr parentGroup = boost::dynamic_pointer_cast<NodeGroup>( dsNode->getInternalNode()->getGroup() );
+    NodeGroupPtr parentGroup = std::dynamic_pointer_cast<NodeGroup>( dsNode->getInternalNode()->getGroup() );
 
     return bool(parentGroup);
 }
 
 DSNodePtr DopeSheet::getGroupDSNode(DSNode *dsNode) const
 {
-    NodeGroupPtr parentGroup = boost::dynamic_pointer_cast<NodeGroup>( dsNode->getInternalNode()->getGroup() );
+    NodeGroupPtr parentGroup = std::dynamic_pointer_cast<NodeGroup>( dsNode->getInternalNode()->getGroup() );
     DSNodePtr parentGroupDSNode;
 
     if (parentGroup) {
@@ -646,8 +642,8 @@ DopeSheet::moveSelectedKeysAndNodes(double dt)
     _imp->selectionModel->getCurrentSelection(&selectedKeyframes, &selectedNodes);
 
     ///Constraint dt according to keyframe positions
-    double maxLeft = INT_MIN;
-    double maxRight = INT_MAX;
+    double maxLeft = std::numeric_limits<int>::min();
+    double maxRight = std::numeric_limits<int>::max();
     std::vector<DopeSheetKeyPtr> vect;
     for (DopeSheetKeyPtrList::iterator it = selectedKeyframes.begin(); it != selectedKeyframes.end(); ++it) {
         DSKnobPtr knobDs = (*it)->getContext();
@@ -1463,7 +1459,7 @@ DSNodePrivate::initGroupNode()
 
        for (NodesList::const_iterator it = subNodes.begin(); it != subNodes.end(); ++it) {
          NodePtr subNode = (*it);
-         NodeGuiPtr subNodeGui = boost::dynamic_pointer_cast<NodeGui>(subNode->getNodeGui());
+         NodeGuiPtr subNodeGui = std::dynamic_pointer_cast<NodeGui>(subNode->getNodeGui());
 
          if (!subNodeGui || !subNodeGui->getSettingPanel() || !subNodeGui->isSettingsPanelVisible()) {
              continue;

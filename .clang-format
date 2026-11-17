@@ -1,0 +1,5 @@
+BasedOnStyle: WebKit
+AlignAfterOpenBracket: Align
+AlwaysBreakAfterDefinitionReturnType: TopLevel
+WhitespaceSensitiveMacros: ['CLANG_DIAG_ON', 'CLANG_DIAG_OFF', 'GCC_DIAG_ON', 'GCC_DIAG_OFF', 'MSVC_DIAG_ON', 'MSVC_DIAG_OFF']
+

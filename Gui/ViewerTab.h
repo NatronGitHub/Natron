@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,13 +28,9 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
 #include "Global/GlobalDefines.h"
 #include "Global/KeySymbols.h" // Key
+#include "Global/QtCompat.h"
 
 #include "Engine/RenderStats.h"
 #include "Engine/ViewIdx.h"
@@ -43,7 +39,7 @@
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
 
-#include <QtCore/QSize>
+#include <QSize>
 
 NATRON_NAMESPACE_ENTER
 
@@ -96,6 +92,19 @@ public:
     bool notifyOverlaysPenMotion(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
 
     bool notifyOverlaysPenUp(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
+
+    /**
+     * @brief Compute the cursor requested by the overlays shown on this viewer (OFX interact
+     * cursors), from the current requests of the overlays that received the last pen or key
+     * event: the overlay that caught the event wins, else the first non-default request in
+     * dispatch order. Returns false for the default (viewer) cursor.
+     **/
+    bool getOverlaysCursor(QCursor* cursor);
+
+private:
+    bool getOverlayCursorFor(const NodePtr& node, QCursor* cursor);
+
+public:
 
     bool notifyOverlaysKeyDown(const RenderScale & renderScale, QKeyEvent* e);
 
@@ -167,9 +176,9 @@ public:
 
     void setAutoContrastEnabled(bool b);
 
-    void setMipMapLevel(int level);
+    void setMipmapLevel(unsigned int level);
 
-    int getMipMapLevel() const;
+    unsigned int getMipmapLevel() const;
 
     void setRenderScaleActivated(bool act);
 
@@ -472,11 +481,11 @@ private:
     virtual bool eventFilter(QObject *target, QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
-    boost::scoped_ptr<ViewerTabPrivate> _imp;
+    std::unique_ptr<ViewerTabPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

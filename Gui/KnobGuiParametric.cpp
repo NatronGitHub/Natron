@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -45,7 +45,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QKeyEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-#include <QtCore/QDebug>
+#include <QDebug>
 #include <QFontComboBox>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -96,7 +96,7 @@ KnobGuiParametric::KnobGuiParametric(KnobIPtr knob,
     , _resetButton(NULL)
     , _curves()
 {
-    _knob = boost::dynamic_pointer_cast<KnobParametric>(knob);
+    _knob = std::dynamic_pointer_cast<KnobParametric>(knob);
     QObject::connect( _knob.lock().get(), SIGNAL(curveColorChanged(int)), this, SLOT(onColorChanged(int)) );
 }
 

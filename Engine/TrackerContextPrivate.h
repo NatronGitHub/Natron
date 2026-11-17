@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,10 +32,7 @@
 
 #include <list>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/utility.hpp>
-#endif
-
+// clang-format off
 GCC_DIAG_OFF(unused-function)
 GCC_DIAG_OFF(unused-parameter)
 #if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
@@ -53,6 +50,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
 GCC_DIAG_ON(maybe-uninitialized)
 #endif
+// clang-format on
 
 #include <QFuture>
 #include <QFutureWatcher>
@@ -478,8 +476,8 @@ public:
         double rms;
     };
 
-    typedef boost::shared_ptr<QFutureWatcher<CornerPinData> > CornerPinSolverWatcher;
-    typedef boost::shared_ptr<QFutureWatcher<TransformData> > TransformSolverWatcher;
+    typedef std::shared_ptr<QFutureWatcher<CornerPinData> > CornerPinSolverWatcher;
+    typedef std::shared_ptr<QFutureWatcher<TransformData> > TransformSolverWatcher;
 
     struct SolveRequest
     {

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,7 +30,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QMutex>
+#include <QMutex>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 CLANG_DIAG_ON(deprecated)
@@ -334,6 +334,18 @@ PyModalDialog::getParam(const QString& scriptName) const
     return Effect::createParamWrapperForKnob(knob);
 }
 
+QSize
+PyModalDialog::minimumSizeHint() const
+{
+    return QWidget::minimumSizeHint();
+}
+
+QSize
+PyModalDialog::sizeHint() const
+{
+    return QWidget::sizeHint();
+}
+
 struct PyPanelPrivate
 {
     DialogParamHolder* holder;
@@ -416,6 +428,7 @@ PyPanel::PyPanel(const QString& scriptName,
 
 PyPanel::~PyPanel()
 {
+    getGui()->unregisterTab(this);
     getGui()->unregisterPyPanel(this);
 }
 
@@ -525,7 +538,7 @@ PyPanel::mousePressEvent(QMouseEvent* e)
 }
 
 void
-PyPanel::enterEvent(QEvent* e)
+PyPanel::enterEvent(QtCompat::QEnterEvent* e)
 {
     enterEventBase();
     QWidget::enterEvent(e);

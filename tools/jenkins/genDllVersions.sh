@@ -89,41 +89,49 @@ function catDll() {
 INIT_VAR=1
 DLL_VAR_PREFIX="NATRON"
 BIN_PATH="$SDK_HOME_BIN"
-# all Qt libraries are necessary for PySide
-catDll Qt3Support4
-catDll QtCLucene4
-catDll QtCore4
-catDll QtDBus4
-catDll QtDeclarative4
-catDll QtDesigner4
-catDll QtDesignerComponents4
-catDll QtGui4
-catDll QtHelp4
-catDll QtMultimedia4
-catDll QtNetwork4
-catDll QtOpenGL4
-catDll QtScript4
-catDll QtScriptTools4
-catDll QtSql4
-catDll QtSvg4
-catDll QtTest4
-catDll QtXml4
-catDll QtXmlPatterns4
+if [ "$QT_VERSION_MAJOR" = "5" ]; then
+    catDll Qt5Concurrent
+    catDll Qt5Core
+    catDll Qt5DBus
+    catDll Qt5Gui
+    catDll Qt5Network
+    catDll Qt5OpenGL
+    catDll Qt5PrintSupport
+    catDll Qt5Qml
+    catDll Qt5QmlModels
+    catDll Qt5QmlWorkerScript
+    catDll Qt5Quick
+    catDll Qt5QuickParticles
+    catDll Qt5QuickShapes
+    catDll Qt5QuickTest
+    catDll Qt5QuickWidgets
+    catDll Qt5Sql
+    catDll Qt5Test
+    catDll Qt5Widgets
+    catDll Qt5Xml
+    catDll Qt5XmlPatterns
+
+    catDll libdouble-conversion
+    catDll libicuin
+    catDll libpcre2-16-
+    catDll libmd4c
+else
+    echo "Unsupported QT_VERSION_MAJOR" ${QT_VERSION_MAJOR}
+    exit 1
+fi
+
 
 catDll fbclient
 catDll libass-
 catDll libbluray-
 catDll libboost_filesystem-mt
-catDll libboost_regex-mt
 catDll libboost_serialization-mt
-catDll libboost_system-mt
 catDll libboost_thread-mt
 catDll libbz2-
 catDll libcaca-
 catDll libcairo-2
-catDll libcelt0-
-catDll libcroco-
-catDll LIBEAY32
+#catDll libcroco-
+#catDll LIBEAY32
 catDll libexpat-
 catDll libffi-
 catDll libfontconfig-
@@ -135,12 +143,11 @@ catDll libgio-
 catDll libglib-
 catDll libgmodule-
 catDll libgmp-
-catDll libgnutls-
+catDll libgnutls-30
 catDll libgobject-
 catDll libgomp-
 catDll libgraphite
 catDll libgsm
-catDll libHalf-
 catDll libharfbuzz-0
 catDll libhogweed-
 catDll libiconv-
@@ -148,51 +155,53 @@ catDll libicudt
 catDll libicuuc
 catDll libidn2-
 catDll libIex-
-catDll libIlmImf-
 catDll libIlmThread-
 catDll libImath-
 catDll libintl-
-catDll libjasper-
+catDll libjasper
 catDll libjpeg-
 catDll liblcms2-
 catDll liblzma-
 catDll libmfx
-catDll libmng-
 catDll libmodplug-
 catDll libmp3lame-
 catDll libnettle-
 catDll libnghttp2-
+catDll libnghttp3-
 catDll libogg-
 catDll libopenal-
 catDll libOpenColorIO
-catDll libOpenImageIO
+catDll libOpenEXR-
+catDll libOpenEXRCore
+catDll libOpenImageIO-
+catDll libOpenImageIO_Util-
 catDll libopenjp2-
+catDll libopenjph-
 catDll libopus-
 catDll libp11-kit-
 catDll libpango-
 catDll libpangocairo-
 catDll libpangoft2-
 catDll libpangowin32-
-catDll libpcre-
+catDll libpcre2-8-
 catDll libpixman-
 catDll libpng16-
-catDll libPtex
-catDll libpyside-python${PYVER}
-catDll libpython${PYVER}
+#catDll libPtex
 catDll librsvg-
 catDll librtmp-
-catDll libshiboken-python${PYVER}
+catDll libsharpyuv-
 catDll libspeex-
 catDll libsqlite3-
 catDll libsrt
 catDll libssh2-
 catDll libstdc++-
+catDll libSvtAv1Enc
 catDll libtasn1-
 catDll libtheoradec-
 catDll libtheoraenc-
 catDll libtiff-
-catDll libtinyxml-
 catDll libunistring-
+catDll libunibreak-
 catDll libvorbis-
 catDll libvorbisenc-
 catDll libvpx-
@@ -202,23 +211,48 @@ catDll libwebpdemux-
 catDll libwebpmux-
 catDll libwinpthread-
 catDll libxml2-
-catDll phonon4
 #catDll SDL2
-catDll SSLEAY32
+#catDll SSLEAY32
 catDll zlib1
+catDll libbrotlicommon
+catDll libbrotlidec
+catDll libbrotlienc
+catDll libssl-3-
+catDll libcrypto-3-
+catDll libzstd
 
 catDll libSeExpr
-catDll yaml-cpp
+catDll libyaml-cpp
 catDll libopenh264
 catDll libthai
 catDll libdatrie-
 catDll libsnappy
-catDll libpugixml
-catDll libheif-
+#catDll libpugixml
+catDll libheif
+catDll libkvazaar-
+catDll libcryptopp
+catDll librav1e
 catDll libde265-
 catDll libx265
 catDll libdav1d
+catDll libaom
+catDll libdeflate
+catDll libjbig-
+catDll liblerc
+catDll libpsl-5
+catDll libcairo-gobject-
 
+# python
+catDll libpython${PYVER}
+if [ "$PYV" = 2 ]; then
+    catDll libpyside-python${PYVER}
+    catDll libshiboken-python${PYVER}
+else
+    catDll libpyside
+    catDll libshiboken
+fi
+
+# gcc
 if [ "$BITS" = "32" ]; then
     catDll libgcc_s_dw2-
 else
@@ -254,9 +288,9 @@ INIT_VAR=1
 DLL_VAR_PREFIX="ARENA"
 BIN_PATH="$SDK_HOME_BIN"
 catDll libcdr-
-catDll libcroco-
+#catDll libcroco-
 catDll libicuin
-catDll libpoppler-9
+catDll libpoppler-117
 catDll libpoppler-glib-
 catDll librevenge-0
 catDll librevenge-stream-
@@ -268,10 +302,13 @@ INIT_VAR=1
 DLL_VAR_PREFIX="GMIC"
 BIN_PATH="$SDK_HOME_BIN"
 catDll libfftw3-
+catDll libfftw3_threads-
 catDll libcurl-
 catDll libnghttp2-
-catDll libbrotlidec
-catDll libbrotlicommon
+catDll libngtcp2-
+catDll libngtcp2_crypto_ossl
+#catDll libbrotlidec
+#catDll libbrotlicommon
 
 # Local variables:
 # mode: shell-script

@@ -27,7 +27,7 @@ Detailed Description
 
 The Tracker is a special class attached to :doc:`effects<Effect>` that needs
 tracking capabilities. It contains all :doc:`tracks<Track>` for this node
-and also allow to start and stop tracking from a Python script.
+and also allows one to start and stop tracking from a Python script.
 
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

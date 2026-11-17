@@ -24,7 +24,7 @@
 
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
-set -x # Print commands and their arguments as they are executed.
+#set -x # Print commands and their arguments as they are executed.
 
 echo "*** Windows installer..."
 
@@ -41,7 +41,7 @@ popd () {
 }
 
 # Generate dll versions with dlls on the system
-env BITS="$BITS" PYVER="$PYVER" NATRON_LICENSE="$NATRON_LICENSE" ./genDllVersions.sh
+env BITS="$BITS" PYVER="$PYVER" PYV="${PYV}" QT_VERSION_MAJOR="${QT_VERSION_MAJOR}" NATRON_LICENSE="$NATRON_LICENSE" ./genDllVersions.sh
 
 source dllVersions.sh
 
@@ -55,7 +55,7 @@ if [ -z "${NATRON_BUILD_CONFIG:-}" ]; then
     exit 1
 fi
 
-DUMP_SYMS="$SDK_HOME/bin/dump_syms.exe"
+DUMP_SYMS="$SDK_HOME/bin/natron_dump_syms_dwarf.exe"
 
 dump_syms_safe() {
     if [ $# != 2 ]; then
@@ -131,14 +131,27 @@ $GSED -e "s/_VERSION_/${NATRON_VERSION_FULL}/;s#_RBVERSION_#${NATRON_GIT_BRANCH}
 cp "$INC_PATH/config/"*.png "$INSTALLER_PATH/config/"
 
 # make sure we have mt and qtifw
-if [ ! -f "$SDK_HOME/bin/mt.exe" ] || [ ! -f "$SDK_HOME/bin/binarycreator.exe" ]; then
-    if [ ! -d "$SRC_PATH/natron-windows-installer" ]; then
-        ( cd "$SRC_PATH";
-          $CURL "$THIRD_PARTY_BIN_URL/natron-windows-installer.zip" --output "$SRC_PATH/natron-windows-installer.zip"
-          unzip natron-windows-installer.zip
-        )
+
+MT_BIN=mt.exe
+if ! which ${MT_BIN}; then
+    # Add Windows SDK to path so that mt.exe is available.
+    WIN_SDK_MAJOR_VERSION=10
+    WIN_SDK_BASE_PATH="/c/Program Files (x86)/Windows Kits/${WIN_SDK_MAJOR_VERSION}/bin"
+    MT_BIN=$(find "${WIN_SDK_BASE_PATH}" -name mt.exe | grep x64 | sort -n | tail -1)
+
+    if [[ -z "${MT_BIN}" ]]; then
+        echo "Failed to find mt.exe"
+        exit 1
     fi
-    cp "$SRC_PATH/natron-windows-installer/mingw$BITS/bin/"{archivegen.exe,binarycreator.exe,installerbase.exe,installerbase.manifest,repogen.exe,mt.exe} "$SDK_HOME/bin/"
+fi
+
+if ! which binarycreator.exe && [ ! -f "/Setup.exe" ]; then
+    pacman -S mingw-w64-x86_64-qt-installer-framework
+
+    if ! which binarycreator.exe; then
+        echo "Failed to find binarycreator.exe"
+        exit 1
+    fi
 fi
 
 function installPlugin() {
@@ -209,7 +222,7 @@ function installPlugin() {
         done
         echo "</assembly>" >> "$PLUGIN_MANIFEST"
         for location in "$PKG_PATH/data" "${TMP_PORTABLE_DIR}"; do
-            (cd "$location/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}"; mt -nologo -manifest "$PLUGIN_MANIFEST" -outputresource:"${OFX_BINARY}.ofx;2")
+            (cd "$location/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}"; "${MT_BIN}" -nologo -manifest "$PLUGIN_MANIFEST" -outputresource:"${OFX_BINARY}.ofx;2")
         done
 
     fi
@@ -257,7 +270,7 @@ for location in "${COPY_LOCATIONS[@]}"; do
     mkdir -p "$location/docs" "$location/bin" "$location/Resources" "$location/Plugins/PyPlugs"
 
     cp -a "${TMP_BINARIES_PATH}/docs/natron"/* "$location/docs/"
-    cp "${TMP_BINARIES_PATH}/PyPlugs"/* "$location/Plugins/PyPlugs/"
+    cp -a "${TMP_BINARIES_PATH}/PyPlugs"/* "$location/Plugins/PyPlugs/"
 
     # Include in the portable version the test program that we will use later on
     if [ "$location" = "${TMP_PORTABLE_DIR}" ]; then
@@ -365,19 +378,15 @@ for location in "${COPY_LOCATIONS[@]}"; do
     #cp -a "$SDK_HOME/etc/fonts"/* "$location/Resources/etc/fonts"
     cp -a "${TMP_BINARIES_PATH}/Resources/etc/fonts"/* "$location/Resources/etc/fonts/"
     cp -a "$SDK_HOME/share/poppler" "$location/Resources/"
-    cp -a "$SDK_HOME/share/qt4/plugins"/* "$location/bin/"
-    rm -f "$location/bin"/*/*d4.dll || true
+    cp -a "$SDK_HOME/share/qt${QT_VERSION_MAJOR}/plugins"/* "$location/bin/"
 
     for depend in "${NATRON_DLL[@]}"; do
         cp "$depend" "$location/bin/"
     done
 
     #Copy Qt dlls (required for all PySide modules to work correctly)
-    cp "$SDK_HOME/bin"/Qt*4.dll "$location/bin/"
+    cp "$SDK_HOME/bin"/Qt${QT_VERSION_MAJOR}*.dll "$location/bin/"
 
-
-    # Ignore debug dlls of Qt
-    rm "$location/bin"/*d4.dll || true
     rm "$location/bin/sqldrivers"/{*mysql*,*psql*} || true
 
     if [ "$COMPILE_TYPE" != "debug" ]; then
@@ -394,7 +403,10 @@ done
 mkdir -p "${TMP_PORTABLE_DIR}/Plugins"
 cp -a "$SDK_HOME/lib/python${PYVER}" "${TMP_PORTABLE_DIR}/lib/"
 
-mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide" "${TMP_PORTABLE_DIR}/Plugins/"
+
+PYSIDE_PLUGIN_PATH="${TMP_PORTABLE_DIR}/Plugins/PySide2"
+mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide2" "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/shiboken2" "${TMP_PORTABLE_DIR}/Plugins"
+
 rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"/{test,config,config-"${PYVER}"m}
 
 ( cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages";
@@ -409,10 +421,12 @@ done
 PYDIR="${TMP_PORTABLE_DIR}/lib/python${PYVER:-}"
 find "${PYDIR}" -type f -name '*.pyo' -exec rm {} \;
 (cd "${PYDIR}"; xargs rm -rf || true) < "$INC_PATH/python-exclude.txt"
-(cd "${TMP_PORTABLE_DIR}" ; find . -type d -name __pycache__ -exec rm -rf {} \;)
+(cd "${TMP_PORTABLE_DIR}" ;
+    find . -type d -name __pycache__ -exec rm -rf {} \; || true
+)
 
 if [ "$COMPILE_TYPE" != "debug" ]; then
-for dir in "${TMP_PORTABLE_DIR}/Plugins/PySide" "${TMP_PORTABLE_DIR}/lib/python${PYVER:-}"; do
+for dir in "${PYSIDE_PLUGIN_PATH}" "${TMP_PORTABLE_DIR}/lib/python${PYVER:-}"; do
     echo "*** stripping binaries in $dir"
     find "$dir" -type f \( -iname '*.exe' -o -iname '*.dll' -o -iname '*.pyd' -o -iname '*.ofx' \) -exec strip -s {} \;
     echo "*** stripping binaries in $dir... done!"
@@ -420,33 +434,43 @@ done
 fi
 
 # python zip
-if [ "${USE_QT5:-}" != 1 ]; then
-    rm -rf  "$PYDIR"/site-packages/shiboken2*  "$PYDIR"/site-packages/PySide2 || true
-fi
 
 export PY_BIN="$SDK_HOME/bin/python.exe"
 export PYDIR="$PYDIR"
-. "$CWD"/zip-python.sh
+#. "$CWD"/zip-python.sh
+. "$CWD"/zip-python-mingw.sh
 
+NATRON_PYTHON="${TMP_PORTABLE_DIR}/bin/natron-python"
 # Install pip
-if [ -x "${TMP_PORTABLE_DIR}"/bin/natron-python ]; then
-    $CURL --remote-name --insecure https://bootstrap.pypa.io/pip/2.7/get-pip.py
-    "${TMP_PORTABLE_DIR}"/bin/natron-python get-pip.py
+if [ -x "${NATRON_PYTHON}" ]; then
+    pushd "$PYDIR/../.."
+    if [ "$PYV" = "2" ]; then
+        $CURL --remote-name --insecure https://bootstrap.pypa.io/pip/${PYVER}/get-pip.py
+    else
+        $CURL --remote-name --insecure https://bootstrap.pypa.io/get-pip.py
+    fi
+    "${NATRON_PYTHON}" get-pip.py
     rm get-pip.py
-fi
+    # Install qtpy
+    "${NATRON_PYTHON}" -m pip install qtpy
 
-# Run extra user provided pip install scripts
-if [ -f "${EXTRA_PYTHON_MODULES_SCRIPT:-}" ]; then
-    "${TMP_PORTABLE_DIR}"/bin/natron-python "$EXTRA_PYTHON_MODULES_SCRIPT" || true
+    # Useful Python packages
+    "${NATRON_PYTHON}" -m pip install future six #psutil
+    # Run extra user provided pip install scripts
+    if [ -f "${EXTRA_PYTHON_MODULES_SCRIPT:-}" ]; then
+        "${NATRON_PYTHON}" "$EXTRA_PYTHON_MODULES_SCRIPT" || true
+    fi
+    "${NATRON_PYTHON}" -m compileall -f "${PYDIR}/site-packages"
+    popd
 fi
-
 
 
 # Copy Python distrib to installer package
 cp -r "$PYDIR" "$DLLS_PACKAGE_PATH/data/lib/"
 cp "${TMP_PORTABLE_DIR}"/lib/python*.zip "${DLLS_PACKAGE_PATH}/data/lib/"
 mkdir -p "${DLLS_PACKAGE_PATH}/data/Plugins"
-cp -a "${TMP_PORTABLE_DIR}/Plugins/PySide" "${DLLS_PACKAGE_PATH}/data/Plugins/"
+
+cp -a "${PYSIDE_PLUGIN_PATH}" "${DLLS_PACKAGE_PATH}/data/Plugins/"
 
 # Configure the package date using the most recent DLL modification date
 CLIBS_VERSION="00000000000000"
@@ -500,8 +524,12 @@ echo "Done"
 # Create installers
 
 ONLINE_INSTALL_DIR="online_installer"
-BUNDLED_INSTALL_DIR="offline_installer"
-ZIP_INSTALL_DIR="compressed_no_installer"
+#BUNDLED_INSTALL_DIR="offline_installer"
+#ZIP_INSTALL_DIR="compressed_no_installer"
+
+# These have easily identifiable filenames and extensions anyway:
+BUNDLED_INSTALL_DIR="."
+ZIP_INSTALL_DIR="."
 
 mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR"
 

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,17 +28,11 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QtGlobal> // for Q_OS_*
+#include <QtGlobal> // for Q_OS_*
 #include <QMainWindow>
-#include <QtCore/QUrl>
+#include <QUrl>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -69,7 +63,6 @@ class Gui
     : public DocumentWindow
 #endif
       , public SerializableWindow
-      , public boost::noncopyable
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -80,7 +73,11 @@ public:
     friend class PanelWidget;
 
     explicit Gui(const GuiAppInstancePtr& app,
-                 QWidget* parent = 0);
+                 QWidget* parent = nullptr);
+
+    Gui(const Gui&) = delete;
+
+    Gui& operator=(const Gui&) = delete;
 
     virtual ~Gui() OVERRIDE;
 
@@ -489,16 +486,6 @@ public:
     virtual void ddeOpenFile(const QString& filePath) OVERRIDE FINAL;
 #endif
 
-    /**
-     * @brief Returns true on OS X if on a High DPI (Retina) Display.
-     **/
-#ifndef Q_OS_MAC
-    bool isHighDPI() const { return false; }
-
-#else
-    bool isHighDPI() const { return QtMac::isHighDPIInternal(this); }
-
-#endif
 
     AppInstancePtr createNewProject();
 
@@ -539,6 +526,7 @@ public:
     void updateAboutWindowLibrariesVersion();
 
 protected:
+
     // Reimplemented Protected Functions
 
     //bool event(QEvent* event) OVERRIDE;
@@ -692,7 +680,7 @@ public Q_SLOTS:
     void openHelpIssues();
     void openHelpDocumentation();
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
     void dockClicked();
 #endif
     
@@ -719,7 +707,7 @@ private:
     virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
     virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE FINAL;
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
-    boost::scoped_ptr<GuiPrivate> _imp;
+    std::unique_ptr<GuiPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -25,7 +25,7 @@
 
 #include "KnobGuiValue.h"
 
-#include <cfloat>
+#include <limits>
 #include <algorithm> // min, max
 #include <stdexcept>
 
@@ -45,7 +45,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QKeyEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-#include <QtCore/QDebug>
+#include <QDebug>
 #include <QFontComboBox>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -97,8 +97,8 @@ struct KnobGuiValuePrivate
 
     KnobGuiValuePrivate(KnobIPtr knob)
         : knob(knob)
-        , intKnob( boost::dynamic_pointer_cast<KnobIntBase>(knob) )
-        , doubleKnob( boost::dynamic_pointer_cast<KnobDoubleBase>(knob) )
+        , intKnob( std::dynamic_pointer_cast<KnobIntBase>(knob) )
+        , doubleKnob( std::dynamic_pointer_cast<KnobDoubleBase>(knob) )
         , spinBoxes()
         , container(0)
         , slider(0)
@@ -384,10 +384,10 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
     if (!isSliderDisabled() && !isRectangleParam) {
         double dispmin = displayMins[0];
         double dispmax = displayMaxs[0];
-        if (dispmin == -DBL_MAX) {
+        if (dispmin == std::numeric_limits<double>::lowest()) {
             dispmin = mins[0];
         }
-        if (dispmax == DBL_MAX) {
+        if (dispmax == std::numeric_limits<double>::max()) {
             dispmax = maxs[0];
         }
 
@@ -1054,7 +1054,7 @@ KnobGuiValue::_show()
     if ( _imp->slider && ( ( !_imp->dimensionSwitchButton && (_imp->spinBoxes.size() == 1) ) || ( _imp->dimensionSwitchButton && !_imp->dimensionSwitchButton->isChecked() ) ) ) {
         double sliderMax = _imp->slider->maximum();
         double sliderMin = _imp->slider->minimum();
-        if ( (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN) ) {
+        if ( (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < std::numeric_limits<int>::max()) && (sliderMin > std::numeric_limits<int>::min()) ) {
             _imp->slider->show();
         }
     }
@@ -1180,7 +1180,7 @@ KnobGuiValue::refreshDimensionName(int dim)
 KnobGuiDouble::KnobGuiDouble(KnobIPtr knob,
                              KnobGuiContainerI *container)
     : KnobGuiValue(knob, container)
-    , _knob( boost::dynamic_pointer_cast<KnobDouble>(knob) )
+    , _knob( std::dynamic_pointer_cast<KnobDouble>(knob) )
 {
 }
 
@@ -1299,7 +1299,7 @@ KnobGuiDouble::getDecimals(std::vector<int>* decimals) const
 KnobGuiInt::KnobGuiInt(KnobIPtr knob,
                        KnobGuiContainerI *container)
     : KnobGuiValue(knob, container)
-    , _knob( boost::dynamic_pointer_cast<KnobInt>(knob) )
+    , _knob( std::dynamic_pointer_cast<KnobInt>(knob) )
 {
 }
 

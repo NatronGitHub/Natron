@@ -20,6 +20,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/share/pkgconfig/shared-mim
         #make -j${MKJOBS}
         make
         make install
+        #cp "$SDK_HOME/share/pkgconfig/shared-mime-info.pc" "$SDK_HOME/lib/pkgconfig/shared-mime-info.pc"
     else
         mkdir build
         cd build

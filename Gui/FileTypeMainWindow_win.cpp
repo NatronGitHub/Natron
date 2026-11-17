@@ -45,12 +45,13 @@
 #include <stdexcept>
 
 // —— general includes —————————————————————————
-#include <windows.h>
+#include <Dde.h>
+
 #include <QMessageBox>
 #include <QApplication>
-#include <QtCore/QDir>
-#include <QtCore/QFileInfo>
-#include <QtCore/QRegExp>
+#include <QDir>
+#include <QFileInfo>
+#include <QRegularExpression>
 
 NATRON_NAMESPACE_ENTER
 
@@ -88,25 +89,25 @@ DocumentWindow::~DocumentWindow()
 // —— protected slots —————————————————————————
 // —— events ————————————————————————————
 bool
-DocumentWindow::winEvent(MSG *message,
-                         long *result)
+DocumentWindow::nativeEvent(const QByteArray& eventType, void* message, NativeEventResult* result)
 {
-    switch (message->message) {
+    MSG* msg = static_cast<MSG*>(message);
+    switch (msg->message) {
     case WM_DDE_INITIATE:
 
-        return ddeInitiate(message, result);
+        return ddeInitiate(msg, result);
         break;
     case WM_DDE_EXECUTE:
 
-        return ddeExecute(message, result);
+        return ddeExecute(msg, result);
         break;
     case WM_DDE_TERMINATE:
 
-        return ddeTerminate(message, result);
+        return ddeTerminate(msg, result);
         break;
     }
 
-    return QMainWindow::winEvent(message, result);
+    return QMainWindow::nativeEvent(eventType, message, result);
 }
 
 void
@@ -232,7 +233,7 @@ DocumentWindow::enableShellOpen()
 // —— private helpers —————————————————————————
 bool
 DocumentWindow::ddeInitiate(MSG* message,
-                            long* result)
+                            NativeEventResult* result)
 {
     if ( ( 0 != LOWORD(message->lParam) ) &&
          ( 0 != HIWORD(message->lParam) ) &&
@@ -257,7 +258,7 @@ DocumentWindow::ddeInitiate(MSG* message,
 
 bool
 DocumentWindow::ddeExecute(MSG* message,
-                           long* result)
+                           NativeEventResult* result)
 {
     // unpack the DDE message
     UINT_PTR unused = 0;
@@ -282,9 +283,14 @@ DocumentWindow::ddeExecute(MSG* message,
         return true;
     }
 
-    QRegExp regCommand( QString::fromUtf8("^\\[(\\w+)\\((.*)\\)\\]$") );
-    if ( regCommand.exactMatch(command) ) {
-        executeDdeCommand( regCommand.cap(1), regCommand.cap(2) );
+    // \A...\z and DotMatchesEverythingOption: QRegExp::exactMatch() matched
+    // the whole string and its '.' matched newlines; PCRE's '.' does not,
+    // and its '$' also matches before a final newline.
+    QRegularExpression regCommand( QString::fromUtf8("\\A\\[(\\w+)\\((.*)\\)\\]\\z"),
+                                   QRegularExpression::DotMatchesEverythingOption | QRegularExpression::UseUnicodePropertiesOption );
+    const QRegularExpressionMatch commandMatch = regCommand.match(command);
+    if ( commandMatch.hasMatch() ) {
+        executeDdeCommand( commandMatch.captured(1), commandMatch.captured(2) );
     }
 
     *result = 0;
@@ -294,7 +300,7 @@ DocumentWindow::ddeExecute(MSG* message,
 
 bool
 DocumentWindow::ddeTerminate(MSG* message,
-                             long* result)
+                             NativeEventResult* result)
 {
     Q_UNUSED(result);
     // The client or server application should respond by posting a WM_DDE_TERMINATE message.
@@ -344,15 +350,17 @@ void
 DocumentWindow::executeDdeCommand(const QString& command,
                                   const QString& params)
 {
-    QRegExp regCommand( QString::fromUtf8("^\"(.*)\"$") );
-    bool singleCommand = regCommand.exactMatch(params);
+    QRegularExpression regCommand( QString::fromUtf8("\\A\"(.*)\"\\z"),
+                                   QRegularExpression::DotMatchesEverythingOption );
+    const QRegularExpressionMatch paramsMatch = regCommand.match(params);
+    bool singleCommand = paramsMatch.hasMatch();
 
     if ( ( 0 == command.compare(QString::fromUtf8("open"), Qt::CaseInsensitive) ) && singleCommand ) {
-        ddeOpenFile( regCommand.cap(1) );
+        ddeOpenFile( paramsMatch.captured(1) );
     } else if ( ( 0 == command.compare(QString::fromUtf8("new"), Qt::CaseInsensitive) ) && singleCommand ) {
-        ddeNewFile( regCommand.cap(1) );
+        ddeNewFile( paramsMatch.captured(1) );
     } else if ( ( 0 == command.compare(QString::fromUtf8("print"), Qt::CaseInsensitive) ) && singleCommand ) {
-        ddePrintFile( regCommand.cap(1) );
+        ddePrintFile( paramsMatch.captured(1) );
     } else {
         executeUnknownDdeCommand(command, params);
     }

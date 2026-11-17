@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,16 +32,12 @@
 #include <map>
 #include <string>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QCursor>
 #include <QFutureWatcher>
-#include <QtCore/QString>
-#include <QtCore/QTimer>
+#include <QString>
+#include <QTimer>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -68,8 +64,8 @@ struct GuiApplicationManagerPrivate
 {
     GuiApplicationManager* _publicInterface;
     std::list<PluginGroupNodePtr> _topLevelToolButtons;
-    boost::scoped_ptr<KnobsClipBoard> _knobsClipBoard;
-    boost::scoped_ptr<KnobGuiFactory> _knobGuiFactory;
+    std::unique_ptr<KnobsClipBoard> _knobsClipBoard;
+    std::unique_ptr<KnobGuiFactory> _knobGuiFactory;
     QCursor _colorPickerCursor, _linkToCursor, _linkMultCursor;
     SplashScreen* _splashScreen;
 
@@ -85,12 +81,12 @@ struct GuiApplicationManagerPrivate
 
     ///Used temporarily to store startup args while we load fonts
     CLArgs startupArgs;
-    boost::shared_ptr<QFutureWatcher<void> > fontconfigUpdateWatcher;
+    std::shared_ptr<QFutureWatcher<void> > fontconfigUpdateWatcher;
     QTimer updateSplashscreenTimer;
     int fontconfigMessageDots;
     PreviewThread previewRenderThread;
     int dpiX, dpiY;
-    boost::scoped_ptr<DocumentationManager> documentation;
+    std::unique_ptr<DocumentationManager> documentation;
 
 
     GuiApplicationManagerPrivate(GuiApplicationManager* publicInterface);

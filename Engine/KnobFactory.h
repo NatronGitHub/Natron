@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,10 +31,6 @@
 #include <string>
 #include <map>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#endif
-
 #include "Global/GlobalDefines.h"
 
 #include "Engine/EngineFwd.h"
@@ -52,12 +48,12 @@ public:
     ~KnobFactory();
 
     template <typename K>
-    boost::shared_ptr<K> createKnob(KnobHolder*  holder,
+    std::shared_ptr<K> createKnob(KnobHolder*  holder,
                                     const std::string &label,
                                     int dimension = 1,
                                     bool declaredByPlugin = true) const
     {
-        return boost::dynamic_pointer_cast<K>( createKnob(K::typeNameStatic(), holder, label, dimension, declaredByPlugin) );
+        return std::dynamic_pointer_cast<K>( createKnob(K::typeNameStatic(), holder, label, dimension, declaredByPlugin) );
     }
 
 private:

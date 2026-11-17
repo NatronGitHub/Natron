@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,12 +31,11 @@
 #include <algorithm> // min, max
 #include <stdexcept>
 
-#include <boost/algorithm/clamp.hpp>
-
 #include <QApplication> // qApp
-#include <QDesktopWidget>
+#include <QScreen>
 
 #include "Global/FStreamsSupport.h"
+#include "Global/MathUtils.h"
 
 #include "Engine/NodeSerialization.h"
 #include "Engine/RotoLayer.h"
@@ -66,6 +65,84 @@
 #endif
 
 NATRON_NAMESPACE_ENTER
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
+// Return the available geometry of the screen to use for a window saved with frame
+// position (x, y) and size (w, h). This is the connected screen that shows the largest
+// part of the window, which may be left of or above the primary screen (negative
+// coordinates on the virtual desktop). The frame's top-left corner alone is not enough:
+// it can be a few pixels outside the screen (invisible resize borders on Windows, a
+// maximized window), or in a gap between screens of different sizes.
+// If the window overlaps no screen, the screen nearest to it is used, so a window saved
+// on a monitor that was since unplugged comes back on a remaining one.
+QRect
+screenGeometryForWindow(int x,
+                        int y,
+                        int w,
+                        int h)
+{
+    const QRect win( x, y, std::max(w, 1), std::max(h, 1) );
+    const QList<QScreen*> screens = QGuiApplication::screens();
+    QScreen* best = NULL;
+    qint64 bestArea = 0;
+    for (QScreen* screen : screens) {
+        if (!screen) {
+            continue;
+        }
+        const QRect inter = screen->geometry().intersected(win);
+        const qint64 area = inter.isEmpty() ? 0 : (qint64)inter.width() * inter.height();
+        if (area > bestArea) {
+            bestArea = area;
+            best = screen;
+        }
+    }
+    if (!best) {
+        // no overlap: take the screen whose center is nearest to the window's center
+        const QPoint c = win.center();
+        qint64 bestDist = -1;
+        for (QScreen* screen : screens) {
+            if (!screen) {
+                continue;
+            }
+            const QPoint d = screen->geometry().center() - c;
+            const qint64 dist = (qint64)d.x() * d.x() + (qint64)d.y() * d.y();
+            if ( (bestDist < 0) || (dist < bestDist) ) {
+                bestDist = dist;
+                best = screen;
+            }
+        }
+    }
+    if (!best) {
+        best = QGuiApplication::primaryScreen();
+    }
+
+    return best ? best->availableGeometry() : QRect();
+}
+
+// Restore a window's saved geometry, making sure it fits on the screen it was saved on
+// and that at least 50x50 pixels of it are visible.
+void
+restoreWindowGeometry(QWidget* window,
+                      int x,
+                      int y,
+                      int w,
+                      int h)
+{
+    const QRect screen = screenGeometryForWindow(x, y, w, h);
+
+    if ( screen.isEmpty() ) {
+        window->resize(w, h);
+        window->move( QPoint(x, y) );
+
+        return;
+    }
+    window->resize( std::min( w, screen.width() ), std::min( h, screen.height() ) );
+    window->move( QPoint( MathUtils::clamp( x, screen.left(), screen.right() - 50 ),
+                          MathUtils::clamp( y, screen.top(), screen.bottom() - 50 ) ) );
+}
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 void
 Gui::createDefaultLayout1()
@@ -197,8 +274,6 @@ Gui::restoreLayout(bool wipePrevious,
         createDefaultLayout1();
     } else {
         std::list<ApplicationWindowSerialization*> floatingDockablePanels;
-        QDesktopWidget* desktop = QApplication::desktop();
-        QRect screen = desktop->screenGeometry();
 
         ///now restore the gui layout
         for (std::list<ApplicationWindowSerialization*>::const_iterator it = layoutSerialization._windows.begin();
@@ -241,14 +316,8 @@ Gui::restoreLayout(bool wipePrevious,
                 window = floatingWindow;
             }
 
-            ///Restore geometry
-            int w = std::min( (*it)->w, screen.width() );
-            int h = std::min( (*it)->h, screen.height() );
-            window->resize(w, h);
-            // If the screen size changed, make sure at least 50x50 pixels of the window are visible
-            int x = boost::algorithm::clamp( (*it)->x, screen.left(), screen.right() - 50 );
-            int y = boost::algorithm::clamp( (*it)->y, screen.top(), screen.bottom() - 50 );
-            window->move( QPoint(x, y) );
+            ///Restore geometry, on the screen it was saved on if it is still connected
+            restoreWindowGeometry( window, (*it)->x, (*it)->y, (*it)->w, (*it)->h );
         }
 
         for (std::list<ApplicationWindowSerialization*>::iterator it = floatingDockablePanels.begin();
@@ -282,8 +351,10 @@ Gui::restoreLayout(bool wipePrevious,
                 }
             }
             assert(fWindow);
-            fWindow->move( QPoint( (*it)->x, (*it)->y ) );
-            fWindow->resize( std::min( (*it)->w, screen.width() ), std::min( (*it)->h, screen.height() ) );
+            if (!fWindow) {
+                continue;
+            }
+            restoreWindowGeometry( fWindow, (*it)->x, (*it)->y, (*it)->w, (*it)->h );
         }
     }
 } // restoreLayout

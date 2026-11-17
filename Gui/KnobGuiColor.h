@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -33,13 +33,15 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QObject>
+#include <QObject>
 #include <QStyledItemDelegate>
 #include <QTextEdit>
+#include <QToolButton>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
+#include "Global/QtCompat.h"
 
 #include "Engine/Singleton.h"
 #include "Engine/Knob.h"
@@ -48,6 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/CurveSelection.h"
 #include "Gui/KnobGuiValue.h"
+#include "Gui/ColorSelectorWidget.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
@@ -95,7 +98,7 @@ Q_SIGNALS:
 
 private:
 
-    virtual void enterEvent(QEvent*) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent*) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent*) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent*) OVERRIDE FINAL;
 
@@ -129,7 +132,7 @@ public:
 
 public Q_SLOTS:
 
-    void showColorDialog();
+    void updateColorSelector();
 
     void setPickingEnabled(bool enabled);
 
@@ -137,8 +140,7 @@ public Q_SLOTS:
 
     void onMustShowAllDimension();
 
-    void onDialogCurrentColorChanged(const QColor & color);
-
+    void onColorSelectorChanged(float r, float g, float b, float a);
 
 Q_SIGNALS:
 
@@ -185,7 +187,8 @@ private:
 
     KnobColorWPtr _knob;
     ColorPickerLabel *_colorLabel;
-    Button *_colorDialogButton;
+    ColorSelectorWidget *_colorSelector;
+    QToolButton *_colorSelectorButton;
     std::vector<double> _lastColor;
     bool _useSimplifiedUI;
 };

@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Karolina Surma <ksurma@redhat.com>
+Date: Mon, 24 Jan 2022 08:56:03 +0100
+Subject: [PATCH] 00375-fix-test_distance-to-enable-Python-build-on-i686.patch
+
+00375 #
+Fix precision in test_distance (test.test_turtle.TestVec2D).
+See: https://bugzilla.redhat.com/show_bug.cgi?id=2038843
+---
+ Lib/test/test_turtle.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Lib/test/test_turtle.py b/Lib/test/test_turtle.py
+index 8f8434c5f4c..f7f28174463 100644
+--- a/Lib/test/test_turtle.py
++++ b/Lib/test/test_turtle.py
+@@ -217,7 +217,7 @@ class TestVec2D(VectorComparisonMixin, unittest.TestCase):
+     def test_distance(self):
+         vec = Vec2D(6, 8)
+         expected = 10
+-        self.assertEqual(abs(vec), expected)
++        self.assertAlmostEqual(abs(vec), expected)
+ 
+         vec = Vec2D(0, 0)
+         expected = 0
+@@ -225,7 +225,7 @@ class TestVec2D(VectorComparisonMixin, unittest.TestCase):
+ 
+         vec = Vec2D(2.5, 6)
+         expected = 6.5
+-        self.assertEqual(abs(vec), expected)
++        self.assertAlmostEqual(abs(vec), expected)
+ 
+     def test_rotate(self):
+ 

@@ -1,0 +1,113 @@
+Backport of:
+ - https://github.com/OpenImageIO/oiio/commit/3e74eae539bcd3662106009baa64ab23a3e48a75
+ - https://github.com/OpenImageIO/oiio/commit/650772433010b5889e6d2694137cace2567ad487
+
+diff --git src/raw.imageio/rawinput.cpp src/raw.imageio/rawinput.cpp
+index 5c1b96b526..1f19f0c447 100644
+--- src/raw.imageio/rawinput.cpp
++++ src/raw.imageio/rawinput.cpp
+@@ -790,8 +790,9 @@ RawInput::get_makernotes_canon()
+     MAKERF(FlashExposureLock);
+     MAKERF(ExposureMode);
+     MAKERF(AESetting);
+-    MAKERF(HighlightTonePriority);
+     MAKERF(ImageStabilization);
++#    if LIBRAW_VERSION < LIBRAW_MAKE_VERSION(0, 21, 0)
++    MAKERF(HighlightTonePriority);
+     MAKERF(FocusMode);
+     MAKER(AFPoint, 0);
+     MAKERF(FocusContinuous);
+@@ -812,6 +813,7 @@ RawInput::get_makernotes_canon()
+         //  short        AFPointsSelected[4];
+         //  ushort       PrimaryAFPoint;
+     }
++#    endif
+     MAKERF(FlashMode);
+     MAKERF(FlashActivity);
+     MAKER(FlashBits, 0);
+@@ -851,6 +853,7 @@ RawInput::get_makernotes_nikon()
+     MAKERF(ImageStabilization);
+     MAKER(VibrationReduction, 0);
+     MAKERF(VRMode);
++#    if LIBRAW_VERSION < LIBRAW_MAKE_VERSION(0, 21, 0)
+     MAKER(FocusMode, 0);
+     MAKERF(AFPoint);
+     MAKER(AFPointsInFocus, 0);
+@@ -870,6 +873,7 @@ RawInput::get_makernotes_nikon()
+         MAKER(AFAreaHeight, 0);
+         MAKER(ContrastDetectAFInFocus, 0);
+     }
++#    endif
+     MAKER(FlashSetting, 0);
+     MAKER(FlashType, 0);
+     MAKERF(FlashExposureCompensation);
+@@ -1016,9 +1020,11 @@ RawInput::get_makernotes_fuji()
+     MAKERF(ExrMode);
+     MAKERF(Macro);
+     MAKERF(Rating);
++#    if LIBRAW_VERSION < LIBRAW_MAKE_VERSION(0, 21, 0)
+     MAKERF(FrameRate);
+     MAKERF(FrameWidth);
+     MAKERF(FrameHeight);
++#    endif
+ #endif
+ }
+ 
+diff --git src/raw.imageio/rawinput.cpp src/raw.imageio/rawinput.cpp
+index 816dd10c9e..dd41eb6732 100644
+--- src/raw.imageio/rawinput.cpp
++++ src/raw.imageio/rawinput.cpp
+@@ -29,9 +29,6 @@ template<class T> using auto_ptr = unique_ptr<T>;
+ }
+ #endif
+ 
+-#include <libraw/libraw.h>
+-#include <libraw/libraw_version.h>
+-
+ 
+ // This plugin utilises LibRaw:
+ //   http://www.libraw.org/
+@@ -40,6 +37,18 @@ template<class T> using auto_ptr = unique_ptr<T>;
+ // Example raw images from many camera models:
+ //   https://www.rawsamples.ch
+ 
++#include <libraw/libraw.h>
++#include <libraw/libraw_version.h>
++
++#if LIBRAW_VERSION < LIBRAW_MAKE_VERSION(0, 15, 0)
++#    error "OpenImageIO does not support such an old LibRaw"
++#endif
++
++// Some structure layouts changed mid-release on this snapshot
++#define LIBRAW_VERSION_AT_LEAST_SNAPSHOT_202110      \
++    (LIBRAW_VERSION >= LIBRAW_MAKE_VERSION(0, 21, 0) \
++     && LIBRAW_SHLIB_CURRENT >= 22)
++
+ 
+ OIIO_PLUGIN_NAMESPACE_BEGIN
+ 
+@@ -1016,6 +1025,16 @@ RawInput::get_makernotes_canon()
+     MAKERF(ContinuousDrive);
+     MAKER(SensorWidth, 0);
+     MAKER(SensorHeight, 0);
++#    if LIBRAW_VERSION_AT_LEAST_SNAPSHOT_202110
++    add(m_make, "SensorLeftBorder", mn.DefaultCropAbsolute.l, false, 0);
++    add(m_make, "SensorTopBorder", mn.DefaultCropAbsolute.t, false, 0);
++    add(m_make, "SensorRightBorder", mn.DefaultCropAbsolute.r, false, 0);
++    add(m_make, "SensorBottomBorder", mn.DefaultCropAbsolute.b, false, 0);
++    add(m_make, "BlackMaskLeftBorder", mn.LeftOpticalBlack.l, false, 0);
++    add(m_make, "BlackMaskTopBorder", mn.LeftOpticalBlack.t, false, 0);
++    add(m_make, "BlackMaskRightBorder", mn.LeftOpticalBlack.r, false, 0);
++    add(m_make, "BlackMaskBottomBorder", mn.LeftOpticalBlack.b, false, 0);
++#    else
+     MAKER(SensorLeftBorder, 0);
+     MAKER(SensorTopBorder, 0);
+     MAKER(SensorRightBorder, 0);
+@@ -1024,6 +1043,7 @@ RawInput::get_makernotes_canon()
+     MAKER(BlackMaskTopBorder, 0);
+     MAKER(BlackMaskRightBorder, 0);
+     MAKER(BlackMaskBottomBorder, 0);
++#    endif
+ #endif
+ #if LIBRAW_VERSION >= LIBRAW_MAKE_VERSION(0, 19, 0)
+     // Extra added with libraw 0.19:

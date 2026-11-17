@@ -18,7 +18,7 @@ Draw a ramp between 2 edges.
 
 The ramp is composited with the source image using the ‘over’ operator.
 
-See also: http://opticalenquiry.com/nuke/index.php?title=Ramp
+See also: https://web.archive.org/web/20220807184828/http://www.opticalenquiry.com/nuke/index.php?title=Ramp
 
 Inputs
 ------
@@ -58,6 +58,8 @@ Controls
 | Color 1 / ``color1``                 | Color   | r: 1 g: 1 b: 1 a: 1 |                                                                                                                                |
 +--------------------------------------+---------+---------------------+--------------------------------------------------------------------------------------------------------------------------------+
 | Interactive Update / ``interactive`` | Boolean | Off                 | If checked, update the parameter values during interaction with the image viewer, else update the values when pen is released. |
++--------------------------------------+---------+---------------------+--------------------------------------------------------------------------------------------------------------------------------+
+| HiDPI / ``hidpi``                    | Boolean | Off                 | Should be checked when the display area is High-DPI (a.k.a Retina). Draws OpenGL overlays twice larger.                        |
 +--------------------------------------+---------+---------------------+--------------------------------------------------------------------------------------------------------------------------------+
 | Invert Mask / ``maskInvert``         | Boolean | Off                 | When checked, the effect is fully applied where the mask is 0.                                                                 |
 +--------------------------------------+---------+---------------------+--------------------------------------------------------------------------------------------------------------------------------+

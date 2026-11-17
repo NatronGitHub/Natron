@@ -1,0 +1,30 @@
+Prevent configure script from finding X11 OpenGL (e.g. mesa & freeglut).
+--- configure.orig	2023-06-09 08:27:09.000000000 -0500
++++ configure	2023-06-19 08:50:55.000000000 -0500
+@@ -20596,7 +20596,7 @@
+ CPPFLAGS="${GL_CFLAGS} ${CPPFLAGS}"
+ ax_save_LIBS="${LIBS}"
+ LIBS=""
+-ax_check_libs="-lopengl32 -lGL"
++ax_check_libs="-lopengl32"
+ for ax_lib in ${ax_check_libs}; do
+   if test X$ax_compiler_ms = Xyes; then :
+   ax_try_lib=`echo $ax_lib | sed -e 's/^-l//' -e 's/$/.lib/'`
+@@ -20811,7 +20811,7 @@
+   ax_cv_check_glu_libglu=yes
+ else
+   LIBS=""
+-ax_check_libs="-lglu32 -lGLU"
++ax_check_libs="-lglu32"
+ for ax_lib in ${ax_check_libs}; do
+   if test X$ax_compiler_ms = Xyes; then :
+   ax_try_lib=`echo $ax_lib | sed -e 's/^-l//' -e 's/$/.lib/'`
+@@ -20966,7 +20966,7 @@
+ CPPFLAGS="${GLUT_CFLAGS} ${CPPFLAGS}"
+ ax_save_LIBS="${LIBS}"
+ LIBS=""
+-ax_check_libs="-lglut32 -lglut"
++ax_check_libs="-lglut32"
+ for ax_lib in ${ax_check_libs}; do
+   if test X$ax_compiler_ms = Xyes; then :
+   ax_try_lib=`echo $ax_lib | sed -e 's/^-l//' -e 's/$/.lib/'`

@@ -17,7 +17,7 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-if [ -z "$TMP_PATH" ]; then
+if [ -z "${TMP_PATH:-}" ]; then
     echo "TMP_PATH unset"
     exit 1
 fi

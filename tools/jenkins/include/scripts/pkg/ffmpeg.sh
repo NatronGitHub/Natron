@@ -2,10 +2,10 @@
 
 # Install FFmpeg
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/ffmpeg.html
-FFMPEG_VERSION=4.4
+FFMPEG_VERSION=6.0
 # see https://ffmpeg.org/download.html
-FFMPEG_VERSION_LIBAVCODEC=58.134.100
-FFMPEG_TAR="ffmpeg-${FFMPEG_VERSION}.tar.bz2"
+FFMPEG_VERSION_LIBAVCODEC=60.3.100
+FFMPEG_TAR="ffmpeg-${FFMPEG_VERSION}.tar.xz"
 FFMPEG_SITE="http://www.ffmpeg.org/releases"
 if download_step; then
     download "$FFMPEG_SITE" "$FFMPEG_TAR"
@@ -18,7 +18,7 @@ if build_step && { force_build || { [ ! -d "$SDK_HOME/ffmpeg-gpl2" ] || [ ! -d "
     untar "$SRC_PATH/$FFMPEG_TAR"
     pushd "ffmpeg-${FFMPEG_VERSION}"
     LGPL_SETTINGS=(
-        "--enable-x86asm" "--enable-swscale" "--enable-avfilter" "--enable-avresample"
+        "--enable-x86asm" "--enable-swscale" "--enable-avfilter"
         "--enable-libmp3lame" "--enable-libvorbis" "--enable-libopus" "--enable-librsvg"
         "--enable-libtheora" "--enable-libopenh264" "--enable-libopenjpeg"
         "--enable-libsnappy" "--enable-libmodplug" "--enable-libvpx" "--enable-libsoxr"
@@ -26,7 +26,7 @@ if build_step && { force_build || { [ ! -d "$SDK_HOME/ffmpeg-gpl2" ] || [ ! -d "
         "--enable-libaom" "--enable-libdav1d"
         "--enable-gnutls" "--enable-fontconfig" "--enable-libfreetype" "--enable-libfribidi"
         "--disable-libxcb" "--disable-libxcb-shm" "--disable-libxcb-xfixes"
-        "--disable-indev=jack" "--disable-outdev=xv" "--disable-xlib" )
+        "--disable-indev=jack" "--disable-outdev=xv" "--disable-xlib" "--disable-debug" )
     GPL_SETTINGS=( "${LGPL_SETTINGS[@]}" "--enable-gpl" "--enable-libx264" "--enable-libx265" "--enable-libxvid" "--enable-version3" )
 
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME/ffmpeg-gpl2" --libdir="$SDK_HOME/ffmpeg-gpl2/lib" --enable-shared --disable-static "${GPL_SETTINGS[@]}"

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -33,13 +33,8 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QtCore/QLineF>
-#include <QtCore/QDebug>
-
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/shared_ptr.hpp>
-#include <boost/math/special_functions/fpclassify.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#include <QLineF>
+#include <QDebug>
 
 #include "Engine/RotoContextPrivate.h"
 
@@ -342,7 +337,7 @@ bezierSegmentBboxUpdate(bool useGuiCurves,
                         const BezierCP & last,
                         double time,
                         ViewIdx view,
-                        unsigned int mipMapLevel,
+                        unsigned int mipmapLevel,
                         const Transform::Matrix3x3& transform,
                         RectD* bbox) ///< input/output
 {
@@ -377,8 +372,8 @@ bezierSegmentBboxUpdate(bool useGuiCurves,
     p2.y = p2M.y / p2M.z;
     p3.y = p3M.y / p3M.z;
 
-    if (mipMapLevel > 0) {
-        int pot = 1 << mipMapLevel;
+    if (mipmapLevel > 0) {
+        int pot = 1 << mipmapLevel;
         p0.x /= pot;
         p0.y /= pot;
 
@@ -401,7 +396,7 @@ Bezier::bezierSegmentListBboxUpdate(bool useGuiCurves,
                                     bool isOpenBezier,
                                     double time,
                                     ViewIdx view,
-                                    unsigned int mipMapLevel,
+                                    unsigned int mipmapLevel,
                                     const Transform::Matrix3x3& transform,
                                     RectD* bbox) ///< input/output
 {
@@ -433,7 +428,7 @@ Bezier::bezierSegmentListBboxUpdate(bool useGuiCurves,
             }
             next = points.begin();
         }
-        bezierSegmentBboxUpdate(useGuiCurves, *(*it), *(*next), time, view, mipMapLevel, transform, bbox);
+        bezierSegmentBboxUpdate(useGuiCurves, *(*it), *(*next), time, view, mipmapLevel, transform, bbox);
 
         // increment for next iteration
         if ( next != points.end() ) {
@@ -722,7 +717,7 @@ bezierSegmentEval(bool useGuiCurves,
                   const BezierCP & last,
                   double time,
                   ViewIdx view,
-                  unsigned int mipMapLevel,
+                  unsigned int mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                   int nbPointsPerSegment,
 #else
@@ -757,8 +752,8 @@ bezierSegmentEval(bool useGuiCurves,
     p3.x = p3M.x / p3M.z; p3.y = p3M.y / p3M.z;
 
 
-    if (mipMapLevel > 0) {
-        int pot = 1 << mipMapLevel;
+    if (mipmapLevel > 0) {
+        int pot = 1 << mipmapLevel;
         p0.x /= pot;
         p0.y /= pot;
 
@@ -992,7 +987,7 @@ Bezier::dequeueGuiActions()
     QMutexLocker k(&itemMutex);
 
     if (mustCopy) {
-        BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+        BezierPtr this_shared = std::dynamic_pointer_cast<Bezier>( shared_from_this() );
         assert(this_shared);
         BezierCPs::iterator fit = _imp->featherPoints.begin();
         for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++fit) {
@@ -1012,7 +1007,7 @@ void
 Bezier::copyInternalPointsToGuiPoints()
 {
     assert( !itemMutex.tryLock() );
-    BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+    BezierPtr this_shared = std::dynamic_pointer_cast<Bezier>( shared_from_this() );
     assert(this_shared);
     BezierCPs::iterator fit = _imp->featherPoints.begin();
     for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++fit) {
@@ -1043,7 +1038,7 @@ Bezier::clearAllPoints()
 void
 Bezier::clone(const RotoItem* other)
 {
-    BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+    BezierPtr this_shared = std::dynamic_pointer_cast<Bezier>( shared_from_this() );
 
     assert(this_shared);
 
@@ -1067,11 +1062,11 @@ Bezier::clone(const RotoItem* other)
         _imp->points.clear();
         BezierCPs::const_iterator itF = otherBezier->_imp->featherPoints.begin();
         for (BezierCPs::const_iterator it = otherBezier->_imp->points.begin(); it != otherBezier->_imp->points.end(); ++it) {
-            BezierCPPtr cp = boost::make_shared<BezierCP>(this_shared);
+            BezierCPPtr cp = std::make_shared<BezierCP>(this_shared);
             cp->clone(**it);
             _imp->points.push_back(cp);
             if (useFeather) {
-                BezierCPPtr fp = boost::make_shared<BezierCP>(this_shared);
+                BezierCPPtr fp = std::make_shared<BezierCP>(this_shared);
                 fp->clone(**itF);
                 _imp->featherPoints.push_back(fp);
                 ++itF;
@@ -1116,7 +1111,7 @@ Bezier::addControlPoint(double x,
     ///if the curve is empty make a new keyframe at the current timeline's time
     ///otherwise re-use the time at which the keyframe was set on the first control point
     BezierCPPtr p;
-    BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+    BezierPtr this_shared = std::dynamic_pointer_cast<Bezier>( shared_from_this() );
     assert(this_shared);
     bool autoKeying = getContext()->isAutoKeyingEnabled();
     {
@@ -1126,12 +1121,12 @@ Bezier::addControlPoint(double x,
             keyframeTime = time;
         } else {
             keyframeTime = _imp->points.front()->getKeyframeTime(useGuiCurve, 0);
-            if (keyframeTime == INT_MAX) {
+            if (keyframeTime == std::numeric_limits<int>::max()) {
                 keyframeTime = getContext()->getTimelineCurrentTime();
             }
         }
 
-        p = boost::make_shared<BezierCP>(this_shared);
+        p = std::make_shared<BezierCP>(this_shared);
         if (autoKeying) {
             p->setPositionAtTime(useGuiCurve, keyframeTime, x, y);
             p->setLeftBezierPointAtTime(useGuiCurve, keyframeTime, x, y);
@@ -1144,7 +1139,7 @@ Bezier::addControlPoint(double x,
         _imp->points.insert(_imp->points.end(), p);
 
         if ( useFeatherPoints() ) {
-            BezierCPPtr fp = boost::make_shared<FeatherPoint>(this_shared);
+            BezierCPPtr fp = std::make_shared<FeatherPoint>(this_shared);
             if (autoKeying) {
                 fp->setPositionAtTime(useGuiCurve, keyframeTime, x, y);
                 fp->setLeftBezierPointAtTime(useGuiCurve, keyframeTime, x, y);
@@ -1174,10 +1169,10 @@ Bezier::addControlPointAfterIndex(int index,
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
 
-    BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+    BezierPtr this_shared = std::dynamic_pointer_cast<Bezier>( shared_from_this() );
     assert(this_shared);
 
-    BezierCPPtr p = boost::make_shared<BezierCP>(this_shared);
+    BezierCPPtr p = std::make_shared<BezierCP>(this_shared);
     BezierCPPtr fp;
     bool useGuiCurve = !canSetInternalPoints();
     if (useGuiCurve) {
@@ -1185,7 +1180,7 @@ Bezier::addControlPointAfterIndex(int index,
     }
 
     if ( useFeatherPoints() ) {
-        fp = boost::make_shared<FeatherPoint>(this_shared);
+        fp = std::make_shared<FeatherPoint>(this_shared);
     }
     {
         QMutexLocker l(&itemMutex);
@@ -2544,7 +2539,7 @@ Bezier::deCastelJau(bool isOpenBezier,
                     bool useGuiCurves,
                     const std::list<BezierCPPtr>& cps,
                     double time,
-                    unsigned int mipMapLevel,
+                    unsigned int mipmapLevel,
                     bool finished,
                     int nBPointsPerSegment,
                     const Transform::Matrix3x3& transform,
@@ -2558,7 +2553,12 @@ Bezier::deCastelJau(bool isOpenBezier,
     if ( next != cps.end() ) {
         ++next;
     }
+    BezierCPs::const_iterator nextnext = next;
+    if ( nextnext != cps.end() ) {
+        ++nextnext;
+    }
 
+    const bool isClosed = finished && !isOpenBezier;
 
     for (BezierCPs::const_iterator it = cps.begin(); it != cps.end(); ++it) {
         if ( next == cps.end() ) {
@@ -2568,12 +2568,14 @@ Bezier::deCastelJau(bool isOpenBezier,
             next = cps.begin();
         }
 
+        const bool isLastSegment = nextnext == cps.end();
+
         if (points) {
             std::list<ParametricPoint> segmentPoints;
-            bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipMapLevel, nBPointsPerSegment, transform, &segmentPoints, bbox);
+            bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipmapLevel, nBPointsPerSegment, transform, &segmentPoints, bbox);
 
             // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
-            if (!isOpenBezier || next != cps.end()) {
+            if (isClosed || !isLastSegment) {
                 if (!segmentPoints.empty()) {
                     segmentPoints.pop_back();
                 }
@@ -2581,9 +2583,9 @@ Bezier::deCastelJau(bool isOpenBezier,
             points->push_back(segmentPoints);
         } else {
             assert(pointsSingleList);
-            bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipMapLevel, nBPointsPerSegment, transform, pointsSingleList, bbox);
+            bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipmapLevel, nBPointsPerSegment, transform, pointsSingleList, bbox);
             // If we are a closed bezier or we are not on the last segment, remove the last point so we don't add duplicates
-            if (!isOpenBezier || next != cps.end()) {
+            if (isClosed || !isLastSegment) {
                 if (!pointsSingleList->empty()) {
                     pointsSingleList->pop_back();
                 }
@@ -2594,13 +2596,16 @@ Bezier::deCastelJau(bool isOpenBezier,
         if ( next != cps.end() ) {
             ++next;
         }
+        if ( nextnext != cps.end() ) {
+            ++nextnext;
+        }
     } // for()
 }
 
 void
 Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
                                    double time,
-                                   unsigned int mipMapLevel,
+                                   unsigned int mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                    int nbPointsPerSegment,
 #else
@@ -2609,7 +2614,7 @@ Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
                                    std::list<std::list<ParametricPoint> >* points,
                                    RectD* bbox) const
 {
-    evaluateAtTime_DeCasteljau_internal(useGuiPoints, time, mipMapLevel,
+    evaluateAtTime_DeCasteljau_internal(useGuiPoints, time, mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                         nbPointsPerSegment,
 #else
@@ -2621,7 +2626,7 @@ Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
 void
 Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
                                    double time,
-                                   unsigned int mipMapLevel,
+                                   unsigned int mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                    int nbPointsPerSegment,
 #else
@@ -2630,7 +2635,7 @@ Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
                                    std::list<ParametricPoint >* pointsSingleList,
                                    RectD* bbox) const
 {
-    evaluateAtTime_DeCasteljau_internal(useGuiPoints, time, mipMapLevel,
+    evaluateAtTime_DeCasteljau_internal(useGuiPoints, time, mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                         nbPointsPerSegment,
 #else
@@ -2642,7 +2647,7 @@ Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
 void
 Bezier::evaluateAtTime_DeCasteljau_internal(bool useGuiCurves,
                                             double time,
-                                            unsigned int mipMapLevel,
+                                            unsigned int mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                             int nbPointsPerSegment,
 #else
@@ -2657,7 +2662,7 @@ Bezier::evaluateAtTime_DeCasteljau_internal(bool useGuiCurves,
 
     getTransformAtTime(time, &transform);
     QMutexLocker l(&itemMutex);
-    deCastelJau(isOpenBezier(), useGuiCurves, _imp->points, time, mipMapLevel, _imp->finished,
+    deCastelJau(isOpenBezier(), useGuiCurves, _imp->points, time, mipmapLevel, _imp->finished,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                 nbPointsPerSegment,
 #else
@@ -2669,11 +2674,11 @@ Bezier::evaluateAtTime_DeCasteljau_internal(bool useGuiCurves,
 void
 Bezier::evaluateAtTime_DeCasteljau_autoNbPoints(bool useGuiPoints,
                                                 double time,
-                                                unsigned int mipMapLevel,
+                                                unsigned int mipmapLevel,
                                                 std::list<std::list<ParametricPoint> >* points,
                                                 RectD* bbox) const
 {
-    evaluateAtTime_DeCasteljau(useGuiPoints, time, mipMapLevel,
+    evaluateAtTime_DeCasteljau(useGuiPoints, time, mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                -1,
 #else
@@ -2685,7 +2690,7 @@ Bezier::evaluateAtTime_DeCasteljau_autoNbPoints(bool useGuiPoints,
 void
 Bezier::evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiCurves,
                                              double time,
-                                             unsigned int mipMapLevel,
+                                             unsigned int mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                 int nbPointsPerSegment,
 #else
@@ -2695,7 +2700,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiCurves,
                                              std::list<ParametricPoint >* points,
                                              RectD* bbox) const
 {
-    evaluateFeatherPointsAtTime_DeCasteljau_internal(useGuiCurves, time, mipMapLevel,
+    evaluateFeatherPointsAtTime_DeCasteljau_internal(useGuiCurves, time, mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                      nbPointsPerSegment,
 #else
@@ -2707,7 +2712,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiCurves,
 void
 Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiPoints,
                                                          double time,
-                                                         unsigned int mipMapLevel,
+                                                         unsigned int mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                          int nbPointsPerSegment,
 #else
@@ -2755,7 +2760,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiPoints,
         }
         if (points) {
             std::list<ParametricPoint> segmentPoints;
-            bezierSegmentEval(useGuiPoints, *(*it), *(*next), time, ViewIdx(0),  mipMapLevel,
+            bezierSegmentEval(useGuiPoints, *(*it), *(*next), time, ViewIdx(0),  mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                               nbPointsPerSegment,
 #else
@@ -2772,7 +2777,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiPoints,
             points->push_back(segmentPoints);
         } else {
             assert(pointsSingleList);
-            bezierSegmentEval(useGuiPoints, *(*it), *(*next), time, ViewIdx(0),  mipMapLevel,
+            bezierSegmentEval(useGuiPoints, *(*it), *(*next), time, ViewIdx(0),  mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                               nbPointsPerSegment,
 #else
@@ -2804,7 +2809,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiPoints,
 void
 Bezier::evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiPoints,
                                                 double time,
-                                                unsigned int mipMapLevel,
+                                                unsigned int mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                 int nbPointsPerSegment,
 #else
@@ -2814,7 +2819,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiPoints,
                                                 std::list<std::list<ParametricPoint> >* points, ///< output
                                                 RectD* bbox) const ///< output
 {
-    evaluateFeatherPointsAtTime_DeCasteljau_internal(useGuiPoints, time, mipMapLevel,
+    evaluateFeatherPointsAtTime_DeCasteljau_internal(useGuiPoints, time, mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                      nbPointsPerSegment,
 #else
@@ -3325,7 +3330,7 @@ Bezier::save(RotoItemSerialization* obj) const
 void
 Bezier::load(const RotoItemSerialization & obj)
 {
-    BezierPtr this_shared = boost::dynamic_pointer_cast<Bezier>( shared_from_this() );
+    BezierPtr this_shared = std::dynamic_pointer_cast<Bezier>( shared_from_this() );
 
     assert(this_shared);
 
@@ -3338,12 +3343,12 @@ Bezier::load(const RotoItemSerialization & obj)
         bool useFeather = useFeatherPoints();
         std::list<BezierCP>::const_iterator itF = s._featherPoints.begin();
         for (std::list<BezierCP>::const_iterator it = s._controlPoints.begin(); it != s._controlPoints.end(); ++it) {
-            BezierCPPtr cp = boost::make_shared<BezierCP>(this_shared);
+            BezierCPPtr cp = std::make_shared<BezierCP>(this_shared);
             cp->clone(*it);
             _imp->points.push_back(cp);
 
             if (useFeather) {
-                BezierCPPtr fp = boost::make_shared<FeatherPoint>(this_shared);
+                BezierCPPtr fp = std::make_shared<FeatherPoint>(this_shared);
                 fp->clone(*itF);
                 _imp->featherPoints.push_back(fp);
                 ++itF;
@@ -3387,7 +3392,7 @@ Bezier::getPreviousKeyframeTime(double time) const
         }
     }
 
-    return INT_MIN;
+    return std::numeric_limits<int>::min();
 }
 
 int
@@ -3403,7 +3408,7 @@ Bezier::getNextKeyframeTime(double time) const
         }
     }
 
-    return INT_MAX;
+    return std::numeric_limits<int>::max();
 }
 
 int

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -20,6 +20,7 @@
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#undef Py_LIMITED_API  // Needed for PyRun_SimpleString, PyRun_String, Py_NoUserSiteDirectory
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
@@ -55,7 +56,7 @@
 #include <sstream> // stringstream
 #include <locale>
 
-#include <QtCore/QtGlobal> // for Q_OS_*
+#include <QtGlobal> // for Q_OS_*
 #if defined(Q_OS_LINUX)
 #include <sys/signal.h>
 #ifndef __USE_GNU
@@ -68,7 +69,7 @@
 #ifdef Q_OS_UNIX
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
 #include <sys/sysctl.h>
 #include <libproc.h>
 #endif
@@ -84,17 +85,16 @@
 #include <ceres/version.h>
 #include <openMVG/version.hpp>
 
-#include <QtCore/QDateTime>
-#include <QtCore/QDebug>
-#include <QtCore/QDir>
-#include <QtCore/QTextCodec>
-#include <QtCore/QCoreApplication>
-#include <QtCore/QSettings>
-#include <QtCore/QThreadPool>
-#include <QtCore/QTextStream>
-#include <QtNetwork/QAbstractSocket>
-#include <QtNetwork/QLocalServer>
-#include <QtNetwork/QLocalSocket>
+#include <QDateTime>
+#include <QDebug>
+#include <QDir>
+#include <QCoreApplication>
+#include <QSettings>
+#include <QThreadPool>
+#include <QTextStream>
+#include <QAbstractSocket>
+#include <QLocalServer>
+#include <QLocalSocket>
 
 
 #include "Global/ProcInfo.h"
@@ -103,6 +103,7 @@
 #ifdef DEBUG
 #include "Global/FloatingPointExceptions.h"
 #endif
+#include "Global/PythonUtils.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/Backdrop.h"
@@ -140,10 +141,6 @@
 #include "sbkversion.h" // shiboken/pyside version
 
 #include "AppManagerPrivate.h" // include breakpad after Engine, because it includes /usr/include/AssertMacros.h on OS X which defines a check(x) macro, which conflicts with boost
-
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
-#endif
 
 NATRON_NAMESPACE_ENTER
 
@@ -249,134 +246,6 @@ setSigSegvSignal()
 
 #endif // if defined(__NATRON_LINUX__) && !defined(__FreeBSD__)
 
-
-#if PY_MAJOR_VERSION >= 3
-// Python 3
-
-//Borrowed from https://github.com/python/cpython/blob/634cb7aa2936a09e84c5787d311291f0e042dba3/Python/fileutils.c
-//Somehow Python 3 dev forced every C application embedding python to have their own code to convert char** to wchar_t**
-static wchar_t*
-char2wchar(char* arg)
-{
-    wchar_t *res = NULL;
-
-#ifdef HAVE_BROKEN_MBSTOWCS
-    /* Some platforms have a broken implementation of
-     * mbstowcs which does not count the characters that
-     * would result from conversion.  Use an upper bound.
-     */
-    size_t argsize = strlen(arg);
-#else
-    size_t argsize = mbstowcs(NULL, arg, 0);
-#endif
-    size_t count;
-    unsigned char *in;
-    wchar_t *out;
-#ifdef HAVE_MBRTOWC
-    mbstate_t mbs;
-#endif
-    if (argsize != (size_t)-1) {
-        res = (wchar_t *)malloc( (argsize + 1) * sizeof(wchar_t) );
-        if (!res) {
-            goto oom;
-        }
-        count = mbstowcs(res, arg, argsize + 1);
-        if (count != (size_t)-1) {
-            wchar_t *tmp;
-            /* Only use the result if it contains no
-             surrogate characters. */
-            for (tmp = res; *tmp != 0 &&
-                 (*tmp < 0xd800 || *tmp > 0xdfff); tmp++) {
-                ;
-            }
-            if (*tmp == 0) {
-                return res;
-            }
-        }
-        free(res);
-    }
-    /* Conversion failed. Fall back to escaping with surrogateescape. */
-#ifdef HAVE_MBRTOWC
-    /* Try conversion with mbrtwoc (C99), and escape non-decodable bytes. */
-    /* Overallocate; as multi-byte characters are in the argument, the
-     actual output could use less memory. */
-    argsize = strlen(arg) + 1;
-    res = (wchar_t*)malloc( argsize * sizeof(wchar_t) );
-    if (!res) {
-        goto oom;
-    }
-    in = (unsigned char*)arg;
-    out = res;
-    std::memset(&mbs, 0, sizeof mbs);
-    while (argsize) {
-        size_t converted = mbrtowc(out, (char*)in, argsize, &mbs);
-        if (converted == 0) {
-            /* Reached end of string; null char stored. */
-            break;
-        }
-        if (converted == (size_t)-2) {
-            /* Incomplete character. This should never happen,
-             since we provide everything that we have -
-             unless there is a bug in the C library, or I
-             misunderstood how mbrtowc works. */
-            fprintf(stderr, "unexpected mbrtowc result -2\n");
-            free(res);
-
-            return NULL;
-        }
-        if (converted == (size_t)-1) {
-            /* Conversion error. Escape as UTF-8b, and start over
-             in the initial shift state. */
-            *out++ = 0xdc00 + *in++;
-            argsize--;
-            std::memset(&mbs, 0, sizeof mbs);
-            continue;
-        }
-        if ( (*out >= 0xd800) && (*out <= 0xdfff) ) {
-            /* Surrogate character.  Escape the original
-             byte sequence with surrogateescape. */
-            argsize -= converted;
-            while (converted--) {
-                *out++ = 0xdc00 + *in++;
-            }
-            continue;
-        }
-        /* successfully converted some bytes */
-        in += converted;
-        argsize -= converted;
-        out++;
-    }
-#else
-    /* Cannot use C locale for escaping; manually escape as if charset
-     is ASCII (i.e. escape all bytes > 128. This will still roundtrip
-     correctly in the locale's charset, which must be an ASCII superset. */
-    res = (wchar_t*)malloc( (strlen(arg) + 1) * sizeof(wchar_t) );
-    if (!res) {
-        goto oom;
-    }
-    in = (unsigned char*)arg;
-    out = res;
-    while (*in) {
-        if (*in < 128) {
-            *out++ = *in++;
-        } else {
-            *out++ = 0xdc00 + *in++;
-        }
-    }
-    *out = 0;
-#endif // ifdef HAVE_MBRTOWC
-
-    return res;
-oom:
-    fprintf(stderr, "out of memory\n");
-    free(res);
-
-    return NULL;
-} // char2wchar
-
-#endif // if PY_MAJOR_VERSION >= 3
-
-
 //} // anon namespace
 
 void
@@ -441,18 +310,10 @@ AppManager::loadFromArgs(const CLArgs& cl)
 {
 
 #ifdef DEBUG
-    for (std::size_t i = 0; i < _imp->commandLineArgsUtf8.size(); ++i) {
-        std::cout << "argv[" << i << "] = " << _imp->commandLineArgsUtf8[i] << std::endl;
+    for (std::size_t i = 0; i < _imp->commandLineArgsWide.size(); ++i) {
+        std::cout << "argv[" << i << "] = " << StrUtils::utf16_to_utf8( std::wstring(_imp->commandLineArgsWide[i]) ) << std::endl;
     }
 #endif
-
-    // Ensure Qt knows C-strings are UTF-8 before creating the QApplication for argv
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    // be forward compatible: source code is UTF-8, and Qt5 assumes UTF-8 by default
-    QTextCodec::setCodecForCStrings( QTextCodec::codecForName("UTF-8") );
-    QTextCodec::setCodecForTr( QTextCodec::codecForName("UTF-8") );
-#endif
-
 
     // This needs to be done BEFORE creating qApp because
     // on Linux, X11 will create a context that would corrupt
@@ -486,9 +347,9 @@ AppManager::loadFromArgs(const CLArgs& cl)
 
             std::string stdFcPath = fcPath.toStdString();
 
-            // qputenv on minw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
             qDebug() << "Setting FONTCONFIG_PATH to" << stdFcPath.c_str();
-#if 0 //def __NATRON_WIN32__
+#if 0 //def __NATRON_WIN32__ // commented out in https://github.com/NatronGitHub/Natron/commit/3445d671f15fbd97bca164b53ceb41cef47c61c3
+            // qputenv on mingw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
             _wputenv_s(L"FONTCONFIG_PATH", StrUtils::utf8_to_utf16(stdFcPath).c_str());
 #else
              qputenv( "FONTCONFIG_PATH", stdFcPath.c_str() );
@@ -595,9 +456,15 @@ AppManager::~AppManager()
     QThreadPool::globalInstance()->waitForDone();
 
     ///Kill caches now because decreaseNCacheFilesOpened can be called
-    _imp->_nodeCache->waitForDeleterThread();
-    _imp->_diskCache->waitForDeleterThread();
-    _imp->_viewerCache->waitForDeleterThread();
+    if (_imp->_nodeCache) {
+        _imp->_nodeCache->waitForDeleterThread();
+    }
+    if (_imp->_diskCache) {
+        _imp->_diskCache->waitForDeleterThread();
+    }
+    if (_imp->_viewerCache) {
+        _imp->_viewerCache->waitForDeleterThread();
+    }
     _imp->_nodeCache.reset();
     _imp->_viewerCache.reset();
     _imp->_diskCache.reset();
@@ -627,7 +494,7 @@ public:
     virtual ~QuitInstanceArgs() {}
 };
 
-typedef boost::shared_ptr<QuitInstanceArgs> QuitInstanceArgsPtr;
+typedef std::shared_ptr<QuitInstanceArgs> QuitInstanceArgsPtr;
 
 void
 AppManager::afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args)
@@ -667,7 +534,7 @@ AppManager::quitNow(const AppInstancePtr& instance)
             (*it)->quitAnyProcessing_blocking(false);
         }
     }
-    QuitInstanceArgsPtr args = boost::make_shared<QuitInstanceArgs>();
+    QuitInstanceArgsPtr args = std::make_shared<QuitInstanceArgs>();
     args->instance = instance;
     afterQuitProcessingCallback(args);
 }
@@ -675,7 +542,7 @@ AppManager::quitNow(const AppInstancePtr& instance)
 void
 AppManager::quit(const AppInstancePtr& instance)
 {
-    QuitInstanceArgsPtr args = boost::make_shared<QuitInstanceArgs>();
+    QuitInstanceArgsPtr args = std::make_shared<QuitInstanceArgs>();
 
     args->instance = instance;
     if ( !instance->getProject()->quitAnyProcessingForAllNodes(this, args) ) {
@@ -850,7 +717,7 @@ AppManager::loadInternal(const CLArgs& cl)
 # endif
 
 
-    _imp->_settings = boost::make_shared<Settings>();
+    _imp->_settings = std::make_shared<Settings>();
     _imp->_settings->initializeKnobsPublic();
 
     bool hasGLForRendering = hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, 0);
@@ -932,6 +799,12 @@ bool
 AppManager::isCopyInputImageForPluginRenderEnabled() const
 {
     return _imp->pluginsUseInputImageCopyToRender;
+}
+
+bool
+AppManager::isOnWayland() const
+{
+    return _imp->onWayland;
 }
 
 bool
@@ -1048,6 +921,12 @@ AppManager::getWGLData() const
 
 #endif
 #ifdef __NATRON_LINUX__
+const OSGLContext_egl_data*
+AppManager::getEGLData() const
+{
+    return _imp->eglInfo.get();
+}
+
 const OSGLContext_glx_data*
 AppManager::getGLXData() const
 {
@@ -1072,9 +951,9 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         U64 viewerCacheSize = _imp->_settings->getMaximumViewerDiskCacheSize();
         U64 maxDiskCacheNode = _imp->_settings->getMaximumDiskCacheNodeSize();
 
-        _imp->_nodeCache = boost::make_shared<Cache<Image> >("NodeCache", NATRON_CACHE_VERSION, maxCacheRAM, 1.);
-        _imp->_diskCache = boost::make_shared<Cache<Image> >("DiskCache", NATRON_CACHE_VERSION, maxDiskCacheNode, 0.);
-        _imp->_viewerCache = boost::make_shared<Cache<FrameEntry> >("ViewerCache", NATRON_CACHE_VERSION, viewerCacheSize, 0.);
+        _imp->_nodeCache = std::make_shared<Cache<Image> >("NodeCache", NATRON_CACHE_VERSION, maxCacheRAM, 1.);
+        _imp->_diskCache = std::make_shared<Cache<Image> >("DiskCache", NATRON_CACHE_VERSION, maxDiskCacheNode, 0.);
+        _imp->_viewerCache = std::make_shared<Cache<FrameEntry> >("ViewerCache", NATRON_CACHE_VERSION, viewerCacheSize, 0.);
         _imp->setViewerCacheTileSize();
     } catch (std::logic_error&) {
         // ignore
@@ -1098,7 +977,12 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         _imp->restoreCaches();
     }
 
-    setLoadingStatus( tr("Loading plugin cache...") );
+    if (cl.isOpenFXCacheClearRequestedOnLaunch()) {
+        setLoadingStatus( tr("Clearing the OpenFX Plugins cache...") );
+        clearPluginsLoadedCache();
+    } else {
+        setLoadingStatus( tr("Loading plugin cache...") );
+    }
 
 
     ///Set host properties after restoring settings since it depends on the host name.
@@ -1230,7 +1114,7 @@ AppManager::newAppInstanceInternal(const CLArgs& cl,
     if (!alwaysBackground) {
         instance = makeNewInstance(_imp->_availableID);
     } else {
-        instance = boost::make_shared<AppInstance>(_imp->_availableID);
+        instance = std::make_shared<AppInstance>(_imp->_availableID);
     }
 
     {
@@ -1880,7 +1764,7 @@ addToPythonPathFunctor(const QDir& directory)
     std::string addToPythonPath("sys.path.append(str('");
 
     addToPythonPath += directory.absolutePath().toStdString();
-    addToPythonPath += "').decode('utf-8'))\n";
+    addToPythonPath += "'))\n";
 
     std::string err;
     bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(addToPythonPath, &err, 0);
@@ -1954,37 +1838,28 @@ AppManager::loadPythonGroups()
         operateOnPathRecursive(&addToPythonPathFunctor, d);
     }
 
-    ///Also import Pyside.QtCore and Pyside.QtGui (the later only in non background mode)
+    ///Also import qtpy.QtCore and qtpy.QtGui (the later only in non background mode)
     {
         std::string s;
-#     if (SHIBOKEN_MAJOR_VERSION == 2)
-        s = "import PySide2\nimport PySide2.QtCore as QtCore";
-#     else
-        s = "import PySide\nimport PySide.QtCore as QtCore";
-#     endif
+        s = "import qtpy\nfrom qtpy import QtCore";
         bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(s, &err, 0);
         if (!ok) {
-            QString message = tr("Failed to import PySide.QtCore, make sure it is bundled with your Natron installation "
+            QString message = tr("Failed to import qtpy.QtCore, make sure it is bundled with your Natron installation "
                                      "or reachable through the Python path. "
                                      "Note that Natron disables usage "
                                  "of site-packages).");
             std::cerr << message.toStdString() << std::endl;
-            appPTR->writeToErrorLog_mt_safe(QLatin1String("PySide.QtCore"), QDateTime::currentDateTime(), message);
+            appPTR->writeToErrorLog_mt_safe(QLatin1String("qtpy.QtCore"), QDateTime::currentDateTime(), message);
         }
     }
 
     if ( !isBackground() ) {
-        std::string s;
-#     if (SHIBOKEN_MAJOR_VERSION == 2)
-        s = "import PySide2.QtGui as QtGui";
-#     else
-        s = "import PySide.QtGui as QtGui";
-#     endif
+        std::string s = "from qtpy import QtGui";
         bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(s, &err, 0);
         if (!ok) {
-            QString message = tr("Failed to import PySide.QtGui");
+            QString message = tr("Failed to import qtpy.QtGui");
             std::cerr << message.toStdString() << std::endl;
-            appPTR->writeToErrorLog_mt_safe(QLatin1String("PySide.QtGui"), QDateTime::currentDateTime(), message);
+            appPTR->writeToErrorLog_mt_safe(QLatin1String("qtpy.QtGui"), QDateTime::currentDateTime(), message);
         }
     }
 
@@ -2144,10 +2019,10 @@ AppManager::registerPlugin(const QString& resourcesPath,
                            int minor,
                            bool isDeprecated)
 {
-    QMutex* pluginMutex = 0;
+    QRecursiveMutex* pluginMutex = nullptr;
 
     if (mustCreateMutex) {
-        pluginMutex = new QMutex(QMutex::Recursive);
+        pluginMutex = new QRecursiveMutex();
     }
     Plugin* plugin = new Plugin(binary, resourcesPath, pluginID, pluginLabel, pluginIconPath, groupIconPath, groups, pluginMutex, major, minor,
                                 isReader, isWriter, isDeprecated);
@@ -2611,7 +2486,7 @@ AppManager::setLoadingStatus(const QString & str)
 AppInstancePtr
 AppManager::makeNewInstance(int appID) const
 {
-    return boost::make_shared<AppInstance>(appID);
+    return std::make_shared<AppInstance>(appID);
 }
 
 void
@@ -2629,9 +2504,6 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<ViewSpec>("ViewSpec");
     qRegisterMetaType<NodePtr>("NodePtr");
     qRegisterMetaType<std::list<double> >("std::list<double>");
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
-#endif
 }
 
 void
@@ -3057,39 +2929,6 @@ AppManager::getPluginIDs(const std::string& filter)
 }
 
 
-std::string
-NATRON_PYTHON_NAMESPACE::PyStringToStdString(PyObject* obj)
-{
-    ///Must be locked
-    assert( PyThreadState_Get() );
-    std::string ret;
-
-    if ( PyString_Check(obj) ) {
-        char* buf = PyString_AsString(obj);
-        if (buf) {
-            ret += std::string(buf);
-        }
-    } else if ( PyUnicode_Check(obj) ) {
-        /*PyObject * temp_bytes = PyUnicode_AsEncodedString(obj, "ASCII", "strict"); // Owned reference
-           if (temp_bytes != NULL) {
-           char* cstr = PyBytes_AS_STRING(temp_bytes); // Borrowed pointer
-           ret.append(cstr);
-           Py_DECREF(temp_bytes);
-           }*/
-        PyObject* utf8pyobj = PyUnicode_AsUTF8String(obj); // newRef
-        if (utf8pyobj) {
-            char* cstr = PyBytes_AS_STRING(utf8pyobj); // Borrowed pointer
-            ret.append(cstr);
-            Py_DECREF(utf8pyobj);
-        }
-    } else if ( PyBytes_Check(obj) ) {
-        char* cstr = PyBytes_AS_STRING(obj); // Borrowed pointer
-        ret.append(cstr);
-    }
-
-    return ret;
-}
-
 void
 AppManager::initPython()
 {
@@ -3108,254 +2947,14 @@ AppManager::initPython()
     //
     QString binPath = QCoreApplication::applicationDirPath();
     binPath = QDir::toNativeSeparators(binPath);
-#ifdef __NATRON_WIN32__
-    static std::string pythonHome = binPath.toStdString() + "\\.."; // must use static storage
-    QString pyPathZip = QString::fromUtf8( (pythonHome + "\\lib\\python" NATRON_PY_VERSION_STRING_NO_DOT ".zip").c_str() );
-    QString pyPath = QString::fromUtf8( (pythonHome +  "\\lib\\python" NATRON_PY_VERSION_STRING).c_str() );
-    QString pluginPath = binPath + QString::fromUtf8("\\..\\Plugins");
-#else
-#  if defined(__NATRON_LINUX__)
-    static std::string pythonHome = binPath.toStdString() + "/.."; // must use static storage
-#  elif defined(__NATRON_OSX__)
-    static std::string pythonHome = binPath.toStdString() + "/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING; // must use static storage
-#  else
-#    error "unsupported platform"
-#  endif
-    QString pyPathZip = QString::fromUtf8( (pythonHome + "/lib/python" NATRON_PY_VERSION_STRING_NO_DOT ".zip").c_str() );
-    QString pyPath = QString::fromUtf8( (pythonHome + "/lib/python" NATRON_PY_VERSION_STRING).c_str() );
-    QString pluginPath = binPath + QString::fromUtf8("/../Plugins");
-#endif
-    if ( !QFile( QDir::fromNativeSeparators(pyPathZip) ).exists() ) {
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "\"%s\" does not exist, not added to PYTHONPATH\n", pyPathZip.toStdString().c_str() );
-#     endif
-        pyPathZip.clear();
-    }
-    if ( !QDir( QDir::fromNativeSeparators(pyPath) ).exists() ) {
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "\"%s\" does not exist, not added to PYTHONPATH\n", pyPath.toStdString().c_str() );
-#     endif
-        pyPath.clear();
-    }
-    if ( !QDir( QDir::fromNativeSeparators(pluginPath) ).exists() ) {
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "\"%s\" does not exist, not added to PYTHONPATH\n", pluginPath.toStdString().c_str() );
-#     endif
-        pluginPath.clear();
-    }
-    // PYTHONHOME is really useful if there's a python inside it
-    if ( pyPathZip.isEmpty() && pyPath.isEmpty() ) {
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "dir \"%s\" does not exist or does not contain lib/python*, not setting PYTHONHOME\n", pythonHome.c_str() );
-#     endif
-        pythonHome.clear();
-    }
-    /////////////////////////////////////////
-    // Py_SetPythonHome
-    /////////////////////////////////////////
-    //
-    // Must be done before Py_Initialize (see doc of Py_Initialize)
-    //
-    // The argument should point to a zero-terminated character string in static storage whose contents will not change for the duration of the program’s execution
-
-    if ( !pythonHome.empty() ) {
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "Py_SetPythonHome(\"%s\")\n", pythonHome.c_str() );
-#     endif
-#     if PY_MAJOR_VERSION >= 3
-        // Python 3
-        static const std::wstring pythonHomeW = StrUtils::utf8_to_utf16(pythonHome); // must use static storage
-        Py_SetPythonHome( const_cast<wchar_t*>( pythonHomeW.c_str() ) );
-#     else
-        // Python 2
-        Py_SetPythonHome( const_cast<char*>( pythonHome.c_str() ) );
-#     endif
-    }
-
-    /////////////////////////////////////////
-    // PYTHONPATH and Py_SetPath
-    /////////////////////////////////////////
-    //
-    // note: to check the python path of a python install, execute:
-    // python -c 'import sys,pprint; pprint.pprint( sys.path )'
-    //
-    // to build the python27.zip, cd to lib/python2.7, and generate the pyo and the zip file using:
-    //
-    //  python -O -m compileall .
-    //  zip -r ../python27.zip *.py* bsddb compiler ctypes curses distutils email encodings hotshot idlelib importlib json logging multiprocessing pydoc_data sqlite3 unittest wsgiref xml
-    //
-    QString pythonPath = QString::fromUtf8( qgetenv("PYTHONPATH") );
-    //Add the Python distribution of Natron to the Python path
-
-    QStringList toPrepend;
-    if ( !pyPathZip.isEmpty() ) {
-        toPrepend.append(pyPathZip);
-    }
-    if ( !pyPath.isEmpty() ) {
-        toPrepend.append(pyPath);
-    }
-    if ( !pluginPath.isEmpty() ) {
-        toPrepend.append(pluginPath);
-    }
-
-#if defined(__NATRON_OSX__) && defined DEBUG
-    // in debug mode, also prepend the local PySide directory
-    // homebrew's pyside directory
-    toPrepend.append( QString::fromUtf8("/usr/local/Cellar/pyside/1.2.2_1/lib/python" NATRON_PY_VERSION_STRING "/site-packages") );
-    // macport's pyside directory
-    toPrepend.append( QString::fromUtf8("/opt/local/Library/Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING "/site-packages") );
-#endif
-
-    if ( toPrepend.isEmpty() ) {
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf("PYTHONPATH not modified\n");
-#     endif
-    } else {
-#     ifdef __NATRON_WIN32__
-        const QChar pathSep = QChar::fromLatin1(';');
-#     else
-        const QChar pathSep = QChar::fromLatin1(':');
-#     endif
-        QString toPrependStr = toPrepend.join(pathSep);
-        if (pythonPath.isEmpty()) {
-            pythonPath = toPrependStr;
-        } else {
-            pythonPath = toPrependStr + pathSep + pythonPath;
-        }
-        // qputenv on minw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
-#     if 0//def __NATRON_WIN32__
-        _wputenv_s(L"PYTHONPATH", StrUtils::utf8_to_utf16(pythonPath.toStdString()).c_str());
-#     else
-        std::string pythonPathString = pythonPath.toStdString();
-        qputenv( "PYTHONPATH", pythonPathString.c_str() );
-        //Py_SetPath( pythonPathString.c_str() ); // does not exist in Python 2
-#     endif
-#     if PY_MAJOR_VERSION >= 3
-        std::wstring pythonPathString = StrUtils::utf8_to_utf16( pythonPath.toStdString() );
-        Py_SetPath( pythonPathString.c_str() ); // argument is copied internally, no need to use static storage
-#     endif
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "PYTHONPATH set to %s\n", pythonPath.toStdString().c_str() );
-#     endif
-    }
-
-    /////////////////////////////////////////
-    // Py_SetProgramName
-    /////////////////////////////////////////
-    //
-    // Must be done before Py_Initialize (see doc of Py_Initialize)
-    //
-#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-    printf( "Py_SetProgramName(\"%s\")\n", _imp->commandLineArgsUtf8[0] );
-#endif
-#if PY_MAJOR_VERSION >= 3
-    // Python 3
-    Py_SetProgramName(_imp->commandLineArgsWide[0]);
-#else
-    // Python 2
-    Py_SetProgramName(_imp->commandLineArgsUtf8[0]);
-#endif
-
+    NATRON_PYTHON_NAMESPACE::setupPythonEnv(binPath.toStdString());
 
     ///Must be called prior to Py_Initialize (calls PyImport_AppendInittab())
     initBuiltinPythonModules();
-
-    //See https://developer.blender.org/T31507
-    //Python will not load anything in site-packages if this is set
-    //We are sure that nothing in system wide site-packages is loaded, for instance on OS X with Python installed
-    //through macports on the system, the following printf show the following:
-
-    /*Py_GetProgramName is /Applications/Natron.app/Contents/MacOS/Natron
-       Py_GetPrefix is /Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7
-       Py_GetExecPrefix is /Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7
-       Py_GetProgramFullPath is /Applications/Natron.app/Contents/MacOS/Natron
-       Py_GetPath is /Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7:/Applications/Natron.app/Contents/MacOS/../Plugins:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python27.zip:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/plat-darwin:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/plat-mac:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/plat-mac/lib-scriptpackages:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/lib-tk:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/lib-old:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/lib-dynload
-       Py_GetPythonHome is ../Frameworks/Python.framework/Versions/2.7/lib
-       Python library is in /Applications/Natron.app/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages*/
-
-    //Py_NoSiteFlag = 1;
-
-
-    /////////////////////////////////////////
-    // Py_Initialize
-    /////////////////////////////////////////
-    //
-    // Initialize the Python interpreter. In an application embedding Python, this should be called before using any other Python/C API functions; with the exception of Py_SetProgramName(), Py_SetPythonHome() and Py_SetPath().
-#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-    printf("Py_Initialize()\n");
-#endif
-    Py_Initialize(); // calls setlocale()
-    // pythonHome must be const, so that the c_str() pointer is never invalidated
-
-    /////////////////////////////////////////
-    // PySys_SetArgv
-    /////////////////////////////////////////
-    //
-#if PY_MAJOR_VERSION >= 3
-    // Python 3
-    PySys_SetArgv( argc, &_imp->args.front() ); /// relative module import
-#else
-    // Python 2
-    PySys_SetArgv( _imp->commandLineArgsUtf8.size(), &_imp->commandLineArgsUtf8.front() ); /// relative module import
-#endif
-
-    _imp->mainModule = PyImport_ImportModule("__main__"); //create main module , new ref
-
-    //See http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
-    //Python releases the GIL every 100 virtual Python instructions, we do not want that to happen in the middle of an expression.
-    //_PyEval_SetSwitchInterval(LONG_MAX);
-
-    //See answer for http://stackoverflow.com/questions/15470367/pyeval-initthreads-in-python-3-how-when-to-call-it-the-saga-continues-ad-naus
-    // Note: on Python >= 3.7 this is already done by Py_Initialize(),
-    // but it doesn't hurt do do it once more.
-    PyEval_InitThreads();
-
-    // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
-    ///All calls to the Python API should call PythonGILLocker beforehand.
-    // Disabled because it seems to crash Natron at launch.
-    //_imp->mainThreadState = PyGILState_GetThisThreadState();
-    //PyEval_ReleaseThread(_imp->mainThreadState);
+    
+    _imp->mainModule = NATRON_PYTHON_NAMESPACE::initializePython3(_imp->commandLineArgsWide);
 
     std::string err;
-#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-    /// print info about python lib
-    {
-        printf( "PATH is %s\n", Py_GETENV("PATH") );
-        printf( "PYTHONPATH is %s\n", Py_GETENV("PYTHONPATH") );
-        printf( "PYTHONHOME is %s\n", Py_GETENV("PYTHONHOME") );
-        printf( "Py_DebugFlag is %d\n", Py_DebugFlag );
-        printf( "Py_VerboseFlag is %d\n", Py_VerboseFlag );
-        printf( "Py_InteractiveFlag is %d\n", Py_InteractiveFlag );
-        printf( "Py_InspectFlag is %d\n", Py_InspectFlag );
-        printf( "Py_OptimizeFlag is %d\n", Py_OptimizeFlag );
-        printf( "Py_NoSiteFlag is %d\n", Py_NoSiteFlag );
-        printf( "Py_BytesWarningFlag is %d\n", Py_BytesWarningFlag );
-        printf( "Py_UseClassExceptionsFlag is %d\n", Py_UseClassExceptionsFlag );
-        printf( "Py_FrozenFlag is %d\n", Py_FrozenFlag );
-        printf( "Py_TabcheckFlag is %d\n", Py_TabcheckFlag );
-        printf( "Py_UnicodeFlag is %d\n", Py_UnicodeFlag );
-        printf( "Py_IgnoreEnvironmentFlag is %d\n", Py_IgnoreEnvironmentFlag );
-        printf( "Py_DivisionWarningFlag is %d\n", Py_DivisionWarningFlag );
-        printf( "Py_DontWriteBytecodeFlag is %d\n", Py_DontWriteBytecodeFlag );
-        printf( "Py_NoUserSiteDirectory is %d\n", Py_NoUserSiteDirectory );
-        printf( "Py_GetProgramName is %s\n", Py_GetProgramName() );
-        printf( "Py_GetPrefix is %s\n", Py_GetPrefix() );
-        printf( "Py_GetExecPrefix is %s\n", Py_GetPrefix() );
-        printf( "Py_GetProgramFullPath is %s\n", Py_GetProgramFullPath() );
-        printf( "Py_GetPath is %s\n", Py_GetPath() );
-        printf( "Py_GetPythonHome is %s\n", Py_GetPythonHome() );
-        bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript("from distutils.sysconfig import get_python_lib; print('Python library is in ' + get_python_lib())", &err, 0);
-        assert(ok);
-        Q_UNUSED(ok);
-    }
-#endif
-
-    // Release the GIL, because PyEval_InitThreads acquires the GIL
-    // see https://docs.python.org/3.7/c-api/init.html#c.PyEval_InitThreads
-    PyThreadState *_save = PyEval_SaveThread();
-    // The lock should be released just before PyFinalize() using:
-    // PyEval_RestoreThread(_save);
-
     std::string modulename = NATRON_ENGINE_PYTHON_MODULE_NAME;
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nfrom math import *\nimport " + modulename, &err, 0);
     if (!ok) {
@@ -3402,6 +3001,9 @@ AppManager::initPython()
             throw std::runtime_error( tr("Error while loading StreamCatcher: %1").arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
         }
     }
+    // Set QT_API for QtPy
+    // https://github.com/spyder-ide/qtpy
+    qputenv("QT_API", "pyside2");
 } // AppManager::initPython
 
 void
@@ -3411,6 +3013,10 @@ AppManager::tearDownPython()
 
     return;
 #endif
+    if ( !Py_IsInitialized() ) {
+        return;
+    }
+
     ///See https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
 #if !defined(NDEBUG)
     QThread* curThread = QThread::currentThread();
@@ -3438,23 +3044,13 @@ AppManager::getMainModule()
 ///The symbol has been generated by Shiboken in  Engine/NatronEngine/natronengine_module_wrapper.cpp
 extern "C"
 {
-#if PY_MAJOR_VERSION >= 3
-// Python 3
 PyObject* PyInit_NatronEngine();
-#else
-void initNatronEngine();
-#endif
 }
 
 void
 AppManager::initBuiltinPythonModules()
 {
-#if PY_MAJOR_VERSION >= 3
-    // Python 3
     int ret = PyImport_AppendInittab(NATRON_ENGINE_PYTHON_MODULE_NAME, &PyInit_NatronEngine);
-#else
-    int ret = PyImport_AppendInittab(NATRON_ENGINE_PYTHON_MODULE_NAME, &initNatronEngine);
-#endif
     if (ret == -1) {
         throw std::runtime_error("Failed to initialize built-in Python module.");
     }
@@ -3499,14 +3095,14 @@ AppManager::launchPythonInterpreter()
         throw std::runtime_error("AppInstance::launchPythonInterpreter(): interpretPythonScript(" + s + " failed!");
     }
 
-    // PythonGILLocker pgl;
-#if PY_MAJOR_VERSION >= 3
-    // Python 3
-    Py_Main(1, &_imp->commandLineArgsWide[0]);
-#else
-    Py_Main(1, &_imp->commandLineArgsUtf8[0]);
+    PyGILState_Ensure(); // Py_Main does PyGILState_Release() for us.
+
+    assert(PyThreadState_Get());
+#if PY_VERSION_HEX >= 0x030400F0
+    assert(PyGILState_Check()); // Not available prior to Python 3.4
 #endif
 
+    Py_Main(1, &_imp->commandLineArgsWide[0]);
 }
 
 int
@@ -4013,14 +3609,14 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
 
             PyObject* pyStr = PyObject_Str(pyExcValue);
             if (pyStr) {
-                const char* str = PyString_AsString(pyStr);
-                if (error && str) {
+                std::string str = NATRON_PYTHON_NAMESPACE::PyStringToStdString(pyStr);
+                if ( error && !str.empty() ) {
                     *error += std::string("Python exception: ") + str + '\n';
                 }
                 Py_DECREF(pyStr);
 
                 // See if we can get a full traceback
-                PyObject* module_name = PyString_FromString("traceback");
+                PyObject* module_name = PyUnicode_FromString("traceback");
                 PyObject* pyth_module = PyImport_Import(module_name);
                 Py_DECREF(module_name);
 
@@ -4035,16 +3631,16 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
                     if (pyth_func && PyCallable_Check(pyth_func)) {
                         PyObject *pyth_val = PyObject_CallFunctionObjArgs(pyth_func, pyExcType, pyExcValue, pyExcTraceback, NULL);
                         if (pyth_val) {
-                            PyObject *emptyString = PyString_FromString("");
+                            PyObject *emptyString = PyUnicode_FromString("");
                             PyObject *strList = PyObject_CallMethod(emptyString, (char*)"join", (char*)"(O)", pyth_val);
                             Py_DECREF(emptyString);
                             Py_DECREF(pyth_val);
                             pyStr = PyObject_Str(strList);
                             Py_DECREF(strList);
                             if (pyStr) {
-                                str = PyString_AsString(pyStr);
-                                if (error && str) {
-                                    *error += std::string(str) + '\n';
+                                str = NATRON_PYTHON_NAMESPACE::PyStringToStdString(pyStr);
+                                if ( error && !str.empty() ) {
+                                    *error += str + '\n';
                                 }
                                 Py_DECREF(pyStr);
                             }
@@ -4189,7 +3785,7 @@ NATRON_PYTHON_NAMESPACE::isKeyword(const std::string& str)
 }
 
 #if !defined(NDEBUG) && !defined(DEBUG_PYTHON_GIL)
-#pragma message WARN("define DEBUG_PYTHON_GIL in AppManager.h to debug Python GIL issues")
+//#pragma message WARN("define DEBUG_PYTHON_GIL in AppManager.h to debug Python GIL issues")
 #endif
 
 #ifdef DEBUG_PYTHON_GIL
@@ -4275,6 +3871,86 @@ PythonGILLocker::~PythonGILLocker()
     --pythonCount[threadname];
 #endif
     PyGILState_Release(state);
+}
+
+PythonGILUnlocker::PythonGILUnlocker()
+{
+#ifdef DEBUG_PYTHON_GIL
+    if (!Py_IsInitialized()) {
+        throw std::runtime_error("Trying to execute python code, but Py_IsInitialized() returns false");
+    }
+#endif
+    assert(Py_IsInitialized());
+
+    // Also take the Python GIL, since not doing so seems to crash Natron during recursive Natron->Python->Natron->Python calls, see https://github.com/NatronGitHub/Natron/issues/379
+    // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
+    // Take the GIL for this thread
+#ifdef DEBUG_PYTHON_GIL
+    QThread* curThread = QThread::currentThread();
+    QString threadname = (qApp && qApp->thread() == curThread) ? QString::fromUtf8("Main") : curThread->objectName();
+    qDebug() << QString::fromUtf8("Thread '%1' is releasing the Python GIL").arg(threadname);
+#endif
+    assert(PyThreadState_Get());
+#if PY_VERSION_HEX >= 0x030400F0
+    assert(PyGILState_Check()); // Not available prior to Python 3.4
+#endif
+    PyGILState_Release(PyGILState_UNLOCKED);
+#ifdef DEBUG_PYTHON_GIL
+    qDebug() << QString::fromUtf8("Thread '%1' released the Python GIL").arg(threadname);
+#endif
+
+#ifdef USE_NATRON_GIL
+    // Take the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
+    // We do this after we got the Python GIL, to avoid deadlocks:
+    // If we do it the other way, this thread may be waiting for the Python GIL while keeping the Natron GIL
+    // locked, thus preventing other threads from getting the Python GIL.
+    if (appPTR) {
+#ifdef DEBUG_PYTHON_GIL
+        qDebug() << QString::fromUtf8("Thread '%1' is releasing the Natron GIL").arg(threadname);
+#endif
+        appPTR->releaseNatronGIL();
+#ifdef DEBUG_PYTHON_GIL
+        qDebug() << QString::fromUtf8("Thread '%1' released the Natron GIL").arg(threadname);
+#endif
+    }
+#endif
+}
+
+PythonGILUnlocker::~PythonGILUnlocker()
+{
+    // Take the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
+#ifdef DEBUG_PYTHON_GIL
+    QThread* curThread = QThread::currentThread();
+    QString threadname = (qApp && qApp->thread() == curThread) ? QString::fromUtf8("Main") : curThread->objectName();
+#endif
+#ifdef USE_NATRON_GIL
+    if (appPTR) {
+#ifdef DEBUG_PYTHON_GIL
+        qDebug() << QString::fromUtf8("Thread '%1' is asking the Natron GIL").arg(threadname);
+#endif
+        appPTR->takeNatronGIL();
+    }
+#endif
+
+    // We released the Python GIL too, so take it here.
+    // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
+#if PY_VERSION_HEX >= 0x030400F0
+    assert(!PyGILState_Check());  // Not available prior to Python 3.4
+#endif
+    // Release the GIL, no thread will own it afterwards.
+#ifdef DEBUG_PYTHON_GIL
+    qDebug() << QString::fromUtf8("Thread '%1' is asking the Python GIL").arg(threadname);
+#endif
+    /* PyGILState_STATE state = */
+    PyGILState_Ensure();
+#ifdef DEBUG_PYTHON_GIL
+    qDebug() << QString::fromUtf8("Thread '%1' got the Python GIL").arg(threadname);
+#endif
+
+    assert(PyThreadState_Get());
+#if PY_VERSION_HEX >= 0x030400F0
+    assert(PyGILState_Check()); // Not available prior to Python 3.4
+#endif
 }
 
 static bool
@@ -4513,7 +4189,7 @@ NATRON_PYTHON_NAMESPACE::getFunctionArguments(const std::string& pyFunc,
 #endif
     std::stringstream ss;
     ss << "import inspect\n";
-    ss << "args_spec = inspect.getargspec(" << pyFunc << ")\n";
+    ss << "args_spec = inspect.getfullargspec(" << pyFunc << ")\n";
     std::string script = ss.str();
     std::string output;
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, error, &output);

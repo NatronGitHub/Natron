@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,10 +28,11 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QtCore/QDebug>
+#include <QDebug>
 
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
+#include "Engine/NodeGroup.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
@@ -150,7 +151,6 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,
     , checkerboardEnabled(false)
     , fpsMutex()
     , fps(24.)
-    , lastOverlayNode()
     , hasPenDown(false)
     , hasCaughtPenMotionWhileDragging(false)
 {
@@ -165,10 +165,15 @@ ViewerTabPrivate::getOverlayTransform(double time,
                                       EffectInstance* currentNode,
                                       Transform::Matrix3x3* transform) const
 {
-    if ( currentNode == target->getEffectInstance().get() ) {
+    EffectInstance* targetNode = target->getEffectInstance().get();
+    NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(targetNode);
+    if (isGroupNode) {
+        NodePtr output = isGroupNode->getOutputNodeInput(false);
+        return getOverlayTransform(time, view, output, currentNode, transform);
+    }
+    if ( currentNode == targetNode  ) {
         return true;
     }
-    RenderScale s(1.);
     EffectInstancePtr input;
     StatusEnum stat = eStatusReplyDefault;
     Transform::Matrix3x3 mat;
@@ -180,7 +185,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
     if ( !currentNode->getNode()->isNodeDisabled() /*&& currentNode->getNode()->getCurrentCanTransform()*/ ) {
         // Always use draft mode to draw overlay (so that transforms are applied,
         // even in case of motion blur, see Transform3x3Plugin::getTransform() )
-        stat = currentNode->getTransform_public(time, s, /*draftRender=*/true, view, &input, &mat);
+        stat = currentNode->getTransform_public(time, RenderScale::identity, /*draftRender=*/true, view, &input, &mat);
     }
     if (stat == eStatusFailed) {
         return false;
@@ -284,7 +289,14 @@ ViewerTabPrivate::getTimeTransform(double time,
     if (!currentNode) {
         return false;
     }
-    if ( currentNode == target->getEffectInstance().get() ) {
+    EffectInstance* targetNode = target->getEffectInstance().get();
+    NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(targetNode);
+    if (isGroupNode) {
+        NodePtr output = isGroupNode->getOutputNodeInput(false);
+        EffectInstance* outputNode = output->getEffectInstance().get();
+        return getTimeTransform(time, view, output, currentNode, newTime);
+    }
+    if ( currentNode == targetNode  ) {
         *newTime = time;
 
         return true;

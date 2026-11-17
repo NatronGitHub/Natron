@@ -1,19 +1,20 @@
 diff -ur /Users/devernay/Development/blender/extern/glog/src/windows/port.h ./src/windows/port.h
 --- /Users/devernay/Development/blender/extern/glog/src/windows/port.h	2016-03-21 18:40:14.000000000 +0100
 +++ ./src/windows/port.h	2016-05-20 11:55:42.000000000 +0200
-@@ -136,17 +136,22 @@
+@@ -136,17 +136,23 @@
  #endif  // _MSC_VER
  
  // ----------------------------------- THREADS
-+#ifndef __MINGW32__ // MingW
++#if defined(HAVE_PTHREAD)
++# include <pthread.h>
++#else // no PTHREAD
  typedef DWORD pthread_t;
  typedef DWORD pthread_key_t;
  typedef LONG pthread_once_t;
  enum { PTHREAD_ONCE_INIT = 0 };   // important that this be 0! for SpinLock
-+#else
  #define pthread_self  GetCurrentThreadId
  #define pthread_equal(pthread_t_1, pthread_t_2)  ((pthread_t_1)==(pthread_t_2))
-+#endif
++#endif // HAVE_PTHREAD
  
 +#ifndef __MINGW32__ // MingW
  inline struct tm* localtime_r(const time_t* timep, struct tm* result) {

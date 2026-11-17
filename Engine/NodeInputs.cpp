@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,7 +26,7 @@
 #include "NodePrivate.h"
 
 #include <QDebug>
-#include <QtCore/QThread>
+#include <QThread>
 
 #include "Engine/NodeGroup.h"
 #include "Engine/PrecompNode.h"
@@ -168,7 +168,7 @@ void
 Node::getOutputsWithGroupRedirection(NodesList& outputs) const
 {
     NodesList redirections;
-    NodePtr thisShared = boost::const_pointer_cast<Node>( shared_from_this() );
+    NodePtr thisShared = std::const_pointer_cast<Node>( shared_from_this() );
 
     applyNodeRedirectionsDownstream(0, thisShared, false, redirections);
     if ( !redirections.empty() ) {
@@ -627,12 +627,11 @@ checkCanConnectNoMultiRes(const Node* output,
 {
     //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
     //Check that the input has the same RoD that another input and that its rod is set to 0,0
-    RenderScale scale(1.);
     RectD rod;
     bool isProjectFormat;
     StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(),
                                                                                output->getApp()->getTimeLine()->currentFrame(),
-                                                                               scale,
+                                                                               RenderScale::identity,
                                                                                ViewIdx(0),
                                                                                &rod, &isProjectFormat);
 
@@ -660,7 +659,7 @@ checkCanConnectNoMultiRes(const Node* output,
             RectD inputRod;
             stat = inputNode->getEffectInstance()->getRegionOfDefinition_public(inputNode->getHashValue(),
                                                                                 output->getApp()->getTimeLine()->currentFrame(),
-                                                                                scale,
+                                                                                RenderScale::identity,
                                                                                 ViewIdx(0),
                                                                                 &inputRod, &isProjectFormat);
             if ( (stat == eStatusFailed) && !inputRod.isNull() ) {
@@ -1735,7 +1734,7 @@ Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
 
         for (InputsV::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
             NodePtr input = it->lock();
-            if ( input && input->hasSequentialOnlyNodeUpstream(nodeName) && input->getEffectInstance()->isWriter() ) {
+            if ( input && input->isActivated() && input->hasSequentialOnlyNodeUpstream(nodeName) && input->getEffectInstance()->isWriter() ) {
                 nodeName = input->getScriptName_mt_safe();
 
                 return true;

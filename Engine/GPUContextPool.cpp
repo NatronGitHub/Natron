@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,8 +27,6 @@
 
 #include <set>
 #include <stdexcept>
-
-#include <boost/make_shared.hpp>
 
 #include <QMutex>
 #include <QWaitCondition>
@@ -120,12 +118,12 @@ GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
 
 #ifndef NATRON_RENDER_SHARED_CONTEXT
     while (_imp->glContextPool.empty() && (int)_imp->attachedGLContexts.size() >= maxContexts) {
-        _imp->glContextPoolEmpty.wait(&_imp->contextPoolMutex);
+        _imp->glContextPoolEmpty.wait(k.mutex());
     }
     if ( _imp->glContextPool.empty() ) {
         assert( (int)_imp->attachedGLContexts.size() < maxContexts );
         //  Create a new one
-        newContext = boost::make_shared<OSGLContext>( FramebufferConfig(), shareContext.get(), GLVersion.major, GLVersion.minor, rendererID );
+        newContext = std::make_shared<OSGLContext>( FramebufferConfig(), shareContext.get(), GLVersion.major, GLVersion.minor, rendererID );
     } else {
         std::set<OSGLContextPtr>::iterator it = _imp->glContextPool.begin();
         newContext = *it;
@@ -136,7 +134,7 @@ GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
 
     if ( (int)_imp->glContextPool.size() < maxContexts ) {
         //  Create a new one
-        newContext = boost::make_shared<OSGLContext>( FramebufferConfig(), shareContext.get(), GLVersion.major, GLVersion.minor, rendererID );
+        newContext = std::make_shared<OSGLContext>( FramebufferConfig(), shareContext.get(), GLVersion.major, GLVersion.minor, rendererID );
         _imp->glContextPool.insert(newContext);
     } else {
         while ((int)_imp->glContextPool.size() > maxContexts) {
@@ -170,6 +168,7 @@ GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
         if (!_imp->currentOpenGLRendererMaxTexSize) {
             newContext->setContextCurrentNoRender();
             glGetIntegerv(GL_MAX_TEXTURE_SIZE, &_imp->currentOpenGLRendererMaxTexSize);
+            newContext->unsetCurrentContextNoRender();
         }
     }
 

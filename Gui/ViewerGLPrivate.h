@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,8 +30,8 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QMutex>
-#include <QtCore/QSize>
+#include <QMutex>
+#include <QSize>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -41,7 +41,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ViewerGL.h"
 #include "Gui/ZoomContext.h"
 #include "Gui/GuiFwd.h"
-
 
 #define WIPE_MIX_HANDLE_LENGTH 50.
 #define WIPE_ROTATE_HANDLE_LENGTH 100.
@@ -105,7 +104,7 @@ struct TextureInfo
         , gain(1.)
         , gamma(1.)
         , offset(0.)
-        , mipMapLevel(0)
+        , mipmapLevel(0)
         , premult(eImagePremultiplicationOpaque)
         , time(0)
         , rod()
@@ -123,7 +122,7 @@ struct TextureInfo
     double gain;
     double gamma;
     double offset;
-    unsigned int mipMapLevel;
+    unsigned int mipmapLevel;
     ImagePremultiplicationEnum premult;
     SequenceTime time;
     RectD rod;
@@ -159,8 +158,8 @@ struct ViewerGL::Implementation
     GLuint iboTriangleStripId; /*!< IBOs holding vertices indexes for triangle strip sets*/
     TextureInfo displayTextures[2]; /*!< A pointer to the textures that would be used if A and B are displayed*/
     std::vector<TextureInfo> partialUpdateTextures; /*!< Pointer to the partial rectangle textures overlayed onto the displayed texture when tracking*/
-    boost::scoped_ptr<QGLShaderProgram> shaderRGB; /*!< The shader program used to render RGB data*/
-    boost::scoped_ptr<QGLShaderProgram> shaderBlack; /*!< The shader program used when the viewer is disconnected.*/
+    std::unique_ptr<QOpenGLShaderProgram> shaderRGB; /*!< The shader program used to render RGB data*/
+    std::unique_ptr<QOpenGLShaderProgram> shaderBlack; /*!< The shader program used when the viewer is disconnected.*/
     bool shaderLoaded; /*!< Flag to check whether the shaders have already been loaded.*/
     InfoViewerWidget* infoViewer[2]; /*!< Pointer to the info bar below the viewer holding pixel/mouse/format related info*/
     ViewerTab* const viewerTab; /*!< Pointer to the viewer tab GUI*/
@@ -172,7 +171,8 @@ struct ViewerGL::Implementation
     const QColor textRenderingColor;
     const QColor displayWindowOverlayColor;
     const QColor rodOverlayColor;
-    QFont textFont;
+    double _screenPixelRatio;
+    std::unique_ptr<QFont> _textFont;
     bool overlay; /*!< True if the user enabled overlay display*/
     bool updatingTexture;
     QColor clearColor;
@@ -184,6 +184,8 @@ struct ViewerGL::Implementation
     QPoint lastMousePosition; //< in widget coordinates
     QPointF lastDragStartPos; //< in zoom coordinates
     bool hasMovedSincePress;
+    bool setColorPickerCursor; //< was the color picker cursor set?
+    bool setOverlayCursor; //< was a cursor requested by an OpenFX overlay set?
 
     /////// currentViewerInfo
     QString currentViewerInfo_btmLeftBBOXoverlay[2]; /*!< The string holding the bottom left corner coordinates of the dataWindow*/
@@ -234,7 +236,7 @@ public:
      *@brief Fill the rendering VAO with vertices and texture coordinates
      * that depends upon the currently displayed texture.
      **/
-    void drawRenderingVAO(unsigned int mipMapLevel, int textureIndex, DrawPolygonModeEnum polygonMode, bool background);
+    void drawRenderingVAO(unsigned int mipmapLevel, int textureIndex, DrawPolygonModeEnum polygonMode, bool background);
 
     void initializeGL();
 

@@ -1,0 +1,34 @@
+From 1422cf4a7f277fb13fd209f24a90d6c02641497d Mon Sep 17 00:00:00 2001
+From: Friedemann Kleint <Friedemann.Kleint@qt.io>
+Date: Thu, 23 Jun 2022 10:44:01 +0200
+Subject: libshiboken: Fix build with numpy 1.23.0
+
+Pick-to: 6.3 6.2 5.15
+Change-Id: I885c332d6c948820140946c73ae1926e88834143
+Reviewed-by: Christian Tismer <tismer@stackless.com>
+---
+ sources/shiboken2/libshiboken/sbknumpyarrayconverter.cpp | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+(limited to 'sources/shiboken2/libshiboken/sbknumpyarrayconverter.cpp')
+
+diff --git a/sources/shiboken2/libshiboken/sbknumpyarrayconverter.cpp b/sources/shiboken2/libshiboken/sbknumpyarrayconverter.cpp
+index 3048ffba6..c8541adf5 100644
+--- sources/shiboken2/libshiboken/sbknumpyarrayconverter.cpp.orig
++++ sources/shiboken2/libshiboken/sbknumpyarrayconverter.cpp
+@@ -115,8 +115,13 @@ std::ostream &operator<<(std::ostream &str, PyArrayObject *o)
+             str << " NPY_ARRAY_NOTSWAPPED";
+         if ((flags & NPY_ARRAY_WRITEABLE) != 0)
+             str << " NPY_ARRAY_WRITEABLE";
++#if NPY_VERSION >= 0x00000010 // NPY_1_23_API_VERSION
++        if ((flags & NPY_ARRAY_WRITEBACKIFCOPY) != 0)
++            str << " NPY_ARRAY_WRITEBACKIFCOPY";
++#else
+         if ((flags & NPY_ARRAY_UPDATEIFCOPY) != 0)
+             str << " NPY_ARRAY_UPDATEIFCOPY";
++#endif
+     } else {
+         str << '0';
+     }
+-- 
+cgit v1.2.1

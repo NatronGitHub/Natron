@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -33,12 +33,12 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QCoreApplication>
-#include <QtCore/QDateTime>
-#include <QtCore/QString>
+#include <QCoreApplication>
+#include <QDateTime>
+#include <QString>
 #include <QFuture>
 #include <QFutureWatcher>
-#include <QtCore/QMutex>
+#include <QMutex>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -68,8 +68,7 @@ public:
     QDateTime projectCreationTime; //< the project creation time
     std::list<Format> builtinFormats;
     std::list<Format> additionalFormats; //< added by the user
-    mutable QMutex formatMutex; //< protects builtinFormats & additionalFormats
-
+    mutable QRecursiveMutex formatMutex;
 
     ///Project parameters (settings)
     KnobPathPtr envVars;
@@ -104,11 +103,11 @@ public:
     bool isLoadingProjectInternal; //< true when loading the internal project (not gui)
     mutable QMutex isSavingProjectMutex;
     bool isSavingProject; //< true when the project is saving
-    boost::shared_ptr<QTimer> autoSaveTimer;
-    std::list<boost::shared_ptr<QFutureWatcher<void> > > autoSaveFutures;
+    std::shared_ptr<QTimer> autoSaveTimer;
+    std::list<std::shared_ptr<QFutureWatcher<void> > > autoSaveFutures;
     mutable QMutex projectClosingMutex;
     bool projectClosing;
-    boost::shared_ptr<TLSHolder<Project::ProjectTLSData> > tlsData;
+    std::shared_ptr<TLSHolder<Project::ProjectTLSData> > tlsData;
 
     // only used on the main-thread
     struct RenderWatcher

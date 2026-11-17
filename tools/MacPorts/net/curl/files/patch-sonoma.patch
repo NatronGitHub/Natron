@@ -1,0 +1,20 @@
+--- configure
++++ configure
+@@ -21732,7 +21732,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+     if test "x$build_for_macos" != xno; then
+       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+ printf "%s\n" "yes" >&6; }
+-      LDFLAGS="$LDFLAGS -framework CoreFoundation -framework SystemConfiguration"
++      LDFLAGS="$LDFLAGS -framework CoreFoundation -framework CoreServices -framework SystemConfiguration"
+     else
+       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+ printf "%s\n" "no" >&6; }
+@@ -26234,7 +26234,7 @@ printf "%s\n" "#define USE_SECTRANSP 1" >>confdefs.h
+     ssl_msg="Secure Transport"
+     test secure-transport != "$DEFAULT_SSL_BACKEND" || VALID_DEFAULT_SSL_BACKEND=yes
+     SECURETRANSPORT_ENABLED=1
+-    LDFLAGS="$LDFLAGS -framework CoreFoundation -framework Security"
++    LDFLAGS="$LDFLAGS -framework CoreFoundation -framework CoreServices -framework Security"
+   else
+     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+ printf "%s\n" "no" >&6; }

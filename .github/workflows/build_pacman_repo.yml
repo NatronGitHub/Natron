@@ -1,0 +1,76 @@
+name: Build pacman repo
+
+# The package repository is a release artifact: built on demand, or for (pre-)release tags.
+# Run it by hand (workflow_dispatch) after changing tools/MINGW-packages.
+on:
+  workflow_dispatch: {}
+  push:
+    tags:
+    - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+env:
+  cache-name: cache-natron-repo
+
+jobs:
+  build_repo:
+    name: Build pacman repo
+    runs-on: windows-2022
+    timeout-minutes: 360
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4.1.1
+        with:
+          submodules: recursive
+      - name: Setup MinGW environment
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw64
+          update: true
+          install: git base-devel
+      - name: Install Inno Setup
+        run: choco install innosetup
+        shell: pwsh
+      - name: Prep MinGW package version list
+        run: |
+          pacman -Sl mingw64 msys > mingw-package-version-list.txt
+      - name: Restore natron repo directory from cache
+        id: restore-natron-repo-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: natron_repo
+          key: ${{ env.cache-name }}-${{ hashFiles('mingw-package-version-list.txt', 'tools/MINGW-packages/**/PKGBUILD') }}
+      - name: Build natron package repo
+        id: build-package-repo
+        # Allow continuing after error so cache gets updated and makes reruns faster.
+        continue-on-error: true
+        run: |
+          tools/MINGW-packages/build_natron_package_repo.sh natron_repo
+
+          REPO_VERSION=`cat ${GITHUB_WORKSPACE}/tools/MINGW-packages/windows_pacman_repo_version.txt`
+          echo "REPO_VERSION=${REPO_VERSION}" >> "$GITHUB_OUTPUT"
+      - name: Save natron repo directory to cache
+        id: save-natron-repo-cache
+        uses: actions/cache/save@v4
+        # save even if build fails.
+        if: always()
+        with:
+          path: natron_repo
+          key: ${{ env.cache-name }}-${{ hashFiles('mingw-package-version-list.txt', 'tools/MINGW-packages/**/PKGBUILD') }}
+      - name: Upload natron_package_repo artifacts
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: natron_package_repo-${{ steps.build-package-repo.outputs.REPO_VERSION }}
+          path: natron_repo
+      - name: Check on failures
+        if: steps.build-package-repo.outcome != 'success'
+        run: exit 1

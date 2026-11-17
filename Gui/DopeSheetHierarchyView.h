@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,24 +28,15 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 
-#include <QtCore/QtGlobal>
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-#include <QtWidgets/QTreeWidget>
-#include <QtWidgets/QStyledItemDelegate>
-#else
-#include <QtGui/QTreeWidget>
-#include <QtGui/QStyledItemDelegate>
-#endif
+#include <QtGlobal>
+
+#include <QTreeWidget>
+#include <QStyledItemDelegate>
 
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -261,7 +252,7 @@ private Q_SLOTS:
 private:
 
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
-    boost::scoped_ptr<HierarchyViewPrivate> _imp;
+    std::unique_ptr<HierarchyViewPrivate> _imp;
 };
 
 

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,13 +28,15 @@
 #include <bitset>
 #include <stdexcept>
 
-#include <QtCore/QCoreApplication>
+#include <QCoreApplication>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QCheckBox>
 #include <QItemSelectionModel>
-#include <QtCore/QRegExp>
+#include <QRegularExpression>
+
+#include "Global/QtCompat.h"
 
 #include "Engine/Node.h"
 #include "Engine/Timer.h"
@@ -176,7 +178,7 @@ public:
         }
 
         QColor c;
-        NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( node->getNodeGui() );
+        NodeGuiPtr nodeUi = std::dynamic_pointer_cast<NodeGui>( node->getNodeGui() );
         if (nodeUi) {
             double r, g, b;
             nodeUi->getColor(&r, &g, &b);
@@ -195,7 +197,7 @@ public:
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
-            NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( node->getNodeGui() );
+            NodeGuiPtr nodeUi = std::dynamic_pointer_cast<NodeGui>( node->getNodeGui() );
             if (nodeUi) {
                 item->setTextColor(Qt::black);
                 item->setBackgroundColor(c);
@@ -321,7 +323,7 @@ public:
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
-            const std::set<unsigned int>& mm = stats.getMipMapLevelsRendered();
+            const std::set<unsigned int>& mm = stats.getMipmapLevelsRendered();
             for (std::set<unsigned int>::const_iterator it = mm.begin(); it != mm.end(); ++it) {
                 str.append( QString::number(*it) );
                 str.append( QLatin1Char(' ') );
@@ -900,12 +902,7 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
     _imp->view->setSelectionMode(QAbstractItemView::SingleSelection);
     _imp->view->setSelectionBehavior(QAbstractItemView::SelectRows);
 
-
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    _imp->view->header()->setResizeMode(QHeaderView::ResizeToContents);
-#else
     _imp->view->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
-#endif
     _imp->view->header()->setStretchLastSection(true);
     _imp->view->setUniformRowHeights(true);
     _imp->view->setSortingEnabled(true);
@@ -940,7 +937,7 @@ RenderStatsDialog::onSelectionChanged(const QItemSelection &selected,
     if (!node) {
         return;
     }
-    NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( node->getNodeGui() );
+    NodeGuiPtr nodeUi = std::dynamic_pointer_cast<NodeGui>( node->getNodeGui() );
     if (!nodeUi) {
         return;
     }
@@ -1015,12 +1012,15 @@ RenderStatsDialogPrivate::updateVisibleRowsInternal(const QString& nameFilter,
 
 
     if ( useUnixWildcardsCheckbox->isChecked() ) {
-        QRegExp nameExpr(nameFilter, Qt::CaseInsensitive, QRegExp::Wildcard);
+        // QtCompat::wildcardToRegularExpression() anchors, like exactMatch() did.
+        QRegularExpression nameExpr(QtCompat::wildcardToRegularExpression(nameFilter),
+                                    QRegularExpression::CaseInsensitiveOption);
         if ( !nameExpr.isValid() ) {
             return;
         }
 
-        QRegExp idExpr(pluginIDFilter, Qt::CaseInsensitive, QRegExp::Wildcard);
+        QRegularExpression idExpr(QtCompat::wildcardToRegularExpression(pluginIDFilter),
+                                  QRegularExpression::CaseInsensitiveOption);
         if ( !idExpr.isValid() ) {
             return;
         }
@@ -1033,8 +1033,8 @@ RenderStatsDialogPrivate::updateVisibleRowsInternal(const QString& nameFilter,
                 continue;
             }
 
-            if ( ( nameFilter.isEmpty() || nameExpr.exactMatch( QString::fromUtf8( node->getLabel().c_str() ) ) ) &&
-                 ( pluginIDFilter.isEmpty() || idExpr.exactMatch( QString::fromUtf8( node->getPluginID().c_str() ) ) ) ) {
+            if ( ( nameFilter.isEmpty() || nameExpr.match( QString::fromUtf8( node->getLabel().c_str() ) ).hasMatch() ) &&
+                 ( pluginIDFilter.isEmpty() || idExpr.match( QString::fromUtf8( node->getPluginID().c_str() ) ).hasMatch() ) ) {
                 if ( view->isRowHidden(i, rootIdx) ) {
                     view->setRowHidden(i, rootIdx, false);
                 }

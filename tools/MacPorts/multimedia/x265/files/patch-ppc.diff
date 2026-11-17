@@ -1,0 +1,20 @@
+--- CMakeLists.txt.orig	2024-04-04 04:39:50.000000000 -0500
++++ CMakeLists.txt	2024-10-08 01:10:52.000000000 -0500
+@@ -53,7 +53,7 @@
+ list(FIND X86_ALIASES "${SYSPROC}" X86MATCH)
+ list(FIND ARM_ALIASES "${SYSPROC}" ARMMATCH)
+ list(FIND ARM64_ALIASES "${SYSPROC}" ARM64MATCH)
+-set(POWER_ALIASES powerpc64 powerpc64le ppc64 ppc64le)
++set(POWER_ALIASES ppc powerpc64 powerpc64le ppc64 ppc64le)
+ list(FIND POWER_ALIASES "${SYSPROC}" POWERMATCH)
+ if(X86MATCH GREATER "-1")
+     set(X86 1)
+@@ -511,7 +511,7 @@
+     endif(WINXP_SUPPORT)
+ endif()
+ 
+-if(POWER)
++if(POWER AND NOT APPLE)
+     # IBM Power8
+     option(ENABLE_ALTIVEC "Enable ALTIVEC profiling instrumentation" ON)
+     if(ENABLE_ALTIVEC)

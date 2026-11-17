@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -33,10 +33,10 @@
 #include <utility>
 #include <stdexcept>
 
-#include <QtCore/QTextStream>
-#include <QtCore/QSettings>
-#include <QtCore/QFile>
-#include <QtCore/QFileInfo>
+#include <QTextStream>
+#include <QSettings>
+#include <QFile>
+#include <QFileInfo>
 
 #include <QAction>
 #include <QApplication>
@@ -564,7 +564,7 @@ Gui::removeViewerTab(ViewerTab* tab,
         ///call the deleteNode which will call this function again when the node will be deactivated.
         NodePtr internalNode = tab->getInternalNode()->getNode();
         NodeGuiIPtr guiI = internalNode->getNodeGui();
-        NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(guiI);
+        NodeGuiPtr gui = std::dynamic_pointer_cast<NodeGui>(guiI);
         assert(gui);
         NodeGraphI* graph_i = internalNode->getGroup()->getNodeGraph();
         assert(graph_i);

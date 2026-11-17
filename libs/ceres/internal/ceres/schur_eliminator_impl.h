@@ -149,9 +149,10 @@ Init(int num_eliminate_blocks, const CompressedRowBlockStructure* bs) {
   const Chunk& chunk = chunks_.back();
 
   uneliminated_row_begins_ = chunk.start + chunk.size;
-  if (num_threads_ > 1) {
-    random_shuffle(chunks_.begin(), chunks_.end());
-  }
+  // https://github.com/ceres-solver/ceres-solver/commit/1e8e9452d0a7dfaf5697b544810798a58e35443e
+  // if (num_threads_ > 1) {
+  //   random_shuffle(chunks_.begin(), chunks_.end());
+  // }
 
   buffer_.reset(new double[buffer_size_ * num_threads_]);
 

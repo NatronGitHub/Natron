@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,8 +28,8 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QtCore/QtGlobal> // for Q_OS_*
-#include <QtCore/QDebug>
+#include <QtGlobal> // for Q_OS_*
+#include <QDebug>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QCloseEvent>
@@ -38,7 +38,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QMenuBar>
 #include <QUndoGroup>
 #include <QDesktopServices>
-#include <QtCore/QUrl>
+#include <QUrl>
 
 #include "Engine/Node.h"
 #include "Engine/Project.h"
@@ -108,7 +108,7 @@ Gui::Gui(const GuiAppInstancePtr& app,
 
     setAttribute(Qt::WA_DeleteOnClose, true);
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
      QObject::connect( appPTR, SIGNAL(dockClicked()), this, SLOT(dockClicked()) );
 #endif
 #ifdef DEBUG
@@ -779,7 +779,7 @@ Gui::openHelpDocumentation()
 #endif
 }
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
 void
 Gui::dockClicked()
 {

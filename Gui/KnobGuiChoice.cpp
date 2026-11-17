@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -47,7 +47,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QKeyEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-#include <QtCore/QDebug>
+#include <QDebug>
 #include <QFontComboBox>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -116,7 +116,7 @@ KnobComboBox::wheelEvent(QWheelEvent *e)
 }
 
 void
-KnobComboBox::enterEvent(QEvent* e)
+KnobComboBox::enterEvent(QtCompat::QEnterEvent* e)
 {
     _dnd->mouseEnter(e);
     ComboBox::enterEvent(e);
@@ -209,7 +209,7 @@ KnobGuiChoice::KnobGuiChoice(KnobIPtr knob,
     : KnobGui(knob, container)
     , _comboBox(0)
 {
-    KnobChoicePtr k = boost::dynamic_pointer_cast<KnobChoice>(knob);
+    KnobChoicePtr k = std::dynamic_pointer_cast<KnobChoice>(knob);
     QObject::connect( k.get(), SIGNAL(populated()), this, SLOT(onEntriesPopulated()) );
     QObject::connect( k.get(), SIGNAL(entryAppended()), this, SLOT(onEntryAppended()) );
     QObject::connect( k.get(), SIGNAL(entriesReset()), this, SLOT(onEntriesReset()) );

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -35,15 +35,11 @@
 #include <bitset>
 
 CLANG_DIAG_OFF(deprecated)
-#include <QtCore/QMetaType>
-#include <QtCore/QObject>
+#include <QMetaType>
+#include <QObject>
 CLANG_DIAG_ON(deprecated)
-#include <QtCore/QMutex>
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#endif
+#include <QMutex>
+
 #include "Engine/AppManager.h"
 #include "Global/KeySymbols.h"
 #include "Engine/ImagePlaneDesc.h"
@@ -83,7 +79,7 @@ NATRON_NAMESPACE_ENTER
 
 class Node
     : public QObject
-    , public boost::enable_shared_from_this<Node>
+    , public std::enable_shared_from_this<Node>
     , public CacheEntryHolder
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -96,7 +92,7 @@ public:
 
 public:
     // TODO: enable_shared_from_this
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
     Node(const AppInstancePtr& app,
          const NodeCollectionPtr& group,
          Plugin* plugin);
@@ -156,7 +152,7 @@ public:
 
     ///function called by EffectInstance to create a knob
     template <class K>
-    boost::shared_ptr<K> createKnob(const std::string &description,
+    std::shared_ptr<K> createKnob(const std::string &description,
                                     int dimension = 1,
                                     bool declaredByPlugin = true)
     {
@@ -498,7 +494,7 @@ public:
                                   unsigned int mipmapLevel,
                                   std::list<std::list<std::pair<Point, double> > >* strokes,
                                   int* strokeIndex) const;
-    ImagePtr getOrRenderLastStrokeImage(unsigned int mipMapLevel,
+    ImagePtr getOrRenderLastStrokeImage(unsigned int mipmapLevel,
                                                         double par,
                                                         const ImagePlaneDesc& components,
                                                         ImageBitDepthEnum depth) const;
@@ -908,7 +904,7 @@ public:
      * @brief DO NOT EVER USE THIS FUNCTION. This is provided for compatibility with plug-ins that
      * do not respect the OpenFX specification.
      **/
-    ImagePtr getImageBeingRendered(double time, unsigned int mipMapLevel, ViewIdx view);
+    ImagePtr getImageBeingRendered(double time, unsigned int mipmapLevel, ViewIdx view);
 
     void beginInputEdition();
 
@@ -1530,7 +1526,7 @@ private:
     void setNodeVariableToPython(const std::string& oldName, const std::string& newName);
     void deleteNodeVariableToPython(const std::string& nodeName);
 
-    boost::scoped_ptr<Implementation> _imp;
+    std::unique_ptr<Implementation> _imp;
 };
 
 /**

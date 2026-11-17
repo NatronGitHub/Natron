@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -23,9 +23,9 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <boost/algorithm/clamp.hpp>
-
 #include "TrackerNode.h"
+
+#include "Global/MathUtils.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/Curve.h"
@@ -131,8 +131,8 @@ TrackerNode::initializeKnobs()
 {
     TrackerContextPtr context = getNode()->getTrackerContext();
     KnobPagePtr trackingPage = context->getTrackingPageKnob();
-    KnobButtonPtr addMarker = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamAddTrackLabel) );
 
+    KnobButtonPtr addMarker = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamAddTrackLabel) );
     addMarker->setName(kTrackerUIParamAddTrack);
     addMarker->setHintToolTip( tr(kTrackerUIParamAddTrackHint) );
     addMarker->setEvaluateOnChange(false);
@@ -509,7 +509,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialogFirstFrame->setEvaluateOnChange(false);
     trackRangeDialogFirstFrame->setAnimationEnabled(false);
     trackRangeDialogFirstFrame->setIsPersistent(false);
-    trackRangeDialogFirstFrame->setDefaultValue(INT_MIN);
+    trackRangeDialogFirstFrame->setDefaultValue(std::numeric_limits<int>::min());
     trackRangeDialog->addKnob(trackRangeDialogFirstFrame);
     _imp->ui->trackRangeDialogFirstFrame = trackRangeDialogFirstFrame;
 
@@ -520,7 +520,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialogLastFrame->setEvaluateOnChange(false);
     trackRangeDialogLastFrame->setAnimationEnabled(false);
     trackRangeDialogLastFrame->setIsPersistent(false);
-    trackRangeDialogLastFrame->setDefaultValue(INT_MIN);
+    trackRangeDialogLastFrame->setDefaultValue(std::numeric_limits<int>::min());
     trackRangeDialog->addKnob(trackRangeDialogLastFrame);
     _imp->ui->trackRangeDialogLastFrame = trackRangeDialogLastFrame;
 
@@ -531,7 +531,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialogFrameStep->setEvaluateOnChange(false);
     trackRangeDialogFrameStep->setAnimationEnabled(false);
     trackRangeDialogFrameStep->setIsPersistent(false);
-    trackRangeDialogFrameStep->setDefaultValue(INT_MIN);
+    trackRangeDialogFrameStep->setDefaultValue(std::numeric_limits<int>::min());
     trackRangeDialog->addKnob(trackRangeDialogFrameStep);
     _imp->ui->trackRangeDialogStep = trackRangeDialogFrameStep;
 
@@ -569,6 +569,11 @@ TrackerNode::knobChanged(KnobI* k,
     }
 
     ctx->onKnobsLoaded();
+
+    OverlaySupport* overlay = getCurrentViewportForOverlays();
+    if (!overlay || !overlay->getInternalViewerNode()) {
+        return false;
+    }
     
     bool ret = true;
     if ( k == _imp->ui->trackRangeDialogOkButton.lock().get() ) {
@@ -593,7 +598,6 @@ TrackerNode::knobChanged(KnobI* k,
             return false;
         }
 
-        OverlaySupport* overlay = getCurrentViewportForOverlays();
         ctx->trackSelectedMarkers( startFrame, lastFrame, step,  overlay);
         _imp->ui->trackRangeDialogGroup.lock()->setValue(false);
     } else if ( k == _imp->ui->trackRangeDialogCancelButton.lock().get() ) {
@@ -731,6 +735,7 @@ TrackerNode::drawOverlay(double time,
     overlay->getPixelScale(pixelScaleX, pixelScaleY);
     double viewportSize[2];
     overlay->getViewportSize(viewportSize[0], viewportSize[1]);
+    double screenPixelRatio = overlay->getScreenPixelRatio();
 
     {
         GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT);
@@ -792,7 +797,6 @@ TrackerNode::drawOverlay(double time,
                 ///Draw a custom interact, indicating the track isn't selected
                 glEnable(GL_LINE_SMOOTH);
                 glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-                glLineWidth(1.5f);
 
                 for (int l = 0; l < 2; ++l) {
                     // shadow (uses GL_PROJECTION)
@@ -812,11 +816,12 @@ TrackerNode::drawOverlay(double time,
                     double x = centerKnob->getValueAtTime(time, 0);
                     double y = centerKnob->getValueAtTime(time, 1);
 
-                    glPointSize(POINT_SIZE);
+                    glPointSize(POINT_SIZE * screenPixelRatio);
                     glBegin(GL_POINTS);
                     glVertex2d(x, y);
                     glEnd();
 
+                    glLineWidth(1.5f * screenPixelRatio);
                     glBegin(GL_LINES);
                     glVertex2d(x - CROSS_SIZE * pixelScaleX, y);
                     glVertex2d(x + CROSS_SIZE * pixelScaleX, y);
@@ -826,7 +831,7 @@ TrackerNode::drawOverlay(double time,
                     glVertex2d(x, y + CROSS_SIZE * pixelScaleY);
                     glEnd();
                 }
-                glPointSize(1.);
+                glPointSize(1. * screenPixelRatio);
             } else { // if (isSelected) {
                 glEnable(GL_LINE_SMOOTH);
                 glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
@@ -1001,6 +1006,7 @@ TrackerNode::drawOverlay(double time,
                     ///Draw center position
                     glEnable(GL_LINE_SMOOTH);
                     glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+                    glLineWidth(1.5 * screenPixelRatio);
                     glBegin(GL_LINE_STRIP);
                     glColor3f(0.5 * l, 0.5 * l, 0.5 * l);
                     for (CenterPointsMap::iterator it = centerPoints.begin(); it != centerPoints.end(); ++it) {
@@ -1012,6 +1018,7 @@ TrackerNode::drawOverlay(double time,
                     glDisable(GL_LINE_SMOOTH);
 
                     glEnable(GL_POINT_SMOOTH);
+                    glPointSize(POINT_SIZE * screenPixelRatio);
                     glBegin(GL_POINTS);
                     if (!showErrorColor) {
                         glColor3f(0.5 * l, 0.5 * l, 0.5 * l);
@@ -1029,7 +1036,7 @@ TrackerNode::drawOverlay(double time,
                                    Also clamp to the interval if the correlation is higher, and reverse.
                                  */
 
-                                double error = boost::algorithm::clamp(it2->second.err, 0., CORRELATION_ERROR_MAX_DISPLAY);
+                                double error = MathUtils::clamp(it2->second.err, 0., CORRELATION_ERROR_MAX_DISPLAY);
                                 double mappedError = 0.33 - 0.33 * error / CORRELATION_ERROR_MAX_DISPLAY;
                                 float r, g, b;
                                 Color::hsv_to_rgb(mappedError, 1, 1, &r, &g, &b);
@@ -1045,6 +1052,7 @@ TrackerNode::drawOverlay(double time,
 
 
                     glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
+                    glLineWidth(1.5 * screenPixelRatio);
                     glBegin(GL_LINE_LOOP);
                     glVertex2d( topLeft.x(), topLeft.y() );
                     glVertex2d( topRight.x(), topRight.y() );
@@ -1052,6 +1060,7 @@ TrackerNode::drawOverlay(double time,
                     glVertex2d( btmLeft.x(), btmLeft.y() );
                     glEnd();
 
+                    glLineWidth(1.5f * screenPixelRatio);
                     glBegin(GL_LINE_LOOP);
                     glVertex2d( searchTopLeft.x(), searchTopLeft.y() );
                     glVertex2d( searchTopRight.x(), searchTopRight.y() );
@@ -1059,7 +1068,7 @@ TrackerNode::drawOverlay(double time,
                     glVertex2d( searchBtmLeft.x(), searchBtmRight.y() );
                     glEnd();
 
-                    glPointSize(POINT_SIZE);
+                    glPointSize(POINT_SIZE * screenPixelRatio);
                     glBegin(GL_POINTS);
 
                     ///draw center
@@ -1150,6 +1159,7 @@ TrackerNode::drawOverlay(double time,
                     glEnd();
 
                     if ( (offset.x() != 0) || (offset.y() != 0) ) {
+                        glLineWidth(1.5f * screenPixelRatio);
                         glBegin(GL_LINES);
                         glColor3f( (float)thisMarkerColor[0] * l * 0.5, (float)thisMarkerColor[1] * l * 0.5, (float)thisMarkerColor[2] * l * 0.5 );
                         glVertex2d( center.x(), center.y() );
@@ -1158,6 +1168,7 @@ TrackerNode::drawOverlay(double time,
                     }
 
                     ///now show small lines at handle positions
+                    glLineWidth(1.5f * screenPixelRatio);
                     glBegin(GL_LINES);
 
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerMidLeft) || (_imp->ui->eventState == eMouseStateDraggingInnerMidLeft) ) ) {
@@ -1246,7 +1257,7 @@ TrackerNode::drawOverlay(double time,
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glEnable(GL_LINE_SMOOTH);
             glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-            glLineWidth(1.5);
+            glLineWidth(1.5 * screenPixelRatio);
             //GLProtectMatrix p(GL_PROJECTION); // useless (we do two glTranslate in opposite directions)
 
             const double addTrackSize = TO_DPIX(ADDTRACK_SIZE);
@@ -1265,6 +1276,7 @@ TrackerNode::drawOverlay(double time,
                     glColor4d(0., 1., 0., 0.8);
                 }
 
+                glLineWidth(1.5 * screenPixelRatio);
                 glBegin(GL_LINE_LOOP);
                 glVertex2d(_imp->ui->lastMousePos.x() - addTrackSize * 2 * pixelScaleX, _imp->ui->lastMousePos.y() - addTrackSize * 2 * pixelScaleY);
                 glVertex2d(_imp->ui->lastMousePos.x() - addTrackSize * 2 * pixelScaleX, _imp->ui->lastMousePos.y() + addTrackSize * 2 * pixelScaleY);
@@ -1273,6 +1285,7 @@ TrackerNode::drawOverlay(double time,
                 glEnd();
 
                 ///draw a cross at the cursor position
+                glLineWidth(1.5f * screenPixelRatio);
                 glBegin(GL_LINES);
                 glVertex2d( _imp->ui->lastMousePos.x() - addTrackSize * pixelScaleX, _imp->ui->lastMousePos.y() );
                 glVertex2d( _imp->ui->lastMousePos.x() + addTrackSize * pixelScaleX, _imp->ui->lastMousePos.y() );
@@ -1504,7 +1517,7 @@ TrackerNode::onOverlayPenDown(double time,
 
     if (!didSomething) {
         int keyTime = _imp->ui->isInsideKeyFrameTexture(time, pos, viewportPos);
-        if (keyTime != INT_MAX) {
+        if (keyTime != std::numeric_limits<int>::max()) {
             ViewerInstance* viewer = overlay->getInternalViewerNode();
             if (viewer) {
                 viewer->getTimeline()->seekFrame(keyTime, true, viewer, eTimelineChangeReasonOtherSeek);
@@ -1541,7 +1554,8 @@ TrackerNode::onOverlayPenMotion(double time,
 
     assert(overlay);
     overlay->getPixelScale(pixelScale.first, pixelScale.second);
-    bool didSomething = false;
+    bool didSomething = false; // Set if an actual action was performed based on mouse motion.
+    bool redraw = false; // Set if we just need a redraw (e.g., hover state changed).
     TrackerContextPtr context = getNode()->getTrackerContext();
     Point delta;
     delta.x = pos.x() - _imp->ui->lastMousePos.x();
@@ -1551,7 +1565,7 @@ TrackerNode::onOverlayPenMotion(double time,
     if (_imp->ui->hoverState != eDrawStateInactive) {
         _imp->ui->hoverState = eDrawStateInactive;
         _imp->ui->hoverMarker.reset();
-        didSomething = true;
+        redraw = true;
     }
 
     std::vector<TrackMarkerPtr> allMarkers;
@@ -1584,9 +1598,9 @@ TrackerNode::onOverlayPenMotion(double time,
             _imp->ui->hoverMarker = *it;
             hoverProcess = true;
         } else if ( ( (offset.x() != 0) || (offset.y() != 0) ) && _imp->ui->isNearbyPoint(QPointF( center.x() + offset.x(), center.y() + offset.y() ), viewportPos.x(), viewportPos.y(), POINT_TOLERANCE) ) {
+            redraw = _imp->ui->hoverState != eDrawStateHoveringCenter;
             _imp->ui->hoverState = eDrawStateHoveringCenter;
             _imp->ui->hoverMarker = *it;
-            didSomething = true;
         }
 
 
@@ -1716,7 +1730,7 @@ TrackerNode::onOverlayPenMotion(double time,
     } else if ( _imp->ui->showMarkerTexture && _imp->ui->selectedMarkerTexture && _imp->ui->isInsideSelectedMarkerTexture(pos) ) {
         setCurrentCursor(eCursorSizeAll);
         hoverProcess = true;
-    } else if ( _imp->ui->showMarkerTexture && (_imp->ui->isInsideKeyFrameTexture(time, pos, viewportPos) != INT_MAX) ) {
+    } else if ( _imp->ui->showMarkerTexture && (_imp->ui->isInsideKeyFrameTexture(time, pos, viewportPos) != std::numeric_limits<int>::max()) ) {
         setCurrentCursor(eCursorPointingHand);
         hoverProcess = true;
     } else {
@@ -1729,7 +1743,7 @@ TrackerNode::onOverlayPenMotion(double time,
     }
 
     if (hoverProcess) {
-        didSomething = true;
+        redraw = true;
     }
 
     KnobDoublePtr centerKnob, offsetKnob, searchWndTopRight, searchWndBtmLeft;
@@ -1876,8 +1890,8 @@ TrackerNode::onOverlayPenMotion(double time,
             searchWindowCorners[1].x = searchWndTopRight->getValueAtTime(time, 0)  + center.x + offset.x;
             searchWindowCorners[1].y = searchWndTopRight->getValueAtTime(time, 1)  + center.y + offset.y;
 
-            cur.x = boost::algorithm::clamp(cur.x, searchWindowCorners[0].x, searchWindowCorners[1].x);
-            cur.y = boost::algorithm::clamp(cur.y, searchWindowCorners[0].y, searchWindowCorners[1].y);
+            cur.x = MathUtils::clamp(cur.x, searchWindowCorners[0].x, searchWindowCorners[1].x);
+            cur.y = MathUtils::clamp(cur.y, searchWindowCorners[0].y, searchWindowCorners[1].y);
 
             cur.x -= (center.x + offset.x);
             cur.y -= (center.y + offset.y);
@@ -2203,9 +2217,8 @@ TrackerNode::onOverlayPenMotion(double time,
             if (prevDist != 0) {
                 double dist = std::sqrt( ( pos.x() - centerPoint.x) * ( pos.x() - centerPoint.x) + ( pos.y() - centerPoint.y) * ( pos.y() - centerPoint.y) );
                 double ratio = dist / prevDist;
-                _imp->ui->selectedMarkerScale.x *= ratio;
-                _imp->ui->selectedMarkerScale.x = boost::algorithm::clamp(_imp->ui->selectedMarkerScale.x, 0.05, 1.);
-                _imp->ui->selectedMarkerScale.y = _imp->ui->selectedMarkerScale.x;
+
+                _imp->ui->selectedMarkerScale = MathUtils::clamp(_imp->ui->selectedMarkerScale * ratio, 0.05, 1.);
                 didSomething = true;
             }
             break;
@@ -2221,8 +2234,8 @@ TrackerNode::onOverlayPenMotion(double time,
             }
             double x = centerKnob->getValueAtTime(time, 0);
             double y = centerKnob->getValueAtTime(time, 1);
-            double dx = delta.x *  _imp->ui->selectedMarkerScale.x;
-            double dy = delta.y *  _imp->ui->selectedMarkerScale.y;
+            double dx = delta.x * _imp->ui->selectedMarkerScale;
+            double dy = delta.y * _imp->ui->selectedMarkerScale;
             x += dx;
             y += dy;
             centerKnob->setValuesAtTime(time, x, y, view, eValueChangedReasonPluginEdited);
@@ -2247,6 +2260,10 @@ TrackerNode::onOverlayPenMotion(double time,
         didSomething = true;
     }
     _imp->ui->lastMousePos = pos;
+
+    if (redraw) {
+        redrawOverlayInteract();
+    }
 
     return didSomething;
 } //penMotion

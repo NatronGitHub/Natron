@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -52,7 +52,7 @@ ProjectSerialization::initialize(const Project* project)
         if ( knobs[i]->getIsPersistent() &&
              !isGroup && !isPage && !isButton &&
              knobs[i]->hasModificationsForSerialization() ) {
-            KnobSerializationPtr newKnobSer = boost::make_shared<KnobSerialization>(knobs[i]);
+            KnobSerializationPtr newKnobSer = std::make_shared<KnobSerialization>(knobs[i]);
             _projectKnobs.push_back(newKnobSer);
         }
     }

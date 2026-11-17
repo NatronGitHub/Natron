@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,7 +32,9 @@ CLANG_DIAG_OFF(deprecated)
 #include <QPainter>
 #include <QStyleOption>
 #include <QApplication>
-#include <QDesktopWidget>
+
+#include <QScreen>
+
 CLANG_DIAG_ON(deprecated)
 
 #ifdef DEBUG
@@ -74,7 +76,11 @@ SplashScreen::SplashScreen(const QString & filePath)
     setAttribute(Qt::WA_TranslucentBackground, true);
 
     _pixmap.load(filePath);
-
+    _scale = 1.;
+    if (_scale != 1.) {
+        _pixmap = _pixmap.scaled( int(_pixmap.width() * _scale), int(_pixmap.height() * _scale),
+                                 Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
     resize( _pixmap.width(), _pixmap.height() );
     {
 #ifdef DEBUG
@@ -83,8 +89,8 @@ SplashScreen::SplashScreen(const QString & filePath)
         show();
     }
 
-    QDesktopWidget* desktop = QApplication::desktop();
-    QRect screen = desktop->screenGeometry();
+    QScreen* desktop = QGuiApplication::primaryScreen();
+    QRect screen = desktop->availableGeometry();
     move(screen.width() / 2 - width() / 2, screen.height() / 2 - height() / 2);
 }
 
@@ -106,15 +112,15 @@ SplashScreen::paintEvent(QPaintEvent*)
 {
     QStyleOption opt;
 
-    opt.init(this);
+    opt.initFrom(this);
     QPainter p(this);
 
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 
     p.drawPixmap(0, 0, _pixmap);
     p.setPen(Qt::white);
-    p.drawText(QPointF(120, 100), _text);
-    p.drawText(QPointF(20, 450), _versionString);
+    p.drawText(QPointF(120 * _scale, 100 * _scale), _text);
+    p.drawText(QPointF(20 * _scale, _pixmap.height() - 15 * _scale), _versionString);
 }
 
 LoadProjectSplashScreen::LoadProjectSplashScreen(const QString & filePath)
@@ -128,11 +134,16 @@ LoadProjectSplashScreen::LoadProjectSplashScreen(const QString & filePath)
 
     _pixmap.load( QString::fromUtf8(":Resources/Images/loadProjectSplashscreen.png") );
 
+    _scale = 1.;
+    if (_scale != 1.) {
+        _pixmap = _pixmap.scaled( int(_pixmap.width() * _scale), int(_pixmap.height() * _scale),
+                                 Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
     resize( _pixmap.width(), _pixmap.height() );
     show();
 
-    QDesktopWidget* desktop = QApplication::desktop();
-    QRect screen = desktop->screenGeometry();
+    QScreen* desktop = QGuiApplication::primaryScreen();
+    QRect screen = desktop->availableGeometry();
     move(screen.width() / 2 - width() / 2, screen.height() / 2 - height() / 2);
 }
 
@@ -154,19 +165,19 @@ LoadProjectSplashScreen::paintEvent(QPaintEvent* /*e*/)
 {
     QStyleOption opt;
 
-    opt.init(this);
+    opt.initFrom(this);
     QPainter p(this);
 
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 
     p.drawPixmap(0, 0, _pixmap);
     p.setPen(Qt::white);
-    p.drawText(QPointF(250, 250), _text);
+    p.drawText(QPointF(250 * _scale, _pixmap.height() - 51 * _scale), _text);
 
     QString loadString( tr("Loading ") );
     QFontMetrics fm = p.fontMetrics();
-    QPointF loadStrPos(300, 150);
-    p.drawText(QPointF(loadStrPos.x() + fm.width(loadString) + 5, 150), _projectName);
+    QPointF loadStrPos(300 * _scale, _pixmap.height() / 2.);
+    p.drawText(QPointF(loadStrPos.x() + (fm.horizontalAdvance(loadString) + 5) * _scale, _pixmap.height() / 2.), _projectName);
     p.setPen( QColor(243, 137, 0) );
     p.drawText(loadStrPos, loadString);
 }

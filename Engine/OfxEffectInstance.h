@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,16 +31,12 @@
 #include <map>
 #include <string>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
-#include <QtCore/QMutex>
-#include <QtCore/QString>
-#include <QtCore/QObject>
+#include <QMutex>
+#include <QString>
+#include <QObject>
 CLANG_DIAG_ON(deprecated)
-#include <QtCore/QStringList>
+#include <QStringList>
 
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/ViewIdx.h"
@@ -178,6 +174,10 @@ public:
     virtual void getFrameRange(double *first, double *last) OVERRIDE;
     virtual void initializeOverlayInteract() OVERRIDE FINAL;
     virtual bool hasOverlay() const OVERRIDE FINAL;
+    virtual bool getOverlayCursor(CursorEnum* cursor,
+                                  std::string* customImage,
+                                  int* hotSpotX,
+                                  int* hotSpotY) const OVERRIDE FINAL;
     virtual void redrawOverlayInteract() OVERRIDE FINAL;
     virtual void drawOverlay(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
     virtual bool onOverlayPenDown(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -288,7 +288,6 @@ public:
                                     Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void onEnableOpenGLKnobValueChanged(bool activated) OVERRIDE FINAL;
 
     /********OVERRIDDEN FROM EFFECT INSTANCE: END*************/
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
@@ -317,7 +316,7 @@ private:
 
 private:
 
-    boost::scoped_ptr<OfxEffectInstancePrivate> _imp;
+    std::unique_ptr<OfxEffectInstancePrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

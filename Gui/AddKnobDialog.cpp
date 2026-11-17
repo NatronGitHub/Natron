@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,12 +26,13 @@
 #include "AddKnobDialog.h"
 
 #include <cfloat> // floor
+#include <limits>
 #include <stdexcept>
 #include <sstream> // stringstream
 
 #include <QCheckBox>
 #include <QTextEdit>
-#include <QtCore/QTextStream>
+#include <QTextStream>
 #include <QFormLayout>
 
 #include "Engine/EffectInstance.h"
@@ -944,7 +945,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     const KnobsVec& internalKnobs = _imp->panel->getHolder()->getKnobs();
     for (KnobsVec::const_iterator it = internalKnobs.begin(); it != internalKnobs.end(); ++it) {
         if ( (*it)->isUserKnob() ) {
-            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
+            KnobPagePtr isPage = std::dynamic_pointer_cast<KnobPage>(*it);
             if (isPage) {
                 _imp->userPages.push_back(isPage);
             }
@@ -1044,7 +1045,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     onTypeCurrentIndexChanged( (int)t );
 
     if (knob) {
-        _imp->originalKnobSerialization = boost::make_shared<KnobSerialization>(knob);
+        _imp->originalKnobSerialization = std::make_shared<KnobSerialization>(knob);
     }
 }
 
@@ -1712,7 +1713,7 @@ AddKnobDialog::onOkClicked()
         assert(_imp->typeChoice);
         t = (ParamDataTypeEnum)_imp->typeChoice->activeIndex();
     } else {
-        oldKnobIsPage = boost::dynamic_pointer_cast<KnobPage>(_imp->knob);
+        oldKnobIsPage = std::dynamic_pointer_cast<KnobPage>(_imp->knob);
         oldKnobScriptName = _imp->knob->getName();
         effect = dynamic_cast<EffectInstance*>( _imp->knob->getHolder() );
         oldParentPage = _imp->knob->getTopLevelPage();
@@ -1827,7 +1828,7 @@ AddKnobDialog::onOkClicked()
         KnobGroup* group = _imp->getSelectedGroup();
         KnobGroupPtr shrdGrp;
         if (group) {
-            shrdGrp = boost::dynamic_pointer_cast<KnobGroup>( group->shared_from_this() );
+            shrdGrp = std::dynamic_pointer_cast<KnobGroup>( group->shared_from_this() );
         }
 
         try {
@@ -1967,13 +1968,13 @@ AddKnobDialogPrivate::setVisibleMinMax(bool visible)
 
         if ( (t == AddKnobDialog::eParamDataTypeColorRGB) || (t == AddKnobDialog::eParamDataTypeColorRGBA) ) {
             // color range to 0-1
-            minBox->setValue(INT_MIN);
-            maxBox->setValue(INT_MAX);
+            minBox->setValue(std::numeric_limits<int>::min());
+            maxBox->setValue(std::numeric_limits<int>::max());
             dminBox->setValue(0.);
             dmaxBox->setValue(1.);
         } else {
-            minBox->setValue(INT_MIN);
-            maxBox->setValue(INT_MAX);
+            minBox->setValue(std::numeric_limits<int>::min());
+            maxBox->setValue(std::numeric_limits<int>::max());
             dminBox->setValue(0);
             dmaxBox->setValue(100);
         }

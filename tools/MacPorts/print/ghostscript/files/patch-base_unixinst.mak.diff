@@ -1,5 +1,5 @@
---- base/unixinst.mak.orig	2019-03-26 09:13:42.000000000 +0000
-+++ base/unixinst.mak	2020-04-28 01:05:01.000000000 -0700
+--- base/unixinst.mak.orig	2023-09-12 14:40:30
++++ base/unixinst.mak	2023-09-14 17:45:24
 @@ -78,6 +78,8 @@
  PSEXDIR=$(PSLIBDIR)/../examples
  PSMANDIR=$(PSLIBDIR)/../man
@@ -9,19 +9,17 @@
  install-data: install-libdata install-resdata$(COMPILE_INITS) install-iccdata$(COMPILE_INITS) install-doc install-man
  
  # There's no point in providing a complete dependency list: we include
-@@ -157,7 +159,9 @@
- 
- DOC_PAGE_IMAGES=Artifex_logo.png  favicon.png  ghostscript_logo.png  hamburger-light.png  x-light.png
- 
--install-doc: $(PSDOCDIR)/News.htm
+@@ -148,13 +150,30 @@
+ # install html documentation
+ DOC_PAGES=index.html News.html COPYING Ghostscript.pdf \
+           GS9_Color_Management.pdf
 +GPDL_DOC_PAGES=ghostpdl.pdf ghostpdl.txt
-+
-+install-doc: $(PSDOCDIR)/News.htm install-doc-$(PCL_TARGET) install-doc-$(XPS_TARGET) install-doc-$(GPDL_TARGET)
+ 
+-install-doc: $(PSDOCDIR)/News.html
++install-doc: $(PSDOCDIR)/News.html install-doc-$(PCL_TARGET) install-doc-$(XPS_TARGET) install-doc-$(GPDL_TARGET)
  	-mkdir -p $(DESTDIR)$(docdir)
- 	-mkdir -p $(DESTDIR)$(docdir)/images
  	$(SH) -c 'for f in $(DOC_PAGES) ;\
-@@ -167,6 +171,22 @@
- 	do if ( test -f $(PSDOCDIR)/images/$$f ); then $(INSTALL_DATA) $(PSDOCDIR)/images/$$f $(DESTDIR)$(docdir)/images; fi;\
+ 	do if ( test -f $(PSDOCDIR)/$$f ); then $(INSTALL_DATA) $(PSDOCDIR)/$$f $(DESTDIR)$(docdir); fi;\
  	done'
  
 +install-doc-gpcl6: install-doc-gpdl
@@ -41,9 +39,9 @@
 +	$(NO_OP)
 +
  # install the man pages for each locale
- MAN_LCDIRS=. de
+ MAN_LCDIRS=.
  MAN1_LINKS_PS2PS=eps2eps
-@@ -201,7 +221,7 @@
+@@ -189,7 +208,7 @@
  	done'
  
  # install the example files
@@ -52,10 +50,11 @@
  	-mkdir -p $(DESTDIR)$(exdir)
  	for f in \
          alphabet.ps colorcir.ps escher.ps grayalph.ps snowflak.ps \
-@@ -217,6 +237,20 @@
+@@ -204,6 +223,20 @@
+ all_ag1.ps all_aj2.ps article9.ps gscjk_ag.ps gscjk_ak.ps iso2022v.ps ;\
  	do $(INSTALL_DATA) $(PSEXDIR)/cjk/$$f $(DESTDIR)$(exdir)/cjk ;\
  	done
- 
++
 +install-examples-gpcl6:
 +	-mkdir -p $(DESTDIR)$(exdir)/pcl
 +	for f in \
@@ -69,7 +68,6 @@
 +# Dummy target
 +install-examples-:
 +	$(NO_OP)
-+
+ 
  install-shared: $(GS_SHARED_OBJS)
  	-mkdir -p $(DESTDIR)$(gssharedir)
- 	$(SH) -c 'for obj in $(GS_SHARED_OBJS); do \

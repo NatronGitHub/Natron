@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,14 +28,8 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/make_shared.hpp>
-#endif
-
-#include <QtCore/QMutex>
-#include <QtCore/QReadWriteLock>
+#include <QMutex>
+#include <QReadWriteLock>
 
 #include "Engine/Curve.h"
 #include "Engine/EngineFwd.h"
@@ -90,18 +84,18 @@ struct BezierCPPrivate
         , guiLeftY(0)
         , guiRightY(0)
     {
-        curveX= boost::make_shared<Curve>();
-        curveY= boost::make_shared<Curve>();
-        guiCurveX= boost::make_shared<Curve>();
-        guiCurveY= boost::make_shared<Curve>();
-        curveLeftBezierX= boost::make_shared<Curve>();
-        curveRightBezierX= boost::make_shared<Curve>();
-        curveLeftBezierY= boost::make_shared<Curve>();
-        curveRightBezierY= boost::make_shared<Curve>();
-        guiCurveLeftBezierX= boost::make_shared<Curve>();
-        guiCurveRightBezierX= boost::make_shared<Curve>();
-        guiCurveLeftBezierY= boost::make_shared<Curve>();
-        guiCurveRightBezierY= boost::make_shared<Curve>();
+        curveX= std::make_shared<Curve>();
+        curveY= std::make_shared<Curve>();
+        guiCurveX= std::make_shared<Curve>();
+        guiCurveY= std::make_shared<Curve>();
+        curveLeftBezierX= std::make_shared<Curve>();
+        curveRightBezierX= std::make_shared<Curve>();
+        curveLeftBezierY= std::make_shared<Curve>();
+        curveRightBezierY= std::make_shared<Curve>();
+        guiCurveLeftBezierX= std::make_shared<Curve>();
+        guiCurveRightBezierX= std::make_shared<Curve>();
+        guiCurveLeftBezierY= std::make_shared<Curve>();
+        guiCurveRightBezierY= std::make_shared<Curve>();
     }
 };
 

@@ -9,7 +9,7 @@ Text node
 
 |pluginIcon| 
 
-*This documentation is for version 6.13 of Text (net.fxarena.openfx.Text).*
+*This documentation is for version 6.14 of Text (net.fxarena.openfx.Text).*
 
 Description
 -----------
@@ -56,6 +56,8 @@ Controls
 | Reset Center / ``resetCenter``              | Button  |                     | Reset the position of the center to the center of the input region of definition                                                                                                   |
 +---------------------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Interactive Update / ``interactive``        | Boolean | On                  | If checked, update the parameter values during interaction with the image viewer, else update the values when pen is released.                                                     |
++---------------------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| HiDPI / ``hidpi``                           | Boolean | Off                 | Should be checked when the display area is High-DPI (a.k.a Retina). Draws OpenGL overlays twice larger.                                                                            |
 +---------------------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Transform / ``transform``                   | Boolean | On                  | Use transform overlay for text position.                                                                                                                                           |
 +---------------------------------------------+---------+---------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+

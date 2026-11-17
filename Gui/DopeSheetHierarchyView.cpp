@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,8 +27,8 @@
 
 #include <stdexcept>
 
-#include <QtCore/QDebug> //REMOVEME
-#include <QtCore/QSize>
+#include <QDebug> //REMOVEME
+#include <QSize>
 #include <QHeaderView>
 #include <QPainter>
 #include <QResizeEvent>
@@ -130,7 +130,7 @@ HierarchyViewSelectionModel::selectChildren(const QModelIndex &index,
                                             QItemSelection *selection) const
 {
     int row = 0;
-    QModelIndex childIndex = index.child(row, 0);
+    QModelIndex childIndex = index.model()->index(row, 0, index);
 
     while ( childIndex.isValid() ) {
         if ( !selection->contains(childIndex) ) {
@@ -143,7 +143,7 @@ HierarchyViewSelectionModel::selectChildren(const QModelIndex &index,
         }
 
         ++row;
-        childIndex = index.child(row, 0);
+        childIndex = index.model()->index(row, 0, index);
     }
 }
 
@@ -187,7 +187,7 @@ HierarchyViewSelectionModel::checkParentsSelectedStates(const QModelIndex &index
         QModelIndex index = (*it);
         bool selectParent = true;
         int row = 0;
-        QModelIndex childIndexIt = index.child(row, 0);
+        QModelIndex childIndexIt = index.model()->index(row, 0, index);
 
         while ( childIndexIt.isValid() ) {
             if ( childIndexIt.data(QT_ROLE_CONTEXT_IS_ANIMATED).toBool() ) {
@@ -199,7 +199,7 @@ HierarchyViewSelectionModel::checkParentsSelectedStates(const QModelIndex &index
             }
 
             ++row;
-            childIndexIt = index.child(row, 0);
+            childIndexIt = index.model()->index(row, 0, index);
         }
 
         if ( (flags & QItemSelectionModel::Select && selectParent) ) {
@@ -798,7 +798,13 @@ HierarchyView::drawRow(QPainter *painter,
         painter->fillRect(itemRect.adjusted(-1, 0, 0, 0), fillColor);
 
         // Draw the item text
-        QStyleOptionViewItemV4 newOpt = viewOptions();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        QStyleOptionViewItem newOpt;
+        initViewItemOption(&newOpt);
+#else
+        QStyleOptionViewItem newOpt = viewOptions();
+#endif
+
         newOpt.rect = itemRect;
 
         if ( selectionModel()->isSelected(index) ) {
@@ -848,7 +854,13 @@ HierarchyView::drawBranches(QPainter *painter,
         painter->fillRect(rectForDull, nodeColorDull);
 
         // Draw the branch indicator
-        QStyleOptionViewItemV4 option = viewOptions();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        QStyleOptionViewItem option;
+        initViewItemOption(&option);
+#else
+        QStyleOptionViewItem option = viewOptions();
+#endif
+
         option.rect = _imp->getParentArrowRect(item, rect);
         option.displayAlignment = Qt::AlignCenter;
 

@@ -124,115 +124,6 @@ $GSED "s/_VERSION_/${NATRON_VERSION_FULL}/;s#_RBVERSION_#${NATRON_GIT_BRANCH}#g;
 # Copy installer images to the config folder
 cp "$INC_PATH/config"/*.png "${INSTALLER_PATH}/config/"
 
-function installPlugin() {
-    OFX_BINARY="$1"
-    PACKAGE_NAME="$2"
-    PACKAGE_XML="$3"
-    PACKAGE_INSTALL_SCRIPT="$4"
-    NATRON_LIBS="$5"
-
-    if [ ! -d "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle" ]; then
-        return 0
-    fi
-
-    # Create package
-    PKG_PATH="${INSTALLER_PATH}/packages/$PACKAGE_NAME"
-    if [ ! -d "$PKG_PATH" ]; then
-        mkdir -p "$PKG_PATH/data" "$PKG_PATH/meta" "$PKG_PATH/data/Plugins/OFX/Natron"
-    fi
-
-    # Copy to portable archive
-    if [ ! -d "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron" ]; then
-        mkdir -p "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron"
-    fi
-
-    # Configure package for installer
-    if [ ! -f "$PKG_PATH/meta/package.xml" ]; then
-        $GSED -e "s/_VERSION_/${VERSION_TAG}/;s/_DATE_/${INSTALLER_XML_DATE}/" < "$PACKAGE_XML" > "$PKG_PATH/meta/package.xml"
-    fi
-    if [ ! -f "$PKG_PATH/meta/installscript.qs" ]; then
-        cp "$PACKAGE_INSTALL_SCRIPT" "$PKG_PATH/meta/installscript.qs"
-    fi
-
-    # Dump symbols
-    if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
-        "${SDK_HOME}/bin/dump_syms" "${TMP_BINARIES_PATH}"/OFX/Plugins/"${OFX_BINARY}".ofx.bundle/Contents/*/"${OFX_BINARY}".ofx > "${BUILD_ARCHIVE_DIRECTORY}/symbols/${OFX_BINARY}.ofx-${CURRENT_DATE}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
-    fi
-
-
-
-
-    # Extract dependencies
-    OFX_DEPENDS="$(ldd $(find "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle/Contents/Linux-"* -maxdepth 1 -type f) | grep "${SDK_HOME}" | awk '{print $3}'|sort|uniq)"
-    if [ ! -z "$OFX_DEPENDS" ]; then
-
-
-        LIBS_DIR="${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle/Libraries"
-        mkdir -p "$LIBS_DIR"
-
-        DEPENDS_NOT_PART_OF_NATRON=()
-        for x in $OFX_DEPENDS; do
-            # Add the dep only if it is not part of Natron libs
-            pluginlib="$(basename "$x")"
-            CREATE_SYM_LINK=0
-            for y in $NATRON_LIBS; do
-               natronlib="$(basename "$y")"
-               if [ "$pluginlib" = "$natronlib" ]; then
-                    CREATE_SYM_LINK=1
-                    break
-               fi
-            done
-            if [ "$CREATE_SYM_LINK" = "1" ]; then
-                # Create a sym-link to the already bundled dependency in ${TMP_PORTABLE_DIR}/lib
-                # This is a relative path, assuming the plug-in Libraries directory is:
-                # ${TMP_PORTABLE_DIR}/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Libraries
-                (cd "$LIBS_DIR"; ln -sf ../../../../../lib/"$pluginlib" .)
-            else
-                DEPENDS_NOT_PART_OF_NATRON+=("$x")
-            fi
-        done
-
-        # Copy deps to Libraries directory in the plug-in bundle
-        for x in "${DEPENDS_NOT_PART_OF_NATRON[@]-}"; do
-            if [ ! -z "$x" ]; then
-                pluginlib="$(basename "$x")"
-                if [ -f "$x" ] && [ ! -f "$LIBS_DIR/$pluginlib" ] && [ ! -L "$LIBS_DIR/$pluginlib" ]; then
-                    cp -f "$x" "$LIBS_DIR/"
-                fi
-            fi
-        done
-
-        # Extract dependencies of the dependencies
-        OFX_LIB_DEP=$(ldd $(find "$LIBS_DIR" -maxdepth 1 -type f) |grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)
-        for y in $OFX_LIB_DEP; do
-            pluginlib="$(basename "$y")"
-            if [ ! -f "$LIBS_DIR/$pluginlib" ] && [ ! -L "$LIBS_DIR/$pluginlib" ]; then
-                cp -f "$y" "$LIBS_DIR/"
-            fi
-        done
-
-        # Set the rpath of the shared libraries to origin
-        pushd "$LIBS_DIR"
-        chmod 755 *.so* || true
-        for i in *.so*; do
-            patchelf --force-rpath --set-rpath "\$ORIGIN" "$i" || true
-        done
-        popd
-    fi
-
-    # Strip binary
-    if [ "$COMPILE_TYPE" != "debug" ]; then
-        find "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle" -type f \( -iname '*.so' -o -iname '*.ofx' \) -exec strip -s {} \; &>/dev/null
-    fi
-
-    for location in "$PKG_PATH/data" "${TMP_PORTABLE_DIR}"; do
-        # Copy plug-in bundle
-        cp -a "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle" "$location/Plugins/OFX/Natron/"
-    done
-
-}
-
-
 # Natron package
 NATRON_PKG="fr.inria.natron"
 NATRON_PACKAGE_PATH="${INSTALLER_PATH}/packages/${NATRON_PKG}"
@@ -330,7 +221,7 @@ for location in "${COPY_LOCATIONS[@]}"; do
     cp -R "${TMP_BINARIES_PATH}/Resources/etc"  "$location/Resources/"
     cp "${TMP_BINARIES_PATH}/Resources/stylesheets"/mainstyle.qss "$location/Resources/stylesheets/"
     cp "$INC_PATH/natron/natron-mime.sh" "$location/bin/"
-    cp "${TMP_BINARIES_PATH}/PyPlugs"/* "$location/Plugins/PyPlugs/"
+    cp -a "${TMP_BINARIES_PATH}/PyPlugs"/* "$location/Plugins/PyPlugs/"
 
     # OCIO -> has its own package, see below
     #cp -LR "${TMP_BINARIES_PATH}/Natron/OpenColorIO-Configs" "$location/Resources/"
@@ -437,7 +328,7 @@ function fixrpath() {
             if [ -f "$i" ]; then
                 chmod u+w $i
                 patchelf --force-rpath --set-rpath "\$ORIGIN${RPATH}" "$i" || true
-                optlibs="$(ldd "$i" | grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)"
+                optlibs="$(env LD_LIBRARY_PATH="" ldd "$i" | grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)"
                 if [ ! -z "$optlibs" ]; then
                     for r in $optlibs; do
                         echo "Warning: runtime path remaining to $r for $folder/$i"
@@ -527,7 +418,7 @@ python_site_packages=(PySide shiboken.so)
 
 mkdir -p "${TMP_PORTABLE_DIR}/lib/python${PYVER}"
 
-for pydir in "${SDK_HOME}/lib/python${PYVER}" "${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib/python${PYVER}"; do
+for pydir in "${SDK_HOME}/lib/python${PYVER}"; do
     (cd "$pydir"; tar cf - . --exclude site-packages)|(cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}"; tar xf -)
     for p in "${python_site_packages[@]}"; do
         if [ -e "$pydir/site-packages/$p" ]; then
@@ -541,10 +432,10 @@ mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide" "${TMP_PORTABLE
 (cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages"; ln -sf "../../../Plugins/PySide" . )
 
 # Remove unused stuff
-rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"/{test,config,config-"${PYVER}m"}
+rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"/{test,config,config-"${PYVER}${PYTHON_ABIFLAGS}"}
 
 # Copy PySide dependencies
-PYSIDE_DEPENDS=$(ldd $(find "${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib/python${PYVER}/site-packages/PySide" -maxdepth 1 -type f) | grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)
+PYSIDE_DEPENDS=$(ldd $(find "${SDK_HOME}/lib/python${PYVER}/site-packages/PySide" -maxdepth 1 -type f) | grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)
 for y in $PYSIDE_DEPENDS; do
     dep=$(basename "$y")
     if [ ! -f "${TMP_PORTABLE_DIR}/lib/$dep" ]; then
@@ -553,7 +444,7 @@ for y in $PYSIDE_DEPENDS; do
 done
 
 # Remove any pycache
-(cd "${TMP_PORTABLE_DIR}" ; find . -type d -name __pycache__ -exec rm -rf {} \;)
+(cd "${TMP_PORTABLE_DIR}" ; find . -name __pycache__ -exec rm -rf {} \;) || true
 
 # Strip pyside and python depends
 if [ "${COMPILE_TYPE}" != "debug" ]; then
@@ -577,16 +468,34 @@ export PY_BIN="${SDK_HOME}/bin/python${PYVER:-}"
 export PYDIR="$PYDIR"
 . "$CWD"/zip-python.sh
 
+NATRON_PYTHON="${TMP_PORTABLE_DIR}/bin/natron-python"
 # Install pip
-if [ -x "${TMP_PORTABLE_DIR}"/bin/natron-python ]; then
-    $CURL --remote-name --insecure https://bootstrap.pypa.io/pip/2.7/get-pip.py
-    "${TMP_PORTABLE_DIR}"/bin/natron-python get-pip.py
+if [ -x "${NATRON_PYTHON}" ]; then
+    pushd "$PYDIR/../.."
+    if [ "$PYV" = "2" ]; then
+        $CURL --remote-name --insecure https://bootstrap.pypa.io/pip/${PYVER}/get-pip.py
+    else
+        $CURL --remote-name --insecure https://bootstrap.pypa.io/get-pip.py
+    fi
+    "${NATRON_PYTHON}" get-pip.py
     rm get-pip.py
-fi
-
-# Run extra user provided pip install scripts
-if [ -f "${EXTRA_PYTHON_MODULES_SCRIPT:-}" ]; then
-    "${TMP_PORTABLE_DIR}"/bin/natron-python "$EXTRA_PYTHON_MODULES_SCRIPT" || true
+    # Install qtpy
+    if [ "${USE_QT5:-}" != 1 ]; then
+        # Qt4 support was dropped after QtPy 1.11.2
+        "${NATRON_PYTHON}" -m pip install qtpy==1.11.2
+        # qtpy bug fix for Qt4
+        $GSED -i "s/^except ImportError:/except (ImportError, PythonQtError):/" "${TMP_PORTABLE_DIR}/lib/python${PYVER:-}/site-packages/qtpy/__init__.py"
+    else
+        "${NATRON_PYTHON}" -m pip install qtpy
+    fi
+    # Useful Python packages
+    "${NATRON_PYTHON}" -m pip install future six psutil
+    # Run extra user provided pip install scripts
+    if [ -f "${EXTRA_PYTHON_MODULES_SCRIPT:-}" ]; then
+        "${NATRON_PYTHON}" "$EXTRA_PYTHON_MODULES_SCRIPT" || true
+    fi
+    "${NATRON_PYTHON}" -m compileall -f "${PYDIR}/site-packages"
+    popd
 fi
 
 
@@ -606,6 +515,117 @@ done
 
 
 ALL_NATRON_LIBS=$(ls "$LIBS_PACKAGE_PATH/data/lib"/*.so*)
+
+function installPlugin() {
+    OFX_BINARY="$1"
+    PACKAGE_NAME="$2"
+    PACKAGE_XML="$3"
+    PACKAGE_INSTALL_SCRIPT="$4"
+    NATRON_LIBS="$5"
+
+    if [ ! -d "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle" ]; then
+        return 0
+    fi
+
+    # plugins may keep references to /opt/Natron-sdk/lib64 (eg Arena.ofx or IO.ofx)
+    fixrpath "${TMP_BINARIES_PATH}"/OFX/Plugins/"${OFX_BINARY}".ofx.bundle/Contents/Linux-* "/../../Libraries"
+
+    # Create package
+    PKG_PATH="${INSTALLER_PATH}/packages/$PACKAGE_NAME"
+    if [ ! -d "$PKG_PATH" ]; then
+        mkdir -p "$PKG_PATH/data" "$PKG_PATH/meta" "$PKG_PATH/data/Plugins/OFX/Natron"
+    fi
+
+    # Copy to portable archive
+    if [ ! -d "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron" ]; then
+        mkdir -p "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron"
+    fi
+
+    # Configure package for installer
+    if [ ! -f "$PKG_PATH/meta/package.xml" ]; then
+        $GSED -e "s/_VERSION_/${VERSION_TAG}/;s/_DATE_/${INSTALLER_XML_DATE}/" < "$PACKAGE_XML" > "$PKG_PATH/meta/package.xml"
+    fi
+    if [ ! -f "$PKG_PATH/meta/installscript.qs" ]; then
+        cp "$PACKAGE_INSTALL_SCRIPT" "$PKG_PATH/meta/installscript.qs"
+    fi
+
+    # Dump symbols
+    if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
+        "${SDK_HOME}/bin/dump_syms" "${TMP_BINARIES_PATH}"/OFX/Plugins/"${OFX_BINARY}".ofx.bundle/Contents/*/"${OFX_BINARY}".ofx > "${BUILD_ARCHIVE_DIRECTORY}/symbols/${OFX_BINARY}.ofx-${CURRENT_DATE}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
+    fi
+
+
+
+
+    # Extract dependencies
+    OFX_DEPENDS="$(ldd $(find "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle/Contents/Linux-"* -maxdepth 1 -type f) | grep "${SDK_HOME}" | awk '{print $3}'|sort|uniq)"
+    if [ ! -z "$OFX_DEPENDS" ]; then
+
+
+        LIBS_DIR="${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle/Libraries"
+        mkdir -p "$LIBS_DIR"
+
+        DEPENDS_NOT_PART_OF_NATRON=()
+        for x in $OFX_DEPENDS; do
+            # Add the dep only if it is not part of Natron libs
+            pluginlib="$(basename "$x")"
+            CREATE_SYM_LINK=0
+            for y in $NATRON_LIBS; do
+               natronlib="$(basename "$y")"
+               if [ "$pluginlib" = "$natronlib" ]; then
+                    CREATE_SYM_LINK=1
+                    break
+               fi
+            done
+            if [ "$CREATE_SYM_LINK" = "1" ]; then
+                # Create a sym-link to the already bundled dependency in ${TMP_PORTABLE_DIR}/lib
+                # This is a relative path, assuming the plug-in Libraries directory is:
+                # ${TMP_PORTABLE_DIR}/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Libraries
+                (cd "$LIBS_DIR"; ln -sf ../../../../../lib/"$pluginlib" .)
+            else
+                DEPENDS_NOT_PART_OF_NATRON+=("$x")
+            fi
+        done
+
+        # Copy deps to Libraries directory in the plug-in bundle
+        for x in "${DEPENDS_NOT_PART_OF_NATRON[@]-}"; do
+            if [ ! -z "$x" ]; then
+                pluginlib="$(basename "$x")"
+                if [ -f "$x" ] && [ ! -f "$LIBS_DIR/$pluginlib" ] && [ ! -L "$LIBS_DIR/$pluginlib" ]; then
+                    cp -f "$x" "$LIBS_DIR/"
+                fi
+            fi
+        done
+
+        # Extract dependencies of the dependencies
+        OFX_LIB_DEP=$(ldd $(find "$LIBS_DIR" -maxdepth 1 -type f) |grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)
+        for y in $OFX_LIB_DEP; do
+            pluginlib="$(basename "$y")"
+            if [ ! -f "$LIBS_DIR/$pluginlib" ] && [ ! -L "$LIBS_DIR/$pluginlib" ]; then
+                cp -f "$y" "$LIBS_DIR/"
+            fi
+        done
+
+        # Set the rpath of the shared libraries to origin
+        pushd "$LIBS_DIR"
+        chmod 755 *.so* || true
+        for i in *.so*; do
+            patchelf --force-rpath --set-rpath "\$ORIGIN" "$i" || true
+        done
+        popd
+    fi
+
+    # Strip binary
+    if [ "$COMPILE_TYPE" != "debug" ]; then
+        find "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle" -type f \( -iname '*.so' -o -iname '*.ofx' \) -exec strip -s {} \; &>/dev/null
+    fi
+
+    for location in "$PKG_PATH/data" "${TMP_PORTABLE_DIR}"; do
+        # Copy plug-in bundle
+        cp -a "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle" "$location/Plugins/OFX/Natron/"
+    done
+
+}
 
 PACKAGES="${PACKAGES},fr.inria.openfx.io"
 installPlugin "IO" "fr.inria.openfx.io" "$XML/openfx-io.xml" "$QS/openfx-io.qs" "$ALL_NATRON_LIBS"
@@ -645,7 +665,7 @@ fi
 
 # At this point we can run Natron unit tests to check that the deployment is ok.
 rm -rf "$HOME/.cache/INRIA/Natron"* &> /dev/null || true
-$TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python.supp" "${TMP_PORTABLE_DIR}/bin/Tests"
+$TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" "${TMP_PORTABLE_DIR}/bin/Tests"
 rm "${TMP_PORTABLE_DIR}/bin/Tests"
 
 # Clean and perms
@@ -654,10 +674,15 @@ rm "${TMP_PORTABLE_DIR}/bin/Tests"
 # Build repo and packages
 
 ONLINE_INSTALL_DIR="online_installer"
-BUNDLED_INSTALL_DIR="offline_installer"
-ZIP_INSTALL_DIR="compressed_no_installer"
-DEB_INSTALL_DIR="deb_package"
-RPM_INSTALL_DIR="rpm_package"
+#BUNDLED_INSTALL_DIR="offline_installer"
+#ZIP_INSTALL_DIR="compressed_no_installer"
+#DEB_INSTALL_DIR="deb_package"
+#RPM_INSTALL_DIR="rpm_package"
+# These have easily identifiable filenames and extensions anyway:
+BUNDLED_INSTALL_DIR="."
+ZIP_INSTALL_DIR="."
+DEB_INSTALL_DIR="."
+RPM_INSTALL_DIR="."
 
 if [ -d "${BUILD_ARCHIVE_DIRECTORY}" ]; then
     rm -rf "${BUILD_ARCHIVE_DIRECTORY}"

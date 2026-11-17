@@ -1,0 +1,11 @@
+--- lib/accelerated/aarch64/Makefile.am.orig	2021-04-19 02:28:28.000000000 -0500
++++ lib/accelerated/aarch64/Makefile.am	2022-03-22 13:39:44.000000000 -0500
+@@ -34,7 +34,7 @@
+ endif
+ 
+ #ensure that we have all aarch64 instruction sets enabled for the assembler
+-AM_CCASFLAGS = -Wa,-march=all
++AM_CCASFLAGS = -Wa
+ 
+ EXTRA_DIST = README
+ 

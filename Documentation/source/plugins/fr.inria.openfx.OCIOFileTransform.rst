@@ -26,25 +26,39 @@ Supported formats:
 
 .3dl (lustre)
 
+.cc (ColorCorrection)
+
 .ccc (ColorCorrectionCollection)
 
 .cdl (ColorDecisionList)
 
-.cc (ColorCorrection)
+.clf (Academy/ASC Common LUT Format)
+
+.ctf (Color Transform Format)
 
 .csp (cinespace)
 
+.lut (Discreet 1D LUT)
+
 .lut (houdini)
 
-.itx (iridas_itx)
+.icc (International Color Consortium profile)
+
+.icm (Image Color Matching profile)
+
+.pf (ICC profile)
 
 .cube (iridas_cube)
+
+.itx (iridas_itx)
 
 .look (iridas_look)
 
 .mga (pandora_mga)
 
 .m3d (pandora_m3d)
+
+.cube (resolve_cube)
 
 .spi1d (spi1d)
 
@@ -83,16 +97,23 @@ Controls
 |                                   |         |         | |                                                                                                                                                                                  |
 |                                   |         |         | | .3dl (flame)                                                                                                                                                                     |
 |                                   |         |         | | .3dl (lustre)                                                                                                                                                                    |
+|                                   |         |         | | .cc (ColorCorrection)                                                                                                                                                            |
 |                                   |         |         | | .ccc (ColorCorrectionCollection)                                                                                                                                                 |
 |                                   |         |         | | .cdl (ColorDecisionList)                                                                                                                                                         |
-|                                   |         |         | | .cc (ColorCorrection)                                                                                                                                                            |
+|                                   |         |         | | .clf (Academy/ASC Common LUT Format)                                                                                                                                             |
+|                                   |         |         | | .ctf (Color Transform Format)                                                                                                                                                    |
 |                                   |         |         | | .csp (cinespace)                                                                                                                                                                 |
+|                                   |         |         | | .lut (Discreet 1D LUT)                                                                                                                                                           |
 |                                   |         |         | | .lut (houdini)                                                                                                                                                                   |
-|                                   |         |         | | .itx (iridas_itx)                                                                                                                                                                |
+|                                   |         |         | | .icc (International Color Consortium profile)                                                                                                                                    |
+|                                   |         |         | | .icm (Image Color Matching profile)                                                                                                                                              |
+|                                   |         |         | | .pf (ICC profile)                                                                                                                                                                |
 |                                   |         |         | | .cube (iridas_cube)                                                                                                                                                              |
+|                                   |         |         | | .itx (iridas_itx)                                                                                                                                                                |
 |                                   |         |         | | .look (iridas_look)                                                                                                                                                              |
 |                                   |         |         | | .mga (pandora_mga)                                                                                                                                                               |
 |                                   |         |         | | .m3d (pandora_m3d)                                                                                                                                                               |
+|                                   |         |         | | .cube (resolve_cube)                                                                                                                                                             |
 |                                   |         |         | | .spi1d (spi1d)                                                                                                                                                                   |
 |                                   |         |         | | .spi3d (spi3d)                                                                                                                                                                   |
 |                                   |         |         | | .spimtx (spimtx)                                                                                                                                                                 |
@@ -111,8 +132,7 @@ Controls
 |                                   |         |         | | **Tetrahedral (tetrahedral)**                                                                                                                                                    |
 |                                   |         |         | | **Best (best)**                                                                                                                                                                  |
 +-----------------------------------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Enable GPU Render / ``enableGPU`` | Boolean | Off     | | Enable GPU-based OpenGL render.                                                                                                                                                  |
-|                                   |         |         | | Note that GPU render is not as accurate as CPU render, so this should be enabled with care.                                                                                      |
+| Enable GPU Render / ``enableGPU`` | Boolean | Off     | | Enable GPU-based OpenGL render (only available when “(Un)premult” is not checked).                                                                                               |
 |                                   |         |         | | If the checkbox is checked but is not enabled (i.e. it cannot be unchecked), GPU render can not be enabled or disabled from the plugin and is probably part of the host options. |
 |                                   |         |         | | If the checkbox is not checked and is not enabled (i.e. it cannot be checked), GPU render is not available on this host.                                                         |
 +-----------------------------------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+

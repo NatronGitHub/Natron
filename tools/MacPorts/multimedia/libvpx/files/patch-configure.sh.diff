@@ -1,0 +1,77 @@
+#==================================================================================================
+# From: Dean M Greer <Gcenx@github.com>
+#
+# macOS High Sierra may have MacOSX10.14.SDK and MacOSX10.13.SDK available. So due to how this
+# detection works, MacOSX10.14.SDK will be used causing an i386 build to fail.
+#==================================================================================================
+--- build/make/configure.sh.orig	2026-11-14 08:56:30.013417222 -0500
++++ build/make/configure.sh	2026-11-14 09:06:10.402923487 -0500
+@@ -933,68 +933,9 @@
+         add_ldflags "-isysroot ${iphoneos_sdk_dir}"
+       fi
+       ;;
+-    *-darwin*)
+-      osx_sdk_dir="$(show_darwin_sdk_path macosx)"
+-      if [ -d "${osx_sdk_dir}" ]; then
+-        add_cflags  "-isysroot ${osx_sdk_dir}"
+-        add_ldflags "-isysroot ${osx_sdk_dir}"
+-      fi
+-      ;;
+   esac
+ 
+   case ${toolchain} in
+-    *-darwin8-*)
+-      add_cflags  "-mmacosx-version-min=10.4"
+-      add_ldflags "-mmacosx-version-min=10.4"
+-      ;;
+-    *-darwin9-*)
+-      add_cflags  "-mmacosx-version-min=10.5"
+-      add_ldflags "-mmacosx-version-min=10.5"
+-      ;;
+-    *-darwin10-*)
+-      add_cflags  "-mmacosx-version-min=10.6"
+-      add_ldflags "-mmacosx-version-min=10.6"
+-      ;;
+-    *-darwin11-*)
+-      add_cflags  "-mmacosx-version-min=10.7"
+-      add_ldflags "-mmacosx-version-min=10.7"
+-      ;;
+-    *-darwin12-*)
+-      add_cflags  "-mmacosx-version-min=10.8"
+-      add_ldflags "-mmacosx-version-min=10.8"
+-      ;;
+-    *-darwin13-*)
+-      add_cflags  "-mmacosx-version-min=10.9"
+-      add_ldflags "-mmacosx-version-min=10.9"
+-      ;;
+-    *-darwin14-*)
+-      add_cflags  "-mmacosx-version-min=10.10"
+-      add_ldflags "-mmacosx-version-min=10.10"
+-      ;;
+-    *-darwin15-*)
+-      add_cflags  "-mmacosx-version-min=10.11"
+-      add_ldflags "-mmacosx-version-min=10.11"
+-      ;;
+-    *-darwin16-*)
+-      add_cflags  "-mmacosx-version-min=10.12"
+-      add_ldflags "-mmacosx-version-min=10.12"
+-      ;;
+-    *-darwin17-*)
+-      add_cflags  "-mmacosx-version-min=10.13"
+-      add_ldflags "-mmacosx-version-min=10.13"
+-      ;;
+-    *-darwin18-*)
+-      add_cflags  "-mmacosx-version-min=10.14"
+-      add_ldflags "-mmacosx-version-min=10.14"
+-      ;;
+-    *-darwin19-*)
+-      add_cflags  "-mmacosx-version-min=10.15"
+-      add_ldflags "-mmacosx-version-min=10.15"
+-      ;;
+-    *-darwin2[0-5]-*)
+-      add_cflags  "-arch ${toolchain%%-*}"
+-      add_ldflags "-arch ${toolchain%%-*}"
+-      ;;
+     *-iphonesimulator-*)
+       add_cflags  "-miphoneos-version-min=${IOS_VERSION_MIN}"
+       add_ldflags "-miphoneos-version-min=${IOS_VERSION_MIN}"

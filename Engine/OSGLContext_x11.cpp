@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -33,6 +33,14 @@
 
 #include <dlfcn.h>
 
+// Qt has to come before the X11 headers. Xlib defines Status as a macro and
+// Qt6's qtextstream.h refuses to compile when it is already defined, which
+// Qt5 tolerated.
+
+#include "Engine/AppManager.h"
+#include "Engine/OSGLContext.h"
+#include "Global/GLIncludes.h"
+
 extern "C"
 {
 #include <X11/Xlib.h>
@@ -41,9 +49,6 @@ extern "C"
 #include <X11/Xresource.h>
 }
 
-#include "Engine/AppManager.h"
-#include "Engine/OSGLContext.h"
-#include "Global/GLIncludes.h"
 
 #define GLX_VENDOR 1
 #define GLX_RGBA_BIT 0x00000001
@@ -111,6 +116,7 @@ typedef Bool (*PFNGLXQUERYEXTENSIONPROC)(Display*, int*, int*);
 typedef Bool (*PFNGLXQUERYVERSIONPROC)(Display*, int*, int*);
 typedef void (*PFNGLXDESTROYCONTEXTPROC)(Display*, GLXContext);
 typedef Bool (*PFNGLXMAKECURRENTPROC)(Display*, GLXDrawable, GLXContext);
+typedef GLXContext (*PFNGLXGETCURRENTCONTEXTPROC)();
 typedef void (*PFNGLXSWAPBUFFERSPROC)(Display*, GLXDrawable);
 typedef const char* (*PFNGLXQUERYEXTENSIONSSTRINGPROC)(Display*, int);
 typedef GLXFBConfig* (*PFNGLXGETFBCONFIGSPROC)(Display*, int, int*);
@@ -167,6 +173,7 @@ struct OSGLContext_glx_dataPrivate
     PFNGLXQUERYVERSIONPROC QueryVersion;
     PFNGLXDESTROYCONTEXTPROC DestroyContext;
     PFNGLXMAKECURRENTPROC MakeCurrent;
+    PFNGLXGETCURRENTCONTEXTPROC GetCurrentContext;
     PFNGLXSWAPBUFFERSPROC SwapBuffers;
     PFNGLXQUERYEXTENSIONSSTRINGPROC QueryExtensionsString;
     PFNGLXCREATENEWCONTEXTPROC CreateNewContext;
@@ -316,6 +323,7 @@ OSGLContext_x11::initGLXData(OSGLContext_glx_data* glxInfo)
     glxInfo->_imp->QueryVersion = (PFNGLXQUERYVERSIONPROC)dlsym(glxInfo->_imp->handle, "glXQueryVersion");
     glxInfo->_imp->DestroyContext = (PFNGLXDESTROYCONTEXTPROC)dlsym(glxInfo->_imp->handle, "glXDestroyContext");
     glxInfo->_imp->MakeCurrent = (PFNGLXMAKECURRENTPROC)dlsym(glxInfo->_imp->handle, "glXMakeCurrent");
+    glxInfo->_imp->GetCurrentContext = (PFNGLXGETCURRENTCONTEXTPROC)dlsym(glxInfo->_imp->handle, "glXGetCurrentContext");
     glxInfo->_imp->SwapBuffers = (PFNGLXSWAPBUFFERSPROC)dlsym(glxInfo->_imp->handle, "glXSwapBuffers");
     glxInfo->_imp->QueryExtensionsString = (PFNGLXQUERYEXTENSIONSSTRINGPROC)dlsym(glxInfo->_imp->handle, "glXQueryExtensionsString");
     glxInfo->_imp->CreateNewContext = (PFNGLXCREATENEWCONTEXTPROC)dlsym(glxInfo->_imp->handle, "glXCreateNewContext");
@@ -810,6 +818,10 @@ OSGLContext_x11::~OSGLContext_x11()
         _imp->glxWindowHandle = 0;
     }
     if (_imp->glxContextHandle) {
+
+        if (glxInfo->_imp->GetCurrentContext() == _imp->glxContextHandle) {
+            glxInfo->_imp->MakeCurrent(glxInfo->_imp->x11.display, None, NULL);
+        }
         glxInfo->_imp->DestroyContext(glxInfo->_imp->x11.display, _imp->glxContextHandle);
         _imp->glxContextHandle = 0;
     }
@@ -831,6 +843,14 @@ OSGLContext_x11::makeContextCurrent(const OSGLContext_x11* context)
     } else {
         return glxInfo->_imp->MakeCurrent(glxInfo->_imp->x11.display, None, NULL);
     }
+}
+
+bool
+OSGLContext_x11::threadHasACurrentContext() {
+    const OSGLContext_glx_data* glxInfo = appPTR->getGLXData();
+
+    assert(glxInfo);
+    return glxInfo->_imp->GetCurrentContext() != NULL;
 }
 
 void
@@ -873,7 +893,7 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         return;
     }
     if (!glxInfo->_imp->MESA_query_renderer) {
-        boost::scoped_ptr<OSGLContext_x11> context;
+        std::unique_ptr<OSGLContext_x11> context;
         try {
             context.reset( new OSGLContext_x11(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID(), 0) );
         } catch (const std::exception& e) {
@@ -972,7 +992,7 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                     info.maxMemBytes = v[0] * 1e6;
 
                     // Now create a context with the renderer ID
-                    boost::scoped_ptr<OSGLContext_x11> context;
+                    std::unique_ptr<OSGLContext_x11> context;
                     try {
                         context.reset( new OSGLContext_x11(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID( (int)renderer ), 0) );
                     } catch (const std::exception& e) {

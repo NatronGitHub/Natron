@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,11 +28,8 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#endif
-
-#include <QtCore/QMutex>
+#include <QMutex>
+#include <QRecursiveMutex>
 
 #include "Engine/Variant.h"
 #include "Engine/Knob.h"
@@ -67,7 +64,8 @@ struct CurvePrivate
     CurveTypeEnum type;
     double xMin, xMax;
     double yMin, yMax;
-    mutable QMutex _lock; //< the plug-ins can call getValueAt at any moment and we must make sure the user is not playing around
+    mutable QRecursiveMutex _lock;
+
     bool isParametric;
     bool isPeriodic;
 
@@ -83,14 +81,14 @@ struct CurvePrivate
         , xMax(std::numeric_limits<double>::infinity())
         , yMin(-std::numeric_limits<double>::infinity())
         , yMax(std::numeric_limits<double>::infinity())
-        , _lock(QMutex::Recursive)
+        , _lock()
         , isParametric(false)
         , isPeriodic(false)
     {
     }
 
     CurvePrivate(const CurvePrivate & other)
-        : _lock(QMutex::Recursive)
+        : _lock()
     {
         *this = other;
     }

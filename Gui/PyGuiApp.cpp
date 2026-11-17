@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -333,7 +333,7 @@ GuiApp::selectNode(Effect* effect,
         return;
     }
 
-    NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( effect->getInternalNode()->getNodeGui() );
+    NodeGuiPtr nodeUi = std::dynamic_pointer_cast<NodeGui>( effect->getInternalNode()->getNodeGui() );
     if (!nodeUi) {
         return;
     }
@@ -346,7 +346,7 @@ GuiApp::selectNode(Effect* effect,
     }
     assert(graph);
     if (!graph) {
-        throw std::logic_error("");
+        throw std::logic_error("invalid graph");
     }
     graph->selectNode(nodeUi, !clearPreviousSelection);
 }
@@ -361,7 +361,7 @@ GuiApp::setSelection(const std::list<Effect*>& nodes)
     NodeCollectionPtr collection;
     bool printWarn = false;
     for (std::list<Effect*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( (*it)->getInternalNode()->getNodeGui() );
+        NodeGuiPtr nodeUi = std::dynamic_pointer_cast<NodeGui>( (*it)->getInternalNode()->getNodeGui() );
         if (!nodeUi) {
             continue;
         }
@@ -388,7 +388,7 @@ GuiApp::setSelection(const std::list<Effect*>& nodes)
         }
         assert(graph);
         if (!graph) {
-            throw std::logic_error("");
+            throw std::logic_error("invalid graph");
         }
         graph->setSelection(selection);
     }
@@ -419,9 +419,70 @@ GuiApp::selectAllNodes(Group* group)
     }
     assert(graph);
     if (!graph) {
-        throw std::logic_error("");
+        throw std::logic_error("invalid graph");
     }
     graph->selectAllNodes(false);
+}
+
+
+void
+GuiApp::copySelectedNodes(Group* group)
+{
+    if ( appPTR->isBackground() ) {
+        return;
+    }
+    NodeGraph* graph = 0;
+    NodeCollectionPtr collection;
+    NodeGroup* isGroup = 0;
+    if (group) {
+        collection = group->getInternalCollection();
+        if (collection) {
+            isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+            if (isGroup) {
+                graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
+            }
+        }
+    } else {
+        graph = getInternalGuiApp()->getGui()->getLastSelectedGraph();
+    }
+    if (!graph) {
+        graph = getInternalGuiApp()->getGui()->getNodeGraph();
+    }
+    assert(graph);
+    if (!graph) {
+        throw std::logic_error("invalid graph");
+    }
+    graph->copySelectedNodes();
+}
+
+void
+GuiApp::pasteNodes(Group* group)
+{
+    if ( appPTR->isBackground() ) {
+        return;
+    }
+    NodeGraph* graph = 0;
+    NodeCollectionPtr collection;
+    NodeGroup* isGroup = 0;
+    if (group) {
+        collection = group->getInternalCollection();
+        if (collection) {
+            isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+            if (isGroup) {
+                graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
+            }
+        }
+    } else {
+        graph = getInternalGuiApp()->getGui()->getLastSelectedGraph();
+    }
+    if (!graph) {
+        graph = getInternalGuiApp()->getGui()->getNodeGraph();
+    }
+    assert(graph);
+    if (!graph) {
+        throw std::logic_error("");
+    }
+    graph->pasteNodeClipBoards();
 }
 
 void
@@ -436,7 +497,7 @@ GuiApp::deselectNode(Effect* effect)
         return;
     }
 
-    NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( effect->getInternalNode()->getNodeGui() );
+    NodeGuiPtr nodeUi = std::dynamic_pointer_cast<NodeGui>( effect->getInternalNode()->getNodeGui() );
     if (!nodeUi) {
         return;
     }
@@ -449,7 +510,7 @@ GuiApp::deselectNode(Effect* effect)
     }
     assert(graph);
     if (!graph) {
-        throw std::logic_error("");
+        throw std::logic_error("invalid graph");
     }
     graph->deselectNode(nodeUi);
 }
@@ -480,7 +541,7 @@ GuiApp::clearSelection(Group* group)
     }
     assert(graph);
     if (!graph) {
-        throw std::logic_error("");
+        throw std::logic_error("invalid graph");
     }
     graph->clearSelection();
 }
@@ -788,7 +849,7 @@ PyViewer::setProxyIndex(int index)
     if ( !getInternalNode()->isActivated() ) {
         return;
     }
-    _viewer->setMipMapLevel(index + 1);
+    _viewer->setMipmapLevel(index + 1);
 }
 
 int
@@ -798,7 +859,7 @@ PyViewer::getProxyIndex() const
         return 0;
     }
 
-    return _viewer->getMipMapLevel() - 1;
+    return _viewer->getMipmapLevel() - 1;
 }
 
 void

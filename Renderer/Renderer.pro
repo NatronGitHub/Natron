@@ -1,6 +1,6 @@
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <https://natrongithub.github.io/>,
-# (C) 2018-2021 The Natron developers
+# (C) 2018-2023 The Natron developers
 # (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
 #
 # Natron is free software: you can redistribute it and/or modify
@@ -17,9 +17,8 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-QT       += core network
+QT       += core network concurrent
 QT       -= gui
-greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
 TARGET = NatronRenderer
 CONFIG += console

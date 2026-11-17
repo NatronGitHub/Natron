@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,17 +29,19 @@
 #include "Global/Macros.h"
 
 #include "Node.h"
+#include "Timer.h" // gettimeofday()
 
-#include <QtCore/QWaitCondition>
-#include <QtCore/QReadWriteLock>
-#include <QtCore/QMutex>
+#include <QWaitCondition>
+#include <QReadWriteLock>
+#include <QMutex>
 
 #include "Engine/Hash64.h"
 
 NATRON_NAMESPACE_ENTER
 
-/*The output node was connected from inputNumber to this...*/
-typedef std::map<NodeWPtr, int > DeactivatedState;
+/*The output node was connected from inputNumber to this...
+  One entry per link: an output node may be connected to several of its inputs.*/
+typedef std::vector<std::pair<NodeWPtr, int32_t> > DeactivatedState;
 typedef std::list<Node::KnobLink> KnobLinkList;
 typedef std::vector<NodeWPtr> InputsV;
 
@@ -173,8 +175,9 @@ public:
         , mustQuitPreview(0)
         , mustQuitPreviewMutex()
         , mustQuitPreviewCond()
-        , renderInstancesSharedMutex(QMutex::Recursive)
+        , renderInstancesSharedMutex()
         , knobsAge(0)
+        , knobsAgeIsUniqueToSession(false)
         , knobsAgeMutex()
         , masterNodeMutex()
         , masterNode()
@@ -362,6 +365,11 @@ public:
     QMutex renderInstancesSharedMutex; //< see eRenderSafetyInstanceSafe in EffectInstance::renderRoI
     //only 1 clone can render at any time
     U64 knobsAge; //< the age of the knobs in this effect. It gets incremented every times the effect has its evaluate() function called.
+    // False while knobsAge is a value that was loaded (from a project, a clipboard or a master node) or the initial 0:
+    // that value may also have been reached in another session with different parameter values (see #1124).
+    // The first increment after that jumps to a random value, so that the ages (and hashes) reached by edits in this
+    // session can never be those of another session, which matters for the persistent disk and viewer caches.
+    bool knobsAgeIsUniqueToSession;
     mutable QReadWriteLock knobsAgeMutex; //< protects knobsAge and hash
     Hash64 hash; //< recomputed every time knobsAge is changed.
     mutable QMutex masterNodeMutex; //< protects masterNode and nodeLinks

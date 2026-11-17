@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -54,7 +54,7 @@ PropertiesBinWrapper::mousePressEvent(QMouseEvent* e)
 }
 
 void
-PropertiesBinWrapper::enterEvent(QEvent* e)
+PropertiesBinWrapper::enterEvent(QtCompat::QEnterEvent* e)
 {
     QWidget::enterEvent(e);
 }

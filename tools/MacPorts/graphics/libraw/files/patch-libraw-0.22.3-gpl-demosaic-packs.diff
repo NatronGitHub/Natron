@@ -1,0 +1,729 @@
+Restore the LibRaw 0.18 GPL demosaic packs (--enable-demosaic-pack-gpl2[=DIR], --enable-demosaic-pack-gpl3[=DIR]).
+Source: https://github.com/devernay/LibRaw/commit/56970694 (branch natron-gpl-demosaic-packs-0.22.3),
+adapted to the LibRaw-0.22.3.tar.gz release tarball: no Makefile.devel, buildfiles/libraw.pro hunk dropped.
+Changes configure.ac and Makefile.am: run autoreconf -fi before configure.
+
+diff -ruN LibRaw-0.22.3/Makefile.am b/LibRaw-0.22.3/Makefile.am
+--- Makefile.am	2026-10-24 11:24:46
++++ Makefile.am	2026-11-14 20:16:11
+@@ -24,6 +24,9 @@
+ pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = libraw.pc libraw_r.pc
+ 
++# Include path for the optional demosaic packs (see configure --enable-demosaic-pack-gpl2/3)
++AM_CPPFLAGS = $(LIBRAW_DEMOSAIC_PACKS_CPPFLAGS)
++
+ # Libraries
+ lib_LTLIBRARIES = lib/libraw.la lib/libraw_r.la
+ 
+@@ -41,6 +44,7 @@
+ 	src/decoders/unpack_thumb.cpp src/decoders/unpack.cpp \
+ 	src/demosaic/aahd_demosaic.cpp src/demosaic/ahd_demosaic.cpp \
+ 	src/demosaic/dcb_demosaic.cpp src/demosaic/dht_demosaic.cpp \
++	src/demosaic/demosaic_packs.cpp \
+ 	src/demosaic/misc_demosaic.cpp src/demosaic/xtrans_demosaic.cpp \
+ 	src/integration/dngsdk_glue.cpp src/integration/rawspeed_glue.cpp\
+ 	src/metadata/adobepano.cpp src/metadata/canon.cpp \
+@@ -81,6 +85,12 @@
+ lib_libraw_la_LDFLAGS = -no-undefined -version-info $(LIBRAW_SHLIB_VER)
+ lib_libraw_r_la_LDFLAGS = -no-undefined -version-info $(LIBRAW_SHLIB_VER)
+ 
++
++# Tests ("make check")
++check_PROGRAMS = tests/demosaic_test
++tests_demosaic_test_SOURCES = tests/demosaic_test.cpp
++tests_demosaic_test_LDADD = lib/libraw.la
++TESTS = $(check_PROGRAMS)
+ 
+ # Sample binaries
+ if EXAMPLES
+diff -ruN LibRaw-0.22.3/Makefile.dist b/LibRaw-0.22.3/Makefile.dist
+--- Makefile.dist	2026-10-24 11:24:46
++++ Makefile.dist	2026-11-14 20:16:11
+@@ -21,6 +21,11 @@
+ # CFLAGS+=-DUSE_DNGSDK -I../dng_sdk/source
+ # LDADDD+=-L../dng_sdk/release -ldng -lXMPCore -ljpeg -lz
+ 
++# LibRaw demosaic packs (0.18.8 sources, see README.demosaic-packs)
++# WARNING: the resulting library is GPL2+ (GPL2 pack) or GPL3+ (GPL3 pack)
++# CFLAGS+=-DLIBRAW_DEMOSAIC_PACK_GPL2 -I./LibRaw-demosaic-pack-GPL2
++# CFLAGS+=-DLIBRAW_DEMOSAIC_PACK_GPL3 -I./LibRaw-demosaic-pack-GPL3
++
+ # ZLIB support (FP dng)
+ CFLAGS+=-DUSE_ZLIB
+ LDADD+=-lz
+@@ -72,6 +77,7 @@
+   object/aspect_ratio.o \
+   object/misc_demosaic.o object/xtrans_demosaic.o object/ahd_demosaic.o \
+   object/dht_demosaic.o  object/aahd_demosaic.o  object/dcb_demosaic.o \
++  object/demosaic_packs.o \
+   object/file_write.o \
+   object/ext_preprocess.o   object/apply_profile.o
+ 
+@@ -110,7 +116,7 @@
+   object/postprocessing_aux.mt.o object/postprocessing_utils_dcrdefs.mt.o \
+   object/aspect_ratio.mt.o \
+   object/misc_demosaic.mt.o object/xtrans_demosaic.mt.o \
+-  object/ahd_demosaic.mt.o object/dht_demosaic.mt.o \
++  object/ahd_demosaic.mt.o object/dht_demosaic.mt.o object/demosaic_packs.mt.o \
+   object/aahd_demosaic.mt.o object/dcb_demosaic.mt.o \
+   object/file_write.mt.o \
+   object/ext_preprocess.mt.o   object/apply_profile.mt.o
+@@ -291,6 +297,10 @@
+ 	${CXX} -c -DLIBRAW_NOTHREADS  ${CFLAGS} -o object/dcb_demosaic.o src/demosaic/dcb_demosaic.cpp
+ object/dcb_demosaic.mt.o: src/demosaic/dcb_demosaic.cpp
+ 	${CXX} -c ${CFLAGS} -o object/dcb_demosaic.mt.o src/demosaic/dcb_demosaic.cpp
++object/demosaic_packs.o: src/demosaic/demosaic_packs.cpp
++	${CXX} -c -DLIBRAW_NOTHREADS  ${CFLAGS} -o object/demosaic_packs.o src/demosaic/demosaic_packs.cpp
++object/demosaic_packs.mt.o: src/demosaic/demosaic_packs.cpp
++	${CXX} -c ${CFLAGS} -o object/demosaic_packs.mt.o src/demosaic/demosaic_packs.cpp
+ object/dht_demosaic.o: src/demosaic/dht_demosaic.cpp
+ 	${CXX} -c -DLIBRAW_NOTHREADS  ${CFLAGS} -o object/dht_demosaic.o src/demosaic/dht_demosaic.cpp
+ object/dht_demosaic.mt.o: src/demosaic/dht_demosaic.cpp
+diff -ruN LibRaw-0.22.3/Makefile.mingw b/LibRaw-0.22.3/Makefile.mingw
+--- Makefile.mingw	2026-10-24 11:24:46
++++ Makefile.mingw	2026-11-14 20:16:11
+@@ -22,6 +22,11 @@
+ # LIBJPEG8:
+ #CFLAGS+=-DUSE_JPEG8
+ 
++# LibRaw demosaic packs (0.18.8 sources, see README.demosaic-packs)
++# WARNING: the resulting library is GPL2+ (GPL2 pack) or GPL3+ (GPL3 pack)
++# CFLAGS+=-DLIBRAW_DEMOSAIC_PACK_GPL2 -I./LibRaw-demosaic-pack-GPL2
++# CFLAGS+=-DLIBRAW_DEMOSAIC_PACK_GPL3 -I./LibRaw-demosaic-pack-GPL3
++
+ # LCMS support
+ #CFLAGS+=-DUSE_LCMS -I/usr/local/include
+ #LDADD+=-L/usr/local/lib -llcms
+@@ -63,6 +68,7 @@
+   object/aspect_ratio.o \
+   object/misc_demosaic.o object/xtrans_demosaic.o object/ahd_demosaic.o \
+   object/dht_demosaic.o  object/aahd_demosaic.o  object/dcb_demosaic.o \
++  object/demosaic_packs.o \
+   object/file_write.o \
+   object/ext_preprocess.o   object/apply_profile.o
+ 
+@@ -189,6 +195,8 @@
+ 	${CXX} -c -DLIBRAW_NOTHREADS  ${CFLAGS} -o object/ahd_demosaic.o src/demosaic/ahd_demosaic.cpp
+ object/dcb_demosaic.o: src/demosaic/dcb_demosaic.cpp
+ 	${CXX} -c -DLIBRAW_NOTHREADS  ${CFLAGS} -o object/dcb_demosaic.o src/demosaic/dcb_demosaic.cpp
++object/demosaic_packs.o: src/demosaic/demosaic_packs.cpp
++	${CXX} -c -DLIBRAW_NOTHREADS  ${CFLAGS} -o object/demosaic_packs.o src/demosaic/demosaic_packs.cpp
+ object/dht_demosaic.o: src/demosaic/dht_demosaic.cpp
+ 	${CXX} -c -DLIBRAW_NOTHREADS  ${CFLAGS} -o object/dht_demosaic.o src/demosaic/dht_demosaic.cpp
+ object/misc_demosaic.o: src/demosaic/misc_demosaic.cpp
+diff -ruN LibRaw-0.22.3/Makefile.msvc b/LibRaw-0.22.3/Makefile.msvc
+--- Makefile.msvc	2026-10-24 11:24:46
++++ Makefile.msvc	2026-11-14 20:16:11
+@@ -11,6 +11,11 @@
+ #LDFLAGS_DNG=..\\dng_sdk\\release\\libdng.lib  ..\\dng_sdk\\release\\XMPCore.lib
+ # you may also need to specify zlib.lib and jpeg.lib in the line above
+ 
++# LibRaw demosaic packs (0.18.8 sources, see README.demosaic-packs)
++# WARNING: the resulting library is GPL2+ (GPL2 pack) or GPL3+ (GPL3 pack)
++#CFLAGSG2=/DLIBRAW_DEMOSAIC_PACK_GPL2 /I"LibRaw-demosaic-pack-GPL2"
++#CFLAGSG3=/DLIBRAW_DEMOSAIC_PACK_GPL3 /I"LibRaw-demosaic-pack-GPL3"
++
+ # LCMS 1.x support
+ #LCMS_DEF=/DUSE_LCMS /DCMS_DLL /I..\lcms-1.19\include
+ #LCMS_LIB=..\lcms-1.19\bin\lcms.lib
+@@ -70,6 +75,7 @@
+   object\aspect_ratio_st.obj \
+   object\misc_demosaic_st.obj object\xtrans_demosaic_st.obj object\ahd_demosaic_st.obj \
+   object\dht_demosaic_st.obj  object\aahd_demosaic_st.obj  object\dcb_demosaic_st.obj \
++  object\demosaic_packs_st.obj \
+   object\file_write_st.obj \
+   object\ext_preprocess_st.obj   object\apply_profile_st.obj
+ 
+@@ -108,7 +114,7 @@
+   object\postprocessing_aux.obj object\postprocessing_utils_dcrdefs.obj \
+   object\aspect_ratio.obj \
+   object\misc_demosaic.obj object\xtrans_demosaic.obj \
+-  object\ahd_demosaic.obj object\dht_demosaic.obj \
++  object\ahd_demosaic.obj object\dht_demosaic.obj object\demosaic_packs.obj \
+   object\aahd_demosaic.obj object\dcb_demosaic.obj \
+   object\file_write.obj \
+   object\ext_preprocess.obj   object\apply_profile.obj
+@@ -305,6 +311,12 @@
+ 
+ object\dcb_demosaic.obj: src\demosaic\dcb_demosaic.cpp
+ 	$(CC) $(COPT) /DLIBRAW_BUILDLIB /Fo"object\\dcb_demosaic.obj" /c src\demosaic\dcb_demosaic.cpp
++
++object\demosaic_packs_st.obj: src\demosaic\demosaic_packs.cpp
++	$(CC) $(COPT) /DLIBRAW_NODLL /DLIBRAW_BUILDLIB /Fo"object\\demosaic_packs_st.obj" /c src\demosaic\demosaic_packs.cpp
++
++object\demosaic_packs.obj: src\demosaic\demosaic_packs.cpp
++	$(CC) $(COPT) /DLIBRAW_BUILDLIB /Fo"object\\demosaic_packs.obj" /c src\demosaic\demosaic_packs.cpp
+ 
+ object\dht_demosaic_st.obj: src\demosaic\dht_demosaic.cpp
+ 	$(CC) $(COPT) /DLIBRAW_NODLL /DLIBRAW_BUILDLIB /Fo"object\\dht_demosaic_st.obj" /c src\demosaic\dht_demosaic.cpp
+diff -ruN LibRaw-0.22.3/README.demosaic-packs b/LibRaw-0.22.3/README.demosaic-packs
+--- README.demosaic-packs	2026-10-24 11:24:46
++++ README.demosaic-packs	2026-11-14 20:16:11
+@@ -6,12 +6,59 @@
+ We too: we (LibRaw team) focused on RAW decode and metadata extraction, but not
+ on postprocessing (demosaic, noise suppression, etc).
+ 
+-So, LibRaw-demosaic-pack-GPLn are abandoned now. We will be happy to convey 
++So, LibRaw-demosaic-pack-GPLn are abandoned now. We will be happy to convey
+ their support and development to any developer who will show interest.
+ 
+ LibRaw 0.19 contains callback calls placed instead of calls to demosaic pack routines.
+ So, adaptation of demosaic packs to new LibRaw should be easy (and, of course, we'll
+ provide some support and/or implement additional callbacks if needed).
+ 
++======================= Building with the demosaic packs =====================
+ 
+-                                                              
++This tree can again be built with the (unmodified) last released packs,
++LibRaw-demosaic-pack-GPL2-0.18.8 and LibRaw-demosaic-pack-GPL3-0.18.8
++(https://www.libraw.org/data/). The glue code is in
++src/demosaic/demosaic_packs.cpp; it contains no GPL code and compiles to
++nothing unless a pack is enabled.
++
++LICENSE WARNING: a library built with the GPL2 pack is covered by the GPL
++version 2 or later; with the GPL3 pack, by the GPL version 3 or later.
++Without the packs, LibRaw stays LGPL 2.1 / CDDL 1.0.
++
++Algorithms (imgdata.params.user_qual, dcraw_emu -q):
++   5  AHD-Mod   modified AHD (Paul Lee)                     GPL2 pack
++   6  AFD       Adaptive Filtered Demosaic (5-pass)         GPL2 pack
++   7  VCD       Variance of Color Differences               GPL2 pack
++   8  VCD+AHD   mixed VCD/modified AHD                      GPL2 pack
++                (uses median_filter_new() when med_passes > 0)
++   9  LMMSE     LMMSE interpolation                         GPL2 pack
++  10  AMaZE     AMaZE (from RawTherapee)                    GPL3 pack
++Without the corresponding pack these fall back to AHD and set
++LIBRAW_WARN_FALLBACK_TO_AHD in imgdata.process_warnings, as before.
++
++The other pack features of LibRaw 0.18 (CA correction, line/impulse noise
++reduction, green equilibration, the GPL2 Foveon decoder, VCD refinement and
++edge-sensitive median filter) are not available: their parameters no longer
++exist in libraw_output_params_t.
++
++Run-time detection:
++  LibRaw::capabilities() / libraw_capabilities() report
++  LIBRAW_CAPS_DEMOSAICSGPL2 and LIBRAW_CAPS_DEMOSAICSGPL3.
++  libraw_const.h defines LIBRAW_HAS_DEMOSAIC_GPL_CAPS so that applications can
++  tell at compile time that these capability bits exist.
++
++./configure:
++  Unpack the packs into the LibRaw source directory (or anywhere) and use
++    --enable-demosaic-pack-gpl2[=DIR]  (default DIR: $srcdir/LibRaw-demosaic-pack-GPL2)
++    --enable-demosaic-pack-gpl3[=DIR]  (default DIR: $srcdir/LibRaw-demosaic-pack-GPL3)
++  Both are disabled by default; configure fails if an enabled pack is not
++  found. "make check" runs tests/demosaic_test, which checks every user_qual
++  value and the capability bits against the build configuration.
++
++Makefile.devel, Makefile.dist, Makefile.mingw, Makefile.msvc:
++  uncomment the LIBRAW_DEMOSAIC_PACK_GPL2/GPL3 lines (CFLAGSG2/CFLAGSG3 for
++  Makefile.msvc) and adjust the include paths.
++
++Other builds (qmake, Visual Studio project, CMake): add
++  -DLIBRAW_DEMOSAIC_PACK_GPL2 / -DLIBRAW_DEMOSAIC_PACK_GPL3
++and the pack directories to the include path for all library sources.
+diff -ruN LibRaw-0.22.3/buildfiles/libraw.vcxproj b/LibRaw-0.22.3/buildfiles/libraw.vcxproj
+--- buildfiles/libraw.vcxproj	2026-10-24 11:24:46
++++ buildfiles/libraw.vcxproj	2026-11-14 20:16:11
+@@ -160,6 +160,7 @@
+     <ClCompile Include="..\src\decoders\decoders_dcraw.cpp" />
+     <ClCompile Include="..\src\decoders\decoders_libraw.cpp" />
+     <ClCompile Include="..\src\decoders\decoders_libraw_dcrdefs.cpp" />
++    <ClCompile Include="..\src\demosaic\demosaic_packs.cpp" />
+     <ClCompile Include="..\src\demosaic\dht_demosaic.cpp" />
+     <ClCompile Include="..\src\decoders\dng.cpp" />
+     <ClCompile Include="..\src\integration\dngsdk_glue.cpp" />
+diff -ruN LibRaw-0.22.3/buildfiles/libraw.vcxproj.filters b/LibRaw-0.22.3/buildfiles/libraw.vcxproj.filters
+--- buildfiles/libraw.vcxproj.filters	2026-10-24 11:24:46
++++ buildfiles/libraw.vcxproj.filters	2026-11-14 20:16:11
+@@ -79,6 +79,9 @@
+     <ClCompile Include="..\src\decoders\decoders_libraw_dcrdefs.cpp">
+       <Filter>Source Files</Filter>
+     </ClCompile>
++    <ClCompile Include="..\src\demosaic\demosaic_packs.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
+     <ClCompile Include="..\src\demosaic\dht_demosaic.cpp">
+       <Filter>Source Files</Filter>
+     </ClCompile>
+diff -ruN LibRaw-0.22.3/configure.ac b/LibRaw-0.22.3/configure.ac
+--- configure.ac	2026-10-24 11:24:46
++++ configure.ac	2026-11-14 20:16:11
+@@ -116,6 +116,35 @@
+ 	esac],[examples=true])
+ AM_CONDITIONAL([EXAMPLES], [test x$examples = xtrue])
+ 
++# LibRaw-demosaic-pack-GPL2 / LibRaw-demosaic-pack-GPL3 (0.18.8 sources)
++# Disabled by default. --enable-demosaic-pack-gplN looks for the pack in
++# $srcdir/LibRaw-demosaic-pack-GPLN, --enable-demosaic-pack-gplN=DIR uses DIR.
++# Enabling a pack makes the resulting library GPL (v2+ for GPL2, v3+ for GPL3).
++AC_DEFUN([LIBRAW_DEMOSAIC_PACK],[
++AC_ARG_ENABLE([demosaic-pack-gpl$1],
++	AS_HELP_STRING([--enable-demosaic-pack-gpl$1@<:@=DIR@:>@],
++		[Enable LibRaw demosaic pack/GPL$1 (from DIR, default $srcdir/LibRaw-demosaic-pack-GPL$1); the library becomes GPL$1+]),
++	[case "${enableval}" in
++		yes)	dp$1=true; dp$1dir="${srcdir}/LibRaw-demosaic-pack-GPL$1" ;;
++		no)	dp$1=false ;;
++		*)	dp$1=true; dp$1dir="${enableval}" ;;
++	esac],[dp$1=false])
++if test x$dp$1 = xtrue ; then
++	if test -f "${dp$1dir}/$2" ; then
++		dp$1dir=`cd "${dp$1dir}" && pwd`
++		AC_MSG_NOTICE([Activated LibRaw demosaic pack/GPL$1 in ${dp$1dir}])
++		CPPFLAGS="$CPPFLAGS -DLIBRAW_DEMOSAIC_PACK_GPL$1"
++		LIBRAW_DEMOSAIC_PACKS_CPPFLAGS="$LIBRAW_DEMOSAIC_PACKS_CPPFLAGS -I${dp$1dir}"
++	else
++		AC_MSG_ERROR([${dp$1dir} does not contain LibRaw-demosaic-pack-GPL$1 ($2 not found)])
++	fi
++fi
++])
++LIBRAW_DEMOSAIC_PACKS_CPPFLAGS=
++LIBRAW_DEMOSAIC_PACK([2],[afd_interpolate_pl.c])
++LIBRAW_DEMOSAIC_PACK([3],[amaze_demosaic_RT.cc])
++AC_SUBST([LIBRAW_DEMOSAIC_PACKS_CPPFLAGS])
++
+ LIBS="$LIBS -lm"
+ 
+ case "${host_os}" in
+diff -ruN LibRaw-0.22.3/libraw/libraw.h b/LibRaw-0.22.3/libraw/libraw.h
+--- libraw/libraw.h	2026-10-24 11:24:46
++++ libraw/libraw.h	2026-11-14 20:16:11
+@@ -455,6 +455,15 @@
+ 
+   void dcb(int iterations, int dcb_enhance);
+   void fbdd(int noiserd);
++
++  /* from demosaic packs (only defined when built with them) */
++  void ahd_interpolate_mod();
++  void afd_interpolate_pl(int afd_passes, int clip_on);
++  void lmmse_interpolate(int gamma_apply);
++  void vcd_interpolate(int ahd_cutoff);
++  void ahd_partial_interpolate(int threshold_value);
++  void median_filter_new();
++  void amaze_demosaic_RT();
+   void exp_bef(float expos, float preser);
+ 
+   void bad_pixels(const char *);
+diff -ruN LibRaw-0.22.3/libraw/libraw_const.h b/LibRaw-0.22.3/libraw/libraw_const.h
+--- libraw/libraw_const.h	2026-10-24 11:24:46
++++ libraw/libraw_const.h	2026-11-14 20:16:11
+@@ -289,7 +289,13 @@
+   LIBRAW_CAPS_JPEG = 1<<7,
+   LIBRAW_CAPS_RAWSPEED3 = 1<<8,
+   LIBRAW_CAPS_RAWSPEED_BITS = 1<<9,
++  /* GPL demosaic packs (user_qual 5-9: GPL2, user_qual 10: GPL3). Bits are
++     set only if the library was built with LIBRAW_DEMOSAIC_PACK_GPL2/GPL3. */
++  LIBRAW_CAPS_DEMOSAICSGPL2 = 1<<16,
++  LIBRAW_CAPS_DEMOSAICSGPL3 = 1<<17,
+ };
++/* Defined when LibRaw::capabilities() reports LIBRAW_CAPS_DEMOSAICSGPL2/3 */
++#define LIBRAW_HAS_DEMOSAIC_GPL_CAPS 1
+ 
+ enum LibRaw_colorspace {
+   LIBRAW_COLORSPACE_NotFound = 0,
+diff -ruN LibRaw-0.22.3/src/demosaic/demosaic_packs.cpp b/LibRaw-0.22.3/src/demosaic/demosaic_packs.cpp
+--- src/demosaic/demosaic_packs.cpp	1970-01-01 01:00:00
++++ src/demosaic/demosaic_packs.cpp	2026-11-14 20:16:11
+@@ -0,0 +1,63 @@
++/* -*- C++ -*-
++ * Copyright 2008-2026 LibRaw LLC (info@libraw.org)
++ *
++ LibRaw is free software; you can redistribute it and/or modify
++ it under the terms of the one of two licenses as you choose:
++
++1. GNU LESSER GENERAL PUBLIC LICENSE version 2.1
++   (See file LICENSE.LGPL provided in LibRaw distribution archive for details).
++
++2. COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0
++   (See file LICENSE.CDDL provided in LibRaw distribution archive for details).
++
++ */
++
++/*
++   Glue for the (unmodified) LibRaw-demosaic-pack-GPL2/GPL3 0.18.8 sources.
++
++   This file contains no GPL code. The pack sources are only compiled in when
++   LIBRAW_DEMOSAIC_PACK_GPL2 / LIBRAW_DEMOSAIC_PACK_GPL3 are defined and the
++   pack directories are on the include path (see configure.ac
++   --enable-demosaic-pack-gpl2[=DIR] / --enable-demosaic-pack-gpl3[=DIR]).
++   A library built that way is covered by the GPL (v2+ or v3+ respectively).
++   Without these defines this file compiles to nothing.
++ */
++
++#if defined(LIBRAW_DEMOSAIC_PACK_GPL2) || defined(LIBRAW_DEMOSAIC_PACK_GPL3)
++
++#include "../../internal/dcraw_defs.h"
++
++#ifndef CLASS
++#define CLASS LibRaw::
++#endif
++
++/* Compatibility with the 0.18 internal API used by the pack sources */
++/* merror(): LibRaw::malloc/calloc now throw on failure; keep a NULL check */
++#define merror(ptr, where)                                                     \
++  do                                                                           \
++  {                                                                            \
++    if (!(ptr))                                                                \
++      throw LIBRAW_EXCEPTION_ALLOC;                                            \
++  } while (0)
++/* color constants moved to LibRaw_constants */
++#define xyz_rgb LibRaw_constants::xyz_rgb
++#define d65_white LibRaw_constants::d65_white
++
++#ifdef LIBRAW_DEMOSAIC_PACK_GPL2
++#include <ahd_interpolate_mod.c>
++#include <ahd_partial_interpolate.c>
++#include <afd_interpolate_pl.c>
++#include <vcd_interpolate.c>
++#include <lmmse_interpolate.c>
++#include <median_filter_new.c>
++#endif
++
++#ifdef LIBRAW_DEMOSAIC_PACK_GPL3
++/* amaze_demosaic_RT.cc defines its own versions of these */
++#undef SQR
++#undef LIM
++#undef ULIM
++#include <amaze_demosaic_RT.cc>
++#endif
++
++#endif
+diff -ruN LibRaw-0.22.3/src/postprocessing/dcraw_process.cpp b/LibRaw-0.22.3/src/postprocessing/dcraw_process.cpp
+--- src/postprocessing/dcraw_process.cpp	2026-10-24 11:24:46
++++ src/postprocessing/dcraw_process.cpp	2026-11-14 20:16:11
+@@ -187,6 +187,22 @@
+         ahd_interpolate(); // really don't need it here due to fallback op
+       else if (quality == 4)
+         dcb(iterations, dcb_enhance);
++#ifdef LIBRAW_DEMOSAIC_PACK_GPL2
++      else if (quality == 5)
++        ahd_interpolate_mod();
++      else if (quality == 6)
++        afd_interpolate_pl(2, 1);
++      else if (quality == 7)
++        vcd_interpolate(0);
++      else if (quality == 8)
++        vcd_interpolate(12);
++      else if (quality == 9)
++        lmmse_interpolate(1);
++#endif
++#ifdef LIBRAW_DEMOSAIC_PACK_GPL3
++      else if (quality == 10)
++        amaze_demosaic_RT();
++#endif
+ 
+       else if (quality == 11)
+         dht_interpolate();
+@@ -212,6 +228,11 @@
+       (callbacks.post_interpolate_cb)(this);
+     else if (!P1.is_foveon && P1.colors == 3 && O.med_passes > 0)
+     {
++#ifdef LIBRAW_DEMOSAIC_PACK_GPL2
++      if (quality == 8) // VCD+AHD: as in LibRaw 0.18 with demosaic pack GPL2
++        median_filter_new();
++      else
++#endif
+       median_filter();
+       SET_PROC_FLAG(LIBRAW_PROGRESS_MEDIAN_FILTER);
+     }
+diff -ruN LibRaw-0.22.3/src/utils/utils_libraw.cpp b/LibRaw-0.22.3/src/utils/utils_libraw.cpp
+--- src/utils/utils_libraw.cpp	2026-10-24 11:24:46
++++ src/utils/utils_libraw.cpp	2026-11-14 20:16:11
+@@ -224,6 +224,12 @@
+ #ifdef USE_JPEG
+   ret |= LIBRAW_CAPS_JPEG;
+ #endif
++#ifdef LIBRAW_DEMOSAIC_PACK_GPL2
++  ret |= LIBRAW_CAPS_DEMOSAICSGPL2;
++#endif
++#ifdef LIBRAW_DEMOSAIC_PACK_GPL3
++  ret |= LIBRAW_CAPS_DEMOSAICSGPL3;
++#endif
+   return ret;
+ }
+ 
+diff -ruN LibRaw-0.22.3/tests/demosaic_test.cpp b/LibRaw-0.22.3/tests/demosaic_test.cpp
+--- tests/demosaic_test.cpp	1970-01-01 01:00:00
++++ tests/demosaic_test.cpp	2026-11-14 20:16:11
+@@ -0,0 +1,281 @@
++/* -*- C++ -*-
++ * Copyright 2026 LibRaw LLC (info@libraw.org)
++ *
++ LibRaw is free software; you can redistribute it and/or modify
++ it under the terms of the one of two licenses as you choose:
++
++1. GNU LESSER GENERAL PUBLIC LICENSE version 2.1
++   (See file LICENSE.LGPL provided in LibRaw distribution archive for details).
++
++2. COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0
++   (See file LICENSE.CDDL provided in LibRaw distribution archive for details).
++
++ */
++
++/*
++   Demosaic regression test (run by "make check").
++
++   A synthetic RGB image is mosaiced into a 16-bit RGGB Bayer buffer, opened
++   with LibRaw::open_bayer() and processed with every user_qual value
++   (0-12). For each algorithm the test checks that:
++   - dcraw_process() succeeds;
++   - LIBRAW_WARN_FALLBACK_TO_AHD is set exactly when the algorithm is not
++     available (user_qual 5-9 need demosaic pack GPL2, 10 needs GPL3);
++   - LibRaw::capabilities() reports LIBRAW_CAPS_DEMOSAICSGPL2/3 exactly when
++     the library was built with the corresponding pack;
++   - the result is close to the original RGB image (PSNR above a threshold);
++   - an available non-AHD algorithm does not produce the AHD result.
++
++   The expected pack availability comes from the LIBRAW_DEMOSAIC_PACK_GPL2/3
++   macros, which configure adds to CPPFLAGS for both the library and this
++   test. Pass --print to see the per-algorithm PSNR values.
++ */
++
++#include <math.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <vector>
++
++#include "libraw/libraw.h"
++
++namespace
++{
++
++const int W = 300; // not a multiple of the AMaZE tile size (512), on purpose
++const int H = 220;
++const int BORDER = 16; // pixels ignored near the image border
++const double MAXV = 4000.0;
++
++// Smooth gradients, a sharp diagonal edge and colored disks: enough structure
++// to tell demosaic algorithms apart, but free of fine aliasing patterns so that
++// all algorithms are expected to do reasonably well.
++void reference(int x, int y, double rgb[3])
++{
++  double fx = x / (double)W, fy = y / (double)H;
++  rgb[0] = 0.15 + 0.6 * fx;
++  rgb[1] = 0.20 + 0.5 * fy;
++  rgb[2] = 0.15 + 0.3 * (1 - fx) + 0.2 * fy;
++  if (x + 0.6 * y > 0.7 * W) // sharp edge
++  {
++    rgb[0] *= 0.5;
++    rgb[1] *= 0.6;
++    rgb[2] = rgb[2] * 0.5 + 0.3;
++  }
++  double dx = x - 0.3 * W, dy = y - 0.6 * H;
++  if (dx * dx + dy * dy < 30 * 30)
++  {
++    rgb[0] = 0.8;
++    rgb[1] = 0.25;
++    rgb[2] = 0.2;
++  }
++  dx = x - 0.75 * W;
++  dy = y - 0.3 * H;
++  if (dx * dx + dy * dy < 25 * 25)
++  {
++    rgb[0] = 0.2;
++    rgb[1] = 0.3;
++    rgb[2] = 0.85;
++  }
++  for (int c = 0; c < 3; c++)
++    rgb[c] *= MAXV;
++}
++
++struct Algo
++{
++  int qual;
++  const char *name;
++  int pack;        // 0: always available, 2: GPL2 pack, 3: GPL3 pack
++  double min_psnr; // dB, on the interior of the image
++};
++
++const Algo algos[] = {
++    {0, "linear", 0, 25.}, {1, "VNG", 0, 28.},      {2, "PPG", 0, 28.},
++    {3, "AHD", 0, 28.},    {4, "DCB", 0, 28.},      {5, "AHD-Mod", 2, 28.},
++    {6, "AFD", 2, 28.},    {7, "VCD", 2, 28.},      {8, "VCD+AHD", 2, 28.},
++    {9, "LMMSE", 2, 28.},  {10, "AMaZE", 3, 28.},   {11, "DHT", 0, 28.},
++    {12, "AAHD", 0, 28.},
++};
++
++#ifdef LIBRAW_DEMOSAIC_PACK_GPL2
++const bool have_gpl2 = true;
++#else
++const bool have_gpl2 = false;
++#endif
++#ifdef LIBRAW_DEMOSAIC_PACK_GPL3
++const bool have_gpl3 = true;
++#else
++const bool have_gpl3 = false;
++#endif
++
++bool available(const Algo &a)
++{
++  return a.pack == 0 || (a.pack == 2 && have_gpl2) ||
++         (a.pack == 3 && have_gpl3);
++}
++
++// Runs one demosaic. On success, out receives W*H*3 linear values.
++bool run(const std::vector<unsigned char> &bayer, int qual,
++         std::vector<double> &out, unsigned &warnings)
++{
++  LibRaw *lr = new LibRaw;
++  int ret = lr->open_bayer(&bayer[0], (unsigned)bayer.size(), W, H, 0, 0, 0, 0,
++                           0, LIBRAW_OPENBAYER_RGGB, 0, 0, 0);
++  if (ret == LIBRAW_SUCCESS)
++    ret = lr->unpack();
++  if (ret == LIBRAW_SUCCESS)
++  {
++    libraw_output_params_t &O = lr->imgdata.params;
++    O.user_qual = qual;
++    O.output_color = 0; // raw color: no color matrix
++    O.no_auto_bright = 1;
++    O.gamm[0] = O.gamm[1] = 1.0;
++    O.output_bps = 16;
++    O.highlight = 0;
++    O.med_passes = 0;
++    O.use_camera_wb = O.use_auto_wb = 0;
++    O.user_black = 0;
++    ret = lr->dcraw_process();
++  }
++  if (ret != LIBRAW_SUCCESS)
++  {
++    fprintf(stderr, "user_qual %d: LibRaw error %d (%s)\n", qual, ret,
++            libraw_strerror(ret));
++    delete lr;
++    return false;
++  }
++  warnings = lr->imgdata.process_warnings;
++  if (lr->imgdata.sizes.iwidth != W || lr->imgdata.sizes.iheight != H)
++  {
++    fprintf(stderr, "user_qual %d: unexpected output size %dx%d\n", qual,
++            lr->imgdata.sizes.iwidth, lr->imgdata.sizes.iheight);
++    delete lr;
++    return false;
++  }
++  out.resize(W * H * 3);
++  for (int i = 0; i < W * H; i++)
++    for (int c = 0; c < 3; c++)
++      out[i * 3 + c] = lr->imgdata.image[i][c];
++  delete lr;
++  return true;
++}
++
++// PSNR on the interior, after fitting one gain per channel (scale_colors()
++// may rescale the data slightly).
++double psnr(const std::vector<double> &out, const std::vector<double> &ref)
++{
++  double sse = 0;
++  long n = 0;
++  for (int c = 0; c < 3; c++)
++  {
++    double so = 0, sr = 0;
++    for (int y = BORDER; y < H - BORDER; y++)
++      for (int x = BORDER; x < W - BORDER; x++)
++      {
++        int i = (y * W + x) * 3 + c;
++        so += out[i] * ref[i];
++        sr += out[i] * out[i];
++      }
++    double g = sr > 0 ? so / sr : 0;
++    for (int y = BORDER; y < H - BORDER; y++)
++      for (int x = BORDER; x < W - BORDER; x++)
++      {
++        int i = (y * W + x) * 3 + c;
++        double d = g * out[i] - ref[i];
++        sse += d * d;
++        n++;
++      }
++  }
++  double mse = sse / n;
++  return mse > 0 ? 10 * log10(MAXV * MAXV / mse) : 999.;
++}
++
++} // namespace
++
++int main(int argc, char **argv)
++{
++  bool print = argc > 1 && !strcmp(argv[1], "--print");
++  int failures = 0;
++
++  printf("%s, demosaic pack GPL2: %s, GPL3: %s\n", LibRaw::version(),
++         have_gpl2 ? "yes" : "no", have_gpl3 ? "yes" : "no");
++
++  unsigned caps = LibRaw::capabilities();
++  if (!!(caps & LIBRAW_CAPS_DEMOSAICSGPL2) != have_gpl2 ||
++      !!(caps & LIBRAW_CAPS_DEMOSAICSGPL3) != have_gpl3)
++  {
++    fprintf(stderr, "FAIL: capabilities() = 0x%x does not match the build\n",
++            caps);
++    failures++;
++  }
++
++  std::vector<double> ref(W * H * 3);
++  std::vector<unsigned char> bayer(W * H * 2);
++  for (int y = 0; y < H; y++)
++    for (int x = 0; x < W; x++)
++    {
++      double rgb[3];
++      reference(x, y, rgb);
++      for (int c = 0; c < 3; c++)
++        ref[(y * W + x) * 3 + c] = rgb[c];
++      int c = (y & 1) ? ((x & 1) ? 2 : 1) : ((x & 1) ? 1 : 0); // RGGB
++      unsigned v = (unsigned)(rgb[c] + 0.5);
++      bayer[(y * W + x) * 2] = v & 0xff; // little endian
++      bayer[(y * W + x) * 2 + 1] = v >> 8;
++    }
++
++  std::vector<double> ahd;
++  unsigned w;
++  if (!run(bayer, 3, ahd, w))
++    return 1;
++
++  for (size_t k = 0; k < sizeof(algos) / sizeof(algos[0]); k++)
++  {
++    const Algo &a = algos[k];
++    std::vector<double> out;
++    unsigned warnings = 0;
++    if (!run(bayer, a.qual, out, warnings))
++    {
++      failures++;
++      continue;
++    }
++    bool avail = available(a);
++    bool fellback = (warnings & LIBRAW_WARN_FALLBACK_TO_AHD) != 0;
++    double p = psnr(out, ref);
++    bool same_as_ahd = out == ahd;
++    bool ok = true;
++    if (fellback == avail)
++    {
++      fprintf(stderr, "FAIL: %s (user_qual %d): fallback to AHD %s\n", a.name,
++              a.qual, fellback ? "unexpected" : "missing");
++      ok = false;
++    }
++    if (p < a.min_psnr)
++    {
++      fprintf(stderr, "FAIL: %s (user_qual %d): PSNR %.2f dB < %.2f dB\n",
++              a.name, a.qual, p, a.min_psnr);
++      ok = false;
++    }
++    if (avail && a.qual != 3 && same_as_ahd)
++    {
++      fprintf(stderr, "FAIL: %s (user_qual %d): result identical to AHD\n",
++              a.name, a.qual);
++      ok = false;
++    }
++    if (!avail && !same_as_ahd)
++    {
++      fprintf(stderr, "FAIL: %s (user_qual %d): fallback differs from AHD\n",
++              a.name, a.qual);
++      ok = false;
++    }
++    if (print || !ok)
++      printf("%-8s user_qual %2d: %s, PSNR %6.2f dB%s\n", a.name, a.qual,
++             avail ? "available  " : "unavailable", p,
++             fellback ? " (AHD fallback)" : "");
++    if (!ok)
++      failures++;
++  }
++
++  printf("%s\n", failures ? "FAILED" : "PASSED");
++  return failures ? 1 : 0;
++}

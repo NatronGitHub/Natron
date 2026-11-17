@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,9 +28,11 @@
 #include <vector>
 #include <cmath>
 #include <cstdlib>
+#include <random>
 
 #include <gtest/gtest.h>
 
+// clang-format off
 #if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
 GCC_DIAG_OFF(maybe-uninitialized)
 #endif
@@ -40,6 +42,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 408
 GCC_DIAG_ON(maybe-uninitialized)
 #endif
+// clang-format on
 
 #include "Engine/EngineFwd.h"
 #include "Engine/Transform.h"
@@ -359,9 +362,12 @@ TEST(ModelSearch, SimilarityNPoints)
     testSimilarity(x1);
 }
 
+typedef std::mt19937 RandomNumberGenerator;
+const std::uint32_t kDefaultSeed = 2000u;
 
 static void
-computeHomography(int w1,
+computeHomography(RandomNumberGenerator& rng,
+                  int w1,
                   int h1,
                   int w2,
                   int h2,
@@ -396,7 +402,7 @@ computeHomography(int w1,
     *nbOutliers = 0;
     for (std::size_t i = 0; i < x1.size(); ++i) {
         double prob = (outliersProp * i) / (double)x1.size();
-        double s = std::rand() % 100;
+        double s = rng() % 100;
         bool isOutlier = s <= (prob * 100);
         if (isOutlier) {
             x1[i].x = x1[i].x + i * 5.5;
@@ -409,7 +415,7 @@ computeHomography(int w1,
 }
 
 static void
-testHomography(std::vector<Point>& x1)
+testHomography(RandomNumberGenerator& rng, std::vector<Point>& x1)
 {
     const int w1 = 500;
     const int h1 = 500;
@@ -427,7 +433,7 @@ testHomography(std::vector<Point>& x1)
     openMVG::Mat3 foundModel;
     InliersVec inliers;
     try {
-        computeHomography(w1, h1, w2, h2, H, outliersProp, x1, &x2, &nbOutliers, &foundModel, &inliers);
+        computeHomography(rng, w1, h1, w2, h2, H, outliersProp, x1, &x2, &nbOutliers, &foundModel, &inliers);
     } catch (...) {
         ASSERT_TRUE(false);
     }
@@ -448,26 +454,27 @@ testHomography(std::vector<Point>& x1)
 
 TEST(ModelSearch, HomographyMinimal)
 {
+    RandomNumberGenerator rng(kDefaultSeed);
     std::vector<Point> x1;
 
     padd(x1, 50, 50);
     padd(x1, 240, 60);
     padd(x1, 223, 342);
     padd(x1, 13, 310);
-    testHomography(x1);
+    testHomography(rng, x1);
 }
 
 TEST(ModelSearch, HomographyNPoints)
 {
+    RandomNumberGenerator rng(kDefaultSeed);
     std::vector<Point> x1;
     const int n = 1000;
 
     x1.resize(n);
 
-    std::srand(2000);
     for (int i = 0; i < n; ++i) {
-        x1[i].x = std::rand() % 500 + 1;
-        x1[i].y = std::rand() % 500 + 1;
+        x1[i].x = rng() % 500 + 1;
+        x1[i].y = rng() % 500 + 1;
     }
-    testHomography(x1);
+    testHomography(rng, x1);
 }

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install cmake
-# see http://www.linuxfromscratch.org/blfs/view/cvs/general/cmake.html
+# see http://www.linuxfromscratch.org/blfs/view/svn/general/cmake.html
 #
 # cmake 3.10.1 does not compile with the system libuv
 # Utilities/cmlibuv/src/unix/posix-poll.c: In function 'uv__platform_loop_init':
@@ -10,8 +10,7 @@
 #       ^~
 # Since there is no way to disable libuv alone (--no-system-libuv unavailable in ./bootstrap),
 # we disable all system libs. Voilà!
-CMAKE_VERSION=3.19.8
-#CMAKE_VERSION=3.20.0 # makes mariadb build fail
+CMAKE_VERSION=3.26.3
 CMAKE_VERSION_SHORT=${CMAKE_VERSION%.*}
 CMAKE_TAR="cmake-${CMAKE_VERSION}.tar.gz"
 CMAKE_SITE="https://cmake.org/files/v${CMAKE_VERSION_SHORT}"

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,10 +29,9 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <boost/algorithm/clamp.hpp>
-
 #include <cairo/cairo.h>
 
+#include "Global/MathUtils.h"
 
 #include "Engine/Node.h"
 #include "Engine/Image.h"
@@ -55,7 +54,7 @@ struct RotoSmearPrivate
         , lastCur()
         , lastDistToNext(0)
     {
-        lastCur.first.x = lastCur.first.y = INT_MIN;
+        lastCur.first.x = lastCur.first.y = std::numeric_limits<int>::min();
     }
 };
 
@@ -129,8 +128,7 @@ RotoSmear::isIdentity(double time,
     NodePtr node = getNode();
     node->getPaintStrokeRoD(time, &maskRod);
 
-    RectI maskPixelRod;
-    maskRod.toPixelEnclosing(scale, getAspectRatio(-1), &maskPixelRod);
+    const RectI maskPixelRod = maskRod.toPixelEnclosing(scale, getAspectRatio(-1));
     if ( !maskPixelRod.intersects(roi) ) {
         *inputTime = time;
         *inputNb = 0;
@@ -154,9 +152,7 @@ renderSmearDot(const unsigned char* maskData,
 {
     /// First copy the portion of the image around the previous dot into tmpBuf
     RectD prevDotRoD(prev.x - brushSizePixels / 2., prev.y - brushSizePixels / 2., prev.x + brushSizePixels / 2., prev.y + brushSizePixels / 2.);
-    RectI prevDotBounds;
-
-    prevDotRoD.toPixelEnclosing(0, outputImage->getPixelAspectRatio(), &prevDotBounds);
+    const RectI prevDotBounds = prevDotRoD.toPixelEnclosing(0, outputImage->getPixelAspectRatio());
     ImagePtr tmpBuf( new Image(outputImage->getComponents(),
                                prevDotRoD,
                                prevDotBounds,
@@ -212,12 +208,12 @@ RotoSmear::render(const RenderActionArgs& args)
 {
     NodePtr node = getNode();
     RotoDrawableItemPtr item = node->getAttachedRotoItem();
-    RotoStrokeItemPtr stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
+    RotoStrokeItemPtr stroke = std::dynamic_pointer_cast<RotoStrokeItem>(item);
     RotoContextPtr context = stroke->getContext();
 
     assert(context);
     bool duringPainting = isDuringPaintStrokeCreationThreadLocal();
-    unsigned int mipmapLevel = Image::getLevelFromScale(args.originalScale.x);
+    unsigned int mipmapLevel = args.originalScale.toMipmapLevel();
     std::list<std::list<std::pair<Point, double> > > strokes;
     int strokeIndex;
     node->getLastPaintStrokePoints(args.time, mipmapLevel, &strokes, &strokeIndex);
@@ -227,12 +223,12 @@ RotoSmear::render(const RenderActionArgs& args)
     std::pair<Point, double> lastCur;
     if (!duringPainting) {
         QMutexLocker k(&_imp->smearDataMutex);
-        _imp->lastCur.first.x = INT_MIN;
-        _imp->lastCur.first.y = INT_MIN;
+        _imp->lastCur.first.x = std::numeric_limits<int>::min();
+        _imp->lastCur.first.y = std::numeric_limits<int>::min();
         lastCur = _imp->lastCur;
     } else {
         QMutexLocker k(&_imp->smearDataMutex);
-        isFirstStrokeTick = _imp->lastCur.first.x == INT_MIN && _imp->lastCur.first.y == INT_MIN;
+        isFirstStrokeTick = _imp->lastCur.first.x == std::numeric_limits<int>::min() && _imp->lastCur.first.y == std::numeric_limits<int>::min();
         lastCur = _imp->lastCur;
     }
 
@@ -314,7 +310,7 @@ RotoSmear::render(const RenderActionArgs& args)
 
         for (std::list<std::pair<ImagePlaneDesc, ImagePtr> >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
-            assert(plane->second->getMipMapLevel() == mipmapLevel);
+            assert(plane->second->getMipmapLevel() == mipmapLevel);
 
             distToNext = 0.;
             int nComps = plane->first.getNumComponents();
@@ -405,8 +401,8 @@ RotoSmear::render(const RenderActionArgs& args)
                 Point v;
                 v.x = renderPoint.first.x - prev.first.x;
                 v.y = renderPoint.first.y - prev.first.y;
-                double vx = boost::algorithm::clamp(std::abs(v.x / halfSize), 0., .7);
-                double vy = boost::algorithm::clamp(std::abs(v.y / halfSize), 0., .7);
+                double vx = MathUtils::clamp(std::abs(v.x / halfSize), 0., .7);
+                double vy = MathUtils::clamp(std::abs(v.y / halfSize), 0., .7);
 
                 prevPoint.x = prev.first.x + vx * v.x;
                 prevPoint.y = prev.first.y + vy * v.y;

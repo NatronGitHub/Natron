@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,11 +26,13 @@
 #include "NodeGraph.h"
 #include "NodeGraphPrivate.h"
 
+#include <limits>
 #include <sstream> // stringstream
 #include <stdexcept>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// clang-format off
 GCC_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
@@ -40,11 +42,12 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/version.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
+// clang-format on
 #endif
 
 #include <QApplication>
 #include <QClipboard>
-#include <QtCore/QMimeData>
+#include <QMimeData>
 
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
@@ -189,7 +192,7 @@ NodeGraph::pasteNodeClipBoards(const QPointF& pos)
         return false;
     }
 
-    _imp->pasteNodesInternal(cb, pos, true, &newNodes);
+    _imp->pasteNodesInternal(cb, _imp->_root->mapFromScene(pos), true, &newNodes);
 
     return true;
 }
@@ -197,7 +200,7 @@ NodeGraph::pasteNodeClipBoards(const QPointF& pos)
 bool
 NodeGraph::pasteNodeClipBoards()
 {
-    QPointF position = _imp->_root->mapFromScene( mapToScene( mapFromGlobal( QCursor::pos() ) ) );
+    QPointF position = mapToScene( mapFromGlobal( QCursor::pos() ) );
 
     return pasteNodeClipBoards(position);
 }
@@ -215,13 +218,13 @@ NodeGraph::duplicateSelectedNodes(const QPointF& pos)
     NodeClipBoard tmpClipboard;
     _imp->copyNodesInternal(_imp->_selection, tmpClipboard);
     std::list<std::pair<std::string, NodeGuiPtr> > newNodes;
-    _imp->pasteNodesInternal(tmpClipboard, pos, true, &newNodes);
+    _imp->pasteNodesInternal(tmpClipboard, _imp->_root->mapFromScene(pos), true, &newNodes);
 }
 
 void
 NodeGraph::duplicateSelectedNodes()
 {
-    QPointF scenePos = _imp->_root->mapFromScene( mapToScene( mapFromGlobal( QCursor::pos() ) ) );
+    QPointF scenePos = mapToScene( mapFromGlobal( QCursor::pos() ) );
 
     duplicateSelectedNodes(scenePos);
 }
@@ -235,10 +238,10 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
         return;
     }
 
-    double xmax = INT_MIN;
-    double xmin = INT_MAX;
-    double ymin = INT_MAX;
-    double ymax = INT_MIN;
+    double xmax = std::numeric_limits<int>::min();
+    double xmin = std::numeric_limits<int>::max();
+    double ymin = std::numeric_limits<int>::max();
+    double ymax = std::numeric_limits<int>::min();
     NodesGuiList nodesToCopy = _imp->_selection;
     for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
         if ( (*it)->getNode()->getMasterNode() ) {
@@ -302,7 +305,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
     std::map<std::string, std::string> oldNewScriptNamesMapping;
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         NodeSerializationPtr  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
-        NodeGuiSerializationPtr guiSerialization = boost::make_shared<NodeGuiSerialization>();
+        NodeGuiSerializationPtr guiSerialization = std::make_shared<NodeGuiSerialization>();
         (*it)->serialize( guiSerialization.get() );
         NodeGuiPtr clone = _imp->pasteNode(internalSerialization, guiSerialization, offset,
                                            _imp->group.lock(), std::string(), true, &oldNewScriptNamesMapping);
@@ -337,7 +340,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
 void
 NodeGraph::cloneSelectedNodes()
 {
-    QPointF scenePos = _imp->_root->mapFromScene( mapToScene( mapFromGlobal( QCursor::pos() ) ) );
+    QPointF scenePos = mapToScene( mapFromGlobal( QCursor::pos() ) );
 
     cloneSelectedNodes(scenePos);
 } // cloneSelectedNodes
@@ -426,10 +429,10 @@ void
 NodeGraph::centerOnAllNodes()
 {
     assert( QThread::currentThread() == qApp->thread() );
-    double xmin = INT_MAX;
-    double xmax = INT_MIN;
-    double ymin = INT_MAX;
-    double ymax = INT_MIN;
+    double xmin = std::numeric_limits<int>::max();
+    double xmax = std::numeric_limits<int>::min();
+    double ymin = std::numeric_limits<int>::max();
+    double ymax = std::numeric_limits<int>::min();
     //_imp->_root->setPos(0,0);
 
     if ( _imp->_selection.empty() ) {
@@ -457,7 +460,11 @@ NodeGraph::centerOnAllNodes()
             }
         }
     }
-    QRectF bbox( xmin, ymin, (xmax - xmin), (ymax - ymin) );
+    // Move the scene so that topleft of the viewing area is at 0,0, and avoid issues
+    // when topleft has negative coords.
+    moveRootInternal(-xmin, -ymin);
+    QRectF bbox( 0, 0, (xmax - xmin), (ymax - ymin) );
+    setAlignment(Qt::AlignRight|Qt::AlignVCenter);
     fitInView(bbox, Qt::KeepAspectRatio);
 
     double currentZoomFactor = transform().mapRect( QRectF(0, 0, 1, 1) ).width();

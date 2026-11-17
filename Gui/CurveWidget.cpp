@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,6 +26,7 @@
 #include "CurveWidget.h"
 
 #include <cmath> // floor
+#include <limits>
 #include <stdexcept>
 #include <sstream> // stringstream
 
@@ -33,11 +34,12 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-#include <QtCore/QTextStream>
-#include <QtCore/QThread>
+#include <QTextStream>
+#include <QThread>
 #include <QApplication>
 #include <QToolButton>
-#include <QDesktopWidget>
+#include <QScreen>
+#include <QWindow>
 
 #include "Engine/Bezier.h"
 #include "Engine/PyParameter.h" // IntParam
@@ -61,6 +63,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/PythonPanels.h" // PyModelDialog
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
+
+#include <QOpenGLContext>
 
 NATRON_NAMESPACE_ENTER
 
@@ -108,8 +112,8 @@ CurveWidget::CurveWidget(Gui* gui,
                          CurveSelection* selection,
                          TimeLinePtr timeline,
                          QWidget* parent,
-                         const QGLWidget* shareWidget)
-    : QGLWidget(parent, shareWidget)
+                         const QOpenGLWidget* shareWidget)
+    : QOpenGLWidget(parent)
     , _imp( new CurveWidgetPrivate(gui, selection, timeline, this) )
 {
     // always running in the main thread
@@ -146,6 +150,12 @@ CurveWidget::~CurveWidget()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     makeCurrent();
+}
+
+bool
+CurveWidget::hasTimeline() const
+{
+    return bool(_imp->_timeline);
 }
 
 void
@@ -224,13 +234,13 @@ CurveWidget::centerOn(const std::vector<CurveGuiPtr> & curves, bool useDisplayRa
 
 
             if (thisCurveRange.min == -std::numeric_limits<double>::infinity() ||
-                thisCurveRange.min == INT_MIN ||
+                thisCurveRange.min == std::numeric_limits<int>::min() ||
                 thisCurveRange.max == std::numeric_limits<double>::infinity() ||
-                thisCurveRange.max == INT_MAX ||
+                thisCurveRange.max == std::numeric_limits<int>::max() ||
                 thisXRange.first == -std::numeric_limits<double>::infinity() ||
-                thisXRange.first == INT_MIN ||
+                thisXRange.first == std::numeric_limits<int>::min() ||
                 thisXRange.second == std::numeric_limits<double>::infinity() ||
-                thisXRange.second == INT_MAX) {
+                thisXRange.second == std::numeric_limits<int>::max()) {
                 continue;
             }
 
@@ -269,8 +279,8 @@ CurveWidget::centerOn(const std::vector<CurveGuiPtr> & curves, bool useDisplayRa
         doCenter = true;
         double xmin = keys.begin()->getTime();
         double xmax = keys.rbegin()->getTime();
-        double ymin = INT_MAX;
-        double ymax = INT_MIN;
+        double ymin = std::numeric_limits<int>::max();
+        double ymax = std::numeric_limits<int>::min();
         //find out ymin,ymax
         for (KeyFrameSet::const_iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
             double value = it2->getValue();
@@ -421,7 +431,7 @@ CurveWidget::swapOpenGLBuffers()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    swapBuffers();
+    update();
 }
 
 /**
@@ -471,11 +481,7 @@ CurveWidget::getScreenPixelRatio() const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    return windowHandle()->devicePixelRatio()
-#else
-    return 1.;
-#endif
+    return devicePixelRatio();
 }
 #endif
 
@@ -565,7 +571,7 @@ CurveWidget::resizeGL(int width,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     if ( !appPTR->isOpenGLLoaded() ) {
         return;
@@ -578,10 +584,15 @@ CurveWidget::resizeGL(int width,
         height = 1;
     }
     glViewport (0, 0, width, height);
+    double zoomWidth = width;
+    double zoomHeight = height;
+    double screenPixelRatio = getScreenPixelRatio();
+    zoomWidth /= screenPixelRatio;
+    zoomHeight /= screenPixelRatio;
 
     // Width and height may be 0 when tearing off a viewer tab to another panel
     if ( (width > 0) && (height > 0) ) {
-        _imp->zoomCtx.setScreenSize(width, height);
+        _imp->zoomCtx.setScreenSize(zoomWidth, zoomHeight);
     }
 
     if (height == 1) {
@@ -599,7 +610,7 @@ CurveWidget::paintGL()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     if ( !appPTR->isOpenGLLoaded() ) {
         return;
@@ -610,6 +621,16 @@ CurveWidget::paintGL()
     if (_imp->zoomCtx.factor() <= 0) {
         return;
     }
+
+    {
+        double screenPixelRatio = getScreenPixelRatio();
+        if (screenPixelRatio != _imp->_screenPixelRatio) {
+            _imp->_screenPixelRatio = screenPixelRatio;
+            _imp->_textFont.reset(new QFont(appFont, appFontSize * screenPixelRatio));
+        }
+    }
+    assert(_imp->_textFont);
+
     double zoomLeft, zoomRight, zoomBottom, zoomTop;
     zoomLeft = _imp->zoomCtx.left();
     zoomRight = _imp->zoomCtx.right();
@@ -650,28 +671,28 @@ CurveWidget::paintGL()
             //GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
             GLProtectAttrib a(GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
 
-            RenderScale scale(1.);
+            const OfxPointD scale = {1., 1.};
             customInteract->setCallingViewport(this);
             customInteract->drawAction(0, scale, 0, customInteract->hasColorPicker() ? &customInteract->getLastColorPickerColor() : 0);
             glCheckErrorIgnoreOSXBug();
         }
 
-        _imp->drawScale();
+        _imp->drawScale(_imp->_screenPixelRatio);
 
 
 
         if (_imp->_timelineEnabled) {
-            _imp->drawTimelineMarkers();
+            _imp->drawTimelineMarkers(_imp->_screenPixelRatio);
         }
 
         if (_imp->_drawSelectedKeyFramesBbox) {
-            _imp->drawSelectedKeyFramesBbox();
+            _imp->drawSelectedKeyFramesBbox(_imp->_screenPixelRatio);
         }
 
-        _imp->drawCurves();
+        _imp->drawCurves(_imp->_screenPixelRatio);
 
         if ( !_imp->_selectionRectangle.isNull() ) {
-            _imp->drawSelectionRectangle();
+            _imp->drawSelectionRectangle(_imp->_screenPixelRatio);
         }
     } // GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
     glCheckError();
@@ -704,7 +725,7 @@ CurveWidget::renderText(double x,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     if ( text.isEmpty() ) {
         return;
@@ -719,8 +740,8 @@ CurveWidget::renderText(double x,
     if ( (w <= 0) || (h <= 0) || (right <= left) || (top <= bottom) ) {
         return;
     }
-    double scalex = (right - left) / w;
-    double scaley = (top - bottom) / h;
+    double scalex = (right - left) / (w * _imp->_screenPixelRatio);
+    double scaley = (top - bottom) / (h * _imp->_screenPixelRatio);
     _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font, flags);
     glCheckError();
 }
@@ -779,8 +800,9 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
     if (selectedText) {
         EditKeyFrameDialog* dialog = new EditKeyFrameDialog(mode, this, selectedText, this);
         int dialogW = dialog->sizeHint().width();
-        QDesktopWidget* desktop = QApplication::desktop();
-        QRect screen = desktop->screenGeometry();
+        QScreen* desktop = QGuiApplication::primaryScreen();
+        QRect screen = desktop->availableGeometry();
+
         QPoint gP = e->globalPos();
         if ( gP.x() > (screen.width() - dialogW) ) {
             gP.rx() -= dialogW;
@@ -1205,7 +1227,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
 
     if (_imp->_state == eEventStateNone) {
         // nothing else to do
-        QGLWidget::mouseMoveEvent(e);
+        QOpenGLWidget::mouseMoveEvent(e);
 
         return;
     }
@@ -1328,7 +1350,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     if (mustUpdate) {
         update();
     }
-    QGLWidget::mouseMoveEvent(e);
+    QOpenGLWidget::mouseMoveEvent(e);
 } // mouseMoveEvent
 
 void
@@ -1394,12 +1416,12 @@ CurveWidget::wheelEvent(QWheelEvent* e)
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     // don't handle horizontal wheel (e.g. on trackpad or Might Mouse)
-    if (e->orientation() != Qt::Vertical) {
+    if (e->angleDelta().x() != 0) {
         return;
     }
 
-    double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
-    QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
+    double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->angleDelta().y() );
+    QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->position().x(), e->position().y() );
 
     if ( modCASIsControlShift(e) ) {
         _imp->zoomOrPannedSinceLastFit = true;
@@ -1490,7 +1512,7 @@ CurveWidget::getWidgetFontHeight() const
 int
 CurveWidget::getStringWidthForCurrentFont(const std::string& string) const
 {
-    return fontMetrics().width( QString::fromUtf8( string.c_str() ) );
+    return fontMetrics().horizontalAdvance( QString::fromUtf8( string.c_str() ) );
 }
 
 QSize
@@ -1536,10 +1558,10 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorPaste, modifiers, key) ) {
         pasteKeyFramesFromClipBoardToSelectedCurve();
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomIn, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
-        QWheelEvent e(mapFromGlobal( QCursor::pos() ), 120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
+        QWheelEvent e(mapFromGlobal( QCursor::pos() ), QCursor::pos(), QPoint(), QPoint(0, 120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
         wheelEvent(&e);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
-        QWheelEvent e(mapFromGlobal( QCursor::pos() ), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
+        QWheelEvent e(mapFromGlobal( QCursor::pos() ), QCursor::pos(), QPoint(), QPoint(0, -120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
         wheelEvent(&e);
     } else {
         accept = false;
@@ -1565,15 +1587,15 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
         if (ce) {
             ce->handleUnCaughtKeyPressEvent(e);
         }
-        QGLWidget::keyPressEvent(e);
+        QOpenGLWidget::keyPressEvent(e);
     }
 } // keyPressEvent
 
 void
-CurveWidget::enterEvent(QEvent* e)
+CurveWidget::enterEvent(QtCompat::QEnterEvent* e)
 {
     setFocus();
-    QGLWidget::enterEvent(e);
+    QOpenGLWidget::enterEvent(e);
 }
 
 void
@@ -1998,7 +2020,7 @@ CurveWidget::getFont() const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    return *_imp->_font;
+    return *_imp->_textFont;
 }
 
 const SelectedKeys &
@@ -2016,7 +2038,7 @@ CurveWidget::getTextFont() const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    return *_imp->_font;
+    return *_imp->_textFont;
 }
 
 void
@@ -2071,7 +2093,7 @@ CurveWidget::onUpdateOnPenUpActionTriggered()
 void
 CurveWidget::focusInEvent(QFocusEvent* e)
 {
-    QGLWidget::focusInEvent(e);
+    QOpenGLWidget::focusInEvent(e);
 }
 
 void
@@ -2210,36 +2232,15 @@ CurveWidget::importCurveFromAscii()
         std::map<CurveGuiPtr, std::vector<double> > curvesValues;
         ///scan the file to get the curve values
         while ( !ts.atEnd() ) {
-            QString line = ts.readLine();
-            if ( line.isEmpty() ) {
+            QString line = ts.readLine().simplified();
+            if ( line.isEmpty() || line[0] == QLatin1Char('#') ) {
                 continue;
             }
-            int i = 0;
-            std::vector<double> values;
-
             ///read the line to extract all values
-            while ( i < line.size() ) {
-                QString value;
-                while ( i < line.size() && line.at(i) != QLatin1Char('_') ) {
-                    value.push_back( line.at(i) );
-                    ++i;
-                }
-                if ( i < line.size() ) {
-                    if ( line.at(i) != QLatin1Char('_') ) {
-                        Dialogs::errorDialog( tr("Curve Import").toStdString(), tr("The file could not be read.").toStdString() );
-
-                        return;
-                    }
-                    ++i;
-                }
-                bool ok;
-                double v = value.toDouble(&ok);
-                if (!ok) {
-                    Dialogs::errorDialog( tr("Curve Import").toStdString(), tr("The file could not be read.").toStdString() );
-
-                    return;
-                }
-                values.push_back(v);
+            QStringList valuesStr = line.split( QLatin1Char(' ') );
+            std::vector<double> values;
+            Q_FOREACH(const QString& v, valuesStr) {
+                values.push_back( v.toDouble() );
             }
             ///assert that the values count is greater than the number of curves provided by the user
             if ( values.size() < columns.size() ) {

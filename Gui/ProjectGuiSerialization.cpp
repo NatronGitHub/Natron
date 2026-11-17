@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QDebug>
+#include <QDebug>
 #include <QSplitter>
 #include <QVBoxLayout>
 CLANG_DIAG_ON(deprecated)
@@ -73,7 +73,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
         if (!nodegui_i) {
             continue;
         }
-        NodeGuiPtr nodegui = boost::dynamic_pointer_cast<NodeGui>(nodegui_i);
+        NodeGuiPtr nodegui = std::dynamic_pointer_cast<NodeGui>(nodegui_i);
 
         if ( nodegui->isVisible() ) {
             NodeCollectionPtr isInCollection = (*it)->getGroup();
@@ -103,7 +103,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                         viewerData.colorSpace = tab->getColorSpace();
                         viewerData.channels = tab->getChannelsString();
                         viewerData.renderScaleActivated = tab->getRenderScaleActivated();
-                        viewerData.mipMapLevel = tab->getMipMapLevel();
+                        viewerData.mipmapLevel = tab->getMipmapLevel();
                         viewerData.zoomOrPanSinceLastFit = tab->getZoomOrPannedSinceLastFit();
                         viewerData.wipeCompositingOp = (int)tab->getCompositingOperator();
                         viewerData.leftToolbarVisible = tab->isLeftToolbarVisible();
@@ -174,7 +174,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
 
     std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string> pythonPanels = projectGui->getGui()->getPythonPanels();
     for (std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string>::iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
-        PythonPanelSerializationPtr s = boost::make_shared<PythonPanelSerialization>();
+        PythonPanelSerializationPtr s = std::make_shared<PythonPanelSerialization>();
         s->initialize(it->first, it->second);
         _pythonPanels.push_back(s);
     }

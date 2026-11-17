@@ -46,11 +46,11 @@ softnessUpper = (D-C)
 
 See also:
 
-- http://opticalenquiry.com/nuke/index.php?title=The_Keyer_Nodes#Keyer
+- https://web.archive.org/web/20220524000628/http://www.opticalenquiry.com/nuke/index.php?title=The_Keyer_Nodes#Keyer
 
 - http://opticalenquiry.com/nuke/index.php?title=Green_Screen
 
-- http://opticalenquiry.com/nuke/index.php?title=Keying_Tips
+- https://web.archive.org/web/20211023071843/http://opticalenquiry.com/nuke/index.php?title=Keying_Tips
 
 Inputs
 ------

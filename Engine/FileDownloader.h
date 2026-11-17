@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,11 +28,11 @@
 
 #include "Global/Macros.h"
 
-#include <boost/scoped_ptr.hpp>
-
+// clang-format off
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
-#include <QtCore/QObject>
+#include <QObject>
 CLANG_DIAG_ON(deprecated-register)
+// clang-format on
 
 #include "Engine/EngineFwd.h"
 
@@ -88,9 +88,9 @@ public Q_SLOTS:
 private:
 
     QNetworkReply* m_reply;
-    boost::scoped_ptr<QNetworkAccessManager> m_WebCtrl;
-    boost::scoped_ptr<QByteArray> m_DownloadedData;
-    boost::scoped_ptr<QTimer> m_timer;
+    std::unique_ptr<QNetworkAccessManager> m_WebCtrl;
+    std::unique_ptr<QByteArray> m_DownloadedData;
+    std::unique_ptr<QTimer> m_timer;
 };
 
 NATRON_NAMESPACE_EXIT

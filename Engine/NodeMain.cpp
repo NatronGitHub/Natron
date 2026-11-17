@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -25,7 +25,9 @@
 
 #include "NodePrivate.h"
 
-#include <QtCore/QThread>
+#include <QThread>
+#include <QRandomGenerator>
+#include <QWriteLocker>
 
 #include "Engine/AppInstance.h"
 #include "Engine/CreateNodeArgs.h"
@@ -186,7 +188,7 @@ Node::load(const CreateNodeArgs& args)
        Set modifiable props
      */
     refreshDynamicProperties();
-    onOpenGLEnabledKnobChangedOnProject(getApp()->getProject()->isOpenGLRenderActivated());
+    onOpenGLEnabledKnobChangedOnProject(getApp()->getProject()->isGPURenderingEnabledInProject());
 
     if ( isTrackerNodePlugin() ) {
         _imp->isMultiInstance = true;
@@ -219,6 +221,14 @@ Node::load(const CreateNodeArgs& args)
     }
 
     if (!serialization) {
+        // A node created from scratch may already have non-default values (initial values given at creation, which
+        // don't increment the knobs age before the node is fully created). Give it an age unique to this session, so
+        // that its hash can't match a node created with other values in an earlier session (#1124).
+        {
+            QWriteLocker l(&_imp->knobsAgeMutex);
+            _imp->knobsAge = QRandomGenerator::global()->generate64();
+            _imp->knobsAgeIsUniqueToSession = true;
+        }
         computeHash();
     }
 
@@ -313,7 +323,7 @@ Node::restoreUserKnobs(const NodeSerialization& serialization)
             page->setAsUserKnob(true);
             page->setName( (*it)->getName() );
         } else {
-            page = boost::dynamic_pointer_cast<KnobPage>(found);
+            page = std::dynamic_pointer_cast<KnobPage>(found);
         }
         if (page) {
             _imp->restoreUserKnobsRecursive( (*it)->getChildren(), KnobGroupPtr(), page );
@@ -339,7 +349,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<KnobSerializatio
             if (!found) {
                 grp = AppManager::createKnob<KnobGroup>(effect.get(), isGrp->getLabel(), 1, false);
             } else {
-                grp = boost::dynamic_pointer_cast<KnobGroup>(found);
+                grp = std::dynamic_pointer_cast<KnobGroup>(found);
                 if (!grp) {
                     continue;
                 }
@@ -381,7 +391,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<KnobSerializatio
                     k = AppManager::createKnob<KnobInt>(effect.get(), isRegular->getLabel(),
                                                         sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobInt>(found);
+                    k = std::dynamic_pointer_cast<KnobInt>(found);
                     if (!k) {
                         continue;
                     }
@@ -406,7 +416,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<KnobSerializatio
                     k = AppManager::createKnob<KnobDouble>(effect.get(), isRegular->getLabel(),
                                                            sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobDouble>(found);
+                    k = std::dynamic_pointer_cast<KnobDouble>(found);
                     if (!k) {
                         continue;
                     }
@@ -438,7 +448,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<KnobSerializatio
                     k = AppManager::createKnob<KnobBool>(effect.get(), isRegular->getLabel(),
                                                          sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobBool>(found);
+                    k = std::dynamic_pointer_cast<KnobBool>(found);
                     if (!k) {
                         continue;
                     }
@@ -450,7 +460,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<KnobSerializatio
                     k = AppManager::createKnob<KnobChoice>(effect.get(), isRegular->getLabel(),
                                                            sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobChoice>(found);
+                    k = std::dynamic_pointer_cast<KnobChoice>(found);
                     if (!k) {
                         continue;
                     }
@@ -474,7 +484,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<KnobSerializatio
                     k = AppManager::createKnob<KnobColor>(effect.get(), isRegular->getLabel(),
                                                           sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobColor>(found);
+                    k = std::dynamic_pointer_cast<KnobColor>(found);
                     if (!k) {
                         continue;
                     }
@@ -499,7 +509,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<KnobSerializatio
                     k = AppManager::createKnob<KnobString>(effect.get(), isRegular->getLabel(),
                                                            sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobString>(found);
+                    k = std::dynamic_pointer_cast<KnobString>(found);
                     if (!k) {
                         continue;
                     }
@@ -523,7 +533,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<KnobSerializatio
                     k = AppManager::createKnob<KnobFile>(effect.get(), isRegular->getLabel(),
                                                          sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobFile>(found);
+                    k = std::dynamic_pointer_cast<KnobFile>(found);
                     if (!k) {
                         continue;
                     }
@@ -540,7 +550,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<KnobSerializatio
                     k = AppManager::createKnob<KnobOutputFile>(effect.get(), isRegular->getLabel(),
                                                                sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobOutputFile>(found);
+                    k = std::dynamic_pointer_cast<KnobOutputFile>(found);
                     if (!k) {
                         continue;
                     }
@@ -557,7 +567,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<KnobSerializatio
                     k = AppManager::createKnob<KnobPath>(effect.get(), isRegular->getLabel(),
                                                          sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobPath>(found);
+                    k = std::dynamic_pointer_cast<KnobPath>(found);
                     if (!k) {
                         continue;
                     }
@@ -574,7 +584,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<KnobSerializatio
                     k = AppManager::createKnob<KnobButton>(effect.get(), isRegular->getLabel(),
                                                            sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobButton>(found);
+                    k = std::dynamic_pointer_cast<KnobButton>(found);
                     if (!k) {
                         continue;
                     }
@@ -586,7 +596,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<KnobSerializatio
                     k = AppManager::createKnob<KnobSeparator>(effect.get(), isRegular->getLabel(),
                                                               sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobSeparator>(found);
+                    k = std::dynamic_pointer_cast<KnobSeparator>(found);
                     if (!k) {
                         continue;
                     }
@@ -597,7 +607,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<KnobSerializatio
                 if (!found) {
                     k = AppManager::createKnob<KnobParametric>(effect.get(), isRegular->getLabel(), sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobParametric>(found);
+                    k = std::dynamic_pointer_cast<KnobParametric>(found);
                     if (!k) {
                         continue;
                     }
@@ -621,7 +631,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<KnobSerializatio
                         std::string optionID = choiceData->_choiceString;
                         // first, try to get the id the easy way ( see choiceMatch() )
                         int id = isChoice->choiceRestorationId(choiceSerialized, optionID);
-#pragma message WARN("TODO: choice id filters")
+//#pragma message WARN("TODO: choice id filters")
                         //if (id < 0) {
                         //    // no luck, try the filters
                         //    filterKnobChoiceOptionCompat(getPluginID(), serialization.getPluginMajorVersion(), serialization.getPluginMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, projectInfos.vRev, serializedName, &optionID);
@@ -726,7 +736,7 @@ Node::Implementation::restoreKnobLinksRecursive(const NodesList & allNodes,
 
     for (std::vector<KnobIPtr>::const_iterator it = children.begin(); it != children.end(); ++it) {
         (*it)->restoreLinks(allNodes, oldNewScriptNamesMapping, throwOnFailure);
-        KnobGroupPtr isGroup = boost::dynamic_pointer_cast<KnobGroup>(*it);
+        KnobGroupPtr isGroup = std::dynamic_pointer_cast<KnobGroup>(*it);
         if (isGroup) {
             restoreKnobLinksRecursive(allNodes, isGroup, oldNewScriptNamesMapping, throwOnFailure);
         }
@@ -745,7 +755,7 @@ Node::restoreKnobsLinks(const NodesList & allNodes,
     std::vector<KnobIPtr> knobs = getKnobs();
     for (std::vector<KnobIPtr>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
         (*it)->restoreLinks(allNodes, oldNewScriptNamesMapping, throwOnFailure);
-        KnobGroupPtr group = boost::dynamic_pointer_cast<KnobGroup>(*it);
+        KnobGroupPtr group = std::dynamic_pointer_cast<KnobGroup>(*it);
         if (group) {
             _imp->restoreKnobLinksRecursive(allNodes, group, oldNewScriptNamesMapping, throwOnFailure);
         }
@@ -838,7 +848,7 @@ public:
     virtual ~NodeDestroyNodeInternalArgs() {}
 };
 
-typedef boost::shared_ptr<NodeDestroyNodeInternalArgs> NodeDestroyNodeInternalArgsPtr;
+typedef std::shared_ptr<NodeDestroyNodeInternalArgs> NodeDestroyNodeInternalArgsPtr;
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
@@ -883,9 +893,9 @@ Node::destroyNode(bool blockingDestroy, bool autoReconnect)
         if (isGrp) {
             isGrp->getNodes_recursive(nodesToWatch, false);
         }
-        _imp->renderWatcher = boost::make_shared<NodeRenderWatcher>(nodesToWatch);
+        _imp->renderWatcher = std::make_shared<NodeRenderWatcher>(nodesToWatch);
         QObject::connect( _imp->renderWatcher.get(), SIGNAL(taskFinished(int,GenericWatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int,GenericWatcherCallerArgsPtr)) );
-        NodeDestroyNodeInternalArgsPtr args = boost::make_shared<NodeDestroyNodeInternalArgs>();
+        NodeDestroyNodeInternalArgsPtr args = std::make_shared<NodeDestroyNodeInternalArgs>();
         args->autoReconnect = autoReconnect;
         _imp->renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
 

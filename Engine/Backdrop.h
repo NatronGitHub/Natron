@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,10 +29,6 @@
 #include "Global/Macros.h"
 
 #include <string>
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
 
 #include "Engine/NoOpBase.h"
 #include "Engine/EngineFwd.h"
@@ -92,7 +88,7 @@ private:
                              double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE FINAL;
     virtual void initializeKnobs() OVERRIDE FINAL;
-    boost::scoped_ptr<BackdropPrivate> _imp;
+    std::unique_ptr<BackdropPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

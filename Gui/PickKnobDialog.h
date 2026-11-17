@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,11 +27,6 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -67,7 +62,7 @@ public Q_SLOTS:
 
 private:
 
-    boost::scoped_ptr<PickKnobDialogPrivate> _imp;
+    std::unique_ptr<PickKnobDialogPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

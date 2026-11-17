@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,11 +28,6 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-#include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
@@ -40,6 +35,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
+#include "Global/QtCompat.h"
 
 #include "Engine/EngineFwd.h"
 
@@ -247,7 +243,7 @@ protected:
 
 private:
 
-    boost::scoped_ptr<RotoItemEditorContextPrivate> _imp;
+    std::unique_ptr<RotoItemEditorContextPrivate> _imp;
 };
 
 struct BezierEditorContextPrivate;
@@ -271,7 +267,7 @@ public:
 
 private:
 
-    boost::scoped_ptr<BezierEditorContextPrivate> _imp;
+    std::unique_ptr<BezierEditorContextPrivate> _imp;
 };
 
 
@@ -315,7 +311,7 @@ public Q_SLOTS:
 
 private:
 
-    boost::scoped_ptr<RotoCurveEditorContextPrivate> _imp;
+    std::unique_ptr<RotoCurveEditorContextPrivate> _imp;
 };
 
 struct CurveEditorPrivate;
@@ -384,7 +380,7 @@ public Q_SLOTS:
 private:
 
     virtual QUndoStack* getUndoStack() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
@@ -392,7 +388,7 @@ private:
 
     void recursiveSelect(QTreeWidgetItem* cur, std::vector<CurveGuiPtr> *curves, bool inspectRotos = true);
 
-    boost::scoped_ptr<CurveEditorPrivate> _imp;
+    std::unique_ptr<CurveEditorPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

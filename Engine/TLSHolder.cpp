@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -35,16 +35,16 @@
 #include "Engine/Project.h"
 #include "Engine/ThreadPool.h"
 
-#include <QtCore/QWaitCondition>
-#include <QtCore/QThread>
-#include <QtCore/QDebug>
+#include <QWaitCondition>
+#include <QThread>
+#include <QDebug>
 
 NATRON_NAMESPACE_ENTER
 
 
 AppTLS::AppTLS()
     : _objectMutex()
-    , _object( new GLobalTLSObject() )
+    , _object( new GlobalTLSObject() )
     , _spawnsMutex()
     , _spawns()
 {
@@ -114,7 +114,7 @@ AppTLS::softCopy(QThread* fromThread,
     copyAbortInfo(fromThread, toThread);
 
     QWriteLocker k(&_spawnsMutex);
-    _spawns[toThread] = fromThread;
+    _spawns[uintptr_t(toThread)] = fromThread;
 }
 
 void
@@ -132,7 +132,7 @@ AppTLS::cleanupTLSForThread()
         QWriteLocker l(&_spawnsMutex);
 
         //This thread was spawned, but TLS not used, do not bother to clean-up
-        ThreadSpawnMap::iterator foundSpawned = _spawns.find(curThread);
+        ThreadSpawnMap::iterator foundSpawned = _spawns.find(uintptr_t(curThread));
         if ( foundSpawned != _spawns.end() ) {
             _spawns.erase(foundSpawned);
 

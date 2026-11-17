@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -25,14 +25,12 @@
 
 #include "Plugin.h"
 
+#include <algorithm>
 #include <cassert>
+#include <locale>
 #include <stdexcept>
 
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/algorithm/string/predicate.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-
-#include <QtCore/QMutex>
+#include <QMutex>
 
 #include "Engine/AppManager.h"
 #include "Engine/LibraryBinary.h"
@@ -180,7 +178,7 @@ Plugin::getGrouping() const
     return _grouping;
 }
 
-QMutex*
+QRecursiveMutex*
 Plugin::getPluginLock() const
 {
     return _lock;
@@ -360,11 +358,16 @@ PluginGroupNode::tryRemoveChild(PluginGroupNode* plugin)
     }
 }
 
+static bool
+iless(char l, char r) {
+    return std::tolower(l, std::locale()) < std::tolower(r, std::locale());
+}
+
 bool
 FormatExtensionCompareCaseInsensitive::operator() (const std::string& lhs,
                                                    const std::string& rhs) const
 {
-    return boost::algorithm::lexicographical_compare( lhs, rhs, boost::algorithm::is_iless() );
+    return std::lexicographical_compare( lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), iless );
 }
 
 NATRON_NAMESPACE_EXIT

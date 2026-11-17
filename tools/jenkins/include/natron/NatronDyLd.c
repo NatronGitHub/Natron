@@ -78,6 +78,9 @@ setup_spawnattr(posix_spawnattr_t* spawnattr)
 
 // Darwin version to OS X release:
 
+// 22.x.x  macOS 13.x    Ventura
+// 21.x.x  macOS 12.x    Monterey
+// 20.x.x  macOS 11.x    Big Sur
 // 19.x.x  macOS 10.15.x Catalina
 // 18.x.x  macOS 10.14.x Mojave
 // 17.x.x. macOS 10.13.x High Sierra

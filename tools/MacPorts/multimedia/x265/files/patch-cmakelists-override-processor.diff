@@ -1,5 +1,5 @@
---- CMakeLists.txt.orig	2021-01-31 17:45:15.000000000 -0800
-+++ CMakeLists.txt	2021-01-31 17:45:51.000000000 -0800
+--- CMakeLists.txt.orig	2024-04-04 04:39:50.000000000 -0500
++++ CMakeLists.txt	2024-10-08 01:10:52.000000000 -0500
 @@ -37,6 +37,10 @@
  
  SET(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" "${CMAKE_MODULE_PATH}")
@@ -9,5 +9,5 @@
 +endif()
 +
  # System architecture detection
- string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" SYSPROC)
- set(X86_ALIASES x86 i386 i686 x86_64 amd64)
+ if (APPLE AND CMAKE_OSX_ARCHITECTURES)
+     string(TOLOWER "${CMAKE_OSX_ARCHITECTURES}" SYSPROC)

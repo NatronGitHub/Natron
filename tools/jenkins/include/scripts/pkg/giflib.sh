@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install giflib
-# see http://www.linuxfromscratch.org/blfs/view/cvs/general/giflib.html
+# see http://www.linuxfromscratch.org/blfs/view/svn/general/giflib.html
 GIFLIB_VERSION=5.2.1
 GIFLIB_TAR="giflib-${GIFLIB_VERSION}.tar.gz"
 GIFLIB_SITE="https://sourceforge.net/projects/giflib/files"

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,8 +29,8 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QtCore/QDebug>
-#include <QtCore/QTimer>
+#include <QDebug>
+#include <QTimer>
 
 #include <QAction>
 #include <QVBoxLayout>
@@ -91,7 +91,7 @@ addSpacer(QBoxLayout* layout)
     line->setFrameShadow(QFrame::Raised);
     //line->setObjectName("LayoutSeparator");
     QPalette palette;
-    palette.setColor(QPalette::Foreground, Qt::black);
+    palette.setColor(QPalette::WindowText, Qt::black);
     line->setPalette(palette);
     layout->addWidget(line);
     layout->addSpacing(5);
@@ -146,7 +146,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
                                         "The channels of the layer will be mapped to the RGBA channels of the viewer according to "
                                         "its number of channels. (e.g: UV would be mapped to RG)") + QString::fromUtf8("</p>") );
     QObject::connect( _imp->layerChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onLayerComboChanged(int)) );
-    _imp->layerChoice->setFixedWidth( fm.width( QString::fromUtf8("Color.Toto.RGBA") ) + 3 * TO_DPIX(DROP_DOWN_ICON_SIZE) );
+    _imp->layerChoice->setFixedWidth( fm.horizontalAdvance( QString::fromUtf8("Color.Toto.RGBA") ) + 3 * TO_DPIX(DROP_DOWN_ICON_SIZE) );
     _imp->layerChoice->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     _imp->firstRowLayout->addWidget(_imp->layerChoice);
 
@@ -154,7 +154,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->alphaChannelChoice->setToolTip( QString::fromUtf8("<p><b>") + tr("Alpha channel:") + QString::fromUtf8("</b></p><p>")
                                           + tr("Select here a channel of any layer that will be used when displaying the "
                                                "alpha channel with the <b>Channels</b> choice on the right.") + QString::fromUtf8("</p>") );
-    _imp->alphaChannelChoice->setFixedWidth( fm.width( QString::fromUtf8("Color.alpha") ) + 3 * TO_DPIX(DROP_DOWN_ICON_SIZE) );
+    _imp->alphaChannelChoice->setFixedWidth( fm.horizontalAdvance( QString::fromUtf8("Color.alpha") ) + 3 * TO_DPIX(DROP_DOWN_ICON_SIZE) );
     _imp->alphaChannelChoice->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     QObject::connect( _imp->alphaChannelChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onAlphaChannelComboChanged(int)) );
     _imp->firstRowLayout->addWidget(_imp->alphaChannelChoice);
@@ -163,7 +163,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->viewerChannels->setToolTip( QString::fromUtf8("<p><b>") + tr("Display Channels:") + QString::fromUtf8("</b></p><p>")
                                       + tr("The channels to display on the viewer.") + QString::fromUtf8("</p>") );
     _imp->firstRowLayout->addWidget(_imp->viewerChannels);
-    _imp->viewerChannels->setFixedWidth( fm.width( QString::fromUtf8("Luminance") ) + 3 * TO_DPIX(DROP_DOWN_ICON_SIZE) );
+    _imp->viewerChannels->setFixedWidth( fm.horizontalAdvance( QString::fromUtf8("Luminance") ) + 3 * TO_DPIX(DROP_DOWN_ICON_SIZE) );
     _imp->viewerChannels->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
     addSpacer(_imp->firstRowLayout);
@@ -319,7 +319,6 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->refreshButton->setFixedSize(buttonSize);
     _imp->refreshButton->setIconSize(buttonIconSize);
     {
-        QKeySequence seq(Qt::CTRL + Qt::SHIFT);
         std::list<std::string> refreshActions;
         refreshActions.push_back(kShortcutIDActionRefresh);
         refreshActions.push_back(kShortcutIDActionRefreshWithStats);
@@ -338,7 +337,6 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->pauseButton->setChecked(false);
     _imp->pauseButton->setDown(false);
     {
-        QKeySequence seq(Qt::CTRL + Qt::SHIFT);
         std::list<std::string> actions;
         actions.push_back(kShortcutIDActionPauseViewerInputA);
         actions.push_back(kShortcutIDActionPauseViewer);
@@ -360,7 +358,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
     _imp->firstInputImage = new ComboBox(_imp->firstSettingsRow);
     _imp->firstInputImage->setToolTip( _imp->firstInputLabel->toolTip() );
-    _imp->firstInputImage->setFixedWidth(fm.width( QString::fromUtf8("ColorCorrect1") ) + 3 * DROP_DOWN_ICON_SIZE);
+    _imp->firstInputImage->setFixedWidth(fm.horizontalAdvance( QString::fromUtf8("ColorCorrect1") ) + 3 * DROP_DOWN_ICON_SIZE);
     _imp->firstInputImage->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     _imp->firstInputImage->addItem( QString::fromUtf8(" - ") );
     QObject::connect( _imp->firstInputImage, SIGNAL(currentIndexChanged(QString)), this, SLOT(onFirstInputNameChanged(QString)) );
@@ -376,7 +374,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
     _imp->compositingOperator = new ComboBox(_imp->firstSettingsRow);
     QObject::connect( _imp->compositingOperator, SIGNAL(currentIndexChanged(int)), this, SLOT(onCompositingOperatorIndexChanged(int)) );
-    _imp->compositingOperator->setFixedWidth(fm.width( QString::fromUtf8("W-OnionSkin") ) + 3 * DROP_DOWN_ICON_SIZE);
+    _imp->compositingOperator->setFixedWidth(fm.horizontalAdvance( QString::fromUtf8("W-OnionSkin") ) + 3 * DROP_DOWN_ICON_SIZE);
     _imp->compositingOperator->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     _imp->compositingOperator->setToolTip( _imp->compositingOperatorLabel->toolTip() );
     _imp->compositingOperator->addItem( tr(" - "), QIcon(), QKeySequence(), tr("No wipe or composite: A") );
@@ -399,7 +397,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
     _imp->secondInputImage = new ComboBox(_imp->firstSettingsRow);
     _imp->secondInputImage->setToolTip( _imp->secondInputLabel->toolTip() );
-    _imp->secondInputImage->setFixedWidth(fm.width( QString::fromUtf8("ColorCorrect1") )  + 3 * DROP_DOWN_ICON_SIZE);
+    _imp->secondInputImage->setFixedWidth(fm.horizontalAdvance( QString::fromUtf8("ColorCorrect1") )  + 3 * DROP_DOWN_ICON_SIZE);
     _imp->secondInputImage->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     _imp->secondInputImage->addItem( QString::fromUtf8(" - ") );
     QObject::connect( _imp->secondInputImage, SIGNAL(currentIndexChanged(QString)), this, SLOT(onSecondInputNameChanged(QString)) );
@@ -504,6 +502,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->viewerColorSpace->addItem( QString::fromUtf8("Linear(None)") );
     _imp->viewerColorSpace->addItem( QString::fromUtf8("sRGB") );
     _imp->viewerColorSpace->addItem( QString::fromUtf8("Rec.709") );
+    _imp->viewerColorSpace->addItem( QString::fromUtf8("BT1886") );
     _imp->viewerColorSpace->setCurrentIndex(1);
 
     QPixmap pixCheckerboardEnabled, pixCheckerboardDisabld;

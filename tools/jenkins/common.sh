@@ -17,6 +17,9 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
+# see https://stackoverflow.com/a/24067243
+function version_gt() { test "$(printf '%s\n' "$@" | $GSORT -V | head -n 1)" != "$1"; }
+
 # common.sh is sourced multiple times across scripts so it may already have set CWD
 if [ -z "${CWD:-}" ]; then
     CWD="$(pwd)"
@@ -37,6 +40,7 @@ export TMPDIR
 LANG="C"
 export LANG
 GSED="sed -b"
+GSORT="sort"
 TIMEOUT="timeout"
 #WGET="wget --referer https://natron.fr/"
 
@@ -56,17 +60,16 @@ Msys|MINGW64_NT-*|MINGW32_NT-*)
     ;;
 Darwin)
     PKGOS=${PKGOS:-OSX}
+    if [ "$(uname -m)" = "arm64" ]; then
+        # No Qt4 on apple Silicon
+        QT_VERSION_MAJOR=${QT_VERSION_MAJOR:-5}
+    fi
     ;;
 *)
     (>&2 echo "$system not supported!")
     exit 1
     ;;
 esac
-
-unset LD_LIBRARY_PATH LD_RUN_PATH DYLD_LIBRARY_PATH LIBRARY_PATH CPATH PKG_CONFIG_PATH
-# save the default PATH to avoid growing it each time we source this file
-DEFAULT_PATH="${DEFAULT_PATH:-$PATH}"
-PATH="$DEFAULT_PATH"
 
 # Figure out architecture: 32bit, 64bit or Universal
 #
@@ -113,14 +116,28 @@ elif [ "$PKGOS" = "OSX" ]; then
             ;;
         *)
             BITS=64
-            ARCH=x86_64
+            ARCH=$(uname -m)
             ;;
     esac;
     # always deploy for the same version as the build system, since we use macports (for now)
     MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion | cut -d. -f-2)
     export MACOSX_DEPLOYMENT_TARGET
     MACPORTS="/opt/local"
-    SDK_HOME="$MACPORTS"
+    LOCAL="/usr/local"
+    HOMEBREW="${LOCAL}"
+    if [ -e "/brew2/local" ]; then
+        HOMEBREW="/brew2/local"
+    elif [ -e "/opt/homebrew" ]; then
+        HOMEBREW="/opt/homebrew"
+    fi
+    if [ -e "${MACPORTS}" ]; then
+        SDK_HOME="${SDK_HOME:-${MACPORTS}}"
+    elif [ -e "${HOMEBREW}" ]; then
+        SDK_HOME="${SDK_HOME:-${HOMEBREW}}"
+    else
+        SDK_HOME="${SDK_HOME:-${LOCAL}}"
+    fi
+
     # Path where GPL builds are stored
     CUSTOM_BUILDS_PATH="/opt"
 
@@ -128,13 +145,14 @@ elif [ "$PKGOS" = "OSX" ]; then
     # let's use gsed in binary mode.
     # gsed is provided by the gsed package on MacPorts or the gnu-sed package on homebrew
     # when using this variable, do not double-quote it ("$GSED"), because it contains options
-    GSED="${MACPORTS}/bin/gsed -b"
-    PATH="${MACPORTS}/bin:$PATH"
+    GSED="${SDK_HOME}/bin/gsed -b"
+    GSORT="${SDK_HOME}/bin/gsort"
+    PATH="${SDK_HOME}/bin:$PATH"
     # timeout is available in GNU coreutils:
     # sudo port install coreutils
     # or
     # brew install coreutils
-    TIMEOUT="${MACPORTS}/bin/gtimeout"
+    TIMEOUT="${SDK_HOME}/bin/gtimeout"
 elif [ "$PKGOS" = "Windows" ]; then
     if [ -z "${BITS:-}" ]; then
         (>&2 echo "Error: You must select a value for BITS (32 or 64)")
@@ -179,17 +197,66 @@ fi
 
 # The version of Python used by the SDK and to build Natron
 # Python 2 or 3, NOTE! v3 is probably broken, been untested for a long while
-# If PYV is not set, set it to 2
-: "${PYV:=2}"
-if [ "$PYV" = "3" ]; then
-    PYVER=3.7
-else
-    PYVER=2.7
+# To default to Python 2, move the Python 3 section below the Python 2 section
+PYTHON_ABIFLAGS=
+if [[ $(type -P python3) ]]; then
+    PY3VER="$(python3 -c "import platform; print('.'.join(platform.python_version_tuple()[:2]))")"
+    PY3VERNODOT=$(echo ${PY3VER:-}| sed 's/\.//')
+    if [ -z "${PYV:-}" ]; then
+        PYV=3
+    fi
 fi
-PYVERNODOT=$(echo ${PYVER:-}| sed 's/\.//')
+if [[ $(type -P python2) ]]; then
+    PY2VER="$(python2 -c "import platform; print('.'.join(platform.python_version_tuple()[:2]))")"
+    PY2VERNODOT=$(echo ${PY2VER:-}| sed 's/\.//')
+    if [ -z "${PYV:-}" ]; then
+        # default to Python 2 if present
+        PYV=2
+    fi
+    case "${RELEASE_TAG:-}" in
+    1.*|2.[01234].*)
+        PYV=2
+    esac
+    case "${GIT_BRANCH:-}" in
+    RB-1|RB-1.*|RB-2.[01234])
+        PYV=2
+    esac
+fi
+if [ "${PYV:-}" = 3 ]; then
+    PYVER="${PY3VER}"
+    PYVERNODOT="${PY3VERNODOT}"
+    case "${PYVER}" in
+    3.[01234567])
+        PYTHON_ABIFLAGS="m"
+        ;;
+    esac
+    PYTHON_HOME="$(python${PYV} -c "import sys; print(sys.prefix)")"
+fi
+if [ "${PYV:-}" = 2 ]; then
+    PYVER="${PY2VER}"
+    PYVERNODOT="${PY2VERNODOT}"
+    PYTHON_ABIFLAGS=""
+    PYTHON_HOME="$(python${PYV} -c "import sys; print(sys.prefix)")"
+fi
+PY_EXE="$SDK_HOME/bin/python${PYV}"
+# PY_LIB="$SDK_HOME/lib/libpython${PYVER}.so"
+# PY_INC="$SDK_HOME/include/python${PYVER}"
+# PYTHON_HOME="$SDK_HOME"
+# PYTHON_PATH="$SDK_HOME/lib/python${PYVER}"
+# PYTHON_INCLUDE="$SDK_HOME/include/python${PYVER}"
+# export PYTHON_PATH PYTHON_INCLUDE
 
-QT_VERSION_MAJOR=4
 
+QT_VERSION_MAJOR=${QT_VERSION_MAJOR:-5}
+if [[ ${QT_VERSION_MAJOR} -lt 5 ]]; then
+    echo "QT_VERSION_MAJOR ${QT_VERSION_MAJOR} not supported."
+    exit 1
+fi
+
+unset LD_LIBRARY_PATH LD_RUN_PATH DYLD_LIBRARY_PATH LIBRARY_PATH CPATH PKG_CONFIG_PATH
+# save the default PATH to avoid growing it each time we source this file
+DEFAULT_PATH="${DEFAULT_PATH:-$PATH}"
+PATH="$DEFAULT_PATH"
 
 # Keep existing tag, else make a new one
 if [ -z "${CURRENT_DATE:-}" ]; then
@@ -215,13 +282,17 @@ THIRD_PARTY_BIN_URL=https://natrongithub.github.io/files/bin
 #
 # Set build threads to 2 if not exists
 if [ -z "${MKJOBS:-}" ]; then
-    if [ "$PKGOS" = "Linux" ]; then
+    case "$system" in
+    Linux)
         DEFAULT_MKJOBS=$(nproc)
-    elif [ "$PKGOS" = "OSX" ]; then
+        ;;
+    Darwin)
         DEFAULT_MKJOBS=$(sysctl -n hw.ncpu)
-    else
+        ;;
+    *)
         DEFAULT_MKJOBS=2
-    fi
+        ;;
+    esac
     MKJOBS=$DEFAULT_MKJOBS
 fi
 
@@ -296,7 +367,15 @@ elif [ "$PKGOS" = "OSX" ]; then
     fi
 fi
 
-if [ -d "$SDK_HOME/osmesa" ]; then
+if [ -n "${OSMESA_PREFIX:-}" ] && [ -z "${LLVM_PREFIX:-}" ]; then
+    # an OSMesa install needs the LLVM it was built with (e.g. Mesa 25.0.7 needs LLVM >= 15)
+    (>&2 echo "Error: OSMESA_PREFIX=$OSMESA_PREFIX is set, so LLVM_PREFIX must be set too (e.g. /opt/llvm-19.1.7)")
+    exit 1
+fi
+if [ -n "${OSMESA_PREFIX:-}" ]; then
+    # e.g. OSMESA_PREFIX=/opt/osmesa-25.0.7 (with LLVM_PREFIX=/opt/llvm-19.1.7)
+    OSMESA_PATH="${OSMESA_PREFIX}"
+elif [ -d "$SDK_HOME/osmesa" ]; then
     OSMESA_PATH="$SDK_HOME/osmesa"
 elif [ -d "/opt/osmesa" ]; then
     OSMESA_PATH="/opt/osmesa"
@@ -306,7 +385,9 @@ else
     OSMESA_PATH="$SDK_HOME/osmesa"
 fi
 
-if [ -d "$SDK_HOME/llvm" ]; then
+if [ -n "${LLVM_PREFIX:-}" ]; then
+    LLVM_PATH="${LLVM_PREFIX}"
+elif [ -d "$SDK_HOME/llvm" ]; then
     LLVM_PATH="$SDK_HOME/llvm"
 elif [ -d "/opt/llvm" ]; then
     LLVM_PATH="/opt/llvm"
@@ -330,19 +411,28 @@ else
 fi
 export QTDIR
 
+BOOST_ROOT="$SDK_HOME"
+
 PKG_CONFIG_PATH=
 if [ "$PKGOS" = "Linux" ]; then
     PATH="$SDK_HOME/bin:$QTDIR/bin:$SDK_HOME/gcc/bin:$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$PATH"
     LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib64:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
     LD_LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib64:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
     #LD_RUN_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
-    PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig:$SDK_HOME/libdata/pkgconfig:$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+    PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig:$SDK_HOME/libdata/pkgconfig:$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$PYTHON_HOME/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 elif [ "$PKGOS" = "Windows" ]; then
-    PKG_CONFIG_PATH="$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+    PKG_CONFIG_PATH="$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$(cygpath -u ${PYTHON_HOME})/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 elif [ "$PKGOS" = "OSX" ]; then
-    PKG_CONFIG_PATH="$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+    PKG_CONFIG_PATH="$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$PYTHON_HOME/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 fi
-export LD_LIBRARY_PATH LD_RUN_PATH DYLD_LIBRARY_PATH LIBRARY_PATH CPATH PKG_CONFIG_PATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH
+export LD_LIBRARY_PATH LD_RUN_PATH DYLD_LIBRARY_PATH LIBRARY_PATH CPATH PKG_CONFIG_PATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH BOOST_ROOT
+
+if [ "${QT_VERSION_MAJOR}" = 4 ]; then
+    QT_VERSION=$(pkg-config --modversion QtCore)
+else
+    QT_VERSION=$(pkg-config --modversion Qt${QT_VERSION_MAJOR}Core)
+fi
+QT_VERSION_MINOR=$(echo $QT_VERSION | cut -d. -f2)
 
 # Load compiler related stuff
 source $CWD/compiler-common.sh

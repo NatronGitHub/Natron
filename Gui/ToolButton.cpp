@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,10 +30,9 @@
 
 CLANG_DIAG_OFF(deprecated)
 #include <QMenu>
-#include <QtCore/QtAlgorithms>
+#include <QtAlgorithms>
 CLANG_DIAG_ON(deprecated)
 
-#include <boost/weak_ptr.hpp>
 #include "Gui/GuiAppInstance.h"
 #include "Gui/Gui.h"
 #include "Engine/CreateNodeArgs.h"
@@ -216,7 +215,7 @@ ToolButton::sortChildren()
     }
     assert(_imp->_menu);
     QList<QAction*> actions = _imp->_menu->actions();
-    qSort( actions.begin(), actions.end(), ToolButtonChildrenSortFunctor() );
+    std::sort( actions.begin(), actions.end(), ToolButtonChildrenSortFunctor() );
     _imp->_menu->clear();
 
     std::vector<ToolButton*> sortedChildren;

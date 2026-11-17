@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -33,8 +33,8 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QSplitter>
-#include <QtCore/QTimer>
-#include <QtCore/QDebug>
+#include <QTimer>
+#include <QDebug>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -242,8 +242,7 @@ AddFormatDialog::onCopyFromViewer()
             RectD f = tab->getViewer()->getRoD(0);
             RectD canonicalFormat = tab->getViewer()->getCanonicalFormat(0);
             double par = tab->getViewer()->getPAR(0);
-            RectI format;
-            canonicalFormat.toPixelEnclosing(0, par, &format);
+            const RectI format = canonicalFormat.toPixelEnclosing(0, par);
             _widthSpinBox->setValue( format.width() );
             _heightSpinBox->setValue( format.height() );
             _pixelAspectSpinBox->setValue(par);
@@ -291,7 +290,7 @@ loadNodeGuiSerialization(Gui* gui,
 
     NodeGuiIPtr nGui_i = internalNode->getNodeGui();
     assert(nGui_i);
-    NodeGuiPtr nGui = boost::dynamic_pointer_cast<NodeGui>(nGui_i);
+    NodeGuiPtr nGui = std::dynamic_pointer_cast<NodeGui>(nGui_i);
 
     nGui->refreshPosition( serialization.getX(), serialization.getY(), true );
 
@@ -381,7 +380,7 @@ loadNodeGuiSerialization(Gui* gui,
             tab->setUserRoI(found->second.userRoI);
             tab->setClipToProject(found->second.isClippedToProject);
             tab->setRenderScaleActivated(found->second.renderScaleActivated);
-            tab->setMipMapLevel(found->second.mipMapLevel);
+            tab->setMipmapLevel(found->second.mipmapLevel);
             tab->setCompositingOperator( (ViewerCompositingOperatorEnum)found->second.wipeCompositingOp );
             tab->setZoomOrPannedSinceLastFit(found->second.zoomOrPanSinceLastFit);
             tab->setTopToolbarVisible(found->second.topToolbarVisible);

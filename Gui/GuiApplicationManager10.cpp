@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,23 +28,21 @@
 
 #include <stdexcept> // runtime_error
 
-#include <boost/scoped_ptr.hpp>
-
-#ifdef Q_OS_MAC
-// for dockClickHandler and Application::Application()
-#include <objc/objc.h>
+#ifdef Q_OS_DARWIN
+// for Application::Application()
 #include <objc/message.h>
 #endif
 
 ///gui
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QtGlobal> // for Q_OS_*
-#include <QtCore/QDebug>
-#include <QtCore/QSettings>
-#include <QtCore/QFileInfo>
+#include <QtGlobal> // for Q_OS_*
+#include <QDebug>
+#include <QSettings>
+#include <QFileInfo>
 #include <QApplication>
-#include <QDesktopWidget>
+#include <QGuiApplication>
+#include <QScreen>
 #include <QFileOpenEvent>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -68,9 +66,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/KnobGuiFactory.h"
 #include "Gui/SplashScreen.h"
-
-// removed in qt5, just revert the commit (1b58d9acc493111390b31f0bffd6b2a76baca91b)
-Q_INIT_RESOURCE_EXTERN(GuiResources);
 
 /**
  * @macro Registers a keybind to the application.
@@ -109,6 +104,10 @@ Q_INIT_RESOURCE_EXTERN(GuiResources);
 //Increment this when making change to default shortcuts or changes that would break expected default shortcuts
 //in a way. This way the user will get prompted to restore default shortcuts on next launch
 #define NATRON_SHORTCUTS_DEFAULT_VERSION 8
+
+inline void initGuiResource() {
+    Q_INIT_RESOURCE(GuiResources);
+}
 
 NATRON_NAMESPACE_ENTER
 
@@ -166,7 +165,7 @@ GuiApplicationManager::registerGuiMetaTypes() const
     qRegisterMetaType<CurveWidget*>();
 }
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
 static bool
 dockClickHandler(id self,SEL _cmd,...)
 {
@@ -203,8 +202,8 @@ public:
         , _app(app)
     {
         //setAttribute(Qt::AA_UseHighDpiPixmaps); // Qt 5
-        
-#ifdef Q_OS_MAC
+
+#ifdef Q_OS_DARWIN
         // see http://stackoverflow.com/questions/15143369/qt-on-os-x-how-to-detect-clicking-the-app-dock-icon
 
         // Starting from Qt5.4.0 you can handle QEvent, that related to click on dock: QEvent::ApplicationActivate.
@@ -248,7 +247,7 @@ bool
 Application::event(QEvent* e)
 {
     switch ( e->type() ) {
-#if defined(Q_OS_MAC) || defined(Q_OS_SYMBIAN)
+#if defined(Q_OS_DARWIN) || defined(Q_OS_SYMBIAN)
     case QEvent::FileOpen: {
         // This class is currently supported for Mac OS X and Symbian only
         // http://doc.qt.io/qt-4.8/qfileopenevent.html
@@ -296,31 +295,33 @@ GuiApplicationManager::initializeQApp(int &argc,
     QApplication* app;
     {
 #ifdef DEBUG
-        boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
-                                                               boost_adaptbx::floating_point::exception_trapping::overflow);
+        // division_by_zero happens here - don't trap it
+        boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::overflow);
 #endif
         app = new Application(this, argc, argv);
     }
-    QDesktopWidget* desktop = app->desktop();
-    int dpiX = desktop->logicalDpiX();
-    int dpiY = desktop->logicalDpiY();
+    // QDesktopWidget is gone in Qt6. Its logicalDpiX()/logicalDpiY() rounded
+    // the primary screen's QScreen values, and returned 72 when there was no
+    // screen. Keep both, so that Qt5 builds behave exactly as before.
+    double dpiX = 72.;
+    double dpiY = 72.;
+    if ( QScreen* screen = QGuiApplication::primaryScreen() ) {
+        // rounded, as QDesktopWidget::logicalDpiX()/Y() did
+        dpiX = qRound( screen->logicalDotsPerInchX() );
+        dpiY = qRound( screen->logicalDotsPerInchY() );
+    }
 
     setCurrentLogicalDPI(dpiX, dpiY);
 
     app->setQuitOnLastWindowClosed(true);
 
-    //Q_INIT_RESOURCE(GuiResources);
-    // Q_INIT_RESOURCES expanded, and fixed for use from inside a namespace:
-    // (requires using Q_INIT_RESOURCES_EXTERN(GuiResources) before entering the namespace)
-    ::qInitResources_GuiResources();
+    // use namespace workaround
+    // https://doc.qt.io/qt-5/qdir.html#Q_INIT_RESOURCE
+    initGuiResource();
 
 #ifdef DEBUG
-    QLocale loc;
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    loc = QApplication::keyboardInputLocale();
-#else
-    loc = QGuiApplication::inputMethod()->locale();
-#endif
+    QLocale loc = QGuiApplication::inputMethod()->locale();
+
     qDebug() << "keyboard input locale:" << loc.bcp47Name();
 #endif
 
@@ -464,7 +465,7 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
     std::list<GuiAppInstancePtr> guiApps;
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstancePtr app = boost::dynamic_pointer_cast<GuiAppInstance>(*it);
+        GuiAppInstancePtr app = std::dynamic_pointer_cast<GuiAppInstance>(*it);
         if (app) {
             guiApps.push_back(app);
         }
@@ -482,7 +483,7 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
         instances = getAppInstances();
         guiApps.clear();
         for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-            GuiAppInstancePtr ga = boost::dynamic_pointer_cast<GuiAppInstance>(*it);
+            GuiAppInstancePtr ga = std::dynamic_pointer_cast<GuiAppInstance>(*it);
             if ( ga && ( triedInstances.find(ga) == triedInstances.end() ) ) {
                 guiApps.push_back(ga);
             }
@@ -952,6 +953,7 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFrameNodes, kShortcutDescActionGraphFrameNodes, Qt::NoModifier, Qt::Key_F);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphShowCacheSize, kShortcutDescActionGraphShowCacheSize, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, kShortcutDescActionGraphFindNode, Qt::ControlModifier, Qt::Key_F);
+    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateNode, kShortcutDescActionGraphCreateNode, Qt::NoModifier, Qt::Key_Tab);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, kShortcutDescActionGraphRenameNode, Qt::NoModifier, Qt::Key_N);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExtractNode, kShortcutDescActionGraphExtractNode, Qt::ControlModifier | Qt::ShiftModifier,
                     Qt::Key_X);
@@ -1146,12 +1148,7 @@ GuiApplicationManager::clearNodeClipBoard()
 ///The symbol has been generated by Shiboken in  Engine/NatronEngine/natronengine_module_wrapper.cpp
 extern "C"
 {
-#if PY_MAJOR_VERSION >= 3
-// Python 3
 PyObject* PyInit_NatronGui();
-#else
-void initNatronGui();
-#endif
 }
 
 
@@ -1160,12 +1157,7 @@ GuiApplicationManager::initBuiltinPythonModules()
 {
     AppManager::initBuiltinPythonModules();
 
-#if PY_MAJOR_VERSION >= 3
-    // Python 3
     int ret = PyImport_AppendInittab(NATRON_GUI_PYTHON_MODULE_NAME, &PyInit_NatronGui);
-#else
-    int ret = PyImport_AppendInittab(NATRON_GUI_PYTHON_MODULE_NAME, &initNatronGui);
-#endif
     if (ret == -1) {
         throw std::runtime_error("Failed to initialize built-in Python module.");
     }

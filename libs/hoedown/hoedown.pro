@@ -11,7 +11,6 @@ INCLUDEPATH += . src
 
 include(../../global.pri)
 include(../../libs.pri)
-include(../../config.pri)
 
 # hoedown has too many "unused parameter" warnings
 *clang*|*g++*|*xcode {

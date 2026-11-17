@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -59,7 +59,7 @@ public:
     {
     }
 
-    QPixmap getIcon(NATRON_NAMESPACE::PixmapEnum val) const
+    QPixmap getIcon(Natron::PixmapEnum val) const
     {
         QPixmap ret;
 
@@ -75,7 +75,7 @@ public:
         if (!app) {
             return 0;
         }
-        GuiAppInstancePtr guiApp = boost::dynamic_pointer_cast<GuiAppInstance>(app);
+        GuiAppInstancePtr guiApp = std::dynamic_pointer_cast<GuiAppInstance>(app);
         if (!guiApp) {
             return 0;
         }
@@ -101,7 +101,7 @@ public:
         Dialogs::errorDialog( title.toStdString(), message.toStdString() );
     }
 
-    NATRON_NAMESPACE::StandardButtonEnum questionDialog(const QString& title,
+    Natron::StandardButtonEnum questionDialog(const QString& title,
                                                         const QString& message)
     {
         return Dialogs::questionDialog(title.toStdString(), message.toStdString(), false);

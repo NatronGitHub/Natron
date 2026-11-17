@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,15 +29,10 @@
 
 #include "Global/QtCompat.h"
 
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/algorithm/string/predicate.hpp> // iequals
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// clang-format off
 GCC_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
@@ -47,13 +42,14 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/version.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
+// clang-format on
 #endif
 
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QCoreApplication>
-#include <QtCore/QProcess>
+#include <QCoreApplication>
+#include <QProcess>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -186,18 +182,18 @@ ReadNode::isBundledReader(const std::string& pluginID,
 {
     if (wasProjectCreatedWithLowerCaseIDs) {
         // Natron 1.x has plugin ids stored in lowercase
-        return ( boost::iequals(pluginID, PLUGINID_OFX_READOIIO) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READFFMPEG) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READPFM) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READPSD) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READKRITA) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READSVG) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READMISC) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READORA) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READCDR) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READPNG) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READPDF) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_READBRAW) );
+        return ( StrUtils::iequals(pluginID, PLUGINID_OFX_READOIIO) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READFFMPEG) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READPFM) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READPSD) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READKRITA) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READSVG) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READMISC) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READORA) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READCDR) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READPNG) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READPDF) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_READBRAW) );
     }
 
     return (pluginID == PLUGINID_OFX_READOIIO ||
@@ -422,7 +418,7 @@ ReadNodePrivate::cloneGenericKnobs()
                         std::string optionID = choiceData->_choiceString;
                         // first, try to get the id the easy way ( see choiceMatch() )
                         int id = isChoice->choiceRestorationId(choiceSerialized, optionID);
-#pragma message WARN("TODO: choice id filters")
+//#pragma message WARN("TODO: choice id filters")
                         //if (id < 0) {
                         //    // no luck, try the filters
                         //    filterKnobChoiceOptionCompat(getPluginID(), serialization.getPluginMajorVersion(), serialization.getPluginMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, projectInfos.vRev, serializedName, &optionID);
@@ -511,7 +507,7 @@ ReadNodePrivate::destroyReadNode()
                      (*it)->setSecret(false);
                      }*/
                     
-                    KnobSerializationPtr s = boost::make_shared<KnobSerialization>(*it);
+                    KnobSerializationPtr s = std::make_shared<KnobSerialization>(*it);
                     serialized.push_back(s);
                 }
                 if (!isGeneric) {
@@ -541,7 +537,7 @@ ReadNodePrivate::destroyReadNode()
         int n ;
         iArchive >> boost::serialization::make_nvp("numItems", n);
         for (int i = 0; i < n; ++i) {
-            KnobSerializationPtr s = boost::make_shared<KnobSerialization>();
+            KnobSerializationPtr s = std::make_shared<KnobSerialization>();
             iArchive >> boost::serialization::make_nvp("item", *s);
             genericKnobsSerialization.push_back(s);
 
@@ -556,7 +552,7 @@ ReadNodePrivate::destroyReadNode()
     
     //This will remove the GUI of non generic parameters
     _publicInterface->recreateKnobs(true);
-#pragma message WARN("TODO: if Gui, refresh pluginID, version, help tooltip in DockablePanel to reflect embedded node change")
+//#pragma message WARN("TODO: if Gui, refresh pluginID, version, help tooltip in DockablePanel to reflect embedded node change")
 
     QMutexLocker k(&embeddedPluginMutex);
     if (embeddedPlugin) {
@@ -751,7 +747,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
         // Set the filename value
         if (node) {
-            KnobFilePtr fileKnob = boost::dynamic_pointer_cast<KnobFile>(node->getKnobByName(kOfxImageEffectFileParamName));
+            KnobFilePtr fileKnob = std::dynamic_pointer_cast<KnobFile>(node->getKnobByName(kOfxImageEffectFileParamName));
             if (fileKnob) {
                 fileKnob->setValue(filename);
             }
@@ -797,11 +793,21 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
     //This will refresh the GUI with this Reader specific parameters
     _publicInterface->recreateKnobs(true);
-#pragma message WARN("TODO: if Gui, refresh pluginID, version, help tooltip in DockablePanel to reflect embedded node change")
+//#pragma message WARN("TODO: if Gui, refresh pluginID, version, help tooltip in DockablePanel to reflect embedded node change")
 
     KnobIPtr knob = node ? node->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
     if (knob) {
-        inputFileKnob = boost::dynamic_pointer_cast<KnobFile>(knob);
+        inputFileKnob = std::dynamic_pointer_cast<KnobFile>(knob);
+    }
+
+    // If no decoder could be created (e.g. the decoder plug-in saved in the project is not installed),
+    // the knobs of the default reader replaced ours and the filename was reset: restore it, so that
+    // it is not lost when the project is saved, and the error message tells which file could not be read.
+    if ( !node && !filename.empty() ) {
+        KnobFilePtr fileKnob = inputFileKnob.lock();
+        if ( fileKnob && (fileKnob->getValue() != filename) ) {
+            fileKnob->setValue(filename);
+        }
     }
 } // ReadNodePrivate::createReadNode
 
@@ -1185,6 +1191,14 @@ ReadNode::onEffectCreated(bool mayCreateFileDialog,
             propName += "_";
             propName += kOfxImageEffectFileParamName;
             pattern = args.getProperty<std::string>(propName);
+        }
+        if ( pattern.empty() ) {
+            // The node may have been loaded from a project although no decoder could be created
+            // (see onKnobsAboutToBeLoaded()): keep the filename that was loaded.
+            KnobFilePtr fileKnob = _imp->inputFileKnob.lock();
+            if (fileKnob) {
+                pattern = fileKnob->getValue();
+            }
         }
     }
     _imp->createReadNode( throwErrors, pattern, NodeSerializationPtr() );

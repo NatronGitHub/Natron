@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -21,6 +21,10 @@
 #define NATRON_GLOBAL_GLINCLUDES_H
 
 #include <glad/glad.h> // libs.pri sets the right include path. glads.h may set GLAD_DEBUG
+
+// Disable including GL/glext.h after glad.h
+#define __glext_h_
+#define __gl_glext_h_
 
 /* this is where we can safely include GLU */
 #  if defined(__APPLE__) && defined(__MACH__)

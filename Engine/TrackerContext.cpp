@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -25,21 +25,15 @@
 
 #include "TrackerContext.h"
 
+#include <limits>
 #include <set>
 #include <sstream> // stringstream
 
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind/bind.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QWaitCondition>
-#include <QtCore/QThread>
-#include <QtCore/QCoreApplication>
+#include <QWaitCondition>
+#include <QThread>
+#include <QCoreApplication>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -52,14 +46,13 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobTypes.h"
 #include "Engine/Project.h"
 #include "Engine/Curve.h"
+#include "Engine/Timer.h" // gettimeofday()
 #include "Engine/TLSHolder.h"
 #include "Engine/Transform.h"
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerContextPrivate.h"
 #include "Engine/TrackerSerialization.h"
 #include "Engine/ViewerInstance.h"
-
-using namespace boost::placeholders;
 
 #define NATRON_TRACKER_REPORT_PROGRESS_DELTA_MS 200
 
@@ -81,7 +74,7 @@ TrackerContext::getMotionModelsAndHelps(bool addPerspective,
 }
 
 TrackerContext::TrackerContext(const NodePtr &node)
-    : boost::enable_shared_from_this<TrackerContext>()
+    : std::enable_shared_from_this<TrackerContext>()
     , _imp( new TrackerContextPrivate(this, node) )
 {
 }
@@ -99,7 +92,7 @@ struct TrackerContext::MakeSharedEnabler: public TrackerContext
 TrackerContextPtr
 TrackerContext::create(const NodePtr &node)
 {
-    return boost::make_shared<TrackerContext::MakeSharedEnabler>(node);
+    return std::make_shared<TrackerContext::MakeSharedEnabler>(node);
 }
 
 
@@ -151,14 +144,14 @@ TrackerContext::goToPreviousKeyFrame(int time)
 
     getSelectedMarkers(&markers);
 
-    int minimum = INT_MIN;
+    int minimum = std::numeric_limits<int>::min();
     for (std::list<TrackMarkerPtr> ::iterator it = markers.begin(); it != markers.end(); ++it) {
         int t = (*it)->getPreviousKeyframe(time);
-        if ( (t != INT_MIN) && (t > minimum) ) {
+        if ( (t != std::numeric_limits<int>::min()) && (t > minimum) ) {
             minimum = t;
         }
     }
-    if (minimum != INT_MIN) {
+    if (minimum != std::numeric_limits<int>::min()) {
         getNode()->getApp()->setLastViewerUsingTimeline( NodePtr() );
         getNode()->getApp()->getTimeLine()->seekFrame(minimum, false,  NULL, eTimelineChangeReasonPlaybackSeek);
     }
@@ -171,14 +164,14 @@ TrackerContext::goToNextKeyFrame(int time)
 
     getSelectedMarkers(&markers);
 
-    int maximum = INT_MAX;
+    int maximum = std::numeric_limits<int>::max();
     for (std::list<TrackMarkerPtr> ::iterator it = markers.begin(); it != markers.end(); ++it) {
         int t = (*it)->getNextKeyframe(time);
-        if ( (t != INT_MAX) && (t < maximum) ) {
+        if ( (t != std::numeric_limits<int>::max()) && (t < maximum) ) {
             maximum = t;
         }
     }
-    if (maximum != INT_MAX) {
+    if (maximum != std::numeric_limits<int>::max()) {
         getNode()->getApp()->setLastViewerUsingTimeline( NodePtr() );
         getNode()->getApp()->getTimeLine()->seekFrame(maximum, false,  NULL, eTimelineChangeReasonPlaybackSeek);
     }
@@ -777,7 +770,7 @@ getCornerPinPoint(Node* node,
     QString name = isFrom ? QString::fromUtf8("from%1").arg(index + 1) : QString::fromUtf8("to%1").arg(index + 1);
     KnobIPtr knob = node->getKnobByName( name.toStdString() );
     assert(knob);
-    KnobDoublePtr  ret = boost::dynamic_pointer_cast<KnobDouble>(knob);
+    KnobDoublePtr  ret = std::dynamic_pointer_cast<KnobDouble>(knob);
     assert(ret);
 
     return ret;
@@ -795,7 +788,7 @@ getCornerPinPoint(Node* node,
     QString name = isFrom ? QString::fromUtf8("from%1").arg(index + 1) : QString::fromUtf8("to%1").arg(index + 1);
     KnobIPtr knob = node->getKnobByName( name.toStdString() );
     assert(knob);
-    KnobDoublePtr  ret = boost::dynamic_pointer_cast<KnobDouble>(knob);
+    KnobDoublePtr  ret = std::dynamic_pointer_cast<KnobDouble>(knob);
     assert(ret);
 
     return ret;
@@ -1844,7 +1837,7 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 GenericSchedulerThread::ThreadStateEnum
 TrackScheduler::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
 {
-    TrackArgsPtr args = boost::dynamic_pointer_cast<TrackArgs>(inArgs);
+    TrackArgsPtr args = std::dynamic_pointer_cast<TrackArgs>(inArgs);
 
     assert(args);
 
@@ -1863,7 +1856,7 @@ TrackScheduler::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
 
     const std::vector<TrackMarkerAndOptionsPtr>& tracks = args->getTracks();
     const int numTracks = (int)tracks.size();
-    std::vector<int> trackIndexes( tracks.size() );
+    std::vector<std::size_t> trackIndexes( tracks.size() );
     for (std::size_t i = 0; i < tracks.size(); ++i) {
         trackIndexes[i] = i;
         tracks[i]->natronMarker->notifyTrackingStarted();
@@ -1892,13 +1885,13 @@ TrackScheduler::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
         }
 
 
+        std::function<bool (const std::size_t&)> track = [&](const std::size_t &i) {
+            return TrackSchedulerPrivate::trackStepFunctor(i, *args, cur);
+        };
         while (cur != end) {
             ///Launch parallel thread for each track using the global thread pool
             QFuture<bool> future = QtConcurrent::mapped( trackIndexes,
-                                                         boost::bind(&TrackSchedulerPrivate::trackStepFunctor,
-                                                                     _1,
-                                                                     *args,
-                                                                     cur) );
+                                                         track );
             future.waitForFinished();
 
             allTrackFailed = true;

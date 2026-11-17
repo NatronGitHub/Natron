@@ -461,7 +461,7 @@ if [ ! -s "$prefix/osmesa/lib/pkgconfig/gl.pc" ] || [ "$(env PKG_CONFIG_PATH=$pr
         download "$OSMESA_LLVM_SITE" "$OSMESA_LLVM_TAR"
         mkdir -p "${prefix}/llvm" || true
     fi
-    git clone https://github.com/devernay/osmesa-install
+    git clone --depth 1 https://github.com/devernay/osmesa-install
     pushd osmesa-install
     mkdir build
     pushd build
@@ -577,9 +577,8 @@ fi # if false
 # TODO: modify to checkout the right commit, not HEAD
 build_package opencolorio-git
 
-# Install libraw
+# Install libraw: GPL2 demosaic pack for GPL builds, no pack (LGPL) for COMMERCIAL builds
 build_package libraw-gpl2
-build_package libraw-gpl3
 build_package libraw-lgpl
 
 # Install ilmbase (adds ilmbase-2.2.0-threadpool_release_lock_single_thread.patch)

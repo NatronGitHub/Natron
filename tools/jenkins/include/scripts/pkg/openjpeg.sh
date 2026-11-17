@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Install openjpeg
-# see http://www.linuxfromscratch.org/blfs/view/cvs/general/openjpeg2.html
-OPENJPEG2_VERSION=2.4.0
+# see http://www.linuxfromscratch.org/blfs/view/svn/general/openjpeg2.html
+OPENJPEG2_VERSION=2.5.0
 OPENJPEG2_VERSION_SHORT=${OPENJPEG2_VERSION%.*}
 OPENJPEG2_TAR="openjpeg-${OPENJPEG2_VERSION}.tar.gz"
 if download_step; then

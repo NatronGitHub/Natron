@@ -1,9 +1,0 @@
---- a/src/sql/drivers/mysql/qsql_mysql.pri	2012-05-24 13:53:35 +0400
-+++ b/src/sql/drivers/mysql/qsql_mysql.pri	2012-05-24 13:54:31 +0400
-@@ -12,5 +12,5 @@
-         QMAKE_CXXFLAGS *= $$QT_CFLAGS_MYSQL
-     }
- } else {
--    !contains(LIBS, .*mysql.*):!contains(LIBS, .*mysqld.*):LIBS += -llibmysql
-+    LIBS += -lmysqlclient
- }

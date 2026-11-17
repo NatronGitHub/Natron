@@ -18,7 +18,7 @@ Divide the selected channels by alpha (or another channel)
 
 If no channel is selected, or the premultChannel is set to None, the image data is left untouched, but its premultiplication state is set to UnPreMultiplied.
 
-See also: http://opticalenquiry.com/nuke/index.php?title=Premultiplication
+See also: https://web.archive.org/web/20210413043727/http://opticalenquiry.com/nuke/index.php?title=Premultiplication
 
 Inputs
 ------

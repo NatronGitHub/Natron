@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,11 +26,13 @@
 #include "NodeGraphUndoRedo.h"
 
 #include <algorithm> // min, max
+#include <limits>
+#include <set>
 #include <stdexcept>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QDebug>
+#include <QDebug>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -78,13 +80,13 @@ MoveMultipleNodesCommand::move(double dx,
         QPointF pos = (*it)->getPos_mt_safe();
         (*it)->setPosition(pos.x() + dx, pos.y() + dy);
     }
+    setText( tr("Move node(s)") );
 }
 
 void
 MoveMultipleNodesCommand::undo()
 {
     move(-_dx, -_dy);
-    setText( tr("Move nodes") );
 }
 
 void
@@ -94,7 +96,6 @@ MoveMultipleNodesCommand::redo()
         move(_dx, _dy);
     }
     _firstRedoCalled = true;
-    setText( tr("Move nodes") );
 }
 
 AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
@@ -133,6 +134,7 @@ AddMultipleNodesCommand::~AddMultipleNodesCommand()
             }
         }
     }
+    setText( tr("Add node") );
 }
 
 void
@@ -166,9 +168,7 @@ AddMultipleNodesCommand::undo()
     for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }
-
-
-    setText( tr("Add node") );
+    _graph->updateNavigator();
 }
 
 void
@@ -214,9 +214,8 @@ AddMultipleNodesCommand::redo()
         }
     }
 
-
     _firstRedoCalled = true;
-    setText( tr("Add node") );
+    _graph->updateNavigator();
 }
 
 RemoveMultipleNodesCommand::RemoveMultipleNodesCommand(NodeGraph* graph,
@@ -251,6 +250,7 @@ RemoveMultipleNodesCommand::RemoveMultipleNodesCommand(NodeGraph* graph,
         }
         _nodes.push_back(n);
     }
+    setText( tr("Remove node(s)") );
 }
 
 RemoveMultipleNodesCommand::~RemoveMultipleNodesCommand()
@@ -314,7 +314,7 @@ RemoveMultipleNodesCommand::undo()
 
     _isRedone = false;
     _graph->scene()->update();
-    setText( tr("Remove node") );
+    _graph->updateNavigator();
 } // RemoveMultipleNodesCommand::undo
 
 void
@@ -407,7 +407,7 @@ RemoveMultipleNodesCommand::redo()
     _graph->updateNavigator();
 
     _graph->scene()->update();
-    setText( tr("Remove node") );
+    _graph->updateNavigator();
 } // redo
 
 ConnectCommand::ConnectCommand(NodeGraph* graph,
@@ -422,7 +422,15 @@ ConnectCommand::ConnectCommand(NodeGraph* graph,
     _graph(graph),
     _inputNb( edge->getInputNumber() )
 {
-    assert( _dst.lock() );
+    NodeGuiPtr dst = _dst.lock();
+    assert(dst);
+    if (newSrc) {
+        setText( tr("Connect %1 to %2")
+                 .arg( QString::fromUtf8( dst->getNode()->getLabel().c_str() ) ).arg( QString::fromUtf8( newSrc->getNode()->getLabel().c_str() ) ) );
+    } else {
+        setText( tr("Disconnect %1")
+                 .arg( QString::fromUtf8( dst->getNode()->getLabel().c_str() ) ) );
+    }
 }
 
 void
@@ -436,15 +444,6 @@ ConnectCommand::undo()
               oldSrc,
               dst,
               _inputNb);
-
-    if (newSrc) {
-        setText( tr("Connect %1 to %2")
-                 .arg( QString::fromUtf8( dst->getNode()->getLabel().c_str() ) ).arg( QString::fromUtf8( newSrc->getNode()->getLabel().c_str() ) ) );
-    } else {
-        setText( tr("Disconnect %1")
-                 .arg( QString::fromUtf8( dst->getNode()->getLabel().c_str() ) ) );
-    }
-
 
     ViewerInstance* isDstAViewer = dst->getNode()->isEffectViewer();
     if (!isDstAViewer) {
@@ -464,15 +463,6 @@ ConnectCommand::redo()
               newSrc,
               dst,
               _inputNb);
-
-    if (newSrc) {
-        setText( tr("Connect %1 to %2")
-                 .arg( QString::fromUtf8( dst->getNode()->getLabel().c_str() ) ).arg( QString::fromUtf8( newSrc->getNode()->getLabel().c_str() ) ) );
-    } else {
-        setText( tr("Disconnect %1")
-                 .arg( QString::fromUtf8( dst->getNode()->getLabel().c_str() ) ) );
-    }
-
 
     ViewerInstance* isDstAViewer = dst->getNode()->isEffectViewer();
     if (!isDstAViewer) {
@@ -512,10 +502,10 @@ ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
             if (connectionOk) {
                 internalDst->replaceInput(internalNewSrc, inputNb);
             } else {
-                internalDst->disconnectInput( internalDst->getInputIndex( internalOldSrc.get() ) );
+                internalDst->disconnectInput(inputNb);
             }
         } else if (internalOldSrc && !internalNewSrc) {
-            internalDst->disconnectInput( internalDst->getInputIndex( internalOldSrc.get() ) );
+            internalDst->disconnectInput(inputNb);
         } else if (!internalOldSrc && internalNewSrc) {
             Node::CanConnectInputReturnValue ret = internalDst->canConnectInput(internalNewSrc, inputNb);
             bool connectionOk = ret == Node::eCanConnectInput_ok ||
@@ -524,7 +514,7 @@ ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
             if (connectionOk) {
                 internalDst->connectInput(internalNewSrc, inputNb);
             } else {
-                internalDst->disconnectInput( internalDst->getInputIndex( internalOldSrc.get() ) );
+                internalDst->disconnectInput(inputNb);
             }
         }
     }
@@ -653,6 +643,7 @@ ResizeBackdropCommand::ResizeBackdropCommand(const NodeGuiPtr& bd,
 
     _oldW = bbox.width();
     _oldH = bbox.height();
+    setText( tr("Resize %1").arg( QString::fromUtf8( _bd->getNode()->getLabel().c_str() ) ) );
 }
 
 ResizeBackdropCommand::~ResizeBackdropCommand()
@@ -663,14 +654,12 @@ void
 ResizeBackdropCommand::undo()
 {
     _bd->resize(_oldW, _oldH);
-    setText( tr("Resize %1").arg( QString::fromUtf8( _bd->getNode()->getLabel().c_str() ) ) );
 }
 
 void
 ResizeBackdropCommand::redo()
 {
     _bd->resize(_w, _h);
-    setText( tr("Resize %1").arg( QString::fromUtf8( _bd->getNode()->getLabel().c_str() ) ) );
 }
 
 bool
@@ -704,6 +693,7 @@ DecloneMultipleNodesCommand::DecloneMultipleNodesCommand(NodeGraph* graph,
         assert( n.master.lock() );
         _nodes.push_back(n);
     }
+    setText( tr("Declone node(s)") );
 }
 
 DecloneMultipleNodesCommand::~DecloneMultipleNodesCommand()
@@ -718,7 +708,6 @@ DecloneMultipleNodesCommand::undo()
     }
 
     _graph->getGui()->getApp()->triggerAutoSave();
-    setText( tr("Declone node") );
 }
 
 void
@@ -729,7 +718,6 @@ DecloneMultipleNodesCommand::redo()
     }
 
     _graph->getGui()->getApp()->triggerAutoSave();
-    setText( tr("Declone node") );
 }
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -745,7 +733,7 @@ public:
 
     Tree()
         : nodes()
-        , topLevelNodeCenter(0, INT_MAX)
+        , topLevelNodeCenter(0, std::numeric_limits<int>::max())
     {
     }
 
@@ -791,7 +779,7 @@ private:
                            NodeGui* currentNode, const QPointF & currentNodeScenePos, std::list<NodeGui*> & usedNodes);
 };
 
-typedef boost::shared_ptr<Tree> TreePtr;
+typedef std::shared_ptr<Tree> TreePtr;
 typedef std::list<TreePtr> TreePtrList;
 
 void
@@ -1013,14 +1001,14 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr> & nodes
 
     for (std::list<NodeGuiPtr> ::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( !hasNodeOutputsInList( nodes, (*it) ) ) {
-            TreePtr newTree = boost::make_shared<Tree>();
+            TreePtr newTree = std::make_shared<Tree>();
             newTree->buildTree(*it, nodes, usedNodes);
             trees.push_back(newTree);
         }
     }
 
     ///For all trees find out which one has the top most level node
-    QPointF topLevelPos(0, INT_MAX);
+    QPointF topLevelPos(0, std::numeric_limits<int>::max());
     for (TreePtrList::iterator it = trees.begin(); it != trees.end(); ++it) {
         const QPointF & treeTop = (*it)->getTopLevelNodeCenter();
         if ( treeTop.y() < topLevelPos.y() ) {
@@ -1031,7 +1019,7 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr> & nodes
     ///now offset all trees to be top aligned at the same level
     for (TreePtrList::iterator it = trees.begin(); it != trees.end(); ++it) {
         QPointF treeTop = (*it)->getTopLevelNodeCenter();
-        if (treeTop.y() == INT_MAX) {
+        if (treeTop.y() == std::numeric_limits<int>::max()) {
             treeTop.setY( topLevelPos.y() );
         }
         QPointF delta( 0, topLevelPos.y() - treeTop.y() );
@@ -1050,6 +1038,7 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr> & nodes
             _nodes.push_back(n);
         }
     }
+    setText( tr("Rearrange nodes") );
 }
 
 void
@@ -1058,7 +1047,6 @@ RearrangeNodesCommand::undo()
     for (std::list<NodeToRearrange>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->node->refreshPosition(it->oldPos.x(), it->oldPos.y(), true);
     }
-    setText( tr("Rearrange nodes") );
 }
 
 void
@@ -1067,7 +1055,6 @@ RearrangeNodesCommand::redo()
     for (std::list<NodeToRearrange>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->node->refreshPosition(it->newPos.x(), it->newPos.y(), true);
     }
-    setText( tr("Rearrange nodes") );
 }
 
 DisableNodesCommand::DisableNodesCommand(const std::list<NodeGuiPtr> & nodes,
@@ -1078,6 +1065,7 @@ DisableNodesCommand::DisableNodesCommand(const std::list<NodeGuiPtr> & nodes,
     for (std::list<NodeGuiPtr> ::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         _nodes.push_back(*it);
     }
+    setText( tr("Disable node(s)") );
 }
 
 void
@@ -1086,7 +1074,6 @@ DisableNodesCommand::undo()
     for (std::list<NodeGuiWPtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->lock()->getNode()->setNodeDisabled(false);
     }
-    setText( tr("Disable nodes") );
 }
 
 void
@@ -1095,7 +1082,6 @@ DisableNodesCommand::redo()
     for (std::list<NodeGuiWPtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->lock()->getNode()->setNodeDisabled(true);
     }
-    setText( tr("Disable nodes") );
 }
 
 EnableNodesCommand::EnableNodesCommand(const std::list<NodeGuiPtr> & nodes,
@@ -1106,6 +1092,7 @@ EnableNodesCommand::EnableNodesCommand(const std::list<NodeGuiPtr> & nodes,
     for (std::list<NodeGuiPtr> ::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         _nodes.push_back(*it);
     }
+    setText( tr("Enable node(s)") );
 }
 
 void
@@ -1114,7 +1101,6 @@ EnableNodesCommand::undo()
     for (std::list<NodeGuiWPtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->lock()->getNode()->setNodeDisabled(true);
     }
-    setText( tr("Enable nodes") );
 }
 
 void
@@ -1123,7 +1109,6 @@ EnableNodesCommand::redo()
     for (std::list<NodeGuiWPtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->lock()->getNode()->setNodeDisabled(false);
     }
-    setText( tr("Enable nodes") );
 }
 
 LoadNodePresetsCommand::LoadNodePresetsCommand(const NodeGuiPtr & node,
@@ -1135,6 +1120,7 @@ LoadNodePresetsCommand::LoadNodePresetsCommand(const NodeGuiPtr & node,
     , _node(node)
     , _newSerializations(serialization)
 {
+    setText( tr("Load presets") );
 }
 
 void
@@ -1159,6 +1145,8 @@ LoadNodePresetsCommand::undo()
     NodePtr internalNode = node->getNode();
     MultiInstancePanelPtr panel = node->getMultiInstancePanel();
     internalNode->loadKnobs(*_oldSerialization.front(), true);
+    // loadKnobs() may have created user knobs: rebuild the settings panel (#480)
+    internalNode->getEffectInstance()->recreateUserKnobs(true);
     if (panel) {
         std::list<NodePtr> newChildren, oldChildren;
         getListAsShared(_newChildren, newChildren);
@@ -1168,7 +1156,6 @@ LoadNodePresetsCommand::undo()
     }
     internalNode->getEffectInstance()->incrHashAndEvaluate(true, true);
     internalNode->getApp()->triggerAutoSave();
-    setText( tr("Load presets") );
 }
 
 void
@@ -1206,6 +1193,8 @@ LoadNodePresetsCommand::redo()
     }
 
     internalNode->loadKnobs(*_newSerializations.front(), true);
+    // loadKnobs() may have created user knobs: rebuild the settings panel (#480)
+    internalNode->getEffectInstance()->recreateUserKnobs(true);
     if (panel) {
         std::list<NodePtr> oldChildren, newChildren;
         getListAsShared(_oldChildren, oldChildren);
@@ -1225,8 +1214,6 @@ LoadNodePresetsCommand::redo()
     internalNode->getEffectInstance()->incrHashAndEvaluate(true, true);
     internalNode->getApp()->triggerAutoSave();
     _firstRedoCalled = true;
-
-    setText( tr("Load presets") );
 } // LoadNodePresetsCommand::redo
 
 RenameNodeUndoRedoCommand::RenameNodeUndoRedoCommand(const NodeGuiPtr & node,
@@ -1306,14 +1293,21 @@ extractTreesFromNodes(const std::list<NodeGuiPtr> & nodes,
             ExtractedTree tree;
             tree.output.node = *it;
             NodePtr n = (*it)->getNode();
+            // An output node appears once per link in getGuiOutputs(), and it may be connected
+            // to n through several of its inputs: record every (input number, output node) link once.
             const NodesWList& outputs = n->getGuiOutputs();
+            std::set<NodePtr> visitedOutputs;
             for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
                 NodePtr output = it2->lock();
-                if (!output) {
+                if ( !output || !visitedOutputs.insert(output).second ) {
                     continue;
                 }
-                int idx = output->inputIndex(n);
-                tree.output.outputs.push_back( std::make_pair(idx, output) );
+                int nInputs = output->getNInputs();
+                for (int idx = 0; idx < nInputs; ++idx) {
+                    if (output->getRealInput(idx) == n) {
+                        tree.output.outputs.push_back( std::make_pair(idx, output) );
+                    }
+                }
             }
 
             const std::vector<Edge*>& inputs = (*it)->getInputsArrows();
@@ -1345,6 +1339,7 @@ ExtractNodeUndoRedoCommand::ExtractNodeUndoRedoCommand(NodeGraph* graph,
     , _trees()
 {
     extractTreesFromNodes(nodes, _trees);
+    setText( tr("Extract node") );
 }
 
 ExtractNodeUndoRedoCommand::~ExtractNodeUndoRedoCommand()
@@ -1407,7 +1402,6 @@ ExtractNodeUndoRedoCommand::undo()
     }
 
     _graph->getGui()->getApp()->triggerAutoSave();
-    setText( tr("Extract node") );
 } // ExtractNodeUndoRedoCommand::undo
 
 void
@@ -1495,9 +1489,6 @@ ExtractNodeUndoRedoCommand::redo()
     }
 
     _graph->getGui()->getApp()->triggerAutoSave();
-
-
-    setText( tr("Extract node") );
 } // ExtractNodeUndoRedoCommand::redo
 
 GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,
@@ -1526,16 +1517,16 @@ GroupFromSelectionCommand::undo()
 {
     std::list<NodeGuiPtr> nodesToSelect;
 
-    for (OutputLinksMap::iterator it = _outputLinks.begin(); it != _outputLinks.end(); ++it) {
-        NodePtr outputNode = it->first.lock();
+    for (OutputLinks::iterator it = _outputLinks.begin(); it != _outputLinks.end(); ++it) {
+        NodePtr outputNode = it->outputNode.lock();
         if (!outputNode) {
             continue;
         }
-        NodePtr input = it->second.inputNode.lock();
+        NodePtr input = it->inputNode.lock();
         if (!input) {
             continue;
         }
-        outputNode->replaceInput(input, it->second.inputIdx);
+        outputNode->replaceInput(input, it->inputIdx);
     }
 
 
@@ -1583,7 +1574,7 @@ GroupFromSelectionCommand::redo()
 
     NodeGroupPtr isGrp;
     if (_firstRedoCalled) {
-        isGrp = boost::dynamic_pointer_cast<NodeGroup>(_group.lock()->getNode()->getEffectInstance());
+        isGrp = std::dynamic_pointer_cast<NodeGroup>(_group.lock()->getNode()->getEffectInstance());
         assert(isGrp);
         if (!isGrp) {
             throw std::logic_error("GroupFromSelectionCommand::redo()");
@@ -1599,14 +1590,14 @@ GroupFromSelectionCommand::redo()
 
         NodePtr containerNode = _graph->getGui()->getApp()->createNode(groupArgs);
 
-        isGrp = boost::dynamic_pointer_cast<NodeGroup>( containerNode->getEffectInstance()->shared_from_this() );
+        isGrp = std::dynamic_pointer_cast<NodeGroup>( containerNode->getEffectInstance()->shared_from_this() );
         assert(isGrp);
         if (!isGrp) {
             throw std::logic_error("GroupFromSelectionCommand::redo()");
         }
         NodeGuiIPtr container_i = containerNode->getNodeGui();
         assert(container_i);
-        _group = boost::dynamic_pointer_cast<NodeGui>(container_i);
+        _group = std::dynamic_pointer_cast<NodeGui>(container_i);
         assert( _group.lock() );
 
         // Set the position of the group
@@ -1627,8 +1618,13 @@ GroupFromSelectionCommand::redo()
         int inputNb = 0;
         for (std::list<Project::NodesTree>::iterator it = trees.begin(); it != trees.end(); ++it) {
             NodeGuiPtr foundOriginalOutputNode;
+            if (!it->output.node->isActivated()) {
+                continue;
+            }
+            const std::string outputNodeName = it->output.node->getScriptName_mt_safe();
             for (NodesGuiList::const_iterator it3 = originalNodes.begin(); it3 != originalNodes.end(); ++it3) {
-                if ( (*it3)->getNode()->getScriptName_mt_safe() == it->output.node->getScriptName_mt_safe() ) {
+                NodePtr n = (*it3)->getNode();
+                if ( n && n->isActivated() && n->getScriptName_mt_safe() == outputNodeName) {
                     foundOriginalOutputNode = *it3;
                     break;
                 }
@@ -1643,8 +1639,13 @@ GroupFromSelectionCommand::redo()
             for (std::list<Project::TreeInput>::iterator it2 = it->inputs.begin(); it2 != it->inputs.end(); ++it2) {
                 // Find the equivalent node in the original nodes and see which inputs we need to create
                 NodeGuiPtr foundOriginalNode;
+                if (!it2->node->isActivated()) {
+                    continue;
+                }
+                const std::string originalNodeName = it2->node->getScriptName_mt_safe();
                 for (NodesGuiList::const_iterator it3 = originalNodes.begin(); it3 != originalNodes.end(); ++it3) {
-                    if ( (*it3)->getNode()->getScriptName_mt_safe() == it2->node->getScriptName_mt_safe() ) {
+                    NodePtr n = (*it3)->getNode();
+                    if ( n && n->isActivated() && n->getScriptName_mt_safe() == originalNodeName) {
                         foundOriginalNode = *it3;
                         break;
                     }
@@ -1746,20 +1747,23 @@ GroupFromSelectionCommand::redo()
                 int inputIdx = output->getInputIndex(foundOriginalOutputNode->getNode().get());
                 assert(inputIdx != -1);
                 output->replaceInput(isGrp->getNode(), inputIdx);
-                OutputLink& link = _outputLinks[*it2];
-                link.inputNode = foundOriginalOutputNode->getNode();
+                // One entry per link: output may be connected to several of its inputs.
+                OutputLink link;
+                link.outputNode = output;
                 link.inputIdx = inputIdx;
+                link.inputNode = foundOriginalOutputNode->getNode();
+                _outputLinks.push_back(link);
             }
         } // for all trees
     } // !_firstRedoCalled
 
     if (_firstRedoCalled) {
-        for (OutputLinksMap::iterator it = _outputLinks.begin(); it != _outputLinks.end(); ++it) {
-            NodePtr outputNode = it->first.lock();
+        for (OutputLinks::iterator it = _outputLinks.begin(); it != _outputLinks.end(); ++it) {
+            NodePtr outputNode = it->outputNode.lock();
             if (!outputNode) {
                 continue;
             }
-            outputNode->replaceInput(isGrp->getNode(), it->second.inputIdx);
+            outputNode->replaceInput(isGrp->getNode(), it->inputIdx);
         }
     }
 
@@ -1834,7 +1838,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
             if ( !inp && !output && !(*it2)->getParentMultiInstance() ) {
                 NodeGuiIPtr gui_i = (*it2)->getNodeGui();
                 assert(gui_i);
-                NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+                NodeGuiPtr nodeGui = std::dynamic_pointer_cast<NodeGui>(gui_i);
                 assert(nodeGui);
                 nodesToCopy.push_back(nodeGui);
             }
@@ -1856,7 +1860,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
 
         NodeGuiIPtr groupGui_i = group->getNode()->getNodeGui();
         assert(groupGui_i);
-        NodeGuiPtr groupGui = boost::dynamic_pointer_cast<NodeGui>(groupGui_i);
+        NodeGuiPtr groupGui = std::dynamic_pointer_cast<NodeGui>(groupGui_i);
         assert(groupGui);
         expandedGroup.group = groupGui;
 
@@ -1881,7 +1885,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
         // Remember the links from the Group node we are expending to its inputs and outputs
 
         // This is the y coord. of the bottom-most input
-        double inputY = INT_MIN;
+        double inputY = std::numeric_limits<int>::min();
         int maxInputs = group->getNode()->getNInputs();
         assert( maxInputs == (int)groupInputs.size() );
         for (int i = 0; i < maxInputs; ++i) {
@@ -1895,7 +1899,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
 
                 NodeGuiIPtr inputGui_i = input->getNodeGui();
                 assert(inputGui_i);
-                NodeGuiPtr inputGui = boost::dynamic_pointer_cast<NodeGui>(inputGui_i);
+                NodeGuiPtr inputGui = std::dynamic_pointer_cast<NodeGui>(inputGui_i);
                 assert(inputGui);
                 ntc.input = inputGui;
 
@@ -1925,7 +1929,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
         QPointF firstInputPos;
 
         // This is the y coord of the top most output
-        double outputY = INT_MAX;
+        double outputY = std::numeric_limits<int>::max();
         if (groupOutput) {
             NodePtr groupOutputInput = groupOutput->getInput(0);
             if (groupOutputInput) {
@@ -1950,7 +1954,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                 for (std::map<NodePtr, int>::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
                     NodeGuiIPtr outputGui_i = it2->first->getNodeGui();
                     assert(outputGui_i);
-                    NodeGuiPtr outputGui = boost::dynamic_pointer_cast<NodeGui>(outputGui_i);
+                    NodeGuiPtr outputGui = std::dynamic_pointer_cast<NodeGui>(outputGui_i);
                     assert(outputGui);
                     outputsConnectedToGroup.push_back(outputGui);
 
@@ -1965,8 +1969,8 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
         }
 
         // If there is no output to the group, the output is considered to be infinite (so we don't move any node)
-        if (outputY == INT_MIN) {
-            outputY = INT_MAX;
+        if (outputY == std::numeric_limits<int>::min()) {
+            outputY = std::numeric_limits<int>::max();
         }
 
         const double ySpaceAvailable = outputY  - inputY;
@@ -2063,7 +2067,7 @@ InlineGroupCommand::redo()
                 if (!input) {
                     continue;
                 }
-                for (std::map<NodeGuiWPtr, int>::iterator it3 = it2->second.outputs.begin();
+                for (NodeGuisMap::iterator it3 = it2->second.outputs.begin();
                      it3 != it2->second.outputs.end(); ++it3) {
                     NodeGuiPtr node = it3->first.lock();
                     if (node) {

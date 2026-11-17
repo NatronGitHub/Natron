@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,16 +28,12 @@
 #include <fstream>
 #include <algorithm> // min, max
 #include <ios>
+#include <limits>
+#include <set>
 #include <cstdlib> // strtoul
 #include <cerrno> // errno
 #include <cassert>
 #include <stdexcept>
-
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/algorithm/string/predicate.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
 
 #ifdef __NATRON_WIN32__
 #include <stdio.h> //for _snprintf
@@ -49,15 +45,17 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
 
-#include <QtCore/QCoreApplication>
-#include <QtCore/QTimer>
-#include <QtCore/QThread>
-#include <QtCore/QDir>
-#include <QtCore/QTemporaryFile>
-#include <QtCore/QFileInfo>
-#include <QtCore/QDebug>
-#include <QtCore/QTextStream>
-#include <QtNetwork/QHostInfo>
+#include <QCoreApplication>
+#include <QTimer>
+#include <QThread>
+#include <QDir>
+#include <QDirIterator>
+#include <QTemporaryFile>
+#include <QFileInfo>
+#include <QDebug>
+#include <QTextStream>
+#include <QHostInfo>
+#include <QRegularExpression>
 #include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 
 #include <ofxhXml.h> // OFX::XML::escape
@@ -157,14 +155,14 @@ struct Project::MakeSharedEnabler: public Project
 ProjectPtr
 Project::create(const AppInstancePtr& appInstance)
 {
-    return boost::make_shared<Project::MakeSharedEnabler>(appInstance);
+    return std::make_shared<Project::MakeSharedEnabler>(appInstance);
 }
 
 
 Project::~Project()
 {
     ///wait for all autosaves to finish
-    for (std::list<boost::shared_ptr<QFutureWatcher<void> > >::iterator it = _imp->autoSaveFutures.begin(); it != _imp->autoSaveFutures.end(); ++it) {
+    for (std::list<std::shared_ptr<QFutureWatcher<void> > >::iterator it = _imp->autoSaveFutures.begin(); it != _imp->autoSaveFutures.end(); ++it) {
         (*it)->waitForFinished();
     }
 
@@ -195,7 +193,7 @@ public:
         AppInstancePtr a = app.lock();
 
         if (a) {
-            a->closeLoadPRojectSplashScreen();
+            a->closeLoadProjectSplashScreen();
         }
     }
 };
@@ -500,6 +498,57 @@ fileCopy(const QString & source,
     return success;
 }
 
+static QStringList
+findBackups(const QString & filePath)
+{
+    QStringList ret;
+    if ( QFile::exists(filePath) ) {
+        ret.append(filePath);
+    }
+    // find files matching filePath.~[0-9]+~
+    QRegularExpression rx( QString::fromUtf8("\\.~(\\d+)~\\z"), QRegularExpression::UseUnicodePropertiesOption );
+    QFileInfo fileInfo(filePath);
+    QString fileName = fileInfo.fileName();
+    QDirIterator it(fileInfo.dir());
+    while (it.hasNext()) {
+        QString filename = it.next();
+        QFileInfo file(filename);
+
+        if (file.isDir()) { // Check if it's a dir
+            continue;
+        }
+
+        // If the filename contains target string - put it in the hitlist
+        QString fn = file.fileName();
+        // The pattern ends with \z (PCRE's $ would also match before a final
+        // newline), so there is at most one match and lastIndexIn() is just
+        // that match.
+        QRegularExpressionMatch backupMatch = rx.match(fn);
+        if ( fn.startsWith(fileName) && backupMatch.hasMatch() &&
+             ( backupMatch.capturedStart() == fileName.size() ) ) {
+            ret.append(file.filePath());
+        }
+    }
+    ret.sort();
+
+    return ret;
+}
+
+// if filePath matches .*\.~[0-9]+~, increment the backup number
+// else append .~1~
+static QString
+nextBackup(const QString & filePath)
+{
+    QRegularExpression rx( QString::fromUtf8("\\.~(\\d+)~\\z"), QRegularExpression::UseUnicodePropertiesOption );
+    QRegularExpressionMatch match = rx.match(filePath);
+    if ( match.hasMatch() ) {
+        int i = match.captured(1).toInt();
+        return filePath.left( match.capturedStart() ) + QString::fromUtf8(".~%1~").arg(i+1);
+    } else {
+        return filePath + QString::fromUtf8(".~1~");
+    }
+}
+
 QString
 Project::saveProjectInternal(const QString & path,
                              const QString & name,
@@ -595,20 +644,40 @@ Project::saveProjectInternal(const QString & path,
         }
     } // ofile
 
-    if ( QFile::exists(filePath) ) {
-        QFile::remove(filePath);
+    if (!autoSave) {
+        // rotate backups
+        int saveVersions = appPTR->getCurrentSettings()->saveVersions();
+        // find the list of ordered backups (including the file itself if it exists)
+        QStringList backups = findBackups(filePath);
+        // remove extra backups
+        for (int i = backups.size() - 1; i >= saveVersions; --i) {
+            if ( QFile::exists(backups.last()) ) {
+                QFile::remove(backups.last());
+            }
+            backups.removeLast();
+        }
+        // rename existing backups
+        for (int i = backups.size() - 1; i >= 0; --i) {
+            QFile::rename(backups.at(i), nextBackup(backups.at(i)));
+        }
     }
-    int nAttemps = 0;
 
-    while ( nAttemps < 10 && !fileCopy(tmpFilename, filePath) ) {
-        ++nAttemps;
+    if (!QFile::rename(tmpFilename, filePath)) {
+        // QFile::rename() may fail, e.g. if tmpFilename and filePath are not on the same partition
+        if (!QFile::copy(tmpFilename, filePath)) {
+            int nAttemps = 0;
+
+            while ( nAttemps < 10 && !fileCopy(tmpFilename, filePath) ) {
+                ++nAttemps;
+            }
+
+            if (nAttemps >= 10) {
+                throw std::runtime_error( "Failed to save to " + filePath.toStdString() );
+            }
+        }
+
+        QFile::remove(tmpFilename);
     }
-
-    if (nAttemps >= 10) {
-        throw std::runtime_error( "Failed to save to " + filePath.toStdString() );
-    }
-
-    QFile::remove(tmpFilename);
 
     if (!autoSave && updateProjectProperties) {
         QString lockFilePath = getLockAbsoluteFilePath();
@@ -692,9 +761,11 @@ Project::onAutoSaveTimerTriggered()
     bool canAutoSave = !hasNodeRendering() && !getApp()->isShowingDialog();
 
     if (canAutoSave) {
-        boost::shared_ptr<QFutureWatcher<void> > watcher = boost::make_shared<QFutureWatcher<void> >();
+        std::shared_ptr<QFutureWatcher<void> > watcher = std::make_shared<QFutureWatcher<void> >();
         QObject::connect( watcher.get(), SIGNAL(finished()), this, SLOT(onAutoSaveFutureFinished()) );
-        watcher->setFuture( QtConcurrent::run(this, &Project::autoSave) );
+        // Qt6 dropped the run(object, memberFunction) overload; a lambda is the
+        // one spelling both versions accept.
+        watcher->setFuture( QtConcurrent::run( [this]() { autoSave(); } ) );
         _imp->autoSaveFutures.push_back(watcher);
     } else {
         ///If the auto-save failed because a render is in progress, try every 2 seconds to auto-save.
@@ -709,7 +780,7 @@ Project::onAutoSaveFutureFinished()
     QFutureWatcherBase* future = qobject_cast<QFutureWatcherBase*>( sender() );
 
     assert(future);
-    for (std::list<boost::shared_ptr<QFutureWatcher<void> > >::iterator it = _imp->autoSaveFutures.begin(); it != _imp->autoSaveFutures.end(); ++it) {
+    for (std::list<std::shared_ptr<QFutureWatcher<void> > >::iterator it = _imp->autoSaveFutures.begin(); it != _imp->autoSaveFutures.end(); ++it) {
         if (it->get() == future) {
             _imp->autoSaveFutures.erase(it);
             break;
@@ -853,8 +924,10 @@ Project::initializeKnobs()
                                         "special frame rates.") );
     _imp->frameRate->setAnimationEnabled(false);
     _imp->frameRate->setDefaultValue(24);
+    _imp->frameRate->setMinimum(0.);
+    _imp->frameRate->setMaximum(std::numeric_limits<int>::max());
     _imp->frameRate->setDisplayMinimum(0.);
-    _imp->frameRate->setDisplayMaximum(50.);
+    _imp->frameRate->setDisplayMaximum(120.);
     page->addKnob(_imp->frameRate);
 
     _imp->gpuSupport = AppManager::createKnob<KnobChoice>( this, tr("GPU Rendering") );
@@ -869,9 +942,7 @@ Project::initializeKnobs()
     _imp->gpuSupport->setAnimationEnabled(false);
     _imp->gpuSupport->setHintToolTip( tr("Select when to activate GPU rendering for plug-ins. Note that if the OpenGL Rendering parameter in the Preferences/GPU Rendering is set to disabled then GPU rendering will not be activated regardless of that value.") );
     _imp->gpuSupport->setEvaluateOnChange(false);
-    if (!appPTR->getCurrentSettings()->isOpenGLRenderingEnabled()) {
-        _imp->gpuSupport->setAllDimensionsEnabled(false);
-    }
+    _imp->gpuSupport->setAllDimensionsEnabled(appPTR->getCurrentSettings()->isOpenGLRenderingEnabled());
     page->addKnob(_imp->gpuSupport);
 
     KnobPagePtr viewsPage = AppManager::createKnob<KnobPage>( this, tr("Views") );
@@ -939,6 +1010,7 @@ Project::initializeKnobs()
     colorSpaces.push_back(ChoiceOption("Linear","",""));
     colorSpaces.push_back(ChoiceOption("sRGB","",""));
     colorSpaces.push_back(ChoiceOption("Rec.709","",""));
+    colorSpaces.push_back(ChoiceOption("BT1886","",""));
 
     _imp->colorSpace8u = AppManager::createKnob<KnobChoice>( this, tr("8-Bit LUT") );
     _imp->colorSpace8u->setName("defaultColorSpace8u");
@@ -1128,7 +1200,7 @@ Project::getProjectDefaultFormat(Format *f) const
     ChoiceOption formatSpec = _imp->formatKnob->getActiveEntry();
     // use the label here, because the id does not contain the format specifications.
     // see ProjectPrivate::generateStringFromFormat()
-#pragma message WARN("TODO: can't we store the format somewhere instead of parsing the label???")
+//#pragma message WARN("TODO: can't we store the format somewhere instead of parsing the label???")
     if ( !formatSpec.label.empty() ) {
         ProjectPrivate::generateFormatFromString(QString::fromUtf8( formatSpec.label.c_str() ), f);
     } else {
@@ -1144,16 +1216,6 @@ Project::getProjectFormatAtIndex(int index,
     QMutexLocker l(&_imp->formatMutex);
 
     return _imp->findFormat(index, f);
-}
-
-bool
-Project::isOpenGLRenderActivated() const
-{
-    if (!appPTR->getCurrentSettings()->isOpenGLRenderingEnabled()) {
-        return false;
-    }
-    int index =  _imp->gpuSupport->getValue();
-    return index == 0 || (index == 2 && !getApp()->isBackground());
 }
 
 int
@@ -1437,7 +1499,7 @@ toLowerString(const std::string& str)
     return ret;
 }
 
-// replaced by boost::iequals(lhs, rhs)
+// replaced by StrUtils::iequals(lhs, rhs)
 static bool
 caseInsensitiveCompare(const std::string& lhs,
                        const std::string& rhs)
@@ -1460,7 +1522,7 @@ Project::createProjectViews(const std::vector<std::string>& views)
     for (std::size_t i = 0; i < views.size(); ++i) {
         bool found = false;
         for (std::list<std::string>::iterator it = pairs.begin(); it != pairs.end(); ++it) {
-            if ( boost::iequals(*it, views[i]) ) {
+            if ( StrUtils::iequals(*it, views[i]) ) {
                 found = true;
                 break;
             }
@@ -1577,6 +1639,7 @@ Project::onKnobValueChanged(KnobI* knob,
                             bool /*originatedFromMainThread*/)
 {
     bool ret = true;
+    bool shouldAutoSave = false;
 
     if ( knob == _imp->viewsList.get() ) {
         /**
@@ -1592,13 +1655,16 @@ Project::onKnobValueChanged(KnobI* knob,
             forceComputeInputDependentDataOnAllTrees();
         }
         Q_EMIT projectViewsChanged();
+        shouldAutoSave = true;
     } else if  ( knob == _imp->defaultLayersList.get() ) {
         if (reason == eValueChangedReasonUserEdited) {
             ///default layers change, notify all nodes so they rebuild their layers menus
             forceComputeInputDependentDataOnAllTrees();
         }
+        shouldAutoSave = true;
     } else if ( knob == _imp->setupForStereoButton.get() ) {
         setupProjectForStereo();
+        shouldAutoSave = true;
     } else if ( knob == _imp->formatKnob.get() ) {
         int index = _imp->formatKnob->getValue();
         Format frmt;
@@ -1623,22 +1689,47 @@ Project::onKnobValueChanged(KnobI* knob,
             ///Format change, hence probably the PAR so run getClipPreferences again
             forceComputeInputDependentDataOnAllTrees();
             Q_EMIT formatChanged(frmt);
+            shouldAutoSave = true;
         }
     } else if ( knob == _imp->addFormatKnob.get() ) {
         Q_EMIT mustCreateFormat();
     } else if ( knob == _imp->previewMode.get() ) {
         Q_EMIT autoPreviewChanged( _imp->previewMode->getValue() );
+        shouldAutoSave = true;
     }  else if ( knob == _imp->frameRate.get() ) {
         forceComputeInputDependentDataOnAllTrees();
+        shouldAutoSave = true;
     } else if ( knob == _imp->frameRange.get() ) {
         int first = _imp->frameRange->getValue(0);
         int last = _imp->frameRange->getValue(1);
         Q_EMIT frameRangeChanged(first, last);
+        shouldAutoSave = true;
     } else if ( knob == _imp->gpuSupport.get() ) {
 
         refreshOpenGLRenderingFlagOnNodes();
+        shouldAutoSave = true;
     } else {
         ret = false;
+    }
+
+    // others knobs that should trigger auto save
+    if ( knob == _imp->colorSpace8u.get() ||
+         knob == _imp->colorSpace16u.get() ||
+         knob == _imp->colorSpace32f.get() ||
+         knob == _imp->lockFrameRange.get() ||
+         knob == _imp->onProjectLoadCB.get() ||
+         knob == _imp->onProjectSaveCB.get() ||
+         knob == _imp->onProjectCloseCB.get() ||
+         knob == _imp->onNodeCreated.get() ||
+         knob == _imp->onNodeDeleted.get() ||
+         knob == _imp->envVars.get() )
+    {
+        shouldAutoSave = true;
+    }
+
+    // auto save on project knobs change
+    if (shouldAutoSave) {
+        _imp->lastAutoSave = QDateTime();
     }
 
     return ret;
@@ -1647,14 +1738,9 @@ Project::onKnobValueChanged(KnobI* knob,
 void
 Project::refreshOpenGLRenderingFlagOnNodes()
 {
-    bool activated = appPTR->getCurrentSettings()->isOpenGLRenderingEnabled();
-    if (!activated) {
-        _imp->gpuSupport->setAllDimensionsEnabled(false);
-    } else {
-        _imp->gpuSupport->setAllDimensionsEnabled(true);
-        int index =  _imp->gpuSupport->getValue();
-        activated = index == 0 || (index == 2 && !getApp()->isBackground());
-    }
+    _imp->gpuSupport->setAllDimensionsEnabled(appPTR->getCurrentSettings()->isOpenGLRenderingEnabled());
+
+    const bool activated = isGPURenderingEnabledInProject();
     NodesList allNodes;
     getNodes_recursive(allNodes, false);
     for (NodesList::iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
@@ -1880,7 +1966,7 @@ public:
     }
 };
 
-typedef boost::shared_ptr<ResetWatcherArgs> ResetWatcherArgsPtr;
+typedef std::shared_ptr<ResetWatcherArgs> ResetWatcherArgsPtr;
 
 void
 Project::reset(bool aboutToQuit, bool blocking)
@@ -1892,7 +1978,7 @@ Project::reset(bool aboutToQuit, bool blocking)
     }
 
     if (!blocking) {
-        ResetWatcherArgsPtr args = boost::make_shared<ResetWatcherArgs>();
+        ResetWatcherArgsPtr args = std::make_shared<ResetWatcherArgs>();
         args->aboutToQuit = aboutToQuit;
         if ( !quitAnyProcessingForAllNodes(this, args) ) {
             doResetEnd(aboutToQuit);
@@ -2000,7 +2086,7 @@ Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver,
     if ( nodesToWatch.empty() ) {
         return false;
     }
-    NodeRenderWatcherPtr renderWatcher = boost::make_shared<NodeRenderWatcher>(nodesToWatch);
+    NodeRenderWatcherPtr renderWatcher = std::make_shared<NodeRenderWatcher>(nodesToWatch);
     QObject::connect(renderWatcher.get(), SIGNAL(taskFinished(int,GenericWatcherCallerArgsPtr)), this, SLOT(onQuitAnyProcessingWatcherTaskFinished(int,GenericWatcherCallerArgsPtr)), Qt::UniqueConnection);
     ProjectPrivate::RenderWatcher p;
     p.receiver = receiver;
@@ -2179,63 +2265,9 @@ Project::getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const
 std::string
 Project::escapeXML(const std::string &istr)
 {
-    std::string str( istr );
-
-    for (size_t i = 0; i < str.size(); ++i) {
-        switch (str[i]) {
-        case '<':
-            str.replace(i, 1, "&lt;");
-            i += 3;
-            break;
-
-        case '>':
-            str.replace(i, 1, "&gt;");
-            i += 3;
-            break;
-        case '&':
-            str.replace(i, 1, "&amp;");
-            i += 4;
-            break;
-        case '"':
-            str.replace(i, 1, "&quot;");
-            i += 5;
-            break;
-        case '\'':
-            str.replace(i, 1, "&apos;");
-            i += 5;
-            break;
-        default: {
-            unsigned char c = (unsigned char)(str[i]);
-            // Escape even the whitespace characters '\n' '\r' '\t', although they are valid
-            // XML, because they would be converted to space when re-read.
-            // See http://www.w3.org/TR/xml/#AVNormalize
-            if ( ( ( 0x01 <= c) && ( c <= 0x1f) ) || ( ( 0x7F <= c) && ( c <= 0x9F) ) ) {
-                // these characters must be escaped in XML 1.1
-                // http://www.w3.org/TR/xml/#sec-references
-                std::string ns = "&#x";
-                if (c > 0xf) {
-                    int d = c / 0x10;
-                    ns += ('0' + d);     // d cannot be more than 9 (because c <= 0x9F)
-                }
-                int d = c & 0xf;
-                ns += d < 10 ? ('0' + d) : ('A' + d - 10);
-                ns += ';';
-                str.replace(i, 1, ns);
-                i += ns.size() + 1;
-            } else if (0xC0 <= c && c < 0xE0) { // 2-byte UTF-8
-                i += 1;
-            } else if (0xE0 <= c && c < 0xF0) { // 3-byte UTF-8
-                i += 2;
-            } else if (0xF0 <= c && c < 0xF8) { // 4-byte UTF-8
-                i += 3;
-            }
-
-            break;
-        }
-        }
-    }
-    assert( str == OFX::XML::escape(istr) ); // check that this escaped string is consistent with the one in HostSupport
-    return str;
+    // Same escaping as OFX HostSupport (UTF-8 aware, '\t' '\n' '\r' kept as character references,
+    // characters that are illegal in XML 1.0 replaced by U+FFFD)
+    return OFX::XML::escape(istr);
 } // Project::escapeXML
 
 std::string
@@ -2265,7 +2297,7 @@ Project::unescapeXML(const std::string &istr)
             } else if ( !str.compare(i + 1, 1, "#") ) {
                 size_t end = str.find_first_of(";", i + 2);
                 if (end == std::string::npos) {
-                    // malformed XML
+                    // malformed XML: keep the rest as is
                     return str;
                 }
                 char *tail = NULL;
@@ -2276,13 +2308,33 @@ Project::unescapeXML(const std::string &istr)
 
                 errno = 0;
                 unsigned long cp = std::strtoul(head, &tail, hex ? 16 : 10);
-                bool fail = errno || (tail - &str[0]) != (long)end || cp > 0xff; // only handle 0x01-0xff
+                bool fail = errno || (tail - &str[0]) != (long)end || cp > 0x10ffff;
                 errno = errno_save;
                 if (fail) {
-                    return str;
+                    // not a valid character reference: leave it, and go on with the rest of the string
+                    continue;
                 }
-                // replace from '&' to ';' (thus the +1)
-                str.replace(i, tail - head + 1 + prefix, 1, (char)cp);
+                if (cp <= 0xff) {
+                    // 0x01-0xff: the byte itself (how Natron wrote these, see escapeXML)
+                    // replace from '&' to ';' (thus the +1)
+                    str.replace(i, tail - head + 1 + prefix, 1, (char)cp);
+                } else {
+                    // e.g. &#xFFFD; written by OFX::XML::escape: UTF-8 encode the code point
+                    std::string utf8;
+                    if (cp < 0x800) {
+                        utf8 += (char)(0xC0 | (cp >> 6));
+                    } else if (cp < 0x10000) {
+                        utf8 += (char)(0xE0 | (cp >> 12));
+                        utf8 += (char)(0x80 | ( (cp >> 6) & 0x3F ));
+                    } else {
+                        utf8 += (char)(0xF0 | (cp >> 18));
+                        utf8 += (char)(0x80 | ( (cp >> 12) & 0x3F ));
+                        utf8 += (char)(0x80 | ( (cp >> 6) & 0x3F ));
+                    }
+                    utf8 += (char)(0x80 | (cp & 0x3F));
+                    str.replace(i, tail - head + 1 + prefix, utf8);
+                    i += utf8.size() - 1; // the loop's ++i skips the last byte
+                }
             }
         }
     }
@@ -2742,14 +2794,21 @@ Project::extractTreesFromNodes(const NodesList& nodes,
         if (isOutput) {
             NodesTree tree;
             tree.output.node = *it;
+            // An output node appears once per link in getGuiOutputs(), and it may be connected
+            // to this node through several of its inputs: record every (input number, output node) link once.
             const NodesWList& outputs = (*it)->getGuiOutputs();
+            std::set<NodePtr> visitedOutputs;
             for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
                 NodePtr output = it2->lock();
-                if (!output) {
+                if ( !output || !visitedOutputs.insert(output).second ) {
                     continue;
                 }
-                int idx = output->inputIndex(*it);
-                tree.output.outputs.push_back( std::make_pair(idx, *it2) );
+                int nInputs = output->getNInputs();
+                for (int idx = 0; idx < nInputs; ++idx) {
+                    if (output->getRealInput(idx) == *it) {
+                        tree.output.outputs.push_back( std::make_pair(idx, *it2) );
+                    }
+                }
             }
 
             const std::vector<NodeWPtr>& inputs = (*it)->getGuiInputs();

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,12 +31,14 @@
 #include <QPainter>
 #include <QStyleOption>
 #include "Gui/GuiMacros.h"
+// clang-format off
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_ON(deprecated-register)
+// clang-format on
 
 #include "Gui/GuiApplicationManager.h"
 #include "Engine/Settings.h"

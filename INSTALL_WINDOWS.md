@@ -3,11 +3,9 @@ Instructions for installing Natron from sources on Microsoft Windows
 
 # Installing with MSYS2
 
-[MSYS2](https://sourceforge.net/projects/msys2/) is a unix-like
-toolchain that can be used to build Windows applications. It provides
-most dependencies required by Natron.
+[MSYS2](https://sourceforge.net/projects/msys2/) is a unix-like toolchain that can be used to build Windows applications on Windows 8.1/10/11. It provides everything required by Natron and the OFX plug-ins.
 
-Follow the [Windows SDK](tools/MINGW-packages/README.md) instructions to setup MSYS2 and install the required MSYS packages.
+Follow the [SDK instructions](tools/MINGW-packages/README.md) to setup your system for building and developing Natron and/or the OFX plug-ins. The rest of this document can be ignored.
 
 ### OpenFX
 

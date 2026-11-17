@@ -1,16 +1,16 @@
 #!/bin/bash
 
 # Install ImageMagick6
-# see http://www.linuxfromscratch.org/blfs/view/cvs/general/imagemagick6.html
-MAGICK_VERSION=6.9.12-10
+# see http://www.linuxfromscratch.org/blfs/view/svn/general/imagemagick6.html
+MAGICK_VERSION=6.9.12-84
 if [ "${CENTOS:-0}" = 6 ] && [ -z "${DTS+x}" ]; then
     MAGICK_VERSION=6.9.10-78 # 6.9.10-79 and later fail to compile on CentOS6 with "undefined reference to `aligned_alloc'"
 fi
 MAGICK_VERSION_SHORT=${MAGICK_VERSION%-*}
 #MAGICK_TAR="ImageMagick6-${MAGICK_VERSION}.tar.gz"
 #MAGICK_SITE="https://gitlab.com/ImageMagick/ImageMagick6/-/archive/${MAGICK_VERSION}"
-MAGICK_TAR="ImageMagick-${MAGICK_VERSION}.tar.gz"
-MAGICK_SITE="https://imagemagick.org/download/releases"
+MAGICK_TAR="ImageMagick-${MAGICK_VERSION}.tar.xz"
+MAGICK_SITE="https://imagemagick.org/archive/releases"
 if download_step; then
     download "$MAGICK_SITE" "$MAGICK_TAR"
 fi
@@ -30,8 +30,10 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/Magick++.pc"
     # the following patch was integrated, see https://github.com/ImageMagick/ImageMagick/issues/1488
     #patch -p0 -i "$INC_PATH/patches/ImageMagick/pango-align-hack.diff"
 
-    # backport by @rodlie of xcf (GIMP) format from IM7:
-    patch -p0 -i "$INC_PATH/patches/ImageMagick/ImageMagick-6.9.10-gimp210.diff"
+    if version_gt "6.9.12.76" "${MAGICK_VERSION//-/.}"; then
+        # backport by @rodlie of xcf (GIMP) format from IM7:
+        patch -p0 -i "$INC_PATH/patches/ImageMagick/ImageMagick-6.9.10-gimp210.diff"
+    fi
 
     MAGICK_CFLAGS="-DMAGICKCORE_EXCLUDE_DEPRECATED=1"
     if [ -f /etc/centos-release ] && grep -q "release 6"  /etc/centos-release; then

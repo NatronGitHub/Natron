@@ -1,0 +1,19 @@
+--- a/src/lib/OpenEXR/ImfAttribute.h
++++ b/src/lib/OpenEXR/ImfAttribute.h
+@@ -215,14 +215,14 @@
+ }
+ 
+ template <class T>
+-inline T&
++T&
+ TypedAttribute<T>::value ()
+ {
+     return _value;
+ }
+ 
+ template <class T>
+-inline const T&
++const T&
+ TypedAttribute<T>::value () const
+ {
+     return _value;

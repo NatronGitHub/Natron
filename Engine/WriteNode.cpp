@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,14 +29,9 @@
 
 #include "Global/QtCompat.h"
 
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/algorithm/string/predicate.hpp> // iequals
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// clang-format off
 GCC_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
@@ -46,11 +41,12 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/version.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
+// clang-format on
 #endif
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QCoreApplication>
+#include <QCoreApplication>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -174,10 +170,10 @@ WriteNode::isBundledWriter(const std::string& pluginID,
 {
     if (wasProjectCreatedWithLowerCaseIDs) {
         // Natron 1.x has plugin ids stored in lowercase
-        return ( boost::iequals(pluginID, PLUGINID_OFX_WRITEOIIO) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_WRITEFFMPEG) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_WRITEPFM) ||
-                 boost::iequals(pluginID, PLUGINID_OFX_WRITEPNG) );
+        return ( StrUtils::iequals(pluginID, PLUGINID_OFX_WRITEOIIO) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_WRITEFFMPEG) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_WRITEPFM) ||
+                 StrUtils::iequals(pluginID, PLUGINID_OFX_WRITEPNG) );
     }
 
     return (pluginID == PLUGINID_OFX_WRITEOIIO ||
@@ -385,7 +381,7 @@ WriteNodePrivate::cloneGenericKnobs()
                         std::string optionID = choiceData->_choiceString;
                         // first, try to get the id the easy way ( see choiceMatch() )
                         int id = isChoice->choiceRestorationId(choiceSerialized, optionID);
-#pragma message WARN("TODO: choice id filters")
+//#pragma message WARN("TODO: choice id filters")
                         //if (id < 0) {
                         //    // no luck, try the filters
                         //    filterKnobChoiceOptionCompat(getPluginID(), serialization.getPluginMajorVersion(), serialization.getPluginMinorVersion(), projectInfos.vMajor, projectInfos.vMinor, projectInfos.vRev, serializedName, &optionID);
@@ -473,7 +469,7 @@ WriteNodePrivate::destroyWriteNode()
                      // Don't save the secret state otherwise some knobs could be invisible when cloning the serialization even if we change format
                      (*it)->setSecret(false);
                      }*/
-                    KnobSerializationPtr s = boost::make_shared<KnobSerialization>(*it);
+                    KnobSerializationPtr s = std::make_shared<KnobSerialization>(*it);
                     serialized.push_back(s);
                 }
                 if (!isGeneric) {
@@ -502,7 +498,7 @@ WriteNodePrivate::destroyWriteNode()
             int n ;
             iArchive >> boost::serialization::make_nvp("numItems", n);
             for (int i = 0; i < n; ++i) {
-                KnobSerializationPtr s = boost::make_shared<KnobSerialization>();
+                KnobSerializationPtr s = std::make_shared<KnobSerialization>();
                 iArchive >> boost::serialization::make_nvp("item", *s);
                 genericKnobsSerialization.push_back(s);
             }
@@ -517,7 +513,7 @@ WriteNodePrivate::destroyWriteNode()
 
     //This will remove the GUI of non generic parameters
     _publicInterface->recreateKnobs(true);
-#pragma message WARN("TODO: if Gui, refresh pluginID, version, help tooltip in DockablePanel to reflect embedded node change")
+//#pragma message WARN("TODO: if Gui, refresh pluginID, version, help tooltip in DockablePanel to reflect embedded node change")
 
     if (embeddedNode) {
         embeddedNode->destroyNode(true, false);
@@ -534,7 +530,7 @@ WriteNodePrivate::destroyWriteNode()
 void
 WriteNodePrivate::createDefaultWriteNode()
 {
-    NodeGroupPtr isNodeGroup = boost::dynamic_pointer_cast<NodeGroup>( _publicInterface->shared_from_this() );
+    NodeGroupPtr isNodeGroup = std::dynamic_pointer_cast<NodeGroup>( _publicInterface->shared_from_this() );
     CreateNodeArgs args( WRITE_NODE_DEFAULT_WRITER, isNodeGroup );
     args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
     args.setProperty(kCreateNodeArgsPropOutOfProject, true);
@@ -649,7 +645,7 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
 {
     QString qpattern = QString::fromUtf8( filename.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
-    NodeGroupPtr isNodeGroup = boost::dynamic_pointer_cast<NodeGroup>( _publicInterface->shared_from_this() );
+    NodeGroupPtr isNodeGroup = std::dynamic_pointer_cast<NodeGroup>( _publicInterface->shared_from_this() );
     std::string readerPluginID = appPTR->getReaderPluginIDForFileType(ext);
     NodePtr writeNode = embeddedPlugin.lock();
 
@@ -719,7 +715,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         return;
     }
 
-    NodeGroupPtr isNodeGroup = boost::dynamic_pointer_cast<NodeGroup>( _publicInterface->shared_from_this() );
+    NodeGroupPtr isNodeGroup = std::dynamic_pointer_cast<NodeGroup>( _publicInterface->shared_from_this() );
     NodePtr input = inputNode.lock(), output = outputNode.lock();
     //NodePtr maskInput;
     assert( (input && output) || (!input && !output) );
@@ -825,7 +821,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
 
         // Set the filename value
         if (writeNode) {
-            KnobOutputFilePtr fileKnob = boost::dynamic_pointer_cast<KnobOutputFile>(writeNode->getKnobByName(kOfxImageEffectFileParamName));
+            KnobOutputFilePtr fileKnob = std::dynamic_pointer_cast<KnobOutputFile>(writeNode->getKnobByName(kOfxImageEffectFileParamName));
             if (fileKnob) {
                 fileKnob->setValue(filename);
             }
@@ -882,11 +878,11 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
 
     //This will refresh the GUI with this Reader specific parameters
     _publicInterface->recreateKnobs(true);
-#pragma message WARN("TODO: if Gui, refresh pluginID, version, help tooltip in DockablePanel to reflect embedded node change")
+//#pragma message WARN("TODO: if Gui, refresh pluginID, version, help tooltip in DockablePanel to reflect embedded node change")
 
     KnobIPtr knob = writeNode ? writeNode->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
     if (knob) {
-        outputFileKnob = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
+        outputFileKnob = std::dynamic_pointer_cast<KnobOutputFile>(knob);
     }
 } // WriteNodePrivate::createWriteNode
 
@@ -1094,7 +1090,7 @@ WriteNode::onEffectCreated(bool mayCreateFileDialog,
     QObject::connect(engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onSequenceRenderFinished()));
 
     if ( !_imp->renderButtonKnob.lock() ) {
-        _imp->renderButtonKnob = boost::dynamic_pointer_cast<KnobButton>( getKnobByName(kNatronWriteParamStartRender) );
+        _imp->renderButtonKnob = std::dynamic_pointer_cast<KnobButton>( getKnobByName(kNatronWriteParamStartRender) );
         assert( _imp->renderButtonKnob.lock() );
     }
 
@@ -1141,7 +1137,7 @@ WriteNode::onEffectCreated(bool mayCreateFileDialog,
 void
 WriteNode::onKnobsAboutToBeLoaded(const NodeSerializationPtr& serialization)
 {
-    _imp->renderButtonKnob = boost::dynamic_pointer_cast<KnobButton>( getKnobByName(kNatronWriteParamStartRender) );
+    _imp->renderButtonKnob = std::dynamic_pointer_cast<KnobButton>( getKnobByName(kNatronWriteParamStartRender) );
     assert( _imp->renderButtonKnob.lock() );
 
     assert(serialization);

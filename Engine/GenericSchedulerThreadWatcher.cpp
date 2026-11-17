@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,8 +27,8 @@
 
 #include "GenericSchedulerThreadWatcher.h"
 
-#include <QtCore/QMetaType>
-#include <QtCore/QWaitCondition>
+#include <QMetaType>
+#include <QWaitCondition>
 
 #include "Engine/GenericSchedulerThread.h"
 #include "Engine/OutputSchedulerThread.h"
@@ -116,7 +116,7 @@ GenericWatcher::stopWatching()
             _imp->startRequestsCond.wakeOne();
         }
         while (_imp->mustQuit) {
-            _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
+            _imp->mustQuitCond.wait(quitLocker.mutex());
         }
     }
 
@@ -160,7 +160,7 @@ GenericWatcher::run()
         {
             QMutexLocker l(&_imp->startRequestsMutex);
             while (_imp->startRequests <= 0) {
-                _imp->startRequestsCond.wait(&_imp->startRequestsMutex);
+                _imp->startRequestsCond.wait(l.mutex());
             }
             ///We got the request, reset it back to 0
             _imp->startRequests = 0;
@@ -180,7 +180,7 @@ GenericWatcher::scheduleBlockingTask(int taskID,
     }
 
     {
-        QMutexLocker(&_imp->tasksMutex);
+        QMutexLocker k(&_imp->tasksMutex);
         GenericWatcherPrivate::Task t;
         t.id = taskID;
         t.args = args;

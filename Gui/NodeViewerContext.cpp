@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -59,6 +59,8 @@
 
 NATRON_NAMESPACE_ENTER
 
+typedef std::map<KnobIWPtr, KnobGuiPtr, std::owner_less<KnobIWPtr>> KnobIsMap;
+
 struct NodeViewerContextPrivate
 {
     Q_DECLARE_TR_FUNCTIONS(NodeViewerContext)
@@ -68,7 +70,7 @@ public:
     NodeGuiWPtr node;
     ViewerGL* viewer;
     ViewerTab* viewerTab;
-    std::map<KnobIWPtr, KnobGuiPtr> knobsMapping;
+    KnobIsMap knobsMapping;
     QString currentRole, currentTool;
     QToolBar* toolbar;
     std::map<QString, ViewerToolButton*> toolButtons;
@@ -159,6 +161,8 @@ NodeViewerContext::createGui()
     QObject::connect( _imp->viewer, SIGNAL(selectionCleared()), this, SLOT(onViewerSelectionCleared()), Qt::UniqueConnection );
     NodeGuiPtr node = _imp->getNode();
     QObject::connect( node.get(), SIGNAL(settingsPanelClosed(bool)), this, SLOT(onNodeSettingsPanelClosed(bool)), Qt::UniqueConnection );
+    QObject::connect( node.get(), SIGNAL(settingsPanelMinimized()), this, SLOT(onNodeSettingsPanelMinimized()), Qt::UniqueConnection );
+    QObject::connect( node.get(), SIGNAL(settingsPanelMaximized()), this, SLOT(onNodeSettingsPanelMaximized()), Qt::UniqueConnection );
     KnobsVec knobsOrdered = node->getNode()->getEffectInstance()->getViewerUIKnobs();
 
 
@@ -238,7 +242,7 @@ addSpacer(QBoxLayout* layout)
     line->setFrameShape(QFrame::VLine);
     line->setFrameShadow(QFrame::Raised);
     QPalette palette;
-    palette.setColor(QPalette::Foreground, Qt::black);
+    palette.setColor(QPalette::WindowText, Qt::black);
     line->setPalette(palette);
     layout->addWidget(line);
     layout->addSpacing( TO_DPIX(5) );
@@ -266,6 +270,18 @@ NodeViewerContext::onNodeSettingsPanelClosed(bool closed)
         // Set the viewer interface for this plug-in to be the one of this node
         _imp->viewerTab->setPluginViewerInterface(node);
     }
+}
+
+void
+NodeViewerContext::onNodeSettingsPanelMinimized()
+{
+    return onNodeSettingsPanelClosed(true);
+}
+
+void
+NodeViewerContext::onNodeSettingsPanelMaximized()
+{
+    return onNodeSettingsPanelClosed(false);
 }
 
 int
@@ -462,7 +478,7 @@ NodeViewerContext::pushUndoCommand(QUndoCommand* cmd)
 KnobGuiPtr
 NodeViewerContext::getKnobGui(const KnobIPtr& knob) const
 {
-    std::map<KnobIWPtr, KnobGuiPtr>::const_iterator found =  _imp->knobsMapping.find(knob);
+    KnobIsMap::const_iterator found =  _imp->knobsMapping.find(knob);
 
     if ( found == _imp->knobsMapping.end() ) {
         return KnobGuiPtr();

@@ -10,6 +10,7 @@ Managing Projects
    compositing-projects-setup
    compositing-projects-proxy
    compositing-projects-readers
+   compositing-projects-render
    compositing-projects-caching
    compositing-projects-framerange
 

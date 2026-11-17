@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,24 +30,16 @@
 #include <stdexcept>
 #include <cassert>
 #include <cstring> // for std::memcpy
-#include <cfloat> // DBL_MAX
-
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/make_shared.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind/bind.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#include <limits>
 
 CLANG_DIAG_OFF(deprecated)
-#include <QtCore/QtGlobal>
+#include <QtGlobal>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
-#include <QtCore/QFutureWatcher>
-#include <QtCore/QMutex>
-#include <QtCore/QWaitCondition>
-#include <QtCore/QCoreApplication>
-#include <QtCore/QThreadPool>
+#include <QFutureWatcher>
+#include <QMutex>
+#include <QWaitCondition>
+#include <QCoreApplication>
+#include <QThreadPool>
 CLANG_DIAG_ON(deprecated)
 
 #include "Engine/AppInstance.h"
@@ -74,8 +66,6 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Utils.h"
 #include "Engine/ViewIdx.h"
 
-using namespace boost::placeholders;
-
 #ifndef M_LN2
 #define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
 #endif
@@ -85,7 +75,7 @@ using namespace boost::placeholders;
 NATRON_NAMESPACE_ENTER
 
 using std::make_pair;
-using boost::shared_ptr;
+using std::shared_ptr;
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
@@ -96,8 +86,8 @@ struct MinMaxVal {
     {
     }
     MinMaxVal()
-    : min(DBL_MAX)
-    , max(-DBL_MAX)
+    : min(std::numeric_limits<double>::max())
+    , max(std::numeric_limits<double>::lowest())
     {
     }
 
@@ -149,6 +139,9 @@ ViewerInstance::lutFromColorspace(ViewerColorSpaceEnum cs)
         break;
     case eViewerColorSpaceRec709:
         lut = Color::LutManager::Rec709Lut();
+        break;
+    case eViewerColorSpaceBT1886:
+        lut = Color::LutManager::BT1886Lut();
         break;
     case eViewerColorSpaceLinear:
     default:
@@ -207,7 +200,7 @@ ViewerInstance::~ViewerInstance()
 RenderEngine*
 ViewerInstance::createRenderEngine()
 {
-    ViewerInstancePtr thisShared = boost::dynamic_pointer_cast<ViewerInstance>( shared_from_this() );
+    ViewerInstancePtr thisShared = std::dynamic_pointer_cast<ViewerInstance>( shared_from_this() );
 
     return new ViewerRenderEngine(thisShared);
 }
@@ -444,7 +437,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
     NodePtr thisNode = getNode();
     ViewerArgsPtr args[2];
     for (int i = 0; i < 2; ++i) {
-        args[i] = boost::make_shared<ViewerArgs>();
+        args[i] = std::make_shared<ViewerArgs>();
         if ( (i == 1) && (_imp->uiContext->getCompositingOperator() == eViewerCompositingOperatorNone) ) {
             break;
         }
@@ -460,7 +453,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
             roi.x2 = args[i]->params->textureRect.x2;
             roi.y2 = args[i]->params->textureRect.y2;
            }
-           status[i] = EffectInstance::computeRequestPass(time, view, args[i]->params->mipMapLevel, roi, thisNode, request);
+           status[i] = EffectInstance::computeRequestPass(time, view, args[i]->params->mipmapLevel, roi, thisNode, request);
            if (status[i] == eStatusFailed) {
             continue;
            }*/
@@ -844,7 +837,7 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
 
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
-        outArgs->mipmapLevelWithoutDraft = (unsigned int)_imp->viewerMipMapLevel;
+        outArgs->mipmapLevelWithoutDraft = _imp->viewerMipmapLevel;
     }
 
     assert(_imp->uiContext);
@@ -861,20 +854,20 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     if (isFullFrameProcessingEnabled()) {
         outArgs->mipmapLevelWithoutDraft = 0;
     } else {
-        int zoomMipMapLevel;
+        unsigned int zoomMipmapLevel;
         {
             double closestPowerOf2 = zoomFactor >= 1 ? 1 : ipow( 2, (int)-std::ceil(std::log(zoomFactor) / M_LN2) );
-            zoomMipMapLevel = std::log(closestPowerOf2) / M_LN2;
+            zoomMipmapLevel = std::log(closestPowerOf2) / M_LN2;
         }
-        outArgs->mipmapLevelWithoutDraft = (unsigned int)std::max( (int)outArgs->mipmapLevelWithoutDraft, (int)zoomMipMapLevel );
+        outArgs->mipmapLevelWithoutDraft = std::max(outArgs->mipmapLevelWithoutDraft, zoomMipmapLevel);
     }
-    outArgs->mipMapLevelWithDraft = outArgs->mipmapLevelWithoutDraft;
+    outArgs->mipmapLevelWithDraft = outArgs->mipmapLevelWithoutDraft;
 
     outArgs->draftModeEnabled = getApp()->isDraftRenderEnabled();
 
     // If draft mode is enabled, compute the mipmap level according to the auto-proxy setting in the preferences
     if ( outArgs->draftModeEnabled && appPTR->getCurrentSettings()->isAutoProxyEnabled() ) {
-        unsigned int autoProxyLevel = appPTR->getCurrentSettings()->getAutoProxyMipMapLevel();
+        unsigned int autoProxyLevel = appPTR->getCurrentSettings()->getAutoProxyMipmapLevel();
         if (zoomFactor > 1) {
             //Decrease draft mode at each inverse mipmaplevel level taken
             unsigned int invLevel = Image::getLevelFromScale(1. / zoomFactor);
@@ -884,7 +877,7 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
                 autoProxyLevel = 0;
             }
         }
-        outArgs->mipMapLevelWithDraft = (unsigned int)std::max( (int)outArgs->mipmapLevelWithoutDraft, (int)autoProxyLevel );
+        outArgs->mipmapLevelWithDraft = std::max(outArgs->mipmapLevelWithoutDraft, autoProxyLevel);
     }
 
 
@@ -904,7 +897,7 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     // Did the user enabled the user roi from the viewer UI?
     outArgs->userRoIEnabled = _imp->uiContext->isUserRegionOfInterestEnabled();
 
-    outArgs->params = boost::make_shared<UpdateViewerParams>();
+    outArgs->params = std::make_shared<UpdateViewerParams>();
 
     // The PAR of the input image
     outArgs->params->pixelAspectRatio = outArgs->activeInputToRender->getAspectRatio(-1);
@@ -961,7 +954,7 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     }
 
     // Flag that we are going to render
-    outArgs->isRenderingFlag = boost::make_shared<RenderingFlagSetter>( getNode() );
+    outArgs->isRenderingFlag = std::make_shared<RenderingFlagSetter>( getNode() );
 } // ViewerInstance::setupMinimalUpdateViewerParams
 
 void
@@ -972,7 +965,7 @@ ViewerInstance::getRegionsOfInterest(double /*time*/,
                                      ViewIdx /*view*/,
                                      RoIMap* ret)
 {
-#pragma message WARN("2.2: fix this and only add RoI for thread local input")
+//#pragma message WARN("2.2: fix this and only add RoI for thread local input")
     for (int i = 0; i < getNInputs(); ++i) {
         EffectInstancePtr input = getInput(i);
         if (input) {
@@ -1008,10 +1001,10 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
             QMutexLocker k(&_imp->viewerParamsMutex);
             partialRects = _imp->partialUpdateRects;
             for (std::list<RectD>::iterator it = partialRects.begin(); it != partialRects.end(); ++it) {
-                RectI pixelRect;
-                it->toPixelEnclosing(mipmapLevel, outArgs->params->pixelAspectRatio, &pixelRect);
+                RectI pixelRect = it->toPixelEnclosing(mipmapLevel, outArgs->params->pixelAspectRatio);
                 ///Intersect to the RoI
-                if ( pixelRect.intersect(outArgs->params->roi, &pixelRect) ) {
+                pixelRect.clip(outArgs->params->roi);
+                if ( !pixelRect.isNull() ) {
                     tile.rect.set(pixelRect);
                     tile.rectRounded  = pixelRect;
                     tile.rect.closestPo2 = 1 << mipmapLevel;
@@ -1070,7 +1063,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
 
 
     outArgs->params->rod = rod;
-    outArgs->params->mipMapLevel = mipmapLevel;
+    outArgs->params->mipmapLevel = mipmapLevel;
 
     std::string inputToRenderName = outArgs->activeInputToRender->getNode()->getScriptName_mt_safe();
 
@@ -1167,10 +1160,8 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
     // zillions of textures in the cache, each a few pixels different.
     const bool useTextureCache = !outArgs->userRoIEnabled && !outArgs->autoContrast && !rotoPaintNode.get() && !outArgs->isDoingPartialUpdates;
 
-    // If it's eSupportsMaybe and mipMapLevel!=0, don't forget to update
+    // If it's eSupportsMaybe and mipmapLevel!=0, don't forget to update
     // this after the first call to getRegionOfDefinition().
-    const RenderScale scaleOne(1.);
-
     // This may be eSupportsMaybe
     EffectInstance::SupportsEnum supportsRS = outArgs->activeInputToRender->supportsRenderScaleMaybe();
 
@@ -1179,9 +1170,8 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
     const int nLookups = outArgs->draftModeEnabled ? 2 : 1;
 
     for (int lookup = 0; lookup < nLookups; ++lookup) {
-        const unsigned mipMapLevel = lookup == 0 ? outArgs->mipmapLevelWithoutDraft : outArgs->mipMapLevelWithDraft;
-        RenderScale scale;
-        scale.x = scale.y = Image::getScaleFromMipMapLevel(mipMapLevel);
+        const unsigned mipmapLevel = lookup == 0 ? outArgs->mipmapLevelWithoutDraft : outArgs->mipmapLevelWithDraft;
+        RenderScale scale = RenderScale::fromMipmapLevel(mipmapLevel);
 
 
         RectD rod;
@@ -1204,7 +1194,7 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
         } else {
             stat = outArgs->activeInputToRender->getRegionOfDefinition_public(outArgs->activeInputHash,
                                                                               outArgs->params->time,
-                                                                              supportsRS ==  eSupportsNo ? scaleOne : scale,
+                                                                              supportsRS ==  eSupportsNo ? RenderScale::identity : scale,
                                                                               outArgs->params->view,
                                                                               &rod,
                                                                               0 /*isProjectFormat*/);
@@ -1215,7 +1205,7 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
         }
 
         // update scale after the first call to getRegionOfDefinition
-        if ( (supportsRS == eSupportsMaybe) && (mipMapLevel != 0) ) {
+        if ( (supportsRS == eSupportsMaybe) && (mipmapLevel != 0) ) {
             supportsRS = (outArgs->activeInputToRender)->supportsRenderScaleMaybe();
         }
 
@@ -1226,7 +1216,7 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
         Q_UNUSED(isRodProjectFormat);
 
         // Ok we go the RoD, we can actually compute the RoI and look-up the cache
-        ViewerRenderRetCode retCode = getViewerRoIAndTexture(rod, viewerHash, useTextureCache, lookup == 1, mipMapLevel, stats, outArgs);
+        ViewerRenderRetCode retCode = getViewerRoIAndTexture(rod, viewerHash, useTextureCache, lookup == 1, mipmapLevel, stats, outArgs);
         if (retCode != eViewerRenderRetCodeRender) {
             return retCode;
         }
@@ -1256,7 +1246,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
 {
     // Just redraw if the viewer is paused
     if ( isViewerPaused(textureIndex) ) {
-        outArgs->params = boost::make_shared<UpdateViewerParams>();
+        outArgs->params = std::make_shared<UpdateViewerParams>();
         outArgs->params->isViewerPaused = true;
         outArgs->params->time = time;
         outArgs->params->setUniqueID(textureIndex);
@@ -1318,22 +1308,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
     ViewerParallelRenderArgsSetterPtr frameArgs;
 
     if (useTLS) {
-#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
-        frameArgs.reset( new ViewerParallelRenderArgsSetter(inArgs.params->time,
-                                                            inArgs.params->view,
-                                                            !isSequentialRender,
-                                                            isSequentialRender,
-                                                            inArgs.params->abortInfo,
-                                                            getNode(),
-                                                            inArgs.params->textureIndex,
-                                                            getTimeline().get(),
-                                                            false,
-                                                            rotoPaintNode,
-                                                            inArgs.activeInputToRender->getNode(),
-                                                            inArgs.draftModeEnabled,
-                                                            stats) );
-#else
-        frameArgs = boost::make_shared<ViewerParallelRenderArgsSetter>(inArgs.params->time,
+        frameArgs = std::make_shared<ViewerParallelRenderArgsSetter>(inArgs.params->time,
                                                                        inArgs.params->view,
                                                                        !isSequentialRender,
                                                                        isSequentialRender,
@@ -1346,7 +1321,6 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                                                        inArgs.activeInputToRender->getNode(),
                                                                        inArgs.draftModeEnabled,
                                                                        stats);
-#endif
     }
 
 
@@ -1426,11 +1400,10 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
 
     if (useTLS) {
-        RectD canonicalRoi;
-        roi.toCanonical(inArgs.params->mipMapLevel, inArgs.params->pixelAspectRatio, inArgs.params->rod, &canonicalRoi);
+        const RectD canonicalRoi = roi.toCanonical(inArgs.params->mipmapLevel, inArgs.params->pixelAspectRatio, inArgs.params->rod);
 
         FrameRequestMap requestPassData;
-        StatusEnum stat = EffectInstance::computeRequestPass(inArgs.params->time, view, inArgs.params->mipMapLevel, canonicalRoi, getNode(), requestPassData);
+        StatusEnum stat = EffectInstance::computeRequestPass(inArgs.params->time, view, inArgs.params->mipmapLevel, canonicalRoi, getNode(), requestPassData);
         if (stat == eStatusFailed) {
             return eViewerRenderRetCodeFail;
         }
@@ -1526,10 +1499,10 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             channelsRendered[3] = true;
             break;
         }
-        stats->setGlobalRenderInfosForNode(getNode(), inArgs.params->rod, inArgs.params->srcPremult, channelsRendered, true, true, inArgs.params->mipMapLevel);
+        stats->setGlobalRenderInfosForNode(getNode(), inArgs.params->rod, inArgs.params->srcPremult, channelsRendered, true, true, inArgs.params->mipmapLevel);
     }
 
-#pragma message WARN("Implement Viewer so it accepts OpenGL Textures in input")
+//#pragma message WARN("Implement Viewer so it accepts OpenGL Textures in input")
     BufferableObjectPtrList partialUpdateObjects;
     for (std::size_t rectIndex = 0; rectIndex < splitRoi.size(); ++rectIndex) {
         //AlphaImage will only be set when displaying the Matte overlay
@@ -1543,10 +1516,10 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             std::map<ImagePlaneDesc, ImagePtr> planes;
             EffectInstance::RenderRoIRetCode retCode;
             {
-                boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
+                std::unique_ptr<EffectInstance::RenderRoIArgs> renderArgs;
                 renderArgs.reset( new EffectInstance::RenderRoIArgs(inArgs.params->time,
-                                                                    Image::getScaleFromMipMapLevel(inArgs.params->mipMapLevel),
-                                                                    inArgs.params->mipMapLevel,
+                                                                    RenderScale::fromMipmapLevel(inArgs.params->mipmapLevel),
+                                                                    inArgs.params->mipmapLevel,
                                                                     view,
                                                                     inArgs.forceRender,
                                                                     splitRoi[rectIndex],
@@ -1635,14 +1608,14 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         //Make sure the viewer does not render something outside the bounds
         RectI viewerRenderRoI;
         if (colorImage) {
-            splitRoi[rectIndex].intersect(colorImage->getBounds(), &viewerRenderRoI);
+            viewerRenderRoI = splitRoi[rectIndex].intersect(colorImage->getBounds());
         }
 
         UpdateViewerParamsPtr updateParams;
         if (!inArgs.isDoingPartialUpdates) {
             updateParams = inArgs.params;
         } else {
-            updateParams = boost::make_shared<UpdateViewerParams>(*inArgs.params);
+            updateParams = std::make_shared<UpdateViewerParams>(*inArgs.params);
             updateParams->mustFreeRamBuffer = true;
             updateParams->isPartialRect = true;
             UpdateViewerParams::CachedTile tile;
@@ -1687,7 +1660,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
 
                 bool canUseOldTex = _imp->lastRenderParams[updateParams->textureIndex] &&
-                                    updateParams->mipMapLevel == _imp->lastRenderParams[updateParams->textureIndex]->mipMapLevel &&
+                                    updateParams->mipmapLevel == _imp->lastRenderParams[updateParams->textureIndex]->mipmapLevel &&
                                     tile.rect.contains(_imp->lastRenderParams[updateParams->textureIndex]->tiles.front().rect);
 
                 if (!canUseOldTex) {
@@ -1699,8 +1672,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                     //Overwrite the RoI to only the last portion rendered
                     RectD lastPaintBbox = getApp()->getLastPaintStrokeBbox();
 
-
-                    lastPaintBbox.toPixelEnclosing(updateParams->mipMapLevel, par, &lastPaintBboxPixel);
+                    lastPaintBboxPixel = lastPaintBbox.toPixelEnclosing(updateParams->mipmapLevel, par);
 
 
                     //The last buffer must be valid
@@ -1728,19 +1700,6 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                         return eViewerRenderRetCodeFail;
                     }
 
-                    /*UpdateViewerParams::CachedTile tileCopy = tile;
-                       //If we are painting, only render the portion needed
-                       if ( !lastPaintBboxPixel.isNull() ) {
-                        tileCopy.rect.intersect(lastPaintBboxPixel, &tileCopy.rect);
-                        std::size_t pixelSize = 4;
-                        if (updateParams->depth == eImageBitDepthFloat) {
-                            pixelSize *= sizeof(float);
-                        }
-                        std::size_t dstRowSize = tileCopy.rect.width() * pixelSize;
-                        tileCopy.bytesCount = tileCopy.rect.height() * dstRowSize;
-                       }
-
-                       unCachedTiles.push_back(tileCopy);*/
                     unCachedTiles.push_back(tile);
                 }
                 _imp->lastRenderParams[updateParams->textureIndex] = updateParams;
@@ -1763,12 +1722,9 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             // For the viewer, we need the enclosing rectangle to avoid black borders.
             // Do this here to avoid infinity values.
 
-            RectI bounds;
-            updateParams->rod.toPixelEnclosing(updateParams->mipMapLevel, updateParams->pixelAspectRatio, &bounds);
+            const RectI bounds = updateParams->rod.toPixelEnclosing(updateParams->mipmapLevel, updateParams->pixelAspectRatio);
 
-            RectI tileBounds;
-            tileBounds.x1 = tileBounds.y1 = 0;
-            tileBounds.x2 = tileBounds.y2 = inArgs.params->tileSize;
+            const RectI tileBounds(0, 0, inArgs.params->tileSize, inArgs.params->tileSize);
             assert(!tileBounds.isNull());
             if (tileBounds.isNull()) {
                 return eViewerRenderRetCodeRedraw;
@@ -1791,7 +1747,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                  inArgs.channels,
                                  inArgs.params->view,
                                  it->rect,
-                                 inArgs.params->mipMapLevel,
+                                 inArgs.params->mipmapLevel,
                                  inputToRenderName,
                                  inArgs.params->layer,
                                  inArgs.params->alphaLayer.getPlaneID() + inArgs.params->alphaChannelName,
@@ -1847,12 +1803,12 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
         //If we are painting, only render the portion needed
         if ( !lastPaintBboxPixel.isNull() ) {
-            lastPaintBboxPixel.intersect(viewerRenderRoI, &viewerRenderRoI);
+            viewerRenderRoI.clipIfOverlaps(lastPaintBboxPixel);
         }
 
         TimeLapsePtr viewerRenderTimeRecorder;
         if (stats) {
-            viewerRenderTimeRecorder = boost::make_shared<TimeLapse>();
+            viewerRenderTimeRecorder = std::make_shared<TimeLapse>();
         }
 
         std::size_t tileRowElements = inArgs.params->tileSize;
@@ -1915,11 +1871,10 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                     vmax = vMinMax.max;
                 } else {
                     std::vector<RectI> splitRects = viewerRenderRoI.splitIntoSmallerRects( appPTR->getMaxThreadCount() );
-                    QFuture<MinMaxVal> future = QtConcurrent::mapped( splitRects,
-                                                                                       boost::bind(findAutoContrastVminVmax,
-                                                                                                   colorImage,
-                                                                                                   inArgs.channels,
-                                                                                                   _1) );
+                    std::function<MinMaxVal (const RectI&)> findAutoContrast = [&](const RectI &rect) {
+                        return findAutoContrastVminVmax(colorImage, inArgs.channels, rect);
+                    };
+                    QFuture<MinMaxVal> future = QtConcurrent::mapped( splitRects, findAutoContrast );
                     future.waitForFinished();
                     QList<MinMaxVal> results = future.results();
                     Q_FOREACH (const MinMaxVal &vMinMax, results) {
@@ -1968,11 +1923,9 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             } else {
                 QReadLocker k(&_imp->gammaLookupMutex);
                 QtConcurrent::map( unCachedTiles,
-                                   boost::bind(&renderFunctor,
-                                               viewerRenderRoI,
-                                               args,
-                                               this,
-                                               _1) ).waitForFinished();
+                                   [&](const UpdateViewerParams::CachedTile &tile) {
+                                    renderFunctor(viewerRenderRoI, args, this, tile);
+                                   } ).waitForFinished();
             }
 
             if (inArgs.isDoingPartialUpdates) {
@@ -2027,7 +1980,7 @@ ViewerInstance::updateViewer(UpdateViewerParamsPtr & frame)
     if ( isViewerPaused(frame->textureIndex) ) {
         return;
     }
-    _imp->updateViewer( boost::dynamic_pointer_cast<UpdateViewerParams>(frame) );
+    _imp->updateViewer( std::dynamic_pointer_cast<UpdateViewerParams>(frame) );
 }
 
 void
@@ -2098,7 +2051,7 @@ findAutoContrastVminVmax_generic(const ImagePtr inputImage,
                 maxi = std::max(std::max(r, g), b);
                 break;
             case eDisplayChannelsY:
-                mini = r = 0.299 * r + 0.587 * g + 0.114 * b;
+                mini = 0.299 * r + 0.587 * g + 0.114 * b;
                 maxi = mini;
                 break;
             case eDisplayChannelsR:
@@ -2200,7 +2153,7 @@ scaleToTexture8bits_generic(const RectI& roi,
     const int srcRowElements = (int)args.inputImage->getRowElements();
     Image::ReadAccessPtr matteAcc;
     if (applyMatte) {
-        matteAcc = boost::make_shared<Image::ReadAccess>( args.matteImage.get() );
+        matteAcc = std::make_shared<Image::ReadAccess>( args.matteImage.get() );
     }
 
     for (int y = y1; y < y2;
@@ -2597,7 +2550,7 @@ scaleToTexture32bitsGeneric(const RectI& roi,
     Image::ReadAccessPtr matteAcc;
 
     if (applyMatte) {
-        matteAcc = boost::make_shared<Image::ReadAccess>( args.matteImage.get() );
+        matteAcc = std::make_shared<Image::ReadAccess>( args.matteImage.get() );
     }
 
     assert( (args.renderOnlyRoI && roi.x1 >= tile.rect.x1 && roi.x2 <= tile.rect.x2 && roi.y1 >= tile.rect.y1 && roi.y2 <= tile.rect.y2) || (!args.renderOnlyRoI && tile.rect.x1 >= roi.x1 && tile.rect.x2 <= roi.x2 && tile.rect.y1 >= roi.y1 && tile.rect.y2 <= roi.y2) );
@@ -2928,8 +2881,6 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(UpdateViewerParamsPtr params
         doUpdate = false;
     }*/
     if (doUpdate) {
-        /*RectI bounds;
-           params->rod.toPixelEnclosing(params->mipMapLevel, params->pixelAspectRatio, &bounds);*/
 
         assert( (params->isPartialRect && params->tiles.size() == 1) || !params->isPartialRect );
 
@@ -2977,7 +2928,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(UpdateViewerParamsPtr params
             }
         }
 
-        uiContext->endTransferBufferFromRAMToGPU(params->textureIndex, texture, originalImage, params->time, params->rod,  params->pixelAspectRatio, depth, params->mipMapLevel, params->srcPremult, params->gain, params->gamma, params->offset, params->lut, params->recenterViewport, params->viewportCenter, params->isPartialRect);
+        uiContext->endTransferBufferFromRAMToGPU(params->textureIndex, texture, originalImage, params->time, params->rod,  params->pixelAspectRatio, depth, params->mipmapLevel, params->srcPremult, params->gain, params->gamma, params->offset, params->lut, params->recenterViewport, params->viewportCenter, params->isPartialRect);
 
         if (!isDrawing) {
             uiContext->updateColorPicker(params->textureIndex);
@@ -3067,25 +3018,17 @@ ViewerInstance::onGainChanged(double exp)
     }
 }
 
-unsigned int
-ViewerInstance::getViewerMipMapLevel() const
-{
-    QMutexLocker l(&_imp->viewerParamsMutex);
-
-    return _imp->viewerMipMapLevel;
-}
-
 void
-ViewerInstance::onMipMapLevelChanged(int level)
+ViewerInstance::onMipmapLevelChanged(unsigned int level)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
-        if (_imp->viewerMipMapLevel == (unsigned int)level) {
+        if (_imp->viewerMipmapLevel == level) {
             return;
         }
-        _imp->viewerMipMapLevel = level;
+        _imp->viewerMipmapLevel = level;
     }
 }
 
@@ -3270,14 +3213,14 @@ ViewerInstance::getGain() const
     return _imp->viewerParamsGain;
 }
 
-int
-ViewerInstance::getMipMapLevel() const
+unsigned int
+ViewerInstance::getMipmapLevel() const
 {
     // MT-SAFE: called from main thread and Serialization (pooled) thread
 
     QMutexLocker l(&_imp->viewerParamsMutex);
 
-    return _imp->viewerMipMapLevel;
+    return _imp->viewerMipmapLevel;
 }
 
 DisplayChannelsEnum
@@ -3455,8 +3398,8 @@ ViewerInstance::getTimelineBounds(int* first,
     }
 }
 
-int
-ViewerInstance::getMipMapLevelFromZoomFactor() const
+unsigned int
+ViewerInstance::getMipmapLevelFromZoomFactor() const
 {
     double zoomFactor = _imp->uiContext->getZoomFactor();
     double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) );

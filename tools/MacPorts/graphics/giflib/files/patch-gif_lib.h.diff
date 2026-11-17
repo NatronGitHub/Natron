@@ -1,0 +1,11 @@
+--- lib/gif_lib.h.orig	2012-05-06 15:55:48.000000000 -0500
++++ lib/gif_lib.h	2012-05-17 22:40:50.000000000 -0500
+@@ -216,7 +216,7 @@
+ 
+ extern ColorMapObject *MakeMapObject(int ColorCount,
+                                      const GifColorType * ColorMap);
+-extern void FreeMapObject(ColorMapObject * Object);
++extern void FreeMapObject(ColorMapObject *ColorMapObject);
+ extern ColorMapObject *UnionColorMap(const ColorMapObject * ColorIn1,
+                                      const ColorMapObject * ColorIn2,
+                                      GifPixelType ColorTransIn2[]);

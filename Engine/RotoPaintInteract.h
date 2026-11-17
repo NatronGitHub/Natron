@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,12 +29,8 @@
 #include "Global/Macros.h"
 
 #include <list>
-#include <QtCore/QPointF>
-#include <QtCore/QRectF>
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/enable_shared_from_this.hpp>
-#endif
+#include <QPointF>
+#include <QRectF>
 
 #include <ofxNatron.h>
 
@@ -300,6 +296,10 @@ NATRON_NAMESPACE_ENTER
 #define kRotoUIParamBuildUpHint "When build-up is enabled, the next brush stroke will build up " \
     "when painted over itself"
 
+#define kRotoUIParamAutoConnectViewer "autoConnectViewerButton"
+#define kRotoUIParamAutoConnectViewerLabel "Auto-connect Viewer"
+#define kRotoUIParamAutoConnectViewerHint "Auto-connect the viewer(s) to the RotoPaint node when using one of the paint tools."
+
 #define kRotoUIParamEffect "effectSpinbox"
 #define kRotoUIParamEffectLabel "Effect Strength"
 #define kRotoUIParamEffectHint "The strength of the next paint brush effect"
@@ -501,7 +501,7 @@ enum RotoToolEnum
 };
 
 class RotoPaintInteract
-    : public boost::enable_shared_from_this<RotoPaintInteract>
+    : public std::enable_shared_from_this<RotoPaintInteract>
 {
 public:
     RotoPaintPrivate* p;
@@ -610,6 +610,7 @@ public:
     KnobDoubleWPtr hardnessSpinbox;
     KnobButtonWPtr pressureHardnessButton;
     KnobButtonWPtr buildUpButton;
+    KnobButtonWPtr autoConnectViewerButton;
     KnobDoubleWPtr effectSpinBox;
     KnobIntWPtr timeOffsetSpinBox;
     KnobChoiceWPtr timeOffsetModeChoice;
@@ -621,7 +622,7 @@ public:
 private:
     struct MakeSharedEnabler;
 
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
 
     RotoPaintInteract(RotoPaintPrivate* p);
 

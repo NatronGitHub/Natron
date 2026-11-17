@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -35,20 +35,14 @@
 #include "Global/GlobalDefines.h"
 
 CLANG_DIAG_OFF(deprecated)
-#include <QtCore/QtGlobal> // for Q_OS_*
+#include <QtGlobal> // for Q_OS_*
 // /usr/include/qt5/QtCore/qgenericatomic.h:177:13: warning: 'register' storage class specifier is deprecated [-Wdeprecated]
-#include <QtCore/QObject>
+#include <QObject>
 CLANG_DIAG_ON(deprecated)
-#include <QtCore/QStringList>
-#include <QtCore/QString>
-#include <QtCore/QProcess>
-#include <QtCore/QMap>
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/noncopyable.hpp>
-#endif
+#include <QStringList>
+#include <QString>
+#include <QProcess>
+#include <QMap>
 
 #include "Engine/AfterQuitProcessingI.h"
 #include "Engine/Plugin.h"
@@ -94,7 +88,7 @@ typedef std::vector<AppInstancePtr> AppInstanceVec;
 
 struct AppManagerPrivate;
 class AppManager
-    : public QObject, public AfterQuitProcessingI, public boost::noncopyable
+    : public QObject, public AfterQuitProcessingI
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -132,6 +126,10 @@ public:
     bool loadW( int argc, wchar_t **argv, const CLArgs& cl);
 
 private:
+
+    AppManager(const AppManager&) = delete;
+
+    AppManager& operator=(const AppManager&) = delete;
 
     bool loadFromArgs(const CLArgs& cl);
 
@@ -250,7 +248,7 @@ public:
 
     template <class K>
     static
-    boost::shared_ptr<K> createKnob(KnobHolder*  holder,
+    std::shared_ptr<K> createKnob(KnobHolder*  holder,
                                     const std::string &label,
                                     int dimension = 1,
                                     bool declaredByPlugin = true)
@@ -260,7 +258,7 @@ public:
 
     template <class K>
     static
-    boost::shared_ptr<K> createKnob(KnobHolder*  holder,
+    std::shared_ptr<K> createKnob(KnobHolder*  holder,
                                     const QString &label,
                                     int dimension = 1,
                                     bool declaredByPlugin = true)
@@ -496,7 +494,7 @@ public:
     void setOFXHostHandle(void* handle);
 
     OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                                                    ContextEnum* ctx);
+                                                                    Natron::ContextEnum* ctx);
     AppTLS* getAppTLS() const;
     const OfxHost* getOFXHost() const;
     GPUContextPool* getGPUContextPool() const;
@@ -569,14 +567,18 @@ public:
 
     bool isTextureFloatSupported() const;
 
-    bool hasOpenGLForRequirements(OpenGLRequirementsTypeEnum type, QString* missingOpenGLError = 0) const;
+    bool hasOpenGLForRequirements(Natron::OpenGLRequirementsTypeEnum type, QString* missingOpenGLError = 0) const;
 
     virtual void updateAboutWindowLibrariesVersion() {}
+
+    bool isOnWayland() const;
 
 #ifdef __NATRON_WIN32__
     const OSGLContext_wgl_data* getWGLData() const;
 #endif
 #ifdef __NATRON_LINUX__
+    const OSGLContext_egl_data* getEGLData() const;
+
     const OSGLContext_glx_data* getGLXData() const;
 #endif
 
@@ -701,7 +703,7 @@ private:
     void tearDownPython();
 
     static AppManager *_instance;
-    boost::scoped_ptr<AppManagerPrivate> _imp;
+    std::unique_ptr<AppManagerPrivate> _imp;
 };
 
 // AppManager
@@ -734,14 +736,14 @@ void warningDialog(const std::string & title, const std::string & message, bool*
 void informationDialog(const std::string & title, const std::string & message, bool useHtml = false);
 void informationDialog(const std::string & title, const std::string & message, bool* stopAsking, bool useHtml = false);
 
-StandardButtonEnum questionDialog(const std::string & title, const std::string & message, bool useHtml,
-                                  StandardButtons buttons =
-                                      StandardButtons(eStandardButtonYes | eStandardButtonNo),
-                                  StandardButtonEnum defaultButton = eStandardButtonNoButton);
+Natron::StandardButtonEnum questionDialog(const std::string & title, const std::string & message, bool useHtml,
+                                  Natron::StandardButtons buttons =
+                                      Natron::StandardButtons(Natron::StandardButtonEnum::eStandardButtonYes | Natron::StandardButtonEnum::eStandardButtonNo),
+                                  Natron::StandardButtonEnum defaultButton = Natron::StandardButtonEnum::eStandardButtonNoButton);
 
-StandardButtonEnum questionDialog(const std::string & title, const std::string & message, bool useHtml,
-                                  StandardButtons buttons,
-                                  StandardButtonEnum defaultButton,
+Natron::StandardButtonEnum questionDialog(const std::string & title, const std::string & message, bool useHtml,
+                                  Natron::StandardButtons buttons,
+                                  Natron::StandardButtonEnum defaultButton,
                                   bool* stopAsking);
 } // namespace Dialogs
 
@@ -777,7 +779,6 @@ bool interpretPythonScript(const std::string& script, std::string* error, std::s
 
 //void compilePyScript(const std::string& script,PyObject** code);
 
-std::string PyStringToStdString(PyObject* obj);
 std::string makeNameScriptFriendlyWithDots(const std::string& str);
 std::string makeNameScriptFriendly(const std::string& str);
 
@@ -823,6 +824,17 @@ public:
     PythonGILLocker();
 
     ~PythonGILLocker();
+};
+
+/**
+ * @brief Small helper class to use as RAII to temporarily release the GIL (Global Interpreter Lock)
+ **/
+class PythonGILUnlocker
+{
+public:
+    PythonGILUnlocker();
+
+    ~PythonGILUnlocker();
 };
 
 NATRON_NAMESPACE_EXIT

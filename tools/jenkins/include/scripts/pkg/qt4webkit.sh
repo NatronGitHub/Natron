@@ -26,7 +26,7 @@ if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtWebKit.pc
     untar "$SRC_PATH/$QT4WEBKIT_TAR"
 
     #############################################
-    # patches from fedora's qtwebkit-2.3.4-29.fc32.src.rpm
+    # patches from fedora's qtwebkit-2.3.4-35.fc36.src.rpm
     
     # search /usr/lib{,64}/mozilla/plugins-wrapped for browser plugins too
     Patch1=webkit-qtwebkit-2.2-tp1-pluginpath.patch
@@ -54,6 +54,10 @@ if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtWebKit.pc
     Patch100=webkit-qtwebkit-23-gcc5.patch
     # backport from qt5-qtwebkit: URLs visited during private browsing show up in WebpageIcons.db
     Patch101=webkit-qtwebkit-23-private_browsing.patch
+    # fix FTBFS with bison-3.7
+    Patch102=qtwebkit-bison-3.7.patch
+    # fix FTBFS wtih glib ≥ 2.68
+    Patch103=webkit-qtwebkit-23-glib2.patch
 
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch1" # -p1 -b .pluginpath
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch3" # -p1 -b .debuginfo
@@ -70,20 +74,17 @@ if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtWebKit.pc
 
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch100" # -p1 -b .gcc5
     patch -Np1 -i "$INC_PATH/patches/Qt/$Patch101" # -p1 -b .private_browsing
+    #%if 0%{?fedora} > 33 || 0%{?rhel} > 8 # bison ≥ 3.7
+    if version_gt "$BISON_VERSION" 3.6.99; then
+    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch102" # -p1 -b .bison37
+    fi
+    #%if 0%{?fedora} > 34 || 0%{?rhel} > 8 # glib ≥ 2.68
+    if version_gt "$GLIB_VERSION" 2.67.99; then
+    patch -Np1 -i "$INC_PATH/patches/Qt/$Patch103" #-p1 -b .glib2
+    fi
 
     #######################################
     
-    # bison 3.7 breaks webkit build:
-    # https://bugs.gentoo.org/736499
-    # https://github.com/qtwebkit/qtwebkit/commit/d92b11fea65364fefa700249bd3340e0cd4c5b31
-    patch -Np1 -i "$INC_PATH/patches/Qt/webkit-qtwebkit-bison37.patch"
-    # Unfortunately, even with this patch it still doesn build, and fails with:
-    # generated/XPathGrammar.tab.c:124:10: fatal error: XPathGrammar.tab.h: No such file or directory
-    if version_gt "$BISON_VERSION" 3.7; then
-        echo "qt4webkit doesn't build with bison >= 3.7"
-        echo "fix this, then remove this message from qt4webkit.sh"
-    fi
-
     # disable xslt if libxml2 is compiled with ICU support, or qtwebkit will not compile, see https://aur.archlinux.org/packages/qtwebkit
     if [ "$LIBXML2_ICU" -eq 1 ]; then
         xslt_flag="--no-xslt"

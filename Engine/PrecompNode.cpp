@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -34,7 +34,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QCoreApplication>
+#include <QCoreApplication>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -454,7 +454,7 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
     app.lock()->getProject()->getNodes_recursive(nodes, true);
     PrecompNodePtr precomp;
     if (setPartOfPrecomp) {
-        precomp = boost::dynamic_pointer_cast<PrecompNode>( _publicInterface->shared_from_this() );
+        precomp = std::dynamic_pointer_cast<PrecompNode>( _publicInterface->shared_from_this() );
         assert(precomp);
 
         //extract all inputs of the tree
@@ -586,7 +586,7 @@ PrecompNodePrivate::createReadNode()
         return;
     }
 
-    PrecompNodePtr precomp = boost::dynamic_pointer_cast<PrecompNode>( _publicInterface->shared_from_this() );
+    PrecompNodePtr precomp = std::dynamic_pointer_cast<PrecompNode>( _publicInterface->shared_from_this() );
     assert(precomp);
     read->setPrecompNode(precomp);
 

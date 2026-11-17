@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,9 +28,9 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QtCore/QCoreApplication>
-#include <QtCore/QThread>
-#include <QtCore/QTimer>
+#include <QCoreApplication>
+#include <QThread>
+#include <QTimer>
 
 #include <QHBoxLayout>
 #include <QGraphicsScene>
@@ -211,10 +211,10 @@ void
 Gui::createGroupGui(const NodePtr & group,
                     const CreateNodeArgs& args)
 {
-    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( group->getEffectInstance()->shared_from_this() );
+    NodeGroupPtr isGrp = std::dynamic_pointer_cast<NodeGroup>( group->getEffectInstance()->shared_from_this() );
 
     assert(isGrp);
-    NodeCollectionPtr collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);
+    NodeCollectionPtr collection = std::dynamic_pointer_cast<NodeCollection>(isGrp);
     assert(collection);
 
     TabWidget* where = 0;

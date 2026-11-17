@@ -16,7 +16,7 @@ Description
 
 Draw zebra stripes on all pixels outside of the specified range.
 
-See also: http://opticalenquiry.com/nuke/index.php?title=Evaluating_Color#The_ClipTest_node
+See also: https://web.archive.org/web/20220627024754/http://www.opticalenquiry.com/nuke/index.php?title=Evaluating_Color#The_ClipTest_node
 
 Inputs
 ------

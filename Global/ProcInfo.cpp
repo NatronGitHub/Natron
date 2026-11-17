@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -36,6 +36,10 @@
 #include <cerrno>
 #include <cstdlib> // malloc
 #include <string.h> // strdup
+#endif
+
+#ifdef __NATRON_WIN32__
+#include <shellapi.h>  // CommandLineToArgvW
 #endif
 
 #include "StrUtils.h"
@@ -499,7 +503,7 @@ ProcInfo::getenv_wrapper(const char *varName)
     std::vector<char> buffer;
     getenv_s(&requiredSize, 0, 0, varName);
     if (requiredSize == 0)
-        return buffer;
+        return std::string();
     buffer.resize(requiredSize);
     getenv_s(&requiredSize, &buffer[0], requiredSize, varName);
     // requiredSize includes the terminating null, which we don't want.

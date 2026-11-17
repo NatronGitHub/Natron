@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -34,6 +34,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// clang-format off
 GCC_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
@@ -42,7 +43,8 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/split_member.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
-#endif
+#// clang-format on
+endif
 
 #include "Engine/EngineFwd.h"
 
@@ -53,45 +55,48 @@ Variant::save(Archive & ar,
               const unsigned int version) const
 {
     Q_UNUSED(version);
-    QVariant::Type t = type();
+    // QVariant::Type and QVariant::type() are deprecated in Qt6 in favour of
+    // the metatype id. userType() returns that id in both Qt 5.15 and Qt 6, and
+    // the QMetaType constants below are the same values QVariant::Type used.
+    const int t = userType();
     std::string typeStr;
     switch (t) {
-    case QVariant::Bool: {
+    case QMetaType::Bool: {
         bool v = toBool();
         typeStr = "bool";
         ar & ::boost::serialization::make_nvp("Type", typeStr);
         ar & ::boost::serialization::make_nvp("Value", v);
         break;
     }
-    case QVariant::Int: {
+    case QMetaType::Int: {
         int v = toInt();
         typeStr = "int";
         ar & ::boost::serialization::make_nvp("Type", typeStr);
         ar & ::boost::serialization::make_nvp("Value", v);
         break;
     }
-    case QVariant::UInt: {
+    case QMetaType::UInt: {
         int v = toUInt();
         typeStr = "uint";
         ar & ::boost::serialization::make_nvp("Type", typeStr);
         ar & ::boost::serialization::make_nvp("Value", v);
         break;
     }
-    case QVariant::Double: {
+    case QMetaType::Double: {
         double v = toDouble();
         typeStr = "double";
         ar & ::boost::serialization::make_nvp("Type", typeStr);
         ar & ::boost::serialization::make_nvp("Value", v);
         break;
     }
-    case QVariant::String: {
+    case QMetaType::QString: {
         typeStr = "string";
         ar & ::boost::serialization::make_nvp("Type", typeStr);
         std::string str = toString().toStdString();
         ar & ::boost::serialization::make_nvp("Value", str);
         break;
     }
-    case QVariant::StringList: {
+    case QMetaType::QStringList: {
         typeStr = "stringlist";
         ar & ::boost::serialization::make_nvp("Type", typeStr);
         std::list<std::string> list;

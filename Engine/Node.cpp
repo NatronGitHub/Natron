@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -35,19 +35,14 @@
 
 #include "Global/Macros.h"
 
-#include <boost/scoped_ptr.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/algorithm/string/case_conv.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-
-#include <QtCore/QDateTime>
-#include <QtCore/QDebug>
-#include <QtCore/QReadWriteLock>
-#include <QtCore/QCoreApplication>
-#include <QtCore/QWaitCondition>
-#include <QtCore/QTextStream>
-#include <QtCore/QFile>
-#include <QtCore/QRegExp>
+#include <QDateTime>
+#include <QDebug>
+#include <QReadWriteLock>
+#include <QCoreApplication>
+#include <QWaitCondition>
+#include <QTextStream>
+#include <QFile>
+#include <QRandomGenerator>
 
 #include <ofxNatron.h>
 
@@ -119,13 +114,39 @@ NATRON_NAMESPACE_ENTER
 
 using std::make_pair;
 using std::cout; using std::endl;
-using boost::shared_ptr;
+using std::shared_ptr;
 
 
 // protect local classes in anonymous namespace
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
+// Advance the knobs age after a change of the node's parameters. knobsAgeMutex must be locked for writing.
+//
+// The age is mixed into the node hash, which keys the RAM, disk and viewer caches. The disk and viewer caches
+// persist across sessions, and the age is saved in the project. Simply incrementing the loaded age would reproduce,
+// in a new session, ages (and hashes) that were already reached in an earlier session (for example one that was
+// closed without saving), but with different parameter values: the persistent caches would then return images
+// computed with those other values (#1124). The first change after a load thus jumps to a random 64-bit age, and the
+// following changes increment it, so that hashes stay reproducible for the saved state of a project (its cached
+// images remain usable after reopening it) but are unique to the session as soon as a parameter changes.
+void
+advanceKnobsAge(U64* age,
+                bool* isUniqueToSession)
+{
+    if (*isUniqueToSession) {
+        ++*age;
+    } else {
+        *age = QRandomGenerator::global()->generate64();
+        *isUniqueToSession = true;
+    }
 
+    ///if the age of an effect somehow reaches the maximum age (will never happen)
+    ///handle it by clearing the cache and resetting the age to 0.
+    if ( *age == std::numeric_limits<U64>::max() ) {
+        appPTR->clearAllCaches();
+        *age = 0;
+    }
+}
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
@@ -527,7 +548,7 @@ Node::getLastPaintStrokePoints(double time,
 }
 
 ImagePtr
-Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
+Node::getOrRenderLastStrokeImage(unsigned int mipmapLevel,
                                  double par,
                                  const ImagePlaneDesc& components,
                                  ImageBitDepthEnum depth) const
@@ -535,7 +556,7 @@ Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
     std::list<RectI> restToRender;
     RotoDrawableItemPtr item = _imp->paintStroke.lock();
-    RotoStrokeItemPtr stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
+    RotoStrokeItemPtr stroke = std::dynamic_pointer_cast<RotoStrokeItem>(item);
 
     assert(stroke);
     if (!stroke) {
@@ -549,7 +570,7 @@ Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
     double distNextIn = 0.;
     ImagePtr strokeImage;
     getApp()->getRenderStrokeData(&lastStrokeBbox, &lastStrokePoints, &distNextIn, &strokeImage);
-    double distToNextOut = stroke->renderSingleStroke(lastStrokeBbox, lastStrokePoints, mipMapLevel, par, components, depth, distNextIn, &strokeImage);
+    double distToNextOut = stroke->renderSingleStroke(lastStrokeBbox, lastStrokePoints, mipmapLevel, par, components, depth, distNextIn, &strokeImage);
 
     getApp()->updateStrokeImage(strokeImage, distToNextOut, true);
 
@@ -1101,7 +1122,7 @@ Node::loadKnob(const KnobIPtr & knob,
             std::string stringParamName = isChoice->getName() + "Choice";
             for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
                 if ( (*it)->getName() == stringParamName ) {
-                    KnobStringPtr stringKnob = boost::dynamic_pointer_cast<KnobString>((*it)->getKnob());
+                    KnobStringPtr stringKnob = std::dynamic_pointer_cast<KnobString>((*it)->getKnob());
                     if (stringKnob) {
                         std::string serializedString = stringKnob->getValue();
                         if ((*it)->_version < KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION) {
@@ -1202,7 +1223,7 @@ Node::loadKnob(const KnobIPtr & knob,
         break;
 
     }
-  
+
 } // Node::loadKnob
 
 
@@ -1258,6 +1279,8 @@ Node::setKnobsAge(U64 newAge)
         if (changed) {
             _imp->knobsAge = newAge;
         }
+        // newAge comes from a serialization or from the master node: the next change must give a fresh age (#1124)
+        _imp->knobsAgeIsUniqueToSession = false;
     }
     if (changed) {
         Q_EMIT knobsAgeChanged(newAge);
@@ -1270,31 +1293,17 @@ Node::incrementKnobsAge_internal()
 {
     {
         QWriteLocker l(&_imp->knobsAgeMutex);
-        ++_imp->knobsAge;
-
-        ///if the age of an effect somehow reaches the maximum age (will never happen)
-        ///handle it by clearing the cache and resetting the age to 0.
-        if ( _imp->knobsAge == std::numeric_limits<U64>::max() ) {
-            appPTR->clearAllCaches();
-            _imp->knobsAge = 0;
-        }
+        advanceKnobsAge(&_imp->knobsAge, &_imp->knobsAgeIsUniqueToSession);
     }
 }
 
 void
 Node::incrementKnobsAge()
 {
-    U32 newAge;
+    U64 newAge;
     {
         QWriteLocker l(&_imp->knobsAgeMutex);
-        ++_imp->knobsAge;
-
-        ///if the age of an effect somehow reaches the maximum age (will never happen)
-        ///handle it by clearing the cache and resetting the age to 0.
-        if ( _imp->knobsAge == std::numeric_limits<U64>::max() ) {
-            appPTR->clearAllCaches();
-            _imp->knobsAge = 0;
-        }
+        advanceKnobsAge(&_imp->knobsAge, &_imp->knobsAgeIsUniqueToSession);
         newAge = _imp->knobsAge;
     }
     Q_EMIT knobsAgeChanged(newAge);
@@ -1349,7 +1358,7 @@ Node::Implementation::abortPreview_blocking(bool allowPreviewRenders)
         assert(!mustQuitPreview);
         ++mustQuitPreview;
         while (mustQuitPreview) {
-            mustQuitPreviewCond.wait(&mustQuitPreviewMutex);
+            mustQuitPreviewCond.wait(l.mutex());
         }
     }
 }
@@ -1646,12 +1655,11 @@ Node::makeInfoForInput(int inputNumber) const
         ss << "<b>" << tr("Frame range:").toStdString() << "</b> <font color=#c8c8c8>" << first << " - " << last << "</font><br />";
     }
     {
-        RenderScale scale(1.);
         RectD rod;
         bool isProjectFormat;
         StatusEnum stat = input->getRegionOfDefinition_public(getHashValue(),
                                                               time,
-                                                              scale, ViewIdx(0), &rod, &isProjectFormat);
+                                                              RenderScale::identity, ViewIdx(0), &rod, &isProjectFormat);
         if (stat != eStatusFailed) {
             ss << "<b>" << tr("Region of Definition (at t=%1):").arg(time).toStdString() << "</b> <font color=#c8c8c8>";
             ss << tr("left = %1 bottom = %2 right = %3 top = %4").arg(rod.x1).arg(rod.y1).arg(rod.x2).arg(rod.y2).toStdString() << "</font><br />";
@@ -1711,15 +1719,15 @@ Node::findPluginFormatKnobs(const KnobsVec & knobs,
             }
         }
         if (formatSize && formatPar) {
-            _imp->pluginFormatKnobs.formatChoice = boost::dynamic_pointer_cast<KnobChoice>(formatKnob);
+            _imp->pluginFormatKnobs.formatChoice = std::dynamic_pointer_cast<KnobChoice>(formatKnob);
             formatSize->setEvaluateOnChange(false);
             formatPar->setEvaluateOnChange(false);
             formatSize->setSecret(true);
             formatSize->setSecretByDefault(true);
             formatPar->setSecret(true);
             formatPar->setSecretByDefault(true);
-            _imp->pluginFormatKnobs.size = boost::dynamic_pointer_cast<KnobInt>(formatSize);
-            _imp->pluginFormatKnobs.par = boost::dynamic_pointer_cast<KnobDouble>(formatPar);
+            _imp->pluginFormatKnobs.size = std::dynamic_pointer_cast<KnobInt>(formatSize);
+            _imp->pluginFormatKnobs.par = std::dynamic_pointer_cast<KnobDouble>(formatPar);
 
             std::vector<ChoiceOption> formats;
             int defValue;
@@ -2116,7 +2124,7 @@ Node::getOrCreateMainPage()
     KnobPagePtr mainPage;
 
     for (std::size_t i = 0; i < knobs.size(); ++i) {
-        KnobPagePtr p = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
+        KnobPagePtr p = std::dynamic_pointer_cast<KnobPage>(knobs[i]);
         if ( p && (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_INFO) &&
              (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
             mainPage = p;
@@ -2161,7 +2169,7 @@ Node::findOrCreateChannelEnabled(const KnobPagePtr& mainPage)
         KnobBoolPtr enabled;
         for (std::size_t j = 0; j < knobs.size(); ++j) {
             if (knobs[j]->getOriginalName() == channelNames[i]) {
-                foundEnabled[i] = boost::dynamic_pointer_cast<KnobBool>(knobs[j]);
+                foundEnabled[i] = std::dynamic_pointer_cast<KnobBool>(knobs[j]);
                 break;
             }
         }
@@ -2358,7 +2366,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
 
 
     if (lastKnobBeforeAdvancedOption && mainPage) {
-        
+
         KnobsVec mainPageChildren = mainPage->getChildren();
         int i = 0;
         for (KnobsVec::iterator it = mainPageChildren.begin(); it != mainPageChildren.end(); ++it, ++i) {
@@ -2958,7 +2966,7 @@ Node::deactivate(const std::list<NodePtr> & outputsToDisconnect,
         if (dc) {
             int inputNb = output->getInputIndex(this);
             if (inputNb != -1) {
-                _imp->deactivatedState.insert( make_pair(*it, inputNb) );
+                _imp->deactivatedState.push_back( std::make_pair(*it, inputNb) );
 
                 ///reconnect if inputToConnectTo is not null
                 if (inputToConnectTo) {
@@ -3055,7 +3063,7 @@ Node::activate(const std::list<NodePtr> & outputsToRestore,
 
 
     ///Restore all outputs that was connected to this node
-    for (std::map<NodeWPtr, int >::iterator it = _imp->deactivatedState.begin();
+    for (DeactivatedState::iterator it = _imp->deactivatedState.begin();
          it != _imp->deactivatedState.end(); ++it) {
         NodePtr output = it->first.lock();
         if (!output) {
@@ -3078,11 +3086,10 @@ Node::activate(const std::list<NodePtr> & outputsToRestore,
             ///before connecting the outputs to this node, disconnect any link that has been made
             ///between the outputs by the user. This should normally never happen as the undo/redo
             ///stack follow always the same order.
-            NodePtr outputHasInput = output->getInput(it->second);
-            if (outputHasInput) {
-                bool ok = getApp()->getProject()->disconnectNodes(outputHasInput, output);
-                assert(ok);
-                Q_UNUSED(ok);
+            if ( output->getRealInput(it->second) ) {
+                int dc = output->disconnectInput(it->second);
+                assert(dc == it->second);
+                Q_UNUSED(dc);
             }
 
             ///and connect the output to this node
@@ -3164,9 +3171,9 @@ renderPreview(const Image & srcImg,
               bool convertToSrgb,
               unsigned int* dstPixels)
 {
-#ifdef DEBUG
-    // Uncomment if using plugins that generate FP exceptions
-    // boost_adaptbx::floating_point::exception_trapping trap(0);
+#if defined(DEBUG) && !defined(DEBUG_NAN)
+    // Some plugins generate FP exceptions
+    boost_adaptbx::floating_point::exception_trapping trap(0);
 #endif
     ///recompute it after the rescaling
     const RectI & srcBounds = srcImg.getBounds();
@@ -3306,7 +3313,6 @@ Node::makePreviewImage(SequenceTime time,
     ComputingPreviewSetter_RAII computingPreviewRAII( _imp.get() );
     RectD rod;
     bool isProjectFormat;
-    RenderScale scale(1.);
     U64 nodeHash = getHashValue();
     EffectInstance* effect = 0;
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>( _imp->effect.get() );
@@ -3322,7 +3328,7 @@ Node::makePreviewImage(SequenceTime time,
 
     effect->clearPersistentMessage(false);
 
-    StatusEnum stat = effect->getRegionOfDefinition_public(nodeHash, time, scale, ViewIdx(0), &rod, &isProjectFormat);
+    StatusEnum stat = effect->getRegionOfDefinition_public(nodeHash, time, RenderScale::identity, ViewIdx(0), &rod, &isProjectFormat);
     if ( (stat == eStatusFailed) || rod.isNull() ) {
         return false;
     }
@@ -3332,14 +3338,12 @@ Node::makePreviewImage(SequenceTime time,
     double closestPowerOf2X = xZoomFactor >= 1 ? 1 : ipow( 2, (int)-std::ceil( std::log(xZoomFactor) / M_LN2 ) );
     double closestPowerOf2Y = yZoomFactor >= 1 ? 1 : ipow( 2, (int)-std::ceil( std::log(yZoomFactor) / M_LN2 ) );
     int closestPowerOf2 = std::max(closestPowerOf2X, closestPowerOf2Y);
-    unsigned int mipMapLevel = std::min(std::log( (double)closestPowerOf2 ) / std::log(2.), 5.);
+    unsigned int mipmapLevel = std::min(std::log( (double)closestPowerOf2 ) / std::log(2.), 5.);
 
-    scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
-    scale.y = scale.x;
+    const RenderScale scale = RenderScale::fromMipmapLevel(mipmapLevel);
 
     const double par = effect->getAspectRatio(-1);
-    RectI renderWindow;
-    rod.toPixelEnclosing(mipMapLevel, par, &renderWindow);
+    const RectI renderWindow = rod.toPixelEnclosing(mipmapLevel, par);
 
     NodePtr thisNode = shared_from_this();
     RenderingFlagSetter flagIsRendering(thisNode);
@@ -3366,7 +3370,7 @@ Node::makePreviewImage(SequenceTime time,
                                                   true, // isDraft
                                                   RenderStatsPtr() );
         FrameRequestMap request;
-        stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipMapLevel, rod, thisNode, request);
+        stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipmapLevel, rod, thisNode, request);
         if (stat == eStatusFailed) {
             return false;
         }
@@ -3386,9 +3390,9 @@ Node::makePreviewImage(SequenceTime time,
         // but any exception in renderROI is probably fatal.
         std::map<ImagePlaneDesc, ImagePtr> planes;
         try {
-            boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(time,
+            std::unique_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(time,
                                                                                                            scale,
-                                                                                                           mipMapLevel,
+                                                                                                           mipmapLevel,
                                                                                                            ViewIdx(0), //< preview only renders view 0 (left)
                                                                                                            false,
                                                                                                            renderWindow,
@@ -4404,7 +4408,7 @@ Node::lock(const ImagePtr & image)
         std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
 
     while ( it != _imp->imagesBeingRendered.end() ) {
-        _imp->imagesBeingRenderedCond.wait(&_imp->imagesBeingRenderedMutex);
+        _imp->imagesBeingRenderedCond.wait(l.mutex());
         it = std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
     }
     ///Okay the image is not used by any other thread, claim that we want to use it
@@ -4445,7 +4449,7 @@ Node::unlock(const ImagePtr & image)
 
 ImagePtr
 Node::getImageBeingRendered(double time,
-                            unsigned int mipMapLevel,
+                            unsigned int mipmapLevel,
                             ViewIdx view)
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
@@ -4453,7 +4457,7 @@ Node::getImageBeingRendered(double time,
     for (std::list<ImagePtr>::iterator it = _imp->imagesBeingRendered.begin();
          it != _imp->imagesBeingRendered.end(); ++it) {
         const ImageKey &key = (*it)->getKey();
-        if ( (key._view == view) && ( (*it)->getMipMapLevel() == mipMapLevel ) && (key._time == time) ) {
+        if ( (key._view == view) && ( (*it)->getMipmapLevel() == mipmapLevel ) && (key._time == time) ) {
             return *it;
         }
     }
@@ -4481,10 +4485,10 @@ Node::onFileNameParameterChanged(KnobI* fileKnob)
         ///union the project frame range if not locked with the reader frame range
         bool isLocked = getApp()->getProject()->isFrameRangeLocked();
         if (!isLocked) {
-            double leftBound = INT_MIN, rightBound = INT_MAX;
+            double leftBound = std::numeric_limits<int>::min(), rightBound = std::numeric_limits<int>::max();
             _imp->effect->getFrameRange_public(getHashValue(), &leftBound, &rightBound, true);
 
-            if ( (leftBound != INT_MIN) && (rightBound != INT_MAX) ) {
+            if ( (leftBound != std::numeric_limits<int>::min()) && (rightBound != std::numeric_limits<int>::max()) ) {
                 if ( getGroup() || getIOContainer() ) {
                     getApp()->getProject()->unionFrameRangeWith(leftBound, rightBound);
                 }
@@ -4539,8 +4543,8 @@ Node::getOriginalFrameRangeForReader(const std::string& pluginID,
 {
     if ( ReadNode::isVideoReader(pluginID) ) {
         ///If the plug-in is a video, only ffmpeg may know how many frames there are
-        *firstFrame = INT_MIN;
-        *lastFrame = INT_MAX;
+        *firstFrame = std::numeric_limits<int>::min();
+        *lastFrame = std::numeric_limits<int>::max();
     } else {
         SequenceParsing::SequenceFromPattern seq;
         FileSystemModel::filesListFromPattern(canonicalFileName, &seq);
@@ -4575,8 +4579,8 @@ Node::computeFrameRangeForReader(KnobI* fileKnob)
         pluginID = getPluginID();
     }
 
-    int leftBound = INT_MIN;
-    int rightBound = INT_MAX;
+    int leftBound = std::numeric_limits<int>::min();
+    int rightBound = std::numeric_limits<int>::max();
     ///Set the originalFrameRange parameter of the reader if it has one.
     KnobIPtr knob = getKnobByName(kReaderParamNameOriginalFrameRange);
     if (knob) {
@@ -4590,7 +4594,7 @@ Node::computeFrameRangeForReader(KnobI* fileKnob)
 
             if ( ReadNode::isVideoReader(pluginID) ) {
                 ///If the plug-in is a video, only ffmpeg may know how many frames there are
-                originalFrameRange->setValues(INT_MIN, INT_MAX, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+                originalFrameRange->setValues(std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
             } else {
                 std::string pattern = isFile->getValue();
                 getApp()->getProject()->canonicalizePath(pattern);
@@ -4817,7 +4821,6 @@ Node::onRefreshIdentityStateRequestReceived()
 
     ProjectPtr project = getApp()->getProject();
     double time = project->currentFrame();
-    RenderScale scale(1.);
     double inputTime = 0;
     U64 hash = getHashValue();
     bool viewAware =  _imp->effect->isViewAware();
@@ -4840,7 +4843,7 @@ Node::onRefreshIdentityStateRequestReceived()
         for (int i = 0; i < nViews; ++i) {
             int identityInputNb = -1;
             ViewIdx identityView;
-            bool isViewIdentity = _imp->effect->isIdentity_public(true, hash, time, scale, frmt, ViewIdx(i), &inputTime, &identityView, &identityInputNb);
+            bool isViewIdentity = _imp->effect->isIdentity_public(true, hash, time, RenderScale::identity, frmt, ViewIdx(i), &inputTime, &identityView, &identityInputNb);
             if ( (i > 0) && ( (isViewIdentity != isIdentity) || (identityInputNb != inputNb) || (identityView.value() != i) ) ) {
                 isIdentity = false;
                 inputNb = -1;
@@ -4896,7 +4899,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
 
     bool ret = true;
     if ( what == _imp->previewEnabledKnob.lock().get() ) {
-        if ( (reason == eValueChangedReasonUserEdited) || (reason == eValueChangedReasonSlaveRefresh) ) {
+        if ( (reason == eValueChangedReasonUserEdited) || (reason == eValueChangedReasonSlaveRefresh) || (reason == eValueChangedReasonNatronInternalEdited) ) {
             Q_EMIT previewKnobToggled();
         }
     } else if ( what == _imp->renderButton.lock().get() ) {
@@ -4904,9 +4907,9 @@ Node::onEffectKnobValueChanged(KnobI* what,
             /*if this is a button and it is a render button,we're safe to assume the plug-ins wants to start rendering.*/
             AppInstance::RenderWork w;
             w.writer = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
-            w.firstFrame = INT_MIN;
-            w.lastFrame = INT_MAX;
-            w.frameStep = INT_MIN;
+            w.firstFrame = std::numeric_limits<int>::min();
+            w.lastFrame = std::numeric_limits<int>::max();
+            w.frameStep = std::numeric_limits<int>::min();
             w.useRenderStats = getApp()->isRenderStatsActionChecked();
             std::list<AppInstance::RenderWork> works;
             works.push_back(w);
@@ -5022,20 +5025,9 @@ Node::onEffectKnobValueChanged(KnobI* what,
         ssinfo << "</font>";
         _imp->nodeInfos.lock()->setValue( ssinfo.str() );
     } else if ( what == _imp->openglRenderingEnabledKnob.lock().get() ) {
-        bool enabled = true;
-        int thisKnobIndex = _imp->openglRenderingEnabledKnob.lock()->getValue();
-        if (thisKnobIndex == 1 || (thisKnobIndex == 2 && getApp()->isBackground())) {
-            enabled = false;
-        }
-        if (enabled) {
-            // Check value on project now
-            if (!getApp()->getProject()->isOpenGLRenderActivated()) {
-                enabled = false;
-            }
-        }
-        _imp->effect->onEnableOpenGLKnobValueChanged(enabled);
+         // Do nothing. Knob value will be checked in getCurrentOpenGLRenderSupport() calls.
     } else if (what == _imp->processAllLayersKnob.lock().get() ) {
-        
+
         std::map<int, ChannelSelector>::iterator foundOutput = _imp->channelsSelectors.find(-1);
         if (foundOutput != _imp->channelsSelectors.end()) {
             _imp->onLayerChanged(foundOutput->first, foundOutput->second);
@@ -5103,23 +5095,14 @@ Node::onEffectKnobValueChanged(KnobI* what,
 void
 Node::onOpenGLEnabledKnobChangedOnProject(bool activated)
 {
-    bool enabled = activated;
     KnobChoicePtr k = _imp->openglRenderingEnabledKnob.lock();
-    if (enabled) {
-        if (k) {
-            k->setAllDimensionsEnabled(true);
-            int thisKnobIndex = k->getValue();
-            if (thisKnobIndex == 1 || (thisKnobIndex == 2 && getApp()->isBackground())) {
-                enabled = false;
-            }
-        }
-    } else {
-        if (k) {
-            k->setAllDimensionsEnabled(true);
-        }
+    if (k) {
+        // Make the enable state for the node knob match the
+        // state of the project level GPU rendering state.
+        // This makes it so you can't change node level GPU
+        // rendering state if the project has GPU rendering disabled.
+        k->setAllDimensionsEnabled(activated);
     }
-    _imp->effect->onEnableOpenGLKnobValueChanged(enabled);
-    
 }
 
 bool
@@ -5181,19 +5164,18 @@ Node::Implementation::onLayerChanged(int inputNb,
 
         ///Disable all input selectors as it doesn't make sense to edit them whilst output is All
         for (std::map<int, ChannelSelector>::iterator it = channelsSelectors.begin(); it != channelsSelectors.end(); ++it) {
-            
+
             NodePtr inp;
             if (it->first >= 0) {
                 inp = _publicInterface->getInput(it->first);
             }
             bool mustBeSecret = (it->first >= 0 && !inp.get()) || outputIsAll;
             it->second.layer.lock()->setSecret(mustBeSecret);
-            
+
         }
     }
     if (!isRefreshingInputRelatedData) {
         ///Clip preferences have changed
-        RenderScale s(1.);
         effect->refreshMetadata_public(true);
     }
     if ( !enabledChan[0].lock() ) {
@@ -5299,7 +5281,6 @@ Node::Implementation::onMaskSelectorChanged(int inputNb,
 
     if (!isRefreshingInputRelatedData) {
         ///Clip preferences have changed
-        RenderScale s(1.);
         effect->refreshMetadata_public(true);
     }
 }
@@ -5666,7 +5647,7 @@ Node::setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes)
     if ( QThread::currentThread() != qApp->thread() ) {
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
         while ( _imp->nodeIsDequeuing && !aborted() ) {
-            _imp->nodeIsDequeuingCond.wait(&_imp->nodeIsDequeuingMutex);
+            _imp->nodeIsDequeuingCond.wait(k.mutex());
         }
     }
 
@@ -5845,7 +5826,6 @@ addIdentityNodesRecursively(const Node* caller,
             /*
                Very unlikely that there's no request pass. But we still check
              */
-            RenderScale scale(1.);
             double inputTimeId;
             ViewIdx identityView;
             int inputNbId;
@@ -5855,7 +5835,7 @@ addIdentityNodesRecursively(const Node* caller,
 
             RectI format = node->getEffectInstance()->getOutputFormat();
 
-            isIdentity = node->getEffectInstance()->isIdentity_public(true, renderHash, time, scale, format, view, &inputTimeId, &identityView, &inputNbId);
+            isIdentity = node->getEffectInstance()->isIdentity_public(true, renderHash, time, RenderScale::identity, format, view, &inputTimeId, &identityView, &inputNbId);
         }
 
 
@@ -6137,14 +6117,12 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,
         }
 
         double time = (double)getApp()->getTimeLine()->currentFrame();
-        RenderScale scaleOne(1.);
         ///Render scale support might not have been set already because getRegionOfDefinition could have failed until all non optional inputs were connected
         if (_imp->effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
             RectD rod;
-            StatusEnum stat = _imp->effect->getRegionOfDefinition(getHashValue(), time, scaleOne, ViewIdx(0), &rod);
+            StatusEnum stat = _imp->effect->getRegionOfDefinition(getHashValue(), time, RenderScale::identity, ViewIdx(0), &rod);
             if (stat != eStatusFailed) {
-                RenderScale scale(0.5);
-                stat = _imp->effect->getRegionOfDefinition(getHashValue(), time, scale, ViewIdx(0), &rod);
+                stat = _imp->effect->getRegionOfDefinition(getHashValue(), time, RenderScale::fromMipmapLevel(1), ViewIdx(0), &rod);
                 if (stat != eStatusFailed) {
                     _imp->effect->setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
                 } else {
@@ -6546,7 +6524,7 @@ Node::declareNodeVariableToPython(const std::string& nodeName)
         ss << nodeFullName << " = " << appID << ".getNode(\"" << nodeName << "\")\n";
 #ifdef DEBUG
         ss << "if not " << nodeFullName << ":\n";
-        ss << "    print \"[BUG]: " << nodeFullName << " does not exist!\"";
+        ss << "    print(\"[BUG]: " << nodeFullName << " does not exist!\")";
 #endif
         std::string script = ss.str();
         std::string output;
@@ -6657,7 +6635,7 @@ Node::declarePythonFields()
     std::stringstream ss;
 #ifdef DEBUG
     ss << "if not " << nodeFullName << ":\n";
-    ss << "    print \"[BUG]: " << nodeFullName << " is not defined!\"\n";
+    ss << "    print(\"[BUG]: " << nodeFullName << " is not defined!\")\n";
 #endif
     const KnobsVec& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
@@ -7072,7 +7050,7 @@ Node::getChannelSelectorKnob(int inputNb) const
                 return KnobChoicePtr();
             }
 
-            return boost::dynamic_pointer_cast<KnobChoice>(knob);
+            return std::dynamic_pointer_cast<KnobChoice>(knob);
         }
 
         return KnobChoicePtr();
@@ -7247,9 +7225,9 @@ Node::refreshChannelSelectors()
 
 
         KnobChoicePtr channelKnob = it->second.channel.lock();
-        
+
         hasChanged |= channelKnob->populateChoices(choices);
-        
+
     }
     //Notify the effect channels have changed (the viewer needs this)
     _imp->effect->onChannelsSelectorRefreshed();
@@ -7288,7 +7266,6 @@ Node::addUserComponents(const ImagePlaneDesc& comps)
     }
     if (!_imp->isRefreshingInputRelatedData) {
         ///Clip preferences have changed
-        RenderScale s(1.);
         getEffectInstance()->refreshMetadata_public(true);
     }
     {

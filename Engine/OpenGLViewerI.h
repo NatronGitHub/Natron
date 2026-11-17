@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,11 +28,9 @@
 
 #include "Global/Macros.h"
 
+#include <limits>
 #include <list>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#endif
 #include "Engine/OverlaySupport.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
@@ -77,10 +75,10 @@ public:
      * @brief Given the region of definition of an image, must return the portion of that image which is
      * actually displayed on the viewport. (It cannot be bigger than the rod)
      **/
-    virtual RectI getImageRectangleDisplayed(const RectI & pixelRod, const double par, unsigned int mipMapLevel) = 0;
-    virtual RectI getImageRectangleDisplayedRoundedToTileSize(int texIndex, const RectD & rod, const double par, unsigned int mipMapLevel,
+    virtual RectI getImageRectangleDisplayed(const RectI & pixelRod, const double par, unsigned int mipmapLevel) = 0;
+    virtual RectI getImageRectangleDisplayedRoundedToTileSize(int texIndex, const RectD & rod, const double par, unsigned int mipmapLevel,
                                                               std::vector<RectI>* tiles, std::vector<RectI>* tilesRounded, int *tileSize, RectI* roiNotRounded) = 0;
-    virtual RectI getExactImageRectangleDisplayed(int texIndex, const RectD & rod, const double par, unsigned int mipMapLevel) = 0;
+    virtual RectI getExactImageRectangleDisplayed(int texIndex, const RectD & rod, const double par, unsigned int mipmapLevel) = 0;
 
     /**
      * @brief Must return the bit depth of the texture used to render. (Byte, half or float)
@@ -125,7 +123,7 @@ public:
                                                const RectD& rod,
                                                double par,
                                                ImageBitDepthEnum depth,
-                                               unsigned int mipMapLevel,
+                                               unsigned int mipmapLevel,
                                                ImagePremultiplicationEnum premult,
                                                double gain,
                                                double gamma,
@@ -144,7 +142,7 @@ public:
      * @brief This function should update the color picker values (as a label or numbers) right away.
      * If x and y are INT_MAX then the viewer should just use the current position of the cursor.
      **/
-    virtual void updateColorPicker(int textureIndex, int x = INT_MAX, int y = INT_MAX) = 0;
+    virtual void updateColorPicker(int textureIndex, int x = std::numeric_limits<int>::max(), int y = std::numeric_limits<int>::max()) = 0;
 
     /**
      * @brief Must use OpenGL to query the texture color at the given image coordinates

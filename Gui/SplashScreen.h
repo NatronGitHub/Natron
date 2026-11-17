@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,7 +32,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
 #include <QPixmap>
-#include <QtCore/QString>
+#include <QString>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -51,6 +51,7 @@ private:
     QPixmap _pixmap;
     QString _text;
     QString _versionString;
+    qreal _scale;
 
 public:
 
@@ -79,6 +80,7 @@ private:
     QPixmap _pixmap;
     QString _text;
     QString _projectName;
+    qreal _scale;
 
 public:
 

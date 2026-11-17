@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # install gdb (requires xz, zlib ncurses, python2, texinfo)
-# see http://www.linuxfromscratch.org/blfs/view/cvs/general/gdb.html
+# see http://www.linuxfromscratch.org/blfs/view/svn/general/gdb.html
 GDB_VERSION=8.3.1 # 9.1 fails to build while compiling alloc-ipa.c
 GDB_TAR="gdb-${GDB_VERSION}.tar.xz" # when using the sdk during debug we get a conflict with native gdb, so bundle our own
-GDB_SITE="ftp://ftp.gnu.org/gnu/gdb"
+GDB_SITE="http://ftp.gnu.org/gnu/gdb"
 if download_step; then
     download "$GDB_SITE" "$GDB_TAR"
 fi

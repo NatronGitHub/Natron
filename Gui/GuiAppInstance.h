@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,11 +29,6 @@
 #include "Global/Macros.h"
 
 #include <map>
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
 
 #include "Engine/AppInstance.h"
 #include "Engine/ViewIdx.h"
@@ -125,16 +120,16 @@ public:
     virtual void warningDialog(const std::string & title, const std::string & message, bool* stopAsking, bool useHtml) const OVERRIDE FINAL;
     virtual void informationDialog(const std::string & title, const std::string & message, bool useHtml) const OVERRIDE FINAL;
     virtual void informationDialog(const std::string & title, const std::string & message, bool* stopAsking, bool useHtml) const OVERRIDE FINAL;
-    virtual StandardButtonEnum questionDialog(const std::string & title,
+    virtual Natron::StandardButtonEnum questionDialog(const std::string & title,
                                               const std::string & message,
                                               bool useHtml,
-                                              StandardButtons buttons = StandardButtons(eStandardButtonYes | eStandardButtonNo),
-                                              StandardButtonEnum defaultButton = eStandardButtonNoButton) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual StandardButtonEnum questionDialog(const std::string & title,
+                                              Natron::StandardButtons buttons = Natron::StandardButtons(Natron::StandardButtonEnum::eStandardButtonYes | Natron::StandardButtonEnum::eStandardButtonNo),
+                                              Natron::StandardButtonEnum defaultButton = Natron::StandardButtonEnum::eStandardButtonNoButton) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual Natron::StandardButtonEnum questionDialog(const std::string & title,
                                               const std::string & message,
                                               bool useHtml,
-                                              StandardButtons buttons,
-                                              StandardButtonEnum defaultButton,
+                                              Natron::StandardButtons buttons,
+                                              Natron::StandardButtonEnum defaultButton,
                                               bool* stopAsking) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void loadProjectGui(bool isAutosave,  boost::archive::xml_iarchive & archive) const OVERRIDE FINAL;
     virtual void saveProjectGui(boost::archive::xml_oarchive & archive) OVERRIDE FINAL;
@@ -178,7 +173,7 @@ public:
     virtual void declareCurrentAppVariable_Python() OVERRIDE;
     virtual void createLoadProjectSplashScreen(const QString& projectFile) OVERRIDE FINAL;
     virtual void updateProjectLoadStatus(const QString& str) OVERRIDE FINAL;
-    virtual void closeLoadPRojectSplashScreen() OVERRIDE FINAL;
+    virtual void closeLoadProjectSplashScreen() OVERRIDE FINAL;
     virtual void renderAllViewers(bool canAbort) OVERRIDE FINAL;
     virtual void refreshAllPreviews() OVERRIDE FINAL;
     virtual void abortAllViewers() OVERRIDE FINAL;
@@ -277,7 +272,7 @@ private:
     virtual void createNodeGui(const NodePtr &node,
                                const NodePtr&  parentMultiInstance,
                                const CreateNodeArgs& args) OVERRIDE FINAL;
-    boost::scoped_ptr<GuiAppInstancePrivate> _imp;
+    std::unique_ptr<GuiAppInstancePrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

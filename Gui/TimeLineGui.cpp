@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,14 +29,14 @@
 #include <set>
 #include <stdexcept>
 
-#include <QtGui/QFont>
+#include <QFont>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
-#include <QtGui/QMouseEvent>
+#include <QMouseEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-#include <QtCore/QCoreApplication>
-#include <QtCore/QThread>
-#include <QtCore/QTimer>
+#include <QCoreApplication>
+#include <QThread>
+#include <QTimer>
 
 #include "Global/GlobalDefines.h"
 
@@ -58,8 +58,11 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/TextRenderer.h"
+#include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ticks.h"
+
+#include <QOpenGLContext>
 
 NATRON_NAMESPACE_ENTER
 
@@ -156,7 +159,8 @@ struct TimelineGuiPrivate
     int mouseMoveX; ///< widget X coordinate of last mousemove position
     TimeLineZoomContext tlZoomCtx;
     TextRenderer textRenderer;
-    QFont font;
+    double _screenPixelRatio;
+    std::unique_ptr<QFont> _textFont;
     bool firstPaint;
     CachedFrames cachedFrames;
     mutable QMutex boundariesMutex;
@@ -186,7 +190,8 @@ struct TimelineGuiPrivate
         , mouseMoveX(0)
         , tlZoomCtx()
         , textRenderer()
-        , font(appFont, appFontSize)
+        , _screenPixelRatio(0.)
+        , _textFont()
         , firstPaint(true)
         , cachedFrames()
         , boundariesMutex()
@@ -232,7 +237,7 @@ TimeLineGui::TimeLineGui(ViewerInstance* viewer,
                          TimeLinePtr timeline,
                          Gui* gui,
                          ViewerTab* viewerTab)
-    : QGLWidget(viewerTab)
+    : QOpenGLWidget(viewerTab)
     , _imp( new TimelineGuiPrivate(this, viewer, gui, viewerTab) )
 {
     setTimeline(timeline);
@@ -352,6 +357,15 @@ TimeLineGui::paintGL()
 
     glCheckError();
 
+    {
+        double screenPixelRatio = _imp->viewerTab->getViewer()->getScreenPixelRatio();
+        if (screenPixelRatio != _imp->_screenPixelRatio) {
+            _imp->_screenPixelRatio = screenPixelRatio;
+            _imp->_textFont.reset(new QFont(appFont, appFontSize * screenPixelRatio, QFont::Bold));
+        }
+    }
+    assert(_imp->_textFont);
+
     SequenceTime leftBound, rightBound;
     {
         QMutexLocker k(&_imp->boundariesMutex);
@@ -423,20 +437,31 @@ TimeLineGui::paintGL()
             firstFrame = (double)f;
             lastFrame = (double)l;
         }
-        QPointF firstFrameWidgetPos = toWidgetCoordinates(firstFrame, 0);
-        QPointF lastFrameWidgetPos = toWidgetCoordinates(lastFrame, 0);
-
-        glScissor( firstFrameWidgetPos.x(), 0,
-                   lastFrameWidgetPos.x() - firstFrameWidgetPos.x(), height() );
 
         double bgR, bgG, bgB;
         settings->getBaseColor(&bgR, &bgG, &bgB);
+#if 0
+        // solution using glScissor
+        QPointF firstFrameWidgetPos = toWidgetCoordinates(firstFrame, 0);
+        QPointF lastFrameWidgetPos = toWidgetCoordinates(lastFrame, 0);
+
+        glScissor( firstFrameWidgetPos.x() * _imp->_screenPixelRatio, 0,
+                   (lastFrameWidgetPos.x() - firstFrameWidgetPos.x()) * _imp->_screenPixelRatio, height() * _imp->_screenPixelRatio);
 
         glEnable(GL_SCISSOR_TEST);
         glClearColor(bgR, bgG, bgB, 1.);
         glClear(GL_COLOR_BUFFER_BIT);
         glCheckErrorIgnoreOSXBug();
         glDisable(GL_SCISSOR_TEST);
+#else
+        glColor4f(bgR, bgG, bgB, 1.);
+        glBegin(GL_POLYGON);
+        glVertex2f( firstFrame, btmLeft.y() );
+        glVertex2f( firstFrame, topRight.y() );
+        glVertex2f( lastFrame, topRight.y() );
+        glVertex2f( lastFrame, btmLeft.y() );
+        glEnd();
+#endif
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -455,8 +480,9 @@ TimeLineGui::paintGL()
         }
 
 
-        QFontMetrics fontM(_imp->font, 0);
-        double lineYPosWidget = height() - 1 - fontM.height()  - TO_DPIY(TICK_HEIGHT) / 2.;
+        QFontMetrics fm(*_imp->_textFont, 0);
+        double fmHeight = fm.height() / _imp->_screenPixelRatio;
+        double lineYPosWidget = height() - 1 - fmHeight  - TO_DPIY(TICK_HEIGHT) / 2.;
         double lineYpos = toTimeLineCoordinates(0, lineYPosWidget).y();
         double cachedLineYPos = toTimeLineCoordinates(0, lineYPosWidget + 1).y();
 
@@ -484,6 +510,7 @@ TimeLineGui::paintGL()
 
 
         glColor4f(txtR / 2., txtG / 2., txtB / 2., 1.);
+        glLineWidth(1.5 * _imp->_screenPixelRatio);
         glBegin(GL_LINES);
         glVertex2f(btmLeft.x(), lineYpos);
         glVertex2f(topRight.x(), lineYpos);
@@ -493,8 +520,8 @@ TimeLineGui::paintGL()
 #if (__GNUC__ == 8 && __GNUC_MINOR__ >= 1 && __GNUC_MINOR__ < 3) && !defined(ENFORCE_GCC8)
 #error "Timeline GUI is wrong with GCC 8.1 (and maybe GCC 8.2), see https://github.com/NatronGitHub/Natron/issues/279"
 #endif
-        double tickBottom = toTimeLineCoordinates( 0, height() - 1 - fontM.height() ).y();
-        double tickTop = toTimeLineCoordinates( 0, height() - 1 - fontM.height()  - TO_DPIY(TICK_HEIGHT) ).y();
+        double tickBottom = toTimeLineCoordinates( 0, height() - 1 - fmHeight ).y();
+        double tickTop = toTimeLineCoordinates( 0, height() - 1 - fmHeight  - TO_DPIY(TICK_HEIGHT) ).y();
         const double smallestTickSizePixel = 30.; // tick size (in pixels) for alpha = 0.
         const double largestTickSizePixel = 200.; // tick size (in pixels) for alpha = 1.
         const double rangePixel =  width();
@@ -517,7 +544,7 @@ TimeLineGui::paintGL()
         ticks_fill(half_tick, ticks_max, m1, m2, &ticks);
         const double smallestTickSize = range * smallestTickSizePixel / rangePixel;
         const double largestTickSize = range * largestTickSizePixel / rangePixel;
-        const double minTickSizeTextPixel = _imp->isTimeFormatFrames ? fontM.width( QLatin1String("00000") ) : fontM.width( QLatin1String("00:00:00:00") ); // AXIS-SPECIFIC
+        const double minTickSizeTextPixel = ( _imp->isTimeFormatFrames ? fm.horizontalAdvance( QLatin1String("00000") ) : fm.horizontalAdvance( QLatin1String("00:00:00:00") ) ) / _imp->_screenPixelRatio;
         const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
         for (int i = m1; i <= m2; ++i) {
             double value = i * smallTickSize + offset;
@@ -531,7 +558,7 @@ TimeLineGui::paintGL()
                 continue;
             }
             glColor4f(txtR, txtG, txtB, alpha);
-
+            glLineWidth(1.5 * _imp->_screenPixelRatio);
             glBegin(GL_LINES);
             glVertex2f(value, tickBottom);
             glVertex2f(value, tickTop);
@@ -541,7 +568,7 @@ TimeLineGui::paintGL()
             if (tickSize > minTickSizeText) {
                 const int tickSizePixel = rangePixel * tickSize / range;
                 const QString s = _imp->isTimeFormatFrames ? QString::number(value) : timecodeString(value, fps);
-                const int sSizePixel =  fontM.width(s);
+                const int sSizePixel =  fm.horizontalAdvance(s) / _imp->_screenPixelRatio;
                 if (tickSizePixel > sSizePixel) {
                     const int sSizeFullPixel = sSizePixel + minTickSizeTextPixel;
                     double alphaText = 1.0; //alpha;
@@ -550,14 +577,14 @@ TimeLineGui::paintGL()
                         // draw it with a lower alpha
                         alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
                     }
-                    alphaText = std::min(alphaText, alpha); // don't draw more opaque than tcks
+                    //alphaText = std::min(alphaText, alpha); // don't draw more opaque than ticks
                     QColor c;
                     c.setRgbF( Image::clamp<qreal>(txtR, 0., 1.),
                                Image::clamp<qreal>(txtG, 0., 1.),
                                Image::clamp<qreal>(txtB, 0., 1.) );
                     c.setAlpha(255 * alphaText);
                     glCheckError();
-                    renderText(value, btmLeft.y(), s, c, _imp->font, Qt::AlignHCenter);
+                    renderText(value, btmLeft.y(), s, c, *_imp->_textFont, Qt::AlignHCenter);
                 }
             }
         }
@@ -652,7 +679,7 @@ TimeLineGui::paintGL()
             glEnd();
             glCheckErrorIgnoreOSXBug();
 
-            renderText(currentBtm.x(), currentTopRight.y(), currentNumber, currentColor, _imp->font, Qt::AlignHCenter);
+            renderText(currentBtm.x(), currentTopRight.y(), currentNumber, currentColor, *_imp->_textFont, Qt::AlignHCenter);
         }
 
         //draw the bounds and the current time cursor
@@ -680,7 +707,7 @@ TimeLineGui::paintGL()
         QString currentFrameStr = _imp->isTimeFormatFrames ? QString::number(currentTime) : timecodeString(currentTime, fps);
         double cursorTextXposWidget = cursorBtmWidgetCoord.x();
         double cursorTextPos = toTimeLine(cursorTextXposWidget);
-        renderText(cursorTextPos, cursorTopLeft.y(), currentFrameStr, actualCursorColor, _imp->font, Qt::AlignHCenter);
+        renderText(cursorTextPos, cursorTopLeft.y(), currentFrameStr, actualCursorColor, *_imp->_textFont, Qt::AlignHCenter);
         glBegin(GL_POLYGON);
         glVertex2f( cursorBtm.x(), cursorBtm.y() );
         glVertex2f( cursorTopLeft.x(), cursorTopLeft.y() );
@@ -701,7 +728,7 @@ TimeLineGui::paintGL()
                     double leftBoundTextXposWidget = toWidgetCoordinates( ( leftBoundBtm.x() + leftBoundBtmRight.x() ) / 2., 0 ).x();
                     double leftBoundTextPos = toTimeLine(leftBoundTextXposWidget);
                     renderText(leftBoundTextPos, leftBoundTop.y(),
-                               leftBoundStr, boundsColor, _imp->font, Qt::AlignHCenter);
+                               leftBoundStr, boundsColor, *_imp->_textFont, Qt::AlignHCenter);
                 }
                 glColor4f(boundsR, boundsG, boundsB, 1.);
                 glBegin(GL_POLYGON);
@@ -718,7 +745,7 @@ TimeLineGui::paintGL()
                     double rightBoundTextXposWidget = toWidgetCoordinates( ( rightBoundBtm.x() + rightBoundBtmLeft.x() ) / 2., 0 ).x();
                     double rightBoundTextPos = toTimeLine(rightBoundTextXposWidget);
                     renderText(rightBoundTextPos, rightBoundTop.y(),
-                               rightBoundStr, boundsColor, _imp->font, Qt::AlignHCenter);
+                               rightBoundStr, boundsColor, *_imp->_textFont, Qt::AlignHCenter);
                 }
                 glColor4f(boundsR, boundsG, boundsB, 1.);
                 glCheckError();
@@ -736,8 +763,7 @@ TimeLineGui::paintGL()
         glEnable(GL_LINE_SMOOTH);
         glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
         glCheckError();
-        glLineWidth(2);
-        glCheckError();
+        glLineWidth(2 * _imp->_screenPixelRatio);
         glBegin(GL_LINES);
         for (CachedFrames::const_iterator i = _imp->cachedFrames.begin(); i != _imp->cachedFrames.end(); ++i) {
             if ( ( i->time >= btmLeft.x() ) && ( i->time <= topRight.x() ) ) {
@@ -753,6 +779,7 @@ TimeLineGui::paintGL()
         glEnd();
 
         ///now draw keyframes
+        glLineWidth(2 * _imp->_screenPixelRatio);
         glBegin(GL_LINES);
         glColor4f(kfR, kfG, kfB, 1.);
         std::list<SequenceTime> remainingUserKeys;
@@ -804,9 +831,9 @@ TimeLineGui::paintGL()
             glEnd();
 
             /*QString kfStr = QString::number(*it);
-               double kfXposWidget = kfBtmWidgetCoord.x() - fontM.width(kfStr) / 2.;
+               double kfXposWidget = kfBtmWidgetCoord.x() - fontM.width(kfStr) / (2. * _imp->_screenPixelRatio);
                double kfTextPos = toTimeLine(kfXposWidget);
-               renderText(kfTextPos,kfTopLeft.y(), kfStr, userKeyColor, _imp->font, Qt::AlignHCenter);*/
+               renderText(kfTextPos,kfTopLeft.y(), kfStr, userKeyColor, *_imp->_textFont, Qt::AlignHCenter);*/
         }
         glCheckErrorIgnoreOSXBug();
         glDisable(GL_POLYGON_SMOOTH);
@@ -823,7 +850,7 @@ TimeLineGui::renderText(double x,
                         const QFont & font,
                         int flags) const
 {
-    assert( QGLContext::currentContext() == context() );
+    assert( QOpenGLContext::currentContext() == context() );
 
     glCheckError();
     if ( text.isEmpty() ) {
@@ -839,8 +866,8 @@ TimeLineGui::renderText(double x,
     if ( (w <= 0) || (h <= 0) || (right <= left) || (top <= bottom) ) {
         return;
     }
-    double scalex = (right - left) / w;
-    double scaley = (top - bottom) / h;
+    double scalex = (right - left) / (w  * _imp->_screenPixelRatio);
+    double scaley = (top - bottom) / (h  * _imp->_screenPixelRatio);
     _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font, flags);
     glCheckError();
 }
@@ -980,11 +1007,11 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
 } // TimeLineGui::mouseMoveEvent
 
 void
-TimeLineGui::enterEvent(QEvent* e)
+TimeLineGui::enterEvent(QtCompat::QEnterEvent* e)
 {
     _imp->alphaCursor = true;
     update();
-    QGLWidget::enterEvent(e);
+    QOpenGLWidget::enterEvent(e);
 }
 
 void
@@ -992,7 +1019,7 @@ TimeLineGui::leaveEvent(QEvent* e)
 {
     _imp->alphaCursor = false;
     update();
-    QGLWidget::leaveEvent(e);
+    QOpenGLWidget::leaveEvent(e);
 }
 
 void
@@ -1050,23 +1077,23 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
     }
 
     _imp->state = eTimelineStateIdle;
-    QGLWidget::mouseReleaseEvent(e);
+    QOpenGLWidget::mouseReleaseEvent(e);
 } // TimeLineGui::mouseReleaseEvent
 
 void
 TimeLineGui::wheelEvent(QWheelEvent* e)
 {
-    if (e->orientation() != Qt::Vertical) {
+    if (e->angleDelta().x() != 0) {
         return;
     }
-    const double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() ); // no need to use ipow() here, because the result is not cast to int
+    const double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->angleDelta().y() );
     double newZoomFactor = _imp->tlZoomCtx.zoomFactor * scaleFactor;
     if (newZoomFactor <= 0.01) { // 1 pixel for 100 frames
         newZoomFactor = 0.01;
     } else if (newZoomFactor > 100.) { // 100 pixels per frame seems reasonable, see also DopeSheetView::wheelEvent()
         newZoomFactor = 100.;
     }
-    QPointF zoomCenter = toTimeLineCoordinates( e->x(), e->y() );
+    QPointF zoomCenter = toTimeLineCoordinates( e->position().x(), e->position().y() );
     double zoomRatio =   _imp->tlZoomCtx.zoomFactor / newZoomFactor;
     _imp->tlZoomCtx.left = zoomCenter.x() - (zoomCenter.x() - _imp->tlZoomCtx.left) * zoomRatio;
     _imp->tlZoomCtx.bottom = zoomCenter.y() - (zoomCenter.y() - _imp->tlZoomCtx.bottom) * zoomRatio;

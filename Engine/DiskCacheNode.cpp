@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,6 +26,7 @@
 #include "DiskCacheNode.h"
 
 #include <cassert>
+#include <limits>
 #include <stdexcept>
 
 #include "Engine/Node.h"
@@ -160,8 +161,8 @@ DiskCacheNode::knobChanged(KnobI* k,
     } else if (_imp->preRender.lock().get() == k) {
         AppInstance::RenderWork w;
         w.writer = this;
-        w.firstFrame = INT_MIN;
-        w.lastFrame = INT_MAX;
+        w.firstFrame = std::numeric_limits<int>::min();
+        w.lastFrame = std::numeric_limits<int>::max();
         w.frameStep = 1;
         w.useRenderStats = false;
         std::list<AppInstance::RenderWork> works;
@@ -220,7 +221,7 @@ DiskCacheNode::render(const RenderActionArgs& args)
         if (!srcImg) {
             return eStatusFailed;
         }
-        if ( srcImg->getMipMapLevel() != output.second->getMipMapLevel() ) {
+        if ( srcImg->getMipmapLevel() != output.second->getMipmapLevel() ) {
             throw std::runtime_error("Host gave image with wrong scale");
         }
         if ( ( srcImg->getComponents() != output.second->getComponents() ) || ( srcImg->getBitDepth() != output.second->getBitDepth() ) ) {

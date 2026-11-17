@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,19 +28,15 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 
-CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QSize>
-#include <QtOpenGL/QGLWidget>
-CLANG_DIAG_ON(deprecated)
+#include <QSize>
 CLANG_DIAG_ON(uninitialized)
+
+#include <QOpenGLWidget>
+
+#include <Global/QtCompat.h>
 
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
@@ -52,7 +48,7 @@ NATRON_NAMESPACE_ENTER
  **/
 struct HistogramPrivate;
 class Histogram
-    : public QGLWidget
+    : public QOpenGLWidget
       , public PanelWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -72,7 +68,7 @@ public:
     };
 
     Histogram(Gui* gui,
-              const QGLWidget* shareWidget = NULL);
+              const QOpenGLWidget* shareWidget = NULL);
 
     virtual ~Histogram();
 
@@ -82,6 +78,7 @@ public:
     void hideViewerCursor();
 
     int getViewerTextureInputDisplayed() const;
+    double getScreenPixelRatio() const;
 
 public Q_SLOTS:
 
@@ -114,11 +111,11 @@ private:
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void showEvent(QShowEvent* e) OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
-    boost::scoped_ptr<HistogramPrivate> _imp;
+    std::unique_ptr<HistogramPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

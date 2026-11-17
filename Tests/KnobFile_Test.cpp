@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,8 +27,10 @@
 
 #include <gtest/gtest.h>
 
-#include <QtCore/QString>
-#include <QtCore/QDir>
+#include <QString>
+#include <QDir>
+
+#include <QRandomGenerator>
 
 #include "Engine/FileSystemModel.h"
 #include "Engine/StandardPaths.h"
@@ -50,7 +52,7 @@ TEST(SequenceParsing, TestHashCharacter) {
     ///create temporary files as a sequence and try to read that sequence.
     QString tempPath = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
     QDir dir(tempPath);
-    QString dirName = QString::fromUtf8("NatronUnitTest") + QString::number( qrand() );
+    QString dirName = QString::fromUtf8("NatronUnitTest") + QString::number( QRandomGenerator::global()->generate() );
 
     dir.mkpath( QString::fromUtf8(".") );
     dir.mkdir(dirName);
@@ -221,7 +223,7 @@ TEST(SequenceParsing, TestPrintfLikeSyntax) {
     ///create temporary files as a sequence and try to read that sequence.
     QString tempPath = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
     QDir dir(tempPath);
-    QString dirName = QString::fromUtf8("NatronUnitTest") + QString::number( qrand() );
+    QString dirName = QString::fromUtf8("NatronUnitTest") + QString::number( QRandomGenerator::global()->generate() );
     dir.mkpath( QString::fromUtf8(".") );
     dir.mkdir(dirName);
     dir.cd(dirName);
@@ -329,7 +331,7 @@ TEST(SequenceParsing, TestViews) {
     ///create temporary files as a sequence and try to read that sequence.
     QString tempPath = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
     QDir dir(tempPath);
-    QString dirName = QString::fromUtf8("NatronUnitTest") + QString::number( qrand() );
+    QString dirName = QString::fromUtf8("NatronUnitTest") + QString::number( QRandomGenerator::global()->generate() );
 
     dir.mkpath( QString::fromUtf8(".") );
     dir.mkdir(dirName);

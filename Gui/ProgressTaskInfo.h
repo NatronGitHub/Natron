@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,23 +28,18 @@
 
 #include "Global/Macros.h"
 
-#include <QtCore/QObject>
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#endif
+#include <QObject>
 
 #include "Gui/GuiFwd.h"
 
+#include "Gui/TaskBar.h"
 
 NATRON_NAMESPACE_ENTER
 
 struct ProgressTaskInfoPrivate;
 class ProgressTaskInfo
     : public QObject
-    , public boost::enable_shared_from_this<ProgressTaskInfo>
+    , public std::enable_shared_from_this<ProgressTaskInfo>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -64,7 +59,7 @@ public:
     };
 
 private:
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
 
     ProgressTaskInfo(ProgressPanel* panel,
                      const NodePtr& node,
@@ -122,6 +117,12 @@ public:
 
     ProcessHandlerPtr getProcess() const;
 
+    void setTaskBar(TaskBar *taskbar);
+
+    void updateTaskBarProgress(ProgressTaskStatusEnum status, double progress);
+
+    void updateTaskBarState(TaskBar::ProgressState state);
+
 public Q_SLOTS:
 
     void onShowProgressPanelTimerTimeout();
@@ -169,7 +170,8 @@ private:
 
     void clearItems();
 
-    boost::scoped_ptr<ProgressTaskInfoPrivate> _imp;
+    std::unique_ptr<ProgressTaskInfoPrivate> _imp;
+    TaskBar *_taskbar;
 };
 
 NATRON_NAMESPACE_EXIT

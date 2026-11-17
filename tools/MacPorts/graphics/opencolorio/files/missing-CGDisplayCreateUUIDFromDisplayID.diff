@@ -1,0 +1,12 @@
+--- src/OpenColorIO/SystemMonitor_macos.cpp.orig	2021-11-29 16:37:53.000000000 -0800
++++ src/OpenColorIO/SystemMonitor_macos.cpp	2021-11-29 16:40:50.000000000 -0800
+@@ -14,6 +14,9 @@
+ 
+ #include "Logging.h"
+ 
++#if defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && (__MAC_OS_X_VERSION_MIN_REQUIRED < 1070) && (__MAC_OS_X_VERSION_MIN_REQUIRED >= 1040)
++extern "C" CFUUIDRef CGDisplayCreateUUIDFromDisplayID (uint32_t displayID);
++#endif
+ 
+ namespace OCIO_NAMESPACE
+ {

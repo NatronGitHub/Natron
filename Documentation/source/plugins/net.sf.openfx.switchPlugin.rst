@@ -24,7 +24,7 @@ A typical use case is a graph where an edited movie is used as input, then split
 
 This plugin concatenates transforms.
 
-See also: http://opticalenquiry.com/nuke/index.php?title=Switch
+See also: https://web.archive.org/web/20220120145727/http://opticalenquiry.com/nuke/index.php?title=Switch
 
 Inputs
 ------

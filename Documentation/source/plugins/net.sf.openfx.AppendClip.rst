@@ -14,7 +14,7 @@ Description
 
 Append one clip to another.
 
-See also: http://opticalenquiry.com/nuke/index.php?title=AppendClip
+See also: https://web.archive.org/web/20220627030729/http://www.opticalenquiry.com/nuke/index.php?title=AppendClip
 
 Inputs
 ------

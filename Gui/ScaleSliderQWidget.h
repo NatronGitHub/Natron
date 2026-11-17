@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,18 +28,15 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QSize>
+#include <QSize>
 #include <QWidget>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
+#include "Global/QtCompat.h"
 
 #include "Gui/GuiFwd.h"
 
@@ -96,6 +93,7 @@ public:
     bool getAltered() const;
 
     void setUseLineColor(bool use, const QColor& color);
+    void setUseSliderColor(bool use, const QColor &color);
 
 Q_SIGNALS:
     void editingFinished(bool hasMovedOnce);
@@ -124,11 +122,11 @@ private:
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
-    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void enterEvent(QtCompat::QEnterEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
-    boost::scoped_ptr<ScaleSliderQWidgetPrivate> _imp;
+    std::unique_ptr<ScaleSliderQWidgetPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

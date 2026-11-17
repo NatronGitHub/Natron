@@ -42,7 +42,7 @@ A is input PFg and B is input C, rw is the value of “Red Weight” and gbw is 
 
 See also:
 
-- http://opticalenquiry.com/nuke/index.php?title=The_Keyer_Nodes#IBK
+- https://web.archive.org/web/20220524000628/http://www.opticalenquiry.com/nuke/index.php?title=The_Keyer_Nodes#IBK
 
 - https://compositingmentor.com/2014/07/19/advanced-keying-breakdown-alpha-1-4-ibk-stacked-technique/
 

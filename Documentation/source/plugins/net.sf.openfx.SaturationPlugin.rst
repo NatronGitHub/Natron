@@ -16,7 +16,7 @@ Description
 
 Modify the color saturation of an image.
 
-See also: http://opticalenquiry.com/nuke/index.php?title=Saturation
+See also: https://web.archive.org/web/20220627030455/http://www.opticalenquiry.com/nuke/index.php?title=Saturation
 
 Inputs
 ------

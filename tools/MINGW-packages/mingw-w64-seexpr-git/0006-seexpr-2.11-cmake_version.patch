@@ -1,0 +1,12 @@
+diff -ru SeExpr-2.11/CMakeLists.txt.orig SeExpr-2.11/CMakeLists.txt
+--- SeExpr-2.11/CMakeLists.txt.orig	2025-04-05 10:23:50.648992700 -0700
++++ SeExpr-2.11/CMakeLists.txt	2025-04-05 10:24:26.639875400 -0700
+@@ -15,7 +15,7 @@
+ # http://www.apache.org/licenses/LICENSE-2.0
+ 
+ ## CMake compatibility issues: don't modify this, please!
+-CMAKE_MINIMUM_REQUIRED( VERSION 2.4.6 )
++CMAKE_MINIMUM_REQUIRED( VERSION 3.10.0 )
+ MARK_AS_ADVANCED(CMAKE_BACKWARDS_COMPATIBILITY)
+ ## allow more human readable "if then else" constructs
+ SET( CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE )

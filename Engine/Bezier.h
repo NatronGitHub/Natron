@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -33,14 +33,11 @@
 #include <string>
 #include <utility>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
+// clang-format off
 CLANG_DIAG_OFF(deprecated-declarations)
-#include <QtCore/QObject>
+#include <QObject>
 CLANG_DIAG_ON(deprecated-declarations)
+// clang-format on
 
 #include "Global/GlobalDefines.h"
 
@@ -363,7 +360,7 @@ public:
 
     static void deCastelJau(bool isOpenBezier,
                             bool useGuiCurves,
-                            const std::list<BezierCPPtr>& cps, double time, unsigned int mipMapLevel,
+                            const std::list<BezierCPPtr>& cps, double time, unsigned int mipmapLevel,
                             bool finished,
                             int nBPointsPerSegment,
                             const Transform::Matrix3x3& transform,
@@ -381,7 +378,7 @@ public:
      **/
     void evaluateAtTime_DeCasteljau(bool useGuiCurves,
                                     double time,
-                                    unsigned int mipMapLevel,
+                                    unsigned int mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                     int nbPointsPerSegment,
 #else
@@ -392,7 +389,7 @@ public:
 
     void evaluateAtTime_DeCasteljau(bool useGuiCurves,
                                     double time,
-                                    unsigned int mipMapLevel,
+                                    unsigned int mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                     int nbPointsPerSegment,
 #else
@@ -405,7 +402,7 @@ private:
 
     void evaluateAtTime_DeCasteljau_internal(bool useGuiCurves,
                                     double time,
-                                    unsigned int mipMapLevel,
+                                    unsigned int mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                     int nbPointsPerSegment,
 #else
@@ -422,7 +419,7 @@ public:
      **/
     void evaluateAtTime_DeCasteljau_autoNbPoints(bool useGuiCurves,
                                                  double time,
-                                                 unsigned int mipMapLevel,
+                                                 unsigned int mipmapLevel,
                                                  std::list<std::list<ParametricPoint> >* points,
                                                  RectD* bbox) const;
 
@@ -432,7 +429,7 @@ public:
      **/
     void evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiCurves,
                                                  double time,
-                                                 unsigned int mipMapLevel,
+                                                 unsigned int mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                  int nbPointsPerSegment,
 #else
@@ -444,7 +441,7 @@ public:
 
     void evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiCurves,
                                                  double time,
-                                                 unsigned int mipMapLevel,
+                                                 unsigned int mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                  int nbPointsPerSegment,
 #else
@@ -458,7 +455,7 @@ private:
 
     void evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiCurves,
                                                           double time,
-                                                          unsigned int mipMapLevel,
+                                                          unsigned int mipmapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                           int nbPointsPerSegment,
 #else
@@ -482,7 +479,7 @@ public:
                                             bool isOpenBezier,
                                             double time,
                                             ViewIdx view,
-                                            unsigned int mipMapLevel,
+                                            unsigned int mipmapLevel,
                                             const Transform::Matrix3x3& transform,
                                             RectD* bbox);
 
@@ -668,7 +665,7 @@ Q_SIGNALS:
 
 private:
 
-    boost::scoped_ptr<BezierPrivate> _imp;
+    std::unique_ptr<BezierPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

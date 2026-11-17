@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,8 +30,8 @@
 
 #include <QFutureWatcher>
 #include <QtConcurrentRun>
-#include <QtCore/QPointF>
-#include <QtCore/QRectF>
+#include <QPointF>
+#include <QRectF>
 
 #include <ofxNatron.h>
 
@@ -248,7 +248,7 @@ enum TrackerDrawStateEnum
 };
 
 typedef QFutureWatcher<std::pair<ImagePtr, RectI> > TrackWatcher;
-typedef boost::shared_ptr<TrackWatcher> TrackWatcherPtr;
+typedef std::shared_ptr<TrackWatcher> TrackWatcherPtr;
 
 struct TrackRequestKey
 {
@@ -312,6 +312,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     TrackerNodePrivate* _p;
+
     KnobButtonWPtr addTrackButton;
     KnobButtonWPtr trackRangeButton;
     KnobButtonWPtr trackBwButton;
@@ -363,7 +364,7 @@ public:
     TrackMarkerPtr interactMarker, hoverMarker;
 
     typedef std::map<int, GLTexturePtr> KeyFrameTexIDs;
-    typedef std::map<TrackMarkerWPtr, KeyFrameTexIDs> TrackKeysMap;
+    typedef std::map<TrackMarkerWPtr, KeyFrameTexIDs, std::owner_less<TrackMarkerWPtr>> TrackKeysMap;
     TrackKeysMap trackTextures;
     TrackKeyframeRequests trackRequestsMap;
     GLTexturePtr selectedMarkerTexture;
@@ -374,7 +375,7 @@ public:
     GLuint pboID;
     TrackWatcherPtr imageGetterWatcher;
     bool showMarkerTexture;
-    RenderScale selectedMarkerScale;
+    double selectedMarkerScale;
     ImageWPtr selectedMarkerImg;
     bool isTracking;
 

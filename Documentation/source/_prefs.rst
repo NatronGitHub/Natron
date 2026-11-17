@@ -20,6 +20,14 @@ The number of seconds after an event that Natron should wait before auto-saving.
 
 When activated Natron will auto-save projects that have never been saved and will prompt you on startup if an auto-save of that unsaved project was found. Disabling this will no longer save un-saved project.
 
+**Save versions**
+
+Number of versions created (for backup) when saving newer versions of a file.
+
+This option keeps saved versions of your file in the same directory, adding .\ :sub:`1`, .\ :sub:`2`, etc., with the number increasing to the number of versions you specify.
+
+Older files will be named with a higher number. E.g. with the default setting of 2, you will have three versions of your file: \*.ntp (last saved), \*.ntp.\ :sub:`1` (second last saved), \*.\ :sub:`2` (third last saved).
+
 **Appear to plug-ins as**
 
 Natron will appear with the name of the selected application to the OpenFX plug-ins. Changing it to the name of another application can help loading plugins which restrict their usage to specific OpenFX host(s). If a Host is not listed here, use the “Custom” entry to enter a custom host name. Changing this requires a restart of the application and requires clearing the OpenFX plugins cache from the Cache menu.
@@ -33,11 +41,11 @@ Controls how many threads Natron should use to render.
 
 -1: Disable multithreading totally (useful for debugging)
 
-0: Guess the thread count from the number of cores.
+0: Guess the thread count from the number of cores and the available memory (min(num_cores,memory/3.5Gb)).
 
 **Number of parallel renders (0=“guess”)**
 
-Controls the number of parallel frame that will be rendered at the same time by the renderer.A value of 0 indicate that Natron should automatically determine the best number of parallel renders to launch given your CPU activity. Setting a value different than 0 should be done only if you know what you’re doing and can lead in some situations to worse performances. Overall to get the best performances you should have your CPU at 100% activity without idle times.
+Controls the number of parallel frame that will be rendered at the same time by the renderer. A value of 0 indicate that Natron should automatically determine the best number of parallel renders to launch given your CPU activity. Setting a value different than 0 should be done only if you know what you’re doing and can lead in some situations to worse performances. Overall to get the best performances you should have your CPU at 100% activity without idle times.
 
 **Effects use the thread-pool**
 
@@ -47,7 +55,7 @@ WARNING: This is known not to work when using The Foundry’s Furnace plug-ins (
 
 **Max threads usable per effect (0=“guess”)**
 
-Controls how many threads a specific effect can use at most to do its processing. A high value will allow 1 effect to spawn lots of thread and might not be efficient because the time spent to launch all the threads might exceed the time spent actually processing.By default (0) the renderer applies an heuristic to determine what’s the best number of threads for an effect.
+Controls how many threads a specific effect can use at most to do its processing. A high value will allow 1 effect to spawn lots of thread and might not be efficient because the time spent to launch all the threads might exceed the time spent actually processing. By default (0) the renderer applies an heuristic to determine what’s the best number of threads for an effect.
 
 **Render in a separate process**
 
@@ -146,7 +154,7 @@ When activated, all colors picked from the color parameters are linearized befor
 
 **Maximum number of open settings panels (0=“unlimited”)**
 
-This property holds the maximum number of settings panels that can be held by the properties dock at the same time.The special value of 0 indicates there can be an unlimited number of panels opened.
+This property holds the maximum number of settings panels that can be held by the properties dock at the same time. The special value of 0 indicates there can be an unlimited number of panels opened.
 
 **Value increments based on cursor position**
 
@@ -206,7 +214,7 @@ The maximum size that may be used by the DiskCache node on disk (in GiB)
 
 WARNING: Changing this parameter requires a restart of the application.
 
-This points to the location where Natron on-disk caches will be. This variable should point to your fastest disk. This parameter can be overriden by the value of the environment variable NATRON_DISK_CACHE_PATH.
+This points to the location where Natron on-disk caches will be. This variable should point to your fastest disk. This parameter can be overridden by the value of the environment variable NATRON_DISK_CACHE_PATH.
 
 If the parameter is left empty or the location set is invalid, the default location will be used.
 
@@ -254,6 +262,10 @@ Controls the maximum amount of nodes that can have their interface showing up at
 When enabled, the row of number keys on the keyboard is used for switching input (<key> connects input to A side, <shift-key> connects input to B side), even if the corresponding character in the current keyboard layout is not a number.
 
 This may have to be disabled when using a remote display connection to Linux from a different OS.
+
+**Only display overlays for the viewer render path**
+
+When disabled, overlays for all the non-minimized open properties panels are displayed. When enabled, overlays are displayed only for the render path for the current viewer inputs.
 
 Nodegraph
 ---------
@@ -393,11 +405,11 @@ Node Graph
 
 **Display plug-in icon on node-graph**
 
-When checked, each node that has a plug-in icon will display it in the node-graph.Changing this option will not affect already existing nodes, unless a restart of Natron is made.
+When checked, each node that has a plug-in icon will display it in the node-graph. Changing this option will not affect already existing nodes, unless a restart of Natron is made.
 
 **Anti-Aliasing**
 
-When checked, the node graph will be painted using anti-aliasing. Unchecking it may increase performances. Changing this requires a restart of Natron
+When checked, the node graph will be painted using anti-aliasing. Unchecking it may increase performance. Changing this requires a restart of Natron
 
 **Default node color**
 

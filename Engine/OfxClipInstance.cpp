@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,15 +32,9 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
-#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/math/special_functions/fpclassify.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
-
-#include <QtCore/QTextStream>
-#include <QtCore/QDebug>
-#include <QtCore/QCoreApplication>
+#include <QTextStream>
+#include <QDebug>
+#include <QCoreApplication>
 
 #include "Engine/CacheEntry.h"
 #include "Engine/OfxEffectInstance.h"
@@ -75,7 +69,7 @@ public:
     double aspectRatio;
     bool optional;
     bool mask;
-    boost::shared_ptr<TLSHolder<OfxClipInstance::ClipTLSData> > tlsData;
+    std::shared_ptr<TLSHolder<OfxClipInstance::ClipTLSData> > tlsData;
 
 public:
     OfxClipInstancePrivate(OfxClipInstance* publicInterface,
@@ -607,7 +601,7 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
         bool isProjectFormat;
         U64 nodeHash = associatedNode->getRenderHash();
         RectD rod;
-        RenderScale scale( Image::getScaleFromMipMapLevel(mipmapLevel) );
+        const RenderScale scale = RenderScale::fromMipmapLevel(mipmapLevel);
         StatusEnum st = associatedNode->getRegionOfDefinition_public(nodeHash, time, scale, view, &rod, &isProjectFormat);
         if (st == eStatusFailed) {
             ret->x1 = 0.;
@@ -649,8 +643,8 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time,
         mipmapLevel = 0;
     } else {
         ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-        if ( !tls->mipMapLevel.empty() ) {
-            mipmapLevel = tls->mipMapLevel.back();
+        if ( !tls->mipmapLevel.empty() ) {
+            mipmapLevel = tls->mipmapLevel.back();
         } else {
             mipmapLevel = 0;
         }
@@ -685,8 +679,8 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         if ( !tls->view.empty() ) {
             view = tls->view.back();
         }
-        if ( !tls->mipMapLevel.empty() ) {
-            mipmapLevel = tls->mipMapLevel.back();
+        if ( !tls->mipmapLevel.empty() ) {
+            mipmapLevel = tls->mipmapLevel.back();
         } else {
             mipmapLevel = 0;
         }
@@ -767,7 +761,7 @@ OfxClipInstance::getImagePlane(OfxTime time,
                                const std::string& plane,
                                const OfxRectD *optionalBounds)
 {
-    if ( (boost::math::isnan)(time) ) {
+    if ( std::isnan(time) ) {
         // time is NaN
 
         return NULL;
@@ -798,7 +792,7 @@ OfxClipInstance::getImagePlaneInternal(OfxTime time,
                                        OFX::Host::ImageEffect::Image** image,
                                        OFX::Host::ImageEffect::Texture** texture)
 {
-    if ( (boost::math::isnan)(time) ) {
+    if ( std::isnan(time) ) {
         // time is NaN
 
         return false;
@@ -894,13 +888,13 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     if (comp.getNumComponents() == 0) {
         return false;
     }
-    if ( (boost::math::isnan)(time) ) {
+    if ( std::isnan(time) ) {
         // time is NaN
         return false;
     }
 
 
-    unsigned int mipMapLevel = 0;
+    unsigned int mipmapLevel = 0;
     // Get mipmaplevel and view from the TLS
 #ifdef DEBUG
     if ( !tls || tls->view.empty() ) {
@@ -924,10 +918,10 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
             view = ViewIdx( viewParam.value() );
         }
 
-        if ( tls->mipMapLevel.empty() ) {
-            mipMapLevel = 0;
+        if ( tls->mipmapLevel.empty() ) {
+            mipmapLevel = 0;
         } else {
-            mipMapLevel = tls->mipMapLevel.back();
+            mipmapLevel = tls->mipmapLevel.back();
         }
     } else {
         if ( viewParam.isCurrent() ) {
@@ -952,7 +946,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
             }
             bool sameComponents = (mapImageToClipPref && (*it)->getComponentsString() == thisClipComponents) ||
                                   (!mapImageToClipPref && (*it)->getComponentsString() == *ofxPlane);
-            if ( sameComponents && (internalImage->getMipMapLevel() == mipMapLevel) &&
+            if ( sameComponents && (internalImage->getMipmapLevel() == mipmapLevel) &&
                  ( time == internalImage->getTime() ) &&
                  ( view == internalImage->getKey().getView() ) ) {
                 if (retImage) {
@@ -977,7 +971,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     }
 
 
-    RenderScale renderScale( Image::getScaleFromMipMapLevel(mipMapLevel) );
+    const RenderScale renderScale = RenderScale::fromMipmapLevel(mipmapLevel);
     RectD bounds;
     if (optionalBounds) {
         bounds.x1 = optionalBounds->x1;
@@ -1332,7 +1326,7 @@ struct OfxImageCommonPrivate
     GenericAccessPtr access;
     OfxClipInstance::RenderActionDataPtr tls;
     std::string components;
-    boost::scoped_ptr<RamBuffer<unsigned char> > localBuffer;
+    std::unique_ptr<RamBuffer<unsigned char> > localBuffer;
 
     OfxImageCommonPrivate(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
                           const ImagePtr& image,
@@ -1374,8 +1368,8 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
 
     assert(internalImage);
 
-    unsigned int mipMapLevel = internalImage->getMipMapLevel();
-    RenderScale scale( NATRON_NAMESPACE::Image::getScaleFromMipMapLevel(mipMapLevel) );
+    const unsigned int mipmapLevel = internalImage->getMipmapLevel();
+    const OfxPointD scale = RenderScale::fromMipmapLevel(mipmapLevel).toOfxPointD();
     ofxImageBase->setDoubleProperty(kOfxImageEffectPropRenderScale, scale.x, 0);
     ofxImageBase->setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
 
@@ -1389,10 +1383,10 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
 
     // The bounds of the image at the moment we peak the rowBytes and the internal buffer pointer.
     // Note that when the ReadAccess, or WriteAccess object is released, the image may be resized afterwards (only bigger)
-    RectI pluginsSeenBounds;
+    const RectI bounds = internalImage->getBounds();
+    const RectI pluginsSeenBounds = renderWindow.intersect(bounds);
 
     int dataSizeOf = getSizeOfForBitDepth( internalImage->getBitDepth() );
-
 
     if (isSrcImage) {
         // Some plug-ins need a local version of the input image because they modify it (e.g: ReMap). This is out of spec
@@ -1403,9 +1397,6 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
         const bool copySrcToPluginLocalData = appPTR->isCopyInputImageForPluginRenderEnabled();
         NATRON_NAMESPACE::Image::ReadAccessPtr access( new NATRON_NAMESPACE::Image::ReadAccess( internalImage.get() ) );
 
-        // data ptr
-        const RectI bounds = internalImage->getBounds();
-        renderWindow.intersect(bounds, &pluginsSeenBounds);
         const std::size_t srcRowSize = bounds.width() * nComps  * dataSizeOf;
 
         // row bytes
@@ -1414,8 +1405,6 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
         if (storage == eStorageModeGLTex) {
             _imp->access = access;
         } else {
-
-
             if (!copySrcToPluginLocalData) {
                 const unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
                 assert(ptr);
@@ -1446,16 +1435,12 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
             }
         }
     } else {
-        const RectI bounds = internalImage->getBounds();
         const std::size_t srcRowSize = bounds.width() * nComps  * dataSizeOf;
 
         // row bytes
         ofxImageBase->setIntProperty(kOfxImagePropRowBytes, srcRowSize);
         
         NATRON_NAMESPACE::Image::WriteAccessPtr access( new NATRON_NAMESPACE::Image::WriteAccess( internalImage.get() ) );
-
-        // data ptr
-        renderWindow.intersect(bounds, &pluginsSeenBounds);
 
         if (storage != eStorageModeGLTex) {
             unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
@@ -1481,8 +1466,7 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
     // " An image's region of definition, in *PixelCoordinates,* is the full frame area of the image plane that the image covers."
     // Image::getRoD() is in *CANONICAL* coordinates
     // OFX::Image RoD is in *PIXEL* coordinates
-    RectI pixelRod;
-    rod.toPixelEnclosing(mipMapLevel, internalImage->getPixelAspectRatio(), &pixelRod);
+    const RectI pixelRod = rod.toPixelEnclosing(mipmapLevel, internalImage->getPixelAspectRatio());
     ofxImageBase->setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.left(), 0);
     ofxImageBase->setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.bottom(), 1);
     ofxImageBase->setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.right(), 2);
@@ -1596,7 +1580,7 @@ OfxClipInstance::setClipTLS(ViewIdx view,
 
     assert(tls);
     tls->view.push_back(view);
-    tls->mipMapLevel.push_back(mipmapLevel);
+    tls->mipmapLevel.push_back(mipmapLevel);
     RenderActionDataPtr d( new RenderActionData() );
     d->clipComponents = components;
     tls->renderData.push_back(d);
@@ -1615,9 +1599,9 @@ OfxClipInstance::invalidateClipTLS()
     if ( !tls->view.empty() ) {
         tls->view.pop_back();
     }
-    assert( !tls->mipMapLevel.empty() );
-    if ( !tls->mipMapLevel.empty() ) {
-        tls->mipMapLevel.pop_back();
+    assert( !tls->mipmapLevel.empty() );
+    if ( !tls->mipmapLevel.empty() ) {
+        tls->mipmapLevel.pop_back();
     }
     assert( !tls->renderData.empty() );
     if ( !tls->renderData.empty() ) {

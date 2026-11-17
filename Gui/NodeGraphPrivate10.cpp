@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -26,6 +26,7 @@
 #include "NodeGraphPrivate.h"
 #include "NodeGraph.h"
 
+#include <limits>
 #include <stdexcept>
 #include <sstream> // stringstream
 
@@ -58,10 +59,10 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
                                      std::list<std::pair<std::string, NodeGuiPtr> > *newNodes)
 {
     if ( !clipboard.isEmpty() ) {
-        double xmax = INT_MIN;
-        double xmin = INT_MAX;
-        double ymin = INT_MAX;
-        double ymax = INT_MIN;
+        double xmax = std::numeric_limits<int>::min();
+        double xmin = std::numeric_limits<int>::max();
+        double ymin = std::numeric_limits<int>::max();
+        double ymax = std::numeric_limits<int>::min();
 
         for (std::list<NodeGuiSerializationPtr>::const_iterator it = clipboard.nodesUI.begin();
              it != clipboard.nodesUI.end(); ++it) {
@@ -91,6 +92,8 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
         NodesGuiList newNodesList;
         std::list<std::pair<NodeSerializationPtr, NodePtr> > newNodesMap;
 
+        std::set<std::string> missingNodePlugins;
+
         ///The script-name of the copy node is different than the one of the original one
         ///We store the mapping so we can restore node links correctly
         std::map<std::string, std::string> oldNewScriptNamesMapping;
@@ -104,6 +107,7 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
                 NodeGuiPtr node = pasteNode( *itOther, *it, offset, group.lock(), std::string(), false, &oldNewScriptNamesMapping);
 
                 if (!node) {
+                    missingNodePlugins.insert((*itOther)->getPluginID());
                     continue;
                 }
                 newNodes->push_back( std::make_pair(oldScriptName, node) );
@@ -113,7 +117,20 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
                 const std::string& newScriptName = node->getNode()->getScriptName();
                 oldNewScriptNamesMapping[oldScriptName] = newScriptName;
             }
-            assert( internalNodesClipBoard.size() == newNodes->size() );
+            if (internalNodesClipBoard.size() != newNodes->size()) {
+                std::ostringstream message;
+                if (!missingNodePlugins.empty()) {
+                    message << QObject::tr("Following plugins are missing:").toStdString() << std::endl << std::endl << "<ul>";
+                    for (std::set<std::string>::const_iterator it = missingNodePlugins.begin(); it != missingNodePlugins.end(); ++it) {
+                        message << "<li>" << *it << "</li>";
+                    }
+                    message << "</ul>";
+                } else {
+                    message << QObject::tr("Unknown error").toStdString() << std::endl;
+                }
+                _publicInterface->getGui()->informationDialog(QObject::tr("Paste error").toStdString(), message.str(), true);
+                return;
+            }
 
             ///Now that all nodes have been duplicated, try to restore nodes connections
             restoreConnections(internalNodesClipBoard, *newNodes, oldNewScriptNamesMapping);
@@ -146,6 +163,19 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
     }
 } // pasteNodesInternal
 
+// Trim underscore followed by digits at the end of baseName (see #732).
+static
+void trimNumber(std::string &baseName)
+{
+    std::size_t found_underscore = baseName.rfind('_');
+    if (found_underscore != std::string::npos && found_underscore != (baseName.size() - 1)) {
+        std::size_t found_nondigit = baseName.find_last_not_of("0123456789");
+        if (found_nondigit == found_underscore) {
+            baseName.erase(found_underscore);
+        }
+    }
+}
+
 NodeGuiPtr
 NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
                             const NodeGuiSerializationPtr & guiSerialization,
@@ -173,26 +203,30 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
         return NodeGuiPtr();
     }
     NodeGuiIPtr gui_i = n->getNodeGui();
-    NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+    NodeGuiPtr gui = std::dynamic_pointer_cast<NodeGui>(gui_i);
     assert(gui);
 
-    std::string name;
     if ( ( grp == group.lock() ) && ( !internalSerialization->getNode() || ( internalSerialization->getNode()->getGroup() == group.lock() ) ) ) {
-        //We pasted the node in the same group, give it another label
-        int no = 1;
-        std::string label = internalSerialization->getNodeLabel();
-        do {
-            if (no > 1) {
-                std::stringstream ss;
-                ss << internalSerialization->getNodeLabel();
-                ss << '_';
-                ss << no;
-                label = ss.str();
-            }
-            ++no;
-        } while ( grp->checkIfNodeLabelExists( label, n.get() ) );
-
-        n->setLabel(label);
+        // We pasted the node in the same group, give it another label.
+        // If the label is available, use it as is.
+        // Else look for a similar name by adding a (different) number suffix.
+        std::string name = internalSerialization->getNodeLabel();
+        if ( grp->checkIfNodeLabelExists( name, n.get() ) ) {
+            std::string baseName = name;
+            trimNumber(baseName);
+            int no = 1;
+            do {
+                name = baseName;
+                if (no > 1) {
+                    name += '_';
+                    std::stringstream ss;
+                    ss << no;
+                    name += ss.str();
+                }
+                ++no;
+            } while ( grp->checkIfNodeLabelExists( name, n.get() ) );
+        }
+        n->setLabel(name);
     } else {
         //If we paste the node in a different graph, it can keep its scriptname/label
     }
@@ -231,7 +265,7 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
 
     ///Recurse if this is a group or multi-instance
     NodeGroupPtr isGrp =
-        boost::dynamic_pointer_cast<NodeGroup>( n->getEffectInstance()->shared_from_this() );
+        std::dynamic_pointer_cast<NodeGroup>( n->getEffectInstance()->shared_from_this() );
     const std::list<NodeSerializationPtr>& nodes = internalSerialization->getNodesCollection();
     std::list<NodeGuiSerializationPtr>  nodesUi;
     if (guiSerialization) {

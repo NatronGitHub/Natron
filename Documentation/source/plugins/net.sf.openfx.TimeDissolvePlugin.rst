@@ -16,7 +16,7 @@ Dissolves between two inputs, starting the dissolve at the in frame and ending a
 
 You can specify the dissolve curve over time, if the OFX host supports it (else it is a traditional smoothstep).
 
-See also http://opticalenquiry.com/nuke/index.php?title=TimeDissolve
+See also https://web.archive.org/web/20220627033151/http://www.opticalenquiry.com/nuke/index.php?title=TimeDissolve
 
 Inputs
 ------

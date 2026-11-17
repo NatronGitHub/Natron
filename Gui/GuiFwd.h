@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,7 +30,13 @@
 
 #include "Engine/EngineFwd.h"
 
+#ifdef Q_OS_DARWIN
+// for dockClickHandler
+#include <objc/objc.h> // defines OBJC_OLD_DISPATCH_PROTOTYPES
+#endif
+
 // Qt
+#include <QtGlobal>
 
 class QAbstractButton;
 class QAction;
@@ -48,7 +54,6 @@ class QFont;
 class QFontComboBox;
 class QFontMetrics;
 class QFrame;
-class QGLShaderProgram;
 class QGraphicsLineItem;
 class QGraphicsPolygonItem;
 class QGraphicsScene;
@@ -92,7 +97,9 @@ class QUndoStack;
 class QVBoxLayout;
 class QWheelEvent;
 class QWidget;
-typedef boost::shared_ptr<QUndoStack> QUndoStackPtr;
+typedef std::shared_ptr<QUndoStack> QUndoStackPtr;
+
+class QOpenGLShaderProgram;
 
 // Natron Gui
 NATRON_NAMESPACE_ENTER
@@ -228,14 +235,15 @@ class ViewerGL;
 class ViewerTab;
 class ViewerToolButton;
 class KnobPageGui;
+
+#ifdef Q_OS_DARWIN
 //Implementation in Gui/QtMac.mm
 namespace QtMac {
-bool isHighDPIInternal(const QWidget* w);
 #if OBJC_OLD_DISPATCH_PROTOTYPES != 1
 void setupDockClickHandler(void (*)(void));
 #endif
-
 }
+#endif
 
 NATRON_PYTHON_NAMESPACE_ENTER
 class GuiApp;
@@ -244,76 +252,76 @@ class PyPanel;
 class PyTabWidget;
 class IntParam;
 class StringParam;
-typedef boost::shared_ptr<StringParam> StringParamPtr;
-typedef boost::shared_ptr<IntParam> IntParamPtr;
-typedef boost::shared_ptr<PyModalDialog> PyModalDialogPtr;
+typedef std::shared_ptr<StringParam> StringParamPtr;
+typedef std::shared_ptr<IntParam> IntParamPtr;
+typedef std::shared_ptr<PyModalDialog> PyModalDialogPtr;
 NATRON_PYTHON_NAMESPACE_EXIT
 
-typedef boost::shared_ptr<AnimItemBase> AnimItemBasePtr;
-typedef boost::shared_ptr<AnimationModule> AnimationModulePtr;
-typedef boost::shared_ptr<AnimationModuleBase> AnimationModuleBasePtr;
-typedef boost::shared_ptr<AnimationModuleSelectionModel> AnimationModuleSelectionModelPtr;
-typedef boost::shared_ptr<AnimationModuleSelectionProvider> AnimationModuleSelectionProviderPtr;
-typedef boost::shared_ptr<BackdropGui> BackdropGuiPtr;
-typedef boost::shared_ptr<BezierCPCurveGui> BezierCPCurveGuiPtr;
-typedef boost::shared_ptr<ComboBoxMenuNode> ComboBoxMenuNodePtr;
-typedef boost::shared_ptr<CurveGui> CurveGuiPtr;
-typedef boost::shared_ptr<DSKnob> DSKnobPtr;
-typedef boost::shared_ptr<DSNode> DSNodePtr;
-typedef boost::shared_ptr<DefaultInteractI> DefaultInteractIPtr;
-typedef boost::shared_ptr<DopeSheetKey> DopeSheetKeyPtr;
-typedef boost::shared_ptr<DroppedTreeItem> DroppedTreeItemPtr;
-typedef boost::shared_ptr<FileDialogPreviewProvider> FileDialogPreviewProviderPtr;
-typedef boost::shared_ptr<GuiAppInstance> GuiAppInstancePtr;
-typedef boost::shared_ptr<HostOverlay> HostOverlayPtr;
-typedef boost::shared_ptr<InspectorNode> InspectorNodePtr;
-typedef boost::shared_ptr<KnobAnim> KnobAnimPtr;
-typedef boost::shared_ptr<KnobCurveGui> KnobCurveGuiPtr;
-typedef boost::shared_ptr<KnobGui const> KnobGuiConstPtr;
-typedef boost::shared_ptr<KnobGui> KnobGuiPtr;
-typedef boost::shared_ptr<KnobGuiColor> KnobGuiColorPtr;
-typedef boost::shared_ptr<KnobGuiDouble> KnobGuiDoublePtr;
-typedef boost::shared_ptr<KnobGuiInt> KnobGuiIntPtr;
-typedef boost::shared_ptr<KnobGuiWidgets> KnobGuiWidgetsPtr;
-typedef boost::shared_ptr<KnobItemsTableGui> KnobItemsTableGuiPtr;
-typedef boost::shared_ptr<KnobPageGui> KnobPageGuiPtr;
-typedef boost::shared_ptr<KnobWidgetDnD> KnobWidgetDnDPtr;
-typedef boost::shared_ptr<KnobsHolderAnimBase> KnobsHolderAnimBasePtr;
-typedef boost::shared_ptr<MultiInstancePanel> MultiInstancePanelPtr;
-typedef boost::shared_ptr<NodeAnim> NodeAnimPtr;
-typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
-typedef boost::shared_ptr<NodeGuiI> NodeGuiIPtr;
-typedef boost::shared_ptr<NodeGuiIndicator> NodeGuiIndicatorPtr;
-typedef boost::shared_ptr<NodeGuiSerialization> NodeGuiSerializationPtr;
-typedef boost::shared_ptr<NodeViewerContext> NodeViewerContextPtr;
-typedef boost::shared_ptr<ProgressTaskInfo> ProgressTaskInfoPtr;
-typedef boost::shared_ptr<PythonPanelSerialization> PythonPanelSerializationPtr;
-typedef boost::shared_ptr<SelectedKey> SelectedKeyPtr;
-typedef boost::shared_ptr<TableItem> TableItemPtr;
-typedef boost::shared_ptr<TableItemAnim> TableItemAnimPtr;
-typedef boost::shared_ptr<TableModel> TableModelPtr;
-typedef boost::shared_ptr<const TableItem> TableItemConstPtr;
-typedef boost::weak_ptr<AnimItemBase> AnimItemBaseWPtr;
-typedef boost::weak_ptr<AnimationModule> AnimationModuleWPtr;
-typedef boost::weak_ptr<AnimationModuleBase> AnimationModuleBaseWPtr;
-typedef boost::weak_ptr<AnimationModuleSelectionModel> AnimationModuleSelectionModelWPtr;
-typedef boost::weak_ptr<AnimationModuleSelectionProvider> AnimationModuleSelectionProviderWPtr;
-typedef boost::weak_ptr<DSKnob> DSKnobWPtr;
-typedef boost::weak_ptr<DSNode> DSNodeWPtr;
-typedef boost::weak_ptr<GuiAppInstance> GuiAppInstanceWPtr;
-typedef boost::weak_ptr<KnobAnim> KnobAnimWPtr;
-typedef boost::weak_ptr<KnobCurveGui> KnobCurveGuiWPtr;
-typedef boost::weak_ptr<KnobGui> KnobGuiWPtr;
-typedef boost::weak_ptr<KnobGuiWidgets> KnobGuiWidgetsWPtr;
-typedef boost::weak_ptr<KnobItemsTableGui> KnobItemsTableGuiWPtr;
-typedef boost::weak_ptr<KnobPageGui> KnobPageGuiWPtr;
-typedef boost::weak_ptr<KnobsHolderAnimBase> KnobsHolderAnimBaseWPtr;
-typedef boost::weak_ptr<NodeAnim> NodeAnimWPtr;
-typedef boost::weak_ptr<NodeGui> NodeGuiWPtr;
-typedef boost::weak_ptr<NodeViewerContext> NodeViewerContextWPtr;
-typedef boost::weak_ptr<TableItem> TableItemWPtr;
-typedef boost::weak_ptr<TableItemAnim> TableItemAnimWPtr;
-typedef boost::weak_ptr<TableModel> TableModelWPtr;
+typedef std::shared_ptr<AnimItemBase> AnimItemBasePtr;
+typedef std::shared_ptr<AnimationModule> AnimationModulePtr;
+typedef std::shared_ptr<AnimationModuleBase> AnimationModuleBasePtr;
+typedef std::shared_ptr<AnimationModuleSelectionModel> AnimationModuleSelectionModelPtr;
+typedef std::shared_ptr<AnimationModuleSelectionProvider> AnimationModuleSelectionProviderPtr;
+typedef std::shared_ptr<BackdropGui> BackdropGuiPtr;
+typedef std::shared_ptr<BezierCPCurveGui> BezierCPCurveGuiPtr;
+typedef std::shared_ptr<ComboBoxMenuNode> ComboBoxMenuNodePtr;
+typedef std::shared_ptr<CurveGui> CurveGuiPtr;
+typedef std::shared_ptr<DSKnob> DSKnobPtr;
+typedef std::shared_ptr<DSNode> DSNodePtr;
+typedef std::shared_ptr<DefaultInteractI> DefaultInteractIPtr;
+typedef std::shared_ptr<DopeSheetKey> DopeSheetKeyPtr;
+typedef std::shared_ptr<DroppedTreeItem> DroppedTreeItemPtr;
+typedef std::shared_ptr<FileDialogPreviewProvider> FileDialogPreviewProviderPtr;
+typedef std::shared_ptr<GuiAppInstance> GuiAppInstancePtr;
+typedef std::shared_ptr<HostOverlay> HostOverlayPtr;
+typedef std::shared_ptr<InspectorNode> InspectorNodePtr;
+typedef std::shared_ptr<KnobAnim> KnobAnimPtr;
+typedef std::shared_ptr<KnobCurveGui> KnobCurveGuiPtr;
+typedef std::shared_ptr<KnobGui const> KnobGuiConstPtr;
+typedef std::shared_ptr<KnobGui> KnobGuiPtr;
+typedef std::shared_ptr<KnobGuiColor> KnobGuiColorPtr;
+typedef std::shared_ptr<KnobGuiDouble> KnobGuiDoublePtr;
+typedef std::shared_ptr<KnobGuiInt> KnobGuiIntPtr;
+typedef std::shared_ptr<KnobGuiWidgets> KnobGuiWidgetsPtr;
+typedef std::shared_ptr<KnobItemsTableGui> KnobItemsTableGuiPtr;
+typedef std::shared_ptr<KnobPageGui> KnobPageGuiPtr;
+typedef std::shared_ptr<KnobWidgetDnD> KnobWidgetDnDPtr;
+typedef std::shared_ptr<KnobsHolderAnimBase> KnobsHolderAnimBasePtr;
+typedef std::shared_ptr<MultiInstancePanel> MultiInstancePanelPtr;
+typedef std::shared_ptr<NodeAnim> NodeAnimPtr;
+typedef std::shared_ptr<NodeGui> NodeGuiPtr;
+typedef std::shared_ptr<NodeGuiI> NodeGuiIPtr;
+typedef std::shared_ptr<NodeGuiIndicator> NodeGuiIndicatorPtr;
+typedef std::shared_ptr<NodeGuiSerialization> NodeGuiSerializationPtr;
+typedef std::shared_ptr<NodeViewerContext> NodeViewerContextPtr;
+typedef std::shared_ptr<ProgressTaskInfo> ProgressTaskInfoPtr;
+typedef std::shared_ptr<PythonPanelSerialization> PythonPanelSerializationPtr;
+typedef std::shared_ptr<SelectedKey> SelectedKeyPtr;
+typedef std::shared_ptr<TableItem> TableItemPtr;
+typedef std::shared_ptr<TableItemAnim> TableItemAnimPtr;
+typedef std::shared_ptr<TableModel> TableModelPtr;
+typedef std::shared_ptr<const TableItem> TableItemConstPtr;
+typedef std::weak_ptr<AnimItemBase> AnimItemBaseWPtr;
+typedef std::weak_ptr<AnimationModule> AnimationModuleWPtr;
+typedef std::weak_ptr<AnimationModuleBase> AnimationModuleBaseWPtr;
+typedef std::weak_ptr<AnimationModuleSelectionModel> AnimationModuleSelectionModelWPtr;
+typedef std::weak_ptr<AnimationModuleSelectionProvider> AnimationModuleSelectionProviderWPtr;
+typedef std::weak_ptr<DSKnob> DSKnobWPtr;
+typedef std::weak_ptr<DSNode> DSNodeWPtr;
+typedef std::weak_ptr<GuiAppInstance> GuiAppInstanceWPtr;
+typedef std::weak_ptr<KnobAnim> KnobAnimWPtr;
+typedef std::weak_ptr<KnobCurveGui> KnobCurveGuiWPtr;
+typedef std::weak_ptr<KnobGui> KnobGuiWPtr;
+typedef std::weak_ptr<KnobGuiWidgets> KnobGuiWidgetsWPtr;
+typedef std::weak_ptr<KnobItemsTableGui> KnobItemsTableGuiWPtr;
+typedef std::weak_ptr<KnobPageGui> KnobPageGuiWPtr;
+typedef std::weak_ptr<KnobsHolderAnimBase> KnobsHolderAnimBaseWPtr;
+typedef std::weak_ptr<NodeAnim> NodeAnimWPtr;
+typedef std::weak_ptr<NodeGui> NodeGuiWPtr;
+typedef std::weak_ptr<NodeViewerContext> NodeViewerContextWPtr;
+typedef std::weak_ptr<TableItem> TableItemWPtr;
+typedef std::weak_ptr<TableItemAnim> TableItemAnimWPtr;
+typedef std::weak_ptr<TableModel> TableModelWPtr;
 typedef std::list<NodeGuiPtr> NodesGuiList;
 typedef std::list<NodeGuiWPtr> NodesGuiWList;
 

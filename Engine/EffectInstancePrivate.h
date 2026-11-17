@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -34,9 +34,10 @@
 #include <list>
 #include <string>
 
-#include <QtCore/QCoreApplication>
-#include <QtCore/QWaitCondition>
-#include <QtCore/QMutex>
+#include <QCoreApplication>
+#include <QWaitCondition>
+#include <QMutex>
+#include <QRecursiveMutex>
 
 #include "Global/GlobalDefines.h"
 
@@ -53,7 +54,7 @@ struct ActionKey
 {
     double time;
     ViewIdx view;
-    unsigned int mipMapLevel;
+    unsigned int mipmapLevel;
 };
 
 struct IdentityResults
@@ -82,9 +83,9 @@ struct CompareActionsCacheKeys
         if (lhs.time < rhs.time) {
             return true;
         } else if (lhs.time == rhs.time) {
-            if (lhs.mipMapLevel < rhs.mipMapLevel) {
+            if (lhs.mipmapLevel < rhs.mipmapLevel) {
                 return true;
-            } else if (lhs.mipMapLevel == rhs.mipMapLevel) {
+            } else if (lhs.mipmapLevel == rhs.mipmapLevel) {
                 if (lhs.view < rhs.view) {
                     return true;
                 } else {
@@ -132,13 +133,13 @@ public:
     void setComponentsNeededResults(U64 hash, double time, ViewIdx view, const EffectInstance::ComponentsNeededMap& neededComps, std::bitset<4> processChannels,  bool processAll,
                                     const std::list<ImagePlaneDesc>& passThroughPlanes,int passThroughInputNb, ViewIdx passThroughView, double passThroughTime);
 
-    bool getRoDResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, RectD* rod);
+    bool getRoDResult(U64 hash, double time, ViewIdx view, unsigned int mipmapLevel, RectD* rod);
 
-    void setRoDResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, const RectD & rod);
+    void setRoDResult(U64 hash, double time, ViewIdx view, unsigned int mipmapLevel, const RectD & rod);
 
-    bool getFramesNeededResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, FramesNeededMap* framesNeeded);
+    bool getFramesNeededResult(U64 hash, double time, ViewIdx view, unsigned int mipmapLevel, FramesNeededMap* framesNeeded);
 
-    void setFramesNeededResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, const FramesNeededMap & framesNeeded);
+    void setFramesNeededResult(U64 hash, double time, ViewIdx view, unsigned int mipmapLevel, const FramesNeededMap & framesNeeded);
 
     bool getTimeDomainResult(U64 hash, double *first, double* last);
 
@@ -180,7 +181,7 @@ public:
     EffectInstance* _publicInterface;
 
     ///Thread-local storage living through the render_public action and used by getImage to retrieve all parameters
-    boost::shared_ptr<TLSHolder<EffectInstance::EffectTLSData> > tlsData;
+    std::shared_ptr<TLSHolder<EffectInstance::EffectTLSData> > tlsData;
     mutable QReadWriteLock duringInteractActionMutex; //< protects duringInteractAction
     bool duringInteractAction; //< true when we're running inside an interact action
 
@@ -211,7 +212,7 @@ public:
     };
 
     QMutex imagesBeingRenderedMutex;
-    typedef boost::shared_ptr<ImageBeingRendered> ImageBeingRenderedPtr;
+    typedef std::shared_ptr<ImageBeingRendered> ImageBeingRenderedPtr;
     typedef std::map<ImagePtr, ImageBeingRenderedPtr> ImageBeingRenderedMap;
     ImageBeingRenderedMap imagesBeingRendered;
 #endif
@@ -224,11 +225,12 @@ public:
 
     // set during interact actions on main-thread
     OverlaySupport* overlaysViewport;
-    mutable QMutex attachedContextsMutex;
+    mutable QRecursiveMutex attachedContextsMutex;
+
     // A list of context that are currently attached (i.e attachOpenGLContext() has been called on them but not yet dettachOpenGLContext).
     // If a plug-in returns false to supportsConcurrentOpenGLRenders() then whenever trying to attach a context, we take a lock in attachOpenGLContext
     // that is released in dettachOpenGLContext so that there can only be a single attached OpenGL context at any time.
-    std::map<OSGLContextWPtr, EffectInstance::OpenGLContextEffectDataPtr> attachedContexts;
+    EffectInstance::OpenGLContextEffectsMap attachedContexts;
 
     // Render clones are very small copies holding just pointers to Knobs that are used to render plug-ins that are only
     // eRenderSafetyInstanceSafe or lower
@@ -273,11 +275,11 @@ public:
        - OfxClipInstance::getImage
      *
      * We don't provide these datas for the getRegionOfDefinition with these render args because this action can be called way
-     * prior we have all the other parameters. getRegionOfDefinition only needs the current render view and mipMapLevel if it is
+     * prior we have all the other parameters. getRegionOfDefinition only needs the current render view and mipmapLevel if it is
      * called on a render thread or during an analysis. We provide it by setting those 2 parameters directly on a thread-storage
      * object local to the clip.
      *
-     * For getImage, all the ScopedRenderArgs are active (except for analysis). The view and mipMapLevel parameters will be retrieved
+     * For getImage, all the ScopedRenderArgs are active (except for analysis). The view and mipmapLevel parameters will be retrieved
      * on the clip that needs the image. All the other parameters will be retrieved in EffectInstance::getImage on the ScopedRenderArgs.
      *
      * During an analysis effect we don't set any ScopedRenderArgs and call some actions recursively if needed.
@@ -323,8 +325,8 @@ public:
         int firstFrame;
         int lastFrame;
         int preferredInput;
-        unsigned int mipMapLevel;
-        unsigned int renderMappedMipMapLevel;
+        unsigned int mipmapLevel;
+        unsigned int renderMappedMipmapLevel;
         RectD rod;
         double time;
         ViewIdx view;
@@ -346,8 +348,8 @@ public:
                                                   const bool isRenderResponseToUserInteraction,
                                                   const int firstFrame, const int lastFrame,
                                                   const int preferredInput,
-                                                  const unsigned int mipMapLevel,
-                                                  const unsigned int renderMappedMipMapLevel,
+                                                  const unsigned int mipmapLevel,
+                                                  const unsigned int renderMappedMipmapLevel,
                                                   const RectD & rod,
                                                   const double time,
                                                   const ViewIdx view,
@@ -382,7 +384,7 @@ public:
     ///    * renderMappedImage points to fullScaleMappedImage
     ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
     RenderingFunctorRetEnum renderHandler(const EffectTLSDataPtr& tls,
-                                          const unsigned int mipMapLevel,
+                                          const unsigned int mipmapLevel,
                                           const bool renderFullScaleThenDownscale,
                                           const bool isSequentialRender,
                                           const bool isRenderResponseToUserInteraction,

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,8 +30,8 @@
 #include <stdexcept>
 #include <cstring> // for std::memcpy, std::memset
 
-#include <QtCore/QWaitCondition>
-#include <QtCore/QMutex>
+#include <QWaitCondition>
+#include <QMutex>
 
 #include "Gui/GuiDefines.h"
 #include "Gui/NodeGui.h"
@@ -60,7 +60,7 @@ public:
     }
 };
 
-typedef boost::shared_ptr<ComputePreviewRequest> ComputePreviewRequestPtr;
+typedef std::shared_ptr<ComputePreviewRequest> ComputePreviewRequestPtr;
 
 struct PreviewThreadPrivate
 {
@@ -89,7 +89,7 @@ void
 PreviewThread::appendToQueue(const NodeGuiPtr& node,
                              double time)
 {
-    ComputePreviewRequestPtr r = boost::make_shared<ComputePreviewRequest>();
+    ComputePreviewRequestPtr r = std::make_shared<ComputePreviewRequest>();
 
     r->node = node;
     r->time = time;
@@ -99,7 +99,7 @@ PreviewThread::appendToQueue(const NodeGuiPtr& node,
 GenericSchedulerThread::ThreadStateEnum
 PreviewThread::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
 {
-    ComputePreviewRequestPtr args = boost::dynamic_pointer_cast<ComputePreviewRequest>(inArgs);
+    ComputePreviewRequestPtr args = std::dynamic_pointer_cast<ComputePreviewRequest>(inArgs);
 
     assert(args);
 

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,31 +30,26 @@
 #include <stdexcept>
 
 #include "Engine/RectI.h"
+#include "Engine/RenderScale.h"
 
 NATRON_NAMESPACE_ENTER
 
-void
-RectD::toPixelEnclosing(const RenderScale & scale,
-                        double par,
-                        RectI *rect) const
+RectI
+RectD::toPixelEnclosing(const RenderScale& renderScale,
+                        double par) const
 {
-    rect->x1 = std::floor(x1 * scale.x / par);
-    rect->y1 = std::floor(y1 * scale.y);
-    rect->x2 = std::ceil(x2 * scale.x / par);
-    rect->y2 = std::ceil(y2 * scale.y);
+    return toPixelEnclosing(renderScale.toMipmapLevel(), par);
 }
 
-void
-RectD::toPixelEnclosing(unsigned int mipMapLevel,
-                        double par,
-                        RectI *rect) const
+RectI
+RectD::toPixelEnclosing(unsigned int mipmapLevel,
+                        double par) const
 {
-    double scale = 1. / (1 << mipMapLevel);
-
-    rect->x1 = std::floor(x1 * scale / par);
-    rect->y1 = std::floor(y1 * scale);
-    rect->x2 = std::ceil(x2 * scale / par);
-    rect->y2 = std::ceil(y2 * scale);
+    const double scale = 1. / (1 << mipmapLevel);
+    return RectI(std::floor(x1 * scale / par),
+                 std::floor(y1 * scale),
+                 std::ceil(x2 * scale / par),
+                 std::ceil(y2 * scale));
 }
 
 NATRON_NAMESPACE_EXIT

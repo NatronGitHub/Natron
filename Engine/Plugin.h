@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,17 +32,17 @@
 #include <set>
 #include <map>
 #include <list>
-#include <QtCore/QString>
-#include <QtCore/QStringList>
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
+#include <QString>
+#include <QStringList>
+#include <QRecursiveMutex>
 
 #include "Global/Enums.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/PluginActionShortcut.h"
+
+#ifdef SBK_RUN
+NATRON_NAMESPACE_USING
+#endif
 
 NATRON_NAMESPACE_ENTER
 
@@ -169,10 +169,11 @@ class Plugin
     QString _pythonModule;
     OFX::Host::ImageEffect::ImageEffectPlugin* _ofxPlugin;
     OFX::Host::ImageEffect::Descriptor* _ofxDescriptor;
-    QMutex* _lock;
+    QRecursiveMutex* _lock;
+
     int _majorVersion;
     int _minorVersion;
-    ContextEnum _ofxContext;
+    Natron::ContextEnum _ofxContext;
     mutable bool _hasShortcutSet; //< to speed up the keypress event of Nodegraph, this is used to find out quickly whether it has a shortcut or not.
     bool _isReader, _isWriter;
 
@@ -194,7 +195,7 @@ class Plugin
     bool _multiThreadingEnabled;
     bool _openglActivated;
 
-    PluginOpenGLRenderSupport _openglRenderSupport;
+    Natron::PluginOpenGLRenderSupport _openglRenderSupport;
 
 public:
 
@@ -235,7 +236,8 @@ public:
            const QString & iconFilePath,
            const QStringList & groupIconFilePath,
            const QStringList & grouping,
-           QMutex* lock,
+           QRecursiveMutex* lock,
+
            int majorVersion,
            int minorVersion,
            bool isReader,
@@ -334,7 +336,8 @@ public:
 
     bool getToolsetScript() const;
 
-    QMutex* getPluginLock() const;
+    QRecursiveMutex* getPluginLock() const;
+
     LibraryBinary* getLibraryBinary() const;
 
     int getMajorVersion() const;
@@ -354,9 +357,9 @@ public:
     void setOfxPlugin(OFX::Host::ImageEffect::ImageEffectPlugin* p);
 
     OFX::Host::ImageEffect::ImageEffectPlugin* getOfxPlugin() const;
-    OFX::Host::ImageEffect::Descriptor* getOfxDesc(ContextEnum* ctx) const;
+    OFX::Host::ImageEffect::Descriptor* getOfxDesc(Natron::ContextEnum* ctx) const;
 
-    void setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc, ContextEnum ctx);
+    void setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc, Natron::ContextEnum ctx);
 
     bool isRenderScaleEnabled() const;
     void setRenderScaleEnabled(bool b);
@@ -370,8 +373,8 @@ public:
     bool isOpenGLEnabled() const;
     void setOpenGLEnabled(bool b);
 
-    void setOpenGLRenderSupport(PluginOpenGLRenderSupport support);
-    PluginOpenGLRenderSupport getPluginOpenGLRenderSupport() const;
+    void setOpenGLRenderSupport(Natron::PluginOpenGLRenderSupport support);
+    Natron::PluginOpenGLRenderSupport getPluginOpenGLRenderSupport() const;
 };
 
 struct Plugin_compare_version

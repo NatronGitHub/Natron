@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,18 +30,11 @@
 
 #include <map>
 #include <vector>
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/noncopyable.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QDateTime>
-#include <QtCore/QObject>
+#include <QDateTime>
+#include <QObject>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -61,11 +54,10 @@ NATRON_NAMESPACE_ENTER
 struct ProjectPrivate;
 
 class Project
-    :  public KnobHolder
+    : public KnobHolder
     , public NodeCollection
     , public AfterQuitProcessingI
-    , public boost::noncopyable
-    , public boost::enable_shared_from_this<Project>
+    , public std::enable_shared_from_this<Project>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -73,7 +65,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     struct MakeSharedEnabler;
 
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
     Project(const AppInstancePtr& appInstance);
 
 public:
@@ -87,7 +79,7 @@ public:
         std::vector<std::string> viewNames;
     };
 
-    typedef boost::shared_ptr<ProjectTLSData> ProjectDataTLSPtr;
+    typedef std::shared_ptr<ProjectTLSData> ProjectDataTLSPtr;
 
     /**
      * @brief Loads the project with the given path and name corresponding to a file on disk.
@@ -307,11 +299,13 @@ public:
      **/
     bool quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const GenericWatcherCallerArgsPtr& args);
 
-    bool isOpenGLRenderActivated() const;
-
     void refreshOpenGLRenderingFlagOnNodes();
 
 private:
+
+    Project(const Project&) = delete;
+
+    Project& operator=(const Project&) = delete;
 
     virtual void afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args) OVERRIDE FINAL;
 
@@ -428,7 +422,7 @@ private:
     bool load(const ProjectSerialization & obj, const QString& name, const QString& path, bool* mustSave);
 
 
-    boost::scoped_ptr<ProjectPrivate> _imp;
+    std::unique_ptr<ProjectPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

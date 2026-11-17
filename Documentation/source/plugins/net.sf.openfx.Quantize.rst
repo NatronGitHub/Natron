@@ -14,7 +14,7 @@ Description
 
 Reduce the number of color levels per channel.
 
-See also: http://opticalenquiry.com/nuke/index.php?title=Color_Operation
+See also: https://web.archive.org/web/20210728012057/http://opticalenquiry.com/nuke/index.php?title=Color_Operation
 
 Inputs
 ------

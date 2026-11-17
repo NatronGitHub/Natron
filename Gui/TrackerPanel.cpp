@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,6 +27,8 @@
 
 #include "TrackerPanel.h"
 
+#include <limits>
+
 #include <QApplication>
 #include <QHBoxLayout>
 #include <QStyledItemDelegate>
@@ -34,7 +36,7 @@
 #include <QHeaderView>
 #include <QCheckBox>
 #include <QItemSelection>
-#include <QtCore/QDebug>
+#include <QDebug>
 
 
 #include "Engine/Settings.h"
@@ -228,7 +230,7 @@ struct TrackKeys
         : userKeys(), centerKeys(), visible(false) {}
 };
 
-typedef std::map<TrackMarkerWPtr, TrackKeys  > TrackKeysMap;
+typedef std::map<TrackMarkerWPtr, TrackKeys, std::owner_less<TrackMarkerWPtr>> TrackKeysMap;
 
 struct TrackerPanelPrivate
 {
@@ -242,7 +244,7 @@ public:
     QVBoxLayout* mainLayout;
     TableView* view;
     TableModel* model;
-    boost::scoped_ptr<TableItemEditorFactory> itemEditorFactory;
+    std::unique_ptr<TableItemEditorFactory> itemEditorFactory;
     QWidget* buttonsContainer;
     QHBoxLayout* buttonsLayout;
     Button* addButton;
@@ -466,11 +468,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
 
     _imp->view->setAttribute(Qt::WA_MacShowFocusRect, 0);
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    _imp->view->header()->setResizeMode(QHeaderView::ResizeToContents);
-#else
     _imp->view->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
-#endif
     _imp->view->header()->setStretchLastSection(true);
 
     _imp->mainLayout->addWidget(_imp->view);
@@ -1006,8 +1004,8 @@ TrackerPanel::onAverageButtonClicked()
 #endif
 
     RangeD keyframesRange;
-    keyframesRange.min = INT_MAX;
-    keyframesRange.max = INT_MIN;
+    keyframesRange.min = std::numeric_limits<int>::max();
+    keyframesRange.max = std::numeric_limits<int>::min();
     for (std::list<TrackMarkerPtr>::iterator it = markers.begin(); it != markers.end(); ++it) {
         KnobDoublePtr markCenter = (*it)->getCenterKnob();
         double mini, maxi;
@@ -1027,7 +1025,7 @@ TrackerPanel::onAverageButtonClicked()
         }
     }
 
-    bool hasKeyFrame = keyframesRange.min != INT_MIN && keyframesRange.max != INT_MAX;
+    bool hasKeyFrame = keyframesRange.min != std::numeric_limits<int>::min() && keyframesRange.max != std::numeric_limits<int>::max();
     for (double t = keyframesRange.min; t <= keyframesRange.max; t += 1) {
         Point avgCenter;
         avgCenter.x = avgCenter.y = 0.;
@@ -1388,7 +1386,7 @@ TrackerPanel::onItemDataChanged(TableItem* item)
                 case COL_OFFSET_X:
                 case COL_OFFSET_Y:
                 case COL_ERROR: {
-                    KnobDoublePtr knob = boost::dynamic_pointer_cast<KnobDouble>( _imp->items[it].items[i].knob.lock() );
+                    KnobDoublePtr knob = std::dynamic_pointer_cast<KnobDouble>( _imp->items[it].items[i].knob.lock() );
                     assert(knob);
                     int dim = _imp->items[it].items[i].dimension;
                     double value = item->data(Qt::DisplayRole).toDouble();

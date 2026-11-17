@@ -1,0 +1,18 @@
+--- sources/shiboken2/libshiboken/pep384impl.cpp	2022-03-16 09:18:06.000000000 +0100
++++ sources/shiboken2/libshiboken/pep384impl.cpp.patched	2022-03-16 09:17:41.000000000 +0100
+@@ -751,9 +751,6 @@
+ #endif // IS_PY2
+     Shiboken::AutoDecRef privateobj(PyObject_GetAttr(
+         reinterpret_cast<PyObject *>(Py_TYPE(self)), Shiboken::PyMagicName::name()));
+-#ifndef Py_LIMITED_API
+-    return _Py_Mangle(privateobj, name);
+-#else
+     // PYSIDE-1436: _Py_Mangle is no longer exposed; implement it always.
+     // The rest of this function is our own implementation of _Py_Mangle.
+     // Please compare the original function in compile.c .
+@@ -789,7 +786,6 @@
+     if (amount > big_stack)
+         free(resbuf);
+     return result;
+-#endif // else Py_LIMITED_API
+ }

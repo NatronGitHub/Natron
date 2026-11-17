@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,10 +30,8 @@
 
 #include "Global/GLIncludes.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/OSGLContext_xdg.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
 #ifdef __NATRON_LINUX__
 
 #include "Global/GlobalDefines.h"
@@ -48,7 +46,7 @@ class OSGLContext_glx_data
 {
 public:
 
-    boost::scoped_ptr<OSGLContext_glx_dataPrivate> _imp;
+    std::unique_ptr<OSGLContext_glx_dataPrivate> _imp;
 
 
     OSGLContext_glx_data();
@@ -57,7 +55,7 @@ public:
 };
 
 struct OSGLContext_x11Private;
-class OSGLContext_x11
+class OSGLContext_x11 : public OSGLContext_xdg
 {
 public:
 
@@ -73,6 +71,7 @@ public:
     static void initGLXData(OSGLContext_glx_data* glxInfo);
     static void destroyGLXData(OSGLContext_glx_data* glxInfo);
     static bool makeContextCurrent(const OSGLContext_x11* context);
+    static bool threadHasACurrentContext();
     static void getGPUInfos(std::list<OpenGLRendererInfo>& renderers);
 
     void swapBuffers();
@@ -81,7 +80,7 @@ public:
 
 private:
     friend struct OSGLContext_x11Private;
-    boost::scoped_ptr<OSGLContext_x11Private> _imp;
+    std::unique_ptr<OSGLContext_x11Private> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

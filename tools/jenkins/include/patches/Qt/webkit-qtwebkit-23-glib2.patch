@@ -1,0 +1,14 @@
+diff -up webkit-qtwebkit-23/Source/WTF/wtf/gobject/GRefPtr.h.me webkit-qtwebkit-23/Source/WTF/wtf/gobject/GRefPtr.h
+--- webkit-qtwebkit-23/Source/WTF/wtf/gobject/GRefPtr.h.me	2021-09-16 10:00:33.214875944 +0200
++++ webkit-qtwebkit-23/Source/WTF/wtf/gobject/GRefPtr.h	2021-09-16 10:00:51.055293899 +0200
+@@ -28,9 +28,7 @@
+ #include <wtf/AlwaysInline.h>
+ #include <wtf/RefPtr.h>
+ #include <algorithm>
+-
+-extern "C" void g_object_unref(gpointer);
+-extern "C" gpointer g_object_ref_sink(gpointer);
++#include <glib.h>
+ 
+ namespace WTF {
+ 

@@ -1,7 +1,7 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
+ * Copyright (C) 2018-2023 The Natron developers
  * Copyright (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
- * Copyright (C) 2018-2021 The Natron developers
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,7 +66,7 @@
 #endif
 
 
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_DARWIN)
 #include "client/mac/crash_generation/crash_generation_server.h"
 #include <execinfo.h>
 #include <cstdio>
@@ -183,7 +183,7 @@ setChildDeadSignal()
     }
 }
 
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_DARWIN)
 /* from http://svn.python.org/projects/python/trunk/Mac/Tools/pythonw.c */
 static bool
 setup_spawnattr(posix_spawnattr_t* spawnattr)
@@ -251,7 +251,7 @@ setup_spawnattr(posix_spawnattr_t* spawnattr)
     }
     return true;
 }
-#endif // Q_OS_MAC
+#endif // Q_OS_DARWIN
 
 #endif // NATRON_CRASH_REPORTER_USE_FORK
 } // anon namespace
@@ -531,7 +531,7 @@ CallbacksManager::initInternal()
     QObject::connect( _natronProcess, SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(onSpawnedProcessFinished(int,QProcess::ExitStatus)) );
     QObject::connect( _natronProcess, SIGNAL(error(QProcess::ProcessError)), this, SLOT(onSpawnedProcessError(QProcess::ProcessError)) );
     QStringList processArgs;
-    for (int i = 0; i < _argc; ++i) {
+    for (int i = 1; i < _argc; ++i) {
         processArgs.push_back( QString::fromUtf8(_argv[i]) );
     }
     if (enableBreakpad) {
@@ -541,8 +541,6 @@ CallbacksManager::initInternal()
         qint64 crashReporterPid = qApp->applicationPid();
         QString pidStr = QString::number(crashReporterPid);
         processArgs.push_back(pidStr);
-        processArgs.push_back( QString::fromUtf8("--" NATRON_BREAKPAD_CLIENT_FD_ARG) );
-        processArgs.push_back( QString::number(-1) );
         processArgs.push_back( QString::fromUtf8("--" NATRON_BREAKPAD_PIPE_ARG) );
         processArgs.push_back(_pipePath);
         processArgs.push_back( QString::fromUtf8("--" NATRON_BREAKPAD_COM_PIPE_ARG) );
@@ -615,7 +613,7 @@ CallbacksManager::initInternal()
            We are the child process (i.e: Natron)
          */
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_DARWIN
         // on OSX, try to execute in 32-bit mode if this is executed in 32-bit mode
         
         /* We're weak-linking to posix-spawnv to ensure that
@@ -1111,7 +1109,7 @@ utf8_to_utf16(const std::string & s)
 #endif
 
 
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_DARWIN)
 void
 OnClientDumpRequest(void */*context*/,
                     const ClientInfo & /*client_info*/,
@@ -1148,7 +1146,7 @@ CallbacksManager::createCrashGenerationServer()
     /*
      * We initialize the CrashGenerationServer now that the connection is made between Natron & the Crash reporter
      */
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_DARWIN)
     _crashServer = new CrashGenerationServer( _pipePath.toStdString().c_str(),
                                               0, // filter cb
                                               0, // filter ctx

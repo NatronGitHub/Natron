@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,10 +29,12 @@
 #include <algorithm> // min, max
 #include <stdexcept>
 
-#include <QtCore/QSize>
+#include <QSize>
 #include <QHBoxLayout>
 #include <QApplication> // qApp
-#include <QDesktopWidget>
+
+#include <QScreen>
+
 #include <QScrollArea>
 #include "Engine/Project.h"
 #include "Gui/Gui.h"
@@ -116,9 +118,10 @@ FloatingWidget::setWidget(QWidget* w)
     w->setVisible(true);
     w->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    QDesktopWidget* dw = qApp->desktop();
-    assert(dw);
-    QRect geom = dw->screenGeometry();
+    QScreen* desktop = QGuiApplication::primaryScreen();
+    assert(desktop != nullptr);
+    QRect geom = desktop->availableGeometry();
+
     widgetSize.setWidth( std::min( widgetSize.width(), geom.width() ) );
     widgetSize.setHeight( std::min( widgetSize.height(), geom.height() ) );
     resize(widgetSize);

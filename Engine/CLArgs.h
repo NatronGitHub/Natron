@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,20 +29,18 @@
 #include "Global/Macros.h"
 
 #include <list>
+#include <optional>
 #include <string>
 #include <vector>
 #include <utility>
 
 #include "Global/GlobalDefines.h"
 CLANG_DIAG_OFF(deprecated)
-#include <QtCore/QStringList>
-#include <QtCore/QString>
-#include <QtCore/QCoreApplication>
+#include <QStringList>
+#include <QString>
+#include <QCoreApplication>
 CLANG_DIAG_ON(deprecated)
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
@@ -102,7 +100,7 @@ public:
     static void printBackGroundWelcomeMessage();
     static void printUsage(const std::string& programName);
 
-    int getError() const;
+    const std::optional<int>& getError() const;
 
     const std::list<CLArgs::WriterArg>& getWriterArgs() const;
     const std::list<CLArgs::ReaderArg>& getReaderArgs() const;
@@ -120,7 +118,9 @@ public:
     bool isInterpreterMode() const;
 
     bool isCacheClearRequestedOnLaunch() const;
-    
+
+    bool isOpenFXCacheClearRequestedOnLaunch() const;
+
     /*
      * @brief Has a Natron project or Python script been passed to the command line ?
      */
@@ -139,19 +139,18 @@ public:
 
     bool areRenderStatsEnabled() const;
 
+#ifdef NATRON_USE_BREAKPAD
     const QString& getBreakpadProcessExecutableFilePath() const;
-
     qint64 getBreakpadProcessPID() const;
-
     int getBreakpadClientFD() const;
-
     const QString& getBreakpadPipeFilePath() const;
     const QString& getBreakpadComPipeFilePath() const;
+#endif
     const QString& getExportDocsPath() const;
 
 private:
 
-    boost::scoped_ptr<CLArgsPrivate> _imp;
+    std::unique_ptr<CLArgsPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

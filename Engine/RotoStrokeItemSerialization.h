@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,6 +30,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// clang-format off
 GCC_DIAG_OFF(unused-parameter)
 #include <boost/archive/basic_archive.hpp>
 #include <boost/serialization/base_object.hpp>
@@ -40,6 +41,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/map.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
+// clang-format on
 #endif
 
 #include "Engine/AppManager.h"
@@ -136,9 +138,9 @@ private:
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
         if (version < ROTO_STROKE_INTRODUCES_MULTIPLE_STROKES) {
             ar & ::boost::serialization::make_nvp("BrushType", _brushType);
-            CurvePtr x = boost::make_shared<Curve>();
-            CurvePtr y = boost::make_shared<Curve>();
-            CurvePtr p = boost::make_shared<Curve>();
+            CurvePtr x = std::make_shared<Curve>();
+            CurvePtr y = std::make_shared<Curve>();
+            CurvePtr p = std::make_shared<Curve>();
             ar & ::boost::serialization::make_nvp("CurveX", *x);
             ar & ::boost::serialization::make_nvp("CurveY", *y);
             ar & ::boost::serialization::make_nvp("CurveP", *p);
@@ -150,9 +152,9 @@ private:
             ar & ::boost::serialization::make_nvp("BrushType", _brushType);
             ar & ::boost::serialization::make_nvp("NbItems", nb);
             for (int i = 0; i < nb; ++i) {
-                CurvePtr x = boost::make_shared<Curve>();
-                CurvePtr y = boost::make_shared<Curve>();
-                CurvePtr p = boost::make_shared<Curve>();
+                CurvePtr x = std::make_shared<Curve>();
+                CurvePtr y = std::make_shared<Curve>();
+                CurvePtr p = std::make_shared<Curve>();
                 ar & ::boost::serialization::make_nvp("CurveX", *x);
                 ar & ::boost::serialization::make_nvp("CurveY", *y);
                 ar & ::boost::serialization::make_nvp("CurveP", *p);

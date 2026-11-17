@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,10 +29,11 @@
 
 #include "BaseTest.h"
 
-#include <QtCore/QFile>
-#include <QtCore/QThreadPool>
+#include <QFile>
+#include <QThreadPool>
 
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
+// clang-format off
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 #include <ofxhPluginCache.h>
@@ -43,6 +44,7 @@ CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 //#include <ofxhHost.h>
 CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
+// clang-format on
 
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
@@ -304,6 +306,42 @@ TEST_F(BaseTest, SetValues)
         double v = radius->getValueAtTime(i);
         EXPECT_TRUE(std::abs(v - i / 100.) < 1e-6);
     }
+}
+
+// #1124: the node hash keys the disk and viewer caches, which persist across sessions. Reloading a project
+// restores the saved knobs age: changing a parameter after that must not give the hash that a different change
+// gave in an earlier session (closed without saving) from the same saved state.
+TEST_F(BaseTest, HashAfterReload)
+{
+    NodePtr generator = createNode(_generatorPluginID);
+
+    ASSERT_TRUE(generator.get() != NULL);
+    KnobIPtr knob = generator->getKnobByName("noiseZSlope");
+    KnobDouble* slope = dynamic_cast<KnobDouble*>( knob.get() );
+    ASSERT_TRUE(slope != 0);
+
+    const U64 savedAge = generator->getKnobsAge();
+    const U64 savedHash = generator->getHashValue();
+
+    // first session: change the parameter, then "close without saving"
+    slope->setValue(0.25);
+    const U64 firstSessionHash = generator->getHashValue();
+    EXPECT_NE(firstSessionHash, savedHash);
+
+    // reopen: the saved age (and thus the saved hash) is restored
+    slope->setValue(0.);
+    generator->setKnobsAge(savedAge);
+    EXPECT_EQ(generator->getHashValue(), savedHash);
+
+    // second session: a different change must give a different hash
+    slope->setValue(0.75);
+    EXPECT_NE(generator->getHashValue(), savedHash);
+    EXPECT_NE(generator->getHashValue(), firstSessionHash);
+
+    // later changes in the same session still change the hash
+    const U64 secondSessionHash = generator->getHashValue();
+    slope->setValue(0.5);
+    EXPECT_NE(generator->getHashValue(), secondSessionHash);
 }
 
 ///High level test: simple node connections test

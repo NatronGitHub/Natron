@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -74,13 +74,13 @@ public:
 
     void getFrameRange(int* firstFrame, int* lastFrame) const;
 
-    void setPlaybackMode(NATRON_NAMESPACE::PlaybackModeEnum mode);
+    void setPlaybackMode(Natron::PlaybackModeEnum mode);
 
-    NATRON_NAMESPACE::PlaybackModeEnum getPlaybackMode() const;
+    Natron::PlaybackModeEnum getPlaybackMode() const;
 
-    NATRON_NAMESPACE::ViewerCompositingOperatorEnum getCompositingOperator() const;
+    Natron::ViewerCompositingOperatorEnum getCompositingOperator() const;
 
-    void setCompositingOperator(NATRON_NAMESPACE::ViewerCompositingOperatorEnum op);
+    void setCompositingOperator(Natron::ViewerCompositingOperatorEnum op);
 
     int getAInput() const;
 
@@ -90,9 +90,9 @@ public:
 
     void setBInput(int index);
 
-    void setChannels(NATRON_NAMESPACE::DisplayChannelsEnum channels);
+    void setChannels(Natron::DisplayChannelsEnum channels);
 
-    NATRON_NAMESPACE::DisplayChannelsEnum getChannels() const;
+    Natron::DisplayChannelsEnum getChannels() const;
 
     void setProxyModeEnabled(bool enabled);
 
@@ -155,6 +155,8 @@ public:
     void selectNode(Effect* effect, bool clearPreviousSelection);
     void setSelection(const std::list<Effect*>& nodes);
     void selectAllNodes(Group* group = 0);
+    void copySelectedNodes(Group* group = 0);
+    void pasteNodes(Group* group = 0);
     void deselectNode(Effect* effect);
     void clearSelection(Group* group = 0);
 

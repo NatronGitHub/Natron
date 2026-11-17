@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -20,6 +20,7 @@
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#undef Py_LIMITED_API  // Needed for Py_NoUserSiteDirectory, PyBytes_AS_STRING
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
@@ -27,6 +28,8 @@
 
 #include <cstdlib>
 #include <vector>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #ifdef _MSC_VER
 #define WIN32_LEAN_AND_MEAN
@@ -34,7 +37,6 @@
 #pragma warning (disable : 4996)
 #else
 #include <dirent.h>
-#include <sys/stat.h>
 #endif
 
 #include "../Global/FStreamsSupport.h"
@@ -53,27 +55,18 @@ static bool fileExists(const std::string& path)
 
 static bool dirExists(const std::string& path)
 {
-#ifdef _MSC_VER
-    char* pathCpy = strcpy(path.c_str());
-    strcat(path.c_str(), "\\*");
-    WIN32_FIND_DATA find_data;
-    HANDLE h = FindFirstFile(pathCpy, &find_data);
-    pathCpy[strlen(pathCpy) - 2] = '\0';
-    if (h == INVALID_HANDLE_VALUE) {
+    // https://stackoverflow.com/q/18100097
+    struct stat info;
+
+    if(stat(path.c_str(), &info ) != 0) {
         return false;
+    } else if(info.st_mode & S_IFDIR) {
+        return true;
     }
-    FindClose(h);
-#else
-    DIR* d = opendir(path.c_str());
-    if (d == NULL) {
-        return false;
-    }
-    closedir(d);
-#endif
-    return true;
+    return false;
 }
 
-void setupPythonEnv(const char* argv0Param)
+void setupPythonEnv(const std::string& binPath)
 {
     //Disable user sites as they could conflict with Natron bundled packages.
     //If this is set, Python won’t add the user site-packages directory to sys.path.
@@ -84,12 +77,13 @@ void setupPythonEnv(const char* argv0Param)
     //
     // set up paths, clear those that don't exist or are not valid
     //
-    std::string binPath = ProcInfo::applicationDirPath(argv0Param);
-    binPath = StrUtils::toNativeSeparators(binPath);
 #ifdef __NATRON_WIN32__
     static std::string pythonHome = binPath + "\\.."; // must use static storage
+    static const std::wstring pythonHomeW = StrUtils::utf8_to_utf16(pythonHome);
     std::string pyPathZip = pythonHome + "\\lib\\python" NATRON_PY_VERSION_STRING_NO_DOT ".zip";
     std::string pyPath = pythonHome +  "\\lib\\python" NATRON_PY_VERSION_STRING;
+    std::string pyPathDynLoad = pyPath + "\\lib-dynload";
+    std::string pyPathSitePackages = pyPath + "\\site-packages";
     std::string pluginPath = binPath + "\\..\\Plugins";
 #else
 #  if defined(__NATRON_LINUX__)
@@ -99,8 +93,11 @@ void setupPythonEnv(const char* argv0Param)
 #  else
 #    error "unsupported platform"
 #  endif
+    static const std::wstring pythonHomeW = StrUtils::utf8_to_utf16(pythonHome);
     std::string pyPathZip = pythonHome + "/lib/python" NATRON_PY_VERSION_STRING_NO_DOT ".zip";
     std::string pyPath = pythonHome + "/lib/python" NATRON_PY_VERSION_STRING;
+    std::string pyPathDynLoad = pyPath + "/lib-dynload";
+    std::string pyPathSitePackages = pyPath + "/site-packages";
     std::string pluginPath = binPath + "/../Plugins";
 #endif
     if ( !fileExists( StrUtils::fromNativeSeparators(pyPathZip) ) ) {
@@ -114,6 +111,18 @@ void setupPythonEnv(const char* argv0Param)
         printf( "\"%s\" does not exist, not added to PYTHONPATH\n", pyPath.c_str() );
 #     endif
         pyPath.clear();
+    }
+    if ( !dirExists( StrUtils::fromNativeSeparators(pyPathDynLoad) ) ) {
+#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+        printf( "\"%s\" does not exist, not added to PYTHONPATH\n", pyPathDynLoad.c_str() );
+#     endif
+        pyPathDynLoad.clear();
+    }
+    if ( !dirExists( StrUtils::fromNativeSeparators(pyPathSitePackages) ) ) {
+#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
+        printf( "\"%s\" does not exist, not added to PYTHONPATH\n", pyPathSitePackages.c_str() );
+#     endif
+        pyPathSitePackages.clear();
     }
     if ( !dirExists( StrUtils::fromNativeSeparators(pluginPath) ) ) {
 #     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
@@ -141,14 +150,7 @@ void setupPythonEnv(const char* argv0Param)
 #     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
         printf( "Py_SetPythonHome(\"%s\")\n", pythonHome.c_str() );
 #     endif
-#     if PY_MAJOR_VERSION >= 3
-        // Python 3
-        static const std::wstring pythonHomeW = StrUtils::utf8_to_utf16(pythonHome); // must use static storage
         Py_SetPythonHome( const_cast<wchar_t*>( pythonHomeW.c_str() ) );
-#     else
-        // Python 2
-        Py_SetPythonHome( const_cast<char*>( pythonHome.c_str() ) );
-#     endif
     }
 
 
@@ -173,6 +175,12 @@ void setupPythonEnv(const char* argv0Param)
     }
     if ( !pyPath.empty() ) {
         toPrepend.push_back(pyPath);
+    }
+    if ( !pyPathDynLoad.empty() ) {
+        toPrepend.push_back(pyPathDynLoad);
+    }
+    if ( !pyPathSitePackages.empty() ) {
+        toPrepend.push_back(pyPathSitePackages);
     }
     if ( !pluginPath.empty() ) {
         toPrepend.push_back(pluginPath);
@@ -202,17 +210,8 @@ void setupPythonEnv(const char* argv0Param)
         } else {
             pythonPath = toPrependStr + pathSep + pythonPath;
         }
-        // qputenv on minw will just call putenv, but we want to keep the utf16 info, so we need to call _wputenv
-#     if 0//def __NATRON_WIN32__
-        _wputenv_s(L"PYTHONPATH", StrUtils::utf8_to_utf16(pythonPath).c_str());
-#     else
+        // Py_SetPath() sets the whole path, but setting PYTHONPATH still keeps the system's python path
         ProcInfo::putenv_wrapper( "PYTHONPATH", pythonPath.c_str() );
-        //Py_SetPath( pythonPathString.c_str() ); // does not exist in Python 2
-#     endif
-#     if PY_MAJOR_VERSION >= 3
-        std::wstring pythonPathString = StrUtils::utf8_to_utf16(pythonPath);
-        Py_SetPath( pythonPathString.c_str() ); // argument is copied internally, no need to use static storage
-#     endif
 #     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
         printf( "PYTHONPATH set to %s\n", pythonPath.c_str() );
 #     endif
@@ -220,11 +219,7 @@ void setupPythonEnv(const char* argv0Param)
 
 } // setupPythonEnv
 
-#if PY_MAJOR_VERSION >= 3
 PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide)
-#else
-PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
-#endif
 {
     //See https://developer.blender.org/T31507
     //Python will not load anything in site-packages if this is set
@@ -248,14 +243,7 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
     // Must be done before Py_Initialize (see doc of Py_Initialize)
     //
 
-#if PY_MAJOR_VERSION >= 3
-    // Python 3
     Py_SetProgramName(commandLineArgsWide[0]);
-#else
-    // Python 2
-    printf( "Py_SetProgramName(\"%s\")\n", commandLineArgsUtf8[0] );
-    Py_SetProgramName(commandLineArgsUtf8[0]);
-#endif
 
     /////////////////////////////////////////
     // Py_Initialize
@@ -268,29 +256,33 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
     Py_Initialize();
     // pythonHome must be const, so that the c_str() pointer is never invalidated
 
+    // Py_SetPath clears sys.prefix and sys.exec_prefix
+    // https://github.com/NatronGitHub/Natron/issues/696
+    PyObject *prefix = PyUnicode_FromWideChar(Py_GetPythonHome(), -1);
+    PySys_SetObject(const_cast<char*>("prefix"), prefix);
+    Py_XDECREF(prefix);
+    PyObject *exec_prefix = PyUnicode_FromWideChar(Py_GetPythonHome(), -1);
+    PySys_SetObject(const_cast<char*>("exec_prefix"), exec_prefix);
+    Py_XDECREF(exec_prefix);
+
     /////////////////////////////////////////
     // PySys_SetArgv
     /////////////////////////////////////////
     //
-#if PY_MAJOR_VERSION >= 3
-    // Python 3
     PySys_SetArgv( commandLineArgsWide.size(), const_cast<wchar_t**>(&commandLineArgsWide[0]) ); /// relative module import
-#else
-    // Python 2
-    PySys_SetArgv( commandLineArgsUtf8.size(), const_cast<char**>(&commandLineArgsUtf8[0]) ); /// relative module import
-#endif
 
     PyObject* mainModule = PyImport_ImportModule("__main__"); //create main module , new ref
 
     //See https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
     //Python releases the GIL every 100 virtual Python instructions, we do not want that to happen in the middle of an expression.
     // Not recessary since we also have the Natron GIL to control the execution of our own scripts.
-    //_PyEval_SetSwitchInterval(LONG_MAX);
+    //_PyEval_SetSwitchInterval(std::numeric_limits<long>::max());
 
     //See answer for http://stackoverflow.com/questions/15470367/pyeval-initthreads-in-python-3-how-when-to-call-it-the-saga-continues-ad-naus
     // Note: on Python >= 3.7 this is already done by Py_Initialize(),
-    // but it doesn't hurt do do it once more.
+#if PY_VERSION_HEX < 0x03070000
     PyEval_InitThreads();
+#endif
 
     // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
     ///All calls to the Python API should call PythonGILLocker beforehand.
@@ -312,20 +304,54 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
         printf( "Py_OptimizeFlag is %d\n", Py_OptimizeFlag );
         printf( "Py_NoSiteFlag is %d\n", Py_NoSiteFlag );
         printf( "Py_BytesWarningFlag is %d\n", Py_BytesWarningFlag );
-        printf( "Py_UseClassExceptionsFlag is %d\n", Py_UseClassExceptionsFlag );
         printf( "Py_FrozenFlag is %d\n", Py_FrozenFlag );
-        printf( "Py_TabcheckFlag is %d\n", Py_TabcheckFlag );
-        printf( "Py_UnicodeFlag is %d\n", Py_UnicodeFlag );
+        printf( "Py_HashRandomizationFlag is %d\n", Py_HashRandomizationFlag );
+        printf( "Py_IsolatedFlag is %d\n", Py_IsolatedFlag );
+        printf( "Py_QuietFlag is %d\n", Py_QuietFlag );
         printf( "Py_IgnoreEnvironmentFlag is %d\n", Py_IgnoreEnvironmentFlag );
-        printf( "Py_DivisionWarningFlag is %d\n", Py_DivisionWarningFlag );
         printf( "Py_DontWriteBytecodeFlag is %d\n", Py_DontWriteBytecodeFlag );
         printf( "Py_NoUserSiteDirectory is %d\n", Py_NoUserSiteDirectory );
-        printf( "Py_GetProgramName is %s\n", Py_GetProgramName() );
-        printf( "Py_GetPrefix is %s\n", Py_GetPrefix() );
-        printf( "Py_GetExecPrefix is %s\n", Py_GetPrefix() );
-        printf( "Py_GetProgramFullPath is %s\n", Py_GetProgramFullPath() );
-        printf( "Py_GetPath is %s\n", Py_GetPath() );
-        printf( "Py_GetPythonHome is %s\n", Py_GetPythonHome() );
+        printf( "Py_GetProgramName is %ls\n", Py_GetProgramName() );
+        printf( "Py_GetPrefix is %ls\n", Py_GetPrefix() );
+        printf( "Py_GetExecPrefix is %ls\n", Py_GetPrefix() );
+        printf( "Py_GetProgramFullPath is %ls\n", Py_GetProgramFullPath() );
+        printf( "Py_GetPath is %ls\n", Py_GetPath() );
+        printf( "Py_GetPythonHome is %ls\n", Py_GetPythonHome() );
+
+#define DUMP_SYS(NAME) \
+            do { \
+                obj = PySys_GetObject(#NAME); \
+                PySys_FormatStderr("  sys.%s = ", #NAME); \
+                if (obj != NULL) { \
+                    PySys_FormatStdout("%A", obj); \
+                } \
+                else { \
+                    PySys_WriteStdout("(not set)"); \
+                } \
+                PySys_FormatStdout("\n"); \
+            } while (0)
+
+        PyObject *obj;
+        DUMP_SYS(version);
+        DUMP_SYS(_base_executable);
+        DUMP_SYS(base_prefix);
+        DUMP_SYS(base_exec_prefix);
+        DUMP_SYS(platlibdir);
+        DUMP_SYS(executable);
+        DUMP_SYS(prefix);
+        DUMP_SYS(exec_prefix);
+#undef DUMP_SYS
+
+        PyObject *sys_path = PySys_GetObject("path");  /* borrowed reference */
+        if (sys_path != NULL && PyList_Check(sys_path)) {
+            PySys_WriteStdout("  sys.path = [\n");
+            Py_ssize_t len = PyList_GET_SIZE(sys_path);
+            for (Py_ssize_t i=0; i < len; i++) {
+                PyObject *path = PyList_GET_ITEM(sys_path, i);
+                PySys_FormatStdout("    %A,\n", path);
+            }
+            PySys_WriteStdout("  ]\n");
+        }
 
         PyObject* dict = PyModule_GetDict(mainModule);
 
@@ -348,6 +374,37 @@ PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8)
 
     return mainModule;
 } // initializePython
+
+
+std::string
+PyStringToStdString(PyObject* py_val)
+{
+    ///Must be locked
+    assert( PyThreadState_Get() );
+    std::string val;
+    PyObject* s = nullptr;
+    // The following should work with Python 2 and 3.
+    // https://stackoverflow.com/a/38600095
+    if (!py_val) {
+        val = "(null)";
+    } else if( PyUnicode_Check(py_val) ) {  // python3 has unicode, but we convert to bytes
+        s = PyUnicode_AsUTF8String(py_val);
+    } else if( PyBytes_Check(py_val) ) {  // python2 has bytes already
+        s = PyObject_Bytes(py_val);
+    } else {
+        // Not a string => Error, warning ...
+        val = "(not a string)";
+    }
+
+    // If succesfully converted to bytes, then convert to C++ string
+    if (s) {
+        val = std::string( PyBytes_AS_STRING(s) );
+        Py_XDECREF(s);
+    }
+
+    return val;
+}
+
 NATRON_PYTHON_NAMESPACE_EXIT
 
 NATRON_NAMESPACE_EXIT

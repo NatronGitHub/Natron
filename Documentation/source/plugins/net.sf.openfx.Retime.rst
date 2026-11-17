@@ -16,7 +16,7 @@ Description
 
 Change the timing of the input clip.
 
-See also: http://opticalenquiry.com/nuke/index.php?title=Retime
+See also: https://web.archive.org/web/20220627032808/http://www.opticalenquiry.com/nuke/index.php?title=Retime
 
 Inputs
 ------

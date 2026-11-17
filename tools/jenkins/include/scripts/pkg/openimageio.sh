@@ -2,11 +2,11 @@
 
 # Install oiio
 # see https://github.com/OpenImageIO/oiio/releases
-OIIO_VERSION=2.2.14.0 # compiled for C++11 (see -DCMAKE_CXX_STANDARD=11 below, and openexr build)
-OIIO_VERSION_SHORT=2.2 # ${OIIO_VERSION%.*}
-OIIO_TAR="oiio-Release-${OIIO_VERSION}.tar.gz"
+OIIO_VERSION=2.4.11.0 # compiled for C++14 (see -DCMAKE_CXX_STANDARD=14 below, and openexr build)
+OIIO_VERSION_SHORT=2.4 # ${OIIO_VERSION%.*}
+OIIO_TAR="oiio-${OIIO_VERSION}.tar.gz"
 if download_step; then
-    download_github OpenImageIO oiio "$OIIO_VERSION" Release- "$OIIO_TAR"
+    download_github OpenImageIO oiio "$OIIO_VERSION" v "$OIIO_TAR"
 fi
 if build_step && { force_build || { [ "${REBUILD_OIIO:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME/lib/libOpenImage"* "$SDK_HOME/include/OpenImage"* || true
@@ -14,7 +14,7 @@ fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ]; }; }; then
     start_build
     untar "$SRC_PATH/$OIIO_TAR"
-    pushd "oiio-Release-${OIIO_VERSION}"
+    pushd "oiio-${OIIO_VERSION}"
 
     if [ -d "$INC_PATH/patches/OpenImageIO/$OIIO_VERSION_SHORT" ]; then
         patches=$(find  "$INC_PATH/patches/OpenImageIO/$OIIO_VERSION_SHORT" -type f)
@@ -40,7 +40,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ]; 
     OIIO_CMAKE_FLAGS+=( "-DUSE_FREETYPE:BOOL=TRUE" "-DFREETYPE_INCLUDE_PATH=$SDK_HOME/include" )
     OIIO_CMAKE_FLAGS+=( "-DUSE_FFMPEG:BOOL=FALSE" )
     OIIO_CMAKE_FLAGS+=( "-DLINKSTATIC=0" "-DBUILDSTATIC=0" )
-    OIIO_CMAKE_FLAGS+=( "-DOpenJpeg_ROOT=$SDK_HOME" "-DOPENJPEG_HOME=$SDK_HOME" "-DOPENJPEG_INCLUDE_DIR=$SDK_HOME/include/openjpeg-$OPENJPEG2_VERSION_SHORT" "-DUSE_OPENJPEG:BOOL=TRUE" )
+    OIIO_CMAKE_FLAGS+=( "-DOpenJPEG_ROOT=$SDK_HOME" "-DOPENJPEG_HOME=$SDK_HOME" "-DOPENJPEG_INCLUDE_DIR=$SDK_HOME/include/openjpeg-$OPENJPEG2_VERSION_SHORT" "-DUSE_OPENJPEG:BOOL=TRUE" )
     OIIO_CMAKE_FLAGS+=( "-DUSE_HEIF:BOOL=TRUE" )
     if version_gt 4.8.1 "$GCC_VERSION"; then
         OIIO_CMAKE_FLAGS+=( "-DUSE_CPP11:BOOL=FALSE" )
@@ -51,17 +51,19 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ]; 
     if version_gt 7.1 "$GCC_VERSION"; then
         OIIO_CMAKE_FLAGS+=( "-DUSE_CPP17:BOOL=FALSE" )
     fi
-    OIIO_CMAKE_FLAGS+=( "-DUSE_LIBRAW:BOOL=TRUE" "-DCMAKE_INSTALL_PREFIX=$SDK_HOME" )
+    # Several versions of libraw are installed, use the GPL2 version during SDK build
+    OIIO_CMAKE_FLAGS+=( "-DUSE_LIBRAW:BOOL=TRUE" "-DLibRaw_ROOT=$SDK_HOME/libraw-gpl2")
+    OIIO_CMAKE_FLAGS+=( "-DCMAKE_INSTALL_PREFIX=$SDK_HOME" )
     OIIO_CMAKE_FLAGS+=( "-DBUILD_FMT_FORCE:BOOL=TRUE" )
-    OIIO_CMAKE_FLAGS+=( "-DCMAKE_CXX_STANDARD=11" )
+    OIIO_CMAKE_FLAGS+=( "-DCMAKE_CXX_STANDARD=14" )
     mkdir build
     pushd build
 
-    cmake "${OIIO_CMAKE_FLAGS[@]}" ..
+    env PKG_CONFIG_PATH="$SDK_HOME/libraw-gpl2/lib/pkgconfig:$PKG_CONFIG_PATH" cmake "${OIIO_CMAKE_FLAGS[@]}" ..
     make -j${MKJOBS} ${OIIOMAKE:-}
     make install
     popd
     popd
-    rm -rf "oiio-Release-${OIIO_VERSION}"
+    rm -rf "oiio-${OIIO_VERSION}"
     end_build
 fi

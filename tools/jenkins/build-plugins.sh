@@ -63,7 +63,6 @@ fi
 # Setup env
 CXXFLAGS_EXTRA=
 if [ "$PKGOS" = "Linux" ]; then
-    export BOOST_ROOT="$SDK_HOME"
     export OPENJPEG_HOME="$SDK_HOME"
     export THIRD_PARTY_TOOLS_HOME="$SDK_HOME"
     export LD_LIBRARY_PATH="$SDK_HOME/lib:$FFMPEG_PATH/lib"
@@ -77,14 +76,15 @@ if [ "$PKGOS" = "Linux" ]; then
     export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
 
 elif [ "$PKGOS" = "Windows" ]; then
-    export BOOST_ROOT="$SDK_HOME"
     export OPENJPEG_HOME="$SDK_HOME"
     export THIRD_PARTY_TOOLS_HOME="$SDK_HOME"
     export GIT_SSL_NO_VERIFY="true"
-    export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${FFMPEG_PATH}/include:$LIBRAW_PATH/include"
+    # https://github.com/msys2/MINGW-packages/issues/10761
+    # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70129
+    # export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${FFMPEG_PATH}/include:$LIBRAW_PATH/include"
+    export C_INCLUDE_PATH="${FFMPEG_PATH}/include:${LIBRAW_PATH}/include"
     export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
     BUILDID="-Wl,--build-id"
-
 elif [ "$PKGOS" = "OSX" ]; then
     # see https://github.com/Homebrew/homebrew-core/issues/32765
     CXXFLAGS_EXTRA="-isysroot `xcodebuild -version -sdk macosx Path 2>/dev/null`"
@@ -119,6 +119,22 @@ else
     OPTFLAG=-Ofast
 fi
 
+CP_OR_MV="cp -a"
+if [ "${MINIMIZE_DISK_USAGE:-}" = "1" ]; then
+    # Move large files instead of copying them to minimize disk usage.
+    CP_OR_MV=mv
+fi
+
+function maybe_cleanup_binary_files() {
+    if [ "${MINIMIZE_DISK_USAGE:-}" = "1" ]; then
+        echo "Cleaning up files to minimize disk usage..."
+
+        rm -fv `find . -name *.o`
+        rm -fv `find . -name *.ofx`
+    fi
+}
+
+
 # MISC
 if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
 
@@ -138,7 +154,19 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
             llvmsystemlibs="--system-libs"
             ;;
     esac
-    LLVM_LIB="$(${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler ${llvmsystemlibs}| tr '\n' ' ')"
+    llvmcomponents="engine mcjit mcdisassembler"
+    llvmlinkstatic=""
+    case "$llvmversion" in
+        [2-9].*|1[0-4].*)
+            ;;
+        *)
+            # LLVM >= 15 (Mesa 25.0.7 OSMesa): link the LLVM components used by llvmpipe (llvm_modules
+            # in Mesa's meson.build), and the static libraries even if LLVM's default is shared.
+            llvmcomponents="bitwriter engine mcdisassembler mcjit core executionengine scalaropts transformutils instcombine coroutines native passes"
+            llvmlinkstatic="--link-static"
+            ;;
+    esac
+    LLVM_LIB="$(${LLVM_PATH}/bin/llvm-config ${llvmlinkstatic} --ldflags --libs ${llvmcomponents} ${llvmsystemlibs}| tr '\n' ' ')"
     MESALIB=""
     GLULIB=""
     MESALIB="-lOSMesa"
@@ -168,9 +196,11 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
             CMAKE_LDFLAGS="-static -Wl,--build-id"
         fi
         rm ../DenoiseSharpen/DenoiseWavelet.cpp || true
+        set -x
         env CXX="$CXX" LDFLAGS="$CMAKE_LDFLAGS" cmake .. ${MSYS:-} -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DBITS="${BITS}" -DUSE_OSMESA=1 -DOSMESA_INCLUDES="${OSMESA_PATH}/include" -DOSMESA_LIBRARIES="-L${OSMESA_PATH}/lib -L${LLVM_PATH}/lib ${GLULIB} ${MESALIB} $LLVM_LIB" ${UNIVERSAL:-}
         make -j"${MKJOBS}"
         make install
+        set +x
         echo "Info: build openfx-misc using cmake... done!"
     else
         echo "Info: build openfx-misc using make..."
@@ -181,6 +211,7 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
 
         echo "Info: make all except CImg."
 
+        set -x
         env \
             OSMESA_PATH="${OSMESA_PATH}" \
             LLVM_PATH="${LLVM_PATH}" \
@@ -195,6 +226,7 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
             ${OMP} \
             CXXFLAGS_EXTRA="-DHAVE_OSMESA ${CXXFLAGS_EXTRA}" \
             make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
+        set +x
 
         echo "Info: make CImg."
 
@@ -203,6 +235,7 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
         
         # build CImg.ofx
 
+        set -x
         if [ "$COMPILER" = "clang" ] && [ -n "${GXX:-}" ]; then
             # Building with Apple clang (no OpenMP available), but GCC is available too!
             # libSupport was compiled by clang, now clean it to build it again with gcc
@@ -233,9 +266,13 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
                 CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
                 make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-} -C CImg
         fi
-        cp -a ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+        ${CP_OR_MV} ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+        set +x
         echo "Info: build openfx-misc using make... done!"
     fi
+
+    maybe_cleanup_binary_files
+
     cd "$TMP_PATH"
     #rm -rf openfx-misc || true
 fi
@@ -276,12 +313,15 @@ if [ "$BUILD_IO" = "1" ] && [ -d "$TMP_PATH/openfx-io" ]; then
                  IO_SEEXPR_LIB="bin/libSeExpr.dll"
             fi
         fi
+        set -x
         env CXX="$CXX" LDFLAGS="$CMAKE_LDFLAGS" cmake .. ${MSYS:-} -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DBITS="${BITS}" -DOpenImageIO_INCLUDE_DIR="${IO_DEPENDS_PATH}/include" -DOpenImageIO_LIBRARY="${IO_DEPENDS_PATH}/${IO_OIIO_LIB}" -DSEEXPR_INCLUDE_DIRS="${IO_DEPENDS_PATH}/include" -DSEEXPR_LIBRARIES="${IO_DEPENDS_PATH}/${IO_SEEXPR_LIB}" ${UNIVERSAL:-}
         make -j"${MKJOBS}"
         make install
+        set +x
         echo "Info: build openfx-io using cmake... done!"
     else
         echo "Info: build openfx-io using make..."
+        set -x
         env \
             OIIO_HOME="$SDK_HOME" \
             SEEXPR_HOME="${SDK_HOME}" \
@@ -292,9 +332,13 @@ if [ "$BUILD_IO" = "1" ] && [ -d "$TMP_PATH/openfx-io" ]; then
             LDFLAGS_ADD="${BUILDID:-}" \
             CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
             make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
-        cp -a ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+        ${CP_OR_MV} ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+        set +x
         echo "Info: build openfx-io using make... done!"
     fi
+
+    maybe_cleanup_binary_files
+
     cd "$TMP_PATH"
     #rm -rf openfx-io  || true
 fi
@@ -327,6 +371,7 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
         make -C Bundle lodepng.h
     fi
 
+    set -x
     env \
         MINGW="${ISWIN:-}" \
         LICENSE="$NATRON_LICENSE" \
@@ -339,7 +384,11 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
         CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
         make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
 
-    cp -a ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+    ${CP_OR_MV} ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+    set +x
+
+    maybe_cleanup_binary_files
+
     cd "$TMP_PATH"
     #rm -rf openfx-arena || true
     echo "Info: build openfx-arena using make... done!"
@@ -365,9 +414,49 @@ if [ "$BUILD_GMIC" = "1" ] && [ -d "$TMP_PATH/openfx-gmic" ]; then
         ISWIN=1
     fi
 
+    # gmic.eu may refuse downloads (HTTP 403 seen in 2026), and the Makefile's curl saves the
+    # error page as the tarball. Pre-fetch the G'MIC sources (official site, then the MacPorts
+    # distfiles mirror), verifying the checksum. Only for versions whose checksum is known here:
+    # for others, the openfx-gmic Makefile downloads and verifies the sources itself.
+    GMICVER=$(sed -n 's/^GMICVER *= *//p' Makefile | head -1)
+    GMICSRC=$(sed -n 's/^GMICSRC *= *//p' Makefile | head -1 | sed "s/\$(GMICVER)/${GMICVER}/")
+    GMIC_SHA256=
+    case "$GMICSRC" in
+        gmic_2.8.4.tar.gz) GMIC_SHA256=b2a279bdf981595b30d8d7828fabf9a620cde06eae8db345a8cddf2160c25379 ;; # MacPorts gmic 2.8.4
+    esac
+    gmic_src_ok() { # file
+        gzip -t "$1" 2>/dev/null || return 1
+        [ -n "$GMIC_SHA256" ] || return 0
+        if command -v sha256sum >/dev/null 2>&1; then
+            [ "$(sha256sum "$1" | cut -d' ' -f1)" = "$GMIC_SHA256" ]
+        elif command -v shasum >/dev/null 2>&1; then
+            [ "$(shasum -a 256 "$1" | cut -d' ' -f1)" = "$GMIC_SHA256" ]
+        else
+            echo "Warning: neither sha256sum nor shasum found, cannot verify $1"
+            return 1
+        fi
+    }
+    if [ -n "$GMICSRC" ] && [ -n "$GMIC_SHA256" ] && ! gmic_src_ok "$GMICSRC"; then
+        rm -f "$GMICSRC"
+        for url in "https://gmic.eu/files/source/$GMICSRC" ${GMIC_SHA256:+"https://distfiles.macports.org/gmic/$GMICSRC"}; do
+            if curl -f --retry 3 -L -s -S -o "$GMICSRC.tmp" "$url" && gmic_src_ok "$GMICSRC.tmp"; then
+                mv "$GMICSRC.tmp" "$GMICSRC"
+                echo "Info: fetched $GMICSRC from $url"
+                break
+            fi
+            echo "Warning: could not fetch a valid $GMICSRC from $url"
+            rm -f "$GMICSRC.tmp"
+        done
+        if [ -n "$GMIC_SHA256" ] && [ ! -f "$GMICSRC" ]; then
+            echo "Error: could not download $GMICSRC"
+            exit 1
+        fi
+    fi
+
     echo "Info: build openfx-gmic using make..."
 
     # build GMIC.ofx
+    set -x
     if [ "$COMPILER" = "clang" ] && [ -n "${GXX:-}" ]; then
         # Building with Apple clang (no OpenMP available), but GCC is available too!
         env \
@@ -391,7 +480,10 @@ if [ "$BUILD_GMIC" = "1" ] && [ -d "$TMP_PATH/openfx-gmic" ]; then
             CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA ${CXXFLAGS_EXTRA}" \
             make -j"${GMIC_MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
     fi
-    cp -a ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+    ${CP_OR_MV} ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+    set +x
+    maybe_cleanup_binary_files
+
     cd "$TMP_PATH"
     #rm -rf openfx-gmic || true
     echo "Info: build openfx-gmic using make... done!"
@@ -416,7 +508,10 @@ if [ "$BUILD_CV" = "1" ] && [ -d "$TMP_PATH/openfx-opencv" ]; then
         LDFLAGS_ADD="${BUILDID:-}" \
         CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
         make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
-    cp -a ./*/*-"${BITS}"-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+    ${CP_OR_MV} ./*/*-"${BITS}"-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+
+    maybe_cleanup_binary_files
+
 fi
 
 #rm -f $KILLSCRIPT || true

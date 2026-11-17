@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,7 +30,7 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QDrag>
-#include <QtCore/QMimeData>
+#include <QMimeData>
 #include <QPainter>
 #include <QDragEnterEvent>
 #include <QDragLeaveEvent>
@@ -107,7 +107,7 @@ KnobWidgetDnDPtr KnobWidgetDnD::create(const KnobGuiPtr& knob,
                                                        int dimension,
                                                        QWidget* widget)
 {
-    return boost::make_shared<KnobWidgetDnD::MakeSharedEnabler>(knob, dimension, widget);
+    return std::make_shared<KnobWidgetDnD::MakeSharedEnabler>(knob, dimension, widget);
 }
 
 KnobWidgetDnD::KnobWidgetDnD(const KnobGuiPtr& knob,
@@ -285,7 +285,7 @@ KnobWidgetDnD::startDrag()
         textThirdLine = tr("Drag it to a dimension of another parameter of the same type");
     }
 
-    int textWidth = std::max( std::max( fmetrics.width(textFirstLine), fmetrics.width(knobLine) ), fmetrics.width(textThirdLine) );
+    int textWidth = std::max( std::max( fmetrics.horizontalAdvance(textFirstLine), fmetrics.horizontalAdvance(knobLine) ), fmetrics.horizontalAdvance(textThirdLine) );
     QImage dragImg(textWidth, (fmetrics.height() + 5) * 3, QImage::Format_ARGB32);
     dragImg.fill( QColor(0, 0, 0, 200) );
     QPainter p(&dragImg);

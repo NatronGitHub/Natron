@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,16 +32,12 @@
 #include <map>
 #include <vector>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/weak_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QSize>
-#include <QtCore/QCoreApplication>
-#include <QtCore/QMutex>
-#include <QtCore/QWaitCondition>
+#include <QSize>
+#include <QCoreApplication>
+#include <QMutex>
+#include <QWaitCondition>
 #include <QToolBar>
 #include <QMessageBox>
 CLANG_DIAG_ON(deprecated)
@@ -156,7 +152,8 @@ public:
     Splitter* _leftRightSplitter;
 
     ///a list of ptrs to all the viewer tabs.
-    mutable QMutex _viewerTabsMutex;
+    mutable QRecursiveMutex _viewerTabsMutex;
+
     std::list<ViewerTab*> _viewerTabs;
 
     ///Used when all viewers are synchronized to determine which one triggered the sync

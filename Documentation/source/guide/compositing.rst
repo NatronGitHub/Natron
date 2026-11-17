@@ -18,5 +18,4 @@ Compositing
    compositing-transform
    compositing-color
    compositing-stereo
-   compositing-render
    compositing-exprs

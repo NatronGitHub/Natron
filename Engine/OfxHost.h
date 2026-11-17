@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,23 +30,20 @@
 
 #include <list>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QCoreApplication>
+#include <QCoreApplication>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
+// clang-format off
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 #include <ofxhImageEffect.h>
 CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
+// clang-format on
 
 #include "Global/Enums.h"
 #include "Engine/EngineFwd.h"
@@ -186,7 +183,7 @@ public:
         }
     };
 
-    typedef boost::shared_ptr<OfxHostTLSData> OfxHostDataTLSPtr;
+    typedef std::shared_ptr<OfxHostTLSData> OfxHostDataTLSPtr;
 
     OfxHostDataTLSPtr getTLSData() const;
 
@@ -198,7 +195,7 @@ private:
 
     // get the virtuals for viewport size, pixel scale, background colour
     const std::string &getStringProperty(const std::string &name, int n) const OFX_EXCEPTION_SPEC OVERRIDE;
-    boost::scoped_ptr<OfxHostPrivate> _imp;
+    std::unique_ptr<OfxHostPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

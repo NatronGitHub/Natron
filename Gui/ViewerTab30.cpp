@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
-#include <QtCore/QDebug>
+#include <QDebug>
 
 #include <QVBoxLayout>
 #include <QCheckBox>
@@ -89,8 +89,11 @@ ViewerTab::getColorSpace() const
 
         return "Rec.709";
         break;
-    default:
+    case eViewerColorSpaceBT1886:
 
+        return "BT1886";
+        break;
+    default:
         return "";
         break;
     }
@@ -194,20 +197,20 @@ ViewerTab::getGamma() const
 }
 
 void
-ViewerTab::setMipMapLevel(int level)
+ViewerTab::setMipmapLevel(unsigned int level)
 {
     if (level > 0) {
         _imp->renderScaleCombo->setCurrentIndex(level - 1);
     }
 
-    _imp->viewerNode->onMipMapLevelChanged(level);
+    _imp->viewerNode->onMipmapLevelChanged(level);
     _imp->viewer->checkIfViewPortRoIValidOrRender();
 }
 
-int
-ViewerTab::getMipMapLevel() const
+unsigned int
+ViewerTab::getMipmapLevel() const
 {
-    return _imp->viewerNode->getMipMapLevel();
+    return _imp->viewerNode->getMipmapLevel();
 }
 
 void
@@ -219,7 +222,7 @@ ViewerTab::setRenderScaleActivated(bool act)
 bool
 ViewerTab::getRenderScaleActivated() const
 {
-    return _imp->viewerNode->getMipMapLevel() != 0;
+    return _imp->viewerNode->getMipmapLevel() != 0;
 }
 
 void
@@ -327,14 +330,14 @@ ViewerTab::onAutoContrastChanged(bool b)
 void
 ViewerTab::onRenderScaleComboIndexChanged(int index)
 {
-    int level;
+    unsigned int level;
 
     if (_imp->renderScaleActive) {
         level = index + 1;
     } else {
         level = 0;
     }
-    _imp->viewerNode->onMipMapLevelChanged(level);
+    _imp->viewerNode->onMipmapLevelChanged(level);
     _imp->viewer->checkIfViewPortRoIValidOrRender();
 }
 
@@ -369,7 +372,7 @@ ViewerTab::createTrackerInterface(const NodeGuiPtr& n)
         n->ensurePanelCreated();
         MultiInstancePanelPtr multiPanel = n->getMultiInstancePanel();
         if (multiPanel) {
-            TrackerPanelV1Ptr trackPanel = boost::dynamic_pointer_cast<TrackerPanelV1>(multiPanel);
+            TrackerPanelV1Ptr trackPanel = std::dynamic_pointer_cast<TrackerPanelV1>(multiPanel);
             assert(trackPanel);
             tracker = new TrackerGui(trackPanel, this);
         }
@@ -507,7 +510,7 @@ ViewerTab::createNodeViewerInterface(const NodeGuiPtr& n)
     if (!n) {
         return;
     }
-    std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator found = _imp->nodesContext.find(n);
+    ViewerTabPrivate::NodeViewerContextsMap::iterator found = _imp->nodesContext.find(n);
     if ( found != _imp->nodesContext.end() ) {
         // Already exists
         return;
@@ -540,7 +543,7 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
     if (!n) {
         return;
     }
-    std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator it = _imp->nodesContext.find(n);
+    ViewerTabPrivate::NodeViewerContextsMap::iterator it = _imp->nodesContext.find(n);
     if ( it == _imp->nodesContext.end() ) {
         return;
     }
@@ -662,7 +665,7 @@ ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n,
                                      bool permanently,
                                      bool setAnotherFromSamePlugin)
 {
-    std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator found = _imp->nodesContext.find(n);
+    ViewerTabPrivate::NodeViewerContextsMap::iterator found = _imp->nodesContext.find(n);
 
     if ( found == _imp->nodesContext.end() ) {
         return;
@@ -710,8 +713,8 @@ ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n,
 
     if (setAnotherFromSamePlugin && activeNodeForPlugin == n) {
         ///If there's another roto node, set it as the current roto interface
-        std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator newInterface = _imp->nodesContext.end();
-        for (std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator it2 = _imp->nodesContext.begin(); it2 != _imp->nodesContext.end(); ++it2) {
+        ViewerTabPrivate::NodeViewerContextsMap::iterator newInterface = _imp->nodesContext.end();
+        for (ViewerTabPrivate::NodeViewerContextsMap::iterator it2 = _imp->nodesContext.begin(); it2 != _imp->nodesContext.end(); ++it2) {
             NodeGuiPtr otherNode = it2->first.lock();
             if (!otherNode) {
                 continue;
@@ -748,7 +751,7 @@ void
 ViewerTab::getNodesViewerInterface(std::list<NodeGuiPtr>* nodesWithUI,
                                    std::list<NodeGuiPtr>* perPluginActiveUI) const
 {
-    for (std::map<NodeGuiWPtr, NodeViewerContextPtr>::const_iterator it = _imp->nodesContext.begin(); it != _imp->nodesContext.end(); ++it) {
+    for (ViewerTabPrivate::NodeViewerContextsMap::const_iterator it = _imp->nodesContext.begin(); it != _imp->nodesContext.end(); ++it) {
         NodeGuiPtr n = it->first.lock();
         if (n) {
             nodesWithUI->push_back(n);
@@ -766,7 +769,7 @@ void
 ViewerTab::updateSelectedToolForNode(const QString& toolID,
                                      const NodeGuiPtr& node)
 {
-    std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator found = _imp->nodesContext.find(node);
+    ViewerTabPrivate::NodeViewerContextsMap::iterator found = _imp->nodesContext.find(node);
 
     if ( found == _imp->nodesContext.end() ) {
         // Already exists
@@ -779,7 +782,7 @@ void
 ViewerTab::notifyGuiClosing()
 {
     _imp->timeLineGui->discardGuiPointer();
-    for (std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator it = _imp->nodesContext.begin(); it != _imp->nodesContext.end(); ++it) {
+    for (ViewerTabPrivate::NodeViewerContextsMap::iterator it = _imp->nodesContext.begin(); it != _imp->nodesContext.end(); ++it) {
         it->second->notifyGuiClosing();
     }
 }
@@ -1219,9 +1222,8 @@ ViewerTab::onClipPreferencesChanged()
             setInfoBarAndViewerResolution(format, canonicalFormat, format.getPixelAspectRatio(), i);
         } else {
             RectI inputFormat = input->getOutputFormat();
-            RectD inputCanonicalFormat;
             double inputPar = input->getAspectRatio(-1);
-            inputFormat.toCanonical_noClipping(0, inputPar, &inputCanonicalFormat);
+            RectD inputCanonicalFormat = inputFormat.toCanonical_noClipping(0, inputPar);
 
             setInfoBarAndViewerResolution(inputFormat, inputCanonicalFormat, inputPar, i);
 

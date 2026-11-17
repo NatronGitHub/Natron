@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -27,21 +27,19 @@
 
 #include <stdexcept>
 
-#include <boost/shared_ptr.hpp>
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QString>
-#include <QtGui/QFont>
-#include <QtGui/QImage>
-#include <QtCore/QHash>
+#include <QString>
+#include <QFont>
+#include <QImage>
+#include <QHash>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
-CLANG_DIAG_OFF(deprecated)
-#include <QtOpenGL/QGLWidget>
-CLANG_DIAG_ON(deprecated)
+
+#include <QPainter>
+#include <QOpenGLWidget>
 
 NATRON_NAMESPACE_ENTER
 
@@ -89,7 +87,7 @@ struct TextRendererPrivate
     GLint _yOffset;
 };
 
-typedef boost::shared_ptr<TextRendererPrivate> TextRendererPrivatePtr;
+typedef std::shared_ptr<TextRendererPrivate> TextRendererPrivatePtr;
 typedef std::map<QFont, TextRendererPrivatePtr> FontRenderers;
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
@@ -148,7 +146,6 @@ TextRendererPrivate::newTransparentTexture()
 
     QImage image(TEXTURE_SIZE, TEXTURE_SIZE, QImage::Format_ARGB32);
     image.fill(Qt::transparent);
-    image = QGLWidget::convertToGLFormat(image);
     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_SIZE, TEXTURE_SIZE,
                   0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits() );
 
@@ -174,7 +171,7 @@ TextRendererPrivate::createCharacter(QChar c)
     }
 
     GLuint texture = _usedTextures.back();
-    GLsizei width = _fontMetrics.width(c);
+    GLsizei width = _fontMetrics.horizontalAdvance(c);
     GLsizei height = _fontMetrics.height();
 
     // render into a new transparent pixmap using QPainter
@@ -182,7 +179,7 @@ TextRendererPrivate::createCharacter(QChar c)
     image.fill(Qt::transparent);
     QPainter painter;
     painter.begin(&image);
-    painter.setRenderHints(QPainter::HighQualityAntialiasing
+    painter.setRenderHints(QPainter::Antialiasing
                            | QPainter::TextAntialiasing);
     painter.setFont(_font);
     painter.setPen(Qt::white);
@@ -192,7 +189,6 @@ TextRendererPrivate::createCharacter(QChar c)
 
 
     // fill the texture with the QImage
-    image = QGLWidget::convertToGLFormat(image);
     glCheckError();
 
     GLuint savedTexture;
@@ -274,7 +270,7 @@ TextRenderer::renderText(float x,
     TextRendererPrivatePtr p;
     FontRenderers::iterator it = _imp->renderers.find(font);
     if ( it != _imp->renderers.end() ) {
-        p  = (*it).second;
+        p = it->second;
     } else {
         p = TextRendererPrivatePtr( new TextRendererPrivate(font) );
         _imp->renderers[font] = p;
@@ -284,7 +280,7 @@ TextRenderer::renderText(float x,
     if (flags & Qt::AlignHCenter || flags & Qt::AlignRight) {
         int width = 0;
         for (int i = 0; i < text.length(); ++i) {
-            width += p->_fontMetrics.width(text[i]);
+            width += p->_fontMetrics.horizontalAdvance(text[i]);
         }
         if (flags & Qt::AlignHCenter) {
             x -= width/2. * scalex;
@@ -329,13 +325,13 @@ TextRenderer::renderText(float x,
             }
             glCheckError();
             glBegin(GL_QUADS);
-            glTexCoord2f(c->xTexCoords[0], c->yTexCoords[0]);
-            glVertex2f(0, 0);
-            glTexCoord2f(c->xTexCoords[1], c->yTexCoords[0]);
-            glVertex2f(c->w * scalex, 0);
-            glTexCoord2f(c->xTexCoords[1], c->yTexCoords[1]);
-            glVertex2f(c->w * scalex, c->h * scaley);
             glTexCoord2f(c->xTexCoords[0], c->yTexCoords[1]);
+            glVertex2f(0, 0);
+            glTexCoord2f(c->xTexCoords[1], c->yTexCoords[1]);
+            glVertex2f(c->w * scalex, 0);
+            glTexCoord2f(c->xTexCoords[1], c->yTexCoords[0]);
+            glVertex2f(c->w * scalex, c->h * scaley);
+            glTexCoord2f(c->xTexCoords[0], c->yTexCoords[0]);
             glVertex2f(0, c->h * scaley);
             glEnd();
             glCheckErrorIgnoreOSXBug();

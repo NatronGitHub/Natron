@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -29,6 +29,7 @@
 #include "Global/Macros.h"
 
 #include "Global/GLIncludes.h"
+#include "Engine/EngineFwd.h"
 
 #ifdef __NATRON_WIN32__
 
@@ -89,6 +90,8 @@ typedef BOOL (WINAPI * WGLDELETECONTEXT_T)(HGLRC);
 typedef PROC (WINAPI * WGLGETPROCADDRESS_T)(LPCSTR);
 typedef BOOL (WINAPI * WGLMAKECURRENT_T)(HDC, HGLRC);
 typedef BOOL (WINAPI * WGLSHARELISTS_T)(HGLRC, HGLRC);
+typedef HGLRC (WINAPI * WGLGETCURRENTCONTEXT_T)();
+typedef HDC (WINAPI * WGLGETCURRENTDC_T)();
 
 ////////// https://www.opengl.org/registry/specs/NV/gpu_affinity.txt
 
@@ -154,6 +157,8 @@ struct OSGLContext_wgl_data
     HINSTANCE instance;
     WGLCREATECONTEXT_T CreateContext;
     WGLDELETECONTEXT_T DeleteContext;
+    WGLGETCURRENTCONTEXT_T GetCurrentContext;
+    WGLGETCURRENTDC_T GetCurrentDC;
     WGLGETPROCADDRESS_T GetProcAddress;
     WGLMAKECURRENT_T MakeCurrent;
     WGLSHARELISTS_T ShareLists;
@@ -206,6 +211,7 @@ public:
     ~OSGLContext_win();
 
     static bool makeContextCurrent(const OSGLContext_win* context);
+    static bool threadHasACurrentContext();
 
     void swapBuffers();
 

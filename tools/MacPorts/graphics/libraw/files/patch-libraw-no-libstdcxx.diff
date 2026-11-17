@@ -1,6 +1,6 @@
---- Makefile.dist.orig	2020-08-21 04:29:19.000000000 +0200
-+++ Makefile.dist	2020-08-21 04:32:30.000000000 +0200
-@@ -159,10 +159,10 @@
+--- Makefile.dist.orig	2023-01-10 11:32:32.000000000 +0000
++++ Makefile.dist	2023-01-10 11:35:00.000000000 +0000
+@@ -167,10 +167,10 @@
  	${CXX} -DLIBRAW_NOTHREADS  ${CFLAGS} -o bin/mem_image samples/mem_image_sample.cpp -L./lib -lraw  -lm  ${LDADD}
  
  bin/dcraw_half: lib/libraw.a object/dcraw_half.o
@@ -13,21 +13,23 @@
  
  bin/dcraw_emu: lib/libraw.a samples/dcraw_emu.cpp
  	${CXX} -DLIBRAW_NOTHREADS  ${CFLAGS} -o bin/dcraw_emu samples/dcraw_emu.cpp -L./lib -lraw  -lm  ${LDADD}
---- libraw.pc.in
-+++ libraw.pc.in
-@@ -7,5 +7,5 @@ Name: libraw
+--- libraw.pc.in.orig	2023-01-10 11:35:20.000000000 +0000
++++ libraw.pc.in	2023-01-10 11:35:43.000000000 +0000
+@@ -7,6 +7,6 @@
  Description: Raw image decoder library (non-thread-safe)
  Requires: @PACKAGE_REQUIRES@
  Version: @PACKAGE_VERSION@
 -Libs: -L${libdir} -lraw -lstdc++@PC_OPENMP@
 +Libs: -L${libdir} -lraw @PC_OPENMP@
+ Libs.private: @PACKAGE_LIBS_PRIVATE@
  Cflags: -I${includedir}/libraw -I${includedir}
---- libraw_r.pc.in.orig	2020-07-23 04:48:54.000000000 -0500
-+++ libraw_r.pc.in	2020-07-24 15:16:29.000000000 -0500
-@@ -7,5 +7,5 @@
+--- libraw_r.pc.in.orig	2023-01-10 11:35:53.000000000 +0000
++++ libraw_r.pc.in	2023-01-10 11:36:10.000000000 +0000
+@@ -7,6 +7,6 @@
  Description: Raw image decoder library (thread-safe)
  Requires: @PACKAGE_REQUIRES@
  Version: @PACKAGE_VERSION@
 -Libs: -L${libdir} -lraw_r -lstdc++@PC_OPENMP@
 +Libs: -L${libdir} -lraw_r @PC_OPENMP@
+ Libs.private: @PACKAGE_LIBS_PRIVATE@
  Cflags: -I${includedir}/libraw -I${includedir}

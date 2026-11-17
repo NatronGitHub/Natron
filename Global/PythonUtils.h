@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -55,18 +55,15 @@ NATRON_PYTHON_NAMESPACE_ENTER
 /**
  * @brief Calls Py_SetPythonHome and set PYTHONPATH
  **/
-void setupPythonEnv(const char* argv0Param);
+void setupPythonEnv(const std::string& binPath);
 
 /**
  * @brief Must be called after setupPythonEnv(), calls Py_SetProgramName and Py_Initialize, PySys_SetArgv
  * @returns A pointer to the main module
  **/
-#if PY_MAJOR_VERSION >= 3
 PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide);
-#else
-PyObject* initializePython2(const std::vector<char*>& commandLineArgsUtf8);
-#endif
 
+std::string PyStringToStdString(PyObject* obj);
 
 NATRON_PYTHON_NAMESPACE_EXIT
 

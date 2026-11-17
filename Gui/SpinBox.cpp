@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -25,7 +25,6 @@
 
 #include "SpinBox.h"
 
-#include <cfloat>
 #include <cmath>
 #include <algorithm> // min, max
 #include <stdexcept>
@@ -33,13 +32,13 @@
 
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
-#include <QtGui/QWheelEvent>
+#include <QWheelEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-#include <QtGui/QDoubleValidator>
-#include <QtGui/QIntValidator>
+#include <QDoubleValidator>
+#include <QIntValidator>
 #include <QStyle> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QApplication>
-#include <QtCore/QDebug>
+#include <QDebug>
 #include <QMenu>
 #include <QPainter>
 
@@ -156,19 +155,19 @@ SpinBox::setType(SpinBoxTypeEnum type)
     _imp->intValidator = 0;
     switch (_imp->type) {
     case eSpinBoxTypeDouble:
-        _imp->mini.setValue<double>(-DBL_MAX);
-        _imp->maxi.setValue<double>(DBL_MAX);
+        _imp->mini.setValue<double>(std::numeric_limits<double>::lowest());
+        _imp->maxi.setValue<double>(std::numeric_limits<double>::max());
         _imp->doubleValidator = new QDoubleValidator;
-        _imp->doubleValidator->setTop(DBL_MAX);
-        _imp->doubleValidator->setBottom(-DBL_MAX);
+        _imp->doubleValidator->setTop(std::numeric_limits<double>::max());
+        _imp->doubleValidator->setBottom(std::numeric_limits<double>::lowest());
         setValue_internal(value(), true);
         break;
     case eSpinBoxTypeInt:
         _imp->intValidator = new QIntValidator;
-        _imp->mini.setValue<int>(INT_MIN);
-        _imp->maxi.setValue<int>(INT_MAX);
-        _imp->intValidator->setTop(INT_MAX);
-        _imp->intValidator->setBottom(INT_MIN);
+        _imp->mini.setValue<int>(std::numeric_limits<int>::min());
+        _imp->maxi.setValue<int>(std::numeric_limits<int>::max());
+        _imp->intValidator->setTop(std::numeric_limits<int>::max());
+        _imp->intValidator->setBottom(std::numeric_limits<int>::min());
         setValue_internal( (int)std::floor(value() + 0.5), true );
 
         break;
@@ -629,14 +628,14 @@ SpinBox::wheelEvent(QWheelEvent* e)
     if (ignoreWheelEvent) {
         return LineEdit::wheelEvent(e);
     }
-    if ( (e->orientation() != Qt::Vertical) ||
-         ( e->delta() == 0) ||
+    if ( (e->angleDelta().x() != 0) ||
+         ( e->angleDelta().y() == 0) ||
          !isEnabled() ||
          isReadOnly() ||
          !hasFocus() ) { // wheel is only effective when the widget has focus (click it first, then wheel)
         return;
     }
-    int delta = e->delta();
+    int delta = e->angleDelta().y();
     int shift = 0;
     if ( modCASIsShift(e) ) {
         shift = 1;
@@ -1001,7 +1000,7 @@ KnobSpinBox::~KnobSpinBox()
 }
 
 void
-KnobSpinBox::enterEvent(QEvent* e)
+KnobSpinBox::enterEvent(QtCompat::QEnterEvent* e)
 {
     _dnd->mouseEnter(e);
     SpinBox::enterEvent(e);

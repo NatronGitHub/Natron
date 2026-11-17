@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,17 +28,12 @@
 
 #include "Global/Macros.h"
 
-#include <cfloat> // DBL_MAX
-#include <climits> // INT_MAX
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
+#include <limits>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QObject>
-#include <QtCore/QString>
+#include <QObject>
+#include <QString>
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -95,7 +90,7 @@ private:
     void compileAndSetResult(const QString& script);
 
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    boost::scoped_ptr<EditScriptDialogPrivate> _imp;
+    std::unique_ptr<EditScriptDialogPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

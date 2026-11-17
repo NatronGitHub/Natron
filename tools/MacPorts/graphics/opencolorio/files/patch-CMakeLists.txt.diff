@@ -1,0 +1,20 @@
+--- CMakeLists.txt.orig	2018-01-04 18:38:27.000000000 -0700
++++ CMakeLists.txt	2018-08-19 17:57:01.000000000 -0700
+@@ -36,7 +36,7 @@
+ option(OCIO_PYGLUE_SONAME "If ON, soname/soversion will be set for Python module library" OFF)
+ option(OCIO_PYGLUE_LIB_PREFIX "If ON, prefix the Python module with 'lib'" OFF)
+ 
+-if(UNIX AND NOT APPLE)
++if(UNIX)
+     option(USE_EXTERNAL_YAML "Use system installed yaml-cpp library." OFF)
+     option(USE_EXTERNAL_TINYXML "Use system installed tinyxml library." OFF)
+     option(USE_EXTERNAL_LCMS "Use system install lcms2 library." OFF)
+@@ -385,7 +385,7 @@
+     set(OCIO_INLINES_HIDDEN OFF)
+ endif()
+ 
+-set(EXTERNAL_COMPILE_FLAGS "-DTIXML_USE_STL ${YAML_CPP_COMPILE_FLAGS} ${GCC_COMPILE_FLAGS}")
++set(EXTERNAL_COMPILE_FLAGS "${YAML_CPP_COMPILE_FLAGS} ${GCC_COMPILE_FLAGS}")
+ 
+ set(EXTERNAL_LINK_FLAGS "")
+ set(EXTERNAL_LIBRARY_DIRS ${PROJECT_BINARY_DIR}/ext/dist/lib)

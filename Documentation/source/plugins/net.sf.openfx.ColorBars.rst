@@ -18,7 +18,7 @@ Generate an image with SMPTE RP 219:2002 color bars.
 
 The output of this plugin is broadcast-safe of “Output IRE” is unchecked. Be careful that colorbars are defined in a nonlinear colorspace. In order to get linear RGB, this plug-in should be combined with a transformation from the video space to linear.
 
-See also: http://opticalenquiry.com/nuke/index.php?title=Constant,_CheckerBoard,_ColorBars,_ColorWheel
+See also: https://web.archive.org/web/20220807183203/http://www.opticalenquiry.com/nuke/index.php?title=Constant,_CheckerBoard,_ColorBars,_ColorWheel
 
 Inputs
 ------
@@ -76,6 +76,8 @@ Controls
 | Size / ``size``                          | Double  | w: 1 h: 1     | Width and height of the size rectangle.                                                                                                                       |
 +------------------------------------------+---------+---------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Interactive Update / ``interactive``     | Boolean | Off           | If checked, update the parameter values during interaction with the image viewer, else update the values when pen is released.                                |
++------------------------------------------+---------+---------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| HiDPI / ``hidpi``                        | Boolean | Off           | Should be checked when the display area is High-DPI (a.k.a Retina). Draws OpenGL overlays twice larger.                                                       |
 +------------------------------------------+---------+---------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Frame Range / ``frameRange``             | Integer | min: 1 max: 1 | Time domain.                                                                                                                                                  |
 +------------------------------------------+---------+---------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------+

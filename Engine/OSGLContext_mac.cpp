@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -473,7 +473,9 @@ OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,
 #endif // if 0
 }
 
+// clang-format off
 GCC_DIAG_OFF(deprecated-declarations)
+// clang-format on
 static const char *RendererIDString(GLint ID)
 {
     static char holder[256] = {0};
@@ -514,7 +516,9 @@ static const char *RendererIDString(GLint ID)
         }
     }
 }
+// clang-format off
 GCC_DIAG_ON(deprecated-declarations)
+// clang-format on
 
 void
 OSGLContext_mac::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
@@ -643,6 +647,11 @@ OSGLContext_mac::makeContextCurrent(const OSGLContext_mac* context)
     } else {
         CGLSetCurrentContext(0);
     }
+}
+
+bool
+OSGLContext_mac::threadHasACurrentContext() {
+    return CGLGetCurrentContext() != NULL;
 }
 
 void

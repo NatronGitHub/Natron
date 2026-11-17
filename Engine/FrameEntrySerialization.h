@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -30,11 +30,13 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// clang-format off
 GCC_DIAG_OFF(unused-parameter)
 #include <boost/archive/basic_archive.hpp>
 #include <boost/serialization/version.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
+// clang-format on
 #endif
 
 #include "Engine/FrameEntry.h"
@@ -74,7 +76,7 @@ FrameKey::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("Channels", _channels);
     ar & ::boost::serialization::make_nvp("View", _view);
     ar & ::boost::serialization::make_nvp("TextureRect", _textureRect);
-    ar & ::boost::serialization::make_nvp("LoD", _mipMapLevel);
+    ar & ::boost::serialization::make_nvp("LoD", _mipmapLevel);
 
     if (version >= FRAME_KEY_INTRODUCES_INPUT_NAME) {
         ar & ::boost::serialization::make_nvp("InputName", _inputName);

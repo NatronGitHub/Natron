@@ -47,10 +47,4 @@ In the Properties Panel on the right side you can make several adjustments to yo
 .. image:: _images/compositing-Read_node01.png
 
 
-
-
-
-
-.. toctree::
-   :maxdepth: 2
-
+See :doc:`The Reader node <thenodes-image-read>` section for more information.

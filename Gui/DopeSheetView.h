@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,26 +28,12 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include "Global/GlobalDefines.h"
 
-CLANG_DIAG_OFF(deprecated)
-CLANG_DIAG_OFF(uninitialized)
+#include <QTreeWidget>
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-#include <QtWidgets/QTreeWidget>
-#else
-#include <QtGui/QTreeWidget>
-#endif
-
-#include <QtOpenGL/QGLWidget>
-CLANG_DIAG_ON(deprecated)
-CLANG_DIAG_ON(uninitialized)
+#include <QOpenGLWidget>
 
 #include "Engine/OverlaySupport.h"
 #include "Engine/ViewIdx.h"
@@ -81,7 +67,7 @@ class DopeSheetViewPrivate;
  * /!\ This class should depends less of the hierarchy view.
  */
 class DopeSheetView
-    : public QGLWidget, public OverlaySupport
+    : public QOpenGLWidget, public OverlaySupport
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -147,7 +133,6 @@ public:
     void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
     void saveOpenGLContext() OVERRIDE FINAL;
     void restoreOpenGLContext() OVERRIDE FINAL;
-    unsigned int getCurrentRenderScale() const OVERRIDE FINAL;
     virtual RectD getViewportRect() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
 
@@ -343,7 +328,7 @@ public Q_SLOTS:
     }
 
 private: /* attributes */
-    boost::scoped_ptr<DopeSheetViewPrivate> _imp;
+    std::unique_ptr<DopeSheetViewPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

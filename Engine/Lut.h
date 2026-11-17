@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -38,7 +38,7 @@
 #include <string>
 
 CLANG_DIAG_OFF(deprecated)
-#include <QtCore/QMutex>
+#include <QMutex>
 CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
@@ -89,6 +89,7 @@ public:
     ///buit-ins color-spaces
     static const Lut* sRGBLut();
     static const Lut* Rec709Lut();
+    static const Lut* BT1886Lut();
     static const Lut* CineonLut();
     static const Lut* Gamma1_8Lut();
     static const Lut* Gamma2_2Lut();
@@ -494,6 +495,18 @@ to_func_srgb(float v)
     } else {
         return 1.055f * std::pow(v, 1.0f / 2.4f) - 0.055f;
     }
+}
+
+inline float
+from_func_bt1886(float v)
+{
+    return std::pow(v, 2.4);
+}
+
+inline float
+to_func_bt1886(float v)
+{
+    return std::pow(v, 1.0/2.4);
 }
 
 // r,g,b values are from 0 to 1

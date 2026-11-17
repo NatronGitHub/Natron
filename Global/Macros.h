@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -37,7 +37,18 @@
 #define __NATRON_LINUX__
 #endif
 
-#ifdef SBK_RUN
+#ifdef __cplusplus
+#if __cplusplus < 201703L
+#error "Natron 2.6+ requires C++17"
+#endif
+// Establish the name space.
+namespace Natron { }
+namespace Python { }
+#define NATRON_NAMESPACE_USING using namespace Natron;
+#define NATRON_PYTHON_NAMESPACE_USING using namespace Natron::Python;
+#endif
+
+#if defined(SBK_RUN)
 
 // run shiboken without the Natron namespace, and add NATRON_NAMESPACE_USING to each cpp afterwards
 #define NATRON_NAMESPACE
@@ -53,18 +64,10 @@
 // Macros to use in each file to enter and exit the right name spaces.
 #define NATRON_NAMESPACE_ENTER namespace NATRON_NAMESPACE {
 #define NATRON_NAMESPACE_EXIT }
-#define NATRON_NAMESPACE_USING using namespace NATRON_NAMESPACE;
 
 #define NATRON_PYTHON_NAMESPACE Python
 #define NATRON_PYTHON_NAMESPACE_ENTER namespace NATRON_PYTHON_NAMESPACE {
 #define NATRON_PYTHON_NAMESPACE_EXIT }
-#define NATRON_PYTHON_NAMESPACE_USING using namespace NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE;
-
-#ifdef __cplusplus
-// Establish the name space.
-namespace NATRON_NAMESPACE { }
-namespace NATRON_PYTHON_NAMESPACE { }
-#endif
 
 #endif
 
@@ -72,7 +75,7 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_NAMESPACE_ANONYMOUS_EXIT }
 
 #define NATRON_APPLICATION_DESCRIPTION "Open-source, cross-platform, nodal video compositing software."
-#define NATRON_COPYRIGHT "(C) 2018-2021 The Natron developers. (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat."
+#define NATRON_COPYRIGHT "(C) 2018-2023 The Natron developers. (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat."
 #define NATRON_ORGANIZATION_NAME "INRIA"
 #define NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "fr"
 #define NATRON_ORGANIZATION_DOMAIN_SUB "inria"
@@ -121,10 +124,20 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_VERSION_MINOR_30 0
 #define NATRON_VERSION_REVISION_30 0
 
-// RB-2.4: 2.4.1
+// RB-2.6: 2.6.0
+#define NATRON_VERSION_MAJOR_26 2
+#define NATRON_VERSION_MINOR_26 6
+#define NATRON_VERSION_REVISION_26 0
+
+// RB-2.5: 2.5.0
+#define NATRON_VERSION_MAJOR_25 2
+#define NATRON_VERSION_MINOR_25 5
+#define NATRON_VERSION_REVISION_25 0
+
+// RB-2.4: 2.4.4
 #define NATRON_VERSION_MAJOR_24 2
 #define NATRON_VERSION_MINOR_24 4
-#define NATRON_VERSION_REVISION_24 1
+#define NATRON_VERSION_REVISION_24 4
 
 // RB-2.3: 2.3.16
 #define NATRON_VERSION_MAJOR_23 2
@@ -142,9 +155,9 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_VERSION_REVISION_21 10
 
 // The Natron version for this branch
-#define NATRON_VERSION_MAJOR NATRON_VERSION_MAJOR_24
-#define NATRON_VERSION_MINOR NATRON_VERSION_MINOR_24
-#define NATRON_VERSION_REVISION NATRON_VERSION_REVISION_24
+#define NATRON_VERSION_MAJOR NATRON_VERSION_MAJOR_26
+#define NATRON_VERSION_MINOR NATRON_VERSION_MINOR_26
+#define NATRON_VERSION_REVISION NATRON_VERSION_REVISION_26
 
 
 #define NATRON_LATEST_VERSION_URL "https://natrongithub.github.io/LATEST_VERSION.txt"
@@ -434,25 +447,22 @@ GCC_ONLY_DIAG_OFF(pragmas)  // warning: unknown option after '#pragma GCC diagno
 #endif
 #endif
 
-// silence warnings from the COMPILER() COMPILER_SUPPORTS() and COMPILER_QUIRK() macros below
-#if __has_warning("-Wexpansion-to-defined")
-CLANG_DIAG_OFF(expansion-to-defined)
-#endif
-
-
 /////////////////////////////////////////////////////////////////////////////////////////////
 // The following was grabbed from WTF/wtf/Compiler.h (where WTF was replaced by NATRON)
 // see https://trac.webkit.org/browser/webkit/trunk/Source/WTF/wtf/Compiler.h?format=txt
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 /* COMPILER() - the compiler being used to build the project */
-#define COMPILER(NATRON_FEATURE) (defined NATRON_COMPILER_ ## NATRON_FEATURE && NATRON_COMPILER_ ## NATRON_FEATURE)
+#ifdef COMPILER
+#undef COMPILER
+#endif
+#define COMPILER(NATRON_FEATURE) (NATRON_COMPILER_ ## NATRON_FEATURE)
 
 /* COMPILER_SUPPORTS() - whether the compiler being used to build the project supports the given feature. */
-#define COMPILER_SUPPORTS(NATRON_COMPILER_FEATURE) (defined NATRON_COMPILER_SUPPORTS_ ## NATRON_COMPILER_FEATURE && NATRON_COMPILER_SUPPORTS_ ## NATRON_COMPILER_FEATURE)
+#define COMPILER_SUPPORTS(NATRON_COMPILER_FEATURE) (NATRON_COMPILER_SUPPORTS_ ## NATRON_COMPILER_FEATURE)
 
 /* COMPILER_QUIRK() - whether the compiler being used to build the project requires a given quirk. */
-#define COMPILER_QUIRK(NATRON_COMPILER_QUIRK) (defined NATRON_COMPILER_QUIRK_ ## NATRON_COMPILER_QUIRK && NATRON_COMPILER_QUIRK_ ## NATRON_COMPILER_QUIRK)
+#define COMPILER_QUIRK(NATRON_COMPILER_QUIRK) (NATRON_COMPILER_QUIRK_ ## NATRON_COMPILER_QUIRK)
 
 /* COMPILER_HAS_CLANG_HEATURE() - whether the compiler supports a particular language or library feature. */
 /* http://clang.llvm.org/docs/LanguageExtensions.html#has-feature-and-has-extension */
@@ -880,8 +890,10 @@ ignore_result(T x)
 
 #if COMPILER_SUPPORTS(CXX_OVERRIDE_CONTROL)
 // we want to use override & final, and get no warnings even if not compiling in c++11 mode
+// clang-format off
 CLANG_DIAG_OFF(c++11-extensions)
 //GCC_DIAG_OFF(c++11-extensions) // no corresponding GCC warning option?
+// clang-format on
 #endif
 
 

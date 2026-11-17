@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -28,18 +28,11 @@
 
 #include "Global/Macros.h"
 
-#include <cfloat> // DBL_MAX
-#include <climits> // INT_MAX
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#endif
+#include <limits>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QtCore/QObject>
+#include <QObject>
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -69,7 +62,7 @@ struct KnobGuiPrivate;
 class KnobGui
     : public QObject
     , public KnobGuiI
-    , public boost::enable_shared_from_this<KnobGui>
+    , public std::enable_shared_from_this<KnobGui>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -85,7 +78,7 @@ public:
 
 public:
     // TODO: enable_shared_from_this
-    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    // constructors should be privatized in any class that derives from std::enable_shared_from_this<>
 
     KnobGui(const KnobIPtr& knob,
             KnobGuiContainerI* container);
@@ -203,8 +196,8 @@ public:
             ret = knob->setValue(v, ViewSpec::current(), dimension, reason, newKey);
         }
         if ( (ret > 0) && (ret != KnobHelper::eValueChangedReturnCodeNothingChanged) && (reason == eValueChangedReasonUserEdited) ) {
-            assert(newKey);
-            if (ret == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
+            assert(newKey != nullptr);
+            if (ret == KnobHelper::eValueChangedReturnCodeKeyframeAdded && newKey != nullptr) {
                 setKeyframeMarkerOnTimeline( newKey->getTime() );
             }
             Q_EMIT keyFrameSet();
@@ -301,13 +294,13 @@ public:
     static bool shouldSliderBeVisible(int sliderMin,
                                       int sliderMax)
     {
-        return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN);
+        return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < std::numeric_limits<int>::max()) && (sliderMin > std::numeric_limits<int>::min());
     }
 
     static bool shouldSliderBeVisible(double sliderMin,
                                       double sliderMax)
     {
-        return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < DBL_MAX) && (sliderMin > -DBL_MAX);
+        return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < std::numeric_limits<double>::max()) && (sliderMin > std::numeric_limits<double>::lowest());
     }
 
     virtual bool getAllDimensionsVisible() const OVERRIDE { return true; }
@@ -513,7 +506,7 @@ private:
 
 private:
 
-    boost::scoped_ptr<KnobGuiPrivate> _imp;
+    std::unique_ptr<KnobGuiPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT

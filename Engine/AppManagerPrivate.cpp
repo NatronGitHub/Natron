@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -25,7 +25,7 @@
 
 #include "AppManagerPrivate.h"
 
-#include <QtCore/QtGlobal> // for Q_OS_*
+#include <QtGlobal> // for Q_OS_*
 #if defined(Q_OS_UNIX)
 #include <sys/time.h>     // for getrlimit on linux
 #include <sys/resource.h> // for getrlimit
@@ -40,18 +40,20 @@
 #include <sstream> // stringstream
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// clang-format off
 GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/export.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
+// clang-format on
 
-#include <QtCore/QDebug>
-#include <QtCore/QProcess>
-#include <QtCore/QTemporaryFile>
-#include <QtCore/QCoreApplication>
-#include <QtNetwork/QLocalServer>
-#include <QtNetwork/QLocalSocket>
+#include <QDebug>
+#include <QProcess>
+#include <QTemporaryFile>
+#include <QCoreApplication>
+#include <QLocalServer>
+#include <QLocalSocket>
 
 #include "Global/QtCompat.h" // for removeRecursively
 #include "Global/GlobalDefines.h"
@@ -80,6 +82,128 @@ GCC_DIAG_ON(unused-parameter)
 
 BOOST_CLASS_EXPORT(NATRON_NAMESPACE::FrameParams)
 BOOST_CLASS_EXPORT(NATRON_NAMESPACE::ImageParams)
+
+//Borrowed from https://github.com/python/cpython/blob/634cb7aa2936a09e84c5787d311291f0e042dba3/Python/fileutils.c
+//Somehow Python 3 dev forced every C application embedding python to have their own code to convert char** to wchar_t**
+static wchar_t*
+char2wchar(const char* arg)
+{
+    wchar_t *res = NULL;
+
+#ifdef HAVE_BROKEN_MBSTOWCS
+    /* Some platforms have a broken implementation of
+     * mbstowcs which does not count the characters that
+     * would result from conversion.  Use an upper bound.
+     */
+    size_t argsize = strlen(arg);
+#else
+    size_t argsize = mbstowcs(NULL, arg, 0);
+#endif
+
+    size_t count;
+    unsigned char *in;
+    wchar_t *out;
+#ifdef HAVE_MBRTOWC
+    mbstate_t mbs;
+#endif
+    if (argsize != (size_t)-1) {
+        res = (wchar_t *)malloc( (argsize + 1) * sizeof(wchar_t) );
+        if (!res) {
+            goto oom;
+        }
+        count = mbstowcs(res, arg, argsize + 1);
+        if (count != (size_t)-1) {
+            wchar_t *tmp;
+            /* Only use the result if it contains no
+             surrogate characters. */
+            for (tmp = res; *tmp != 0 &&
+                 (*tmp < 0xd800 || *tmp > 0xdfff); tmp++) {
+                ;
+            }
+            if (*tmp == 0) {
+                return res;
+            }
+        }
+        free(res);
+    }
+    /* Conversion failed. Fall back to escaping with surrogateescape. */
+#ifdef HAVE_MBRTOWC
+    /* Try conversion with mbrtwoc (C99), and escape non-decodable bytes. */
+    /* Overallocate; as multi-byte characters are in the argument, the
+     actual output could use less memory. */
+    argsize = strlen(arg) + 1;
+    res = (wchar_t*)malloc( argsize * sizeof(wchar_t) );
+    if (!res) {
+        goto oom;
+    }
+    in = (unsigned char*)arg;
+    out = res;
+    std::memset(&mbs, 0, sizeof mbs);
+    while (argsize) {
+        size_t converted = mbrtowc(out, (char*)in, argsize, &mbs);
+        if (converted == 0) {
+            /* Reached end of string; null char stored. */
+            break;
+        }
+        if (converted == (size_t)-2) {
+            /* Incomplete character. This should never happen,
+             since we provide everything that we have -
+             unless there is a bug in the C library, or I
+             misunderstood how mbrtowc works. */
+            fprintf(stderr, "unexpected mbrtowc result -2\n");
+            free(res);
+
+            return NULL;
+        }
+        if (converted == (size_t)-1) {
+            /* Conversion error. Escape as UTF-8b, and start over
+             in the initial shift state. */
+            *out++ = 0xdc00 + *in++;
+            argsize--;
+            std::memset(&mbs, 0, sizeof mbs);
+            continue;
+        }
+        if ( (*out >= 0xd800) && (*out <= 0xdfff) ) {
+            /* Surrogate character.  Escape the original
+             byte sequence with surrogateescape. */
+            argsize -= converted;
+            while (converted--) {
+                *out++ = 0xdc00 + *in++;
+            }
+            continue;
+        }
+        /* successfully converted some bytes */
+        in += converted;
+        argsize -= converted;
+        out++;
+    }
+#else
+    /* Cannot use C locale for escaping; manually escape as if charset
+     is ASCII (i.e. escape all bytes > 128. This will still roundtrip
+     correctly in the locale's charset, which must be an ASCII superset. */
+    res = (wchar_t*)malloc( (strlen(arg) + 1) * sizeof(wchar_t) );
+    if (!res) {
+        goto oom;
+    }
+    in = (unsigned char*)arg;
+    out = res;
+    while (*in) {
+        if (*in < 128) {
+            *out++ = *in++;
+        } else {
+            *out++ = 0xdc00 + *in++;
+        }
+    }
+    *out = 0;
+#endif // ifdef HAVE_MBRTOWC
+
+    return res;
+oom:
+    fprintf(stderr, "out of memory\n");
+    free(res);
+
+    return NULL;
+} // char2wchar
 
 NATRON_NAMESPACE_ENTER
 AppManagerPrivate::AppManagerPrivate()
@@ -117,6 +241,9 @@ AppManagerPrivate::AppManagerPrivate()
     , nThreadsMutex()
     , runningThreadsCount()
     , lastProjectLoadedCreatedDuringRC2Or3(false)
+    , commandLineArgsWideOriginal()
+    , commandLineArgsWide()
+    , commandLineArgsUtf8Original()
     , commandLineArgsUtf8()
     , nArgs(0)
     , mainModule(0)
@@ -141,6 +268,10 @@ AppManagerPrivate::AppManagerPrivate()
     setMaxCacheFiles();
 
     runningThreadsCount = 0;
+
+#if defined(__NATRON_LINUX__)
+    onWayland = qEnvironmentVariableIsSet("WAYLAND_DISPLAY") && !qEnvironmentVariableIsSet("NATRON_DISABLE_WAYLAND");
+#endif
 }
 
 AppManagerPrivate::~AppManagerPrivate()
@@ -150,12 +281,9 @@ AppManagerPrivate::~AppManagerPrivate()
     for (std::size_t i = 0; i < commandLineArgsUtf8Original.size(); ++i) {
         free(commandLineArgsUtf8Original[i]);
     }
-#if PY_MAJOR_VERSION >= 3
-    // Python 3
     for (std::size_t i = 0; i < commandLineArgsWideOriginal.size(); ++i) {
         free(commandLineArgsWideOriginal[i]);
     }
-#endif
 }
 
 #ifdef NATRON_USE_BREAKPAD
@@ -171,7 +299,7 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath,
        We check periodically that the crash reporter process is still alive. If the user killed it somehow, then we want
        the Natron process to terminate
      */
-    breakpadAliveThread = boost::make_shared<ExistenceCheckerThread>(QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK),
+    breakpadAliveThread = std::make_shared<ExistenceCheckerThread>(QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK),
                                                                      QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK),
                                                                      breakpadComPipePath);
     QObject::connect( breakpadAliveThread.get(), SIGNAL(otherProcessUnreachable()), appPTR, SLOT(onCrashReporterNoLongerResponding()) );
@@ -186,9 +314,9 @@ AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath,
 
     Q_UNUSED(breakpad_client_fd);
     try {
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_DARWIN)
         Q_UNUSED(breakpad_client_fd);
-        breakpadHandler = boost::make_shared<google_breakpad::ExceptionHandler>( dumpPath.toStdString(),
+        breakpadHandler = std::make_shared<google_breakpad::ExceptionHandler>( dumpPath.toStdString(),
                                                                                  google_breakpad::ExceptionHandler::FilterCallback(NULL),
                                                                                  google_breakpad::ExceptionHandler::MinidumpCallback(NULL) /*dmpcb*/,
                                                                                  (void*)NULL,
@@ -196,7 +324,7 @@ AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath,
                                                                                  breakpadPipePath.toStdString().c_str() );
 #elif defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
         Q_UNUSED(breakpadPipePath);
-        breakpadHandler = boost::make_shared<google_breakpad::ExceptionHandler>( google_breakpad::MinidumpDescriptor( dumpPath.toStdString() ),
+        breakpadHandler = std::make_shared<google_breakpad::ExceptionHandler>( google_breakpad::MinidumpDescriptor( dumpPath.toStdString() ),
                                                                                  google_breakpad::ExceptionHandler::FilterCallback(NULL),
                                                                                  google_breakpad::ExceptionHandler::MinidumpCallback(NULL) /*dmpCb*/,
                                                                                  (void*)NULL,
@@ -204,7 +332,7 @@ AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath,
                                                                                  breakpad_client_fd);
 #elif defined(Q_OS_WIN32)
         Q_UNUSED(breakpad_client_fd);
-        breakpadHandler = boost::make_shared<google_breakpad::ExceptionHandler>( dumpPath.toStdWString(),
+        breakpadHandler = std::make_shared<google_breakpad::ExceptionHandler>( dumpPath.toStdWString(),
                                                                                  google_breakpad::ExceptionHandler::FilterCallback(NULL), //filter callback
                                                                                  google_breakpad::ExceptionHandler::MinidumpCallback(NULL) /*dmpcb*/,
                                                                                  (void*)NULL, //context
@@ -320,6 +448,10 @@ template <typename T>
 void
 saveCache(Cache<T>* cache)
 {
+    if (!cache) {
+        return;
+    }
+
     std::string cacheRestoreFilePath = cache->getRestoreFilePath();
     FStreamsSupport::ofstream ofile;
     FStreamsSupport::open(&ofile, cacheRestoreFilePath);
@@ -461,13 +593,10 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath, bool isT
 
     QDir cacheFolder(cachePath);
 
-#   if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    QtCompat::removeRecursively(cachePath);
-#   else
     if ( cacheFolder.exists() ) {
         cacheFolder.removeRecursively();
     }
-#endif
+
     if ( !cacheFolder.exists() ) {
         bool success = cacheFolder.mkpath( QChar::fromLatin1('.') );
         if (!success) {
@@ -625,9 +754,13 @@ AppManagerPrivate::initGLAPISpecific()
     OSGLContext_win::initWGLData( wglInfo.get() );
 #elif defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
     // scoped_ptr
-    glxInfo.reset(new OSGLContext_glx_data);
-    OSGLContext_x11::initGLXData( glxInfo.get() );
-
+    if (onWayland) {
+        eglInfo.reset(new OSGLContext_egl_data);
+        OSGLContext_wayland::initEGLData( eglInfo.get() );
+    } else {
+        glxInfo.reset(new OSGLContext_glx_data);
+        OSGLContext_x11::initGLXData( glxInfo.get() );
+    }
 #endif // Q_OS_WIN32
 }
 
@@ -790,12 +923,29 @@ AppManagerPrivate::initGl(bool checkRenderingReq)
 
     hasInitializedOpenGLFunctions = true;
 
+#ifdef __NATRON_LINUX__
+    bool glLoaded = false;
+    const OSGLContext_egl_data* eglInfo = nullptr;
+
+    if (appPTR->isOnWayland()) {
+        eglInfo = appPTR->getEGLData();
+    }
+
+    if (eglInfo && eglInfo->getProcAddress) {
+        glLoaded = gladLoadGLLoader(eglInfo->getProcAddress);
+    } else {
+        glLoaded = gladLoadGL();
+    }
+#else
     bool glLoaded = gladLoadGL();
+#endif
 
 #ifdef GLAD_DEBUG
     if (glLoaded) {
+#ifdef GL_TRACE_CALLS
         glad_set_pre_callback(pre_gl_call);
         glad_set_post_callback(post_gl_call);
+#endif
 
         // disablepost_gl_call for glBegin and commands that are authorized between glBegin and glEnd
         // (because glGetError isn't authorized there)
@@ -1002,6 +1152,9 @@ AppManagerPrivate::tearDownGL()
         OSGLContext_win::destroyWGLData( wglInfo.get() );
     }
 #elif defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
+    if (eglInfo) {
+        OSGLContext_wayland::destroyEGLData( eglInfo.get() );
+    }
     if (glxInfo) {
         OSGLContext_x11::destroyGLXData( glxInfo.get() );
     }
@@ -1012,26 +1165,17 @@ void
 AppManagerPrivate::copyUtf8ArgsToMembers(const std::vector<std::string>& utf8Args)
 {
     // Copy command line args to local members that live throughout the lifetime of AppManager
-#if PY_MAJOR_VERSION >= 3
-    // Python 3
     commandLineArgsWideOriginal.resize(utf8Args.size());
-#endif
     commandLineArgsUtf8Original.resize(utf8Args.size());
     nArgs = (int)utf8Args.size();
     for (std::size_t i = 0; i < utf8Args.size(); ++i) {
         commandLineArgsUtf8Original[i] = strdup(utf8Args[i].c_str());
 
         // Python 3 needs wchar_t arguments
-#if PY_MAJOR_VERSION >= 3
-        // Python 3
         commandLineArgsWideOriginal[i] = char2wchar(utf8Args[i].c_str());
-#endif
     }
     commandLineArgsUtf8 = commandLineArgsUtf8Original;
-#if PY_MAJOR_VERSION >= 3
-    // Python 3
     commandLineArgsWide = commandLineArgsWideOriginal;
-#endif
 }
 
 void

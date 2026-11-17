@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -33,23 +33,19 @@
 #include <vector>
 #include <map>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
-#include <QtCore/QtGlobal> // for Q_OS_*
-#include <QtCore/QMutex>
-#include <QtCore/QString>
-#include <QtCore/QAtomicInt>
-#include <QtCore/QCoreApplication>
+#include <QtGlobal> // for Q_OS_*
+#include <QMutex>
+#include <QString>
+#include <QAtomicInt>
+#include <QCoreApplication>
 
 
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
+#include "Engine/OSGLContext_wayland.h"
 #include "Engine/OSGLContext_x11.h"
 #elif defined(Q_OS_WIN32)
 #include "Engine/OSGLContext_win.h"
-#elif defined(Q_OS_MAC)
+#elif defined(Q_OS_DARWIN)
 #include "Engine/OSGLContext_mac.h"
 #endif
 
@@ -63,7 +59,7 @@
 
 // include breakpad after Engine, because it includes /usr/include/AssertMacros.h on OS X which defines a check(x) macro, which conflicts with boost
 #ifdef NATRON_USE_BREAKPAD
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_DARWIN)
 GCC_DIAG_OFF(deprecated)
 #include "client/mac/handler/exception_handler.h"
 GCC_DIAG_ON(deprecated)
@@ -86,9 +82,9 @@ struct AppManagerPrivate
 
 public:
     typedef Cache<Image> ImageCache;
-    typedef boost::shared_ptr<ImageCache> ImageCachePtr;
+    typedef std::shared_ptr<ImageCache> ImageCachePtr;
     typedef Cache<FrameEntry> FrameEntryCache;
-    typedef boost::shared_ptr<FrameEntryCache> FrameEntryCachePtr;
+    typedef std::shared_ptr<FrameEntryCache> FrameEntryCachePtr;
 
     AppTLS globalTLS;
     AppManager::AppTypeEnum _appType; //< the type of app
@@ -101,14 +97,14 @@ public:
     PluginsMap _plugins; //< list of the plugins
     IOPluginsMap readerPlugins; // for all reader plug-ins which are best suited for each format
     IOPluginsMap writerPlugins; // for all writer plug-ins which are best suited for each format
-    boost::scoped_ptr<OfxHost> ofxHost; //< OpenFX host
-    boost::scoped_ptr<KnobFactory> _knobFactory; //< knob maker
+    std::unique_ptr<OfxHost> ofxHost; //< OpenFX host
+    std::unique_ptr<KnobFactory> _knobFactory; //< knob maker
     ImageCachePtr _nodeCache; //< Images cache
     ImageCachePtr _diskCache; //< Images disk cache (used by DiskCache nodes)
     FrameEntryCachePtr _viewerCache; //< Viewer textures cache
     mutable QMutex diskCachesLocationMutex;
     QString diskCachesLocation;
-    boost::scoped_ptr<ProcessInputChannel> _backgroundIPC; //< object used to communicate with the main app
+    std::unique_ptr<ProcessInputChannel> _backgroundIPC; //< object used to communicate with the main app
     //if this app is background, see the ProcessInputChannel def
     bool _loaded; //< true when the first instance is completely loaded.
     QString _binaryPath; //< the path to the application's binary
@@ -146,10 +142,9 @@ public:
     // Python 3
     std::vector<wchar_t*> commandLineArgsWideOriginal; // must be free'd on exit
     std::vector<wchar_t*> commandLineArgsWide; // a copy of the above, may be modified
-#else
+#endif
     std::vector<char*> commandLineArgsUtf8Original; // must be free'd on exit
     std::vector<char*> commandLineArgsUtf8; // a copy of the above, may be modified
-#endif
 
     //  QCoreApplication will hold a reference to that int until QCoreApplication destructor is invoked.
     //  Thus ensure that the QCoreApplication is destroyed before AppManager itself
@@ -161,7 +156,7 @@ public:
 #ifdef NATRON_USE_BREAKPAD
     QString breakpadProcessExecutableFilePath;
     Q_PID breakpadProcessPID;
-    boost::shared_ptr<google_breakpad::ExceptionHandler> breakpadHandler;
+    std::shared_ptr<google_breakpad::ExceptionHandler> breakpadHandler;
     ExistenceCheckerThreadPtr breakpadAliveThread;
 #endif
 
@@ -196,16 +191,20 @@ public:
     bool hasInitializedOpenGLFunctions;
     mutable QMutex openGLFunctionsMutex;
 
+    bool onWayland;
+
 #ifdef Q_OS_WIN32
-    boost::scoped_ptr<OSGLContext_wgl_data> wglInfo;
+    std::unique_ptr<OSGLContext_wgl_data> wglInfo;
 #endif
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
-    boost::scoped_ptr<OSGLContext_glx_data> glxInfo;
+    std::unique_ptr<OSGLContext_egl_data> eglInfo;
+
+    std::unique_ptr<OSGLContext_glx_data> glxInfo;
 #endif
 
-    boost::scoped_ptr<GPUContextPool> renderingContextPool;
+    std::unique_ptr<GPUContextPool> renderingContextPool;
     std::list<OpenGLRendererInfo> openGLRenderers;
-    boost::scoped_ptr<QCoreApplication> _qApp;
+    std::unique_ptr<QCoreApplication> _qApp;
 
 public:
     AppManagerPrivate();

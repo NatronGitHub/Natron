@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -32,13 +32,8 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QtCore/QLineF>
-#include <QtCore/QDebug>
-
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-#include <boost/shared_ptr.hpp>
-#include <boost/math/special_functions/fpclassify.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#include <QLineF>
+#include <QDebug>
 
 #include "Engine/AppInstance.h"
 #include "Engine/BezierCP.h"

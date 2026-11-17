@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <https://natrongithub.github.io/>,
- * (C) 2018-2021 The Natron developers
+ * (C) 2018-2023 The Natron developers
  * (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
@@ -31,33 +31,22 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 
-#include <QtCore/QDebug>
-#include <QtCore/QThread>
-#include <QtCore/QWaitCondition>
+#include <QDebug>
+#include <QThread>
+#include <QWaitCondition>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-#include <QtWidgets/QVBoxLayout>
-#include <QtWidgets/QHeaderView>
-#include <QtWidgets/QCheckBox>
-#include <QtWidgets/QStyledItemDelegate>
-#include <QtWidgets/QUndoCommand>
-#include <QtWidgets/QApplication>
-#else
-#include <QtGui/QVBoxLayout>
-#include <QtGui/QHeaderView>
-#include <QtGui/QCheckBox>
-#include <QtGui/QStyledItemDelegate>
-#include <QtGui/QUndoCommand>
-#include <QtGui/QApplication>
-#endif
+#include <QVBoxLayout>
+#include <QHeaderView>
+#include <QCheckBox>
+#include <QStyledItemDelegate>
+#include <QUndoCommand>
+#include <QApplication>
 
-#include <QtGui/QPixmap>
-#include <QtGui/QPainter>
+#include <QPixmap>
+#include <QPainter>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-
-#include <boost/weak_ptr.hpp>
 
 #include <ofxNatron.h>
 
@@ -109,7 +98,7 @@ getCenterKnobForTracker(Node* node)
     KnobIPtr knob = node->getKnobByName(kTrackCenterName);
 
     assert(knob);
-    KnobDoublePtr dblKnob = boost::dynamic_pointer_cast<KnobDouble>(knob);
+    KnobDoublePtr dblKnob = std::dynamic_pointer_cast<KnobDouble>(knob);
     assert(dblKnob);
 
     return dblKnob;
@@ -553,11 +542,7 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->view->setAttribute(Qt::WA_MacShowFocusRect, 0);
     _imp->view->setUniformRowHeights(true);
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    _imp->view->header()->setResizeMode(QHeaderView::ResizeToContents);
-#else
     _imp->view->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
-#endif
     _imp->view->header()->setStretchLastSection(true);
 
 
@@ -912,6 +897,7 @@ public:
         , _panel(panel)
         , _nodes(nodes)
     {
+        setText( tr("Remove instance(s)") );
     }
 
     virtual ~RemoveNodeCommand()
@@ -925,7 +911,6 @@ public:
         _panel->setRedrawOnSelectionChanged(true);
         _panel->getMainInstance()->getApp()->triggerAutoSave();
         _panel->getMainInstance()->getApp()->redrawAllViewers();
-        setText( tr("Remove instance(s)") );
     }
 
     virtual void redo() OVERRIDE FINAL
@@ -935,7 +920,6 @@ public:
         _panel->setRedrawOnSelectionChanged(true);
         _panel->getMainInstance()->getApp()->triggerAutoSave();
         _panel->getMainInstance()->getApp()->redrawAllViewers();
-        setText( tr("Remove instance(s)") );
     }
 };
 
@@ -1945,8 +1929,8 @@ TrackerPanelV1::onAverageTracksButtonClicked()
     KnobDoublePtr newInstanceCenter = getCenterKnobForTracker( newInstance.get() );
     std::list<KnobDoublePtr> centers;
     RangeD keyframesRange;
-    keyframesRange.min = INT_MAX;
-    keyframesRange.max = INT_MIN;
+    keyframesRange.min = std::numeric_limits<int>::max();
+    keyframesRange.max = std::numeric_limits<int>::min();
 
     for (std::list<Node*>::iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
         KnobDoublePtr dblKnob = getCenterKnobForTracker(*it);
@@ -1968,10 +1952,10 @@ TrackerPanelV1::onAverageTracksButtonClicked()
             keyframesRange.max = maxi;
         }
     }
-    if (keyframesRange.min == INT_MIN) {
+    if (keyframesRange.min == std::numeric_limits<int>::min()) {
         keyframesRange.min = 0;
     }
-    if (keyframesRange.max == INT_MAX) {
+    if (keyframesRange.max == std::numeric_limits<int>::max()) {
         keyframesRange.max = 0;
     }
 
@@ -2327,7 +2311,7 @@ getCornerPinPoint(Node* node,
     QString name = isFrom ? QString::fromUtf8("from%1").arg(index + 1) : QString::fromUtf8("to%1").arg(index + 1);
     KnobIPtr knob = node->getKnobByName( name.toStdString() );
     assert(knob);
-    KnobDoublePtr  ret = boost::dynamic_pointer_cast<KnobDouble>(knob);
+    KnobDoublePtr  ret = std::dynamic_pointer_cast<KnobDouble>(knob);
     assert(ret);
 
     return ret;

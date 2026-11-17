@@ -1,6 +1,6 @@
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <https://natrongithub.github.io/>,
-# (C) 2018-2021 The Natron developers
+# (C) 2018-2023 The Natron developers
 # (C) 2013-2018 INRIA and Alexandre Gauthier-Foichat
 #
 # Natron is free software: you can redistribute it and/or modify
@@ -23,11 +23,12 @@ TARGET = Natron
 VERSION_21 = 2.1.10
 VERSION_22 = 2.2.10
 VERSION_23 = 2.3.16
-VERSION_24 = 2.4.1
+VERSION_24 = 2.4.4
+VERSION_25 = 2.5.0
 VERSION_30 = 3.0.0
 
 # The version for this branch
-VERSION = $$VERSION_24
+VERSION = $$VERSION_25
 
 TEMPLATE = app
 win32 {
@@ -39,8 +40,9 @@ CONFIG += moc
 CONFIG += boost boost-serialization-lib opengl qt cairo python shiboken pyside
 CONFIG += static-gui static-engine static-host-support static-breakpadclient static-libmv static-openmvg static-ceres static-qhttpserver static-libtess
 
-QT += gui core opengl network
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
+QT += gui core opengl network widgets concurrent
+# QOpenGLWidget moved to its own module in Qt6; CMake already appends it.
+equals(QT_MAJOR_VERSION, 6): QT += openglwidgets
 
 !noexpat: CONFIG += expat
 
