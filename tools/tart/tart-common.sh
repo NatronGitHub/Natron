@@ -189,7 +189,11 @@ vm_stop() { # vm
 vm_sync() { # vm : copy tools/ of the Natron checkout (tracked files, with local changes) and osmesa-install
     local vm=$1
     log "syncing sources into $vm"
-    vm_ssh "$vm" "mkdir -p Documents/third_party/Natron"
+    # The MacPorts overlay must be an exact copy: a file deleted from the checkout (e.g. a port
+    # removed from the overlay) would otherwise survive in the VM and be published again by the
+    # VM's tools/MacPorts/sync.sh. --files-from below can't delete, so start from an empty
+    # directory. Nothing else lives there (provision.sh logs go to ~/provision-logs).
+    vm_ssh "$vm" "mkdir -p Documents/third_party/Natron && rm -rf Documents/third_party/Natron/tools/MacPorts"
     # only the files git tracks under tools/ (the build checks out Natron itself from GitHub):
     # untracked notes or credentials in the checkout never end up in the image
     (cd "$NATRON_SRC" && git ls-files -z tools) |
