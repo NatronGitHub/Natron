@@ -237,6 +237,56 @@ So the chain from application to pixels is:
 ``appPTR`` → ``AppInstance`` → ``Project`` (a ``NodeCollection``) →
 ``Node`` → ``EffectInstance`` → (OpenFX plug-in or built-in C++).
 
+.. mermaid::
+   :alt: AppManager owns the AppInstances, the OfxHost, the Settings, the
+         KnobFactory and three caches. An AppInstance owns one Project, which
+         is a KnobHolder and a NodeCollection. A NodeCollection owns Nodes,
+         each Node owns one EffectInstance, which is a NamedKnobHolder, and a
+         KnobHolder owns knobs. Node points to its GUI through NodeGuiI,
+         implemented by NodeGui; ViewerInstance points to OpenGLViewerI,
+         implemented by ViewerGL. GuiApplicationManager and GuiAppInstance are
+         the GUI subclasses.
+   :caption: The runtime object model. Filled diamonds: ownership (shared_ptr).
+             Hollow triangles: inheritance. Dashed arrows: the Engine side of
+             an Engine/Gui interface.
+
+   classDiagram
+       direction TB
+       class AppManager
+       class GuiApplicationManager
+       class AppInstance
+       class GuiAppInstance
+       class Project
+       class KnobHolder
+       class NamedKnobHolder
+       class NodeCollection
+       class Node
+       class EffectInstance
+       class OutputEffectInstance
+       class KnobI
+       AppManager <|-- GuiApplicationManager
+       AppInstance <|-- GuiAppInstance
+       AppManager *-- "0..*" AppInstance : _appInstances
+       AppManager *-- OfxHost
+       AppManager *-- Settings
+       AppManager *-- KnobFactory
+       AppManager *-- "3" Cache : node, disk, viewer caches
+       AppInstance *-- "1" Project
+       KnobHolder <|-- Project
+       NodeCollection <|-- Project
+       KnobHolder <|-- Settings
+       NodeCollection *-- "0..*" Node
+       Node *-- "1" EffectInstance : effect
+       KnobHolder *-- "0..*" KnobI
+       KnobHolder <|-- NamedKnobHolder
+       NamedKnobHolder <|-- EffectInstance
+       EffectInstance <|-- OutputEffectInstance
+       Node ..> NodeGuiI : GUI pointer
+       NodeGuiI <|.. NodeGui
+       ViewerInstance ..> OpenGLViewerI : uiContext
+       OpenGLViewerI <|.. ViewerGL
+       OutputEffectInstance <|-- ViewerInstance
+
 Ownership follows the rule given in :ref:`maint-design`: each parent holds its
 children through a ``shared_ptr`` (``AppManager`` its ``AppInstance`` objects,
 a ``NodeCollection`` its ``Node`` objects, a ``Node`` its ``EffectInstance``,
@@ -269,6 +319,41 @@ classes derive from it than just the Viewer and the writers:
 ``NATRON_ENABLE_IO_META_NODES`` is set (it is, in ``Global/Macros.h``), and the
 Viewer only when Natron is not running in background mode
 (``AppManager::loadBuiltinNodePlugins`` in ``Engine/AppManager.cpp``).
+
+.. mermaid::
+   :alt: OutputEffectInstance derives from EffectInstance.
+         AbstractOfxEffectInstance, ViewerInstance, DiskCacheNode, NoOpBase and
+         NodeGroup derive from OutputEffectInstance; OfxEffectInstance from
+         AbstractOfxEffectInstance; Dot, Backdrop, GroupInput and GroupOutput
+         from NoOpBase; WriteNode and TrackerNode from NodeGroup, which is also
+         a NodeCollection. ReadNode, RotoPaint, RotoSmear, PrecompNode,
+         OneViewNode and JoinViewsNode derive from EffectInstance; RotoNode
+         from RotoPaint.
+   :caption: The effect classes (the headers in Engine/).
+
+   classDiagram
+       direction TB
+       EffectInstance <|-- OutputEffectInstance
+       OutputEffectInstance <|-- AbstractOfxEffectInstance
+       AbstractOfxEffectInstance <|-- OfxEffectInstance
+       OutputEffectInstance <|-- ViewerInstance
+       OutputEffectInstance <|-- DiskCacheNode
+       OutputEffectInstance <|-- NoOpBase
+       NoOpBase <|-- Dot
+       NoOpBase <|-- Backdrop
+       NoOpBase <|-- GroupInput
+       NoOpBase <|-- GroupOutput
+       OutputEffectInstance <|-- NodeGroup
+       NodeCollection <|-- NodeGroup
+       NodeGroup <|-- WriteNode
+       NodeGroup <|-- TrackerNode
+       EffectInstance <|-- ReadNode
+       EffectInstance <|-- RotoPaint
+       RotoPaint <|-- RotoNode
+       EffectInstance <|-- RotoSmear
+       EffectInstance <|-- PrecompNode
+       EffectInstance <|-- OneViewNode
+       EffectInstance <|-- JoinViewsNode
 
 Why ``Node`` and ``EffectInstance`` are separate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -318,6 +403,36 @@ Startup sequence
 ``AppManager::load()`` (``loadW()`` on Windows). The order of what follows
 matters when you add anything that runs at startup (``Engine/AppManager.cpp``
 unless noted):
+
+.. mermaid::
+   :alt: main calls AppManager::load, then loadFromArgs, which initializes
+         OpenGL, then the QApplication, then Python, then loadInternal, which creates
+         the Settings and calls initGui. In the GUI, the event loop starts and
+         the rest runs from a slot. loadInternalAfterInitGui creates the caches
+         and calls loadAllPlugins: built-in nodes, OfxHost::loadOFXPlugins,
+         which registers each OFX plug-in, then PyPlugs and init.py. Finally
+         newAppInstance creates the first AppInstance, whose load creates the
+         Project and opens the project, runs the script or starts the writers.
+   :caption: Startup, from main() to the first AppInstance.
+
+   sequenceDiagram
+       participant Main as main()
+       participant AM as AppManager
+       participant OH as OfxHost
+       participant AI as AppInstance
+       Main->>AM: load() → loadFromArgs()
+       AM->>AM: initializeOpenGLFunctionsOnce(), initializeQApp()
+       AM->>AM: ThreadPool, FONTCONFIG_PATH, then initPython()
+       AM->>AM: loadInternal(): Settings, then initGui()
+       Note over AM: GUI: the event loop starts, and the rest runs from onFontconfigCacheUpdateFinished()
+       AM->>AM: loadInternalAfterInitGui(): the three caches
+       AM->>AM: loadAllPlugins() → loadBuiltinNodePlugins()
+       AM->>OH: loadOFXPlugins()
+       OH->>AM: registerPlugin() for each OFX plug-in
+       AM->>AM: loadPythonGroups() (PyPlugs, init.py), onAllPluginsLoaded()
+       AM->>AI: newAppInstance() → load()
+       AI->>AI: create the Project, run the command-line Python commands
+       AI->>AI: open the project, run the script, or start the writers
 
 1. ``load()`` sets the locale, stores the command line and calls
    ``loadFromArgs()``.

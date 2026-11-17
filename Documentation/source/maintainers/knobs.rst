@@ -36,6 +36,27 @@ set together, except while a value change is queued (see below).
 ``Knob<T>::getValue(dimension, view, clamp)`` (``KnobImpl.h``) returns, in
 this order of precedence:
 
+.. mermaid::
+   :alt: getValue returns the expression result if the dimension has an
+         expression; otherwise the curve value at the current time if it is
+         animated, using the master curve if linked; otherwise the master value
+         if linked; otherwise the stored value, the GUI copy on the main thread
+         and the render copy on other threads, clamped to the range.
+   :caption: How Knob<T>::getValue resolves a value (KnobImpl.h).
+
+   flowchart TD
+       A["Knob#lt;T#gt;::getValue(dimension, view)"] --> B{"expression on<br/>this dimension?"}
+       B -- yes --> B1["getValueFromExpression()<br/>(cached per time, Python)"]
+       B -- no --> C{"isAnimated()?<br/>(master's curve if linked)"}
+       C -- yes --> C1["getValueAtTime(current time)"]
+       C -- no --> D{"getMaster(dimension)?"}
+       D -- yes --> D1["getValueFromMaster()"]
+       D -- no --> E{"main thread?"}
+       E -- yes --> E1["_guiValues[dimension]"]
+       E -- no --> E2["_values[dimension]"]
+       E1 --> F["clamp to the range"]
+       E2 --> F
+
 1. the result of the **expression** of that dimension, if it has one
    (``getValueFromExpression``, which caches the result for each time until
    the expression's inputs change);
@@ -102,6 +123,41 @@ right away; ``_values`` and the rest wait. The queue is applied later by
 
 Links (slave and master)
 ------------------------
+
+.. mermaid::
+   :alt: When the master knob changes, its holder brackets the change: on a
+         significant change it aborts the renders and increments the knobs age,
+         calls knobChanged and the Python callback, then refreshes the
+         listeners: for a link the master dimension is cloned into the slave
+         dimension, for an expression the cached results are cleared, then the
+         slave evaluates the change in its own holder and refreshes its own
+         listeners. Finally the master holder re-renders the Viewers.
+   :caption: How a change of a master knob reaches a linked knob (Knob.cpp,
+             KnobImpl.h).
+
+   sequenceDiagram
+       participant U as User or plug-in
+       participant M as Master knob
+       participant H as Master's KnobHolder
+       participant S as Slave knob
+       participant SH as Slave's KnobHolder
+       Note over M,S: Linking: S.slaveTo(dim, M, masterDim) sets masters[dim] = M, connects M's keyframe signals once, clones M into S, and calls M.addListener(false, dim, masterDim, S)
+       U->>M: setValue(v, masterDim)
+       M->>H: evaluateValueChange(): beginChanges(), appendValueChange(), endChanges()
+       H->>H: significant change: onSignificantEvaluateAboutToBeCalled() (abort renders, incrementKnobsAge())
+       H->>H: onKnobValueChanged_public() → knobChanged() (OFX instanceChanged), onParamChanged
+       H->>M: refreshListenersAfterValueChange(masterDim)
+       loop each listener dimension whose targetDim is masterDim
+           alt link
+               M->>S: clone(M, dim, masterDim)
+           else expression
+               M->>S: clearExpressionsResults()
+           end
+       end
+       M->>S: evaluateValueChangeInternal(eValueChangedReasonSlaveRefresh)
+       S->>SH: endChanges(): the slave's knobChanged, re-render
+       M->>S: refreshListenersAfterValueChange() of the slave (recursion)
+       H->>H: evaluate() → renderCurrentFrame() of the Viewers
 
 A dimension of a knob can be **linked** to a dimension of another knob of a
 compatible type: the linked dimension (the *slave*) then shows and returns

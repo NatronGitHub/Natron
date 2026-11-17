@@ -49,6 +49,42 @@ How the bindings are generated
 
 In the CMake build (``Engine/CMakeLists.txt`` and ``Gui/CMakeLists.txt``):
 
+.. mermaid::
+   :alt: At configure time, sourceList.py reads typesystem_engine.xml and lists
+         the wrapper files. At build time, shiboken2 or shiboken6 reads the
+         global header, which includes the Py* headers, and the typesystem
+         file, which loads PySide typesystem_core.xml, and writes the wrappers
+         into the build directory. sourceCleanup.py post-processes them, and
+         they are compiled into the NatronEngine static library. At run time,
+         AppManager::initPython registers PyInit_NatronEngine. The Gui module
+         is built the same way.
+   :caption: Generating the NatronEngine module (the NatronGui module is built
+             the same way).
+
+   flowchart LR
+       subgraph inputs ["Sources"]
+           PY["Engine/Py*.h"]
+           GH["PySide2_Engine_Python.h<br/>or PySide6_Engine_Python.h"]
+           TS["typesystem_engine.xml"]
+           PTS["PySide typesystem_core.xml"]
+       end
+       SL["tools/utils/sourceList.py<br/>(configure time)"]
+       SB["shiboken2 / shiboken6<br/>(build time)"]
+       OUT["build/Engine/Qt5 or Qt6/NatronEngine/<br/>natronengine_module_wrapper.cpp<br/>*_wrapper.cpp"]
+       SC["tools/utils/sourceCleanup.py"]
+       LIB["NatronEngine static library"]
+       RT["AppManager::initPython()<br/>PyImport_AppendInittab(PyInit_NatronEngine)"]
+       TS --> SL
+       SL -->|"list of wrapper files"| OUT
+       PY --> GH
+       GH --> SB
+       TS --> SB
+       PTS -.->|"loaded by"| TS
+       SB --> OUT
+       OUT --> SC
+       SC -->|"compiled into"| LIB
+       LIB -->|"at run time"| RT
+
 1. At configure time, ``tools/utils/sourceList.py`` reads the typesystem file
    and lists the files that Shiboken will write: the module wrapper plus one
    ``<name>_wrapper.cpp`` for each ``object-type``, ``value-type`` and

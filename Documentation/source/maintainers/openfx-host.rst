@@ -81,6 +81,47 @@ host behaviour, and update it when you fix one of those issues.
 How a plug-in becomes a node
 ----------------------------
 
+.. mermaid::
+   :alt: At startup, OfxHost::loadOFXPlugins sets the cache version and the
+         search path of the HostSupport PluginCache, reads the cache file and
+         scans the plug-in files, which loads and describes only the new or
+         changed binaries, writes the cache if it changed, and registers each
+         plug-in with AppManager. When the user creates a node, AppInstance
+         asks OfxHost to describe the plug-in in a context on first use,
+         creates the Node, whose load calls OfxHost::createOfxEffect, which
+         creates the OfxEffectInstance; populate creates the clips, parameters
+         and knobs, and the create-instance action is called.
+   :caption: Loading the OpenFX plug-ins at startup, and creating an OpenFX
+             node.
+
+   sequenceDiagram
+       participant AM as AppManager
+       participant OH as OfxHost
+       participant PC as OFX::Host::PluginCache
+       participant P as OFX plug-in
+       participant AI as AppInstance
+       participant N as Node
+       participant OE as OfxEffectInstance
+       Note over AM,P: At startup
+       AM->>OH: loadOFXPlugins()
+       OH->>PC: setCacheVersion("NatronOFXCachev2")
+       OH->>PC: setPluginHostPath("Natron"), ("Nuke"), addFileToPath(...)
+       Note right of PC: OFX_PLUGIN_PATH was added by the PluginCache constructor
+       OH->>PC: readCache(), scanPluginFiles()
+       PC->>P: new or changed binaries only: kOfxActionLoad, kOfxActionDescribe
+       OH->>OH: writeOFXCache() if the cache changed
+       loop each plug-in of getPluginsByIDMajor()
+           OH->>AM: registerPlugin()
+       end
+       Note over AM,OE: When the user creates a node
+       AI->>OH: getPluginContextAndDescribe() (first use only)
+       OH->>P: kOfxImageEffectActionDescribeInContext
+       AI->>N: new Node, Node::load()
+       N->>OH: createOfxEffect()
+       OH->>OE: new OfxEffectInstance, createOfxImageEffectInstance()
+       OE->>OE: populate(): OFX clips and parameters, and the Natron knobs (OfxParamToKnob)
+       OE->>P: kOfxActionCreateInstance
+
 Loading the plug-ins happens once, at startup, in ``OfxHost::loadOFXPlugins``
 (``Engine/OfxHost.cpp``), called by ``AppManager::loadAllPlugins`` (see
 :ref:`maint-startup`):

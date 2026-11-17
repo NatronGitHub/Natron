@@ -9,6 +9,35 @@ This chapter explains where images are cached, how they are found again, and
 how the cache stays within its size limits. The render side (when
 ``renderRoI`` looks up and fills the cache) is in :ref:`maint-rendering`.
 
+.. mermaid::
+   :alt: renderRoI looks up the cache: first the RAM part, then the disk part,
+         whose entries are mapped again and moved back to RAM. On a hit, the
+         entry with the right mip-map level is picked, or one of a higher
+         resolution is downscaled. On a miss, the output image is allocated:
+         outside the cache if shouldCacheOutput says no, otherwise with
+         getOrCreate, which checks the free memory and evicts least-recently-
+         used entries while the cache is more than 90 percent full. When a node
+         hash changes, the CacheCleanerThread removes the node entries that
+         have another hash.
+   :caption: Looking up and filling an image cache (Cache.h,
+             EffectInstance.cpp).
+
+   flowchart TD
+       A["renderRoI: getImageFromCacheAndConvertIfNeeded()"] --> L["Cache::get(key)"]
+       L --> D{"hash in _memoryCache?"}
+       D -- yes --> H["entries with this hash:<br/>pick the mip-map level,<br/>downscale or convert if needed"]
+       D -- no --> E{"hash in _diskCache?"}
+       E -- yes --> F["map the file again,<br/>move the entry back to RAM"] --> H
+       E -- no --> M["miss: allocate the output image"]
+       M --> B{"shouldCacheOutput()?"}
+       B -- no --> X["new Image, outside the cache"]
+       B -- yes --> C["Cache::getOrCreate(key, params)<br/>→ createInternal()"]
+       C --> G1["checkCacheFreeMemoryIsGoodEnough()"]
+       G1 --> G2{"cache more than 90% full?"}
+       G2 -- yes --> G3["evict the LRU entry: to the disk part,<br/>or delete it on the DeleterThread"] --> G2
+       G2 -- no --> G4["new entry in _memoryCache"]
+       N["node hash changed"] -.-> CL["CacheCleanerThread removes the node's<br/>entries that have another hash"]
+
 The three caches
 ----------------
 
