@@ -692,6 +692,13 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
     }
 
     getGui()->getApp()->getProject()->forceComputeInputDependentDataOnAllTrees();
+
+    // Previews are not computed while the node tree is created: compute them now.
+    NodesGuiList createdNodesGui;
+    for (std::list<std::pair<std::string, NodeGuiPtr> >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
+        createdNodesGui.push_back(it->second);
+    }
+    _imp->refreshPreviewsOfCreatedNodes(createdNodesGui);
 }
 
 QPointF

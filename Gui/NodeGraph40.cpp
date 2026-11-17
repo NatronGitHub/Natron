@@ -333,6 +333,9 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
         (*it)->getNode()->restoreKnobsLinks(allNodes, oldNewScriptNamesMapping, true); // clone should never fail
     }
 
+    // Now that the clones are connected, compute their previews (and those of the nodes inside cloned groups).
+    _imp->refreshPreviewsOfCreatedNodes(newNodesList);
+
 
     pushUndoCommand( new AddMultipleNodesCommand(this, newNodesList) );
 } // NodeGraph::cloneSelectedNodes

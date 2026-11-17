@@ -759,26 +759,34 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         ss << "import " << moduleName.toStdString() << '\n';
         ss << moduleName.toStdString() << ".createInstance(app,app)";
 
-        std::string output;
-        FlagIncrementer flag(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
-        CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
-        if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output) ) {
-            if ( !err.empty() ) {
-                Dialogs::errorDialog(tr("Python").toStdString(), err);
-            }
+        {
+            std::string output;
+            FlagIncrementer flag(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
+            CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
+            if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output) ) {
+                if ( !err.empty() ) {
+                    Dialogs::errorDialog(tr("Python").toStdString(), err);
+                }
 
-            return false;
-        } else {
-            if ( !output.empty() ) {
-                if ( appPTR->isBackground() ) {
-                    std::cout << output << std::endl;
-                } else {
-                    appendToScriptEditor(output);
+                return false;
+            } else {
+                if ( !output.empty() ) {
+                    if ( appPTR->isBackground() ) {
+                        std::cout << output << std::endl;
+                    } else {
+                        appendToScriptEditor(output);
+                    }
                 }
             }
-        }
 
-        getProject()->forceComputeInputDependentDataOnAllTrees();
+            getProject()->forceComputeInputDependentDataOnAllTrees();
+        } // CreatingNodeTreeFlag_RAII createNodeTree
+
+        // Previews are not computed while a node tree is created (see NodeGui::forceComputePreview()):
+        // compute them now, unless this is part of a larger node tree, which refreshes them once complete.
+        if ( !isCreatingNodeTree() ) {
+            getProject()->forceRefreshPreviews();
+        }
     } else {
         PythonGILLocker pgl;
 
@@ -940,6 +948,17 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
     ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
     bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
     onGroupCreationFinished(node, serialization, autoConnect);
+
+    // Previews are not computed while a node tree is created (see NodeGui::forceComputePreview()):
+    // compute them now, unless this is part of a larger node tree (e.g. pasting nodes or loading a
+    // project), which refreshes them once complete.
+    if ( node && !isCreatingNodeTree() ) {
+        node->computePreviewImage( getTimeLine()->currentFrame() );
+        NodeGroup* isGrp = node->isEffectGroup();
+        if (isGrp) {
+            isGrp->forceRefreshPreviews();
+        }
+    }
 
     return node;
 } // AppInstance::createNodeFromPythonModule

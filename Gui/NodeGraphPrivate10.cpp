@@ -153,15 +153,28 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
         }
 
         // Now that meta-datas are refreshed, compute preview
-        for (NodesGuiList::const_iterator it = newNodesList.begin(); it!=newNodesList.end(); ++it) {
-            (*it)->forceComputePreview(_publicInterface->getGui()->getApp()->getTimeLine()->currentFrame());
-        }
+        refreshPreviewsOfCreatedNodes(newNodesList);
 
         if (useUndoCommand) {
             _publicInterface->pushUndoCommand( new AddMultipleNodesCommand(_publicInterface, newNodesList) );
         }
     }
 } // pasteNodesInternal
+
+void
+NodeGraphPrivate::refreshPreviewsOfCreatedNodes(const NodesGuiList& nodes)
+{
+    const double time = _publicInterface->getGui()->getApp()->getTimeLine()->currentFrame();
+
+    for (NodesGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        (*it)->forceComputePreview(time);
+        NodePtr node = (*it)->getNode();
+        NodeGroup* isGroup = node ? node->isEffectGroup() : 0;
+        if (isGroup) {
+            isGroup->forceRefreshPreviews();
+        }
+    }
+}
 
 // Trim underscore followed by digits at the end of baseName (see #732).
 static
@@ -248,6 +261,12 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
 
     //We don't want the clone to have the same hash as the original
     n->incrementKnobsAge();
+    if (guiSerialization) {
+        // The preview is restored at the end, once the node is complete (see below).
+        gui->copyFrom(*guiSerialization, false);
+    }
+    QPointF newPos = gui->getPos_mt_safe() + offset;
+    gui->setPosition( newPos.x(), newPos.y() );
 
     if (clone) {
         assert( internalSerialization->getNode() );
@@ -310,15 +329,12 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
         }
     }
 
-    // Restore the GUI state (color, position, size, preview) only once the node is complete,
-    // including the sub-graph of a group: if the preview is enabled, copyFrom() starts rendering it
-    // on the preview thread, which must not run while the main thread is still creating and
-    // connecting the nodes inside the group (see #814).
+    // Restore the preview state only once the node is complete, including the sub-graph of a group:
+    // enabling the preview renders it on the preview thread, which must not run while the main thread
+    // is still creating and connecting the nodes inside the group (see #814).
     if (guiSerialization) {
-        gui->copyFrom(*guiSerialization);
+        gui->restorePreviewFrom(*guiSerialization);
     }
-    QPointF newPos = gui->getPos_mt_safe() + offset;
-    gui->setPosition( newPos.x(), newPos.y() );
 
     return gui;
 } // NodeGraphPrivate::pasteNode

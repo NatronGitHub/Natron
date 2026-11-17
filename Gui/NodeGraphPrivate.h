@@ -246,6 +246,13 @@ public:
                             const std::list<std::pair<std::string, NodeGuiPtr> > & newNodes,
                             const std::map<std::string, std::string>& oldNewScriptNamesMap);
 
+    /**
+     * @brief Computes the previews of the given nodes and, for groups, of the nodes they contain.
+     * NodeGui::forceComputePreview() does nothing while a node tree is being created, so this must be
+     * called once the pasted/cloned nodes are complete and connected (see #814).
+     **/
+    void refreshPreviewsOfCreatedNodes(const NodesGuiList& nodes);
+
     void editSelectionFromSelectionRectangle(bool addToSelection);
 
     void resetSelection();
