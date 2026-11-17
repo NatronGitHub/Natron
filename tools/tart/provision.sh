@@ -187,6 +187,7 @@ step_libs() {
     $PORT install poppler librevenge libcdr-0.1 sox libzip
     sudo sed -i '' -e 's/Zstd::Zstd/zstd/' /opt/local/lib/pkgconfig/libzip.pc
     $PORT install ImageMagick +natron -x11
+    $PORT install ImageMagick7 +natron -x11 -openexr
     $PORT install fftw-3 -gfortran fftw-3-single -gfortran
     $PORT install ffmpeg +gpl2 +highbitdepth +natronmini
     $PORT install openimageio +freetype +natron +opencolorio +openjpeg +python310 -python312 -python313 -python314
@@ -347,6 +348,11 @@ step_update() {
         rm -f "$LOGDIR/ffmpeg-novmaf.pending"
         # libvmaf is no longer needed by anything
         $PORT -N uninstall libvmaf 2>/dev/null || true
+    fi
+    # ImageMagick 7 for openfx-arena (Natron 2.6), for the images created before step_libs had it
+    if ! port -q installed ImageMagick7 2>/dev/null | grep -q '(active)'; then
+        echo "===== installing ImageMagick7 +natron"
+        $PORT install ImageMagick7 +natron -x11 -openexr
     fi
     # rebuild OSMesa/LLVM only if missing (delete /opt/osmesa/lib to force a rebuild)
     step_osmesa
