@@ -56,12 +56,13 @@ installed for the duration of a render by ``ParallelRenderArgsSetter`` (and
 ``ViewerParallelRenderArgsSetter``, in ``ViewerInstance.cpp``) and reached
 through the ``TLSHolder`` / ``AppTLS`` machinery.
 
-The Viewer and writer frame renders do three things before they call
-``renderRoI`` (see ``DefaultRenderFrameRunnable::renderFrame`` in
-``OutputSchedulerThread.cpp`` for writers, and
-``ViewerInstance::renderViewer_internal`` for the Viewer). Other entry points
-(the tracker, node previews, analysis actions, ``DefaultScheduler::processFrame``)
-only do the first one, without the request pass:
+The Viewer and writer frame renders and the node previews do three things
+before they call ``renderRoI`` (see ``DefaultRenderFrameRunnable::renderFrame``
+in ``OutputSchedulerThread.cpp`` for writers,
+``ViewerInstance::renderViewer_internal`` for the Viewer, and
+``Node::makePreviewImage`` for previews). Other entry points (the tracker,
+analysis actions, ``DefaultScheduler::processFrame``) only do the first one,
+without the request pass:
 
 1. Construct a ``ParallelRenderArgsSetter`` for the tree
    (``ParallelRenderArgs.cpp``). Its constructor visits every node upstream of
