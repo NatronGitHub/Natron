@@ -316,6 +316,13 @@ public:
     const QString & getPluginLabel() const;
     const QString getLabelVersionMajorMinorEncoded() const;
     static QString makeLabelWithoutSuffix(const QString& label);
+
+    /**
+     * @brief A safe slug for a grouping path, used in file names and URLs:
+     * only the ASCII letters and digits of each level are kept, and levels are joined by '_'.
+     * For example, "G'MIC/Colors" and "GMIC/Colors" both give "GMIC_Colors".
+     **/
+    static QString makeGroupingId(const QStringList& grouping);
     const QString& getLabelWithoutSuffix() const;
     void setLabelWithoutSuffix(const QString& label);
 

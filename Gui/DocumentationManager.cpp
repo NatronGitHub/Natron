@@ -34,6 +34,7 @@ GCC_ONLY_DIAG_ON(class-memaccess)
 #include <iostream>
 #include <exception>
 #include <cstddef>
+#include <cassert>
 
 #include "qhttpserver.h"
 #include "qhttprequest.h"
@@ -42,6 +43,7 @@ GCC_ONLY_DIAG_ON(class-memaccess)
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Engine/AppInstance.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/DocumentationGroups.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/Project.h"
@@ -80,7 +82,9 @@ DocumentationManager::DocumentationManager(QObject *parent)
     (void)QT_TR_NOOP(PLUGIN_GROUP_OTHER);
     (void)QT_TR_NOOP(PLUGIN_GROUP_DEFAULT);
     (void)QT_TR_NOOP(PLUGIN_GROUP_OFX);
-    (void)QT_TR_NOOP("GMIC");
+    // openfx-gmic
+    (void)QT_TR_NOOP("G'MIC");
+    (void)QT_TR_NOOP("GMIC"); // before openfx-gmic used the G'MIC spelling
     // openfx-arena
     (void)QT_TR_NOOP("Extra");
     (void)QT_TR_NOOP("Extra/" PLUGIN_GROUP_COLOR);
@@ -335,11 +339,10 @@ DocumentationManager::handler(QHttpRequest *req,
         QString html = settings->makeHTMLDocumentation(true);
         html = parser(html, docDir);
         body = html.toUtf8();
-    } else if ( page == QString::fromUtf8("_group.html") ) {
+    } else if ( ( page == QString::fromUtf8("_group.html") ) || ( page == QString::fromUtf8("_nodes.html") ) ) {
 //#pragma message WARN("TODO: produce HTML from file templates")
         // TODO: we should really read and parse _group.html or _groupChannel.html and just replace the relevant sections
-        QString html;
-        QString group;
+        // IMPORTANT: this code is *very* similar to AppInstance::exportDocs
         QString groupHeader = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">"
                                                 "<html>"
                                                 "<head>"
@@ -366,71 +369,79 @@ DocumentationManager::handler(QHttpRequest *req,
                             .arg( tr("Navigation") );
         QString navFooter = QString::fromUtf8("</ul>"
                                               "</div>");
+        QString navItem = QString::fromUtf8("<li><a href=\"%1\">%2</a> &raquo;</li>");
+        QString listItem = QString::fromUtf8("<li class=\"toctree-l1\"><a href=\"%1\">%2</a></li>");
+        QString groupsHelp = tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") + QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.");
+
+        QString groupId;
         for (int i = 0; i < options.size(); ++i) {
             if ( options.at(i).contains( QString::fromUtf8("id=") ) ) {
                 QStringList split = options.at(i).split(QString::fromUtf8("="), Qt::SkipEmptyParts);
 
                 if (split.length() > 0) {
-                    QString groupID = split.takeLast();
-                    group = groupID;
+                    groupId = split.takeLast();
                 }
             }
         }
-        if ( !group.isEmpty() ) {
-            // IMPORTANT: this code is *very* similar to AppInstance::exportDocs
 
-            QMap<QString, QString> pluginsOrderedByLabel; // use a map so that it gets sorted by label
-            std::list<std::string> pluginIDs = appPTR->getPluginIDs();
-            for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
-                Plugin* plugin = 0;
-                QString pluginID = QString::fromUtf8( it->c_str() );
-                try {
-                    plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
-                } catch (const std::exception& e) {
-                    std::cerr << e.what() << std::endl;
-                }
-                if ( plugin && !plugin->getIsDeprecated() && ( !plugin->getIsForInternalUseOnly() || plugin->isReader() || plugin->isWriter() ) ) {
-                    QStringList groupList = plugin->getGrouping();
-                    if (groupList.at(0) == group) {
-                        pluginsOrderedByLabel[Plugin::makeLabelWithoutSuffix( plugin->getPluginLabel() )] = pluginID;
-                    }
-                }
+        DocumentationGroups docGroups;
+        QString title;
+        QString intro;
+        QString nav;
+        QString items;
+        if ( page == QString::fromUtf8("_nodes.html") ) {
+            // the Nodes page: one item per top-level node group
+            title = tr("Nodes");
+            intro = tr("The following sections contain documentation about every node in %1, with one section for each node group.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) + QLatin1Char(' ') + groupsHelp;
+            nav = navItem.arg( QString::fromUtf8("/_group.html") ).arg( tr("Reference Guide") );
+            Q_FOREACH(const QString &id, docGroups.getTopLevelGroupIds()) {
+                const DocumentationGroups::Group* group = docGroups.getGroup(id);
+                assert(group);
+                items.append( listItem.arg( QString::fromUtf8("/_group.html?id=") + id ).arg( DocumentationGroups::makeGroupTitle(group->path) ) );
             }
-            if ( !pluginsOrderedByLabel.isEmpty() ) {
-                QString groupBodyStart = QString::fromUtf8("<div class=\"document\">"
-                                                           "<div class=\"documentwrapper\">"
-                                                           "<div class=\"body\">"
-                                                           "<h1>%1</h1>"
-                                                           "<p>%2</p>"
-                                                           "<div class=\"toctree-wrapper compound\">"
-                                                           "<ul>")
-                                         .arg( tr("%1 nodes").arg( tr( group.toUtf8().constData() ) ) )
-                                         .arg( tr("The following sections contain documentation about every node in the %1 group.").arg( tr( group.toUtf8().constData() ) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") + QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.")
- 
-                                               );
-                html.append(groupHeader);
-                html.replace(QString::fromUtf8("__REPLACE_TITLE__"), tr("%1 nodes").arg( tr( group.toUtf8().constData() ) ) );
-                html.append(navHeader);
-                html.append( QString::fromUtf8("<li><a href=\"/_group.html\">%1</a> &raquo;</li>")
-                             .arg( tr("Reference Guide") ) );
-                html.append(navFooter);
-                html.append(groupBodyStart);
-
-                for (QMap<QString, QString>::const_iterator i = pluginsOrderedByLabel.constBegin();
-                     i != pluginsOrderedByLabel.constEnd();
+        } else if ( !groupId.isEmpty() ) {
+            // a node group page: its sub-groups, then its nodes
+            const DocumentationGroups::Group* group = docGroups.getGroup(groupId);
+            if (group) {
+                QString groupLabel = DocumentationGroups::makeGroupLabel(group->path);
+                title = DocumentationGroups::makeGroupTitle(group->path);
+                if ( group->subGroupIds.isEmpty() ) {
+                    intro = tr("The following sections contain documentation about every node in the %1 group.").arg(groupLabel);
+                } else {
+                    intro = tr("The following sections contain documentation about every node in the %1 group, starting with its sub-groups.").arg(groupLabel);
+                }
+                intro += QLatin1Char(' ') + groupsHelp;
+                nav = navItem.arg( QString::fromUtf8("/_group.html") ).arg( tr("Reference Guide") );
+                nav += navItem.arg( QString::fromUtf8("/_nodes.html") ).arg( tr("Nodes") );
+                for (int i = 1; i < group->path.size(); ++i) {
+                    QStringList parentPath = group->path.mid(0, i);
+                    nav += navItem.arg( QString::fromUtf8("/_group.html?id=") + DocumentationGroups::makeGroupId(parentPath) ).arg( DocumentationGroups::makeGroupTitle(parentPath) );
+                }
+                Q_FOREACH(const QString &subGroupId, group->subGroupIds) {
+                    const DocumentationGroups::Group* subGroup = docGroups.getGroup(subGroupId);
+                    assert(subGroup);
+                    items.append( listItem.arg( QString::fromUtf8("/_group.html?id=") + subGroupId ).arg( DocumentationGroups::makeGroupTitle(subGroup->path) ) );
+                }
+                for (QMap<QString, QString>::const_iterator i = group->pluginsByLabel.constBegin();
+                     i != group->pluginsByLabel.constEnd();
                      ++i) {
                     const QString& plugID = i.value();
                     const QString& plugName = i.key();
                     if ( !plugID.isEmpty() && !plugName.isEmpty() ) {
-                        html.append( QString::fromUtf8("<li class=\"toctree-l1\"><a href='/_plugin.html?id=%1'>%2</a></li>")
-                                     .arg(plugID)
-                                     .arg(plugName) );
+                        items.append( listItem.arg( QString::fromUtf8("/_plugin.html?id=") + plugID ).arg(plugName) );
                     }
                 }
-                html.append(groupBodyEnd);
-                html.append(groupFooter);
             }
         } else {
+            // the Reference Guide page
+            title = tr("Reference Guide");
+            intro = tr("The first section in this manual describes the various options available from the %1 preference settings. The next section gives the documentation for the various environment variables that may be used to control %1's behavior. The last section documents every node in %1, organized by node group.")
+                    .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) + QLatin1Char(' ') + groupsHelp;
+            items.append( listItem.arg( QString::fromUtf8("/_prefs.html") ).arg( tr("%1 preferences").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) ) );
+            items.append( listItem.arg( QString::fromUtf8("/_environment.html") ).arg( tr("Environment Variables") ) );
+            items.append( listItem.arg( QString::fromUtf8("/_nodes.html") ).arg( tr("Nodes") ) );
+        }
+        if ( !title.isEmpty() ) {
             QString groupBodyStart = QString::fromUtf8("<div class=\"document\">"
                                                        "<div class=\"documentwrapper\">"
                                                        "<div class=\"body\">"
@@ -438,59 +449,21 @@ DocumentationManager::handler(QHttpRequest *req,
                                                        "<p>%2</p>"
                                                        "<div class=\"toctree-wrapper compound\">"
                                                        "<ul>")
-                                     .arg( tr("Reference Guide") )
-            .arg ( tr("The first section in this manual describes the various options available from the %1 preference settings. The next section gives the documentation for the various environment variables that may be used to control %1's behavior. It is followed by one section for each node group in %1.")
-                  .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") + QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.") );
+                                     .arg(title)
+                                     .arg(intro);
+            QString html;
             html.append(groupHeader);
-            html.replace( QString::fromUtf8("__REPLACE_TITLE__"), tr("Reference Guide") );
+            html.replace(QString::fromUtf8("__REPLACE_TITLE__"), title);
             html.append(navHeader);
+            html.append(nav);
             html.append(navFooter);
             html.append(groupBodyStart);
-            html.append( QString::fromUtf8("<li class=\"toctree-l1\"><a href=\"/_prefs.html\">%1</a></li>").arg( tr("%1 preferences").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) ) );
-
-            QStringList groups;
-            // Group ordering is set at every place in the code where GROUP_ORDER appears in the comments
-            groups << QString::fromUtf8(PLUGIN_GROUP_IMAGE);
-            groups << QString::fromUtf8(PLUGIN_GROUP_PAINT);
-            groups << QString::fromUtf8(PLUGIN_GROUP_TIME);
-            groups << QString::fromUtf8(PLUGIN_GROUP_CHANNEL);
-            groups << QString::fromUtf8(PLUGIN_GROUP_COLOR);
-            groups << QString::fromUtf8(PLUGIN_GROUP_FILTER);
-            groups << QString::fromUtf8(PLUGIN_GROUP_KEYER);
-            groups << QString::fromUtf8(PLUGIN_GROUP_MERGE);
-            groups << QString::fromUtf8(PLUGIN_GROUP_TRANSFORM);
-            groups << QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW);
-            groups << QString::fromUtf8(PLUGIN_GROUP_OTHER);
-            groups << QString::fromUtf8("GMIC"); // openfx-gmic
-            groups << QString::fromUtf8("Extra"); // openfx-arena
-
-            std::list<std::string> pluginIDs = appPTR->getPluginIDs();
-            for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
-                Plugin* plugin = 0;
-                QString pluginID = QString::fromUtf8( it->c_str() );
-                try {
-                    plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
-                }catch (const std::exception& e) {
-                    std::cerr << e.what() << std::endl;
-                }
-
-                if (plugin) {
-                    QStringList groupList = plugin->getGrouping();
-                    groups << groupList.at(0);
-                }
-            }
-            groups.removeDuplicates();
-            for (int i = 0; i < groups.size(); ++i) {
-                html.append( QString::fromUtf8("<li class='toctree-l1'><a href='/_group.html?id=%1'>%2</a></li>")
-                             .arg( groups.at(i) )
-                             .arg( tr("%1 nodes").arg( tr( groups.at(i).toUtf8().constData() ) ) )
-                             );
-            }
+            html.append(items);
             html.append(groupBodyEnd);
             html.append(groupFooter);
+            html = parser(html, docDir);
+            body = html.toUtf8();
         }
-        html = parser(html, docDir);
-        body = html.toUtf8();
     }
 
     int status = 200;

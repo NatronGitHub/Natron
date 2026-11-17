@@ -108,6 +108,29 @@ Plugin::makeLabelWithoutSuffix(const QString& label)
     return label;
 }
 
+QString
+Plugin::makeGroupingId(const QStringList& grouping)
+{
+    QStringList ids;
+    Q_FOREACH(const QString& level, grouping) {
+        QString id;
+        Q_FOREACH(const QChar& c, level) {
+            if ( ( c >= QLatin1Char('a') && c <= QLatin1Char('z') ) ||
+                 ( c >= QLatin1Char('A') && c <= QLatin1Char('Z') ) ||
+                 ( c >= QLatin1Char('0') && c <= QLatin1Char('9') ) ) {
+                id.append(c);
+            }
+        }
+        if ( id.isEmpty() ) {
+            // no ASCII letter or digit: use the UTF-8 bytes
+            id = QString::fromLatin1( level.toUtf8().toHex() );
+        }
+        ids << id;
+    }
+
+    return ids.join( QLatin1Char('_') );
+}
+
 const QString&
 Plugin::getLabelWithoutSuffix() const
 {

@@ -3,11 +3,12 @@
 Filter nodes
 ============================================================
 
-The following sections contain documentation about every node in the Filter group. Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.
+The following sections contain documentation about every node in the Filter group, starting with its sub-groups. Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.
 
 .. toctree::
     :maxdepth: 1
 
+    _groupFilter_Matrix.rst
     plugins/fr.inria.AngleBlur.rst
     plugins/net.sf.cimg.CImgBloom.rst
     plugins/net.sf.cimg.CImgBlur.rst
@@ -29,8 +30,6 @@ The following sections contain documentation about every node in the Filter grou
     plugins/net.sf.openfx.GodRays.rst
     plugins/eu.cimg.Inpaint.rst
     plugins/net.sf.cimg.CImgLaplacian.rst
-    plugins/eu.cimg.CImgMatrix3x3.rst
-    plugins/eu.cimg.CImgMatrix5x5.rst
     plugins/net.sf.cimg.CImgMedian.rst
     plugins/net.sf.openfx.Shadertoy.rst
     plugins/net.sf.cimg.CImgSharpen.rst
