@@ -3,12 +3,13 @@
 _realname=openimageio
 pkgbase=mingw-w64-natron_${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}"
-pkgver=2.5.13.1
-# pkgrel 99.2: rebuilt against natron_libraw-gpl2 0.22.3
-pkgrel=99.3
+# The same version as Natron's macOS build (tools/MacPorts/graphics/openimageio).
+# Built against natron_libraw-gpl2 (in its private prefix) and without FFmpeg.
+pkgver=3.1.17.0
+pkgrel=1
 pkgdesc="A library for reading and writing images, including classes, utilities, and applications (mingw-w64)"
 arch=('any')
-mingw_arch=('mingw64' 'ucrt64' 'clang64' 'clangarm64')
+mingw_arch=('mingw64' 'ucrt64')
 url="https://www.openimageio.org/"
 msys2_repository_url="https://github.com/AcademySoftwareFoundation/OpenImageIO"
 msys2_references=(
@@ -40,15 +41,13 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
 options=('strip' 'buildflags' '!debug')
 source=(https://github.com/AcademySoftwareFoundation/OpenImageIO/archive/v${pkgver}/${_realname}-${pkgver}.tar.gz
         0000-workaround-ansidecl-h-PTR-define-conflict.patch
-        0001-Fix-building-on-mingw-w64-aarch64.patch
-        oiio-2.0.8-invalidatespec.patch
-        oiio-2.2.14-libraw.diff
+        0002-mingw-putenv.patch
+        oiio-3.1-invalidatespec.patch
        )
-sha256sums=('0fbaec6c15215e11cf4545128c4d64eaa97b461cb9b5fb8a76f9a7d35c99e3df'
+sha256sums=('92a26c0af4ffc6676d72d9dfe0e991eb45fdf3192abee3d0855a24d6c721b013'
             '9e4e21333676268a91c0f4e7676aeab7658e5f748e7e5cfe43a92f0fd7931229'
-            '91bd9a6a07f448a6dd8d1ff9a1c8cefaedb8cdd77029b84b6fc02fe9a7cf71f0'
-            'd9c2e066ce0e94404d31fd649341cc0ee03faf9b4023dfcdf5cf59fbbf466127'
-            '59d8b06e11945fd703c1db354457ca2aedda3d48402d89e47f376ff90a17255e'
+            'a03bcafded0808f9894d26b55a2bf26e69ce0676bf73d8a512ec1546de16ca34'
+            '91085ca7ff87e6427751d5b5ee48bc92a8c555925fc7077935d32f530c9472c8'
            )
 
 # Helper macros to help make tasks easier #
@@ -62,11 +61,12 @@ apply_patch_with_msg() {
 
 prepare() {
   cd ${srcdir}/OpenImageIO-${pkgver}
+  # MinGW fixes, from MSYS2's openimageio
   apply_patch_with_msg \
     0000-workaround-ansidecl-h-PTR-define-conflict.patch \
-    0001-Fix-building-on-mingw-w64-aarch64.patch \
-    oiio-2.0.8-invalidatespec.patch \
-    oiio-2.2.14-libraw.diff
+    0002-mingw-putenv.patch
+  # Natron: do not clear subimages in invalidate_spec() (thread safety), as on macOS
+  patch -Nbp0 -i "${srcdir}/oiio-3.1-invalidatespec.patch"
 }
 
 build() {
@@ -87,7 +87,9 @@ build() {
     -G"Ninja" \
     -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
     -DCMAKE_DLL_NAME_WITH_SOVERSION=ON \
-    -DCMAKE_CXX_STANDARD=14 \
+    -DCMAKE_CXX_STANDARD=17 \
+    -DBUILD_MISSING_DEPS=OFF \
+    -DOIIO_INTERNALIZE_FMT=OFF \
     -DUSE_FREETYPE=ON \
     -DUSE_OPENCV=OFF \
     -DUSE_OPENGL=OFF \
@@ -108,6 +110,10 @@ build() {
     -DOPENJPEG_INCLUDE_DIR=`pkg-config --variable=includedir libopenjp2` \
     -DUSE_PYTHON=OFF \
     -DUSE_PTEX=OFF \
+    -DUSE_DICOM=OFF \
+    -DUSE_JXL=OFF \
+    -DUSE_OPENVDB=OFF \
+    -DUSE_TBB=OFF \
     -DCMAKE_SHARED_LINKER_FLAGS=" -Wl,--export-all-symbols -Wl,--enable-auto-import " \
     ${extra_config} \
     ../OpenImageIO-${pkgver}
