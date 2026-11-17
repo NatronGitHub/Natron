@@ -279,32 +279,38 @@ Signing, notarization and the test suite are described in `Documentation/source/
 
 Do this every few weeks, and before a release build. Each step is safe to stop after; the `sudo` steps need your password.
 
-1. **Use MacPorts, not Homebrew, in this terminal.** Run `port_switch` (see "MacPorts from scratch" above), or `export PATH=/opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin; unset HOMEBREW_PREFIX HOMEBREW_CELLAR HOMEBREW_REPOSITORY`. Then check that none of these resolve to `/opt/homebrew` or `/usr/local`:
+**MacPorts reads Natron's ports only from `/opt/MacPorts-Natron`, which is a copy of the `tools/MacPorts` directory of the checkout you last ran `./sync.sh` from.** If that was an old branch or another worktree, MacPorts silently uses its old Portfiles. So always sync from an up-to-date checkout of the branch you build (step 1), and check the copy (step 3).
+
+1. **Update the checkout** of the branch you build (usually `RB-2.6`):
+
+   ```Shell
+   cd $NATRON_SRC && git switch RB-2.6 && git pull
+   ```
+
+2. **Use MacPorts, not Homebrew, in this terminal.** Run `port_switch` (see "MacPorts from scratch" above), or `export PATH=/opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin; unset HOMEBREW_PREFIX HOMEBREW_CELLAR HOMEBREW_REPOSITORY`. Then check that none of these resolve to `/opt/homebrew` or `/usr/local`:
 
    ```Shell
    which port pkg-config cmake python3
    ```
 
-2. **Update MacPorts itself and its list of ports:**
+3. **Update MacPorts and publish the overlay:**
 
    ```Shell
    sudo port selfupdate
-   ```
-
-3. **See what would be upgraded,** before changing anything:
-
-   ```Shell
-   port outdated
-   ```
-
-4. **Check Natron's overlay against upstream:**
-
-   ```Shell
    cd $NATRON_SRC/tools/MacPorts
+   ./sync.sh
+   diff -rq -x 'PortIndex*' $NATRON_SRC/tools/MacPorts /opt/MacPorts-Natron
+   ```
+
+   `./sync.sh` must end with `Ports failed: 0`, and the `diff` must print nothing.
+
+4. **Check the overlay against upstream:**
+
+   ```Shell
    ./check.sh
    ```
 
-   It lists each overlay Portfile (or `files/` patch) whose upstream version changed, with a suggested command. If it lists anything, bring the overlay up to date first, as described in "Reintegrating upstream Portfiles into the overlay" in the Maintainer Guide (`Documentation/source/maintainers/build-macos.rst`), then commit the result. You can also skip this step and keep using the committed overlay: it still works, it's just behind upstream.
+   It lists each overlay Portfile (or `files/` patch) whose upstream version changed, with a suggested command. If it lists anything, bring the overlay up to date first, as described in "Reintegrating upstream Portfiles into the overlay" in the Maintainer Guide (`Documentation/source/maintainers/build-macos.rst`), commit the result, and run `./sync.sh` again from that checkout. You can also skip this and keep using the committed overlay: it still works, it's just behind upstream.
 
    Some overlay ports are deliberately **pinned** to a version other than upstream's. Their `Portfile` is kept when reintegrating; only `Portfile.orig` follows upstream:
 
@@ -313,13 +319,11 @@ Do this every few weeks, and before a release build. Each step is safe to stop a
    | `graphics/libraw` | 0.22.3 (upstream: 0.22.2) + patch | the GPL demosaic packs (`+gpl2`) are restored by a Natron patch |
    | `graphics/opencolorio` | 2.6.0 (upstream: 2.5.1) | VFX Reference Platform CY2027; keep it until upstream reaches 2.6, and rev-bump `openimageio` when the OCIO minor version changes |
 
-5. **Publish the overlay to MacPorts:**
+5. **See what would be upgraded,** now that the overlay is published:
 
    ```Shell
-   ./sync.sh
+   port outdated
    ```
-
-   It must end with `Ports failed: 0`.
 
 6. **Upgrade the installed ports:**
 
@@ -333,9 +337,18 @@ Do this every few weeks, and before a release build. Each step is safe to stop a
    sudo -v; for p in $(port -q echo outdated | awk '{print $1}'); do echo "== $p"; sudo port -v upgrade "$p"; done 2>&1 | tee /tmp/natron-port-upgrade.log
    ```
 
-   MacPorts never downgrades a port. If a pinned port was installed in a newer version, uninstall it (`sudo port -f uninstall libraw`) and install it again with the same variants (see step 7 of the install). If `port installed ffmpeg` shows `+vmaf`, reinstall it with `+natronmini`: `sudo port -f uninstall ffmpeg && sudo port install ffmpeg +gpl2 +highbitdepth +natronmini`.
+   MacPorts never downgrades a port. If a pinned port was installed in a newer version, remove the inactive versions first (`port uninstall` refuses to choose when several versions are installed), then uninstall it and install it again with the variants of install section 7:
 
-7. **Reclaim disk space:**
+   ```Shell
+   sudo port uninstall inactive
+   sudo port -f uninstall libraw && sudo port -v -N install libraw +gpl2
+   ```
+
+   If `port installed ffmpeg` shows `+vmaf`, reinstall it the same way with `+gpl2 +highbitdepth +natronmini`.
+
+7. **Re-apply the install fixups.** An upgrade of the ports concerned can undo them. Re-run the `ln`, `sed`, `port select` and `pip` commands of install sections 7 (the `minizip-ng` link and `sed`, the `libzip.pc` `sed`) and 8 (`port select` for `python`, `python3` and `sphinx`, `pip-3.10 install qtpy==1.11.2`, and the `shiboken2` and `/opt/local/Library/lib` links). They are safe to run again. In tart, the `fixups` step of `tools/tart/provision.sh` re-applies the links, `sed`s and `port select`s after every update (`qtpy` is installed by its `python_qt` step).
+
+8. **Reclaim disk space:**
 
    ```Shell
    sudo port uninstall inactive
@@ -345,57 +358,69 @@ Do this every few weeks, and before a release build. Each step is safe to stop a
 
    `port clean --work --dist installed` removes the build directories and the downloaded source archives of the installed ports, and keeps their logs. Don't delete `/opt/local/var/macports/software`: MacPorts needs those archives to deactivate and reactivate ports.
 
-8. **Rebuild and test.** Libraries may have changed version, so rebuild Natron and the plug-ins (step 10, or "Developing with the MacPorts SDK" below) and run the unit tests. Before a release, also run the Natron-Tests regression suite on the new DMG (see `Documentation/source/maintainers/build-macos.rst`).
+9. **Rebuild and test,** if the upgrade touched anything Natron or the plug-ins link to: `qt5`, `py310-pyside2`, `python310`, `boost`, `ffmpeg`, `openimageio`, `opencolorio`, `libraw`, `openexr`, `ImageMagick`, `poppler`, `cairo`, … Rebuild from a fresh build directory (install section 10, or "Developing with the MacPorts SDK" below), clear Natron's cache (`rm -rf ~/Library/Caches/INRIA/Natron`), and run the unit tests (see [Testing](#testing)). Before a release, also run the Natron-Tests regression suite on the new DMG (`UNIT_TESTS=true` with `launchBuildMain.sh`, see install section 10, or `runTests.sh`, see "Testing" in `Documentation/source/maintainers/build-macos.rst`).
 
-With the tart VMs (`tools/tart`), `tools/tart/natron-sdk.sh update` does steps 2 and 4 to 6 inside a copy of the SDK image: it installs the MacPorts version set by `MACPORTS_VERSION` in `tools/tart/provision.sh` and syncs the ports tree (instead of `selfupdate`), runs `check.sh` (and only warns if the overlay is behind upstream: reintegrate on the host first), `./sync.sh`, reinstalls the pinned ports whose installed version differs from the overlay, then upgrades the outdated ports one by one. The previous image is kept as `natron-sdk-sequoia-prev`. See `tools/tart/README.md`.
+With the tart VMs (`tools/tart`), `tools/tart/natron-sdk.sh update` does steps 3 to 7 inside a copy of the SDK image: it installs the MacPorts version set by `MACPORTS_VERSION` in `tools/tart/provision.sh` and syncs the ports tree (instead of `selfupdate`), copies the host checkout's `tools/` into the VM (so update the host checkout first, step 1), runs `check.sh` (and only warns if the overlay is behind upstream: reintegrate on the host first), `./sync.sh`, reinstalls the pinned ports whose installed version differs from the overlay, upgrades the outdated ports one by one, and re-applies the fixups. The previous image is kept as `natron-sdk-sequoia-prev`. See `tools/tart/README.md`.
 
 #### After a macOS upgrade
 
-A new major version of macOS (e.g. 15 to 26) needs a new MacPorts and a rebuild of every port: ports built for the previous macOS may not work any more, and `port selfupdate` doesn't fix that. This follows the [MacPorts migration procedure](https://trac.macports.org/wiki/Migration).
+A new major version of macOS (e.g. 15 to 26) needs a new MacPorts and a reinstall of every port: ports built for the previous macOS may not work any more, and `port selfupdate` doesn't fix that. This follows the [MacPorts migration procedure](https://trac.macports.org/wiki/Migration).
 
-1. **Install Xcode and its Command Line Tools for the new macOS,** and accept the licence:
+1. **Update Xcode** from the App Store for the new macOS, then redo install section 1 (`xcode-select -s` and `xcodebuild -license accept`).
+
+2. **Install the MacPorts `.pkg` for the new macOS** from <https://www.macports.org/install.php>. It keeps your `/opt/local/etc/macports/sources.conf`. Check that the overlay is still registered (otherwise redo install section 3):
 
    ```Shell
-   xcode-select --install
-   sudo xcodebuild -license
+   grep -q '^file:///opt/MacPorts-Natron' /opt/local/etc/macports/sources.conf && port file openimageio
    ```
 
-2. **Install the MacPorts `.pkg` for the new macOS** from <https://www.macports.org/install.php>. Your `/opt/local/etc/macports/sources.conf`, including the `file:///opt/MacPorts-Natron` line, is kept.
+   `port file openimageio` must print a path under `/opt/MacPorts-Natron`.
 
-3. **Save the list of installed and requested ports:**
+3. **Use MacPorts, not Homebrew,** and update the checkout (steps 1 and 2 of "Keeping MacPorts up to date").
+
+4. **Save the list of installed and requested ports,** after removing the inactive versions (otherwise they are reinstalled too), and keep a copy:
 
    ```Shell
+   sudo port uninstall inactive
    port -qv installed > ~/myports.txt
    port echo requested | cut -d ' ' -f 1 | uniq > ~/requested.txt
+   test -s ~/myports.txt && test -s ~/requested.txt && cp ~/myports.txt ~/requested.txt ~/Desktop/
    ```
 
-4. **Uninstall all ports,** then clean up:
+   Don't go on unless the `test` succeeded.
+
+5. **Uninstall all ports,** then clean up:
 
    ```Shell
    sudo port -fp uninstall installed
    sudo port reclaim
    ```
 
-5. **Publish the overlay again,** so that the reinstall uses Natron's ports:
+6. **Publish the overlay again,** so that the reinstall uses Natron's ports:
 
    ```Shell
    cd $NATRON_SRC/tools/MacPorts && ./sync.sh
+   diff -rq -x 'PortIndex*' $NATRON_SRC/tools/MacPorts /opt/MacPorts-Natron
    ```
 
-6. **Reinstall the ports** with MacPorts' `restore_ports.tcl` script, which reinstalls them with the same variants:
+7. **Rebuild OSMesa** if you use it (install section 4). It must be built before the ports that need it, so do it now, before the reinstall.
+
+8. **Reinstall the ports** with MacPorts' `restore_ports.tcl` script, which reinstalls them with the same variants. Download it outside the Natron checkout:
 
    ```Shell
+   cd /tmp
    curl --location --remote-name https://github.com/macports/macports-contrib/raw/master/restore_ports/restore_ports.tcl
    chmod +x restore_ports.tcl
-   xattr -d com.apple.quarantine restore_ports.tcl
    sudo ./restore_ports.tcl ~/myports.txt
    sudo port unsetrequested installed
    xargs sudo port setrequested < ~/requested.txt
    ```
 
-   If a port fails, reinstall it by hand with the commands and variants of steps 4 to 9 of the install above, which are the reference for Natron's variants (`ImageMagick +natron`, `ffmpeg +natronmini`, `libraw +gpl2`, ...).
+   (A file downloaded with a web browser instead of `curl` also needs `xattr -d com.apple.quarantine restore_ports.tcl`.) If a port fails, reinstall it by hand with the commands and variants of install sections 4 to 9, which are the reference for Natron's variants (`ImageMagick +natron`, `ffmpeg +natronmini`, `libraw +gpl2`, ...).
 
-7. **Check the compiler** (step 5), rebuild OSMesa if you use it (step 4), then rebuild and test Natron (step 8 of "Keeping MacPorts up to date").
+9. **Re-apply the install fixups** (step 7 of "Keeping MacPorts up to date"): `restore_ports.tcl` doesn't restore `port select` choices, `pip` packages or hand-made links.
+
+10. **Check the compiler** (install section 5), then rebuild from a fresh build directory and test (step 9 of "Keeping MacPorts up to date"). A clean rebuild is mandatory after a macOS upgrade.
 
 #### Developing with the MacPorts SDK
 

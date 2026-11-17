@@ -97,11 +97,18 @@ maintained in ``INSTALL_MACOS.md`` — follow it there rather than duplicating i
 Keeping the local MacPorts up to date
 -------------------------------------
 
-The step-by-step routine (update MacPorts, check the overlay, upgrade the
-ports, reclaim disk space, rebuild and test) and the procedure after a macOS
-upgrade are in ``INSTALL_MACOS.md``, section "11. Keeping MacPorts up to date".
-This section covers the maintainer part of it: bringing Natron's overlay up to
-date when upstream MacPorts changes one of its ports.
+The step-by-step routine (update the checkout, update MacPorts, publish and
+check the overlay, upgrade the ports, re-apply the install fixups, reclaim disk
+space, rebuild and test) and the procedure after a macOS upgrade are in
+``INSTALL_MACOS.md``, section "11. Keeping MacPorts up to date". This section
+covers the maintainer part of it: bringing Natron's overlay up to date when
+upstream MacPorts changes one of its ports.
+
+**MacPorts reads the overlay only from** ``/opt/MacPorts-Natron``, **which is a
+copy of the** ``tools/MacPorts`` **directory of the checkout that last ran**
+``./sync.sh``. After working on a reintegration branch, switch back to the
+branch you build and run ``./sync.sh`` again, otherwise MacPorts keeps using
+the branch's Portfiles.
 
 .. _maint-macos-overlay-reintegrate:
 
@@ -120,7 +127,9 @@ of some MacPorts ports. A port that also exists upstream has three files:
 
 Ports that exist only in the overlay (for example ``graphics/seexpr211`` or
 the older ``openimageio*`` versions) have no ``Portfile.orig`` or
-``Portfile.patch``. Patches to the port's sources live in ``files/``, and
+``Portfile.patch``. A few directories have a ``Portfile.orig`` and
+``Portfile.patch`` but no ``Portfile``: they are leftovers of ports that were
+removed from the overlay, which MacPorts ignores (#1194 removes them). Patches to the port's sources live in ``files/``, and
 MacPorts applies them with ``-p0``.
 
 The upstream ports tree is the one MacPorts downloads with ``port selfupdate``:
@@ -132,21 +141,22 @@ default source in ``/opt/local/etc/macports/sources.conf`` is the HTTPS one.
 #. **Update MacPorts and list what changed upstream**::
 
        sudo port selfupdate
-       cd .../Natron/tools/MacPorts
+       cd $NATRON_SRC/tools/MacPorts
        ./check.sh
 
    For each port whose upstream Portfile no longer matches ``Portfile.orig``,
-   ``check.sh`` prints the port, the file dates, and the command to
-   reintegrate it. It also lists ``files/`` patches that upstream added or
+   ``check.sh`` prints the port and the file dates, and, for ports that have
+   a ``Portfile.patch``, the command to reintegrate it. It also lists ``files/`` patches that upstream added or
    changed.
 
-#. **Reintegrate each listed port.** With ``$ports`` the upstream tree and
-   ``$P`` the port directory (e.g. ``graphics/openimageio``), the usual
-   commands are the ones ``check.sh`` prints::
+#. **Reintegrate each listed port.** The usual commands are the ones
+   ``check.sh`` prints; spelled out, with ``P`` the port directory::
 
+       ports=/opt/local/var/macports/sources/rsync.macports.org/macports/release/tarballs/ports
+       P=graphics/openimageio
        cp "$ports/$P/Portfile" "$P/Portfile.orig"
        cp "$ports/$P/Portfile" "$P/Portfile"
-       (cd "$P" && patch Portfile < Portfile.patch)
+       (cd "$P" && patch < Portfile.patch)
 
    That is: take the new upstream Portfile as the baseline, then re-apply
    Natron's changes on top of it. If ``patch`` reports rejected hunks, open the
@@ -179,6 +189,7 @@ default source in ``/opt/local/etc/macports/sources.conf`` is the HTTPS one.
 #. **Publish the overlay and test it**::
 
        ./sync.sh
+       diff -rq -x 'PortIndex*' $NATRON_SRC/tools/MacPorts /opt/MacPorts-Natron
 
    ``sync.sh`` copies the overlay to ``/opt/MacPorts-Natron`` and runs
    ``portindex``, which must report ``Ports failed: 0``. A failure there is
