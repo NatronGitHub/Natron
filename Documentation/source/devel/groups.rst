@@ -228,6 +228,7 @@ You can create a group from the selection in Natron by holding CTRL+SHIFT+G.
 This will effectively move all nodes selected into a new sub-group
 
 You can also copy/cut/paste in-between groups and projects.
+
 Creating a group by hand
 ------------------------
 

@@ -10,9 +10,8 @@ numpy to it.
 The bundled Python
 ------------------
 
-The Natron 2.6 binaries ship Python 3.11 in Qt 5 builds and Python 3.13 in Qt 6 builds. Check
-the version of your build with ``import sys; print(sys.version)`` in the Script Editor. The
-version matters for modules with compiled code: they must be built for that Python version.
+The Python 3 version depends on your Natron build: check it with
+``import sys; print(sys.version)`` in the Script Editor. The version matters for modules with compiled code: they must be built for that Python version.
 
 Natron sets up the Python path (``sys.path``) at startup, in this order:
 
@@ -43,6 +42,9 @@ installation, so you need write access to it. On a shared or read-only installat
 modules into another directory and add it to ``PYTHONPATH``, or to a plug-in search path::
 
     natron-python -m pip install --target /studio/natron-python-modules numpy
+
+On macOS, installing into ``Natron.app`` modifies the signed application bundle, so prefer
+``--target`` there too (not tested).
 
 The Natron modules, ``NatronEngine`` and ``NatronGui``, are built into the Natron executables: they
 can't be imported in natron-python. To test code that uses them without the user interface,
