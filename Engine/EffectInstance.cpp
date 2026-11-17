@@ -2796,6 +2796,11 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
                                                 it->second.tmpImage->getPremultiplication(),
                                                 it->second.tmpImage->getFieldingOrder(),
                                                 false);
+                        if ( !originalInputImage->getBounds().contains(downscaledRectToRender) ) {
+                            // upscaleMipmap only writes the part of tmp covered by originalInputImage,
+                            // and copyUnProcessedChannels reads all of renderMappedRectToRender.
+                            tmp->fillZero(renderMappedRectToRender);
+                        }
                         originalInputImage->upscaleMipmap( downscaledRectToRender, originalInputImage->getMipmapLevel(), 0, tmp.get() );
                         mappedOriginalInputImage = tmp;
                     }

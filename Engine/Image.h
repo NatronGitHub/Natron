@@ -756,7 +756,8 @@ public:
 
     /**
      * @brief Upscales a portion of this image into output.
-     * If the upscaled roi does not fit into output's bounds, it is cropped first.
+     * roi is clamped to the bounds of this image. The upscaled roi is then clipped to the RoD
+     * and to output's bounds. The pixels of output outside of that rectangle are not written.
      **/
     void upscaleMipmap(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, Image* output) const;
 
