@@ -62,6 +62,39 @@ OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
 {
 }
 
+#if !defined(__APPLE__) && !defined(_WIN32)
+// ofxNatron.h extension 13: "Each bit has exactly the meaning of the host's key symbols:
+// kNatronOfxKeyModifierControl is set while a key that the host reports as kOfxKey_Control_L or
+// kOfxKey_Control_R is down, and likewise for Shift (kOfxKey_Shift_L/R), Alt (kOfxKey_Alt_L/R) and
+// Meta (kOfxKey_Meta_L/R)."
+// On macOS, Qt::MetaModifier and Qt::Key_Meta are both the physical Control key, and on Windows
+// both are the Windows key, so Qt's modifier bit matches the key symbol Natron sends
+// (QtEnumConvert::fromQtKey() maps Qt::Key_Meta to Key_Meta_L on every platform).
+// On X11 and Wayland, Qt::MetaModifier is the Mod4 (Logo) modifier, which the Super keys set,
+// but Natron reports those as Key_Super_L/R (from Qt::Key_Super_L/R), not as Key_Meta_L/R
+// (NatronGitHub/Natron#1278). Qt::Key_Meta only comes from a Meta_L/Meta_R keysym (e.g. the
+// Windows key with the XKB option altwin:meta_win). So there, the Meta bit is set only while a key
+// that Natron reported to an overlay as Key_Meta_L/R is down and Qt::MetaModifier is still set:
+// Super alone never sets it. Qt::MetaModifier being cleared also forgets a Meta key whose key-up
+// was missed. A Meta key pressed while no overlay had the focus is not seen, as with tracking the
+// key events in the plug-in.
+static bool gMetaKeyDown = false;
+#endif
+
+void
+ofxKeyModifiersNoteKeyEvent(Key key,
+                            bool down)
+{
+#if !defined(__APPLE__) && !defined(_WIN32)
+    if ( (key == Key_Meta_L) || (key == Key_Meta_R) ) {
+        gMetaKeyDown = down;
+    }
+#else
+    (void)key;
+    (void)down;
+#endif
+}
+
 int
 ofxKeyModifiersFromNatron(const KeyboardModifiers& modifiers)
 {
@@ -76,9 +109,17 @@ ofxKeyModifiersFromNatron(const KeyboardModifiers& modifiers)
     if ( modifiers.testFlag(eKeyboardModifierAlt) ) {
         ret |= kNatronOfxKeyModifierAlt;
     }
+#if !defined(__APPLE__) && !defined(_WIN32)
+    if ( !modifiers.testFlag(eKeyboardModifierMeta) ) {
+        gMetaKeyDown = false;
+    } else if (gMetaKeyDown) {
+        ret |= kNatronOfxKeyModifierMeta;
+    }
+#else
     if ( modifiers.testFlag(eKeyboardModifierMeta) ) {
         ret |= kNatronOfxKeyModifierMeta;
     }
+#endif
 
     return ret;
 }

@@ -2356,6 +2356,7 @@ keyModifiersAfterKeyEvent(Key key,
 {
     KeyboardModifierEnum m;
 
+    ofxKeyModifiersNoteKeyEvent(key, down);
     switch (key) {
     case Key_Shift_L:
     case Key_Shift_R:
