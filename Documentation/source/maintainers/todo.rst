@@ -23,18 +23,21 @@ single source of truth for the audited work items and counts. In short: the
 CMake build already has a ``NATRON_QT6`` switch and the viewer already uses
 ``QOpenGLWidget``, and the removed Qt APIs (``QRegExp``, ``QDesktopWidget``,
 ``setMargin``) have been replaced (PR #1084), so the remaining work is bounded:
-bring the qmake build to Qt6 parity, and regenerate the
+regenerate the
 PySide6/Shiboken6 bindings (resolving the enum/flag issue
 `#854 <https://github.com/NatronGitHub/Natron/issues/854>`_). Tracks
 `#1011 <https://github.com/NatronGitHub/Natron/issues/1011>`_ and
 `#827 <https://github.com/NatronGitHub/Natron/issues/827>`_.
 
-**Keep the two build systems in sync, and pick a long-term direction (P2).**
-Natron maintains *both* qmake and CMake builds. Every structural change must
-touch both, which is error-prone. Recommendation: treat CMake as the primary
-build (it already leads on Qt 6), keep qmake working during the transition, and
-document a date/criteria for eventually retiring qmake. Until then, add a CI job
-for each so neither silently rots.
+**Retire the qmake build (P2).**
+CMake is the supported build, and the qmake build is deprecated
+(`#1181 <https://github.com/NatronGitHub/Natron/issues/1181>`_). The plan:
+move the release scripts in ``tools/jenkins`` (Natron and the plug-ins) to
+CMake; remove qmake on RB-2.7 first; remove it on RB-2.6 once each installer
+built with CMake has been shown to be equivalent to the qmake one. Until then,
+keep the ``*.pro``/``*.pri`` files in sync with CMake
+(``tools/utils/checkQmakeSources.py`` checks the source lists in CI). The qmake
+build gets no new features, in particular no further Qt 6 work.
 
 **Modernize CI (P1).**
 Migrate CI from Travis to GitHub Actions
