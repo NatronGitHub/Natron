@@ -164,6 +164,13 @@ and the PDF with::
     sphinx-build -b latex source pdf
     (cd pdf; latexmk -pdf Natron)
 
+The Developers Guide includes the OpenFX documentation of the ``libs/OpenFX``
+submodule (``Documentation/source/_ext/natron_openfx.py`` copies it into
+``devel/openfx/``, which git ignores). It needs the submodule
+(``git submodule update --init libs/OpenFX``) and Doxygen; without them, those
+pages are placeholders. Read the Docs builds HTML, PDF and ePub on every push
+(see ``.readthedocs.yaml``).
+
 Diagrams
 ~~~~~~~~
 

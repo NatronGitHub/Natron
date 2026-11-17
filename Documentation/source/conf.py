@@ -28,6 +28,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_ex
 extensions = [
     # sphinxcontrib.mermaid, plus the PDF/ePub rendering or fallback
     'natron_mermaid',
+    # the Doxygen API pages of the OpenFX reference (see natron_openfx below)
+    'breathe',
+    'natron_openfx',
 ]
 
 # -- Mermaid diagrams (see _ext/natron_mermaid.py and the Maintainers Guide,
@@ -43,6 +46,16 @@ mermaid_params = [
     '--pdfFit',
     '--scale', '2',
 ]
+
+# -- OpenFX documentation (Developers Guide > OpenFX plug-ins) ------------------
+# Copied from the libs/OpenFX submodule into devel/openfx/ (not tracked by git),
+# with its Doxygen XML for breathe. See _ext/natron_openfx.py.
+import natron_openfx
+_openfx = natron_openfx.prepare(os.path.dirname(os.path.abspath(__file__)))
+breathe_projects = _openfx['breathe_projects']
+breathe_default_project = 'ofx_reference'
+breathe_default_members = ('members', 'protected-members', 'private-members', 'undoc-members')
+rst_epilog = _openfx['rst_epilog']
 
 # Add any paths that contain templates here, relative to this directory.
 #templates_path = ['_templates']
@@ -93,7 +106,7 @@ version = '.'.join(release.split('.')[0:2])
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = []
+exclude_patterns = [] + _openfx.get('exclude_patterns', [])
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None

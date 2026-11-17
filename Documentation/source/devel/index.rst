@@ -18,3 +18,4 @@ Developers Guide
     gettingstarted
     devel-faq
     tutorials
+    openfx

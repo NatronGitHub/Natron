@@ -17,6 +17,8 @@ build:
     # rust: "1.70"
     # golang: "1.20"
   apt_packages:
+    # the Doxygen XML of the OpenFX reference (Developers Guide)
+    - doxygen
     # the shared libraries of the headless Chrome used by mermaid-cli
     - libasound2
     - libatk-bridge2.0-0
@@ -37,6 +39,12 @@ build:
       # Only chrome-headless-shell is used: skip the full Chrome download.
       # If this fails, the PDF and ePub show the diagram sources instead.
       - cd Documentation && PUPPETEER_CHROME_SKIP_DOWNLOAD=true npm install --no-audit --no-fund --no-package-lock || true
+
+# The OpenFX Programming Guide and Reference come from this submodule.
+submodules:
+  include:
+    - libs/OpenFX
+  recursive: false
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
