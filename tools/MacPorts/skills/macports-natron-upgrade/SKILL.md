@@ -1,6 +1,6 @@
 ---
 name: macports-natron-upgrade
-description: Upgrade the local Natron MacPorts portfile overlay against upstream MacPorts, and build Natron into a macOS arm64 DMG. Use when asked to update/upgrade the Natron MacPorts ports, run check.sh, reintegrate upstream Portfile changes, resolve failing Natron patchfiles after a MacPorts sync, regenerate Portfile.patch files, or build Natron / produce a DMG via tools/jenkins/launchBuildMain.sh. Enforces that the pinned port (libraw) keeps its Portfile.
+description: Upgrade the local Natron MacPorts portfile overlay against upstream MacPorts, and build Natron into a macOS arm64 DMG. Use when asked to update/upgrade the Natron MacPorts ports, run check.sh, reintegrate upstream Portfile changes, resolve failing Natron patchfiles after a MacPorts sync, regenerate Portfile.patch files, or build Natron / produce a DMG via tools/jenkins/launchBuildMain.sh. Enforces that pinned ports (those with a PINNED file: libraw, opencolorio) keep their Portfile.
 version: 1.0.0
 tags: [skill, macports, natron, portfile, upgrade]
 ---
@@ -42,11 +42,12 @@ From 2021 to 2026-11-15, `lang/libomp` was pinned to 11.1.0. Both upstream bugs 
 
 ## Pinned ports
 
-These overlay ports are deliberately older than upstream, or carry patches that must survive reintegration. On reintegration, update only `Portfile.orig` (and regenerate `Portfile.patch`); keep the effective `Portfile` unless the user explicitly approves a version change. Each pinned port has a `PINNED` file: line 1 is the kind, `ahead` (newer than upstream: unpin as soon as upstream catches up, which `check.sh` reports as "upstream caught up: unpin") or `older` (held back until the reason is gone); line 2 is the reason. `check.sh` prints only the `Portfile.orig` update for pinned ports:
+These overlay ports (each has a `PINNED` file: `ahead` of upstream, unpin when upstream's version is >= ours; or `older`, held back) are deliberately at another version than upstream, or carry patches that must survive reintegration. On reintegration, update only `Portfile.orig` (and regenerate `Portfile.patch`); keep the effective `Portfile` unless the user explicitly approves a version change. Each pinned port has a `PINNED` file: line 1 is the kind, `ahead` (newer than upstream: unpin as soon as upstream catches up, which `check.sh` reports as "upstream caught up: unpin") or `older` (held back until the reason is gone); line 2 is the reason. `check.sh` prints only the `Portfile.orig` update for pinned ports:
 
 | port | pinned | why |
 |---|---|---|
 | `graphics/libraw` | 0.22.3 + `patch-libraw-0.22.3-gpl-demosaic-packs.diff` | upstream LibRaw dropped the GPL demosaic packs in 0.19; the patch restores them (`+gpl2`: AHD-Mod, AFD, VCD, Mixed, LMMSE; `+gpl3`: AMaZE, not shipped). When bumping the version, check that the patch still applies and that `make check` (tests/demosaic_test) reports the packs; rev-bump openimageio so it rebuilds against the same libraw |
+| `graphics/opencolorio` | 2.6.0 (ahead of upstream 2.5.1) | VFX Reference Platform CY2027; keep it until upstream reaches 2.6, and rev-bump openimageio when the OCIO minor version changes |
 
 MacPorts never downgrades: if a pinned port was installed in a newer version, `sudo port -f uninstall <port>` and install it again with the same variants.
 
