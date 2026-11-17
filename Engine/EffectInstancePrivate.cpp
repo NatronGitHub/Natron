@@ -605,7 +605,8 @@ EffectInstance::Implementation::markImageAsBeingRendered(const ImagePtr & img, c
 
 bool
 EffectInstance::Implementation::waitForImageBeingRenderedElsewhere(const RectI & roi,
-                                                                            const ImagePtr & img)
+                                                                   const ImagePtr & img,
+                                                                   const std::list<RectI>& renderedRects)
 {
     if ( !img->usesBitMap() ) {
         return true;
@@ -620,13 +621,27 @@ EffectInstance::Implementation::waitForImageBeingRenderedElsewhere(const RectI &
         return true;
     }
     k.unlock(); // imagesBeingRenderedMutex
+
+    QMutexLocker kk(&ibr->lock);
+
+    // The rectangles this thread rendered are still marked PIXEL_UNAVAILABLE (they are only marked as
+    // rendered by unmarkImageAsBeingRendered(), after this wait). Mark them as rendered now, or this
+    // thread would wait for its own pixels until it is the only one using the image (refCount == 1):
+    // two such threads wait for each other forever, which stopped the playback and hung
+    // NatronRenderer (#811). Wake up the other threads waiting on this image, since these pixels are ready.
+    if ( !renderedRects.empty() ) {
+        for (std::list<RectI>::const_iterator it = renderedRects.begin(); it != renderedRects.end(); ++it) {
+            img->markForRendered(*it);
+        }
+        ibr->cond.wakeAll();
+    }
+
     std::list<RectI> restToRender;
     bool isBeingRenderedElseWhere = false;
     img->getRestToRender_trimap(roi, restToRender, &isBeingRenderedElseWhere);
 
     bool ab = _publicInterface->aborted();
 
-    QMutexLocker kk(&ibr->lock);
     while (!ab && isBeingRenderedElseWhere && !ibr->failed && ibr->refCount > 1) {
         ibr->cond.wait(kk.mutex(), 50);
         restToRender.clear();

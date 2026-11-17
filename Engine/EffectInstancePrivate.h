@@ -249,7 +249,13 @@ public:
 #if NATRON_ENABLE_TRIMAP
     void markImageAsBeingRendered(const ImagePtr & img, const RectI& roi, std::list<RectI>* restToRender, bool *renderedElsewhere);
 
-    bool waitForImageBeingRenderedElsewhere(const RectI & roi, const ImagePtr & img);
+    /**
+     * @brief Wait until the portions of roi in img that other threads are rendering are done.
+     * renderedRects are the rectangles this thread marked with markImageAsBeingRendered() and has
+     * finished rendering: they are marked as rendered before waiting, else they would still be
+     * PIXEL_UNAVAILABLE in the bitmap and this thread would wait for its own pixels (see #811).
+     **/
+    bool waitForImageBeingRenderedElsewhere(const RectI & roi, const ImagePtr & img, const std::list<RectI>& renderedRects);
 
     void unmarkImageAsBeingRendered(const ImagePtr & img, const std::list<RectI>& rects, bool renderFailed);
 #endif

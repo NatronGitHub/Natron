@@ -272,7 +272,11 @@ public:
         _isValid = false;
     }
 
-    void waitForPendingRegions()
+    /**
+     * @brief Wait for the portions of the RoI that other threads are rendering.
+     * @param rectsRendered true if this thread successfully rendered the rectangles returned by getRectsToRender().
+     **/
+    void waitForPendingRegions(bool rectsRendered)
     {
         if (!_isBeingRenderedElseWhere || !_isValid) {
             return;
@@ -285,7 +289,7 @@ public:
                 cacheImage = it->second.fullscaleImage;
             }
             if (cacheImage && cacheImage->usesBitMap()) {
-                if (!_effect->_imp->waitForImageBeingRenderedElsewhere(_roi, cacheImage)) {
+                if (!_effect->_imp->waitForImageBeingRenderedElsewhere(_roi, cacheImage, rectsRendered ? _rectsToRender : std::list<RectI>())) {
                     _isValid = false;
                 }
             }
@@ -1623,7 +1627,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     if (renderAborted && renderRetCode != EffectInstance::eRenderRoIStatusImageRendered  && renderRetCode != EffectInstance::eRenderRoIStatusImageAlreadyRendered) {
         guard->invalidate();
     } else {
-        guard->waitForPendingRegions();
+        guard->waitForPendingRegions(!renderAborted && renderRetCode == eRenderRoIStatusImageRendered);
     }
 #endif // NATRON_ENABLE_TRIMAP
 
