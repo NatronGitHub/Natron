@@ -309,6 +309,14 @@ public:
      **/
     int exec();
 
+    /**
+     * @brief True if --no-dialogs was given on the command line: message and question
+     * dialogs are then not shown, see Dialogs::getDismissedDialogAnswer().
+     * This is never saved in the settings.
+     **/
+    bool isDialogsDisabled() const;
+    void setDialogsDisabled(bool disabled);
+
     virtual void setUndoRedoStackLimit(int /*limit*/)
     {
     }
@@ -745,6 +753,21 @@ Natron::StandardButtonEnum questionDialog(const std::string & title, const std::
                                   Natron::StandardButtons buttons,
                                   Natron::StandardButtonEnum defaultButton,
                                   bool* stopAsking);
+
+/**
+ * @brief The answer of a question dialog that is not shown because of --no-dialogs: the
+ * default button, as if Enter was pressed, or, if there is no default button, the button
+ * Escape would pick (Cancel, Close, Abort, No or NoToAll, in that order). Returns
+ * eStandardButtonEscape if there is none of these.
+ **/
+Natron::StandardButtonEnum getDismissedDialogAnswer(Natron::StandardButtons buttons,
+                                                    Natron::StandardButtonEnum defaultButton);
+
+/**
+ * @brief Prints "[dialog dismissed] <title>: <message>" to stderr. Called instead of
+ * showing a dialog when --no-dialogs was given.
+ **/
+void printDismissedDialog(const std::string & title, const std::string & message);
 } // namespace Dialogs
 
 // put global functions in a namespace, see https://google.github.io/styleguide/cppguide.html#Nonmember,_Static_Member,_and_Global_Functions

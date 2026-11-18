@@ -75,6 +75,7 @@ public:
     std::list<std::pair<int, std::pair<int, int> > > frameRanges;
     bool rangeSet;
     bool enableRenderStats;
+    bool noDialogs;
     bool isEmpty;
     mutable QString imageFilename;
 #ifdef NATRON_USE_BREAKPAD
@@ -104,6 +105,7 @@ public:
         , frameRanges()
         , rangeSet(false)
         , enableRenderStats(false)
+        , noDialogs(false)
         , isEmpty(true)
         , imageFilename()
 #ifdef NATRON_USE_BREAKPAD
@@ -265,6 +267,7 @@ CLArgs::operator=(const CLArgs& other)
     _imp->frameRanges = other._imp->frameRanges;
     _imp->rangeSet = other._imp->rangeSet;
     _imp->enableRenderStats = other._imp->enableRenderStats;
+    _imp->noDialogs = other._imp->noDialogs;
     _imp->isEmpty = other._imp->isEmpty;
     _imp->imageFilename = other._imp->imageFilename;
     _imp->exportDocsPath = other._imp->exportDocsPath;
@@ -324,6 +327,14 @@ CLArgs::printUsage(const std::string& programName)
         "  --no-settings\n"
         "    When passed on the command-line, the %1 settings will not be restored\n"
         "    from the preferences file on disk so that %1 uses the default ones.\n"
+        "  --no-dialogs\n"
+        "    Do not show message or question dialogs (errors, warnings, questions,\n"
+        "    startup prompts). Each one is printed to the standard error as\n"
+        "    \"[dialog dismissed] <title>: <message>\" and answered with its default\n"
+        "    button, as if Enter or Escape had been pressed. Answers are not saved.\n"
+        "    Useful to drive the graphical interface from scripts and tests. In\n"
+        "    background mode, where dialogs are never shown, questions are then also\n"
+        "    answered with their default button (instead of Yes).\n"
         "  --setting name=value\n"
         "    Sets the named %1 setting to the given value. This is done after loading\n"
         "    the settings and prior to executing Python commands or loading the project.\n"
@@ -565,6 +576,12 @@ bool
 CLArgs::areRenderStatsEnabled() const
 {
     return _imp->enableRenderStats;
+}
+
+bool
+CLArgs::areDialogsDisabled() const
+{
+    return _imp->noDialogs;
 }
 
 bool
@@ -837,6 +854,15 @@ CLArgsPrivate::parse()
             it = args.erase(it);
 
             useDefaultSettings = true;
+        }
+    }
+
+    {
+        QStringList::iterator it = hasToken( QString::fromUtf8("no-dialogs"), QString() );
+        if ( it != args.end() ) {
+            it = args.erase(it);
+
+            noDialogs = true;
         }
     }
 
@@ -1309,6 +1335,7 @@ CLArgsPrivate::parse()
     qDebug() << "isBackground:" << isBackground;
     qDebug() << "isInterpreterMode:" << isInterpreterMode;
     qDebug() << "enableRenderStats:" << enableRenderStats;
+    qDebug() << "noDialogs:" << noDialogs;
 #ifdef NATRON_USE_BREAKPAD
     qDebug() << "breakpadProcessPID:" << breakpadProcessPID;
     qDebug() << "breakpadProcessFilePath:" << breakpadProcessFilePath;

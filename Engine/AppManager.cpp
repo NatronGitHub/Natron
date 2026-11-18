@@ -686,6 +686,8 @@ AppManager::loadInternal(const CLArgs& cl)
     // see http://doc.qt.io/qt-4.8/qcoreapplication.html#locale-settings
     setApplicationLocale();
     
+    _imp->dialogsDisabled = cl.areDialogsDisabled();
+
     Log::instance(); //< enable logging
     bool mustSetSignalsHandlers = true;
 #ifdef NATRON_USE_BREAKPAD
@@ -2601,6 +2603,18 @@ AppManager::onQueueRendersChanged(bool queuingEnabled)
     }
 }
 
+bool
+AppManager::isDialogsDisabled() const
+{
+    return _imp->dialogsDisabled;
+}
+
+void
+AppManager::setDialogsDisabled(bool disabled)
+{
+    _imp->dialogsDisabled = disabled;
+}
+
 int
 AppManager::exec()
 {
@@ -3387,6 +3401,12 @@ Dialogs::errorDialog(const std::string & title,
                      const std::string & message,
                      bool useHtml)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+
+        return;
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3402,6 +3422,13 @@ Dialogs::errorDialog(const std::string & title,
                      bool* stopAsking,
                      bool useHtml)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+        *stopAsking = false;
+
+        return;
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3416,6 +3443,12 @@ Dialogs::warningDialog(const std::string & title,
                        const std::string & message,
                        bool useHtml)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+
+        return;
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3431,6 +3464,13 @@ Dialogs::warningDialog(const std::string & title,
                        bool* stopAsking,
                        bool useHtml)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+        *stopAsking = false;
+
+        return;
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3445,6 +3485,12 @@ Dialogs::informationDialog(const std::string & title,
                            const std::string & message,
                            bool useHtml)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+
+        return;
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3460,6 +3506,13 @@ Dialogs::informationDialog(const std::string & title,
                            bool* stopAsking,
                            bool useHtml)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+        *stopAsking = false;
+
+        return;
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3476,6 +3529,12 @@ Dialogs::questionDialog(const std::string & title,
                         StandardButtons buttons,
                         StandardButtonEnum defaultButton)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+
+        return getDismissedDialogAnswer(buttons, defaultButton);
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3496,6 +3555,13 @@ Dialogs::questionDialog(const std::string & title,
                         StandardButtonEnum defaultButton,
                         bool* stopAsking)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+        *stopAsking = false;
+
+        return getDismissedDialogAnswer(buttons, defaultButton);
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3506,6 +3572,34 @@ Dialogs::questionDialog(const std::string & title,
 
         return eStandardButtonYes;
     }
+}
+
+StandardButtonEnum
+Dialogs::getDismissedDialogAnswer(StandardButtons buttons,
+                                  StandardButtonEnum defaultButton)
+{
+    // Enter picks the default button
+    if ( (defaultButton != eStandardButtonNoButton) && (defaultButton != eStandardButtonEscape) ) {
+        return defaultButton;
+    }
+    // otherwise, pick the button Escape would pick (see QMessageBox::detectEscapeButton())
+    const StandardButtonEnum escapeButtons[] = {
+        eStandardButtonCancel, eStandardButtonClose, eStandardButtonAbort, eStandardButtonNo, eStandardButtonNoToAll
+    };
+    for (std::size_t i = 0; i < sizeof(escapeButtons) / sizeof(escapeButtons[0]); ++i) {
+        if ( buttons.testFlag(escapeButtons[i]) ) {
+            return escapeButtons[i];
+        }
+    }
+
+    return eStandardButtonEscape;
+}
+
+void
+Dialogs::printDismissedDialog(const std::string & title,
+                              const std::string & message)
+{
+    std::cerr << "[dialog dismissed] " << title << ": " << message << std::endl;
 }
 
 #if 0 // dead code

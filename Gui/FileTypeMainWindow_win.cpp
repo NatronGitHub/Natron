@@ -38,6 +38,12 @@
 // See https://gitlab.com/qtdevnet-wiki-mvc/qtdevnet-registereditorfiletype/tree/master
 // and https://wiki.qt.io/Assigning_a_file_type_to_an_Application_on_Windows
 
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
 #include "FileTypeMainWindow_win.h"
 
 #ifdef __NATRON_WIN32__
@@ -52,6 +58,8 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QRegularExpression>
+
+#include "Engine/AppManager.h" // appPTR, Dialogs
 
 NATRON_NAMESPACE_ENTER
 
@@ -334,13 +342,23 @@ DocumentWindow::SetHkcrUserRegKey(QString key,
             return true;
         }
 
-        QMessageBox::warning( 0, QString::fromUtf8("Error in setting Registry values"),
-                              QString::fromUtf8("registration database update failed for key '%s'.").arg(key) );
+        const QString title = QString::fromUtf8("Error in setting Registry values");
+        const QString text = QString::fromUtf8("registration database update failed for key '%s'.").arg(key);
+        if ( appPTR->isDialogsDisabled() ) {
+            Dialogs::printDismissedDialog( title.toStdString(), text.toStdString() );
+        } else {
+            QMessageBox::warning(0, title, text);
+        }
     } else {
         wchar_t buffer[4096];
         ::FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM, 0, lRetVal, 0, buffer, 4096, 0);
         QString szText = QString::fromUtf16( (const ushort*)buffer );
-        QMessageBox::warning(this, QString::fromUtf8("Error in setting Registry values"), szText);
+        const QString title = QString::fromUtf8("Error in setting Registry values");
+        if ( appPTR->isDialogsDisabled() ) {
+            Dialogs::printDismissedDialog( title.toStdString(), szText.toStdString() );
+        } else {
+            QMessageBox::warning(this, title, szText);
+        }
     }
 
     return false;

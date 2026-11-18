@@ -24,6 +24,20 @@ An optional Python script filename can be specified to source a script before th
 Note that Natron will not start rendering any Write node of the sourced script, you must explicitly start it.
 *NatronRenderer* and *Natron* will do the same thing in this mode, only the *init.py* script will be loaded.
 
+**[--no-dialogs]** does not show the message and question dialogs: errors, warnings,
+questions and the startup prompts (OpenColorIO configuration, auto-save recovery, updates check,
+default appearance and shortcuts...).
+Each dialog is printed to the standard error as ``[dialog dismissed] <title>: <message>`` and
+counts as dismissed: a question returns its default button, as if Enter was pressed, or the
+button Escape would pick if there is no default button (Cancel, Close, Abort or No). The
+"Do not show this again" answers are not saved, and the startup question about checking for
+updates is asked again at the next launch.
+The main window is shown without taking the focus.
+This is meant to drive the graphical interface from scripts and tests, see :ref:`guiTesting`.
+The file dialogs opened by user actions are still shown.
+In background mode (*NatronRenderer*, *-b* or *-t*), where dialogs are never shown, the questions
+are then also answered with their default button, instead of *Yes*.
+
 
 Options for the execution of Natron projects:
 ---------------------------------------------
