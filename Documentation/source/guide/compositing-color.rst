@@ -16,7 +16,7 @@ displays it, and how to choose the OpenColorIO configuration is explained in
 
 The nodes
 ---------
-Really important nodes are marked with an asterix:
+The most important nodes are marked with an asterisk:
 
 
 
@@ -28,7 +28,7 @@ Positive values will brighten all parts of the image. As a stand alone color man
 
 **Multiply***
 
-It can be used to brighten or darken an image, or to fix a color cast. In maths, Multiply has no effect upon zero (black). Hence, the Multiply node will have no effect upon the blacks of an image.
+It can be used to brighten or darken an image, or to fix a color cast. In math, Multiply has no effect upon zero (black). Hence, the Multiply node will have no effect upon the blacks of an image.
 
 **Clamp**
 
@@ -47,7 +47,7 @@ The curve of a color lookup can also be a bit more difficult to read than nodes 
 
 **Colorspace conversion nodes**
 
-Engineers think of color as existing in things called spaces which are mathematical, 3D models the purpose of which is to organise them. Different color spaces serve different purposes: some are meant for printing, some are meant for screen-based work, some are meant for TV. Nodes such as :ref:`RGBToHSL <net.sf.openfx.RGBToHSL>`, :ref:`RGBToHSV <net.sf.openfx.RGBToHSV>` or :ref:`RGB709ToLab <net.sf.openfx.RGB709ToLab>` (and their inverses, such as :ref:`HSLToRGB <net.sf.openfx.HSLToRGB>` and :ref:`LabToRGB709 <net.sf.openfx.LabToRGB709>`) move an image from RGB to another color model. This makes it possible to use the channels of that model as masks for simple RGB operations, or to make adjustments that would be hard to do in RGB. The workflow is: convert from the linear RGB working space to the model of your choice, make the adjustment, then convert back to RGB.
+Engineers think of color as existing in things called spaces which are mathematical, 3D models the purpose of which is to organize them. Different color spaces serve different purposes: some are meant for printing, some are meant for screen-based work, some are meant for TV. Nodes such as :ref:`RGBToHSL <net.sf.openfx.RGBToHSL>`, :ref:`RGBToHSV <net.sf.openfx.RGBToHSV>` or :ref:`RGB709ToLab <net.sf.openfx.RGB709ToLab>` (and their inverses, such as :ref:`HSLToRGB <net.sf.openfx.HSLToRGB>` and :ref:`LabToRGB709 <net.sf.openfx.LabToRGB709>`) move an image from RGB to another color model. This makes it possible to use the channels of that model as masks for simple RGB operations, or to make adjustments that would be hard to do in RGB. The workflow is: convert from the linear RGB working space to the model of your choice, make the adjustment, then convert back to RGB.
 For example, a contrast adjustment on the saturation channel of HSL desaturates the less saturated parts of an image and increases the saturation of the rest.
 The Lab model separates the lightness of an image (the L channel) from its hue and saturation (the a and b channels), better than HSL does. The a and b channels of one image can be copied into another one, with an effect similar to the hue blend mode of image editors: for example, the blurred colors of a vivid sunset can make a dull sky more colorful.
 Blurring only the a and b channels blurs the hue and saturation of an image and keeps its lightness.
@@ -55,7 +55,7 @@ To convert between colorspaces of the OpenColorIO configuration (log, sRGB, Rec.
 
 **ColorCorrect***
 
-Artists have for thousands of years been separating the lightness values of their paintings into three bands: shadows, midtones and highlights. The ColorCorrect node is a collection of operations that not only can effect the entire image but can address separately these three ranges 
+Artists have for thousands of years been separating the lightness values of their paintings into three bands: shadows, midtones and highlights. The ColorCorrect node is a collection of operations that not only can affect the entire image but can address separately these three ranges.
 
 **Gamma**
 
@@ -71,25 +71,35 @@ The histogram is a scope, not a node: open it from the menu at the top left of a
 
 **HueCorrect***
 
-This can be a very tricky node to get to know.
-We can conclude that the perception of the amount of hue within a color (its chroma) is linked to two things: saturation and lightness.
-When adjusting color it is important to have separate control over these values, which is something that the HueCorrect node offers.
-This effect it masks by two further values: hue and saturation. Its interface offers control over nine values:
+HueCorrect changes the colors of an image depending on their hue. It
+computes the hue and saturation of each pixel, and reads the adjustment to
+apply from a set of curves, where the horizontal axis is the hue. It has ten
+curves:
 
-Saturation (sat)
-This can change the saturation value of an image, with respect to particular regions of hue.
+hue
+    Hue shift.
 
-Luminance (lum)
-This can change the luminosity (i.e. brightness) value of an image, with respect to particular regions of hue.
+sat
+    Saturation gain, applied last.
 
-Luminance components (red, blue, green)
-This can change the r, g and b channels of an image, with respect to particular regions of hue.
+lum
+    Luminance gain.
 
-Suppression (r_sup, g_sup, b_sup)
-This is similar to adjusting the luminance components, but instead of nullifying them (replacing them with black), replaces them with white.
+red, green, blue
+    Gains on the red, green and blue channels.
 
-Saturation threshold (sat_thrsh)
-This only effects the image if first the 'Luminance' or 'Luminance components' have been adjusted. Adjustments to this value will act as 'per hue' saturation level mask to the effect.
+r_sup, g_sup, b_sup
+    Suppression of a channel toward the other two: for example, where r is
+    larger than min(g, b), r_sup scales the difference, so that 0 brings r
+    down to min(g, b). This is a common way to remove a color spill.
+
+sat_thrsh
+    Saturation threshold: the lum, red, green and blue gains are not applied
+    to pixels whose saturation is below this value, and are applied
+    progressively above it.
+
+The **Mix Luminance** parameter restores part or all of the original
+luminance. See :ref:`net.sf.openfx.HueCorrect` for all the parameters.
 
 
 **HSVTool**
@@ -100,8 +110,9 @@ The HSVTool has three functions: Color replacement, Color adjust, Hue keyer
 **Saturation***
 
 A color becomes a grey if its RGB values are all identical.
-The Saturation node desaturates an image by averaging its RGB channels.
-More localised control over saturation is offered by the HueCorrect node.
+The Saturation node mixes each pixel with its luminance, computed with the
+**Luminance Math** formula (Rec. 709 by default). More localized control over
+saturation is offered by the HueCorrect node.
 
 
 .. toctree::

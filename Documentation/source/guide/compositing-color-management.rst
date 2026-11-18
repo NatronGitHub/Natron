@@ -75,11 +75,11 @@ Natron installation:
   V-Log, REDLog, CLog...); Filmic colorspaces; the ``sRGB``,
   ``DCI-P3``, ``Rec709`` and ``XYZ`` displays; and the Filmic and film
   emulation looks.
-- **blender-cycles**: a more recent configuration with a
-  ``Linear sRGB / REC.709 D65`` working space, sRGB, AdobeRGB, Cineon and
-  Josh Pines log curves, and many film emulation looks.
-- **natron**: the same base as *blender-cycles*, without the looks, plus
-  Rec.709, Rec.1886 and Rec.2020 curves and V-Log.
+- **natron**: a small configuration with ``Linear sRGB / REC.709 D65`` as
+  the working space (``scene_linear``); sRGB, AdobeRGB, Rec.709, Rec.1886
+  and Rec.2020 curves, Cineon and Josh Pines log curves, V-Log/V-Gamut and
+  XYZ; the ``sRGB / REC.709 Reference`` and ``DCI-P3 Reference`` displays;
+  and no looks.
 - **nuke-default**: the colorspaces of Nuke's default configuration
   (``linear``, ``sRGB``, ``rec709``, ``Cineon``, gamma curves and many camera
   log curves: AlexaV3LogC, SLog3, REDLog, CLog...), and no looks. Use it to
@@ -237,8 +237,8 @@ controls):
 These are fixed curves built into Natron. They do **not** use the OpenColorIO
 configuration, and they only change what you see: the images computed by the
 nodes and written to files are not affected. The Viewer's **gain** and
-**gamma** controls are applied before this conversion, and are display-only
-too.
+**gamma** controls are display-only too: the gain is applied before this
+conversion, and the gamma after it.
 
 To see the image through a view transform of the configuration (a film
 emulation, *Filmic*, an ACES output transform, a P3 display...), insert an
@@ -288,8 +288,8 @@ them use the global configuration.
 :ref:`OCIOLogConvert <fr.inria.openfx.OCIOLogConvert>`
     Converts between the ``scene_linear`` and ``compositing_log`` roles of the
     configuration. Of the bundled configurations, only *blender* and
-    *nuke-default* define ``compositing_log``: with *natron* or
-    *blender-cycles* this node cannot be used.
+    *nuke-default* define ``compositing_log``: with *natron* this node cannot
+    be used.
 
 Most of these nodes have an **OCIO config help...** button that lists the
 colorspaces, displays or looks of the current configuration.
@@ -328,9 +328,12 @@ ACES
     Download an ACES configuration (for example from the
     `OpenColorIO-Config-ACES <https://github.com/AcademySoftwareFoundation/OpenColorIO-Config-ACES>`_
     project), select it as a custom configuration or with the ``OCIO``
-    variable, and restart Natron. These configurations are written for
-    OpenColorIO 2, which the OCIO version used by your Natron build must
-    support. Read each input with its ACES input
+    variable, and restart Natron. Each ACES configuration needs a minimum
+    OpenColorIO version, given in its file name (``..._ocio-v2.1.ocio``) and
+    in its release notes. Natron 2.6 uses OpenColorIO 2.6 on macOS and
+    Windows, and OpenColorIO 2.2 on Linux: on Linux, use a configuration made
+    for OCIO 2.2 or earlier, such as the ``ocio-v2.1`` ones of release 1.0.0.
+    Read each input with its ACES input
     colorspace (the camera's log colorspace, or the sRGB texture colorspace for
     sRGB images), keep the working space (ACEScg), view through an OCIODisplay
     node with the ACES output transform for your monitor, and write EXR files
