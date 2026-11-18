@@ -1,3 +1,7 @@
+Pin libtbbmalloc by the path it was loaded from on macOS, where
+dlopen("libtbbmalloc.2.dylib") doesn't find the already loaded library
+outside the dyld search path (NatronGitHub/Natron#1253).
+Same fix as https://github.com/uxlfoundation/oneTBB/pull/1849
 --- src/tbbmalloc/tbbmalloc.cpp.orig
 +++ src/tbbmalloc/tbbmalloc.cpp
 @@ -91,6 +91,17 @@

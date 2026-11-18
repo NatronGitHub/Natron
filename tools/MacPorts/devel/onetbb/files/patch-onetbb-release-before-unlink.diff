@@ -1,3 +1,5 @@
+Release the global_control storage before dynamic_unlink_all() unloads
+libtbbmalloc, which allocated it (NatronGitHub/Natron#1253).
 --- src/tbb/governor.cpp.orig
 +++ src/tbb/governor.cpp
 @@ -119,8 +119,11 @@
