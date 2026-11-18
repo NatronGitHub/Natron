@@ -26,6 +26,15 @@ log=$(mktemp -t natron-lldb)
   -k "process kill" \
   -k "quit 139" \
   -- "$prog" "$@" > "$log" 2>&1
+if grep -q "attach failed (Not allowed to attach" "$log"; then
+  # Hardened-runtime binaries without get-task-allow (e.g. a release Natron.app) can't be
+  # debugged. Run them directly instead, with stdin from /dev/null. There is no backtrace on a crash,
+  # and a GUI app may show the macOS crash dialog, so prefer a local (debuggable) build.
+  rm -f "$log"
+  echo "natron-lldb.sh: lldb may not attach to $prog (hardened runtime); running it directly" >&2
+  "$prog" "$@" < /dev/null
+  exit $?
+fi
 cat "$log"
 # lldb --batch doesn't propagate the inferior's status: derive it from the log.
 if grep -q "stop reason = " "$log"; then
