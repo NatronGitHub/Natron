@@ -30,7 +30,16 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QColorDialog>
+#include <QCoreApplication>
+#include <QElapsedTimer>
 #include <QImage>
+#include <QKeyEvent>
+#include <QMouseEvent>
+#include <QTabletEvent>
+#include <QThread>
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#include <QPointingDevice>
+#endif
 #include <QPainter>
 #include <QPixmap>
 CLANG_DIAG_ON(deprecated)
@@ -38,6 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/OutputSchedulerThread.h" // RenderEngine
 #include "Engine/PyNodeGroup.h"
 #include "Engine/PyNode.h"
 #include "Engine/PyParameter.h" // ColorTuple
@@ -886,6 +896,304 @@ PyViewer::getCurrentView() const
     }
 
     return _viewer->getCurrentView().value();
+}
+
+ViewerGL*
+PyViewer::getViewerGL() const
+{
+    NodePtr node = getInternalNode();
+
+    if ( !node || !node->isActivated() || !_viewer ) {
+        return 0;
+    }
+
+    return _viewer->getViewer();
+}
+
+// the timestamp of the simulated events, in milliseconds (used e.g. for the speed of paint strokes)
+static unsigned long
+simulatedEventTimestamp()
+{
+    static QElapsedTimer timer;
+
+    if ( !timer.isValid() ) {
+        timer.start();
+    }
+
+    return (unsigned long)timer.elapsed();
+}
+
+bool
+PyViewer::sendPenEvent(QEvent::Type type,
+                       double x,
+                       double y,
+                       int button,
+                       Qt::KeyboardModifiers modifiers,
+                       double pressure)
+{
+    ViewerGL* gl = getViewerGL();
+
+    if (!gl) {
+        return false;
+    }
+    // The zoom context of the viewer works in widget coordinates in logical pixels, like
+    // QMouseEvent: the device pixel ratio (HiDPI) is handled by Qt.
+    const QPointF local = gl->toWidgetCoordinates( QPointF(x, y) );
+    const QPointF global = QPointF( gl->mapToGlobal( QPoint(0, 0) ) ) + local;
+    const Qt::MouseButton b = (Qt::MouseButton)button;
+    Qt::MouseButton eventButton = b;
+    Qt::MouseButtons buttons = b;
+    if (type == QEvent::MouseMove) {
+        eventButton = Qt::NoButton; // buttons = the buttons held during the motion
+    } else if (type == QEvent::MouseButtonRelease) {
+        buttons = Qt::NoButton;
+    }
+
+    if (pressure != 1.) {
+        // as with a real tablet, send the tablet event first: the viewer records the pressure
+        // of press and release, and uses tablet motions instead of mouse motions
+        QEvent::Type tabletType = (type == QEvent::MouseMove) ? QEvent::TabletMove :
+                                  (type == QEvent::MouseButtonRelease) ? QEvent::TabletRelease : QEvent::TabletPress;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        QTabletEvent te(tabletType, QPointingDevice::primaryPointingDevice(), local, global, pressure,
+                        0.f, 0.f, 0.f, 0., 0.f, modifiers, eventButton, buttons);
+#else
+        QTabletEvent te(tabletType, local, global, QTabletEvent::Stylus, QTabletEvent::Pen, pressure,
+                        0, 0, 0., 0., 0, modifiers, 0, eventButton, buttons);
+#endif
+        te.setTimestamp( simulatedEventTimestamp() );
+        te.ignore();
+        QCoreApplication::sendEvent(gl, &te);
+        if ( (type == QEvent::MouseMove) && te.isAccepted() ) {
+            return true;
+        }
+    }
+
+    QMouseEvent e(type, local, global, eventButton, buttons, modifiers);
+    e.setTimestamp( simulatedEventTimestamp() );
+    QCoreApplication::sendEvent(gl, &e);
+
+    return e.isAccepted();
+}
+
+bool
+PyViewer::penDown(double x,
+                  double y,
+                  int button,
+                  Qt::KeyboardModifiers modifiers,
+                  double pressure)
+{
+    return sendPenEvent(QEvent::MouseButtonPress, x, y, button, modifiers, pressure);
+}
+
+bool
+PyViewer::penMotion(double x,
+                    double y,
+                    int button,
+                    Qt::KeyboardModifiers modifiers,
+                    double pressure)
+{
+    return sendPenEvent(QEvent::MouseMove, x, y, button, modifiers, pressure);
+}
+
+bool
+PyViewer::penUp(double x,
+                double y,
+                int button,
+                Qt::KeyboardModifiers modifiers,
+                double pressure)
+{
+    return sendPenEvent(QEvent::MouseButtonRelease, x, y, button, modifiers, pressure);
+}
+
+bool
+PyViewer::penDoubleClick(double x,
+                         double y,
+                         int button,
+                         Qt::KeyboardModifiers modifiers)
+{
+    // the sequence of events Qt sends for a double-click
+    if ( !getViewerGL() ) {
+        return false;
+    }
+    sendPenEvent(QEvent::MouseButtonPress, x, y, button, modifiers, 1.);
+    sendPenEvent(QEvent::MouseButtonRelease, x, y, button, modifiers, 1.);
+    bool ret = sendPenEvent(QEvent::MouseButtonDblClick, x, y, button, modifiers, 1.);
+    sendPenEvent(QEvent::MouseButtonRelease, x, y, button, modifiers, 1.);
+
+    return ret;
+}
+
+bool
+PyViewer::drag(double x0,
+               double y0,
+               double x1,
+               double y1,
+               int steps,
+               int button,
+               Qt::KeyboardModifiers modifiers)
+{
+    if ( !penDown(x0, y0, button, modifiers) ) {
+        return false;
+    }
+    if (steps < 1) {
+        steps = 1;
+    }
+    for (int i = 1; i <= steps; ++i) {
+        const double t = (double)i / steps;
+        penMotion(x0 + t * (x1 - x0), y0 + t * (y1 - y0), button, modifiers);
+    }
+
+    return penUp(x1, y1, button, modifiers);
+}
+
+bool
+PyViewer::sendKeyEvent(QEvent::Type type,
+                       Qt::Key key,
+                       Qt::KeyboardModifiers modifiers)
+{
+    ViewerGL* gl = getViewerGL();
+
+    if (!gl) {
+        return false;
+    }
+    // the text of printable keys, as a keyboard would produce it
+    QString text;
+    if ( (key >= Qt::Key_Space) && (key <= Qt::Key_AsciiTilde) && !( modifiers & (Qt::ControlModifier | Qt::MetaModifier) ) ) {
+        QChar c( (ushort)key );
+        text = (modifiers & Qt::ShiftModifier) ? QString(c).toUpper() : QString(c).toLower();
+    }
+    QKeyEvent e(type, key, modifiers, text);
+    e.setTimestamp( simulatedEventTimestamp() );
+    // the viewer does not handle keys: Qt propagates the event to the ViewerTab, which
+    // forwards it to the overlays and to the viewer shortcuts
+    QCoreApplication::sendEvent(gl, &e);
+
+    return e.isAccepted();
+}
+
+bool
+PyViewer::keyDown(Qt::Key key,
+                  Qt::KeyboardModifiers modifiers)
+{
+    return sendKeyEvent(QEvent::KeyPress, key, modifiers);
+}
+
+bool
+PyViewer::keyUp(Qt::Key key,
+                Qt::KeyboardModifiers modifiers)
+{
+    return sendKeyEvent(QEvent::KeyRelease, key, modifiers);
+}
+
+bool
+PyViewer::keyPress(Qt::Key key,
+                   Qt::KeyboardModifiers modifiers)
+{
+    bool ret = keyDown(key, modifiers);
+
+    keyUp(key, modifiers);
+
+    return ret;
+}
+
+Double2DTuple
+PyViewer::toWidgetCoordinates(double x,
+                              double y) const
+{
+    Double2DTuple ret = {0., 0.};
+    ViewerGL* gl = getViewerGL();
+
+    if (gl) {
+        QPointF p = gl->toWidgetCoordinates( QPointF(x, y) );
+        ret.x = p.x();
+        ret.y = p.y();
+    }
+
+    return ret;
+}
+
+Double2DTuple
+PyViewer::toCanonicalCoordinates(double wx,
+                                 double wy) const
+{
+    Double2DTuple ret = {0., 0.};
+    ViewerGL* gl = getViewerGL();
+
+    if (gl) {
+        QPointF p = gl->toZoomCoordinates( QPointF(wx, wy) );
+        ret.x = p.x();
+        ret.y = p.y();
+    }
+
+    return ret;
+}
+
+double
+PyViewer::getZoom() const
+{
+    ViewerGL* gl = getViewerGL();
+
+    return gl ? gl->getZoomFactor() : 1.;
+}
+
+Double2DTuple
+PyViewer::getPan() const
+{
+    Double2DTuple ret = {0., 0.};
+    ViewerGL* gl = getViewerGL();
+
+    if (gl) {
+        double zoomFactor, zoomAspectRatio;
+        gl->getProjection(&ret.x, &ret.y, &zoomFactor, &zoomAspectRatio);
+    }
+
+    return ret;
+}
+
+void
+PyViewer::fitToFormat()
+{
+    ViewerGL* gl = getViewerGL();
+
+    if (gl) {
+        gl->fitImageToFormat();
+    }
+}
+
+void
+PyViewer::processEvents()
+{
+    QCoreApplication::processEvents();
+}
+
+bool
+PyViewer::waitForRender(int timeoutMs)
+{
+    ViewerGL* gl = getViewerGL();
+
+    if (!gl) {
+        return false;
+    }
+    RenderEnginePtr engine = _viewer->getInternalNode()->getRenderEngine();
+    QElapsedTimer timer;
+    timer.start();
+    int idleChecks = 0;
+    do {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+        if ( engine && engine->hasThreadsWorking() ) {
+            idleChecks = 0;
+        } else if (++idleChecks >= 5) {
+            // idle for a few event-loop iterations: the render requests queued by the events
+            // have started and finished, and the viewer was redrawn
+            QCoreApplication::processEvents();
+
+            return true;
+        }
+        QThread::msleep(10);
+    } while (timer.elapsed() < timeoutMs);
+
+    return false;
 }
 
 /**
