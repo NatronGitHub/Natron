@@ -71,11 +71,15 @@ target_link_libraries(NatronGui
         Qt::Gui
         Qt::Widgets
         ${QT_OPENGLWIDGETS}
-        Python3::Module
+        Python3::Python # not Python3::Module, see Engine/CMakeLists.txt
         NatronEngine
     PRIVATE
         qhttpserver
 )
+if(APPLE)
+    # QtMac.mm and TaskBarMac.mm use AppKit (global.pri links it into every qmake target)
+    target_link_libraries(NatronGui PRIVATE "-framework AppKit")
+endif()
 if(NATRON_USE_OPENMP)
     # for the OpenMP version shown in the About window
     target_link_libraries(NatronGui PRIVATE OpenMP::OpenMP_CXX)

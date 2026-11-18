@@ -79,7 +79,10 @@ target_link_libraries(NatronEngine
         Qt::Core
         Qt::Concurrent
         Qt::Network
-        Python3::Module
+        # Python3::Python, not Python3::Module: on macOS, Module brings
+        # "-undefined dynamic_lookup", which the executables inherit, so a missing
+        # library becomes a crash at run time instead of a link error.
+        Python3::Python
         ${XDG_LIBS}
         ceres
         # LibraryBinary.cpp, OSGLContext_x11/wayland.cpp and glad use dlopen/dlsym:
