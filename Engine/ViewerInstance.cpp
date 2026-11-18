@@ -1826,7 +1826,11 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
                 ///if vmax - vmin is greater than 1 the gain will be really small and we won't see
                 ///anything in the image
-                if (vmin == vmax) {
+                if (vmin > vmax) {
+                    // empty RoI: no min/max was found
+                    vmin = 0.;
+                    vmax = 1.;
+                } else if (vmin == vmax) {
                     vmin = vmax - 1.;
                 }
                 updateParams->gain = 1 / (vmax - vmin);
@@ -1862,8 +1866,9 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
             ///if autoContrast is enabled, find out the vmin/vmax before rendering and mapping against new values
             if (inArgs.autoContrast && !inArgs.isDoingPartialUpdates) {
-                double vmin = std::numeric_limits<double>::infinity();
-                double vmax = -std::numeric_limits<double>::infinity();
+                // initialized so that the first min/max found replaces them (+/-infinity would be UB with -ffast-math)
+                double vmin = std::numeric_limits<double>::max();
+                double vmax = std::numeric_limits<double>::lowest();
 
                 if (runInCurrentThread) {
                     MinMaxVal vMinMax = findAutoContrastVminVmax(colorImage, inArgs.channels, viewerRenderRoI);
@@ -1887,7 +1892,11 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                     }
                 } // runInCurrentThread
 
-                if (vmax == vmin) {
+                if (vmin > vmax) {
+                    // empty RoI: no min/max was found
+                    vmin = 0.;
+                    vmax = 1.;
+                } else if (vmax == vmin) {
                     vmin = vmax - 1.;
                 }
 
@@ -2005,8 +2014,10 @@ findAutoContrastVminVmax_generic(const ImagePtr inputImage,
                                  DisplayChannelsEnum channels,
                                  const RectI & rect)
 {
-    double localVmin = std::numeric_limits<double>::infinity();
-    double localVmax = -std::numeric_limits<double>::infinity();
+    // initialized so that the first min/max found replaces them (+/-infinity would be UB with -ffast-math).
+    // If rect is empty, localVmin > localVmax on return.
+    double localVmin = std::numeric_limits<double>::max();
+    double localVmax = std::numeric_limits<double>::lowest();
     Image::ReadAccess acc = inputImage->getReadRights();
 
     for (int y = rect.bottom(); y < rect.top(); ++y) {
@@ -2255,9 +2266,11 @@ scaleToTexture8bits_generic(const RectI& roi,
                 g = g * args.gain + args.offset;
                 b = b * args.gain + args.offset;
                 if  (args.gamma <= 0) {
-                    r = (r < 1.) ? 0. : (r == 1. ? 1. : std::numeric_limits<double>::infinity() );
-                    g = (g < 1.) ? 0. : (g == 1. ? 1. : std::numeric_limits<double>::infinity() );
-                    b = (b < 1.) ? 0. : (b == 1. ? 1. : std::numeric_limits<double>::infinity() );
+                    // the limit of pow(x, 1/gamma) when gamma -> 0 is 0 for x < 1, 1 for x = 1, and infinity for x > 1,
+                    // but values above 1 are displayed as 1 (and lookupGammaLut() also clamps to 1)
+                    r = (r < 1.) ? 0. : 1.;
+                    g = (g < 1.) ? 0. : 1.;
+                    b = (b < 1.) ? 0. : 1.;
                 } else if (args.gamma != 1.) {
                     r = viewer->interpolateGammaLut(r);
                     g = viewer->interpolateGammaLut(g);

@@ -17,7 +17,7 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-set(Tests_HEADERS BaseTest.h)
+set(Tests_HEADERS BaseTest.h NaNGuards_FastMath.h)
 set(Tests_SOURCES
     google-test/src/gtest-all.cc
     google-mock/src/gmock-all.cc
@@ -30,6 +30,8 @@ set(Tests_SOURCES
     KnobSlave_Test.cpp
     KnobStringAnimation_Test.cpp
     Lut_Test.cpp
+    NaNGuards_FastMath.cpp
+    NaNGuards_Test.cpp
     NodeGroup_Test.cpp
     NodePreview_Test.cpp
     OfxPluginDeprecated_Test.cpp
@@ -42,6 +44,15 @@ set(Tests_SOURCES
     wmain.cpp
 )
 add_executable(Tests ${Tests_HEADERS} ${Tests_SOURCES})
+# NaNGuards_FastMath.cpp checks that MathUtils::isFinite()/isNaN() still work in code
+# compiled with -ffast-math, which assumes that NaN and infinity never happen.
+if(MSVC) # MSVC and clang-cl
+    set_source_files_properties(NaNGuards_FastMath.cpp PROPERTIES COMPILE_OPTIONS "/fp:fast")
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set_source_files_properties(NaNGuards_FastMath.cpp PROPERTIES
+        COMPILE_OPTIONS "-ffast-math"
+        COMPILE_DEFINITIONS NATRON_TESTS_FAST_MATH_TU)
+endif()
 # openMVG first, for the order of the SYSTEM include directories (see Engine/CMakeLists.txt)
 target_link_libraries(Tests
     PRIVATE

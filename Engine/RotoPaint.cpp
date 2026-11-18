@@ -1789,10 +1789,8 @@ RotoPaint::drawOverlay(double time,
 
                 ///draw the feather points
                 std::list<ParametricPoint > featherPoints;
-                RectD featherBBox( std::numeric_limits<double>::infinity(),
-                                   std::numeric_limits<double>::infinity(),
-                                   -std::numeric_limits<double>::infinity(),
-                                   -std::numeric_limits<double>::infinity() );
+                RectD featherBBox;
+                featherBBox.setupInfinity();
                 bool clockWise = isBezier->isFeatherPolygonClockwiseOriented(true, time);
 
 

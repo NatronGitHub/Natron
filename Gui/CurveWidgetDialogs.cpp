@@ -95,8 +95,9 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
         gui->getApp()->getFrameRange(&xstart, &xend);
         incr = QString::fromUtf8("1");
     } else {
-        xstart = std::numeric_limits<double>::infinity();
-        xend = -std::numeric_limits<double>::infinity();
+        // unbounded is +/-DBL_MAX (not +/-infinity, which -ffast-math assumes never happens)
+        xstart = std::numeric_limits<double>::max();
+        xend = std::numeric_limits<double>::lowest();
         for (size_t i = 0; i < curves.size(); ++i) {
             std::pair<double, double> r = curves[i]->getInternalCurve()->getXRange();
             if (r.first < xstart) {
@@ -106,10 +107,11 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
                 xend = r.second;
             }
         }
-        if ( xstart == std::numeric_limits<double>::infinity() ) {
+        // no curve, or an unbounded range: xend - xstart below would overflow
+        if ( (xstart >= std::numeric_limits<double>::max()) || (xstart <= std::numeric_limits<double>::lowest()) ) {
             xstart = 0.;
         }
-        if ( xend == -std::numeric_limits<double>::infinity() ) {
+        if ( (xend <= std::numeric_limits<double>::lowest()) || (xend >= std::numeric_limits<double>::max()) ) {
             xend = 1.;
         }
         if (xstart == 0. && xend == 1.) {

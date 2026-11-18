@@ -45,6 +45,8 @@ NATRON_THIRD_PARTY_SOURCES += \
     google-test/src/gtest-all.cc \
     google-mock/src/gmock-all.cc
 
+# NaNGuards_FastMath.cpp is compiled with -ffast-math by the CMake build only (qmake can't set
+# per-file flags); here it runs the same tests without -ffast-math.
 SOURCES += \
     BaseTest.cpp \
     Curve_Test.cpp \
@@ -55,6 +57,8 @@ SOURCES += \
     KnobSlave_Test.cpp \
     KnobStringAnimation_Test.cpp \
     Lut_Test.cpp \
+    NaNGuards_FastMath.cpp \
+    NaNGuards_Test.cpp \
     NodeGroup_Test.cpp \
     NodePreview_Test.cpp \
     OfxPluginDeprecated_Test.cpp \
@@ -67,6 +71,7 @@ SOURCES += \
     wmain.cpp
 
 HEADERS += \
-    BaseTest.h
+    BaseTest.h \
+    NaNGuards_FastMath.h
 
 include(../warnings.pri)

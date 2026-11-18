@@ -377,7 +377,11 @@ struct ValueSerialization
         if (hasAnimation) {
             assert( _knob->canAnimate() );
             Curve c;
+            const int nonFiniteBefore = CurveSerializationDetail::nonFiniteValuesRead;
             ar & ::boost::serialization::make_nvp("Curve", c);
+            // the file contained NaN values (#1267): the real knob, cloned from this
+            // temporary knob, must recompute the derivatives with its own properties
+            const bool mustRefreshDerivatives = (CurveSerializationDetail::nonFiniteValuesRead != nonFiniteBefore);
             ///This is to overcome the change to the animation of file params: They no longer hold keyframes
             ///Don't try to load keyframes
             convertOldFileKeyframesToPattern = isFile && isFile->getName() == kOfxImageEffectFileParamName;
@@ -386,6 +390,9 @@ struct ValueSerialization
                 assert(curve);
                 if (curve) {
                     _knob->getCurve(ViewIdx(0), _dimension)->clone(c);
+                    if (mustRefreshDerivatives) {
+                        curve->setMustRefreshDerivatives();
+                    }
                 }
             }
         }
@@ -664,8 +671,19 @@ private:
         ////restore extra datas
         if (isParametric) {
             std::list<Curve > curves;
+            const int nonFiniteBefore = CurveSerializationDetail::nonFiniteValuesRead;
             ar & ::boost::serialization::make_nvp("ParametricCurves", curves);
             isParametric->loadParametricCurves(curves);
+            if (CurveSerializationDetail::nonFiniteValuesRead != nonFiniteBefore) {
+                // the file contained NaN values (#1267): the real knob, cloned from this
+                // temporary knob, must recompute the derivatives with its own periodicity
+                for (int i = 0; i < isParametric->getDimension(); ++i) {
+                    CurvePtr curve = isParametric->getParametricCurve(i);
+                    if (curve) {
+                        curve->setMustRefreshDerivatives();
+                    }
+                }
+            }
         } else if (isStringAnimated) {
             std::map<int, std::string> extraDatas;
             ar & ::boost::serialization::make_nvp("StringsAnimation", extraDatas);
