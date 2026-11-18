@@ -778,14 +778,10 @@ KnobStringBase::getValueFromCurve(double time,
 {
     AnimatingKnobStringHelper* isStringAnimated = dynamic_cast<AnimatingKnobStringHelper* >(this);
 
-    if (isStringAnimated) {
-        *ret = isStringAnimated->getStringAtTime(time, view, dimension);
-        ///ret is not empty if the animated string knob has a custom interpolation
-        if ( !ret->empty() ) {
-            return true;
-        }
+    if (!isStringAnimated) {
+        // only animating string knobs have keyframes
+        return false;
     }
-    assert( ret->empty() );
     CurvePtr curve;
     if (useGuiCurve) {
         curve = getGuiCurve(view, dimension, byPassMaster);
@@ -793,16 +789,11 @@ KnobStringBase::getValueFromCurve(double time,
     if (!curve) {
         curve = getCurve(view, dimension, byPassMaster);
     }
-    if ( curve && (curve->getKeyFramesCount() > 0) ) {
-        assert(isStringAnimated);
-        if (isStringAnimated) {
-            isStringAnimated->stringFromInterpolatedValue(curve->getValueAt(time), view, ret);
-        }
-
-        return true;
+    if (!curve) {
+        return false;
     }
 
-    return false;
+    return isStringAnimated->getStringFromCurve(*curve, time, ret);
 }
 
 template<typename T>
@@ -1942,7 +1933,7 @@ KnobStringBase::getKeyFrameValueByIndex(ViewSpec view,
         *ok =  curve->getKeyFrameWithIndex(index, &kf);
 
         if (*ok) {
-            animatedString->stringFromInterpolatedValue(kf.getValue(), view, &value);
+            *ok = animatedString->stringFromKeyFrameValue(kf.getValue(), &value);
         }
     }
 
