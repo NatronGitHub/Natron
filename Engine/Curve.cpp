@@ -339,7 +339,31 @@ Curve::clone(const Curve & other)
 
     _imp->keyFrames.clear();
     std::transform( otherKeys.begin(), otherKeys.end(), std::inserter( _imp->keyFrames, _imp->keyFrames.begin() ), KeyFrameCloner() );
+    bool mustRefreshDerivatives;
+    {
+        QMutexLocker lo(&other._imp->_lock);
+        mustRefreshDerivatives = other._imp->mustRefreshDerivatives;
+    }
+    if (mustRefreshDerivatives) {
+        // other was loaded from a file with NaN values: its derivatives must be recomputed
+        // with this curve's properties (e.g. periodicity)
+        refreshAutomaticDerivatives();
+    }
     onCurveChanged();
+}
+
+void
+Curve::refreshAutomaticDerivatives()
+{
+    QMutexLocker l(&_imp->_lock);
+
+    for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
+        KeyframeTypeEnum interp = it->getInterpolation();
+        if ( (interp != eKeyframeTypeFree) && (interp != eKeyframeTypeBroken) && (interp != eKeyframeTypeNone) ) {
+            // refreshDerivatives() replaces the keyframe, and returns an iterator on the new one
+            it = refreshDerivatives(eCurveChangedReasonDerivativesChanged, it);
+        }
+    }
 }
 
 bool
@@ -820,7 +844,8 @@ interParams(const KeyFrameSet &keyFrames,
                 // rounding error in the line above
                 *t = minKeyFrameX;
             }
-            assert(*t >= minKeyFrameX && *t < minKeyFrameX + period);
+            // (with large times, minKeyFrameX + period may round to minKeyFrameX)
+            assert( *t >= minKeyFrameX && (*t < minKeyFrameX + period || minKeyFrameX + period == minKeyFrameX) );
         }
         itup = keyFrames.upper_bound(KeyFrame(*t, 0.));
     }
@@ -1575,9 +1600,11 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
             // The previous keyframe is the last one, shifted by one period.
             // Skip the keyframes that would not be strictly before tcur once shifted, e.g.
             // a keyframe at tcur + period, which is the same point as this one (see #1267).
-            // The loop ends at the latest on key itself, since period > 0.
+            // At most size() - 1 keys are skipped: the loop normally ends on key itself, since
+            // period > 0, but with large times tcur - period may round to tcur. The degenerate
+            // neighbour that remains is then ignored by Interpolation::autoComputeDerivatives().
             KeyFrameSet::const_reverse_iterator prev = _imp->keyFrames.rbegin();
-            while (prev->getTime() - period >= tcur) {
+            for (std::size_t skipped = 1; skipped < _imp->keyFrames.size() && prev->getTime() - period >= tcur; ++skipped) {
                 ++prev;
             }
             tprev = prev->getTime() - period;
@@ -1616,9 +1643,9 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
             // The next keyframe is the first one, shifted by one period.
             // Skip the keyframes that would not be strictly after tcur once shifted, e.g.
             // a keyframe at tcur - period, which is the same point as this one (see #1267).
-            // The loop ends at the latest on key itself, since period > 0.
+            // At most size() - 1 keys are skipped (see the previous keyframe above).
             KeyFrameSet::const_iterator start = _imp->keyFrames.begin();
-            while (start->getTime() + period <= tcur) {
+            for (std::size_t skipped = 1; skipped < _imp->keyFrames.size() && start->getTime() + period <= tcur; ++skipped) {
                 ++start;
             }
             tnext = start->getTime() + period;

@@ -994,11 +994,19 @@ Interpolation::autoComputeDerivatives(KeyframeTypeEnum interpPrev,
     }
 
     // Hermite coefficients P0' and P3' are the derivatives with respect to x \in [0,1]
+    // (a virtual keyframe one frame away; for |tcur| > 2^53, tcur +/- 1 rounds to tcur, so
+    // use the next representable time instead, to never divide by zero)
     if (interpPrev == eKeyframeTypeNone) {
         tprev = tcur - 1.;
+        if (tprev >= tcur) {
+            tprev = std::nextafter( tcur, std::numeric_limits<double>::lowest() );
+        }
     }
     if (interpNext == eKeyframeTypeNone) {
         tnext = tcur + 1.;
+        if (tnext <= tcur) {
+            tnext = std::nextafter( tcur, std::numeric_limits<double>::max() );
+        }
     }
     const double Q0pr = vprevDerivRight * (tcur - tprev); // normalize for x \in [0,1]
     const double P3pl = vnextDerivLeft * (tnext - tcur); // normalize for x \in [0,1]

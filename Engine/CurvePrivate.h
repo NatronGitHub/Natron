@@ -68,6 +68,7 @@ struct CurvePrivate
 
     bool isParametric;
     bool isPeriodic;
+    bool mustRefreshDerivatives; // non-finite values were replaced when loading (see CurveSerialization.h)
 
     CurvePrivate()
         : keyFrames()
@@ -85,6 +86,7 @@ struct CurvePrivate
         , _lock()
         , isParametric(false)
         , isPeriodic(false)
+        , mustRefreshDerivatives(false)
     {
     }
 
@@ -106,6 +108,7 @@ struct CurvePrivate
         yMin = other.yMin;
         yMax = other.yMax;
         isPeriodic = other.isPeriodic;
+        mustRefreshDerivatives = other.mustRefreshDerivatives;
     }
 
     

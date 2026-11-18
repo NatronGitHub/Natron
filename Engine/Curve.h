@@ -352,6 +352,12 @@ public:
 
     void setKeyframes(const KeyFrameSet& keys, bool refreshDerivatives);
 
+    /**
+     * @brief Recompute the derivatives of all the keyframes that are not Free or Broken
+     * (used after loading a project that contained NaN derivatives, see #1267).
+     **/
+    void refreshAutomaticDerivatives();
+
 private:
     friend class ::boost::serialization::access;
     template<class Archive>
