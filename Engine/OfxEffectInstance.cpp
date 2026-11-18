@@ -3299,7 +3299,15 @@ OfxEffectInstance::onInteractViewportSelectionUpdated(const RectD& rectangle,
     KnobIntPtr k = _imp->selectionRectangleStateKnob.lock();
     // Every node with a viewer context gets the viewer's selection signals: only the node whose
     // settings panel is open (so whose overlay is drawn) uses the rectangle, as in RotoPaint.
-    if ( !k || !getNode()->isSettingsPanelVisible() ) {
+    // The reader/writer embedded in a Read/Write node has no panel: use the one of that node.
+    NodePtr panelNode = getNode();
+#ifdef NATRON_ENABLE_IO_META_NODES
+    NodePtr ioContainer = panelNode->getIOContainer();
+    if (ioContainer) {
+        panelNode = ioContainer;
+    }
+#endif
+    if ( !k || !panelNode->isSettingsPanelVisible() ) {
         return;
     }
     double propV[4] = {rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2};
