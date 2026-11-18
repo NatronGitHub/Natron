@@ -568,6 +568,20 @@ Bitmap::markForRendering(const RectI & roi)
     return markFor(roi, PIXEL_UNAVAILABLE);
 }
 
+std::size_t
+Bitmap::clearPixelsBeingRendered()
+{
+    std::size_t n = 0;
+    for (std::vector<char>::iterator it = _map.begin(); it != _map.end(); ++it) {
+        if (*it == PIXEL_UNAVAILABLE) {
+            *it = 0;
+            ++n;
+        }
+    }
+
+    return n;
+}
+
 #endif
 
 void
@@ -1122,6 +1136,14 @@ Image::copyAndResizeIfNeeded(const RectI& newBounds,
     merge.merge(_bounds);
 
     resizeInternal(this, _bounds, merge, fillWithBlackAndTransparent, setBitmapTo1, usesBitMap(), output);
+#if NATRON_ENABLE_TRIMAP
+    if ( (*output)->usesBitMap() ) {
+        // The pixels that other threads are rendering will only be rendered in the source image:
+        // they are not available in the copy, and nobody would ever mark them as rendered there.
+        QWriteLocker ko( &(*output)->_entryLock );
+        (*output)->_bitmap.clearPixelsBeingRendered();
+    }
+#endif
 
     return true;
 }
