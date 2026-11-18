@@ -51,7 +51,7 @@ inline double roundSSE(double val) {
 }
 
 //! This is the Quintic interpolant from Perlin's Improved Noise Paper
-double s_curve(double t) { return t * t * t * (t * (6 * t - 15) + 10); }
+static double s_curve(double t) { return t * t * t * (t * (6 * t - 15) + 10); }
 
 //! Does a hash reduce to a character
 template <int d>

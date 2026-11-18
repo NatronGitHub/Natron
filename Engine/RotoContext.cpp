@@ -3551,8 +3551,7 @@ RotoContextPrivate::renderFeather_cairo(const std::list<RotoFeatherVertex>& vert
     ++next;
     std::list<RotoFeatherVertex>::const_iterator nextNext = next;
     ++nextNext;
-    int index = 0;
-    for (std::list<RotoFeatherVertex>::const_iterator it = vertices.begin(); it!=vertices.end(); index += 3) {
+    for (std::list<RotoFeatherVertex>::const_iterator it = vertices.begin(); it!=vertices.end(); ) {
 
 
         cairo_mesh_pattern_begin_patch(mesh);
