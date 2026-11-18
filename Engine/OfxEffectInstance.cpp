@@ -3268,7 +3268,7 @@ OfxEffectInstance::dettachOpenGLContext(const EffectInstance::OpenGLContextEffec
 }
 
 void
-OfxEffectInstance::onInteractViewportSelectionCleared(KeyboardModifiers modifiers)
+OfxEffectInstance::onInteractViewportSelectionCleared(KeyboardModifiers /*modifiers*/)
 {
     KnobIntPtr k = _imp->selectionRectangleStateKnob.lock();
     // Unlike updates (see onInteractViewportSelectionUpdated), a clear is sent to every node, as
@@ -3279,11 +3279,10 @@ OfxEffectInstance::onInteractViewportSelectionCleared(KeyboardModifiers modifier
     }
     double propV[4] = {0, 0, 0, 0};
     effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
-    // the modifiers of the pen down that starts the selection rectangle (NatronGitHub/Natron#1206)
-    // HostSupport declares this property on the instance only if the host sets
-    // kNatronOfxHostPropInteractKeyModifiers, which OfxHost always does: if that flag ever became
-    // conditional, setIntProperty would throw here (the property would not exist).
-    effectInstance()->getProps().setIntProperty( kNatronOfxInteractPropKeyModifiers, ofxKeyModifiersFromNatron(modifiers) );
+    // The instanceChanged action gives no keyboard modifiers (ofxNatron.h extensions 7 and 13):
+    // the plug-in uses those of the last action of its overlay. The pen down that starts the
+    // selection rectangle (ViewerGL::mousePressEvent) and the Escape key down
+    // (ViewerTab::keyPressEvent) reach the overlays before this clear.
 
     // The state is already 0 at creation and after every clear: force the notification
     // (hasChanged = true), so that the plug-in always hears that the selection was cleared.
@@ -3294,7 +3293,7 @@ OfxEffectInstance::onInteractViewportSelectionCleared(KeyboardModifiers modifier
 void
 OfxEffectInstance::onInteractViewportSelectionUpdated(const RectD& rectangle,
                                                       bool onRelease,
-                                                      KeyboardModifiers modifiers)
+                                                      KeyboardModifiers /*modifiers*/)
 {
     KnobIntPtr k = _imp->selectionRectangleStateKnob.lock();
     // Every node with a viewer context gets the viewer's selection signals: only the node whose
@@ -3312,9 +3311,7 @@ OfxEffectInstance::onInteractViewportSelectionUpdated(const RectD& rectangle,
     }
     double propV[4] = {rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2};
     effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
-    // As in onInteractViewportSelectionCleared: setIntProperty would throw if OfxHost's
-    // kNatronOfxHostPropInteractKeyModifiers ever became conditional.
-    effectInstance()->getProps().setIntProperty( kNatronOfxInteractPropKeyModifiers, ofxKeyModifiersFromNatron(modifiers) );
+    // no keyboard modifiers here either: the plug-in uses those of the last action of its overlay
     // During a drag the state stays 1 while the rectangle changes: force the notification
     // (hasChanged = true), so that the plug-in gets instanceChanged on every update.
     k->setValue(onRelease ? 2 : 1, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, NULL, true);
