@@ -269,10 +269,11 @@ function ofx_cmake_build() {
     if [ "$PKGOS" = "OSX" ]; then
         # Apple clang has no OpenMP runtime: MacPorts' libomp (only used with Apple clang)
         args+=(-DOFX_LIBOMP_ROOT="${MACPORTS:-/opt/local}")
-        # all the macOS bundles target macOS 14.0 (maintainer's decision; the default of openfx's
-        # Makefiles and CMake helpers). Explicit, because common.sh exports MACOSX_DEPLOYMENT_TARGET
-        # from sw_vers, which CMake would use otherwise (#1347 fixes common.sh).
-        args+=(-DCMAKE_OSX_DEPLOYMENT_TARGET=14.0)
+        # the deployment target of common.sh (14.0 for all the macOS bundles, #1347), as the
+        # Makefiles, which read MACOSX_DEPLOYMENT_TARGET too
+        if [ -n "${MACOSX_DEPLOYMENT_TARGET:-}" ]; then
+            args+=(-DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET")
+        fi
         # make the bundles self-contained, as the Makefiles' release builds do (osxDeploy.sh)
         args+=(-DOFX_DEPLOY_BUNDLES=ON)
         if [ "$PLUGINS_DEBUG" != "1" ]; then
@@ -580,7 +581,7 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
         # Windows (no MINGW_STATIC), as the make path: the static ImageMagick (natron_imagemagick)
         # is linked with "pkg-config --static" by openfx-arena's CMakeLists.txt anyway.
         arena_openmp=OFF
-        case " $(pkg-config Magick++ --cflags --libs 2>/dev/null) " in
+        case " $(pkg-config Magick++ --cflags --libs --static 2>/dev/null) " in
             *" -fopenmp "*) arena_openmp=ON;;
         esac
         # (OFX_LICENSE: passed by ofx_cmake_build)

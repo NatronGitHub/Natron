@@ -272,9 +272,11 @@ function ofx_cmake_build() {
     fi
     if [ "$PKGOS" = "OSX" ]; then
         args+=(-DOFX_LIBOMP_ROOT="${MACPORTS:-/opt/local}")
-        # all the macOS bundles target macOS 14.0 (explicit: common.sh exports
-        # MACOSX_DEPLOYMENT_TARGET from sw_vers, which CMake would use otherwise)
-        args+=(-DCMAKE_OSX_DEPLOYMENT_TARGET=14.0)
+        # the deployment target of common.sh (14.0 for all the macOS bundles, #1347), as the
+        # Makefiles, which read MACOSX_DEPLOYMENT_TARGET too
+        if [ -n "${MACOSX_DEPLOYMENT_TARGET:-}" ]; then
+            args+=(-DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET")
+        fi
         args+=(-DOFX_DEPLOY_BUNDLES=ON)
         if [ "$PLUGINS_DEBUG" != "1" ]; then
             args+=(-DOFX_DEPLOY_STRICT_MINOS=ON)
