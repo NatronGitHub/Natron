@@ -277,6 +277,12 @@ public:
      **/
     bool didSettingsExistOnStartup() const;
 
+    /// True if --no-settings was given: the default settings are used
+    bool isUsingDefaultSettings() const
+    {
+        return _usingDefaultSettings;
+    }
+
     bool notifyOnFileChange() const;
 
     bool isAggressiveCachingEnabled() const;
@@ -648,6 +654,7 @@ private:
     bool _restoringSettings;
     bool _ocioRestored;
     bool _settingsExisted;
+    bool _usingDefaultSettings = false;
     // set by an answer that --no-dialogs gave, for this session only: never saved
     std::set<KnobI*> _sessionOnlyKnobs;
     bool _defaultAppearanceOutdated;

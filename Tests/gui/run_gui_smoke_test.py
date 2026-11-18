@@ -174,9 +174,19 @@ def descendants(pid):
 def killTree(p):
     """Kills p, its process group, and all its descendants: under lldb, Natron runs in its
     own process group, below debugserver, so killing the group of the wrapper is not enough."""
+    if sys.platform == "win32":
+        # no process groups nor SIGKILL: taskkill kills the whole tree
+        subprocess.call(["taskkill", "/T", "/F", "/PID", str(p.pid)],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            p.kill()
+        except OSError:
+            pass
+        p.wait()
+        return
     # let a wrapper such as natron-lldb.sh kill its inferior first
     try:
-        p.send_signal(signal.SIGTERM)
+        p.terminate()
         p.wait(timeout=10)
     except (OSError, subprocess.TimeoutExpired):
         pass
@@ -198,7 +208,7 @@ def run(cmd, env):
     print("Running: " + " ".join(cmd))
     sys.stdout.flush()
     # in its own process group, so that a timeout kills the wrapper and Natron
-    p = subprocess.Popen(cmd, env=env, start_new_session=True)
+    p = subprocess.Popen(cmd, env=env, start_new_session=(sys.platform != "win32"))
     try:
         return p.wait(timeout=RUN_TIMEOUT)
     except subprocess.TimeoutExpired:

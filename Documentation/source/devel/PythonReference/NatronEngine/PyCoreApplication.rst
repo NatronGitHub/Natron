@@ -398,7 +398,9 @@ stopped. This is meant for scripts and tests, see :ref:`guiTesting`.
   skipped, and *NatronRenderer* exits with *exitCode*.
 - In interpreter mode (*-t*): when called from the script given on the command line, the
   interactive interpreter is not started; when called from the interactive interpreter, this
-  raises :class:`SystemExit` (*exitCode*), as :func:`sys.exit` does.
+  raises :class:`SystemExit` (*exitCode*), as :func:`sys.exit` does. When called from a callback
+  run by Natron while the interactive interpreter runs, the callback stops, and the interpreter
+  exits once it returns to the prompt.
 - *natron-python* is a plain Python interpreter where :doc:`PyCoreApplication` does not exist:
   use :func:`sys.exit` there.
 

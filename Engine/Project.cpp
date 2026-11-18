@@ -217,6 +217,13 @@ Project::loadProject(const QString & path,
             // In Gui mode, attempt to load an auto-save for this project if there's one.
             QString autosaveFileName;
             bool hasAutoSave = findAutoSaveForProject(realPath, name, &autosaveFileName);
+            if ( hasAutoSave && appPTR->isDialogsDisabled() ) {
+                // --no-dialogs: load the project itself, and keep its auto-save, which may be
+                // the user's crash recovery: using it would delete it when quitting
+                Dialogs::printDismissedDialog( tr("Auto-save").toStdString(),
+                                               tr("A recent auto-save of %1 was found. It is not used, and kept.").arg(name).toStdString() );
+                hasAutoSave = false;
+            }
             if (hasAutoSave) {
                 StandardButtonEnum ret = eStandardButtonNo;
                 if (attemptToLoadAutosave) {

@@ -2081,6 +2081,7 @@ void
 Settings::restoreSettings(bool useDefault)
 {
     _restoringSettings = true;
+    _usingDefaultSettings = useDefault;
 
     // call restoreKnobsFromSettings only if --no-settings is not part of the command-line arguments
     if (!useDefault) {

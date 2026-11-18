@@ -3702,6 +3702,27 @@ NATRON_PYTHON_NAMESPACE::ensureScriptHasModuleImport(const std::string& moduleNa
 
 #endif
 
+// The number of interpretPythonScript() calls running in this thread
+static thread_local int pythonScriptDepth = 0;
+
+// Raises SystemExit at the interactive prompt of the -t option, once no
+// interpretPythonScript() is running (see interpretPythonScript())
+static int
+raiseSystemExitAtPrompt(void*)
+{
+    if (pythonScriptDepth > 0) {
+        // still in a script run by Natron (e.g. a callback): try again when it returns
+        Py_AddPendingCall(raiseSystemExitAtPrompt, 0);
+
+        return 0;
+    }
+    PyObject* code = PyLong_FromLong( appPTR->getRequestedExitCode() );
+    PyErr_SetObject(PyExc_SystemExit, code);
+    Py_XDECREF(code);
+
+    return -1;
+}
+
 bool
 NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
                                                std::string* error,
@@ -3722,7 +3743,9 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     PyErr_Clear();
 
     ///This is faster than PyRun_SimpleString since is doesn't call PyImport_AddModule("__main__")
+    ++pythonScriptDepth;
     PyObject* v = PyRun_String(script.c_str(), Py_file_input, dict, 0);
+    --pythonScriptDepth;
     if (v) {
         Py_DECREF(v);
         status = 0;
@@ -3733,6 +3756,13 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
         error->clear();
     }
     PyObject* ex = PyErr_Occurred();
+    if ( ex && PyErr_GivenExceptionMatches(ex, PyExc_SystemExit) &&
+         appPTR->isQuitRequested() && appPTR->isPythonInterpreterRunning() ) {
+        // natron.quit() was called from a script run by Natron (e.g. a callback) while the
+        // interactive prompt of the -t option runs: the SystemExit it raised stops here, so
+        // raise it again at the prompt to end the session.
+        Py_AddPendingCall(raiseSystemExitAtPrompt, 0);
+    }
     if (ex) {
         assert(status < 0);
         if (!error) {

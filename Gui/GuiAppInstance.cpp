@@ -431,6 +431,12 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
     if ( !appPTR->getCurrentSettings()->isAutoSaveEnabledForUnsavedProjects() ) {
         return false;
     }
+    if ( appPTR->isDialogsDisabled() ) {
+        // --no-dialogs: never touch the user's crash-recovery auto-saves. Restoring one (the
+        // default answer) would load it in this session, which then deletes it when quitting
+        // without saving; answering No would delete it right away.
+        return false;
+    }
 
     QDir savesDir( Project::autoSavesDir() );
     QStringList entries = savesDir.entryList(QDir::Files | QDir::NoDotAndDotDot);

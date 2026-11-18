@@ -39,15 +39,19 @@ counts as dismissed. The answers never block and never destroy data:
   by :doc:`GuiApp<PythonReference/NatronGui/GuiApp>` (:meth:`getFilenameDialog<NatronGui.GuiApp.getFilenameDialog>`,
   :meth:`getRGBColorDialog<NatronGui.GuiApp.getRGBColorDialog>`...) count as cancelled;
 - the startup prompts: the OpenColorIO configuration check answers Yes (use the default
-  configuration) only if the selected one is unusable, No otherwise; the recovery of an
-  auto-saved project answers Yes (restore it: No would delete it); the new default appearance
+  configuration) only if the selected one is unusable, No otherwise; the auto-saves are
+  never recovered nor deleted: the question to restore an auto-saved untitled project is not
+  asked, and a project given on the command line is loaded from its file even if a more recent
+  auto-save exists (only the auto-saves written during the session are removed when quitting);
+  the new default appearance
   and the new default shortcuts are not applied (No); the question about checking for updates
   is not answered, so it is asked again at the next launch without *--no-dialogs*;
 - custom modal dialogs (:doc:`PyModalDialog<PythonReference/NatronGui/PyModalDialog>`, group
   parameters shown as a dialog) count as rejected, and the error log is printed to the
   standard error instead of opening the log window.
 
-None of these answers is saved in the preferences: e.g. when the OpenColorIO configuration
+None of these answers is saved in the preferences, and neither are the window geometry and the
+last directories of the file dialogs (they are not saved with *--no-settings* either): e.g. when the OpenColorIO configuration
 check switches to the default configuration, it is only for this session, and the questions
 about the new appearance or shortcuts are asked again at the next launch.
 

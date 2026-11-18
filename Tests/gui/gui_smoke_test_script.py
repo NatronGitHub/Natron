@@ -180,11 +180,18 @@ def runTest():
     check(abs(t1.x - t0.x - 100.) <= tol and abs(t1.y - t0.y - 50.) <= tol,
           "dragging the Transform centre handle changed translate by (100, 50)")
 
+    # let the end of the interaction (pen up) push its undo command
+    for j in range(5):
+        app.processEvents()
     undoAction = findUndoAction()
     check(undoAction is not None, "found Edit > Undo")
+    log("triggering %r" % undoAction.text())
     undoAction.trigger()
     viewer.waitForRender()
+    for j in range(5):
+        app.processEvents()
     t2 = translate.get()
+    log("translate after undo=(%g, %g)" % (t2.x, t2.y))
     check(abs(t2.x - t0.x) <= 1e-6 and abs(t2.y - t0.y) <= 1e-6, "undo restored translate")
     checkScreenshot(app, os.path.join(outDir, "Viewer1-after-undo.png"), "Viewer1")
 

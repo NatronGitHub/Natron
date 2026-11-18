@@ -123,6 +123,18 @@ Gui::~Gui()
     qDebug() << "Gui::~Gui()" << (void*)(this);
 #endif
     _imp->_nodeGraphArea->invalidateAllNodesParenting();
+
+    // Delete the viewers now: they are child widgets, which QWidget::~QWidget() would delete
+    // after _imp, but ~ViewerTab() uses the Gui (getApp(), getNodeGraph()).
+    std::list<ViewerTab*> viewers;
+    {
+        QMutexLocker k(&_imp->_viewerTabsMutex);
+        viewers.swap(_imp->_viewerTabs);
+    }
+    for (std::list<ViewerTab*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        delete *it;
+    }
+
     delete _imp->_errorLog;
     delete _imp->_projectGui;
     delete _imp->_undoStacksGroup;
