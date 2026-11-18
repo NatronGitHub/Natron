@@ -268,6 +268,10 @@ private:
                                                               to an OfxParamInstance. Without this pointer we would be unable
                                                               to track the knobs that have been created for 1 Node since OfxParamInstance
                                                               is totally dissociated from Node.*/
+    // Nesting depth of the actions of this instance on the main thread (see mainEntry()): an action, e.g.
+    // kOfxActionInstanceChanged, may trigger another one (when a value it sets changes a parameter).
+    // Only read and written on the main thread.
+    int _mainThreadActionDepth;
 };
 
 class OfxImageEffectDescriptor
