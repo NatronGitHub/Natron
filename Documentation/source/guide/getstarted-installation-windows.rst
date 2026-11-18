@@ -4,34 +4,23 @@
 Windows
 =======
 
-.. toctree::
-   :maxdepth: 2
-
-This chapter will guide your through the installation and maintenance of Natron on Windows.
+This chapter explains how to install and maintain Natron on Windows.
 
 Requirements
 ------------
 
-Natron will work on Windows 7, 8.x, 10 with latest updates.
+Natron needs 64-bit Windows 10 or later on an x86-64 processor, and a graphics
+card with OpenGL 2.0. See :ref:`system-requirements` for the details.
 
-The basic requirements are:
-
- * x86 compatible CPU (Core2 x86_64 or higher recommended)
- * OpenGL 2.0 or higher with the following extensions:
-    * **GL_ARB_texture_non_power_of_two** *(Viewer and OpenGL rendering)*
-    * **GL_ARB_shader_objects** *(Viewer and OpenGL rendering)*
-    * **GL_ARB_vertex_buffer_object** *(Viewer and OpenGL rendering)*
-    * **GL_ARB_pixel_buffer_object** *(Viewer and OpenGL rendering)*
-    * **GL_ARB_vertex_array_object** or **GL_APPLE_vertex_array_object** *(OpenGL rendering only)*
-    * **GL_ARB_framebuffer_object** or **GL_EXT_framebuffer_object** *(OpenGL rendering only)*
-    * **GL_ARB_texture_float** *(OpenGL rendering only)*
-
-If you don't have the minimum required OpenGL extensions we provide a Software OpenGL solution, install the package *Software OpenGL* from the installer. If you have the portable ZIP file copy *bin\\mesa\\opengl32.dll* to *bin\\*.
+If your graphics driver does not provide the OpenGL features Natron needs, use
+the software OpenGL renderer: select the *Legacy hardware support* package in
+the installer, or, with the portable ZIP file, copy *bin\\mesa\\opengl32.dll*
+to *bin\\*. Software rendering is much slower.
 
 Download
 --------
 
-Navigate to https://natrongithub.github.io/#download and download the latest version. This documentation will assume that you downloaded the installer (our default and recommended choice).
+Navigate to https://natrongithub.github.io/#download and download the latest version. This page assumes that you downloaded the installer, which is the recommended choice.
 
 .. image:: _images/win_install_01.png
    :width: 40%
@@ -39,37 +28,37 @@ Navigate to https://natrongithub.github.io/#download and download the latest ver
 Install
 -------
 
-You are now ready to start the installation, double-click on the setup file to start the installation.
+Double-click the setup file to start the installation.
 
 .. image:: _images/win_install_02.png
    :width: 15%
 
-You should now be greated with the installation wizard.
+The installation wizard opens.
 
 .. image:: _images/win_install_03.png
    :width: 40%
 
-Click 'Next' to start the installation, you first option is where to install Natron. The default location is recommended.
+Click 'Next'. First choose where to install Natron: the default location is recommended.
 
 .. image:: _images/win_install_04.png
    :width: 40%
 
-Your next option is the package selection, most users should accept the default. Each package has an more in-depth description if you want to know what they provide.
+Then select the packages to install. Most users should keep the default selection. Click a package to see its description.
 
 .. image:: _images/win_install_05.png
    :width: 40%
 
-Then comes the standard license agreement, Natron and it's plug-ins are licensed under the GPL version 2. You can read more about the licenses for each component included in Natron after installation (in menu Help→About).
+Then accept the license agreement. Natron and its plug-ins are licensed under the GNU GPL version 2. After installation, the licenses of all the components included in Natron are listed in Help → About.
 
 .. image:: _images/win_install_06.png
    :width: 40%
 
-The installation wizard is now ready to install Natron on your computer. The process should not take more than a minute or two (depending on your computer).
+The wizard then installs Natron. This takes a minute or two.
 
 .. image:: _images/win_install_07.png
    :width: 40%
 
-The installation is now over! Start Natron and enjoy.
+The installation is complete.
 
 .. image:: _images/win_install_08.png
    :width: 40%
@@ -82,11 +71,11 @@ Natron can now be started from the desktop icon or from the start menu.
 Maintenance
 -----------
 
-Natron includes a maintenance tool called 'NatronSetup', with this application you can easily upgrade Natron and it's components when a new version is available. You can also add or remove individual packages, or remove Natron completely. The application should be in the same start menu folder as Natron, or you can start it from the folder where you installed Natron.
+The installer also installs a maintenance tool called 'NatronSetup'. Use it to update Natron and its components when a new version is available, to add or remove packages, or to uninstall Natron. It is in the same Start menu folder as Natron, and in the folder where Natron is installed.
 
 .. image:: _images/win_install_10.png
    :width: 40%
 .. image:: _images/win_install_11.png
    :width: 40%
 
-The application also include a basic settings category, where you can configure proxy and other advanced options.
+Its settings let you configure a network proxy and other advanced options.

@@ -4,41 +4,40 @@
 Linux
 =====
 
-.. toctree::
-   :maxdepth: 2
-
-This chapter will guide your through the installation and maintenance of Natron on Linux.
+This chapter explains how to install and maintain Natron on Linux.
 
 Requirements
 ------------
 
-Natron will work on any Linux distribution which still receives seccurity updates.
-This includes (but not limited to):
+The Linux binaries are built on Rocky Linux 8, for x86-64 and aarch64
+processors. They run on any 64-bit Linux distribution that has:
 
- * `CentOS <https://www.centos.org/>`_ / `RHEL <https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux>`_ 7 and later
- * `Debian <https://www.debian.org/>`_ 8 "Jessie" and later
- * `Ubuntu <https://www.ubuntu.com/>`_ 16.04 LTS (Xenial Xerus) and later
- * `Fedora <https://getfedora.org>`_ 32 and later
+* glibc 2.28 or later;
+* the X11 client libraries, at least as recent as those of Rocky Linux 8
+  (libX11 1.6.8, libxcb 1.13, libxkbcommon 0.9). Natron is an X11
+  application: on a Wayland desktop it runs through XWayland;
+* an OpenGL driver: see :ref:`system-requirements`.
 
-The official binaries are built on CentOS 7, thus the basic system requirements are:
+Natron includes its other libraries (Qt, Python, fontconfig, FreeType, the C++
+runtime, …).
 
- * x86 compatible CPU (Core2 x86_64 or higher recommended)
- * Linux 2.6.32 and higher
- * Glibc 2.12 and higher
- * libgcc 4.4 and higher
- * OpenGL 2.0 or higher with the following extensions:
-    * **GL_ARB_texture_non_power_of_two** *(Viewer and OpenGL rendering)*
-    * **GL_ARB_shader_objects** *(Viewer and OpenGL rendering)*
-    * **GL_ARB_vertex_buffer_object** *(Viewer and OpenGL rendering)*
-    * **GL_ARB_pixel_buffer_object** *(Viewer and OpenGL rendering)*
-    * **GL_ARB_vertex_array_object** or **GL_APPLE_vertex_array_object** *(OpenGL rendering only)*
-    * **GL_ARB_framebuffer_object** or **GL_EXT_framebuffer_object** *(OpenGL rendering only)*
-    * **GL_ARB_texture_float** *(OpenGL rendering only)*
+For example, these distributions meet the requirements:
+
+* `RHEL <https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux>`_,
+  `Rocky Linux <https://rockylinux.org/>`_ and `AlmaLinux <https://almalinux.org/>`_ 8 and later
+* `Debian <https://www.debian.org/>`_ 12 "bookworm" and later
+* `Ubuntu <https://ubuntu.com/>`_ 22.04 LTS and later
+* `Fedora <https://fedoraproject.org/>`_ (all supported releases)
+
+If your graphics driver does not provide the OpenGL features Natron needs, run
+Natron with Mesa's software renderer: set the environment variable
+``LIBGL_ALWAYS_SOFTWARE=1`` before starting Natron. Software rendering is much
+slower.
 
 Download
 --------
 
-Navigate to https://natrongithub.github.io/1#download and download the latest version. This documentation will assume that you downloaded the installer (our default and recommended choice).
+Go to https://natrongithub.github.io/#download and download the latest version. This page assumes that you downloaded the installer.
 
 .. image:: _images/linux_install_01.png
    :width: 30%
@@ -46,7 +45,7 @@ Navigate to https://natrongithub.github.io/1#download and download the latest ve
 Extract
 -------
 
-When the file has been downloaded, extract the file. This can be done in your file browser, usually just right-click and select 'Extract Here'.
+Extract the downloaded archive. In most file managers, right-click it and select 'Extract Here'.
 
 .. image:: _images/linux_install_02.png
    :width: 30%
@@ -54,44 +53,44 @@ When the file has been downloaded, extract the file. This can be done in your fi
 Install
 -------
 
-You are now ready to start the installation, double-click on the extracted file to start the installation.
+Double-click the extracted file to start the installation.
 
 .. image:: _images/linux_install_04.png
    :width: 30%
 
-*On some installations you are not allowed to execute downloaded files, right-click and select properties, then tick the 'Execute file as program' option. This option may have a different name depending on your distribution and desktop environment. You can also make the file executable through the terminal, type chmod +x filename.*
+*If the file does not start, make it executable: right-click it, select Properties, and tick 'Allow executing file as program' (the name of this option depends on the desktop environment). In a terminal, you can run* ``chmod +x <filename>`` *instead.*
 
-You should now be greated with the installation wizard.
+The installation wizard opens.
 
 .. image:: _images/linux_install_05.png
    :width: 30%
 
-Click 'Next' to start the installation, you first option is where to install Natron. Usually the default location is good enough. If you select a installation path outside your home directory you will need to supply the root (administrator) password before you can continue.
+Click 'Next'. First choose where to install Natron: the default location is usually fine. If you choose a folder outside your home directory, the installer asks for the root (administrator) password.
 
 .. image:: _images/linux_install_06.png
    :width: 30%
 
-Your next option is the package selection, most users should accept the default. Each package has an more in-depth description if you want to know what they provide.
+Then select the packages to install. Most users should keep the default selection. Click a package to see its description.
 
 .. image:: _images/linux_install_07.png
    :width: 30%
 
-Then comes the standard license agreement, Natron and it's plug-ins are licensed under the GPL version 2. You can read more about the licenses for each component included in Natron after installation (in Help=>About).
+Then accept the license agreement. Natron and its plug-ins are licensed under the GNU GPL version 2. After installation, the licenses of all the components included in Natron are listed in Help → About.
 
 .. image:: _images/linux_install_08.png
    :width: 30%
 
-The installation wizard is now ready to install Natron on your computer. The process should not take more than a minute or two (depending on your computer).
+The wizard then installs Natron. This takes a minute or two.
 
 .. image:: _images/linux_install_09.png
    :width: 30%
 
-The installation is now over! Start Natron and enjoy.
+The installation is complete.
 
 .. image:: _images/linux_install_10.png
    :width: 30%
 
-Natron can be started from the desktop menu (under Graphics) or by executing the 'Natron' file in the folder you installed Natron.
+Start Natron from the desktop menu (under Graphics), or run the 'Natron' file in the installation folder.
 
 .. image:: _images/linux_install_11.png
    :width: 30%
@@ -101,7 +100,7 @@ Natron can be started from the desktop menu (under Graphics) or by executing the
 Maintenance
 -----------
 
-Natron includes a maintenance tool called 'NatronSetup', with this application you can easily upgrade Natron and it's components when a new version is available. You can also add or remove individual packages, or remove Natron completely. The application is in the 'Graphics' section in the desktop menu, or you can start it from the folder where you installed Natron.
+The installer also installs a maintenance tool called 'NatronSetup'. Use it to update Natron and its components when a new version is available, to add or remove packages, or to uninstall Natron. It is in the 'Graphics' section of the desktop menu, and in the folder where Natron is installed.
 
 .. image:: _images/linux_install_11.png
    :width: 30%
@@ -111,9 +110,14 @@ Natron includes a maintenance tool called 'NatronSetup', with this application y
 .. image:: _images/linux_install_14.png
    :width: 30%
 
-The application also include a basic settings category, where you can configure proxy and other advanced options.
+Its settings let you configure a network proxy and other advanced options.
 
-Advanced installation
----------------------
+Other ways to install Natron
+----------------------------
 
-Natron also has RPM and DEB packages, these are recommended for multi-user installations or for deployment on more than one machine. You can find more information on our website at https://natrongithub.github.io/ .
+* The portable archive (``Natron-<version>-Linux-<arch>-no-installer.tar.xz``)
+  needs no installation: extract it anywhere and run the ``Natron`` script it
+  contains.
+* Natron is also available on `Flathub <https://flathub.org/apps/fr.natron.Natron>`_
+  (``flatpak install flathub fr.natron.Natron``). This package is maintained
+  separately, and may be older than the latest release.
