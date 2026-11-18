@@ -89,10 +89,15 @@ for pkg_dir in ${PKGS}; do
     echo "Skipping. ${PACKAGE_NAME} already in repository."
   fi
 
-  # Install the packages that replace MSYS2's as soon as they are in the
-  # repository (also when it was restored from the cache), without
-  # --overwrite: this also checks that they install cleanly over MSYS2's.
-  natron_repo_install_overrides
+  # Install a package that replaces MSYS2's (NATRON_REPO_OVERRIDES) as soon as
+  # it is in the repository, whether just built or restored from the cache,
+  # without --overwrite: this also checks that it installs cleanly over MSYS2's.
+  for name in ${NATRON_REPO_OVERRIDES}; do
+    if [[ ${PACKAGE_NAME} == "${MINGW_PACKAGE_PREFIX}-${name}" ]]; then
+      natron_repo_install_overrides
+      break
+    fi
+  done
 
   echo -e "Leaving package directory ${pkg_dir}."
   cd "${BUILD_SCRIPT_DIR}"

@@ -5,7 +5,7 @@
  # Contributor: Renato Silva <br.renatosilva@gmail.com>
  
 +# Natron: MSYS2's mingw-w64-freetype (PKGBUILD.orig, msys2/MINGW-packages
-+# b6f22c12be) with the upstream fix 05f343a for the ULABS/UABS macros, which
++# 4b4964efd2) with the upstream fix 05f343a for the ULABS/UABS macros, which
 +# isn't in a FreeType release yet (NatronGitHub/Natron#1287). Same pkgname as
 +# MSYS2's, so it replaces the system package. pkgrel is 1.1: above MSYS2's
 +# 2.15.0-1, below any MSYS2 rebuild (2.15.0-2) or update (2.15.1), which then

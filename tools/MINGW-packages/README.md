@@ -186,7 +186,7 @@ The repository is built in MSYS2 UCRT64 (`build_pacman_repo.yml`, `build_natron_
 | `natron-setup` | The Inno Setup installer. |
 | `natron-build-deps-common`, `-qt5`, `-qt6` | Meta-packages that install everything needed to build Natron, the plug-ins and the installer. |
 
-OpenColorIO, OpenEXR, Imath, poppler (with the private headers that ReadPDF uses) and SoX now come from MSYS2.
+OpenColorIO, OpenEXR, Imath, poppler (with the private headers that ReadPDF uses) and SoX now come from MSYS2. The Breakpad tools (`dump_syms`, `breakdown`) are gone: releases ship no crash reporter until #1183.
 
 ### Packages that replace MSYS2's
 
@@ -196,7 +196,7 @@ pacman takes a package from the *first* repository in `pacman.conf` that has it,
 
 Because `1.1` sorts below `2`, an MSYS2 rebuild with the fix (`2.15.0-2`) or a new release (`2.15.1`) wins automatically: `natron_repo_install_overrides` then keeps MSYS2's package and prints a warning, and `pacman -Syu` replaces Natron's. When that happens, check that MSYS2's package has the fix, then delete the package: remove its directory, its entries in `build.sh`, `build_natron_package_repo.sh` and `NATRON_REPO_OVERRIDES`, and its row in the table above, and bump `windows_pacman_repo_version.txt`. Don't keep it around deprecated.
 
-To install such a package by hand from a local build of the repository: `pacman -S natron/${MINGW_PACKAGE_PREFIX}-freetype`, or `pacman -U ${MINGW_PACKAGE_PREFIX}-freetype-*-any.pkg.tar.*` in its directory. The Breakpad tools (`dump_syms`, `breakdown`) are gone: releases ship no crash reporter until #1183.
+To install such a package by hand from a local build of the repository: `pacman -S natron/${MINGW_PACKAGE_PREFIX}-freetype`, or `pacman -U ${MINGW_PACKAGE_PREFIX}-freetype-*-any.pkg.tar.*` in its directory.
 
 ### When to rebuild the package repository
 
