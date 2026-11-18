@@ -343,14 +343,16 @@ Curve::clone(const Curve & other)
         QMutexLocker lo(&other._imp->_lock);
         otherKeys = other._imp->keyFrames;
         mustRefreshDerivatives = other._imp->mustRefreshDerivatives;
-        // The derivatives are recomputed once, in the first curve cloned from other
-        // (usually the knob's curve, other being the temporary that was loaded).
-        other._imp->mustRefreshDerivatives = false;
     }
     QMutexLocker l(&_imp->_lock);
 
     _imp->keyFrames.clear();
     std::transform( otherKeys.begin(), otherKeys.end(), std::inserter( _imp->keyFrames, _imp->keyFrames.begin() ), KeyFrameCloner() );
+    // The flag is propagated to this curve, so that every curve in a chain of clones
+    // recomputes the derivatives with its own periodicity: a project loads into a
+    // temporary curve, which is cloned into a temporary (non-periodic) knob, which is
+    // then cloned into the real knob (KnobParametric::cloneExtraData()).
+    _imp->mustRefreshDerivatives = mustRefreshDerivatives;
     if (mustRefreshDerivatives) {
         // other was loaded from a file with NaN values: its derivatives must be recomputed
         // with this curve's properties (e.g. periodicity)
@@ -1606,9 +1608,11 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
     KeyframeTypeEnum prevType, nextType;
 
     double period = _imp->xMax - _imp->xMin;
+    // periodic, with a positive finite period (the default range is unbounded, and its period is infinite)
+    const bool effectivelyPeriodic = _imp->isPeriodic && (period > 0.) && MathUtils::isFinite(period);
     assert( key != _imp->keyFrames.end() );
     if ( key == _imp->keyFrames.begin() ) {
-        if (_imp->isPeriodic && _imp->keyFrames.size() > 1 && period > 0. && MathUtils::isFinite(period)) {
+        if (effectivelyPeriodic && _imp->keyFrames.size() > 1) {
             // The previous keyframe is the last one, shifted by one period.
             // Skip the keyframes that would not be strictly before tcur once shifted, e.g.
             // a keyframe at tcur + period, which is the same point as this one (see #1267).
@@ -1640,7 +1644,7 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
         prevType = prev->getInterpolation();
 
         //if prev is the first keyframe, and not edited by the user then interpolate linearly
-        if ( !_imp->isPeriodic && ( prev == _imp->keyFrames.begin() ) && (prevType != eKeyframeTypeFree) &&
+        if ( !effectivelyPeriodic && ( prev == _imp->keyFrames.begin() ) && (prevType != eKeyframeTypeFree) &&
              ( prevType != eKeyframeTypeBroken) ) {
             prevType = eKeyframeTypeLinear;
         }
@@ -1651,7 +1655,7 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
         ++next;
     }
     if ( next == _imp->keyFrames.end() ) {
-        if (_imp->isPeriodic && _imp->keyFrames.size() > 1 && period > 0. && MathUtils::isFinite(period)) {
+        if (effectivelyPeriodic && _imp->keyFrames.size() > 1) {
             // The next keyframe is the first one, shifted by one period.
             // Skip the keyframes that would not be strictly after tcur once shifted, e.g.
             // a keyframe at tcur - period, which is the same point as this one (see #1267).
@@ -1681,7 +1685,7 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
             ++nextnext;
         }
         //if next is thelast keyframe, and not edited by the user then interpolate linearly
-        if ( !_imp->isPeriodic && ( nextnext == _imp->keyFrames.end() ) && (nextType != eKeyframeTypeFree) &&
+        if ( !effectivelyPeriodic && ( nextnext == _imp->keyFrames.end() ) && (nextType != eKeyframeTypeFree) &&
              ( nextType != eKeyframeTypeBroken) ) {
             nextType = eKeyframeTypeLinear;
         }

@@ -77,9 +77,10 @@ saveFinite(Archive & ar,
 }
 
 // Parse a number written by an XML archive. The stream uses the "C" locale, as the
-// archive does, so the result doesn't depend on the process locale (strtod() would
-// read "556.568" as 556 after a Python script called locale.setlocale(LC_ALL, "") on a
-// French or German system). The whole string must be a number: "nan", "inf" or the
+// archive does, so the result doesn't depend on the process locale: after a Python
+// script called locale.setlocale(LC_ALL, "") on a French or German system, strtod()
+// stops at the '.' of "5.5656800000000001e+02" (556.568, as written by Boost) and
+// returns 5. The whole string must be a number: "nan", "inf" or the
 // old MSVCRT "1.#QNAN" fail, and are reported as such.
 inline bool
 parseDouble(const std::string& s,
@@ -93,6 +94,8 @@ parseDouble(const std::string& s,
     iss.clear();
     iss.str(s);
     iss >> *v;
+    // Note: libc++ also fails on subnormal values (strtod sets ERANGE), so they are read
+    // as 0 and the derivatives are recomputed. Boost's own reader failed on them too.
     if ( iss.fail() ) {
         return false;
     }

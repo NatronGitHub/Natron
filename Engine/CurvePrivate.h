@@ -68,10 +68,10 @@ struct CurvePrivate
 
     bool isParametric;
     bool isPeriodic;
-    // non-finite values were replaced when loading (see CurveSerialization.h), and the
-    // derivatives must be recomputed by the next Curve::clone() from this curve, which clears it.
-    // mutable: clone() clears it in the source curve.
-    mutable bool mustRefreshDerivatives;
+    // non-finite values were replaced when loading (see CurveSerialization.h): the
+    // derivatives are recomputed by every Curve::clone() from this curve, with the target's
+    // periodicity, and the flag is propagated to the target.
+    bool mustRefreshDerivatives;
 
     CurvePrivate()
         : keyFrames()
