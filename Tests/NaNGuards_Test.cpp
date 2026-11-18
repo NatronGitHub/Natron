@@ -437,8 +437,9 @@ TEST(NaNGuards, CurveLoadNaNDerivatives)
             EXPECT_NEAR( i1->getRightDerivative(), i2->getRightDerivative(), 1e-12 );
         }
 
-        // the curve is usually loaded in a temporary, then cloned into the knob's curve,
-        // which recomputes them with its own periodicity
+        // the curve is usually loaded in a temporary knob of KnobSerialization, which marks it,
+        // then cloned into the knob's curve, which recomputes them with its own periodicity
+        c2.setMustRefreshDerivatives(); // as KnobSerialization::load() does
         Curve p;
         p.setXRange(0., 6.);
         p.setPeriodic(true);
@@ -594,8 +595,10 @@ TEST(NaNGuards, CurveLoadCommaLocale)
     EXPECT_EQ( 556.568, k3.begin()->getValue() ) << found;
 }
 
-// clone() recomputes the derivatives of a curve loaded with NaN values with the target's
-// periodicity, and propagates the flag to the target.
+// The derivatives of a curve loaded with NaN values are recomputed by clone() and
+// cloneAndCheckIfChanged() with the target's periodicity, only when the source was marked
+// (KnobSerialization::load() marks the curves of its temporary knobs), and the flag is
+// never propagated: later clones copy the keys unchanged.
 TEST(NaNGuards, CurveCloneRefresh)
 {
     Curve c;
@@ -607,51 +610,55 @@ TEST(NaNGuards, CurveCloneRefresh)
     Curve loaded;
     loadCurve(setAllKeyValues(saveCurve(c), "LeftDerivative", "nan"), &loaded);
     expectFiniteDerivatives(loaded);
+    EXPECT_FALSE( loaded.getMustRefreshDerivatives() ); // loading alone doesn't mark the curve
 
-    // the first clone recomputes them with the target's periodicity
-    Curve p;
-    p.setXRange(0., 6.);
-    p.setPeriodic(true);
-    p.clone(loaded);
-    expectFiniteDerivatives(p);
-    Curve pref(p);
-    pref.refreshAutomaticDerivatives();
-    expectSameKeys(pref, p);
-    // in a periodic curve, the left derivative of the first key comes from the key at 3 - 6
-    // (it is 0 without periodicity)
-    EXPECT_NE( loaded.getKeyFrames_mt_safe().begin()->getLeftDerivative(), p.getKeyFrames_mt_safe().begin()->getLeftDerivative() );
+    // an unmarked curve is copied as is (e.g. BezierCP, Roto strokes, which load into a
+    // temporary Curve and clone it)
+    Curve q;
+    q.setXRange(0., 6.);
+    q.setPeriodic(true);
+    q.clone(loaded);
+    expectSameKeys(loaded, q);
+    EXPECT_FALSE( q.getMustRefreshDerivatives() );
 
-    EXPECT_NEAR( -1. / 3., p.getKeyFrames_mt_safe().begin()->getLeftDerivative(), 1e-12 );
-
-    // A project loads in two steps: the loaded curve is cloned into a temporary,
-    // non-periodic knob (KnobSerialization), whose curve is then copied into the real,
-    // periodic knob by Node::loadKnob() -> cloneAndUpdateGui() ->
-    // Curve::cloneAndCheckIfChanged(). The last step must use its own periodicity.
-    Curve loaded2;
-    loadCurve(setAllKeyValues(saveCurve(c), "LeftDerivative", "nan"), &loaded2);
-    Curve tmp; // non-periodic
-    tmp.clone(loaded2);
-    expectFiniteDerivatives(tmp);
+    // the temporary knob of KnobSerialization: non-periodic, marked
+    Curve tmp;
+    tmp.clone(loaded);
+    tmp.setMustRefreshDerivatives();
     EXPECT_EQ( 0., tmp.getKeyFrames_mt_safe().begin()->getLeftDerivative() );
+
+    // Knob::clone() -> Curve::clone() (Roto, Tracker, Project, Read/Write...): recomputed with
+    // the target's periodicity; in a periodic curve, the left derivative of the first key
+    // comes from the key at 3 - 6
     Curve real;
     real.setXRange(0., 6.);
     real.setPeriodic(true);
-    // the real knob may already have the same keys (e.g. its default curve): it must still be refreshed
-    real.setKeyframes(tmp.getKeyFrames_mt_safe(), false);
-    EXPECT_TRUE( real.cloneAndCheckIfChanged(tmp) );
+    real.clone(tmp);
     expectFiniteDerivatives(real);
     EXPECT_NEAR( -1. / 3., real.getKeyFrames_mt_safe().begin()->getLeftDerivative(), 1e-12 );
-    expectSameKeys(p, real);
-
-    // after loading, clones from the knob's curve copy the keys unchanged
-    real.clearMustRefreshDerivatives(); // as Node::loadKnob() does
+    EXPECT_FALSE( real.getMustRefreshDerivatives() );
+    Curve pref(real);
+    pref.refreshAutomaticDerivatives();
+    expectSameKeys(pref, real);
+    // a second clone from that curve leaves the keys bit-identical, and doesn't mark the target
     Curve again;
-    again.setXRange(0., 6.);
-    again.setPeriodic(true);
-    again.clone(real);
+    again.clone(real); // non-periodic: it would recompute different derivatives
     expectSameKeys(real, again);
-    EXPECT_FALSE( again.cloneAndCheckIfChanged(real) );
-    expectSameKeys(real, again);
+    EXPECT_FALSE( again.getMustRefreshDerivatives() );
+
+    // Node::loadKnob() -> cloneAndUpdateGui() -> Curve::cloneAndCheckIfChanged(): the real knob
+    // may already have the same keys (e.g. its default curve), it must still be refreshed
+    Curve real2;
+    real2.setXRange(0., 6.);
+    real2.setPeriodic(true);
+    real2.setKeyframes(tmp.getKeyFrames_mt_safe(), false);
+    EXPECT_TRUE( real2.cloneAndCheckIfChanged(tmp) );
+    expectSameKeys(real, real2);
+    EXPECT_FALSE( real2.getMustRefreshDerivatives() );
+    Curve again2;
+    again2.setKeyframes(real2.getKeyFrames_mt_safe(), false);
+    EXPECT_FALSE( again2.cloneAndCheckIfChanged(real2) );
+    expectSameKeys(real2, again2);
 }
 
 static KnobParametricPtr
@@ -701,8 +708,9 @@ TEST(NaNGuards, ParametricKnobLoadNaNDerivatives)
 
     KnobParametricPtr real = makeHueCurveKnob();
     real->cloneAndUpdateGui( loaded.getKnob().get() );
-    real->getParametricCurve(0)->clearMustRefreshDerivatives(); // end of Node::loadKnob()
+    EXPECT_TRUE( std::dynamic_pointer_cast<KnobParametric>( loaded.getKnob() )->getParametricCurve(0)->getMustRefreshDerivatives() );
     CurvePtr realCurve = real->getParametricCurve(0);
+    EXPECT_FALSE( realCurve->getMustRefreshDerivatives() );
     expectFiniteDerivatives(*realCurve);
     EXPECT_NEAR( expectedLeft, realCurve->getKeyFrames_mt_safe().begin()->getLeftDerivative(), 1e-12 );
     expectSameKeys(*savedCurve, *realCurve);
@@ -773,4 +781,56 @@ TEST(NaNGuards, LogLutDomainClamp)
             EXPECT_TRUE( MathUtils::isFinite( r.lut->toColorSpaceFloatFromLinearFloat(v) ) ) << r.lut->getName() << " v=" << v;
         }
     }
+}
+
+// Knobs restored with Knob::clone() from a KnobSerialization (TrackMarker::load(),
+// RotoDrawableItem::load(), Project, Read/Write...): the animation curve loaded with NaN
+// derivatives is recomputed, and the real knob's curve keeps no flag.
+TEST(NaNGuards, AnimatedKnobLoadNaNDerivatives)
+{
+    KnobDoublePtr saved = std::make_shared<KnobDouble>( (KnobHolder*)NULL, std::string("x"), 1, false );
+    saved->populate();
+    CurvePtr savedCurve = saved->getCurve(ViewIdx(0), 0);
+    ASSERT_TRUE(savedCurve != nullptr);
+    // Linear keys: their derivatives don't depend on the order in which they are refreshed
+    const double kv[3][2] = { { 0., 0. }, { 10., 1. }, { 20., 0.5 } };
+    for (const auto& v : kv) {
+        KeyFrame k(v[0], v[1]);
+        k.setInterpolation(eKeyframeTypeLinear);
+        savedCurve->addKeyFrame(k);
+    }
+
+    std::stringstream ss;
+    {
+        KnobSerialization ser(saved);
+        boost::archive::xml_oarchive oa(ss);
+        oa << boost::serialization::make_nvp("Knob", ser);
+    }
+    std::string bad = setAllKeyValues(ss.str(), "LeftDerivative", "nan");
+    bad = setAllKeyValues(bad, "RightDerivative", "inf");
+    ASSERT_NE( ss.str(), bad );
+
+    KnobSerialization loaded;
+    {
+        std::stringstream is(bad);
+        boost::archive::xml_iarchive ia(is);
+        ASSERT_NO_THROW( ia >> boost::serialization::make_nvp("Knob", loaded) );
+    }
+    ASSERT_TRUE( loaded.getKnob() != nullptr );
+    EXPECT_TRUE( loaded.getKnob()->getCurve(ViewIdx(0), 0)->getMustRefreshDerivatives() );
+
+    KnobDoublePtr real = std::make_shared<KnobDouble>( (KnobHolder*)NULL, std::string("x"), 1, false );
+    real->populate();
+    real->clone( loaded.getKnob().get() );
+    CurvePtr realCurve = real->getCurve(ViewIdx(0), 0);
+    expectFiniteDerivatives(*realCurve);
+    expectSameKeys(*savedCurve, *realCurve);
+    EXPECT_FALSE( realCurve->getMustRefreshDerivatives() );
+
+    // a second clone from the knob leaves the keys bit-identical
+    KnobDoublePtr other = std::make_shared<KnobDouble>( (KnobHolder*)NULL, std::string("x"), 1, false );
+    other->populate();
+    other->clone( real.get() );
+    expectSameKeys( *realCurve, *other->getCurve(ViewIdx(0), 0) );
+    EXPECT_FALSE( other->getCurve(ViewIdx(0), 0)->getMustRefreshDerivatives() );
 }
