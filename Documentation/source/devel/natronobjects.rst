@@ -47,8 +47,10 @@ so Natron does the following assignment for you::
 
 .. warning::
 
-    Note that when running scripts in the *Script Editor*, the application is running in GUI
-    mode hence the *app* variable is not declared.
+    In GUI mode, don't rely on the *app* variable in the *Script Editor*. Natron sets it
+    before running a callback, a menu command or a loaded script, so it may exist, but it then
+    points to whichever project instance ran that code last. Use *app1*, *app2*... (or
+    :func:`natron.getGuiInstance(index)<NatronGui.PyGuiApplication.getGuiInstance>`) instead.
 
 
 The :doc:`PythonReference/NatronEngine/App` object is responsible for managing all information
