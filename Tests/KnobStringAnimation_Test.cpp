@@ -473,3 +473,51 @@ TEST_F(KnobStringAnimationTest, LoadOldProjectWithStaleIndices)
     EXPECT_EQ( "b", at(fractional, 2.5) );
     EXPECT_EQ( "b", at(fractional, 3.) );
 }
+
+// The curve editor keeps the real keyframes in its selection (CurveGui::getKeyFrames()) and only shows their
+// index (CurveGui::getKeyFramesForDisplay()). Deleting a selected keyframe and undoing it (RemoveKeysCommand ->
+// KnobGui::setKeyframes() -> onKeyFrameSet()) must restore its string. It gave "c" when the selection held indices.
+TEST_F(KnobStringAnimationTest, CurveEditorDeleteUndo)
+{
+    // intern other strings first, so that the internal values differ from the indices
+    setKey(_knob, 100., "zz");
+    setKey(_knob, 101., "yy");
+    setKey(_knob, 102., "xx");
+    deleteKey(_knob, 100.);
+    deleteKey(_knob, 101.);
+    deleteKey(_knob, 102.);
+    setKey(_knob, 0., "a");
+    setKey(_knob, 5., "b");
+    setKey(_knob, 10., "c");
+    KeyFrameSet keys = _knob->getCurve(ViewIdx(0), 0)->getKeyFrames_mt_safe();
+    KeyFrame selected = *Curve::findWithTime(keys, 5.);
+    deleteKey(_knob, 5.);
+    EXPECT_TRUE( _knob->onKeyFrameSet(5., ViewSpec::all(), selected, 0) ); // RemoveKeysCommand::undo
+    EXPECT_EQ( "a", at(_knob, 0.) );
+    EXPECT_EQ( "b", at(_knob, 5.) );
+    EXPECT_EQ( "c", at(_knob, 10.) );
+}
+
+// Adding a keyframe on a string curve in the curve editor (CurveWidget::addKey()): the displayed y is the
+// keyframe index, so the keyframe value is built from the string at that time. Using y gave "c" at t=7.
+TEST_F(KnobStringAnimationTest, CurveEditorAddKeyOnCurve)
+{
+    setKey(_knob, 100., "zz");
+    setKey(_knob, 101., "yy");
+    setKey(_knob, 102., "xx");
+    deleteKey(_knob, 100.);
+    deleteKey(_knob, 101.);
+    deleteKey(_knob, 102.);
+    setKey(_knob, 0., "a");
+    setKey(_knob, 5., "b");
+    setKey(_knob, 10., "c");
+    // the displayed value
+    EXPECT_EQ( 1., _knob->getValueAtWithExpression(7., ViewIdx(0), 0) );
+    double value;
+    _knob->stringToKeyFrameValue( 7., ViewIdx(0), _knob->getValueAtTime(7., 0), &value );
+    EXPECT_TRUE( _knob->onKeyFrameSet(7., ViewSpec::all(), KeyFrame(7., value), 0) ); // AddKeysCommand::redo
+    EXPECT_EQ( "b", at(_knob, 5.) );
+    EXPECT_EQ( "b", at(_knob, 7.) );
+    EXPECT_EQ( "c", at(_knob, 10.) );
+    EXPECT_EQ( 4, keyCount(_knob) );
+}

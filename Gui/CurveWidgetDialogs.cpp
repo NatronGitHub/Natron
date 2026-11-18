@@ -401,7 +401,7 @@ struct EditKeyFrameDialogPrivate
         : curveWidget(curveWidget)
         , key(key)
         , originalX( key->key.getTime() )
-        , originalY( key->key.getValue() )
+        , originalY( key->curve->getKeyFrameDisplayValue(key->key) )
         , mainLayout(0)
         , boxContainer(0)
         , boxLayout(0)

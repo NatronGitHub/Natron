@@ -241,18 +241,12 @@ class DopeSheetKey
 {
 public:
     DopeSheetKey(const DSKnobPtr &knob,
-                 const KeyFrame& kf)
-        : context(knob)
-        , key(kf)
-    {
-        DSKnobPtr knobContext = context.lock();
-
-        assert(knobContext);
-    }
+                 const KeyFrame& kf);
 
     DopeSheetKey(const DopeSheetKey &other)
         : context(other.context)
         , key(other.key)
+        , isString(other.isString)
     {}
 
     friend bool operator==(const DopeSheetKey &key,
@@ -295,6 +289,9 @@ public:
 
     DSKnobWPtr context;
     KeyFrame key;
+    // The value of a string keyframe references a string (see StringAnimationManager): it can only be pasted to
+    // string parameters. Stored here because the parameter may be gone when the keyframe is pasted.
+    bool isString;
 };
 
 typedef DopeSheetKeyPtr DopeSheetKeyPtr;

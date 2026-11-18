@@ -970,15 +970,10 @@ DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
 
             // The value of a string keyframe references a string (see StringAnimationManager): string keyframes
             // can only be pasted to string parameters, and other keyframes cannot be pasted to string parameters.
-            {
-                DSKnobPtr srcContext = _keys[i].context.lock();
-                KnobIPtr srcKnob = srcContext ? srcContext->getInternalKnob() : KnobIPtr();
-                bool srcIsString = dynamic_cast<AnimatingKnobStringHelper*>( srcKnob.get() ) != NULL;
-                bool dstIsString = dynamic_cast<AnimatingKnobStringHelper*>( knob.get() ) != NULL;
-                if (!srcKnob || srcIsString != dstIsString) {
-                    knob->endChanges();
-                    continue;
-                }
+            // (DopeSheet::pasteKeys() warns about them)
+            if ( _keys[i].isString != ( dynamic_cast<AnimatingKnobStringHelper*>( knob.get() ) != NULL ) ) {
+                knob->endChanges();
+                continue;
             }
 
             double keyTime = _keys[i].key.getTime();

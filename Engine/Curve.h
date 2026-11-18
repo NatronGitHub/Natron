@@ -195,6 +195,10 @@ public:
      **/
     bool isYComponentMovable() const WARN_UNUSED_RETURN;
 
+    /// The keyframe values of a string curve reference strings (see StringAnimationManager and
+    /// getKeyFramesForDisplay_mt_safe())
+    bool isStringCurve() const WARN_UNUSED_RETURN;
+
     /**whether the curve will clamp possible keyframe X values to integers or not.**/
     bool areKeyFramesTimeClampedToIntegers() const WARN_UNUSED_RETURN;
 

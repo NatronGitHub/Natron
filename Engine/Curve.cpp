@@ -1859,6 +1859,13 @@ Curve::isYComponentMovable() const
 }
 
 bool
+Curve::isStringCurve() const
+{
+    // the type does not change after construction
+    return _imp->type == CurvePrivate::eCurveTypeString;
+}
+
+bool
 Curve::areKeyFramesValuesClampedToIntegers() const
 {
     QMutexLocker l(&_imp->_lock);
