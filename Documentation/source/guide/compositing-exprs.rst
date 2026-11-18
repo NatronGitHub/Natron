@@ -52,8 +52,8 @@ The field of a parameter with an expression is green. Its slider is
 disabled, and a value typed in the field has no effect while the expression
 is set. To change the expression, right-click the parameter
 and choose **Edit expression...**. To remove it, choose
-**Clear expression**: the parameter then uses its keyframes, or its value,
-again.
+**Clear expression** (or **Clear expression (all dimensions)**): the
+parameter then uses its keyframes, or its value, again.
 
 You can also:
 
@@ -67,7 +67,10 @@ You can also:
 
 In the expression dialog, you can also hold **Ctrl** (**Cmd** on macOS) and
 drag a parameter from a properties panel into the text area to insert a
-reference to it.
+reference to it. The inserted text has the form
+``Node.param.get()[dimension]``, which reads the value at the current frame:
+replace ``get()`` with ``get(frame)`` if the other parameter is animated (see
+the note below).
 
 
 Referring to other parameters
@@ -168,15 +171,18 @@ These variables are defined in every expression:
     frame. ``curve(frame)`` is the animation of the first dimension at the
     current frame.
 
-``random(min, max)`` and ``randomInt(min, max)``
-    A random number between ``min`` and ``max`` (``max`` excluded). Unlike the
-    functions of the Python ``random`` module, these give the same value for
-    a given frame as long as the node and its inputs are unchanged: the
-    random seed depends on the frame, the dimension and the state of the
-    node. Changing a parameter of the node, or of a node upstream, gives new
-    random values. ``randomInt`` rounds toward zero, so with a negative
-    ``min`` the results are uneven: ``randomInt(-5, 5)`` practically never
-    returns -5, and returns 0 twice as often as the other values.
+``random(min, max, frame, seed)`` and ``randomInt(min, max, frame, seed)``
+    A random number between ``min`` and ``max`` (``max`` excluded). The value
+    only depends on ``frame``, on ``seed`` (an integer, 0 if omitted) and on
+    the state of the node: it is the same each time the frame is computed,
+    and changing a parameter of the node, or of a node upstream, gives new
+    random values. Use a different ``seed`` to get several independent random
+    values in one expression. Always pass ``frame``: ``random(min, max)``
+    without it is not tied to the frame, and its value depends on the values
+    computed before, so a render is not reproducible. ``randomInt`` rounds
+    toward zero, so with a negative ``min`` the results are uneven:
+    ``randomInt(-5, 5, frame)`` practically never returns -5, and returns 0
+    twice as often as the other values.
 
 All the functions of the Python ``math`` module can be used directly, for
 example ``sin()``, ``cos()``, ``sqrt()``, ``floor()``, ``pi``. More functions
@@ -208,7 +214,7 @@ Oscillate between -10 and 10, with a period of about 31 frames::
 Add a random variation between -2 and 2 to the animation of this
 parameter::
 
-    curve(frame, dimension) + random(-2, 2)
+    curve(frame, dimension) + random(-2, 2, frame, dimension)
 
 Play the animation of this parameter twice as fast::
 
