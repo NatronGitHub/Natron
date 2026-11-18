@@ -174,8 +174,8 @@ The **Type** parameter says how the new format is chosen:
 - **To Project Format** (the default): use the project format. This is the
   quickest way to conform every source to the resolution of the shot.
 - **To Format**: pick a format from the **Format** menu, for example
-  "HD_720 1280x720" or "2K_DCP 2048x1080". You can also add your own format
-  from this menu.
+  "HD_720 1280x720" or "2K_DCP 2048x1080". To add your own format, use
+  **New Format...** in the project settings: it then appears in this menu.
 - **To Box**: type a width and height in **Size**, and a
   **Pixel Aspect Ratio**. If **Force This Shape** is checked, the output
   format is exactly that box. If it is left unchecked (the default), the image
@@ -291,7 +291,8 @@ Outside the region of definition, the image is always transparent black.
 it is unchecked (the default), the filter repeats the edge pixels, so the
 edges stay sharp. When it is checked, the edges fade to transparent black
 over one pixel, which gives an antialiased border; the region of definition
-then grows by one pixel. Check it when the scaled image does not cover the
+then grows by one pixel (within the output format, unless **Preserve BBox**
+is checked). Check it when the scaled image does not cover the
 whole frame and will be placed over another image.
 
 Pixel aspect ratio and anamorphic footage
@@ -359,9 +360,8 @@ one that matches what you want to change:
   unwanted edges, or to make later nodes faster by computing fewer pixels.
 - **Resize** (**Transform > Resize**,
   :ref:`reference <fr.inria.openfx.OIIOResize>`) also changes the resolution
-  and scales the image, using a different method (from OpenImageIO). It can
-  give nicer results when shrinking an image a lot, but it is slower than
-  Reformat for interactive work and it does not concatenate with transforms.
+  and scales the image, using the OpenImageIO filters. It does not
+  concatenate with transforms.
 - **Transform** (**Transform > Transform**,
   :ref:`reference <net.sf.openfx.TransformPlugin>`) moves, rotates and scales
   the image *inside* the same format. Its output keeps the format of its
