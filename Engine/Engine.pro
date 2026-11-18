@@ -26,7 +26,7 @@ QT += core network concurrent
 
 ENGINE_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronEngine
 
-!noexpat: CONFIG += expat
+CONFIG += expat
 
 
 CONFIG += libmv-flags openmvg-flags glad-flags libtess-flags
