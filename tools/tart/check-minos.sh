@@ -60,7 +60,8 @@ add_path() {
     fi
 }
 if [ "$STDIN" = 1 ]; then
-    while IFS= read -r p; do [ -n "$p" ] && add_path "$p"; done
+    # leading blanks are ignored (port contents indents its list)
+    while IFS= read -r p; do p=${p#"${p%%[![:space:]]*}"}; [ -z "$p" ] || add_path "$p"; done
 fi
 for p in "$@"; do add_path "$p"; done
 

@@ -389,7 +389,11 @@ ports_newer_than_target() {
     for p in $(port -q installed active | awk '{print $1}'); do
         rc=0
         port -q contents "$p" | "$CHECK_MINOS" -t "$macos_target" -l > /dev/null 2>&1 || rc=$?
-        [ "$rc" != 1 ] || echo "$p"
+        case $rc in
+            0) ;;
+            1) echo "$p" ;;
+            *) echo "check-minos.sh failed (status $rc) on the files of $p" >&2; return 1 ;;
+        esac
     done
 }
 
@@ -418,7 +422,9 @@ deps_order() {
 step_rebuild_target() {
     local skip=$LOGDIR/rebuild_target.skip p v todo=() failed=() n=0
     touch "$skip"
-    for p in $(ports_newer_than_target); do
+    local newer
+    newer=$(ports_newer_than_target)   # not in the for: a failure must stop the step
+    for p in $newer; do
         v=$(port -q installed "$p" | awk '/\(active\)/ {print $2}')
         if grep -qxF "$p $v" "$skip"; then
             echo "$p $v: still built for a macOS newer than $macos_target after a rebuild, skipped"
