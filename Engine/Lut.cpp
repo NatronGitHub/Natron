@@ -1360,6 +1360,13 @@ from_func_Cineon(float v)
     return ( 1.f / ( 1.f - 0.01079775161f ) ) * ( std::pow(10.f, ( (1023.f * v) - 685.f ) * 0.002f / 0.6f) - 0.01079775161f);
 }
 
+// Note on the domain checks in the log to_func_* functions below (Cineon, Panalog,
+// REDLog, ViperLog): log10(x) is undefined for x <= 0, so these values return the
+// code value 0 instead of NaN. This makes the curves non-monotonic just above the
+// boundary: there, log10(x) tends to -infinity, so the code value is very negative
+// (below 0) and jumps back to 0 at the boundary. Only negative linear values (which
+// these log encodings can't represent anyway) are affected.
+
 /// to Cineon from Linear Opto-Electronic Transfer Function (OETF)
 static
 float
