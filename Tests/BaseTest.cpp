@@ -506,6 +506,27 @@ TEST_F(BaseTest, ProjectFormatAutoSetFromReaderWithSameFormat)
     QFile::remove(filePath);
 }
 
+// Formats added to a project must be removed when the project is reset (e.g. closed), otherwise the format
+// choices don't match the project's format list any more and the next formats added point to the wrong entries.
+TEST_F(BaseTest, ProjectFormatAfterProjectReset)
+{
+    ProjectPtr project = getApp()->getProject();
+    // add formats
+    resetProjectFormat( project, Format(0, 0, 300, 100, "", 1.) );
+    resetProjectFormat( project, Format(0, 0, 300, 200, "", 1.) );
+    expectProjectFormat(project, 300, 200, 1.);
+
+    project->resetProject();
+    expectProjectFormat(project, 1920, 1080, 1.);
+
+    // add new formats, and select formats that were added before the reset
+    const int sizes[][2] = { {64, 48}, {32, 16}, {200, 100}, {200, 200}, {64, 48} };
+    for (std::size_t i = 0; i < sizeof(sizes) / sizeof(sizes[0]); ++i) {
+        resetProjectFormat( project, Format(0, 0, sizes[i][0], sizes[i][1], "", 1.) );
+        expectProjectFormat(project, sizes[i][0], sizes[i][1], 1.);
+    }
+}
+
 // #1294: a Reader created while a sequence render is running must not change the project format
 // during that render; the format is auto-set when the render finishes.
 TEST_F(BaseTest, ProjectFormatNotAutoSetDuringSequenceRender)

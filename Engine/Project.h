@@ -191,6 +191,9 @@ private:
     /// set (or add) the project format from the Reader's output format
     void setProjectFormatFromReader(const NodePtr& reader);
 
+    /// check the pending Readers again in 100 ms (at most one check is scheduled at a time)
+    void scheduleAutoSetProjectFormatRetry();
+
 public:
 
     bool isAutoSetProjectFormatEnabled() const;

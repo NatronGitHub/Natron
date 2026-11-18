@@ -2053,6 +2053,23 @@ Project::doResetEnd(bool aboutToQuit)
             _imp->autoSaveTimer->stop();
             _imp->additionalFormats.clear();
         }
+        {
+            // The format choices must match builtinFormats + additionalFormats: remove the formats that were added
+            // to the closed project, otherwise the indices of the formats added afterwards point to the wrong entries.
+            std::vector<ChoiceOption> entries;
+            {
+                QMutexLocker l(&_imp->formatMutex);
+                for (std::list<Format>::const_iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
+                    QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
+                    if ( !it->getName().empty() ) {
+                        entries.push_back( ChoiceOption(it->getName(), formatStr.toStdString(), "") );
+                    } else {
+                        entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+                    }
+                }
+            }
+            _imp->formatKnob->populateChoices(entries);
+        }
         getApp()->removeAllKeyframesIndicators();
 
         Q_EMIT projectNameChanged(QString::fromUtf8(NATRON_PROJECT_UNTITLED), false);
@@ -2212,6 +2229,9 @@ Project::autoSetProjectFormatFromReader(const NodePtr& reader)
             }
         }
         _imp->autoSetProjectFormatPendingReaders.push_back(reader);
+        // The render may already have emitted renderFinished before we connected to it (it is still
+        // seen as running until its engine becomes idle): also poll until no render is running.
+        scheduleAutoSetProjectFormatRetry();
 
         return;
     }
@@ -2245,10 +2265,7 @@ Project::applyPendingAutoSetProjectFormat(const QObject* ignoredEngine)
     if ( isSequenceRenderRunning(ignoredEngine) ) {
         // Another render is running, or the engine that finished is not idle yet: check again soon.
         // (A running render also triggers this check when it finishes.)
-        if (!_imp->autoSetProjectFormatRetryScheduled) {
-            _imp->autoSetProjectFormatRetryScheduled = true;
-            QTimer::singleShot( 100, this, SLOT(onAutoSetProjectFormatRetry()) );
-        }
+        scheduleAutoSetProjectFormatRetry();
 
         return;
     }
@@ -2263,6 +2280,15 @@ Project::applyPendingAutoSetProjectFormat(const QObject* ignoredEngine)
 
             return;
         }
+    }
+}
+
+void
+Project::scheduleAutoSetProjectFormatRetry()
+{
+    if (!_imp->autoSetProjectFormatRetryScheduled) {
+        _imp->autoSetProjectFormatRetryScheduled = true;
+        QTimer::singleShot( 100, this, SLOT(onAutoSetProjectFormatRetry()) );
     }
 }
 
