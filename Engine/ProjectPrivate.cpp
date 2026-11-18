@@ -86,6 +86,8 @@ ProjectPrivate::ProjectPrivate(Project* project)
     , onNodeDeleted()
     , timeline( new TimeLine(project) )
     , autoSetProjectFormat( appPTR->getCurrentSettings()->isAutoProjectFormatEnabled() )
+    , autoSetProjectFormatPendingReaders()
+    , autoSetProjectFormatRetryScheduled(false)
     , isLoadingProjectMutex()
     , isLoadingProject(false)
     , isLoadingProjectInternal(false)
@@ -93,6 +95,7 @@ ProjectPrivate::ProjectPrivate(Project* project)
     , isSavingProject(false)
     , autoSaveTimer( new QTimer() )
     , projectClosing(false)
+    , resetting(false)
     , tlsData( new TLSHolder<Project::ProjectTLSData>() )
 
 {
@@ -424,6 +427,11 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename,
 void
 ProjectPrivate::runOnProjectCloseCallback()
 {
+    // In interpreter mode (-t), the callback ran from the atexit hook of
+    // launchPythonInterpreter(), before Py_Main() finalized Python (#1253).
+    if ( !Py_IsInitialized() ) {
+        return;
+    }
     std::string onProjectClose = _publicInterface->getOnProjectCloseCB();
 
     if ( !onProjectClose.empty() ) {

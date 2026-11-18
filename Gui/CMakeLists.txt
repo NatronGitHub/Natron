@@ -37,7 +37,7 @@ endif()
 set(shiboken_args
     "-std=c++17" "--enable-parent-ctor-heuristic" "--use-isnull-as-nb_nonzero"
     "--avoid-protected-hack" "--enable-pyside-extensions"
-    ${PYGUI_INCS}
+    ${PYGUI_INCS} ${SHIBOKEN_QT_FRAMEWORK_ARGS}
     "-T../Engine" "-T${PYSIDE_TYPESYSTEMS}" "--output-directory=${PYGUI_OUT}"
     "${PYGUI_HEADER}" "typesystem_natronGui.xml")
 
@@ -45,6 +45,7 @@ execute_process(COMMAND ${Python3_EXECUTABLE} ../tools/utils/sourceList.py types
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     OUTPUT_VARIABLE PyGui_SOURCES)
 set_property(SOURCE ${PyGui_SOURCES} PROPERTY SKIP_AUTOGEN ON)
+set_property(SOURCE ${PyGui_SOURCES} APPEND PROPERTY COMPILE_OPTIONS ${NATRON_BINDINGS_NO_WARNINGS})
 add_custom_command(OUTPUT ${PyGui_SOURCES}
     COMMAND $<TARGET_FILE:${SHIBOKEN_EXE}> ${shiboken_args}
     COMMAND ${Python3_EXECUTABLE} ../tools/utils/sourceCleanup.py typesystem_natronGui.xml ${PYGUI_OUT}
@@ -85,10 +86,9 @@ target_include_directories(NatronGui
         ..
         ../Engine
         ../Global
-        ../libs/SequenceParsing
-        ../libs/qhttpserver/src
         ${CMAKE_BINARY_DIR}/Engine/Qt${QT_VERSION_MAJOR}/NatronEngine
 )
+target_include_directories(NatronGui SYSTEM PRIVATE ../libs/SequenceParsing ../libs/qhttpserver/src)
 target_compile_definitions(NatronGui
     PRIVATE
         NATRON_CUSTOM_BUILD_USER_TOKEN="${BUILD_USER_NAME}"

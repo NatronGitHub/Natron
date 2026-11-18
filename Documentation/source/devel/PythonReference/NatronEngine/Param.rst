@@ -223,6 +223,14 @@ This function returns **True** upon success and **False** otherwise.
     curve will still be returned.
     This is useful to write custom expressions for motion design such as looping, reversing, etc...
 
+    .. note::
+
+        On a string parameter (:doc:`StringParamBase` and its subclasses), this returns the
+        0-based index of the keyframe at or before *time* (0 before the first keyframe).
+        The value is constant between keyframes: it is never interpolated.
+        To get the string itself, use
+        :func:`getValueAtTime()<NatronEngine.StringParamBase.getValueAtTime>`.
+
 
 .. method:: NatronEngine.Param.getAddNewLine()
 

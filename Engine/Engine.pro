@@ -26,7 +26,7 @@ QT += core network concurrent
 
 ENGINE_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronEngine
 
-!noexpat: CONFIG += expat
+CONFIG += expat
 
 
 CONFIG += libmv-flags openmvg-flags glad-flags libtess-flags
@@ -82,6 +82,7 @@ SOURCES += \
     CurveSerialization.cpp \
     DefaultShaders.cpp \
     DiskCacheNode.cpp \
+    DocumentationGroups.cpp \
     Dot.cpp \
     EffectInstance.cpp \
     EffectInstancePrivate.cpp \
@@ -207,8 +208,6 @@ SOURCES += \
     ../Global/ProcInfo.cpp \
     ../Global/PythonUtils.cpp \
     ../Global/StrUtils.cpp \
-    ../libs/SequenceParsing/SequenceParsing.cpp \
-    $${ENGINE_WRAPPER_DIR}/natronengine_module_wrapper.cpp \
 
 HEADERS += \
     AbortableRenderInfo.h \
@@ -237,6 +236,7 @@ HEADERS += \
     CurveSerialization.h \
     DefaultShaders.h \
     DiskCacheNode.h \
+    DocumentationGroups.h \
     DockablePanelI.h \
     Dot.h \
     EffectInstance.h \
@@ -478,11 +478,16 @@ ENGINE_GENERATED_SOURCES = \
     tracker_wrapper \
     userparamholder_wrapper \
 
+# bundled third-party code and generated bindings: see warnings.pri
+NATRON_THIRD_PARTY_SOURCES += ../libs/SequenceParsing/SequenceParsing.cpp
+NATRON_BINDINGS_SOURCES += $${ENGINE_WRAPPER_DIR}/natronengine_module_wrapper.cpp
 for(name, ENGINE_GENERATED_SOURCES) {
-    SOURCES += $${ENGINE_WRAPPER_DIR}/$${name}.cpp
+    NATRON_BINDINGS_SOURCES += $${ENGINE_WRAPPER_DIR}/$${name}.cpp
     HEADERS += $${ENGINE_WRAPPER_DIR}/$${name}.h
 }
 
 
 OTHER_FILES += \
     typesystem_engine.xml
+
+include(../warnings.pri)

@@ -660,9 +660,10 @@ if [ "${QT_VERSION_MAJOR}" = 5 ]; then
     cp -a "${SDK_HOME}/Library/Frameworks/${PYSHIBOKEN}" "${package}/Contents/Frameworks/${PYSHIBOKEN}"
     rm -rf "${package}/Contents/Frameworks/${PYSHIBOKEN}/docs"
     (cd "${package}/Contents/Frameworks" && ln -sf "${PYLIB}/site-packages/shiboken2/libshiboken2"*.dylib .)
-    install_name_tool -rpath "${SDK_HOME}/Library/Frameworks/${PYSHIBOKEN}" "@executable_path/../Frameworks/${PYSHIBOKEN}" "${natron_binary}"
     (cd "${package}/Contents/Frameworks" && ln -sf "${PYSIDE}/libpyside2"*.dylib .)
-    install_name_tool -rpath "${SDK_HOME}/Library/Frameworks/${PYSIDE}" "@executable_path/../Frameworks/${PYSIDE}" "${natron_binary}"
+    # The PySide2/Shiboken2 rpaths of every binary (Natron, NatronRenderer, natron-python, ...) are
+    # rewritten further down, in the loop over "${bins[@]}", with "|| true": binaries built with
+    # "cmake -DNATRON_INSTALL_LAYOUT=PORTABLE" have relative rpaths only, and nothing to rewrite.
     for binary in  "${package}/Contents/Frameworks/${PYSHIBOKEN}"/lib*.dylib "${package}/Contents/Frameworks/${PYSIDE}"/lib*.dylib; do
         for f in "${qt_libs[@]}"; do
             install_name_tool -change "${qt_frameworks_dir}/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "${binary}"

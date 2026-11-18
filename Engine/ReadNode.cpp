@@ -264,9 +264,15 @@ public:
 
     void placeReadNodeKnobsInPage();
 
+    /**
+     * @param userEdited True when called from knobChanged() because the file or the decoder was
+     * changed (not when the node is created or loaded): a new decoder then gets the instance changed
+     * action of its filename (see the implementation).
+     **/
     void createReadNode(bool throwErrors,
                         const std::string& filename,
-                        const NodeSerializationPtr& serialization );
+                        const NodeSerializationPtr& serialization,
+                        bool userEdited = false);
 
     void destroyReadNode();
 
@@ -645,7 +651,8 @@ getFileNameFromSerialization(const std::list<KnobSerializationPtr>& serializatio
 void
 ReadNodePrivate::createReadNode(bool throwErrors,
                                 const std::string& filename,
-                                const NodeSerializationPtr& serialization)
+                                const NodeSerializationPtr& serialization,
+                                bool userEdited)
 {
     if (creatingReadNode) {
         return;
@@ -746,15 +753,27 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         node = _publicInterface->getApp()->createNode(args);
 
         // Set the filename value
+        KnobFilePtr fileKnob;
+        bool fileKnobUnchanged = false;
         if (node) {
-            KnobFilePtr fileKnob = std::dynamic_pointer_cast<KnobFile>(node->getKnobByName(kOfxImageEffectFileParamName));
+            fileKnob = std::dynamic_pointer_cast<KnobFile>(node->getKnobByName(kOfxImageEffectFileParamName));
             if (fileKnob) {
-                fileKnob->setValue(filename);
+                fileKnobUnchanged = ( fileKnob->setValue(filename) == KnobHelper::eValueChangedReturnCodeNothingChanged );
             }
         }
         {
             QMutexLocker k(&embeddedPluginMutex);
             embeddedPlugin = node;
+        }
+        // When the user changes the file or the decoder, the new decoder shares the filename knob
+        // of this node, which already has the filename: setValue() did not change it, so the new
+        // decoder did not get the instance changed action for its filename. Call it, as when the
+        // decoder is the same (see above), so that it behaves as a reader given a new file (e.g.
+        // ReadSVG centers its transform on the canvas instead of the project).
+        // Never when a project is loaded (serialization): the decoder is created with its saved
+        // parameters, which must not be reset (e.g. GenericReader's frame range), as before.
+        if (fileKnobUnchanged && userEdited && !serialization) {
+            node->getEffectInstance()->onKnobValueChanged_public(fileKnob.get(), eValueChangedReasonNatronInternalEdited, _publicInterface->getCurrentTime(), ViewSpec(0), true);
         }
 
         if (pluginIDKnob) {
@@ -798,6 +817,16 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     KnobIPtr knob = node ? node->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
     if (knob) {
         inputFileKnob = std::dynamic_pointer_cast<KnobFile>(knob);
+    }
+
+    // If no decoder could be created (e.g. the decoder plug-in saved in the project is not installed),
+    // the knobs of the default reader replaced ours and the filename was reset: restore it, so that
+    // it is not lost when the project is saved, and the error message tells which file could not be read.
+    if ( !node && !filename.empty() ) {
+        KnobFilePtr fileKnob = inputFileKnob.lock();
+        if ( fileKnob && (fileKnob->getValue() != filename) ) {
+            fileKnob->setValue(filename);
+        }
     }
 } // ReadNodePrivate::createReadNode
 
@@ -876,6 +905,14 @@ bool
 ReadNode::isReader() const
 {
     return true;
+}
+
+bool
+ReadNode::isOutputFormatFromFile() const
+{
+    NodePtr p = getEmbeddedReader();
+
+    return p ? p->getEffectInstance()->isOutputFormatFromFile() : false;
 }
 
 // static
@@ -1182,6 +1219,14 @@ ReadNode::onEffectCreated(bool mayCreateFileDialog,
             propName += kOfxImageEffectFileParamName;
             pattern = args.getProperty<std::string>(propName);
         }
+        if ( pattern.empty() ) {
+            // The node may have been loaded from a project although no decoder could be created
+            // (see onKnobsAboutToBeLoaded()): keep the filename that was loaded.
+            KnobFilePtr fileKnob = _imp->inputFileKnob.lock();
+            if (fileKnob) {
+                pattern = fileKnob->getValue();
+            }
+        }
     }
     _imp->createReadNode( throwErrors, pattern, NodeSerializationPtr() );
     _imp->refreshPluginSelectorKnob();
@@ -1236,7 +1281,7 @@ ReadNode::knobChanged(KnobI* k,
         assert(fileKnob);
         std::string filename = fileKnob->getValue();
         try {
-            _imp->createReadNode( false, filename, NodeSerializationPtr() );
+            _imp->createReadNode( false, filename, NodeSerializationPtr(), true /*userEdited*/ );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
@@ -1261,14 +1306,12 @@ ReadNode::knobChanged(KnobI* k,
         std::string filename = fileKnob->getValue();
 
         try {
-            _imp->createReadNode( false, filename, NodeSerializationPtr() );
+            _imp->createReadNode( false, filename, NodeSerializationPtr(), true /*userEdited*/ );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
-        // Make sure instance changed action is called on the decoder and not caught in our knobChanged handler.
-        if (_imp->embeddedPlugin) {
-            _imp->embeddedPlugin->getEffectInstance()->onKnobValueChanged_public(fileKnob.get(), eValueChangedReasonNatronInternalEdited, getCurrentTime(), ViewSpec(0), true);
-        }
+        // createReadNode() calls the instance changed action of the filename on the decoder, whether
+        // it was kept or replaced: don't call it twice (e.g. ReadFFmpeg would probe the file twice).
         
 
         _imp->refreshFileInfoVisibility(entry);
@@ -1444,6 +1487,214 @@ ReadNode::getFramesNeeded(double time,
     } else {
         return FramesNeededMap();
     }
+}
+
+// Overlay interacts.
+// The OFX overlay interact belongs to the embedded reader plug-in (it is created when the embedded node
+// is loaded, see Node::load()), but the viewer only asks the nodes that have a settings panel,
+// i.e. this ReadNode. Forward every overlay action to the embedded effect through its _public
+// function, so that the embedded effect handles its own render scale, recursion and
+// "doing interact action" state (which its interact uses to redraw and to get its render scale).
+// The embedded reader may change when the file type changes: it is fetched on every call, and the
+// new one gets its viewport before each draw or event (see setCurrentViewportForOverlays).
+
+EffectInstancePtr
+ReadNode::getEmbeddedReaderEffect() const
+{
+    NodePtr p = getEmbeddedReader();
+
+    return p ? p->getEffectInstance() : EffectInstancePtr();
+}
+
+bool
+ReadNode::hasOverlay() const
+{
+    EffectInstancePtr effect = getEmbeddedReaderEffect();
+
+    return effect ? effect->hasOverlay() : false;
+}
+
+bool
+ReadNode::getOverlayCursor(CursorEnum* cursor,
+                           std::string* customImage,
+                           int* hotSpotX,
+                           int* hotSpotY) const
+{
+    EffectInstancePtr effect = getEmbeddedReaderEffect();
+
+    return effect ? effect->getOverlayCursor(cursor, customImage, hotSpotX, hotSpotY) : false;
+}
+
+void
+ReadNode::onInteractViewportSelectionCleared(KeyboardModifiers modifiers)
+{
+    EffectInstancePtr effect = getEmbeddedReaderEffect();
+
+    if (effect) {
+        effect->onInteractViewportSelectionCleared(modifiers);
+    }
+}
+
+void
+ReadNode::onInteractViewportSelectionUpdated(const RectD& rectangle,
+                                             bool onRelease,
+                                             KeyboardModifiers modifiers)
+{
+    EffectInstancePtr effect = getEmbeddedReaderEffect();
+
+    if (effect) {
+        effect->onInteractViewportSelectionUpdated(rectangle, onRelease, modifiers);
+    }
+}
+
+void
+ReadNode::setCurrentViewportForOverlays(OverlaySupport* viewport)
+{
+    EffectInstancePtr effect = getEmbeddedReaderEffect();
+
+    if (effect) {
+        effect->setCurrentViewportForOverlays_public(viewport);
+    }
+}
+
+void
+ReadNode::setInteractColourPicker(const OfxRGBAColourD& color,
+                                  bool setColor,
+                                  bool hasColor)
+{
+    EffectInstancePtr effect = getEmbeddedReaderEffect();
+
+    // Not setInteractColourPicker_public(): the parameter interacts were already updated by ours,
+    // since the knobs of the embedded reader are also the knobs of this node.
+    if (effect) {
+        effect->setInteractColourPicker(color, setColor, hasColor);
+    }
+}
+
+void
+ReadNode::drawOverlay(double time,
+                      const RenderScale & renderScale,
+                      ViewIdx view)
+{
+    EffectInstancePtr effect = getEmbeddedReaderEffect();
+
+    if (effect) {
+        effect->drawOverlay_public(time, renderScale, view);
+    }
+}
+
+bool
+ReadNode::onOverlayPenDown(double time,
+                           const RenderScale & renderScale,
+                           ViewIdx view,
+                           const QPointF & viewportPos,
+                           const QPointF & pos,
+                           double pressure,
+                           double timestamp,
+                           PenType pen,
+                           KeyboardModifiers modifiers)
+{
+    EffectInstancePtr effect = getEmbeddedReaderEffect();
+
+    return effect ? effect->onOverlayPenDown_public(time, renderScale, view, viewportPos, pos, pressure, timestamp, pen, modifiers) : false;
+}
+
+bool
+ReadNode::onOverlayPenDoubleClicked(double time,
+                                    const RenderScale & renderScale,
+                                    ViewIdx view,
+                                    const QPointF & viewportPos,
+                                    const QPointF & pos)
+{
+    EffectInstancePtr effect = getEmbeddedReaderEffect();
+
+    return effect ? effect->onOverlayPenDoubleClicked_public(time, renderScale, view, viewportPos, pos) : false;
+}
+
+bool
+ReadNode::onOverlayPenMotion(double time,
+                             const RenderScale & renderScale,
+                             ViewIdx view,
+                             const QPointF & viewportPos,
+                             const QPointF & pos,
+                             double pressure,
+                             double timestamp,
+                             KeyboardModifiers modifiers)
+{
+    EffectInstancePtr effect = getEmbeddedReaderEffect();
+
+    return effect ? effect->onOverlayPenMotion_public(time, renderScale, view, viewportPos, pos, pressure, timestamp, modifiers) : false;
+}
+
+bool
+ReadNode::onOverlayPenUp(double time,
+                         const RenderScale & renderScale,
+                         ViewIdx view,
+                         const QPointF & viewportPos,
+                         const QPointF & pos,
+                         double pressure,
+                         double timestamp,
+                         KeyboardModifiers modifiers)
+{
+    EffectInstancePtr effect = getEmbeddedReaderEffect();
+
+    return effect ? effect->onOverlayPenUp_public(time, renderScale, view, viewportPos, pos, pressure, timestamp, modifiers) : false;
+}
+
+bool
+ReadNode::onOverlayKeyDown(double time,
+                           const RenderScale & renderScale,
+                           ViewIdx view,
+                           Key key,
+                           KeyboardModifiers modifiers)
+{
+    EffectInstancePtr effect = getEmbeddedReaderEffect();
+
+    return effect ? effect->onOverlayKeyDown_public(time, renderScale, view, key, modifiers) : false;
+}
+
+bool
+ReadNode::onOverlayKeyUp(double time,
+                         const RenderScale & renderScale,
+                         ViewIdx view,
+                         Key key,
+                         KeyboardModifiers modifiers)
+{
+    EffectInstancePtr effect = getEmbeddedReaderEffect();
+
+    return effect ? effect->onOverlayKeyUp_public(time, renderScale, view, key, modifiers) : false;
+}
+
+bool
+ReadNode::onOverlayKeyRepeat(double time,
+                             const RenderScale & renderScale,
+                             ViewIdx view,
+                             Key key,
+                             KeyboardModifiers modifiers)
+{
+    EffectInstancePtr effect = getEmbeddedReaderEffect();
+
+    return effect ? effect->onOverlayKeyRepeat_public(time, renderScale, view, key, modifiers) : false;
+}
+
+bool
+ReadNode::onOverlayFocusGained(double time,
+                               const RenderScale & renderScale,
+                               ViewIdx view)
+{
+    EffectInstancePtr effect = getEmbeddedReaderEffect();
+
+    return effect ? effect->onOverlayFocusGained_public(time, renderScale, view) : false;
+}
+
+bool
+ReadNode::onOverlayFocusLost(double time,
+                             const RenderScale & renderScale,
+                             ViewIdx view)
+{
+    EffectInstancePtr effect = getEmbeddedReaderEffect();
+
+    return effect ? effect->onOverlayFocusLost_public(time, renderScale, view) : false;
 }
 
 NATRON_NAMESPACE_EXIT

@@ -29,6 +29,7 @@
 #include <algorithm> // min, max
 #include <ios>
 #include <limits>
+#include <set>
 #include <cstdlib> // strtoul
 #include <cerrno> // errno
 #include <cassert>
@@ -54,6 +55,7 @@
 #include <QDebug>
 #include <QTextStream>
 #include <QHostInfo>
+#include <QRegularExpression>
 #include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 
 #include <ofxhXml.h> // OFX::XML::escape
@@ -504,7 +506,7 @@ findBackups(const QString & filePath)
         ret.append(filePath);
     }
     // find files matching filePath.~[0-9]+~
-    QRegExp rx(QString::fromUtf8("\\.~(\\d+)~$"));
+    QRegularExpression rx( QString::fromUtf8("\\.~(\\d+)~\\z"), QRegularExpression::UseUnicodePropertiesOption );
     QFileInfo fileInfo(filePath);
     QString fileName = fileInfo.fileName();
     QDirIterator it(fileInfo.dir());
@@ -518,7 +520,12 @@ findBackups(const QString & filePath)
 
         // If the filename contains target string - put it in the hitlist
         QString fn = file.fileName();
-        if (fn.startsWith(fileName) && rx.lastIndexIn(fn) == fileName.size()) {
+        // The pattern ends with \z (PCRE's $ would also match before a final
+        // newline), so there is at most one match and lastIndexIn() is just
+        // that match.
+        QRegularExpressionMatch backupMatch = rx.match(fn);
+        if ( fn.startsWith(fileName) && backupMatch.hasMatch() &&
+             ( backupMatch.capturedStart() == fileName.size() ) ) {
             ret.append(file.filePath());
         }
     }
@@ -532,11 +539,11 @@ findBackups(const QString & filePath)
 static QString
 nextBackup(const QString & filePath)
 {
-    QRegExp rx(QString::fromUtf8("\\.~(\\d+)~$"));
-    int pos = rx.lastIndexIn(filePath);
-    if (pos >= 0) {
-        int i = rx.cap(1).toInt();
-        return filePath.left(pos) + QString::fromUtf8(".~%1~").arg(i+1);
+    QRegularExpression rx( QString::fromUtf8("\\.~(\\d+)~\\z"), QRegularExpression::UseUnicodePropertiesOption );
+    QRegularExpressionMatch match = rx.match(filePath);
+    if ( match.hasMatch() ) {
+        int i = match.captured(1).toInt();
+        return filePath.left( match.capturedStart() ) + QString::fromUtf8(".~%1~").arg(i+1);
     } else {
         return filePath + QString::fromUtf8(".~1~");
     }
@@ -756,7 +763,9 @@ Project::onAutoSaveTimerTriggered()
     if (canAutoSave) {
         std::shared_ptr<QFutureWatcher<void> > watcher = std::make_shared<QFutureWatcher<void> >();
         QObject::connect( watcher.get(), SIGNAL(finished()), this, SLOT(onAutoSaveFutureFinished()) );
-        watcher->setFuture( QtConcurrent::run(this, &Project::autoSave) );
+        // Qt6 dropped the run(object, memberFunction) overload; a lambda is the
+        // one spelling both versions accept.
+        watcher->setFuture( QtConcurrent::run( [this]() { autoSave(); } ) );
         _imp->autoSaveFutures.push_back(watcher);
     } else {
         ///If the auto-save failed because a render is in progress, try every 2 seconds to auto-save.
@@ -1963,6 +1972,16 @@ void
 Project::reset(bool aboutToQuit, bool blocking)
 {
     assert( QThread::currentThread() == qApp->thread() );
+    // An onProjectClose callback that resets the project (app.resetProject()) would recurse forever.
+    if (_imp->resetting) {
+        return;
+    }
+    struct ResettingGuard
+    {
+        bool& flag;
+        ResettingGuard(bool& f) : flag(f) { flag = true; }
+        ~ResettingGuard() { flag = false; }
+    } resettingGuard(_imp->resetting);
     {
         QMutexLocker k(&_imp->projectClosingMutex);
         _imp->projectClosing = true;
@@ -2036,12 +2055,30 @@ Project::doResetEnd(bool aboutToQuit)
         {
             QMutexLocker l(&_imp->projectLock);
             _imp->autoSetProjectFormat = appPTR->getCurrentSettings()->isAutoProjectFormatEnabled();
+            _imp->autoSetProjectFormatPendingReaders.clear();
             _imp->hasProjectBeenSavedByUser = false;
             _imp->projectCreationTime = QDateTime::currentDateTime();
             _imp->setProjectFilename(NATRON_PROJECT_UNTITLED);
             _imp->setProjectPath("");
             _imp->autoSaveTimer->stop();
             _imp->additionalFormats.clear();
+        }
+        {
+            // The format choices must match builtinFormats + additionalFormats: remove the formats that were added
+            // to the closed project, otherwise the indices of the formats added afterwards point to the wrong entries.
+            std::vector<ChoiceOption> entries;
+            {
+                QMutexLocker l(&_imp->formatMutex);
+                for (std::list<Format>::const_iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
+                    QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
+                    if ( !it->getName().empty() ) {
+                        entries.push_back( ChoiceOption(it->getName(), formatStr.toStdString(), "") );
+                    } else {
+                        entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+                    }
+                }
+            }
+            _imp->formatKnob->populateChoices(entries);
         }
         getApp()->removeAllKeyframesIndicators();
 
@@ -2145,9 +2182,144 @@ Project::setAutoSetProjectFormatEnabled(bool enabled)
     _imp->autoSetProjectFormat = enabled;
 }
 
+// Returns true if a Reader can auto-set the project format, i.e. it has a decodable file.
+static bool
+canAutoSetProjectFormatFromReader(const NodePtr& reader)
+{
+    // a deleted Reader may still be referenced (e.g. by a pending list), but must be ignored
+    if ( !reader || !reader->isActivated() ) {
+        return false;
+    }
+    EffectInstancePtr effect = reader->getEffectInstance();
+
+    // A Reader without a decodable file (no file name, no decoder, unreadable file) reports the
+    // project rectangle as its default output format: it must not set the format nor disable the auto-set.
+    return effect && effect->isReader() && effect->isOutputFormatFromFile();
+}
+
+bool
+Project::isSequenceRenderRunning(const QObject* ignoredEngine)
+{
+    bool renderRunning = false;
+    NodesList nodes;
+
+    getNodes_recursive(nodes, true);
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        OutputEffectInstance* output = dynamic_cast<OutputEffectInstance*>( (*it)->getEffectInstance().get() );
+        if ( !output || !output->isDoingSequentialRender() ) {
+            continue;
+        }
+        RenderEnginePtr engine = output->getRenderEngine();
+        if ( engine && (engine.get() == ignoredEngine) ) {
+            // this engine emitted renderFinished, but it only becomes idle a bit later
+            continue;
+        }
+        renderRunning = true;
+        if (engine) {
+            QObject::connect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onSequenceRenderFinishedAutoSetProjectFormat()), Qt::UniqueConnection );
+        }
+    }
+
+    return renderRunning;
+}
+
+void
+Project::autoSetProjectFormatFromReader(const NodePtr& reader)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    if ( !isAutoSetProjectFormatEnabled() || !canAutoSetProjectFormatFromReader(reader) ) {
+        return;
+    }
+
+    // Never change the project format while a sequence render is running: wait for it to finish.
+    if ( isSequenceRenderRunning(NULL) ) {
+        for (std::list<NodeWPtr>::const_iterator it = _imp->autoSetProjectFormatPendingReaders.begin(); it != _imp->autoSetProjectFormatPendingReaders.end(); ++it) {
+            if (it->lock() == reader) {
+                return;
+            }
+        }
+        _imp->autoSetProjectFormatPendingReaders.push_back(reader);
+        // The render may already have emitted renderFinished before we connected to it (it is still
+        // seen as running until its engine becomes idle): also poll until no render is running.
+        scheduleAutoSetProjectFormatRetry();
+
+        return;
+    }
+    _imp->autoSetProjectFormatPendingReaders.clear();
+    setProjectFormatFromReader(reader);
+}
+
+void
+Project::setProjectFormatFromReader(const NodePtr& reader)
+{
+    EffectInstancePtr effect = reader->getEffectInstance();
+    Format frmt;
+
+    frmt.set( effect->getOutputFormat() );
+    frmt.setPixelAspectRatio( effect->getAspectRatio(-1) );
+    setOrAddProjectFormat(frmt);
+}
+
+void
+Project::applyPendingAutoSetProjectFormat(const QObject* ignoredEngine)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    if ( !isAutoSetProjectFormatEnabled() ) {
+        _imp->autoSetProjectFormatPendingReaders.clear();
+
+        return;
+    }
+    if ( _imp->autoSetProjectFormatPendingReaders.empty() ) {
+        return;
+    }
+    if ( isSequenceRenderRunning(ignoredEngine) ) {
+        // Another render is running, or the engine that finished is not idle yet: check again soon.
+        // (A running render also triggers this check when it finishes.)
+        scheduleAutoSetProjectFormatRetry();
+
+        return;
+    }
+    // The first pending Reader that still exists and can still decode its file sets the format.
+    std::list<NodeWPtr> pending;
+    pending.swap(_imp->autoSetProjectFormatPendingReaders);
+    for (std::list<NodeWPtr>::const_iterator it = pending.begin(); it != pending.end(); ++it) {
+        NodePtr reader = it->lock();
+        if ( canAutoSetProjectFormatFromReader(reader) ) {
+            // don't call autoSetProjectFormatFromReader(): it would see the engine that just finished as running
+            setProjectFormatFromReader(reader);
+
+            return;
+        }
+    }
+}
+
+void
+Project::scheduleAutoSetProjectFormatRetry()
+{
+    if (!_imp->autoSetProjectFormatRetryScheduled) {
+        _imp->autoSetProjectFormatRetryScheduled = true;
+        QTimer::singleShot( 100, this, SLOT(onAutoSetProjectFormatRetry()) );
+    }
+}
+
+void
+Project::onSequenceRenderFinishedAutoSetProjectFormat()
+{
+    // renderFinished is emitted by the scheduler thread before its engine becomes idle: ignore that engine.
+    applyPendingAutoSetProjectFormat( sender() );
+}
+
+void
+Project::onAutoSetProjectFormatRetry()
+{
+    _imp->autoSetProjectFormatRetryScheduled = false;
+    applyPendingAutoSetProjectFormat(NULL);
+}
+
 void
 Project::setOrAddProjectFormat(const Format & frmt,
-                               bool skipAdd)
+                               bool skipAdd,
+                               bool mayChangeFormat)
 {
     if ( frmt.isNull() ) {
         return;
@@ -2158,7 +2330,13 @@ Project::setOrAddProjectFormat(const Format & frmt,
     {
         QMutexLocker l(&_imp->formatMutex);
 
-        if (_imp->autoSetProjectFormat) {
+        bool autoSet = _imp->autoSetProjectFormat;
+        if (autoSet && !mayChangeFormat) {
+            Format current;
+            getProjectDefaultFormat(&current);
+            autoSet = (frmt == current);
+        }
+        if (autoSet) {
             _imp->autoSetProjectFormat = false;
             dispW = frmt;
 
@@ -2785,14 +2963,21 @@ Project::extractTreesFromNodes(const NodesList& nodes,
         if (isOutput) {
             NodesTree tree;
             tree.output.node = *it;
+            // An output node appears once per link in getGuiOutputs(), and it may be connected
+            // to this node through several of its inputs: record every (input number, output node) link once.
             const NodesWList& outputs = (*it)->getGuiOutputs();
+            std::set<NodePtr> visitedOutputs;
             for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
                 NodePtr output = it2->lock();
-                if (!output) {
+                if ( !output || !visitedOutputs.insert(output).second ) {
                     continue;
                 }
-                int idx = output->inputIndex(*it);
-                tree.output.outputs.push_back( std::make_pair(idx, *it2) );
+                int nInputs = output->getNInputs();
+                for (int idx = 0; idx < nInputs; ++idx) {
+                    if (output->getRealInput(idx) == *it) {
+                        tree.output.outputs.push_back( std::make_pair(idx, *it2) );
+                    }
+                }
             }
 
             const std::vector<NodeWPtr>& inputs = (*it)->getGuiInputs();

@@ -552,9 +552,7 @@ AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath, bool is
         QStringList files = directory.entryList(QDir::AllDirs);
 
 
-        /*Now counting actual data files in the cache*/
         /*check if there's 256 subfolders, otherwise reset cache.*/
-        int count = 0; // -1 because of the restoreFile
         int subFolderCount = 0;
         Q_FOREACH(const QString &file, files) {
             QString subFolder(cachePath);
@@ -567,12 +565,6 @@ AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath, bool is
             QDir d(subFolder);
             if ( d.exists() ) {
                 ++subFolderCount;
-                QStringList items = d.entryList();
-                for (int j = 0; j < items.size(); ++j) {
-                    if ( ( items[j] != QString::fromUtf8(".") ) && ( items[j] != QString::fromUtf8("..") ) ) {
-                        ++count;
-                    }
-                }
             }
         }
         if (subFolderCount < 256) {

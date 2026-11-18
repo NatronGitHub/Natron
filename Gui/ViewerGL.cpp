@@ -37,6 +37,7 @@
 #include <QMenu>
 #include <QToolButton>
 #include <QApplication> // qApp
+#include <QGuiApplication> // queryKeyboardModifiers
 #include <QScreen>
 #include <QWindow>
 
@@ -77,11 +78,13 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeGui.h"
 #include "Gui/KnobGuiParametric.h"
 #include "Gui/NodeSettingsPanel.h"
+#include "Gui/QtEnumConvert.h"
 #include "Gui/Shaders.h"
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerTab.h"
 
 #include <QOpenGLContext>
+#include <QRegularExpression>
 
 
 #define USER_ROI_BORDER_TICK_SIZE 15.f
@@ -119,6 +122,8 @@ ViewerGL::ViewerGL(ViewerTab* parent,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    // Unlike QGLWidget, QOpenGLWidget takes no share widget: the argument is kept for API compatibility.
+    Q_UNUSED(shareWidget);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     //setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
@@ -259,6 +264,23 @@ ViewerGL::paintGL()
         return;
     }
     glCheckError();
+
+    // query the keyboard modifiers once per paint, not once per overlay draw action
+    struct PaintKeyboardModifiersSetter
+    {
+        ViewerGL::Implementation* const imp;
+        PaintKeyboardModifiersSetter(ViewerGL::Implementation* i)
+            : imp(i)
+        {
+            imp->paintKeyboardModifiers = QGuiApplication::queryKeyboardModifiers();
+            imp->inPaintGL = true;
+        }
+
+        ~PaintKeyboardModifiersSetter()
+        {
+            imp->inPaintGL = false;
+        }
+    } paintKeyboardModifiersSetter( _imp.get() );
 
 
     {
@@ -1069,7 +1091,7 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 static QStringList
 explode(const QString& str)
 {
-    QRegExp rx( QString::fromUtf8("(\\ |\\-|\\.|\\/|\\t|\\n)") ); //RegEx for ' ' '/' '.' '-' '\t' '\n'
+    QRegularExpression rx( QString::fromUtf8("(\\ |\\-|\\.|\\/|\\t|\\n)") ); //RegEx for ' ' '/' '.' '-' '\t' '\n'
     QStringList ret;
     int startIndex = 0;
 
@@ -1843,7 +1865,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     if (!overlaysCaught &&
         (_imp->ms == eMouseStateUndefined) &&
         _imp->overlay) {
-        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), _imp->pointerTypeOnPress, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e));
+        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), _imp->pointerTypeOnPress, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e), QtEnumConvert::fromQtModifiers( e->modifiers() ));
         if (overlaysCaught) {
             mustRedraw = true;
         }
@@ -1995,7 +2017,9 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->lastDragStartPos = zoomPos;
         _imp->ms = eMouseStateSelecting;
         if ( !modCASIsControl(e) ) {
-            Q_EMIT selectionCleared();
+            // when the overlays are shown, they got this pen down (notifyOverlaysPenDown above)
+            // before the clear, so the OFX plug-ins know its modifiers (ofxNatron.h extensions 7, 13)
+            Q_EMIT selectionCleared( e->modifiers() );
             mustRedraw = true;
         }
         overlaysCaught = true;
@@ -2026,7 +2050,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
 
     if (_imp->ms == eMouseStateSelecting) {
         if (_imp->hasMovedSincePress) {
-            Q_EMIT selectionRectangleChanged(true);
+            Q_EMIT selectionRectangleChanged( true, e->modifiers() );
         }
     } else if (_imp->ms == eMouseStateBuildingUserRoI) {
         QMutexLocker k(&_imp->userRoIMutex);
@@ -2044,7 +2068,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
         QMutexLocker l(&_imp->zoomCtxMutex);
         zoomPos = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
     }
-    if ( _imp->viewerTab->notifyOverlaysPenUp(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), QMouseEventLocalPos(e), zoomPos, currentTimeForEvent(e), _imp->pressureOnRelease) ) {
+    if ( _imp->viewerTab->notifyOverlaysPenUp(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), QMouseEventLocalPos(e), zoomPos, _imp->pressureOnRelease, currentTimeForEvent(e), QtEnumConvert::fromQtModifiers( e->modifiers() )) ) {
         mustRedraw = true;
     }
     updateOverlayCursor();
@@ -2066,6 +2090,16 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
     }
 } // mouseMoveEvent
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+static constexpr QPointingDevice::PointerType kTabletPointerCursor = QPointingDevice::PointerType::Cursor;
+static constexpr QPointingDevice::PointerType kTabletPointerEraser = QPointingDevice::PointerType::Eraser;
+static constexpr QPointingDevice::PointerType kTabletPointerPen = QPointingDevice::PointerType::Pen;
+#else
+static constexpr QTabletEvent::PointerType kTabletPointerCursor = QTabletEvent::Cursor;
+static constexpr QTabletEvent::PointerType kTabletPointerEraser = QTabletEvent::Eraser;
+static constexpr QTabletEvent::PointerType kTabletPointerPen = QTabletEvent::Pen;
+#endif
+
 void
 ViewerGL::tabletEvent(QTabletEvent* e)
 {
@@ -2078,13 +2112,13 @@ ViewerGL::tabletEvent(QTabletEvent* e)
     switch ( e->type() ) {
     case QEvent::TabletPress: {
         switch ( e->pointerType() ) {
-        case QTabletEvent::Cursor:
+        case kTabletPointerCursor:
             _imp->pointerTypeOnPress  = ePenTypeCursor;
             break;
-        case QTabletEvent::Eraser:
+        case kTabletPointerEraser:
             _imp->pointerTypeOnPress  = ePenTypeEraser;
             break;
-        case QTabletEvent::Pen:
+        case kTabletPointerPen:
         default:
             _imp->pointerTypeOnPress  = ePenTypePen;
             break;
@@ -2118,7 +2152,6 @@ ViewerGL::penMotionInternal(int x,
                             double timestamp,
                             QInputEvent* e)
 {
-    Q_UNUSED(e);
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
@@ -2464,12 +2497,13 @@ ViewerGL::penMotionInternal(int x,
     case eMouseStateSelecting: {
         _imp->refreshSelectionRectangle(zoomPos);
         mustRedraw = true;
-        Q_EMIT selectionRectangleChanged(false);
+        Q_EMIT selectionRectangleChanged( false, e ? e->modifiers() : QGuiApplication::queryKeyboardModifiers() );
     }; break;
     default: {
         QPointF localPos(x, y);
         if ( _imp->overlay &&
-             _imp->viewerTab->notifyOverlaysPenMotion(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), localPos, zoomPos, pressure, timestamp)) {
+             _imp->viewerTab->notifyOverlaysPenMotion(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), localPos, zoomPos, pressure, timestamp,
+                                                      QtEnumConvert::fromQtModifiers( e ? e->modifiers() : QGuiApplication::queryKeyboardModifiers() ))) {
             mustRedraw = true;
             overlaysCaughtByPlugin = true;
         }
@@ -3610,6 +3644,14 @@ ViewerGL::getScreenPixelRatio() const
     return devicePixelRatio();
 }
 #endif
+
+KeyboardModifiers
+ViewerGL::getKeyboardModifiers() const
+{
+    // the actual state of the keyboard, not the last event's: this is used by the overlay
+    // actions that are not triggered by an input event (draw, gain/lose focus)
+    return QtEnumConvert::fromQtModifiers( _imp->inPaintGL ? _imp->paintKeyboardModifiers : QGuiApplication::queryKeyboardModifiers() );
+}
 
 /**
  * @brief Returns the colour of the background (i.e: clear color) of the viewport.

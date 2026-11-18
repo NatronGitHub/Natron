@@ -42,7 +42,7 @@
 #include <QWaitCondition>
 #include <QTextStream>
 #include <QFile>
-#include <QRegExp>
+#include <QRandomGenerator>
 
 #include <ofxNatron.h>
 
@@ -120,7 +120,33 @@ using std::shared_ptr;
 // protect local classes in anonymous namespace
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
+// Advance the knobs age after a change of the node's parameters. knobsAgeMutex must be locked for writing.
+//
+// The age is mixed into the node hash, which keys the RAM, disk and viewer caches. The disk and viewer caches
+// persist across sessions, and the age is saved in the project. Simply incrementing the loaded age would reproduce,
+// in a new session, ages (and hashes) that were already reached in an earlier session (for example one that was
+// closed without saving), but with different parameter values: the persistent caches would then return images
+// computed with those other values (#1124). The first change after a load thus jumps to a random 64-bit age, and the
+// following changes increment it, so that hashes stay reproducible for the saved state of a project (its cached
+// images remain usable after reopening it) but are unique to the session as soon as a parameter changes.
+void
+advanceKnobsAge(U64* age,
+                bool* isUniqueToSession)
+{
+    if (*isUniqueToSession) {
+        ++*age;
+    } else {
+        *age = QRandomGenerator::global()->generate64();
+        *isUniqueToSession = true;
+    }
 
+    ///if the age of an effect somehow reaches the maximum age (will never happen)
+    ///handle it by clearing the cache and resetting the age to 0.
+    if ( *age == std::numeric_limits<U64>::max() ) {
+        appPTR->clearAllCaches();
+        *age = 0;
+    }
+}
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
@@ -1253,6 +1279,8 @@ Node::setKnobsAge(U64 newAge)
         if (changed) {
             _imp->knobsAge = newAge;
         }
+        // newAge comes from a serialization or from the master node: the next change must give a fresh age (#1124)
+        _imp->knobsAgeIsUniqueToSession = false;
     }
     if (changed) {
         Q_EMIT knobsAgeChanged(newAge);
@@ -1265,31 +1293,17 @@ Node::incrementKnobsAge_internal()
 {
     {
         QWriteLocker l(&_imp->knobsAgeMutex);
-        ++_imp->knobsAge;
-
-        ///if the age of an effect somehow reaches the maximum age (will never happen)
-        ///handle it by clearing the cache and resetting the age to 0.
-        if ( _imp->knobsAge == std::numeric_limits<U64>::max() ) {
-            appPTR->clearAllCaches();
-            _imp->knobsAge = 0;
-        }
+        advanceKnobsAge(&_imp->knobsAge, &_imp->knobsAgeIsUniqueToSession);
     }
 }
 
 void
 Node::incrementKnobsAge()
 {
-    U32 newAge;
+    U64 newAge;
     {
         QWriteLocker l(&_imp->knobsAgeMutex);
-        ++_imp->knobsAge;
-
-        ///if the age of an effect somehow reaches the maximum age (will never happen)
-        ///handle it by clearing the cache and resetting the age to 0.
-        if ( _imp->knobsAge == std::numeric_limits<U64>::max() ) {
-            appPTR->clearAllCaches();
-            _imp->knobsAge = 0;
-        }
+        advanceKnobsAge(&_imp->knobsAge, &_imp->knobsAgeIsUniqueToSession);
         newAge = _imp->knobsAge;
     }
     Q_EMIT knobsAgeChanged(newAge);
@@ -2952,7 +2966,7 @@ Node::deactivate(const std::list<NodePtr> & outputsToDisconnect,
         if (dc) {
             int inputNb = output->getInputIndex(this);
             if (inputNb != -1) {
-                _imp->deactivatedState.insert( make_pair(*it, inputNb) );
+                _imp->deactivatedState.push_back( std::make_pair(*it, inputNb) );
 
                 ///reconnect if inputToConnectTo is not null
                 if (inputToConnectTo) {
@@ -3072,11 +3086,10 @@ Node::activate(const std::list<NodePtr> & outputsToRestore,
             ///before connecting the outputs to this node, disconnect any link that has been made
             ///between the outputs by the user. This should normally never happen as the undo/redo
             ///stack follow always the same order.
-            NodePtr outputHasInput = output->getInput(it->second);
-            if (outputHasInput) {
-                bool ok = getApp()->getProject()->disconnectNodes(outputHasInput, output);
-                assert(ok);
-                Q_UNUSED(ok);
+            if ( output->getRealInput(it->second) ) {
+                int dc = output->disconnectInput(it->second);
+                assert(dc == it->second);
+                Q_UNUSED(dc);
             }
 
             ///and connect the output to this node
@@ -3300,18 +3313,31 @@ Node::makePreviewImage(SequenceTime time,
     ComputingPreviewSetter_RAII computingPreviewRAII( _imp.get() );
     RectD rod;
     bool isProjectFormat;
-    U64 nodeHash = getHashValue();
-    EffectInstance* effect = 0;
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>( _imp->effect.get() );
-    if (isGroup) {
-        effect = isGroup->getOutputNode(false)->getEffectInstance().get();
-    } else {
-        effect = _imp->effect.get();
-    }
-
     if (!_imp->effect) {
         return false;
     }
+    EffectInstancePtr effect;
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>( _imp->effect.get() );
+    if (isGroup) {
+        // A group renders through its Output node. A group may have no Output node: the user may
+        // have deleted it, or the group is being pasted/duplicated and its sub-graph is not
+        // created yet (see #814). There is nothing to preview then.
+        NodePtr outputNode = isGroup->getOutputNode(false);
+        if (outputNode) {
+            effect = outputNode->getEffectInstance();
+        }
+    } else {
+        effect = _imp->effect;
+    }
+    if (!effect) {
+        return false;
+    }
+    // The node that is actually rendered, and thus the root of the render tree: for a group, its
+    // Output node, so that the Output node and the nodes inside the group get the rendering flag,
+    // the thread-local render args, the frame requests and the abort info.
+    NodePtr rootNode = effect->getNode();
+    assert(rootNode);
+    U64 nodeHash = rootNode->getHashValue();
 
     effect->clearPersistentMessage(false);
 
@@ -3332,8 +3358,7 @@ Node::makePreviewImage(SequenceTime time,
     const double par = effect->getAspectRatio(-1);
     const RectI renderWindow = rod.toPixelEnclosing(mipmapLevel, par);
 
-    NodePtr thisNode = shared_from_this();
-    RenderingFlagSetter flagIsRendering(thisNode);
+    RenderingFlagSetter flagIsRendering(rootNode);
 
 
     {
@@ -3342,14 +3367,14 @@ Node::makePreviewImage(SequenceTime time,
         const bool isSequentialRender = false;
         AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
         if (isAbortable) {
-            isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, thisNode->getEffectInstance() );
+            isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, effect );
         }
         ParallelRenderArgsSetter frameRenderArgs( time,
                                                   ViewIdx(0), //< preview only renders view 0 (left)
                                                   isRenderUserInteraction, //<isRenderUserInteraction
                                                   isSequentialRender, //isSequential
                                                   abortInfo, // abort info
-                                                  thisNode, // viewer requester
+                                                  rootNode, // tree root
                                                   0, //texture index
                                                   getApp()->getTimeLine().get(), // timeline
                                                   NodePtr(), //rotoPaint node
@@ -3357,7 +3382,7 @@ Node::makePreviewImage(SequenceTime time,
                                                   true, // isDraft
                                                   RenderStatsPtr() );
         FrameRequestMap request;
-        stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipmapLevel, rod, thisNode, request);
+        stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipmapLevel, rod, rootNode, request);
         if (stat == eStatusFailed) {
             return false;
         }
@@ -3387,7 +3412,7 @@ Node::makePreviewImage(SequenceTime time,
                                                                                                            requestedComps, //< preview is always rgb...
                                                                                                            depth,
                                                                                                            false,
-                                                                                                           effect,
+                                                                                                           effect.get(),
                                                                                                            eStorageModeRAM /*returnStorage*/,
                                                                                                            time /*callerRenderTime*/) );
             EffectInstance::RenderRoIRetCode retCode;
@@ -4352,8 +4377,11 @@ Node::findClosestSupportedComponents(int inputNb,
         QMutexLocker l(&_imp->inputsMutex);
 
         if (inputNb >= 0) {
-            assert( inputNb < (int)_imp->inputsComponents.size() );
-            comps = _imp->inputsComponents[inputNb];
+            // While a GroupInput is being activated, getNInputs() may be larger than inputsComponents.size():
+            // no supported components then.
+            if ( inputNb < (int)_imp->inputsComponents.size() ) {
+                comps = _imp->inputsComponents[inputNb];
+            }
         } else {
             assert(inputNb == -1);
             comps = _imp->outputComponents;
@@ -6559,6 +6587,12 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
         return;
     }
     if ( getParentMultiInstance() ) {
+        return;
+    }
+    // The project may be reset after Python was finalized: in interpreter mode (-t),
+    // Py_Main() finalizes Python before it returns. The variable went away with the
+    // interpreter, and taking the GIL now would crash (#1253).
+    if ( !Py_IsInitialized() ) {
         return;
     }
 

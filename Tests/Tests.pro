@@ -24,10 +24,11 @@ CONFIG += moc rcc
 CONFIG += boost boost-serialization-lib opengl qt cairo python shiboken pyside 
 CONFIG += static-gui static-engine static-host-support static-breakpadclient static-libmv static-openmvg static-ceres static-libtess
 QT += gui core opengl network widgets concurrent
+equals(QT_MAJOR_VERSION, 6): QT += openglwidgets
 
 CONFIG += openmvg-flags glad-flags
 
-!noexpat: CONFIG += expat
+CONFIG += expat
 
 INCLUDEPATH += google-test/include
 INCLUDEPATH += google-test
@@ -39,19 +40,31 @@ QMAKE_CLEAN += ofxTestLog.txt test_dot_generator0.jpg
 
 include(../global.pri)
 
-SOURCES += \
+# bundled third-party code: see warnings.pri
+NATRON_THIRD_PARTY_SOURCES += \
     google-test/src/gtest-all.cc \
-    google-mock/src/gmock-all.cc \
+    google-mock/src/gmock-all.cc
+
+SOURCES += \
     BaseTest.cpp \
     Curve_Test.cpp \
     FileSystemModel_Test.cpp \
     Hash64_Test.cpp \
     Image_Test.cpp \
     KnobFile_Test.cpp \
+    KnobSlave_Test.cpp \
+    KnobStringAnimation_Test.cpp \
     Lut_Test.cpp \
+    NodeGroup_Test.cpp \
+    NodePreview_Test.cpp \
     OSGLContext_Test.cpp \
+    PluginGrouping_Test.cpp \
+    ReadNodeOverlay_Test.cpp \
+    RotoPaint_Test.cpp \
     Tracker_Test.cpp \
     wmain.cpp
 
 HEADERS += \
     BaseTest.h
+
+include(../warnings.pri)

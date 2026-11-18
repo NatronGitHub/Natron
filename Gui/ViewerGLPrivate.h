@@ -225,6 +225,10 @@ struct ViewerGL::Implementation
     QSize sizeH;
     PenType pointerTypeOnPress;
     double pressureOnPress, pressureOnRelease;
+    // the keyboard modifiers queried once at the start of paintGL(), for the overlay draw actions
+    // (see ViewerGL::getKeyboardModifiers())
+    bool inPaintGL = false;
+    Qt::KeyboardModifiers paintKeyboardModifiers;
     int wheelDeltaSeekFrame; // accumulated wheel delta for frame seeking (crtl+wheel)
     bool isUpdatingTexture;
     bool renderOnPenUp;

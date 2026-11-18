@@ -568,6 +568,20 @@ Bitmap::markForRendering(const RectI & roi)
     return markFor(roi, PIXEL_UNAVAILABLE);
 }
 
+std::size_t
+Bitmap::clearPixelsBeingRendered()
+{
+    std::size_t n = 0;
+    for (std::vector<char>::iterator it = _map.begin(); it != _map.end(); ++it) {
+        if (*it == PIXEL_UNAVAILABLE) {
+            *it = 0;
+            ++n;
+        }
+    }
+
+    return n;
+}
+
 #endif
 
 void
@@ -1122,6 +1136,14 @@ Image::copyAndResizeIfNeeded(const RectI& newBounds,
     merge.merge(_bounds);
 
     resizeInternal(this, _bounds, merge, fillWithBlackAndTransparent, setBitmapTo1, usesBitMap(), output);
+#if NATRON_ENABLE_TRIMAP
+    if ( (*output)->usesBitMap() ) {
+        // The pixels that other threads are rendering will only be rendered in the source image:
+        // they are not available in the copy, and nobody would ever mark them as rendered there.
+        QWriteLocker ko( &(*output)->_entryLock );
+        (*output)->_bitmap.clearPixelsBeingRendered();
+    }
+#endif
 
     return true;
 }
@@ -1795,9 +1817,27 @@ Image::halveRoIForDepth(const RectI & roi,
             (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) ||
             (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
 
+    ///handle case where there is only 1 pixel: nothing to average, copy it.
+    ///This happens in buildMipmapLevel() when an intermediate level is 1x1.
+    if ( (roi.width() == 1) && (roi.height() == 1) ) {
+        QWriteLocker k1(&output->_entryLock);
+        QReadLocker k2(&_entryLock);
+        const int dstx = roi.x1 >> 1; // floor(roi.x1/2.0)
+        const int dsty = roi.y1 >> 1; // floor(roi.y1/2.0)
+        assert( output->_bounds.contains(dstx, dsty) );
+        const PIX* const src = (const PIX*)pixelAt(roi.x1, roi.y1);
+        PIX* const dst = (PIX*)output->pixelAt(dstx, dsty);
+        assert(src && dst);
+        std::copy(src, src + _nbComponents, dst);
+        if (copyBitMap) {
+            *output->_bitmap.getBitmapAt(dstx, dsty) = *_bitmap.getBitmapAt(roi.x1, roi.y1);
+        }
+
+        return;
+    }
+
     ///handle case where there is only 1 column/row
     if ( (roi.width() == 1) || (roi.height() == 1) ) {
-        assert( !(roi.width() == 1 && roi.height() == 1) ); /// can't be 1x1
         halve1DImage(roi, output);
 
         return;
@@ -1830,10 +1870,13 @@ Image::halveRoIForDepth(const RectI & roi,
 #ifdef DEBUG_NAN
     assert(!checkForNaNsNoLock(srcRoI));
 #endif
-    dstRoI.x1 = (srcRoI.x1 + 1) / 2; // equivalent to ceil(srcRoI.x1/2.0)
-    dstRoI.y1 = (srcRoI.y1 + 1) / 2; // equivalent to ceil(srcRoI.y1/2.0)
-    dstRoI.x2 = srcRoI.x2 / 2; // equivalent to floor(srcRoI.x2/2.0)
-    dstRoI.y2 = srcRoI.y2 / 2; // equivalent to floor(srcRoI.y2/2.0)
+    // Largest enclosed rectangle (see downscaleMipmap() in Image.h).
+    // Use arithmetic shifts, as in RectI::downscalePowerOfTwoLargestEnclosed(): the integer division
+    // truncates towards zero, which is not ceil/floor for negative coordinates.
+    dstRoI.x1 = (srcRoI.x1 + 1) >> 1; // equivalent to ceil(srcRoI.x1/2.0)
+    dstRoI.y1 = (srcRoI.y1 + 1) >> 1; // equivalent to ceil(srcRoI.y1/2.0)
+    dstRoI.x2 = srcRoI.x2 >> 1; // equivalent to floor(srcRoI.x2/2.0)
+    dstRoI.y2 = srcRoI.y2 >> 1; // equivalent to floor(srcRoI.y2/2.0)
 
 
     const PIX* const srcPixels      = (const PIX*)pixelAt(srcBounds.x1,   srcBounds.y1);
@@ -1996,15 +2039,24 @@ Image::halve1DImageForDepth(const RectI & roi,
 //               dstBounds.x2 * 2 == roi.x2 || // we halve in only 1 dimension
 //               dstBounds.y2 * 2 == roi.y2)
 //           );
-    int halfWidth = width / 2;
-    int halfHeight = height / 2;
+    // Same as halveRoIForDepth(), along the only dimension that is longer than 1 pixel:
+    // dst pixel p is the average of the aligned src pixels 2p and 2p+1, and only the
+    // largest enclosed range is computed, so that if the roi starts at an odd
+    // coordinate, src pixel roi.x1 (or roi.y1) is not used.
+    // In the other dimension, the dst pixel is the one that contains the src pixel.
     if (height == 1) { //1 row
         assert(width != 1); /// widthxheight can't be 1x1
-
-        const PIX* src = (const PIX*)pixelAt(roi.x1, roi.y1);
-        PIX* dst = (PIX*)output->pixelAt(dstBounds.x1, dstBounds.y1);
+        const int dstx1 = (roi.x1 + 1) >> 1; // ceil(roi.x1/2.0)
+        const int dstx2 = roi.x2 >> 1; // floor(roi.x2/2.0)
+        const int dsty = roi.y1 >> 1; // floor(roi.y1/2.0)
+        if (dstx2 <= dstx1) {
+            return;
+        }
+        assert( dstBounds.contains(dstx1, dsty) && dstBounds.contains(dstx2 - 1, dsty) );
+        const PIX* src = (const PIX*)pixelAt(dstx1 * 2, roi.y1);
+        PIX* dst = (PIX*)output->pixelAt(dstx1, dsty);
         assert(src && dst);
-        for (int x = 0; x < halfWidth; ++x) {
+        for (int x = dstx1; x < dstx2; ++x) {
             for (int k = 0; k < _nbComponents; ++k) {
 #ifdef DEBUG_NAN
                 assert( !std::isnan(*src) ); // check for NaN
@@ -2020,24 +2072,31 @@ Image::halve1DImageForDepth(const RectI & roi,
             src += _nbComponents;
         }
     } else if (width == 1) {
+        const int dsty1 = (roi.y1 + 1) >> 1; // ceil(roi.y1/2.0)
+        const int dsty2 = roi.y2 >> 1; // floor(roi.y2/2.0)
+        const int dstx = roi.x1 >> 1; // floor(roi.x1/2.0)
+        if (dsty2 <= dsty1) {
+            return;
+        }
+        assert( dstBounds.contains(dstx, dsty1) && dstBounds.contains(dstx, dsty2 - 1) );
         int rowSize = srcBounds.width() * _nbComponents;
-        const PIX* src = (const PIX*)pixelAt(roi.x1, roi.y1);
-        PIX* dst = (PIX*)output->pixelAt(dstBounds.x1, dstBounds.y1);
+        int dstRowSize = dstBounds.width() * _nbComponents;
+        const PIX* src = (const PIX*)pixelAt(roi.x1, dsty1 * 2);
+        PIX* dst = (PIX*)output->pixelAt(dstx, dsty1);
         assert(src && dst);
-        for (int y = 0; y < halfHeight; ++y) {
+        for (int y = dsty1; y < dsty2; ++y) {
             for (int k = 0; k < _nbComponents; ++k) {
 #ifdef DEBUG_NAN
-                assert( !std::isnan(*src) ); // check for NaN
-                assert( !std::isnan(*(src + rowSize)) ); // check for NaN
+                assert( !std::isnan(src[k]) ); // check for NaN
+                assert( !std::isnan(src[k + rowSize]) ); // check for NaN
 #endif
-                *dst = PIX( (float)( *src + (*src + rowSize) ) / 2. );
+                dst[k] = PIX( (float)( src[k] + src[k + rowSize] ) / 2. );
 #ifdef DEBUG_NAN
-                assert( !std::isnan(*dst) ); // check for NaN
+                assert( !std::isnan(dst[k]) ); // check for NaN
 #endif
-                ++dst;
-                ++src;
             }
-            src += rowSize;
+            src += 2 * rowSize;
+            dst += dstRowSize;
         }
     }
 }
@@ -2179,18 +2238,19 @@ Image::upscaleMipmapForDepth(const RectI & roi,
     ///You should not call this function with a level equal to 0.
     assert(fromLevel > toLevel);
 
-    assert(roi.x1 <= _bounds.x1 && _bounds.x2 <= roi.x2 &&
-           roi.y1 <= _bounds.y1 && _bounds.y2 <= roi.y2);
-
-    const RectI & srcRoi = roi;
-    // The source rectangle, intersected to this image region of definition in pixels and the output bounds.
-    RectI dstRoi = roi.toNewMipmapLevel(fromLevel, toLevel, _par, getRoD());
-    dstRoi.clipIfOverlaps(output->_bounds); //output may be a bit smaller than the upscaled RoI
-    int scale = 1 << (fromLevel - toLevel);
+    // The source rectangle, intersected with the bounds of this image (roi may be larger or smaller).
+    const RectI srcRoi = roi.intersect(_bounds);
+    const unsigned int levels = fromLevel - toLevel;
+    const int scale = 1 << levels;
+    // The destination rectangle: the upscaled source rectangle, intersected with the region of definition
+    // and with the output bounds (output may be smaller than the upscaled RoI, on any side).
+    RectI dstRoi = srcRoi.toNewMipmapLevel(fromLevel, toLevel, _par, getRoD());
+    dstRoi = dstRoi.intersect( srcRoi.upscalePowerOfTwo(levels) ); // every dst pixel must come from a src pixel in srcRoi
+    dstRoi = dstRoi.intersect(output->_bounds);
 
     assert( output->getComponents() == getComponents() );
 
-    if (_nbComponents == 0) {
+    if ( (_nbComponents == 0) || srcRoi.isNull() || dstRoi.isNull() ) {
         return;
     }
 
@@ -2198,13 +2258,19 @@ Image::upscaleMipmapForDepth(const RectI & roi,
     QReadLocker k2(&_entryLock);
     int srcRowSize = _bounds.width() * _nbComponents;
     int dstRowSize = output->_bounds.width() * _nbComponents;
-    const PIX *src = (const PIX*)pixelAt(srcRoi.x1, srcRoi.y1);
+    const int dstRoiRowSize = dstRoi.width() * _nbComponents;
+    // The src pixel (xi, yi) covers the dst pixels [xi*scale, (xi+1)*scale) x [yi*scale, (yi+1)*scale).
+    // Start at the src pixel that covers the first dst pixel, which is not srcRoi.x1/y1 if the output
+    // is cropped on the left/bottom. The arithmetic shift is a floor division, also for negative coordinates.
+    const int xiStart = dstRoi.x1 >> levels;
+    int yi = dstRoi.y1 >> levels;
+    assert(srcRoi.x1 <= xiStart && xiStart < srcRoi.x2 && srcRoi.y1 <= yi && yi < srcRoi.y2);
+    const PIX *src = (const PIX*)pixelAt(xiStart, yi);
     PIX* dst = (PIX*)output->pixelAt(dstRoi.x1, dstRoi.y1);
     assert(src && dst);
 
     // algorithm: fill the first line of output, and replicate it as many times as necessary
     // works even if dstRoi is not exactly a multiple of srcRoi (first/last column/line may not be complete)
-    int yi = srcRoi.y1;
     int ycount; // how many lines should be filled
     for (int yo = dstRoi.y1; yo < dstRoi.y2; ++yi, src += srcRowSize, yo += ycount, dst += ycount * dstRowSize) {
         const PIX * const srcLineStart = src;
@@ -2212,7 +2278,7 @@ Image::upscaleMipmapForDepth(const RectI & roi,
         ycount = scale - (yo - yi * scale); // how many lines should be filled
         ycount = std::min(ycount, dstRoi.y2 - yo);
         assert(0 < ycount && ycount <= scale);
-        int xi = srcRoi.x1;
+        int xi = xiStart;
         int xcount = 0; // how many pixels should be filled
         const PIX * srcPix = srcLineStart;
         PIX * dstPixFirst = dstLineBatchStart;
@@ -2220,7 +2286,7 @@ Image::upscaleMipmapForDepth(const RectI & roi,
         for (int xo = dstRoi.x1; xo < dstRoi.x2; ++xi, srcPix += _nbComponents, xo += xcount, dstPixFirst += xcount * _nbComponents) {
             xcount = scale - (xo - xi * scale);
             xcount = std::min(xcount, dstRoi.x2 - xo);
-            //assert(0 < xcount && xcount <= scale);
+            assert(0 < xcount && xcount <= scale);
             // replicate srcPix as many times as necessary
             PIX * dstPix = dstPixFirst;
             //assert((srcPix-(PIX*)pixelAt(srcRoi.x1, srcRoi.y1)) % components == 0);
@@ -2241,8 +2307,8 @@ Image::upscaleMipmapForDepth(const RectI & roi,
         // now replicate the line as many times as necessary
         for (int i = 1; i < ycount; ++i, dstLineStart += dstRowSize) {
             assert(dstLineStart == (PIX*)output->pixelAt(dstRoi.x1, yo+i));
-            assert(dstLineStart + dstRowSize == (PIX*)output->pixelAt(dstRoi.x2 - 1, yo+i) + _nbComponents);
-            std::copy(dstLineBatchStart, dstLineBatchStart + dstRowSize, dstLineStart);
+            assert(dstLineStart + dstRoiRowSize == (PIX*)output->pixelAt(dstRoi.x2 - 1, yo+i) + _nbComponents);
+            std::copy(dstLineBatchStart, dstLineBatchStart + dstRoiRowSize, dstLineStart);
         }
     }
 } // upscaleMipmapForDepth

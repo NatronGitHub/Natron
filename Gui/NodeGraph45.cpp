@@ -38,6 +38,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QKeyEvent>
 #include <QApplication>
 #include <QCheckBox>
+#include <QRegularExpression>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -368,14 +369,18 @@ FindNodeDialog::updateFindResults(const QString& filter)
     }
     Qt::CaseSensitivity sensitivity = _imp->caseSensitivity->isChecked() ? Qt::CaseSensitive : Qt::CaseInsensitive;
     const NodesGuiList& activeNodes = _imp->graph->getAllActiveNodes();
-    QRegExp exp(_imp->matchWhole->isChecked() ? filter :
-                ( QChar::fromLatin1('*') + filter + QChar::fromLatin1('*') ),
-                sensitivity,
-                QRegExp::Wildcard);
+    // QtCompat::wildcardToRegularExpression() anchors, which is what
+    // exactMatch() did, and lets '*' match '/', unlike Qt's function.
+    QRegularExpression exp(QtCompat::wildcardToRegularExpression(
+                               _imp->matchWhole->isChecked() ? filter :
+                               ( QChar::fromLatin1('*') + filter + QChar::fromLatin1('*') ) ),
+                           sensitivity == Qt::CaseInsensitive ?
+                           QRegularExpression::CaseInsensitiveOption :
+                           QRegularExpression::NoPatternOption);
 
     if ( exp.isValid() ) {
         for (NodesGuiList::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-            if ( (*it)->isVisible() && exp.exactMatch( QString::fromUtf8( (*it)->getNode()->getLabel().c_str() ) ) ) {
+            if ( (*it)->isVisible() && exp.match( QString::fromUtf8( (*it)->getNode()->getLabel().c_str() ) ).hasMatch() ) {
                 _imp->nodeResults.push_back(*it);
             }
         }
@@ -650,6 +655,9 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
                                      const NodeCollectionPtr& group,
                                      std::list<std::pair<std::string, NodeGuiPtr> >& createdNodes)
 {
+    // Previews are not computed while the node tree is created: compute those of the created nodes
+    // when this function returns, including on error. Declared before createNodeTree.
+    RefreshPreviewsOfCreatedNodes_RAII refreshPreviews( getGui()->getApp(), group );
     {
         CreatingNodeTreeFlag_RAII createNodeTree( getGui()->getApp() );
         NodeClipBoard clipboard;

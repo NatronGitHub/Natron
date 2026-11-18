@@ -3,22 +3,23 @@ set -e
 #set -x
 BUILD_SCRIPT_DIR=$(realpath $(dirname "${BASH_SOURCE[0]}"))
 
+# Natron's own builds of packages that MSYS2 doesn't provide in the form Natron
+# needs (a pinned version, Natron patches, or a licence variant). Everything
+# else comes from MSYS2 itself (see the natron-build-deps-* meta-packages).
+# Built for the environment of the calling shell (UCRT64).
+# mingw-w64-freetype replaces MSYS2's freetype (NATRON_REPO_OVERRIDES in
+# natron_repo_common.sh), and is built first so that the packages that follow
+# are built and checked with it.
 PKGS="
+mingw-w64-freetype
 mingw-w64-natron-setup
-mingw-w64-imath
-mingw-w64-openexr
 mingw-w64-libraw-gpl2
 mingw-w64-libraw-lgpl
-mingw-w64-opencolorio2-git
 mingw-w64-openimageio
 mingw-w64-seexpr-git
-mingw-w64-x264-git
 mingw-w64-ffmpeg-gpl2
-mingw-w64-sox
-mingw-w64-poppler
 mingw-w64-imagemagick
 mingw-w64-osmesa
-mingw-w64-dump_syms
 mingw-w64-natron-build-deps-common
 mingw-w64-natron-build-deps-qt5
 mingw-w64-natron-build-deps-qt6
@@ -36,6 +37,16 @@ else
   NATRON_REPO_DIR=$(realpath $1)
 fi
 
+# The packages are only built for UCRT64 (mingw_arch=('ucrt64') in every
+# PKGBUILD): MSYS2's MINGW64 lacks several of their dependencies.
+if [[ "${MSYSTEM:-}" != UCRT64 || -z "${MINGW_PACKAGE_PREFIX:-}" ]]; then
+  echo "Run this script from an MSYS2 UCRT64 shell (MSYSTEM=UCRT64, current: ${MSYSTEM:-unset})."
+  exit 1
+fi
+# makepkg-mingw builds for the architectures in MINGW_ARCH.
+MINGW_ARCH=ucrt64
+echo "Building the Natron packages for ${MSYSTEM} (${MINGW_PACKAGE_PREFIX})."
+
 natron_repo_init ${NATRON_REPO_DIR}
 
 for pkg_dir in ${PKGS}; do
@@ -44,34 +55,49 @@ for pkg_dir in ${PKGS}; do
 
   PACKAGE_NAME=`makepkg --printsrcinfo | awk '/pkgname/{print $3}'`
 
-  # Check to see if the package is already available
-  if [[ -z $(pacman -Ssq ${PACKAGE_NAME}) ]]; then
-    if [[ ${PACKAGE_NAME} == 'mingw-w64-x86_64-osmesa' ]]; then
-      echo "Fetching prebuilt ${PACKAGE_NAME} ..."
-      # Can't build osmesa right now so use previously built package.
-      OSMESA_PKG_FILENAME=mingw-w64-x86_64-osmesa-111.471db69.17.1.10.3.9.1-2-any.pkg.tar.xz
-      wget -O ${OSMESA_PKG_FILENAME} https://sourceforge.net/projects/natron/files/MINGW-packages/mingw64/${OSMESA_PKG_FILENAME}/download
-      echo "Fetch complete."
-    else
-      echo "Building ${PACKAGE_NAME} ..."
+  # Check to see if the package is already in the natron repository. Only look
+  # there: a package that replaces an MSYS2 package (mingw-w64-freetype) has
+  # the same name as one in the MSYS2 repositories.
+  if ! pacman -Sl natron 2>/dev/null | awk '{print $2}' | grep -qxF "${PACKAGE_NAME}"; then
+    echo "Building ${PACKAGE_NAME} ..."
 
-      # Print available disk space to facilitate GitHub action debugging.
-      df -h
+    # Print available disk space to facilitate GitHub action debugging.
+    df -h
 
-      # Remove any package files from previous builds.
-      rm -f mingw-w64-x86_64-*-any.pkg.tar.*
-      time MAKEFLAGS="-j$(nproc)" makepkg-mingw -LfCcsr --needed --noconfirm
+    # Remove any package files from previous builds.
+    rm -f "${MINGW_PACKAGE_PREFIX}"-*-any.pkg.tar.*
 
-      echo "Build complete."
+    # Download and verify the sources first, and retry that once: the
+    # ffmpeg.org download has timed out several times. makepkg resumes the
+    # partial download. Only the download is retried; a build failure below
+    # still fails immediately.
+    if ! MINGW_ARCH="${MINGW_ARCH}" makepkg-mingw --verifysource --noconfirm; then
+      echo "Downloading the sources of ${PACKAGE_NAME} failed, retrying once ..."
+      sleep 30
+      MINGW_ARCH="${MINGW_ARCH}" makepkg-mingw --verifysource --noconfirm
     fi
 
-    for pkg_file in `find . -name 'mingw-w64-x86_64-*-any.pkg.tar.*'`; do
+    time MINGW_ARCH="${MINGW_ARCH}" MAKEFLAGS="-j$(nproc)" makepkg-mingw -LfCcsr --needed --noconfirm
+
+    echo "Build complete."
+
+    for pkg_file in `find . -name "${MINGW_PACKAGE_PREFIX}-*-any.pkg.tar.*"`; do
       echo "Adding ${pkg_file} to package repo ..."
       natron_repo_add_package ${pkg_file}
     done
   else
     echo "Skipping. ${PACKAGE_NAME} already in repository."
   fi
+
+  # Install a package that replaces MSYS2's (NATRON_REPO_OVERRIDES) as soon as
+  # it is in the repository, whether just built or restored from the cache,
+  # without --overwrite: this also checks that it installs cleanly over MSYS2's.
+  for name in ${NATRON_REPO_OVERRIDES}; do
+    if [[ ${PACKAGE_NAME} == "${MINGW_PACKAGE_PREFIX}-${name}" ]]; then
+      natron_repo_install_overrides
+      break
+    fi
+  done
 
   echo -e "Leaving package directory ${pkg_dir}."
   cd "${BUILD_SCRIPT_DIR}"

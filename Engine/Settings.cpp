@@ -2716,19 +2716,7 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         "</ul>\n"
         "</li>\n"
         "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_environment.html\">Environment Variables</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupImage.html\">Image nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupDraw.html\">Draw nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupTime.html\">Time nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupChannel.html\">Channel nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupColor.html\">Color nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupFilter.html\">Filter nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupKeyer.html\">Keyer nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupMerge.html\">Merge nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupTransform.html\">Transform nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupViews.html\">Views nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupOther.html\">Other nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupGMIC.html\">GMIC nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupExtra.html\">Extra nodes</a></li>\n"
+        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_nodes.html\">Nodes</a></li>\n"
         "</ul>\n"
         "</li>\n"
         "<li class=\"toctree-l1\"><a class=\"reference internal\" href=\"devel/index.html\">Developers Guide</a></li>\n"
@@ -3260,18 +3248,68 @@ Settings::doOCIOStartupCheckIfNeeded()
         int entry_i = _ocioConfigKnob->getValue();
         std::vector<ChoiceOption> entries = _ocioConfigKnob->getEntries_mt_safe();
         std::string warnText;
+        // When the selected config is invalid or unusable (custom config without an existing file),
+        // switching to the default config loses nothing, so Yes is the default answer. Otherwise the
+        // user chose a non-default config on purpose: only replace it if they explicitly answer Yes.
+        StandardButtonEnum defaultButton = eStandardButtonNo;
+        // the default config, if it is bundled with this installation
+        int defaultIndex = -1;
+        for (unsigned i = 0; i < entries.size(); ++i) {
+            if (entries[i].id == NATRON_DEFAULT_OCIO_CONFIG_NAME) {
+                defaultIndex = i;
+                break;
+            }
+        }
         if ( (entry_i < 0) || ( entry_i >= (int)entries.size() ) ) {
             warnText = tr("The current OCIO config selected in the preferences is invalid, would you like to set it to the default config (%1)?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
+            defaultButton = eStandardButtonYes;
+        } else if (entries[entry_i].id == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
+            // A custom config file was explicitly selected: don't ask if that file exists.
+            std::string file;
+            try {
+                file = _customOcioConfigFile->getValue();
+            } catch (...) {
+                // ignore exceptions
+            }
+            QString customFile = QString::fromUtf8( file.c_str() );
+            if ( !customFile.isEmpty() && QFile::exists(customFile) ) {
+                return;
+            }
+            if ( customFile.isEmpty() ) {
+                warnText = tr("\"%1\" is selected as the OCIO config in the preferences, but no custom OpenColorIO configuration file is set. "
+                              "Would you like to set it to the default config (%2)?").arg( QString::fromUtf8(NATRON_CUSTOM_OCIO_CONFIG_NAME), QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
+            } else {
+                warnText = tr("The custom OpenColorIO configuration file selected in the preferences does not exist:\n%1\n"
+                              "Would you like to set the OCIO config to the default config (%2)? "
+                              "The custom file path is kept in the preferences.").arg( customFile, QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
+            }
+            defaultButton = eStandardButtonYes;
         } else if (entries[entry_i].id != NATRON_DEFAULT_OCIO_CONFIG_NAME) {
-            warnText = tr("The current OCIO config selected in the preferences is not the default one (%1), would you like to set it to the default config?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
+            warnText = tr("The current OCIO config selected in the preferences (%1) is not the default one (%2), would you like to set it to the default config?\n"
+                          "Answer No to keep the current config.").arg( QString::fromUtf8( entries[entry_i].id.c_str() ), QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
         } else {
+            return;
+        }
+
+        if ( (defaultIndex == -1) && (defaultButton == eStandardButtonNo) ) {
+            // a usable non-default config is selected and the default one isn't available: nothing to offer
+            return;
+        }
+        if (defaultIndex == -1) {
+            // the default config isn't bundled (e.g. a build without the OpenColorIO-Configs folder):
+            // switching to it is impossible, so don't ask, just tell the user what to do
+            Dialogs::warningDialog( "OCIO config", tr("%1\n\n"
+                                                      "The %2 OCIO config could not be found, probably because the OpenColorIO-Configs folder "
+                                                      "that should be bundled with %3 is missing. Set a custom OpenColorIO configuration file "
+                                                      "in the Color Management preferences.").arg( QString::fromUtf8( warnText.c_str() ), QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
+
             return;
         }
 
         bool stopAsking = false;
         StandardButtonEnum reply = mainInstance->questionDialog("OCIO config", warnText, false,
                                                                 StandardButtons(eStandardButtonYes | eStandardButtonNo),
-                                                                eStandardButtonYes,
+                                                                defaultButton,
                                                                 &stopAsking);
         if (stopAsking != !docheck) {
             _ocioStartupCheck->setValue(!stopAsking);
@@ -3279,20 +3317,13 @@ Settings::doOCIOStartupCheckIfNeeded()
         }
 
         if (reply == eStandardButtonYes) {
-            int defaultIndex = -1;
-            for (unsigned i = 0; i < entries.size(); ++i) {
-                if (entries[i].id.find(NATRON_DEFAULT_OCIO_CONFIG_NAME) != std::string::npos) {
-                    defaultIndex = i;
-                    break;
-                }
-            }
             if (defaultIndex != -1) {
                 _ocioConfigKnob->setValue(defaultIndex);
                 saveSetting( _ocioConfigKnob.get() );
             } else {
                 Dialogs::warningDialog( "OCIO config", tr("The %2 OCIO config could not be found.\n"
                                                           "This is probably because you're not using the OpenColorIO-Configs folder that should "
-                                                          "be bundled with your %1 installation.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString() );
+                                                          "be bundled with your %1 installation.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME), QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString() );
             }
         }
     }

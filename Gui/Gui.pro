@@ -23,6 +23,8 @@ CONFIG += staticlib
 CONFIG += moc rcc
 CONFIG += boost opengl qt cairo python shiboken pyside 
 QT += gui core network concurrent widgets
+# QOpenGLWidget moved to its own module in Qt6; CMake already appends it.
+equals(QT_MAJOR_VERSION, 6): QT += openglwidgets
 
 GUI_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronGui
 ENGINE_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronEngine
@@ -221,7 +223,6 @@ SOURCES += \
     ViewerTabPrivate.cpp \
     ViewerToolButton.cpp \
     ticks.cpp \
-    $${GUI_WRAPPER_DIR}/natrongui_module_wrapper.cpp \
 
 HEADERS += \
     AboutWindow.h \
@@ -388,8 +389,10 @@ GUI_GENERATED_SOURCES = \
     pytabwidget_wrapper \
     pyviewer_wrapper
 
+# generated bindings: see warnings.pri
+NATRON_BINDINGS_SOURCES += $${GUI_WRAPPER_DIR}/natrongui_module_wrapper.cpp
 for(name, GUI_GENERATED_SOURCES) {
-    SOURCES += $${GUI_WRAPPER_DIR}/$${name}.cpp
+    NATRON_BINDINGS_SOURCES += $${GUI_WRAPPER_DIR}/$${name}.cpp
     HEADERS += $${GUI_WRAPPER_DIR}/$${name}.h
 }
 
@@ -420,3 +423,5 @@ OBJECTIVE_SOURCES += \
     $$PWD/../Gui/QtMac.mm \
     $$PWD/../Gui/TaskBarMac.mm
 }
+
+include(../warnings.pri)

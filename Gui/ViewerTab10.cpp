@@ -866,7 +866,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         QWheelEvent e(mapFromGlobal( QCursor::pos() ), QCursor::pos(), QPoint(), QPoint(0, -120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
         wheelEvent(&e);
     } else if (key == Qt::Key_Escape) {
-        _imp->viewer->s_selectionCleared();
+        _imp->viewer->s_selectionCleared( e->modifiers() );
         update();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDSwitchInputAAndB, modifiers, key) ) {
         ///Put it after notifyOverlaysKeyDown() because Roto may intercept Enter

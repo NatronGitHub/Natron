@@ -29,6 +29,7 @@
 #include <fstream>
 #include <limits>
 #include <list>
+#include <set>
 #include <cassert>
 #include <stdexcept>
 #include <sstream> // stringstream
@@ -61,6 +62,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/FileDownloader.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/DiskCacheNode.h"
+#include "Engine/DocumentationGroups.h"
 #include "Engine/ProjectSerialization.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
@@ -234,6 +236,41 @@ AppInstance::getNodesBeingCreated() const
     assert( QThread::currentThread() == qApp->thread() );
 
     return _imp->_creatingNodeQueue;
+}
+
+RefreshPreviewsOfCreatedNodes_RAII::RefreshPreviewsOfCreatedNodes_RAII(const AppInstancePtr& app,
+                                                                       const NodeCollectionPtr& collection)
+    : _app(app)
+    , _collection(collection)
+    , _nodesBefore()
+{
+    if (collection) {
+        _nodesBefore = collection->getNodes();
+    }
+}
+
+RefreshPreviewsOfCreatedNodes_RAII::~RefreshPreviewsOfCreatedNodes_RAII()
+{
+    AppInstancePtr app = _app.lock();
+    NodeCollectionPtr collection = _collection.lock();
+
+    if ( !app || !collection || app->isBackground() || app->isCreatingNodeTree() ) {
+        return;
+    }
+    std::set<NodePtr> nodesBefore( _nodesBefore.begin(), _nodesBefore.end() );
+    const double time = app->getTimeLine()->currentFrame();
+    NodesList nodes = collection->getNodes();
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ( !*it || ( nodesBefore.find(*it) != nodesBefore.end() ) ) {
+            continue;
+        }
+        // NodeGui::forceComputePreview() checks that the preview is enabled and the node is activated
+        (*it)->computePreviewImage(time);
+        NodeGroup* isGrp = (*it)->isEffectGroup();
+        if (isGrp) {
+            isGrp->forceRefreshPreviews();
+        }
+    }
 }
 
 bool
@@ -599,6 +636,9 @@ AppInstance::loadInternal(const CLArgs& cl,
             throw std::invalid_argument( tr("%1: No such file.").arg(scriptFilename).toStdString() );
         }
 
+        // sys.exit() in the script finalizes Python: close the projects before (#1253)
+        appPTR->registerCloseProjectsAtPythonExit();
+
         std::list<AppInstance::RenderWork> writersWork;
 
 
@@ -664,6 +704,8 @@ AppInstance::loadInternal(const CLArgs& cl,
             startWritersRenderingFromNames( cl.areRenderStatsEnabled(), false, writers, cl.getFrameRanges() );
         }
     } else if (appPTR->getAppType() == AppManager::eAppTypeInterpreter) {
+        // sys.exit() in the script, or Py_Main(), finalizes Python: close the projects before (#1253)
+        appPTR->registerCloseProjectsAtPythonExit();
         QFileInfo info( cl.getScriptFilename() );
         if ( info.exists() ) {
             if ( info.suffix() == QString::fromUtf8("py") ) {
@@ -759,26 +801,30 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         ss << "import " << moduleName.toStdString() << '\n';
         ss << moduleName.toStdString() << ".createInstance(app,app)";
 
-        std::string output;
-        FlagIncrementer flag(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
-        CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
-        if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output) ) {
-            if ( !err.empty() ) {
-                Dialogs::errorDialog(tr("Python").toStdString(), err);
-            }
+        {
+            // Declared before createNodeTree, so that the previews are refreshed once the tree is created.
+            RefreshPreviewsOfCreatedNodes_RAII refreshPreviews( shared_from_this(), getProject() );
+            std::string output;
+            FlagIncrementer flag(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
+            CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
+            if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output) ) {
+                if ( !err.empty() ) {
+                    Dialogs::errorDialog(tr("Python").toStdString(), err);
+                }
 
-            return false;
-        } else {
-            if ( !output.empty() ) {
-                if ( appPTR->isBackground() ) {
-                    std::cout << output << std::endl;
-                } else {
-                    appendToScriptEditor(output);
+                return false;
+            } else {
+                if ( !output.empty() ) {
+                    if ( appPTR->isBackground() ) {
+                        std::cout << output << std::endl;
+                    } else {
+                        appendToScriptEditor(output);
+                    }
                 }
             }
-        }
 
-        getProject()->forceComputeInputDependentDataOnAllTrees();
+            getProject()->forceComputeInputDependentDataOnAllTrees();
+        } // CreatingNodeTreeFlag_RAII createNodeTree, RefreshPreviewsOfCreatedNodes_RAII refreshPreviews
     } else {
         PythonGILLocker pgl;
 
@@ -857,6 +903,9 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
 
     NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
     NodeCollectionPtr group = args.getProperty<NodeCollectionPtr>(kCreateNodeArgsPropGroupContainer);
+    // Computes the previews of the nodes created by the script (the PyPlug and the nodes inside it, or the
+    // nodes created by a toolset) when this function returns, after createNodeTree is destroyed.
+    RefreshPreviewsOfCreatedNodes_RAII refreshPreviews(shared_from_this(), group);
     {
         FlagIncrementer fs(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
         if (_imp->_creatingGroup == 1) {
@@ -1412,23 +1461,6 @@ void
 AppInstance::exportDocs(const QString path)
 {
     if ( !path.isEmpty() ) {
-        QStringList groups;
-        // Group ordering is set at every place in the code where GROUP_ORDER appears in the comments
-        groups << QString::fromUtf8(PLUGIN_GROUP_IMAGE);
-        groups << QString::fromUtf8(PLUGIN_GROUP_PAINT);
-        groups << QString::fromUtf8(PLUGIN_GROUP_TIME);
-        groups << QString::fromUtf8(PLUGIN_GROUP_CHANNEL);
-        groups << QString::fromUtf8(PLUGIN_GROUP_COLOR);
-        groups << QString::fromUtf8(PLUGIN_GROUP_FILTER);
-        groups << QString::fromUtf8(PLUGIN_GROUP_KEYER);
-        groups << QString::fromUtf8(PLUGIN_GROUP_MERGE);
-        groups << QString::fromUtf8(PLUGIN_GROUP_TRANSFORM);
-        groups << QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW);
-        groups << QString::fromUtf8(PLUGIN_GROUP_OTHER);
-        groups << QString::fromUtf8("GMIC"); // openfx-gmic
-        groups << QString::fromUtf8("Extra"); // openfx-arena
-        QVector<QStringList> plugins;
-
         // Generate a MD for each plugin
         // IMPORTANT: this code is *very* similar to DocumentationManager::handler(...) is section "_group.html"
         std::list<std::string> pluginIDs = appPTR->getPluginIDs();
@@ -1438,12 +1470,7 @@ AppInstance::exportDocs(const QString path)
                 Plugin* plugin = 0;
                 QString pluginID = QString::fromUtf8( it->c_str() );
                 plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
-                if ( plugin && !plugin->getIsDeprecated() && ( !plugin->getIsForInternalUseOnly() || plugin->isReader() || plugin->isWriter() ) ) {
-                    QStringList groups = plugin->getGrouping();
-                    groups << groups.at(0);
-                    QStringList plugList;
-                    plugList << plugin->getGrouping().at(0) << pluginID << Plugin::makeLabelWithoutSuffix( plugin->getPluginLabel() );
-                    plugins << plugList;
+                if ( DocumentationGroups::isDocumented(plugin) ) {
                     CreateNodeArgs args( pluginID.toStdString(), NodeCollectionPtr() );
                     args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
                     args.setProperty(kCreateNodeArgsPropOutOfProject, true);
@@ -1509,54 +1536,72 @@ AppInstance::exportDocs(const QString path)
             }
         }
 
-        // Generate RST for plugin groups
-        // IMPORTANT: this code is *very* similar to DocumentationManager::handler in the "_group.html" section
-        groups.removeDuplicates();
-        QString groupMD;
-        groupMD.append( QString::fromUtf8(".. ") + tr("Do not edit this file! It is generated automatically by %1 itself.").arg ( QString::fromUtf8( NATRON_APPLICATION_NAME) ) + QString::fromUtf8("\n\n") );
-        groupMD.append( QString::fromUtf8(".. _reference-guide:\n\n") );
-        groupMD.append( tr("Reference Guide") );
-        groupMD.append( QString::fromUtf8("\n============================================================\n\n") );
-        groupMD.append( tr("The first section in this manual describes the various options available from the %1 preference settings. The next section gives the documentation for the various environment variables that may be used to control %1's behavior. It is followed by one section for each node group in %1.")
-                       .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") /*+ QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.")*/ );
-        groupMD.append( QString::fromUtf8("\n\n") );
-        //groupMD.append( QString::fromUtf8("Contents:\n\n") );
-        groupMD.append( QString::fromUtf8(".. toctree::\n") );
-        groupMD.append( QString::fromUtf8("    :maxdepth: 1\n\n") );
-        groupMD.append( QString::fromUtf8("    _prefs.rst\n") );
-        groupMD.append( QString::fromUtf8("    _environment.rst\n") );
+        // Generate RST for the Reference Guide, the Nodes page and the node groups.
+        // IMPORTANT: this code is *very* similar to DocumentationManager::handler in the "_group.html" and "_nodes.html" sections
+        const QString doNotEdit = QString::fromUtf8(".. ") + tr("Do not edit this file! It is generated automatically by %1 itself.").arg ( QString::fromUtf8( NATRON_APPLICATION_NAME) ) + QString::fromUtf8("\n\n");
+        const QString titleUnderline = QString::fromUtf8("\n============================================================\n\n");
+        const QString toctree = QString::fromUtf8(".. toctree::\n"
+                                                  "    :maxdepth: 1\n\n");
+        const QString groupsHelp = tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.");
 
-        Q_FOREACH(const QString &group, groups) {
+        QString refMD;
+        refMD.append(doNotEdit);
+        refMD.append( QString::fromUtf8(".. _reference-guide:\n\n") );
+        refMD.append( tr("Reference Guide") );
+        refMD.append(titleUnderline);
+        refMD.append( tr("The first section in this manual describes the various options available from the %1 preference settings. The next section gives the documentation for the various environment variables that may be used to control %1's behavior. The last section documents every node in %1, organized by node group.")
+                      .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+        refMD.append( QString::fromUtf8("\n\n") );
+        refMD.append(toctree);
+        refMD.append( QString::fromUtf8("    _prefs.rst\n") );
+        refMD.append( QString::fromUtf8("    _environment.rst\n") );
+        refMD.append( QString::fromUtf8("    _nodes.rst\n") );
+
+        QString nodesMD;
+        nodesMD.append(doNotEdit);
+        nodesMD.append( QString::fromUtf8(".. _reference-nodes:\n\n") );
+        nodesMD.append( tr("Nodes") );
+        nodesMD.append(titleUnderline);
+        nodesMD.append( tr("The following sections contain documentation about every node in %1, with one section for each node group.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) + QLatin1Char(' ') + groupsHelp );
+        nodesMD.append( QString::fromUtf8("\n\n") );
+        nodesMD.append(toctree);
+
+        DocumentationGroups docGroups;
+        Q_FOREACH(const QString &groupId, docGroups.getTopLevelGroupIds()) {
+            nodesMD.append( QString::fromUtf8("    _group") + groupId + QString::fromUtf8(".rst\n") );
+        }
+
+        Q_FOREACH(const QString &groupId, docGroups.getGroupIds()) {
+            const DocumentationGroups::Group* group = docGroups.getGroup(groupId);
+            assert(group);
+            QString groupLabel = DocumentationGroups::makeGroupLabel(group->path);
             QString plugMD;
 
-            plugMD.append( QString::fromUtf8(".. ") + tr("Do not edit this file! It is generated automatically by %1 itself.").arg ( QString::fromUtf8( NATRON_APPLICATION_NAME) ) + QString::fromUtf8("\n\n") );
-            plugMD.append( tr("%1 nodes").arg( tr( group.toUtf8().constData() ) ) );
-            plugMD.append( QString::fromUtf8("\n============================================================\n\n") );
-            plugMD.append( tr("The following sections contain documentation about every node in the %1 group.").arg( tr( group.toUtf8().constData() ) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") /*+ QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.")*/ );
+            plugMD.append(doNotEdit);
+            plugMD.append( DocumentationGroups::makeGroupTitle(group->path) );
+            plugMD.append(titleUnderline);
+            if ( group->subGroupIds.isEmpty() ) {
+                plugMD.append( tr("The following sections contain documentation about every node in the %1 group.").arg(groupLabel) );
+            } else {
+                plugMD.append( tr("The following sections contain documentation about every node in the %1 group, starting with its sub-groups.").arg(groupLabel) );
+            }
+            plugMD.append( QLatin1Char(' ') + groupsHelp );
             plugMD.append( QString::fromUtf8("\n\n") );
-            //plugMD.append( QString::fromUtf8("Contents:\n\n") );
-            plugMD.append( QString::fromUtf8(".. toctree::\n") );
-            plugMD.append( QString::fromUtf8("    :maxdepth: 1\n\n") );
-
-            QMap<QString, QString> pluginsOrderedByLabel; // use a map so that it gets sorted by label
-            Q_FOREACH(const QStringList &currPlugin, plugins) {
-                if (currPlugin.size() == 3) {
-                    if ( group == currPlugin.at(0) ) {
-                        pluginsOrderedByLabel[currPlugin.at(2)] = currPlugin.at(1);
-                    }
-                }
+            plugMD.append(toctree);
+            Q_FOREACH(const QString &subGroupId, group->subGroupIds) {
+                // short title in the toctree (sidebar and this page), the sub-group page keeps its full title
+                const DocumentationGroups::Group* subGroup = docGroups.getGroup(subGroupId);
+                assert(subGroup);
+                plugMD.append( QString::fromUtf8("    ") + DocumentationGroups::makeSubGroupTitle(subGroup->path) +
+                               QString::fromUtf8(" <_group") + subGroupId + QString::fromUtf8(".rst>\n") );
             }
-            for (QMap<QString, QString>::const_iterator i = pluginsOrderedByLabel.constBegin();
-                 i != pluginsOrderedByLabel.constEnd();
+            for (QMap<QString, QString>::const_iterator i = group->pluginsByLabel.constBegin();
+                 i != group->pluginsByLabel.constEnd();
                  ++i) {
-                const QString& plugID = i.value();
-                //const QString& plugName = i.key();
-                plugMD.append( QString::fromUtf8("    plugins/") + plugID + QString::fromUtf8(".rst\n") );
+                plugMD.append( QString::fromUtf8("    plugins/") + i.value() + QString::fromUtf8(".rst\n") );
             }
 
-            groupMD.append( QString::fromUtf8("    _group") + group + QString::fromUtf8(".rst\n") );
-
-            QFile plugFile( path + QString::fromUtf8("/_group") + group + QString::fromUtf8(".rst") );
+            QFile plugFile( path + QString::fromUtf8("/_group") + groupId + QString::fromUtf8(".rst") );
             plugMD.append( QString::fromUtf8("\n") );
             if ( plugFile.open(QIODevice::Text | QIODevice::WriteOnly | QIODevice::Truncate) ) {
                 QTextStream out(&plugFile);
@@ -1565,13 +1610,20 @@ AppInstance::exportDocs(const QString path)
             }
         }
 
-        // Generate RST for plugins ToC
-        QFile groupFile( path + QString::fromUtf8("/_group.rst") );
-        groupMD.append( QString::fromUtf8("\n") );
-        if ( groupFile.open(QIODevice::Text | QIODevice::WriteOnly | QIODevice::Truncate) ) {
-            QTextStream out(&groupFile);
-            out << groupMD;
-            groupFile.close();
+        // Generate RST for the Reference Guide and the Nodes page
+        QFile refFile( path + QString::fromUtf8("/_group.rst") );
+        refMD.append( QString::fromUtf8("\n") );
+        if ( refFile.open(QIODevice::Text | QIODevice::WriteOnly | QIODevice::Truncate) ) {
+            QTextStream out(&refFile);
+            out << refMD;
+            refFile.close();
+        }
+        QFile nodesFile( path + QString::fromUtf8("/_nodes.rst") );
+        nodesMD.append( QString::fromUtf8("\n") );
+        if ( nodesFile.open(QIODevice::Text | QIODevice::WriteOnly | QIODevice::Truncate) ) {
+            QTextStream out(&nodesFile);
+            out << nodesMD;
+            nodesFile.close();
         }
 
         // Generate MD for settings

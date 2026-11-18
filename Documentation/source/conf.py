@@ -108,10 +108,15 @@ html_theme = 'sphinx_rtd_theme'
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-#html_theme_options = {
-#   "nosidebar": "true",
-#   "footertextcolor": "#000000"
-#}
+# Sidebar navigation: show only the top sections, and expand only the branch of
+# the current page (Reference Guide > Nodes > node group > sub-group > node).
+# navigation_depth must cover the deepest node pages: the nodes of a sub-group
+# (e.g. Reference Guide > Nodes > G'MIC > Colors > node) are at depth 5.
+html_theme_options = {
+    'collapse_navigation': True,
+    'navigation_depth': 6,
+    'titles_only': False,
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
@@ -186,7 +191,19 @@ htmlhelp_basename = 'Natrondoc'
 
 # -- Options for LaTeX output --------------------------------------------------
 
-mypreamble=r'''\renewcommand{\code}[1]{\texttt{\footnotesize{}#1}}
+# Sphinx derives the depth of the table of contents from the :maxdepth: of the
+# root toctree (index.rst), which is small to keep the HTML front page short, and
+# writes it before the preamble, so set it here. With the guides as parts
+# (latex_toplevel_sectioning below), depth 2 lists parts, chapters, sections and
+# subsections: the User Guide chapters and their sections, and in the Reference
+# Guide the node groups, their sub-groups, and the nodes of groups that have no
+# sub-groups. The nodes of a sub-group (e.g. G'MIC / Colors) are one level deeper,
+# and not listed. Section numbers (secnumdepth 2) stop at the same level.
+# Recent Sphinx versions no longer define \code: \providecommand first, so that
+# \renewcommand doesn't stop pdflatex with "Command \code undefined".
+mypreamble=r'''\providecommand{\code}[1]{}
+\renewcommand{\code}[1]{\texttt{\footnotesize{}#1}}
+\setcounter{tocdepth}{2}
 '''
 latex_elements = {
 # The paper size ('letterpaper' or 'a4paper').
@@ -213,10 +230,11 @@ geometry = 'margin=0.5in,marginparwidth=0.5in'
 #latex_logo = None
 latex_logo = '../../Gui/Resources/Images/natronIcon.pdf'
 
-# For "manual" documents, if this is true, then toplevel headings are parts,
-# not chapters.
-latex_use_parts = True
-#latex_toplevel_sectioning = 'part'
+# The top-level headings (the four guides) are parts, so that the node pages
+# (Reference Guide > Nodes > group > sub-group > node) stay at \subsection or
+# \subsubsection, and their own sections at \paragraph.
+# (latex_use_parts, which did the same, was removed from Sphinx.)
+latex_toplevel_sectioning = 'part'
 
 # If true, show page references after internal links.
 #latex_show_pagerefs = False

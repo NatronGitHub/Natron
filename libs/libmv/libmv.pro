@@ -13,7 +13,9 @@ CONFIG += libmv-flags gflags-flags
 include(../../global.pri)
 include(../../libs.pri)
 
+# bundled third-party code: no warnings (-w), as NATRON_THIRD_PARTY_NO_WARNINGS in CMake
 CONFIG -= warn_on
+CONFIG += warn_off
 
 win32-msvc* {
         INCLUDEPATH += third_party/msinttypes

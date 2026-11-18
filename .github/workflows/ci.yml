@@ -2,16 +2,24 @@ name: Tests
 
 on:
   workflow_dispatch: {}
+  # nightly macOS build of the default branch, skipped if it didn't change in the last 25 hours
+  schedule:
+  - cron: '17 3 * * *'
+  # one run per change: push only on the main and release branches and on tags,
+  # feature branches run through their pull request
   push:
     branches:
-    - RB-2.5
-    - RB-2.6
+    - master
+    - 'RB-*'
+    tags:
+    - 'v*'
     paths-ignore:
       - 'Documentation/**'
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
-    - RB-2.5
-    - RB-2.6
+    - master
+    - 'RB-*'
     paths-ignore:
       - 'Documentation/**'
 
@@ -19,11 +27,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   unix_test:
+    if: github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)
+    timeout-minutes: 180
     name: Test ${{ matrix.os }} Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     defaults:
@@ -52,6 +62,11 @@ jobs:
         uses: actions/checkout@v4.1.1
         with:
           submodules: recursive
+      # No per-PR job builds with qmake any more; at least check that the qmake
+      # project files list the same sources as the CMake build.
+      - name: Check that qmake and CMake build the same sources
+        shell: bash
+        run: python3 tools/utils/checkQmakeSources.py
       - name: Install Linux system packages
         shell: bash
         run: |
@@ -71,8 +86,8 @@ jobs:
       - name: Download Plugins
         run: |
           mkdir Plugins && cd Plugins
-          wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-ubuntu_22-testing.zip
-          unzip openfx-io-build-ubuntu_22-testing.zip
+          wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-ubuntu_24-testing.zip
+          unzip openfx-io-build-ubuntu_24-testing.zip
           cd ..
 
       - name: Build Unix (debug)
@@ -115,11 +130,10 @@ jobs:
         run: exit 1
 
   win-test:
+    if: github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)
+    timeout-minutes: 240
     name: Test ${{ matrix.os }} UCRT64 Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
-    # Known failure (#1147): the embedded Python 3.14 of Tests.exe
-    # cannot import shiboken2 on UCRT64. Don't turn RB-2.6 red until it's fixed.
-    continue-on-error: true
     defaults:
       run:
         shell: msys2 {0}
@@ -203,11 +217,18 @@ jobs:
           cd build
 
           mkdir Plugins && cd Plugins
-          wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-windows_latest-testing.zip
-          unzip openfx-io-build-windows_latest-testing.zip
+          wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-windows_ucrt64-testing.zip
+          unzip openfx-io-build-windows_ucrt64-testing.zip
           cd ..
 
-          PYTHONHOME=${MINGW_PREFIX} OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
+          # MSYS2's Python (>= 3.11) loads extension modules with
+          # LOAD_LIBRARY_SEARCH_DEFAULT_DIRS, which ignores PATH: only the
+          # directory of the executable is searched. python.exe lives in
+          # ${MINGW_PREFIX}/bin next to the DLLs, but Tests.exe is in build/Tests,
+          # so lib-dynload/binascii.pyd (needed by zipfile, imported by shiboken2)
+          # cannot find zlib1.dll (#1147). PYTHONLEGACYWINDOWSDLLLOADING=1
+          # (an MSYS2 Python extension) restores the PATH search.
+          PYTHONLEGACYWINDOWSDLLLOADING=1 PYTHONHOME=${MINGW_PREFIX} OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
 
       - name: Upload ${{ matrix.os }} Test Log artifacts
         if: always()
@@ -220,13 +241,38 @@ jobs:
         if: steps.run-windows-tests.outcome == 'failure'
         run: exit 1
 
+  changes:
+    # nightly runs only: did the default branch change in the last 25 hours?
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+    steps:
+      - name: Check for recent commits
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          since=$(date -u -d '25 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          n=$(gh api "repos/${{ github.repository }}/commits?sha=${{ github.ref_name }}&since=$since&per_page=1" --jq length)
+          echo "changed=$([ "$n" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
   macos-test:
     # Built with MacPorts (as the official macOS binaries), never Homebrew.
     # The Natron-only dependencies come from MacPorts binary archives; the
     # resulting /opt/local is cached, keyed on the MacPorts version, the
     # overlay (tools/MacPorts) and MACPORTS_CACHE_VERSION (bump it when the
     # port list below changes).
-    name: Test macos-15 arm64 MacPorts Python 3.10
+    # macOS arm64 runners are scarce: run only once Linux and Windows have passed. Merging only
+    # requires Linux and Windows; this job is informative. Nightly, it runs alone if the branch changed.
+    needs: [changes, unix_test, win-test]
+    if: >-
+      !cancelled() && (
+      (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
+      (github.event_name != 'schedule' && needs.unix_test.result == 'success' && needs.win-test.result == 'success' &&
+       (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
+    name: Test macos-15 arm64 MacPorts Python 3.11
     runs-on: macos-15
     timeout-minutes: 360
     defaults:
@@ -237,10 +283,10 @@ jobs:
       CI: 'True'
       OCIO_CONFIG_VERSION: 2.5
       MACPORTS_VERSION: 2.12.7
-      MACPORTS_CACHE_VERSION: 1
+      MACPORTS_CACHE_VERSION: 2
       MACPORTS_PORTS: >-
-        pkgconfig zstd python310 py310-pyside2 py310-qtpy boost expat cairo
-      PYVER: '3.10'
+        cmake pkgconfig zstd python311 py311-pyside2 py311-qtpy boost expat cairo
+      PYVER: '3.11'
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4.1.1
@@ -330,7 +376,7 @@ jobs:
             [ $i = 3 ] && exit 1
             sleep 30
           done
-          sudo port select --set python3 python310
+          sudo port select --set python3 python311
           sudo port -N clean --work --dist installed || true
 
       - name: Save MacPorts to cache
@@ -354,7 +400,8 @@ jobs:
           rm -rf ~/macports-cache
           port installed $MACPORTS_PORTS
           python3 --version
-          command -v python3 pkg-config
+          command -v python3 pkg-config cmake
+          cmake --version
           test -x /opt/local/Library/Frameworks/Python.framework/Versions/$PYVER/lib/python$PYVER/site-packages/shiboken2_generator/shiboken2
           if command -v brew; then echo "::error::Homebrew is still in PATH"; exit 1; fi
 
@@ -363,36 +410,18 @@ jobs:
           curl -fsSL --retry 5 https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v${OCIO_CONFIG_VERSION}.tar.gz | tar xzf -
           mv OpenColorIO-Configs-Natron-v${OCIO_CONFIG_VERSION} OpenColorIO-Configs
 
-      - name: Build Natron (qmake)
+      - name: Build Natron (CMake)
         run: |
-          # The MacPorts PySide2 has no CMake config files, so this uses the
-          # qmake build, like tools/jenkins/build-natron.sh does on macOS.
-          PY=/opt/local/Library/Frameworks/Python.framework/Versions/$PYVER
-          SITE=$PY/lib/python$PYVER/site-packages
-          QTDIR=/opt/local/libexec/qt5
-          cp tools/jenkins/include/natron/OSX.pri config.pri
-
-          # Generate the Python bindings (from tools/jenkins/build-natron.sh).
-          # Call the generator binary directly: the shiboken2-3.10 wrapper
-          # looks for a shiboken2-3.10 link that the port doesn't install.
-          SHIBOKEN=$SITE/shiboken2_generator/shiboken2
-          SHIBOKEN_INCLUDE_PATHS="-I. -I./Engine -I./Global -Ilibs/OpenFX/include -I/opt/local/include -I${QTDIR}/include -I${QTDIR}/include/QtCore -I${PY}/include/python${PYVER} -I${SITE}/PySide2/include -I${SITE}/PySide2/include/QtCore -I${SITE}/PySide2/include/QtGui"
-          SHIBOKEN_TYPESYSTEM_PATHS="-T${SITE}/PySide2/typesystems"
-          $SHIBOKEN -std=c++17 --avoid-protected-hack --enable-pyside-extensions ${SHIBOKEN_INCLUDE_PATHS} ${SHIBOKEN_TYPESYSTEM_PATHS} \
-            --output-directory=Engine/Qt5 Engine/Pyside2_Engine_Python.h Engine/typesystem_engine.xml
-          $SHIBOKEN -std=c++17 --avoid-protected-hack --enable-pyside-extensions ${SHIBOKEN_INCLUDE_PATHS} -I${QTDIR}/include/QtWidgets -I${QTDIR}/include/QtGui ${SHIBOKEN_TYPESYSTEM_PATHS} -T./Engine -T./Shiboken \
-            --output-directory=Gui/Qt5 Gui/PySide2_Gui_Python.h Gui/typesystem_natronGui.xml
-          python3 tools/utils/sourceCleanup.py Engine/typesystem_engine.xml Engine/Qt5
-          python3 tools/utils/sourceCleanup.py Gui/typesystem_natronGui.xml Gui/Qt5
-
+          # The MacPorts PySide2 has no CMake config files: CMake finds Shiboken2
+          # and PySide2 through Python3_EXECUTABLE (cmake/PySide2FromPython.cmake).
           # Natron is built with the system (Xcode) clang, which fully supports C++20 on
           # macOS 15; MacPorts only provides the libraries (see #1134).
           /usr/bin/clang++ --version
-          $QTDIR/bin/qmake -r -spec macx-clang CONFIG+=release CONFIG+=python3 CONFIG-=openmp \
-            QMAKE_CC=/usr/bin/clang QMAKE_CXX=/usr/bin/clang++ QMAKE_LINK=/usr/bin/clang++ \
-            CONFIG-=enable-breakpad CONFIG+=enable-cairo PYTHON_CONFIG=python${PYVER}-config Project.pro
-          make -j$(sysctl -n hw.ncpu)
-          make -j$(sysctl -n hw.ncpu) -C Tests
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DNATRON_BUILD_TESTS=ON \
+            -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
+            -DCMAKE_PREFIX_PATH="/opt/local/libexec/qt5;/opt/local" \
+            -DPython3_EXECUTABLE=/opt/local/bin/python${PYVER}
+          cmake --build build -j$(sysctl -n hw.ncpu)
 
       - name: Run macOS Tests
         id: run-macos-tests
@@ -401,15 +430,15 @@ jobs:
           # There is no prebuilt openfx-io for macOS (the Linux and Windows
           # jobs download one), so the tests that need the IO plug-ins
           # (BaseTest.*) are skipped.
-          cd Tests
-          OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ./Tests --gtest_filter='-BaseTest.*' 2>&1 | tee LastTest.log
+          cd build
+          GTEST_FILTER='-BaseTest.*' OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
 
       - name: Upload macOS Test Log artifacts
         if: always()
         uses: actions/upload-artifact@v4.3.1
         with:
           name: macos-15 Test Logs
-          path: ${{ github.workspace }}/Tests/LastTest.log
+          path: ${{ github.workspace }}/build/Testing/Temporary/LastTest.log
 
       - name: Check for test failures
         if: steps.run-macos-tests.outcome == 'failure'

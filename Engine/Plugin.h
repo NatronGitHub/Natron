@@ -316,6 +316,15 @@ public:
     const QString & getPluginLabel() const;
     const QString getLabelVersionMajorMinorEncoded() const;
     static QString makeLabelWithoutSuffix(const QString& label);
+
+    /**
+     * @brief A safe slug for a grouping path, used in file names and URLs:
+     * in each level, ASCII letters and digits are kept, other ASCII characters (punctuation, spaces)
+     * are dropped, and non-ASCII characters are encoded as xHHHH. Levels are joined by '_'.
+     * For example, "G'MIC/Colors" and "GMIC/Colors" both give "GMIC_Colors", and "Façade" gives "Fax00E7ade".
+     * The result never contains '-', which callers may use to make ids unique.
+     **/
+    static QString makeGroupingId(const QStringList& grouping);
     const QString& getLabelWithoutSuffix() const;
     void setLabelWithoutSuffix(const QString& label);
 

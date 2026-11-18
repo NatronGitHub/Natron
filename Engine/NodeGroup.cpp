@@ -1323,6 +1323,32 @@ NodeGroup::initializeKnobs()
 
 }
 
+// Call onInputChanged() on every input of every output node that is connected to groupNode.
+// An output node appears once per link in getOutputs(), and may be connected to groupNode
+// through several of its inputs.
+static void
+notifyGroupOutputsInputChanged(const NodePtr& groupNode)
+{
+    std::set<NodePtr> outputs;
+    {
+        const NodesWList& outputsList = groupNode->getOutputs();
+        for (NodesWList::const_iterator it = outputsList.begin(); it != outputsList.end(); ++it) {
+            NodePtr output = it->lock();
+            if (output) {
+                outputs.insert(output);
+            }
+        }
+    }
+    for (std::set<NodePtr>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        int nInputs = (*it)->getNInputs();
+        for (int idx = 0; idx < nInputs; ++idx) {
+            if ( (*it)->getRealInput(idx) == groupNode ) {
+                (*it)->onInputChanged(idx);
+            }
+        }
+    }
+}
+
 void
 NodeGroup::notifyNodeDeactivated(const NodePtr& node)
 {
@@ -1331,27 +1357,47 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
     }
     NodePtr thisNode = getNode();
 
-    {
-        QMutexLocker k(&_imp->nodesLock);
-        GroupInput* isInput = dynamic_cast<GroupInput*>( node->getEffectInstance().get() );
-        if (isInput) {
+    GroupInput* isInput = dynamic_cast<GroupInput*>( node->getEffectInstance().get() );
+    if (isInput) {
+        // Disconnect the real input and re-initialize the inputs of the group without holding nodesLock:
+        // they take the inputsMutex of the group node and of the nodes inside the group, and render threads
+        // take nodesLock while holding these (see #814). _imp->inputs is only modified by the main thread.
+        int inputNb = -1;
+        {
+            QMutexLocker k(&_imp->nodesLock);
             for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-                NodePtr input = _imp->inputs[i].lock();
-                if (node == input) {
-                    ///Also disconnect the real input
-
-                    thisNode->disconnectInput(i);
-
-
-                    _imp->inputs.erase(_imp->inputs.begin() + i);
-                    thisNode->initializeInputs();
-
-                    return;
+                if (_imp->inputs[i].lock() == node) {
+                    inputNb = (int)i;
+                    break;
                 }
             }
-            ///The input must have been tracked before
-            assert(false);
         }
+        ///The input must have been tracked before
+        assert(inputNb != -1);
+        if (inputNb != -1) {
+            ///Also disconnect the real input
+            thisNode->disconnectInput(inputNb);
+
+            // disconnectInput() runs the Python inputChanged callback and emits signals: look for the
+            // GroupInput again instead of reusing inputNb.
+            {
+                QMutexLocker k(&_imp->nodesLock);
+                for (std::vector<NodeWPtr>::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
+                    if (it->lock() == node) {
+                        _imp->inputs.erase(it);
+                        break;
+                    }
+                }
+                ///Sync gui inputs
+                _imp->guiInputs = _imp->inputs;
+            }
+            thisNode->initializeInputs();
+        }
+        // Fall through: sync the gui inputs/outputs and notify the outputs of the group.
+    }
+
+    {
+        QMutexLocker k(&_imp->nodesLock);
         GroupOutput* isOutput = dynamic_cast<GroupOutput*>( node->getEffectInstance().get() );
         if (isOutput) {
             for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
@@ -1368,16 +1414,7 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
     }
 
     ///Notify outputs of the group nodes that their inputs may have changed
-    const NodesWList& outputs = thisNode->getOutputs();
-    for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        NodePtr output = it->lock();
-        if (!output) {
-            continue;
-        }
-        int idx = output->getInputIndex( thisNode.get() );
-        assert(idx != -1);
-        output->onInputChanged(idx);
-    }
+    notifyGroupOutputsInputChanged(thisNode);
 } // NodeGroup::notifyNodeDeactivated
 
 void
@@ -1389,13 +1426,12 @@ NodeGroup::notifyNodeActivated(const NodePtr& node)
 
     NodePtr thisNode = getNode();
 
+    GroupInput* isInput = dynamic_cast<GroupInput*>( node->getEffectInstance().get() );
     {
         QMutexLocker k(&_imp->nodesLock);
-        GroupInput* isInput = dynamic_cast<GroupInput*>( node->getEffectInstance().get() );
         if (isInput) {
             _imp->inputs.push_back(node);
             _imp->guiInputs.push_back(node);
-            thisNode->initializeInputs();
         }
         GroupOutput* isOutput = dynamic_cast<GroupOutput*>( node->getEffectInstance().get() );
         if (isOutput) {
@@ -1403,17 +1439,12 @@ NodeGroup::notifyNodeActivated(const NodePtr& node)
             _imp->guiOutputs.push_back(node);
         }
     }
-    ///Notify outputs of the group nodes that their inputs may have changed
-    const NodesWList& outputs = thisNode->getOutputs();
-    for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        NodePtr output = it->lock();
-        if (!output) {
-            continue;
-        }
-        int idx = output->getInputIndex( thisNode.get() );
-        assert(idx != -1);
-        output->onInputChanged(idx);
+    if (isInput) {
+        // Without holding nodesLock (see notifyNodeDeactivated() and #814)
+        thisNode->initializeInputs();
     }
+    ///Notify outputs of the group nodes that their inputs may have changed
+    notifyGroupOutputsInputChanged(thisNode);
 }
 
 void
@@ -1476,24 +1507,24 @@ NodePtr
 NodeGroup::getRealInputForInput(bool useGuiConnexions,
                                 const NodePtr& input) const
 {
+    int inputNb = -1;
     {
         QMutexLocker k(&_imp->nodesLock);
-        if (!useGuiConnexions) {
-            for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-                if (_imp->inputs[i].lock() == input) {
-                    return getNode()->getInput(i);
-                }
-            }
-        } else {
-            for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
-                if (_imp->guiInputs[i].lock() == input) {
-                    return getNode()->getGuiInput(i);
-                }
+        const std::vector<NodeWPtr>& inputs = useGuiConnexions ? _imp->guiInputs : _imp->inputs;
+        for (U32 i = 0; i < inputs.size(); ++i) {
+            if (inputs[i].lock() == input) {
+                inputNb = (int)i;
+                break;
             }
         }
     }
+    if (inputNb == -1) {
+        return NodePtr();
+    }
 
-    return NodePtr();
+    // Call getInput() without holding nodesLock: it takes the group node's inputsMutex, and the main thread
+    // takes nodesLock while holding it (see #814).
+    return useGuiConnexions ? getNode()->getGuiInput(inputNb) : getNode()->getInput(inputNb);
 }
 
 void
@@ -1654,7 +1685,9 @@ escapeString(const QString& str)
         } else {
 #if PY_MAJOR_VERSION >= 3
             // Python 3 strings are unicode
-            ret.append(QString::fromUtf8("\\u%1").arg(str[i].unicode(), 4, 16, QLatin1Char('0')));
+            // QChar::unicode() returns char16_t on Qt6, which arg() has no
+            // overload for, and ushort on Qt5, where the cast does nothing.
+            ret.append(QString::fromUtf8("\\u%1").arg(ushort(str[i].unicode()), 4, 16, QLatin1Char('0')));
 #else
             // Python 2: convert to Utf8
             QByteArray utf8 = QString(str[i]).toUtf8();
@@ -1760,11 +1793,10 @@ exportKnobValues(int indentLevel,
                                                     NUM_COLOR(r) + QString::fromUtf8(", ") + NUM_COLOR(g) + QString::fromUtf8(", ") + NUM_COLOR(b) + QString::fromUtf8(")") );
             if (curve) {
                 KeyFrameSet keys = curve->getKeyFrames_mt_safe();
-                int c = 0;
                 if ( !keys.empty() ) {
                     WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.deleteAllControlPoints(") + NUM_INT(i) + QString::fromUtf8(")") );
                 }
-                for (KeyFrameSet::iterator it3 = keys.begin(); it3 != keys.end(); ++it3, ++c) {
+                for (KeyFrameSet::iterator it3 = keys.begin(); it3 != keys.end(); ++it3) {
                     QString interpStr;
                     switch ( it3->getInterpolation() ) {
                     case eKeyframeTypeNone:

@@ -171,7 +171,7 @@ if [ "${PKGOS:-}" = "OSX" ]; then
     done
     if [ -n "$macos_missing" ]; then
         echo "Error: missing required macOS packaging tool(s):$macos_missing"
-        echo "  dmgbuild -> sudo port install py310-dmgbuild && sudo ln -s dmgbuild-3.10 /opt/local/bin/dmgbuild  (or: python3 -m pip install dmgbuild; writes the DMG .DS_Store layout without Finder/TCC)"
+        echo "  dmgbuild -> sudo port install py311-dmgbuild && sudo ln -sfn dmgbuild-3.11 /opt/local/bin/dmgbuild  (or: python3 -m pip install dmgbuild; writes the DMG .DS_Store layout without Finder/TCC)"
         echo "  oiiotool -> sudo port install openimageio    (DMG background processing)"
         echo "  identify -> sudo port install ImageMagick    (DMG background dimensions)"
         echo "See INSTALL_MACOS.md, section 'macOS packaging tools'."
@@ -203,6 +203,7 @@ echo "PYTHON_HOME=${PYTHON_HOME}"
 echo "Qt config:"
 echo "QT_VERSION_MAJOR=${QT_VERSION_MAJOR}"
 echo "QTDIR=${QTDIR}"
+echo "QMAKE=${QMAKE}"
 
 # check that TIMEOUT works
 $TIMEOUT 1 true && echo "$TIMEOUT works"
@@ -254,6 +255,32 @@ fi
 if [ -z "${GIT_URL_IS_NATRON:-}" ]; then
     GIT_URL_IS_NATRON=0
     isNatronRepo "$GIT_URL" && GIT_URL_IS_NATRON=1
+fi
+
+# A wrong QTDIR otherwise surfaces much later as a missing Qt header during the
+# shiboken run, which is a long way from the actual cause. Plug-in CI builds
+# (GIT_URL_IS_NATRON != 1, TYPE=PLUGIN_CI) do not need Qt, so they only
+# get a warning.
+# The Qt major version is checked too: when qt5-base is missing, the
+# unsuffixed qmake found on PATH may be Qt6's.
+qmake_error=""
+if qmake_qt_version=$("$QMAKE" -query QT_VERSION 2> /dev/null) && [ -n "$qmake_qt_version" ]; then
+    if [ "${qmake_qt_version%%.*}" = "$QT_VERSION_MAJOR" ]; then
+        echo "$QMAKE works (Qt $qmake_qt_version)"
+    else
+        qmake_error="$QMAKE is the qmake of Qt $qmake_qt_version, not Qt ${QT_VERSION_MAJOR}."
+    fi
+else
+    qmake_error="$QMAKE is not usable."
+fi
+if [ -n "$qmake_error" ]; then
+    if [ "${GIT_URL_IS_NATRON:-}" = "1" ]; then
+        (>&2 echo "Error: $qmake_error")
+        (>&2 echo "Set NATRON_QMAKE to the qmake of the Qt ${QT_VERSION_MAJOR} to build against.")
+        exit 1
+    else
+        (>&2 echo "Warning: $qmake_error (Qt is not needed for plug-in builds.)")
+    fi
 fi
 
 

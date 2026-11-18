@@ -52,7 +52,14 @@
             </target-to-native>
         </conversion-rule>
     </primitive-type>
-    
+
+    <!--shiboken6 does not know PyList as a built-in type (it knows PyObject,
+        PyDict and PySequence), and Natron uses PyList as an argument type, so
+        declare it with its check function. shiboken2 knows PyList already:
+        it ignores this entry's check-function (with a warning) and generates
+        the same code. -->
+    <custom-type name="PyList" check-function="PyList_Check"/>
+
     <!--std::pair from/to Python pair-->
     <container-type name="std::pair" type="pair">
         <include file-name="utility" location="global"/>

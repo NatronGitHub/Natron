@@ -3,5 +3,7 @@ Git URL=https://git.blender.org/blender.git
 Git HEAD version=aaec4ed07dd15a6174f2f46c10b3e592e9e5d578 (2017-07-07)
 
 Local modifications:
-* patches/libmv-frame_accessor_no_image_copy.patch
-* patches/libmv-predict-Natron.patch
+* patches/0001-libmv-frame_accessor_no_image_copy.patch
+* patches/0002-libmv-predict-Natron.patch
+* patches/0003-libmv-mingw32.patch
+* patches/0004-libmv-sum-or-dynamic.patch

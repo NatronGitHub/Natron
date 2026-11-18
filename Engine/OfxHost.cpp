@@ -42,6 +42,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 #include <QDateTime>
 #include <QDir>
+#include <QFile>
 #include <QMutex>
 #include <QThreadPool>
 #include <QCoreApplication>
@@ -336,6 +337,11 @@ OfxHost::setProperties()
     _properties.setIntProperty(kNatronOfxImageEffectPropHostMixing, 1);
 
     _properties.setIntProperty(kNatronOfxPropDescriptionIsMarkdown, 1);
+
+    // keyboard modifiers in the interact actions (ofxNatron.h extension 13): HostSupport then
+    // declares kNatronOfxInteractPropKeyModifiers in the inArgs of the actions of the interacts
+    // whose supportsKeyModifiers() returns true (OfxOverlayInteract).
+    _properties.setIntProperty(kNatronOfxInteractHostPropSupportsKeyModifiers, 1);
 
     // interact cursors (NatronGitHub/openfx#4): the CSS cursor names Natron can display,
     // plus custom PNG cursors from the plug-in resources
@@ -838,6 +844,8 @@ getPluginShortcuts(const OFX::Host::ImageEffect::Descriptor& desc, std::list<Plu
     }
 }
 
+#ifndef QT_NO_DEBUG_OUTPUT
+// used by qDebug() below (with QT_NO_DEBUG_OUTPUT, qDebug() accepts anything)
 static inline
 QDebug operator<<(QDebug dbg, const std::list<std::string> &l)
 {
@@ -847,6 +855,7 @@ QDebug operator<<(QDebug dbg, const std::list<std::string> &l)
 
     return dbg.space();
 }
+#endif
 
 void
 OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
@@ -988,26 +997,26 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         }
         iconFileName.append(resourcesPath);
         iconFileName.append( QString::fromUtf8( pngIcon.c_str() ) );
-        QString groupIconFilename;
-        if (groups.size() > 0) {
-            groupIconFilename = resourcesPath;
-            // the plugin grouping has no descriptor, just try the default filename.
-            groupIconFilename.append(groups[0]);
-            groupIconFilename.append( QString::fromUtf8(".png") );
-        } else {
+        // the plugin grouping has no descriptor, just try the default filename:
+        // Resources/<group>.png, Resources/<group>/<subgroup>.png, etc.
+        // If that file does not exist, use the safe slug of each level (see Plugin::makeGroupingId()),
+        // e.g. Resources/GMIC.png for the "G'MIC" group.
+        QStringList groupIcons;
+        if ( groups.isEmpty() ) {
             //Use default Misc group when the plug-in doesn't belong to a group
             groups.push_back( QString::fromUtf8(PLUGIN_GROUP_DEFAULT) );
+            groupIcons << QString();
         }
-        QStringList groupIcons;
-        groupIcons << groupIconFilename;
-        for (int i = 1; i < groups.size(); ++i) {
-            QString groupIconPath = resourcesPath;
-            for (int j = 0; j <= i; ++j) {
-                groupIconPath += groups[j];
-                if (j < i) {
-                    groupIconPath += QLatin1Char('/');
-                } else {
-                    groupIconPath.append( QString::fromUtf8(".png") );
+        for (int i = groupIcons.size(); i < groups.size(); ++i) {
+            QString groupIconPath = resourcesPath + groups.mid(0, i + 1).join( QLatin1Char('/') ) + QString::fromUtf8(".png");
+            if ( !QFile::exists(groupIconPath) ) {
+                QStringList slugs;
+                for (int j = 0; j <= i; ++j) {
+                    slugs << Plugin::makeGroupingId( QStringList(groups[j]) );
+                }
+                QString slugIconPath = resourcesPath + slugs.join( QLatin1Char('/') ) + QString::fromUtf8(".png");
+                if ( QFile::exists(slugIconPath) ) {
+                    groupIconPath = slugIconPath;
                 }
             }
             groupIcons << groupIconPath;

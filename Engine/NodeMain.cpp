@@ -26,6 +26,8 @@
 #include "NodePrivate.h"
 
 #include <QThread>
+#include <QRandomGenerator>
+#include <QWriteLocker>
 
 #include "Engine/AppInstance.h"
 #include "Engine/CreateNodeArgs.h"
@@ -219,6 +221,14 @@ Node::load(const CreateNodeArgs& args)
     }
 
     if (!serialization) {
+        // A node created from scratch may already have non-default values (initial values given at creation, which
+        // don't increment the knobs age before the node is fully created). Give it an age unique to this session, so
+        // that its hash can't match a node created with other values in an earlier session (#1124).
+        {
+            QWriteLocker l(&_imp->knobsAgeMutex);
+            _imp->knobsAge = QRandomGenerator::global()->generate64();
+            _imp->knobsAgeIsUniqueToSession = true;
+        }
         computeHash();
     }
 
@@ -866,7 +876,7 @@ Node::destroyNode(bool blockingDestroy, bool autoReconnect)
     }
 
     {
-        QMutexLocker k(&_imp->activatedMutex);
+        QMutexLocker k(&_imp->isBeingDestroyedMutex);
         _imp->isBeingDestroyed = true;
     }
 
@@ -900,7 +910,10 @@ Node::isSupportedComponent(int inputNb,
     QMutexLocker l(&_imp->inputsMutex);
 
     if (inputNb >= 0) {
-        assert( inputNb < (int)_imp->inputsComponents.size() );
+        // While a GroupInput is being activated, getNInputs() may be larger than inputsComponents.size()
+        if ( inputNb >= (int)_imp->inputsComponents.size() ) {
+            return false;
+        }
         std::list<ImagePlaneDesc>::const_iterator found =
             std::find(_imp->inputsComponents[inputNb].begin(), _imp->inputsComponents[inputNb].end(), comp);
 
