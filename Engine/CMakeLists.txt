@@ -82,6 +82,8 @@ target_link_libraries(NatronEngine
         Python3::Module
         ${XDG_LIBS}
         ceres
+        # LibraryBinary.cpp uses dlopen/dlsym: libdl is separate in glibc < 2.34
+        ${CMAKE_DL_LIBS}
         hoedown
         mv
         openMVG
