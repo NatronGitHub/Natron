@@ -119,8 +119,19 @@ elif [ "$PKGOS" = "OSX" ]; then
             ARCH=$(uname -m)
             ;;
     esac;
-    # always deploy for the same version as the build system, since we use macports (for now)
-    MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion | cut -d. -f-2)
+    # Oldest macOS supported by the release (maintainer decision, 2026-11-18: Natron 2.6 runs
+    # on macOS 14 Sonoma or later). The MacPorts libraries that are bundled must be built for
+    # it too (macosx_deployment_target in macports.conf, see INSTALL_MACOS.md). On an older
+    # build system, deploy for that system's version, as before. An explicit
+    # MACOSX_DEPLOYMENT_TARGET in the environment wins.
+    NATRON_MACOS_MIN=14.0
+    if [ -z "${MACOSX_DEPLOYMENT_TARGET:-}" ]; then
+        MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion | cut -d. -f-2)
+        case "$MACOSX_DEPLOYMENT_TARGET" in
+            10.*|11.*|12.*|13.*) ;;
+            *) MACOSX_DEPLOYMENT_TARGET=$NATRON_MACOS_MIN ;;
+        esac
+    fi
     export MACOSX_DEPLOYMENT_TARGET
     MACPORTS="/opt/local"
     LOCAL="/usr/local"

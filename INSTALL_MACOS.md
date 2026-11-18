@@ -3,7 +3,7 @@ Instructions for installing Natron from sources on macOS
 
 These are step-by-step instructions to compile Natron on macOS. This file is the reference for macOS installs. There are two ways to build:
 
-- **In a VM, fully automated:** `tools/tart/README.md` builds the same MacPorts SDK in a clean macOS 15 (Sequoia, the distribution baseline) [tart](https://tart.run) VM, then builds the `.dmg` in a throw-away clone. Its provisioning script (`tools/tart/provision.sh`) runs the MacPorts steps below. tart only runs on **Apple Silicon Macs** and only produces arm64 builds; for Intel or universal builds, or for macOS 11 and older, use the MacPorts steps below on an Intel Mac (see "Notes for older systems"). On any Mac, the MacPorts steps below can also be run natively.
+- **In a VM, fully automated:** `tools/tart/README.md` builds the same MacPorts SDK in a clean macOS 15 (Sequoia) [tart](https://tart.run) VM, for macOS 14 (Sonoma) and later, then builds the `.dmg` in a throw-away clone. Its provisioning script (`tools/tart/provision.sh`) runs the MacPorts steps below. tart only runs on **Apple Silicon Macs** and only produces arm64 builds; for Intel or universal builds, or for macOS 11 and older, use the MacPorts steps below on an Intel Mac (see "Notes for older systems"). On any Mac, the MacPorts steps below can also be run natively.
 - **On your Mac:** follow the [MacPorts section](#macports-from-scratch) below, or use Homebrew for development builds.
 
 The official macOS binaries are built with [MacPorts](https://www.macports.org) plus the custom ports in `tools/MacPorts`, using the `tools/jenkins/launchBuildMain.sh` script. That script does everything: checks out the sources, compiles the plugins and Natron, builds the `.dmg`, runs the tests and archives the result. The [MacPorts section](#macports-from-scratch) below describes how to prepare a Mac for it from scratch. On Apple Silicon it produces native arm64 binaries.
@@ -88,6 +88,15 @@ Download and install the `.pkg` for your macOS version from <https://www.macport
 sudo port selfupdate
 ```
 
+**Natron 2.6 for macOS runs on macOS 14 (Sonoma) or later**, so the release build, and the MacPorts libraries bundled in the `.dmg`, are built for macOS 14 (minimum version `minos` 14.0) on any newer build Mac. Tell MacPorts to build every port for macOS 14, and from source, since its binary archives are built for the macOS they were made on (e.g. minos 15.0 on Sequoia). Add these lines to `/opt/local/etc/macports/macports.conf` **before installing any port**:
+
+```
+macosx_deployment_target	14.0
+buildfromsource	always
+```
+
+Leave `macosx_sdk_version` unset: MacPorts then uses the SDK of the running macOS, and building for an older deployment target with a newer SDK is the normal setup. Every port is then built from source, which takes much longer than installing binary archives. For a development build that you only run on your own Mac, you can skip this. If ports were installed before these lines were added, rebuild the ones built for a newer macOS (see "Building for an older macOS" below).
+
 #### 3. Natron's custom ports
 
 Natron needs modified ports. Examples: the `+natron` variants of ImageMagick, ImageMagick7 and openimageio and the `+natronmini` variant of ffmpeg; libraw 0.22.3 with the GPL demosaic packs restored by a patch; freetype 2.15.0 with an upstream fix for rotated text backported. MacPorts reads them from a copy of `tools/MacPorts` in `/opt/MacPorts-Natron`. A copy is used rather than the source tree itself, because MacPorts accesses the ports as an unprivileged user that usually can't read your home directory.
@@ -130,7 +139,7 @@ sudo port select --set python python27
 cd $NATRON_SRC/..   # anywhere outside the Natron checkout (not in tools/MacPorts)
 git clone https://github.com/devernay/osmesa-install.git
 mkdir osmesa-install/build && cd osmesa-install/build
-env LLVM_BUILD=1 MKJOBS=8 ../osmesa-install.sh     # LLVM 6.0.1 into /opt/llvm, Mesa 18.3.6 into /opt/osmesa; no sudo
+env LLVM_BUILD=1 MKJOBS=8 MACOSX_DEPLOYMENT_TARGET=14.0 ../osmesa-install.sh     # LLVM 6.0.1 into /opt/llvm, Mesa 18.3.6 into /opt/osmesa; no sudo
 
 sudo port select --set python none
 ```
@@ -145,7 +154,7 @@ sudo mkdir -p /opt/osmesa-25.0.7 /opt/llvm-19.1.7
 sudo chown $(id -un):staff /opt/osmesa-25.0.7 /opt/llvm-19.1.7
 cd $NATRON_SRC/../osmesa-install/build   # the osmesa-install checkout of the step above
 env OSMESA_VERSION=25.0.7 OSMESA_PREFIX=/opt/osmesa-25.0.7 LLVM_PREFIX=/opt/llvm-19.1.7 \
-    PYTHON=/opt/local/bin/python3.11 MKJOBS=8 ../osmesa-install.sh   # builds LLVM 19.1.7 first; no sudo
+    PYTHON=/opt/local/bin/python3.11 MKJOBS=8 MACOSX_DEPLOYMENT_TARGET=14.0 ../osmesa-install.sh   # builds LLVM 19.1.7 first; no sudo
 # then build Natron (step 10) with: env OSMESA_PREFIX=/opt/osmesa-25.0.7 LLVM_PREFIX=/opt/llvm-19.1.7 ...
 ```
 
@@ -269,7 +278,7 @@ env NOUPDATE=1 WORKSPACE=$HOME/Development/workspace DISABLE_BREAKPAD=1 NATRON_L
 
 `launchBuildMain.sh` still builds Natron with the deprecated qmake build on RB-2.6; this will change when the release scripts move to CMake (#1181). It checks out Natron (`GIT_URL`, `GIT_BRANCH`) and the plug-ins from GitHub: local changes in `$NATRON_SRC` are not built, except for the `tools/` scripts and the overlay. To build local changes, see "Developing with the MacPorts SDK".
 
-The `.dmg` ends up in `$HOME/Development/workspace/builds_archive/natron_github_RB2/1/`, named `Natron-<branch>-<date>-<commit>-macOS<version>-<arch>.dmg`. Use `UNIT_TESTS=true` to also run the render regression suite (Natron-Tests); this adds `-tests.txt` and `-unit_tests_failures.zip` next to the DMG. `BUILD_FROM=N` / `BUILD_TO=N` run only some of the six steps (checkout, plugins, Natron, installer, tests, archive).
+The `.dmg` ends up in `$HOME/Development/workspace/builds_archive/natron_github_RB2/1/`, named `Natron-<branch>-<date>-<commit>-macOS<version>-<arch>.dmg`, where `<version>` is the oldest macOS it runs on. `tools/jenkins/common.sh` builds Natron and the plug-ins for macOS 14.0 (`NATRON_MACOS_MIN`) on macOS 14 or later, and for the build Mac's own version on older systems; set `MACOSX_DEPLOYMENT_TARGET` to override it. Check the result with `tools/tart/check-minos.sh -t 14.0 Natron-*.dmg`, which lists every Mach-O file in the `.dmg` that needs a newer macOS (`tools/tart/natron-build.sh` runs it and fails if there is one). Use `UNIT_TESTS=true` to also run the render regression suite (Natron-Tests); this adds `-tests.txt` and `-unit_tests_failures.zip` next to the DMG. `BUILD_FROM=N` / `BUILD_TO=N` run only some of the six steps (checkout, plugins, Natron, installer, tests, archive).
 
 For a release, build a tag instead of a branch:
 
@@ -368,7 +377,7 @@ Do this every few weeks, and before a release build. Each step is safe to stop a
 
 9. **Rebuild and test,** if the upgrade touched anything Natron or the plug-ins link to: `qt5`, `py311-pyside2`, `python311`, `boost`, `ffmpeg`, `openimageio`, `opencolorio`, `libraw`, `openexr`, `ImageMagick`, `ImageMagick7`, `poppler`, `cairo`, `freetype`, … Rebuild from a fresh build directory (install section 10, or "Developing with the MacPorts SDK" below), clear Natron's cache (`rm -rf ~/Library/Caches/INRIA/Natron`), and run the unit tests (see [Testing](#testing)). Before a release, also run the Natron-Tests regression suite on the new DMG (`UNIT_TESTS=true` with `launchBuildMain.sh`, see install section 10, or `runTests.sh`, see "Testing" in `Documentation/source/maintainers/build-macos.rst`).
 
-With the tart VMs (`tools/tart`), `tools/tart/natron-sdk.sh update` does steps 3 to 7 inside a copy of the SDK image: it installs the MacPorts version set by `MACPORTS_VERSION` in `tools/tart/provision.sh` and syncs the ports tree (instead of `selfupdate`), copies the host checkout's `tools/` into the VM (so update the host checkout first, step 1), runs `check.sh` (and only warns if the overlay is behind upstream: reintegrate on the host first), `./sync.sh`, reinstalls the pinned ports whose installed version differs from the overlay, upgrades the outdated ports one by one, installs `ImageMagick7 +natron` if the image doesn't have it yet, and re-applies the fixups. The previous image is kept as `natron-sdk-sequoia-prev`. See `tools/tart/README.md`.
+With the tart VMs (`tools/tart`), `tools/tart/natron-sdk.sh update` does steps 3 to 7 inside a copy of the SDK image: it installs the MacPorts version set by `MACPORTS_VERSION` in `tools/tart/provision.sh` and syncs the ports tree (instead of `selfupdate`), copies the host checkout's `tools/` into the VM (so update the host checkout first, step 1), runs `check.sh` (and only warns if the overlay is behind upstream: reintegrate on the host first), `./sync.sh`, reinstalls the pinned ports whose installed version differs from the overlay, upgrades the outdated ports one by one, installs `ImageMagick7 +natron` if the image doesn't have it yet, rebuilds from source the ports (and OSMesa/LLVM) built for a macOS newer than 14.0 (see "Building for an older macOS"), and re-applies the fixups. The previous image is kept as `natron-sdk-sequoia-prev`. See `tools/tart/README.md`.
 
 #### Switching from Python 3.10 to 3.11
 
@@ -472,6 +481,20 @@ A new major version of macOS (e.g. 15 to 26) needs a new MacPorts and a reinstal
 9. **Re-apply the install fixups** (step 7 of "Keeping MacPorts up to date"): `restore_ports.tcl` doesn't restore `port select` choices, `pip` packages or hand-made links.
 
 10. **Check the compiler** (install section 5), then rebuild from a fresh build directory and test (step 9 of "Keeping MacPorts up to date"). A clean rebuild is mandatory after a macOS upgrade.
+
+#### Building for an older macOS
+
+The release supports macOS 14 and later (see install section 2). Ports installed before `macosx_deployment_target 14.0` and `buildfromsource always` were set in `macports.conf`, or installed from MacPorts' binary archives, are built for the macOS they were installed on, and their dylibs make the `.dmg` require that macOS. `tools/tart/check-minos.sh` (`-t TARGET`, default 14.0) lists the Mach-O files that need a newer macOS than the target. To rebuild every port that has one, from source and in dependency order:
+
+```Shell
+CHECK=$NATRON_SRC/tools/tart/check-minos.sh
+for p in $(port -q installed active | awk '{print $1}'); do
+    port -q contents $p | $CHECK -t 14.0 -l > /dev/null 2>&1; [ $? = 1 ] && echo $p
+done > ~/rebuild.txt
+sudo port -n -s upgrade --force $(cat ~/rebuild.txt)   # one port at a time is also fine
+```
+
+`-n` rebuilds only the given ports, `-s` builds from source, and `--force` rebuilds ports that are up to date. The ports are rebuilt in the order given: putting the dependencies first is safer (a port may link a static library or inline a header of a dependency), and the tart step below does that. Rebuild OSMesa and LLVM too (install section 4, with `MACOSX_DEPLOYMENT_TARGET=14.0`): `$CHECK /opt/osmesa/lib /opt/llvm/lib/libLLVMSupport.a` tells whether they need it. A few ports may stay too new after a rebuild (prebuilt binaries, or a build system that ignores `MACOSX_DEPLOYMENT_TARGET`): that only matters if their files end up in the `.dmg`, which `check-minos.sh` on the `.dmg` tells. `tools/tart/natron-sdk.sh update` does all of this in the tart SDK image (`step_macports_conf` and `step_rebuild_target` in `tools/tart/provision.sh`).
 
 #### Developing with the MacPorts SDK
 

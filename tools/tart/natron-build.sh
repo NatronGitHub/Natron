@@ -10,6 +10,8 @@
 #
 # The local tools/jenkins scripts and tools/MacPorts overlay are used (copied into the VM);
 # the Natron and plugin sources are checked out from GitHub by launchBuildMain.sh.
+# The build fails if a Mach-O file in the DMG needs a macOS newer than $MACOS_MIN (14.0),
+# see check-minos.sh; the list is in <dmg name>-minos.txt next to the DMG.
 set -euo pipefail
 . "$(dirname "$0")/tart-common.sh"
 
@@ -24,7 +26,7 @@ while getopts "b:to:ki:h" opt; do
         o) OUT=$OPTARG ;;
         k) KEEP=1 ;;
         i) SDK_IMAGE=$OPTARG ;;
-        *) sed -n 2,12p "$0"; exit 1 ;;
+        *) sed -n 2,14p "$0"; exit 1 ;;
     esac
 done
 
@@ -58,5 +60,19 @@ if [ "$status" = 0 ] && ! ls "$OUT"/*/*/*.dmg > /dev/null 2>&1; then
     log "Error: the build succeeded but no DMG was copied to $OUT: keeping $VM"
     status=1; KEEP=1
 fi
+# Every Mach-O file in the DMG must run on the oldest supported macOS ($MACOS_MIN, default 14.0,
+# as NATRON_MACOS_MIN in tools/jenkins/common.sh): a release fails otherwise.
+MACOS_MIN=${MACOS_MIN:-14.0}
+for dmg in "$OUT"/*/*/*.dmg; do
+    [ -f "$dmg" ] || continue
+    log "checking that every Mach-O file in $(basename "$dmg") runs on macOS $MACOS_MIN"
+    if "$(dirname "$0")/check-minos.sh" -t "$MACOS_MIN" "$dmg" > "${dmg%.dmg}-minos.txt"; then
+        log "minos check OK"
+    else
+        log "Error: files in $(basename "$dmg") need a macOS newer than $MACOS_MIN (${dmg%.dmg}-minos.txt):"
+        head -20 "${dmg%.dmg}-minos.txt"
+        status=1
+    fi
+done
 [ "$status" = 0 ] && log "build OK" || log "build FAILED (status $status), see $OUT/logs/build.log"
 exit "$status"

@@ -592,7 +592,8 @@ fi
 INSTALLER_OS="${PKGOS}"
 INSTALLER_ARCH="${BITS}"
 if [ "${INSTALLER_OS}" = "OSX" ]; then
-    case "$(sw_vers -productVersion)" in
+    # named after the oldest macOS it runs on (MACOSX_DEPLOYMENT_TARGET, see common.sh)
+    case "${MACOSX_DEPLOYMENT_TARGET:-$(sw_vers -productVersion)}" in
         10.5.*) INSTALLER_OS="MacOSX105";; 
         10.6.*) INSTALLER_OS="MacOSX106";; 
         10.7.*) INSTALLER_OS="MacOSX107";; 
@@ -618,7 +619,7 @@ if [ "${INSTALLER_OS}" = "OSX" ]; then
         29.*) INSTALLER_OS="macOS29";;
         30.*) INSTALLER_OS="macOS30";;
         # Fallback for any unlisted/future release: use macOS<major>.
-        *) INSTALLER_OS="macOS$(sw_vers -productVersion | cut -d. -f1)";;
+        *) INSTALLER_OS="macOS$(echo "${MACOSX_DEPLOYMENT_TARGET:-$(sw_vers -productVersion)}" | cut -d. -f1)";;
     esac
 
     case "${BITS}" in

@@ -207,6 +207,8 @@ function ofx_cmake_build() {
     if [ "$PKGOS" = "OSX" ]; then
         # make the bundles self-contained, as the Makefiles' release builds do (osxDeploy.sh)
         args+=(-DOFX_DEPLOY_BUNDLES=ON)
+        # the oldest macOS supported (common.sh); CMake would also take it from the environment
+        args+=(-DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET")
         if [ "$build_type" != "Debug" ]; then
             # fail if a bundled library needs a newer macOS than the deployment target
             # (an "unused variable" warning where the repository's openfx is older)
