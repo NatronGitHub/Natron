@@ -1055,12 +1055,8 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
                 }
             }
             if (!wasKilled) {
-                try {
-                    mainInstance->getProject()->reset(true/*aboutToQuit*/, true /*blocking*/);
-                } catch (std::logic_error&) {
-                    // ignore
-                }
-
+                // quitNow() resets the project (AppInstance::aboutToQuit()): resetting it here
+                // too ran the beforeProjectClose callback twice
                 try {
                     mainInstance->quitNow();
                 } catch (std::logic_error&) {

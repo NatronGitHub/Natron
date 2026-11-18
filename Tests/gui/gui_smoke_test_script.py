@@ -136,6 +136,11 @@ def runTest():
     transform = app.createNode(TRANSFORM_ID)
     check(transform is not None, "created a Transform node")
     transform.connectInput(0, read)
+    # node previews on: the preview thread renders while the test runs and quits
+    for node in (read, transform):
+        p = node.getParam("enablePreview")
+        if p is not None:
+            p.set(True)
     # Natron only creates a viewer for a new empty project, not when it runs a script
     viewerNode = app.getNode("Viewer1")
     if viewerNode is None:
@@ -197,6 +202,24 @@ def runTest():
         path = os.path.join(outDir, tab + ".png")
         if app.saveScreenshot(path, tab):
             log("saved %s" % os.path.basename(path))
+
+    # previews: change the Transform a few times and wait for the renders and previews
+    for i in range(5):
+        translate.set(t0.x + 10. * i, t0.y)
+        check(viewer.waitForRender(), "waitForRender() with previews on (%d)" % i)
+        for j in range(5):
+            app.processEvents()
+
+    # a close request delivered inside a nested event loop must not delete the main window
+    # under the running code: it is deferred until the loop is done
+    mainWindow = [w for w in QtWidgets.QApplication.topLevelWidgets()
+                  if isinstance(w, QtWidgets.QMainWindow) and w.isVisible()][0]
+    QtCore.QTimer.singleShot(0, mainWindow.close)
+    viewer.waitForRender()
+    for j in range(10):
+        app.processEvents()
+    check(mainWindow.isVisible() and app.getViewer("Viewer1") is not None,
+          "a close request during waitForRender() did not close the main window")
     return 0
 
 

@@ -30,6 +30,7 @@
 
 #include <string>
 #include <map>
+#include <set>
 #include <vector>
 
 #include "Global/GlobalDefines.h"
@@ -647,6 +648,8 @@ private:
     bool _restoringSettings;
     bool _ocioRestored;
     bool _settingsExisted;
+    // set by an answer that --no-dialogs gave, for this session only: never saved
+    std::set<KnobI*> _sessionOnlyKnobs;
     bool _defaultAppearanceOutdated;
 };
 

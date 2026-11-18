@@ -143,7 +143,8 @@ plug-ins are missing.
 To catch crashes, run Natron under a debugger: with ``--debugger``, the smoke test runs Natron
 through ``Tests/gui/natron-lldb.sh``, which runs it under lldb in batch mode, prints the
 backtrace of all threads on a crash and exits with status 139 (on macOS, this also avoids the
-system "quit unexpectedly" dialog). The environment variable *NATRON_TEST_WRAPPER* can give
+system "quit unexpectedly" dialog). When it receives TERM, INT or HUP (e.g. on a timeout), it
+kills Natron too, which lldb runs in its own process group. The environment variable *NATRON_TEST_WRAPPER* can give
 another command to run Natron with. ``natron-lldb.sh`` also works for *NatronRenderer*,
 *natron-python* and the *Tests* binary::
 
@@ -159,7 +160,9 @@ Tips
   they do nothing and return False.
 - :meth:`natron.quit()<NatronEngine.PyCoreApplication.quit>` removes the auto-saves of the
   projects, and it waits until Natron has finished loading and no nested event loop is
-  running, so it can be called from anywhere in the script.
+  running, so it can be called from anywhere in the script. Likewise, a request to close the
+  main window that arrives during :meth:`waitForRender<NatronGui.PyViewer.waitForRender>` or
+  :meth:`processEvents<NatronGui.GuiApp.processEvents>` is deferred until they return.
 
 - Wait for the viewer with :meth:`waitForRender<NatronGui.PyViewer.waitForRender>` after
   changing the graph, the view or a parameter, before checking values or saving a screenshot.

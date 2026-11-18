@@ -1939,6 +1939,9 @@ Settings::saveSettings(const std::vector<KnobI*>& knobs,
 
     settings.setValue(QString::fromUtf8(kQSettingsSoftwareMajorVersionSettingName), NATRON_VERSION_MAJOR);
     for (U32 i = 0; i < knobs.size(); ++i) {
+        if ( _sessionOnlyKnobs.count(knobs[i]) ) {
+            continue; // an answer given by --no-dialogs, not by the user
+        }
         KnobStringBase* isString = dynamic_cast<KnobStringBase*>(knobs[i]);
         KnobIntBase* isInt = dynamic_cast<KnobIntBase*>(knobs[i]);
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>(knobs[i]);
@@ -2278,6 +2281,10 @@ Settings::onKnobValueChanged(KnobI* k,
 {
     Q_EMIT settingChanged(k);
     bool ret = true;
+
+    if (reason == eValueChangedReasonUserEdited) {
+        _sessionOnlyKnobs.erase(k); // the user chose this value: save it
+    }
 
     if ( k == _maxViewerDiskCacheGB.get() ) {
         if (!_restoringSettings) {
@@ -3326,6 +3333,10 @@ Settings::doOCIOStartupCheckIfNeeded()
                 _ocioConfigKnob->setValue(defaultIndex);
                 if (saveAnswer) {
                     saveSetting( _ocioConfigKnob.get() );
+                } else {
+                    // not saved either by a later saveSettings() (e.g. from Python), unless
+                    // the user changes it in the preferences
+                    _sessionOnlyKnobs.insert( _ocioConfigKnob.get() );
                 }
             } else {
                 Dialogs::warningDialog( "OCIO config", tr("The %2 OCIO config could not be found.\n"

@@ -1875,6 +1875,16 @@ Project::getLockFileInfos(const QString& projectPath,
 }
 
 void
+Project::stopAutoSave()
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    _imp->autoSaveTimer->stop();
+    for (std::list<std::shared_ptr<QFutureWatcher<void> > >::iterator it = _imp->autoSaveFutures.begin(); it != _imp->autoSaveFutures.end(); ++it) {
+        (*it)->waitForFinished();
+    }
+}
+
+void
 Project::removeLastAutosave()
 {
     /*

@@ -206,6 +206,12 @@ public:
     static void clearAutoSavesDir();
     void removeLastAutosave();
 
+    /**
+     * @brief Stops the pending auto-save and waits for the one in progress, if any, so that
+     * no auto-save is written afterwards (e.g. before removeLastAutosave() when quitting).
+     **/
+    void stopAutoSave();
+
     QString getLockAbsoluteFilePath() const;
     void createLockFile();
     void removeLockFile();

@@ -528,12 +528,19 @@ GuiApplicationManager::quitWhenIdle()
         return;
     }
 
+    // No preview may be computed while the nodes are deleted: the preview thread holds a
+    // NodeGui and emits its signals from a worker thread. Natron is quitting, so stop it.
+    _imp->previewRenderThread.quitThread(false);
+    _imp->previewRenderThread.waitForThreadToQuit_enforce_blocking();
+
     // The projects are closed without asking to save them: remove their last auto-save, as
-    // answering Discard does, or the next launch would offer to restore it.
+    // answering Discard does, or the next launch would offer to restore it. First stop the
+    // auto-save, so that one running in a worker thread doesn't write the file again.
     const AppInstanceVec instances = getAppInstances();
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         ProjectPtr project = (*it)->getProject();
         if (project) {
+            project->stopAutoSave();
             project->removeLastAutosave();
         }
     }
