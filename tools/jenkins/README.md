@@ -177,7 +177,7 @@ The following options can be passed to `launchBuildMain.sh` as environment varia
 
 `UNIT_TESTS`: Run unit tests after build. Value can be "false" or "true" (for compatibility with jenkins).
 
-`NATRON_LICENSE`: Must be `GPL` or `COMMERCIAL`. When GPL is selected, GPL components (such as certain codecs of ffmpeg or demosaic patterns of libraw) will be included. COMMERCIAL builds also leave out openfx-arena's ReadPDF (poppler) and AudioCurve (libsox, which links GPL libraries).
+`NATRON_LICENSE`: Must be `GPL` or `COMMERCIAL`. When GPL is selected, GPL components (such as certain codecs of ffmpeg or demosaic patterns of libraw) will be included. COMMERCIAL builds also leave out openfx-arena's ReadPDF (poppler) and AudioCurve (libsox, which links GPL libraries), and build openfx-gmic with pocketfft instead of FFTW and with only the G'MIC filters under CeCILL-C. `build-plugins.sh` passes the licence to every plug-in repository (`-DOFX_LICENSE`, or `LICENSE=` for the Makefiles).
 
 `DISABLE_BREAKPAD`: If set to 1, natron will be built without crash reporting capabilities.
 
@@ -214,7 +214,7 @@ This should be consistent with the `REMOTE_PREFIX_USER` value passed to the uplo
 
 `DEBUG_SCRIPTS`: If set to 1, binaries from previous build with same options are not cleaned so that the scripts can continue the same compilation.
 
-`MISC_USE_MAKE`, `IO_USE_MAKE`, `ARENA_USE_MAKE`: openfx-misc, openfx-io and openfx-arena are built with their CMake builds when their checkout has one (`build-plugins.sh`, function `ofx_cmake_build`). Set to 1 to build them with their Makefiles instead. The CMake builds ignore `OPTFLAG`: they use `-O3` (with `-g` for `relwithdebinfo`).
+`PLUGINS_BUILD_SYSTEM`: `cmake` (default) or `make`. With `cmake`, openfx-misc, openfx-io, openfx-arena and openfx-gmic are built with their CMake builds (`build-plugins.sh`, function `ofx_cmake_build`), and a checkout without one is an error. `make` builds them with their Makefiles, the fallback while RB-2.6 is maintained. The CMake builds ignore `OPTFLAG`: they use `-O3` (with `-g` for `relwithdebinfo`); `COMPILE_TYPE=debug` gives `CMAKE_BUILD_TYPE=Debug`, whose macOS bundles are not made self-contained. They download the G'MIC sources into `$WORKSPACE/src`, which is kept across builds.
 
 `EXTRA_PYTHON_MODULES_SCRIPT`: Path to a python script that should install extra modules with `pip` or `easy_install`.
 
