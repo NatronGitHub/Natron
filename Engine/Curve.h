@@ -359,11 +359,14 @@ public:
     void refreshAutomaticDerivatives();
 
     /**
-     * @brief Forget that this curve was loaded with non-finite values (see refreshAutomaticDerivatives()),
-     * so that later clones don't recompute the derivatives again. Called on the knob's curves
-     * at the end of Node::loadKnob().
+     * @brief Mark this curve as loaded from a file that contained non-finite values (#1267):
+     * clone() and cloneAndCheckIfChanged() from this curve then recompute the automatic
+     * derivatives of their target with the target's properties (e.g. periodicity).
+     * The flag is never propagated by clone(): it is only set on the curves of the temporary
+     * knobs of KnobSerialization::load(), which are then cloned into the real knobs.
      **/
-    void clearMustRefreshDerivatives();
+    void setMustRefreshDerivatives();
+    bool getMustRefreshDerivatives() const WARN_UNUSED_RETURN;
 
 private:
     friend class ::boost::serialization::access;

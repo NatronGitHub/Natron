@@ -68,7 +68,6 @@
 #include "Engine/Image.h"
 #include "Engine/ImageParams.h"
 #include "Engine/Knob.h"
-#include "Engine/Curve.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/LibraryBinary.h"
@@ -1225,24 +1224,6 @@ Node::loadKnob(const KnobIPtr & knob,
 
     }
 
-    // The knob's curves are now loaded: if the file contained NaN values (#1267), their
-    // derivatives were recomputed, and later clones (undo, copy/paste, links) must copy them
-    // unchanged.
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        CurvePtr curve = knob->getCurve(ViewIdx(0), i, true);
-        if (curve) {
-            curve->clearMustRefreshDerivatives();
-        }
-    }
-    KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
-    if (isParametric) {
-        for (int i = 0; i < isParametric->getDimension(); ++i) {
-            CurvePtr curve = isParametric->getParametricCurve(i);
-            if (curve) {
-                curve->clearMustRefreshDerivatives();
-            }
-        }
-    }
 } // Node::loadKnob
 
 

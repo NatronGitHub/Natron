@@ -348,11 +348,9 @@ Curve::clone(const Curve & other)
 
     _imp->keyFrames.clear();
     std::transform( otherKeys.begin(), otherKeys.end(), std::inserter( _imp->keyFrames, _imp->keyFrames.begin() ), KeyFrameCloner() );
-    // The flag is propagated to this curve, so that every curve in a chain of clones
-    // recomputes the derivatives with its own periodicity: a project loads into a
-    // temporary curve, which is cloned into a temporary (non-periodic) knob, which is
-    // then cloned into the real knob (KnobParametric::cloneExtraData()).
-    _imp->mustRefreshDerivatives = mustRefreshDerivatives;
+    // The flag is not propagated to this curve: it is set explicitly only on the curves of
+    // the temporary knobs of KnobSerialization (see setMustRefreshDerivatives()), and the
+    // final curve, cloned from them, keeps no flag.
     if (mustRefreshDerivatives) {
         // other was loaded from a file with NaN values: its derivatives must be recomputed
         // with this curve's properties (e.g. periodicity)
@@ -362,11 +360,19 @@ Curve::clone(const Curve & other)
 }
 
 void
-Curve::clearMustRefreshDerivatives()
+Curve::setMustRefreshDerivatives()
 {
     QMutexLocker l(&_imp->_lock);
 
-    _imp->mustRefreshDerivatives = false;
+    _imp->mustRefreshDerivatives = true;
+}
+
+bool
+Curve::getMustRefreshDerivatives() const
+{
+    QMutexLocker l(&_imp->_lock);
+
+    return _imp->mustRefreshDerivatives;
 }
 
 void
@@ -398,9 +404,8 @@ Curve::cloneAndCheckIfChanged(const Curve& other)
 
     if (mustRefreshDerivatives) {
         // other was loaded from a file with NaN values (#1267): copy the keys and recompute
-        // the derivatives with this curve's properties (e.g. periodicity). This is the last
-        // step of loading a project (Node::loadKnob() -> cloneAndUpdateGui()), so the flag
-        // is not propagated to this curve.
+        // the derivatives with this curve's properties (e.g. periodicity), as clone() does.
+        // This is the last step of loading a project (Node::loadKnob() -> cloneAndUpdateGui()).
         _imp->keyFrames.clear();
         std::transform( otherKeys.begin(), otherKeys.end(), std::inserter( _imp->keyFrames, _imp->keyFrames.begin() ), KeyFrameCloner() );
         refreshAutomaticDerivatives();

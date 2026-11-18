@@ -161,9 +161,10 @@ Curve::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("KeyFrameSet", _imp->keyFrames);
     if ( Archive::is_loading::value && (CurveSerializationDetail::nonFiniteValuesRead != nonFiniteBefore) ) {
         // NaN values (#1267) were replaced by 0: recompute the automatic derivatives.
-        // The curve is usually a temporary that gets cloned or copied into the knob's curve,
-        // which is periodic or not, so the flag is kept and clone() recomputes them again.
-        _imp->mustRefreshDerivatives = true;
+        // If this curve is a temporary whose keys are then copied into a knob of a temporary
+        // KnobSerialization, the caller marks that knob's curve with setMustRefreshDerivatives()
+        // (see KnobSerialization::load()), so that the final curve recomputes them with its own
+        // properties (e.g. periodicity).
         refreshAutomaticDerivatives();
     }
 }
