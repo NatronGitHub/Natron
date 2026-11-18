@@ -428,12 +428,32 @@ A new major version of macOS (e.g. 15 to 26) needs a new MacPorts and a reinstal
 
 `launchBuildMain.sh` builds everything from fresh checkouts. To work on Natron or the plugins directly, build them from your own checkouts.
 
-The OpenFX plugins ([openfx-io](https://github.com/NatronGitHub/openfx-io), [openfx-misc](https://github.com/NatronGitHub/openfx-misc), [openfx-arena](https://github.com/NatronGitHub/openfx-arena), [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic)) build with `make` (`CONFIG=debug` or `release`, OpenMP with the MacPorts clang):
+The OpenFX plugins ([openfx-io](https://github.com/NatronGitHub/openfx-io), [openfx-misc](https://github.com/NatronGitHub/openfx-misc), [openfx-arena](https://github.com/NatronGitHub/openfx-arena), [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic)) build the way `tools/jenkins/build-plugins.sh` builds them: openfx-misc and openfx-io with CMake (#1203), openfx-arena and openfx-gmic with `make`. The bundles go to `~/OFX/Natron-release`, which is the directory that `OFX_PLUGIN_PATH` points to in the commands below.
 
 ```Shell
 mkdir -p ~/src && cd ~/src
 for p in openfx-io openfx-misc openfx-arena openfx-gmic; do git clone --recursive https://github.com/NatronGitHub/$p.git; done
-cd ~/src/openfx-misc
+```
+
+openfx-misc and openfx-io use openfx's CMake helpers. Build them with the MacPorts clang (for OpenMP), as C++17 with a Qt5 Natron (`-DOFX_CXX_STANDARD=20` with Qt6), and install the bundles straight into `~/OFX/Natron-release`:
+
+```Shell
+for p in openfx-misc openfx-io; do
+  cd ~/src/$p
+  cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_CXX_COMPILER=clang++-mp-$CLANG -DCMAKE_CXX_FLAGS="-stdlib=libc++" \
+      -DCMAKE_PREFIX_PATH=/opt/local -DSEEXPR_HOME=/opt/local -DOFX_CXX_STANDARD=17 \
+      -DPLUGIN_INSTALLDIR=$HOME/OFX/Natron-release
+  cmake --build build && cmake --install build
+done
+```
+
+CMake's `Release` uses `-O3`, and `build-plugins.sh` uses `-O3 -g` for its `RelWithDebInfo` builds. `build-plugins.sh` also passes `-DOFX_DEPLOY_BUNDLES=ON`, which copies the MacPorts libraries into the bundles for the DMG; a development build doesn't need it. `SEEXPR_HOME` is only used by openfx-io: openfx-misc warns that it is unused. For CPU rendering in Shadertoy, add `-DUSE_OSMESA=ON` for openfx-misc. It uses the OSMesa and LLVM of install section 4: `/opt/osmesa` and `/opt/llvm` by default, or set `-DOSMESA_PATH` and `-DLLVM_PATH`. The CMake options are listed in each repository's `README.md` and `CMakeLists.txt`.
+
+openfx-arena and openfx-gmic build with `make` (`CONFIG=debug` or `release`, OpenMP with the MacPorts clang). `build-plugins.sh` builds them with `OPTFLAG=-Ofast`. #1280 moves openfx-arena to CMake.
+
+```Shell
+cd ~/src/openfx-arena   # then the same in ~/src/openfx-gmic
 env SEEXPR_HOME=/opt/local OSMESA=1 OPENMP=1 CXX="clang++-mp-$CLANG -stdlib=libc++" \
     CXXFLAGS_EXTRA="-DGL_SILENCE_DEPRECATION -isysroot $(xcrun --sdk macosx --show-sdk-path) -std=c++14" \
     CONFIG=release make -j8
@@ -443,7 +463,7 @@ Bundles are written to `<Plugin>/Darwin-64-<config>/*.ofx.bundle`. To use them, 
 
 ```Shell
 mkdir -p ~/OFX/Natron-release && cd ~/OFX/Natron-release
-ln -sf ~/src/openfx-io/IO/Darwin-64-release/IO.ofx.bundle ~/src/openfx-misc/*/Darwin-64-release/*.ofx.bundle .
+ln -sf ~/src/openfx-arena/Bundle/Darwin-64-release/Arena.ofx.bundle ~/src/openfx-gmic/GMIC_OFX/Darwin-64-release/GMIC.ofx.bundle .
 ```
 
 Natron itself builds with CMake, the system (Xcode) clang and the MacPorts libraries (see [Building with CMake](#building-with-cmake) below), from `$NATRON_SRC`, with Homebrew off the `PATH`:
@@ -1036,7 +1056,7 @@ Shiboken has a few glitches which needs fixing with some sed commands, run tools
 
 ## OpenFX plugins
 
-Instructions to build the [openfx-io](https://github.com/NatronGitHub/openfx-io) and [openfx-misc](https://github.com/NatronGitHub/openfx-misc) sets of plugins can also be found in the [tools/packageOSX.sh](https://github.com/NatronGitHub/Natron/blob/master/tools/packageOSX.sh) script if you are using MacPorts, or in the .travis.yml file in their respective github repositories if you are using Homebrew ([openfx-misc/.travis.yml](https://github.com/NatronGitHub/openfx-misc/blob/master/.travis.yml), [openfx-io/.travis.yml](https://github.com/NatronGitHub/openfx-io/blob/master/.travis.yml).
+With MacPorts, build the plugins as in "Developing with the MacPorts SDK" above, or as `tools/jenkins/build-plugins.sh` does. Each plugin repository's `README.md` has its own build instructions, and its CI workflows in `.github/workflows` show a complete build.
 
 
 You can install [TuttleOFX](http://www.tuttleofx.org/) using Homebrew:

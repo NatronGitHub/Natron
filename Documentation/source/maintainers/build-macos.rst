@@ -28,6 +28,10 @@ of **custom ports** in ``tools/MacPorts``. Homebrew is intentionally not used
 for releases (MacPorts is easier to customize and can build universal binaries).
 ``launchBuildMain.sh`` performs six steps: checkout sources, build the plugins,
 build Natron, build the installer/DMG, run unit tests, archive artifacts.
+The plugins are built by ``tools/jenkins/build-plugins.sh``: openfx-misc and
+openfx-io with CMake (#1203), openfx-arena and openfx-gmic with their Makefiles.
+To build them by hand, see "Developing with the MacPorts SDK" in
+``INSTALL_MACOS.md``.
 
 Prerequisites
 -------------
