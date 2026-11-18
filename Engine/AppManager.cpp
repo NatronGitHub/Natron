@@ -20,7 +20,7 @@
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#undef Py_LIMITED_API  // Needed for PyRun_SimpleString, PyRun_String, Py_NoUserSiteDirectory
+#undef Py_LIMITED_API  // Needed for PyRun_SimpleString, PyRun_String
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
@@ -69,6 +69,10 @@
 #ifdef Q_OS_UNIX
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <fcntl.h> // fcntl
+#include <signal.h> // sigaction, raise
+#include <unistd.h> // pipe, read, write
 #ifdef Q_OS_DARWIN
 #include <sys/sysctl.h>
 #include <libproc.h>
@@ -90,6 +94,7 @@
 #include <QDir>
 #include <QCoreApplication>
 #include <QSettings>
+#include <QSocketNotifier>
 #include <QThreadPool>
 #include <QTextStream>
 #include <QAbstractSocket>
@@ -148,14 +153,53 @@ AppManager* AppManager::_instance = 0;
 
 #ifdef __NATRON_UNIX__
 
+// Set by the first termination signal caught while an event loop can quit the application.
+static volatile std::sig_atomic_t shutDownSignalCaught = 0;
+// Self-pipe that wakes up the main thread, see AppManager::setUpShutDownSignalNotifier().
+// The write end is -1 when there is no event loop to quit (background mode).
+static int shutDownSignalPipe[2] = { -1, -1 };
+
 //namespace  {
+// A signal handler runs on any thread, interrupting whatever it was doing (maybe while
+// it holds a lock), so it may only call async-signal-safe functions (see signal-safety(7)).
+// Quitting the application from here crashed or deadlocked (#1253).
 static void
-handleShutDownSignal( int /*signalId*/ )
+handleShutDownSignal(int signalId)
 {
-    if (appPTR) {
-        std::cerr << "\nCaught termination signal, exiting!" << std::endl;
-        appPTR->quitApplication();
+    const int savedErrno = errno; // write() may change it under the interrupted code
+    static const char msg[] = "\nCaught termination signal, exiting!\n";
+    ssize_t ret = ::write(STDERR_FILENO, msg, sizeof(msg) - 1);
+
+    (void)ret;
+    if ( !shutDownSignalCaught && (shutDownSignalPipe[1] != -1) ) {
+        // Let the main thread quit the application, see AppManager::onShutDownSignalReceived().
+        shutDownSignalCaught = 1;
+        const char c = 0;
+        ret = ::write(shutDownSignalPipe[1], &c, 1);
+        (void)ret;
+        errno = savedErrno;
+
+        return;
     }
+    // No event loop can quit the application (background mode, where the main thread
+    // may be rendering or running the Python interpreter; the event loop has ended), or
+    // the signal was sent again: terminate now, with the default action of the signal.
+    // Nothing is cleaned up: the disk cache index is not saved (the disk cache is lost),
+    // and the project lock file stays (a lock whose process is gone is ignored).
+    struct sigaction sa;
+    sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_handler = SIG_DFL;
+    sigaction(signalId, &sa, NULL);
+    raise(signalId); // delivered when the handler returns
+    errno = savedErrno;
+}
+
+// Called when no event loop will run again: from then on, handleShutDownSignal() terminates.
+static void
+disarmShutDownSignalPipe()
+{
+    shutDownSignalPipe[1] = -1;
 }
 
 static void
@@ -182,6 +226,24 @@ setShutDownSignal(int signalId)
 
 #define NATRON_UNIX_BACKTRACE_STACK_DEPTH 16
 
+// The address of the faulting instruction, or NULL on architectures not handled here.
+static void*
+faultInstructionAddress(const ucontext_t* uc)
+{
+#if defined(__x86_64__)
+    return (void*)uc->uc_mcontext.gregs[REG_RIP];
+#elif defined(__i386__)
+    return (void*)uc->uc_mcontext.gregs[REG_EIP];
+#elif defined(__aarch64__)
+    return (void*)uc->uc_mcontext.pc;
+#elif defined(__arm__)
+    return (void*)uc->uc_mcontext.arm_pc;
+#else
+    (void)uc;
+    return NULL;
+#endif
+}
+
 static void
 backTraceSigSegvHandler(int sig,
                         siginfo_t *info,
@@ -200,23 +262,17 @@ backTraceSigSegvHandler(int sig,
             threadName = (qApp && qApp->thread() == curThread) ? "Main" : curThread->objectName().toStdString();
         }
         std::cerr << "Caught segmentation fault (SIGSEGV) from thread "  << threadName << "(" << curThread << "), faulty address is " <<
-             #ifndef __x86_64__
-        (void*)uc->uc_mcontext.gregs[REG_EIP]
-             #else
-            (void*) uc->uc_mcontext.gregs[REG_RIP]
-             #endif
-            << " from " << info->si_addr << std::endl;
+            faultInstructionAddress(uc) << " from " << info->si_addr << std::endl;
     } else {
         printf("Got signal %d#92;n", sig);
     }
 
     trace_size = backtrace(trace, NATRON_UNIX_BACKTRACE_STACK_DEPTH);
     /* overwrite sigaction with caller's address */
-#ifndef __x86_64__
-    trace[1] = (void *) uc->uc_mcontext.gregs[REG_EIP];
-#else
-    trace[1] = (void *) uc->uc_mcontext.gregs[REG_RIP];
-#endif
+    void* faultAddress = faultInstructionAddress(uc);
+    if (faultAddress && trace_size > 1) {
+        trace[1] = faultAddress;
+    }
 
 
     messages = backtrace_symbols(trace, trace_size);
@@ -412,6 +468,9 @@ AppManager::loadW(int argc,
 
 AppManager::~AppManager()
 {
+#ifdef __NATRON_UNIX__
+    disarmShutDownSignalPipe();
+#endif
 #ifdef NATRON_USE_BREAKPAD
     if (_imp->breakpadAliveThread) {
         _imp->breakpadAliveThread->quitThread();
@@ -577,6 +636,44 @@ AppManager::quitApplication()
 }
 
 void
+AppManager::setUpShutDownSignalNotifier()
+{
+#ifdef __NATRON_UNIX__
+    // Only an event loop can quit the application on a termination signal: in background
+    // mode, the main thread doesn't run one, and handleShutDownSignal() terminates.
+    if ( isBackground() || (shutDownSignalPipe[0] != -1) ) {
+        return;
+    }
+    int fds[2];
+    if (::pipe(fds) == -1) {
+        std::perror("setting up termination signal pipe");
+
+        return;
+    }
+    for (int i = 0; i < 2; ++i) {
+        ::fcntl(fds[i], F_SETFD, FD_CLOEXEC);
+        ::fcntl(fds[i], F_SETFL, ::fcntl(fds[i], F_GETFL) | O_NONBLOCK); // the handler must never block
+    }
+    shutDownSignalPipe[0] = fds[0];
+    shutDownSignalPipe[1] = fds[1];
+    QSocketNotifier* notifier = new QSocketNotifier(fds[0], QSocketNotifier::Read, this);
+    QObject::connect( notifier, SIGNAL(activated(QSocketDescriptor,QSocketNotifier::Type)), this, SLOT(onShutDownSignalReceived()) );
+#endif
+}
+
+void
+AppManager::onShutDownSignalReceived()
+{
+#ifdef __NATRON_UNIX__
+    // Called on the main thread by the event loop, after handleShutDownSignal().
+    char c;
+    while (::read(shutDownSignalPipe[0], &c, 1) > 0) {
+    }
+    quitApplication();
+#endif
+}
+
+void
 AppManager::initializeQApp(int &argc,
                            char **argv)
 {
@@ -707,6 +804,7 @@ AppManager::loadInternal(const CLArgs& cl)
 
 # ifdef __NATRON_UNIX__
     if (mustSetSignalsHandlers) {
+        setUpShutDownSignalNotifier();
         setShutDownSignal(SIGINT);   // shut down on ctrl-c
         setShutDownSignal(SIGTERM);   // shut down on killall
 #     if defined(__NATRON_LINUX__) && !defined(__FreeBSD__)
@@ -2670,7 +2768,13 @@ AppManager::exec()
 #ifdef DEBUG
     boost_adaptbx::floating_point::exception_trapping trap(0);
 #endif
-    return qApp->exec();
+    int ret = qApp->exec();
+#ifdef __NATRON_UNIX__
+    // The event loop is over: it can't quit the application on a signal anymore.
+    disarmShutDownSignalPipe();
+#endif
+
+    return ret;
 }
 
 void
@@ -3002,20 +3106,20 @@ AppManager::initPython()
     //Disable user sites as they could conflict with Natron bundled packages.
     //If this is set, Python won’t add the user site-packages directory to sys.path.
     //See https://www.python.org/dev/peps/pep-0370/
+    // (initializePython3() also disables it in the Python configuration)
     qputenv("PYTHONNOUSERSITE", "1");
-    ++Py_NoUserSiteDirectory;
 
     //
     // set up paths, clear those that don't exist or are not valid
     //
     QString binPath = QCoreApplication::applicationDirPath();
     binPath = QDir::toNativeSeparators(binPath);
-    NATRON_PYTHON_NAMESPACE::setupPythonEnv(binPath.toStdString());
+    std::wstring pythonHome = NATRON_PYTHON_NAMESPACE::setupPythonEnv(binPath.toStdString());
 
     ///Must be called prior to Py_Initialize (calls PyImport_AppendInittab())
     initBuiltinPythonModules();
     
-    _imp->mainModule = NATRON_PYTHON_NAMESPACE::initializePython3(_imp->commandLineArgsWide);
+    _imp->mainModule = NATRON_PYTHON_NAMESPACE::initializePython3(_imp->commandLineArgsWide, pythonHome);
 
     std::string err;
     std::string modulename = NATRON_ENGINE_PYTHON_MODULE_NAME;
@@ -3144,6 +3248,61 @@ AppManager::toggleAutoHideGraphInputs()
     for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
         (*it)->toggleAutoHideGraphInputs();
     }
+}
+
+// Registered with atexit by registerCloseProjectsAtPythonExit() in the background modes that run
+// scripts: Py_Main() (-t), or sys.exit() in a script, finalizes Python, so close the projects while Python
+// still runs, for the onProjectClose callbacks and the removal of the node variables (#1253).
+// After Py_Main(), loadInternalAfterInitGui() then quits the instances.
+static PyObject*
+closeProjectsAtPythonExit(PyObject* /*self*/,
+                          PyObject* /*args*/)
+{
+    // SystemExit raised on another thread (e.g. sys.exit() in an expression evaluated by a
+    // render thread) also finalizes Python: the projects can only be reset on the main thread.
+    if ( !qApp || (QThread::currentThread() != qApp->thread()) ) {
+        Py_RETURN_NONE;
+    }
+    if (appPTR) {
+        const AppInstanceVec instances = appPTR->getAppInstances();
+        // Release the GIL while the nodes are deleted: they may wait for threads that need it.
+        // The callbacks take it again with PythonGILLocker.
+        Py_BEGIN_ALLOW_THREADS
+        for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+            try {
+                (*it)->getProject()->reset(true /*aboutToQuit*/, true /*blocking*/);
+            } catch (const std::exception& e) {
+                std::cerr << e.what() << std::endl;
+            }
+        }
+        Py_END_ALLOW_THREADS
+    }
+    Py_RETURN_NONE;
+}
+
+static PyMethodDef closeProjectsAtPythonExitDef = {
+    "_natronCloseProjectsAtExit", closeProjectsAtPythonExit, METH_NOARGS, NULL
+};
+
+void
+AppManager::registerCloseProjectsAtPythonExit()
+{
+    // Before the scripts of the background modes run: sys.exit() in a script finalizes Python too (#1253).
+    static bool registered = false;
+    if (registered) {
+        return;
+    }
+    registered = true;
+    PythonGILLocker pgl;
+    PyObject* atexitModule = PyImport_ImportModule("atexit");
+    PyObject* func = PyCFunction_New(&closeProjectsAtPythonExitDef, NULL);
+    PyObject* ret = (atexitModule && func) ? PyObject_CallMethod(atexitModule, "register", "O", func) : NULL;
+    if (!ret) {
+        PyErr_Print();
+    }
+    Py_XDECREF(ret);
+    Py_XDECREF(func);
+    Py_XDECREF(atexitModule);
 }
 
 void
@@ -3740,6 +3899,14 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
 
     return true;
 #endif
+    if ( !Py_IsInitialized() ) {
+        // e.g. after Py_Main() returned in interpreter mode (#1253)
+        if (error) {
+            *error = "Python is not initialized or was already finalized";
+        }
+
+        return false;
+    }
     PythonGILLocker pgl;
     PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
     int status = -1;
@@ -3973,13 +4140,18 @@ QMap<QString,int> PythonGILLocker::natronCount;
 // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
 PythonGILLocker::PythonGILLocker()
     : state(PyGILState_UNLOCKED)
+    , locked(false)
 {
 #ifdef DEBUG_PYTHON_GIL
     if (!Py_IsInitialized()) {
         throw std::runtime_error("Trying to execute python code, but Py_IsInitialized() returns false");
     }
 #endif
-    assert(Py_IsInitialized());
+    if ( !Py_IsInitialized() ) {
+        // Taking the GIL of a finalized interpreter crashes (#1253): lock nothing.
+        return;
+    }
+    locked = true;
 
     // Also take the Python GIL, since not doing so seems to crash Natron during recursive Natron->Python->Natron->Python calls, see https://github.com/NatronGitHub/Natron/issues/379
     // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
@@ -4020,6 +4192,9 @@ PythonGILLocker::PythonGILLocker()
 
 PythonGILLocker::~PythonGILLocker()
 {
+    if (!locked) {
+        return;
+    }
     // Release the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
 #ifdef DEBUG_PYTHON_GIL
     QThread* curThread = QThread::currentThread();
@@ -4362,6 +4537,14 @@ NATRON_PYTHON_NAMESPACE::getFunctionArguments(const std::string& pyFunc,
 
     return;
 #endif
+    if ( !Py_IsInitialized() ) {
+        // e.g. after Py_Main() returned in interpreter mode (#1253)
+        if (error) {
+            *error = "Python is not initialized or was already finalized";
+        }
+
+        return;
+    }
     std::stringstream ss;
     ss << "import inspect\n";
     ss << "args_spec = inspect.getfullargspec(" << pyFunc << ")\n";

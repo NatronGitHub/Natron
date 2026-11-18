@@ -1381,9 +1381,21 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
 
     const RectD & rod = internalImage->getRoD(); // Not the OFX RoD!!! Image::getRoD() is in *CANONICAL* coordinates
 
+    // Lock the image before reading its bounds: until then, another thread may grow it in place
+    // (Image::ensureBounds()), and the plug-in would see the new buffer with the old bounds and row bytes,
+    // i.e. a sheared and shifted image. The lock is held as long as this OfxImage exists.
+    NATRON_NAMESPACE::Image::ReadAccessPtr readAccess;
+    NATRON_NAMESPACE::Image::WriteAccessPtr writeAccess;
+    if (isSrcImage) {
+        readAccess.reset( new NATRON_NAMESPACE::Image::ReadAccess( internalImage.get() ) );
+    } else {
+        writeAccess.reset( new NATRON_NAMESPACE::Image::WriteAccess( internalImage.get() ) );
+    }
+
     // The bounds of the image at the moment we peak the rowBytes and the internal buffer pointer.
     // Note that when the ReadAccess, or WriteAccess object is released, the image may be resized afterwards (only bigger)
-    const RectI bounds = internalImage->getBounds();
+    // (Image::getBounds() can't be used here: it locks the image for reading, which deadlocks under a WriteAccess.)
+    const RectI bounds = readAccess ? readAccess->getBounds() : writeAccess->getBounds();
     const RectI pluginsSeenBounds = renderWindow.intersect(bounds);
 
     int dataSizeOf = getSizeOfForBitDepth( internalImage->getBitDepth() );
@@ -1395,7 +1407,7 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
         // when this OfxImage is destroyed. By default this local copy is deactivated, to activate it, the user has to go
         // in the preferences and check "Use input image copy for plug-ins rendering"
         const bool copySrcToPluginLocalData = appPTR->isCopyInputImageForPluginRenderEnabled();
-        NATRON_NAMESPACE::Image::ReadAccessPtr access( new NATRON_NAMESPACE::Image::ReadAccess( internalImage.get() ) );
+        const NATRON_NAMESPACE::Image::ReadAccessPtr& access = readAccess;
 
         const std::size_t srcRowSize = bounds.width() * nComps  * dataSizeOf;
 
@@ -1440,7 +1452,7 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
         // row bytes
         ofxImageBase->setIntProperty(kOfxImagePropRowBytes, srcRowSize);
         
-        NATRON_NAMESPACE::Image::WriteAccessPtr access( new NATRON_NAMESPACE::Image::WriteAccess( internalImage.get() ) );
+        const NATRON_NAMESPACE::Image::WriteAccessPtr& access = writeAccess;
 
         if (storage != eStorageModeGLTex) {
             unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );

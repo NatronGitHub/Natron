@@ -156,9 +156,11 @@ public:
                                               std::map<OfxClipInstance*, int>& clipsMapping);
 
     /**
-     * We add some output parameters to the function so that we can delay the actual setting of the clip preferences
+     * We add some output parameters to the function so that we can delay the actual setting of the clip preferences.
+     * For Readers, *outputFormatSet (if not NULL) is set to true if the plug-in set the output format, i.e. if it could
+     * read the format from the file.
      **/
-    StatusEnum getClipPreferences_safe(NodeMetadata& defaultPrefs);
+    StatusEnum getClipPreferences_safe(NodeMetadata& defaultPrefs, bool* outputFormatSet = NULL);
 
     virtual OfxStatus createInstanceAction() OVERRIDE FINAL;
 
@@ -233,6 +235,10 @@ public:
     {
         return _ofxEffectInstance.lock();
     }
+
+    /// The knob holder whose multiple params edit level groups the edits of the plug-in in one undo command:
+    /// the effect, or the Read/Write node of a reader/writer embedded in a Read/Write node.
+    EffectInstancePtr getParamsEditHolder() const WARN_UNUSED_RETURN;
 
     /// to be called right away after populate() is called. It adds to their group all the params.
     /// This is done in a deferred manner as some params can sometimes not be defined in a good order.

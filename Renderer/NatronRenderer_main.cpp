@@ -52,6 +52,7 @@ NATRON_NAMESPACE_USING
 // g++ knows nothing about wmain
 // https://sourceforge.net/p/mingw-w64/wiki2/Unicode%20apps/
 extern "C" {
+    int wmain(int argc, wchar_t** argv); // declared, for -Wmissing-declarations
     int wmain(int argc, wchar_t** argv)
 #else
     int main(int argc, char *argv[])

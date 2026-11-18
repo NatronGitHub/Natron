@@ -1219,8 +1219,9 @@ Gui::saveAndIncrVersion()
 
         if ( !versionStr.isEmpty() ) {
             name.remove( i, versionStr.size() );
-            --i; //move 1 char backward, if the char is a '_' remove it
-            if ( (i >= 0) && ( name.at(i) == QLatin1Char('_') ) ) {
+            // if the version number is preceded by a '_', remove it too
+            if ( (i >= 1) && ( name.at(i - 1) == QLatin1Char('_') ) ) {
+                --i;
                 name.remove(i, 1);
             }
             currentVersion = versionStr.toInt();

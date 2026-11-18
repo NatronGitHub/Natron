@@ -6589,6 +6589,12 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
     if ( getParentMultiInstance() ) {
         return;
     }
+    // The project may be reset after Python was finalized: in interpreter mode (-t),
+    // Py_Main() finalizes Python before it returns. The variable went away with the
+    // interpreter, and taking the GIL now would crash (#1253).
+    if ( !Py_IsInitialized() ) {
+        return;
+    }
 
     AppInstancePtr app = getApp();
     if (!app) {

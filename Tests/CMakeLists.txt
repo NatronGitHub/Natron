@@ -28,33 +28,39 @@ set(Tests_SOURCES
     Image_Test.cpp
     KnobFile_Test.cpp
     KnobSlave_Test.cpp
+    KnobStringAnimation_Test.cpp
     Lut_Test.cpp
     NodeGroup_Test.cpp
     NodePreview_Test.cpp
     NoDialogs_Test.cpp
     OSGLContext_Test.cpp
     PluginGrouping_Test.cpp
+    ReadNodeOverlay_Test.cpp
     RotoPaint_Test.cpp
     Tracker_Test.cpp
     wmain.cpp
 )
 add_executable(Tests ${Tests_HEADERS} ${Tests_SOURCES})
+# openMVG first, for the order of the SYSTEM include directories (see Engine/CMakeLists.txt)
 target_link_libraries(Tests
     PRIVATE
+        openMVG
         NatronEngine
         Qt::Core
         Python3::Python
-        openMVG
 )
+target_include_directories(Tests PRIVATE ..)
 target_include_directories(Tests
-    PRIVATE
-        ..
+    SYSTEM PRIVATE
         ../libs/SequenceParsing
         google-test/include
         google-test
         google-mock/include
         google-mock
 )
+# bundled third-party code (see NATRON_THIRD_PARTY_NO_WARNINGS)
+set_property(SOURCE google-test/src/gtest-all.cc google-mock/src/gmock-all.cc
+    APPEND PROPERTY COMPILE_OPTIONS ${NATRON_THIRD_PARTY_NO_WARNINGS})
 add_test(NAME Tests COMMAND Tests)
 
 # GUI smoke test (see gui/run_gui_smoke_test.py): runs the Natron GUI with --no-dialogs.
