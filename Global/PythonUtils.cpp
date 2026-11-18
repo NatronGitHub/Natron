@@ -361,23 +361,34 @@ PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide,
     // would insert sys.path[0]): sys.argv is the Natron command line, and the directory of
     // argv[0] is prepended to sys.path (relative module import).
     {
-        PyObject* argv = PyList_New(0);
+        // On errors, abort as PySys_SetArgv() did (Py_FatalError), rather than set a shifted sys.argv.
+        PyObject* argv = PyList_New( (Py_ssize_t)commandLineArgsWide.size() );
+        if (!argv) {
+            Py_FatalError("can't create sys.argv");
+        }
         for (std::size_t i = 0; i < commandLineArgsWide.size(); ++i) {
             PyObject* arg = PyUnicode_FromWideChar(commandLineArgsWide[i], -1);
-            if (arg) {
-                PyList_Append(argv, arg);
-                Py_DECREF(arg);
+            if (!arg) {
+                Py_FatalError("can't create sys.argv");
+            }
+            PyList_SET_ITEM(argv, (Py_ssize_t)i, arg); // steals the reference
+        }
+        if (PySys_SetObject(const_cast<char*>("argv"), argv) != 0) {
+            Py_FatalError("can't assign sys.argv");
+        }
+        Py_DECREF(argv);
+
+        PyObject* path0 = PyUnicode_FromWideChar(sysPath0FromArgv0(commandLineArgsWide[0]).c_str(), -1);
+        if (!path0) {
+            Py_FatalError("can't compute path0 from argv");
+        }
+        PyObject* sysPath = PySys_GetObject("path"); // borrowed reference
+        if (sysPath) {
+            if (PyList_Insert(sysPath, 0, path0) != 0) {
+                Py_FatalError("can't prepend path0 to sys.path");
             }
         }
-        PySys_SetObject(const_cast<char*>("argv"), argv);
-        Py_XDECREF(argv);
-
-        PyObject* sysPath = PySys_GetObject("path"); // borrowed reference
-        PyObject* path0 = PyUnicode_FromWideChar(sysPath0FromArgv0(commandLineArgsWide[0]).c_str(), -1);
-        if ( sysPath && PyList_Check(sysPath) && path0 ) {
-            PyList_Insert(sysPath, 0, path0);
-        }
-        Py_XDECREF(path0);
+        Py_DECREF(path0);
     }
 
     PyObject* mainModule = PyImport_ImportModule("__main__"); //create main module , new ref
@@ -470,9 +481,10 @@ runPythonMain(int argc,
               wchar_t** argv,
               const std::wstring& pythonHome)
 {
-    // What Py_Main() does, with the Python home (formerly Py_SetPythonHome()) and the user
-    // site disabled (formerly Py_NoUserSiteDirectory, which Py_Main() ignored: the
-    // PYTHONNOUSERSITE environment variable set by setupPythonEnv() disabled it).
+    // What Py_Main() does, with the Python home (formerly Py_SetPythonHome()).
+    // The user site is disabled by the PYTHONNOUSERSITE environment variable set by
+    // setupPythonEnv(), as before (Py_Main() ignored Py_NoUserSiteDirectory): as with
+    // python, -s and -I disable it too, and -E ignores PYTHONNOUSERSITE.
     PyConfig config;
     PyConfig_InitPythonConfig(&config);
     // also pre-initializes Python from the command line (-E, -I, -X utf8...), as Py_Main()
@@ -481,7 +493,6 @@ runPythonMain(int argc,
         status = PyConfig_SetString( &config, &config.home, pythonHome.c_str() );
     }
     if ( !PyStatus_Exception(status) ) {
-        config.user_site_directory = 0;
         status = Py_InitializeFromConfig(&config);
     }
     PyConfig_Clear(&config);

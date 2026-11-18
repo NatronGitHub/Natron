@@ -70,7 +70,7 @@ PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide,
 
 /**
  * @brief Must be called after setupPythonEnv(): the equivalent of Py_Main(argc, argv), with
- * the given Python home (if not empty) and the user site disabled.
+ * the given Python home (if not empty).
  * @returns The exit status
  **/
 int runPythonMain(int argc, wchar_t** argv, const std::wstring& pythonHome);
