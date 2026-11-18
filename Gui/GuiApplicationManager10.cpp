@@ -508,9 +508,11 @@ GuiApplicationManager::requestQuit(int exitCode)
     // Do not close the projects now: this may be called from a Python callback, by a node
     // or a knob that would be destroyed. Close them once the event loop is back, without
     // asking to save. When the last one is closed, the event loop exits.
-    QTimer::singleShot( 0, this, [this]() {
+    // This may be called from a render thread (e.g. natron.quit() in afterFrameRendered),
+    // where QTimer::singleShot() would need an event loop: queue the call to the main thread.
+    QMetaObject::invokeMethod( this, [this]() {
         quitWhenIdle();
-    } );
+    }, Qt::QueuedConnection );
 }
 
 void
