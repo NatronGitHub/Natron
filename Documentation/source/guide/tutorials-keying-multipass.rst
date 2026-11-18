@@ -105,7 +105,6 @@ Image credits
 
 - Source photograph: `Girl in front of a green background
   <https://commons.wikimedia.org/wiki/File:Girl_in_front_of_a_green_background.jpg>`_
-  by `PictureYouth <http://www.pictureyouth.com/>`_, from `Flickr
-  <https://www.flickr.com/photos/45688888@N08/8682520230>`_, licensed under
+  by PictureYouth (originally on Flickr, no longer online), licensed under
   `CC BY 2.0 <https://creativecommons.org/licenses/by/2.0/>`_. The mattes and
   the result were rendered from it with Natron.

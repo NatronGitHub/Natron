@@ -70,7 +70,6 @@ Image credits
 
 - Source photograph: `Peter Alsop
   <https://commons.wikimedia.org/wiki/File:Peter_Alsop.jpg>`_ by Moose School
-  Productions, from `peteralsop.com
-  <http://peteralsop.com/gallery/peters-headshots>`_, licensed under `CC BY 4.0
+  Productions (originally on peteralsop.com, no longer online), licensed under `CC BY 4.0
   <https://creativecommons.org/licenses/by/4.0/>`_. Resized; the mattes and
   the result were rendered from it with Natron.
