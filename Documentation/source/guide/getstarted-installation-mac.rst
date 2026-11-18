@@ -9,7 +9,7 @@ This chapter explains how to install Natron on macOS.
 Requirements
 ------------
 
-Natron 2.6 needs macOS 15 (Sequoia) or later, on a Mac with Apple Silicon
+Natron 2.6 needs macOS 14 (Sonoma) or later, on a Mac with Apple Silicon
 (arm64). The 2.6 binaries do not run on Intel Macs: use Natron 2.5 there, or
 build Natron from source. Every Apple Silicon Mac has a GPU with the OpenGL
 features Natron needs. See :ref:`system-requirements`.

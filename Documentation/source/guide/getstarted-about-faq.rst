@@ -16,7 +16,7 @@ What operating systems are supported by Natron?
 Natron 2.6 runs on:
 
 * Windows 10 or later, 64-bit (x86-64);
-* macOS 15 (Sequoia) or later, on Apple Silicon (arm64) Macs;
+* macOS 14 (Sonoma) or later, on Apple Silicon (arm64) Macs;
 * 64-bit Linux (x86-64 or aarch64) with glibc 2.28 or later, for example RHEL, Rocky Linux or AlmaLinux 8, Debian 12, Ubuntu 22.04 LTS, or later versions.
 
 32-bit systems and Intel Macs are not supported by Natron 2.6. See :ref:`system-requirements` for the details.

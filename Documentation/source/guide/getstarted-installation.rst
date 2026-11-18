@@ -16,7 +16,7 @@ Natron 2.6 binaries are 64-bit only. 32-bit systems are no longer supported.
 Operating system and processor:
 
 - **Windows:** Windows 10 or later, 64-bit, on an x86-64 processor.
-- **macOS:** macOS 15 (Sequoia) or later, on a Mac with Apple Silicon (arm64).
+- **macOS:** macOS 14 (Sonoma) or later, on a Mac with Apple Silicon (arm64).
   The 2.6 binaries do not run on Intel Macs: use Natron 2.5 there, or build
   Natron from source.
 - **Linux:** a 64-bit distribution (x86-64 or aarch64) with glibc 2.28 or

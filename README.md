@@ -68,7 +68,7 @@ If you are willing to help, please contact the development team on the [pixls.us
 Natron 2.6 binaries are 64-bit only:
 
 - Windows 10 or later, 64-bit (x86-64).
-- macOS 15 (Sequoia) or later, on Apple Silicon (arm64). Intel Macs can use Natron 2.5.
+- macOS 14 (Sonoma) or later, on Apple Silicon (arm64). Intel Macs can use Natron 2.5.
 - Linux (x86-64 or aarch64) with glibc 2.28 or later, for example RHEL/Rocky Linux/AlmaLinux 8, Debian 12, Ubuntu 22.04 LTS, or later. The binaries are built on Rocky Linux 8.
 
 The viewer needs OpenGL 2.0 with the `GL_ARB_vertex_buffer_object` and `GL_ARB_pixel_buffer_object` extensions, which almost any graphics card or integrated GPU from the last fifteen years provides. GPU rendering also needs `GL_ARB_texture_float`, `GL_ARB_framebuffer_object` (or `GL_EXT_framebuffer_object`) and `GL_ARB_vertex_array_object` (or `GL_APPLE_vertex_array_object`).
@@ -97,7 +97,7 @@ For each architecture / operating system, you can either download a stable relea
 There are instructions for building Natron and the basic plugins from source in this directory on various architectures / operating systems. Natron is built with CMake; the qmake build is deprecated and will be removed in a future release ([#1181](https://github.com/NatronGitHub/Natron/issues/1181)):
 
 - [GNU/Linux](INSTALL_LINUX.md)
-- [macOS](INSTALL_MACOS.md) (on an Apple Silicon Mac, [tools/tart](tools/tart/README.md) also builds the macOS 15 arm64 DMG automatically in a VM)
+- [macOS](INSTALL_MACOS.md) (on an Apple Silicon Mac, [tools/tart](tools/tart/README.md) also builds the arm64 DMG, for macOS 14 and later, automatically in a VM)
 - [FreeBSD](INSTALL_FREEBSD.md)
 - [Windows](INSTALL_WINDOWS.md)
 
