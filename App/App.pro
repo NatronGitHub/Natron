@@ -46,7 +46,7 @@ QT += gui core opengl network widgets concurrent
 # QOpenGLWidget moved to its own module in Qt6; CMake already appends it.
 equals(QT_MAJOR_VERSION, 6): QT += openglwidgets
 
-!noexpat: CONFIG += expat
+CONFIG += expat
 
 macx {
   ### custom variables for the Info.plist file

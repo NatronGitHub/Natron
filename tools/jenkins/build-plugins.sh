@@ -14,8 +14,8 @@ updateBuildOptions
 
 #MAKEFLAGS_VERBOSE="V=1" # verbose build
 
-# openfx-misc and openfx-io use their CMake builds when available
-# (set MISC_USE_MAKE=1 or IO_USE_MAKE=1 to use their Makefiles instead).
+# openfx-misc, openfx-io and openfx-arena use their CMake builds when available
+# (set MISC_USE_MAKE=1, IO_USE_MAKE=1 or ARENA_USE_MAKE=1 to use their Makefiles instead).
 
 
 BUILD_IO=1
@@ -111,17 +111,19 @@ if [ "$COMPILE_TYPE" = "debug" ]; then
     # done in release and relwithdebinfo configs).
     # 
     #COMPILE_TYPE=debug
-    # (also for the CMake builds of openfx-misc and openfx-io, see ofx_cmake_build)
+    # (also for the CMake builds of openfx-misc, openfx-io and openfx-arena, see ofx_cmake_build)
     COMPILE_TYPE=relwithdebinfo
     OPTFLAG=-O
 else
-    # Makefile builds (openfx-arena, openfx-gmic, and openfx-misc/openfx-io with
-    # MISC_USE_MAKE=1/IO_USE_MAKE=1): maximum optimization, including non-conformant IEEE
-    # floating-point computation.
-    OPTFLAG=-Ofast
+    # Makefile builds (openfx-gmic, and openfx-misc/openfx-io/openfx-arena with
+    # MISC_USE_MAKE=1/IO_USE_MAKE=1/ARENA_USE_MAKE=1): -O3, like the CMake builds. Not -Ofast: its
+    # -ffinite-math-only lets NaN and Inf through std::max/std::min and folds
+    # std::isnan/std::isfinite to constants, so the plug-ins' NaN/Inf guards don't work.
+    OPTFLAG=-O3
 fi
 # OPTFLAG is ignored by the CMake builds (ofx_cmake_build): they use -O3, with -g for
 # relwithdebinfo, and conformant IEEE floating point (maintainer's rule: -O3 when the tests pass).
+# The Makefile builds above use the same -O3.
 
 CP_OR_MV="cp -a"
 if [ "${MINIMIZE_DISK_USAGE:-}" = "1" ]; then
@@ -458,49 +460,78 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
     printStatusMessage "Building openfx-arena..."
     cd "$TMP_PATH/openfx-arena"
 
-    if [ "$PKGOS" = "OSX" ]; then
-        $GSED -e s/-lgomp// -i.orig Makefile.master
+    # openfx-arena builds with openfx's CMake helpers since openfx-arena#72. Use them when
+    # available, unless ARENA_USE_MAKE=1 forces the Makefiles.
+    if [ "${ARENA_USE_MAKE:-}" != "1" ] && [ -f CMakeLists.txt ] && grep -q 'ofx_deploy_bundle' CMakeLists.txt; then
+        echo "Info: build openfx-arena using cmake..."
+        # Same ImageMagick as the make path: the Magick++ found by pkg-config (ImageMagick 6;
+        # the SDK's magick7 is not used, see the commented-out IM=7 in the make path), and
+        # OpenMP only if that ImageMagick was built with it (the Makefiles keep its -fopenmp,
+        # which the CMake build drops in favour of OFX_USE_OPENMP). Not static on Windows
+        # (no MINGW_STATIC), as the make path.
+        arena_openmp=OFF
+        case " $(pkg-config Magick++ --cflags --libs 2>/dev/null) " in
+            *" -fopenmp "*) arena_openmp=ON;;
+        esac
+        arena_args=(-DOFX_LICENSE="$NATRON_LICENSE" -DOFX_USE_OPENMP="$arena_openmp")
+        if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
+            # no AudioCurve: libsox links GPL libraries (libmad, libid3tag; libao on Windows)
+            arena_args+=(-DAUDIO=OFF)
+        fi
+        ofx_cmake_build ${arena_args[@]+"${arena_args[@]}"}
+        echo "Info: build openfx-arena using cmake... done!"
+    else
+        if [ "$PKGOS" = "OSX" ]; then
+            $GSED -e s/-lgomp// -i.orig Makefile.master
+        fi
+
+        if [ "$PKGOS" = "Windows" ]; then
+            ISWIN=1
+        fi
+        arena_make_audio=""
+        if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
+            # no AudioCurve (libsox links GPL libraries). On the command line: Bundle/Makefile's
+            # "AUDIO = ON" (when pkg-config finds sox) overrides the environment.
+            arena_make_audio="AUDIO=OFF"
+        fi
+
+        echo "Info: build openfx-arena using make..."
+        # Arena 2.1 breaks compat with older releases, check if this is a 2.1(+) build
+        ARENA_CHECK=$(cat Bundle/Makefile|grep lodepng)
+        if [ "$ARENA_CHECK" != "" ]; then
+            #if [ "$PKGOS" != "OSX" ]; then
+            #  export PKG_CONFIG_PATH="${SDK_HOME}/magick7/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+            #else
+            #  export PKG_CONFIG_PATH="/opt/magick/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+            #fi
+            #ARENA_FLAGS="IM=7"
+            # Fetch external depends before build
+            make -C Bundle lodepng.h
+        fi
+
+        set -x
+        env \
+            MINGW="${ISWIN:-}" \
+            LICENSE="$NATRON_LICENSE" \
+            ${ARENA_FLAGS:-} \
+            CXX="$CXX" \
+            CONFIG="${COMPILE_TYPE}" \
+            OPTFLAG="${OPTFLAG}" \
+            BITS="${BITS}" \
+            LDFLAGS_ADD="${BUILDID:-}" \
+            CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
+            make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-} ${arena_make_audio:-}
+
+        ${CP_OR_MV} ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
+        set +x
+
+        echo "Info: build openfx-arena using make... done!"
     fi
-
-    if [ "$PKGOS" = "Windows" ]; then
-        ISWIN=1
-    fi
-
-    echo "Info: build openfx-arena using make..."
-    # Arena 2.1 breaks compat with older releases, check if this is a 2.1(+) build
-    ARENA_CHECK=$(cat Bundle/Makefile|grep lodepng)
-    if [ "$ARENA_CHECK" != "" ]; then
-        #if [ "$PKGOS" != "OSX" ]; then
-        #  export PKG_CONFIG_PATH="${SDK_HOME}/magick7/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
-        #else
-        #  export PKG_CONFIG_PATH="/opt/magick/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
-        #fi
-        #ARENA_FLAGS="IM=7"
-        # Fetch external depends before build
-        make -C Bundle lodepng.h
-    fi
-
-    set -x
-    env \
-        MINGW="${ISWIN:-}" \
-        LICENSE="$NATRON_LICENSE" \
-        ${ARENA_FLAGS:-} \
-        CXX="$CXX" \
-        CONFIG="${COMPILE_TYPE}" \
-        OPTFLAG="${OPTFLAG}" \
-        BITS="${BITS}" \
-        LDFLAGS_ADD="${BUILDID:-}" \
-        CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
-        make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
-
-    ${CP_OR_MV} ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
-    set +x
 
     maybe_cleanup_binary_files
 
     cd "$TMP_PATH"
     #rm -rf openfx-arena || true
-    echo "Info: build openfx-arena using make... done!"
 fi
 
 # GMIC

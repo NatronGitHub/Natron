@@ -1,0 +1,105 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+
+_with_harfbuzz="yes"
+
+_realname=freetype
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=2.15.0
+pkgrel=1
+pkgdesc="TrueType font rendering library (mingw-w64)"
+arch=('any')
+mingw_arch=('mingw64' 'ucrt64' 'clang64' 'clangarm64')
+msys2_references=(
+  'archlinux: freetype2'
+  "cpe: cpe:/a:freetype:freetype"
+)
+url="https://www.freetype.org/"
+msys2_repository_url="https://gitlab.freedesktop.org/freetype/freetype"
+license=('spdx:GPL-2.0-or-later OR FTL')
+depends=("${MINGW_PACKAGE_PREFIX}-cc-libs"
+         "${MINGW_PACKAGE_PREFIX}-brotli"
+         "${MINGW_PACKAGE_PREFIX}-bzip2"
+         "${MINGW_PACKAGE_PREFIX}-libpng"
+         "${MINGW_PACKAGE_PREFIX}-zlib")
+if [ "${_with_harfbuzz}" == "yes" ]; then
+  depends+=("${MINGW_PACKAGE_PREFIX}-harfbuzz")
+fi
+makedepends=("${MINGW_PACKAGE_PREFIX}-meson"
+             "${MINGW_PACKAGE_PREFIX}-ninja"
+             "${MINGW_PACKAGE_PREFIX}-pkgconf"
+             "${MINGW_PACKAGE_PREFIX}-cc")
+source=(https://download-mirror.savannah.gnu.org/releases/freetype/freetype-${pkgver}.tar.xz{,.sig}
+        freetype-2.10.0-enable-valid.patch
+        freetype-2.10.0-enable-spr.patch)
+sha256sums=('93cd47eb719c325107f2d3cf087d06299e944c3b48a40b55537302304dea1dd5'
+            'SKIP'
+            '30e84993f899b66c31451992667f7ac6cc9e0b19dfe2f47ccb546d77bbc77ef5'
+            '0571f18d97834df020e4cbdb1338b14f9160669f868237080951e01f5b86727c')
+validpgpkeys=('E30674707856409FF1948010BE6C3AAC63AD8E3F') # Werner Lemberg <wl@gnu.org>
+
+# Helper macros to help make tasks easier #
+apply_patch_with_msg() {
+  for _patch in "$@"
+  do
+    msg2 "Applying ${_patch}"
+    patch -Nbp1 -i "${srcdir}/${_patch}"
+  done
+}
+
+prepare() {
+  cd "${srcdir}/freetype-${pkgver}"
+
+  apply_patch_with_msg \
+    freetype-2.10.0-enable-valid.patch \
+    freetype-2.10.0-enable-spr.patch
+}
+
+build() {
+  declare -a extra_config
+  if check_option "debug" "n"; then
+    extra_config+=("--buildtype=release")
+  else
+    extra_config+=("--buildtype=debug")
+  fi
+
+  if [ "${_with_harfbuzz}" != "yes" ]; then
+    extra_config+=("-Dharfbuzz=disabled")
+  fi
+
+  extra_config+=("-Dhvf=disabled")
+
+  MSYS2_ARG_CONV_EXCL="--prefix=" \
+    meson setup \
+      --prefix="${MINGW_PREFIX}" \
+      --wrap-mode=nodownload \
+      --auto-features=enabled \
+      --default-library=shared \
+      "${extra_config[@]}" \
+      "build-${MSYSTEM}" \
+      "${_realname}-${pkgver}"
+
+  meson compile -C "build-${MSYSTEM}"
+
+  MSYS2_ARG_CONV_EXCL="--prefix=" \
+    meson setup \
+      --prefix="${MINGW_PREFIX}" \
+      --wrap-mode=nodownload \
+      --auto-features=enabled \
+      --default-library=static \
+      "${extra_config[@]}" \
+      "build-${MSYSTEM}-static" \
+      "${_realname}-${pkgver}"
+
+  meson compile -C "build-${MSYSTEM}-static"
+}
+
+package () {
+  DESTDIR="${pkgdir}" meson install -C "build-${MSYSTEM}-static"
+  DESTDIR="${pkgdir}" meson install -C "build-${MSYSTEM}"
+
+  # Licenses
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/docs/GPLv2.TXT"   "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/GPLv2.TXT"
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/docs/FTL.TXT"     "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/FTL.TXT"
+}

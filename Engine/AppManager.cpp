@@ -226,6 +226,24 @@ setShutDownSignal(int signalId)
 
 #define NATRON_UNIX_BACKTRACE_STACK_DEPTH 16
 
+// The address of the faulting instruction, or NULL on architectures not handled here.
+static void*
+faultInstructionAddress(const ucontext_t* uc)
+{
+#if defined(__x86_64__)
+    return (void*)uc->uc_mcontext.gregs[REG_RIP];
+#elif defined(__i386__)
+    return (void*)uc->uc_mcontext.gregs[REG_EIP];
+#elif defined(__aarch64__)
+    return (void*)uc->uc_mcontext.pc;
+#elif defined(__arm__)
+    return (void*)uc->uc_mcontext.arm_pc;
+#else
+    (void)uc;
+    return NULL;
+#endif
+}
+
 static void
 backTraceSigSegvHandler(int sig,
                         siginfo_t *info,
@@ -244,23 +262,17 @@ backTraceSigSegvHandler(int sig,
             threadName = (qApp && qApp->thread() == curThread) ? "Main" : curThread->objectName().toStdString();
         }
         std::cerr << "Caught segmentation fault (SIGSEGV) from thread "  << threadName << "(" << curThread << "), faulty address is " <<
-             #ifndef __x86_64__
-        (void*)uc->uc_mcontext.gregs[REG_EIP]
-             #else
-            (void*) uc->uc_mcontext.gregs[REG_RIP]
-             #endif
-            << " from " << info->si_addr << std::endl;
+            faultInstructionAddress(uc) << " from " << info->si_addr << std::endl;
     } else {
         printf("Got signal %d#92;n", sig);
     }
 
     trace_size = backtrace(trace, NATRON_UNIX_BACKTRACE_STACK_DEPTH);
     /* overwrite sigaction with caller's address */
-#ifndef __x86_64__
-    trace[1] = (void *) uc->uc_mcontext.gregs[REG_EIP];
-#else
-    trace[1] = (void *) uc->uc_mcontext.gregs[REG_RIP];
-#endif
+    void* faultAddress = faultInstructionAddress(uc);
+    if (faultAddress && trace_size > 1) {
+        trace[1] = faultAddress;
+    }
 
 
     messages = backtrace_symbols(trace, trace_size);

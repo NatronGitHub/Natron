@@ -68,6 +68,16 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 NATRON_NAMESPACE_ENTER
 
+// The keyframe values of string curves reference strings (see StringAnimationManager)
+static bool
+isStringCurve(const CurveGuiPtr& curve)
+{
+    KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( curve.get() );
+
+    return isKnobCurve && dynamic_cast<AnimatingKnobStringHelper*>( isKnobCurve->getInternalKnob().get() );
+}
+
+
 /*****************************CURVE WIDGET***********************************************/
 
 
@@ -271,7 +281,7 @@ CurveWidget::centerOn(const std::vector<CurveGuiPtr> & curves, bool useDisplayRa
     RectD ret;
     for (U32 i = 0; i < curvesToFrame.size(); ++i) {
         const CurveGuiPtr& c = curvesToFrame[i];
-        KeyFrameSet keys = c->getKeyFrames();
+        KeyFrameSet keys = c->getKeyFramesForDisplay();
 
         if ( keys.empty() ) {
             continue;
@@ -1370,7 +1380,7 @@ CurveWidget::refreshSelectedKeysBbox()
          ++it) {
         for (std::list<KeyPtr>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             double x = (*it2)->key.getTime();
-            double y = (*it2)->key.getValue();
+            double y = it->first->getKeyFrameDisplayValue( (*it2)->key );
             if (bboxSet) {
                 if ( x < keyFramesBbox.left() ) {
                     keyFramesBbox.set_left(x);
@@ -1749,9 +1759,12 @@ CurveWidget::copySelectedKeyFramesToClipBoard()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     _imp->_keyFramesClipBoard.clear();
+    _imp->_keyFramesClipBoardIsString.clear();
     for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
+        bool isString = isStringCurve(it->first);
         for (std::list<KeyPtr>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             _imp->_keyFramesClipBoard.push_back( (*it2)->key );
+            _imp->_keyFramesClipBoardIsString.push_back(isString);
         }
     }
 }
@@ -1774,8 +1787,26 @@ CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve()
 
         return;
     }
+    // string keyframes can only be pasted to string curves, and other keyframes to other curves
+    bool isString = isStringCurve(curve);
+    std::vector<KeyFrame> keys;
+    assert( _imp->_keyFramesClipBoard.size() == _imp->_keyFramesClipBoardIsString.size() );
+    for (std::size_t i = 0; i < _imp->_keyFramesClipBoard.size(); ++i) {
+        if (_imp->_keyFramesClipBoardIsString[i] == isString) {
+            keys.push_back(_imp->_keyFramesClipBoard[i]);
+        }
+    }
+    if ( keys.size() < _imp->_keyFramesClipBoard.size() ) {
+        Dialogs::warningDialog( tr("Curve Editor").toStdString(),
+                                tr("Keyframes of string parameters can only be pasted to string parameters, "
+                                   "and other keyframes to other parameters: %1 keyframe(s) were not pasted.")
+                                .arg(_imp->_keyFramesClipBoard.size() - keys.size()).toStdString() );
+    }
+    if ( keys.empty() ) {
+        return;
+    }
     //this function will call update() for us
-    pushUndoCommand( new AddKeysCommand(this, curve, _imp->_keyFramesClipBoard) );
+    pushUndoCommand( new AddKeysCommand(this, curve, keys) );
 }
 
 void
@@ -2310,6 +2341,15 @@ CurveWidget::addKey(const CurveGuiPtr& curve, double xCurve, double yCurve)
     }
     std::vector<KeyFrame> keys(1);
     keys[0] = KeyFrame(xCurve, yCurve, 0, 0);
+    if ( isStringCurve(curve) ) {
+        // yCurve is the displayed value (the keyframe index): the keyframe value must reference the string
+        // at that time (see StringAnimationManager)
+        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( curve.get() );
+        AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>( isKnobCurve->getInternalKnob().get() );
+        double value;
+        isString->stringToKeyFrameValue( xCurve, ViewIdx(0), isString->getValueAtTime( xCurve, isKnobCurve->getDimension() ), &value );
+        keys[0].setValue(value);
+    }
     pushUndoCommand( new AddKeysCommand(this, curve, keys) );
 
     _imp->_drawSelectedKeyFramesBbox = false;

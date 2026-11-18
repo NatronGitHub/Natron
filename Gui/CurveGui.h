@@ -126,7 +126,16 @@ public:
     virtual bool areKeyFramesValuesClampedToBooleans() const;
     virtual bool areKeyFramesValuesClampedToIntegers() const;
     virtual bool isYComponentMovable() const;
+    /**
+     * @brief The keyframes of the curve. For string curves, the keyframe values reference strings (see
+     * StringAnimationManager): keep them in data (selection, undo, clipboard), but show them with
+     * getKeyFramesForDisplay() or getKeyFrameDisplayValue().
+     **/
     virtual KeyFrameSet getKeyFrames() const;
+    /// The keyframes with the value at which they are shown: their index for string curves.
+    KeyFrameSet getKeyFramesForDisplay() const;
+    /// The value at which a keyframe of this curve is shown: its index for string curves.
+    double getKeyFrameDisplayValue(const KeyFrame& key) const;
     virtual int getKeyFrameIndex(double time) const = 0;
     virtual KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp, int index) = 0;
 

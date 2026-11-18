@@ -35,5 +35,9 @@ if(WIN32)
     set(gflags_SOURCES ${gflags_SOURCES} src/windows_port.cc)
 endif()
 add_library(gflags STATIC ${gflags_HEADERS} ${gflags_SOURCES})
+# gflags uses pthread rwlocks (HAVE_PTHREAD/HAVE_RWLOCK): link the thread library
+# explicitly, since glibc < 2.34 keeps it in a separate libpthread.
+find_package(Threads REQUIRED)
+target_link_libraries(gflags PUBLIC Threads::Threads)
 target_include_directories(gflags PUBLIC . src src/gflags)
 set_target_properties(gflags PROPERTIES POSITION_INDEPENDENT_CODE ON)

@@ -888,11 +888,13 @@ DSPasteKeysCommand::DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
                                        const std::list<DSKnobPtr>& dstKnobs,
                                        bool pasteRelativeToRefTime,
                                        DopeSheetEditor *model,
+                                       bool setValuesFromDestination,
                                        QUndoCommand *parent)
     : QUndoCommand(parent),
     _refTime(0),
     _refKeyindex(-1),
     _pasteRelativeToRefTime(pasteRelativeToRefTime),
+    _setValuesFromDestination(setValuesFromDestination),
     _keys(),
     _model(model)
 {
@@ -928,33 +930,6 @@ DSPasteKeysCommand::redo()
 }
 
 void
-DSPasteKeysCommand::setKeyValueFromKnob(const KnobIPtr& knob, double keyTime, KeyFrame* key)
-{
-    KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase*>( knob.get() );
-    KnobBoolBase* isBool = dynamic_cast<KnobBoolBase*>( knob.get() );
-    KnobIntBase* isInt = dynamic_cast<KnobIntBase*>( knob.get() );
-    KnobStringBase* isString = dynamic_cast<KnobStringBase*>( knob.get() );
-
-
-    if (isDouble) {
-        key->setValue( isDouble->getValueAtTime(keyTime) );
-    } else if (isBool) {
-        key->setValue( isBool->getValueAtTime(keyTime) );
-    } else if (isInt) {
-        key->setValue( isInt->getValueAtTime(keyTime) );
-    } else if (isString) {
-        std::string v = isString->getValueAtTime(keyTime);
-        double keyFrameValue = 0.;
-        AnimatingKnobStringHelper* isStringAnimatedKnob = dynamic_cast<AnimatingKnobStringHelper*>(isString);
-        assert(isStringAnimatedKnob);
-        if (isStringAnimatedKnob) {
-            isStringAnimatedKnob->stringToKeyFrameValue(keyTime, ViewIdx(0), v, &keyFrameValue);
-        }
-        key->setValue(keyFrameValue);
-    }
-}
-
-void
 DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
 {
     for (std::list<DSKnobWPtr>::const_iterator it = _dstKnobs.begin(); it != _dstKnobs.end(); ++it) {
@@ -968,6 +943,15 @@ DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
             KnobIPtr knob = knobContext->getInternalKnob();
             knob->beginChanges();
 
+            // The value of a string keyframe references a string (see StringAnimationManager): string keyframes
+            // can only be pasted to string parameters, and other keyframes cannot be pasted to string parameters.
+            // (DopeSheet::pasteKeys() warns about them)
+            if ( !_setValuesFromDestination &&
+                 ( _keys[i].isString != ( dynamic_cast<AnimatingKnobStringHelper*>( knob.get() ) != NULL ) ) ) {
+                knob->endChanges();
+                continue;
+            }
+
             double keyTime = _keys[i].key.getTime();
             double setTime = _pasteRelativeToRefTime ? keyTime - _keys[_refKeyindex].key.getTime() + _refTime : keyTime;
 
@@ -975,10 +959,15 @@ DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
 
                 for (int j = 0; j < knob->getDimension(); ++j) {
                     if ( (dim == -1) || (j == dim) ) {
-                        KeyFrame k = _keys[i].key;
-                        k.setTime(setTime);
+                        if (_setValuesFromDestination) {
+                            // the value of dimension j at that time
+                            knob->onKeyFrameSet(setTime, ViewIdx(0), j);
+                        } else {
+                            KeyFrame k = _keys[i].key;
+                            k.setTime(setTime);
 
-                        knob->setKeyFrame(k, ViewSpec::all(), j, eValueChangedReasonNatronGuiEdited);
+                            knob->setKeyFrame(k, ViewSpec::all(), j, eValueChangedReasonNatronGuiEdited);
+                        }
                     }
                 }
             } else {

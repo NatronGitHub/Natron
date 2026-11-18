@@ -304,7 +304,6 @@ elseif(APPLE)
 elseif(WIN32)
     enable_language(RC)
     add_compile_definitions(WINDOWS WIN32 _UNICODE UNICODE NOMINMAX QHTTP_SERVER_STATIC)
-    add_compile_definitions(COMPILED_FROM_DSP XML_STATIC) # for expat
     if (NOT MSVC)
         add_compile_options(-municode)
         if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -329,7 +328,24 @@ enable_testing()
 
 add_subdirectory(libs)
 
-add_subdirectory(HostSupport)
+# HostSupport: openfx's OfxHost target (openfx::HostSupport), with Natron's options and the
+# parametric parameters of libs/OpenFX_extensions. It links ${CMAKE_DL_LIBS} itself (dlopen in
+# ofxhBinary.cpp). HostSupport/HostSupport.pro is the qmake equivalent: keep them in sync.
+# These normal variables intentionally force openfx's options: a user's -DOFX_*=... has no effect.
+set(OFX_BUILD_HOSTSUPPORT ON)
+set(OFX_EXTENSIONS_NATRON ON)
+set(OFX_EXTENSIONS_NUKE ON)
+set(OFX_EXTENSIONS_TUTTLE ON)
+set(OFX_EXTENSIONS_VEGAS ON)
+set(OFX_EXTENSIONS_RESOLVE ON)
+set(OFX_SUPPORTS_OPENGLRENDER ON)
+set(OFX_SUPPORTS_MULTITHREAD ON)
+set(OFX_SUPPORTS_DIALOG ON)
+set(OFX_SUPPORTS_PARAMETRIC ON)
+add_subdirectory(libs/OpenFX EXCLUDE_FROM_ALL)
+target_sources(OfxHost PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/libs/OpenFX_extensions/ofxhParametricParam.cpp)
+target_include_directories(OfxHost PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libs/OpenFX_extensions>)
+add_library(HostSupport ALIAS OfxHost)
 
 add_subdirectory(Engine)
 
