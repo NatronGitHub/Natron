@@ -66,6 +66,7 @@
 #include "Gui/ProgressPanel.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
+#include "Gui/AIChatPanel.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
@@ -553,6 +554,12 @@ Gui::getScriptEditor() const
     return _imp->_scriptEditor;
 }
 
+AIChatPanel*
+Gui::getAIChatPanel() const
+{
+    return _imp->_aiChatPanel;
+}
+
 ProgressPanel*
 Gui::getProgressPanel() const
 {
@@ -767,6 +774,35 @@ Gui::ensureScriptEditorVisible()
         }
         assert(pane);
         pane->moveScriptEditorHere();
+    }
+}
+
+void
+Gui::ensureAIChatPanelVisible()
+{
+    if (!_imp->_aiChatPanel) {
+        return;
+    }
+
+    TabWidget* pane = _imp->_aiChatPanel->getParentPane();
+
+    if (pane != 0) {
+        pane->setCurrentWidget(_imp->_aiChatPanel);
+    } else {
+        pane = _imp->_nodeGraphArea->getParentPane();
+        if (!pane) {
+            std::list<TabWidget*> tabs;
+            {
+                QMutexLocker k(&_imp->_panesMutex);
+                tabs = _imp->_panes;
+            }
+            if ( tabs.empty() ) {
+                return;
+            }
+            pane = tabs.front();
+        }
+        assert(pane);
+        pane->moveAIChatPanelHere();
     }
 }
 

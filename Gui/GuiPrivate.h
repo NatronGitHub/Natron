@@ -123,6 +123,7 @@ public:
     ActionWithShortcut* actionImportLayout;
     ActionWithShortcut* actionExportLayout;
     ActionWithShortcut* actionRestoreDefaultLayout;
+    QAction* actionShowAIChatPanel;
     ActionWithShortcut* actionNextTab;
     ActionWithShortcut* actionPrevTab;
     ActionWithShortcut* actionCloseTab;
@@ -245,6 +246,7 @@ public:
     bool _aboutToClose;
     bool leftToolBarDisplayedOnHoverOnly;
     ScriptEditor* _scriptEditor;
+    AIChatPanel* _aiChatPanel;
     TabWidget* _lastEnteredTabWidget;
 
     ///Menu entries added by the user
@@ -282,6 +284,8 @@ public:
     void createDopeSheetGui();
 
     void createScriptEditorGui();
+
+    void createAIChatPanelGui();
 
     void createProgressPanelGui();
 

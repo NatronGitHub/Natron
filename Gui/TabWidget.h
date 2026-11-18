@@ -300,6 +300,8 @@ public Q_SLOTS:
 
     void moveProgressPanelHere();
 
+    void moveAIChatPanelHere();
+
     void onSplitHorizontally()
     {
         splitHorizontally();

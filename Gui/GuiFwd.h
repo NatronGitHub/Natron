@@ -104,6 +104,9 @@ class QOpenGLShaderProgram;
 // Natron Gui
 NATRON_NAMESPACE_ENTER
 class AboutWindow;
+class AIAgentBackend;
+class AIChatPanel;
+class AIMcpServer;
 class ActionWithShortcut;
 class AnimItemBase;
 class AnimatedCheckBox;
@@ -119,6 +122,7 @@ class BezierCPCurveGui;
 class BoundAction;
 class Button;
 class ChannelsComboBox;
+class ClaudeCodeBackend;
 class ClickableLabel;
 class ColoredFrame;
 class ComboBox;

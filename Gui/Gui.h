@@ -353,6 +353,8 @@ public:
     CurveEditor* getCurveEditor() const;
     DopeSheetEditor * getDopeSheetEditor() const;
     ScriptEditor* getScriptEditor() const;
+
+    AIChatPanel* getAIChatPanel() const;
     ProgressPanel* getProgressPanel() const;
     QVBoxLayout* getPropertiesLayout() const;
     PropertiesBinWrapper* getPropertiesBin() const;
@@ -656,6 +658,12 @@ public Q_SLOTS:
     void importLayout();
 
     void restoreDefaultLayout();
+
+    /**
+     * @brief Brings the AI Assistant panel into view, docking it next to the
+     * node graph if it is not in a pane yet.
+     **/
+    void ensureAIChatPanelVisible();
 
     void onFreezeUIButtonClicked(bool clicked);
 
