@@ -28,6 +28,8 @@
 #include <cstring> // for std::memcpy
 #include <algorithm> // min, max
 #include <cassert>
+#include <cfloat> // FLT_MIN
+#include <cmath>
 #include <stdexcept>
 
 #include "Engine/RectI.h"
@@ -1361,11 +1363,16 @@ from_func_Cineon(float v)
 }
 
 // Note on the domain checks in the log to_func_* functions below (Cineon, Panalog,
-// REDLog, ViperLog): log10(x) is undefined for x <= 0, so these values return the
-// code value 0 instead of NaN. This makes the curves non-monotonic just above the
-// boundary: there, log10(x) tends to -infinity, so the code value is very negative
-// (below 0) and jumps back to 0 at the boundary. Only negative linear values (which
-// these log encodings can't represent anyway) are affected.
+// REDLog, ViperLog): log10(x) is -infinity for x = 0 and NaN for x < 0, so the
+// argument of log10 is clamped to FLT_MIN, the smallest normal float. The curves
+// stay finite and monotonic (they are constant below the clamp), and the result is
+// unchanged wherever the argument is at least FLT_MIN. Only linear values at or
+// below the bottom of the log encoding (which it can't represent anyway) are affected.
+static inline float
+log10Clamped(float x)
+{
+    return std::log10( std::max(x, FLT_MIN) );
+}
 
 /// to Cineon from Linear Opto-Electronic Transfer Function (OETF)
 static
@@ -1377,11 +1384,7 @@ to_func_Cineon(float v)
     //float offset = 0.01079775161f;
 
     //return (std::log10( (v + offset) / ( 1.f / (1.f - offset) ) ) / 0.0033f + 685.0f) / 1023.f;
-    if (v + 0.01079775161f <= 0.f) {
-        // outside of the domain of log10 (-infinity at the limit): return the lowest code value
-        return 0.f;
-    }
-    return (std::log10( (v + 0.01079775161f) / ( 1.f / (1.f - 0.01079775161f) ) ) / (0.002f / 0.6f) + 685.0f) / 1023.f;
+    return (log10Clamped( (v + 0.01079775161f) / ( 1.f / (1.f - 0.01079775161f) ) ) / (0.002f / 0.6f) + 685.0f) / 1023.f;
 }
 
 const Lut*
@@ -1447,12 +1450,7 @@ static
 float
 to_func_Panalog(float v)
 {
-    const float x = 0.0408f + (1.0f - 0.0408f) * v;
-    if (x <= 0.f) {
-        // outside of the domain of log10 (-infinity at the limit): return the lowest code value
-        return 0.f;
-    }
-    return (444.f * std::log10(x) + 681.f) / 1023.f;
+    return (444.f * log10Clamped(0.0408f + (1.0f - 0.0408f) * v) + 681.f) / 1023.f;
 }
 
 const Lut*
@@ -1474,12 +1472,7 @@ static
 float
 to_func_REDLog(float v)
 {
-    const float x = 0.01f + (1.0f - 0.01f) * v;
-    if (x <= 0.f) {
-        // outside of the domain of log10 (-infinity at the limit): return the lowest code value
-        return 0.f;
-    }
-    return (511.f * std::log10(x) + 1023.) / 1023.f;
+    return (511.f * log10Clamped(0.01f + (1.0f - 0.01f) * v) + 1023.) / 1023.f;
 }
 
 const Lut*
@@ -1501,11 +1494,7 @@ static
 float
 to_func_ViperLog(float v)
 {
-    if (v <= 0.f) {
-        // outside of the domain of log10 (-infinity at the limit): return the lowest code value
-        return 0.f;
-    }
-    return (500.f * std::log10(v) + 1023.f) / 1023.f;
+    return (500.f * log10Clamped(v) + 1023.f) / 1023.f;
 }
 
 const Lut*
