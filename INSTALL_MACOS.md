@@ -90,7 +90,7 @@ sudo port selfupdate
 
 #### 3. Natron's custom ports
 
-Natron needs modified ports. Examples: the `+natron` variants of ImageMagick and openimageio and the `+natronmini` variant of ffmpeg; libraw 0.22.3 with the GPL demosaic packs restored by a patch; freetype 2.15.0 with an upstream fix for rotated text backported; onetbb with a patch for a crash at exit (#1253). MacPorts reads them from a copy of `tools/MacPorts` in `/opt/MacPorts-Natron`. A copy is used rather than the source tree itself, because MacPorts accesses the ports as an unprivileged user that usually can't read your home directory.
+Natron needs modified ports. Examples: the `+natron` variants of ImageMagick, ImageMagick7 and openimageio and the `+natronmini` variant of ffmpeg; libraw 0.22.3 with the GPL demosaic packs restored by a patch; freetype 2.15.0 with an upstream fix for rotated text backported; onetbb with a patch for a crash at exit (#1253). MacPorts reads them from a copy of `tools/MacPorts` in `/opt/MacPorts-Natron`. A copy is used rather than the source tree itself, because MacPorts accesses the ports as an unprivileged user that usually can't read your home directory.
 
 ```Shell
 sudo mkdir -p /opt/MacPorts-Natron
@@ -215,6 +215,9 @@ sudo port -v -N install librsvg -quartz
 sudo port -v -N install poppler librevenge libcdr-0.1 sox libzip
 sudo sed -i '' -e 's/Zstd::Zstd/zstd/' /opt/local/lib/pkgconfig/libzip.pc
 sudo port -v -N install ImageMagick +natron -x11
+# ImageMagick 7, which openfx-arena uses since Natron 2.6 (static, in /opt/local/lib/ImageMagick7,
+# so it doesn't conflict with ImageMagick 6 above)
+sudo port -v -N install ImageMagick7 +natron -x11 -openexr
 
 # openfx-gmic
 sudo port -v -N install fftw-3 -gfortran fftw-3-single -gfortran
@@ -363,9 +366,9 @@ Do this every few weeks, and before a release build. Each step is safe to stop a
 
    `port clean --work --dist installed` removes the build directories and the downloaded source archives of the installed ports, and keeps their logs. Don't delete `/opt/local/var/macports/software`: MacPorts needs those archives to deactivate and reactivate ports.
 
-9. **Rebuild and test,** if the upgrade touched anything Natron or the plug-ins link to: `qt5`, `py311-pyside2`, `python311`, `boost`, `ffmpeg`, `openimageio`, `opencolorio`, `libraw`, `openexr`, `ImageMagick`, `poppler`, `cairo`, `freetype`, … Rebuild from a fresh build directory (install section 10, or "Developing with the MacPorts SDK" below), clear Natron's cache (`rm -rf ~/Library/Caches/INRIA/Natron`), and run the unit tests (see [Testing](#testing)). Before a release, also run the Natron-Tests regression suite on the new DMG (`UNIT_TESTS=true` with `launchBuildMain.sh`, see install section 10, or `runTests.sh`, see "Testing" in `Documentation/source/maintainers/build-macos.rst`).
+9. **Rebuild and test,** if the upgrade touched anything Natron or the plug-ins link to: `qt5`, `py311-pyside2`, `python311`, `boost`, `ffmpeg`, `openimageio`, `opencolorio`, `libraw`, `openexr`, `ImageMagick`, `ImageMagick7`, `poppler`, `cairo`, `freetype`, … Rebuild from a fresh build directory (install section 10, or "Developing with the MacPorts SDK" below), clear Natron's cache (`rm -rf ~/Library/Caches/INRIA/Natron`), and run the unit tests (see [Testing](#testing)). Before a release, also run the Natron-Tests regression suite on the new DMG (`UNIT_TESTS=true` with `launchBuildMain.sh`, see install section 10, or `runTests.sh`, see "Testing" in `Documentation/source/maintainers/build-macos.rst`).
 
-With the tart VMs (`tools/tart`), `tools/tart/natron-sdk.sh update` does steps 3 to 7 inside a copy of the SDK image: it installs the MacPorts version set by `MACPORTS_VERSION` in `tools/tart/provision.sh` and syncs the ports tree (instead of `selfupdate`), copies the host checkout's `tools/` into the VM (so update the host checkout first, step 1), runs `check.sh` (and only warns if the overlay is behind upstream: reintegrate on the host first), `./sync.sh`, reinstalls the pinned ports whose installed version differs from the overlay, upgrades the outdated ports one by one, and re-applies the fixups. The previous image is kept as `natron-sdk-sequoia-prev`. See `tools/tart/README.md`.
+With the tart VMs (`tools/tart`), `tools/tart/natron-sdk.sh update` does steps 3 to 7 inside a copy of the SDK image: it installs the MacPorts version set by `MACPORTS_VERSION` in `tools/tart/provision.sh` and syncs the ports tree (instead of `selfupdate`), copies the host checkout's `tools/` into the VM (so update the host checkout first, step 1), runs `check.sh` (and only warns if the overlay is behind upstream: reintegrate on the host first), `./sync.sh`, reinstalls the pinned ports whose installed version differs from the overlay, upgrades the outdated ports one by one, installs `ImageMagick7 +natron` if the image doesn't have it yet, and re-applies the fixups. The previous image is kept as `natron-sdk-sequoia-prev`. See `tools/tart/README.md`.
 
 #### Switching from Python 3.10 to 3.11
 
@@ -464,7 +467,7 @@ A new major version of macOS (e.g. 15 to 26) needs a new MacPorts and a reinstal
    xargs sudo port setrequested < ~/requested.txt
    ```
 
-   (A file downloaded with a web browser instead of `curl` also needs `xattr -d com.apple.quarantine restore_ports.tcl`.) If a port fails, reinstall it by hand with the commands and variants of install sections 4 to 9, which are the reference for Natron's variants (`ImageMagick +natron`, `ffmpeg +natronmini`, `libraw +gpl2`, ...).
+   (A file downloaded with a web browser instead of `curl` also needs `xattr -d com.apple.quarantine restore_ports.tcl`.) If a port fails, reinstall it by hand with the commands and variants of install sections 4 to 9, which are the reference for Natron's variants (`ImageMagick +natron`, `ImageMagick7 +natron`, `ffmpeg +natronmini`, `libraw +gpl2`, ...).
 
 9. **Re-apply the install fixups** (step 7 of "Keeping MacPorts up to date"): `restore_ports.tcl` doesn't restore `port select` choices, `pip` packages or hand-made links.
 

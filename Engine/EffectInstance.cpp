@@ -5710,6 +5710,22 @@ EffectInstance::refreshMetadata_internal()
         node->refreshEnabledKnobsLabel(plane);
     }
 
+    // Auto-set the project format from the first Reader now, on the main thread, rather than
+    // when the Reader first renders, which may be in the middle of a sequence render (#1294).
+    // Changing the project format re-enters Project::onKnobValueChanged() ->
+    // forceComputeInputDependentDataOnAllTrees(), which refreshes the metadata of all nodes while we are
+    // still refreshing this one. This is safe: our metadata is already stored above, and when called from
+    // refreshMetadata_recursive() the runningClipPreferences guard (ClipPreferencesRunning_RAII) makes the
+    // nested refresh skip this node, while the other nodes (e.g. Writers using the project format) are
+    // refreshed with the new format. The auto-set then is disabled, so the nested call doesn't recurse again.
+    if ( isReader() ) {
+        AppInstancePtr app = getApp();
+        ProjectPtr project = app ? app->getProject() : ProjectPtr();
+        if (project) {
+            project->autoSetProjectFormatFromReader( getNode() );
+        }
+    }
+
     return ret;
 }
 

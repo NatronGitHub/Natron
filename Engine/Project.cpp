@@ -2055,12 +2055,30 @@ Project::doResetEnd(bool aboutToQuit)
         {
             QMutexLocker l(&_imp->projectLock);
             _imp->autoSetProjectFormat = appPTR->getCurrentSettings()->isAutoProjectFormatEnabled();
+            _imp->autoSetProjectFormatPendingReaders.clear();
             _imp->hasProjectBeenSavedByUser = false;
             _imp->projectCreationTime = QDateTime::currentDateTime();
             _imp->setProjectFilename(NATRON_PROJECT_UNTITLED);
             _imp->setProjectPath("");
             _imp->autoSaveTimer->stop();
             _imp->additionalFormats.clear();
+        }
+        {
+            // The format choices must match builtinFormats + additionalFormats: remove the formats that were added
+            // to the closed project, otherwise the indices of the formats added afterwards point to the wrong entries.
+            std::vector<ChoiceOption> entries;
+            {
+                QMutexLocker l(&_imp->formatMutex);
+                for (std::list<Format>::const_iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
+                    QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
+                    if ( !it->getName().empty() ) {
+                        entries.push_back( ChoiceOption(it->getName(), formatStr.toStdString(), "") );
+                    } else {
+                        entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+                    }
+                }
+            }
+            _imp->formatKnob->populateChoices(entries);
         }
         getApp()->removeAllKeyframesIndicators();
 
@@ -2164,9 +2182,144 @@ Project::setAutoSetProjectFormatEnabled(bool enabled)
     _imp->autoSetProjectFormat = enabled;
 }
 
+// Returns true if a Reader can auto-set the project format, i.e. it has a decodable file.
+static bool
+canAutoSetProjectFormatFromReader(const NodePtr& reader)
+{
+    // a deleted Reader may still be referenced (e.g. by a pending list), but must be ignored
+    if ( !reader || !reader->isActivated() ) {
+        return false;
+    }
+    EffectInstancePtr effect = reader->getEffectInstance();
+
+    // A Reader without a decodable file (no file name, no decoder, unreadable file) reports the
+    // project rectangle as its default output format: it must not set the format nor disable the auto-set.
+    return effect && effect->isReader() && effect->isOutputFormatFromFile();
+}
+
+bool
+Project::isSequenceRenderRunning(const QObject* ignoredEngine)
+{
+    bool renderRunning = false;
+    NodesList nodes;
+
+    getNodes_recursive(nodes, true);
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        OutputEffectInstance* output = dynamic_cast<OutputEffectInstance*>( (*it)->getEffectInstance().get() );
+        if ( !output || !output->isDoingSequentialRender() ) {
+            continue;
+        }
+        RenderEnginePtr engine = output->getRenderEngine();
+        if ( engine && (engine.get() == ignoredEngine) ) {
+            // this engine emitted renderFinished, but it only becomes idle a bit later
+            continue;
+        }
+        renderRunning = true;
+        if (engine) {
+            QObject::connect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onSequenceRenderFinishedAutoSetProjectFormat()), Qt::UniqueConnection );
+        }
+    }
+
+    return renderRunning;
+}
+
+void
+Project::autoSetProjectFormatFromReader(const NodePtr& reader)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    if ( !isAutoSetProjectFormatEnabled() || !canAutoSetProjectFormatFromReader(reader) ) {
+        return;
+    }
+
+    // Never change the project format while a sequence render is running: wait for it to finish.
+    if ( isSequenceRenderRunning(NULL) ) {
+        for (std::list<NodeWPtr>::const_iterator it = _imp->autoSetProjectFormatPendingReaders.begin(); it != _imp->autoSetProjectFormatPendingReaders.end(); ++it) {
+            if (it->lock() == reader) {
+                return;
+            }
+        }
+        _imp->autoSetProjectFormatPendingReaders.push_back(reader);
+        // The render may already have emitted renderFinished before we connected to it (it is still
+        // seen as running until its engine becomes idle): also poll until no render is running.
+        scheduleAutoSetProjectFormatRetry();
+
+        return;
+    }
+    _imp->autoSetProjectFormatPendingReaders.clear();
+    setProjectFormatFromReader(reader);
+}
+
+void
+Project::setProjectFormatFromReader(const NodePtr& reader)
+{
+    EffectInstancePtr effect = reader->getEffectInstance();
+    Format frmt;
+
+    frmt.set( effect->getOutputFormat() );
+    frmt.setPixelAspectRatio( effect->getAspectRatio(-1) );
+    setOrAddProjectFormat(frmt);
+}
+
+void
+Project::applyPendingAutoSetProjectFormat(const QObject* ignoredEngine)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    if ( !isAutoSetProjectFormatEnabled() ) {
+        _imp->autoSetProjectFormatPendingReaders.clear();
+
+        return;
+    }
+    if ( _imp->autoSetProjectFormatPendingReaders.empty() ) {
+        return;
+    }
+    if ( isSequenceRenderRunning(ignoredEngine) ) {
+        // Another render is running, or the engine that finished is not idle yet: check again soon.
+        // (A running render also triggers this check when it finishes.)
+        scheduleAutoSetProjectFormatRetry();
+
+        return;
+    }
+    // The first pending Reader that still exists and can still decode its file sets the format.
+    std::list<NodeWPtr> pending;
+    pending.swap(_imp->autoSetProjectFormatPendingReaders);
+    for (std::list<NodeWPtr>::const_iterator it = pending.begin(); it != pending.end(); ++it) {
+        NodePtr reader = it->lock();
+        if ( canAutoSetProjectFormatFromReader(reader) ) {
+            // don't call autoSetProjectFormatFromReader(): it would see the engine that just finished as running
+            setProjectFormatFromReader(reader);
+
+            return;
+        }
+    }
+}
+
+void
+Project::scheduleAutoSetProjectFormatRetry()
+{
+    if (!_imp->autoSetProjectFormatRetryScheduled) {
+        _imp->autoSetProjectFormatRetryScheduled = true;
+        QTimer::singleShot( 100, this, SLOT(onAutoSetProjectFormatRetry()) );
+    }
+}
+
+void
+Project::onSequenceRenderFinishedAutoSetProjectFormat()
+{
+    // renderFinished is emitted by the scheduler thread before its engine becomes idle: ignore that engine.
+    applyPendingAutoSetProjectFormat( sender() );
+}
+
+void
+Project::onAutoSetProjectFormatRetry()
+{
+    _imp->autoSetProjectFormatRetryScheduled = false;
+    applyPendingAutoSetProjectFormat(NULL);
+}
+
 void
 Project::setOrAddProjectFormat(const Format & frmt,
-                               bool skipAdd)
+                               bool skipAdd,
+                               bool mayChangeFormat)
 {
     if ( frmt.isNull() ) {
         return;
@@ -2177,7 +2330,13 @@ Project::setOrAddProjectFormat(const Format & frmt,
     {
         QMutexLocker l(&_imp->formatMutex);
 
-        if (_imp->autoSetProjectFormat) {
+        bool autoSet = _imp->autoSetProjectFormat;
+        if (autoSet && !mayChangeFormat) {
+            Format current;
+            getProjectDefaultFormat(&current);
+            autoSet = (frmt == current);
+        }
+        if (autoSet) {
             _imp->autoSetProjectFormat = false;
             dispW = frmt;
 
