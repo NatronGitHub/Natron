@@ -156,6 +156,13 @@ public:
      **/
     void setKeyModifiersFromViewport();
 
+    // HostSupport passes kNatronOfxInteractPropKeyModifiers to the image effect overlays
+    // (ofxNatron.h extension 13)
+    virtual bool supportsKeyModifiers() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
     // the value of kNatronOfxInteractPropKeyModifiers in the inArgs of the interact actions
     virtual int getKeyModifiers() const OVERRIDE FINAL
     {
