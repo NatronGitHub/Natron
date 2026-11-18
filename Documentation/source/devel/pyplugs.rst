@@ -11,3 +11,4 @@ create, write and distribute them.
     :maxdepth: 1
 
     groups.rst
+    pyplug-writing.rst
