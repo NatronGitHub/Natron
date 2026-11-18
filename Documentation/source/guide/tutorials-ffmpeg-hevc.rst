@@ -47,8 +47,10 @@ and look at the "Supported pixel formats" line: ``yuv420p10le`` means 10-bit
 4:2:0 is available, ``yuv420p12le`` means 12-bit 4:2:0 is available. In
 WriteFFmpeg, the **Show Avail.** button gives the same information.
 
-For now, the macOS builds for Apple Silicon (arm64) include an 8-bit-only
-x265: they can only write 8-bit HEVC.
+The macOS builds of Natron include an 8-bit-only x265 (the Natron MacPorts
+overlay builds x265 without its ``highdepth`` variant), so WriteFFmpeg can
+only write 8-bit HEVC on macOS. To get 10-bit HEVC on macOS, render an image
+sequence and encode it with ``hevc_videotoolbox`` (see `Hardware encoders`_).
 
 
 Writing HEVC from Natron
