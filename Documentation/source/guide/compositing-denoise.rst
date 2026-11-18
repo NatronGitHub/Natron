@@ -63,7 +63,7 @@ While the analysis is locked, the color model, the analysis rectangle and the
 is locked). To change the color model, uncheck *Lock Analysis and Apply* first,
 then press *Analyze Noise Levels* again (the noise levels are reset when the
 color model changes).
-The default color model, Y'CbCr, works well for most footage: it lets the
+The default color model, *Y'CbCr(A)*, works well for most footage: it lets the
 chroma channels (where the eye sees less detail) be denoised more than the
 luminance, with the *Cb Gain* and *Cr Gain* parameters.
 
@@ -93,7 +93,7 @@ settings) connected to the *AnalysisSource* input.
 
 DenoiseSharpen assumes that the noise is Gaussian and has the same level in dark
 and bright areas. Its description explains how to handle other kinds of noise:
-for example, with the *RGB* color model, multiplicative noise can be denoised by
+for example, with the *RGB(A)* (linear RGB) color model, multiplicative noise can be denoised by
 converting the image to a log encoding before denoising and back to linear after.
 Isolated bright or dark pixels (salt-and-pepper noise, dead pixels) are better
 removed with a median filter.
