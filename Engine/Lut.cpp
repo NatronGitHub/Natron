@@ -603,7 +603,7 @@ Lut::from_byte_planar(float* to,
     validate();
     if (!alpha) {
         for (int f = 0, t = 0; f < W; f += inDelta, t += outDelta) {
-            to[f] = fromFunc_uint8_to_float[(int)from[f]];
+            to[t] = fromFunc_uint8_to_float[(int)from[f]];
         }
     } else {
         for (int f = 0, t = 0; f < W; f += inDelta, t += outDelta) {

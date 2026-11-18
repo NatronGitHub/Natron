@@ -1843,7 +1843,6 @@ RotoPaint::drawOverlay(double time,
                     glColor3d(0.85, 0.67, 0.);
 
                     std::list<BezierCPPtr>::const_iterator itF = featherPts.begin();
-                    int index = 0;
                     std::list<BezierCPPtr>::const_iterator prevCp = cps.end();
                     if ( prevCp != cps.begin() ) {
                         --prevCp;
@@ -2040,7 +2039,6 @@ RotoPaint::drawOverlay(double time,
                         if ( prevCp != cps.end() ) {
                             ++prevCp;
                         }
-                        ++index;
                     } // for(it2)
                 } // if ( ( selected != _imp->ui->selectedBeziers.end() ) && !locked ) {
             } // if (isBezier)

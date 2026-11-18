@@ -338,7 +338,7 @@ CurveGui::drawCurve(int curveIndex,
             keyframes.insert( KeyFrame(*it, i) );
         }
     } else {
-        keyframes = getInternalCurve()->getKeyFrames_mt_safe();
+        keyframes = getKeyFramesForDisplay();
         isPeriodic = getInternalCurve()->isCurvePeriodic();
         parametricRange = getInternalCurve()->getXRange();
     }
@@ -601,6 +601,42 @@ KeyFrameSet
 CurveGui::getKeyFrames() const
 {
     return getInternalCurve()->getKeyFrames_mt_safe();
+}
+
+KeyFrameSet
+CurveGui::getKeyFramesForDisplay() const
+{
+    KeyFrameSet keys = getKeyFrames();
+    CurvePtr curve = getInternalCurve();
+
+    if ( !curve || !curve->isStringCurve() ) {
+        return keys;
+    }
+    // same as Curve::getValueAt() on string curves
+    KeyFrameSet ret;
+    int index = 0;
+    for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it, ++index) {
+        KeyFrame k(*it);
+        k.setValue(index);
+        ret.insert(ret.end(), k);
+    }
+
+    return ret;
+}
+
+double
+CurveGui::getKeyFrameDisplayValue(const KeyFrame& key) const
+{
+    CurvePtr curve = getInternalCurve();
+
+    if ( curve && curve->isStringCurve() ) {
+        int index = getKeyFrameIndex( key.getTime() );
+        if (index >= 0) {
+            return index;
+        }
+    }
+
+    return key.getValue();
 }
 
 KnobCurveGui::KnobCurveGui(CurveWidget *curveWidget,

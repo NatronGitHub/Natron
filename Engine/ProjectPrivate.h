@@ -98,6 +98,8 @@ public:
     KnobStringPtr onNodeDeleted;
     TimeLinePtr timeline; // global timeline
     bool autoSetProjectFormat;
+    std::list<NodeWPtr> autoSetProjectFormatPendingReaders; // Readers whose format was not auto-set because a sequence render was running (#1294)
+    bool autoSetProjectFormatRetryScheduled;
     mutable QMutex isLoadingProjectMutex;
     bool isLoadingProject; //< true when the project is loading
     bool isLoadingProjectInternal; //< true when loading the internal project (not gui)
@@ -107,6 +109,7 @@ public:
     std::list<std::shared_ptr<QFutureWatcher<void> > > autoSaveFutures;
     mutable QMutex projectClosingMutex;
     bool projectClosing;
+    bool resetting; // Project::reset() is running (main thread only)
     std::shared_ptr<TLSHolder<Project::ProjectTLSData> > tlsData;
 
     // only used on the main-thread

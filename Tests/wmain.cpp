@@ -8,6 +8,7 @@
 using namespace NATRON_NAMESPACE;
 
 #if defined(_WIN32) && defined(UNICODE)
+GTEST_API_ int wmain(int argc, wchar_t **argv); // declared, for -Wmissing-declarations
 GTEST_API_ int wmain(int argc, wchar_t **argv)
 #else
 GTEST_API_ int main(int argc, char **argv)

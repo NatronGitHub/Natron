@@ -298,7 +298,15 @@ struct ValueSerialization
         ar & ::boost::serialization::make_nvp("HasAnimation", hasAnimation);
 
         if (hasAnimation) {
-            ar & ::boost::serialization::make_nvp( "Curve", *( _knob->getCurve(ViewIdx(0), _dimension, true) ) );
+            AnimatingKnobStringHelper* isAnimatedString = dynamic_cast<AnimatingKnobStringHelper*>( _knob.get() );
+            if (isAnimatedString) {
+                // the strings are saved by time in KnobSerialization ("StringsAnimation")
+                Curve c;
+                isAnimatedString->getCurveForSerialization(_dimension, &c);
+                ar & ::boost::serialization::make_nvp("Curve", c);
+            } else {
+                ar & ::boost::serialization::make_nvp( "Curve", *( _knob->getCurve(ViewIdx(0), _dimension, true) ) );
+            }
         }
 
         if (isInt && !isChoice) {
@@ -567,7 +575,7 @@ private:
             ar & ::boost::serialization::make_nvp("ParametricCurves", curves);
         } else if (isString) {
             std::map<int, std::string> extraDatas;
-            isString->getAnimation().save(&extraDatas);
+            isString->saveAnimation(&extraDatas);
             ar & ::boost::serialization::make_nvp("StringsAnimation", extraDatas);
         }
         ChoiceExtraData* cdata = dynamic_cast<ChoiceExtraData*>(_extraData);
