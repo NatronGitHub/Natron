@@ -31,16 +31,22 @@
 
 #include <cmath>
 #include <limits>
+#include <iostream>
+#include <regex>
+#include <sstream>
+#include <string>
 
 #include <gtest/gtest.h>
 
 #include "Global/MathUtils.h"
 #include "Engine/Curve.h"
+#include "Engine/CurveSerialization.h"
 #include "Engine/Format.h"
 #include "Engine/Interpolation.h"
 #include "Engine/Lut.h"
 #include "Engine/Transform.h"
 #include "Gui/ZoomContext.h"
+#include "NaNGuards_FastMath.h"
 
 NATRON_NAMESPACE_USING
 
@@ -300,4 +306,152 @@ TEST(NaNGuards, MathUtilsIsFinite)
     EXPECT_FALSE( MathUtils::isNaN( std::numeric_limits<float>::infinity() ) );
     EXPECT_TRUE( MathUtils::isNaN( std::numeric_limits<float>::quiet_NaN() ) );
     EXPECT_TRUE( MathUtils::isNaN( -std::numeric_limits<float>::quiet_NaN() ) );
+}
+
+// Values computed at run time, so that the compiler can't know they are NaN or infinite.
+static volatile double gZero = 0.;
+static volatile double gBig = std::numeric_limits<double>::max();
+
+// MathUtils::isFinite()/isNaN() called from a TU compiled with -ffast-math (see
+// NaNGuards_FastMath.cpp): without the optimization barrier, clang folds them to constants.
+TEST(NaNGuards, MathUtilsWithFastMath)
+{
+    const double zero = gZero;
+    const double nanD = zero / zero;
+    const double infD = 1. / zero;
+    const float nanF = (float)nanD;
+    const float infF = (float)infD;
+
+    if ( !NaNGuardsFastMath::compiledWithFastMath() ) {
+        std::cout << "note: NaNGuards_FastMath.cpp was not compiled with -ffast-math" << std::endl;
+    }
+    EXPECT_TRUE( NaNGuardsFastMath::isFiniteD(1.) );
+    EXPECT_TRUE( NaNGuardsFastMath::isFiniteD( std::numeric_limits<double>::max() ) );
+    EXPECT_FALSE( NaNGuardsFastMath::isFiniteD(nanD) );
+    EXPECT_FALSE( NaNGuardsFastMath::isFiniteD(infD) );
+    EXPECT_FALSE( NaNGuardsFastMath::isFiniteD(-infD) );
+    EXPECT_TRUE( NaNGuardsFastMath::isFiniteF(1.f) );
+    EXPECT_FALSE( NaNGuardsFastMath::isFiniteF(nanF) );
+    EXPECT_FALSE( NaNGuardsFastMath::isFiniteF(infF) );
+    EXPECT_FALSE( NaNGuardsFastMath::isNaNF(1.f) );
+    EXPECT_FALSE( NaNGuardsFastMath::isNaNF(infF) );
+    EXPECT_TRUE( NaNGuardsFastMath::isNaNF(nanF) );
+    const float pix[5] = { 0.f, nanF, 1.f, infF, nanF };
+    EXPECT_EQ( 2, NaNGuardsFastMath::countNaN(pix, 5) );
+    EXPECT_TRUE( NaNGuardsFastMath::isSumFinite(1., 2.) );
+    EXPECT_FALSE( NaNGuardsFastMath::isSumFinite(gBig, gBig) ); // overflows to infinity
+}
+
+// With large times, tcur - period rounds to tcur: the search for the previous/next
+// keyframe across the period must not run past the end of the keyframes (it crashed).
+TEST(NaNGuards, PeriodicCurveHugeTimes)
+{
+    Curve c;
+
+    c.setXRange(0., 6.);
+    c.setPeriodic(true);
+    c.addKeyFrame( KeyFrame(1e17, 0.25) );
+    c.addKeyFrame( KeyFrame(1e17 + 64, 0.75) );
+    c.addKeyFrame( KeyFrame(1e17 + 128, 0.5) );
+    expectFiniteDerivatives(c);
+    const double xs[] = { 0., 3., 1e17, 1e17 + 32, 1e17 + 64, 1e17 + 1e3 };
+    for (double x : xs) {
+        EXPECT_TRUE( MathUtils::isFinite( c.getValueAt(x) ) ) << "x=" << x;
+    }
+}
+
+static std::string
+saveCurve(const Curve& c)
+{
+    std::stringstream ss;
+    {
+        boost::archive::xml_oarchive oa(ss);
+        oa << boost::serialization::make_nvp( "Curve", const_cast<Curve&>(c) );
+    }
+
+    return ss.str();
+}
+
+static void
+loadCurve(const std::string& s,
+          Curve* c)
+{
+    std::stringstream ss(s);
+    boost::archive::xml_iarchive ia(ss);
+
+    ia >> boost::serialization::make_nvp("Curve", *c);
+}
+
+// Projects saved before the fix for #1267 contain NaN derivatives, which Boost's
+// xml_iarchive can't read: they are read as 0, and the derivatives are recomputed.
+TEST(NaNGuards, CurveLoadNaNDerivatives)
+{
+    Curve c;
+
+    c.addKeyFrame( KeyFrame(0., 0.) );
+    c.addKeyFrame( KeyFrame(3., 1.) );
+    c.addKeyFrame( KeyFrame(6., 0.) );
+    const std::string good = saveCurve(c);
+
+    // a normal curve loads unchanged
+    {
+        Curve c2;
+        loadCurve(good, &c2);
+        KeyFrameSet k1 = c.getKeyFrames_mt_safe();
+        KeyFrameSet k2 = c2.getKeyFrames_mt_safe();
+        ASSERT_EQ( k1.size(), k2.size() );
+        for (KeyFrameSet::const_iterator i1 = k1.begin(), i2 = k2.begin(); i1 != k1.end(); ++i1, ++i2) {
+            EXPECT_EQ( i1->getTime(), i2->getTime() );
+            EXPECT_EQ( i1->getValue(), i2->getValue() );
+            EXPECT_EQ( i1->getLeftDerivative(), i2->getLeftDerivative() );
+            EXPECT_EQ( i1->getRightDerivative(), i2->getRightDerivative() );
+        }
+    }
+
+    // NaN and infinite derivatives, as written by older versions
+    std::string bad = std::regex_replace( good, std::regex("<LeftDerivative>[^<]*</LeftDerivative>"), "<LeftDerivative>nan</LeftDerivative>" );
+    bad = std::regex_replace( bad, std::regex("<RightDerivative>[^<]*</RightDerivative>"), "<RightDerivative>-inf</RightDerivative>" );
+    ASSERT_NE(good, bad);
+    {
+        Curve c2;
+        ASSERT_NO_THROW( loadCurve(bad, &c2) );
+        expectFiniteDerivatives(c2);
+        // the automatic derivatives are recomputed (they depend on the order in which they are
+        // refreshed, so compare with the same refresh on the original curve)
+        Curve ref(c);
+        ref.refreshAutomaticDerivatives();
+        KeyFrameSet k1 = ref.getKeyFrames_mt_safe();
+        KeyFrameSet k2 = c2.getKeyFrames_mt_safe();
+        ASSERT_EQ( k1.size(), k2.size() );
+        for (KeyFrameSet::const_iterator i1 = k1.begin(), i2 = k2.begin(); i1 != k1.end(); ++i1, ++i2) {
+            EXPECT_NEAR( i1->getLeftDerivative(), i2->getLeftDerivative(), 1e-12 );
+            EXPECT_NEAR( i1->getRightDerivative(), i2->getRightDerivative(), 1e-12 );
+        }
+
+        // the curve is usually loaded in a temporary, then cloned into the knob's curve,
+        // which recomputes them with its own periodicity
+        Curve p;
+        p.setXRange(0., 6.);
+        p.setPeriodic(true);
+        p.clone(c2);
+        expectFiniteDerivatives(p);
+        EXPECT_DOUBLE_EQ( 0., p.getValueAt(6.) );
+        EXPECT_DOUBLE_EQ( 1., p.getValueAt(3.) );
+    }
+
+#ifdef NDEBUG // KeyFrame asserts that its values are finite
+    // NaN values are not written
+    {
+        KeyFrameSet keys = c.getKeyFrames_mt_safe();
+        KeyFrame k = *keys.begin();
+        k.setLeftDerivative( gZero / gZero );
+        Curve c3;
+        c3.setKeyframes(KeyFrameSet{ k }, false);
+        const std::string s = saveCurve(c3);
+        EXPECT_EQ( std::string::npos, s.find("nan") ) << s;
+        Curve c4;
+        ASSERT_NO_THROW( loadCurve(s, &c4) );
+        expectFiniteDerivatives(c4);
+    }
+#endif
 }
