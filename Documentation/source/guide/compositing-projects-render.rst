@@ -41,7 +41,8 @@ To write the result to disk:
    the Node Graph, or use **Image > Write** in the toolbar. By default, a file
    dialog asks for the output file name (this can be turned off with
    **Edit > Preferences > User Interface > Prompt with file dialog when
-   creating Write node**).
+   creating Write node**; on macOS, the Preferences are in the **Natron**
+   menu).
 
    .. image:: _images/TheNodes-Image/node_image_write_nodetree.jpg
 
@@ -87,8 +88,10 @@ The **Render** menu starts several renders at once:
   **Render statistics** window. While it is on, the window shows, for the
   frame displayed in the Viewer, the render time and the cache use of every
   node. Renders started while it is on also write, next to each rendered
-  frame, a text file with the same name and a ``-stats.txt`` ending, with the
-  same information. Use them to find the nodes that slow down a project.
+  frame, a text file with the same information, named after the frame file
+  without its extension followed by ``-stats.txt`` (``render_0001.exr`` gives
+  ``render_0001-stats.txt``). Use them to find the nodes that slow down a
+  project.
 
 Each Write node renders its own **Frame Range** with its own **Frame
 Increment**. On macOS, the function keys may need :kbd:`Fn` (for example
@@ -117,14 +120,15 @@ Two check boxes at the top of the panel change how renders run:
   finished, instead of running at the same time. This is the same setting as
   **Edit > Preferences > Threading > Append new renders to queue**.
 - **Remove Finished Tasks**: finished tasks leave the list. When it is off,
-  they stay in the list and can be restarted.
+  they stay in the list, and the ones that can be paused can be restarted
+  (renders to video files cannot).
 
 Rendering in a separate process
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 With **Edit > Preferences > Threading > Render in a separate process**
-checked, Natron saves a copy of the project when a render starts, and renders
-that copy with a second Natron process that runs in the background. If the
+checked (**Natron > Preferences** on macOS), Natron saves a copy of the
+project when a render starts, and renders that copy with a second Natron process that runs in the background. If the
 main window crashes, the render goes on. Right-click such a task in the
 Progress panel and choose **Show Process Log** to see the output of that
 process.
@@ -161,7 +165,8 @@ Write node named ``Write1`` from frame 1 to frame 100::
   example ``1-10,20,30-50:2``. Put the frame ranges after the project file
   rather than right after ``-w <Write node>``: there, a range with a step is
   taken as an output file name (`issue #1263 <https://github.com/NatronGitHub/Natron/issues/1263>`_).
-- ``-s`` writes the ``-stats.txt`` render statistics described above.
+- ``-s`` writes the ``-stats.txt`` render statistics described above. It
+  does not work when writing video files.
 
 Since the frames to render are given on the command line, a render farm can
 split a shot into chunks of frames and render each chunk on a different
