@@ -46,6 +46,36 @@ clamp(const T& v, const T& lo, const T& hi)
     return MathUtils::clamp(v, lo, hi, std::less<T>{});
 }
 
+// The raw bits of a floating-point value.
+// Testing the bits is not enough with -ffast-math: clang marks the arguments of
+// a fast-math function as never NaN or infinite (nofpclass(nan inf)), and then
+// deduces the result of a bit test made on a memcpy of that value. The empty asm
+// statement is an optimization barrier: the compiler can't know anything about
+// the bits after it, so the test is really performed (same as openfx #151).
+inline std::uint64_t
+floatBits(double x)
+{
+    std::uint64_t bits;
+    std::memcpy(&bits, &x, sizeof(bits));
+#if defined(__GNUC__) // gcc and clang
+    __asm__("" : "+r"(bits));
+#endif
+
+    return bits;
+}
+
+inline std::uint32_t
+floatBits(float x)
+{
+    std::uint32_t bits;
+    std::memcpy(&bits, &x, sizeof(bits));
+#if defined(__GNUC__) // gcc and clang
+    __asm__("" : "+r"(bits));
+#endif
+
+    return bits;
+}
+
 // isFinite(x) is true if x is neither NaN nor infinite.
 // It tests the exponent bits instead of calling std::isfinite or comparing
 // floating-point values, because -ffast-math (-ffinite-math-only) lets the
@@ -55,29 +85,20 @@ clamp(const T& v, const T& lo, const T& hi)
 inline bool
 isFinite(double x)
 {
-    std::uint64_t bits;
-    std::memcpy(&bits, &x, sizeof(bits));
-
-    return (bits & 0x7ff0000000000000ULL) != 0x7ff0000000000000ULL;
+    return (floatBits(x) & 0x7ff0000000000000ULL) != 0x7ff0000000000000ULL;
 }
 
 inline bool
 isFinite(float x)
 {
-    std::uint32_t bits;
-    std::memcpy(&bits, &x, sizeof(bits));
-
-    return (bits & 0x7f800000U) != 0x7f800000U;
+    return (floatBits(x) & 0x7f800000U) != 0x7f800000U;
 }
 
 // isNaN(x) is true if x is a NaN. See isFinite() for why it doesn't use std::isnan.
 inline bool
 isNaN(float x)
 {
-    std::uint32_t bits;
-    std::memcpy(&bits, &x, sizeof(bits));
-
-    return (bits & 0x7fffffffU) > 0x7f800000U;
+    return (floatBits(x) & 0x7fffffffU) > 0x7f800000U;
 }
 
 } // namespace MathUtils
