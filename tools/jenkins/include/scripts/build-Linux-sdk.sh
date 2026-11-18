@@ -56,11 +56,33 @@ if [ -z "${WITH_MARIADB+x}" ]; then
     fi
 fi
 
-# GCC_TOOLSET=N gcc-toolset version used on Rocky Linux 8 (default: 14, i.e. GCC 14.2,
-# as in the VFX Reference Platform CY2026)
+# GCC_TOOLSET=N gcc-toolset version used on Rocky Linux 8 and 9 (default: 14, i.e. GCC 14.2,
+# as in the VFX Reference Platform CY2026/CY2027)
 GCC_TOOLSET="${GCC_TOOLSET:-14}"
-# SHIBOKEN2_CLANG_VERSION=X.Y.Z libclang version used by shiboken2 on Rocky Linux 8
-SHIBOKEN2_CLANG_VERSION="${SHIBOKEN2_CLANG_VERSION:-18.1.8}"
+# libclang used by the shiboken2 generator on Rocky Linux (see the Dockerfile generation below).
+# Shiboken2 5.15.19, even with the libclang >= 16 patches, misparses some default arguments with
+# libclang 22 (e.g. QEvent::Type values resolved in the wrong class): use an older libclang.
+if [ "${ROCKY:-0}" -ge 9 ]; then
+    # SHIBOKEN2_CLANG_VERSION=N: major version of EPEL's clangN-devel compat package
+    SHIBOKEN2_CLANG_VERSION="${SHIBOKEN2_CLANG_VERSION:-19}"
+    SHIBOKEN2_CLANG_PKGS="clang${SHIBOKEN2_CLANG_VERSION}-devel llvm${SHIBOKEN2_CLANG_VERSION}-devel"
+    SHIBOKEN2_LLVM_DIR="/usr/lib64/llvm${SHIBOKEN2_CLANG_VERSION}"
+else
+    # SHIBOKEN2_CLANG_VERSION=X.Y.Z: version of AppStream's clang-devel (as in MacPorts)
+    SHIBOKEN2_CLANG_VERSION="${SHIBOKEN2_CLANG_VERSION:-18.1.8}"
+    SHIBOKEN2_CLANG_PKGS="clang-devel-${SHIBOKEN2_CLANG_VERSION} llvm-devel-${SHIBOKEN2_CLANG_VERSION}"
+    SHIBOKEN2_LLVM_DIR="/usr"
+fi
+# WITH_QT4=true|false build Qt 4 (with QtWebKit, PySide and Shiboken) and the Qt installer
+# framework (with its static Qt 4). Not needed on Rocky Linux 9 and later: Natron 2.6 is
+# built with Qt 5, and the Linux releases are portable archives, without the IFW installer.
+if [ -z "${WITH_QT4+x}" ]; then
+    if [ "${ROCKY:-0}" -ge 9 ]; then
+        WITH_QT4=false
+    else
+        WITH_QT4=true
+    fi
+fi
 
 if [ "${DOWNLOAD:-}" = "1" ] && [ -z "${GEN_DOCKERFILE+x}" ]; then
     echo "*** downloading all source distributions"
@@ -184,10 +206,14 @@ EOF
             PREYUM="sed -i -e 's/^mirrorlist/#mirrorlist/' -e 's@^#[ ]*baseurl=http://mirror.centos.org@baseurl=http://vault.centos.org@' /etc/yum.repos.d/CentOS*.repo && $PREYUM"
         fi
         if [ "${CENTOS:-7}"  -ge 8 ] || [ -n "${ROCKY+x}" ]; then
-            # Enable powertools on CentOS >= 8 / Rocky Linux 8
+            # Enable powertools on CentOS >= 8 / Rocky Linux 8, CRB on Rocky Linux >= 9
             # https://www.how2shout.com/linux/how-to-enable-powertools-repository-on-rocky-linux-8/
             # https://computingforgeeks.com/enable-powertools-repository-on-centos-rhel-linux/
-            DTSYUM+="dnf -y install dnf-plugins-core && dnf -y install epel-release && dnf config-manager --set-enabled powertools && dnf -y update && dnf -y groupinstall 'Development Tools' && "
+            EL_DEVEL_REPO=powertools
+            if [ "${ROCKY:-0}" -ge 9 ]; then
+                EL_DEVEL_REPO=crb
+            fi
+            DTSYUM+="dnf -y install dnf-plugins-core && dnf -y install epel-release && dnf config-manager --set-enabled ${EL_DEVEL_REPO} && dnf -y update && dnf -y groupinstall 'Development Tools' && "
             YUM_DEVEL_EXTRA=""
         else
             YUM_DEVEL_EXTRA="libXevie-devel libdmx-devel" # only available on CentOS <= 7
@@ -203,23 +229,33 @@ EOF
             fi
             DTSYUM+="yum -y install devtoolset-${DTS} && "
         fi
-        if [ "${ROCKY:-0}" = 8 ]; then
-            # Rocky Linux 8's system GCC (8.5) has incomplete C++17 and no C++20 support:
-            # use the gcc-toolset (GCC 14.2, as in the VFX Reference Platform CY2026),
+        if [ "${ROCKY:-0}" -ge 8 ]; then
+            # The system GCC of Rocky Linux 8 (8.5) has incomplete C++17 and no C++20 support,
+            # and the one of Rocky Linux 9 (11.5) has incomplete C++20 support: use the
+            # gcc-toolset (GCC 14.2, as in the VFX Reference Platform CY2026/CY2027),
             # available for x86_64 and aarch64. The system GCC is still used to build
-            # the installer's static Qt 4 and qtifw (see DTSSDK below).
-            # clang-devel: libclang, for the shiboken2 generator (see pkg/pyside2.sh), which
-            # also needs LLVM_INSTALL_DIR to find clang's builtin headers. Shiboken2 5.15.19,
-            # even with the libclang >= 16 patches, misparses some default arguments with the
-            # current libclang 22 (e.g. QEvent::Type values resolved in the wrong class): pin
-            # libclang 18, as MacPorts does.
-            DTSYUM+="dnf -y install gcc-toolset-${GCC_TOOLSET} clang-devel-${SHIBOKEN2_CLANG_VERSION} llvm-devel-${SHIBOKEN2_CLANG_VERSION} && "
+            # the installer's static Qt 4 and qtifw, if WITH_QT4 (see DTSSDK below).
+            # libclang, for the shiboken2 generator (see pkg/pyside2.sh), which also needs
+            # LLVM_INSTALL_DIR to find clang's builtin headers (see SHIBOKEN2_CLANG_VERSION).
+            DTSYUM+="dnf -y install gcc-toolset-${GCC_TOOLSET} ${SHIBOKEN2_CLANG_PKGS} && "
+            if [ "${SHIBOKEN2_LLVM_DIR}" != /usr ]; then
+                # shiboken2 looks for the builtin headers in $LLVM_INSTALL_DIR/lib/clang/<version>/include,
+                # but EPEL's clangN-resource-filesystem puts them in /usr/lib/clang/N/include
+                DTSYUM+="ln -sfn /usr/lib/clang ${SHIBOKEN2_LLVM_DIR}/lib/clang && "
+            fi
             DOCKER_ENV_TOOLSET="ENV PATH=\"/opt/rh/gcc-toolset-${GCC_TOOLSET}/root/usr/bin:\$PATH\" \\
-    LLVM_INSTALL_DIR=/usr"
+    LLVM_INSTALL_DIR=${SHIBOKEN2_LLVM_DIR}"
+        fi
+        # libXvMC was removed in EL9
+        YUM_XVMC=libXvMC-devel
+        if [ "${ROCKY:-0}" -ge 9 ]; then
+            YUM_XVMC=
+            # Rust (cargo, rustc), to build librsvg >= 2.41 (see pkg/librsvg.sh)
+            DTSYUM+="dnf -y install rust-toolset && "
         fi
         # Note: perl-version added for qt4webkit, see https://github.com/NatronGitHub/Natron/issues/351#issuecomment-524068232
         # perl-Encode and perl-Data-Dumper needed to build texinfo before perl
-        YUM_PKGS="ca-certificates make util-linux git tar bzip2 wget glibc-devel diffutils patch zip unzip alsa-lib-devel libX11-devel mesa-libGL-devel mesa-libEGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbcommon-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXres-devel libXtst-devel xorg-x11-proto-devel libXxf86dga-devel libXpm-devel perl-Digest-MD5 perl-version perl-Encode perl-Data-Dumper"
+        YUM_PKGS="ca-certificates make util-linux git tar bzip2 wget glibc-devel diffutils patch zip unzip alsa-lib-devel libX11-devel mesa-libGL-devel mesa-libEGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel ${YUM_XVMC} libXxf86vm-devel libxkbcommon-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXres-devel libXtst-devel xorg-x11-proto-devel libXxf86dga-devel libXpm-devel perl-Digest-MD5 perl-version perl-Encode perl-Data-Dumper"
         SDKPREP="RUN ${PREYUM}${DTSYUM}yum -y install ${YUM_PKGS} ${YUM_DEVEL_EXTRA} && yum -y clean all"
         cat <<EOF
 FROM $DOCKER_BASE as intermediate
@@ -599,17 +635,20 @@ if dobuild; then
     echo "*** Info: Build logs are in $LOGDIR"
 fi
 
+step="" # the last package built (none yet, e.g. if WITH_QT4 is false)
 checkpointstep=""
 prevstep=""
 reachedstep=0 # becomes 1 when LAST_STEP is reached
 pkgs=()
 
-build openssl-installer
+if $WITH_QT4; then
+    build openssl-installer
 
-checkpoint
+    checkpoint
 
-build qt-installer
-build qtifw
+    build qt-installer
+    build qtifw
+fi
 
 checkpoint
 
@@ -654,8 +693,11 @@ elif [ "${UBUNTU:-0}" = 18.04 ]; then
 elif [ "${CENTOS:-7}" = 8 ]; then
     GCC_VERSION=8.3.1
     BOOTSTRAP_GCC_VERSION=$GCC_VERSION
-elif [ "${ROCKY:-0}" = 8 ]; then
+elif [ "${ROCKY:-0}" -ge 8 ]; then
     # gcc-toolset-${GCC_TOOLSET} (installed with dnf, see the Dockerfile generation above)
+    if dobuild; then
+        export LLVM_INSTALL_DIR="${LLVM_INSTALL_DIR:-$SHIBOKEN2_LLVM_DIR}"
+    fi
     DTSSDK="source scl_source enable gcc-toolset-${GCC_TOOLSET} && "
     if dobuild; then
         case " ${X_SCLS:-} " in
@@ -919,6 +961,7 @@ checkpoint
 
 checkpoint
 
+if $WITH_QT4; then
 build qt4
 
 checkpoint
@@ -944,6 +987,7 @@ if dobuild; then
         LD_LIBRARY_PATH="$LD_LIBRARY_PATH_SAVE"
     fi
 fi
+fi # WITH_QT4
 
 checkpoint
 
@@ -989,6 +1033,10 @@ fi
 checkpoint
 
 if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ]; then
+    SDK_DEFAULT_QT=qt4
+    if ! $WITH_QT4; then
+        SDK_DEFAULT_QT=qt5
+    fi
     cat <<EOF
 RUN xz $SDK_HOME/var/log/Natron-Linux-*-SDK/*
 FROM $DOCKER_BASE
@@ -996,7 +1044,7 @@ MAINTAINER https://github.com/NatronGitHub/Natron
 WORKDIR /home
 COPY --from=intermediate $SDK_HOME $SDK_HOME
 ARG SDK=$SDK_HOME
-ARG QTDIR=\$SDK/qt4
+ARG QTDIR=\$SDK/${SDK_DEFAULT_QT}
 ARG GCC=\$SDK/gcc
 ARG FFMPEG=\$SDK/ffmpeg-gpl2
 ARG LIBRAW=\$SDK/libraw-gpl2
@@ -1037,7 +1085,7 @@ EOF
     DTSENABLE=
     if [ -n "${DTS:-}" ]; then
         DTSENABLE="scl enable devtoolset-${DTS} "
-    elif [ "${ROCKY:-0}" = 8 ]; then
+    elif [ "${ROCKY:-0}" -ge 8 ]; then
         # gcc-toolset-${GCC_TOOLSET} is also first in PATH (see ENV above), so that
         # "docker run <image> bash -c ..." uses it too.
         DTSENABLE="scl enable gcc-toolset-${GCC_TOOLSET} "
