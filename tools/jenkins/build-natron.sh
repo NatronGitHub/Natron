@@ -236,8 +236,11 @@ if [ "$NATRON_BUILD_SYSTEM" = "cmake" ]; then
     split_compiler CMAKE_OBJCXX "$OBJECTIVE_CXX"
 
     PYTHON_EXE="$PY_EXE"
-    if [ -x "$SDK_HOME/bin/python${PYVER}" ] || [ -x "$SDK_HOME/bin/python${PYVER}.exe" ]; then
+    if [ -x "$SDK_HOME/bin/python${PYVER}" ]; then
         PYTHON_EXE="$SDK_HOME/bin/python${PYVER}"
+    elif [ -x "$SDK_HOME/bin/python${PYVER}.exe" ]; then
+        # MSYS2: keep the .exe, so that "cygpath -m" names an existing file for cmake
+        PYTHON_EXE="$SDK_HOME/bin/python${PYVER}.exe"
     fi
 
     OCIO_CONFIGS_LIST="${OCIO_CONFIGS[*]}"
@@ -294,8 +297,8 @@ if [ "$NATRON_BUILD_SYSTEM" = "cmake" ]; then
     fi
 
     if [ "$COMPILE_TYPE" != "debug" ]; then
-        # qmake: CONFIG+=noassertions. qmake's CONFIG+=fast (-Ofast) is not reproduced:
-        # its -ffinite-math-only defeats NaN and infinity checks (see #1277). Add
+        # qmake: CONFIG+=noassertions. No fast math (the release builds use -O3 without it):
+        # -ffinite-math-only defeats NaN and infinity checks (see #1277). Add
         # -DNATRON_FAST_MATH=ON to NATRON_EXTRA_CMAKE_FLAGS to get it.
         CMAKE_FLAGS+=(-DNATRON_NO_ASSERTIONS=ON)
     fi
@@ -471,9 +474,9 @@ elif [ "$PKGOS" = "Windows" ]; then
 fi
 
 if [ "$COMPILE_TYPE" != "debug" ]; then
-    # Let us benefit from maximum optimization for release builds,
-    # including non-conformant IEEE floating-point computation.
-    QMAKE_FLAGS_EXTRA+=(CONFIG+=noassertions CONFIG+=fast)
+    # No CONFIG+=fast (-Ofast), as in the CMake build: its -ffinite-math-only
+    # defeats NaN and infinity checks (see #1277).
+    QMAKE_FLAGS_EXTRA+=(CONFIG+=noassertions)
 fi
 
 # build

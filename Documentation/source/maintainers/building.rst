@@ -268,8 +268,9 @@ CMake build options
 
 These cache variables reproduce the qmake ``CONFIG`` flags of ``global.pri``
 and ``libs.pri``. Their defaults give a plain developer build; the installers
-(``tools/jenkins/build-natron.sh``) turn on the release flavour, OpenMP,
-``NATRON_NO_ASSERTIONS`` and ``NATRON_FAST_MATH``.
+(``tools/jenkins/build-natron.sh``) turn on the release flavour, OpenMP and
+``NATRON_NO_ASSERTIONS``, but not ``NATRON_FAST_MATH``: the release builds use
+``-O3`` without fast math.
 
 ``NATRON_BUILD_CONFIG`` (empty by default)
    The release flavour shown in the version string, splash screen and About
@@ -306,7 +307,7 @@ and ``libs.pri``. Their defaults give a plain developer build; the installers
    which overrides the optimization level of the build type and allows
    floating-point computations that do not conform to IEEE 754. qmake's
    ``CONFIG+=fast`` uses ``-Ofast``, which clang 19 and later deprecate in
-   favor of ``-O3 -ffast-math``.
+   favor of ``-O3 -ffast-math``. The installers use neither.
 ``NATRON_SANITIZE`` (empty)
    Sanitizers passed to ``-fsanitize=``, comma-separated: ``address``,
    ``thread``, ``undefined``, ``address,undefined``… Use it with a ``Debug``
@@ -409,11 +410,11 @@ The installers are built by ``tools/jenkins/launchBuildMain.sh``, which calls
 
 ``NATRON_EXTRA_CMAKE_FLAGS`` adds options, separated by spaces, e.g.
 ``NATRON_EXTRA_CMAKE_FLAGS=-DNATRON_FAST_MATH=ON``. Two differences with the
-qmake release builds are intentional: ``CONFIG+=fast`` (``-Ofast``) is not
-reproduced, because its ``-ffinite-math-only`` defeats the NaN and infinity
-checks (see #1277; add ``-DNATRON_FAST_MATH=ON`` to get it), and there is no
-Breakpad crash reporter (#1183), so ``launchBuildMain.sh`` sets
-``DISABLE_BREAKPAD=1``. The C++ standard is the one ``CMakeLists.txt`` sets;
+former qmake release builds are intentional: there is no fast math, because
+``-ffinite-math-only`` defeats the NaN and infinity checks (see #1277; the
+qmake path no longer adds ``CONFIG+=fast`` either, and
+``-DNATRON_FAST_MATH=ON`` brings it back), and there is no Breakpad crash
+reporter (#1183), so ``launchBuildMain.sh`` sets ``DISABLE_BREAKPAD=1``. The C++ standard is the one ``CMakeLists.txt`` sets;
 a ``-std=`` flag in ``$CXX`` is ignored.
 
 On RB-2.6, ``NATRON_BUILD_SYSTEM=qmake`` selects the deprecated qmake build
