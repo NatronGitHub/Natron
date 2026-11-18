@@ -154,9 +154,14 @@ toolbar. Only the selected tracks that are enabled are tracked.
      - :kbd:`Ctrl` + :kbd:`C` (:kbd:`Cmd` + :kbd:`C` on macOS)
      - Track only over the pattern keyframes around the current frame.
 
-These shortcuts work when the Viewer has the keyboard focus (click in it
-first), and can be changed in the Shortcut Editor
-(**Edit > Preferences > User Interface > Shortcut Editor**).
+More shortcuts act on the selected tracks: :kbd:`Ctrl` + :kbd:`A`
+(:kbd:`Cmd` + :kbd:`A` on macOS) selects all the tracks, :kbd:`Backspace`
+removes the selected tracks, and the arrow keys nudge them by one screen
+pixel.
+
+These shortcuts work while the mouse is over the Viewer, and can be changed in
+the Shortcut Editor (**Edit > Preferences > User Interface > Shortcut
+Editor**).
 
 The other buttons of the Viewer toolbar are:
 
@@ -232,9 +237,10 @@ The **Transform** tab turns the tracks into a transformation:
   example the frame where the element to match-move is in the right place.
   **Set to Current Frame** sets it to the current frame.
 
-The transform is computed again at the end of every tracking run. Press
-**Compute** to compute it after other changes, or check **Compute Transform
-Automatically** to compute it whenever a parameter that affects it changes.
+The transform is computed again at the end of every tracking run. With
+**Compute Transform Automatically** (on by default), it is also computed
+whenever a parameter that affects it changes; when it is off, press
+**Compute** after such changes.
 
 The Tracker can apply the transform to its own input, which is how you
 stabilize the tracked image. You can also export the transform to another
@@ -315,8 +321,8 @@ square over all tracks). It estimates the quality of the model. A warning
 
 The transform is computed as a second step, after tracking, over all the
 tracked frames at once (at the end of each tracking run, when **Compute** is
-pressed, or when a parameter changes with **Compute Transform Automatically**
-checked), because the result at one frame depends on the other
+pressed, or when a parameter changes while **Compute Transform
+Automatically** is on), because the result at one frame depends on the other
 frames when smoothing or jitter is used. The parameters that change the result
 are:
 
