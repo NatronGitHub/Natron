@@ -687,6 +687,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     }
     //Destroy any previous reader
     //This will store the serialization of the generic knobs
+    const bool hadDecoder = (bool)embeddedPlugin;
     destroyReadNode();
 
     bool defaultFallback = false;
@@ -758,12 +759,14 @@ ReadNodePrivate::createReadNode(bool throwErrors,
             QMutexLocker k(&embeddedPluginMutex);
             embeddedPlugin = node;
         }
-        // When the decoder changes (another file type), the new decoder shares the filename knob
-        // of this node, which already has the new filename: setValue() did not change it, so the
-        // new decoder did not get the instance changed action for its filename. Call it, as when
-        // the decoder is the same (see above), so that it behaves as a reader given a new file
-        // (e.g. ReadSVG centers its transform on the canvas instead of the project).
-        if (fileKnobUnchanged) {
+        // When the decoder changes (another file type or decoder), the new decoder shares the
+        // filename knob of this node, which already has the new filename: setValue() did not change
+        // it, so the new decoder did not get the instance changed action for its filename. Call it,
+        // as when the decoder is the same (see above), so that it behaves as a reader given a new
+        // file (e.g. ReadSVG centers its transform on the canvas instead of the project).
+        // Not when a project is loaded (serialization): the decoder is created with its saved
+        // parameters, which must not be reset (e.g. GenericReader's frame range), as before.
+        if (fileKnobUnchanged && hadDecoder && !serialization) {
             node->getEffectInstance()->onKnobValueChanged_public(fileKnob.get(), eValueChangedReasonNatronInternalEdited, _publicInterface->getCurrentTime(), ViewSpec(0), true);
         }
 
@@ -1293,10 +1296,8 @@ ReadNode::knobChanged(KnobI* k,
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
-        // Make sure instance changed action is called on the decoder and not caught in our knobChanged handler.
-        if (_imp->embeddedPlugin) {
-            _imp->embeddedPlugin->getEffectInstance()->onKnobValueChanged_public(fileKnob.get(), eValueChangedReasonNatronInternalEdited, getCurrentTime(), ViewSpec(0), true);
-        }
+        // createReadNode() calls the instance changed action of the filename on the decoder, whether
+        // it was kept or replaced: don't call it twice (e.g. ReadFFmpeg would probe the file twice).
         
 
         _imp->refreshFileInfoVisibility(entry);

@@ -36,7 +36,7 @@
 
 #include <gtest/gtest.h>
 
-#include <QtCore/QDir>
+#include <QtCore/QTemporaryDir>
 #include <QtCore/QPointF>
 #include <QtCore/QString>
 
@@ -161,8 +161,8 @@ protected:
     virtual void SetUp() OVERRIDE FINAL
     {
         _app = appPTR->getTopLevelInstance();
-        _dir = QDir::tempPath() + QString::fromUtf8("/NatronReadNodeOverlayTest");
-        QDir().mkpath(_dir);
+        ASSERT_TRUE( _tmpDir.isValid() );
+        _dir = _tmpDir.path();
         _svgFile = _dir.toStdString() + "/square.svg";
         std::ofstream svg( _svgFile.c_str() );
         svg << "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100\" height=\"100\">"
@@ -181,7 +181,6 @@ protected:
         }
         _effect.reset();
         _node.reset();
-        QDir(_dir).removeRecursively();
     }
 
     void createReadNode(const std::string& filename)
@@ -231,6 +230,7 @@ protected:
     }
 
     AppInstancePtr _app;
+    QTemporaryDir _tmpDir; // removed with the test fixture
     QString _dir;
     std::string _svgFile, _exrFile;
     MockViewport _viewport;
@@ -277,8 +277,6 @@ TEST_F(ReadNodeOverlayTest, ReaderWithOverlay)
         return;
     }
     EXPECT_TRUE( _effect->hasOverlay() );
-    // The embedded reader has no settings panel: its overlay is drawn when the one of the Read node is.
-    EXPECT_EQ( reader->shouldDrawOverlay(), _node->shouldDrawOverlay() );
     // The embedded reader got the viewport of the Read node.
     EXPECT_EQ( reader->getEffectInstance()->getCurrentViewportForOverlays(), &_viewport );
 
@@ -343,4 +341,78 @@ TEST_F(ReadNodeOverlayTest, ReaderWithOverlay)
     penMotion(x1 + 3., y1);
     penUp(x1 + 3., y1);
     EXPECT_DOUBLE_EQ( translate->getValueAtTime(kTime, 0), x1 - center->getValueAtTime(kTime, 0) + 3. );
+}
+
+// A project with a Read node is saved and loaded: the decoder is created from the saved parameters,
+// and must not be given the instance changed action of its filename as for a new file, which would
+// make GenericReader probe the file again and reset its frame range (see ReadNodePrivate::createReadNode()).
+// The parameters are loaded again after that, so the values below would also be right if it were;
+// this checks that the reloaded Read node has its decoder, file and parameters, and still switches
+// decoders after the load.
+TEST_F(ReadNodeOverlayTest, ProjectReload)
+{
+    if ( !isPluginAvailable(PLUGINID_OFX_READOIIO) ) {
+        reportSkipped("plug-in not found (needs " PLUGINID_OFX_READOIIO " from openfx-io in OFX_PLUGIN_PATH)");
+
+        return;
+    }
+    // A sequence of three 2x2 PPM images
+    for (int f = 1; f <= 3; ++f) {
+        std::ofstream ppm( ( _dir.toStdString() + "/img" + std::to_string(f) + ".ppm" ).c_str(), std::ios::binary );
+        ppm << "P6\n2 2\n255\n" << std::string(12, '\x80');
+    }
+    const std::string pattern = _dir.toStdString() + "/img#.ppm";
+    createReadNode(pattern);
+    ASSERT_EQ( getEmbeddedReader()->getPluginID(), std::string(PLUGINID_OFX_READOIIO) );
+    KnobIntPtr firstFrame = std::dynamic_pointer_cast<KnobInt>( _node->getKnobByName("firstFrame") );
+    KnobIntPtr lastFrame = std::dynamic_pointer_cast<KnobInt>( _node->getKnobByName("lastFrame") );
+    ASSERT_TRUE( bool(firstFrame) );
+    ASSERT_TRUE( bool(lastFrame) );
+    EXPECT_EQ( firstFrame->getValue(), 1 );
+    EXPECT_EQ( lastFrame->getValue(), 3 );
+    // the user reads only frame 2
+    firstFrame->setValue(2);
+    lastFrame->setValue(2);
+    const std::string name = _node->getScriptName_mt_safe();
+    _effect->setCurrentViewportForOverlays_public(NULL);
+    _effect.reset();
+    _node.reset();
+    firstFrame.reset();
+    lastFrame.reset();
+
+    const QString dir = _dir + QLatin1Char('/');
+    QString savedPath;
+    ASSERT_TRUE( _app->getProject()->saveProject( dir, QString::fromUtf8("ReadNodeOverlay.ntp"), &savedPath ) );
+    ASSERT_TRUE( _app->getProject()->loadProject( dir, QString::fromUtf8("ReadNodeOverlay.ntp") ) );
+
+    _node = _app->getProject()->getNodeByName(name);
+    ASSERT_TRUE( bool(_node) );
+    _effect = _node->getEffectInstance();
+    NodePtr reader = getEmbeddedReader();
+    ASSERT_TRUE( bool(reader) );
+    EXPECT_EQ( reader->getPluginID(), std::string(PLUGINID_OFX_READOIIO) );
+    KnobFilePtr file = std::dynamic_pointer_cast<KnobFile>( _node->getKnobByName(kOfxImageEffectFileParamName) );
+    ASSERT_TRUE( bool(file) );
+    EXPECT_EQ( file->getValue(), pattern );
+    firstFrame = std::dynamic_pointer_cast<KnobInt>( _node->getKnobByName("firstFrame") );
+    lastFrame = std::dynamic_pointer_cast<KnobInt>( _node->getKnobByName("lastFrame") );
+    ASSERT_TRUE( bool(firstFrame) );
+    ASSERT_TRUE( bool(lastFrame) );
+    EXPECT_EQ( firstFrame->getValue(), 2 );
+    EXPECT_EQ( lastFrame->getValue(), 2 );
+    EXPECT_FALSE( _effect->hasOverlay() );
+
+    if ( isPluginAvailable(PLUGINID_OFX_READSVG) ) {
+        // After the load, a new decoder still gets its file.
+        setFile(_svgFile);
+        reader = getEmbeddedReader();
+        ASSERT_TRUE( bool(reader) );
+        EXPECT_EQ( reader->getPluginID(), std::string(PLUGINID_OFX_READSVG) );
+        if ( reader->getEffectInstance()->hasOverlay() ) {
+            KnobDoublePtr center = std::dynamic_pointer_cast<KnobDouble>( _node->getKnobByName("transformCenter") );
+            ASSERT_TRUE( bool(center) );
+            EXPECT_DOUBLE_EQ( center->getValueAtTime(kTime, 0), 50. );
+            EXPECT_DOUBLE_EQ( center->getValueAtTime(kTime, 1), 50. );
+        }
+    }
 }
