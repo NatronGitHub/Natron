@@ -63,6 +63,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/NodeSerialization.h"
 #include "Engine/NodeMetadata.h"
 #include "Engine/OfxClipInstance.h"
+#include "Engine/OfxHost.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/OfxParamInstance.h"
@@ -2833,12 +2834,13 @@ OfxEffectInstance::supportsTiles() const
 PluginOpenGLRenderSupport
 OfxEffectInstance::supportsOpenGLRender() const
 {
-    const std::string& str = effectInstance()->getProps().getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
+    const OFX::Host::Property::Set& props = effectInstance()->getProps();
+    const std::string& str = props.getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
 
     if (str == "false") {
         return ePluginOpenGLRenderSupportNone;
     } else if (str == "true") {
-        return ePluginOpenGLRenderSupportYes;
+        return OfxHost::applyCPURenderSupport(ePluginOpenGLRenderSupportYes, props);
     } else {
         assert(str == "needed");
 

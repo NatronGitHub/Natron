@@ -71,6 +71,13 @@ public:
 
     void setOfxHostOSHandle(void* handle);
 
+    /// The OpenGL render support of a plug-in descriptor or instance, given the support read from its
+    /// kOfxImageEffectPropOpenGLRenderSupported: a plug-in that supports OpenGL render ("true") but
+    /// sets kOfxImageEffectPropCPURenderSupported (OFX 1.5.1) to "false" can't render on the CPU, so it
+    /// needs OpenGL, like a plug-in that sets kOfxImageEffectPropOpenGLRenderSupported to "needed".
+    static PluginOpenGLRenderSupport applyCPURenderSupport(PluginOpenGLRenderSupport openGLSupport,
+                                                           const OFX::Host::Property::Set& effectProps);
+
     /// Create a new instance of an image effect plug-in.
     ///
     /// It is called by ImageEffectPlugin::createInstance which the

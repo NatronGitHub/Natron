@@ -356,6 +356,21 @@ OfxHost::setProperties()
 #endif
 } // OfxHost::setProperties
 
+PluginOpenGLRenderSupport
+OfxHost::applyCPURenderSupport(PluginOpenGLRenderSupport openGLSupport,
+                               const OFX::Host::Property::Set& effectProps)
+{
+    // HostSupport declares kOfxImageEffectPropCPURenderSupported on every descriptor, and so on every
+    // instance, with its spec default "true". Natron can't render with CUDA, Metal or OpenCL, so a
+    // plug-in that supports neither the CPU nor OpenGL keeps ePluginOpenGLRenderSupportNone.
+    if ( (openGLSupport == ePluginOpenGLRenderSupportYes) &&
+         (effectProps.getStringProperty(kOfxImageEffectPropCPURenderSupported) == "false") ) {
+        return ePluginOpenGLRenderSupportNeeded;
+    }
+
+    return openGLSupport;
+}
+
 static
 Settings::KnownHostNameEnum
 getHostNameProxy(const std::string& pluginID,
@@ -1050,6 +1065,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
                 glSupport = ePluginOpenGLRenderSupportYes;
             }
         }
+        glSupport = applyCPURenderSupport( glSupport, p->getDescriptor().getProps() );
         natronPlugin->setOpenGLRenderSupport(glSupport);
 
         natronPlugin->setOfxPlugin(p);
