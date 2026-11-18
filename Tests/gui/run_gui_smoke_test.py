@@ -154,23 +154,56 @@ QtCore.QTimer.singleShot(200, start)
 """
 
 WRAPPER = []
+# seconds, for each Natron run (NATRON_TEST_RUN_TIMEOUT overrides it, e.g. to test the timeout)
+RUN_TIMEOUT = int(os.environ.get("NATRON_TEST_RUN_TIMEOUT", "300"))
+
+
+def descendants(pid):
+    """The pids of all the descendants of pid (needs pgrep, else none)."""
+    try:
+        out = subprocess.check_output(["pgrep", "-P", str(pid)], stderr=subprocess.DEVNULL)
+    except (OSError, subprocess.CalledProcessError):
+        return []
+    ret = []
+    for c in out.split():
+        c = int(c)
+        ret += descendants(c) + [c]
+    return ret
+
+
+def killTree(p):
+    """Kills p, its process group, and all its descendants: under lldb, Natron runs in its
+    own process group, below debugserver, so killing the group of the wrapper is not enough."""
+    # let a wrapper such as natron-lldb.sh kill its inferior first
+    try:
+        p.send_signal(signal.SIGTERM)
+        p.wait(timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    pids = descendants(p.pid)
+    try:
+        os.killpg(p.pid, signal.SIGKILL)
+    except OSError:
+        pass
+    for pid in pids + [p.pid]:
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except OSError:
+            pass
+    p.wait()
 
 
 def run(cmd, env):
     cmd = WRAPPER + cmd
     print("Running: " + " ".join(cmd))
     sys.stdout.flush()
-    # in its own process group, so that a timeout kills Natron too, not only the wrapper
+    # in its own process group, so that a timeout kills the wrapper and Natron
     p = subprocess.Popen(cmd, env=env, start_new_session=True)
     try:
-        return p.wait(timeout=300)
+        return p.wait(timeout=RUN_TIMEOUT)
     except subprocess.TimeoutExpired:
-        print("timeout: killing the process group")
-        try:
-            os.killpg(p.pid, signal.SIGKILL)
-        except OSError:
-            pass
-        p.wait()
+        print("timeout: killing Natron and its wrapper")
+        killTree(p)
         return None
 
 

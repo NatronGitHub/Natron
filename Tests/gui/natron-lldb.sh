@@ -17,6 +17,33 @@ export ASAN_OPTIONS="${ASAN_OPTIONS:-abort_on_error=0:detect_leaks=0}"
 export UBSAN_OPTIONS="${UBSAN_OPTIONS:-abort_on_error=0:print_stacktrace=1}"
 export TSAN_OPTIONS="${TSAN_OPTIONS:-abort_on_error=0}"
 log=$(mktemp -t natron-lldb)
+
+# lldb's inferior runs in its own process group, under debugserver: killing lldb, or its process
+# group, leaves it running. On TERM/INT/HUP (e.g. a test timeout), kill the whole tree.
+descendants() {
+  local c
+  for c in $(pgrep -P "$1"); do
+    descendants "$c"
+    echo "$c"
+  done
+}
+child=""
+cleanup() {
+  trap - TERM INT HUP
+  if [ -n "$child" ]; then
+    pids="$(sed -n 's/^Process \([0-9]*\) launched.*/\1/p' "$log" 2>/dev/null) $(descendants "$child")"
+    # shellcheck disable=SC2086
+    kill -KILL $pids 2>/dev/null
+    kill -KILL "$child" 2>/dev/null
+    wait "$child" 2>/dev/null
+  fi
+  cat "$log" 2>/dev/null
+  rm -f "$log"
+  echo "natron-lldb.sh: interrupted, killed $prog" >&2
+  exit 143
+}
+trap cleanup TERM INT HUP
+
 /usr/bin/lldb --batch --no-lldbinit \
   -o "settings set target.inherit-tcc true" \
   -o "settings set target.input-path /dev/null" \
@@ -25,14 +52,18 @@ log=$(mktemp -t natron-lldb)
   -k "thread backtrace all" \
   -k "process kill" \
   -k "quit 139" \
-  -- "$prog" "$@" > "$log" 2>&1
+  -- "$prog" "$@" > "$log" 2>&1 < /dev/null &
+child=$!
+wait "$child"
 if grep -q "attach failed (Not allowed to attach" "$log"; then
   # Hardened-runtime binaries without get-task-allow (e.g. a release Natron.app) can't be
   # debugged. Run them directly instead, with stdin from /dev/null. There is no backtrace on a crash,
   # and a GUI app may show the macOS crash dialog, so prefer a local (debuggable) build.
   rm -f "$log"
   echo "natron-lldb.sh: lldb may not attach to $prog (hardened runtime); running it directly" >&2
-  "$prog" "$@" < /dev/null
+  "$prog" "$@" < /dev/null &
+  child=$!
+  wait "$child"
   exit $?
 fi
 cat "$log"
