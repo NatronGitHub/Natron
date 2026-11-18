@@ -207,6 +207,12 @@ public:
     void removeLastAutosave();
 
     /**
+     * @brief Can removeLastAutosave() remove this auto-save file? Always, except with
+     * --no-dialogs, where only the auto-saves this session wrote may be removed.
+     **/
+    bool canRemoveAutoSave(const QString& filePath) const;
+
+    /**
      * @brief Stops the pending auto-save and waits for the one in progress, if any, so that
      * no auto-save is written afterwards (e.g. before removeLastAutosave() when quitting).
      **/

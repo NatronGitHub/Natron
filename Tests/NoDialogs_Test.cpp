@@ -27,10 +27,15 @@
 
 #include <gtest/gtest.h>
 
+#include <QtCore/QDir>
+#include <QtCore/QFile>
 #include <QtCore/QStringList>
+#include <QtCore/QTemporaryDir>
 
 #include "Engine/AppManager.h"
+#include "Engine/AppInstance.h"
 #include "Engine/CLArgs.h"
+#include "Engine/Project.h"
 
 NATRON_NAMESPACE_USING
 
@@ -113,6 +118,57 @@ TEST(NoDialogs, DialogFunctions)
     Dialogs::errorDialog("Test", "Error");
     Dialogs::warningDialog("Test", "Warning");
     Dialogs::informationDialog("Test", "Information");
+
+    appPTR->setDialogsDisabled(wasDisabled);
+}
+
+static void
+touch(const QString& path)
+{
+    QFile f(path);
+    ASSERT_TRUE( f.open(QIODevice::WriteOnly) );
+    f.write("x");
+}
+
+// --no-dialogs: Project::removeLastAutosave() only removes the auto-saves this session wrote,
+// never one that may be the user's crash recovery (e.g. <dir>/<name>.ntp.autosave)
+TEST(NoDialogs, RemoveOnlyOwnAutoSaves)
+{
+    ASSERT_TRUE( appPTR );
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ASSERT_TRUE( app != nullptr );
+    ProjectPtr project = app->getProject();
+    const bool wasDisabled = appPTR->isDialogsDisabled();
+    QTemporaryDir dir;
+    ASSERT_TRUE( dir.isValid() );
+    const QString path = dir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("foo.ntp");
+    const QString autoSave = path + name + QString::fromUtf8(".autosave");
+
+    // the project is saved by the user (in background mode this doesn't touch the auto-saves)
+    ASSERT_TRUE( project->saveProject(path, name, 0) );
+    ASSERT_TRUE( QFile::exists(path + name) );
+
+    // a previous session left an auto-save next to the project
+    appPTR->setDialogsDisabled(true);
+    touch(autoSave);
+    EXPECT_FALSE( project->canRemoveAutoSave(autoSave) );
+    project->removeLastAutosave();
+    EXPECT_TRUE( QFile::exists(autoSave) ) << "--no-dialogs must keep an auto-save it did not write";
+
+    // an auto-save written by this session is removed
+    ASSERT_TRUE( project->saveProject_imp(path, name, true /*autoSave*/, true) );
+    EXPECT_TRUE( project->canRemoveAutoSave(autoSave) );
+    project->removeLastAutosave();
+    EXPECT_FALSE( QFile::exists(autoSave) );
+
+    // without --no-dialogs, removeLastAutosave() keeps removing the auto-save of the project
+    appPTR->setDialogsDisabled(false);
+    touch(autoSave);
+    EXPECT_TRUE( project->canRemoveAutoSave(autoSave) );
+    project->removeLastAutosave();
+    EXPECT_FALSE( QFile::exists(autoSave) );
+    EXPECT_TRUE( QFile::exists(path + name) ) << "the project file itself is never removed";
 
     appPTR->setDialogsDisabled(wasDisabled);
 }

@@ -183,15 +183,24 @@ def runTest():
     # let the end of the interaction (pen up) push its undo command
     for j in range(5):
         app.processEvents()
+    # The drag may be recorded as more than one undo command (the Transform interact edits
+    # the parameters at each motion, and the edits are merged by the undo stack): undo until
+    # translate is back, at most a few times.
     undoAction = findUndoAction()
     check(undoAction is not None, "found Edit > Undo")
-    log("triggering %r" % undoAction.text())
-    undoAction.trigger()
-    viewer.waitForRender()
-    for j in range(5):
-        app.processEvents()
-    t2 = translate.get()
-    log("translate after undo=(%g, %g)" % (t2.x, t2.y))
+    for k in range(5):
+        log("triggering %r" % undoAction.text())
+        undoAction.trigger()
+        viewer.waitForRender()
+        for j in range(5):
+            app.processEvents()
+        t2 = translate.get()
+        log("translate after undo=(%g, %g)" % (t2.x, t2.y))
+        if (abs(t2.x - t0.x) <= 1e-6 and abs(t2.y - t0.y) <= 1e-6):
+            break
+        undoAction = findUndoAction()
+        if undoAction is None or "Transform1" not in undoAction.text():
+            break
     check(abs(t2.x - t0.x) <= 1e-6 and abs(t2.y - t0.y) <= 1e-6, "undo restored translate")
     checkScreenshot(app, os.path.join(outDir, "Viewer1-after-undo.png"), "Viewer1")
 

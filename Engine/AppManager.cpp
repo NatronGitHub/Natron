@@ -2617,9 +2617,17 @@ AppManager::requestQuit(int exitCode)
     // Background mode: there is no event loop to leave. Record the exit code (returned by
     // main()), and stop what is running. AppInstance::load() skips the renders and the
     // interpreter that were not started yet, then the instance quits as usual.
-    _imp->quitRequested = true;
     _imp->requestedExitCode = exitCode;
-    abortAnyProcessing();
+    _imp->quitRequested = true;
+    if ( QThread::currentThread() == qApp->thread() ) {
+        abortAnyProcessing();
+    } else {
+        // called from a render thread (e.g. natron.quit() in afterFrameRendered): stop the
+        // renders from the main thread
+        QMetaObject::invokeMethod( this, [this]() {
+            abortAnyProcessing();
+        }, Qt::QueuedConnection );
+    }
 }
 
 bool
