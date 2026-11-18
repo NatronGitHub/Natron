@@ -272,7 +272,7 @@ jobs:
       (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
       (github.event_name != 'schedule' && needs.unix_test.result == 'success' && needs.win-test.result == 'success' &&
        (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
-    name: Test macos-15 arm64 MacPorts Python 3.10
+    name: Test macos-15 arm64 MacPorts Python 3.11
     runs-on: macos-15
     timeout-minutes: 360
     defaults:
@@ -283,10 +283,10 @@ jobs:
       CI: 'True'
       OCIO_CONFIG_VERSION: 2.5
       MACPORTS_VERSION: 2.12.7
-      MACPORTS_CACHE_VERSION: 1
+      MACPORTS_CACHE_VERSION: 2
       MACPORTS_PORTS: >-
-        cmake pkgconfig zstd python310 py310-pyside2 py310-qtpy boost expat cairo
-      PYVER: '3.10'
+        cmake pkgconfig zstd python311 py311-pyside2 py311-qtpy boost expat cairo
+      PYVER: '3.11'
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4.1.1
@@ -376,7 +376,7 @@ jobs:
             [ $i = 3 ] && exit 1
             sleep 30
           done
-          sudo port select --set python3 python310
+          sudo port select --set python3 python311
           sudo port -N clean --work --dist installed || true
 
       - name: Save MacPorts to cache

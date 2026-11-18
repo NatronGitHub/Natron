@@ -129,13 +129,13 @@ if [ "$COMPILE_TYPE" = "debug" ]; then
     COMPILE_TYPE=relwithdebinfo
     OPTFLAG=-O
 else
-    # Makefile builds (PLUGINS_BUILD_SYSTEM=make): maximum optimization, including non-conformant
-    # IEEE floating-point computation.
-    OPTFLAG=-Ofast
+    # Makefile builds (PLUGINS_BUILD_SYSTEM=make): -O3, like the CMake builds. Not -Ofast: its
+    # -ffinite-math-only lets NaN and Inf through std::max/std::min and folds
+    # std::isnan/std::isfinite to constants, so the plug-ins' NaN/Inf guards don't work.
+    OPTFLAG=-O3
 fi
-# OPTFLAG is ignored by the CMake builds (ofx_cmake_build): they use -O3 (CMake's Release default,
-# and -O3 -g for relwithdebinfo), and conformant IEEE floating point (maintainer's rule: -O3 when
-# the tests pass).
+# OPTFLAG is ignored by the CMake builds (ofx_cmake_build): they use -O3, with -g for
+# relwithdebinfo, and conformant IEEE floating point.
 
 CP_OR_MV="cp -a"
 if [ "${MINIMIZE_DISK_USAGE:-}" = "1" ]; then

@@ -44,12 +44,14 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
+#include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/WriteNode.h"
 
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h" // isKeybind
@@ -518,7 +520,21 @@ ViewerTab::getOverlayCursorFor(const NodePtr& node,
     if ( name.contains( QLatin1Char('/') ) || name.contains( QLatin1Char('\\') ) ) {
         return false;
     }
-    QString resourcesPath = QString::fromUtf8( node->getPluginResourcesPath().c_str() );
+    NodePtr resourcesNode = node;
+#ifdef NATRON_ENABLE_IO_META_NODES
+    // The overlay of a Read/Write node is the one of its embedded reader/writer plug-in
+    // (see ReadNode::getOverlayCursor): the image is in the resources of that plug-in.
+    NodePtr embeddedNode;
+    if ( ReadNode* isRead = dynamic_cast<ReadNode*>( effect.get() ) ) {
+        embeddedNode = isRead->getEmbeddedReader();
+    } else if ( WriteNode* isWrite = dynamic_cast<WriteNode*>( effect.get() ) ) {
+        embeddedNode = isWrite->getEmbeddedWriter();
+    }
+    if (embeddedNode) {
+        resourcesNode = embeddedNode;
+    }
+#endif
+    QString resourcesPath = QString::fromUtf8( resourcesNode->getPluginResourcesPath().c_str() );
     if ( !resourcesPath.isEmpty() && !resourcesPath.endsWith( QLatin1Char('/') ) ) {
         resourcesPath += QLatin1Char('/');
     }

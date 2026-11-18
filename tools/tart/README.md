@@ -54,7 +54,7 @@ Only one Natron VM can run at a time: clones of an image share their IPv6 link-l
 
 ## Settings
 
-Environment variables (see `tart-common.sh`): `BASE_IMAGE`, `SDK_IMAGE`, `VM_CPU` (8), `VM_MEMORY` (16384 MB), `VM_DISK` (250 GB), `TART_KEY` (`~/.ssh/natron-tart_ed25519`), `OSMESA_INSTALL_SRC`, `GUEST_PROXY_ALLOW` (`*:80 *:443`), and `RSYNC`. `MACPORTS_VERSION` is at the top of `provision.sh`; the Python version (3.10) is spelled out in `step_python_qt` and `step_fixups`. Runtime files (address cache, VM logs) go to `$TMPDIR/natron-tart` (`TART_RUN`); SSH control sockets go to `/tmp/natron-tart-$UID` (`TART_SOCK`), because macOS's `$TMPDIR` path is too long for a Unix socket. Only one `natron-sdk.sh` or `natron-build.sh` runs at a time (lock in that directory).
+Environment variables (see `tart-common.sh`): `BASE_IMAGE`, `SDK_IMAGE`, `VM_CPU` (8), `VM_MEMORY` (16384 MB), `VM_DISK` (250 GB), `TART_KEY` (`~/.ssh/natron-tart_ed25519`), `OSMESA_INSTALL_SRC`, `GUEST_PROXY_ALLOW` (`*:80 *:443`), and `RSYNC`. `MACPORTS_VERSION` and the Python version (`pyver`, 3.11) are at the top of `provision.sh`. On an SDK image made with an older Python, `natron-sdk.sh update` installs the new Python ports and switches `openimageio`'s python variant (`step_python_migrate`). Runtime files (address cache, VM logs) go to `$TMPDIR/natron-tart` (`TART_RUN`); SSH control sockets go to `/tmp/natron-tart-$UID` (`TART_SOCK`), because macOS's `$TMPDIR` path is too long for a Unix socket. Only one `natron-sdk.sh` or `natron-build.sh` runs at a time (lock in that directory).
 
 ## Networking
 

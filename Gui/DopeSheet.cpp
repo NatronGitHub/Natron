@@ -798,6 +798,41 @@ DopeSheet::slipReader(const DSNodePtr &reader,
     }
 }
 
+DopeSheetKey::DopeSheetKey(const DSKnobPtr &knob,
+                           const KeyFrame& kf)
+    : context(knob)
+    , key(kf)
+    , isString(false)
+{
+    assert(knob);
+    if (knob) {
+        isString = dynamic_cast<AnimatingKnobStringHelper*>( knob->getInternalKnob().get() ) != NULL;
+    }
+}
+
+/// Warn about the keyframes that DSPasteKeysCommand will not paste: string keyframes to other parameters, and other
+/// keyframes to string parameters.
+static void
+warnAboutStringKeysMismatch(const std::vector<DopeSheetKey>& keys,
+                            const std::list<DSKnobPtr>& dstKnobs)
+{
+    int nSkipped = 0;
+    for (std::list<DSKnobPtr>::const_iterator it = dstKnobs.begin(); it != dstKnobs.end(); ++it) {
+        bool dstIsString = dynamic_cast<AnimatingKnobStringHelper*>( (*it)->getInternalKnob().get() ) != NULL;
+        for (std::size_t i = 0; i < keys.size(); ++i) {
+            if (keys[i].isString != dstIsString) {
+                ++nSkipped;
+            }
+        }
+    }
+    if (nSkipped > 0) {
+        Dialogs::warningDialog( QObject::tr("Paste").toStdString(),
+                                QObject::tr("Keyframes of string parameters can only be pasted to string parameters, "
+                                            "and other keyframes to other parameters: %1 keyframe(s) were not pasted.")
+                                .arg(nSkipped).toStdString() );
+    }
+}
+
 void
 DopeSheet::copySelectedKeys()
 {
@@ -885,12 +920,13 @@ DopeSheet::pasteKeys(bool relative)
             Dialogs::warningDialog(tr("Paste").toStdString(), tr("You must select at least one parameter dimension on the left to perform this action").toStdString());
             return;
         }
+        warnAboutStringKeysMismatch(toPaste, dstKnobs);
         _imp->pushUndoCommand( new DSPasteKeysCommand(toPaste, dstKnobs, relative, _imp->editor) );
     }
 }
 
 void
-DopeSheet::pasteKeys(const std::vector<DopeSheetKey>& keys, bool relative)
+DopeSheet::pasteKeys(const std::vector<DopeSheetKey>& keys, bool relative, bool setValuesFromDestination)
 {
     if ( !keys.empty() ) {
         std::list<DSKnobPtr> dstKnobs;
@@ -899,7 +935,10 @@ DopeSheet::pasteKeys(const std::vector<DopeSheetKey>& keys, bool relative)
             Dialogs::warningDialog(tr("Paste").toStdString(), tr("You must select at least one parameter dimension on the left to perform this action").toStdString());
             return;
         }
-        _imp->pushUndoCommand( new DSPasteKeysCommand(keys, dstKnobs, relative, _imp->editor) );
+        if (!setValuesFromDestination) {
+            warnAboutStringKeysMismatch(keys, dstKnobs);
+        }
+        _imp->pushUndoCommand( new DSPasteKeysCommand(keys, dstKnobs, relative, _imp->editor, setValuesFromDestination) );
     }
 }
 

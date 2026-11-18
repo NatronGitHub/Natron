@@ -28,11 +28,13 @@ set(Tests_SOURCES
     Image_Test.cpp
     KnobFile_Test.cpp
     KnobSlave_Test.cpp
+    KnobStringAnimation_Test.cpp
     Lut_Test.cpp
     NodeGroup_Test.cpp
     NodePreview_Test.cpp
     OSGLContext_Test.cpp
     PluginGrouping_Test.cpp
+    ReadNodeOverlay_Test.cpp
     RotoPaint_Test.cpp
     Tracker_Test.cpp
     wmain.cpp

@@ -156,9 +156,9 @@ if [ "${DEBUG_MODE:-}" = "1" ]; then
     OPTFLAG=-O
 else
     BUILD_MODE=relwithdebinfo
-    # Let us benefit from maximum optimization for release builds,
-    # including non-conformant IEEE floating-point computation.
-    OPTFLAG=-Ofast
+    # -O3, not -Ofast: -ffinite-math-only breaks the plug-ins' NaN/Inf guards
+    # (std::isnan/std::isfinite are folded to constants).
+    OPTFLAG=-O3
 fi
 
 # Build system of the plug-ins (#1181): PLUGINS_BUILD_SYSTEM=cmake (default) builds openfx-misc,
