@@ -4536,14 +4536,14 @@ Node::onFileNameParameterChanged(KnobI* fileKnob)
             if (foundViewPattern == std::string::npos) {
                 foundViewPattern = pattern.find("%V");
             }
-            if (foundViewPattern != std::string::npos) {
-                //We found view pattern
-                KnobIPtr viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
-                if (viewsKnob) {
-                    KnobChoice* viewsSelector = dynamic_cast<KnobChoice*>( viewsKnob.get() );
-                    if (viewsSelector) {
-                        viewsSelector->setSecret(true);
-                    }
+            // Hide the Views parameter if and only if the file name has a view pattern.
+            // Also show it again when the pattern is removed, or when a project saved with the
+            // old detection (any '%' or 'v' in the path counted, #1312) has it hidden.
+            KnobIPtr viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
+            if (viewsKnob) {
+                KnobChoice* viewsSelector = dynamic_cast<KnobChoice*>( viewsKnob.get() );
+                if (viewsSelector) {
+                    viewsSelector->setSecret(foundViewPattern != std::string::npos);
                 }
             }
         }
