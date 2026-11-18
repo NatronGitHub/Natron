@@ -30,6 +30,9 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QColorDialog>
+#include <QImage>
+#include <QPainter>
+#include <QPixmap>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -46,10 +49,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Gui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
+#include "Gui/PanelWidget.h"
 #include "Gui/PythonPanels.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/TabWidget.h"
-#include "Gui/ViewerGL.h"
+#include "Gui/ViewerGL.h" // includes glad before QOpenGLWidget
 #include "Gui/ViewerTab.h"
 
 NATRON_NAMESPACE_ENTER
@@ -882,6 +886,87 @@ PyViewer::getCurrentView() const
     }
 
     return _viewer->getCurrentView().value();
+}
+
+/**
+ * @brief Renders widget into an image with QWidget::grab(), and pastes the framebuffer of
+ * the visible QOpenGLWidget's it contains at their position: grab() may leave them black.
+ **/
+static QImage
+grabWidgetWithOpenGL(QWidget* widget)
+{
+    QImage image = widget->grab().toImage(); // has the device pixel ratio of the widget
+
+    if ( image.isNull() ) {
+        return image;
+    }
+    QList<QOpenGLWidget*> glWidgets = widget->findChildren<QOpenGLWidget*>();
+    if ( QOpenGLWidget* isGL = qobject_cast<QOpenGLWidget*>(widget) ) {
+        glWidgets.prepend(isGL);
+    }
+    if ( glWidgets.isEmpty() ) {
+        return image;
+    }
+    QPainter p(&image); // in logical (device-independent) pixels, like widget coordinates
+    Q_FOREACH(QOpenGLWidget* gl, glWidgets) {
+        if ( !gl->isVisible() || gl->visibleRegion().isEmpty() || (gl->width() <= 0) || (gl->height() <= 0) ) {
+            continue;
+        }
+        // renders the widget (calls paintGL) and reads its framebuffer, in device pixels
+        QImage fb = gl->grabFramebuffer();
+        if ( fb.isNull() ) {
+            continue;
+        }
+        const QPoint pos = (gl == widget) ? QPoint(0, 0) : gl->mapTo( widget, QPoint(0, 0) );
+        // only paint the part of the GL widget that is not hidden by its parents (e.g. a scroll area)
+        p.save();
+        p.setClipRegion( gl->visibleRegion().translated(pos) );
+        p.drawImage( QRect( pos, gl->size() ), fb );
+        p.restore();
+    }
+    p.end();
+
+    return image;
+}
+
+bool
+GuiApp::saveScreenshot(const QString& filePath,
+                       const QString& scriptName) const
+{
+    GuiAppInstancePtr app = getInternalGuiApp();
+    Gui* gui = app ? app->getGui() : 0;
+
+    if ( !gui || filePath.isEmpty() ) {
+        return false;
+    }
+    QWidget* widget = 0;
+    if ( scriptName.isEmpty() ) {
+        widget = gui; // the main window
+    } else {
+        // a tab: "Viewer1", "nodeGraph", "properties", "curveEditor", "dopeSheetEditor", a Python panel...
+        PanelWidget* panel = gui->findExistingTab( scriptName.toStdString() );
+        if (panel) {
+            widget = panel->getWidget();
+        } else {
+            // a pane: "pane1", ...
+            const std::list<TabWidget*>& panes = gui->getPanes();
+            for (std::list<TabWidget*>::const_iterator it = panes.begin(); it != panes.end(); ++it) {
+                if ( (*it)->objectName_mt_safe() == scriptName ) {
+                    widget = *it;
+                    break;
+                }
+            }
+        }
+    }
+    if ( !widget || !widget->isVisible() ) {
+        return false;
+    }
+    QImage image = grabWidgetWithOpenGL(widget);
+    if ( image.isNull() ) {
+        return false;
+    }
+
+    return image.save(filePath);
 }
 
 NATRON_PYTHON_NAMESPACE_EXIT
