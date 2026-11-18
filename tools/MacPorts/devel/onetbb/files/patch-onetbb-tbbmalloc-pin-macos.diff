@@ -1,0 +1,20 @@
+--- src/tbbmalloc/tbbmalloc.cpp.orig
++++ src/tbbmalloc/tbbmalloc.cpp
+@@ -91,6 +91,17 @@
+ // Work around non-reentrancy in dlopen() on Android
+     RegisterProcessShutdownNotification() {
+         // prevents unloading, POSIX case
++#if __APPLE__
++        // On macOS, dlopen(MALLOCLIB_NAME) does not look at the images already loaded:
++        // it only searches DYLD_LIBRARY_PATH and the fallback path (/usr/lib), so the
++        // library is not pinned when it is installed elsewhere (e.g. /opt/local/lib).
++        // libtbb then unloads it in dynamic_unlink_all() and calls into unmapped code
++        // at exit. Reopen it by the path it was loaded from instead.
++        Dl_info info;
++        if (dladdr(reinterpret_cast<void*>(&scalable_malloc), &info) && info.dli_fname &&
++            dlopen(info.dli_fname, RTLD_NOW))
++            return;
++#endif
+ 
+         // We need better support for the library pinning
+         // when dlopen can't find TBBmalloc library.

@@ -1,0 +1,15 @@
+--- src/tbb/governor.cpp.orig
++++ src/tbb/governor.cpp
+@@ -119,8 +119,11 @@
+ #endif /* TBB_USE_ASSERT */
+ 
+     system_topology::destroy();
+-    dynamic_unlink_all();
++    // global_control_release() frees the control storage with cache_aligned_deallocate(),
++    // which may call scalable_aligned_free() from libtbbmalloc: release it before
++    // dynamic_unlink_all() unloads libtbbmalloc, or it calls into unmapped code at exit.
+     global_control_release();
++    dynamic_unlink_all();
+ }
+ 
+ rml::tbb_server* governor::create_rml_server ( rml::tbb_client& client ) {
