@@ -52,6 +52,8 @@ CLANG_DIAG_ON(uninitialized)
 #include <ofxInteract.h>
 #include <ofxNatron.h>
 #include <ofxhUtilities.h> // for StatStr
+#include <ofxColour.h>
+#include <ofx-native-v1.5_aces-v1.3_ocio-v2.3.h>
 #include <ofxhPluginCache.h>
 
 #include "Engine/AppInstance.h"
@@ -1166,6 +1168,107 @@ OfxImageEffectInstance::areAllNonOptionalClipsConnected() const
     return true;
 }
 
+std::string
+OfxImageEffectInstance::chooseColourManagementStyle(const std::string& hostStyle,
+                                                    const std::string& pluginStyle,
+                                                    bool hasOCIOConfig)
+{
+    std::string style = OFX::Host::ImageEffect::Instance::negotiateColourManagementStyle(hostStyle, pluginStyle);
+
+    if ( (style == kOfxImageEffectColourManagementOCIO) && !hasOCIOConfig ) {
+        // "A host must set [kOfxImageEffectPropOCIOConfig] on any effect instances where it has
+        // negotiated OCIO colour management": without a config, use the native config instead
+        style = OFX::Host::ImageEffect::Instance::negotiateColourManagementStyle(kOfxImageEffectColourManagementFull, pluginStyle);
+    }
+
+    return style;
+}
+
+std::string
+OfxImageEffectInstance::workingColourspace(const std::string& style)
+{
+    if (style == kOfxImageEffectColourManagementOCIO) {
+        // a role, which "any string acceptable to Config::getColorSpace()" includes
+        return "scene_linear";
+    } else if ( style.empty() || (style == kOfxImageEffectColourManagementNone) ) {
+        return std::string();
+    }
+
+    // a basic colourspace, valid in every native style
+    return kOfxColourspaceOfxSceneLinear;
+}
+
+void
+OfxImageEffectInstance::setupColourManagement(const std::string& ocioConfigPath)
+{
+    const std::string& hostStyle = OFX::Host::ImageEffect::gImageEffectHost->getProperties().getStringProperty(kOfxImageEffectPropColourManagementStyle);
+    const OFX::Host::Property::Set& pluginProps = getDescriptor().getProps();
+    const std::string& pluginStyle = pluginProps.getStringProperty(kOfxImageEffectPropColourManagementStyle);
+    const std::string style = chooseColourManagementStyle( hostStyle, pluginStyle, !ocioConfigPath.empty() );
+
+    setColourManagementStyle(style);
+    if (style == kOfxImageEffectColourManagementNone) {
+        return;
+    }
+    // "The host must set this property to indicate the native colour management config [...]. It is
+    // important to set this even in OCIO mode, to define the basic colourspaces." The only one is
+    // ofx-native-v1.5_aces-v1.3_ocio-v2.3, which Natron declares in kOfxImageEffectPropColourManagementAvailableConfigs.
+    getProps().setStringProperty(kOfxImageEffectPropColourManagementConfig, kOfxConfigIdentifier);
+    getProps().setStringProperty(kOfxImageEffectPropOCIOConfig, (style == kOfxImageEffectColourManagementOCIO) ? ocioConfigPath : std::string() );
+}
+
+void
+OfxImageEffectInstance::setInputColourspaces(const NodeMetadata& metadata)
+{
+    const std::string style = getColourManagementStyle();
+    const std::string working = workingColourspace(style);
+
+    if ( working.empty() ) {
+        return;
+    }
+    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
+        OfxClipInstance *clip = dynamic_cast<OfxClipInstance*>(it->second);
+        if ( !clip || clip->isOutput() ) {
+            continue;
+        }
+        // "If a clip sets OfxImageClipPropIsMask or it only supports OfxImageComponentAlpha, colour
+        // management is disabled and this property must be unset."
+        const std::vector<std::string>& comps = clip->getSupportedComponents();
+        const bool alphaOnly = (comps.size() == 1) && (comps[0] == kOfxImageComponentAlpha);
+        if ( clip->isMask() || alphaOnly ) {
+            clip->setColourspace( std::string() );
+            continue;
+        }
+        std::string colourspace = metadata.getColourspace( clip->getInputNb() );
+        if ( colourspace.empty() ) {
+            colourspace = working;
+        }
+        clip->setColourspace(colourspace);
+    }
+}
+
+void
+OfxImageEffectInstance::updateOutputColourspace(NodeMetadata& metadata)
+{
+    const std::string working = workingColourspace( getColourManagementStyle() );
+
+    if ( working.empty() ) {
+        return;
+    }
+    std::vector<std::string> preferred(1, working);
+    std::string colourspace;
+    OfxStatus st = getOutputColourspaceAction(preferred, colourspace);
+    if ( (st == kOfxStatOK) || (st == kOfxStatReplyDefault) ) {
+        // a cross-reference to an input clip ("OfxColourspace_Source") is resolved, so that the
+        // downstream effects get an actual colourspace
+        colourspace = resolveColourspace(colourspace);
+    } else {
+        colourspace.clear();
+    }
+    // the working space is stored as an empty string, as for effects without colour management
+    metadata.setColourspace(-1, colourspace == working ? std::string() : colourspace);
+}
+
 void
 OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metadata,
                                                              OFX::Host::Property::Set &outArgs,
@@ -1253,6 +1356,11 @@ OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metad
         outArgs.createProperty(specPAR);
         outArgs.setDoubleProperty( parParamName, metadata.getPixelAspectRatio(inputNb) );
     }
+
+    // OFX 1.5 colour management: the OfxImageClipPropPreferredColourspaces_<clip> of the input clips
+    if ( !workingColourspace( getColourManagementStyle() ).empty() ) {
+        setupClipPreferencesColourArgs(outArgs);
+    }
 } // OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata
 
 StatusEnum
@@ -1314,6 +1422,11 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs,
         // The plug-in may have set invalid values (e.g. NaN), in which case reading the out-args
         // throws OFX::Host::Property::Exception, which is not a std::exception: treat it as a failure.
         try {
+            // OFX 1.5 colour management: the preferred colourspaces of the input clips
+            if ( !workingColourspace( getColourManagementStyle() ).empty() ) {
+                readClipPreferencesColourArgs(outArgs);
+            }
+
             /// OK, go pump the components/depths back into the clips themselves
             for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin();
                  it != _clips.end();

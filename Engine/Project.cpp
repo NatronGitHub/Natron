@@ -74,6 +74,7 @@
 #include "Engine/FormatSerialization.h"
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
+#include "Engine/OfxEffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/ProjectPrivate.h"
@@ -2756,6 +2757,16 @@ Project::onOCIOConfigPathChanged(const std::string& path,
         endChanges(block);
     } catch (std::logic_error&) {
         // ignore
+    }
+
+    // OFX 1.5 colour management: the OCIO config of the effects that do colour management
+    NodesList nodes;
+    getNodes_recursive(nodes, false);
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        OfxEffectInstancePtr effect = std::dynamic_pointer_cast<OfxEffectInstance>( (*it)->getEffectInstance() );
+        if (effect) {
+            effect->onOCIOConfigChanged();
+        }
     }
 }
 

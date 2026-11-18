@@ -52,6 +52,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include <tuttle/ofxReadWrite.h>
 #include <ofxInteract.h>
 #include <ofxNatron.h>
+#include <ofxColour.h>
 #include <nuke/fnOfxExtensions.h>
 
 #include "Engine/AppInstance.h"
@@ -542,6 +543,10 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             }
             //////////////////////////////////////////////////////
 #endif
+
+            // OFX 1.5 colour management: the style and configs, which the plug-in may read in
+            // kOfxActionCreateInstance
+            _imp->effect->setupColourManagement( getOCIOConfigFile() );
 
             ///Set default metadata since the OpenFX plug-in may fetch images in its constructor
             setDefaultMetadata();
@@ -1357,6 +1362,8 @@ OfxEffectInstance::onMetadataRefreshed(const NodeMetadata& metadata)
             clip->setPixelDepth( OfxClipInstance::natronsDepthToOfxDepth( metadata.getBitDepth(inputNb) ) );
             clip->setAspectRatio( metadata.getPixelAspectRatio(inputNb) );
         }
+        // OFX 1.5 colour management: the colourspaces of the input clips
+        _imp->effect->setInputColourspaces(metadata);
 
         effectInstance()->updatePreferences_safe( metadata.getOutputFrameRate(),
                                                   OfxClipInstance::natronsFieldingToOfxFielding( metadata.getOutputFielding() ),
@@ -1396,9 +1403,40 @@ OfxEffectInstance::getPreferredMetadata(NodeMetadata& metadata)
         ///It has been overridden and no data is actually set on the clip, everything will be set into the
         ///metadata object
         stat = _imp->effect->getClipPreferences_safe(metadata, &_imp->outputFormatFromPlugin);
+
+        // OFX 1.5 colour management: "This should be called after first gathering the plug-in's preferred
+        // input colourspaces via OfxImageEffectActionGetClipPreferences", and again "whenever the effect
+        // instance is changed", which also refreshes the metadata.
+        if (stat != eStatusFailed) {
+            _imp->effect->updateOutputColourspace(metadata);
+        }
     }
 
     return stat;
+}
+
+std::string
+OfxEffectInstance::getOCIOConfigFile()
+{
+    // The OCIO environment variable, which Settings sets to the config file of the preferences (a file
+    // path or an ocio:// URI). AppManager::getOCIOConfigPath() is the directory of that file.
+    return std::string( qgetenv(NATRON_OCIO_ENV_VAR_NAME).constData() );
+}
+
+void
+OfxEffectInstance::onOCIOConfigChanged()
+{
+    if (!_imp->effect || !_imp->created) {
+        return;
+    }
+    const std::string oldStyle = _imp->effect->getColourManagementStyle();
+    _imp->effect->setupColourManagement( getOCIOConfigFile() );
+    // the plug-in must be asked for its output colourspace again "if the host changes any of the other
+    // colour properties": refresh the metadata, here and downstream
+    if ( (oldStyle != kOfxImageEffectColourManagementNone) ||
+         (_imp->effect->getColourManagementStyle() != kOfxImageEffectColourManagementNone) ) {
+        refreshMetadata_public(true);
+    }
 }
 
 StatusEnum

@@ -66,6 +66,8 @@ CLANG_DIAG_ON(uninitialized)
 #endif
 #include <ofxInteract.h>
 #include <ofxNatron.h>
+#include <ofxColour.h>
+#include <ofx-native-v1.5_aces-v1.3_ocio-v2.3.h>
 
 //ofx host support
 #include <ofxhPluginAPICache.h>
@@ -319,6 +321,11 @@ OfxHost::setProperties()
     //}
 #endif
     _properties.setIntProperty(kOfxImageEffectPropRenderQualityDraft, 1); // OFX 1.4
+    // OFX 1.5 colour management (ofxColour.h): the OCIO style, with the project's OCIO config, and the
+    // native config, which defines the basic colourspaces "even in OCIO mode". Natron labels the images
+    // (the working space is the scene_linear role), but does not convert them, see OfxImageEffectInstance.
+    _properties.setStringProperty(kOfxImageEffectPropColourManagementStyle, kOfxImageEffectColourManagementOCIO);
+    _properties.setStringProperty(kOfxImageEffectPropColourManagementAvailableConfigs, kOfxConfigIdentifier, 0);
     _properties.setStringProperty(kOfxImageEffectHostPropNativeOrigin, kOfxHostNativeOriginBottomLeft); // OFX 1.4
 
 #ifdef OFX_EXTENSIONS_NUKE

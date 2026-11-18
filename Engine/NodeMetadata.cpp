@@ -37,12 +37,14 @@ struct PerInputData
     int nComps;
     std::string componentsType;
     ImageBitDepthEnum bitdepth;
+    std::string colourspace; // OFX 1.5 colour management: empty for Natron's working space
 
     PerInputData()
         : pixelAspectRatio(1.)
         , nComps(0)
         , componentsType()
         , bitdepth(eImageBitDepthFloat)
+        , colourspace()
     {
     }
 };
@@ -159,6 +161,9 @@ NodeMetadata::operator==(const NodeMetadata& other) const
     if (_imp->outputData.componentsType != other._imp->outputData.componentsType) {
         return false;
     }
+    if (_imp->outputData.colourspace != other._imp->outputData.colourspace) {
+        return false;
+    }
     if ( _imp->inputsData.size() != other._imp->inputsData.size() ) {
         return false;
     }
@@ -176,6 +181,9 @@ NodeMetadata::operator==(const NodeMetadata& other) const
             return false;
         }
         if (_imp->inputsData[i].nComps != other._imp->inputsData[i].nComps) {
+            return false;
+        }
+        if (_imp->inputsData[i].colourspace != other._imp->inputsData[i].colourspace) {
             return false;
         }
     }
@@ -351,6 +359,29 @@ NodeMetadata::getComponentsType(int inputNb) const
             return kNatronColorPlaneID;
         }
     }
+}
+
+void
+NodeMetadata::setColourspace(int inputNb,
+                             const std::string& colourspace)
+{
+    if (inputNb == -1) {
+        _imp->outputData.colourspace = colourspace;
+    } else if ( inputNb < (int)_imp->inputsData.size() ) {
+        _imp->inputsData[inputNb].colourspace = colourspace;
+    }
+}
+
+std::string
+NodeMetadata::getColourspace(int inputNb) const
+{
+    if (inputNb == -1) {
+        return _imp->outputData.colourspace;
+    } else if ( inputNb < (int)_imp->inputsData.size() ) {
+        return _imp->inputsData[inputNb].colourspace;
+    }
+
+    return std::string();
 }
 
 void

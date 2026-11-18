@@ -95,6 +95,15 @@ public:
 
     std::string getComponentsType(int inputNb) const;
 
+    /**
+     * @brief The OFX 1.5 colourspace (kOfxImageClipPropColourspace) of the images of an input, or of the output
+     * if inputNb is -1, for the effects that do colour management. An empty string means Natron's working space
+     * (the scene_linear role of the project's OCIO config). Natron only labels images: it does not convert them.
+     **/
+    void setColourspace(int inputNb, const std::string& colourspace);
+
+    std::string getColourspace(int inputNb) const;
+
     void setOutputFormat(const RectI& format);
 
     const RectI& getOutputFormat() const;

@@ -261,6 +261,13 @@ public:
     virtual SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum getPreferredMetadata(NodeMetadata& metadata) OVERRIDE FINAL;
     virtual void onMetadataRefreshed(const NodeMetadata& metadata) OVERRIDE FINAL;
+
+    /// OFX 1.5 colour management: the OCIO config of the project changed
+    void onOCIOConfigChanged();
+
+    /// the OCIO config file used by Natron and the plug-ins (the OCIO environment variable)
+    static std::string getOCIOConfigFile();
+
     virtual void getComponentsNeededAndProduced(double time, ViewIdx view,
                                                 EffectInstance::ComponentsNeededMap* comps,
                                                 double* passThroughTime,

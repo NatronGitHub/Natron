@@ -861,6 +861,10 @@ public:
 
     ImageBitDepthEnum getBitDepth(int inputNb) const;
 
+    /// the OFX 1.5 colourspace of the images of an input, or of the output if inputNb is -1
+    /// (see NodeMetadata::getColourspace(): empty for Natron's working space)
+    std::string getMetadataColourspace(int inputNb) const;
+
 
     ///////////////////////End Metadatas related////////////////////////
 

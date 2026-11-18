@@ -151,6 +151,41 @@ public:
     virtual OfxStatus getViewCount(int *nViews) const OVERRIDE FINAL;
     virtual OfxStatus getViewName(int viewIndex, const char** name) const OVERRIDE FINAL;
 
+    /// @name OFX 1.5 colour management (ofxColour.h)
+    ///
+    /// Natron labels images with colourspaces, but does not convert them: the working space is
+    /// the scene_linear role of the project's OCIO config, the input clips of an effect are in
+    /// the output colourspace of the effects connected to them (NodeMetadata::getColourspace()),
+    /// and the output colourspace of an effect that does colour management is the one it reports
+    /// in kOfxImageEffectActionGetOutputColourspace. The plug-ins' preferred colourspaces are
+    /// read but not honoured ("In the event that the host cannot supply images in a requested
+    /// colourspace, it may supply images in any valid colourspace").
+    /// @{
+
+    /// The colour management style of an instance, given the highest style of the host and of the
+    /// plug-in: the highest style both support, except that the OCIO style needs an OCIO config
+    /// (without one, Full is the highest).
+    static std::string chooseColourManagementStyle(const std::string& hostStyle,
+                                                   const std::string& pluginStyle,
+                                                   bool hasOCIOConfig);
+
+    /// The name of the working space in a colour management style: the scene_linear role in the
+    /// OCIO style, ofx_scene_linear in the native ones, empty without colour management.
+    static std::string workingColourspace(const std::string& style);
+
+    /// Set the colour management properties of this instance (style, native config, OCIO config).
+    /// Called at creation, before kOfxActionCreateInstance, and when the OCIO config changes.
+    void setupColourManagement(const std::string& ocioConfigPath);
+
+    /// set the kOfxImageClipPropColourspace of the input clips from the metadata (no-op without
+    /// colour management)
+    void setInputColourspaces(const NodeMetadata& metadata);
+
+    /// call kOfxImageEffectActionGetOutputColourspace, and store the output colourspace, resolved, in
+    /// the metadata (no-op without colour management)
+    void updateOutputColourspace(NodeMetadata& metadata);
+    /// @}
+
     void setupClipPreferencesArgsFromMetadata(NodeMetadata& metadata,
                                               OFX::Host::Property::Set &outArgs,
                                               std::map<OfxClipInstance*, int>& clipsMapping);

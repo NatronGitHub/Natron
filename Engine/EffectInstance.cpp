@@ -5506,6 +5506,10 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
             metadata.setNComps(i, rawComps);
             metadata.setComponentsType(i, kNatronColorPlaneID);
         }
+        // OFX 1.5 colour management labels: an input's images are in the output colourspace of the
+        // node connected to it. The output of an effect that does no colour management is in the
+        // working space (empty), see OfxEffectInstance::getPreferredMetadata() for the others.
+        metadata.setColourspace( i, (i >= 0 && effect) ? effect->getMetadataColourspace(-1) : std::string() );
     }
     
     // default to a reasonable value if there is no input
@@ -5566,6 +5570,14 @@ EffectInstance::getMetadataNComps(int inputNb) const
 {
     QMutexLocker k(&_imp->metadataMutex);
     return _imp->metadata.getNComps(inputNb);
+}
+
+std::string
+EffectInstance::getMetadataColourspace(int inputNb) const
+{
+    QMutexLocker k(&_imp->metadataMutex);
+
+    return _imp->metadata.getColourspace(inputNb);
 }
 
 ImageBitDepthEnum
