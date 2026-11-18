@@ -13,9 +13,8 @@ directory, so ``prepare()``, called from conf.py:
 2. runs Doxygen on ``libs/OpenFX/include`` (as OpenFX's own build does),
    writing the XML to ``Documentation/openfx-doxygen/`` (also ignored), and
    generates the breathe API pages (``Reference/api/``);
-3. fixes what Natron's build would warn about in the copy (see ``_adapt``:
-   a blank line after the SPDX comments, and the API index without the
-   ``doxygenindex`` that duplicates every declaration of the API pages);
+3. replaces the API index of the copy by one without the ``doxygenindex``,
+   which declares again everything the API pages declare (see ``_adapt``);
 4. returns the breathe configuration, the ``exclude_patterns`` and an
    ``|openfx_commit|`` substitution.
 
@@ -241,19 +240,6 @@ def _rewrite(path, text):
 
 def _adapt(dest):
     """Small fixes to the copy, which Natron's build would otherwise warn about."""
-    for dirpath, _dirnames, filenames in os.walk(dest):
-        for name in filenames:
-            if not name.endswith(".rst"):
-                continue
-            path = os.path.join(dirpath, name)
-            with open(path, encoding="utf-8") as f:
-                lines = f.read().split("\n")
-            # ".. SPDX-License-Identifier: ..." directly followed by the title:
-            # docutils wants a blank line after the comment.
-            if (len(lines) > 1 and lines[0].startswith(".. SPDX-License-Identifier")
-                    and lines[1].strip()):
-                lines.insert(1, "")
-                _rewrite(path, "\n".join(lines))
     index = os.path.join(dest, "Reference", "DoxygenIndex.rst")
     if os.path.isfile(index):
         _rewrite(index, DOXYGEN_INDEX)
