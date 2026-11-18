@@ -53,15 +53,27 @@ NATRON_NAMESPACE_ENTER
 NATRON_PYTHON_NAMESPACE_ENTER
 
 /**
- * @brief Calls Py_SetPythonHome and set PYTHONPATH
+ * @brief Sets PYTHONNOUSERSITE and PYTHONPATH for the Python bundled with Natron.
+ * @returns The Python home of the bundled Python, or an empty string if there is none.
  **/
-void setupPythonEnv(const std::string& binPath);
+std::wstring setupPythonEnv(const std::string& binPath);
 
 /**
- * @brief Must be called after setupPythonEnv(), calls Py_SetProgramName and Py_Initialize, PySys_SetArgv
+ * @brief Must be called after setupPythonEnv(): initializes Python (with PyConfig, PEP 587)
+ * with the program name commandLineArgsWide[0], the given Python home (if not empty) and the
+ * user site disabled, then sets sys.argv to commandLineArgsWide and prepends the directory of
+ * commandLineArgsWide[0] to sys.path.
  * @returns A pointer to the main module
  **/
-PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide);
+PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide,
+                            const std::wstring& pythonHome);
+
+/**
+ * @brief Must be called after setupPythonEnv(): the equivalent of Py_Main(argc, argv), with
+ * the given Python home (if not empty) and the user site disabled.
+ * @returns The exit status
+ **/
+int runPythonMain(int argc, wchar_t** argv, const std::wstring& pythonHome);
 
 std::string PyStringToStdString(PyObject* obj);
 

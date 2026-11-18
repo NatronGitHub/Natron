@@ -71,7 +71,7 @@ extern "C" {
 
     std::string binPath = NATRON_NAMESPACE::ProcInfo::applicationDirPath(commandLineArgsUtf8[0].c_str());
     binPath = NATRON_NAMESPACE::StrUtils::toNativeSeparators(binPath);
-    NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::setupPythonEnv(binPath);
+    std::wstring pythonHome = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::setupPythonEnv(binPath);
 
 
     std::vector<wchar_t*> wideArgs(argc);
@@ -79,7 +79,7 @@ extern "C" {
         std::wstring utf16 = NATRON_NAMESPACE::StrUtils::utf8_to_utf16(commandLineArgsUtf8[i]);
         wideArgs[i] = wcsdup(utf16.c_str());
     }
-    int ret = Py_Main(commandLineArgsUtf8.size(), &wideArgs[0]);
+    int ret = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::runPythonMain(argc, &wideArgs[0], pythonHome);
     return ret;
 } //main
 #ifdef __NATRON_WIN32__
