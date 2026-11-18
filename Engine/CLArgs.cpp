@@ -332,6 +332,8 @@ CLArgs::printUsage(const std::string& programName)
         "    startup prompts). Each one is printed to the standard error as\n"
         "    \"[dialog dismissed] <title>: <message>\" and answered with its default\n"
         "    button, as if Enter or Escape had been pressed. Answers are not saved.\n"
+        "    \"Save changes?\" is answered Discard, and file dialogs count as cancelled,\n"
+        "    so that nothing blocks.\n"
         "    Useful to drive the graphical interface from scripts and tests. In\n"
         "    background mode, where dialogs are never shown, questions are then also\n"
         "    answered with their default button (instead of Yes).\n"

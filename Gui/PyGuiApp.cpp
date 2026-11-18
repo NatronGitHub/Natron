@@ -59,6 +59,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Gui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
+#include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/PanelWidget.h"
 #include "Gui/PythonPanels.h"
 #include "Gui/SequenceFileDialog.h"
@@ -151,6 +152,12 @@ QString
 GuiApp::getFilenameDialog(const QStringList& filters,
                           const QString& location) const
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        // --no-dialogs: the file dialog counts as cancelled
+        Dialogs::printDismissedDialog( "getFilenameDialog", tr("File dialog not shown, cancelled.").toStdString() );
+
+        return QString();
+    }
     Gui* gui = getInternalGuiApp()->getGui();
     std::vector<std::string> f;
 
@@ -177,6 +184,12 @@ QString
 GuiApp::getSequenceDialog(const QStringList& filters,
                           const QString& location) const
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        // --no-dialogs: the file dialog counts as cancelled
+        Dialogs::printDismissedDialog( "getSequenceDialog", tr("File dialog not shown, cancelled.").toStdString() );
+
+        return QString();
+    }
     Gui* gui = getInternalGuiApp()->getGui();
     std::vector<std::string> f;
 
@@ -202,6 +215,12 @@ GuiApp::getSequenceDialog(const QStringList& filters,
 QString
 GuiApp::getDirectoryDialog(const QString& location) const
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        // --no-dialogs: the file dialog counts as cancelled
+        Dialogs::printDismissedDialog( "getDirectoryDialog", tr("File dialog not shown, cancelled.").toStdString() );
+
+        return QString();
+    }
     Gui* gui = getInternalGuiApp()->getGui();
     std::vector<std::string> f;
     SequenceFileDialog dialog(gui,
@@ -225,6 +244,12 @@ QString
 GuiApp::saveFilenameDialog(const QStringList& filters,
                            const QString& location) const
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        // --no-dialogs: the file dialog counts as cancelled
+        Dialogs::printDismissedDialog( "saveFilenameDialog", tr("File dialog not shown, cancelled.").toStdString() );
+
+        return QString();
+    }
     Gui* gui = getInternalGuiApp()->getGui();
     std::vector<std::string> f;
 
@@ -251,6 +276,12 @@ QString
 GuiApp::saveSequenceDialog(const QStringList& filters,
                            const QString& location) const
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        // --no-dialogs: the file dialog counts as cancelled
+        Dialogs::printDismissedDialog( "saveSequenceDialog", tr("File dialog not shown, cancelled.").toStdString() );
+
+        return QString();
+    }
     Gui* gui = getInternalGuiApp()->getGui();
     std::vector<std::string> f;
 
@@ -277,6 +308,14 @@ ColorTuple
 GuiApp::getRGBColorDialog() const
 {
     ColorTuple ret;
+
+    if ( appPTR->isDialogsDisabled() ) {
+        // --no-dialogs: the colour dialog counts as cancelled
+        Dialogs::printDismissedDialog( "getRGBColorDialog", tr("Colour dialog not shown, cancelled.").toStdString() );
+        ret.r = ret.g = ret.b = ret.a = 0.;
+
+        return ret;
+    }
     QColorDialog dialog;
 
     if ( dialog.exec() ) {

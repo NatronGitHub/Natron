@@ -25,16 +25,27 @@ Note that Natron will not start rendering any Write node of the sourced script, 
 *NatronRenderer* and *Natron* will do the same thing in this mode, only the *init.py* script will be loaded.
 
 **[--no-dialogs]** does not show the message and question dialogs: errors, warnings,
-questions and the startup prompts (OpenColorIO configuration, auto-save recovery, updates check,
-default appearance and shortcuts...).
+questions and the startup prompts.
 Each dialog is printed to the standard error as ``[dialog dismissed] <title>: <message>`` and
-counts as dismissed: a question returns its default button, as if Enter was pressed, or the
-button Escape would pick if there is no default button (Cancel, Close, Abort or No). The
-"Do not show this again" answers are not saved, and the startup question about checking for
-updates is asked again at the next launch.
+counts as dismissed. The answers never block and never destroy data:
+
+- a question returns its default button, as if Enter was pressed, or the button Escape would
+  pick if there is no default button (Cancel, Close, Abort or No). The "Do not show this
+  again" answers are not saved;
+- "Save changes to <project>?", when closing or quitting, is answered **Discard**: the
+  default, Save, would open the Save As file dialog for an untitled project. Save the project
+  from the script if needed, e.g. with :meth:`app.saveProjectAs(filename)<NatronEngine.App.saveProjectAs>`;
+- the file dialogs opened by Natron (Open, Save As, the file of a new Read or Write node) and
+  by :doc:`GuiApp<PythonReference/NatronGui/GuiApp>` (:meth:`getFilenameDialog<NatronGui.GuiApp.getFilenameDialog>`,
+  :meth:`getRGBColorDialog<NatronGui.GuiApp.getRGBColorDialog>`...) count as cancelled;
+- the startup prompts: the OpenColorIO configuration check answers Yes (use the default
+  configuration) only if the selected one is unusable, No otherwise; the recovery of an
+  auto-saved project answers Yes (restore it: No would delete it); the new default appearance
+  and the new default shortcuts are not applied (No); the question about checking for updates
+  is not answered, so it is asked again at the next launch without *--no-dialogs*.
+
 The main window is shown without taking the focus.
 This is meant to drive the graphical interface from scripts and tests, see :ref:`guiTesting`.
-The file dialogs opened by user actions are still shown.
 In background mode (*NatronRenderer*, *-b* or *-t*), where dialogs are never shown, the questions
 are then also answered with their default button, instead of *Yes*.
 
