@@ -122,6 +122,16 @@ public:
     /// clearPersistentMessage
     virtual OfxStatus clearPersistentMessage() OVERRIDE;
     virtual void loadingStatus(bool loading, const std::string & pluginId, int versionMajor, int versionMinor) OVERRIDE;
+
+    /// Called by HostSupport just before it calls the OfxSetHost entry point (OFX 1.5) of a plug-in
+    /// binary, once per load of the binary, before any of its plug-ins is known: the host name that
+    /// OfxSetHost sees (kOfxPropName, see getStringProperty()) is chosen from the binary's bundle
+    /// identifier, not from the plug-in that was loaded before.
+    virtual void loadingBinary(const std::string& filePath) OVERRIDE;
+
+    /// The CFBundleIdentifier in the Info.plist of the OFX bundle that contains a plug-in binary
+    /// (e.g. ".../Foo.ofx.bundle/Contents/MacOS/Foo.ofx"), or "" if there is none.
+    static std::string getBundleIdentifier(const std::string& binaryFilePath);
     virtual bool pluginSupported(OFX::Host::ImageEffect::ImageEffectPlugin *plugin, std::string &reason) const OVERRIDE;
 
     ///fetch the parametric parameters suite or returns the base class version

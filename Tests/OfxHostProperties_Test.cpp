@@ -32,9 +32,12 @@
 
 #include <gtest/gtest.h>
 
+#include <QtCore/QDir>
+#include <QtCore/QFile>
+#include <QtCore/QTemporaryDir>
+
 #include <ofxCore.h>
 #include <ofxColour.h>
-#include <ofxDrawSuite.h>
 #include <ofxGPURender.h>
 #include <ofxImageEffect.h>
 #include <ofxParam.h>
@@ -42,6 +45,10 @@
 #include <ofxhPropertySuite.h>
 
 #include "Global/GlobalDefines.h"
+
+#include "Engine/AppManager.h"
+#include "Engine/OfxHost.h"
+#include "Engine/Settings.h"
 
 NATRON_NAMESPACE_USING
 
@@ -91,5 +98,62 @@ TEST(OfxHostProperties, NotYetSupported15Features)
     EXPECT_EQ( std::string("false"), props.getStringProperty(kOfxImageEffectPropOpenCLRenderSupported) );
     EXPECT_EQ( std::string(kOfxImageEffectColourManagementNone), props.getStringProperty(kOfxImageEffectPropColourManagementStyle) );
     EXPECT_EQ( 0, props.getIntProperty(kOfxParamHostPropSupportsStrChoice) );
-    EXPECT_TRUE( OFX::Host::ImageEffect::gImageEffectHost->fetchSuite(kOfxDrawSuite, 1) == NULL );
+}
+
+namespace {
+// make <dir>/<name>.ofx.bundle/Contents/MacOS/<name>.ofx (empty) and its Info.plist, and return the binary path
+std::string
+makeBundle(const QString& dir, const QString& name, const char* bundleIdentifier)
+{
+    const QString bundle = dir + QLatin1Char('/') + name + QString::fromUtf8(".ofx.bundle");
+    QDir().mkpath( bundle + QString::fromUtf8("/Contents/MacOS") );
+    if (bundleIdentifier) {
+        QFile plist( bundle + QString::fromUtf8("/Contents/Info.plist") );
+        if ( plist.open(QIODevice::WriteOnly) ) {
+            plist.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<plist version=\"1.0\">\n<dict>\n"
+                        "\t<key>CFBundleExecutable</key>\n\t<string>x.ofx</string>\n"
+                        "\t<key>CFBundleIdentifier</key>\n\t<string>");
+            plist.write(bundleIdentifier);
+            plist.write("</string>\n</dict>\n</plist>\n");
+        }
+    }
+
+    return ( bundle + QString::fromUtf8("/Contents/MacOS/") + name + QString::fromUtf8(".ofx") ).toStdString();
+}
+}
+
+TEST(OfxHostProperties, BundleIdentifier)
+{
+    QTemporaryDir tmp;
+    ASSERT_TRUE( tmp.isValid() );
+    EXPECT_EQ( std::string("com.example.Foo"), NATRON_NAMESPACE::OfxHost::getBundleIdentifier( makeBundle(tmp.path(), QString::fromUtf8("Foo"), "com.example.Foo") ) );
+    EXPECT_EQ( std::string(), NATRON_NAMESPACE::OfxHost::getBundleIdentifier( makeBundle(tmp.path(), QString::fromUtf8("NoPlist"), NULL) ) );
+    EXPECT_EQ( std::string(), NATRON_NAMESPACE::OfxHost::getBundleIdentifier("/not/a/bundle/Foo.ofx") );
+}
+
+// OfxSetHost (OFX 1.5) is called with the host before any plug-in of the binary is known: the host
+// name it sees follows the binary's bundle identifier (see getHostNameProxy() in OfxHost.cpp), not
+// the plug-in that was loaded before.
+TEST(OfxHostProperties, HostNameAtOfxSetHost)
+{
+    ASSERT_TRUE(OFX::Host::ImageEffect::gImageEffectHost != NULL);
+    OFX::Host::ImageEffect::Host* host = OFX::Host::ImageEffect::gImageEffectHost;
+    OFX::Host::Property::Set& props = hostProps();
+    QTemporaryDir tmp;
+    ASSERT_TRUE( tmp.isValid() );
+    const std::string nuke = appPTR->getCurrentSettings()->getKnownHostName(Settings::eKnownHostNameNuke);
+    const std::string natron = appPTR->getCurrentSettings()->getHostName();
+
+    // a plug-in that was being loaded, from another binary (e.g. the last one of the scan)
+    host->loadingStatus(true, "com.absoft.neatvideo4", 4, 0);
+    EXPECT_EQ( nuke, props.getStringProperty(kOfxPropName) );
+    host->loadingBinary( makeBundle(tmp.path(), QString::fromUtf8("Other"), "org.example.Other") );
+    EXPECT_EQ( natron, props.getStringProperty(kOfxPropName) );
+    // a Neat Video binary: the Nuke host name, as for its plug-ins
+    host->loadingBinary( makeBundle(tmp.path(), QString::fromUtf8("NeatVideo"), "com.absoft.neatvideo5") );
+    EXPECT_EQ( nuke, props.getStringProperty(kOfxPropName) );
+    // the next plug-in being loaded replaces the binary
+    host->loadingStatus(true, "org.example.Plugin", 1, 0);
+    EXPECT_EQ( natron, props.getStringProperty(kOfxPropName) );
+    host->loadingStatus(false, "", 0, 0);
 }

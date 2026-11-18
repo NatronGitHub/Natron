@@ -47,6 +47,8 @@ CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is depr
 #include <QThreadPool>
 #include <QCoreApplication>
 #include <QDebug>
+#include <QRegularExpression>
+#include <QRegularExpressionMatch>
 #include <QTemporaryFile>
 CLANG_DIAG_ON(deprecated-register)
 // clang-format on
@@ -159,8 +161,10 @@ struct OfxHostPrivate
     QMutex* pluginsMutexesLock; //<protects _pluginsMutexes
 #endif
     std::string loadingPluginID; // ID of the plugin being loaded
+    std::string loadingPluginBinaryPath; // the binary of loadingPluginID, if known
     int loadingPluginVersionMajor;
     int loadingPluginVersionMinor;
+    std::string setHostBundleID; // bundle identifier of the binary whose OfxSetHost is being called (OFX 1.5)
 
     OfxHostPrivate()
         : imageEffectPluginCache()
@@ -170,8 +174,10 @@ struct OfxHostPrivate
         , pluginsMutexesLock(0)
 #endif
         , loadingPluginID()
+        , loadingPluginBinaryPath()
         , loadingPluginVersionMajor(0)
         , loadingPluginVersionMinor(0)
+        , setHostBundleID()
     {
     }
 };
@@ -459,6 +465,10 @@ OfxHost::getStringProperty(const std::string &name,
             pluginID = _imp->loadingPluginID;
             pluginVersionMajor = _imp->loadingPluginVersionMajor;
             pluginVersionMinor = _imp->loadingPluginVersionMinor;
+        } else if ( !_imp->setHostBundleID.empty() ) {
+            // OfxSetHost of a binary whose plug-ins are not known yet: the vendor prefixes of
+            // getHostNameProxy() are those of the bundle identifier too
+            pluginID = _imp->setHostBundleID;
         } else {
             OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
             if (tls && tls->lastEffectCallingMainEntry) {
@@ -676,8 +686,10 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
                                      ContextEnum* ctx)
 {
     _imp->loadingPluginID = plugin->getRawIdentifier();
+    _imp->loadingPluginBinaryPath = plugin->getBinary() ? plugin->getBinary()->getFilePath() : std::string();
     _imp->loadingPluginVersionMajor = plugin->getVersionMajor();
     _imp->loadingPluginVersionMinor = plugin->getVersionMajor();
+    _imp->setHostBundleID.clear();
 
     OFX::Host::PluginHandle *pluginHandle;
     // getPluginHandle() must be called before getContexts():
@@ -733,6 +745,8 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
 
     *ctx = OfxEffectInstance::mapToContextEnum(context);
     _imp->loadingPluginID.clear();
+    _imp->loadingPluginBinaryPath.clear();
+    _imp->setHostBundleID.clear();
 
     return desc;
 } // OfxHost::getPluginContextAndDescribe
@@ -771,6 +785,9 @@ OfxHost::createOfxEffect(NodePtr node,
                                                  hasUsedFileDialog
 #endif
                                                  );
+    // if creating the instance loaded the plug-in binary (and called its OfxSetHost), the following
+    // actions are those of the effect
+    _imp->setHostBundleID.clear();
 
     return hostSideEffect;
 }
@@ -907,7 +924,11 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     assert(pluginCache);
     /// set the version label in the global cache
     // v2: HostSupport of openfx 4476791d (read-only properties, bundle architecture folders): describe the plug-ins again
-    pluginCache->setCacheVersion(NATRON_APPLICATION_NAME "OFXCachev2");
+    // v3: OfxSetHost (OFX 1.5). A binary whose OfxSetHost refuses this host is cached with no plug-ins,
+    // and its answer may depend on the host name and version (kOfxPropName, kOfxPropVersion), so they
+    // are part of the cache version: the plug-ins are scanned again when they change.
+    pluginCache->setCacheVersion( std::string(NATRON_APPLICATION_NAME "OFXCachev3-" NATRON_VERSION_STRING "-")
+                                  + appPTR->getCurrentSettings()->getHostName() );
 
     /// register the image effect cache with the global plugin cache
     _imp->imageEffectPluginCache->registerInCache( *pluginCache );
@@ -972,6 +993,8 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     pluginCache->scanPluginFiles();
     qDebug() << "Load OFX Plugins: scan plugins... done!";
     _imp->loadingPluginID.clear(); // finished loading plugins
+    _imp->loadingPluginBinaryPath.clear();
+    _imp->setHostBundleID.clear();
 
     if ( pluginCache->dirty() ) {
         // write the cache NOW (it won't change anyway)
@@ -1175,14 +1198,52 @@ OfxHost::loadingStatus(bool loading,
 {
     // set the pluginID in case the plug-in tries to fetch the hostname property
     _imp->loadingPluginID = pluginId;
+    _imp->loadingPluginBinaryPath.clear(); // unknown
     _imp->loadingPluginVersionMajor = versionMajor;
     _imp->loadingPluginVersionMinor = versionMinor;
+    _imp->setHostBundleID.clear();
     if (loading && appPTR) {
         appPTR->setLoadingStatus( QString::fromUtf8("OpenFX: loading ") + QString::fromUtf8( pluginId.c_str() ) + QString::fromUtf8(" v") + QString::number(versionMajor) + QLatin1Char('.') + QString::number(versionMinor) );
 #     ifdef DEBUG
         qDebug() << QString::fromUtf8("OpenFX: loading ") + QString::fromUtf8( pluginId.c_str() ) + QString::fromUtf8(" v") + QString::number(versionMajor) + QLatin1Char('.') + QString::number(versionMinor);
 #     endif
     }
+}
+
+void
+OfxHost::loadingBinary(const std::string& filePath)
+{
+    // OfxSetHost is called next. The plug-in being loaded or described, if any, is only relevant if it
+    // is in this binary (a binary that is loaded when one of its plug-ins is first used); otherwise it
+    // was the last plug-in of the scan, from another binary.
+    if ( _imp->loadingPluginBinaryPath.empty() || (_imp->loadingPluginBinaryPath != filePath) ) {
+        _imp->loadingPluginID.clear();
+        _imp->loadingPluginBinaryPath.clear();
+        _imp->loadingPluginVersionMajor = 0;
+        _imp->loadingPluginVersionMinor = 0;
+    }
+    _imp->setHostBundleID = getBundleIdentifier(filePath);
+}
+
+std::string
+OfxHost::getBundleIdentifier(const std::string& binaryFilePath)
+{
+    // the bundle is the ancestor directory whose name ends with ".bundle"
+    const QString path = QString::fromUtf8( binaryFilePath.c_str() );
+    const QString bundleSuffix = QString::fromUtf8(".bundle/");
+    const int pos = path.lastIndexOf(bundleSuffix, -1, Qt::CaseInsensitive);
+    if (pos < 0) {
+        return std::string();
+    }
+    QFile plist( path.left( pos + bundleSuffix.size() ) + QString::fromUtf8("Contents/Info.plist") );
+    if ( !plist.open(QIODevice::ReadOnly) ) {
+        return std::string();
+    }
+    const QString contents = QString::fromUtf8( plist.readAll() );
+    const QRegularExpression re( QString::fromUtf8("<key>\\s*CFBundleIdentifier\\s*</key>\\s*<string>\\s*([^<]*?)\\s*</string>") );
+    const QRegularExpressionMatch m = re.match(contents);
+
+    return m.hasMatch() ? m.captured(1).toStdString() : std::string();
 }
 
 bool
