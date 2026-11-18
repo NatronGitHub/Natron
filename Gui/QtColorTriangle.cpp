@@ -67,6 +67,7 @@
 #include <QVBoxLayout>
 
 #include <math.h>
+#include <algorithm> // min, max
 
 /*! \class QtColorTriangle
 
@@ -874,7 +875,8 @@ double QtColorTriangle::angleAt(const QPointF &pos, const QRect &rect) const
     if (mouserad == 0.0)
         return 0.0;
 
-    double angle = acos(mousexdist / mouserad);
+    // clamp, because of rounding errors acos() could get a value slightly outside of [-1,1]
+    double angle = acos( std::max( -1., std::min(mousexdist / mouserad, 1.) ) );
     if (mouseydist >= 0)
 	angle = TWOPI - angle;
 
@@ -906,6 +908,25 @@ Returns the vector product of (x1,y1) and (x2,y2).
 inline double vprod(double x1, double y1, double x2, double y2)
 {
     return x1 * x2 + y1 * y2;
+}
+
+/*! \internal
+
+Returns the cosine of the angle between (x1,y1) and (x2,y2), clamped
+to [-1,1] so that acos() never gets a value outside of its domain
+because of rounding. If one of the vectors is null, the angle is
+undefined and 1 is returned (the vector is then also multiplied by a
+null distance by the caller).
+ */
+inline double vcos(double x1, double y1, double x2, double y2)
+{
+    double l = vlen(x1, y1) * vlen(x2, y2);
+    if (l <= 0.) {
+        return 1.;
+    }
+    double c = vprod(x1, y1, x2, y2) / l;
+
+    return c < -1. ? -1. : (c > 1. ? 1. : c);
 }
 
 /*! \internal
@@ -1100,8 +1121,7 @@ QPointF QtColorTriangle::movePointToTriangle(double x, double y, const Vertex &a
     double v1yA = y - a.point.y();
     double v2xA = b.point.x() - a.point.x();
     double v2yA = b.point.y() - a.point.y();
-    double vpA = vprod(v1xA, v1yA, v2xA, v2yA);
-    double cosA = vpA / (vlen(v1xA, v1yA) * vlen(v2xA, v2yA));
+    double cosA = vcos(v1xA, v1yA, v2xA, v2yA);
     double alphaA = acos(cosA);
 
     // Let v1B be the vector from x to b.
@@ -1110,8 +1130,7 @@ QPointF QtColorTriangle::movePointToTriangle(double x, double y, const Vertex &a
     double v1yB = y - b.point.y();
     double v2xB = c.point.x() - b.point.x();
     double v2yB = c.point.y() - b.point.y();
-    double vpB = vprod(v1xB, v1yB, v2xB, v2yB);
-    double cosB = vpB / (vlen(v1xB, v1yB) * vlen(v2xB, v2yB));
+    double cosB = vcos(v1xB, v1yB, v2xB, v2yB);
     double alphaB = acos(cosB);
 
     // Let v1C be the vector from x to c.
@@ -1120,8 +1139,7 @@ QPointF QtColorTriangle::movePointToTriangle(double x, double y, const Vertex &a
     double v1yC = y - c.point.y();
     double v2xC = a.point.x() - c.point.x();
     double v2yC = a.point.y() - c.point.y();
-    double vpC = vprod(v1xC, v1yC, v2xC, v2yC);
-    double cosC = vpC / (vlen(v1xC, v1yC) * vlen(v2xC, v2yC));
+    double cosC = vcos(v1xC, v1yC, v2xC, v2yC);
     double alphaC = acos(cosC);
 
     // Find the radian angles between the (1,0) vector and the points
