@@ -1472,17 +1472,12 @@ OFX::Host::Param::Descriptor *
 OfxImageEffectDescriptor::paramDefine(const char *paramType,
                                       const char *name)
 {
-    static const OFX::Host::Property::PropSpec hostOverlaysProps[] = {
-        { kOfxParamPropHasHostOverlayHandle,  OFX::Host::Property::eInt,    1,    true,    "0" },
-        { kOfxParamPropUseHostOverlayHandle,  OFX::Host::Property::eInt,    1,    false,    "0" },
-        OFX::Host::Property::propSpecEnd
-    };
+    // HostSupport declares kOfxParamPropHasHostOverlayHandle (default 0) and
+    // kOfxParamPropUseHostOverlayHandle on every parameter except groups and pages.
     OFX::Host::Param::Descriptor *ret = OFX::Host::Param::SetDescriptor::paramDefine(paramType, name);
-    OFX::Host::Property::Set& props = ret->getProperties();
-
-    props.addProperties(hostOverlaysProps);
 
     if (std::strcmp(paramType, kOfxParamTypeDouble2D) == 0) {
+        OFX::Host::Property::Set& props = ret->getProperties();
         const std::string& type = ret->getDoubleType();
         // only kOfxParamDoubleTypeXYAbsolute and kOfxParamDoubleTypeNormalisedXYAbsolute are be supported
         if (  //type == kOfxParamDoubleTypePlain ||
