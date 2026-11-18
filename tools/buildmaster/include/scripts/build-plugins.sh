@@ -171,12 +171,16 @@ case "$PLUGINS_BUILD_SYSTEM" in
     cmake|make) ;;
     *) echo "Error: PLUGINS_BUILD_SYSTEM must be cmake or make, not \"$PLUGINS_BUILD_SYSTEM\""; exit 1;;
 esac
+# CMake build type: always RelWithDebInfo, as the Makefiles' CONFIG (BUILD_MODE); DEBUG_MODE=1 gives
+# -O1 -g, as the Makefiles' OPTFLAG=-O. Not CMake's Debug: openfx's ofx_deploy_bundle only deploys
+# release configurations, so Debug bundles would still reference the MacPorts libraries.
+PLUGINS_CMAKE_BUILD_TYPE=RelWithDebInfo
 if [ "${DEBUG_MODE:-}" = "1" ]; then
-    # On macOS, openfx's ofx_deploy_bundle only deploys release configurations, as the
-    # Makefiles: Debug bundles still reference the MacPorts libraries.
-    PLUGINS_CMAKE_BUILD_TYPE=Debug
+    PLUGINS_DEBUG=1
+    PLUGINS_CMAKE_RELWITHDEBINFO_FLAGS="-O1 -g -DNDEBUG"
 else
-    PLUGINS_CMAKE_BUILD_TYPE=RelWithDebInfo
+    PLUGINS_DEBUG=0
+    PLUGINS_CMAKE_RELWITHDEBINFO_FLAGS="-O3 -g -DNDEBUG"
 fi
 
 # Whether to build the plug-in repository in the current directory (named $1) with its CMake
@@ -201,6 +205,7 @@ function plugins_use_cmake() {
 # (C++17 with Qt5, C++20 with Qt6), licence, OpenMP, macOS deployment target and bundle
 # deployment. Extra arguments are passed to cmake at configure time, after these.
 function ofx_cmake_build() {
+    # shellcheck disable=SC2206 # (split on purpose, see above)
     local cxx_words=($CXX)
     local cxx="${cxx_words[0]}"
     local cxx_flags=""
@@ -223,6 +228,22 @@ function ofx_cmake_build() {
          && [ -f "${MACPORTS:-/opt/local}/include/libomp/omp.h" ]; then
         openmp=ON
     fi
+    if [ "$openmp" = "OFF" ] && [ "$PKGOS" = "OSX" ]; then
+        # the plug-ins that use OpenMP (CImg, G'MIC, DenoiseSharpen...) would be much slower
+        if [ "$PLUGINS_DEBUG" = "1" ]; then
+            echo "Warning: ************************************************************"
+            echo "Warning: building the plug-ins in $(pwd) WITHOUT OpenMP: $cxx (COMPILER=$COMPILER) has no OpenMP, and ${MACPORTS:-/opt/local}/include/libomp/omp.h is missing (sudo port install libomp)"
+            echo "Warning: ************************************************************"
+        else
+            echo "Error: the plug-ins in $(pwd) would be built without OpenMP: $cxx (COMPILER=$COMPILER) has no OpenMP, and ${MACPORTS:-/opt/local}/include/libomp/omp.h is missing (sudo port install libomp)"
+            exit 1
+        fi
+    fi
+    # MinGW gcc: large objects; openfx's add_ofx_plugin only adds -Wa,-mbig-obj to plug-in targets
+    local bigobj=""
+    if [ "$PKGOS" = "Windows" ] && [ "$COMPILER" = "gcc" ]; then
+        bigobj=" -Wa,-mbig-obj"
+    fi
     local prefix_path="$SDK_HOME" install_prefix="$TMP_BINARIES_PATH"
     if [ "$PKGOS" = "Windows" ]; then
         prefix_path="$(cygpath -m "$prefix_path")"
@@ -231,9 +252,9 @@ function ofx_cmake_build() {
     local args=(
         -S . -B build
         -DCMAKE_BUILD_TYPE="$PLUGINS_CMAKE_BUILD_TYPE"
-        -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O3 -g -DNDEBUG"
+        -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="$PLUGINS_CMAKE_RELWITHDEBINFO_FLAGS"
         -DCMAKE_CXX_COMPILER="$cxx"
-        -DCMAKE_CXX_FLAGS="${cxx_flags# } ${CXXFLAGS_EXTRA}"
+        -DCMAKE_CXX_FLAGS="${cxx_flags# } ${CXXFLAGS_EXTRA}${bigobj}"
         -DOFX_CXX_STANDARD="$cxx_std"
         -DOFX_USE_OPENMP="$openmp"
         -DCMAKE_INSTALL_PREFIX="$install_prefix"
@@ -251,11 +272,11 @@ function ofx_cmake_build() {
     fi
     if [ "$PKGOS" = "OSX" ]; then
         args+=(-DOFX_LIBOMP_ROOT="${MACPORTS:-/opt/local}")
-        if [ -n "${MACOSX_DEPLOYMENT_TARGET:-}" ]; then
-            args+=(-DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET")
-        fi
+        # all the macOS bundles target macOS 14.0 (explicit: common.sh exports
+        # MACOSX_DEPLOYMENT_TARGET from sw_vers, which CMake would use otherwise)
+        args+=(-DCMAKE_OSX_DEPLOYMENT_TARGET=14.0)
         args+=(-DOFX_DEPLOY_BUNDLES=ON)
-        if [ "$PLUGINS_CMAKE_BUILD_TYPE" != "Debug" ]; then
+        if [ "$PLUGINS_DEBUG" != "1" ]; then
             args+=(-DOFX_DEPLOY_STRICT_MINOS=ON)
         fi
     fi
@@ -391,7 +412,9 @@ if [ "$BUILD_MISC" = "1" ]; then
             misc_sdk="$(cygpath -m "$SDK_HOME")"
             misc_llvm_lib="${LLVM_LIB//-L${LLVM_PATH}/-L${misc_llvm}}"
         fi
+        # BUILD_DEBUGPROXY: not shipped (its default is ON in Debug builds)
         ofx_cmake_build \
+            -DBUILD_DEBUGPROXY=OFF \
             -DUSE_OSMESA=ON \
             -DOSMESA_PATH="${misc_osmesa}" \
             -DLLVM_PATH="${misc_llvm}" \
@@ -414,7 +437,7 @@ if [ "$BUILD_MISC" = "1" ]; then
             OSMESA_PATH="${OSMESA_PATH}" \
             LDFLAGS_MESA="-L${OSMESA_PATH}/lib ${GLULIB} ${MESALIB} -lz -L${LLVM_PATH}/lib ${LLVM_LIB}" \
             CXX="$CXX" \
-            CONFIG="${COMPILE_TYPE}" \
+            CONFIG="${BUILD_MODE}" \
             OPTFLAG="${OPTFLAG}" \
             BITS="${BITS}" \
             LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" \
@@ -434,11 +457,11 @@ if [ "$BUILD_MISC" = "1" ]; then
             # Building with Apple clang (no OpenMP available), but GCC is available too!
             # libSupport was compiled by clang, now clean it to build it again with gcc
             make -j"${MKJOBS}" \
-                 CXX="$CXX" CONFIG="${COMPILE_TYPE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" HAVE_CIMG=0 clean
+                 CXX="$CXX" CONFIG="${BUILD_MODE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" HAVE_CIMG=0 clean
             # build CImg with OpenMP support, but statically link libgomp (see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=31400)
             env \
                 CXX="$CXX" \
-                CONFIG="${COMPILE_TYPE}" \
+                CONFIG="${BUILD_MODE}" \
                 OPTFLAG="${OPTFLAG}" \
                 BITS="${BITS}" \
                 LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-} -static-libgcc" \
@@ -451,7 +474,7 @@ if [ "$BUILD_MISC" = "1" ]; then
             # build CImg with OpenMP support (no OpenGL required)
             env \
                 CXX="$CXX" \
-                CONFIG="${COMPILE_TYPE}" \
+                CONFIG="${BUILD_MODE}" \
                 OPTFLAG="${OPTFLAG}" \
                 BITS="${BITS}" \
                 LDFLAGS_ADD="${BUILDID:-} ${EXTRA_LDFLAGS_OFXMISC:-}" \
@@ -587,13 +610,25 @@ if [ "$BUILD_ARENA" = "1" ]; then
     ARENA_V=$ARENA_GIT_VERSION
     $GSED -e "s/ARENAPLUG_DEVEL_GIT=.*/ARENAPLUG_DEVEL_GIT=${ARENA_V}/" --in-place "$COMMITS_HASH"
 
+    # ImageMagick 7 (MAGICK7_PREFIX, as tools/jenkins/build-plugins.sh): its pkg-config files come
+    # first, only for this build; IM=7 when the Magick++ found is ImageMagick 7.
+    arena_saved_pkg_config_path="${PKG_CONFIG_PATH:-}"
+    if [ -n "${MAGICK7_PREFIX:-}" ]; then
+        export PKG_CONFIG_PATH="${MAGICK7_PREFIX}/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+    fi
+    arena_magick_version="$(pkg-config --modversion Magick++ 2>/dev/null || true)"
+    arena_im=""
+    case "$arena_magick_version" in
+        7.*) arena_im=7;;
+        *) echo "Warning: openfx-arena is built with ImageMagick ${arena_magick_version:-(none)}, not ImageMagick 7 (set MAGICK7_PREFIX)";;
+    esac
     if plugins_use_cmake openfx-arena; then
         # OpenMP only if ImageMagick was built with it (the Makefiles keep its -fopenmp)
         arena_openmp=OFF
-        case " $(pkg-config Magick++ --cflags --libs 2>/dev/null) " in
+        case " $(pkg-config Magick++ --cflags --libs --static 2>/dev/null) " in
             *" -fopenmp "*) arena_openmp=ON;;
         esac
-        arena_args=(-DOFX_USE_OPENMP="$arena_openmp")
+        arena_args=(-DOFX_USE_OPENMP="$arena_openmp" -DIM="$arena_im")
         if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
             # no AudioCurve: libsox links GPL libraries (libmad, libid3tag; libao on Windows)
             arena_args+=(-DAUDIO=OFF)
@@ -627,10 +662,11 @@ if [ "$BUILD_ARENA" = "1" ]; then
             # "AUDIO = ON" (when pkg-config finds sox) overrides the environment.
             arena_make_audio="AUDIO=OFF"
         fi
-        make -j"${MKJOBS}" $MAKEFLAGS_VERBOSE MINGW="${ISWIN:-}" LICENSE="$NATRON_LICENSE" ${ARENA_FLAGS:-} ${arena_make_audio} \
+        make -j"${MKJOBS}" $MAKEFLAGS_VERBOSE MINGW="${ISWIN:-}" LICENSE="$NATRON_LICENSE" ${ARENA_FLAGS:-} ${arena_im:+IM=$arena_im} ${arena_make_audio} \
              CXX="$CXX" CONFIG="${BUILD_MODE}" BITS="${BITS}" OPTFLAG="${OPTFLAG}" LDFLAGS_ADD="${BUILDID:-}" CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}"
         cp -a ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
     fi
+    export PKG_CONFIG_PATH="$arena_saved_pkg_config_path"
     echo "$ARENA_V" > "$TMP_BINARIES_PATH/OFX/Plugins/Arena.ofx.bundle-version.txt"
     cd "$TMP_PATH"
     #rm -rf openfx-arena || true

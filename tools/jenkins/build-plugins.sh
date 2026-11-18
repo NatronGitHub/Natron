@@ -113,10 +113,18 @@ mkdir -p "$TMP_BINARIES_PATH/Plugins"
 
 
 # CMake build type of the plug-ins (ofx_cmake_build), before COMPILE_TYPE=debug is rewritten
-# below for the Makefiles. On macOS, openfx's ofx_deploy_bundle only deploys release
-# configurations, as the Makefiles: Debug bundles still reference the MacPorts libraries.
+# below for the Makefiles. COMPILE_TYPE=debug gives RelWithDebInfo with -O1 -g, as the Makefiles'
+# CONFIG=relwithdebinfo OPTFLAG=-O: openfx's ofx_deploy_bundle only deploys release
+# configurations (as the Makefiles), and the macOS installer skips its library step for debug
+# builds, so CMake Debug bundles would still reference the MacPorts libraries.
+PLUGINS_DEBUG=0
+PLUGINS_CMAKE_RELWITHDEBINFO_FLAGS="-O3 -g -DNDEBUG"
 case "$COMPILE_TYPE" in
-    debug) PLUGINS_CMAKE_BUILD_TYPE=Debug;;
+    debug)
+        PLUGINS_DEBUG=1
+        PLUGINS_CMAKE_BUILD_TYPE=RelWithDebInfo
+        PLUGINS_CMAKE_RELWITHDEBINFO_FLAGS="-O1 -g -DNDEBUG"
+        ;;
     relwithdebinfo) PLUGINS_CMAKE_BUILD_TYPE=RelWithDebInfo;;
     *) PLUGINS_CMAKE_BUILD_TYPE=Release;;
 esac
@@ -185,6 +193,7 @@ function ofx_cmake_build() {
     # standard of the plug-ins follows the policy (C++17 with Qt5, C++20 with Qt6), through
     # OFX_CXX_STANDARD. Limitation: $CXX is split on spaces, so the compiler path must not
     # contain spaces, and a launcher (e.g. "ccache clang++") is not supported.
+    # shellcheck disable=SC2206 # (split on purpose, see above)
     local cxx_words=($CXX)
     local cxx="${cxx_words[0]}"
     local cxx_flags=""
@@ -210,6 +219,24 @@ function ofx_cmake_build() {
          && [ -f "${MACPORTS:-/opt/local}/include/libomp/omp.h" ]; then
         openmp=ON
     fi
+    if [ "$openmp" = "OFF" ] && [ "$PKGOS" = "OSX" ]; then
+        # the plug-ins that use OpenMP (CImg, G'MIC, DenoiseSharpen...) would be much slower
+        if [ "$PLUGINS_DEBUG" = "1" ]; then
+            echo "Warning: ************************************************************"
+            echo "Warning: building the plug-ins in $(pwd) WITHOUT OpenMP: $cxx (COMPILER=$COMPILER) has no OpenMP, and ${MACPORTS:-/opt/local}/include/libomp/omp.h is missing (sudo port install libomp)"
+            echo "Warning: ************************************************************"
+        else
+            echo "Error: the plug-ins in $(pwd) would be built without OpenMP: $cxx (COMPILER=$COMPILER) has no OpenMP, and ${MACPORTS:-/opt/local}/include/libomp/omp.h is missing (sudo port install libomp)"
+            exit 1
+        fi
+    fi
+    # MinGW gcc: large objects (COFF's 2^16-section limit, e.g. CImg and G'MIC). openfx's
+    # add_ofx_plugin adds -Wa,-mbig-obj to the plug-in targets, but not to the static libraries
+    # they link (openfx::Support, a repository's own libraries).
+    local bigobj=""
+    if [ "$PKGOS" = "Windows" ] && [ "$COMPILER" = "gcc" ]; then
+        bigobj=" -Wa,-mbig-obj"
+    fi
     local prefix_path="$SDK_HOME" install_prefix="$TMP_BINARIES_PATH"
     if [ "$PKGOS" = "Windows" ]; then
         # cmake.exe and ninja are native programs: pass Windows paths (untested here)
@@ -219,10 +246,11 @@ function ofx_cmake_build() {
     local args=(
         -S . -B build
         -DCMAKE_BUILD_TYPE="$PLUGINS_CMAKE_BUILD_TYPE"
-        # -O3 also with debug info (CMake's RelWithDebInfo default is -O2 -g; Release is -O3)
-        -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O3 -g -DNDEBUG"
+        # -O3 also with debug info (CMake's RelWithDebInfo default is -O2 -g; Release is -O3);
+        # -O1 -g for COMPILE_TYPE=debug
+        -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="$PLUGINS_CMAKE_RELWITHDEBINFO_FLAGS"
         -DCMAKE_CXX_COMPILER="$cxx"
-        -DCMAKE_CXX_FLAGS="${cxx_flags# } ${CXXFLAGS_EXTRA}"
+        -DCMAKE_CXX_FLAGS="${cxx_flags# } ${CXXFLAGS_EXTRA}${bigobj}"
         -DOFX_CXX_STANDARD="$cxx_std"
         -DOFX_USE_OPENMP="$openmp"
         -DCMAKE_INSTALL_PREFIX="$install_prefix"
@@ -241,12 +269,13 @@ function ofx_cmake_build() {
     if [ "$PKGOS" = "OSX" ]; then
         # Apple clang has no OpenMP runtime: MacPorts' libomp (only used with Apple clang)
         args+=(-DOFX_LIBOMP_ROOT="${MACPORTS:-/opt/local}")
-        if [ -n "${MACOSX_DEPLOYMENT_TARGET:-}" ]; then
-            args+=(-DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET")
-        fi
+        # all the macOS bundles target macOS 14.0 (maintainer's decision; the default of openfx's
+        # Makefiles and CMake helpers). Explicit, because common.sh exports MACOSX_DEPLOYMENT_TARGET
+        # from sw_vers, which CMake would use otherwise (#1347 fixes common.sh).
+        args+=(-DCMAKE_OSX_DEPLOYMENT_TARGET=14.0)
         # make the bundles self-contained, as the Makefiles' release builds do (osxDeploy.sh)
         args+=(-DOFX_DEPLOY_BUNDLES=ON)
-        if [ "$PLUGINS_CMAKE_BUILD_TYPE" != "Debug" ]; then
+        if [ "$PLUGINS_DEBUG" != "1" ]; then
             # fail if a bundled library needs a newer macOS than the deployment target
             # (an "unused variable" warning where the repository's openfx is older)
             args+=(-DOFX_DEPLOY_STRICT_MINOS=ON)
@@ -350,7 +379,9 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
             misc_sdk="$(cygpath -m "$SDK_HOME")"
             misc_llvm_lib="${LLVM_LIB//-L${LLVM_PATH}/-L${misc_llvm}}"
         fi
+        # BUILD_DEBUGPROXY: not shipped (its default is ON in Debug builds)
         ofx_cmake_build \
+            -DBUILD_DEBUGPROXY=OFF \
             -DUSE_OSMESA=ON \
             -DOSMESA_PATH="${misc_osmesa}" \
             -DLLVM_PATH="${misc_llvm}" \
@@ -462,8 +493,7 @@ if [ "$BUILD_IO" = "1" ] && [ -d "$TMP_PATH/openfx-io" ]; then
             [ -n "$io_ffmpeg_pc" ] && io_ffmpeg_pc="$(cygpath -m "$io_ffmpeg_pc")"
             io_prefix_args=(-DCMAKE_PREFIX_PATH="$(cygpath -m "$SDK_HOME");$(cygpath -m "$LIBRAW_PATH");$(cygpath -m "$FFMPEG_PATH")")
         fi
-        # OFX_IO_REQUIRE_ALL (requested from openfx-io): fail on missing plug-in groups; an
-        # "unused variable" warning until openfx-io has it (ofx_cmake_build also checks the log)
+        # OFX_IO_REQUIRE_ALL: fail on missing plug-in groups (ofx_cmake_build also checks the log)
         io_saved_pkg_config_path="${PKG_CONFIG_PATH:-}"
         if [ "$PKGOS" != "OSX" ]; then
             # LibRaw's libraw_r.pc (only for this build, not for the next plug-ins)
@@ -545,7 +575,7 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
         echo "Info: build openfx-arena using cmake..."
         # OpenMP only if ImageMagick was built with it (the Makefiles keep its -fopenmp, which
         # the CMake build drops in favour of OFX_USE_OPENMP). -DIM=7 links oleaut32 on MinGW,
-        # as make IM=7; libomp is looked for next to ImageMagick, then in MacPorts (macOS).
+        # as make IM=7; with Apple clang, libomp is MacPorts' (OFX_LIBOMP_ROOT, see ofx_cmake_build).
         # AudioCurve: AUTO (built if pkg-config finds sox), as the Makefiles, but OFF for COMMERCIAL. Not static on
         # Windows (no MINGW_STATIC), as the make path: the static ImageMagick (natron_imagemagick)
         # is linked with "pkg-config --static" by openfx-arena's CMakeLists.txt anyway.
@@ -553,7 +583,8 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
         case " $(pkg-config Magick++ --cflags --libs 2>/dev/null) " in
             *" -fopenmp "*) arena_openmp=ON;;
         esac
-        arena_args=(-DOFX_LICENSE="$NATRON_LICENSE" -DOFX_USE_OPENMP="$arena_openmp" -DIM="$arena_im")
+        # (OFX_LICENSE: passed by ofx_cmake_build)
+        arena_args=(-DOFX_USE_OPENMP="$arena_openmp" -DIM="$arena_im")
         if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
             # no AudioCurve: libsox links GPL libraries (libmad, libid3tag; libao on Windows)
             arena_args+=(-DAUDIO=OFF)
