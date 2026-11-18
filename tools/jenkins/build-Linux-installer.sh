@@ -44,17 +44,91 @@ popd () {
 
 # (MAGICK7_PREFIX: openfx-arena's ImageMagick 7, see common.sh; fixrpath removes the plug-in's
 # build rpath, so ldd only finds the libraries to bundle through LD_LIBRARY_PATH)
+# The C++ runtime is not taken from the SDK: see SYSTEM_LIBS_RE below.
 LD_LIBRARY_PATH="${SDK_HOME}/lib:${FFMPEG_PATH}/lib:${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib${MAGICK7_PREFIX:+:${MAGICK7_PREFIX}/lib}"
-PATH="${SDK_HOME}/gcc/bin:${SDK_HOME}/bin:$PATH"
-export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${SDK_HOME}/qt${QT_VERSION_MAJOR}/include"
+PATH="${SDK_HOME}/bin:$PATH"
+export C_INCLUDE_PATH="${SDK_HOME}/include:${SDK_HOME}/qt${QT_VERSION_MAJOR}/include"
 export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
-
-if [ "${ARCH}" = "x86_64" ]; then
-    LD_LIBRARY_PATH="${SDK_HOME}/gcc/lib64:${FFMPEG_PATH}/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-else
-    LD_LIBRARY_PATH="${SDK_HOME}/gcc/lib:${FFMPEG_PATH}/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-fi
 export LD_LIBRARY_PATH
+
+# Libraries that always come from the system and are never bundled:
+# - glibc (libc, libm, libdl, libpthread, librt, ld-linux*, ...);
+# - the GCC runtime (libstdc++, libgcc_s, libgomp, libatomic). Natron is built on Rocky Linux 8
+#   with gcc-toolset: its libstdc++.so is a linker script that takes the symbols missing
+#   from the system libstdc++ (GCC 8.5) from libstdc++_nonshared.a, so the binaries only need
+#   the system libstdc++;
+# - OpenGL (GLVND), X11/xcb and DRM, which must match the system's graphics driver and display.
+# A dependency in this list is an error: the bundle would then not use the system library.
+SYSTEM_LIBS_RE='^(ld-linux.*|lib(c|m|mvec|dl|pthread|rt|resolv|util|anl|stdc\+\+|gcc_s|gomp|atomic|GL|EGL|GLX|GLdispatch|OpenGL|X11|X11-xcb|xcb|xcb-.*|drm)\.so(\..*)?)$'
+
+# Highest symbol versions defined by the system libraries of Rocky Linux 8 (glibc 2.28;
+# libstdc++, libgcc_s and libgomp from GCC 8.5), on x86_64 and aarch64. A bundled binary
+# that needs a newer version would not run on the oldest supported systems.
+SYSTEM_SYMVER_MAX="GLIBC_2.28 GLIBCXX_3.4.25 CXXABI_1.3.11 GCC_7.0.0 GOMP_5.0 OMP_5.0"
+
+function isSystemLib() {
+    [[ "$(basename "$1")" =~ $SYSTEM_LIBS_RE ]]
+}
+
+# Print the SDK libraries needed by the given ELF files, i.e. the libraries to bundle.
+# Fails if one of them is a system library.
+function sdkDepends() {
+    local deps d
+    deps="$(ldd "$@" 2>/dev/null | grep "$SDK_HOME" | awk '{print $3}' | sort | uniq)" || true
+    for d in $deps; do
+        if isSystemLib "$d"; then
+            (>&2 echo "Error: $d is a system library and must not be bundled. Check LD_LIBRARY_PATH and the SDK.")
+            exit 1
+        fi
+        echo "$d"
+    done
+}
+
+# Succeeds if the symbol version $1 (e.g. GLIBCXX_3.4.29) is newer than the system one.
+function symverTooNew() {
+    local prefix="${1%_*}" num="${1##*_}" m max
+    [[ "$num" =~ ^[0-9.]+$ ]] || return 1
+    for m in $SYSTEM_SYMVER_MAX; do
+        if [ "${m%_*}" = "$prefix" ]; then
+            max="${m##*_}"
+            [ "$num" != "$max" ] && [ "$(printf '%s\n%s\n' "$max" "$num" | sort -V | tail -n 1)" = "$num" ]
+            return
+        fi
+    done
+    return 1
+}
+
+# Check a bundle directory: it must contain no system library, and no ELF file in it may need
+# a symbol version newer than SYSTEM_SYMVER_MAX.
+function checkBundle() {
+    local dir="$1" f v t errors=0
+    for t in find od objdump; do
+        if ! command -v "$t" > /dev/null; then
+            (>&2 echo "Error: $t is required to check the bundle")
+            exit 1
+        fi
+    done
+    while IFS= read -r -d '' f; do
+        if isSystemLib "$f"; then
+            (>&2 echo "Error: system library bundled: $f")
+            errors=$((errors + 1))
+        fi
+    done < <(find "$dir" \( -type f -o -type l \) -name 'lib*.so*' -print0)
+    while IFS= read -r -d '' f; do
+        [ "$(od -An -tx1 -N4 "$f" | tr -d ' \n')" = "7f454c46" ] || continue
+        for v in $(objdump -p "$f" 2>/dev/null | awk '/^Version References:/ {r=1; next} r && NF == 4 {print $4} r && NF == 0 {exit}' | sort -u); do
+            if symverTooNew "$v"; then
+                (>&2 echo "Error: $f needs $v, newer than the system libraries of Rocky Linux 8 ($SYSTEM_SYMVER_MAX)")
+                errors=$((errors + 1))
+            fi
+        done
+    done < <(find "$dir" -type f \( -name '*.so' -o -name '*.so.*' -o -name '*.ofx' -o -perm -u+x \) -print0)
+    if [ "$errors" -gt 0 ]; then
+        (>&2 echo "Error: $errors problem(s) with the system libraries in $dir, see above")
+        exit 1
+    fi
+    echo "* $dir: no system library bundled, no symbol version newer than $SYSTEM_SYMVER_MAX"
+}
 
 # Pretty architecture/platform identifier (used for breakpad symbol files)
 PKGOS_BITS="${PKGOS}-x86_${BITS}bit"
@@ -140,55 +214,6 @@ cat "$QS/$PKGOS/natron.qs" > "$NATRON_PACKAGE_PATH/meta/installscript.qs"
 cat "${TMP_BINARIES_PATH}/docs/natron/LICENSE.txt" > "$NATRON_PACKAGE_PATH/meta/natron-license.txt"
 
 
-#GLIBCXX 3.4.19 is for GCC 4.8.3, see https://gcc.gnu.org/onlinedocs/libstdc++/manual/abi.html
-compat_version_script=3.4.19
-compat_version=3.4.19
-case "${TC_GCC:-}" in
-    4.4.[2-9])
-        compat_version=3.4.13
-        ;;
-    4.5.*)
-        compat_version=3.4.14
-        ;;
-    4.6.0)
-        compat_version=3.4.15
-        ;;
-    4.6.[1-9])
-        compat_version=3.4.16
-        ;;
-    4.7.*)
-        compat_version=3.4.17
-        ;;
-    4.8.[0-2])
-        compat_version=3.4.18
-        ;;
-    4.8.[3-9])
-        compat_version=3.4.19
-        ;;
-    4.9.*|5.0.*)
-        compat_version=3.4.20
-        ;;
-    5.[1-9].*|6.0.*)
-        compat_version=3.4.21
-        ;;
-    6.[1-9].*|7.0*)
-        compat_version=3.4.22
-        ;;
-    7.1.*)
-        compat_version=3.4.23
-        ;;
-    7.[2-9].*)
-        compat_version=3.4.24
-        ;;
-    8.*)
-        compat_version=3.4.25
-        ;;
-    9.*)
-        compat_version=3.4.26
-        ;;
-esac
-
-
 BINARIES_TO_INSTALL=""
 if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
 mv "${TMP_BINARIES_PATH}/bin/Natron" "${TMP_BINARIES_PATH}/bin/Natron-bin"
@@ -229,9 +254,9 @@ for location in "${COPY_LOCATIONS[@]}"; do
     #cp -LR "${TMP_BINARIES_PATH}/Natron/OpenColorIO-Configs" "$location/Resources/"
 
 
-    # Configure shell launch script with gcc compat version
-    $GSED -e "s#${compat_version_script}#${compat_version}#" "$INC_PATH/scripts/Natron-Linux.sh" > "$location/Natron"
-    $GSED -e "s#${compat_version_script}#${compat_version}#" -e "s#bin/Natron#bin/NatronRenderer#" "$INC_PATH/scripts/Natron-Linux.sh" > "$location/NatronRenderer"
+    # Launch scripts
+    cp "$INC_PATH/scripts/Natron-Linux.sh" "$location/Natron"
+    $GSED -e "s#bin/Natron#bin/NatronRenderer#" "$INC_PATH/scripts/Natron-Linux.sh" > "$location/NatronRenderer"
     chmod a+x "$location/Natron" "$location/NatronRenderer"
 
     # Include in the portable version the test program that we will use later on
@@ -265,7 +290,7 @@ if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
 fi
 
 # Get all dependencies of the binaries
-CORE_DEPENDS="$(ldd $(find "${TMP_PORTABLE_DIR}/bin" -maxdepth 1 -type f) | grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)"
+CORE_DEPENDS="$(sdkDepends $(find "${TMP_PORTABLE_DIR}/bin" -maxdepth 1 -type f))"
 
 # icu libraries don't seem to be picked up by this ldd call above
 pushd "${SDK_HOME}/lib"
@@ -363,7 +388,7 @@ for location in "${COPY_LOCATIONS[@]}"; do
     done
 
     # Copy dependencies of the libraries
-    LIB_DEPENDS=$(ldd $(find "${location}/lib" -maxdepth 1 -type f) |grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)
+    LIB_DEPENDS=$(sdkDepends $(find "${location}/lib" -maxdepth 1 -type f))
     for y in $LIB_DEPENDS; do
         dep=$(basename "$y")
         if [ ! -f "${location}/lib/$dep" ]; then
@@ -372,7 +397,7 @@ for location in "${COPY_LOCATIONS[@]}"; do
     done
 
     # Qt plug-in dependencies
-    QT_PLUG_DEPENDS=$(ldd $(find "${location}/bin" -maxdepth 2 -type f -name '*.so') | grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)
+    QT_PLUG_DEPENDS=$(sdkDepends $(find "${location}/bin" -maxdepth 2 -type f -name '*.so'))
     for z in $QT_PLUG_DEPENDS; do
         dep=$(basename "$z")
         if [ ! -f "${location}/lib/$dep" ]; then
@@ -437,7 +462,7 @@ mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide" "${TMP_PORTABLE
 rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"/{test,config,config-"${PYVER}${PYTHON_ABIFLAGS}"}
 
 # Copy PySide dependencies
-PYSIDE_DEPENDS=$(ldd $(find "${SDK_HOME}/lib/python${PYVER}/site-packages/PySide" -maxdepth 1 -type f) | grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)
+PYSIDE_DEPENDS=$(sdkDepends $(find "${SDK_HOME}/lib/python${PYVER}/site-packages/PySide" -maxdepth 1 -type f))
 for y in $PYSIDE_DEPENDS; do
     dep=$(basename "$y")
     if [ ! -f "${TMP_PORTABLE_DIR}/lib/$dep" ]; then
@@ -560,7 +585,7 @@ function installPlugin() {
 
 
     # Extract dependencies
-    OFX_DEPENDS="$(ldd $(find "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle/Contents/Linux-"* -maxdepth 1 -type f) | grep "${SDK_HOME}" | awk '{print $3}'|sort|uniq)"
+    OFX_DEPENDS="$(sdkDepends $(find "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle/Contents/Linux-"* -maxdepth 1 -type f))"
     if [ ! -z "$OFX_DEPENDS" ]; then
 
 
@@ -600,7 +625,7 @@ function installPlugin() {
         done
 
         # Extract dependencies of the dependencies
-        OFX_LIB_DEP=$(ldd $(find "$LIBS_DIR" -maxdepth 1 -type f) |grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)
+        OFX_LIB_DEP=$(sdkDepends $(find "$LIBS_DIR" -maxdepth 1 -type f))
         for y in $OFX_LIB_DEP; do
             pluginlib="$(basename "$y")"
             if [ ! -f "$LIBS_DIR/$pluginlib" ] && [ ! -L "$LIBS_DIR/$pluginlib" ]; then
@@ -664,6 +689,11 @@ if [ -d "${TMP_PORTABLE_DIR}/Resources/docs" ]; then
     cp -R "${TMP_PORTABLE_DIR}/Resources/docs" "$NATRON_PACKAGE_PATH/data/Resources/"
 fi
 
+
+# No system runtime may be bundled, and the binaries must run with the system libraries of
+# the oldest supported distribution (Rocky Linux 8)
+checkBundle "${TMP_PORTABLE_DIR}"
+checkBundle "${INSTALLER_PATH}/packages"
 
 # At this point we can run Natron unit tests to check that the deployment is ok.
 rm -rf "$HOME/.cache/INRIA/Natron"* &> /dev/null || true
