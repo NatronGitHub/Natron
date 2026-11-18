@@ -89,7 +89,6 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    bool integerIncrement = false;
     double xstart, xend;
     QString incr;
     if ( parent->hasTimeline() ) {
@@ -118,9 +117,6 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
         } else {
             incr = QString::number(xend - xstart) + QString::fromUtf8("/100.");
         }
-    }
-    for (size_t i = 0; i < curves.size(); ++i) {
-        integerIncrement |= curves[i]->areKeyFramesTimeClampedToIntegers();
     }
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setContentsMargins(0, 3, 0, 0);

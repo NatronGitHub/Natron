@@ -371,6 +371,7 @@ PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide)
     PyThreadState *_save = PyEval_SaveThread();
     // The lock should be released just before PyFinalize() using:
     // PyEval_RestoreThread(_save);
+    (void)_save; // unused for now
 
     return mainModule;
 } // initializePython

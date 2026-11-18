@@ -59,6 +59,16 @@ NATRON_NAMESPACE_ENTER
 
 namespace {
 
+// Convert the generic function pointer returned by GetProcAddress()/wglGetProcAddress()
+// (FARPROC/PROC) to the actual function pointer type. Going through void (*)(void)
+// tells GCC this is intended (no -Wcast-function-type).
+template <typename T, typename P>
+T
+procCast(P proc)
+{
+    return reinterpret_cast<T>( reinterpret_cast<void (*)(void)>(proc) );
+}
+
 bool makeDCAndContextCurrent(HDC dc, HGLRC context)
 {
     const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();
@@ -105,13 +115,13 @@ OSGLContext_win::initWGLData(OSGLContext_wgl_data* wglInfo)
         throw std::runtime_error("WGL: Failed to load opengl32.dll");
     }
 
-    wglInfo->CreateContext = (WGLCREATECONTEXT_T)GetProcAddress(wglInfo->instance, "wglCreateContext");
-    wglInfo->DeleteContext = (WGLDELETECONTEXT_T)GetProcAddress(wglInfo->instance, "wglDeleteContext");
-    wglInfo->GetCurrentContext = (WGLGETCURRENTCONTEXT_T)GetProcAddress(wglInfo->instance, "wglGetCurrentContext");
-    wglInfo->GetCurrentDC = (WGLGETCURRENTDC_T)GetProcAddress(wglInfo->instance, "wglGetCurrentDC");
-    wglInfo->GetProcAddress = (WGLGETPROCADDRESS_T)GetProcAddress(wglInfo->instance, "wglGetProcAddress");
-    wglInfo->MakeCurrent = (WGLMAKECURRENT_T)GetProcAddress(wglInfo->instance, "wglMakeCurrent");
-    wglInfo->ShareLists = (WGLSHARELISTS_T)GetProcAddress(wglInfo->instance, "wglShareLists");
+    wglInfo->CreateContext = procCast<WGLCREATECONTEXT_T>( GetProcAddress(wglInfo->instance, "wglCreateContext") );
+    wglInfo->DeleteContext = procCast<WGLDELETECONTEXT_T>( GetProcAddress(wglInfo->instance, "wglDeleteContext") );
+    wglInfo->GetCurrentContext = procCast<WGLGETCURRENTCONTEXT_T>( GetProcAddress(wglInfo->instance, "wglGetCurrentContext") );
+    wglInfo->GetCurrentDC = procCast<WGLGETCURRENTDC_T>( GetProcAddress(wglInfo->instance, "wglGetCurrentDC") );
+    wglInfo->GetProcAddress = procCast<WGLGETPROCADDRESS_T>( GetProcAddress(wglInfo->instance, "wglGetProcAddress") );
+    wglInfo->MakeCurrent = procCast<WGLMAKECURRENT_T>( GetProcAddress(wglInfo->instance, "wglMakeCurrent") );
+    wglInfo->ShareLists = procCast<WGLSHARELISTS_T>( GetProcAddress(wglInfo->instance, "wglShareLists") );
 
     WNDCLASSEXW wc;
 
@@ -136,17 +146,17 @@ OSGLContext_win::loadWGLExtensions(OSGLContext_wgl_data* wglInfo)
     }
     // Functions for WGL_EXT_extension_string
     // NOTE: These are needed by extensionSupported
-    wglInfo->GetExtensionsStringEXT = (PFNWGLGETEXTENSIONSSTRINGEXTPROC)wglInfo->GetProcAddress("wglGetExtensionsStringEXT");
-    wglInfo->GetExtensionsStringARB = (PFNWGLGETEXTENSIONSSTRINGARBPROC)wglInfo->GetProcAddress("wglGetExtensionsStringARB");
+    wglInfo->GetExtensionsStringEXT = procCast<PFNWGLGETEXTENSIONSSTRINGEXTPROC>( wglInfo->GetProcAddress("wglGetExtensionsStringEXT") );
+    wglInfo->GetExtensionsStringARB = procCast<PFNWGLGETEXTENSIONSSTRINGARBPROC>( wglInfo->GetProcAddress("wglGetExtensionsStringARB") );
 
     // Functions for WGL_ARB_create_context
-    wglInfo->CreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglInfo->GetProcAddress("wglCreateContextAttribsARB");
+    wglInfo->CreateContextAttribsARB = procCast<PFNWGLCREATECONTEXTATTRIBSARBPROC>( wglInfo->GetProcAddress("wglCreateContextAttribsARB") );
 
     // Functions for WGL_EXT_swap_control
-    wglInfo->SwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglInfo->GetProcAddress("wglSwapIntervalEXT");
+    wglInfo->SwapIntervalEXT = procCast<PFNWGLSWAPINTERVALEXTPROC>( wglInfo->GetProcAddress("wglSwapIntervalEXT") );
 
     // Functions for WGL_ARB_pixel_format
-    wglInfo->GetPixelFormatAttribivARB = (PFNWGLGETPIXELFORMATATTRIBIVARBPROC)wglInfo->GetProcAddress("wglGetPixelFormatAttribivARB");
+    wglInfo->GetPixelFormatAttribivARB = procCast<PFNWGLGETPIXELFORMATATTRIBIVARBPROC>( wglInfo->GetProcAddress("wglGetPixelFormatAttribivARB") );
 
     // This needs to include every extension used below except for
     // WGL_ARB_extensions_string and WGL_EXT_extensions_string
@@ -164,23 +174,23 @@ OSGLContext_win::loadWGLExtensions(OSGLContext_wgl_data* wglInfo)
     wglInfo->AMD_gpu_association = extensionSupported("WGL_AMD_gpu_association", wglInfo);
 
     if (wglInfo->NV_gpu_affinity) {
-        wglInfo->EnumGpusNV = (PFNWGLENUMGPUSNV)wglInfo->GetProcAddress("wglEnumGpusNV");
-        wglInfo->EnumGpuDevicesNV = (PFNWGLENUMGPUDEVICESNV)wglInfo->GetProcAddress("wglEnumGpuDevicesNV");
-        wglInfo->CreateAffinityDCNV = (PFNWGLCREATEAFFINITYDCNV)wglInfo->GetProcAddress("wglCreateAffinityDCNV");
-        wglInfo->EnumGpusFromAffinityDCNV = (PFNWGLENUMGPUSFROMAFFINITYDCNV)wglInfo->GetProcAddress("wglEnumGpusFromAffinityDCNV");
-        wglInfo->DeleteDCNV = (PFNWGLDELETEDCNV)wglInfo->GetProcAddress("wglDeleteDCNV");
+        wglInfo->EnumGpusNV = procCast<PFNWGLENUMGPUSNV>( wglInfo->GetProcAddress("wglEnumGpusNV") );
+        wglInfo->EnumGpuDevicesNV = procCast<PFNWGLENUMGPUDEVICESNV>( wglInfo->GetProcAddress("wglEnumGpuDevicesNV") );
+        wglInfo->CreateAffinityDCNV = procCast<PFNWGLCREATEAFFINITYDCNV>( wglInfo->GetProcAddress("wglCreateAffinityDCNV") );
+        wglInfo->EnumGpusFromAffinityDCNV = procCast<PFNWGLENUMGPUSFROMAFFINITYDCNV>( wglInfo->GetProcAddress("wglEnumGpusFromAffinityDCNV") );
+        wglInfo->DeleteDCNV = procCast<PFNWGLDELETEDCNV>( wglInfo->GetProcAddress("wglDeleteDCNV") );
     }
 
     if (wglInfo->AMD_gpu_association) {
-        wglInfo->GetGpuIDAMD = (PFNWGLGETGPUIDSAMD)wglInfo->GetProcAddress("wglGetGPUIDsAMD");
-        wglInfo->GetGPUInfoAMD = (PFNWGLGETGPUINFOAMD)wglInfo->GetProcAddress("wglGetGPUInfoAMD");
-        wglInfo->GetContextGpuIDAMD = (PFNWGLGETCONTEXTGPUIDAMD)wglInfo->GetProcAddress("wglGetContextGPUIDAMD");
-        wglInfo->CreateAssociatedContextAMD = (PFNWGLCREATEASSOCIATEDCONTEXTAMD)wglInfo->GetProcAddress("wglCreateAssociatedContextAMD");
-        wglInfo->CreateAssociatedContextAttribsAMD = (PFNWGLCREATEASSOCIATEDCONTEXTATTRIBSAMD)wglInfo->GetProcAddress("wglCreateAssociatedContextAttribsAMD");
-        wglInfo->DeleteAssociatedContextAMD = (PFNWGLDELETEASSOCIATEDCONTEXTAMD)wglInfo->GetProcAddress("wglDeleteAssociatedContextAMD");
-        wglInfo->MakeAssociatedContetCurrentAMD = (PFNWGLMAKEASSOCIATEDCONTEXTCURRENTAMD)wglInfo->GetProcAddress("wglMakeAssociatedContextCurrentAMD");
-        wglInfo->GetCurrentAssociatedContextAMD = (PFNWGLGETCURRENTASSOCIATEDCONTEXTAMD)wglInfo->GetProcAddress("wglGetCurrentAssociatedContextAMD");
-        wglInfo->BlitContextFrameBufferAMD = (PFNWGLBLITCONTEXTFRAMEBUFFERAMD)wglInfo->GetProcAddress("wglBlitContextFramebufferAMD");
+        wglInfo->GetGpuIDAMD = procCast<PFNWGLGETGPUIDSAMD>( wglInfo->GetProcAddress("wglGetGPUIDsAMD") );
+        wglInfo->GetGPUInfoAMD = procCast<PFNWGLGETGPUINFOAMD>( wglInfo->GetProcAddress("wglGetGPUInfoAMD") );
+        wglInfo->GetContextGpuIDAMD = procCast<PFNWGLGETCONTEXTGPUIDAMD>( wglInfo->GetProcAddress("wglGetContextGPUIDAMD") );
+        wglInfo->CreateAssociatedContextAMD = procCast<PFNWGLCREATEASSOCIATEDCONTEXTAMD>( wglInfo->GetProcAddress("wglCreateAssociatedContextAMD") );
+        wglInfo->CreateAssociatedContextAttribsAMD = procCast<PFNWGLCREATEASSOCIATEDCONTEXTATTRIBSAMD>( wglInfo->GetProcAddress("wglCreateAssociatedContextAttribsAMD") );
+        wglInfo->DeleteAssociatedContextAMD = procCast<PFNWGLDELETEASSOCIATEDCONTEXTAMD>( wglInfo->GetProcAddress("wglDeleteAssociatedContextAMD") );
+        wglInfo->MakeAssociatedContetCurrentAMD = procCast<PFNWGLMAKEASSOCIATEDCONTEXTCURRENTAMD>( wglInfo->GetProcAddress("wglMakeAssociatedContextCurrentAMD") );
+        wglInfo->GetCurrentAssociatedContextAMD = procCast<PFNWGLGETCURRENTASSOCIATEDCONTEXTAMD>( wglInfo->GetProcAddress("wglGetCurrentAssociatedContextAMD") );
+        wglInfo->BlitContextFrameBufferAMD = procCast<PFNWGLBLITCONTEXTFRAMEBUFFERAMD>( wglInfo->GetProcAddress("wglBlitContextFramebufferAMD") );
     }
 
     wglInfo->extensionsLoaded = GL_TRUE;

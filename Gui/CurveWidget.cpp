@@ -118,6 +118,8 @@ CurveWidget::CurveWidget(Gui* gui,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    // Unlike QGLWidget, QOpenGLWidget takes no share widget: the argument is kept for API compatibility.
+    Q_UNUSED(shareWidget);
 
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     setMouseTracking(true);

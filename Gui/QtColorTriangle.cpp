@@ -913,7 +913,7 @@ inline double vprod(double x1, double y1, double x2, double y2)
 Returns true if the point cos(p),sin(p) is on the arc between
     cos(a1),sin(a1) and cos(a2),sin(a2); otherwise returns false.
 */
-bool angleBetweenAngles(double p, double a1, double a2)
+static bool angleBetweenAngles(double p, double a1, double a2)
 {
     if (a1 > a2) {
 	a2 += TWOPI;
