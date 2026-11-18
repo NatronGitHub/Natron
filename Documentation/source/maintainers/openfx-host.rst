@@ -20,10 +20,11 @@ Where the host code lives
 - ``libs/OpenFX`` — the official OpenFX headers and the C++ *support* library
   (the reference host/plug-in support code). ``libs/OpenFX_extensions`` adds the
   extension suites Natron supports.
-- ``HostSupport/`` — the generic C++ host classes (``OFX::Host::…``): plug-in
-  cache and loading, property sets, image-effect descriptors and instances,
-  clip and parameter descriptors, interact descriptors. This layer is
-  application-agnostic.
+- ``libs/OpenFX/HostSupport`` (plus ``libs/OpenFX_extensions``) — the generic
+  C++ host classes (``OFX::Host::…``): plug-in cache and loading, property sets,
+  image-effect descriptors and instances, clip and parameter descriptors,
+  interact descriptors. This layer is application-agnostic. CMake builds it as
+  openfx's ``OfxHost`` target; ``HostSupport/`` only holds the qmake project.
 - ``Engine/Ofx*`` — the **Natron-specific glue** that connects the generic host
   to Natron's node/knob/image model.
 

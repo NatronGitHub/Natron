@@ -118,12 +118,14 @@ if [ "$COMPILE_TYPE" = "debug" ]; then
     OPTFLAG=-O
 else
     # Makefile builds (openfx-gmic, and openfx-misc/openfx-io/openfx-arena with
-    # MISC_USE_MAKE=1/IO_USE_MAKE=1/ARENA_USE_MAKE=1): maximum optimization, including non-conformant IEEE
-    # floating-point computation.
-    OPTFLAG=-Ofast
+    # MISC_USE_MAKE=1/IO_USE_MAKE=1/ARENA_USE_MAKE=1): -O3, like the CMake builds. Not -Ofast: its
+    # -ffinite-math-only lets NaN and Inf through std::max/std::min and folds
+    # std::isnan/std::isfinite to constants, so the plug-ins' NaN/Inf guards don't work.
+    OPTFLAG=-O3
 fi
 # OPTFLAG is ignored by the CMake builds (ofx_cmake_build): they use -O3, with -g for
 # relwithdebinfo, and conformant IEEE floating point (maintainer's rule: -O3 when the tests pass).
+# The Makefile builds above use the same -O3.
 
 CP_OR_MV="cp -a"
 if [ "${MINIMIZE_DISK_USAGE:-}" = "1" ]; then
@@ -504,14 +506,19 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
         # OpenMP only if ImageMagick was built with it (the Makefiles keep its -fopenmp, which
         # the CMake build drops in favour of OFX_USE_OPENMP). -DIM=7 links oleaut32 on MinGW,
         # as make IM=7; libomp is looked for next to ImageMagick, then in MacPorts (macOS).
-        # AudioCurve: AUTO (built if pkg-config finds sox), as the Makefiles. Not static on
+        # AudioCurve: AUTO (built if pkg-config finds sox), as the Makefiles, but OFF for COMMERCIAL. Not static on
         # Windows (no MINGW_STATIC), as the make path: the static ImageMagick (natron_imagemagick)
         # is linked with "pkg-config --static" by openfx-arena's CMakeLists.txt anyway.
         arena_openmp=OFF
-        case " $(pkg-config Magick++ --cflags --libs --static 2>/dev/null) " in
+        case " $(pkg-config Magick++ --cflags --libs 2>/dev/null) " in
             *" -fopenmp "*) arena_openmp=ON;;
         esac
-        ofx_cmake_build -DOFX_LICENSE="$NATRON_LICENSE" -DOFX_USE_OPENMP="$arena_openmp" -DIM="$arena_im"
+        arena_args=(-DOFX_LICENSE="$NATRON_LICENSE" -DOFX_USE_OPENMP="$arena_openmp" -DIM="$arena_im")
+        if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
+            # no AudioCurve: libsox links GPL libraries (libmad, libid3tag; libao on Windows)
+            arena_args+=(-DAUDIO=OFF)
+        fi
+        ofx_cmake_build ${arena_args[@]+"${arena_args[@]}"}
         echo "Info: build openfx-arena using cmake... done!"
     else
         if [ "$PKGOS" = "OSX" ]; then
@@ -520,6 +527,12 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
 
         if [ "$PKGOS" = "Windows" ]; then
             ISWIN=1
+        fi
+        arena_make_audio=""
+        if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
+            # no AudioCurve (libsox links GPL libraries). On the command line: Bundle/Makefile's
+            # "AUDIO = ON" (when pkg-config finds sox) overrides the environment.
+            arena_make_audio="AUDIO=OFF"
         fi
 
         echo "Info: build openfx-arena using make..."
@@ -541,7 +554,7 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
             BITS="${BITS}" \
             LDFLAGS_ADD="${BUILDID:-}" \
             CXXFLAGS_EXTRA="${CXXFLAGS_EXTRA}" \
-            make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
+            make -j"${MKJOBS}" ${MAKEFLAGS_VERBOSE:-} ${arena_make_audio:-}
 
         ${CP_OR_MV} ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
         set +x

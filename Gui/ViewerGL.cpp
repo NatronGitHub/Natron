@@ -2015,7 +2015,8 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->lastDragStartPos = zoomPos;
         _imp->ms = eMouseStateSelecting;
         if ( !modCASIsControl(e) ) {
-            // the plug-ins get the modifiers of the pen down that starts the selection rectangle
+            // when the overlays are shown, they got this pen down (notifyOverlaysPenDown above)
+            // before the clear, so the OFX plug-ins know its modifiers (ofxNatron.h extensions 7, 13)
             Q_EMIT selectionCleared( e->modifiers() );
             mustRedraw = true;
         }

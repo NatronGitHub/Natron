@@ -28,7 +28,7 @@ equals(QT_MAJOR_VERSION, 6): QT += openglwidgets
 
 CONFIG += openmvg-flags glad-flags
 
-!noexpat: CONFIG += expat
+CONFIG += expat
 
 INCLUDEPATH += google-test/include
 INCLUDEPATH += google-test
@@ -55,6 +55,7 @@ SOURCES += \
     NodePreview_Test.cpp \
     OSGLContext_Test.cpp \
     PluginGrouping_Test.cpp \
+    ReadNodeOverlay_Test.cpp \
     RotoPaint_Test.cpp \
     Tracker_Test.cpp \
     wmain.cpp
