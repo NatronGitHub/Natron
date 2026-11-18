@@ -1170,6 +1170,17 @@ Settings::initializeKnobsViewers()
                                             "displayed only for the render path for the current viewer "
                                             "inputs.") );
     _viewersTab->addKnob(_viewerOverlaysPath);
+
+    _drawSuiteShadows = AppManager::createKnob<KnobBool>( this, tr("Draw shadows on plug-in overlays drawn without OpenGL") );
+    _drawSuiteShadows->setName("drawSuiteShadows");
+    _drawSuiteShadows->setHintToolTip( tr("Some plug-ins draw their viewer overlays (handles, outlines, labels) with the "
+                                          "OpenFX DrawSuite instead of OpenGL. When this is checked, the lines and the text "
+                                          "of these overlays get a dark drop shadow, like Natron's own overlays and the "
+                                          "OpenGL overlays of most plug-ins, so that they stay visible on any image. "
+                                          "It also applies to the OpenGL overlays of plug-ins that draw them with the DrawSuite "
+                                          "emulation of the OpenFX Support library. Other OpenGL overlays draw their own "
+                                          "shadows.") );
+    _viewersTab->addKnob(_drawSuiteShadows);
 } // Settings::initializeKnobsViewers
 
 void
@@ -1569,6 +1580,8 @@ Settings::setDefaultValues()
     _maximumNodeViewerUIOpened->setDefaultValue(2);
     _viewerNumberKeys->setDefaultValue(true);
     _viewerOverlaysPath->setDefaultValue(true);
+    // on by default, like the shadows of Natron's own OpenGL overlays
+    _drawSuiteShadows->setDefaultValue(true);
 
     // Nodegraph
     _autoScroll->setDefaultValue(false);
@@ -2368,6 +2381,12 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->toggleAutoHideGraphInputs();
     } else if ( k == _autoProxyWhenScrubbingTimeline.get() ) {
         _autoProxyLevel->setSecret( !_autoProxyWhenScrubbingTimeline->getValue() );
+    } else if ( ( k == _drawSuiteShadows.get() ) && !_restoringSettings ) {
+        // the overlays drawn with the DrawSuite get or lose their shadows
+        const AppInstanceVec& apps = appPTR->getAppInstances();
+        for (AppInstanceVec::const_iterator it = apps.begin(); it != apps.end(); ++it) {
+            (*it)->redrawAllViewers();
+        }
     } else if ( !_restoringSettings &&
                 ( ( k == _sunkenColor.get() ) ||
                   ( k == _baseColor.get() ) ||
@@ -2529,6 +2548,12 @@ bool
 Settings::viewerOverlaysPath() const
 {
     return _viewerOverlaysPath->getValue();
+}
+
+bool
+Settings::drawSuiteShadows() const
+{
+    return _drawSuiteShadows->getValue();
 }
 
 ///////////////////////////////////////////////////////

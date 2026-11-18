@@ -64,6 +64,25 @@ The glue classes
 ``OfxOverlayInteract`` / ``OfxParamOverlayInteract``
     Route the plug-in's viewport overlay drawing and mouse/key interaction
     through Natron's viewer (via the ``OverlaySupport`` interface).
+    Overlays may draw with OpenGL (``kOfxImageEffectPluginPropOverlayInteractV1``)
+    or with the OFX 1.5 DrawSuite (``kOfxImageEffectPluginPropOverlayInteractV2``).
+    If a plug-in has both, the V1 overlay is used
+    (``OfxHost::preferOverlayInteractV1()``). ``OfxDrawSuiteGL``
+    (``OfxDrawSuiteGL.cpp``) draws the DrawSuite calls with OpenGL, in the same
+    canonical view and GL context as the OpenGL overlays. It is a thin adapter
+    over HostSupport's ``OFX::Host::Interact::OpenGLDrawSuite``
+    (``ofxhDrawSuiteOpenGL.h``), which draws with the openfx OpenGL DrawSuite core
+    (``ofxDrawSuiteOpenGL.h``), the code that the Support library also uses to
+    emulate the DrawSuite in OpenGL overlays. Natron provides the OpenGL
+    functions (from glad, once OpenGL is loaded), its overlay colours, the
+    viewport's font for the text (``OverlaySupport::canRenderText()``; otherwise
+    the core's built-in font), and the shadows: the "Draw shadows on plug-in
+    overlays drawn without OpenGL" preference (``drawSuiteShadows``, on by
+    default) answers ``drawSuiteShadows()``, which HostSupport passes to every
+    draw as ``kNatronOfxInteractPropDrawSuiteShadows``. So it also applies to the
+    V1 (OpenGL) overlays of plug-ins built with the openfx Support library that
+    draw through its DrawSuite emulation (``OFX::DrawArgs::getDrawContext()``):
+    that emulation reads the property and draws the same shadows.
 
 ``OfxMemory`` / ``PluginMemory``
     Implement the OFX memory-suite so plug-ins can allocate scratch buffers

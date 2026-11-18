@@ -123,7 +123,11 @@ OfxOverlayInteract::drawAction(OfxTime time,
                                int view,
                                const OfxRGBAColourD* pickerColour)
 {
+    // Natron calls kOfxInteractActionDraw from the paintGL() of the viewport (ViewerGL), so its
+    // OpenGL context is current, as V1 (OpenGL) overlays need (see OfxHost::preferOverlayInteractV1()).
     NatronOverlayInteractSupport::OGLContextSaver s(_viewport);
+    // the same shadows value as the one HostSupport passes to the plug-in
+    _drawSuite.beginDraw( _viewport, drawSuiteShadows() );
     OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::drawAction(time, renderScale, view, pickerColour);
 
     return stat;
@@ -401,6 +405,20 @@ void
 OfxParamOverlayInteract::getPixelAspectRatio(double & par) const
 {
     par = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractSizeAspect);
+}
+
+OfxStatus
+OfxParamOverlayInteract::drawAction(OfxTime time,
+                                    const OfxPointD &renderScale,
+                                    int view,
+                                    const OfxRGBAColourD* pickerColour)
+{
+    // Natron calls kOfxInteractActionDraw from the paintGL() of the parameter's widget
+    // (CustomParamInteract, CurveWidget), so its OpenGL context is current, as V1 (OpenGL)
+    // interacts need. The same shadows value as the one HostSupport passes to the plug-in.
+    _drawSuite.beginDraw( _viewport, drawSuiteShadows() );
+
+    return OFX::Host::Interact::Instance::drawAction(time, renderScale, view, pickerColour);
 }
 
 OfxStatus

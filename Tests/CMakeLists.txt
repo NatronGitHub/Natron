@@ -43,6 +43,7 @@ set(Tests_SOURCES
     OfxCPURenderSupport_Test.cpp
     OfxClipGetImage_Test.cpp
     OfxCustomParamInterp_Test.cpp
+    OfxDrawSuite_Test.cpp
     OfxHostProperties_Test.cpp
     OfxImageMemory_Test.cpp
     OfxInstanceChanged_Test.cpp

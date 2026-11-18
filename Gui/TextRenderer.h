@@ -50,6 +50,11 @@ public:
                     const QFont &font,
                     int flags = 0) const; //!< see http://doc.qt.io/qt-4.8/qpainter.html#drawText-10
 
+    /// The width of text as renderText() draws it, in font pixels: the sum of the advances of its
+    /// characters (renderText() draws one character at a time, so without kerning, which
+    /// QFontMetrics::horizontalAdvance(text) includes)
+    static int textWidth(const QFontMetrics& fontMetrics, const QString &text);
+
 private:
     struct Implementation;
     std::unique_ptr<Implementation> _imp;

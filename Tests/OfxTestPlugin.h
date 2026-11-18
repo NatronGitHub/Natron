@@ -36,9 +36,6 @@
 #include <gtest/gtest.h>
 
 #include <ofxhBinary.h>
-// (before ofxhParam.h: it includes ofxhMemory.h, which uses OfxImageMemoryHandle without including
-// ofxImageEffect.h, fixed by openfx#189)
-#include <ofxImageEffect.h>
 #include <ofxhParam.h>
 
 #include "Engine/AbortableRenderInfo.h"
@@ -71,6 +68,8 @@
 #define kNatronTestPluginGPURenderFailed "net.natron.test.GPURenderFailed"
 #define kNatronTestPluginGPUOnlyRenderFailed "net.natron.test.GPUOnlyRenderFailed"
 #define kNatronTestPluginQuestion "net.natron.test.Question"
+#define kNatronTestPluginOverlayV1V2 "net.natron.test.OverlayV1V2"
+#define kNatronTestPluginOverlayV2 "net.natron.test.OverlayV2"
 
 namespace NatronTestPlugin {
 // true if the host loaded the plug-in

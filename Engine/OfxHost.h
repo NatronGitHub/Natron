@@ -149,6 +149,25 @@ public:
 
     virtual bool pluginSupported(OFX::Host::ImageEffect::ImageEffectPlugin *plugin, std::string &reason) const OVERRIDE;
 
+    /// OFX 1.5 DrawSuite: Natron's overlay interacts implement the DrawSuite hooks (see
+    /// OfxDrawSuiteGL), so fetchSuite(kOfxDrawSuite, 1) succeeds, and a plug-in that registers
+    /// only a kOfxImageEffectPluginPropOverlayInteractV2 overlay gets it. A plug-in that registers
+    /// both gets its V1 overlay (see preferOverlayInteractV1()).
+    virtual bool supportsDrawSuite() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
+    /// When a plug-in registers both kOfxImageEffectPluginPropOverlayInteractV1 and V2, Natron uses
+    /// the V1 (OpenGL) overlay: OpenGL can draw more than the DrawSuite, and that is the overlay
+    /// these plug-ins were written and tested with. Constant for the session, as HostSupport
+    /// requires. Natron calls every kOfxInteractActionDraw from the paintGL() of the viewport's
+    /// OpenGL widget, so the OpenGL context is current around every V1 draw.
+    virtual bool preferOverlayInteractV1() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
     ///fetch the parametric parameters suite or returns the base class version
     virtual const void* fetchSuite(const char *suiteName, int suiteVersion) OVERRIDE;
 
