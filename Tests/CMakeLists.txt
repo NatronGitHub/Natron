@@ -42,12 +42,12 @@ set(Tests_SOURCES
 add_executable(Tests ${Tests_HEADERS} ${Tests_SOURCES})
 # NaNGuards_FastMath.cpp checks that MathUtils::isFinite()/isNaN() still work in code
 # compiled with -ffast-math, which assumes that NaN and infinity never happen.
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+if(MSVC) # MSVC and clang-cl
+    set_source_files_properties(NaNGuards_FastMath.cpp PROPERTIES COMPILE_OPTIONS "/fp:fast")
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set_source_files_properties(NaNGuards_FastMath.cpp PROPERTIES
         COMPILE_OPTIONS "-ffast-math"
         COMPILE_DEFINITIONS NATRON_TESTS_FAST_MATH_TU)
-elseif(MSVC)
-    set_source_files_properties(NaNGuards_FastMath.cpp PROPERTIES COMPILE_OPTIONS "/fp:fast")
 endif()
 target_link_libraries(Tests
     PRIVATE

@@ -57,8 +57,12 @@ floatBits(double x)
 {
     std::uint64_t bits;
     std::memcpy(&bits, &x, sizeof(bits));
-#if defined(__GNUC__) // gcc and clang
+#if defined(__GNUC__) || defined(__clang__) // gcc, clang and clang-cl
     __asm__("" : "+r"(bits));
+#else
+    // other compilers (MSVC): a volatile copy, which the compiler must really read
+    volatile std::uint64_t vbits = bits;
+    bits = vbits;
 #endif
 
     return bits;
@@ -69,8 +73,12 @@ floatBits(float x)
 {
     std::uint32_t bits;
     std::memcpy(&bits, &x, sizeof(bits));
-#if defined(__GNUC__) // gcc and clang
+#if defined(__GNUC__) || defined(__clang__) // gcc, clang and clang-cl
     __asm__("" : "+r"(bits));
+#else
+    // other compilers (MSVC): a volatile copy, which the compiler must really read
+    volatile std::uint32_t vbits = bits;
+    bits = vbits;
 #endif
 
     return bits;
