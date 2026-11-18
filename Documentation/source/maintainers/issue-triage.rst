@@ -103,10 +103,10 @@ P1 — Sustainability (build, Qt 6, distribution)
   (Qt flag/enum binding bug), tracked historically alongside the Qt5 tracker
   `#827 <https://github.com/NatronGitHub/Natron/issues/827>`_. See
   :ref:`maint-qt6` for the concrete plan.
-- **CI modernization** — `#601
-  <https://github.com/NatronGitHub/Natron/issues/601>`_ (migrate CI from Travis
-  to GitHub Actions; ``difficulty:easy``). A prerequisite for reliably shipping
-  everything else, and a good first task.
+- **CI** — `#601 <https://github.com/NatronGitHub/Natron/issues/601>`_
+  (migrate CI from Travis to GitHub Actions) is done: Linux, Windows and macOS
+  build and test every pull request (see :ref:`maint-ci`). The Qt 6 build is
+  not in CI yet.
 - **Binary distribution** — `#990
   <https://github.com/NatronGitHub/Natron/issues/990>`_ (Linux 2.6 distrib,
   ``help-needed``), `#741 <https://github.com/NatronGitHub/Natron/issues/741>`_
@@ -115,9 +115,10 @@ P1 — Sustainability (build, Qt 6, distribution)
   (Ubuntu PPA / Debian repo — the single most-commented issue),
   `#318 <https://github.com/NatronGitHub/Natron/issues/318>`_ (AppImage),
   `#681 <https://github.com/NatronGitHub/Natron/issues/681>`_ (update Windows
-  SDK). `#672 <https://github.com/NatronGitHub/Natron/issues/672>`_ (downgrade
-  macOS libomp; ``difficulty:easy``) and `#668
-  <https://github.com/NatronGitHub/Natron/issues/668>`_ (FreeBSD) round this out.
+  SDK) and `#668 <https://github.com/NatronGitHub/Natron/issues/668>`_
+  (FreeBSD) round this out. (`#672
+  <https://github.com/NatronGitHub/Natron/issues/672>`_, the OpenMP plug-in
+  crashes on macOS, is fixed by #1146, which unpinned libomp.)
 
 P2 — Confirmed functional bugs & popular features
 -------------------------------------------------
@@ -163,11 +164,8 @@ input),
 Sheet display),
 `#480 <https://github.com/NatronGitHub/Natron/issues/480>`_ (load user
 parameters immediately),
-`#826 <https://github.com/NatronGitHub/Natron/issues/826>`_ (embed timecode in
-MOV),
-`#601 <https://github.com/NatronGitHub/Natron/issues/601>`_ and
-`#672 <https://github.com/NatronGitHub/Natron/issues/672>`_ (build-system, also
-listed under P1).
+and `#826 <https://github.com/NatronGitHub/Natron/issues/826>`_ (embed
+timecode in MOV).
 
 Investigation starting points for the P0 bugs
 ---------------------------------------------
