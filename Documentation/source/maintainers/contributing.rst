@@ -124,7 +124,10 @@ It is skipped (exit status 77) without a display, in CI unless
 ``NATRON_GUI_TESTS=1`` is set, or without the openfx-io and openfx-misc
 plug-ins. It opens Natron windows (without taking the focus): run GUI tests one at
 a time. A crash at exit with some plug-ins (#1253) only prints a warning, unless
-``--strict-exit`` is given.
+``--strict-exit`` is given. ``--debugger`` (or ``NATRON_TEST_WRAPPER=/path/to/wrapper``)
+runs Natron under lldb with ``Tests/gui/natron-lldb.sh``: a crash prints the backtraces
+of all threads and exits with status 139, without the macOS crash dialog. The same
+script can run ``NatronRenderer``, ``natron-python`` or ``Tests``.
 
 Debugging and profiling
 -----------------------

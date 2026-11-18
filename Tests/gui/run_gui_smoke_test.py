@@ -20,17 +20,25 @@
 
 """GUI smoke test: runs the Natron GUI with --no-dialogs.
 
-Usage: run_gui_smoke_test.py /path/to/Natron [--keep] [--strict-exit]
+Usage: run_gui_smoke_test.py /path/to/Natron [--keep] [--strict-exit] [--debugger]
 
-1. Natron runs a script that calls natron.quit(42) from a timer, without OFX plug-ins:
-   the exit status must be 42.
-2. Natron runs gui_smoke_test_script.py, which creates Read -> Transform -> Viewer1,
+1. Natron runs a script that creates a node (so that the project has unsaved changes) and
+   calls natron.quit(42) from a timer, without OFX plug-ins: the exit status must be 42.
+2. Same, but the script closes the main window: "Save changes?" must not block (it is
+   answered Discard with --no-dialogs) and the exit status must be 0.
+3. Natron runs gui_smoke_test_script.py, which creates Read -> Transform -> Viewer1,
    saves screenshots of the main window and of Viewer1 (checking that they are not
    black), drags the Transform overlay handle, undoes it, sends viewer shortcuts, and
    calls natron.quit(status).
    The script also writes its status to a file: with some OFX plug-ins (those using TBB,
    like openfx-io), Natron may crash at exit, after natron.quit() (issue #1253). That
    crash is reported, and only fails the test with --strict-exit.
+
+Each Natron run is limited to 300 seconds.
+--debugger runs Natron under lldb with natron-lldb.sh (next to this script): a crash
+prints the backtrace of all threads and gives the exit status 139, and macOS does not
+show its "quit unexpectedly" dialog. The environment variable NATRON_TEST_WRAPPER may
+instead give any command to run Natron with (e.g. "/path/to/natron-lldb.sh" or "valgrind").
 
 Exit status: 0 on success, 77 if skipped (no display, running in CI without
 NATRON_GUI_TESTS=1, or the Read/Transform plug-ins are missing: set OFX_PLUGIN_PATH
@@ -40,6 +48,7 @@ It never takes a screen-level screenshot: only Natron's widgets are captured.
 """
 
 import os
+import shlex
 import shutil
 import struct
 import subprocess
@@ -79,17 +88,32 @@ def hasDisplay():
     return True  # macOS and Windows: assume a logged-in session
 
 
+# The project has unsaved changes (a node was created) when Natron quits
 QUIT_SCRIPT = """
 from NatronGui import natron
 try:
-    from PySide2 import QtCore
+    from PySide2 import QtCore, QtWidgets
 except ImportError:
-    from PySide6 import QtCore
-QtCore.QTimer.singleShot(200, lambda: natron.quit(42))
+    from PySide6 import QtCore, QtWidgets
+
+def quit():
+    natron.getGuiInstance(0).createNode("fr.inria.built-in.Viewer")
+    if MODE == "close":
+        for w in QtWidgets.QApplication.topLevelWidgets():
+            if isinstance(w, QtWidgets.QMainWindow) and w.isVisible():
+                w.close()  # asks "Save changes?"
+                break
+    else:
+        natron.quit(42)
+
+QtCore.QTimer.singleShot(200, quit)
 """
+
+WRAPPER = []
 
 
 def run(cmd, env):
+    cmd = WRAPPER + cmd
     print("Running: " + " ".join(cmd))
     sys.stdout.flush()
     try:
@@ -106,6 +130,10 @@ def main(argv):
     natronBin = argv[1]
     keep = "--keep" in argv[2:]
     strict = "--strict-exit" in argv[2:]
+    if "--debugger" in argv[2:]:
+        WRAPPER[:] = [os.path.join(HERE, "natron-lldb.sh")]
+    elif os.environ.get("NATRON_TEST_WRAPPER"):
+        WRAPPER[:] = shlex.split(os.environ["NATRON_TEST_WRAPPER"])
     if os.environ.get("CI") and os.environ.get("NATRON_GUI_TESTS") != "1":
         print("GUI smoke test skipped in CI (set NATRON_GUI_TESTS=1 to run it)")
         return SKIP
@@ -115,20 +143,23 @@ def main(argv):
 
     outDir = tempfile.mkdtemp(prefix="natron-gui-test-")
     try:
-        # 1. natron.quit(exitCode) sets the exit status (no OFX plug-ins, see #1253)
-        quitScript = os.path.join(outDir, "quit42.py")
-        with open(quitScript, "w") as f:
-            f.write(QUIT_SCRIPT)
+        # 1. natron.quit(exitCode) sets the exit status, and
+        # 2. closing the main window doesn't block on "Save changes?"
+        # (no OFX plug-ins: no crash at exit, see #1253)
         env = dict(os.environ)
         env.pop("OFX_PLUGIN_PATH", None)
-        status = run([natronBin, "--no-dialogs", "--no-settings",
-                      "--setting", "useStdOFXPluginsLocation=False", quitScript], env)
-        print("Natron exited with status %s" % status)
-        if status != 42:
-            print("FAILED: natron.quit(42) should exit with status 42")
-            return 1
+        for mode, expected in (("quit", 42), ("close", 0)):
+            quitScript = os.path.join(outDir, "quit_%s.py" % mode)
+            with open(quitScript, "w") as f:
+                f.write("MODE = %r\n" % mode + QUIT_SCRIPT)
+            status = run([natronBin, "--no-dialogs", "--no-settings",
+                          "--setting", "useStdOFXPluginsLocation=False", quitScript], env)
+            print("Natron exited with status %s" % status)
+            if status != expected:
+                print("FAILED: %s should exit with status %d" % ("natron.quit(42)" if mode == "quit" else "closing the main window", expected))
+                return 1
 
-        # 2. the smoke test
+        # 3. the smoke test
         image = os.path.join(outDir, "input.png")
         writePNG(image)
         env = dict(os.environ)

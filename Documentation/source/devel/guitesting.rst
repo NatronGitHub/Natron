@@ -9,7 +9,9 @@ Four features make this possible:
 
 - the :ref:`--no-dialogs<natronExec>` command-line option: the message and question dialogs,
   including the startup prompts, are not shown, they return their default button and are
-  printed to the standard error, so that nothing blocks the script;
+  printed to the standard error, so that nothing blocks the script. "Save changes?" is answered
+  Discard and the file dialogs count as cancelled (see the list of answers in
+  :ref:`natronExec`);
 - :meth:`natron.quit(exitCode)<NatronEngine.PyCoreApplication.quit>`: closes the projects
   without asking to save them and exits with *exitCode*, so that the result of the test is
   the exit status of Natron;
@@ -132,9 +134,20 @@ Run it and check the exit status::
     Natron --no-dialogs --no-settings test_transform.py; echo "exit status: $?"
 
 The GUI smoke test of the Natron sources, ``Tests/gui/run_gui_smoke_test.py``, is a longer
-version of this example that also checks that the screenshots are not black. CTest runs it as
-*GuiSmokeTest*; it is skipped (exit status 77) when there is no display, in CI unless
-*NATRON_GUI_TESTS=1* is set, or when the plug-ins are missing.
+version of this example that also checks that the screenshots are not black, and that
+quitting with :meth:`natron.quit()<NatronEngine.PyCoreApplication.quit>` or by closing the main
+window does not block on "Save changes?". CTest runs it as *GuiSmokeTest*; it is skipped (exit
+status 77) when there is no display, in CI unless *NATRON_GUI_TESTS=1* is set, or when the
+plug-ins are missing.
+
+To catch crashes, run Natron under a debugger: with ``--debugger``, the smoke test runs Natron
+through ``Tests/gui/natron-lldb.sh``, which runs it under lldb in batch mode, prints the
+backtrace of all threads on a crash and exits with status 139 (on macOS, this also avoids the
+system "quit unexpectedly" dialog). The environment variable *NATRON_TEST_WRAPPER* can give
+another command to run Natron with. ``natron-lldb.sh`` also works for *NatronRenderer*,
+*natron-python* and the *Tests* binary::
+
+    Tests/gui/natron-lldb.sh -o backtrace.txt build/Renderer/NatronRenderer -t script.py
 
 Tips
 ----
