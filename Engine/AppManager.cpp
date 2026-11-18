@@ -3175,14 +3175,19 @@ AppManager::toggleAutoHideGraphInputs()
     }
 }
 
-// Registered with atexit by registerCloseProjectsAtPythonExit() in interpreter mode (-t):
-// Py_Main(), or sys.exit() in a script, finalizes Python, so close the projects while Python
+// Registered with atexit by registerCloseProjectsAtPythonExit() in the background modes that run
+// scripts: Py_Main() (-t), or sys.exit() in a script, finalizes Python, so close the projects while Python
 // still runs, for the onProjectClose callbacks and the removal of the node variables (#1253).
 // After Py_Main(), loadInternalAfterInitGui() then quits the instances.
 static PyObject*
 closeProjectsAtPythonExit(PyObject* /*self*/,
                           PyObject* /*args*/)
 {
+    // SystemExit raised on another thread (e.g. sys.exit() in an expression evaluated by a
+    // render thread) also finalizes Python: the projects can only be reset on the main thread.
+    if ( !qApp || (QThread::currentThread() != qApp->thread()) ) {
+        Py_RETURN_NONE;
+    }
     if (appPTR) {
         const AppInstanceVec instances = appPTR->getAppInstances();
         // Release the GIL while the nodes are deleted: they may wait for threads that need it.
@@ -3207,7 +3212,7 @@ static PyMethodDef closeProjectsAtPythonExitDef = {
 void
 AppManager::registerCloseProjectsAtPythonExit()
 {
-    // Before the -t scripts run: sys.exit() in a script finalizes Python too (#1253).
+    // Before the scripts of the background modes run: sys.exit() in a script finalizes Python too (#1253).
     static bool registered = false;
     if (registered) {
         return;
@@ -3955,7 +3960,6 @@ PythonGILLocker::PythonGILLocker()
         throw std::runtime_error("Trying to execute python code, but Py_IsInitialized() returns false");
     }
 #endif
-    assert(Py_IsInitialized());
     if ( !Py_IsInitialized() ) {
         // Taking the GIL of a finalized interpreter crashes (#1253): lock nothing.
         return;
