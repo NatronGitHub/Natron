@@ -22,6 +22,8 @@ case "$PLUGINS_BUILD_SYSTEM" in
     cmake|make) ;;
     *) echo "Error: PLUGINS_BUILD_SYSTEM must be cmake or make, not \"$PLUGINS_BUILD_SYSTEM\""; exit 1;;
 esac
+# openfx-arena is built with Natron's ImageMagick 7 (MAGICK7_PREFIX, see common.sh;
+# ARENA_ALLOW_ANY_MAGICK=1 allows another one, e.g. ImageMagick 6).
 
 
 BUILD_IO=1
@@ -501,19 +503,57 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
     printStatusMessage "Building openfx-arena..."
     cd "$TMP_PATH/openfx-arena"
 
+    # ImageMagick 7 (MAGICK7_PREFIX, see common.sh), for the CMake and the make builds: its
+    # pkg-config files come first, only for this build (as LibRaw's for openfx-io). Natron 2.6
+    # ships openfx-arena with Natron's ImageMagick 7 build (Q32 HDRI, static on macOS and
+    # Windows): another ImageMagick (6, or a stock Q16 build such as MSYS2's or Homebrew's)
+    # is only accepted with ARENA_ALLOW_ANY_MAGICK=1.
+    arena_saved_pkg_config_path="${PKG_CONFIG_PATH:-}"
+    if [ -n "${MAGICK7_PREFIX:-}" ]; then
+        export PKG_CONFIG_PATH="${MAGICK7_PREFIX}/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+    fi
+    arena_magick_version="$(pkg-config --modversion Magick++ 2>/dev/null || true)"
+    arena_magick_libname="$(pkg-config --variable=libname Magick++ 2>/dev/null || true)"
+    arena_magick_prefix="$(pkg-config --variable=prefix Magick++ 2>/dev/null || true)"
+    arena_im=""
+    arena_magick_ok=0
+    case "$arena_magick_version" in
+        7.*)
+            arena_im=7
+            case "$arena_magick_libname" in
+                *Q32HDRI*) arena_magick_ok=1;;
+            esac
+            if [ -n "${MAGICK7_PREFIX:-}" ]; then
+                case "$arena_magick_prefix/" in
+                    "${MAGICK7_PREFIX%/}/"*) arena_magick_ok=1;;
+                esac
+            fi
+            ;;
+    esac
+    if [ "$arena_magick_ok" != 1 ]; then
+        if [ "${ARENA_ALLOW_ANY_MAGICK:-}" != "1" ]; then
+            echo "Error: openfx-arena needs Natron's ImageMagick 7 (Q32 HDRI, in MAGICK7_PREFIX=${MAGICK7_PREFIX:-}), but pkg-config finds Magick++ ${arena_magick_version:-(none)} (${arena_magick_libname:-no libname}, prefix ${arena_magick_prefix:-none}; PKG_CONFIG_PATH=${PKG_CONFIG_PATH:-})."
+            echo "Install it (macOS: sudo port install ImageMagick7 +natron -x11 -openexr; Linux SDK: include/scripts/pkg/imagemagick7.sh; Windows: natron_imagemagick), set MAGICK7_PREFIX, or set ARENA_ALLOW_ANY_MAGICK=1 to build with this ImageMagick."
+            exit 1
+        fi
+        echo "Warning: building openfx-arena with ImageMagick ${arena_magick_version:-(none)} (${arena_magick_libname:-}), not Natron's ImageMagick 7 (ARENA_ALLOW_ANY_MAGICK=1)"
+    fi
+    echo "Info: openfx-arena uses ImageMagick $arena_magick_version ($arena_magick_libname, $arena_magick_prefix)"
+
     # openfx-arena builds with openfx's CMake helpers since openfx-arena#72.
     if plugins_use_cmake openfx-arena; then
         echo "Info: build openfx-arena using cmake..."
-        # Same ImageMagick as the make path: the Magick++ found by pkg-config (ImageMagick 6;
-        # the SDK's magick7 is not used, see the commented-out IM=7 in the make path), and
-        # OpenMP only if that ImageMagick was built with it (the Makefiles keep its -fopenmp,
-        # which the CMake build drops in favour of OFX_USE_OPENMP). Not static on Windows
-        # (no MINGW_STATIC), as the make path.
+        # OpenMP only if ImageMagick was built with it (the Makefiles keep its -fopenmp, which
+        # the CMake build drops in favour of OFX_USE_OPENMP). -DIM=7 links oleaut32 on MinGW,
+        # as make IM=7; libomp is looked for next to ImageMagick, then in MacPorts (macOS).
+        # AudioCurve: AUTO (built if pkg-config finds sox), as the Makefiles, but OFF for COMMERCIAL. Not static on
+        # Windows (no MINGW_STATIC), as the make path: the static ImageMagick (natron_imagemagick)
+        # is linked with "pkg-config --static" by openfx-arena's CMakeLists.txt anyway.
         arena_openmp=OFF
         case " $(pkg-config Magick++ --cflags --libs 2>/dev/null) " in
             *" -fopenmp "*) arena_openmp=ON;;
         esac
-        arena_args=(-DOFX_LICENSE="$NATRON_LICENSE" -DOFX_USE_OPENMP="$arena_openmp")
+        arena_args=(-DOFX_LICENSE="$NATRON_LICENSE" -DOFX_USE_OPENMP="$arena_openmp" -DIM="$arena_im")
         if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
             # no AudioCurve: libsox links GPL libraries (libmad, libid3tag; libao on Windows)
             arena_args+=(-DAUDIO=OFF)
@@ -539,12 +579,6 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
         # Arena 2.1 breaks compat with older releases, check if this is a 2.1(+) build
         ARENA_CHECK=$(cat Bundle/Makefile|grep lodepng)
         if [ "$ARENA_CHECK" != "" ]; then
-            #if [ "$PKGOS" != "OSX" ]; then
-            #  export PKG_CONFIG_PATH="${SDK_HOME}/magick7/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
-            #else
-            #  export PKG_CONFIG_PATH="/opt/magick/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
-            #fi
-            #ARENA_FLAGS="IM=7"
             # Fetch external depends before build
             make -C Bundle lodepng.h
         fi
@@ -553,7 +587,7 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
         env \
             MINGW="${ISWIN:-}" \
             LICENSE="$NATRON_LICENSE" \
-            ${ARENA_FLAGS:-} \
+            IM="$arena_im" \
             CXX="$CXX" \
             CONFIG="${COMPILE_TYPE}" \
             OPTFLAG="${OPTFLAG}" \
@@ -567,6 +601,7 @@ if [ "$BUILD_ARENA" = "1" ] && [ -d "$TMP_PATH/openfx-arena" ]; then
 
         echo "Info: build openfx-arena using make... done!"
     fi
+    export PKG_CONFIG_PATH="$arena_saved_pkg_config_path"
 
     maybe_cleanup_binary_files
 
@@ -609,8 +644,14 @@ if [ "$BUILD_GMIC" = "1" ] && [ -d "$TMP_PATH/openfx-gmic" ]; then
             # (the --param options are gcc's)
             gmic_cxxflags_extra="$GMIC_CXXFLAGS_EXTRA ${CXXFLAGS_EXTRA}"
         fi
+        gmic_args=(-DGMIC_DOWNLOAD_DIR="$gmic_download_dir")
+        if [ "$PKGOS" = "Linux" ] && grep -q 'GMIC_STATIC_DEPS' CMakeLists.txt; then
+            # link the SDK's shared zlib and libpng: GMIC_STATIC_DEPS (default ON on Linux) needs
+            # static archives built with -fPIC, which the Natron SDK doesn't provide
+            gmic_args+=(-DGMIC_STATIC_DEPS=OFF)
+        fi
         CXXFLAGS_EXTRA="$gmic_cxxflags_extra" MKJOBS="$GMIC_MKJOBS" \
-            ofx_cmake_build -DGMIC_DOWNLOAD_DIR="$gmic_download_dir"
+            ofx_cmake_build "${gmic_args[@]}"
         echo "Info: build openfx-gmic using cmake... done!"
     else
         if [ "$PKGOS" = "Windows" ]; then

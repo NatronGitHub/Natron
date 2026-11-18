@@ -216,6 +216,10 @@ This should be consistent with the `REMOTE_PREFIX_USER` value passed to the uplo
 
 `PLUGINS_BUILD_SYSTEM`: `cmake` (default) or `make`. With `cmake`, openfx-misc, openfx-io, openfx-arena and openfx-gmic are built with their CMake builds (`build-plugins.sh`, function `ofx_cmake_build`), and a checkout without one is an error. `make` builds them with their Makefiles, the fallback while RB-2.6 is maintained. The CMake builds ignore `OPTFLAG`: they use `-O3` (with `-g` for `relwithdebinfo`); `COMPILE_TYPE=debug` gives `CMAKE_BUILD_TYPE=Debug`, whose macOS bundles are not made self-contained. They download the G'MIC sources into `$WORKSPACE/src`, which is kept across builds.
 
+`MAGICK7_PREFIX`: Prefix of the ImageMagick 7 that openfx-arena is built with (its `lib/pkgconfig` is put first in `PKG_CONFIG_PATH` for that build). Defaults to `$SDK_HOME/magick7` on Linux (`include/scripts/pkg/imagemagick7.sh`), `$SDK_HOME/lib/ImageMagick7` on macOS (MacPorts' `ImageMagick7 +natron`, from `tools/MacPorts`), and the MSYS2 prefix on Windows (`natron_imagemagick`, from `tools/MINGW-packages`).
+
+`ARENA_ALLOW_ANY_MAGICK`: `build-plugins.sh` stops if the `Magick++` that pkg-config finds for openfx-arena is not Natron's ImageMagick 7 build (version 7, and a Q32 HDRI `libname` or a prefix in `MAGICK7_PREFIX`). Set to 1 to build openfx-arena with that ImageMagick anyway, e.g. ImageMagick 6 (Natron 2.5's; the output of some plug-ins differs, see openfx-arena's `ChangeLog.md`) or a stock Q16 ImageMagick 7.
+
 `EXTRA_PYTHON_MODULES_SCRIPT`: Path to a python script that should install extra modules with `pip` or `easy_install`.
 
 

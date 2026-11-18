@@ -40,9 +40,12 @@ QMAKE_CLEAN += ofxTestLog.txt test_dot_generator0.jpg
 
 include(../global.pri)
 
-SOURCES += \
+# bundled third-party code: see warnings.pri
+NATRON_THIRD_PARTY_SOURCES += \
     google-test/src/gtest-all.cc \
-    google-mock/src/gmock-all.cc \
+    google-mock/src/gmock-all.cc
+
+SOURCES += \
     BaseTest.cpp \
     Curve_Test.cpp \
     FileSystemModel_Test.cpp \
@@ -63,3 +66,5 @@ SOURCES += \
 
 HEADERS += \
     BaseTest.h
+
+include(../warnings.pri)
