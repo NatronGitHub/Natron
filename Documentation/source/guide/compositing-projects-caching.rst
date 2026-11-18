@@ -238,7 +238,8 @@ Keeping a large script fast
 - **Freeze finished branches with a DiskCache node** (see above).
 - **Limit the node previews.** Each preview in the Node Graph is a separate
   render. Uncheck **Preview** in the **Node** tab of the nodes whose preview
-  you don't need, or uncheck **View > Toggle Auto Previews** in the Node Graph
+  you don't need (or select them and press :kbd:`Alt+P` in the Node Graph),
+  or uncheck **View > Toggle Auto Previews** in the Node Graph
   right-click menu so that previews are not refreshed after every change.
 - **Close the Properties panels** you don't use: the panel of an edited node
   makes Natron cache the images around that node.
