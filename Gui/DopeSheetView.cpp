@@ -3627,9 +3627,10 @@ DopeSheetView::mouseDoubleClickEvent(QMouseEvent *e)
                                           eTimelineChangeReasonDopeSheetEditorSeek);
 
                 KeyFrame k(keyframeTime, 0);
+                // set the value before the key is copied into the DopeSheetKey
+                DSPasteKeysCommand::setKeyValueFromKnob(knob, keyframeTime, &k);
                 DopeSheetKey key(dsKnob, k);
                 toPaste.push_back(key);
-                DSPasteKeysCommand::setKeyValueFromKnob(knob, keyframeTime, &k);
                 _imp->model->pasteKeys(toPaste, true);
             }
         }
