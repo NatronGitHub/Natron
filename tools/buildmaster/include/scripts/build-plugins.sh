@@ -704,8 +704,14 @@ if [ "$BUILD_GMIC" = "1" ]; then
             # (the --param options are gcc's)
             gmic_cxxflags_extra="$GMIC_CXXFLAGS_EXTRA ${CXXFLAGS_EXTRA}"
         fi
+        gmic_args=(-DGMIC_DOWNLOAD_DIR="$gmic_download_dir")
+        if [ "$PKGOS" = "Linux" ] && grep -q 'GMIC_STATIC_DEPS' CMakeLists.txt; then
+            # link the SDK's shared zlib and libpng: GMIC_STATIC_DEPS (default ON on Linux) needs
+            # static archives built with -fPIC, which the Natron SDK doesn't provide
+            gmic_args+=(-DGMIC_STATIC_DEPS=OFF)
+        fi
         CXXFLAGS_EXTRA="$gmic_cxxflags_extra" MKJOBS="$GMIC_MKJOBS" \
-            ofx_cmake_build -DGMIC_DOWNLOAD_DIR="$gmic_download_dir"
+            ofx_cmake_build "${gmic_args[@]}"
     else
         if [ "$COMPILER" = "gcc" ] || [ "$COMPILER" = "clang-omp" ]; then
             # build with OpenMP support
