@@ -366,6 +366,11 @@ public:
     {
     }
 
+    // TODO: keyboard modifiers in parameter interacts (ofxNatron.h extension 13): override
+    // supportsKeyModifiers() and getKeyModifiers(), and set the state from CustomParamInteract and
+    // CurveWidget before each action (NatronGitHub/Natron#1283). Until then, HostSupport doesn't
+    // pass kNatronOfxInteractPropKeyModifiers here, and the plug-ins track the modifier keys.
+
     virtual bool isColorPickerRequired() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /*Swaps the buffer of the attached viewer*/
