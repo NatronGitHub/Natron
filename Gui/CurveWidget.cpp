@@ -206,8 +206,8 @@ CurveWidget::centerOn(const std::vector<CurveGuiPtr> & curves, bool useDisplayRa
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     // First try to center curves given their display range
-    Curve::YRange displayRange(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
-    std::pair<double, double> xRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+    Curve::YRange displayRange( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
+    std::pair<double, double> xRange = std::make_pair( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
     bool rangeSet = false;
 
     std::vector<CurveGuiPtr> curvesToFrame;
@@ -233,13 +233,15 @@ CurveWidget::centerOn(const std::vector<CurveGuiPtr> & curves, bool useDisplayRa
             std::pair<double, double> thisXRange = curve->getXRange();
 
 
-            if (thisCurveRange.min == -std::numeric_limits<double>::infinity() ||
+            // unbounded ranges are +/-DBL_MAX (or INT_MIN/INT_MAX for integer knobs).
+            // Test them with <= and >=, which also catch an infinite bound, even with -ffast-math.
+            if (thisCurveRange.min <= std::numeric_limits<double>::lowest() ||
                 thisCurveRange.min == std::numeric_limits<int>::min() ||
-                thisCurveRange.max == std::numeric_limits<double>::infinity() ||
+                thisCurveRange.max >= std::numeric_limits<double>::max() ||
                 thisCurveRange.max == std::numeric_limits<int>::max() ||
-                thisXRange.first == -std::numeric_limits<double>::infinity() ||
+                thisXRange.first <= std::numeric_limits<double>::lowest() ||
                 thisXRange.first == std::numeric_limits<int>::min() ||
-                thisXRange.second == std::numeric_limits<double>::infinity() ||
+                thisXRange.second >= std::numeric_limits<double>::max() ||
                 thisXRange.second == std::numeric_limits<int>::max()) {
                 continue;
             }
@@ -343,7 +345,7 @@ CurveWidget::updateSelectionAfterCurveChange(CurveGui* curve)
 
     CurvePtr internalCurve = found->first->getInternalCurve();
     bool isPeriodic = false;
-    std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+    std::pair<double,double> parametricRange = std::make_pair( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
     if (internalCurve) {
         isPeriodic = internalCurve->isCurvePeriodic();
         parametricRange = internalCurve->getXRange();
@@ -1791,7 +1793,7 @@ CurveWidget::selectAllKeyFrames()
 
             CurvePtr internalCurve = (*it)->getInternalCurve();
             bool isPeriodic = false;
-            std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+            std::pair<double,double> parametricRange = std::make_pair( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
             if (internalCurve) {
                 isPeriodic = internalCurve->isCurvePeriodic();
                 parametricRange = internalCurve->getXRange();
@@ -2325,7 +2327,7 @@ CurveWidget::addKey(const CurveGuiPtr& curve, double xCurve, double yCurve)
 
     CurvePtr internalCurve = curve->getInternalCurve();
     bool isPeriodic = false;
-    std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+    std::pair<double,double> parametricRange = std::make_pair( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
     if (internalCurve) {
         isPeriodic = internalCurve->isCurvePeriodic();
         parametricRange = internalCurve->getXRange();
