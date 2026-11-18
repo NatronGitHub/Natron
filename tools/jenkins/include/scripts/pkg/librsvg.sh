@@ -43,6 +43,14 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/librsvg-2.0.
     fi
     untar "$SRC_PATH/$LIBRSVG_TAR"
     pushd "librsvg-${LIBRSVG_VERSION}"
+    if version_gt "$LIBRSVG_VERSION_SHORT" 2.40; then
+        # The tarball doesn't vendor the Rust crates. Fetch them first, without the SDK's
+        # libraries: a system cargo (e.g. rust-toolset) uses the system libcurl, which may not
+        # work with them. Then build offline, with the SDK's libraries (the linker must find
+        # the SDK's glib, not the system one).
+        env -u LD_LIBRARY_PATH cargo fetch
+        export CARGO_NET_OFFLINE=true
+    fi
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-gtk-doc --disable-static --enable-shared --disable-introspection --disable-vala --disable-pixbuf-loader
     make -j${MKJOBS}
     make install

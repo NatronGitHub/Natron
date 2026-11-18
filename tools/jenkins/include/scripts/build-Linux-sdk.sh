@@ -490,17 +490,20 @@ function download() {
                 # or wget fails on Ubuntu for sourceforge and all letsencrypt-certified sites
                 SET_SSL_CERT_DIR="env SSL_CERT_DIR=/etc/ssl/certs"
             fi
-            $SET_SSL_CERT_DIR wget -q "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || fail=true
+            # wget is the system one: don't let it load the SDK's libraries (on Rocky Linux 9, the
+            # system gnutls fails with the SDK's older nettle)
+            SYSWGET="env -u LD_LIBRARY_PATH wget"
+            $SET_SSL_CERT_DIR $SYSWGET -q "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || fail=true
             if $fail; then
                 echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
                 echo "*** downloading $package from $master_site"
                 fail=false
-                $SET_SSL_CERT_DIR wget -q "$master_site/$package" -O "$SRC_PATH/$package" || fail=true
+                $SET_SSL_CERT_DIR $SYSWGET -q "$master_site/$package" -O "$SRC_PATH/$package" || fail=true
                 if $fail; then
                     echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
                     echo "*** downloading $package from $master_site without checking certificate"
                     fail=false
-                    wget -q --no-check-certificate "$master_site/$package" -O "$SRC_PATH/$package" || fail=true
+                    $SYSWGET -q --no-check-certificate "$master_site/$package" -O "$SRC_PATH/$package" || fail=true
                     if $fail; then
                         echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
                         rm "$SRC_PATH/$package" > /dev/null 2>&1 || true
