@@ -161,7 +161,7 @@ script name. The image has the resolution of the screen, e.g. twice the size of 
 each direction on a HiDPI display.
 
 It must be called from the main (GUI) thread: it returns False when called from a render
-thread, e.g. from the *afterFrameRendered* callback.
+thread, e.g. from the *afterFrameRender* callback.
 
 See :ref:`guiTesting` for an example.
 

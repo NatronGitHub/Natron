@@ -938,7 +938,7 @@ PyViewer::getCurrentView() const
 }
 
 // The GUI functions below may only run in the main thread: some Python callbacks (e.g.
-// afterFrameRendered) run in render threads
+// afterFrameRender) run in render threads
 static bool
 isMainThread()
 {

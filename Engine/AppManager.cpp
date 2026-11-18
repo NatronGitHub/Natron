@@ -2717,11 +2717,13 @@ AppManager::requestQuit(int exitCode)
     // interpreter that were not started yet, then the instance quits as usual.
     _imp->requestedExitCode = exitCode;
     _imp->quitRequested = true;
-    if ( QThread::currentThread() == qApp->thread() ) {
+    if ( isBackground() || ( QThread::currentThread() == qApp->thread() ) ) {
+        // abortAnyProcessing() does not block. In background mode, call it even from a render
+        // thread (e.g. natron.quit() in afterFrameRender): the main thread waits for the render
+        // and runs no event loop, so a queued call would only run once all frames are rendered.
         abortAnyProcessing();
     } else {
-        // called from a render thread (e.g. natron.quit() in afterFrameRendered): stop the
-        // renders from the main thread
+        // GUI, called from a render thread: stop the renders from the main thread
         QMetaObject::invokeMethod( this, [this]() {
             abortAnyProcessing();
         }, Qt::QueuedConnection );

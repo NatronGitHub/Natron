@@ -225,7 +225,7 @@ Project::loadProject(const QString & path,
                                                tr("A recent auto-save of %1 was found. It is not used, and kept.").arg(name).toStdString() );
                 hasAutoSave = false;
                 // The auto-saves of this project would overwrite it (<dir>/<name>.autosave):
-                // do not auto-save it in this session
+                // do not auto-save it in this session (see refreshAutoSaveDisabled())
                 _imp->autoSaveDisabled = true;
             }
             if (hasAutoSave) {
@@ -247,7 +247,9 @@ Project::loadProject(const QString & path,
                         QMutexLocker k(&_imp->projectLock);
                         _imp->lastAutoSaveFilePath = realPath + realName;
                         // the user chose to use it: this session owns it now
-                        _imp->autoSavesWrittenBySession.insert( QDir::cleanPath(realPath + realName) );
+                        if ( appPTR->isDialogsDisabled() ) {
+                            _imp->autoSavesWrittenBySession.insert( QDir::cleanPath(realPath + realName) );
+                        }
                     }
                 }
             }
@@ -607,7 +609,7 @@ Project::saveProjectInternal(const QString & path,
             if (updateProjectProperties) {
                 _imp->lastAutoSaveFilePath = filePath;
             }
-            if (!isRenderSave) {
+            if ( !isRenderSave && appPTR->isDialogsDisabled() ) {
                 _imp->autoSavesWrittenBySession.insert( QDir::cleanPath(filePath) );
             }
         }
@@ -617,7 +619,7 @@ Project::saveProjectInternal(const QString & path,
 
     std::string newFilePath = _imp->runOnProjectSaveCallback(filePath.toStdString(), autoSave);
     filePath = QString::fromUtf8( newFilePath.c_str() );
-    if (autoSave && !isRenderSave) {
+    if ( autoSave && !isRenderSave && appPTR->isDialogsDisabled() ) {
         // the onProjectSave callback may have changed the file name
         QMutexLocker l(&_imp->projectLock);
         _imp->autoSavesWrittenBySession.insert( QDir::cleanPath(filePath) );
@@ -719,6 +721,9 @@ Project::saveProjectInternal(const QString & path,
 
         //Create the lock file corresponding to the project
         createLockFile();
+
+        // --no-dialogs: the name changed (Save As), check for an auto-save of another session
+        refreshAutoSaveDisabled();
     } else if (updateProjectProperties) {
         if (!isRenderSave) {
             QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
@@ -1917,6 +1922,7 @@ Project::removeLastAutosave()
 
     if ( !filepath.isEmpty() && canRemoveAutoSave(filepath) ) {
         QFile::remove(filepath);
+        forgetAutoSave(filepath);
     }
 
     /*
@@ -1929,6 +1935,35 @@ Project::removeLastAutosave()
     QString autoSaveFilePath = projectPath + projectFilename + QString::fromUtf8(".autosave");
     if ( QFile::exists(autoSaveFilePath) && canRemoveAutoSave(autoSaveFilePath) ) {
         QFile::remove(autoSaveFilePath);
+        forgetAutoSave(autoSaveFilePath);
+    }
+}
+
+void
+Project::forgetAutoSave(const QString& filePath)
+{
+    QMutexLocker l(&_imp->projectLock);
+
+    _imp->autoSavesWrittenBySession.erase( QDir::cleanPath(filePath) );
+}
+
+void
+Project::refreshAutoSaveDisabled()
+{
+    _imp->autoSaveDisabled = false;
+    if ( !appPTR->isDialogsDisabled() || getApp()->isBackground() || !hasProjectBeenSavedByUser() ) {
+        return;
+    }
+    // --no-dialogs: an auto-save of this project written by another session (the user's crash
+    // recovery) would be overwritten by the auto-saves of this session (<dir>/<name>.autosave)
+    QString path = QString::fromUtf8( _imp->getProjectPath().c_str() );
+    StrUtils::ensureLastPathSeparator(path);
+    const QString name = QString::fromUtf8( _imp->getProjectFilename().c_str() );
+    QString autoSaveFileName;
+    if ( findAutoSaveForProject(path, name, &autoSaveFileName) && !wroteAutoSave(path + autoSaveFileName) ) {
+        Dialogs::printDismissedDialog( tr("Auto-save").toStdString(),
+                                       tr("An auto-save of %1 exists: it is kept, and %1 is not auto-saved in this session.").arg(name).toStdString() );
+        _imp->autoSaveDisabled = true;
     }
 }
 
@@ -1940,9 +1975,7 @@ Project::canRemoveAutoSave(const QString& filePath) const
     }
     // --no-dialogs: only remove the auto-saves this session wrote (or chose to use), never
     // an auto-save that may be the user's crash recovery
-    QMutexLocker l(&_imp->projectLock);
-
-    return _imp->autoSavesWrittenBySession.count( QDir::cleanPath(filePath) ) > 0;
+    return wroteAutoSave(filePath);
 }
 
 void
@@ -1969,9 +2002,35 @@ Project::clearAutoSavesDir()
                 dirToRemove += QLatin1Char('/');
             }
             dirToRemove += entry;
+            if ( appPTR->isDialogsDisabled() && !isAutoSaveOfThisSession(dirToRemove) ) {
+                // --no-dialogs: keep the auto-saves of other sessions (the user's crash recovery)
+                continue;
+            }
             QFile::remove(dirToRemove);
         }
     }
+}
+
+bool
+Project::isAutoSaveOfThisSession(const QString& filePath)
+{
+    const AppInstanceVec instances = appPTR->getAppInstances();
+    for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        ProjectPtr project = (*it)->getProject();
+        if ( project && project->wroteAutoSave(filePath) ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool
+Project::wroteAutoSave(const QString& filePath) const
+{
+    QMutexLocker l(&_imp->projectLock);
+
+    return _imp->autoSavesWrittenBySession.count( QDir::cleanPath(filePath) ) > 0;
 }
 
 QString
@@ -2031,6 +2090,12 @@ Project::reset(bool aboutToQuit, bool blocking)
     {
         QMutexLocker k(&_imp->projectClosingMutex);
         _imp->projectClosing = true;
+    }
+    // a new project: it may auto-save, and it wrote no auto-save yet
+    _imp->autoSaveDisabled = false;
+    {
+        QMutexLocker l(&_imp->projectLock);
+        _imp->autoSavesWrittenBySession.clear();
     }
 
     if (!blocking) {

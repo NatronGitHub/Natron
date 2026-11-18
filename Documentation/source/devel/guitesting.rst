@@ -156,7 +156,7 @@ Tips
 - Call the GUI functions (:meth:`saveScreenshot<NatronGui.GuiApp.saveScreenshot>`, the
   :doc:`PyViewer<PythonReference/NatronGui/PyViewer>` input functions,
   :meth:`processEvents<NatronGui.GuiApp.processEvents>`...) from the main thread: from the
-  script, a timer or a GUI callback. In render threads (e.g. the *afterFrameRendered* callback)
+  script, a timer or a GUI callback. In render threads (e.g. the *afterFrameRender* callback)
   they do nothing and return False.
 - :meth:`natron.quit()<NatronEngine.PyCoreApplication.quit>` removes the auto-saves of the
   projects, and it waits until Natron has finished loading and no nested event loop is

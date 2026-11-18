@@ -120,7 +120,7 @@ public:
      * button is a Qt::MouseButton (1: left, 2: right, 4: middle), modifiers a
      * Qt::KeyboardModifiers. A pressure other than 1 also sends tablet events.
      * They return whether the event was accepted, and False when not called from the main
-     * thread (e.g. from a render callback such as afterFrameRendered).
+     * thread (e.g. from a render callback such as afterFrameRender).
      */
     bool penDown(double x, double y, int button = 1, Qt::KeyboardModifiers modifiers = Qt::NoModifier, double pressure = 1.);
 

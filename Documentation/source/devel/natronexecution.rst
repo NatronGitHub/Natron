@@ -43,8 +43,9 @@ counts as dismissed. The answers never block and never destroy data:
   never recovered nor deleted: the question to restore an auto-saved untitled project is not
   asked, and a project given on the command line is loaded from its file even if a more recent
   auto-save exists, and that project is then not auto-saved during the session, so that its
-  auto-save is not overwritten. Only the auto-saves written during the session are removed when
-  quitting or when answering Discard;
+  auto-save is not overwritten (the same applies after a Save As to a project that has an
+  auto-save). Only the auto-saves written during the session are removed: when quitting, when
+  answering Discard, and by *Clear All Caches* (or *--clear-cache*);
   the new default appearance
   and the new default shortcuts are not applied (No); the question about checking for updates
   is not answered, so it is asked again at the next launch without *--no-dialogs*;

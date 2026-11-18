@@ -27,6 +27,7 @@
 
 #include <gtest/gtest.h>
 
+#include <QtCore/QCoreApplication>
 #include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QStringList>
@@ -138,9 +139,22 @@ TEST(NoDialogs, RemoveOnlyOwnAutoSaves)
     AppInstancePtr app = appPTR->getTopLevelInstance();
     ASSERT_TRUE( app != nullptr );
     ProjectPtr project = app->getProject();
-    const bool wasDisabled = appPTR->isDialogsDisabled();
     QTemporaryDir dir;
     ASSERT_TRUE( dir.isValid() );
+
+    // restores the shared state even if an ASSERT fails: declared after dir, so the project
+    // is reset before the directory it was saved to is removed
+    struct Restore
+    {
+        ProjectPtr project;
+        bool dialogsDisabled;
+        ~Restore()
+        {
+            project->reset(false, true);
+            appPTR->setDialogsDisabled(dialogsDisabled);
+        }
+    } restore = { project, appPTR->isDialogsDisabled() };
+
     const QString path = dir.path() + QLatin1Char('/');
     const QString name = QString::fromUtf8("foo.ntp");
     const QString autoSave = path + name + QString::fromUtf8(".autosave");
@@ -156,19 +170,34 @@ TEST(NoDialogs, RemoveOnlyOwnAutoSaves)
     project->removeLastAutosave();
     EXPECT_TRUE( QFile::exists(autoSave) ) << "--no-dialogs must keep an auto-save it did not write";
 
-    // an auto-save written by this session is removed
+    // an auto-save written by this session is removed, and forgotten
     ASSERT_TRUE( project->saveProject_imp(path, name, true /*autoSave*/, true) );
-    EXPECT_TRUE( project->canRemoveAutoSave(autoSave) );
+    EXPECT_TRUE( project->wroteAutoSave(autoSave) );
     project->removeLastAutosave();
     EXPECT_FALSE( QFile::exists(autoSave) );
+    EXPECT_FALSE( project->wroteAutoSave(autoSave) );
+
+    // reset() forgets the auto-saves of the previous project
+    ASSERT_TRUE( project->saveProject_imp(path, name, true /*autoSave*/, true) );
+    EXPECT_TRUE( project->wroteAutoSave(autoSave) );
+    project->reset(false, true);
+    EXPECT_FALSE( project->wroteAutoSave(autoSave) );
+    QFile::remove(autoSave);
+
+    // Clear All Caches (Project::clearAutoSavesDir()) keeps the auto-saves of other sessions
+    const QString foreign = Project::autoSavesDir() + QString::fromUtf8("/NoDialogsTest.ntp.autosave.%1").arg( QCoreApplication::applicationPid() );
+    QDir().mkpath( Project::autoSavesDir() );
+    touch(foreign);
+    Project::clearAutoSavesDir();
+    EXPECT_TRUE( QFile::exists(foreign) ) << "--no-dialogs must keep the auto-saves of other sessions";
+    QFile::remove(foreign);
 
     // without --no-dialogs, removeLastAutosave() keeps removing the auto-save of the project
+    ASSERT_TRUE( project->saveProject(path, name, 0) );
     appPTR->setDialogsDisabled(false);
     touch(autoSave);
     EXPECT_TRUE( project->canRemoveAutoSave(autoSave) );
     project->removeLastAutosave();
     EXPECT_FALSE( QFile::exists(autoSave) );
     EXPECT_TRUE( QFile::exists(path + name) ) << "the project file itself is never removed";
-
-    appPTR->setDialogsDisabled(wasDisabled);
 }

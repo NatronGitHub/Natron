@@ -70,6 +70,10 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME GuiSmokeTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_gui_smoke_test.py $<TARGET_FILE:Natron>)
     set_tests_properties(GuiSmokeTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 960)
+    # natron.quit() from a render callback stops a NatronRenderer render (headless)
+    add_test(NAME RendererQuitTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_quit_test.py $<TARGET_FILE:NatronRenderer>)
+    set_tests_properties(RendererQuitTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
 endif()
 
 # Not part of a normal install. The installer scripts install it separately

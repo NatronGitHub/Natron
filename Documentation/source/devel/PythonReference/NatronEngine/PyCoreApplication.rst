@@ -395,7 +395,8 @@ stopped. This is meant for scripts and tests, see :ref:`guiTesting`.
   answering *Discard* to "Save changes?", so that the next launch does not offer to restore it.
 - In background mode (*NatronRenderer*, or *Natron -b*), the rest of the script is executed,
   then the renders that were not started yet (the Write nodes given with *-w* or *-o*) are
-  skipped, and *NatronRenderer* exits with *exitCode*.
+  skipped, and *NatronRenderer* exits with *exitCode*. Called from a render callback (e.g.
+  *afterFrameRender*), it stops the render in progress.
 - In interpreter mode (*-t*): when called from the script given on the command line, the
   interactive interpreter is not started; when called from the interactive interpreter, this
   raises :class:`SystemExit` (*exitCode*), as :func:`sys.exit` does. When called from a callback

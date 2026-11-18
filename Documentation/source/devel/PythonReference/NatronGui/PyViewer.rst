@@ -282,7 +282,7 @@ Most events are accepted, so check the result of the action instead.
 These functions, :meth:`fitToFormat<NatronGui.PyViewer.fitToFormat>` and
 :meth:`waitForRender<NatronGui.PyViewer.waitForRender>` must be called from the main (GUI)
 thread: from the script, a timer, a menu command or a callback run by the GUI. Some callbacks,
-such as *afterFrameRendered*, run in render threads: there, the functions do nothing and
+such as *afterFrameRender*, run in render threads: there, the functions do nothing and
 return False.
 
 The overlay of a node is only shown, and only receives the events, while its settings panel is
