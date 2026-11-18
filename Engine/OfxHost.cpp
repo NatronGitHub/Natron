@@ -844,6 +844,8 @@ getPluginShortcuts(const OFX::Host::ImageEffect::Descriptor& desc, std::list<Plu
     }
 }
 
+#ifndef QT_NO_DEBUG_OUTPUT
+// used by qDebug() below (with QT_NO_DEBUG_OUTPUT, qDebug() accepts anything)
 static inline
 QDebug operator<<(QDebug dbg, const std::list<std::string> &l)
 {
@@ -853,6 +855,7 @@ QDebug operator<<(QDebug dbg, const std::list<std::string> &l)
 
     return dbg.space();
 }
+#endif
 
 void
 OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,

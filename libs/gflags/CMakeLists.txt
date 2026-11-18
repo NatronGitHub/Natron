@@ -39,5 +39,6 @@ add_library(gflags STATIC ${gflags_HEADERS} ${gflags_SOURCES})
 # explicitly, since glibc < 2.34 keeps it in a separate libpthread.
 find_package(Threads REQUIRED)
 target_link_libraries(gflags PUBLIC Threads::Threads)
-target_include_directories(gflags PUBLIC . src src/gflags)
+target_include_directories(gflags SYSTEM PUBLIC . src src/gflags)
+target_compile_options(gflags PRIVATE ${NATRON_THIRD_PARTY_NO_WARNINGS})
 set_target_properties(gflags PROPERTIES POSITION_INDEPENDENT_CODE ON)
