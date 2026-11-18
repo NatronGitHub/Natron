@@ -47,6 +47,8 @@ add_library(HostSupport STATIC ${HostSupport_SOURCES})
 target_link_libraries(HostSupport
     PRIVATE
         EXPAT::EXPAT
+        # ofxhBinary.cpp loads the plug-ins with dlopen/dlsym (libdl is separate in glibc < 2.34)
+        ${CMAKE_DL_LIBS}
 )
 target_include_directories(HostSupport
     PUBLIC
