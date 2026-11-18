@@ -115,7 +115,7 @@ and exits with 0 on success and 1 on failure. It needs the openfx-io and openfx-
         # a viewer shortcut: + zooms in
         zoom = viewer.getZoom()
         viewer.keyPress(QtCore.Qt.Key_Plus)
-        viewer.processEvents()
+        app.processEvents()
         if viewer.getZoom() <= zoom:
             return 1
         return 0
@@ -136,7 +136,7 @@ Run it and check the exit status::
 The GUI smoke test of the Natron sources, ``Tests/gui/run_gui_smoke_test.py``, is a longer
 version of this example that also checks that the screenshots are not black, and that
 quitting with :meth:`natron.quit()<NatronEngine.PyCoreApplication.quit>` or by closing the main
-window does not block on "Save changes?". CTest runs it as *GuiSmokeTest*; it is skipped (exit
+window does not block on "Save changes?" and leaves no auto-save behind. CTest runs it as *GuiSmokeTest*; it is skipped (exit
 status 77) when there is no display, in CI unless *NATRON_GUI_TESTS=1* is set, or when the
 plug-ins are missing.
 
@@ -151,6 +151,15 @@ another command to run Natron with. ``natron-lldb.sh`` also works for *NatronRen
 
 Tips
 ----
+
+- Call the GUI functions (:meth:`saveScreenshot<NatronGui.GuiApp.saveScreenshot>`, the
+  :doc:`PyViewer<PythonReference/NatronGui/PyViewer>` input functions,
+  :meth:`processEvents<NatronGui.GuiApp.processEvents>`...) from the main thread: from the
+  script, a timer or a GUI callback. In render threads (e.g. the *afterFrameRendered* callback)
+  they do nothing and return False.
+- :meth:`natron.quit()<NatronEngine.PyCoreApplication.quit>` removes the auto-saves of the
+  projects, and it waits until Natron has finished loading and no nested event loop is
+  running, so it can be called from anywhere in the script.
 
 - Wait for the viewer with :meth:`waitForRender<NatronGui.PyViewer.waitForRender>` after
   changing the graph, the view or a parameter, before checking values or saving a screenshot.

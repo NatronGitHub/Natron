@@ -63,7 +63,7 @@ add_test(NAME Tests COMMAND Tests)
 if(Python3_Interpreter_FOUND)
     add_test(NAME GuiSmokeTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_gui_smoke_test.py $<TARGET_FILE:Natron>)
-    set_tests_properties(GuiSmokeTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 600)
+    set_tests_properties(GuiSmokeTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 960)
 endif()
 
 # Not part of a normal install. The installer scripts install it separately

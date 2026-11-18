@@ -34,7 +34,8 @@ Usage: run_gui_smoke_test.py /path/to/Natron [--keep] [--strict-exit] [--debugge
    like openfx-io), Natron may crash at exit, after natron.quit() (issue #1253). That
    crash is reported, and only fails the test with --strict-exit.
 
-Each Natron run is limited to 300 seconds.
+Each Natron run is limited to 300 seconds; on timeout, its process group is killed.
+Runs 1 and 2 also check that the auto-save of the project is removed when quitting.
 --debugger runs Natron under lldb with natron-lldb.sh (next to this script): a crash
 prints the backtrace of all threads and gives the exit status 139, and macOS does not
 show its "quit unexpectedly" dialog. The environment variable NATRON_TEST_WRAPPER may
@@ -50,6 +51,7 @@ It never takes a screen-level screenshot: only Natron's widgets are captured.
 import os
 import shlex
 import shutil
+import signal
 import struct
 import subprocess
 import sys
@@ -85,19 +87,39 @@ def writePNG(path, width=320, height=240):
 def hasDisplay():
     if sys.platform.startswith("linux") or sys.platform.startswith("freebsd"):
         return bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
-    return True  # macOS and Windows: assume a logged-in session
+    if sys.platform == "darwin":
+        # "Aqua" in a GUI login session; "Background" or "System" e.g. over ssh, where the
+        # process cannot reach the WindowServer
+        try:
+            out = subprocess.check_output(["launchctl", "managername"], stderr=subprocess.DEVNULL)
+            return out.decode(errors="replace").strip() == "Aqua"
+        except (OSError, subprocess.CalledProcessError):
+            return False
+    return True  # Windows: assume a logged-in session
 
 
-# The project has unsaved changes (a node was created) when Natron quits
+# The project has unsaved changes (a node was created) when Natron quits. The script waits
+# for the auto-save of the project (--setting autoSaveDelay=1), then quits, so that the
+# test can check that the auto-save was removed.
 QUIT_SCRIPT = """
+import os
+import NatronEngine
 from NatronGui import natron
 try:
     from PySide2 import QtCore, QtWidgets
 except ImportError:
     from PySide6 import QtCore, QtWidgets
 
+autosaves = os.path.join(QtCore.QStandardPaths.writableLocation(QtCore.QStandardPaths.AppLocalDataLocation), "Autosaves")
+waited = [0]
+
+def autosaveFiles():
+    try:
+        return [f for f in os.listdir(autosaves) if ".autosave" in f]
+    except OSError:
+        return []
+
 def quit():
-    natron.getGuiInstance(0).createNode("fr.inria.built-in.Viewer")
     if MODE == "close":
         for w in QtWidgets.QApplication.topLevelWidgets():
             if isinstance(w, QtWidgets.QMainWindow) and w.isVisible():
@@ -106,7 +128,29 @@ def quit():
     else:
         natron.quit(42)
 
-QtCore.QTimer.singleShot(200, quit)
+def waitForAutosave():
+    waited[0] += 1
+    found = [f for f in autosaveFiles() if f not in before]
+    if found or waited[0] > 50:
+        with open(os.path.join(OUTDIR, "autosave_%s.txt" % MODE), "w") as f:
+            f.write(autosaves + "\\n" + "\\n".join(found) + "\\n")
+        quit()
+    else:
+        QtCore.QTimer.singleShot(200, waitForAutosave)
+
+def start():
+    app = natron.getGuiInstance(0)
+    app.createNode("fr.inria.built-in.Viewer")
+    # changing a parameter triggers the auto-save
+    roto = app.createNode("fr.inria.built-in.Roto")
+    for param in roto.getParams():
+        if isinstance(param, NatronEngine.DoubleParam):
+            param.set(param.get() + 0.25)
+            break
+    waitForAutosave()
+
+before = autosaveFiles()
+QtCore.QTimer.singleShot(200, start)
 """
 
 WRAPPER = []
@@ -116,11 +160,36 @@ def run(cmd, env):
     cmd = WRAPPER + cmd
     print("Running: " + " ".join(cmd))
     sys.stdout.flush()
+    # in its own process group, so that a timeout kills Natron too, not only the wrapper
+    p = subprocess.Popen(cmd, env=env, start_new_session=True)
     try:
-        return subprocess.call(cmd, env=env, timeout=300)
+        return p.wait(timeout=300)
     except subprocess.TimeoutExpired:
-        print("timeout")
+        print("timeout: killing the process group")
+        try:
+            os.killpg(p.pid, signal.SIGKILL)
+        except OSError:
+            pass
+        p.wait()
         return None
+
+
+def checkAutosaves(outDir, mode):
+    """The auto-save that appeared while the script ran must have been removed at quit."""
+    path = os.path.join(outDir, "autosave_%s.txt" % mode)
+    if not os.path.isfile(path):
+        print("FAILED: the %s script did not finish" % mode)
+        return False
+    with open(path) as f:
+        lines = [l for l in f.read().split("\n") if l]
+    autosaves, found = lines[0], lines[1:]
+    if not found:
+        print("note: no auto-save was written before quitting (%s)" % mode)
+    left = [f for f in found if os.path.exists(os.path.join(autosaves, f))]
+    if left:
+        print("FAILED: auto-saves left in %s after quitting (%s): %s" % (autosaves, mode, ", ".join(left)))
+        return False
+    return True
 
 
 def main(argv):
@@ -151,12 +220,15 @@ def main(argv):
         for mode, expected in (("quit", 42), ("close", 0)):
             quitScript = os.path.join(outDir, "quit_%s.py" % mode)
             with open(quitScript, "w") as f:
-                f.write("MODE = %r\n" % mode + QUIT_SCRIPT)
+                f.write("MODE = %r\nOUTDIR = %r\n" % (mode, outDir) + QUIT_SCRIPT)
             status = run([natronBin, "--no-dialogs", "--no-settings",
-                          "--setting", "useStdOFXPluginsLocation=False", quitScript], env)
+                          "--setting", "useStdOFXPluginsLocation=False",
+                          "--setting", "autoSaveDelay=1", quitScript], env)
             print("Natron exited with status %s" % status)
             if status != expected:
                 print("FAILED: %s should exit with status %d" % ("natron.quit(42)" if mode == "quit" else "closing the main window", expected))
+                return 1
+            if not checkAutosaves(outDir, mode):
                 return 1
 
         # 3. the smoke test
