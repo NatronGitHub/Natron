@@ -69,6 +69,20 @@ The SDK may be updated by pulling the last modifications to the script and re-ex
 
 The release scripts (`tools/jenkins/launchBuildMain.sh`) build Natron with CMake, from the SDK; extra CMake options go in `NATRON_EXTRA_CMAKE_FLAGS`. On RB-2.6, `NATRON_BUILD_SYSTEM=qmake` selects the deprecated qmake build instead (see `Documentation/source/maintainers/building.rst`, "Release builds").
 
+### Runtime requirements of the Linux binaries
+
+The official Linux binaries are built on Rocky Linux 8 with the Natron SDK. They bundle the SDK libraries: Qt, Python, Boost, OpenImageIO, OpenColorIO, OpenEXR, FFmpeg, LibRaw, and so on. They never bundle the following system libraries, which must be installed on the system that runs Natron:
+
+- glibc 2.28 or later: libc, libm, libdl, libpthread, librt and ld-linux.
+- libstdc++ and libgcc_s from GCC 8.5 or later. On Rocky Linux 8 these are the system ones. Natron may be compiled with a newer GCC, from `gcc-toolset`, but the libstdc++ symbols that are newer than GCC 8.5 are then linked statically, from `libstdc++_nonshared.a`, so the binaries only need the system libstdc++.
+- libgomp (OpenMP runtime), from GCC 8.5 or later. It is a separate package (`libgomp` on RHEL/Rocky, `libgomp1` on Debian/Ubuntu). Desktop systems have it, but minimal images such as the `rockylinux:8` container image don't.
+- libGL from GLVND (libGL, libEGL, libGLX, libGLdispatch), and an OpenGL driver.
+- The X11 client libraries, at least as recent as Rocky Linux 8's: libX11 1.6.8, libxcb 1.13 and libxkbcommon 0.9. Also libdrm.
+
+`tools/jenkins/build-Linux-installer.sh` checks this. It fails in two cases:
+- one of these libraries would be bundled;
+- a bundled binary needs a symbol version newer than Rocky Linux 8 provides, as found by `objdump -p` (Version References). The limits are GLIBC_2.28, GLIBCXX_3.4.25, CXXABI_1.3.11, GCC_7.0.0, GOMP_5.0 and OMP_5.0.
+
 ### Environment to use the Natron SDK
 
 Once the SDK is built, you should set your environment in the shell from which you execute or test Natron, to make sure that the Natron SDK is preferred over any other system library:
