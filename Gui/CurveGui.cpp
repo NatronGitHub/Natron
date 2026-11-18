@@ -338,7 +338,7 @@ CurveGui::drawCurve(int curveIndex,
             keyframes.insert( KeyFrame(*it, i) );
         }
     } else {
-        keyframes = getInternalCurve()->getKeyFrames_mt_safe();
+        keyframes = getKeyFrames();
         isPeriodic = getInternalCurve()->isCurvePeriodic();
         parametricRange = getInternalCurve()->getXRange();
     }
@@ -598,7 +598,8 @@ CurveGui::isYComponentMovable() const
 KeyFrameSet
 CurveGui::getKeyFrames() const
 {
-    return getInternalCurve()->getKeyFrames_mt_safe();
+    // the keyframes of string curves are shown with their index as value, see Curve::getValueAt()
+    return getInternalCurve()->getKeyFramesForDisplay_mt_safe();
 }
 
 KnobCurveGui::KnobCurveGui(CurveWidget *curveWidget,

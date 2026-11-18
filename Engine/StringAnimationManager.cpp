@@ -31,7 +31,7 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QMutex>
+#include <QReadWriteLock>
 
 #include <ofxParam.h>
 #include <ofxhPropertySuite.h> // PropSpec
@@ -59,25 +59,29 @@ public:
 
     double valueFromString(const std::string & v)
     {
-        QMutexLocker l(&_mutex);
-        std::map<std::string, int>::const_iterator found = _ids.find(v);
-
-        if ( found != _ids.end() ) {
-            return found->second;
+        {
+            QReadLocker l(&_lock);
+            std::map<std::string, int>::const_iterator found = _ids.find(v);
+            if ( found != _ids.end() ) {
+                return found->second;
+            }
         }
-        int id = (int)_strings.size();
-        _strings.push_back(v);
-        _ids.insert( std::make_pair(v, id) );
+        QWriteLocker l(&_lock);
+        // another thread may have added it in-between
+        std::pair<std::map<std::string, int>::iterator, bool> ret = _ids.insert( std::make_pair( v, (int)_strings.size() ) );
+        if (ret.second) {
+            _strings.push_back(v);
+        }
 
-        return id;
+        return ret.first->second;
     }
 
     bool stringFromValue(double value,
                          std::string* ret) const
     {
-        // The value of a string keyframe is an integer, but string curves round their value (see Curve::getValueAt())
+        // The value of a string keyframe is an integer
         double id = std::floor(value + 0.5);
-        QMutexLocker l(&_mutex);
+        QReadLocker l(&_lock);
 
         if ( !(id >= 0) || ( id >= (double)_strings.size() ) ) { // also catches NaN
             return false;
@@ -89,13 +93,13 @@ public:
 
 private:
     StringKeyFrameTable()
-        : _mutex()
+        : _lock()
         , _ids()
         , _strings()
     {
     }
 
-    mutable QMutex _mutex;
+    mutable QReadWriteLock _lock;
     std::map<std::string, int> _ids;
     std::vector<std::string> _strings;
 };

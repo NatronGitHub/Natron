@@ -248,6 +248,8 @@ public:
     /*
      * The interpolated curve value.
      * An empty curve has a value of zero everywhere/
+     * The value of a string curve is the index of the keyframe at or before t (0 before the first keyframe),
+     * see getKeyFramesForDisplay_mt_safe().
      */
     double getValueAt(double t, bool clamp = true) const WARN_UNUSED_RETURN;
 
@@ -256,6 +258,21 @@ public:
     double getIntegrateFromTo(double t1, double t2) const WARN_UNUSED_RETURN;
 
     KeyFrameSet getKeyFrames_mt_safe() const WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Same as getKeyFrames_mt_safe(), except that the value of each keyframe of a string curve is its index.
+     * The keyframe values of a string curve reference strings (see StringAnimationManager): they are only
+     * meaningful within the process, and must not be shown to users or saved.
+     **/
+    KeyFrameSet getKeyFramesForDisplay_mt_safe() const WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Find, in a single query, the last keyframe at or before time and the first keyframe after time.
+     * @param prev If not NULL, receives the keyframe at or before time, if any.
+     * @param next If not NULL, receives the first keyframe after time, if any; *hasNext tells whether there is one.
+     * @returns the index of the keyframe at or before time, or -1 if there is none.
+     **/
+    int getKeyFramesAround(double time, KeyFrame* prev, KeyFrame* next, bool* hasNext) const WARN_UNUSED_RETURN;
 
     void clearKeyFrames();
 

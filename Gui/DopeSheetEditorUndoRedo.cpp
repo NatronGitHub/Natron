@@ -968,6 +968,19 @@ DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
             KnobIPtr knob = knobContext->getInternalKnob();
             knob->beginChanges();
 
+            // The value of a string keyframe references a string (see StringAnimationManager): string keyframes
+            // can only be pasted to string parameters, and other keyframes cannot be pasted to string parameters.
+            {
+                DSKnobPtr srcContext = _keys[i].context.lock();
+                KnobIPtr srcKnob = srcContext ? srcContext->getInternalKnob() : KnobIPtr();
+                bool srcIsString = dynamic_cast<AnimatingKnobStringHelper*>( srcKnob.get() ) != NULL;
+                bool dstIsString = dynamic_cast<AnimatingKnobStringHelper*>( knob.get() ) != NULL;
+                if (!srcKnob || srcIsString != dstIsString) {
+                    knob->endChanges();
+                    continue;
+                }
+            }
+
             double keyTime = _keys[i].key.getTime();
             double setTime = _pasteRelativeToRefTime ? keyTime - _keys[_refKeyindex].key.getTime() + _refTime : keyTime;
 

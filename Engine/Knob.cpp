@@ -6452,16 +6452,14 @@ AnimatingKnobStringHelper::getStringFromCurve(const Curve& curve,
                                               std::string* ret) const
 {
     // Do not interpolate the keyframe values, which are not numbers (see StringAnimationManager)
-    KeyFrame key;
-    if ( curve.getKeyFrameWithTime(time, &key) ) {
-        return stringFromKeyFrameValue(key.getValue(), ret);
-    }
     KeyFrame prev, next;
-    bool hasPrev = curve.getPreviousKeyframeTime(time, &prev);
-    bool hasNext = curve.getNextKeyframeTime(time, &next);
-    if (!hasPrev) {
+    bool hasNext = false;
+    if (curve.getKeyFramesAround(time, &prev, &next, &hasNext) < 0) {
         // before the first keyframe, or no keyframe
         return hasNext && stringFromKeyFrameValue(next.getValue(), ret);
+    }
+    if (prev.getTime() == time) {
+        return stringFromKeyFrameValue(prev.getValue(), ret);
     }
     if ( hasNext && _animation->hasCustomInterp() ) {
         // in-between 2 keyframes
@@ -6534,6 +6532,9 @@ AnimatingKnobStringHelper::saveAnimation(std::map<int, std::string>* keyframes) 
     for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
         std::string v;
         stringFromKeyFrameValue(it->getValue(), &v);
+        // The project format stores integer times, as before: keyframes at fractional times are truncated, and
+        // if several keyframes have the same integer part, only the first one is saved. loadAnimation() gives
+        // the others the string of the last saved time at or before their time.
         keyframes->insert( std::make_pair( (int)it->getTime(), v ) );
     }
 }
@@ -6545,17 +6546,9 @@ AnimatingKnobStringHelper::getCurveForSerialization(int dimension,
     CurvePtr internalCurve = getCurve(ViewIdx(0), dimension, true /*byPassMaster*/);
 
     assert(internalCurve);
-    KeyFrameSet keys = internalCurve->getKeyFrames_mt_safe();
-    KeyFrameSet indexKeys;
-    int index = 0;
-    for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it, ++index) {
-        // Keyframe values are only valid within this process (see StringAnimationManager). Save the index of
-        // the keyframe, which is what older versions read from projects.
-        KeyFrame k(*it);
-        k.setValue(index);
-        indexKeys.insert(k);
-    }
-    curve->setKeyframes(indexKeys, false);
+    // Keyframe values are only valid within this process (see StringAnimationManager). Save the index of
+    // each keyframe, which is what older versions read from projects.
+    curve->setKeyframes(internalCurve->getKeyFramesForDisplay_mt_safe(), false);
 }
 
 /***************************KNOB EXPLICIT TEMPLATE INSTANTIATION******************************************/

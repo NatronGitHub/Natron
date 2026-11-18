@@ -487,6 +487,8 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,
         }
 
         _imp->ySpinbox->setValue(_imp->originalY);
+        // e.g. the keyframe values of string curves cannot be edited (see StringAnimationManager)
+        _imp->ySpinbox->setEnabled( key->curve->isYComponentMovable() );
         QObject::connect( _imp->ySpinbox, SIGNAL(valueChanged(double)), this, SLOT(onYSpinBoxValueChanged(double)) );
         QObject::connect( _imp->ySpinbox, SIGNAL(returnPressed()), this, SLOT(onEditingFinished()) );
         _imp->boxLayout->addWidget(_imp->ySpinbox);

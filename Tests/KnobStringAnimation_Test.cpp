@@ -230,6 +230,39 @@ TEST_F(KnobStringAnimationTest, OverwriteKey)
     EXPECT_EQ( "b", at(_knob, 10.) );
 }
 
+// The values of string keyframes reference strings and are not shown to users: Param.curve() (and the curve
+// editor) return the index of the keyframe at or before the time, as before.
+TEST_F(KnobStringAnimationTest, CurveValueIsKeyFrameIndex)
+{
+    // intern other strings first, so that the internal values differ from the indices
+    setKey(_knob, 100., "zz");
+    setKey(_knob, 101., "yy");
+    deleteKey(_knob, 100.);
+    deleteKey(_knob, 101.);
+
+    setKey(_knob, 0., "a");
+    setKey(_knob, 10., "c");
+    setKey(_knob, 5., "b");
+    setKey(_knob, 20., "a");
+    const double times[] = {-5., 0., 3., 5., 7., 10., 15., 20., 30.};
+    const double expected[] = {0., 0., 0., 1., 1., 2., 2., 3., 3.};
+    for (int i = 0; i < 9; ++i) {
+        EXPECT_EQ( expected[i], _knob->getRawCurveValueAt(times[i], ViewIdx(0), 0) ) << "t=" << times[i];
+        EXPECT_EQ( expected[i], _knob->getCurve(ViewIdx(0), 0)->getValueAt(times[i], false) ) << "t=" << times[i];
+    }
+    KeyFrameSet keys = _knob->getCurve(ViewIdx(0), 0)->getKeyFramesForDisplay_mt_safe();
+    ASSERT_EQ( 4U, keys.size() );
+    int i = 0;
+    for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it, ++i) {
+        EXPECT_EQ( (double)i, it->getValue() );
+    }
+
+    // a keyframe value that does not reference a string is rejected
+    EXPECT_FALSE( _knob->setKeyFrame(KeyFrame(7., 1e9), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited) );
+    EXPECT_FALSE( _knob->setKeyFrame(KeyFrame(7., -1.), ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited) );
+    EXPECT_EQ( 4, keyCount(_knob) );
+}
+
 // Undo/redo and copy/paste re-add keyframes with their value: a keyframe value must not depend on the other
 // keyframes of the curve, nor on the knob.
 TEST_F(KnobStringAnimationTest, ReAddKeyFrame)

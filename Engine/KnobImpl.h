@@ -853,8 +853,8 @@ KnobStringBase::getRawCurveValueAt(double time,
     CurvePtr curve  = getCurve(view, dimension, true);
 
     if ( curve && (curve->getKeyFramesCount() > 0) ) {
-        //getValueAt already clamps to the range for us
-        return curve->getValueAt(time, false); //< no clamping to range!
+        // the index of the keyframe at or before time (see Curve::getValueAt())
+        return curve->getValueAt(time, false);
     }
 
     return 0;
@@ -2213,6 +2213,13 @@ Knob<T>::setKeyFrame(const KeyFrame& key,
                      int dimension,
                      ValueChangedReasonEnum reason)
 {
+    const AnimatingKnobStringHelper* isString = dynamic_cast<const AnimatingKnobStringHelper*>(this);
+    std::string str;
+    if ( isString && !isString->stringFromKeyFrameValue(key.getValue(), &str) ) {
+        // the value of a string keyframe must reference a string (see StringAnimationManager)
+        return false;
+    }
+
     CurvePtr curve;
     KnobHolder* holder = getHolder();
     bool useGuiCurve = ( !holder || !holder->isSetValueCurrentlyPossible() ) && getKnobGuiPointer();

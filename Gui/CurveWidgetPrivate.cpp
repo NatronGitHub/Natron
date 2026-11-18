@@ -86,6 +86,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
     , _mustSetDragOrientation(false)
     , _mouseDragOrientation()
     , _keyFramesClipBoard()
+    , _keyFramesClipBoardIsString()
     , _selectionRectangle()
     , _dragStartPoint()
     , _drawSelectedKeyFramesBbox(false)

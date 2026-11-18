@@ -1742,6 +1742,15 @@ CurveWidget::deleteSelectedKeyFrames()
     update();
 }
 
+// The keyframe values of string curves reference strings (see StringAnimationManager)
+static bool
+isStringCurve(const CurveGuiPtr& curve)
+{
+    KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( curve.get() );
+
+    return isKnobCurve && dynamic_cast<AnimatingKnobStringHelper*>( isKnobCurve->getInternalKnob().get() );
+}
+
 void
 CurveWidget::copySelectedKeyFramesToClipBoard()
 {
@@ -1749,9 +1758,20 @@ CurveWidget::copySelectedKeyFramesToClipBoard()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     _imp->_keyFramesClipBoard.clear();
+    _imp->_keyFramesClipBoardIsString.clear();
     for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
+        bool isString = isStringCurve(it->first);
         for (std::list<KeyPtr>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            _imp->_keyFramesClipBoard.push_back( (*it2)->key );
+            KeyFrame k = (*it2)->key;
+            if (isString) {
+                // the selected keyframes hold their index as value (see CurveGui::getKeyFrames()): copy the
+                // keyframe, which references its string
+                if ( !it->first->getInternalCurve()->getKeyFrameWithTime(k.getTime(), &k) ) {
+                    continue;
+                }
+            }
+            _imp->_keyFramesClipBoard.push_back(k);
+            _imp->_keyFramesClipBoardIsString.push_back(isString);
         }
     }
 }
@@ -1774,8 +1794,20 @@ CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve()
 
         return;
     }
+    // string keyframes can only be pasted to string curves, and other keyframes to other curves
+    bool isString = isStringCurve(curve);
+    std::vector<KeyFrame> keys;
+    assert( _imp->_keyFramesClipBoard.size() == _imp->_keyFramesClipBoardIsString.size() );
+    for (std::size_t i = 0; i < _imp->_keyFramesClipBoard.size(); ++i) {
+        if (_imp->_keyFramesClipBoardIsString[i] == isString) {
+            keys.push_back(_imp->_keyFramesClipBoard[i]);
+        }
+    }
+    if ( keys.empty() ) {
+        return;
+    }
     //this function will call update() for us
-    pushUndoCommand( new AddKeysCommand(this, curve, _imp->_keyFramesClipBoard) );
+    pushUndoCommand( new AddKeysCommand(this, curve, keys) );
 }
 
 void

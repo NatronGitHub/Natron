@@ -26,6 +26,7 @@
 #include "Curve.h"
 
 #include <algorithm>
+#include <iterator>
 #include <cassert>
 #include <limits>
 #include <stdexcept>
@@ -885,6 +886,36 @@ interParams(const KeyFrameSet &keyFrames,
     }
 }
 
+/// index of the last keyframe at or before time, or -1
+static int
+keyFramesAround(const KeyFrameSet& keyFrames,
+                double time,
+                KeyFrame* prev,
+                KeyFrame* next,
+                bool* hasNext)
+{
+    // the first keyframe after time
+    KeyFrameSet::const_iterator upper = keyFrames.upper_bound( KeyFrame(time, 0.) );
+
+    if (next) {
+        assert(hasNext);
+        *hasNext = ( upper != keyFrames.end() );
+        if (*hasNext) {
+            *next = *upper;
+        }
+    }
+    if ( upper == keyFrames.begin() ) {
+        return -1;
+    }
+    KeyFrameSet::const_iterator lower = upper;
+    --lower;
+    if (prev) {
+        *prev = *lower;
+    }
+
+    return (int)std::distance(keyFrames.begin(), lower);
+}
+
 double
 Curve::getValueAt(double t,
                   bool doClamp) const
@@ -901,6 +932,13 @@ Curve::getValueAt(double t,
         // There is no special case for a curve with one (1) keyframe: the result is a linear curve before and after the keyframe.
     //} else if (_imp->keyFrames.size() == 1) {
     //    return _imp->keyFrames.begin()->getValue();
+    }
+
+    if (_imp->type == CurvePrivate::eCurveTypeString) {
+        // the keyframe values reference strings and cannot be interpolated: see getKeyFramesForDisplay_mt_safe()
+        int index = keyFramesAround(_imp->keyFrames, t, NULL, NULL, NULL);
+
+        return index < 0 ? 0. : (double)index;
     }
 
     double v;
@@ -1272,6 +1310,36 @@ Curve::getKeyFrames_mt_safe() const
     QMutexLocker l(&_imp->_lock);
 
     return _imp->keyFrames;
+}
+
+KeyFrameSet
+Curve::getKeyFramesForDisplay_mt_safe() const
+{
+    QMutexLocker l(&_imp->_lock);
+
+    if (_imp->type != CurvePrivate::eCurveTypeString) {
+        return _imp->keyFrames;
+    }
+    KeyFrameSet ret;
+    int index = 0;
+    for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it, ++index) {
+        KeyFrame k(*it);
+        k.setValue(index);
+        ret.insert(ret.end(), k);
+    }
+
+    return ret;
+}
+
+int
+Curve::getKeyFramesAround(double time,
+                          KeyFrame* prev,
+                          KeyFrame* next,
+                          bool* hasNext) const
+{
+    QMutexLocker l(&_imp->_lock);
+
+    return keyFramesAround(_imp->keyFrames, time, prev, next, hasNext);
 }
 
 KeyFrameSet::iterator
