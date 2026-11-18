@@ -304,7 +304,6 @@ elseif(APPLE)
 elseif(WIN32)
     enable_language(RC)
     add_compile_definitions(WINDOWS WIN32 _UNICODE UNICODE NOMINMAX QHTTP_SERVER_STATIC)
-    add_compile_definitions(COMPILED_FROM_DSP XML_STATIC) # for expat
     if (NOT MSVC)
         add_compile_options(-municode)
         if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -334,7 +333,6 @@ add_subdirectory(libs)
 # ofxhBinary.cpp). HostSupport/HostSupport.pro is the qmake equivalent: keep them in sync.
 # These normal variables intentionally force openfx's options: a user's -DOFX_*=... has no effect.
 set(OFX_BUILD_HOSTSUPPORT ON)
-set(OFX_USE_SYSTEM_EXPAT ON)
 set(OFX_EXTENSIONS_NATRON ON)
 set(OFX_EXTENSIONS_NUKE ON)
 set(OFX_EXTENSIONS_TUTTLE ON)

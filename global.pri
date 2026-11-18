@@ -315,7 +315,7 @@ win32 {
   #ofx needs WINDOWS def
   #microsoft compiler needs _MBCS to compile with the multi-byte character set.
   #DEFINES += _MBCS
-  DEFINES += WINDOWS COMPILED_FROM_DSP XML_STATIC  NOMINMAX
+  DEFINES += WINDOWS NOMINMAX
   DEFINES += _UNICODE UNICODE
 
   DEFINES += QHTTP_SERVER_STATIC
