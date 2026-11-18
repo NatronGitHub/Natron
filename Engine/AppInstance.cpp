@@ -305,6 +305,7 @@ AppInstance::checkForNewVersion() const
     QObject::connect( downloader, SIGNAL(error()), this, SLOT(newVersionCheckError()) );
 
     ///make the call blocking
+    AppManager::NestedEventLoopRAII nestedLoop; // natron.quit() waits for the end of this loop
     QEventLoop loop;
 
     connect( downloader->getReply(), SIGNAL(finished()), &loop, SLOT(quit()) );

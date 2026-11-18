@@ -335,6 +335,21 @@ public:
     /// True while the interactive Python interpreter of the -t option is running
     bool isPythonInterpreterRunning() const;
 
+    /**
+     * @brief Declares a nested event loop (QEventLoop::exec(), processEvents() called from
+     * Python...) for its lifetime. natron.quit() waits until there is none to close the projects,
+     * because the code that runs the nested loop would use the deleted objects afterwards.
+     **/
+    class NestedEventLoopRAII
+    {
+    public:
+        NestedEventLoopRAII();
+        ~NestedEventLoopRAII();
+    };
+
+    /// The number of nested event loops currently running, see NestedEventLoopRAII
+    int getNestedEventLoopsCount() const;
+
     virtual void setUndoRedoStackLimit(int /*limit*/)
     {
     }

@@ -42,7 +42,14 @@ counts as dismissed. The answers never block and never destroy data:
   configuration) only if the selected one is unusable, No otherwise; the recovery of an
   auto-saved project answers Yes (restore it: No would delete it); the new default appearance
   and the new default shortcuts are not applied (No); the question about checking for updates
-  is not answered, so it is asked again at the next launch without *--no-dialogs*.
+  is not answered, so it is asked again at the next launch without *--no-dialogs*;
+- custom modal dialogs (:doc:`PyModalDialog<PythonReference/NatronGui/PyModalDialog>`, group
+  parameters shown as a dialog) count as rejected, and the error log is printed to the
+  standard error instead of opening the log window.
+
+None of these answers is saved in the preferences: e.g. when the OpenColorIO configuration
+check switches to the default configuration, it is only for this session, and the questions
+about the new appearance or shortcuts are asked again at the next launch.
 
 The main window is shown without taking the focus.
 This is meant to drive the graphical interface from scripts and tests, see :ref:`guiTesting`.

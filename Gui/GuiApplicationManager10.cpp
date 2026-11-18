@@ -477,7 +477,10 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
         GuiAppInstancePtr app = guiApps.front();
         if (app) {
             triedInstances.insert(app);
-            app->getGui()->abortProject(true, warnUserForSave, true);
+            Gui* gui = app->getGui();
+            if (gui) { // null if the Gui was already closed and deleted
+                gui->abortProject(true, warnUserForSave, true);
+            }
         }
 
         //refreshg ui instances
@@ -506,8 +509,35 @@ GuiApplicationManager::requestQuit(int exitCode)
     // or a knob that would be destroyed. Close them once the event loop is back, without
     // asking to save. When the last one is closed, the event loop exits.
     QTimer::singleShot( 0, this, [this]() {
-        exitApp(false);
+        quitWhenIdle();
     } );
+}
+
+void
+GuiApplicationManager::quitWhenIdle()
+{
+    // Not while the application is loading (the script given on the command line runs during
+    // GuiAppInstance::load()), nor from a nested event loop (QEventLoop in checkForNewVersion(),
+    // processEvents() or waitForRender() called from Python, a modal dialog): the code that
+    // runs it would use the deleted projects afterwards. Try again later.
+    if ( !isLoaded() || (getNestedEventLoopsCount() > 0) || QApplication::activeModalWidget() ) {
+        QTimer::singleShot( 50, this, [this]() {
+            quitWhenIdle();
+        } );
+
+        return;
+    }
+
+    // The projects are closed without asking to save them: remove their last auto-save, as
+    // answering Discard does, or the next launch would offer to restore it.
+    const AppInstanceVec instances = getAppInstances();
+    for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        ProjectPtr project = (*it)->getProject();
+        if (project) {
+            project->removeLastAutosave();
+        }
+    }
+    exitApp(false);
 }
 
 static bool
@@ -689,7 +719,10 @@ GuiApplicationManager::loadShortcuts()
         _imp->_shortcutsChangedVersion = true;
     }
 
-    settings.setValue(QString::fromUtf8("NATRON_SHORTCUTS_DEFAULT_VERSION"), NATRON_SHORTCUTS_DEFAULT_VERSION);
+    // --no-dialogs: the question about the new default shortcuts is not shown, ask it next time
+    if ( !isDialogsDisabled() ) {
+        settings.setValue(QString::fromUtf8("NATRON_SHORTCUTS_DEFAULT_VERSION"), NATRON_SHORTCUTS_DEFAULT_VERSION);
+    }
 
 
     for (AppShortcuts::iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
@@ -1125,6 +1158,17 @@ GuiApplicationManager::notifyShortcutChanged(KeyBoundAction* action)
 void
 GuiApplicationManager::showErrorLog()
 {
+    if ( isDialogsDisabled() ) {
+        // --no-dialogs: print the log to stderr instead of showing the log window
+        std::list<LogEntry> log;
+        getErrorLog_mt_safe(&log);
+        for (std::list<LogEntry>::const_iterator it = log.begin(); it != log.end(); ++it) {
+            Dialogs::printDismissedDialog( tr("Error log").toStdString(),
+                                           ( it->context + QString::fromUtf8(": ") + it->message ).toStdString() );
+        }
+
+        return;
+    }
     hideSplashScreen();
     GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( getTopLevelInstance().get() );
     if (app) {

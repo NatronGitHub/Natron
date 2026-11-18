@@ -26,6 +26,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <atomic>
+
 #include "Global/Macros.h"
 
 #include <list>
@@ -108,8 +110,9 @@ public:
     //if this app is background, see the ProcessInputChannel def
     bool _loaded; //< true when the first instance is completely loaded.
     bool dialogsDisabled; //< --no-dialogs was given
-    bool quitRequested; //< natron.quit() was called
-    int requestedExitCode; //< the exit code given to natron.quit()
+    std::atomic<bool> quitRequested; //< natron.quit() was called
+    std::atomic<int> requestedExitCode; //< the exit code given to natron.quit()
+    std::atomic<int> nestedEventLoops; //< see AppManager::NestedEventLoopRAII
     bool pythonInterpreterRunning; //< Py_Main() of the -t option is running
     QString _binaryPath; //< the path to the application's binary
     U64 _nodesGlobalMemoryUse; //< how much memory all the nodes are using (besides the cache)

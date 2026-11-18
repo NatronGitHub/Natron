@@ -343,7 +343,7 @@ DocumentWindow::SetHkcrUserRegKey(QString key,
         }
 
         const QString title = QString::fromUtf8("Error in setting Registry values");
-        const QString text = QString::fromUtf8("registration database update failed for key '%s'.").arg(key);
+        const QString text = QString::fromUtf8("registration database update failed for key '%1'.").arg(key);
         if ( appPTR->isDialogsDisabled() ) {
             Dialogs::printDismissedDialog( title.toStdString(), text.toStdString() );
         } else {

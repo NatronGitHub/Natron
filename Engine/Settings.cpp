@@ -2151,7 +2151,10 @@ Settings::restoreSettings(bool useDefault)
         if ( _settingsExisted && (appearanceVersion < NATRON_DEFAULT_APPEARANCE_VERSION) ) {
             _defaultAppearanceOutdated = true;
             _defaultAppearanceVersion->setValue(NATRON_DEFAULT_APPEARANCE_VERSION);
-            saveSetting( _defaultAppearanceVersion.get() );
+            // --no-dialogs: the question about the new appearance is not shown, ask it next time
+            if ( !appPTR->isDialogsDisabled() ) {
+                saveSetting( _defaultAppearanceVersion.get() );
+            }
         }
 
         appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
@@ -3311,7 +3314,9 @@ Settings::doOCIOStartupCheckIfNeeded()
                                                                 StandardButtons(eStandardButtonYes | eStandardButtonNo),
                                                                 defaultButton,
                                                                 &stopAsking);
-        if (stopAsking != !docheck) {
+        // --no-dialogs: the answer was not given by the user, apply it to this session only
+        const bool saveAnswer = !appPTR->isDialogsDisabled();
+        if ( saveAnswer && (stopAsking != !docheck) ) {
             _ocioStartupCheck->setValue(!stopAsking);
             saveSetting( _ocioStartupCheck.get() );
         }
@@ -3319,7 +3324,9 @@ Settings::doOCIOStartupCheckIfNeeded()
         if (reply == eStandardButtonYes) {
             if (defaultIndex != -1) {
                 _ocioConfigKnob->setValue(defaultIndex);
-                saveSetting( _ocioConfigKnob.get() );
+                if (saveAnswer) {
+                    saveSetting( _ocioConfigKnob.get() );
+                }
             } else {
                 Dialogs::warningDialog( "OCIO config", tr("The %2 OCIO config could not be found.\n"
                                                           "This is probably because you're not using the OpenColorIO-Configs folder that should "

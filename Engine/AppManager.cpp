@@ -2644,6 +2644,22 @@ AppManager::isPythonInterpreterRunning() const
     return _imp->pythonInterpreterRunning;
 }
 
+AppManager::NestedEventLoopRAII::NestedEventLoopRAII()
+{
+    ++appPTR->_imp->nestedEventLoops;
+}
+
+AppManager::NestedEventLoopRAII::~NestedEventLoopRAII()
+{
+    --appPTR->_imp->nestedEventLoops;
+}
+
+int
+AppManager::getNestedEventLoopsCount() const
+{
+    return _imp->nestedEventLoops;
+}
+
 int
 AppManager::exec()
 {
