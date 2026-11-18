@@ -68,7 +68,10 @@ struct CurvePrivate
 
     bool isParametric;
     bool isPeriodic;
-    bool mustRefreshDerivatives; // non-finite values were replaced when loading (see CurveSerialization.h)
+    // non-finite values were replaced when loading (see CurveSerialization.h), and the
+    // derivatives must be recomputed by the next Curve::clone() from this curve, which clears it.
+    // mutable: clone() clears it in the source curve.
+    mutable bool mustRefreshDerivatives;
 
     CurvePrivate()
         : keyFrames()

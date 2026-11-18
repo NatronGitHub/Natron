@@ -46,7 +46,8 @@ GCC_DIAG_ON(unused-parameter)
 // clang-format on
 #endif
 
-#include <cstdlib> // strtod
+#include <locale>
+#include <sstream>
 #include <string>
 #include <type_traits>
 
@@ -75,9 +76,34 @@ saveFinite(Archive & ar,
     ar & ::boost::serialization::make_nvp(name, v);
 }
 
+// Parse a number written by an XML archive. The stream uses the "C" locale, as the
+// archive does, so the result doesn't depend on the process locale (strtod() would
+// read "556.568" as 556 after a Python script called locale.setlocale(LC_ALL, "") on a
+// French or German system). The whole string must be a number: "nan", "inf" or the
+// old MSVCRT "1.#QNAN" fail, and are reported as such.
+inline bool
+parseDouble(const std::string& s,
+            double* v)
+{
+    thread_local std::istringstream iss = [] {
+        std::istringstream i;
+        i.imbue( std::locale::classic() );
+        return i;
+    }();
+    iss.clear();
+    iss.str(s);
+    iss >> *v;
+    if ( iss.fail() ) {
+        return false;
+    }
+    iss >> std::ws;
+
+    return iss.eof() && MathUtils::isFinite(*v);
+}
+
 // Read a value that may be "nan" or "inf" in an XML archive (xml_iarchive fails on
-// them with "input stream error"): read the text and parse it. A non-finite value
-// is replaced by 0 and counted in nonFiniteValuesRead.
+// them with "input stream error"): read the text and parse it. A value that isn't a
+// finite number is replaced by 0 and counted in nonFiniteValuesRead.
 template<class Archive>
 void
 loadFinite(Archive & ar,
@@ -87,9 +113,7 @@ loadFinite(Archive & ar,
     if ( std::is_same<Archive, boost::archive::xml_iarchive>::value ) {
         std::string s;
         ar & ::boost::serialization::make_nvp(name, s);
-        char* end = NULL;
-        *v = std::strtod(s.c_str(), &end); // also parses nan, inf
-        if ( (end == s.c_str()) || !MathUtils::isFinite(*v) ) {
+        if ( !parseDouble(s, v) ) {
             *v = 0.;
             ++nonFiniteValuesRead;
         }

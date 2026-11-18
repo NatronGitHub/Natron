@@ -37,6 +37,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Smooth1D.h"
+#include "Global/MathUtils.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -334,16 +335,22 @@ Curve::areKeyFramesTimeClampedToIntegers() const
 void
 Curve::clone(const Curve & other)
 {
-    KeyFrameSet otherKeys = other.getKeyFrames_mt_safe();
+    // Read other's keys and flag under other's lock only, before locking this:
+    // locking both (A.clone(B) and B.clone(A) at the same time) could deadlock.
+    KeyFrameSet otherKeys;
+    bool mustRefreshDerivatives;
+    {
+        QMutexLocker lo(&other._imp->_lock);
+        otherKeys = other._imp->keyFrames;
+        mustRefreshDerivatives = other._imp->mustRefreshDerivatives;
+        // The derivatives are recomputed once, in the first curve cloned from other
+        // (usually the knob's curve, other being the temporary that was loaded).
+        other._imp->mustRefreshDerivatives = false;
+    }
     QMutexLocker l(&_imp->_lock);
 
     _imp->keyFrames.clear();
     std::transform( otherKeys.begin(), otherKeys.end(), std::inserter( _imp->keyFrames, _imp->keyFrames.begin() ), KeyFrameCloner() );
-    bool mustRefreshDerivatives;
-    {
-        QMutexLocker lo(&other._imp->_lock);
-        mustRefreshDerivatives = other._imp->mustRefreshDerivatives;
-    }
     if (mustRefreshDerivatives) {
         // other was loaded from a file with NaN values: its derivatives must be recomputed
         // with this curve's properties (e.g. periodicity)
@@ -826,7 +833,12 @@ interParams(const KeyFrameSet &keyFrames,
     assert(keyFrames.size() >= 1);
     assert( itup == keyFrames.end() || *t < itup->getTime() );
     double period = xMax - xMin;
-    if (isPeriodic && period > 0.) {
+    // the default range is unbounded, and its period (DBL_MAX - lowest()) is infinite:
+    // such a curve is not periodic
+    if ( !(period > 0.) || !MathUtils::isFinite(period) ) {
+        isPeriodic = false;
+    }
+    if (isPeriodic) {
         // If the curve is periodic, bring t back into the half-open period
         // [minKeyFrameX, minKeyFrameX + period), which starts at the first keyframe.
         // The period must be half-open: a keyframe at minKeyFrameX + period is the same
@@ -1596,7 +1608,7 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
     double period = _imp->xMax - _imp->xMin;
     assert( key != _imp->keyFrames.end() );
     if ( key == _imp->keyFrames.begin() ) {
-        if (_imp->isPeriodic && _imp->keyFrames.size() > 1 && period > 0.) {
+        if (_imp->isPeriodic && _imp->keyFrames.size() > 1 && period > 0. && MathUtils::isFinite(period)) {
             // The previous keyframe is the last one, shifted by one period.
             // Skip the keyframes that would not be strictly before tcur once shifted, e.g.
             // a keyframe at tcur + period, which is the same point as this one (see #1267).
@@ -1639,7 +1651,7 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
         ++next;
     }
     if ( next == _imp->keyFrames.end() ) {
-        if (_imp->isPeriodic && _imp->keyFrames.size() > 1 && period > 0.) {
+        if (_imp->isPeriodic && _imp->keyFrames.size() > 1 && period > 0. && MathUtils::isFinite(period)) {
             // The next keyframe is the first one, shifted by one period.
             // Skip the keyframes that would not be strictly after tcur once shifted, e.g.
             // a keyframe at tcur - period, which is the same point as this one (see #1267).
