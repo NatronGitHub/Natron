@@ -746,15 +746,25 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         node = _publicInterface->getApp()->createNode(args);
 
         // Set the filename value
+        KnobFilePtr fileKnob;
+        bool fileKnobUnchanged = false;
         if (node) {
-            KnobFilePtr fileKnob = std::dynamic_pointer_cast<KnobFile>(node->getKnobByName(kOfxImageEffectFileParamName));
+            fileKnob = std::dynamic_pointer_cast<KnobFile>(node->getKnobByName(kOfxImageEffectFileParamName));
             if (fileKnob) {
-                fileKnob->setValue(filename);
+                fileKnobUnchanged = ( fileKnob->setValue(filename) == KnobHelper::eValueChangedReturnCodeNothingChanged );
             }
         }
         {
             QMutexLocker k(&embeddedPluginMutex);
             embeddedPlugin = node;
+        }
+        // When the decoder changes (another file type), the new decoder shares the filename knob
+        // of this node, which already has the new filename: setValue() did not change it, so the
+        // new decoder did not get the instance changed action for its filename. Call it, as when
+        // the decoder is the same (see above), so that it behaves as a reader given a new file
+        // (e.g. ReadSVG centers its transform on the canvas instead of the project).
+        if (fileKnobUnchanged) {
+            node->getEffectInstance()->onKnobValueChanged_public(fileKnob.get(), eValueChangedReasonNatronInternalEdited, _publicInterface->getCurrentTime(), ViewSpec(0), true);
         }
 
         if (pluginIDKnob) {

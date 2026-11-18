@@ -286,6 +286,9 @@ TEST_F(ReadNodeOverlayTest, ReaderWithOverlay)
     KnobDoublePtr center = std::dynamic_pointer_cast<KnobDouble>( _node->getKnobByName("transformCenter") );
     ASSERT_TRUE( bool(translate) );
     ASSERT_TRUE( bool(center) );
+    // ReadSVG centers its transform on the 100x100 canvas when it gets its file.
+    EXPECT_DOUBLE_EQ( center->getValueAtTime(kTime, 0), 50. );
+    EXPECT_DOUBLE_EQ( center->getValueAtTime(kTime, 1), 50. );
     const double x0 = center->getValueAtTime(kTime, 0) + translate->getValueAtTime(kTime, 0);
     const double y0 = center->getValueAtTime(kTime, 1) + translate->getValueAtTime(kTime, 1);
     const double tx0 = translate->getValueAtTime(kTime, 0);
@@ -329,6 +332,11 @@ TEST_F(ReadNodeOverlayTest, ReaderWithOverlay)
     center = std::dynamic_pointer_cast<KnobDouble>( _node->getKnobByName("transformCenter") );
     ASSERT_TRUE( bool(translate) );
     ASSERT_TRUE( bool(center) );
+    // The new ReadSVG got the instance changed action for its file (it shares the filename knob of
+    // the Read node, which already had that value), so it centered its transform on the canvas,
+    // not on the project (the default of its normalised center parameter).
+    EXPECT_DOUBLE_EQ( center->getValueAtTime(kTime, 0), 50. );
+    EXPECT_DOUBLE_EQ( center->getValueAtTime(kTime, 1), 50. );
     const double x1 = center->getValueAtTime(kTime, 0) + translate->getValueAtTime(kTime, 0);
     const double y1 = center->getValueAtTime(kTime, 1) + translate->getValueAtTime(kTime, 1);
     EXPECT_TRUE( penDown(x1, y1) );
