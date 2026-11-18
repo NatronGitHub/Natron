@@ -279,8 +279,10 @@ and ``libs.pri``. Their defaults give a plain developer build; the installers
 ``NATRON_CUSTOM_BUILD_USER_NAME`` (empty)
    The name shown by a ``CUSTOM`` build. With ``NATRON_BUILD_CONFIG=CUSTOM``
    only, it defines ``NATRON_CUSTOM_BUILD_USER_TOKEN`` to the bare name, which
-   ``Global/Macros.h`` turns into a string. The old ``-DBUILD_USER_NAME=…``
-   still sets its initial value.
+   ``Global/Macros.h`` turns into a string, so the name can't contain a comma,
+   a quote, a backslash, a parenthesis, ``;``, ``#``, ``//`` or ``/*``:
+   CMake stops with an error. The old ``-DBUILD_USER_NAME=…`` still sets its
+   initial value.
 ``NATRON_USE_OPENMP`` (``ON`` with GCC except on macOS, ``OFF`` otherwise, as in ``libs.pri``)
    Compile the bundled ceres and openMVG, which the tracker uses, with OpenMP
    (``CERES_USE_OPENMP``, ``OPENMVG_USE_OPENMP``, ``OpenMP::OpenMP_CXX``).
