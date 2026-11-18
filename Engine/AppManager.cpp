@@ -69,6 +69,9 @@
 #ifdef Q_OS_UNIX
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h> // fcntl
+#include <signal.h> // sigaction, raise
+#include <unistd.h> // pipe, read, write
 #ifdef Q_OS_DARWIN
 #include <sys/sysctl.h>
 #include <libproc.h>
@@ -90,6 +93,7 @@
 #include <QDir>
 #include <QCoreApplication>
 #include <QSettings>
+#include <QSocketNotifier>
 #include <QThreadPool>
 #include <QTextStream>
 #include <QAbstractSocket>
@@ -148,14 +152,41 @@ AppManager* AppManager::_instance = 0;
 
 #ifdef __NATRON_UNIX__
 
+// Set by the first termination signal caught while an event loop can quit the application.
+static volatile std::sig_atomic_t shutDownSignalCaught = 0;
+// Self-pipe that wakes up the main thread, see AppManager::setUpShutDownSignalNotifier().
+// The write end is -1 when there is no event loop to quit (background mode).
+static int shutDownSignalPipe[2] = { -1, -1 };
+
 //namespace  {
+// A signal handler runs on any thread, interrupting whatever it was doing (maybe while
+// it holds a lock), so it may only call async-signal-safe functions (see signal-safety(7)).
+// Quitting the application from here crashed or deadlocked (#1253).
 static void
-handleShutDownSignal( int /*signalId*/ )
+handleShutDownSignal(int signalId)
 {
-    if (appPTR) {
-        std::cerr << "\nCaught termination signal, exiting!" << std::endl;
-        appPTR->quitApplication();
+    static const char msg[] = "\nCaught termination signal, exiting!\n";
+    ssize_t ret = ::write(STDERR_FILENO, msg, sizeof(msg) - 1);
+
+    (void)ret;
+    if ( !shutDownSignalCaught && (shutDownSignalPipe[1] != -1) ) {
+        // Let the main thread quit the application, see AppManager::onShutDownSignalReceived().
+        shutDownSignalCaught = 1;
+        const char c = 0;
+        ret = ::write(shutDownSignalPipe[1], &c, 1);
+        (void)ret;
+
+        return;
     }
+    // No event loop can quit the application (background mode, where the main thread
+    // may be rendering or running the Python interpreter), or the signal was sent again:
+    // terminate now, with the default action of the signal.
+    struct sigaction sa;
+    sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_handler = SIG_DFL;
+    sigaction(signalId, &sa, NULL);
+    raise(signalId); // delivered when the handler returns
 }
 
 static void
@@ -577,6 +608,44 @@ AppManager::quitApplication()
 }
 
 void
+AppManager::setUpShutDownSignalNotifier()
+{
+#ifdef __NATRON_UNIX__
+    // Only an event loop can quit the application on a termination signal: in background
+    // mode, the main thread doesn't run one, and handleShutDownSignal() terminates.
+    if ( isBackground() || (shutDownSignalPipe[0] != -1) ) {
+        return;
+    }
+    int fds[2];
+    if (::pipe(fds) == -1) {
+        std::perror("setting up termination signal pipe");
+
+        return;
+    }
+    for (int i = 0; i < 2; ++i) {
+        ::fcntl(fds[i], F_SETFD, FD_CLOEXEC);
+        ::fcntl(fds[i], F_SETFL, ::fcntl(fds[i], F_GETFL) | O_NONBLOCK); // the handler must never block
+    }
+    shutDownSignalPipe[0] = fds[0];
+    shutDownSignalPipe[1] = fds[1];
+    QSocketNotifier* notifier = new QSocketNotifier(fds[0], QSocketNotifier::Read, this);
+    QObject::connect( notifier, SIGNAL(activated(QSocketDescriptor,QSocketNotifier::Type)), this, SLOT(onShutDownSignalReceived()) );
+#endif
+}
+
+void
+AppManager::onShutDownSignalReceived()
+{
+#ifdef __NATRON_UNIX__
+    // Called on the main thread by the event loop, after handleShutDownSignal().
+    char c;
+    while (::read(shutDownSignalPipe[0], &c, 1) > 0) {
+    }
+    quitApplication();
+#endif
+}
+
+void
 AppManager::initializeQApp(int &argc,
                            char **argv)
 {
@@ -705,6 +774,7 @@ AppManager::loadInternal(const CLArgs& cl)
 
 # ifdef __NATRON_UNIX__
     if (mustSetSignalsHandlers) {
+        setUpShutDownSignalNotifier();
         setShutDownSignal(SIGINT);   // shut down on ctrl-c
         setShutDownSignal(SIGTERM);   // shut down on killall
 #     if defined(__NATRON_LINUX__) && !defined(__FreeBSD__)

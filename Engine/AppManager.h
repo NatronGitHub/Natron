@@ -637,6 +637,8 @@ public Q_SLOTS:
 
     void onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance, void* instanceData);
 
+    void onShutDownSignalReceived();
+
 Q_SIGNALS:
 
 
@@ -691,6 +693,8 @@ private:
     virtual void afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args) OVERRIDE FINAL;
 
     bool loadInternal(const CLArgs& cl);
+
+    void setUpShutDownSignalNotifier();
 
     void loadPythonGroups();
 
