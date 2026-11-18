@@ -140,12 +140,12 @@ Use osmesa-install master: it has the LLVM and Mesa build fixes needed with rece
 **Mesa 25.0.7 (optional).** osmesa-install also builds Mesa 25.0.7 with LLVM 19.1.7, which gives thread-safe OSMesa and OpenGL 4.5 compatibility contexts to the Shadertoy plugin; Mesa 18.3.6 remains the default. It needs meson, ninja and a Python 3 with mako and PyYAML instead of Python 2.7 and gsed. Install it next to the default one, and select it for the Natron build with `OSMESA_PREFIX` and `LLVM_PREFIX`:
 
 ```Shell
-sudo port -v -N install meson ninja py310-mako py310-yaml
+sudo port -v -N install meson ninja py311-mako py311-yaml
 sudo mkdir -p /opt/osmesa-25.0.7 /opt/llvm-19.1.7
 sudo chown $(id -un):staff /opt/osmesa-25.0.7 /opt/llvm-19.1.7
 cd $NATRON_SRC/../osmesa-install/build   # the osmesa-install checkout of the step above
 env OSMESA_VERSION=25.0.7 OSMESA_PREFIX=/opt/osmesa-25.0.7 LLVM_PREFIX=/opt/llvm-19.1.7 \
-    PYTHON=/opt/local/bin/python3.10 MKJOBS=8 ../osmesa-install.sh   # builds LLVM 19.1.7 first; no sudo
+    PYTHON=/opt/local/bin/python3.11 MKJOBS=8 ../osmesa-install.sh   # builds LLVM 19.1.7 first; no sudo
 # then build Natron (step 10) with: env OSMESA_PREFIX=/opt/osmesa-25.0.7 LLVM_PREFIX=/opt/llvm-19.1.7 ...
 ```
 
@@ -221,28 +221,30 @@ sudo port -v -N install fftw-3 -gfortran fftw-3-single -gfortran
 
 # openfx-io
 sudo port -v -N install ffmpeg +gpl2 +highbitdepth +natronmini
-sudo port -v -N install openimageio +freetype +natron +opencolorio +openjpeg +python310 -python312 -python313 -python314
+sudo port -v -N install openimageio +freetype +natron +opencolorio +openjpeg +python311 -python310 -python312 -python313 -python314
 ```
 
-#### 8. Python 3.10, Qt 5 and PySide2
+#### 8. Python 3.11, Qt 5 and PySide2
+
+Python 3.10 is end-of-life and is no longer used (Python version policy, 2026-11-17): Qt 5 builds use Python 3.11 with Qt 5.15.19 and PySide2/Shiboken2 5.15.19 (MacPorts `python311`, `py311-pyside2`); Qt 6 builds use Python 3.13. To switch an existing install from Python 3.10, see [Switching from Python 3.10 to 3.11](#switching-from-python-310-to-311).
 
 ```Shell
-sudo port -v -N install py310-pip
+sudo port -v -N install python311 py311-pip
 sudo port -v -N install openblas
-sudo port -v -N install py310-numpy -gfortran
-sudo port -v -N install py310-sphinx py310-sphinx_rtd_theme
+sudo port -v -N install py311-numpy -gfortran
+sudo port -v -N install py311-sphinx py311-sphinx_rtd_theme
 sudo port -v -N install qt5 qt5-qtwebengine
-sudo port -v -N install py310-pyside2   # its shiboken2 builds against the clang/llvm it depends on
+sudo port -v -N install py311-pyside2   # its shiboken2 builds against the clang/llvm it depends on
 
-sudo port select --set python python310
-sudo port select --set python3 python310
-sudo port select --set sphinx py310-sphinx
-sudo pip-3.10 install qtpy==1.11.2
+sudo port select --set python python311
+sudo port select --set python3 python311
+sudo port select --set sphinx py311-sphinx
+sudo pip-3.11 install qtpy==1.11.2
 
 # links expected by the build scripts
-PY=/opt/local/Library/Frameworks/Python.framework/Versions/3.10
-sudo ln -sfn shiboken2 $PY/lib/python3.10/site-packages/shiboken2_generator/shiboken2-3.10
-sudo ln -sfn shiboken2-3.10 /opt/local/bin/shiboken2
+PY=/opt/local/Library/Frameworks/Python.framework/Versions/3.11
+sudo ln -sfn shiboken2 $PY/lib/python3.11/site-packages/shiboken2_generator/shiboken2-3.11
+sudo ln -sfn shiboken2-3.11 /opt/local/bin/shiboken2
 sudo ln -sfn Frameworks /opt/local/Library/lib
 ```
 
@@ -349,7 +351,7 @@ Do this every few weeks, and before a release build. Each step is safe to stop a
 
    If `port installed ffmpeg` shows `+vmaf`, reinstall it the same way with `+gpl2 +highbitdepth +natronmini`.
 
-7. **Re-apply the install fixups.** An upgrade of the ports concerned can undo them. Re-run the `ln`, `sed`, `port select` and `pip` commands of install sections 7 (the `minizip-ng` link and `sed`, the `libzip.pc` `sed`) and 8 (`port select` for `python`, `python3` and `sphinx`, `pip-3.10 install qtpy==1.11.2`, and the `shiboken2` and `/opt/local/Library/lib` links). They are safe to run again. In tart, the `fixups` step of `tools/tart/provision.sh` re-applies the links, `sed`s and `port select`s after every update (`qtpy` is installed by its `python_qt` step).
+7. **Re-apply the install fixups.** An upgrade of the ports concerned can undo them. Re-run the `ln`, `sed`, `port select` and `pip` commands of install sections 7 (the `minizip-ng` link and `sed`, the `libzip.pc` `sed`) and 8 (`port select` for `python`, `python3` and `sphinx`, `pip-3.11 install qtpy==1.11.2`, and the `shiboken2` and `/opt/local/Library/lib` links). They are safe to run again. In tart, the `fixups` step of `tools/tart/provision.sh` re-applies the links, `sed`s and `port select`s after every update (`qtpy` is installed by its `python_qt` step).
 
 8. **Reclaim disk space:**
 
@@ -361,9 +363,52 @@ Do this every few weeks, and before a release build. Each step is safe to stop a
 
    `port clean --work --dist installed` removes the build directories and the downloaded source archives of the installed ports, and keeps their logs. Don't delete `/opt/local/var/macports/software`: MacPorts needs those archives to deactivate and reactivate ports.
 
-9. **Rebuild and test,** if the upgrade touched anything Natron or the plug-ins link to: `qt5`, `py310-pyside2`, `python310`, `boost`, `ffmpeg`, `openimageio`, `opencolorio`, `libraw`, `openexr`, `ImageMagick`, `poppler`, `cairo`, `freetype`, … Rebuild from a fresh build directory (install section 10, or "Developing with the MacPorts SDK" below), clear Natron's cache (`rm -rf ~/Library/Caches/INRIA/Natron`), and run the unit tests (see [Testing](#testing)). Before a release, also run the Natron-Tests regression suite on the new DMG (`UNIT_TESTS=true` with `launchBuildMain.sh`, see install section 10, or `runTests.sh`, see "Testing" in `Documentation/source/maintainers/build-macos.rst`).
+9. **Rebuild and test,** if the upgrade touched anything Natron or the plug-ins link to: `qt5`, `py311-pyside2`, `python311`, `boost`, `ffmpeg`, `openimageio`, `opencolorio`, `libraw`, `openexr`, `ImageMagick`, `poppler`, `cairo`, `freetype`, … Rebuild from a fresh build directory (install section 10, or "Developing with the MacPorts SDK" below), clear Natron's cache (`rm -rf ~/Library/Caches/INRIA/Natron`), and run the unit tests (see [Testing](#testing)). Before a release, also run the Natron-Tests regression suite on the new DMG (`UNIT_TESTS=true` with `launchBuildMain.sh`, see install section 10, or `runTests.sh`, see "Testing" in `Documentation/source/maintainers/build-macos.rst`).
 
 With the tart VMs (`tools/tart`), `tools/tart/natron-sdk.sh update` does steps 3 to 7 inside a copy of the SDK image: it installs the MacPorts version set by `MACPORTS_VERSION` in `tools/tart/provision.sh` and syncs the ports tree (instead of `selfupdate`), copies the host checkout's `tools/` into the VM (so update the host checkout first, step 1), runs `check.sh` (and only warns if the overlay is behind upstream: reintegrate on the host first), `./sync.sh`, reinstalls the pinned ports whose installed version differs from the overlay, upgrades the outdated ports one by one, and re-applies the fixups. The previous image is kept as `natron-sdk-sequoia-prev`. See `tools/tart/README.md`.
+
+#### Switching from Python 3.10 to 3.11
+
+Until 2026-11-17 the SDK used Python 3.10, which is end-of-life. On a machine installed before, after the routine above (steps 1 to 6), install the Python 3.11 ports, switch `openimageio`'s Python bindings, and redo the selections and links of install sections 8 and 9:
+
+```Shell
+sudo port -v -N install python311 py311-pip
+sudo port -v -N install py311-numpy -gfortran
+sudo port -v -N install py311-sphinx py311-sphinx_rtd_theme
+sudo port -v -N install py311-pyside2       # builds from source if there is no binary archive: allow an hour or more
+sudo port -v -N install py311-dmgbuild      # only to build the .dmg
+# -n: only openimageio is rebuilt (without it, --enforce-variants would apply the variants to its dependencies)
+sudo port -n -v -N upgrade --enforce-variants openimageio +freetype +natron +opencolorio +openjpeg \
+    +python311 -python310 -python312 -python313 -python314
+
+sudo port select --set python python311
+sudo port select --set python3 python311
+sudo port select --set sphinx py311-sphinx
+sudo pip-3.11 install qtpy==1.11.2
+
+PY=/opt/local/Library/Frameworks/Python.framework/Versions/3.11
+sudo ln -sfn shiboken2 $PY/lib/python3.11/site-packages/shiboken2_generator/shiboken2-3.11
+sudo ln -sfn shiboken2-3.11 /opt/local/bin/shiboken2
+sudo ln -sfn dmgbuild-3.11 /opt/local/bin/dmgbuild   # if py311-dmgbuild is installed
+```
+
+If you built Mesa 25.0.7 (install section 4), also `sudo port -v -N install py311-mako py311-yaml`; it only needs them to rebuild Mesa.
+
+Check that the build sees Python 3.11: `python3 --version`, `ls -l /opt/local/bin/shiboken2`, and `port installed openimageio` (it must show `+python311`). `opencolorio` and `opencolorio1` are installed without Python bindings and need no change. Then rebuild Natron from a **fresh** build directory, with `-DPython3_EXECUTABLE=/opt/local/bin/python3.11` (a build directory configured with Python 3.10 keeps it in its CMake cache), and run the tests (step 9).
+
+Once Natron builds and passes the tests, remove Python 3.10 and everything that uses it. Remove the inactive ports first: the variant switch leaves the old `openimageio +python310` installed but inactive, and it would still show up as a dependent of `python310`. Then check that `port rdependents python310` (recursive) lists only `py310-*` ports; if the active `openimageio` is listed, the variant switch above didn't happen, so don't go on:
+
+```Shell
+sudo port uninstall inactive
+port rdependents python310
+sudo port uninstall --follow-dependents python310
+sudo port uninstall python3_select-310   # the python3 selector entry for 3.10, a dependency of python310
+port echo leaves                         # review: unrequested ports nothing depends on any more
+```
+
+The `pip`, `cython` and `sphinx` selector entries for 3.10 belong to the `py310-*` ports and go away with them. Uninstall the ports listed by `port echo leaves` only if you don't need them (`sudo port uninstall leaves` removes them all, including build dependencies such as `clang-18` that a later rebuild of `py311-pyside2` would install again).
+
+With tart, `tools/tart/natron-sdk.sh update` does all of this except the removal of Python 3.10 (`step_python_migrate` in `tools/tart/provision.sh`, then its `fixups` step).
 
 #### After a macOS upgrade
 
@@ -454,7 +499,7 @@ cd $NATRON_SRC
 cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DNATRON_BUILD_TESTS=ON \
     -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
     -DCMAKE_PREFIX_PATH="/opt/local/libexec/qt5;/opt/local" \
-    -DPython3_EXECUTABLE=/opt/local/bin/python3.10
+    -DPython3_EXECUTABLE=/opt/local/bin/python3.11
 cmake --build build -j$(sysctl -n hw.ncpu)
 ```
 
@@ -694,11 +739,11 @@ of after a multi-hour build:
   the disk image's `.DS_Store`, without driving Finder (the old AppleScript
   approach needs GUI Automation / TCC permission and fails in headless or
   unprivileged sessions). With MacPorts, install the port and link the
-  versioned script (the port only installs `dmgbuild-3.10`):
+  versioned script (the port only installs `dmgbuild-3.11`):
 
   ```Shell
-  sudo port -v -N install py310-dmgbuild
-  sudo ln -s dmgbuild-3.10 /opt/local/bin/dmgbuild
+  sudo port -v -N install py311-dmgbuild
+  sudo ln -sfn dmgbuild-3.11 /opt/local/bin/dmgbuild
   ```
 
   Otherwise, install it with pip: `python3 -m pip install dmgbuild`.
@@ -724,17 +769,17 @@ mv OpenColorIO-Configs-Natron-v2.5 OpenColorIO-Configs
 
 ## Building with CMake
 
-CMake is the supported build. It builds with Qt 5 and PySide2 by default; `-DNATRON_QT6=ON` selects Qt 6 and PySide6 (not covered by the macOS CI). Other options: `-DCMAKE_BUILD_TYPE=Debug|Release|RelWithDebInfo`, `-DNATRON_BUILD_TESTS=OFF` (skip the unit tests), `-DNATRON_SYSTEM_LIBS=ON` (use system copies of the libraries in `libs/`). `cmake --install build --prefix <dir>` installs Natron; `-DNATRON_INSTALL_LAYOUT=PORTABLE` installs a self-contained `Natron.app`, as the release scripts will (see `Documentation/source/maintainers/building.rst`).
+CMake is the supported build. It builds with Qt 5 and PySide2 by default; `-DNATRON_QT6=ON` selects Qt 6 and PySide6 (not covered by the macOS CI; following the Python version policy, use Python 3.13 with it, i.e. MacPorts `python313` and `py313-pyside6`, and `-DPython3_EXECUTABLE=/opt/local/bin/python3.13`). Other options: `-DCMAKE_BUILD_TYPE=Debug|Release|RelWithDebInfo`, `-DNATRON_BUILD_TESTS=OFF` (skip the unit tests), `-DNATRON_SYSTEM_LIBS=ON` (use system copies of the libraries in `libs/`). `cmake --install build --prefix <dir>` installs Natron; `-DNATRON_INSTALL_LAYOUT=PORTABLE` installs a self-contained `Natron.app`, as the release scripts will (see `Documentation/source/maintainers/building.rst`).
 
 ### On MacPorts
 
-MacPorts' `py310-pyside2` has no CMake config files: CMake then finds Shiboken2 and PySide2 through `Python3_EXECUTABLE` (see `cmake/PySide2FromPython.cmake`). Build with the system (Xcode) clang and the MacPorts libraries, from `$NATRON_SRC`, with Homebrew off the `PATH`:
+MacPorts' `py311-pyside2` has no CMake config files: CMake then finds Shiboken2 and PySide2 through `Python3_EXECUTABLE` (see `cmake/PySide2FromPython.cmake`). Build with the system (Xcode) clang and the MacPorts libraries, from `$NATRON_SRC`, with Homebrew off the `PATH`:
 
 ```Shell
 cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
     -DCMAKE_PREFIX_PATH="/opt/local/libexec/qt5;/opt/local" \
-    -DPython3_EXECUTABLE=/opt/local/bin/python3.10
+    -DPython3_EXECUTABLE=/opt/local/bin/python3.11
 cmake --build build -j$(sysctl -n hw.ncpu)
 (cd build && env OFX_PLUGIN_PATH=$HOME/OFX/Natron-release OCIO=$NATRON_SRC/OpenColorIO-Configs/blender/config.ocio ctest -V)
 ```
@@ -982,7 +1027,7 @@ The render regression tests are in [Natron-Tests](https://github.com/NatronGitHu
 This is not required: with Qt 5, the bindings are generated during the build, and the generated files for Qt 4 are in the repository. You only need this with Qt 4, if you extend or modify the Python bindings via the
 typesystem.xml file. See the documentation of shiboken-2.7 for an explanation of the command line arguments.
 
-On MacPorts with qt4-mac, py310-pyside, py310-shiboken:
+Historical, for Qt 4 only (Natron 2.5 and older), with the Python 3.10 it was written for: Shiboken 1.2.4 is not part of the Python 3.11 SDK, and `tools/jenkins/include/scripts/pkg/python3.sh` notes that Python 3.11 breaks it. On MacPorts with qt4-mac, py310-pyside, py310-shiboken:
 ```Shell
 PYVER=3.10 # Set to the python version
 QT_VERSION_MAJOR=4
@@ -999,9 +1044,9 @@ tools/utils/runPostShiboken.sh Gui/Qt${QT_VERSION_MAJOR}/NatronGui natrongui
 Building Natron with Qt5 should generate the Python bindings automatically, but in case it does not,
 here are the commands to recreate the Python bindings:
 
-On MacPorts with qt5, py310-pyside2:
+On MacPorts with qt5, py311-pyside2:
 ```Shell
-PYVER=3.10 # Set to the python version
+PYVER=3.11 # Set to the python version
 PYTHON_HOME=$(python${PYVER}-config --prefix)
 QT_VERSION_MAJOR=5
 # Fix a missing link in the MacPorts package

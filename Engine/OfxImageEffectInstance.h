@@ -234,6 +234,10 @@ public:
         return _ofxEffectInstance.lock();
     }
 
+    /// The knob holder whose multiple params edit level groups the edits of the plug-in in one undo command:
+    /// the effect, or the Read/Write node of a reader/writer embedded in a Read/Write node.
+    EffectInstancePtr getParamsEditHolder() const WARN_UNUSED_RETURN;
+
     /// to be called right away after populate() is called. It adds to their group all the params.
     /// This is done in a deferred manner as some params can sometimes not be defined in a good order.
     void addParamsToTheirParents();

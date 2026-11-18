@@ -165,7 +165,7 @@ The failure is almost always a **context mismatch**: the patch was written for a
 The full macOS build (Natron + OpenFX plugins, bundled into a `.dmg`) is driven by `tools/jenkins/launchBuildMain.sh`, which runs 6 steps: (1) checkout sources, (2) build plugins, (3) build Natron, (4) build installer/DMG, (5) unit tests, (6) archive/cleanup.
 
 **Prerequisites** (installed into `/opt/local` via MacPorts — sudo; see the MacPorts section of `INSTALL_MACOS.md`):
-- Full SDK: qt5, python310, **py310-pyside2** (provides the shiboken2 generator), openimageio, ffmpeg, cairo, librsvg, boost, openexr, seexpr/seexpr211, ImageMagick, etc.
+- Full SDK: qt5, python311, **py311-pyside2** (provides the shiboken2 generator), openimageio, ffmpeg, cairo, librsvg, boost, openexr, seexpr/seexpr211, ImageMagick, etc.
 - **OSMesa** at `/opt/osmesa` (or `$SDK_HOME/osmesa`), built separately via `osmesa-install.sh`.
 - Symlinks the build checks (else it hard-exits): `…/site-packages/shiboken2_generator/shiboken2-<PYVER>` **must resolve to a real file**, `/opt/local/bin/shiboken2 → shiboken2-<PYVER>`, and `${SDK_HOME}/Library/lib → Frameworks`.
 - The `/opt/MacPorts-Natron` overlay declared in `sources.conf` (this skill's upgrade workflow).
@@ -188,7 +188,7 @@ nohup env NOUPDATE=1 WORKSPACE=$HOME/Development/workspace \
 - **partial runs:** `BUILD_FROM`/`BUILD_TO` restrict which of the 6 steps run; `DEBUG_SCRIPTS=1` keeps prior binaries to resume.
 - **release build:** set `RELEASE_TAG=x.y.z NATRON_DEV_STATUS=STABLE NATRON_BUILD_NUMBER=1` instead of a branch CI build.
 
-**Common prerequisite failure:** `Error: broken MacPort install … shiboken2` means `py310-pyside2` isn't installed (or its generator symlink dangles) → `sudo port -v -N install py310-pyside2`, then ensure the two shiboken symlinks above resolve to real files.
+**Common prerequisite failure:** `Error: broken MacPort install … shiboken2` means `py311-pyside2` isn't installed (or its generator symlink dangles) → `sudo port -v -N install py311-pyside2`, then ensure the two shiboken symlinks above resolve to real files.
 
 ## Quick reference
 | Action | Command |
