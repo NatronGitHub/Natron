@@ -356,6 +356,20 @@ OfxHost::setProperties()
 #endif
 } // OfxHost::setProperties
 
+bool
+OfxHost::isPluginDeprecated(const OFX::Host::Property::Set& descriptorProps)
+{
+    // kOfxImageEffectPluginPropObsolete: "available for use in old projects but not offered to users for
+    // new use", which is what Natron does with deprecated plug-ins (see Plugin::getIsUserCreatable()).
+    // Both properties are declared, with a default of 0, on every HostSupport descriptor, including the
+    // ones loaded from the plug-in cache.
+    return ( descriptorProps.getIntProperty(kOfxImageEffectPluginPropObsolete) != 0
+#ifdef OFX_EXTENSIONS_NATRON
+             || descriptorProps.getIntProperty(kNatronOfxImageEffectPropDeprecated) != 0
+#endif
+             );
+}
+
 static
 Settings::KnownHostNameEnum
 getHostNameProxy(const std::string& pluginID,
@@ -1022,7 +1036,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         const std::set<std::string> & contexts = p->getContexts();
         std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
         std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
-        const bool isDeprecated = p->getDescriptor().isDeprecated();
+        const bool isDeprecated = isPluginDeprecated( p->getDescriptor().getProps() );
         Plugin* natronPlugin = appPTR->registerPlugin( resourcesPath,
                                                        groups,
                                                        QString::fromUtf8( openfxId.c_str() ),
