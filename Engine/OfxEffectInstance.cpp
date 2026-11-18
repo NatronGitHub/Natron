@@ -552,6 +552,11 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 stat = _imp->effect->createInstanceAction();
             }
             _imp->created = true;
+            // WriteOIIO sets the visibility of its Views parameter from the format in its constructor:
+            // hide it if the file name has a view pattern.
+            if ( isWriter() ) {
+                getNode()->refreshViewsSelectorVisibility();
+            }
         } // SET_CAN_SET_VALUE(true);
 
 

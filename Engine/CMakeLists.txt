@@ -41,6 +41,7 @@ execute_process(COMMAND ${Python3_EXECUTABLE} ../tools/utils/sourceList.py types
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     OUTPUT_VARIABLE PyEngine_SOURCES)
 set_property(SOURCE ${PyEngine_SOURCES} PROPERTY SKIP_AUTOGEN ON)
+set_property(SOURCE ${PyEngine_SOURCES} APPEND PROPERTY COMPILE_OPTIONS ${NATRON_BINDINGS_NO_WARNINGS})
 add_custom_command(OUTPUT ${PyEngine_SOURCES}
     COMMAND $<TARGET_FILE:${SHIBOKEN_EXE}> ${shiboken_args}
     COMMAND ${Python3_EXECUTABLE} ../tools/utils/sourceCleanup.py typesystem_engine.xml ${PYENGINE_OUT}
@@ -67,6 +68,17 @@ list(APPEND NatronEngine_SOURCES
     ../libs/SequenceParsing/SequenceParsing.cpp
 )
 add_library(NatronEngine STATIC ${NatronEngine_HEADERS} ${NatronEngine_SOURCES})
+# The bundled libraries come first: their include directories are SYSTEM, and
+# SYSTEM include directories are searched in this order, so their headers stay
+# ahead of an installed copy (e.g. ceres or glog in /opt/local/include).
+target_link_libraries(NatronEngine
+    PRIVATE
+        ceres
+        hoedown
+        mv
+        openMVG
+        tess
+)
 target_link_libraries(NatronEngine
     PUBLIC
         HostSupport
@@ -84,14 +96,9 @@ target_link_libraries(NatronEngine
         # library becomes a crash at run time instead of a link error.
         Python3::Python
         ${XDG_LIBS}
-        ceres
         # LibraryBinary.cpp, OSGLContext_x11/wayland.cpp and glad use dlopen/dlsym:
         # libdl is separate in glibc < 2.34
         ${CMAKE_DL_LIBS}
-        hoedown
-        mv
-        openMVG
-        tess
 )
 
 if(WIN32)
@@ -112,9 +119,12 @@ target_include_directories(NatronEngine
         .
         ..
         ../Global
-        ../libs/SequenceParsing
         ${X11_INCLUDE_DIR}
 )
+target_include_directories(NatronEngine SYSTEM PRIVATE ../libs/SequenceParsing)
+# bundled third-party code (see NATRON_THIRD_PARTY_NO_WARNINGS)
+set_property(SOURCE ../libs/SequenceParsing/SequenceParsing.cpp
+    APPEND PROPERTY COMPILE_OPTIONS ${NATRON_THIRD_PARTY_NO_WARNINGS})
 target_compile_definitions(NatronEngine
     PRIVATE
         QT_NO_KEYWORDS

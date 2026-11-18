@@ -109,6 +109,7 @@ public:
     std::list<std::shared_ptr<QFutureWatcher<void> > > autoSaveFutures;
     mutable QMutex projectClosingMutex;
     bool projectClosing;
+    bool resetting; // Project::reset() is running (main thread only)
     std::shared_ptr<TLSHolder<Project::ProjectTLSData> > tlsData;
 
     // only used on the main-thread
