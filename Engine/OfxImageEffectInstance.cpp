@@ -36,8 +36,10 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QDebug>
+#include <QThread>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -161,7 +163,13 @@ OfxImageEffectInstance::mainEntry(const char *action,
     // Maybe paramEditBegin() was called by the effect without a matching paramEditEnd(). Let us fix that.
     // See issue https://github.com/NatronGitHub/Natron/issues/708
     // test for getMultipleParamsEditLevel() first, because it costs less.
-    OfxEffectInstancePtr effect = getOfxEffectInstance();
+    // The edit level is the one of the holder of the knobs (see editBegin()).
+    // Only on the main thread, where the plug-in edits its parameters (e.g. in an overlay action):
+    // an action on a render thread (e.g. of the reader embedded in a Read node, whose edit level is
+    // the one of the Read node, or of any effect) must not end an edit block of the main thread
+    // while it is open, e.g. during an overlay drag.
+    const bool isMainThread = ( QThread::currentThread() == qApp->thread() );
+    EffectInstancePtr effect = isMainThread ? getParamsEditHolder() : EffectInstancePtr();
 
     if (effect && (effect->getMultipleParamsEditLevel() != KnobHolder::eMultipleParamsEditOff) && !effect->getApp()->isCreatingPythonGroup() ) {
         while (effect->getMultipleParamsEditLevel() != KnobHolder::eMultipleParamsEditOff) {
@@ -984,13 +992,36 @@ OfxImageEffectInstance::addParamsToTheirParents()
    - ::kOfxStatErrBadHandle  - if the instance handle was invalid
 
  */
+EffectInstancePtr
+OfxImageEffectInstance::getParamsEditHolder() const
+{
+    EffectInstancePtr effect = getOfxEffectInstance();
+
+#ifdef NATRON_ENABLE_IO_META_NODES
+    // The knobs of a reader/writer embedded in a Read/Write node belong to that node (see
+    // OfxParamToKnob::getKnobHolder()), which creates the undo commands of their changes: the
+    // multiple edits of the plug-in must be grouped there. Cheaper than getKnobHolder(), since
+    // mainEntry() calls this for every action: only these embedded nodes have an IO container.
+    if (effect) {
+        NodePtr node = effect->getNode();
+        NodePtr ioContainer = node ? node->getIOContainer() : NodePtr();
+        if (ioContainer) {
+            return ioContainer->getEffectInstance();
+        }
+    }
+#endif
+
+    return effect;
+}
+
 OfxStatus
 OfxImageEffectInstance::editBegin(const std::string & /*name*/)
 {
     ///Don't push undo/redo actions while creating a group
-    OfxEffectInstancePtr effect = getOfxEffectInstance();
+    // The edits are grouped in one undo command by the holder of the knobs (see getParamsEditHolder()).
+    EffectInstancePtr effect = getParamsEditHolder();
 
-    if ( !effect->getApp()->isCreatingPythonGroup() ) {
+    if ( effect && !effect->getApp()->isCreatingPythonGroup() ) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
     }
 
@@ -1004,9 +1035,10 @@ OfxStatus
 OfxImageEffectInstance::editEnd()
 {
     ///Don't push undo/redo actions while creating a group
-    OfxEffectInstancePtr effect = getOfxEffectInstance();
+    // As in editBegin(): the holder of the knobs.
+    EffectInstancePtr effect = getParamsEditHolder();
 
-    if ( !effect->getApp()->isCreatingPythonGroup() ) {
+    if ( effect && !effect->getApp()->isCreatingPythonGroup() ) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
     }
 
