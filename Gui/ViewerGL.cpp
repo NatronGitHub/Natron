@@ -122,6 +122,8 @@ ViewerGL::ViewerGL(ViewerTab* parent,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    // Unlike QGLWidget, QOpenGLWidget takes no share widget: the argument is kept for API compatibility.
+    Q_UNUSED(shareWidget);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     //setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
