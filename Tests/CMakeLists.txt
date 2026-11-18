@@ -37,6 +37,7 @@ set(Tests_SOURCES
     ReadNodeOverlay_Test.cpp
     RotoPaint_Test.cpp
     Tracker_Test.cpp
+    WriteNodeViews_Test.cpp
     wmain.cpp
 )
 add_executable(Tests ${Tests_HEADERS} ${Tests_SOURCES})
