@@ -552,8 +552,8 @@ TEST(NaNGuards, CurveLoadExactRoundTrip)
 }
 
 // The values must not depend on the C locale (LC_NUMERIC), which a Python script can
-// change with locale.setlocale(): with a comma decimal separator, strtod() reads
-// "556.568" as 556.
+// change with locale.setlocale(): with a comma decimal separator, strtod() stops at
+// the '.' of "5.5656800000000001e+02" (556.568, as written by Boost) and returns 5.
 TEST(NaNGuards, CurveLoadCommaLocale)
 {
     const char* oldLocale = std::setlocale(LC_NUMERIC, NULL);
@@ -587,9 +587,9 @@ TEST(NaNGuards, CurveLoadCommaLocale)
     EXPECT_EQ( 556.568, k3.begin()->getValue() ) << found;
 }
 
-// clone() recomputes the derivatives of a curve loaded with NaN values once, and
-// clears the flag: later clones copy the keys unchanged.
-TEST(NaNGuards, CurveCloneRefreshOnce)
+// clone() recomputes the derivatives of a curve loaded with NaN values with the target's
+// periodicity, and propagates the flag to the target.
+TEST(NaNGuards, CurveCloneRefresh)
 {
     Curve c;
     for (int i = 0; i < 3; ++i) {
@@ -614,12 +614,24 @@ TEST(NaNGuards, CurveCloneRefreshOnce)
     // (it is 0 without periodicity)
     EXPECT_NE( loaded.getKeyFrames_mt_safe().begin()->getLeftDerivative(), p.getKeyFrames_mt_safe().begin()->getLeftDerivative() );
 
-    // the second clone doesn't recompute them: the keys are those of loaded
-    Curve p2;
-    p2.setXRange(0., 6.);
-    p2.setPeriodic(true);
-    p2.clone(loaded);
-    expectSameKeys(loaded, p2);
+    EXPECT_NEAR( -1. / 3., p.getKeyFrames_mt_safe().begin()->getLeftDerivative(), 1e-12 );
+
+    // A project loads in two steps: the loaded curve is cloned into a temporary,
+    // non-periodic knob, which is then cloned into the real, periodic knob
+    // (KnobParametric::cloneExtraData()). The last clone must use its own periodicity.
+    Curve loaded2;
+    loadCurve(setAllKeyValues(saveCurve(c), "LeftDerivative", "nan"), &loaded2);
+    Curve tmp; // non-periodic
+    tmp.clone(loaded2);
+    expectFiniteDerivatives(tmp);
+    EXPECT_EQ( 0., tmp.getKeyFrames_mt_safe().begin()->getLeftDerivative() );
+    Curve real;
+    real.setXRange(0., 6.);
+    real.setPeriodic(true);
+    real.clone(tmp);
+    expectFiniteDerivatives(real);
+    EXPECT_NEAR( -1. / 3., real.getKeyFrames_mt_safe().begin()->getLeftDerivative(), 1e-12 );
+    expectSameKeys(p, real);
 }
 
 // A periodic curve without setXRange() has an infinite period: it is not wrapped.
