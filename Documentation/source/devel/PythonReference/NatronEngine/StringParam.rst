@@ -51,6 +51,16 @@ Here are the different types of string parameters:
 
    A multi-line string with rich text support with a `subset of html <https://qt-project.org/doc/qt-4.8/richtext-html-subset.html>`_
 
+String parameters that animate hold the string of a keyframe until the next keyframe
+(the value steps, there is no interpolation between strings). Before the first keyframe,
+the value is the string of the first keyframe.
+Keyframes can be added, deleted and moved freely: this never changes the string of the
+other keyframes.
+:func:`setValueAtTime()<NatronEngine.StringParamBase.setValueAtTime>`,
+:func:`getValueAtTime()<NatronEngine.StringParamBase.getValueAtTime>` and
+:func:`deleteValueAtTime()<NatronEngine.AnimatedParam.deleteValueAtTime>` set, read and
+delete the string of the keyframe at a given time.
+
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
