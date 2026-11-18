@@ -56,7 +56,6 @@ Functions to simulate user input (for tests)
 - def :meth:`getZoom<NatronGui.PyViewer.getZoom>` ()
 - def :meth:`getPan<NatronGui.PyViewer.getPan>` ()
 - def :meth:`fitToFormat<NatronGui.PyViewer.fitToFormat>` ()
-- def :meth:`processEvents<NatronGui.PyViewer.processEvents>` ()
 - def :meth:`waitForRender<NatronGui.PyViewer.waitForRender>` ([timeoutMs=10000])
 
 .. _pyViewer.details:
@@ -280,6 +279,12 @@ is a :class:`PySide.QtCore.Qt.Key` (e.g. ``QtCore.Qt.Key_F``), as in
 The pen and key functions return True if the event was accepted by the viewer or an overlay.
 Most events are accepted, so check the result of the action instead.
 
+These functions, :meth:`fitToFormat<NatronGui.PyViewer.fitToFormat>` and
+:meth:`waitForRender<NatronGui.PyViewer.waitForRender>` must be called from the main (GUI)
+thread: from the script, a timer, a menu command or a callback run by the GUI. Some callbacks,
+such as *afterFrameRendered*, run in render threads: there, the functions do nothing and
+return False.
+
 The overlay of a node is only shown, and only receives the events, while its settings panel is
 open. :meth:`App.createNode<NatronEngine.App.createNode>` does not open it: select the node
 with :meth:`selectNode<NatronGui.GuiApp.selectNode>` and send the *Return* key to the node
@@ -405,10 +410,6 @@ Returns the canonical coordinates of the bottom-left corner of the viewer.
 
 Fits the project format in the viewer, as the *F* key does.
 
-.. method:: NatronGui.PyViewer.processEvents()
-
-Processes the pending GUI events, e.g. to let the viewer redraw its overlays.
-
 .. method:: NatronGui.PyViewer.waitForRender([timeoutMs=10000])
 
     :param timeoutMs: :class:`int`
@@ -418,3 +419,4 @@ Processes the GUI events until the viewer has no render in progress, so that the
 overlays are up to date, e.g. before checking the values of the parameters or calling
 :meth:`saveScreenshot<NatronGui.GuiApp.saveScreenshot>`. Returns False if the viewer was still
 rendering after *timeoutMs* milliseconds.
+To only process the pending events, use :meth:`GuiApp.processEvents()<NatronGui.GuiApp.processEvents>`.

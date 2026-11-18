@@ -119,7 +119,8 @@ public:
      * The window does not need to be focused or on top, and the mouse cursor does not move.
      * button is a Qt::MouseButton (1: left, 2: right, 4: middle), modifiers a
      * Qt::KeyboardModifiers. A pressure other than 1 also sends tablet events.
-     * They return whether the event was accepted.
+     * They return whether the event was accepted, and False when not called from the main
+     * thread (e.g. from a render callback such as afterFrameRendered).
      */
     bool penDown(double x, double y, int button = 1, Qt::KeyboardModifiers modifiers = Qt::NoModifier, double pressure = 1.);
 
@@ -156,12 +157,10 @@ public:
     /// fits the project format in the viewer, as the F key does
     void fitToFormat();
 
-    /// processes the pending GUI events (redraws, queued signals)
-    void processEvents();
-
     /**
      * @brief Processes the GUI events until the viewer has no render running, so that the
-     * overlays are redrawn and the renders they trigger are done. Returns false on timeout.
+     * overlays are redrawn and the renders they trigger are done. Returns false on timeout,
+     * or when not called from the main thread.
      **/
     bool waitForRender(int timeoutMs = 10000);
 
@@ -236,9 +235,15 @@ public:
      * Only Natron's own widgets are captured (QWidget::grab()), never the screen.
      * The content of OpenGL widgets (viewers, curve editor, dope sheet...) is read from
      * their framebuffer. The file format follows the extension of filePath.
-     * Returns true on success.
+     * Returns true on success, false when not called from the main thread.
      **/
     bool saveScreenshot( const QString& filePath, const QString& scriptName = QString() ) const;
+
+    /**
+     * @brief Processes the pending GUI events (redraws, queued signals), e.g. after sending
+     * input events to a viewer. Does nothing when not called from the main thread.
+     **/
+    void processEvents();
 };
 
 NATRON_PYTHON_NAMESPACE_EXIT;

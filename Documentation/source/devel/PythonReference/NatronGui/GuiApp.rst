@@ -30,6 +30,7 @@ Functions
 - def :meth:`saveFilenameDialog<NatronGui.GuiApp.saveFilenameDialog>` (filters[, location=None])
 - def :meth:`saveSequenceDialog<NatronGui.GuiApp.saveSequenceDialog>` (filters[, location=None])
 - def :meth:`saveScreenshot<NatronGui.GuiApp.saveScreenshot>` (filePath[, scriptName=""])
+- def :meth:`processEvents<NatronGui.GuiApp.processEvents>` ()
 - def :meth:`selectNode<NatronGui.GuiApp.selectNode>` (node,clearPreviousSelection)
 - def :meth:`deselectNode<NatronGui.GuiApp.deselectNode>` (node)
 - def :meth:`setSelection<NatronGui.GuiApp.setSelection>` (nodes)
@@ -159,7 +160,16 @@ their position. Floating windows are not part of the main window: capture them w
 script name. The image has the resolution of the screen, e.g. twice the size of the window in
 each direction on a HiDPI display.
 
+It must be called from the main (GUI) thread: it returns False when called from a render
+thread, e.g. from the *afterFrameRendered* callback.
+
 See :ref:`guiTesting` for an example.
+
+.. method:: NatronGui.GuiApp.processEvents()
+
+Processes the pending GUI events (redraws, queued signals), e.g. to let a viewer redraw its
+overlays after :meth:`PyViewer.keyPress()<NatronGui.PyViewer.keyPress>`. Does nothing when not
+called from the main (GUI) thread.
 
 .. method:: NatronGui.GuiApp.getRGBColorDialog()
 

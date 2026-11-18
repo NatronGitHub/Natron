@@ -937,6 +937,14 @@ PyViewer::getCurrentView() const
     return _viewer->getCurrentView().value();
 }
 
+// The GUI functions below may only run in the main thread: some Python callbacks (e.g.
+// afterFrameRendered) run in render threads
+static bool
+isMainThread()
+{
+    return QThread::currentThread() == QCoreApplication::instance()->thread();
+}
+
 ViewerGL*
 PyViewer::getViewerGL() const
 {
@@ -970,6 +978,9 @@ PyViewer::sendPenEvent(QEvent::Type type,
                        Qt::KeyboardModifiers modifiers,
                        double pressure)
 {
+    if ( !isMainThread() ) {
+        return false;
+    }
     ViewerGL* gl = getViewerGL();
 
     if (!gl) {
@@ -1091,6 +1102,9 @@ PyViewer::sendKeyEvent(QEvent::Type type,
                        Qt::Key key,
                        Qt::KeyboardModifiers modifiers)
 {
+    if ( !isMainThread() ) {
+        return false;
+    }
     ViewerGL* gl = getViewerGL();
 
     if (!gl) {
@@ -1193,6 +1207,9 @@ PyViewer::getPan() const
 void
 PyViewer::fitToFormat()
 {
+    if ( !isMainThread() ) {
+        return;
+    }
     ViewerGL* gl = getViewerGL();
 
     if (gl) {
@@ -1200,20 +1217,19 @@ PyViewer::fitToFormat()
     }
 }
 
-void
-PyViewer::processEvents()
-{
-    QCoreApplication::processEvents();
-}
 
 bool
 PyViewer::waitForRender(int timeoutMs)
 {
+    if ( !isMainThread() ) {
+        return false;
+    }
     ViewerGL* gl = getViewerGL();
 
     if (!gl) {
         return false;
     }
+    AppManager::NestedEventLoopRAII nestedLoop; // natron.quit() waits for the end of this loop
     RenderEnginePtr engine = _viewer->getInternalNode()->getRenderEngine();
     QElapsedTimer timer;
     timer.start();
@@ -1280,6 +1296,9 @@ bool
 GuiApp::saveScreenshot(const QString& filePath,
                        const QString& scriptName) const
 {
+    if ( !isMainThread() ) {
+        return false;
+    }
     GuiAppInstancePtr app = getInternalGuiApp();
     Gui* gui = app ? app->getGui() : 0;
 
@@ -1314,6 +1333,16 @@ GuiApp::saveScreenshot(const QString& filePath,
     }
 
     return image.save(filePath);
+}
+
+void
+GuiApp::processEvents()
+{
+    if ( !isMainThread() ) {
+        return;
+    }
+    AppManager::NestedEventLoopRAII nestedLoop; // natron.quit() waits for the end of this loop
+    QCoreApplication::processEvents();
 }
 
 NATRON_PYTHON_NAMESPACE_EXIT

@@ -186,10 +186,10 @@ def runTest():
     # a viewer shortcut sent as a key event: + zooms in, F fits the format again
     zoomFit = viewer.getZoom()
     viewer.keyPress(QtCore.Qt.Key_Plus)
-    viewer.processEvents()
+    app.processEvents()
     check(viewer.getZoom() > zoomFit * 1.01, "the + key zoomed in (%g -> %g)" % (zoomFit, viewer.getZoom()))
     viewer.keyPress(QtCore.Qt.Key_F)
-    viewer.processEvents()
+    app.processEvents()
     check(abs(viewer.getZoom() - zoomFit) < 1e-6 * zoomFit, "the F key fitted the format again")
 
     # the other tabs, including the OpenGL ones
