@@ -1370,6 +1370,10 @@ to_func_Cineon(float v)
     //float offset = 0.01079775161f;
 
     //return (std::log10( (v + offset) / ( 1.f / (1.f - offset) ) ) / 0.0033f + 685.0f) / 1023.f;
+    if (v + 0.01079775161f <= 0.f) {
+        // outside of the domain of log10 (-infinity at the limit): return the lowest code value
+        return 0.f;
+    }
     return (std::log10( (v + 0.01079775161f) / ( 1.f / (1.f - 0.01079775161f) ) ) / (0.002f / 0.6f) + 685.0f) / 1023.f;
 }
 
@@ -1436,7 +1440,12 @@ static
 float
 to_func_Panalog(float v)
 {
-    return (444.f * std::log10(0.0408f + (1.0f - 0.0408f) * v) + 681.f) / 1023.f;
+    const float x = 0.0408f + (1.0f - 0.0408f) * v;
+    if (x <= 0.f) {
+        // outside of the domain of log10 (-infinity at the limit): return the lowest code value
+        return 0.f;
+    }
+    return (444.f * std::log10(x) + 681.f) / 1023.f;
 }
 
 const Lut*
@@ -1458,7 +1467,12 @@ static
 float
 to_func_REDLog(float v)
 {
-    return (511.f * std::log10(0.01f + (1.0f - 0.01f) * v) + 1023.) / 1023.f;
+    const float x = 0.01f + (1.0f - 0.01f) * v;
+    if (x <= 0.f) {
+        // outside of the domain of log10 (-infinity at the limit): return the lowest code value
+        return 0.f;
+    }
+    return (511.f * std::log10(x) + 1023.) / 1023.f;
 }
 
 const Lut*
@@ -1480,6 +1494,10 @@ static
 float
 to_func_ViperLog(float v)
 {
+    if (v <= 0.f) {
+        // outside of the domain of log10 (-infinity at the limit): return the lowest code value
+        return 0.f;
+    }
     return (500.f * std::log10(v) + 1023.f) / 1023.f;
 }
 
