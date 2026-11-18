@@ -5710,6 +5710,19 @@ EffectInstance::refreshMetadata_internal()
         node->refreshEnabledKnobsLabel(plane);
     }
 
+    // Auto-set the project format from the first Reader now, on the main thread, rather than
+    // when the Reader first renders, which may be in the middle of a sequence render (#1294).
+    if ( isReader() ) {
+        AppInstancePtr app = getApp();
+        ProjectPtr project = app ? app->getProject() : ProjectPtr();
+        if (project) {
+            Format frmt;
+            frmt.set( metadata.getOutputFormat() );
+            frmt.setPixelAspectRatio( metadata.getPixelAspectRatio(-1) );
+            project->autoSetProjectFormatFromReader(frmt);
+        }
+    }
+
     return ret;
 }
 

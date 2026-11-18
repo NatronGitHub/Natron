@@ -2155,8 +2155,33 @@ Project::setAutoSetProjectFormatEnabled(bool enabled)
 }
 
 void
+Project::autoSetProjectFormatFromReader(const Format & frmt)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    if ( frmt.isNull() ) {
+        return;
+    }
+    {
+        QMutexLocker l(&_imp->formatMutex);
+        if (!_imp->autoSetProjectFormat) {
+            return;
+        }
+        // A Reader without a valid file gets the project format as its default output format:
+        // that must not disable the auto-set. If the file has the same format as the project,
+        // the auto-set is disabled when the Reader first renders, as before.
+        Format current;
+        getProjectDefaultFormat(&current);
+        if (frmt == current) {
+            return;
+        }
+    }
+    setOrAddProjectFormat(frmt);
+}
+
+void
 Project::setOrAddProjectFormat(const Format & frmt,
-                               bool skipAdd)
+                               bool skipAdd,
+                               bool mayChangeFormat)
 {
     if ( frmt.isNull() ) {
         return;
@@ -2167,7 +2192,13 @@ Project::setOrAddProjectFormat(const Format & frmt,
     {
         QMutexLocker l(&_imp->formatMutex);
 
-        if (_imp->autoSetProjectFormat) {
+        bool autoSet = _imp->autoSetProjectFormat;
+        if (autoSet && !mayChangeFormat) {
+            Format current;
+            getProjectDefaultFormat(&current);
+            autoSet = (frmt == current);
+        }
+        if (autoSet) {
             _imp->autoSetProjectFormat = false;
             dispW = frmt;
 

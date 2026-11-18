@@ -165,7 +165,20 @@ public:
 
     void addProjectDefaultLayer(const ImagePlaneDesc& comps);
 
-    void setOrAddProjectFormat(const Format & frmt, bool skipAdd = false);
+    /**
+     * @brief Add frmt to the project formats. If the project format is still to be auto-set
+     * (empty project, see the "Auto-set project format" preference), it is set to frmt.
+     * If mayChangeFormat is false (e.g. during a render), the project format is only auto-set
+     * if it is already equal to frmt, so that it never changes while a render is running (#1294).
+     **/
+    void setOrAddProjectFormat(const Format & frmt, bool skipAdd = false, bool mayChangeFormat = true);
+
+    /**
+     * @brief Called on the main thread when the metadata of a Reader is computed: if the project
+     * format is still to be auto-set and the Reader's format differs from it, set the project format
+     * from the Reader, before any render starts (#1294).
+     **/
+    void autoSetProjectFormatFromReader(const Format & frmt);
 
     bool isAutoSetProjectFormatEnabled() const;
 

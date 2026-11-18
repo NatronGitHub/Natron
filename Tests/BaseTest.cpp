@@ -26,6 +26,8 @@
 #include "Global/Macros.h"
 
 #include <cstdlib>
+#include <fstream>
+#include <string>
 
 #include "BaseTest.h"
 
@@ -342,6 +344,83 @@ TEST_F(BaseTest, HashAfterReload)
     const U64 secondSessionHash = generator->getHashValue();
     slope->setValue(0.5);
     EXPECT_NE(generator->getHashValue(), secondSessionHash);
+}
+
+// Write a binary PPM image of the given size (any image format that ReadOIIO decodes would do).
+static void
+writeTestPPM(const QString& filePath,
+             int width,
+             int height)
+{
+    std::ofstream ofs(filePath.toStdString().c_str(), std::ios::binary);
+    ofs << "P6\n" << width << " " << height << "\n255\n";
+    std::string pixels(width * height * 3, '\x80');
+    ofs.write( pixels.data(), pixels.size() );
+}
+
+static NodePtr
+createReadNode(const AppInstancePtr& app,
+               const QString& filePath)
+{
+    CreateNodeArgs args( PLUGINID_NATRON_READ, app->getProject() );
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+
+    return app->createReader(filePath.toStdString(), args);
+}
+
+// #1294: in an otherwise empty project, the project format is auto-set from the first Reader
+// as soon as the Reader has a file, i.e. before any render starts, and not when the Reader first renders
+// (which may be in the middle of a sequence render, so that the frames of a Writer had different formats).
+TEST_F(BaseTest, ProjectFormatAutoSetFromReaderBeforeRender)
+{
+    ProjectPtr project = getApp()->getProject();
+    Format hd(0, 0, 1920, 1080, "HD", 1.);
+    // start from an empty HD project, with the format still to be auto-set
+    project->setAutoSetProjectFormatEnabled(true);
+    project->setOrAddProjectFormat(hd); // sets the format and disables the auto-set
+    project->setAutoSetProjectFormatEnabled(true);
+
+    const QString& binPath = appPTR->getApplicationBinaryPath();
+    QString emptyPath = binPath + QString::fromUtf8("/test_project_format_empty.ppm");
+    QString filePath = binPath + QString::fromUtf8("/test_project_format_64x48.ppm");
+    QString file2Path = binPath + QString::fromUtf8("/test_project_format_32x16.ppm");
+    writeTestPPM(filePath, 64, 48);
+    writeTestPPM(file2Path, 32, 16);
+    QFile::remove(emptyPath);
+
+    // A Reader whose file does not exist must not disable the auto-set.
+    NodePtr emptyReader = createReadNode(getApp(), emptyPath);
+    Format f;
+    project->getProjectDefaultFormat(&f);
+    EXPECT_EQ(1920, f.width());
+    EXPECT_EQ(1080, f.height());
+    EXPECT_TRUE( project->isAutoSetProjectFormatEnabled() );
+
+    // The first Reader with a file sets the project format, without rendering.
+    NodePtr reader = createReadNode(getApp(), filePath);
+    ASSERT_TRUE( bool(reader) );
+    EXPECT_EQ(64, reader->getEffectInstance()->getOutputFormat().width());
+    project->getProjectDefaultFormat(&f);
+    EXPECT_EQ(64, f.width());
+    EXPECT_EQ(48, f.height());
+    EXPECT_FALSE( project->isAutoSetProjectFormatEnabled() );
+
+    // The next Readers don't change it.
+    NodePtr reader2 = createReadNode(getApp(), file2Path);
+    ASSERT_TRUE( bool(reader2) );
+    project->getProjectDefaultFormat(&f);
+    EXPECT_EQ(64, f.width());
+    EXPECT_EQ(48, f.height());
+
+    if (emptyReader) {
+        emptyReader->destroyNode(false, false);
+    }
+    reader->destroyNode(false, false);
+    reader2->destroyNode(false, false);
+    QFile::remove(filePath);
+    QFile::remove(file2Path);
 }
 
 ///High level test: simple node connections test
