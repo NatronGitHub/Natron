@@ -3175,9 +3175,10 @@ AppManager::toggleAutoHideGraphInputs()
     }
 }
 
-// Registered with atexit by launchPythonInterpreter(): Py_Main() finalizes Python before it
-// returns, so close the projects while Python still runs, for the onProjectClose callbacks and
-// the removal of the node variables (#1253). loadInternalAfterInitGui() then quits the instances.
+// Registered with atexit by registerCloseProjectsAtPythonExit() in interpreter mode (-t):
+// Py_Main(), or sys.exit() in a script, finalizes Python, so close the projects while Python
+// still runs, for the onProjectClose callbacks and the removal of the node variables (#1253).
+// After Py_Main(), loadInternalAfterInitGui() then quits the instances.
 static PyObject*
 closeProjectsAtPythonExit(PyObject* /*self*/,
                           PyObject* /*args*/)
@@ -3204,6 +3205,27 @@ static PyMethodDef closeProjectsAtPythonExitDef = {
 };
 
 void
+AppManager::registerCloseProjectsAtPythonExit()
+{
+    // Before the -t scripts run: sys.exit() in a script finalizes Python too (#1253).
+    static bool registered = false;
+    if (registered) {
+        return;
+    }
+    registered = true;
+    PythonGILLocker pgl;
+    PyObject* atexitModule = PyImport_ImportModule("atexit");
+    PyObject* func = PyCFunction_New(&closeProjectsAtPythonExitDef, NULL);
+    PyObject* ret = (atexitModule && func) ? PyObject_CallMethod(atexitModule, "register", "O", func) : NULL;
+    if (!ret) {
+        PyErr_Print();
+    }
+    Py_XDECREF(ret);
+    Py_XDECREF(func);
+    Py_XDECREF(atexitModule);
+}
+
+void
 AppManager::launchPythonInterpreter()
 {
     std::string err;
@@ -3216,18 +3238,6 @@ AppManager::launchPythonInterpreter()
     }
 
     PyGILState_Ensure(); // Py_Main does PyGILState_Release() for us.
-
-    {
-        PyObject* atexitModule = PyImport_ImportModule("atexit");
-        PyObject* func = PyCFunction_New(&closeProjectsAtPythonExitDef, NULL);
-        PyObject* ret = (atexitModule && func) ? PyObject_CallMethod(atexitModule, "register", "O", func) : NULL;
-        if (!ret) {
-            PyErr_Print();
-        }
-        Py_XDECREF(ret);
-        Py_XDECREF(func);
-        Py_XDECREF(atexitModule);
-    }
 
     assert(PyThreadState_Get());
 #if PY_VERSION_HEX >= 0x030400F0

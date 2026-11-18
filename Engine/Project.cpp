@@ -1972,6 +1972,16 @@ void
 Project::reset(bool aboutToQuit, bool blocking)
 {
     assert( QThread::currentThread() == qApp->thread() );
+    // An onProjectClose callback that resets the project (app.resetProject()) would recurse forever.
+    if (_imp->resetting) {
+        return;
+    }
+    struct ResettingGuard
+    {
+        bool& flag;
+        ResettingGuard(bool& f) : flag(f) { flag = true; }
+        ~ResettingGuard() { flag = false; }
+    } resettingGuard(_imp->resetting);
     {
         QMutexLocker k(&_imp->projectClosingMutex);
         _imp->projectClosing = true;

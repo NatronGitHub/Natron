@@ -93,6 +93,7 @@ ProjectPrivate::ProjectPrivate(Project* project)
     , isSavingProject(false)
     , autoSaveTimer( new QTimer() )
     , projectClosing(false)
+    , resetting(false)
     , tlsData( new TLSHolder<Project::ProjectTLSData>() )
 
 {

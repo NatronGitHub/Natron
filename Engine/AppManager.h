@@ -466,6 +466,8 @@ public:
 
     QString getPyPlugsGlobalPath() const;
 
+    void registerCloseProjectsAtPythonExit();
+
     void launchPythonInterpreter();
 
     int isProjectAlreadyOpened(const std::string& projectFilePath) const;

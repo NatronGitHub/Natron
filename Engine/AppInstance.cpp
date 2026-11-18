@@ -701,6 +701,7 @@ AppInstance::loadInternal(const CLArgs& cl,
             startWritersRenderingFromNames( cl.areRenderStatsEnabled(), false, writers, cl.getFrameRanges() );
         }
     } else if (appPTR->getAppType() == AppManager::eAppTypeInterpreter) {
+        appPTR->registerCloseProjectsAtPythonExit();
         QFileInfo info( cl.getScriptFilename() );
         if ( info.exists() ) {
             if ( info.suffix() == QString::fromUtf8("py") ) {
