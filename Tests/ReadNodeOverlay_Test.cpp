@@ -181,6 +181,13 @@ protected:
         }
         _effect.reset();
         _node.reset();
+        if (_projectLoaded) {
+            // Leave the shared app with an untitled empty project, as the other tests find it,
+            // before the temporary directory of the saved project is removed.
+            _app->getProject()->resetProject();
+            EXPECT_TRUE( _app->getProject()->getProjectPath().isEmpty() );
+            _projectLoaded = false;
+        }
     }
 
     void createReadNode(const std::string& filename)
@@ -231,6 +238,7 @@ protected:
 
     AppInstancePtr _app;
     QTemporaryDir _tmpDir; // removed with the test fixture
+    bool _projectLoaded = false;
     QString _dir;
     std::string _svgFile, _exrFile;
     MockViewport _viewport;
@@ -343,13 +351,12 @@ TEST_F(ReadNodeOverlayTest, ReaderWithOverlay)
     EXPECT_DOUBLE_EQ( translate->getValueAtTime(kTime, 0), x1 - center->getValueAtTime(kTime, 0) + 3. );
 }
 
-// A project with a Read node is saved and loaded: the decoder is created from the saved parameters,
-// and must not be given the instance changed action of its filename as for a new file, which would
-// make GenericReader probe the file again and reset its frame range (see ReadNodePrivate::createReadNode()).
-// The parameters are loaded again after that, so the values below would also be right if it were;
-// this checks that the reloaded Read node has its decoder, file and parameters, and still switches
-// decoders after the load.
-TEST_F(ReadNodeOverlayTest, ProjectReload)
+// A project with a Read node is saved and loaded: the reloaded Read node has its decoder, file and
+// parameters, and still switches decoders after the load.
+// Note: this does NOT test that the decoder misses the instance changed action of its filename at
+// load (see ReadNodePrivate::createReadNode()): the parameters are loaded again after the decoder is
+// created, so the values checked here are the same either way.
+TEST_F(ReadNodeOverlayTest, ProjectSaveAndLoad)
 {
     if ( !isPluginAvailable(PLUGINID_OFX_READOIIO) ) {
         reportSkipped("plug-in not found (needs " PLUGINID_OFX_READOIIO " from openfx-io in OFX_PLUGIN_PATH)");
@@ -383,6 +390,8 @@ TEST_F(ReadNodeOverlayTest, ProjectReload)
     const QString dir = _dir + QLatin1Char('/');
     QString savedPath;
     ASSERT_TRUE( _app->getProject()->saveProject( dir, QString::fromUtf8("ReadNodeOverlay.ntp"), &savedPath ) );
+    // The project of the shared app now is in the temporary directory: reset it in TearDown().
+    _projectLoaded = true;
     ASSERT_TRUE( _app->getProject()->loadProject( dir, QString::fromUtf8("ReadNodeOverlay.ntp") ) );
 
     _node = _app->getProject()->getNodeByName(name);

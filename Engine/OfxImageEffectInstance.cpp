@@ -36,8 +36,10 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QDebug>
+#include <QThread>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -162,7 +164,12 @@ OfxImageEffectInstance::mainEntry(const char *action,
     // See issue https://github.com/NatronGitHub/Natron/issues/708
     // test for getMultipleParamsEditLevel() first, because it costs less.
     // The edit level is the one of the holder of the knobs (see editBegin()).
-    EffectInstancePtr effect = getParamsEditHolder();
+    // Only on the main thread, where the plug-in edits its parameters (e.g. in an overlay action):
+    // an action on a render thread (e.g. of the reader embedded in a Read node, whose edit level is
+    // the one of the Read node, or of any effect) must not end an edit block of the main thread
+    // while it is open, e.g. during an overlay drag.
+    const bool isMainThread = ( QThread::currentThread() == qApp->thread() );
+    EffectInstancePtr effect = isMainThread ? getParamsEditHolder() : EffectInstancePtr();
 
     if (effect && (effect->getMultipleParamsEditLevel() != KnobHolder::eMultipleParamsEditOff) && !effect->getApp()->isCreatingPythonGroup() ) {
         while (effect->getMultipleParamsEditLevel() != KnobHolder::eMultipleParamsEditOff) {

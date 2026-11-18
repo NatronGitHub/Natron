@@ -264,9 +264,15 @@ public:
 
     void placeReadNodeKnobsInPage();
 
+    /**
+     * @param userEdited True when called from knobChanged() because the file or the decoder was
+     * changed (not when the node is created or loaded): a new decoder then gets the instance changed
+     * action of its filename (see the implementation).
+     **/
     void createReadNode(bool throwErrors,
                         const std::string& filename,
-                        const NodeSerializationPtr& serialization );
+                        const NodeSerializationPtr& serialization,
+                        bool userEdited = false);
 
     void destroyReadNode();
 
@@ -645,7 +651,8 @@ getFileNameFromSerialization(const std::list<KnobSerializationPtr>& serializatio
 void
 ReadNodePrivate::createReadNode(bool throwErrors,
                                 const std::string& filename,
-                                const NodeSerializationPtr& serialization)
+                                const NodeSerializationPtr& serialization,
+                                bool userEdited)
 {
     if (creatingReadNode) {
         return;
@@ -687,7 +694,6 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     }
     //Destroy any previous reader
     //This will store the serialization of the generic knobs
-    const bool hadDecoder = (bool)embeddedPlugin;
     destroyReadNode();
 
     bool defaultFallback = false;
@@ -759,14 +765,14 @@ ReadNodePrivate::createReadNode(bool throwErrors,
             QMutexLocker k(&embeddedPluginMutex);
             embeddedPlugin = node;
         }
-        // When the decoder changes (another file type or decoder), the new decoder shares the
-        // filename knob of this node, which already has the new filename: setValue() did not change
-        // it, so the new decoder did not get the instance changed action for its filename. Call it,
-        // as when the decoder is the same (see above), so that it behaves as a reader given a new
-        // file (e.g. ReadSVG centers its transform on the canvas instead of the project).
-        // Not when a project is loaded (serialization): the decoder is created with its saved
+        // When the user changes the file or the decoder, the new decoder shares the filename knob
+        // of this node, which already has the filename: setValue() did not change it, so the new
+        // decoder did not get the instance changed action for its filename. Call it, as when the
+        // decoder is the same (see above), so that it behaves as a reader given a new file (e.g.
+        // ReadSVG centers its transform on the canvas instead of the project).
+        // Never when a project is loaded (serialization): the decoder is created with its saved
         // parameters, which must not be reset (e.g. GenericReader's frame range), as before.
-        if (fileKnobUnchanged && hadDecoder && !serialization) {
+        if (fileKnobUnchanged && userEdited && !serialization) {
             node->getEffectInstance()->onKnobValueChanged_public(fileKnob.get(), eValueChangedReasonNatronInternalEdited, _publicInterface->getCurrentTime(), ViewSpec(0), true);
         }
 
@@ -1267,7 +1273,7 @@ ReadNode::knobChanged(KnobI* k,
         assert(fileKnob);
         std::string filename = fileKnob->getValue();
         try {
-            _imp->createReadNode( false, filename, NodeSerializationPtr() );
+            _imp->createReadNode( false, filename, NodeSerializationPtr(), true /*userEdited*/ );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
@@ -1292,7 +1298,7 @@ ReadNode::knobChanged(KnobI* k,
         std::string filename = fileKnob->getValue();
 
         try {
-            _imp->createReadNode( false, filename, NodeSerializationPtr() );
+            _imp->createReadNode( false, filename, NodeSerializationPtr(), true /*userEdited*/ );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
