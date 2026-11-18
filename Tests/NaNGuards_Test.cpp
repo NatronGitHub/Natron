@@ -45,6 +45,13 @@
 #include "Engine/CurveSerialization.h"
 #include "Engine/Format.h"
 #include "Engine/Interpolation.h"
+// for the std::map, std::list, std::vector and std::string members of KnobSerialization
+#include <boost/serialization/list.hpp>
+#include <boost/serialization/map.hpp>
+#include <boost/serialization/string.hpp>
+#include <boost/serialization/vector.hpp>
+#include "Engine/KnobSerialization.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Lut.h"
 #include "Engine/Transform.h"
 #include "Gui/ZoomContext.h"
@@ -617,8 +624,9 @@ TEST(NaNGuards, CurveCloneRefresh)
     EXPECT_NEAR( -1. / 3., p.getKeyFrames_mt_safe().begin()->getLeftDerivative(), 1e-12 );
 
     // A project loads in two steps: the loaded curve is cloned into a temporary,
-    // non-periodic knob, which is then cloned into the real, periodic knob
-    // (KnobParametric::cloneExtraData()). The last clone must use its own periodicity.
+    // non-periodic knob (KnobSerialization), whose curve is then copied into the real,
+    // periodic knob by Node::loadKnob() -> cloneAndUpdateGui() ->
+    // Curve::cloneAndCheckIfChanged(). The last step must use its own periodicity.
     Curve loaded2;
     loadCurve(setAllKeyValues(saveCurve(c), "LeftDerivative", "nan"), &loaded2);
     Curve tmp; // non-periodic
@@ -628,10 +636,85 @@ TEST(NaNGuards, CurveCloneRefresh)
     Curve real;
     real.setXRange(0., 6.);
     real.setPeriodic(true);
-    real.clone(tmp);
+    // the real knob may already have the same keys (e.g. its default curve): it must still be refreshed
+    real.setKeyframes(tmp.getKeyFrames_mt_safe(), false);
+    EXPECT_TRUE( real.cloneAndCheckIfChanged(tmp) );
     expectFiniteDerivatives(real);
     EXPECT_NEAR( -1. / 3., real.getKeyFrames_mt_safe().begin()->getLeftDerivative(), 1e-12 );
     expectSameKeys(p, real);
+
+    // after loading, clones from the knob's curve copy the keys unchanged
+    real.clearMustRefreshDerivatives(); // as Node::loadKnob() does
+    Curve again;
+    again.setXRange(0., 6.);
+    again.setPeriodic(true);
+    again.clone(real);
+    expectSameKeys(real, again);
+    EXPECT_FALSE( again.cloneAndCheckIfChanged(real) );
+    expectSameKeys(real, again);
+}
+
+static KnobParametricPtr
+makeHueCurveKnob()
+{
+    // like HueCorrect's hue curves: periodic, with the range [0,6]
+    KnobParametricPtr k = std::make_shared<KnobParametric>( (KnobHolder*)NULL, std::string("hue"), 1, false );
+    k->populate();
+    k->setPeriodic(true);
+    k->setParametricRange(0., 6.);
+
+    return k;
+}
+
+// The whole load path of a parametric knob, as for a project saved with NaN derivatives (#1267):
+// the XML is loaded into a temporary knob (KnobSerialization::createKnob()), and restored
+// into the real, periodic knob with cloneAndUpdateGui(), as Node::loadKnob() does.
+TEST(NaNGuards, ParametricKnobLoadNaNDerivatives)
+{
+    KnobParametricPtr saved = makeHueCurveKnob();
+    CurvePtr savedCurve = saved->getParametricCurve(0);
+    for (int i = 0; i < 3; ++i) {
+        KeyFrame k(3. * i, i == 1 ? 1. : 0.);
+        k.setInterpolation(eKeyframeTypeLinear);
+        savedCurve->addKeyFrame(k);
+    }
+    expectFiniteDerivatives(*savedCurve);
+    const double expectedLeft = savedCurve->getKeyFrames_mt_safe().begin()->getLeftDerivative();
+    EXPECT_NEAR(-1. / 3., expectedLeft, 1e-12);
+
+    std::stringstream ss;
+    {
+        KnobSerialization ser(saved);
+        boost::archive::xml_oarchive oa(ss);
+        oa << boost::serialization::make_nvp("Knob", ser);
+    }
+    const std::string bad = setAllKeyValues(ss.str(), "LeftDerivative", "nan");
+    ASSERT_NE( ss.str(), bad );
+
+    KnobSerialization loaded;
+    {
+        std::stringstream is(bad);
+        boost::archive::xml_iarchive ia(is);
+        ASSERT_NO_THROW( ia >> boost::serialization::make_nvp("Knob", loaded) );
+    }
+    ASSERT_TRUE( loaded.getKnob() != nullptr );
+
+    KnobParametricPtr real = makeHueCurveKnob();
+    real->cloneAndUpdateGui( loaded.getKnob().get() );
+    real->getParametricCurve(0)->clearMustRefreshDerivatives(); // end of Node::loadKnob()
+    CurvePtr realCurve = real->getParametricCurve(0);
+    expectFiniteDerivatives(*realCurve);
+    EXPECT_NEAR( expectedLeft, realCurve->getKeyFrames_mt_safe().begin()->getLeftDerivative(), 1e-12 );
+    expectSameKeys(*savedCurve, *realCurve);
+    EXPECT_DOUBLE_EQ( 0., realCurve->getValueAt(6.) );
+
+    // a second clone from the knob's curve leaves the keys bit-identical
+    KnobParametricPtr other = makeHueCurveKnob();
+    other->cloneAndUpdateGui( real.get() );
+    expectSameKeys( *realCurve, *other->getParametricCurve(0) );
+    Curve copy;
+    copy.clone(*realCurve);
+    expectSameKeys(*realCurve, copy);
 }
 
 // A periodic curve without setXRange() has an infinite period: it is not wrapped.
