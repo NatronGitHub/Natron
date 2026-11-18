@@ -57,6 +57,15 @@ target_include_directories(Tests
 )
 add_test(NAME Tests COMMAND Tests)
 
+# GUI smoke test (see gui/run_gui_smoke_test.py): runs the Natron GUI with --no-dialogs.
+# It is skipped (exit status 77) without a display, in CI unless NATRON_GUI_TESTS=1, or
+# without the Read and Transform plug-ins (set OFX_PLUGIN_PATH as for the Tests binary).
+if(Python3_Interpreter_FOUND)
+    add_test(NAME GuiSmokeTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_gui_smoke_test.py $<TARGET_FILE:Natron>)
+    set_tests_properties(GuiSmokeTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 600)
+endif()
+
 # Not part of a normal install. The installer scripts install it separately
 # (cmake --install <build> --component Tests) and run it from the bundled tree:
 # in Natron.app/Contents/MacOS on macOS PORTABLE, in bin/ elsewhere.

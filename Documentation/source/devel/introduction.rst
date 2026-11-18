@@ -12,4 +12,5 @@ This section covers the basic principles for scripting in Python in Natron.
     scriptvslabel.rst
     startupscripts.rst
     natronexecution.rst
+    guitesting.rst
     natronobjects.rst
