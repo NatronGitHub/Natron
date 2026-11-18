@@ -58,26 +58,10 @@ for(kind, $$list(third_party bindings)) {
     QMAKE_EXTRA_COMPILERS += natron_$${kind}
 }
 
-# The include directories of the bundled third-party code are system include
-# directories (-isystem), as SYSTEM in the CMake build: their headers don't
-# warn in Natron's translation units. (GCC and clang only: MSVC keeps -I.)
-!msvc {
-    natron_third_party_incdirs = $$PWD/Tests/google-test $$PWD/Tests/google-mock
-    for(lib, $$list(Eigen3 ceres gflags glog hoedown libmv libtess openMVG qhttpserver SequenceParsing)) {
-        natron_third_party_incdirs += $$PWD/libs/$$lib
-    }
-    for(dir, INCLUDEPATH) {
-        absdir = $$clean_path($$absolute_path($$dir, $$_PRO_FILE_PWD_))
-        for(tpdir, natron_third_party_incdirs) {
-            equals(absdir, $$tpdir)|contains(absdir, ^$$re_escape($$tpdir)/.*) {
-                natron_system_incdirs += $$absdir
-                INCLUDEPATH -= $$dir
-            }
-        }
-    }
-    for(dir, natron_system_incdirs) {
-        QMAKE_CFLAGS += -isystem $$shell_quote($$dir)
-        QMAKE_CXXFLAGS += -isystem $$shell_quote($$dir)
-        DEPENDPATH += $$dir
-    }
-}
+# Unlike the CMake build, the include directories of the bundled third-party
+# code stay -I (INCLUDEPATH), not -isystem: -isystem directories are searched
+# after every -I directory, and some SDK directories (-I/opt/local/include,
+# -I/opt/Natron-sdk/include) only reach INCPATH after this file is read (e.g.
+# from pkg-config), so an SDK with glog, gflags or gtest headers would replace the
+# bundled headers while the bundled libraries are linked. Giving a directory both
+# -I and -isystem doesn't help: GCC and clang then ignore the -I.
