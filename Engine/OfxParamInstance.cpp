@@ -39,6 +39,7 @@
 #include <QDebug>
 
 #include "Global/GlobalDefines.h"
+#include "Global/MathUtils.h"
 #include "Engine/AppManager.h"
 #include "Engine/Knob.h"
 #include "Engine/KnobFactory.h"
@@ -4813,12 +4814,9 @@ OfxParametricInstance::addControlPoint(int curveIndex,
                                        double value,
                                        bool /* addAnimationKey*/)
 {
-    if ( std::isnan(time) || // check for NaN
-         std::isinf(time) ||
-         std::isnan(key) || // check for NaN
-         std::isinf(key) ||
-         std::isnan(value) || // check for NaN
-         std::isinf(value) ) {
+    if ( !MathUtils::isFinite(time) || // reject NaN and infinity (works with -ffast-math)
+         !MathUtils::isFinite(key) ||
+         !MathUtils::isFinite(value) ) {
         return kOfxStatFailed;
     }
 

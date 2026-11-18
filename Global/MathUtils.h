@@ -21,6 +21,8 @@
 #define NATRON_GLOBAL_MATHUTILS_H
 
 #include <algorithm>
+#include <cstdint>
+#include <cstring>
 #include <functional>
 
 #include "../Global/Macros.h"
@@ -42,6 +44,40 @@ constexpr const T&
 clamp(const T& v, const T& lo, const T& hi)
 {
     return MathUtils::clamp(v, lo, hi, std::less<T>{});
+}
+
+// isFinite(x) is true if x is neither NaN nor infinite.
+// It tests the exponent bits instead of calling std::isfinite or comparing
+// floating-point values, because -ffast-math (-ffinite-math-only) lets the
+// compiler fold std::isnan, std::isinf, std::isfinite and x != x to constants.
+// Use it only to validate values that come from outside (plug-ins, Python,
+// files); computations must make sure they never create a NaN or an infinity.
+inline bool
+isFinite(double x)
+{
+    std::uint64_t bits;
+    std::memcpy(&bits, &x, sizeof(bits));
+
+    return (bits & 0x7ff0000000000000ULL) != 0x7ff0000000000000ULL;
+}
+
+inline bool
+isFinite(float x)
+{
+    std::uint32_t bits;
+    std::memcpy(&bits, &x, sizeof(bits));
+
+    return (bits & 0x7f800000U) != 0x7f800000U;
+}
+
+// isNaN(x) is true if x is a NaN. See isFinite() for why it doesn't use std::isnan.
+inline bool
+isNaN(float x)
+{
+    std::uint32_t bits;
+    std::memcpy(&bits, &x, sizeof(bits));
+
+    return (bits & 0x7fffffffU) > 0x7f800000U;
 }
 
 } // namespace MathUtils

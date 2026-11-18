@@ -32,6 +32,7 @@
 
 #include <QDebug>
 
+#include "Global/MathUtils.h"
 #include "Engine/AppManager.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/GPUContextPool.h"
@@ -2160,7 +2161,7 @@ Image::checkForNaNsAndFix(const RectI& roi)
 #ifdef DEBUG_NAN
             assert( !std::isnan(*pix) ); // check for NaN
 #endif
-            if ( std::isnan(*pix) ) { // check for NaN (std::isnan(x) is not slower than x != x and works with -Ofast)
+            if ( MathUtils::isNaN(*pix) ) { // check for NaN (tests the bits: std::isnan(x) and x != x are folded to false with -ffast-math)
                 *pix = 1.;
                 hasnan = true;
             }
@@ -2193,7 +2194,7 @@ Image::checkForNaNsNoLock(const RectI& roi) const
 #ifdef DEBUG_NAN
             assert( !std::isnan(*pix) ); // check for NaN
 #endif
-            if ( std::isnan(*pix) ) { // check for NaN (std::isnan(x) is not slower than x != x and works with -Ofast)
+            if ( MathUtils::isNaN(*pix) ) { // check for NaN (tests the bits: std::isnan(x) and x != x are folded to false with -ffast-math)
                 hasnan = true;
             }
         }
