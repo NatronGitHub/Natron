@@ -4532,9 +4532,9 @@ Node::onFileNameParameterChanged(KnobI* fileKnob)
         KnobOutputFile* fileParam = dynamic_cast<KnobOutputFile*>(fileKnob);
         if (fileParam) {
             std::string pattern = fileParam->getValue();
-            std::size_t foundViewPattern = pattern.find_first_of("%v");
+            std::size_t foundViewPattern = pattern.find("%v");
             if (foundViewPattern == std::string::npos) {
-                foundViewPattern = pattern.find_first_of("%V");
+                foundViewPattern = pattern.find("%V");
             }
             if (foundViewPattern != std::string::npos) {
                 //We found view pattern
