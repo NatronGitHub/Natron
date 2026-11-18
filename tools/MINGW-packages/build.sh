@@ -2,6 +2,7 @@
 set -e -x
 CWD=`pwd`
 PKGS="
+mingw-w64-freetype
 mingw-w64-libraw-gpl2
 mingw-w64-libraw-lgpl
 mingw-w64-openimageio

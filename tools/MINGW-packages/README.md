@@ -176,6 +176,7 @@ The repository is built in MSYS2 UCRT64 (`build_pacman_repo.yml`, `build_natron_
 
 | Package | Why Natron builds it |
 |---|---|
+| `freetype` 2.15.0-1.1 | MSYS2's FreeType 2.15.0-1 with the upstream fix [05f343a](https://gitlab.freedesktop.org/freetype/freetype/-/commit/05f343a) ("Fix macros", not in a release yet). FreeType 2.15.0 defines `ULABS( a )` without parentheses, so `FT_Set_Transform` resets a y flip combined with a rotation within about 1.8° of 45°, 135°, 225° or 315° to the identity, and rotated text comes out unrotated in openfx-arena's Text (#1287). It replaces MSYS2's package, see "Packages that replace MSYS2's" below. macOS has the same backport in `tools/MacPorts/print/freetype` (#1286). |
 | `natron_ffmpeg-gpl2` 9.0.2 | FFmpeg for openfx-io, GPL-2.0-or-later (`--enable-gpl` without `--enable-version3`; MSYS2's FFmpeg is GPLv3), with the same version and configuration as Natron's macOS build (MacPorts `+gpl2 +natronmini`), in the private prefix `${MINGW_PREFIX}/ffmpeg-gpl2`. It uses MSYS2's `libx264` (ABI 165), so there is only one x264. |
 | `natron_libraw-gpl2`, `natron_libraw-lgpl` 0.22.3 | LibRaw with the GPL demosaic packs (GPL builds), and without them (COMMERCIAL builds). |
 | `natron_openimageio` 3.1.17.0 | OIIO, the same version as Natron's macOS build, built against `natron_libraw-gpl2` and MSYS2's OpenColorIO, OpenEXR and Imath, without FFmpeg, for openfx-io. |
@@ -185,7 +186,17 @@ The repository is built in MSYS2 UCRT64 (`build_pacman_repo.yml`, `build_natron_
 | `natron-setup` | The Inno Setup installer. |
 | `natron-build-deps-common`, `-qt5`, `-qt6` | Meta-packages that install everything needed to build Natron, the plug-ins and the installer. |
 
-OpenColorIO, OpenEXR, Imath, poppler (with the private headers that ReadPDF uses) and SoX now come from MSYS2. The Breakpad tools (`dump_syms`, `breakdown`) are gone: releases ship no crash reporter until #1183.
+OpenColorIO, OpenEXR, Imath, poppler (with the private headers that ReadPDF uses) and SoX now come from MSYS2.
+
+### Packages that replace MSYS2's
+
+Natron's packages normally have their own names (`natron_*`, `osmesa`, `natron-*`), so that they can't clash with MSYS2's. A package that must replace an MSYS2 package for everything that links it (e.g. `freetype`, which harfbuzz, fontconfig, cairo, poppler and Qt depend on) keeps MSYS2's name instead, with MSYS2's PKGBUILD (`PKGBUILD.orig`), Natron's change (`PKGBUILD.patch`, regenerated with `diff -u PKGBUILD.orig PKGBUILD > PKGBUILD.patch`), and a `pkgrel` with a decimal part, such as `1.1` for MSYS2's `1`. It then installs over MSYS2's package with no file conflicts and no `provides`/`conflicts`. `check.sh` reports when MSYS2's PKGBUILD changes.
+
+pacman takes a package from the *first* repository in `pacman.conf` that has it, without comparing versions, and `[natron]` comes after MSYS2's repositories. So neither `pacman -S` (or a dependency of `natron-build-deps-*`) nor `pacman -Syu` installs these packages from `[natron]`. They are listed in `NATRON_REPO_OVERRIDES` (`natron_repo_common.sh`), and `natron_repo_install_overrides` installs each of them explicitly, as `natron/<package>`, if and only if its version is newer than MSYS2's (`vercmp`). `build_natron_package_repo.sh` builds them first and installs them (without `--overwrite`, so that a file conflict fails the build), and `install_natron_pacman_repo.sh` installs them for the installer builds. Once installed, a later `pacman -Syu` keeps them ("local is newer than ucrt64") until MSYS2 has a higher version.
+
+Because `1.1` sorts below `2`, an MSYS2 rebuild with the fix (`2.15.0-2`) or a new release (`2.15.1`) wins automatically: `natron_repo_install_overrides` then keeps MSYS2's package and prints a warning, and `pacman -Syu` replaces Natron's. When that happens, check that MSYS2's package has the fix, then delete the package: remove its directory, its entries in `build.sh`, `build_natron_package_repo.sh` and `NATRON_REPO_OVERRIDES`, and its row in the table above, and bump `windows_pacman_repo_version.txt`. Don't keep it around deprecated.
+
+To install such a package by hand from a local build of the repository: `pacman -S natron/${MINGW_PACKAGE_PREFIX}-freetype`, or `pacman -U ${MINGW_PACKAGE_PREFIX}-freetype-*-any.pkg.tar.*` in its directory. The Breakpad tools (`dump_syms`, `breakdown`) are gone: releases ship no crash reporter until #1183.
 
 ### When to rebuild the package repository
 

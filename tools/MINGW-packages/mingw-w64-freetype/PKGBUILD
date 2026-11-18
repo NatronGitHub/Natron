@@ -1,0 +1,124 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+
+# Natron: MSYS2's mingw-w64-freetype (PKGBUILD.orig, msys2/MINGW-packages
+# b6f22c12be) with the upstream fix 05f343a for the ULABS/UABS macros, which
+# isn't in a FreeType release yet (NatronGitHub/Natron#1287). Same pkgname as
+# MSYS2's, so it replaces the system package. pkgrel is 1.1: above MSYS2's
+# 2.15.0-1, below any MSYS2 rebuild (2.15.0-2) or update (2.15.1), which then
+# wins. Delete this directory as soon as MSYS2 ships a FreeType with 05f343a
+# (see "Packages that replace MSYS2's" in ../README.md).
+
+_with_harfbuzz="yes"
+
+_realname=freetype
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=2.15.0
+pkgrel=1.1
+pkgdesc="TrueType font rendering library (mingw-w64, Natron: ULABS fix 05f343a)"
+arch=('any')
+mingw_arch=('ucrt64')
+msys2_references=(
+  'archlinux: freetype2'
+  "cpe: cpe:/a:freetype:freetype"
+)
+url="https://www.freetype.org/"
+msys2_repository_url="https://gitlab.freedesktop.org/freetype/freetype"
+license=('spdx:GPL-2.0-or-later OR FTL')
+depends=("${MINGW_PACKAGE_PREFIX}-cc-libs"
+         "${MINGW_PACKAGE_PREFIX}-brotli"
+         "${MINGW_PACKAGE_PREFIX}-bzip2"
+         "${MINGW_PACKAGE_PREFIX}-libpng"
+         "${MINGW_PACKAGE_PREFIX}-zlib")
+if [ "${_with_harfbuzz}" == "yes" ]; then
+  depends+=("${MINGW_PACKAGE_PREFIX}-harfbuzz")
+fi
+makedepends=("${MINGW_PACKAGE_PREFIX}-meson"
+             "${MINGW_PACKAGE_PREFIX}-ninja"
+             "${MINGW_PACKAGE_PREFIX}-pkgconf"
+             "${MINGW_PACKAGE_PREFIX}-cc")
+# Natron: no .sig, because makepkg can't check it on a CI runner that doesn't
+# have the key; the sha256sum pins the same tarball as MSYS2's.
+source=(https://download-mirror.savannah.gnu.org/releases/freetype/freetype-${pkgver}.tar.xz
+        freetype-2.10.0-enable-valid.patch
+        freetype-2.10.0-enable-spr.patch
+        0001-freetype-2.15.0-fix-ULABS-UABS-macros-05f343a.patch)
+sha256sums=('93cd47eb719c325107f2d3cf087d06299e944c3b48a40b55537302304dea1dd5'
+            '30e84993f899b66c31451992667f7ac6cc9e0b19dfe2f47ccb546d77bbc77ef5'
+            '0571f18d97834df020e4cbdb1338b14f9160669f868237080951e01f5b86727c'
+            'bb229898a6082ad1e0118d4ae04db451217efb98183c31b0ad7c88507d0cc08a')
+
+# Helper macros to help make tasks easier #
+apply_patch_with_msg() {
+  for _patch in "$@"
+  do
+    msg2 "Applying ${_patch}"
+    patch -Nbp1 -i "${srcdir}/${_patch}"
+  done
+}
+
+prepare() {
+  cd "${srcdir}/freetype-${pkgver}"
+
+  apply_patch_with_msg \
+    freetype-2.10.0-enable-valid.patch \
+    freetype-2.10.0-enable-spr.patch
+
+  # Natron: https://gitlab.freedesktop.org/freetype/freetype/-/commit/05f343a
+  # ("Fix macros", 2026-10-17). FreeType 2.15.0 (a98c7c2) defines ULABS( a )
+  # without parentheses, so FT_Matrix_Check gets the determinant of reflected
+  # matrices wrong, and FT_Set_Transform resets a y flip combined with a
+  # rotation within about 1.8 degrees of 45, 135, 225 or 315 degrees to the
+  # identity (NatronGitHub/openfx-arena#86, #88).
+  apply_patch_with_msg \
+    0001-freetype-2.15.0-fix-ULABS-UABS-macros-05f343a.patch
+}
+
+build() {
+  declare -a extra_config
+  if check_option "debug" "n"; then
+    extra_config+=("--buildtype=release")
+  else
+    extra_config+=("--buildtype=debug")
+  fi
+
+  if [ "${_with_harfbuzz}" != "yes" ]; then
+    extra_config+=("-Dharfbuzz=disabled")
+  fi
+
+  extra_config+=("-Dhvf=disabled")
+
+  MSYS2_ARG_CONV_EXCL="--prefix=" \
+    meson setup \
+      --prefix="${MINGW_PREFIX}" \
+      --wrap-mode=nodownload \
+      --auto-features=enabled \
+      --default-library=shared \
+      "${extra_config[@]}" \
+      "build-${MSYSTEM}" \
+      "${_realname}-${pkgver}"
+
+  meson compile -C "build-${MSYSTEM}"
+
+  MSYS2_ARG_CONV_EXCL="--prefix=" \
+    meson setup \
+      --prefix="${MINGW_PREFIX}" \
+      --wrap-mode=nodownload \
+      --auto-features=enabled \
+      --default-library=static \
+      "${extra_config[@]}" \
+      "build-${MSYSTEM}-static" \
+      "${_realname}-${pkgver}"
+
+  meson compile -C "build-${MSYSTEM}-static"
+}
+
+package () {
+  DESTDIR="${pkgdir}" meson install -C "build-${MSYSTEM}-static"
+  DESTDIR="${pkgdir}" meson install -C "build-${MSYSTEM}"
+
+  # Licenses
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/docs/GPLv2.TXT"   "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/GPLv2.TXT"
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/docs/FTL.TXT"     "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/FTL.TXT"
+}
