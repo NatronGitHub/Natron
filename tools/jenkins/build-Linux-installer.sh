@@ -53,18 +53,20 @@ export LD_LIBRARY_PATH
 
 # Libraries that always come from the system and are never bundled:
 # - glibc (libc, libm, libdl, libpthread, librt, ld-linux*, ...);
-# - the GCC runtime (libstdc++, libgcc_s, libgomp, libatomic). Natron is built on Rocky Linux 8
+# - the GCC runtime (libstdc++, libgcc_s, libgomp, libatomic). Natron is built on Rocky Linux 9
 #   with gcc-toolset: its libstdc++.so is a linker script that takes the symbols missing
-#   from the system libstdc++ (GCC 8.5) from libstdc++_nonshared.a, so the binaries only need
+#   from the system libstdc++ (GCC 11) from libstdc++_nonshared.a, so the binaries only need
 #   the system libstdc++;
 # - OpenGL (GLVND), X11/xcb and DRM, which must match the system's graphics driver and display.
 # A dependency in this list is an error: the bundle would then not use the system library.
 SYSTEM_LIBS_RE='^(ld-linux.*|lib(c|m|mvec|dl|pthread|rt|resolv|util|anl|stdc\+\+|gcc_s|gomp|atomic|GL|EGL|GLX|GLdispatch|OpenGL|X11|X11-xcb|xcb|xcb-.*|drm)\.so(\..*)?)$'
 
-# Highest symbol versions defined by the system libraries of Rocky Linux 8 (glibc 2.28;
-# libstdc++, libgcc_s and libgomp from GCC 8.5), on x86_64 and aarch64. A bundled binary
+# Highest symbol versions defined by the system libraries of Rocky Linux 9.0 (glibc 2.34;
+# libstdc++, libgcc_s and libgomp from GCC 11), on x86_64 and aarch64. A bundled binary
 # that needs a newer version would not run on the oldest supported systems.
-SYSTEM_SYMVER_MAX="GLIBC_2.28 GLIBCXX_3.4.25 CXXABI_1.3.11 GCC_7.0.0 GOMP_5.0 OMP_5.0"
+# Later EL9 glibc packages also define some GLIBC_2.35 symbols (backports, e.g. __memcmpeq,
+# _dl_find_object): a binary that uses them would not run on EL 9.0 to 9.x, hence GLIBC_2.34.
+SYSTEM_SYMVER_MAX="GLIBC_2.34 GLIBCXX_3.4.29 CXXABI_1.3.13 GCC_11.0 GOMP_5.0.1 OMP_5.0.1"
 
 function isSystemLib() {
     [[ "$(basename "$1")" =~ $SYSTEM_LIBS_RE ]]
@@ -116,9 +118,9 @@ function checkBundle() {
     done < <(find "$dir" \( -type f -o -type l \) -name 'lib*.so*' -print0)
     while IFS= read -r -d '' f; do
         [ "$(od -An -tx1 -N4 "$f" | tr -d ' \n')" = "7f454c46" ] || continue
-        for v in $(objdump -p "$f" 2>/dev/null | awk '/^Version References:/ {r=1; next} r && NF == 4 {print $4} r && NF == 0 {exit}' | sort -u); do
+        for v in $(objdump -p "$f" 2>/dev/null | awk '/^Version References:/ {r=1; next} r && /^ *required from / {next} r && $1 ~ /^0x/ && NF == 4 {print $4; next} r {exit}' | sort -u); do
             if symverTooNew "$v"; then
-                (>&2 echo "Error: $f needs $v, newer than the system libraries of Rocky Linux 8 ($SYSTEM_SYMVER_MAX)")
+                (>&2 echo "Error: $f needs $v, newer than the system libraries of Rocky Linux 9 ($SYSTEM_SYMVER_MAX)")
                 errors=$((errors + 1))
             fi
         done
@@ -691,7 +693,7 @@ fi
 
 
 # No system runtime may be bundled, and the binaries must run with the system libraries of
-# the oldest supported distribution (Rocky Linux 8)
+# the oldest supported distribution (Rocky Linux 9)
 checkBundle "${TMP_PORTABLE_DIR}"
 checkBundle "${INSTALLER_PATH}/packages"
 

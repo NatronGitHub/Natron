@@ -71,17 +71,17 @@ The release scripts (`tools/jenkins/launchBuildMain.sh`) build Natron with CMake
 
 ### Runtime requirements of the Linux binaries
 
-The official Linux binaries are built on Rocky Linux 8 with the Natron SDK. They bundle the SDK libraries: Qt, Python, Boost, OpenImageIO, OpenColorIO, OpenEXR, FFmpeg, LibRaw, and so on. They never bundle the following system libraries, which must be installed on the system that runs Natron:
+The official Linux binaries are built on Rocky Linux 9 with the Natron SDK. They bundle the SDK libraries: Qt, Python, Boost, OpenImageIO, OpenColorIO, OpenEXR, FFmpeg, LibRaw, and so on. They never bundle the following system libraries, which must be installed on the system that runs Natron:
 
-- glibc 2.28 or later: libc, libm, libdl, libpthread, librt and ld-linux.
-- libstdc++ and libgcc_s from GCC 8.5 or later. On Rocky Linux 8 these are the system ones. Natron may be compiled with a newer GCC, from `gcc-toolset`, but the libstdc++ symbols that are newer than GCC 8.5 are then linked statically, from `libstdc++_nonshared.a`, so the binaries only need the system libstdc++.
-- libgomp (OpenMP runtime), from GCC 8.5 or later. It is a separate package (`libgomp` on RHEL/Rocky, `libgomp1` on Debian/Ubuntu). Desktop systems have it, but minimal images such as the `rockylinux:8` container image don't.
+- glibc 2.34 or later: libc, libm, libdl, libpthread, librt and ld-linux.
+- libstdc++ and libgcc_s from GCC 11 or later. On Rocky Linux 9 these are the system ones. Natron is compiled with a newer GCC, from `gcc-toolset`, but the libstdc++ symbols that are newer than GCC 11 are linked statically, from `libstdc++_nonshared.a`, so the binaries only need the system libstdc++.
+- libgomp (OpenMP runtime), from GCC 11 or later. It is a separate package (`libgomp` on RHEL/Rocky, `libgomp1` on Debian/Ubuntu). Most systems have it, but minimal images such as `rockylinux:9-minimal` don't.
 - libGL from GLVND (libGL, libEGL, libGLX, libGLdispatch), and an OpenGL driver.
-- The X11 client libraries, at least as recent as Rocky Linux 8's: libX11 1.6.8, libxcb 1.13 and libxkbcommon 0.9. Also libdrm.
+- The X11 client libraries, at least as recent as those of Rocky Linux 9.0: libX11 1.7.0, libxcb 1.13.1 and libxkbcommon 1.0.3. Also libdrm.
 
 `tools/jenkins/build-Linux-installer.sh` checks this. It fails in two cases:
 - one of these libraries would be bundled;
-- a bundled binary needs a symbol version newer than Rocky Linux 8 provides, as found by `objdump -p` (Version References). The limits are GLIBC_2.28, GLIBCXX_3.4.25, CXXABI_1.3.11, GCC_7.0.0, GOMP_5.0 and OMP_5.0.
+- a bundled binary needs a symbol version newer than Rocky Linux 9.0 provides, as found by `objdump -p` (Version References). The limits are GLIBC_2.34, GLIBCXX_3.4.29, CXXABI_1.3.13, GCC_11.0, GOMP_5.0.1 and OMP_5.0.1. Later EL9 updates of glibc define a few GLIBC_2.35 symbols, backported from glibc 2.35: a binary that needs them would not run on older EL9 systems.
 
 ### Environment to use the Natron SDK
 

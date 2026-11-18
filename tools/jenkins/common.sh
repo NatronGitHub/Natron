@@ -477,7 +477,7 @@ BOOST_ROOT="$SDK_HOME"
 
 PKG_CONFIG_PATH=
 if [ "$PKGOS" = "Linux" ]; then
-    # The compiler is gcc-toolset (Rocky Linux 8), and its C++ runtime is the system one:
+    # The compiler is gcc-toolset (Rocky Linux 9), and its C++ runtime is the system one:
     # don't use the SDK's old self-built GCC ($SDK_HOME/gcc).
     PATH="$SDK_HOME/bin:$QTDIR/bin:$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$PATH"
     LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
