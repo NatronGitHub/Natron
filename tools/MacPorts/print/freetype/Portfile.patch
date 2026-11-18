@@ -1,0 +1,25 @@
+--- Portfile.orig	2026-11-18 09:51:20
++++ Portfile	2026-11-18 09:51:37
+@@ -5,7 +5,7 @@
+ 
+ name                    freetype
+ version                 2.15.0
+-revision                0
++revision                1
+ set docdistname         ${name}-doc-${version}
+ use_xz                  yes
+ checksums               ${distname}${extract.suffix} \
+@@ -46,6 +46,13 @@
+     patch-src_base_ftrfork.c.diff \
+     patch-modules.cfg.diff
+ 
++# Natron: backport of upstream 05f343a (unreleased, after 2.15.0): fix the
++# ULABS/UABS macros, which made FT_Set_Transform reset some reflected and
++# rotated matrices to the identity (openfx-arena #86, #88).
++# Remove this patch and the PINNED file when MacPorts ships a release with it.
++patchfiles-append \
++    patch-include_freetype_internal_ftcalc.h.diff
++
+ depends_build           path:bin/pkg-config:pkgconfig
+ 
+ depends_lib             port:brotli \

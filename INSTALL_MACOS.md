@@ -90,7 +90,7 @@ sudo port selfupdate
 
 #### 3. Natron's custom ports
 
-Natron needs modified ports. Examples: the `+natron` variants of ImageMagick and openimageio and the `+natronmini` variant of ffmpeg; libraw 0.22.3 with the GPL demosaic packs restored by a patch. MacPorts reads them from a copy of `tools/MacPorts` in `/opt/MacPorts-Natron`. A copy is used rather than the source tree itself, because MacPorts accesses the ports as an unprivileged user that usually can't read your home directory.
+Natron needs modified ports. Examples: the `+natron` variants of ImageMagick and openimageio and the `+natronmini` variant of ffmpeg; libraw 0.22.3 with the GPL demosaic packs restored by a patch; freetype 2.15.0 with an upstream fix for rotated text backported. MacPorts reads them from a copy of `tools/MacPorts` in `/opt/MacPorts-Natron`. A copy is used rather than the source tree itself, because MacPorts accesses the ports as an unprivileged user that usually can't read your home directory.
 
 ```Shell
 sudo mkdir -p /opt/MacPorts-Natron
@@ -320,6 +320,7 @@ Do this every few weeks, and before a release build. Each step is safe to stop a
    |---|---|---|
    | `graphics/libraw` | 0.22.3 (upstream: 0.22.2) + patch | the GPL demosaic packs (`+gpl2`) are restored by a Natron patch |
    | `graphics/opencolorio` | 2.6.0 (upstream: 2.5.1) | VFX Reference Platform CY2027; keep it until upstream reaches 2.6, and rev-bump `openimageio` when the OCIO minor version changes |
+   | `print/freetype` | 2.15.0_1 (upstream: 2.15.0_0) + patch | backport of FreeType's unreleased fix 05f343a: 2.15.0 resets some reflected and rotated transforms to the identity, so rotated text in openfx-arena's Text comes out unrotated (openfx-arena #86, #88); unpin when MacPorts ships a FreeType newer than 2.15.0 or a release that has 05f343a. `sudo port -v upgrade outdated` picks up the revision bump |
 
 5. **See what would be upgraded,** now that the overlay is published:
 
