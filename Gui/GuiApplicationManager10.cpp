@@ -44,6 +44,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QGuiApplication>
 #include <QScreen>
 #include <QFileOpenEvent>
+#include <QTimer>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -489,6 +490,24 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
             }
         }
     }
+}
+
+void
+GuiApplicationManager::requestQuit(int exitCode)
+{
+    bool alreadyRequested = isQuitRequested();
+
+    // records the exit code returned by main() and stops the renders
+    AppManager::requestQuit(exitCode);
+    if (alreadyRequested) {
+        return;
+    }
+    // Do not close the projects now: this may be called from a Python callback, by a node
+    // or a knob that would be destroyed. Close them once the event loop is back, without
+    // asking to save. When the last one is closed, the event loop exits.
+    QTimer::singleShot( 0, this, [this]() {
+        exitApp(false);
+    } );
 }
 
 static bool

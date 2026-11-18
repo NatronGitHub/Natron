@@ -2615,6 +2615,35 @@ AppManager::setDialogsDisabled(bool disabled)
     _imp->dialogsDisabled = disabled;
 }
 
+void
+AppManager::requestQuit(int exitCode)
+{
+    // Background mode: there is no event loop to leave. Record the exit code (returned by
+    // main()), and stop what is running. AppInstance::load() skips the renders and the
+    // interpreter that were not started yet, then the instance quits as usual.
+    _imp->quitRequested = true;
+    _imp->requestedExitCode = exitCode;
+    abortAnyProcessing();
+}
+
+bool
+AppManager::isQuitRequested() const
+{
+    return _imp->quitRequested;
+}
+
+int
+AppManager::getRequestedExitCode() const
+{
+    return _imp->requestedExitCode;
+}
+
+bool
+AppManager::isPythonInterpreterRunning() const
+{
+    return _imp->pythonInterpreterRunning;
+}
+
 int
 AppManager::exec()
 {
@@ -3116,7 +3145,9 @@ AppManager::launchPythonInterpreter()
     assert(PyGILState_Check()); // Not available prior to Python 3.4
 #endif
 
+    _imp->pythonInterpreterRunning = true;
     Py_Main(1, &_imp->commandLineArgsWide[0]);
+    _imp->pythonInterpreterRunning = false;
 }
 
 int

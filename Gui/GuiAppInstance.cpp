@@ -32,6 +32,7 @@
 #include <QSettings>
 #include <QMutex>
 #include <QCoreApplication>
+#include <QPointer>
 
 #include "Engine/CLArgs.h"
 #include "Engine/Project.h"
@@ -115,7 +116,10 @@ struct KnobDnDData
 
 struct GuiAppInstancePrivate
 {
-    Gui* _gui; //< ptr to the Gui interface
+    // ptr to the Gui interface. A QPointer, because the Gui deletes itself when its window is
+    // closed (Qt::WA_DeleteOnClose), possibly before this instance quits, e.g. if the event loop
+    // exits before the renders are aborted: aboutToQuit() must not use a deleted Gui.
+    QPointer<Gui> _gui;
     bool _isClosing;
 
     //////////////

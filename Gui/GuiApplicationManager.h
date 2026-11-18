@@ -172,6 +172,9 @@ public:
     ///Closes the application, asking the user to save each opened project that has unsaved changes
     virtual void exitApp(bool warnUserForSave) OVERRIDE FINAL;
 
+    ///natron.quit(): closes all projects without asking to save them at the end of the current event-loop iteration
+    virtual void requestQuit(int exitCode) OVERRIDE FINAL;
+
     bool isNodeClipBoardEmpty() const;
 
     NodeClipBoard& getNodeClipBoard();

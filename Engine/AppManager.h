@@ -317,6 +317,24 @@ public:
     bool isDialogsDisabled() const;
     void setDialogsDisabled(bool disabled);
 
+    /**
+     * @brief Implements natron.quit(exitCode): closes all projects without asking to save
+     * them, stops any processing, and makes the process exit with exitCode.
+     * In GUI mode, this is done at the end of the current event-loop iteration, so that it
+     * may be called from a Python callback. In background mode, the renders that were not
+     * started yet are skipped and the Python interpreter (-t) is not started.
+     **/
+    virtual void requestQuit(int exitCode);
+
+    /// True once requestQuit() was called
+    bool isQuitRequested() const;
+
+    /// The exit code given to requestQuit(), or 0
+    int getRequestedExitCode() const;
+
+    /// True while the interactive Python interpreter of the -t option is running
+    bool isPythonInterpreterRunning() const;
+
     virtual void setUndoRedoStackLimit(int /*limit*/)
     {
     }

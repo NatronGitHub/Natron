@@ -109,10 +109,9 @@ extern "C" {
 #endif
         return 1;
     } else {
-        return 0;
+        // 0, or the exit code given to natron.quit(exitCode)
+        return manager.getRequestedExitCode();
     }
-
-    return 0;
 } //main
 #ifdef Q_OS_WIN
 } // extern "C"

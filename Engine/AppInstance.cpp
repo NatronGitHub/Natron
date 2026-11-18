@@ -693,7 +693,10 @@ AppInstance::loadInternal(const CLArgs& cl,
             }
         }
 
-        ///launch renders
+        ///launch renders, unless natron.quit() was called by one of the scripts above
+        if ( appPTR->isQuitRequested() ) {
+            return;
+        }
         if ( !writersWork.empty() ) {
             startWritersRendering(false, writersWork);
         } else {
@@ -722,7 +725,10 @@ AppInstance::loadInternal(const CLArgs& cl,
         }
 
 
-        appPTR->launchPythonInterpreter();
+        // natron.quit() called by one of the scripts above ends the session
+        if ( !appPTR->isQuitRequested() ) {
+            appPTR->launchPythonInterpreter();
+        }
     } else {
         execOnProjectCreatedCallback();
 

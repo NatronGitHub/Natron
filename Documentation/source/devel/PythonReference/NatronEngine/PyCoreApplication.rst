@@ -37,6 +37,7 @@ Functions
 - def :meth:`isMacOSX<NatronEngine.PyCoreApplication.isMacOSX>` ()
 - def :meth:`isUnix<NatronEngine.PyCoreApplication.isUnix>` ()
 - def :meth:`isWindows<NatronEngine.PyCoreApplication.isWindows>` ()
+- def :meth:`quit<NatronEngine.PyCoreApplication.quit>` ([exitCode=0])
 - def :meth:`setOnProjectCreatedCallback<NatronEngine.PyCoreApplication.setOnProjectCreatedCallback>` (pythonFunctionName)
 - def :meth:`setOnProjectLoadedCallback<NatronEngine.PyCoreApplication.setOnProjectLoadedCallback>` (pythonFunctionName)
 
@@ -375,6 +376,50 @@ This is exactly the same as calling::
     Clever use of this function can be made in the **init.py** script to do generic stuff
     for all projects (whether they are new projects or loaded projects). For instance
     one might want to add a list of Formats to the project. See the example :ref:`here<startupScripts>`
+
+.. method:: NatronEngine.PyCoreApplication.quit([exitCode=0])
+
+    :param exitCode: :class:`int`
+
+Quits Natron, and makes the process exit with the status *exitCode*.
+The projects are closed **without** asking to save them, and the renders in progress are
+stopped. This is meant for scripts and tests, see :ref:`guiTesting`.
+
+- In the GUI (*Natron*), the projects are closed at the end of the current event-loop
+  iteration, so it is safe to call it from a callback or from a timer. The function returns
+  immediately and the rest of the calling script is executed.
+- In background mode (*NatronRenderer*, or *Natron -b*), the rest of the script is executed,
+  then the renders that were not started yet (the Write nodes given with *-w* or *-o*) are
+  skipped, and *NatronRenderer* exits with *exitCode*.
+- In interpreter mode (*-t*): when called from the script given on the command line, the
+  interactive interpreter is not started; when called from the interactive interpreter, this
+  raises :class:`SystemExit` (*exitCode*), as :func:`sys.exit` does.
+- *natron-python* is a plain Python interpreter where :doc:`PyCoreApplication` does not exist:
+  use :func:`sys.exit` there.
+
+For example, to run a check in the GUI and report its result in the exit status::
+
+    Natron --no-dialogs check.py; echo $?
+
+with *check.py*::
+
+    from NatronGui import natron
+    from PySide2 import QtCore  # or PySide6
+
+    def check():
+        app = natron.getGuiInstance(0)
+        ok = app.getViewer("Viewer1") is not None
+        natron.quit(0 if ok else 1)
+
+    # wait until the main window is shown and the event loop is running
+    QtCore.QTimer.singleShot(500, check)
+
+.. note::
+
+    With some OpenFX plug-ins, Natron may crash at exit, after closing the projects, which
+    changes the exit status to that of the crash (e.g. 139 for a segmentation fault): see
+    `issue #1253 <https://github.com/NatronGitHub/Natron/issues/1253>`_.
+    A test can also write its result to a file before calling :func:`quit`.
 
 .. method:: NatronEngine.PyCoreApplication.setOnProjectLoadedCallback(pythonFunctionName)
 
