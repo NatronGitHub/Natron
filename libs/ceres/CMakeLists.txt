@@ -258,8 +258,8 @@ target_compile_definitions(ceres
         CERES_STD_UNORDERED_MAP
         CERES_STD_SHARED_PTR
 )
-# ceres uses pthread_rwlock_* (and OpenMP/std::thread): link the thread library explicitly,
-# since glibc < 2.34 (e.g. Rocky Linux 8) keeps it in a separate libpthread.
+# ceres uses pthread_rwlock_*: link the thread library explicitly, since glibc < 2.34
+# (e.g. Rocky Linux 8) keeps it in a separate libpthread.
 find_package(Threads REQUIRED)
 target_link_libraries(ceres PUBLIC glog::glog Threads::Threads)
 set_target_properties(ceres PROPERTIES POSITION_INDEPENDENT_CODE ON)
