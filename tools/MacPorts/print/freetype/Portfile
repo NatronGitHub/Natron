@@ -47,9 +47,13 @@ patchfiles \
     patch-modules.cfg.diff
 
 # Natron: backport of upstream 05f343a (unreleased, after 2.15.0): fix the
-# ULABS/UABS macros, which made FT_Set_Transform reset some reflected and
-# rotated matrices to the identity (openfx-arena #86, #88).
-# Remove this patch and the PINNED file when MacPorts ships a release with it.
+# ULABS/UABS macros, which made FT_Set_Transform reset reflected matrices
+# rotated within about 1.8 degrees of 45, 135, 225 or 315 degrees to the
+# identity (openfx-arena #86, #88).
+# Remove this patch and the PINNED file (unpin) when MacPorts ships a FreeType
+# release that contains 05f343a (2.15.1 or later). Check that upstream has
+# 05f343a before unpinning: check.sh only compares version and revision, so a
+# rev-bump alone isn't enough.
 patchfiles-append \
     patch-include_freetype_internal_ftcalc.h.diff
 

@@ -1,2 +1,2 @@
 ahead
-FreeType 2.15.0_1 (upstream 2.15.0_0) with the upstream ULABS fix 05f343a backported (rotated text under a reflected transform, openfx-arena #86 #88); unpin when MacPorts ships a FreeType > 2.15.0 or a release with 05f343a
+FreeType 2.15.0_1 (upstream 2.15.0_0) with the upstream ULABS fix 05f343a backported (reflected text rotated within about 1.8 degrees of 45/135/225/315 degrees comes out unrotated, openfx-arena #86 #88); unpin when MacPorts ships a FreeType release that contains 05f343a (2.15.1 or later)

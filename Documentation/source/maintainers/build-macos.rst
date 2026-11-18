@@ -171,7 +171,8 @@ default source in ``/opt/local/etc/macports/sources.conf`` is the HTTPS one.
    **Pinned ports are the exception.** A port directory with a ``PINNED`` file
    is deliberately kept at a version other than upstream's (the table is in
    ``INSTALL_MACOS.md``, section 11; today ``graphics/libraw``,
-   ``graphics/opencolorio`` and ``print/freetype``). The file says which kind of pin it is:
+   ``graphics/opencolorio`` and ``print/freetype``). The file says which
+   kind of pin it is:
    ``ahead`` (our version is newer than upstream's: unpin it, by deleting
    ``PINNED`` and taking upstream's Portfile, as soon as upstream's version
    is greater than or equal to ours, which ``check.sh`` reports as
