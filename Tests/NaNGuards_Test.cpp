@@ -29,7 +29,9 @@
 
 #include "Global/Macros.h"
 
+#include <clocale>
 #include <cmath>
+#include <cstdlib>
 #include <limits>
 #include <iostream>
 #include <regex>
@@ -454,4 +456,226 @@ TEST(NaNGuards, CurveLoadNaNDerivatives)
         expectFiniteDerivatives(c4);
     }
 #endif
+}
+
+static std::string
+setAllKeyValues(const std::string& xml,
+                const std::string& tag,
+                const std::string& text)
+{
+    return std::regex_replace( xml, std::regex("<" + tag + ">[^<]*</" + tag + ">"), "<" + tag + ">" + text + "</" + tag + ">" );
+}
+
+// Values that aren't finite numbers, as written by older versions or other C runtimes,
+// are read as 0 and the automatic derivatives are recomputed.
+TEST(NaNGuards, CurveLoadNonNumbers)
+{
+    Curve c;
+
+    c.addKeyFrame( KeyFrame(0., 0.) );
+    c.addKeyFrame( KeyFrame(3., 1.) );
+    c.addKeyFrame( KeyFrame(6., 0.) );
+    const std::string good = saveCurve(c);
+    Curve ref(c);
+    ref.refreshAutomaticDerivatives();
+    KeyFrameSet kref = ref.getKeyFrames_mt_safe();
+    const char* texts[] = { "nan", "-nan", "NaN", "inf", "-inf", "1.#QNAN", "-1.#IND", "1.#INF", "1e999", "", "abc", "1.5x" };
+    for (const char* t : texts) {
+        std::string bad = setAllKeyValues(good, "LeftDerivative", t);
+        bad = setAllKeyValues(bad, "RightDerivative", t);
+        Curve c2;
+        ASSERT_NO_THROW( loadCurve(bad, &c2) ) << t;
+        expectFiniteDerivatives(c2);
+        KeyFrameSet k2 = c2.getKeyFrames_mt_safe();
+        ASSERT_EQ( kref.size(), k2.size() ) << t;
+        for (KeyFrameSet::const_iterator i1 = kref.begin(), i2 = k2.begin(); i1 != kref.end(); ++i1, ++i2) {
+            EXPECT_EQ( i1->getValue(), i2->getValue() ) << t;
+            EXPECT_NEAR( i1->getLeftDerivative(), i2->getLeftDerivative(), 1e-12 ) << t;
+            EXPECT_NEAR( i1->getRightDerivative(), i2->getRightDerivative(), 1e-12 ) << t;
+        }
+    }
+    // a non-number value is read as 0
+    {
+        Curve c2;
+        ASSERT_NO_THROW( loadCurve(setAllKeyValues(good, "Value", "1.#QNAN"), &c2) );
+        KeyFrameSet k2 = c2.getKeyFrames_mt_safe();
+        for (KeyFrameSet::const_iterator it = k2.begin(); it != k2.end(); ++it) {
+            EXPECT_EQ( 0., it->getValue() );
+        }
+        expectFiniteDerivatives(c2);
+    }
+}
+
+static Curve
+makeFreeCurve()
+{
+    // Free keys keep their derivatives, so every value is read back as written
+    Curve c;
+    const double values[][4] = {
+        { 0., 556.568, 1. / 3., -2. / 3. },
+        { 1., 0.1, 1e-300, -1e300 },
+        { 2.5, -1234567.890123, std::numeric_limits<double>::min(), std::numeric_limits<double>::max() },
+        { 7., std::numeric_limits<double>::lowest(), -0.1, 3.14159265358979 },
+    };
+    for (const auto& v : values) {
+        KeyFrame k(v[0], v[1], v[2], v[3]);
+        k.setInterpolation(eKeyframeTypeFree);
+        c.addKeyFrame(k);
+    }
+
+    return c;
+}
+
+static void
+expectSameKeys(const Curve& a,
+               const Curve& b)
+{
+    KeyFrameSet ka = a.getKeyFrames_mt_safe();
+    KeyFrameSet kb = b.getKeyFrames_mt_safe();
+    ASSERT_EQ( ka.size(), kb.size() );
+    for (KeyFrameSet::const_iterator i1 = ka.begin(), i2 = kb.begin(); i1 != ka.end(); ++i1, ++i2) {
+        EXPECT_EQ( i1->getTime(), i2->getTime() );
+        EXPECT_EQ( i1->getValue(), i2->getValue() );
+        EXPECT_EQ( i1->getLeftDerivative(), i2->getLeftDerivative() );
+        EXPECT_EQ( i1->getRightDerivative(), i2->getRightDerivative() );
+        EXPECT_EQ( i1->getInterpolation(), i2->getInterpolation() );
+    }
+}
+
+TEST(NaNGuards, CurveLoadExactRoundTrip)
+{
+    Curve c = makeFreeCurve();
+    Curve c2;
+
+    loadCurve(saveCurve(c), &c2);
+    expectSameKeys(c, c2);
+}
+
+// The values must not depend on the C locale (LC_NUMERIC), which a Python script can
+// change with locale.setlocale(): with a comma decimal separator, strtod() reads
+// "556.568" as 556.
+TEST(NaNGuards, CurveLoadCommaLocale)
+{
+    const char* oldLocale = std::setlocale(LC_NUMERIC, NULL);
+    const std::string saved = oldLocale ? oldLocale : "C";
+    const char* locales[] = { "fr_FR.UTF-8", "de_DE.UTF-8", "fr_FR", "de_DE", "French_France.1252", "German_Germany.1252", "fr_FR.ISO8859-1", "de_DE.ISO8859-1" };
+    const char* found = NULL;
+
+    for (const char* l : locales) {
+        if ( std::setlocale(LC_NUMERIC, l) && (std::strtod("556.568", NULL) != 556.568) ) {
+            found = l;
+            break;
+        }
+    }
+    if (!found) {
+        std::setlocale( LC_NUMERIC, saved.c_str() );
+        std::cout << "note: no locale with a comma decimal separator, skipping" << std::endl;
+
+        return;
+    }
+    Curve c = makeFreeCurve();
+    const std::string xml = saveCurve(c); // written in the "C" locale by the archive
+    Curve c2;
+    loadCurve(xml, &c2);
+    // also parse a value written with nan derivatives, so that parseDouble's failure path is used
+    Curve c3;
+    loadCurve(setAllKeyValues(xml, "LeftDerivative", "nan"), &c3);
+    std::setlocale( LC_NUMERIC, saved.c_str() );
+    expectSameKeys(c, c2);
+    KeyFrameSet k3 = c3.getKeyFrames_mt_safe();
+    ASSERT_EQ( 4u, k3.size() );
+    EXPECT_EQ( 556.568, k3.begin()->getValue() ) << found;
+}
+
+// clone() recomputes the derivatives of a curve loaded with NaN values once, and
+// clears the flag: later clones copy the keys unchanged.
+TEST(NaNGuards, CurveCloneRefreshOnce)
+{
+    Curve c;
+    for (int i = 0; i < 3; ++i) {
+        KeyFrame k(3. * i, i == 1 ? 1. : 0.);
+        k.setInterpolation(eKeyframeTypeLinear);
+        c.addKeyFrame(k);
+    }
+    Curve loaded;
+    loadCurve(setAllKeyValues(saveCurve(c), "LeftDerivative", "nan"), &loaded);
+    expectFiniteDerivatives(loaded);
+
+    // the first clone recomputes them with the target's periodicity
+    Curve p;
+    p.setXRange(0., 6.);
+    p.setPeriodic(true);
+    p.clone(loaded);
+    expectFiniteDerivatives(p);
+    Curve pref(p);
+    pref.refreshAutomaticDerivatives();
+    expectSameKeys(pref, p);
+    // in a periodic curve, the left derivative of the first key comes from the key at 3 - 6
+    // (it is 0 without periodicity)
+    EXPECT_NE( loaded.getKeyFrames_mt_safe().begin()->getLeftDerivative(), p.getKeyFrames_mt_safe().begin()->getLeftDerivative() );
+
+    // the second clone doesn't recompute them: the keys are those of loaded
+    Curve p2;
+    p2.setXRange(0., 6.);
+    p2.setPeriodic(true);
+    p2.clone(loaded);
+    expectSameKeys(loaded, p2);
+}
+
+// A periodic curve without setXRange() has an infinite period: it is not wrapped.
+TEST(NaNGuards, PeriodicCurveWithoutRange)
+{
+    Curve c;
+
+    c.setPeriodic(true);
+    c.addKeyFrame( KeyFrame(0., 0.) );
+    c.addKeyFrame( KeyFrame(3., 1.) );
+    expectFiniteDerivatives(c);
+    const double xs[] = { -1e300, -6., 0., 1.5, 3., 6., 1e300 };
+    for (double x : xs) {
+        EXPECT_TRUE( MathUtils::isFinite( c.getValueAt(x) ) ) << "x=" << x;
+    }
+}
+
+// The log encodings clamp the argument of log10 to FLT_MIN: inside the domain, the
+// result is the same as the formula; outside, it is finite and the curve is monotonic.
+TEST(NaNGuards, LogLutDomainClamp)
+{
+    struct Ref {
+        const Color::Lut* lut;
+        float (*f)(float);
+        float vmin; // the argument of log10 is FLT_MIN at vmin
+    };
+    const Ref refs[] = {
+        { Color::LutManager::CineonLut(),
+          [](float v) { return (std::log10( (v + 0.01079775161f) / ( 1.f / (1.f - 0.01079775161f) ) ) / (0.002f / 0.6f) + 685.0f) / 1023.f; },
+          -0.01079775161f },
+        { Color::LutManager::PanalogLut(),
+          [](float v) { return (444.f * std::log10(0.0408f + (1.0f - 0.0408f) * v) + 681.f) / 1023.f; },
+          -0.0408f / (1.0f - 0.0408f) },
+        { Color::LutManager::REDLogLut(),
+          [](float v) { return (float)( (511.f * std::log10(0.01f + (1.0f - 0.01f) * v) + 1023.) / 1023.f ); },
+          -0.01f / (1.0f - 0.01f) },
+        { Color::LutManager::ViperLogLut(),
+          [](float v) { return (500.f * std::log10(v) + 1023.f) / 1023.f; },
+          0.f },
+    };
+    for (const Ref& r : refs) {
+        // inside the domain: unchanged
+        for (float v = r.vmin + 1e-4f; v < 2.f; v += 0.0137f) {
+            EXPECT_EQ( r.f(v), r.lut->toColorSpaceFloatFromLinearFloat(v) ) << r.lut->getName() << " v=" << v;
+        }
+        // finite and monotonic everywhere
+        float prev = r.lut->toColorSpaceFloatFromLinearFloat(-10.f);
+        EXPECT_TRUE( MathUtils::isFinite(prev) ) << r.lut->getName();
+        for (float v = -10.f; v < 1.f; v += 0.001f) {
+            float y = r.lut->toColorSpaceFloatFromLinearFloat(v);
+            EXPECT_TRUE( MathUtils::isFinite(y) ) << r.lut->getName() << " v=" << v;
+            EXPECT_GE(y, prev) << r.lut->getName() << " v=" << v;
+            prev = y;
+        }
+        for (float v : { r.vmin, std::nextafter(r.vmin, 1.f), std::nextafter(r.vmin, -1.f) }) {
+            EXPECT_TRUE( MathUtils::isFinite( r.lut->toColorSpaceFloatFromLinearFloat(v) ) ) << r.lut->getName() << " v=" << v;
+        }
+    }
 }
