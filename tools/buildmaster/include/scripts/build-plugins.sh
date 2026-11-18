@@ -163,8 +163,9 @@ fi
 
 # Build system of the plug-ins (#1181): PLUGINS_BUILD_SYSTEM=cmake (default) builds openfx-misc,
 # openfx-io, openfx-arena and openfx-gmic with their CMake builds (function ofx_cmake_build, as
-# tools/jenkins/build-plugins.sh); PLUGINS_BUILD_SYSTEM=make uses their Makefiles (RB-2.6
-# fallback, needed for release tags older than the CMake builds).
+# tools/jenkins/build-plugins.sh), or with their Makefiles where the checkout has no CMake build
+# (the release tags, see plugins_use_cmake); PLUGINS_BUILD_SYSTEM=make uses the Makefiles for all
+# of them (RB-2.6 fallback).
 PLUGINS_BUILD_SYSTEM="${PLUGINS_BUILD_SYSTEM:-cmake}"
 case "$PLUGINS_BUILD_SYSTEM" in
     cmake|make) ;;
@@ -179,8 +180,10 @@ else
 fi
 
 # Whether to build the plug-in repository in the current directory (named $1) with its CMake
-# build: yes unless PLUGINS_BUILD_SYSTEM=make. A checkout without a CMake build that uses openfx's
-# helpers (ofx_deploy_bundle) is an error, rather than a silent fallback to its Makefiles.
+# build: yes unless PLUGINS_BUILD_SYSTEM=make, or unless the checkout has no CMake build that uses
+# openfx's helpers (ofx_deploy_bundle). The release builds check out the *PLUG_GIT_TAG tags of
+# common-buildmaster.sh (Natron-2.3.13), which predate the CMake builds: those repositories are
+# built with their Makefiles, with a message. (tools/jenkins/build-plugins.sh stops instead.)
 function plugins_use_cmake() {
     if [ "$PLUGINS_BUILD_SYSTEM" = "make" ]; then
         return 1
@@ -188,8 +191,8 @@ function plugins_use_cmake() {
     if [ -f CMakeLists.txt ] && grep -q 'ofx_deploy_bundle' CMakeLists.txt; then
         return 0
     fi
-    echo "Error: $1 in $(pwd) has no CMake build with openfx's helpers (ofx_deploy_bundle): use a newer $1, or build the plug-ins with their Makefiles (PLUGINS_BUILD_SYSTEM=make)"
-    exit 1
+    echo "Warning: $1 in $(pwd) ($(git describe --tags --always 2>/dev/null || echo unknown version)) has no CMake build with openfx's helpers (ofx_deploy_bundle): building it with its Makefiles"
+    return 1
 }
 
 # Build and install the plug-in repository in the current directory with its CMake build into
@@ -232,13 +235,17 @@ function ofx_cmake_build() {
         -DCMAKE_CXX_COMPILER="$cxx"
         -DCMAKE_CXX_FLAGS="${cxx_flags# } ${CXXFLAGS_EXTRA}"
         -DOFX_CXX_STANDARD="$cxx_std"
-        -DOFX_LICENSE="$NATRON_LICENSE"
         -DOFX_USE_OPENMP="$openmp"
         -DCMAKE_INSTALL_PREFIX="$install_prefix"
         -DPLUGIN_INSTALLDIR="OFX/Plugins"
         -DCMAKE_PREFIX_PATH="$prefix_path"
         -DBUILD_TESTING=OFF
     )
+    if grep -q 'OFX_LICENSE' CMakeLists.txt; then
+        # the licence, where the CMake build has the option (openfx-arena, openfx-gmic, and
+        # openfx-misc since #171; not openfx-io, which gets the licence's FFmpeg and LibRaw)
+        args+=(-DOFX_LICENSE="$NATRON_LICENSE")
+    fi
     if [ -n "${BUILDID:-}" ]; then
         args+=(-DCMAKE_SHARED_LINKER_FLAGS="${BUILDID}" -DCMAKE_MODULE_LINKER_FLAGS="${BUILDID}")
     fi

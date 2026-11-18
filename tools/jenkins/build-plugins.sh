@@ -171,7 +171,7 @@ function plugins_use_cmake() {
 # (openfx's add_ofx_plugin/ofx_deploy_bundle helpers), into $TMP_BINARIES_PATH/OFX/Plugins, where
 # the Makefile builds copy their bundles too.
 # Common options: the build type (PLUGINS_CMAKE_BUILD_TYPE), the C++ standard (C++17 with Qt5,
-# C++20 with Qt6), the licence (OFX_LICENSE=$NATRON_LICENSE), OpenMP, and on macOS the deployment
+# C++20 with Qt6), the licence (OFX_LICENSE=$NATRON_LICENSE, where supported), OpenMP, and on macOS the deployment
 # target and the bundle deployment (OFX_DEPLOY_BUNDLES).
 # Extra arguments are passed to cmake at configure time, after these (so they win). The configure
 # output is checked: the build fails if a plug-in group was dropped because its libraries were not
@@ -222,13 +222,17 @@ function ofx_cmake_build() {
         -DCMAKE_CXX_COMPILER="$cxx"
         -DCMAKE_CXX_FLAGS="${cxx_flags# } ${CXXFLAGS_EXTRA}"
         -DOFX_CXX_STANDARD="$cxx_std"
-        -DOFX_LICENSE="$NATRON_LICENSE"
         -DOFX_USE_OPENMP="$openmp"
         -DCMAKE_INSTALL_PREFIX="$install_prefix"
         -DPLUGIN_INSTALLDIR="OFX/Plugins"
         -DCMAKE_PREFIX_PATH="$prefix_path"
         -DBUILD_TESTING=OFF
     )
+    if grep -q 'OFX_LICENSE' CMakeLists.txt; then
+        # the licence, where the CMake build has the option (openfx-arena, openfx-gmic, and
+        # openfx-misc since #171; not openfx-io, which gets the licence's FFmpeg and LibRaw)
+        args+=(-DOFX_LICENSE="$NATRON_LICENSE")
+    fi
     if [ -n "${BUILDID:-}" ]; then
         args+=(-DCMAKE_SHARED_LINKER_FLAGS="${BUILDID}" -DCMAKE_MODULE_LINKER_FLAGS="${BUILDID}")
     fi
@@ -652,6 +656,12 @@ if [ "$BUILD_GMIC" = "1" ] && [ -d "$TMP_PATH/openfx-gmic" ]; then
             fi
         fi
 
+        if [ "$NATRON_LICENSE" = "COMMERCIAL" ] && [ ! -f license.mk ]; then
+            # An openfx-gmic without license.mk ignores LICENSE= and links FFTW (GPL), whose DLLs
+            # the COMMERCIAL Windows installer leaves out (genDllVersions.sh).
+            echo "Error: this openfx-gmic has no license.mk, so its Makefiles can't make a COMMERCIAL build (it would link FFTW, which is GPL): use a newer openfx-gmic"
+            exit 1
+        fi
         echo "Info: build openfx-gmic using make..."
 
         # build GMIC.ofx
