@@ -8,12 +8,13 @@ These docker images are based on CentOS6 for a maximum compatibility accross all
 
 See [this github issue comment](https://github.com/moby/buildkit/issues/1472#issuecomment-941628522): just add `FROM intermediate` before the RUN line that fails, and relaunch the build with `docker builtx build --load --target itermediate -t arch .`. Now `docker run --rm -it arch sh` gives you a shell before the fail.
 
-## Building the Rocky Linux 8 SDK image (amd64 and arm64)
+## Building the Rocky Linux SDK image (amd64 and arm64)
 
-`natron-sdk-rockylinux8/build.sh` builds `natrongithub/natron-sdk-rockylinux8` for one architecture, natively:
+`natron-sdk-rockylinux/build.sh` builds `natrongithub/natron-sdk-rockylinux9` (or `natrongithub/natron-sdk-rockylinux8` with `ROCKY=8`) for one architecture, natively. Rocky Linux 9 is the baseline of the Natron 2.6 Linux binaries.
 ```
-tools/docker/natron-sdk-rockylinux8/build.sh arm64   # or amd64; default: the docker host's architecture
-DOCKER=podman tools/docker/natron-sdk-rockylinux8/build.sh arm64   # with podman
+tools/docker/natron-sdk-rockylinux/build.sh arm64   # or amd64; default: the docker host's architecture
+DOCKER=podman tools/docker/natron-sdk-rockylinux/build.sh arm64   # with podman
+ROCKY=8 tools/docker/natron-sdk-rockylinux/build.sh   # the older Rocky Linux 8 SDK
 ```
 The image is tagged `:latest-amd64` or `:latest-arm64`. Nothing is pushed: the script prints the commands that push the image and create the multi-arch `:latest` manifest once both architectures are pushed. Building for the other architecture works through emulation, but takes much longer. The build needs about 30 GB of disk space for the image and its layers.
 
