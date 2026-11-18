@@ -181,6 +181,18 @@ public:
      **/
     void autoSetProjectFormatFromReader(const NodePtr& reader);
 
+private:
+    /// true if a sequence render (other than the one of ignoredEngine) is running; connects to their renderFinished signal
+    bool isSequenceRenderRunning(const QObject* ignoredEngine);
+
+    /// auto-set the project format from the first pending Reader, once no sequence render is running
+    void applyPendingAutoSetProjectFormat(const QObject* ignoredEngine);
+
+    /// set (or add) the project format from the Reader's output format
+    void setProjectFormatFromReader(const NodePtr& reader);
+
+public:
+
     bool isAutoSetProjectFormatEnabled() const;
 
     void setAutoSetProjectFormatEnabled(bool enabled);
@@ -369,6 +381,8 @@ public Q_SLOTS:
     void onProjectFormatPopulated();
 
     void onSequenceRenderFinishedAutoSetProjectFormat();
+
+    void onAutoSetProjectFormatRetry();
 
 Q_SIGNALS:
 

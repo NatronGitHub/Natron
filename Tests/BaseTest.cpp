@@ -32,8 +32,8 @@
 #include "BaseTest.h"
 
 #include <QCoreApplication>
+#include <QElapsedTimer>
 #include <QFile>
-#include <QThread>
 #include <QThreadPool>
 
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
@@ -58,6 +58,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/OutputEffectInstance.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Plugin.h"
 #include "Engine/Curve.h"
@@ -521,35 +522,55 @@ TEST_F(BaseTest, ProjectFormatNotAutoSetDuringSequenceRender)
     connectNodes(generator, writer, 0, true);
 
     QString filePath = binPath + QString::fromUtf8("/test_project_format_64x48.ppm");
+    QString file2Path = binPath + QString::fromUtf8("/test_project_format_32x16.ppm");
     writeTestPPM(filePath, 64, 48);
+    writeTestPPM(file2Path, 32, 16);
 
     OutputEffectInstance* output = dynamic_cast<OutputEffectInstance*>( writer->getEffectInstance().get() );
     ASSERT_TRUE(output);
     // non-blocking render (AppInstance::startWritersRendering always blocks in background mode)
     output->renderFullSequence(false, false, NULL, 1, 200, 1);
-    for (int i = 0; i < 500 && !output->isDoingSequentialRender(); ++i) {
-        QThread::msleep(1);
+    QElapsedTimer timer;
+    timer.start();
+    while ( !output->isDoingSequentialRender() && timer.elapsed() < 5000 ) {
+        QCoreApplication::processEvents();
     }
 
     NodePtr reader;
     if ( output->isDoingSequentialRender() ) {
+        // The first pending Reader is deleted before the render ends: the next one must be used.
+        NodePtr deletedReader = createReadNode(getApp(), file2Path);
+        ASSERT_TRUE( bool(deletedReader) );
+        deletedReader->destroyNode(true, false);
+        deletedReader.reset();
         reader = createReadNode(getApp(), filePath);
         ASSERT_TRUE( bool(reader) );
         if ( output->isDoingSequentialRender() ) {
             expectProjectFormat(project, 200, 200, 1.);
             EXPECT_TRUE( project->isAutoSetProjectFormatEnabled() );
         }
+        // renderFinished is emitted by the scheduler thread while the render is still active.
+        // Block that thread until the main thread has processed the queued signals (the Project's
+        // slot was connected first, so it runs first), to make sure that the Project handles
+        // renderFinished while the engine is not idle yet.
+        RenderEnginePtr engine = output->getRenderEngine();
+        ASSERT_TRUE( bool(engine) );
+        QObject::connect( engine.get(), &RenderEngine::renderFinished, project.get(), [](int) {}, Qt::BlockingQueuedConnection );
     } else {
         std::cout << "Warning: the render finished too early, not testing the auto-set during the render" << std::endl;
     }
-    // wait for the render to finish, and process the queued renderFinished signal
-    for (int i = 0; i < 6000 && output->isDoingSequentialRender(); ++i) {
+    // Wait for the render to finish and process the queued renderFinished signal, without sleeping,
+    // so that the signal is handled while the render engine may still be active.
+    timer.restart();
+    while ( output->isDoingSequentialRender() && timer.elapsed() < 120000 ) {
         QCoreApplication::processEvents();
-        QThread::msleep(10);
     }
     EXPECT_FALSE( output->isDoingSequentialRender() );
-    QCoreApplication::processEvents();
     if (reader) {
+        timer.restart();
+        while ( project->isAutoSetProjectFormatEnabled() && timer.elapsed() < 2000 ) {
+            QCoreApplication::processEvents();
+        }
         expectProjectFormat(project, 64, 48, 1.);
         EXPECT_FALSE( project->isAutoSetProjectFormatEnabled() );
         reader->destroyNode(false, false);
@@ -557,6 +578,7 @@ TEST_F(BaseTest, ProjectFormatNotAutoSetDuringSequenceRender)
     writer->destroyNode(false, false);
     generator->destroyNode(false, false);
     QFile::remove(filePath);
+    QFile::remove(file2Path);
     for (int i = 1; i <= 200; ++i) {
         QFile::remove( binPath + QString::fromUtf8("/test_project_format_render_%1.jpg").arg(i, 4, 10, QLatin1Char('0')) );
     }
