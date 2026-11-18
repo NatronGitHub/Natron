@@ -116,12 +116,14 @@ if [ "$COMPILE_TYPE" = "debug" ]; then
     OPTFLAG=-O
 else
     # Makefile builds (openfx-arena, openfx-gmic, and openfx-misc/openfx-io with
-    # MISC_USE_MAKE=1/IO_USE_MAKE=1): maximum optimization, including non-conformant IEEE
-    # floating-point computation.
-    OPTFLAG=-Ofast
+    # MISC_USE_MAKE=1/IO_USE_MAKE=1): -O3, like the CMake builds. Not -Ofast: its
+    # -ffinite-math-only lets NaN and Inf through std::max/std::min and folds
+    # std::isnan/std::isfinite to constants, so the plug-ins' NaN/Inf guards don't work.
+    OPTFLAG=-O3
 fi
 # OPTFLAG is ignored by the CMake builds (ofx_cmake_build): they use -O3, with -g for
 # relwithdebinfo, and conformant IEEE floating point (maintainer's rule: -O3 when the tests pass).
+# The Makefile builds above use the same -O3.
 
 CP_OR_MV="cp -a"
 if [ "${MINIMIZE_DISK_USAGE:-}" = "1" ]; then
