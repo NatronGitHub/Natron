@@ -302,8 +302,8 @@ main color channels. All the layers are also available downstream, for example
 with a :ref:`Shuffle <net.sf.openfx.ShufflePlugin>` node. See
 :doc:`compositing-channels`.
 
-To write several layers in one file, set the **Layer(s)** parameter of
-WriteOIIO to **All** and write to OpenEXR.
+To write several layers in one file, check **All Planes** in WriteOIIO and
+write to OpenEXR.
 
 Colorspace and premultiplication
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -426,8 +426,9 @@ scripts) do not have them:
   is usually not available either. When an algorithm is not available, the
   **Demosaic** parameter falls back to AHD.
 
-On Windows, there are no non-GPL builds of Natron yet: some of the bundled
-libraries still depend on GPL encoders (see
+On Windows, there are no non-GPL builds of Natron yet. The build scripts
+already use a LibRaw without the demosaic packs for them, but the bundled
+libheif still depends on the GPL x264 encoder (see
 `issue #1177 <https://github.com/NatronGitHub/Natron/issues/1177>`_).
 
 The menus of WriteFFmpeg only show the codecs and containers of the FFmpeg
