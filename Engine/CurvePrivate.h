@@ -70,7 +70,9 @@ struct CurvePrivate
     bool isPeriodic;
     // non-finite values were replaced when loading (see CurveSerialization.h): the
     // derivatives are recomputed by every Curve::clone() from this curve, with the target's
-    // periodicity, and the flag is propagated to the target.
+    // periodicity, and the flag is propagated to the target (a temporary curve or knob).
+    // Curve::cloneAndCheckIfChanged(), the last step of loading, recomputes them without
+    // propagating the flag, and Node::loadKnob() clears it on the knob's curves.
     bool mustRefreshDerivatives;
 
     CurvePrivate()

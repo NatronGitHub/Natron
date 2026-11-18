@@ -362,6 +362,14 @@ Curve::clone(const Curve & other)
 }
 
 void
+Curve::clearMustRefreshDerivatives()
+{
+    QMutexLocker l(&_imp->_lock);
+
+    _imp->mustRefreshDerivatives = false;
+}
+
+void
 Curve::refreshAutomaticDerivatives()
 {
     QMutexLocker l(&_imp->_lock);
@@ -378,8 +386,29 @@ Curve::refreshAutomaticDerivatives()
 bool
 Curve::cloneAndCheckIfChanged(const Curve& other)
 {
-    KeyFrameSet otherKeys = other.getKeyFrames_mt_safe();
+    // Read other's keys and flag under other's lock only, before locking this (see clone()).
+    KeyFrameSet otherKeys;
+    bool mustRefreshDerivatives;
+    {
+        QMutexLocker lo(&other._imp->_lock);
+        otherKeys = other._imp->keyFrames;
+        mustRefreshDerivatives = other._imp->mustRefreshDerivatives;
+    }
     QMutexLocker l(&_imp->_lock);
+
+    if (mustRefreshDerivatives) {
+        // other was loaded from a file with NaN values (#1267): copy the keys and recompute
+        // the derivatives with this curve's properties (e.g. periodicity). This is the last
+        // step of loading a project (Node::loadKnob() -> cloneAndUpdateGui()), so the flag
+        // is not propagated to this curve.
+        _imp->keyFrames.clear();
+        std::transform( otherKeys.begin(), otherKeys.end(), std::inserter( _imp->keyFrames, _imp->keyFrames.begin() ), KeyFrameCloner() );
+        refreshAutomaticDerivatives();
+        onCurveChanged();
+
+        return true;
+    }
+
     bool hasChanged = false;
 
     if ( otherKeys.size() != _imp->keyFrames.size() ) {

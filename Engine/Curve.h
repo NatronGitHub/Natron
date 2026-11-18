@@ -358,6 +358,13 @@ public:
      **/
     void refreshAutomaticDerivatives();
 
+    /**
+     * @brief Forget that this curve was loaded with non-finite values (see refreshAutomaticDerivatives()),
+     * so that later clones don't recompute the derivatives again. Called on the knob's curves
+     * at the end of Node::loadKnob().
+     **/
+    void clearMustRefreshDerivatives();
+
 private:
     friend class ::boost::serialization::access;
     template<class Archive>
