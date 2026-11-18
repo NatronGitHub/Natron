@@ -1370,6 +1370,10 @@ Curve::setKeyFrameValueAndTimeInternal(double time, double value, int index, int
             throw std::invalid_argument( err.toStdString() );
         }
 
+        if (_imp->type == CurvePrivate::eCurveTypeString) {
+            // the value references a string (see StringAnimationManager): only the time can change
+            value = it->getValue();
+        }
         bool setTime = ( time != it->getTime() );
         bool setValue = ( value != it->getValue() );
 
@@ -1424,7 +1428,10 @@ Curve::moveKeyFrameValueAndTimeInternal(const double time, const double dt, cons
 
         double newX = it->getTime() + dt;
         double newY = it->getValue() + dv;
-        if (_imp->type == CurvePrivate::eCurveTypeInt) {
+        if (_imp->type == CurvePrivate::eCurveTypeString) {
+            // the value references a string (see StringAnimationManager): only the time can move
+            newY = it->getValue();
+        } else if (_imp->type == CurvePrivate::eCurveTypeInt) {
             newY = std::floor(newY + 0.5);
         } else if (_imp->type == CurvePrivate::eCurveTypeBool) {
             newY = newY < 0.5 ? 0 : 1;

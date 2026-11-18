@@ -366,7 +366,11 @@ public:
     void copySelectedKeys();
     void pasteKeys(bool relative);
 
-    void pasteKeys(const std::vector<DopeSheetKey>& keys, bool relative);
+    /**
+     * @brief Paste the given keys to the selected parameters. If setValuesFromDestination is true, only their times
+     * are used: each new keyframe gets the value of its parameter dimension at that time.
+     **/
+    void pasteKeys(const std::vector<DopeSheetKey>& keys, bool relative, bool setValuesFromDestination = false);
 
     void setSelectedKeysInterpolation(KeyframeTypeEnum keyType);
 

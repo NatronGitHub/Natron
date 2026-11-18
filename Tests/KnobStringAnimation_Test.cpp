@@ -521,3 +521,56 @@ TEST_F(KnobStringAnimationTest, CurveEditorAddKeyOnCurve)
     EXPECT_EQ( "c", at(_knob, 10.) );
     EXPECT_EQ( 4, keyCount(_knob) );
 }
+
+// The value of a string keyframe references its string: moving a keyframe in y (curve editor drag, or the
+// keyframe dialog restoring its original value on Escape) must not change it.
+TEST_F(KnobStringAnimationTest, MoveKeyValueIsIgnored)
+{
+    setKey(_knob, 0., "a");
+    setKey(_knob, 10., "b");
+    KeyFrame newKey;
+    ASSERT_TRUE( _knob->moveValueAtTime(eCurveChangeReasonInternal, 10., ViewSpec::all(), 0, 0., -7., &newKey) );
+    EXPECT_EQ( "a", at(_knob, 0.) );
+    EXPECT_EQ( "b", at(_knob, 10.) );
+    ASSERT_TRUE( _knob->moveValueAtTime(eCurveChangeReasonInternal, 10., ViewSpec::all(), 0, 2., 3., &newKey) );
+    EXPECT_EQ( 12., newKey.getTime() );
+    EXPECT_EQ( "b", at(_knob, 12.) );
+    // CurveEditorUndoRedo sets the time and value of keyframes directly
+    CurvePtr curve = _knob->getCurve(ViewIdx(0), 0);
+    KeyFrame k = curve->setKeyFrameValueAndTime(14., 1., 1);
+    EXPECT_EQ( 14., k.getTime() );
+    EXPECT_EQ( "a", at(_knob, 0.) );
+    EXPECT_EQ( "b", at(_knob, 14.) );
+}
+
+// Ctrl+double-click in the dope sheet adds a keyframe to each pasted dimension with the value of that dimension
+// (DSPasteKeysCommand with setValuesFromDestination -> KnobI::onKeyFrameSet()). It used the value of dimension 0.
+TEST_F(KnobStringAnimationTest, AddKeyWithValueOfEachDimension)
+{
+    KnobDoublePtr translate = AppManager::createKnob<KnobDouble>(_node->getEffectInstance().get(), std::string("translate"), 3);
+    translate->setName("translate");
+    translate->setValue(1., ViewSpec::all(), 0);
+    translate->setValue(2., ViewSpec::all(), 1);
+    translate->setValueAtTime(0., 3., ViewSpec::all(), 2);
+    translate->setValueAtTime(20., 5., ViewSpec::all(), 2);
+    for (int i = 0; i < 3; ++i) {
+        EXPECT_TRUE( translate->onKeyFrameSet(10., ViewIdx(0), i) );
+    }
+    EXPECT_EQ( 1., translate->getValueAtTime(10., 0) );
+    EXPECT_EQ( 2., translate->getValueAtTime(10., 1) );
+    EXPECT_EQ( 4., translate->getValueAtTime(10., 2) );
+    for (int i = 0; i < 3; ++i) {
+        KeyFrame k;
+        ASSERT_TRUE( translate->getCurve(ViewIdx(0), i)->getKeyFrameWithTime(10., &k) );
+        EXPECT_EQ( translate->getValueAtTime(10., i), k.getValue() ) << "dimension " << i;
+    }
+
+    // a string parameter keeps its string
+    setKey(_knob, 0., "a");
+    setKey(_knob, 20., "b");
+    EXPECT_TRUE( _knob->onKeyFrameSet(10., ViewIdx(0), 0) );
+    EXPECT_EQ( 3, keyCount(_knob) );
+    EXPECT_EQ( "a", at(_knob, 10.) );
+    EXPECT_EQ( "a", at(_knob, 15.) );
+    EXPECT_EQ( "b", at(_knob, 20.) );
+}
