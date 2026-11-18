@@ -242,6 +242,7 @@ struct OfxEffectInstancePrivate
     bool supportsMultipleClipDepths;
     bool doesTemporalAccess;
     bool multiplanar;
+    bool outputFormatFromPlugin; // true if the last getClipPreferences action set the output format (main thread only)
 
     OfxEffectInstancePrivate()
         : effect()
@@ -270,6 +271,7 @@ struct OfxEffectInstancePrivate
         , supportsMultipleClipDepths(false)
         , doesTemporalAccess(false)
         , multiplanar(false)
+        , outputFormatFromPlugin(false)
     {
     }
 
@@ -297,6 +299,7 @@ struct OfxEffectInstancePrivate
         , supportsMultipleClipDepths(other.supportsMultipleClipDepths)
         , doesTemporalAccess(other.doesTemporalAccess)
         , multiplanar(other.multiplanar)
+        , outputFormatFromPlugin(other.outputFormatFromPlugin)
     {
     }
 };
@@ -836,6 +839,14 @@ OfxEffectInstance::isReader() const
 }
 
 bool
+OfxEffectInstance::isOutputFormatFromFile() const
+{
+    assert( QThread::currentThread() == qApp->thread() );
+
+    return isReader() && _imp->outputFormatFromPlugin;
+}
+
+bool
 OfxEffectInstance::isVideoReader() const
 {
     return isReader() && ReadNode::isVideoReader( getPluginID() );
@@ -1358,6 +1369,7 @@ OfxEffectInstance::onMetadataRefreshed(const NodeMetadata& metadata)
 StatusEnum
 OfxEffectInstance::getPreferredMetadata(NodeMetadata& metadata)
 {
+    _imp->outputFormatFromPlugin = false;
     if (!_imp->created || !_imp->effect) {
         return eStatusFailed;
     }
@@ -1383,7 +1395,7 @@ OfxEffectInstance::getPreferredMetadata(NodeMetadata& metadata)
 
         ///It has been overridden and no data is actually set on the clip, everything will be set into the
         ///metadata object
-        stat = _imp->effect->getClipPreferences_safe(metadata);
+        stat = _imp->effect->getClipPreferences_safe(metadata, &_imp->outputFormatFromPlugin);
     }
 
     return stat;

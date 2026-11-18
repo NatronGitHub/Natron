@@ -2045,6 +2045,7 @@ Project::doResetEnd(bool aboutToQuit)
         {
             QMutexLocker l(&_imp->projectLock);
             _imp->autoSetProjectFormat = appPTR->getCurrentSettings()->isAutoProjectFormatEnabled();
+            _imp->autoSetProjectFormatPendingReader.reset();
             _imp->hasProjectBeenSavedByUser = false;
             _imp->projectCreationTime = QDateTime::currentDateTime();
             _imp->setProjectFilename(NATRON_PROJECT_UNTITLED);
@@ -2155,27 +2156,56 @@ Project::setAutoSetProjectFormatEnabled(bool enabled)
 }
 
 void
-Project::autoSetProjectFormatFromReader(const Format & frmt)
+Project::autoSetProjectFormatFromReader(const NodePtr& reader)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if ( frmt.isNull() ) {
+    if ( !reader || !isAutoSetProjectFormatEnabled() ) {
         return;
     }
-    {
-        QMutexLocker l(&_imp->formatMutex);
-        if (!_imp->autoSetProjectFormat) {
-            return;
-        }
-        // A Reader without a valid file gets the project format as its default output format:
-        // that must not disable the auto-set. If the file has the same format as the project,
-        // the auto-set is disabled when the Reader first renders, as before.
-        Format current;
-        getProjectDefaultFormat(&current);
-        if (frmt == current) {
-            return;
+    EffectInstancePtr effect = reader->getEffectInstance();
+    // A Reader without a decodable file (no file name, no decoder, unreadable file) reports the
+    // project rectangle as its default output format: it must not set the format nor disable the auto-set.
+    if ( !effect || !effect->isReader() || !effect->isOutputFormatFromFile() ) {
+        return;
+    }
+
+    // Never change the project format while a sequence render is running: wait for it to finish.
+    bool renderRunning = false;
+    NodesList nodes;
+    getNodes_recursive(nodes, true);
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        OutputEffectInstance* output = dynamic_cast<OutputEffectInstance*>( (*it)->getEffectInstance().get() );
+        if ( output && output->isDoingSequentialRender() ) {
+            renderRunning = true;
+            RenderEnginePtr engine = output->getRenderEngine();
+            if (engine) {
+                QObject::connect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onSequenceRenderFinishedAutoSetProjectFormat()), Qt::UniqueConnection );
+            }
         }
     }
+    if (renderRunning) {
+        if ( !_imp->autoSetProjectFormatPendingReader.lock() ) {
+            _imp->autoSetProjectFormatPendingReader = reader;
+        }
+
+        return;
+    }
+    _imp->autoSetProjectFormatPendingReader.reset();
+
+    Format frmt;
+    frmt.set( effect->getOutputFormat() );
+    frmt.setPixelAspectRatio( effect->getAspectRatio(-1) );
     setOrAddProjectFormat(frmt);
+}
+
+void
+Project::onSequenceRenderFinishedAutoSetProjectFormat()
+{
+    NodePtr reader = _imp->autoSetProjectFormatPendingReader.lock();
+    if (reader) {
+        // re-checks that no other sequence render is running
+        autoSetProjectFormatFromReader(reader);
+    }
 }
 
 void

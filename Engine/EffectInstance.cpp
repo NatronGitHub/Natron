@@ -5716,10 +5716,7 @@ EffectInstance::refreshMetadata_internal()
         AppInstancePtr app = getApp();
         ProjectPtr project = app ? app->getProject() : ProjectPtr();
         if (project) {
-            Format frmt;
-            frmt.set( metadata.getOutputFormat() );
-            frmt.setPixelAspectRatio( metadata.getPixelAspectRatio(-1) );
-            project->autoSetProjectFormatFromReader(frmt);
+            project->autoSetProjectFormatFromReader( getNode() );
         }
     }
 

@@ -156,9 +156,11 @@ public:
                                               std::map<OfxClipInstance*, int>& clipsMapping);
 
     /**
-     * We add some output parameters to the function so that we can delay the actual setting of the clip preferences
+     * We add some output parameters to the function so that we can delay the actual setting of the clip preferences.
+     * For Readers, *outputFormatSet (if not NULL) is set to true if the plug-in set the output format, i.e. if it could
+     * read the format from the file.
      **/
-    StatusEnum getClipPreferences_safe(NodeMetadata& defaultPrefs);
+    StatusEnum getClipPreferences_safe(NodeMetadata& defaultPrefs, bool* outputFormatSet = NULL);
 
     virtual OfxStatus createInstanceAction() OVERRIDE FINAL;
 

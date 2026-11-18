@@ -175,10 +175,11 @@ public:
 
     /**
      * @brief Called on the main thread when the metadata of a Reader is computed: if the project
-     * format is still to be auto-set and the Reader's format differs from it, set the project format
-     * from the Reader, before any render starts (#1294).
+     * format is still to be auto-set and the Reader could decode its file, set the project format
+     * from the Reader's format (if they are equal, just disable the auto-set), before any render starts (#1294).
+     * If a sequence render (Writer or playback) is running, this is postponed until it finishes.
      **/
-    void autoSetProjectFormatFromReader(const Format & frmt);
+    void autoSetProjectFormatFromReader(const NodePtr& reader);
 
     bool isAutoSetProjectFormatEnabled() const;
 
@@ -366,6 +367,8 @@ public Q_SLOTS:
     void onAutoSaveFutureFinished();
 
     void onProjectFormatPopulated();
+
+    void onSequenceRenderFinishedAutoSetProjectFormat();
 
 Q_SIGNALS:
 

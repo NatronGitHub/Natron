@@ -338,6 +338,16 @@ public:
     }
 
     /**
+     * @brief For Readers: true if the output format of the last computed metadata was set by the
+     * decoder from the file, false if there is no file, no decoder, or the file could not be decoded.
+     * Main thread only.
+     **/
+    virtual bool isOutputFormatFromFile() const WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    /**
      * @brief Basically returns true for PLUGINID_OFX_READFFMPEG
      **/
     virtual bool isVideoReader() const WARN_UNUSED_RETURN

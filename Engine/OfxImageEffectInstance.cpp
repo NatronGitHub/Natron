@@ -1224,14 +1224,27 @@ OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metad
 } // OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata
 
 StatusEnum
-OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
+OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs,
+                                                bool* outputFormatSet)
 {
     /// create the out args with the stuff that does not depend on individual clips
     OFX::Host::Property::Set outArgs;
     OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
     std::map<OfxClipInstance*, int> clipInputs;
 
+    if (outputFormatSet) {
+        *outputFormatSet = false;
+    }
     setupClipPreferencesArgsFromMetadata(defaultPrefs, outArgs, clipInputs);
+
+    // For Readers, find out whether the plug-in sets the output format (i.e. it could decode the file):
+    // pass an empty format, and use the default one if the plug-in left it empty.
+    // A Reader without a decodable file must not auto-set the project format (#1294).
+    const bool detectOutputFormat = effect && effect->isReader();
+    if (detectOutputFormat) {
+        const int emptyFormat[4] = {0, 0, 0, 0};
+        outArgs.setIntPropertyN(kOfxImageClipPropFormat, emptyFormat, 4);
+    }
 
 
 #       ifdef OFX_DEBUG_ACTIONS
@@ -1325,6 +1338,14 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
             format.y1 = formatV[1];
             format.x2 = formatV[2];
             format.y2 = formatV[3];
+            if (detectOutputFormat) {
+                if ( format.isNull() ) {
+                    // the plug-in did not set the output format: keep the default one
+                    format = defaultPrefs.getOutputFormat();
+                } else if (outputFormatSet) {
+                    *outputFormatSet = true;
+                }
+            }
             defaultPrefs.setOutputFormat(format);
         } catch (const OFX::Host::Property::Exception &e) {
             qDebug() << "getClipPreferences: invalid property value returned by the plug-in, status" << e.getStatus();

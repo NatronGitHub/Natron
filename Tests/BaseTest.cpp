@@ -31,7 +31,9 @@
 
 #include "BaseTest.h"
 
+#include <QCoreApplication>
 #include <QFile>
+#include <QThread>
 #include <QThreadPool>
 
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
@@ -53,7 +55,9 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/Project.h"
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
+#include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/OutputEffectInstance.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Plugin.h"
 #include "Engine/Curve.h"
@@ -358,29 +362,57 @@ writeTestPPM(const QString& filePath,
     ofs.write( pixels.data(), pixels.size() );
 }
 
+// same arguments as App.createReader() / App.createNode() in Python
+static void
+setReadNodeArgs(CreateNodeArgs& args)
+{
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
+    args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+}
+
 static NodePtr
 createReadNode(const AppInstancePtr& app,
                const QString& filePath)
 {
     CreateNodeArgs args( PLUGINID_NATRON_READ, app->getProject() );
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    setReadNodeArgs(args);
 
     return app->createReader(filePath.toStdString(), args);
 }
 
+// Start from an empty project with the given format, with the project format still to be auto-set.
+static void
+resetProjectFormat(const ProjectPtr& project,
+                   const Format& f)
+{
+    project->setAutoSetProjectFormatEnabled(true);
+    project->setOrAddProjectFormat(f); // sets the format and disables the auto-set
+    project->setAutoSetProjectFormatEnabled(true);
+}
+
+static void
+expectProjectFormat(const ProjectPtr& project,
+                    int width,
+                    int height,
+                    double par)
+{
+    Format f;
+    project->getProjectDefaultFormat(&f);
+    EXPECT_EQ( width, f.width() );
+    EXPECT_EQ( height, f.height() );
+    EXPECT_DOUBLE_EQ( par, f.getPixelAspectRatio() );
+}
+
 // #1294: in an otherwise empty project, the project format is auto-set from the first Reader
-// as soon as the Reader has a file, i.e. before any render starts, and not when the Reader first renders
+// as soon as the Reader has a decodable file, i.e. before any render starts, and not when the Reader first renders
 // (which may be in the middle of a sequence render, so that the frames of a Writer had different formats).
 TEST_F(BaseTest, ProjectFormatAutoSetFromReaderBeforeRender)
 {
     ProjectPtr project = getApp()->getProject();
-    Format hd(0, 0, 1920, 1080, "HD", 1.);
-    // start from an empty HD project, with the format still to be auto-set
-    project->setAutoSetProjectFormatEnabled(true);
-    project->setOrAddProjectFormat(hd); // sets the format and disables the auto-set
-    project->setAutoSetProjectFormatEnabled(true);
+    resetProjectFormat( project, Format(0, 0, 1920, 1080, "HD", 1.) );
 
     const QString& binPath = appPTR->getApplicationBinaryPath();
     QString emptyPath = binPath + QString::fromUtf8("/test_project_format_empty.ppm");
@@ -392,27 +424,20 @@ TEST_F(BaseTest, ProjectFormatAutoSetFromReaderBeforeRender)
 
     // A Reader whose file does not exist must not disable the auto-set.
     NodePtr emptyReader = createReadNode(getApp(), emptyPath);
-    Format f;
-    project->getProjectDefaultFormat(&f);
-    EXPECT_EQ(1920, f.width());
-    EXPECT_EQ(1080, f.height());
+    expectProjectFormat(project, 1920, 1080, 1.);
     EXPECT_TRUE( project->isAutoSetProjectFormatEnabled() );
 
     // The first Reader with a file sets the project format, without rendering.
     NodePtr reader = createReadNode(getApp(), filePath);
     ASSERT_TRUE( bool(reader) );
-    EXPECT_EQ(64, reader->getEffectInstance()->getOutputFormat().width());
-    project->getProjectDefaultFormat(&f);
-    EXPECT_EQ(64, f.width());
-    EXPECT_EQ(48, f.height());
+    EXPECT_EQ( 64, reader->getEffectInstance()->getOutputFormat().width() );
+    expectProjectFormat(project, 64, 48, 1.);
     EXPECT_FALSE( project->isAutoSetProjectFormatEnabled() );
 
     // The next Readers don't change it.
     NodePtr reader2 = createReadNode(getApp(), file2Path);
     ASSERT_TRUE( bool(reader2) );
-    project->getProjectDefaultFormat(&f);
-    EXPECT_EQ(64, f.width());
-    EXPECT_EQ(48, f.height());
+    expectProjectFormat(project, 64, 48, 1.);
 
     if (emptyReader) {
         emptyReader->destroyNode(false, false);
@@ -421,6 +446,120 @@ TEST_F(BaseTest, ProjectFormatAutoSetFromReaderBeforeRender)
     reader2->destroyNode(false, false);
     QFile::remove(filePath);
     QFile::remove(file2Path);
+}
+
+// #1294: with a project PAR != 1, a Read node without a file reports the project rectangle with PAR 1:
+// it must neither change the project format nor disable the auto-set.
+TEST_F(BaseTest, ProjectFormatNotAutoSetFromReaderWithoutFile)
+{
+    ProjectPtr project = getApp()->getProject();
+    resetProjectFormat( project, Format(0, 0, 720, 576, "PAL", 1.09) );
+
+    const QString& binPath = appPTR->getApplicationBinaryPath();
+    QString filePath = binPath + QString::fromUtf8("/test_project_format_64x48.ppm");
+    writeTestPPM(filePath, 64, 48);
+
+    CreateNodeArgs args( PLUGINID_NATRON_READ, getApp()->getProject() );
+    setReadNodeArgs(args);
+    NodePtr reader = getApp()->createNode(args);
+    ASSERT_TRUE( bool(reader) );
+    expectProjectFormat(project, 720, 576, 1.09);
+    EXPECT_TRUE( project->isAutoSetProjectFormatEnabled() );
+
+    // setting the file afterwards auto-sets the project format
+    KnobIPtr fileKnob = reader->getKnobByName(kOfxImageEffectFileParamName);
+    KnobFile* file = dynamic_cast<KnobFile*>( fileKnob.get() );
+    ASSERT_TRUE(file);
+    file->setValue( filePath.toStdString() );
+    expectProjectFormat(project, 64, 48, 1.);
+    EXPECT_FALSE( project->isAutoSetProjectFormatEnabled() );
+
+    reader->destroyNode(false, false);
+    QFile::remove(filePath);
+}
+
+// #1294: if the first Reader's file has the project format, the auto-set is disabled, so that the next Readers don't change it.
+TEST_F(BaseTest, ProjectFormatAutoSetFromReaderWithSameFormat)
+{
+    ProjectPtr project = getApp()->getProject();
+    resetProjectFormat( project, Format(0, 0, 200, 100, "", 1.) );
+
+    const QString& binPath = appPTR->getApplicationBinaryPath();
+    QString samePath = binPath + QString::fromUtf8("/test_project_format_200x100.ppm");
+    QString filePath = binPath + QString::fromUtf8("/test_project_format_64x48.ppm");
+    writeTestPPM(samePath, 200, 100);
+    writeTestPPM(filePath, 64, 48);
+
+    NodePtr reader = createReadNode(getApp(), samePath);
+    ASSERT_TRUE( bool(reader) );
+    expectProjectFormat(project, 200, 100, 1.);
+    EXPECT_FALSE( project->isAutoSetProjectFormatEnabled() );
+
+    NodePtr reader2 = createReadNode(getApp(), filePath);
+    ASSERT_TRUE( bool(reader2) );
+    expectProjectFormat(project, 200, 100, 1.);
+
+    reader->destroyNode(false, false);
+    reader2->destroyNode(false, false);
+    QFile::remove(samePath);
+    QFile::remove(filePath);
+}
+
+// #1294: a Reader created while a sequence render is running must not change the project format
+// during that render; the format is auto-set when the render finishes.
+TEST_F(BaseTest, ProjectFormatNotAutoSetDuringSequenceRender)
+{
+    ProjectPtr project = getApp()->getProject();
+    resetProjectFormat( project, Format(0, 0, 200, 200, "", 1.) );
+
+    NodePtr generator = createNode(_generatorPluginID);
+    NodePtr writer = createNode(_writeOIIOPluginID);
+    ASSERT_TRUE( bool(generator) && bool(writer) );
+    const QString& binPath = appPTR->getApplicationBinaryPath();
+    QString outPath = binPath + QString::fromUtf8("/test_project_format_render_####.jpg");
+    writer->setOutputFilesForWriter( outPath.toStdString() );
+    connectNodes(generator, writer, 0, true);
+
+    QString filePath = binPath + QString::fromUtf8("/test_project_format_64x48.ppm");
+    writeTestPPM(filePath, 64, 48);
+
+    OutputEffectInstance* output = dynamic_cast<OutputEffectInstance*>( writer->getEffectInstance().get() );
+    ASSERT_TRUE(output);
+    // non-blocking render (AppInstance::startWritersRendering always blocks in background mode)
+    output->renderFullSequence(false, false, NULL, 1, 200, 1);
+    for (int i = 0; i < 500 && !output->isDoingSequentialRender(); ++i) {
+        QThread::msleep(1);
+    }
+
+    NodePtr reader;
+    if ( output->isDoingSequentialRender() ) {
+        reader = createReadNode(getApp(), filePath);
+        ASSERT_TRUE( bool(reader) );
+        if ( output->isDoingSequentialRender() ) {
+            expectProjectFormat(project, 200, 200, 1.);
+            EXPECT_TRUE( project->isAutoSetProjectFormatEnabled() );
+        }
+    } else {
+        std::cout << "Warning: the render finished too early, not testing the auto-set during the render" << std::endl;
+    }
+    // wait for the render to finish, and process the queued renderFinished signal
+    for (int i = 0; i < 6000 && output->isDoingSequentialRender(); ++i) {
+        QCoreApplication::processEvents();
+        QThread::msleep(10);
+    }
+    EXPECT_FALSE( output->isDoingSequentialRender() );
+    QCoreApplication::processEvents();
+    if (reader) {
+        expectProjectFormat(project, 64, 48, 1.);
+        EXPECT_FALSE( project->isAutoSetProjectFormatEnabled() );
+        reader->destroyNode(false, false);
+    }
+    writer->destroyNode(false, false);
+    generator->destroyNode(false, false);
+    QFile::remove(filePath);
+    for (int i = 1; i <= 200; ++i) {
+        QFile::remove( binPath + QString::fromUtf8("/test_project_format_render_%1.jpg").arg(i, 4, 10, QLatin1Char('0')) );
+    }
 }
 
 ///High level test: simple node connections test
