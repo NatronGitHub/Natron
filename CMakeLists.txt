@@ -19,8 +19,25 @@
 
 cmake_minimum_required(VERSION 3.16.7)
 
+# The version is the one of Global/Macros.h (NATRON_VERSION_MAJOR/MINOR/REVISION), so that the
+# macOS Info.plist (CFBundleShortVersionString, CFBundleVersion) can't disagree with the
+# version Natron reports. qmake's App/App.pro has its own copy (VERSION).
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/Global/Macros.h" _natron_macros_h)
+foreach(_part MAJOR MINOR REVISION)
+    # #define NATRON_VERSION_MAJOR NATRON_VERSION_MAJOR_26, then #define NATRON_VERSION_MAJOR_26 2
+    if(NOT _natron_macros_h MATCHES "#define NATRON_VERSION_${_part} (NATRON_VERSION_${_part}_[0-9]+)")
+        message(FATAL_ERROR "Global/Macros.h: no #define NATRON_VERSION_${_part} NATRON_VERSION_${_part}_<n>")
+    endif()
+    set(_natron_version_macro "${CMAKE_MATCH_1}")
+    if(NOT _natron_macros_h MATCHES "#define ${_natron_version_macro} ([0-9]+)")
+        message(FATAL_ERROR "Global/Macros.h: no #define ${_natron_version_macro} <number>")
+    endif()
+    set(_natron_version_${_part} "${CMAKE_MATCH_1}")
+endforeach()
+unset(_natron_macros_h)
+
 project(Natron
-    VERSION "2.6.0"
+    VERSION "${_natron_version_MAJOR}.${_natron_version_MINOR}.${_natron_version_REVISION}"
     DESCRIPTION "Open Source Compositing Software"
     HOMEPAGE_URL "https://natrongithub.github.io/"
     LANGUAGES CXX C
