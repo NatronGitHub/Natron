@@ -98,6 +98,8 @@ public:
     KnobStringPtr onNodeDeleted;
     TimeLinePtr timeline; // global timeline
     bool autoSetProjectFormat;
+    std::list<NodeWPtr> autoSetProjectFormatPendingReaders; // Readers whose format was not auto-set because a sequence render was running (#1294)
+    bool autoSetProjectFormatRetryScheduled;
     mutable QMutex isLoadingProjectMutex;
     bool isLoadingProject; //< true when the project is loading
     bool isLoadingProjectInternal; //< true when loading the internal project (not gui)
