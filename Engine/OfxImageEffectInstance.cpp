@@ -114,6 +114,7 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
                                                bool interactive)
     : OFX::Host::ImageEffect::Instance(plugin, desc, context, interactive)
     , _ofxEffectInstance()
+    , _mainThreadActionDepth(0)
 {
     getProps().setGetHook(kNatronOfxExtraCreatedPlanes, (OFX::Host::Property::GetHook*)this);
 
@@ -122,6 +123,7 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
 OfxImageEffectInstance::OfxImageEffectInstance(const OfxImageEffectInstance& other)
     : OFX::Host::ImageEffect::Instance(other)
     , _ofxEffectInstance()
+    , _mainThreadActionDepth(0)
 {
 }
 
@@ -147,6 +149,29 @@ public:
     }
 };
 
+// Counts the actions of an instance that are running on the main thread (see mainEntry()).
+class MainThreadActionDepth_RAII
+{
+    int* _depth;
+
+public:
+
+    MainThreadActionDepth_RAII(int* depth)
+        : _depth(depth)
+    {
+        if (_depth) {
+            ++*_depth;
+        }
+    }
+
+    ~MainThreadActionDepth_RAII()
+    {
+        if (_depth) {
+            --*_depth;
+        }
+    }
+};
+
 OfxStatus
 OfxImageEffectInstance::mainEntry(const char *action,
                                   const void *handle,
@@ -157,6 +182,8 @@ OfxImageEffectInstance::mainEntry(const char *action,
     boost_adaptbx::floating_point::exception_trapping trap(0);
 #endif
     ThreadIsActionCaller_RAII t(this);
+    const bool isMainThread = ( QThread::currentThread() == qApp->thread() );
+    MainThreadActionDepth_RAII depth(isMainThread ? &_mainThreadActionDepth : NULL);
 
     OfxStatus retval = OFX::Host::ImageEffect::Instance::mainEntry(action, handle, inArgs, outArgs);
 
@@ -168,8 +195,12 @@ OfxImageEffectInstance::mainEntry(const char *action,
     // an action on a render thread (e.g. of the reader embedded in a Read node, whose edit level is
     // the one of the Read node, or of any effect) must not end an edit block of the main thread
     // while it is open, e.g. during an overlay drag.
-    const bool isMainThread = ( QThread::currentThread() == qApp->thread() );
-    EffectInstancePtr effect = isMainThread ? getParamsEditHolder() : EffectInstancePtr();
+    // Only when the outermost action of this instance returns: an action that the plug-in triggers
+    // inside its edit block, e.g. the kOfxActionInstanceChanged of the parameter changed by its first
+    // setValue() in the block, must not end the block, or the later changes of the block are not
+    // recorded for undo (see issue https://github.com/NatronGitHub/Natron/issues/1335).
+    const bool isOutermostAction = isMainThread && (_mainThreadActionDepth == 1);
+    EffectInstancePtr effect = isOutermostAction ? getParamsEditHolder() : EffectInstancePtr();
 
     if (effect && (effect->getMultipleParamsEditLevel() != KnobHolder::eMultipleParamsEditOff) && !effect->getApp()->isCreatingPythonGroup() ) {
         while (effect->getMultipleParamsEditLevel() != KnobHolder::eMultipleParamsEditOff) {
