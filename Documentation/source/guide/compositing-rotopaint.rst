@@ -187,11 +187,10 @@ buttons above the Viewer controls how editing works:
   keyframe at the current frame.
 - **Enable Feather-Link** (on by default): moving a point also moves its
   feather point.
-- **Display Feather**: show the feather curve, so that it can be edited.
-- **Enable Sticky Selection**: clicking outside of any shape does not clear the
+- **Display Feather** (on by default): show the feather curve, so that it can
+  be edited.
+- **Enable Sticky Selection** (off by default): clicking outside of any shape does not clear the
   selection.
-- **Enable Sticky Bounding Box**: clicking anywhere inside the bounding box of
-  the selected points moves them. When off, drag its center cross instead.
 - **Enable Ripple Edit**: moving a point moves it by the same amount at all its
   keyframes.
 - **Add Keyframe** / **Remove Keyframe**: for the selected shapes, at the
@@ -213,7 +212,7 @@ which you can change later in the **Stroke** tab of the Properties panel.
   pen pressure changes these values along the stroke.
 - **Build-Up**: the stroke builds up where it paints over itself.
 - **Effect Strength** (Blur tool only).
-- **Multi-Stroke**: successive strokes painted with the same tool are added to
+- **Multi-Stroke** (on by default): successive strokes painted with the same tool are added to
   the same item of the list. Select another tool to start a new item.
 - **Auto-connect Viewer**: connect the Viewer directly to the RotoPaint node
   when a paint tool is used.
