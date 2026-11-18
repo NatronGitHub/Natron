@@ -28,7 +28,9 @@ set -u # Treat unset variables as an error when substituting.
 # NATRON_DEV_STATUS: ALPHA, BETA, RC, STABLE, CUSTOM: this is useful when doing a release (i.e: if specifying RELEASE_TAG.)
 # NATRON_CUSTOM_BUILD_USER_NAME: For a release, Tag the build with a specific user/client name
 # NATRON_BUILD_NUMBER: When doing a release this is the number of the release (if doing a rebuild)
-# NATRON_EXTRA_QMAKE_FLAGS: Optional qmake flags to pass when building Natron
+# NATRON_BUILD_SYSTEM: cmake (the default) or qmake (deprecated, kept on RB-2.6 as a fallback, see #1181). The CMake build has no crash reporter: it implies DISABLE_BREAKPAD=1.
+# NATRON_EXTRA_CMAKE_FLAGS: Optional cmake flags to pass when building Natron with CMake, e.g. "-DNATRON_FAST_MATH=ON"
+# NATRON_EXTRA_QMAKE_FLAGS: Optional qmake flags to pass when building Natron with qmake
 # BUILD_NAME: Give a name to the build so that it can be found in the archive
 # DISABLE_RPM_DEB_PKGS: If set to 1, deb and rpm packages will not be built. Otherwise they are only built for a release
 # DISABLE_PORTABLE_ARCHIVE: If set to 1, a portable archive will not be built
@@ -111,6 +113,8 @@ echo "NATRON_DEV_STATUS                 : \"${NATRON_DEV_STATUS:-}\""
 echo "NATRON_BUILD_NUMBER               : \"${NATRON_BUILD_NUMBER:-}\""
 echo "NATRON_CUSTOM_BUILD_USER_NAME     : \"${NATRON_CUSTOM_BUILD_USER_NAME:-}\""
 echo "COMPILE_TYPE                      : \"${COMPILE_TYPE:-}\""
+echo "NATRON_BUILD_SYSTEM               : \"${NATRON_BUILD_SYSTEM:-}\""
+echo "NATRON_EXTRA_CMAKE_FLAGS          : \"${NATRON_EXTRA_CMAKE_FLAGS:-}\""
 echo "NATRON_EXTRA_QMAKE_FLAGS          : \"${NATRON_EXTRA_QMAKE_FLAGS:-}\""
 echo "DISABLE_RPM_DEB_PKGS              : \"${DISABLE_RPM_DEB_PKGS:-}\""
 echo "DISABLE_PORTABLE_ARCHIVE          : \"${DISABLE_PORTABLE_ARCHIVE:-}\""
@@ -235,6 +239,22 @@ if [ "${DEBUG_SCRIPTS:-}" != "1" ]; then
     DEBUG_SCRIPTS=0
 else
     echo "DEBUG_SCRIPTS specified: picking up any existing previous compilation"
+fi
+
+# Natron is built with CMake by default; qmake is deprecated (#1181)
+NATRON_BUILD_SYSTEM="${NATRON_BUILD_SYSTEM:-cmake}"
+case "$NATRON_BUILD_SYSTEM" in
+    cmake|qmake) ;;
+    *)
+        echo "Error: NATRON_BUILD_SYSTEM must be cmake or qmake, not \"$NATRON_BUILD_SYSTEM\""
+        exit 1
+        ;;
+esac
+if [ "$NATRON_BUILD_SYSTEM" = "cmake" ] && [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
+    # Breakpad is being replaced by sentry-native (#1183), which the CMake build will support
+    echo "The CMake build has no Breakpad crash reporter (#1183): building without it (DISABLE_BREAKPAD=1)."
+    echo "Set NATRON_BUILD_SYSTEM=qmake for a build with Breakpad."
+    DISABLE_BREAKPAD=1
 fi
 
 # By default breakpad is enabled
@@ -379,6 +399,8 @@ echo "TYPE is $TYPE"
 
 # Can be set to relwithdebinfo, release, debug
 setBuildOption "COMPILE_TYPE" "$COMPILE_TYPE"
+setBuildOption "NATRON_BUILD_SYSTEM" "$NATRON_BUILD_SYSTEM"
+setBuildOption "NATRON_EXTRA_CMAKE_FLAGS" "${NATRON_EXTRA_CMAKE_FLAGS:-}"
 setBuildOption "NATRON_EXTRA_QMAKE_FLAGS" "${NATRON_EXTRA_QMAKE_FLAGS:-}"
 
 setBuildOption "BUILD_TYPE" "$TYPE"

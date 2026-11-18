@@ -22,11 +22,29 @@ set -u # Treat unset variables as an error when substituting.
 #set -x # Print commands and their arguments as they are executed.
 
 # DISABLE_BREAKPAD=1: Disable automatic crash report
+# NATRON_BUILD_SYSTEM: cmake (the default) or qmake (deprecated, kept on RB-2.6 as a
+#   fallback until the CMake-built installers are shown to be equivalent, see #1181)
+# NATRON_EXTRA_CMAKE_FLAGS: extra arguments for cmake (CMake build), e.g. "-DNATRON_FAST_MATH=ON"
+# NATRON_EXTRA_QMAKE_FLAGS: extra arguments for qmake (qmake build)
 
 source common.sh
 source manageBuildOptions.sh
 source manageLog.sh
 updateBuildOptions
+
+NATRON_BUILD_SYSTEM="${NATRON_BUILD_SYSTEM:-cmake}"
+case "$NATRON_BUILD_SYSTEM" in
+    cmake|qmake) ;;
+    *)
+        echo "Error: NATRON_BUILD_SYSTEM must be cmake or qmake, not \"$NATRON_BUILD_SYSTEM\""
+        exit 1
+        ;;
+esac
+if [ "$NATRON_BUILD_SYSTEM" = "cmake" ] && [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
+    # launchBuildMain.sh sets DISABLE_BREAKPAD=1 for CMake builds
+    echo "Error: the CMake build has no Breakpad crash reporter (#1183): set DISABLE_BREAKPAD=1, or NATRON_BUILD_SYSTEM=qmake"
+    exit 1
+fi
 
 NO_BUILD=0
 # If Natron is already built, exit when debugging scripts
@@ -123,20 +141,22 @@ fi
 #Update GitVersion to have the correct hash
 $GSED "s#__BRANCH__#${NATRON_GIT_BRANCH}#;s#__COMMIT__#${NATRON_GIT_COMMIT}#;s#__IO_COMMIT__#${IO_GIT_HASH:-}#;s#__MISC_COMMIT__#${MISC_GIT_HASH:-}#;s#__ARENA_COMMIT__#${ARENA_GIT_HASH:-}#;s#__GMIC_COMMIT__#${GMIC_GIT_HASH:-}#" "$INC_PATH/natron/GitVersion.h" > Global/GitVersion.h
 
-# add config based on python version
-if [ "$NATRON_VERSION_MAJOR" -ge "3" ]; then
-    cat "$INC_PATH/natron/${PKGOS}_natron3.pri" > config.pri
-else
-    cat "$INC_PATH/natron/${PKGOS}.pri" > config.pri
+if [ "$NATRON_BUILD_SYSTEM" = "qmake" ]; then
+    # add config based on python version
+    if [ "$NATRON_VERSION_MAJOR" -ge "3" ]; then
+        cat "$INC_PATH/natron/${PKGOS}_natron3.pri" > config.pri
+    else
+        cat "$INC_PATH/natron/${PKGOS}.pri" > config.pri
+    fi
+
+    echo "*** config.pri:"
+    echo "========================================================================"
+    cat config.pri
+    echo "========================================================================"
 fi
 
-echo "*** config.pri:"
-echo "========================================================================"
-cat config.pri
-echo "========================================================================"
-
-# Generate pyside bindings (cmake can generate these, qmake can't)
-if [ "$QT_VERSION_MAJOR" = 5 ]; then
+# Generate pyside bindings (cmake generates these during the build, qmake can't)
+if [ "$NATRON_BUILD_SYSTEM" = "qmake" ] && [ "$QT_VERSION_MAJOR" = 5 ]; then
     UNIX_PYTHON_HOME="${PYTHON_HOME}"
     UNIX_SDK_HOME="${SDK_HOME}"
     case "$system" in
@@ -166,6 +186,193 @@ if [ "$QT_VERSION_MAJOR" = 5 ]; then
     python3 tools/utils/sourceCleanup.py Gui/typesystem_natronGui.xml Gui/Qt${QT_VERSION_MAJOR}
 
 fi
+
+OCIO_CONFIGS=()
+if [ "$OCIO_CONFIGS_VERSION" = "2.0" ]; then
+    OCIO_CONFIGS+=(blender nuke-default)
+else
+    OCIO_CONFIGS+=(blender natron nuke-default)
+fi
+
+RES_DIR="$TMP_BINARIES_PATH/Resources"
+
+if [ "$NATRON_BUILD_SYSTEM" = "cmake" ]; then
+    # CMake build: configure, build, "cmake --install" with the PORTABLE layout into a
+    # staging directory, then copy the result to the flat layout that the installer scripts
+    # read from $TMP_BINARIES_PATH: bin/ (with Info.plist and PkgInfo on macOS), Resources/,
+    # PyPlugs/, docs/natron/, and on macOS the DMG background. CMake generates the Python
+    # bindings during the build.
+    CMAKE_BUILD_DIR="$TMP_PATH/Natron-cmake-build"
+    CMAKE_INSTALL_DIR="$TMP_PATH/Natron-cmake-install"
+    # cmake is a native program on Windows: give it Windows paths
+    cmake_path() {
+        if [ "$PKGOS" = "Windows" ]; then cygpath -m "$1"; else echo "$1"; fi
+    }
+
+    case "$COMPILE_TYPE" in
+        debug) CMAKE_BUILD_TYPE=Debug;;
+        relwithdebinfo) CMAKE_BUILD_TYPE=RelWithDebInfo;;
+        *) CMAKE_BUILD_TYPE=Release;;
+    esac
+
+    # $CC, $CXX and $OBJECTIVE_CXX may carry flags (e.g. "clang++-mp-22 -stdlib=libc++ -std=c++20"):
+    # CMake needs the compiler alone, and the flags in CMAKE_<LANG>_FLAGS. A -std=... flag is
+    # dropped: CMakeLists.txt sets the C++ standard. The compiler path must not contain spaces.
+    split_compiler() { # split_compiler VAR "compiler flags...": sets VAR_EXE and VAR_FLAGS
+        local words i w flags=""
+        read -r -a words <<< "$2"
+        for ((i = 1; i < ${#words[@]}; i++)); do
+            w="${words[$i]}"
+            case "$w" in
+                -std=*) ;;
+                *) flags="$flags $w";;
+            esac
+        done
+        printf -v "$1_EXE" '%s' "${words[0]}"
+        printf -v "$1_FLAGS" '%s' "${flags# }"
+    }
+    split_compiler CMAKE_CC "$CC"
+    split_compiler CMAKE_CXX "$CXX"
+    split_compiler CMAKE_OBJCXX "$OBJECTIVE_CXX"
+
+    PYTHON_EXE="$PY_EXE"
+    if [ -x "$SDK_HOME/bin/python${PYVER}" ] || [ -x "$SDK_HOME/bin/python${PYVER}.exe" ]; then
+        PYTHON_EXE="$SDK_HOME/bin/python${PYVER}"
+    fi
+
+    OCIO_CONFIGS_LIST="${OCIO_CONFIGS[*]}"
+    CMAKE_FLAGS=(
+        -S "$(cmake_path "$PWD")"
+        -B "$(cmake_path "$CMAKE_BUILD_DIR")"
+        -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE"
+        -DCMAKE_C_COMPILER="$CMAKE_CC_EXE"
+        -DCMAKE_CXX_COMPILER="$CMAKE_CXX_EXE"
+        -DCMAKE_C_FLAGS="${CMAKE_CC_FLAGS} ${BF:-}"
+        -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS} ${BF:-}"
+        -DCMAKE_PREFIX_PATH="$(cmake_path "$QTDIR");$(cmake_path "$SDK_HOME")"
+        -DPython3_EXECUTABLE="$(cmake_path "$PYTHON_EXE")"
+        -DCMAKE_INSTALL_PREFIX="$(cmake_path "$CMAKE_INSTALL_DIR")"
+        -DNATRON_INSTALL_LAYOUT=PORTABLE
+        -DNATRON_OCIO_CONFIGS_DIR="$(cmake_path "$OCIO_CONFIGS_DIR")"
+        -DNATRON_OCIO_CONFIGS="${OCIO_CONFIGS_LIST// /;}"
+        -DNATRON_BUILD_TESTS=ON
+    )
+    if [ "$QT_VERSION_MAJOR" -ge 6 ]; then
+        CMAKE_FLAGS+=(-DNATRON_QT6=ON)
+    fi
+    if [ "$CMAKE_BUILD_TYPE" = "RelWithDebInfo" ]; then
+        # -O3 also with debug info (CMake's RelWithDebInfo default is -O2 -g)
+        CMAKE_FLAGS+=(-DCMAKE_C_FLAGS_RELWITHDEBINFO="-O3 -g -DNDEBUG" -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O3 -g -DNDEBUG")
+    fi
+
+    # setup version (qmake: CONFIG+=snapshot/alpha/beta/RC/stable, BUILD_NUMBER, BUILD_USER_NAME)
+    case "$NATRON_BUILD_CONFIG" in
+        ALPHA|BETA|RC)
+            if [ -z "${NATRON_BUILD_NUMBER:-}" ]; then
+                echo "You must supply a NATRON_BUILD_NUMBER when NATRON_BUILD_CONFIG=$NATRON_BUILD_CONFIG"
+                exit 1
+            fi
+            CMAKE_FLAGS+=(-DNATRON_BUILD_CONFIG="$NATRON_BUILD_CONFIG" -DNATRON_BUILD_NUMBER="$NATRON_BUILD_NUMBER")
+            ;;
+        SNAPSHOT|STABLE)
+            CMAKE_FLAGS+=(-DNATRON_BUILD_CONFIG="$NATRON_BUILD_CONFIG")
+            ;;
+        CUSTOM)
+            if [ -z "${NATRON_CUSTOM_BUILD_USER_NAME:-}" ]; then
+                echo "You must supply a NATRON_CUSTOM_BUILD_USER_NAME when NATRON_BUILD_CONFIG=CUSTOM"
+                exit 1
+            fi
+            CMAKE_FLAGS+=(-DNATRON_BUILD_CONFIG=CUSTOM -DNATRON_CUSTOM_BUILD_USER_NAME="$NATRON_CUSTOM_BUILD_USER_NAME")
+            ;;
+    esac
+
+    # OpenMP (ceres and openMVG, for the tracker), as with qmake
+    if [ "$COMPILER" = "clang" ]; then
+        CMAKE_FLAGS+=(-DNATRON_USE_OPENMP=OFF)
+    else
+        CMAKE_FLAGS+=(-DNATRON_USE_OPENMP=ON)
+    fi
+
+    if [ "$COMPILE_TYPE" != "debug" ]; then
+        # qmake: CONFIG+=noassertions. qmake's CONFIG+=fast (-Ofast) is not reproduced:
+        # its -ffinite-math-only defeats NaN and infinity checks (see #1277). Add
+        # -DNATRON_FAST_MATH=ON to NATRON_EXTRA_CMAKE_FLAGS to get it.
+        CMAKE_FLAGS+=(-DNATRON_NO_ASSERTIONS=ON)
+    fi
+
+    if [ "$PKGOS" = "OSX" ]; then
+        CMAKE_FLAGS+=(
+            -DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET"
+            -DCMAKE_OBJCXX_COMPILER="$CMAKE_OBJCXX_EXE"
+            -DCMAKE_OBJCXX_FLAGS="$CMAKE_OBJCXX_FLAGS"
+        )
+    fi
+
+    if command -v ninja >/dev/null 2>&1; then
+        CMAKE_FLAGS+=(-G Ninja)
+    elif [ "$PKGOS" = "Windows" ]; then
+        CMAKE_FLAGS+=(-G "MSYS Makefiles")
+    fi
+
+    # Extra cmake flags passed from the command line (split on spaces, no globbing)
+    read -r -a CMAKE_FLAGS_EXTRA <<< "${NATRON_EXTRA_CMAKE_FLAGS:-}"
+    # (index loop: macOS /bin/bash 3.2 with set -u rejects expanding an empty array)
+    for ((i = 0; i < ${#CMAKE_FLAGS_EXTRA[@]}; i++)); do
+        CMAKE_FLAGS+=("${CMAKE_FLAGS_EXTRA[$i]}")
+    done
+
+    if [ "$NO_BUILD" != "1" ]; then
+        printStatusMessage "Building Natron with CMake..."
+        rm -rf "$CMAKE_BUILD_DIR"
+        set -x
+        env CFLAGS= CXXFLAGS= cmake "${CMAKE_FLAGS[@]}"
+        cmake --build "$(cmake_path "$CMAKE_BUILD_DIR")" -j"${MKJOBS}"
+        set +x
+    fi
+
+    rm -rf "$CMAKE_INSTALL_DIR"
+    cmake --install "$(cmake_path "$CMAKE_BUILD_DIR")"
+    cmake --install "$(cmake_path "$CMAKE_BUILD_DIR")" --component Tests
+
+    if [ "${MINIMIZE_DISK_USAGE:-}" = "1" ]; then
+        echo "Cleaning up files to minimize disk usage..."
+        find "$CMAKE_BUILD_DIR" -type f \( -name '*.o' -o -name '*.obj' -o -name '*.a' \) -delete
+    fi
+
+    # stage the installed files into the layout the installer scripts expect
+    rm -rf "$TMP_BINARIES_PATH"/Natron* "$TMP_BINARIES_PATH/PyPlugs" "$RES_DIR/OpenColorIO-Configs" || true
+    rm -f "$TMP_BINARIES_PATH"/bin/Natron* "$TMP_BINARIES_PATH"/bin/natron-python* "$TMP_BINARIES_PATH"/bin/Tests* || true
+    mkdir -p "$TMP_BINARIES_PATH/bin" "$RES_DIR" "$TMP_BINARIES_PATH/docs/natron"
+    if [ "$PKGOS" = "OSX" ]; then
+        CMAKE_APP_CONTENTS="$CMAKE_INSTALL_DIR/Natron.app/Contents"
+        cp -a "$CMAKE_APP_CONTENTS/MacOS/." "$TMP_BINARIES_PATH/bin/"
+        # build-OSX-installer.sh moves Info.plist and PkgInfo from bin/ to Contents/
+        cp "$CMAKE_APP_CONTENTS/Info.plist" "$CMAKE_APP_CONTENTS/PkgInfo" "$TMP_BINARIES_PATH/bin/"
+        cp -a "$CMAKE_APP_CONTENTS/Resources/." "$RES_DIR/"
+        cp -a "$CMAKE_APP_CONTENTS/Plugins/PyPlugs" "$TMP_BINARIES_PATH/PyPlugs"
+        cp LICENSE.txt "$TMP_BINARIES_PATH/docs/natron/"
+        cp Gui/Resources/Images/splashscreen.* "$TMP_BINARIES_PATH/"
+    else
+        cp -a "$CMAKE_INSTALL_DIR/bin/." "$TMP_BINARIES_PATH/bin/"
+        cp -a "$CMAKE_INSTALL_DIR/Resources/." "$RES_DIR/"
+        cp -a "$CMAKE_INSTALL_DIR/Plugins/PyPlugs" "$TMP_BINARIES_PATH/PyPlugs"
+        cp -a "$CMAKE_INSTALL_DIR/docs/natron/." "$TMP_BINARIES_PATH/docs/natron/"
+    fi
+    echo "*** $RES_DIR/OpenColorIO-Configs now contains:"
+    ls "$RES_DIR/OpenColorIO-Configs"
+
+    TEST_BINARY_TO_RUN="$TMP_BINARIES_PATH/bin/Tests"
+    if [ "$PKGOS" = "Windows" ]; then
+        TEST_BINARY_TO_RUN="${TEST_BINARY_TO_RUN}.exe"
+    elif [ "$PKGOS" = "OSX" ]; then
+        # the installed Tests has the relative RPATHs of the app bundle, which only resolve once
+        # build-OSX-installer.sh has bundled the libraries (it runs Tests again from there):
+        # run the one in the build tree, whose RPATHs point to the libraries it was linked with
+        TEST_BINARY_TO_RUN="$CMAKE_BUILD_DIR/Tests/Tests"
+    fi
+else
+# qmake build (NATRON_BUILD_SYSTEM=qmake, deprecated): not indented, to keep it
+# identical to the previous version of this script. It ends at "end of the qmake build".
 
 # setup build dir
 if [ "${QMAKE_BUILD_SUBDIR:-}" = "1" ]; then
@@ -384,7 +591,6 @@ if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
     ${CP_OR_MV} CrashReporterCLI/$CRASHCLI "$TMP_BINARIES_PATH/bin/"
 fi
 
-RES_DIR="$TMP_BINARIES_PATH/Resources"
 if [ ! -d "$RES_DIR" ]; then
     mkdir -p "$RES_DIR"
 fi
@@ -392,13 +598,6 @@ fi
 # copy everything else we need
 rm -rf "$RES_DIR/OpenColorIO-Configs" || true
 mkdir -p "$RES_DIR/OpenColorIO-Configs"
-
-OCIO_CONFIGS=()
-if [ "$OCIO_CONFIGS_VERSION" = "2.0" ]; then
-    OCIO_CONFIGS+=(blender nuke-default)
-else
-    OCIO_CONFIGS+=(blender natron nuke-default)
-fi
 
 echo "*** Copying OpenColorIO profiles from $OCIO_CONFIGS_DIR to $RES_DIR/OpenColorIO-Configs (profiles: ${OCIO_CONFIGS[*]})"
 for profile in "${OCIO_CONFIGS[@]}"; do
@@ -441,6 +640,8 @@ if [ "$PKGOS" = "Linux" ] || [ "$PKGOS" = "Windows" ]; then
     #cp "$srcdir"/Gui/Resources/share/fontconfig/conf.avail/* "$RES_DIR/etc/fonts/conf.d/"
     cp "$srcdir"/Gui/Resources/etc/fonts/conf.d/* "$RES_DIR/etc/fonts/conf.d/"
 fi
+
+fi # end of the qmake build
 
 set -x
 # set OCIO for Tests
