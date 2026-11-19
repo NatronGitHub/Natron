@@ -17,5 +17,6 @@ Compositing
    compositing-tracking
    compositing-transform
    compositing-color
+   compositing-evaluating-color
    compositing-stereo
    compositing-exprs
