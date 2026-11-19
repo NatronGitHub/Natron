@@ -36,3 +36,16 @@ QMAKE_EXTENSION_SHLIB = ofx
 win32: TARGET_EXT = .ofx
 
 SOURCES += NatronTestPlugin.cpp
+
+# Copies of the bundle that the host must skip (Tests/OfxPluginScan_Test.cpp, #1380): "Any bundle or
+# sub-directory name starting with the character '@' is to be ignored" (ofxPackaging.rst), and a
+# directory whose name only contains ".ofx.bundle" is not a bundle. Same as Tests/CMakeLists.txt.
+NATRON_TEST_OFX_SKIPPED = \
+    @NatronTestPluginDisabled.ofx.bundle/Contents/$${NATRON_TEST_OFX_ARCHDIR}/@NatronTestPluginDisabled.ofx \
+    @Disabled/NatronTestPluginInDisabledDir.ofx.bundle/Contents/$${NATRON_TEST_OFX_ARCHDIR}/NatronTestPluginInDisabledDir.ofx \
+    NatronTestPluginOld.ofx.bundle.old/Contents/$${NATRON_TEST_OFX_ARCHDIR}/NatronTestPluginOld.ofx
+for(skipped, NATRON_TEST_OFX_SKIPPED) {
+    skippedPath = $${NATRON_TEST_OFX_PLUGIN_DIR}/$${skipped}
+    QMAKE_POST_LINK += $$sprintf($$QMAKE_MKDIR_CMD, $$shell_quote($$shell_path($$dirname(skippedPath)))) $$escape_expand(\\n\\t)
+    QMAKE_POST_LINK += $$QMAKE_COPY $$shell_quote($$shell_path($${DESTDIR}/$${TARGET}.ofx)) $$shell_quote($$shell_path($${skippedPath})) $$escape_expand(\\n\\t)
+}
