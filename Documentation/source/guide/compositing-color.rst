@@ -22,32 +22,43 @@ The most important nodes are marked with an asterisk:
 
 **Add***
 
-This node affects all values within the image in the same way: literally adding to them.
-Positive values will brighten all parts of the image. As a stand alone color manipulation it is of limited use, though it is ideal for lightening the blacks of distant objects.
+Adds its **Value** to every pixel, so dark and bright areas move up (or down,
+with a negative value) by the same amount. On its own it is rarely the right
+correction, but a small positive value is a quick way to raise the blacks,
+for example to make a distant object look hazier.
 
 
 **Multiply***
 
-It can be used to brighten or darken an image, or to fix a color cast. In math, Multiply has no effect upon zero (black). Hence, the Multiply node will have no effect upon the blacks of an image.
+Multiplies every pixel by its **Value**: values above 1 brighten the image,
+values below 1 darken it, and different values per channel correct a color
+cast. Since zero times anything is zero, pure black stays black. This is the
+same operation as the *gain* of other color nodes.
 
 **Clamp**
 
-The Clamp node, like the ColorLookup node, is not explicitly designed to provide feedback on images, however it can easily be used to do so.
-It functions in much the same way as the ClipTest node: it flattens out the user-defined lower and upper lightness range of the image and,
-if you tick MinClampTo and MaxClampTo, can replace these values with user defined colors.
-Properly used it can provide clearer information than the ClipTest node.
+Limits the values to a **Minimum** and a **Maximum**. Besides its normal use
+(for example, keeping a matte between 0 and 1), it helps to see where an
+image goes out of range: with **Enable MinClampTo** and **Enable
+MaxClampTo** checked, the clamped pixels are replaced by the **MinClampTo**
+and **MaxClampTo** colors, which can be set to a bright color. The
+:ref:`ClipTest <net.sf.openfx.ClipTestPlugin>` node shows the same areas with
+zebra stripes, without changing other pixels.
 
 
 **ColorLookup***
 
-A color lookup is what image editors Curves tool does.
-It is a very powerful tool, capable of replicating the function of many other color nodes.
-Its disadvantage is that it requires more processing than many of those nodes.
-The curve of a color lookup can also be a bit more difficult to read than nodes featuring sliders.
+The equivalent of the *Curves* tool of image editors: each channel (and a
+master curve for all three colors) is remapped through a curve that you
+edit. Most of the other color operations can be built with it, and it is the
+most flexible way to shape contrast. The price is that a curve is harder to
+read, and to set precisely, than a few sliders.
 
 **Colorspace conversion nodes**
 
-Engineers think of color as existing in things called spaces which are mathematical, 3D models the purpose of which is to organize them. Different color spaces serve different purposes: some are meant for printing, some are meant for screen-based work, some are meant for TV. Nodes such as :ref:`RGBToHSL <net.sf.openfx.RGBToHSL>`, :ref:`RGBToHSV <net.sf.openfx.RGBToHSV>` or :ref:`RGB709ToLab <net.sf.openfx.RGB709ToLab>` (and their inverses, such as :ref:`HSLToRGB <net.sf.openfx.HSLToRGB>` and :ref:`LabToRGB709 <net.sf.openfx.LabToRGB709>`) move an image from RGB to another color model. This makes it possible to use the channels of that model as masks for simple RGB operations, or to make adjustments that would be hard to do in RGB. The workflow is: convert from the linear RGB working space to the model of your choice, make the adjustment, then convert back to RGB.
+A color model describes colors with three numbers other than red, green and
+blue: hue, saturation and lightness for HSL, or lightness and two color
+opponents for Lab. Each model makes some adjustments easier. Nodes such as :ref:`RGBToHSL <net.sf.openfx.RGBToHSL>`, :ref:`RGBToHSV <net.sf.openfx.RGBToHSV>` or :ref:`RGB709ToLab <net.sf.openfx.RGB709ToLab>` (and their inverses, such as :ref:`HSLToRGB <net.sf.openfx.HSLToRGB>` and :ref:`LabToRGB709 <net.sf.openfx.LabToRGB709>`) move an image from RGB to another color model. This makes it possible to use the channels of that model as masks for simple RGB operations, or to make adjustments that would be hard to do in RGB. The workflow is: convert from the linear RGB working space to the model of your choice, make the adjustment, then convert back to RGB.
 For example, a contrast adjustment on the saturation channel of HSL desaturates the less saturated parts of an image and increases the saturation of the rest.
 The Lab model separates the lightness of an image (the L channel) from its hue and saturation (the a and b channels), better than HSL does. The a and b channels of one image can be copied into another one, with an effect similar to the hue blend mode of image editors: for example, the blurred colors of a vivid sunset can make a dull sky more colorful.
 Blurring only the a and b channels blurs the hue and saturation of an image and keeps its lightness.
@@ -55,15 +66,28 @@ To convert between colorspaces of the OpenColorIO configuration (log, sRGB, Rec.
 
 **ColorCorrect***
 
-Artists have for thousands of years been separating the lightness values of their paintings into three bands: shadows, midtones and highlights. The ColorCorrect node is a collection of operations that not only can affect the entire image but can address separately these three ranges.
+Has the same set of controls (**Saturation**, **Contrast**, **Gamma**,
+**Gain** and **Offset**) four times: once for the whole image (*Master*), and
+once each for the *Shadows*, *Midtones* and *Highlights*. This lets you, for
+example, warm up the highlights while keeping neutral shadows. The curves
+in its **Ranges** tab define which values count as shadows, midtones and
+highlights.
 
 **Gamma**
 
-This raises or lowers the middle-ish point of the color curve. The default value is one, with smaller numbers darkening the lower registers and higher numbers lightening them. Stand-alone gamma adjustments can also be done with ColorLookup, which gives more control over where the curve is bent. Both ColorCorrect and Grade have built in Gamma value sliders.
+Bends the middle of the tone curve while leaving 0 and 1 in place. With the
+default **Value** of 1 nothing changes; lower values darken the midtones and
+higher values brighten them. Grade and ColorCorrect also have a gamma
+control, and ColorLookup can do the same with more control over which part
+of the curve moves.
 
 **Grade***
 
-This node is a collection of operations that combine to work upon the lightness and hue values of an image. It is mostly a fixer: used for correcting and matching, though of course it can also be used for more aesthetically lavish purposes.
+The usual node to fix and match images. **Black Point** and **White Point**
+pick the darkest and brightest values of the input, which are mapped to
+**Lift** and **Gain**; **Multiply**, **Offset** and **Gamma** are then applied.
+Setting the black and white points of one plate from the darkest and
+brightest areas of another is a quick way to match their levels.
 
 **Histogram**
 
@@ -109,10 +133,21 @@ The HSVTool has three functions: Color replacement, Color adjust, Hue keyer
 
 **Saturation***
 
-A color becomes a grey if its RGB values are all identical.
+A pixel with equal red, green and blue values is gray: it has no saturation.
 The Saturation node mixes each pixel with its luminance, computed with the
 **Luminance Math** formula (Rec. 709 by default). More localized control over
 saturation is offered by the HueCorrect node.
+
+
+Further reading
+---------------
+
+The archived Optical Enquiry Nuke wiki pages on `the Color nodes
+<https://web.archive.org/web/20220523235532/http://www.opticalenquiry.com/nuke/index.php?title=The_Color_Nodes>`__
+and `Color Operations Visualised
+<https://web.archive.org/web/20220627030639/http://www.opticalenquiry.com/nuke/index.php?title=Color_Operations_Visualised>`__
+show what the basic color operations do to a gradient. They use Nuke node
+names, but these operations are the same in Natron.
 
 
 .. toctree::
