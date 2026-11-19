@@ -1415,7 +1415,9 @@ AppManager::clearAllCaches()
         (*it)->renderAllViewers(true);
     }
 
-    Project::clearAutoSavesDir();
+    // Do not remove the auto-saves here (#1258): they are not a cache, but the crash-recovery files of the
+    // unsaved projects of every running Natron. This is also called when the disk cache is wiped at
+    // startup (--clear-cache or a new cache version), before the user is offered to restore them.
 }
 
 void

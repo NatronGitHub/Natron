@@ -68,6 +68,7 @@ SOURCES += \
     OfxTestPlugin_Test.cpp \
     OSGLContext_Test.cpp \
     PluginGrouping_Test.cpp \
+    ProjectAutoSave_Test.cpp \
     ReadNodeOverlay_Test.cpp \
     RenderThreadSafety_Test.cpp \
     RotoPaint_Test.cpp \

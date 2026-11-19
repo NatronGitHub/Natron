@@ -149,11 +149,8 @@ The cache settings are in **Edit > Preferences > Caching**:
 **Wipe Disk Cache**
    Clears all the caches and deletes all the cache files in the disk cache
    folder. Use it if the disk cache seems to take more space than expected, or
-   if Natron seems to show old images. Like **Clear All Caches** (see
-   `The Cache menu`_), it also deletes all the auto-save files in the
-   auto-save folder, including the crash-recovery files left by earlier
-   sessions: save your projects first, and recover any crashed project
-   before using it.
+   if Natron seems to show old images. It does not delete the auto-save
+   files.
 
 The full list of preferences is in the Reference Guide: :doc:`../_prefs`.
 
@@ -205,9 +202,11 @@ comes from the cache.
 
 **Clear All Caches** (:kbd:`Ctrl+Shift+K`, :kbd:`Cmd+Shift+K` on macOS)
    Stops the Viewers, empties all the caches above, then renders the Viewers
-   again. It also deletes all the auto-save files in the auto-save folder,
-   including the crash-recovery files left by earlier sessions: save your
-   projects first, and recover any crashed project before using it.
+   again. It does not delete the auto-save files: Natron deletes a project's
+   auto-save when you save it, or when you close it with **Don't Save**. When
+   you decline to restore the crash-recovery files at startup, Natron deletes
+   all the auto-saves of untitled projects, including those of the other
+   running Natron processes.
 
 **Clear Plug-ins Load Cache**
    Natron keeps a list of the OpenFX plug-ins it found, so that it starts
