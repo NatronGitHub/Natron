@@ -104,18 +104,37 @@ void
 TrackerContext::load(const TrackerContextSerialization& serialization)
 {
     TrackerContextPtr thisShared = shared_from_this();
-    QMutexLocker k(&_imp->trackerContextMutex);
 
-    for (std::list<TrackSerialization>::const_iterator it = serialization._tracks.begin(); it != serialization._tracks.end(); ++it) {
-        TrackMarkerPtr marker;
-        if ( it->usePatternMatching() ) {
-            marker = TrackMarkerPM::create(thisShared);
-        } else {
-            marker = TrackMarker::create(thisShared);
+    // The serialization replaces the current tracks: when presets are loaded on
+    // an existing node, or when that is undone, remove the current tracks first
+    // (they would otherwise be kept, and the loaded ones appended to them, #1247).
+    std::vector<TrackMarkerPtr> oldMarkers;
+    getAllMarkers(&oldMarkers);
+    for (std::size_t i = 0; i < oldMarkers.size(); ++i) {
+        removeMarker(oldMarkers[i]);
+    }
+
+    std::vector<TrackMarkerPtr> newMarkers;
+    {
+        QMutexLocker k(&_imp->trackerContextMutex);
+
+        for (std::list<TrackSerialization>::const_iterator it = serialization._tracks.begin(); it != serialization._tracks.end(); ++it) {
+            TrackMarkerPtr marker;
+            if ( it->usePatternMatching() ) {
+                marker = TrackMarkerPM::create(thisShared);
+            } else {
+                marker = TrackMarker::create(thisShared);
+            }
+            marker->initializeKnobsPublic();
+            marker->load(*it);
+            _imp->markers.push_back(marker);
+            newMarkers.push_back(marker);
         }
-        marker->initializeKnobsPublic();
-        marker->load(*it);
-        _imp->markers.push_back(marker);
+    }
+
+    // Tell the GUI (tracks table) about the loaded tracks
+    for (std::size_t i = 0; i < newMarkers.size(); ++i) {
+        Q_EMIT trackInserted(newMarkers[i], (int)i);
     }
 }
 

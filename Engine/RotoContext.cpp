@@ -1024,11 +1024,35 @@ RotoContext::load(const RotoContextSerialization & obj)
         it->lock()->setDefaultAllDimensionsEnabled(false);
     }
 
-    assert(_imp->layers.size() == 1);
+    assert( !_imp->layers.empty() );
 
     RotoLayerPtr baseLayer = _imp->layers.front();
 
+    // The serialization replaces the current items: when presets are loaded on
+    // an existing node, or when that is undone, remove the current items first
+    // (they would otherwise be kept, and the loaded ones appended to them, #1247).
+    {
+        RotoItems oldItems = baseLayer->getItems();
+        for (RotoItems::iterator it = oldItems.begin(); it != oldItems.end(); ++it) {
+            removeItem(*it, RotoItem::eSelectionReasonOther);
+        }
+    }
+    assert(_imp->layers.size() == 1);
+
     baseLayer->load(obj._baseLayer);
+
+    // Tell the GUI (settings panel, curve editor) about the loaded items
+    {
+        const RotoItems newItems = baseLayer->getItems();
+        int index = 0;
+        for (RotoItems::const_iterator it = newItems.begin(); it != newItems.end(); ++it, ++index) {
+            {
+                QMutexLocker l(&_imp->rotoContextMutex);
+                _imp->lastInsertedItem = *it;
+            }
+            Q_EMIT itemInserted(index, RotoItem::eSelectionReasonOther);
+        }
+    }
 
     for (std::list<std::string>::const_iterator it = obj._selectedItems.begin(); it != obj._selectedItems.end(); ++it) {
         RotoItemPtr item = getItemByName(*it);
