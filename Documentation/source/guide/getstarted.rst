@@ -12,5 +12,4 @@ Getting started
    Transition-fromNuke_01
    getstarted-environment
    getstarted-troubleshooting
-   known-bugs-and-workarounds
    

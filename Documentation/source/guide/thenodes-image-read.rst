@@ -4,89 +4,120 @@
 Read Node
 =========
 
-.. toctree::
-   :maxdepth: 2
+The Read node reads movies, still images and image sequences into the project.
+When you create it (**Image > Read**, or :kbd:`R` in the Node Graph), a file
+browser opens to choose the file.
 
-The read node brings movies or still images into the script. When you call it from the menu (shortcut key R) a file browser will appear. You will need to navigate to the 'Users' folder and look for your user identity in the list.
+You can also drag files from your file manager onto the Node Graph: Natron
+creates a Read node for each file or image sequence. If you drop a folder,
+Natron looks for files and sequences in it and in all its subfolders.
 
-It might be easier to just drag your files onto the Node Graph where they will automatically be assigned a Read node. Image sequences need to be placed inside a folder, and the folder dropped into Natron. Read-in paths can be tidied up later. Natron will find all image sequences in this folder recursively (ie. folders inside folders)
 
-
-Filename
---------
-| Click on the folder icon to open the file browser and choose the file you want to read from disk.
-| See :doc:`The File Browser <getstarted-environment-fileselect>` section for more informations.
+File
+----
+| Click the folder icon next to **File** to open the file browser and choose
+  the file to read.
+| See :doc:`The File Browser <getstarted-environment-fileselect>` section for
+  more information.
 
 Timing
 ------
 
-The Read node can change the timing attributes of a movie file or image sequence.
+The Read node can change the timing of a movie file or an image sequence.
 
 .. image:: _images/TheNodes-Image/read_node_time_props.jpg
 
 
-Main Settings
+Main settings
 
-* "First Frame" and "Last Frame": By default the value of the beginning and end frames found on disk. (The length is not shown, it is length=Last-First+1 ). You can change the First and Last values tu cut head or tail of your clip
-* "Frame mode": The sequence can be moved in time. Selecting "Time Offset" and inputing -100 into this will shift the sequence back in time by 100 frames. "Starting time" use an absolute start time.
+* **First Frame** and **Last Frame**: by default, the first and last frames
+  found on disk. Change them to trim the start or the end of the clip.
+* **Frame Mode**: moves the clip in time. With **Time Offset**, an offset of
+  -100 moves the clip 100 frames earlier. With **Starting Time**, you set the
+  output frame at which the first frame of the clip is shown.
 
-Other Settings
+Other settings
 
-* "after" and "before": They define what happens before the first frame and after the last. The default is "hold", but by selecting "loop" or "bounce", looped animations can be made. An example use of this is to loop the swaing of a tree. The value "black" in these menus results in a black transparent image. "error" also gives a black image but should stop a render
-* "On Missing Frame": let"s you use a sequence by filling the gaps with previous or next image. This can be used for test renders from 3D rendered only 1 frame out of 2. or to quick fix a broken file that you have to remove
+* **Before** and **After**: what the node outputs before the first frame and
+  after the last one. The default is **Hold** (repeat the first or last
+  frame). **Loop** and **Bounce** repeat the clip, which is useful for looping
+  animations such as a tree swaying in the wind. **Black** outputs a black,
+  transparent image, and **Error** reports an error, which stops a render.
+* **On Missing Frame**: what to do when a frame of the sequence is missing:
+  **Hold previous**, **Load next** or **Load nearest** frame, **Error**, or
+  **Black**. This lets you use a test render in which only every other frame
+  was rendered, or a sequence with a broken frame that you removed.
 
 .. note::
    **Tip:**
-   Natron behaves way better with image sequence (numbered) files rather than Movies (quicktime, mp4, ...). More reliable, faster access, possibility to overwrite parts of sequence when (re)rendering are the main reasons for this
+   Natron works better with image sequences (numbered files) than with movie
+   files (QuickTime, MP4, ...): they are more reliable, faster to access, and
+   you can re-render only part of a sequence.
 
 
 Interpretation
 --------------
 
-The read node can change how the image is imported in the project
+These settings change how the image is interpreted.
 
 .. image:: _images/TheNodes-Image/read_node_interpret_footage.jpg
 
 Main settings
 
-- "Frame rate" defaults to the value as found in the file. It can be overridden if the file has been encoded with the wrong values
+- **Frame rate** defaults to the frame rate found in the file. Override it
+  with **Custom FPS** if the file was encoded with the wrong value.
 
 .. note::
-   A numbered file sequence has no absolute framerate. So, when loading a sequence you should set the Frame rate here as Natron can not guess from the file. As noted below this will however not change the behavior of Natron
-
-
-.. note::
-   Natron is frame rate agnostic. It means that it will always process one frame in the source to one frame to the output. The framerate is mainly a metadata. You can do framerate conversions explicitly in your node tree. (24 to 25fps with "retime" node set at speed 0.96)
-
-
-
-- Premultiplication. If your image has transparent areas, you should know if it was encoded in "premultiplied" or "unpremultiplied" mode. Natron can work in both modes (and switch from one to the other with Premult and Unpremult Nodes)
-
-   For a video leave all this to opaque, for most photoshop like documents use "premultiplied" in all, for some 3D render passes you will switch both to "unpremultiplied".
-   If both values are the same, the image is not changed but the metadata passed to the node tree.
-   If the values are different, the file is "Premultiplied" or "Unpremultiplied" as needed
+   An image sequence has no frame rate of its own, so Natron cannot read it
+   from the files: set it here. As explained below, this does not change how
+   Natron processes the frames.
 
 
 .. note::
-   Most programs output premultiplied images, but not all 3D renderers
+   Natron processes frames, not time: one input frame always gives one
+   output frame, and the frame rate is mostly metadata. To convert the frame
+   rate, use a node in the graph: for example, a Retime node with a
+   **Speed** of 0.96 converts 24 fps to 25 fps.
+
+
+- **File Premult** and **Output Premult**: if the image has transparent
+  areas, you need to know whether the file stores premultiplied or
+  unpremultiplied colors. Natron can work in both modes, and the Premult and
+  Unpremult nodes convert from one to the other.
+
+   For a video, leave both set to **Opaque**. For most images from painting
+   programs, use **PreMultiplied** for both. Some 3D render passes need
+   **UnPreMultiplied** for both.
+   If both values are the same, the image is not changed, and the value is
+   passed down the graph as metadata.
+   If they are different, the node premultiplies or unpremultiplies the image.
+
+
+.. note::
+   Most programs write premultiplied images, but some 3D renderers do not.
 
 Other settings
-- "Output Components" tells Natron wether or not to ditch the Alpha channel from the source file.
+
+- **Output Components** chooses whether to keep the alpha channel of the file
+  (**RGBA**) or to drop it (**RGB**). It can also output only the alpha
+  channel (**Alpha**), or two channels (**RG**).
 
 Decoding
 --------
 
-The read node can change the way an image is rendered from the values in the disk file. These options change with the type of file being read.
+The decoder options depend on the type of file being read.
 
-jpeg options:
+JPEG options:
 
 .. image:: _images/TheNodes-Image/read_node_decoder_closed.jpg
 
-quicktime options:
+QuickTime and other video options:
 
 .. image:: _images/TheNodes-Image/read_node_decoder_quicktime.jpg
 
-Allows multi track videos (eg. stereo files) to be split in different Layers in Natron
+In a multi-view (stereo) project, each video track of the file is read as a
+view. Check **First Track Only** if the file has several video tracks that are
+not views.
 
 RAW file options:
 
@@ -95,21 +126,24 @@ RAW file options:
 
 PDF file options:
 
-Multi-page PDFs can be loaded in Natron. To view the different pages, add a Shuffle node after the Read node to choose the layer containing the desired page.
+Natron can read multi-page PDF documents: each page is a layer. To show
+another page, choose its layer in the Viewer's layer menu, or add a Shuffle
+node after the Read node to pick that layer.
 
 Color
 -----
 
-The read node can change the color interpretation of an image.
+The Read node converts the colors of the image.
 
 .. image:: _images/TheNodes-Image/read_node_color_closed.jpg
 
-The file will be converted from "File colorspace" to "Output Colorspace"
+The image is converted from **File Colorspace** to **Output Colorspace**.
 
 .. note::
    **Tips:**
-     * It is recommended to leave "Output" to linear as this is the recommended basic workflow in Natron
-     * When file and Output spaces are the same, no conversion will occur
+     * Leave **Output Colorspace** set to the linear colorspace (the default):
+       Natron is designed to work on linear images.
+     * When the two colorspaces are the same, no conversion is done.
 
-See :doc:`The readers <compositing-projects-readers>` section for more information.
-
+See :doc:`The readers <compositing-projects-readers>` section for more
+information.
