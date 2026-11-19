@@ -40,6 +40,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Global/KeySymbols.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/OfxDrawSuiteGL.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -61,7 +62,10 @@ class NatronOverlayInteractSupport
 protected:
 
     OverlaySupport* _viewport;
-    
+
+    // the OFX 1.5 DrawSuite of this interact, drawn in _viewport (set at the start of each draw)
+    OfxDrawSuiteGL _drawSuite;
+
 
 public:
     NatronOverlayInteractSupport();
@@ -222,6 +226,51 @@ public:
 
     /// call create instance
     virtual OfxStatus createInstanceAction() OVERRIDE FINAL;
+
+    // OFX 1.5 DrawSuite (OfxDrawSuiteV1): drawn with OpenGL in the calling viewport, like the OpenGL
+    // overlays (see OfxDrawSuiteGL). HostSupport has checked the arguments and that
+    // kOfxInteractActionDraw is running.
+    virtual OfxStatus drawGetColour(OfxStandardColour stdColour,
+                                    OfxRGBAColourF *colour) OVERRIDE FINAL
+    {
+        return _drawSuite.getColour(stdColour, colour);
+    }
+
+    virtual OfxStatus drawSetColour(const OfxRGBAColourF *colour) OVERRIDE FINAL
+    {
+        return _drawSuite.setColour(colour);
+    }
+
+    virtual OfxStatus drawSetLineWidth(float width) OVERRIDE FINAL
+    {
+        return _drawSuite.setLineWidth(width);
+    }
+
+    virtual OfxStatus drawSetLineStipple(OfxDrawLineStipplePattern pattern) OVERRIDE FINAL
+    {
+        return _drawSuite.setLineStipple(pattern);
+    }
+
+    virtual OfxStatus drawPrimitive(OfxDrawPrimitive primitive,
+                                    const OfxPointD *points,
+                                    int pointCount) OVERRIDE FINAL
+    {
+        return _drawSuite.drawPrimitive(primitive, points, pointCount);
+    }
+
+    virtual OfxStatus drawText(const char *text,
+                               const OfxPointD *pos,
+                               int alignment) OVERRIDE FINAL
+    {
+        return _drawSuite.drawText(text, pos, alignment);
+    }
+
+    // Natron extension 14 (kNatronOfxInteractPropDrawSuiteShadows): the drawSuiteShadows
+    // preference. drawAction() passes the same value to the DrawSuite.
+    virtual bool drawSuiteShadows() const OVERRIDE FINAL
+    {
+        return OfxDrawSuiteGL::shadowsPreference();
+    }
 
     // interact action - kOfxInteractActionDraw
     //
@@ -404,6 +453,57 @@ public:
 
     /*Calls update() on all viewers*/
     virtual OfxStatus redraw() OVERRIDE FINAL;
+
+    // interact action - kOfxInteractActionDraw: resets the DrawSuite state
+    virtual OfxStatus drawAction(OfxTime time,
+                                 const OfxPointD &renderScale,
+                                 int view,
+                                 const OfxRGBAColourD* pickerColour) OVERRIDE FINAL;
+
+    // OFX 1.5 DrawSuite (OfxDrawSuiteV1): drawn with OpenGL in the calling viewport, like the OpenGL
+    // overlays (see OfxDrawSuiteGL). HostSupport has checked the arguments and that
+    // kOfxInteractActionDraw is running.
+    virtual OfxStatus drawGetColour(OfxStandardColour stdColour,
+                                    OfxRGBAColourF *colour) OVERRIDE FINAL
+    {
+        return _drawSuite.getColour(stdColour, colour);
+    }
+
+    virtual OfxStatus drawSetColour(const OfxRGBAColourF *colour) OVERRIDE FINAL
+    {
+        return _drawSuite.setColour(colour);
+    }
+
+    virtual OfxStatus drawSetLineWidth(float width) OVERRIDE FINAL
+    {
+        return _drawSuite.setLineWidth(width);
+    }
+
+    virtual OfxStatus drawSetLineStipple(OfxDrawLineStipplePattern pattern) OVERRIDE FINAL
+    {
+        return _drawSuite.setLineStipple(pattern);
+    }
+
+    virtual OfxStatus drawPrimitive(OfxDrawPrimitive primitive,
+                                    const OfxPointD *points,
+                                    int pointCount) OVERRIDE FINAL
+    {
+        return _drawSuite.drawPrimitive(primitive, points, pointCount);
+    }
+
+    virtual OfxStatus drawText(const char *text,
+                               const OfxPointD *pos,
+                               int alignment) OVERRIDE FINAL
+    {
+        return _drawSuite.drawText(text, pos, alignment);
+    }
+
+    // Natron extension 14 (kNatronOfxInteractPropDrawSuiteShadows): the drawSuiteShadows
+    // preference. drawAction() passes the same value to the DrawSuite.
+    virtual bool drawSuiteShadows() const OVERRIDE FINAL
+    {
+        return OfxDrawSuiteGL::shadowsPreference();
+    }
 
 
     /// hooks to kOfxInteractPropViewportSize in the property set

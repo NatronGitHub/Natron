@@ -74,6 +74,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/Format.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Image.h"
+#include "Engine/OfxDrawSuiteGL.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
@@ -1246,6 +1247,12 @@ AppManagerPrivate::initGl(bool checkRenderingReq)
         glad_debug_glCallLists = glad_glCallLists;
     }
 #endif
+
+    // the OpenGL functions of the OFX DrawSuite, now that glad has loaded them (and, with
+    // GLAD_DEBUG, set up its wrappers)
+    if (glLoaded) {
+        OfxDrawSuiteGL::loadGLFunctions();
+    }
 
     // If only EXT_framebuffer is present and not ARB link functions
     if (glLoaded && GLAD_GL_EXT_framebuffer_object && !GLAD_GL_ARB_framebuffer_object) {

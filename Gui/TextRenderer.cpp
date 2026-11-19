@@ -256,6 +256,20 @@ TextRenderer::~TextRenderer()
 {
 }
 
+int
+TextRenderer::textWidth(const QFontMetrics& fontMetrics,
+                        const QString &text)
+{
+    // the advances of the characters drawn by renderText() (see createCharacter())
+    int width = 0;
+
+    for (int i = 0; i < text.length(); ++i) {
+        width += fontMetrics.horizontalAdvance(text[i]);
+    }
+
+    return width;
+}
+
 void
 TextRenderer::renderText(float x,
                          float y,
@@ -278,10 +292,7 @@ TextRenderer::renderText(float x,
     assert(p);
 
     if (flags & Qt::AlignHCenter || flags & Qt::AlignRight) {
-        int width = 0;
-        for (int i = 0; i < text.length(); ++i) {
-            width += p->_fontMetrics.horizontalAdvance(text[i]);
-        }
+        int width = textWidth(p->_fontMetrics, text);
         if (flags & Qt::AlignHCenter) {
             x -= width/2. * scalex;
         }

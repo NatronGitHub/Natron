@@ -28,6 +28,7 @@
 
 #include <cassert>
 #include <algorithm> // min, max
+#include <cmath> // floor
 #include <limits>
 #include <cstring> // for std::memcpy, std::memset, std::strcmp, std::strchr
 #include <stdexcept>
@@ -3273,12 +3274,15 @@ ViewerGL::renderText(double x,
                      double r,
                      double g,
                      double b,
-                     int flags)
+                     int flags,
+                     double a)
 {
     QColor c;
 
-    c.setRgbF( Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.) );
-    renderText(x, y, QString::fromUtf8( string.c_str() ), c, font(), flags);
+    c.setRgbF( Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.), Image::clamp(a, 0., 1.) );
+    // the text font, scaled by the screen pixel ratio, as the widget's own labels (renderText() draws one
+    // font pixel per device pixel)
+    renderText(x, y, QString::fromUtf8( string.c_str() ), c, _imp->_textFont ? *_imp->_textFont : font(), flags);
 
     return true;
 }
@@ -3679,7 +3683,34 @@ ViewerGL::getBackgroundColour(double &r,
 int
 ViewerGL::getWidgetFontHeight() const
 {
-    return fontMetrics().height();
+    // in widget pixels, for the font that renderText() draws with
+    if ( !_imp->_textFont || !(_imp->_screenPixelRatio > 0.) ) {
+        return fontMetrics().height();
+    }
+
+    return (int)std::floor(QFontMetrics(*_imp->_textFont).height() / _imp->_screenPixelRatio + 0.5);
+}
+
+int
+ViewerGL::getWidgetFontAscent() const
+{
+    // in widget pixels, for the font that renderText() draws with
+    if ( !_imp->_textFont || !(_imp->_screenPixelRatio > 0.) ) {
+        return fontMetrics().ascent();
+    }
+
+    return (int)std::floor(QFontMetrics(*_imp->_textFont).ascent() / _imp->_screenPixelRatio + 0.5);
+}
+
+int
+ViewerGL::getWidgetFontDescent() const
+{
+    // in widget pixels, for the font that renderText() draws with
+    if ( !_imp->_textFont || !(_imp->_screenPixelRatio > 0.) ) {
+        return fontMetrics().descent();
+    }
+
+    return (int)std::floor(QFontMetrics(*_imp->_textFont).descent() / _imp->_screenPixelRatio + 0.5);
 }
 
 /**
@@ -3688,7 +3719,13 @@ ViewerGL::getWidgetFontHeight() const
 int
 ViewerGL::getStringWidthForCurrentFont(const std::string& string) const
 {
-    return fontMetrics().horizontalAdvance( QString::fromUtf8( string.c_str() ) );
+    // the width that renderText() draws, in widget pixels
+    const QString text = QString::fromUtf8( string.c_str() );
+    if ( !_imp->_textFont || !(_imp->_screenPixelRatio > 0.) ) {
+        return TextRenderer::textWidth(fontMetrics(), text);
+    }
+
+    return (int)std::floor(TextRenderer::textWidth(QFontMetrics(*_imp->_textFont), text) / _imp->_screenPixelRatio + 0.5);
 }
 
 void
