@@ -171,6 +171,15 @@ submodule (``Documentation/source/_ext/natron_openfx.py`` copies it into
 them, or with ``NATRON_DOCS_OPENFX=0`` (which the installers set, to keep the
 documentation bundled with Natron small), those pages are placeholders.
 
+Use Doxygen 1.17 or earlier (Read the Docs uses the Doxygen of Ubuntu 22.04,
+1.9.1). Doxygen 1.18 writes the suite function pointers in a form that breathe
+cannot parse, so the reference would lose those declarations, with about 330
+warnings: with Doxygen 1.18 or later, ``natron_openfx.py`` writes the
+placeholders instead and says so in the build log (look for
+``natron_openfx:``). ``NATRON_DOCS_OPENFX=force`` builds the OpenFX pages
+anyway, e.g. to check a change to them; MacPorts and Homebrew ship Doxygen
+1.18 or later.
+
 Read the Docs builds HTML, PDF and ePub for each push to a release branch
 (see ``.readthedocs.yaml``), but only the HTML for a pull request: check the
 PDF and ePub locally when a change can affect them.
@@ -207,8 +216,11 @@ or later::
     npm ci    # node_modules/ is ignored by git
 
 The HTML pages draw the diagrams in the browser, with the mermaid.js of
-``node_modules`` (copied to ``_static/mermaid/``, so the offline documentation
-and the one bundled with Natron work too). The PDF and ePub need pictures,
+``node_modules`` (copied to ``_static/mermaid/``, so that a local or offline
+build works without a network connection). ``tools/jenkins/gen-natron-doc.sh``,
+which builds the documentation bundled with Natron, does not run ``npm ci``:
+unless ``Documentation/node_modules`` already exists there, the bundled
+documentation shows the diagrams as source. The PDF and ePub need pictures,
 which `mermaid-cli <https://github.com/mermaid-js/mermaid-cli>`_ draws with a
 headless Chrome; ``_ext/natron_mermaid.py`` checks that it works before the PDF
 or ePub build. Without sphinxcontrib-mermaid or ``node_modules``, or if

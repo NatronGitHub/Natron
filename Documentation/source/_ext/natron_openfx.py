@@ -18,7 +18,8 @@ directory, so ``prepare()``, called from conf.py:
 4. returns the breathe configuration, the ``exclude_patterns`` and an
    ``|openfx_commit|`` substitution.
 
-If the submodule is not checked out, breathe or Doxygen is missing, or
+If the submodule is not checked out, breathe or Doxygen is missing, Doxygen
+is 1.18 or later (unless ``NATRON_DOCS_OPENFX=force``, see ``_stage``), or
 ``NATRON_DOCS_OPENFX=0`` (the documentation bundled with Natron), it writes
 short placeholder pages instead, so that the rest of the documentation still
 builds and its links to these pages still resolve.
@@ -60,6 +61,16 @@ PLACEHOLDERS = {
 
 def _log(msg):
     print("natron_openfx: " + msg, file=sys.stderr)
+
+
+def _doxygen_version():
+    """The Doxygen version as a tuple of ints, e.g. (1, 9, 8), or None."""
+    try:
+        out = subprocess.run(["doxygen", "--version"], capture_output=True,
+                             text=True).stdout.split()[0]
+        return tuple(int(x) for x in out.split(".")[:3])
+    except (OSError, IndexError, ValueError):
+        return None
 
 
 def _git_commit(path):
@@ -181,16 +192,21 @@ def _stage(confdir, ofx, stage):
         _write_placeholders(stage, "Doxygen is not installed")
         return None
 
-    try:
-        version = subprocess.run(["doxygen", "--version"], capture_output=True,
-                                 text=True).stdout.split()[0]
-        if tuple(int(x) for x in version.split(".")[:2]) >= (1, 18):
-            # As OpenFX's Documentation/build.sh says.
-            _log("Doxygen %s writes the suite function pointers in a form breathe "
-                 "cannot parse (\"Error in declarator\" warnings, missing "
-                 "declarations); use Doxygen 1.17 or earlier" % version)
-    except (OSError, IndexError, ValueError):
-        pass
+    version = _doxygen_version()
+    if version and version >= (1, 18):
+        # As OpenFX's Documentation/build.sh says, Doxygen 1.18 writes the
+        # suite function pointers in a form that breathe cannot parse: the
+        # reference would lose those declarations, with about 330 warnings.
+        text = ".".join(str(x) for x in version)
+        if os.environ.get("NATRON_DOCS_OPENFX") == "force":
+            _log("Doxygen %s: the OpenFX reference will have \"Error in "
+                 "declarator\" warnings and missing declarations" % text)
+        else:
+            _write_placeholders(stage, "it needs Doxygen 1.17 or earlier, and "
+                                "Doxygen %s is installed (set "
+                                "``NATRON_DOCS_OPENFX=force`` to build it anyway)"
+                                % text)
+            return None
     doxygen_out = os.path.normpath(os.path.join(confdir, "..", "openfx-doxygen"))
     try:
         xml = _run_doxygen(os.path.join(ofx, "include"), doxygen_out)
