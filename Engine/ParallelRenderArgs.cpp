@@ -884,8 +884,8 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
 
 FrameOrderRender::FrameOrderRender(const std::set<const Node*>& affectedNodes)
     : _affectedNodes(affectedNodes)
-    , _renderedMutex()
-    , _rendered()
+    , _claimsMutex()
+    , _claims()
 {
 }
 
@@ -895,20 +895,48 @@ FrameOrderRender::isAffected(const Node* node) const
     return _affectedNodes.find(node) != _affectedNodes.end();
 }
 
+bool
+FrameOrderRender::claimFirstRender(U64 keyHash,
+                                   const std::function<void()>& onClaim)
+{
+    QMutexLocker l(&_claimsMutex);
+
+    if ( !_claims.insert( std::make_pair(keyHash, false) ).second ) {
+        return false;
+    }
+    // under the lock: the other threads that need this image wait until it is done
+    if (onClaim) {
+        onClaim();
+    }
+
+    return true;
+}
+
 void
 FrameOrderRender::setRendered(U64 keyHash)
 {
-    QMutexLocker l(&_renderedMutex);
+    QMutexLocker l(&_claimsMutex);
 
-    _rendered.insert(keyHash);
+    _claims[keyHash] = true;
+}
+
+void
+FrameOrderRender::releaseClaim(U64 keyHash)
+{
+    QMutexLocker l(&_claimsMutex);
+    std::map<U64, bool>::iterator found = _claims.find(keyHash);
+
+    if ( (found != _claims.end()) && !found->second ) {
+        _claims.erase(found);
+    }
 }
 
 bool
-FrameOrderRender::wasRendered(U64 keyHash) const
+FrameOrderRender::isClaimed(U64 keyHash) const
 {
-    QMutexLocker l(&_renderedMutex);
+    QMutexLocker l(&_claimsMutex);
 
-    return _rendered.find(keyHash) != _rendered.end();
+    return _claims.find(keyHash) != _claims.end();
 }
 
 ParallelRenderArgs::ParallelRenderArgs()

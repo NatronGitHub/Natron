@@ -30,11 +30,19 @@
 
 #include "Global/Macros.h"
 
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <mutex>
+#include <set>
 #include <string>
+#include <thread>
+#include <vector>
 
 #include <gtest/gtest.h>
 
 #include "Engine/KnobTypes.h"
+#include "Engine/ParallelRenderArgs.h"
 
 #include "OfxTestPlugin.h"
 
@@ -241,4 +249,63 @@ TEST(SequentialRender, TemporalNodeDownstream)
     EXPECT_EQ(before.sequentialRenders + (kLastFrame - kFirstFrame + 3), after.sequentialRenders);
     EXPECT_EQ(before.nonSequentialRenders, after.nonSequentialRenders);
     EXPECT_EQ(before.outOfOrder, after.outOfOrder);
+}
+
+// Several threads rendering the same image at the same time in a frame-order render: exactly one claims its first
+// render, and its claim action (removing the cache entries rendered out of order) is done before any other thread
+// learns that the image is claimed, so that none of them uses an entry that is being removed.
+TEST(FrameOrderRender, ClaimFirstRenderIsAtomic)
+{
+    const int nThreads = 8;
+    const U64 keyHash = 1234;
+    FrameOrderRender render( (std::set<const Node*>()) );
+    std::mutex startMutex;
+    std::condition_variable startCond;
+    bool start = false;
+    std::atomic<int> claims(0);
+    std::atomic<int> onClaimCalls(0);
+    std::atomic<bool> onClaimDone(false);
+    std::atomic<int> sawClaimBeforeDone(0);
+    std::vector<std::thread> threads;
+
+    for (int i = 0; i < nThreads; ++i) {
+        threads.push_back( std::thread([&]() {
+            {
+                std::unique_lock<std::mutex> l(startMutex);
+                startCond.wait(l, [&]() { return start; });
+            }
+            const bool claimed = render.claimFirstRender(keyHash, [&]() {
+                ++onClaimCalls;
+                // the others are all waiting for the claim by now
+                std::this_thread::sleep_for( std::chrono::milliseconds(50) );
+                onClaimDone = true;
+            });
+            if (claimed) {
+                ++claims;
+            } else if ( !onClaimDone || !render.isClaimed(keyHash) ) {
+                ++sawClaimBeforeDone;
+            }
+        }) );
+    }
+    {
+        std::lock_guard<std::mutex> l(startMutex);
+        start = true;
+    }
+    startCond.notify_all();
+    for (std::size_t i = 0; i < threads.size(); ++i) {
+        threads[i].join();
+    }
+    EXPECT_EQ(1, claims);
+    EXPECT_EQ(1, onClaimCalls);
+    EXPECT_EQ(0, sawClaimBeforeDone);
+
+    // a failed render releases its claim, a rendered one keeps it
+    EXPECT_TRUE( render.isClaimed(keyHash) );
+    render.releaseClaim(keyHash);
+    EXPECT_FALSE( render.isClaimed(keyHash) );
+    EXPECT_TRUE( render.claimFirstRender(keyHash, std::function<void()>()) );
+    render.setRendered(keyHash);
+    render.releaseClaim(keyHash);
+    EXPECT_TRUE( render.isClaimed(keyHash) );
+    EXPECT_FALSE( render.claimFirstRender(keyHash, std::function<void()>()) );
 }

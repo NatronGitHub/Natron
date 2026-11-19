@@ -31,6 +31,7 @@
 #include <set>
 #include <map>
 #include <list>
+#include <functional>
 
 #include <QMutex>
 
@@ -170,6 +171,12 @@ public:
  * sequence, the host *must* ignore all frames rendered out of order and not cache them for use in the final result".
  * They are only taken from the cache if they were rendered during this render, which renders them in frame order
  * (e.g. the frames t-1..t+1 that a temporal node downstream fetches at each frame).
+ *
+ * The first render of an image (a key) of an affected node in this render claims it (claimFirstRender()), which
+ * removes the cache entries rendered out of order with that key; the threads that need the same image at the same
+ * time then use the image of the claimer through the cache (and the trimap). The claim becomes "rendered"
+ * (setRendered()) when the claimer rendered it, or is released (releaseClaim()) if its render was aborted, failed,
+ * or rendered nothing, as the bitmap of the image is.
  **/
 class FrameOrderRender
 {
@@ -179,16 +186,26 @@ public:
     /// true if node can only be rendered sequentially, or is downstream of such a node, in this render
     bool isAffected(const Node* node) const;
 
-    /// Record that the image with this key (ImageKey::getHash()) of an affected node is rendered by this render
+    /// Claim the first render by this render of the image with this key (ImageKey::getHash()) of an affected node.
+    /// Returns true for exactly one caller, after calling onClaim() (e.g. removing the cache entries with this key),
+    /// before any other call to claimFirstRender() or isClaimed() with this key returns.
+    bool claimFirstRender(U64 keyHash, const std::function<void()>& onClaim);
+
+    /// The claimer rendered the image with this key: it stays claimed until the end of the render.
     void setRendered(U64 keyHash);
 
-    /// true if the image with this key was rendered by this render
-    bool wasRendered(U64 keyHash) const;
+    /// The claimer's render of the image with this key was aborted, failed, or rendered nothing: the next
+    /// request claims it again. Does nothing if the image was rendered.
+    void releaseClaim(U64 keyHash);
+
+    /// true if the image with this key is claimed (being rendered or rendered) by this render: it may then be
+    /// taken from the cache.
+    bool isClaimed(U64 keyHash) const;
 
 private:
     const std::set<const Node*> _affectedNodes; // only compared, never dereferenced
-    mutable QMutex _renderedMutex;
-    std::set<U64> _rendered;
+    mutable QMutex _claimsMutex;
+    std::map<U64, bool> _claims; // true when rendered
 };
 
 struct FrameViewPair

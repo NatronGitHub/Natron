@@ -892,8 +892,34 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     const FrameOrderRenderPtr& frameOrderRender = frameArgs->frameOrderRender;
     const bool isFrameOrderAffected = frameOrderRender && frameOrderRender->isAffected( getNode().get() );
     auto mayUseCachedImage = [&](const ImageKey& lookupKey) {
-        return !isFrameOrderAffected || frameOrderRender->wasRendered( lookupKey.getHash() );
+        return !isFrameOrderAffected || frameOrderRender->isClaimed( lookupKey.getHash() );
     };
+    // The claim of the first render of this image by the frame-order render (see FrameOrderRender): released when
+    // renderRoI() returns, unless the image was rendered.
+    struct FrameOrderClaim
+    {
+        FrameOrderRenderPtr render;
+        U64 keyHash;
+        bool claimed;
+        bool rendered;
+
+        FrameOrderClaim() : render(), keyHash(0), claimed(false), rendered(false) {}
+
+        ~FrameOrderClaim()
+        {
+            if (claimed && !rendered) {
+                render->releaseClaim(keyHash);
+            }
+        }
+
+        void setRendered()
+        {
+            if (claimed && !rendered) {
+                render->setRendered(keyHash);
+                rendered = true;
+            }
+        }
+    } frameOrderClaim;
     const bool draftModeSupported = getNode()->isDraftModeUsed();
     const bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
     bool createInCache;
@@ -953,14 +979,21 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ImagePlanesToRenderPtr planesToRender = std::make_shared<ImagePlanesToRender>();
     planesToRender->useOpenGL = storage == eStorageModeGLTex;
     FramesNeededMapPtr framesNeeded = std::make_shared<FramesNeededMap>();
-    if ( isFrameOrderAffected && createInCache && !frameOrderRender->wasRendered( key->getHash() ) ) {
+    if (isFrameOrderAffected && createInCache) {
         // A cache entry with this key, rendered out of order (e.g. in the Viewer), would be returned by
         // getImageOrCreate() when the planes are allocated below: only the RoI would be rendered into it, while its
-        // bitmap marks the rest as rendered, and setRendered() below would make all of it reusable. Remove it.
-        appPTR->removeFromNodeCache( key->getHash() );
-        if ( nonDraftKey->getHash() != key->getHash() ) {
-            appPTR->removeFromNodeCache( nonDraftKey->getHash() );
-        }
+        // bitmap marks the rest as rendered. The first render of this key in this render removes it, atomically
+        // with the claim, so that another thread rendering the same image now uses this one.
+        const U64 keyHash = key->getHash();
+        const U64 nonDraftKeyHash = nonDraftKey->getHash();
+        frameOrderClaim.render = frameOrderRender;
+        frameOrderClaim.keyHash = keyHash;
+        frameOrderClaim.claimed = frameOrderRender->claimFirstRender(keyHash, [keyHash, nonDraftKeyHash]() {
+            appPTR->removeFromNodeCache(keyHash);
+            if (nonDraftKeyHash != keyHash) {
+                appPTR->removeFromNodeCache(nonDraftKeyHash);
+            }
+        });
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Look-up the cache ///////////////////////////////////////////////////////////////
@@ -1381,11 +1414,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
 
     bool hasSomethingToRender = !planesToRender->rectsToRender.empty();
-    if (hasSomethingToRender && isFrameOrderAffected && createInCache) {
-        // rendered in frame order by this render into the cache entry of this key: it may be used from the cache in
-        // the next frames of the render
-        frameOrderRender->setRendered( key->getHash() );
-    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// End Determine rectangles left to render /////////////////////////////////////////////////
@@ -1720,6 +1748,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         renderAborted = aborted();
 
     } // if (!hasSomethingToRender) {
+
+    if ( !renderAborted && (renderRetCode == eRenderRoIStatusImageRendered) ) {
+        // rendered in frame order by this render, into the cache entry of this key: it may be used from the cache in
+        // the next frames of the render (the trimap guard below marks the pixels as rendered likewise)
+        frameOrderClaim.setRendered();
+    }
 
 #if NATRON_ENABLE_TRIMAP
     assert(guard);
