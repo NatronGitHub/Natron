@@ -104,7 +104,7 @@ How a plug-in becomes a node
        participant OE as OfxEffectInstance
        Note over AM,P: At startup
        AM->>OH: loadOFXPlugins()
-       OH->>PC: setCacheVersion("NatronOFXCachev2")
+       OH->>PC: setCacheVersion(getPluginCacheVersion())<br/>"NatronOFXCachev3-" + hash of the host name
        OH->>PC: setPluginHostPath("Natron"), ("Nuke"), addFileToPath(...)
        Note right of PC: OFX_PLUGIN_PATH was added by the PluginCache constructor
        OH->>PC: readCache(), scanPluginFiles()
@@ -127,8 +127,9 @@ Loading the plug-ins happens once, at startup, in ``OfxHost::loadOFXPlugins``
 :ref:`maint-startup`):
 
 1. It gets the HostSupport plug-in cache (``OFX::Host::PluginCache``) and sets
-   its version label (``NatronOFXCachev2``: changing it forces all plug-ins to
-   be described again).
+   its version label (``getPluginCacheVersion()``: ``NatronOFXCachev3-``
+   followed by a SHA-1 hash of the host name set in the preferences; changing
+   it forces all plug-ins to be described again).
 2. It builds the search path. The ``PluginCache`` constructor (in
    ``libs/OpenFX/HostSupport``) has already added the directories of the
    ``OFX_PLUGIN_PATH`` environment variable. ``loadOFXPlugins`` then adds the
