@@ -200,3 +200,12 @@ Keyers can output the foreground already composited over the background.
 Don't use that composite: it leaves no room to color correct the foreground.
 Use the keyer's premultiplied or unpremultiplied output, or its alpha, and do
 the Merge yourself further down the node graph.
+
+See also
+--------
+
+- :ref:`transition-from-nuke`: the differences between Nuke and Natron.
+- :doc:`getstarted-environment-nodegraph`: arranging and labeling the nodes of
+  the Node Graph.
+- :doc:`compositing-color`: the color correction nodes.
+- :doc:`compositing-channels`: alpha, mattes and premultiplication.

@@ -155,3 +155,12 @@ names, but these operations are the same in Natron.
 
    compositing-color-management
 
+See also
+--------
+
+- :doc:`tutorials-hsvtool`: secondary color correction and color replacement
+  with HSVTool.
+- :doc:`tutorials-keying-huekeyer`: combining HueKeyer and HueCorrect for
+  color effects.
+- :ref:`evaluating-script-structure`: advice on organizing color grading in a
+  project.

@@ -202,3 +202,13 @@ Further reading
   <http://keithp.com/~keithp/porterduff/p253-porter.pdf>`__, SIGGRAPH 1984:
   the paper that introduced premultiplied alpha and the compositing operators
   of the Merge node.
+
+See also
+--------
+
+- :doc:`tutorials-keying`: keying tutorials, which build mattes and
+  premultiply the foreground with them.
+- :ref:`evaluating-script-structure`: common premultiplication mistakes, among
+  other bad practices.
+- :doc:`tutorials-svgworkflow`: using the layers of an SVG file as separate
+  images.

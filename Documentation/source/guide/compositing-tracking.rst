@@ -345,3 +345,11 @@ For a CornerPin, the **To** points are computed from the **From** points: at
 each frame, the transformation found from the tracks is applied to the From
 points to get the To points. If you change the From points (for example with
 **Set to Input Rod**), the transform must be computed again for all frames.
+
+See also
+--------
+
+- :ref:`pythontracker`: Python tutorials that create tracks, run the tracking,
+  and export the tracked data.
+- :ref:`tracksToCornerPin`: driving a CornerPin or a Transform node from
+  tracks with Python.

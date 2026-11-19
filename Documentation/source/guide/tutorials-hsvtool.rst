@@ -131,3 +131,11 @@ viewer. With compressed footage, the settings give quite different results.
    (see :doc:`tutorials-keying-colorlookup`). To key a range of hues with
    curves, see also :ref:`HueKeyer <net.sf.openfx.HueKeyer>` and the
    :doc:`Hue Keyer tutorial <tutorials-keying-huekeyer>`.
+
+See also
+--------
+
+- :doc:`compositing-color`: the other color correction nodes.
+- :doc:`compositing-evaluating-color`: checking the values of the image in the
+  Viewer.
+- :doc:`compositing-keying`: the keyer nodes, and how to combine mattes.

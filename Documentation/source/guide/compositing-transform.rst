@@ -39,3 +39,13 @@ Corner Pin Images
 See the :ref:`Transform <net.sf.openfx.TransformPlugin>` and
 :ref:`CornerPin <net.sf.openfx.CornerPinPlugin>` references for all the
 parameters.
+
+See also
+########
+
+- :doc:`compositing-tracking`: computing a Transform or a CornerPin from
+  tracks.
+- :ref:`tracksToCornerPin`: driving a CornerPin or a Transform node from
+  tracks with Python.
+- :ref:`tutorials-hugin`: assembling a panorama from a Hugin project with
+  LensDistortion and Card3D.

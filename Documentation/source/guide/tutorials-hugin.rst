@@ -222,3 +222,8 @@ Limitations
 - **Blending:** the ``enblend`` seams are not imported. You can read the
   ``mask-*.tif`` files that ``enblend --save-masks`` writes and use them as
   masks, but they are in the panorama space, after the Card3D projection.
+
+See also
+--------
+
+- :doc:`compositing-transform`: the Transform and CornerPin nodes.

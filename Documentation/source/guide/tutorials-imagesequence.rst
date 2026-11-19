@@ -219,3 +219,11 @@ What format should I use for frames? (esp if the video is 10bit or 12bit) ?
 
 Suggestion:
 For muxing audio. But it is usually pointless as it goes to NLE at the end.
+
+See also
+========
+
+- :doc:`thenodes-image-read`: the parameters of the Read node.
+- :ref:`compositing-projects-readers-sequences-first`: why Natron works better
+  with image sequences.
+- :doc:`compositing-time`: trimming, shifting and retiming clips in Natron.

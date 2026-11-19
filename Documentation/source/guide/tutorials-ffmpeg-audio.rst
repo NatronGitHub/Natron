@@ -86,3 +86,10 @@ right:
 ``ffmpeg -layouts`` lists the channel names and layouts. More examples are in
 the FFmpeg wiki page
 `Manipulating audio channels <https://trac.ffmpeg.org/wiki/AudioChannelManipulation>`__.
+
+See also
+--------
+
+- :doc:`thenodes-image-write`: writing the video with the Write node.
+- :doc:`compositing-time`: editing time in Natron, which the sound track must
+  then match.

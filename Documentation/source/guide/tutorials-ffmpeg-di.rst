@@ -307,3 +307,12 @@ To bring a ProRes or DNxHR file back into Natron as an image sequence, see
 ffmpeg uses the color metadata of the input file to convert from Y'CbCr to
 RGB, so check it with ``ffprobe`` first. Read the DPX files in Natron with
 the matching **File Colorspace** (for example ``nuke_rec709``).
+
+See also
+--------
+
+- :doc:`thenodes-image-write`: the parameters of the Write node.
+- :doc:`thenodes-image-read`: the parameters of the Read node, including
+  **File Colorspace**.
+- :ref:`compositing-color-management`: the colorspaces used when reading and
+  writing files.

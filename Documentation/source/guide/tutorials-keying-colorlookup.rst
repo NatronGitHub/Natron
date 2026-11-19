@@ -65,6 +65,12 @@ ColorLookup1.
    especially if the monitor isn't calibrated. This check is especially
    useful after adjusting a matte with ColorLookup.
 
+See also
+--------
+
+- :doc:`compositing-keying`: the keyer nodes, and their unpremultiplied and
+  premultiplied outputs.
+
 Image credits
 -------------
 

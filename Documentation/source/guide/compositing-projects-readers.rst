@@ -434,3 +434,11 @@ libheif still depends on the GPL x264 encoder (see
 The menus of WriteFFmpeg only show the codecs and containers of the FFmpeg
 libraries that Natron uses, so a codec that is missing from the **Codec** menu
 is not available in your build.
+
+See also
+--------
+
+- :ref:`tutorials-svgworkflow`: preparing an SVG file in Inkscape and using
+  its layers in Natron.
+- :ref:`tutorials-ffmpeg-di`: producing digital intermediates, and converting
+  them back to images.

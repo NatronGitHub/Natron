@@ -125,3 +125,11 @@ The archived pages of the Optical Enquiry Nuke wiki on `the Time nodes
 <https://web.archive.org/web/20220524010817/http://www.opticalenquiry.com/nuke/index.php?title=The_Time_Nodes>`__
 describe the equivalent Nuke nodes (TimeOffset, FrameHold, Retime,
 AppendClip, TimeClip, Oflow).
+
+See also
+--------
+
+- :ref:`tutorials-imagesequence`: converting videos to image sequences, which
+  are more reliable to read frame by frame.
+- :ref:`tutorials-ffmpeg-audio`: Natron does not handle audio; this tutorial
+  shows how to add the sound track to the rendered video.

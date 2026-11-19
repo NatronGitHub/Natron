@@ -23,3 +23,10 @@ Natron. These tutorials show a few of them. See also
    tutorials-ffmpeg-di
    tutorials-ffmpeg-audio
    tutorials-ffmpeg-hevc
+
+See also
+--------
+
+- :ref:`compositing-projects-readers-video`: reading and writing video files
+  in Natron.
+- :doc:`thenodes-image-write`: the parameters of the Write node.

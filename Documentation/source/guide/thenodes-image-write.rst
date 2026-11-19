@@ -118,3 +118,12 @@ QuickTime and other movie options:
    Natron works better with image sequences (numbered files) than with movie
    files (QuickTime, MP4, ...): they are more reliable, faster to access, and
    you can re-render only part of a sequence.
+
+See also
+--------
+
+- :ref:`tutorials-ffmpeg-di`: producing ProRes, DNxHR and other digital
+  intermediates.
+- :ref:`tutorials-ffmpeg-hevc`: encoding HEVC (H.265) from Natron or with
+  ffmpeg.
+- :ref:`tutorials-ffmpeg-audio`: adding sound to the videos written by Natron.

@@ -100,6 +100,11 @@ premultiplied image directly, but with the colors of the cleaned plate.
 Some green spill remains on the hair: see the :doc:`despilling tips
 <tutorials-keying-despill>`.
 
+See also
+--------
+
+- :doc:`compositing-keying`: the keyer nodes, and how to combine mattes.
+
 Image credits
 -------------
 
