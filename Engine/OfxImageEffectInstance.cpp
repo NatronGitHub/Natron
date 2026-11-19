@@ -1042,14 +1042,15 @@ OfxImageEffectInstance::getParamsEditHolder() const
 }
 
 OfxStatus
-OfxImageEffectInstance::editBegin(const std::string & /*name*/)
+OfxImageEffectInstance::editBegin(const std::string & name)
 {
     ///Don't push undo/redo actions while creating a group
     // The edits are grouped in one undo command by the holder of the knobs (see getParamsEditHolder()).
+    // name: "label to attach to any undo/redo string"
     EffectInstancePtr effect = getParamsEditHolder();
 
     if ( effect && !effect->getApp()->isCreatingPythonGroup() ) {
-        effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+        effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand, name);
     }
 
     return kOfxStatOK;

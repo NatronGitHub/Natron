@@ -464,6 +464,7 @@ struct KnobHelperPrivate
     bool IsSecret, defaultIsSecret, inViewerContextSecret;
     std::vector<bool> enabled, defaultEnabled;
     bool CanUndo;
+    bool canUndoSet; // setCanUndo() was called
     QMutex evaluateOnChangeMutex;
     bool evaluateOnChange; //< if true, a value change will never trigger an evaluation
     bool IsPersistent; //will it be serialized?
@@ -554,6 +555,7 @@ struct KnobHelperPrivate
         , enabled(dimension_)
         , defaultEnabled(dimension_)
         , CanUndo(true)
+        , canUndoSet(false)
         , evaluateOnChangeMutex()
         , evaluateOnChange(true)
         , IsPersistent(true)
@@ -3404,11 +3406,19 @@ void
 KnobHelper::setCanUndo(bool val)
 {
     _imp->CanUndo = val;
+    _imp->canUndoSet = true;
 }
 
 bool
 KnobHelper::getCanUndo() const
 {
+    // The Natron knobs that don't evaluate on change (e.g. GUI-only settings) are not undoable, unless setCanUndo() says
+    // otherwise. For OpenFX parameters, setCanUndo() is kOfxParamPropCanUndo: kOfxParamPropEvaluateOnChange is about
+    // rendering, not undo.
+    if (!_imp->canUndoSet) {
+        return getEvaluateOnChange();
+    }
+
     return _imp->CanUndo;
 }
 
@@ -4924,6 +4934,7 @@ struct KnobHolder::KnobHolderPrivate
     mutable QMutex paramsEditLevelMutex;
     KnobHolder::MultipleParamsEditEnum paramsEditLevel;
     int paramsEditRecursionLevel;
+    std::string paramsEditLabel; // the label of the undo command of the outermost block, or empty
     mutable QMutex evaluationBlockedMutex;
     int evaluationBlocked;
 
@@ -4951,6 +4962,7 @@ struct KnobHolder::KnobHolderPrivate
         , isDequeingValuesSet(false)
         , paramsEditLevel(eMultipleParamsEditOff)
         , paramsEditRecursionLevel(0)
+        , paramsEditLabel()
         , evaluationBlockedMutex()
         , evaluationBlocked(0)
         , canCurrentlySetValue(true)
@@ -4979,6 +4991,7 @@ struct KnobHolder::KnobHolderPrivate
     , isDequeingValuesSet(other.isDequeingValuesSet)
     , paramsEditLevel(other.paramsEditLevel)
     , paramsEditRecursionLevel(other.paramsEditRecursionLevel)
+    , paramsEditLabel(other.paramsEditLabel)
     , evaluationBlockedMutex()
     , evaluationBlocked(0)
     , canCurrentlySetValue(other.canCurrentlySetValue)
@@ -6006,7 +6019,8 @@ KnobHolder::getMultipleParamsEditLevel() const
 }
 
 void
-KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level)
+KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level,
+                                       const std::string& label)
 {
     QMutexLocker l(&_imp->paramsEditLevelMutex);
 
@@ -6014,13 +6028,17 @@ KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level)
         _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
     } else {
         if (level == KnobHolder::eMultipleParamsEditOff) {
+            // An end without a matching start (e.g. an unmatched paramEditEnd() of an OpenFX plug-in) changes nothing: in
+            // particular, it must not end a beginChanges() bracket of someone else.
             if (_imp->paramsEditRecursionLevel > 0) {
                 --_imp->paramsEditRecursionLevel;
+                if (_imp->paramsEditRecursionLevel == 0) {
+                    _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
+                    _imp->paramsEditLabel.clear();
+                }
+                // matches the beginChanges() of eMultipleParamsEditOnCreateNewCommand
+                endChanges();
             }
-            if (_imp->paramsEditRecursionLevel == 0) {
-                _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
-            }
-            endChanges();
         } else if (level == KnobHolder::eMultipleParamsEditOn) {
             _imp->paramsEditLevel = level;
         } else {
@@ -6028,10 +6046,20 @@ KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level)
             beginChanges();
             if (_imp->paramsEditLevel == KnobHolder::eMultipleParamsEditOff) {
                 _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOnCreateNewCommand;
+                // the label of the outermost block
+                _imp->paramsEditLabel = label;
             }
             ++_imp->paramsEditRecursionLevel;
         }
     }
+}
+
+std::string
+KnobHolder::getMultipleParamsEditLabel() const
+{
+    QMutexLocker l(&_imp->paramsEditLevelMutex);
+
+    return _imp->paramsEditLabel;
 }
 
 AppInstancePtr

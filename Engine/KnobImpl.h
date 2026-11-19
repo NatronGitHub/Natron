@@ -1043,7 +1043,9 @@ Knob<T>::setValue(const T & v,
     }
 #endif
 
-    if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() ) {
+    // A knob that can't undo is set now: it must not start the undo command of a block of changes (paramEditBegin()),
+    // or the next changes of the block would be merged into the previous undo command.
+    if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() && getCanUndo() ) {
         KnobHolder::MultipleParamsEditEnum paramEditLevel = holder->getMultipleParamsEditLevel();
         switch (paramEditLevel) {
         case KnobHolder::eMultipleParamsEditOff:
@@ -1095,6 +1097,11 @@ Knob<T>::setValue(const T & v,
         ///basically if we enter this if condition, for each dimension the undo stack will create a new command.
         ///the caller should have tested this prior to calling this function and correctly called editBegin() editEnd()
         ///to bracket the setValue()  calls within the same undo/redo command.
+        // Outside a block, only the changes made by an interact (overlay) action are undo commands. The changes that
+        // the plug-in makes in kOfxActionInstanceChanged are not: they follow a change of another parameter, whose own
+        // undo and redo make the plug-in recompute them, and pushing undo commands while the undo stack undoes or
+        // redoes that change would corrupt the redo history. A plug-in that wants its changes to be undoable as one
+        // step (e.g. the result of an analysis) brackets them with paramEditBegin()/paramEditEnd().
         if ( holder->isDoingInteractAction() ) {
             if ( !get_SetValueRecursionLevel() ) {
                 Variant vari;
@@ -1106,7 +1113,7 @@ Knob<T>::setValue(const T & v,
                 return ret;
             }
         }
-    } // if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() ) {
+    } // if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() && getCanUndo() ) {
 
 
     if ( holder && !holder->isSetValueCurrentlyPossible() ) {
@@ -1454,7 +1461,9 @@ Knob<T>::setValueAtTime(double time,
     }
 #endif
 
-    if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() ) {
+    // A knob that can't undo is set now: it must not start the undo command of a block of changes (paramEditBegin()),
+    // or the next changes of the block would be merged into the previous undo command.
+    if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() && getCanUndo() ) {
         KnobHolder::MultipleParamsEditEnum paramEditLevel = holder->getMultipleParamsEditLevel();
         switch (paramEditLevel) {
         case KnobHolder::eMultipleParamsEditOff:

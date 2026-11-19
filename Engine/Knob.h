@@ -1010,13 +1010,14 @@ public:
     virtual void setIsPersistent(bool b) = 0;
 
     /**
-     * @brief If set to false, the knob will not be able to use undo/redo actions.
-     * By default this is set to true.
+     * @brief Whether the changes of the knob are put on the undo/redo stack (e.g. kOfxParamPropCanUndo for the OpenFX
+     * parameters). By default, see getCanUndo().
      **/
     virtual void setCanUndo(bool val) = 0;
 
     /**
      * @brief Can the knob use undo/redo actions ?
+     * If setCanUndo() was never called, only the knobs that evaluate on change (getEvaluateOnChange()) can.
      **/
     virtual bool getCanUndo() const = 0;
 
@@ -2457,7 +2458,17 @@ public:
     void refreshInstanceSpecificKnobsOnly(bool isPlayback, double time);
     KnobHolder::MultipleParamsEditEnum getMultipleParamsEditLevel() const;
 
-    void setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level);
+    /**
+     * @brief Start (eMultipleParamsEditOnCreateNewCommand) or end (eMultipleParamsEditOff) a block of changes that are
+     * one undo command, e.g. paramEditBegin()/paramEditEnd() of an OpenFX effect. Blocks may be nested: the
+     * outermost one is the undo command, and label, if not empty, is attached to the text of its undo command.
+     **/
+    void setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level, const std::string& label = std::string());
+
+    /**
+     * @brief The label attached to the text of the undo command of the block of changes in progress, or empty.
+     **/
+    std::string getMultipleParamsEditLabel() const;
 
     virtual bool isProject() const
     {
