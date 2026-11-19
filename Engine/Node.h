@@ -230,6 +230,9 @@ public:
      **/
     void beginEditKnobs();
 
+    // the last editor of the node is gone (see EffectInstance::endEditKnobs())
+    void endEditKnobs();
+
     /**
      * @brief Forwarded to the live effect instance
      **/

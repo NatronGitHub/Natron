@@ -1377,11 +1377,28 @@ public:
     void clearPluginMemoryChunks();
 
     /**
-     * @brief Called right away when the user first opens the settings panel of the node.
-     * This is called after each params had its default value set.
+     * @brief Called when the user opens the settings panel of the node (the first time, right after
+     * each param had its default value set, and each time it is opened again).
+     * Calls to beginEditKnobs() and endEditKnobs() alternate: a second beginEditKnobs() does nothing.
      **/
     virtual void beginEditKnobs()
     {
+    }
+
+    /**
+     * @brief Called when the last editor of the node is gone: its settings panel was closed, or the node
+     * was deactivated or is being destroyed. Does nothing if beginEditKnobs() was not called.
+     **/
+    virtual void endEditKnobs()
+    {
+    }
+
+    /**
+     * @brief True between beginEditKnobs() and endEditKnobs().
+     **/
+    virtual bool isEditingKnobs() const
+    {
+        return false;
     }
 
     /**
@@ -1802,6 +1819,12 @@ protected:
      * share pointers (since internally these classes are thread-safe) and ensure that any private data member is copied.
      **/
     virtual EffectInstancePtr createRenderClone() { return EffectInstancePtr(); }
+
+    /**
+     * @brief Called on the main instance before a render clone made by createRenderClone() is used to
+     * render, to bring the state that the clone doesn't share with the main instance up to date.
+     **/
+    virtual void refreshRenderCloneState(const EffectInstancePtr& /*clone*/) {}
 
 
     /**

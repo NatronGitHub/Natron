@@ -2656,6 +2656,14 @@ Node::beginEditKnobs()
 }
 
 void
+Node::endEditKnobs()
+{
+    if (_imp->effect) {
+        _imp->effect->endEditKnobs();
+    }
+}
+
+void
 Node::setEffect(const EffectInstancePtr& effect)
 {
     ////Only called by the main-thread
@@ -2993,6 +3001,10 @@ Node::deactivate(const std::list<NodePtr> & outputsToDisconnect,
 
     // If the effect was doing OpenGL rendering and had context(s) bound, detach them.
     _imp->effect->dettachAllOpenGLContexts();
+
+    // A deactivated (deleted) node has no editor: the GUI also closes its settings panel, and opens it
+    // again (with a new kOfxActionBeginInstanceEdit) if the node is activated again.
+    _imp->effect->endEditKnobs();
 
 
 #if NATRON_VERSION_ENCODED < NATRON_VERSION_ENCODE(3,0,0)

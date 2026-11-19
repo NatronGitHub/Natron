@@ -257,6 +257,9 @@ struct OfxEffectInstancePrivate
     // the single-instance plug-in of which this is an instance, or NULL (see gSingleInstances)
     const OFX::Host::ImageEffect::ImageEffectPlugin* singleInstancePlugin;
     OfxEffectInstance* publicInterface; // for gSingleInstances
+    // true between kOfxActionBeginInstanceEdit and kOfxActionEndInstanceEdit (main thread only; always
+    // false on render clones, which get neither action)
+    bool instanceEditOpen;
 
     // The kOfxActionBeginInstanceChanged/kOfxActionEndInstanceChanged brackets in progress on the main thread, innermost
     // last (see InstanceChangedBracket_RAII).
@@ -307,6 +310,7 @@ struct OfxEffectInstancePrivate
         , singleInstancePlugin(NULL)
         , publicInterface(NULL)
         , instanceChangedBrackets()
+        , instanceEditOpen(false)
     {
     }
 
@@ -352,6 +356,7 @@ struct OfxEffectInstancePrivate
         , singleInstancePlugin(NULL) // render clones are not made for single-instance plug-ins
         , publicInterface(NULL)
         , instanceChangedBrackets()
+        , instanceEditOpen(false)
     {
     }
 };
@@ -763,6 +768,10 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
 OfxEffectInstance::~OfxEffectInstance()
 {
+    // "kOfxActionEndInstanceEdit ... \post no user interface is open on the instance": the last editor
+    // is closed before the instance is destroyed (e.g. when the project is closed with the panel open).
+    endEditKnobs();
+
     // The interacts must be destroyed before their effect (ofxInteracts.rst). The parameter
     // interacts are held by their knob, which outlives this object (the knobs belong to the
     // KnobHolder base, or to the Read/Write node of an embedded reader/writer), and maybe by the
@@ -3055,10 +3064,59 @@ OfxEffectInstance::supportsMultiResolution() const
 void
 OfxEffectInstance::beginEditKnobs()
 {
+    assert( QThread::currentThread() == qApp->thread() );
+    // kOfxActionBeginInstanceEdit "is called when an instance is first actively edited by a user": once
+    // per editing session, until kOfxActionEndInstanceEdit.
+    if ( _imp->instanceEditOpen || !effectInstance() ) {
+        return;
+    }
+    _imp->instanceEditOpen = true;
+    // kOfxPropIsInteractive: "Indicates if a host is actively editing the effect with some GUI."
+    effectInstance()->getProps().setIntProperty(kOfxPropIsInteractive, 1);
+
     ///Take the preferences lock so that it cannot be modified throughout the action.
     QReadLocker preferencesLocker(&_imp->preferencesLock);
 
     effectInstance()->beginInstanceEditAction();
+}
+
+void
+OfxEffectInstance::endEditKnobs()
+{
+    // kOfxActionEndInstanceEdit "is called when the last user interface on an instance closed", with
+    // "\pre kOfxActionBeginInstanceEdit has been called on the instance handle".
+    if ( !_imp->instanceEditOpen || !effectInstance() ) {
+        return;
+    }
+    assert( QThread::currentThread() == qApp->thread() );
+    _imp->instanceEditOpen = false;
+
+    {
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(&_imp->preferencesLock);
+
+        effectInstance()->endInstanceEditAction();
+    }
+    effectInstance()->getProps().setIntProperty(kOfxPropIsInteractive, 0);
+}
+
+bool
+OfxEffectInstance::isEditingKnobs() const
+{
+    return _imp->instanceEditOpen;
+}
+
+void
+OfxEffectInstance::refreshRenderCloneState(const EffectInstancePtr& clone)
+{
+    OfxEffectInstance* ofxClone = dynamic_cast<OfxEffectInstance*>( clone.get() );
+
+    if ( !ofxClone || !ofxClone->effectInstance() || !effectInstance() ) {
+        return;
+    }
+    // kOfxPropIsInteractive of the render clones follows the main instance
+    ofxClone->effectInstance()->getProps().setIntProperty( kOfxPropIsInteractive,
+                                                           effectInstance()->getProps().getIntProperty(kOfxPropIsInteractive) );
 }
 
 void

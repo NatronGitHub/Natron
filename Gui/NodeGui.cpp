@@ -488,6 +488,16 @@ void
 NodeGui::onSettingsPanelClosed(bool closed)
 {
     NodePtr internalNode = getNode();
+    // The settings panel is the editor of the node (the curve editor, the dope sheet and the node graph
+    // open it to edit the node): kOfxActionEndInstanceEdit when it is closed, and
+    // kOfxActionBeginInstanceEdit when it is opened again.
+    if (internalNode) {
+        if (closed) {
+            internalNode->endEditKnobs();
+        } else {
+            beginEditKnobs();
+        }
+    }
     if (internalNode && internalNode->hasAnyPersistentMessage()) {
         const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
@@ -1976,11 +1986,7 @@ NodeGui::showGui()
         }
         NodeGuiPtr thisShared = shared_from_this();
         _graph->getGui()->setNodeViewerInterface(thisShared);
-
-        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( node->getEffectInstance().get() );
-        if (ofxNode) {
-            ofxNode->effectInstance()->beginInstanceEditAction();
-        }
+        // (opening the settings panel again above calls beginEditKnobs(): see onSettingsPanelClosed())
     }
 
     if (_slaveMasterLink) {
@@ -2010,10 +2016,8 @@ NodeGui::activate(bool triggerRender)
         showGui();
     } else {
         ///don't show gui if it is a multi instance child, but still Q_EMIT the begin edit action
-        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( node->getEffectInstance().get() );
-        if (ofxNode) {
-            ofxNode->effectInstance()->beginInstanceEditAction();
-        }
+        ///(Node::deactivate() sent the end edit action)
+        beginEditKnobs();
     }
     _graph->restoreFromTrash(this);
     //_graph->getGui()->getCurveEditor()->addNode(shared_from_this());
@@ -2095,10 +2099,7 @@ NodeGui::deactivate(bool triggerRender)
     if (!isMultiInstanceChild) {
         hideGui();
     }
-    OfxEffectInstance* ofxNode = !node ? 0 : dynamic_cast<OfxEffectInstance*>( node->getEffectInstance().get() );
-    if (ofxNode) {
-        ofxNode->effectInstance()->endInstanceEditAction();
-    }
+    // (Node::deactivate() sent kOfxActionEndInstanceEdit if kOfxActionBeginInstanceEdit was sent)
     if (_graph) {
         _graph->moveToTrash(this);
         if ( _graph->getGui() ) {
