@@ -700,7 +700,7 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
     _imp->loadingPluginID = plugin->getRawIdentifier();
     _imp->loadingPluginBinaryPath = plugin->getBinary() ? plugin->getBinary()->getFilePath() : std::string();
     _imp->loadingPluginVersionMajor = plugin->getVersionMajor();
-    _imp->loadingPluginVersionMinor = plugin->getVersionMajor();
+    _imp->loadingPluginVersionMinor = plugin->getVersionMinor();
     _imp->setHostBundleID.clear();
 
     OFX::Host::PluginHandle *pluginHandle;
