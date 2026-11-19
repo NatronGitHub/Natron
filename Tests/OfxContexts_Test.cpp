@@ -147,9 +147,14 @@ TEST(OfxContexts, MissingHostFeatureFallback)
         return;
     }
     EXPECT_EQ( std::string(kOfxImageEffectContextFilter), createAndGetContext(kNatronTestPluginContextFallback) );
-    EXPECT_EQ( 1, NatronTestPlugin::counter("ContextFallback.describe." kOfxImageEffectContextGeneral) );
-    EXPECT_EQ( 1, NatronTestPlugin::counter("ContextFallback.describe." kOfxImageEffectContextFilter) );
-    // the description is done once: a second node uses it
+    // The description is done when the first node of the plug-in is created, and kept for the process
+    // (Plugin::setOfxDesc()): each context was described once, whichever test created the first node.
+    const int describedGeneral = NatronTestPlugin::counter("ContextFallback.describe." kOfxImageEffectContextGeneral);
+    const int describedFilter = NatronTestPlugin::counter("ContextFallback.describe." kOfxImageEffectContextFilter);
+    EXPECT_EQ(1, describedGeneral);
+    EXPECT_EQ(1, describedFilter);
+    // a second node uses it: neither the failed context nor the good one is described again
     EXPECT_EQ( std::string(kOfxImageEffectContextFilter), createAndGetContext(kNatronTestPluginContextFallback) );
-    EXPECT_EQ( 1, NatronTestPlugin::counter("ContextFallback.describe." kOfxImageEffectContextFilter) );
+    EXPECT_EQ( describedGeneral, NatronTestPlugin::counter("ContextFallback.describe." kOfxImageEffectContextGeneral) );
+    EXPECT_EQ( describedFilter, NatronTestPlugin::counter("ContextFallback.describe." kOfxImageEffectContextFilter) );
 }

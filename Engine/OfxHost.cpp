@@ -769,6 +769,11 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
             break;
         }
         failedContexts.push_back( QString::fromUtf8( it->c_str() ) );
+        if ( (*it == kOfxImageEffectContextReader) || (*it == kOfxImageEffectContextWriter) ) {
+            // Natron registers the plug-in as a reader or a writer (Plugin::isReader(), isWriter()), and
+            // creates its nodes as such: don't make it a General or Filter effect instead.
+            break;
+        }
     }
     if (!desc) {
         throw std::runtime_error( tr("Plug-in parameters and inputs description (kOfxImageEffectActionDescribeInContext) failed in context %1.")
