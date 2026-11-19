@@ -1033,6 +1033,27 @@ DockablePanel::setClosed(bool c)
 } // setClosed
 
 void
+DockablePanel::closeBeforeDeletion()
+{
+    if (_imp->_floating && _imp->_gui) {
+        // Do not dock the panel back, as setClosedInternal() does with floatPanel(): that would insert it
+        // into the properties bin and the opened panels, which may close another docked panel when the
+        // maximum number of opened panels is reached. Take it out of its floating window and delete
+        // that window, so that setClosed() below handles it as a docked panel.
+        _imp->_floating = false;
+        FloatingWidget* floatingWidget = _imp->_floatingWidget;
+        _imp->_floatingWidget = 0;
+        if (floatingWidget) {
+            _imp->_gui->unregisterFloatingWindow(floatingWidget);
+            floatingWidget->removeEmbeddedWidget();
+            floatingWidget->deleteLater();
+        }
+    }
+    // Remove it from the opened panels, turn off its color pickers and hide its keyframes from the timeline
+    setClosed(true);
+}
+
+void
 DockablePanel::setClosedInternal(bool c)
 {
     if (!_imp->_gui) {

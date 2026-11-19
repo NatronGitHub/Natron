@@ -2783,13 +2783,10 @@ NodeGui::destroyGui()
     //Delete settings panel
     if (_settingsPanel) {
         // The Gui keeps raw pointers to the opened panels (Gui::getVisiblePanels()), used by the
-        // viewer for overlays and color pickers: close the panel first, as hideGui() does when the
-        // node is deleted from the Node Graph, because destroyNode() (e.g. Python's Effect.destroy())
-        // does not hide the GUI before destroying it (#1431). A floating panel is docked back
-        // when closed, which also deletes its floating window.
-        if ( !_settingsPanel->isClosed() ) {
-            _settingsPanel->setClosed(true);
-        }
+        // viewer for overlays and color pickers, so the panel must be closed before it is deleted (#1431).
+        // When the node is deleted from the Node Graph, hideGui() closes it before the node goes to
+        // the trash, but Node::destroyNode() (e.g. Python's Effect.destroy()) does not call hideGui().
+        _settingsPanel->closeBeforeDeletion();
         // Make sure no dangling pointer is left in any case.
         guiObj->removeVisibleDockablePanel(_settingsPanel);
     }
