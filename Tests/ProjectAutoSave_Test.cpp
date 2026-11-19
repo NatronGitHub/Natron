@@ -31,6 +31,11 @@
 
 #include <gtest/gtest.h>
 
+#include <chrono>
+#include <cstdio>
+#include <cstdlib>
+#include <future>
+#include <iostream>
 #include <thread>
 
 #include <QCoreApplication>
@@ -43,6 +48,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/LogEntry.h"
 #include "Engine/Project.h"
 
 NATRON_NAMESPACE_USING
@@ -104,6 +110,8 @@ namespace {
 // Runs a background auto-save of the top-level project in another thread, as
 // Project::onAutoSaveTimerTriggered() does, and makes it last ~1.5 s with a
 // beforeProjectSave Python callback that sleeps when called for an auto-save.
+// autoSaveCode and saveCode are Python lines (indented by 8 spaces) run by the callback
+// for the auto-save (before the sleep) and for the other saves.
 class SlowAutoSave
 {
     ProjectPtr _project;
@@ -114,17 +122,24 @@ class SlowAutoSave
     std::thread _thread;
 
 public:
-    SlowAutoSave(const QString& dir, const QString& name)
+    SlowAutoSave(const QString& dir,
+                 const QString& name,
+                 const std::string& autoSaveCode = std::string(),
+                 const std::string& saveCode = std::string())
         : _project( appPTR->getTopLevelInstance()->getProject() )
         , _marker( dir + QString::fromUtf8("autosave-started") )
         , _ok(false)
     {
         std::string script =
-            "import time\n"
+            "import os, time\n"
             "def natronTest825BeforeSave(filename, app, autoSave):\n"
             "    if autoSave:\n"
             "        open(\"" + _marker.toStdString() + "\", \"w\").close()\n"
+            + autoSaveCode +
             "        time.sleep(1.5)\n"
+            "    else:\n"
+            "        pass\n"
+            + saveCode +
             "    return filename\n";
         std::string error, output;
         EXPECT_TRUE( ::Natron::Python::interpretPythonScript(script, &error, &output) ) << error << output;
@@ -164,6 +179,41 @@ public:
         return _ok;
     }
 };
+
+// Runs f in another thread and waits at most timeoutS seconds for it. A hang is a test failure,
+// but the test binary can't go on with a thread stuck in a save: exit.
+template<typename F>
+bool
+runWithTimeout(F f,
+               int timeoutS)
+{
+    std::packaged_task<bool()> task(f);
+    std::future<bool> result = task.get_future();
+    std::thread thread( std::move(task) );
+    if (result.wait_for( std::chrono::seconds(timeoutS) ) != std::future_status::ready) {
+        ADD_FAILURE() << "the save did not finish after " << timeoutS << " s: the project stayed marked as being saved";
+        std::cerr << std::flush;
+        std::fflush(stdout);
+        std::_Exit(1);
+    }
+    thread.join();
+
+    return result.get();
+}
+
+bool
+errorLogContains(const QString& text)
+{
+    std::list<LogEntry> entries;
+    appPTR->getErrorLog_mt_safe(&entries);
+    for (std::list<LogEntry>::const_iterator it = entries.begin(); it != entries.end(); ++it) {
+        if ( it->message.contains(text) ) {
+            return true;
+        }
+    }
+
+    return false;
+}
 } // anonymous namespace
 
 // Ctrl+S (Gui::saveProject() -> Project::saveProject()) while the auto-save is running
@@ -206,4 +256,68 @@ TEST(ProjectAutoSave, PythonSaveDuringAutoSave)
         EXPECT_TRUE( autoSave.join() );
     }
     app->getProject()->resetProject();
+}
+
+// The beforeProjectSave callback of the auto-save calls app.saveProjectAs() in the auto-save
+// thread: that nested save fails (the project is being saved), without showing a dialog from that
+// thread, which would wait for the main thread while it waits for this auto-save (deadlock).
+// A save during that auto-save still waits and saves.
+TEST(ProjectAutoSave, NestedSaveInAutoSaveCallback)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("NestedSave.ntp");
+    const QString nested = dir + QString::fromUtf8("Nested.ntp");
+    const QString nestedResult = dir + QString::fromUtf8("nested-result");
+    ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
+    appPTR->clearErrorLog_mt_safe();
+    {
+        SlowAutoSave autoSave(dir, name,
+                              "        with open(\"" + nestedResult.toStdString() + "\", \"w\") as f:\n"
+                              "            f.write(str(app.saveProjectAs(\"" + nested.toStdString() + "\")))\n");
+        EXPECT_TRUE( runWithTimeout([&]() { return project->saveProject(dir, name, 0); }, 30) );
+        EXPECT_TRUE( QFile::exists(dir + name) ) << "the save was dropped";
+        EXPECT_TRUE( autoSave.join() );
+    }
+    QFile f(nestedResult);
+    ASSERT_TRUE( f.open(QIODevice::ReadOnly) );
+    EXPECT_EQ( QByteArray("False"), f.readAll() );
+    EXPECT_FALSE( QFile::exists(nested) );
+    EXPECT_TRUE( errorLogContains( QString::fromUtf8("being saved") ) );
+    project->resetProject();
+}
+
+// An auto-save that fails with an exception must not leave the project marked as being saved:
+// the save waiting for it, and the later ones, must run (they would hang forever).
+// The auto-save fails because the callback points TMPDIR to a missing directory (the save first
+// writes to a temporary file there); the callback of the next save restores it.
+TEST(ProjectAutoSave, SaveAfterFailedAutoSave)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("SaveAfterFailedAutoSave.ntp");
+    ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
+    const QByteArray oldTmpDir = qgetenv("TMPDIR");
+    {
+        SlowAutoSave autoSave(dir, name,
+                              "        globals()['natronTest825OldTmp'] = os.environ.get('TMPDIR')\n"
+                              "        os.environ['TMPDIR'] = \"" + (dir + QString::fromUtf8("missing/dir")).toStdString() + "\"\n",
+                              "        if globals().get('natronTest825OldTmp') is not None:\n"
+                              "            os.environ['TMPDIR'] = globals()['natronTest825OldTmp']\n"
+                              "        elif 'TMPDIR' in os.environ and 'missing' in os.environ['TMPDIR']:\n"
+                              "            del os.environ['TMPDIR']\n");
+        EXPECT_TRUE( runWithTimeout([&]() { return project->saveProject(dir, name, 0); }, 30) );
+        EXPECT_FALSE( autoSave.join() ) << "the auto-save should have failed";
+        EXPECT_TRUE( QFile::exists(dir + name) ) << "the save was dropped";
+    }
+    // and a later save
+    EXPECT_TRUE( runWithTimeout([&]() { return project->saveProject(dir, name, 0); }, 30) );
+    if ( oldTmpDir.isEmpty() ) {
+        qunsetenv("TMPDIR");
+    } else {
+        qputenv("TMPDIR", oldTmpDir);
+    }
+    project->resetProject();
 }

@@ -95,7 +95,12 @@ public:
     bool saveProject(const QString & path, const QString & name, QString* newFilePath);
 
 
-    bool saveProject_imp(const QString & path, const QString & name, bool autoSave, bool updateProjectProperties, QString* newFilePath = 0);
+    /**
+     * @brief Saves the project. A save other than the background auto-save waits for a running save to finish.
+     * @param errorMessage If not null, set to the reason of the failure.
+     * @returns false if the project could not be saved.
+     **/
+    bool saveProject_imp(const QString & path, const QString & name, bool autoSave, bool updateProjectProperties, QString* newFilePath = 0, QString* errorMessage = 0);
 
     /**
      * @brief Same as saveProject except that it will save the project in a temporary file

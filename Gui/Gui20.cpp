@@ -141,6 +141,21 @@ getPixmapForGrouping(QPixmap* pixmap,
     appPTR->getIcon(e, size, pixmap);
 }
 
+// Shows the busy cursor while saving: a save may first wait for a running auto-save (#825).
+class SaveWaitCursor
+{
+public:
+    SaveWaitCursor()
+    {
+        QApplication::setOverrideCursor(Qt::WaitCursor);
+    }
+
+    ~SaveWaitCursor()
+    {
+        QApplication::restoreOverrideCursor();
+    }
+};
+
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 void
@@ -1134,7 +1149,11 @@ Gui::saveProject()
             return false;
         }
 
-        bool ret = project->saveProject(projectPath, projectFilename, 0);
+        bool ret;
+        {
+            SaveWaitCursor waitCursor;
+            ret = project->saveProject(projectPath, projectFilename, 0);
+        }
 
         ///update the open recents
         if ( !projectPath.endsWith( QLatin1Char('/') ) ) {
@@ -1166,7 +1185,11 @@ Gui::saveProjectAs(const std::string& filename)
     }
     _imp->_lastSaveProjectOpenedDir = QString::fromUtf8( path.c_str() );
 
-    bool ret = getApp()->getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( fileCopy.c_str() ), 0);
+    bool ret;
+    {
+        SaveWaitCursor waitCursor;
+        ret = getApp()->getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( fileCopy.c_str() ), 0);
+    }
 
     if (ret) {
         QString filePath = QString::fromUtf8( path.c_str() ) + QString::fromUtf8( fileCopy.c_str() );
@@ -1254,7 +1277,12 @@ Gui::saveAndIncrVersion()
         name.insert(positionToInsertVersion, toInsert);
     }
 
-    if ( project->saveProject(path, name, 0) ) {
+    bool ret;
+    {
+        SaveWaitCursor waitCursor;
+        ret = project->saveProject(path, name, 0);
+    }
+    if (ret) {
         QString filename = path + QLatin1Char('/') + name;
         updateRecentFiles(filename);
     }
