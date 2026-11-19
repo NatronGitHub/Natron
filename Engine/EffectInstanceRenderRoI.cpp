@@ -1749,9 +1749,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     } // if (!hasSomethingToRender) {
 
-    if ( !renderAborted && (renderRetCode == eRenderRoIStatusImageRendered) ) {
-        // rendered in frame order by this render, into the cache entry of this key: it may be used from the cache in
-        // the next frames of the render (the trimap guard below marks the pixels as rendered likewise)
+    if ( !renderAborted && ( (renderRetCode == eRenderRoIStatusImageRendered) || (renderRetCode == eRenderRoIStatusImageAlreadyRendered) ) ) {
+        // rendered in frame order by this render, into the cache entry of this key, by this thread or by another one
+        // of the frame (already rendered): it may be used from the cache in the next frames of the render. Releasing
+        // the claim would make a later frame remove that entry and render the frame again, out of order.
         frameOrderClaim.setRendered();
     }
 
