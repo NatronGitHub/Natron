@@ -1,17 +1,26 @@
 .. for help on writing/extending this file, see the reStructuredText cheatsheet
    http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
-   
+
 Transforming elements
 =====================
 
-Transform nodes are used to deal with translation, rotation, and scale. 
+The Transform node translates, rotates, scales and skews an image. The
+CornerPin node maps the four corners of an image to four new positions.
 
 Transforming Images
 ###################
 
-1.  	Select Transform > Transform (or press T in the Node Graph) to insert a Transform node after the image you want to transform.
-2.    On the viewer there will appear a control element called "Gizmo" (the circle with the crosshairs). Use your mouse within the "Gizmo" to scale, rotate, skew and move your image. Just hover with the mouse over the crosshairs or the circle of the "Gizmo" to fastly select the operation you need.
-3.    In the Controls Panel you can also input your values with typing in numbers, highligthing the value and scrolling the middle mouse wheel or dragging the sliders (with CTRL pressed the slider reacts in a higher resolution). 
+1. Select the node to transform, then choose **Transform > Transform** in the
+   toolbar, or press :kbd:`T` in the Node Graph.
+2. While the node's properties are open, the Viewer shows its handle: a
+   circle with a cross at its center. Hover over a part of the handle to
+   highlight it, then drag it: the center moves the image, the circle scales
+   it, the four points on the circle scale it horizontally or vertically, the
+   rotation bar rotates it, and the lines of the cross skew it.
+3. You can also type values in the properties panel, drag a slider, or hover
+   over a value and turn the mouse wheel. Hold :kbd:`Ctrl` while dragging a
+   slider for 10 times finer steps, or :kbd:`Ctrl+Shift` for 100 times finer
+   steps.
 
 .. image:: _images/compositing-Transform_01.png
 
@@ -19,13 +28,14 @@ Transforming Images
 Corner Pin Images
 #################
 
-1.  	Select Transform > Corner Pin to map the position of the four corners of an image.
-2.    Now you are able to move the corners directly with the mouse or entering values in the Controls Panel.
+1. Choose **Transform > CornerPin** to add a CornerPin node.
+2. Drag the four corner points in the Viewer, or type their positions in the
+   **To** group of parameters. The **From** group holds the original
+   positions of the points; **Set to input rod** sets them to the corners of
+   the input image.
 
 .. image:: _images/compositing-Corner_Pin_01.png
 
-
-
-.. toctree::
-   :maxdepth: 2
-
+See the :ref:`Transform <net.sf.openfx.TransformPlugin>` and
+:ref:`CornerPin <net.sf.openfx.CornerPinPlugin>` references for all the
+parameters.
