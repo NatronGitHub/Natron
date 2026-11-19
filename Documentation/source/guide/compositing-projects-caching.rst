@@ -195,9 +195,9 @@ comes from the cache.
    cache.
 
 **Clear Playback Cache**
-   Empties the part of the playback cache that is in RAM. The frames that
-   were only in RAM are lost and are computed again when needed; the frames
-   stored on disk are kept.
+   Empties the whole playback cache (the frames rendered for the Viewers),
+   in RAM and on disk: the frames are computed again when needed. The
+   DiskCache node cache is kept.
 
 **Clear Per-Node Cache**
    Empties the per-node RAM cache and the internal caches of the OpenFX

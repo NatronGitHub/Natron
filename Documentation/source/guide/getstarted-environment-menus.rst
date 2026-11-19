@@ -184,7 +184,7 @@ Clear Disk Cache
   Clear the disk cache, which is kept between Natron sessions, including the
   images stored by DiskCache nodes.
 Clear Playback Cache
-  Clear the images rendered for the Viewers.
+  Clear the images rendered for the Viewers (in RAM and on disk).
 Clear Per-Node Cache
   Clear the intermediate images kept in memory for each node, and the caches
   of the OpenFX plug-ins.
