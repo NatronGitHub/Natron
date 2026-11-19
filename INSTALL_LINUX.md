@@ -81,12 +81,10 @@ This must be done in every shell/terminal where you intend to compile and/or run
 
 ## Installing dependencies from Ubuntu
 
-The scripts `tools/travis/install_dependencies.sh` and
-`tools/travis/build.sh` respectively install the correct dependencies
-and build Natron and the standard set of plugins on Ubuntu
-18.04 (Bionic Beaver).
-These scripts are used to make the [Travis CI builds](https://travis-ci.org/github/NatronGitHub/Natron).
-You can use them as a reference, but the resulting binaries are not guaranteed to be fully functional.
+The Linux job of the [GitHub Actions CI](https://github.com/NatronGitHub/Natron/actions/workflows/ci.yml)
+(`.github/workflows/ci.yml`) installs the dependencies and builds Natron and the tests on Ubuntu 24.04:
+read it for the exact package list and build commands.
+You can use it as a reference, but the resulting binaries are not guaranteed to be fully functional.
 
 ## Installing dependencies manually
 

@@ -96,10 +96,6 @@ This directory contains various tools to help building and maintaining Natron.
 
   The source for the `normalize` utility from Qt4, which normalizes the signatures in SIGNAL() and SLOT() macros through the Natron source code. This gives a very small speedup at execution. Most code-formatting tools usually break normalized signatures, so this tool should be run afterwards.
   
-- **travis**
-
-  Scripts used for [Travis CI builds of Natron](https://travis-ci.org/NatronGitHub/Natron). See also the hidden file `.travis.yml` at the top source directory.
-
 - **uncrustify**
 
   Configuration file for [uncrustify](http://uncrustify.sourceforge.net/). Unfortunately, uncrustify also breaks things, so the source code needs to be fixed after running it:
