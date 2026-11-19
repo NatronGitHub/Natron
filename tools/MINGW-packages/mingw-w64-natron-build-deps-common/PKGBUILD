@@ -2,7 +2,7 @@
 
 pkgname="${MINGW_PACKAGE_PREFIX}-natron-build-deps-common"
 pkgver=2026.11
-pkgrel=2
+pkgrel=3
 pkgdesc="Minimal package set for building Natron installer for any version of Qt"
 url="https://natrongithub.github.io/"
 arch=("any")
@@ -46,7 +46,6 @@ depends=(
   "${MINGW_PACKAGE_PREFIX}-libxml2"
   # openfx-gmic
   "${MINGW_PACKAGE_PREFIX}-curl"
-  "${MINGW_PACKAGE_PREFIX}-fftw"
   # installer (no crash reporter until #1183: no breakpad, no dump_syms)
   "zip"
   "unzip"

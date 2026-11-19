@@ -197,7 +197,6 @@ step_libs() {
     sudo sed -i '' -e 's/Zstd::Zstd/zstd/' /opt/local/lib/pkgconfig/libzip.pc
     $PORT install ImageMagick +natron -x11
     $PORT install ImageMagick7 +natron -x11 -openexr
-    $PORT install fftw-3 -gfortran fftw-3-single -gfortran
     $PORT install ffmpeg +gpl2 +highbitdepth +natronmini
     $PORT install openimageio +freetype +natron +opencolorio +openjpeg $(oiio_python_variants)
 }

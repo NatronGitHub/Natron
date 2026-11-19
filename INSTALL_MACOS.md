@@ -221,8 +221,7 @@ sudo port -v -N install ImageMagick +natron -x11
 # so it doesn't conflict with ImageMagick 6 above)
 sudo port -v -N install ImageMagick7 +natron -x11 -openexr
 
-# openfx-gmic
-sudo port -v -N install fftw-3 -gfortran fftw-3-single -gfortran
+# openfx-gmic needs no extra port: its build downloads pocketfft, its FFT library
 
 # openfx-io
 sudo port -v -N install ffmpeg +gpl2 +highbitdepth +natronmini
@@ -699,12 +698,6 @@ To install the [openfx-arena](https://github.com/NatronGitHub/openfx-arena) set 
 brew install librsvg poppler librevenge libcdr libzip sox
 brew uninstall imagemagick
 brew install imagemagick --with-hdri --with-librsvg --with-quantum-depth-32 --with-pango
-```
-
-To install the [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic) set of plugin, you also need the following:
-
-```Shell
-brew install fftw
 ```
 
 also set the correct value for the pkg-config path (you can also put

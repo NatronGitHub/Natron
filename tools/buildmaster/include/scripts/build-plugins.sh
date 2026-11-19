@@ -731,7 +731,8 @@ if [ "$BUILD_GMIC" = "1" ]; then
     if plugins_use_cmake openfx-gmic; then
         # The CMake build downloads the G'MIC sources (from each mirror in turn, checking their
         # sha256) into the download cache $SRC_PATH, which outlives the checkout.
-        # OFX_LICENSE=COMMERCIAL gives pocketfft instead of FFTW, and only the CeCILL-C filters.
+        # FFT=pocketfft (the default since openfx-gmic#94) for both licences: the Natron SDKs
+        # don't provide FFTW (GPL). OFX_LICENSE=COMMERCIAL also keeps only the CeCILL-C filters.
         gmic_download_dir="$SRC_PATH"
         mkdir -p "$gmic_download_dir"
         if [ "$PKGOS" = "Windows" ]; then
@@ -742,7 +743,7 @@ if [ "$BUILD_GMIC" = "1" ]; then
             # (the --param options are gcc's)
             gmic_cxxflags_extra="$GMIC_CXXFLAGS_EXTRA ${CXXFLAGS_EXTRA}"
         fi
-        gmic_args=(-DGMIC_DOWNLOAD_DIR="$gmic_download_dir")
+        gmic_args=(-DGMIC_DOWNLOAD_DIR="$gmic_download_dir" -DFFT=pocketfft)
         if [ "$PKGOS" = "Linux" ] && grep -q 'GMIC_STATIC_DEPS' CMakeLists.txt; then
             # link the SDK's shared zlib and libpng: GMIC_STATIC_DEPS (default ON on Linux) needs
             # static archives built with -fPIC, which the Natron SDK doesn't provide
@@ -753,15 +754,15 @@ if [ "$BUILD_GMIC" = "1" ]; then
     else
         if [ "$COMPILER" = "gcc" ] || [ "$COMPILER" = "clang-omp" ]; then
             # build with OpenMP support
-            make -j"${GMIC_MKJOBS}" $MAKEFLAGS_VERBOSE LICENSE="$NATRON_LICENSE" OPENMP=1 \
+            make -j"${GMIC_MKJOBS}" $MAKEFLAGS_VERBOSE LICENSE="$NATRON_LICENSE" FFT=pocketfft OPENMP=1 \
                  CXX="$CXX" CONFIG="${BUILD_MODE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-}" CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA ${CXXFLAGS_EXTRA}"
         elif [ -n "${GXX:-}" ]; then
             # Building with clang, but GCC is available too!
-            make -j"${GMIC_MKJOBS}" $MAKEFLAGS_VERBOSE LICENSE="$NATRON_LICENSE" OPENMP=1 \
+            make -j"${GMIC_MKJOBS}" $MAKEFLAGS_VERBOSE LICENSE="$NATRON_LICENSE" FFT=pocketfft OPENMP=1 \
                  CXX="$GXX" CONFIG="${BUILD_MODE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-} -static-libgcc" CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA ${CXXFLAGS_EXTRA}"
         else
             # build without OpenMP
-            make -j"${GMIC_MKJOBS}" $MAKEFLAGS_VERBOSE LICENSE="$NATRON_LICENSE" \
+            make -j"${GMIC_MKJOBS}" $MAKEFLAGS_VERBOSE LICENSE="$NATRON_LICENSE" FFT=pocketfft \
                  CXX="$CXX" CONFIG="${BUILD_MODE}" OPTFLAG="${OPTFLAG}" BITS="${BITS}" LDFLAGS_ADD="${BUILDID:-}" CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA ${CXXFLAGS_EXTRA}"
         fi
         cp -a ./*/*-*-*/*.ofx.bundle "$TMP_BINARIES_PATH/OFX/Plugins/"
