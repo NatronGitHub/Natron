@@ -48,10 +48,19 @@ if build_step && { force_build || { [ ! -s "$QT5PREFIX/lib/pkgconfig/Qt5Core.pc"
             -nomake examples                          \
             -no-rpath                                 \
             -syslog                                   \
+            -xcb                                      \
+            -xcb-xlib                                 \
+            -xkbcommon                                \
             -skip qtwebengine                         \
             -skip qtlocation
     make -j${MKJOBS}
     make install
+    # The X11 platform plug-in, which Natron needs: -xcb makes configure fail if its
+    # dependencies are missing, but check that it was built and installed.
+    if [ ! -s "$QT5PREFIX/plugins/platforms/libqxcb.so" ] || [ ! -s "$QT5PREFIX/lib/libQt5XcbQpa.so.5" ]; then
+        (>&2 echo "Error: the Qt5 xcb platform plug-in ($QT5PREFIX/plugins/platforms/libqxcb.so) was not built.")
+        exit 1
+    fi
     # Remove references to the build directory from installed library dependency (prl) files by running the following command as the root user: 
     find $QT5PREFIX/ -name \*.prl -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \;
     popd

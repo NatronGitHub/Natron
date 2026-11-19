@@ -135,7 +135,7 @@ EOF
     PATH=\"\$SDK/bin:\$QTDIR/bin:\$GCC/bin:\$FFMPEG/bin:\$LIBRAW_PATH:\$PATH\" \\
     WORKSPACE=/home \\
     GIT_URL=https://github.com/NatronGitHub/Natron.git \\
-    GIT_BRANCH=RB-2.5 \\
+    GIT_BRANCH=RB-2.6 \\
     GIT_COMMIT= \\
     RELEASE_TAG=  \\
     SNAPSHOT_BRANCH= \\
@@ -253,9 +253,13 @@ EOF
             # Rust (cargo, rustc), to build librsvg >= 2.41 (see pkg/librsvg.sh)
             DTSYUM+="dnf -y install rust-toolset && "
         fi
+        # The xcb platform plug-in of Qt 5.15 (pkg/qt5.sh) needs libxcb with its extensions
+        # (randr, render, shape, shm, sync, xfixes, xinerama, xkb, xinput, glx), the xcb-util
+        # libraries (icccm/wm, image, keysyms, renderutil), libX11-xcb and libxkbcommon-x11.
+        YUM_XCB="libxcb-devel xcb-util-devel xcb-util-wm-devel xcb-util-image-devel xcb-util-keysyms-devel xcb-util-renderutil-devel libxkbcommon-x11-devel"
         # Note: perl-version added for qt4webkit, see https://github.com/NatronGitHub/Natron/issues/351#issuecomment-524068232
         # perl-Encode and perl-Data-Dumper needed to build texinfo before perl
-        YUM_PKGS="ca-certificates make util-linux git tar bzip2 wget glibc-devel diffutils patch zip unzip alsa-lib-devel libX11-devel mesa-libGL-devel mesa-libEGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel ${YUM_XVMC} libXxf86vm-devel libxkbcommon-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXres-devel libXtst-devel xorg-x11-proto-devel libXxf86dga-devel libXpm-devel perl-Digest-MD5 perl-version perl-Encode perl-Data-Dumper"
+        YUM_PKGS="ca-certificates make util-linux git tar bzip2 wget glibc-devel diffutils patch zip unzip alsa-lib-devel libX11-devel mesa-libGL-devel mesa-libEGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel ${YUM_XVMC} libXxf86vm-devel libxkbcommon-devel ${YUM_XCB} libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXres-devel libXtst-devel xorg-x11-proto-devel libXxf86dga-devel libXpm-devel perl-Digest-MD5 perl-version perl-Encode perl-Data-Dumper"
         SDKPREP="RUN ${PREYUM}${DTSYUM}yum -y install ${YUM_PKGS} ${YUM_DEVEL_EXTRA} && yum -y clean all"
         cat <<EOF
 FROM $DOCKER_BASE as intermediate
@@ -789,6 +793,7 @@ build patchelf
 build gettext
 build intltool
 build zlib
+build zstd # (for tiff, curl, libarchive, boost_iostreams, Qt and others: they would link the system libzstd otherwise)
 
 checkpoint
 
