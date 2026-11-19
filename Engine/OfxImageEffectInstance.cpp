@@ -204,9 +204,9 @@ OfxImageEffectInstance::mainEntry(const char *action,
     EffectInstancePtr effect = isOutermostAction ? getParamsEditHolder() : EffectInstancePtr();
 
     if (effect && (effect->getMultipleParamsEditLevel() != KnobHolder::eMultipleParamsEditOff) && !effect->getApp()->isCreatingPythonGroup() ) {
-        while (effect->getMultipleParamsEditLevel() != KnobHolder::eMultipleParamsEditOff) {
-            effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
-        }
+        // bounded by the number of open blocks: setMultipleParamsEditLevel(eMultipleParamsEditOff) does nothing when no
+        // block is open, so a loop until the level is off could never end if the level and the blocks disagreed
+        effect->endAllMultipleParamsEdits();
     }
     return retval;
 }

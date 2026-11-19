@@ -6031,35 +6031,46 @@ void
 KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level,
                                        const std::string& label)
 {
-    QMutexLocker l(&_imp->paramsEditLevelMutex);
-
+    // beginChanges() and endChanges() are called without holding paramsEditLevelMutex: endChanges() calls the knob
+    // changed handlers (e.g. kOfxActionInstanceChanged), whose setValue() calls getMultipleParamsEditLevel().
     if ( appPTR->isBackground() ) {
+        QMutexLocker l(&_imp->paramsEditLevelMutex);
         _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
-    } else {
-        if (level == KnobHolder::eMultipleParamsEditOff) {
-            // An end without a matching start (e.g. an unmatched paramEditEnd() of an OpenFX plug-in) changes nothing: in
-            // particular, it must not end a beginChanges() bracket of someone else.
+
+        return;
+    }
+    if (level == KnobHolder::eMultipleParamsEditOff) {
+        bool endedBlock = false;
+        {
+            QMutexLocker l(&_imp->paramsEditLevelMutex);
+            // An end without a matching start (e.g. an unmatched paramEditEnd() of an OpenFX plug-in) changes nothing:
+            // in particular, it must not end a beginChanges() bracket of someone else.
             if (_imp->paramsEditRecursionLevel > 0) {
                 --_imp->paramsEditRecursionLevel;
                 if (_imp->paramsEditRecursionLevel == 0) {
                     _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
                     _imp->paramsEditLabel.clear();
                 }
-                // matches the beginChanges() of eMultipleParamsEditOnCreateNewCommand
-                endChanges();
+                endedBlock = true;
             }
-        } else if (level == KnobHolder::eMultipleParamsEditOn) {
-            _imp->paramsEditLevel = level;
-        } else {
-            assert(level == KnobHolder::eMultipleParamsEditOnCreateNewCommand);
-            beginChanges();
-            if (_imp->paramsEditLevel == KnobHolder::eMultipleParamsEditOff) {
-                _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOnCreateNewCommand;
-                // the label of the outermost block
-                _imp->paramsEditLabel = label;
-            }
-            ++_imp->paramsEditRecursionLevel;
         }
+        if (endedBlock) {
+            // matches the beginChanges() of eMultipleParamsEditOnCreateNewCommand
+            endChanges();
+        }
+    } else if (level == KnobHolder::eMultipleParamsEditOn) {
+        QMutexLocker l(&_imp->paramsEditLevelMutex);
+        _imp->paramsEditLevel = level;
+    } else {
+        assert(level == KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+        beginChanges();
+        QMutexLocker l(&_imp->paramsEditLevelMutex);
+        if (_imp->paramsEditLevel == KnobHolder::eMultipleParamsEditOff) {
+            _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOnCreateNewCommand;
+            // the label of the outermost block
+            _imp->paramsEditLabel = label;
+        }
+        ++_imp->paramsEditRecursionLevel;
     }
 }
 
@@ -6069,6 +6080,28 @@ KnobHolder::getMultipleParamsEditLabel() const
     QMutexLocker l(&_imp->paramsEditLevelMutex);
 
     return _imp->paramsEditLabel;
+}
+
+void
+KnobHolder::endAllMultipleParamsEdits()
+{
+    // Each setMultipleParamsEditLevel(eMultipleParamsEditOff) ends one block, so this loop ends, also if blocks are opened
+    // while it closes them (e.g. by a knob changed handler called by endChanges()).
+    for (;;) {
+        {
+            QMutexLocker l(&_imp->paramsEditLevelMutex);
+            if (_imp->paramsEditRecursionLevel <= 0) {
+                // no block is open: the level must be off
+                assert(_imp->paramsEditRecursionLevel == 0 && _imp->paramsEditLevel == KnobHolder::eMultipleParamsEditOff);
+                _imp->paramsEditRecursionLevel = 0;
+                _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
+                _imp->paramsEditLabel.clear();
+
+                return;
+            }
+        }
+        setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+    }
 }
 
 AppInstancePtr
