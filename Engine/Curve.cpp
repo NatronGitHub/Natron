@@ -441,13 +441,13 @@ Curve::cloneAndCheckIfChanged(const Curve& other)
 
 void
 Curve::clone(const Curve & other,
-             SequenceTime offset,
+             double offset,
              const RangeD* range)
 {
     KeyFrameSet otherKeys = other.getKeyFrames_mt_safe();
-    // The range=[0,0] case is obviously a bug in the spec of paramCopy() from the parameter suite:
-    // it prevents copying the value of frame 0.
-    bool copyRange = range != NULL /*&& (range->min != 0 || range->max != 0)*/;
+    // NULL means all the keyframes. In paramCopy() from the OFX parameter suite, [0, 0] also means all the
+    // keyframes: OfxKeyFrame::copyFrom() passes NULL then.
+    bool copyRange = range != NULL;
     QMutexLocker l(&_imp->_lock);
 
     _imp->keyFrames.clear();

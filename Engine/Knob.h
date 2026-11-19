@@ -1724,10 +1724,10 @@ protected:
                                          int /*dimension = -1*/,
                                          int /*otherDimension = -1*/) {}
 
-    void cloneOneCurve(KnobI* other, int offset, const RangeD* range, int dimension, int otherDimension);
+    void cloneOneCurve(KnobI* other, double offset, const RangeD* range, int dimension, int otherDimension);
     bool cloneOneCurveAndCheckIfChanged(KnobI* other, bool updateGui, int dimension, int otherDimension);
 
-    void cloneCurves(KnobI* other, int offset, const RangeD* range, int dimension = -1, int otherDimension = -1);
+    void cloneCurves(KnobI* other, double offset, const RangeD* range, int dimension = -1, int otherDimension = -1);
     bool cloneCurvesAndCheckIfChanged(KnobI* other, bool updateGui, int dimension = -1, int otherDimension = -1);
 
 
