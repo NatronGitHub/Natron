@@ -19,7 +19,7 @@ from the foreground.
 
 See also the :doc:`alternative matte extraction tutorial
 <tutorials-AlternativeMatteExtraction>`, which shows how to turn the spill maps
-of Despill, lp_ChillSpill and ColorSuppression into mattes.
+of Despill, lp_ChillSpill and ColorSuppress into mattes.
 
 .. toctree::
    :maxdepth: 2
