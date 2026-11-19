@@ -120,6 +120,7 @@ set_target_properties(NatronTestPlugin PROPERTIES
     SUFFIX ".ofx"
     # a single folder for all the configurations of multi-configuration generators
     LIBRARY_OUTPUT_DIRECTORY "${_natron_test_bundle}/Contents/${_natron_test_archdir}/$<0:>"
+    AUTOMOC OFF # (CMAKE_AUTOMOC is on for the whole project; the plug-in doesn't use Qt)
     C_VISIBILITY_PRESET hidden
     CXX_VISIBILITY_PRESET hidden
     VISIBILITY_INLINES_HIDDEN ON)
