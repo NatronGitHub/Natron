@@ -6082,28 +6082,6 @@ KnobHolder::getMultipleParamsEditLabel() const
     return _imp->paramsEditLabel;
 }
 
-void
-KnobHolder::endAllMultipleParamsEdits()
-{
-    // Each setMultipleParamsEditLevel(eMultipleParamsEditOff) ends one block, so this loop ends, also if blocks are opened
-    // while it closes them (e.g. by a knob changed handler called by endChanges()).
-    for (;;) {
-        {
-            QMutexLocker l(&_imp->paramsEditLevelMutex);
-            if (_imp->paramsEditRecursionLevel <= 0) {
-                // no block is open: the level must be off
-                assert(_imp->paramsEditRecursionLevel == 0 && _imp->paramsEditLevel == KnobHolder::eMultipleParamsEditOff);
-                _imp->paramsEditRecursionLevel = 0;
-                _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
-                _imp->paramsEditLabel.clear();
-
-                return;
-            }
-        }
-        setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
-    }
-}
-
 AppInstancePtr
 KnobHolder::getApp() const
 {

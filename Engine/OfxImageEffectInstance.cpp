@@ -116,6 +116,7 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
     : OFX::Host::ImageEffect::Instance(plugin, desc, context, interactive)
     , _ofxEffectInstance()
     , _mainThreadActionDepth(0)
+    , _pluginEditBlocks(0)
 {
     getProps().setGetHook(kNatronOfxExtraCreatedPlanes, (OFX::Host::Property::GetHook*)this);
 
@@ -125,6 +126,7 @@ OfxImageEffectInstance::OfxImageEffectInstance(const OfxImageEffectInstance& oth
     : OFX::Host::ImageEffect::Instance(other)
     , _ofxEffectInstance()
     , _mainThreadActionDepth(0)
+    , _pluginEditBlocks(0)
 {
 }
 
@@ -203,10 +205,12 @@ OfxImageEffectInstance::mainEntry(const char *action,
     const bool isOutermostAction = isMainThread && (_mainThreadActionDepth == 1);
     EffectInstancePtr effect = isOutermostAction ? getParamsEditHolder() : EffectInstancePtr();
 
-    if (effect && (effect->getMultipleParamsEditLevel() != KnobHolder::eMultipleParamsEditOff) && !effect->getApp()->isCreatingPythonGroup() ) {
-        // bounded by the number of open blocks: setMultipleParamsEditLevel(eMultipleParamsEditOff) does nothing when no
-        // block is open, so a loop until the level is off could never end if the level and the blocks disagreed
-        effect->endAllMultipleParamsEdits();
+    // Only the blocks that the plug-in opened: a block opened by Natron around the action (e.g. an overlay drag, during
+    // which a value change calls kOfxActionInstanceChanged) is ended by Natron.
+    if (effect) {
+        for (int openBlocks = _pluginEditBlocks.exchange(0); openBlocks > 0; --openBlocks) {
+            effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+        }
     }
     return retval;
 }
@@ -1050,6 +1054,7 @@ OfxImageEffectInstance::editBegin(const std::string & name)
     EffectInstancePtr effect = getParamsEditHolder();
 
     if ( effect && !effect->getApp()->isCreatingPythonGroup() ) {
+        ++_pluginEditBlocks;
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand, name);
     }
 
@@ -1066,7 +1071,11 @@ OfxImageEffectInstance::editEnd()
     // As in editBegin(): the holder of the knobs.
     EffectInstancePtr effect = getParamsEditHolder();
 
-    if ( effect && !effect->getApp()->isCreatingPythonGroup() ) {
+    // only a block that the plug-in opened: an unmatched paramEditEnd() must not end a block of Natron
+    int openBlocks = _pluginEditBlocks.load();
+    while ( (openBlocks > 0) && !_pluginEditBlocks.compare_exchange_weak(openBlocks, openBlocks - 1) ) {
+    }
+    if ( effect && (openBlocks > 0) ) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
     }
 
