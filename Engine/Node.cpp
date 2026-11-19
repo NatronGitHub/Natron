@@ -367,20 +367,12 @@ Node::getCurrentOpenGLRenderSupport() const
     return _imp->currentSupportOpenGLRender;
 }
 
-void
-Node::setCurrentSequentialRenderSupport(SequentialPreferenceEnum support)
-{
-    QMutexLocker k(&_imp->pluginsPropMutex);
-
-    _imp->currentSupportSequentialRender = support;
-}
-
 SequentialPreferenceEnum
 Node::getCurrentSequentialRenderSupport() const
 {
-    QMutexLocker k(&_imp->pluginsPropMutex);
-
-    return _imp->currentSupportSequentialRender;
+    // Not cached in refreshDynamicProperties(): an OFX plug-in may set kOfxImageEffectInstancePropSequentialRender on
+    // its instance in any action, and OfxEffectInstance::getSequentialPreference() reads it.
+    return _imp->effect ? _imp->effect->getSequentialPreference() : eSequentialPreferenceNotSequential;
 }
 
 void
@@ -435,7 +427,6 @@ Node::refreshDynamicProperties()
     RenderSafetyEnum safety = _imp->effect->renderThreadSafety();
     setRenderThreadSafety(safety);
     setCurrentSupportTiles(multiResSupported && tilesSupported);
-    setCurrentSequentialRenderSupport( _imp->effect->getSequentialPreference() );
     setCurrentCanTransform(canTransform);
 }
 

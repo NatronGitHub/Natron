@@ -883,6 +883,43 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
 
 
+    // When rendering in frame order because of a plug-in that must be rendered sequentially, its frames, and the
+    // frames of the nodes downstream, may have been rendered and cached out of order: "If eventually rendering the
+    // sequence, the host *must* ignore all frames rendered out of order and not cache them for use in the final
+    // result" (kOfxImageEffectInstancePropSequentialRender). Only use the images rendered by this render: the input
+    // images of the caller (args.inputImagesList, rendered for this frame), and the cached images that this render
+    // rendered (e.g. the frames t-1..t+1 fetched by a temporal node downstream).
+    const FrameOrderRenderPtr& frameOrderRender = frameArgs->frameOrderRender;
+    const bool isFrameOrderAffected = frameOrderRender && frameOrderRender->isAffected( getNode().get() );
+    auto mayUseCachedImage = [&](const ImageKey& lookupKey) {
+        return !isFrameOrderAffected || frameOrderRender->isClaimed( lookupKey.getHash() );
+    };
+    // The claim of the first render of this image by the frame-order render (see FrameOrderRender): released when
+    // renderRoI() returns, unless the image was rendered.
+    struct FrameOrderClaim
+    {
+        FrameOrderRenderPtr render;
+        U64 keyHash;
+        bool claimed;
+        bool rendered;
+
+        FrameOrderClaim() : render(), keyHash(0), claimed(false), rendered(false) {}
+
+        ~FrameOrderClaim()
+        {
+            if (claimed && !rendered) {
+                render->releaseClaim(keyHash);
+            }
+        }
+
+        void setRendered()
+        {
+            if (claimed && !rendered) {
+                render->setRendered(keyHash);
+                rendered = true;
+            }
+        }
+    } frameOrderClaim;
     const bool draftModeSupported = getNode()->isDraftModeUsed();
     const bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
     bool createInCache;
@@ -893,6 +930,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         // in Analysis, the node upstream of the analysis node should always cache
         createInCache = (frameArgs->isAnalysis && frameArgs->treeRoot->getEffectInstance().get() == args.caller) ? true : shouldCacheOutput(isFrameVaryingOrAnimated, args.time, args.view, frameArgs->visitsCount);
     }
+    if ( !createInCache && (storage != eStorageModeGLTex) && isFrameOrderAffected &&
+         (getSequentialPreference() == eSequentialPreferenceOnlySequential) ) {
+        // A node downstream may fetch this frame again in a later frame of the render (e.g. a temporal node fetching
+        // t-1..t+1): it must come from the cache, since rendering it again would be out of frame order.
+        createInCache = true;
+    }
+    // Note: if the cache evicts such a frame before a node downstream fetches it again, it is rendered again, out of
+    // frame order. The cache would have to be full for that to happen during a render.
     ///Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
     bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = getNode()->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
     ///For multi-resolution we want input images with exactly the same size as the output image
@@ -934,6 +979,22 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ImagePlanesToRenderPtr planesToRender = std::make_shared<ImagePlanesToRender>();
     planesToRender->useOpenGL = storage == eStorageModeGLTex;
     FramesNeededMapPtr framesNeeded = std::make_shared<FramesNeededMap>();
+    if (isFrameOrderAffected && createInCache) {
+        // A cache entry with this key, rendered out of order (e.g. in the Viewer), would be returned by
+        // getImageOrCreate() when the planes are allocated below: only the RoI would be rendered into it, while its
+        // bitmap marks the rest as rendered. The first render of this key in this render removes it, atomically
+        // with the claim, so that another thread rendering the same image now uses this one.
+        const U64 keyHash = key->getHash();
+        const U64 nonDraftKeyHash = nonDraftKey->getHash();
+        frameOrderClaim.render = frameOrderRender;
+        frameOrderClaim.keyHash = keyHash;
+        frameOrderClaim.claimed = frameOrderRender->claimFirstRender(keyHash, [keyHash, nonDraftKeyHash]() {
+            appPTR->removeFromNodeCache(keyHash);
+            if (nonDraftKeyHash != keyHash) {
+                appPTR->removeFromNodeCache(nonDraftKeyHash);
+            }
+        });
+    }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Look-up the cache ///////////////////////////////////////////////////////////////
 
@@ -981,7 +1042,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                         args.inputImagesList,
                                                         frameArgs->stats,
                                                         glContextLocker,
-                                                        &plane.fullscaleImage);
+                                                        &plane.fullscaleImage,
+                                                        mayUseCachedImage(n == 0 ? *nonDraftKey : *key));
                     if (plane.fullscaleImage) {
                         if (byPassCache) {
                             if (plane.fullscaleImage) {
@@ -1013,7 +1075,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                             args.inputImagesList,
                                                             frameArgs->stats,
                                                             glContextLocker,
-                                                            &plane.fullscaleImage);
+                                                            &plane.fullscaleImage,
+                                                            mayUseCachedImage(n == 0 ? *nonDraftKey : *key));
                         if (plane.fullscaleImage) {
                             if (byPassCache) {
                                 if (plane.fullscaleImage) {
@@ -1653,7 +1716,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                               rod,
                                               par,
                                               planesToRender,
-                                              frameArgs->isSequentialRender,
+                                              // kOfxImageEffectPropSequentialRenderStatus: "the host is currently rendering in a way so that it
+                                              // guarantees sequential rendering", i.e. "in frame order on a single effect instance". The Writer
+                                              // of a sequential render (e.g. WriteFFmpeg) always gets it: it may only write a movie then.
+                                              // (No special case for Readers: ReadOIIO's "isPlayback" use of the status only matters with its
+                                              // OIIO cache, which it creates only on Natron < 2.2, openfx-io d3e96ca; ReadFFmpeg ignores it.)
+                                              frameArgs->isSequentialRender && ( frameArgs->frameOrderRender ||
+                                                                                 ( isWriter() && (frameArgs->treeRoot == getNode()) ) ),
                                               frameArgs->isRenderResponseToUserInteraction,
                                               nodeHash,
                                               renderFullScaleThenDownscale,
@@ -1679,6 +1748,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         renderAborted = aborted();
 
     } // if (!hasSomethingToRender) {
+
+    if ( !renderAborted && ( (renderRetCode == eRenderRoIStatusImageRendered) || (renderRetCode == eRenderRoIStatusImageAlreadyRendered) ) ) {
+        // rendered in frame order by this render, into the cache entry of this key, by this thread or by another one
+        // of the frame (already rendered): it may be used from the cache in the next frames of the render. Releasing
+        // the claim would make a later frame remove that entry and render the frame again, out of order.
+        frameOrderClaim.setRendered();
+    }
 
 #if NATRON_ENABLE_TRIMAP
     assert(guard);

@@ -31,6 +31,9 @@
 #include <set>
 #include <map>
 #include <list>
+#include <functional>
+
+#include <QMutex>
 
 #include "Global/GlobalDefines.h"
 
@@ -134,6 +137,11 @@ public:
     /// Is this render sequential ? True for Viewer playback or a sequential writer such as WriteFFMPEG
     bool isSequentialRender : 1;
 
+    /// Set if the frames of this sequential render are rendered one at a time, in frame order (see
+    /// OutputSchedulerThread::getFrameOrderRender()): only then do OFX plug-ins get
+    /// kOfxImageEffectPropSequentialRenderStatus=1 (the Writer of the render, and Readers, always get it).
+    FrameOrderRenderPtr frameOrderRender;
+
     ///Was the render started in the instanceChangedAction (knobChanged)
     bool isAnalysis : 1;
 
@@ -152,6 +160,52 @@ public:
     ParallelRenderArgs();
 
     bool isCurrentFrameRenderNotAbortable() const;
+};
+
+/**
+ * @brief The state of a render on disk that renders one frame at a time, in frame order, because a node can only be
+ * rendered sequentially (kOfxImageEffectInstancePropSequentialRender=1). It is shared by all the frames of the render.
+ *
+ * The frames of the affected nodes (the sequential nodes and the nodes downstream of them, in the tree of the
+ * render) may have been rendered and cached out of order before, e.g. in the Viewer: "If eventually rendering the
+ * sequence, the host *must* ignore all frames rendered out of order and not cache them for use in the final result".
+ * They are only taken from the cache if they were rendered during this render, which renders them in frame order
+ * (e.g. the frames t-1..t+1 that a temporal node downstream fetches at each frame).
+ *
+ * The first render of an image (a key) of an affected node in this render claims it (claimFirstRender()), which
+ * removes the cache entries rendered out of order with that key; the threads that need the same image at the same
+ * time then use the image of the claimer through the cache (and the trimap). The claim becomes "rendered"
+ * (setRendered()) when the claimer rendered it, or is released (releaseClaim()) if its render was aborted, failed,
+ * or rendered nothing, as the bitmap of the image is.
+ **/
+class FrameOrderRender
+{
+public:
+    explicit FrameOrderRender(const std::set<const Node*>& affectedNodes);
+
+    /// true if node can only be rendered sequentially, or is downstream of such a node, in this render
+    bool isAffected(const Node* node) const;
+
+    /// Claim the first render by this render of the image with this key (ImageKey::getHash()) of an affected node.
+    /// Returns true for exactly one caller, after calling onClaim() (e.g. removing the cache entries with this key),
+    /// before any other call to claimFirstRender() or isClaimed() with this key returns.
+    bool claimFirstRender(U64 keyHash, const std::function<void()>& onClaim);
+
+    /// The claimer rendered the image with this key: it stays claimed until the end of the render.
+    void setRendered(U64 keyHash);
+
+    /// The claimer's render of the image with this key was aborted, failed, or rendered nothing: the next
+    /// request claims it again. Does nothing if the image was rendered.
+    void releaseClaim(U64 keyHash);
+
+    /// true if the image with this key is claimed (being rendered or rendered) by this render: it may then be
+    /// taken from the cache.
+    bool isClaimed(U64 keyHash) const;
+
+private:
+    const std::set<const Node*> _affectedNodes; // only compared, never dereferenced
+    mutable QMutex _claimsMutex;
+    std::map<U64, bool> _claims; // true when rendered
 };
 
 struct FrameViewPair
@@ -271,7 +325,8 @@ public:
                              const NodePtr& activeRotoPaintNode,
                              bool isAnalysis,
                              bool draftMode,
-                             const RenderStatsPtr& stats);
+                             const RenderStatsPtr& stats,
+                             const FrameOrderRenderPtr& frameOrderRender = FrameOrderRenderPtr());
 
     ParallelRenderArgsSetter(const std::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr> >& args);
 

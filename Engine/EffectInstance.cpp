@@ -1626,7 +1626,8 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                                                     const EffectInstance::InputImagesMap & inputImages,
                                                     const RenderStatsPtr & stats,
                                                     const OSGLContextAttacherPtr& glContextAttacher,
-                                                    ImagePtr* image)
+                                                    ImagePtr* image,
+                                                    bool lookupPersistentCache)
 {
     ImageList cachedImages;
     bool isCached = false;
@@ -1647,7 +1648,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
         }
     }
 
-    if (!isCached) {
+    if (!isCached && lookupPersistentCache) {
         // For textures, we lookup for a RAM image, if found we convert it to a texture
         if ( (storage == eStorageModeRAM) || (storage == eStorageModeGLTex) ) {
             isCached = appPTR->getImage(key, &cachedImages);

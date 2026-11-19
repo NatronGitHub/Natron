@@ -469,7 +469,6 @@ public:
     void setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support);
     PluginOpenGLRenderSupport getCurrentOpenGLRenderSupport() const;
 
-    void setCurrentSequentialRenderSupport(SequentialPreferenceEnum support);
     SequentialPreferenceEnum getCurrentSequentialRenderSupport() const;
 
     void setCurrentCanTransform(bool support);

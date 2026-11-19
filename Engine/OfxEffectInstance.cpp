@@ -236,7 +236,6 @@ struct OfxEffectInstancePrivate
     std::vector<ClipsInfo> clipsInfos;
     OfxClipInstance* outputClip;
     int nbSourceClips;
-    SequentialPreferenceEnum sequentialPref;
     mutable QMutex supportsConcurrentGLRendersMutex;
     bool supportsConcurrentGLRenders;
     bool isOutput; //if the OfxNode can output a file somehow
@@ -293,7 +292,6 @@ struct OfxEffectInstancePrivate
         , clipsInfos()
         , outputClip(0)
         , nbSourceClips(0)
-        , sequentialPref(eSequentialPreferenceNotSequential)
         , supportsConcurrentGLRendersMutex()
         , supportsConcurrentGLRenders(false)
         , isOutput(false)
@@ -339,7 +337,6 @@ struct OfxEffectInstancePrivate
         , clipsInfos(other.clipsInfos)
         , outputClip(other.outputClip)
         , nbSourceClips(other.nbSourceClips)
-        , sequentialPref(other.sequentialPref)
         , supportsConcurrentGLRendersMutex()
         , supportsConcurrentGLRenders(other.supportsConcurrentGLRenders)
         , isOutput(other.isOutput)
@@ -559,21 +556,6 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         _imp->supportsMultipleClipDepths = _imp->effect->supportsMultipleClipDepths();
         _imp->doesTemporalAccess = _imp->effect->temporalAccess();
         _imp->multiplanar = _imp->effect->isMultiPlanar();
-        int sequential = _imp->effect->getPlugin()->getDescriptor().getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender);
-        switch (sequential) {
-        case 0:
-            _imp->sequentialPref = eSequentialPreferenceNotSequential;
-            break;
-        case 1:
-            _imp->sequentialPref = eSequentialPreferenceOnlySequential;
-            break;
-        case 2:
-            _imp->sequentialPref = eSequentialPreferencePreferSequential;
-            break;
-        default:
-            _imp->sequentialPref =  eSequentialPreferenceNotSequential;
-            break;
-        }
 
         beginChanges();
         OfxStatus stat;
@@ -3267,7 +3249,24 @@ OfxEffectInstance::isViewInvariant() const
 SequentialPreferenceEnum
 OfxEffectInstance::getSequentialPreference() const
 {
-    return _imp->sequentialPref;
+    if (!_imp->effect) {
+        return eSequentialPreferenceNotSequential;
+    }
+    // kOfxImageEffectInstancePropSequentialRender is read/write on the instance: it starts from the descriptor's
+    // value, and the plug-in may change it (e.g. in kOfxActionInstanceChanged), so read it every time. The read isn't
+    // locked, as for the other properties that the host reads while the plug-in may set them: an int is read.
+    switch ( _imp->effect->getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender) ) {
+    case 1:
+
+        return eSequentialPreferenceOnlySequential;
+    case 2:
+
+        return eSequentialPreferencePreferSequential;
+    case 0:
+    default:
+
+        return eSequentialPreferenceNotSequential;
+    }
 }
 
 const std::string &

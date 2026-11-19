@@ -39,6 +39,7 @@
 #include <QWaitCondition>
 #include <QCoreApplication>
 #include <QString>
+#include <QStringList>
 #include <QThreadPool>
 #include <QDebug>
 #include <QTextStream>
@@ -67,6 +68,7 @@
 #include "Engine/UpdateViewerParams.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ParallelRenderArgs.h"
 #include "Engine/WriteNode.h"
 
 #ifdef DEBUG
@@ -242,6 +244,10 @@ struct OutputSchedulerThreadPrivate
     QMutex bufferedOutputMutex;
     int lastBufferedOutputSize;
 
+    // Set by startRender() before the render threads start (see OutputSchedulerThread::getFrameOrderRender())
+    mutable QMutex frameOrderRenderMutex;
+    FrameOrderRenderPtr frameOrderRender;
+
 
     OutputSchedulerThreadPrivate(RenderEngine* engine,
                                  const OutputEffectInstancePtr& effect,
@@ -281,6 +287,8 @@ struct OutputSchedulerThreadPrivate
 #endif
         , bufferedOutputMutex()
         , lastBufferedOutputSize(0)
+        , frameOrderRenderMutex()
+        , frameOrderRender()
     {
     }
 
@@ -1053,6 +1061,13 @@ OutputSchedulerThread::startRender()
 
     aboutToStartRender();
 
+    // Before the first render thread starts (in adjustNumberOfThreads() below)
+    {
+        FrameOrderRenderPtr frameOrderRender = createFrameOrderRender();
+        QMutexLocker k(&_imp->frameOrderRenderMutex);
+        _imp->frameOrderRender = frameOrderRender;
+    }
+
     ///Notify everyone that the render is started
     _imp->engine->s_renderStarted(forward);
 
@@ -1525,6 +1540,10 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads,
         optimalNThreads = userSettingParallelThreads;
     }
     optimalNThreads = std::max(1, optimalNThreads);
+    if ( getFrameOrderRender() ) {
+        // One render thread: it takes the frames in order from framesToRender (see pushAllFrameRange())
+        optimalNThreads = 1;
+    }
 
 
     if ( ( (runningThreads < optimalNThreads) && (currentParallelRenders < optimalNThreads) ) || (currentParallelRenders == 0) ) {
@@ -1886,6 +1905,14 @@ OutputSchedulerThreadStartArgsPtr
 OutputSchedulerThread::getCurrentRunArgs() const
 {
     return _imp->runArgs.lock();
+}
+
+FrameOrderRenderPtr
+OutputSchedulerThread::getFrameOrderRender() const
+{
+    QMutexLocker k(&_imp->frameOrderRenderMutex);
+
+    return _imp->frameOrderRender;
 }
 
 int
@@ -2317,7 +2344,8 @@ private:
                                                          NodePtr(),
                                                          false,
                                                          false,
-                                                         stats);
+                                                         stats,
+                                                         _imp->scheduler->getFrameOrderRender() );
 
                 {
                     FrameRequestMap request;
@@ -2522,6 +2550,94 @@ DefaultScheduler::handleRenderFailure(const std::string& errorMessage)
     if ( appPTR->isBackground() ) {
         std::cerr << errorMessage << std::endl;
     }
+}
+
+// true if node can only be rendered sequentially or is downstream of such a node; such nodes are added to affected.
+// visited memoizes the result for each node (the graph may have diamonds).
+static bool
+findSequentialOnlyNodesUpstream(const NodePtr& node,
+                                std::map<const Node*, bool>& visited,
+                                std::set<const Node*>& affected,
+                                std::list<std::string>& sequentialNodeNames)
+{
+    std::map<const Node*, bool>::const_iterator found = visited.find( node.get() );
+    if ( found != visited.end() ) {
+        return found->second;
+    }
+    visited[node.get()] = false; // (cycles are not allowed, but don't loop if there is one)
+    // A disabled node is not rendered: it is the identity of an input
+    bool isAffected = false;
+    EffectInstancePtr effect = node->getEffectInstance();
+    if ( effect && !node->isNodeDisabled() && (effect->getSequentialPreference() == eSequentialPreferenceOnlySequential) ) {
+        isAffected = true;
+        sequentialNodeNames.push_back( node->getScriptName_mt_safe() );
+    }
+    // The inputs that are not rendered (e.g. the inputs of a Switch that are not selected) are not excluded: that
+    // would need the RoI and identity actions at each frame of the render.
+    int nInputs = node->getNInputs();
+    for (int i = 0; i < nInputs; ++i) {
+        NodePtr input = node->getInput(i);
+        if ( input && input->isActivated() && findSequentialOnlyNodesUpstream(input, visited, affected, sequentialNodeNames) ) {
+            isAffected = true;
+        }
+    }
+    visited[node.get()] = isAffected;
+    if (isAffected) {
+        affected.insert( node.get() );
+    }
+
+    return isAffected;
+}
+
+FrameOrderRenderPtr
+DefaultScheduler::createFrameOrderRender() const
+{
+    // A node that "needs to be sequentially rendered to be correct" (kOfxImageEffectInstancePropSequentialRender=1,
+    // e.g. a particle system or a temporal denoiser) must be rendered "on a single computer over it's entire frame
+    // range, from first to last", so the render on disk renders one frame at a time, in frame order. The Writer
+    // itself is not concerned: a sequential Writer such as WriteFFmpeg puts the frames in order itself, while the
+    // nodes upstream render frames in parallel.
+    OutputEffectInstancePtr effect = _effect.lock();
+    if (!effect) {
+        return FrameOrderRenderPtr();
+    }
+    NodePtr outputNode = effect->getNode();
+    WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effect.get() );
+    if (isWriteNode) {
+        NodePtr embeddedWriter = isWriteNode->getEmbeddedWriter();
+        if (embeddedWriter) {
+            outputNode = embeddedWriter;
+        }
+    }
+    if (!outputNode) {
+        return FrameOrderRenderPtr();
+    }
+    std::map<const Node*, bool> visited;
+    std::set<const Node*> affected;
+    std::list<std::string> sequentialNodeNames;
+    int nInputs = outputNode->getNInputs();
+    for (int i = 0; i < nInputs; ++i) {
+        NodePtr input = outputNode->getInput(i);
+        if (input && input->isActivated()) {
+            findSequentialOnlyNodesUpstream(input, visited, affected, sequentialNodeNames);
+        }
+    }
+    if ( affected.empty() ) {
+        return FrameOrderRenderPtr();
+    }
+    // the output node is downstream too (its cache lookup is skipped anyway if it is a Writer)
+    affected.insert( outputNode.get() );
+    if ( effect->getNode() != outputNode ) {
+        affected.insert( effect->getNode().get() );
+    }
+    QStringList names;
+    for (std::list<std::string>::const_iterator it = sequentialNodeNames.begin(); it != sequentialNodeNames.end(); ++it) {
+        names.push_back( QString::fromUtf8( it->c_str() ) );
+    }
+    qDebug() << effect->getScriptName_mt_safe().c_str() << ": rendering one frame at a time, in frame order, because"
+             << names.join( QString::fromUtf8(", ") ) << "must be rendered sequentially";
+
+    return std::make_shared<FrameOrderRender>(affected);
 }
 
 SchedulingPolicyEnum

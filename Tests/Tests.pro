@@ -90,6 +90,7 @@ SOURCES += \
     ReadNodeOverlay_Test.cpp \
     RenderThreadSafety_Test.cpp \
     RotoPaint_Test.cpp \
+    SequentialRender_Test.cpp \
     Tracker_Test.cpp \
     ViewerCache_Test.cpp \
     WriteNodeViews_Test.cpp \

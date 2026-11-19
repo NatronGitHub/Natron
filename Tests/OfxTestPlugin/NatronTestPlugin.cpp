@@ -54,6 +54,8 @@
 //   or 0, the renders with status 1 that are not in frame order (neither the frame of the previous render
 //   with status 1 of the instance nor the next one), and the renders running at the same time. Writing the
 //   "instanceSequential" parameter sets kOfxImageEffectInstancePropSequentialRender on the instance.
+// - net.natron.test.TimeBlur: a temporal filter that fetches the frames t-1, t and t+1 of Source in render (and
+//   asks for them in getFramesNeeded), and counts its renders.
 // - net.natron.test.GPURenderFailed: supports OpenGL render, returns kOfxStatGPURenderFailed from the
 //   OpenGL render, and renders on the CPU otherwise. net.natron.test.GPUOnlyRenderFailed does the same,
 //   but sets kOfxImageEffectPropCPURenderSupported to "false".
@@ -98,6 +100,7 @@
 #define kClipGetImagePluginIdentifier "net.natron.test.ClipGetImage"
 #define kSequentialPluginIdentifier "net.natron.test.Sequential"
 #define kSequentialStatusPluginIdentifier "net.natron.test.SequentialStatus"
+#define kTimeBlurPluginIdentifier "net.natron.test.TimeBlur"
 #define kGPURenderFailedPluginIdentifier "net.natron.test.GPURenderFailed"
 #define kGPUOnlyRenderFailedPluginIdentifier "net.natron.test.GPUOnlyRenderFailed"
 #define kQuestionPluginIdentifier "net.natron.test.Question"
@@ -1246,6 +1249,62 @@ sequentialStatusPluginMain(const char* action,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// net.natron.test.TimeBlur
+
+OfxStatus
+timeBlurPluginMain(const char* action,
+                   const void* handle,
+                   OfxPropertySetHandle inArgs,
+                   OfxPropertySetHandle outArgs)
+{
+    OfxImageEffectHandle effect = (OfxImageEffectHandle)handle;
+
+    if (std::strcmp(action, kOfxActionDescribe) == 0) {
+        OfxStatus stat = describe(effect, "TimeBlurTest", kOfxImageEffectRenderFullySafe, false);
+        if (stat != kOfxStatOK) {
+            return stat;
+        }
+        OfxPropertySetHandle props;
+        gEffectSuite->getPropertySet(effect, &props);
+        gPropSuite->propSetInt(props, kOfxImageEffectPropTemporalClipAccess, 0, 1);
+
+        return kOfxStatOK;
+    }
+    if (std::strcmp(action, kOfxImageEffectActionDescribeInContext) == 0) {
+        return defineClips(effect);
+    }
+    if (std::strcmp(action, kOfxImageEffectActionGetFramesNeeded) == 0) {
+        OfxTime time = 0.;
+        gPropSuite->propGetDouble(inArgs, kOfxPropTime, 0, &time);
+        double range[2] = { time - 1., time + 1. };
+        gPropSuite->propSetDoubleN(outArgs, "OfxImageClipPropFrameRange_" kOfxImageEffectSimpleSourceClipName, 2, range);
+
+        return kOfxStatOK;
+    }
+    if (std::strcmp(action, kOfxImageEffectActionRender) == 0) {
+        incrementCounter("TimeBlur.render");
+        OfxTime time = 0.;
+        gPropSuite->propGetDouble(inArgs, kOfxPropTime, 0, &time);
+        OfxImageClipHandle source = getClip(effect, kOfxImageEffectSimpleSourceClipName);
+        if (!source) {
+            return kOfxStatFailed;
+        }
+        for (int dt = -1; dt <= 1; ++dt) {
+            OfxPropertySetHandle image = 0;
+            if (gEffectSuite->clipGetImage(source, time + dt, 0, &image) == kOfxStatOK) {
+                gEffectSuite->clipReleaseImage(image);
+            } else {
+                incrementCounter("TimeBlur.fetchFailed");
+            }
+        }
+
+        return fillOutput(effect, inArgs, 0.f);
+    }
+
+    return commonAction(action, effect, "TimeBlur");
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // net.natron.test.GPURenderFailed
 
 OfxStatus
@@ -1376,6 +1435,7 @@ OfxPlugin gPlugins[] = {
     { kOfxImageEffectPluginApi, 1, kClipGetImagePluginIdentifier, 1, 0, setHost, clipGetImagePluginMain },
     { kOfxImageEffectPluginApi, 1, kSequentialPluginIdentifier, 1, 0, setHost, sequentialPluginMain },
     { kOfxImageEffectPluginApi, 1, kSequentialStatusPluginIdentifier, 1, 0, setHost, sequentialStatusPluginMain },
+    { kOfxImageEffectPluginApi, 1, kTimeBlurPluginIdentifier, 1, 0, setHost, timeBlurPluginMain },
     { kOfxImageEffectPluginApi, 1, kGPURenderFailedPluginIdentifier, 1, 0, setHost, gpuRenderFailedPluginMain },
     { kOfxImageEffectPluginApi, 1, kGPUOnlyRenderFailedPluginIdentifier, 1, 0, setHost, gpuOnlyRenderFailedPluginMain },
     { kOfxImageEffectPluginApi, 1, kQuestionPluginIdentifier, 1, 0, setHost, questionPluginMain },
