@@ -105,7 +105,8 @@ a class to the class it inherits from. Plain arrows show which object gives acce
 
 .. mermaid::
    :alt: Param is the base class of all parameters. AnimatedParam, ButtonParam,
-         SeparatorParam, GroupParam, PageParam and ParametricParam inherit Param. IntParam,
+         SeparatorParam, GroupParam, PageParam, ParametricParam and BytesParam
+         inherit Param. IntParam,
          DoubleParam, ColorParam, ChoiceParam, BooleanParam and StringParamBase inherit
          AnimatedParam. Int2DParam inherits IntParam and Int3DParam inherits Int2DParam;
          Double2DParam inherits DoubleParam and Double3DParam inherits Double2DParam.
@@ -120,6 +121,7 @@ a class to the class it inherits from. Plain arrows show which object gives acce
        Param <|-- GroupParam
        Param <|-- PageParam
        Param <|-- ParametricParam
+       Param <|-- BytesParam
        AnimatedParam <|-- IntParam
        AnimatedParam <|-- DoubleParam
        AnimatedParam <|-- ColorParam
