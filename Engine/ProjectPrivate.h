@@ -39,6 +39,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QFuture>
 #include <QFutureWatcher>
 #include <QMutex>
+#include <QWaitCondition>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -105,6 +106,8 @@ public:
     bool isLoadingProjectInternal; //< true when loading the internal project (not gui)
     mutable QMutex isSavingProjectMutex;
     bool isSavingProject; //< true when the project is saving
+    QWaitCondition isSavingProjectCond; //< signaled when isSavingProject becomes false
+    QThread* savingProjectThread; //< the thread running the save while isSavingProject is true
     std::shared_ptr<QTimer> autoSaveTimer;
     std::list<std::shared_ptr<QFutureWatcher<void> > > autoSaveFutures;
     mutable QMutex projectClosingMutex;

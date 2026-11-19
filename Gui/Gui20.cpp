@@ -1254,10 +1254,10 @@ Gui::saveAndIncrVersion()
         name.insert(positionToInsertVersion, toInsert);
     }
 
-    project->saveProject(path, name, 0);
-
-    QString filename = path + QLatin1Char('/') + name;
-    updateRecentFiles(filename);
+    if ( project->saveProject(path, name, 0) ) {
+        QString filename = path + QLatin1Char('/') + name;
+        updateRecentFiles(filename);
+    }
 } // Gui::saveAndIncrVersion
 
 void

@@ -1822,7 +1822,11 @@ AppInstance::startWritersRendering(bool doBlockingRender,
     bool renderInSeparateProcess = appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled();
     QString savePath;
     if (renderInSeparateProcess) {
-        getProject()->saveProject_imp(QString(), QString::fromUtf8("RENDER_SAVE.ntp"), true, false, &savePath);
+        if ( !getProject()->saveProject_imp(QString(), QString::fromUtf8("RENDER_SAVE.ntp"), true, false, &savePath) || savePath.isEmpty() ) {
+            Dialogs::errorDialog( tr("Render").toStdString(), tr("Could not save the project for the render in a separate process.").toStdString() );
+
+            return;
+        }
     }
 
     std::list<RenderQueueItem> itemsToQueue;

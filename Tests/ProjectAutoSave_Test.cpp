@@ -19,6 +19,7 @@
 
 // Regression test for #1258: clearing the caches must not delete the auto-saves (the crash-recovery
 // files of the unsaved projects).
+// Regression test for #825: a user save during a background auto-save must not be dropped.
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -30,11 +31,18 @@
 
 #include <gtest/gtest.h>
 
+#include <thread>
+
 #include <QCoreApplication>
 #include <QDir>
+#include <QElapsedTimer>
 #include <QFile>
+#include <QTemporaryDir>
+#include <QThread>
 
+#include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Project.h"
 
 NATRON_NAMESPACE_USING
@@ -90,4 +98,112 @@ TEST(ProjectAutoSave, WipeDiskCacheKeepsAutoSaves)
     appPTR->wipeAndCreateDiskCacheStructure();
 
     EXPECT_TRUE( QFile::exists( autoSave.path() ) );
+}
+
+namespace {
+// Runs a background auto-save of the top-level project in another thread, as
+// Project::onAutoSaveTimerTriggered() does, and makes it last ~1.5 s with a
+// beforeProjectSave Python callback that sleeps when called for an auto-save.
+class SlowAutoSave
+{
+    ProjectPtr _project;
+    KnobStringPtr _callbackKnob;
+    std::string _oldCallback;
+    QString _marker;
+    bool _ok;
+    std::thread _thread;
+
+public:
+    SlowAutoSave(const QString& dir, const QString& name)
+        : _project( appPTR->getTopLevelInstance()->getProject() )
+        , _marker( dir + QString::fromUtf8("autosave-started") )
+        , _ok(false)
+    {
+        std::string script =
+            "import time\n"
+            "def natronTest825BeforeSave(filename, app, autoSave):\n"
+            "    if autoSave:\n"
+            "        open(\"" + _marker.toStdString() + "\", \"w\").close()\n"
+            "        time.sleep(1.5)\n"
+            "    return filename\n";
+        std::string error, output;
+        EXPECT_TRUE( ::Natron::Python::interpretPythonScript(script, &error, &output) ) << error << output;
+        _callbackKnob = std::dynamic_pointer_cast<KnobString>( _project->getKnobByName("beforeProjectSave") );
+        EXPECT_TRUE( bool(_callbackKnob) );
+        if (_callbackKnob) {
+            _oldCallback = _callbackKnob->getValue();
+            _callbackKnob->setValue("natronTest825BeforeSave");
+        }
+        _thread = std::thread([this, dir, name]() {
+            _ok = _project->saveProject_imp(dir, name, true /*autoSave*/, true /*updateProjectProperties*/);
+        });
+        // wait until the auto-save is running
+        QElapsedTimer timer;
+        timer.start();
+        while ( !QFile::exists(_marker) && timer.elapsed() < 10000 ) {
+            QThread::msleep(10);
+        }
+        EXPECT_TRUE( QFile::exists(_marker) ) << "the auto-save did not start";
+    }
+
+    ~SlowAutoSave()
+    {
+        join();
+        if (_callbackKnob) {
+            _callbackKnob->setValue(_oldCallback);
+        }
+        _project->removeLastAutosave();
+    }
+
+    bool join()
+    {
+        if ( _thread.joinable() ) {
+            _thread.join();
+        }
+
+        return _ok;
+    }
+};
+} // anonymous namespace
+
+// Ctrl+S (Gui::saveProject() -> Project::saveProject()) while the auto-save is running
+// returned at once without saving and without any error (#825). It must wait for the auto-save and save.
+TEST(ProjectAutoSave, SaveDuringAutoSave)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("SaveDuringAutoSave.ntp");
+    ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
+    {
+        SlowAutoSave autoSave(dir, name);
+        QString savedPath;
+        EXPECT_TRUE( project->saveProject(dir, name, &savedPath) );
+        EXPECT_EQ(dir + name, savedPath);
+        EXPECT_TRUE( QFile::exists(dir + name) ) << "the save was dropped";
+        EXPECT_TRUE( autoSave.join() );
+    }
+    // the save after the auto-save made it obsolete: it was removed
+    EXPECT_FALSE( QFile::exists(dir + name + QString::fromUtf8(".autosave")) );
+    project->resetProject();
+}
+
+// Same from Python (app.saveProjectAs()), where the thread that waits holds the Python GIL, which
+// the auto-save needs to run the beforeProjectSave callback: the wait must not deadlock.
+TEST(ProjectAutoSave, PythonSaveDuringAutoSave)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("PythonSaveDuringAutoSave.ntp");
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    {
+        SlowAutoSave autoSave(dir, name);
+        std::string script = "assert " + app->getAppIDString() + ".saveProjectAs(\"" + (dir + name).toStdString() + "\")\n";
+        std::string error, output;
+        EXPECT_TRUE( ::Natron::Python::interpretPythonScript(script, &error, &output) ) << error << output;
+        EXPECT_TRUE( QFile::exists(dir + name) ) << "the save was dropped";
+        EXPECT_TRUE( autoSave.join() );
+    }
+    app->getProject()->resetProject();
 }
