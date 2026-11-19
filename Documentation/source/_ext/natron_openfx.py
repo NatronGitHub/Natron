@@ -83,7 +83,7 @@ def _git_commit(path):
 
 
 def _write_placeholders(stage, reason):
-    _log("OpenFX documentation not included: " + reason)
+    _log("OpenFX documentation not included: " + reason.replace("``", ""))
     for rel, title in PLACEHOLDERS.items():
         path = os.path.join(stage, rel)
         os.makedirs(os.path.dirname(path), exist_ok=True)
