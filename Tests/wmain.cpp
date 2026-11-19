@@ -2,6 +2,9 @@
 
 #include "gtest/gtest.h"
 
+#include <QtCore/QByteArray>
+#include <QtCore/QtGlobal>
+
 #include "Engine/AppManager.h"
 #include "Engine/CLArgs.h"
 
@@ -16,6 +19,24 @@ GTEST_API_ int main(int argc, char **argv)
 {
     printf("Running main() from wmain.cpp\n");
     ::testing::InitGoogleTest(&argc, argv);
+#ifdef NATRON_TESTS_OFX_PLUGIN_DIR
+    // The OFX plug-in built for the tests (Tests/OfxTestPlugin.h), before the plug-in cache reads
+    // OFX_PLUGIN_PATH.
+    {
+#ifdef _WIN32
+        const char sep = ';';
+#else
+        const char sep = ':';
+#endif
+        QByteArray path(NATRON_TESTS_OFX_PLUGIN_DIR);
+        const QByteArray userPath = qgetenv("OFX_PLUGIN_PATH");
+        if ( !userPath.isEmpty() ) {
+            path += sep;
+            path += userPath;
+        }
+        qputenv("OFX_PLUGIN_PATH", path);
+    }
+#endif
     AppManager manager;
 
     {

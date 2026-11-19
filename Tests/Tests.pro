@@ -63,6 +63,7 @@ SOURCES += \
     NodePreview_Test.cpp \
     OfxCPURenderSupport_Test.cpp \
     OfxPluginDeprecated_Test.cpp \
+    OfxTestPlugin_Test.cpp \
     OSGLContext_Test.cpp \
     PluginGrouping_Test.cpp \
     ReadNodeOverlay_Test.cpp \
@@ -73,6 +74,12 @@ SOURCES += \
 
 HEADERS += \
     BaseTest.h \
-    NaNGuards_FastMath.h
+    NaNGuards_FastMath.h \
+    OfxTestPlugin.h
+
+# the OFX test plug-in (OfxTestPlugin/OfxTestPlugin.pro), loaded through OFX_PLUGIN_PATH by wmain.cpp
+include(OfxTestPlugin/OfxTestPlugin.pri)
+DEFINES += NATRON_TESTS_OFX_PLUGIN_DIR=\\\"$${NATRON_TEST_OFX_PLUGIN_DIR}\\\"
+DEFINES += NATRON_TESTS_OFX_PLUGIN_BINARY=\\\"$${NATRON_TEST_OFX_BINARY_DIR}/NatronTestPlugin.ofx\\\"
 
 include(../warnings.pri)
