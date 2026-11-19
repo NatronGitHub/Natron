@@ -28,11 +28,13 @@
 #include <locale>
 #include <limits>
 #include <cassert>
+#include <map>
 #include <set>
 #include <stdexcept>
 
 #include <QDebug>
 #include <QByteArray>
+#include <QDateTime>
 #include <QMutex>
 #include <QReadWriteLock>
 #include <QPointF>
@@ -90,9 +92,11 @@ using std::cout; using std::endl; using std::string;
 
 namespace  {
 // kOfxImageEffectPluginPropSingleInstance: "only one instance can exist at any one time". The
-// single-instance plug-ins of which an instance exists (Natron makes no render clones of them).
-QMutex gSingleInstancePluginsMutex;
-std::set<const OFX::Host::ImageEffect::ImageEffectPlugin*> gSingleInstancePlugins;
+// instances of the single-instance plug-ins (Natron makes no render clones of them), see
+// OfxEffectInstance::createOfxImageEffectInstance().
+QMutex gSingleInstancesMutex;
+std::map<const OFX::Host::ImageEffect::ImageEffectPlugin*, std::set<OfxEffectInstance*> > gSingleInstances;
+int gAllowExtraSingleInstances = 0; // see OfxEffectInstance::AllowExtraSingleInstances (main thread)
 
 /**
  * @class This class is helpful to set thread-storage data on the clips of an effect
@@ -251,8 +255,9 @@ struct OfxEffectInstancePrivate
     bool doesTemporalAccess;
     bool multiplanar;
     bool outputFormatFromPlugin; // true if the last getClipPreferences action set the output format (main thread only)
-    // the single-instance plug-in of which this is the instance, or NULL (see gSingleInstancePlugins)
+    // the single-instance plug-in of which this is an instance, or NULL (see gSingleInstances)
     const OFX::Host::ImageEffect::ImageEffectPlugin* singleInstancePlugin;
+    OfxEffectInstance* publicInterface; // for gSingleInstances
 
     OfxEffectInstancePrivate()
         : effect()
@@ -283,14 +288,21 @@ struct OfxEffectInstancePrivate
         , multiplanar(false)
         , outputFormatFromPlugin(false)
         , singleInstancePlugin(NULL)
+        , publicInterface(NULL)
     {
     }
 
     void releaseSingleInstance()
     {
         if (singleInstancePlugin) {
-            QMutexLocker l(&gSingleInstancePluginsMutex);
-            gSingleInstancePlugins.erase(singleInstancePlugin);
+            QMutexLocker l(&gSingleInstancesMutex);
+            std::map<const OFX::Host::ImageEffect::ImageEffectPlugin*, std::set<OfxEffectInstance*> >::iterator found = gSingleInstances.find(singleInstancePlugin);
+            if ( found != gSingleInstances.end() ) {
+                found->second.erase(publicInterface);
+                if ( found->second.empty() ) {
+                    gSingleInstances.erase(found);
+                }
+            }
             singleInstancePlugin = NULL;
         }
     }
@@ -321,6 +333,7 @@ struct OfxEffectInstancePrivate
         , multiplanar(other.multiplanar)
         , outputFormatFromPlugin(other.outputFormatFromPlugin)
         , singleInstancePlugin(NULL) // render clones are not made for single-instance plug-ins
+        , publicInterface(NULL)
     {
     }
 };
@@ -401,14 +414,38 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
     std::string images;
 
-    if ( plugin->getDescriptor().isSingleInstance() ) {
-        // Refuse a second instance: the node is not created, and the error is reported.
-        QMutexLocker l(&gSingleInstancePluginsMutex);
-        if ( !gSingleInstancePlugins.insert(plugin).second ) {
-            throw std::runtime_error( tr("%1 allows only one instance at a time, and there is already one.")
-                                      .arg( QString::fromUtf8( plugin->getDescriptor().getLabel().c_str() ) ).toStdString() );
+    // A temporary node out of the project (e.g. to show the plug-in's documentation) is neither checked nor counted.
+    if ( plugin->getDescriptor().isSingleInstance() && !args.getProperty<bool>(kCreateNodeArgsPropOutOfProject) ) {
+        QMutexLocker l(&gSingleInstancesMutex);
+        std::set<OfxEffectInstance*>& instances = gSingleInstances[plugin];
+        // Only the active nodes count: a deleted node stays alive, deactivated, in the undo history.
+        NodePtr activeNode;
+        for (std::set<OfxEffectInstance*>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+            NodePtr n = (*it)->getNode();
+            if ( n && n->isActivated() ) {
+                activeNode = n;
+                break;
+            }
         }
+        if (activeNode) {
+            const QString label = QString::fromUtf8( plugin->getDescriptor().getLabel().c_str() );
+            const QString other = QString::fromUtf8( activeNode->getFullyQualifiedName().c_str() );
+            if ( (gAllowExtraSingleInstances > 0) || getApp()->getProject()->isLoadingProject() ) {
+                // Moving nodes into a group creates them before it deletes the originals, and an
+                // old project may already have several: keep them, and say so.
+                appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( getNode()->getScriptName_mt_safe().c_str() ), QDateTime::currentDateTime(),
+                                                 tr("Warning: %1 allows only one instance at a time, but %2 is already one. "
+                                                    "The plug-in may not work with several instances: keep only one.")
+                                                 .arg(label).arg(other) );
+            } else {
+                // Refuse it: the node is not created, and the error is reported.
+                throw std::runtime_error( tr("%1 allows only one instance at a time, and %2 is already one.")
+                                          .arg(label).arg(other).toStdString() );
+            }
+        }
+        instances.insert(this);
         _imp->singleInstancePlugin = plugin;
+        _imp->publicInterface = this;
     }
 
     try {
@@ -681,6 +718,17 @@ OfxEffectInstance::~OfxEffectInstance()
         _imp->effect->destroyInstanceAction();
     }
     _imp->releaseSingleInstance();
+}
+
+OfxEffectInstance::AllowExtraSingleInstances::AllowExtraSingleInstances()
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    ++gAllowExtraSingleInstances;
+}
+
+OfxEffectInstance::AllowExtraSingleInstances::~AllowExtraSingleInstances()
+{
+    --gAllowExtraSingleInstances;
 }
 
 EffectInstancePtr
