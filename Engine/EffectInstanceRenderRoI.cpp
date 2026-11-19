@@ -883,6 +883,17 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
 
 
+    // When rendering in frame order because of a plug-in that must be rendered sequentially, its frames, and the
+    // frames of the nodes downstream, may have been rendered and cached out of order: "If eventually rendering the
+    // sequence, the host *must* ignore all frames rendered out of order and not cache them for use in the final
+    // result" (kOfxImageEffectInstancePropSequentialRender). Only use the images rendered by this render: the input
+    // images of the caller (args.inputImagesList, rendered for this frame), and the cached images that this render
+    // rendered (e.g. the frames t-1..t+1 fetched by a temporal node downstream).
+    const FrameOrderRenderPtr& frameOrderRender = frameArgs->frameOrderRender;
+    const bool isFrameOrderAffected = frameOrderRender && frameOrderRender->isAffected( getNode().get() );
+    auto mayUseCachedImage = [&](const ImageKey& lookupKey) {
+        return !isFrameOrderAffected || frameOrderRender->wasRendered( lookupKey.getHash() );
+    };
     const bool draftModeSupported = getNode()->isDraftModeUsed();
     const bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
     bool createInCache;
@@ -892,6 +903,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     } else {
         // in Analysis, the node upstream of the analysis node should always cache
         createInCache = (frameArgs->isAnalysis && frameArgs->treeRoot->getEffectInstance().get() == args.caller) ? true : shouldCacheOutput(isFrameVaryingOrAnimated, args.time, args.view, frameArgs->visitsCount);
+    }
+    if ( !createInCache && (storage != eStorageModeGLTex) && isFrameOrderAffected &&
+         (getSequentialPreference() == eSequentialPreferenceOnlySequential) ) {
+        // A node downstream may fetch this frame again in a later frame of the render (e.g. a temporal node fetching
+        // t-1..t+1): it must come from the cache, since rendering it again would be out of frame order.
+        createInCache = true;
     }
     ///Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
     bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = getNode()->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
@@ -967,14 +984,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             }
             //For writers, we always want to call the render action when doing a sequential render, but we still want to use the cache for nodes upstream
             bool doCacheLookup = !isWriter() || !frameArgs->isSequentialRender;
-            // When rendering in frame order because of a plug-in that must be rendered sequentially, its frames, and
-            // the frames of the nodes downstream, may have been rendered and cached out of order: "If eventually
-            // rendering the sequence, the host *must* ignore all frames rendered out of order and not cache them for
-            // use in the final result" (kOfxImageEffectInstancePropSequentialRender). Render them again.
-            if ( doCacheLookup && frameArgs->isRenderedInFrameOrder ) {
-                std::string sequentialNodeName;
-                doCacheLookup = !getNode()->hasSequentialOnlyNodeUpstream(sequentialNodeName);
-            }
             if (doCacheLookup) {
                 int nLookups = draftModeSupported && frameArgs->draftMode ? 2 : 1;
 
@@ -989,7 +998,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                         args.inputImagesList,
                                                         frameArgs->stats,
                                                         glContextLocker,
-                                                        &plane.fullscaleImage);
+                                                        &plane.fullscaleImage,
+                                                        mayUseCachedImage(n == 0 ? *nonDraftKey : *key));
                     if (plane.fullscaleImage) {
                         if (byPassCache) {
                             if (plane.fullscaleImage) {
@@ -1021,7 +1031,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                             args.inputImagesList,
                                                             frameArgs->stats,
                                                             glContextLocker,
-                                                            &plane.fullscaleImage);
+                                                            &plane.fullscaleImage,
+                                                            mayUseCachedImage(n == 0 ? *nonDraftKey : *key));
                         if (plane.fullscaleImage) {
                             if (byPassCache) {
                                 if (plane.fullscaleImage) {
@@ -1359,6 +1370,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
 
     bool hasSomethingToRender = !planesToRender->rectsToRender.empty();
+    if (hasSomethingToRender && isFrameOrderAffected && createInCache) {
+        // rendered in frame order by this render into the cache entry of this key: it may be used from the cache in
+        // the next frames of the render
+        frameOrderRender->setRendered( key->getHash() );
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// End Determine rectangles left to render /////////////////////////////////////////////////
@@ -1664,8 +1680,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                               // kOfxImageEffectPropSequentialRenderStatus: "the host is currently rendering in a way so that it
                                               // guarantees sequential rendering", i.e. "in frame order on a single effect instance". The Writer
                                               // of a sequential render (e.g. WriteFFmpeg) always gets it: it may only write a movie then.
-                                              frameArgs->isSequentialRender && ( frameArgs->isRenderedInFrameOrder ||
-                                                                                 ( isWriter() && (frameArgs->treeRoot == getNode()) ) ),
+                                              frameArgs->isSequentialRender && ( frameArgs->frameOrderRender ||
+                                                                                 ( isWriter() && (frameArgs->treeRoot == getNode()) ) ||
+                                                                                 // Compatibility: ReadOIIO (openfx-io) uses the status as "is
+                                                                                 // playback or render on disk", to skip the OIIO cache, which uses
+                                                                                 // too much RAM then. Readers keep getting it until it uses
+                                                                                 // kOfxImageEffectPropInteractiveRenderStatus instead.
+                                                                                 isReader() ),
                                               frameArgs->isRenderResponseToUserInteraction,
                                               nodeHash,
                                               renderFullScaleThenDownscale,

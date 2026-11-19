@@ -469,7 +469,6 @@ public:
     void setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support);
     PluginOpenGLRenderSupport getCurrentOpenGLRenderSupport() const;
 
-    void setCurrentSequentialRenderSupport(SequentialPreferenceEnum support);
     SequentialPreferenceEnum getCurrentSequentialRenderSupport() const;
 
     void setCurrentCanTransform(bool support);
@@ -977,11 +976,6 @@ public:
      * @param nodeName If the return value is true, this will be set to the name of the node
      * which is sequential.
      *
-     **/
-    /**
-     * @brief True if this node, or a node upstream, can only be rendered sequentially
-     * (eSequentialPreferenceOnlySequential, e.g. kOfxImageEffectInstancePropSequentialRender=1); nodeName is then
-     * the name of that node.
      **/
     bool hasSequentialOnlyNodeUpstream(std::string & nodeName) const;
 

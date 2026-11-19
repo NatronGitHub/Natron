@@ -63,39 +63,46 @@ getCounters(const std::string& id)
     return c;
 }
 
-// generator -> node (a test plug-in with the given ID) -> DiskCache
+// generator -> node (a test plug-in with the given ID) [-> downstream (another test plug-in)] -> DiskCache
 struct Graph
 {
-    NodePtr generator, node, output;
+    NodePtr generator, node, downstream, output;
 
-    explicit Graph(const char* pluginID)
+    explicit Graph(const char* pluginID,
+                   const char* downstreamPluginID = 0)
     {
         generator = NatronTestPlugin::createNode(kNatronTestPluginGenerator);
         node = NatronTestPlugin::createNode(pluginID);
+        if (downstreamPluginID) {
+            downstream = NatronTestPlugin::createNode(downstreamPluginID);
+        }
         output = NatronTestPlugin::createNode(PLUGINID_NATRON_DISKCACHE);
-        if (generator && node && output) {
+        if ( generator && node && output && ( downstream || !downstreamPluginID ) ) {
             ProjectPtr project = node->getApp()->getProject();
             project->connectNodes(0, generator, node);
-            project->connectNodes(0, node, output);
+            if (downstream) {
+                project->connectNodes(0, node, downstream);
+                project->connectNodes(0, downstream, output);
+            } else {
+                project->connectNodes(0, node, output);
+            }
         }
     }
 
     ~Graph()
     {
-        if (output) {
-            output->destroyNode(true, false);
-        }
-        if (node) {
-            node->destroyNode(true, false);
-        }
-        if (generator) {
-            generator->destroyNode(true, false);
+        NodePtr nodes[4] = { output, downstream, node, generator };
+        for (int i = 0; i < 4; ++i) {
+            if (nodes[i]) {
+                nodes[i]->destroyNode(true, false);
+            }
         }
     }
 
     bool isValid() const
     {
-        return generator && node && output && node->getInput(0) == generator && output->getInput(0) == node;
+        return generator && node && output && node->getInput(0) == generator &&
+               output->getInput(0) == (downstream ? downstream : node) && ( !downstream || downstream->getInput(0) == node );
     }
 };
 
@@ -188,4 +195,50 @@ TEST(SequentialRender, StatusIsOneOnlyInFrameOrder)
     if (NatronTestPlugin::counter(id + ".maxActiveRenders") > 1) {
         EXPECT_EQ(before.sequentialRenders, after.sequentialRenders) << "frames rendered in parallel with kOfxImageEffectPropSequentialRenderStatus=1";
     }
+}
+
+// The nodes downstream of the sequential node use the image of the frame that was rendered for them, from the input
+// images of the render, without rendering the sequential node again for each clipGetImage.
+TEST(SequentialRender, DownstreamNodeRendersSequentialNodeOnce)
+{
+    if ( !canRunTest(kNatronTestPluginSequential) || !NatronTestPlugin::isAvailable(kNatronTestPluginMultiPAR) ) {
+        return;
+    }
+    const std::string id("Sequential");
+    Graph g(kNatronTestPluginSequential, kNatronTestPluginMultiPAR);
+    ASSERT_TRUE( g.isValid() );
+
+    const Counters before = getCounters(id);
+    const int downstreamRenders = NatronTestPlugin::counter("MultiPAR.render");
+    NatronTestPlugin::renderSequence(g.output, kFirstFrame, kLastFrame);
+    const Counters after = getCounters(id);
+    EXPECT_EQ( kLastFrame - kFirstFrame + 1, NatronTestPlugin::counter("MultiPAR.render") - downstreamRenders );
+    // once per frame
+    EXPECT_EQ(before.sequentialRenders + (kLastFrame - kFirstFrame + 1), after.sequentialRenders);
+    EXPECT_EQ(before.nonSequentialRenders, after.nonSequentialRenders);
+    EXPECT_EQ(before.outOfOrder, after.outOfOrder);
+}
+
+// A temporal node downstream (frames t-1, t and t+1) gets the frames that the sequential node rendered earlier in the
+// same render from the cache: the sequential node renders each frame once, in frame order.
+TEST(SequentialRender, TemporalNodeDownstream)
+{
+    if ( !canRunTest(kNatronTestPluginSequential) || !NatronTestPlugin::isAvailable(kNatronTestPluginTimeBlur) ) {
+        return;
+    }
+    const std::string id("Sequential");
+    Graph g(kNatronTestPluginSequential, kNatronTestPluginTimeBlur);
+    ASSERT_TRUE( g.isValid() );
+
+    const Counters before = getCounters(id);
+    const int downstreamRenders = NatronTestPlugin::counter("TimeBlur.render");
+    const int fetchFailed = NatronTestPlugin::counter("TimeBlur.fetchFailed");
+    NatronTestPlugin::renderSequence(g.output, kFirstFrame, kLastFrame);
+    const Counters after = getCounters(id);
+    EXPECT_EQ( kLastFrame - kFirstFrame + 1, NatronTestPlugin::counter("TimeBlur.render") - downstreamRenders );
+    EXPECT_EQ( fetchFailed, NatronTestPlugin::counter("TimeBlur.fetchFailed") );
+    // frames kFirstFrame-1 to kLastFrame+1, once each
+    EXPECT_EQ(before.sequentialRenders + (kLastFrame - kFirstFrame + 3), after.sequentialRenders);
+    EXPECT_EQ(before.nonSequentialRenders, after.nonSequentialRenders);
+    EXPECT_EQ(before.outOfOrder, after.outOfOrder);
 }

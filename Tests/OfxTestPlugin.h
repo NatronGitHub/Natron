@@ -64,6 +64,7 @@
 #define kNatronTestPluginClipGetImage "net.natron.test.ClipGetImage"
 #define kNatronTestPluginSequential "net.natron.test.Sequential"
 #define kNatronTestPluginSequentialStatus "net.natron.test.SequentialStatus"
+#define kNatronTestPluginTimeBlur "net.natron.test.TimeBlur"
 #define kNatronTestPluginGPURenderFailed "net.natron.test.GPURenderFailed"
 #define kNatronTestPluginGPUOnlyRenderFailed "net.natron.test.GPUOnlyRenderFailed"
 #define kNatronTestPluginQuestion "net.natron.test.Question"

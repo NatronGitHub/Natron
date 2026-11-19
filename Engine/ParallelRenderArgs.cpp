@@ -701,7 +701,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                                                    bool isAnalysis,
                                                    bool draftMode,
                                                    const RenderStatsPtr& stats,
-                                                   bool isRenderedInFrameOrder)
+                                                   const FrameOrderRenderPtr& frameOrderRender)
     :  argsMap()
 {
     assert(treeRoot);
@@ -743,8 +743,8 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
             U64 nodeHash = node->getHashValue();
             liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash,
                                                    abortInfo, treeRoot, it->second.visitCounter, NodeFrameRequestPtr(), glContext,  textureIndex, timeline, isAnalysis, duringPaintStrokeCreation, rotoPaintNodes, safety, glSupport, doNanHandling, draftMode, stats);
-            if (isRenderedInFrameOrder) {
-                liveInstance->getParallelRenderArgsTLS()->isRenderedInFrameOrder = true;
+            if (frameOrderRender) {
+                liveInstance->getParallelRenderArgsTLS()->frameOrderRender = frameOrderRender;
             }
         }
         for (NodesList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
@@ -756,8 +756,8 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
             int visitsCounter = (int)outputs.size();
 
             (*it2)->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, visitsCounter, NodeFrameRequestPtr(), glContext, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodesList(), (*it2)->getCurrentRenderThreadSafety(),  (*it2)->getCurrentOpenGLRenderSupport(),doNanHandling, draftMode, stats);
-            if (isRenderedInFrameOrder) {
-                (*it2)->getEffectInstance()->getParallelRenderArgsTLS()->isRenderedInFrameOrder = true;
+            if (frameOrderRender) {
+                (*it2)->getEffectInstance()->getParallelRenderArgsTLS()->frameOrderRender = frameOrderRender;
             }
         }
 
@@ -882,6 +882,35 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
     }
 }
 
+FrameOrderRender::FrameOrderRender(const std::set<const Node*>& affectedNodes)
+    : _affectedNodes(affectedNodes)
+    , _renderedMutex()
+    , _rendered()
+{
+}
+
+bool
+FrameOrderRender::isAffected(const Node* node) const
+{
+    return _affectedNodes.find(node) != _affectedNodes.end();
+}
+
+void
+FrameOrderRender::setRendered(U64 keyHash)
+{
+    QMutexLocker l(&_renderedMutex);
+
+    _rendered.insert(keyHash);
+}
+
+bool
+FrameOrderRender::wasRendered(U64 keyHash) const
+{
+    QMutexLocker l(&_renderedMutex);
+
+    return _rendered.find(keyHash) != _rendered.end();
+}
+
 ParallelRenderArgs::ParallelRenderArgs()
     : time(0)
     , timeline(0)
@@ -899,7 +928,6 @@ ParallelRenderArgs::ParallelRenderArgs()
     , currentOpenglSupport(ePluginOpenGLRenderSupportNone)
     , isRenderResponseToUserInteraction(false)
     , isSequentialRender(false)
-    , isRenderedInFrameOrder(false)
     , isAnalysis(false)
     , isDuringPaintStrokeCreation(false)
     , doNansHandling(true)

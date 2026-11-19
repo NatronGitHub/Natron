@@ -605,7 +605,8 @@ public:
                                              const EffectInstance::InputImagesMap & inputImages,
                                              const RenderStatsPtr & stats,
                                              const OSGLContextAttacherPtr& glContextAttacher,
-                                             ImagePtr* image);
+                                             ImagePtr* image,
+                                             bool lookupPersistentCache = true); //< if false, only look in inputImages
 
     /**
      * @brief Converts the given OpenGL texture to a RAM-stored image. The resulting image will be cached.

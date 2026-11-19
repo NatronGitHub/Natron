@@ -1752,37 +1752,28 @@ Node::duringInputChangedAction() const
 }
 
 
-static bool
-hasSequentialOnlyNodeUpstreamInternal(const Node* node,
-                                      std::set<const Node*>& visited,
-                                      std::string & nodeName)
-{
-    if ( !visited.insert(node).second ) {
-        return false;
-    }
-    EffectInstancePtr effect = node->getEffectInstance();
-    if ( effect && (effect->getSequentialPreference() == eSequentialPreferenceOnlySequential) ) {
-        nodeName = node->getScriptName_mt_safe();
-
-        return true;
-    }
-    int nInputs = node->getNInputs();
-    for (int i = 0; i < nInputs; ++i) {
-        NodePtr input = node->getInput(i);
-        if ( input && input->isActivated() && hasSequentialOnlyNodeUpstreamInternal(input.get(), visited, nodeName) ) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 bool
 Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
 {
-    std::set<const Node*> visited;
+    ///Just take into account sequentiallity for writers
+    if ( (_imp->effect->getSequentialPreference() == eSequentialPreferenceOnlySequential) && _imp->effect->isWriter() ) {
+        nodeName = getScriptName_mt_safe();
 
-    return hasSequentialOnlyNodeUpstreamInternal(this, visited, nodeName);
+        return true;
+    } else {
+        QMutexLocker l(&_imp->inputsMutex);
+
+        for (InputsV::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
+            NodePtr input = it->lock();
+            if ( input && input->isActivated() && input->hasSequentialOnlyNodeUpstream(nodeName) && input->getEffectInstance()->isWriter() ) {
+                nodeName = input->getScriptName_mt_safe();
+
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
 
 //////////////////////////////////

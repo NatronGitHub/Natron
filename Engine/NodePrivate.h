@@ -242,7 +242,6 @@ public:
         , currentThreadSafety(eRenderSafetyInstanceSafe)
         , currentSupportTiles(false)
         , currentSupportOpenGLRender(ePluginOpenGLRenderSupportNone)
-        , currentSupportSequentialRender(eSequentialPreferenceNotSequential)
         , currentCanTransform(false)
         , draftModeUsed(false)
         , mustComputeInputRelatedData(true)
@@ -461,7 +460,6 @@ public:
     RenderSafetyEnum pluginSafety, currentThreadSafety;
     bool currentSupportTiles;
     PluginOpenGLRenderSupport currentSupportOpenGLRender;
-    SequentialPreferenceEnum currentSupportSequentialRender;
     bool currentCanTransform;
     bool draftModeUsed, mustComputeInputRelatedData;
     bool duringPaintStrokeCreation; // protected by lastStrokeMovementMutex
