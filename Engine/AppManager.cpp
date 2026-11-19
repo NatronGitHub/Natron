@@ -106,7 +106,6 @@
 #include <QThread>
 #include <QUuid>
 #include <QRegularExpression>
-#include <QTimer>
 #include <QSettings>
 #include <QSocketNotifier>
 #include <QThreadPool>
@@ -1097,7 +1096,11 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
     if (oldCacheVersion != NATRON_CACHE_VERSION || cl.isCacheClearRequestedOnLaunch()) {
         setLoadingStatus( tr("Clearing the image cache...") );
         // If another process uses the caches, they are not wiped (it would delete its files): start with empty caches
-        (void)wipeAndCreateDiskCacheStructure();
+        if ( !wipeAndCreateDiskCacheStructure() ) {
+            std::cerr << "Warning: the disk caches in " << getDiskCacheLocation().toStdString()
+                      << " were not cleared, because another " NATRON_APPLICATION_NAME " process uses them. "
+                      << "Starting with empty caches." << std::endl;
+        }
     } else {
         setLoadingStatus( tr("Restoring the image cache...") );
         _imp->restoreCaches();
@@ -2650,13 +2653,13 @@ AppManager::registerEngineMetaTypes() const
 // - On a local file system, the lock tells everything: the host name is ignored (on macOS it changes with the network).
 // - On a network file system, the lock of another host can't be trusted (e.g. NFS mounted with "nolock" makes flock()
 //   local to each host): the file of another host is in use if it was touched by its owner in the last
-//   kDiskCacheInstanceStaleHours (the owner touches it every kDiskCacheInstanceTouchMinutes).
+//   kDiskCacheInstanceStaleHours (the owner touches it every 10 minutes, from a thread: see
+//   AppManagerPrivate::startDiskCachesInstanceFileToucher()).
 // - The files whose lock can't be tested (another user's file, a file system without flock(), which gives an error
 //   other than EWOULDBLOCK) are considered in use, so the cleanup is disabled on such file systems.
 // - Unlocked files with an older name format (no UUID) are stale and removed.
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
-const int kDiskCacheInstanceTouchMinutes = 10;
 const int kDiskCacheInstanceStaleHours = 2;
 
 QString
@@ -2682,23 +2685,25 @@ isLocalFileSystem(const QString& folder)
         return false; // can't tell: the safe side
     }
 #if defined(__linux__)
-    switch ( (unsigned long)fsStat.f_type ) {
-    case 0x6969UL:     // NFS
-    case 0x517BUL:     // SMB
-    case 0xFF534D42UL: // CIFS
-    case 0xFE534D42UL: // SMB2
-    case 0x00C36400UL: // Ceph
-    case 0x65735546UL: // FUSE (sshfs...)
-    case 0x5346414FUL: // AFS
-    case 0x73757245UL: // Coda
-    case 0x01021997UL: // 9P
-    case 0x0BD00BD0UL: // Lustre
-    case 0x47504653UL: // GPFS
-    case 0x01161970UL: // GFS2
-    case 0x7461636FUL: // OCFS2
-        return false;
-    default:
+    // Only the file systems that are known to be local: the others are considered as network file systems (the safe side)
+    switch ( (unsigned long)(unsigned int)fsStat.f_type ) { // the magic numbers are 32-bit
+    case 0xEF53UL:     // ext2, ext3, ext4
+    case 0x58465342UL: // XFS
+    case 0x9123683EUL: // Btrfs
+    case 0x01021994UL: // tmpfs
+    case 0x2FC12FC1UL: // ZFS
+    case 0xF2F52010UL: // F2FS
+    case 0x794C7630UL: // overlayfs
+    case 0x858458F6UL: // ramfs
+    case 0x73717368UL: // squashfs
+    case 0x3153464AUL: // JFS
+    case 0x52654973UL: // ReiserFS
+    case 0xCA451A4EUL: // bcachefs
+    case 0x4D44UL:     // FAT
+    case 0x5346544EUL: // NTFS (ntfs3)
         return true;
+    default:
+        return false;
     }
 #elif defined(MNT_LOCAL)
     return (fsStat.f_flags & MNT_LOCAL) != 0;
@@ -2838,18 +2843,19 @@ AppManager::refreshDiskCacheLocation()
             qDebug() << "Warning: could not create the instance file of the disk cache in" << diskCacheInstancesFolder(location);
         }
         // Touch it periodically: on a network file system, the other hosts consider it stale if it is not touched
-        if ( !_imp->diskCachesInstanceFileTimer && (QThread::currentThread() == thread()) ) {
-            _imp->diskCachesInstanceFileTimer = new QTimer(this);
-            QObject::connect( _imp->diskCachesInstanceFileTimer, &QTimer::timeout, this, [this]() {
-                QMutexLocker l(&_imp->diskCachesLocationMutex);
-                if (_imp->diskCachesInstanceFile) {
-                    _imp->diskCachesInstanceFile->setFileTime( QDateTime::currentDateTime(), QFileDevice::FileModificationTime );
-                }
-            } );
-            _imp->diskCachesInstanceFileTimer->start(kDiskCacheInstanceTouchMinutes * 60 * 1000);
-        }
+        _imp->startDiskCachesInstanceFileToucher();
     }
     _imp->diskCachesLocation = location;
+}
+
+void
+AppManager::setDiskCacheInstanceFileTouchInterval(int milliseconds)
+{
+    {
+        std::lock_guard<std::mutex> l(_imp->diskCachesInstanceFileToucherMutex);
+        _imp->diskCachesInstanceFileTouchMs = milliseconds;
+    }
+    _imp->diskCachesInstanceFileToucherCond.notify_all();
 }
 
 bool

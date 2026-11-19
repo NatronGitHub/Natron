@@ -156,6 +156,15 @@ The cache settings are in **Edit > Preferences > Caching**:
    wrote it last (each process writes it when it saves a project and when it
    exits); the files of the other processes are then deleted.
 
+   To know whether another process uses the caches, each process keeps a
+   locked file in the ``Instances`` sub-folder. The cache files are never
+   deleted when Natron can't tell: if this folder contains a file of another
+   user, or if the file system doesn't support file locks, the clean-up at
+   startup is disabled. On a network file system, a host that crashed while
+   holding a lock keeps its file in use until the server releases the lock,
+   or until the file is 2 hours old if the locks are local to each host
+   (NFS mounted with ``nolock``).
+
 **Wipe Disk Cache**
    Clears all the caches and deletes all the cache files in the disk cache
    folder. Use it if the disk cache seems to take more space than expected, or

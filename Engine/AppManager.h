@@ -464,6 +464,9 @@ public:
      **/
     bool isDiskCacheUsedByAnotherProcess() const;
 
+    // For the tests: how often the file of this process in <disk cache location>/Instances is touched (default: 10 minutes)
+    void setDiskCacheInstanceFileTouchInterval(int milliseconds);
+
     void saveCaches() const;
 
     PyObject* getMainModule();

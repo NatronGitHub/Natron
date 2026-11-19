@@ -25,6 +25,10 @@
 
 #include "AppManagerPrivate.h"
 
+#include <chrono>
+
+#include <QDateTime>
+
 #include <QtGlobal> // for Q_OS_*
 #if defined(Q_OS_UNIX)
 #include <sys/time.h>     // for getrlimit on linux
@@ -228,7 +232,11 @@ AppManagerPrivate::AppManagerPrivate()
     , diskCachesLocationMutex()
     , diskCachesLocation()
     , diskCachesInstanceFile()
-    , diskCachesInstanceFileTimer(NULL)
+    , diskCachesInstanceFileToucher()
+    , diskCachesInstanceFileToucherMutex()
+    , diskCachesInstanceFileToucherCond()
+    , diskCachesInstanceFileToucherMustQuit(false)
+    , diskCachesInstanceFileTouchMs(10 * 60 * 1000)
     , _backgroundIPC()
     , _loaded(false)
     , _binaryPath()
@@ -277,6 +285,15 @@ AppManagerPrivate::AppManagerPrivate()
 
 AppManagerPrivate::~AppManagerPrivate()
 {
+    // Stop the thread before diskCachesInstanceFile is closed
+    if ( diskCachesInstanceFileToucher.joinable() ) {
+        {
+            std::lock_guard<std::mutex> l(diskCachesInstanceFileToucherMutex);
+            diskCachesInstanceFileToucherMustQuit = true;
+        }
+        diskCachesInstanceFileToucherCond.notify_all();
+        diskCachesInstanceFileToucher.join();
+    }
     
 
     for (std::size_t i = 0; i < commandLineArgsUtf8Original.size(); ++i) {
@@ -285,6 +302,36 @@ AppManagerPrivate::~AppManagerPrivate()
     for (std::size_t i = 0; i < commandLineArgsWideOriginal.size(); ++i) {
         free(commandLineArgsWideOriginal[i]);
     }
+}
+
+void
+AppManagerPrivate::touchDiskCachesInstanceFile()
+{
+    QMutexLocker k(&diskCachesLocationMutex);
+    if (diskCachesInstanceFile) {
+        diskCachesInstanceFile->setFileTime( QDateTime::currentDateTime(), QFileDevice::FileModificationTime );
+    }
+}
+
+void
+AppManagerPrivate::startDiskCachesInstanceFileToucher()
+{
+    if ( diskCachesInstanceFileToucher.joinable() ) {
+        return;
+    }
+    diskCachesInstanceFileToucher = std::thread([this]() {
+        std::unique_lock<std::mutex> l(diskCachesInstanceFileToucherMutex);
+        while (!diskCachesInstanceFileToucherMustQuit) {
+            // Also woken up when the interval changes
+            diskCachesInstanceFileToucherCond.wait_for( l, std::chrono::milliseconds(diskCachesInstanceFileTouchMs) );
+            if (diskCachesInstanceFileToucherMustQuit) {
+                break;
+            }
+            l.unlock();
+            touchDiskCachesInstanceFile();
+            l.lock();
+        }
+    });
 }
 
 #ifdef NATRON_USE_BREAKPAD

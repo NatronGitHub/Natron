@@ -32,12 +32,14 @@
 
 #include "Global/Macros.h"
 
+#include <chrono>
 #include <cstring>
 #include <iostream>
 #include <list>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <thread>
 
 #ifndef _WIN32
 #include <sys/file.h> // flock
@@ -49,6 +51,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QDateTime>
 #include <QFileInfo>
 #include <QStorageInfo>
 #include <QSysInfo>
@@ -535,4 +538,30 @@ TEST(DiskCacheLocation, DetectsOtherProcesses)
     }
     EXPECT_TRUE( appPTR->wipeAndCreateDiskCacheStructure() );
     EXPECT_FALSE( QFile::exists(marker) );
+}
+
+// On a network file system, the other hosts consider the file of this process stale if it isn't touched. It is touched
+// by a thread, since NatronRenderer and the background renders never run an event loop: check that it happens
+// without one (this test doesn't run any).
+TEST(DiskCacheLocation, InstanceFileIsTouchedWithoutEventLoop)
+{
+    const QString folder = appPTR->getDiskCacheLocation() + QString::fromUtf8("/Instances");
+    const QStringList own = QDir(folder).entryList(QStringList() << QString::fromUtf8("*@%1-*.lock").arg( QCoreApplication::applicationPid() ), QDir::Files);
+    ASSERT_EQ( 1, own.size() );
+    const QString path = folder + QLatin1Char('/') + own.front();
+    {
+        QFile f(path);
+        ASSERT_TRUE( f.open(QIODevice::ReadWrite) );
+        ASSERT_TRUE( f.setFileTime(QDateTime(QDate(2000, 1, 1), QTime(0, 0)), QFileDevice::FileModificationTime) );
+    }
+    ASSERT_GT( QFileInfo(path).lastModified().secsTo( QDateTime::currentDateTime() ), 3600LL );
+
+    appPTR->setDiskCacheInstanceFileTouchInterval(20);
+    bool touched = false;
+    for (int i = 0; i < 100 && !touched; ++i) {
+        std::this_thread::sleep_for( std::chrono::milliseconds(20) );
+        touched = QFileInfo(path).lastModified().secsTo( QDateTime::currentDateTime() ) < 60;
+    }
+    appPTR->setDiskCacheInstanceFileTouchInterval(10 * 60 * 1000);
+    EXPECT_TRUE(touched);
 }
