@@ -329,7 +329,7 @@ CurveGui::drawCurve(int curveIndex,
         }
     }
     bool isPeriodic = false;
-    std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+    std::pair<double,double> parametricRange = std::make_pair( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
     if (isBezier) {
         std::set<double> keys;
         isBezier->getBezier()->getKeyframeTimes(&keys);
@@ -338,7 +338,7 @@ CurveGui::drawCurve(int curveIndex,
             keyframes.insert( KeyFrame(*it, i) );
         }
     } else {
-        keyframes = getInternalCurve()->getKeyFrames_mt_safe();
+        keyframes = getKeyFramesForDisplay();
         isPeriodic = getInternalCurve()->isCurvePeriodic();
         parametricRange = getInternalCurve()->getXRange();
     }
@@ -384,10 +384,12 @@ CurveGui::drawCurve(int curveIndex,
         if (!isBezier && _selected) {
             ///Draw y min/max axis so the user understands why the curve is clamped
             Curve::YRange curveYRange = getCurveYRange();
+            // unbounded ranges are +/-DBL_MAX (or INT_MIN/INT_MAX for integer knobs).
+            // Test them with > and <, which also exclude an infinite bound, even with -ffast-math.
             if (curveYRange.min != std::numeric_limits<int>::min() &&
-                curveYRange.min != -std::numeric_limits<double>::infinity() &&
+                curveYRange.min > std::numeric_limits<double>::lowest() &&
                 curveYRange.max != std::numeric_limits<int>::max() &&
-                curveYRange.max != std::numeric_limits<double>::infinity() ) {
+                curveYRange.max < std::numeric_limits<double>::max() ) {
                 QColor minMaxColor;
                 minMaxColor.setRgbF(0.398979, 0.398979, 0.398979);
                 glColor4d(minMaxColor.redF(), minMaxColor.greenF(), minMaxColor.blueF(), 1.);
@@ -599,6 +601,42 @@ KeyFrameSet
 CurveGui::getKeyFrames() const
 {
     return getInternalCurve()->getKeyFrames_mt_safe();
+}
+
+KeyFrameSet
+CurveGui::getKeyFramesForDisplay() const
+{
+    KeyFrameSet keys = getKeyFrames();
+    CurvePtr curve = getInternalCurve();
+
+    if ( !curve || !curve->isStringCurve() ) {
+        return keys;
+    }
+    // same as Curve::getValueAt() on string curves
+    KeyFrameSet ret;
+    int index = 0;
+    for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it, ++index) {
+        KeyFrame k(*it);
+        k.setValue(index);
+        ret.insert(ret.end(), k);
+    }
+
+    return ret;
+}
+
+double
+CurveGui::getKeyFrameDisplayValue(const KeyFrame& key) const
+{
+    CurvePtr curve = getInternalCurve();
+
+    if ( curve && curve->isStringCurve() ) {
+        int index = getKeyFrameIndex( key.getTime() );
+        if (index >= 0) {
+            return index;
+        }
+    }
+
+    return key.getValue();
 }
 
 KnobCurveGui::KnobCurveGui(CurveWidget *curveWidget,

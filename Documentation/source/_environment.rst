@@ -111,11 +111,11 @@ To clear an environment variable, use the following command:
 Natron Environment Variables
 ----------------------------
 
-``NATRON_PLUGIN_PATH``: A semicolon-separated list of directories where to look for PyPlugs and Toolsets. Subdirectories are also searched, and symbolic links are followed.
+``NATRON_PLUGIN_PATH``: A list of directories where to look for PyPlugs, Toolsets and startup scripts (init.py, initGui.py), separated by ``;`` on Windows and by ``:`` on macOS and Linux. Subdirectories are also searched, and symbolic links are followed. See :ref:`natronPath` for the complete search order.
 
-``OFX_PLUGIN_PATH``: A semicolon-separated list of directories_ where to look for OpenFX plugin bundles. Subdirectories are also searched, and symbolic links are followed.
+``OFX_PLUGIN_PATH``: A list of directories_ where to look for OpenFX plugin bundles, separated by ``;`` on Windows and by ``:`` or ``;`` on macOS and Linux. Subdirectories are also searched, and symbolic links are followed.
 
-``PYTHONPATH``: semicolon-separated list of directories where to look for extra python modules. The Python modules should be compatible with Natron's embedded Python, and can be tested using the Python executable ``natron-python``, which is installed next to the Natron binary. Python modules can also be installed with pip_. For example, ``natron-python -m pip install numpy`` would install numpy for Natron.
+``PYTHONPATH``: list of directories where to look for extra python modules, separated by ``;`` on Windows and by ``:`` on macOS and Linux. The Python modules should be compatible with Natron's embedded Python, and can be tested using the Python executable ``natron-python``, which is installed next to the Natron binary. Python modules can also be installed with pip_. For example, ``natron-python -m pip install numpy`` would install numpy for Natron.
 
 ``OCIO``: This variable can be used to point to the global OpenColorIO_ config file, e.g ``config.ocio``, and it supersedes the OpenColorIO setting in Natron's preferences.
 

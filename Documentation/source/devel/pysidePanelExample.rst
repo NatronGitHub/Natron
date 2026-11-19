@@ -1,13 +1,17 @@
 .. _pysideExample:
 
-PySide panels
+Python panels
 =============
 
 To create a non-modal :ref:`panel<pypanel>` that can be saved in the project's layout and
 docked into the application's :ref:`tab-widgets<pyTabWidget>`, there is 2 possible way of
 doing it:
 
-    * Sub-class :ref:`PyPanel<pypanel>` and create your own GUI using `PySide <http://qt-project.org/wiki/PySideDocumentation>`_
+    * Sub-class :ref:`PyPanel<pypanel>` and create your own GUI with Qt for Python:
+      PySide2 (`documentation <https://doc.qt.io/qtforpython-5/>`__) with Qt 5 builds of Natron, or PySide6
+      (`documentation <https://doc.qt.io/qtforpython-6/>`__) with Qt 6 builds. Import Qt through
+      `qtpy <https://github.com/spyder-ide/qtpy>`_ (``from qtpy import QtCore, QtGui, QtWidgets``)
+      so that the same code works with both.
 
 
     * Use the API proposed by :ref:`PyPanel<pypanel>` to add custom user :ref:`parameters<Param>` as done for :ref:`PyModalDialog<pyModalDialog>`.
@@ -28,7 +32,7 @@ This callback will not be called for project being loaded either via an auto-sav
         #Create panel
         ...
 
-    def onProjectCreatedCallback():
+    def onProjectCreatedCallback(app):
         createMyPanel()
 
 .. warning::
@@ -50,7 +54,7 @@ See the example below (the whole script is available attached below)
     def restore(self,data):
 
         self.locationEdit.setText(data)
-        self.label.setPixmap(QPixmap(data))
+        self.label.setPixmap(QtGui.QPixmap(data))
 
 
 The sole requirement to save a panel in the layout is to call the :func:`registerPythonPanel(panel,function)<NatronGui.GuiApp.registerPythonPanel>` function
@@ -70,8 +74,8 @@ Let's assume we have no use to make our own widgets and want quick :ref:`paramet
 we just have to use the :ref:`PyPanel<pypanel>` class without sub-classing it::
 
     #Callback called when a parameter of the player changes
-    #The variable paramName is declared by Natron; indicating the name of the parameter which just had its value changed
-    def myPlayerParamChangedCallback():
+    #paramName is the script-name of the parameter which just had its value changed
+    def myPlayerParamChangedCallback(paramName, app, userEdited):
 
         viewer = app.getViewer("Viewer1")
         if viewer == None:

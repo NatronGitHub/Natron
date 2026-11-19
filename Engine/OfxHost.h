@@ -71,6 +71,18 @@ public:
 
     void setOfxHostOSHandle(void* handle);
 
+    /// The OpenGL render support of a plug-in descriptor or instance, given the support read from its
+    /// kOfxImageEffectPropOpenGLRenderSupported: a plug-in that supports OpenGL render ("true") but
+    /// sets kOfxImageEffectPropCPURenderSupported (OFX 1.5.1) to "false" can't render on the CPU, so it
+    /// needs OpenGL, like a plug-in that sets kOfxImageEffectPropOpenGLRenderSupported to "needed".
+    static PluginOpenGLRenderSupport applyCPURenderSupport(PluginOpenGLRenderSupport openGLSupport,
+                                                           const OFX::Host::Property::Set& effectProps);
+
+    /// Is a plug-in with this descriptor deprecated, i.e. only kept to load old projects and not offered
+    /// to users for new nodes? True if it sets kNatronOfxImageEffectPropDeprecated (Natron extension) or
+    /// kOfxImageEffectPluginPropObsolete (OFX, after 1.5.1), which have the same meaning.
+    static bool isPluginDeprecated(const OFX::Host::Property::Set& descriptorProps);
+
     /// Create a new instance of an image effect plug-in.
     ///
     /// It is called by ImageEffectPlugin::createInstance which the

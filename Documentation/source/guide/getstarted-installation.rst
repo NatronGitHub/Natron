@@ -1,52 +1,86 @@
 .. for help on writing/extending this file, see the reStructuredText cheatsheet
    http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
-   
+
 Installation
 ============
 
-This chapter will guide you through the installation of Natron on Windows, Mac and Linux.
+This chapter explains how to install Natron on Windows, macOS and Linux.
+
+.. _system-requirements:
+
+System requirements
+-------------------
+
+Natron 2.6 binaries are 64-bit only. 32-bit systems are no longer supported.
+
+Operating system and processor:
+
+- **Windows:** Windows 10 or later, 64-bit, on an x86-64 processor.
+- **macOS:** macOS 14 (Sonoma) or later, on a Mac with Apple Silicon (arm64)
+  or an Intel processor (x86-64).
+- **Linux:** a 64-bit distribution (x86-64 or aarch64) at least as recent as
+  RHEL, Rocky Linux or AlmaLinux 9: glibc 2.34 or later, and the C++ runtime,
+  X11 and OpenGL libraries of the system. See :doc:`getstarted-installation-linux`
+  for details.
+
+Graphics card:
+
+- The viewer needs OpenGL 2.0 with the ``GL_ARB_vertex_buffer_object`` and
+  ``GL_ARB_pixel_buffer_object`` extensions. Almost every graphics card and
+  integrated GPU made in the last fifteen years has them, if its driver is
+  installed.
+- GPU rendering, which a few plug-ins such as
+  :ref:`Shadertoy <net.sf.openfx.Shadertoy>` can use, also needs
+  ``GL_ARB_texture_float``, ``GL_ARB_framebuffer_object`` (or
+  ``GL_EXT_framebuffer_object``) and ``GL_ARB_vertex_array_object`` (or
+  ``GL_APPLE_vertex_array_object``). Without them, these plug-ins render on
+  the CPU.
+- If the graphics driver does not meet these requirements, Natron can use a
+  slower software OpenGL renderer: see :ref:`the FAQ <software-opengl>`.
+
+Memory: Natron keeps rendered images in a RAM cache, which makes playback and
+interaction fast. More RAM means a larger cache, and large images or long
+sequences need several gigabytes. The cache size is set in Edit → Preferences →
+Caching.
 
 .. toctree::
    :maxdepth: 2
-   
+
    getstarted-installation-windows
    getstarted-installation-mac
    getstarted-installation-linux
 
-Additional Elements
-===================
+Additional elements
+-------------------
 
 Community scripts
------------------
+~~~~~~~~~~~~~~~~~
 
-Many scripts that bring additional functionality can be downloaded from:
-https://github.com/NatronGitHub/natron-python-scripting
+The `natron-python-scripting <https://github.com/NatronGitHub/natron-python-scripting>`_
+repository holds community Python scripts that add tools, mostly to the Tools
+and Edit menus: predefined Roto shapes, multi-layer EXR extraction, node
+connection tools, and more. Several of them make Natron behave more like Nuke.
 
-To install these:
+To install them:
 
-- Copy the content of this repository to your .Natron folder.:ref: 'Natron plug-in paths'
-- Restart Natron
-- Enjoy the new items available mostly in Tools and Edit menu.
-
-
-These tool add predefined roto shapes, multilayer EXR extraction, node connexion tools, and more.
-They will bring Natron closer to the Nuke interface.
-Albeit experimental, these scripts are a recommended download, more specifically for previous Nuke users.
-
-
-Community plugins
------------------
-
-Additional Python plugins (PyPlugs) can be downloaded from:
-https://github.com/NatronGitHub/natron-plugins
-
-To install these:
-
-- Copy the content of this repository to any folder of your choice.
-- Open Natron preferences from the menubar, select Plugins->PyPlugs search path->Add.. and enter the extracted file location.
-- Save preferences.
+- Copy the contents of the repository into the ``.Natron`` folder in your home
+  directory (see :ref:`natronPath`).
 - Restart Natron.
-- Enjoy the new tools available in the left toolbar.
 
-These tools bring animated textures for motion designers, as well as most common Nuke gizmos (DespillMadness, PushPixel,...).
-Albeit experimental these scripts are a recommended download.
+These scripts are experimental.
+
+Community plug-ins
+~~~~~~~~~~~~~~~~~~
+
+The `natron-plugins <https://github.com/NatronGitHub/natron-plugins>`_
+repository holds community Python plug-ins (PyPlugs): animated textures for
+motion design, and equivalents of common Nuke gizmos (DespillMadness,
+PushPixel, …).
+
+To install them:
+
+- Copy the contents of the repository into a folder of your choice.
+- In Edit → Preferences → Plug-ins, add that folder to "PyPlugs search path".
+- Click "Save" and restart Natron.
+
+The new tools appear in the toolbar on the left. These plug-ins are experimental.

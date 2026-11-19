@@ -246,7 +246,8 @@ set(ceres_SOURCES
     internal/ceres/wall_time.cc
 )
 add_library(ceres STATIC ${ceres_HEADERS} ${ceres_SOURCES})
-target_include_directories(ceres PUBLIC ../Eigen3 ../glog/src config include internal)
+target_include_directories(ceres SYSTEM PUBLIC ../Eigen3 ../glog/src config include internal)
+target_compile_options(ceres PRIVATE ${NATRON_THIRD_PARTY_NO_WARNINGS})
 target_compile_definitions(ceres
     PUBLIC
         CERES_HAVE_PTHREAD
@@ -262,5 +263,9 @@ target_compile_definitions(ceres
 # (e.g. Rocky Linux 8) keeps it in a separate libpthread.
 find_package(Threads REQUIRED)
 target_link_libraries(ceres PUBLIC glog::glog Threads::Threads)
+if(NATRON_USE_OPENMP)
+    target_compile_definitions(ceres PUBLIC CERES_USE_OPENMP)
+    target_link_libraries(ceres PUBLIC OpenMP::OpenMP_CXX)
+endif()
 set_target_properties(ceres PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_library(Ceres::ceres ALIAS ceres)

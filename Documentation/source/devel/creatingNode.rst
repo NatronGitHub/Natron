@@ -8,7 +8,7 @@ Creating a new node:
 --------------------
 
 To create a :doc:`node<PythonReference/NatronEngine/Effect>` in Natron, you would do so
-using the :doc:`app instance<PythonReference/NatronEngine/Effect>` via the function
+using the :doc:`app instance<PythonReference/NatronEngine/App>` via the function
 :func:`createNode(pluginId,majorVersion,group)<NatronEngine.App.createNode>` like this::
 
     app1.createNode("fr.inria.openfx.ReadOIIO")
@@ -94,17 +94,17 @@ Note that the following script would do the same since nodes are :ref:`auto-decl
     #The write node is now available via its script name app.WriteOIIO1
 
     node = app.createNode("net.sf.cimg.CImgBlur")
-    print(node.getScriptName()) # prints CImgBlur1
+    print(node.getScriptName()) # prints Blur1
 
-    #The blur node is now available via its script name app.BlurCImg1
+    #The blur node is now available via its script name app.Blur1
 
     node = app.createNode("fr.inria.openfx.ReadOIIO")
     print(node.getScriptName()) # prints ReadOIIO1
 
     #The ReadOIIO node is now available via its script name app.ReadOIIO1
 
-    app.WriteOIIO1.connectInput(0,app.BlurCImg1)
-    app.BlurCImg1.connectInput(0,app.ReadOIIO1)
+    app.WriteOIIO1.connectInput(0,app.Blur1)
+    app.Blur1.connectInput(0,app.ReadOIIO1)
 
 
 Note that not all connections are possible, and sometimes it may fail for some reasons explained
@@ -112,15 +112,15 @@ in the documentation of the :func:`connectInput(inputNumber,input)<NatronEngine.
 
 You should then check for errors this way::
 
-    if not app.WriteOIIO1.connectInput(0,app.BlurCImg1):
+    if not app.WriteOIIO1.connectInput(0,app.Blur1):
         # Handle errors
 
 You can check beforehand whether a subsequent *connectInput* call would succeed or not
-by calling the :func:`canConnectInput(inputNumber,input)<NatronEngine.Effect.connectInput>` which basically
-checks whether is is okay to do the connection or not. You can then safely write the following instructions::
+by calling the :func:`canConnectInput(inputNumber,input)<NatronEngine.Effect.canConnectInput>` function, which
+checks whether it is okay to do the connection or not. You can then safely write the following instructions::
 
-    if app.WriteOIIO1.canConnectInput(0,app.BlurCImg1):
-        app.WriteOIIO1.connectInput(0,app.BlurCImg1)
+    if app.WriteOIIO1.canConnectInput(0,app.Blur1):
+        app.WriteOIIO1.connectInput(0,app.Blur1)
     else:
         # Handle errors
 

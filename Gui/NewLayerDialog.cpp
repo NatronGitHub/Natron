@@ -229,7 +229,7 @@ NewLayerDialog::onNumCompsChanged(double value)
         _imp->bEdit->setVisible(true);
         _imp->aLabel->setVisible(false);
         _imp->aEdit->setVisible(false);
-    } else if (value == 3) {
+    } else if (value == 4) {
         _imp->rLabel->setVisible(true);
         _imp->rEdit->setVisible(true);
         _imp->gLabel->setVisible(true);
