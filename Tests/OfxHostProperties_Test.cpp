@@ -236,10 +236,13 @@ TEST(OfxHostProperties, OfxSetHostOncePerBinary)
     ASSERT_TRUE( createTestNode(kNatronTestPluginSingleInstance) );
     EXPECT_EQ( 1, NatronTestPlugin::counter("Binary.setHost") );
     EXPECT_EQ( 1, NatronTestPlugin::counter("Binary.setHostBeforeGetNumberOfPlugins") );
-    // the scan calls OfxGetNumberOfPlugins; a binary known from the cache only gets OfxGetPlugin
-    // (TestsOfxCache in Tests/CMakeLists.txt)
+    // the scan calls OfxGetNumberOfPlugins; a binary known from the cache only gets OfxGetPlugin. With
+    // NATRON_TESTS_KEEP_OFX_CACHE (TestsOfxCache in Tests/CMakeLists.txt), this proves that the plug-in
+    // came from the cache, and was loaded at its first use.
     if ( qgetenv("NATRON_TESTS_KEEP_OFX_CACHE").isEmpty() ) {
         EXPECT_LE( 1, NatronTestPlugin::counter("Binary.getNumberOfPlugins") );
+    } else {
+        EXPECT_EQ( 0, NatronTestPlugin::counter("Binary.getNumberOfPlugins") );
     }
     EXPECT_EQ( 1, NatronTestPlugin::counter("Binary.setHostAPIVersion0") );
     EXPECT_EQ( 5, NatronTestPlugin::counter("Binary.setHostAPIVersion1") );
