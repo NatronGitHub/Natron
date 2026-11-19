@@ -29,23 +29,39 @@
 //   instances.
 // - net.natron.test.SyncPrivateData: keeps the number of changes of its "value" parameter in private
 //   data, and only writes it to its "changeCount" parameter in kOfxActionSyncPrivateData.
+// - net.natron.test.Params: parameters of every type, to test the parameter suite and the parameter
+//   actions:
+//   - pairs of parameters "<type>From" and "<type>To" of each type, for paramCopy;
+//   - the custom parameters have an interpolation callback (kOfxParamPropCustomInterpCallbackV1), which
+//     checks that its first argument is the parameter set of an instance;
+//   - it checks that each kOfxActionInstanceChanged is bracketed by kOfxActionBeginInstanceChanged and
+//     kOfxActionEndInstanceChanged with the same reason, and counts the errors ("Params.error.*");
+//   - writing "chainSource" makes the plug-in write "chainTarget" in kOfxActionInstanceChanged;
+//   - "preset" (kOfxParamPropCanUndo=0) is the "preset" example of the parameter suite documentation:
+//     choosing a preset sets "presetA", "presetB" and "presetC" in a paramEditBegin/paramEditEnd block,
+//     and sets "preset" back to 0;
+//   - "uiOnly" has kOfxParamPropEvaluateOnChange=0, "noUndo" has kOfxParamPropCanUndo=0.
 
+#include <cstdio>
 #include <cstring>
 #include <map>
 #include <mutex>
 #include <set>
 #include <string>
+#include <vector>
 
 #include <ofxCore.h>
 #include <ofxImageEffect.h>
 #include <ofxInteract.h>
 #include <ofxParam.h>
+#include <ofxParametricParam.h>
 #include <ofxProperty.h>
 
 #define kPluginGrouping "Other/Test"
 #define kParamInteractPluginIdentifier "net.natron.test.ParamInteract"
 #define kSingleInstancePluginIdentifier "net.natron.test.SingleInstance"
 #define kSyncPrivateDataPluginIdentifier "net.natron.test.SyncPrivateData"
+#define kParamsPluginIdentifier "net.natron.test.Params"
 
 namespace {
 OfxHost* gHost = 0;
@@ -59,6 +75,10 @@ std::mutex gMutex;
 std::map<std::string, int> gCounters;
 std::set<OfxImageEffectHandle> gLiveEffects;
 std::map<OfxInteractHandle, OfxImageEffectHandle> gInteractEffects;
+// net.natron.test.Params: the parameter sets of the live instances, and the reasons of the
+// kOfxActionBeginInstanceChanged actions that have not been ended yet, by instance
+std::set<OfxParamSetHandle> gParamsParamSets;
+std::map<OfxImageEffectHandle, std::vector<std::string> > gParamsBrackets;
 
 void
 incrementCounter(const std::string& name,
@@ -371,6 +391,319 @@ syncPrivateDataPluginMain(const char* action,
     return commonAction(action, effect, "SyncPrivateData");
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// net.natron.test.Params
+
+// the parameter types of the "<type>From"/"<type>To" pairs
+struct ParamsType
+{
+    const char* prefix;
+    const char* type;
+};
+
+const ParamsType gParamsTypes[] = {
+    { "int", kOfxParamTypeInteger },
+    { "double", kOfxParamTypeDouble },
+    { "bool", kOfxParamTypeBoolean },
+    { "choice", kOfxParamTypeChoice },
+    { "rgb", kOfxParamTypeRGB },
+    { "rgba", kOfxParamTypeRGBA },
+    { "double2D", kOfxParamTypeDouble2D },
+    { "int2D", kOfxParamTypeInteger2D },
+    { "double3D", kOfxParamTypeDouble3D },
+    { "int3D", kOfxParamTypeInteger3D },
+    { "string", kOfxParamTypeString },
+    { "custom", kOfxParamTypeCustom },
+    { "parametric", kOfxParamTypeParametric },
+};
+
+// kOfxParamPropCustomInterpCallbackV1 of the custom parameters: "<lower>><upper>@<amount>", or an error
+// if the first argument is not the parameter set of an instance ("the plugin instance that this
+// parameter occurs in"), or kOfxStatFailed if the lower keyframe is "fail".
+OfxStatus
+paramsCustomInterp(OfxParamSetHandle instance,
+                   OfxPropertySetHandle inArgs,
+                   OfxPropertySetHandle outArgs)
+{
+    {
+        std::lock_guard<std::mutex> l(gMutex);
+        if ( !gParamsParamSets.count(instance) ) {
+            ++gCounters["Params.interp.badHandle"];
+
+            return kOfxStatErrBadHandle;
+        }
+    }
+    const char* lower = 0;
+    const char* upper = 0;
+    double amount = 0.;
+    if ( (gPropSuite->propGetString(inArgs, kOfxParamPropCustomValue, 0, &lower) != kOfxStatOK) ||
+         (gPropSuite->propGetString(inArgs, kOfxParamPropCustomValue, 1, &upper) != kOfxStatOK) ||
+         (gPropSuite->propGetDouble(inArgs, kOfxParamPropInterpolationAmount, 0, &amount) != kOfxStatOK) ) {
+        incrementCounter("Params.interp.badArgs");
+
+        return kOfxStatFailed;
+    }
+    if (std::strcmp(lower, "fail") == 0) {
+        incrementCounter("Params.interp.failed");
+
+        return kOfxStatFailed;
+    }
+    std::string result = std::string(lower) + '>' + upper + '@';
+    char buf[32];
+    std::snprintf(buf, sizeof(buf), "%.2f", amount);
+    result += buf;
+    gPropSuite->propSetString(outArgs, kOfxParamPropCustomValue, 0, result.c_str());
+    incrementCounter("Params.interp.ok");
+
+    return kOfxStatOK;
+}
+
+OfxStatus
+paramsDefine(OfxParamSetHandle paramSet,
+             const char* type,
+             const std::string& name,
+             OfxPropertySetHandle* props)
+{
+    OfxStatus stat = gParamSuite->paramDefine(paramSet, type, name.c_str(), props);
+
+    if (stat != kOfxStatOK) {
+        return stat;
+    }
+    if (std::strcmp(type, kOfxParamTypeChoice) == 0) {
+        gPropSuite->propSetString(*props, kOfxParamPropChoiceOption, 0, "zero");
+        gPropSuite->propSetString(*props, kOfxParamPropChoiceOption, 1, "one");
+        gPropSuite->propSetString(*props, kOfxParamPropChoiceOption, 2, "two");
+    } else if ( (std::strcmp(type, kOfxParamTypeString) == 0) || (std::strcmp(type, kOfxParamTypeCustom) == 0) ) {
+        gPropSuite->propSetInt(*props, kOfxParamPropAnimates, 0, 1);
+        if (std::strcmp(type, kOfxParamTypeCustom) == 0) {
+            gPropSuite->propSetPointer(*props, kOfxParamPropCustomInterpCallbackV1, 0, (void*)&paramsCustomInterp);
+        }
+    } else if (std::strcmp(type, kOfxParamTypeParametric) == 0) {
+        gPropSuite->propSetInt(*props, kOfxParamPropParametricDimension, 0, 1);
+        gPropSuite->propSetDouble(*props, kOfxParamPropParametricRange, 0, 0.);
+        gPropSuite->propSetDouble(*props, kOfxParamPropParametricRange, 1, 1.);
+    }
+
+    return kOfxStatOK;
+}
+
+OfxStatus
+paramsDescribeInContext(OfxImageEffectHandle effect)
+{
+    OfxStatus stat = defineClips(effect);
+
+    if (stat != kOfxStatOK) {
+        return stat;
+    }
+    OfxParamSetHandle paramSet = getParamSet(effect);
+    if (!paramSet) {
+        return kOfxStatFailed;
+    }
+    OfxPropertySetHandle props;
+    for (std::size_t i = 0; i < sizeof(gParamsTypes) / sizeof(gParamsTypes[0]); ++i) {
+        if ( (paramsDefine(paramSet, gParamsTypes[i].type, std::string(gParamsTypes[i].prefix) + "From", &props) != kOfxStatOK) ||
+             (paramsDefine(paramSet, gParamsTypes[i].type, std::string(gParamsTypes[i].prefix) + "To", &props) != kOfxStatOK) ) {
+            return kOfxStatFailed;
+        }
+    }
+    if ( (paramsDefine(paramSet, kOfxParamTypeInteger, "chainSource", &props) != kOfxStatOK) ||
+         (paramsDefine(paramSet, kOfxParamTypeInteger, "chainTarget", &props) != kOfxStatOK) ) {
+        return kOfxStatFailed;
+    }
+    if (paramsDefine(paramSet, kOfxParamTypeChoice, "preset", &props) != kOfxStatOK) {
+        return kOfxStatFailed;
+    }
+    gPropSuite->propSetInt(props, kOfxParamPropCanUndo, 0, 0);
+    if ( (paramsDefine(paramSet, kOfxParamTypeDouble, "presetA", &props) != kOfxStatOK) ||
+         (paramsDefine(paramSet, kOfxParamTypeDouble, "presetB", &props) != kOfxStatOK) ||
+         (paramsDefine(paramSet, kOfxParamTypeDouble, "presetC", &props) != kOfxStatOK) ) {
+        return kOfxStatFailed;
+    }
+    if (paramsDefine(paramSet, kOfxParamTypeBoolean, "uiOnly", &props) != kOfxStatOK) {
+        return kOfxStatFailed;
+    }
+    gPropSuite->propSetInt(props, kOfxParamPropEvaluateOnChange, 0, 0);
+    if (paramsDefine(paramSet, kOfxParamTypeDouble, "noUndo", &props) != kOfxStatOK) {
+        return kOfxStatFailed;
+    }
+    gPropSuite->propSetInt(props, kOfxParamPropCanUndo, 0, 0);
+
+    return kOfxStatOK;
+}
+
+// kOfxActionBeginInstanceChanged and kOfxActionEndInstanceChanged
+void
+paramsBracket(OfxImageEffectHandle effect,
+              OfxPropertySetHandle inArgs,
+              bool begin)
+{
+    const char* reason = 0;
+
+    if ( !inArgs || (gPropSuite->propGetString(inArgs, kOfxPropChangeReason, 0, &reason) != kOfxStatOK) || !reason ) {
+        incrementCounter("Params.error.noReason");
+
+        return;
+    }
+    std::lock_guard<std::mutex> l(gMutex);
+    std::vector<std::string>& brackets = gParamsBrackets[effect];
+    if (begin) {
+        brackets.push_back(reason);
+        ++gCounters["Params.begin"];
+        ++gCounters[std::string("Params.begin.") + reason];
+        ++gCounters["Params.openBrackets"];
+        int& maxDepth = gCounters["Params.maxDepth"];
+        if ( (int)brackets.size() > maxDepth ) {
+            maxDepth = (int)brackets.size();
+        }
+
+        return;
+    }
+    ++gCounters["Params.end"];
+    ++gCounters[std::string("Params.end.") + reason];
+    if ( brackets.empty() ) {
+        ++gCounters["Params.error.unmatchedEnd"];
+
+        return;
+    }
+    if (brackets.back() != reason) {
+        ++gCounters["Params.error.endReasonMismatch"];
+    }
+    brackets.pop_back();
+    --gCounters["Params.openBrackets"];
+}
+
+OfxStatus
+paramsSetInt(OfxParamSetHandle paramSet,
+             const char* name,
+             int value)
+{
+    OfxParamHandle param;
+    OfxStatus stat = gParamSuite->paramGetHandle(paramSet, name, &param, 0);
+
+    return stat == kOfxStatOK ? gParamSuite->paramSetValue(param, value) : stat;
+}
+
+OfxStatus
+paramsSetDouble(OfxParamSetHandle paramSet,
+                const char* name,
+                double value)
+{
+    OfxParamHandle param;
+    OfxStatus stat = gParamSuite->paramGetHandle(paramSet, name, &param, 0);
+
+    return stat == kOfxStatOK ? gParamSuite->paramSetValue(param, value) : stat;
+}
+
+OfxStatus
+paramsInstanceChanged(OfxImageEffectHandle effect,
+                      OfxPropertySetHandle inArgs)
+{
+    const char* type = 0;
+    const char* name = 0;
+    const char* reason = 0;
+
+    if ( !inArgs ||
+         (gPropSuite->propGetString(inArgs, kOfxPropType, 0, &type) != kOfxStatOK) ||
+         (gPropSuite->propGetString(inArgs, kOfxPropName, 0, &name) != kOfxStatOK) ||
+         (gPropSuite->propGetString(inArgs, kOfxPropChangeReason, 0, &reason) != kOfxStatOK) ) {
+        incrementCounter("Params.error.badInstanceChangedArgs");
+
+        return kOfxStatFailed;
+    }
+    {
+        std::lock_guard<std::mutex> l(gMutex);
+        ++gCounters["Params.instanceChanged"];
+        ++gCounters[std::string("Params.instanceChanged.") + name];
+        const std::vector<std::string>& brackets = gParamsBrackets[effect];
+        if ( brackets.empty() ) {
+            ++gCounters["Params.error.instanceChangedOutsideBracket"];
+        } else if (brackets.back() != reason) {
+            ++gCounters["Params.error.instanceChangedReasonMismatch"];
+        }
+    }
+    if (std::strcmp(type, kOfxTypeParameter) != 0) {
+        return kOfxStatOK;
+    }
+    OfxParamSetHandle paramSet = getParamSet(effect);
+    if (!paramSet) {
+        return kOfxStatFailed;
+    }
+    if (std::strcmp(name, "chainSource") == 0) {
+        OfxParamHandle param;
+        int value = 0;
+        if ( (gParamSuite->paramGetHandle(paramSet, name, &param, 0) != kOfxStatOK) ||
+             (gParamSuite->paramGetValue(param, &value) != kOfxStatOK) ) {
+            return kOfxStatFailed;
+        }
+
+        return paramsSetInt(paramSet, "chainTarget", value + 1);
+    }
+    if (std::strcmp(name, "preset") == 0) {
+        OfxParamHandle param;
+        int value = 0;
+        if ( (gParamSuite->paramGetHandle(paramSet, name, &param, 0) != kOfxStatOK) ||
+             (gParamSuite->paramGetValue(param, &value) != kOfxStatOK) ) {
+            return kOfxStatFailed;
+        }
+        if (value == 0) {
+            return kOfxStatOK;
+        }
+        // the "preset" example of the documentation of paramEditBegin: the first write of the block goes
+        // to a parameter that is not undoable
+        incrementCounter("Params.presetApplied");
+        gParamSuite->paramEditBegin(paramSet, "Apply preset");
+        paramsSetInt(paramSet, "preset", 0);
+        paramsSetDouble(paramSet, "presetA", value * 1.);
+        paramsSetDouble(paramSet, "presetB", value * 2.);
+        paramsSetDouble(paramSet, "presetC", value * 3.);
+        gParamSuite->paramEditEnd(paramSet);
+    }
+
+    return kOfxStatOK;
+}
+
+OfxStatus
+paramsPluginMain(const char* action,
+                 const void* handle,
+                 OfxPropertySetHandle inArgs,
+                 OfxPropertySetHandle /*outArgs*/)
+{
+    OfxImageEffectHandle effect = (OfxImageEffectHandle)handle;
+
+    if (std::strcmp(action, kOfxActionDescribe) == 0) {
+        return describe(effect, "ParamsTest", kOfxImageEffectRenderFullySafe, false);
+    }
+    if (std::strcmp(action, kOfxImageEffectActionDescribeInContext) == 0) {
+        return paramsDescribeInContext(effect);
+    }
+    if (std::strcmp(action, kOfxActionCreateInstance) == 0) {
+        OfxParamSetHandle paramSet = getParamSet(effect);
+        std::lock_guard<std::mutex> l(gMutex);
+        gParamsParamSets.insert(paramSet);
+    } else if (std::strcmp(action, kOfxActionDestroyInstance) == 0) {
+        OfxParamSetHandle paramSet = getParamSet(effect);
+        std::lock_guard<std::mutex> l(gMutex);
+        gParamsParamSets.erase(paramSet);
+        if ( !gParamsBrackets[effect].empty() ) {
+            gCounters["Params.error.destroyedInBracket"] += (int)gParamsBrackets[effect].size();
+            gCounters["Params.openBrackets"] -= (int)gParamsBrackets[effect].size();
+        }
+        gParamsBrackets.erase(effect);
+    } else if (std::strcmp(action, kOfxActionBeginInstanceChanged) == 0) {
+        paramsBracket(effect, inArgs, true);
+
+        return kOfxStatOK;
+    } else if (std::strcmp(action, kOfxActionEndInstanceChanged) == 0) {
+        paramsBracket(effect, inArgs, false);
+
+        return kOfxStatOK;
+    } else if (std::strcmp(action, kOfxActionInstanceChanged) == 0) {
+        return paramsInstanceChanged(effect, inArgs);
+    }
+
+    return commonAction(action, effect, "Params");
+}
+
 void
 setHost(OfxHost* host)
 {
@@ -381,6 +714,7 @@ OfxPlugin gPlugins[] = {
     { kOfxImageEffectPluginApi, 1, kParamInteractPluginIdentifier, 1, 0, setHost, paramInteractPluginMain },
     { kOfxImageEffectPluginApi, 1, kSingleInstancePluginIdentifier, 1, 0, setHost, singleInstancePluginMain },
     { kOfxImageEffectPluginApi, 1, kSyncPrivateDataPluginIdentifier, 1, 0, setHost, syncPrivateDataPluginMain },
+    { kOfxImageEffectPluginApi, 1, kParamsPluginIdentifier, 1, 0, setHost, paramsPluginMain },
 };
 } // anonymous namespace
 

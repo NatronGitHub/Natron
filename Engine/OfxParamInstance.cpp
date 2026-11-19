@@ -4349,7 +4349,9 @@ OfxCustomInstance::OfxCustomInstance(const OfxEffectInstancePtr& node,
     GCC_DIAG_PEDANTIC_ON
 
     if (_imp->customParamInterpolationV1Entry) {
-        knob->setCustomInterpolation( _imp->customParamInterpolationV1Entry, (void*)getHandle() );
+        // The first argument of the callback is "the plugin instance that this parameter occurs in" (OfxParamSetHandle),
+        // as the plug-in gets it from getParamSet(), not the parameter.
+        knob->setCustomInterpolation( _imp->customParamInterpolationV1Entry, (void*)node->effectInstance()->getParamSetHandle() );
     }
 }
 

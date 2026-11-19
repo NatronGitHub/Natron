@@ -2317,7 +2317,7 @@ public:
      **/
     void getCurveForSerialization(int dimension, Curve* curve) const;
 
-    void setCustomInterpolation(customParamInterpolationV1Entry_t func, void* ofxParamHandle);
+    void setCustomInterpolation(customParamInterpolationV1Entry_t func, void* ofxParamSetHandle);
 
     /**
      * @brief Returns in returnValue the string held by a keyframe value, or false if the value does not hold a string.

@@ -37,6 +37,7 @@ set(Tests_SOURCES
     NodeGroup_Test.cpp
     NodePreview_Test.cpp
     OfxCPURenderSupport_Test.cpp
+    OfxCustomParamInterp_Test.cpp
     OfxImageMemory_Test.cpp
     OfxMultiThreadSuite_Test.cpp
     OfxParamInteract_Test.cpp
