@@ -375,20 +375,112 @@ OfxParamToKnob::connectDynamicProperties()
 }
 
 void
-OfxParamToKnob::onKnobAnimationLevelChanged(ViewSpec /*view*/,
-                                            int /*dimension*/)
+OfxParamToKnob::connectAnimationProperties()
 {
     OFX::Host::Param::Instance* param = getOfxParam();
 
     assert(param);
+    // only the parameters that hold a value have these properties: setGetHook() ignores the others
+    param->getProperties().setGetHook(kOfxParamPropIsAnimating, &_animationPropertiesHook);
+    param->getProperties().setGetHook(kOfxParamPropIsAutoKeying, &_animationPropertiesHook);
+}
 
-    AnimationLevelEnum l = getKnob()->getAnimationLevel(0);
+void
+OfxParamToKnob::getKnobDimensions(int* first,
+                                  int* count) const
+{
+    KnobIPtr knob = getKnob();
 
-    ///This assert might crash Natron when reading a project made with a version
-    ///of Natron prior to 0.96 when file params still had keyframes.
-    //assert(l == eAnimationLevelNone || getCanAnimate());
-    param->getProperties().setIntProperty(kOfxParamPropIsAnimating, l != eAnimationLevelNone);
-    param->getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == eAnimationLevelInterpolatedValue);
+    *first = 0;
+    *count = knob ? knob->getDimension() : 0;
+}
+
+// The knob that holds the value of a dimension: the master of a linked (slaved) dimension, recursively.
+static KnobIPtr
+getValueKnob(const KnobIPtr& knob,
+             int* dimension)
+{
+    KnobIPtr k = knob;
+
+    for (;;) {
+        std::pair<int, KnobIPtr> master = k->getMaster(*dimension);
+        if (!master.second) {
+            return k;
+        }
+        k = master.second;
+        *dimension = master.first;
+    }
+}
+
+bool
+OfxParamToKnob::isAnimatingForOfx() const
+{
+    KnobIPtr knob = getKnob();
+
+    if (!knob) {
+        return false;
+    }
+    int first, count;
+    getKnobDimensions(&first, &count);
+    for (int i = first; i < first + count; ++i) {
+        int dim = i;
+        KnobIPtr k = getValueKnob(knob, &dim);
+        if ( !k->getExpression(dim).empty() || k->isAnimated( dim, ViewSpec::current() ) ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool
+OfxParamToKnob::isAutoKeyingForOfx() const
+{
+    KnobIPtr knob = getKnob();
+
+    if ( !knob || !knob->isAnimationEnabled() ) {
+        return false;
+    }
+    int first, count;
+    getKnobDimensions(&first, &count);
+    // see Knob<T>::setValue(): a value change of a dimension animated by keyframes sets a keyframe
+    for (int i = first; i < first + count; ++i) {
+        if ( !knob->isSlave(i) && knob->getExpression(i).empty() && knob->isAnimated( i, ViewSpec::current() ) ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+int
+OfxParamToKnob::AnimationPropertiesHook::getIntProperty(const std::string &name,
+                                                        int /*index*/) const OFX_EXCEPTION_SPEC
+{
+    if (name == kOfxParamPropIsAnimating) {
+        return _param->isAnimatingForOfx() ? 1 : 0;
+    }
+    if (name == kOfxParamPropIsAutoKeying) {
+        return _param->isAutoKeyingForOfx() ? 1 : 0;
+    }
+
+    return 0;
+}
+
+void
+OfxParamToKnob::AnimationPropertiesHook::getIntPropertyN(const std::string &name,
+                                                         int *values,
+                                                         int count) const OFX_EXCEPTION_SPEC
+{
+    for (int i = 0; i < count; ++i) {
+        values[i] = getIntProperty(name, i);
+    }
+}
+
+int
+OfxParamToKnob::AnimationPropertiesHook::getDimension(const std::string & /*name*/) const OFX_EXCEPTION_SPEC
+{
+    return 1;
 }
 
 void

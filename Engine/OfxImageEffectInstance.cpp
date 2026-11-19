@@ -739,13 +739,8 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     knob->setCanUndo( descriptor.getCanUndo() );
     knob->setSpacingBetweenItems( descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth) );
 
-    if ( knob->isAnimationEnabled() ) {
-        KnobSignalSlotHandlerPtr handler = knob->getSignalSlotHandler();
-        if (handler) {
-            QObject::connect( handler.get(), SIGNAL(animationLevelChanged(ViewSpec,int)), ptk,
-                              SLOT(onKnobAnimationLevelChanged(ViewSpec,int)) );
-        }
-    }
+    // kOfxParamPropIsAnimating and kOfxParamPropIsAutoKeying
+    ptk->connectAnimationProperties();
 
     int layoutHint = descriptor.getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if (layoutHint == kOfxParamPropLayoutHintNoNewLine) {

@@ -86,10 +86,28 @@ class OfxParamToKnob
 
     friend class PropertyModified_RAII;
 
+    // Computes kOfxParamPropIsAnimating and kOfxParamPropIsAutoKeying when they are read
+    class AnimationPropertiesHook
+        : public OFX::Host::Property::GetHook
+    {
+        const OfxParamToKnob* _param;
+
+    public:
+        explicit AnimationPropertiesHook(const OfxParamToKnob* param)
+            : _param(param)
+        {
+        }
+
+        virtual int getIntProperty(const std::string &name, int index = 0) const OFX_EXCEPTION_SPEC OVERRIDE FINAL;
+        virtual void getIntPropertyN(const std::string &name, int *values, int count) const OFX_EXCEPTION_SPEC OVERRIDE FINAL;
+        virtual int getDimension(const std::string &name) const OFX_EXCEPTION_SPEC OVERRIDE FINAL;
+    };
+
     OFX::Host::Interact::Descriptor interactDesc;
     mutable QMutex dynamicPropModifiedMutex;
     int _dynamicPropModified;
     EffectInstanceWPtr _effect;
+    AnimationPropertiesHook _animationPropertiesHook;
 
 public:
 
@@ -98,6 +116,7 @@ public:
         : dynamicPropModifiedMutex()
         , _dynamicPropModified(0)
         , _effect(effect)
+        , _animationPropertiesHook(this)
     {
     }
 
@@ -118,6 +137,34 @@ public:
     EffectInstancePtr getKnobHolder() const;
 
     void connectDynamicProperties();
+
+    /**
+     * @brief Compute kOfxParamPropIsAnimating and kOfxParamPropIsAutoKeying from the knob when the plug-in reads
+     * them, with or without a GUI.
+     **/
+    void connectAnimationProperties();
+
+    /**
+     * @brief kOfxParamPropIsAnimating: the value of the parameter may change with time, in any of its dimensions:
+     * it has keyframes or an expression, or it is linked to a parameter that has.
+     **/
+    bool isAnimatingForOfx() const;
+
+    /**
+     * @brief kOfxParamPropIsAutoKeying: a value change adds a keyframe, which Natron does in the dimensions that
+     * are animated by keyframes.
+     **/
+    bool isAutoKeyingForOfx() const;
+
+protected:
+
+    /**
+     * @brief The dimensions of the knob that hold the parameter: [*first, *first + *count).
+     * All of them, except for the parameters that share a knob (see OfxDouble2DInstance).
+     **/
+    virtual void getKnobDimensions(int* first, int* count) const;
+
+public:
 
     //these are per ofxparam thread-local data
     struct OfxParamTLSData
@@ -177,7 +224,6 @@ public Q_SLOTS:
     void onLabelChanged();
     void onDisplayMinMaxChanged(double min, double max, int index);
     void onMinMaxChanged(double min, double max, int index);
-    void onKnobAnimationLevelChanged(ViewSpec view, int dimension);
     void onChoiceMenuReset();
     void onChoiceMenuPopulated();
     void onChoiceMenuEntryAppended();
@@ -563,6 +609,14 @@ public:
 
     //bool isAnimated(int dimension) const;
     bool isAnimated() const;
+
+protected:
+
+    virtual void getKnobDimensions(int* first, int* count) const OVERRIDE FINAL
+    {
+        *first = _startIndex;
+        *count = 2;
+    }
 
 private:
 
