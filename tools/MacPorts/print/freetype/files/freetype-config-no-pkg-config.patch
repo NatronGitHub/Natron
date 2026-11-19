@@ -1,0 +1,13 @@
+Let's not have freetype-config giving different answers depending on
+whether or not pkg-config is installed.
+--- builds/unix/unix-def.in.orig	2022-03-30 13:50:28.000000000 -0500
++++ builds/unix/unix-def.in	2022-04-06 16:29:20.000000000 -0500
+@@ -111,7 +111,7 @@
+ $(OBJ_BUILD)/freetype-config: $(TOP_DIR)/builds/unix/freetype-config.in
+ 	rm -f $@ $@.tmp
+ 	sed -e 's|%LIBSSTATIC_CONFIG%|$(LIBSSTATIC_CONFIG)|'   \
+-	    -e 's|%PKG_CONFIG%|$(PKG_CONFIG)|'                 \
++	    -e 's|%PKG_CONFIG%|false|'                         \
+ 	    -e 's|%build_libtool_libs%|$(build_libtool_libs)|' \
+ 	    -e 's|%exec_prefix%|$(exec_prefix)|'               \
+ 	    -e 's|%ft_version%|$(ft_version)|'                 \

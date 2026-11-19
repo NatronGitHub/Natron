@@ -42,8 +42,8 @@ Prerequisites
 - **macOS packaging tools**, verified early by ``launchBuildMain.sh`` and
   documented in ``INSTALL_MACOS.md``:
 
-  - ``dmgbuild`` — ``sudo port install py310-dmgbuild`` and
-    ``sudo ln -s dmgbuild-3.10 /opt/local/bin/dmgbuild`` (or
+  - ``dmgbuild`` — ``sudo port install py311-dmgbuild`` and
+    ``sudo ln -sfn dmgbuild-3.11 /opt/local/bin/dmgbuild`` (or
     ``python3 -m pip install dmgbuild``); writes the DMG ``.DS_Store`` layout
     without Finder/TCC.
   - ``oiiotool`` — from the ``openimageio`` port (DMG background processing).
@@ -174,8 +174,9 @@ default source in ``/opt/local/etc/macports/sources.conf`` is the HTTPS one.
 
    **Pinned ports are the exception.** A port directory with a ``PINNED`` file
    is deliberately kept at a version other than upstream's (the table is in
-   ``INSTALL_MACOS.md``, section 11; today ``graphics/libraw`` and
-   ``graphics/opencolorio``). The file says which kind of pin it is:
+   ``INSTALL_MACOS.md``, section 11; today ``graphics/libraw``,
+   ``graphics/opencolorio`` and ``print/freetype``). The file says which
+   kind of pin it is:
    ``ahead`` (our version is newer than upstream's: unpin it, by deleting
    ``PINNED`` and taking upstream's Portfile, as soon as upstream's version
    is greater than or equal to ours, which ``check.sh`` reports as

@@ -240,7 +240,9 @@ Interpolation::solveCubic(double c0,
         }
     } else if (D < 0.0) {
         // casus irreductibilis: three real solutions
-        double phi = 1.0 / 3.0 * acos( -q / sqrt(-cb_p) );
+        // D < 0 implies cb_p < -q*q <= 0, so -cb_p > 0 and |q / sqrt(-cb_p)| < 1,
+        // but rounding may give a value slightly outside of [-1, 1]
+        double phi = 1.0 / 3.0 * acos( std::max( -1., std::min( -q / sqrt(-cb_p), 1. ) ) );
         double t = 2.0 * sqrt(-p);
         s[0] = t * cos(phi);
         o[0] = 1;
@@ -306,7 +308,9 @@ getOneCubicRoot(double c0,
         }
     } else if (D < 0.0) {
         // casus irreductibilis: three real solutions
-        double phi = 1.0 / 3.0 * acos( -q / sqrt(-cb_p) );
+        // D < 0 implies cb_p < -q*q <= 0, so -cb_p > 0 and |q / sqrt(-cb_p)| < 1,
+        // but rounding may give a value slightly outside of [-1, 1]
+        double phi = 1.0 / 3.0 * acos( std::max( -1., std::min( -q / sqrt(-cb_p), 1. ) ) );
         double t = 2.0 * sqrt(-p);
         s = t * cos(phi);
     } else { // D > 0.0
@@ -448,6 +452,10 @@ Interpolation::interpolate(double tcur,
         P3 = P0 + P0pr;
         tnext = tcur + 1;
     }
+    if (tnext <= tcur) {
+        // degenerate segment (coincident keyframes): there is nothing to interpolate
+        return P0;
+    }
     double c0, c1, c2, c3;
     hermiteToCubicCoeffs(P0, P0pr, P3pl, P3, &c0, &c1, &c2, &c3);
 
@@ -496,6 +504,10 @@ Interpolation::derive(double tcur,
         P3pl = P0pr;
         P3 = P0 + P0pr;
         tnext = tcur + 1;
+    }
+    if (tnext <= tcur) {
+        // degenerate segment (coincident keyframes): the derivative is undefined, return 0
+        return 0.;
     }
     double c0, c1, c2, c3;
     hermiteToCubicCoeffs(P0, P0pr, P3pl, P3, &c0, &c1, &c2, &c3);
@@ -548,6 +560,10 @@ Interpolation::derive_clamp(double tcur,
         P3 = P0 + P0pr;
         tnext = tcur + 1;
     }
+    if (tnext <= tcur) {
+        // degenerate segment (coincident keyframes): the derivative is undefined, return 0
+        return 0.;
+    }
     double c0, c1, c2, c3;
     hermiteToCubicCoeffs(P0, P0pr, P3pl, P3, &c0, &c1, &c2, &c3);
 
@@ -599,6 +615,10 @@ Interpolation::integrate(double tcur,
         P3pl = P0pr;
         P3 = P0 + P0pr;
         tnext = tcur + 1;
+    }
+    if (tnext <= tcur) {
+        // degenerate segment (coincident keyframes): its integral is zero
+        return 0.;
     }
     double c0, c1, c2, c3;
     hermiteToCubicCoeffs(P0, P0pr, P3pl, P3, &c0, &c1, &c2, &c3);
@@ -717,8 +737,9 @@ Interpolation::integrate_clamp(double tcur,
                                KeyframeTypeEnum interp,
                                KeyframeTypeEnum interpNext)
 {
-    if ( vmin == -std::numeric_limits<double>::infinity() &&
-         vmax == +std::numeric_limits<double>::infinity() ) {
+    // unbounded range (+/-DBL_MAX or +/-infinity): no clamping
+    if ( vmin <= std::numeric_limits<double>::lowest() &&
+         vmax >= std::numeric_limits<double>::max() ) {
         return integrate(tcur,
                          vcur,              //start control point
                          vcurDerivRight, //being the derivative dv/dt at tcur
@@ -754,6 +775,10 @@ Interpolation::integrate_clamp(double tcur,
         P3pl = P0pr;
         P3 = P0 + P0pr;
         tnext = tcur + 1;
+    }
+    if (tnext <= tcur) {
+        // degenerate segment (coincident keyframes): its integral is zero
+        return 0.;
     }
     double c0, c1, c2, c3;
     hermiteToCubicCoeffs(P0, P0pr, P3pl, P3, &c0, &c1, &c2, &c3);
@@ -958,12 +983,30 @@ Interpolation::autoComputeDerivatives(KeyframeTypeEnum interpPrev,
     const double P0 = vcur;
     const double P3 = vnext;
 
+    // A previous (or next) keyframe that is not strictly before (or after) the current one,
+    // e.g. the same point seen through the period of a periodic curve (#1267), would make the
+    // formulas below divide by zero: ignore it.
+    if (tprev >= tcur) {
+        interpPrev = eKeyframeTypeNone;
+    }
+    if (tnext <= tcur) {
+        interpNext = eKeyframeTypeNone;
+    }
+
     // Hermite coefficients P0' and P3' are the derivatives with respect to x \in [0,1]
+    // (a virtual keyframe one frame away; for |tcur| > 2^53, tcur +/- 1 rounds to tcur, so
+    // use the next representable time instead, to never divide by zero)
     if (interpPrev == eKeyframeTypeNone) {
         tprev = tcur - 1.;
+        if (tprev >= tcur) {
+            tprev = std::nextafter( tcur, std::numeric_limits<double>::lowest() );
+        }
     }
     if (interpNext == eKeyframeTypeNone) {
         tnext = tcur + 1.;
+        if (tnext <= tcur) {
+            tnext = std::nextafter( tcur, std::numeric_limits<double>::max() );
+        }
     }
     const double Q0pr = vprevDerivRight * (tcur - tprev); // normalize for x \in [0,1]
     const double P3pl = vnextDerivLeft * (tnext - tcur); // normalize for x \in [0,1]

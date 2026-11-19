@@ -77,6 +77,7 @@ Format::serialize(Archive & ar,
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RectI);
     }
     ar & ::boost::serialization::make_nvp("Pixel_aspect_ratio", _par);
+    _par = validPixelAspectRatio(_par); // a file may contain 0
     ar & ::boost::serialization::make_nvp("Name", _name);
 }
 

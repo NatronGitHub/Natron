@@ -1145,19 +1145,6 @@ KnobHelper::moveValueAtTimeInternal(bool useGuiCurve,
     }
 
 
-    ///Make sure string animation follows up
-    AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>(this);
-    std::string v;
-    if (isString) {
-        isString->stringFromInterpolatedValue(time, view, &v);
-    }
-    keyframeRemoved_virtual(dimension, time);
-    if (isString) {
-        double ret;
-        isString->stringToKeyFrameValue(newKey->getTime(), view, v, &ret);
-    }
-
-
     if (_signalSlotHandler) {
         _signalSlotHandler->s_keyFrameMoved( view, dimension, time, newKey->getTime() );
     }
@@ -1278,22 +1265,13 @@ KnobHelper::transformValueAtTimeInternal(bool useGuiCurve,
     p = Transform::matApply(matrix, p);
 
 
-    if ( curve->areKeyFramesValuesClampedToIntegers() ) {
+    if ( !curve->isYComponentMovable() ) {
+        // the value of a string keyframe references its string (see StringAnimationManager)
+        p.y = k.getValue();
+    } else if ( curve->areKeyFramesValuesClampedToIntegers() ) {
         p.y = std::floor(p.y + 0.5);
     } else if ( curve->areKeyFramesValuesClampedToBooleans() ) {
         p.y = p.y < 0.5 ? 0 : 1;
-    }
-
-    ///Make sure string animation follows up
-    AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>(this);
-    std::string v;
-    if (isString) {
-        isString->stringFromInterpolatedValue(k.getValue(), view, &v);
-    }
-    keyframeRemoved_virtual(dimension, time);
-    if (isString) {
-        double ret;
-        isString->stringToKeyFrameValue(p.x, view, v, &ret);
     }
 
 
@@ -2772,11 +2750,12 @@ KnobHelper::validateExpression(const std::string& expression,
                     index = 1;
                 }
 
-                const AnimatingKnobStringHelper* isStringAnimated = dynamic_cast<const AnimatingKnobStringHelper* >(this);
-                if (!isStringAnimated) {
-                    return std::string();
+                // a number is the index of a keyframe (the last one if the index is too large)
+                int nKeys = isString->getKeyFramesCount(ViewIdx(0), dimension);
+                if ( (index >= 0) && (nKeys > 0) ) {
+                    bool ok;
+                    *resultAsString = isString->getKeyFrameValueByIndex(ViewIdx(0), dimension, std::min(index, nKeys - 1), &ok);
                 }
-                isStringAnimated->stringFromInterpolatedValue(index, ViewSpec::current(), resultAsString);
             }
         }
     }
@@ -6438,46 +6417,6 @@ KnobHolder::updateHasAnimation()
 }
 
 /***************************STRING ANIMATION******************************************/
-void
-AnimatingKnobStringHelper::cloneExtraData(KnobI* other,
-                                          int /*dimension*/,
-                                          int /*otherDimension*/)
-{
-    AnimatingKnobStringHelper* isAnimatedString = dynamic_cast<AnimatingKnobStringHelper*>(other);
-
-    if (isAnimatedString) {
-        _animation->clone( isAnimatedString->getAnimation() );
-    }
-}
-
-bool
-AnimatingKnobStringHelper::cloneExtraDataAndCheckIfChanged(KnobI* other,
-                                                           int /*dimension*/,
-                                                           int /*otherDimension*/)
-{
-    AnimatingKnobStringHelper* isAnimatedString = dynamic_cast<AnimatingKnobStringHelper*>(other);
-
-    if (isAnimatedString) {
-        return _animation->cloneAndCheckIfChanged( isAnimatedString->getAnimation() );
-    }
-
-    return false;
-}
-
-void
-AnimatingKnobStringHelper::cloneExtraData(KnobI* other,
-                                          double offset,
-                                          const RangeD* range,
-                                          int /*dimension*/,
-                                          int /*otherDimension*/)
-{
-    AnimatingKnobStringHelper* isAnimatedString = dynamic_cast<AnimatingKnobStringHelper*>(other);
-
-    if (isAnimatedString) {
-        _animation->clone(isAnimatedString->getAnimation(), offset, range);
-    }
-}
-
 AnimatingKnobStringHelper::AnimatingKnobStringHelper(KnobHolder* holder,
                                                      const std::string &description,
                                                      int dimension,
@@ -6492,61 +6431,55 @@ AnimatingKnobStringHelper::~AnimatingKnobStringHelper()
 }
 
 void
-AnimatingKnobStringHelper::stringToKeyFrameValue(double time,
+AnimatingKnobStringHelper::stringToKeyFrameValue(double /*time*/,
                                                  ViewSpec /*view*/,
                                                  const std::string & v,
                                                  double* returnValue)
 {
-    _animation->insertKeyFrame(time, v, returnValue);
+    *returnValue = StringAnimationManager::stringToKeyFrameValue(v);
 }
 
-void
-AnimatingKnobStringHelper::stringFromInterpolatedValue(double interpolated,
-                                                       ViewSpec view,
-                                                       std::string* returnValue) const
+bool
+AnimatingKnobStringHelper::stringFromKeyFrameValue(double value,
+                                                   std::string* returnValue) const
 {
-    assert( !view.isAll() );
-    Q_UNUSED(view);
-    _animation->stringFromInterpolatedIndex(interpolated, returnValue);
+    return StringAnimationManager::keyFrameValueToString(value, returnValue);
 }
 
-void
-AnimatingKnobStringHelper::animationRemoved_virtual(int /*dimension*/)
+bool
+AnimatingKnobStringHelper::getStringFromCurve(const Curve& curve,
+                                              double time,
+                                              std::string* ret) const
 {
-    _animation->clearKeyFrames();
-}
-
-void
-AnimatingKnobStringHelper::keyframeRemoved_virtual(int /*dimension*/,
-                                                   double time)
-{
-    _animation->removeKeyFrame(time);
-}
-
-std::string
-AnimatingKnobStringHelper::getStringAtTime(double time,
-                                           ViewSpec view,
-                                           int dimension)
-{
-    std::string ret;
-
-    // assert(!view.isAll());
-    // assert(!view.isCurrent()); // not yet implemented
-    if ( _animation->hasCustomInterp() ) {
-        bool succeeded = false;
+    // Do not interpolate the keyframe values, which are not numbers (see StringAnimationManager)
+    KeyFrame prev, next;
+    bool hasNext = false;
+    if (curve.getKeyFramesAround(time, &prev, &next, &hasNext) < 0) {
+        // before the first keyframe, or no keyframe
+        return hasNext && stringFromKeyFrameValue(next.getValue(), ret);
+    }
+    if (prev.getTime() == time) {
+        return stringFromKeyFrameValue(prev.getValue(), ret);
+    }
+    if ( hasNext && _animation->hasCustomInterp() ) {
+        // in-between 2 keyframes
+        std::string prevValue, nextValue;
+        if ( !stringFromKeyFrameValue(prev.getValue(), &prevValue) ||
+             !stringFromKeyFrameValue(next.getValue(), &nextValue) ) {
+            return false;
+        }
         try {
-            succeeded = _animation->customInterpolation(time, &ret);
+            _animation->customInterpolation(time, prev.getTime(), prevValue, next.getTime(), nextValue, ret);
         } catch (...) {
+            // the interpolation function is plug-in code: fall back to the value of the knob
+            return false;
         }
 
-        if (!succeeded) {
-            return getValue(dimension, view);
-        } else {
-            return ret;
-        }
+        return true;
     }
 
-    return ret;
+    // the value of the last keyframe before time
+    return stringFromKeyFrameValue(prev.getValue(), ret);
 }
 
 void
@@ -6559,13 +6492,63 @@ AnimatingKnobStringHelper::setCustomInterpolation(customParamInterpolationV1Entr
 void
 AnimatingKnobStringHelper::loadAnimation(const std::map<int, std::string> & keyframes)
 {
-    _animation->load(keyframes);
+    // Projects store the string of each keyframe by time (see saveAnimation()). The values of the keyframes in
+    // the curve are indices in this list, which were wrong in projects saved by older versions if a keyframe was
+    // added before or removed between existing keyframes (issue #1290): ignore them.
+    for (int dim = 0; dim < getDimension(); ++dim) {
+        CurvePtr curve = getCurve(ViewIdx(0), dim, true /*byPassMaster*/);
+        if ( !curve || (curve->getKeyFramesCount() == 0) ) {
+            continue;
+        }
+        KeyFrameSet keys = curve->getKeyFrames_mt_safe();
+        KeyFrameSet newKeys;
+        for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+            std::string v;
+            if ( !keyframes.empty() ) {
+                // The times are saved as integers: use the last saved time at or before the keyframe time.
+                std::map<int, std::string>::const_iterator found = keyframes.upper_bound( (int)it->getTime() );
+                if ( found != keyframes.begin() ) {
+                    --found;
+                }
+                v = found->second;
+            }
+            KeyFrame k(*it);
+            k.setValue( StringAnimationManager::stringToKeyFrameValue(v) );
+            newKeys.insert(k);
+        }
+        curve->setKeyframes(newKeys, false);
+    }
 }
 
 void
 AnimatingKnobStringHelper::saveAnimation(std::map<int, std::string>* keyframes) const
 {
-    _animation->save(keyframes);
+    CurvePtr curve = getCurve(ViewIdx(0), 0, true /*byPassMaster*/);
+
+    if (!curve) {
+        return;
+    }
+    KeyFrameSet keys = curve->getKeyFrames_mt_safe();
+    for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        std::string v;
+        stringFromKeyFrameValue(it->getValue(), &v);
+        // The project format stores integer times, as before: keyframes at fractional times are truncated, and
+        // if several keyframes have the same integer part, only the first one is saved. loadAnimation() gives
+        // the others the string of the last saved time at or before their time.
+        keyframes->insert( std::make_pair( (int)it->getTime(), v ) );
+    }
+}
+
+void
+AnimatingKnobStringHelper::getCurveForSerialization(int dimension,
+                                                    Curve* curve) const
+{
+    CurvePtr internalCurve = getCurve(ViewIdx(0), dimension, true /*byPassMaster*/);
+
+    assert(internalCurve);
+    // Keyframe values are only valid within this process (see StringAnimationManager). Save the index of
+    // each keyframe, which is what older versions read from projects.
+    curve->setKeyframes(internalCurve->getKeyFramesForDisplay_mt_safe(), false);
 }
 
 /***************************KNOB EXPLICIT TEMPLATE INSTANTIATION******************************************/
