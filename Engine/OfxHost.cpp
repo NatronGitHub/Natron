@@ -638,88 +638,34 @@ OfxHost::clearPersistentMessage()
     return kOfxStatOK;
 }
 
-static std::string
-getContext_internal(const std::set<std::string> & contexts)
+std::vector<std::string>
+OfxHost::getSupportedContexts(const std::set<std::string> & pluginContexts)
 {
-    std::string context;
+    // The contexts Natron can instantiate a plug-in in, by order of preference. Generator, Filter,
+    // General and Transition are the ones it advertises in kOfxImageEffectPropSupportedContexts (see
+    // setProperties()); Reader, Writer and Tracker (a Natron extension) are not advertised, but Natron
+    // implements them; Paint is handled like General with the clips of the Paint context. Retimer is not
+    // supported: Natron does not drive the "SourceTime" parameter.
+    static const char* const supportedContexts[] = {
+        kOfxImageEffectContextReader,
+        kOfxImageEffectContextWriter,
+        kNatronOfxImageEffectContextTracker,
+        kOfxImageEffectContextGeneral,
+        kOfxImageEffectContextFilter,
+        kOfxImageEffectContextPaint,
+        kOfxImageEffectContextGenerator,
+        kOfxImageEffectContextTransition,
+    };
+    std::vector<std::string> ret;
 
-    if (contexts.size() == 0) {
-        throw std::runtime_error( std::string("Error: Plug-in does not support any context") );
-        //context = kOfxImageEffectContextGeneral;
-        //plugin->addContext(kOfxImageEffectContextGeneral);
-    } else if (contexts.size() == 1) {
-        context = ( *contexts.begin() );
-
-        return context;
-    } else {
-        std::set<std::string>::iterator found = contexts.find(kOfxImageEffectContextReader);
-        bool reader = found != contexts.end();
-        if (reader) {
-            context = kOfxImageEffectContextReader;
-
-            return context;
-        }
-
-        found = contexts.find(kOfxImageEffectContextWriter);
-        bool writer = found != contexts.end();
-        if (writer) {
-            context = kOfxImageEffectContextWriter;
-
-            return context;
-        }
-
-        found = contexts.find(kNatronOfxImageEffectContextTracker);
-        bool tracker = found != contexts.end();
-        if (tracker) {
-            context = kNatronOfxImageEffectContextTracker;
-
-            return context;
-        }
-
-
-        found = contexts.find(kOfxImageEffectContextGeneral);
-        bool general = found != contexts.end();
-        if (general) {
-            context = kOfxImageEffectContextGeneral;
-
-            return context;
-        }
-
-        found = contexts.find(kOfxImageEffectContextFilter);
-        bool filter = found != contexts.end();
-        if (filter) {
-            context = kOfxImageEffectContextFilter;
-
-            return context;
-        }
-
-        found = contexts.find(kOfxImageEffectContextPaint);
-        bool paint = found != contexts.end();
-        if (paint) {
-            context = kOfxImageEffectContextPaint;
-
-            return context;
-        }
-
-        found = contexts.find(kOfxImageEffectContextGenerator);
-        bool generator = found != contexts.end();
-        if (generator) {
-            context = kOfxImageEffectContextGenerator;
-
-            return context;
-        }
-
-        found = contexts.find(kOfxImageEffectContextTransition);
-        bool transition = found != contexts.end();
-        if (transition) {
-            context = kOfxImageEffectContextTransition;
-
-            return context;
+    for (std::size_t i = 0; i < sizeof(supportedContexts) / sizeof(supportedContexts[0]); ++i) {
+        if ( pluginContexts.count(supportedContexts[i]) ) {
+            ret.push_back(supportedContexts[i]);
         }
     }
 
-    return context;
-} // getContext_internal
+    return ret;
+}
 
 OFX::Host::ImageEffect::Descriptor*
 OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
@@ -798,9 +744,13 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
     }
     assert(pluginHandle->getOfxPlugin() && pluginHandle->getOfxPlugin()->mainEntry);
 
-    const std::set<std::string> & contexts = plugin->getContexts();
-    std::string context = getContext_internal(contexts);
-    if ( context.empty() ) {
+    // "kOfxImageEffectActionDescribeInContext will be called once for each context that the host and
+    // plug-in mutually support" (ofxCore.h). A Natron node has a single context, so the contexts are
+    // described lazily, by order of preference, until one succeeds: a context whose description returns
+    // kOfxStatErrMissingHostFeature "will be ignored by the host" (ofxImageEffect.h), and the next one
+    // is tried.
+    const std::vector<std::string> contexts = getSupportedContexts( plugin->getContexts() );
+    if ( contexts.empty() ) {
         throw std::invalid_argument( tr("OpenFX plug-in does not have any valid context.").toStdString() );
     }
 
@@ -809,11 +759,20 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
     assert(ph->getOfxPlugin()->mainEntry);
     Q_UNUSED(ph);
     OFX::Host::ImageEffect::Descriptor* desc = NULL;
-    //This will call kOfxImageEffectActionDescribeInContext
-    desc = plugin->getContext(context);
+    std::string context;
+    QStringList failedContexts;
+    for (std::vector<std::string>::const_iterator it = contexts.begin(); it != contexts.end(); ++it) {
+        //This will call kOfxImageEffectActionDescribeInContext
+        desc = plugin->getContext(*it);
+        if (desc) {
+            context = *it;
+            break;
+        }
+        failedContexts.push_back( QString::fromUtf8( it->c_str() ) );
+    }
     if (!desc) {
         throw std::runtime_error( tr("Plug-in parameters and inputs description (kOfxImageEffectActionDescribeInContext) failed in context %1.")
-                                  .arg( QString::fromUtf8( context.c_str() ) ).toStdString() );
+                                  .arg( failedContexts.join( QString::fromUtf8(", ") ) ).toStdString() );
     }
 
     //Create the mask clip if needed
@@ -1097,7 +1056,20 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
          it != ofxPlugins.end(); ++it) {
         OFX::Host::ImageEffect::ImageEffectPlugin* p = it->second;
         assert(p);
-        if (p->getContexts().size() == 0) {
+        // "If a plug-in does not report to support any context supported by host, host should not enable
+        // the plug-in." (ofxCore.h)
+        if ( getSupportedContexts( p->getContexts() ).empty() ) {
+            if ( !p->getContexts().empty() ) {
+                QStringList pluginContexts;
+                for (std::set<std::string>::const_iterator itc = p->getContexts().begin(); itc != p->getContexts().end(); ++itc) {
+                    pluginContexts.push_back( QString::fromUtf8( itc->c_str() ) );
+                }
+                QString message = tr("%1 is not loaded: none of its contexts (%2) is supported.")
+                                  .arg( QString::fromUtf8( p->getIdentifier().c_str() ) )
+                                  .arg( pluginContexts.join( QString::fromUtf8(", ") ) );
+                qDebug() << "Load OFX Plugins:" << message;
+                appPTR->writeToErrorLog_mt_safe( QLatin1String("OpenFX"), QDateTime::currentDateTime(), message );
+            }
             continue;
         }
         assert( p->getBinary() );

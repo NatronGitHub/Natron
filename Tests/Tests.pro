@@ -67,6 +67,7 @@ SOURCES += \
     NodePresets_Test.cpp \
     NodePreview_Test.cpp \
     OfxBytesParam_Test.cpp \
+    OfxContexts_Test.cpp \
     OfxCPURenderSupport_Test.cpp \
     OfxClipGetImage_Test.cpp \
     OfxCustomParamInterp_Test.cpp \
