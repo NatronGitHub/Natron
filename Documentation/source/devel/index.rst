@@ -7,7 +7,8 @@ This guide is for people who automate or extend Natron without changing its C++ 
 
 - Python script authors, who automate tasks, set up projects, or add menu commands and panels;
 - PyPlug authors, who package node graphs as reusable nodes;
-- pipeline TDs, who render projects from the command line or on a render farm.
+- pipeline TDs, who render projects from the command line or on a render farm;
+- OpenFX plug-in authors, who write new nodes in C or C++ as OpenFX plug-ins.
 
 To change Natron itself, read the :ref:`maintainers-guide`. To use Natron, read the :ref:`user-guide`.
 
@@ -25,10 +26,9 @@ Where to start:
 - :ref:`groups` explains how to turn a Group into a PyPlug, and :ref:`pyplugWriting` how to write one.
 - :ref:`debuggingPython` explains where the output and the errors of your scripts go.
 - :ref:`pythonEnvironment` explains which Python Natron uses and how to add modules such as numpy.
+- :ref:`devel-openfx` is for authors of OpenFX plug-ins (C or C++), with the OpenFX Programming Guide
+  and Reference.
 - The :ref:`apiReference` lists all the classes and functions.
-
-.. The OpenFX plug-ins section (written separately) goes in the toctree below,
-   after "commandline" and before "devel-faq".
 
 .. toctree::
     :maxdepth: 2
@@ -38,6 +38,7 @@ Where to start:
     pyplugs
     python-gui
     commandline
+    openfx
     devel-faq
     tutorials
     APIReference
