@@ -267,6 +267,17 @@ OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,
     setCallingViewport(knob);
 }
 
+void
+OfxParamOverlayInteract::destroyInstanceAction()
+{
+    if (_state == OFX::Host::Interact::eCreated) {
+        callEntry(kOfxActionDestroyInstance, NULL);
+    }
+    // Instance::callEntry() doesn't call the plug-in for a failed instance, and ~Instance() only
+    // calls kOfxActionDestroyInstance for a created one.
+    _state = OFX::Host::Interact::eFailed;
+}
+
 bool
 OfxParamOverlayInteract::isColorPickerRequired() const
 {

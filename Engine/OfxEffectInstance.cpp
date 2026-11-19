@@ -631,6 +631,21 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
 OfxEffectInstance::~OfxEffectInstance()
 {
+    // The interacts must be destroyed before their effect (ofxInteracts.rst). The parameter
+    // interacts are held by their knob, which outlives this object (the knobs belong to the
+    // KnobHolder base), and maybe by the GUI: destroy them now.
+    const KnobsVec& knobs = getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        // render clones share the knobs of the main instance, which owns their interacts
+        if ( !*it || ( (*it)->getHolder() != this ) ) {
+            continue;
+        }
+        OfxParamOverlayInteractPtr interact = (*it)->getCustomInteract();
+        if (interact) {
+            interact->destroyInstanceAction();
+            (*it)->setCustomInteract( OfxParamOverlayInteractPtr() );
+        }
+    }
     _imp->overlayInteract.reset();
     if (_imp->effect) {
         _imp->effect->destroyInstanceAction();
