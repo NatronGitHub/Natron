@@ -17,7 +17,7 @@ Project and files
 **Set the format and frame rate before you start**
 
 Open the :ref:`project settings <compositing-projects-setup>` (press :kbd:`S`
-in the node graph) and set the **Output Format** and **Frame Rate** before you
+in the node graph) and set the **Project Format** and **Frame Rate** before you
 add nodes. Generators such as Constant use the project format by default. If
 it is wrong, many nodes end up with a format different from the one you work
 in, which is tedious to fix later.
