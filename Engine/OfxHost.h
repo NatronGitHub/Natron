@@ -71,6 +71,11 @@ public:
 
     void setOfxHostOSHandle(void* handle);
 
+    /// Is a plug-in with this descriptor deprecated, i.e. only kept to load old projects and not offered
+    /// to users for new nodes? True if it sets kNatronOfxImageEffectPropDeprecated (Natron extension) or
+    /// kOfxImageEffectPluginPropObsolete (OFX, after 1.5.1), which have the same meaning.
+    static bool isPluginDeprecated(const OFX::Host::Property::Set& descriptorProps);
+
     /// Create a new instance of an image effect plug-in.
     ///
     /// It is called by ImageEffectPlugin::createInstance which the

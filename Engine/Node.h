@@ -1131,6 +1131,14 @@ public:
 
     void onFileNameParameterChanged(KnobI* fileKnob);
 
+    /**
+     * @brief For writers: hide the Views parameter of WriteOIIO if the file name has a %v or %V view
+     * pattern (each view is written to its own file, see OutputEffectInstance::renderFullSequence()).
+     * Otherwise its visibility is left as the plug-in set it: WriteOIIO shows it only for the formats
+     * that can hold several views in a single file (EXR).
+     **/
+    void refreshViewsSelectorVisibility();
+
     static void getOriginalFrameRangeForReader(const std::string& pluginID, const std::string& canonicalFileName, int* firstFrame, int* lastFrame);
 
     void computeFrameRangeForReader(KnobI* fileKnob);

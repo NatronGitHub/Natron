@@ -21,7 +21,9 @@ win32-msvc* {
 	}
 }
 
+# bundled third-party code: no warnings (-w), as NATRON_THIRD_PARTY_NO_WARNINGS in CMake
 CONFIG -= warn_on
+CONFIG += warn_off
 
 SOURCES += \
         openMVG/features/akaze/AKAZE.cpp \

@@ -3626,11 +3626,11 @@ DopeSheetView::mouseDoubleClickEvent(QMouseEvent *e)
                 _imp->timeline->seekFrame(SequenceTime(keyframeTime), false, 0,
                                           eTimelineChangeReasonDopeSheetEditorSeek);
 
+                // only the time is used: each keyframe gets the value of its dimension (setValuesFromDestination)
                 KeyFrame k(keyframeTime, 0);
                 DopeSheetKey key(dsKnob, k);
                 toPaste.push_back(key);
-                DSPasteKeysCommand::setKeyValueFromKnob(knob, keyframeTime, &k);
-                _imp->model->pasteKeys(toPaste, true);
+                _imp->model->pasteKeys(toPaste, true, true);
             }
         }
     }

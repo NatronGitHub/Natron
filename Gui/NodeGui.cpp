@@ -1521,7 +1521,6 @@ NodeGui::initializeInputs()
     ///Make new edge for all non existing inputs
     NodeGuiPtr thisShared = shared_from_this();
     int inputsCount = 0;
-    int emptyInputsCount = 0;
     for (U32 i = 0; i < inputs.size(); ++i) {
         Edge* edge = new Edge( i, 0., thisShared, parentItem() );
         if ( ( node && node->getEffectInstance()->isInputRotoBrush(i) ) || !isVisible() ) {
@@ -1540,9 +1539,6 @@ NodeGui::initializeInputs()
         if ( node &&
              !node->getEffectInstance()->isInputMask(i) &&
              !node->getEffectInstance()->isInputRotoBrush(i) ) {
-            if (!input) {
-                ++emptyInputsCount;
-            }
             ++inputsCount;
         }
         _inputEdges.push_back(edge);

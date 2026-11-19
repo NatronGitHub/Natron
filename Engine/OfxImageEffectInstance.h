@@ -156,9 +156,11 @@ public:
                                               std::map<OfxClipInstance*, int>& clipsMapping);
 
     /**
-     * We add some output parameters to the function so that we can delay the actual setting of the clip preferences
+     * We add some output parameters to the function so that we can delay the actual setting of the clip preferences.
+     * For Readers, *outputFormatSet (if not NULL) is set to true if the plug-in set the output format, i.e. if it could
+     * read the format from the file.
      **/
-    StatusEnum getClipPreferences_safe(NodeMetadata& defaultPrefs);
+    StatusEnum getClipPreferences_safe(NodeMetadata& defaultPrefs, bool* outputFormatSet = NULL);
 
     virtual OfxStatus createInstanceAction() OVERRIDE FINAL;
 
@@ -268,6 +270,10 @@ private:
                                                               to an OfxParamInstance. Without this pointer we would be unable
                                                               to track the knobs that have been created for 1 Node since OfxParamInstance
                                                               is totally dissociated from Node.*/
+    // Nesting depth of the actions of this instance on the main thread (see mainEntry()): an action, e.g.
+    // kOfxActionInstanceChanged, may trigger another one (when a value it sets changes a parameter).
+    // Only read and written on the main thread.
+    int _mainThreadActionDepth;
 };
 
 class OfxImageEffectDescriptor
