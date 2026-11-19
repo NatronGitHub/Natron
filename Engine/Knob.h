@@ -2147,6 +2147,7 @@ private:
         QMutexLocker k(&_valueMutex);
 
         _exprRes[dimension].clear();
+        ++_exprResGeneration;
     }
 
 
@@ -2247,6 +2248,9 @@ private:
     };
     std::vector<DefaultValue> _defaultValues;
     mutable ExprResults _exprRes;
+    // Incremented whenever _exprRes is cleared or replaced (protected by _valueMutex): a result computed
+    // from the values before that must not be stored (see getValueFromExpression())
+    mutable unsigned int _exprResGeneration;
 
     //Only for double and int
     mutable QReadWriteLock _minMaxMutex;

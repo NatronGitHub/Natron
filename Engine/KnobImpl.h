@@ -99,6 +99,7 @@ Knob<T>::Knob(KnobHolder*  holder,
     , _guiValues(dimension)
     , _defaultValues(dimension)
     , _exprRes(dimension)
+    , _exprResGeneration(0)
     , _minMaxMutex()
     , _minimums(dimension)
     , _maximums(dimension)
@@ -478,7 +479,7 @@ Knob<T>::getValueFromExpression(double time,
 
 
     ///Check first if a value was already computed:
-
+    unsigned int generation;
     {
         QMutexLocker k(&_valueMutex);
         typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
@@ -487,10 +488,13 @@ Knob<T>::getValueFromExpression(double time,
 
             return true;
         }
+        generation = _exprResGeneration;
     }
 
     bool exprWasValid = isExpressionValid(dimension, 0);
     {
+        // Evaluate without holding _valueMutex: Python takes the GIL, and an expression that holds the GIL
+        // may read this knob (which locks _valueMutex)
         EXPR_RECURSION_LEVEL();
         std::string error;
         bool exprOk = evaluateExpression(time, view,  dimension, ret, &error);
@@ -510,7 +514,12 @@ Knob<T>::getValueFromExpression(double time,
     }
 
     QMutexLocker k(&_valueMutex);
-    _exprRes[dimension].insert( std::make_pair(time, *ret) );
+    // If the results were cleared during the evaluation (e.g. a parameter used by the expression changed
+    // in another thread), this result may be computed from the old values: return it, but don't store it,
+    // else later renders would keep using it.
+    if (_exprResGeneration == generation) {
+        _exprRes[dimension].insert( std::make_pair(time, *ret) );
+    }
 
     return true;
 }
@@ -566,19 +575,23 @@ Knob<T>::getValueFromExpression_pod(double time,
 
 
     ///Check first if a value was already computed:
+    unsigned int generation;
+    {
+        QMutexLocker k(&_valueMutex);
+        typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
+        if ( found != _exprRes[dimension].end() ) {
+            *ret = found->second;
 
-
-    QMutexLocker k(&_valueMutex);
-    typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
-    if ( found != _exprRes[dimension].end() ) {
-        *ret = found->second;
-
-        return true;
+            return true;
+        }
+        generation = _exprResGeneration;
     }
 
 
     bool exprWasValid = isExpressionValid(dimension, 0);
     {
+        // Evaluate without holding _valueMutex (see getValueFromExpression()): holding it while waiting for the
+        // Python GIL could deadlock with a thread that holds the GIL and reads this knob.
         EXPR_RECURSION_LEVEL();
         std::string error;
         bool exprOk = evaluateExpression_pod(time, view, dimension, ret, &error);
@@ -597,8 +610,11 @@ Knob<T>::getValueFromExpression_pod(double time,
         *ret =  clampToMinMax(*ret, dimension);
     }
 
-    //QWriteLocker k(&_valueMutex);
-    _exprRes[dimension].insert( std::make_pair(time, *ret) );
+    QMutexLocker k(&_valueMutex);
+    // as in getValueFromExpression()
+    if (_exprResGeneration == generation) {
+        _exprRes[dimension].insert( std::make_pair(time, *ret) );
+    }
 
     return true;
 }
@@ -2726,6 +2742,7 @@ Knob<T>::cloneExpressionsResults(KnobI* other,
             otherKnob->getExpressionResults(i, results);
             QMutexLocker k(&_valueMutex);
             _exprRes[i] = results;
+            ++_exprResGeneration;
         }
     } else {
         if (otherDimension == -1) {
@@ -2735,6 +2752,7 @@ Knob<T>::cloneExpressionsResults(KnobI* other,
         otherKnob->getExpressionResults(otherDimension, results);
         QMutexLocker k(&_valueMutex);
         _exprRes[dimension] = results;
+        ++_exprResGeneration;
     }
 }
 
