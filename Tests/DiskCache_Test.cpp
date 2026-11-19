@@ -21,7 +21,8 @@
 // - #1112: the restore cleanup removes the files that are not in the table of contents;
 // - #1128: the size of the cache is counted correctly, and a cache hit does not drop the other entries of the hash;
 // - #1265: NATRON_DISK_CACHE_PATH takes precedence over the "Disk cache path" preference;
-// - #192: the disk space of the cache files is allocated before they are written.
+// - #192: the disk space of the cache files is allocated before they are written;
+// - the unreferenced files are not deleted while another Natron process uses the cache.
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -38,6 +39,11 @@
 #include <stdexcept>
 #include <string>
 
+#ifndef _WIN32
+#include <sys/file.h> // flock
+#include <sys/stat.h> // stat
+#endif
+
 #include <gtest/gtest.h>
 
 #include <QCoreApplication>
@@ -50,6 +56,9 @@
 #include "Engine/Cache.h"
 #include "Engine/CacheSerialization.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/FrameEntry.h"
+#include "Engine/FrameKey.h"
+#include "Engine/FrameParams.h"
 #include "Engine/Image.h"
 #include "Engine/ImageKey.h"
 #include "Engine/KnobTypes.h"
@@ -58,6 +67,7 @@
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
+#include "Engine/TextureRect.h"
 #include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_USING
@@ -362,6 +372,11 @@ TEST(MemoryFileTest, ReserveAllocatesDiskSpace)
     EXPECT_NO_THROW( f.reserve(0, size) );
     EXPECT_NO_THROW( f.reserve(size / 2, size / 4) ); // already allocated
     ASSERT_TRUE( f.data() != NULL );
+#ifndef _WIN32
+    struct stat st;
+    ASSERT_EQ( 0, ::stat(path.c_str(), &st) );
+    EXPECT_GE( (unsigned long long)st.st_blocks * 512ULL, (unsigned long long)size );
+#endif
     std::memset(f.data(), 1, size);
     EXPECT_EQ(1, f.data()[size - 1]);
     f.remove();
@@ -403,4 +418,100 @@ TEST(MemoryFileTest, ReserveFailsWhenTheDiskIsFull)
     // reserve() must not have filled the disk: on a full APFS volume, a file can't even be deleted
     f.remove();
     EXPECT_FALSE( QFile::exists( QString::fromUtf8( path.c_str() ) ) );
+}
+
+// #1112: the restore cleanup of a tiled cache (the viewer cache) removes the files of its folder that are not
+// referenced by the table of contents, and keeps the tile files that are.
+TEST_F(DiskCacheTest, TiledRestoreRemovesUnreferencedFiles)
+{
+    typedef Cache<FrameEntry> TileCache;
+    const std::string name = _cacheName + "Tiled";
+    const RectI bounds(0, 0, 16, 16);
+    const std::size_t tileBytes = 16 * 16 * 4;
+    std::shared_ptr<TileCache> cache = std::make_shared<TileCache>(name, NATRON_CACHE_VERSION, 1024ULL * 1024ULL * 1024ULL, 0.);
+    cache->setTiled(true, tileBytes);
+    const QString cachePath = cache->getCachePath();
+    QDir(cachePath).removeRecursively();
+    QDir().mkpath(cachePath);
+
+    FrameKey key(_holder.get(), 1, 0x9999999999999999ULL, 1., 1., (int)eViewerColorSpaceSRGB, (int)eImageBitDepthByte,
+                 (int)eDisplayChannelsRGB, ViewIdx(0), TextureRect(0, 0, 16, 16, 1, 1.), 0, "Input1",
+                 ImagePlaneDesc::getRGBAComponents(), std::string(), false, false);
+    QString usedFile;
+    {
+        FrameParamsPtr params = std::make_shared<FrameParams>(bounds, (int)eImageBitDepthByte, bounds, ImagePtr());
+        FrameEntryPtr entry;
+        cache->getOrCreate(key, params, NULL, &entry);
+        ASSERT_TRUE( bool(entry) );
+        entry->allocateMemory();
+        ASSERT_TRUE( entry->isStoredOnDisk() );
+        usedFile = QString::fromUtf8( entry->getFilePath().c_str() );
+    }
+    ASSERT_TRUE( QFile::exists(usedFile) );
+    const QStringList orphans = QStringList()
+                                << cachePath + QString::fromUtf8("/CachePart99")
+                                << cachePath + QString::fromUtf8("/stray.txt");
+    Q_FOREACH(const QString &orphan, orphans) {
+        createFile(orphan);
+    }
+
+    TileCache::CacheTOC toc;
+    cache->save(&toc);
+    ASSERT_EQ( 1U, toc.size() );
+    cache->waitForDeleterThread();
+    cache.reset();
+
+    cache = std::make_shared<TileCache>(name, NATRON_CACHE_VERSION, 1024ULL * 1024ULL * 1024ULL, 0.);
+    cache->setTiled(true, tileBytes);
+    cache->restore(toc);
+    Q_FOREACH(const QString &orphan, orphans) {
+        EXPECT_FALSE( QFile::exists(orphan) ) << orphan.toStdString();
+    }
+    EXPECT_TRUE( QFile::exists(usedFile) );
+    {
+        std::list<FrameEntryPtr> found;
+        EXPECT_TRUE( cache->get(key, &found) );
+    }
+    cache->waitForDeleterThread();
+    cache.reset();
+    QDir(cachePath).removeRecursively();
+}
+
+// When another Natron process uses the caches, restore() must not delete the files it doesn't know: they may be
+// the files of the other process.
+TEST_F(DiskCacheTest, RestoreKeepsUnknownFilesIfAsked)
+{
+    const QString orphan = _cache->getCachePath() + QString::fromUtf8("/ab/other-process." NATRON_CACHE_FILE_EXT);
+    createFile(orphan);
+    ImageCache::CacheTOC toc;
+    _cache->restore(toc, false);
+    EXPECT_TRUE( QFile::exists(orphan) );
+    _cache->restore(toc, true);
+    EXPECT_FALSE( QFile::exists(orphan) );
+}
+
+// Each process keeps a file locked in <disk cache location>/Instances: the file of another running process means
+// that the caches are shared, and the file of a process that is gone is removed.
+TEST(DiskCacheLocation, DetectsOtherProcesses)
+{
+    if ( appPTR->isDiskCacheUsedByAnotherProcess() ) {
+        reportSkipped("another Natron process uses the disk cache location");
+
+        return;
+    }
+    const QString folder = appPTR->getDiskCacheLocation() + QString::fromUtf8("/Instances");
+    ASSERT_TRUE( QDir(folder).exists() );
+    // A file of another process (simulated in this process: the lock of another open file conflicts)
+    const QString otherPath = folder + QString::fromUtf8("/NatronTest-other.lock");
+    {
+        QFile other(otherPath);
+        ASSERT_TRUE( other.open(QIODevice::ReadWrite) );
+#ifndef _WIN32
+        ASSERT_EQ( 0, ::flock(other.handle(), LOCK_EX | LOCK_NB) );
+#endif
+        EXPECT_TRUE( appPTR->isDiskCacheUsedByAnotherProcess() );
+        EXPECT_TRUE( QFile::exists(otherPath) );
+    } // closing the file releases the lock, as when the process exits
+    EXPECT_FALSE( appPTR->isDiskCacheUsedByAnotherProcess() );
+    EXPECT_FALSE( QFile::exists(otherPath) ); // the stale file was removed
 }

@@ -38,6 +38,7 @@
 #include <QString>
 #include <QAtomicInt>
 #include <QCoreApplication>
+#include <QFile>
 
 
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
@@ -104,6 +105,9 @@ public:
     FrameEntryCachePtr _viewerCache; //< Viewer textures cache
     mutable QMutex diskCachesLocationMutex;
     QString diskCachesLocation;
+    // The file that tells the other Natron processes that this one uses the disk caches in diskCachesLocation
+    // (see AppManager::isDiskCacheUsedByAnotherProcess()), protected by diskCachesLocationMutex
+    std::unique_ptr<QFile> diskCachesInstanceFile;
     std::unique_ptr<ProcessInputChannel> _backgroundIPC; //< object used to communicate with the main app
     //if this app is background, see the ProcessInputChannel def
     bool _loaded; //< true when the first instance is completely loaded.
@@ -221,7 +225,8 @@ public:
 
     static void addOpenGLRequirementsString(QString& str, OpenGLRequirementsTypeEnum type);
 
-    bool checkForCacheDiskStructure(const QString & cachePath, bool isTiled);
+    // canCleanUp: if false (another process uses the cache), don't reset the cache folder if its structure is wrong
+    bool checkForCacheDiskStructure(const QString & cachePath, bool isTiled, bool canCleanUp);
 
     void cleanUpCacheDiskStructure(const QString & cachePath, bool isTiled);
 

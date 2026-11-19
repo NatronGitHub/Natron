@@ -73,6 +73,7 @@
 #include <fcntl.h> // fcntl
 #include <signal.h> // sigaction, raise
 #include <unistd.h> // pipe, read, write
+#include <sys/file.h> // flock
 #ifdef Q_OS_DARWIN
 #include <sys/sysctl.h>
 #include <libproc.h>
@@ -93,6 +94,8 @@
 #include <QDebug>
 #include <QDir>
 #include <QCoreApplication>
+#include <QFile>
+#include <QSysInfo>
 #include <QSettings>
 #include <QSocketNotifier>
 #include <QThreadPool>
@@ -2617,6 +2620,63 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<std::list<double> >("std::list<double>");
 }
 
+// The disk caches of all the Natron processes (Natron, NatronRenderer, the background renders) are in the same
+// folder. Each process keeps a file of its own open in the "Instances" sub-folder, locked with flock() on Unix (the
+// lock is released when the process exits, even if it crashes), and open without sharing deletion on Windows.
+// A process may only delete cache files that it doesn't know about when no other process uses the caches.
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
+QString
+diskCacheInstancesFolder(const QString& diskCachesLocation)
+{
+    return diskCachesLocation + QString::fromUtf8("/Instances");
+}
+
+// Opens and locks the file of this process. Returns NULL on failure.
+QFile*
+createDiskCacheInstanceFile(const QString& diskCachesLocation)
+{
+    const QString folder = diskCacheInstancesFolder(diskCachesLocation);
+    QDir().mkpath(folder);
+    const QString path = folder + QString::fromUtf8("/%1-%2.lock").arg( QSysInfo::machineHostName() ).arg( QCoreApplication::applicationPid() );
+    std::unique_ptr<QFile> file( new QFile(path) );
+    if ( !file->open(QIODevice::ReadWrite) ) {
+        return NULL;
+    }
+#ifdef Q_OS_UNIX
+    if (::flock(file->handle(), LOCK_EX | LOCK_NB) != 0) {
+        return NULL;
+    }
+#endif
+
+    return file.release();
+}
+
+// Returns true if the file of another process is in use, and removes it otherwise (the process is gone).
+bool
+isDiskCacheInstanceFileInUse(const QString& path)
+{
+#ifdef Q_OS_UNIX
+    QFile file(path);
+    if ( !file.open(QIODevice::ReadWrite) ) {
+        // Can't tell: assume that it is used
+        return file.exists();
+    }
+    if (::flock(file.handle(), LOCK_EX | LOCK_NB) != 0) {
+        return true;
+    }
+    // Remove it while it is locked, so that no other process can lock it meanwhile
+    QFile::remove(path);
+
+    return false;
+#else
+    // A file that is open by a running process can't be removed
+    return !QFile::remove(path) && QFile::exists(path);
+#endif
+}
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 void
 AppManager::refreshDiskCacheLocation()
 {
@@ -2628,18 +2688,55 @@ AppManager::refreshDiskCacheLocation()
         paths << _imp->_settings->getDiskCachePath();
     }
     QMutexLocker k(&_imp->diskCachesLocationMutex);
+    QString location;
     Q_FOREACH(const QString &path, paths) {
         if ( !path.isEmpty() ) {
             QDir d(path);
             // create the full path if the directory does not exist
             if ( d.exists() || d.mkpath(path) ) {
-                _imp->diskCachesLocation = path;
-
-                return;
+                location = path;
+                break;
             }
         }
     }
-    _imp->diskCachesLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
+    if ( location.isEmpty() ) {
+        location = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
+    }
+    if ( (location != _imp->diskCachesLocation) || !_imp->diskCachesInstanceFile ) {
+        // Tell the other processes that this one uses the caches in the new location
+        if (_imp->diskCachesInstanceFile) {
+            const QString oldPath = _imp->diskCachesInstanceFile->fileName();
+            _imp->diskCachesInstanceFile.reset();
+            QFile::remove(oldPath);
+        }
+        _imp->diskCachesInstanceFile.reset( createDiskCacheInstanceFile(location) );
+        if (!_imp->diskCachesInstanceFile) {
+            qDebug() << "Warning: could not create the instance file of the disk cache in" << diskCacheInstancesFolder(location);
+        }
+    }
+    _imp->diskCachesLocation = location;
+}
+
+bool
+AppManager::isDiskCacheUsedByAnotherProcess() const
+{
+    QString folder;
+    QString ownFile;
+    {
+        QMutexLocker k(&_imp->diskCachesLocationMutex);
+        folder = diskCacheInstancesFolder(_imp->diskCachesLocation);
+        if (_imp->diskCachesInstanceFile) {
+            ownFile = QFileInfo( _imp->diskCachesInstanceFile->fileName() ).fileName();
+        }
+    }
+    const QStringList files = QDir(folder).entryList(QStringList() << QString::fromUtf8("*.lock"), QDir::Files);
+    Q_FOREACH(const QString &file, files) {
+        if ( (file != ownFile) && isDiskCacheInstanceFileInUse( folder + QLatin1Char('/') + file ) ) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 const QString&

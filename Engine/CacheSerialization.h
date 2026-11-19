@@ -113,7 +113,8 @@ Cache<EntryType>::save(CacheTOC* tableOfContents)
 /*Restores the cache from disk.*/
 template<typename EntryType>
 void
-Cache<EntryType>::restore(const CacheTOC & tableOfContents)
+Cache<EntryType>::restore(const CacheTOC & tableOfContents,
+                          bool removeUnreferencedFiles)
 {
     ///Make sure the shared_ptrs live in this list and are destroyed not while under the lock
     ///so that the memory freeing (which might be expensive for large images) doesn't happen while under the lock
@@ -171,6 +172,10 @@ Cache<EntryType>::restore(const CacheTOC & tableOfContents)
             QMutexLocker locker(&_lock);
             sealEntry(EntryTypePtr(value), false /*inMemory*/);
         }
+    }
+
+    if (!removeUnreferencedFiles) {
+        return;
     }
 
     // Remove from the cache all files that are not referenced by the table of contents (#1112).

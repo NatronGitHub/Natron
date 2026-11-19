@@ -139,12 +139,16 @@ The cache settings are in **Edit > Preferences > Caching**:
 
 **Disk cache path**
    The folder where the playback cache and the DiskCache nodes store their
-   files. Choose your fastest disk. When this field is set, it is used, even
-   if the ``NATRON_DISK_CACHE_PATH`` environment variable is set. When it is
-   empty, ``NATRON_DISK_CACHE_PATH`` is used if it is set (see
-   :doc:`../_environment`), and otherwise a default folder (its path is shown
-   in the tooltip of the parameter). Changing this setting requires
-   restarting Natron.
+   files. Choose your fastest disk. The ``NATRON_DISK_CACHE_PATH``
+   environment variable, if it is set, takes precedence over this field (see
+   :doc:`../_environment`). When neither is set, a default folder is used
+   (its path is shown in the tooltip of the parameter). Changing this setting
+   requires restarting Natron.
+
+   All the Natron processes that use the same folder (for example Natron and
+   a background render) share the caches. While another process uses them,
+   Natron doesn't delete the cache files that it doesn't know about when it
+   starts.
 
 **Wipe Disk Cache**
    Clears all the caches and deletes all the cache files in the disk cache

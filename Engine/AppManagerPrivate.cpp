@@ -488,7 +488,13 @@ void
 restoreCache(AppManagerPrivate* p,
              Cache<T>* cache)
 {
-    if ( p->checkForCacheDiskStructure( cache->getCachePath(), cache->isTileCache() ) ) {
+    // If another Natron process uses the same caches, the files that are not in the table of contents may be
+    // its own: don't delete them (and don't reset the cache folder).
+    const bool canDeleteUnknownFiles = !appPTR->isDiskCacheUsedByAnotherProcess();
+    if (!canDeleteUnknownFiles) {
+        qDebug() << "The disk cache" << cache->getCachePath() << "is used by another Natron process: its unused files are not cleaned up.";
+    }
+    if ( p->checkForCacheDiskStructure( cache->getCachePath(), cache->isTileCache(), canDeleteUnknownFiles ) ) {
         std::string settingsFilePath = cache->getRestoreFilePath();
         FStreamsSupport::ifstream ifile;
         FStreamsSupport::open(&ifile, settingsFilePath);
@@ -507,12 +513,14 @@ restoreCache(AppManagerPrivate* p,
             //Only load caches with same version, otherwise wipe it!
             if ( cacheVersion == cache->cacheVersion() ) {
                 iArchive >> tableOfContents;
-            } else {
+            } else if (canDeleteUnknownFiles) {
                 p->cleanUpCacheDiskStructure( cache->getCachePath(), cache->isTileCache() );
             }
         } catch (const std::exception & e) {
             qDebug() << "Exception when reading disk cache TOC:" << e.what();
-            p->cleanUpCacheDiskStructure( cache->getCachePath(), cache->isTileCache() );
+            if (canDeleteUnknownFiles) {
+                p->cleanUpCacheDiskStructure( cache->getCachePath(), cache->isTileCache() );
+            }
 
             return;
         }
@@ -520,7 +528,7 @@ restoreCache(AppManagerPrivate* p,
         QFile restoreFile( QString::fromUtf8( settingsFilePath.c_str() ) );
         restoreFile.remove();
 
-        cache->restore(tableOfContents);
+        cache->restore(tableOfContents, canDeleteUnknownFiles);
     }
 }
 
@@ -532,7 +540,9 @@ AppManagerPrivate::restoreCaches()
 } // restoreCaches
 
 bool
-AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath, bool isTiled)
+AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath,
+                                              bool isTiled,
+                                              bool canCleanUp)
 {
     QString settingsFilePath = cachePath;
 
@@ -542,7 +552,10 @@ AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath, bool is
     settingsFilePath += QString::fromUtf8("restoreFile." NATRON_CACHE_FILE_EXT);
 
     if ( !QFile::exists(settingsFilePath) ) {
-        cleanUpCacheDiskStructure(cachePath, isTiled);
+        // Without a restore file, the files in the cache folder are unknown (creating a missing folder is fine)
+        if ( canCleanUp || !QDir(cachePath).exists() ) {
+            cleanUpCacheDiskStructure(cachePath, isTiled);
+        }
 
         return false;
     }
@@ -569,8 +582,10 @@ AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath, bool is
         }
         if (subFolderCount < 256) {
             qDebug() << cachePath << "doesn't contain sub-folders indexed from 00 to FF. Resetting.";
-            cleanUpCacheDiskStructure(cachePath, isTiled);
-            
+            if (canCleanUp) {
+                cleanUpCacheDiskStructure(cachePath, isTiled);
+            }
+
             return false;
         }
     }

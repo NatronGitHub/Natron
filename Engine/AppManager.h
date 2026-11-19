@@ -458,6 +458,12 @@ public:
     void refreshDiskCacheLocation();
     const QString& getDiskCacheLocation() const;
 
+    /**
+     * @brief Returns true if another Natron process (Natron, NatronRenderer, a background render...) uses the disk caches
+     * in the same location. The cache files that are not known to this process must then not be deleted.
+     **/
+    bool isDiskCacheUsedByAnotherProcess() const;
+
     void saveCaches() const;
 
     PyObject* getMainModule();
