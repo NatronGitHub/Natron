@@ -29,9 +29,16 @@
 
 #include "Global/Macros.h"
 
+#include <map>
 #include <string>
 
 #include <gtest/gtest.h>
+
+#include <QByteArray>
+#include <QDir>
+#include <QFile>
+#include <QString>
+#include <QStringList>
 
 #include "Engine/KnobTypes.h"
 #include "Engine/OSGLContext.h"
@@ -43,17 +50,35 @@ NATRON_NAMESPACE_USING
 
 namespace {
 // Enable OpenGL rendering (Preferences/GPU Rendering) for the lifetime of the object.
+// Changing that setting deletes the OpenFX plug-in load cache (Settings::onKnobValueChanged() calls
+// AppManager::clearPluginsLoadedCache()). The cache files are saved first and written back afterwards:
+// the TestsOfxCache test (Tests/CMakeLists.txt) runs on the cache written by the full Tests run.
 class OpenGLRenderingEnabler
 {
     KnobChoice* _knob;
     int _savedValue;
+    std::map<QString, QByteArray> _ofxCacheFiles;
+
+    static QString ofxCacheDirPath()
+    {
+        return appPTR->getDiskCacheLocation() + QString::fromUtf8("/OFXLoadCache");
+    }
 
 public:
     OpenGLRenderingEnabler()
         : _knob( dynamic_cast<KnobChoice*>( appPTR->getCurrentSettings()->getKnobByName("enableOpenGLRendering").get() ) )
         , _savedValue(0)
+        , _ofxCacheFiles()
     {
         if (_knob) {
+            const QDir dir( ofxCacheDirPath() );
+            const QStringList files = dir.entryList(QDir::Files);
+            for (int i = 0; i < files.size(); ++i) {
+                QFile f( dir.absoluteFilePath(files[i]) );
+                if ( f.open(QIODevice::ReadOnly) ) {
+                    _ofxCacheFiles[files[i]] = f.readAll();
+                }
+            }
             _savedValue = _knob->getValue();
             _knob->setValue( (int)Settings::eEnableOpenGLEnabled );
         }
@@ -63,6 +88,16 @@ public:
     {
         if (_knob) {
             _knob->setValue(_savedValue);
+            if ( !_ofxCacheFiles.empty() ) {
+                const QDir dir( ofxCacheDirPath() );
+                dir.mkpath( QString::fromUtf8(".") );
+                for (std::map<QString, QByteArray>::const_iterator it = _ofxCacheFiles.begin(); it != _ofxCacheFiles.end(); ++it) {
+                    QFile f( dir.absoluteFilePath(it->first) );
+                    if ( f.open(QIODevice::WriteOnly | QIODevice::Truncate) ) {
+                        f.write(it->second);
+                    }
+                }
+            }
         }
     }
 
