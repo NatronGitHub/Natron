@@ -273,6 +273,8 @@ env NOUPDATE=1 WORKSPACE=$HOME/Development/workspace DISABLE_BREAKPAD=1 NATRON_L
 
 The `.dmg` ends up in `$HOME/Development/workspace/builds_archive/natron_github_RB2/1/`, named `Natron-<branch>-<date>-<commit>-macOS<version>-<arch>.dmg`. Use `UNIT_TESTS=true` to also run the render regression suite (Natron-Tests); this adds `-tests.txt` and `-unit_tests_failures.zip` next to the DMG. `BUILD_FROM=N` / `BUILD_TO=N` run only some of the six steps (checkout, plugins, Natron, installer, tests, archive).
 
+The plug-ins (openfx-misc, openfx-io, openfx-arena, openfx-gmic) are built with their CMake builds, with `-DOFX_DEPLOY_BUNDLES=ON` (`tools/jenkins/build-plugins.sh`); `PLUGINS_BUILD_SYSTEM=make` builds them with their Makefiles instead.
+
 For a release, build a tag instead of a branch:
 
 ```Shell
