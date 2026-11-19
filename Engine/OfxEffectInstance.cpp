@@ -28,10 +28,12 @@
 #include <locale>
 #include <limits>
 #include <cassert>
+#include <set>
 #include <stdexcept>
 
 #include <QDebug>
 #include <QByteArray>
+#include <QMutex>
 #include <QReadWriteLock>
 #include <QPointF>
 
@@ -87,6 +89,11 @@ using std::cout; using std::endl; using std::string;
 
 
 namespace  {
+// kOfxImageEffectPluginPropSingleInstance: "only one instance can exist at any one time". The
+// single-instance plug-ins of which an instance exists (Natron makes no render clones of them).
+QMutex gSingleInstancePluginsMutex;
+std::set<const OFX::Host::ImageEffect::ImageEffectPlugin*> gSingleInstancePlugins;
+
 /**
  * @class This class is helpful to set thread-storage data on the clips of an effect
  * When destroyed, it is removed from the clips, ensuring they are removed.
@@ -244,6 +251,8 @@ struct OfxEffectInstancePrivate
     bool doesTemporalAccess;
     bool multiplanar;
     bool outputFormatFromPlugin; // true if the last getClipPreferences action set the output format (main thread only)
+    // the single-instance plug-in of which this is the instance, or NULL (see gSingleInstancePlugins)
+    const OFX::Host::ImageEffect::ImageEffectPlugin* singleInstancePlugin;
 
     OfxEffectInstancePrivate()
         : effect()
@@ -273,7 +282,17 @@ struct OfxEffectInstancePrivate
         , doesTemporalAccess(false)
         , multiplanar(false)
         , outputFormatFromPlugin(false)
+        , singleInstancePlugin(NULL)
     {
+    }
+
+    void releaseSingleInstance()
+    {
+        if (singleInstancePlugin) {
+            QMutexLocker l(&gSingleInstancePluginsMutex);
+            gSingleInstancePlugins.erase(singleInstancePlugin);
+            singleInstancePlugin = NULL;
+        }
     }
 
     OfxEffectInstancePrivate(const OfxEffectInstancePrivate& other)
@@ -301,6 +320,7 @@ struct OfxEffectInstancePrivate
         , doesTemporalAccess(other.doesTemporalAccess)
         , multiplanar(other.multiplanar)
         , outputFormatFromPlugin(other.outputFormatFromPlugin)
+        , singleInstancePlugin(NULL) // render clones are not made for single-instance plug-ins
     {
     }
 };
@@ -380,6 +400,16 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     }
 
     std::string images;
+
+    if ( plugin->getDescriptor().isSingleInstance() ) {
+        // Refuse a second instance: the node is not created, and the error is reported.
+        QMutexLocker l(&gSingleInstancePluginsMutex);
+        if ( !gSingleInstancePlugins.insert(plugin).second ) {
+            throw std::runtime_error( tr("%1 allows only one instance at a time, and there is already one.")
+                                      .arg( QString::fromUtf8( plugin->getDescriptor().getLabel().c_str() ) ).toStdString() );
+        }
+        _imp->singleInstancePlugin = plugin;
+    }
 
     try {
         _imp->effect.reset( new OfxImageEffectInstance(plugin, *desc, mapContextToString(context), false) );
@@ -615,10 +645,12 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     } catch (const std::exception & e) {
         qDebug() << "Error: Caught exception while creating OfxImageEffectInstance" << ": " << e.what();
         _imp->effect.reset();
+        _imp->releaseSingleInstance();
         throw;
     } catch (...) {
         qDebug() << "Error: Caught exception while creating OfxImageEffectInstance";
         _imp->effect.reset();
+        _imp->releaseSingleInstance();
         throw;
     }
 
@@ -648,11 +680,19 @@ OfxEffectInstance::~OfxEffectInstance()
     if (_imp->effect) {
         _imp->effect->destroyInstanceAction();
     }
+    _imp->releaseSingleInstance();
 }
 
 EffectInstancePtr
 OfxEffectInstance::createRenderClone()
 {
+    if ( _imp->effect->getPlugin()->getDescriptor().isSingleInstance() ) {
+        // kOfxImageEffectPluginPropSingleInstance: a clone would be a second instance. The renders
+        // then use the main instance, one at a time for an InstanceSafe plug-in (see
+        // EffectInstance::getOrCreateRenderInstance()).
+        return EffectInstancePtr();
+    }
+
     OfxEffectInstancePtr clone( new OfxEffectInstance(*this) );
 
     clone->_imp->effect.reset( new OfxImageEffectInstance(*_imp->effect) );
