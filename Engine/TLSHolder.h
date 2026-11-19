@@ -38,7 +38,6 @@
 
 #include "Global/GlobalDefines.h"
 
-#include <QReadWriteLock>
 #include <QThread>
 
 #include "Engine/EngineFwd.h"
