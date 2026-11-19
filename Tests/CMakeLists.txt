@@ -45,6 +45,7 @@ set(Tests_SOURCES
     OfxParamInteract_Test.cpp
     OfxParamUndo_Test.cpp
     OfxPluginDeprecated_Test.cpp
+    OfxSingleInstance_Test.cpp
     OfxSyncPrivateData_Test.cpp
     OfxTestPlugin_Test.cpp
     OSGLContext_Test.cpp

@@ -294,6 +294,19 @@ public:
 
     /********OVERRIDDEN FROM EFFECT INSTANCE: END*************/
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
+    /**
+     * @brief While an object of this class exists (main thread), a second active instance of a
+     * plug-in that sets kOfxImageEffectPluginPropSingleInstance is created with a warning in the
+     * log, instead of being refused: when nodes are moved by copying them and then deleting the
+     * originals (Group From Selection).
+     **/
+    class AllowExtraSingleInstances
+    {
+public:
+        AllowExtraSingleInstances();
+        ~AllowExtraSingleInstances();
+    };
+
     static ContextEnum mapToContextEnum(const std::string &s);
     static std::string mapContextToString(ContextEnum ctx);
     static std::string natronValueChangedReasonToOfxValueChangedReason(ValueChangedReasonEnum reason);

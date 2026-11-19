@@ -1593,7 +1593,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
         assert(renderInstance);
 
-        if (safety == eRenderSafetyInstanceSafe) {
+        if ( (safety == eRenderSafetyInstanceSafe) ||
+             ( useRenderClone && ( renderInstance.get() == this ) ) ) {
+            // (the second case: no concurrent OpenGL renders, and the main instance is used, which
+            // also happens when the effect makes no render clones, e.g. a single-instance OFX plug-in)
             locker.reset( new QtCompat::MutexLock( &getNode()->getRenderInstancesSharedMutex() ) );
         } else if (safety == eRenderSafetyUnsafe) {
             const Plugin* p = getNode()->getPlugin();

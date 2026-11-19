@@ -41,6 +41,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/GroupOutput.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
+#include "Engine/OfxEffectInstance.h"
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/TimeLine.h"
@@ -1603,9 +1604,13 @@ GroupFromSelectionCommand::redo()
         // Set the position of the group
         container_i->setPosition( groupPosition.x(), groupPosition.y() );
 
-        // Copy all the selected nodes and paste them in the newly created Group
+        // Copy all the selected nodes and paste them in the newly created Group. The originals are
+        // deleted below, so the copies of a single-instance plug-in are not refused.
         std::list<std::pair<std::string, NodeGuiPtr> > newNodes;
-        _graph->copyNodesAndCreateInGroup(originalNodes, isGrp, newNodes);
+        {
+            OfxEffectInstance::AllowExtraSingleInstances allowMovingSingleInstances;
+            _graph->copyNodesAndCreateInGroup(originalNodes, isGrp, newNodes);
+        }
 
         for (std::list<std::pair<std::string, NodeGuiPtr> >::iterator it = newNodes.begin(); it != newNodes.end(); ++it) {
             internalNewNodes.push_back( it->second->getNode() );
