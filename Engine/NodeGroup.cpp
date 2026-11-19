@@ -25,6 +25,7 @@
 
 #include "NodeGroup.h"
 
+#include <iostream>
 #include <set>
 #include <locale>
 #include <limits>
@@ -1890,8 +1891,14 @@ exportKnobValues(int indentLevel,
                 } else if ( dynamic_cast<KnobBytes*>(isStr) ) {
                     // binary data (Python bytes), which a string literal can't hold: hexadecimal
                     std::string v = isStr->getValue(i, ViewIdx(0), true);
-                    const QByteArray hex = QByteArray::fromRawData( v.data(), (int)v.size() ).toHex();
-                    WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setValue(bytes.fromhex(\"") + QString::fromLatin1(hex) + QString::fromUtf8("\"))") );
+                    if ( v.size() > KnobBytes::maxExportLength() ) {
+                        // the script is a QString: 2 characters per byte, 2 bytes per character
+                        std::cerr << knob->getName() << ": Warning: the value (" << v.size() << " bytes) is too large for the Python script, it is not exported" << std::endl;
+                        WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("# the value of this Bytes parameter is too large to be exported (%1 bytes)").arg( (qulonglong)v.size() ) );
+                    } else {
+                        const QByteArray hex = QByteArray::fromRawData( v.data(), (int)v.size() ).toHex();
+                        WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setValue(bytes.fromhex(\"") + QString::fromLatin1(hex) + QString::fromUtf8("\"))") );
+                    }
                 } else if (isStr) {
                     std::string v = isStr->getValue(i, ViewIdx(0), true);
                     WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setValue(") + ESC(v)  + QString::fromUtf8(")") );

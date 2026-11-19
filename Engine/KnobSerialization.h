@@ -86,8 +86,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS_RESULTS 5
 #define VALUE_SERIALIZATION_REMOVES_EXPRESSIONS_RESULTS 6
 #define VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES 7
-#define VALUE_SERIALIZATION_INTRODUCES_BYTES 8 // KnobBytes: the value and the default in base64 (Natron 2.6)
-#define VALUE_SERIALIZATION_VERSION VALUE_SERIALIZATION_INTRODUCES_BYTES
+#define VALUE_SERIALIZATION_VERSION VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES
 
 #define MASTER_SERIALIZATION_INTRODUCE_MASTER_TRACK_NAME 2
 #define MASTER_SERIALIZATION_INTRODUCE_MASTER_NODE_NAME_FULL 3
@@ -338,7 +337,8 @@ struct ValueSerialization
             ar & ::boost::serialization::make_nvp("Value", v);
             ar & ::boost::serialization::make_nvp("Default", defV);
         } else if (isBytes) {
-            // raw bytes: XML text can't hold them (NUL bytes, invalid UTF-8)
+            // raw bytes: XML text can't hold them (NUL bytes, invalid UTF-8). Saved as the value of a String knob
+            // (see KnobSerialization::save()): the text of KnobBytes::encodeForSerialization().
             std::string v = KnobBytes::encodeForSerialization( isBytes->getValue(_dimension) );
             std::string defV = KnobBytes::encodeForSerialization( isBytes->getDefaultValue(_dimension) );
             ar & ::boost::serialization::make_nvp("Value", v);
@@ -375,7 +375,6 @@ struct ValueSerialization
         KnobGroup* isGrp = dynamic_cast<KnobGroup*>( _knob.get() );
         KnobSeparator* isSep = dynamic_cast<KnobSeparator*>( _knob.get() );
         KnobButton* btn = dynamic_cast<KnobButton*>( _knob.get() );
-        KnobBytes* isBytes = dynamic_cast<KnobBytes*>( _knob.get() );
         bool enabled;
         ar & ::boost::serialization::make_nvp("Enabled", enabled);
 
@@ -451,22 +450,6 @@ struct ValueSerialization
                 ar & ::boost::serialization::make_nvp("Default", defV);
                 isChoice->setDefaultValueWithoutApplying(defV, _dimension);
             }
-        } else if (isBytes) {
-            // (only in projects saved with VALUE_SERIALIZATION_INTRODUCES_BYTES or later: there were no KnobBytes before)
-            std::string v, defV, def, data;
-            ar & ::boost::serialization::make_nvp("Value", v);
-            ar & ::boost::serialization::make_nvp("Default", defV);
-            if ( KnobBytes::decodeFromSerialization(defV, &def) ) {
-                isBytes->setDefaultValueWithoutApplying(def, _dimension);
-            } else {
-                std::cerr << _knob->getName() << ": Warning: the default value in the project is not valid base64, ignoring it" << std::endl;
-            }
-            if ( !KnobBytes::decodeFromSerialization(v, &data) ) {
-                // no garbage: the value is the default
-                std::cerr << _knob->getName() << ": Warning: the value in the project is not valid base64, using the default value" << std::endl;
-                data = def;
-            }
-            isBytes->setValue(data, ViewIdx(0), _dimension);
         } else if (isString && !isFile) {
             std::string v;
             ar & ::boost::serialization::make_nvp("Value", v);
@@ -581,9 +564,15 @@ private:
         AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>( _knob.get() );
         KnobParametric* isParametric = dynamic_cast<KnobParametric*>( _knob.get() );
         KnobDouble* isDouble = dynamic_cast<KnobDouble*>( _knob.get() );
+        // A KnobBytes is saved as a non-animated String knob whose value is the text of
+        // KnobBytes::encodeForSerialization(), with the same elements as a String knob: Natron 2.5 and older,
+        // which have no Bytes knobs, read it without getting out of step (they don't skip the elements of a
+        // knob of an unknown type), and load() turns it back into a KnobBytes.
+        KnobBytes* isBytes = dynamic_cast<KnobBytes*>( _knob.get() );
         std::string name = _knob->getName();
         ar & ::boost::serialization::make_nvp("Name", name);
-        ar & ::boost::serialization::make_nvp("Type", _typeName);
+        std::string typeName = isBytes ? KnobString::typeNameStatic() : _typeName;
+        ar & ::boost::serialization::make_nvp("Type", typeName);
         ar & ::boost::serialization::make_nvp("Dimension", _dimension);
         bool secret = _knob->getIsSecret();
         ar & ::boost::serialization::make_nvp("Secret", secret);
@@ -599,9 +588,11 @@ private:
             std::list<Curve > curves;
             isParametric->saveParametricCurves(&curves);
             ar & ::boost::serialization::make_nvp("ParametricCurves", curves);
-        } else if (isString) {
-            std::map<int, std::string> extraDatas;
-            isString->saveAnimation(&extraDatas);
+        } else if (isString || isBytes) {
+            std::map<int, std::string> extraDatas; // (none for a KnobBytes, which doesn't animate)
+            if (isString) {
+                isString->saveAnimation(&extraDatas);
+            }
             ar & ::boost::serialization::make_nvp("StringsAnimation", extraDatas);
         }
         ChoiceExtraData* cdata = dynamic_cast<ChoiceExtraData*>(_extraData);
@@ -609,8 +600,10 @@ private:
             ar & ::boost::serialization::make_nvp("ChoiceLabel", cdata->_choiceString);
         }
 
-        ar & ::boost::serialization::make_nvp("UserKnob", _isUserKnob);
-        if (_isUserKnob) {
+        // (plug-ins define Bytes params: a KnobBytes is never a user knob, whose String data it doesn't have)
+        bool isUserKnob = _isUserKnob && !isBytes;
+        ar & ::boost::serialization::make_nvp("UserKnob", isUserKnob);
+        if (isUserKnob) {
             ar & ::boost::serialization::make_nvp("Label", _label);
             ar & ::boost::serialization::make_nvp("Help", _tooltip);
             ar & ::boost::serialization::make_nvp("NewLine", _triggerNewLine);
@@ -843,7 +836,13 @@ private:
                 }
             }
         }
+
+        // a KnobBytes saved as a String knob (see save())
+        restoreBytesKnob();
     } // load
+
+    /// If the knob is a String knob that holds a KnobBytes (see save()), replace it with the KnobBytes.
+    void restoreBytesKnob();
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 

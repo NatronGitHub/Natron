@@ -195,7 +195,9 @@ PasteUndoCommand::copyFrom(const KnobIPtr& serializedKnob,
                 } else if (isDouble && isFromDouble) {
                     double f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromDouble->getValue(_imp->fromDimension) : isFromDouble->getValue(i);
                     isDouble->setValue(f, ViewIdx(0), i, eValueChangedReasonNatronInternalEdited, 0);
-                } else if (isString && isFromString) {
+                } else if ( isString && isFromString &&
+                            ( ( dynamic_cast<KnobBytes*>(isString) != NULL ) == ( dynamic_cast<KnobBytes*>(isFromString) != NULL ) ) ) {
+                    // (raw bytes and text are not pasted into each other, see Knob<T>::isTypeCompatible())
                     std::string f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromString->getValue(_imp->fromDimension) : isFromString->getValue(i);
                     isString->setValue(f, ViewIdx(0), i, eValueChangedReasonNatronInternalEdited, 0);
                 }

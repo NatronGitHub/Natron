@@ -880,10 +880,23 @@ public:
      **/
     static std::size_t maxLength();
 
-    /// the text that holds a value in the project (base64)
+    /**
+     * @brief The largest value that a Python script (PyPlug export) holds: in hexadecimal, in a QString (2 characters
+     * per byte, 2 bytes per character), which must fit in less than INT_MAX bytes with the rest of the script.
+     **/
+    static std::size_t maxExportLength();
+
+    /**
+     * @brief The text that holds a value in the project: kSerializationPrefix, then the data in base64. The knob
+     * is saved as a String knob with this value (see KnobSerialization::save()), which Natron 2.5 can read.
+     **/
     static std::string encodeForSerialization(const std::string& data);
 
-    /// the value held by the text of a project, or false if the text is not valid base64 (data is then empty)
+    /// true if text was made by encodeForSerialization() (it starts with its prefix)
+    static bool isSerializedBytes(const std::string& text);
+
+    /// the value held by the text of a project, or false if the text was not made by encodeForSerialization() or is
+    /// not valid base64 (data is then empty)
     static bool decodeFromSerialization(const std::string& text, std::string* data);
 
     /// A value of a string knob in a Variant (undo commands): a QByteArray for KnobBytes (the raw bytes),
@@ -898,6 +911,7 @@ private:
 
 private:
     static const std::string _typeNameStr;
+    static const std::string _serializationPrefix;
 };
 
 /******************************KnobGroup**************************************/

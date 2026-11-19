@@ -4692,9 +4692,12 @@ OfxBytesInstance::OfxBytesInstance(const OfxEffectInstancePtr& node,
     knob->blockValueChanges();
     // BytesInstance copied the default when it was created
     const std::vector<unsigned char>& def = getDefault();
-    std::string defValue( def.begin(), def.end() );
-    if ( defValue.size() > KnobBytes::maxLength() ) {
-        defValue.clear();
+    std::string defValue;
+    if ( def.size() > KnobBytes::maxLength() ) {
+        std::cerr << getName() << ": Warning: the default value of this Bytes parameter (" << def.size()
+                  << " bytes) is larger than " << KnobBytes::maxLength() << " bytes, ignoring it" << std::endl;
+    } else {
+        defValue.assign( def.begin(), def.end() );
     }
     knob->setDefaultValue(defValue, 0);
     knob->unblockValueChanges();
@@ -4804,7 +4807,12 @@ OfxBytesInstance::setDefault()
     // the plug-in's data is only valid during the call that sets the property: copy it
     const OfxBytes *def = (const OfxBytes *)getProperties().getPointerProperty(kOfxParamPropDefault);
     std::string value;
-    if ( def && def->data && (def->length > 0) && (def->length <= KnobBytes::maxLength()) ) {
+    if ( def && def->data && (def->length > KnobBytes::maxLength()) ) {
+        std::cerr << getName() << ": Warning: the default value of this Bytes parameter (" << def->length
+                  << " bytes) is larger than " << KnobBytes::maxLength() << " bytes, ignoring it" << std::endl;
+
+        return;
+    } else if ( def && def->data && (def->length > 0) ) {
         value.assign( (const char*)def->data, def->length );
     }
     _imp->knob.lock()->setDefaultValueWithoutApplying(value, 0);

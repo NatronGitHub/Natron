@@ -23,6 +23,7 @@
 // - bytesAnimates: a Bytes param with kOfxParamPropAnimates = 1;
 // - trigger: an Integer param. Its instanceChanged sets "bytes": 1: 256 bytes 0..255, 2: a NULL OfxBytes,
 //   3: a zero length; then reads it back. 4: sets the default of "bytes" to "dyn" from a buffer on the stack.
+//   5: sets a default of 2 GB (more than the host accepts).
 // The render action reads "bytes" and prints its length and checksum on stderr (for NatronRenderer runs).
 // Counters ("Bytes.*"): defined / defineFailed (paramDefine of the Bytes params), instanceChanged,
 // readBackOK / readBackFailed (the value read back in instanceChanged), render, renderLength and
@@ -163,6 +164,17 @@ instanceChanged(OfxImageEffectHandle effect,
         OfxBytes def = { buffer, sizeof(buffer) };
         gPropSuite->propSetPointer(props, kOfxParamPropDefault, 0, (void*)&def);
         std::memset(buffer, 0x55, sizeof(buffer));
+
+        return kOfxStatOK;
+    } else if (mode == 5) {
+        // a default too large for the host (which must not read the data)
+        OfxPropertySetHandle props;
+        if (gParamSuite->paramGetPropertySet(bytes, &props) != kOfxStatOK) {
+            return kOfxStatFailed;
+        }
+        unsigned char buffer[3] = { 'b', 'i', 'g' };
+        OfxBytes def = { buffer, (size_t)0x80000000u };
+        gPropSuite->propSetPointer(props, kOfxParamPropDefault, 0, (void*)&def);
 
         return kOfxStatOK;
     } else {

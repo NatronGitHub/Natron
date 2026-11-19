@@ -1488,15 +1488,31 @@ KnobBytes::maxLength()
     return (std::size_t)( (std::numeric_limits<int>::max() - 1024) / 4 ) * 3;
 }
 
+std::size_t
+KnobBytes::maxExportLength()
+{
+    // 4 bytes in the script per byte of data, and half of the script for the rest of it
+    return (std::size_t)(std::numeric_limits<int>::max() / 8);
+}
+
+// (a text that a String knob wouldn't hold by chance, and that can't be base64: '-' and ':')
+const std::string KnobBytes::_serializationPrefix("natron-bytes-base64:");
+
 std::string
 KnobBytes::encodeForSerialization(const std::string& data)
 {
     if ( data.empty() ) {
-        return std::string();
+        return _serializationPrefix;
     }
     const QByteArray encoded = QByteArray::fromRawData( data.data(), (int)data.size() ).toBase64();
 
-    return std::string( encoded.constData(), (std::size_t)encoded.size() );
+    return _serializationPrefix + std::string( encoded.constData(), (std::size_t)encoded.size() );
+}
+
+bool
+KnobBytes::isSerializedBytes(const std::string& text)
+{
+    return text.compare(0, _serializationPrefix.size(), _serializationPrefix) == 0;
 }
 
 bool
@@ -1504,13 +1520,17 @@ KnobBytes::decodeFromSerialization(const std::string& text,
                                    std::string* data)
 {
     data->clear();
-    if ( text.empty() ) {
-        return true;
-    }
-    if ( text.size() > (std::size_t)std::numeric_limits<int>::max() ) {
+    if ( !isSerializedBytes(text) ) {
         return false;
     }
-    const QByteArray::FromBase64Result decoded = QByteArray::fromBase64Encoding(QByteArray::fromRawData( text.data(), (int)text.size() ),
+    const std::size_t n = text.size() - _serializationPrefix.size();
+    if (n == 0) {
+        return true;
+    }
+    if ( n > (std::size_t)std::numeric_limits<int>::max() ) {
+        return false;
+    }
+    const QByteArray::FromBase64Result decoded = QByteArray::fromBase64Encoding(QByteArray::fromRawData( text.data() + _serializationPrefix.size(), (int)n ),
                                                                                 QByteArray::AbortOnBase64DecodingErrors);
     if (!decoded) {
         return false;

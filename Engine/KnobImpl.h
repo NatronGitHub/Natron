@@ -2187,7 +2187,11 @@ template<typename T>
 bool
 Knob<T>::isTypeCompatible(const KnobIPtr & other) const
 {
-    return isTypePOD() == other->isTypePOD();
+    // Raw bytes are not text: a KnobBytes and another string knob refuse each other (copy/paste, links)
+    const bool isBytes = dynamic_cast<const KnobBytes*>(this) != NULL;
+    const bool otherIsBytes = dynamic_cast<const KnobBytes*>( other.get() ) != NULL;
+
+    return ( isTypePOD() == other->isTypePOD() ) && (isBytes == otherIsBytes);
 }
 
 template<typename T>

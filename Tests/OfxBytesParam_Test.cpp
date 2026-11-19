@@ -310,6 +310,14 @@ TEST_F(OfxBytesParamTest, SetDefault)
     EXPECT_EQ( std::string("dyn"), toString(value) );
 }
 
+// A default larger than KnobBytes::maxLength() is ignored (with a warning), without reading the data.
+TEST_F(OfxBytesParamTest, SetDefaultTooLarge)
+{
+    SKIP_IF_NO_PLUGIN();
+    trigger(5);
+    EXPECT_EQ( toString( defaultBytes() ), _knob->getDefaultValue(0) );
+}
+
 // The host copies the data (NUL bytes included), and gives the plug-in a pointer to its own copy.
 TEST_F(OfxBytesParamTest, SetAndGet)
 {
@@ -443,10 +451,21 @@ TEST_F(OfxBytesParamTest, SaveAndLoadNode)
     const std::string xml = saveNode(_node);
     // the XML holds the data as base64 text, whatever the bytes
     EXPECT_EQ( std::string::npos, xml.find('\0') );
-    EXPECT_NE( std::string::npos, xml.find("<Type>Bytes</Type>") );
+    // saved as a String knob, which Natron 2.5 can read (see Natron25ReadsItAsAString)
+    EXPECT_EQ( std::string::npos, xml.find("<Type>Bytes</Type>") );
     EXPECT_NE( std::string::npos, xml.find( KnobBytes::encodeForSerialization( toString(data) ) ) );
     NodeSerializationPtr loaded = loadNode(xml);
     destroy(_node);
+
+    // the loaded knob is a KnobBytes again
+    bool found = false;
+    for (NodeSerialization::KnobValues::const_iterator it = loaded->getKnobsValues().begin(); it != loaded->getKnobsValues().end(); ++it) {
+        if ( (*it)->getName() == "bytes" ) {
+            found = true;
+            EXPECT_TRUE( bool( std::dynamic_pointer_cast<KnobBytes>( (*it)->getKnob() ) ) );
+        }
+    }
+    EXPECT_TRUE(found);
 
     NodePtr node = createBytesNode(loaded);
     ASSERT_TRUE( bool(node) );
@@ -470,7 +489,7 @@ TEST_F(OfxBytesParamTest, LoadInvalidBase64)
     const std::string encoded = KnobBytes::encodeForSerialization( toString(data) );
     const std::size_t pos = xml.find(encoded);
     ASSERT_NE(std::string::npos, pos);
-    xml.replace(pos, encoded.size(), "not*base64!");
+    xml.replace( pos, encoded.size(), KnobBytes::encodeForSerialization( std::string() ) + "not*base64!" );
     NodeSerializationPtr loaded = loadNode(xml);
     destroy(_node);
 
@@ -482,35 +501,103 @@ TEST_F(OfxBytesParamTest, LoadInvalidBase64)
     destroy(node);
 }
 
-// The ValueSerialization version was bumped for KnobBytes: values saved with the previous version (all
-// projects before Natron 2.6, which had no KnobBytes) still load.
-TEST(OfxBytesParamSerialization, PreviousValueVersionLoads)
+// Natron 2.5 and older have no Bytes knobs, and get out of step when they read a knob of an unknown type (their
+// KnobSerialization::load() returns before reading its elements), so that the whole project fails to load. A
+// KnobBytes is saved exactly as a non-animated String knob whose value is the text of
+// KnobBytes::encodeForSerialization(): the elements that Natron 2.5 reads for a String knob (its
+// KnobSerialization and ValueSerialization have the same String layout as Natron 2.6, at the same class
+// versions), so it reads it as a String knob, whatever plug-in it belongs to.
+TEST_F(OfxBytesParamTest, Natron25ReadsItAsAString)
 {
-    EXPECT_EQ(VALUE_SERIALIZATION_INTRODUCES_BYTES, VALUE_SERIALIZATION_VERSION);
-    KnobStringPtr knob = std::make_shared<KnobString>( (KnobHolder*)NULL, std::string("s"), 1, false );
-    knob->populate();
-    knob->setValue( std::string("text"), ViewSpec::all(), 0 );
-    std::stringstream ss;
-    {
-        KnobSerialization s(knob);
+    SKIP_IF_NO_PLUGIN();
+    const Bytes data = allBytes();
+    ASSERT_EQ( kOfxStatOK, setBytes(_bytes, data) );
+    // the String knob that Natron 2.5 would read
+    KnobStringPtr str = std::make_shared<KnobString>( (KnobHolder*)NULL, std::string("bytes"), 1, false );
+    str->populate();
+    str->setName("bytes");
+    str->setSecret( _knob->getIsSecret() );
+    str->setEnabled( 0, _knob->isEnabled(0) );
+    str->setDefaultValueWithoutApplying( KnobBytes::encodeForSerialization( _knob->getDefaultValue(0) ), 0 );
+    str->setValue( KnobBytes::encodeForSerialization( toString(data) ), ViewSpec::all(), 0 );
+    std::string xml[2];
+    KnobIPtr knobs[2] = { _knob, str };
+    for (int i = 0; i < 2; ++i) {
+        std::stringstream ss;
+        KnobSerialization s(knobs[i]);
         boost::archive::xml_oarchive oArchive(ss);
         oArchive << boost::serialization::make_nvp("Knob", s);
+        xml[i] = ss.str();
     }
-    std::string xml = ss.str();
-    // the class version of ValueSerialization, written once with its first object
-    const std::string current = "version=\"" + std::to_string(VALUE_SERIALIZATION_VERSION) + "\"";
-    const std::size_t pos = xml.find(current);
-    ASSERT_NE(std::string::npos, pos) << xml;
-    xml.replace( pos, current.size(), "version=\"" + std::to_string(VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) + "\"" );
-    std::stringstream old(xml);
-    KnobSerialization loaded;
+    EXPECT_EQ(xml[1], xml[0]);
+    EXPECT_NE( std::string::npos, xml[0].find("<Type>String</Type>") );
+
+    // read back with a following element (a knob of a node): Natron 2.6 makes a KnobBytes of it, and the
+    // archive stays in step
+    std::stringstream ss;
     {
-        boost::archive::xml_iarchive iArchive(old);
-        iArchive >> boost::serialization::make_nvp("Knob", loaded);
+        KnobSerialization s(_knob);
+        KnobSerialization s2(str);
+        int after = 42;
+        boost::archive::xml_oarchive oArchive(ss);
+        oArchive << boost::serialization::make_nvp("Knob", s);
+        oArchive << boost::serialization::make_nvp("Knob2", s2);
+        oArchive << boost::serialization::make_nvp("After", after);
     }
-    KnobStringPtr loadedKnob = std::dynamic_pointer_cast<KnobString>( loaded.getKnob() );
-    ASSERT_TRUE( bool(loadedKnob) );
-    EXPECT_EQ( std::string("text"), loadedKnob->getValue(0) );
+    KnobSerialization loaded, loaded2;
+    int after = 0;
+    {
+        boost::archive::xml_iarchive iArchive(ss);
+        iArchive >> boost::serialization::make_nvp("Knob", loaded);
+        iArchive >> boost::serialization::make_nvp("Knob2", loaded2);
+        iArchive >> boost::serialization::make_nvp("After", after);
+    }
+    EXPECT_EQ(42, after);
+    KnobBytesPtr bytes = std::dynamic_pointer_cast<KnobBytes>( loaded.getKnob() );
+    ASSERT_TRUE( bool(bytes) );
+    EXPECT_EQ( toString(data), bytes->getValue(0) );
+    EXPECT_EQ( toString( defaultBytes() ), bytes->getDefaultValue(0) );
+    EXPECT_TRUE( bool( std::dynamic_pointer_cast<KnobBytes>( loaded2.getKnob() ) ) );
+}
+
+// A String knob whose text doesn't come from a KnobBytes stays a String knob.
+TEST(OfxBytesParamSerialization, StringKnobsStayStrings)
+{
+    const char* values[] = { "text", "natron-bytes-base64", "", "AAEC" };
+    for (int i = 0; i < 4; ++i) {
+        KnobStringPtr knob = std::make_shared<KnobString>( (KnobHolder*)NULL, std::string("s"), 1, false );
+        knob->populate();
+        knob->setValue( std::string(values[i]), ViewSpec::all(), 0 );
+        std::stringstream ss;
+        {
+            KnobSerialization s(knob);
+            boost::archive::xml_oarchive oArchive(ss);
+            oArchive << boost::serialization::make_nvp("Knob", s);
+        }
+        KnobSerialization loaded;
+        {
+            boost::archive::xml_iarchive iArchive(ss);
+            iArchive >> boost::serialization::make_nvp("Knob", loaded);
+        }
+        KnobStringPtr loadedKnob = std::dynamic_pointer_cast<KnobString>( loaded.getKnob() );
+        ASSERT_TRUE( bool(loadedKnob) ) << values[i];
+        EXPECT_EQ( std::string(values[i]), loadedKnob->getValue(0) );
+    }
+}
+
+// Raw bytes are not text: a KnobBytes and a String knob refuse to be copied into each other (Param.copy(), paste).
+TEST_F(OfxBytesParamTest, NotCompatibleWithStrings)
+{
+    SKIP_IF_NO_PLUGIN();
+    KnobStringPtr str = std::make_shared<KnobString>( (KnobHolder*)NULL, std::string("s"), 1, false );
+    str->populate();
+    KnobBytesPtr other = std::make_shared<KnobBytes>( (KnobHolder*)NULL, std::string("b"), 1, false );
+    other->populate();
+    EXPECT_FALSE( _knob->isTypeCompatible(str) );
+    EXPECT_FALSE( str->isTypeCompatible(_knob) );
+    EXPECT_TRUE( _knob->isTypeCompatible(other) );
+    EXPECT_TRUE( str->isTypeCompatible(str) );
+    EXPECT_FALSE( KnobI::areTypesCompatibleForSlave( _knob.get(), str.get() ) );
 }
 
 // The value is saved in a project (.ntp) and restored when the project is loaded.
@@ -599,6 +686,61 @@ TEST_F(OfxBytesParamTest, PythonParam)
     EXPECT_EQ( toString( defaultBytes() ), param.getValue() );
 }
 
+// The PyPlug export (Group "Export as Python plug-in") writes the value as Python bytes, which a string literal
+// can't hold.
+TEST_F(OfxBytesParamTest, PyPlugExport)
+{
+    SKIP_IF_NO_PLUGIN();
+    const Bytes data = allBytes();
+    ASSERT_EQ( kOfxStatOK, setBytes(_bytes, data) );
+    QString script;
+    appPTR->getTopLevelInstance()->getProject()->exportGroupToPython( QString::fromUtf8("net.natron.test.BytesExport"), QString::fromUtf8("BytesExport"),
+                                                                       QString(), QString(), QString::fromUtf8("Other"), 1, script );
+    const QByteArray hex = QByteArray( (const char*)&data[0], (int)data.size() ).toHex();
+    EXPECT_TRUE( script.contains( QString::fromUtf8("param.setValue(bytes.fromhex(\"") + QString::fromLatin1(hex) + QString::fromUtf8("\"))") ) )
+        << script.toStdString();
+    // no raw bytes in the script
+    EXPECT_FALSE( script.contains( QChar(0) ) );
+    EXPECT_GT( KnobBytes::maxExportLength(), (std::size_t)0 );
+    EXPECT_LT( KnobBytes::maxExportLength() * 4, (std::size_t)INT_MAX );
+}
+
+// The Python bindings of BytesParam (Shiboken): bytes in and out, any bytes-like object in, TypeError for str.
+TEST_F(OfxBytesParamTest, PythonBindings)
+{
+    SKIP_IF_NO_PLUGIN();
+    const std::string node = appPTR->getTopLevelInstance()->getAppIDString() + "." + _node->getFullyQualifiedName();
+    const std::string script =
+        "p = " + node + ".getParam(\"bytes\")\n"
+        "assert type(p).__name__ == \"BytesParam\", type(p)\n"
+        "assert p.getDefaultValue() == b\"N\\x00a\\xff\\x00\", p.getDefaultValue()\n"
+        "assert p.getValue() == p.getDefaultValue()\n"
+        "d = bytes(range(256))\n"
+        "p.setValue(d)\n"
+        "v = p.getValue()\n"
+        "assert type(v) is bytes and v == d, v\n"
+        "p.setValue(bytearray(b\"x\\x00y\"))\n"
+        "assert p.getValue() == b\"x\\x00y\"\n"
+        "p.setValue(memoryview(b\"mv\"))\n"
+        "assert p.getValue() == b\"mv\"\n"
+        "try:\n"
+        "    p.setValue(\"text\")\n"
+        "    raise RuntimeError(\"no TypeError for str\")\n"
+        "except TypeError:\n"
+        "    pass\n"
+        "assert p.getValue() == b\"mv\"\n"
+        "p.restoreDefaultValue()\n"
+        "assert p.getValue() == b\"N\\x00a\\xff\\x00\"\n"
+        "p.setValue(b\"\")\n"
+        "assert p.getValue() == b\"\"\n";
+    std::string error, output;
+    EXPECT_TRUE( ::Natron::Python::interpretPythonScript(script, &error, &output) ) << error << output;
+    EXPECT_EQ( std::string(), error );
+    Bytes value;
+    ASSERT_TRUE( getBytes(_bytes, &value) );
+    EXPECT_TRUE( value.empty() );
+}
+
 // The data returned to the plug-in is per thread: render threads may read the param at the same time, and
 // the data returned to one thread stays valid until that thread's next call on the param (HostSupport's
 // BytesInstance::getV returns a pointer to a member of the instance, which another thread would overwrite).
@@ -664,17 +806,25 @@ TEST(OfxBytesParamEncoding, RoundTrip)
 {
     const std::string data = toString( allBytes() );
     const std::string encoded = KnobBytes::encodeForSerialization(data);
-    EXPECT_EQ( std::string::npos, encoded.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=") );
+    const std::string prefix = KnobBytes::encodeForSerialization( std::string() );
+    EXPECT_EQ( std::string("natron-bytes-base64:"), prefix );
+    ASSERT_EQ( 0, encoded.compare( 0, prefix.size(), prefix ) );
+    EXPECT_EQ( std::string::npos, encoded.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=", prefix.size()) );
+    EXPECT_TRUE( KnobBytes::isSerializedBytes(encoded) );
+    EXPECT_FALSE( KnobBytes::isSerializedBytes("AAEC") );
     std::string decoded("garbage");
     EXPECT_TRUE( KnobBytes::decodeFromSerialization(encoded, &decoded) );
     EXPECT_EQ(data, decoded);
 
-    EXPECT_EQ( std::string(), KnobBytes::encodeForSerialization( std::string() ) );
-    EXPECT_TRUE( KnobBytes::decodeFromSerialization(std::string(), &decoded) );
+    EXPECT_TRUE( KnobBytes::decodeFromSerialization(prefix, &decoded) );
     EXPECT_TRUE( decoded.empty() );
-    EXPECT_EQ( std::string("AA=="), KnobBytes::encodeForSerialization( std::string(1, '\0') ) );
+    EXPECT_EQ( prefix + "AA==", KnobBytes::encodeForSerialization( std::string(1, '\0') ) );
 
     decoded = "garbage";
-    EXPECT_FALSE( KnobBytes::decodeFromSerialization("not*base64!", &decoded) );
+    EXPECT_FALSE( KnobBytes::decodeFromSerialization(prefix + "not*base64!", &decoded) );
+    EXPECT_TRUE( decoded.empty() );
+    // a text that was not made by encodeForSerialization()
+    decoded = "garbage";
+    EXPECT_FALSE( KnobBytes::decodeFromSerialization("AA==", &decoded) );
     EXPECT_TRUE( decoded.empty() );
 }
