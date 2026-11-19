@@ -91,6 +91,7 @@ SOURCES += \
     ProjectAutoSave_Test.cpp \
     ReadNodeOverlay_Test.cpp \
     RenderThreadSafety_Test.cpp \
+    RenderThreads_Test.cpp \
     RotoPaint_Test.cpp \
     SequentialRender_Test.cpp \
     Tracker_Test.cpp \
