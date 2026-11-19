@@ -2302,8 +2302,7 @@ Settings::onKnobValueChanged(KnobI* k,
         }
         setCachingLabels();
     } else if ( k == _diskCachePath.get() ) {
-        QString path = QString::fromUtf8(_diskCachePath->getValue().c_str());
-        qputenv(NATRON_DISK_CACHE_PATH_ENV_VAR, path.toUtf8());
+        // The environment variable, if set, takes precedence over the preference (#1265): don't overwrite it
         appPTR->refreshDiskCacheLocation();
     } else if ( k == _wipeDiskCache.get() ) {
         appPTR->wipeAndCreateDiskCacheStructure();
@@ -2551,6 +2550,12 @@ U64
 Settings::getMaximumDiskCacheNodeSize() const
 {
     return (U64)( _maxDiskCacheNodeGB->getValue() ) * 1024 * 1024 * 1024;
+}
+
+QString
+Settings::getDiskCachePath() const
+{
+    return _diskCachePath ? QString::fromUtf8( _diskCachePath->getValue().c_str() ) : QString();
 }
 
 ///////////////////////////////////////////////////

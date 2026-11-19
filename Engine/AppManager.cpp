@@ -2620,14 +2620,23 @@ AppManager::registerEngineMetaTypes() const
 void
 AppManager::refreshDiskCacheLocation()
 {
+    // The environment variable takes precedence over the "Disk cache path" preference, as documented (#1265).
+    // The settings do not exist yet when this is first called by loadInternal().
+    QStringList paths;
+    paths << QString::fromUtf8( qgetenv(NATRON_DISK_CACHE_PATH_ENV_VAR) );
+    if (_imp->_settings) {
+        paths << _imp->_settings->getDiskCachePath();
+    }
     QMutexLocker k(&_imp->diskCachesLocationMutex);
-    QString path = QString::fromUtf8(qgetenv(NATRON_DISK_CACHE_PATH_ENV_VAR));
-    if ( !path.isEmpty() ) {
-        QDir d(path);
-        // create the full path if the directory does not exist
-        if ( d.exists() || d.mkpath(path) ) {
-            _imp->diskCachesLocation = path;
-            return;
+    Q_FOREACH(const QString &path, paths) {
+        if ( !path.isEmpty() ) {
+            QDir d(path);
+            // create the full path if the directory does not exist
+            if ( d.exists() || d.mkpath(path) ) {
+                _imp->diskCachesLocation = path;
+
+                return;
+            }
         }
     }
     _imp->diskCachesLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
