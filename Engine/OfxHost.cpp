@@ -1206,7 +1206,8 @@ OfxHost::newMemoryInstance(size_t nBytes)
     OfxMemory* ret = new OfxMemory( OfxEffectInstancePtr() );
     bool allocated = ret->alloc(nBytes);
 
-    if ( ( (nBytes != 0) && !ret->getPtr() ) || !allocated ) {
+    // (test allocated first: after a failed allocation, PluginMemory::getPtr() must not be called)
+    if ( !allocated || ( (nBytes != 0) && !ret->getPtr() ) ) {
         delete ret;
         // This may be called from a render thread: log the error, never open a dialog.
         appPTR->writeToErrorLog_mt_safe( QLatin1String("OpenFX"), QDateTime::currentDateTime(),

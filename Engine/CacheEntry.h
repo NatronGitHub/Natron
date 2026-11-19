@@ -119,6 +119,8 @@ public:
         }
         data = (T*)malloc( size * sizeof(T) );
         if (!data) {
+            // no data: size() must be 0 (PluginMemory::getPtr() asserts it, freeMem() would unregister it)
+            count = 0;
             throw std::bad_alloc();
         }
     }
