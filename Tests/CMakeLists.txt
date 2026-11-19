@@ -48,6 +48,7 @@ set(Tests_SOURCES
     OfxParamInteract_Test.cpp
     OfxParamUndo_Test.cpp
     OfxPluginDeprecated_Test.cpp
+    OfxPluginScan_Test.cpp
     OfxSingleInstance_Test.cpp
     OfxSyncPrivateData_Test.cpp
     OfxTestPlugin_Test.cpp
@@ -139,6 +140,19 @@ set_target_properties(NatronTestPlugin PROPERTIES
     C_VISIBILITY_PRESET hidden
     CXX_VISIBILITY_PRESET hidden
     VISIBILITY_INLINES_HIDDEN ON)
+# Copies of the bundle that the host must skip (OfxPluginScan_Test.cpp, #1380): "Any bundle or
+# sub-directory name starting with the character '@' is to be ignored" (ofxPackaging.rst), and a
+# directory whose name only contains ".ofx.bundle" is not a bundle.
+foreach(_natron_test_skipped
+        "@NatronTestPluginDisabled.ofx.bundle/Contents/${_natron_test_archdir}/@NatronTestPluginDisabled.ofx"
+        "@Disabled/NatronTestPluginInDisabledDir.ofx.bundle/Contents/${_natron_test_archdir}/NatronTestPluginInDisabledDir.ofx"
+        "NatronTestPluginOld.ofx.bundle.old/Contents/${_natron_test_archdir}/NatronTestPluginOld.ofx")
+    get_filename_component(_natron_test_skipped_dir "${NATRON_TESTS_OFX_PLUGIN_DIR}/${_natron_test_skipped}" DIRECTORY)
+    add_custom_command(TARGET NatronTestPlugin POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${_natron_test_skipped_dir}"
+        COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:NatronTestPlugin>" "${NATRON_TESTS_OFX_PLUGIN_DIR}/${_natron_test_skipped}"
+        VERBATIM)
+endforeach()
 add_dependencies(Tests NatronTestPlugin)
 target_compile_definitions(Tests PRIVATE
     NATRON_TESTS_OFX_PLUGIN_DIR="${NATRON_TESTS_OFX_PLUGIN_DIR}"
