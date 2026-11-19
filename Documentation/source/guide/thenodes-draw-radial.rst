@@ -6,26 +6,30 @@ Radial Node
 
 Radial creates a radial gradient. 
 
-It is very useful for masking off a color adjustment and its softness parameter can be edited without compromising its edge values too much. Frequently use it to mask out nebulous regions of an effect. 
+It is useful as a mask for a color correction or another effect, especially over soft, loosely defined areas: its **Softness** can be changed without changing the edge much.
 
-It is faster to use and to process that a Roto or RotoPaint node. 
+It is faster to set up and to render than a Roto or RotoPaint node.
     
 .. image:: _images/TheNodes-Draw/nodes_draw_radial01.jpg
     
 Usage
 --------
 
-Use the rectangle gizmo visible when properties are opened to edit the shape 
-If an exact circle is required then the "2" button should be pressed in the size parameters.
-If the circle should be centered in the image press the "center" button 
+While the node's properties are open, drag the rectangle handle in the Viewer
+to change the shape.
+For an exact circle, give the same width and height to **Size**: the button
+next to it switches between one value for both dimensions and one value per
+dimension.
+To center the shape in the image, click **Center**.
 
-A hard-edged circle can be obtained by setting the softness paramet to 0.
+For a hard-edged circle, set **Softness** to 0 (the default is 1).
 
-The End colors can be changed with "color 0" and "color 1" parameters.
+**Color 0** is the color outside the shape and **Color 1** the color inside.
 
-To fill the image with the effect set "Extent" to "Project"
+To fill the whole image, set **Extent** to **Project**.
 
-The node allows different 2 of transitions. With or without the "Perceptually linear" checkbox.
+Check **Perceptually Linear** for a falloff that looks linear to the eye,
+rather than a linear one.
 
 .. toctree::
     :maxdepth: 2

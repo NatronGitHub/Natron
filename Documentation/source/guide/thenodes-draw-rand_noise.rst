@@ -4,12 +4,11 @@
 Rand Node
 =========
 
-Creates uniform Random noise.
-This node alone is not suitable for image regrain.
+Rand draws a field of random pixels. This node alone cannot regrain an image.
 
 .. image:: _images/TheNodes-Draw/nodes_draw_rand01.jpg
 
-2 different Rand with different values of "Density"
+Two Rand nodes with different **Density** values.
 
 
 Usage
@@ -17,18 +16,18 @@ Usage
 
 .. image:: _images/TheNodes-Draw/nodes_draw_rand02.jpg
 
-The "Density" parameter allows one to change the average distance between the random dots of the noise
+**Density**, from 0 to 1, sets the proportion of random pixels: a lower density gives fewer of them. **Noise** sets how strong the noise is.
 
-check "Static Seed" for a freeze frame of the effect
+Check **Static Seed** to get the same noise on every frame.
 
 Noise Node
 ==========
 
-Creates noiseover the source image.
+Noise adds noise to the source image.
 
 .. image:: _images/TheNodes-Draw/nodes_draw_noise01PoissonGaussian.jpg
 
-2 different types of Noise. Poisson on the left, Gaussian on the right.
+Two noise types: Poisson on the left, Gaussian on the right.
 
 
 Usage
@@ -36,11 +35,15 @@ Usage
 
 .. image:: _images/TheNodes-Draw/nodes_draw_noise02.jpg
 
-The Sigma parameter control the amount of noise.
+**Sigma** controls the amount of noise.
 
-The "type "Poisson" noise reacts to the source image. It could be used to simulate electronic sensor noise. It gives a black result when no source image is provided. Type "Gaussian" is more uniform and is not dependant on the source image
+**Type** chooses the noise: **Gaussian** (the default), **Uniform**, **Salt &
+Pepper**, **Poisson** or **Rice**. Poisson noise depends on the source image,
+like the noise of a camera sensor, and gives a black image when there is no
+source. Gaussian noise is the same everywhere and does not depend on the
+source image.
 
-check "Static Seed" for a freeze frame of the effect
+Check **Static Seed** to get the same noise on every frame.
 
 
 .. toctree::
