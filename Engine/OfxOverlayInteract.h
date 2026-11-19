@@ -366,6 +366,15 @@ public:
     {
     }
 
+    /**
+     * @brief Call kOfxActionDestroyInstance now, while the effect instance is still alive: "An
+     * interact instance must always be associated with an effect instance, so it gets created after
+     * the effect and destroyed before the effect" (ofxInteracts.rst). The GUI may still hold this
+     * object after the effect is gone, so all the later actions fail without calling the plug-in, and
+     * the destructor doesn't call kOfxActionDestroyInstance again.
+     **/
+    void destroyInstanceAction();
+
     // TODO: keyboard modifiers in parameter interacts (ofxNatron.h extension 13): override
     // supportsKeyModifiers() and getKeyModifiers(), and set the state from CustomParamInteract and
     // CurveWidget before each action (NatronGitHub/Natron#1283). Until then, HostSupport doesn't

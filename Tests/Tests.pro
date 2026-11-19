@@ -66,6 +66,7 @@ SOURCES += \
     OfxCPURenderSupport_Test.cpp \
     OfxImageMemory_Test.cpp \
     OfxMultiThreadSuite_Test.cpp \
+    OfxParamInteract_Test.cpp \
     OfxPluginDeprecated_Test.cpp \
     OfxTestPlugin_Test.cpp \
     OSGLContext_Test.cpp \
