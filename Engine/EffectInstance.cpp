@@ -4137,7 +4137,8 @@ EffectInstance::attachOpenGLContext_public(const OSGLContextPtr& glContext,
             (*data)->setHasTakenLock(true);
         }
         _imp->attachedContexts.insert( std::make_pair(glContext, *data) );
-    } else {
+    } else if (!concurrentGLRender) {
+        // the lock taken above without a locker (concurrent renders: the locker releases it)
         _imp->attachedContextsMutex.unlock();
     }
 

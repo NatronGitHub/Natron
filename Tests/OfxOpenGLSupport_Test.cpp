@@ -20,8 +20,8 @@
 // - when kOfxActionOpenGLContextAttached returns kOfxStatFailed, "the host should not attempt to run the
 //   plug-in in OpenGL render mode" (ofxGPURender.h): the frame is rendered on the CPU, and OpenGL is not
 //   tried again; a plug-in that needs OpenGL fails, without attaching again;
-// - a plug-in that needs OpenGL, created where OpenGL rendering is disabled or unavailable, gets an
-//   error message when it is created.
+// - a plug-in that needs OpenGL, rendered where OpenGL rendering is disabled or unavailable, fails with a
+//   message saying why, without being called.
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -226,7 +226,7 @@ TEST(OfxOpenGLSupport, ContextAttachFailedNeeded)
     NodePtr node = createNode(kNatronTestPluginGLAttachFailedNeeded);
     ASSERT_TRUE( bool(node) );
     ASSERT_EQ( ePluginOpenGLRenderSupportNeeded, node->getCurrentOpenGLRenderSupport() );
-    // OpenGL rendering is enabled: no message when the node is created
+    // OpenGL rendering is enabled: no "OpenGL unavailable" message
     EXPECT_TRUE( node->getOpenGLRenderUnavailableMessage().isEmpty() );
 
     const int attach = NatronTestPlugin::counter("GLAttachFailedNeeded.attach");
@@ -240,8 +240,8 @@ TEST(OfxOpenGLSupport, ContextAttachFailedNeeded)
     node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
 }
 
-// A plug-in that needs OpenGL, created where OpenGL rendering is disabled, is told so at creation.
-TEST(OfxOpenGLSupport, NeededButDisabledAtCreation)
+// A plug-in that needs OpenGL, rendered where OpenGL rendering is disabled, fails with a message saying why.
+TEST(OfxOpenGLSupport, NeededButDisabled)
 {
     if ( !canRunTest(kNatronTestPluginGLAttachFailedNeeded, false) ) {
         return;
@@ -250,10 +250,10 @@ TEST(OfxOpenGLSupport, NeededButDisabledAtCreation)
     ASSERT_FALSE( appPTR->getCurrentSettings()->isOpenGLRenderingEnabled() );
     NodePtr node = createNode(kNatronTestPluginGLAttachFailedNeeded);
     ASSERT_TRUE( bool(node) );
-    // (the message is set as a persistent message, which is only printed in background mode)
+    // the reason (set as a persistent message when it renders, which is only printed in background mode)
     EXPECT_FALSE( node->getOpenGLRenderUnavailableMessage().isEmpty() );
 
-    // and the render fails without calling the plug-in
+    // the render fails without calling the plug-in
     const int attach = NatronTestPlugin::counter("GLAttachFailedNeeded.attach");
     const int cpuRenders = NatronTestPlugin::counter("GLAttachFailedNeeded.cpuRenders");
     EXPECT_FALSE( bool( renderFrame(node, 1.) ) );

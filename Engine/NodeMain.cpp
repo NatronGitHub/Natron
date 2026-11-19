@@ -189,13 +189,6 @@ Node::load(const CreateNodeArgs& args)
      */
     refreshDynamicProperties();
     onOpenGLEnabledKnobChangedOnProject(getApp()->getProject()->isGPURenderingEnabledInProject());
-    {
-        // A plug-in that needs OpenGL can't render in this process: say why now, rather than at each render
-        QString message = getOpenGLRenderUnavailableMessage();
-        if ( !message.isEmpty() ) {
-            setPersistentMessage( eMessageTypeError, message.toStdString() );
-        }
-    }
 
     if ( isTrackerNodePlugin() ) {
         _imp->isMultiInstance = true;

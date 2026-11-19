@@ -371,12 +371,15 @@ Node::getCurrentOpenGLRenderSupport() const
     return _imp->currentSupportOpenGLRender;
 }
 
-void
+bool
 Node::setOpenGLContextAttachFailed()
 {
     QMutexLocker k(&_imp->pluginsPropMutex);
+    bool wasSet = _imp->openGLContextAttachFailed;
 
     _imp->openGLContextAttachFailed = true;
+
+    return !wasSet;
 }
 
 bool

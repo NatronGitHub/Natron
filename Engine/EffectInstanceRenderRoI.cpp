@@ -888,8 +888,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             }
         }
     } else if (openGLSupport == ePluginOpenGLRenderSupportNeeded) {
-        // no OpenGL context for this render: OpenGL is disabled or not available, and the plug-in can't
-        // render without it
+        // No OpenGL context for this render: OpenGL rendering is disabled or not available (or, in a render
+        // without abort info or thread-local render args, Natron can't manage an OpenGL context), and the
+        // plug-in can't render without it: fail, rather than calling it without OpenGL.
         QString message = getNode()->getOpenGLRenderUnavailableMessage();
         if ( message.isEmpty() ) {
             message = tr("%1 needs OpenGL rendering, but no OpenGL context is available for this render.").arg( QString::fromUtf8( getNode()->getLabel().c_str() ) );
@@ -1721,13 +1722,16 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 // kOfxActionOpenGLContextAttached returned kOfxStatFailed: "the host should not attempt to
                 // run the plug-in in OpenGL render mode" (ofxGPURender.h). Don't try OpenGL again for this
                 // node, and render on the CPU now if the plug-in can (as when it runs out of GPU memory).
-                getNode()->setOpenGLContextAttachFailed();
+                // (log it once: other frames may be in flight with the same failure)
+                const bool firstFailure = getNode()->setOpenGLContextAttachFailed();
                 if (openGLSupport == ePluginOpenGLRenderSupportYes) {
-                    appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( getNode()->getLabel_mt_safe().c_str() ), QDateTime::currentDateTime(),
-                                                     tr("Attaching the OpenGL context failed: rendering without OpenGL.") );
+                    if (firstFailure) {
+                        appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( getNode()->getLabel_mt_safe().c_str() ), QDateTime::currentDateTime(),
+                                                         tr("Attaching the OpenGL context failed: rendering without OpenGL.") );
+                    }
                     renderRetCode = eRenderRoIStatusRenderOutOfGPUMemory;
                 } else {
-                    if ( !getNode()->hasPersistentMessage() ) {
+                    if (firstFailure) {
                         setPersistentMessage( eMessageTypeError, tr("%1 needs OpenGL rendering, but it failed to attach the OpenGL context.")
                                               .arg( QString::fromUtf8( getNode()->getLabel().c_str() ) ).toStdString() );
                     }

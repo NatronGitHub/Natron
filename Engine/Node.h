@@ -475,7 +475,8 @@ public:
      * returns ePluginOpenGLRenderSupportNone, or the render fails if it needs OpenGL), until it changes
      * its OpenGL render support.
      **/
-    void setOpenGLContextAttachFailed();
+    // returns true if it was not set before
+    bool setOpenGLContextAttachFailed();
     bool hasOpenGLContextAttachFailed() const;
 
     /**
