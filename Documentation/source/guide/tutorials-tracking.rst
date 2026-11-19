@@ -260,8 +260,8 @@ the Tracker), or crop it.
 computed transform at each frame. If it is large at some frames, a track is
 probably wrong there: fix it, or disable it at these frames. Check **Robust
 Model** (the default) to ignore the tracks that do not agree with the others.
-The :doc:`Tracking and stabilizing <compositing-tracking>` page explains how
-the transform is computed.
+The section :ref:`tracking-model` of the tracking page explains how the
+transform is computed.
 
 To keep the motion of the camera but remove its shake, use **Remove Jitter**
 instead of Stabilize: the transform removes only the fast motion, averaged over
@@ -327,7 +327,7 @@ Where to go from here
 - Track a feature that leaves the frame, using an offset, and follow it with
   a Transform instead of a CornerPin.
 - Try **Remove Jitter** on a real hand-held shot.
-- Automate tracking with Python: see :doc:`/devel/tracker`.
+- Automate tracking with Python: see :ref:`pythontracker`.
 
 See also
 --------
@@ -337,9 +337,9 @@ See also
 - :ref:`Tracker <fr.inria.built-in.Tracker>`,
   :ref:`CornerPin <net.sf.openfx.CornerPinPlugin>` and
   :ref:`Transform <net.sf.openfx.TransformPlugin>`: the node reference pages.
-- :doc:`/devel/tracker` and the :ref:`Tracker <Tracker>` and :ref:`Track <Track>`
-  classes of the Python API: creating tracks, tracking and reading the tracked
-  data from a script.
+- :ref:`pythontracker` (Python tutorials) and :doc:`/devel/tracker`: creating
+  tracks, tracking, and reading or exporting the tracked data from a script,
+  with the :ref:`Tracker <Tracker>` and :ref:`Track <Track>` classes.
 
 .. _tutorials-tracking-credits:
 

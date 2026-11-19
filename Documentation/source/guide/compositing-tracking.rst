@@ -349,6 +349,8 @@ points to get the To points. If you change the From points (for example with
 See also
 --------
 
+- :doc:`tutorials-tracking`: a step-by-step tutorial that tracks a shot, then
+  stabilizes it and match-moves an image onto it.
 - :ref:`pythontracker`: Python tutorials that create tracks, run the tracking,
   and export the tracked data.
 - :ref:`tracksToCornerPin`: driving a CornerPin or a Transform node from
