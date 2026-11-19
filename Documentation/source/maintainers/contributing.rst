@@ -209,11 +209,14 @@ standards such as C++23, other compilers or OS versions) are meant to run
 nightly, weekly or by hand, never per pull request; none is set up yet.
 
 **Installers and packages are release artifacts.** They are built only by hand
-or for ``v*`` tags, never for pull requests: ``build_installer.yml`` builds
-the Windows installer and ``build_pacman_repo.yml`` the Windows package
+or for pre-release tags, never for pull requests: ``build_installer.yml``
+builds the Windows installer and ``build_pacman_repo.yml`` the Windows package
 repository, both uploaded as workflow artifacts. The macOS and Linux installers
-are built outside GitHub Actions, with the ``tools/jenkins`` scripts (Linux in
-the ``tools/docker/natron-sdk-rockylinux8`` image).
+are built outside GitHub Actions: the macOS release builds with ``tools/tart``
+(in a macOS VM on a maintainer's Apple Silicon Mac), the Linux installers with
+the ``tools/jenkins`` scripts in the Rocky Linux 9 SDK Docker image (being
+adapted from ``tools/docker/natron-sdk-rockylinux8``, see `#1343
+<https://github.com/NatronGitHub/Natron/pull/1343>`_).
 
 Where to start
 --------------
