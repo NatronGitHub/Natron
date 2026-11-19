@@ -2470,6 +2470,12 @@ public:
      **/
     std::string getMultipleParamsEditLabel() const;
 
+    /**
+     * @brief End all the blocks of changes in progress (e.g. paramEditBegin() without paramEditEnd() by an OpenFX
+     * plug-in): as many setMultipleParamsEditLevel(eMultipleParamsEditOff) as there are open blocks, never more.
+     **/
+    void endAllMultipleParamsEdits();
+
     virtual bool isProject() const
     {
         return false;

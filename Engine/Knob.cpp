@@ -6062,6 +6062,25 @@ KnobHolder::getMultipleParamsEditLabel() const
     return _imp->paramsEditLabel;
 }
 
+void
+KnobHolder::endAllMultipleParamsEdits()
+{
+    int openBlocks;
+    {
+        QMutexLocker l(&_imp->paramsEditLevelMutex);
+        openBlocks = _imp->paramsEditRecursionLevel;
+    }
+    // each call ends one block (and its beginChanges() bracket)
+    for (int i = 0; i < openBlocks; ++i) {
+        setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+    }
+    QMutexLocker l(&_imp->paramsEditLevelMutex);
+    // no block is open: the level must be off
+    assert(_imp->paramsEditLevel == KnobHolder::eMultipleParamsEditOff);
+    _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
+    _imp->paramsEditLabel.clear();
+}
+
 AppInstancePtr
 KnobHolder::getApp() const
 {
