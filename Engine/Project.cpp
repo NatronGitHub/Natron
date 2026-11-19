@@ -458,6 +458,14 @@ public:
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 bool
+Project::isSaveInProgress() const
+{
+    QMutexLocker l(&_imp->isSavingProjectMutex);
+
+    return _imp->isSavingProject || _imp->waitingSaves > 0;
+}
+
+bool
 Project::saveProject_imp(const QString & path,
                          const QString & name,
                          bool autoS,
@@ -495,6 +503,7 @@ Project::saveProject_imp(const QString & path,
         _imp->autoSaveTimer->stop();
     }
 
+    bool aborted = false;
     {
         QMutexLocker l(&_imp->isSavingProjectMutex);
         if ( _imp->isSavingProject && !isBackgroundAutoSave && (_imp->savingProjectThread != QThread::currentThread()) ) {
@@ -502,6 +511,10 @@ Project::saveProject_imp(const QString & path,
             // started by onAutoSaveTimerTriggered(). Wait for it to finish, then save (#825).
             // That save may run Python (the beforeProjectSave callback, expressions), so release
             // the Python GIL if this thread holds it, e.g. if called from app.saveProject().
+            // The main thread processes events while waiting, which could reset or close the project:
+            // then this save must not save the new project to this path.
+            ++_imp->waitingSaves;
+            const unsigned int resetCount = _imp->resetCount;
             l.unlock();
             std::unique_ptr<PythonGILUnlocker> gilUnlocker;
             if ( Py_IsInitialized() && PyGILState_Check() ) {
@@ -520,8 +533,13 @@ Project::saveProject_imp(const QString & path,
             }
             _imp->isSavingProject = true;
             _imp->savingProjectThread = QThread::currentThread();
+            --_imp->waitingSaves;
             l.unlock();
-            // gilUnlocker takes the GIL back when going out of scope, after isSavingProjectMutex was released
+            gilUnlocker.reset(); // take the GIL back, after isSavingProjectMutex was released
+            if (_imp->resetCount != resetCount) {
+                SavingProjectFlagResetter savingFlagResetter( _imp.get() );
+                aborted = true;
+            }
         } else if (_imp->isSavingProject) {
             // A background auto-save while another save is running (that save is at least as
             // recent), or a save from within a save on the same thread (e.g. from the beforeProjectSave callback).
@@ -541,15 +559,28 @@ Project::saveProject_imp(const QString & path,
         }
     }
 
+    if (aborted) {
+        QString message = tr("The project was closed while this save was waiting for the auto-save to finish: it was not saved.");
+        if (!autoS) {
+            reportSaveProblem(tr("Save"), message, true);
+        }
+        if (errorMessage) {
+            *errorMessage = message;
+        }
+
+        return false;
+    }
+
     QString ret;
     QString error;
+    QStringList warnings;
     bool ok = false;
 
     {
         SavingProjectFlagResetter savingFlagResetter( _imp.get() );
         try {
             if (!autoS) {
-                ret = saveProjectInternal(path, name, false, updateProjectProperties);
+                ret = saveProjectInternal(path, name, false, updateProjectProperties, &warnings);
 
                 ///We just saved, remove the last auto-save which is now obsolete
                 removeLastAutosave();
@@ -559,7 +590,7 @@ Project::saveProject_imp(const QString & path,
                     removeLastAutosave();
                 }
 
-                ret = saveProjectInternal(path, name, true, updateProjectProperties);
+                ret = saveProjectInternal(path, name, true, updateProjectProperties, &warnings);
             }
             ok = true;
         } catch (const std::exception & e) {
@@ -569,6 +600,10 @@ Project::saveProject_imp(const QString & path,
         }
     } // savingFlagResetter
 
+    if ( !warnings.isEmpty() ) {
+        // shown after isSavingProject was cleared, like errors: the dialog runs an event loop
+        reportSaveProblem( tr("Save"), warnings.join( QLatin1Char('\n') ), false );
+    }
     if (!ok) {
         if (!autoS) {
             reportSaveProblem(tr("Save"), error, true);
@@ -662,7 +697,8 @@ QString
 Project::saveProjectInternal(const QString & path,
                              const QString & name,
                              bool autoSave,
-                             bool updateProjectProperties)
+                             bool updateProjectProperties,
+                             QStringList* warnings)
 {
     bool isRenderSave = name.contains( QString::fromUtf8("RENDER_SAVE") );
     QDateTime time = QDateTime::currentDateTime();
@@ -784,6 +820,7 @@ Project::saveProjectInternal(const QString & path,
             }
 
             if (nAttemps >= 10) {
+                QFile::remove(tmpFilename);
                 throw std::runtime_error( "Failed to save to " + filePath.toStdString() );
             }
         }
@@ -791,9 +828,10 @@ Project::saveProjectInternal(const QString & path,
         QFile::remove(tmpFilename);
     }
 
-    if ( !backupErrors.isEmpty() ) {
+    if ( !backupErrors.isEmpty() && warnings ) {
         // The project was saved, but its previous versions may not have been kept
-        reportSaveProblem( tr("Save"), tr("The project was saved to %1, but its backups could not be updated:").arg(filePath) + QLatin1Char('\n') + backupErrors.join( QLatin1Char('\n') ), false );
+        warnings->append( tr("The project was saved to %1, but its backups could not be updated:").arg(filePath) );
+        *warnings += backupErrors;
     }
 
     if (!autoSave && updateProjectProperties) {
@@ -2144,6 +2182,8 @@ Project::reset(bool aboutToQuit, bool blocking)
         ResettingGuard(bool& f) : flag(f) { flag = true; }
         ~ResettingGuard() { flag = false; }
     } resettingGuard(_imp->resetting);
+    // a save waiting for the auto-save (see saveProject_imp()) must not save the new project
+    ++_imp->resetCount;
     {
         QMutexLocker k(&_imp->projectClosingMutex);
         _imp->projectClosing = true;

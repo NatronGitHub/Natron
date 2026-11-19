@@ -103,6 +103,12 @@ public:
     bool saveProject_imp(const QString & path, const QString & name, bool autoSave, bool updateProjectProperties, QString* newFilePath = 0, QString* errorMessage = 0);
 
     /**
+     * @brief True while the project is being saved (also by the background auto-save), or a save waits to start.
+     * The main thread processes events while a save waits (see saveProject_imp()): the project must not be closed then.
+     **/
+    bool isSaveInProgress() const WARN_UNUSED_RETURN;
+
+    /**
      * @brief Same as saveProject except that it will save the project in a temporary file
      * so it doesn't overwrite the project.
      **/
@@ -425,7 +431,7 @@ private:
     bool loadProjectInternal(const QString & path, const QString & name, bool isAutoSave,
                              bool isUntitledAutosave, bool* mustSave);
 
-    QString saveProjectInternal(const QString & path, const QString & name, bool autosave, bool updateProjectProperties);
+    QString saveProjectInternal(const QString & path, const QString & name, bool autosave, bool updateProjectProperties, QStringList* warnings);
 
 
 

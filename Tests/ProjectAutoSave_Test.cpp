@@ -32,6 +32,8 @@
 #include <gtest/gtest.h>
 
 #include <chrono>
+#include <condition_variable>
+#include <mutex>
 #include <cstdio>
 #include <cstdlib>
 #include <future>
@@ -44,6 +46,7 @@
 #include <QFile>
 #include <QTemporaryDir>
 #include <QThread>
+#include <QTimer>
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -201,6 +204,39 @@ runWithTimeout(F f,
     return result.get();
 }
 
+// Exits the test binary if not destroyed within timeoutS seconds, for a save on the main thread that would hang.
+class Watchdog
+{
+    std::mutex _mutex;
+    std::condition_variable _cond;
+    bool _done;
+    std::thread _thread;
+
+public:
+    explicit Watchdog(int timeoutS)
+        : _done(false)
+    {
+        _thread = std::thread([this, timeoutS]() {
+            std::unique_lock<std::mutex> l(_mutex);
+            if ( !_cond.wait_for(l, std::chrono::seconds(timeoutS), [this]() { return _done; }) ) {
+                std::cerr << "FAILURE: the save did not finish after " << timeoutS << " s: the project stayed marked as being saved" << std::endl;
+                std::fflush(stdout);
+                std::_Exit(1);
+            }
+        });
+    }
+
+    ~Watchdog()
+    {
+        {
+            std::lock_guard<std::mutex> l(_mutex);
+            _done = true;
+        }
+        _cond.notify_all();
+        _thread.join();
+    }
+};
+
 bool
 errorLogContains(const QString& text)
 {
@@ -261,8 +297,10 @@ TEST(ProjectAutoSave, PythonSaveDuringAutoSave)
 // The beforeProjectSave callback of the auto-save calls app.saveProjectAs() in the auto-save
 // thread: that nested save fails (the project is being saved), without showing a dialog from that
 // thread, which would wait for the main thread while it waits for this auto-save (deadlock).
-// A save during that auto-save still waits and saves.
-TEST(ProjectAutoSave, NestedSaveInAutoSaveCallback)
+// A save during that auto-save still waits and saves, from the main thread (which processes
+// events while waiting) or from another thread.
+static void
+testNestedSaveInAutoSaveCallback(bool mainThread)
 {
     QTemporaryDir tmpDir;
     ASSERT_TRUE( tmpDir.isValid() );
@@ -276,7 +314,12 @@ TEST(ProjectAutoSave, NestedSaveInAutoSaveCallback)
         SlowAutoSave autoSave(dir, name,
                               "        with open(\"" + nestedResult.toStdString() + "\", \"w\") as f:\n"
                               "            f.write(str(app.saveProjectAs(\"" + nested.toStdString() + "\")))\n");
-        EXPECT_TRUE( runWithTimeout([&]() { return project->saveProject(dir, name, 0); }, 30) );
+        if (mainThread) {
+            Watchdog watchdog(30);
+            EXPECT_TRUE( project->saveProject(dir, name, 0) );
+        } else {
+            EXPECT_TRUE( runWithTimeout([&]() { return project->saveProject(dir, name, 0); }, 30) );
+        }
         EXPECT_TRUE( QFile::exists(dir + name) ) << "the save was dropped";
         EXPECT_TRUE( autoSave.join() );
     }
@@ -288,10 +331,43 @@ TEST(ProjectAutoSave, NestedSaveInAutoSaveCallback)
     project->resetProject();
 }
 
+TEST(ProjectAutoSave, NestedSaveInAutoSaveCallback)
+{
+    testNestedSaveInAutoSaveCallback(false);
+}
+
+TEST(ProjectAutoSave, NestedSaveInAutoSaveCallbackMainThread)
+{
+    testNestedSaveInAutoSaveCallback(true);
+}
+
+// A save from the main thread waiting for the auto-save processes events: if one of them resets
+// (or closes) the project, the save must not write the new, empty project over the file.
+TEST(ProjectAutoSave, ResetDuringWaitingSave)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("ResetDuringWaitingSave.ntp");
+    ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
+    {
+        SlowAutoSave autoSave(dir, name);
+        bool resetRan = false;
+        QTimer::singleShot( 300, [&]() { resetRan = true; project->resetProject(); } );
+        {
+            Watchdog watchdog(30);
+            EXPECT_FALSE( project->saveProject(dir, name, 0) );
+        }
+        EXPECT_TRUE(resetRan);
+        EXPECT_FALSE( QFile::exists(dir + name) ) << "the reset project was saved";
+        autoSave.join();
+    }
+    project->resetProject();
+}
+
 // An auto-save that fails with an exception must not leave the project marked as being saved:
 // the save waiting for it, and the later ones, must run (they would hang forever).
-// The auto-save fails because the callback points TMPDIR to a missing directory (the save first
-// writes to a temporary file there); the callback of the next save restores it.
+// The beforeProjectSave callback makes the auto-save fail: it returns a path in a missing directory.
 TEST(ProjectAutoSave, SaveAfterFailedAutoSave)
 {
     QTemporaryDir tmpDir;
@@ -299,25 +375,14 @@ TEST(ProjectAutoSave, SaveAfterFailedAutoSave)
     const QString dir = tmpDir.path() + QLatin1Char('/');
     const QString name = QString::fromUtf8("SaveAfterFailedAutoSave.ntp");
     ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
-    const QByteArray oldTmpDir = qgetenv("TMPDIR");
     {
         SlowAutoSave autoSave(dir, name,
-                              "        globals()['natronTest825OldTmp'] = os.environ.get('TMPDIR')\n"
-                              "        os.environ['TMPDIR'] = \"" + (dir + QString::fromUtf8("missing/dir")).toStdString() + "\"\n",
-                              "        if globals().get('natronTest825OldTmp') is not None:\n"
-                              "            os.environ['TMPDIR'] = globals()['natronTest825OldTmp']\n"
-                              "        elif 'TMPDIR' in os.environ and 'missing' in os.environ['TMPDIR']:\n"
-                              "            del os.environ['TMPDIR']\n");
-        EXPECT_TRUE( runWithTimeout([&]() { return project->saveProject(dir, name, 0); }, 30) );
+                              "        filename = \"" + (dir + QString::fromUtf8("missing/dir/autosave.ntp")).toStdString() + "\"\n");
+        EXPECT_TRUE( runWithTimeout([&]() { return project->saveProject(dir, name, 0); }, 60) );
         EXPECT_FALSE( autoSave.join() ) << "the auto-save should have failed";
         EXPECT_TRUE( QFile::exists(dir + name) ) << "the save was dropped";
     }
     // and a later save
     EXPECT_TRUE( runWithTimeout([&]() { return project->saveProject(dir, name, 0); }, 30) );
-    if ( oldTmpDir.isEmpty() ) {
-        qunsetenv("TMPDIR");
-    } else {
-        qputenv("TMPDIR", oldTmpDir);
-    }
     project->resetProject();
 }
