@@ -57,7 +57,10 @@ fi
 export LD_LIBRARY_PATH
 
 # Pretty architecture/platform identifier (used for breakpad symbol files)
-PKGOS_BITS="${PKGOS}-x86_${BITS}bit"
+case "${ARCH}" in
+    aarch64) PKGOS_BITS="${PKGOS}-aarch64" ;;
+    *) PKGOS_BITS="${PKGOS}-x86_${BITS}bit" ;;
+esac
 
 if [ -d "${BUILD_ARCHIVE_DIRECTORY}" ]; then
     rm -rf "${BUILD_ARCHIVE_DIRECTORY}"
@@ -789,7 +792,9 @@ if ( [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABL
     cp "$INC_PATH/debian"/post* DEBIAN/
     chmod +x DEBIAN/post*
 
-    if [ "${BITS}" = "64" ]; then
+    if [ "${ARCH}" = "aarch64" ]; then
+        DEB_ARCH=arm64
+    elif [ "${BITS}" = "64" ]; then
         DEB_ARCH=amd64
     else
         DEB_ARCH=i386

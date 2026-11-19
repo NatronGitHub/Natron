@@ -8,14 +8,24 @@
 # Rocky Linux and on non-x86_64 architectures: PyPI only has x86_64 wheels, and
 # they don't include the shiboken2 generator. Elsewhere, the PyPI wheel is
 # installed, as before.
-# The source build needs libclang (clang-devel, from Rocky Linux's AppStream).
+# The source build needs libclang, installed by the Dockerfile: on Rocky Linux 9, EPEL's
+# clang19-devel/llvm19-devel (in /usr/lib64/llvm19), because AppStream's clang 22 is too
+# recent for shiboken2 5.15.19; on Rocky Linux 8, AppStream's clang-devel 18 (see
+# SHIBOKEN2_CLANG_VERSION in build-Linux-sdk.sh).
 if [ -n "${ROCKY:-}" ] || [ "${ARCH:-x86_64}" != "x86_64" ]; then
     PYSIDE2_FROM_SOURCE=1
-    # the latest open-source 5.15 release, with libclang 18 (see the Dockerfile)
+    # the latest open-source 5.15 release
     PYSIDE2_VERSION="5.15.19"
 else
     PYSIDE2_FROM_SOURCE=0
     PYSIDE2_VERSION="5.15.2.1"
+    # The PyPI wheels of PySide2 5.15.2.1 require Python < 3.11, and the SDK has Python 3.11
+    # (pkg/python3.sh): this path (CentOS 7 and Ubuntu SDKs on x86_64) can't build Natron 2.6,
+    # whose Linux SDK is the Rocky Linux one.
+    if [ "${PY3_VERSION_SHORT:-3.11}" != "3.10" ] && [ "${PY3_VERSION_SHORT:-3.11}" != "3.9" ] && [ "${PY3_VERSION_SHORT:-3.11}" != "3.8" ] && build_step; then
+        (>&2 echo "Error: PyPI has no PySide2 ${PYSIDE2_VERSION} for Python ${PY3_VERSION_SHORT:-3.11}: build the SDK on Rocky Linux (ROCKY=9), which builds PySide2 from source.")
+        exit 1
+    fi
 fi
 PYSIDE2_VERSION_SHORT="5.15" # ${PYSIDE2_VERSION%.*}
 PYSIDE2_TAR="pyside-setup-opensource-src-${PYSIDE2_VERSION}.tar.xz"
@@ -61,7 +71,7 @@ if build_step && { force_build || [ ! -x "$PYSIDE2_SHIBOKEN2" ] || [ "$("$PYSIDE
         rm -rf "pyside-setup-opensource-src-${PYSIDE2_VERSION}"
         # Also install QtPy for better forward-compatibility https://github.com/NatronGitHub/Natron/pull/687
         # (it was installed with PySide 1.2.4 when that was also built for Python 3)
-        "$PY3_EXE" -m pip install qtpy
+        "$PY3_EXE" -m pip install qtpy==1.11.2
     else
         #${SDK_HOME}/bin/pip${PY3_VERSION_SHORT} install --index-url=http://download.qt.io/snapshots/ci/pyside/${PYSIDE2_VERSION}/latest/ pyside2 --trusted-host download.qt.io
         ${SDK_HOME}/bin/pip${PY3_VERSION_SHORT} install pyside2=="${PYSIDE2_VERSION}"

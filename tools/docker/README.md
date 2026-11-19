@@ -2,7 +2,7 @@
 
 This directory contains tools to build Natron using docker images (requires [Docker]).
 
-These docker images are based on CentOS6 for a maximum compatibility accross all Linux distributions (CentOS6 will receive maintenance updates until November 30th, 2020). This can be modified by changing the value of `DOCKER_BASE` in `tools/jenkins/insclude/scripts/build-Linux-sdk.sh`.
+The Natron 2.6 Linux SDK image is based on Rocky Linux 9 (EL9, glibc 2.34, as in the VFX Reference Platform CY2027), so that the binaries built with it run on all the Linux distributions that are at least as recent. The older images (`natron-sdk-centos*`, `natron-sdk-ubuntu*`) are kept for the older Natron releases. The base image is chosen by `DOCKER_BASE` in `tools/jenkins/include/scripts/build-Linux-sdk.sh`.
 
 ## Debugging a docker build that fails
 
