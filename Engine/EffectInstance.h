@@ -1253,7 +1253,8 @@ public:
      * eMessageTypeError : you want to inform the user an error occurred.
      * eMessageTypeQuestion : you want to ask the user about something.
      * The function will return true always except for a message of type eMessageTypeQuestion, in which
-     * case the function may return false if the user pressed the 'No' button.
+     * case it returns true only if the user pressed the 'Yes' button: false if the user answered 'No', or could not
+     * be asked (use question() to tell these apart).
      * @param content The message you want to pass.
      **/
     bool message(MessageTypeEnum type, const std::string & content) const;
