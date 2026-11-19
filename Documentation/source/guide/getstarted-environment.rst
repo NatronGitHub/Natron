@@ -78,6 +78,7 @@ The Dope Sheet
 
 Shows the keyframes of the nodes over time, without their values, so that
 you can change the timing of an animation. Each small box is a keyframe.
+See :doc:`getstarted-environment-anim`.
 
 The File Browser
 ################
