@@ -1585,7 +1585,9 @@ public:
             if ( existingEntry != _memoryCache.end() ) {
                 std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
                 for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
-                    if ( (*it)->getKey() == entry->getKey() ) {
+                    // Compare the entries, not their keys: several entries may have equal keys,
+                    // e.g. the images of a frame at several mipmap levels (#1129)
+                    if (*it == entry) {
                         toRemove.push_back(*it);
                         ret.erase(it);
                         break;
@@ -1599,7 +1601,7 @@ public:
                 if ( existingEntry != _diskCache.end() ) {
                     std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
                     for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
-                        if ( (*it)->getKey() == entry->getKey() ) {
+                        if (*it == entry) {
                             toRemove.push_back(*it);
                             ret.erase(it);
                             break;
@@ -1722,46 +1724,13 @@ private:
                                                                        bool removeAll) OVERRIDE FINAL
     {
         std::list<EntryTypePtr> toDelete;
-        CacheContainer newMemCache, newDiskCache;
         {
             QMutexLocker locker(&_lock);
 
-            for (ConstCacheIterator memIt = _memoryCache.begin(); memIt != _memoryCache.end(); ++memIt) {
-                const std::list<EntryTypePtr> & entries = getValueFromIterator(memIt);
-                if ( !entries.empty() ) {
-                    const EntryTypePtr & front = entries.front();
-
-                    if ( (front->getKey().getCacheHolderID() == holderID) &&
-                         ( ( front->getKey().getTreeVersion() != nodeHash) || removeAll ) ) {
-                        for (typename std::list<EntryTypePtr>::const_iterator it = entries.begin(); it != entries.end(); ++it) {
-                            toDelete.push_back(*it);
-                        }
-                    } else {
-                        typename EntryType::hash_type hash = front->getHashKey();
-                        newMemCache.insert(hash, entries);
-                    }
-                }
-            }
-
-            for (ConstCacheIterator dIt = _diskCache.begin(); dIt != _diskCache.end(); ++dIt) {
-                const std::list<EntryTypePtr> & entries = getValueFromIterator(dIt);
-                if ( !entries.empty() ) {
-                    const EntryTypePtr & front = entries.front();
-
-                    if ( (front->getKey().getCacheHolderID() == holderID) &&
-                         ( ( front->getKey().getTreeVersion() != nodeHash) || removeAll ) ) {
-                        for (typename std::list<EntryTypePtr>::const_iterator it = entries.begin(); it != entries.end(); ++it) {
-                            toDelete.push_back(*it);
-                        }
-                    } else {
-                        typename EntryType::hash_type hash = front->getHashKey();
-                        newDiskCache.insert(hash, entries);
-                    }
-                }
-            }
-
-            _memoryCache = newMemCache;
-            _diskCache = newDiskCache;
+            // Erase the entries in place: rebuilding the containers by iterating them would lose their LRU order,
+            // since begin() iterates in hash order (#1130). This is called on every change of a node hash.
+            removeEntriesOfHolder(_memoryCache, holderID, nodeHash, removeAll, &toDelete);
+            removeEntriesOfHolder(_diskCache, holderID, nodeHash, removeAll, &toDelete);
         } // QMutexLocker locker(&_lock);
 
         if ( !toDelete.empty() ) {
@@ -1772,6 +1741,37 @@ private:
             toDelete.clear();
         }
     } // removeAllEntriesWithDifferentNodeHashForHolderPrivate
+
+    /**
+     * @brief Remove from the container, and append to toDelete, the entries of the holder with a different
+     * nodeHash (or all of them if removeAll is true). The order of the other entries is kept. _lock must be locked.
+     **/
+    static void removeEntriesOfHolder(CacheContainer& container,
+                                      const std::string & holderID,
+                                      U64 nodeHash,
+                                      bool removeAll,
+                                      std::list<EntryTypePtr>* toDelete)
+    {
+        for (CacheIterator it = container.begin(); it != container.end();) {
+            const std::list<EntryTypePtr> & entries = getValueFromIterator(it);
+            bool remove = true; // also remove empty lists
+            if ( !entries.empty() ) {
+                const EntryTypePtr & front = entries.front();
+                remove = (front->getKey().getCacheHolderID() == holderID) &&
+                         ( ( front->getKey().getTreeVersion() != nodeHash) || removeAll );
+            }
+            if (remove) {
+                toDelete->insert( toDelete->end(), entries.begin(), entries.end() );
+                // Erasing an element only invalidates the iterators to that element
+                CacheIterator next = it;
+                ++next;
+                container.erase(it);
+                it = next;
+            } else {
+                ++it;
+            }
+        }
+    }
 
     bool getInternal(const typename EntryType::key_type & key,
                      std::list<EntryTypePtr>* returnValue) const
