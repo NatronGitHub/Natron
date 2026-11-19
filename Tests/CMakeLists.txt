@@ -129,7 +129,9 @@ else()
         set(_natron_test_archdir "${_natron_test_os}-${CMAKE_SYSTEM_PROCESSOR}")
     endif()
 endif()
-add_library(NatronTestPlugin MODULE OfxTestPlugin/NatronTestPlugin.cpp)
+# every source file of OfxTestPlugin/ is part of the bundle (see OfxTestPlugin/NatronTestPluginRegistry.h)
+file(GLOB NatronTestPlugin_SOURCES CONFIGURE_DEPENDS OfxTestPlugin/*.cpp OfxTestPlugin/*.h)
+add_library(NatronTestPlugin MODULE ${NatronTestPlugin_SOURCES})
 target_include_directories(NatronTestPlugin SYSTEM PRIVATE ../libs/OpenFX/include)
 set_target_properties(NatronTestPlugin PROPERTIES
     PREFIX ""
