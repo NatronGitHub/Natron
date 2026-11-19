@@ -52,3 +52,6 @@ script ends: end the script with ``quit()``. In the Script Editor, ``trackRange`
     tracker/runTracking.rst
     tracker/exportTrackData.rst
     tracker/tracksToCornerPin.rst
+
+See also the User Guide tutorial :doc:`/guide/tutorials-tracking`, which uses
+the Tracker from the GUI.
