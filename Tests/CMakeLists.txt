@@ -41,6 +41,7 @@ set(Tests_SOURCES
     ReadNodeOverlay_Test.cpp
     RotoPaint_Test.cpp
     Tracker_Test.cpp
+    ViewerCache_Test.cpp
     WriteNodeViews_Test.cpp
     wmain.cpp
 )

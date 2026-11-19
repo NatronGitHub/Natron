@@ -600,6 +600,9 @@ public:
 
     static void setApplicationLocale();
 
+    // Releases the textures displayed by the viewers, and the images they hold for the color picker
+    virtual void clearLastRenderedTextures() {}
+
 public Q_SLOTS:
 
     void exitAppWithSaveWarning()
@@ -674,7 +677,6 @@ protected:
     virtual void onPluginLoaded(Plugin* /*plugin*/) {}
 
     virtual void onAllPluginsLoaded();
-    virtual void clearLastRenderedTextures() {}
 
     virtual void initBuiltinPythonModules();
 
