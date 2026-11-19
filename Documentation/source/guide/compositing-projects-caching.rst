@@ -146,9 +146,9 @@ The cache settings are in **Edit > Preferences > Caching**:
    requires restarting Natron.
 
    All the Natron processes that use the same folder (for example Natron and
-   a background render) share the caches. While another process uses them,
-   Natron doesn't delete the cache files that it doesn't know about when it
-   starts.
+   a background render) share the caches. A Natron that starts while another
+   one uses them starts with empty caches: it doesn't restore the cached
+   images of the other one, nor delete its files.
 
 **Wipe Disk Cache**
    Clears all the caches and deletes all the cache files in the disk cache

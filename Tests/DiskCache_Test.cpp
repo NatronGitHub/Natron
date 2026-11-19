@@ -50,6 +50,7 @@
 #include <QDir>
 #include <QFile>
 #include <QStorageInfo>
+#include <QSysInfo>
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -379,6 +380,12 @@ TEST(MemoryFileTest, ReserveAllocatesDiskSpace)
 #endif
     std::memset(f.data(), 1, size);
     EXPECT_EQ(1, f.data()[size - 1]);
+    EXPECT_TRUE( f.flush(MemoryFile::eFlushTypeSync, NULL, 0) );
+#ifndef _WIN32
+    // The reserved blocks are those of the data (they back the start of the file), not more blocks
+    ASSERT_EQ( 0, ::stat(path.c_str(), &st) );
+    EXPECT_LT( (unsigned long long)st.st_blocks * 512ULL, 2ULL * size );
+#endif
     f.remove();
 }
 
@@ -477,21 +484,10 @@ TEST_F(DiskCacheTest, TiledRestoreRemovesUnreferencedFiles)
     QDir(cachePath).removeRecursively();
 }
 
-// When another Natron process uses the caches, restore() must not delete the files it doesn't know: they may be
-// the files of the other process.
-TEST_F(DiskCacheTest, RestoreKeepsUnknownFilesIfAsked)
-{
-    const QString orphan = _cache->getCachePath() + QString::fromUtf8("/ab/other-process." NATRON_CACHE_FILE_EXT);
-    createFile(orphan);
-    ImageCache::CacheTOC toc;
-    _cache->restore(toc, false);
-    EXPECT_TRUE( QFile::exists(orphan) );
-    _cache->restore(toc, true);
-    EXPECT_FALSE( QFile::exists(orphan) );
-}
-
 // Each process keeps a file locked in <disk cache location>/Instances: the file of another running process means
-// that the caches are shared, and the file of a process that is gone is removed.
+// that the caches are shared (and they are then not restored), and the file of a process that is gone is removed.
+// The files of other hosts are considered in use, since their process can't be checked (this is also what happens
+// with all the files on NFS mounted with "nolock", where flock() is local to each host).
 TEST(DiskCacheLocation, DetectsOtherProcesses)
 {
     if ( appPTR->isDiskCacheUsedByAnotherProcess() ) {
@@ -501,8 +497,8 @@ TEST(DiskCacheLocation, DetectsOtherProcesses)
     }
     const QString folder = appPTR->getDiskCacheLocation() + QString::fromUtf8("/Instances");
     ASSERT_TRUE( QDir(folder).exists() );
-    // A file of another process (simulated in this process: the lock of another open file conflicts)
-    const QString otherPath = folder + QString::fromUtf8("/NatronTest-other.lock");
+    // A file of another process on this host (simulated in this process: the lock of another open file conflicts)
+    const QString otherPath = folder + QLatin1Char('/') + QSysInfo::machineHostName() + QString::fromUtf8("@NatronTest-other.lock");
     {
         QFile other(otherPath);
         ASSERT_TRUE( other.open(QIODevice::ReadWrite) );
@@ -514,4 +510,12 @@ TEST(DiskCacheLocation, DetectsOtherProcesses)
     } // closing the file releases the lock, as when the process exits
     EXPECT_FALSE( appPTR->isDiskCacheUsedByAnotherProcess() );
     EXPECT_FALSE( QFile::exists(otherPath) ); // the stale file was removed
+
+    // A file of another host is considered in use, and kept
+    const QString otherHostPath = folder + QString::fromUtf8("/NatronTest-other-host.invalid@1-x.lock");
+    createFile(otherHostPath);
+    EXPECT_TRUE( appPTR->isDiskCacheUsedByAnotherProcess() );
+    EXPECT_TRUE( QFile::exists(otherHostPath) );
+    QFile::remove(otherHostPath);
+    EXPECT_FALSE( appPTR->isDiskCacheUsedByAnotherProcess() );
 }

@@ -225,8 +225,7 @@ public:
 
     static void addOpenGLRequirementsString(QString& str, OpenGLRequirementsTypeEnum type);
 
-    // canCleanUp: if false (another process uses the cache), don't reset the cache folder if its structure is wrong
-    bool checkForCacheDiskStructure(const QString & cachePath, bool isTiled, bool canCleanUp);
+    bool checkForCacheDiskStructure(const QString & cachePath, bool isTiled);
 
     void cleanUpCacheDiskStructure(const QString & cachePath, bool isTiled);
 

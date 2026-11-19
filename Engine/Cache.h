@@ -37,7 +37,6 @@
 #include <cstddef>
 #include <utility>
 #include <algorithm> // min, max
-#include <stdexcept>
 #include <string>
 #include <stdexcept>
 
@@ -1706,12 +1705,9 @@ public:
     void save(CacheTOC* tableOfContents);
 
 
-    /**
-     * @brief Restores the cache from disk.
-     * @param removeUnreferencedFiles If true, the files of the cache folder that are not in the table of contents are
-     * deleted. Must be false if another process uses the cache (see AppManager::isDiskCacheUsedByAnotherProcess()).
-     **/
-    void restore(const CacheTOC & tableOfContents, bool removeUnreferencedFiles = true);
+    /*Restores the cache from disk. Must not be called if another process uses the cache
+       (see AppManager::isDiskCacheUsedByAnotherProcess()): the files that are not in the table of contents are deleted.*/
+    void restore(const CacheTOC & tableOfContents);
 
 
     void removeAllEntriesWithDifferentNodeHashForHolderPublic(const CacheEntryHolder* holder,
