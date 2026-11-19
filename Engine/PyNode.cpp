@@ -401,6 +401,7 @@ Effect::createParamWrapperForKnob(const KnobIPtr& knob)
     KnobPagePtr isPage = std::dynamic_pointer_cast<KnobPage>(knob);
     KnobParametricPtr isParametric = std::dynamic_pointer_cast<KnobParametric>(knob);
     KnobSeparatorPtr isSep = std::dynamic_pointer_cast<KnobSeparator>(knob);
+    KnobBytesPtr isBytes = std::dynamic_pointer_cast<KnobBytes>(knob);
 
     if (isInt) {
         switch (dims) {
@@ -454,6 +455,8 @@ Effect::createParamWrapperForKnob(const KnobIPtr& knob)
         return new ButtonParam(isButton);
     } else if (isSep) {
         return new SeparatorParam(isSep);
+    } else if (isBytes) {
+        return new BytesParam(isBytes);
     }
 
     return NULL;

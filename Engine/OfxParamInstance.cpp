@@ -35,6 +35,7 @@
 #include <nuke/fnPublicOfxExtensions.h>
 #include <ofxParametricParam.h>
 #include <ofxNatron.h>
+#include <ofxhUtilities.h> // OFX::IsNaN
 
 #include <QDebug>
 
@@ -4648,6 +4649,185 @@ OfxStatus
 OfxCustomInstance::copyFrom(const OFX::Host::Param::Instance &instance,
                             OfxTime offset,
                             const OfxRangeD* range)
+{
+    const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
+
+    return OfxKeyFrame::copyFrom(instance, *this, other.getKnob(), getKnob(), offset, range);
+}
+
+////////////////////////// OfxBytesInstance /////////////////////////////////////////////////
+
+/*
+   OFX 1.5 Bytes parameters (kOfxParamTypeBytes, ofxParam.h): "a Plug-in defined opaque data parameter".
+   Their value is an OfxBytes { data, length }: paramGetValue gives the plug-in a pointer to host-owned data,
+   valid until the next call on the param (in the same thread: render threads may read it at the same time),
+   and paramSetValue copies the plug-in's data (a NULL OfxBytes or a zero length gives an empty value).
+   The default (kOfxParamPropDefault) is a pointer to an OfxBytes, or NULL.
+
+   The data is held by a KnobBytes (raw bytes), which has its own serialization in the project.
+ */
+
+struct OfxBytesInstancePrivate
+{
+    KnobBytesWPtr knob;
+    std::shared_ptr<TLSHolder<OfxParamToKnob::OfxParamTLSData> > tlsData;
+
+    OfxBytesInstancePrivate()
+        : knob()
+        , tlsData( new TLSHolder<OfxParamToKnob::OfxParamTLSData>() )
+    {
+    }
+};
+
+OfxBytesInstance::OfxBytesInstance(const OfxEffectInstancePtr& node,
+                                   OFX::Host::Param::Descriptor & descriptor)
+    : OfxParamToKnob(node)
+    , OFX::Host::Param::BytesInstance( descriptor, node->effectInstance() )
+    , _imp( new OfxBytesInstancePrivate() )
+{
+    KnobBytesPtr knob = checkIfKnobExistsWithNameOrCreate<KnobBytes>(descriptor.getName(), this, 1);
+
+    _imp->knob = knob;
+
+    knob->blockValueChanges();
+    // BytesInstance copied the default when it was created
+    const std::vector<unsigned char>& def = getDefault();
+    std::string defValue( def.begin(), def.end() );
+    if ( defValue.size() > KnobBytes::maxLength() ) {
+        defValue.clear();
+    }
+    knob->setDefaultValue(defValue, 0);
+    knob->unblockValueChanges();
+}
+
+OfxBytesInstance::~OfxBytesInstance()
+{
+}
+
+OfxStatus
+OfxBytesInstance::get(std::vector<unsigned char> &data)
+{
+    const std::string value = _imp->knob.lock()->getValue();
+
+    data.assign( value.begin(), value.end() );
+
+    return kOfxStatOK;
+}
+
+OfxStatus
+OfxBytesInstance::get(OfxTime time,
+                      std::vector<unsigned char> &data)
+{
+    const std::string value = _imp->knob.lock()->getValueAtTime(time);
+
+    data.assign( value.begin(), value.end() );
+
+    return kOfxStatOK;
+}
+
+OfxStatus
+OfxBytesInstance::set(const unsigned char *data,
+                      size_t length)
+{
+    if ( length > KnobBytes::maxLength() ) {
+        return kOfxStatErrMemory;
+    }
+    KnobBytesPtr knob = _imp->knob.lock();
+
+    knob->setValueFromPlugin( (data && length > 0) ? std::string( (const char*)data, length ) : std::string(), ViewSpec::current(), 0 );
+
+    return kOfxStatOK;
+}
+
+OfxStatus
+OfxBytesInstance::set(OfxTime /*time*/,
+                      const unsigned char *data,
+                      size_t length)
+{
+    // Bytes params don't animate (see newParam()): paramSetValueAtTime sets the value
+    return set(data, length);
+}
+
+// The data returned to the plug-in is per thread: render threads may read the param at the same time
+// (BytesInstance::getV uses a member of the instance).
+OfxStatus
+OfxBytesInstance::getAtTime(bool atTime,
+                            OfxTime time,
+                            va_list arg)
+{
+    if ( atTime && OFX::IsNaN(time) ) {
+        return kOfxStatErrValue;
+    }
+    OfxBytes *value = va_arg(arg, OfxBytes *);
+    if (!value) {
+        return kOfxStatErrValue;
+    }
+    KnobBytesPtr knob = _imp->knob.lock();
+    std::string& data = _imp->tlsData->getOrCreateTLSData()->bytes;
+    data = atTime ? knob->getValueAtTime(time) : knob->getValue();
+    value->data = data.empty() ? NULL : (const unsigned char*)data.data();
+    value->length = data.size();
+
+    return kOfxStatOK;
+}
+
+OfxStatus
+OfxBytesInstance::getV(va_list arg)
+{
+    return getAtTime(false, 0., arg);
+}
+
+OfxStatus
+OfxBytesInstance::getV(OfxTime time,
+                       va_list arg)
+{
+    return getAtTime(true, time, arg);
+}
+
+KnobIPtr
+OfxBytesInstance::getKnob() const
+{
+    return _imp->knob.lock();
+}
+
+void
+OfxBytesInstance::setHint()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _imp->knob.lock()->setHintToolTip( getHint() );
+}
+
+void
+OfxBytesInstance::setDefault()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    // the plug-in's data is only valid during the call that sets the property: copy it
+    const OfxBytes *def = (const OfxBytes *)getProperties().getPointerProperty(kOfxParamPropDefault);
+    std::string value;
+    if ( def && def->data && (def->length > 0) && (def->length <= KnobBytes::maxLength()) ) {
+        value.assign( (const char*)def->data, def->length );
+    }
+    _imp->knob.lock()->setDefaultValueWithoutApplying(value, 0);
+}
+
+void
+OfxBytesInstance::setLabel()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _imp->knob.lock()->setLabel( getParamLabel(this) );
+}
+
+void
+OfxBytesInstance::setEvaluateOnChange()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _imp->knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
+}
+
+OfxStatus
+OfxBytesInstance::copyFrom(const OFX::Host::Param::Instance &instance,
+                           OfxTime offset,
+                           const OfxRangeD* range)
 {
     const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
 

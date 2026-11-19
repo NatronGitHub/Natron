@@ -342,6 +342,9 @@ OfxHost::setProperties()
     _properties.setIntProperty( kOfxParamHostPropSupportsChoiceAnimation, KnobChoice::canAnimateStatic() );
     _properties.setIntProperty( kOfxParamHostPropSupportsBooleanAnimation, KnobBool::canAnimateStatic() );
     _properties.setIntProperty( kOfxParamHostPropSupportsCustomAnimation, KnobString::canAnimateStatic() );
+    // OFX 1.5 Bytes params (OfxBytesInstance). The standard has no host property for them (plug-ins learn
+    // that a host doesn't support them from paramDefine): this HostSupport property lets paramDefine accept them.
+    _properties.setIntProperty(kOfxHostSupportHostPropSupportsBytes, 1);
     _properties.setPointerProperty(kOfxPropHostOSHandle, NULL);
     _properties.setIntProperty(kOfxParamHostPropSupportsParametricAnimation, 0);
 

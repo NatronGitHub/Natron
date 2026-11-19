@@ -28,6 +28,7 @@
 
 #include "Global/Macros.h"
 
+#include <iostream>
 #include <map>
 #include <vector>
 #include <string>
@@ -85,7 +86,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS_RESULTS 5
 #define VALUE_SERIALIZATION_REMOVES_EXPRESSIONS_RESULTS 6
 #define VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES 7
-#define VALUE_SERIALIZATION_VERSION VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES
+#define VALUE_SERIALIZATION_INTRODUCES_BYTES 8 // KnobBytes: the value and the default in base64 (Natron 2.6)
+#define VALUE_SERIALIZATION_VERSION VALUE_SERIALIZATION_INTRODUCES_BYTES
 
 #define MASTER_SERIALIZATION_INTRODUCE_MASTER_TRACK_NAME 2
 #define MASTER_SERIALIZATION_INTRODUCE_MASTER_NODE_NAME_FULL 3
@@ -292,6 +294,7 @@ struct ValueSerialization
         KnobGroup* isGrp = dynamic_cast<KnobGroup*>( _knob.get() );
         KnobSeparator* isSep = dynamic_cast<KnobSeparator*>( _knob.get() );
         KnobButton* btn = dynamic_cast<KnobButton*>( _knob.get() );
+        KnobBytes* isBytes = dynamic_cast<KnobBytes*>( _knob.get() );
         bool enabled = _knob->isEnabled(_dimension);
         ar & ::boost::serialization::make_nvp("Enabled", enabled);
         bool hasAnimation = _knob->isAnimated(_dimension);
@@ -334,6 +337,12 @@ struct ValueSerialization
             }
             ar & ::boost::serialization::make_nvp("Value", v);
             ar & ::boost::serialization::make_nvp("Default", defV);
+        } else if (isBytes) {
+            // raw bytes: XML text can't hold them (NUL bytes, invalid UTF-8)
+            std::string v = KnobBytes::encodeForSerialization( isBytes->getValue(_dimension) );
+            std::string defV = KnobBytes::encodeForSerialization( isBytes->getDefaultValue(_dimension) );
+            ar & ::boost::serialization::make_nvp("Value", v);
+            ar & ::boost::serialization::make_nvp("Default", defV);
         } else if (isString) {
             std::string v = isString->getValue(_dimension);
             std::string defV = isString->getDefaultValue(_dimension);
@@ -366,6 +375,7 @@ struct ValueSerialization
         KnobGroup* isGrp = dynamic_cast<KnobGroup*>( _knob.get() );
         KnobSeparator* isSep = dynamic_cast<KnobSeparator*>( _knob.get() );
         KnobButton* btn = dynamic_cast<KnobButton*>( _knob.get() );
+        KnobBytes* isBytes = dynamic_cast<KnobBytes*>( _knob.get() );
         bool enabled;
         ar & ::boost::serialization::make_nvp("Enabled", enabled);
 
@@ -441,6 +451,22 @@ struct ValueSerialization
                 ar & ::boost::serialization::make_nvp("Default", defV);
                 isChoice->setDefaultValueWithoutApplying(defV, _dimension);
             }
+        } else if (isBytes) {
+            // (only in projects saved with VALUE_SERIALIZATION_INTRODUCES_BYTES or later: there were no KnobBytes before)
+            std::string v, defV, def, data;
+            ar & ::boost::serialization::make_nvp("Value", v);
+            ar & ::boost::serialization::make_nvp("Default", defV);
+            if ( KnobBytes::decodeFromSerialization(defV, &def) ) {
+                isBytes->setDefaultValueWithoutApplying(def, _dimension);
+            } else {
+                std::cerr << _knob->getName() << ": Warning: the default value in the project is not valid base64, ignoring it" << std::endl;
+            }
+            if ( !KnobBytes::decodeFromSerialization(v, &data) ) {
+                // no garbage: the value is the default
+                std::cerr << _knob->getName() << ": Warning: the value in the project is not valid base64, using the default value" << std::endl;
+                data = def;
+            }
+            isBytes->setValue(data, ViewIdx(0), _dimension);
         } else if (isString && !isFile) {
             std::string v;
             ar & ::boost::serialization::make_nvp("Value", v);

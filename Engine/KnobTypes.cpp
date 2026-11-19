@@ -26,6 +26,7 @@
 #include "KnobTypes.h"
 
 #include <cfloat>
+#include <limits>
 #include <cmath>
 #include <locale>
 #include <sstream>
@@ -53,6 +54,7 @@
 #include "Engine/RotoContext.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
+#include "Engine/Variant.h"
 #include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER
@@ -1444,6 +1446,103 @@ KnobString::setAsLabel()
 {
     setAnimationEnabled(false); //< labels cannot animate
     _isLabel = true;
+}
+
+/******************************KnobBytes**************************************/
+
+KnobBytes::KnobBytes(KnobHolder* holder,
+                     const std::string &label,
+                     int dimension,
+                     bool declaredByPlugin)
+    : KnobStringBase(holder, label, dimension, declaredByPlugin)
+{
+}
+
+KnobBytes::~KnobBytes()
+{
+}
+
+bool
+KnobBytes::canAnimate() const
+{
+    return canAnimateStatic();
+}
+
+const std::string KnobBytes::_typeNameStr("Bytes");
+const std::string &
+KnobBytes::typeNameStatic()
+{
+    return _typeNameStr;
+}
+
+const std::string &
+KnobBytes::typeName() const
+{
+    return typeNameStatic();
+}
+
+std::size_t
+KnobBytes::maxLength()
+{
+    // base64 makes 4 bytes from 3, and a Qt 5 QByteArray holds less than INT_MAX bytes
+    return (std::size_t)( (std::numeric_limits<int>::max() - 1024) / 4 ) * 3;
+}
+
+std::string
+KnobBytes::encodeForSerialization(const std::string& data)
+{
+    if ( data.empty() ) {
+        return std::string();
+    }
+    const QByteArray encoded = QByteArray::fromRawData( data.data(), (int)data.size() ).toBase64();
+
+    return std::string( encoded.constData(), (std::size_t)encoded.size() );
+}
+
+bool
+KnobBytes::decodeFromSerialization(const std::string& text,
+                                   std::string* data)
+{
+    data->clear();
+    if ( text.empty() ) {
+        return true;
+    }
+    if ( text.size() > (std::size_t)std::numeric_limits<int>::max() ) {
+        return false;
+    }
+    const QByteArray::FromBase64Result decoded = QByteArray::fromBase64Encoding(QByteArray::fromRawData( text.data(), (int)text.size() ),
+                                                                                QByteArray::AbortOnBase64DecodingErrors);
+    if (!decoded) {
+        return false;
+    }
+    data->assign( decoded.decoded.constData(), (std::size_t)decoded.decoded.size() );
+
+    return true;
+}
+
+void
+KnobBytes::stringToVariant(const KnobI* knob,
+                           const std::string& value,
+                           Variant* variant)
+{
+    if ( dynamic_cast<const KnobBytes*>(knob) ) {
+        variant->setValue( QByteArray( value.data(), (int)value.size() ) );
+    } else {
+        variant->setValue( QString::fromUtf8( value.c_str() ) );
+    }
+}
+
+std::string
+KnobBytes::stringFromVariant(const KnobI* knob,
+                             const Variant& variant)
+{
+    if ( dynamic_cast<const KnobBytes*>(knob) ) {
+        const QByteArray data = variant.toByteArray();
+
+        return std::string( data.constData(), (std::size_t)data.size() );
+    }
+
+    return variant.toString().toStdString();
 }
 
 /******************************KnobGroup**************************************/

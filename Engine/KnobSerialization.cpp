@@ -155,6 +155,8 @@ KnobSerialization::createKnob(const std::string & typeName,
         ret = std::make_shared<KnobChoice>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobString::typeNameStatic() ) {
         ret = std::make_shared<KnobString>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobBytes::typeNameStatic() ) {
+        ret = std::make_shared<KnobBytes>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobParametric::typeNameStatic() ) {
         ret = std::make_shared<KnobParametric>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobColor::typeNameStatic() ) {

@@ -920,10 +920,8 @@ void
 KnobStringBase::valueToVariant(const std::string & v,
                                   Variant* vari)
 {
-    KnobStringBase* isString = dynamic_cast<KnobStringBase*>(this);
-    if (isString) {
-        vari->setValue<QString>( QString::fromUtf8( v.c_str() ) );
-    }
+    // KnobBytes holds raw bytes: a QByteArray, not a QString (see KnobBytes::stringToVariant())
+    KnobBytes::stringToVariant(this, v, vari);
 }
 
 template<typename T>

@@ -836,6 +836,70 @@ private:
     bool _isCustom;
 };
 
+/******************************KnobBytes**************************************/
+
+/**
+ * @brief Opaque binary data: the value of an OFX 1.5 Bytes parameter (kOfxParamTypeBytes), "a Plug-in defined
+ * opaque data parameter". The value is a std::string used as a byte container: it holds any bytes, including NUL
+ * bytes, and is not text (never convert it to a QString). Storing it in a Knob<std::string> gives the knob's value
+ * mutex, undo, copy/paste, clone and links, as for the other knobs. The knob doesn't animate, has no expression
+ * in practice (the value is not text), and has its own serialization (base64 in the project, see
+ * ValueSerialization).
+ **/
+class KnobBytes
+    : public KnobStringBase
+{
+public:
+
+    static KnobHelper * BuildKnob(KnobHolder* holder,
+                                  const std::string &label,
+                                  int dimension,
+                                  bool declaredByPlugin = true)
+    {
+        return new KnobBytes(holder, label, dimension, declaredByPlugin);
+    }
+
+    KnobBytes(KnobHolder* holder,
+              const std::string &label,
+              int dimension,
+              bool declaredByPlugin);
+
+    virtual ~KnobBytes();
+
+    static bool canAnimateStatic()
+    {
+        return false;
+    }
+
+    static const std::string & typeNameStatic();
+
+    /**
+     * @brief The largest value, in bytes. Larger values are refused (kOfxStatErrMemory for OFX): the undo
+     * commands hold the value in a QByteArray, and the project holds it in base64, whose size must fit in
+     * a Qt 5 QByteArray (less than INT_MAX bytes).
+     **/
+    static std::size_t maxLength();
+
+    /// the text that holds a value in the project (base64)
+    static std::string encodeForSerialization(const std::string& data);
+
+    /// the value held by the text of a project, or false if the text is not valid base64 (data is then empty)
+    static bool decodeFromSerialization(const std::string& text, std::string* data);
+
+    /// A value of a string knob in a Variant (undo commands): a QByteArray for KnobBytes (the raw bytes),
+    /// a QString for the other string knobs.
+    static void stringToVariant(const KnobI* knob, const std::string& value, Variant* variant);
+    static std::string stringFromVariant(const KnobI* knob, const Variant& variant);
+
+private:
+
+    virtual bool canAnimate() const OVERRIDE FINAL;
+    virtual const std::string & typeName() const OVERRIDE FINAL;
+
+private:
+    static const std::string _typeNameStr;
+};
+
 /******************************KnobGroup**************************************/
 class KnobGroup
     :  public QObject, public KnobBoolBase

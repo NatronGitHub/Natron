@@ -37,6 +37,7 @@ set(Tests_SOURCES
     NaNGuards_Test.cpp
     NodeGroup_Test.cpp
     NodePreview_Test.cpp
+    OfxBytesParam_Test.cpp
     OfxCPURenderSupport_Test.cpp
     OfxCustomParamInterp_Test.cpp
     OfxHostProperties_Test.cpp

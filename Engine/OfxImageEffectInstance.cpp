@@ -31,6 +31,8 @@
 #include <new> // std::bad_alloc
 #include <string>
 #include <map>
+#include <iostream>
+#include <set>
 #include <locale>
 #include <stdexcept>
 #include <cstring> // for std::memcpy, std::memset, std::strcmp
@@ -40,6 +42,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDebug>
+#include <QMutex>
 #include <QThread>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -625,6 +628,29 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         OfxCustomInstance *ret = new OfxCustomInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         instance = ret;
+    } else if (paramType == kOfxParamTypeBytes) {
+        // OFX 1.5: "a Plug-in defined opaque data parameter" (ofxParam.h). Like Custom parameters, it has
+        // no user interface; it doesn't animate (forced below).
+        secretByDefault = true;
+        enabledByDefault = false;
+        if ( descriptor.getCanAnimate() ) {
+            // once per plug-in and parameter: newParam() is called for each instance
+            static QMutex warnedMutex;
+            static std::set<std::string> warned;
+            const std::string key = getOfxEffectInstance()->getPluginID() + '/' + paramName;
+            bool warn;
+            {
+                QMutexLocker l(&warnedMutex);
+                warn = warned.insert(key).second;
+            }
+            if (warn) {
+                std::cerr << getOfxEffectInstance()->getPluginID() << ": Warning: the Bytes parameter " << paramName
+                          << " sets kOfxParamPropAnimates to 1, but Natron doesn't animate Bytes parameters" << std::endl;
+            }
+        }
+        OfxBytesInstance *ret = new OfxBytesInstance(getOfxEffectInstance(), descriptor);
+        knob = ret->getKnob();
+        instance = ret;
     } else if (paramType == kOfxParamTypeGroup) {
         OfxGroupInstance *ret = new OfxGroupInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
@@ -736,7 +762,9 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
 
     knob->setIsMetadataSlave( isClipPreferencesSlaveParam(paramName) );
     knob->setIsPersistent(persistent);
-    knob->setAnimationEnabled( descriptor.getCanAnimate() );
+    // Bytes params are opaque data, which can't be interpolated: they never animate in Natron, even if the
+    // plug-in sets kOfxParamPropAnimates (HostSupport's default is 0 for them)
+    knob->setAnimationEnabled( descriptor.getCanAnimate() && paramType != kOfxParamTypeBytes );
     knob->setSecretByDefault(secretByDefault);
     knob->setDefaultAllDimensionsEnabled(enabledByDefault);
     knob->setHintToolTip( descriptor.getHint() );

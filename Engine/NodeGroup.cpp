@@ -854,7 +854,8 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,
             for (U32 j = 0; j < knobs.size(); ++j) {
                 KnobStringBase* isString = dynamic_cast< KnobStringBase* >( knobs[j].get() );
                 KnobString* isStringKnob = dynamic_cast<KnobString*>(isString);
-                if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
+                // (a KnobBytes holds binary data, not a file path)
+                if ( !isString || isStringKnob || dynamic_cast<KnobBytes*>(isString) || ( knobs[j] == project->getEnvVarKnob() ) ) {
                     continue;
                 }
 
@@ -894,7 +895,8 @@ NodeCollection::fixPathName(const std::string& oldName,
             for (U32 j = 0; j < knobs.size(); ++j) {
                 KnobStringBase* isString = dynamic_cast< KnobStringBase* >( knobs[j].get() );
                 KnobString* isStringKnob = dynamic_cast<KnobString*>(isString);
-                if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
+                // (a KnobBytes holds binary data, not a file path)
+                if ( !isString || isStringKnob || dynamic_cast<KnobBytes*>(isString) || ( knobs[j] == project->getEnvVarKnob() ) ) {
                     continue;
                 }
 
@@ -1885,6 +1887,11 @@ exportKnobValues(int indentLevel,
                     int v = std::min( 1., std::max( 0., std::floor(isGrp->getValue(i, ViewIdx(0), true) + 0.5) ) );
                     QString vStr = v ? QString::fromUtf8("True") : QString::fromUtf8("False");
                     WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setOpened(") + vStr + QString::fromUtf8(")") );
+                } else if ( dynamic_cast<KnobBytes*>(isStr) ) {
+                    // binary data (Python bytes), which a string literal can't hold: hexadecimal
+                    std::string v = isStr->getValue(i, ViewIdx(0), true);
+                    const QByteArray hex = QByteArray::fromRawData( v.data(), (int)v.size() ).toHex();
+                    WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setValue(bytes.fromhex(\"") + QString::fromLatin1(hex) + QString::fromUtf8("\"))") );
                 } else if (isStr) {
                     std::string v = isStr->getValue(i, ViewIdx(0), true);
                     WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setValue(") + ESC(v)  + QString::fromUtf8(")") );
