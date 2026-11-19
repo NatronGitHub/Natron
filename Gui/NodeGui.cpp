@@ -427,7 +427,14 @@ NodeGui::ensurePanelCreated(bool minimized, bool hideUnmodified)
     _settingsPanel = createPanel(propsLayout, thisShared);
 
     initializeKnobs();
-    beginEditKnobs();
+    // kOfxActionBeginInstanceEdit if the panel was created open: a panel created closed (Output node, nodes
+    // of a Python group, panels restored closed) begins editing when it is opened (onSettingsPanelClosed()).
+    // A multi-instance child is edited through the panel of its parent: it begins now (see activate()).
+    NodePtr internalNode = getNode();
+    if ( ( _settingsPanel && !_settingsPanel->isClosed() ) ||
+         ( internalNode && !internalNode->getParentMultiInstanceName().empty() ) ) {
+        beginEditKnobs();
+    }
 
     if (_settingsPanel) {
         QObject::connect( _settingsPanel, SIGNAL(nameChanged(QString)), this, SLOT(setName(QString)) );
@@ -454,7 +461,6 @@ NodeGui::ensurePanelCreated(bool minimized, bool hideUnmodified)
          * We just do one redraw when all children are created
          */
         NodesList children;
-        NodePtr internalNode = getNode();
         if (internalNode) {
             internalNode->getChildrenMultiInstance(&children);
         }
@@ -1986,7 +1992,11 @@ NodeGui::showGui()
         }
         NodeGuiPtr thisShared = shared_from_this();
         _graph->getGui()->setNodeViewerInterface(thisShared);
-        // (opening the settings panel again above calls beginEditKnobs(): see onSettingsPanelClosed())
+        // Opening the settings panel again above calls beginEditKnobs() (see onSettingsPanelClosed()). A
+        // minimized panel was not closed by hideGui(): it is still open, so begin editing again too.
+        if ( _settingsPanel && !_settingsPanel->isClosed() ) {
+            beginEditKnobs();
+        }
     }
 
     if (_slaveMasterLink) {
