@@ -28,6 +28,7 @@
 #include <cassert>
 #include <cstdarg>
 #include <memory>
+#include <new> // std::bad_alloc
 #include <string>
 #include <map>
 #include <locale>
@@ -1176,10 +1177,13 @@ OfxImageEffectInstance::newMemoryInstance(size_t nBytes)
     bool allocated = ret->alloc(nBytes);
 
     if ( ( (nBytes != 0) && !ret->getPtr() ) || !allocated ) {
-        Dialogs::errorDialog( tr("Out of memory").toStdString(),
-                              tr("%1 failed to allocate memory (%2).")
-                              .arg( QString::fromUtf8( getOfxEffectInstance()->getNode()->getLabel_mt_safe().c_str() ) )
-                              .arg( printAsRAM(nBytes) ).toStdString() );
+        delete ret;
+        // This is usually called from a render thread: log the error, never open a dialog.
+        appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( effect->getNode()->getLabel_mt_safe().c_str() ), QDateTime::currentDateTime(),
+                                         tr("Failed to allocate memory (%1).").arg( printAsRAM(nBytes) ) );
+        // Returning NULL would make HostSupport allocate the memory itself. Throwing bad_alloc makes
+        // imageMemoryAlloc() return kOfxStatErrMemory and set *memoryHandle to NULL, as the spec says.
+        throw std::bad_alloc();
     }
 
     return ret;

@@ -1207,8 +1207,13 @@ OfxHost::newMemoryInstance(size_t nBytes)
     bool allocated = ret->alloc(nBytes);
 
     if ( ( (nBytes != 0) && !ret->getPtr() ) || !allocated ) {
-        Dialogs::errorDialog( tr("Out of memory").toStdString(),
-                              tr("Failed to allocate memory (%1).").arg( printAsRAM(nBytes) ).toStdString() );
+        delete ret;
+        // This may be called from a render thread: log the error, never open a dialog.
+        appPTR->writeToErrorLog_mt_safe( QLatin1String("OpenFX"), QDateTime::currentDateTime(),
+                                         tr("Failed to allocate memory (%1).").arg( printAsRAM(nBytes) ) );
+        // Returning NULL would make HostSupport allocate the memory itself. Throwing bad_alloc makes
+        // imageMemoryAlloc() return kOfxStatErrMemory and set *memoryHandle to NULL, as the spec says.
+        throw std::bad_alloc();
     }
 
     return ret;
