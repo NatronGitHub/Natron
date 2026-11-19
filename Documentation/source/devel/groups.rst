@@ -112,7 +112,7 @@ Exporting a group
 Once your group is setup correctly, you can *export* it as a Python script that Natron will
 generate automatically. We call them *PyPlugs*.
 
-To do so, click the **Export as Python plug-in** button in the "Node" page of the settings panel
+To do so, click the **Export as PyPlug** button in the "Node" page of the settings panel
 of the Group node.
 
 .. figure:: exportButton.png
@@ -166,11 +166,11 @@ and even in the tab menu of the node-graph:
 
 .. note::
 
-    The plug-in ID of the group will be exactly the same as the *Label* you picked when
-    exporting it, hence when creating a node using the group from a Python script, you
-    would do so:
+    The plug-in ID of the group is the *Unique ID* that you entered in the export dialog:
+    the exported script returns it from its *getPluginID()* function. To create a node using
+    the group from a Python script, pass that ID to createNode, e.g.::
 
-        app.createNode("MyBlurGroup")
+        app.createNode("fr.inria.groups.MyBlurGroup")
 
     If several plug-ins have the same *pluginID*, Natron will then sort plug-ins by version.
 
@@ -232,153 +232,25 @@ You can also copy/cut/paste in-between groups and projects.
 Creating a group by hand
 ------------------------
 
-You can also write a group plug-in by hand using the :ref:`Python API<apiReference>` of Natron.
-
-Natron detects a Python file within the plug-in path as a PyPlug if it contains the following line [1]_::
-
-    # Natron PyPlug
-
-There may be Python files which are neither PyPlugs or Toolsets within these directories, for example python modules.
-
-To work as a plug-in, your script should implemented the following functions::
-
-    # This function is mandatory and should return the label of the plug-in as
-    # visible on the user interface
-    def getLabel():
-        return LABEL
-
-    # This function should return an int specifying the version of the plug-in
-    # If not implemented, Natron will use 1 by default
-    def getVersion():
-        return VERSION
-
-    # This function should return a string specifying the ID of the plug-in, for example
-    # "fr.inria.groups.customBlur"
-    # If not implemented, Natron will use the label as a pluginID
-    def getPluginID():
-        return UNIQUE_ID
-
-    # This function should return a string specifying the relative file path of an image
-    # file relative to the location of this Python script.
-    # This function is optional.
-    def getIconPath():
-        return ICON_PATH
-
-    # This function is mandatory and should return the plug-in grouping, e.g.:
-    # "Other/Groups"
-    def getGrouping():
-        return GROUPING
-
-    # This function is optional and should return a string describing the plug-in to the user.
-    # This is the text that will show up when the user press the "?" button on the settings panel.
-    def getDescription():
-        return DESCRIPTION
-
-    # This function is mandatory and should re-create all the nodes and parameters state
-    # of the group.
-    # The group parameter is a group node that has been created by Natron and that  will host all
-    # the internal nodes created by this function.
-    # The app parameter is for convenience to have access in a generic way to the app object,
-    # no matter in which project instance your script is invoked in.
-    def createInstance(app, group):
-        ...
-
-The Python group plug-ins generated automatically by Natron are a good start to figure out
-how to write scripts yourself.
-
-.. warning::
-
-    Python group plug-ins should avoid using any functionality provided by the :ref:`NatronGui<NatronGui>` module
-    because it would then break their compatibility when working in command-line background mode.
-    The reason behind this is that the Python module NatronGui is not imported in command-line mode because
-    internally it relies on the QtGui library, which may not be present on some render-farms.
-    Attempts to load PyPlugs relaying on the NatronGui module would then fail and the rendering
-    would abort.
-
-
-.. warning::
-
-    Note that PyPlugs are **imported** by Natron which means that the script will not have access
-    to any external variable declared by Natron except the variables passed to the createInstance function
-    or the attributes of the modules imported.
+You can also write a PyPlug by hand with the :ref:`Python API<apiReference>` of Natron.
+:ref:`pyplugWriting` describes the functions that a PyPlug must define, with a complete example.
 
 .. _pyPlugHandWritten:
 
 Adding hand-written code (callbacks, etc...)
 --------------------------------------------
 
-It is common to add hand-written code to a PyPlug. When making changes to the PyPlug from
-the GUI of Natron, exporting it again will overwrite any change made to the python script
-of the PyPlug.
-In order to help development, all hand-written code can be written in a separate script
-with the **same** name of the original Python script but ending with *Ext.py*, e.g.:
-
-    MyPyPlugExt.py
-
-This extension script can contain for example the definition of all callbacks used in the PyPlug.
-When calling the *createInstance(app,group)* function, the PyPlug will call right at the end
-of the function the *createInstanceExt(app,group)* function. You can define it in your
-*extension script* if you want to apply extra steps to the creation of the group. For example
-you might want to actually set the callbacks on the group::
-
-    #This is in MyPyPlugExt.py
-
-    def paramChangedCallback(thisParam, thisNode, thisGroup, app, userEdited):
-        print thisParam.getScriptName()
-
-    def createInstanceExt(app,group):
-        # Note that the callback belongs to the PyPlug to so we use it as prefix
-        group.onParamChanged.set("MyPyPlug.paramChangedCallback")
-
-.. note::
-
-    Note that callbacks don't have to be registered with the extension module prefix but just
-    with the PyPlug's name prefix since the *"from ... import *"* statement is made to import
-    the extensions script.
+Exporting a Group again overwrites its Python script. Put hand-written code, such as callbacks,
+in a separate ``<Label>Ext.py`` file: see :ref:`pyplugWriting-ext`.
 
 Starting Natron with a script in command line
 ----------------------------------------------
 
-Natron can be started with a Python script as argument.
-
-When used in background mode (i.e: using NatronRenderer or Natron with the option **-b**)
-Natron will do the following steps:
-
-- Source the script
-- If found, run a function with the following signature *createInstance(app,group)*
-- Start rendering the specified writer nodes (with the **-w** option) and/or the *Output* nodes (with the **-o** option)
-
-This allows one to pass a group plug-in to Natron and render it easily if needed.
-Also, it can take arbitrary scripts which are not necessarily group plug-ins.
-
-When Natron is launched in GUI mode but with a Python script in argument, it will do the following steps:
-
-- Source the script
-- If found, run a function with the following signature *createInstance(app,group)*
-
+A PyPlug, or any other Python script, can be passed to Natron or NatronRenderer on the command
+line, to build a graph and render it: see :ref:`cl-python-scripts`.
 
 Toolsets
 --------
 
-Toolsets in Natron are a predefined set of actions that will be applied to the node-graph.
-They work exactly like PyPlugs except that no actual group node will be created, only
-the content of the *createInstance(app,group)* function will be executed.
-
-This useful to create pre-defined graphs, for example like the Split and Join plug-in
-in the Views menu.
-
-To be recognized as a toolset, your PyPlug must implement the following function::
-
-    def getIsToolset():
-        return True
-
-Also the **group** parameter passed to the *createInstance(app,group)* function
-will be *None* because no group node is actually involved.
-
-As with regular PyPlugs, the file must also contrain the line [1]_::
-
-    # Natron PyPlug
-
-.. [1] There was a bug in Natron versions 2.1.0 through 2.3.14 which prevented loading PyPlugs and Toolsets if they did not have a line that started with::
-
-        # This file was automatically generated by Natron PyPlug exporter
+Toolsets are PyPlugs that add a set of nodes to the node graph instead of creating a Group node:
+see :ref:`pyplugWriting-toolsets`.

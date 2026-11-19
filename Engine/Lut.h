@@ -500,13 +500,15 @@ to_func_srgb(float v)
 inline float
 from_func_bt1886(float v)
 {
-    return std::pow(v, 2.4);
+    // pow(negative, non-integer) is NaN: map negative values to 0, as from_func_srgb() does
+    return (v <= 0.0f) ? 0.0f : std::pow(v, 2.4);
 }
 
 inline float
 to_func_bt1886(float v)
 {
-    return std::pow(v, 1.0/2.4);
+    // pow(negative, non-integer) is NaN: map negative values to 0, as to_func_srgb() does
+    return (v <= 0.0f) ? 0.0f : std::pow(v, 1.0/2.4);
 }
 
 // r,g,b values are from 0 to 1

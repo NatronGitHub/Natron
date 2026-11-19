@@ -165,7 +165,36 @@ public:
 
     void addProjectDefaultLayer(const ImagePlaneDesc& comps);
 
-    void setOrAddProjectFormat(const Format & frmt, bool skipAdd = false);
+    /**
+     * @brief Add frmt to the project formats. If the project format is still to be auto-set
+     * (empty project, see the "Auto-set project format" preference), it is set to frmt.
+     * If mayChangeFormat is false (e.g. during a render), the project format is only auto-set
+     * if it is already equal to frmt, so that it never changes while a render is running (#1294).
+     **/
+    void setOrAddProjectFormat(const Format & frmt, bool skipAdd = false, bool mayChangeFormat = true);
+
+    /**
+     * @brief Called on the main thread when the metadata of a Reader is computed: if the project
+     * format is still to be auto-set and the Reader could decode its file, set the project format
+     * from the Reader's format (if they are equal, just disable the auto-set), before any render starts (#1294).
+     * If a sequence render (Writer or playback) is running, this is postponed until it finishes.
+     **/
+    void autoSetProjectFormatFromReader(const NodePtr& reader);
+
+private:
+    /// true if a sequence render (other than the one of ignoredEngine) is running; connects to their renderFinished signal
+    bool isSequenceRenderRunning(const QObject* ignoredEngine);
+
+    /// auto-set the project format from the first pending Reader, once no sequence render is running
+    void applyPendingAutoSetProjectFormat(const QObject* ignoredEngine);
+
+    /// set (or add) the project format from the Reader's output format
+    void setProjectFormatFromReader(const NodePtr& reader);
+
+    /// check the pending Readers again in 100 ms (at most one check is scheduled at a time)
+    void scheduleAutoSetProjectFormatRetry();
+
+public:
 
     bool isAutoSetProjectFormatEnabled() const;
 
@@ -353,6 +382,10 @@ public Q_SLOTS:
     void onAutoSaveFutureFinished();
 
     void onProjectFormatPopulated();
+
+    void onSequenceRenderFinishedAutoSetProjectFormat();
+
+    void onAutoSetProjectFormatRetry();
 
 Q_SIGNALS:
 

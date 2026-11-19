@@ -40,6 +40,7 @@
 #include <QCoreApplication>
 #include <QThread>
 
+#include "Global/MathUtils.h"
 #include "Global/PythonUtils.h"
 
 #include "Engine/Curve.h"
@@ -1395,7 +1396,7 @@ Knob<T>::makeKeyFrame(Curve* curve,
     } else {
         keyFrameValue = (double)v;
     }
-    if ( std::isnan(keyFrameValue) || std::isinf(keyFrameValue) ) { // check for NaN or infinity
+    if ( !MathUtils::isFinite(keyFrameValue) ) { // reject NaN and infinity (works with -ffast-math)
         *key = KeyFrame( (double)time, getMaximum(0) );
     } else {
         *key = KeyFrame( (double)time, keyFrameValue );

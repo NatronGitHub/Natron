@@ -52,6 +52,10 @@ ticks_size_10(double xmin,
               double range_units,
               double min_tick_size_units)
 {
+    if ( (xmax <= xmin) || (range_units <= 0) || (min_tick_size_units <= 0) ) {
+        // empty range: log10() below would be computed on zero, a negative value or infinity
+        return 1.;
+    }
     // first, compute the size of min_tick_size_units
     double min_tick_size = min_tick_size_units * (xmax - xmin) / range_units;
     int next_p10 = std::ceil( std::log10(min_tick_size) );
@@ -76,6 +80,15 @@ ticks_size(double xmin,
            double *t_size,
            bool* half_tick)
 {
+    if ( (xmax <= xmin) || (range_units <= 0) || (min_tick_size_units <= 0) ) {
+        // empty range: log10() below would be computed on zero, a negative value or infinity
+        *t_size = 1.;
+        if (half_tick) {
+            *half_tick = false;
+        }
+
+        return;
+    }
     // first, compute the size of min_tick_size_units
     double min_tick_size = min_tick_size_units * (xmax - xmin) / range_units;
     int next_p10 = std::ceil( std::log10(min_tick_size) );
@@ -178,8 +191,12 @@ ticks_alpha(double min,
             double val)
 {
     assert(val > 0. && min > 0. && max > 0. && max > min);
-    const double alpha = sqrt( (val - min) / (max - min) );
+    if (max <= min) {
+        return 1.;
+    }
+    // clamp before sqrt(), which gives NaN for a negative value
+    const double ratio = (val - min) / (max - min);
 
-    return std::max( 0., std::min(alpha, 1.) );
+    return sqrt( std::max( 0., std::min(ratio, 1.) ) );
 }
 

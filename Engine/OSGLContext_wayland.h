@@ -63,7 +63,9 @@ public:
     ~OSGLContext_wayland();
 
     static void initEGLData(OSGLContext_egl_data* eglInfo);
-    static void destroyEGLData(OSGLContext_egl_data* eglInfo);
+    // unloadLibrary=false terminates the EGL display and disconnects from Wayland,
+    // but keeps libEGL loaded (a later call with true unloads it).
+    static void destroyEGLData(OSGLContext_egl_data* eglInfo, bool unloadLibrary = true);
     static bool makeContextCurrent(const OSGLContext_wayland* context);
     static bool threadHasACurrentContext();
     static void getGPUInfos(std::list<OpenGLRendererInfo>& renderers);

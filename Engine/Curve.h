@@ -373,6 +373,22 @@ public:
 
     void setKeyframes(const KeyFrameSet& keys, bool refreshDerivatives);
 
+    /**
+     * @brief Recompute the derivatives of all the keyframes that are not Free or Broken
+     * (used after loading a project that contained NaN derivatives, see #1267).
+     **/
+    void refreshAutomaticDerivatives();
+
+    /**
+     * @brief Mark this curve as loaded from a file that contained non-finite values (#1267):
+     * clone() and cloneAndCheckIfChanged() from this curve then recompute the automatic
+     * derivatives of their target with the target's properties (e.g. periodicity).
+     * The flag is never propagated by clone(): it is only set on the curves of the temporary
+     * knobs of KnobSerialization::load(), which are then cloned into the real knobs.
+     **/
+    void setMustRefreshDerivatives();
+    bool getMustRefreshDerivatives() const WARN_UNUSED_RETURN;
+
 private:
     friend class ::boost::serialization::access;
     template<class Archive>

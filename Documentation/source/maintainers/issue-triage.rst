@@ -105,8 +105,8 @@ P1 — Sustainability (build, Qt 6, distribution)
   :ref:`maint-qt6` for the concrete plan.
 - **CI modernization** — `#601
   <https://github.com/NatronGitHub/Natron/issues/601>`_ (migrate CI from Travis
-  to GitHub Actions; ``difficulty:easy``). A prerequisite for reliably shipping
-  everything else, and a good first task.
+  to GitHub Actions) is closed: CI runs on GitHub Actions. What remains (Qt 6
+  builds) is listed in :ref:`maint-todo`.
 - **Binary distribution** — `#990
   <https://github.com/NatronGitHub/Natron/issues/990>`_ (Linux 2.6 distrib,
   ``help-needed``), `#741 <https://github.com/NatronGitHub/Natron/issues/741>`_
