@@ -12,6 +12,24 @@ The easiest way to make a PyPlug is to build the Group in the user interface and
 (see :ref:`groups`). This page explains what the exported script contains, how to write one by
 hand, and how to distribute it.
 
+.. mermaid::
+   :alt: A Group built in the user interface is exported with Export as PyPlug, which writes
+         Label.py into a directory of the search path; hand-written code goes in LabelExt.py.
+         At the next start, Natron finds the file, recognizes it as a PyPlug, reads its getLabel,
+         getPluginID and other functions, and registers it in the menus. When the user or a script
+         creates the node, Natron creates a Group node and calls createInstance(app, group), which
+         ends by calling createInstanceExt(app, group) if the Ext file defines it.
+   :caption: The life of a PyPlug, from the export to a node in a project.
+
+   flowchart TD
+       grp["Group built in the user interface"] -- "Export as PyPlug" --> file["Label.py in a search path<br/>(+ optional LabelExt.py)"]
+       hand["Hand-written PyPlug"] --> file
+       file -- "next start of Natron" --> detect["Detected as a PyPlug,<br/>getLabel(), getPluginID()... read"]
+       detect --> menu["Registered in the menus<br/>and the tab menu"]
+       menu -- "user, or app.createNode(pluginID)" --> node["Natron creates a Group node"]
+       node --> ci["createInstance(app, group)"]
+       ci --> ext["createInstanceExt(app, group)<br/>if LabelExt.py defines it"]
+
 .. _pyplugWriting-file:
 
 The PyPlug file

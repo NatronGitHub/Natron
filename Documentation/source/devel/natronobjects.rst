@@ -63,3 +63,76 @@ found in the settings panel of the node.
 
 The same :doc:`PythonReference/NatronEngine/Param` class is also used for the project settings
 and the application settings (preferences).
+
+Overview of the classes
+-----------------------
+
+The two diagrams below show the main classes of the API. Arrows with a hollow head point from
+a class to the class it inherits from. Plain arrows show which object gives access to which.
+
+.. mermaid::
+   :alt: PyGuiApplication inherits PyCoreApplication, which gives access to the App instances
+         (app1, app2...) and to the AppSettings. GuiApp inherits App, and App inherits Group.
+         Effect inherits Group and UserParamHolder. A Group contains Effects, and an Effect has
+         Params, and may have a Roto context (Layers and BezierCurves, which inherit ItemBase)
+         and a Tracker context (Tracks). GuiApp gives access to PyViewer, PyTabWidget and
+         PyPanel; PyPanel and PyModalDialog inherit UserParamHolder.
+   :caption: Applications, projects and nodes.
+
+   classDiagram
+       direction TB
+       PyCoreApplication <|-- PyGuiApplication
+       Group <|-- App
+       App <|-- GuiApp
+       Group <|-- Effect
+       UserParamHolder <|-- Effect
+       UserParamHolder <|-- PyPanel
+       UserParamHolder <|-- PyModalDialog
+       ItemBase <|-- Layer
+       ItemBase <|-- BezierCurve
+       PyCoreApplication --> "*" App : getInstance()
+       PyCoreApplication --> AppSettings : getSettings()
+       Group --> "*" Effect : getChildren()
+       Effect --> "*" Param : getParams()
+       Effect --> Roto : getRotoContext()
+       Effect --> Tracker : getTrackerContext()
+       Roto --> Layer : getBaseLayer()
+       Layer --> "*" ItemBase : getChildren()
+       Tracker --> "*" Track : getAllTracks()
+       GuiApp --> PyViewer : getViewer()
+       GuiApp --> PyTabWidget : getTabWidget()
+       GuiApp --> PyPanel : getUserPanel()
+
+.. mermaid::
+   :alt: Param is the base class of all parameters. AnimatedParam, ButtonParam,
+         SeparatorParam, GroupParam, PageParam, ParametricParam and BytesParam
+         inherit Param. IntParam,
+         DoubleParam, ColorParam, ChoiceParam, BooleanParam and StringParamBase inherit
+         AnimatedParam. Int2DParam inherits IntParam and Int3DParam inherits Int2DParam;
+         Double2DParam inherits DoubleParam and Double3DParam inherits Double2DParam.
+         StringParam, FileParam, OutputFileParam and PathParam inherit StringParamBase.
+   :caption: The parameter classes.
+
+   classDiagram
+       direction TB
+       Param <|-- AnimatedParam
+       Param <|-- ButtonParam
+       Param <|-- SeparatorParam
+       Param <|-- GroupParam
+       Param <|-- PageParam
+       Param <|-- ParametricParam
+       Param <|-- BytesParam
+       AnimatedParam <|-- IntParam
+       AnimatedParam <|-- DoubleParam
+       AnimatedParam <|-- ColorParam
+       AnimatedParam <|-- ChoiceParam
+       AnimatedParam <|-- BooleanParam
+       AnimatedParam <|-- StringParamBase
+       IntParam <|-- Int2DParam
+       Int2DParam <|-- Int3DParam
+       DoubleParam <|-- Double2DParam
+       Double2DParam <|-- Double3DParam
+       StringParamBase <|-- StringParam
+       StringParamBase <|-- FileParam
+       StringParamBase <|-- OutputFileParam
+       StringParamBase <|-- PathParam

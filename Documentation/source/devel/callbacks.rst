@@ -133,6 +133,29 @@ For the *parameter changed callback* of :ref:`PyPanel<pypanel>` and :ref:`PyModa
     as attributes of the object.
 
 
+.. mermaid::
+   :alt: When the user edits a parameter, or a script calls setValue, the parameter notifies
+         its node (EffectInstance::onKnobValueChanged_public). For an OpenFX plug-in, Natron
+         first sends the kOfxActionInstanceChanged action to the plug-in. Then, unless the change
+         only comes from a time change, Natron reads the name of the node's onParamChanged
+         function, checks the names of its arguments, and calls it with thisParam, thisNode,
+         thisGroup, app and userEdited. Errors are printed in the Script Editor.
+   :caption: How a parameter change reaches the onParamChanged callback.
+
+   sequenceDiagram
+       actor User
+       participant Param as Parameter (knob)
+       participant Node as Node (EffectInstance)
+       participant Plugin as OpenFX plug-in
+       participant Py as Python callback
+       User->>Param: edit in the settings panel,<br/>or Param.setValue() from a script
+       Param->>Node: onKnobValueChanged_public()
+       Node->>Plugin: kOfxActionInstanceChanged<br/>(OpenFX nodes only)
+       Note over Node: stop here if the change<br/>is only a time change
+       Node->>Node: check the argument names<br/>of the onParamChanged function
+       Node->>Py: cb(thisParam, thisNode, thisGroup, app, userEdited)
+       Py-->>Node: errors are printed in the Script Editor
+
 Registering the param changed callback
 ----------------------------------------
 
@@ -490,6 +513,31 @@ You can set the callback from the project settings:
 
 This callback can also be set in the *Node* tab of any **Group** node (or *PyPlug*).
 If set on the Group, the callback will be invoked for the *Group* node and all its direct children (not recursively).
+
+The render callbacks of a Write node are called in this order:
+
+.. mermaid::
+   :alt: When a render starts, with app.render() or the -w option, Natron calls the
+         beforeRender callback with thisNode and app. Then for each frame it calls
+         beforeFrameRender with frame, thisNode and app, renders the frame, and calls
+         afterFrameRender with frame, thisNode and app. At the end, or when the render is
+         aborted, it calls afterRender with aborted, thisNode and app. An exception in
+         beforeRender, beforeFrameRender or afterFrameRender aborts the render.
+   :caption: The render callbacks of a Write node.
+
+   sequenceDiagram
+       participant S as Script or command line
+       participant W as Write node
+       participant Py as Python callbacks
+       S->>W: app.render(), or -w
+       W->>Py: beforeRender(thisNode, app)
+       loop each frame
+           W->>Py: beforeFrameRender(frame, thisNode, app)
+           W->>W: render the frame
+           W->>Py: afterFrameRender(frame, thisNode, app)
+       end
+       W->>Py: afterRender(aborted, thisNode, app)
+       Note over Py,W: an exception in beforeRender, beforeFrameRender<br/>or afterFrameRender aborts the render
 
 The Before frame render callback:
 ---------------------------------

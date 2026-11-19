@@ -54,6 +54,22 @@ PyPlugs (Python group plug-ins and toolsets), Natron looks into the following se
 
 If "Use bundled plug-ins" is unchecked, Natron loads no bundled PyPlugs at all.
 
+.. mermaid::
+   :alt: The search order is: the bundled PyPlugs if "Use bundled plug-ins" and "Prefer
+         bundled plug-ins" are both checked; ~/.Natron; the system location; the directories of
+         NATRON_PLUGIN_PATH; the "PyPlugs search path" preference; and last the bundled PyPlugs
+         if "Use bundled plug-ins" is checked but "Prefer bundled plug-ins" is not.
+   :caption: Order of the PyPlug search paths. The bundled PyPlugs are searched first or last,
+             depending on the preferences, or not at all.
+
+   flowchart LR
+       b1["Bundled PyPlugs<br/>(if Use bundled and<br/>Prefer bundled)"] --> user["~/.Natron"]
+       user --> sys["System location"]
+       sys --> env["NATRON_PLUGIN_PATH<br/>(; on Windows, : elsewhere)"]
+       env --> pref["Preferences:<br/>PyPlugs search path"]
+       pref --> b2["Bundled PyPlugs<br/>(if Use bundled and<br/>not Prefer bundled)"]
+
+
 Each of these directories is searched **recursively**: Natron also looks into all its sub-directories.
 Every directory and sub-directory is also added to the Python path (``sys.path``), so that your
 scripts can import the Python modules that are stored next to them.
