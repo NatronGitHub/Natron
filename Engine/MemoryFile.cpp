@@ -337,10 +337,10 @@ MemoryFile::resize(size_t new_size)
 //
 // - Linux and FreeBSD: posix_fallocate(). glibc emulates it by writing when the file system doesn't support it, so
 //   the fallback below is only used with musl, or on file systems such as ZFS that return EINVAL.
-// - macOS has no posix_fallocate(). F_PREALLOCATE can only allocate from the physical end of the file: it is only
-//   used to allocate a whole file that has no block yet (a new file of the DiskCache node), which is then not written
-//   twice. Not for a part of a file (the tiles of a tile file): another thread may write another tile meanwhile, and
-//   the blocks would then be allocated after it. The tiles are written with zeroes.
+// - macOS has no posix_fallocate(): the blocks are allocated by writing zeroes, so the files of the DiskCache node are
+//   written twice (the tiles of the viewer cache only once per tile, see Cache::allocTile()). F_PREALLOCATE can't be
+//   used: it allocates from the physical end of the file, and on APFS the blocks it allocates for a file that was
+//   already extended by ftruncate() don't back its data (writing the data then allocates as many other blocks).
 // - Writing zeroes doesn't allocate anything on file systems that compress data or detect zeroes (ZFS or btrfs with
 //   compression store them as holes): the disk may then still get full while the mapping is written.
 static int
@@ -358,24 +358,6 @@ allocateFileBlocks(int fd,
         return rc;
     }
     // Not supported by the file system: write zeroes instead
-#endif
-#if defined(__APPLE__) && defined(F_PREALLOCATE)
-    struct stat fileStat;
-    if ( (offset == 0) && (::fstat(fd, &fileStat) == 0) && (fileStat.st_blocks == 0) && (fileStat.st_size == length) ) {
-        fstore_t store;
-        std::memset( &store, 0, sizeof(store) );
-        store.fst_flags = F_ALLOCATEALL; // all or nothing
-        store.fst_posmode = F_PEOFPOSMODE;
-        store.fst_offset = 0;
-        store.fst_length = length;
-        if (::fcntl(fd, F_PREALLOCATE, &store) == 0) {
-            return 0;
-        }
-        if ( (errno == ENOSPC) || (errno == EDQUOT) ) {
-            return errno;
-        }
-        // Not supported: write zeroes
-    }
 #endif
     // Writing allocates the blocks.
     // Don't write if it would leave less than kMinFreeBytes on the disk: if the disk gets full, the zeroes already written
