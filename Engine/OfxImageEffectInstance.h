@@ -28,6 +28,7 @@
 
 #include "Global/Macros.h"
 
+#include <atomic>
 #include <string>
 #include <cstdarg>
 
@@ -274,6 +275,10 @@ private:
     // kOfxActionInstanceChanged, may trigger another one (when a value it sets changes a parameter).
     // Only read and written on the main thread.
     int _mainThreadActionDepth;
+    // The number of edit blocks that the plug-in opened (paramEditBegin()) and did not end yet (paramEditEnd()). When the
+    // outermost action returns, mainEntry() ends these, and only these: the blocks opened by Natron (e.g. an overlay
+    // drag of a host interact) stay open.
+    std::atomic<int> _pluginEditBlocks;
 };
 
 class OfxImageEffectDescriptor
