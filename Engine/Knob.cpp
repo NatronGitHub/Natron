@@ -5822,9 +5822,9 @@ KnobHolder::endChanges(bool discardRendering)
 
     // Call instanceChanged on each knob.
     // On the main thread, the consecutive changes with the same reason are a group of value changes
-    // (beginKnobsValuesChanged()/endKnobsValuesChanged()), e.g. the animated knobs when the time changes: an OpenFX
-    // effect brackets their kOfxActionInstanceChanged actions with a single pair of kOfxActionBeginInstanceChanged
-    // and kOfxActionEndInstanceChanged.
+    // (beginKnobsValuesChanged()/endKnobsValuesChanged()), e.g. the changes queued by appendValueChange() while the
+    // evaluation of the holder is blocked: an OpenFX effect brackets their kOfxActionInstanceChanged actions with a
+    // single pair of kOfxActionBeginInstanceChanged and kOfxActionEndInstanceChanged.
     bool ret = false;
     KnobsValuesChangedGroup_RAII group(this);
     for (KnobChanges::iterator it = knobChanged.begin(); it != knobChanged.end(); ++it) {
@@ -6311,6 +6311,58 @@ KnobHolder::checkIfOverlayRedrawNeeded()
         _imp->overlayRedrawStack = 0;
 
         return ret;
+    }
+}
+
+void
+KnobHolder::resetKnobsToDefaultValues(const std::list<KnobIPtr>& knobs,
+                                      int dimension,
+                                      double time)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+
+    // First reset all the knobs, with their value changes blocked: the knob changed handlers (e.g. the
+    // kOfxActionInstanceChanged of an OpenFX effect) are called once per knob below, when all the knobs have their
+    // default value, rather than also for each knob whose value changes here.
+    for (std::list<KnobIPtr>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        const KnobIPtr& knob = *it;
+        if (!knob) {
+            continue;
+        }
+        KnobHolder* holder = knob->getHolder();
+        if (holder) {
+            holder->beginChanges();
+        }
+        knob->blockValueChanges();
+        for (int d = 0; d < knob->getDimension(); ++d) {
+            if ( (d == dimension) || (dimension == -1) ) {
+                knob->resetToDefaultValue(d);
+            }
+        }
+        knob->unblockValueChanges();
+        if (holder) {
+            holder->endChanges(true);
+        }
+    }
+
+    // Then call the knob changed handlers, in one group of value changes: an OpenFX effect gets a single
+    // kOfxActionBeginInstanceChanged/kOfxActionEndInstanceChanged pair around the kOfxActionInstanceChanged actions of
+    // its parameters.
+    KnobsValuesChangedGroup_RAII group(this);
+    group.setReason(eValueChangedReasonRestoreDefault);
+    for (std::list<KnobIPtr>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        const KnobIPtr& knob = *it;
+        if (!knob) {
+            continue;
+        }
+        KnobHolder* holder = knob->getHolder();
+        if (holder) {
+            holder->onKnobValueChanged_public(knob.get(), eValueChangedReasonRestoreDefault, time, ViewIdx(0), true);
+        }
+        // the value changes were blocked above, so the listeners (slaves, expressions) were not refreshed
+        if ( !knob->isListenersNotificationBlocked() ) {
+            knob->refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonRestoreDefault, dimension);
+        }
     }
 }
 

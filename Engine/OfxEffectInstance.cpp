@@ -2890,6 +2890,9 @@ OfxEffectInstance::knobChanged(KnobI* k,
     }
     // assert(!view.isAll() && !view.isCurrent());
     const ViewIdx v = ( view.isAll() || view.isCurrent() ) ? ViewIdx(0) : ViewIdx(view);
+    // paramInstanceChangedAction() fails without calling the plug-in if the parameter doesn't exist or the time is NaN: no
+    // bracket then (a bracket has at least one kOfxActionInstanceChanged)
+    const bool callsPlugin = effect->getParam( k->getOriginalName() ) && !OFX::IsNaN(time);
     if (recursionLevel == 1) {
         SET_CAN_SET_VALUE(true);
         ClipsThreadStorageSetter clipSetter( effect,
@@ -2900,14 +2903,20 @@ OfxEffectInstance::knobChanged(KnobI* k,
         ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
         ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
         ///the clip preferences to stay the same throughout the action.
-        InstanceChangedBracket_RAII bracket( this, ofxReason, v, renderScale.toMipmapLevel() );
+        std::unique_ptr<InstanceChangedBracket_RAII> bracket;
+        if (callsPlugin) {
+            bracket.reset( new InstanceChangedBracket_RAII( this, ofxReason, v, renderScale.toMipmapLevel() ) );
+        }
         stat = effect->paramInstanceChangedAction(k->getOriginalName(), ofxReason, (OfxTime)time, renderScale.toOfxPointD());
     } else {
         ///This action as all the overlay interacts actions can trigger recursive actions, such as
         ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
         ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
         ///the clip preferences to stay the same throughout the action.
-        InstanceChangedBracket_RAII bracket( this, ofxReason, v, renderScale.toMipmapLevel() );
+        std::unique_ptr<InstanceChangedBracket_RAII> bracket;
+        if (callsPlugin) {
+            bracket.reset( new InstanceChangedBracket_RAII( this, ofxReason, v, renderScale.toMipmapLevel() ) );
+        }
         stat = effect->paramInstanceChangedAction(k->getOriginalName(), ofxReason, (OfxTime)time, renderScale.toOfxPointD());
     }
 

@@ -30,6 +30,7 @@
 
 #include "Global/Macros.h"
 
+#include <list>
 #include <map>
 #include <string>
 
@@ -240,5 +241,40 @@ TEST_F(OfxInstanceChangedTest, EditBlockInInstanceChanged)
     EXPECT_EQ( applied + 1, NatronTestPlugin::counter("Params.presetApplied") );
     EXPECT_EQ( 0, preset->getValue() );
     EXPECT_LE( 4, delta("Params.instanceChanged") );
+    expectNoError();
+}
+
+// Restore Defaults (RestoreDefaultsCommand, KnobHolder::resetKnobsToDefaultValues()): one bracket, and one instance
+// change per parameter, whether its value changed or not.
+TEST_F(OfxInstanceChangedTest, RestoreDefaults)
+{
+    if ( skipped() ) {
+        return;
+    }
+    KnobIntPtr a = intKnob("intFrom");
+    KnobDoublePtr b = std::dynamic_pointer_cast<KnobDouble>( _node->getKnobByName("doubleFrom") );
+    KnobIPtr c = _node->getKnobByName("boolFrom");
+    ASSERT_TRUE(a && b && c);
+    a->setValue(3, ViewSpec::all(), 0, eValueChangedReasonUserEdited, NULL);
+    b->setValueAtTime(1., 2., ViewSpec::all(), 0);
+    b->setValueAtTime(5., 3., ViewSpec::all(), 0);
+    resetCounters();
+    const int icA = NatronTestPlugin::counter("Params.instanceChanged.intFrom");
+    const int icB = NatronTestPlugin::counter("Params.instanceChanged.doubleFrom");
+    const int icC = NatronTestPlugin::counter("Params.instanceChanged.boolFrom");
+
+    std::list<KnobIPtr> knobs;
+    knobs.push_back(a);
+    knobs.push_back(b);
+    knobs.push_back(c);
+    _effect->resetKnobsToDefaultValues( knobs, -1, _effect->getCurrentTime() );
+    EXPECT_EQ( 0, a->getValue() );
+    EXPECT_EQ( 0, b->getKeyFramesCount(ViewIdx(0), 0) );
+    EXPECT_EQ( 3, delta("Params.instanceChanged") );
+    EXPECT_EQ( icA + 1, NatronTestPlugin::counter("Params.instanceChanged.intFrom") );
+    EXPECT_EQ( icB + 1, NatronTestPlugin::counter("Params.instanceChanged.doubleFrom") );
+    EXPECT_EQ( icC + 1, NatronTestPlugin::counter("Params.instanceChanged.boolFrom") );
+    EXPECT_EQ( 1, delta("Params.begin") );
+    EXPECT_EQ( 1, delta("Params.begin." kOfxChangeUserEdited) );
     expectNoError();
 }

@@ -724,14 +724,14 @@ RestoreDefaultsCommand::redo()
     }
 
 
-    /*
-       First reset all knobs values, this will not call instanceChanged action
-     */
+    // the keyframes that are removed
+    std::list<KnobIPtr> knobs;
     for (std::list<KnobIWPtr>::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
         KnobIPtr itKnob = it->lock();
         if (!itKnob) {
             continue;
         }
+        knobs.push_back(itKnob);
         if ( itKnob->getHolder() && itKnob->getHolder()->getApp() ) {
             int dim = itKnob->getDimension();
             for (int i = 0; i < dim; ++i) {
@@ -746,48 +746,21 @@ RestoreDefaultsCommand::redo()
                 }
             }
         }
-
-        if ( itKnob->getHolder() ) {
-            itKnob->getHolder()->beginChanges();
-        }
-       // itKnob->blockValueChanges();
-
-        for (int d = 0; d < itKnob->getDimension(); ++d) {
-            if ( (d == _targetDim) || (_targetDim == -1) ) {
-                itKnob->resetToDefaultValue(d);
-            }
-        }
-
-        // itKnob->unblockValueChanges();
-
-        if ( itKnob->getHolder() ) {
-            itKnob->getHolder()->endChanges(true);
-        }
     }
 
-    /*
-       Block value changes and call instanceChange on all knobs  afterwards to put back the plug-in
-       in a correct state
-     */
     double time = 0;
     if (app) {
         time = app->getTimeLine()->currentFrame();
     }
-    // one group of value changes: an OpenFX effect gets a single kOfxActionBeginInstanceChanged/kOfxActionEndInstanceChanged
-    // pair around the kOfxActionInstanceChanged actions of its parameters
-    {
-        std::unique_ptr<KnobsValuesChangedGroup_RAII> group;
-        if (holder) {
-            group.reset( new KnobsValuesChangedGroup_RAII(holder) );
-            group->setReason(eValueChangedReasonRestoreDefault);
-        }
-        for (std::list<KnobIWPtr>::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
-            KnobIPtr itKnob = it->lock();
-            if (!itKnob) {
-                continue;
-            }
-            if ( itKnob->getHolder() ) {
-                itKnob->getHolder()->onKnobValueChanged_public(itKnob.get(), eValueChangedReasonRestoreDefault, time, ViewIdx(0), true);
+    if (holder) {
+        // reset the values, then call the knob changed handlers (instanceChanged) once per knob, in one group of changes
+        holder->resetKnobsToDefaultValues(knobs, _targetDim, time);
+    } else {
+        for (std::list<KnobIPtr>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+            for (int d = 0; d < (*it)->getDimension(); ++d) {
+                if ( (d == _targetDim) || (_targetDim == -1) ) {
+                    (*it)->resetToDefaultValue(d);
+                }
             }
         }
     }

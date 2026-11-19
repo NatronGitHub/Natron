@@ -2487,6 +2487,12 @@ public:
      * @brief Restore all knobs to their default values
      **/
     void restoreDefaultValues();
+
+    /**
+     * @brief Reset the given knobs (of this holder) to their default values, in all their dimensions if dimension is -1,
+     * then call the knob changed handler once per knob, in one group of value changes (Restore Defaults).
+     **/
+    void resetKnobsToDefaultValues(const std::list<KnobIPtr>& knobs, int dimension, double time);
     virtual void aboutToRestoreDefaultValues()
     {
     }
