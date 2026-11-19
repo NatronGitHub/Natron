@@ -1259,6 +1259,12 @@ public:
     bool message(MessageTypeEnum type, const std::string & content) const;
 
     /**
+     * @brief Ask the user a yes/no question (see Node::question()): eStandardButtonYes, eStandardButtonNo, or
+     * eStandardButtonNoButton if the user could not be asked.
+     **/
+    StandardButtonEnum question(const std::string & content) const;
+
+    /**
      * @brief Use this function to post a persistent message to the user. It will be displayed on the
      * node's graphical interface and on any connected viewer. The message can be of 3 types...
      * INFORMATION_MESSAGE : you just want to inform the user about something.

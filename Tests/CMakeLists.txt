@@ -51,6 +51,7 @@ set(Tests_SOURCES
     OfxParamUndo_Test.cpp
     OfxPluginDeprecated_Test.cpp
     OfxPluginScan_Test.cpp
+    OfxQuestion_Test.cpp
     OfxSingleInstance_Test.cpp
     OfxSyncPrivateData_Test.cpp
     OfxTestPlugin_Test.cpp

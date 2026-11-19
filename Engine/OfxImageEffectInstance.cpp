@@ -322,10 +322,19 @@ OfxImageEffectInstance::vmessage(const char* msgtype,
     } else if (type == kOfxMessageMessage) {
         effect->message(eMessageTypeInfo, message);
     } else if (type == kOfxMessageQuestion) {
-        if ( effect->message(eMessageTypeQuestion, message) ) {
+        // ofxMessage.h: kOfxStatReplyYes or kOfxStatReplyNo, the user's reply, or "some error code if an error
+        // was encounterred". "It is an error to post a question message if the plugin is not in an
+        // interactive session."
+        switch ( effect->question(message) ) {
+        case eStandardButtonYes:
+
             return kOfxStatReplyYes;
-        } else {
+        case eStandardButtonNo:
+
             return kOfxStatReplyNo;
+        default:
+
+            return kOfxStatFailed;
         }
     }
 
