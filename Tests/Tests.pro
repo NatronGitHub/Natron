@@ -79,6 +79,7 @@ SOURCES += \
     OfxSingleInstance_Test.cpp \
     OfxSyncPrivateData_Test.cpp \
     OfxTestPlugin_Test.cpp \
+    OpenGLRenderFailed_Test.cpp \
     OSGLContext_Test.cpp \
     PluginGrouping_Test.cpp \
     ProjectAutoSave_Test.cpp \

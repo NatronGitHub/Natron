@@ -1726,9 +1726,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         ///use the ret code instead.
         throw std::runtime_error("Rendering Failed");
     } else if (renderRetCode == eRenderRoIStatusRenderOutOfGPUMemory) {
-        /// Recall renderRoI on this node, but don't use GPU this time if possible
+        /// The OpenGL render ran out of memory or failed (kOfxStatGPUOutOfMemory, kOfxStatGPURenderFailed):
+        /// recall renderRoI on this node, but don't use GPU this time if possible
         if (openGLSupport != ePluginOpenGLRenderSupportYes) {
             // The plug-in can only use GPU or doesn't support GPU
+            if ( !getNode()->hasPersistentMessage() ) {
+                setPersistentMessage( eMessageTypeError, tr("The OpenGL render failed or ran out of GPU memory, and this plug-in cannot render without OpenGL.").toStdString() );
+            }
             throw std::runtime_error("Rendering Failed");
         }
         std::unique_ptr<RenderRoIArgs> newArgs( new RenderRoIArgs(args) );
