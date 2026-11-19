@@ -300,8 +300,17 @@ public:
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     /**
      * @brief Called by render-threads to pick some work to do or to get asleep if there's nothing to do
+     * @returns false, and no frame, if the thread must quit
      **/
-    int pickFrameToRender(RenderThreadTask* thread, bool* enableRenderStats, std::vector<ViewIdx>* viewsToRender);
+    bool pickFrameToRender(RenderThreadTask* thread, int* time, bool* enableRenderStats, std::vector<ViewIdx>* viewsToRender);
+
+    /**
+     * @brief For the tests only (Tests/RenderThreads_Test.cpp): if churnRenderThreads, adjustNumberOfThreads()
+     * stops and starts a render thread alternately; if delayUs > 0, the render threads wait delayUs microseconds
+     * after taking a frame and before adjusting the number of threads, and stopRender() between telling the
+     * threads to quit and waiting for them. This widens the windows of the races of #248.
+     **/
+    static void setTestHooks(bool churnRenderThreads, int delayUs);
 #endif
 
     /**

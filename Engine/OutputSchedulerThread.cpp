@@ -30,6 +30,7 @@
 #include <limits>
 #include <list>
 #include <algorithm> // min, max
+#include <atomic>
 #include <cassert>
 #include <stdexcept>
 #include <sstream> // stringstream
@@ -93,6 +94,23 @@
 #define NATRON_SCHEDULER_ABORT_AFTER_X_UNSUCCESSFUL_ITERATIONS 5000
 
 NATRON_NAMESPACE_ENTER
+
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
+namespace {
+// See OutputSchedulerThread::setTestHooks()
+std::atomic<bool> gTestChurnRenderThreads(false);
+std::atomic<int> gTestDelayUs(0);
+}
+
+void
+OutputSchedulerThread::setTestHooks(bool churnRenderThreads,
+                                    int delayUs)
+{
+    gTestChurnRenderThreads = churnRenderThreads;
+    gTestDelayUs = delayUs;
+}
+
+#endif
 
 
 ///Sort the frames by time and then by view
@@ -209,6 +227,11 @@ struct OutputSchedulerThreadPrivate
     ///Worker threads
     mutable QMutex renderThreadsMutex;
     RenderThreads renderThreads;
+    // Set by stopRenderThreads(0), when all the render threads are told to quit, until the next startRender():
+    // no render thread may start meanwhile, e.g. from adjustNumberOfThreads() in a thread finishing its last
+    // frame, since stopRender() and the destructor wait for the threads that were told to quit.
+    // Protected by renderThreadsMutex.
+    bool renderThreadsStopping;
     QWaitCondition allRenderThreadsInactiveCond; // wait condition to make sure all render threads are asleep
 
 #ifdef NATRON_PLAYBACK_USES_THREAD_POOL
@@ -267,6 +290,7 @@ struct OutputSchedulerThreadPrivate
         , lastPlaybackRenderDirection(eRenderDirectionForward)
         , renderThreadsMutex()
         , renderThreads()
+        , renderThreadsStopping(false)
         , allRenderThreadsInactiveCond()
 #ifdef NATRON_PLAYBACK_USES_THREAD_POOL
         , threadPool( QThreadPool::globalInstance() )
@@ -419,6 +443,25 @@ struct OutputSchedulerThreadPrivate
         return renderThreads.end();
     }
 
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
+    // The number of render threads that were not told to quit by stopRenderThreads(). The others may
+    // still be rendering their last frame, but they won't take any other frame.
+    int getNRenderThreadsNotQuitting() const
+    {
+        ///Private shouldn't lock
+        assert( !renderThreadsMutex.tryLock() );
+        int ret = 0;
+        for (RenderThreads::const_iterator it = renderThreads.begin(); it != renderThreads.end(); ++it) {
+            if ( !it->thread->mustQuit() ) {
+                ++ret;
+            }
+        }
+
+        return ret;
+    }
+
+#endif
+
     int getNBufferedFrames() const
     {
         QMutexLocker l(&bufMutex);
@@ -548,6 +591,7 @@ struct OutputSchedulerThreadPrivate
 #endif
     }
 };
+
 
 OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,
                                              const OutputEffectInstancePtr& effect,
@@ -815,8 +859,9 @@ OutputSchedulerThread::pushFramesToRender(int nThreads)
     }
 }
 
-int
+bool
 OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread,
+                                         int* time,
                                          bool* enableRenderStats,
                                          std::vector<ViewIdx>* viewsToRender)
 {
@@ -843,7 +888,9 @@ OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread,
             _imp->framesToRenderNotEmptyCond.wait(l.mutex());
         }
 
-        if ( !_imp->framesToRender.empty() ) {
+        // A thread that must quit takes no frame: the other threads render the remaining frames.
+        // (It used to take one and quit without rendering it, so that the render never finished, #248.)
+        if ( !_imp->framesToRender.empty() && !thread->mustQuit() ) {
             ///Notify that we're running for good, will do nothing if flagged already running
             thread->notifyIsRunning(true);
 
@@ -855,13 +902,19 @@ OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread,
         }
     }
 
+    if (gTestDelayUs > 0) {
+        // Tests: widen the window between taking a frame and rendering it
+        QThread::usleep( (unsigned long)gTestDelayUs );
+    }
+
     // thread is quitting, make sure we notified the application it is no longer running
     if (!gotFrame) {
         thread->notifyIsRunning(false);
 
+        *time = -1;
         *enableRenderStats = false;
 
-        return -1;
+        return false;
     } else {
         ///Flag the thread as active
         {
@@ -872,10 +925,11 @@ OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread,
         }
 
         OutputSchedulerThreadStartArgsPtr args = _imp->runArgs.lock();
+        *time = frame;
         *enableRenderStats = args->enableRenderStats;
         *viewsToRender = args->viewsToRender;
 
-        return frame;
+        return true;
     }
 } // OutputSchedulerThread::pickFrameToRender
 
@@ -1079,6 +1133,7 @@ OutputSchedulerThread::startRender()
     int nThreads;
     {
         QMutexLocker l(&_imp->renderThreadsMutex);
+        _imp->renderThreadsStopping = false;
         _imp->removeAllQuitRenderThreads();
         nThreads = (int)_imp->renderThreads.size();
     }
@@ -1175,6 +1230,10 @@ OutputSchedulerThread::stopRender()
     ///Remove all current threads so the new render doesn't have many threads concurrently trying to do the same thing at the same time
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     stopRenderThreads(0);
+    if (gTestDelayUs > 0) {
+        // Tests: widen the window in which a render thread could start after the others were told to quit
+        QThread::usleep( (unsigned long)gTestDelayUs );
+    }
 #endif
     _imp->waitForRenderThreadsToQuit();
 
@@ -1531,8 +1590,14 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads,
     ///How many threads are running in the application
     int runningThreads = appPTR->getNRunningThreads() + QThreadPool::globalInstance()->activeThreadCount();
 
-    ///How many current threads are used by THIS renderer
-    int currentParallelRenders = getNRenderThreads();
+    ///How many current threads are used by THIS renderer.
+    ///The threads that were told to quit don't count: else, while they render their last frame, more
+    ///threads would be told to quit, until no thread is left to render the remaining frames (#248).
+    int currentParallelRenders;
+    {
+        QMutexLocker l(&_imp->renderThreadsMutex);
+        currentParallelRenders = _imp->getNRenderThreadsNotQuitting();
+    }
 
     *lastNThreads = currentParallelRenders;
 
@@ -1549,15 +1614,33 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads,
         optimalNThreads = 1;
     }
 
+    bool launch = ( (runningThreads < optimalNThreads) && (currentParallelRenders < optimalNThreads) ) || (currentParallelRenders == 0);
+    bool stop = !launch && (runningThreads > optimalNThreads) && (currentParallelRenders > optimalNThreads);
+    if (gTestChurnRenderThreads) {
+        // Tests: stop and start a thread alternately, to exercise the races of #248
+        launch = (currentParallelRenders < 2);
+        stop = !launch;
+    }
 
-    if ( ( (runningThreads < optimalNThreads) && (currentParallelRenders < optimalNThreads) ) || (currentParallelRenders == 0) ) {
+    if (launch) {
         ////////
-        ///Launch 1 thread
+        ///Launch 1 thread, unless the render is finished or being stopped: stopRender() (or the destructor)
+        ///waits for the threads that were told to quit, and a new thread would never be told to quit (and
+        ///createRunnable() is pure virtual in the destructor).
+        bool renderFinished;
+        {
+            QMutexLocker k(&_imp->renderFinishedMutex);
+            renderFinished = _imp->renderFinished;
+        }
         QMutexLocker l(&_imp->renderThreadsMutex);
+        if ( _imp->renderThreadsStopping || renderFinished || isBeingAborted() ) {
+            *newNThreads = currentParallelRenders;
 
+            return;
+        }
         _imp->appendRunnable( createRunnable() );
         *newNThreads = currentParallelRenders +  1;
-    } else if ( (runningThreads > optimalNThreads) && (currentParallelRenders > optimalNThreads) ) {
+    } else if (stop) {
         ////////
         ///Stop 1 thread
         stopRenderThreads(1);
@@ -1630,6 +1713,10 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             ///////////
             /////Now set the appropriate number of threads to render.
             int newNThreads, nbCurParallelRenders;
+            if (gTestDelayUs > 0) {
+                // Tests: let stopRender() start meanwhile
+                QThread::usleep( (unsigned long)gTestDelayUs );
+            }
             adjustNumberOfThreads(&newNThreads, &nbCurParallelRenders);
 #else
             startTasksFromLastStartedFrame();
@@ -1942,6 +2029,17 @@ OutputSchedulerThread::stopRenderThreads(int nThreadsToStop)
     {
         ///First flag the number of threads to stop
         QMutexLocker l(&_imp->renderThreadsMutex);
+        if (nThreadsToStop == 0) {
+            _imp->renderThreadsStopping = true;
+        }
+        if (nThreadsToStop > 0) {
+            // Keep at least one thread to render the remaining frames, even if several threads call
+            // adjustNumberOfThreads() at the same time (#248)
+            nThreadsToStop = std::min(nThreadsToStop, _imp->getNRenderThreadsNotQuitting() - 1);
+            if (nThreadsToStop <= 0) {
+                return;
+            }
+        }
         int i = 0;
         for (RenderThreads::iterator it = _imp->renderThreads.begin();
              it != _imp->renderThreads.end() && (i < nThreadsToStop || nThreadsToStop == 0); ++it) {
@@ -2086,11 +2184,16 @@ RenderThreadTask::run()
     notifyIsRunning(true);
 
     for (;; ) {
+        int time;
         bool enableRenderStats;
         std::vector<ViewIdx> viewsToRender;
-        int time = _imp->scheduler->pickFrameToRender(this, &enableRenderStats, &viewsToRender);
-
-        if ( mustQuit() ) {
+        if ( !_imp->scheduler->pickFrameToRender(this, &time, &enableRenderStats, &viewsToRender) ) {
+            // This thread must quit
+            break;
+        }
+        // The frame was removed from the frames to render: render it, even if this thread was told
+        // to quit meanwhile, else the render would never finish (#248). Unless the render is aborted.
+        if ( mustQuit() && _imp->scheduler->isBeingAborted() ) {
             break;
         }
 
