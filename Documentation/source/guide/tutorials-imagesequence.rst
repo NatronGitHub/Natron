@@ -178,32 +178,8 @@ Import the image "as sequence" in the timeline (or drag'n'drop the folder) and r
 Creating Digital Intermediate For Editing Servers
 =================================================
 
-For Digital Intermediate, the `PRORES 4444` codec is a nice choice for MOV containers. It supports 12-bit with YUVA and retains alpha with 16-bit precision.
-
-It can be done with ffmpeg or in kdenlive/Shotcut importing the TIFF/PNG as sequence.
-
-
-FFmpeg
-~~~~~~
-``ffmpeg -framerate 30 -i input%03d.tiff -f mov -acodec pcm_s16le -vcodec prores_ks -vprofile 4444 -vendor ap10 -pix_fmt yuva444p10le out.mov``
-
-Shotcut/Kdenlive
-~~~~~~~~~~~~~~~~
-- A render profile needs to be created first with below profile:
-- ``f=mov acodec=pcm_s16le vcodec=prores_ks vprofile=4444 vendor=ap10 pix_fmt=yuva444p10le qscale=%quality``
-- Use TIFF/PNG image as sequence in the timeline.
-- Then Render with this newly created prores 4444 profile.
-
-A tutorial on PRORES in LINUX by CGVIRUS:
-https://youtu.be/oBiaBYthZSo
-
-It can be done with Adobe Premiere/Avid/Fcpx/Resolve etc as well by importing TIFF/PNG as sequence and render as MOV prores 4444.
-
-DaVinci Resolve, Adobe Premiere etc
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-- Drag and drop the folder containing the image sequence to a timeline.
-- Render the timeline in PRORES 4444.
+To encode an image sequence to a digital intermediate (ProRes, DNxHR, FFV1),
+with FFmpeg or directly from Natron, see :doc:`tutorials-ffmpeg-di`.
 
 How to Render Image Sequences from Natron
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

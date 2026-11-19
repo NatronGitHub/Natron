@@ -4,10 +4,7 @@
 Using the menus
 ===============
 
-.. toctree::
-   :maxdepth: 2
-
-Modifications of your project are done using items located in menus located in different places of the interface.
+Natron has a menu bar, and context menus that open with a right-click in most panels. When a command has a keyboard shortcut, the menu shows it. The shortcuts below are the defaults: you can change them in the *Shortcut Editor* tab of the Preferences.
 
 The menu bar
 ############
@@ -22,35 +19,43 @@ File menu
 
 
 New Project
-  Clear the node graph to start from scratch a new process.
+  Start a new, empty project.
 Open Project...
-  Load a ``.ntp`` file that is the description of a node graph. The ``.ntp`` contains no image data but only the instructions on how to process the images.
-Open Recent...
-  Shortcut access to the most recently loaded ``.ntp`` files.
+  Open a ``.ntp`` project file. A project file describes the node graph: it
+  contains no image data, only the instructions to process the images.
+Open Recent
+  Open one of the recently opened project files.
 
-If a saved project is currently opened, the open functions will open in a new window.
+If the current project is not empty, the project opens in a new window.
 
 Reload Project
-  Reload the current ``.ntp`` from disk. This can be used if you break something in your graph and don't know exactly what.
+  Reload the current project file from disk, discarding the unsaved changes.
 Close Project
-  Close the current project but keep other projects opened.
+  Close the current project. Other open projects stay open.
 Save Project
-  Save the current node graph.
-Save Project As...
-  Save the current node graph with a new name
+  Save the current project.
+Save Project As..
+  Save the current project under a new name.
 New Project Version
-  Increment the version number in the project file.
-  
-Project files are very small files. It is thus recommended to save different files for the different steps of your work. Would you want to recover a previous state or in case your ``.ntp`` gets corrupted.
+  Save the project under a new name with an incremented version number:
+  ``shot.ntp`` is saved as ``shot_001.ntp``, ``shot_001.ntp`` as
+  ``shot_002.ntp``, and so on. The version number is the group of digits just
+  before the ``.ntp`` extension, and it is written with at least three digits.
 
-Natron expects the version number to be in the form ``name_001.ntp``, ``name_002.ntp`` and so on.
-  
+Project files are small, so it is a good idea to save a new version at each
+step of your work: you can then go back to an earlier state, or recover from a
+damaged file.
 
-.. note::  You can number your files with different patterns like ``name_v01`` but you will have to increment manually with "Save Project As..."
+.. note::  Use the ``name_001.ntp`` form. Other forms, such as
+   ``name_v01.ntp``, are not handled correctly: increment them yourself with
+   *Save Project As..*.
 
 Export Project As Group
-  With this item you can export a group of nodes to be reused later. This way you can create custom tools for Natron named plugins or Pyplugs.
-  The group of nodes will appear as a single node when reused. This is why you must add one "output" node and "input" node(s) if relevant. So that Natron can determine how to connect your group when you will reuse it as part of another node graph
+  Save the whole project as a PyPlug, a Python script that recreates the graph
+  as a single Group node that you can reuse in other projects. Add Input
+  nodes, and one Output node, so that Natron knows how to connect the group.
+Quit
+  Quit Natron (in the :menuselection:`Natron` menu on macOS).
 
 Edit menu
 ---------
@@ -59,42 +64,46 @@ Edit menu
 
 
 Preferences...
-  Many preferences let you change the display of informations inside Natron. Many optimisation settings are also located in this menu.
+  Open the Preferences window: display, performance, plug-in paths,
+  shortcuts and other settings. On macOS, it is in the
+  :menuselection:`Natron` menu.
 
-Undo/Redo
-  The Undo item is modified dynamically to hint you about the last operation that can be undone.
+Undo and Redo
+  The text of these entries tells you which change will be undone or redone.
+  See :doc:`getstarted-environment-undoredo`.
 
 Layout menu
 -------------
 .. image:: _images/menu_layout_01.png
 
 
-The Layout is the position of the different user interface elements of Natron. This menu let's you manage different layout configuration.
+The layout is the arrangement of the panels in the Natron window. This menu lets you save and load layouts.
 
 Useful for:
 
-- Use different configs according to your present task (animating with a bigger curve editor, rotoscoping with a bigger viewer,...)
-- Export a layout to use on a different computer
-- create separate viewer and tools windows when using a dual monitor setup.
+- keep one layout for each kind of task (a bigger Curve Editor to animate,
+  a bigger Viewer for rotoscoping, and so on);
+- use your layout on another computer;
+- keep a layout with separate windows for a dual-monitor setup.
 
 Import Layout...
-   Load a file containing the position of UI elements. The file extension is usually ``.nl``
-   
+  Load a layout file (``.nl``).
 Export Layout...
-  Save a ``.nl`` file.
-  
-Restore default layout
-  Some UI elements are stacked in the same screen position to acees these you can click on their tab names.
-  In default Layout: Node Graph, Curve Editor, Dope Sheet are in the same lower left pane accessible through Tab navigation
+  Save the current layout to a ``.nl`` file.
+Restore Default Layout
+  Go back to the default layout. In this layout, the Node Graph, the Curve
+  Editor and the Dope Sheet share the same pane: click their tabs to switch
+  between them.
 
-Here are 3 commands better used through their keyboard shortcuts:
+The following commands act on the pane under the mouse pointer, and are
+easier to use with their shortcuts:
 
 Previous Tab
-  Shortcut: CTrl+Shift+T
+  :kbd:`Ctrl+Shift+T`
 Next Tab
-  Shortcut: Ctrl+T
+  :kbd:`Ctrl+T`
 Close Tab
-  Shortcut: Shift+Esc
+  :kbd:`Shift+Esc`
   
   
 Display menu
@@ -102,36 +111,45 @@ Display menu
 .. image:: _images/menu_display_01.png
 
 
-In Natron you can view different parts of your work in different windows. For each window a viewer node is present in the node graph.
-To better compare different images each viewer can be split in side A/side B. This menu helps you manage these settings.
+Each Viewer panel belongs to a Viewer node in the Node Graph. A Viewer can
+show two of its inputs, called the A side and the B side, to compare them.
 
 .. image:: _images/viewer_02.png
    :width: 600px
    
-Above: a viewer can have multiple inputs, up to 10.
-By default only one input is displayed. Once you choose a mixing mode (see red box above) A and B sides become active. "W_under" is the usual mode.
+A Viewer node has 10 inputs. By default, the Viewer shows only the A side.
+Choose a compositing operator in the Viewer toolbar (red box above) to show
+the B side as well: *W-Under*, the wipe, is the most common one.
 
 
 New Viewer
-  Add a new viewer node in the node graph. The new viewer will be displayed in a new tab.
-  This command also comes in handy if you inadvertently delete the first viewer node.
+  :kbd:`Ctrl+I`. Add a Viewer node to the Node Graph. Its Viewer panel opens in
+  a new tab. Use it, for example, if you deleted the only Viewer node.
 
-Viewer(s)>Connect to A/B side>Connect Viewer to input 1/.../10
-  Show the image connected to input 1..10 in the A (or B) side of the viewer.
-  If a node is selected it is also connected to the input 1..10 of the viewer.
-  
-  It is very convenient to use shortcuts: ``0`` to ``9`` to quickly show the output of the selected node.
-  
-Show project Settings...
+Viewer(s) --> Connect to A Side / Connect to B Side
+  Show input 1 to 10 of the Viewer on the A (or B) side. If a node is
+  selected in the Node Graph, it is first connected to that input. Use the
+  shortcuts: :kbd:`1` to :kbd:`9` and :kbd:`0` (input 10) for the A side,
+  :kbd:`Shift+1` to :kbd:`Shift+0` for the B side.
 
-Show project errors log...
-  This console shows error issued while rendering.(e.g. GPU specific errors can be inspected here as this is a sensitive area depending on your computer configuration).
+Viewer(s) --> View
+  Choose the view shown by all Viewers in a multi-view (for example stereo)
+  project.
 
-Show/Hide application console
-  This console shows error that may occur when Natron's configuration change (e.g. new plugins installed). Also handy to get the result of your python scripts.
+Show Project Settings...
+  :kbd:`S`. Open the settings of the project (format, frame range, frame rate,
+  project paths, and so on) in the Properties panel.
+
+Show Project Errors Log...
+  Show the errors and warnings that nodes reported, for example while
+  rendering. GPU rendering errors also appear here.
+
+Show/Hide Application Console
+  Windows only: show the console window, where Natron prints its messages.
+  On Linux and macOS, start Natron from a terminal to see these messages.
 
 Enter Full Screen
-  Save some screen space removing the title bar of Natron.
+  :kbd:`Alt+S`. Show the Natron window in full screen.
 
   
 
@@ -140,34 +158,40 @@ Render menu
 .. image:: _images/menu_render_01.png
 
    
-The final result of Natron image processing is only written to disk as a new image. When a Write node has been setup and the render process has been launched.
+Natron writes images to disk only when you render a Write node.
 
 Render All Writers
-  Launch the rendering for all write nodes. The frame range to render is defined by the project settings and the Write node settings
+  :kbd:`F5`. Render all the Write nodes. The frame range comes from the
+  settings of each Write node.
 
 Render Selected Writers
-  Launch the rendering for one or more  write nodes.
+  :kbd:`F7`. Render the Write nodes selected in the Node Graph.
 
 Enable Render Statistics
-  Display a window showing how long it takes to render each node. This can help find bottlenecks when a project takes a very long time to render.
+  :kbd:`F2`. Show a window with the time spent rendering each node, to find
+  the nodes that slow down your project.
 
 Cache menu
 ------------
 .. image:: _images/menu_cache_01.png
 
    
-To improve Natron speed, some intermediate images of the node graph are kept in memory/on disk. This caching mechanism sometimes need to be cleared to free up memory/disk space. Use this if Natron seems to slow down or warn you about memory usage.
+To be faster, Natron keeps rendered images in memory and on disk. Clear these
+caches to free memory or disk space, for example if Natron slows down or warns
+about memory usage.
 
 Clear Disk Cache
-  Clears the internal disk cache (which is persistent between Natron runs), and data generated by "DiskCache" nodes.
+  Clear the disk cache, which is kept between Natron sessions, including the
+  images stored by DiskCache nodes.
 Clear Playback Cache
-  Clears final images sent to the viewer. Useful for previewing long sequences
+  Clear the images rendered for the Viewers.
 Clear Per-Node Cache
-  Clears in-memory intermediate results. Useful when you make change high up in the node tree or have nodes with "Force caching" enabled.
-Clear All caches
-  Best way to free up space in Natron.
-Clear Plug-Ins Load Cache
-  Will trigger a full plugins scan on next Natron run.
+  Clear the intermediate images kept in memory for each node, and the caches
+  of the OpenFX plug-ins.
+Clear All Caches
+  :kbd:`Ctrl+Shift+K`. Clear all the caches above.
+Clear Plug-ins Load Cache
+  Natron will scan all the plug-ins again the next time it starts.
 
 
 Help menu
@@ -176,79 +200,51 @@ Help menu
 
 
 Documentation
-  -
+  Open this documentation.
 Website
-  -
+  Open the Natron website.
 Forum
-  -
+  Open the Natron forum on pixls.us.
 Issues
-  -
-  
-Links to various resources to help you with Natron.
-
+  Open the Natron issue tracker on GitHub, to report a bug.
 About Natron
-  Information about your version of Natron.
+  Show the version of Natron, its license and the libraries it uses (in the
+  :menuselection:`Natron` menu on macOS).
 
 Tools menu
 -----------
 .. image:: _images/menu_tools_01.png
 
    
-In this menu additional functions are added through python scripting. Natron interface can be vastly modified through scripting.  
+This menu only appears when a Python script adds commands to it, for example
+the community scripts (see :doc:`getstarted-installation`). Scripts can add
+commands to any menu.
 
 Context menus
 -------------
 
-You can right-click in many places of Natron to get quick access to a contextual menu. Here are the main ones:
-
+Right-click in a panel to open its context menu. Here are the main ones.
 
 .. figure:: _images/menu_context_curve_01.png
 
-   
-   Context menu for the Curve Editor window
-
-*
+   Context menu of the Curve Editor
 
 .. figure:: _images/menu_context_dope_01.png
 
-   
-   Context menu for the Dope Sheet window
+   Context menu of the Dope Sheet
 
 .. figure:: _images/menu_context_nodegraph_01.png
 
-   
-   Context menu for the node graph window
-
-*
-
-.. figure:: _images/menu_context_parameter_01.png
-
-   
-   Context menu for the Node Graph window
-
-*
+   Context menu of the Node Graph
 
 .. figure:: _images/menu_context_properties_01.png
-   
-   Context menu for the Properties window
 
-*
-   
+   Context menu of the Properties panel
+
 .. figure:: _images/menu_context_parameter_01.png
 
-   
-   Context menu for a parameter box in the Properties window
+   Context menu of a parameter in the Properties panel
 
-*
-   
 .. figure:: _images/menu_context_viewer_01.png
 
-   
-   Context menu for the Viewer window
-
-
-Menus Usage
------------
-
-When a menu item has a keyboard shortcut associated, it is visible inside the menus.
-
+   Context menu of the Viewer

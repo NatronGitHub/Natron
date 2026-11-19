@@ -2648,7 +2648,7 @@ TrackerContextPrivate::onCornerPinSolverWatcherProgress(int progress)
     NodePtr thisNode = node.lock();
     double min = lastSolveRequest.cpWatcher->progressMinimum();
     double max = lastSolveRequest.cpWatcher->progressMaximum();
-    double p = (progress - min) / (max - min);
+    double p = (max > min) ? (progress - min) / (max - min) : 1.;
     thisNode->getApp()->progressUpdate(thisNode, p);
 }
 
@@ -2659,7 +2659,7 @@ TrackerContextPrivate::onTransformSolverWatcherProgress(int progress)
     NodePtr thisNode = node.lock();
     double min = lastSolveRequest.tWatcher->progressMinimum();
     double max = lastSolveRequest.tWatcher->progressMaximum();
-    double p = (progress - min) / (max - min);
+    double p = (max > min) ? (progress - min) / (max - min) : 1.;
     thisNode->getApp()->progressUpdate(thisNode, p);
 }
 

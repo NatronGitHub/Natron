@@ -157,6 +157,10 @@ public:
         // the time that was passed to the original renderRoI call of the caller node
         double callerRenderTime;
 
+        // how many times renderRoI called itself again because pixels that another thread was rendering
+        // were released without being rendered
+        int renderAgainCount;
+
         RenderRoIArgs()
             : time(0)
             , scale()
@@ -173,6 +177,7 @@ public:
             , returnStorage(eStorageModeRAM)
             , allowGPURendering(true)
             , callerRenderTime(0.)
+            , renderAgainCount(0)
         {
         }
 
@@ -205,6 +210,7 @@ public:
             , returnStorage(returnStorage)
             , allowGPURendering(true)
             , callerRenderTime(callerRenderTime)
+            , renderAgainCount(0)
         {
         }
     };
@@ -333,6 +339,16 @@ public:
      * @brief Is the node a reader ?
      **/
     virtual bool isReader() const WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    /**
+     * @brief For Readers: true if the output format of the last computed metadata was set by the
+     * decoder from the file, false if there is no file, no decoder, or the file could not be decoded.
+     * Main thread only.
+     **/
+    virtual bool isOutputFormatFromFile() const WARN_UNUSED_RETURN
     {
         return false;
     }

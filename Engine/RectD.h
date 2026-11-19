@@ -147,13 +147,15 @@ public:
         /*assert((x2>= x1) && (y2>=y1));*/
     }
 
-    //Useful for bbox computations
+    //Useful for bbox computations: the first merge() sets the bbox.
+    //The empty bbox is +/-DBL_MAX rather than +/-infinity, because arithmetic on it
+    //(e.g. its center) would give NaN, and -ffast-math assumes that infinities never happen.
     void setupInfinity()
     {
-        x1 = std::numeric_limits<double>::infinity();
-        x2 = -std::numeric_limits<double>::infinity();
-        y1 = std::numeric_limits<double>::infinity();
-        y2 = -std::numeric_limits<double>::infinity();
+        x1 = std::numeric_limits<double>::max();
+        x2 = std::numeric_limits<double>::lowest();
+        y1 = std::numeric_limits<double>::max();
+        y2 = std::numeric_limits<double>::lowest();
     }
 
     void set(const RectD & b)

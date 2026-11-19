@@ -13,99 +13,102 @@ Main rules
 
 .. image:: _images/TheNodes-Image/node_connections.gif
 
-- Nodes can have 1 or more inputs.
-   Most processing nodes have only 1 input (blur, color corrections...)
-
-   Merging nodes have several inputs that are turned into one "mixed" output
-- mask input is present on many nodes.
-   It's purpose usually is to limit the effect of the node to the part of the image defined by the white part of the mask
-- Nodes always have exactly 1 output. 
-   If several nodes B and C connect their inputs to the same output of node A they will receive the same image
-   
-   The only node without any output is the Viewer node. It determines what node is shown in the Viewer pane
+- Most processing nodes, such as Blur or the color corrections, have one
+  image input. Merge nodes have several inputs that they combine into one
+  output. Nodes that create images, such as Read or Constant, have no input.
+- Many nodes also have a *Mask* input, which limits the effect of the node
+  to the white parts of the mask.
+- A node has one output, which can be connected to the inputs of several
+  nodes: they all receive the same image. The Viewer node has no output: it
+  chooses what the Viewer panel shows.
 
 .. image:: _images/TheNodes-Image/node_viewer.gif
 
-When a node has several inputs (eg. Merge node) the B input is the "background" and A is the "foreground" image. If you disable the node, B input is passed unmodified
-Merge nodes can have many inputs added when required to allow many merge operations at once
+On a Merge node, the B input is the background and the A input is the
+foreground. When the node is disabled, the B input is passed through
+unchanged. When you connect the A input, a new A input appears, so that one
+Merge node can combine many images.
 
 .. image:: _images/TheNodes-Image/node_multiple_inputs.gif
    :width: 600
 
 Creating nodes
 --------------
-Nodes can be created in 3 ways
+There are three ways to create a node:
 
-- Use their shortcut
-   ``G`` Grade
-   
-   ``T`` Transform
-   
-   ``B`` Blur
-   
-   ``C`` ColorCorrect 
-   
-   ``R`` Read
-   
-   ``W`` Write
-   
-   ``.`` Dot
-   
-   ``O`` Roto
-   
-   ``P`` Rotopaint
-   
-   ``M`` Merge
-- Pick the node in the tools palette under each category.
+- Press its shortcut in the Node Graph. These nodes have one by default:
+
+  ========= ============
+  Key       Node
+  ========= ============
+  :kbd:`R`  Read
+  :kbd:`W`  Write
+  :kbd:`G`  Grade
+  :kbd:`C`  ColorCorrect
+  :kbd:`B`  Blur
+  :kbd:`T`  Transform
+  :kbd:`M`  Merge
+  :kbd:`O`  Roto
+  :kbd:`P`  RotoPaint
+  :kbd:`.`  Dot
+  ========= ============
+
+  You can give a shortcut to any other node in the *Shortcut Editor* tab of
+  the Preferences.
+- Choose the node in the :doc:`toolbar <getstarted-environment-toolbar>`.
 
 .. image:: _images/toolbar_02.jpg
 
-- Call the Node search menu with ``tab`` then type some letters to make the list of the names appears
+- Press :kbd:`Tab` in the Node Graph, type a few letters of the node name,
+  and choose the node in the list.
 
 .. image:: _images/Environment/environment-nodes-node_select.gif
 
 Duplicating Nodes
 -----------------
 
-Nodes can be duplicated by copying (shortcut ``CTRL+C``) and pasting  (shortcut ``CTRL+V``)
+To copy nodes, select them and press :kbd:`Ctrl+C`, then :kbd:`Ctrl+V` to
+paste them, or press :kbd:`Alt+C` (*Duplicate*). The copies are independent of
+the original nodes.
 
-This create two independent copies.
-
-If you want the two copies to process different images with the same parameters even when they are changed the nodes can be cloned (shortcut ``ALT+K``). 
-
-The link between the nodes is shown with a pink arrow.
+To process different images with the same parameters, clone the node instead
+(:kbd:`Alt+K`): the parameters of the clone follow those of the original node,
+even when you change them later. The clone is drawn in pink, with an arrow to
+the original node. Press :kbd:`Alt+Shift+K` (*Declone*) to make the clone
+independent again.
 
 .. image:: _images/Environment/environment-nodes-clones.gif
 
 
 .. note::
-   - Even Group (New in v2.4) and Roto can be cloned (which is not possible in nuke)
-   - Beware that parameters of the group are clones dynamically updated but not the internal structure of nodes inside the group
+   - Group and Roto nodes can be cloned too. Viewers cannot.
+   - When you clone a Group, only the parameters of the Group node are
+     linked, not the nodes inside the group.
 
 Connections
 ------------
-To connect a node to another:
-grab the tip of the input arrow and drop it onto the input node
+To connect two nodes, drag the tip of an input arrow and drop it on the node
+that should feed it.
 
 .. image:: _images/TheNodes-Image/node_connect_disconnect.gif
 
-insert in the graph:
-hold ``ctrl`` + drag and drop node C onto a existing connection between A and B will insert the node inbetween. resulting in A->C->B
-To show you where the node will be inserted, a green arrow is displayed
+To insert a node C in an existing connection from A to B, hold :kbd:`Ctrl`
+(:kbd:`Cmd` on macOS) while you drag C onto the connection: the connection is
+highlighted, and when you release the mouse button you get A → C → B.
 
 .. image:: _images/TheNodes-Image/node_insert.gif
 
-To disconnect a node:
-select it, press ``ctrl+shift+x``
+To take a node out of the graph and keep its upstream and downstream nodes
+connected, select it and press :kbd:`Ctrl+Shift+X` (*Extract*).
 
 .. image:: _images/TheNodes-Image/node_extract.gif
 
-**community scripts**
-
-To connect distant nodes, select output node, input node, press ``y``
+With the community scripts installed (see :doc:`getstarted-installation`),
+you can also connect distant nodes: select the upstream node, then the
+downstream node, and press :kbd:`Y`.
 
 .. image:: _images/TheNodes-Image/node_distant_connect.gif
 
 
 
-For more in depth information on how to manage your nodegraph see :doc:`Nodegraph <getstarted-environment-nodegraph>`
+To organize the Node Graph, see :doc:`getstarted-environment-nodegraph`.

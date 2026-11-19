@@ -67,6 +67,8 @@ Some packages, especially Qt 4.8.7, have Natron-specific patches. Take a look at
 
 The SDK may be updated by pulling the last modifications to the script and re-executing it.
 
+The release scripts (`tools/jenkins/launchBuildMain.sh`) build Natron with CMake, from the SDK; extra CMake options go in `NATRON_EXTRA_CMAKE_FLAGS`. On RB-2.6, `NATRON_BUILD_SYSTEM=qmake` selects the deprecated qmake build instead (see `Documentation/source/maintainers/building.rst`, "Release builds").
+
 ### Environment to use the Natron SDK
 
 Once the SDK is built, you should set your environment in the shell from which you execute or test Natron, to make sure that the Natron SDK is preferred over any other system library:
@@ -79,12 +81,10 @@ This must be done in every shell/terminal where you intend to compile and/or run
 
 ## Installing dependencies from Ubuntu
 
-The scripts `tools/travis/install_dependencies.sh` and
-`tools/travis/build.sh` respectively install the correct dependencies
-and build Natron and the standard set of plugins on Ubuntu
-18.04 (Bionic Beaver).
-These scripts are used to make the [Travis CI builds](https://travis-ci.org/github/NatronGitHub/Natron).
-You can use them as a reference, but the resulting binaries are not guaranteed to be fully functional.
+The Linux job of the [GitHub Actions CI](https://github.com/NatronGitHub/Natron/actions/workflows/ci.yml)
+(`.github/workflows/ci.yml`) installs the dependencies and builds Natron and the tests on Ubuntu 24.04:
+read it for the exact package list and build commands.
+You can use it as a reference, but the resulting binaries are not guaranteed to be fully functional.
 
 ## Installing dependencies manually
 
@@ -146,7 +146,7 @@ Natron uses the OpenFX API, before building you should make sure its submodule i
 For that, go under Natron and type
 
 ```
-git submodule update -i --recursive
+git submodule update --init --recursive
 ```
 
 ### Download OpenColorIO-Configs
@@ -259,7 +259,7 @@ To install, run `cmake --install build --prefix /usr/local` (or another prefix).
 
 ## Deprecated: building with qmake
 
-***note:*** *The qmake build is deprecated. It still works on RB-2.6, where the release scripts in `tools/jenkins` still use it, but it will be removed in a future release (first on RB-2.7, see [#1181](https://github.com/NatronGitHub/Natron/issues/1181)). It needs a [config.pri](#configpri) file.*
+***note:*** *The qmake build is deprecated. It still works on RB-2.6, where the release scripts in `tools/jenkins` use it with `NATRON_BUILD_SYSTEM=qmake` (they build with CMake by default), but it will be removed in a future release (first on RB-2.7, see [#1181](https://github.com/NatronGitHub/Natron/issues/1181)). It needs a [config.pri](#configpri) file.*
 
 To build, go into the Natron directory and type:
 
@@ -330,7 +330,7 @@ Update submodules:
 
 ```
 git submodule init
-git submodule update -i --recursive
+git submodule update --init --recursive
 ```
 
 Build it with CMake, as described in [Build](#build):
@@ -470,7 +470,7 @@ Get Natron:
 
 ```
 git clone https://github.com/NatronGitHub/Natron && cd Natron
-git submodule update -i --recursive
+git submodule update --init --recursive
 wget https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.5.tar.gz
 tar xzf Natron-v2.5.tar.gz
 mv OpenColorIO-Configs-Natron-v2.5 OpenColorIO-Configs

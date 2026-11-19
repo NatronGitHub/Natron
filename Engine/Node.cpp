@@ -1165,6 +1165,12 @@ Node::loadKnob(const KnobIPtr & knob,
             continue;
         }
 
+        // The visibility of the Views parameter of writers is not restored: it follows the format (set
+        // by the plug-in) and the file name (refreshViewsSelectorVisibility()). Projects saved by Natron
+        // 2.5 or older may have it hidden by mistake (#1312).
+        const bool keepSecret = _imp->effect->isWriter() && (knob->getName() == kWriteOIIOParamViewsSelector);
+        const bool wasSecret = knob->getIsSecret();
+
         knob->cloneDefaultValues( serializedKnob.get() );
 
         if (isChoice) {
@@ -1213,6 +1219,10 @@ Node::loadKnob(const KnobIPtr & knob,
                     knob->setEnabled( i, serializedKnob->isEnabled(i) );
                 }
             }
+        }
+
+        if (keepSecret) {
+            knob->setSecret(wasSecret);
         }
 
         if (knob->getName() == kOfxImageEffectFileParamName) {
@@ -4526,29 +4536,27 @@ Node::onFileNameParameterChanged(KnobI* fileKnob)
             }
         }
 
-        /*
-           Check if the filename param has a %V in it, in which case make sure to hide the Views parameter
-         */
-        KnobOutputFile* fileParam = dynamic_cast<KnobOutputFile*>(fileKnob);
-        if (fileParam) {
-            std::string pattern = fileParam->getValue();
-            std::size_t foundViewPattern = pattern.find_first_of("%v");
-            if (foundViewPattern == std::string::npos) {
-                foundViewPattern = pattern.find_first_of("%V");
-            }
-            if (foundViewPattern != std::string::npos) {
-                //We found view pattern
-                KnobIPtr viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
-                if (viewsKnob) {
-                    KnobChoice* viewsSelector = dynamic_cast<KnobChoice*>( viewsKnob.get() );
-                    if (viewsSelector) {
-                        viewsSelector->setSecret(true);
-                    }
-                }
-            }
-        }
+        refreshViewsSelectorVisibility();
     }
 } // Node::onFileNameParameterChanged
+
+void
+Node::refreshViewsSelectorVisibility()
+{
+    if ( !_imp->effect || !_imp->effect->isWriter() ) {
+        return;
+    }
+    KnobChoicePtr viewsSelector = std::dynamic_pointer_cast<KnobChoice>( getKnobByName(kWriteOIIOParamViewsSelector) );
+    KnobOutputFilePtr fileParam = std::dynamic_pointer_cast<KnobOutputFile>( getKnobByName(kOfxImageEffectFileParamName) );
+    if (!viewsSelector || !fileParam) {
+        return;
+    }
+    // Look for the two-character pattern: find_first_of("%v") would match any '%' or 'v' (#1312).
+    std::string pattern = fileParam->getValue();
+    if ( ( pattern.find("%v") != std::string::npos ) || ( pattern.find("%V") != std::string::npos ) ) {
+        viewsSelector->setSecret(true);
+    }
+}
 
 void
 Node::getOriginalFrameRangeForReader(const std::string& pluginID,
@@ -6587,6 +6595,12 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
         return;
     }
     if ( getParentMultiInstance() ) {
+        return;
+    }
+    // The project may be reset after Python was finalized: in interpreter mode (-t),
+    // Py_Main() finalizes Python before it returns. The variable went away with the
+    // interpreter, and taking the GIL now would crash (#1253).
+    if ( !Py_IsInitialized() ) {
         return;
     }
 

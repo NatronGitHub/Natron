@@ -338,10 +338,10 @@ OfxHost::setProperties()
 
     _properties.setIntProperty(kNatronOfxPropDescriptionIsMarkdown, 1);
 
-    // keyboard modifiers in the interact actions and with the selection rectangle (ofxNatron.h
-    // extension 13): HostSupport then declares kNatronOfxInteractPropKeyModifiers on the interact
-    // inArgs and on the effect instances, so this must be set before any instance is created.
-    _properties.setIntProperty(kNatronOfxHostPropInteractKeyModifiers, 1);
+    // keyboard modifiers in the interact actions (ofxNatron.h extension 13): HostSupport then
+    // declares kNatronOfxInteractPropKeyModifiers in the inArgs of the actions of the interacts
+    // whose supportsKeyModifiers() returns true (OfxOverlayInteract).
+    _properties.setIntProperty(kNatronOfxInteractHostPropSupportsKeyModifiers, 1);
 
     // interact cursors (NatronGitHub/openfx#4): the CSS cursor names Natron can display,
     // plus custom PNG cursors from the plug-in resources
@@ -355,6 +355,35 @@ OfxHost::setProperties()
     }
 #endif
 } // OfxHost::setProperties
+
+PluginOpenGLRenderSupport
+OfxHost::applyCPURenderSupport(PluginOpenGLRenderSupport openGLSupport,
+                               const OFX::Host::Property::Set& effectProps)
+{
+    // HostSupport declares kOfxImageEffectPropCPURenderSupported on every descriptor, and so on every
+    // instance, with its spec default "true". Natron can't render with CUDA, Metal or OpenCL, so a
+    // plug-in that supports neither the CPU nor OpenGL keeps ePluginOpenGLRenderSupportNone.
+    if ( (openGLSupport == ePluginOpenGLRenderSupportYes) &&
+         (effectProps.getStringProperty(kOfxImageEffectPropCPURenderSupported) == "false") ) {
+        return ePluginOpenGLRenderSupportNeeded;
+    }
+
+    return openGLSupport;
+}
+
+bool
+OfxHost::isPluginDeprecated(const OFX::Host::Property::Set& descriptorProps)
+{
+    // kOfxImageEffectPluginPropObsolete: "available for use in old projects but not offered to users for
+    // new use", which is what Natron does with deprecated plug-ins (see Plugin::getIsUserCreatable()).
+    // Both properties are declared, with a default of 0, on every HostSupport descriptor, including the
+    // ones loaded from the plug-in cache.
+    return ( descriptorProps.getIntProperty(kOfxImageEffectPluginPropObsolete) != 0
+#ifdef OFX_EXTENSIONS_NATRON
+             || descriptorProps.getIntProperty(kNatronOfxImageEffectPropDeprecated) != 0
+#endif
+             );
+}
 
 static
 Settings::KnownHostNameEnum
@@ -844,6 +873,8 @@ getPluginShortcuts(const OFX::Host::ImageEffect::Descriptor& desc, std::list<Plu
     }
 }
 
+#ifndef QT_NO_DEBUG_OUTPUT
+// used by qDebug() below (with QT_NO_DEBUG_OUTPUT, qDebug() accepts anything)
 static inline
 QDebug operator<<(QDebug dbg, const std::list<std::string> &l)
 {
@@ -853,6 +884,7 @@ QDebug operator<<(QDebug dbg, const std::list<std::string> &l)
 
     return dbg.space();
 }
+#endif
 
 void
 OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
@@ -1022,7 +1054,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         const std::set<std::string> & contexts = p->getContexts();
         std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
         std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
-        const bool isDeprecated = p->getDescriptor().isDeprecated();
+        const bool isDeprecated = isPluginDeprecated( p->getDescriptor().getProps() );
         Plugin* natronPlugin = appPTR->registerPlugin( resourcesPath,
                                                        groups,
                                                        QString::fromUtf8( openfxId.c_str() ),
@@ -1050,6 +1082,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
                 glSupport = ePluginOpenGLRenderSupportYes;
             }
         }
+        glSupport = applyCPURenderSupport( glSupport, p->getDescriptor().getProps() );
         natronPlugin->setOpenGLRenderSupport(glSupport);
 
         natronPlugin->setOfxPlugin(p);

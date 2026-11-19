@@ -852,7 +852,7 @@ bezierSegmentMeetsPoint(bool useGuiCurves,
     ///the minimum square distance between a decasteljau point an the given (x,y) point
     ///we save a sqrt call
     double sqDistance = distance * distance;
-    double minSqDistance = std::numeric_limits<double>::infinity();
+    double minSqDistance = std::numeric_limits<double>::max();
     double tForMin = -1.;
     // 1/incr = 0.9 -> 2 points   +                + o
     // 1/incr = 1.0 -> 2 points   +                o

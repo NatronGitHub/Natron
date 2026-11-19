@@ -244,6 +244,9 @@ public:
 
     void initGLAPISpecific();
 
+    // If the Wayland/EGL off-screen context failed, switch to X11/GLX. Returns false if not possible.
+    bool fallBackToGLX(const char* reason);
+
     void tearDownGL();
 
     void setViewerCacheTileSize();
