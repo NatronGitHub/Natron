@@ -30,7 +30,11 @@ if build_step && { force_build || { [ ! -d "$SDK_HOME/ffmpeg-gpl2" ] || [ ! -d "
     if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then
         LGPL_SETTINGS+=( "--enable-x86asm" )
     fi
-    GPL_SETTINGS=( "${LGPL_SETTINGS[@]}" "--enable-gpl" "--enable-libx264" "--enable-libx265" "--enable-libxvid" "--enable-version3" )
+    # GPL version 2 or later: no --enable-version3, which would make the binaries GPL 3 (or LGPL 3
+    # for the LGPL build). None of the enabled libraries requires it (configure fails otherwise):
+    # the version3 ones are gmp, libaribb24, liblensfun, libopencore-amr*, libvmaf, libvo-amrwbenc,
+    # mbedtls, rkmpp, and libsmbclient (GPL 3).
+    GPL_SETTINGS=( "${LGPL_SETTINGS[@]}" "--enable-gpl" "--enable-libx264" "--enable-libx265" "--enable-libxvid" )
 
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME/ffmpeg-gpl2" --libdir="$SDK_HOME/ffmpeg-gpl2/lib" --enable-shared --disable-static "${GPL_SETTINGS[@]}"
     make -j${MKJOBS}
