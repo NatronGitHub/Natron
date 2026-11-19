@@ -42,13 +42,14 @@ NATRON_NAMESPACE_USING
 TEST(OfxTestPlugin, CreateAndDestroyInstance)
 {
     const char* pluginIDs[] = {
-        kNatronTestPluginParamInteract, kNatronTestPluginSingleInstance, kNatronTestPluginSyncPrivateData
+        kNatronTestPluginParamInteract, kNatronTestPluginSingleInstance, kNatronTestPluginSyncPrivateData,
+        kNatronTestPluginParams
     };
     const char* counterPrefixes[] = {
-        "ParamInteract", "SingleInstance", "SyncPrivateData"
+        "ParamInteract", "SingleInstance", "SyncPrivateData", "Params"
     };
 
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 4; ++i) {
         if ( !NatronTestPlugin::isAvailable(pluginIDs[i]) ) {
             NatronTestPlugin::reportSkipped(pluginIDs[i]);
 
