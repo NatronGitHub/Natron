@@ -131,7 +131,7 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - I17
      - `ofxInteract.h:236-238 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxInteract.h#L236-L238>`__ / `ofxInteracts.rst:85 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxInteracts.rst?plain=1#L85>`__ "If this is called via ...OverlayInteractV2, drawing MUST use DrawSuite"; V1 SHOULD use OpenGL
      - MUST (host side: choose entry)
-     - HS ``Base::getOverlayInteractMainEntry`` uses V2 only if ``gImageEffectHost->supportsDrawSuite()`` (ofxhIE:278-301). RB-2.6 Natron does not override ``supportsDrawSuite`` (default false, ofxhIE:4792-4795), so V1 is used, a V2-only plug-in gets no overlay, and fetchSuite(kOfxDrawSuite) returns NULL (ofxhIE:4833-4836). Consistent: Natron does not claim DrawSuite. See section 3 for `#1349 <https://github.com/NatronGitHub/Natron/issues/1349>`__.
+     - HS ``Base::getOverlayInteractMainEntry`` uses V2 only if ``gImageEffectHost->supportsDrawSuite()`` (ofxhIE:278-301). RB-2.6 Natron does not override ``supportsDrawSuite`` (default false, ofxhIE:4792-4795), so V1 is used, a V2-only plug-in gets no overlay, and fetchSuite(kOfxDrawSuite) returns NULL (ofxhIE:4833-4836). Consistent: Natron does not claim DrawSuite. See section 3 for `#1349 <https://github.com/NatronGitHub/Natron/pull/1349>`__.
      - OK (DrawSuite not supported; `#1103 <https://github.com/NatronGitHub/Natron/issues/1103>`__/#1136)
    * - I18
      - `ofxInteract.h:240-242 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxInteract.h#L240-L242>`__, `ofxInteracts.rst:97-100 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxInteracts.rst?plain=1#L97-L100>`__ overlays must not swap buffers; `ofxInteracts.rst:142-144 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxInteracts.rst?plain=1#L142-L144>`__ "A parameter's interact draw function will have full responsibility for ... swapping buffers"
@@ -244,7 +244,7 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
      - V2 not used in RB-2.6 (I17).
      - N/A
 
-3. What PR `#1349 <https://github.com/NatronGitHub/Natron/issues/1349>`__ changes (open, head ``ofx15-draw-suite``)
+3. What PR `#1349 <https://github.com/NatronGitHub/Natron/pull/1349>`__ changes (open, head ``ofx15-draw-suite``)
 -------------------------------------------------------------------------------------------------------------------
 
 - ``OfxHost::supportsDrawSuite()`` returns true (Engine/OfxHost.h), so fetchSuite(kOfxDrawSuite,1) succeeds and V2 overlays are used, V2 preferred when a plug-in has both (Tests/OfxDrawSuite_Test.cpp ``OverlayEntryPoint``). Closes I17/D1 (`#1103 <https://github.com/NatronGitHub/Natron/issues/1103>`__, `#1136 <https://github.com/NatronGitHub/Natron/issues/1136>`__).
@@ -263,7 +263,7 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
 
   - drawText: host font, alignment flags incl. CenterH (Left\|Right) and CenterV (Top\|Baseline). **The colour's alpha is ignored** (``renderText(..., r, g, b, 0)``), although "Sets the colour for future drawing operations (lines, filled shapes and text) ... The host should use "over" compositing when using a non-opaque colour" (`ofxDrawSuite.h:99-104 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxDrawSuite.h#L99-L104>`__). PARTIAL. Returns kOfxStatFailed if the viewport can't draw text.
 
-- Not changed by `#1349 <https://github.com/NatronGitHub/Natron/issues/1349>`__: I6, I7, I13, I16, I18-I24, I28, I29 (it only adds DrawSuite hooks and the descent helper).
+- Not changed by `#1349 <https://github.com/NatronGitHub/Natron/pull/1349>`__: I6, I7, I13, I16, I18-I24, I28, I29 (it only adds DrawSuite hooks and the descent helper).
 
 4. ofxGPURender.h
 -----------------
@@ -580,14 +580,14 @@ Spec-only
 
 23. **K11 MISSING (MAY): OfxSetHost is never called** by HostSupport/Natron. `#1107 <https://github.com/NatronGitHub/Natron/issues/1107>`__. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
-24. `#1349 <https://github.com/NatronGitHub/Natron/issues/1349>`__ **PARTIAL: DrawSuite drawText ignores the colour's alpha** (``renderText(..., 0)`` in Engine/OfxDrawSuiteGL.cpp, PR only). Tracked in `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__ until `#1349 <https://github.com/NatronGitHub/Natron/issues/1349>`__ is merged. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+24. `#1349 <https://github.com/NatronGitHub/Natron/pull/1349>`__ **PARTIAL: DrawSuite drawText ignores the colour's alpha** (``renderText(..., 0)`` in Engine/OfxDrawSuiteGL.cpp, PR only). Tracked in `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__ until `#1349 <https://github.com/NatronGitHub/Natron/pull/1349>`__ is merged. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
 NEXT items met: kOfxImageEffectPropMetalTextureSupported, Win-arm64ec folder, kOfxInteractPropKeyModifiers (OFX 1.6, under ``#ifdef``), the interact cursor extension (NatronGitHub/openfx#4, Natron extension).
 
 Verdict counts
 --------------
 
-Over the 72 table rows (sections 1, 2, 4, 5, 6; the `#1349 <https://github.com/NatronGitHub/Natron/issues/1349>`__ section is counted separately):
+Over the 72 table rows (sections 1, 2, 4, 5, 6; the `#1349 <https://github.com/NatronGitHub/Natron/pull/1349>`__ section is counted separately):
 
 .. list-table::
    :header-rows: 1
@@ -607,4 +607,4 @@ Over the 72 table rows (sections 1, 2, 4, 5, 6; the `#1349 <https://github.com/N
    * - N/A
      - 8
 
-`#1349 <https://github.com/NatronGitHub/Natron/issues/1349>`__: 1 PARTIAL (drawText alpha); it resolves I17/D1 (DrawSuite and OverlayInteractV2 supported), and fixes none of the other problems.
+`#1349 <https://github.com/NatronGitHub/Natron/pull/1349>`__: 1 PARTIAL (drawText alpha); it resolves I17/D1 (DrawSuite and OverlayInteractV2 supported), and fixes none of the other problems.

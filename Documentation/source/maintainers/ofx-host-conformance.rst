@@ -80,9 +80,11 @@ Keeping these pages up to date
 
 - **When an issue is fixed**, change the verdict of its rows on the area page
   (for example "OK (fixed by #NNNN)", with a link to the pull request), add the
-  same note to its entry in the Problems list of that page, update the counts
-  below, and remove the issue from the open problems list on this page. For an
-  item of #1385, also tick its box in the issue.
+  same note to its entry in the Problems list of that page, and remove the
+  issue from the open problems list on this page. Update the counts in both
+  places: the Summary table below, and the area page's own counts section
+  ("Verdict counts", or "Counts" on the parameters page; the core page has
+  none). For an item of #1385, also tick its box in the issue.
 - **Line numbers** in the code references are those of the audited commits
   (Natron 7dea437a6, HostSupport 93c21ed7); they are not updated when the code
   moves. When you re-check a row, update its code references and say at which
