@@ -410,6 +410,7 @@ step_build() {
         GIT_URL=https://github.com/NatronGitHub/Natron.git GIT_BRANCH="${GIT_BRANCH:-RB-2.6}" \
         UNIT_TESTS="${UNIT_TESTS:-false}" BUILD_NAME=natron_github_RB2 BUILD_NUMBER=1 \
         COMPILE_TYPE=release MKJOBS="$JOBS" \
+        NATRON_BUILD_SYSTEM="${NATRON_BUILD_SYSTEM:-cmake}" NATRON_EXTRA_CMAKE_FLAGS="${NATRON_EXTRA_CMAKE_FLAGS:-}" \
         ./launchBuildMain.sh
     # launchBuildMain.sh can exit 0 after a failed sub-step: require the DMG
     ls -l "$WORKSPACE/builds_archive/natron_github_RB2/1/"

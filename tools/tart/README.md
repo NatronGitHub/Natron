@@ -44,7 +44,10 @@ Before `update`, reintegrate upstream MacPorts changes into the overlay on the h
 ```sh
 tools/tart/natron-build.sh                 # RB-2.6, release, no tests
 tools/tart/natron-build.sh -b RB-2.6 -t    # also run the unit/regression tests
+tools/tart/natron-build.sh -s qmake        # build Natron with the deprecated qmake build
 ```
+
+Natron is built with CMake (`NATRON_BUILD_SYSTEM=cmake`, see `tools/jenkins/build-natron.sh`); `NATRON_EXTRA_CMAKE_FLAGS` in the environment is passed on to it.
 
 Each build runs in a fresh clone of the SDK image. Clones are copy-on-write, so they are fast and small. The clone is deleted afterwards (`-k` keeps it). The results (`.dmg`, test results, logs) are copied to `./natron-builds/<vm-name>/`.
 

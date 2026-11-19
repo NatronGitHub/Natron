@@ -191,7 +191,11 @@ The following options can be passed to `launchBuildMain.sh` as environment varia
 
 `NATRON_BUILD_NUMBER`: When doing a release this is the number of the release (if doing a rebuild).
 
-`NATRON_EXTRA_QMAKE_FLAGS`: Optional qmake flags to pass when building Natron.
+`NATRON_BUILD_SYSTEM`: `cmake` (the default) or `qmake`. The qmake build is deprecated and is kept on RB-2.6 as a fallback until the CMake-built installers are shown to be equivalent (#1181). The CMake build has no crash reporter yet (#1183), so it implies `DISABLE_BREAKPAD=1`.
+
+`NATRON_EXTRA_CMAKE_FLAGS`: Optional cmake flags to pass when building Natron with CMake, separated by spaces, e.g. `-DNATRON_FAST_MATH=ON`. The options are listed in `Documentation/source/maintainers/building.rst`.
+
+`NATRON_EXTRA_QMAKE_FLAGS`: Optional qmake flags to pass when building Natron with qmake.
 
 `BUILD_NAME`: Set this to label the project build. On the slave, the build artifacts are stored for some amount of time in `$WORKSPACE/builds_archive/$BUILD_NAME/$BUILD_NUMBER`.
 
