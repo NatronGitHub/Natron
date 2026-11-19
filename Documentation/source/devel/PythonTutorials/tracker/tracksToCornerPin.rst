@@ -97,3 +97,10 @@ of match-moving.
 With two tracks or more, the rotation and scale can be computed too; the
 simplest way is then to let the Tracker node compute the transform and to use
 its *Export* button.
+
+See also
+--------
+
+- :doc:`/guide/compositing-transform`: the Transform and CornerPin nodes.
+- :doc:`/guide/compositing-tracking`: exporting a CornerPin or a Transform
+  from the Tracker node without Python.

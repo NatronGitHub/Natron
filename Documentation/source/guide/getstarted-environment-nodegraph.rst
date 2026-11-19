@@ -146,3 +146,9 @@ A common  convention is:
   name, so Natron gives a new name to the nodes you copy.
 
 For more about nodes, see :doc:`getstarted-environment-nodes`.
+
+See also
+--------
+
+- :ref:`evaluating-script-structure`: common bad practices that make a project
+  hard to read, fix or hand over.

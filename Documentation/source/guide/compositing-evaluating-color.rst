@@ -108,3 +108,9 @@ Further reading
 on the archived Optical Enquiry Nuke wiki, describes the equivalent tools of
 Nuke: the Pixel Analyzer and the scopes are panels there, and Nuke's CurveTool
 does what the ImageStatistics node does in Natron.
+
+See also
+--------
+
+- :doc:`tutorials-hsvtool`: picking a source color and adjusting HSVTool
+  ranges while viewing the alpha channel.

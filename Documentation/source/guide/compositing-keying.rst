@@ -186,3 +186,12 @@ but most of the advice applies to Natron:
   <https://web.archive.org/web/20211023071843/http://opticalenquiry.com/nuke/index.php?title=Keying_Tips>`__
 - `Combining Alphas
   <https://web.archive.org/web/20200813104439/http://www.opticalenquiry.com/nuke/index.php?title=Combining_Alphas>`__
+
+See also
+--------
+
+- :doc:`tutorials-keying`: step-by-step keying and despill tutorials.
+- :doc:`tutorials-AlternativeMatteExtraction`: turning the spill maps of the
+  despill nodes into mattes.
+- :doc:`tutorials-hsvtool`: using HSVTool as a keyer, from a range of hues,
+  saturations and brightnesses.

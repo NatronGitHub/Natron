@@ -149,6 +149,12 @@ effect, for precise color effects.
    lower the saturation (``sat``) or the suppression curves (``r_sup``,
    ``g_sup``, ``b_sup``) of HueCorrect for the hue of the fringes.
 
+See also
+--------
+
+- :doc:`compositing-keying`: the other keyer nodes, and how to combine mattes.
+- :doc:`compositing-color`: the color correction nodes, including HueCorrect.
+
 Image credits
 -------------
 

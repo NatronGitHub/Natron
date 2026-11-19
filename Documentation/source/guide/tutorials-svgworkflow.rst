@@ -116,3 +116,11 @@ nodes.
 
 Plan the drawing before you start: give the layers, groups and paths
 consistent, meaningful names, so that they are easy to find in Natron.
+
+See also
+--------
+
+- :doc:`compositing-channels`: viewing layers and moving channels with
+  Shuffle.
+- :doc:`compositing-projects-readers`: the file formats that Natron reads, and
+  their layers.

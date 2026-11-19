@@ -344,3 +344,10 @@ Exchanging files with other applications
     the applications to the same file. For single files, putting the
     colorspace name right before the extension lets every application pick the
     right colorspace.
+
+See also
+########
+
+- :ref:`tutorials-ffmpeg-di`: colorspace and bit depth of digital
+  intermediates.
+- :ref:`tutorials-ffmpeg-hevc`: color metadata and HDR10 in HEVC files.

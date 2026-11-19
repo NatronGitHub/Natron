@@ -29,3 +29,10 @@ of Despill, lp_ChillSpill and ColorSuppress into mattes.
    tutorials-keying-multipass
    tutorials-keying-despill
    tutorials-keying-colorlookup
+
+See also
+--------
+
+- :doc:`compositing-keying`: the keyer nodes, combining mattes, and removing
+  spill.
+- :doc:`compositing-channels`: alpha, mattes and premultiplication.

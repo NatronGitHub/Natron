@@ -147,3 +147,11 @@ The image is converted from **File Colorspace** to **Output Colorspace**.
 
 See :doc:`The readers <compositing-projects-readers>` section for more
 information.
+
+See also
+--------
+
+- :ref:`tutorials-imagesequence`: converting videos to image sequences before
+  reading them.
+- :ref:`tutorials-ffmpeg-di`: converting digital intermediates back to images
+  for Natron.
