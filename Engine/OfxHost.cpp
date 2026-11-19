@@ -155,7 +155,7 @@ struct OfxHostPrivate
     std::shared_ptr<TLSHolder<OfxHost::OfxHostTLSData> > tlsData;
 
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-    std::list<QMutex*> pluginsMutexes;
+    std::list<QRecursiveMutex*> pluginsMutexes;
     QMutex* pluginsMutexesLock; //<protects _pluginsMutexes
 #endif
     std::string loadingPluginID; // ID of the plugin being loaded
@@ -1609,17 +1609,18 @@ OfxHost::mutexDestroy(const OfxMutexHandle mutex)
     // suite functions should not throw
     try {
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-        const QMutex* mutexqt = reinterpret_cast<const QMutex*>(mutex);
+        const QRecursiveMutex* mutexqt = reinterpret_cast<const QRecursiveMutex*>(mutex);
         {
             QMutexLocker l(_pluginsMutexesLock);
-            std::list<QMutex*>::iterator found = std::find(_pluginsMutexes.begin(), _pluginsMutexes.end(), mutexqt);
+            std::list<QRecursiveMutex*>::iterator found = std::find(_pluginsMutexes.begin(), _pluginsMutexes.end(), mutexqt);
             if ( found != _pluginsMutexes.end() ) {
                 delete *found;
                 _pluginsMutexes.erase(found);
             }
         }
 #else
-        delete reinterpret_cast<const QMutex*>(mutex);
+        // mutexCreate() allocates a QRecursiveMutex: delete it as one (in Qt6 it does not derive from QMutex)
+        delete reinterpret_cast<const QRecursiveMutex*>(mutex);
 #endif
 
         return kOfxStatOK;
@@ -1650,7 +1651,7 @@ OfxHost::mutexLock(const OfxMutexHandle mutex)
     }
     // suite functions should not throw
     try {
-        reinterpret_cast<QMutex*>(mutex)->lock();
+        reinterpret_cast<QRecursiveMutex*>(mutex)->lock();
 
         return kOfxStatOK;
     } catch (std::bad_alloc&) {
@@ -1679,7 +1680,7 @@ OfxHost::mutexUnLock(const OfxMutexHandle mutex)
     }
     // suite functions should not throw
     try {
-        reinterpret_cast<QMutex*>(mutex)->unlock();
+        reinterpret_cast<QRecursiveMutex*>(mutex)->unlock();
 
         return kOfxStatOK;
     } catch (std::bad_alloc&) {
@@ -1709,7 +1710,7 @@ OfxHost::mutexTryLock(const OfxMutexHandle mutex)
     }
     // suite functions should not throw
     try {
-        if ( reinterpret_cast<QMutex*>(mutex)->tryLock() ) {
+        if ( reinterpret_cast<QRecursiveMutex*>(mutex)->tryLock() ) {
             return kOfxStatOK;
         } else {
             return kOfxStatFailed;
