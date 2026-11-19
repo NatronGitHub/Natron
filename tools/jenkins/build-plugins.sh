@@ -663,8 +663,9 @@ if [ "$BUILD_GMIC" = "1" ] && [ -d "$TMP_PATH/openfx-gmic" ]; then
         # The CMake build downloads the G'MIC sources (from each mirror in turn, checking their
         # sha256) into GMIC_DOWNLOAD_DIR: the download cache $SRC_PATH, which outlives the
         # openfx-gmic checkout, so a tarball already there is not downloaded again.
-        # OFX_LICENSE=COMMERCIAL (ofx_cmake_build) gives pocketfft instead of FFTW, and only the
-        # G'MIC filters under CeCILL-C.
+        # FFT=pocketfft (BSD-3-Clause, the default since openfx-gmic#94) for both licences: the
+        # Natron SDKs don't provide FFTW (GPL). OFX_LICENSE=COMMERCIAL (ofx_cmake_build) also
+        # keeps only the G'MIC filters under CeCILL-C.
         gmic_download_dir="$SRC_PATH"
         mkdir -p "$gmic_download_dir"
         if [ "$PKGOS" = "Windows" ]; then
@@ -676,7 +677,7 @@ if [ "$BUILD_GMIC" = "1" ] && [ -d "$TMP_PATH/openfx-gmic" ]; then
             # (the --param options are gcc's)
             gmic_cxxflags_extra="$GMIC_CXXFLAGS_EXTRA ${CXXFLAGS_EXTRA}"
         fi
-        gmic_args=(-DGMIC_DOWNLOAD_DIR="$gmic_download_dir")
+        gmic_args=(-DGMIC_DOWNLOAD_DIR="$gmic_download_dir" -DFFT=pocketfft)
         if [ "$PKGOS" = "Linux" ] && grep -q 'GMIC_STATIC_DEPS' CMakeLists.txt; then
             # link the SDK's shared zlib and libpng: GMIC_STATIC_DEPS (default ON on Linux) needs
             # static archives built with -fPIC, which the Natron SDK doesn't provide
@@ -729,10 +730,10 @@ if [ "$BUILD_GMIC" = "1" ] && [ -d "$TMP_PATH/openfx-gmic" ]; then
             fi
         fi
 
-        if [ "$NATRON_LICENSE" = "COMMERCIAL" ] && [ ! -f license.mk ]; then
-            # An openfx-gmic without license.mk ignores LICENSE= and links FFTW (GPL), whose DLLs
-            # the COMMERCIAL Windows installer leaves out (genDllVersions.sh).
-            echo "Error: this openfx-gmic has no license.mk, so its Makefiles can't make a COMMERCIAL build (it would link FFTW, which is GPL): use a newer openfx-gmic"
+        if [ ! -f license.mk ]; then
+            # An openfx-gmic without license.mk ignores LICENSE= and FFT= and links FFTW (GPL),
+            # which the Natron SDKs no longer provide: FFT=pocketfft below needs license.mk.
+            echo "Error: this openfx-gmic has no license.mk, so its Makefiles can't use pocketfft (they would link FFTW, which the Natron SDKs don't provide): use a newer openfx-gmic"
             exit 1
         fi
         echo "Info: build openfx-gmic using make..."
@@ -749,6 +750,7 @@ if [ "$BUILD_GMIC" = "1" ] && [ -d "$TMP_PATH/openfx-gmic" ]; then
                 LDFLAGS_ADD="${BUILDID:-} -static-libgcc" \
                 OPENMP=1 \
                 LICENSE="$NATRON_LICENSE" \
+                FFT=pocketfft \
                 CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA ${CXXFLAGS_EXTRA}" \
                 make -j"${GMIC_MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
         else
@@ -761,6 +763,7 @@ if [ "$BUILD_GMIC" = "1" ] && [ -d "$TMP_PATH/openfx-gmic" ]; then
                 LDFLAGS_ADD="${BUILDID:-}" \
                 ${OMP} \
                 LICENSE="$NATRON_LICENSE" \
+                FFT=pocketfft \
                 CXXFLAGS_EXTRA="$GMIC_CXXFLAGS_EXTRA ${CXXFLAGS_EXTRA}" \
                 make -j"${GMIC_MKJOBS}" ${MAKEFLAGS_VERBOSE:-}
         fi

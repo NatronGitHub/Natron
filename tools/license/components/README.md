@@ -89,8 +89,7 @@ Natron binaries include components from the following libraries:
 
 * G'MIC (CeCILL-C, LGPL-like) http://gmic.eu/
 * CImg (CeCILL-C, LGPL-like) http://cimg.eu/
-* FFTW (GPLv2) http://www.fftw.org/ (GPL builds only)
-* pocketfft (3-clause BSD) https://github.com/mreineck/pocketfft (COMMERCIAL builds, instead of FFTW)
+* pocketfft (3-clause BSD) https://github.com/mreineck/pocketfft
 
 ## Indirect dependencies
 

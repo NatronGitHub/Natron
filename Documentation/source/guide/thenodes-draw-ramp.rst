@@ -6,16 +6,21 @@ Ramp Node
 
 
         
-Ramp is what grown-ups call a gradient. The Ramp node of Natron give a butter-smooth gradient that is best used to mask off color operations.
+The Ramp node draws a linear gradient between two points. It is often used as a mask for color corrections.
     
 .. image:: _images/TheNodes-Draw/nodes_draw_ramp01.jpg
     
 Usage
 -----
     
-The End colors can be changed. And the end positions can be moved in the viewer with the point 0 / Point 1 widgets visible in the viewer when the properties of the node are opened.
+**Color 0** and **Color 1** are the colors at the two ends. While the node's
+properties are open, drag the **Point 0** and **Point 1** handles in the Viewer
+to move the ends.
 
-The Ramp type allows different types of transitions. The gradient is always linear. The colorwheel node can be changed to become a radial gradient.
+**Ramp Type** sets how the color changes between the two points: **Linear**,
+**PLinear** (perceptually linear), **Ease-in**, **Ease-out**, **Smooth**, or
+**None**. The gradient always follows a straight line; for a radial gradient,
+use the Radial node.
 
 .. toctree::
     :maxdepth: 2

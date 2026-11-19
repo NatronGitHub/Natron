@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _DoubleParam:
 
 DoubleParam
@@ -66,11 +66,11 @@ Member functions description
 
 
 
-.. method:: NatronEngine.DoubleParam.get(frame)
+.. method:: DoubleParam.get(frame)
 
 
-    :param frame: :class:`float<PySide.QtCore.float>`
-    :rtype: :class:`float<PySide.QtCore.double>`
+    :param frame: :class:`float`
+    :rtype: :class:`float`
 
 Returns the value of this parameter at the given *frame*. If the animation curve has an
 animation (see :func:`getIsAnimated(dimension)<NatronEngine.AnimatedParam.getIsAnimated>` then the
@@ -79,20 +79,21 @@ value will be interpolated using the *interpolation* chosen by the user for the 
 
 
 
-.. method:: NatronEngine.DoubleParam.get()
+.. method:: DoubleParam.get()
+    :noindex:
 
 
-    :rtype: :class:`float<PySide.QtCore.double>`
+    :rtype: :class:`float`
 
 Returns the value of this parameter at the given current timeline's time.
 
 
 
-.. method:: NatronEngine.DoubleParam.getDefaultValue([dimension=0])
+.. method:: DoubleParam.getDefaultValue([dimension=0])
 
 
-    :param dimension: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`float<PySide.QtCore.double>`
+    :param dimension: :class:`int`
+    :rtype: :class:`float`
 
 Returns the default value for this parameter. *dimension* is meaningless for the DoubleParam
 class because it is 1-dimensional, but is useful for inherited classes :doc:`Double2DParam`
@@ -101,11 +102,11 @@ and :doc:`Double3DParam`
 
 
 
-.. method:: NatronEngine.DoubleParam.getDisplayMaximum(dimension)
+.. method:: DoubleParam.getDisplayMaximum(dimension)
 
 
-    :param dimension: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`double<PySide.QtCore.double>`
+    :param dimension: :class:`int`
+    :rtype: :class:`float`
 
 Returns the display maximum for this parameter at the given *dimension*.
 The display maximum is the maximum value visible on the slider, internally the value
@@ -114,11 +115,11 @@ can exceed this range.
 
 
 
-.. method:: NatronEngine.DoubleParam.getDisplayMinimum(dimension)
+.. method:: DoubleParam.getDisplayMinimum(dimension)
 
 
-    :param dimension: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`float<PySide.QtCore.double>`
+    :param dimension: :class:`int`
+    :rtype: :class:`float`
 
 
 Returns the display minimum for this parameter at the given *dimension*.
@@ -127,11 +128,11 @@ can exceed this range.
 
 
 
-.. method:: NatronEngine.DoubleParam.getMaximum([dimension=0])
+.. method:: DoubleParam.getMaximum([dimension=0])
 
 
-    :param dimension: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`float<PySide.QtCore.double>`
+    :param dimension: :class:`int`
+    :rtype: :class:`float`
 
 
 Returns the maximum for this parameter at the given *dimension*.
@@ -139,11 +140,11 @@ The maximum value cannot be exceeded and any higher value will be clamped to thi
 
 
 
-.. method:: NatronEngine.DoubleParam.getMinimum([dimension=0])
+.. method:: DoubleParam.getMinimum([dimension=0])
 
 
-    :param dimension: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`float<PySide.QtCore.double>`
+    :param dimension: :class:`int`
+    :rtype: :class:`float`
 
 
 
@@ -151,23 +152,23 @@ Returns the minimum for this parameter at the given *dimension*.
 The minimum value cannot be exceeded and any lower value will be clamped to this value.
 
 
-.. method:: NatronEngine.DoubleParam.getValue([dimension=0])
+.. method:: DoubleParam.getValue([dimension=0])
 
 
-    :param dimension: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`float<PySide.QtCore.double>`
+    :param dimension: :class:`int`
+    :rtype: :class:`float`
 
 
 Returns the value of this parameter at the given *dimension* at the current timeline's time.
 
 
 
-.. method:: NatronEngine.DoubleParam.getValueAtTime(time[, dimension=0])
+.. method:: DoubleParam.getValueAtTime(time[, dimension=0])
 
 
-    :param time: :class:`float<PySide.QtCore.float>`
-    :param dimension: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`float<PySide.QtCore.double>`
+    :param time: :class:`float`
+    :param dimension: :class:`int`
+    :rtype: :class:`float`
 
 
 Returns the value of this parameter at the given *dimension* at the given *time*.
@@ -178,10 +179,10 @@ value will be interpolated using the *interpolation* chosen by the user for the 
 
 
 
-.. method:: NatronEngine.DoubleParam.restoreDefaultValue([dimension=0])
+.. method:: DoubleParam.restoreDefaultValue([dimension=0])
 
 
-    :param dimension: :class:`int<PySide.QtCore.int>`
+    :param dimension: :class:`int`
 
 
 Returns the value of this parameter at the given *dimension* at the given *time*.
@@ -189,11 +190,11 @@ Returns the value of this parameter at the given *dimension* at the given *time*
 
 
 
-.. method:: NatronEngine.DoubleParam.set(x, frame)
+.. method:: DoubleParam.set(x, frame)
 
 
-    :param x: :class:`float<PySide.QtCore.double>`
-    :param frame: :class:`float<PySide.QtCore.float>`
+    :param x: :class:`float`
+    :param frame: :class:`float`
 
 
 Set a new keyframe on the parameter with the value *x* at the given *frame*.
@@ -201,10 +202,11 @@ Set a new keyframe on the parameter with the value *x* at the given *frame*.
 
 
 
-.. method:: NatronEngine.DoubleParam.set(x)
+.. method:: DoubleParam.set(x)
+    :noindex:
 
 
-    :param x: :class:`float<PySide.QtCore.double>`
+    :param x: :class:`float`
 
 Set the value of this parameter to be *x*.
 If this parameter is animated (see :func:`getIsAnimated(dimension)<NatronEngine.AnimatedParam.getIsAnimated>`
@@ -213,11 +215,11 @@ then this function will automatically add a keyframe at the timeline's current t
 
 
 
-.. method:: NatronEngine.DoubleParam.setDefaultValue(value[, dimension=0])
+.. method:: DoubleParam.setDefaultValue(value[, dimension=0])
 
 
-    :param value: :class:`float<PySide.QtCore.double>`
-    :param dimension: :class:`int<PySide.QtCore.int>`
+    :param value: :class:`float`
+    :param dimension: :class:`int`
 
 Set the default *value* for this parameter at the given *dimension*.
 
@@ -225,11 +227,11 @@ Set the default *value* for this parameter at the given *dimension*.
 
 
 
-.. method:: NatronEngine.DoubleParam.setDisplayMaximum(maximum[, dimension=0])
+.. method:: DoubleParam.setDisplayMaximum(maximum[, dimension=0])
 
 
-    :param maximum: :class:`float<PySide.QtCore.double>`
-    :param dimension: :class:`int<PySide.QtCore.int>`
+    :param maximum: :class:`float`
+    :param dimension: :class:`int`
 
 Set the display maximum of the parameter to be *maximum* for the given *dimension*.
 See :func:`getDisplayMaximum<Natron.DoubleParam.getDisplayMaximum>`
@@ -237,11 +239,11 @@ See :func:`getDisplayMaximum<Natron.DoubleParam.getDisplayMaximum>`
 
 
 
-.. method:: NatronEngine.DoubleParam.setDisplayMinimum(minimum[, dimension=0])
+.. method:: DoubleParam.setDisplayMinimum(minimum[, dimension=0])
 
 
-    :param minimum: :class:`float<PySide.QtCore.double>`
-    :param dimension: :class:`int<PySide.QtCore.int>`
+    :param minimum: :class:`float`
+    :param dimension: :class:`int`
 
 
 Set the display minimum of the parameter to be *minmum* for the given *dimension*.
@@ -249,11 +251,11 @@ See :func:`getDisplayMinimum<Natron.DoubleParam.getDisplayMinimum>`
 
 
 
-.. method:: NatronEngine.DoubleParam.setMaximum(maximum[, dimension=0])
+.. method:: DoubleParam.setMaximum(maximum[, dimension=0])
 
 
-    :param maximum: :class:`float<PySide.QtCore.double>`
-    :param dimension: :class:`int<PySide.QtCore.int>`
+    :param maximum: :class:`float`
+    :param dimension: :class:`int`
 
 Set the maximum of the parameter to be *maximum* for the given *dimension*.
 See :func:`getMaximum<Natron.DoubleParam.getMaximum>`
@@ -261,11 +263,11 @@ See :func:`getMaximum<Natron.DoubleParam.getMaximum>`
 
 
 
-.. method:: NatronEngine.DoubleParam.setMinimum(minimum[, dimension=0])
+.. method:: DoubleParam.setMinimum(minimum[, dimension=0])
 
 
-    :param minimum: :class:`float<PySide.QtCore.double>`
-    :param dimension: :class:`int<PySide.QtCore.int<`
+    :param minimum: :class:`float`
+    :param dimension: :class:`int`
 
 
 
@@ -273,23 +275,23 @@ Set the minimum of the parameter to be *minimum* for the given *dimension*.
 See :func:`getMinimum<Natron.DoubleParam.getMinimum>`
 
 
-.. method:: NatronEngine.DoubleParam.setValue(value[, dimension=0])
+.. method:: DoubleParam.setValue(value[, dimension=0])
 
 
-    :param value: :class:`float<PySide.QtCore.double>`
-    :param dimension: :class:`int<PySide.QtCore.int>`
+    :param value: :class:`float`
+    :param dimension: :class:`int`
 
 Same as :func:`set(value,dimension)<NatronEngine.DoubleParam.set>`
 
 
 
 
-.. method:: NatronEngine.DoubleParam.setValueAtTime(value, time[, dimension=0])
+.. method:: DoubleParam.setValueAtTime(value, time[, dimension=0])
 
 
-    :param value: :class:`float<PySide.QtCore.double>`
-    :param time: :class:`float<PySide.QtCore.float>`
-    :param dimension: :class:`int<PySide.QtCore.int>`
+    :param value: :class:`float`
+    :param time: :class:`float`
+    :param dimension: :class:`int`
 
 Same as :func:`set(value,time,dimension)<NatronEngine.DoubleParam.set>`
 

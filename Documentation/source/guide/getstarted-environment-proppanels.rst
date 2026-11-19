@@ -4,109 +4,123 @@
 Properties panels
 =================
 
-.. toctree::
-   :maxdepth: 2
-
-Here you can interact with the node properties to fine tune the effect on the image. As in the rest of Natron all changes are non destructive and can be modified at any time. 
+The properties panel shows the parameters of a node. Double-click a node in
+the Node Graph, or select it and press :kbd:`Return`, to open its panel. As in
+the rest of Natron, all changes are non-destructive: you can change any
+parameter at any time.
 
 .. image:: _images/proppanel_blur_02.png
 
-The elements of the properties panel are:
- - 1 Maximum number nodes opened in the properties window
- - 2 icon of the node to identify it's type. Most useful when the name has been changed. Hovering the icon popups the node type in plain text
- - 3 icon of the presets / user menu :ref:`Presets_menu`
- - 4 icon of the center in node graph. When you click this the view in the node graph is moved to center the node on screen
- - 5 Node name This can be changed but it is good to keep this name to easily tell the type of a node and keep syntax short, should you reference this node in an expression. For more verbosity the node "label" field gives more freedom.
- - 6 Node parameter tabs. The parameters of a node are spread across several tabs. The controls, Node, Info tabs are present in most nodes but others can sometimes be found too. You can even add tabs through
- - 7 The color of the node in the graph window
- - 8 Undo/redo specific for this node and not the overall Natron session.
- - 9 restore values for this operator. When clicked it will reset the node (including those with expressions)
- - 10 the ? icon opens the documentation for the specific node
- - 11 shrink the node pane to show only animated parameters. Use only after you started your animations.
- - 12 flat line: shrink completely the node parameters display. Box icon: detach the node of the current pane
- - 13 Global parameters :ref: proppanel_parameters
- - 14 Main parameters
- - 15 Optimisation parameters
- - 16 Limitation parameters  
+The numbers in the image above show:
 
+1. The maximum number of panels open at the same time in the Properties
+   area (0 means no limit).
+2. The icon of the node type. Hover over it to see the name and version of
+   the plug-in.
+3. The *Settings and presets* menu (see :ref:`Presets_menu`).
+4. *Center the node graph on this item*: moves the Node Graph view to show
+   the node.
+5. The node name. Changing it renames the node, which also changes the name
+   that expressions use (see :doc:`getstarted-environment-nodegraph`). To add
+   a description, use the *Label* parameter of the *Node* tab instead.
+6. The tabs of the parameters. Most nodes have a *Controls*, a *Node* and an
+   *Info* tab, and some have more. You can add your own tabs with
+   *Manage user parameters...* (see :ref:`Presets_menu`).
+7. The color of the node in the Node Graph.
+8. Undo and redo the changes made to the parameters of this node only.
+9. Restore the default values of all the parameters of the node.
+10. Open the documentation of the node.
+11. Show or hide the parameters that still have their default value.
+12. Minimize the panel (flat line), float it in its own window, or close it.
+13. to 16. The parameters of the node (see :ref:`proppanel_parameters`).
 
-_proppanel_parameters:
+.. _proppanel_parameters:
+
 Controls tab
---------------
+------------
+
+The *Controls* tab holds the parameters of the effect. Many nodes share these
+parameters, shown here for the Blur node:
 
 RGBA
-	The channels that will be computed
+   The channels that the node processes.
 Main parameters
-	These ones are different for each node type as they are the ones really defining the effect.
+   They define the effect, and are different for each node.
 Border Conditions
-	Sets the way to evaluate pixels beyond the canvas edges
-	"Nearest" virtually extends the image to avoid the appearance of dark edges when blurring and set to "Black"
+   How pixels outside the image are computed. *Nearest* repeats the edge
+   pixels, which avoids dark edges when you blur an image; *Black* treats
+   them as black.
 Expand RoD
-	Let the calculation of the node run for "out of image" pixels. These pixels could be brought back in frame by a subsequent transform lower in the graph
-Crop to Format
-	crop the result to the format defined in pro ject settings avoiding useless calculations 
+   Compute pixels outside the image, so that a later node, such as a
+   Transform, can bring them back into the frame.
+Crop To Format
+   Crop the result to the project format, which avoids useless computations.
 Output Layer
-	Define the channels that will actually be modified by the node
-Mask
-	Define how the mask provided on the mask input should be treated. By default the node affects the image only where the alpha channel of the mask input is not Black
+   The layer that the node writes.
+Mask parameters
+   How the image connected to the *Mask* input is used. By default, the
+   node has an effect only where the alpha channel of the mask is not black.
 Mix
-	Let's you revert partially the effect to go back toward the original image
-
-
+   Blend the result with the input image, to reduce the effect.
 
 Node tab
----------
+--------
 
 .. image:: _images/proppanel_blur_03.png
 
-label
-	Here you can put custom test or expressions that will be shown in the node graph on the "body" of the node.
+Label
+   Text shown under the node name in the Node Graph.
 Hide inputs
-	Hide the incoming connexion arrow of the node. Useful when it is very far from it's inputs
+   Hide the input connections of the node in the Node Graph, which helps when
+   the node is far from its inputs.
 Force caching
-	Avoid rerendering this node (and ustream ones) when your are done setting up this part and will start to add more nodes downstream.
+   Keep the output of the node in the cache, so that it is not computed
+   again while you work on the nodes downstream.
 Preview
-	Add a "postage stamp" to the node to get a preview of the image getting out of it.
-
+   Show a thumbnail of the output of the node in the Node Graph.
 Disable
-	Same as toggle with "D" key to compare with and without the effect of the node
-Lifetime
-	Save computation time by not evaluating this node outside of the Lifetime interval. This is similar to the in/out points of a clip in editing
+   Turn the node off, to compare the image with and without its effect.
+   :kbd:`D` in the Node Graph does the same.
+Enable Lifetime and Lifetime Range
+   Outside this frame range, the node is disabled and not computed, like
+   the in and out points of a clip.
 Callbacks
-	are for python scripting and automation of Natron
-
+   Python functions that Natron calls at given moments, for example after a
+   parameter changes or before a frame is rendered. See the Python
+   documentation.
 
 Info tab
----------
+--------
+
 .. image:: _images/proppanel_blur_04.png
 
-Here you can check the properties of the data generated by the node. It may be useful if your project becomes suddenly very slow to compute. For example, memory can be filled by an image carrying too many Layers that may not be useful
+Shows information about the inputs and the output of the node, such as their
+layers and bit depth. This helps to understand why a project becomes
+slow: for example, an image may carry many layers that are not needed.
 
-User tab(s)
--------------
-To build expressions you can add new parameters to your node. They can't be added to default tabs. You will be prompted to add a user tab before adding new parameters to it with command "Manage user parameters... " :ref:`Presets_menu`
+User tabs
+---------
 
+To add your own parameters to a node, for example to drive expressions,
+choose *Manage user parameters...* in the *Settings and presets* menu. User
+parameters go in their own tabs: Natron asks you to create a tab first.
 
 .. _Presets_menu:
 
-Presets menu
---------------
+Settings and presets menu
+-------------------------
 
-   This menu let's you work on the parameters of the node
-   
-   .. image:: _images/proppanel_presets_01.png
+This menu opens from the button next to the node icon.
 
-Import  Export presets
-	Let you save to file the values of all the parameters of the node at once. This can then be restored with "Import"
+.. image:: _images/proppanel_presets_01.png
 
-Manage user parameters... 
-	A menu to add new parameters to your node. They will be useful to build expressions that can be modified interactively (on "real" parameters)
-
+Import presets and Export as presets
+   Save the values of all the parameters of the node to a file, and load them
+   again later, on the same node or another node of the same type. See
+   :doc:`getstarted-environment-presets`.
+Manage user parameters...
+   Add, edit and remove user parameters and tabs.
 Set key on all parameters
-	A quick and dirty way to animate the values of a node
-
+   Set a keyframe on all the parameters at the current frame.
 Remove animation on all parameters
-	A quick way to "freeze" a node settings. Only animation curves will be frozen. Expressions are kept.
-
-
-
+   Remove the keyframes of all the parameters. Expressions are kept.
