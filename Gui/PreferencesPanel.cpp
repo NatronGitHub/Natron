@@ -571,7 +571,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 checkboxLayout->setContentsMargins(0, 0, 0, 0);
                 checkboxLayout->setSpacing(0);
                 checkbox->setFixedSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
-                checkbox->setChecked( plugin->isActivated() );
+                checkbox->setChecked( plugin->isRenderScaleEnabled() );
                 QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onRSEnabledCheckBoxChecked(bool)) );
                 _imp->pluginsView->setItemWidget(node.item, COL_RS_ENABLED, checkbox);
                 node.rsCheckbox = checkbox;
@@ -585,7 +585,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 checkboxLayout->setContentsMargins(0, 0, 0, 0);
                 checkboxLayout->setSpacing(0);
                 checkbox->setFixedSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
-                checkbox->setChecked( plugin->isActivated() );
+                checkbox->setChecked( plugin->isMultiThreadingEnabled() );
                 QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onMTEnabledCheckBoxChecked(bool)) );
                 _imp->pluginsView->setItemWidget(node.item, COL_MT_ENABLED, checkbox);
                 node.mtCheckbox = checkbox;
@@ -598,7 +598,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 checkboxLayout->setContentsMargins(0, 0, 0, 0);
                 checkboxLayout->setSpacing(0);
                 checkbox->setFixedSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
-                checkbox->setChecked(plugin->isActivated());
+                checkbox->setChecked( plugin->isOpenGLEnabled() );
                 QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onGLEnabledCheckBoxChecked(bool)) );
                 _imp->pluginsView->setItemWidget(node.item, COL_GL_ENABLED, checkbox);
                 if (plugin->getPluginOpenGLRenderSupport() == ePluginOpenGLRenderSupportNone) {
@@ -910,7 +910,7 @@ PreferencesPanel::onGLEnabledCheckBoxChecked(bool checked)
         return;
     }
     for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it!=_imp->pluginsList.end(); ++it) {
-        if (it->mtCheckbox == cb) {
+        if (it->glCheckbox == cb) {
             it->plugin->setOpenGLEnabled(checked);
             _imp->pluginSettingsChanged = true;
             break;

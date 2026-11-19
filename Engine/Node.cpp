@@ -297,14 +297,26 @@ Node::setRenderThreadSafety(RenderSafetyEnum safety)
 }
 
 RenderSafetyEnum
-Node::getCurrentRenderThreadSafety() const
+Node::applyMultiThreadingPreference(RenderSafetyEnum pluginSafety,
+                                    bool multiThreadingEnabled)
 {
-    if ( !isMultiThreadingSupportEnabledForPlugin() ) {
+    if ( !multiThreadingEnabled && (pluginSafety > eRenderSafetyInstanceSafe) ) {
         return eRenderSafetyInstanceSafe;
     }
-    QMutexLocker k(&_imp->pluginsPropMutex);
 
-    return _imp->currentThreadSafety;
+    return pluginSafety;
+}
+
+RenderSafetyEnum
+Node::getCurrentRenderThreadSafety() const
+{
+    RenderSafetyEnum safety;
+    {
+        QMutexLocker k(&_imp->pluginsPropMutex);
+        safety = _imp->currentThreadSafety;
+    }
+
+    return applyMultiThreadingPreference( safety, isMultiThreadingSupportEnabledForPlugin() );
 }
 
 void

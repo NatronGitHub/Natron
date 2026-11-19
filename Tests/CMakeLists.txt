@@ -40,6 +40,7 @@ set(Tests_SOURCES
     OSGLContext_Test.cpp
     PluginGrouping_Test.cpp
     ReadNodeOverlay_Test.cpp
+    RenderThreadSafety_Test.cpp
     RotoPaint_Test.cpp
     Tracker_Test.cpp
     ViewerCache_Test.cpp
