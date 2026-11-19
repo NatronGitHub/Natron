@@ -765,17 +765,20 @@ OfxEffectInstance::~OfxEffectInstance()
 {
     // The interacts must be destroyed before their effect (ofxInteracts.rst). The parameter
     // interacts are held by their knob, which outlives this object (the knobs belong to the
-    // KnobHolder base), and maybe by the GUI: destroy them now.
-    const KnobsVec& knobs = getKnobs();
-    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        // render clones share the knobs of the main instance, which owns their interacts
-        if ( !*it || ( (*it)->getHolder() != this ) ) {
-            continue;
-        }
-        OfxParamOverlayInteractPtr interact = (*it)->getCustomInteract();
-        if (interact) {
-            interact->destroyInstanceAction();
-            (*it)->setCustomInteract( OfxParamOverlayInteractPtr() );
+    // KnobHolder base, or to the Read/Write node of an embedded reader/writer), and maybe by the
+    // GUI: destroy them now. Every parameter of this instance, whatever the holder of its knob; but
+    // only the interacts of this instance: render clones share the knobs of the main instance, which
+    // owns their interacts.
+    if (_imp->effect) {
+        const std::list<OFX::Host::Param::Instance*> & params = _imp->effect->getParamList();
+        for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) {
+            OfxParamToKnob* paramToKnob = dynamic_cast<OfxParamToKnob*>(*it);
+            KnobIPtr knob = paramToKnob ? paramToKnob->getKnob() : KnobIPtr();
+            OfxParamOverlayInteractPtr interact = knob ? knob->getCustomInteract() : OfxParamOverlayInteractPtr();
+            if ( interact && ( interact->getEffectInstance() == _imp->effect.get() ) ) {
+                interact->destroyInstanceAction();
+                knob->setCustomInteract( OfxParamOverlayInteractPtr() );
+            }
         }
     }
     _imp->overlayInteract.reset();
@@ -939,7 +942,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         interactDesc.setEntryPoint(interactEntryPoint);
 //#pragma message WARN("FIXME: bitdepth and hasalpha are probably wrong")
         interactDesc.describe(/*bitdepthPerComponent=*/ 8, /*hasAlpha=*/ false);
-        OfxParamOverlayInteractPtr overlayInteract( new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance()->getHandle()) );
+        OfxParamOverlayInteractPtr overlayInteract( new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance() ) );
         knob->setCustomInteract(overlayInteract);
         overlayInteract->createInstanceAction();
     }

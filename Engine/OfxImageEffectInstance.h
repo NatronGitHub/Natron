@@ -28,9 +28,9 @@
 
 #include "Global/Macros.h"
 
-#include <atomic>
 #include <string>
 #include <cstdarg>
+#include <vector>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -71,6 +71,20 @@ public:
     {
         _ofxEffectInstance = node;
     }
+
+    /**
+     * @brief Brackets an action of the instance or of one of its interacts (overlay or parameter interact), which don't
+     * go through mainEntry(). On the main thread, it counts the nesting depth of these actions, and when the outermost one
+     * returns, it ends the edit blocks that the plug-in opened and left open (paramEditBegin() without paramEditEnd()).
+     **/
+    class MainThreadAction_RAII
+    {
+        OfxImageEffectInstance* _effect;
+
+    public:
+        explicit MainThreadAction_RAII(OfxImageEffectInstance* effect);
+        ~MainThreadAction_RAII();
+    };
 
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
@@ -275,10 +289,18 @@ private:
     // kOfxActionInstanceChanged, may trigger another one (when a value it sets changes a parameter).
     // Only read and written on the main thread.
     int _mainThreadActionDepth;
-    // The number of edit blocks that the plug-in opened (paramEditBegin()) and did not end yet (paramEditEnd()). When the
-    // outermost action returns, mainEntry() ends these, and only these: the blocks opened by Natron (e.g. an overlay
-    // drag of a host interact) stay open.
-    std::atomic<int> _pluginEditBlocks;
+    // The edit blocks that the plug-in opened (paramEditBegin()) and did not end yet (paramEditEnd()), innermost last:
+    // true for a block opened on _pluginEditHolder, false for a block that was ignored (while a PyPlug is created), so
+    // that each paramEditEnd() ends the block of its paramEditBegin(). When the outermost action returns, these blocks,
+    // and only these, are ended: the blocks opened by Natron (e.g. an overlay drag of a host interact) stay open.
+    // Only used on the Qt main thread (see editBegin()).
+    std::vector<bool> _pluginEditBlocks;
+    // The holder of the knobs (getParamsEditHolder()) on which these blocks are open, e.g. the Read/Write node of an
+    // embedded reader/writer.
+    EffectInstanceWPtr _pluginEditHolder;
+
+    // End the blocks of _pluginEditBlocks (main thread only).
+    void endPluginEditBlocks();
 };
 
 class OfxImageEffectDescriptor

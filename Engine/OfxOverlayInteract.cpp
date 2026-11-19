@@ -59,6 +59,7 @@ OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
     : OFX::Host::ImageEffect::OverlayInteract(v, bitDepthPerComponent, hasAlpha)
     , NatronOverlayInteractSupport()
     , _keyModifiers(0)
+    , _effect(&v)
 {
 }
 
@@ -260,11 +261,31 @@ OfxOverlayInteract::redraw()
 
 OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,
                                                  OFX::Host::Interact::Descriptor &desc,
-                                                 void *effectInstance)
-    : OFX::Host::Interact::Instance(desc, effectInstance)
+                                                 OfxImageEffectInstance* effect)
+    : OFX::Host::Interact::Instance( desc, effect->getHandle() )
     , NatronOverlayInteractSupport()
+    , _effect(effect)
 {
     setCallingViewport(knob);
+}
+
+OfxStatus
+OfxParamOverlayInteract::callEntry(const char *action,
+                                   OFX::Host::Property::Set *inArgs)
+{
+    // _effect is NULL once the interact is destroyed, when the effect may be gone too (see destroyInstanceAction())
+    OfxImageEffectInstance::MainThreadAction_RAII mainThreadAction(_effect);
+
+    return OFX::Host::Interact::Instance::callEntry(action, inArgs);
+}
+
+OfxStatus
+OfxOverlayInteract::callEntry(const char *action,
+                              OFX::Host::Property::Set *inArgs)
+{
+    OfxImageEffectInstance::MainThreadAction_RAII mainThreadAction(_effect);
+
+    return OFX::Host::ImageEffect::OverlayInteract::callEntry(action, inArgs);
 }
 
 void
@@ -276,6 +297,7 @@ OfxParamOverlayInteract::destroyInstanceAction()
     // Instance::callEntry() doesn't call the plug-in for a failed instance, and ~Instance() only
     // calls kOfxActionDestroyInstance for a created one.
     _state = OFX::Host::Interact::eFailed;
+    _effect = NULL;
 }
 
 bool
