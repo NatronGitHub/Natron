@@ -241,6 +241,9 @@ public:
     void  removeAllImagesFromDiskCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
     void  removeAllTexturesFromCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
 
+    // Synchronously removes from the viewer cache the textures of the viewer at the given time
+    void removeAllTexturesFromCacheForHolderAtTime(const CacheEntryHolder* holder, double time);
+
     void removeAllCacheEntriesForHolder(const CacheEntryHolder* holder, bool blocking);
 
     SettingsPtr getCurrentSettings() const WARN_UNUSED_RETURN;

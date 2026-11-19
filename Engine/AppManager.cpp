@@ -2485,6 +2485,13 @@ AppManager::removeAllTexturesFromCacheWithMatchingIDAndDifferentKey(const CacheE
 }
 
 void
+AppManager::removeAllTexturesFromCacheForHolderAtTime(const CacheEntryHolder* holder,
+                                                      double time)
+{
+    _imp->_viewerCache->removeAllEntriesForHolderAtTime(holder, time);
+}
+
+void
 AppManager::removeAllCacheEntriesForHolder(const CacheEntryHolder* holder,
                                            bool blocking)
 {

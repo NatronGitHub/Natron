@@ -19,6 +19,7 @@
 
 // Tests of the invalidation of the viewer cache (the textures displayed by the viewers):
 // - #1119: "Clear Playback Cache" removes the cached viewer textures;
+// - #1115: Refresh removes the cached textures of the current frame;
 // - #1116: changing the project LUTs invalidates the cached images and textures.
 
 // ***** BEGIN PYTHON BLOCK *****
@@ -32,6 +33,7 @@
 #include <list>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -92,6 +94,37 @@ TEST(ViewerCache, ClearPlaybackCacheRemovesTextures)
         std::list<FrameEntryPtr> found;
         EXPECT_FALSE( appPTR->getTexture(key, &found) );
     }
+    holder->destroyNode(true, false);
+}
+
+// #1115: Refresh removes the cached textures of the current frame of the viewer (the forced render neither uses nor
+// fills the texture cache, so they would come back at the next pan or zoom), and keeps those of the other frames.
+TEST(ViewerCache, RemoveTexturesOfOneFrame)
+{
+    NodePtr holder = createDot();
+    ASSERT_TRUE( bool(holder) );
+
+    const RectI bounds(0, 0, 16, 16);
+    std::vector<FrameKey> keys;
+    for (int time = 1; time <= 2; ++time) {
+        keys.push_back( FrameKey(holder.get(), time, 0x8888888888888888ULL, 1., 1., (int)eViewerColorSpaceSRGB, (int)eImageBitDepthByte,
+                                 (int)eDisplayChannelsRGB, ViewIdx(0), TextureRect(0, 0, 16, 16, 1, 1.), 0, "Input1",
+                                 ImagePlaneDesc::getRGBAComponents(), std::string(), false, false) );
+        FrameParamsPtr params = std::make_shared<FrameParams>(bounds, (int)eImageBitDepthByte, bounds, ImagePtr());
+        FrameEntryPtr entry;
+        ASSERT_FALSE( appPTR->getTextureOrCreate(keys.back(), params, NULL, &entry) );
+        ASSERT_TRUE( bool(entry) );
+        entry->allocateMemory();
+    }
+
+    appPTR->removeAllTexturesFromCacheForHolderAtTime(holder.get(), 1);
+
+    std::list<FrameEntryPtr> found;
+    EXPECT_FALSE( appPTR->getTexture(keys[0], &found) );
+    found.clear();
+    EXPECT_TRUE( appPTR->getTexture(keys[1], &found) );
+    found.clear();
+    appPTR->clearPlaybackCache();
     holder->destroyNode(true, false);
 }
 

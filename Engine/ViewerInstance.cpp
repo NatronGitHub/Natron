@@ -229,10 +229,10 @@ ViewerInstance::forceFullComputationOnNextFrame()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    // The forced render does not use nor fill the texture cache, so remove the textures of this viewer from the
-    // cache: they would be displayed again by the next render that uses it, e.g. after a pan or a zoom (#1115).
-    // This is synchronous, so that the next render can't find them.
-    appPTR->removeAllCacheEntriesForHolder(getNode().get(), true);
+    // The forced render does not use nor fill the texture cache, so remove the textures of the current frame of
+    // this viewer from the cache: they would be displayed again by the next render that uses it, e.g. after a pan
+    // or a zoom (#1115). This is synchronous, so that the next render can't find them. The other frames are kept.
+    appPTR->removeAllTexturesFromCacheForHolderAtTime( getNode().get(), getTimeline()->currentFrame() );
 
     QMutexLocker forceRenderLocker(&_imp->forceRenderMutex);
     _imp->forceRender[0] = _imp->forceRender[1] = true;

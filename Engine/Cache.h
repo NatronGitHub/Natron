@@ -1678,6 +1678,41 @@ public:
         }
     }
 
+    /**
+     * @brief Synchronously removes from the cache the entries of the holder at the given time (e.g. the textures
+     * of a frame of a viewer). The order of the other entries is kept.
+     **/
+    void removeAllEntriesForHolderAtTime(const CacheEntryHolder* holder,
+                                         double time)
+    {
+        const std::string holderID = holder->getCacheID();
+        std::list<EntryTypePtr> toDelete;
+        {
+            QMutexLocker locker(&_lock);
+            CacheContainer* containers[2] = { &_memoryCache, &_diskCache };
+            for (int i = 0; i < 2; ++i) {
+                for (CacheIterator it = containers[i]->begin(); it != containers[i]->end();) {
+                    const std::list<EntryTypePtr> & entries = getValueFromIterator(it);
+                    // All the entries of a list have the same hash, hence the same holder and time
+                    if ( !entries.empty() && (entries.front()->getKey().getCacheHolderID() == holderID) &&
+                         (entries.front()->getTime() == time) ) {
+                        toDelete.insert( toDelete.end(), entries.begin(), entries.end() );
+                        // Erasing an element only invalidates the iterators to that element
+                        CacheIterator next = it;
+                        ++next;
+                        containers[i]->erase(it);
+                        it = next;
+                    } else {
+                        ++it;
+                    }
+                }
+            }
+        }
+        if ( !toDelete.empty() ) {
+            _deleterThread.appendToQueue(toDelete);
+        }
+    }
+
     void getMemoryStatsForCacheEntryHolder(const CacheEntryHolder* holder,
                                            std::size_t* ramOccupied,
                                            std::size_t* diskOccupied) const
