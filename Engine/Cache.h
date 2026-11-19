@@ -1581,36 +1581,10 @@ public:
 
         {
             QMutexLocker l(&_lock);
-            CacheIterator existingEntry = _memoryCache( entry->getHashKey() );
-            if ( existingEntry != _memoryCache.end() ) {
-                std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
-                for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
-                    // Compare the entries, not their keys: several entries may have equal keys,
-                    // e.g. the images of a frame at several mipmap levels (#1129)
-                    if (*it == entry) {
-                        toRemove.push_back(*it);
-                        ret.erase(it);
-                        break;
-                    }
-                }
-                if ( ret.empty() ) {
-                    _memoryCache.erase(existingEntry);
-                }
-            } else {
-                existingEntry = _diskCache( entry->getHashKey() );
-                if ( existingEntry != _diskCache.end() ) {
-                    std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
-                    for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
-                        if (*it == entry) {
-                            toRemove.push_back(*it);
-                            ret.erase(it);
-                            break;
-                        }
-                    }
-                    if ( ret.empty() ) {
-                        _diskCache.erase(existingEntry);
-                    }
-                }
+            // The entry may be in the disk portion even if other entries of its hash are in the memory portion
+            // (e.g. other mipmap levels), so look in both
+            if ( !removeEntryFromContainer(_memoryCache, entry, &toRemove) ) {
+                removeEntryFromContainer(_diskCache, entry, &toRemove);
             }
         } // QMutexLocker l(&_lock);
         if ( !toRemove.empty() ) {
@@ -1621,6 +1595,40 @@ public:
             toRemove.clear();
         }
     } // removeEntry
+
+private:
+    /**
+     * @brief Removes the entry from the container and appends it to toRemove. Returns false if it is not in the container.
+     * _lock must be locked.
+     **/
+    static bool removeEntryFromContainer(CacheContainer& container,
+                                         const EntryTypePtr& entry,
+                                         std::list<EntryTypePtr>* toRemove)
+    {
+        CacheIterator existingEntry = container( entry->getHashKey() );
+        if ( existingEntry == container.end() ) {
+            return false;
+        }
+        std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
+        bool found = false;
+        for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
+            // Compare the entries, not their keys: several entries may have equal keys,
+            // e.g. the images of a frame at several mipmap levels (#1129)
+            if (*it == entry) {
+                toRemove->push_back(*it);
+                ret.erase(it);
+                found = true;
+                break;
+            }
+        }
+        if ( ret.empty() ) {
+            container.erase(existingEntry);
+        }
+
+        return found;
+    }
+
+public:
 
     void removeEntry(U64 hash)
     {
