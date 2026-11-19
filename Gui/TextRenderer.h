@@ -33,13 +33,29 @@
 
 NATRON_NAMESPACE_ENTER
 
+/**
+ * @brief Draws text in the current OpenGL context, using glyph textures.
+ *
+ * The glyph textures are cached per OpenGL context: a QOpenGLWidget gets a new context each time
+ * it moves to another top-level window (e.g. when a panel is dragged into a floating window), and
+ * the textures of the old context can not be used in the new one (issue #536). The cache of a
+ * context is dropped when that context is destroyed.
+ */
 class TextRenderer
 {
 public:
 
     TextRenderer();
 
+    // Deletes the textures of the current OpenGL context; the textures of the other contexts are
+    // freed with their context.
     ~TextRenderer();
+
+    /**
+     * @brief Deletes the glyph textures of the current OpenGL context. The widget that owns this
+     * renderer calls it, with its context current, before that context is destroyed.
+     */
+    void releaseGLResources();
 
     void renderText(float x,
                     float y,

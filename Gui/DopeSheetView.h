@@ -164,6 +164,10 @@ public Q_SLOTS:
 
 protected:
     void initializeGL() OVERRIDE FINAL;
+    // Called before the OpenGL context is destroyed (e.g. when the widget moves to another window)
+    void onContextAboutToBeDestroyed();
+    // Deletes the OpenGL objects of the current context
+    void releaseGLResources();
     void resizeGL(int w, int h) OVERRIDE FINAL;
     void paintGL() OVERRIDE FINAL;
 

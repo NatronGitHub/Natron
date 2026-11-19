@@ -161,7 +161,12 @@ CurveWidget::~CurveWidget()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    makeCurrent();
+    if ( QOpenGLContext* glContext = context() ) {
+        // ~QOpenGLWidget destroys the context after this object is gone: don't get its signal
+        glContext->disconnect(this);
+        makeCurrent();
+        releaseGLResources();
+    }
 }
 
 bool
@@ -176,6 +181,25 @@ CurveWidget::initializeGL()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     appPTR->initializeOpenGLFunctionsOnce();
+    // QOpenGLWidget destroys its context and creates a new one when it moves to another top-level
+    // window, e.g. when the Curve Editor is dragged into a floating window (#536), and then calls
+    // initializeGL() again. The OpenGL objects of the old context must be released with it.
+    QObject::connect( context(), &QOpenGLContext::aboutToBeDestroyed, this, &CurveWidget::onContextAboutToBeDestroyed );
+}
+
+void
+CurveWidget::onContextAboutToBeDestroyed()
+{
+    makeCurrent();
+    releaseGLResources();
+    // The context stays current: it is destroyed right after this signal.
+}
+
+void
+CurveWidget::releaseGLResources()
+{
+    assert( QOpenGLContext::currentContext() == context() );
+    _imp->textRenderer.releaseGLResources();
 }
 
 void
