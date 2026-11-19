@@ -14,4 +14,5 @@ Tutorials
    tutorials-hugin
    tutorials-svgworkflow
    tutorials-AlternativeMatteExtraction
+   tutorials-keying
    tutorials-evaluating-script-structure

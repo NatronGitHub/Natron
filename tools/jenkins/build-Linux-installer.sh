@@ -42,7 +42,9 @@ popd () {
     command popd "$@" > /dev/null
 }
 
-LD_LIBRARY_PATH="${SDK_HOME}/lib:${FFMPEG_PATH}/lib:${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib"
+# (MAGICK7_PREFIX: openfx-arena's ImageMagick 7, see common.sh; fixrpath removes the plug-in's
+# build rpath, so ldd only finds the libraries to bundle through LD_LIBRARY_PATH)
+LD_LIBRARY_PATH="${SDK_HOME}/lib:${FFMPEG_PATH}/lib:${SDK_HOME}/qt${QT_VERSION_MAJOR}/lib${MAGICK7_PREFIX:+:${MAGICK7_PREFIX}/lib}"
 PATH="${SDK_HOME}/gcc/bin:${SDK_HOME}/bin:$PATH"
 export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${SDK_HOME}/qt${QT_VERSION_MAJOR}/include"
 export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"

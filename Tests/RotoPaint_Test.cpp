@@ -148,9 +148,9 @@ class OverlayActions
     : public EffectInstance
 {
 public:
-    typedef bool (EffectInstance::*PenDownFn)(double, const RenderScale &, ViewIdx, const QPointF &, const QPointF &, double, double, PenType);
-    typedef bool (EffectInstance::*PenMotionFn)(double, const RenderScale &, ViewIdx, const QPointF &, const QPointF &, double, double);
-    typedef bool (EffectInstance::*PenUpFn)(double, const RenderScale &, ViewIdx, const QPointF &, const QPointF &, double, double);
+    typedef bool (EffectInstance::*PenDownFn)(double, const RenderScale &, ViewIdx, const QPointF &, const QPointF &, double, double, PenType, KeyboardModifiers);
+    typedef bool (EffectInstance::*PenMotionFn)(double, const RenderScale &, ViewIdx, const QPointF &, const QPointF &, double, double, KeyboardModifiers);
+    typedef bool (EffectInstance::*PenUpFn)(double, const RenderScale &, ViewIdx, const QPointF &, const QPointF &, double, double, KeyboardModifiers);
 
     static PenDownFn penDown() { return &OverlayActions::onOverlayPenDown; }
 
@@ -236,20 +236,20 @@ protected:
     void penDown(double x,
                  double y)
     {
-        EXPECT_TRUE( ( (*_effect).*OverlayActions::penDown() )(kTime, RenderScale(), ViewIdx(0), QPointF(x, y), QPointF(x, y), 1., 0., ePenTypeLMB) );
+        EXPECT_TRUE( ( (*_effect).*OverlayActions::penDown() )(kTime, RenderScale(), ViewIdx(0), QPointF(x, y), QPointF(x, y), 1., 0., ePenTypeLMB, KeyboardModifiers()) );
     }
 
     void penMotion(double x,
                    double y)
     {
-        EXPECT_TRUE( ( (*_effect).*OverlayActions::penMotion() )(kTime, RenderScale(), ViewIdx(0), QPointF(x, y), QPointF(x, y), 1., 0.) );
+        EXPECT_TRUE( ( (*_effect).*OverlayActions::penMotion() )(kTime, RenderScale(), ViewIdx(0), QPointF(x, y), QPointF(x, y), 1., 0., KeyboardModifiers()) );
     }
 
     void penUp(double x,
                double y)
     {
         // The return value only tells whether the interact needs a redraw
-        const bool redraw = ( (*_effect).*OverlayActions::penUp() )(kTime, RenderScale(), ViewIdx(0), QPointF(x, y), QPointF(x, y), 1., 0.);
+        const bool redraw = ( (*_effect).*OverlayActions::penUp() )(kTime, RenderScale(), ViewIdx(0), QPointF(x, y), QPointF(x, y), 1., 0., KeyboardModifiers());
 
         Q_UNUSED(redraw);
     }

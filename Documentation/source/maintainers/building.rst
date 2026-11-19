@@ -114,7 +114,7 @@ Shiboken2 and PySide2 without CMake config files
 With Qt 5, CMake first looks for the Shiboken2 and PySide2 CMake config files
 (``Shiboken2Config.cmake``, ``PySide2Config.cmake``; point CMake at them with
 ``Shiboken2_DIR``/``PySide2_DIR`` or ``CMAKE_PREFIX_PATH``). Some installs have
-none: PySide2 built with ``setup.py``, such as MacPorts' ``py310-pyside2``, and
+none: PySide2 built with ``setup.py``, such as MacPorts' ``py311-pyside2``, and
 the PySide2 wheels used with a ``shiboken2_generator`` wheel from download.qt.io
 (PyPI has no ``shiboken2_generator``, and its PySide2 wheels bundle their own
 Qt, which Natron must then link too). If neither config package is found, CMake asks
@@ -133,7 +133,7 @@ directories. This replaces the paths that the qmake build gets from
      - ``-DSHIBOKEN2_GENERATOR=/path/to/shiboken2`` (default: the binary in
        ``site-packages/shiboken2_generator``)
    * - ``INCLUDEPATH`` and ``LIBS`` under ``$$PYTHON_SITE_PACKAGES``
-     - automatic, from ``-DPython3_EXECUTABLE=/path/to/python3.10``
+     - automatic, from ``-DPython3_EXECUTABLE=/path/to/python3.11``
    * - ``QMAKE_RPATHDIR`` under ``$$PYTHON_SITE_PACKAGES``
      - automatic in the build tree; installed binaries get theirs from the
        install rules
@@ -142,8 +142,14 @@ directories. This replaces the paths that the qmake build gets from
 
 For example, with MacPorts::
 
+    git submodule update --init --recursive   # --recursive: libs/SequenceParsing/tinydir
     cmake -S . -B build -DCMAKE_PREFIX_PATH="/opt/local/libexec/qt5;/opt/local" \
-        -DPython3_EXECUTABLE=/opt/local/bin/python3.10
+        -DPython3_EXECUTABLE=/opt/local/bin/python3.11
+
+If shiboken2 fails to parse the libc++ headers of a recent Xcode SDK
+(``use of undeclared identifier '__builtin_clzg'``), use an older SDK with
+``export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk``, exported
+for both the configure and ``cmake --build``: shiboken runs during the build.
 
 Two compile definitions set in the CMake build are worth knowing about because
 they affect how you must write code:
@@ -163,13 +169,10 @@ Build type, sanitizers and debugging
   ``Global/FloatingPointExceptions.h`` and the ``main()`` functions) so that a
   stray ``NaN`` or division by zero aborts immediately instead of silently
   propagating through the image pipeline.
-- For an AddressSanitizer build with CMake, pass the flags yourself:
-  ``-DCMAKE_C_FLAGS="-fsanitize=address -fno-omit-frame-pointer"``,
-  ``-DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer"`` and
-  ``-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address``.
-  The deprecated qmake build has ``CONFIG+=addresssanitizer`` (see the messages
-  at the bottom of ``Project.pro``), and ``CONFIG+=enable-breakpad`` to build
-  with the Breakpad crash reporter, which the CMake build doesn't build.
+- The qmake build supports ``CONFIG+=addresssanitizer`` for an
+  AddressSanitizer build (see the messages at the bottom of ``Project.pro``),
+  and ``CONFIG+=enable-breakpad`` to build with the Breakpad crash reporter.
+  The CMake equivalents of the qmake ``CONFIG`` flags are listed below.
 
 macOS app bundle and install layout
 -----------------------------------
@@ -259,6 +262,168 @@ configure time). It must be the version the installer script bundles
        in the source tree, if present)
    * - ``OCIO.files`` in ``OpenColorIO-Configs.pri``
      - ``-DNATRON_OCIO_CONFIGS="blender;natron;nuke-default"``
+
+CMake build options
+-------------------
+
+These cache variables reproduce the qmake ``CONFIG`` flags of ``global.pri``
+and ``libs.pri``. Their defaults give a plain developer build; the installers
+(``tools/jenkins/build-natron.sh``) turn on the release flavour, OpenMP and
+``NATRON_NO_ASSERTIONS``, but not ``NATRON_FAST_MATH``: the release builds use
+``-O3`` without fast math.
+
+``NATRON_BUILD_CONFIG`` (empty by default)
+   The release flavour shown in the version string, splash screen and About
+   window: empty for a ``Devel`` build, or ``SNAPSHOT``, ``ALPHA``, ``BETA``,
+   ``RC``, ``STABLE`` or ``CUSTOM``. It defines the matching
+   ``NATRON_CONFIG_*`` macro read by ``Global/Macros.h``. ``CUSTOM`` is a
+   ``STABLE`` build that shows "Natron for *name*" instead of the version, and
+   needs ``NATRON_CUSTOM_BUILD_USER_NAME``. Only the build farm should set it.
+``NATRON_BUILD_NUMBER`` (``0``)
+   The build number of an ``ALPHA``, ``BETA`` or ``RC`` release, e.g. ``2``
+   for RC2. It defines ``NATRON_BUILD_NUMBER``. ``-DBUILD_NUMBER=…``, the
+   qmake variable, sets its initial value.
+``NATRON_CUSTOM_BUILD_USER_NAME`` (empty)
+   The name shown by a ``CUSTOM`` build. With ``NATRON_BUILD_CONFIG=CUSTOM``
+   only, it defines ``NATRON_CUSTOM_BUILD_USER_TOKEN`` to the bare name, which
+   ``Global/Macros.h`` turns into a string, so the name can't contain a comma,
+   a quote, a backslash, a parenthesis, ``;``, ``#``, ``//`` or ``/*``:
+   CMake stops with an error. The old ``-DBUILD_USER_NAME=…`` still sets its
+   initial value.
+``NATRON_USE_OPENMP`` (``ON`` with GCC except on macOS, ``OFF`` otherwise, as in ``libs.pri``)
+   Compile the bundled ceres and openMVG, which the tracker uses, with OpenMP
+   (``CERES_USE_OPENMP``, ``OPENMVG_USE_OPENMP``, ``OpenMP::OpenMP_CXX``).
+   Apple clang has no OpenMP runtime: install MacPorts' ``libomp``, which is
+   found automatically in ``/opt/local/include/libomp`` and
+   ``/opt/local/lib/libomp``. For another libomp, set ``OpenMP_ROOT`` to its
+   prefix (e.g. ``-DOpenMP_ROOT=$(brew --prefix libomp)``).
+   When OpenMP is not found, the default only gives a warning and builds
+   without it; an explicit ``-DNATRON_USE_OPENMP=ON`` stops the configure.
+``NATRON_NO_ASSERTIONS`` (``OFF``)
+   Define ``NDEBUG``, ``QT_NO_DEBUG``, ``QT_NO_DEBUG_OUTPUT`` and
+   ``QT_NO_WARNING_OUTPUT`` in every configuration, which removes
+   ``assert()`` and the ``qDebug()``/``qWarning()`` output. Release and
+   RelWithDebInfo builds already define ``NDEBUG``.
+``NATRON_FAST_MATH`` (``OFF``)
+   Compile everything with ``-O3 -ffast-math`` (MSVC: ``/O2 /fp:fast``),
+   which overrides the optimization level of the build type and allows
+   floating-point computations that do not conform to IEEE 754. qmake's
+   ``CONFIG+=fast`` uses ``-Ofast``, which clang 19 and later deprecate in
+   favor of ``-O3 -ffast-math``. The installers use neither.
+``NATRON_SANITIZE`` (empty)
+   Sanitizers passed to ``-fsanitize=``, comma-separated: ``address``,
+   ``thread``, ``undefined``, ``address,undefined``… Use it with a ``Debug``
+   or ``RelWithDebInfo`` build. Unlike qmake, it does not force a debug
+   build with ``-O1``.
+``NATRON_COVERAGE`` (``OFF``)
+   Instrument for code coverage with ``--coverage`` (GCC and Clang). Use it
+   with a ``Debug`` build.
+
+The following table maps each qmake flag that ``tools/jenkins/build-natron.sh``
+passes, and the other ``global.pri`` flags, to CMake.
+
+.. list-table:: qmake CONFIG flag → CMake option
+   :header-rows: 1
+   :widths: 40 60
+
+   * - qmake
+     - CMake
+   * - ``CONFIG+=debug``, ``release``, ``relwithdebinfo`` (``COMPILE_TYPE``)
+     - ``-DCMAKE_BUILD_TYPE=Debug``, ``Release``, ``RelWithDebInfo``
+   * - ``CONFIG+=snapshot``, ``alpha``, ``beta``, ``RC``, ``stable``
+     - ``-DNATRON_BUILD_CONFIG=SNAPSHOT``, ``ALPHA``, ``BETA``, ``RC``, ``STABLE``
+   * - ``BUILD_NUMBER=N``
+     - ``-DNATRON_BUILD_NUMBER=N``
+   * - ``CONFIG+=custombuild BUILD_USER_NAME=name``
+     - ``-DNATRON_BUILD_CONFIG=CUSTOM -DNATRON_CUSTOM_BUILD_USER_NAME=name``
+   * - ``CONFIG+=openmp``, ``CONFIG-=openmp``
+     - ``-DNATRON_USE_OPENMP=ON``, ``OFF``
+   * - ``CONFIG+=noassertions``
+     - ``-DNATRON_NO_ASSERTIONS=ON``
+   * - ``CONFIG+=fast``
+     - ``-DNATRON_FAST_MATH=ON``
+   * - ``CONFIG+=addresssanitizer``, ``threadsanitizer``
+     - ``-DNATRON_SANITIZE=address``, ``thread``
+   * - ``CONFIG+=coverage``
+     - ``-DNATRON_COVERAGE=ON``
+   * - ``CONFIG+=python3 PYTHON_CONFIG=pythonX.Y-config``
+     - Always Python 3; choose it with ``-DPython3_EXECUTABLE=…``
+   * - ``CONFIG+=enable-cairo``
+     - Always on: cairo is required
+   * - ``CONFIG+=enable-breakpad``, ``CONFIG-=enable-breakpad``
+     - Not available: Breakpad is being replaced by sentry-native (#1183)
+   * - ``CONFIG+=enable-osmesa OSMESA_PATH=… LLVM_PATH=…``
+     - None: Natron itself doesn't use OSMesa (only openfx-misc's Shadertoy
+       does), and the flag has no effect on the qmake build either
+   * - The GCC-version-dependent flags of ``global.pri``
+       (``-ftemplate-depth-1024``, ``-fpermissive``, ``-Wno-deprecated-declarations``,
+       ``-Wno-int-in-bool-context``, ``-Wno-expansion-to-defined``)
+     - None: the CMake build needs a C++17 compiler (GCC 8 or later) and sets
+       its own warning flags in ``CMakeLists.txt``. ``-fpermissive`` was a
+       workaround for Boost 1.65 and earlier (MrKepzie/Natron#1659)
+   * - ``-spec macx-clang``, ``macx-g++``, ``win32-g++``;
+       ``QMAKE_CC``, ``QMAKE_CXX``, ``QMAKE_LINK``
+     - ``-DCMAKE_C_COMPILER=…``, ``-DCMAKE_CXX_COMPILER=…`` (or the ``CC`` and
+       ``CXX`` environment variables), and a generator such as
+       ``-G "MSYS Makefiles"`` or ``-G Ninja``
+   * - ``QMAKE_OBJECTIVE_CC``, ``QMAKE_OBJECTIVE_CXX``
+     - ``-DCMAKE_OBJCXX_COMPILER=…``
+   * - ``CONFIG+=x86_64``, ``arm64`` (macOS)
+     - ``-DCMAKE_OSX_ARCHITECTURES=x86_64``, ``arm64``
+   * - ``QMAKE_MACOSX_DEPLOYMENT_TARGET=X.Y``
+     - ``-DCMAKE_OSX_DEPLOYMENT_TARGET=X.Y``
+   * - ``CFLAGS``, ``CXXFLAGS`` in the environment
+     - The same variables, read at the first configure, or
+       ``-DCMAKE_C_FLAGS=…``, ``-DCMAKE_CXX_FLAGS=…``
+   * - ``CONFIG+=silent``
+     - The default; ``cmake --build build --verbose`` shows the commands
+   * - ``CONFIG+=enforce-gcc8``
+     - None: it only bypasses the ``#error`` for GCC 8.1 and 8.2 in
+       ``Gui/TimeLineGui.cpp`` (issue #279), which were replaced by GCC 8.3
+       in 2019 and are not used by any SDK. Pass
+       ``-DCMAKE_CXX_FLAGS=-DENFORCE_GCC8`` if you must.
+
+Release builds
+--------------
+
+The installers are built by ``tools/jenkins/launchBuildMain.sh``, which calls
+``build-plugins.sh``, ``build-natron.sh`` and ``build-<OS>-installer.sh``
+(macOS: through ``tools/tart``; Linux: in the SDK Docker image; Windows:
+``build_installer.yml``). ``build-natron.sh`` builds Natron with CMake:
+
+- it configures with ``-DNATRON_INSTALL_LAYOUT=PORTABLE``, the release flavour
+  (``NATRON_BUILD_CONFIG``, ``NATRON_BUILD_NUMBER``,
+  ``NATRON_CUSTOM_BUILD_USER_NAME``), ``NATRON_USE_OPENMP`` (``OFF`` only
+  with Apple clang), ``NATRON_NO_ASSERTIONS`` (except for ``COMPILE_TYPE=debug``),
+  the OpenColorIO configs it downloaded, and the compilers, Qt and Python
+  chosen by ``common.sh`` and ``compiler-common.sh``. ``COMPILE_TYPE``
+  ``release``, ``relwithdebinfo`` and ``debug`` become the ``Release``,
+  ``RelWithDebInfo`` (with ``-O3``) and ``Debug`` build types;
+- it runs ``cmake --install`` (plus ``--component Tests``) into a staging
+  directory, and copies the result to the layout the installer scripts read
+  in ``$TMP_BINARIES_PATH``: ``bin/`` (on macOS with ``Info.plist`` and
+  ``PkgInfo``), ``Resources/``, ``PyPlugs/``, ``docs/natron/``, and on macOS
+  the DMG background. The installer scripts are unchanged;
+- the Python bindings are generated by the CMake build: the shiboken2 commands
+  of the qmake build are not run;
+- the unit tests run from ``bin/``, except on macOS, where the ``Tests`` of
+  the build tree is run (the installed one only finds its libraries inside the
+  final bundle; ``build-OSX-installer.sh`` runs it again from there).
+
+``NATRON_EXTRA_CMAKE_FLAGS`` adds options, separated by spaces, e.g.
+``NATRON_EXTRA_CMAKE_FLAGS=-DNATRON_FAST_MATH=ON``. Two differences with the
+former qmake release builds are intentional: there is no fast math, because
+``-ffinite-math-only`` defeats the NaN and infinity checks (see #1277; the
+qmake path no longer adds ``CONFIG+=fast`` either, and
+``-DNATRON_FAST_MATH=ON`` brings it back), and there is no Breakpad crash
+reporter (#1183), so ``launchBuildMain.sh`` sets ``DISABLE_BREAKPAD=1``. The C++ standard is the one ``CMakeLists.txt`` sets;
+a ``-std=`` flag in ``$CXX`` is ignored.
+
+On RB-2.6, ``NATRON_BUILD_SYSTEM=qmake`` selects the deprecated qmake build
+(and ``NATRON_EXTRA_QMAKE_FLAGS``), until the CMake-built installers are shown
+to be equivalent (#1181). ``tools/compare-builds.sh`` compares two builds: the
+file lists, the resources, ``Info.plist``, the linked libraries and rpaths of
+every binary, and with ``-r`` the version strings and the Python modules.
 
 Code style and the pre-commit hook
 ----------------------------------

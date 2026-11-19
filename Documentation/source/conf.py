@@ -16,7 +16,7 @@ import sys, os
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_ext'))
 
 # -- General configuration -----------------------------------------------------
 
@@ -25,7 +25,39 @@ import sys, os
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = []
+# The installers build the documentation with only sphinx and sphinx-rtd-theme
+# (tools/jenkins/gen-natron-doc.sh): every extension below works without the
+# optional packages of requirements.txt, and says so in the log.
+extensions = [
+    # mermaid diagrams: sphinxcontrib.mermaid if installed, else the source
+    'natron_mermaid',
+    # the OpenFX documentation (see below)
+    'natron_openfx',
+]
+
+# -- Mermaid diagrams (see _ext/natron_mermaid.py and the Maintainers Guide,
+# "Contributing" > "Diagrams") ---------------------------------------------------
+# HTML: drawn in the browser by the mermaid.js of Documentation/node_modules
+# (npm ci), copied to _static/mermaid/. PDF and ePub: drawn by mermaid-cli if
+# it works. Otherwise each diagram is shown as source.
+mermaid_params = [
+    '--puppeteerConfigFile', os.path.join(os.path.dirname(os.path.abspath(__file__)), '_ext', 'puppeteer-config.json'),
+    '--backgroundColor', 'white',
+    '--pdfFit',
+    '--scale', '2',
+]
+
+# -- OpenFX documentation (Developers Guide > OpenFX plug-ins) ------------------
+# Copied from the libs/OpenFX submodule into devel/openfx/ (not tracked by git),
+# with its Doxygen XML for breathe. See _ext/natron_openfx.py.
+import natron_openfx
+_openfx = natron_openfx.prepare(os.path.dirname(os.path.abspath(__file__)))
+breathe_projects = _openfx['breathe_projects']
+if breathe_projects:  # only when the OpenFX pages are included
+    extensions.append('breathe')
+breathe_default_project = 'ofx_reference'
+breathe_default_members = ('members', 'protected-members', 'private-members', 'undoc-members')
+rst_epilog = _openfx['rst_epilog']
 
 # Add any paths that contain templates here, relative to this directory.
 #templates_path = ['_templates']
@@ -76,7 +108,7 @@ version = '.'.join(release.split('.')[0:2])
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = []
+exclude_patterns = [] + _openfx.get('exclude_patterns', [])
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -108,10 +140,15 @@ html_theme = 'sphinx_rtd_theme'
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-#html_theme_options = {
-#   "nosidebar": "true",
-#   "footertextcolor": "#000000"
-#}
+# Sidebar navigation: show only the top sections, and expand only the branch of
+# the current page (Reference Guide > Nodes > node group > sub-group > node).
+# navigation_depth must cover the deepest node pages: the nodes of a sub-group
+# (e.g. Reference Guide > Nodes > G'MIC > Colors > node) are at depth 5.
+html_theme_options = {
+    'collapse_navigation': True,
+    'navigation_depth': 6,
+    'titles_only': False,
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
@@ -186,7 +223,19 @@ htmlhelp_basename = 'Natrondoc'
 
 # -- Options for LaTeX output --------------------------------------------------
 
-mypreamble=r'''\renewcommand{\code}[1]{\texttt{\footnotesize{}#1}}
+# Sphinx derives the depth of the table of contents from the :maxdepth: of the
+# root toctree (index.rst), which is small to keep the HTML front page short, and
+# writes it before the preamble, so set it here. With the guides as parts
+# (latex_toplevel_sectioning below), depth 2 lists parts, chapters, sections and
+# subsections: the User Guide chapters and their sections, and in the Reference
+# Guide the node groups, their sub-groups, and the nodes of groups that have no
+# sub-groups. The nodes of a sub-group (e.g. G'MIC / Colors) are one level deeper,
+# and not listed. Section numbers (secnumdepth 2) stop at the same level.
+# Recent Sphinx versions no longer define \code: \providecommand first, so that
+# \renewcommand doesn't stop pdflatex with "Command \code undefined".
+mypreamble=r'''\providecommand{\code}[1]{}
+\renewcommand{\code}[1]{\texttt{\footnotesize{}#1}}
+\setcounter{tocdepth}{2}
 '''
 latex_elements = {
 # The paper size ('letterpaper' or 'a4paper').
@@ -213,10 +262,11 @@ geometry = 'margin=0.5in,marginparwidth=0.5in'
 #latex_logo = None
 latex_logo = '../../Gui/Resources/Images/natronIcon.pdf'
 
-# For "manual" documents, if this is true, then toplevel headings are parts,
-# not chapters.
-latex_use_parts = True
-#latex_toplevel_sectioning = 'part'
+# The top-level headings (the four guides) are parts, so that the node pages
+# (Reference Guide > Nodes > group > sub-group > node) stay at \subsection or
+# \subsubsection, and their own sections at \paragraph.
+# (latex_use_parts, which did the same, was removed from Sphinx.)
+latex_toplevel_sectioning = 'part'
 
 # If true, show page references after internal links.
 #latex_show_pagerefs = False

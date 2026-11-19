@@ -1793,11 +1793,10 @@ exportKnobValues(int indentLevel,
                                                     NUM_COLOR(r) + QString::fromUtf8(", ") + NUM_COLOR(g) + QString::fromUtf8(", ") + NUM_COLOR(b) + QString::fromUtf8(")") );
             if (curve) {
                 KeyFrameSet keys = curve->getKeyFrames_mt_safe();
-                int c = 0;
                 if ( !keys.empty() ) {
                     WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.deleteAllControlPoints(") + NUM_INT(i) + QString::fromUtf8(")") );
                 }
-                for (KeyFrameSet::iterator it3 = keys.begin(); it3 != keys.end(); ++it3, ++c) {
+                for (KeyFrameSet::iterator it3 = keys.begin(); it3 != keys.end(); ++it3) {
                     QString interpStr;
                     switch ( it3->getInterpolation() ) {
                     case eKeyframeTypeNone:

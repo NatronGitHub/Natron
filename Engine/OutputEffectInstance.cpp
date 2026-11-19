@@ -174,9 +174,9 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
 
     if ( isViewAware() ) {
         //If the Writer is view aware, check if it wants to render all views at once or not
-        std::size_t foundViewPattern = pattern.find_first_of("%v");
+        std::size_t foundViewPattern = pattern.find("%v");
         if (foundViewPattern == std::string::npos) {
-            foundViewPattern = pattern.find_first_of("%V");
+            foundViewPattern = pattern.find("%V");
         }
         if (foundViewPattern == std::string::npos) {
             ///No view pattern

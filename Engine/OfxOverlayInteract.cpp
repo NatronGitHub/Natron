@@ -58,7 +58,43 @@ OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
                                        bool hasAlpha)
     : OFX::Host::ImageEffect::OverlayInteract(v, bitDepthPerComponent, hasAlpha)
     , NatronOverlayInteractSupport()
+    , _keyModifiers(0)
 {
+}
+
+int
+ofxKeyModifiersFromNatron(const KeyboardModifiers& modifiers)
+{
+    int ret = 0;
+
+    if ( modifiers.testFlag(eKeyboardModifierShift) ) {
+        ret |= kNatronOfxKeyModifierShift;
+    }
+    if ( modifiers.testFlag(eKeyboardModifierControl) ) {
+        ret |= kNatronOfxKeyModifierControl;
+    }
+    if ( modifiers.testFlag(eKeyboardModifierAlt) ) {
+        ret |= kNatronOfxKeyModifierAlt;
+    }
+    if ( modifiers.testFlag(eKeyboardModifierMeta) ) {
+        ret |= kNatronOfxKeyModifierMeta;
+    }
+
+    return ret;
+}
+
+void
+OfxOverlayInteract::setKeyModifiers(const KeyboardModifiers& modifiers)
+{
+    _keyModifiers = ofxKeyModifiersFromNatron(modifiers);
+}
+
+void
+OfxOverlayInteract::setKeyModifiersFromViewport()
+{
+    OverlaySupport* viewport = getLastCallingViewport();
+
+    setKeyModifiers( viewport ? viewport->getKeyboardModifiers() : KeyboardModifiers() );
 }
 
 bool

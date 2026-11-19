@@ -298,7 +298,15 @@ struct ValueSerialization
         ar & ::boost::serialization::make_nvp("HasAnimation", hasAnimation);
 
         if (hasAnimation) {
-            ar & ::boost::serialization::make_nvp( "Curve", *( _knob->getCurve(ViewIdx(0), _dimension, true) ) );
+            AnimatingKnobStringHelper* isAnimatedString = dynamic_cast<AnimatingKnobStringHelper*>( _knob.get() );
+            if (isAnimatedString) {
+                // the strings are saved by time in KnobSerialization ("StringsAnimation")
+                Curve c;
+                isAnimatedString->getCurveForSerialization(_dimension, &c);
+                ar & ::boost::serialization::make_nvp("Curve", c);
+            } else {
+                ar & ::boost::serialization::make_nvp( "Curve", *( _knob->getCurve(ViewIdx(0), _dimension, true) ) );
+            }
         }
 
         if (isInt && !isChoice) {
@@ -369,7 +377,11 @@ struct ValueSerialization
         if (hasAnimation) {
             assert( _knob->canAnimate() );
             Curve c;
+            const int nonFiniteBefore = CurveSerializationDetail::nonFiniteValuesRead;
             ar & ::boost::serialization::make_nvp("Curve", c);
+            // the file contained NaN values (#1267): the real knob, cloned from this
+            // temporary knob, must recompute the derivatives with its own properties
+            const bool mustRefreshDerivatives = (CurveSerializationDetail::nonFiniteValuesRead != nonFiniteBefore);
             ///This is to overcome the change to the animation of file params: They no longer hold keyframes
             ///Don't try to load keyframes
             convertOldFileKeyframesToPattern = isFile && isFile->getName() == kOfxImageEffectFileParamName;
@@ -378,6 +390,9 @@ struct ValueSerialization
                 assert(curve);
                 if (curve) {
                     _knob->getCurve(ViewIdx(0), _dimension)->clone(c);
+                    if (mustRefreshDerivatives) {
+                        curve->setMustRefreshDerivatives();
+                    }
                 }
             }
         }
@@ -560,7 +575,7 @@ private:
             ar & ::boost::serialization::make_nvp("ParametricCurves", curves);
         } else if (isString) {
             std::map<int, std::string> extraDatas;
-            isString->getAnimation().save(&extraDatas);
+            isString->saveAnimation(&extraDatas);
             ar & ::boost::serialization::make_nvp("StringsAnimation", extraDatas);
         }
         ChoiceExtraData* cdata = dynamic_cast<ChoiceExtraData*>(_extraData);
@@ -656,8 +671,19 @@ private:
         ////restore extra datas
         if (isParametric) {
             std::list<Curve > curves;
+            const int nonFiniteBefore = CurveSerializationDetail::nonFiniteValuesRead;
             ar & ::boost::serialization::make_nvp("ParametricCurves", curves);
             isParametric->loadParametricCurves(curves);
+            if (CurveSerializationDetail::nonFiniteValuesRead != nonFiniteBefore) {
+                // the file contained NaN values (#1267): the real knob, cloned from this
+                // temporary knob, must recompute the derivatives with its own periodicity
+                for (int i = 0; i < isParametric->getDimension(); ++i) {
+                    CurvePtr curve = isParametric->getParametricCurve(i);
+                    if (curve) {
+                        curve->setMustRefreshDerivatives();
+                    }
+                }
+            }
         } else if (isStringAnimated) {
             std::map<int, std::string> extraDatas;
             ar & ::boost::serialization::make_nvp("StringsAnimation", extraDatas);

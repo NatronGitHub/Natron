@@ -22,7 +22,7 @@ Most likely you will want to contribute to the :ref:`user-guide`. The source fil
 
 .. note:: The following files are generated automatically and can thus not be edited:
 
-   - The `_group.rst` file, and any file with a name starting with `_group`.
+   - The `_group.rst` file (the Reference Guide), the `_nodes.rst` file, and any file with a name starting with `_group` (one per node group and sub-group).
    - The `_prefs.rst`.
    - The documentation for each individual plugin, which can be found in the `Documentation/source/plugins` directory (see :ref:`writing-plugins-manual`).
 

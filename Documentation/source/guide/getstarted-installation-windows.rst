@@ -4,89 +4,65 @@
 Windows
 =======
 
-.. toctree::
-   :maxdepth: 2
-
-This chapter will guide your through the installation and maintenance of Natron on Windows.
+This chapter explains how to install and maintain Natron on Windows.
 
 Requirements
 ------------
 
-Natron will work on Windows 7, 8.x, 10 with latest updates.
+Natron needs 64-bit Windows 10 or later on an x86-64 processor, and a graphics
+card with OpenGL 2.0. See :ref:`system-requirements` for the details.
 
-The basic requirements are:
-
- * x86 compatible CPU (Core2 x86_64 or higher recommended)
- * OpenGL 2.0 or higher with the following extensions:
-    * **GL_ARB_texture_non_power_of_two** *(Viewer and OpenGL rendering)*
-    * **GL_ARB_shader_objects** *(Viewer and OpenGL rendering)*
-    * **GL_ARB_vertex_buffer_object** *(Viewer and OpenGL rendering)*
-    * **GL_ARB_pixel_buffer_object** *(Viewer and OpenGL rendering)*
-    * **GL_ARB_vertex_array_object** or **GL_APPLE_vertex_array_object** *(OpenGL rendering only)*
-    * **GL_ARB_framebuffer_object** or **GL_EXT_framebuffer_object** *(OpenGL rendering only)*
-    * **GL_ARB_texture_float** *(OpenGL rendering only)*
-
-If you don't have the minimum required OpenGL extensions we provide a Software OpenGL solution, install the package *Software OpenGL* from the installer. If you have the portable ZIP file copy *bin\\mesa\\opengl32.dll* to *bin\\*.
+If your graphics driver does not provide the OpenGL features Natron needs, use
+the software OpenGL renderer: select the *OpenGL Software Renderer (FOR LEGACY
+HARDWARE ONLY)* component in the installer, or, if you run Natron without
+installing it, copy *bin\\mesa\\opengl32.dll* to *bin\\*. Software rendering
+is much slower.
 
 Download
 --------
 
-Navigate to https://natrongithub.github.io/#download and download the latest version. This documentation will assume that you downloaded the installer (our default and recommended choice).
-
-.. image:: _images/win_install_01.png
-   :width: 40%
+Go to https://natrongithub.github.io/#download and download the latest version
+for Windows: a ZIP file, ``Natron-<version>-Windows-x86_64.zip``. Extract it
+(right-click it in the File Explorer and select *Extract All…*). The extracted
+folder contains Natron, ready to run, and its installer, ``Setup.exe``.
 
 Install
 -------
 
-You are now ready to start the installation, double-click on the setup file to start the installation.
+Double-click ``Setup.exe`` in the extracted folder: the installer copies Natron
+from that folder, so keep the folder until the installation is complete.
 
-.. image:: _images/win_install_02.png
-   :width: 15%
+The installer first asks whether to install Natron for all users (this needs
+administrator rights) or only for you. It then shows the license: Natron and
+its plug-ins are licensed under the GNU GPL version 2, and the licenses of all
+the components included in Natron are listed in Help → About after
+installation. The next pages let you choose:
 
-You should now be greated with the installation wizard.
+* the installation folder: the default, in *Program Files* (or in your user
+  folder for a single-user installation), is recommended;
+* the components to install. Natron and the OpenFX IO and Misc plug-ins are
+  always installed; the PyPlugs, the OpenColorIO configurations and the CImg,
+  Shadertoy, Arena and G'MIC plug-ins are selected by default. Keep the
+  *OpenGL Software Renderer (FOR LEGACY HARDWARE ONLY)* component unselected
+  unless your graphics driver does not work with Natron (see above);
+* the Start menu folder, and whether to create a desktop icon.
 
-.. image:: _images/win_install_03.png
-   :width: 40%
+The installer also associates Natron project files (``.ntp``) with Natron. At
+the end, it can start Natron. Afterwards, start Natron from the Start menu (or
+the desktop icon). You can delete the ZIP file and the extracted folder.
 
-Click 'Next' to start the installation, you first option is where to install Natron. The default location is recommended.
+Update and uninstall
+--------------------
 
-.. image:: _images/win_install_04.png
-   :width: 40%
+To update Natron, install the new version the same way: the installer offers
+the folder of the previous installation.
+To uninstall Natron, use *Settings → Apps → Installed apps* (*Apps & features*
+on Windows 10), or the *Uninstall Natron* shortcut in its Start menu folder.
 
-Your next option is the package selection, most users should accept the default. Each package has an more in-depth description if you want to know what they provide.
+Run without installing
+----------------------
 
-.. image:: _images/win_install_05.png
-   :width: 40%
-
-Then comes the standard license agreement, Natron and it's plug-ins are licensed under the GPL version 2. You can read more about the licenses for each component included in Natron after installation (in menu Help→About).
-
-.. image:: _images/win_install_06.png
-   :width: 40%
-
-The installation wizard is now ready to install Natron on your computer. The process should not take more than a minute or two (depending on your computer).
-
-.. image:: _images/win_install_07.png
-   :width: 40%
-
-The installation is now over! Start Natron and enjoy.
-
-.. image:: _images/win_install_08.png
-   :width: 40%
-
-Natron can now be started from the desktop icon or from the start menu.
-
-.. image:: _images/win_install_09.png
-   :width: 40%
-
-Maintenance
------------
-
-Natron includes a maintenance tool called 'NatronSetup', with this application you can easily upgrade Natron and it's components when a new version is available. You can also add or remove individual packages, or remove Natron completely. The application should be in the same start menu folder as Natron, or you can start it from the folder where you installed Natron.
-
-.. image:: _images/win_install_10.png
-   :width: 40%
-.. image:: _images/win_install_11.png
-   :width: 40%
-
-The application also include a basic settings category, where you can configure proxy and other advanced options.
+Natron also runs directly from the extracted folder, without installing it:
+double-click *bin\\Natron.exe*. This is useful to try a new version next to
+the installed one, or on a computer where you cannot install software. To
+remove this copy, delete the folder.
