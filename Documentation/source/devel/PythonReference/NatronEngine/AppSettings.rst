@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _AppSettings:
 
 AppSettings
@@ -23,10 +23,10 @@ Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-.. method:: NatronEngine.AppSettings.getParam(scriptName)
+.. method:: AppSettings.getParam(scriptName)
 
 
-    :param scriptName: :class:`str<NatronEngine.std::string>`
+    :param scriptName: :class:`str`
     :rtype: :class:`Param<NatronEngine.Param>`
 
 Returns a :doc:`Param` by its *scriptName*. See :ref:`this<autoVar>` section for a detailed
@@ -35,7 +35,7 @@ explanation of what is the *script-name*.
 
 
 
-.. method:: NatronEngine.AppSettings.getParams()
+.. method:: AppSettings.getParams()
 
 
     :rtype: :class:`sequence`
@@ -45,7 +45,7 @@ Returns a sequence with all :doc:`Param` composing the settings.
 
 
 
-.. method:: NatronEngine.AppSettings.restoreDefaultSettings()
+.. method:: AppSettings.restoreDefaultSettings()
 
 
 Restores all settings to their default value shipped with Natron.
@@ -54,7 +54,7 @@ Restores all settings to their default value shipped with Natron.
 
 
 
-.. method:: NatronEngine.AppSettings.saveSettings()
+.. method:: AppSettings.saveSettings()
 
 
 

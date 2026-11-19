@@ -293,7 +293,6 @@ ViewerTabPrivate::getTimeTransform(double time,
     NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(targetNode);
     if (isGroupNode) {
         NodePtr output = isGroupNode->getOutputNodeInput(false);
-        EffectInstance* outputNode = output->getEffectInstance().get();
         return getTimeTransform(time, view, output, currentNode, newTime);
     }
     if ( currentNode == targetNode  ) {

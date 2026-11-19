@@ -209,7 +209,7 @@ AddFormatDialog::AddFormatDialog(Project *project,
     _pixelAspectLabel = new Label(tr("pixel aspect:"), _parametersLine);
     _parametersLineLayout->addWidget(_pixelAspectLabel);
     _pixelAspectSpinBox = new SpinBox(this, SpinBox::eSpinBoxTypeDouble);
-    _pixelAspectSpinBox->setMinimum(0.);
+    _pixelAspectSpinBox->setMinimum(0.01); // the pixel aspect ratio must be positive
     _pixelAspectSpinBox->setValue(1.);
     _parametersLineLayout->addWidget(_pixelAspectSpinBox);
 

@@ -1350,7 +1350,9 @@ TrackMarkerPM::trackMarker(bool forward,
                 double value = correlation->getValueAtTime(frame, 0);
 
                 // Convert to a percentage
-                value /= areaPixels;
+                if (areaPixels > 0) {
+                    value /= areaPixels;
+                }
 
                 markerError->setValueAtTime(frame, value, ViewSpec::current(), 0);
             }

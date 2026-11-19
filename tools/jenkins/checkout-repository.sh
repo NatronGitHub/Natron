@@ -83,11 +83,11 @@ function checkoutRepository() {
     fi
 
 
-    # the snapshot are always built with latest version
-    # slow version:
-    #$TIMEOUT 1800 $GIT submodule update --init --recursive --remote
-    # fast version (depth=1):
-    $TIMEOUT 1800 $GIT submodule update --depth 1 --init --recursive --remote
+    # The submodules are checked out at the commits pinned in the branch, not
+    # at the tip of their remote branch (no --remote): a snapshot must build
+    # the same sources as CI. --depth 1 still gets a pinned commit that is not
+    # a branch tip: git then fetches it by sha.
+    $TIMEOUT 1800 $GIT submodule update --depth 1 --init --recursive
 
     # copy tarball of sources pruned of git files
     if [ "${TAR_SOURCES:-}" = "1" ]; then
