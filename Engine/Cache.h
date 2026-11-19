@@ -1246,6 +1246,10 @@ public:
                 /*if the entry doesn't exist on the disk cache,make a new list and insert it*/
                 if ( existingDiskCacheEntry == _diskCache.end() ) {
                     _diskCache.insert(evictedFromMemory.second->getHashKey(), evictedFromMemory.second);
+                } else {
+                    // Append to the existing list: other entries may have the same hash (e.g. other mipmap
+                    // levels), and dropping this one would orphan its file (#1128)
+                    getValueFromIterator(existingDiskCacheEntry).push_back(evictedFromMemory.second);
                 }
             }
 
@@ -1845,11 +1849,17 @@ private:
                             } catch (const std::exception & e) {
                                 qDebug() << "Error while reopening cache file: " << e.what();
                                 ret.erase(it);
+                                if ( ret.empty() ) {
+                                    _diskCache.erase(diskCached);
+                                }
 
                                 return false;
                             } catch (...) {
                                 qDebug() << "Error while reopening cache file";
                                 ret.erase(it);
+                                if ( ret.empty() ) {
+                                    _diskCache.erase(diskCached);
+                                }
 
                                 return false;
                             }
@@ -1888,11 +1898,12 @@ private:
                         }
 
                         if (!_isTiled) {
-
+                            // Remove it from the disk cache. Only remove the list of the hash if it is empty:
+                            // it may contain other entries with the same hash (e.g. other mipmap levels, #1128).
                             ret.erase(it);
-
-                            ///Remove it from the disk cache
-                            _diskCache.erase(diskCached);
+                            if ( ret.empty() ) {
+                                _diskCache.erase(diskCached);
+                            }
                         }
 
                         return true;
