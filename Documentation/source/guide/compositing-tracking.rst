@@ -269,8 +269,9 @@ sign):
 2. In the Transform tab, set **Motion Type** to **Match-Move** and
    **Transform Type** to **CornerPin**, and set the **Reference Frame** to the
    frame where the shape is drawn or the image is placed.
-3. Check **Disable Transform**, so that the Viewer shows the input unchanged
-   while you edit the CornerPin points.
+3. Check **Disable CornerPin** (called **Disable Transform** when
+   **Transform Type** is **Transform**), so that the Viewer shows the input
+   unchanged while you edit the CornerPin points.
 4. At the reference frame, set the **From** points of the CornerPin controls,
    for example to the bounding box of the Roto shape. **Set to Input Rod**
    sets them to the rectangle of the input image.

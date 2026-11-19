@@ -64,12 +64,12 @@ Setting up the Tracker
    Tracker then shows its input image unchanged, which is what you need while
    tracking.
 
-.. PENDING SCREENSHOT (not made yet): _images/tutorials-tracking/viewer-toolbar.png
-      :width: 100%
-      :align: center
-      :alt: The Tracker toolbar at the top of the Viewer
+.. figure:: _images/tutorials-tracking/viewer-toolbar.png
+   :width: 100%
+   :align: center
+   :alt: The Tracker toolbar at the top of the Viewer
 
-      The Tracker toolbar of the Viewer.
+   The Tracker toolbar of the Viewer.
 
 From left to right, the toolbar has:
 
@@ -102,19 +102,23 @@ would be a bad choice in a real shot) and features hidden for part of the shot.
 
 To stabilize or match-move a flat surface, choose at least four features on
 that surface, spread over it: here, a corner of each of three air conditioners
-and the bracket of the awning on the right.
+and the bracket of the awning on the right (at about (140, 362), (488, 373),
+(473, 62) and (720, 110), in pixels from the bottom-left corner of the frame).
+They stay in the frame during the whole shot: a feature near an edge of the
+frame would leave it when the camera moves, and its track would be lost.
 
 To add each track, hold :kbd:`Ctrl` + :kbd:`Alt` (:kbd:`Cmd` + :kbd:`Alt` on
 macOS) and click on the feature. You can also turn on **Add Track** and click,
 or press the **+** button below the track table of the Properties panel.
 
-.. PENDING SCREENSHOT (not made yet): _images/tutorials-tracking/tracks-added.png
-      :width: 100%
-      :align: center
-      :alt: Four tracks placed on corners of the facade at frame 1
+.. figure:: _images/tutorials-tracking/tracks-added.png
+   :width: 100%
+   :align: center
+   :alt: Four tracks at frame 1, on corners of three air conditioners and on the awning bracket
 
-      Four tracks at frame 1. The selected track shows its pattern (the inner
-      square) and its search window (the outer square).
+   Four tracks at frame 1, on corners of three air conditioners and on the
+   bracket of the awning. The selected track shows its pattern (the inner
+   square) and its search window (the outer square).
 
 The **pattern** is the part of the image that the tracker looks for in the
 other frames. The **search window** is the area where it looks for it, around
@@ -154,13 +158,13 @@ matched at each frame: green is a good match, red a bad one. Turn off
 **Refresh Viewer** to track faster: the Viewer then only redraws the tracks,
 not the image.
 
-.. PENDING SCREENSHOT (not made yet): _images/tutorials-tracking/tracks-tracked.png
-      :width: 100%
-      :align: center
-      :alt: The paths of the four tracks over the 48 frames, drawn in green
+.. figure:: _images/tutorials-tracking/tracks-tracked.png
+   :width: 100%
+   :align: center
+   :alt: The paths of the four tracks over the 48 frames, drawn in green
 
-      After tracking, with Show Error on: the paths of the tracks are green, so
-      the patterns were found at every frame.
+   After tracking, with Show Error on: the paths of the tracks are green, so
+   the patterns were found at all 48 frames.
 
 Checking and fixing the tracks
 ------------------------------
@@ -193,29 +197,25 @@ drifts or jumps must be fixed before its data is used.
   a track at the frames where it was lost, so that these frames are not used
   in the next steps.
 
-.. PENDING SCREENSHOT (not made yet): _images/tutorials-tracking/tracking-tab.png
-      :width: 500px
-      :align: center
-      :alt: The Tracking tab of the Tracker properties, with four tracks in the track table
+.. figure:: _images/tutorials-tracking/tracking-tab.png
+   :width: 500px
+   :align: center
+   :alt: The Tracking tab of the Tracker properties, with four tracks in the track table
 
-      The Tracking tab: the tracking settings and the track table.
+   The Tracking tab: the tracking settings and the track table.
 
 Below the track table, **Average** creates a new track whose position is the
 average of the selected tracks. It can replace several noisy tracks of the same
 feature by a single, smoother one.
 
-The tracked positions are animation curves. To look at them, open the Curve
-Editor, unfold the Tracker and the track, and select the curves of its
-**Center**. A sudden step in a curve is usually a frame where the track
-jumped.
-
-.. PENDING SCREENSHOT (not made yet): _images/tutorials-tracking/curve-editor.png
-      :width: 100%
-      :align: center
-      :alt: The Curve Editor showing the x and y curves of the center of a track
-
-      The Curve Editor shows the x and y position of the center of a track at
-      each frame.
+The tracked positions are animated parameters of each track, but the Curve
+Editor does not show them: it only lists the parameters of the Tracker node
+itself, such as the computed transform. To check a track,
+look at its path in the Viewer, which shows its center at every tracked
+frame: a sudden kink in the path is usually a frame where the track jumped.
+The **Center X** and **Center Y** columns of the track table show the
+position at the current frame, with the keyframe color when it was tracked
+at that frame. To read all the values, use Python (see :doc:`/devel/tracker`).
 
 Stabilizing the shot
 --------------------
@@ -236,20 +236,20 @@ With **Compute Transform Automatically** checked (the default), the transform
 is computed at once; otherwise press **Compute**. The Tracker now outputs the
 stabilized image.
 
-.. PENDING SCREENSHOT (not made yet): _images/tutorials-tracking/transform-tab.png
-      :width: 500px
-      :align: center
-      :alt: The Transform tab of the Tracker properties, with Motion Type set to Stabilize
+.. figure:: _images/tutorials-tracking/transform-tab.png
+   :width: 500px
+   :align: center
+   :alt: The Transform tab of the Tracker properties, with Motion Type set to Stabilize
 
-      The Transform tab, set to stabilize the shot with a CornerPin.
+   The Transform tab, set to stabilize the shot with a CornerPin.
 
-.. PENDING SCREENSHOT (not made yet): _images/tutorials-tracking/stabilized-frames.jpg
-      :width: 100%
-      :align: center
-      :alt: Frames 1, 24 and 48 of the stabilized shot: the facade is at the same place in all three
+.. figure:: _images/tutorials-tracking/stabilized-frames.jpg
+   :width: 100%
+   :align: center
+   :alt: Frames 1, 24 and 48 of the stabilized shot: the facade is at the same place in all three
 
-      Frames 1, 24 and 48 after stabilization: the facade stays still, and the
-      edges of the moving frame become visible.
+   Frames 1, 24 and 48 after stabilization: the facade stays still, and the
+   edges of the moving frame become visible.
 
 The stabilized image does not cover the whole frame anymore: the parts that
 were outside the original image are black. Scale the result up a little (for
@@ -276,12 +276,12 @@ Now place an image on the facade, between the two lines of laundry, as if it
 were a poster glued to the wall. The Tracker computes the motion of the wall,
 and an exported CornerPin applies it to the poster.
 
-.. PENDING SCREENSHOT (not made yet): _images/tutorials-tracking/matchmove-graph.png
-      :width: 600px
-      :align: center
-      :alt: Node graph: the poster goes through two CornerPin nodes and is merged over the plate
+.. figure:: _images/tutorials-tracking/matchmove-graph.png
+   :width: 600px
+   :align: center
+   :alt: Node graph: the poster goes through two CornerPin nodes and is merged over the plate
 
-      The node graph of the match-move.
+   The node graph of the match-move.
 
 1. Read the poster image with a second Read node, and add a
    :ref:`CornerPin <net.sf.openfx.CornerPinPlugin>` after it (here called
@@ -303,13 +303,13 @@ Play the shot: the poster now follows the wall. At the reference frame, the
 exported CornerPin does nothing, and the poster is where you placed it. At the
 other frames, it moves the poster as the wall moved since the reference frame.
 
-.. PENDING SCREENSHOT (not made yet): _images/tutorials-tracking/matchmove-frames.jpg
-      :width: 100%
-      :align: center
-      :alt: Frames 1, 24 and 48 of the result: a picture of a rose stays at the same place on the wall
+.. figure:: _images/tutorials-tracking/matchmove-frames.jpg
+   :width: 100%
+   :align: center
+   :alt: Frames 1, 24 and 48 of the result: a picture of a rose stays at the same place on the wall
 
-      Frames 1, 24 and 48 of the match-move: the poster stays on the wall while
-      the camera moves.
+   Frames 1, 24 and 48 of the match-move: the poster stays on the wall while
+   the camera moves.
 
 To make the poster look like part of the shot, grade it to match the plate,
 and add a little blur or grain if the plate has them.
