@@ -38,6 +38,7 @@ set(Tests_SOURCES
     NodePreview_Test.cpp
     OfxCPURenderSupport_Test.cpp
     OfxCustomParamInterp_Test.cpp
+    OfxHostProperties_Test.cpp
     OfxImageMemory_Test.cpp
     OfxInstanceChanged_Test.cpp
     OfxMultiThreadSuite_Test.cpp
@@ -91,6 +92,13 @@ target_include_directories(Tests
 set_property(SOURCE google-test/src/gtest-all.cc google-mock/src/gmock-all.cc
     APPEND PROPERTY COMPILE_OPTIONS ${NATRON_THIRD_PARTY_NO_WARNINGS})
 add_test(NAME Tests COMMAND Tests)
+# The same OFX tests with the plug-ins known from the OFX plug-in cache that Tests wrote, instead of a
+# scan: the binaries are loaded at the first use of their plug-ins (OfxHost::getPluginContextAndDescribe()).
+# Tests sets up the fixture (it scans with --clear-openfx-cache and writes the cache), so
+# `ctest -R TestsOfxCache` runs Tests first too.
+add_test(NAME TestsOfxCache COMMAND Tests "--gtest_filter=OfxHostProperties.*:OfxTestPlugin*")
+set_tests_properties(Tests PROPERTIES FIXTURES_SETUP OfxPluginCache)
+set_tests_properties(TestsOfxCache PROPERTIES FIXTURES_REQUIRED OfxPluginCache ENVIRONMENT "NATRON_TESTS_KEEP_OFX_CACHE=1")
 
 # A minimal OFX plug-in bundle for the tests (OfxTestPlugin/NatronTestPlugin.cpp, read through
 # OfxTestPlugin.h). It is assembled in the build tree, found by the Tests binary through

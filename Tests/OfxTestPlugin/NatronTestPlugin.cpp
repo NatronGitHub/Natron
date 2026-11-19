@@ -41,6 +41,12 @@
 //     choosing a preset sets "presetA", "presetB" and "presetC" in a paramEditBegin/paramEditEnd block,
 //     and sets "preset" back to 0;
 //   - "uiOnly" has kOfxParamPropEvaluateOnChange=0, "noUndo" has kOfxParamPropCanUndo=0.
+//
+// The binary exports OfxSetHost (OFX 1.5), and counts its calls ("Binary.setHost"), whether it came
+// before OfxGetNumberOfPlugins ("Binary.setHostBeforeGetNumberOfPlugins") and the kOfxPropAPIVersion
+// of the host it gets ("Binary.setHostAPIVersion0", "Binary.setHostAPIVersion1"). ParamInteract
+// calls clipGetHandle() in kOfxImageEffectActionDescribeInContext, where it is not valid, and records
+// the status and whether the clip was set to NULL ("ParamInteract.describeClipGetHandle*").
 
 #include <cstdio>
 #include <cstring>
@@ -272,6 +278,16 @@ paramInteractPluginMain(const char* action,
         OfxStatus stat = defineClips(effect);
         if (stat != kOfxStatOK) {
             return stat;
+        }
+        {
+            // "Not a valid call in any of the describe actions": the host must return
+            // kOfxStatErrBadHandle and set the clip to NULL (#1366)
+            OfxImageClipHandle clip = (OfxImageClipHandle)&stat; // not NULL
+            OfxStatus clipStat = gEffectSuite->clipGetHandle(effect, kOfxImageEffectSimpleSourceClipName, &clip, 0);
+            incrementCounter(clipStat == kOfxStatErrBadHandle ? "ParamInteract.describeClipGetHandleBadHandle" :
+                             "ParamInteract.describeClipGetHandleOtherStatus");
+            incrementCounter(clip == 0 ? "ParamInteract.describeClipGetHandleNull" :
+                             "ParamInteract.describeClipGetHandleNotNull");
         }
         OfxParamSetHandle paramSet = getParamSet(effect);
         OfxPropertySetHandle props;
@@ -722,16 +738,41 @@ extern "C" {
 // For the tests (Tests/OfxTestPlugin.h): the value of a counter, 0 if it was never set.
 OfxExport int NatronTestPluginGetCounter(const char* name);
 
+// OFX 1.5: "The order of calls is then: 1) OfxSetHost, 2) OfxGetNumberOfPlugins, 3) OfxGetPlugin"
+OfxExport OfxStatus
+OfxSetHost(const OfxHost* host)
+{
+    int apiVersion[2] = { 0, 0 };
+
+    if (host) {
+        const OfxPropertySuiteV1* propSuite = (const OfxPropertySuiteV1*)host->fetchSuite(host->host, kOfxPropertySuite, 1);
+        if (propSuite) {
+            propSuite->propGetIntN(host->host, kOfxPropAPIVersion, 2, apiVersion);
+        }
+    }
+    std::lock_guard<std::mutex> l(gMutex);
+    ++gCounters["Binary.setHost"];
+    if (gCounters["Binary.getNumberOfPlugins"] == 0) {
+        ++gCounters["Binary.setHostBeforeGetNumberOfPlugins"];
+    }
+    gCounters["Binary.setHostAPIVersion0"] = apiVersion[0];
+    gCounters["Binary.setHostAPIVersion1"] = apiVersion[1];
+
+    return kOfxStatOK;
+}
+
 OfxExport int
 OfxGetNumberOfPlugins(void)
 {
+    incrementCounter("Binary.getNumberOfPlugins");
+
     return (int)( sizeof(gPlugins) / sizeof(gPlugins[0]) );
 }
 
 OfxExport OfxPlugin*
 OfxGetPlugin(int nth)
 {
-    if ( (nth < 0) || ( nth >= OfxGetNumberOfPlugins() ) ) {
+    if ( (nth < 0) || ( nth >= (int)( sizeof(gPlugins) / sizeof(gPlugins[0]) ) ) ) {
         return 0;
     }
 

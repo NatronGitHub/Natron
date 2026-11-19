@@ -65,6 +65,7 @@ SOURCES += \
     NodePreview_Test.cpp \
     OfxCPURenderSupport_Test.cpp \
     OfxCustomParamInterp_Test.cpp \
+    OfxHostProperties_Test.cpp \
     OfxImageMemory_Test.cpp \
     OfxInstanceChanged_Test.cpp \
     OfxMultiThreadSuite_Test.cpp \
