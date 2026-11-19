@@ -55,6 +55,7 @@ SOURCES += \
     Hash64_Test.cpp \
     ImageCache_Test.cpp \
     Image_Test.cpp \
+    KnobExpressionCache_Test.cpp \
     KnobFile_Test.cpp \
     KnobSlave_Test.cpp \
     KnobStringAnimation_Test.cpp \
