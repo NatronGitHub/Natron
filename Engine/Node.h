@@ -813,10 +813,19 @@ public:
      * eMessageTypeError : you want to inform the user an error occurred.
      * eMessageTypeQuestion : you want to ask the user about something.
      * The function will return true always except for a message of type eMessageTypeQuestion, in which
-     * case the function may return false if the user pressed the 'No' button.
+     * case it returns true only if the user pressed the 'Yes' button: false if the user answered 'No', or could not
+     * be asked (use question() to tell these apart).
      * @param content The message you want to pass.
      **/
     bool message(MessageTypeEnum type, const std::string & content) const;
+
+    /**
+     * @brief Ask the user a yes/no question, in a modal dialog. Returns eStandardButtonYes or eStandardButtonNo,
+     * the user's answer, or eStandardButtonNoButton if the user could not be asked: in background mode, from a
+     * thread other than the main thread, or while the node is aborted.
+     * message(eMessageTypeQuestion, content) is question(content) == eStandardButtonYes.
+     **/
+    StandardButtonEnum question(const std::string & content) const;
 
     /**
      * @brief Use this function to post a persistent message to the user. It will be displayed on the

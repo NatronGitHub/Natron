@@ -3091,6 +3091,14 @@ EffectInstance::message(MessageTypeEnum type,
     return node ? node->message(type, content) : false;
 }
 
+StandardButtonEnum
+EffectInstance::question(const std::string & content) const
+{
+    NodePtr node = getNode();
+    assert(node);
+    return node ? node->question(content) : eStandardButtonNoButton;
+}
+
 void
 EffectInstance::setPersistentMessage(MessageTypeEnum type,
                                      const std::string & content)

@@ -3783,6 +3783,10 @@ bool
 Node::message(MessageTypeEnum type,
               const std::string & content) const
 {
+    if (type == eMessageTypeQuestion) {
+        return question(content) == eStandardButtonYes;
+    }
+
     ///If the node was aborted, don't transmit any message because we could cause a deadlock
     if ( _imp->effect->aborted() || (!_imp->nodeCreated && _imp->wasCreatedSilently)) {
         std::cerr << getScriptName_mt_safe() << " message: " << content << std::endl;
@@ -3832,13 +3836,63 @@ Node::message(MessageTypeEnum type,
         Dialogs::errorDialog(getLabel_mt_safe(), content);
 
         return true;
-    case eMessageTypeQuestion:
-
-        return Dialogs::questionDialog(getLabel_mt_safe(), content, false) == eStandardButtonYes;
+    case eMessageTypeQuestion: // handled by question()
     default:
 
         return false;
     }
+}
+
+StandardButtonEnum
+Node::question(const std::string & content) const
+{
+    // Only the user may answer: whenever nobody is asked, return eStandardButtonNoButton, never a reply
+    // (OFX: "It is an error to post a question message if the plugin is not in an interactive session").
+
+    ///If the node was aborted, don't transmit any message because we could cause a deadlock
+    if ( _imp->effect->aborted() || (!_imp->nodeCreated && _imp->wasCreatedSilently) ) {
+        std::cerr << getScriptName_mt_safe() << " question (not asked): " << content << std::endl;
+
+        return eStandardButtonNoButton;
+    }
+
+    // As for the other messages, a question from a separate thread (e.g. a render thread) is not shown
+    // in a dialog (see https://github.com/MrKepzie/Natron/issues/1313): it is logged, and not answered.
+    if ( QThread::currentThread() != qApp->thread() ) {
+        LogEntry::LogEntryColor c;
+        if ( getColor(&c.r, &c.g, &c.b) ) {
+            c.colorSet = true;
+        }
+        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( getLabel_mt_safe().c_str() ), QDateTime::currentDateTime(),
+                                        tr("Question not asked (posted from a thread other than the main thread): %1").arg( QString::fromUtf8( content.c_str() ) ),
+                                        false, c);
+
+        return eStandardButtonNoButton;
+    }
+
+#ifdef NATRON_ENABLE_IO_META_NODES
+    // the user is asked through the Read/Write container node: its answer is the answer
+    NodePtr ioContainer = getIOContainer();
+    if (ioContainer) {
+        return ioContainer->question(content);
+    }
+#endif
+    // Some nodes may be hidden from the user but may still report errors (such that the group is in fact hidden to the user)
+    if ( !isPartOfProject() && getGroup() ) {
+        NodeGroup* isGroup = dynamic_cast<NodeGroup*>( getGroup().get() );
+        if (isGroup) {
+            return isGroup->question(content);
+        }
+    }
+
+    // no interactive session (NatronRenderer, natron-python): nobody can answer
+    if ( appPTR->isBackground() ) {
+        std::cerr << getScriptName_mt_safe() << " question (not asked, no interactive session): " << content << std::endl;
+
+        return eStandardButtonNoButton;
+    }
+
+    return Dialogs::questionDialog(getLabel_mt_safe(), content, false) == eStandardButtonYes ? eStandardButtonYes : eStandardButtonNo;
 }
 
 void
