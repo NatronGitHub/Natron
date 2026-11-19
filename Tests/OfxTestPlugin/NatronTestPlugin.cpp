@@ -385,6 +385,9 @@ OfxPlugin gPlugins[] = {
 } // anonymous namespace
 
 extern "C" {
+// For the tests (Tests/OfxTestPlugin.h): the value of a counter, 0 if it was never set.
+OfxExport int NatronTestPluginGetCounter(const char* name);
+
 OfxExport int
 OfxGetNumberOfPlugins(void)
 {
@@ -401,7 +404,6 @@ OfxGetPlugin(int nth)
     return &gPlugins[nth];
 }
 
-// For the tests (Tests/OfxTestPlugin.h): the value of a counter, 0 if it was never set.
 OfxExport int
 NatronTestPluginGetCounter(const char* name)
 {

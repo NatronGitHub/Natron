@@ -22,13 +22,15 @@
 
 TEMPLATE = lib
 CONFIG += plugin no_plugin_name_prefix
-CONFIG -= qt app_bundle lib_bundle
-CONFIG += c++17
 TARGET = NatronTestPlugin
+
+# the compiler, deployment target and architecture flags of the rest of the build
+include(../../global.pri)
+CONFIG -= qt app_bundle lib_bundle
 
 include(OfxTestPlugin.pri)
 
-INCLUDEPATH += ../../libs/OpenFX/include
+INCLUDEPATH += $$PWD/../../libs/OpenFX/include
 DESTDIR = $${NATRON_TEST_OFX_BINARY_DIR}
 QMAKE_EXTENSION_SHLIB = ofx
 win32: TARGET_EXT = .ofx
