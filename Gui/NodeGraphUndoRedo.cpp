@@ -1899,7 +1899,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                 NodeToConnect ntc;
 
                 assert(groupInputs[i]);
-                std::map<NodePtr, int> outputConnected;
+                std::list<std::pair<NodePtr, int> > outputConnected;
                 groupInputs[i]->getOutputsConnectedToThisNode(&outputConnected);
 
                 NodeGuiIPtr inputGui_i = input->getNodeGui();
@@ -1913,7 +1913,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                     inputY = p.y();
                 }
 
-                for (std::map<NodePtr, int>::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
+                for (std::list<std::pair<NodePtr, int> >::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
                     NodeGuiPtr outputGui;
                     ///Find the new node that was inlined, based on the script name of the old node in the group
                     for (std::list<std::pair<std::string, NodeGuiPtr> >::iterator it3 = newNodes.begin(); it3 != newNodes.end(); ++it3) {
@@ -1923,7 +1923,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                         }
                     }
                     assert(outputGui);
-                    ntc.outputs.insert( std::make_pair(outputGui, it2->second) );
+                    ntc.outputs.push_back( std::make_pair(outputGui, it2->second) );
                 }
 
                 expandedGroup.connections[i] = ntc;
@@ -1954,20 +1954,23 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                 firstInputPos = inputGui->mapToScene( inputGui->mapFromParent( inputGui->getPos_mt_safe() ) );
                 outputConnection.input = inputGui;
 
-                std::map<NodePtr, int> outputConnected;
+                std::list<std::pair<NodePtr, int> > outputConnected;
                 group->getNode()->getOutputsConnectedToThisNode(&outputConnected);
-                for (std::map<NodePtr, int>::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
+                for (std::list<std::pair<NodePtr, int> >::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
                     NodeGuiIPtr outputGui_i = it2->first->getNodeGui();
                     assert(outputGui_i);
                     NodeGuiPtr outputGui = std::dynamic_pointer_cast<NodeGui>(outputGui_i);
                     assert(outputGui);
-                    outputsConnectedToGroup.push_back(outputGui);
+                    // an output node connected to the group through several inputs is listed once per input
+                    if ( std::find(outputsConnectedToGroup.begin(), outputsConnectedToGroup.end(), outputGui) == outputsConnectedToGroup.end() ) {
+                        outputsConnectedToGroup.push_back(outputGui);
+                    }
 
                     QPointF p = outputGui->mapToScene( outputGui->mapFromParent( outputGui->getPos_mt_safe() ) );
                     if (p.y() < outputY) {
                         outputY = p.y();
                     }
-                    outputConnection.outputs.insert( std::make_pair(outputGui, it2->second) );
+                    outputConnection.outputs.push_back( std::make_pair(outputGui, it2->second) );
                 }
                 expandedGroup.connections[-1] = outputConnection;
             }
@@ -2072,7 +2075,7 @@ InlineGroupCommand::redo()
                 if (!input) {
                     continue;
                 }
-                for (NodeGuisMap::iterator it3 = it2->second.outputs.begin();
+                for (NodeGuiLinks::iterator it3 = it2->second.outputs.begin();
                      it3 != it2->second.outputs.end(); ++it3) {
                     NodeGuiPtr node = it3->first.lock();
                     if (node) {

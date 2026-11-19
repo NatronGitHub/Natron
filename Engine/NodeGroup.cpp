@@ -718,9 +718,9 @@ NodeCollection::autoConnectNodes(const NodePtr& selected,
         if ( !created->isOutputNode() ) {
             ///we find all the nodes that were previously connected to the selected node,
             ///and connect them to the created node instead.
-            std::map<NodePtr, int> outputsConnectedToSelectedNode;
+            std::list<std::pair<NodePtr, int> > outputsConnectedToSelectedNode;
             selected->getOutputsConnectedToThisNode(&outputsConnectedToSelectedNode);
-            for (std::map<NodePtr, int>::iterator it = outputsConnectedToSelectedNode.begin();
+            for (std::list<std::pair<NodePtr, int> >::iterator it = outputsConnectedToSelectedNode.begin();
                  it != outputsConnectedToSelectedNode.end(); ++it) {
                 if ( it->first->getParentMultiInstanceName().empty() ) {
                     bool ok = disconnectNodes(selected, it->first);

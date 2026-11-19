@@ -450,12 +450,14 @@ public:
 
 private:
 
-    typedef std::map<NodeGuiWPtr, int32_t, std::owner_less<NodeGuiWPtr>> NodeGuisMap;
+    // One (output node, input number) pair per link: an output node may be
+    // connected to the same input node through several of its inputs (#1168).
+    typedef std::list<std::pair<NodeGuiWPtr, int32_t> > NodeGuiLinks;
 
     struct NodeToConnect
     {
         NodeGuiWPtr input;
-        NodeGuisMap outputs;
+        NodeGuiLinks outputs;
     };
 
     struct InlinedGroup

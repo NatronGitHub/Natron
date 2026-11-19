@@ -59,6 +59,7 @@ SOURCES += \
     KnobSlave_Test.cpp \
     KnobStringAnimation_Test.cpp \
     Lut_Test.cpp \
+    MultiInputLinks_Test.cpp \
     NaNGuards_FastMath.cpp \
     NaNGuards_Test.cpp \
     NodeGroup_Test.cpp \

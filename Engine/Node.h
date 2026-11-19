@@ -522,11 +522,11 @@ public:
 
 
     /**
-     * @brief Returns in 'outputs' a map of all nodes connected to this node
-     * where the value of the map is the input index from which these outputs
-     * are connected to this node.
+     * @brief Returns in 'outputs' one (output node, input number) pair per link
+     * from this node to an output node. An output node connected to this node
+     * through several of its inputs appears once per input (#1168).
      **/
-    void getOutputsConnectedToThisNode(std::map<NodePtr, int>* outputs);
+    void getOutputsConnectedToThisNode(std::list<std::pair<NodePtr, int> >* outputs);
 
     const NodesWList & getOutputs() const;
     const NodesWList & getGuiOutputs() const;
