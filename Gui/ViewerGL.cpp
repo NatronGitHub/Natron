@@ -4139,6 +4139,9 @@ ViewerGL::clearLastRenderedTexture()
                 _imp->displayTextures[i].lastRenderedTiles[j].reset();
             }
             toUnRegister += _imp->displayTextures[i].memoryHeldByLastRenderedImages;
+            // Otherwise the next endTransferBufferFromRAMToGPU() unregisters it again, and the size_t memory
+            // count of the viewer node wraps around (#1122)
+            _imp->displayTextures[i].memoryHeldByLastRenderedImages = 0;
         }
         if (toUnRegister > 0) {
             getInternalNode()->unregisterPluginMemory(toUnRegister);
