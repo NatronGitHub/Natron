@@ -38,6 +38,7 @@ set(Tests_SOURCES
     NodeGroup_Test.cpp
     NodePreview_Test.cpp
     OfxCPURenderSupport_Test.cpp
+    OfxClipGetImage_Test.cpp
     OfxCustomParamInterp_Test.cpp
     OfxHostProperties_Test.cpp
     OfxImageMemory_Test.cpp
