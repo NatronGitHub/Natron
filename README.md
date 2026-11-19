@@ -31,15 +31,15 @@ If you are willing to help, please contact the development team on the [pixls.us
 
 - 32-bit floating-point linear color processing pipeline.
 - Color management handled by [OpenColorIO](https://opencolorio.org/).
-- Dozens of video and image formats supported such as: H264, DNxHR, EXR, DPX, TIFF, JPG, PNG through [OpenImageIO](https://github.com/OpenImageIO/oiio) and [FFmpeg](https://ffmpeg.org/).
-- Support for many free, open-source, and commercial OpenFX plugins—currently almost all features of OpenFX v1.4 are supported. Those marked with (+) are included in the binary releases.
+- Dozens of video and image formats supported such as: H264, DNxHR, EXR, DPX, TIFF, JPG, PNG through [OpenImageIO](https://github.com/AcademySoftwareFoundation/OpenImageIO) and [FFmpeg](https://ffmpeg.org/).
+- Support for many free, open-source, and commercial OpenFX plugins. Natron implements the OpenFX 1.4 host API with the Natron and Nuke extensions; it is built with the OpenFX 1.5.1 headers, but the features added in OpenFX 1.5 are not supported yet. Those marked with (+) are included in the binary releases.
   - [OpenFX-IO](https://github.com/NatronGitHub/openfx-io) (+)
   - [OpenFX-Misc](https://github.com/NatronGitHub/openfx-misc) (+)
   - [OpenFX-G'MIC](https://github.com/NatronGitHub/openfx-gmic) (+)
   - [OpenFX-Arena](https://github.com/NatronGitHub/openfx-arena) (+)
-  - [All OFX products from RevisionFX](http://www.revisionfx.com)
+  - [RE:Vision Effects](https://revisionfx.com/) OpenFX plugins
   - [Boris FX](https://borisfx.com/) OpenFX plugins, including Sapphire
-  - [Furnace by The Foundry](http://www.thefoundry.co.uk/products/furnace/)
+  - [Neat Video](https://www.neatvideo.com/) denoiser
   - ...And many more! Please tell us if you successfully tested other commercial plugins.
 - Intuitive user interface: Natron aims not to break habits by providing an intuitive and familiar user interface. It is possible to customize and separate the graphical user interface on any number of screens. You can re-use your layouts and share your layout files (.nl).
 - Performance: In Natron, anything you do produces real-time feedback in the viewer thanks to the optimized multi-threaded rendering pipeline and support for proxy rendering (computing at a lower resolution to speed up rendering).
@@ -59,37 +59,29 @@ If you are willing to help, please contact the development team on the [pixls.us
   - Nodes groups as Python scripts
   - Script editor to control the application overall
   - User-defined python callbacks to respond to particular checkpoints of the internals of the software (change of a parameter, before rendering a frame, etc…)
-  - Integration of Pyside to the GUI so that the interface is extensible with new menus and windows
+  - Integration of PySide to the GUI so that the interface is extensible with new menus and windows
 
 - Multi-channel compositing: Natron can manipulate multi-layered EXR files thanks to OpenImageIO. Users can choose to work with any layer or channel on any node, new custom layers can also be created.
 
 ## Requirements
 
-A machine running one of the supported operating systems (GNU/Linux, macOS, Microsoft Windows), and a 32-bits x86 or 64-bits x86-64 processor.
+Natron 2.6 binaries are 64-bit only:
 
-An OpenGL 2.0 compatible graphics card is needed to run Natron (2.1+) with hardware-accelerated rendering. Other graphics cards work with software-only rendering (see below).
+- Windows 10 or later, 64-bit (x86-64).
+- macOS 14 (Sonoma) or later, on Apple Silicon (arm64) or Intel (x86-64).
+- Linux (x86-64 or aarch64) with glibc 2.34 or later, for example RHEL/Rocky Linux/AlmaLinux 9, Debian 12, Ubuntu 22.04 LTS, or later. The binaries are built on Rocky Linux 9, and use the system's C++ runtime, X11 and OpenGL libraries.
 
-The following graphics cards are supported for hardware-accelerated rendering:
+The viewer needs OpenGL 2.0 with the `GL_ARB_vertex_buffer_object` and `GL_ARB_pixel_buffer_object` extensions, which almost any graphics card or integrated GPU from the last fifteen years provides. GPU rendering also needs `GL_ARB_texture_float`, `GL_ARB_framebuffer_object` (or `GL_EXT_framebuffer_object`) and `GL_ARB_vertex_array_object` (or `GL_APPLE_vertex_array_object`).
 
-- Intel GMA 3150 (Linux-only)
-- Intel GMA X3xxx (Linux-only)
-- Intel GMA X4xxx (Windows 7 & Linux)
-- Intel HD (Ironlake) (Windows 7 & Linux)
-- Intel HD 2000/3000 (Sandy Bridge) (Windows 7/Linux/Mac)
-- Intel HD 4000 and greater (All platforms)
-- Nvidia GeForce 6 series and greater
-- Nvidia Quadro FX and greater
-- Nvidia Quadro NVS 285 and greater
-- ATI/AMD Radeon R300 and greater
-- ATI/AMD FireGL T2-64 and greater (FirePro)
+If the graphics driver is not good enough, Natron can use a software OpenGL renderer (much slower). On Linux, set the environment variable `LIBGL_ALWAYS_SOFTWARE=1` before running Natron. On Windows, select the "OpenGL Software Renderer (FOR LEGACY HARDWARE ONLY)" component in the installer.
 
-On Windows and Linux you can enable software rendering. On Linux, enable the environment variable LIBGL_ALWAYS_SOFTWARE=1 before running Natron. On Windows, enable the legacy hardware package in the installer.
+See [System requirements](https://natron.readthedocs.io/en/rb-2.6/guide/getstarted-installation.html#system-requirements) in the User Guide for details.
 
 ## Installing
 
 ### Binary distribution
 
-Standalone binary distributions of Natron are available for GNU/Linux, Windows, and macOS on [GitHub](https://github.com/NatronGitHub/Natron/releases), or from [the Natron web site](https://natrongithub.github.io/#download). These distributions contain Natron and four included sets of OpenFX plugins:
+Binary distributions of Natron are available for GNU/Linux (a portable `.tar.xz` archive), Windows (a `.zip` archive that runs as is and contains an installer, `Setup.exe`), and macOS (a `.dmg`) on [GitHub](https://github.com/NatronGitHub/Natron/releases), or from [the Natron web site](https://natrongithub.github.io/#download). These distributions contain Natron and four included sets of OpenFX plugins:
 
 - [openfx-io](https://github.com/NatronGitHub/openfx-io/)
 - [openfx-misc](https://github.com/NatronGitHub/openfx-misc)
@@ -105,7 +97,7 @@ For each architecture / operating system, you can either download a stable relea
 There are instructions for building Natron and the basic plugins from source in this directory on various architectures / operating systems. Natron is built with CMake; the qmake build is deprecated and will be removed in a future release ([#1181](https://github.com/NatronGitHub/Natron/issues/1181)):
 
 - [GNU/Linux](INSTALL_LINUX.md)
-- [macOS](INSTALL_MACOS.md) (on an Apple Silicon Mac, [tools/tart](tools/tart/README.md) also builds the macOS 15 arm64 DMG automatically in a VM)
+- [macOS](INSTALL_MACOS.md) (on an Apple Silicon Mac, [tools/tart](tools/tart/README.md) also builds the arm64 DMG, for macOS 14 and later, automatically in a VM; build the Intel DMG with the MacPorts steps of INSTALL_MACOS.md on an Intel Mac)
 - [FreeBSD](INSTALL_FREEBSD.md)
 - [Windows](INSTALL_WINDOWS.md)
 
