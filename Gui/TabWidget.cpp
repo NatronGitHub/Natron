@@ -2107,9 +2107,11 @@ TabWidget::onTabScriptNameChanged(PanelWidget* tab,
     }
     std::string appID = _imp->gui->getApp()->getAppIDString();
     std::stringstream ss;
-    ss << "if hasattr(" << appID << "." << paneName << ",\"" << oldName << "\"):\n";
+    // The old variable may be missing (see removeTabToPython()): only delete it if it exists, and
+    // declare the new one in any case.
+    ss << "if hasattr(" << appID << ", '" << paneName << "') and hasattr(" << appID << "." << paneName << ", '" << oldName << "'):\n";
     ss << "    del " << appID << "." << paneName << "." << oldName << "\n";
-    ss << appID << "." << paneName << "." << newName << " = " << appID << ".getViewer(\"" << newName << "\")\n";
+    ss << appID << "." << paneName << "." << newName << " = " << appID << ".getViewer('" << newName << "')\n";
 
     std::string err;
     std::string script = ss.str();
