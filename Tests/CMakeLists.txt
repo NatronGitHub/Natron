@@ -35,6 +35,7 @@ set(Tests_SOURCES
     NodeGroup_Test.cpp
     NodePreview_Test.cpp
     OfxCPURenderSupport_Test.cpp
+    OfxImageMemory_Test.cpp
     OfxMultiThreadSuite_Test.cpp
     OfxPluginDeprecated_Test.cpp
     OfxTestPlugin_Test.cpp
