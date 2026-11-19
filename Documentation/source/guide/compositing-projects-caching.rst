@@ -202,8 +202,9 @@ comes from the cache.
 
 **Clear All Caches** (:kbd:`Ctrl+Shift+K`, :kbd:`Cmd+Shift+K` on macOS)
    Stops the Viewers, empties all the caches above, then renders the Viewers
-   again. It does not delete the auto-save files: they are only deleted when
-   you decline to restore them, when Natron starts after a crash.
+   again. It does not delete the auto-save files: Natron deletes a project's
+   auto-save when you save or close it, and the crash-recovery files when you
+   decline to restore them at startup.
 
 **Clear Plug-ins Load Cache**
    Natron keeps a list of the OpenFX plug-ins it found, so that it starts
