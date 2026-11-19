@@ -229,6 +229,11 @@ ViewerInstance::forceFullComputationOnNextFrame()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
+    // The forced render does not use nor fill the texture cache, so remove the textures of the current frame of
+    // this viewer from the cache: they would be displayed again by the next render that uses it, e.g. after a pan
+    // or a zoom (#1115). This is synchronous, so that the next render can't find them. The other frames are kept.
+    appPTR->removeAllTexturesFromCacheForHolderAtTime( getNode().get(), getTimeline()->currentFrame() );
+
     QMutexLocker forceRenderLocker(&_imp->forceRenderMutex);
     _imp->forceRender[0] = _imp->forceRender[1] = true;
 }
@@ -940,19 +945,6 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
         outArgs->isDoingPartialUpdates = _imp->isDoingPartialUpdates;
     }
 
-    // Fill the gamma LUT if it has never been filled yet
-    bool gammaLookupEmpty;
-    {
-        QReadLocker k(&_imp->gammaLookupMutex);
-        gammaLookupEmpty = _imp->gammaLookup.empty();
-    }
-    if (gammaLookupEmpty) {
-        QWriteLocker k(&_imp->gammaLookupMutex);
-        if ( _imp->gammaLookup.empty() ) {
-            _imp->fillGammaLut(outArgs->params->gamma);
-        }
-    }
-
     // Flag that we are going to render
     outArgs->isRenderingFlag = std::make_shared<RenderingFlagSetter>( getNode() );
 } // ViewerInstance::setupMinimalUpdateViewerParams
@@ -1070,7 +1062,8 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
 
     // Texture rect contains the pixel coordinates in the image to be rendered
 
-    if (useCache) {
+    // A forced render (Refresh) must not use the cached textures (#1115)
+    if (useCache && !outArgs->forceRender) {
         FrameEntryLocker entryLocker(_imp.get());
         for (std::list<UpdateViewerParams::CachedTile>::iterator it = outArgs->params->tiles.begin(); it != outArgs->params->tiles.end(); ++it) {
             FrameKey key(getNode().get(),
@@ -1099,12 +1092,6 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                 }
             }
 
-            // If we want to force a refresh, we remove from  the cache texture
-            if (outArgs->forceRender && hasTextureCached) {
-                for (std::list<FrameEntryPtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
-                    appPTR->removeFromViewerCache(*it);
-                }
-            }
             // Find out if we have a corresponding tile in the cache
             FrameEntryPtr foundCachedEntry;
             for (std::list<FrameEntryPtr>::iterator it2 = entries.begin(); it2 != entries.end(); ++it2) {
@@ -1844,13 +1831,13 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                         updateParams->depth,
                                         updateParams->gain,
                                         updateParams->gamma,
+                                        _imp->getGammaLut(updateParams->gamma),
                                         updateParams->offset,
                                         lutFromColorspace(srcColorSpace),
                                         lutFromColorspace(updateParams->lut),
                                         alphaChannelIndex,
                                         viewerRenderRoiOnly,
                                         tileRowElements);
-            QReadLocker k(&_imp->gammaLookupMutex);
             for (std::list<UpdateViewerParams::CachedTile>::iterator it = unCachedTiles.begin(); it != unCachedTiles.end(); ++it) {
                 renderFunctor(viewerRenderRoI,
                               args,
@@ -1916,6 +1903,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                         updateParams->depth,
                                         updateParams->gain,
                                         updateParams->gamma,
+                                        _imp->getGammaLut(updateParams->gamma),
                                         updateParams->offset,
                                         lutFromColorspace(srcColorSpace),
                                         lutFromColorspace(updateParams->lut),
@@ -1924,13 +1912,11 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                         tileRowElements);
 
             if (runInCurrentThread) {
-                QReadLocker k(&_imp->gammaLookupMutex);
                 for (std::list<UpdateViewerParams::CachedTile>::iterator it = unCachedTiles.begin(); it != unCachedTiles.end(); ++it) {
                     renderFunctor(viewerRenderRoI,
                                   args, this, *it);
                 }
             } else {
-                QReadLocker k(&_imp->gammaLookupMutex);
                 QtConcurrent::map( unCachedTiles,
                                    [&](const UpdateViewerParams::CachedTile &tile) {
                                     renderFunctor(viewerRenderRoI, args, this, tile);
@@ -2132,7 +2118,7 @@ void
 scaleToTexture8bits_generic(const RectI& roi,
                             const RenderViewerArgs & args,
                             int nComps,
-                            ViewerInstance* viewer,
+                            ViewerInstance* /*viewer*/,
                             const UpdateViewerParams::CachedTile& tile,
                             U32* tileBuffer)
 {
@@ -2272,9 +2258,9 @@ scaleToTexture8bits_generic(const RectI& roi,
                     g = (g < 1.) ? 0. : 1.;
                     b = (b < 1.) ? 0. : 1.;
                 } else if (args.gamma != 1.) {
-                    r = viewer->interpolateGammaLut(r);
-                    g = viewer->interpolateGammaLut(g);
-                    b = viewer->interpolateGammaLut(b);
+                    r = args.gammaLut->lookup(r);
+                    g = args.gammaLut->lookup(g);
+                    b = args.gammaLut->lookup(b);
                 }
 
 
@@ -2517,12 +2503,6 @@ scaleToTexture8bits(const RectI& roi,
         break;
     }
 } // scaleToTexture8bits
-
-float
-ViewerInstance::interpolateGammaLut(float value)
-{
-    return _imp->lookupGammaLut(value);
-}
 
 void
 ViewerInstance::markAllOnGoingRendersAsAborted(bool keepOldestRender)
@@ -2984,8 +2964,8 @@ ViewerInstance::onGammaChanged(double value)
         }
     }
     if (changed) {
-        QWriteLocker k(&_imp->gammaLookupMutex);
-        _imp->fillGammaLut(value);
+        // Compute the LUT now rather than in the next render
+        (void)_imp->getGammaLut(value);
     }
     assert(_imp->uiContext);
     if (changed) {

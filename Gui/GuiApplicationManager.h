@@ -198,6 +198,8 @@ public:
     virtual double getLogicalDPIYRATIO() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void updateAboutWindowLibrariesVersion() OVERRIDE FINAL;
 
+    virtual void clearLastRenderedTextures() OVERRIDE FINAL;
+
 public Q_SLOTS:
 
     void onFontconfigCacheUpdateFinished();
@@ -225,7 +227,6 @@ private:
     void handleOpenFileRequest();
 
     virtual void onLoadCompleted() OVERRIDE FINAL;
-    virtual void clearLastRenderedTextures() OVERRIDE FINAL;
     /**
      * @brief Load shortcuts from QSettings
      **/

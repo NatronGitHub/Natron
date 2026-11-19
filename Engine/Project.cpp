@@ -1693,6 +1693,20 @@ Project::onKnobValueChanged(KnobI* knob,
         }
     } else if ( knob == _imp->addFormatKnob.get() ) {
         Q_EMIT mustCreateFormat();
+    } else if ( knob == _imp->colorSpace8u.get() ||
+                knob == _imp->colorSpace16u.get() ||
+                knob == _imp->colorSpace32f.get() ) {
+        if ( !isLoadingProject() ) {
+            // These LUTs are used to convert images between bit depths, in the nodes and in the viewers, but they
+            // are neither in the node hash nor in the viewer cache key: change the hash of all the nodes, so that
+            // the images and textures computed with the previous LUTs are not used (#1116), and render again.
+            NodesList nodes;
+            getNodes_recursive(nodes, true);
+            for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+                (*it)->incrementKnobsAge();
+            }
+            getApp()->renderAllViewers(true);
+        }
     } else if ( knob == _imp->previewMode.get() ) {
         Q_EMIT autoPreviewChanged( _imp->previewMode->getValue() );
         shouldAutoSave = true;

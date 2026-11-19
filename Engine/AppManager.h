@@ -241,6 +241,9 @@ public:
     void  removeAllImagesFromDiskCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
     void  removeAllTexturesFromCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
 
+    // Synchronously removes from the viewer cache the textures of the viewer at the given time
+    void removeAllTexturesFromCacheForHolderAtTime(const CacheEntryHolder* holder, double time);
+
     void removeAllCacheEntriesForHolder(const CacheEntryHolder* holder, bool blocking);
 
     SettingsPtr getCurrentSettings() const WARN_UNUSED_RETURN;
@@ -600,6 +603,9 @@ public:
 
     static void setApplicationLocale();
 
+    // Releases the textures displayed by the viewers, and the images they hold for the color picker
+    virtual void clearLastRenderedTextures() {}
+
 public Q_SLOTS:
 
     void exitAppWithSaveWarning()
@@ -674,7 +680,6 @@ protected:
     virtual void onPluginLoaded(Plugin* /*plugin*/) {}
 
     virtual void onAllPluginsLoaded();
-    virtual void clearLastRenderedTextures() {}
 
     virtual void initBuiltinPythonModules();
 

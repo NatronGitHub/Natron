@@ -1340,8 +1340,10 @@ AppManager::clearPlaybackCache()
     if (!_imp->_viewerCache) {
         return;
     }
-    _imp->_viewerCache->clearInMemoryPortion();
     clearLastRenderedTextures();
+    // The viewer cache is tiled: its entries are always in its disk portion (the tiles are memory-mapped),
+    // so clearing its memory portion would do nothing (#1119).
+    _imp->_viewerCache->clear();
 }
 
 void
@@ -2480,6 +2482,13 @@ AppManager::removeAllTexturesFromCacheWithMatchingIDAndDifferentKey(const CacheE
                                                                     U64 treeVersion)
 {
     _imp->_viewerCache->removeAllEntriesWithDifferentNodeHashForHolderPublic(holder, treeVersion);
+}
+
+void
+AppManager::removeAllTexturesFromCacheForHolderAtTime(const CacheEntryHolder* holder,
+                                                      double time)
+{
+    _imp->_viewerCache->removeAllEntriesForHolderAtTime(holder, time);
 }
 
 void

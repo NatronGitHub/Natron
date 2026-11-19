@@ -1547,23 +1547,28 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
         }
 
 
+        {
+            // The color picker and the info bar read these images: forget the images of the previous frames,
+            // which may be at other mipmap levels. The image is not available when the texture comes from the
+            // viewer cache and the image was evicted from the node cache (or after a restart): showing the values
+            // of another frame would be wrong (#1121).
+            QMutexLocker k(&_imp->lastRenderedImageMutex);
+            std::vector<ImagePtr>& lastRenderedTiles = _imp->displayTextures[textureIndex].lastRenderedTiles;
+            for (std::size_t i = 0; i < lastRenderedTiles.size(); ++i) {
+                lastRenderedTiles[i].reset();
+            }
+            if (image) {
+                lastRenderedTiles[mipmapLevel] = image;
+            }
+        }
         if (image) {
             _imp->viewerTab->setImageFormat(textureIndex, image->getComponents(), depth);
-            {
-                QMutexLocker k(&_imp->lastRenderedImageMutex);
-                _imp->displayTextures[textureIndex].lastRenderedTiles[mipmapLevel] = image;
-            }
-            _imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages = 0;
-            _imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages += image->size();
+            _imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages = image->size();
 
             internalNode->registerPluginMemory(_imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages);
             Q_EMIT imageChanged(textureIndex, true);
         } else {
-            if ( !_imp->displayTextures[textureIndex].lastRenderedTiles[mipmapLevel] ) {
-                Q_EMIT imageChanged(textureIndex, false);
-            } else {
-                Q_EMIT imageChanged(textureIndex, true);
-            }
+            Q_EMIT imageChanged(textureIndex, false);
         }
         setRegionOfDefinition(rod, par, textureIndex);
     }
@@ -4139,6 +4144,9 @@ ViewerGL::clearLastRenderedTexture()
                 _imp->displayTextures[i].lastRenderedTiles[j].reset();
             }
             toUnRegister += _imp->displayTextures[i].memoryHeldByLastRenderedImages;
+            // Otherwise the next endTransferBufferFromRAMToGPU() unregisters it again, and the size_t memory
+            // count of the viewer node wraps around (#1122)
+            _imp->displayTextures[i].memoryHeldByLastRenderedImages = 0;
         }
         if (toUnRegister > 0) {
             getInternalNode()->unregisterPluginMemory(toUnRegister);
