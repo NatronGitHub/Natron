@@ -590,30 +590,54 @@ KnobGuiValue::onDimensionSwitchClicked(bool clicked)
         expandAllDimensions();
     } else {
         // Folding shows a single value for all dimensions, so the dimensions
-        // must be equal. If they differ, folding sets them all to the value
-        // of the first dimension: ask first, and make it undoable.
+        // must be equal (same value and same expression, as in updateGUI()).
+        // If their values differ, folding sets them all to the value of the
+        // first dimension: ask first, and make it undoable.
         KnobIPtr knob = _imp->getKnob();
         KnobDoubleBasePtr doubleKnob = _imp->getKnobAsDouble();
         KnobIntBasePtr intKnob = _imp->getKnobAsInt();
         const int nDims = knob->getDimension();
+        const bool isColor = bool( std::dynamic_pointer_cast<KnobColor>(knob) );
         // values as displayed in the spinboxes (denormalized)
         std::vector<double> displayed(nDims);
-        bool allEqual = true;
+        bool sameValues = true;
+        bool sameExpressions = true;
         for (int i = 0; i < nDims; ++i) {
             displayed[i] = valueAccordingToType( false, i, _imp->getKnobValue(i) );
-            if ( (i > 0) && (displayed[i] != displayed[0]) ) {
-                allEqual = false;
+            if (i > 0) {
+                if (displayed[i] != displayed[0]) {
+                    sameValues = false;
+                }
+                if ( knob->getExpression(i) != knob->getExpression(0) ) {
+                    sameExpressions = false;
+                }
             }
         }
-        if (allEqual) {
+        if (!sameExpressions) {
+            // Setting values would not change the expressions, and the
+            // parameter would be unfolded again by the next refresh.
+            Dialogs::warningDialog( tr("Fold").toStdString(),
+                                    ( isColor ?
+                                      tr("The channels of %1 have different expressions: they cannot be folded.") :
+                                      tr("The dimensions of %1 have different expressions: they cannot be folded.") )
+                                    .arg( QString::fromUtf8( knob->getLabel().c_str() ) ).toStdString() );
+            expandAllDimensions();
+
+            return;
+        }
+        if (sameValues) {
             foldAllDimensions();
 
             return;
         }
-        StandardButtonEnum rep = Dialogs::questionDialog( tr("Fold dimensions").toStdString(),
-                                                          tr("The dimensions of %1 have different values. "
-                                                             "Folding them sets them all to the value of the first one (%2).\n"
-                                                             "Do you want to continue?")
+        StandardButtonEnum rep = Dialogs::questionDialog( tr("Fold").toStdString(),
+                                                          ( isColor ?
+                                                            tr("The channels of %1 have different values. "
+                                                               "Folding them sets them all to the value of the first one (%2).\n"
+                                                               "Do you want to continue?") :
+                                                            tr("The dimensions of %1 have different values. "
+                                                               "Folding them sets them all to the value of the first one (%2).\n"
+                                                               "Do you want to continue?") )
                                                           .arg( QString::fromUtf8( knob->getLabel().c_str() ) )
                                                           .arg(displayed[0]).toStdString(),
                                                           false );
@@ -623,13 +647,17 @@ KnobGuiValue::onDimensionSwitchClicked(bool clicked)
             return;
         }
         foldAllDimensions();
+        // A parent command of its own: QUndoStack never merges it (its id()
+        // is -1), so a following edit of the folded parameter, which would
+        // otherwise merge with this KnobUndoCommand, is a separate undo step.
+        QUndoCommand* foldCommand = new QUndoCommand( tr("Fold %1").arg( QString::fromUtf8( knob->getLabel().c_str() ) ) );
         if (doubleKnob) {
             std::list<double> oldValues, newValues;
             for (int i = 0; i < nDims; ++i) {
                 oldValues.push_back( doubleKnob->getValue(i) );
                 newValues.push_back( valueAccordingToType(true, i, displayed[0]) );
             }
-            pushUndoCommand( new KnobUndoCommand<double>(shared_from_this(), oldValues, newValues) );
+            new KnobUndoCommand<double>(shared_from_this(), oldValues, newValues, true, foldCommand);
         } else {
             assert(intKnob);
             std::list<int> oldValues, newValues;
@@ -637,8 +665,9 @@ KnobGuiValue::onDimensionSwitchClicked(bool clicked)
                 oldValues.push_back( intKnob->getValue(i) );
                 newValues.push_back( (int)valueAccordingToType(true, i, displayed[0]) );
             }
-            pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(), oldValues, newValues) );
+            new KnobUndoCommand<int>(shared_from_this(), oldValues, newValues, true, foldCommand);
         }
+        pushUndoCommand(foldCommand);
     }
 }
 
@@ -824,8 +853,11 @@ KnobGuiValue::updateGUI(const int dimension)
             allValuesNotEqual = true;
         }
     }
-    if ( !isAutoFoldDimensionsEnabled() ||
-         (_imp->dimensionSwitchButton && !_imp->dimensionSwitchButton->isChecked() && allValuesNotEqual) ){
+    // Unfold when the dimensions differ. Without auto-fold, a parameter is
+    // never folded automatically, but it stays folded when the user folded it
+    // (it used to be unfolded by every refresh, including the one that
+    // follows the fold, #1249).
+    if ( _imp->dimensionSwitchButton && !_imp->dimensionSwitchButton->isChecked() && allValuesNotEqual ) {
         expandAllDimensions();
     } else if (isAutoFoldDimensionsEnabled() && _imp->dimensionSwitchButton && _imp->dimensionSwitchButton->isChecked() && !allValuesNotEqual) {
         foldAllDimensions();
