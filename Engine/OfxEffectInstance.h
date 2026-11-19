@@ -86,6 +86,7 @@ public:
 };
 
 struct OfxEffectInstancePrivate;
+class InstanceChangedBracket_RAII;
 class OfxEffectInstance
     : public AbstractOfxEffectInstance
 {
@@ -327,6 +328,7 @@ private:
 
 private:
 
+    friend class InstanceChangedBracket_RAII;
     std::unique_ptr<OfxEffectInstancePrivate> _imp;
 };
 

@@ -5750,6 +5750,51 @@ KnobHolder::onDoEndChangesOnMainThreadTriggered()
     endChanges();
 }
 
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
+// A group of value changes with the same reason of a holder (beginKnobsValuesChanged_public()/
+// endKnobsValuesChanged_public()), ended when the reason changes, by end(), or at the latest by the destructor.
+class KnobsValuesChangedGroup_RAII
+{
+    KnobHolder* _holder;
+    bool _inGroup;
+    ValueChangedReasonEnum _reason;
+
+public:
+    explicit KnobsValuesChangedGroup_RAII(KnobHolder* holder)
+        : _holder(holder)
+        , _inGroup(false)
+        , _reason(eValueChangedReasonUserEdited)
+    {
+    }
+
+    ~KnobsValuesChangedGroup_RAII()
+    {
+        end();
+    }
+
+    void setReason(ValueChangedReasonEnum reason)
+    {
+        if ( _inGroup && (reason == _reason) ) {
+            return;
+        }
+        end();
+        _reason = reason;
+        _inGroup = true;
+        _holder->beginKnobsValuesChanged_public(reason);
+    }
+
+    void end()
+    {
+        if (_inGroup) {
+            _inGroup = false;
+            _holder->endKnobsValuesChanged_public(_reason);
+        }
+    }
+};
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 bool
 KnobHolder::endChanges(bool discardRendering)
 {
@@ -5820,13 +5865,21 @@ KnobHolder::endChanges(bool discardRendering)
 
     bool guiFrozen = firstKnobChanged ? getApp() && firstKnobChanged->getKnobGuiPointer() && firstKnobChanged->getKnobGuiPointer()->isGuiFrozenForPlayback() : false;
 
-    // Call instanceChanged on each knob
+    // Call instanceChanged on each knob.
+    // On the main thread, the consecutive changes with the same reason are a group of value changes
+    // (beginKnobsValuesChanged()/endKnobsValuesChanged()), e.g. the animated knobs when the time changes: an OpenFX
+    // effect brackets their kOfxActionInstanceChanged actions with a single pair of kOfxActionBeginInstanceChanged
+    // and kOfxActionEndInstanceChanged.
     bool ret = false;
+    KnobsValuesChangedGroup_RAII group(this);
     for (KnobChanges::iterator it = knobChanged.begin(); it != knobChanged.end(); ++it) {
         if (it->knob && !it->valueChangeBlocked && !isLoadingProject) {
             if ( !it->originatedFromMainThread && !canHandleEvaluateOnChangeInOtherThread() ) {
                 Q_EMIT doValueChangeOnMainThread(it->knob.get(), it->originalReason, it->time, it->view, it->originatedFromMainThread);
             } else {
+                if (isMT) {
+                    group.setReason(it->originalReason);
+                }
                 ret |= onKnobValueChanged_public(it->knob.get(), it->originalReason, it->time, it->view, it->originatedFromMainThread);
             }
         }
@@ -5849,6 +5902,7 @@ KnobHolder::endChanges(bool discardRendering)
             it->knob->refreshListenersAfterValueChange(it->view, it->originalReason, dimension);
         }
     }
+    group.end();
 
     int evaluationBlocked;
     bool hasHadSignificantChange = false;
