@@ -17,7 +17,7 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-set(Tests_HEADERS BaseTest.h NaNGuards_FastMath.h)
+set(Tests_HEADERS BaseTest.h NaNGuards_FastMath.h OfxTestPlugin.h)
 set(Tests_SOURCES
     google-test/src/gtest-all.cc
     google-mock/src/gmock-all.cc
@@ -37,6 +37,7 @@ set(Tests_SOURCES
     OfxCPURenderSupport_Test.cpp
     OfxMultiThreadSuite_Test.cpp
     OfxPluginDeprecated_Test.cpp
+    OfxTestPlugin_Test.cpp
     OSGLContext_Test.cpp
     PluginGrouping_Test.cpp
     ReadNodeOverlay_Test.cpp
@@ -78,6 +79,48 @@ target_include_directories(Tests
 set_property(SOURCE google-test/src/gtest-all.cc google-mock/src/gmock-all.cc
     APPEND PROPERTY COMPILE_OPTIONS ${NATRON_THIRD_PARTY_NO_WARNINGS})
 add_test(NAME Tests COMMAND Tests)
+
+# A minimal OFX plug-in bundle for the tests (OfxTestPlugin/NatronTestPlugin.cpp, read through
+# OfxTestPlugin.h). It is assembled in the build tree, found by the Tests binary through
+# NATRON_TESTS_OFX_PLUGIN_DIR (added to OFX_PLUGIN_PATH by wmain.cpp), and never installed: the tests
+# that need it are skipped when it is not there (e.g. when Tests is run from an installer's tree).
+set(NATRON_TESTS_OFX_PLUGIN_DIR "${CMAKE_CURRENT_BINARY_DIR}/OfxPlugins")
+set(_natron_test_bundle "${NATRON_TESTS_OFX_PLUGIN_DIR}/NatronTestPlugin.ofx.bundle")
+# the bundle architecture folder (OFX packaging spec), as HostSupport looks for it
+if(APPLE)
+    set(_natron_test_archdir "MacOS")
+elseif(WIN32)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(_natron_test_archdir "Win64")
+    else()
+        set(_natron_test_archdir "Win32")
+    endif()
+else()
+    if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+        set(_natron_test_os "FreeBSD")
+    else()
+        set(_natron_test_os "Linux")
+    endif()
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64)$" AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(_natron_test_archdir "${_natron_test_os}-x86-64")
+    else()
+        set(_natron_test_archdir "${_natron_test_os}-${CMAKE_SYSTEM_PROCESSOR}")
+    endif()
+endif()
+add_library(NatronTestPlugin MODULE OfxTestPlugin/NatronTestPlugin.cpp)
+target_include_directories(NatronTestPlugin SYSTEM PRIVATE ../libs/OpenFX/include)
+set_target_properties(NatronTestPlugin PROPERTIES
+    PREFIX ""
+    SUFFIX ".ofx"
+    # a single folder for all the configurations of multi-configuration generators
+    LIBRARY_OUTPUT_DIRECTORY "${_natron_test_bundle}/Contents/${_natron_test_archdir}/$<0:>"
+    C_VISIBILITY_PRESET hidden
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN ON)
+add_dependencies(Tests NatronTestPlugin)
+target_compile_definitions(Tests PRIVATE
+    NATRON_TESTS_OFX_PLUGIN_DIR="${NATRON_TESTS_OFX_PLUGIN_DIR}"
+    NATRON_TESTS_OFX_PLUGIN_BINARY="$<TARGET_FILE:NatronTestPlugin>")
 
 # Not part of a normal install. The installer scripts install it separately
 # (cmake --install <build> --component Tests) and run it from the bundled tree:
