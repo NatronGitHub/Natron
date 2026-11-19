@@ -631,7 +631,12 @@ public Q_SLOTS:
 
     void clearAllCaches();
 
-    void wipeAndCreateDiskCacheStructure();
+    /**
+     * @brief Clears all the caches and deletes the cache folders. Returns false if another Natron process uses the
+     * disk caches (see isDiskCacheUsedByAnotherProcess()): the caches are then only cleared, and the files of the
+     * other process are kept.
+     **/
+    bool wipeAndCreateDiskCacheStructure();
 
     void onNodeMemoryRegistered(qint64 mem);
 

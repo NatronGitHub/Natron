@@ -49,6 +49,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QStorageInfo>
 #include <QSysInfo>
 
@@ -485,9 +486,9 @@ TEST_F(DiskCacheTest, TiledRestoreRemovesUnreferencedFiles)
 }
 
 // Each process keeps a file locked in <disk cache location>/Instances: the file of another running process means
-// that the caches are shared (and they are then not restored), and the file of a process that is gone is removed.
-// The files of other hosts are considered in use, since their process can't be checked (this is also what happens
-// with all the files on NFS mounted with "nolock", where flock() is local to each host).
+// that the caches are shared (and they are then not restored nor wiped), and the file of a process that is gone is
+// removed. On a local file system the lock is trusted whatever the host name (it changes with the network on macOS);
+// on a network file system (not tested here), the files of other hosts are in use until they are 2 hours old.
 TEST(DiskCacheLocation, DetectsOtherProcesses)
 {
     if ( appPTR->isDiskCacheUsedByAnotherProcess() ) {
@@ -497,25 +498,41 @@ TEST(DiskCacheLocation, DetectsOtherProcesses)
     }
     const QString folder = appPTR->getDiskCacheLocation() + QString::fromUtf8("/Instances");
     ASSERT_TRUE( QDir(folder).exists() );
-    // A file of another process on this host (simulated in this process: the lock of another open file conflicts)
-    const QString otherPath = folder + QLatin1Char('/') + QSysInfo::machineHostName() + QString::fromUtf8("@NatronTest-other.lock");
+    // Files of other processes (simulated in this process: the lock of another open file conflicts), with the
+    // current name format, from this host and from another host, and with the format of earlier builds
+    const QStringList names = QStringList()
+                              << QSysInfo::machineHostName() + QString::fromUtf8("@1-00000000-0000-0000-0000-000000000001.lock")
+                              << QString::fromUtf8("other-host.invalid@1-00000000-0000-0000-0000-000000000002.lock")
+                              << QString::fromUtf8("other-host.invalid-1.lock");
+    Q_FOREACH(const QString &name, names) {
+        const QString otherPath = folder + QLatin1Char('/') + name;
+        {
+            QFile other(otherPath);
+            ASSERT_TRUE( other.open(QIODevice::ReadWrite) );
+#ifndef _WIN32
+            ASSERT_EQ( 0, ::flock(other.handle(), LOCK_EX | LOCK_NB) );
+#endif
+            EXPECT_TRUE( appPTR->isDiskCacheUsedByAnotherProcess() ) << name.toStdString();
+            EXPECT_TRUE( QFile::exists(otherPath) ) << name.toStdString();
+        } // closing the file releases the lock, as when the process exits
+        EXPECT_FALSE( appPTR->isDiskCacheUsedByAnotherProcess() ) << name.toStdString();
+        EXPECT_FALSE( QFile::exists(otherPath) ) << name.toStdString(); // the stale file was removed
+    }
+
+    // While another process uses the caches, wiping them doesn't delete the cache folders
+    const QString otherPath = folder + QLatin1Char('/') + names.front();
+    const QString marker = appPTR->getDiskCacheLocation() + QString::fromUtf8("/DiskCache/ab/NatronTest-other-process." NATRON_CACHE_FILE_EXT);
+    QDir().mkpath( QFileInfo(marker).absolutePath() );
+    createFile(marker);
     {
         QFile other(otherPath);
         ASSERT_TRUE( other.open(QIODevice::ReadWrite) );
 #ifndef _WIN32
         ASSERT_EQ( 0, ::flock(other.handle(), LOCK_EX | LOCK_NB) );
 #endif
-        EXPECT_TRUE( appPTR->isDiskCacheUsedByAnotherProcess() );
-        EXPECT_TRUE( QFile::exists(otherPath) );
-    } // closing the file releases the lock, as when the process exits
-    EXPECT_FALSE( appPTR->isDiskCacheUsedByAnotherProcess() );
-    EXPECT_FALSE( QFile::exists(otherPath) ); // the stale file was removed
-
-    // A file of another host is considered in use, and kept
-    const QString otherHostPath = folder + QString::fromUtf8("/NatronTest-other-host.invalid@1-x.lock");
-    createFile(otherHostPath);
-    EXPECT_TRUE( appPTR->isDiskCacheUsedByAnotherProcess() );
-    EXPECT_TRUE( QFile::exists(otherHostPath) );
-    QFile::remove(otherHostPath);
-    EXPECT_FALSE( appPTR->isDiskCacheUsedByAnotherProcess() );
+        EXPECT_FALSE( appPTR->wipeAndCreateDiskCacheStructure() );
+        EXPECT_TRUE( QFile::exists(marker) );
+    }
+    EXPECT_TRUE( appPTR->wipeAndCreateDiskCacheStructure() );
+    EXPECT_FALSE( QFile::exists(marker) );
 }

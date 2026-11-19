@@ -2305,7 +2305,13 @@ Settings::onKnobValueChanged(KnobI* k,
         // The environment variable, if set, takes precedence over the preference (#1265): don't overwrite it
         appPTR->refreshDiskCacheLocation();
     } else if ( k == _wipeDiskCache.get() ) {
-        appPTR->wipeAndCreateDiskCacheStructure();
+        if ( !appPTR->wipeAndCreateDiskCacheStructure() ) {
+            Dialogs::warningDialog( tr("Wipe Disk Cache").toStdString(),
+                                    tr("The disk cache folder is used by another %1 process, so its files were not deleted: "
+                                       "only the cache entries of this process were removed. Quit the other %1 processes "
+                                       "(including the background renders), then wipe the disk cache again.")
+                                    .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
+        }
     } else if ( k == _numberOfThreads.get() ) {
         int nbThreads = getNumberOfThreads();
         appPTR->setNThreadsToRender(nbThreads);

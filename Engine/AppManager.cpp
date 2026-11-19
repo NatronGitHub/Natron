@@ -75,6 +75,12 @@
 #include <unistd.h> // pipe, read, write
 #include <sys/file.h> // flock
 #include <sys/stat.h> // fstat, stat
+#ifdef __linux__
+#include <sys/vfs.h> // statfs
+#else
+#include <sys/param.h>
+#include <sys/mount.h> // statfs, MNT_LOCAL
+#endif
 #ifdef Q_OS_DARWIN
 #include <sys/sysctl.h>
 #include <libproc.h>
@@ -99,6 +105,8 @@
 #include <QSysInfo>
 #include <QThread>
 #include <QUuid>
+#include <QRegularExpression>
+#include <QTimer>
 #include <QSettings>
 #include <QSocketNotifier>
 #include <QThreadPool>
@@ -1088,7 +1096,8 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
 
     if (oldCacheVersion != NATRON_CACHE_VERSION || cl.isCacheClearRequestedOnLaunch()) {
         setLoadingStatus( tr("Clearing the image cache...") );
-        wipeAndCreateDiskCacheStructure();
+        // If another process uses the caches, they are not wiped (it would delete its files): start with empty caches
+        (void)wipeAndCreateDiskCacheStructure();
     } else {
         setLoadingStatus( tr("Restoring the image cache...") );
         _imp->restoreCaches();
@@ -1422,7 +1431,7 @@ AppManager::clearAllCaches()
     Project::clearAutoSavesDir();
 }
 
-void
+bool
 AppManager::wipeAndCreateDiskCacheStructure()
 {
     //Should be called on the main-thread because potentially can interact with rendering
@@ -1432,10 +1441,19 @@ AppManager::wipeAndCreateDiskCacheStructure()
 
     clearAllCaches();
 
+    // The files of the cache folders may be used by another Natron process: only delete them if there is none.
+    // (clearAllCaches() only removed the files of the entries of this process.)
+    if ( isDiskCacheUsedByAnotherProcess() ) {
+        qDebug() << "The disk caches in" << getDiskCacheLocation() << "are used by another Natron process: they are not wiped.";
+
+        return false;
+    }
     assert(_imp->_diskCache);
     _imp->cleanUpCacheDiskStructure( _imp->_diskCache->getCachePath(), false );
     assert(_imp->_viewerCache);
     _imp->cleanUpCacheDiskStructure( _imp->_viewerCache->getCachePath() , true);
+
+    return true;
 }
 
 AppInstancePtr
@@ -2624,14 +2642,22 @@ AppManager::registerEngineMetaTypes() const
 }
 
 // The disk caches of all the Natron processes (Natron, NatronRenderer, the background renders) are in the same
-// folder. Each process keeps a file of its own open in the "Instances" sub-folder, locked with flock() on Unix (the
-// lock is released when the process exits, even if it crashes), and open without sharing deletion on Windows.
-// A process only restores the caches (and deletes the cache files it doesn't know) when no other process uses them.
+// folder. Each process keeps a file of its own open in the "Instances" sub-folder, named <host>@<pid>-<uuid>.lock,
+// locked with flock() on Unix (the lock is released when the process exits, even if it crashes), and open without
+// sharing deletion on Windows (a file that is open, also by another host on an SMB share, can't be removed).
+// A process only restores or wipes the caches (and deletes the cache files it doesn't know) when no other process
+// uses them.
+// - On a local file system, the lock tells everything: the host name is ignored (on macOS it changes with the network).
+// - On a network file system, the lock of another host can't be trusted (e.g. NFS mounted with "nolock" makes flock()
+//   local to each host): the file of another host is in use if it was touched by its owner in the last
+//   kDiskCacheInstanceStaleHours (the owner touches it every kDiskCacheInstanceTouchMinutes).
 // - The files whose lock can't be tested (another user's file, a file system without flock(), which gives an error
 //   other than EWOULDBLOCK) are considered in use, so the cleanup is disabled on such file systems.
-// - The files of another host are considered in use: their process can't be checked. With NFS mounted with "nolock",
-//   flock() is local to each host, so the files of the other hosts can't be checked either.
+// - Unlocked files with an older name format (no UUID) are stale and removed.
 NATRON_NAMESPACE_ANONYMOUS_ENTER
+
+const int kDiskCacheInstanceTouchMinutes = 10;
+const int kDiskCacheInstanceStaleHours = 2;
 
 QString
 diskCacheInstancesFolder(const QString& diskCachesLocation)
@@ -2645,6 +2671,51 @@ diskCacheInstanceFilePrefix()
 {
     return QSysInfo::machineHostName() + QLatin1Char('@');
 }
+
+#ifdef Q_OS_UNIX
+// Returns false if the folder is on a network file system
+bool
+isLocalFileSystem(const QString& folder)
+{
+    struct statfs fsStat;
+    if (::statfs(folder.toUtf8().constData(), &fsStat) != 0) {
+        return false; // can't tell: the safe side
+    }
+#if defined(__linux__)
+    switch ( (unsigned long)fsStat.f_type ) {
+    case 0x6969UL:     // NFS
+    case 0x517BUL:     // SMB
+    case 0xFF534D42UL: // CIFS
+    case 0xFE534D42UL: // SMB2
+    case 0x00C36400UL: // Ceph
+    case 0x65735546UL: // FUSE (sshfs...)
+    case 0x5346414FUL: // AFS
+    case 0x73757245UL: // Coda
+    case 0x01021997UL: // 9P
+    case 0x0BD00BD0UL: // Lustre
+    case 0x47504653UL: // GPFS
+    case 0x01161970UL: // GFS2
+    case 0x7461636FUL: // OCFS2
+        return false;
+    default:
+        return true;
+    }
+#elif defined(MNT_LOCAL)
+    return (fsStat.f_flags & MNT_LOCAL) != 0;
+#else
+    return false;
+#endif
+}
+
+// True if the name has the format <host>@<pid>-<uuid>.lock
+bool
+isCurrentDiskCacheInstanceFileName(const QString& name)
+{
+    static const QRegularExpression re( QString::fromUtf8("^.+@[0-9]+-[0-9a-fA-F-]{36}\\.lock$") );
+
+    return re.match(name).hasMatch();
+}
+#endif
 
 // Opens and locks the file of this process. Returns NULL on failure.
 QFile*
@@ -2693,12 +2764,9 @@ createDiskCacheInstanceFile(const QString& diskCachesLocation)
 
 // Returns true if the file of another process is in use, and removes it otherwise (the process is gone).
 bool
-isDiskCacheInstanceFileInUse(const QString& path)
+isDiskCacheInstanceFileInUse(const QString& path,
+                             bool isLocal)
 {
-    if ( !QFileInfo(path).fileName().startsWith( diskCacheInstanceFilePrefix() ) ) {
-        // Another host: can't tell
-        return true;
-    }
 #ifdef Q_OS_UNIX
     QFile file(path);
     if ( !file.open(QIODevice::ReadWrite) ) {
@@ -2712,11 +2780,20 @@ isDiskCacheInstanceFileInUse(const QString& path)
         // EWOULDBLOCK: locked by a running process. Other errors (no flock()): can't tell
         return true;
     }
+    const QString name = QFileInfo(path).fileName();
+    if ( !isLocal && isCurrentDiskCacheInstanceFileName(name) && !name.startsWith( diskCacheInstanceFilePrefix() ) ) {
+        // Another host, on a network file system: the lock can't be trusted, use the time it was last touched
+        const QDateTime lastTouched = QFileInfo(path).lastModified();
+        if ( lastTouched.secsTo( QDateTime::currentDateTime() ) < kDiskCacheInstanceStaleHours * 3600LL ) {
+            return true;
+        }
+    }
     // Remove it while it is locked: a process that creates it again checks that its file is still there
     QFile::remove(path);
 
     return false;
 #else
+    Q_UNUSED(isLocal);
     // A file that is open by a running process can't be removed
     return !QFile::remove(path) && QFile::exists(path);
 #endif
@@ -2760,6 +2837,17 @@ AppManager::refreshDiskCacheLocation()
         if (!_imp->diskCachesInstanceFile) {
             qDebug() << "Warning: could not create the instance file of the disk cache in" << diskCacheInstancesFolder(location);
         }
+        // Touch it periodically: on a network file system, the other hosts consider it stale if it is not touched
+        if ( !_imp->diskCachesInstanceFileTimer && (QThread::currentThread() == thread()) ) {
+            _imp->diskCachesInstanceFileTimer = new QTimer(this);
+            QObject::connect( _imp->diskCachesInstanceFileTimer, &QTimer::timeout, this, [this]() {
+                QMutexLocker l(&_imp->diskCachesLocationMutex);
+                if (_imp->diskCachesInstanceFile) {
+                    _imp->diskCachesInstanceFile->setFileTime( QDateTime::currentDateTime(), QFileDevice::FileModificationTime );
+                }
+            } );
+            _imp->diskCachesInstanceFileTimer->start(kDiskCacheInstanceTouchMinutes * 60 * 1000);
+        }
     }
     _imp->diskCachesLocation = location;
 }
@@ -2777,8 +2865,13 @@ AppManager::isDiskCacheUsedByAnotherProcess() const
         }
     }
     const QStringList files = QDir(folder).entryList(QStringList() << QString::fromUtf8("*.lock"), QDir::Files);
+#ifdef Q_OS_UNIX
+    const bool isLocal = files.isEmpty() || isLocalFileSystem(folder);
+#else
+    const bool isLocal = true; // unused
+#endif
     Q_FOREACH(const QString &file, files) {
-        if ( (file != ownFile) && isDiskCacheInstanceFileInUse( folder + QLatin1Char('/') + file ) ) {
+        if ( (file != ownFile) && isDiskCacheInstanceFileInUse(folder + QLatin1Char('/') + file, isLocal) ) {
             return true;
         }
     }

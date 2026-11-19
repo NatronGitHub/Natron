@@ -108,6 +108,7 @@ public:
     // The file that tells the other Natron processes that this one uses the disk caches in diskCachesLocation
     // (see AppManager::isDiskCacheUsedByAnotherProcess()), protected by diskCachesLocationMutex
     std::unique_ptr<QFile> diskCachesInstanceFile;
+    QTimer* diskCachesInstanceFileTimer; // touches diskCachesInstanceFile, owned by the AppManager
     std::unique_ptr<ProcessInputChannel> _backgroundIPC; //< object used to communicate with the main app
     //if this app is background, see the ProcessInputChannel def
     bool _loaded; //< true when the first instance is completely loaded.
