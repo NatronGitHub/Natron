@@ -287,6 +287,12 @@ public:
     int getNRenderThreads() const;
 
     /**
+     * @brief True if the current render renders one frame at a time, in frame order, because a node of the
+     * tree can only be rendered sequentially (see mustRenderInFrameOrder()).
+     **/
+    bool isRenderingInFrameOrder() const;
+
+    /**
      * @brief Returns the current number of render threads doing work
      **/
     int getNActiveRenderThreads() const;
@@ -398,6 +404,12 @@ protected:
     virtual void aboutToStartRender() {}
 
     /**
+     * @brief Called by startRender(): true if the frames must be rendered one at a time, in frame order, on a
+     * single render thread.
+     **/
+    virtual bool mustRenderInFrameOrder() const { return false; }
+
+    /**
      * @brief Callback when stopRender() is called
      **/
     virtual void onRenderStopped(bool /*aborted*/) {}
@@ -495,6 +507,7 @@ private:
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL;
     virtual void aboutToStartRender() OVERRIDE FINAL;
+    virtual bool mustRenderInFrameOrder() const OVERRIDE FINAL;
     virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
     OutputEffectInstanceWPtr _effect;
     mutable QMutex _currentTimeMutex;

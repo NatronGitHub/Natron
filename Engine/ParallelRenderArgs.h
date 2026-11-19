@@ -134,6 +134,11 @@ public:
     /// Is this render sequential ? True for Viewer playback or a sequential writer such as WriteFFMPEG
     bool isSequentialRender : 1;
 
+    /// True if the frames of this sequential render are rendered one at a time, in frame order (see
+    /// OutputSchedulerThread::isRenderingInFrameOrder()): only then do OFX plug-ins get
+    /// kOfxImageEffectPropSequentialRenderStatus=1 (the Writer of the render always gets it).
+    bool isRenderedInFrameOrder : 1;
+
     ///Was the render started in the instanceChangedAction (knobChanged)
     bool isAnalysis : 1;
 
@@ -271,7 +276,8 @@ public:
                              const NodePtr& activeRotoPaintNode,
                              bool isAnalysis,
                              bool draftMode,
-                             const RenderStatsPtr& stats);
+                             const RenderStatsPtr& stats,
+                             bool isRenderedInFrameOrder = false);
 
     ParallelRenderArgsSetter(const std::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr> >& args);
 

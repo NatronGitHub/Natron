@@ -30,6 +30,7 @@
 #include <limits>
 #include <list>
 #include <algorithm> // min, max
+#include <atomic>
 #include <cassert>
 #include <stdexcept>
 #include <sstream> // stringstream
@@ -242,6 +243,9 @@ struct OutputSchedulerThreadPrivate
     QMutex bufferedOutputMutex;
     int lastBufferedOutputSize;
 
+    // Set by startRender() before the render threads start (see OutputSchedulerThread::isRenderingInFrameOrder())
+    std::atomic<bool> renderInFrameOrder;
+
 
     OutputSchedulerThreadPrivate(RenderEngine* engine,
                                  const OutputEffectInstancePtr& effect,
@@ -281,6 +285,7 @@ struct OutputSchedulerThreadPrivate
 #endif
         , bufferedOutputMutex()
         , lastBufferedOutputSize(0)
+        , renderInFrameOrder(false)
     {
     }
 
@@ -1053,6 +1058,9 @@ OutputSchedulerThread::startRender()
 
     aboutToStartRender();
 
+    // Before the first render thread starts (in adjustNumberOfThreads() below)
+    _imp->renderInFrameOrder = mustRenderInFrameOrder();
+
     ///Notify everyone that the render is started
     _imp->engine->s_renderStarted(forward);
 
@@ -1525,6 +1533,10 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads,
         optimalNThreads = userSettingParallelThreads;
     }
     optimalNThreads = std::max(1, optimalNThreads);
+    if (_imp->renderInFrameOrder) {
+        // One render thread: it takes the frames in order from framesToRender (see pushAllFrameRange())
+        optimalNThreads = 1;
+    }
 
 
     if ( ( (runningThreads < optimalNThreads) && (currentParallelRenders < optimalNThreads) ) || (currentParallelRenders == 0) ) {
@@ -1886,6 +1898,12 @@ OutputSchedulerThreadStartArgsPtr
 OutputSchedulerThread::getCurrentRunArgs() const
 {
     return _imp->runArgs.lock();
+}
+
+bool
+OutputSchedulerThread::isRenderingInFrameOrder() const
+{
+    return _imp->renderInFrameOrder;
 }
 
 int
@@ -2317,7 +2335,8 @@ private:
                                                          NodePtr(),
                                                          false,
                                                          false,
-                                                         stats);
+                                                         stats,
+                                                         _imp->scheduler->isRenderingInFrameOrder() );
 
                 {
                     FrameRequestMap request;
@@ -2522,6 +2541,44 @@ DefaultScheduler::handleRenderFailure(const std::string& errorMessage)
     if ( appPTR->isBackground() ) {
         std::cerr << errorMessage << std::endl;
     }
+}
+
+bool
+DefaultScheduler::mustRenderInFrameOrder() const
+{
+    // A node that "needs to be sequentially rendered to be correct" (kOfxImageEffectInstancePropSequentialRender=1,
+    // e.g. a particle system or a temporal denoiser) must be rendered "on a single computer over it's entire frame
+    // range, from first to last", so the render on disk renders one frame at a time, in frame order. The Writer
+    // itself is not concerned: a sequential Writer such as WriteFFmpeg puts the frames in order itself, while the
+    // nodes upstream render frames in parallel.
+    OutputEffectInstancePtr effect = _effect.lock();
+    if (!effect) {
+        return false;
+    }
+    NodePtr outputNode = effect->getNode();
+    WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effect.get() );
+    if (isWriteNode) {
+        NodePtr embeddedWriter = isWriteNode->getEmbeddedWriter();
+        if (embeddedWriter) {
+            outputNode = embeddedWriter;
+        }
+    }
+    if (!outputNode) {
+        return false;
+    }
+    int nInputs = outputNode->getNInputs();
+    for (int i = 0; i < nInputs; ++i) {
+        NodePtr input = outputNode->getInput(i);
+        std::string sequentialNodeName;
+        if ( input && input->isActivated() && input->hasSequentialOnlyNodeUpstream(sequentialNodeName) ) {
+            qDebug() << effect->getScriptName_mt_safe().c_str() << ": rendering one frame at a time, in frame order, because"
+                     << sequentialNodeName.c_str() << "must be rendered sequentially";
+
+            return true;
+        }
+    }
+
+    return false;
 }
 
 SchedulingPolicyEnum

@@ -700,7 +700,8 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                                                    const NodePtr& activeRotoPaintNode,
                                                    bool isAnalysis,
                                                    bool draftMode,
-                                                   const RenderStatsPtr& stats)
+                                                   const RenderStatsPtr& stats,
+                                                   bool isRenderedInFrameOrder)
     :  argsMap()
 {
     assert(treeRoot);
@@ -742,6 +743,9 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
             U64 nodeHash = node->getHashValue();
             liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash,
                                                    abortInfo, treeRoot, it->second.visitCounter, NodeFrameRequestPtr(), glContext,  textureIndex, timeline, isAnalysis, duringPaintStrokeCreation, rotoPaintNodes, safety, glSupport, doNanHandling, draftMode, stats);
+            if (isRenderedInFrameOrder) {
+                liveInstance->getParallelRenderArgsTLS()->isRenderedInFrameOrder = true;
+            }
         }
         for (NodesList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
             U64 nodeHash = (*it2)->getHashValue();
@@ -752,6 +756,9 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
             int visitsCounter = (int)outputs.size();
 
             (*it2)->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, visitsCounter, NodeFrameRequestPtr(), glContext, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodesList(), (*it2)->getCurrentRenderThreadSafety(),  (*it2)->getCurrentOpenGLRenderSupport(),doNanHandling, draftMode, stats);
+            if (isRenderedInFrameOrder) {
+                (*it2)->getEffectInstance()->getParallelRenderArgsTLS()->isRenderedInFrameOrder = true;
+            }
         }
 
         if ( node->isMultiInstance() ) {
@@ -892,6 +899,7 @@ ParallelRenderArgs::ParallelRenderArgs()
     , currentOpenglSupport(ePluginOpenGLRenderSupportNone)
     , isRenderResponseToUserInteraction(false)
     , isSequentialRender(false)
+    , isRenderedInFrameOrder(false)
     , isAnalysis(false)
     , isDuringPaintStrokeCreation(false)
     , doNansHandling(true)

@@ -978,6 +978,11 @@ public:
      * which is sequential.
      *
      **/
+    /**
+     * @brief True if this node, or a node upstream, can only be rendered sequentially
+     * (eSequentialPreferenceOnlySequential, e.g. kOfxImageEffectInstancePropSequentialRender=1); nodeName is then
+     * the name of that node.
+     **/
     bool hasSequentialOnlyNodeUpstream(std::string & nodeName) const;
 
 
