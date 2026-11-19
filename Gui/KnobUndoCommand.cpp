@@ -775,20 +775,21 @@ RestoreDefaultsCommand::redo()
     }
     // one group of value changes: an OpenFX effect gets a single kOfxActionBeginInstanceChanged/kOfxActionEndInstanceChanged
     // pair around the kOfxActionInstanceChanged actions of its parameters
-    if (holder) {
-        holder->beginKnobsValuesChanged_public(eValueChangedReasonRestoreDefault);
-    }
-    for (std::list<KnobIWPtr>::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
-        KnobIPtr itKnob = it->lock();
-        if (!itKnob) {
-            continue;
+    {
+        std::unique_ptr<KnobsValuesChangedGroup_RAII> group;
+        if (holder) {
+            group.reset( new KnobsValuesChangedGroup_RAII(holder) );
+            group->setReason(eValueChangedReasonRestoreDefault);
         }
-        if ( itKnob->getHolder() ) {
-            itKnob->getHolder()->onKnobValueChanged_public(itKnob.get(), eValueChangedReasonRestoreDefault, time, ViewIdx(0), true);
+        for (std::list<KnobIWPtr>::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+            KnobIPtr itKnob = it->lock();
+            if (!itKnob) {
+                continue;
+            }
+            if ( itKnob->getHolder() ) {
+                itKnob->getHolder()->onKnobValueChanged_public(itKnob.get(), eValueChangedReasonRestoreDefault, time, ViewIdx(0), true);
+            }
         }
-    }
-    if (holder) {
-        holder->endKnobsValuesChanged_public(eValueChangedReasonRestoreDefault);
     }
 
     if (app) {

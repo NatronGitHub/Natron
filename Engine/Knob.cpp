@@ -5750,51 +5750,6 @@ KnobHolder::onDoEndChangesOnMainThreadTriggered()
     endChanges();
 }
 
-NATRON_NAMESPACE_ANONYMOUS_ENTER
-
-// A group of value changes with the same reason of a holder (beginKnobsValuesChanged_public()/
-// endKnobsValuesChanged_public()), ended when the reason changes, by end(), or at the latest by the destructor.
-class KnobsValuesChangedGroup_RAII
-{
-    KnobHolder* _holder;
-    bool _inGroup;
-    ValueChangedReasonEnum _reason;
-
-public:
-    explicit KnobsValuesChangedGroup_RAII(KnobHolder* holder)
-        : _holder(holder)
-        , _inGroup(false)
-        , _reason(eValueChangedReasonUserEdited)
-    {
-    }
-
-    ~KnobsValuesChangedGroup_RAII()
-    {
-        end();
-    }
-
-    void setReason(ValueChangedReasonEnum reason)
-    {
-        if ( _inGroup && (reason == _reason) ) {
-            return;
-        }
-        end();
-        _reason = reason;
-        _inGroup = true;
-        _holder->beginKnobsValuesChanged_public(reason);
-    }
-
-    void end()
-    {
-        if (_inGroup) {
-            _inGroup = false;
-            _holder->endKnobsValuesChanged_public(_reason);
-        }
-    }
-};
-
-NATRON_NAMESPACE_ANONYMOUS_EXIT
-
 bool
 KnobHolder::endChanges(bool discardRendering)
 {
