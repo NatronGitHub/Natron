@@ -23,6 +23,7 @@ set(Tests_SOURCES
     google-mock/src/gmock-all.cc
     BaseTest.cpp
     Curve_Test.cpp
+    DeepGraphRender_Test.cpp
     DiskCache_Test.cpp
     FileSystemModel_Test.cpp
     Hash64_Test.cpp
@@ -88,6 +89,7 @@ target_link_libraries(Tests
         openMVG
         NatronEngine
         Qt::Core
+        Qt::Concurrent
         Python3::Python
 )
 target_include_directories(Tests PRIVATE ..)

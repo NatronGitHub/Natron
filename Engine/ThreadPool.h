@@ -35,6 +35,17 @@
 
 NATRON_NAMESPACE_ENTER
 
+/**
+ * @brief Stack size, in bytes, of the threads that render (render threads, scheduler threads, the
+ * OFX multi-thread suite threads and the global thread pool, which runs QtConcurrent tasks).
+ *
+ * A render recurses through the whole graph upstream of the rendered node (renderRoI,
+ * getRegionOfDefinition, isFrameVaryingOrAnimated...), using a few KB of stack per node. The default
+ * stack size of secondary threads (512 KB on macOS, 1 MB on Windows) overflows with a chain of
+ * about 200 to 300 nodes (#1434). This is the default stack size of the main thread on macOS and of
+ * all threads on Linux.
+ **/
+#define NATRON_RENDER_THREAD_STACK_SIZE (8 * 1024 * 1024)
 
 /**
  * @brief This class provides a fast way to determine whether a render thread
@@ -45,6 +56,7 @@ class AbortableThread
 {
 public:
 
+    // Sets the stack size of thread to NATRON_RENDER_THREAD_STACK_SIZE: it must not be started yet.
     AbortableThread(QThread* thread);
 
     virtual ~AbortableThread();

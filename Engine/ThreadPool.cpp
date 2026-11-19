@@ -68,6 +68,9 @@ struct AbortableThreadPrivate
 AbortableThread::AbortableThread(QThread* thread)
     : _imp( new AbortableThreadPrivate(thread) )
 {
+    // Every thread that renders derives from AbortableThread (#1434)
+    assert( !thread->isRunning() );
+    thread->setStackSize(NATRON_RENDER_THREAD_STACK_SIZE);
 }
 
 AbortableThread::~AbortableThread()
