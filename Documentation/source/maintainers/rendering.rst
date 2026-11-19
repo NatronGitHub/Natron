@@ -97,6 +97,38 @@ Scheduler threads and playback
 Interactive playback and batch rendering are driven by scheduler threads built
 on a common base:
 
+.. mermaid::
+   :alt: RenderEngine, owned by the output effect, starts the
+         OutputSchedulerThread with renderFrameRange, or the
+         ViewerCurrentFrameRequestScheduler with renderCurrentFrame. On the
+         command line, startWritersRendering calls renderFullSequence, which
+         uses the RenderEngine. The scheduler starts RenderThreadTasks that
+         pick frames: for a writer, DefaultRenderFrameRunnable renders and
+         calls notifyFrameRendered; for the Viewer, ViewerRenderFrameRunnable
+         calls renderViewer and appendToBuffer, and the scheduler calls
+         ViewerInstance::updateViewer in order. Both install the
+         ParallelRenderArgsSetter, run the request pass and call renderRoI.
+   :caption: Who calls renderRoI: playback and batch rendering
+             (OutputSchedulerThread.cpp).
+
+   flowchart TD
+       CLI["AppInstance::startWritersRendering()<br/>→ renderFullSequence()"] --> RE
+       subgraph out ["OutputEffectInstance (Viewer or writer)"]
+           RE["RenderEngine"]
+       end
+       RE -->|"renderFrameRange()"| OST["OutputSchedulerThread<br/>startRender(), startTasks()"]
+       RE -->|"renderCurrentFrame() (Viewer)"| CFS["ViewerCurrentFrameRequestScheduler"]
+       OST --> T["N × RenderThreadTask::run()<br/>pickFrameToRender()"]
+       T -->|writer| W["DefaultRenderFrameRunnable::renderFrame()"]
+       T -->|Viewer| V["ViewerRenderFrameRunnable<br/>→ ViewerInstance::renderViewer()"]
+       CFS -->|"RenderCurrentFrameFunctorRunnable"| V
+       W --> S["ParallelRenderArgsSetter<br/>computeRequestPass()<br/>renderRoI()"]
+       V --> S
+       W -->|"notifyFrameRendered()"| OST
+       V -->|"appendToBuffer()"| OST
+       OST -->|"Viewer: ViewerDisplayScheduler::processFrame()"| UV["ViewerInstance::updateViewer()"]
+       CFS --> UV
+
 - ``GenericSchedulerThread`` (``GenericSchedulerThread.cpp``): a reusable
   start/abort/quit worker-thread abstraction, with a watcher
   (``GenericSchedulerThreadWatcher``) that runs a callback when the thread
@@ -168,6 +200,57 @@ through ``EffectInstance::renderRoI`` (in ``EffectInstance.h`` and
 names below are the real ones, so you can follow along in the source.
 
 Suppose the Viewer needs the visible region of a Blur node at frame 10.
+
+.. mermaid::
+   :alt: The caller installs the ParallelRenderArgs and runs the request pass,
+         then calls renderRoI on node N. N reads its ParallelRenderArgs from
+         the TLS, gets its region of definition, and checks identity: if
+         identity, it calls renderRoI on the identity input and returns.
+         Otherwise it concatenates transforms, computes the RoI and looks up
+         the cache. It gets the frames needed and marks the rectangles left to
+         render. If some are left, it renders its inputs through
+         renderInputImagesForRoI and treeRecurseFunctor, which call renderRoI
+         on input I, then renderRoIInternal calls beginSequenceRender, the
+         render action on each rectangle (in parallel if the effect is fully
+         safe) and endSequenceRender. In all cases it then waits for the
+         rectangles rendered elsewhere, unmarks them, and returns
+         eRenderRoIRetCodeOk.
+   :caption: The life of a renderRoI call (EffectInstanceRenderRoI.cpp,
+             EffectInstance.cpp, ParallelRenderArgs.cpp).
+
+   sequenceDiagram
+       autonumber
+       participant C as Caller (Viewer or writer task)
+       participant N as EffectInstance N
+       participant K as AppManager caches
+       participant I as EffectInstance I (input)
+       participant P as Render action (OFX plug-in or C++)
+       C->>C: ParallelRenderArgsSetter, computeRequestPass()
+       C->>N: renderRoI(args, &planes)
+       N->>N: ParallelRenderArgs from the TLS
+       N->>N: getRegionOfDefinition_public()
+       N->>N: isIdentity_public()
+       alt identity
+           N->>I: renderRoI() on the identity input
+           I-->>N: image
+           N-->>C: eRenderRoIRetCodeOk
+       end
+       N->>N: tryConcatenateTransforms(), RoI (clipped if tiles are supported)
+       N->>K: getImageFromCacheAndConvertIfNeeded()
+       K-->>N: cached image and its bitmap, if any
+       N->>N: getFramesNeeded_public(), markImageAsBeingRendered()
+       opt rectangles left to render
+           N->>N: optimizeRectsToRender() (paint strokes only)
+           N->>I: renderInputImagesForRoI() → treeRecurseFunctor() → renderRoI()
+           I-->>N: input images (kept in the TLS)
+           N->>N: renderRoIInternal(): beginSequenceRender_public()
+           loop each rectangle, in parallel if eRenderSafetyFullySafeFrame
+               N->>P: tiledRenderingFunctor() → renderHandler() → render_public()
+           end
+           N->>N: endSequenceRender_public()
+       end
+       N->>N: waitForPendingRegions(), unmarkImageAsBeingRendered()
+       N-->>C: eRenderRoIRetCodeOk
 
 1. **The call.** ``ViewerInstance::renderViewer_internal`` has installed the
    ``ParallelRenderArgs`` and run the request pass (see above), then calls
