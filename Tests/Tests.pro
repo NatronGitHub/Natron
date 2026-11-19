@@ -61,6 +61,7 @@ SOURCES += \
     NaNGuards_Test.cpp \
     NodeGroup_Test.cpp \
     NodePreview_Test.cpp \
+    OfxCPURenderSupport_Test.cpp \
     OfxPluginDeprecated_Test.cpp \
     OSGLContext_Test.cpp \
     PluginGrouping_Test.cpp \
