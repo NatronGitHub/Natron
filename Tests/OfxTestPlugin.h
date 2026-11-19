@@ -33,8 +33,12 @@
 #include <gtest/gtest.h>
 
 #include <ofxhBinary.h>
+#include <ofxhParam.h>
 
 #include "Engine/AppManager.h"
+#include "Engine/Node.h"
+#include "Engine/OfxEffectInstance.h"
+#include "Engine/OfxImageEffectInstance.h"
 #include "Engine/Plugin.h"
 
 // The OFX plug-ins of Tests/OfxTestPlugin/NatronTestPlugin.cpp, built with the tests (see
@@ -42,6 +46,7 @@
 #define kNatronTestPluginParamInteract "net.natron.test.ParamInteract"
 #define kNatronTestPluginSingleInstance "net.natron.test.SingleInstance"
 #define kNatronTestPluginSyncPrivateData "net.natron.test.SyncPrivateData"
+#define kNatronTestPluginParams "net.natron.test.Params"
 
 namespace NatronTestPlugin {
 // true if the host loaded the plug-in
@@ -89,6 +94,30 @@ counter(const std::string& name)
 
     return -1;
 #endif
+}
+
+// The OFX parameter instance of a parameter of an OFX node, whose handle (getHandle()) is what the
+// plug-in gets from paramGetHandle(), or NULL.
+inline OFX::Host::Param::Instance*
+ofxParam(const NATRON_NAMESPACE::NodePtr& node,
+         const std::string& name)
+{
+    NATRON_NAMESPACE::OfxEffectInstance* effect = node ? dynamic_cast<NATRON_NAMESPACE::OfxEffectInstance*>( node->getEffectInstance().get() ) : 0;
+
+    return ( effect && effect->effectInstance() ) ? effect->effectInstance()->getParam(name) : 0;
+}
+
+// The OFX suites of the host, as the plug-ins get them from fetchSuite().
+inline const OfxParameterSuiteV1*
+parameterSuite()
+{
+    return (const OfxParameterSuiteV1*)OFX::Host::Param::GetSuite(1);
+}
+
+inline const OfxPropertySuiteV1*
+propertySuite()
+{
+    return (const OfxPropertySuiteV1*)OFX::Host::Property::GetSuite(1);
 }
 } // namespace NatronTestPlugin
 
