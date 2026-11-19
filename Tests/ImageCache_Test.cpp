@@ -186,3 +186,28 @@ TEST_F(ImageCacheTest, RemovingEntriesOfANodeKeepsLRUOrder)
         EXPECT_TRUE( std::find(left.begin(), left.end(), hashesInLRUOrder[i]) == left.end() ) << "entry " << i << " was not evicted";
     }
 }
+
+// #1350: the deleter and cleaner threads of the cache must be finished before the cache, which owns
+// their QThread, is destroyed, else Qt aborts the process with "QThread: Destroyed while thread is
+// still running". This happened at exit, in ~AppManager: waitForDeleterThread() returned before
+// run() had returned. Destroying a cache without calling waitForDeleterThread() must be safe too.
+TEST_F(ImageCacheTest, DestroyCacheWhileItsThreadsRun)
+{
+    const std::string cacheName = std::string("TestImageCacheThreads") + QString::number( QCoreApplication::applicationPid() ).toStdString();
+    for (int i = 0; i < 200; ++i) {
+        _cache = std::make_shared<ImageCache>(cacheName, NATRON_CACHE_VERSION, 1024ULL * 1024ULL * 1024ULL, 1.);
+        ImagePtr image = createImage(makeKey(_holderA, 0x3000 + i), 0);
+        ASSERT_TRUE( bool(image) );
+        ASSERT_TRUE( bool( createImage(makeKey(_holderB, 0x4000 + i), 0) ) );
+        // Starts the deleter thread
+        _cache->removeEntry(image);
+        image.reset();
+        // Starts the cleaner thread, which gives the entry of _holderB to the deleter thread
+        _cache->removeAllEntriesWithDifferentNodeHashForHolderPublic(_holderB.get(), 0);
+        if (i % 2 == 0) {
+            // As in ~AppManager
+            _cache->waitForDeleterThread();
+        }
+        _cache.reset();
+    }
+}

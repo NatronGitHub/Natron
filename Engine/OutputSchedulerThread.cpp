@@ -487,7 +487,11 @@ struct OutputSchedulerThreadPrivate
         for (;; ) {
             bool hasRemoved = false;
             for (RenderThreads::iterator it = renderThreads.begin(); it != renderThreads.end(); ++it) {
-                if ( it->thread->hasQuit() ) {
+                // hasQuit() is set at the end of run(), which may not have returned yet: the
+                // QThread must not be deleted before it is finished (else Qt aborts with "QThread:
+                // Destroyed while thread is still running"). We can't wait() for it here, since
+                // the end of run() locks renderThreadsMutex: it is removed by a later call.
+                if ( it->thread->hasQuit() && it->thread->isFinished() ) {
                     it->thread->deleteLater();
                     renderThreads.erase(it);
                     hasRemoved = true;
