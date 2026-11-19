@@ -1731,7 +1731,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         if (openGLSupport != ePluginOpenGLRenderSupportYes) {
             // The plug-in can only use GPU or doesn't support GPU
             if ( !getNode()->hasPersistentMessage() ) {
-                setPersistentMessage( eMessageTypeError, tr("The OpenGL render failed, and this plug-in cannot render without OpenGL.").toStdString() );
+                setPersistentMessage( eMessageTypeError, tr("The OpenGL render failed or ran out of GPU memory, and this plug-in cannot render without OpenGL.").toStdString() );
             }
             throw std::runtime_error("Rendering Failed");
         }
