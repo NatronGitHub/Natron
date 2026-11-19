@@ -35,6 +35,7 @@
 #endif
 #include <cstddef>
 #include <cstdlib>
+#include <cstring> // strcmp
 #include <cassert>
 #include <stdexcept>
 #include <sstream> // stringstream
@@ -52,6 +53,7 @@ GCC_DIAG_ON(unused-parameter)
 #include <QProcess>
 #include <QTemporaryFile>
 #include <QCoreApplication>
+#include <QDir>
 #include <QLocalServer>
 #include <QLocalSocket>
 
@@ -262,16 +264,13 @@ AppManagerPrivate::AppManagerPrivate()
     , glHasTextureFloat(false)
     , hasInitializedOpenGLFunctions(false)
     , openGLFunctionsMutex()
+    , onWayland(false)
     , renderingContextPool()
     , openGLRenderers()
 {
     setMaxCacheFiles();
 
     runningThreadsCount = 0;
-
-#if defined(__NATRON_LINUX__)
-    onWayland = qEnvironmentVariableIsSet("WAYLAND_DISPLAY") && !qEnvironmentVariableIsSet("NATRON_DISABLE_WAYLAND");
-#endif
 }
 
 AppManagerPrivate::~AppManagerPrivate()
@@ -737,9 +736,118 @@ post_gl_call(const char *name,
 
 #endif // debug
 
+#if defined(__NATRON_LINUX__) && defined(__NATRON_WAYLAND__)
+// Does dir contain a Qt Wayland platform plug-in?
+static bool
+hasQtWaylandPlugin(const QString& dir)
+{
+    return !QDir(dir).entryList(QStringList( QString::fromUtf8("libqwayland*") ), QDir::Files).isEmpty();
+}
+
+// Guess whether Qt will use its Wayland platform plugin. This has to be known before
+// the QApplication is created (see AppManager::loadFromArgs()), so this follows the
+// rules of QGuiApplicationPrivate::createPlatformIntegration() in Qt 5.15 and Qt 6.
+// When Qt runs on XWayland (the xcb platform), WAYLAND_DISPLAY is usually set too,
+// but the off-screen OpenGL context must then use GLX, not Wayland/EGL (issue #1001).
+static bool
+qtPlatformIsWayland(int argc,
+                    char* const* argv)
+{
+    if ( !qEnvironmentVariableIsSet("WAYLAND_DISPLAY") ) {
+        return false;
+    }
+    if ( !qEnvironmentVariableIsSet("DISPLAY") ) {
+        // No X11 server (not even XWayland): xcb can't work.
+        return true;
+    }
+
+    // An explicit choice: the -platform command-line option, else QT_QPA_PLATFORM.
+    // It may be a list of platforms to try ("wayland;xcb"), each with options ("xcb:foo").
+    QByteArray platformName = qgetenv("QT_QPA_PLATFORM");
+    // Extra directory searched for platform plug-ins: -platformpluginpath, else QT_QPA_PLATFORM_PLUGIN_PATH.
+    QString platformPluginPath = QString::fromLocal8Bit( qgetenv("QT_QPA_PLATFORM_PLUGIN_PATH") );
+    for (int i = 1; i < argc; ++i) {
+        const char* arg = argv[i];
+        if (!arg || arg[0] != '-') {
+            continue;
+        }
+        if (arg[1] == '-') { // startsWith("--")
+            ++arg;
+        }
+        if ( (std::strcmp(arg, "-platform") == 0) && (i + 1 < argc) && argv[i + 1] ) {
+            ++i;
+            platformName = argv[i];
+        } else if ( (std::strcmp(arg, "-platformpluginpath") == 0) && (i + 1 < argc) && argv[i + 1] ) {
+            ++i;
+            platformPluginPath = QString::fromLocal8Bit(argv[i]);
+        }
+    }
+    bool wayland;
+    if ( !platformName.isEmpty() ) {
+        wayland = platformName.trimmed().toLower().startsWith("wayland");
+    } else {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        // Qt 6 tries Wayland first when WAYLAND_DISPLAY is set.
+        wayland = true;
+#else
+        // Qt 5 uses xcb unless XDG_SESSION_TYPE is "wayland", which it ignores on GNOME.
+        wayland = false;
+        if (qgetenv("XDG_SESSION_TYPE") == "wayland") {
+            const QByteArray currentDesktop = qgetenv("XDG_CURRENT_DESKTOP").toLower();
+            const QByteArray sessionDesktop = qgetenv("XDG_SESSION_DESKTOP").toLower();
+            wayland = !currentDesktop.contains("gnome") && !sessionDesktop.contains("gnome");
+        }
+#endif
+    }
+    if (!wayland) {
+        return false;
+    }
+
+    // Qt falls back to xcb if it has no Wayland platform plugin (official Natron builds
+    // only ship the xcb plugin).
+    // Limitation: plug-in directories set in a qt.conf file ("Plugins=") are not seen here.
+    if ( !platformPluginPath.isEmpty() && hasQtWaylandPlugin(platformPluginPath) ) {
+        return true;
+    }
+    // Once the application exists, Qt also searches the executable's directory
+    // (<appdir>/platforms), which QCoreApplication::libraryPaths() can't report yet.
+    if ( (argc > 0) && argv[0] ) {
+        const QString appDir = QString::fromUtf8( ProcInfo::applicationDirPath(argv[0]).c_str() );
+        if ( !appDir.isEmpty() && hasQtWaylandPlugin( appDir + QString::fromUtf8("/platforms") ) ) {
+            return true;
+        }
+    }
+    const QStringList paths = QCoreApplication::libraryPaths();
+    for (QStringList::const_iterator it = paths.begin(); it != paths.end(); ++it) {
+        if ( hasQtWaylandPlugin( *it + QString::fromUtf8("/platforms") ) ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+#endif // __NATRON_LINUX__ && __NATRON_WAYLAND__
+
 void
 AppManagerPrivate::initGLAPISpecific()
 {
+#if defined(__NATRON_LINUX__) && !defined(__NATRON_WAYLAND__)
+    // Built without Wayland support (e.g. qmake builds): always use X11 (GLX).
+    onWayland = false;
+#elif defined(__NATRON_LINUX__)
+    // Use the Wayland (EGL) off-screen context only if Qt itself runs on Wayland.
+    // The headless NatronRenderer has no Qt platform, so it uses Wayland whenever
+    // WAYLAND_DISPLAY is set (and falls back to GLX if that fails, see fallBackToGLX()).
+    // NATRON_DISABLE_WAYLAND forces X11 (GLX) in all cases.
+    if ( qEnvironmentVariableIsSet("NATRON_DISABLE_WAYLAND") ) {
+        onWayland = false;
+    } else if ( appPTR->isBackground() ) {
+        onWayland = qEnvironmentVariableIsSet("WAYLAND_DISPLAY");
+    } else {
+        onWayland = qtPlatformIsWayland( nArgs, commandLineArgsUtf8.empty() ? nullptr : &commandLineArgsUtf8.front() );
+    }
+#endif
 #ifdef Q_OS_WIN32
     // scoped_ptr
     wglInfo.reset(new OSGLContext_wgl_data);
@@ -754,6 +862,34 @@ AppManagerPrivate::initGLAPISpecific()
         OSGLContext_x11::initGLXData( glxInfo.get() );
     }
 #endif // Q_OS_WIN32
+}
+
+bool
+AppManagerPrivate::fallBackToGLX(const char* reason)
+{
+#if defined(__NATRON_LINUX__)
+    // Wayland/EGL may fail (e.g. no EGL config with EGL_WINDOW_BIT, issue #1001) where
+    // X11/GLX through XWayland works. Retry with GLX, but only if there is an X11 display.
+    if ( !onWayland || !qEnvironmentVariableIsSet("DISPLAY") ) {
+        return false;
+    }
+    std::cerr << "Wayland/EGL OpenGL context failed (" << reason << "), retrying with X11/GLX." << std::endl;
+    // No OSGLContext_wayland was created, so nothing else refers to the EGL display.
+    // Terminate it, but keep libEGL loaded until tearDownGL(): unloading it while
+    // libGL gets loaded may upset a shared GL dispatch library (glvnd).
+    if (eglInfo) {
+        OSGLContext_wayland::destroyEGLData( eglInfo.get(), false /*unloadLibrary*/ );
+    }
+    onWayland = false;
+    glxInfo.reset(new OSGLContext_glx_data);
+    OSGLContext_x11::initGLXData( glxInfo.get() );
+
+    return true;
+#else
+    Q_UNUSED(reason);
+
+    return false;
+#endif
 }
 
 extern "C" {

@@ -943,9 +943,22 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
         bool checkRenderingReq = true;
         if (createOpenGLContext) {
             try {
-                _imp->initGLAPISpecific();
-
-                glContext = _imp->renderingContextPool->attachGLContextToRender(false /*checkIfGLLoaded*/);
+                try {
+                    _imp->initGLAPISpecific();
+                    glContext = _imp->renderingContextPool->attachGLContextToRender(false /*checkIfGLLoaded*/);
+                } catch (const std::exception& e) {
+                    // On Linux, retry once with X11/GLX if Wayland/EGL failed.
+                    if ( !_imp->fallBackToGLX( e.what() ) ) {
+                        throw;
+                    }
+                    const std::string eglError = e.what();
+                    try {
+                        glContext = _imp->renderingContextPool->attachGLContextToRender(false /*checkIfGLLoaded*/);
+                    } catch (const std::exception& e2) {
+                        // Report both failures, not only the last one.
+                        throw std::runtime_error("Wayland/EGL: " + eglError + "; X11/GLX: " + e2.what());
+                    }
+                }
                 if (glContext) {
                     // Make the context current and check its version
                     glContext->setContextCurrentNoRender();
