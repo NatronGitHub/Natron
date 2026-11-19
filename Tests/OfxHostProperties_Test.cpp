@@ -46,9 +46,15 @@
 
 #include "Global/GlobalDefines.h"
 
+#include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
+#include "Engine/CreateNodeArgs.h"
+#include "Engine/Node.h"
 #include "Engine/OfxHost.h"
+#include "Engine/Project.h"
 #include "Engine/Settings.h"
+
+#include "OfxTestPlugin.h"
 
 NATRON_NAMESPACE_USING
 
@@ -156,4 +162,100 @@ TEST(OfxHostProperties, HostNameAtOfxSetHost)
     host->loadingStatus(true, "org.example.Plugin", 1, 0);
     EXPECT_EQ( natron, props.getStringProperty(kOfxPropName) );
     host->loadingStatus(false, "", 0, 0);
+}
+
+namespace {
+// create and destroy a node of a test plug-in, so that its binary is loaded and the plug-in is
+// described, even if it was only known from the plug-in cache
+bool
+createTestNode(const char* pluginID)
+{
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    if (!app) {
+        return false;
+    }
+    CreateNodeArgs args( pluginID, app->getProject() );
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    NodePtr node = app->createNode(args);
+    if (!node) {
+        return false;
+    }
+    node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
+
+    return true;
+}
+}
+
+// OFX 1.5 (ofxCore.h): "The order of calls is then: 1) OfxSetHost, 2) OfxGetNumberOfPlugins, 3)
+// OfxGetPlugin". The test plug-in binary exports OfxSetHost. Natron keeps the scanned binaries loaded
+// (OfxHost::keepPluginsLoadedAfterScan()), so the binary is loaded once, and OfxSetHost is called once,
+// at the scan or, if the binary was only known from the plug-in cache, at the first use of one of its
+// plug-ins. Its host sees API version 1.5.
+TEST(OfxHostProperties, OfxSetHostOncePerBinary)
+{
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParamInteract) ) {
+        NatronTestPlugin::reportSkipped(kNatronTestPluginParamInteract);
+
+        return;
+    }
+    // two plug-ins of the same binary
+    ASSERT_TRUE( createTestNode(kNatronTestPluginParamInteract) );
+    ASSERT_TRUE( createTestNode(kNatronTestPluginSingleInstance) );
+    EXPECT_EQ( 1, NatronTestPlugin::counter("Binary.setHost") );
+    EXPECT_EQ( 1, NatronTestPlugin::counter("Binary.setHostBeforeGetNumberOfPlugins") );
+    EXPECT_LE( 1, NatronTestPlugin::counter("Binary.getNumberOfPlugins") );
+    EXPECT_EQ( 1, NatronTestPlugin::counter("Binary.setHostAPIVersion0") );
+    EXPECT_EQ( 5, NatronTestPlugin::counter("Binary.setHostAPIVersion1") );
+}
+
+// clipGetHandle() is "not a valid call in any of the describe actions": HostSupport used the descriptor
+// as an instance (#1366). It must return kOfxStatErrBadHandle and set the clip to NULL.
+TEST(OfxHostProperties, ClipGetHandleInDescribe)
+{
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParamInteract) ) {
+        NatronTestPlugin::reportSkipped(kNatronTestPluginParamInteract);
+
+        return;
+    }
+    // describes the plug-in in its context, if no other test did
+    ASSERT_TRUE( createTestNode(kNatronTestPluginParamInteract) );
+    EXPECT_LE( 1, NatronTestPlugin::counter("ParamInteract.describeClipGetHandleBadHandle") );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("ParamInteract.describeClipGetHandleOtherStatus") );
+    EXPECT_LE( 1, NatronTestPlugin::counter("ParamInteract.describeClipGetHandleNull") );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("ParamInteract.describeClipGetHandleNotNull") );
+}
+
+// The host descriptor properties are read only for plug-ins ("Properties on the Image Effect Host",
+// ofxPropertiesByObject.rst), and HostSupport's private host pointer, which fetchSuite() dereferences
+// for every plug-in, can never be written by a plug-in (#1367).
+TEST(OfxHostProperties, HostPropertiesReadOnly)
+{
+    ASSERT_TRUE(OFX::Host::ImageEffect::gImageEffectHost != NULL);
+    OFX::Host::Property::Set& set = hostProps();
+    ::OfxHost* handle = OFX::Host::ImageEffect::gImageEffectHost->getHandle();
+    ASSERT_TRUE(handle != NULL);
+    const OfxPropertySuiteV1* props = (const OfxPropertySuiteV1*)handle->fetchSuite(handle->host, kOfxPropertySuite, 1);
+    ASSERT_TRUE(props != NULL);
+
+    const char* const readOnly[] = {
+        kOfxPropAPIVersion, kOfxPropType, kOfxPropName, kOfxPropLabel, kOfxPropVersion, kOfxPropVersionLabel
+    };
+    for (std::size_t i = 0; i < sizeof(readOnly) / sizeof(readOnly[0]); ++i) {
+        OFX::Host::Property::Property* p = set.fetchProperty(readOnly[i]);
+        ASSERT_TRUE(p != NULL) << readOnly[i];
+        EXPECT_TRUE( p->getPluginReadOnly() ) << readOnly[i];
+    }
+
+    // the private host pointer: refused whatever the policy (Natron uses ePluginReadOnlyWarn)
+    EXPECT_EQ( kOfxStatErrValue, props->propSetPointer(handle->host, kOfxHostSupportHostPointer, 0, (void*)&props) );
+    EXPECT_EQ( kOfxStatErrValue, props->propReset(handle->host, kOfxHostSupportHostPointer) );
+    EXPECT_TRUE( handle->fetchSuite(handle->host, kOfxPropertySuite, 1) == props );
+
+    // with the enforce policy, a plug-in can't rename the host
+    const std::string label = set.getStringProperty(kOfxPropLabel);
+    OFX::Host::Property::PluginReadOnlyPolicyEnum policy = OFX::Host::Property::getPluginReadOnlyPolicy();
+    OFX::Host::Property::setPluginReadOnlyPolicy(OFX::Host::Property::ePluginReadOnlyEnforce);
+    EXPECT_EQ( kOfxStatErrValue, props->propSetString(handle->host, kOfxPropLabel, 0, "x") );
+    OFX::Host::Property::setPluginReadOnlyPolicy(policy);
+    EXPECT_EQ( label, set.getStringProperty(kOfxPropLabel) );
 }
