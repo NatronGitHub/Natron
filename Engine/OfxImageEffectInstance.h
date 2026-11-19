@@ -30,6 +30,7 @@
 
 #include <string>
 #include <cstdarg>
+#include <vector>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -288,13 +289,14 @@ private:
     // kOfxActionInstanceChanged, may trigger another one (when a value it sets changes a parameter).
     // Only read and written on the main thread.
     int _mainThreadActionDepth;
-    // The number of edit blocks that the plug-in opened (paramEditBegin()) and did not end yet (paramEditEnd()). When the
-    // outermost action returns, mainEntry() ends these, and only these: the blocks opened by Natron (e.g. an overlay
-    // drag of a host interact) stay open.
-    // Only used on the main thread: the plug-in's paramEditBegin() on other threads is ignored.
-    int _pluginEditBlocks;
-    // The holder of the knobs (getParamsEditHolder()) on which these blocks are open: ended there, also by the
-    // destructor (e.g. when the reader embedded in a Read node is replaced while it has a block open).
+    // The edit blocks that the plug-in opened (paramEditBegin()) and did not end yet (paramEditEnd()), innermost last:
+    // true for a block opened on _pluginEditHolder, false for a block that was ignored (while a PyPlug is created), so
+    // that each paramEditEnd() ends the block of its paramEditBegin(). When the outermost action returns, these blocks,
+    // and only these, are ended: the blocks opened by Natron (e.g. an overlay drag of a host interact) stay open.
+    // Only used on the Qt main thread (see editBegin()).
+    std::vector<bool> _pluginEditBlocks;
+    // The holder of the knobs (getParamsEditHolder()) on which these blocks are open, e.g. the Read/Write node of an
+    // embedded reader/writer.
     EffectInstanceWPtr _pluginEditHolder;
 
     // End the blocks of _pluginEditBlocks (main thread only).

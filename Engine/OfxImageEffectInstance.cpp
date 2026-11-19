@@ -120,7 +120,7 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
     : OFX::Host::ImageEffect::Instance(plugin, desc, context, interactive)
     , _ofxEffectInstance()
     , _mainThreadActionDepth(0)
-    , _pluginEditBlocks(0)
+    , _pluginEditBlocks()
     , _pluginEditHolder()
 {
     getProps().setGetHook(kNatronOfxExtraCreatedPlanes, (OFX::Host::Property::GetHook*)this);
@@ -131,32 +131,44 @@ OfxImageEffectInstance::OfxImageEffectInstance(const OfxImageEffectInstance& oth
     : OFX::Host::ImageEffect::Instance(other)
     , _ofxEffectInstance()
     , _mainThreadActionDepth(0)
-    , _pluginEditBlocks(0)
+    , _pluginEditBlocks()
     , _pluginEditHolder()
 {
 }
 
 OfxImageEffectInstance::~OfxImageEffectInstance()
 {
-    // the blocks that the plug-in left open, on the holder of the knobs, which may outlive this instance (e.g. a Read
-    // node, whose embedded reader is replaced)
-    if ( QThread::currentThread() == qApp->thread() ) {
-        endPluginEditBlocks();
+    // kOfxActionDestroyInstance, the last action (OfxEffectInstance::~OfxEffectInstance()), ends the blocks that the
+    // plug-in left open when it returns (MainThreadAction_RAII). Ending them here, on a holder that may be in the middle of
+    // replacing its embedded reader/writer, could deadlock, and the instance is only destroyed during an action if
+    // something else is wrong.
+    assert( _pluginEditBlocks.empty() );
+    if ( !_pluginEditBlocks.empty() ) {
+        qDebug() << "OFX: an effect instance is destroyed with" << _pluginEditBlocks.size() << "edit blocks open";
     }
 }
 
 void
 OfxImageEffectInstance::endPluginEditBlocks()
 {
-    EffectInstancePtr holder = _pluginEditHolder.lock();
-    int openBlocks = _pluginEditBlocks;
-
-    _pluginEditBlocks = 0;
-    _pluginEditHolder.reset();
-    if (holder) {
-        for (; openBlocks > 0; --openBlocks) {
-            holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+    // Ending a block calls endChanges(), which may call kOfxActionInstanceChanged, in which the plug-in may open a block
+    // again: end those too, but don't loop forever on a plug-in that always does.
+    for (int round = 0; !_pluginEditBlocks.empty() && round < 100; ++round) {
+        std::vector<bool> blocks;
+        blocks.swap(_pluginEditBlocks);
+        EffectInstancePtr holder = _pluginEditHolder.lock();
+        _pluginEditHolder.reset();
+        if (!holder) {
+            continue;
         }
+        for (std::vector<bool>::const_iterator it = blocks.begin(); it != blocks.end(); ++it) {
+            if (*it) {
+                holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+            }
+        }
+    }
+    if ( !_pluginEditBlocks.empty() ) {
+        qDebug() << "OFX: the plug-in keeps opening edit blocks while they are ended";
     }
 }
 
@@ -1091,29 +1103,34 @@ OfxImageEffectInstance::getParamsEditHolder() const
 OfxStatus
 OfxImageEffectInstance::editBegin(const std::string & name)
 {
-    ///Don't push undo/redo actions while creating a group
-    // The edits are grouped in one undo command by the holder of the knobs (see getParamsEditHolder()).
     // name: "label to attach to any undo/redo string"
-    EffectInstancePtr effect = getParamsEditHolder();
-
+    // The spec (ofxParam.h) allows edit blocks in kOfxActionInstanceChanged and in the interact actions. Natron only
+    // supports undo blocks on the Qt main thread: a block opened on another thread (e.g. by a kOfxActionInstanceChanged
+    // that Natron calls off the main thread, where the changes are not grouped) is ignored, and could otherwise be ended
+    // by the main thread while that action runs.
     if ( QThread::currentThread() != qApp->thread() ) {
-        // The spec only allows parameter changes from kOfxActionInstanceChanged and the interact actions, which are on
-        // the main thread. A block opened on a render thread could be ended by the main thread while the render runs.
         static std::once_flag warned;
         std::call_once(warned, [] {
-            qDebug() << "OFX: paramEditBegin() outside the main thread is ignored";
+            qDebug() << "OFX: paramEditBegin() outside the Qt main thread is ignored: Natron only supports undo blocks on the main thread";
         });
 
         return kOfxStatOK;
     }
-    if ( effect && !effect->getApp()->isCreatingPythonGroup() ) {
+    // The edits are grouped in one undo command by the holder of the knobs (see getParamsEditHolder()).
+    EffectInstancePtr effect = getParamsEditHolder();
+    ///Don't push undo/redo actions while creating a group: the block is ignored, but counted, so that its paramEditEnd()
+    ///doesn't end an enclosing block
+    const bool open = effect && !effect->getApp()->isCreatingPythonGroup();
+    if (open) {
         EffectInstancePtr holder = _pluginEditHolder.lock();
-        if ( (_pluginEditBlocks > 0) && (holder != effect) ) {
+        if ( !_pluginEditBlocks.empty() && holder && (holder != effect) ) {
             // the holder changed: end the blocks on the previous one
             endPluginEditBlocks();
         }
-        ++_pluginEditBlocks;
         _pluginEditHolder = effect;
+    }
+    _pluginEditBlocks.push_back(open);
+    if (open) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand, name);
     }
 
@@ -1128,15 +1145,16 @@ OfxImageEffectInstance::editEnd()
 {
     // only a block that the plug-in opened on the main thread (see editBegin()): an unmatched paramEditEnd() must not end
     // a block of Natron
-    if ( ( QThread::currentThread() != qApp->thread() ) || (_pluginEditBlocks <= 0) ) {
+    if ( ( QThread::currentThread() != qApp->thread() ) || _pluginEditBlocks.empty() ) {
         return kOfxStatOK;
     }
-    --_pluginEditBlocks;
+    const bool open = _pluginEditBlocks.back();
+    _pluginEditBlocks.pop_back();
     EffectInstancePtr holder = _pluginEditHolder.lock();
-    if (_pluginEditBlocks == 0) {
+    if ( _pluginEditBlocks.empty() ) {
         _pluginEditHolder.reset();
     }
-    if (holder) {
+    if (open && holder) {
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
     }
 

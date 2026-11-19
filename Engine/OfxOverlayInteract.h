@@ -374,6 +374,12 @@ public:
     // the interact actions are actions of the effect instance (OfxImageEffectInstance::MainThreadAction_RAII)
     virtual OfxStatus callEntry(const char *action, OFX::Host::Property::Set *inArgs) OVERRIDE;
 
+    // the effect instance of the interact, NULL after destroyInstanceAction()
+    OfxImageEffectInstance* getEffectInstance() const
+    {
+        return _effect;
+    }
+
     /**
      * @brief Call kOfxActionDestroyInstance now, while the effect instance is still alive: "An
      * interact instance must always be associated with an effect instance, so it gets created after
