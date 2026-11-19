@@ -124,10 +124,12 @@ public:
     const std::string & ofxGetOutputPremultiplication() const;
 
     /**
-     * @brief Calls syncPrivateDataAction from another thread than the main thread. The actual
-     * call of the action will take place in the main-thread.
+     * @brief Calls kOfxActionSyncPrivateData before the node is serialized (saved or copied), if
+     * this is the main thread, and no dialog is shown. A serialization in another thread (the
+     * autosave) can't wait for the main thread: the caller must sync before it starts the thread,
+     * see Project::syncOpenFXPrivateData().
      **/
-    void syncPrivateData_other_thread();
+    void syncPrivateDataForSerialization();
 
 public:
     /********OVERRIDDEN FROM EFFECT INSTANCE*************/
@@ -304,11 +306,6 @@ public:
 public Q_SLOTS:
 
     void onSyncPrivateDataRequested();
-
-
-Q_SIGNALS:
-
-    void syncPrivateDataRequested();
 
 private:
 

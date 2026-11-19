@@ -309,14 +309,12 @@ OfxEffectInstance::OfxEffectInstance(NodePtr node)
     : AbstractOfxEffectInstance(node)
     , _imp( new OfxEffectInstancePrivate() )
 {
-    QObject::connect( this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()) );
 }
 
 OfxEffectInstance::OfxEffectInstance(const OfxEffectInstance& other)
     : AbstractOfxEffectInstance(other)
     , _imp( new OfxEffectInstancePrivate(*other._imp) )
 {
-    QObject::connect( this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()) );
 }
 
 OfxImageEffectInstance*
@@ -2873,8 +2871,13 @@ OfxEffectInstance::beginEditKnobs()
 }
 
 void
-OfxEffectInstance::syncPrivateData_other_thread()
+OfxEffectInstance::syncPrivateDataForSerialization()
 {
+    if ( QThread::currentThread() != qApp->thread() ) {
+        // Requesting the sync from the main thread (as this did before) only made it happen after
+        // this serialization, while the parameters were being read.
+        return;
+    }
     if ( getApp()->isShowingDialog() ) {
         /*
            We may enter a situation where a plug-in called EffectInstance::message to show a dialog
@@ -2884,7 +2887,7 @@ OfxEffectInstance::syncPrivateData_other_thread()
          */
         return;
     }
-    Q_EMIT syncPrivateDataRequested();
+    onSyncPrivateDataRequested();
 }
 
 void

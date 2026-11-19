@@ -75,6 +75,7 @@
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Node.h"
+#include "Engine/OfxEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/ProjectPrivate.h"
 #include "Engine/ProjectSerialization.h"
@@ -761,6 +762,9 @@ Project::onAutoSaveTimerTriggered()
     bool canAutoSave = !hasNodeRendering() && !getApp()->isShowingDialog();
 
     if (canAutoSave) {
+        // "SyncPrivateData ... generally occurs when an effect is about to be saved or copied"
+        // (ofxCore.h): the autosave thread can't do it.
+        syncOpenFXPrivateData();
         std::shared_ptr<QFutureWatcher<void> > watcher = std::make_shared<QFutureWatcher<void> >();
         QObject::connect( watcher.get(), SIGNAL(finished()), this, SLOT(onAutoSaveFutureFinished()) );
         // Qt6 dropped the run(object, memberFunction) overload; a lambda is the
@@ -771,6 +775,23 @@ Project::onAutoSaveTimerTriggered()
         ///If the auto-save failed because a render is in progress, try every 2 seconds to auto-save.
         ///We don't use the user-provided timeout interval here because it could be an inapropriate value.
         _imp->autoSaveTimer->start(2000);
+    }
+}
+
+void
+Project::syncOpenFXPrivateData()
+{
+    assert( QThread::currentThread() == qApp->thread() );
+
+    NodesList nodes;
+    getNodes_recursive(nodes, true /*onlyActive*/);
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ( (*it)->isOpenFXNode() ) {
+            OfxEffectInstance* effect = dynamic_cast<OfxEffectInstance*>( (*it)->getEffectInstance().get() );
+            if (effect) {
+                effect->syncPrivateDataForSerialization();
+            }
+        }
     }
 }
 
