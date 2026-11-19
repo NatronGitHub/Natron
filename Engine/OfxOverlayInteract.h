@@ -156,6 +156,13 @@ public:
      **/
     void setKeyModifiersFromViewport();
 
+    // HostSupport passes kNatronOfxInteractPropKeyModifiers to the image effect overlays
+    // (ofxNatron.h extension 13)
+    virtual bool supportsKeyModifiers() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
     // the value of kNatronOfxInteractPropKeyModifiers in the inArgs of the interact actions
     virtual int getKeyModifiers() const OVERRIDE FINAL
     {
@@ -358,6 +365,11 @@ public:
     virtual ~OfxParamOverlayInteract()
     {
     }
+
+    // TODO: keyboard modifiers in parameter interacts (ofxNatron.h extension 13): override
+    // supportsKeyModifiers() and getKeyModifiers(), and set the state from CustomParamInteract and
+    // CurveWidget before each action (NatronGitHub/Natron#1283). Until then, HostSupport doesn't
+    // pass kNatronOfxInteractPropKeyModifiers here, and the plug-ins track the modifier keys.
 
     virtual bool isColorPickerRequired() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 

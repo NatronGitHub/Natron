@@ -27,6 +27,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+#include "Global/MathUtils.h"
 
 #include <string>
 
@@ -56,7 +57,7 @@ public:
            const std::string & name,
            double par)
         : RectI(l, b, r, t)
-        , _par(par)
+        , _par( validPixelAspectRatio(par) )
         , _name(name)
     {
     }
@@ -71,7 +72,7 @@ public:
     Format(const RectI& rect,
            const double par)
         : RectI(rect)
-        , _par(par)
+        , _par( validPixelAspectRatio(par) )
         , _name()
     {
     }
@@ -111,7 +112,14 @@ public:
 
     void setPixelAspectRatio(double p)
     {
-        _par = p;
+        _par = validPixelAspectRatio(p);
+    }
+
+    // The pixel aspect ratio must be positive and finite: images are divided by it.
+    // Any other value (e.g. 0 from a file or a script) is replaced by 1.
+    static double validPixelAspectRatio(double par)
+    {
+        return ( MathUtils::isFinite(par) && (par > 0.) ) ? par : 1.;
     }
 
     RectD toCanonicalFormat() const

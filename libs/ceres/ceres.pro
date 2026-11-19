@@ -13,7 +13,9 @@ CONFIG += ceres-flags glog-flags gflags-flags
 include(../../global.pri)
 include(../../libs.pri)
 
+# bundled third-party code: no warnings (-w), as NATRON_THIRD_PARTY_NO_WARNINGS in CMake
 CONFIG -= warn_on
+CONFIG += warn_off
 
 SOURCES += \
 	internal/ceres/array_utils.cc \

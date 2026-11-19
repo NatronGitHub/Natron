@@ -36,8 +36,10 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QDebug>
+#include <QThread>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -112,6 +114,7 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
                                                bool interactive)
     : OFX::Host::ImageEffect::Instance(plugin, desc, context, interactive)
     , _ofxEffectInstance()
+    , _mainThreadActionDepth(0)
 {
     getProps().setGetHook(kNatronOfxExtraCreatedPlanes, (OFX::Host::Property::GetHook*)this);
 
@@ -120,6 +123,7 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
 OfxImageEffectInstance::OfxImageEffectInstance(const OfxImageEffectInstance& other)
     : OFX::Host::ImageEffect::Instance(other)
     , _ofxEffectInstance()
+    , _mainThreadActionDepth(0)
 {
 }
 
@@ -145,6 +149,29 @@ public:
     }
 };
 
+// Counts the actions of an instance that are running on the main thread (see mainEntry()).
+class MainThreadActionDepth_RAII
+{
+    int* _depth;
+
+public:
+
+    MainThreadActionDepth_RAII(int* depth)
+        : _depth(depth)
+    {
+        if (_depth) {
+            ++*_depth;
+        }
+    }
+
+    ~MainThreadActionDepth_RAII()
+    {
+        if (_depth) {
+            --*_depth;
+        }
+    }
+};
+
 OfxStatus
 OfxImageEffectInstance::mainEntry(const char *action,
                                   const void *handle,
@@ -155,13 +182,25 @@ OfxImageEffectInstance::mainEntry(const char *action,
     boost_adaptbx::floating_point::exception_trapping trap(0);
 #endif
     ThreadIsActionCaller_RAII t(this);
+    const bool isMainThread = ( QThread::currentThread() == qApp->thread() );
+    MainThreadActionDepth_RAII depth(isMainThread ? &_mainThreadActionDepth : NULL);
 
     OfxStatus retval = OFX::Host::ImageEffect::Instance::mainEntry(action, handle, inArgs, outArgs);
 
     // Maybe paramEditBegin() was called by the effect without a matching paramEditEnd(). Let us fix that.
     // See issue https://github.com/NatronGitHub/Natron/issues/708
     // test for getMultipleParamsEditLevel() first, because it costs less.
-    OfxEffectInstancePtr effect = getOfxEffectInstance();
+    // The edit level is the one of the holder of the knobs (see editBegin()).
+    // Only on the main thread, where the plug-in edits its parameters (e.g. in an overlay action):
+    // an action on a render thread (e.g. of the reader embedded in a Read node, whose edit level is
+    // the one of the Read node, or of any effect) must not end an edit block of the main thread
+    // while it is open, e.g. during an overlay drag.
+    // Only when the outermost action of this instance returns: an action that the plug-in triggers
+    // inside its edit block, e.g. the kOfxActionInstanceChanged of the parameter changed by its first
+    // setValue() in the block, must not end the block, or the later changes of the block are not
+    // recorded for undo (see issue https://github.com/NatronGitHub/Natron/issues/1335).
+    const bool isOutermostAction = isMainThread && (_mainThreadActionDepth == 1);
+    EffectInstancePtr effect = isOutermostAction ? getParamsEditHolder() : EffectInstancePtr();
 
     if (effect && (effect->getMultipleParamsEditLevel() != KnobHolder::eMultipleParamsEditOff) && !effect->getApp()->isCreatingPythonGroup() ) {
         while (effect->getMultipleParamsEditLevel() != KnobHolder::eMultipleParamsEditOff) {
@@ -984,13 +1023,36 @@ OfxImageEffectInstance::addParamsToTheirParents()
    - ::kOfxStatErrBadHandle  - if the instance handle was invalid
 
  */
+EffectInstancePtr
+OfxImageEffectInstance::getParamsEditHolder() const
+{
+    EffectInstancePtr effect = getOfxEffectInstance();
+
+#ifdef NATRON_ENABLE_IO_META_NODES
+    // The knobs of a reader/writer embedded in a Read/Write node belong to that node (see
+    // OfxParamToKnob::getKnobHolder()), which creates the undo commands of their changes: the
+    // multiple edits of the plug-in must be grouped there. Cheaper than getKnobHolder(), since
+    // mainEntry() calls this for every action: only these embedded nodes have an IO container.
+    if (effect) {
+        NodePtr node = effect->getNode();
+        NodePtr ioContainer = node ? node->getIOContainer() : NodePtr();
+        if (ioContainer) {
+            return ioContainer->getEffectInstance();
+        }
+    }
+#endif
+
+    return effect;
+}
+
 OfxStatus
 OfxImageEffectInstance::editBegin(const std::string & /*name*/)
 {
     ///Don't push undo/redo actions while creating a group
-    OfxEffectInstancePtr effect = getOfxEffectInstance();
+    // The edits are grouped in one undo command by the holder of the knobs (see getParamsEditHolder()).
+    EffectInstancePtr effect = getParamsEditHolder();
 
-    if ( !effect->getApp()->isCreatingPythonGroup() ) {
+    if ( effect && !effect->getApp()->isCreatingPythonGroup() ) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
     }
 
@@ -1004,9 +1066,10 @@ OfxStatus
 OfxImageEffectInstance::editEnd()
 {
     ///Don't push undo/redo actions while creating a group
-    OfxEffectInstancePtr effect = getOfxEffectInstance();
+    // As in editBegin(): the holder of the knobs.
+    EffectInstancePtr effect = getParamsEditHolder();
 
-    if ( !effect->getApp()->isCreatingPythonGroup() ) {
+    if ( effect && !effect->getApp()->isCreatingPythonGroup() ) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
     }
 
@@ -1224,14 +1287,27 @@ OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metad
 } // OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata
 
 StatusEnum
-OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
+OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs,
+                                                bool* outputFormatSet)
 {
     /// create the out args with the stuff that does not depend on individual clips
     OFX::Host::Property::Set outArgs;
     OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
     std::map<OfxClipInstance*, int> clipInputs;
 
+    if (outputFormatSet) {
+        *outputFormatSet = false;
+    }
     setupClipPreferencesArgsFromMetadata(defaultPrefs, outArgs, clipInputs);
+
+    // For Readers, find out whether the plug-in sets the output format (i.e. it could decode the file):
+    // pass an empty format, and use the default one if the plug-in left it empty.
+    // A Reader without a decodable file must not auto-set the project format (#1294).
+    const bool detectOutputFormat = effect && effect->isReader();
+    if (detectOutputFormat) {
+        const int emptyFormat[4] = {0, 0, 0, 0};
+        outArgs.setIntPropertyN(kOfxImageClipPropFormat, emptyFormat, 4);
+    }
 
 
 #       ifdef OFX_DEBUG_ACTIONS
@@ -1325,6 +1401,14 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
             format.y1 = formatV[1];
             format.x2 = formatV[2];
             format.y2 = formatV[3];
+            if (detectOutputFormat) {
+                if ( format.isNull() ) {
+                    // the plug-in did not set the output format: keep the default one
+                    format = defaultPrefs.getOutputFormat();
+                } else if (outputFormatSet) {
+                    *outputFormatSet = true;
+                }
+            }
             defaultPrefs.setOutputFormat(format);
         } catch (const OFX::Host::Property::Exception &e) {
             qDebug() << "getClipPreferences: invalid property value returned by the plug-in, status" << e.getStatus();
@@ -1440,17 +1524,12 @@ OFX::Host::Param::Descriptor *
 OfxImageEffectDescriptor::paramDefine(const char *paramType,
                                       const char *name)
 {
-    static const OFX::Host::Property::PropSpec hostOverlaysProps[] = {
-        { kOfxParamPropHasHostOverlayHandle,  OFX::Host::Property::eInt,    1,    true,    "0" },
-        { kOfxParamPropUseHostOverlayHandle,  OFX::Host::Property::eInt,    1,    false,    "0" },
-        OFX::Host::Property::propSpecEnd
-    };
+    // HostSupport declares kOfxParamPropHasHostOverlayHandle (default 0) and
+    // kOfxParamPropUseHostOverlayHandle on every parameter except groups and pages.
     OFX::Host::Param::Descriptor *ret = OFX::Host::Param::SetDescriptor::paramDefine(paramType, name);
-    OFX::Host::Property::Set& props = ret->getProperties();
-
-    props.addProperties(hostOverlaysProps);
 
     if (std::strcmp(paramType, kOfxParamTypeDouble2D) == 0) {
+        OFX::Host::Property::Set& props = ret->getProperties();
         const std::string& type = ret->getDoubleType();
         // only kOfxParamDoubleTypeXYAbsolute and kOfxParamDoubleTypeNormalisedXYAbsolute are be supported
         if (  //type == kOfxParamDoubleTypePlain ||

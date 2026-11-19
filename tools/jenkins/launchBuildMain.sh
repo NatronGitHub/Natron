@@ -171,7 +171,7 @@ if [ "${PKGOS:-}" = "OSX" ]; then
     done
     if [ -n "$macos_missing" ]; then
         echo "Error: missing required macOS packaging tool(s):$macos_missing"
-        echo "  dmgbuild -> sudo port install py310-dmgbuild && sudo ln -s dmgbuild-3.10 /opt/local/bin/dmgbuild  (or: python3 -m pip install dmgbuild; writes the DMG .DS_Store layout without Finder/TCC)"
+        echo "  dmgbuild -> sudo port install py311-dmgbuild && sudo ln -sfn dmgbuild-3.11 /opt/local/bin/dmgbuild  (or: python3 -m pip install dmgbuild; writes the DMG .DS_Store layout without Finder/TCC)"
         echo "  oiiotool -> sudo port install openimageio    (DMG background processing)"
         echo "  identify -> sudo port install ImageMagick    (DMG background dimensions)"
         echo "See INSTALL_MACOS.md, section 'macOS packaging tools'."

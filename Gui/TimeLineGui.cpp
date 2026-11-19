@@ -1151,6 +1151,10 @@ TimeLineGui::centerOn_tripleSync(SequenceTime left,
     double curveWidth = right - left;
     double w = width();
 
+    if ( (curveWidth <= 0) || (w <= 0) ) {
+        // empty range or widget: the zoom factor would be zero or infinite
+        return;
+    }
     _imp->tlZoomCtx.left = left;
     _imp->tlZoomCtx.zoomFactor = w / curveWidth;
 
@@ -1175,6 +1179,10 @@ TimeLineGui::centerOn(SequenceTime left,
     double curveWidth = right - left + 2 * margin;
     double w = width();
 
+    if ( (curveWidth <= 0) || (w <= 0) ) {
+        // empty range or widget: the zoom factor would be zero or infinite
+        return;
+    }
     _imp->tlZoomCtx.left = left - margin;
     _imp->tlZoomCtx.zoomFactor = w / curveWidth;
 

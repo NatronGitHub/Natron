@@ -915,8 +915,6 @@ ExpandingLineEdit::changeEvent(QEvent *e)
 void
 ExpandingLineEdit::updateMinimumWidth()
 {
-    int left, right;
-
     QMargins textMargin = textMargins();
     int width = textMargin.left() + textMargin.right() + 4;
     QMargins contentMargin = contentsMargins();

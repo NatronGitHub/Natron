@@ -122,6 +122,8 @@ ViewerGL::ViewerGL(ViewerTab* parent,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    // Unlike QGLWidget, QOpenGLWidget takes no share widget: the argument is kept for API compatibility.
+    Q_UNUSED(shareWidget);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     //setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
@@ -2015,7 +2017,8 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->lastDragStartPos = zoomPos;
         _imp->ms = eMouseStateSelecting;
         if ( !modCASIsControl(e) ) {
-            // the plug-ins get the modifiers of the pen down that starts the selection rectangle
+            // when the overlays are shown, they got this pen down (notifyOverlaysPenDown above)
+            // before the clear, so the OFX plug-ins know its modifiers (ofxNatron.h extensions 7, 13)
             Q_EMIT selectionCleared( e->modifiers() );
             mustRedraw = true;
         }

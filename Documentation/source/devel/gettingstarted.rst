@@ -1,9 +1,11 @@
 .. _gettingStarted:
 
-Getting started
-===============
+Working with projects and nodes
+===============================
 
-This section covers basic functionalities a Python script can do in Natron.
+This section covers what a Python script can do with a project: create and connect nodes,
+control their parameters, write expressions and callbacks, render, and script the Roto and
+Tracker nodes. All of this also works in background mode (NatronRenderer).
 
 .. toctree::
     :maxdepth: 1
@@ -11,12 +13,7 @@ This section covers basic functionalities a Python script can do in Natron.
     creatingNode.rst
     controllingParameters.rst
     paramExpressions.rst
-    groups.rst
     callbacks.rst
     renderingWriteNode.rst
     roto.rst
     tracker.rst
-    modalDialogs.rst
-    userCommands.rst
-    pysidePanelExample.rst
-    viewersInteraction.rst
