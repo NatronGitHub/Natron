@@ -2474,6 +2474,13 @@ public:
      **/
     std::string getMultipleParamsEditLabel() const;
 
+    /**
+     * @brief Returns the level of the block of changes in progress, and if it is eMultipleParamsEditOnCreateNewCommand,
+     * sets it to eMultipleParamsEditOn, atomically: the caller makes the first change of the block, which creates its
+     * undo command.
+     **/
+    KnobHolder::MultipleParamsEditEnum takeMultipleParamsEditCreateNewCommand();
+
     virtual bool isProject() const
     {
         return false;

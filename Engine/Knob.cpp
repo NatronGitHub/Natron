@@ -6082,6 +6082,19 @@ KnobHolder::getMultipleParamsEditLabel() const
     return _imp->paramsEditLabel;
 }
 
+KnobHolder::MultipleParamsEditEnum
+KnobHolder::takeMultipleParamsEditCreateNewCommand()
+{
+    QMutexLocker l(&_imp->paramsEditLevelMutex);
+    KnobHolder::MultipleParamsEditEnum level = _imp->paramsEditLevel;
+
+    if (level == KnobHolder::eMultipleParamsEditOnCreateNewCommand) {
+        _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOn;
+    }
+
+    return level;
+}
+
 AppInstancePtr
 KnobHolder::getApp() const
 {

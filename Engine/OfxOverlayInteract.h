@@ -133,6 +133,7 @@ class OfxOverlayInteract
     :  public OFX::Host::ImageEffect::OverlayInteract, public NatronOverlayInteractSupport
 {
     int _keyModifiers; // kNatronOfxKeyModifier* bitmask
+    OfxImageEffectInstance* _effect;
 
 public:
 
@@ -143,6 +144,9 @@ public:
     virtual ~OfxOverlayInteract()
     {
     }
+
+    // the interact actions are actions of the effect instance (OfxImageEffectInstance::MainThreadAction_RAII)
+    virtual OfxStatus callEntry(const char *action, OFX::Host::Property::Set *inArgs) OVERRIDE;
 
     /**
      * @brief Set the keyboard modifiers of the next interact actions: HostSupport passes them in
@@ -352,6 +356,7 @@ public:
 class OfxParamOverlayInteract
     : public OFX::Host::Interact::Instance, public NatronOverlayInteractSupport
 {
+    OfxImageEffectInstance* _effect; // NULL after destroyInstanceAction()
 
 
 
@@ -359,12 +364,15 @@ public:
 
     OfxParamOverlayInteract(KnobI* knob,
                             OFX::Host::Interact::Descriptor &desc,
-                            void *effectInstance);
+                            OfxImageEffectInstance* effect);
 
 
     virtual ~OfxParamOverlayInteract()
     {
     }
+
+    // the interact actions are actions of the effect instance (OfxImageEffectInstance::MainThreadAction_RAII)
+    virtual OfxStatus callEntry(const char *action, OFX::Host::Property::Set *inArgs) OVERRIDE;
 
     /**
      * @brief Call kOfxActionDestroyInstance now, while the effect instance is still alive: "An

@@ -1060,7 +1060,11 @@ Knob<T>::setValue(const T & v,
     // A knob that can't undo is set now: it must not start the undo command of a block of changes (paramEditBegin()),
     // or the next changes of the block would be merged into the previous undo command.
     if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() && getCanUndo() ) {
-        KnobHolder::MultipleParamsEditEnum paramEditLevel = holder->getMultipleParamsEditLevel();
+        // The first write of a block creates its undo command: takeMultipleParamsEditCreateNewCommand() reads the level and
+        // turns eMultipleParamsEditOnCreateNewCommand into eMultipleParamsEditOn atomically.
+        KnobHolder::MultipleParamsEditEnum paramEditLevel = get_SetValueRecursionLevel() ?
+                                                            holder->getMultipleParamsEditLevel() :
+                                                            holder->takeMultipleParamsEditCreateNewCommand();
         switch (paramEditLevel) {
         case KnobHolder::eMultipleParamsEditOff:
         default:
@@ -1069,7 +1073,6 @@ Knob<T>::setValue(const T & v,
             if ( !get_SetValueRecursionLevel() ) {
                 Variant vari;
                 valueToVariant(v, &vari);
-                holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOn);
                 {
                     QMutexLocker l(&_setValueRecursionLevelMutex);
                     ++_setValueRecursionLevel;
@@ -1478,7 +1481,11 @@ Knob<T>::setValueAtTime(double time,
     // A knob that can't undo is set now: it must not start the undo command of a block of changes (paramEditBegin()),
     // or the next changes of the block would be merged into the previous undo command.
     if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() && getCanUndo() ) {
-        KnobHolder::MultipleParamsEditEnum paramEditLevel = holder->getMultipleParamsEditLevel();
+        // The first write of a block creates its undo command: takeMultipleParamsEditCreateNewCommand() reads the level and
+        // turns eMultipleParamsEditOnCreateNewCommand into eMultipleParamsEditOn atomically.
+        KnobHolder::MultipleParamsEditEnum paramEditLevel = get_SetValueRecursionLevel() ?
+                                                            holder->getMultipleParamsEditLevel() :
+                                                            holder->takeMultipleParamsEditCreateNewCommand();
         switch (paramEditLevel) {
         case KnobHolder::eMultipleParamsEditOff:
         default:
@@ -1492,7 +1499,6 @@ Knob<T>::setValueAtTime(double time,
 
                 Variant vari;
                 valueToVariant(v, &vari);
-                holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOn);
                 if (_signalSlotHandler) {
                     _signalSlotHandler->s_appendParamEditChange(reason, vari, view, dimension, time, true, true);
                 }

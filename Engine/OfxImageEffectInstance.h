@@ -28,7 +28,6 @@
 
 #include "Global/Macros.h"
 
-#include <atomic>
 #include <string>
 #include <cstdarg>
 
@@ -71,6 +70,20 @@ public:
     {
         _ofxEffectInstance = node;
     }
+
+    /**
+     * @brief Brackets an action of the instance or of one of its interacts (overlay or parameter interact), which don't
+     * go through mainEntry(). On the main thread, it counts the nesting depth of these actions, and when the outermost one
+     * returns, it ends the edit blocks that the plug-in opened and left open (paramEditBegin() without paramEditEnd()).
+     **/
+    class MainThreadAction_RAII
+    {
+        OfxImageEffectInstance* _effect;
+
+    public:
+        explicit MainThreadAction_RAII(OfxImageEffectInstance* effect);
+        ~MainThreadAction_RAII();
+    };
 
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
@@ -278,7 +291,14 @@ private:
     // The number of edit blocks that the plug-in opened (paramEditBegin()) and did not end yet (paramEditEnd()). When the
     // outermost action returns, mainEntry() ends these, and only these: the blocks opened by Natron (e.g. an overlay
     // drag of a host interact) stay open.
-    std::atomic<int> _pluginEditBlocks;
+    // Only used on the main thread: the plug-in's paramEditBegin() on other threads is ignored.
+    int _pluginEditBlocks;
+    // The holder of the knobs (getParamsEditHolder()) on which these blocks are open: ended there, also by the
+    // destructor (e.g. when the reader embedded in a Read node is replaced while it has a block open).
+    EffectInstanceWPtr _pluginEditHolder;
+
+    // End the blocks of _pluginEditBlocks (main thread only).
+    void endPluginEditBlocks();
 };
 
 class OfxImageEffectDescriptor
