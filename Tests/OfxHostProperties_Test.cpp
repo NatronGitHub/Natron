@@ -35,6 +35,7 @@
 #include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QTemporaryDir>
+#include <QtCore/QThread>
 
 #include <ofxCore.h>
 #include <ofxColour.h>
@@ -135,6 +136,21 @@ TEST(OfxHostProperties, BundleIdentifier)
     EXPECT_EQ( std::string("com.example.Foo"), NATRON_NAMESPACE::OfxHost::getBundleIdentifier( makeBundle(tmp.path(), QString::fromUtf8("Foo"), "com.example.Foo") ) );
     EXPECT_EQ( std::string(), NATRON_NAMESPACE::OfxHost::getBundleIdentifier( makeBundle(tmp.path(), QString::fromUtf8("NoPlist"), NULL) ) );
     EXPECT_EQ( std::string(), NATRON_NAMESPACE::OfxHost::getBundleIdentifier("/not/a/bundle/Foo.ofx") );
+    // HostSupport builds the paths with "\\" on Windows (DIRSEP), after a directory of OFX_PLUGIN_PATH
+    // that may use "/"
+    makeBundle(tmp.path(), QString::fromUtf8("Win"), "com.example.Win");
+    const std::string winPath = ( tmp.path() + QString::fromUtf8("/Win.ofx.bundle\\Contents\\Win64\\Win.ofx") ).toStdString();
+    EXPECT_EQ( std::string("com.example.Win"), NATRON_NAMESPACE::OfxHost::getBundleIdentifier(winPath) );
+}
+
+// The host name goes in the plug-in cache version, which HostSupport writes unescaped in an XML
+// attribute: a host name with '"', '<' or '&' must not make the cache unreadable.
+TEST(OfxHostProperties, PluginCacheVersion)
+{
+    const std::string v = NATRON_NAMESPACE::OfxHost::getPluginCacheVersion("My \"<host>\" & co");
+    EXPECT_EQ( std::string::npos, v.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-") ) << v;
+    EXPECT_EQ( v, NATRON_NAMESPACE::OfxHost::getPluginCacheVersion("My \"<host>\" & co") );
+    EXPECT_NE( v, NATRON_NAMESPACE::OfxHost::getPluginCacheVersion("fr.inria.Natron") );
 }
 
 // OfxSetHost (OFX 1.5) is called with the host before any plug-in of the binary is known: the host
@@ -161,6 +177,23 @@ TEST(OfxHostProperties, HostNameAtOfxSetHost)
     // the next plug-in being loaded replaces the binary
     host->loadingStatus(true, "org.example.Plugin", 1, 0);
     EXPECT_EQ( natron, props.getStringProperty(kOfxPropName) );
+    // a binary with no bundle identifier: Natron's host name, not that of the plug-in loaded before
+    host->loadingStatus(true, "com.absoft.neatvideo4", 4, 0);
+    EXPECT_EQ( nuke, props.getStringProperty(kOfxPropName) );
+    host->loadingBinary( makeBundle(tmp.path(), QString::fromUtf8("NoPlist2"), NULL) );
+    EXPECT_EQ( natron, props.getStringProperty(kOfxPropName) );
+    // the loading state is only that of the thread that loads the plug-ins: another thread (e.g. a
+    // render thread) doesn't see it, and doesn't race with it
+    host->loadingStatus(true, "com.absoft.neatvideo4", 4, 0);
+    std::string otherThreadName;
+    QThread* other = QThread::create([&props, &otherThreadName]() {
+        otherThreadName = props.getStringProperty(kOfxPropName);
+    });
+    other->start();
+    EXPECT_TRUE( other->wait() );
+    delete other;
+    EXPECT_EQ( natron, otherThreadName );
+    EXPECT_EQ( nuke, props.getStringProperty(kOfxPropName) );
     host->loadingStatus(false, "", 0, 0);
 }
 
@@ -203,7 +236,11 @@ TEST(OfxHostProperties, OfxSetHostOncePerBinary)
     ASSERT_TRUE( createTestNode(kNatronTestPluginSingleInstance) );
     EXPECT_EQ( 1, NatronTestPlugin::counter("Binary.setHost") );
     EXPECT_EQ( 1, NatronTestPlugin::counter("Binary.setHostBeforeGetNumberOfPlugins") );
-    EXPECT_LE( 1, NatronTestPlugin::counter("Binary.getNumberOfPlugins") );
+    // the scan calls OfxGetNumberOfPlugins; a binary known from the cache only gets OfxGetPlugin
+    // (TestsOfxCache in Tests/CMakeLists.txt)
+    if ( qgetenv("NATRON_TESTS_KEEP_OFX_CACHE").isEmpty() ) {
+        EXPECT_LE( 1, NatronTestPlugin::counter("Binary.getNumberOfPlugins") );
+    }
     EXPECT_EQ( 1, NatronTestPlugin::counter("Binary.setHostAPIVersion0") );
     EXPECT_EQ( 5, NatronTestPlugin::counter("Binary.setHostAPIVersion1") );
 }

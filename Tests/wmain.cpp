@@ -48,7 +48,11 @@ GTEST_API_ int main(int argc, char **argv)
         args << QString::fromUtf8(argv[0]);
 #endif
         args << QString::fromUtf8("--clear-cache");
-        args << QString::fromUtf8("--clear-openfx-cache");
+        // NATRON_TESTS_KEEP_OFX_CACHE: use the OFX plug-in cache written by the previous run, to test
+        // the plug-ins known from the cache (loaded at their first use) instead of the scan
+        if ( qgetenv("NATRON_TESTS_KEEP_OFX_CACHE").isEmpty() ) {
+            args << QString::fromUtf8("--clear-openfx-cache");
+        }
         args << QString::fromUtf8("--no-settings");
         args << QString::fromUtf8("--settings") << QString::fromUtf8("useStdOFXPluginsLocation=False");
         CLArgs cl(args, true);

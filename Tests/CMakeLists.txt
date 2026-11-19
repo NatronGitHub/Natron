@@ -90,6 +90,10 @@ target_include_directories(Tests
 set_property(SOURCE google-test/src/gtest-all.cc google-mock/src/gmock-all.cc
     APPEND PROPERTY COMPILE_OPTIONS ${NATRON_THIRD_PARTY_NO_WARNINGS})
 add_test(NAME Tests COMMAND Tests)
+# The same OFX tests with the plug-ins known from the OFX plug-in cache that Tests wrote, instead of a
+# scan: the binaries are loaded at the first use of their plug-ins (OfxHost::getPluginContextAndDescribe())
+add_test(NAME TestsOfxCache COMMAND Tests "--gtest_filter=OfxHostProperties.*:OfxTestPlugin*")
+set_tests_properties(TestsOfxCache PROPERTIES DEPENDS Tests ENVIRONMENT "NATRON_TESTS_KEEP_OFX_CACHE=1")
 
 # A minimal OFX plug-in bundle for the tests (OfxTestPlugin/NatronTestPlugin.cpp, read through
 # OfxTestPlugin.h). It is assembled in the build tree, found by the Tests binary through

@@ -126,12 +126,17 @@ public:
     /// Called by HostSupport just before it calls the OfxSetHost entry point (OFX 1.5) of a plug-in
     /// binary, once per load of the binary, before any of its plug-ins is known: the host name that
     /// OfxSetHost sees (kOfxPropName, see getStringProperty()) is chosen from the binary's bundle
-    /// identifier, not from the plug-in that was loaded before.
+    /// identifier, not from the plug-in that was loaded before, at the scan and when a binary known
+    /// from the plug-in cache is loaded (getPluginContextAndDescribe()) alike.
     virtual void loadingBinary(const std::string& filePath) OVERRIDE;
 
     /// The CFBundleIdentifier in the Info.plist of the OFX bundle that contains a plug-in binary
     /// (e.g. ".../Foo.ofx.bundle/Contents/MacOS/Foo.ofx"), or "" if there is none.
     static std::string getBundleIdentifier(const std::string& binaryFilePath);
+
+    /// The version of the OFX plug-in cache (PluginCache::setCacheVersion()) for a host name
+    /// (kOfxPropName): only letters, digits and '-', so that it can go unescaped in the cache's XML.
+    static std::string getPluginCacheVersion(const std::string& hostName);
 
     /// The plug-ins found by the scan stay loaded until exit (HostSupport's default since openfx #174
     /// is to unload each binary after the scan and load it again at first use). Natron keeps them: each
@@ -193,6 +198,9 @@ public:
 
     void setThreadAsActionCaller(OfxImageEffectInstance* instance, bool actionCaller);
 
+    /// Load the plug-in if needed (OfxSetHost of its binary, kOfxActionLoad, kOfxActionDescribe) and
+    /// describe it in its context. Serialized between threads. Throws std::exception on failure, and if
+    /// called again from the thread that is in it (e.g. from a modal dialog opened by a plug-in's action).
     OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                                     ContextEnum* ctx);
 

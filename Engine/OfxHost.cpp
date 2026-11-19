@@ -25,6 +25,7 @@
 
 #include "OfxHost.h"
 
+#include <atomic>
 #include <cassert>
 #include <cstdarg>
 #include <memory>
@@ -46,6 +47,7 @@ CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is depr
 #include <QMutex>
 #include <QThreadPool>
 #include <QCoreApplication>
+#include <QCryptographicHash>
 #include <QDebug>
 #include <QRegularExpression>
 #include <QRegularExpressionMatch>
@@ -160,20 +162,37 @@ struct OfxHostPrivate
     std::list<QRecursiveMutex*> pluginsMutexes;
     QMutex* pluginsMutexesLock; //<protects _pluginsMutexes
 #endif
+    // The state of the plug-in loading that the host name hook (getStringProperty(kOfxPropName)) reads.
+    // Only the thread that loads plug-ins (loadingThread) writes and reads the members below: the scan
+    // (loadOFXPlugins(), loadingStatus(), loadingBinary()), or getPluginContextAndDescribe(), under
+    // describeMutex. The other threads (renders...) only read loadingThread, which is never theirs, and
+    // use the plug-in of the effect that is calling the action instead.
+    std::atomic<QThread*> loadingThread;
     std::string loadingPluginID; // ID of the plugin being loaded
-    std::string loadingPluginBinaryPath; // the binary of loadingPluginID, if known
     int loadingPluginVersionMajor;
     int loadingPluginVersionMinor;
-    std::string setHostBundleID; // bundle identifier of the binary whose OfxSetHost is being called (OFX 1.5)
-    // Serializes the loading and description of the plug-ins (getPluginContextAndDescribe()): HostSupport
-    // requires that the getPluginHandle() call that loads a plug-in (OfxSetHost of its binary if the binary
-    // was only known from the cache, kOfxActionLoad, kOfxActionDescribe) and getContext()
+    bool settingHost; // the OfxSetHost (OFX 1.5) of a binary is being called, see loadingBinary()
+    std::string setHostBundleID; // if settingHost, the bundle identifier of the binary, or ""
+    // Serializes the loading and description of the plug-ins after the scan (getPluginContextAndDescribe()):
+    // HostSupport requires that the getPluginHandle() call that loads a plug-in (OfxSetHost of its binary if
+    // the binary was only known from the cache, kOfxActionLoad, kOfxActionDescribe) and getContext()
     // (kOfxImageEffectActionDescribeInContext) be serialized with every other getPluginHandle(),
-    // getContext() and createInstance() call for all the plug-ins of the binary. The loadingPlugin* and
-    // setHostBundleID members above are shared by these calls too. Once a plug-in is described, its
-    // instances only call getPluginHandle() on a loaded plug-in, which only reads, and nothing is unloaded
-    // before exit (keepPluginsLoadedAfterScan()), so render threads need no lock.
+    // getContext() and createInstance() call for all the plug-ins of the binary. The other callers are the
+    // instances, which exist only once their plug-in is loaded and described: they only call
+    // getPluginHandle() on a loaded plug-in, which only reads, and nothing is unloaded before exit
+    // (keepPluginsLoadedAfterScan()).
     QMutex describeMutex;
+    std::atomic<QThread*> describeThread; // the thread that holds describeMutex, or NULL
+
+    void clearLoadingState()
+    {
+        loadingPluginID.clear();
+        loadingPluginVersionMajor = 0;
+        loadingPluginVersionMinor = 0;
+        settingHost = false;
+        setHostBundleID.clear();
+        loadingThread = nullptr;
+    }
 
     OfxHostPrivate()
         : imageEffectPluginCache()
@@ -182,12 +201,14 @@ struct OfxHostPrivate
         , pluginsMutexes()
         , pluginsMutexesLock(0)
 #endif
+        , loadingThread(nullptr)
         , loadingPluginID()
-        , loadingPluginBinaryPath()
         , loadingPluginVersionMajor(0)
         , loadingPluginVersionMinor(0)
+        , settingHost(false)
         , setHostBundleID()
         , describeMutex()
+        , describeThread(nullptr)
     {
     }
 };
@@ -470,15 +491,21 @@ OfxHost::getStringProperty(const std::string &name,
         std::string pluginID;
         int pluginVersionMajor = 0;
         int pluginVersionMinor = 0;
-        if ( !_imp->loadingPluginID.empty() ) {
+        // the loading state is only that of the thread that loads plug-ins (see OfxHostPrivate)
+        const bool loadingThread = ( _imp->loadingThread.load() == QThread::currentThread() );
+        if (loadingThread && _imp->settingHost) {
+            // OfxSetHost of a binary, before any of its plug-ins is known, at the scan and when a binary
+            // known from the cache is loaded: the vendor prefixes of getHostNameProxy() are those of the
+            // bundle identifier too. With no bundle identifier, the host name is Natron's.
+            pluginID = _imp->setHostBundleID;
+            if ( pluginID.empty() ) {
+                return _properties.getStringPropertyRaw(kOfxPropName);
+            }
+        } else if ( loadingThread && !_imp->loadingPluginID.empty() ) {
             // plugin is not yet created: we are loading or describing it
             pluginID = _imp->loadingPluginID;
             pluginVersionMajor = _imp->loadingPluginVersionMajor;
             pluginVersionMinor = _imp->loadingPluginVersionMinor;
-        } else if ( !_imp->setHostBundleID.empty() ) {
-            // OfxSetHost of a binary whose plug-ins are not known yet: the vendor prefixes of
-            // getHostNameProxy() are those of the bundle identifier too
-            pluginID = _imp->setHostBundleID;
         } else {
             OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
             if (tls && tls->lastEffectCallingMainEntry) {
@@ -695,13 +722,62 @@ OFX::Host::ImageEffect::Descriptor*
 OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                      ContextEnum* ctx)
 {
+    // Re-entry from the thread that is describing a plug-in: e.g. a plug-in opens a modal dialog in
+    // kOfxActionLoad or a describe action, and the user creates a node from its nested event loop.
+    // describeMutex is not recursive, so this would deadlock, and a recursive mutex would be no better:
+    // the nested call would overwrite the loading state of the plug-in being described, and could
+    // describe a plug-in of the same binary (or the same plug-in) while it is half-loaded, which
+    // HostSupport forbids. Refuse it: the node is not created, and the error is reported.
+    if ( _imp->describeThread.load() == QThread::currentThread() ) {
+        throw std::runtime_error( tr("Cannot load %1 while another OpenFX plug-in is being loaded.")
+                                  .arg( QString::fromUtf8( plugin->getIdentifier().c_str() ) ).toStdString() );
+    }
     QMutexLocker l(&_imp->describeMutex);
 
+    // clear the loading state on every exit, including the exceptions
+    struct DescribeScope
+    {
+        OfxHostPrivate* imp;
+        explicit DescribeScope(OfxHostPrivate* imp_)
+            : imp(imp_)
+        {
+            imp->clearLoadingState();
+            imp->describeThread = QThread::currentThread();
+            imp->loadingThread = QThread::currentThread();
+        }
+
+        ~DescribeScope()
+        {
+            imp->clearLoadingState();
+            imp->describeThread = nullptr;
+        }
+    };
+    DescribeScope scope( _imp.get() );
+
+    OFX::Host::PluginBinary* binary = plugin->getBinary();
+    std::unique_ptr<OFX::Host::PluginHandle> binaryHandle;
+    if ( binary && !binary->isLoaded() ) {
+        // A binary known from the plug-in cache, loaded at the first use of one of its plug-ins: load it
+        // with no plug-in being loaded, so that its OfxSetHost (OFX 1.5) sees the same host name as at the
+        // scan (from the bundle identifier, see loadingBinary()), and kOfxActionLoad and the describe
+        // actions the same as at the scan too (from the plug-in, set below). HostSupport calls OfxSetHost
+        // and Load from the same getPluginHandle() call, with no hook in between. This handle keeps the
+        // binary loaded until getPluginHandle() below has taken its own reference, so that OfxSetHost is
+        // called once. (It also calls the plug-in's OfxPlugin::setHost, which getPluginHandle() calls
+        // again with the same host.) If OfxSetHost refuses this host, getPluginHandle() returns NULL.
+        try {
+            binaryHandle.reset( new OFX::Host::PluginHandle(plugin, this) );
+        } catch (...) {
+            throw std::runtime_error( tr("Error: Loading the binary (OfxSetHost) failed while loading %1.")
+                                      .arg( QString::fromUtf8( plugin->getIdentifier().c_str() ) ).toStdString() );
+        }
+        _imp->settingHost = false;
+        _imp->setHostBundleID.clear();
+    }
+
     _imp->loadingPluginID = plugin->getRawIdentifier();
-    _imp->loadingPluginBinaryPath = plugin->getBinary() ? plugin->getBinary()->getFilePath() : std::string();
     _imp->loadingPluginVersionMajor = plugin->getVersionMajor();
     _imp->loadingPluginVersionMinor = plugin->getVersionMinor();
-    _imp->setHostBundleID.clear();
 
     OFX::Host::PluginHandle *pluginHandle;
     // getPluginHandle() must be called before getContexts():
@@ -756,9 +832,6 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
 
 
     *ctx = OfxEffectInstance::mapToContextEnum(context);
-    _imp->loadingPluginID.clear();
-    _imp->loadingPluginBinaryPath.clear();
-    _imp->setHostBundleID.clear();
 
     return desc;
 } // OfxHost::getPluginContextAndDescribe
@@ -797,9 +870,6 @@ OfxHost::createOfxEffect(NodePtr node,
                                                  hasUsedFileDialog
 #endif
                                                  );
-    // if creating the instance loaded the plug-in binary (and called its OfxSetHost), the following
-    // actions are those of the effect
-    _imp->setHostBundleID.clear();
 
     return hostSideEffect;
 }
@@ -936,11 +1006,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     assert(pluginCache);
     /// set the version label in the global cache
     // v2: HostSupport of openfx 4476791d (read-only properties, bundle architecture folders): describe the plug-ins again
-    // v3: OfxSetHost (OFX 1.5). A binary whose OfxSetHost refuses this host is cached with no plug-ins,
-    // and its answer may depend on the host name and version (kOfxPropName, kOfxPropVersion), so they
-    // are part of the cache version: the plug-ins are scanned again when they change.
-    pluginCache->setCacheVersion( std::string(NATRON_APPLICATION_NAME "OFXCachev3-" NATRON_VERSION_STRING "-")
-                                  + appPTR->getCurrentSettings()->getHostName() );
+    pluginCache->setCacheVersion( getPluginCacheVersion( appPTR->getCurrentSettings()->getHostName() ) );
 
     // the host passed to each binary's OfxSetHost (OFX 1.5) at the scan: the same host as when a plug-in
     // known from the cache is loaded later (HostSupport's default, the image effect host, is this one too)
@@ -1008,9 +1074,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     qDebug() << "Load OFX Plugins: scan plugins...";
     pluginCache->scanPluginFiles();
     qDebug() << "Load OFX Plugins: scan plugins... done!";
-    _imp->loadingPluginID.clear(); // finished loading plugins
-    _imp->loadingPluginBinaryPath.clear();
-    _imp->setHostBundleID.clear();
+    _imp->clearLoadingState(); // finished loading plugins
 
     if ( pluginCache->dirty() ) {
         // write the cache NOW (it won't change anyway)
@@ -1212,11 +1276,13 @@ OfxHost::loadingStatus(bool loading,
                        int versionMajor,
                        int versionMinor)
 {
-    // set the pluginID in case the plug-in tries to fetch the hostname property
+    // set the pluginID in case the plug-in tries to fetch the hostname property (called by the scan,
+    // before kOfxActionLoad and kOfxActionDescribe, and after them)
+    _imp->loadingThread = QThread::currentThread();
     _imp->loadingPluginID = pluginId;
-    _imp->loadingPluginBinaryPath.clear(); // unknown
     _imp->loadingPluginVersionMajor = versionMajor;
     _imp->loadingPluginVersionMinor = versionMinor;
+    _imp->settingHost = false;
     _imp->setHostBundleID.clear();
     if (loading && appPTR) {
         appPTR->setLoadingStatus( QString::fromUtf8("OpenFX: loading ") + QString::fromUtf8( pluginId.c_str() ) + QString::fromUtf8(" v") + QString::number(versionMajor) + QLatin1Char('.') + QString::number(versionMinor) );
@@ -1229,29 +1295,49 @@ OfxHost::loadingStatus(bool loading,
 void
 OfxHost::loadingBinary(const std::string& filePath)
 {
-    // OfxSetHost is called next. The plug-in being loaded or described, if any, is only relevant if it
-    // is in this binary (a binary that is loaded when one of its plug-ins is first used); otherwise it
-    // was the last plug-in of the scan, from another binary.
-    if ( _imp->loadingPluginBinaryPath.empty() || (_imp->loadingPluginBinaryPath != filePath) ) {
-        _imp->loadingPluginID.clear();
-        _imp->loadingPluginBinaryPath.clear();
-        _imp->loadingPluginVersionMajor = 0;
-        _imp->loadingPluginVersionMinor = 0;
-    }
+    // OfxSetHost is called next, before any plug-in of the binary is known: at the scan, and when a
+    // binary known from the cache is loaded (see getPluginContextAndDescribe(), which loads it with no
+    // plug-in being loaded). The host name it sees follows the bundle identifier, not the plug-in that
+    // was loaded before (the last plug-in of the scan, from another binary). The next loadingStatus()
+    // or getPluginContextAndDescribe() ends it.
+    _imp->loadingThread = QThread::currentThread();
+    _imp->loadingPluginID.clear();
+    _imp->loadingPluginVersionMajor = 0;
+    _imp->loadingPluginVersionMinor = 0;
+    _imp->settingHost = true;
     _imp->setHostBundleID = getBundleIdentifier(filePath);
+}
+
+std::string
+OfxHost::getPluginCacheVersion(const std::string& hostName)
+{
+    // v3: OfxSetHost (OFX 1.5). A binary whose OfxSetHost refuses this host is cached with no plug-ins,
+    // and its answer may depend on the host name and version (kOfxPropName, kOfxPropVersion): the
+    // plug-ins are scanned again when they change. The version is in the cache file name (see
+    // getCacheFilePath()). The host name, which the user can set in the preferences, goes in as a hash:
+    // HostSupport writes the version unescaped in an XML attribute (<cache version="...">), so a '"',
+    // '<' or '&' would make the cache unreadable, and the plug-ins would be scanned at every launch.
+    const QByteArray hash = QCryptographicHash::hash(QByteArray( hostName.data(), (int)hostName.size() ),
+                                                     QCryptographicHash::Sha1).toHex();
+
+    return std::string(NATRON_APPLICATION_NAME "OFXCachev3-") + std::string( hash.constData(), hash.size() );
 }
 
 std::string
 OfxHost::getBundleIdentifier(const std::string& binaryFilePath)
 {
-    // the bundle is the ancestor directory whose name ends with ".bundle"
-    const QString path = QString::fromUtf8( binaryFilePath.c_str() );
-    const QString bundleSuffix = QString::fromUtf8(".bundle/");
-    const int pos = path.lastIndexOf(bundleSuffix, -1, Qt::CaseInsensitive);
+    // The bundle is the ancestor directory whose name ends with ".bundle". HostSupport builds the paths
+    // with the native separator ("\\" on Windows, see DIRSEP in ofxhPluginCache.cpp), and a directory of
+    // OFX_PLUGIN_PATH may use either one: on Windows, the separators are made "/" first, and a "\\" after
+    // ".bundle" is a separator on every system (a directory name that ends with ".bundle\\" is unlikely).
+    const QString path = QDir::fromNativeSeparators( QString::fromUtf8( binaryFilePath.c_str() ) );
+    const QString bundleSuffix = QString::fromUtf8(".bundle");
+    const int pos = std::max( path.lastIndexOf(bundleSuffix + QLatin1Char('/'), -1, Qt::CaseInsensitive),
+                              path.lastIndexOf(bundleSuffix + QLatin1Char('\\'), -1, Qt::CaseInsensitive) );
     if (pos < 0) {
         return std::string();
     }
-    QFile plist( path.left( pos + bundleSuffix.size() ) + QString::fromUtf8("Contents/Info.plist") );
+    QFile plist( path.left( pos + bundleSuffix.size() ) + QString::fromUtf8("/Contents/Info.plist") );
     if ( !plist.open(QIODevice::ReadOnly) ) {
         return std::string();
     }
