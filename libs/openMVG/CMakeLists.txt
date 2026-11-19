@@ -164,7 +164,8 @@ set(openMVG_HEADERS
     openMVG/robust_estimation/robust_estimator_ProsacKernelAdaptator.hpp
 )
 add_library(openMVG STATIC ${openMVG_HEADERS} ${openMVG_SOURCES})
-target_include_directories(openMVG PUBLIC openMVG .)
+target_include_directories(openMVG SYSTEM PUBLIC openMVG .)
+target_compile_options(openMVG PRIVATE ${NATRON_THIRD_PARTY_NO_WARNINGS})
 target_compile_definitions(openMVG
     PUBLIC
         OPENMVG_HAVE_BOOST
@@ -173,4 +174,8 @@ target_compile_definitions(openMVG
         OPENMVG_STD_SHARED_PTR
 )
 target_link_libraries(openMVG PUBLIC Ceres::ceres)
+if(NATRON_USE_OPENMP)
+    target_compile_definitions(openMVG PUBLIC OPENMVG_USE_OPENMP)
+    target_link_libraries(openMVG PUBLIC OpenMP::OpenMP_CXX)
+endif()
 set_target_properties(openMVG PROPERTIES POSITION_INDEPENDENT_CODE ON)

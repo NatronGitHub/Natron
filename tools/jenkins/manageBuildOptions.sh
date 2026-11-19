@@ -37,9 +37,13 @@ function updateBuildOptions() {
     source "$BUILD_OPTIONS_FILE"
 }
 
-# Set a build option in the build option file so it can be retrieved at different places
+# Set a build option in the build option file so it can be retrieved at different places.
+# The file is sourced, so the value is shell-quoted (it may contain spaces, e.g.
+# NATRON_EXTRA_CMAKE_FLAGS), then escaped for the sed replacement (\, & and /).
 function setBuildOption() {
-    $GSED -e "s/^ *${1//\//\\/}=.*/${1//\//\\/}=${2//\//\\/}/" --in-place "$BUILD_OPTIONS_FILE"
+    local value
+    value=$(printf '%q' "$2" | sed -e 's/[\/&\\]/\\&/g')
+    $GSED -e "s/^ *${1//\//\\/}=.*/${1//\//\\/}=${value}/" --in-place "$BUILD_OPTIONS_FILE"
 }
 
 function dumpBuildOptions() {

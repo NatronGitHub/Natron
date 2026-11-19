@@ -24,6 +24,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "NodeMetadata.h"
+#include "Engine/Format.h"
 #include "Engine/RectI.h"
 #include <cassert>
 #include <vector>
@@ -247,6 +248,8 @@ void
 NodeMetadata::setPixelAspectRatio(int inputNb,
                                   double par)
 {
+    // the PAR may come from a plug-in: images are divided by it, so it must be positive and finite
+    par = Format::validPixelAspectRatio(par);
     if (inputNb == -1) {
         _imp->outputData.pixelAspectRatio = par;
     } else {

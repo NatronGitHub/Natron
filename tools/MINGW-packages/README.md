@@ -36,125 +36,54 @@ pacman -U ${MINGW_PACKAGE_PREFIX}-*-any.pkg.tar.*
 
 # Setup a development environment (Qt Creator)
 
-Start Qt Creator and go to ``Tools`` => ``Options``.
+Qt Creator builds Natron with CMake, as in [INSTALL_WINDOWS.md](../../INSTALL_WINDOWS.md#build). Install the build dependencies listed there (or `${MINGW_PACKAGE_PREFIX}-natron-build-deps-qt5`), plus the debugger:
 
-## Debuggers
+```
+pacman -S --needed ${MINGW_PACKAGE_PREFIX}-gdb
+```
 
-Go to the ``Kits`` menu and select ``Debuggers``, then add a new.
+Start Qt Creator and go to ``Tools`` => ``Options`` => ``Kits``. *It's recommended to click ``Apply`` after adding each item.*
 
-* ``Name`` : ``MinGW GDB``
-* ``Path`` : ``C:\msys64\ucrt64\bin\gdb.exe``
-
-*It's recommended to click ``Apply`` after adding something to the Kit.*
-
-## Compilers
-
-Go to the ``Kits`` menu and select ``Compilers``, then add a new (``MINGW => C``).
-
-* ``Name`` : ``MinGW C``
-* ``Path`` : ``C:\msys64\ucrt64\bin\gcc.exe``
-
-Go to the ``Kits`` menu and select ``Compilers``, then add a new (``MINGW => C++``).
-
-* ``Name`` : ``MinGW C++``
-* ``Path`` : ``C:\msys64\ucrt64\bin\g++.exe``
-
-*It's recommended to click ``Apply`` after adding something to the Kit.*
-
-## Qt
-
-Go to the ``Kits`` menu and select ``Qt Versions``, then add a new.
-
-* ``Name`` : ``MinGW Qt 4.8.7``
-* ``Path`` : ``C:\msys64\ucrt64\bin\qmake.exe``
-
-*It's recommended to click ``Apply`` after adding something to the Kit.*
-
-## Kit
-
-Go to the ``Kits`` menu and select ``Kits``, then add a new.
-
-* ``Name`` : ``Natron SDK Qt4``
-* ``Compiler`` => ``C`` : ``MinGW C``
-* ``Compiler`` => ``C++`` : ``MinGW C++``
-* ``Debugger`` : ``MinGW GDB``
-* ``Qt version`` : ``MinGW Qt 4.8.7``
+* ``Debuggers``: add ``C:\msys64\ucrt64\bin\gdb.exe`` (``Name``: ``UCRT64 GDB``).
+* ``Compilers``: add ``MinGW`` => ``C`` with ``C:\msys64\ucrt64\bin\gcc.exe`` (``UCRT64 C``), and ``MinGW`` => ``C++`` with ``C:\msys64\ucrt64\bin\g++.exe`` (``UCRT64 C++``).
+* ``Qt Versions``: add ``C:\msys64\ucrt64\bin\qmake-qt5.exe`` (``UCRT64 Qt 5``). Qt Creator only uses it to locate Qt: MSYS2 renamed Qt 5's `qmake.exe` to `qmake-qt5.exe`, and the unsuffixed `qmake.exe` belongs to Qt 6.
+* ``CMake``: add ``C:\msys64\ucrt64\bin\cmake.exe`` (``UCRT64 CMake``).
+* ``Kits``: add a kit named ``Natron UCRT64`` with the C and C++ compilers, the debugger, the Qt version and the CMake tool above, and the ``Ninja`` CMake generator.
 
 ## Project
 
-Clone the Natron source (using Git Bash or MSYS2):
+Clone the Natron source in the MSYS2 UCRT64 shell, and download the OpenColorIO configs (the same version as the CI, `OCIO_CONFIG_VERSION` in `.github/workflows/ci.yml`):
 
 ```
 git clone https://github.com/NatronGitHub/Natron
 cd Natron
-git submodule update -i --recursive
+git submodule update --init --recursive
 wget https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.5.tar.gz
 tar xvf Natron-v2.5.tar.gz
 mv OpenColorIO-Configs-Natron-v2.5 OpenColorIO-Configs
-touch config.pri
 ```
 
-Then start Qt Creator and open ``Project.pro`` from the Natron source folder and select the custom kit (``Natron MSYS2``) added previous. When Qt Creator is finished loading the project go to the ``Projects`` tab => ``Natron MSYS2`` => ``Build`` => ``Build Environment`` and add a new environment variable ``PYTHONHOME`` with the value ``C:\msys64\ucrt64``.
+Then open ``CMakeLists.txt`` from the Natron source folder in Qt Creator and select the ``Natron UCRT64`` kit. Under ``Projects`` => ``Natron UCRT64`` => ``Run`` => ``Environment``, add ``PYTHONHOME`` with the value ``C:\msys64\ucrt64``, and ``PYTHONLEGACYWINDOWSDLLLOADING`` with the value ``1`` (MSYS2's Python otherwise ignores ``PATH`` when it loads its DLLs, see #1147). Natron also needs ``C:\msys64\ucrt64\bin`` in ``PATH`` to find its DLLs.
 
-You should now be able to build and run release and debug versions of Natron directly from Qt Creator.
+You should now be able to build and run release and debug versions of Natron directly from Qt Creator. CMake options such as `-DNATRON_BUILD_TESTS=OFF` go in ``Projects`` => ``Build`` => ``CMake``.
 
 # Setup a CI environment
 
-The installer scripts in `tools/jenkins` still use MINGW64; moving them to UCRT64 is the next step of #1133. Until then, with a working MSYS2 installation launch ``C:\msys64\mingw64.exe`` and clone the build tools:
+The per-PR Windows CI (`.github/workflows/ci.yml`) builds Natron with CMake in UCRT64 from stock MSYS2 packages, and runs the unit tests with openfx-io's UCRT64 test build. To reproduce it locally, follow [Build](../../INSTALL_WINDOWS.md#build) in INSTALL_WINDOWS.md. It doesn't need Natron's package repository.
+
+The release installer (`.github/workflows/build_installer.yml`, which runs `tools/jenkins/launchBuildMain.sh`) can't be built at the moment. Natron's package repository is UCRT64-only (#1197), and MSYS2 no longer has PySide2 for MINGW64, but the installer scripts in `tools/jenkins` and `build_installer.yml` still assume MINGW64 (hard-coded `/mingw64` paths and `mingw-w64-x86_64-` package names) and build Natron with qmake. Moving them to UCRT64 is step 5 of #1133, which has the checklist. Until then, don't follow older instructions that set `MSYSTEM=MINGW64`.
+
+Once that is done, a local installer build will run the same command as `build_installer.yml`, from `tools/jenkins` in a UCRT64 shell with `${MINGW_PACKAGE_PREFIX}-natron-build-deps-qt5` installed (see `install_natron_pacman_repo.sh` and "The package repository" below):
 
 ```
-git clone https://github.com/NatronGitHub/Natron NatronCI
+mkdir -p $HOME/natron-build
+WORKSPACE=$HOME/natron-build BUILD_NAME=natron BUILD_NUMBER=1 BITS=64 NATRON_LICENSE=GPL \
+  GIT_URL=https://github.com/NatronGitHub/Natron.git GIT_URL_IS_NATRON=1 SNAPSHOT_BRANCH=RB-2.6 \
+  QT_VERSION_MAJOR=5 DISABLE_BREAKPAD=1 NOUPDATE=1 MKJOBS=$(nproc) UNIT_TESTS=true \
+  ./launchBuildMain.sh
 ```
 
-Now create a build script:
-
-```
-#!/bin/bash
-# Build Natron Windows Snapshot
-#
-
-export WORKSPACE=$HOME/NatronCI-workspace
-export UNIT_TESTS=true
-export BUILD_NAME=snapshots
-export BUILD_NUMBER=RB-2.5
-export GIT_URL=https://github.com/NatronGitHub/Natron.git
-export SNAPSHOT_BRANCH=RB-2.5
-export GIT_BRANCH=RB-2.5
-export NATRON_LICENSE=GPL
-export NATRON_DEV_STATUS=SNAPSHOT
-export NATRON_BUILD_NUMBER=1
-export COMPILE_TYPE=relwithdebinfo
-export BITS=64
-export DISABLE_BREAKPAD=1
-export DISABLE_PORTABLE_ARCHIVE=0
-export REMOTE_URL=NO_URL
-export REMOTE_USER=NO_USER
-export REMOTE_PREFIX=NO_PREFIX
-export MKJOBS=4
-export LOCALAPPDATA="/c/Users/USERNAME/AppData/Local"
-export MSYSTEM=MINGW64
-export NOUPDATE=1
-export GIT_URL_IS_NATRON=1
-
-if [ ! -d "$WORKSPACE" ]; then
-    mkdir -p "$WORKSPACE"
-fi
-
-./launchBuildMain.sh
-```
-
-and save to ``$HOME/NatronCI/tools/jenkins/build-snapshot.sh``. Remember to change ``LOCALAPPDATA`` to match your username, and ``MKJOBS`` to match your CPU. You can disable unit tests with ``UNIT_TESTS=false``.
-
-Now run the script *(working internet connection needed)*:
-
-```
-cd $HOME/NatronCI/tools/jenkins
-bash build-snapshot.sh
-```
-
-The result will be in ``$HOME/NatronCI-workspace``.
-
-This was just an example, see ``launchBuildMain.sh`` for more information/options.
+The result goes to `$WORKSPACE/builds_archive`. See `launchBuildMain.sh` for the other options.
 
 
 ## The package repository

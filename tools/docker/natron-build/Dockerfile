@@ -27,7 +27,9 @@ ARG QTDIR=$SDK/qt4
 # NATRON_DEV_STATUS: ALPHA, BETA, RC, STABLE, CUSTOM: this is useful when doing a release (i.e: if specifying RELEASE_TAG.)
 # NATRON_CUSTOM_BUILD_USER_NAME: For a release, Tag the build with a specific user/client name
 # NATRON_BUILD_NUMBER: When doing a release this is the number of the release (if doing a rebuild)
-# NATRON_EXTRA_QMAKE_FLAGS: Optional qmake flags to pass when building Natron
+# NATRON_BUILD_SYSTEM: cmake (the default) or qmake (deprecated)
+# NATRON_EXTRA_CMAKE_FLAGS: Optional cmake flags to pass when building Natron with CMake
+# NATRON_EXTRA_QMAKE_FLAGS: Optional qmake flags to pass when building Natron with qmake
 # BUILD_NAME: Give a name to the build so that it can be found in the archive
 # DISABLE_RPM_DEB_PKGS: If set to 1, deb and rpm packages will not be built. Otherwise they are only built for a release
 # DISABLE_PORTABLE_ARCHIVE: If set to 1, a portable archive will not be built
@@ -47,6 +49,8 @@ ENV DISABLE_BREAKPAD=1
 ENV COMPILE_TYPE=release
 ENV NATRON_DEV_STATUS=RC
 ENV NATRON_CUSTOM_BUILD_USER_NAME=
+ENV NATRON_BUILD_SYSTEM=cmake
+ENV NATRON_EXTRA_CMAKE_FLAGS=
 ENV NATRON_EXTRA_QMAKE_FLAGS=
 ENV BUILD_NAME=natron_github_RB2
 ENV DISABLE_RPM_DEB_PKGS=1
@@ -82,6 +86,8 @@ RUN \
     COMPILE_TYPE="$COMPILE_TYPE" \
     NATRON_DEV_STATUS="$NATRON_DEV_STATUS" \
     NATRON_CUSTOM_BUILD_USER_NAME="$NATRON_CUSTOM_BUILD_USER_NAME" \
+    NATRON_BUILD_SYSTEM="$NATRON_BUILD_SYSTEM" \
+    NATRON_EXTRA_CMAKE_FLAGS="$NATRON_EXTRA_CMAKE_FLAGS" \
     NATRON_EXTRA_QMAKE_FLAGS="$NATRON_EXTRA_QMAKE_FLAGS" \
     BUILD_NAME="$BUILD_NAME" \
     DISABLE_RPM_DEB_PKGS="$DISABLE_RPM_DEB_PKGS" \
