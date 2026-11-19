@@ -154,6 +154,7 @@ public:
     TileCacheFile()
         : file()
         , usedTiles()
+        , reservedTiles()
         , tileByteSize(0)
     {
     }
@@ -165,6 +166,8 @@ public:
 
     MemoryFilePtr file;
     std::vector<bool> usedTiles;
+    // Tiles whose disk space was allocated (see MemoryFile::reserve()), so that it is done only once per tile
+    std::vector<bool> reservedTiles;
     std::size_t tileByteSize;
 };
 

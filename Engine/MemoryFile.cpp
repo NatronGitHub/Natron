@@ -334,6 +334,14 @@ MemoryFile::resize(size_t new_size)
 
 #if defined(__NATRON_UNIX__)
 // Allocates the disk blocks of [offset, offset + length) of a file. Returns 0 or an errno value.
+//
+// - Linux and FreeBSD: posix_fallocate(). glibc emulates it by writing when the file system doesn't support it, so
+//   the fallback below is only used with musl, or on file systems such as ZFS that return EINVAL.
+// - macOS has no posix_fallocate(). F_PREALLOCATE can only allocate from the physical end of the file: it is used
+//   for a file that has no block yet (a new file of the DiskCache node, or the first tile of a tile file), which is
+//   then not written twice. The other ranges (the other tiles) are written with zeroes.
+// - Writing zeroes doesn't allocate anything on file systems that compress data or detect zeroes (ZFS or btrfs with
+//   compression store them as holes): the disk may then still get full while the mapping is written.
 static int
 allocateFileBlocks(int fd,
                    off_t offset,
@@ -350,7 +358,25 @@ allocateFileBlocks(int fd,
     }
     // Not supported by the file system: write zeroes instead
 #endif
-    // Writing allocates the blocks (macOS has no posix_fallocate(), and F_PREALLOCATE can only allocate at the end of the file).
+#if defined(__APPLE__) && defined(F_PREALLOCATE)
+    struct stat fileStat;
+    if ( (offset == 0) && (::fstat(fd, &fileStat) == 0) && (fileStat.st_blocks == 0) ) {
+        fstore_t store;
+        std::memset( &store, 0, sizeof(store) );
+        store.fst_flags = F_ALLOCATEALL; // all or nothing
+        store.fst_posmode = F_PEOFPOSMODE;
+        store.fst_offset = 0;
+        store.fst_length = length;
+        if (::fcntl(fd, F_PREALLOCATE, &store) == 0) {
+            return 0;
+        }
+        if ( (errno == ENOSPC) || (errno == EDQUOT) ) {
+            return errno;
+        }
+        // Not supported: write zeroes
+    }
+#endif
+    // Writing allocates the blocks.
     // Don't write if it would leave less than kMinFreeBytes on the disk: if the disk gets full, the zeroes already written
     // can't be given back (APFS can't even delete a file or punch a hole when it is full).
     const unsigned long long kMinFreeBytes = 64ULL * 1024 * 1024;

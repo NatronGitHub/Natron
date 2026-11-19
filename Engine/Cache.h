@@ -37,6 +37,7 @@
 #include <cstddef>
 #include <utility>
 #include <algorithm> // min, max
+#include <stdexcept>
 #include <string>
 #include <stdexcept>
 
@@ -673,6 +674,8 @@ private:
                     return TileCacheFilePtr();
                 }
                 (*it)->usedTiles[index] = true;
+                // The tile was written by a previous session, so it has disk space
+                (*it)->reservedTiles[index] = true;
                 return *it;
             }
         }
@@ -696,6 +699,8 @@ private:
             }
             ret->usedTiles.resize(nTilesPerFile, false);
             ret->usedTiles[index] = true;
+            ret->reservedTiles.resize(nTilesPerFile, false);
+            ret->reservedTiles[index] = true;
             _cacheFiles.insert(ret);
             return ret;
 
@@ -805,6 +810,7 @@ private:
                 throw;
             }
             foundAvailableFile->usedTiles.resize(nTilesPerFile, false);
+            foundAvailableFile->reservedTiles.resize(nTilesPerFile, false);
             *dataOffset = 0;
             foundTileIndex = 0;
             _cacheFiles.insert(foundAvailableFile);
@@ -812,29 +818,46 @@ private:
             _nextAvailableCacheFileIndex = 1;
         }
 
-        // Allocate the disk space of the tile now: the tile files are sparse, and if the disk is full,
-        // writing to the mapping would crash (#192). allocateTileCache() then falls back on RAM.
-        try {
-            foundAvailableFile->file->reserve(*dataOffset, _tileByteSize);
-        } catch (...) {
-            if ( !foundAvailableFile->hasUsedTiles() ) {
-                // Don't keep an empty file that may take disk space
-                _cacheFiles.erase(foundAvailableFile);
-                if (_nextAvailableCacheFile.lock() == foundAvailableFile) {
-                    _nextAvailableCacheFile.reset();
-                    _nextAvailableCacheFileIndex = -1;
-                }
-                try {
-                    foundAvailableFile->file->remove();
-                } catch (...) {
-                }
-            }
-            throw;
+        // Mark the tile as used before unlocking: no other thread can then get it, and the file is not removed
+        foundAvailableFile->usedTiles[foundTileIndex] = true;
+        if (foundAvailableFile->reservedTiles[foundTileIndex]) {
+            return foundAvailableFile;
         }
 
-        // Notify the memory file that this portion of the file is valid
-        foundAvailableFile->usedTiles[foundTileIndex] = true;
-        return foundAvailableFile;
+        // Allocate the disk space of the tile now, the first time it is used: the tile files are sparse, and if the
+        // disk is full, writing to the mapping would crash (#192). This may write the tile (see MemoryFile::reserve()),
+        // so don't block the other threads meanwhile.
+        const std::size_t tileOffset = *dataOffset;
+        const std::size_t tileByteSize = _tileByteSize;
+        bool reserved = true;
+        k.unlock();
+        try {
+            foundAvailableFile->file->reserve(tileOffset, tileByteSize);
+        } catch (const std::exception& e) {
+            qDebug() << "Cache:" << e.what();
+            reserved = false;
+        }
+        k.relock();
+        if (reserved) {
+            foundAvailableFile->reservedTiles[foundTileIndex] = true;
+
+            return foundAvailableFile;
+        }
+        foundAvailableFile->usedTiles[foundTileIndex] = false;
+        if ( !foundAvailableFile->hasUsedTiles() ) {
+            // Don't keep an empty file that may take disk space
+            _cacheFiles.erase(foundAvailableFile);
+            if (_nextAvailableCacheFile.lock() == foundAvailableFile) {
+                _nextAvailableCacheFile.reset();
+                _nextAvailableCacheFileIndex = -1;
+            }
+            try {
+                foundAvailableFile->file->remove();
+            } catch (...) {
+            }
+        }
+        // allocateTileCache() then falls back on RAM
+        throw std::runtime_error("Cache: could not allocate the disk space of a tile");
     }
 
             /**
