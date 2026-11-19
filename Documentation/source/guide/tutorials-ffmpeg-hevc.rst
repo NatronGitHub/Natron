@@ -48,9 +48,10 @@ and look at the "Supported pixel formats" line: ``yuv420p10le`` means 10-bit
 WriteFFmpeg, the **Show Avail.** button gives the same information.
 
 The macOS arm64 builds of Natron include an 8-bit-only x265, so WriteFFmpeg
-can only write 8-bit HEVC there. The macOS x86_64 builds include an 8/10/12-bit (multilib) x265. To get
-10-bit HEVC on an arm64 Mac, render an image sequence and encode it with ``hevc_videotoolbox``
-(see `Hardware encoders`_).
+can only write 8-bit HEVC there. The macOS x86_64 builds include an
+8/10/12-bit (multilib) x265. To get 10-bit HEVC on an arm64 Mac, render an
+image sequence and encode it with ``hevc_videotoolbox`` (see
+`Hardware encoders`_).
 
 
 Writing HEVC from Natron
