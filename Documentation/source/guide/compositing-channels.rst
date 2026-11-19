@@ -35,10 +35,16 @@ Choosing which channels a node processes
 
 Most nodes that process colors have **R**, **G**, **B** and **A** checkboxes
 at the top of their properties, which select the channels they modify. The
-other channels are copied unchanged. In the color nodes (Grade,
-ColorCorrect, Multiply, Saturation, and others), **A** is unchecked by
+other channels are copied unchanged. These checkboxes are added by Natron to
+every node that supports them, so the node reference pages do not list them.
+
+In most color correction nodes (Grade, ColorCorrect, Multiply, Add, Gamma,
+Saturation, ColorLookup, HueCorrect, and others), **A** is unchecked by
 default: a color correction normally changes the color of an element, not its
-shape, so it should leave the alpha alone.
+shape, so it should leave the alpha alone. Some nodes check **A** by default,
+because they are often used on mattes: Invert, ColorMatrix, Clamp, Threshold,
+KeyMix, the Draw nodes (Rectangle, Radial, Ramp, Roto), FrameBlend and
+Distortion, for example. Check these checkboxes when you add a node.
 
 The Merge node has the same kind of checkboxes for each input and for its
 output. For example, to combine only the alphas of two images, uncheck **R**,
@@ -137,11 +143,14 @@ Rules of thumb
    brightening, for example, turns the transparent area gray, which shows
    as a "box" around the element once it is merged. Divide by the alpha,
    correct, then multiply again. The color nodes do this for you when their
-   **(Un)premult** checkbox is checked. In most of them (Grade,
-   ColorCorrect, Multiply, ColorLookup, HueCorrect, and others), when you
-   connect the source and have not changed that checkbox yet, it is checked
-   automatically if the input is premultiplied. You can also use an
-   Unpremult node, then the color nodes, then a Premult node.
+   **(Un)premult** checkbox is checked. In Grade, ColorCorrect, Add,
+   ColorLookup, ColorMatrix, Gamma, HSVTool, HueCorrect, Invert and
+   Multiply, this checkbox is set when you connect the **Source** input, as
+   long as you have never changed it on that node: it is checked if the
+   input is a premultiplied RGBA image, and unchecked otherwise (opaque,
+   unpremultiplied, or not RGBA). It is not changed when a project is
+   loaded. You can also use an Unpremult node, then the color nodes, then a
+   Premult node.
 
 **Premultiply once, before merging.**
    The **A** input of a Merge node must be premultiplied. Premultiplying
