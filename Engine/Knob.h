@@ -2472,7 +2472,8 @@ public:
 
     /**
      * @brief End all the blocks of changes in progress (e.g. paramEditBegin() without paramEditEnd() by an OpenFX
-     * plug-in): as many setMultipleParamsEditLevel(eMultipleParamsEditOff) as there are open blocks, never more.
+     * plug-in): setMultipleParamsEditLevel(eMultipleParamsEditOff) while a block is open, counting the blocks opened
+     * meanwhile, never more; then the level is off.
      **/
     void endAllMultipleParamsEdits();
 
