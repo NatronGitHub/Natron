@@ -2107,17 +2107,19 @@ TabWidget::onTabScriptNameChanged(PanelWidget* tab,
     }
     std::string appID = _imp->gui->getApp()->getAppIDString();
     std::stringstream ss;
-    ss << "if hasattr(" << appID << "." << paneName << ",\"" << oldName << "\"):\n";
+    // The old variable may be missing (see removeTabToPython()): only delete it if it exists, and
+    // declare the new one in any case.
+    ss << "if hasattr(" << appID << ", '" << paneName << "') and hasattr(" << appID << "." << paneName << ", '" << oldName << "'):\n";
     ss << "    del " << appID << "." << paneName << "." << oldName << "\n";
-    ss << appID << "." << paneName << "." << newName << " = " << appID << ".getViewer(\"" << newName << "\")\n";
+    ss << appID << "." << paneName << "." << newName << " = " << appID << ".getViewer('" << newName << "')\n";
 
     std::string err;
     std::string script = ss.str();
     _imp->gui->printAutoDeclaredVariable(script);
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
-    assert(ok);
     if (!ok) {
-        throw std::runtime_error("TabWidget::onTabScriptNameChanged: " + err);
+        // This is called from a Qt slot: an exception must not propagate through Qt or Python (#1046).
+        _imp->gui->getApp()->appendToScriptEditor("TabWidget::onTabScriptNameChanged: " + err);
     }
 }
 
@@ -2132,7 +2134,11 @@ TabWidgetPrivate::declareTabToPython(PanelWidget* widget,
         return;
     }
     if ( NATRON_PYTHON_NAMESPACE::isKeyword(tabName) ) {
-        throw std::runtime_error(tabName + " is a Python keyword");
+        // Report the error instead of throwing: this is called while adding a tab, from Qt slots
+        // and from the Python API, through which an exception must not propagate (#1046).
+        gui->getApp()->appendToScriptEditor("TabWidget::declareTabToPython: " + tabName + " is a Python keyword");
+
+        return;
     }
 
     std::string paneName = _publicInterface->objectName_mt_safe().toStdString();
@@ -2150,9 +2156,8 @@ TabWidgetPrivate::declareTabToPython(PanelWidget* widget,
     std::string err;
     gui->printAutoDeclaredVariable(script);
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
-    assert(ok);
     if (!ok) {
-        throw std::runtime_error("TabWidget::declareTabToPython: " + err);
+        gui->getApp()->appendToScriptEditor("TabWidget::declareTabToPython: " + err);
     }
 }
 
@@ -2173,15 +2178,20 @@ TabWidgetPrivate::removeTabToPython(PanelWidget* widget,
     std::string paneName = _publicInterface->objectName_mt_safe().toStdString();
     std::string appID = gui->getApp()->getAppIDString();
     std::stringstream ss;
-    ss << "del " << appID << "." << paneName << "." << tabName;
+    // The variable may legitimately be missing: Python code may have deleted it, the pane may have
+    // been renamed (setObjectName_mt_safe() binds the new name to a new PyTabWidget, without the tab
+    // variables), or declareTabToPython() may have failed.
+    ss << "if hasattr(" << appID << ", '" << paneName << "') and hasattr(" << appID << "." << paneName << ", '" << tabName << "'):\n";
+    ss << "    del " << appID << "." << paneName << "." << tabName << "\n";
 
     std::string err;
     std::string script = ss.str();
     gui->printAutoDeclaredVariable(script);
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
-    assert(ok);
     if (!ok) {
-        throw std::runtime_error("TabWidget::removeTabToPython: " + err);
+        // Report the error instead of throwing: this is called from Qt slots (e.g. closePane())
+        // and from the Python API, through which an exception must not propagate (#1046).
+        gui->getApp()->appendToScriptEditor("TabWidget::removeTabToPython: " + err);
     }
 }
 
