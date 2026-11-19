@@ -340,11 +340,6 @@ fi
 INIT_VAR=1
 DLL_VAR_PREFIX="GMIC"
 BIN_PATH="$SDK_HOME_BIN"
-if [ "$NATRON_LICENSE" = "GPL" ]; then
-    # FFTW is GPL: COMMERCIAL builds of openfx-gmic use pocketfft (OFX_LICENSE=COMMERCIAL)
-    catDll libfftw3-
-    catDll libfftw3_threads-
-fi
 catDll libcurl-
 catDll libnghttp2-
 catDll libngtcp2-

@@ -209,8 +209,8 @@ sudo sed -i '' -e 's/^find_dependency(zstd/#find_dependency(zstd/' /opt/local/li
 sudo port -v -N install opencolorio  -quartz -python27 -python38 -python39 -python310 -python311 -python312 -python313 -python314
 sudo port -v -N install opencolorio1 -quartz -python27 -python38 -python39 -python310 -python311 -python312 -python313 -python314
 
-# openfx-misc
-sudo port -v -N install seexpr seexpr211
+# openfx-io (SeExpr 2.11 only, for SEEXPR_HOME)
+sudo port -v -N install seexpr211
 
 # openfx-arena
 sudo port -v -N install librsvg -quartz
@@ -221,8 +221,7 @@ sudo port -v -N install ImageMagick +natron -x11
 # so it doesn't conflict with ImageMagick 6 above)
 sudo port -v -N install ImageMagick7 +natron -x11 -openexr
 
-# openfx-gmic
-sudo port -v -N install fftw-3 -gfortran fftw-3-single -gfortran
+# openfx-gmic needs no extra port: its build downloads pocketfft, its FFT library
 
 # openfx-io
 sudo port -v -N install ffmpeg +gpl2 +highbitdepth +natronmini
@@ -235,7 +234,6 @@ Python 3.10 is end-of-life and is no longer used (Python version policy, 2026-11
 
 ```Shell
 sudo port -v -N install python311 py311-pip
-sudo port -v -N install openblas
 sudo port -v -N install py311-numpy -gfortran
 sudo port -v -N install py311-sphinx py311-sphinx_rtd_theme
 sudo port -v -N install qt5 qt5-qtwebengine
@@ -699,12 +697,6 @@ To install the [openfx-arena](https://github.com/NatronGitHub/openfx-arena) set 
 brew install librsvg poppler librevenge libcdr libzip sox
 brew uninstall imagemagick
 brew install imagemagick --with-hdri --with-librsvg --with-quantum-depth-32 --with-pango
-```
-
-To install the [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic) set of plugin, you also need the following:
-
-```Shell
-brew install fftw
 ```
 
 also set the correct value for the pkg-config path (you can also put
