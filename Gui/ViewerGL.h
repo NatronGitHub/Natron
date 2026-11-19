@@ -334,6 +334,8 @@ public:
     virtual double getScreenPixelRatio() const OVERRIDE FINAL;
 #endif
 
+    virtual KeyboardModifiers getKeyboardModifiers() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     /**
      * @brief Returns the colour of the background (i.e: clear color) of the viewport.
      **/
@@ -457,9 +459,9 @@ public:
 
     void checkIfViewPortRoIValidOrRender();
 
-    void s_selectionCleared()
+    void s_selectionCleared(Qt::KeyboardModifiers modifiers)
     {
-        Q_EMIT selectionCleared();
+        Q_EMIT selectionCleared(modifiers);
     }
 
 public:
@@ -487,10 +489,16 @@ Q_SIGNALS:
      * @param onRelease When true, this signal is emitted on the mouse release event
      * which means this is the last selection desired by the user.
      * Receivers can either update the selection always or just on mouse release.
+     * @param modifiers The keyboard modifiers of the mouse event.
      **/
-    void selectionRectangleChanged(bool onRelease);
+    void selectionRectangleChanged(bool onRelease, Qt::KeyboardModifiers modifiers);
 
-    void selectionCleared();
+    /**
+     * @brief Emitted when the selection is cleared.
+     * @param modifiers The keyboard modifiers of the event that clears the selection (the
+     * mouse press that starts a selection rectangle, or the Escape key press).
+     **/
+    void selectionCleared(Qt::KeyboardModifiers modifiers);
 
 private:
     /**

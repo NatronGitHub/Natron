@@ -36,9 +36,21 @@ CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 // clang-format on
+#include <ofxNatron.h>
+
+#include "Global/KeySymbols.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
+
+/**
+ * @brief Convert Natron keyboard modifiers to the kNatronOfxInteractPropKeyModifiers bitmask.
+ * The bits follow the OFX key symbols that Natron sends (see QtEnumConvert::fromQtKey()):
+ * Qt::ShiftModifier/Key_Shift is Shift, Qt::ControlModifier/Key_Control is Control (Cmd on macOS),
+ * Qt::AltModifier/Key_Alt is Alt (Option on macOS) and Qt::MetaModifier/Key_Meta is Meta
+ * (the Control key on macOS).
+ **/
+int ofxKeyModifiersFromNatron(const KeyboardModifiers& modifiers);
 
 class NatronOverlayInteractSupport
 {
@@ -120,6 +132,8 @@ class OfxImageEffectInstance;
 class OfxOverlayInteract
     :  public OFX::Host::ImageEffect::OverlayInteract, public NatronOverlayInteractSupport
 {
+    int _keyModifiers; // kNatronOfxKeyModifier* bitmask
+
 public:
 
     OfxOverlayInteract(OfxImageEffectInstance &v,
@@ -128,6 +142,31 @@ public:
 
     virtual ~OfxOverlayInteract()
     {
+    }
+
+    /**
+     * @brief Set the keyboard modifiers of the next interact actions: HostSupport passes them in
+     * kNatronOfxInteractPropKeyModifiers (ofxNatron.h extension 13), see getKeyModifiers().
+     **/
+    void setKeyModifiers(const KeyboardModifiers& modifiers);
+
+    /**
+     * @brief Set the keyboard modifiers of the next interact actions to the current state of the
+     * keyboard, as given by the calling viewport (for draw and focus actions).
+     **/
+    void setKeyModifiersFromViewport();
+
+    // HostSupport passes kNatronOfxInteractPropKeyModifiers to the image effect overlays
+    // (ofxNatron.h extension 13)
+    virtual bool supportsKeyModifiers() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
+    // the value of kNatronOfxInteractPropKeyModifiers in the inArgs of the interact actions
+    virtual int getKeyModifiers() const OVERRIDE FINAL
+    {
+        return _keyModifiers;
     }
 
     virtual bool isColorPickerRequired() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -326,6 +365,11 @@ public:
     virtual ~OfxParamOverlayInteract()
     {
     }
+
+    // TODO: keyboard modifiers in parameter interacts (ofxNatron.h extension 13): override
+    // supportsKeyModifiers() and getKeyModifiers(), and set the state from CustomParamInteract and
+    // CurveWidget before each action (NatronGitHub/Natron#1283). Until then, HostSupport doesn't
+    // pass kNatronOfxInteractPropKeyModifiers here, and the plug-ins track the modifier keys.
 
     virtual bool isColorPickerRequired() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 

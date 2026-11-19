@@ -161,6 +161,10 @@ ViewerTab::setColorSpace(const std::string & colorSpaceName)
 void
 ViewerTab::setGain(double d)
 {
+    if (d <= 0.) {
+        // the gain is a power of 2 (it comes from a project file here): log(d) would be -infinity or NaN
+        d = 1.;
+    }
     double fstop = std::log(d) / M_LN2;
 
     _imp->gainBox->setValue(fstop);

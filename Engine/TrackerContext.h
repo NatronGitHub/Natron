@@ -235,15 +235,15 @@ public:
 
     bool onOverlayPenDownInternalNodes(double time,
                                        const RenderScale & renderScale,
-                                       ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+                                       ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen, KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
 
     bool onOverlayPenMotionInternalNodes(double time,
                                          const RenderScale & renderScale,
-                                         ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+                                         ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
 
     bool onOverlayPenUpInternalNodes(double time,
                                      const RenderScale & renderScale,
-                                     ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+                                     ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
 
     bool onOverlayKeyDownInternalNodes(double time,
                                        const RenderScale & renderScale,

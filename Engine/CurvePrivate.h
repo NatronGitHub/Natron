@@ -68,6 +68,10 @@ struct CurvePrivate
 
     bool isParametric;
     bool isPeriodic;
+    // non-finite values were replaced when loading (see Curve::setMustRefreshDerivatives()):
+    // Curve::clone() and Curve::cloneAndCheckIfChanged() from this curve recompute the
+    // derivatives with the target's periodicity, and don't propagate the flag.
+    bool mustRefreshDerivatives;
 
     CurvePrivate()
         : keyFrames()
@@ -77,13 +81,15 @@ struct CurvePrivate
         , owner(NULL)
         , dimensionInOwner(-1)
         , type(eCurveTypeDouble)
-        , xMin(-std::numeric_limits<double>::infinity())
-        , xMax(std::numeric_limits<double>::infinity())
-        , yMin(-std::numeric_limits<double>::infinity())
-        , yMax(std::numeric_limits<double>::infinity())
+        // "unbounded" is +/-DBL_MAX rather than +/-infinity, which -ffast-math assumes never happens
+        , xMin(std::numeric_limits<double>::lowest())
+        , xMax(std::numeric_limits<double>::max())
+        , yMin(std::numeric_limits<double>::lowest())
+        , yMax(std::numeric_limits<double>::max())
         , _lock()
         , isParametric(false)
         , isPeriodic(false)
+        , mustRefreshDerivatives(false)
     {
     }
 
@@ -105,6 +111,7 @@ struct CurvePrivate
         yMin = other.yMin;
         yMax = other.yMax;
         isPeriodic = other.isPeriodic;
+        mustRefreshDerivatives = other.mustRefreshDerivatives;
     }
 
     

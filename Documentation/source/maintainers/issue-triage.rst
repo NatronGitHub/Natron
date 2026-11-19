@@ -105,8 +105,8 @@ P1 — Sustainability (build, Qt 6, distribution)
   :ref:`maint-qt6` for the concrete plan.
 - **CI modernization** — `#601
   <https://github.com/NatronGitHub/Natron/issues/601>`_ (migrate CI from Travis
-  to GitHub Actions; ``difficulty:easy``). A prerequisite for reliably shipping
-  everything else, and a good first task.
+  to GitHub Actions) is closed: CI runs on GitHub Actions. What remains (Qt 6
+  builds) is listed in :ref:`maint-todo`.
 - **Binary distribution** — `#990
   <https://github.com/NatronGitHub/Natron/issues/990>`_ (Linux 2.6 distrib,
   ``help-needed``), `#741 <https://github.com/NatronGitHub/Natron/issues/741>`_
@@ -204,7 +204,14 @@ main window.
 - the "being rendered elsewhere" wait in ``renderRoI``
   (``waitForImageBeingRenderedElsewhere``, see the worked trace in
   :ref:`maint-rendering`), where a thread can block on another thread's tile that
-  never completes.
+  never completes. `#811 <https://github.com/NatronGitHub/Natron/issues/811>`_
+  was a stall of this kind, fixed in 2.6. A render thread waited for its own
+  tiles, and with several parallel renders two such threads waited for each
+  other forever. A race in the reference count of the images being rendered
+  (`#1127 <https://github.com/NatronGitHub/Natron/issues/1127>`_) could also
+  leave tiles marked as being rendered forever. #248 may be related, since 1
+  or 2 parallel renders avoid it: retest #248 projects with 2.6 before looking
+  elsewhere.
 
 The memory/swap angle the reporter mentions suggests it triggers under cache
 pressure, which overlaps with #192. Reproduce headless (``NatronRenderer``) under

@@ -315,7 +315,7 @@ win32 {
   #ofx needs WINDOWS def
   #microsoft compiler needs _MBCS to compile with the multi-byte character set.
   #DEFINES += _MBCS
-  DEFINES += WINDOWS COMPILED_FROM_DSP XML_STATIC  NOMINMAX
+  DEFINES += WINDOWS NOMINMAX
   DEFINES += _UNICODE UNICODE
 
   DEFINES += QHTTP_SERVER_STATIC
@@ -471,8 +471,7 @@ unix {
      equals(QT_MAJOR_VERSION, 4) {
          # There may be different pyside.pc/shiboken.pc for different versions of python.
          # pkg-config will probably give a bad answer, unless python2 is the system default.
-         # See for example tools/travis/install_dependencies.sh for a solution that works on Linux,
-         # using a custom config.pri
+         # Use a custom config.pri if needed.
          shiboken: PKGCONFIG += shiboken
          pyside:   PKGCONFIG += pyside
          # The following hack also works with Homebrew if pyside is installed with option --with-python3

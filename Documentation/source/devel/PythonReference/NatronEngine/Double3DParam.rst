@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _Double3DParam:
 
 Double3DParam
@@ -24,7 +24,7 @@ Functions
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. method:: NatronEngine.Double3DParam.get()
+.. method:: Double3DParam.get()
 
     :rtype: :class:`Double3DTuple`
 
@@ -33,9 +33,10 @@ timeline's time.
 
 
 
-.. method:: NatronEngine.Double3DParam.get(frame)
+.. method:: Double3DParam.get(frame)
+    :noindex:
 
-    :param frame: :class:`float<PySide.QtCore.float>`
+    :param frame: :class:`float`
     :rtype: :class:`Double3DTuple`
 
 Returns a :doc:`Double3DTuple` with the [x,y,z] values for this parameter at the given *frame*.
@@ -44,13 +45,13 @@ Returns a :doc:`Double3DTuple` with the [x,y,z] values for this parameter at the
 
 
 
-.. method:: NatronEngine.Double3DParam.set(x, y, z, frame)
+.. method:: Double3DParam.set(x, y, z, frame)
 
 
-    :param x: :class:`float<PySide.QtCore.double>`
-    :param y: :class:`float<PySide.QtCore.double>`
-    :param z: :class:`float<PySide.QtCore.double>`
-    :param frame: :class:`PySide.QtCore.int`
+    :param x: :class:`float`
+    :param y: :class:`float`
+    :param z: :class:`float`
+    :param frame: :class:`int`
 
 
 Same as :func:`set(x,frame)<NatronEngine.DoubleParam.set>` but for 3-dimensional doubles.
@@ -58,12 +59,13 @@ Same as :func:`set(x,frame)<NatronEngine.DoubleParam.set>` but for 3-dimensional
 
 
 
-.. method:: NatronEngine.Double3DParam.set(x, y, z)
+.. method:: Double3DParam.set(x, y, z)
+    :noindex:
 
 
-    :param x: :class:`float<PySide.QtCore.double>`
-    :param y: :class:`float<PySide.QtCore.double>`
-    :param z: :class:`float<PySide.QtCore.double>`
+    :param x: :class:`float`
+    :param y: :class:`float`
+    :param z: :class:`float`
 
 
 Same as :func:`set(x)<NatronEngine.DoubleParam.set>` but for 3-dimensional doubles.

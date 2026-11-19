@@ -18,7 +18,7 @@ replacements:
 plugin head:
 
 - %1 -> Dot (plugin label)
-- %2 -> <li><a href="../_group.html?id=GROUP">GROUP nodes</a> &raquo;</li>
+- %2 -> <li><a href="../_group.html?id=GROUP">GROUP nodes</a> &raquo;</li>, one item per level of the node group (e.g. GMIC, then GMIC_Colors for a G'MIC / Colors node)
 
 group head:
 

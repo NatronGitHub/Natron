@@ -4,7 +4,7 @@
 Draw Nodes
 ==========
    
-These are the nodes located in the pencil icon of the toolbar.
+These nodes are in the **Draw** menu (the pencil icon) of the toolbar.
    
 .. toctree::
       :maxdepth: 1

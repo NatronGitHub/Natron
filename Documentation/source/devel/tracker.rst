@@ -32,7 +32,7 @@ You can access the parameters directly with their script-name::
 
     app.Tracker1.tracker.track1.centerPoint
 
-Or you can use the :func:`getParam(paramScriptName)<NatronEngine.Track.getScriptName>` function::
+Or you can use the :func:`getParam(paramScriptName)<NatronEngine.Track.getParam>` function::
 
     app.Tracker1.tracker.track1.getParam("centerPoint")
 
@@ -70,7 +70,7 @@ track::
 
         keyframes.append((x,y))
 
-    print keyframes
+    print(keyframes)
 
 
 Creating Tracks

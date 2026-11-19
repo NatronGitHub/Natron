@@ -83,11 +83,15 @@ See the documentation of the :ref:`PyModalDialog<pyModalDialog>` for more inform
 
 
 
-You can also add custom PySide widgets that can be inserted **after** any user parameter(s)
-using the :func:`addWidget(widget)<>` and :func:`insertWidget(index,widget)<>` functions.
+You can also add custom Qt widgets (from PySide2 with Qt 5 builds of Natron, or PySide6 with Qt 6
+builds; import them through `qtpy <https://github.com/spyder-ide/qtpy>`_ so that the same code works with both),
+which are inserted **after** any user parameter(s),
+using the :func:`addWidget(widget)<NatronGui.PyModalDialog.addWidget>` and :func:`insertWidget(index,widget)<NatronGui.PyModalDialog.insertWidget>` functions.
 ::
 
-    label = QLabel("This is a PySide label")
+    from qtpy.QtWidgets import QLabel
+
+    label = QLabel("This is a Qt label")
     dialog.addWidget(label)
 
 To make the dialog show-up, use the :func:`exec()<>` function on the dialog.
@@ -104,9 +108,9 @@ This function will return once the user pressed either "OK" or "Canceled"::
 
 You can add a custom callback when a parameter changes, for instance to hide another parameter::
 
-    #Callback called when a parameter of  changes
-    #The variable paramName is declared by Natron; indicating the name of the parameter which just had its value changed
-    def paramChangedCallback():
+    #Callback called when a parameter of the dialog changes
+    #paramName is the script-name of the parameter which just had its value changed
+    def paramChangedCallback(paramName, app, userEdited):
         if paramName == "myBool":
             myInteger.setVisible(myBoolean.get())
 
