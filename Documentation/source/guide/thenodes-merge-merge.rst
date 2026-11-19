@@ -19,4 +19,4 @@ compositor that uses unpremultiplied images, such as After Effects, but not in
 Natron.
 
 To ignore the alpha channel of an input, uncheck the **A** checkbox on that
-input's row (**A** or **B**) in the Merge node's properties.
+input's row (**A Channels** or **B Channels**) in the Merge node's properties.
