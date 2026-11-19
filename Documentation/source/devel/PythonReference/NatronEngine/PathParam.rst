@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _PathParam:
 
 PathParam
@@ -50,13 +50,13 @@ Some more characters are escaped, you can see the full function in the source co
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. method:: NatronEngine.PathParam.setAsMultiPathTable()
+.. method:: PathParam.setAsMultiPathTable()
 
 
 When called, the parameter will be able to store multiple paths.
 
 
-.. method:: NatronEngine.PathParam.getTable()
+.. method:: PathParam.getTable()
 
     :rtype: :class:`PySequence`
 
@@ -64,7 +64,7 @@ When called, the parameter will be able to store multiple paths.
     Returns a list of list of strings. Each sub-list corresponds to a row in the table.
     Each elements of the row are the cell value for each column.
 
-.. method:: NatronEngine.PathParam.setTable(table)
+.. method:: PathParam.setTable(table)
 
     :rparam table: :class:`PySequence`
 

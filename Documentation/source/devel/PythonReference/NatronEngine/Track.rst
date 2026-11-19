@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _Track:
 
 Track
@@ -63,28 +63,28 @@ Here is an example briefly explaining how to retrieve the tracking data for a tr
 
         keyframes.append((x,y))
 
-    print keyframes
+    print(keyframes)
 
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-.. method:: NatronEngine.Track.setScriptName(scriptName)
+.. method:: Track.setScriptName(scriptName)
 
-    :param scriptName: :class:`str<NatronEngine.std::string>`
+    :param scriptName: :class:`str`
 
 
 Set the script-name of the track. It will then be accessible via a Python script as such::
 
     Tracker1.tracker.MyTrackScriptName
 
-.. method:: NatronEngine.Track.getScriptName()
+.. method:: Track.getScriptName()
 
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :rtype: :class:`str`
 
     Get the script-name of the track
 
-.. method:: NatronEngine.Track.getParam(paramScriptName)
+.. method:: Track.getParam(paramScriptName)
 
     :rtype: :class:`Param<NatronEngine.Param>`
 
@@ -94,14 +94,14 @@ Set the script-name of the track. It will then be accessible via a Python script
         Tracker1.tracker.center
 
 
-.. method:: NatronEngine.Track.getParams()
+.. method:: Track.getParams()
 
     :rtype: :class:`Param<NatronEngine.Param>`
 
     Returns a list of all the :class:`Param<NatronEngine.Param>` for this track.
 
 
-.. method:: NatronEngine.Track.reset()
+.. method:: Track.reset()
 
     Resets the track completely removing any animation on all parameters and any keyframe
     on the pattern.
