@@ -1029,8 +1029,11 @@ RotoContext::load(const RotoContextSerialization & obj)
     RotoLayerPtr baseLayer = _imp->layers.front();
 
     // The serialization replaces the current items: when presets are loaded on
-    // an existing node, or when that is undone, remove the current items first
+    // an existing node (or that is undone), or when a PyPlug child made by its
+    // script is restored from the project, remove the current items first
     // (they would otherwise be kept, and the loaded ones appended to them, #1247).
+    // While _imp->isCurrentlyLoading is set, the Python attributes are removed
+    // and declared without printing them in the Script Editor.
     {
         RotoItems oldItems = baseLayer->getItems();
         for (RotoItems::iterator it = oldItems.begin(); it != oldItems.end(); ++it) {
@@ -1064,6 +1067,13 @@ RotoContext::load(const RotoContextSerialization & obj)
             linkItemsKnobsRecursively(this, isLayer);
         }
     }
+    // A node that is already created had its items declared to Python
+    // (Node::declareRotoPythonField()): declare the loaded ones. When the node
+    // is being created, Node::load() declares them after loading.
+    if ( getNode()->isNodeCreated() ) {
+        declarePythonFields();
+    }
+
     _imp->isCurrentlyLoading = false;
     refreshRotoPaintTree();
 }
@@ -4654,7 +4664,7 @@ RotoContext::removeItemAsPythonField(const RotoItemPtr& item)
     std::string nodeFullName = appID + "." + nodeName;
     std::string err;
     std::string script = "del " + nodeFullName + ".roto." + item->getFullyQualifiedName() + "\n";
-    if ( !appPTR->isBackground() ) {
+    if ( !appPTR->isBackground() && !_imp->isCurrentlyLoading ) {
         getNode()->getApp()->printAutoDeclaredVariable(script);
     }
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0) ) {
@@ -4808,7 +4818,7 @@ RotoContext::declareItemAsPythonField(const RotoItemPtr& item)
     std::string err;
     std::string script = (nodeFullName + ".roto." + item->getFullyQualifiedName() + " = " +
                           nodeFullName + ".roto.getItemByName(\"" + item->getScriptName() + "\")\n");
-    if ( !appPTR->isBackground() ) {
+    if ( !appPTR->isBackground() && !_imp->isCurrentlyLoading ) {
         getNode()->getApp()->printAutoDeclaredVariable(script);
     }
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0) ) {

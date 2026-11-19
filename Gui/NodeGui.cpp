@@ -2259,6 +2259,15 @@ NodeGui::restoreInternal(const NodeGuiPtr& thisShared,
 {
     assert(internalSerialization.size() >= 1);
 
+    NodePtr node = getNode();
+    if ( node && ( node->getRotoContext() || node->getTrackerContext() ) ) {
+        // Loading presets replaces the shapes or tracks by new ones (#1247).
+        // The commands already in the node's undo stack (settings panel and
+        // viewer interacts) refer to the replaced items and to their settings
+        // panel tree items, which are deleted: undoing them would use deleted
+        // items, so drop them.
+        _undoStack->clear();
+    }
     getSettingPanel()->pushUndoCommand( new LoadNodePresetsCommand(thisShared, internalSerialization) );
 }
 

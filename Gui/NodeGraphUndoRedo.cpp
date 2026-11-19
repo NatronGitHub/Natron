@@ -33,6 +33,8 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QDebug>
+#include <QTimer>
+#include <QUndoStack>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -43,10 +45,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/NodeSerialization.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Project.h"
-#include "Engine/RotoContext.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/TimeLine.h"
-#include "Engine/TrackerContext.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/NodeClipBoard.h"
@@ -1139,21 +1139,6 @@ LoadNodePresetsCommand::~LoadNodePresetsCommand()
 {
 }
 
-// loadKnobs() replaced the shapes or tracks of the node (#1247): declare the
-// new ones to Python (the replaced ones were removed from the Python namespace).
-static void
-declareLoadedItemsAsPythonFields(const NodePtr& node)
-{
-    RotoContextPtr roto = node->getRotoContext();
-    if (roto) {
-        roto->declarePythonFields();
-    }
-    TrackerContextPtr tracker = node->getTrackerContext();
-    if (tracker) {
-        tracker->declarePythonFields();
-    }
-}
-
 void
 LoadNodePresetsCommand::undo()
 {
@@ -1163,7 +1148,20 @@ LoadNodePresetsCommand::undo()
     NodePtr internalNode = node->getNode();
     MultiInstancePanelPtr panel = node->getMultiInstancePanel();
     internalNode->loadKnobs(*_oldSerialization.front(), true);
-    declareLoadedItemsAsPythonFields(internalNode);
+    if ( internalNode->getRotoContext() || internalNode->getTrackerContext() ) {
+        // loadKnobs() replaced the shapes or tracks by new ones (#1247). The
+        // commands after this one in the node's undo stack (already undone)
+        // refer to the replaced items and to their settings panel tree items,
+        // which are deleted: redoing them would use deleted items. If there
+        // are any, clear the stack once this undo is finished.
+        std::weak_ptr<QUndoStack> weakStack = node->getUndoStack();
+        QTimer::singleShot(0, [weakStack]() {
+            QUndoStackPtr stack = weakStack.lock();
+            if ( stack && ( stack->count() > stack->index() + 1 ) ) {
+                stack->clear();
+            }
+        });
+    }
     // loadKnobs() may have created user knobs: rebuild the settings panel (#480)
     internalNode->getEffectInstance()->recreateUserKnobs(true);
     if (panel) {
@@ -1212,7 +1210,6 @@ LoadNodePresetsCommand::redo()
     }
 
     internalNode->loadKnobs(*_newSerializations.front(), true);
-    declareLoadedItemsAsPythonFields(internalNode);
     // loadKnobs() may have created user knobs: rebuild the settings panel (#480)
     internalNode->getEffectInstance()->recreateUserKnobs(true);
     if (panel) {

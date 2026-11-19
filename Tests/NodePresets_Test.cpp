@@ -23,7 +23,9 @@
 //
 // Importing presets (and undoing it) goes through Node::loadKnobs() on an existing node, which loads the
 // RotoContext and TrackerContext of the serialization: the items of the serialization must replace the
-// current ones.
+// current ones. Restoring a PyPlug from a project does the same on the children made by the PyPlug script
+// (NodeCollectionSerialization::restoreFromSerialization() with createNodes == false). In both cases the
+// node is already declared to Python: the loaded items must be declared, and the replaced ones removed.
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -41,7 +43,7 @@
 #include <gtest/gtest.h>
 
 #include "Engine/AppInstance.h"
-#include "Engine/AppManager.h"
+#include "Engine/AppManager.h" // NATRON_PYTHON_NAMESPACE::interpretPythonScript
 #include "Engine/Bezier.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
@@ -110,6 +112,24 @@ trackNames(const TrackerContextPtr& context)
     return names;
 }
 
+// Runs a Python script (made of asserts): it must not raise
+void
+checkPython(const std::string& script)
+{
+    std::string err, output;
+    bool ok = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, &output);
+
+    EXPECT_TRUE(ok) << script << err;
+    EXPECT_EQ(std::string(), err) << script;
+}
+
+// The Python name of a node, e.g. "app1.Roto1"
+std::string
+pythonName(const NodePtr& node)
+{
+    return node->getApp()->getAppIDString() + "." + node->getFullyQualifiedName();
+}
+
 void
 checkRotoLoadReplacesShapes(const char* pluginID)
 {
@@ -135,6 +155,7 @@ checkRotoLoadReplacesShapes(const char* pluginID)
     // the name of the deleted shape is free again: give this one a name of its own
     ASSERT_TRUE( shapeB->setScriptName("OtherBezier") );
     const std::string nameB = shapeB->getScriptName();
+    const std::string fullNameB = shapeB->getFullyQualifiedName(); // e.g. "Layer1.OtherBezier"
     ASSERT_NE(nameA, nameB);
     NodeSerializationPtr stateB = std::make_shared<NodeSerialization>(node);
     ASSERT_EQ( std::list<std::string>(1, nameB), shapeNames(context) );
@@ -143,11 +164,18 @@ checkRotoLoadReplacesShapes(const char* pluginID)
     node->loadKnobs(*stateA);
     EXPECT_EQ( std::list<std::string>(1, nameA), shapeNames(context) );
     EXPECT_EQ( 2u, context->getLayers().size() ); // base layer + sub-layer
+    // and Python sees the loaded shape, not the replaced one
+    RotoItemPtr loadedA = context->getItemByName(nameA);
+    ASSERT_TRUE( bool(loadedA) );
+    const std::string roto = pythonName(node) + ".roto";
+    checkPython("assert " + roto + "." + loadedA->getFullyQualifiedName() + ".getScriptName() == '" + nameA + "'\n"
+                "assert not hasattr(" + roto + "." + fullNameB.substr(0, fullNameB.find('.')) + ", '" + nameB + "')\n");
 
     // Undo (LoadNodePresetsCommand::undo() loads the previous state the same way)
     node->loadKnobs(*stateB);
     EXPECT_EQ( std::list<std::string>(1, nameB), shapeNames(context) );
     EXPECT_EQ( 1u, context->getLayers().size() );
+    checkPython("assert " + roto + "." + fullNameB + ".getScriptName() == '" + nameB + "'\n");
 
     // Redo
     node->loadKnobs(*stateA);
@@ -206,6 +234,10 @@ TEST(NodePresets, TrackerLoadReplacesTracks)
     // Load the preset
     node->loadKnobs(*stateA);
     EXPECT_EQ( namesA, trackNames(context) );
+    // and Python sees the loaded tracks
+    const std::string tracker = pythonName(node) + ".tracker";
+    checkPython("assert " + tracker + "." + namesA.front() + ".getScriptName() == '" + namesA.front() + "'\n"
+                "assert " + tracker + "." + namesA.back() + ".getScriptName() == '" + namesA.back() + "'\n");
 
     // Undo
     node->loadKnobs(*stateB);
@@ -214,6 +246,41 @@ TEST(NodePresets, TrackerLoadReplacesTracks)
     // Redo
     node->loadKnobs(*stateA);
     EXPECT_EQ( namesA, trackNames(context) );
+
+    node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
+}
+
+// A PyPlug script makes a shape on a Roto node inside the PyPlug; the project saved the node with that
+// shape. When the project is loaded, the script runs again (the node gets its shape), then the node is
+// restored from the project with Node::loadKnobs(): the node must have the shape once, and Python must
+// see it.
+TEST(NodePresets, ScriptMadeRotoRestoredFromProject)
+{
+    if ( skipIfMissing(PLUGINID_OFX_ROTO) || skipIfMissing(PLUGINID_OFX_MERGE) ) {
+        return;
+    }
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    CreateNodeArgs args( PLUGINID_NATRON_ROTO, app->getProject() );
+    NodePtr node = app->createNode(args);
+    ASSERT_TRUE( bool(node) );
+    RotoContextPtr context = node->getRotoContext();
+    ASSERT_TRUE( bool(context) );
+    const std::string roto = pythonName(node) + ".roto";
+
+    // The "PyPlug script" makes the shape
+    checkPython("b = " + roto + ".createBezier(0., 0., 1.)\n"
+                "assert b is not None\n");
+    std::list<std::string> names = shapeNames(context);
+    ASSERT_EQ( 1u, names.size() );
+    const std::string shapeName = names.front();
+    NodeSerializationPtr saved = std::make_shared<NodeSerialization>(node);
+
+    // The project restores the node
+    node->loadKnobs(*saved);
+    EXPECT_EQ( std::list<std::string>(1, shapeName), shapeNames(context) );
+    RotoItemPtr loaded = context->getItemByName(shapeName);
+    ASSERT_TRUE( bool(loaded) );
+    checkPython("assert " + roto + "." + loaded->getFullyQualifiedName() + ".getScriptName() == '" + shapeName + "'\n");
 
     node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
 }

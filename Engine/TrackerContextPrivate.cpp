@@ -109,6 +109,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     , markersToUnslave()
     , beginSelectionCounter(0)
     , selectionRecursion(0)
+    , isLoading(false)
     , scheduler(_publicInterface, node)
 {
     EffectInstancePtr effect = node->getEffectInstance();
