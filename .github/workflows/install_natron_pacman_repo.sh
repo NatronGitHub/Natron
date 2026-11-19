@@ -61,3 +61,7 @@ fi
 
 UNIX_NATRON_REPO_DIR=`cygpath -u ${NATRON_REPO_DIR}`
 natron_repo_init ${UNIX_NATRON_REPO_DIR}
+
+# Natron packages that replace MSYS2's (e.g. freetype with the ULABS fix, #1287)
+# are never picked by pacman from the [natron] repository on its own.
+natron_repo_install_overrides || exit 1

@@ -111,8 +111,17 @@ Do NOT hand-edit ``index.rst`` (except to add a whole new guide to the toctree),
   ``QtCompat::wildcardToRegularExpression()`` (``*`` matches ``/``), not Qt's
   path-aware ``QRegularExpression::wildcardToRegularExpression()``; add
   ``UseUnicodePropertiesOption`` when a pattern uses ``\w``/``\b``/``\d``.
-- **To do:** regenerate PySide6/Shiboken6 bindings (fixes enum/flag issue
-  #854). No Qt6 work on the deprecated qmake build (CMake is the Qt6 build).
+- **Done (#1186–#1188):** Engine, Gui and the bindings compile with Qt6
+  (checked on Windows and Linux, Qt5 unchanged); CMake ``NATRON_QT6=ON``
+  generates the Shiboken6/PySide6 bindings; qmake has an untested Qt6 path that
+  generates no bindings; ``QtCompat::MutexLock`` (QMutex or QRecursiveMutex,
+  null locks nothing) and ``QtCompat::QEnterEvent`` (for ``enterEvent``
+  overrides) in ``Global/QtCompat.h``.
+- **To do:** validate PySide6 bindings and the Qt6 GUI at run time (enum/flag
+  issue #854, ``QT_API=pyside2`` #1262); Qt6 CI build (nightly/on demand, not
+  per PR); C++20 with Qt6 (#1148). No more Qt6 work on the deprecated qmake
+  build (CMake is the Qt6 build). Qt5-preserving Qt6 work goes to RB-2.6;
+  RB-2.7 is the Qt6 branch.
 - Keep Qt 5.15 working: prefer APIs present in both; else shim in
   ``QtCompat.h``; else guard with ``#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)``.
 - Full plan: ``Documentation/source/maintainers/qt6-migration.rst``.

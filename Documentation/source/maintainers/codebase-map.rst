@@ -50,10 +50,13 @@ Top-level directories
     ``PythonUtils``, ``FStreamsSupport``).
 
 ``HostSupport/``
-    The build files (``CMakeLists.txt``, ``HostSupport.pro``) of the OpenFX
-    **host** support library — the C++ classes that implement the host side of
-    the OpenFX plug-in contract. Its sources are in the ``libs/OpenFX``
-    submodule (``libs/OpenFX/HostSupport``), next to the OpenFX headers.
+    Only the qmake project of Natron's OpenFX **host** support library
+    (``HostSupport.pro``, ``pch.h``). The library — the C++ classes that
+    implement the host side of the OpenFX plug-in contract — is built from
+    ``libs/OpenFX/HostSupport`` plus the parametric parameters of
+    ``libs/OpenFX_extensions``. CMake builds openfx's own ``OfxHost`` target
+    (``add_subdirectory(libs/OpenFX EXCLUDE_FROM_ALL)`` in the top-level
+    ``CMakeLists.txt``, with Natron's ``OFX_*`` options).
 
 ``libs/``
     Bundled third-party libraries built from source: ``OpenFX`` and

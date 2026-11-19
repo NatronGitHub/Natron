@@ -63,6 +63,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/NodeSerialization.h"
 #include "Engine/NodeMetadata.h"
 #include "Engine/OfxClipInstance.h"
+#include "Engine/OfxHost.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/OfxParamInstance.h"
@@ -242,6 +243,7 @@ struct OfxEffectInstancePrivate
     bool supportsMultipleClipDepths;
     bool doesTemporalAccess;
     bool multiplanar;
+    bool outputFormatFromPlugin; // true if the last getClipPreferences action set the output format (main thread only)
 
     OfxEffectInstancePrivate()
         : effect()
@@ -270,6 +272,7 @@ struct OfxEffectInstancePrivate
         , supportsMultipleClipDepths(false)
         , doesTemporalAccess(false)
         , multiplanar(false)
+        , outputFormatFromPlugin(false)
     {
     }
 
@@ -297,6 +300,7 @@ struct OfxEffectInstancePrivate
         , supportsMultipleClipDepths(other.supportsMultipleClipDepths)
         , doesTemporalAccess(other.doesTemporalAccess)
         , multiplanar(other.multiplanar)
+        , outputFormatFromPlugin(other.outputFormatFromPlugin)
     {
     }
 };
@@ -549,6 +553,11 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 stat = _imp->effect->createInstanceAction();
             }
             _imp->created = true;
+            // WriteOIIO sets the visibility of its Views parameter from the format in its constructor:
+            // hide it if the file name has a view pattern.
+            if ( isWriter() ) {
+                getNode()->refreshViewsSelectorVisibility();
+            }
         } // SET_CAN_SET_VALUE(true);
 
 
@@ -833,6 +842,14 @@ OfxEffectInstance::isReader() const
     assert(_imp->context != eContextNone);
 
     return _imp->context == eContextReader;
+}
+
+bool
+OfxEffectInstance::isOutputFormatFromFile() const
+{
+    assert( QThread::currentThread() == qApp->thread() );
+
+    return isReader() && _imp->outputFormatFromPlugin;
 }
 
 bool
@@ -1358,6 +1375,7 @@ OfxEffectInstance::onMetadataRefreshed(const NodeMetadata& metadata)
 StatusEnum
 OfxEffectInstance::getPreferredMetadata(NodeMetadata& metadata)
 {
+    _imp->outputFormatFromPlugin = false;
     if (!_imp->created || !_imp->effect) {
         return eStatusFailed;
     }
@@ -1383,7 +1401,7 @@ OfxEffectInstance::getPreferredMetadata(NodeMetadata& metadata)
 
         ///It has been overridden and no data is actually set on the clip, everything will be set into the
         ///metadata object
-        stat = _imp->effect->getClipPreferences_safe(metadata);
+        stat = _imp->effect->getClipPreferences_safe(metadata, &_imp->outputFormatFromPlugin);
     }
 
     return stat;
@@ -2208,6 +2226,7 @@ OfxEffectInstance::drawOverlay(double time,
     }
     if (_imp->overlayInteract) {
         SET_CAN_SET_VALUE(false);
+        _imp->overlayInteract->setKeyModifiersFromViewport();
         _imp->overlayInteract->drawAction(time, renderScale.toOfxPointD(), view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
     }
 }
@@ -2228,7 +2247,8 @@ OfxEffectInstance::onOverlayPenDown(double time,
                                     const QPointF & pos,
                                     double pressure,
                                     double /*timestamp*/,
-                                    PenType /*pen*/)
+                                    PenType /*pen*/,
+                                    KeyboardModifiers modifiers)
 {
     if (!_imp->initialized) {
         return false;
@@ -2243,6 +2263,7 @@ OfxEffectInstance::onOverlayPenDown(double time,
 
         SET_CAN_SET_VALUE(true);
 
+        _imp->overlayInteract->setKeyModifiers(modifiers);
         OfxStatus stat = _imp->overlayInteract->penDownAction(time, renderScale.toOfxPointD(), view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
 
 
@@ -2269,7 +2290,8 @@ OfxEffectInstance::onOverlayPenMotion(double time,
                                       const QPointF & viewportPos,
                                       const QPointF & pos,
                                       double pressure,
-                                      double /*timestamp*/)
+                                      double /*timestamp*/,
+                                      KeyboardModifiers modifiers)
 {
     if (!_imp->initialized) {
         return false;
@@ -2284,6 +2306,7 @@ OfxEffectInstance::onOverlayPenMotion(double time,
         OfxStatus stat;
 
         SET_CAN_SET_VALUE(true);
+        _imp->overlayInteract->setKeyModifiers(modifiers);
         stat = _imp->overlayInteract->penMotionAction(time, renderScale.toOfxPointD(), view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
@@ -2306,7 +2329,8 @@ OfxEffectInstance::onOverlayPenUp(double time,
                                   const QPointF & viewportPos,
                                   const QPointF & pos,
                                   double pressure,
-                                  double /*timestamp*/)
+                                  double /*timestamp*/,
+                                  KeyboardModifiers modifiers)
 {
     if (!_imp->initialized) {
         return false;
@@ -2320,6 +2344,7 @@ OfxEffectInstance::onOverlayPenUp(double time,
         penPosViewport.y = viewportPos.y();
 
         SET_CAN_SET_VALUE(true);
+        _imp->overlayInteract->setKeyModifiers(modifiers);
         OfxStatus stat = _imp->overlayInteract->penUpAction(time, renderScale.toOfxPointD(), view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
@@ -2337,12 +2362,50 @@ OfxEffectInstance::onOverlayPenUp(double time,
     return false;
 }
 
+// In the key actions of a modifier key, kNatronOfxInteractPropKeyModifiers holds the state after
+// the event (ofxNatron.h extension 13), whatever the platform reports in the event's modifiers.
+// Qt has a single modifier bit for both sides (Qt::ShiftModifier etc.) and can't tell which one is
+// still down: a key-up of one side (e.g. Key_Shift_L) clears the bit even if the other side
+// (Key_Shift_R) is still held. The next pen or key event brings the right state back.
+static KeyboardModifiers
+keyModifiersAfterKeyEvent(Key key,
+                          KeyboardModifiers modifiers,
+                          bool down)
+{
+    KeyboardModifierEnum m;
+
+    switch (key) {
+    case Key_Shift_L:
+    case Key_Shift_R:
+        m = eKeyboardModifierShift;
+        break;
+    case Key_Control_L:
+    case Key_Control_R:
+        m = eKeyboardModifierControl;
+        break;
+    case Key_Alt_L:
+    case Key_Alt_R:
+        m = eKeyboardModifierAlt;
+        break;
+    case Key_Meta_L:
+    case Key_Meta_R:
+        m = eKeyboardModifierMeta;
+        break;
+    default:
+
+        return modifiers;
+    }
+    modifiers.setFlag(m, down);
+
+    return modifiers;
+}
+
 bool
 OfxEffectInstance::onOverlayKeyDown(double time,
                                     const RenderScale & renderScale,
                                     ViewIdx view,
                                     Key key,
-                                    KeyboardModifiers /*modifiers*/)
+                                    KeyboardModifiers modifiers)
 {
     if (!_imp->initialized) {
         return false;;
@@ -2350,6 +2413,7 @@ OfxEffectInstance::onOverlayKeyDown(double time,
     if (_imp->overlayInteract) {
         QByteArray keyStr;
         SET_CAN_SET_VALUE(true);
+        _imp->overlayInteract->setKeyModifiers( keyModifiersAfterKeyEvent(key, modifiers, true) );
         OfxStatus stat = _imp->overlayInteract->keyDownAction( time, renderScale.toOfxPointD(), view,_imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
@@ -2370,7 +2434,7 @@ OfxEffectInstance::onOverlayKeyUp(double time,
                                   const RenderScale & renderScale,
                                   ViewIdx view,
                                   Key key,
-                                  KeyboardModifiers /* modifiers*/)
+                                  KeyboardModifiers modifiers)
 {
     if (!_imp->initialized) {
         return false;
@@ -2378,6 +2442,7 @@ OfxEffectInstance::onOverlayKeyUp(double time,
     if (_imp->overlayInteract) {
         QByteArray keyStr;
         SET_CAN_SET_VALUE(true);
+        _imp->overlayInteract->setKeyModifiers( keyModifiersAfterKeyEvent(key, modifiers, false) );
         OfxStatus stat = _imp->overlayInteract->keyUpAction( time, renderScale.toOfxPointD(), view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
@@ -2400,7 +2465,7 @@ OfxEffectInstance::onOverlayKeyRepeat(double time,
                                       const RenderScale & renderScale,
                                       ViewIdx view,
                                       Key key,
-                                      KeyboardModifiers /*modifiers*/)
+                                      KeyboardModifiers modifiers)
 {
     if (!_imp->initialized) {
         return false;
@@ -2409,6 +2474,7 @@ OfxEffectInstance::onOverlayKeyRepeat(double time,
         QByteArray keyStr;
 
         SET_CAN_SET_VALUE(true);
+        _imp->overlayInteract->setKeyModifiers( keyModifiersAfterKeyEvent(key, modifiers, true) );
         OfxStatus stat = _imp->overlayInteract->keyRepeatAction( time, renderScale.toOfxPointD(), view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
@@ -2435,6 +2501,7 @@ OfxEffectInstance::onOverlayFocusGained(double time,
     if (_imp->overlayInteract) {
         OfxStatus stat;
         SET_CAN_SET_VALUE(true);
+        _imp->overlayInteract->setKeyModifiersFromViewport();
         stat = _imp->overlayInteract->gainFocusAction(time, renderScale.toOfxPointD(), view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
         if (stat == kOfxStatOK) {
             return true;
@@ -2455,6 +2522,7 @@ OfxEffectInstance::onOverlayFocusLost(double time,
     if (_imp->overlayInteract) {
         OfxStatus stat;
         SET_CAN_SET_VALUE(true);
+        _imp->overlayInteract->setKeyModifiersFromViewport();
         stat = _imp->overlayInteract->loseFocusAction(time, renderScale.toOfxPointD(), view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
         if (stat == kOfxStatOK) {
             return true;
@@ -2771,12 +2839,13 @@ OfxEffectInstance::supportsTiles() const
 PluginOpenGLRenderSupport
 OfxEffectInstance::supportsOpenGLRender() const
 {
-    const std::string& str = effectInstance()->getProps().getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
+    const OFX::Host::Property::Set& props = effectInstance()->getProps();
+    const std::string& str = props.getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
 
     if (str == "false") {
         return ePluginOpenGLRenderSupportNone;
     } else if (str == "true") {
-        return ePluginOpenGLRenderSupportYes;
+        return OfxHost::applyCPURenderSupport(ePluginOpenGLRenderSupportYes, props);
     } else {
         assert(str == "needed");
 
@@ -3218,7 +3287,7 @@ OfxEffectInstance::dettachOpenGLContext(const EffectInstance::OpenGLContextEffec
 }
 
 void
-OfxEffectInstance::onInteractViewportSelectionCleared()
+OfxEffectInstance::onInteractViewportSelectionCleared(KeyboardModifiers /*modifiers*/)
 {
     KnobIntPtr k = _imp->selectionRectangleStateKnob.lock();
     // Unlike updates (see onInteractViewportSelectionUpdated), a clear is sent to every node, as
@@ -3229,6 +3298,10 @@ OfxEffectInstance::onInteractViewportSelectionCleared()
     }
     double propV[4] = {0, 0, 0, 0};
     effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
+    // The instanceChanged action gives no keyboard modifiers (ofxNatron.h extensions 7 and 13):
+    // the plug-in uses those of the last action of its overlay. The pen down that starts the
+    // selection rectangle (ViewerGL::mousePressEvent) and the Escape key down
+    // (ViewerTab::keyPressEvent) reach the overlays before this clear.
 
     // The state is already 0 at creation and after every clear: force the notification
     // (hasChanged = true), so that the plug-in always hears that the selection was cleared.
@@ -3237,16 +3310,27 @@ OfxEffectInstance::onInteractViewportSelectionCleared()
 
 
 void
-OfxEffectInstance::onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease)
+OfxEffectInstance::onInteractViewportSelectionUpdated(const RectD& rectangle,
+                                                      bool onRelease,
+                                                      KeyboardModifiers /*modifiers*/)
 {
     KnobIntPtr k = _imp->selectionRectangleStateKnob.lock();
     // Every node with a viewer context gets the viewer's selection signals: only the node whose
     // settings panel is open (so whose overlay is drawn) uses the rectangle, as in RotoPaint.
-    if ( !k || !getNode()->isSettingsPanelVisible() ) {
+    // The reader/writer embedded in a Read/Write node has no panel: use the one of that node.
+    NodePtr panelNode = getNode();
+#ifdef NATRON_ENABLE_IO_META_NODES
+    NodePtr ioContainer = panelNode->getIOContainer();
+    if (ioContainer) {
+        panelNode = ioContainer;
+    }
+#endif
+    if ( !k || !panelNode->isSettingsPanelVisible() ) {
         return;
     }
     double propV[4] = {rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2};
     effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
+    // no keyboard modifiers here either: the plug-in uses those of the last action of its overlay
     // During a drag the state stays 1 while the rectangle changes: force the notification
     // (hasChanged = true), so that the plug-in gets instanceChanged on every update.
     k->setValue(onRelease ? 2 : 1, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, NULL, true);

@@ -44,12 +44,14 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
+#include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/WriteNode.h"
 
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h" // isKeybind
@@ -172,7 +174,8 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
                                           const QPointF & viewportPos,
                                           const QPointF & pos,
                                           double pressure,
-                                          double timestamp)
+                                          double timestamp,
+                                          KeyboardModifiers modifiers)
 {
     QPointF transformPos;
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
@@ -223,7 +226,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
         EffectInstancePtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenDown_public(time, renderScale, view, viewportPos, transformPos, pressure, timestamp, pen);
+        bool didSmthing = effect->onOverlayPenDown_public(time, renderScale, view, viewportPos, transformPos, pressure, timestamp, pen, modifiers);
         _imp->recordOverlayEvent(node, didSmthing);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
@@ -244,7 +247,8 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
                                  const QPointF & viewportPos,
                                  const QPointF & pos,
                                  double pressure,
-                                 double timestamp)
+                                 double timestamp,
+                                 KeyboardModifiers modifiers)
 {
     if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
@@ -276,7 +280,7 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
             // overlay is not visible in current viewer, even though its parameter panel is open.
             continue;
         }
-        if ( notifyOverlaysPenDown_internal(*it, renderScale, pen, viewportPos, pos, pressure, transformedTime) ) {
+        if ( notifyOverlaysPenDown_internal(*it, renderScale, pen, viewportPos, pos, pressure, transformedTime, modifiers) ) {
             return true;
         }
     }
@@ -367,7 +371,8 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
                                             const QPointF & viewportPos,
                                             const QPointF & pos,
                                             double pressure,
-                                            double timestamp)
+                                            double timestamp,
+                                            KeyboardModifiers modifiers)
 {
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
     ViewIdx view = getCurrentView();
@@ -427,7 +432,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
         EffectInstancePtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenMotion_public(time, renderScale, view, viewportPos, transformPos, pressure, timestamp);
+        bool didSmthing = effect->onOverlayPenMotion_public(time, renderScale, view, viewportPos, transformPos, pressure, timestamp, modifiers);
         _imp->recordOverlayEvent(node, didSmthing);
         if (didSmthing) {
             if (_imp->hasPenDown) {
@@ -450,7 +455,8 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
                                    const QPointF & viewportPos,
                                    const QPointF & pos,
                                    double pressure,
-                                   double timestamp)
+                                   double timestamp,
+                                   KeyboardModifiers modifiers)
 {
     bool didSomething = false;
 
@@ -473,7 +479,7 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
     _imp->beginOverlayEvent();
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( notifyOverlaysPenMotion_internal(*it, renderScale, viewportPos, pos, pressure, timestamp) ) {
+        if ( notifyOverlaysPenMotion_internal(*it, renderScale, viewportPos, pos, pressure, timestamp, modifiers) ) {
             return true;
         }
     }
@@ -514,7 +520,21 @@ ViewerTab::getOverlayCursorFor(const NodePtr& node,
     if ( name.contains( QLatin1Char('/') ) || name.contains( QLatin1Char('\\') ) ) {
         return false;
     }
-    QString resourcesPath = QString::fromUtf8( node->getPluginResourcesPath().c_str() );
+    NodePtr resourcesNode = node;
+#ifdef NATRON_ENABLE_IO_META_NODES
+    // The overlay of a Read/Write node is the one of its embedded reader/writer plug-in
+    // (see ReadNode::getOverlayCursor): the image is in the resources of that plug-in.
+    NodePtr embeddedNode;
+    if ( ReadNode* isRead = dynamic_cast<ReadNode*>( effect.get() ) ) {
+        embeddedNode = isRead->getEmbeddedReader();
+    } else if ( WriteNode* isWrite = dynamic_cast<WriteNode*>( effect.get() ) ) {
+        embeddedNode = isWrite->getEmbeddedWriter();
+    }
+    if (embeddedNode) {
+        resourcesNode = embeddedNode;
+    }
+#endif
+    QString resourcesPath = QString::fromUtf8( resourcesNode->getPluginResourcesPath().c_str() );
     if ( !resourcesPath.isEmpty() && !resourcesPath.endsWith( QLatin1Char('/') ) ) {
         resourcesPath += QLatin1Char('/');
     }
@@ -578,7 +598,8 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
                                const QPointF & viewportPos,
                                const QPointF & pos,
                                double pressure,
-                               double timestamp)
+                               double timestamp,
+                               KeyboardModifiers modifiers)
 {
     bool didSomething = false;
 
@@ -664,7 +685,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
             EffectInstancePtr effect = (*it)->getEffectInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public(_imp->viewer);
-            bool caught = effect->onOverlayPenUp_public(time, renderScale, view, viewportPos, transformPos, pressure, timestamp);
+            bool caught = effect->onOverlayPenUp_public(time, renderScale, view, viewportPos, transformPos, pressure, timestamp, modifiers);
             _imp->recordOverlayEvent(*it, caught);
             didSomething |= caught;
         }

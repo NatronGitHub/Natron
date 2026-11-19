@@ -24,8 +24,9 @@ Where the host code lives
   parameter descriptors, interact descriptors. This layer is
   application-agnostic. ``libs/OpenFX_extensions`` adds the extension suites
   Natron supports.
-- ``HostSupport/`` — only the build files that compile
-  ``libs/OpenFX/HostSupport`` into the ``HostSupport`` library.
+- CMake builds ``libs/OpenFX/HostSupport`` (plus ``libs/OpenFX_extensions``)
+  as openfx's ``OfxHost`` target; ``HostSupport/`` only holds the qmake
+  project.
 - ``Engine/Ofx*`` — the **Natron-specific glue** that connects the generic host
   to Natron's node/knob/image model.
 
@@ -114,6 +115,69 @@ Readers and writers are a special case: the ``ReadNode`` and ``WriteNode``
 built-ins are thin dispatchers that, based on the file extension, embed the
 appropriate OFX reader/writer plug-in (from ``openfx-io``) and expose its
 parameters.
+
+Host behaviour plug-in authors can notice
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These rules changed in Natron 2.6 (`#1099 <https://github.com/NatronGitHub/Natron/pull/1099>`_, `#1108 <https://github.com/NatronGitHub/Natron/pull/1108>`_, `#1150 <https://github.com/NatronGitHub/Natron/pull/1150>`_ and the matching
+``libs/OpenFX`` updates). They are not always obvious from the OFX
+specification, so check them first when a plug-in that worked in Natron 2.5
+doesn't load or behaves differently.
+
+Which binary is loaded from a bundle
+    A bundle ``NAME.ofx.bundle/Contents/ARCHITECTURE/NAME.ofx`` may hold
+    binaries for several platforms. The plug-in cache
+    (``PluginCache::scanDirectory`` in
+    ``libs/OpenFX/HostSupport/src/ofxhPluginCache.cpp``) checks the
+    ``ARCHITECTURE`` folders in the order given by ``archDirsFor()``
+    (``libs/OpenFX/HostSupport/include/ofxhArchDirs.h``):
+
+    - macOS: ``MacOS``, then, on an x86-64 host only, the deprecated
+      ``MacOS-x86-64`` folder.
+    - Windows x64: ``Win64``, then ``win64`` (for case-sensitive folders). An
+      x64 host running under emulation on Arm64 checks ``Win-arm64ec`` first. A
+      32-bit host uses ``Win32``, then ``win32``.
+    - Linux: ``Linux-x86-64`` or ``Linux-x86`` on x86. On other CPUs,
+      ``Linux-$(uname -m)`` (e.g. ``Linux-aarch64``), then the name of the
+      architecture the host was compiled for if it differs, then the legacy
+      ``Linux-x86-64`` (64-bit host) or ``Linux-x86`` (32-bit host) folder,
+      where older build systems put every binary.
+
+    The host loads the binary from the first of these folders whose file
+    matches the host process (word size and CPU, read from the ELF, Mach-O or
+    PE header), so a folder earlier in the list with a binary the host can't
+    load is skipped. If no binary matches, the first one found is used, as
+    before (openfx `#90 <https://github.com/NatronGitHub/openfx/pull/90>`_, `#103 <https://github.com/NatronGitHub/openfx/pull/103>`_, `#105 <https://github.com/NatronGitHub/openfx/pull/105>`_, `#106 <https://github.com/NatronGitHub/openfx/pull/106>`_, `#112 <https://github.com/NatronGitHub/openfx/pull/112>`_).
+
+Clip depths in the clip-preferences action
+    In ``kOfxImageEffectActionGetClipPreferences``, the
+    ``OfxImageClipPropDepth_<clip>`` out-args are writable only if both the host
+    and the plug-in support multiple clip depths
+    (``kOfxImageEffectPropSupportsMultipleClipDepths``), as the OFX
+    clip-preferences reference requires. Natron sets it to 1 on the host, so in
+    practice this depends on the plug-in. Otherwise these properties are
+    read-only for the plug-in
+    (``OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata`` in
+    ``Engine/OfxImageEffectInstance.cpp``; openfx `#102 <https://github.com/NatronGitHub/openfx/pull/102>`_).
+
+Writes to read-only properties
+    HostSupport knows which properties are read-only for plug-ins, and by
+    default refuses a plug-in's write to them with ``kOfxStatErrValue``
+    (openfx `#91 <https://github.com/NatronGitHub/openfx/pull/91>`_). Natron relaxes this to ``ePluginReadOnlyWarn``
+    (``OfxHost::OfxHost`` in ``Engine/OfxHost.cpp``) so that existing
+    plug-ins keep working: the write is accepted, and the first write to each
+    property name prints ``OFX: warning: a plug-in wrote the read-only property
+    <name>`` on stderr. A plug-in that triggers this warning should be fixed.
+
+Cursors
+    Natron 2.6 no longer honours the Natron extension's secret
+    ``kNatronOfxParamCursorName`` string parameter, and no longer sets the
+    ``kNatronOfxImageEffectPropDefaultCursors`` host property (`#1108 <https://github.com/NatronGitHub/Natron/pull/1108>`_). Plug-ins
+    should use the interact cursors instead: check
+    ``kOfxInteractHostPropSupportedCursors`` on the host and set
+    ``kOfxInteractPropCursor`` on the overlay interact (see "Interact cursors
+    (proposed extension)" in ``ofxInteract.h``). None of the bundled plug-ins
+    used the old mechanism.
 
 Practical guidance
 ------------------

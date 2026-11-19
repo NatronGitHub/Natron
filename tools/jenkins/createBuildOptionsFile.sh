@@ -98,6 +98,12 @@ OPENFX_OPENCV_GIT_COMMIT=""
 # Either [relwithdebinfo, release, debug]
 COMPILE_TYPE=""
 
+# Build system for Natron: cmake or qmake (deprecated)
+NATRON_BUILD_SYSTEM=""
+
+# Extra cmake flags
+NATRON_EXTRA_CMAKE_FLAGS=""
+
 # Extra qmake flags
 NATRON_EXTRA_QMAKE_FLAGS=""
 

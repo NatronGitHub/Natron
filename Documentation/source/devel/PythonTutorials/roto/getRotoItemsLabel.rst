@@ -5,7 +5,6 @@ Get items label in a Roto node
 
 ::
 
-  import os
   import NatronEngine
   from NatronGui import *
 
@@ -24,7 +23,7 @@ Get items label in a Roto node
       currentID = currentNode.getPluginID()
 
       # check if selected node(s) are of 'Roto' class
-      if currentID == "fr.inria.built-in.Roto" or nodeID == "fr.inria.built-in.RotoPaint" :
+      if currentID == "fr.inria.built-in.Roto" or currentID == "fr.inria.built-in.RotoPaint" :
 
         # get 'Roto' context
         rotoContext = currentNode.getRotoContext()
@@ -41,11 +40,11 @@ Get items label in a Roto node
           # get current item label
           itemName = item.getLabel()
 
-          os.write(1, '\n' + str(itemName) + '\n')
+          print(itemName)
 
-This script can now be saved in a .py file and added to Natron using the :func:`addMenuCommand(grouping,function)<NatronGui.PyGuiApplication.addMenuCommand>` function in the initGuy.py file.
+This script can now be saved in a .py file and added to Natron using the :func:`addMenuCommand(grouping,function)<NatronGui.PyGuiApplication.addMenuCommand>` function in the initGui.py file.
 
-It can also be can executed directly in Natron's script editor by adding::
+It can also be executed directly in Natron's script editor by adding::
 
   getRotoItemsLabel()
 

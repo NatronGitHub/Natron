@@ -44,6 +44,16 @@ Node::canHandleRenderScaleForOverlays() const
 bool
 Node::shouldDrawOverlay() const
 {
+#ifdef NATRON_ENABLE_IO_META_NODES
+    // The reader/writer embedded in a Read/Write node has no settings panel and is not part of the
+    // project: its overlay is drawn by the Read/Write node (which forwards the overlay actions to
+    // it), whenever the overlay of that node is drawn.
+    NodePtr ioContainer = getIOContainer();
+    if (ioContainer) {
+        return ioContainer->shouldDrawOverlay();
+    }
+#endif
+
     if ( !hasOverlay() && !getRotoContext() ) {
         return false;
     }
@@ -106,6 +116,14 @@ Node::getOverlayColor(double* r,
                       double* g,
                       double* b) const
 {
+#ifdef NATRON_ENABLE_IO_META_NODES
+    // The embedded reader/writer of a Read/Write node has no GUI: use the overlay color of the
+    // Read/Write node, which draws its overlay.
+    NodePtr ioContainer = getIOContainer();
+    if (ioContainer) {
+        return ioContainer->getOverlayColor(r, g, b);
+    }
+#endif
     NodeGuiIPtr gui_i = getNodeGui();
 
     if (!gui_i) {

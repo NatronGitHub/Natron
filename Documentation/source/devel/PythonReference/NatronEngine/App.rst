@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _App:
 
 App
@@ -119,7 +119,7 @@ Accessing the settings of Natron
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To modify the parameters in the *Preferences* of Natron, you can call the
-:func:`getSettings()<NatronEngine.App.getSettings>` function to get an object
+:func:`natron.getSettings()<NatronEngine.PyCoreApplication.getSettings>` function to get an object
 containing all the :doc:`parameters<Param>` of the preferences.
 
 Accessing the project settings
@@ -133,7 +133,7 @@ You can get a specific :doc:`parameter<Param>` of the project settings with the
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. method:: NatronEngine.App.addProjectLayer(layer)
+.. method:: App.addProjectLayer(layer)
 
     :param layer: :class:`ImageLayer<NatronEngine.ImageLayer>`
 
@@ -143,9 +143,9 @@ by changing nodes connections to get access to the new layer. Layer names are un
 even if you add duplicates to the layers list, only the first one in the list with that name
 will be available in the menus.
 
-.. method:: NatronEngine.App.addFormat(formatSpec)
+.. method:: App.addFormat(formatSpec)
 
-    :param formatSpec: :class:`str<NatronEngine.std::string>`
+    :param formatSpec: :class:`str`
 
 Attempts to add a new format to the project's formats list. The *formatSpec* parameter
 must follow this spec: First the name of the format, without any spaces and without any
@@ -157,13 +157,13 @@ format. For instance::
 
 Wrongly formatted format will be omitted and a warning will be printed in the *ScriptEditor*.
 
-.. method:: NatronEngine.App.createNode(pluginID[, majorVersion=-1[, group=None] [, properties=None]])
+.. method:: App.createNode(pluginID[, majorVersion=-1[, group=None] [, properties=None]])
 
 
-    :param pluginID: :class:`str<NatronEngine.std::string>`
-    :param majorVersion: :class:`int<PySide.QtCore.int>`
+    :param pluginID: :class:`str`
+    :param majorVersion: :class:`int`
     :param group: :class:`Group<NatronEngine.Group>`
-    :param properties: :class:`Dict`
+    :param properties: :class:`dict`
     :rtype: :class:`Effect<NatronEngine.Effect>`
 
 Creates a new node instantiating the plug-in specified with the given *pluginID* at the given
@@ -187,7 +187,7 @@ Most properties have a default value and don't need to be specified, except the 
 Below is a list of all the properties available that are recognized by Natron. If you specify
 an unknown property, Natron will print a warning in the Script Editor.
 
-All properties type have been wrapped to Natron types:
+All properties type have been wrapped to Natron types (see :doc:`NodeCreationProperty`):
 
 - A boolean property is represented by the **BoolNodeCreationProperty** class
 - An int property is represented by the **IntNodeCreationProperty** class
@@ -334,10 +334,10 @@ Here is an example on how to pass properties to the createNode function::
 
 
 
-.. method:: NatronEngine.App.createReader(filename[, group=None] [, properties=None])
+.. method:: App.createReader(filename[, group=None] [, properties=None])
 
 
-    :param filename: :class:`str<NatronEngine.std::string>`
+    :param filename: :class:`str`
     :param group: :class:`Group<NatronEngine.Group>`
     :rtype: :class:`Effect<NatronEngine.Effect>`
 
@@ -352,10 +352,10 @@ If however you need a specific decoder to decode the file format, you can use
 the :func:`getSettings()<NatronEngine.App.createNode>` function with the exact plug-in ID.
 
 
-.. method:: NatronEngine.App.createWriter(filename[, group=None] [, properties=None])
+.. method:: App.createWriter(filename[, group=None] [, properties=None])
 
 
-    :param filename: :class:`str<NatronEngine.std::string>`
+    :param filename: :class:`str`
     :param group: :class:`Group<NatronEngine.Group>`
     :rtype: :class:`Effect<NatronEngine.Effect>`
 
@@ -369,10 +369,10 @@ according to the settings in the Preferences of Natron.
 If however you need a specific decoder to encode the file format, you can use
 the :func:`getSettings()<NatronEngine.App.createNode>` function with the exact plug-in ID.
 
-.. method:: NatronEngine.App.getAppID()
+.. method:: App.getAppID()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Returns the **zero-based** ID of the App instance.
 *app1* would have the AppID 0, *app2* would have the AppID 1, and so on...
@@ -380,33 +380,33 @@ Returns the **zero-based** ID of the App instance.
 
 
 
-.. method:: NatronEngine.App.getProjectParam(name)
+.. method:: App.getProjectParam(name)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
+    :param name: :class:`str`
     :rtype: :class:`Param<NatronEngine.Param>`
 
 Returns a project :doc:`Param` given its *name* (script-name). See :ref:`this section<autoVar>` for
 an explanation of *script-name* vs. *label*.
 
 
-.. method:: NatronEngine.App.getViewNames()
+.. method:: App.getViewNames()
 
     :rtype: :class:`Sequence`
 
 Returns a sequence with the name of all the views in the project as setup by the user
 in the "Views" tab of the Project Settings.
 
-.. method:: NatronEngine.App.render(effect,firstFrame,lastFrame[,frameStep])
+.. method:: App.render(effect,firstFrame,lastFrame[,frameStep])
 
 
     :param effect: :class:`Effect<NatronEngine.Effect>`
 
-    :param firstFrame: :class:`int<PySide.QtCore.int>`
+    :param firstFrame: :class:`int`
 
-    :param lastFrame: :class:`int<PySide.QtCore.int>`
+    :param lastFrame: :class:`int`
 
-    :param frameStep: :class:`int<PySide.QtCore.int>`
+    :param frameStep: :class:`int`
 
 
 Starts rendering the given *effect* on the frame-range defined by [*firstFrame*,*lastFrame*].
@@ -428,7 +428,8 @@ A blocking render means that this function returns only when the render finishes
 This function should only be used to render with a Write node or DiskCache node.
 
 
-.. method:: NatronEngine.App.render(tasks)
+.. method:: App.render(tasks)
+    :noindex:
 
 
     :param tasks: :class:`sequence`
@@ -447,48 +448,48 @@ This is a blocking call only in background mode.
 
 
 
-.. method:: NatronEngine.App.timelineGetLeftBound()
+.. method:: App.timelineGetLeftBound()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Returns the *left bound* of the timeline, that is, the first member of the project's frame-range parameter
 
 
 
 
-.. method:: NatronEngine.App.timelineGetRightBound()
+.. method:: App.timelineGetRightBound()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 
 Returns the *right bound* of the timeline, that is, the second member of the project's frame-range parameter
 
 
 
-.. method:: NatronEngine.App.timelineGetTime()
+.. method:: App.timelineGetTime()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Get the timeline's current time.
 In Natron there's only a single internal timeline and all Viewers are synchronised on that
 timeline. If the user seeks a specific frames, then all Viewers will render that frame.
 
 
-.. method:: NatronEngine.App.writeToScriptEditor(message)
+.. method:: App.writeToScriptEditor(message)
 
-    :param message: :class:`str<NatronEngine.std::string>`
+    :param message: :class:`str`
 
 Writes the given *message* to the Script Editor panel of Natron. This can be useful to
 inform the user of various information, warnings or errors.
 
 
-.. method:: NatronEngine.App.saveProject(filename)
+.. method:: App.saveProject(filename)
 
-    :param filename: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :param filename: :class:`str`
+    :rtype: :class:`bool`
 
     Saves the current project under the current project name. If the project has
     never been saved so far, this function e saves the project to the file indicated by the *filename*
@@ -497,10 +498,10 @@ inform the user of various information, warnings or errors.
 
     This function returns *True* if it saved successfully, *False* otherwise.
 
-.. method:: NatronEngine.App.saveProjectAs(filename)
+.. method:: App.saveProjectAs(filename)
 
-    :param filename: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :param filename: :class:`str`
+    :rtype: :class:`bool`
 
     Save the project under the given *filename*.
     In GUI mode, if *filename* is empty, it prompts the user where to save the project.
@@ -510,19 +511,19 @@ inform the user of various information, warnings or errors.
 
 
 
-.. method:: NatronEngine.App.saveTempProject(filename)
+.. method:: App.saveTempProject(filename)
 
-    :param filename: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :param filename: :class:`str`
+    :rtype: :class:`bool`
 
     Saves a copy of the project to the given *filename* without updating project properties
     such as the project path, last save time etc...
     This function returns *True* if it saved successfully, *False* otherwise.
 
 
-.. method:: NatronEngine.App.loadProject(filename)
+.. method:: App.loadProject(filename)
 
-    :param filename: :class:`str<NatronEngine.std::string>`
+    :param filename: :class:`str`
     :rtype: :class:`App<NatronEngine.App>`
 
     Loads the project indicated by *filename*.
@@ -532,9 +533,9 @@ inform the user of various information, warnings or errors.
     This function returns the :class:`App<NatronEngine.App>` object upon success, *None* otherwise.
 
 
-.. method:: NatronEngine.App.resetProject()
+.. method:: App.resetProject()
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
     Attempts to close the current project, without wiping the window.
     In GUI mode, the user is first prompted to saved his/her changes and can abort the
@@ -542,15 +543,15 @@ inform the user of various information, warnings or errors.
     In background mode this function always succeeds, hence always returns *True*.
     this always succeed.
 
-.. method:: NatronEngine.App.closeProject()
+.. method:: App.closeProject()
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
     Same as :func:`resetProject()<NatronEngine.App.resetProject>` except that the
     window will close in GUI mode.
     Also, if this is the last :class:`App<NatronEngine.App>` alive, Natron will close.
 
-.. method:: NatronEngine.App.newProject()
+.. method:: App.newProject()
 
     :rtype: :class:`App<NatronEngine.App>`
 

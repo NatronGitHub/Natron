@@ -24,7 +24,7 @@ CONFIG -= qt
 
 include(../global.pri)
 
-!noexpat: CONFIG += expat
+CONFIG += expat
  
 contains(CONFIG,trace_ofx_actions) {
     DEFINES += OFX_DEBUG_ACTIONS
@@ -68,25 +68,7 @@ win32 {
 	}
 }
 
-noexpat {
-    SOURCES += \
-    ../libs/OpenFX/HostSupport/expat-2.1.0/lib/xmlparse.c \
-    ../libs/OpenFX/HostSupport/expat-2.1.0/lib/xmltok.c \
-    ../libs/OpenFX/HostSupport/expat-2.1.0/lib/xmltok_impl.c \
-    
-    HEADERS += \
-        ../libs/OpenFX/HostSupport/expat-2.1.0/lib/expat.h \
-        ../libs/OpenFX/HostSupport/expat-2.1.0/lib/expat_external.h \
-        ../libs/OpenFX/HostSupport/expat-2.1.0/lib/ascii.h \
-        ../libs/OpenFX/HostSupport/expat-2.1.0/lib/xmltok.h \
-        ../libs/OpenFX/HostSupport/expat-2.1.0/lib/xmltok_impl.h \
-        ../libs/OpenFX/HostSupport/expat-2.1.0/lib/asciitab.h \
-        ../libs/OpenFX/HostSupport/expat-2.1.0/expat_config.h \
-
-    DEFINES += HAVE_EXPAT_CONFIG_H
-
-    INCLUDEPATH += $$PWD/../libs/OpenFX/HostSupport/expat-2.1.0/lib
-}
+noexpat: error("CONFIG+=noexpat is no longer supported ($${LITERAL_HASH}1181); use the system expat")
 
 SOURCES += \
     ../libs/OpenFX/HostSupport/src/ofxhBinary.cpp \
@@ -104,6 +86,7 @@ SOURCES += \
     ../libs/OpenFX_extensions/ofxhParametricParam.cpp
 
 HEADERS += \
+    ../libs/OpenFX/HostSupport/include/ofxhArchDirs.h \
     ../libs/OpenFX/HostSupport/include/ofxhBinary.h \
     ../libs/OpenFX/HostSupport/include/ofxhClip.h \
     ../libs/OpenFX/HostSupport/include/ofxhHost.h \
@@ -112,6 +95,7 @@ HEADERS += \
     ../libs/OpenFX/HostSupport/include/ofxhInteract.h \
     ../libs/OpenFX/HostSupport/include/ofxhMemory.h \
     ../libs/OpenFX/HostSupport/include/ofxhParam.h \
+    ../libs/OpenFX/HostSupport/include/ofxhPlatformDefines.h \
     ../libs/OpenFX/HostSupport/include/ofxhPluginAPICache.h \
     ../libs/OpenFX/HostSupport/include/ofxhPluginCache.h \
     ../libs/OpenFX/HostSupport/include/ofxhProgress.h \
@@ -119,8 +103,12 @@ HEADERS += \
     ../libs/OpenFX/HostSupport/include/ofxhTimeLine.h \
     ../libs/OpenFX/HostSupport/include/ofxhUtilities.h \
     ../libs/OpenFX/HostSupport/include/ofxhXml.h \
+    ../libs/OpenFX/include/ofx-native-v1.5_aces-v1.3_ocio-v2.3.h \
+    ../libs/OpenFX/include/ofxColour.h \
     ../libs/OpenFX/include/ofxCore.h \
     ../libs/OpenFX/include/ofxDialog.h \
+    ../libs/OpenFX/include/ofxDrawSuite.h \
+    ../libs/OpenFX/include/ofxGPURender.h \
     ../libs/OpenFX/include/ofxImageEffect.h \
     ../libs/OpenFX/include/ofxInteract.h \
     ../libs/OpenFX/include/ofxKeySyms.h \
@@ -128,6 +116,7 @@ HEADERS += \
     ../libs/OpenFX/include/ofxMessage.h \
     ../libs/OpenFX/include/ofxMultiThread.h \
     ../libs/OpenFX/include/ofxNatron.h \
+    ../libs/OpenFX/include/ofxOld.h \
     ../libs/OpenFX/include/ofxOpenGLRender.h \
     ../libs/OpenFX/include/ofxParam.h \
     ../libs/OpenFX/include/ofxParametricParam.h \

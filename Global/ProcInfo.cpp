@@ -369,6 +369,7 @@ NatronCFString::toStdString(CFStringRef str)
     //CFStringGetCharacters( str, CFRangeMake(0, length), reinterpret_cast<UniChar *>( const_cast<char *>( string.c_str() ) ) );
     int ok = CFStringGetCString(str, buffer, length, kCFStringEncodingUTF8);
     assert(ok);
+    (void)ok;
     std::string ret(buffer, length - 1);
     std::free(buffer);
 

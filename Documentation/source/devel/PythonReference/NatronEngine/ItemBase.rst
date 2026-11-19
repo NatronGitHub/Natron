@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _ItemBase:
 
 ItemBase
@@ -42,20 +42,20 @@ Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-.. method:: NatronEngine.ItemBase.getLabel()
+.. method:: ItemBase.getLabel()
 
 
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :rtype: :class:`str`
 
 Returns the label of the item, has visible in the table of the settings panel.
 
 
 
 
-.. method:: NatronEngine.ItemBase.getLocked()
+.. method:: ItemBase.getLocked()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Returns whether this item is locked or not. When locked the item is no longer editable by
 the user.
@@ -63,10 +63,10 @@ the user.
 
 
 
-.. method:: NatronEngine.ItemBase.getLockedRecursive()
+.. method:: ItemBase.getLockedRecursive()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Returns whether this item is locked or not. Unlike :func:`getLocked()<NatronEngine.ItemBase.getLocked>`
 this function looks parent layers recursively to find out if the item should be locked.
@@ -74,7 +74,7 @@ this function looks parent layers recursively to find out if the item should be 
 
 
 
-.. method:: NatronEngine.ItemBase.getParentLayer()
+.. method:: ItemBase.getParentLayer()
 
 
     :rtype: :class:`Layer<NatronEngine.Layer>`
@@ -82,11 +82,11 @@ this function looks parent layers recursively to find out if the item should be 
 Returns the parent :doc:`layer<Layer>` of the item. All items must have a parent layer,
 except the base layer.
 
-.. method:: NatronEngine.ItemBase.getParam(name)
+.. method:: ItemBase.getParam(name)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`Param<Param>`
+    :param name: :class:`str`
+    :rtype: :class:`Param<NatronEngine.Param>`
 
 
 Returns a :doc:`parameter<Param>` by its script-name or None if
@@ -94,10 +94,10 @@ no such parameter exists.
 
 
 
-.. method:: NatronEngine.ItemBase.getScriptName()
+.. method:: ItemBase.getScriptName()
 
 
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :rtype: :class:`str`
 
 Returns the *script-name* of the item. The script-name is unique for each items in a roto
 node.
@@ -105,10 +105,10 @@ node.
 
 
 
-.. method:: NatronEngine.ItemBase.getVisible()
+.. method:: ItemBase.getVisible()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Returns whether the item is visible or not. On the user interface, this corresponds to the
 small *eye*. When hidden, an item will no longer have its overlay painted on the viewer,
@@ -117,31 +117,31 @@ but it will still render in the image.
 
 
 
-.. method:: NatronEngine.ItemBase.setLabel(name)
+.. method:: ItemBase.setLabel(name)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
+    :param name: :class:`str`
 
 Set the item's label.
 
 
 
 
-.. method:: NatronEngine.ItemBase.setLocked(locked)
+.. method:: ItemBase.setLocked(locked)
 
 
-    :param locked: :class:`bool<PySide.QtCore.bool>`
+    :param locked: :class:`bool`
 
 Set whether the item should be locked or not. See :func:`getLocked()<NatronEngine.ItemBase.getLocked>`.
 
 
 
 
-.. method:: NatronEngine.ItemBase.setScriptName(name)
+.. method:: ItemBase.setScriptName(name)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :param name: :class:`str`
+    :rtype: :class:`bool`
 
 Set the script-name of the item. You should never call it yourself as Natron chooses 
 automatically a unique script-name for each item. However this function is made available
@@ -151,10 +151,10 @@ can potentially break other scripts relying on it.
 
 
 
-.. method:: NatronEngine.ItemBase.setVisible(activated)
+.. method:: ItemBase.setVisible(activated)
 
 
-    :param activated: :class:`bool<PySide.QtCore.bool>`
+    :param activated: :class:`bool`
 
 Set whether the item should be visible in the Viewer. See :func:`getVisible()<NatronEngine.ItemBase.getVisible>`.
 

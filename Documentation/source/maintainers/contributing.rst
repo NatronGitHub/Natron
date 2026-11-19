@@ -152,15 +152,80 @@ Building this manual
 --------------------
 
 The documentation is `Sphinx <https://www.sphinx-doc.org/>`_ using the Read the
-Docs theme; sources are under ``Documentation/source``. Build the HTML with::
+Docs theme; sources are under ``Documentation/source``. Install the Python
+requirements in a virtual environment, then build the HTML with::
 
+    pip install -r Documentation/source/requirements.txt
     cd Documentation
     sphinx-build -b html source html
 
 and the PDF with::
 
     sphinx-build -b latex source pdf
-    (cd pdf; pdflatex Natron)
+    (cd pdf; latexmk -pdf Natron)
+
+The Developers Guide includes the OpenFX documentation of the ``libs/OpenFX``
+submodule (``Documentation/source/_ext/natron_openfx.py`` copies it into
+``devel/openfx/``, which git ignores). It needs the submodule
+(``git submodule update --init libs/OpenFX``), breathe and Doxygen; without
+them, or with ``NATRON_DOCS_OPENFX=0`` (which the installers set, to keep the
+documentation bundled with Natron small), those pages are placeholders.
+
+Use Doxygen 1.17 or earlier (Read the Docs uses the Doxygen of Ubuntu 22.04,
+1.9.1). Doxygen 1.18 writes the suite function pointers in a form that breathe
+cannot parse, so the reference would lose those declarations, with about 330
+warnings: with Doxygen 1.18 or later, ``natron_openfx.py`` writes the
+placeholders instead and says so in the build log (look for
+``natron_openfx:``). ``NATRON_DOCS_OPENFX=force`` builds the OpenFX pages
+anyway, e.g. to check a change to them; MacPorts and Homebrew ship Doxygen
+1.18 or later.
+
+Read the Docs builds HTML, PDF and ePub for each push to a release branch
+(see ``.readthedocs.yaml``), but only the HTML for a pull request: check the
+PDF and ePub locally when a change can affect them.
+
+Diagrams
+~~~~~~~~
+
+Write diagrams as `Mermaid <https://mermaid.js.org/>`_ text in a ``mermaid``
+directive (from `sphinxcontrib-mermaid
+<https://github.com/mgaitan/sphinxcontrib-mermaid>`_), not as image files, so
+that they can be reviewed and updated like the rest of the text. For example::
+
+    .. mermaid::
+       :alt: Gui links Engine, Engine links HostSupport.
+       :caption: What links what.
+
+       flowchart TB
+           Gui["Gui/"] --> Engine["Engine/"]
+           Engine --> HostSupport["HostSupport/"]
+
+- Use the diagram types of `Mermaid 11 <https://mermaid.js.org/intro/>`_
+  (``flowchart``, ``sequenceDiagram``, ``classDiagram``, ``stateDiagram-v2``,
+  …), and try them in the `Mermaid live editor <https://mermaid.live/>`_.
+- Always give an ``:alt:`` text that says what the diagram shows, and keep
+  diagrams small: a diagram complements the text, it does not replace it.
+- Quote labels that contain punctuation (``A["Engine/ (NatronEngine)"]``);
+  ``<br/>`` breaks a line.
+
+The pictures come from the Node.js packages of ``Documentation/package.json``
+(versions locked in ``package-lock.json``). Install them once, with Node.js 20
+or later::
+
+    cd Documentation
+    npm ci    # node_modules/ is ignored by git
+
+The HTML pages draw the diagrams in the browser, with the mermaid.js of
+``node_modules`` (copied to ``_static/mermaid/``, so that a local or offline
+build works without a network connection). ``tools/jenkins/gen-natron-doc.sh``,
+which builds the documentation bundled with Natron, does not run ``npm ci``:
+unless ``Documentation/node_modules`` already exists there, the bundled
+documentation shows the diagrams as source. The PDF and ePub need pictures,
+which `mermaid-cli <https://github.com/mermaid-js/mermaid-cli>`_ draws with a
+headless Chrome; ``_ext/natron_mermaid.py`` checks that it works before the PDF
+or ePub build. Without sphinxcontrib-mermaid or ``node_modules``, or if
+mermaid-cli doesn't work, the diagrams are shown as source, and the build log
+says why (look for ``mermaid:``).
 
 Two rules from ``Documentation/README-Natron-documentation.md`` are important:
 
@@ -168,6 +233,16 @@ Two rules from ``Documentation/README-Natron-documentation.md`` are important:
   anything under ``plugins/``. The per-node pages in ``plugins/`` are generated
   from the plug-ins themselves with ``tools/genStaticDocs.sh`` (which runs
   ``NatronRenderer`` to dump each node's parameters as reStructuredText).
+  The same run generates the Reference Guide page (``_group.rst``), the
+  "Nodes" page (``_nodes.rst``), and one ``_group<id>.rst`` page per node group
+  and sub-group. Each level of a plug-in's OFX grouping is a group (empty
+  levels are skipped, and a plug-in without a grouping goes to "Other"). The
+  ``<id>`` keeps the ASCII letters and digits of each level, drops the other
+  ASCII characters, encodes non-ASCII characters as ``xHHHH``, and joins the
+  levels with ``_`` (``G'MIC/Colors`` gives ``_groupGMIC_Colors.rst``); an id
+  that differs from an existing one only by case gets a ``-2`` suffix. See
+  ``Engine/DocumentationGroups.h``; the in-app documentation server
+  (``Gui/DocumentationManager.cpp``) builds the same pages on the fly.
 - Everything else — the User Guide (``guide/``), the Developers Guide
   (``devel/``) and this Maintainer Guide (``maintainers/``) — is written by
   hand.

@@ -75,8 +75,14 @@ Knobs are Natron's animated, expression-driven parameters. The hierarchy is:
 - ``KnobSignalSlotHandler`` — the ``QObject`` companion that emits a knob's
   signals.
 - Related: ``Curve`` (``Curve.cpp``) and ``KeyFrame`` for animation;
-  ``Interpolation.cpp`` for keyframe interpolation; ``StringAnimationManager``
-  for animating string values.
+  ``Interpolation.cpp`` for keyframe interpolation.
+- ``StringAnimationManager`` animates string values (``AnimatingKnobStringHelper``).
+  The curve value of a string keyframe is the id of its string in a table of
+  interned strings, which is only valid inside one Natron process. Projects store
+  the strings by time (``StringsAnimation``) and the keyframe indices as curve values,
+  which is the format older versions such as 2.5 read.
+  Never expose or persist the ids: ``Curve::getValueAt()`` and
+  ``Curve::getKeyFramesForDisplay_mt_safe()`` return keyframe indices for string curves.
 
 How values, animation, links and expressions interact is explained in
 :ref:`maint-knobs`.

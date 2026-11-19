@@ -21,6 +21,8 @@
 #define NATRON_GLOBAL_MATHUTILS_H
 
 #include <algorithm>
+#include <cstdint>
+#include <cstring>
 #include <functional>
 
 #include "../Global/Macros.h"
@@ -42,6 +44,69 @@ constexpr const T&
 clamp(const T& v, const T& lo, const T& hi)
 {
     return MathUtils::clamp(v, lo, hi, std::less<T>{});
+}
+
+// The raw bits of a floating-point value.
+// Testing the bits is not enough with -ffast-math: clang marks the arguments of
+// a fast-math function as never NaN or infinite (nofpclass(nan inf)), and then
+// deduces the result of a bit test made on a memcpy of that value. The empty asm
+// statement is an optimization barrier: the compiler can't know anything about
+// the bits after it, so the test is really performed (same as openfx #151).
+inline std::uint64_t
+floatBits(double x)
+{
+    std::uint64_t bits;
+    std::memcpy(&bits, &x, sizeof(bits));
+#if defined(__GNUC__) || defined(__clang__) // gcc, clang and clang-cl
+    __asm__("" : "+r"(bits));
+#else
+    // other compilers (MSVC): a volatile copy, which the compiler must really read
+    volatile std::uint64_t vbits = bits;
+    bits = vbits;
+#endif
+
+    return bits;
+}
+
+inline std::uint32_t
+floatBits(float x)
+{
+    std::uint32_t bits;
+    std::memcpy(&bits, &x, sizeof(bits));
+#if defined(__GNUC__) || defined(__clang__) // gcc, clang and clang-cl
+    __asm__("" : "+r"(bits));
+#else
+    // other compilers (MSVC): a volatile copy, which the compiler must really read
+    volatile std::uint32_t vbits = bits;
+    bits = vbits;
+#endif
+
+    return bits;
+}
+
+// isFinite(x) is true if x is neither NaN nor infinite.
+// It tests the exponent bits instead of calling std::isfinite or comparing
+// floating-point values, because -ffast-math (-ffinite-math-only) lets the
+// compiler fold std::isnan, std::isinf, std::isfinite and x != x to constants.
+// Use it only to validate values that come from outside (plug-ins, Python,
+// files); computations must make sure they never create a NaN or an infinity.
+inline bool
+isFinite(double x)
+{
+    return (floatBits(x) & 0x7ff0000000000000ULL) != 0x7ff0000000000000ULL;
+}
+
+inline bool
+isFinite(float x)
+{
+    return (floatBits(x) & 0x7f800000U) != 0x7f800000U;
+}
+
+// isNaN(x) is true if x is a NaN. See isFinite() for why it doesn't use std::isnan.
+inline bool
+isNaN(float x)
+{
+    return (floatBits(x) & 0x7fffffffU) > 0x7f800000U;
 }
 
 } // namespace MathUtils

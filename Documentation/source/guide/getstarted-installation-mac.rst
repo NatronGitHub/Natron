@@ -4,29 +4,22 @@
 macOS
 =====
 
-.. toctree::
-   :maxdepth: 2
-
-This chapter will guide your through the installation of Natron on macOS (formerly known as Mac OS X or OS X).
+This chapter explains how to install Natron on macOS.
 
 Requirements
 ------------
 
- * Mac OS X 10.6 (Snow Leopard) or higher
- * x86 compatible CPU (Core2 x86_64 or higher recommended)
- * OpenGL 2.0 or higher with the following extensions:
-    * **GL_ARB_texture_non_power_of_two** *(Viewer and OpenGL rendering)*
-    * **GL_ARB_shader_objects** *(Viewer and OpenGL rendering)*
-    * **GL_ARB_vertex_buffer_object** *(Viewer and OpenGL rendering)*
-    * **GL_ARB_pixel_buffer_object** *(Viewer and OpenGL rendering)*
-    * **GL_ARB_vertex_array_object** or **GL_APPLE_vertex_array_object** *(OpenGL rendering only)*
-    * **GL_ARB_framebuffer_object** or **GL_EXT_framebuffer_object** *(OpenGL rendering only)*
-    * **GL_ARB_texture_float** *(OpenGL rendering only)*
+Natron 2.6 needs macOS 14 (Sonoma) or later, on a Mac with Apple Silicon
+(arm64) or an Intel processor (x86-64). Download the DMG for your Mac: the
+file name contains ``arm64`` for Apple Silicon and ``x86_64`` for Intel (the
+Apple menu → About This Mac shows which one you have). Every Mac that runs
+macOS 14 has a GPU with the OpenGL features Natron needs. See
+:ref:`system-requirements`.
 
 Download
 --------
 
-Navigate to https://natrongithub.github.io/#download and download the latest version.
+Go to https://natrongithub.github.io/#download and download the latest version.
 
 .. image:: _images/mac_install_01.png
    :width: 40%
@@ -34,7 +27,8 @@ Navigate to https://natrongithub.github.io/#download and download the latest ver
 Install
 -------
 
-Double-click the DMG file and copy Natron where you want it.
+Double-click the DMG file and drag Natron to the Applications folder, or to
+any other folder.
 
 .. image:: _images/mac_install_02.png
    :width: 40%
@@ -42,13 +36,21 @@ Double-click the DMG file and copy Natron where you want it.
 Run
 ---
 
-On OS X 10.7 and later, you may get the message *"Natron has not been signed by a recognized distributor and may damage your computer. You should move it to the trash"*.
+The Natron application is not notarized by Apple, so the first time you open
+it, macOS says that it cannot check Natron for malicious software and refuses
+to open it. To allow Natron to run:
 
-The macOS binaries are not signed with an Apple Developer ID, because of incompatibilities between the Apple code signing tools and the compiler (GCC 4.9) and target OS (Mac OS X 10.6) we use.
+#. Try to open Natron once, and close the warning.
+#. Open System Settings → Privacy & Security. Near the bottom of the page, a
+   message says that Natron was blocked. Click "Open Anyway", and confirm with
+   your password.
 
-There are at least four options to launch Natron on macOS:
+macOS remembers this choice, so you only need to do it once for each
+installed copy of Natron.
 
-- rather than double-clicking on the Natron application, right-click or control-click on it and select Open
-- after an unsuccessful launch of Natron, go to the Security & Privacy preferences panel, and enable it.
-- from the terminal command-line, execute ``spctl --add /Applications/Natron.app``, as explained in `this OSXDaily article <http://osxdaily.com/2015/07/15/add-remove-gatekeeper-app-command-line-mac-os-x/>`_.
-- (not recommended) click "Allow apps downloaded from: Anywhere" in the Security & Privacy preferences panel. Since macOS 10.12 Sierra, this option is not available anymore, but it is possible to re-enable it, as explained in `that OSXDaily article <http://osxdaily.com/2016/09/27/allow-apps-from-anywhere-macos-gatekeeper/>`_.
+Alternatively, remove the quarantine attribute that macOS adds to downloaded
+files, from the Terminal:
+
+.. code-block:: bash
+
+   xattr -dr com.apple.quarantine /Applications/Natron.app

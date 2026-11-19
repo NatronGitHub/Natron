@@ -133,6 +133,49 @@ libraries; **each layer may depend only on the layers below it.**
        cairo, OpenColorIO and OpenImageIO are *not* here — see
        :ref:`maint-building`.
 
+The diagram shows the CMake targets of these layers and what each one links.
+``natron-python`` is a plain Python interpreter (``Py_Main``): it shares a few
+``Global/`` helpers with Natron but does not link the Engine. ``HostSupport``
+is compiled from the sources of ``libs/OpenFX``.
+
+.. mermaid::
+   :alt: Natron links NatronGui; NatronGui and NatronRenderer link
+         NatronEngine; NatronEngine links HostSupport, which is compiled from
+         the libs/OpenFX sources, embeds Python, and links the bundled ceres,
+         libmv, openMVG, hoedown and libtess; NatronGui also links qhttpserver;
+         natron-python links only Python. NatronGui implements the interfaces
+         that NatronEngine declares in its *I.h headers.
+   :caption: Layers and executables. Solid arrows: "links". Dotted arrows:
+             HostSupport is compiled from libs/OpenFX; the GUI implements the
+             Engine's ``*I.h`` interfaces.
+
+   flowchart TB
+       subgraph apps ["Executables"]
+           App["App/<br/>Natron (GUI)"]
+           Renderer["Renderer/<br/>NatronRenderer (headless)"]
+           PythonBin["PythonBin/<br/>natron-python"]
+       end
+       Gui["Gui/<br/>NatronGui"]
+       Engine["Engine/<br/>NatronEngine"]
+       HostSupport["HostSupport/<br/>HostSupport"]
+       OpenFX["libs/OpenFX<br/>OFX headers and host support sources"]
+       Python(["Python"])
+       subgraph bundled ["Bundled libraries (libs/)"]
+           EngineLibs["ceres, libmv, openMVG,<br/>hoedown, libtess"]
+           qhttpserver["qhttpserver"]
+       end
+
+       App --> Gui
+       Gui --> Engine
+       Gui --> qhttpserver
+       Renderer --> Engine
+       Engine --> HostSupport
+       Engine --> EngineLibs
+       Engine --> Python
+       PythonBin --> Python
+       HostSupport -. "compiled from" .-> OpenFX
+       Gui -. "implements NodeGuiI, KnobGuiI, ..." .-> Engine
+
 The golden rule is that **dependencies only point downward**. ``Gui`` knows
 about ``Engine``; ``Engine`` must never include a ``Gui`` header. This is what
 lets ``NatronRenderer`` link ``Engine`` without ``Gui`` and run on a headless

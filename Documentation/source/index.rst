@@ -11,7 +11,7 @@ Natron documentation
 The Natron documentation is organized as follows:
 
 - The :ref:`user-guide` contains everything to get started with Natron, including tutorials.
-- The :ref:`reference-guide` contains the documentation about the user settings and environment variables for Natron, as well as the documentation for each node in Natron.
+- The :ref:`reference-guide` contains the documentation about the user settings and environment variables for Natron, as well as the documentation for each node in Natron, organized by node group.
 - The :ref:`developers-guide` contains documentation about using the Python scripting language within Natron, and using the Natron command-line interface (a.k.a. NatronRenderer).
 - The :ref:`maintainers-guide` contains documentation for developers who want to contribute to Natron's own C++ source code: the global code design, the techniques used, the different modules and their function, a technical TODO list (including the Qt 6 migration plan), and a triage of the open issues.
 
@@ -41,7 +41,7 @@ The *Natron documentation authors* are:
 - Fahad Hasan Pathik <cgvirus@github>
 
 .. toctree::
-    :maxdepth: 3
+    :maxdepth: 2
 
     guide/index.rst
     _group.rst

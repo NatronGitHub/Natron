@@ -4,7 +4,7 @@
 Image Nodes
 ===========
 
-These are the nodes located in the image icon of the toolbar.
+These nodes are in the **Image** menu of the toolbar.
 
 .. toctree::
    :maxdepth: 1

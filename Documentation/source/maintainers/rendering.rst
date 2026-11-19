@@ -241,15 +241,41 @@ Suppose the Viewer needs the visible region of a Blur node at frame 10.
     (``eRenderRoIStatusImageAlreadyRendered``, ``…ImageRendered``,
     ``…RenderFailed``, ``…RenderOutOfGPUMemory``).
 
-11. **Concurrency: "being rendered elsewhere".** Before returning, the marker
-    waits for the rectangles that another thread was rendering
-    (``waitForPendingRegions`` → ``waitForImageBeingRenderedElsewhere``), and
-    its destructor calls ``unmarkImageAsBeingRendered``. This is the mechanism
-    that keeps concurrent renders from duplicating work. It also makes this wait
-    a prime suspect for the CPU-idle stall in issue
-    `#248 <https://github.com/NatronGitHub/Natron/issues/248>`_: a thread that
-    blocks here on another thread's rectangle that never completes would sit
-    idle forever (see :ref:`maint-issue-triage`).
+11. **Concurrency: "being rendered elsewhere".** If another thread was
+    rendering part of the RoI, the marker first releases this thread's
+    rectangles (``releaseImageRects``: marked as rendered if the render
+    succeeded, cleared otherwise), then waits for the rectangles of the other
+    threads (``waitForPendingRegions`` → ``waitForImageBeingRenderedElsewhere``).
+    Otherwise its destructor releases them. They are cleared, not marked as
+    rendered, if the render was aborted or failed, or if an exception is
+    thrown; the destructor then drops the reference to the image
+    (``unmarkImageAsBeingRendered``). If the wait ends with pixels still
+    missing (another thread released its rectangles without rendering them),
+    ``renderRoI`` calls itself again to render them (at most three times).
+    This keeps concurrent renders from duplicating work.
+
+    Until 2.6, this could hang
+    (`#811 <https://github.com/NatronGitHub/Natron/issues/811>`_):
+
+    - a thread waited for its own rectangles, which were only marked as
+      rendered after the wait, so two threads waiting on the same image waited
+      for each other forever;
+    - the reference count of the images being rendered was racy
+      (`#1127 <https://github.com/NatronGitHub/Natron/issues/1127>`_): an entry
+      could be erased while another thread used it, and that thread's
+      rectangles then stayed ``PIXEL_UNAVAILABLE`` forever. The count is now
+      only changed under ``imagesBeingRenderedMutex``, and no thread waits for
+      an image's ``ImageBeingRendered::lock`` while holding that mutex.
+
+    The CPU-idle stall of
+    `#248 <https://github.com/NatronGitHub/Natron/issues/248>`_ may be related
+    (see :ref:`maint-issue-triage`).
+
+    When ``renderRoI`` is called from ``getImage`` and the cached image is too
+    small, the image is copied into a larger one (``copyAndResizeIfNeeded``)
+    that replaces it in the cache. The pixels other threads are rendering into
+    the old image are cleared in the copy, and this thread renders them itself;
+    the marker is then created on the copy, after it is allocated.
 
 12. **Return.** An aborted render returns ``eRenderRoIRetCodeAborted``; a failed
     one throws; a render that ran out of GPU memory is retried on the CPU.
