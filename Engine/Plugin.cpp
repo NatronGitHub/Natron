@@ -108,6 +108,32 @@ Plugin::makeLabelWithoutSuffix(const QString& label)
     return label;
 }
 
+QString
+Plugin::makeGroupingId(const QStringList& grouping)
+{
+    QStringList ids;
+    Q_FOREACH(const QString& level, grouping) {
+        QString id;
+        Q_FOREACH(const QChar& c, level) {
+            const ushort u = c.unicode();
+            if ( ( u >= 'a' && u <= 'z' ) || ( u >= 'A' && u <= 'Z' ) || ( u >= '0' && u <= '9' ) ) {
+                id.append(c);
+            } else if (u >= 128) {
+                // non-ASCII: keep it, encoded as xHHHH (UTF-16 code unit)
+                id.append( QLatin1Char('x') + QString::number( (uint)u, 16 ).toUpper().rightJustified( 4, QLatin1Char('0') ) );
+            }
+            // ASCII punctuation, spaces and control characters are dropped, so that "G'MIC" gives "GMIC"
+        }
+        if ( id.isEmpty() ) {
+            // only ASCII punctuation or spaces: use the UTF-8 bytes
+            id = QString::fromLatin1("x") + QString::fromLatin1( level.toUtf8().toHex() );
+        }
+        ids << id;
+    }
+
+    return ids.join( QLatin1Char('_') );
+}
+
 const QString&
 Plugin::getLabelWithoutSuffix() const
 {

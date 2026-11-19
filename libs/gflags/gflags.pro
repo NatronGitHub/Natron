@@ -13,7 +13,9 @@ CONFIG += gflags-flags
 include(../../global.pri)
 include(../../libs.pri)
 
+# bundled third-party code: no warnings (-w), as NATRON_THIRD_PARTY_NO_WARNINGS in CMake
 CONFIG -= warn_on
+CONFIG += warn_off
 # disable preprocessor warnings (-Wno-macro-redefined just appeared in recent compilers)
 *g++* {
   QMAKE_CXXFLAGS += -Wp,-w

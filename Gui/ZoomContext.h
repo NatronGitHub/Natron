@@ -283,7 +283,11 @@ public:
              double ymin,
              double ymax)
     {
-        assert(std::isfinite(xmin) && std::isfinite(xmax) && std::isfinite(ymin) && std::isfinite(ymax) && xmin < xmax && ymin < ymax);
+        assert(std::isfinite(xmin) && std::isfinite(xmax) && std::isfinite(ymin) && std::isfinite(ymax));
+        if ( (xmax <= xmin) || (ymax <= ymin) || (screenWidth() <= 0) || (screenHeight() <= 0) ) {
+            // empty area or widget: it can't be fitted, and the divisions below would give NaN or infinity
+            return;
+        }
         double width = xmax - xmin;
         double height = ymax - ymin;
 
@@ -307,7 +311,11 @@ public:
               double ymin,
               double ymax)
     {
-        assert(std::isfinite(xmin) && std::isfinite(xmax) && std::isfinite(ymin) && std::isfinite(ymax) && xmin < xmax && ymin < ymax);
+        assert(std::isfinite(xmin) && std::isfinite(xmax) && std::isfinite(ymin) && std::isfinite(ymax));
+        if ( (xmax <= xmin) || (ymax <= ymin) || (screenWidth() <= 0) || (screenHeight() <= 0) ) {
+            // empty area or widget: it can't be filled, and the divisions below would give NaN or infinity
+            return;
+        }
         double width = xmax - xmin;
         double height = ymax - ymin;
 

@@ -289,6 +289,8 @@ Histogram::Histogram(Gui* gui,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    // Unlike QGLWidget, QOpenGLWidget takes no share widget: the argument is kept for API compatibility.
+    Q_UNUSED(shareWidget);
 
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     setMouseTracking(true);
@@ -1726,7 +1728,6 @@ HistogramPrivate::drawViewerPicker()
 
     //QFontMetrics fm(_textFont, 0);
     //double yPos = zoomCtx.toZoomCoordinates(0,wHeight - fm.height() * 2. / _screenPixelRatio).y();
-    QColor color;
     double imgColor[4] = {0., 0., 0., 0.};
     for (std::size_t i = 0; i < (std::size_t)std::min( (int)viewerPickerColor.size(), 3 ); ++i) {
         imgColor[i] = viewerPickerColor[i];

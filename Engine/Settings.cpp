@@ -697,6 +697,18 @@ Settings::initializeKnobsColorManagement()
 
     _ocioStartupCheck = AppManager::createKnob<KnobBool>( this, tr("Warn on startup if OpenColorIO config is not the default") );
     _ocioStartupCheck->setName("startupCheckOCIO");
+    _ocioStartupCheck->setHintToolTip( tr("When the %1 user interface starts, check the OpenColorIO config selected above, "
+                                          "and offer to switch to the default config (%2) if another config is selected.\n"
+                                          "If the selected config is invalid, or if \"%3\" is selected but the custom OpenColorIO "
+                                          "configuration file is not set or does not exist, the suggested answer is to switch to the "
+                                          "default config (the custom file path is kept). If another bundled config is selected, the "
+                                          "suggested answer is to keep it. A custom config whose file exists is kept without asking. "
+                                          "If the default config is not bundled, a warning is shown only when the selected config "
+                                          "cannot be used.\n"
+                                          "Checking \"Do Not Show This Again\" in the question unchecks this setting.")
+                                       .arg( QString::fromUtf8(NATRON_APPLICATION_NAME),
+                                             QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME),
+                                             QString::fromUtf8(NATRON_CUSTOM_OCIO_CONFIG_NAME) ) );
     _ocioTab->addKnob(_ocioStartupCheck);
 } // Settings::initializeKnobsColorManagement
 
@@ -2716,19 +2728,7 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         "</ul>\n"
         "</li>\n"
         "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_environment.html\">Environment Variables</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupImage.html\">Image nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupDraw.html\">Draw nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupTime.html\">Time nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupChannel.html\">Channel nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupColor.html\">Color nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupFilter.html\">Filter nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupKeyer.html\">Keyer nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupMerge.html\">Merge nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupTransform.html\">Transform nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupViews.html\">Views nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupOther.html\">Other nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupGMIC.html\">GMIC nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupExtra.html\">Extra nodes</a></li>\n"
+        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_nodes.html\">Nodes</a></li>\n"
         "</ul>\n"
         "</li>\n"
         "<li class=\"toctree-l1\"><a class=\"reference internal\" href=\"devel/index.html\">Developers Guide</a></li>\n"

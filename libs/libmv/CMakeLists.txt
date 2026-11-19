@@ -104,9 +104,10 @@ set(mv_SOURCES
     libmv/tracking/track_region.cc
 )
 add_library(mv STATIC ${mv_HEADERS} ${mv_SOURCES})
-target_include_directories(mv PUBLIC third_party .)
+target_include_directories(mv SYSTEM PUBLIC third_party .)
+target_compile_options(mv PRIVATE ${NATRON_THIRD_PARTY_NO_WARNINGS})
 if(MSVC)
-    target_include_directories(mv PUBLIC third_party/msinttypes)
+    target_include_directories(mv SYSTEM PUBLIC third_party/msinttypes)
 endif()
 target_compile_definitions(mv PUBLIC LIBMV_NO_FAST_DETECTOR=)
 target_link_libraries(mv PUBLIC Ceres::ceres)

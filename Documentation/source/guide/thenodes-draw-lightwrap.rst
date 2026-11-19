@@ -6,7 +6,7 @@ Lightwrap Node
 
 LightWrap helps composite objects onto a bright background by simulating reflections from the background light on the foreground, around its edges. 
 
-Input A is the foreground image and its matte, and input B the the background to use for the wrapping effect.
+Input A is the foreground image and its matte, and input B is the background to use for the wrapping effect.
 
 The output of LightWrap should then be composited over the background to give the final composite.
 
@@ -18,22 +18,23 @@ Usage
 
 .. image:: _images/TheNodes-Draw/nodes-draw-lightwrap-interface.gif
 
-Increase FGBlur and Intensity to make the Lightwrap more visible.
+Increase **FGBlur** and **Intensity** to make the light wrap more visible.
 
-Increase Diffuse and BGBlur to make the Lightwrap softer, that is remove details from the background.
+Increase **Diffuse** and **BGBlur** to make the light wrap softer, that is, to remove details of the background from it.
 
-It is easier to adjust the settings with the Generate  wrap only box.
+The settings are easier to adjust with **Generate Wrap Only** checked.
 
 .. image:: _images/TheNodes-Draw/nodes-draw-lightwrap-wrap_only.gif
 
-This can be useful to manage precisely how Lightwrap is composited onto the FG image.
-It is common practice to use a "plus" Merge rather than the default "Over". (see Merge3 node in the example below)
+This also lets you control exactly how the light wrap is composited onto the
+foreground: a Merge node with the **plus** operation is often used rather than
+**over** (see the Merge3 node in the example below).
 
 .. image:: _images/TheNodes-Draw/nodes-draw-lightwrap-plus.gif
 
-Use "Enable Glow" to allow the Lightwrap to be visible also on the background image itself.
+Check **Enable Glow** to make the light wrap visible over the background too.
 
-The lightwrap can also be made of a unique color of your choice with "Use Constant Highlight" and "Constant" color.
+To use a single color for the light wrap, check **Use Constant Highlight** and set the **Constant** color.
 
 .. toctree::
     :maxdepth: 2

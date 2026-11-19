@@ -1,0 +1,24 @@
+Fix the UABS and ULABS macros (missing parentheses around the argument).
+
+FreeType 2.15.0 (commit a98c7c2) defined ULABS( a ) without parentheses, so
+ULABS( xx * yy - xy * yx ) in FT_Matrix_Check computes the wrong determinant
+and FT_Set_Transform silently resets some reflected and rotated matrices to the
+identity: glyphs come out unrotated (openfx-arena #86, #88).
+
+Backport of upstream commit 05f343a64b1fc0ecd9d7e34d5510494cbe3b3793
+("* include/freetype/internal/ftcalc.h (UABS, ULABS): Fix macros.",
+2026-10-17), not in any release yet.
+https://gitlab.freedesktop.org/freetype/freetype/-/commit/05f343a
+--- include/freetype/internal/ftcalc.h
++++ include/freetype/internal/ftcalc.h
+@@ -77,8 +77,8 @@
+ #endif /* FT_INT64 */
+ 
+ 
+-#define ULABS( a )  ( a >= 0 ? (FT_ULong)a : 0UL - (FT_ULong)a )
+-#define  UABS( a )  ( a >= 0 ?  (FT_UInt)a : 0U  -  (FT_UInt)a )
++#define ULABS( a )  ( (a) >= 0 ? (FT_ULong)(a) : 0UL - (FT_ULong)(a) )
++#define  UABS( a )  ( (a) >= 0 ?  (FT_UInt)(a) : 0U  -  (FT_UInt)(a) )
+ 
+ 
+   /**************************************************************************

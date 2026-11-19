@@ -1,0 +1,21 @@
+diff -Naur freetype-2.10.0.orig/modules.cfg freetype-2.10.0/modules.cfg
+--- freetype-2.10.0.orig/modules.cfg	2019-03-15 18:09:32.780172700 -0400
++++ freetype-2.10.0/modules.cfg	2019-03-15 18:10:26.450039100 -0400
+@@ -111,7 +111,7 @@
+ 
+ # TrueType GX/AAT table validation.  Needs `ftgxval.c' below.
+ #
+-# AUX_MODULES += gxvalid
++AUX_MODULES += gxvalid
+ 
+ # Support for streams compressed with gzip (files with suffix .gz).
+ #
+@@ -130,7 +130,7 @@
+ 
+ # OpenType table validation.  Needs `ftotval.c' below.
+ #
+-# AUX_MODULES += otvalid
++AUX_MODULES += otvalid
+ 
+ # Auxiliary PostScript driver component to share common code.
+ #

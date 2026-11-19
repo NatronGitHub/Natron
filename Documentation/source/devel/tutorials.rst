@@ -3,7 +3,7 @@
 Tutorials
 =========
 
-This section provides basic and advanced tutorials on how to exploit Natron features using python.
+This section provides short scripts that use the Natron Python API.
 
 .. toctree::
     :maxdepth: 3

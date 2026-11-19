@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _GroupParam:
 
 GroupParam
@@ -40,7 +40,7 @@ Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-.. method:: NatronEngine.GroupParam.addParam(param)
+.. method:: GroupParam.addParam(param)
 
 
     :param param: :class:`Param<NatronEngine.Param>`
@@ -57,20 +57,20 @@ Adds *param* into the group.
 
 .. warning::
 
-    Once called, you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+    Once called, you should call :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>`
     to update the user interface.
 
-.. method:: NatronEngine.GroupParam.getIsOpened()
+.. method:: GroupParam.getIsOpened()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Returns whether the group is currently expanded (True) or folded (False).
 
 
 
 
-.. method:: NatronEngine.GroupParam.setAsTab()
+.. method:: GroupParam.setAsTab()
 
 
 Set this group as a tab. When set as a tab, it will be inserted into a special TabWidget
@@ -81,10 +81,10 @@ For instance, on the following screenshot, *to* and *from* are 2 groups on which
 .. figure:: groupAsTab.png
 
 
-.. method:: NatronEngine.GroupParam.setOpened(opened)
+.. method:: GroupParam.setOpened(opened)
 
 
-    :param opened: :class:`bool<PySide.QtCore.bool>`
+    :param opened: :class:`bool`
 
 Set this group to be expanded (*opened* = True) or folded (*opened* = False)
 

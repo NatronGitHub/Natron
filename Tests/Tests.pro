@@ -28,7 +28,7 @@ equals(QT_MAJOR_VERSION, 6): QT += openglwidgets
 
 CONFIG += openmvg-flags glad-flags
 
-!noexpat: CONFIG += expat
+CONFIG += expat
 
 INCLUDEPATH += google-test/include
 INCLUDEPATH += google-test
@@ -40,9 +40,14 @@ QMAKE_CLEAN += ofxTestLog.txt test_dot_generator0.jpg
 
 include(../global.pri)
 
-SOURCES += \
+# bundled third-party code: see warnings.pri
+NATRON_THIRD_PARTY_SOURCES += \
     google-test/src/gtest-all.cc \
-    google-mock/src/gmock-all.cc \
+    google-mock/src/gmock-all.cc
+
+# NaNGuards_FastMath.cpp is compiled with -ffast-math by the CMake build only (qmake can't set
+# per-file flags); here it runs the same tests without -ffast-math.
+SOURCES += \
     BaseTest.cpp \
     Curve_Test.cpp \
     FileSystemModel_Test.cpp \
@@ -50,13 +55,24 @@ SOURCES += \
     Image_Test.cpp \
     KnobFile_Test.cpp \
     KnobSlave_Test.cpp \
+    KnobStringAnimation_Test.cpp \
     Lut_Test.cpp \
+    NaNGuards_FastMath.cpp \
+    NaNGuards_Test.cpp \
     NodeGroup_Test.cpp \
     NodePreview_Test.cpp \
+    OfxCPURenderSupport_Test.cpp \
+    OfxPluginDeprecated_Test.cpp \
     OSGLContext_Test.cpp \
+    PluginGrouping_Test.cpp \
+    ReadNodeOverlay_Test.cpp \
     RotoPaint_Test.cpp \
     Tracker_Test.cpp \
+    WriteNodeViews_Test.cpp \
     wmain.cpp
 
 HEADERS += \
-    BaseTest.h
+    BaseTest.h \
+    NaNGuards_FastMath.h
+
+include(../warnings.pri)

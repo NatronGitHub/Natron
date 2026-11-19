@@ -157,6 +157,10 @@ public:
         // the time that was passed to the original renderRoI call of the caller node
         double callerRenderTime;
 
+        // how many times renderRoI called itself again because pixels that another thread was rendering
+        // were released without being rendered
+        int renderAgainCount;
+
         RenderRoIArgs()
             : time(0)
             , scale()
@@ -173,6 +177,7 @@ public:
             , returnStorage(eStorageModeRAM)
             , allowGPURendering(true)
             , callerRenderTime(0.)
+            , renderAgainCount(0)
         {
         }
 
@@ -205,6 +210,7 @@ public:
             , returnStorage(returnStorage)
             , allowGPURendering(true)
             , callerRenderTime(callerRenderTime)
+            , renderAgainCount(0)
         {
         }
     };
@@ -333,6 +339,16 @@ public:
      * @brief Is the node a reader ?
      **/
     virtual bool isReader() const WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    /**
+     * @brief For Readers: true if the output format of the last computed metadata was set by the
+     * decoder from the file, false if there is no file, no decoder, or the file could not be decoded.
+     * Main thread only.
+     **/
+    virtual bool isOutputFormatFromFile() const WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -1621,13 +1637,13 @@ public:
 
     void drawOverlay_public(double time, const RenderScale & renderScale, ViewIdx view);
 
-    bool onOverlayPenDown_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen) WARN_UNUSED_RETURN;
+    bool onOverlayPenDown_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenMotion_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp) WARN_UNUSED_RETURN;
+    bool onOverlayPenMotion_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
     bool onOverlayPenDoubleClicked_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenUp_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp) WARN_UNUSED_RETURN;
+    bool onOverlayPenUp_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
     bool onOverlayKeyDown_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
@@ -1642,10 +1658,16 @@ public:
     void setInteractColourPicker_public(const OfxRGBAColourD& color, bool setColor, bool hasColor);
 
     virtual bool isDoingInteractAction() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void onInteractViewportSelectionCleared() {}
+    /**
+     * @brief Called when the viewer's selection rectangle is cleared or updated.
+     * @param modifiers The keyboard modifiers of the input event: for a clear, the pen down that
+     * starts the selection rectangle (or the key press that clears it).
+     **/
+    virtual void onInteractViewportSelectionCleared(KeyboardModifiers /*modifiers*/) {}
 
     virtual void onInteractViewportSelectionUpdated(const RectD& /*rectangle*/,
-                                                    bool /*onRelease*/) {}
+                                                    bool /*onRelease*/,
+                                                    KeyboardModifiers /*modifiers*/) {}
 
     void setDoingInteractAction(bool doing);
 
@@ -2039,7 +2061,8 @@ protected:
                                   const QPointF & /*pos*/,
                                   double /*pressure*/,
                                   double /*timestamp*/,
-                                  PenType /*pen*/) WARN_UNUSED_RETURN
+                                  PenType /*pen*/,
+                                  KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -2059,7 +2082,8 @@ protected:
                                     const QPointF & /*viewportPos*/,
                                     const QPointF & /*pos*/,
                                     double /*pressure*/,
-                                    double /*timestamp*/) WARN_UNUSED_RETURN
+                                    double /*timestamp*/,
+                                    KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -2070,7 +2094,8 @@ protected:
                                 const QPointF & /*viewportPos*/,
                                 const QPointF & /*pos*/,
                                 double /*pressure*/,
-                                double /*timestamp*/) WARN_UNUSED_RETURN
+                                double /*timestamp*/,
+                                KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
     {
         return false;
     }
