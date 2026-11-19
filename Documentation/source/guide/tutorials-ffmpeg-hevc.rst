@@ -47,10 +47,10 @@ and look at the "Supported pixel formats" line: ``yuv420p10le`` means 10-bit
 4:2:0 is available, ``yuv420p12le`` means 12-bit 4:2:0 is available. In
 WriteFFmpeg, the **Show Avail.** button gives the same information.
 
-The macOS builds of Natron include an 8-bit-only x265 (the Natron MacPorts
-overlay builds x265 without its ``highdepth`` variant), so WriteFFmpeg can
-only write 8-bit HEVC on macOS. To get 10-bit HEVC on macOS, render an image
-sequence and encode it with ``hevc_videotoolbox`` (see `Hardware encoders`_).
+The macOS arm64 builds of Natron include an 8-bit-only x265, so WriteFFmpeg
+can only write 8-bit HEVC there. The macOS x86_64 builds include an 8/10/12-bit (multilib) x265. To get
+10-bit HEVC on an arm64 Mac, render an image sequence and encode it with ``hevc_videotoolbox``
+(see `Hardware encoders`_).
 
 
 Writing HEVC from Natron
@@ -86,8 +86,9 @@ The **Lossless** choice of **Output Quality** sets CRF 0, which is *not*
 lossless with x265: it only gives the highest quality. For true lossless
 encoding, also add ``x265-params=lossless=1`` in **Codec Options** (in the
 **Advanced** group; this parameter is available from Natron 2.6).
-**Codec Options** passes other encoder options too, for example ``tune=grain`` or ``x265-params='keyint=48:bframes=4'`` (values that
-contain a colon must be quoted).
+**Codec Options** passes other encoder options too, for example
+``tune=grain`` or ``x265-params='keyint=48:bframes=4'`` (values that contain
+a colon must be quoted).
 
 The file is tagged ``hev1``. Apple's players (QuickTime Player, iOS, Safari)
 only play HEVC tagged ``hvc1``. Change the tag without re-encoding with:
