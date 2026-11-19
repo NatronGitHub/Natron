@@ -456,6 +456,14 @@ public:
 
     void setRenderThreadSafety(RenderSafetyEnum safety);
     RenderSafetyEnum getCurrentRenderThreadSafety() const;
+
+    /**
+     * @brief The render thread safety to use for a plug-in whose own safety is pluginSafety, when
+     * multithreading is enabled or disabled for it in the preferences. Disabling multithreading can
+     * only make rendering safer: it turns FullySafe into InstanceSafe, but an Unsafe plug-in stays
+     * Unsafe, so that it keeps its per-plug-in render lock (kOfxImageEffectRenderUnsafe).
+     **/
+    static RenderSafetyEnum applyMultiThreadingPreference(RenderSafetyEnum pluginSafety, bool multiThreadingEnabled);
     void revertToPluginThreadSafety();
 
     void setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support);
