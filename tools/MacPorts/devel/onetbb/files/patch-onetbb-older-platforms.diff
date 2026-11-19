@@ -1,0 +1,457 @@
+diff --git cmake/compilers/AppleClang.cmake cmake/compilers/AppleClang.cmake
+index 5ebbdbd1..f0681744 100644
+--- cmake/compilers/AppleClang.cmake
++++ cmake/compilers/AppleClang.cmake
+@@ -37,7 +37,7 @@ if (CMAKE_OSX_ARCHITECTURES)
+ else()
+     set(_tbb_target_architectures "${CMAKE_SYSTEM_PROCESSOR}")
+ endif()
+-if ("${_tbb_target_architectures}" MATCHES "(x86_64|amd64|AMD64)") # OSX systems are 64-bit only
++if ("${_tbb_target_architectures}" MATCHES "(i.86|x86|x86_64|amd64|AMD64)") # Clang is not supported on PowerPC
+     set(TBB_COMMON_COMPILE_FLAGS ${TBB_COMMON_COMPILE_FLAGS} -mrtm $<$<NOT:$<VERSION_LESS:${CMAKE_CXX_COMPILER_VERSION},12.0>>:-mwaitpkg>)
+ endif()
+ unset(_tbb_target_architectures)
+diff --git cmake/compilers/GNU.cmake cmake/compilers/GNU.cmake
+index 34c10db0..2496580d 100644
+--- cmake/compilers/GNU.cmake
++++ cmake/compilers/GNU.cmake
+@@ -36,7 +36,13 @@ if (NOT CMAKE_GENERATOR MATCHES "Ninja" AND NOT CMAKE_CXX_DEPENDS_USE_COMPILER)
+ endif()
+ 
+ # Enable Intel(R) Transactional Synchronization Extensions (-mrtm) and WAITPKG instructions support (-mwaitpkg) on relevant processors
+-if (CMAKE_SYSTEM_PROCESSOR MATCHES "(AMD64|amd64|i.86|x86)" AND NOT EMSCRIPTEN)
++# Like with Apple Clang case, use CMAKE_OSX_ARCHITECTURES if it is defined. Defaulting to CMAKE_SYSTEM_PROCESSOR breaks build on Rosetta.
++if (CMAKE_OSX_ARCHITECTURES)
++    set(_tbb_target_architectures "${CMAKE_OSX_ARCHITECTURES}")
++else()
++    set(_tbb_target_architectures "${CMAKE_SYSTEM_PROCESSOR}")
++endif()
++if ("${_tbb_target_architectures}" MATCHES "(AMD64|amd64|i.86|x86)" AND NOT EMSCRIPTEN)
+     set(TBB_COMMON_COMPILE_FLAGS ${TBB_COMMON_COMPILE_FLAGS} -mrtm $<$<AND:$<NOT:$<CXX_COMPILER_ID:Intel>>,$<NOT:$<VERSION_LESS:${CMAKE_CXX_COMPILER_VERSION},11.0>>>:-mwaitpkg>)
+ endif()
+ 
+diff --git include/oneapi/tbb/task_group.h include/oneapi/tbb/task_group.h
+index 2bbacd55..d282a5af 100644
+--- include/oneapi/tbb/task_group.h
++++ include/oneapi/tbb/task_group.h
+@@ -187,6 +187,23 @@ private:
+     };
+     task_group_context_version my_version;
+ 
++  #if defined __APPLE__ && defined __ppc__
++    /** bool is 32 bits on Darwin ppc32 (but not on ppc64): https://gcc.gnu.org/bugzilla/show_bug.cgi?id=107590
++    https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/LowLevelABI/100-32-bit_PowerPC_Function_Calling_Conventions/32bitPowerPC.html. */
++    //! The context traits.
++    struct context_traits {
++        bool fp_settings        : 4;
++        bool concurrent_wait    : 4;
++        bool bound              : 4;
++        bool reserved1          : 4;
++        bool reserved2          : 4;
++        bool reserved3          : 4;
++        bool reserved4          : 4;
++        bool reserved5          : 4;
++    } my_traits;
++
++    static_assert(sizeof(context_traits) == 4, "Traits shall fit into 4 bytes.");
++  #else // Everything else besides Darwin ppc32:
+     //! The context traits.
+     struct context_traits {
+         bool fp_settings        : 1;
+@@ -200,6 +217,7 @@ private:
+     } my_traits;
+ 
+     static_assert(sizeof(context_traits) == 1, "Traits shall fit into one byte.");
++  #endif
+ 
+     static constexpr std::uint8_t may_have_children = 1;
+     //! The context internal state (currently only may_have_children).
+@@ -417,7 +435,11 @@ private:
+     friend class task_group_base;
+ }; // class task_group_context
+ 
+-static_assert(sizeof(task_group_context) == 128, "Wrong size of task_group_context");
++#if defined __APPLE__ && defined __ppc__ // case of Darwin ppc32
++    static_assert(sizeof(task_group_context) == 136, "Wrong size of task_group_context");
++#else
++    static_assert(sizeof(task_group_context) == 128, "Wrong size of task_group_context");
++#endif
+ 
+ enum task_group_status {
+     not_complete,
+diff --git src/tbb/def/mac32-tbb.def src/tbb/def/mac32-tbb.def
+new file mode 100644
+index 00000000..10eedc3c
+--- /dev/null
++++ src/tbb/def/mac32-tbb.def
+@@ -0,0 +1,159 @@
++# Copyright (c) 2005-2021 Intel Corporation
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++
++
++# TODO: check the legacy comment below, currently use extra leading underscore everywhere.
++# Sometimes macOS* requires leading underscore (e. g. in export list file), but sometimes not
++# (e. g. when searching symbol in a dynamic library via dlsym()). Symbols in this file SHOULD
++# be listed WITHOUT one leading underscore. __TBB_SYMBOL macro should add underscore when
++# necessary, depending on the intended usage.
++
++# Assertions (assert.cpp)
++__ZN3tbb6detail2r117assertion_failureEPKciS3_S3_
++
++# ITT (profiling.cpp)
++__ZN3tbb6detail2r112itt_task_endENS0_2d115itt_domain_enumE
++__ZN3tbb6detail2r114itt_region_endENS0_2d115itt_domain_enumEPvy
++__ZN3tbb6detail2r114itt_task_beginENS0_2d115itt_domain_enumEPvyS4_yNS0_2d021string_resource_indexE
++__ZN3tbb6detail2r115call_itt_notifyEiPv
++__ZN3tbb6detail2r115create_itt_syncEPvPKcS4_
++__ZN3tbb6detail2r116itt_region_beginENS0_2d115itt_domain_enumEPvyS4_yNS0_2d021string_resource_indexE
++__ZN3tbb6detail2r116itt_relation_addENS0_2d115itt_domain_enumEPvyNS0_2d012itt_relationES4_y
++__ZN3tbb6detail2r117itt_set_sync_nameEPvPKc
++__ZN3tbb6detail2r119itt_make_task_groupENS0_2d115itt_domain_enumEPvyS4_yNS0_2d021string_resource_indexE
++__ZN3tbb6detail2r120itt_metadata_str_addENS0_2d115itt_domain_enumEPvyNS0_2d021string_resource_indexEPKc
++__ZN3tbb6detail2r120itt_metadata_ptr_addENS0_2d115itt_domain_enumEPvyNS0_2d021string_resource_indexES4_
++
++# Allocators (allocator.cpp)
++__ZN3tbb6detail2r115allocate_memoryEm
++__ZN3tbb6detail2r117deallocate_memoryEPv
++__ZN3tbb6detail2r122cache_aligned_allocateEm
++__ZN3tbb6detail2r124cache_aligned_deallocateEPv
++__ZN3tbb6detail2r115cache_line_sizeEv
++__ZN3tbb6detail2r117is_tbbmalloc_usedEv
++
++# Small object pool (small_object_pool.cpp)
++__ZN3tbb6detail2r18allocateERPNS0_2d117small_object_poolEm
++__ZN3tbb6detail2r18allocateERPNS0_2d117small_object_poolEmRKNS2_14execution_dataE
++__ZN3tbb6detail2r110deallocateERNS0_2d117small_object_poolEPvm
++__ZN3tbb6detail2r110deallocateERNS0_2d117small_object_poolEPvmRKNS2_14execution_dataE
++
++# Error handling (exception.cpp)
++__ZN3tbb6detail2r115throw_exceptionENS0_2d012exception_idE
++__ZTIN3tbb6detail2r114bad_last_allocE
++__ZTVN3tbb6detail2r114bad_last_allocE
++__ZTIN3tbb6detail2r112missing_waitE
++__ZTVN3tbb6detail2r112missing_waitE
++__ZTIN3tbb6detail2r110user_abortE
++__ZTVN3tbb6detail2r110user_abortE
++__ZTIN3tbb6detail2r111unsafe_waitE
++__ZTVN3tbb6detail2r111unsafe_waitE
++
++# RTM Mutex (rtm_mutex.cpp)
++__ZN3tbb6detail2r17acquireERNS0_2d19rtm_mutexERNS3_11scoped_lockEb
++__ZN3tbb6detail2r17releaseERNS0_2d19rtm_mutex11scoped_lockE
++__ZN3tbb6detail2r111try_acquireERNS0_2d19rtm_mutexERNS3_11scoped_lockE
++
++# RTM RW Mutex (rtm_rw_mutex.cpp)
++__ZN3tbb6detail2r114acquire_readerERNS0_2d112rtm_rw_mutexERNS3_11scoped_lockEb
++__ZN3tbb6detail2r114acquire_writerERNS0_2d112rtm_rw_mutexERNS3_11scoped_lockEb
++__ZN3tbb6detail2r118try_acquire_readerERNS0_2d112rtm_rw_mutexERNS3_11scoped_lockE
++__ZN3tbb6detail2r118try_acquire_writerERNS0_2d112rtm_rw_mutexERNS3_11scoped_lockE
++__ZN3tbb6detail2r17releaseERNS0_2d112rtm_rw_mutex11scoped_lockE
++__ZN3tbb6detail2r17upgradeERNS0_2d112rtm_rw_mutex11scoped_lockE
++__ZN3tbb6detail2r19downgradeERNS0_2d112rtm_rw_mutex11scoped_lockE
++
++# Tasks and partitioners (task.cpp)
++__ZN3tbb6detail2r17suspendEPFvPvPNS1_18suspend_point_typeEES2_
++__ZN3tbb6detail2r16resumeEPNS1_18suspend_point_typeE
++__ZN3tbb6detail2r121current_suspend_pointEv
++__ZN3tbb6detail2r114notify_waitersEm
++
++# Task dispatcher (task_dispatcher.cpp)
++__ZN3tbb6detail2r114execution_slotEPKNS0_2d114execution_dataE
++__ZN3tbb6detail2r14waitERNS0_2d112wait_contextERNS2_18task_group_contextE
++__ZN3tbb6detail2r15spawnERNS0_2d14taskERNS2_18task_group_contextE
++__ZN3tbb6detail2r15spawnERNS0_2d14taskERNS2_18task_group_contextEt
++__ZN3tbb6detail2r116execute_and_waitERNS0_2d14taskERNS2_18task_group_contextERNS2_12wait_contextES6_
++__ZN3tbb6detail2r16submitERNS0_2d14taskERNS2_18task_group_contextEPNS1_5arenaEm
++__ZN3tbb6detail2r115current_contextEv
++
++# Task group context (task_group_context.cpp)
++__ZN3tbb6detail2r110initializeERNS0_2d118task_group_contextE
++__ZN3tbb6detail2r122cancel_group_executionERNS0_2d118task_group_contextE
++__ZN3tbb6detail2r128is_group_execution_cancelledERNS0_2d118task_group_contextE
++__ZN3tbb6detail2r15resetERNS0_2d118task_group_contextE
++__ZN3tbb6detail2r17destroyERNS0_2d118task_group_contextE
++__ZN3tbb6detail2r119capture_fp_settingsERNS0_2d118task_group_contextE
++
++# Task arena (arena.cpp)
++__ZN3tbb6detail2r115max_concurrencyEPKNS0_2d115task_arena_baseE
++__ZN3tbb6detail2r110initializeERNS0_2d115task_arena_baseE
++__ZN3tbb6detail2r16attachERNS0_2d115task_arena_baseE
++__ZN3tbb6detail2r17executeERNS0_2d115task_arena_baseERNS2_13delegate_baseE
++__ZN3tbb6detail2r19terminateERNS0_2d115task_arena_baseE
++__ZN3tbb6detail2r120isolate_within_arenaERNS0_2d113delegate_baseEl
++__ZN3tbb6detail2r17enqueueERNS0_2d14taskEPNS2_15task_arena_baseE
++__ZN3tbb6detail2r17enqueueERNS0_2d14taskERNS2_18task_group_contextEPNS2_15task_arena_baseE
++__ZN3tbb6detail2r14waitERNS0_2d115task_arena_baseE
++
++# System topology parsing and threads pinning (governor.cpp)
++__ZN3tbb6detail2r115numa_node_countEv
++__ZN3tbb6detail2r117fill_numa_indicesEPi
++__ZN3tbb6detail2r115core_type_countEl
++__ZN3tbb6detail2r122fill_core_type_indicesEPil
++__ZN3tbb6detail2r131constraints_default_concurrencyERKNS0_2d111constraintsEl
++__ZN3tbb6detail2r128constraints_threads_per_coreERKNS0_2d111constraintsEl
++__ZN3tbb6detail2r124numa_default_concurrencyEi
++
++# Observer (observer_proxy.cpp)
++__ZN3tbb6detail2r17observeERNS0_2d123task_scheduler_observerEb
++
++# Queuing RW Mutex (queuing_rw_mutex.cpp)
++__ZN3tbb6detail2r111try_acquireERNS0_2d116queuing_rw_mutexERNS3_11scoped_lockEb
++__ZN3tbb6detail2r117upgrade_to_writerERNS0_2d116queuing_rw_mutex11scoped_lockE
++__ZN3tbb6detail2r119downgrade_to_readerERNS0_2d116queuing_rw_mutex11scoped_lockE
++__ZN3tbb6detail2r17acquireERNS0_2d116queuing_rw_mutexERNS3_11scoped_lockEb
++__ZN3tbb6detail2r17releaseERNS0_2d116queuing_rw_mutex11scoped_lockE
++__ZN3tbb6detail2r19constructERNS0_2d116queuing_rw_mutexE
++__ZN3tbb6detail2r19is_writerERKNS0_2d116queuing_rw_mutex11scoped_lockE
++
++# Global control (global_control.cpp)
++__ZN3tbb6detail2r16createERNS0_2d114global_controlE
++__ZN3tbb6detail2r17destroyERNS0_2d114global_controlE
++__ZN3tbb6detail2r127global_control_active_valueEi
++__ZN3tbb6detail2r18finalizeERNS0_2d121task_scheduler_handleEl
++__ZN3tbb6detail2r13getERNS0_2d121task_scheduler_handleE
++
++# Parallel pipeline (parallel_pipeline.cpp)
++__ZN3tbb6detail2r117parallel_pipelineERNS0_2d118task_group_contextEmRKNS2_11filter_nodeE
++__ZN3tbb6detail2r116set_end_of_inputERNS0_2d111base_filterE
++
++# Concurrent bounded queue (concurrent_bounded_queue.cpp)
++__ZN3tbb6detail2r126allocate_bounded_queue_repEm
++__ZN3tbb6detail2r126wait_bounded_queue_monitorEPNS1_18concurrent_monitorEmiRNS0_2d113delegate_baseE
++__ZN3tbb6detail2r128abort_bounded_queue_monitorsEPNS1_18concurrent_monitorE
++__ZN3tbb6detail2r128deallocate_bounded_queue_repEPhm
++__ZN3tbb6detail2r128notify_bounded_queue_monitorEPNS1_18concurrent_monitorEmm
++
++# Concurrent monitor (address_waiter.cpp)
++__ZN3tbb6detail2r115wait_on_addressEPvRNS0_2d113delegate_baseEm
++__ZN3tbb6detail2r117notify_by_addressEPvm
++__ZN3tbb6detail2r121notify_by_address_oneEPv
++__ZN3tbb6detail2r121notify_by_address_allEPv
++
++# Versioning (version.cpp)
++_TBB_runtime_interface_version
++_TBB_runtime_version
++
+diff --git src/tbb/tools_api/ittnotify_config.h src/tbb/tools_api/ittnotify_config.h
+index 0f5d80f6..60cde151 100644
+--- src/tbb/tools_api/ittnotify_config.h
++++ src/tbb/tools_api/ittnotify_config.h
+@@ -184,6 +184,10 @@
+ #  define ITT_ARCH_RISCV64  10
+ #endif /* ITT_ARCH_RISCV64 */
+ 
++#ifndef ITT_ARCH_PPC
++#  define ITT_ARCH_PPC  11
++#endif /* ITT_ARCH_PPC */
++
+ #ifndef ITT_ARCH
+ #  if defined _M_IX86 || defined __i386__
+ #    define ITT_ARCH ITT_ARCH_IA32
+@@ -195,7 +199,9 @@
+ #    define ITT_ARCH ITT_ARCH_ARM
+ #  elif defined __aarch64__
+ #    define ITT_ARCH ITT_ARCH_ARM64
+-#  elif defined __powerpc64__
++#  elif defined __powerpc__ || defined __ppc__
++#    define ITT_ARCH ITT_ARCH_PPC
++#  elif defined __powerpc64__ || defined __ppc64__
+ #    define ITT_ARCH ITT_ARCH_PPC64
+ #  elif defined __loongarch__
+ #    define ITT_ARCH ITT_ARCH_LOONGARCH64
+diff --git src/tbb/tools_api/ittnotify_static.c src/tbb/tools_api/ittnotify_static.c
+index 0b9aa492..0144ebee 100644
+--- src/tbb/tools_api/ittnotify_static.c
++++ src/tbb/tools_api/ittnotify_static.c
+@@ -125,7 +125,7 @@ static const char* ittnotify_lib_name = "libittnotify.dylib";
+ 
+ 
+ #ifndef LIB_VAR_NAME
+-#if ITT_ARCH==ITT_ARCH_IA32 || ITT_ARCH==ITT_ARCH_ARM
++#if ITT_ARCH==ITT_ARCH_IA32 || ITT_ARCH==ITT_ARCH_ARM || ITT_ARCH==ITT_ARCH_PPC
+ #define LIB_VAR_NAME INTEL_LIBITTNOTIFY32
+ #else
+ #define LIB_VAR_NAME INTEL_LIBITTNOTIFY64
+diff --git src/tbbmalloc/def/mac32-tbbmalloc.def src/tbbmalloc/def/mac32-tbbmalloc.def
+new file mode 100644
+index 00000000..b729364c
+--- /dev/null
++++ src/tbbmalloc/def/mac32-tbbmalloc.def
+@@ -0,0 +1,45 @@
++# Copyright (c) 2005-2021 Intel Corporation
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++
++_scalable_calloc
++_scalable_free
++_scalable_malloc
++_scalable_realloc
++_scalable_posix_memalign
++_scalable_aligned_malloc
++_scalable_aligned_realloc
++_scalable_aligned_free
++_scalable_msize
++_scalable_allocation_mode
++_scalable_allocation_command
++___TBB_malloc_safer_aligned_msize
++___TBB_malloc_safer_aligned_realloc
++___TBB_malloc_safer_free
++___TBB_malloc_safer_msize
++___TBB_malloc_safer_realloc
++___TBB_malloc_free_definite_size
++
++/* memory pool stuff */
++__ZN3rml11pool_createElPKNS_13MemPoolPolicyE
++__ZN3rml14pool_create_v1ElPKNS_13MemPoolPolicyEPPNS_10MemoryPoolE
++__ZN3rml10pool_resetEPNS_10MemoryPoolE
++__ZN3rml12pool_destroyEPNS_10MemoryPoolE
++__ZN3rml11pool_mallocEPNS_10MemoryPoolEm
++__ZN3rml9pool_freeEPNS_10MemoryPoolEPv
++__ZN3rml12pool_reallocEPNS_10MemoryPoolEPvm
++__ZN3rml20pool_aligned_reallocEPNS_10MemoryPoolEPvmm
++__ZN3rml19pool_aligned_mallocEPNS_10MemoryPoolEmm
++__ZN3rml13pool_identifyEPv
++__ZN3rml10pool_msizeEPNS_10MemoryPoolEPv
++
+diff --git src/tbbmalloc_proxy/proxy_overload_osx.h src/tbbmalloc_proxy/proxy_overload_osx.h
+index 69582983..bf4df54f 100644
+--- src/tbbmalloc_proxy/proxy_overload_osx.h
++++ src/tbbmalloc_proxy/proxy_overload_osx.h
+@@ -76,11 +76,13 @@ static void zone_statistics(malloc_zone_t *, malloc_statistics_t *s)
+     s->size_in_use = s->max_size_in_use = s->size_allocated = 0;
+ }
+ 
++#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1060 && !defined(__POWERPC__) // zone_locked is not defined on macOS < 10.6 and any PPC
+ static boolean_t zone_locked(malloc_zone_t *)
+ {
+     return false;
+ }
+ 
++#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1070 // Only available on macOS > 10.6
+ static boolean_t impl_zone_enable_discharge_checking(malloc_zone_t *)
+ {
+     return false;
+@@ -88,6 +90,8 @@ static boolean_t impl_zone_enable_discharge_checking(malloc_zone_t *)
+ 
+ static void impl_zone_disable_discharge_checking(malloc_zone_t *) {}
+ static void impl_zone_discharge(malloc_zone_t *, void *) {}
++#endif
++#endif
+ static void impl_zone_destroy(struct _malloc_zone_t *) {}
+ 
+ /* note: impl_malloc_usable_size() is called for each free() call, so it must be fast */
+@@ -105,17 +109,21 @@ static void impl_free(struct _malloc_zone_t *, void *ptr);
+ static void *impl_realloc(struct _malloc_zone_t *, void *ptr, size_t size);
+ static void *impl_memalign(struct _malloc_zone_t *, size_t alignment, size_t size);
+ 
++#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1060 && !defined(__POWERPC__) // zone_locked is not defined on macOS < 10.6 and any PPC
+ /* ptr is in zone and have reported size */
+ static void impl_free_definite_size(struct _malloc_zone_t*, void *ptr, size_t size)
+ {
+     __TBB_malloc_free_definite_size(ptr, size);
+ }
+ 
++#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1070 // Only available on macOS > 10.6
+ /* Empty out caches in the face of memory pressure. */
+ static size_t impl_pressure_relief(struct _malloc_zone_t *, size_t  /* goal */)
+ {
+     return 0;
+ }
++#endif
++#endif
+ 
+ static malloc_zone_t *system_zone = nullptr;
+ 
+@@ -134,10 +142,14 @@ struct DoMallocReplacement {
+         introspect.force_lock = &zone_force_lock;
+         introspect.force_unlock = &zone_force_unlock;
+         introspect.statistics = zone_statistics;
++    #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1060 && !defined(__POWERPC__) // zone_locked is not defined on macOS < 10.6 and any PPC
+         introspect.zone_locked = &zone_locked;
++    #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1070 // Only available on macOS > 10.6
+         introspect.enable_discharge_checking = &impl_zone_enable_discharge_checking;
+         introspect.disable_discharge_checking = &impl_zone_disable_discharge_checking;
+         introspect.discharge = &impl_zone_discharge;
++    #endif
++    #endif
+ 
+         zone.size = &impl_malloc_usable_size;
+         zone.malloc = &impl_malloc;
+@@ -150,8 +162,12 @@ struct DoMallocReplacement {
+         zone.introspect = &introspect;
+         zone.version = 8;
+         zone.memalign = impl_memalign;
++    #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1060 && !defined(__POWERPC__) // Unavailable on macOS < 10.6 and any PPC
+         zone.free_definite_size = &impl_free_definite_size;
++    #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1070 // Only available on macOS > 10.6
+         zone.pressure_relief = &impl_pressure_relief;
++    #endif
++    #endif
+ 
+         // make sure that default purgeable zone is initialized
+         malloc_default_purgeable_zone();
+diff --git test/conformance/conformance_allocators.cpp test/conformance/conformance_allocators.cpp
+index 60ec5cae..0c1b9a6c 100644
+--- test/conformance/conformance_allocators.cpp
++++ test/conformance/conformance_allocators.cpp
+@@ -31,6 +31,7 @@ TEST_CASE("Allocator concept") {
+     TestAllocator<oneapi::tbb::cache_aligned_allocator<void>>(Concept);
+     TestAllocator<oneapi::tbb::tbb_allocator<void>>(Concept);
+ 
++  #if !(defined(__APPLE__) && defined(__POWERPC__)) // This test fails to build on Darwin PPC.
+     // max_size case for cache_aligned allocator
+     using Allocator = oneapi::tbb::cache_aligned_allocator<int>;
+     Allocator allocator;
+@@ -38,6 +39,7 @@ TEST_CASE("Allocator concept") {
+     // Following assertion catches case where max_size() is so large that computation of
+     // number of bytes for such an allocation would overflow size_type.
+     REQUIRE_MESSAGE((allocator.max_size() * typename std::allocator_traits<Allocator>::size_type(sizeof(int)) >= allocator.max_size()), "max_size larger than reasonable");
++  #endif
+ 
+     // operator==
+     TestAllocator<oneapi::tbb::cache_aligned_allocator<void>>(Comparison);
+
+diff --git src/tbbbind/def/mac32-tbbbind.def src/tbbbind/def/mac32-tbbbind.def
+new file mode 100755
+index 00000000..c81c2ff5
+--- /dev/null
++++ src/tbbbind/def/mac32-tbbbind.def
+@@ -0,0 +1,17 @@
++# Copyright (c) 2023 Intel Corporation
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++
++___TBB_internal_initialize_system_topology
++___TBB_internal_get_default_concurrency
++___TBB_internal_destroy_system_topology

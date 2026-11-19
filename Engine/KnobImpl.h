@@ -40,6 +40,7 @@
 #include <QCoreApplication>
 #include <QThread>
 
+#include "Global/MathUtils.h"
 #include "Global/PythonUtils.h"
 
 #include "Engine/Curve.h"
@@ -778,14 +779,10 @@ KnobStringBase::getValueFromCurve(double time,
 {
     AnimatingKnobStringHelper* isStringAnimated = dynamic_cast<AnimatingKnobStringHelper* >(this);
 
-    if (isStringAnimated) {
-        *ret = isStringAnimated->getStringAtTime(time, view, dimension);
-        ///ret is not empty if the animated string knob has a custom interpolation
-        if ( !ret->empty() ) {
-            return true;
-        }
+    if (!isStringAnimated) {
+        // only animating string knobs have keyframes
+        return false;
     }
-    assert( ret->empty() );
     CurvePtr curve;
     if (useGuiCurve) {
         curve = getGuiCurve(view, dimension, byPassMaster);
@@ -793,16 +790,11 @@ KnobStringBase::getValueFromCurve(double time,
     if (!curve) {
         curve = getCurve(view, dimension, byPassMaster);
     }
-    if ( curve && (curve->getKeyFramesCount() > 0) ) {
-        assert(isStringAnimated);
-        if (isStringAnimated) {
-            isStringAnimated->stringFromInterpolatedValue(curve->getValueAt(time), view, ret);
-        }
-
-        return true;
+    if (!curve) {
+        return false;
     }
 
-    return false;
+    return isStringAnimated->getStringFromCurve(*curve, time, ret);
 }
 
 template<typename T>
@@ -862,8 +854,8 @@ KnobStringBase::getRawCurveValueAt(double time,
     CurvePtr curve  = getCurve(view, dimension, true);
 
     if ( curve && (curve->getKeyFramesCount() > 0) ) {
-        //getValueAt already clamps to the range for us
-        return curve->getValueAt(time, false); //< no clamping to range!
+        // the index of the keyframe at or before time (see Curve::getValueAt())
+        return curve->getValueAt(time, false);
     }
 
     return 0;
@@ -1404,7 +1396,7 @@ Knob<T>::makeKeyFrame(Curve* curve,
     } else {
         keyFrameValue = (double)v;
     }
-    if ( std::isnan(keyFrameValue) || std::isinf(keyFrameValue) ) { // check for NaN or infinity
+    if ( !MathUtils::isFinite(keyFrameValue) ) { // reject NaN and infinity (works with -ffast-math)
         *key = KeyFrame( (double)time, getMaximum(0) );
     } else {
         *key = KeyFrame( (double)time, keyFrameValue );
@@ -1942,7 +1934,7 @@ KnobStringBase::getKeyFrameValueByIndex(ViewSpec view,
         *ok =  curve->getKeyFrameWithIndex(index, &kf);
 
         if (*ok) {
-            animatedString->stringFromInterpolatedValue(kf.getValue(), view, &value);
+            *ok = animatedString->stringFromKeyFrameValue(kf.getValue(), &value);
         }
     }
 
@@ -2222,6 +2214,13 @@ Knob<T>::setKeyFrame(const KeyFrame& key,
                      int dimension,
                      ValueChangedReasonEnum reason)
 {
+    const AnimatingKnobStringHelper* isString = dynamic_cast<const AnimatingKnobStringHelper*>(this);
+    std::string str;
+    if ( isString && !isString->stringFromKeyFrameValue(key.getValue(), &str) ) {
+        // the value of a string keyframe must reference a string (see StringAnimationManager)
+        return false;
+    }
+
     CurvePtr curve;
     KnobHolder* holder = getHolder();
     bool useGuiCurve = ( !holder || !holder->isSetValueCurrentlyPossible() ) && getKnobGuiPointer();

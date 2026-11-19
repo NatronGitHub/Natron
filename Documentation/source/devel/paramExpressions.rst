@@ -78,10 +78,11 @@ again in another project.
 
 .. warning::
 
-    Note that you would still be able to reach any node or parameter in the project using the
-    *app1* (or *app* prefix in command-line mode)  but is not recommended to do so::
-
-        app1.Blur1.size
+    You can reach any node or parameter in the project with the *app1* prefix (or *app*
+    in command-line mode), as in ``app1.Blur1.size``, but avoid it: such expressions
+    are not portable, because they break when the project is opened as another instance
+    (``app2``...) or when the nodes are copied into a group. Use plain node names (``Blur1.size``)
+    or the ``thisGroup.`` prefix (``thisGroup.Blur1.size``) instead.
 
 
 All functions available in the Python API are made available to expressions. Also for
@@ -120,22 +121,32 @@ will do it by itself::
 
     #Expression for Blur1.size
 
-    Transform1.translate.get[0]
+    Transform1.translate.get()[0]
 
     #Will be expanded automatically by Natron to
 
-    ret = Transform1.translate.get[0]
+    ret = Transform1.translate.get()[0]
 
 However if you were to write an expression that spans over multiple lines you would need
 to specifically set the **ret** variable yourself and toggle-on the *multi-line* button::
 
-    a = acos(Transform1.translate.get[0])
+    a = acos(Transform1.translate.get()[0])
     b = sin(Transform1.rotate.get())
     ret = (tan(a * b) / pi) + Group1.customParam.get()
 
 
-You can also set an expression from a script using the :func:`setExpression(expr,hasRetVariable,dimension)<>` function
+You can also set an expression from a script using the :func:`setExpression(expr,hasRetVariable,dimension)<NatronEngine.AnimatedParam.setExpression>` function
 of :doc:`PythonReference/NatronEngine/AnimatedParam`.
+
+.. warning::
+
+    :func:`setExpression()<NatronEngine.AnimatedParam.setExpression>` does not raise an exception
+    if the expression is invalid (for example a syntax error or a misspelled node name): it
+    returns **False** and doesn't store the expression, so the parameter keeps its own value or
+    animation curve. Always check the return value::
+
+        if not app1.Blur1.size.setExpression("Transform1.translate.get()[0]", False, 0):
+            print("invalid expression")
 
 Writing an expression:
 ----------------------
@@ -148,8 +159,8 @@ For convenience the following variables have been declared to Python when execut
 
     * **thisParam**: It references the param being edited
 
-    * **dimension**: Defined only for multi-dimensional parameters, it indicates the dimension (0-based index)
-      of the parameter on which the expression has effect.
+    * **dimension**: The dimension (0-based index) of the parameter on which the expression has effect.
+      It is defined in all expressions, and it is 0 for 1-dimensional parameters.
 
     * **frame**: It references the current time on the timeline
 
@@ -188,21 +199,31 @@ without a *frame* in parameter.
 Copying another parameter through expressions:
 ----------------------------------------------
 
-If we want the value of the parameter **size** of the node *BlurCImg1*  to copy the
-parameter **mix** of the node *DilateCImg1*, we would set the following expression on the
-**size** parameter of the node *BlurCImg1* (see :ref:`setting an expression<settingExpr>`)::
+If we want the value of the parameter **size** of the node *Blur1*  to copy the
+parameter **mix** of the node *Dilate1*, we would set the following expression on the
+**size** parameter of the node *Blur1* (see :ref:`setting an expression<settingExpr>`)::
 
-     DilateCImg1.mix.get()
+     Dilate1.mix.get()
 
 
 If mix has an animation and we wanted to get the value of the mix at the previous *frame*,
 the following code would work::
 
-     DilateCImg1.mix.get(frame - 1)
+     Dilate1.mix.get(frame - 1)
 
 
-Note that when choosing the *Link to...* option when right-clicking a parameter, Natron writes
-automatically an expression to copy the parameter to link to for you.
+Natron can also link parameters without an expression:
+
+- **Ctrl+drag** (**Cmd+drag** on macOS) a parameter onto another parameter of the same type
+  creates a *hard link*: the target parameter takes the value of the source.
+- **Ctrl+Shift+drag** (**Cmd+Shift+drag** on macOS) writes an expression for you on the target,
+  of the form ``app1.Node1.param.getValue() * curve(frame,0)`` for a node of the main node graph,
+  or ``thisGroup.Node1.param.getValue() * curve(frame,0)`` for a node inside a group (the
+  dimension passed to ``curve`` is the target dimension, or ``dimension`` when all dimensions are linked).
+- Right-click a parameter, choose :menuselection:`Copy --> Copy Link`, then right-click the target and choose
+  :guilabel:`Paste Link`.
+- From Python, use :func:`slaveTo(otherParam,thisDimension,otherDimension)<NatronEngine.Param.slaveTo>`
+  and :func:`unslave(dimension)<NatronEngine.Param.unslave>`.
 
 
 Using random in expressions:

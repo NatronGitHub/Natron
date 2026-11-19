@@ -367,6 +367,23 @@ elif [ "$PKGOS" = "OSX" ]; then
     fi
 fi
 
+# ImageMagick 7, used by openfx-arena (build-plugins.sh). On Linux and macOS, ImageMagick 6
+# stays in SDK_HOME (on macOS, MacPorts' ImageMagick, which other ports use).
+# - Linux: the SDK's $SDK_HOME/magick7 (include/scripts/pkg/imagemagick7.sh);
+# - macOS: MacPorts' ImageMagick7 +natron (tools/MacPorts/graphics/ImageMagick7), installed in
+#   $SDK_HOME/lib/ImageMagick7;
+# - Windows: natron_imagemagick (tools/MINGW-packages/mingw-w64-imagemagick), which replaces
+#   ImageMagick 6 in the MSYS2 prefix.
+if [ -z "${MAGICK7_PREFIX:-}" ]; then
+    if [ "$PKGOS" = "Linux" ]; then
+        MAGICK7_PREFIX="$SDK_HOME/magick7"
+    elif [ "$PKGOS" = "OSX" ]; then
+        MAGICK7_PREFIX="$SDK_HOME/lib/ImageMagick7"
+    elif [ "$PKGOS" = "Windows" ]; then
+        MAGICK7_PREFIX="${MINGW_PREFIX:-$SDK_HOME}"
+    fi
+fi
+
 if [ -n "${OSMESA_PREFIX:-}" ] && [ -z "${LLVM_PREFIX:-}" ]; then
     # an OSMesa install needs the LLVM it was built with (e.g. Mesa 25.0.7 needs LLVM >= 15)
     (>&2 echo "Error: OSMESA_PREFIX=$OSMESA_PREFIX is set, so LLVM_PREFIX must be set too (e.g. /opt/llvm-19.1.7)")

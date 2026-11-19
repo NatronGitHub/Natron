@@ -27,6 +27,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <cstring> // memcpy
 #include <stdexcept>
 
 #include "Global/GlobalDefines.h"
@@ -114,25 +115,6 @@ LibraryBinary::loadBinary(const std::string & binaryPath)
     return true;
 }
 
-#if defined(__NATRON_UNIX__)
-// dlsym() is declared as returning void*, but it really returns void(*)()
-// and cast between pointer-to-object and pointer-to-function is only conditionally-supported.
-// Ref:
-// ISO/IEC 14882:2011
-// 5.2.10 Reinterpret cast [expr.reinterpret.cast]
-// 8 Converting a function pointer to an object pointer type or vice versa is conditionally-supported. The meaning of such a conversion is implementation-defined, except that if an implementation supports conversions in both directions, converting a prvalue of one type to the other type and back, possibly with different cvqualification, shall yield the original pointer value.
-
-
-NATRON_NAMESPACE_ANONYMOUS_ENTER
-
-typedef void (*value_type)();
-typedef value_type (*value_dlsym_t)(void *, const char *);
-
-NATRON_NAMESPACE_ANONYMOUS_EXIT
-
-
-#endif
-
 bool
 LibraryBinary::loadFunctions(const std::vector<std::string> & funcNames)
 {
@@ -143,7 +125,13 @@ LibraryBinary::loadFunctions(const std::vector<std::string> & funcNames)
 #ifdef __NATRON_WIN32__
         value_type v = (value_type)GetProcAddress( _library, funcNames[i].c_str() );
 #elif defined(__NATRON_UNIX__)
-        value_type v = ( (value_dlsym_t)(dlsym) )( _library, funcNames[i].c_str() );
+        // dlsym() returns a void*, and a cast between pointer-to-object and pointer-to-function
+        // is only conditionally-supported in C++ (ISO/IEC 14882:2011 5.2.10/8), but POSIX
+        // requires the conversion to work: copy the pointer value.
+        void* symbol = dlsym( _library, funcNames[i].c_str() );
+        value_type v;
+        static_assert(sizeof(v) == sizeof(symbol), "function and object pointers must have the same size");
+        std::memcpy( &v, &symbol, sizeof(v) );
 #endif
         if (!v) {
             std::cout << "Couldn't find function " << funcNames[i] << " in binary " << _binaryPath  << std::endl;

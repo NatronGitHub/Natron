@@ -30,6 +30,7 @@
 
 #include <string>
 #include <map>
+#include <memory>
 
 #include "Global/GlobalDefines.h"
 
@@ -39,7 +40,20 @@ NATRON_NAMESPACE_ENTER
 
 struct StringAnimationManagerPrivate;
 
-///not thread-safe
+/**
+ * @brief Animation of string parameters (AnimatingKnobStringHelper).
+ *
+ * A string keyframe is a keyframe of the knob's curve whose value is a reference to the string: equal strings
+ * have the same keyframe value, different strings have different values. The reference does not depend on the
+ * other keyframes of the curve, so adding, removing or moving a keyframe never changes the string of another
+ * keyframe, and keyframes can be copied from a curve to another (undo/redo, copy/paste, clone, link) like the
+ * keyframes of any other parameter type.
+ *
+ * Keyframe values are only meaningful within a process: they are never saved in projects, see
+ * AnimatingKnobStringHelper::saveAnimation() and AnimatingKnobStringHelper::loadAnimation().
+ *
+ * This class also holds the custom interpolation function of OpenFX custom parameters.
+ **/
 class StringAnimationManager
 {
 public:
@@ -56,25 +70,27 @@ public:
 
     void setCustomInterpolation(customParamInterpolationV1Entry_t func, void* ofxParamHandle);
 
-    bool customInterpolation(double time, std::string* ret) const;
+    /**
+     * @brief Interpolate between the strings of two consecutive keyframes with the custom interpolation function.
+     * Requires hasCustomInterp() and lowerTime < time < upperTime.
+     **/
+    void customInterpolation(double time,
+                             double lowerTime,
+                             const std::string& lowerValue,
+                             double upperTime,
+                             const std::string& upperValue,
+                             std::string* ret) const;
 
-    void insertKeyFrame(double time, const std::string & v, double* index);
+    /**
+     * @brief Returns the keyframe value referencing the string v. Thread-safe.
+     **/
+    static double stringToKeyFrameValue(const std::string & v);
 
-    void removeKeyFrame(double time);
-
-    void clearKeyFrames();
-
-    void stringFromInterpolatedIndex(double interpolated, std::string* returnValue) const;
-
-    void clone(const StringAnimationManager & other);
-
-    bool cloneAndCheckIfChanged(const StringAnimationManager & other);
-
-    void clone(const StringAnimationManager & other, SequenceTime offset, const RangeD* range);
-
-    void load(const std::map<int, std::string> & keyframes);
-
-    void save(std::map<int, std::string>* keyframes) const;
+    /**
+     * @brief Returns in ret the string referenced by the keyframe value, or false if the value does not reference
+     * a string. Thread-safe.
+     **/
+    static bool keyFrameValueToString(double value, std::string* ret);
 
 private:
 

@@ -1753,8 +1753,6 @@ public:
     {
     }
 
-    void createTransformFromSelection(const std::list<Node*> & selection, bool linked, ExportTransformTypeEnum type);
-
     void createCornerPinFromSelection(const std::list<Node*> & selection, bool linked, bool useTransformRefFrame, bool invert);
 
     bool getTrackInstancesForButton(std::vector<KnobButton*>* trackButtons, const std::string& buttonName);
@@ -2293,13 +2291,6 @@ TrackerPanelV1::onExportButtonClicked()
         break;
     }
 } // TrackerPanelV1::onExportButtonClicked
-
-void
-TrackerPanelPrivateV1::createTransformFromSelection(const std::list<Node*> & /*selection*/,
-                                                    bool /*linked*/,
-                                                    ExportTransformTypeEnum /*type*/)
-{
-}
 
 namespace  {
 KnobDoublePtr

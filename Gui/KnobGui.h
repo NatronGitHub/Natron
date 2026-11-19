@@ -234,8 +234,8 @@ public:
             updateGUI(dimension);
         }
 
-        return ( (addedKey != KnobHelper::eValueChangedReturnCodeNoKeyframeAdded) &&
-                 (addedKey != KnobHelper::eValueChangedReturnCodeNothingChanged) );
+        // true only if a keyframe was added: undoing a modified keyframe restores its value instead of removing it
+        return addedKey == KnobHelper::eValueChangedReturnCodeKeyframeAdded;
     }
 
     virtual RectD getViewportRect() const OVERRIDE FINAL;

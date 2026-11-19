@@ -2288,6 +2288,10 @@ public:
 
     virtual ~AnimatingKnobStringHelper();
 
+    /**
+     * @brief Returns in returnValue the value of a keyframe holding the string v.
+     * See StringAnimationManager: the value only depends on v.
+     **/
     void stringToKeyFrameValue(double time, ViewSpec view, const std::string & v, double* returnValue);
 
     //for integration of openfx custom params
@@ -2295,29 +2299,36 @@ public:
                                                            OfxPropertySetHandle inArgsRaw,
                                                            OfxPropertySetHandle outArgsRaw);
 
-
-    const StringAnimationManager & getAnimation() const
-    {
-        return *_animation;
-    }
-
+    /**
+     * @brief Set the strings of the keyframes from the strings saved by saveAnimation().
+     * The curves must already be loaded: their keyframe values are replaced by the values of the strings saved at
+     * the same times.
+     **/
     void loadAnimation(const std::map<int, std::string> & keyframes);
 
+    /**
+     * @brief Returns the string of each keyframe of the curve of the first dimension, by time.
+     **/
     void saveAnimation(std::map<int, std::string>* keyframes) const;
+
+    /**
+     * @brief Returns in curve a copy of the curve of the given dimension in which the value of each keyframe is
+     * its index, as saved in projects. See saveAnimation().
+     **/
+    void getCurveForSerialization(int dimension, Curve* curve) const;
 
     void setCustomInterpolation(customParamInterpolationV1Entry_t func, void* ofxParamHandle);
 
-    void stringFromInterpolatedValue(double interpolated, ViewSpec view, std::string* returnValue) const;
+    /**
+     * @brief Returns in returnValue the string held by a keyframe value, or false if the value does not hold a string.
+     **/
+    bool stringFromKeyFrameValue(double value, std::string* returnValue) const;
 
-    std::string getStringAtTime(double time, ViewSpec view, int dimension);
-
-protected:
-
-    virtual void cloneExtraData(KnobI* other, int dimension = -1, int otherDimension = -1) OVERRIDE;
-    virtual bool cloneExtraDataAndCheckIfChanged(KnobI* other, int dimension = -1, int otherDimension = -1) OVERRIDE;
-    virtual void cloneExtraData(KnobI* other, double offset, const RangeD* range, int dimension = -1, int otherDimension = -1) OVERRIDE;
-    virtual void keyframeRemoved_virtual(int dimension, double time) OVERRIDE;
-    virtual void animationRemoved_virtual(int dimension) OVERRIDE;
+    /**
+     * @brief Returns in ret the string of the given curve of this knob at the given time, or false if the curve
+     * has no keyframe.
+     **/
+    bool getStringFromCurve(const Curve& curve, double time, std::string* ret) const;
 
 private:
     std::unique_ptr<StringAnimationManager> _animation;

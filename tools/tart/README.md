@@ -44,7 +44,10 @@ Before `update`, reintegrate upstream MacPorts changes into the overlay on the h
 ```sh
 tools/tart/natron-build.sh                 # RB-2.6, release, no tests
 tools/tart/natron-build.sh -b RB-2.6 -t    # also run the unit/regression tests
+tools/tart/natron-build.sh -s qmake        # build Natron with the deprecated qmake build
 ```
+
+Natron is built with CMake (`NATRON_BUILD_SYSTEM=cmake`, see `tools/jenkins/build-natron.sh`); `NATRON_EXTRA_CMAKE_FLAGS` in the environment is passed on to it.
 
 Each build runs in a fresh clone of the SDK image. Clones are copy-on-write, so they are fast and small. The clone is deleted afterwards (`-k` keeps it). The results (`.dmg`, test results, logs) are copied to `./natron-builds/<vm-name>/`.
 
@@ -69,5 +72,5 @@ The scripts don't rely on the VM getting an IPv4 address. On hosts with corporat
 - The VMs use tart's default shared (NAT) network: they can only be reached from the host, not from the LAN. Don't attach them to a bridged network.
 - The SOCKS proxy opens no port on the host, but whatever runs in the guest (port builds, pip, build scripts) can reach, through the host, anything the host can reach on the allowed ports: the internet, but also services on the host's loopback and the intranet or VPN. `GUEST_PROXY_ALLOW` (passed to ssh's `PermitRemoteOpen`) limits the destinations to ports 80 and 443 by default.
 - The cirruslabs images have the well-known `admin`/`admin` account with passwordless sudo. The scripts use the password once to install a dedicated SSH key, then log in with the key. The account and its password are still in the SDK image.
-- Downloads are verified: the MacPorts `.pkg` (checksum and Developer ID signature of the MacPorts release manager), the QtPy wheel (pinned sha256), and, in `build-plugins.sh`, the G'MIC sources (pinned sha256).
+- Downloads are verified: the MacPorts `.pkg` (checksum and Developer ID signature of the MacPorts release manager), the QtPy wheel (pinned sha256), and the G'MIC sources (sha256 pinned in openfx-gmic's Makefile, checked by its CMake build, which `build-plugins.sh` uses).
 - Only files tracked by git under `tools/` are copied from the Natron checkout, and the copies are removed from the image at the end of `create`/`update`. `push` publishes the image, including the default credentials above: check the registry's visibility first.

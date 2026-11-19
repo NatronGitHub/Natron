@@ -907,6 +907,14 @@ ReadNode::isReader() const
     return true;
 }
 
+bool
+ReadNode::isOutputFormatFromFile() const
+{
+    NodePtr p = getEmbeddedReader();
+
+    return p ? p->getEffectInstance()->isOutputFormatFromFile() : false;
+}
+
 // static
 bool
 ReadNode::isVideoReader(const std::string& pluginID)
