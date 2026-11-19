@@ -67,6 +67,7 @@ SOURCES += \
     OfxCustomParamInterp_Test.cpp \
     OfxImageMemory_Test.cpp \
     OfxMultiThreadSuite_Test.cpp \
+    OfxParamAnimating_Test.cpp \
     OfxParamCopy_Test.cpp \
     OfxParamInteract_Test.cpp \
     OfxPluginDeprecated_Test.cpp \
