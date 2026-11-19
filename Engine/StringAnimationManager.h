@@ -68,13 +68,18 @@ public:
 
     bool hasCustomInterp() const;
 
-    void setCustomInterpolation(customParamInterpolationV1Entry_t func, void* ofxParamHandle);
+    /**
+     * @brief Set the custom interpolation function of an OpenFX custom parameter, and its first argument, the
+     * parameter set of the effect instance (OfxParamSetHandle).
+     **/
+    void setCustomInterpolation(customParamInterpolationV1Entry_t func, void* ofxParamSetHandle);
 
     /**
      * @brief Interpolate between the strings of two consecutive keyframes with the custom interpolation function.
      * Requires hasCustomInterp() and lowerTime < time < upperTime.
+     * Returns false, and leaves ret unchanged, if the function fails.
      **/
-    void customInterpolation(double time,
+    bool customInterpolation(double time,
                              double lowerTime,
                              const std::string& lowerValue,
                              double upperTime,

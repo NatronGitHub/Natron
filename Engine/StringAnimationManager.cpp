@@ -110,12 +110,12 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 struct StringAnimationManagerPrivate
 {
     StringAnimationManager::customParamInterpolationV1Entry_t customInterpolation;
-    void* ofxParamHandle;
+    void* ofxParamSetHandle;
     const KnobI* knob;
 
     StringAnimationManagerPrivate(const KnobI* knob)
         : customInterpolation(NULL)
-        , ofxParamHandle(NULL)
+        , ofxParamSetHandle(NULL)
         , knob(knob)
     {
     }
@@ -138,13 +138,13 @@ StringAnimationManager::hasCustomInterp() const
 
 void
 StringAnimationManager::setCustomInterpolation(customParamInterpolationV1Entry_t func,
-                                               void* ofxParamHandle)
+                                               void* ofxParamSetHandle)
 {
     _imp->customInterpolation = func;
-    _imp->ofxParamHandle = ofxParamHandle;
+    _imp->ofxParamSetHandle = ofxParamSetHandle;
 }
 
-void
+bool
 StringAnimationManager::customInterpolation(double time,
                                             double lowerTime,
                                             const std::string& lowerValue,
@@ -180,9 +180,15 @@ StringAnimationManager::customInterpolation(double time,
     };
     OFX::Host::Property::Set outArgs(outArgsSpec);
 
-    _imp->customInterpolation( _imp->ofxParamHandle, inArgs.getHandle(), outArgs.getHandle() );
+    OfxStatus stat = _imp->customInterpolation( _imp->ofxParamSetHandle, inArgs.getHandle(), outArgs.getHandle() );
+    if (stat != kOfxStatOK) {
+        // outArgs holds its default value, "", which is not a value of the parameter
+        return false;
+    }
 
     *ret = outArgs.getStringProperty(kOfxParamPropCustomValue, 0).c_str();
+
+    return true;
 } // customInterpolation
 
 double

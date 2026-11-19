@@ -6469,11 +6469,14 @@ AnimatingKnobStringHelper::getStringFromCurve(const Curve& curve,
             return false;
         }
         try {
-            _animation->customInterpolation(time, prev.getTime(), prevValue, next.getTime(), nextValue, ret);
+            if ( _animation->customInterpolation(time, prev.getTime(), prevValue, next.getTime(), nextValue, ret) ) {
+                return true;
+            }
         } catch (...) {
-            // the interpolation function is plug-in code: fall back to the value of the knob
-            return false;
         }
+        // the interpolation function is plug-in code, which failed: fall back to the value of the last keyframe
+        // before time, as without a custom interpolation
+        *ret = prevValue;
 
         return true;
     }
@@ -6484,9 +6487,9 @@ AnimatingKnobStringHelper::getStringFromCurve(const Curve& curve,
 
 void
 AnimatingKnobStringHelper::setCustomInterpolation(customParamInterpolationV1Entry_t func,
-                                                  void* ofxParamHandle)
+                                                  void* ofxParamSetHandle)
 {
-    _animation->setCustomInterpolation(func, ofxParamHandle);
+    _animation->setCustomInterpolation(func, ofxParamSetHandle);
 }
 
 void
