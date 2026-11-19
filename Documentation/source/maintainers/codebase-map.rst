@@ -104,10 +104,7 @@ Top-level directories
     (last changed in 2021–2022, and only mentioned by old sections of the
     ``INSTALL_*.md`` files).
 
-Naming conventions
-------------------
-
-Once you recognize a handful of file-name suffixes (``FooFwd.h``, ``FooI.h``,
-``FooPrivate.h``, ``FooSerialization.h``, ``PyFoo.h``, ``OfxFoo.h``, numbered
-``Gui20.cpp`` files), the ~600 files in ``Engine`` and ``Gui`` become
-navigable. They are explained in :ref:`maint-naming`.
+The file-name suffixes used in ``Engine`` and ``Gui`` (``FooFwd.h``,
+``FooI.h``, ``FooPrivate.h``, ``FooSerialization.h``, ``PyFoo.h``,
+``OfxFoo.h``, numbered ``Gui20.cpp`` files) are explained in
+:ref:`maint-naming`.
