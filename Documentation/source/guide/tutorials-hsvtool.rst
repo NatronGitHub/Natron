@@ -44,9 +44,9 @@ Adjusting the ranges
 .. figure:: _images/hsvtool_03.png
 
 Picking **Src Color** sets the **Hue Range**, **Saturation Range** and
-**Brightness Range** around that color, and resets the rolloffs to their
-default values. You can then widen or narrow each range to limit the
-effect. The viewer on the right of the screenshot shows the alpha channel,
+**Brightness Range** around that color, and sets **Hue Range Rolloff** to
+50, **Saturation Range Rolloff** to 0.3 and **Brightness Range Rolloff** to
+0.3. You can then widen or narrow each range to limit the effect. The viewer on the right of the screenshot shows the alpha channel,
 with **Output Alpha** set to **Hue**.
 
 .. figure:: _images/hsvtool_04.png

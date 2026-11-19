@@ -101,9 +101,11 @@ Several nodes can use the image layers of the SVG file:
   **B Layer** menu that choose which image layer of each input is merged, and
   its **Mask** input can use any channel of any image layer, for example
   ``letterA.A``.
-- Most other nodes can process a single image layer (the **Source Layer**
-  and **Output Layer** menus in their **Node** tab), and use any channel of
-  an image layer as a mask.
+- Most other nodes can process a single image layer, and use any channel of
+  an image layer as a mask. The **Output Layer** menu is on their main
+  (usually **Controls**) tab. The input menu, named after the input (for
+  example **Source Layer**), is hidden by default: it appears when that input
+  is connected and **All Planes** is unchecked.
 
 .. figure:: _images/svgworkflow_09.png
 
