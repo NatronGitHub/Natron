@@ -589,32 +589,55 @@ KnobGuiValue::onDimensionSwitchClicked(bool clicked)
     if (clicked) {
         expandAllDimensions();
     } else {
-        foldAllDimensions();
-
+        // Folding shows a single value for all dimensions, so the dimensions
+        // must be equal. If they differ, folding sets them all to the value
+        // of the first dimension: ask first, and make it undoable.
         KnobIPtr knob = _imp->getKnob();
         KnobDoubleBasePtr doubleKnob = _imp->getKnobAsDouble();
         KnobIntBasePtr intKnob = _imp->getKnobAsInt();
         const int nDims = knob->getDimension();
-        if (nDims > 1) {
-            SequenceTime time = knob->getCurrentTime();
-            double firstDimensionValue = _imp->spinBoxes[0].first->value();
-            if (getNormalizationPolicy(0) != eValueIsNormalizedNone) {
-                firstDimensionValue = denormalize(0, time, firstDimensionValue);
+        // values as displayed in the spinboxes (denormalized)
+        std::vector<double> displayed(nDims);
+        bool allEqual = true;
+        for (int i = 0; i < nDims; ++i) {
+            displayed[i] = valueAccordingToType( false, i, _imp->getKnobValue(i) );
+            if ( (i > 0) && (displayed[i] != displayed[0]) ) {
+                allEqual = false;
             }
-            knob->beginChanges();
-            for (int i = 1; i < nDims; ++i) {
-                double v = firstDimensionValue;
-                if (getNormalizationPolicy(i) != eValueIsNormalizedNone) {
-                    v = normalize(i, time, v);
-                }
-                if (doubleKnob) {
-                    doubleKnob->setValue(v, ViewSpec::all(), i);
-                } else {
-                    assert(intKnob);
-                    intKnob->setValue(v, ViewSpec::all(), i);
-                }
+        }
+        if (allEqual) {
+            foldAllDimensions();
+
+            return;
+        }
+        StandardButtonEnum rep = Dialogs::questionDialog( tr("Fold dimensions").toStdString(),
+                                                          tr("The dimensions of %1 have different values. "
+                                                             "Folding them sets them all to the value of the first one (%2).\n"
+                                                             "Do you want to continue?")
+                                                          .arg( QString::fromUtf8( knob->getLabel().c_str() ) )
+                                                          .arg(displayed[0]).toStdString(),
+                                                          false );
+        if (rep != eStandardButtonYes) {
+            expandAllDimensions();
+
+            return;
+        }
+        foldAllDimensions();
+        if (doubleKnob) {
+            std::list<double> oldValues, newValues;
+            for (int i = 0; i < nDims; ++i) {
+                oldValues.push_back( doubleKnob->getValue(i) );
+                newValues.push_back( valueAccordingToType(true, i, displayed[0]) );
             }
-            knob->endChanges();
+            pushUndoCommand( new KnobUndoCommand<double>(shared_from_this(), oldValues, newValues) );
+        } else {
+            assert(intKnob);
+            std::list<int> oldValues, newValues;
+            for (int i = 0; i < nDims; ++i) {
+                oldValues.push_back( intKnob->getValue(i) );
+                newValues.push_back( (int)valueAccordingToType(true, i, displayed[0]) );
+            }
+            pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(), oldValues, newValues) );
         }
     }
 }
