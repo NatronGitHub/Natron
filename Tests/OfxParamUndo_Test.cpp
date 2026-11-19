@@ -37,6 +37,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
@@ -87,4 +88,42 @@ TEST(OfxParamUndo, NatronKnobs)
     knob->setEvaluateOnChange(true);
     knob->setCanUndo(false);
     EXPECT_FALSE( knob->getCanUndo() );
+}
+
+// An unmatched paramEditEnd() must not end a beginChanges() bracket of Natron early, and a matched
+// paramEditBegin()/paramEditEnd() pair, with an empty name, leaves it as it was.
+// Note: Tests runs as a background app, where KnobHolder::setMultipleParamsEditLevel() ignores the edit blocks, so
+// this only fails when run with a GUI app; it documents the contract.
+TEST(OfxParamUndo, UnmatchedParamEditEnd)
+{
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParams) ) {
+        NatronTestPlugin::reportSkipped(kNatronTestPluginParams);
+
+        return;
+    }
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    CreateNodeArgs args( kNatronTestPluginParams, app->getProject() );
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    NodePtr node = app->createNode(args);
+    ASSERT_TRUE( bool(node) );
+    EffectInstancePtr effect = node->getEffectInstance();
+    OfxEffectInstance* ofxEffect = dynamic_cast<OfxEffectInstance*>( effect.get() );
+    ASSERT_TRUE(ofxEffect && ofxEffect->effectInstance());
+    OfxParamSetHandle paramSet = ofxEffect->effectInstance()->getParamSetHandle();
+    const OfxParameterSuiteV1* suite = NatronTestPlugin::parameterSuite();
+
+    ASSERT_FALSE( effect->isEvaluationBlocked() );
+    effect->beginChanges();
+    EXPECT_TRUE( effect->isEvaluationBlocked() );
+    EXPECT_EQ( kOfxStatOK, suite->paramEditEnd(paramSet) ); // unmatched
+    EXPECT_TRUE( effect->isEvaluationBlocked() );
+    EXPECT_EQ( kOfxStatOK, suite->paramEditBegin(paramSet, "") );
+    EXPECT_EQ( kOfxStatOK, suite->paramEditEnd(paramSet) );
+    EXPECT_TRUE( effect->isEvaluationBlocked() );
+    EXPECT_EQ( KnobHolder::eMultipleParamsEditOff, effect->getMultipleParamsEditLevel() );
+    EXPECT_EQ( std::string(), effect->getMultipleParamsEditLabel() );
+    effect->endChanges();
+    EXPECT_FALSE( effect->isEvaluationBlocked() );
+
+    node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
 }

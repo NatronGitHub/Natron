@@ -6028,14 +6028,17 @@ KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level,
         _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
     } else {
         if (level == KnobHolder::eMultipleParamsEditOff) {
+            // An end without a matching start (e.g. an unmatched paramEditEnd() of an OpenFX plug-in) changes nothing: in
+            // particular, it must not end a beginChanges() bracket of someone else.
             if (_imp->paramsEditRecursionLevel > 0) {
                 --_imp->paramsEditRecursionLevel;
+                if (_imp->paramsEditRecursionLevel == 0) {
+                    _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
+                    _imp->paramsEditLabel.clear();
+                }
+                // matches the beginChanges() of eMultipleParamsEditOnCreateNewCommand
+                endChanges();
             }
-            if (_imp->paramsEditRecursionLevel == 0) {
-                _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
-                _imp->paramsEditLabel.clear();
-            }
-            endChanges();
         } else if (level == KnobHolder::eMultipleParamsEditOn) {
             _imp->paramsEditLevel = level;
         } else {
