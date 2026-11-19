@@ -2138,7 +2138,8 @@ ViewerGL::tabletEvent(QTabletEvent* e)
         break;
     }
     case QEvent::TabletRelease: {
-        _imp->pressureOnRelease = pressure;
+        // the pen has left the tablet: pressure 0 (the fix-up above turns the tablet's 0 into 1)
+        _imp->pressureOnRelease = 0.;
         QOpenGLWidget::tabletEvent(e);
         break;
     }

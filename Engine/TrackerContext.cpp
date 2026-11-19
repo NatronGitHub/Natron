@@ -1413,6 +1413,7 @@ TrackerContext::onOverlayKeyDownInternalNodes(double time,
                                               ViewIdx view,
                                               Key key,
                                               KeyboardModifiers modifiers,
+                                              const QString& keyText,
                                               OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
@@ -1422,7 +1423,7 @@ TrackerContext::onOverlayKeyDownInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->getEffectInstance()->onOverlayKeyDown_public(time, renderScale, view, key, modifiers, QString()) ) {
+        if ( thisNode->getEffectInstance()->onOverlayKeyDown_public(time, renderScale, view, key, modifiers, keyText) ) {
             return true;
         }
     }
@@ -1436,6 +1437,7 @@ TrackerContext::onOverlayKeyUpInternalNodes(double time,
                                             ViewIdx view,
                                             Key key,
                                             KeyboardModifiers modifiers,
+                                            const QString& keyText,
                                             OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
@@ -1445,7 +1447,7 @@ TrackerContext::onOverlayKeyUpInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->getEffectInstance()->onOverlayKeyUp_public(time, renderScale, view, key, modifiers, QString()) ) {
+        if ( thisNode->getEffectInstance()->onOverlayKeyUp_public(time, renderScale, view, key, modifiers, keyText) ) {
             return true;
         }
     }
@@ -1459,6 +1461,7 @@ TrackerContext::onOverlayKeyRepeatInternalNodes(double time,
                                                 ViewIdx view,
                                                 Key key,
                                                 KeyboardModifiers modifiers,
+                                                const QString& keyText,
                                                 OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
@@ -1468,7 +1471,7 @@ TrackerContext::onOverlayKeyRepeatInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->getEffectInstance()->onOverlayKeyRepeat_public(time, renderScale, view, key, modifiers, QString()) ) {
+        if ( thisNode->getEffectInstance()->onOverlayKeyRepeat_public(time, renderScale, view, key, modifiers, keyText) ) {
             return true;
         }
     }

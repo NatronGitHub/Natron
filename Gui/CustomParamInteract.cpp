@@ -386,7 +386,16 @@ CustomParamInteract::focusInEvent(QFocusEvent* /*e*/)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    // the focus also changes when the window is deactivated or the panel is being destroyed: the knob or
+    // its holder may be gone
+    KnobGuiPtr knobGui = _imp->knob.lock();
+    KnobIPtr knob = knobGui ? knobGui->getKnob() : KnobIPtr();
+    KnobHolder* holder = knob ? knob->getHolder() : NULL;
+    AppInstancePtr app = holder ? holder->getApp() : AppInstancePtr();
+    if ( !app || !app->getTimeLine() ) {
+        return;
+    }
+    double time = app->getTimeLine()->currentFrame();
     OfxStatus stat = _imp->entryPoint->gainFocusAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0);
     if (stat == kOfxStatOK) {
         update();
@@ -399,7 +408,16 @@ CustomParamInteract::focusOutEvent(QFocusEvent* /*e*/)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    // the focus also changes when the window is deactivated or the panel is being destroyed: the knob or
+    // its holder may be gone
+    KnobGuiPtr knobGui = _imp->knob.lock();
+    KnobIPtr knob = knobGui ? knobGui->getKnob() : KnobIPtr();
+    KnobHolder* holder = knob ? knob->getHolder() : NULL;
+    AppInstancePtr app = holder ? holder->getApp() : AppInstancePtr();
+    if ( !app || !app->getTimeLine() ) {
+        return;
+    }
+    double time = app->getTimeLine()->currentFrame();
     OfxStatus stat = _imp->entryPoint->loseFocusAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0);
     if (stat == kOfxStatOK) {
         update();
