@@ -110,6 +110,13 @@ public:
     void triggerAutoSave();
 
     /**
+     * @brief Calls kOfxActionSyncPrivateData on all the OpenFX nodes of the project, as before a
+     * save. Main thread only: the autosave calls it before it serializes the project in another
+     * thread, where the nodes can't be synced.
+     **/
+    void syncOpenFXPrivateData();
+
+    /**
      * @brief Returns the path to where the auto save files are stored on disk.
      **/
     static QString autoSavesDir() WARN_UNUSED_RETURN;
