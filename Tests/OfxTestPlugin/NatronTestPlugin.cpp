@@ -29,16 +29,39 @@
 //   instances.
 // - net.natron.test.SyncPrivateData: keeps the number of changes of its "value" parameter in private
 //   data, and only writes it to its "changeCount" parameter in kOfxActionSyncPrivateData.
+// - net.natron.test.Generator: a generator that fills its output with 0.5, with the pixel aspect ratio of
+//   its "par" parameter (it supports multiple clip PARs, so that it may set its output PAR, and "par" is a
+//   clip preferences slave parameter).
+// - net.natron.test.MultiPAR: two inputs, Source and B, and kOfxImageEffectPropSupportsMultipleClipPARs.
+//   It records the pixel aspect ratio of each input clip and image, times 1000, in render.
+// - net.natron.test.ClipGetImage: asks for a small region of Source in getRegionsOfInterest; in render,
+//   fetches that small region, then a larger one, and counts the images that don't cover the requested
+//   region (clipped to the RoD) and the calls that returned the same handle twice.
+// - net.natron.test.Sequential and net.natron.test.SequentialStatus: kOfxImageEffectInstancePropSequentialRender
+//   is 1 and 0 on their descriptors. They count the renders with kOfxImageEffectPropSequentialRenderStatus 1
+//   or 0, the renders with status 1 that are not in frame order (neither the frame of the previous render
+//   with status 1 of the instance nor the next one), and the renders running at the same time. Writing the
+//   "instanceSequential" parameter sets kOfxImageEffectInstancePropSequentialRender on the instance.
+// - net.natron.test.GPURenderFailed: supports OpenGL render, returns kOfxStatGPURenderFailed from the
+//   OpenGL render, and renders on the CPU otherwise. net.natron.test.GPUOnlyRenderFailed does the same,
+//   but sets kOfxImageEffectPropCPURenderSupported to "false".
+// - net.natron.test.Question: the "ask" and "askFromThread" push buttons post a kOfxMessageQuestion from
+//   kOfxActionInstanceChanged, on the calling thread or on a thread of the plug-in, and count the replies.
 
+#include <chrono>
+#include <climits>
 #include <cstring>
 #include <map>
 #include <mutex>
 #include <set>
 #include <string>
+#include <thread>
 
 #include <ofxCore.h>
 #include <ofxImageEffect.h>
+#include <ofxGPURender.h>
 #include <ofxInteract.h>
+#include <ofxMessage.h>
 #include <ofxParam.h>
 #include <ofxProperty.h>
 
@@ -46,6 +69,14 @@
 #define kParamInteractPluginIdentifier "net.natron.test.ParamInteract"
 #define kSingleInstancePluginIdentifier "net.natron.test.SingleInstance"
 #define kSyncPrivateDataPluginIdentifier "net.natron.test.SyncPrivateData"
+#define kGeneratorPluginIdentifier "net.natron.test.Generator"
+#define kMultiPARPluginIdentifier "net.natron.test.MultiPAR"
+#define kClipGetImagePluginIdentifier "net.natron.test.ClipGetImage"
+#define kSequentialPluginIdentifier "net.natron.test.Sequential"
+#define kSequentialStatusPluginIdentifier "net.natron.test.SequentialStatus"
+#define kGPURenderFailedPluginIdentifier "net.natron.test.GPURenderFailed"
+#define kGPUOnlyRenderFailedPluginIdentifier "net.natron.test.GPUOnlyRenderFailed"
+#define kQuestionPluginIdentifier "net.natron.test.Question"
 
 namespace {
 OfxHost* gHost = 0;
@@ -53,6 +84,7 @@ const OfxPropertySuiteV1* gPropSuite = 0;
 const OfxImageEffectSuiteV1* gEffectSuite = 0;
 const OfxParameterSuiteV1* gParamSuite = 0;
 const OfxInteractSuiteV1* gInteractSuite = 0;
+const OfxMessageSuiteV1* gMessageSuite = 0;
 
 // everything below is protected by gMutex: the host may call the actions from several threads
 std::mutex gMutex;
@@ -78,7 +110,8 @@ onLoad()
     gEffectSuite = (const OfxImageEffectSuiteV1*)gHost->fetchSuite(gHost->host, kOfxImageEffectSuite, 1);
     gParamSuite = (const OfxParameterSuiteV1*)gHost->fetchSuite(gHost->host, kOfxParameterSuite, 1);
     gInteractSuite = (const OfxInteractSuiteV1*)gHost->fetchSuite(gHost->host, kOfxInteractSuite, 1);
-    if (!gPropSuite || !gEffectSuite || !gParamSuite || !gInteractSuite) {
+    gMessageSuite = (const OfxMessageSuiteV1*)gHost->fetchSuite(gHost->host, kOfxMessageSuite, 1);
+    if (!gPropSuite || !gEffectSuite || !gParamSuite || !gInteractSuite || !gMessageSuite) {
         return kOfxStatErrMissingHostFeature;
     }
 
@@ -89,7 +122,8 @@ OfxStatus
 describe(OfxImageEffectHandle effect,
          const char* label,
          const char* threadSafety,
-         bool singleInstance)
+         bool singleInstance,
+         const char* context = kOfxImageEffectContextFilter)
 {
     OfxPropertySetHandle props;
     OfxStatus stat = gEffectSuite->getPropertySet(effect, &props);
@@ -99,7 +133,7 @@ describe(OfxImageEffectHandle effect,
     }
     gPropSuite->propSetString(props, kOfxPropLabel, 0, label);
     gPropSuite->propSetString(props, kOfxImageEffectPluginPropGrouping, 0, kPluginGrouping);
-    gPropSuite->propSetString(props, kOfxImageEffectPropSupportedContexts, 0, kOfxImageEffectContextFilter);
+    gPropSuite->propSetString(props, kOfxImageEffectPropSupportedContexts, 0, context);
     gPropSuite->propSetString(props, kOfxImageEffectPropSupportedPixelDepths, 0, kOfxBitDepthFloat);
     gPropSuite->propSetString(props, kOfxImageEffectPluginRenderThreadSafety, 0, threadSafety);
     gPropSuite->propSetInt(props, kOfxImageEffectPluginPropSingleInstance, 0, singleInstance ? 1 : 0);
@@ -371,6 +405,610 @@ syncPrivateDataPluginMain(const char* action,
     return commonAction(action, effect, "SyncPrivateData");
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Helpers for the plug-ins that render
+
+void
+setCounter(const std::string& name,
+           int value)
+{
+    std::lock_guard<std::mutex> l(gMutex);
+    gCounters[name] = value;
+}
+
+OfxImageClipHandle
+getClip(OfxImageEffectHandle effect,
+        const char* name)
+{
+    OfxImageClipHandle clip = 0;
+
+    if (gEffectSuite->clipGetHandle(effect, name, &clip, 0) != kOfxStatOK) {
+        return 0;
+    }
+
+    return clip;
+}
+
+OfxParamHandle
+getParam(OfxImageEffectHandle effect,
+         const char* name)
+{
+    OfxParamHandle param = 0;
+    OfxParamSetHandle paramSet = getParamSet(effect);
+
+    if ( !paramSet || (gParamSuite->paramGetHandle(paramSet, name, &param, 0) != kOfxStatOK) ) {
+        return 0;
+    }
+
+    return param;
+}
+
+// The name of the parameter that changed, in kOfxActionInstanceChanged, or an empty string.
+std::string
+changedParamName(OfxPropertySetHandle inArgs)
+{
+    const char* type = 0;
+    const char* name = 0;
+
+    if ( !inArgs || (gPropSuite->propGetString(inArgs, kOfxPropType, 0, &type) != kOfxStatOK) ||
+         !type || (std::strcmp(type, kOfxTypeParameter) != 0) ||
+         (gPropSuite->propGetString(inArgs, kOfxPropName, 0, &name) != kOfxStatOK) || !name ) {
+        return std::string();
+    }
+
+    return name;
+}
+
+bool
+contains(const OfxRectI& outer,
+         const OfxRectI& inner)
+{
+    return outer.x1 <= inner.x1 && outer.y1 <= inner.y1 && inner.x2 <= outer.x2 && inner.y2 <= outer.y2;
+}
+
+// Fill the render window of the output image (RGBA float, the only format the plug-ins support) with
+// value, in a CPU render.
+OfxStatus
+fillOutput(OfxImageEffectHandle effect,
+           OfxPropertySetHandle inArgs,
+           float value)
+{
+    OfxTime time = 0.;
+    OfxRectI renderWindow;
+    OfxImageClipHandle output = getClip(effect, kOfxImageEffectOutputClipName);
+    OfxPropertySetHandle image = 0;
+
+    if ( !output || (gPropSuite->propGetDouble(inArgs, kOfxPropTime, 0, &time) != kOfxStatOK) ||
+         (gPropSuite->propGetIntN(inArgs, kOfxImageEffectPropRenderWindow, 4, &renderWindow.x1) != kOfxStatOK) ||
+         (gEffectSuite->clipGetImage(output, time, 0, &image) != kOfxStatOK) ) {
+        return kOfxStatFailed;
+    }
+    void* data = 0;
+    OfxRectI bounds;
+    int rowBytes = 0;
+    OfxStatus stat = kOfxStatOK;
+    if ( (gPropSuite->propGetPointer(image, kOfxImagePropData, 0, &data) != kOfxStatOK) ||
+         (gPropSuite->propGetIntN(image, kOfxImagePropBounds, 4, &bounds.x1) != kOfxStatOK) ||
+         (gPropSuite->propGetInt(image, kOfxImagePropRowBytes, 0, &rowBytes) != kOfxStatOK) || !data ) {
+        stat = kOfxStatFailed;
+    } else {
+        const int x1 = renderWindow.x1 > bounds.x1 ? renderWindow.x1 : bounds.x1;
+        const int x2 = renderWindow.x2 < bounds.x2 ? renderWindow.x2 : bounds.x2;
+        const int y1 = renderWindow.y1 > bounds.y1 ? renderWindow.y1 : bounds.y1;
+        const int y2 = renderWindow.y2 < bounds.y2 ? renderWindow.y2 : bounds.y2;
+        for (int y = y1; y < y2; ++y) {
+            float* pix = (float*)( (char*)data + (std::ptrdiff_t)(y - bounds.y1) * rowBytes ) + 4 * (x1 - bounds.x1);
+            for (int x = x1; x < x2; ++x, pix += 4) {
+                pix[0] = pix[1] = pix[2] = pix[3] = value;
+            }
+        }
+    }
+    gEffectSuite->clipReleaseImage(image);
+
+    return stat;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// net.natron.test.Generator
+
+OfxStatus
+generatorPluginMain(const char* action,
+                    const void* handle,
+                    OfxPropertySetHandle inArgs,
+                    OfxPropertySetHandle outArgs)
+{
+    OfxImageEffectHandle effect = (OfxImageEffectHandle)handle;
+
+    if (std::strcmp(action, kOfxActionDescribe) == 0) {
+        OfxStatus stat = describe(effect, "GeneratorTest", kOfxImageEffectRenderFullySafe, false, kOfxImageEffectContextGenerator);
+        if (stat != kOfxStatOK) {
+            return stat;
+        }
+        OfxPropertySetHandle props;
+        gEffectSuite->getPropertySet(effect, &props);
+        // so that it may set its output PAR in getClipPreferences
+        gPropSuite->propSetInt(props, kOfxImageEffectPropSupportsMultipleClipPARs, 0, 1);
+        // and getClipPreferences is called again when "par" changes
+        gPropSuite->propSetString(props, kOfxImageEffectPropClipPreferencesSlaveParam, 0, "par");
+
+        return kOfxStatOK;
+    }
+    if (std::strcmp(action, kOfxImageEffectActionDescribeInContext) == 0) {
+        OfxPropertySetHandle props;
+        OfxStatus stat = gEffectSuite->clipDefine(effect, kOfxImageEffectOutputClipName, &props);
+        if (stat != kOfxStatOK) {
+            return stat;
+        }
+        gPropSuite->propSetString(props, kOfxImageEffectPropSupportedComponents, 0, kOfxImageComponentRGBA);
+        OfxParamSetHandle paramSet = getParamSet(effect);
+        if ( !paramSet || (gParamSuite->paramDefine(paramSet, kOfxParamTypeDouble, "par", &props) != kOfxStatOK) ) {
+            return kOfxStatFailed;
+        }
+        gPropSuite->propSetDouble(props, kOfxParamPropDefault, 0, 1.);
+
+        return kOfxStatOK;
+    }
+    if (std::strcmp(action, kOfxImageEffectActionGetClipPreferences) == 0) {
+        double par = 1.;
+        OfxParamHandle param = getParam(effect, "par");
+        if (param) {
+            gParamSuite->paramGetValue(param, &par);
+        }
+        gPropSuite->propSetDouble(outArgs, "OfxImageClipPropPAR_" kOfxImageEffectOutputClipName, 0, par);
+
+        return kOfxStatOK;
+    }
+    if (std::strcmp(action, kOfxImageEffectActionRender) == 0) {
+        incrementCounter("Generator.render");
+
+        return fillOutput(effect, inArgs, 0.5f);
+    }
+
+    return commonAction(action, effect, "Generator");
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// net.natron.test.MultiPAR
+
+// Record the PAR of the clip and of its image at time.
+void
+recordPAR(OfxImageEffectHandle effect,
+          const char* clipName,
+          OfxTime time)
+{
+    OfxImageClipHandle clip = getClip(effect, clipName);
+    OfxPropertySetHandle props;
+
+    if ( !clip || (gEffectSuite->clipGetPropertySet(clip, &props) != kOfxStatOK) ) {
+        return;
+    }
+    double par = 0.;
+    if (gPropSuite->propGetDouble(props, kOfxImagePropPixelAspectRatio, 0, &par) == kOfxStatOK) {
+        setCounter(std::string("MultiPAR.") + clipName + "ClipPAR", (int)(par * 1000. + 0.5) );
+    }
+    OfxPropertySetHandle image = 0;
+    if (gEffectSuite->clipGetImage(clip, time, 0, &image) == kOfxStatOK) {
+        par = 0.;
+        if (gPropSuite->propGetDouble(image, kOfxImagePropPixelAspectRatio, 0, &par) == kOfxStatOK) {
+            setCounter(std::string("MultiPAR.") + clipName + "ImagePAR", (int)(par * 1000. + 0.5) );
+        }
+        gEffectSuite->clipReleaseImage(image);
+    }
+}
+
+OfxStatus
+multiPARPluginMain(const char* action,
+                   const void* handle,
+                   OfxPropertySetHandle inArgs,
+                   OfxPropertySetHandle /*outArgs*/)
+{
+    OfxImageEffectHandle effect = (OfxImageEffectHandle)handle;
+
+    if (std::strcmp(action, kOfxActionDescribe) == 0) {
+        OfxStatus stat = describe(effect, "MultiPARTest", kOfxImageEffectRenderFullySafe, false, kOfxImageEffectContextGeneral);
+        if (stat != kOfxStatOK) {
+            return stat;
+        }
+        OfxPropertySetHandle props;
+        gEffectSuite->getPropertySet(effect, &props);
+        gPropSuite->propSetInt(props, kOfxImageEffectPropSupportsMultipleClipPARs, 0, 1);
+
+        return kOfxStatOK;
+    }
+    if (std::strcmp(action, kOfxImageEffectActionDescribeInContext) == 0) {
+        OfxStatus stat = defineClips(effect);
+        if (stat != kOfxStatOK) {
+            return stat;
+        }
+        OfxPropertySetHandle props;
+        stat = gEffectSuite->clipDefine(effect, "B", &props);
+        if (stat != kOfxStatOK) {
+            return stat;
+        }
+        gPropSuite->propSetString(props, kOfxImageEffectPropSupportedComponents, 0, kOfxImageComponentRGBA);
+        gPropSuite->propSetInt(props, kOfxImageClipPropOptional, 0, 1);
+
+        return kOfxStatOK;
+    }
+    if (std::strcmp(action, kOfxImageEffectActionRender) == 0) {
+        incrementCounter("MultiPAR.render");
+        OfxTime time = 0.;
+        gPropSuite->propGetDouble(inArgs, kOfxPropTime, 0, &time);
+        recordPAR(effect, kOfxImageEffectSimpleSourceClipName, time);
+        recordPAR(effect, "B", time);
+
+        return fillOutput(effect, inArgs, 0.f);
+    }
+
+    return commonAction(action, effect, "MultiPAR");
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// net.natron.test.ClipGetImage
+
+// the regions fetched in render, in canonical coordinates (the tests render at scale 1 with PAR 1, so
+// these are also pixel coordinates)
+const OfxRectI kClipGetImageSmall = { 0, 0, 8, 8 };
+const OfxRectI kClipGetImageLarge = { 0, 0, 48, 48 };
+
+OfxRectI
+intersection(const OfxRectI& a,
+             const OfxRectD& b)
+{
+    OfxRectI r;
+
+    r.x1 = a.x1 > (int)b.x1 ? a.x1 : (int)b.x1;
+    r.y1 = a.y1 > (int)b.y1 ? a.y1 : (int)b.y1;
+    r.x2 = a.x2 < (int)b.x2 ? a.x2 : (int)b.x2;
+    r.y2 = a.y2 < (int)b.y2 ? a.y2 : (int)b.y2;
+
+    return r;
+}
+
+// Fetch region of Source at time, and check that the image covers it (clipped to the RoD).
+OfxPropertySetHandle
+fetchAndCheck(OfxImageClipHandle source,
+              OfxTime time,
+              const OfxRectI& region)
+{
+    OfxRectD regionD = { (double)region.x1, (double)region.y1, (double)region.x2, (double)region.y2 };
+    OfxPropertySetHandle image = 0;
+
+    if (gEffectSuite->clipGetImage(source, time, &regionD, &image) != kOfxStatOK) {
+        incrementCounter("ClipGetImage.fetchFailed");
+
+        return 0;
+    }
+    OfxRectD rod;
+    OfxRectI bounds;
+    if ( (gEffectSuite->clipGetRegionOfDefinition(source, time, &rod) != kOfxStatOK) ||
+         (gPropSuite->propGetIntN(image, kOfxImagePropBounds, 4, &bounds.x1) != kOfxStatOK) ||
+         !contains( bounds, intersection(region, rod) ) ) {
+        incrementCounter("ClipGetImage.regionErrors");
+    }
+
+    return image;
+}
+
+OfxStatus
+clipGetImagePluginMain(const char* action,
+                       const void* handle,
+                       OfxPropertySetHandle inArgs,
+                       OfxPropertySetHandle outArgs)
+{
+    OfxImageEffectHandle effect = (OfxImageEffectHandle)handle;
+
+    if (std::strcmp(action, kOfxActionDescribe) == 0) {
+        return describe(effect, "ClipGetImageTest", kOfxImageEffectRenderFullySafe, false);
+    }
+    if (std::strcmp(action, kOfxImageEffectActionDescribeInContext) == 0) {
+        return defineClips(effect);
+    }
+    if (std::strcmp(action, kOfxImageEffectActionGetRegionsOfInterest) == 0) {
+        // only the small region is needed, so that the host prepares only that part of the input
+        double roi[4] = { (double)kClipGetImageSmall.x1, (double)kClipGetImageSmall.y1,
+                          (double)kClipGetImageSmall.x2, (double)kClipGetImageSmall.y2 };
+        gPropSuite->propSetDoubleN(outArgs, "OfxImageClipPropRoI_" kOfxImageEffectSimpleSourceClipName, 4, roi);
+
+        return kOfxStatOK;
+    }
+    if (std::strcmp(action, kOfxImageEffectActionRender) == 0) {
+        incrementCounter("ClipGetImage.render");
+        OfxTime time = 0.;
+        gPropSuite->propGetDouble(inArgs, kOfxPropTime, 0, &time);
+        OfxImageClipHandle source = getClip(effect, kOfxImageEffectSimpleSourceClipName);
+        if (!source) {
+            return kOfxStatFailed;
+        }
+        OfxPropertySetHandle small = fetchAndCheck(source, time, kClipGetImageSmall);
+        OfxPropertySetHandle large = fetchAndCheck(source, time, kClipGetImageLarge);
+        // "If clipGetImage is called twice with the same parameters, then two separate image handles will
+        // be returned, each of which must be release."
+        OfxPropertySetHandle large2 = fetchAndCheck(source, time, kClipGetImageLarge);
+        if ( large && (large == large2) ) {
+            incrementCounter("ClipGetImage.sameHandle");
+        }
+        incrementCounter("ClipGetImage.checks");
+        if (small) {
+            gEffectSuite->clipReleaseImage(small);
+        }
+        if (large) {
+            gEffectSuite->clipReleaseImage(large);
+        }
+        if (large2) {
+            gEffectSuite->clipReleaseImage(large2);
+        }
+
+        return fillOutput(effect, inArgs, 0.f);
+    }
+
+    return commonAction(action, effect, "ClipGetImage");
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// net.natron.test.Sequential and net.natron.test.SequentialStatus
+
+struct SequentialData
+{
+    int lastSequentialFrame; // the frame of the last render with kOfxImageEffectPropSequentialRenderStatus 1
+};
+
+SequentialData*
+getSequentialData(OfxImageEffectHandle effect)
+{
+    OfxPropertySetHandle props;
+    void* data = 0;
+
+    if ( (gEffectSuite->getPropertySet(effect, &props) != kOfxStatOK) ||
+         (gPropSuite->propGetPointer(props, kOfxPropInstanceData, 0, &data) != kOfxStatOK) ) {
+        return 0;
+    }
+
+    return (SequentialData*)data;
+}
+
+OfxStatus
+sequentialMain(const char* action,
+               OfxImageEffectHandle effect,
+               OfxPropertySetHandle inArgs,
+               OfxPropertySetHandle outArgs,
+               const std::string& id,
+               int sequentialRender)
+{
+    if (std::strcmp(action, kOfxActionDescribe) == 0) {
+        OfxStatus stat = describe(effect, (id + "Test").c_str(), kOfxImageEffectRenderFullySafe, false);
+        if (stat != kOfxStatOK) {
+            return stat;
+        }
+        OfxPropertySetHandle props;
+        gEffectSuite->getPropertySet(effect, &props);
+        gPropSuite->propSetInt(props, kOfxImageEffectInstancePropSequentialRender, 0, sequentialRender);
+
+        return kOfxStatOK;
+    }
+    if (std::strcmp(action, kOfxImageEffectActionDescribeInContext) == 0) {
+        OfxStatus stat = defineClips(effect);
+        if (stat != kOfxStatOK) {
+            return stat;
+        }
+        OfxParamSetHandle paramSet = getParamSet(effect);
+        OfxPropertySetHandle props;
+        if ( !paramSet || (gParamSuite->paramDefine(paramSet, kOfxParamTypeInteger, "instanceSequential", &props) != kOfxStatOK) ) {
+            return kOfxStatFailed;
+        }
+        gPropSuite->propSetInt(props, kOfxParamPropDefault, 0, -1); // -1: keep the descriptor's value
+
+        return kOfxStatOK;
+    }
+    if (std::strcmp(action, kOfxActionCreateInstance) == 0) {
+        OfxPropertySetHandle props;
+        if (gEffectSuite->getPropertySet(effect, &props) != kOfxStatOK) {
+            return kOfxStatFailed;
+        }
+        SequentialData* data = new SequentialData;
+        data->lastSequentialFrame = INT_MIN;
+        gPropSuite->propSetPointer(props, kOfxPropInstanceData, 0, data);
+    } else if (std::strcmp(action, kOfxActionDestroyInstance) == 0) {
+        delete getSequentialData(effect);
+    } else if (std::strcmp(action, kOfxActionInstanceChanged) == 0) {
+        if (changedParamName(inArgs) == "instanceSequential") {
+            int value = -1;
+            OfxParamHandle param = getParam(effect, "instanceSequential");
+            OfxPropertySetHandle props;
+            if ( param && (gParamSuite->paramGetValue(param, &value) == kOfxStatOK) && (value >= 0) &&
+                 (gEffectSuite->getPropertySet(effect, &props) == kOfxStatOK) ) {
+                // kOfxImageEffectInstancePropSequentialRender is read/write on the instance
+                gPropSuite->propSetInt(props, kOfxImageEffectInstancePropSequentialRender, 0, value);
+            }
+        }
+
+        return kOfxStatOK;
+    } else if (std::strcmp(action, kOfxImageEffectActionGetClipPreferences) == 0) {
+        // every frame is different, so that the host renders each of them
+        gPropSuite->propSetInt(outArgs, kOfxImageEffectFrameVarying, 0, 1);
+
+        return kOfxStatOK;
+    } else if (std::strcmp(action, kOfxImageEffectActionRender) == 0) {
+        OfxTime time = 0.;
+        int status = 0;
+        gPropSuite->propGetDouble(inArgs, kOfxPropTime, 0, &time);
+        gPropSuite->propGetInt(inArgs, kOfxImageEffectPropSequentialRenderStatus, 0, &status);
+        SequentialData* data = getSequentialData(effect);
+        if (!data) {
+            return kOfxStatFailed;
+        }
+        const int frame = (int)time;
+        {
+            std::lock_guard<std::mutex> l(gMutex);
+            int& active = gCounters[id + ".activeRenders"];
+            ++active;
+            int& maxActive = gCounters[id + ".maxActiveRenders"];
+            if (active > maxActive) {
+                maxActive = active;
+            }
+        }
+        // Every third frame takes longer to start: frames rendered in parallel reach the check below out of
+        // frame order, which a render in frame order on a single instance never does.
+        std::this_thread::sleep_for( std::chrono::milliseconds(frame % 3 == 0 ? 40 : 5) );
+        {
+            std::lock_guard<std::mutex> l(gMutex);
+            if (status) {
+                ++gCounters[id + ".sequentialRenders"];
+                // the same frame again is not out of order; any other frame than the next one is
+                if ( (data->lastSequentialFrame != INT_MIN) && (frame != data->lastSequentialFrame) &&
+                     (frame != data->lastSequentialFrame + 1) ) {
+                    ++gCounters[id + ".outOfOrder"];
+                }
+                data->lastSequentialFrame = frame;
+            } else {
+                ++gCounters[id + ".nonSequentialRenders"];
+            }
+        }
+        OfxStatus stat = fillOutput(effect, inArgs, (float)time);
+        {
+            std::lock_guard<std::mutex> l(gMutex);
+            --gCounters[id + ".activeRenders"];
+        }
+
+        return stat;
+    }
+
+    return commonAction(action, effect, id);
+}
+
+OfxStatus
+sequentialPluginMain(const char* action,
+                     const void* handle,
+                     OfxPropertySetHandle inArgs,
+                     OfxPropertySetHandle outArgs)
+{
+    return sequentialMain(action, (OfxImageEffectHandle)handle, inArgs, outArgs, "Sequential", 1);
+}
+
+OfxStatus
+sequentialStatusPluginMain(const char* action,
+                           const void* handle,
+                           OfxPropertySetHandle inArgs,
+                           OfxPropertySetHandle outArgs)
+{
+    return sequentialMain(action, (OfxImageEffectHandle)handle, inArgs, outArgs, "SequentialStatus", 0);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// net.natron.test.GPURenderFailed
+
+OfxStatus
+gpuRenderFailedMain(const char* action,
+                    OfxImageEffectHandle effect,
+                    OfxPropertySetHandle inArgs,
+                    const std::string& id,
+                    bool cpuRenderSupported)
+{
+    if (std::strcmp(action, kOfxActionDescribe) == 0) {
+        OfxStatus stat = describe(effect, (id + "Test").c_str(), kOfxImageEffectRenderFullySafe, false);
+        if (stat != kOfxStatOK) {
+            return stat;
+        }
+        OfxPropertySetHandle props;
+        gEffectSuite->getPropertySet(effect, &props);
+        gPropSuite->propSetString(props, kOfxImageEffectPropOpenGLRenderSupported, 0, "true");
+        gPropSuite->propSetString(props, kOfxImageEffectPropCPURenderSupported, 0, cpuRenderSupported ? "true" : "false");
+
+        return kOfxStatOK;
+    }
+    if (std::strcmp(action, kOfxImageEffectActionDescribeInContext) == 0) {
+        return defineClips(effect);
+    }
+    if (std::strcmp(action, kOfxImageEffectActionRender) == 0) {
+        int openGLEnabled = 0;
+        if ( (gPropSuite->propGetInt(inArgs, kOfxImageEffectPropOpenGLEnabled, 0, &openGLEnabled) == kOfxStatOK) &&
+             openGLEnabled ) {
+            incrementCounter(id + ".glRenders");
+
+            // "the host should retry the render with OpenGL rendering disabled" (ofxGPURender.h)
+            return kOfxStatGPURenderFailed;
+        }
+        incrementCounter(id + ".cpuRenders");
+
+        return fillOutput(effect, inArgs, 1.f);
+    }
+
+    return commonAction(action, effect, id);
+}
+
+OfxStatus
+gpuRenderFailedPluginMain(const char* action,
+                          const void* handle,
+                          OfxPropertySetHandle inArgs,
+                          OfxPropertySetHandle /*outArgs*/)
+{
+    return gpuRenderFailedMain(action, (OfxImageEffectHandle)handle, inArgs, "GPURenderFailed", true);
+}
+
+OfxStatus
+gpuOnlyRenderFailedPluginMain(const char* action,
+                              const void* handle,
+                              OfxPropertySetHandle inArgs,
+                              OfxPropertySetHandle /*outArgs*/)
+{
+    return gpuRenderFailedMain(action, (OfxImageEffectHandle)handle, inArgs, "GPUOnlyRenderFailed", false);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// net.natron.test.Question
+
+void
+recordReply(const std::string& where,
+            OfxStatus stat)
+{
+    incrementCounter( "Question." + where + (stat == kOfxStatReplyYes ? ".yes" : stat == kOfxStatReplyNo ? ".no" : ".error") );
+}
+
+OfxStatus
+questionPluginMain(const char* action,
+                   const void* handle,
+                   OfxPropertySetHandle inArgs,
+                   OfxPropertySetHandle /*outArgs*/)
+{
+    OfxImageEffectHandle effect = (OfxImageEffectHandle)handle;
+
+    if (std::strcmp(action, kOfxActionDescribe) == 0) {
+        return describe(effect, "QuestionTest", kOfxImageEffectRenderFullySafe, false);
+    }
+    if (std::strcmp(action, kOfxImageEffectActionDescribeInContext) == 0) {
+        OfxStatus stat = defineClips(effect);
+        if (stat != kOfxStatOK) {
+            return stat;
+        }
+        OfxParamSetHandle paramSet = getParamSet(effect);
+        OfxPropertySetHandle props;
+        if ( !paramSet ||
+             (gParamSuite->paramDefine(paramSet, kOfxParamTypePushButton, "ask", &props) != kOfxStatOK) ||
+             (gParamSuite->paramDefine(paramSet, kOfxParamTypePushButton, "askFromThread", &props) != kOfxStatOK) ) {
+            return kOfxStatFailed;
+        }
+
+        return kOfxStatOK;
+    }
+    if (std::strcmp(action, kOfxActionInstanceChanged) == 0) {
+        const std::string name = changedParamName(inArgs);
+        if (name == "ask") {
+            recordReply( "ask", gMessageSuite->message(effect, kOfxMessageQuestion, "", "Do you really want to?") );
+        } else if (name == "askFromThread") {
+            OfxStatus stat = kOfxStatFailed;
+            std::thread thread([effect, &stat]() {
+                stat = gMessageSuite->message(effect, kOfxMessageQuestion, "", "Do you really want to (from a thread)?");
+            });
+            thread.join();
+            recordReply("askFromThread", stat);
+        }
+
+        return kOfxStatOK;
+    }
+
+    return commonAction(action, effect, "Question");
+}
+
 void
 setHost(OfxHost* host)
 {
@@ -381,6 +1019,14 @@ OfxPlugin gPlugins[] = {
     { kOfxImageEffectPluginApi, 1, kParamInteractPluginIdentifier, 1, 0, setHost, paramInteractPluginMain },
     { kOfxImageEffectPluginApi, 1, kSingleInstancePluginIdentifier, 1, 0, setHost, singleInstancePluginMain },
     { kOfxImageEffectPluginApi, 1, kSyncPrivateDataPluginIdentifier, 1, 0, setHost, syncPrivateDataPluginMain },
+    { kOfxImageEffectPluginApi, 1, kGeneratorPluginIdentifier, 1, 0, setHost, generatorPluginMain },
+    { kOfxImageEffectPluginApi, 1, kMultiPARPluginIdentifier, 1, 0, setHost, multiPARPluginMain },
+    { kOfxImageEffectPluginApi, 1, kClipGetImagePluginIdentifier, 1, 0, setHost, clipGetImagePluginMain },
+    { kOfxImageEffectPluginApi, 1, kSequentialPluginIdentifier, 1, 0, setHost, sequentialPluginMain },
+    { kOfxImageEffectPluginApi, 1, kSequentialStatusPluginIdentifier, 1, 0, setHost, sequentialStatusPluginMain },
+    { kOfxImageEffectPluginApi, 1, kGPURenderFailedPluginIdentifier, 1, 0, setHost, gpuRenderFailedPluginMain },
+    { kOfxImageEffectPluginApi, 1, kGPUOnlyRenderFailedPluginIdentifier, 1, 0, setHost, gpuOnlyRenderFailedPluginMain },
+    { kOfxImageEffectPluginApi, 1, kQuestionPluginIdentifier, 1, 0, setHost, questionPluginMain },
 };
 } // anonymous namespace
 
@@ -409,5 +1055,15 @@ NatronTestPluginGetCounter(const char* name)
     std::map<std::string, int>::const_iterator found = gCounters.find(name);
 
     return found == gCounters.end() ? 0 : found->second;
+}
+// For the tests (Tests/OfxTestPlugin.h): set a counter, e.g. to reset a maximum.
+OfxExport void NatronTestPluginSetCounter(const char* name, int value);
+
+OfxExport void
+NatronTestPluginSetCounter(const char* name,
+                           int value)
+{
+    std::lock_guard<std::mutex> l(gMutex);
+    gCounters[name] = value;
 }
 } // extern "C"
