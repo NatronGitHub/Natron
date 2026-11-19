@@ -47,6 +47,7 @@
 #include "Engine/Image.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
+#include "Engine/OSGLContext.h"
 #include "Engine/ParallelRenderArgs.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
@@ -95,9 +96,13 @@ canRunTest(const char* pluginID,
 
         return false;
     }
-    if ( needsOpenGL && !appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering) ) {
+    // OpenGL may load without any renderer that can render: e.g. on the Linux CI (Xvfb, Mesa llvmpipe),
+    // OSGLContext_x11::getGPUInfos() skips the renderers that are not accelerated, so the "OpenGL Rendering"
+    // preference is hidden and Settings::isOpenGLRenderingEnabled() is always false.
+    if ( needsOpenGL && ( !appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering) ||
+                          appPTR->getOpenGLRenderers().empty() ) ) {
         const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
-        std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name() << ": no OpenGL rendering" << std::endl;
+        std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name() << ": no OpenGL renderer for OpenGL rendering" << std::endl;
 
         return false;
     }
