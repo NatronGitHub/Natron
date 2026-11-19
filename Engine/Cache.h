@@ -673,6 +673,8 @@ private:
                     return TileCacheFilePtr();
                 }
                 (*it)->usedTiles[index] = true;
+                // The tile was written by a previous session, so it has disk space
+                (*it)->reservedTiles[index] = true;
                 return *it;
             }
         }
@@ -696,6 +698,8 @@ private:
             }
             ret->usedTiles.resize(nTilesPerFile, false);
             ret->usedTiles[index] = true;
+            ret->reservedTiles.resize(nTilesPerFile, false);
+            ret->reservedTiles[index] = true;
             _cacheFiles.insert(ret);
             return ret;
 
@@ -805,6 +809,7 @@ private:
                 throw;
             }
             foundAvailableFile->usedTiles.resize(nTilesPerFile, false);
+            foundAvailableFile->reservedTiles.resize(nTilesPerFile, false);
             *dataOffset = 0;
             foundTileIndex = 0;
             _cacheFiles.insert(foundAvailableFile);
@@ -812,9 +817,46 @@ private:
             _nextAvailableCacheFileIndex = 1;
         }
 
-        // Notify the memory file that this portion of the file is valid
+        // Mark the tile as used before unlocking: no other thread can then get it, and the file is not removed
         foundAvailableFile->usedTiles[foundTileIndex] = true;
-        return foundAvailableFile;
+        if (foundAvailableFile->reservedTiles[foundTileIndex]) {
+            return foundAvailableFile;
+        }
+
+        // Allocate the disk space of the tile now, the first time it is used: the tile files are sparse, and if the
+        // disk is full, writing to the mapping would crash (#192). This may write the tile (see MemoryFile::reserve()),
+        // so don't block the other threads meanwhile.
+        const std::size_t tileOffset = *dataOffset;
+        const std::size_t tileByteSize = _tileByteSize;
+        bool reserved = true;
+        k.unlock();
+        try {
+            foundAvailableFile->file->reserve(tileOffset, tileByteSize);
+        } catch (const std::exception& e) {
+            qDebug() << "Cache:" << e.what();
+            reserved = false;
+        }
+        k.relock();
+        if (reserved) {
+            foundAvailableFile->reservedTiles[foundTileIndex] = true;
+
+            return foundAvailableFile;
+        }
+        foundAvailableFile->usedTiles[foundTileIndex] = false;
+        if ( !foundAvailableFile->hasUsedTiles() ) {
+            // Don't keep an empty file that may take disk space
+            _cacheFiles.erase(foundAvailableFile);
+            if (_nextAvailableCacheFile.lock() == foundAvailableFile) {
+                _nextAvailableCacheFile.reset();
+                _nextAvailableCacheFileIndex = -1;
+            }
+            try {
+                foundAvailableFile->file->remove();
+            } catch (...) {
+            }
+        }
+        // allocateTileCache() then falls back on RAM
+        throw std::runtime_error("Cache: could not allocate the disk space of a tile");
     }
 
             /**
@@ -1203,7 +1245,8 @@ public:
                 }
 
                 /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
-                while (diskCacheSize + evictedFromMemory.second->size() >= maximumCacheSize) {
+                // size() is 0 (plus the bitmap) once the file is unmapped: use the size of the file
+                while (diskCacheSize + evictedFromMemory.second->getSizeInBytesFromParams() >= maximumCacheSize) {
                     {
                         std::pair<hash_type, EntryTypePtr> evictedFromDisk = _diskCache.evict();
                         //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
@@ -1226,6 +1269,10 @@ public:
                 /*if the entry doesn't exist on the disk cache,make a new list and insert it*/
                 if ( existingDiskCacheEntry == _diskCache.end() ) {
                     _diskCache.insert(evictedFromMemory.second->getHashKey(), evictedFromMemory.second);
+                } else {
+                    // Append to the existing list: other entries may have the same hash (e.g. other mipmap
+                    // levels), and dropping this one would orphan its file (#1128)
+                    getValueFromIterator(existingDiskCacheEntry).push_back(evictedFromMemory.second);
                 }
             }
 
@@ -1658,7 +1705,8 @@ public:
     void save(CacheTOC* tableOfContents);
 
 
-    /*Restores the cache from disk.*/
+    /*Restores the cache from disk. Must not be called if another process uses the cache
+       (see AppManager::isDiskCacheUsedByAnotherProcess()): the files that are not in the table of contents are deleted.*/
     void restore(const CacheTOC & tableOfContents);
 
 
@@ -1860,11 +1908,17 @@ private:
                             } catch (const std::exception & e) {
                                 qDebug() << "Error while reopening cache file: " << e.what();
                                 ret.erase(it);
+                                if ( ret.empty() ) {
+                                    _diskCache.erase(diskCached);
+                                }
 
                                 return false;
                             } catch (...) {
                                 qDebug() << "Error while reopening cache file";
                                 ret.erase(it);
+                                if ( ret.empty() ) {
+                                    _diskCache.erase(diskCached);
+                                }
 
                                 return false;
                             }
@@ -1903,11 +1957,12 @@ private:
                         }
 
                         if (!_isTiled) {
-
+                            // Remove it from the disk cache. Only remove the list of the hash if it is empty:
+                            // it may contain other entries with the same hash (e.g. other mipmap levels, #1128).
                             ret.erase(it);
-
-                            ///Remove it from the disk cache
-                            _diskCache.erase(diskCached);
+                            if ( ret.empty() ) {
+                                _diskCache.erase(diskCached);
+                            }
                         }
 
                         return true;
@@ -1983,7 +2038,8 @@ private:
             }
 
             /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
-            while ( ( diskCacheSize  + evicted.second->size() ) >= (maximumCacheSize - maximumInMemorySize) ) {
+            // size() is 0 (plus the bitmap) once the file is unmapped: use the size of the file
+            while ( ( diskCacheSize  + evicted.second->getSizeInBytesFromParams() ) >= (maximumCacheSize - maximumInMemorySize) ) {
                 std::pair<hash_type, EntryTypePtr> evictedFromDisk = _diskCache.evict();
                 //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
                 //we'll let the user of these entries purge the extra entries left in the cache later on

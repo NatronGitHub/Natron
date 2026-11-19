@@ -33,11 +33,16 @@
 #include <vector>
 #include <map>
 
+#include <condition_variable>
+#include <mutex>
+#include <thread>
+
 #include <QtGlobal> // for Q_OS_*
 #include <QMutex>
 #include <QString>
 #include <QAtomicInt>
 #include <QCoreApplication>
+#include <QFile>
 
 
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
@@ -104,6 +109,20 @@ public:
     FrameEntryCachePtr _viewerCache; //< Viewer textures cache
     mutable QMutex diskCachesLocationMutex;
     QString diskCachesLocation;
+    // The file that tells the other Natron processes that this one uses the disk caches in diskCachesLocation
+    // (see AppManager::isDiskCacheUsedByAnotherProcess()), protected by diskCachesLocationMutex
+    std::unique_ptr<QFile> diskCachesInstanceFile;
+    // A thread touches diskCachesInstanceFile every diskCachesInstanceFileTouchMs: on a network file system, the other
+    // hosts consider it stale if it is not touched. It is a thread because NatronRenderer and the background renders
+    // never run an event loop (the main thread blocks while rendering), so a QTimer would never fire there.
+    std::thread diskCachesInstanceFileToucher;
+    std::mutex diskCachesInstanceFileToucherMutex;
+    std::condition_variable diskCachesInstanceFileToucherCond;
+    bool diskCachesInstanceFileToucherMustQuit; // protected by diskCachesInstanceFileToucherMutex
+    int diskCachesInstanceFileTouchMs; // protected by diskCachesInstanceFileToucherMutex
+
+    void startDiskCachesInstanceFileToucher();
+    void touchDiskCachesInstanceFile();
     std::unique_ptr<ProcessInputChannel> _backgroundIPC; //< object used to communicate with the main app
     //if this app is background, see the ProcessInputChannel def
     bool _loaded; //< true when the first instance is completely loaded.

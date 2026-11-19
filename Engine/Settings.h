@@ -111,6 +111,9 @@ public:
 
     U64 getMaximumDiskCacheNodeSize() const;
 
+    // The "Disk cache path" preference (may be empty)
+    QString getDiskCachePath() const;
+
     double getUnreachableRamPercent() const;
 
     bool getColorPickerLinear() const;

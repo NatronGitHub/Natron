@@ -139,12 +139,31 @@ The cache settings are in **Edit > Preferences > Caching**:
 
 **Disk cache path**
    The folder where the playback cache and the DiskCache nodes store their
-   files. Choose your fastest disk. When this field is set, it is used, even
-   if the ``NATRON_DISK_CACHE_PATH`` environment variable is set. When it is
-   empty, ``NATRON_DISK_CACHE_PATH`` is used if it is set (see
-   :doc:`../_environment`), and otherwise a default folder (its path is shown
-   in the tooltip of the parameter). Changing this setting requires
-   restarting Natron.
+   files. Choose your fastest disk. The ``NATRON_DISK_CACHE_PATH``
+   environment variable, if it is set, takes precedence over this field (see
+   :doc:`../_environment`). When neither is set, a default folder is used
+   (its path is shown in the tooltip of the parameter). Changing this setting
+   requires restarting Natron.
+
+   All the Natron processes that use the same folder (for example Natron and
+   a background render) share the caches. A Natron that starts while another
+   one uses them starts with empty caches: it doesn't restore the cached
+   images of the other one, nor delete its files, and **Wipe Disk Cache**
+   only removes its own cache files. Each process applies the size limits
+   to its own files, so with N processes the caches can take up to N times
+   the limits on disk. The cached images are restored by the next Natron
+   started alone, from the list of cache files written by the process that
+   wrote it last (each process writes it when it saves a project and when it
+   exits); the files of the other processes are then deleted.
+
+   To know whether another process uses the caches, each process keeps a
+   locked file in the ``Instances`` sub-folder. The cache files are never
+   deleted when Natron can't tell: if this folder contains a file of another
+   user, or if the file system doesn't support file locks, the clean-up at
+   startup is disabled. On a network file system, a host that crashed while
+   holding a lock keeps its file in use until the server releases the lock,
+   or until the file is 2 hours old if the locks are local to each host
+   (NFS mounted with ``nolock``).
 
 **Wipe Disk Cache**
    Clears all the caches and deletes all the cache files in the disk cache

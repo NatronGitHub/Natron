@@ -50,6 +50,7 @@ NATRON_THIRD_PARTY_SOURCES += \
 SOURCES += \
     BaseTest.cpp \
     Curve_Test.cpp \
+    DiskCache_Test.cpp \
     FileSystemModel_Test.cpp \
     Hash64_Test.cpp \
     Image_Test.cpp \

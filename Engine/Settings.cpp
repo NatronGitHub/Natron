@@ -2302,11 +2302,16 @@ Settings::onKnobValueChanged(KnobI* k,
         }
         setCachingLabels();
     } else if ( k == _diskCachePath.get() ) {
-        QString path = QString::fromUtf8(_diskCachePath->getValue().c_str());
-        qputenv(NATRON_DISK_CACHE_PATH_ENV_VAR, path.toUtf8());
+        // The environment variable, if set, takes precedence over the preference (#1265): don't overwrite it
         appPTR->refreshDiskCacheLocation();
     } else if ( k == _wipeDiskCache.get() ) {
-        appPTR->wipeAndCreateDiskCacheStructure();
+        if ( !appPTR->wipeAndCreateDiskCacheStructure() ) {
+            Dialogs::warningDialog( tr("Wipe Disk Cache").toStdString(),
+                                    tr("The disk cache folder is used by another %1 process, so its files were not deleted: "
+                                       "only the cache entries of this process were removed. Quit the other %1 processes "
+                                       "(including the background renders), then wipe the disk cache again.")
+                                    .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
+        }
     } else if ( k == _numberOfThreads.get() ) {
         int nbThreads = getNumberOfThreads();
         appPTR->setNThreadsToRender(nbThreads);
@@ -2551,6 +2556,12 @@ U64
 Settings::getMaximumDiskCacheNodeSize() const
 {
     return (U64)( _maxDiskCacheNodeGB->getValue() ) * 1024 * 1024 * 1024;
+}
+
+QString
+Settings::getDiskCachePath() const
+{
+    return _diskCachePath ? QString::fromUtf8( _diskCachePath->getValue().c_str() ) : QString();
 }
 
 ///////////////////////////////////////////////////

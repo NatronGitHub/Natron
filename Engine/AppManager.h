@@ -461,6 +461,15 @@ public:
     void refreshDiskCacheLocation();
     const QString& getDiskCacheLocation() const;
 
+    /**
+     * @brief Returns true if another Natron process (Natron, NatronRenderer, a background render...) uses the disk caches
+     * in the same location. The cache files that are not known to this process must then not be deleted.
+     **/
+    bool isDiskCacheUsedByAnotherProcess() const;
+
+    // For the tests: how often the file of this process in <disk cache location>/Instances is touched (default: 10 minutes)
+    void setDiskCacheInstanceFileTouchInterval(int milliseconds);
+
     void saveCaches() const;
 
     PyObject* getMainModule();
@@ -631,7 +640,12 @@ public Q_SLOTS:
 
     void clearAllCaches();
 
-    void wipeAndCreateDiskCacheStructure();
+    /**
+     * @brief Clears all the caches and deletes the cache folders. Returns false if another Natron process uses the
+     * disk caches (see isDiskCacheUsedByAnotherProcess()): the caches are then only cleared, and the files of the
+     * other process are kept.
+     **/
+    bool wipeAndCreateDiskCacheStructure();
 
     void onNodeMemoryRegistered(qint64 mem);
 
