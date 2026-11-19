@@ -261,11 +261,12 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobGuiPtr& kno
         holderName = QString::fromUtf8( effect->getNode()->getLabel().c_str() );
     }
 
-    // the label of the block of changes, e.g. the name given to paramEditBegin() by an OpenFX plug-in (empty if it gave
-    // NULL or ""): the default text if it is empty
+    // "label to attach to any undo/redo string" (paramEditBegin() of an OpenFX plug-in): plug-ins often pass an
+    // internal name (e.g. "setTransform"), so it is attached to the usual text, not a replacement. HostSupport turns a
+    // NULL name into "": the usual text alone.
     const std::string label = holder ? holder->getMultipleParamsEditLabel() : std::string();
     if ( !label.empty() ) {
-        setText( QString::fromUtf8( label.c_str() ) );
+        setText( tr("Multiple edits of %1 (%2)").arg( holderName, QString::fromUtf8( label.c_str() ) ) );
     } else {
         setText( tr("Multiple edits of %1").arg(holderName) );
     }

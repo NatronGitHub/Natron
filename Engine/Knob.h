@@ -2461,12 +2461,12 @@ public:
     /**
      * @brief Start (eMultipleParamsEditOnCreateNewCommand) or end (eMultipleParamsEditOff) a block of changes that are
      * one undo command, e.g. paramEditBegin()/paramEditEnd() of an OpenFX effect. Blocks may be nested: the
-     * outermost one is the undo command, and label is the text of its undo command, if not empty.
+     * outermost one is the undo command, and label, if not empty, is attached to the text of its undo command.
      **/
     void setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level, const std::string& label = std::string());
 
     /**
-     * @brief The text of the undo command of the block of changes in progress, or empty for the default text.
+     * @brief The label attached to the text of the undo command of the block of changes in progress, or empty.
      **/
     std::string getMultipleParamsEditLabel() const;
 

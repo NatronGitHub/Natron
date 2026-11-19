@@ -4934,7 +4934,7 @@ struct KnobHolder::KnobHolderPrivate
     mutable QMutex paramsEditLevelMutex;
     KnobHolder::MultipleParamsEditEnum paramsEditLevel;
     int paramsEditRecursionLevel;
-    std::string paramsEditLabel; // the text of the undo command of the outermost block, or empty
+    std::string paramsEditLabel; // the label of the undo command of the outermost block, or empty
     mutable QMutex evaluationBlockedMutex;
     int evaluationBlocked;
 
