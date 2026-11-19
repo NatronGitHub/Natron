@@ -92,6 +92,11 @@ CustomParamInteract::CustomParamInteract(const KnobGuiPtr& knob,
 
     entryPoint->getMinimumSize(minW, minH);
     setMinimumSize(minW, minH);
+    // The interact gets the keyboard focus when it is clicked (or tabbed into): kOfxInteractActionGainFocus,
+    // then the key actions, and kOfxInteractActionLoseFocus when the focus goes ("An interact instance
+    // should be issued a gain focus action before any key or pen actions are issued", ofxInteracts.rst).
+    // QOpenGLWidget defaults to Qt::NoFocus, so these actions were never sent.
+    setFocusPolicy(Qt::StrongFocus);
 }
 
 CustomParamInteract::~CustomParamInteract()
@@ -346,7 +351,9 @@ CustomParamInteract::mouseMoveEvent(QMouseEvent* e)
     pos.y = height() - 1 - e->y();
     viewportPos.x = pos.x;
     viewportPos.y = pos.y;
-    OfxStatus stat = _imp->entryPoint->penMotionAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0, pos, viewportPos, /*pressure=*/ 1.);
+    // without mouse tracking, the motion events come with a button down
+    const double pressure = (e->buttons() == Qt::NoButton) ? 0. : 1.;
+    OfxStatus stat = _imp->entryPoint->penMotionAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0, pos, viewportPos, pressure);
     if (stat == kOfxStatOK) {
         update();
     }
@@ -365,7 +372,9 @@ CustomParamInteract::mouseReleaseEvent(QMouseEvent* e)
     pos.y = height() - 1 - e->y();
     viewportPos.x = pos.x;
     viewportPos.y = pos.y;
-    OfxStatus stat = _imp->entryPoint->penUpAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0, pos, viewportPos, /*pressure=*/ 1.);
+    // the button is up: pressure 0 ("If a pen has only two states (eg: a mouse button), these should map
+    // to 0.0 and 1.0", ofxInteract.h)
+    OfxStatus stat = _imp->entryPoint->penUpAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0, pos, viewportPos, /*pressure=*/ 0.);
     if (stat == kOfxStatOK) {
         update();
     }
@@ -404,7 +413,7 @@ CustomParamInteract::keyPressEvent(QKeyEvent* e)
 
     scale.x = scale.y = 1.;
     double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-    QByteArray keyStr;
+    QByteArray keyStr = OfxParamOverlayInteract::keyStringFromText( e->text() );
     OfxStatus stat;
     if ( e->isAutoRepeat() ) {
         stat = _imp->entryPoint->keyRepeatAction( time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
@@ -413,6 +422,9 @@ CustomParamInteract::keyPressEvent(QKeyEvent* e)
     }
     if (stat == kOfxStatOK) {
         update();
+    } else {
+        // the interact did not use the key: let the settings panel and the application handle it
+        e->ignore();
     }
 }
 
@@ -423,10 +435,12 @@ CustomParamInteract::keyReleaseEvent(QKeyEvent* e)
 
     scale.x = scale.y = 1.;
     double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-    QByteArray keyStr;
+    QByteArray keyStr = OfxParamOverlayInteract::keyStringFromText( e->text() );
     OfxStatus stat = _imp->entryPoint->keyUpAction( time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
     if (stat == kOfxStatOK) {
         update();
+    } else {
+        e->ignore();
     }
 }
 

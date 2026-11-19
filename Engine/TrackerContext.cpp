@@ -1422,7 +1422,7 @@ TrackerContext::onOverlayKeyDownInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->getEffectInstance()->onOverlayKeyDown_public(time, renderScale, view, key, modifiers) ) {
+        if ( thisNode->getEffectInstance()->onOverlayKeyDown_public(time, renderScale, view, key, modifiers, QString()) ) {
             return true;
         }
     }
@@ -1445,7 +1445,7 @@ TrackerContext::onOverlayKeyUpInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->getEffectInstance()->onOverlayKeyUp_public(time, renderScale, view, key, modifiers) ) {
+        if ( thisNode->getEffectInstance()->onOverlayKeyUp_public(time, renderScale, view, key, modifiers, QString()) ) {
             return true;
         }
     }
@@ -1468,7 +1468,7 @@ TrackerContext::onOverlayKeyRepeatInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->getEffectInstance()->onOverlayKeyRepeat_public(time, renderScale, view, key, modifiers) ) {
+        if ( thisNode->getEffectInstance()->onOverlayKeyRepeat_public(time, renderScale, view, key, modifiers, QString()) ) {
             return true;
         }
     }

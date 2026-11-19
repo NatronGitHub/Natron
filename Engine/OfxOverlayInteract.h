@@ -28,6 +28,10 @@
 
 #include "Global/Macros.h"
 
+#include <QtCore/QByteArray>
+#include <QtCore/QPointF>
+#include <QtCore/QString>
+
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
 // clang-format off
 CLANG_DIAG_OFF(unknown-pragmas)
@@ -73,6 +77,22 @@ public:
     virtual ~NatronOverlayInteractSupport();
 
     virtual bool isColorPickerRequired() const = 0;
+
+    /**
+     * @brief The kOfxPropKeyString of a key action, from the text the key generates (QKeyEvent::text()):
+     * "UTF8 string representing a character key that was pressed, some keys have no UTF8 encoding, in
+     * which case this is \"\"". Keys that generate control characters (Return, Tab, Backspace, Escape,
+     * Delete, or a key with Ctrl on some systems) have no character: "".
+     **/
+    static QByteArray keyStringFromText(const QString& text);
+
+    /**
+     * @brief The kOfxInteractPropPenViewportPosition of a pen action: "This is in the interact's openGL
+     * viewport coordinates, with 0,0 being at the bottom left" (ofxInteract.h). widgetPos is in the
+     * coordinates of the calling viewport widget, with 0,0 at the top left, in the units of
+     * kOfxInteractPropViewportSize.
+     **/
+    OfxPointI toPenViewportPosition(const QPointF& widgetPos) const;
 
     void setHasColorPicker(bool hasPicker)
     {

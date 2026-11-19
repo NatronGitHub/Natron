@@ -310,6 +310,32 @@ OfxParamOverlayInteract::isColorPickerRequired() const
     return (bool)getProperties().getIntProperty(kNatronOfxInteractColourPicking);
 }
 
+QByteArray
+NatronOverlayInteractSupport::keyStringFromText(const QString& text)
+{
+    for (int i = 0; i < text.size(); ++i) {
+        if (text.at(i).category() == QChar::Other_Control) {
+            return QByteArray();
+        }
+    }
+
+    return text.toUtf8();
+}
+
+OfxPointI
+NatronOverlayInteractSupport::toPenViewportPosition(const QPointF& widgetPos) const
+{
+    double width = 0., height = 0.;
+
+    n_getViewportSize(width, height);
+    OfxPointI ret;
+    ret.x = (int)widgetPos.x();
+    // flip y, as the parameter interacts do (CustomParamInteract)
+    ret.y = (height > 0.) ? (int)(height - 1. - widgetPos.y()) : (int)widgetPos.y();
+
+    return ret;
+}
+
 NatronOverlayInteractSupport::NatronOverlayInteractSupport()
     : _hasColorPicker(false)
     , _lastColorPicker()

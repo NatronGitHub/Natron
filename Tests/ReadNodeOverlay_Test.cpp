@@ -262,7 +262,7 @@ TEST_F(ReadNodeOverlayTest, ReaderWithoutOverlay)
     EXPECT_FALSE( _effect->hasOverlay() );
     EXPECT_FALSE( penDown(0., 0.) );
     EXPECT_FALSE( penUp(0., 0.) );
-    EXPECT_FALSE( _effect->onOverlayKeyDown_public(kTime, RenderScale(), ViewIdx(0), Key_A, KeyboardModifiers()) );
+    EXPECT_FALSE( _effect->onOverlayKeyDown_public(kTime, RenderScale(), ViewIdx(0), Key_A, KeyboardModifiers(), QString()) );
     _effect->onInteractViewportSelectionCleared( KeyboardModifiers() );
 }
 

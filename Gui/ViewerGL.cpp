@@ -1762,7 +1762,9 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     _imp->viewerTab->onMousePressCalledInViewer();
 
     _imp->hasMovedSincePress = false;
-    _imp->pressureOnRelease = 1.;
+    // the pressure of the next pen up, if no tablet event sets it: "If a pen has only two states (eg: a
+    // mouse button), these should map to 0.0 and 1.0" (ofxInteract.h)
+    _imp->pressureOnRelease = 0.;
     if ( (e->buttons() == Qt::LeftButton) && !(e->modifiers() &  Qt::MetaModifier) ) {
         _imp->pointerTypeOnPress = ePenTypeLMB;
     } else if ( (e->buttons() == Qt::RightButton) || (e->buttons() == Qt::LeftButton  && (e->modifiers() &  Qt::MetaModifier)) ) {
@@ -2091,7 +2093,9 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
 void
 ViewerGL::mouseMoveEvent(QMouseEvent* e)
 {
-    if ( !penMotionInternal(e->x(), e->y(), /*pressure=*/ 1., currentTimeForEvent(e), e) ) {
+    // mouse tracking is on: the pen is up (pressure 0) unless a button is down
+    const double pressure = (e->buttons() == Qt::NoButton) ? 0. : 1.;
+    if ( !penMotionInternal(e->x(), e->y(), pressure, currentTimeForEvent(e), e) ) {
         QOpenGLWidget::mouseMoveEvent(e);
     }
 } // mouseMoveEvent
@@ -2139,6 +2143,10 @@ ViewerGL::tabletEvent(QTabletEvent* e)
         break;
     }
     case QEvent::TabletMove: {
+        if (e->buttons() == Qt::NoButton) {
+            // the pen hovers over the tablet (the pressure fix above turns its 0 into 1)
+            pressure = 0.;
+        }
         if ( !penMotionInternal(e->x(), e->y(), pressure, currentTimeForEvent(e), e) ) {
             QOpenGLWidget::tabletEvent(e);
         } else {
