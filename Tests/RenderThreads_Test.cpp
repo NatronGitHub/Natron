@@ -33,6 +33,8 @@
 
 #include "Global/Macros.h"
 
+#include <memory>
+#include <mutex>
 #include <set>
 
 #include <gtest/gtest.h>
@@ -56,6 +58,31 @@ NATRON_NAMESPACE_USING
 
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
 namespace {
+// The frames reported by RenderEngine::frameRendered, from several render threads
+struct RenderedFrames
+{
+    std::mutex mutex;
+    std::set<int> frames;
+};
+
+// Disconnects at the end of the scope, also when an ASSERT returns early
+class ConnectionGuard
+{
+public:
+    explicit ConnectionGuard(const QMetaObject::Connection& c)
+        : _c(c)
+    {
+    }
+
+    ~ConnectionGuard()
+    {
+        QObject::disconnect(_c);
+    }
+
+private:
+    QMetaObject::Connection _c;
+};
+
 class RenderThreadsTest
     : public ::testing::Test
 {
@@ -155,17 +182,23 @@ TEST_F(RenderThreadsTest, NoFrameIsDropped)
     for (int i = 0; i < 10; ++i) {
         const int nFrames = 500;
         // other frames each time, so that they are not in the cache
-        std::set<int> rendered;
         RenderEnginePtr engine = output()->getRenderEngine();
         ASSERT_TRUE( bool(engine) );
-        QMetaObject::Connection c = QObject::connect( engine.get(), &RenderEngine::frameRendered, [&rendered](int time, double) {
-            rendered.insert(time);
-        } );
+        // frameRendered is emitted by the render threads (free-for-all scheduling), and a connection
+        // without a context object is direct: the slot runs in those threads, at the same time.
+        std::shared_ptr<RenderedFrames> rendered = std::make_shared<RenderedFrames>();
+        ConnectionGuard c( QObject::connect( engine.get(), &RenderEngine::frameRendered, [rendered](int time, double) {
+            std::lock_guard<std::mutex> l(rendered->mutex);
+            rendered->frames.insert(time);
+        } ) );
         startRender(1 + i * nFrames, (i + 1) * nFrames);
         ASSERT_TRUE( waitForRenderEnd(30000) ) << "the render stalled (iteration " << i << ")";
-        QCoreApplication::processEvents();
-        QObject::disconnect(c);
-        EXPECT_EQ( (std::size_t)nFrames, rendered.size() ) << "iteration " << i;
+        std::size_t nRendered;
+        {
+            std::lock_guard<std::mutex> l(rendered->mutex);
+            nRendered = rendered->frames.size();
+        }
+        EXPECT_EQ( (std::size_t)nFrames, nRendered ) << "iteration " << i;
     }
 }
 
