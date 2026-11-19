@@ -16,6 +16,7 @@ Compositing
    compositing-rotopaint
    compositing-tracking
    compositing-transform
+   compositing-time
    compositing-color
    compositing-evaluating-color
    compositing-stereo
