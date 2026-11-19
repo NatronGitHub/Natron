@@ -19,7 +19,8 @@ Transforming Images
    rotation bar rotates it, and the lines of the cross skew it.
 3. You can also type values in the properties panel, drag a slider, or hover
    over a value and turn the mouse wheel. Hold :kbd:`Ctrl` while dragging a
-   slider for finer steps (:kbd:`Shift` for even finer ones).
+   slider for 10 times finer steps, or :kbd:`Ctrl+Shift` for 100 times finer
+   steps.
 
 .. image:: _images/compositing-Transform_01.png
 

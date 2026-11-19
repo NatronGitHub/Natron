@@ -39,10 +39,11 @@ Layering Images Together with the Merge Node
   overlap.
 * **A** or **B**: the bounding box of that input.
 
-6. The **R**, **G**, **B** and **A** checkboxes on the **A** and **B** rows
-   select which channels of each input are used, and those on the **Output**
-   row select which channels the node writes. For example, uncheck the
-   **A** checkbox of input **A** to ignore the alpha of input **A**.
+6. The **R**, **G**, **B** and **A** checkboxes on the **A Channels** and
+   **B Channels** rows select which channels of each input are used, and
+   those on the **Output** row select which channels the node writes. For
+   example, uncheck the **A** checkbox on the **A Channels** row to ignore
+   the alpha of input **A**.
 
 7. **Mix** blends between input **B** (at 0) and the merge result (at 1).
 
