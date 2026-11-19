@@ -209,8 +209,8 @@ sudo sed -i '' -e 's/^find_dependency(zstd/#find_dependency(zstd/' /opt/local/li
 sudo port -v -N install opencolorio  -quartz -python27 -python38 -python39 -python310 -python311 -python312 -python313 -python314
 sudo port -v -N install opencolorio1 -quartz -python27 -python38 -python39 -python310 -python311 -python312 -python313 -python314
 
-# openfx-misc
-sudo port -v -N install seexpr seexpr211
+# openfx-io (SeExpr 2.11 only, for SEEXPR_HOME)
+sudo port -v -N install seexpr211
 
 # openfx-arena
 sudo port -v -N install librsvg -quartz
@@ -234,7 +234,6 @@ Python 3.10 is end-of-life and is no longer used (Python version policy, 2026-11
 
 ```Shell
 sudo port -v -N install python311 py311-pip
-sudo port -v -N install openblas
 sudo port -v -N install py311-numpy -gfortran
 sudo port -v -N install py311-sphinx py311-sphinx_rtd_theme
 sudo port -v -N install qt5 qt5-qtwebengine
