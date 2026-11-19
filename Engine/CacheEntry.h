@@ -1078,7 +1078,9 @@ public:
      **/
     void removeAnyBackingFile() const
     {
-        if ( !isStoredOnDisk() || _cache->isTileCache()) {
+        // Only for an entry stored in a file: its size was added to the cache sizes. Entries that fell back on RAM
+        // (the file could not be created) have no path.
+        if ( !isStoredOnDisk() || _cache->isTileCache() || getFilePath().empty() ) {
             return;
         }
 

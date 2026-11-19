@@ -1223,7 +1223,8 @@ public:
                 }
 
                 /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
-                while (diskCacheSize + evictedFromMemory.second->size() >= maximumCacheSize) {
+                // size() is 0 (plus the bitmap) once the file is unmapped: use the size of the file
+                while (diskCacheSize + evictedFromMemory.second->getSizeInBytesFromParams() >= maximumCacheSize) {
                     {
                         std::pair<hash_type, EntryTypePtr> evictedFromDisk = _diskCache.evict();
                         //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
@@ -1979,7 +1980,8 @@ private:
             }
 
             /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
-            while ( ( diskCacheSize  + evicted.second->size() ) >= (maximumCacheSize - maximumInMemorySize) ) {
+            // size() is 0 (plus the bitmap) once the file is unmapped: use the size of the file
+            while ( ( diskCacheSize  + evicted.second->getSizeInBytesFromParams() ) >= (maximumCacheSize - maximumInMemorySize) ) {
                 std::pair<hash_type, EntryTypePtr> evictedFromDisk = _diskCache.evict();
                 //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
                 //we'll let the user of these entries purge the extra entries left in the cache later on
