@@ -183,9 +183,9 @@ public:
 
     /**
      * @brief Same as the other version clone except that keyframes will be offset by the given offset
-     * and only the keyframes lying in the given range will be copied.
+     * and only the keyframes lying in the given range (all of them if range is NULL) will be copied.
      **/
-    void clone(const Curve & other, SequenceTime offset, const RangeD* range);
+    void clone(const Curve & other, double offset, const RangeD* range);
 
     bool isAnimated() const WARN_UNUSED_RETURN;
 

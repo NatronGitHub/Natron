@@ -40,6 +40,7 @@ set(Tests_SOURCES
     OfxCustomParamInterp_Test.cpp
     OfxImageMemory_Test.cpp
     OfxMultiThreadSuite_Test.cpp
+    OfxParamCopy_Test.cpp
     OfxParamInteract_Test.cpp
     OfxPluginDeprecated_Test.cpp
     OfxSyncPrivateData_Test.cpp

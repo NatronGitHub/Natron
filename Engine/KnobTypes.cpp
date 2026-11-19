@@ -2238,28 +2238,14 @@ KnobParametric::cloneExtraDataAndCheckIfChanged(KnobI* other,
 
 void
 KnobParametric::cloneExtraData(KnobI* other,
-                               double offset,
-                               const RangeD* range,
+                               double /*offset*/,
+                               const RangeD* /*range*/,
                                int dimension,
                                int otherDimension)
 {
-    KnobParametric* isParametric = dynamic_cast<KnobParametric*>(other);
-
-    if (!isParametric) {
-        return;
-    }
-    if (dimension == -1) {
-        int dimMin = std::min( getDimension(), isParametric->getDimension() );
-        for (int i = 0; i < dimMin; ++i) {
-            _curves[i]->clone(*isParametric->_curves[i], offset, range);
-        }
-    } else {
-        if (otherDimension == -1) {
-            otherDimension = dimension;
-        }
-        assert( dimension >= 0 && dimension < getDimension() && otherDimension >= 0 && otherDimension < other->getDimension() );
-        _curves[dimension]->clone(*isParametric->_curves[otherDimension], offset, range);
-    }
+    // The parametric curves are functions of the parametric variable, not of time: the time offset and the
+    // frame range (of paramCopy() in the OFX parameter suite) do not apply to them.
+    cloneExtraData(other, dimension, otherDimension);
 }
 
 void

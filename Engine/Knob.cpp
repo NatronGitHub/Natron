@@ -4165,17 +4165,19 @@ KnobHelper::cloneExpressionsAndCheckIfChanged(KnobI* other,
 
 void
 KnobHelper::cloneOneCurve(KnobI* other,
-                          int offset,
+                          double offset,
                           const RangeD* range,
                           int dimension,
                           int otherDimension)
 {
     assert( dimension >= 0 && dimension < getDimension() &&
             otherDimension >= 0 && otherDimension < other->getDimension() );
+    // the offset also applies without a range
+    const bool plainClone = !range && (offset == 0.);
     CurvePtr thisCurve = getCurve(ViewIdx(0), dimension, true);
     CurvePtr otherCurve = other->getCurve(ViewIdx(0), otherDimension, true);
     if (thisCurve && otherCurve) {
-        if (!range) {
+        if (plainClone) {
             thisCurve->clone(*otherCurve);
         } else {
             thisCurve->clone(*otherCurve, offset, range);
@@ -4185,14 +4187,14 @@ KnobHelper::cloneOneCurve(KnobI* other,
     CurvePtr otherGuiCurve = other->getGuiCurve(ViewIdx(0), otherDimension);
     if (guiCurve) {
         if (otherGuiCurve) {
-            if (!range) {
+            if (plainClone) {
                 guiCurve->clone(*otherGuiCurve);
             } else {
                 guiCurve->clone(*otherGuiCurve, offset, range);
             }
         } else {
             if (otherCurve) {
-                if (!range) {
+                if (plainClone) {
                     guiCurve->clone(*otherCurve);
                 } else {
                     guiCurve->clone(*otherCurve, offset, range);
@@ -4205,7 +4207,7 @@ KnobHelper::cloneOneCurve(KnobI* other,
 
 void
 KnobHelper::cloneCurves(KnobI* other,
-                        int offset,
+                        double offset,
                         const RangeD* range,
                         int dimension,
                         int otherDimension)
