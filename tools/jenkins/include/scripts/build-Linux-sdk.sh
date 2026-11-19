@@ -900,7 +900,6 @@ build xmlto # (required by shared-mime-info)
 build shared-mime-info # (required by gdk-pixbuf)
 build gdk-pixbuf
 build librsvg # (without vala support)
-build fftw # (GPLv2, for openfx-gmic)
 
 checkpoint
 
