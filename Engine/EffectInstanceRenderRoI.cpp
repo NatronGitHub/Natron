@@ -899,6 +899,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     if ( !renderScaleOneUpstreamIfRenderScaleSupportDisabled && !supportsMultiResolution() ) {
         renderScaleOneUpstreamIfRenderScaleSupportDisabled = true;
     }
+    // The image is rendered at full scale from downscaled (thus blurry) inputs only when the effect doesn't support
+    // render scale and the inputs are not rendered at full scale: it must not be found in the cache by a render
+    // at full scale (#1123). ImageKey has no mipmap level, so this flag is what distinguishes these images.
+    // (It used to be set from renderMappedMipmapLevel == 0, which is also true for a real full-scale render.)
+    const bool fullScaleWithDownscaleInputs = renderFullScaleThenDownscale && !renderScaleOneUpstreamIfRenderScaleSupportDisabled;
 
     std::unique_ptr<ImageKey> key( new ImageKey(getNode().get(),
                                                   nodeHash,
@@ -907,7 +912,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                   args.view,
                                                   1.,
                                                   draftModeSupported && frameArgs->draftMode,
-                                                  renderMappedMipmapLevel == 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled) );
+                                                  fullScaleWithDownscaleInputs) );
     std::unique_ptr<ImageKey> nonDraftKey( new ImageKey(getNode().get(),
                                                           nodeHash,
                                                           isFrameVaryingOrAnimated,
@@ -915,7 +920,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                           args.view,
                                                           1.,
                                                           false,
-                                                          renderMappedMipmapLevel == 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled) );
+                                                          fullScaleWithDownscaleInputs) );
 
     bool isDuringPaintStroke = isDuringPaintStrokeCreationThreadLocal();
 

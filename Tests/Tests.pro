@@ -53,6 +53,7 @@ SOURCES += \
     DiskCache_Test.cpp \
     FileSystemModel_Test.cpp \
     Hash64_Test.cpp \
+    ImageCache_Test.cpp \
     Image_Test.cpp \
     KnobFile_Test.cpp \
     KnobSlave_Test.cpp \
