@@ -32,12 +32,14 @@
 #include <fcntl.h>
 #include <sys/mman.h>      // mmap, munmap.
 #include <sys/stat.h>
+#include <sys/statvfs.h>   // fstatvfs
 #include <sys/types.h>     // struct stat.
 #include <unistd.h>        // sysconf.
 #include <cstring>
 #include <cerrno>
 #include <cstdio>
 #endif
+#include <algorithm> // min
 #include <sstream> // stringstream
 #include <iostream>
 #include <cassert>
@@ -328,6 +330,72 @@ MemoryFile::resize(size_t new_size)
         throw std::bad_alloc();
     }
     _imp->size = new_size;
+}
+
+#if defined(__NATRON_UNIX__)
+// Allocates the disk blocks of [offset, offset + length) of a file. Returns 0 or an errno value.
+static int
+allocateFileBlocks(int fd,
+                   off_t offset,
+                   off_t length)
+{
+    // Note: lseek(SEEK_HOLE) can't tell whether this is needed: APFS reports no hole in a file that is mapped.
+#if defined(__linux__) || defined(__FreeBSD__)
+    int rc;
+    do {
+        rc = ::posix_fallocate(fd, offset, length);
+    } while (rc == EINTR);
+    if ( (rc != EINVAL) && (rc != EOPNOTSUPP) && (rc != ENOSYS) ) {
+        return rc;
+    }
+    // Not supported by the file system: write zeroes instead
+#endif
+    // Writing allocates the blocks (macOS has no posix_fallocate(), and F_PREALLOCATE can only allocate at the end of the file).
+    // Don't write if it would leave less than kMinFreeBytes on the disk: if the disk gets full, the zeroes already written
+    // can't be given back (APFS can't even delete a file or punch a hole when it is full).
+    const unsigned long long kMinFreeBytes = 64ULL * 1024 * 1024;
+    struct statvfs fsStat;
+    if ( (::fstatvfs(fd, &fsStat) == 0) && (fsStat.f_blocks > 0) &&
+         ( (unsigned long long)fsStat.f_bavail * fsStat.f_frsize < (unsigned long long)length + kMinFreeBytes ) ) {
+        return ENOSPC;
+    }
+    static const char zeroes[65536] = { 0 };
+    while (length > 0) {
+        ssize_t n = ::pwrite( fd, zeroes, (size_t)std::min( (off_t)sizeof(zeroes), length ), offset );
+        if (n < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+
+            return errno;
+        }
+        offset += n;
+        length -= n;
+    }
+
+    return 0;
+}
+#endif
+
+void
+MemoryFile::reserve(size_t offset,
+                    size_t length)
+{
+#if defined(__NATRON_UNIX__)
+    if ( (length == 0) || (_imp->file_handle < 0) ) {
+        return;
+    }
+    int rc = allocateFileBlocks(_imp->file_handle, (off_t)offset, (off_t)length);
+    if (rc != 0) {
+        std::stringstream ss;
+        ss << "MemoryFile EXC : Failed to allocate " << length << " bytes of disk space for \"" << _imp->path << "\": " << std::strerror(rc) << " (" << rc << ")";
+        throw std::runtime_error( ss.str() );
+    }
+#else
+    // On Windows, resize() extends the file with CreateFileMapping(), which allocates the disk space or fails
+    Q_UNUSED(offset);
+    Q_UNUSED(length);
+#endif
 }
 
 void

@@ -442,10 +442,22 @@ public:
         _path = path;
         try {
             _backingFile.reset( new MemoryFile(_path, MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate) );
-        } catch (const std::runtime_error & r) {
+            if ( !path.empty() && (count != 0) ) {
+                //if the backing file has already the good size and we just wanted to re-open the mapping
+                _backingFile->resize(count);
+                // Allocate the disk space now: if the disk is full, writing to the mapping would crash (#192)
+                _backingFile->reserve(0, count);
+            }
+        } catch (const std::exception & r) {
             qDebug() << r.what();
-            // if opening the file mapping failed, just call allocate again, but this time on RAM!
-            _backingFile.reset();
+            // if creating the file mapping failed (e.g. the disk is full), just call allocate again, but this time on RAM!
+            if (_backingFile) {
+                try {
+                    _backingFile->remove();
+                } catch (...) {
+                }
+                _backingFile.reset();
+            }
             _path.clear();
             allocateRAM(count);
 
@@ -453,11 +465,6 @@ public:
         }
 
         assert(_backingFile);
-
-        if ( !path.empty() && (count != 0) ) {
-            //if the backing file has already the good size and we just wanted to re-open the mapping
-            _backingFile->resize(count);
-        }
     }
 
     void allocateGLTexture(const RectI& rectangle,

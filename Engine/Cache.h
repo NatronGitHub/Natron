@@ -812,6 +812,26 @@ private:
             _nextAvailableCacheFileIndex = 1;
         }
 
+        // Allocate the disk space of the tile now: the tile files are sparse, and if the disk is full,
+        // writing to the mapping would crash (#192). allocateTileCache() then falls back on RAM.
+        try {
+            foundAvailableFile->file->reserve(*dataOffset, _tileByteSize);
+        } catch (...) {
+            if ( !foundAvailableFile->hasUsedTiles() ) {
+                // Don't keep an empty file that may take disk space
+                _cacheFiles.erase(foundAvailableFile);
+                if (_nextAvailableCacheFile.lock() == foundAvailableFile) {
+                    _nextAvailableCacheFile.reset();
+                    _nextAvailableCacheFileIndex = -1;
+                }
+                try {
+                    foundAvailableFile->file->remove();
+                } catch (...) {
+                }
+            }
+            throw;
+        }
+
         // Notify the memory file that this portion of the file is valid
         foundAvailableFile->usedTiles[foundTileIndex] = true;
         return foundAvailableFile;
