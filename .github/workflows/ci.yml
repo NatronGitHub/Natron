@@ -64,7 +64,8 @@ jobs:
       PYTHON_VERSION: ${{ matrix.python-version }}
       OCIO_CONFIG_VERSION: 2.5
       MATRIX_OS: ${{ matrix.os }}
-      CONFIG: ${{ matrix.config }}
+      # not CONFIG: MSYS2's pacman scripts read $CONFIG as their configuration file
+      CI_CONFIG: ${{ matrix.config }}
       # ccache, used by the Fast builds only (see the top of this file)
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_BASEDIR: ${{ github.workspace }}
@@ -129,12 +130,13 @@ jobs:
             ccache-${{ matrix.os }}-gcc-${{ matrix.config }}-
 
       - name: Build Unix (${{ matrix.config }})
+        id: build
         run: |
-          case "$CONFIG" in
+          case "$CI_CONFIG" in
             # CMake Debug (assertions on) without -g and at -O1: much faster to compile and link
             Fast) cfg=(-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS_DEBUG=-O1 -DCMAKE_CXX_FLAGS_DEBUG=-O1
                        -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache) ;;
-            *) cfg=(-DCMAKE_BUILD_TYPE=$CONFIG) ;;
+            *) cfg=(-DCMAKE_BUILD_TYPE=$CI_CONFIG) ;;
           esac
           ccache -z
           mkdir build && cd build
@@ -142,7 +144,7 @@ jobs:
           make -j$(nproc)
 
       - name: ccache statistics
-        if: always()
+        if: ${{ !cancelled() && steps.build.outcome != 'skipped' }}
         run: ccache -s
 
       - name: Save ccache
@@ -189,7 +191,8 @@ jobs:
       PYTHON_VERSION: ${{ matrix.python-version }}
       OCIO_CONFIG_VERSION: 2.5
       MATRIX_OS: ${{ matrix.os }}
-      CONFIG: ${{ matrix.config }}
+      # not CONFIG: MSYS2's pacman scripts read $CONFIG as their configuration file
+      CI_CONFIG: ${{ matrix.config }}
       # ccache, used by the Fast builds only (see the top of this file)
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_BASEDIR: ${{ github.workspace }}
@@ -269,12 +272,13 @@ jobs:
             ccache-${{ matrix.os }}-ucrt64-gcc-${{ matrix.config }}-
 
       - name: Build Windows (${{ matrix.config }})
+        id: build
         run: |
-          case "$CONFIG" in
+          case "$CI_CONFIG" in
             # CMake Debug (assertions on) without -g and at -O1: much faster to compile and link
             Fast) cfg=(-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS_DEBUG=-O1 -DCMAKE_CXX_FLAGS_DEBUG=-O1
                        -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache) ;;
-            *) cfg=(-DCMAKE_BUILD_TYPE=$CONFIG) ;;
+            *) cfg=(-DCMAKE_BUILD_TYPE=$CI_CONFIG) ;;
           esac
           ccache -z
           mkdir build && cd build
@@ -282,7 +286,7 @@ jobs:
           ninja
 
       - name: ccache statistics
-        if: always()
+        if: ${{ !cancelled() && steps.build.outcome != 'skipped' }}
         run: ccache -s
 
       - name: Save ccache
@@ -377,7 +381,8 @@ jobs:
       MACPORTS_PORTS: >-
         cmake pkgconfig zstd python311 py311-pyside2 py311-qtpy boost expat cairo
       PYVER: '3.11'
-      CONFIG: ${{ matrix.config }}
+      # not CONFIG: MSYS2's pacman scripts read $CONFIG as their configuration file
+      CI_CONFIG: ${{ matrix.config }}
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4.1.1
@@ -508,10 +513,10 @@ jobs:
           # Natron is built with the system (Xcode) clang, which fully supports C++20 on
           # macOS 15; MacPorts only provides the libraries (see #1134).
           /usr/bin/clang++ --version
-          case "$CONFIG" in
+          case "$CI_CONFIG" in
             # CMake Debug (assertions on) without -g and at -O1: much faster to compile and link
             Fast) cfg=(-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS_DEBUG=-O1 -DCMAKE_CXX_FLAGS_DEBUG=-O1) ;;
-            *) cfg=(-DCMAKE_BUILD_TYPE=$CONFIG) ;;
+            *) cfg=(-DCMAKE_BUILD_TYPE=$CI_CONFIG) ;;
           esac
           cmake -S . -B build "${cfg[@]}" -DNATRON_BUILD_TESTS=ON \
             -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
