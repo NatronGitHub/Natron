@@ -21,6 +21,8 @@
 // - bytes: a Bytes param whose default holds NUL bytes (kNatronTestBytesDefault);
 // - bytesNoDefault: a Bytes param without a default;
 // - bytesAnimates: a Bytes param with kOfxParamPropAnimates = 1;
+// - bytesStackDefault: a Bytes param whose default is set from a buffer that describeInContext overwrites
+//   right after (the host must copy it, see Tests/OfxBytesParam_Test.cpp);
 // - trigger: an Integer param. Its instanceChanged sets "bytes": 1: 256 bytes 0..255, 2: a NULL OfxBytes,
 //   3: a zero length; then reads it back. 4: sets the default of "bytes" to "dyn" from a buffer on the stack.
 //   5: sets a default of 2 GB (more than the host accepts).
@@ -111,6 +113,15 @@ describeInContext(OfxImageEffectHandle effect)
         gPropSuite->propSetPointer(props, kOfxParamPropDefault, 0, (void*)&gDefault);
     }
     defineBytes(paramSet, "bytesNoDefault");
+    props = defineBytes(paramSet, "bytesStackDefault");
+    if (props) {
+        // the host must copy the data: the plug-in reuses its buffer right away
+        unsigned char buffer[4] = { 's', 't', 0, 'k' };
+        OfxBytes def = { buffer, sizeof(buffer) };
+        gPropSuite->propSetPointer(props, kOfxParamPropDefault, 0, (void*)&def);
+        std::memset(buffer, 0x55, sizeof(buffer));
+        def.length = 1;
+    }
     props = defineBytes(paramSet, "bytesAnimates");
     if (props) {
         gPropSuite->propSetInt(props, kOfxParamPropAnimates, 0, 1);

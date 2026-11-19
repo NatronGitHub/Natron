@@ -294,6 +294,22 @@ TEST_F(OfxBytesParamTest, Default)
     EXPECT_TRUE( value.empty() );
 }
 
+// The plug-in sets the default of its descriptor from a buffer on its stack, which it overwrites right after
+// (bytesStackDefault): HostSupport copies it when the plug-in sets it (openfx#188), so that every new instance
+// gets it (BytesInstance reads the descriptor's default when an instance is created).
+TEST_F(OfxBytesParamTest, DescriptorDefaultIsCopied)
+{
+    SKIP_IF_NO_PLUGIN();
+    Bytes value;
+    ASSERT_TRUE( getBytes(paramHandle(_node, "bytesStackDefault"), &value) );
+    const unsigned char expected[] = { 's', 't', 0, 'k' };
+    EXPECT_EQ( Bytes( expected, expected + sizeof(expected) ), value );
+    NodePtr second = createBytesNode();
+    ASSERT_TRUE( getBytes(paramHandle(second, "bytesStackDefault"), &value) );
+    EXPECT_EQ( Bytes( expected, expected + sizeof(expected) ), value );
+    destroy(second);
+}
+
 // The plug-in changes the default of an instance (kOfxParamPropDefault, from a buffer on its stack):
 // setDefault() copies it during the call.
 TEST_F(OfxBytesParamTest, SetDefault)
@@ -439,8 +455,8 @@ TEST_F(OfxBytesParamTest, RenderAction)
     EXPECT_EQ( 255 * 256 / 2, NatronTestPlugin::counter("Bytes.renderChecksum") );
 }
 
-// The value is saved in the project with its own serialization (base64 text) and restored when it is loaded:
-// save the node as in a project (XML), and create a node from it.
+// The value is saved in the project (as a String knob with base64 text, see Natron25ReadsItAsAString) and
+// restored when it is loaded: save the node as in a project (XML), and create a node from it.
 TEST_F(OfxBytesParamTest, SaveAndLoadNode)
 {
     SKIP_IF_NO_PLUGIN();
