@@ -69,6 +69,15 @@ The glue classes
     Implement the OFX memory-suite so plug-ins can allocate scratch buffers
     that participate in Natron's memory accounting.
 
+Conformance
+-----------
+
+How closely Natron follows the host side of the OpenFX 1.5.1 specification is
+recorded in :ref:`ofx-host-conformance`: one table row per MUST, SHOULD or MAY
+statement addressed to hosts, with what Natron and HostSupport do, a verdict,
+and a link to the issue that tracks each deviation. Check it before changing
+host behaviour, and update it when you fix one of those issues.
+
 How a plug-in becomes a node
 ----------------------------
 

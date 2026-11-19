@@ -30,6 +30,7 @@ introduced where needed.
     gui
     rendering
     openfx-host
+    ofx-host-conformance
     python-bindings
     subsystems
     contributing
