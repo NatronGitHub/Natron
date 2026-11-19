@@ -34,6 +34,7 @@
 #include <gtest/gtest.h>
 
 #include "Engine/KnobTypes.h"
+#include "Engine/OSGLContext.h"
 #include "Engine/Settings.h"
 
 #include "OfxTestPlugin.h"
@@ -82,6 +83,16 @@ canRunTest(const char* pluginID)
     if ( !appPTR->isOpenGLLoaded() ) {
         // TODO: Convert to GTEST_SKIP() when gtest updated.
         std::cerr << "[  SKIPPED ] " << pluginID << ": OpenGL could not be loaded" << std::endl;
+
+        return false;
+    }
+    if ( !appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering) || appPTR->getOpenGLRenderers().empty() ) {
+        // OpenGL rendering can't be enabled in the preferences (the setting is hidden and
+        // Settings::isOpenGLRenderingEnabled() is false) when no renderer qualifies. On Linux, the
+        // renderers that GLX_MESA_query_renderer reports as not accelerated are skipped, e.g. the
+        // software Mesa llvmpipe of the Xvfb CI (OSGLContext_x11::getGPUInfos).
+        // TODO: Convert to GTEST_SKIP() when gtest updated.
+        std::cerr << "[  SKIPPED ] " << pluginID << ": no OpenGL renderer can be used for OpenGL rendering" << std::endl;
 
         return false;
     }
