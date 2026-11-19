@@ -63,6 +63,7 @@ SOURCES += \
     NaNGuards_FastMath.cpp \
     NaNGuards_Test.cpp \
     NodeGroup_Test.cpp \
+    NodePresets_Test.cpp \
     NodePreview_Test.cpp \
     OfxBytesParam_Test.cpp \
     OfxCPURenderSupport_Test.cpp \

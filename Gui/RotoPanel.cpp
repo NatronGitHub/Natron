@@ -1331,18 +1331,15 @@ void
 RotoPanel::onItemRemoved(const RotoItemPtr& item,
                          int reason)
 {
-    Bezier* b = qobject_cast<Bezier*>( sender() );
-    BezierPtr isBezier;
-
-    if (b) {
-        isBezier = std::dynamic_pointer_cast<Bezier>( b->shared_from_this() );
-    }
+    // The sender is the RotoContext, not the Bezier
+    BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(item);
 
     if (isBezier) {
         ItemKeys::iterator it = _imp->keyframes.find(isBezier);
         if ( it != _imp->keyframes.end() ) {
-            for (std::set<double>::iterator it2 = it->second.keys.begin(); it2 != it->second.keys.end(); ++it2) {
-                getNode()->getNode()->getApp()->removeKeyFrameIndicator(*it2);
+            // The timeline only shows the keyframes of the selected Beziers
+            if (it->second.visible) {
+                _imp->setVisibleItemKeyframes(it->second.keys, false, true);
             }
             _imp->keyframes.erase(it);
         }

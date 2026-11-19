@@ -33,6 +33,8 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QDebug>
+#include <QTimer>
+#include <QUndoStack>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -1146,6 +1148,20 @@ LoadNodePresetsCommand::undo()
     NodePtr internalNode = node->getNode();
     MultiInstancePanelPtr panel = node->getMultiInstancePanel();
     internalNode->loadKnobs(*_oldSerialization.front(), true);
+    if ( internalNode->getRotoContext() || internalNode->getTrackerContext() ) {
+        // loadKnobs() replaced the shapes or tracks by new ones (#1247). The
+        // commands after this one in the node's undo stack (already undone)
+        // refer to the replaced items and to their settings panel tree items,
+        // which are deleted: redoing them would use deleted items. If there
+        // are any, clear the stack once this undo is finished.
+        std::weak_ptr<QUndoStack> weakStack = node->getUndoStack();
+        QTimer::singleShot(0, [weakStack]() {
+            QUndoStackPtr stack = weakStack.lock();
+            if ( stack && ( stack->count() > stack->index() + 1 ) ) {
+                stack->clear();
+            }
+        });
+    }
     // loadKnobs() may have created user knobs: rebuild the settings panel (#480)
     internalNode->getEffectInstance()->recreateUserKnobs(true);
     if (panel) {
