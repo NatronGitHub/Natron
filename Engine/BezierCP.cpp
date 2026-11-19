@@ -714,6 +714,7 @@ smoothTangent(bool useGuiCurves,
         }
 
         assert(index < cpCount);
+        Q_UNUSED(index);
         Q_UNUSED(cpCount);
 
         double leftDx, leftDy, rightDx, rightDy;

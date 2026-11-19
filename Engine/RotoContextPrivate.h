@@ -1294,10 +1294,7 @@ struct RotoStrokeItemPrivate
         , strokeDotPatternsMutex()
         , strokeDotPatterns()
     {
-        bbox.x1 = std::numeric_limits<double>::infinity();
-        bbox.x2 = -std::numeric_limits<double>::infinity();
-        bbox.y1 = std::numeric_limits<double>::infinity();
-        bbox.y2 = -std::numeric_limits<double>::infinity();
+        bbox.setupInfinity();
     }
 };
 

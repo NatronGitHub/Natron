@@ -242,6 +242,7 @@ struct OfxEffectInstancePrivate
     bool supportsMultipleClipDepths;
     bool doesTemporalAccess;
     bool multiplanar;
+    bool outputFormatFromPlugin; // true if the last getClipPreferences action set the output format (main thread only)
 
     OfxEffectInstancePrivate()
         : effect()
@@ -270,6 +271,7 @@ struct OfxEffectInstancePrivate
         , supportsMultipleClipDepths(false)
         , doesTemporalAccess(false)
         , multiplanar(false)
+        , outputFormatFromPlugin(false)
     {
     }
 
@@ -297,6 +299,7 @@ struct OfxEffectInstancePrivate
         , supportsMultipleClipDepths(other.supportsMultipleClipDepths)
         , doesTemporalAccess(other.doesTemporalAccess)
         , multiplanar(other.multiplanar)
+        , outputFormatFromPlugin(other.outputFormatFromPlugin)
     {
     }
 };
@@ -549,6 +552,11 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 stat = _imp->effect->createInstanceAction();
             }
             _imp->created = true;
+            // WriteOIIO sets the visibility of its Views parameter from the format in its constructor:
+            // hide it if the file name has a view pattern.
+            if ( isWriter() ) {
+                getNode()->refreshViewsSelectorVisibility();
+            }
         } // SET_CAN_SET_VALUE(true);
 
 
@@ -833,6 +841,14 @@ OfxEffectInstance::isReader() const
     assert(_imp->context != eContextNone);
 
     return _imp->context == eContextReader;
+}
+
+bool
+OfxEffectInstance::isOutputFormatFromFile() const
+{
+    assert( QThread::currentThread() == qApp->thread() );
+
+    return isReader() && _imp->outputFormatFromPlugin;
 }
 
 bool
@@ -1358,6 +1374,7 @@ OfxEffectInstance::onMetadataRefreshed(const NodeMetadata& metadata)
 StatusEnum
 OfxEffectInstance::getPreferredMetadata(NodeMetadata& metadata)
 {
+    _imp->outputFormatFromPlugin = false;
     if (!_imp->created || !_imp->effect) {
         return eStatusFailed;
     }
@@ -1383,7 +1400,7 @@ OfxEffectInstance::getPreferredMetadata(NodeMetadata& metadata)
 
         ///It has been overridden and no data is actually set on the clip, everything will be set into the
         ///metadata object
-        stat = _imp->effect->getClipPreferences_safe(metadata);
+        stat = _imp->effect->getClipPreferences_safe(metadata, &_imp->outputFormatFromPlugin);
     }
 
     return stat;

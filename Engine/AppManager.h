@@ -466,6 +466,8 @@ public:
 
     QString getPyPlugsGlobalPath() const;
 
+    void registerCloseProjectsAtPythonExit();
+
     void launchPythonInterpreter();
 
     int isProjectAlreadyOpened(const std::string& projectFilePath) const;
@@ -637,6 +639,8 @@ public Q_SLOTS:
 
     void onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance, void* instanceData);
 
+    void onShutDownSignalReceived();
+
 Q_SIGNALS:
 
 
@@ -691,6 +695,8 @@ private:
     virtual void afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args) OVERRIDE FINAL;
 
     bool loadInternal(const CLArgs& cl);
+
+    void setUpShutDownSignalNotifier();
 
     void loadPythonGroups();
 
@@ -814,6 +820,7 @@ class PythonGILLocker
 {
     // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
     PyGILState_STATE state;
+    bool locked; // false if Python was not initialized
 #ifdef DEBUG_PYTHON_GIL
     static QMap<QString, int> pythonCount;
 #ifdef USE_NATRON_GIL

@@ -38,6 +38,7 @@
 #include <QThread>
 #include <QCoreApplication>
 
+#include "Global/MathUtils.h"
 #include "Engine/AppInstance.h"
 #include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
@@ -1952,10 +1953,8 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
 {
     ///Mt-safe as Curve is MT-safe
     if ( ( dimension >= (int)_curves.size() ) ||
-         std::isnan(key) || // check for NaN
-         std::isinf(key) ||
-         std::isnan(value) || // check for NaN
-         std::isinf(value) ) {
+         !MathUtils::isFinite(key) || // reject NaN and infinity (works with -ffast-math)
+         !MathUtils::isFinite(value) ) {
         return eStatusFailed;
     }
 
@@ -1979,10 +1978,10 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
 {
     ///Mt-safe as Curve is MT-safe
     if ( ( dimension >= (int)_curves.size() ) ||
-         std::isnan(key) || // check for NaN
-         std::isinf(key) ||
-         std::isnan(value) || // check for NaN
-         std::isinf(value) ) {
+         !MathUtils::isFinite(key) || // reject NaN and infinity (works with -ffast-math)
+         !MathUtils::isFinite(value) ||
+         !MathUtils::isFinite(leftDerivative) ||
+         !MathUtils::isFinite(rightDerivative) ) {
         return eStatusFailed;
     }
 
@@ -2102,7 +2101,9 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
                                    double value)
 {
     ///Mt-safe as Curve is MT-safe
-    if ( dimension >= (int)_curves.size() ) {
+    if ( ( dimension >= (int)_curves.size() ) ||
+         !MathUtils::isFinite(key) || // reject NaN and infinity (works with -ffast-math)
+         !MathUtils::isFinite(value) ) {
         return eStatusFailed;
     }
     try {
@@ -2127,7 +2128,11 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
                                    double rightDerivative)
 {
     ///Mt-safe as Curve is MT-safe
-    if ( dimension >= (int)_curves.size() ) {
+    if ( ( dimension >= (int)_curves.size() ) ||
+         !MathUtils::isFinite(key) || // reject NaN and infinity (works with -ffast-math)
+         !MathUtils::isFinite(value) ||
+         !MathUtils::isFinite(leftDerivative) ||
+         !MathUtils::isFinite(rightDerivative) ) {
         return eStatusFailed;
     }
     int newIdx;

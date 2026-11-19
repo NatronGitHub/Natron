@@ -12,10 +12,9 @@ INCLUDEPATH += . src
 include(../../global.pri)
 include(../../libs.pri)
 
-# hoedown has too many "unused parameter" warnings
-*clang*|*g++*|*xcode {
-  QMAKE_CFLAGS_WARN_ON += -Wno-unused-parameter -Wno-missing-declarations
-}
+# bundled third-party code: no warnings (-w), as NATRON_THIRD_PARTY_NO_WARNINGS in CMake
+CONFIG -= warn_on
+CONFIG += warn_off
 
 OBJECTS_DIR = build
 MOC_DIR = build

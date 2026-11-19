@@ -36,6 +36,7 @@
 #include <QDebug>
 #include <QCoreApplication>
 
+#include "Global/MathUtils.h"
 #include "Engine/CacheEntry.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
@@ -761,8 +762,8 @@ OfxClipInstance::getImagePlane(OfxTime time,
                                const std::string& plane,
                                const OfxRectD *optionalBounds)
 {
-    if ( std::isnan(time) ) {
-        // time is NaN
+    if ( !MathUtils::isFinite(time) ) {
+        // time is NaN or infinite (tested with MathUtils::isFinite, which works with -ffast-math)
 
         return NULL;
     }
@@ -792,8 +793,8 @@ OfxClipInstance::getImagePlaneInternal(OfxTime time,
                                        OFX::Host::ImageEffect::Image** image,
                                        OFX::Host::ImageEffect::Texture** texture)
 {
-    if ( std::isnan(time) ) {
-        // time is NaN
+    if ( !MathUtils::isFinite(time) ) {
+        // time is NaN or infinite (tested with MathUtils::isFinite, which works with -ffast-math)
 
         return false;
     }
@@ -888,8 +889,8 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     if (comp.getNumComponents() == 0) {
         return false;
     }
-    if ( std::isnan(time) ) {
-        // time is NaN
+    if ( !MathUtils::isFinite(time) ) {
+        // time is NaN or infinite (tested with MathUtils::isFinite, which works with -ffast-math)
         return false;
     }
 

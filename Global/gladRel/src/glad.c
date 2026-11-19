@@ -42,7 +42,8 @@ static
 int open_gl(void) {
     libGL = LoadLibraryW(L"opengl32.dll");
     if(libGL != NULL) {
-        gladGetProcAddressPtr = (PFNWGLGETPROCADDRESSPROC_PRIVATE)GetProcAddress(
+        /* cast through void (*)(void), so that GCC does not warn (-Wcast-function-type) */
+        gladGetProcAddressPtr = (PFNWGLGETPROCADDRESSPROC_PRIVATE)(void (*)(void))GetProcAddress(
                 libGL, "wglGetProcAddress");
         return gladGetProcAddressPtr != NULL;
     }
