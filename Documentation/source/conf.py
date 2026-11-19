@@ -236,6 +236,19 @@ htmlhelp_basename = 'Natrondoc'
 mypreamble=r'''\providecommand{\code}[1]{}
 \renewcommand{\code}[1]{\texttt{\footnotesize{}#1}}
 \setcounter{tocdepth}{2}
+% pdflatex (inputenc utf8) stops on Unicode characters that no loaded font
+% encoding provides. Sphinx maps a few of them (e.g. U+2192, U+2713) in running
+% text, but not these, and none in code blocks. Declare the ones the sources
+% use: math symbols and arrows, the modifier-letter apostrophe, and the
+% Vietnamese horned letters (approximated, as T5 fonts are not loaded).
+\DeclareUnicodeCharacter{2264}{\ensuremath{\leq}}
+\DeclareUnicodeCharacter{2265}{\ensuremath{\geq}}
+\DeclareUnicodeCharacter{2260}{\ensuremath{\neq}}
+\DeclareUnicodeCharacter{2229}{\ensuremath{\cap}}
+\DeclareUnicodeCharacter{2194}{\ensuremath{\leftrightarrow}}
+\DeclareUnicodeCharacter{02BC}{\textquoteright}
+\DeclareUnicodeCharacter{01A1}{o\kern-.1em\textquoteright}
+\DeclareUnicodeCharacter{01B0}{u\kern-.1em\textquoteright}
 '''
 latex_elements = {
 # The paper size ('letterpaper' or 'a4paper').

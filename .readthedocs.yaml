@@ -11,8 +11,10 @@ build:
   tools:
     python: "3.12"
     # npm ci in Documentation/: mermaid.js for the HTML, mermaid-cli for the
-    # PDF and ePub (see Documentation/source/_ext/natron_mermaid.py)
-    nodejs: "20"
+    # PDF and ePub (see Documentation/source/_ext/natron_mermaid.py).
+    # Puppeteer 25 needs Node >= 22.12 and mermaid-cli 12 needs >= 22.13:
+    # "22" is the latest 22.x release that Read the Docs provides.
+    nodejs: "22"
     # You can also specify other tool versions:
     # rust: "1.70"
     # golang: "1.20"
@@ -34,6 +36,9 @@ build:
     - libxkbcommon0
     - libxrandr2
     - fonts-liberation
+    # @puppeteer/browsers 3 extracts the Chrome zip with the unzip command
+    # when the optional yauzl module is not installed
+    - unzip
   jobs:
     post_install:
       # mermaid.js (HTML) and mermaid-cli (PDF, ePub), from package-lock.json.
