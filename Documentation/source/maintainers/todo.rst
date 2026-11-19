@@ -44,11 +44,11 @@ keep the ``*.pro``/``*.pri`` files in sync with CMake
 build gets no new features, in particular no further Qt 6 work.
 
 **Modernize CI (P1).**
-Migrate CI from Travis to GitHub Actions
-(`#601 <https://github.com/NatronGitHub/Natron/issues/601>`_; the ``.travis.yml``
-is already disabled). Build **both** Qt 5 and Qt 6 and run the ``Tests`` suite on
-all three platforms so regressions in the dual-toolkit build are caught
-automatically.
+CI runs on GitHub Actions (``.github/workflows/ci.yml``; the migration from
+Travis, `#601 <https://github.com/NatronGitHub/Natron/issues/601>`_, is done):
+it builds Qt 5 and runs the ``Tests`` suite on Linux, macOS and Windows. Add
+Qt 6 builds with tests on all three platforms (nightly, not per pull request),
+so that regressions in the dual-toolkit build are caught automatically.
 
 **Adopt a modern C++ baseline consistently (P3).**
 The CMake build already compiles as C++17, and the code has largely moved from

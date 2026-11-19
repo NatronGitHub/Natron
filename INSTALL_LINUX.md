@@ -82,7 +82,7 @@ This must be done in every shell/terminal where you intend to compile and/or run
 The Linux job of the [GitHub Actions CI](https://github.com/NatronGitHub/Natron/actions/workflows/ci.yml)
 (`.github/workflows/ci.yml`) installs the dependencies and builds Natron and the tests on Ubuntu 24.04:
 read it for the exact package list and build commands.
-You can use them as a reference, but the resulting binaries are not guaranteed to be fully functional.
+You can use it as a reference, but the resulting binaries are not guaranteed to be fully functional.
 
 ## Installing dependencies manually
 
