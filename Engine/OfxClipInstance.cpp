@@ -937,40 +937,11 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     // an image mapped to the clip components
     const bool mapImageToClipPref = !ofxPlane || *ofxPlane == kFnOfxImagePlaneColour;
 
-    //Check if the plug-in already called clipGetImage on this image, in which case we may already have an OfxImage laying around
-    //so we try to re-use it.
-    if (renderData) {
-        for (std::list<OfxImageCommon*>::const_iterator it = renderData->imagesBeingRendered.begin(); it != renderData->imagesBeingRendered.end(); ++it) {
-            ImagePtr internalImage = (*it)->getInternalImage();
-            if (!internalImage) {
-                continue;
-            }
-            bool sameComponents = (mapImageToClipPref && (*it)->getComponentsString() == thisClipComponents) ||
-                                  (!mapImageToClipPref && (*it)->getComponentsString() == *ofxPlane);
-            if ( sameComponents && (internalImage->getMipmapLevel() == mipmapLevel) &&
-                 ( time == internalImage->getTime() ) &&
-                 ( view == internalImage->getKey().getView() ) ) {
-                if (retImage) {
-                    OfxImage* isImage = dynamic_cast<OfxImage*>(*it);
-                    if (isImage) {
-                        *retImage = isImage;
-                        isImage->addReference();
-
-                        return true;
-                    }
-                } else if (retTexture) {
-                    OfxTexture* isTex = dynamic_cast<OfxTexture*>(*it);
-                    if (isTex) {
-                        *retTexture = isTex;
-                        isTex->addReference();
-
-                        return true;
-                    }
-                }
-            }
-        }
-    }
-
+    // Each call returns a new image (OFX 1.5.1, clipGetImage: "If clipGetImage is called twice with the same
+    // parameters, then two separate image handles will be returned, each of which must be release."), which
+    // covers the requested region ("The returned image will be *at least* as big as this region"). The
+    // images of an earlier call are not reused: they may not cover the region, and their handle must not
+    // be returned twice. getImage() gets the pixels from the input images of this render or from the cache.
 
     const RenderScale renderScale = RenderScale::fromMipmapLevel(mipmapLevel);
     RectD bounds;
