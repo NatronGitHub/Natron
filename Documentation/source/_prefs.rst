@@ -185,6 +185,14 @@ OpenColorIO configuration file (config.ocio) to use when “Custom config” is 
 
 Show a warning dialog when changing the OpenColorIO config to remember that a restart is required.
 
+**Warn on startup if OpenColorIO config is not the default**
+
+When the Natron user interface starts, check the OpenColorIO config selected above, and offer to switch to the default config (blender) if another config is selected.
+
+If the selected config is invalid, or if “Custom config” is selected but the custom OpenColorIO configuration file is not set or does not exist, the suggested answer is to switch to the default config (the custom file path is kept). If another bundled config is selected, the suggested answer is to keep it. A custom config whose file exists is kept without asking. If the default config is not bundled, a warning is shown only when the selected config cannot be used.
+
+Checking “Do Not Show This Again” in the question unchecks this setting.
+
 Caching
 -------
 

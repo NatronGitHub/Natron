@@ -636,6 +636,9 @@ AppInstance::loadInternal(const CLArgs& cl,
             throw std::invalid_argument( tr("%1: No such file.").arg(scriptFilename).toStdString() );
         }
 
+        // sys.exit() in the script finalizes Python: close the projects before (#1253)
+        appPTR->registerCloseProjectsAtPythonExit();
+
         std::list<AppInstance::RenderWork> writersWork;
 
 
@@ -701,6 +704,8 @@ AppInstance::loadInternal(const CLArgs& cl,
             startWritersRenderingFromNames( cl.areRenderStatsEnabled(), false, writers, cl.getFrameRanges() );
         }
     } else if (appPTR->getAppType() == AppManager::eAppTypeInterpreter) {
+        // sys.exit() in the script, or Py_Main(), finalizes Python: close the projects before (#1253)
+        appPTR->registerCloseProjectsAtPythonExit();
         QFileInfo info( cl.getScriptFilename() );
         if ( info.exists() ) {
             if ( info.suffix() == QString::fromUtf8("py") ) {

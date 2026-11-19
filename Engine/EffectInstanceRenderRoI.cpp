@@ -1918,19 +1918,19 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
 
     assert( !planesToRender->planes.empty() );
 
-    ///Add the window to the project's available formats if the effect is a reader
-    ///This is the only reliable place where I could put these lines...which don't seem to feel right here.
-    ///Plus setOrAddProjectFormat will actually set the project format the first time we read an image in the project
-    ///hence ask for a new render... which can be expensive!
-    ///Any solution how to work around this ?
-    ///Edit: do not do this if in the main-thread (=noRenderThread = -1) otherwise we will change the parallel render args TLS
-    ///which will lead to asserts down the stream
+    ///Add the window to the project's available formats if the effect is a reader.
+    ///Do not do this if in the main-thread (=noRenderThread = -1) otherwise we will change the parallel render args TLS
+    ///which will lead to asserts down the stream.
+    ///The project format must not change during a render (#1294): Writers and the RoD of the nodes that
+    ///depend on the project format would differ between the first frames and the next ones. The project format is
+    ///auto-set from the first Reader on the main thread, when its metadata is computed (see refreshMetadata_internal),
+    ///so here it may only be auto-set if it is already equal to the Reader's format.
     if ( self->isReader() && ( QThread::currentThread() != qApp->thread() ) ) {
         Format frmt;
         RectI formatRect = self->getOutputFormat();
         frmt.set(formatRect);
         frmt.setPixelAspectRatio(par);
-        self->getApp()->getProject()->setOrAddProjectFormat(frmt);
+        self->getApp()->getProject()->setOrAddProjectFormat(frmt, /*skipAdd=*/false, /*mayChangeFormat=*/false);
     }
 
     unsigned int renderMappedMipmapLevel = 0;

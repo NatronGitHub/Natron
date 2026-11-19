@@ -4,40 +4,29 @@
 Features
 ========
 
-.. toctree::
-   :maxdepth: 2
-   
-* 32 bits floating point linear color processing pipeline.
-* Colorspace management handled by the famous open-source OpenColorIO library.
-* Dozens of file formats supported: EXR, DPX,TIFF, PSD, SVG, Raw, JPG, PNG …
-* **Support for many free and open-source OpenFX plugins:**
-  * `OpenFX-IO <https://github.com/NatronGitHub/openfx-io>`_
-  * `OpenFX-Misc <https://github.com/NatronGitHub/openfx-misc>`_
-  * `OpenFX-Arena <https://github.com/NatronGitHub/openfx-arena>`_
-  * `OpenFX-G'MIC <https://github.com/NatronGitHub/openfx-gmic>`_
-  * `OpenFX-OpenCV <https://github.com/NatronGitHub/openfx-opencv>`_
-  * `OpenFX-Yadif <https://github.com/NatronGitHub/openfx-yadif>`_ deinterlacer
-  * `OpenFX-Vegas <https://github.com/NatronGitHub/openfx-vegas>`_  SDK samples
-  * `OpenFX <https://github.com/NatronGitHub/openfx>`_ samples
-  * `TuttleOFX <https://github.com/tuttleofx/TuttleOFX>`_
-* **Support for commercial OpenFX plugins:**
-  * `RevisionFX <http://www.revisionfx.com/>`_ products
-  * `NeatVideo <https://www.neatvideo.com/>`_ denoiser
-  * `Furnace <http://www.thefoundry.co.uk/products/furnace/>`_ by The Foundry
-  * `KeyLight <http://www.thefoundry.co.uk/products/plugins/keylight/>`_ by The Foundry
-  * GenArts `Sapphire <http://www.genarts.com/software/sapphire/overview>`_
-  * Other `GenArts <http://www.genarts.com>`_ products
-  * And many more....
-  * OpenFX v1.4 supported
-* **Intuitive user interface:** Natron aims not to break habits by providing an intuitive and familiar user interface.  It is possible to separate on any number of screens the graphical user interface. It supports Retina screens on MacOSX.
-* **Performances:**  Never wait for anything to be rendered, in Natron anything you do produces real-time feedback thanks to its optimised multi-threaded rendering pipeline and its support for proxy rendering (i.e: the render pipeline can be computed at lower res to speed-up rendering).
-* **Multi-task:** Natron can render multiple graphs at the same time and make use of 100% of the compute power of your CPU.
-* **Network rendering:** Natron can be used as a command-line tool and can be integrated on a render farm manager such as `Afanasy <http://cgru.info/home>`_.
-* **NatronRenderer:** A command line tool for execution of project files and python scripts. The command line version is executable from ssh on a computer without any display.
-* **Fast & interactive Viewer** – Smooth & accurate  zooming/panning even for very large image sizes (tested on 27k x 30k images).
-* **Real-time playback:** Natron offers  a real-time playback with thanks to its RAM/Disk cache technology. Once a frame is rendered, it can be reproduced instantly afterwards, even for large image sizes.
-* **Low hardware requirements:** All you need is an x86 64 bits or 32 bits processor, at least 3 GB of RAM and a graphic card that supports OpenGL 2.0 or OpenGL 1.5 with some extensions.
-* **Motion editing:** Natron offers a simple and efficient way to deal with keyframes with a very accurate and intuitive curve editor. You can set expressions on animation curves to create easy and believable motion for objects. Natron also incorporates a fully featured dope-sheet to quickly edit clips and keyframes in time-space.
-* **Multi-view workflow:** Natron saves time by keeping all the views in the same stream. You can separate the views at any time with the OneView node.
-* **Rotoscoping/Rotopainting:** Edit your masks and animate them to work with complex shots
-* **Tracker node:** A point tracker is  embedded in Natron to track multiple points. Version 2.1 of Natron will incorporate the Tracker from Blender.
+* **32-bit floating-point linear color pipeline.**
+* **Color management** with `OpenColorIO <https://opencolorio.org/>`_.
+* **Dozens of image and video formats:** EXR, DPX, TIFF, PSD, SVG, camera raw, JPEG, PNG, and video formats such as H.264, ProRes and DNxHR, through OpenImageIO, FFmpeg and other libraries.
+* **Free and open-source OpenFX plug-ins.** These are included in the Natron binaries:
+
+  * `openfx-io <https://github.com/NatronGitHub/openfx-io>`_: readers and writers;
+  * `openfx-misc <https://github.com/NatronGitHub/openfx-misc>`_: color, filter, keying, merge, transform and other basic nodes;
+  * `openfx-arena <https://github.com/NatronGitHub/openfx-arena>`_: text, PSD, SVG and other extra nodes;
+  * `openfx-gmic <https://github.com/NatronGitHub/openfx-gmic>`_: G'MIC filters.
+
+  Other OpenFX plug-ins can be installed: add their folder to "OpenFX plug-ins search path" in Edit → Preferences → Plug-ins.
+
+* **Commercial OpenFX plug-ins**, for example from `RE:Vision Effects <https://revisionfx.com/>`_, `Boris FX <https://borisfx.com/>`_ (Sapphire) or `Neat Video <https://www.neatvideo.com/>`_. See the FAQ about :doc:`commercial plug-ins <getstarted-about-faq>`.
+* **OpenFX support:** Natron implements the OpenFX 1.4 host API, with the Natron and Nuke extensions. It is built with the OpenFX 1.5.1 headers, but the features added in OpenFX 1.5 (string choice parameters, the Draw suite, OpenFX color management, CUDA, Metal and OpenCL rendering) are not supported yet.
+* **Familiar user interface:** the interface follows the conventions of other node-based compositors. Its panes can be rearranged and spread over several screens, and layouts can be saved and reused.
+* **Fast feedback:** the multi-threaded rendering pipeline and proxy rendering (computing at a lower resolution) keep the viewer responsive.
+* **Multi-tasking:** Natron can render several graphs at the same time, and use all the cores of the CPU.
+* **Command-line rendering:** NatronRenderer runs projects and Python scripts without a display, for example over ssh or on a render farm managed by `Afanasy <https://cgru.info/>`_.
+* **Fast and interactive viewer:** smooth zooming and panning, even on very large images (tested on 27k × 30k images).
+* **Real-time playback:** rendered frames are kept in a RAM and disk cache, so they play back instantly.
+* **Animation:** a curve editor and a dope sheet to edit keyframes, and expressions on parameters.
+* **Multi-view workflow:** all the views (for example the left and right views of a stereo project) are processed in the same graph. The :ref:`OneView <fr.inria.built-in.OneView>` node extracts one view.
+* **Rotoscoping and rotopainting:** draw and animate masks and paint strokes with the :ref:`Roto <fr.inria.built-in.Roto>` and :ref:`RotoPaint <fr.inria.built-in.RotoPaint>` nodes.
+* **Tracking:** the :ref:`Tracker <fr.inria.built-in.Tracker>` node tracks multiple points, with the tracking engine of Blender (libmv).
+* **Python scripting:** parameter expressions, user parameters, Python group plug-ins (PyPlugs), a script editor, callbacks, and GUI extensions with PySide.
+* **Hardware:** a 64-bit x86-64 or arm64 processor and an OpenGL 2.0 graphics card. See :ref:`system-requirements`.
