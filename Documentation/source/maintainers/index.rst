@@ -25,7 +25,6 @@ introduced where needed.
     building
     build-macos
     codebase-map
-    architecture
     design-techniques
     engine
     gui

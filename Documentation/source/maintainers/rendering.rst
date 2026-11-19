@@ -16,35 +16,29 @@ Writer rendering a range — and flows *up* the graph toward the readers.
 
 The central call is::
 
-    RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs& args, ...)
+    RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs& args,
+                                               std::map<ImagePlaneDesc, ImagePtr>* outputPlanes)
 
 ``RenderRoIArgs`` says *what* to produce: the time, the view, the render scale
 (mip-map level — a power-of-two downscale used for proxy and for zoomed-out
-viewing), the region of
-interest (a ``RectI``), and the desired components/bit-depth. ``renderRoI``:
+viewing), the region of interest (a ``RectI``), and the desired planes
+(components) and bit depth. ``renderRoI`` finds the region of definition,
+handles identity and cached results, recursively renders the inputs it needs,
+and then calls the effect's render action on what is left. The
+:ref:`worked example <maint-renderroi-example>` below follows one call step by
+step.
 
-1. Computes the effect's **region of definition** (RoD) for these args
-   (``getRegionOfDefinition``) — the maximal area the effect can produce.
-2. Looks the result up in the :ref:`cache <maint-cache>`. On a hit it returns
-   immediately.
-3. On a miss, asks the effect which parts of its **inputs** it needs
-   (``getRegionsOfInterest``) and at which **frames** (``getFramesNeeded`` —
-   temporal effects like FrameBlend or retime pull several frames), and calls
-   ``renderRoI`` recursively on those inputs.
-4. Checks ``isIdentity`` — if the effect is a pass-through for these args (e.g. a
-   disabled node, or a transform with identity matrix) it just forwards the
-   input image instead of rendering.
-5. Splits its output region into tiles and calls the effect's ``render()``
-   action on them, potentially on many threads, then stores the result in the
-   cache.
-
-The relevant *actions* an effect implements mirror the OpenFX action set:
+The *actions* an effect implements mirror the OpenFX action set:
 ``getRegionOfDefinition``, ``getRegionsOfInterest``, ``getFramesNeeded``,
-``isIdentity``, ``getPreferredMetadata`` (components, bit depth, premultiplication state, pixel
-aspect, frame rate), ``beginSequenceRender``/``endSequenceRender``, and
-``render``. ``renderRoIInternal`` (in ``EffectInstanceRenderRoI.cpp``) is the
-private core that wraps ``render`` with thread-safety and cache handling; the
-public ``renderRoI`` orchestrates recursion and identity/cache decisions.
+``isIdentity``, ``getPreferredMetadata`` (components, bit depth,
+premultiplication state, pixel aspect, frame rate),
+``beginSequenceRender``/``endSequenceRender``, and ``render``. The engine
+calls them through ``…_public`` wrappers (``getRegionOfDefinition_public``,
+``isIdentity_public``, ``render_public``, …), which add caching of the results
+and recursion checks. ``renderRoIInternal`` (in ``EffectInstanceRenderRoI.cpp``)
+is the private core that runs ``beginSequenceRender``, the ``render`` action on
+each rectangle, and ``endSequenceRender``; the public ``renderRoI``
+orchestrates recursion, identity and cache decisions.
 
 Per-render context: ParallelRenderArgs and TLS
 ----------------------------------------------
@@ -59,8 +53,35 @@ stores it in **thread-local storage**. ``ParallelRenderArgs`` is described in
 its header as *"thread-local arguments given to render a frame by the tree …
 not to a single renderRoI call but to the rendering of a whole frame."* It is
 installed for the duration of a render by ``ParallelRenderArgsSetter`` (and
-``ViewerParallelRenderArgsSetter``) and reached through the ``TLSHolder`` /
-``AppTLS`` machinery.
+``ViewerParallelRenderArgsSetter``, in ``ViewerInstance.cpp``) and reached
+through the ``TLSHolder`` / ``AppTLS`` machinery.
+
+The Viewer and writer frame renders and the node previews do three things
+before they call ``renderRoI`` (see ``DefaultRenderFrameRunnable::renderFrame``
+in ``OutputSchedulerThread.cpp`` for writers,
+``ViewerInstance::renderViewer_internal`` for the Viewer, and
+``Node::makePreviewImage`` for previews). Other entry points (the tracker,
+analysis actions, ``DefaultScheduler::processFrame``) only do the first one,
+without the request pass:
+
+1. Construct a ``ParallelRenderArgsSetter`` for the tree
+   (``ParallelRenderArgs.cpp``). Its constructor visits every node upstream of
+   the output and stores a ``ParallelRenderArgs`` in the TLS of each of their
+   effects (``setParallelRenderArgsTLS``); its destructor removes them.
+2. Run the **request pass**, ``EffectInstance::computeRequestPass()``. It walks
+   the tree once without rendering (``getInputsRoIsFunctor`` and
+   ``treeRecurseFunctor`` with ``isRenderFunctor`` false) and records, for each
+   node, the region of definition, the regions of interest of its inputs and
+   the frames it needs.
+3. Store the result in the TLS with
+   ``ParallelRenderArgsSetter::updateNodesRequest()``.
+   ``renderRoI`` then reuses these results (for example the frames needed)
+   instead of calling the actions again.
+
+If ``renderRoI`` finds no ``ParallelRenderArgs`` in the TLS, it prints a
+``[BUG]`` message and creates a minimal one on the fly
+(``EffectInstanceRenderRoI.cpp``, at the start of ``renderRoI``), so a missing
+setter shows up in the log rather than as a crash.
 
 .. note::
 
@@ -80,16 +101,30 @@ on a common base:
   start/abort/quit worker-thread abstraction, with a watcher
   (``GenericSchedulerThreadWatcher``) that runs a callback when the thread
   finishes.
-- ``OutputSchedulerThread`` (``OutputSchedulerThread.cpp``): schedules the
-  rendering of a *range* of frames for an output effect, spawning
-  ``RenderThreadTask`` workers, ordering finished frames, and (for the Viewer)
-  feeding them to the display. ``RenderEngine`` owns the scheduler for an output
-  node.
+- ``RenderEngine`` (``OutputSchedulerThread.h``), owned by each
+  ``OutputEffectInstance``, creates the scheduler on first use:
+  a ``DefaultScheduler`` for writers, a ``ViewerDisplayScheduler`` for the
+  Viewer (``ViewerRenderEngine``). Both derive from ``OutputSchedulerThread``,
+  which derives from ``GenericSchedulerThread``.
+- ``OutputSchedulerThread`` schedules the rendering of a *range* of frames:
+  ``startRender()`` and ``startTasks()`` start ``RenderThreadTask`` workers,
+  each of which picks the next frame (``pickFrameToRender()``) and renders it.
+  For writers, the worker (``DefaultRenderFrameRunnable``) calls ``renderRoI``
+  on the writer itself and reports the frame with ``notifyFrameRendered()``.
+  For the Viewer, the worker (``ViewerRenderFrameRunnable``) calls
+  ``ViewerInstance::renderViewer()`` and appends the result to the scheduler's
+  buffer (``appendToBuffer()``); the scheduler thread then shows the frames in
+  order and at the right rate (``ViewerDisplayScheduler::processFrame()`` →
+  ``ViewerInstance::updateViewer()``).
 - The Viewer has its own "current frame" scheduler
-  (``ViewerCurrentFrameRequestScheduler``) so that scrubbing the timeline
-  coalesces and cancels stale requests.
+  (``ViewerCurrentFrameRequestScheduler``, used by
+  ``RenderEngine::renderCurrentFrame()``) so that scrubbing the timeline or
+  editing a parameter coalesces and cancels stale requests.
+- On the command line, ``AppInstance::startWritersRendering()``
+  (``AppInstance.cpp``) calls ``OutputEffectInstance::renderFullSequence()``
+  on each writer, which goes through the same ``RenderEngine``.
 - ``ThreadPool`` (``ThreadPool.cpp``) and Qt's ``QtConcurrent`` provide the
-  worker threads that render tiles in parallel; ``AbortableThread`` /
+  worker threads that render rectangles in parallel; ``AbortableThread`` /
   ``AbortableRenderInfo`` let a render be cancelled promptly when the user acts
   again.
 
@@ -102,29 +137,12 @@ render code polls it and unwinds cleanly. When you write a long-running loop in
 render code, check the abort flag periodically — a render that ignores aborts
 makes the whole UI feel stuck.
 
-.. _maint-cache:
-
 The cache
 ---------
 
-The cache is what makes real-time playback possible: once a frame (or a tile of
-an intermediate result) is computed, it is kept so the next request is instant.
-
-- ``Cache`` (``Cache.h``): a templated, thread-safe, least-recently-used cache
-  with a two-tier backing store — an in-RAM portion and an on-disk portion.
-  ``LRUHashTable.h`` is the eviction structure.
-- Disk entries are memory-mapped files (``MemoryFile.*``, ``TileCacheFile``),
-  so large cached images live on disk but are accessed as memory.
-- Entries are keyed by a 64-bit **hash** (``Hash64``) computed from everything
-  that can affect the result: the node's parameters, its inputs' hashes, the
-  time, view, scale and region. If any input changes, the hash changes and the
-  old entry is simply not found — this is how invalidation stays correct without
-  explicit dirty-tracking.
-- ``CacheEntry`` / ``CacheEntryHolder`` are the stored objects. There are
-  distinct caches/entries for full images (``Image`` + ``ImageParams``) and for
-  the Viewer's display textures (``FrameEntry`` + ``FrameKey`` +
-  ``FrameParams``, which hold the 8-bit or 32-bit texture actually uploaded to
-  OpenGL).
+Rendered images are kept in the caches owned by ``AppManager`` (node images,
+``DiskCache`` node images and Viewer textures), under a hash that changes
+whenever a parameter or an input changes. See :ref:`maint-cache`.
 
 GPU rendering contexts
 ----------------------
@@ -139,98 +157,140 @@ threads can borrow one. GL entry points are loaded with **glad**
 (``Global/GLIncludes.h``). The viewer widgets themselves are ``QOpenGLWidget``
 subclasses (see :ref:`maint-gui`).
 
+.. _maint-renderroi-example:
+
 Worked example: the life of a ``renderRoI`` call
 ------------------------------------------------
 
 To make the pipeline concrete, here is the actual path a single request takes
 through ``EffectInstance::renderRoI`` (in ``EffectInstance.h`` and
-``EffectInstanceRenderRoI.cpp``). Method and enum names below are the real ones,
-so you can follow along in the source.
+``EffectInstanceRenderRoI.cpp``), in the order of the code. Method and enum
+names below are the real ones, so you can follow along in the source.
 
 Suppose the Viewer needs the visible region of a Blur node at frame 10.
 
-1. **The call.** The Viewer's ``ViewerInstance`` calls
-   ``blur->renderRoI(args, …)`` with a ``RenderRoIArgs`` describing time 10, the
-   view, the mip-map level, the region of interest and the desired
-   components/bit-depth. The function returns a ``RenderRoIRetCode`` —
+1. **The call.** ``ViewerInstance::renderViewer_internal`` has installed the
+   ``ParallelRenderArgs`` and run the request pass (see above), then calls
+   ``blur->renderRoI(args, &planes)`` with a ``RenderRoIArgs`` describing time
+   10, the view, the mip-map level, the region of interest and the desired
+   planes and bit depth. The function returns a ``RenderRoIRetCode`` —
    ``eRenderRoIRetCodeOk``, ``eRenderRoIRetCodeAborted`` or
-   ``eRenderRoIRetCodeFailed``.
+   ``eRenderRoIRetCodeFailed``. If the Blur is a render clone, the call is
+   forwarded to the main instance. ``renderRoI`` then fetches its
+   ``ParallelRenderArgs`` from the TLS.
 
-2. **Region of definition.** ``renderRoI`` computes the Blur's RoD for these
-   args and clips the requested RoI to it, so nothing outside the image is
-   requested.
+2. **Region of definition.** ``getRegionOfDefinition_public`` gives the Blur's
+   RoD for these args (unless the caller passed a precomputed one).
 
-3. **Identity check.** It calls ``isIdentity_public``. If the Blur is a
-   pass-through for these args (e.g. size 0, or disabled), it does not render at
-   all — it recurses into the identity input's ``renderRoI`` and returns that.
-   (See the "Check if effect is identity" block in
-   ``EffectInstanceRenderRoI.cpp``.)
+3. **Pass-through planes.** Planes that the Blur does not produce itself are
+   fetched directly from its pass-through input with ``renderRoI``.
 
-4. **Cache lookup.** It builds the cache key from the node hash and args and
-   looks for an existing image (``downscaleImage`` / ``fullscaleImage``). On a
-   full hit it returns immediately. On a partial hit, the image's **bitmap**
-   records which tiles are already valid, so only the missing rectangles are
-   rendered.
+4. **Identity check.** ``isIdentity_public``: if the Blur is a pass-through for
+   these args (e.g. size 0, or disabled), it does not render at all — it calls
+   ``renderRoI`` on the identity input and returns that (the "Check if effect
+   is identity" block).
 
-5. **Concurrency: "being rendered elsewhere".** Before rendering, the effect
-   creates an ``ImageBitMapMarker_RAII`` guard, which calls
-   ``markImageAsBeingRendered`` on the image of each plane: the rectangles still
-   to render are marked ``PIXEL_UNAVAILABLE`` in the bitmap, and the rectangles
-   another thread is already rendering are left out. The thread renders its own
-   rectangles. If another thread was rendering part of the RoI, the thread then
-   releases its rectangles (``releaseImageRects``: marked as rendered if the
-   render succeeded, cleared otherwise) and waits in
-   ``waitForImageBeingRenderedElsewhere`` for the rectangles of the other
-   threads. Otherwise the guard releases them when it is destroyed. They are
-   cleared, not marked as rendered, if the render was aborted or failed, or if an
-   exception is thrown. If the wait ends with pixels still missing (another
-   thread released its rectangles without rendering them), ``renderRoI`` calls
-   itself again to render them. This keeps concurrent renders from duplicating
-   work.
+5. **Transform concatenation.** If the preference is enabled, consecutive
+   transform nodes are merged (``tryConcatenateTransforms``), so the image is
+   resampled only once. Then the RoI is computed: if the effect supports
+   tiles, the requested RoI is clipped to the image bounds; otherwise the RoI
+   becomes the full image bounds.
 
-   Until 2.6, this could hang
-   (`#811 <https://github.com/NatronGitHub/Natron/issues/811>`_):
+6. **Cache lookup.** ``shouldCacheOutput`` decides whether the result goes to
+   the cache (see :ref:`maint-cache`). The cache key is built from the node
+   hash and the args, and ``getImageFromCacheAndConvertIfNeeded`` looks for an
+   existing image (in draft mode, the full-quality image is looked up first);
+   an image of a higher resolution can be downscaled. The image's **bitmap**
+   records which pixels are already valid, so only the missing rectangles are
+   rendered. A full hit does not return here: it still goes through steps 7
+   and 8, finds nothing left to render, skips the inputs and the render, ends
+   with ``eRenderRoIStatusImageAlreadyRendered`` and still waits for the pixels
+   that other threads are rendering (step 11).
 
-   - a thread waited for its own rectangles, which were only marked as rendered
-     after the wait, so two threads waiting on the same image waited for each
-     other forever;
-   - the reference count of the images being rendered was racy
-     (`#1127 <https://github.com/NatronGitHub/Natron/issues/1127>`_): an entry
-     could be erased while another thread used it, and that thread's
-     rectangles then stayed ``PIXEL_UNAVAILABLE`` forever. The count is now only
-     changed under ``imagesBeingRenderedMutex``, and no thread waits for an
-     image's ``ImageBeingRendered::lock`` while holding that mutex.
+7. **Frames needed.** ``getFramesNeeded_public`` (or the result of the request
+   pass) says which frames of which inputs the Blur needs.
 
-   The CPU-idle stall of
-   `#248 <https://github.com/NatronGitHub/Natron/issues/248>`_ may be related
-   (see :ref:`maint-issue-triage`).
+8. **What is left to render.** For a cached image, an
+   ``ImageBitMapMarker_RAII`` calls ``markImageAsBeingRendered``: it returns
+   the rectangles that are neither rendered nor being rendered by another
+   thread, and marks them as being rendered by this one. Only during a paint
+   stroke, when the effect supports tiles and its inputs include a mask or
+   have different regions of definition (``tryIdentityOptim``),
+   ``optimizeRectsToRender`` splits these rectangles and marks the parts that
+   are identity.
 
-   When ``renderRoI`` is called from ``getImage`` and the cached image is too
-   small, the image is copied into a larger one (``copyAndResizeIfNeeded``) that
-   replaces it in the cache. The pixels other threads are rendering into the old
-   image are cleared in the copy, and this thread renders them itself.
+9. **Input images.** ``renderInputImagesForRoI`` asks for the regions of
+   interest of the inputs (``getRegionsOfInterest_public``, unless the request
+   pass already has them) and calls ``treeRecurseFunctor``, which calls
+   ``renderRoI`` on each input for each frame needed. This recursion is what
+   walks the graph toward the readers. The input images are kept in the TLS,
+   where the render action finds them (``EffectInstance::getImage``).
 
-6. **Input images.** For the rectangles it must render, the effect asks which
-   inputs and frames it needs (``getRegionsOfInterest``, ``getFramesNeeded``) and
-   pulls them with ``renderInputImagesForRoI`` — which recurses into the upstream
-   nodes' ``renderRoI``. This recursion is what walks the graph toward the
-   readers; ``treeRecurseFunctor`` drives it.
+10. **Render.** The output planes are allocated (in the cache, or not), and
+    ``renderRoIInternal`` calls ``beginSequenceRender_public``, then
+    ``tiledRenderingFunctor`` on each rectangle, then
+    ``endSequenceRender_public``. The rectangles are rendered in parallel with
+    ``QtConcurrent::mapped`` only if the effect's render thread safety is
+    ``eRenderSafetyFullySafeFrame``, there is more than one rectangle and the
+    render is not on the GPU; otherwise they are rendered one after the other.
+    ``tiledRenderingFunctor`` calls ``renderHandler`` (``EffectInstance.cpp``),
+    which calls ``render_public`` and so the effect's ``render`` action. For
+    OpenFX nodes, ``OfxEffectInstance::render`` calls the plug-in's render
+    action (see :ref:`maint-openfx`); for built-ins it runs the native C++ code.
+    ``renderRoIInternal`` returns a ``RenderRoIStatusEnum``
+    (``eRenderRoIStatusImageAlreadyRendered``, ``…ImageRendered``,
+    ``…RenderFailed``, ``…RenderOutOfGPUMemory``).
 
-7. **Tiling and the render action.** If the effect ``tilesSupported``, the RoI
-   is split into tiles rendered in parallel; otherwise the RoI is expanded to the
-   full bounds. ``renderRoIInternal`` wraps the effect's ``render`` action with
-   thread-safety and returns a ``RenderRoIStatusEnum``
-   (``eRenderRoIStatusImageAlreadyRendered``, ``…ImageRendered``,
-   ``…RenderFailed``, ``…RenderOutOfGPUMemory``). For OpenFX nodes the ``render``
-   action calls into the plug-in (see :ref:`maint-openfx`); for built-ins it runs
-   the native C++ code.
+11. **Concurrency: "being rendered elsewhere".** If another thread was
+    rendering part of the RoI, the marker first releases this thread's
+    rectangles (``releaseImageRects``: marked as rendered if the render
+    succeeded, cleared otherwise), then waits for the rectangles of the other
+    threads (``waitForPendingRegions`` → ``waitForImageBeingRenderedElsewhere``).
+    Otherwise its destructor releases them. They are cleared, not marked as
+    rendered, if the render was aborted or failed, or if an exception is
+    thrown; the destructor then drops the reference to the image
+    (``unmarkImageAsBeingRendered``). If the wait ends with pixels still
+    missing (another thread released its rectangles without rendering them),
+    ``renderRoI`` calls itself again to render them (at most three times).
+    This keeps concurrent renders from duplicating work.
 
-8. **Store and return.** The freshly rendered tiles are written into the cached
-   image (updating its bitmap) and ``renderRoI`` returns ``eRenderRoIRetCodeOk``.
-   The Viewer then uploads the result as a ``FrameEntry`` texture.
+    Until 2.6, this could hang
+    (`#811 <https://github.com/NatronGitHub/Natron/issues/811>`_):
+
+    - a thread waited for its own rectangles, which were only marked as
+      rendered after the wait, so two threads waiting on the same image waited
+      for each other forever;
+    - the reference count of the images being rendered was racy
+      (`#1127 <https://github.com/NatronGitHub/Natron/issues/1127>`_): an entry
+      could be erased while another thread used it, and that thread's
+      rectangles then stayed ``PIXEL_UNAVAILABLE`` forever. The count is now
+      only changed under ``imagesBeingRenderedMutex``, and no thread waits for
+      an image's ``ImageBeingRendered::lock`` while holding that mutex.
+
+    The CPU-idle stall of
+    `#248 <https://github.com/NatronGitHub/Natron/issues/248>`_ may be related
+    (see :ref:`maint-issue-triage`).
+
+    When ``renderRoI`` is called from ``getImage`` and the cached image is too
+    small, the image is copied into a larger one (``copyAndResizeIfNeeded``)
+    that replaces it in the cache. The pixels other threads are rendering into
+    the old image are cleared in the copy, and this thread renders them itself;
+    the marker is then created on the copy, after it is allocated.
+
+12. **Return.** An aborted render returns ``eRenderRoIRetCodeAborted``; a failed
+    one throws; a render that ran out of GPU memory is retried on the CPU.
+    Otherwise the rendered pixels are already in the (cached) image, with its
+    bitmap updated, and ``renderRoI`` returns ``eRenderRoIRetCodeOk``. The
+    Viewer then converts the result into a ``FrameEntry`` texture, which has
+    its own cache.
 
 Throughout, the per-frame context (hashes captured up front, the abort flag,
 statistics) is read from the thread-local ``ParallelRenderArgs``, not from live
-node state. That is what keeps steps 2–7 consistent even if the user changes a
-parameter mid-render — and why bypassing that TLS is a classic source of render
-bugs.
+node state. That is what keeps these steps consistent even if the user changes
+a parameter mid-render — and why bypassing that TLS is a classic source of
+render bugs.
+
+.. toctree::
+   :maxdepth: 1
+
+   cache
