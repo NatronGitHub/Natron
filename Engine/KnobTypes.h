@@ -881,8 +881,9 @@ public:
     static std::size_t maxLength();
 
     /**
-     * @brief The largest value that a Python script (PyPlug export) holds: in hexadecimal, in a QString (2 characters
-     * per byte, 2 bytes per character), which must fit in less than INT_MAX bytes with the rest of the script.
+     * @brief The largest total of the values that a Python script (PyPlug export) holds: in hexadecimal, in a QString
+     * (2 characters per byte, 2 bytes per character), which must fit in less than INT_MAX bytes with the rest of the
+     * script.
      **/
     static std::size_t maxExportLength();
 
