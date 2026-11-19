@@ -43,6 +43,7 @@ set(Tests_SOURCES
     OfxImageMemory_Test.cpp
     OfxInstanceChanged_Test.cpp
     OfxMultiThreadSuite_Test.cpp
+    OfxMultiplePAR_Test.cpp
     OfxParamAnimating_Test.cpp
     OfxParamCopy_Test.cpp
     OfxParamInteract_Test.cpp

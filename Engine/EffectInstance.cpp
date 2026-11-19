@@ -5455,6 +5455,10 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
         double par;
         if (!multipleClipsPAR) {
             par = inputParSet ? inputPar : projectPAR;
+        } else if ( (i >= 0) && effect ) {
+            // The plug-in maps each clip itself (kOfxImageEffectPropSupportsMultipleClipPARs): a connected input
+            // gets the PAR of its own input, "the pixel aspect ratio of a clip or image", not the first one's.
+            par = effect->getAspectRatio(-1);
         } else {
             if (inputParSet) {
                 par = inputPar;
