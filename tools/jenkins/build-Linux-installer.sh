@@ -51,22 +51,40 @@ export C_INCLUDE_PATH="${SDK_HOME}/include:${SDK_HOME}/qt${QT_VERSION_MAJOR}/inc
 export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
 export LD_LIBRARY_PATH
 
-# Libraries that always come from the system and are never bundled:
+# Libraries that always come from the system and are never bundled. A bundled file may need
+# (DT_NEEDED) only these libraries and the bundled ones (see checkBundle):
 # - glibc (libc, libm, libdl, libpthread, librt, ld-linux*, ...);
 # - the GCC runtime (libstdc++, libgcc_s, libgomp, libatomic). Natron is built on Rocky Linux 9
 #   with gcc-toolset: its libstdc++.so is a linker script that takes the symbols missing
 #   from the system libstdc++ (GCC 11) from libstdc++_nonshared.a, so the binaries only need
 #   the system libstdc++;
-# - OpenGL (GLVND), X11/xcb and DRM, which must match the system's graphics driver and display.
-# A dependency in this list is an error: the bundle would then not use the system library.
-SYSTEM_LIBS_RE='^(ld-linux.*|lib(c|m|mvec|dl|pthread|rt|resolv|util|anl|stdc\+\+|gcc_s|gomp|atomic|GL|EGL|GLX|GLdispatch|OpenGL|X11|X11-xcb|xcb|xcb-.*|drm)\.so(\..*)?)$'
+# - OpenGL (GLVND) and DRM, which must match the system's graphics driver;
+# - the desktop libraries, which every Linux desktop has and which must match the system's
+#   display server and sound system: the X11 client libraries (libX11, libX11-xcb, libXext,
+#   libXrender, libXau, libXdmcp, libXi, libXfixes, ... i.e. libX*), libxcb and its extensions,
+#   the xcb-util libraries (libxcb-icccm, -image, -keysyms, -render-util...), libSM, libICE,
+#   libxkbcommon and libxkbcommon-x11, and ALSA (libasound).
+# INSTALL_LINUX.md lists them ("Runtime requirements of the Linux binaries").
+# A library in this list that would be bundled is an error.
+SYSTEM_LIBS_RE='^(ld-linux.*|lib(c|m|mvec|dl|pthread|rt|resolv|util|anl|stdc\+\+|gcc_s|gomp|atomic|GL|EGL|GLX|GLdispatch|OpenGL|drm|X[A-Za-z0-9]*|X11-xcb|xcb|xcb-.*|SM|ICE|xkbcommon|xkbcommon-x11|asound)\.so(\..*)?)$'
 
 # Highest symbol versions defined by the system libraries of Rocky Linux 9.0 (glibc 2.34;
 # libstdc++, libgcc_s and libgomp from GCC 11), on x86_64 and aarch64. A bundled binary
 # that needs a newer version would not run on the oldest supported systems.
 # Later EL9 glibc packages also define some GLIBC_2.35 symbols (backports, e.g. __memcmpeq,
 # _dl_find_object): a binary that uses them would not run on EL 9.0 to 9.x, hence GLIBC_2.34.
-SYSTEM_SYMVER_MAX="GLIBC_2.34 GLIBCXX_3.4.29 CXXABI_1.3.13 GCC_11.0 GOMP_5.0.1 OMP_5.0.1"
+# libgcc_s: the newest version of GCC 11's libgcc_s is GCC_7.0.0 on x86_64 and GCC_11.0 on
+# aarch64 (as in openfx's Support/include/linuxCheckBundle.sh).
+if [ "${ARCH:-$(uname -m)}" = "aarch64" ]; then
+    SYSTEM_SYMVER_GCC_MAX=GCC_11.0
+else
+    SYSTEM_SYMVER_GCC_MAX=GCC_7.0.0
+fi
+SYSTEM_SYMVER_MAX="GLIBC_2.34 GLIBCXX_3.4.29 CXXABI_1.3.13 ${SYSTEM_SYMVER_GCC_MAX} GOMP_5.0.1 OMP_5.0.1"
+# Versions of these libraries without a number that EL9 has (libstdc++'s transactional memory
+# and __float128 ABIs). Any other one, e.g. GLIBC_PRIVATE, or GLIBC_ABI_DT_RELR (glibc >= 2.36,
+# from -z pack-relative-relocs), is an error.
+SYSTEM_SYMVER_OTHER="CXXABI_TM_1 CXXABI_FLOAT128"
 
 function isSystemLib() {
     [[ "$(basename "$1")" =~ $SYSTEM_LIBS_RE ]]
@@ -86,31 +104,50 @@ function sdkDepends() {
     done
 }
 
-# Succeeds if the symbol version $1 (e.g. GLIBCXX_3.4.29) is newer than the system one.
-function symverTooNew() {
-    local prefix="${1%_*}" num="${1##*_}" m max
-    [[ "$num" =~ ^[0-9.]+$ ]] || return 1
-    for m in $SYSTEM_SYMVER_MAX; do
-        if [ "${m%_*}" = "$prefix" ]; then
-            max="${m##*_}"
-            [ "$num" != "$max" ] && [ "$(printf '%s\n%s\n' "$max" "$num" | sort -V | tail -n 1)" = "$num" ]
-            return
-        fi
+# Prints the problem, if the symbol version $1 (e.g. GLIBCXX_3.4.29) of a system library is not
+# available on the oldest supported system. Versions of the other libraries are not checked.
+function symverProblem() {
+    local v="$1" m prefix num max
+    for m in $SYSTEM_SYMVER_OTHER; do
+        [ "$v" = "$m" ] && return 0
     done
-    return 1
+    for m in $SYSTEM_SYMVER_MAX; do
+        prefix="${m%_*}"
+        max="${m##*_}"
+        [[ "$v" == "${prefix}_"* ]] || continue
+        num="${v#"${prefix}_"}"
+        if ! [[ "$num" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+            echo "needs $v, which the system libraries of Rocky Linux 9 don't define"
+        elif [ "$num" != "$max" ] && [ "$(printf '%s\n%s\n' "$max" "$num" | sort -V | tail -n 1)" = "$num" ]; then
+            echo "needs $v, newer than the system libraries of Rocky Linux 9 ($SYSTEM_SYMVER_MAX)"
+        fi
+        return 0
+    done
 }
 
-# Check a bundle directory: it must contain no system library, and no ELF file in it may need
-# a symbol version newer than SYSTEM_SYMVER_MAX.
+# Check a bundle directory:
+# - it must exist and contain ELF files;
+# - it must contain no system library;
+# - every library that an ELF file in it needs (DT_NEEDED) must be either bundled (a file or
+#   symlink with that name anywhere in the directory) or a system library (SYSTEM_LIBS_RE);
+# - no ELF file in it may need a symbol version of a system library that is newer than
+#   SYSTEM_SYMVER_MAX, or a version without a number (except SYSTEM_SYMVER_OTHER).
+# All the problems are listed, then it fails if there is any.
 function checkBundle() {
-    local dir="$1" f v t errors=0
-    for t in find od objdump; do
+    local dir="$1" f v t lib kind problem errors=0 elfs=0
+    local -A bundled=()
+    for t in find od objdump sort; do
         if ! command -v "$t" > /dev/null; then
             (>&2 echo "Error: $t is required to check the bundle")
             exit 1
         fi
     done
+    if [ ! -d "$dir" ]; then
+        (>&2 echo "Error: $dir: no such directory, nothing to check")
+        exit 1
+    fi
     while IFS= read -r -d '' f; do
+        bundled["$(basename "$f")"]=1
         if isSystemLib "$f"; then
             (>&2 echo "Error: system library bundled: $f")
             errors=$((errors + 1))
@@ -118,18 +155,53 @@ function checkBundle() {
     done < <(find "$dir" \( -type f -o -type l \) -name 'lib*.so*' -print0)
     while IFS= read -r -d '' f; do
         [ "$(od -An -tx1 -N4 "$f" | tr -d ' \n')" = "7f454c46" ] || continue
-        for v in $(objdump -p "$f" 2>/dev/null | awk '/^Version References:/ {r=1; next} r && /^ *required from / {next} r && $1 ~ /^0x/ && NF == 4 {print $4; next} r {exit}' | sort -u); do
-            if symverTooNew "$v"; then
-                (>&2 echo "Error: $f needs $v, newer than the system libraries of Rocky Linux 9 ($SYSTEM_SYMVER_MAX)")
-                errors=$((errors + 1))
+        elfs=$((elfs + 1))
+        # "N <lib>" for each DT_NEEDED, "V <lib> <version>" for each version reference (binutils
+        # 2.35 on EL9 prints "private flags = 0x0:" right after them, hence the strict parsing)
+        while read -r kind lib v; do
+            if [ "$kind" = N ]; then
+                if [ -z "${bundled[$lib]+x}" ] && ! isSystemLib "$lib"; then
+                    (>&2 echo "Error: $f needs $lib, which is neither bundled nor a system library (see SYSTEM_LIBS_RE)")
+                    errors=$((errors + 1))
+                fi
+            elif isSystemLib "$lib"; then
+                problem="$(symverProblem "$v")"
+                if [ -n "$problem" ]; then
+                    (>&2 echo "Error: $f $problem (from $lib)")
+                    errors=$((errors + 1))
+                fi
             fi
-        done
+        done < <(objdump -p "$f" 2>/dev/null | awk '
+            /^Dynamic Section:/ {d=1; next}
+            d && $1 == "NEEDED" {print "N", $2; next}
+            d && NF == 0 {d=0}
+            /^Version References:/ {r=1; next}
+            r && /^ *required from / {lib=$3; sub(/:$/, "", lib); next}
+            r && $1 ~ /^0x/ && NF == 4 {print "V", lib, $4; next}
+            r {r=0}' | sort -u)
     done < <(find "$dir" -type f \( -name '*.so' -o -name '*.so.*' -o -name '*.ofx' -o -perm -u+x \) -print0)
+    if [ "$elfs" -eq 0 ]; then
+        (>&2 echo "Error: $dir contains no ELF file: wrong directory?")
+        errors=$((errors + 1))
+    fi
     if [ "$errors" -gt 0 ]; then
         (>&2 echo "Error: $errors problem(s) with the system libraries in $dir, see above")
         exit 1
     fi
-    echo "* $dir: no system library bundled, no symbol version newer than $SYSTEM_SYMVER_MAX"
+    echo "* $dir: $elfs ELF files; no system library bundled, every needed library is bundled or a system library, no symbol version newer than $SYSTEM_SYMVER_MAX"
+}
+
+# Print the system libraries (SYSTEM_LIBS_RE) needed by the ELF files in a directory.
+function systemLibsNeeded() {
+    local f lib
+    while IFS= read -r -d '' f; do
+        [ "$(od -An -tx1 -N4 "$f" | tr -d ' \n')" = "7f454c46" ] || continue
+        objdump -p "$f" 2>/dev/null | awk '$1 == "NEEDED" {print $2}'
+    done < <(find "$1" -type f \( -name '*.so' -o -name '*.so.*' -o -name '*.ofx' \) -print0) | sort -u | while read -r lib; do
+        if isSystemLib "$lib"; then
+            echo "$lib"
+        fi
+    done
 }
 
 # Pretty architecture/platform identifier (used for breakpad symbol files)
@@ -462,6 +534,9 @@ mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide" "${TMP_PORTABLE
 
 # Remove unused stuff
 rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"/{test,config,config-"${PYVER}${PYTHON_ABIFLAGS}"}
+# The crypt module (deprecated since Python 3.11, removed in 3.13) needs libcrypt.so.2 (libxcrypt),
+# which is not a system library everywhere: Debian and Ubuntu only have libcrypt.so.1.
+rm -f "${TMP_PORTABLE_DIR}/lib/python${PYVER}/lib-dynload"/_crypt.*so
 
 # Copy PySide dependencies
 PYSIDE_DEPENDS=$(sdkDepends $(find "${SDK_HOME}/lib/python${PYVER}/site-packages/PySide" -maxdepth 1 -type f))
@@ -696,6 +771,18 @@ fi
 # the oldest supported distribution (Rocky Linux 9)
 checkBundle "${TMP_PORTABLE_DIR}"
 checkBundle "${INSTALLER_PATH}/packages"
+
+# The OFX plug-in bundles, with openfx's linuxCheckBundle.sh: it also checks their DT_RUNPATH/
+# DT_RPATH, which fixrpath and installPlugin set with "patchelf ... || true", and that every
+# library they need is found through them. It is run on the portable tree, where the symlinks
+# from the plug-ins' Libraries directories to Natron's lib directory resolve. The desktop
+# libraries of SYSTEM_LIBS_RE are system libraries for it too.
+OFX_CHECK_BUNDLE="$TMP_PATH/Natron/libs/OpenFX/Support/include/linuxCheckBundle.sh"
+if [ -f "$OFX_CHECK_BUNDLE" ]; then
+    env OFX_ABI_SYSTEM_LIBS="$(systemLibsNeeded "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron" | tr '\n' ' ')" bash "$OFX_CHECK_BUNDLE" "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron"
+else
+    echo "Warning: $OFX_CHECK_BUNDLE not found (libs/OpenFX predates openfx#159): the rpaths of the OFX plug-in bundles are not checked"
+fi
 
 # At this point we can run Natron unit tests to check that the deployment is ok.
 rm -rf "$HOME/.cache/INRIA/Natron"* &> /dev/null || true

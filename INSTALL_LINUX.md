@@ -76,12 +76,20 @@ The official Linux binaries are built on Rocky Linux 9 with the Natron SDK. They
 - glibc 2.34 or later: libc, libm, libdl, libpthread, librt and ld-linux.
 - libstdc++ and libgcc_s from GCC 11 or later. On Rocky Linux 9 these are the system ones. Natron is compiled with a newer GCC, from `gcc-toolset`, but the libstdc++ symbols that are newer than GCC 11 are linked statically, from `libstdc++_nonshared.a`, so the binaries only need the system libstdc++.
 - libgomp (OpenMP runtime), from GCC 11 or later. It is a separate package (`libgomp` on RHEL/Rocky, `libgomp1` on Debian/Ubuntu). Most systems have it, but minimal images such as `rockylinux:9-minimal` don't.
-- libGL from GLVND (libGL, libEGL, libGLX, libGLdispatch), and an OpenGL driver.
-- The X11 client libraries, at least as recent as those of Rocky Linux 9.0: libX11 1.7.0, libxcb 1.13.1 and libxkbcommon 1.0.3. Also libdrm.
+- libGL from GLVND (libGL, libEGL, libGLX, libGLdispatch), and an OpenGL driver. Also libdrm.
+- The X11 client libraries, at least as recent as those of Rocky Linux 9.0 (libX11 1.7.0, libxcb 1.13.1, libxkbcommon 1.0.3): libX11, libX11-xcb, libXext, libXrender, libXau, libXdmcp and the other libX\* libraries, libxcb and its extensions, the xcb-util libraries (libxcb-icccm, libxcb-image, libxcb-keysyms, libxcb-render-util), libSM, libICE, libxkbcommon and libxkbcommon-x11. Qt's X11 platform plug-in (`libqxcb.so`) needs them.
+- ALSA (libasound), for Qt Multimedia.
 
-`tools/jenkins/build-Linux-installer.sh` checks this. It fails in two cases:
-- one of these libraries would be bundled;
-- a bundled binary needs a symbol version newer than Rocky Linux 9.0 provides, as found by `objdump -p` (Version References). The limits are GLIBC_2.34, GLIBCXX_3.4.29, CXXABI_1.3.13, GCC_11.0, GOMP_5.0.1 and OMP_5.0.1. Later EL9 updates of glibc define a few GLIBC_2.35 symbols, backported from glibc 2.35: a binary that needs them would not run on older EL9 systems.
+Everything else comes from the SDK and is bundled. In particular, Python's `crypt` module (deprecated since Python 3.11) is not included: it needs libcrypt.so.2, which Debian and Ubuntu don't have.
+
+`tools/jenkins/build-Linux-installer.sh` checks this (`checkBundle`, on the portable tree and on the installer packages). It fails if:
+- the directory doesn't exist or contains no ELF file;
+- one of the system libraries above is bundled;
+- an ELF file needs (DT_NEEDED) a library that is neither bundled nor one of the system libraries above;
+- a bundled binary needs a symbol version of a system library that is newer than Rocky Linux 9.0 provides, as found by `objdump -p` (Version References): GLIBC_2.34, GLIBCXX_3.4.29, CXXABI_1.3.13, GCC_7.0.0 on x86_64 or GCC_11.0 on aarch64, GOMP_5.0.1 and OMP_5.0.1. Later EL9 updates of glibc define a few GLIBC_2.35 symbols, backported from glibc 2.35: a binary that needs them would not run on older EL9 systems;
+- a bundled binary needs a version of these libraries without a number, such as GLIBC_PRIVATE or GLIBC_ABI_DT_RELR (glibc 2.36 and later), except libstdc++'s CXXABI_TM_1 and CXXABI_FLOAT128.
+
+It then runs openfx's `Support/include/linuxCheckBundle.sh` (from `libs/OpenFX`, if it has it) on the OFX plug-in bundles of the portable tree, which also checks their rpaths.
 
 ### Environment to use the Natron SDK
 
