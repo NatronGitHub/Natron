@@ -1,64 +1,359 @@
 .. for help on writing/extending this file, see the reStructuredText cheatsheet
    http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
-   
-Using Roto / Rotopaint
+
+Using Roto / RotoPaint
 ======================
 
-Natron features a vector-based RotoPaint node for help with tasks like rotoscoping, rig removal, garbage matting, and dustbusting. You can draw Bezier and B-Spline shapes with individual and layer group attributes, including per-point and global feather, motion blur, blending modes and individual or hierarchical 2D transformations.
+Natron has two vector-based nodes for rotoscoping, rig removal, garbage mattes
+and dust-busting: :ref:`Roto <fr.inria.built-in.Roto>` and
+:ref:`RotoPaint <fr.inria.built-in.RotoPaint>`. You draw Bezier shapes, ellipses,
+rectangles and paint strokes directly in the Viewer. Each shape has its own
+color, opacity, feather, life time and 2D transform, shapes can be grouped in
+layers, and every point can be animated.
 
 
 Roto or RotoPaint?
 ******************
-There are two similar nodes in Natron for rotoscoping, Roto and RotoPaint.
-The main difference between these two is that you can only create and edit Bezier and B-spline shapes with Roto, while RotoPaint allows you to draw paint strokes too with various brushes. So the Roto node is an optimal choice if you’re doing rotoscoping only, whereas RotoPaint gives you a broader scale of tools to use.
 
-All tools and controls in the Roto node work the same way as they do in RotoPaint node.
+Both nodes share the same shapes, parameters and Viewer controls. The
+differences are:
+
+- **RotoPaint** adds the clone, reveal, blur, smear, dodge and burn brushes.
+  Its default tool is the paint brush, and by default it draws into the R, G,
+  B and A channels.
+- **Roto** is meant for mattes. Its default tool is the Bezier tool, and by
+  default it only draws into the alpha channel.
+
+Both nodes have eleven optional inputs:
+
+- **Bg**: the image the shapes and strokes are drawn over;
+- **Bg2** to **Bg10**: other images, which the clone and reveal brushes can use
+  as sources;
+- **Mask**: limits where the node changes **Bg**, see `The Mask input`_.
+
+To create the nodes, use the **Draw** group of the
+:doc:`toolbar <getstarted-environment-toolbar>`, or press :kbd:`O` (Roto) or
+:kbd:`P` (RotoPaint) in the Node Graph.
+
+The tools only show in the Viewer while the node's Properties panel is open.
 
 
 Roto (Mask)
 ***********
 
-You can use Roto for masking things, similar to mask tools on other known VFX software.
-In the following example we will mask the person in the picture:
+You can use Roto to mask things, as with the mask tools of other VFX software.
+In the following example we mask the person in the picture:
 
 1. Insert a Merge node.
 2. Insert a Roto node.
-3. Plug the B pipe of the Merge node to the footage.
-4. Plug the A pipe into Roto node.
-5. Double click the Merge node, in the Poperties panel under Operation select: mask and make sure that all A Channels are ticked (This is the first thing to double check if the result is not as expected!).
+3. Connect the B input of the Merge node to the footage.
+4. Connect the A input to the Roto node.
+5. Double-click the Merge node. In the Properties panel, set **Operation** to
+   **mask** and make sure that all A channels are checked (this is the first
+   thing to check if the result is not as expected).
 
 .. image:: _images/compositing-rotopaint_01.png
 
 
 
-6. Double click Roto node and in the Viewer's left side apears a menu, select Bezier tool.
-7. Draw your Bezier directly in the viewer. While holding the mouse it draws curved points, when just clicking it draws edges. Try it yourself to get the feeling.
-8. Close your Bezier with hitting Enter or clicking the first point drawn:
+6. Double-click the Roto node. The Viewer toolbar appears on the left side of
+   the Viewer: select the Bezier tool.
+7. Draw the Bezier directly in the Viewer. Click to add a sharp (cusp) point, or
+   click and drag to add a smooth point and pull out its tangents.
+8. Close the Bezier by clicking its first point or by pressing :kbd:`Enter`:
 
 .. image:: _images/compositing-rotopaint_02.png
 
-9. To feather some parts, you can drag the red handle lines. To feather everything just add a Blur node between Roto and Merge.
-10. To animate the mask, just move the curser in the Timeline, then move your mask, it will Keyframe automatically.
+9. To feather some parts, drag the feather points (see `Feather`_). To feather
+   everything, raise the shape's **Feather** parameter, or add a Blur node
+   between Roto and Merge.
+10. To animate the mask, move to another frame in the Timeline and move the
+    points: with auto-keying on (the default), a keyframe is set automatically.
 
 
 Roto (Stencil)
 **************
 
-If you want to invert the mask:
-
-1. Change the Operation in Merge node to: Stencil
+To invert the mask, change the **Operation** of the Merge node to **stencil**:
 
 .. image:: _images/compositing-rotopaint_03.png
 
 
-RotoPaint (Paint)
-*****************
+The Viewer toolbar
+******************
 
-The RotoPaint node gives you a broader scale of tools to use than Roto, though many of the controls are shared across both nodes.
-As with the Roto node, you should use the Viewer tools to create shapes and paint strokes, and then edit them using the control panel.
+The Viewer toolbar, on the left side of the Viewer, groups the tools by role. Click a
+button to use its current tool, or click and hold it to choose another tool of
+the same group. Each group has a keyboard shortcut, active while the mouse is
+over the Viewer: the first press selects the group, the next presses cycle
+through its tools.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 10 70
+
+   * - Group
+     - Key
+     - Tools
+   * - Selection
+     - :kbd:`Q`
+     - **Select All** (points, tangents, feather and shapes), **Select Points**
+       (only the points of the shape itself), **Select Shapes**, **Select
+       Feather Points**.
+   * - Points edition
+     - :kbd:`D`
+     - **Add Points** (click a selected shape to insert a point; with a
+       selection tool, :kbd:`Ctrl+Alt`-click a shape does the same, or
+       :kbd:`Cmd+Alt`-click on macOS), **Remove
+       Points**, **Cusp Points** (remove the tangents), **Smooth Points**,
+       **Open/Close Shape**, **Remove Feather** (click a point).
+   * - Shapes drawing
+     - :kbd:`V`
+     - **Bezier**, **Ellipse**, **Rectangle**.
+   * - Paint brush
+     - :kbd:`N`
+     - **Solid** paint brush, **Pencil** (draws an open Bezier curve, painted
+       like a stroke, that you can edit point by point later), **Eraser**.
+   * - Clone (RotoPaint only)
+     - :kbd:`C`
+     - **Clone**, **Reveal**.
+   * - Effect (RotoPaint only)
+     - :kbd:`X`
+     - **Blur**, **Smear** (blurs and drags the image along the pen
+       direction).
+   * - Merging (RotoPaint only)
+     - :kbd:`E`
+     - **Dodge** (brightens the image), **Burn** (darkens it).
+
+When you use the eraser end of a graphics tablet pen in RotoPaint, the Eraser
+tool is selected automatically.
+
+Drawing shapes
+--------------
+
+- **Bezier**: click to add points, click and drag to set the tangents of the
+  new point. Click the first point, or press :kbd:`Enter` or :kbd:`Esc`, to
+  close the shape. Selecting another tool also closes it.
+- **Ellipse** and **Rectangle**: click and drag. Hold :kbd:`Shift` to draw a
+  circle or a square, and :kbd:`Ctrl` (:kbd:`Cmd` on macOS) to draw from the
+  center.
+
+Editing shapes
+--------------
+
+With a selection tool, click a point or a shape to select it, or drag a
+rectangle to select several points. The selected points get a bounding box
+with handles to move and scale them. Hold :kbd:`Ctrl` (:kbd:`Cmd` on macOS)
+to switch the handles to rotate and skew; they switch back when you release
+the key.
+These shortcuts work while the mouse is over the Viewer, and most of them are
+also in the right-click menu of the Viewer:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Key
+     - Action
+   * - :kbd:`Ctrl+A` (:kbd:`Cmd+A` on macOS)
+     - Select all
+   * - :kbd:`Ctrl+Alt`-click a shape (:kbd:`Cmd+Alt` on macOS)
+     - Insert a point on the shape (with a selection tool)
+   * - :kbd:`Backspace`
+     - Remove the selected points or shapes
+   * - :kbd:`Z` / :kbd:`Shift+Z`
+     - Smooth / cusp the selected points
+   * - :kbd:`Shift+E`
+     - Remove the feather of the selected points
+   * - :kbd:`Enter`
+     - Open or close the selected shape
+   * - :kbd:`Shift+L`
+     - Lock the selected shapes
+   * - keypad :kbd:`4` :kbd:`6` :kbd:`8` :kbd:`2`
+     - Nudge the selection left, right, up, down
+   * - :kbd:`T`
+     - Show or hide the transform handle of the selected shapes
+
+All these shortcuts can be changed in
+**Edit > Preferences > User Interface > Shortcut Editor**.
+
+The buttons above the Viewer
+----------------------------
+
+While a selection, points edition or shapes drawing tool is active, a row of
+buttons above the Viewer controls how editing works:
+
+- **Enable Auto-Keying** (on by default): any change to a point sets a
+  keyframe at the current frame.
+- **Enable Feather-Link** (on by default): moving a point also moves its
+  feather point.
+- **Display Feather** (on by default): show the feather curve, so that it can
+  be edited.
+- **Enable Sticky Selection** (off by default): clicking outside of any shape does not clear the
+  selection.
+- **Enable Ripple Edit**: moving a point moves it by the same amount at all its
+  keyframes.
+- **Add Keyframe** / **Remove Keyframe**: for the selected shapes, at the
+  current frame.
+- **Show Transform Handle**.
 
 
+Painting with RotoPaint
+***********************
 
-.. toctree::
-   :maxdepth: 2
+When a paint tool is active, the buttons above the Viewer set the brush for the
+**next** stroke. A stroke you have already painted keeps its own settings,
+which you can change later in the **Stroke** tab of the Properties panel.
 
+- **Stroke Color**, **Blending Mode** (how the stroke is merged; it changes
+  with the tool, e.g. *over* for the solid brush, *color-dodge* for Dodge),
+  **Opacity**, **Brush Size** and **Brush Hardness**.
+- **Pressure Affects Opacity / Size / Hardness**: with a graphics tablet, the
+  pen pressure changes these values along the stroke.
+- **Build-Up**: the stroke builds up where it paints over itself.
+- **Effect Strength** (Blur tool only).
+- **Multi-Stroke** (on by default): successive strokes painted with the same tool are added to
+  the same item of the list. Select another tool to start a new item.
+- **Auto-connect Viewer**: connect the Viewer directly to the RotoPaint node
+  when a paint tool is used.
+
+In the Viewer, the brush is drawn as a circle around the cursor. Hold
+:kbd:`Shift` and drag to change the brush size, and :kbd:`Ctrl+Shift`
+(:kbd:`Cmd+Shift` on macOS) and drag to change the opacity.
+
+Cloning and revealing
+---------------------
+
+The **Clone** tool copies pixels from another place of a source image, the
+**Reveal** tool copies them from the same place of another image (for example
+a clean plate connected to **Bg2**). With these tools, the buttons above the
+Viewer also show:
+
+- **Source**: *foreground* (the painted result of the items below the stroke),
+  *background* (the image connected to **Bg**, unpainted), or *background2* to
+  *background10* (**Bg2** to **Bg10**). Choosing the Clone tool selects
+  *background*, the Reveal tool *background2*.
+- To set the clone offset, hold :kbd:`Ctrl` (:kbd:`Cmd` on macOS) and drag in
+  the Viewer. The source is drawn as a second circle with a cross. **Reset
+  Transform** sets the offset back to zero. After painting, the offset of each
+  stroke can be edited (translate, rotate, scale, skew) in its **Clone** tab.
+- **Time Offset** and **Time Offset Mode**: clone from another frame, either
+  at an absolute frame number or relative to the current frame.
+
+.. note:: In Natron 2.6, the *foreground* source gives the same result as
+   *background*, so a clone stroke cannot copy what other strokes have
+   painted (`issue #629 <https://github.com/NatronGitHub/Natron/issues/629>`_).
+
+Strokes last one frame by default
+---------------------------------
+
+A new stroke only exists at the frame where it was painted: its **Life Time**
+is **Single**, and its **Frame** is the current frame. This is what you want
+when you paint out dust or scratches frame by frame. To keep a stroke on all
+frames (for example to paint out a fixed object in a locked-off shot), set
+its **Life Time** to **All** in the Properties panel (see `Life time`_).
+
+
+The shapes and strokes list
+***************************
+
+The bottom of the Properties panel lists all the items of the node: layers,
+shapes and strokes. Selecting an item there selects it in the Viewer, and the
+parameters above the list (**Shape**, **Stroke**, **Clone** and **Transform**
+tabs) apply to the selected items.
+
+- Items are rendered from the bottom of the list to the top: the first item of
+  the list is drawn last, over all the others. Drag and drop items to reorder
+  them or to move them to another layer.
+- The columns show, for each item: its **Label** (double-click to rename), a
+  visibility toggle, a lock (a locked item cannot be edited in the Viewer), the
+  compositing **Operator** (how the item is merged with the items below it,
+  e.g. *over*), the overlay color (the color of the curve in the Viewer, which
+  does not change the output) and the shape **Color**.
+- The **+** and **-** buttons under the list add a layer and remove the
+  selected items. Right-click an item to add a layer, delete, cut, copy, paste
+  or duplicate items.
+- The **Spline keyframe** row above the list shows the keyframes of the
+  selected shapes, with buttons to go to the previous or next keyframe, to add
+  or remove a keyframe at the current frame, and to remove all the animation of
+  the selected shapes.
+
+
+Shape parameters
+****************
+
+Feather
+-------
+
+The **feather** of a shape is a soft edge, which fades from the shape color
+to transparent. It can be set in two ways:
+
+- The **Feather** parameter adds the same distance (in pixels, 1.5 by
+  default) all around the selected shapes. **Feather fall-off** controls how
+  fast the edge fades.
+- Each point of a Bezier also has a feather point. With **Display Feather**
+  on, drag the feather points, or the feather bars that connect them to the
+  shape, to make the feather wider in some places. **Remove Feather** (in the
+  points edition tools, or :kbd:`Shift+E`) puts the feather points back on the
+  shape.
+
+Life time
+---------
+
+**Life Time** sets the frames where an item is rendered: **All**, **Single**
+(only at **Frame**), **From start** (up to **Frame**), **To end** (from
+**Frame**), or **Custom**, which uses the animation of the **Activated**
+parameter. New shapes are rendered on all frames, new strokes on a single
+frame.
+
+Transform
+---------
+
+The **Transform** tab moves, rotates, scales and skews the selected items
+without changing their points. Since the transform can be animated, it can be
+linked to a Tracker (see :doc:`compositing-tracking`) to make a shape follow an
+object.
+
+
+Merging with the background
+***************************
+
+The node first draws all its items over a black and transparent image, from
+the bottom of the list to the top, each with its own color, opacity and
+operator. The result is then merged over the **Bg** input, if it is connected.
+
+- The **R**, **G**, **B** and **A** checkboxes at the top of the **General**
+  tab choose the channels the node draws into. Roto only draws into alpha by
+  default, so its shapes do not change the colors of the image.
+- **Premultiply** multiplies the red, green and blue output by the alpha, so
+  that the image is black and transparent outside the shapes and strokes. Use
+  it only if **Bg** is opaque or unpremultiplied, and only alpha is drawn.
+  For example, to cut a person out of a plate: connect the plate to **Bg** of
+  a Roto node, draw the person's outline (Roto only draws alpha), and check
+  **Premultiply**. The output is the person over black and transparent, ready
+  to be merged *over* a new background.
+
+The Mask input
+--------------
+
+When an image is connected to the **Mask** input, and **Mask** is checked in
+the Properties panel (with the channel to use, alpha by default, next to it),
+the node only changes **Bg** where the mask is white: where the mask is
+black, the output is **Bg** unchanged, and in between the two are mixed. The
+**Mix** parameter does the same for the whole image: at 0 the output is
+**Bg**, at 1 the full result. `Issue #367
+<https://github.com/NatronGitHub/Natron/issues/367>`_ reports cases where the
+Mask input has no effect.
+
+Using a shape as a mask
+-----------------------
+
+To use a Roto shape as a mask for another node, connect the Roto node to the
+**Mask** input of that node, or merge it as shown in `Roto (Mask)`_. See also
+:doc:`compositing-merge` and :doc:`compositing-channels`.
+
+.. note:: Natron 2.6 does not render motion blur on Roto shapes, and it has
+   no B-spline shapes and no per-shape "invert" switch. To invert a matte, use
+   the **stencil** or **out** operation of a
+   :ref:`Merge <net.sf.openfx.MergePlugin>` node, or an
+   :ref:`Invert <net.sf.openfx.Invert>` node.
