@@ -39,6 +39,7 @@
 #include <QWaitCondition>
 #include <QCoreApplication>
 #include <QString>
+#include <QStringList>
 #include <QThreadPool>
 #include <QDebug>
 #include <QTextStream>
@@ -2557,7 +2558,7 @@ static bool
 findSequentialOnlyNodesUpstream(const NodePtr& node,
                                 std::map<const Node*, bool>& visited,
                                 std::set<const Node*>& affected,
-                                std::string& sequentialNodeName)
+                                std::list<std::string>& sequentialNodeNames)
 {
     std::map<const Node*, bool>::const_iterator found = visited.find( node.get() );
     if ( found != visited.end() ) {
@@ -2569,14 +2570,14 @@ findSequentialOnlyNodesUpstream(const NodePtr& node,
     EffectInstancePtr effect = node->getEffectInstance();
     if ( effect && !node->isNodeDisabled() && (effect->getSequentialPreference() == eSequentialPreferenceOnlySequential) ) {
         isAffected = true;
-        sequentialNodeName = node->getScriptName_mt_safe();
+        sequentialNodeNames.push_back( node->getScriptName_mt_safe() );
     }
     // The inputs that are not rendered (e.g. the inputs of a Switch that are not selected) are not excluded: that
     // would need the RoI and identity actions at each frame of the render.
     int nInputs = node->getNInputs();
     for (int i = 0; i < nInputs; ++i) {
         NodePtr input = node->getInput(i);
-        if ( input && input->isActivated() && findSequentialOnlyNodesUpstream(input, visited, affected, sequentialNodeName) ) {
+        if ( input && input->isActivated() && findSequentialOnlyNodesUpstream(input, visited, affected, sequentialNodeNames) ) {
             isAffected = true;
         }
     }
@@ -2613,12 +2614,12 @@ DefaultScheduler::createFrameOrderRender() const
     }
     std::map<const Node*, bool> visited;
     std::set<const Node*> affected;
-    std::string sequentialNodeName;
+    std::list<std::string> sequentialNodeNames;
     int nInputs = outputNode->getNInputs();
     for (int i = 0; i < nInputs; ++i) {
         NodePtr input = outputNode->getInput(i);
         if (input && input->isActivated()) {
-            findSequentialOnlyNodesUpstream(input, visited, affected, sequentialNodeName);
+            findSequentialOnlyNodesUpstream(input, visited, affected, sequentialNodeNames);
         }
     }
     if ( affected.empty() ) {
@@ -2629,8 +2630,12 @@ DefaultScheduler::createFrameOrderRender() const
     if ( effect->getNode() != outputNode ) {
         affected.insert( effect->getNode().get() );
     }
+    QStringList names;
+    for (std::list<std::string>::const_iterator it = sequentialNodeNames.begin(); it != sequentialNodeNames.end(); ++it) {
+        names.push_back( QString::fromUtf8( it->c_str() ) );
+    }
     qDebug() << effect->getScriptName_mt_safe().c_str() << ": rendering one frame at a time, in frame order, because"
-             << sequentialNodeName.c_str() << "must be rendered sequentially";
+             << names.join( QString::fromUtf8(", ") ) << "must be rendered sequentially";
 
     return std::make_shared<FrameOrderRender>(affected);
 }

@@ -910,6 +910,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         // t-1..t+1): it must come from the cache, since rendering it again would be out of frame order.
         createInCache = true;
     }
+    // Note: if the cache evicts such a frame before a node downstream fetches it again, it is rendered again, out of
+    // frame order. The cache would have to be full for that to happen during a render.
     ///Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
     bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = getNode()->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
     ///For multi-resolution we want input images with exactly the same size as the output image
@@ -951,6 +953,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ImagePlanesToRenderPtr planesToRender = std::make_shared<ImagePlanesToRender>();
     planesToRender->useOpenGL = storage == eStorageModeGLTex;
     FramesNeededMapPtr framesNeeded = std::make_shared<FramesNeededMap>();
+    if ( isFrameOrderAffected && createInCache && !frameOrderRender->wasRendered( key->getHash() ) ) {
+        // A cache entry with this key, rendered out of order (e.g. in the Viewer), would be returned by
+        // getImageOrCreate() when the planes are allocated below: only the RoI would be rendered into it, while its
+        // bitmap marks the rest as rendered, and setRendered() below would make all of it reusable. Remove it.
+        appPTR->removeFromNodeCache( key->getHash() );
+        if ( nonDraftKey->getHash() != key->getHash() ) {
+            appPTR->removeFromNodeCache( nonDraftKey->getHash() );
+        }
+    }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Look-up the cache ///////////////////////////////////////////////////////////////
 
@@ -1680,13 +1691,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                               // kOfxImageEffectPropSequentialRenderStatus: "the host is currently rendering in a way so that it
                                               // guarantees sequential rendering", i.e. "in frame order on a single effect instance". The Writer
                                               // of a sequential render (e.g. WriteFFmpeg) always gets it: it may only write a movie then.
+                                              // (No special case for Readers: ReadOIIO's "isPlayback" use of the status only matters with its
+                                              // OIIO cache, which it creates only on Natron < 2.2, openfx-io d3e96ca; ReadFFmpeg ignores it.)
                                               frameArgs->isSequentialRender && ( frameArgs->frameOrderRender ||
-                                                                                 ( isWriter() && (frameArgs->treeRoot == getNode()) ) ||
-                                                                                 // Compatibility: ReadOIIO (openfx-io) uses the status as "is
-                                                                                 // playback or render on disk", to skip the OIIO cache, which uses
-                                                                                 // too much RAM then. Readers keep getting it until it uses
-                                                                                 // kOfxImageEffectPropInteractiveRenderStatus instead.
-                                                                                 isReader() ),
+                                                                                 ( isWriter() && (frameArgs->treeRoot == getNode()) ) ),
                                               frameArgs->isRenderResponseToUserInteraction,
                                               nodeHash,
                                               renderFullScaleThenDownscale,

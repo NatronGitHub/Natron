@@ -3253,7 +3253,8 @@ OfxEffectInstance::getSequentialPreference() const
         return eSequentialPreferenceNotSequential;
     }
     // kOfxImageEffectInstancePropSequentialRender is read/write on the instance: it starts from the descriptor's
-    // value, and the plug-in may change it (e.g. in kOfxActionInstanceChanged), so read it every time.
+    // value, and the plug-in may change it (e.g. in kOfxActionInstanceChanged), so read it every time. The read isn't
+    // locked, as for the other properties that the host reads while the plug-in may set them: an int is read.
     switch ( _imp->effect->getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender) ) {
     case 1:
 
