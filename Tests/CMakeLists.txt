@@ -43,6 +43,7 @@ set(Tests_SOURCES
     OfxParamAnimating_Test.cpp
     OfxParamCopy_Test.cpp
     OfxParamInteract_Test.cpp
+    OfxParamUndo_Test.cpp
     OfxPluginDeprecated_Test.cpp
     OfxTestPlugin_Test.cpp
     OSGLContext_Test.cpp

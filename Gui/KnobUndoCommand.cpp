@@ -261,7 +261,13 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobGuiPtr& kno
         holderName = QString::fromUtf8( effect->getNode()->getLabel().c_str() );
     }
 
-    setText( tr("Multiple edits of %1").arg(holderName) );
+    // the label of the block of changes, e.g. the name given to paramEditBegin() by an OpenFX plug-in
+    const std::string label = holder ? holder->getMultipleParamsEditLabel() : std::string();
+    if ( !label.empty() ) {
+        setText( QString::fromUtf8( label.c_str() ) );
+    } else {
+        setText( tr("Multiple edits of %1").arg(holderName) );
+    }
 }
 
 MultipleKnobEditsUndoCommand::~MultipleKnobEditsUndoCommand()
