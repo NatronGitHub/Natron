@@ -165,6 +165,15 @@ struct OfxHostPrivate
     int loadingPluginVersionMajor;
     int loadingPluginVersionMinor;
     std::string setHostBundleID; // bundle identifier of the binary whose OfxSetHost is being called (OFX 1.5)
+    // Serializes the loading and description of the plug-ins (getPluginContextAndDescribe()): HostSupport
+    // requires that the getPluginHandle() call that loads a plug-in (OfxSetHost of its binary if the binary
+    // was only known from the cache, kOfxActionLoad, kOfxActionDescribe) and getContext()
+    // (kOfxImageEffectActionDescribeInContext) be serialized with every other getPluginHandle(),
+    // getContext() and createInstance() call for all the plug-ins of the binary. The loadingPlugin* and
+    // setHostBundleID members above are shared by these calls too. Once a plug-in is described, its
+    // instances only call getPluginHandle() on a loaded plug-in, which only reads, and nothing is unloaded
+    // before exit (keepPluginsLoadedAfterScan()), so render threads need no lock.
+    QMutex describeMutex;
 
     OfxHostPrivate()
         : imageEffectPluginCache()
@@ -178,6 +187,7 @@ struct OfxHostPrivate
         , loadingPluginVersionMajor(0)
         , loadingPluginVersionMinor(0)
         , setHostBundleID()
+        , describeMutex()
     {
     }
 };
@@ -685,6 +695,8 @@ OFX::Host::ImageEffect::Descriptor*
 OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                      ContextEnum* ctx)
 {
+    QMutexLocker l(&_imp->describeMutex);
+
     _imp->loadingPluginID = plugin->getRawIdentifier();
     _imp->loadingPluginBinaryPath = plugin->getBinary() ? plugin->getBinary()->getFilePath() : std::string();
     _imp->loadingPluginVersionMajor = plugin->getVersionMajor();
@@ -929,6 +941,10 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     // are part of the cache version: the plug-ins are scanned again when they change.
     pluginCache->setCacheVersion( std::string(NATRON_APPLICATION_NAME "OFXCachev3-" NATRON_VERSION_STRING "-")
                                   + appPTR->getCurrentSettings()->getHostName() );
+
+    // the host passed to each binary's OfxSetHost (OFX 1.5) at the scan: the same host as when a plug-in
+    // known from the cache is loaded later (HostSupport's default, the image effect host, is this one too)
+    pluginCache->setScanHost(this);
 
     /// register the image effect cache with the global plugin cache
     _imp->imageEffectPluginCache->registerInCache( *pluginCache );

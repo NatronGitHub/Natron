@@ -132,6 +132,16 @@ public:
     /// The CFBundleIdentifier in the Info.plist of the OFX bundle that contains a plug-in binary
     /// (e.g. ".../Foo.ofx.bundle/Contents/MacOS/Foo.ofx"), or "" if there is none.
     static std::string getBundleIdentifier(const std::string& binaryFilePath);
+
+    /// The plug-ins found by the scan stay loaded until exit (HostSupport's default since openfx #174
+    /// is to unload each binary after the scan and load it again at first use). Natron keeps them: each
+    /// binary gets one OfxSetHost, and each plug-in one kOfxActionLoad and kOfxActionDescribe, kept
+    /// until the plug-in cache is cleared at exit, with no dlclose and no reload in between. Unloading
+    /// and reloading a plug-in binary is risky: its static destructors run at dlclose (e.g. TBB's
+    /// teardown, #1253), and on macOS thread-local statics can keep the image mapped or crash at the
+    /// next load. It also avoids loading every new or changed binary twice at startup.
+    virtual bool keepPluginsLoadedAfterScan() const OVERRIDE { return true; }
+
     virtual bool pluginSupported(OFX::Host::ImageEffect::ImageEffectPlugin *plugin, std::string &reason) const OVERRIDE;
 
     ///fetch the parametric parameters suite or returns the base class version
