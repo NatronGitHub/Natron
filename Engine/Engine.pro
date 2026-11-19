@@ -436,6 +436,7 @@ ENGINE_GENERATED_SOURCES = \
     booleanparam_wrapper \
     boolnodecreationproperty_wrapper \
     buttonparam_wrapper \
+    bytesparam_wrapper \
     choiceparam_wrapper \
     colorparam_wrapper \
     colortuple_wrapper \

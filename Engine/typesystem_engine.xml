@@ -1393,6 +1393,52 @@
     <object-type name="ChoiceParam">
     </object-type>
     <object-type name="ButtonParam"/>
+    <!--OFX 1.5 Bytes params: the value is Python bytes, not str (it is not text)-->
+    <object-type name="BytesParam">
+        <modify-function signature="getMaxLength()const" remove="all"/>
+        <modify-function signature="getValue()const">
+            <modify-argument index="return">
+                <replace-type modified-type="PyObject"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                std::string value = %CPPSELF.%FUNCTION_NAME();
+                %PYARG_0 = PyBytes_FromStringAndSize( value.data(), (Py_ssize_t)value.size() );
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="getDefaultValue()const">
+            <modify-argument index="return">
+                <replace-type modified-type="PyObject"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                std::string value = %CPPSELF.%FUNCTION_NAME();
+                %PYARG_0 = PyBytes_FromStringAndSize( value.data(), (Py_ssize_t)value.size() );
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="setValue(const std::string&amp;)">
+            <modify-argument index="1">
+                <replace-type modified-type="PyObject"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                Py_buffer view;
+                if (PyObject_GetBuffer(%PYARG_1, &amp;view, PyBUF_SIMPLE) != 0) {
+                    PyErr_Clear();
+                    PyErr_SetString(PyExc_TypeError, "BytesParam.setValue: the value must be a bytes-like object (bytes, bytearray...)");
+                    return 0;
+                }
+                if ( (std::size_t)view.len &gt; %CPPSELF.getMaxLength() ) {
+                    PyBuffer_Release(&amp;view);
+                    PyErr_SetString(PyExc_MemoryError, "BytesParam.setValue: the value is too large");
+                    return 0;
+                }
+                std::string value( (const char*)view.buf, (std::size_t)view.len );
+                PyBuffer_Release(&amp;view);
+                %CPPSELF.%FUNCTION_NAME(value);
+                Py_RETURN_NONE;
+            </inject-code>
+        </modify-function>
+    </object-type>
     <object-type name="SeparatorParam"/>
     <object-type name="StringParamBase">
     </object-type>

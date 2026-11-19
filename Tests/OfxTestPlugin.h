@@ -36,6 +36,9 @@
 #include <gtest/gtest.h>
 
 #include <ofxhBinary.h>
+// (before ofxhParam.h: it includes ofxhMemory.h, which uses OfxImageMemoryHandle without including
+// ofxImageEffect.h, fixed by openfx#189)
+#include <ofxImageEffect.h>
 #include <ofxhParam.h>
 
 #include "Engine/AbortableRenderInfo.h"

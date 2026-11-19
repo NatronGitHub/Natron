@@ -132,6 +132,7 @@ SOURCES += \
     KnobGui20.cpp \
     KnobGuiBool.cpp \
     KnobGuiButton.cpp \
+    KnobGuiBytes.cpp \
     KnobGuiChoice.cpp \
     KnobGuiColor.cpp \
     KnobGuiContainerHelper.cpp \
@@ -277,6 +278,7 @@ HEADERS += \
     KnobGui.h \
     KnobGuiBool.h \
     KnobGuiButton.h \
+    KnobGuiBytes.h \
     KnobGuiChoice.h \
     KnobGuiColor.h \
     KnobGuiContainerHelper.h \

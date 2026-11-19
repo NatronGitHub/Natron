@@ -86,6 +86,8 @@
 #include <ofxParametricParam.h>
 #include <ofxProperty.h>
 
+#include "NatronTestPluginRegistry.h"
+
 #define kPluginGrouping "Other/Test"
 #define kParamInteractPluginIdentifier "net.natron.test.ParamInteract"
 #define kSingleInstancePluginIdentifier "net.natron.test.SingleInstance"
@@ -1380,6 +1382,21 @@ OfxPlugin gPlugins[] = {
 };
 } // anonymous namespace
 
+std::vector<OfxPlugin*>&
+natronTestExtraPlugins()
+{
+    static std::vector<OfxPlugin*> plugins;
+
+    return plugins;
+}
+
+void
+natronTestIncrementCounter(const std::string& name,
+                           int delta)
+{
+    incrementCounter(name, delta);
+}
+
 extern "C" {
 // For the tests (Tests/OfxTestPlugin.h): the value of a counter, 0 if it was never set.
 OfxExport int NatronTestPluginGetCounter(const char* name);
@@ -1412,17 +1429,21 @@ OfxGetNumberOfPlugins(void)
 {
     incrementCounter("Binary.getNumberOfPlugins");
 
-    return (int)( sizeof(gPlugins) / sizeof(gPlugins[0]) );
+    // the plug-ins of this file, then the ones of the other source files (NatronTestPluginRegistry.h)
+    return (int)( sizeof(gPlugins) / sizeof(gPlugins[0]) + natronTestExtraPlugins().size() );
 }
 
 OfxExport OfxPlugin*
 OfxGetPlugin(int nth)
 {
-    if ( (nth < 0) || ( nth >= (int)( sizeof(gPlugins) / sizeof(gPlugins[0]) ) ) ) {
+    const int nOwn = (int)( sizeof(gPlugins) / sizeof(gPlugins[0]) );
+
+    // (not OfxGetNumberOfPlugins(), which counts its calls)
+    if ( (nth < 0) || ( nth >= nOwn + (int)natronTestExtraPlugins().size() ) ) {
         return 0;
     }
 
-    return &gPlugins[nth];
+    return nth < nOwn ? &gPlugins[nth] : natronTestExtraPlugins()[nth - nOwn];
 }
 
 OfxExport int

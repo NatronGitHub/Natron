@@ -20,6 +20,7 @@ without importing anything.
     BezierCurve
     BooleanParam
     ButtonParam
+    BytesParam
     ChoiceParam
     ColorParam
     ColorTuple

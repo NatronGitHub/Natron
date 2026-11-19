@@ -171,6 +171,8 @@ public:
     {
         //only for string-param for now
         std::string str;
+        // the value returned to the plug-in by a Bytes param (OfxBytesInstance)
+        std::string bytes;
     };
 
     static std::string getParamLabel(OFX::Host::Param::Instance* param)
@@ -957,6 +959,51 @@ private:
 
 
     std::unique_ptr<OfxCustomInstancePrivate> _imp;
+};
+
+struct OfxBytesInstancePrivate;
+/**
+ * @brief An OFX 1.5 Bytes parameter (kOfxParamTypeBytes): opaque plug-in data, held by a KnobBytes.
+ * Like Custom parameters, it has no user interface, and it doesn't animate.
+ **/
+class OfxBytesInstance
+    : public OfxParamToKnob, public OFX::Host::Param::BytesInstance
+{
+public:
+    OfxBytesInstance(const OfxEffectInstancePtr& node,
+                     OFX::Host::Param::Descriptor & descriptor);
+
+    virtual ~OfxBytesInstance();
+
+    virtual OfxStatus get(std::vector<unsigned char> &) OVERRIDE FINAL;
+    virtual OfxStatus get(OfxTime time, std::vector<unsigned char> &) OVERRIDE FINAL;
+    virtual OfxStatus set(const unsigned char *data, size_t length) OVERRIDE FINAL;
+    virtual OfxStatus set(OfxTime time, const unsigned char *data, size_t length) OVERRIDE FINAL;
+
+    /// implementation of var args function
+    /// The data is only valid until the next API call on this param in the same thread.
+    virtual OfxStatus getV(va_list arg) OVERRIDE FINAL;
+
+    /// implementation of var args function
+    /// The data is only valid until the next API call on this param in the same thread.
+    virtual OfxStatus getV(OfxTime time, va_list arg) OVERRIDE FINAL;
+
+    virtual void setHint() OVERRIDE FINAL;
+    virtual void setDefault() OVERRIDE FINAL;
+    virtual void setLabel() OVERRIDE FINAL;
+
+    /// callback which should set evaluate on change
+    virtual void setEvaluateOnChange() OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
+    virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
+
+    virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
+
+private:
+
+    OfxStatus getAtTime(bool atTime, OfxTime time, va_list arg);
+
+    std::unique_ptr<OfxBytesInstancePrivate> _imp;
 };
 
 

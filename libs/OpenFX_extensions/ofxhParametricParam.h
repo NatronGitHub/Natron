@@ -31,6 +31,9 @@
 // parametric params
 #include "ofxParametricParam.h"
 
+// (before ofxhParam.h: since openfx#188, it includes ofxhMemory.h, which uses OfxImageMemoryHandle without
+// including ofxImageEffect.h, fixed by openfx#189)
+#include "ofxImageEffect.h"
 #include "ofxhParam.h"
 
 namespace OFX {

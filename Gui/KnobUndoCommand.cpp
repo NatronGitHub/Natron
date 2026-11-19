@@ -195,7 +195,9 @@ PasteUndoCommand::copyFrom(const KnobIPtr& serializedKnob,
                 } else if (isDouble && isFromDouble) {
                     double f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromDouble->getValue(_imp->fromDimension) : isFromDouble->getValue(i);
                     isDouble->setValue(f, ViewIdx(0), i, eValueChangedReasonNatronInternalEdited, 0);
-                } else if (isString && isFromString) {
+                } else if ( isString && isFromString &&
+                            ( ( dynamic_cast<KnobBytes*>(isString) != NULL ) == ( dynamic_cast<KnobBytes*>(isFromString) != NULL ) ) ) {
+                    // (raw bytes and text are not pasted into each other, see Knob<T>::isTypeCompatible())
                     std::string f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromString->getValue(_imp->fromDimension) : isFromString->getValue(i);
                     isString->setValue(f, ViewIdx(0), i, eValueChangedReasonNatronInternalEdited, 0);
                 }
@@ -293,6 +295,8 @@ MultipleKnobEditsUndoCommand::createCopyForKnob(const KnobIPtr & originalKnob)
         copy = std::make_shared<KnobChoice>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobString::typeNameStatic() ) {
         copy = std::make_shared<KnobString>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobBytes::typeNameStatic() ) {
+        copy = std::make_shared<KnobBytes>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobParametric::typeNameStatic() ) {
         copy = std::make_shared<KnobParametric>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobColor::typeNameStatic() ) {
@@ -365,7 +369,7 @@ MultipleKnobEditsUndoCommand::undo()
                         knobUI->setValueAtTime<double>(it2->dimension, it2->oldValue.toDouble(), it2->time, ViewIdx(0), &k, refreshGui, _reason);
                     } else if (isString) {
                         //qDebug() << "Undo " << knob->getName().c_str() << "[" << it2->dimension << "] to " << it2->oldValue.toString() << "at time" << it2->time;
-                        knobUI->setValueAtTime<std::string>(it2->dimension, it2->oldValue.toString().toStdString(), it2->time, ViewIdx(0), &k, refreshGui, _reason);
+                        knobUI->setValueAtTime<std::string>(it2->dimension, KnobBytes::stringFromVariant(knob.get(), it2->oldValue), it2->time, ViewIdx(0), &k, refreshGui, _reason);
                     } else {
                         assert(false);
                     }
@@ -394,7 +398,7 @@ MultipleKnobEditsUndoCommand::undo()
                             knobUI->setValue<double>(it2->dimension, oldValue, &k, true, _reason);
                         }
                     } else if (isString) {
-                        std::string oldValue = it2->oldValue.toString().toStdString();
+                        std::string oldValue = KnobBytes::stringFromVariant(knob.get(), it2->oldValue);
                         if (isString->getValueAtTime(it2->time, it2->dimension) != oldValue) {
                             //qDebug() << "Undo" << knob->getName().c_str() << "[" << it2->dimension << "] to " << it2->oldValue.toString();
                             knobUI->setValue<std::string>(it2->dimension, oldValue,
@@ -453,7 +457,12 @@ MultipleKnobEditsUndoCommand::redo()
                 } else if (isDouble) {
                     it2->oldValue.setValue( isDouble->getValueAtTime(it2->time, it2->dimension) );
                 } else if (isString) {
-                    it2->oldValue.setValue( isString->getValueAtTime(it2->time, it2->dimension) );
+                    if ( dynamic_cast<KnobBytes*>( knob.get() ) ) {
+                        // raw bytes: a QByteArray (see KnobBytes::stringToVariant())
+                        KnobBytes::stringToVariant(knob.get(), isString->getValueAtTime(it2->time, it2->dimension), &it2->oldValue);
+                    } else {
+                        it2->oldValue.setValue( isString->getValueAtTime(it2->time, it2->dimension) );
+                    }
                 }
             }
 
@@ -467,7 +476,7 @@ MultipleKnobEditsUndoCommand::redo()
                 } else if (isDouble) {
                     keyAdded = knobUI->setValueAtTime<double>(it2->dimension, it2->newValue.toDouble(), it2->time, ViewIdx(0), &k, refreshGui, _reason);
                 } else if (isString) {
-                    keyAdded = knobUI->setValueAtTime<std::string>(it2->dimension, it2->newValue.toString().toStdString(), it2->time,
+                    keyAdded = knobUI->setValueAtTime<std::string>(it2->dimension, KnobBytes::stringFromVariant(knob.get(), it2->newValue), it2->time,
                                                                    ViewIdx(0), &k, refreshGui, _reason);
                 } else {
                     assert(false);
@@ -490,7 +499,7 @@ MultipleKnobEditsUndoCommand::redo()
                         it2->setValueRetCode = knobUI->setValue<double>(it2->dimension, newValue, &k, true, _reason);
                     }
                 } else if (isString) {
-                    std::string newValue = it2->newValue.toString().toStdString();
+                    std::string newValue = KnobBytes::stringFromVariant(knob.get(), it2->newValue);
                     if (isString->getValueAtTime(it2->time, it2->dimension) != newValue) {
                         it2->setValueRetCode = knobUI->setValue<std::string>(it2->dimension, newValue, &k, true, _reason);
                     }

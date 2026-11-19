@@ -920,10 +920,8 @@ void
 KnobStringBase::valueToVariant(const std::string & v,
                                   Variant* vari)
 {
-    KnobStringBase* isString = dynamic_cast<KnobStringBase*>(this);
-    if (isString) {
-        vari->setValue<QString>( QString::fromUtf8( v.c_str() ) );
-    }
+    // KnobBytes holds raw bytes: a QByteArray, not a QString (see KnobBytes::stringToVariant())
+    KnobBytes::stringToVariant(this, v, vari);
 }
 
 template<typename T>
@@ -2189,7 +2187,11 @@ template<typename T>
 bool
 Knob<T>::isTypeCompatible(const KnobIPtr & other) const
 {
-    return isTypePOD() == other->isTypePOD();
+    // Raw bytes are not text: a KnobBytes and another string knob refuse each other (copy/paste, links)
+    const bool isBytes = dynamic_cast<const KnobBytes*>(this) != NULL;
+    const bool otherIsBytes = dynamic_cast<const KnobBytes*>( other.get() ) != NULL;
+
+    return ( isTypePOD() == other->isTypePOD() ) && (isBytes == otherIsBytes);
 }
 
 template<typename T>

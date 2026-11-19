@@ -35,7 +35,9 @@ DESTDIR = $${NATRON_TEST_OFX_BINARY_DIR}
 QMAKE_EXTENSION_SHLIB = ofx
 win32: TARGET_EXT = .ofx
 
-SOURCES += NatronTestPlugin.cpp
+# every source file of this folder is part of the bundle (see NatronTestPluginRegistry.h)
+SOURCES += $$files($$PWD/*.cpp)
+HEADERS += $$files($$PWD/*.h)
 
 # Copies of the bundle that the host must skip (Tests/OfxPluginScan_Test.cpp, #1380): "Any bundle or
 # sub-directory name starting with the character '@' is to be ignored" (ofxPackaging.rst), and a
