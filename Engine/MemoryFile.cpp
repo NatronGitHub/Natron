@@ -337,9 +337,10 @@ MemoryFile::resize(size_t new_size)
 //
 // - Linux and FreeBSD: posix_fallocate(). glibc emulates it by writing when the file system doesn't support it, so
 //   the fallback below is only used with musl, or on file systems such as ZFS that return EINVAL.
-// - macOS has no posix_fallocate(). F_PREALLOCATE can only allocate from the physical end of the file: it is used
-//   for a file that has no block yet (a new file of the DiskCache node, or the first tile of a tile file), which is
-//   then not written twice. The other ranges (the other tiles) are written with zeroes.
+// - macOS has no posix_fallocate(). F_PREALLOCATE can only allocate from the physical end of the file: it is only
+//   used to allocate a whole file that has no block yet (a new file of the DiskCache node), which is then not written
+//   twice. Not for a part of a file (the tiles of a tile file): another thread may write another tile meanwhile, and
+//   the blocks would then be allocated after it. The tiles are written with zeroes.
 // - Writing zeroes doesn't allocate anything on file systems that compress data or detect zeroes (ZFS or btrfs with
 //   compression store them as holes): the disk may then still get full while the mapping is written.
 static int
@@ -360,7 +361,7 @@ allocateFileBlocks(int fd,
 #endif
 #if defined(__APPLE__) && defined(F_PREALLOCATE)
     struct stat fileStat;
-    if ( (offset == 0) && (::fstat(fd, &fileStat) == 0) && (fileStat.st_blocks == 0) ) {
+    if ( (offset == 0) && (::fstat(fd, &fileStat) == 0) && (fileStat.st_blocks == 0) && (fileStat.st_size == length) ) {
         fstore_t store;
         std::memset( &store, 0, sizeof(store) );
         store.fst_flags = F_ALLOCATEALL; // all or nothing
@@ -462,6 +463,7 @@ MemoryFilePrivate::closeMapping(bool drop_pages)
         throw std::runtime_error( ss.str() );
     }
     ::close(file_handle);
+    file_handle = -1;
 #elif defined(__NATRON_WIN32__)
     Q_UNUSED(drop_pages);
     if (::UnmapViewOfFile(data) == 0) {
