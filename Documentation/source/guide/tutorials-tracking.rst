@@ -53,14 +53,14 @@ Setting up the Tracker
 1. Read the image sequence with a :ref:`Read <fr.inria.built-in.Read>` node.
    When it is the first Read of a new project, Natron sets the project format
    and frame range from it. Check them in the project settings (:kbd:`S` in
-   the Node Graph): the Tracker computes its results in the project format.
+   the Node Graph): the Tracker uses the project format to compute the tracks.
 2. Select the Read node and create a Tracker from the **Transform** group of
    the toolbar, or press :kbd:`Tab` in the Node Graph and type "Tracker". The
    Tracker is connected to the selected node.
 3. Connect the Viewer to the Tracker, and double-click the Tracker to open its
    Properties panel. The Tracker tools appear in a toolbar at the top of the
    Viewer only while this panel is open.
-4. In the **Transform** tab, leave **Motion Type** to **None** for now: the
+4. In the **Transform** tab, leave **Motion Type** set to **None** for now: the
    Tracker then shows its input image unchanged, which is what you need while
    tracking.
 
