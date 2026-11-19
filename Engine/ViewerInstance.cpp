@@ -229,6 +229,11 @@ ViewerInstance::forceFullComputationOnNextFrame()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
+    // The forced render does not use nor fill the texture cache, so remove the textures of this viewer from the
+    // cache: they would be displayed again by the next render that uses it, e.g. after a pan or a zoom (#1115).
+    // This is synchronous, so that the next render can't find them.
+    appPTR->removeAllCacheEntriesForHolder(getNode().get(), true);
+
     QMutexLocker forceRenderLocker(&_imp->forceRenderMutex);
     _imp->forceRender[0] = _imp->forceRender[1] = true;
 }
@@ -1057,7 +1062,8 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
 
     // Texture rect contains the pixel coordinates in the image to be rendered
 
-    if (useCache) {
+    // A forced render (Refresh) must not use the cached textures (#1115)
+    if (useCache && !outArgs->forceRender) {
         FrameEntryLocker entryLocker(_imp.get());
         for (std::list<UpdateViewerParams::CachedTile>::iterator it = outArgs->params->tiles.begin(); it != outArgs->params->tiles.end(); ++it) {
             FrameKey key(getNode().get(),
@@ -1086,12 +1092,6 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                 }
             }
 
-            // If we want to force a refresh, we remove from  the cache texture
-            if (outArgs->forceRender && hasTextureCached) {
-                for (std::list<FrameEntryPtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
-                    appPTR->removeFromViewerCache(*it);
-                }
-            }
             // Find out if we have a corresponding tile in the cache
             FrameEntryPtr foundCachedEntry;
             for (std::list<FrameEntryPtr>::iterator it2 = entries.begin(); it2 != entries.end(); ++it2) {
