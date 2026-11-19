@@ -10,9 +10,11 @@ Requirements
 ------------
 
 Natron 2.6 needs macOS 14 (Sonoma) or later, on a Mac with Apple Silicon
-(arm64). The 2.6 binaries do not run on Intel Macs: use Natron 2.5 there, or
-build Natron from source. Every Apple Silicon Mac has a GPU with the OpenGL
-features Natron needs. See :ref:`system-requirements`.
+(arm64) or an Intel processor (x86-64). Download the DMG for your Mac: the
+file name contains ``arm64`` for Apple Silicon and ``x86_64`` for Intel (the
+Apple menu → About This Mac shows which one you have). Every Mac that runs
+macOS 14 has a GPU with the OpenGL features Natron needs. See
+:ref:`system-requirements`.
 
 Download
 --------

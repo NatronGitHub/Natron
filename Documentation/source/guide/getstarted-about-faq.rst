@@ -16,10 +16,10 @@ What operating systems are supported by Natron?
 Natron 2.6 runs on:
 
 * Windows 10 or later, 64-bit (x86-64);
-* macOS 14 (Sonoma) or later, on Apple Silicon (arm64) Macs;
-* 64-bit Linux (x86-64 or aarch64) with glibc 2.28 or later, for example RHEL, Rocky Linux or AlmaLinux 8, Debian 12, Ubuntu 22.04 LTS, or later versions.
+* macOS 14 (Sonoma) or later, on Apple Silicon (arm64) and Intel (x86-64) Macs;
+* 64-bit Linux (x86-64 or aarch64) with glibc 2.34 or later, for example RHEL, Rocky Linux or AlmaLinux 9, Debian 12, Ubuntu 22.04 LTS, or later versions.
 
-32-bit systems and Intel Macs are not supported by Natron 2.6. See :ref:`system-requirements` for the details.
+32-bit systems are not supported by Natron 2.6. See :ref:`system-requirements` for the details.
 
 
 Why did you make Natron free of charge?
@@ -58,4 +58,4 @@ Natron needs a graphics card with OpenGL 2.0 and a few extensions (see :ref:`sys
 If your graphics card or driver is not supported, Natron can use a software OpenGL renderer. It is much slower.
 
 * On Linux, set the environment variable ``LIBGL_ALWAYS_SOFTWARE=1`` before starting Natron. This uses Mesa's software renderer.
-* On Windows, select the *Legacy hardware support* package in the installer or, with the portable ZIP file, copy ``bin\mesa\opengl32.dll`` to ``bin\``.
+* On Windows, select the *OpenGL Software Renderer (FOR LEGACY HARDWARE ONLY)* component in the installer or, if you run Natron without installing it, copy ``bin\mesa\opengl32.dll`` to ``bin\``.

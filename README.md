@@ -68,12 +68,12 @@ If you are willing to help, please contact the development team on the [pixls.us
 Natron 2.6 binaries are 64-bit only:
 
 - Windows 10 or later, 64-bit (x86-64).
-- macOS 14 (Sonoma) or later, on Apple Silicon (arm64). Intel Macs can use Natron 2.5.
-- Linux (x86-64 or aarch64) with glibc 2.28 or later, for example RHEL/Rocky Linux/AlmaLinux 8, Debian 12, Ubuntu 22.04 LTS, or later. The binaries are built on Rocky Linux 8.
+- macOS 14 (Sonoma) or later, on Apple Silicon (arm64) or Intel (x86-64).
+- Linux (x86-64 or aarch64) with glibc 2.34 or later, for example RHEL/Rocky Linux/AlmaLinux 9, Debian 12, Ubuntu 22.04 LTS, or later. The binaries are built on Rocky Linux 9, and use the system's C++ runtime, X11 and OpenGL libraries.
 
 The viewer needs OpenGL 2.0 with the `GL_ARB_vertex_buffer_object` and `GL_ARB_pixel_buffer_object` extensions, which almost any graphics card or integrated GPU from the last fifteen years provides. GPU rendering also needs `GL_ARB_texture_float`, `GL_ARB_framebuffer_object` (or `GL_EXT_framebuffer_object`) and `GL_ARB_vertex_array_object` (or `GL_APPLE_vertex_array_object`).
 
-If the graphics driver is not good enough, Natron can use a software OpenGL renderer (much slower). On Linux, set the environment variable `LIBGL_ALWAYS_SOFTWARE=1` before running Natron. On Windows, select the "Legacy hardware support" package in the installer.
+If the graphics driver is not good enough, Natron can use a software OpenGL renderer (much slower). On Linux, set the environment variable `LIBGL_ALWAYS_SOFTWARE=1` before running Natron. On Windows, select the "OpenGL Software Renderer (FOR LEGACY HARDWARE ONLY)" component in the installer.
 
 See [System requirements](https://natron.readthedocs.io/en/rb-2.6/guide/getstarted-installation.html#system-requirements) in the User Guide for details.
 
@@ -81,7 +81,7 @@ See [System requirements](https://natron.readthedocs.io/en/rb-2.6/guide/getstart
 
 ### Binary distribution
 
-Standalone binary distributions of Natron are available for GNU/Linux, Windows, and macOS on [GitHub](https://github.com/NatronGitHub/Natron/releases), or from [the Natron web site](https://natrongithub.github.io/#download). These distributions contain Natron and four included sets of OpenFX plugins:
+Binary distributions of Natron are available for GNU/Linux (a portable `.tar.xz` archive), Windows (a `.zip` archive that runs as is and contains an installer, `Setup.exe`), and macOS (a `.dmg`) on [GitHub](https://github.com/NatronGitHub/Natron/releases), or from [the Natron web site](https://natrongithub.github.io/#download). These distributions contain Natron and four included sets of OpenFX plugins:
 
 - [openfx-io](https://github.com/NatronGitHub/openfx-io/)
 - [openfx-misc](https://github.com/NatronGitHub/openfx-misc)
@@ -97,7 +97,7 @@ For each architecture / operating system, you can either download a stable relea
 There are instructions for building Natron and the basic plugins from source in this directory on various architectures / operating systems. Natron is built with CMake; the qmake build is deprecated and will be removed in a future release ([#1181](https://github.com/NatronGitHub/Natron/issues/1181)):
 
 - [GNU/Linux](INSTALL_LINUX.md)
-- [macOS](INSTALL_MACOS.md) (on an Apple Silicon Mac, [tools/tart](tools/tart/README.md) also builds the arm64 DMG, for macOS 14 and later, automatically in a VM)
+- [macOS](INSTALL_MACOS.md) (on an Apple Silicon Mac, [tools/tart](tools/tart/README.md) also builds the arm64 DMG, for macOS 14 and later, automatically in a VM; build the Intel DMG with the MacPorts steps of INSTALL_MACOS.md on an Intel Mac)
 - [FreeBSD](INSTALL_FREEBSD.md)
 - [Windows](INSTALL_WINDOWS.md)
 
