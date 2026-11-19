@@ -234,14 +234,18 @@ The tracking is done: now use the tracks. In the **Transform** tab:
 
 With **Compute Transform Automatically** checked (the default), the transform
 is computed at once; otherwise press **Compute**. The Tracker now outputs the
-stabilized image.
+stabilized image. In Stabilize mode, the Tracker also checks **Invert**: the
+transform computed from the tracks follows the motion of the facade, and its
+inverse cancels that motion. In the other modes, Invert is unchecked.
 
 .. figure:: _images/tutorials-tracking/transform-tab.png
    :width: 500px
    :align: center
    :alt: The Transform tab of the Tracker properties, with Motion Type set to Stabilize
 
-   The Transform tab, set to stabilize the shot with a CornerPin.
+   The Transform tab, set to stabilize the shot with a CornerPin. The values
+   with a blue background have a keyframe at the current frame: the Tracker
+   computes them at every tracked frame.
 
 .. figure:: _images/tutorials-tracking/stabilized-frames.jpg
    :width: 100%
@@ -258,9 +262,15 @@ the Tracker), or crop it.
 
 **Fitting Error (px)** shows how far, in pixels, the tracks are from the
 computed transform at each frame. If it is large at some frames, a track is
-probably wrong there: fix it, or disable it at these frames. Check **Robust
-Model** (the default) to ignore the tracks that do not agree with the others.
-The section :ref:`tracking-model` of the tracking page explains how the
+probably wrong there: fix it, or disable it at these frames. When it reaches
+**Warn If Error Is Above** (1 pixel by default) at some frames, the Tracker
+warns that the model is probably not suited to the tracks: refine the tracks,
+add tracks, or try another **Transform Type**. In the screenshot, the error is
+about 3.7 pixels at the current frame, over the threshold: the tracks do not
+fit one CornerPin exactly. This is small for a 960-pixel-wide shot, and the
+stabilized frames look still, so you can also raise the threshold. Check
+**Robust Model** (the default) to ignore the tracks that do not agree with the
+others. The section :ref:`tracking-model` of the tracking page explains how the
 transform is computed.
 
 To keep the motion of the camera but remove its shake, use **Remove Jitter**
