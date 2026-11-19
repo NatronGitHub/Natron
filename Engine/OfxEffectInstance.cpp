@@ -259,6 +259,25 @@ struct OfxEffectInstancePrivate
     const OFX::Host::ImageEffect::ImageEffectPlugin* singleInstancePlugin;
     OfxEffectInstance* publicInterface; // for gSingleInstances
 
+    // The kOfxActionBeginInstanceChanged/kOfxActionEndInstanceChanged brackets in progress on the main thread, innermost
+    // last (see InstanceChangedBracket_RAII).
+    struct InstanceChangedBracket
+    {
+        std::string reason;
+        // A group of value changes of the effect (beginKnobsValuesChanged()/endKnobsValuesChanged()): its
+        // kOfxActionInstanceChanged actions with this reason share one bracket. Otherwise, a
+        // kOfxActionInstanceChanged action in progress.
+        bool isGroup;
+        // Group: kOfxActionBeginInstanceChanged was sent. It is sent before the first kOfxActionInstanceChanged of
+        // the group, so a group without instance changes has no bracket.
+        bool begun;
+        // Group: the view and mipmap level of the clips thread storage of its kOfxActionBeginInstanceChanged, set again
+        // for its kOfxActionEndInstanceChanged
+        ViewIdx view;
+        unsigned mipmapLevel;
+    };
+    std::vector<InstanceChangedBracket> instanceChangedBrackets;
+
     OfxEffectInstancePrivate()
         : effect()
         , natronPluginID()
@@ -289,6 +308,7 @@ struct OfxEffectInstancePrivate
         , outputFormatFromPlugin(false)
         , singleInstancePlugin(NULL)
         , publicInterface(NULL)
+        , instanceChangedBrackets()
     {
     }
 
@@ -334,7 +354,70 @@ struct OfxEffectInstancePrivate
         , outputFormatFromPlugin(other.outputFormatFromPlugin)
         , singleInstancePlugin(NULL) // render clones are not made for single-instance plug-ins
         , publicInterface(NULL)
+        , instanceChangedBrackets()
     {
+    }
+};
+
+/**
+ * @brief Brackets a kOfxActionInstanceChanged action of the effect with kOfxActionBeginInstanceChanged and
+ * kOfxActionEndInstanceChanged, with the same reason ("All change actions are bracketed by a pair of
+ * kOfxActionBeginInstanceChanged and kOfxActionEndInstanceChanged actions", ofxCore.h). Inside a group of value
+ * changes with the same reason (OfxEffectInstance::beginKnobsValuesChanged()), the actions of the group share the
+ * bracket of the group. The actions triggered by an action, e.g. the kOfxActionInstanceChanged of a parameter that the
+ * plug-in sets in kOfxActionInstanceChanged, get their own bracket, nested in the one of the action.
+ **/
+class InstanceChangedBracket_RAII
+{
+    OfxEffectInstance* _effect;
+    std::string _reason;
+    bool _onMainThread;
+    bool _sendEnd;
+
+public:
+    // view, mipmapLevel: of the clips thread storage of the action (ClipsThreadStorageSetter)
+    InstanceChangedBracket_RAII(OfxEffectInstance* effect,
+                                const std::string& reason,
+                                ViewIdx view,
+                                unsigned mipmapLevel)
+        : _effect(effect)
+        , _reason(reason)
+        , _onMainThread( QThread::currentThread() == qApp->thread() )
+        , _sendEnd(false)
+    {
+        // the brackets in progress are main-thread state: on another thread, each action has its own bracket
+        std::vector<OfxEffectInstancePrivate::InstanceChangedBracket>* brackets = _onMainThread ? &_effect->_imp->instanceChangedBrackets : NULL;
+        OfxEffectInstancePrivate::InstanceChangedBracket action = { reason, false, true, view, mipmapLevel };
+
+        if ( brackets && !brackets->empty() && brackets->back().isGroup && (brackets->back().reason == reason) ) {
+            if (!brackets->back().begun) {
+                brackets->back().begun = true;
+                brackets->back().view = view;
+                brackets->back().mipmapLevel = mipmapLevel;
+                ignore_result( _effect->effectInstance()->beginInstanceChangedAction(reason) );
+            }
+            action.begun = false;
+        } else {
+            ignore_result( _effect->effectInstance()->beginInstanceChangedAction(reason) );
+            _sendEnd = true;
+        }
+        if (brackets) {
+            brackets->push_back(action);
+        }
+    }
+
+    ~InstanceChangedBracket_RAII()
+    {
+        if (_onMainThread) {
+            std::vector<OfxEffectInstancePrivate::InstanceChangedBracket>& brackets = _effect->_imp->instanceChangedBrackets;
+            assert( !brackets.empty() && !brackets.back().isGroup );
+            if ( !brackets.empty() ) {
+                brackets.pop_back();
+            }
+        }
+        if (_sendEnd) {
+            ignore_result( _effect->effectInstance()->endInstanceChangedAction(_reason) );
+        }
     }
 };
 
@@ -1345,9 +1428,8 @@ OfxEffectInstance::onInputChanged(int inputNo)
                                             0);
         assert(_imp->effect);
 
-        _imp->effect->beginInstanceChangedAction(kOfxChangeUserEdited);
+        InstanceChangedBracket_RAII bracket(this, kOfxChangeUserEdited, ViewIdx(0), 0);
         _imp->effect->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, scale);
-        _imp->effect->endInstanceChangedAction(kOfxChangeUserEdited);
     }
 }
 
@@ -2806,10 +2888,13 @@ OfxEffectInstance::knobChanged(KnobI* k,
     if (!effect) {
         throw std::logic_error(__func__);
     }
+    // assert(!view.isAll() && !view.isCurrent());
+    const ViewIdx v = ( view.isAll() || view.isCurrent() ) ? ViewIdx(0) : ViewIdx(view);
+    // paramInstanceChangedAction() fails without calling the plug-in if the parameter doesn't exist or the time is NaN: no
+    // bracket then (a bracket has at least one kOfxActionInstanceChanged)
+    const bool callsPlugin = effect->getParam( k->getOriginalName() ) && !OFX::IsNaN(time);
     if (recursionLevel == 1) {
         SET_CAN_SET_VALUE(true);
-        // assert(!view.isAll() && !view.isCurrent());
-        ViewIdx v = ( view.isAll() || view.isCurrent() ) ? ViewIdx(0) : ViewIdx(view);
         ClipsThreadStorageSetter clipSetter( effect,
                                              v,
                                              renderScale.toMipmapLevel() );
@@ -2818,12 +2903,20 @@ OfxEffectInstance::knobChanged(KnobI* k,
         ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
         ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
         ///the clip preferences to stay the same throughout the action.
+        std::unique_ptr<InstanceChangedBracket_RAII> bracket;
+        if (callsPlugin) {
+            bracket.reset( new InstanceChangedBracket_RAII( this, ofxReason, v, renderScale.toMipmapLevel() ) );
+        }
         stat = effect->paramInstanceChangedAction(k->getOriginalName(), ofxReason, (OfxTime)time, renderScale.toOfxPointD());
     } else {
         ///This action as all the overlay interacts actions can trigger recursive actions, such as
         ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
         ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
         ///the clip preferences to stay the same throughout the action.
+        std::unique_ptr<InstanceChangedBracket_RAII> bracket;
+        if (callsPlugin) {
+            bracket.reset( new InstanceChangedBracket_RAII( this, ofxReason, v, renderScale.toMipmapLevel() ) );
+        }
         stat = effect->paramInstanceChangedAction(k->getOriginalName(), ofxReason, (OfxTime)time, renderScale.toOfxPointD());
     }
 
@@ -2838,31 +2931,34 @@ OfxEffectInstance::knobChanged(KnobI* k,
 void
 OfxEffectInstance::beginKnobsValuesChanged(ValueChangedReasonEnum reason)
 {
-    if (!_imp->initialized) {
-        return;
-    }
-
-    SET_CAN_SET_VALUE(true);
-    ///This action as all the overlay interacts actions can trigger recursive actions, such as
-    ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
-    ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
-    ///the clip preferences to stay the same throughout the action.
-    ignore_result( effectInstance()->beginInstanceChangedAction( natronValueChangedReasonToOfxValueChangedReason(reason) ) );
+    // A group of value changes (see KnobHolder::endChanges()): kOfxActionBeginInstanceChanged is only sent before the
+    // first kOfxActionInstanceChanged of the group, if there is one (see InstanceChangedBracket_RAII).
+    assert( QThread::currentThread() == qApp->thread() );
+    OfxEffectInstancePrivate::InstanceChangedBracket group = { natronValueChangedReasonToOfxValueChangedReason(reason), true, false, ViewIdx(0), 0 };
+    _imp->instanceChangedBrackets.push_back(group);
 }
 
 void
-OfxEffectInstance::endKnobsValuesChanged(ValueChangedReasonEnum reason)
+OfxEffectInstance::endKnobsValuesChanged(ValueChangedReasonEnum /*reason*/)
 {
-    if (!_imp->initialized) {
+    assert( QThread::currentThread() == qApp->thread() );
+    std::vector<OfxEffectInstancePrivate::InstanceChangedBracket>& brackets = _imp->instanceChangedBrackets;
+    assert( !brackets.empty() && brackets.back().isGroup );
+    if ( brackets.empty() || !brackets.back().isGroup ) {
         return;
     }
-
-    SET_CAN_SET_VALUE(true);
-    ///This action as all the overlay interacts actions can trigger recursive actions, such as
-    ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
-    ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
-    ///the clip preferences to stay the same throughout the action.
-    ignore_result( effectInstance()->endInstanceChangedAction( natronValueChangedReasonToOfxValueChangedReason(reason) ) );
+    OfxEffectInstancePrivate::InstanceChangedBracket group = brackets.back();
+    brackets.pop_back();
+    if (group.begun) {
+        SET_CAN_SET_VALUE(true);
+        // the clips thread storage of the actions of the group
+        ClipsThreadStorageSetter clipSetter(effectInstance(), group.view, group.mipmapLevel);
+        ///This action as all the overlay interacts actions can trigger recursive actions, such as
+        ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
+        ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
+        ///the clip preferences to stay the same throughout the action.
+        ignore_result( effectInstance()->endInstanceChangedAction(group.reason) );
+    }
 }
 
 void

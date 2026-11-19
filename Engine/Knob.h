@@ -2487,6 +2487,12 @@ public:
      * @brief Restore all knobs to their default values
      **/
     void restoreDefaultValues();
+
+    /**
+     * @brief Reset the given knobs (of this holder) to their default values, in all their dimensions if dimension is -1,
+     * then call the knob changed handler once per knob, in one group of value changes (Restore Defaults).
+     **/
+    void resetKnobsToDefaultValues(const std::list<KnobIPtr>& knobs, int dimension, double time);
     virtual void aboutToRestoreDefaultValues()
     {
     }
@@ -2855,6 +2861,51 @@ public:
  * @brief Should be called in the beginning of any action that can be called recursively
  **/
 #define RECURSIVE_ACTION() MANAGE_RECURSION(false)
+
+/**
+ * @brief A group of value changes with the same reason of a holder (beginKnobsValuesChanged_public()/
+ * endKnobsValuesChanged_public(), main thread only): setReason() starts it, or ends it and starts another one if the
+ * reason changes. It is ended by end(), or at the latest by the destructor, also on exceptions.
+ **/
+class KnobsValuesChangedGroup_RAII
+{
+    KnobHolder* _holder;
+    bool _inGroup;
+    ValueChangedReasonEnum _reason;
+
+public:
+    explicit KnobsValuesChangedGroup_RAII(KnobHolder* holder)
+        : _holder(holder)
+        , _inGroup(false)
+        , _reason(eValueChangedReasonUserEdited)
+    {
+    }
+
+    ~KnobsValuesChangedGroup_RAII()
+    {
+        end();
+    }
+
+    void setReason(ValueChangedReasonEnum reason)
+    {
+        if ( _inGroup && (reason == _reason) ) {
+            return;
+        }
+        end();
+        _reason = reason;
+        _inGroup = true;
+        _holder->beginKnobsValuesChanged_public(reason);
+    }
+
+    void end()
+    {
+        if (_inGroup) {
+            _inGroup = false;
+            _holder->endKnobsValuesChanged_public(_reason);
+        }
+    }
+};
+
 
 
 class InitializeKnobsFlag_RAII

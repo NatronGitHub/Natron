@@ -39,6 +39,7 @@ set(Tests_SOURCES
     OfxCPURenderSupport_Test.cpp
     OfxCustomParamInterp_Test.cpp
     OfxImageMemory_Test.cpp
+    OfxInstanceChanged_Test.cpp
     OfxMultiThreadSuite_Test.cpp
     OfxParamAnimating_Test.cpp
     OfxParamCopy_Test.cpp
