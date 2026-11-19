@@ -43,12 +43,15 @@ keep the ``*.pro``/``*.pri`` files in sync with CMake
 (``tools/utils/checkQmakeSources.py`` checks the source lists in CI). The qmake
 build gets no new features, in particular no further Qt 6 work.
 
-**Modernize CI (P1).**
+**Add the scheduled CI builds (P1).**
 CI runs on GitHub Actions (``.github/workflows/ci.yml``; the migration from
 Travis, `#601 <https://github.com/NatronGitHub/Natron/issues/601>`_, is done):
-it builds Qt 5 and runs the ``Tests`` suite on Linux, macOS and Windows. Add
-Qt 6 builds with tests on all three platforms (nightly, not per pull request),
-so that regressions in the dual-toolkit build are caught automatically.
+each pull request builds Qt 5 and runs the ``Tests`` suite on Linux, Windows
+and macOS (see :ref:`maint-ci`). What is missing are the builds that the CI
+policy keeps out of pull requests: Qt 6 with tests on all three platforms,
+extra C++ standards (C++23), and other compilers or OS versions, to run
+nightly, weekly or by hand, so that regressions in the dual-toolkit build are
+still caught.
 
 **Adopt a modern C++ baseline consistently (P3).**
 The CMake build already compiles as C++17, and the code has largely moved from
@@ -152,7 +155,6 @@ Issue                Summary                                             Priorit
 `#864`_              CLI renders zero frames                              P0
 `#1011`_ / `#854`_   Qt 6 support / Qt flag binding bug                   P1
 `#827`_              Qt version tracker                                   P1
-`#601`_              Migrate CI to GitHub Actions                         P1
 `#215`_ / `#990`_    Ubuntu PPA-Debian repo / Linux binary distrib        P1
 `#557`_              Reliable crash reporting                             P1
 `#209`_              Viewer 8-bit textures                                P2
@@ -171,7 +173,6 @@ Issue                Summary                                             Priorit
 .. _#1011: https://github.com/NatronGitHub/Natron/issues/1011
 .. _#854: https://github.com/NatronGitHub/Natron/issues/854
 .. _#827: https://github.com/NatronGitHub/Natron/issues/827
-.. _#601: https://github.com/NatronGitHub/Natron/issues/601
 .. _#215: https://github.com/NatronGitHub/Natron/issues/215
 .. _#990: https://github.com/NatronGitHub/Natron/issues/990
 .. _#557: https://github.com/NatronGitHub/Natron/issues/557
