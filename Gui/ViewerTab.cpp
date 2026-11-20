@@ -1002,6 +1002,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
     /*frame seeker*/
     _imp->timeLineGui = new TimeLineGui(node, timeline, getGui(), this);
+    _imp->timeLineGui->setObjectName( QString::fromUtf8("TimeLine") );
     QObject::connect( _imp->timeLineGui, SIGNAL(boundariesChanged(SequenceTime,SequenceTime)),
                       this, SLOT(onTimelineBoundariesChanged(SequenceTime,SequenceTime)) );
     QObject::connect( gui->getApp()->getProject().get(), SIGNAL(frameRangeChanged(int,int)), _imp->timeLineGui, SLOT(onProjectFrameRangeChanged(int,int)) );

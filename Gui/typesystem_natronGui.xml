@@ -127,27 +127,28 @@
     </object-type>
     
     <object-type name="PyViewer">
-        <modify-function signature="getImage(RectD*,int)const">
+        <modify-function signature="getImage(RectD*,std::vector&lt;float&gt;*,int,RectD)const">
             <modify-argument index="return">
                 <replace-type modified-type="PyObject"/>
             </modify-argument>
             <modify-argument index="1">
                 <remove-argument/>
             </modify-argument>
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
             <inject-code class="target" position="beginning">
                 RectD bounds;
-                std::list&lt;double&gt; pixels = %CPPSELF.%FUNCTION_NAME(&amp;bounds, %2);
+                std::vector&lt;float&gt; pixels;
+                %CPPSELF.%FUNCTION_NAME(&amp;bounds, &amp;pixels, %3, %4);
                 if ( PyErr_Occurred() ) {
                     return 0;
                 }
-                PyObject* list = PyList_New( (Py_ssize_t)pixels.size() );
-                Py_ssize_t i = 0;
-                for (std::list&lt;double&gt;::const_iterator it = pixels.begin(); it != pixels.end(); ++it, ++i) {
-                    PyList_SET_ITEM( list, i, PyFloat_FromDouble(*it) );
-                }
+                // float32 RGBA, for array.array('f', data) or numpy.frombuffer(data, numpy.float32)
+                PyObject* data = PyBytes_FromStringAndSize( pixels.empty() ? "" : (const char*)&amp;pixels[0], (Py_ssize_t)(pixels.size() * sizeof(float)) );
                 %PYARG_0 = PyTuple_New(2);
                 PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[RectD](bounds));
-                PyTuple_SET_ITEM(%PYARG_0, 1, list);
+                PyTuple_SET_ITEM(%PYARG_0, 1, data);
                 return %PYARG_0;
             </inject-code>
         </modify-function>

@@ -224,13 +224,9 @@ NodeGui::initialize(NodeGraph* dag,
     internalNode->setNodeGuiPointer(thisAsShared);
 
     QObject::connect( internalNode.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInternalNameChanged(QString)) );
-    // the objectName of the settings panel is the fully qualified name of the node
-    NodeWPtr weakNode = internalNode;
-    QObject::connect( internalNode.get(), &Node::scriptNameChanged, this, [this, weakNode](const QString&) {
-        NodePtr n = weakNode.lock();
-        if ( n && _settingsPanel ) {
-            _settingsPanel->setObjectName( QString::fromUtf8( n->getFullyQualifiedName().c_str() ) );
-        }
+    // the objectName of the settings panel is the fully qualified name of the node (refreshObjectNames())
+    QObject::connect( internalNode.get(), &Node::scriptNameChanged, this, [this](const QString&) {
+        refreshObjectNames();
     } );
     QObject::connect( internalNode.get(), SIGNAL(refreshEdgesGUI()), this, SLOT(refreshEdges()) );
     QObject::connect( internalNode.get(), SIGNAL(knobsInitialized()), this, SLOT(initializeKnobs()) );
@@ -3492,6 +3488,35 @@ NodeGui::onInternalNameChanged(const QString & s)
         _settingsPanel->setName(s);
     }
     scene()->update();
+}
+
+void
+NodeGui::refreshObjectNames()
+{
+    NodePtr node = getNode();
+
+    if (!node) {
+        return;
+    }
+    const QString name = QString::fromUtf8( node->getFullyQualifiedName().c_str() );
+    if (_settingsPanel) {
+        _settingsPanel->setObjectName(name);
+    }
+    // a group: the names of its graph and of the panels of its nodes contain its name
+    NodeGroup* group = node->isEffectGroup();
+    if (group) {
+        NodeGraph* graph = dynamic_cast<NodeGraph*>( group->getNodeGraph() );
+        if (graph) {
+            graph->setObjectName(name);
+        }
+        NodesList nodes = group->getNodes();
+        for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            NodeGuiPtr gui = std::dynamic_pointer_cast<NodeGui>( (*it)->getNodeGui() );
+            if (gui) {
+                gui->refreshObjectNames();
+            }
+        }
+    }
 }
 
 void

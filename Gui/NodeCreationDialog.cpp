@@ -446,6 +446,8 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
     }
 
     _imp->textEdit = new CompleterLineEdit(pluginsMap, true, this);
+    _imp->textEdit->setObjectName( QString::fromUtf8("NodeCreationDialogLineEdit") );
+
     if ( !initialFilterName.isEmpty() ) {
         _imp->textEdit->setText(initialFilterName);
     }

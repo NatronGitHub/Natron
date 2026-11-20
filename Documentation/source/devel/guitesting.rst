@@ -215,9 +215,10 @@ their results are displayed.
 
 To find a widget (e.g. with PySide's ``QWidget.findChild()``), use its stable name (see
 :ref:`widgetNames`): ``nodeGraph`` for the node graph, the fully qualified node name for a settings
-panel, the param script name (or the ``paramName`` Qt property, for the widgets that already have a
-name, such as the ``dim-0`` fields) for the widgets of a parameter, the tab script name (e.g.
-``Viewer1``) for a viewer, and ``nodeCreationDialog`` for the node creation dialog.
+panel, the param script name for the first widget of a parameter (and the ``paramName`` Qt
+property for all its widgets), the tab script name (e.g. ``Viewer1``) for a viewer, ``TimeLine``,
+``PropertiesBin``, and ``nodeCreationDialog`` (with its ``NodeCreationDialogLineEdit``) for the node
+creation dialog.
 
 The NatronGuiTest module
 ~~~~~~~~~~~~~~~~~~~~~~~~

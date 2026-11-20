@@ -303,6 +303,7 @@ GuiPrivate::createPropertiesBinGui()
 {
     _propertiesBin = new PropertiesBinWrapper(_gui);
     _propertiesBin->setScriptName(kPropertiesBinName);
+    _propertiesBin->setObjectName( QString::fromUtf8("PropertiesBin") );
     _propertiesBin->setLabel( tr("Properties").toStdString() );
 
     QVBoxLayout* mainPropertiesLayout = new QVBoxLayout(_propertiesBin);

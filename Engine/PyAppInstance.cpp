@@ -29,6 +29,8 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
+#include <climits>
+
 #include <QCoreApplication>
 #include <QDebug>
 #include <QThread>
@@ -482,34 +484,55 @@ App::newProject()
     return new App(app);
 }
 
+// The undo/redo and wait functions work with the GUI, on the main thread: raises RuntimeError otherwise
+// (e.g. from a render callback).
+static bool
+checkMainThread(const char* function)
+{
+    if ( QThread::currentThread() != qApp->thread() ) {
+        PyErr_Format(PyExc_RuntimeError, "%s must be called from the main thread", function);
+
+        return false;
+    }
+
+    return true;
+}
+
 void
 App::undo()
 {
-    getInternalApp()->undo();
+    if ( checkMainThread("App.undo()") ) {
+        getInternalApp()->undo();
+    }
 }
 
 void
 App::redo()
 {
-    getInternalApp()->redo();
+    if ( checkMainThread("App.redo()") ) {
+        getInternalApp()->redo();
+    }
 }
 
 bool
 App::canUndo() const
 {
-    return getInternalApp()->canUndo();
+    return checkMainThread("App.canUndo()") && getInternalApp()->canUndo();
 }
 
 bool
 App::canRedo() const
 {
-    return getInternalApp()->canRedo();
+    return checkMainThread("App.canRedo()") && getInternalApp()->canRedo();
 }
 
 std::list<QString>
 App::getUndoHistory() const
 {
     std::list<QString> ret;
+    if ( !checkMainThread("App.getUndoHistory()") ) {
+        return ret;
+    }
     const std::list<std::string> history = getInternalApp()->getUndoHistory();
 
     for (std::list<std::string>::const_iterator it = history.begin(); it != history.end(); ++it) {
@@ -522,7 +545,7 @@ App::getUndoHistory() const
 int
 App::getUndoIndex() const
 {
-    return getInternalApp()->getUndoIndex();
+    return checkMainThread("App.getUndoIndex()") ? getInternalApp()->getUndoIndex() : 0;
 }
 
 bool
@@ -530,16 +553,14 @@ App::waitForRenders(double timeout)
 {
     AppInstancePtr app = getInternalApp();
 
-    if ( QThread::currentThread() != qApp->thread() ) {
-        // the events are processed by the main thread
-        PyErr_SetString(PyExc_RuntimeError, "App.waitForRenders() must be called from the main thread");
-
+    if ( !checkMainThread("App.waitForRenders()") ) {
         return false;
     }
     // In the GUI, wait until the events posted by the renders (e.g. viewer textures) are processed:
     // no render for a little while. In background mode, nothing is displayed.
     const int settleMs = app->isBackground() ? 0 : 200;
-    const int timeoutMs = (timeout < 0.) ? -1 : (int)(timeout * 1000.);
+    // no overflow: a timeout of more than about 24 days is no timeout
+    const int timeoutMs = ( (timeout < 0.) || (timeout * 1000. >= (double)INT_MAX) ) ? -1 : (int)(timeout * 1000.);
     bool ok;
     // the renders may need the Python lock (expressions, callbacks)
     Py_BEGIN_ALLOW_THREADS

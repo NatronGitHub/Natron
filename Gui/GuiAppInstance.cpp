@@ -1690,7 +1690,12 @@ GuiAppInstance::reloadScriptEditorFonts()
 QUndoStack*
 GuiAppInstance::getActiveUndoStack() const
 {
-    return _imp->_gui ? _imp->_gui->getActiveUndoStack() : 0;
+    // The node graph's stack (node creation, deletion, connections, and the undo groups of the Python
+    // API), not the active one (the last focused panel), which depends on the focus: a PyPlug button in a
+    // panel would make App.undo() undo the panel's last change.
+    NodeGraph* graph = _imp->_gui ? _imp->_gui->getNodeGraph() : 0;
+
+    return graph ? graph->getUndoStack() : 0;
 }
 
 void
