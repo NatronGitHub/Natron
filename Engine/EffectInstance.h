@@ -1732,6 +1732,8 @@ public:
      **/
     void addOverlaySlaveParam(const KnobIPtr& knob);
 
+    void clearOverlaySlaveParams();
+
     bool isOverlaySlaveParam(const KnobI* knob) const;
 
 
