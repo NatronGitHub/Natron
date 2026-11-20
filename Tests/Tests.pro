@@ -100,6 +100,7 @@ SOURCES += \
     OfxParamUndo_Test.cpp \
     OfxPluginObsolete_Test.cpp \
     OfxPluginScan_Test.cpp \
+    OfxProjectLoad_Test.cpp \
     OfxQuestion_Test.cpp \
     OfxSequenceRenderArgs_Test.cpp \
     OfxSingleInstance_Test.cpp \

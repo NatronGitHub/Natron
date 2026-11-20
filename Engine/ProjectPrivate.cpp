@@ -25,7 +25,10 @@
 
 #include "ProjectPrivate.h"
 
+#include <algorithm>
 #include <list>
+#include <set>
+#include <vector>
 #include <cassert>
 #include <stdexcept>
 #include <sstream> // stringstream
@@ -42,7 +45,10 @@
 #include "Engine/AppManager.h"
 #include "Engine/AppManager.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/GroupInput.h"
+#include "Engine/Knob.h"
 #include "Engine/Node.h"
+#include "Engine/NodeGroup.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Project.h"
@@ -54,6 +60,89 @@
 
 
 NATRON_NAMESPACE_ENTER
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
+// Append the nodes of app to ordered, each once, a node after the nodes upstream of it: its inputs (Node::getInput()
+// already redirects a Group to its GroupOutput's input, a GroupInput to the input of its Group, and a Precomp to its
+// output node, which belongs to the Precomp's own app, loaded before), and the nodes inside it for a Group. The
+// GroupInput case below is redundant with the redirections, but keeps a GroupInput after the input of its Group if
+// getInput() is not redirected (e.g. when the Group has no GroupOutput).
+void
+appendUpstreamFirst(const NodePtr& node,
+                    const AppInstance* app,
+                    std::set<Node*>* visited,
+                    NodesList* ordered)
+{
+    if ( !node || (node->getApp().get() != app) || !visited->insert( node.get() ).second ) {
+        return;
+    }
+    for (int i = 0; i < node->getNInputs(); ++i) {
+        appendUpstreamFirst(node->getInput(i), app, visited, ordered);
+    }
+    if ( dynamic_cast<GroupInput*>( node->getEffectInstance().get() ) ) {
+        NodeGroupPtr group = std::dynamic_pointer_cast<NodeGroup>( node->getGroup() );
+        if (group) {
+            std::vector<NodePtr> groupInputs;
+            group->getInputs(&groupInputs, false);
+            for (std::size_t i = 0; i < groupInputs.size(); ++i) {
+                if (groupInputs[i] == node) {
+                    appendUpstreamFirst(group->getNode()->getInput( (int)i ), app, visited, ordered);
+                }
+            }
+        }
+    }
+    NodeGroup* isGroup = node->isEffectGroup();
+    if (isGroup) {
+        NodesList children = isGroup->getNodes();
+        for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
+            if ( (*it)->isActivated() ) {
+                appendUpstreamFirst(*it, app, visited, ordered);
+            }
+        }
+    }
+    ordered->push_back(node);
+}
+
+// Append to names, once each, the names of the nodes of app whose effects are in holders, as the user sees them: the
+// Write or Read node rather than the reader or writer it embeds.
+void
+appendNodeNames(const std::set<KnobHolder*>& holders,
+                const AppInstance* app,
+                std::vector<std::string>* names)
+{
+    for (std::set<KnobHolder*>::const_iterator h = holders.begin(); h != holders.end(); ++h) {
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(*h);
+        NodePtr node = effect ? effect->getNode() : NodePtr();
+        if ( !node || (node->getApp().get() != app) ) {
+            continue;
+        }
+#ifdef NATRON_ENABLE_IO_META_NODES
+        NodePtr container = node->getIOContainer();
+        if (container) {
+            node = container;
+        }
+#endif
+        const std::string name = node->getFullyQualifiedName();
+        if ( std::find(names->begin(), names->end(), name) == names->end() ) {
+            names->push_back(name);
+        }
+    }
+}
+
+// "a, b, c"
+QString
+joinNames(const std::vector<std::string>& names)
+{
+    std::string joined;
+    for (std::size_t i = 0; i < names.size(); ++i) {
+        joined += (i ? ", " : "") + names[i];
+    }
+
+    return QString::fromUtf8( joined.c_str() );
+}
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 ProjectPrivate::ProjectPrivate(Project* project)
     : _publicInterface(project)
@@ -240,6 +329,76 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
 
     _publicInterface->forceComputeInputDependentDataOnAllTrees();
 
+    // All the nodes, links and input connections are restored and the clip preferences computed: tell the effects
+    // that their inputs are connected, before anything is rendered (#1107, see OfxEffectInstance::onInputsRestoredAfterProjectLoad()). Upstream nodes first, so that
+    // an effect sees the metadata of its inputs as refreshed after their own action.
+    // The render thread storage that the actions need is set once on the tree of each root (a node that no node of
+    // the project reads), not once per effect: setting it walks the whole upstream tree, so once per effect costs
+    // O(n^2) on a chain of n effects (3 s for 1000 Multiply nodes, instead of 8 ms, #1447). It is set again after an
+    // action changed a knob (the hashes changed). Setting it may wait for an OpenGL context of the pool, as in
+    // Node::onInputChanged().
+    // The knob changed handlers aren't called while the project is loading (KnobHolder::endChanges()), and the knobs
+    // age isn't incremented: if a knob that affects the render or the metadata changed in an action, give its node,
+    // and the nodes whose links or expressions follow it, a new age (hence a new hash, so that no image cached for
+    // the old values is used), and refresh their input related data (clip preferences, metadata) and those of their
+    // outputs. Their hashes changed: set the render thread storage again for the next action. Display-only knobs,
+    // which many plug-ins set from their inputs (e.g. the info parameters of WriteFFmpeg), are neither saved nor
+    // rendered: they change nothing. If a saved knob changed, the values the project has are not the saved ones: the
+    // project is marked as modified, and the nodes are listed in the Script Editor (stdout in background mode).
+    std::vector<std::string> changedDuringLoad; // the nodes whose saved values changed, in the order of the changes
+    std::vector<std::string> animatedNotSet; // the nodes whose saved animated values a plug-in tried to set
+    {
+        const AppInstance* app = _publicInterface->getApp().get();
+        NodesList nodes, roots;
+        _publicInterface->getNodes_recursive(nodes, true);
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            NodesList outputs;
+            (*it)->getOutputsWithGroupRedirection(outputs);
+            bool isRoot = true;
+            for (NodesList::iterator o = outputs.begin(); o != outputs.end() && isRoot; ++o) {
+                isRoot = ( (*o)->getApp().get() != app );
+            }
+            if (isRoot) {
+                roots.push_back(*it);
+            }
+        }
+        // the roots, then any node they don't reach
+        roots.insert( roots.end(), nodes.begin(), nodes.end() );
+        std::set<Node*> visited;
+        for (NodesList::iterator root = roots.begin(); root != roots.end(); ++root) {
+            NodesList tree;
+            appendUpstreamFirst(*root, app, &visited, &tree);
+            ParallelRenderArgsSetterPtr renderArgs;
+            for (NodesList::iterator it = tree.begin(); it != tree.end(); ++it) {
+                if ( !(*it)->getEffectInstance()->wantsInputsRestoredAfterProjectLoad() ) {
+                    continue;
+                }
+                if (!renderArgs) {
+                    renderArgs = (*root)->createRenderArgsForInstanceChanged();
+                }
+                KnobHolder::ValueChanges changes;
+                {
+                    KnobHolder::ValueChangesRecorder recorder(&changes);
+                    (*it)->onInputsRestoredAfterProjectLoad();
+                }
+                appendNodeNames(changes.persistent, app, &changedDuringLoad);
+                appendNodeNames(changes.animatedNotSet, app, &animatedNotSet);
+                if ( changes.significant.empty() ) {
+                    continue;
+                }
+                renderArgs.reset();
+                for (std::set<KnobHolder*>::const_iterator h = changes.significant.begin(); h != changes.significant.end(); ++h) {
+                    EffectInstance* effect = dynamic_cast<EffectInstance*>(*h);
+                    NodePtr node = effect ? effect->getNode() : NodePtr();
+                    if ( node && (node->getApp().get() == app) ) {
+                        node->incrementKnobsAge();
+                        node->forceRefreshAllInputRelatedData();
+                    }
+                }
+            }
+        }
+    }
+
     QDateTime time = QDateTime::currentDateTime();
     autoSetProjectFormat = false;
     hasProjectBeenSavedByUser = true;
@@ -247,6 +406,24 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     projectPath->setValue( path.toStdString() );
     ageSinceLastSave = time;
     lastAutoSave = time;
+    if ( !changedDuringLoad.empty() ) {
+        // modified, as after loading an auto-save (see Project::loadProjectInternal() and Project::isSaveUpToDate())
+        ageSinceLastSave = QDateTime();
+        QString message = tr("Project load: plug-ins changed parameter values in: %1 (the project is marked modified)").arg( joinNames(changedDuringLoad) );
+        // Project::loadProject() saves a project whose PyPlugs were updated right after the load: that would write
+        // the values the plug-ins changed without the user seeing them. The user saves (or not) the project instead.
+        if (*mustSave) {
+            *mustSave = false;
+            message += QLatin1Char(' ');
+            message += tr("The updated PyPlugs were not saved: save the project to keep them.");
+        }
+        _publicInterface->getApp()->appendToScriptEditor( message.toStdString() );
+    }
+    if ( !animatedNotSet.empty() ) {
+        // no keyframe is set while a project is loading (Knob<T>::setValue()): the animation is kept
+        _publicInterface->getApp()->appendToScriptEditor( tr("Project load: plug-ins tried to change animated parameters, which keep their animation, in: %1")
+                                                          .arg( joinNames(animatedNotSet) ).toStdString() );
+    }
     _publicInterface->getApp()->setProjectWasCreatedWithLowerCaseIDs(false);
 
     if (obj.getVersion() < PROJECT_SERIALIZATION_REMOVES_TIMELINE_BOUNDS) {
