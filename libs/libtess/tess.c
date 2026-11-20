@@ -36,6 +36,8 @@
 #include <stddef.h>
 #include <assert.h>
 #include <setjmp.h>
+#include <stdint.h>
+#include <string.h>
 #include "memalloc.h"
 #include "tess.h"
 #include "mesh.h"
@@ -411,6 +413,17 @@ static int EmptyCache( GLUtesselator *tess )
 }
 
 
+/* Natron: true if x is a NaN. Tests the bits rather than calling isnan(),
+ * which -ffast-math (-ffinite-math-only) folds to false
+ * (see MathUtils::isNaN() in Global/MathUtils.h).
+ */
+static int IsNaN( GLdouble x )
+{
+  uint64_t bits;
+  memcpy( &bits, &x, sizeof(bits) );
+  return (bits & 0x7fffffffffffffffULL) > 0x7ff0000000000000ULL;
+}
+
 void GLAPIENTRY
 gluTessVertex( GLUtesselator *tess, GLdouble coords[3], void *data )
 {
@@ -428,6 +441,15 @@ gluTessVertex( GLUtesselator *tess, GLdouble coords[3], void *data )
   }
   for( i = 0; i < 3; ++i ) {
     x = coords[i];
+    if( IsNaN( x ) ) {
+      /* Natron: a NaN coordinate cannot be ordered (all comparisons are
+       * false), which breaks the invariants of the sweep, which then
+       * dereferences NULL pointers (crash in ConnectLeftVertex()).
+       * Report it like an out-of-range coordinate and skip the vertex.
+       */
+      CALL_ERROR_OR_ERROR_DATA( GLU_TESS_COORD_TOO_LARGE );
+      return;
+    }
     if( x < - GLU_TESS_MAX_COORD ) {
       x = - GLU_TESS_MAX_COORD;
       tooLarge = TRUE;

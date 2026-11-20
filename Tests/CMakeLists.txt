@@ -34,6 +34,7 @@ set(Tests_SOURCES
     KnobFile_Test.cpp
     KnobSlave_Test.cpp
     KnobStringAnimation_Test.cpp
+    LibTess_Test.cpp
     LoadPythonScript_Test.cpp
     Lut_Test.cpp
     MultiInputLinks_Test.cpp
