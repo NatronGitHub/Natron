@@ -150,7 +150,8 @@ public:
      * If both exist, returns the most recent one, and the other one in otherAutoSaves.
      * Unless includeOlderThanProject is true, an auto-save older than the project file is ignored: it was
      * left by a crash before the project was saved again, e.g. by Natron 2.5, which ignores the binary
-     * auto-saves. It is neither offered nor removed.
+     * auto-saves. It is not offered, and not removed here; but, as any auto-save of the project, removeLastAutosave()
+     * removes it at the first save or auto-save of the project in this session (unless --no-dialogs, see canRemoveAutoSave()).
      **/
     bool findAutoSaveForProject(const QString& projectPath, const QString& projectName, QString* autoSaveFileName,
                                 bool includeOlderThanProject = false, QStringList* otherAutoSaves = 0);

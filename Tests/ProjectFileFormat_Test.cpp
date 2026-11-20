@@ -508,7 +508,8 @@ TEST(ProjectFileFormat, AutoSaveNames)
     EXPECT_EQ( QStringList() << QString::fromUtf8("c.ntp.binautosave"), others );
 
     // An auto-save older than the project (left by a crash of 2.6, then the project was saved by 2.5, which
-    // ignores the binary auto-saves) is not offered, and not removed. It still counts for --no-dialogs.
+    // ignores the binary auto-saves) is not offered, and not removed by findAutoSaveForProject() (the next save or
+    // auto-save of the project removes it, see removeLastAutosave()). It still counts for --no-dialogs.
     ASSERT_TRUE( setTime(dir + QString::fromUtf8("c.ntp.autosave"), now.addSecs(-200)) );
     ASSERT_TRUE( setTime(dir + QString::fromUtf8("c.ntp.binautosave"), now.addSecs(-150)) );
     EXPECT_FALSE( project->findAutoSaveForProject( dir, QString::fromUtf8("c.ntp"), &found ) );

@@ -1278,6 +1278,7 @@ Project::findAutoSaveForProject(const QString& projectPath,
         }
         const QDateTime time = QFileInfo(projectPath + entry).lastModified();
         if ( !includeOlderThanProject && (time < projectInfo.lastModified()) ) {
+            qDebug() << "Auto-save" << (projectPath + entry) << "is older than the project file: not offered";
             continue;
         }
         candidates.append(entry);
