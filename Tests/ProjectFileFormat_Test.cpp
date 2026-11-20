@@ -31,6 +31,8 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
+#include <vector>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -47,6 +49,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
+#include <boost/serialization/vector.hpp>
 GCC_DIAG_ON(unused-parameter)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
@@ -381,18 +384,19 @@ TEST(ProjectFileFormat, AutoSaveKeepsTheFormatOfTheProject)
         // the auto-save, as written by Project::autoSave()
         QString autoSavePath;
         ASSERT_TRUE( project->saveProject_imp(dir, name, true /*autoSave*/, true /*updateProjectProperties*/, &autoSavePath) );
-        ASSERT_EQ( name + QString::fromUtf8(".autosave"), QFileInfo(autoSavePath).fileName() );
+        // not "*.ntp.autosave", which Natron 2.5 would offer to restore (and fail to load, then delete)
+        ASSERT_EQ( name + QString::fromUtf8(".binautosave"), QFileInfo(autoSavePath).fileName() );
         EXPECT_EQ( eProjectFileFormatBinary, Project::detectFileFormat(autoSavePath) );
 
         // Restore it. In GUI mode, loadProject() asks whether to use the auto-save of a project;
         // headless, load it as the auto-save of an untitled project: it is also loaded as an auto-save.
         project->resetProject();
-        ASSERT_TRUE( project->loadProject( dir, name + QString::fromUtf8(".autosave"), true /*isUntitledAutosave*/ ) );
+        ASSERT_TRUE( project->loadProject( dir, name + QString::fromUtf8(".binautosave"), true /*isUntitledAutosave*/ ) );
         EXPECT_EQ( format, project->getFileFormat() ) << "the format of the project was not restored from its auto-save";
 
         // loaded directly (File > Open), it is a binary project
         project->resetProject();
-        ASSERT_TRUE( project->loadProject( dir, name + QString::fromUtf8(".autosave") ) );
+        ASSERT_TRUE( project->loadProject( dir, name + QString::fromUtf8(".binautosave") ) );
         EXPECT_EQ( eProjectFileFormatBinary, project->getFileFormat() );
         project->resetProject();
         createTestProject(app);
@@ -409,6 +413,46 @@ TEST(ProjectFileFormat, AutoSaveKeepsTheFormatOfTheProject)
     ASSERT_TRUE( project->loadProject( dir, QFileInfo(autoSavePath).fileName(), true /*isUntitledAutosave*/ ) );
     EXPECT_EQ( eProjectFileFormatNone, project->getFileFormat() );
     project->resetProject();
+}
+
+// Binary auto-saves end with .ntp.binautosave: Natron 2.5 and earlier look for ".ntp.autosave" (RB-2.5
+// Project::findAutoSaveForProject() and GuiAppInstance::findAndTryLoadUntitledAutoSave()), so they never
+// offer to restore a binary auto-save, which they couldn't load, and never delete it. 2.6 finds both.
+TEST(ProjectFileFormat, AutoSaveNames)
+{
+    const QString natron25Pattern = QString::fromUtf8(".ntp.autosave");
+    const char* binaryNames[] = { "foo.ntp.binautosave", "Untitled.ntp.binautosave.123456789" };
+    for (const char* n : binaryNames) {
+        const QString name = QString::fromUtf8(n);
+        EXPECT_EQ( -1, name.indexOf(natron25Pattern) ) << n;
+        int suffixSize = 0;
+        EXPECT_EQ( name.indexOf( QString::fromUtf8(".ntp") ), Project::findAutoSaveSuffix(name, &suffixSize) ) << n;
+        EXPECT_EQ( 12, suffixSize ) << n;
+    }
+    const char* textNames[] = { "foo.ntp.autosave", "Untitled.ntp.autosave.123456789" };
+    for (const char* n : textNames) {
+        const QString name = QString::fromUtf8(n);
+        int suffixSize = 0;
+        EXPECT_EQ( name.indexOf( QString::fromUtf8(".ntp") ), Project::findAutoSaveSuffix(name, &suffixSize) ) << n;
+        EXPECT_EQ( 9, suffixSize ) << n;
+    }
+    EXPECT_EQ( -1, Project::findAutoSaveSuffix( QString::fromUtf8("foo.ntp") ) );
+    EXPECT_EQ( -1, Project::findAutoSaveSuffix( QString::fromUtf8("foo.ntp.~1~") ) );
+
+    // findAutoSaveForProject() finds the binary auto-save of a project, and also a text one by 2.5
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
+    writeFile( dir + QString::fromUtf8("a.ntp"), QByteArray("<?xml") );
+    writeFile( dir + QString::fromUtf8("a.ntp.binautosave"), QByteArray("x") );
+    writeFile( dir + QString::fromUtf8("b.ntp"), QByteArray("<?xml") );
+    writeFile( dir + QString::fromUtf8("b.ntp.autosave"), QByteArray("x") );
+    QString found;
+    EXPECT_TRUE( project->findAutoSaveForProject( dir, QString::fromUtf8("a.ntp"), &found ) );
+    EXPECT_EQ( QString::fromUtf8("a.ntp.binautosave"), found );
+    EXPECT_TRUE( project->findAutoSaveForProject( dir, QString::fromUtf8("b.ntp"), &found ) );
+    EXPECT_EQ( QString::fromUtf8("b.ntp.autosave"), found );
 }
 
 // Damaged files: the error says which format the file has, and what is wrong with it.
@@ -449,10 +493,189 @@ TEST(ProjectFileFormat, DamagedFiles)
             boost::archive::xml_iarchive ia(ifile);
             ADD_FAILURE() << "xml_iarchive read a binary project";
         } catch (const std::exception& e) {
-            std::cout << "Natron 2.5 would report: Unrecognized or damaged project file: " << e.what() << std::endl;
+            // Checked with the official Natron 2.5.0 (macOS): "Error while loading project: Unrecognized or
+            // damaged project file: unrecognized XML syntax"
+            EXPECT_EQ( std::string("unrecognized XML syntax"), std::string( e.what() ) );
         }
     }
+
+    // A binary project by a later version, with a more recent layout: said as is, not as a damaged file.
+    {
+        std::ofstream ofile( ( dir + QString::fromUtf8("future.ntp") ).toStdString().c_str(), std::ios_base::out | std::ios_base::binary );
+        PortableBinaryOArchive oa(ofile);
+        unsigned int version = 1000;
+        int format = eProjectFileFormatBinary;
+        oa << version << format;
+    }
+    EXPECT_FALSE( loadAndCaptureOutput(project, dir, QString::fromUtf8("future.ntp"), &output) );
+    EXPECT_NE( std::string::npos, output.find("This binary project was saved with a more recent version") ) << output;
+    EXPECT_EQ( std::string::npos, output.find("damaged") ) << output;
     project->resetProject();
+}
+
+// A damaged size (of a string or a collection) is an error, not a huge allocation.
+TEST(PortableBinaryArchive, DamagedSizes)
+{
+    for (int i = 0; i < 2; ++i) {
+        std::ostringstream ss;
+        {
+            PortableBinaryOArchive oa(ss, boost::archive::no_header);
+            std::size_t huge = std::size_t(1) << 40; // 1 TB
+            oa << huge;
+            std::string rest("abc");
+            oa << rest;
+        }
+        std::istringstream is( ss.str() );
+        PortableBinaryIArchive ia(is, boost::archive::no_header);
+        try {
+            if (i == 0) {
+                std::string s;
+                ia >> s;
+            } else {
+                std::vector<double> v;
+                ia >> v;
+            }
+            ADD_FAILURE() << "a 1 TB size was accepted";
+        } catch (const PortableBinaryArchiveException& e) {
+            EXPECT_EQ( std::string("size larger than the rest of the file"), std::string( e.what() ) );
+        } catch (const std::exception& e) {
+            ADD_FAILURE() << "unexpected error: " << e.what();
+        }
+    }
+}
+
+namespace {
+// The directory of the committed project files (Tests/data), or an empty string if it isn't there
+// (e.g. Tests run from an installed bundle).
+QString
+dataDir()
+{
+#ifdef NATRON_TESTS_DATA_DIR
+    QString d = QString::fromUtf8(NATRON_TESTS_DATA_DIR) + QLatin1Char('/');
+    if ( QFile::exists( d + QString::fromUtf8("ProjectFileFormat-2.5.ntp") ) ) {
+        return d;
+    }
+#endif
+
+    return QString();
+}
+
+// Copies a committed project file to dir, so that the paths saved in the project (the [Project] variable) are those of dir.
+bool
+copyData(const QString& name,
+         const QString& dir)
+{
+    return QFile::copy( dataDir() + name, dir + name );
+}
+} // anonymous namespace
+
+// A project saved by Natron 2.5.0 (Tests/data/ProjectFileFormat-2.5.ntp, made by ProjectFileFormat-2.5.py):
+// it loads, and text -> binary -> text gives the same text as text -> text. The 2.5 class versions
+// go through the binary archive.
+TEST(ProjectFileFormat, Natron25Project)
+{
+    if ( dataDir().isEmpty() ) {
+        std::cout << "Tests/data not found: skipped" << std::endl;
+
+        return;
+    }
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    ASSERT_TRUE( copyData(QString::fromUtf8("ProjectFileFormat-2.5.ntp"), dir) );
+    ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
+
+    ASSERT_TRUE( project->loadProject( dir, QString::fromUtf8("ProjectFileFormat-2.5.ntp") ) );
+    EXPECT_EQ( eProjectFileFormatText, project->getFileFormat() );
+    EXPECT_TRUE( bool( project->getNodeByName("Group1") ) );
+    EXPECT_TRUE( bool( project->getNodeByName("Dot1") ) );
+    EXPECT_TRUE( bool( project->getNodeByName("BackDrop1") ) );
+    ASSERT_TRUE( saveCopy(project, dir, QString::fromUtf8("text.ntp"), eProjectFileFormatText) );
+    ASSERT_TRUE( saveCopy(project, dir, QString::fromUtf8("binary.ntp"), eProjectFileFormatBinary) );
+    const QByteArray text = readFile( dir + QString::fromUtf8("text.ntp") );
+    ASSERT_TRUE( text.contains("myString") );
+
+    ASSERT_TRUE( project->loadProject( dir, QString::fromUtf8("binary.ntp") ) );
+    ASSERT_TRUE( saveCopy(project, dir, QString::fromUtf8("roundtrip.ntp"), eProjectFileFormatText) );
+    EXPECT_TRUE( text == readFile( dir + QString::fromUtf8("roundtrip.ntp") ) ) << "text -> binary -> text changed the 2.5 project";
+
+    // NATRON_TEST_WRITE_DATA=1 regenerates Tests/data/ProjectFileFormat-2.6.binary.ntp from the 2.5 project
+    if ( std::getenv("NATRON_TEST_WRITE_DATA") ) {
+        const QString path = dataDir() + QString::fromUtf8("ProjectFileFormat-2.6.binary.ntp");
+        QFile::remove(path);
+        EXPECT_TRUE( QFile::copy(dir + QString::fromUtf8("binary.ntp"), path) );
+        std::cout << "wrote " << path.toStdString() << std::endl;
+    }
+    project->resetProject();
+}
+
+// A committed binary project (Tests/data/ProjectFileFormat-2.6.binary.ntp, written on macOS arm64 from the
+// 2.5 project) loads on every platform of the CI, and in later versions, and is the same project as its text twin.
+TEST(ProjectFileFormat, CommittedBinaryProject)
+{
+    if ( dataDir().isEmpty() ) {
+        std::cout << "Tests/data not found: skipped" << std::endl;
+
+        return;
+    }
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    ASSERT_TRUE( copyData(QString::fromUtf8("ProjectFileFormat-2.5.ntp"), dir) );
+    ASSERT_TRUE( copyData(QString::fromUtf8("ProjectFileFormat-2.6.binary.ntp"), dir) );
+    ASSERT_EQ( eProjectFileFormatBinary, Project::detectFileFormat( dir + QString::fromUtf8("ProjectFileFormat-2.6.binary.ntp") ) );
+    ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
+
+    ASSERT_TRUE( project->loadProject( dir, QString::fromUtf8("ProjectFileFormat-2.5.ntp") ) );
+    ASSERT_TRUE( saveCopy(project, dir, QString::fromUtf8("from-text.ntp"), eProjectFileFormatText) );
+    ASSERT_TRUE( project->loadProject( dir, QString::fromUtf8("ProjectFileFormat-2.6.binary.ntp") ) );
+    EXPECT_EQ( eProjectFileFormatBinary, project->getFileFormat() );
+    EXPECT_TRUE( bool( project->getNodeByName("Group1") ) );
+    ASSERT_TRUE( saveCopy(project, dir, QString::fromUtf8("from-binary.ntp"), eProjectFileFormatText) );
+    EXPECT_TRUE( readFile( dir + QString::fromUtf8("from-text.ntp") ) == readFile( dir + QString::fromUtf8("from-binary.ntp") ) )
+        << "the committed binary project differs from its text twin";
+    project->resetProject();
+}
+
+// The Python API: app.saveProject(), saveProjectAs() and saveTempProject() take an optional format,
+// and app.getProjectFormat()/setProjectFormat() give the format of the project.
+TEST(ProjectFileFormat, PythonAPI)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const std::string dir = ( tmpDir.path() + QLatin1Char('/') ).toStdString();
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    app->getProject()->resetProject();
+    const std::string a = app->getAppIDString();
+    std::string script =
+        "import NatronEngine\n"
+        "F = NatronEngine.Natron.ProjectFileFormatEnum\n"
+        "def fmt(p):\n"
+        "    d = open(p, 'rb').read(64)\n"
+        "    return 'binary' if d.startswith(b'\\x01\\x16serialization::archive') else ('text' if d.startswith(b'<?xml') else 'unknown')\n"
+        "a = " + a + "\n"
+        "a.createNode('fr.inria.built-in.Dot')\n"
+        "assert a.getProjectFormat() == F.eProjectFileFormatNone\n"
+        // the preference (binary) for a new project
+        "assert a.saveProjectAs('" + dir + "default.ntp')\n"
+        "assert fmt('" + dir + "default.ntp') == 'binary', fmt('" + dir + "default.ntp')\n"
+        "assert a.getProjectFormat() == F.eProjectFileFormatBinary\n"
+        // an explicit format becomes the format of the project
+        "assert a.saveProjectAs('" + dir + "text.ntp', F.eProjectFileFormatText)\n"
+        "assert fmt('" + dir + "text.ntp') == 'text'\n"
+        "assert a.getProjectFormat() == F.eProjectFileFormatText\n"
+        "assert a.saveProject('')\n"
+        "assert fmt('" + dir + "text.ntp') == 'text'\n"
+        // a temporary copy in another format doesn't change the format of the project
+        "assert a.saveTempProject('" + dir + "temp.ntp', F.eProjectFileFormatBinary)\n"
+        "assert fmt('" + dir + "temp.ntp') == 'binary'\n"
+        "assert a.getProjectFormat() == F.eProjectFileFormatText\n"
+        "a.setProjectFormat(F.eProjectFileFormatBinary)\n"
+        "assert a.saveProject('')\n"
+        "assert fmt('" + dir + "text.ntp') == 'binary'\n";
+    std::string error, output;
+    EXPECT_TRUE( ::Natron::Python::interpretPythonScript(script, &error, &output) ) << error << output;
+    app->getProject()->resetProject();
 }
 
 // Sizes and times of a large project in both formats, and the same text -> binary -> text check

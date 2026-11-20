@@ -175,7 +175,8 @@ endforeach()
 add_dependencies(Tests NatronTestPlugin)
 target_compile_definitions(Tests PRIVATE
     NATRON_TESTS_OFX_PLUGIN_DIR="${NATRON_TESTS_OFX_PLUGIN_DIR}"
-    NATRON_TESTS_OFX_PLUGIN_BINARY="$<TARGET_FILE:NatronTestPlugin>")
+    NATRON_TESTS_OFX_PLUGIN_BINARY="$<TARGET_FILE:NatronTestPlugin>"
+    NATRON_TESTS_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data")
 
 # Not part of a normal install. The installer scripts install it separately
 # (cmake --install <build> --component Tests) and run it from the bundled tree:

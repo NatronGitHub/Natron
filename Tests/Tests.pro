@@ -119,5 +119,7 @@ HEADERS += \
 include(OfxTestPlugin/OfxTestPlugin.pri)
 DEFINES += NATRON_TESTS_OFX_PLUGIN_DIR=\\\"$${NATRON_TEST_OFX_PLUGIN_DIR}\\\"
 DEFINES += NATRON_TESTS_OFX_PLUGIN_BINARY=\\\"$${NATRON_TEST_OFX_BINARY_DIR}/NatronTestPlugin.ofx\\\"
+# the project files read by ProjectFileFormat_Test.cpp
+DEFINES += NATRON_TESTS_DATA_DIR=\\\"$$PWD/data\\\"
 
 include(../warnings.pri)
