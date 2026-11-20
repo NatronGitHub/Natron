@@ -32,7 +32,6 @@ Functions
 - def :meth:`saveFilenameDialog<NatronGui.GuiApp.saveFilenameDialog>` (filters[, location=None])
 - def :meth:`saveSequenceDialog<NatronGui.GuiApp.saveSequenceDialog>` (filters[, location=None])
 - def :meth:`saveScreenshot<NatronGui.GuiApp.saveScreenshot>` (filePath[, scriptName=""])
-- def :meth:`processEvents<NatronGui.GuiApp.processEvents>` ()
 - def :meth:`selectNode<NatronGui.GuiApp.selectNode>` (node,clearPreviousSelection)
 - def :meth:`deselectNode<NatronGui.GuiApp.deselectNode>` (node)
 - def :meth:`setSelection<NatronGui.GuiApp.setSelection>` (nodes)
@@ -166,12 +165,6 @@ It must be called from the main (GUI) thread: it returns False when called from 
 thread, e.g. from the *afterFrameRender* callback.
 
 See :ref:`guiTesting` for an example.
-
-.. method:: GuiApp.processEvents()
-
-Processes the pending GUI events (redraws, queued signals), e.g. to let a viewer redraw its
-overlays after :meth:`PyViewer.keyPress()<NatronGui.PyViewer.keyPress>`. Does nothing when not
-called from the main (GUI) thread.
 
 .. method:: GuiApp.getRGBColorDialog()
 

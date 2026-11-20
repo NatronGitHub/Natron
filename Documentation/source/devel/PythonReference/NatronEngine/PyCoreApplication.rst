@@ -389,10 +389,8 @@ stopped. This is meant for scripts and tests, see :ref:`guiTesting`.
 - In the GUI (*Natron*), the projects are closed at the end of the current event-loop
   iteration, so it is safe to call it from a callback or from a timer. The function returns
   immediately and the rest of the calling script is executed. If Natron is still loading (e.g.
-  :func:`quit` is called by the script given on the command line), or a nested event loop is
-  running (:meth:`GuiApp.processEvents()<NatronGui.GuiApp.processEvents>`,
-  :meth:`PyViewer.waitForRender()<NatronGui.PyViewer.waitForRender>`, a modal dialog), the
-  projects are closed once it is done. The last auto-save of each project is removed, as when
+  :func:`quit` is called by the script given on the command line), or a nested event loop of
+  Natron is running (e.g. a modal dialog), the projects are closed once it is done. The last auto-save of each project is removed, as when
   answering *Discard* to "Save changes?", so that the next launch does not offer to restore it.
 - In background mode (*NatronRenderer*, or *Natron -b*), the rest of the script is executed,
   then the renders that were not started yet (the Write nodes given with *-w* or *-o*) are

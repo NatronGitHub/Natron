@@ -4,25 +4,20 @@ Testing Natron's GUI from scripts
 =================================
 
 A Python script can drive the graphical interface of Natron and check the result, e.g. to
-write a regression test for a viewer overlay or to make screenshots for the documentation.
-Four features make this possible:
+write a regression test or to make screenshots for the documentation. Three features make this
+possible:
 
-- the :ref:`--no-dialogs<natronExec>` command-line option: the message and question dialogs,
+- the :option:`--no-dialogs` command-line option: the message and question dialogs,
   including the startup prompts, are not shown, they return their default button and are
   printed to the standard error, so that nothing blocks the script. "Save changes?" is answered
   Discard and the file dialogs count as cancelled (see the list of answers in
-  :ref:`natronExec`);
+  :option:`--no-dialogs`);
 - :meth:`natron.quit(exitCode)<NatronEngine.PyCoreApplication.quit>`: closes the projects
   without asking to save them and exits with *exitCode*, so that the result of the test is
   the exit status of Natron;
 - :meth:`app.saveScreenshot(filePath, scriptName)<NatronGui.GuiApp.saveScreenshot>`: saves an
   image of the main window, or of a tab or pane, including the content of the viewers and of
-  the other OpenGL widgets. Only the widgets of Natron are captured, never the screen;
-- the :ref:`input functions of PyViewer<pyViewer>`, such as
-  :meth:`drag<NatronGui.PyViewer.drag>` and :meth:`keyPress<NatronGui.PyViewer.keyPress>`:
-  they send real mouse and key events to a viewer, in canonical coordinates (the coordinates
-  the overlays use, y pointing up), so that the overlays of the nodes react as they would to
-  the user. They work when the window is not on top, and they do not move the mouse cursor.
+  the other OpenGL widgets. Only the widgets of Natron are captured, never the screen.
 
 How the script runs
 -------------------
@@ -40,45 +35,22 @@ available.
 
 When Natron runs a script, it does not create a viewer: create one with
 ``app.createNode("fr.inria.built-in.Viewer")``.
-The viewer only shows the overlay of a node, and only sends it the events, while the settings
-panel of the node is open, and :meth:`createNode<NatronEngine.App.createNode>` does not open
-it: select the node and send the *Return* key to the node graph, as in the example below.
 
-Example: dragging the Transform handle
---------------------------------------
+Example: a screenshot of the viewer
+-----------------------------------
 
-This script creates Read → Transform → Viewer1, drags the centre handle of the Transform
-overlay by (100, 50), checks the *translate* parameter, undoes the change, saves screenshots,
-and exits with 0 on success and 1 on failure. It needs the openfx-io and openfx-misc plug-ins
-(set *OFX_PLUGIN_PATH* if they are not installed), and an image to read::
+This script creates Read → Transform → Viewer1, waits for the viewer, saves screenshots and
+exits with 0 on success and 1 on failure. It needs the openfx-io and openfx-misc plug-ins (set
+*OFX_PLUGIN_PATH* if they are not installed), and an image to read::
 
-    import sys
     from NatronGui import natron
     try:
-        from PySide2 import QtCore, QtGui, QtWidgets
+        from PySide2 import QtCore
     except ImportError:
-        from PySide6 import QtCore, QtGui, QtWidgets
+        from PySide6 import QtCore
 
     IMAGE = "/path/to/image.png"
     OUT = "/tmp"
-
-    def openSettingsPanel(app, effect):
-        # as selecting the node and pressing Return in the node graph
-        app.selectNode(effect, True)
-        for w in QtWidgets.QApplication.allWidgets():
-            if w.metaObject().className().endswith("NodeGraph") and w.isVisible():
-                for t in (QtCore.QEvent.KeyPress, QtCore.QEvent.KeyRelease):
-                    QtWidgets.QApplication.sendEvent(w, QtGui.QKeyEvent(t, QtCore.Qt.Key_Return, QtCore.Qt.NoModifier))
-
-    def undo():
-        # Edit > Undo
-        for w in QtWidgets.QApplication.topLevelWidgets():
-            if isinstance(w, QtWidgets.QMainWindow):
-                for m in w.menuBar().actions():
-                    for a in (m.menu().actions() if m.menu() else []):
-                        if a.shortcut() == QtGui.QKeySequence(QtGui.QKeySequence.Undo) and a.isEnabled():
-                            a.trigger()
-                            return
 
     def test():
         read = app.createNode("fr.inria.built-in.Read")
@@ -87,38 +59,17 @@ and exits with 0 on success and 1 on failure. It needs the openfx-io and openfx-
         transform.connectInput(0, read)
         viewerNode = app.createNode("fr.inria.built-in.Viewer")  # Viewer1
         viewerNode.connectInput(0, transform)
+        app.getViewer("Viewer1").renderCurrentFrame(True)
 
-        viewer = app.getViewer("Viewer1")
-        viewer.fitToFormat()
-        viewer.waitForRender()
-        app.saveScreenshot(OUT + "/mainWindow.png")
-        app.saveScreenshot(OUT + "/Viewer1.png", "Viewer1")
+        # let the viewer render and redraw
+        timer = QtCore.QElapsedTimer()
+        timer.start()
+        while timer.elapsed() < 3000:
+            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents, 50)
 
-        openSettingsPanel(app, transform)
-        viewer.waitForRender()
-        translate = transform.getParam("translate")
-        center = transform.getParam("center")
-        t0 = translate.get()
-        cx = center.get().x + t0.x
-        cy = center.get().y + t0.y
-        viewer.drag(cx, cy, cx + 100, cy + 50)
-        viewer.waitForRender()
-        t1 = translate.get()
-        tol = 1.5 / viewer.getZoom()  # the overlay moves by whole screen pixels
-        if abs(t1.x - t0.x - 100) > tol or abs(t1.y - t0.y - 50) > tol:
-            return 1
-
-        undo()
-        if translate.get().x != t0.x:
-            return 1
-
-        # a viewer shortcut: + zooms in
-        zoom = viewer.getZoom()
-        viewer.keyPress(QtCore.Qt.Key_Plus)
-        app.processEvents()
-        if viewer.getZoom() <= zoom:
-            return 1
-        return 0
+        ok = app.saveScreenshot(OUT + "/mainWindow.png")
+        ok = app.saveScreenshot(OUT + "/Viewer1.png", "Viewer1") and ok
+        return 0 if ok else 1
 
     def main():
         status = 1
@@ -131,14 +82,14 @@ and exits with 0 on success and 1 on failure. It needs the openfx-io and openfx-
 
 Run it and check the exit status::
 
-    Natron --no-dialogs --no-settings test_transform.py; echo "exit status: $?"
+    Natron --no-dialogs --no-settings test_screenshot.py; echo "exit status: $?"
 
 The GUI smoke test of the Natron sources, ``Tests/gui/run_gui_smoke_test.py``, is a longer
 version of this example that also checks that the screenshots are not black, and that
 quitting with :meth:`natron.quit()<NatronEngine.PyCoreApplication.quit>` or by closing the main
-window does not block on "Save changes?" and leaves no auto-save behind. CTest runs it as *GuiSmokeTest*; it is skipped (exit
-status 77) when there is no display, in CI unless *NATRON_GUI_TESTS=1* is set, or when the
-plug-ins are missing.
+window does not block on "Save changes?" and leaves no auto-save behind. CTest runs it as
+*GuiSmokeTest*; it is skipped (exit status 77) when there is no display, in CI unless
+*NATRON_GUI_TESTS=1* is set, or when the plug-ins are missing.
 
 To catch crashes, run Natron under a debugger: with ``--debugger``, the smoke test runs Natron
 through ``Tests/gui/natron-lldb.sh``, which runs it under lldb in batch mode, prints the
@@ -153,21 +104,12 @@ another command to run Natron with. ``natron-lldb.sh`` also works for *NatronRen
 Tips
 ----
 
-- Call the GUI functions (:meth:`saveScreenshot<NatronGui.GuiApp.saveScreenshot>`, the
-  :doc:`PyViewer<PythonReference/NatronGui/PyViewer>` input functions,
-  :meth:`processEvents<NatronGui.GuiApp.processEvents>`...) from the main thread: from the
+- Call :meth:`saveScreenshot<NatronGui.GuiApp.saveScreenshot>` from the main thread: from the
   script, a timer or a GUI callback. In render threads (e.g. the *afterFrameRender* callback)
-  they do nothing and return False.
+  it does nothing and returns False.
 - :meth:`natron.quit()<NatronEngine.PyCoreApplication.quit>` removes the auto-saves of the
-  projects, and it waits until Natron has finished loading and no nested event loop is
-  running, so it can be called from anywhere in the script. Likewise, a request to close the
-  main window that arrives during :meth:`waitForRender<NatronGui.PyViewer.waitForRender>` or
-  :meth:`processEvents<NatronGui.GuiApp.processEvents>` is deferred until they return.
-
-- Wait for the viewer with :meth:`waitForRender<NatronGui.PyViewer.waitForRender>` after
-  changing the graph, the view or a parameter, before checking values or saving a screenshot.
-- The overlays snap the pointer to the screen pixels: compare the values with a tolerance of
-  about one pixel, i.e. ``1.5 / viewer.getZoom()`` in canonical units.
+  projects, and it waits until Natron has finished loading and no nested event loop of
+  Natron (e.g. a modal dialog) is running, so it can be called from anywhere in the script.
 - In the GUI, the output of the script (``print``) goes to the Script Editor. To see it in the
   terminal, write to ``sys.__stderr__``.
 - With some OpenFX plug-ins, Natron may crash at exit, after the projects were closed, which

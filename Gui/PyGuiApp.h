@@ -28,9 +28,6 @@
 
 #include "Global/Macros.h"
 
-#include <QtCore/QEvent>
-#include <QtCore/qnamespace.h> // Qt::Key, Qt::KeyboardModifiers
-
 #include "Engine/PyAppInstance.h"
 #include "Engine/PyParameter.h" // ColorTuple
 #include "Engine/ViewIdx.h"
@@ -110,65 +107,6 @@ public:
 
     /* Python API: do not use ViewIdx */
     int getCurrentView() const;
-
-    /*
-     * Simulated input, for tests. Positions are in canonical coordinates: the coordinates
-     * the OpenFX overlay interacts receive (pixel aspect ratio included, y pointing up).
-     * The events are real Qt events sent to the viewer's OpenGL widget, so they go through
-     * the viewer (pan, zoom, picking) and the overlays of the nodes, as user input would.
-     * The window does not need to be focused or on top, and the mouse cursor does not move.
-     * button is a Qt::MouseButton (1: left, 2: right, 4: middle), modifiers a
-     * Qt::KeyboardModifiers. A pressure other than 1 also sends tablet events.
-     * They return whether the event was accepted, and False when not called from the main
-     * thread (e.g. from a render callback such as afterFrameRender).
-     */
-    bool penDown(double x, double y, int button = 1, Qt::KeyboardModifiers modifiers = Qt::NoModifier, double pressure = 1.);
-
-    /// a motion with button held (0 for a motion without any button pressed)
-    bool penMotion(double x, double y, int button = 1, Qt::KeyboardModifiers modifiers = Qt::NoModifier, double pressure = 1.);
-
-    bool penUp(double x, double y, int button = 1, Qt::KeyboardModifiers modifiers = Qt::NoModifier, double pressure = 1.);
-
-    /// sends the same events as a double-click: press, release, double-click, release
-    bool penDoubleClick(double x, double y, int button = 1, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
-
-    bool keyDown(Qt::Key key, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
-
-    bool keyUp(Qt::Key key, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
-
-    /// keyDown() followed by keyUp(), returns whether the key down was accepted
-    bool keyPress(Qt::Key key, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
-
-    /// penDown() at (x0, y0), steps penMotion() to (x1, y1), penUp() at (x1, y1)
-    bool drag(double x0, double y0, double x1, double y1, int steps = 10, int button = 1, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
-
-    /// canonical coordinates to the viewer's widget coordinates (in logical pixels, y down)
-    Double2DTuple toWidgetCoordinates(double x, double y) const;
-
-    /// the viewer's widget coordinates to canonical coordinates
-    Double2DTuple toCanonicalCoordinates(double wx, double wy) const;
-
-    /// the zoom factor (widget pixels per canonical unit)
-    double getZoom() const;
-
-    /// the canonical coordinates of the bottom-left corner of the viewer
-    Double2DTuple getPan() const;
-
-    /// fits the project format in the viewer, as the F key does
-    void fitToFormat();
-
-    /**
-     * @brief Processes the GUI events until the viewer has no render running, so that the
-     * overlays are redrawn and the renders they trigger are done. Returns false on timeout,
-     * or when not called from the main thread.
-     **/
-    bool waitForRender(int timeoutMs = 10000);
-
-private:
-
-    ViewerGL* getViewerGL() const;
-    bool sendPenEvent(QEvent::Type type, double x, double y, int button, Qt::KeyboardModifiers modifiers, double pressure);
-    bool sendKeyEvent(QEvent::Type type, Qt::Key key, Qt::KeyboardModifiers modifiers);
 };
 
 class GuiApp
@@ -238,12 +176,6 @@ public:
      * Returns true on success, false when not called from the main thread.
      **/
     bool saveScreenshot( const QString& filePath, const QString& scriptName = QString() ) const;
-
-    /**
-     * @brief Processes the pending GUI events (redraws, queued signals), e.g. after sending
-     * input events to a viewer. Does nothing when not called from the main thread.
-     **/
-    void processEvents();
 };
 
 NATRON_PYTHON_NAMESPACE_EXIT;

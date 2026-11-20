@@ -28,8 +28,9 @@ Usage: run_gui_smoke_test.py /path/to/Natron [--keep] [--strict-exit] [--debugge
    answered Discard with --no-dialogs) and the exit status must be 0.
 3. Natron runs gui_smoke_test_script.py, which creates Read -> Transform -> Viewer1,
    saves screenshots of the main window and of Viewer1 (checking that they are not
-   black), drags the Transform overlay handle, undoes it, sends viewer shortcuts, and
-   calls natron.quit(status).
+   black) and of the other tabs, changes the Transform while the node previews render,
+   and calls natron.quit(status). (The overlay drag, undo and viewer shortcuts are
+   tested by the --test scripts of #1455.)
    The script also writes its status to a file: with some OFX plug-ins (those using TBB,
    like openfx-io), Natron may crash at exit, after natron.quit() (issue #1253). That
    crash is reported, and only fails the test with --strict-exit.

@@ -131,11 +131,9 @@ Testing the GUI from scripts
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 GUI behavior can also be tested by a Python script run by the Natron GUI with
-``--no-dialogs``: the script builds a graph, sends mouse and key events to a
-viewer in canonical coordinates (``PyViewer.drag()``, ``keyPress()``...), checks
-the parameters, saves screenshots of Natron's own widgets
-(``GuiApp.saveScreenshot()``, never a screen capture) and exits with
-``natron.quit(status)``. The Developers Guide chapter :ref:`guiTesting` has a
+``--no-dialogs``: the script builds a graph, checks the result, saves screenshots
+of Natron's own widgets (``GuiApp.saveScreenshot()``, never a screen capture) and
+exits with ``natron.quit(status)``. The Developers Guide chapter :ref:`guiTesting` has a
 complete example. ``Tests/gui/run_gui_smoke_test.py`` is the smoke test of the
 sources, run by CTest as *GuiSmokeTest*::
 

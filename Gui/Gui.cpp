@@ -317,10 +317,9 @@ Gui::closeEvent(QCloseEvent* e)
         // natron.quit() will close everything, without asking to save
         e->ignore();
     } else if (appPTR->getNestedEventLoopsCount() > 0) {
-        // A nested event loop is running (e.g. PyViewer.waitForRender() or
-        // GuiApp.processEvents() called from Python): closing now would delete this window
-        // (Qt::WA_DeleteOnClose) and the project in that loop, under the code that runs it.
-        // Close once it is done.
+        // A nested event loop is running (see AppManager::NestedEventLoopRAII): closing now
+        // would delete this window (Qt::WA_DeleteOnClose) and the project in that loop, under
+        // the code that runs it. Close once it is done.
         e->ignore();
         QTimer::singleShot( 50, this, SLOT(close()) );
     } else if ( app && app->getProject()->isSaveInProgress() ) {

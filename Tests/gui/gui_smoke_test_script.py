@@ -91,32 +91,13 @@ def checkScreenshot(app, path, scriptName=""):
     check(notBlack > 0.2 and colours > 8, "%s is not black or uniform" % os.path.basename(path))
 
 
-def findUndoAction():
-    """The Edit > Undo action of the main window (it undoes the last change of the active undo stack)."""
-    undo = QtGui.QKeySequence(QtGui.QKeySequence.Undo)
-    for w in QtWidgets.QApplication.topLevelWidgets():
-        if not isinstance(w, QtWidgets.QMainWindow):
-            continue
-        for menuAction in w.menuBar().actions():
-            menu = menuAction.menu()
-            if not menu:
-                continue
-            for a in menu.actions():
-                if a.shortcut() == undo and a.isEnabled():
-                    return a
-    return None
-
-
-def openSettingsPanel(app, effect):
-    """Opens the settings panel of effect, as selecting it and pressing Return in the node
-    graph does: the viewer only shows the overlays of the nodes whose panel is open."""
-    app.selectNode(effect, True)
-    for w in QtWidgets.QApplication.allWidgets():
-        if w.metaObject().className().endswith("NodeGraph") and w.isVisible():
-            for t in (QtCore.QEvent.KeyPress, QtCore.QEvent.KeyRelease):
-                QtWidgets.QApplication.sendEvent(w, QtGui.QKeyEvent(t, QtCore.Qt.Key_Return, QtCore.Qt.NoModifier))
-            return True
-    return False
+def processEventsFor(seconds):
+    """Processes the GUI events for a while, so that the renders and redraws happen.
+    (The viewer input events, the render wait and the undo functions are in #1455.)"""
+    timer = QtCore.QElapsedTimer()
+    timer.start()
+    while timer.elapsed() < seconds * 1000.:
+        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents, 50)
 
 
 def runTest():
@@ -150,68 +131,12 @@ def runTest():
 
     viewer = app.getViewer("Viewer1")
     check(viewer is not None, "getViewer('Viewer1')")
-    viewer.fitToFormat()
-    check(viewer.waitForRender(), "the viewer rendered")
+    viewer.renderCurrentFrame(True)
+    processEventsFor(3.)
 
     checkScreenshot(app, os.path.join(outDir, "mainWindow.png"))
     checkScreenshot(app, os.path.join(outDir, "Viewer1.png"), "Viewer1")
     check(not app.saveScreenshot(os.path.join(outDir, "none.png"), "noSuchTab"), "saveScreenshot of an unknown tab fails")
-
-    # coordinates round trip
-    w = viewer.toWidgetCoordinates(100., 200.)
-    c = viewer.toCanonicalCoordinates(w.x, w.y)
-    check(abs(c.x - 100.) < 1e-6 and abs(c.y - 200.) < 1e-6, "toCanonicalCoordinates(toWidgetCoordinates(p)) == p")
-
-    # drag the centre handle of the Transform overlay by (100, 50)
-    check(openSettingsPanel(app, transform), "opened the Transform settings panel")
-    viewer.waitForRender()
-    translate = transform.getParam("translate")
-    center = transform.getParam("center")
-    t0 = translate.get()
-    c0 = center.get()
-    cx, cy = c0.x + t0.x, c0.y + t0.y
-    log("translate=(%g, %g) center=(%g, %g) zoom=%g" % (t0.x, t0.y, c0.x, c0.y, viewer.getZoom()))
-    viewer.drag(cx, cy, cx + 100., cy + 50., 10)
-    viewer.waitForRender()
-    t1 = translate.get()
-    log("translate after drag=(%g, %g)" % (t1.x, t1.y))
-    # the interact snaps the motion to the screen pixels: allow one pixel at the current zoom
-    tol = 1.5 / viewer.getZoom()
-    check(abs(t1.x - t0.x - 100.) <= tol and abs(t1.y - t0.y - 50.) <= tol,
-          "dragging the Transform centre handle changed translate by (100, 50)")
-
-    # let the end of the interaction (pen up) push its undo command
-    for j in range(5):
-        app.processEvents()
-    # The drag may be recorded as more than one undo command (the Transform interact edits
-    # the parameters at each motion, and the edits are merged by the undo stack): undo until
-    # translate is back, at most a few times.
-    undoAction = findUndoAction()
-    check(undoAction is not None, "found Edit > Undo")
-    for k in range(5):
-        log("triggering %r" % undoAction.text())
-        undoAction.trigger()
-        viewer.waitForRender()
-        for j in range(5):
-            app.processEvents()
-        t2 = translate.get()
-        log("translate after undo=(%g, %g)" % (t2.x, t2.y))
-        if (abs(t2.x - t0.x) <= 1e-6 and abs(t2.y - t0.y) <= 1e-6):
-            break
-        undoAction = findUndoAction()
-        if undoAction is None or "Transform1" not in undoAction.text():
-            break
-    check(abs(t2.x - t0.x) <= 1e-6 and abs(t2.y - t0.y) <= 1e-6, "undo restored translate")
-    checkScreenshot(app, os.path.join(outDir, "Viewer1-after-undo.png"), "Viewer1")
-
-    # a viewer shortcut sent as a key event: + zooms in, F fits the format again
-    zoomFit = viewer.getZoom()
-    viewer.keyPress(QtCore.Qt.Key_Plus)
-    app.processEvents()
-    check(viewer.getZoom() > zoomFit * 1.01, "the + key zoomed in (%g -> %g)" % (zoomFit, viewer.getZoom()))
-    viewer.keyPress(QtCore.Qt.Key_F)
-    app.processEvents()
-    check(abs(viewer.getZoom() - zoomFit) < 1e-6 * zoomFit, "the F key fitted the format again")
 
     # the other tabs, including the OpenGL ones
     for tab in ("nodeGraph", "properties", "curveEditor", "dopeSheetEditor"):
@@ -219,23 +144,12 @@ def runTest():
         if app.saveScreenshot(path, tab):
             log("saved %s" % os.path.basename(path))
 
-    # previews: change the Transform a few times and wait for the renders and previews
+    # previews: change the Transform a few times while the previews render
+    translate = transform.getParam("translate")
+    t0 = translate.get()
     for i in range(5):
         translate.set(t0.x + 10. * i, t0.y)
-        check(viewer.waitForRender(), "waitForRender() with previews on (%d)" % i)
-        for j in range(5):
-            app.processEvents()
-
-    # a close request delivered inside a nested event loop must not delete the main window
-    # under the running code: it is deferred until the loop is done
-    mainWindow = [w for w in QtWidgets.QApplication.topLevelWidgets()
-                  if isinstance(w, QtWidgets.QMainWindow) and w.isVisible()][0]
-    QtCore.QTimer.singleShot(0, mainWindow.close)
-    viewer.waitForRender()
-    for j in range(10):
-        app.processEvents()
-    check(mainWindow.isVisible() and app.getViewer("Viewer1") is not None,
-          "a close request during waitForRender() did not close the main window")
+        processEventsFor(0.5)
     return 0
 
 

@@ -525,7 +525,7 @@ GuiApplicationManager::quitWhenIdle()
 {
     // Not while the application is loading (the script given on the command line runs during
     // GuiAppInstance::load()), nor from a nested event loop (QEventLoop in checkForNewVersion(),
-    // processEvents() or waitForRender() called from Python, a modal dialog): the code that
+    // a modal dialog): the code that
     // runs it would use the deleted projects afterwards. Try again later.
     if ( !isLoaded() || (getNestedEventLoopsCount() > 0) || QApplication::activeModalWidget() ) {
         QTimer::singleShot( 50, this, [this]() {
