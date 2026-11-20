@@ -57,6 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiTest.h"
 #include "Gui/KnobGui.h"
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
@@ -197,7 +198,7 @@ NodeGraph::popFindDialog(const QPoint& p)
     FindNodeDialog* dialog = new FindNodeDialog(this, this);
 
     if ( (realPos.x() == 0) && (realPos.y() == 0) ) {
-        QPoint global = QCursor::pos();
+        QPoint global = GuiTest::cursorPos();
         QSize sizeH = dialog->sizeHint();
         global.rx() -= sizeH.width() / 2;
         global.ry() -= sizeH.height() / 2;

@@ -50,6 +50,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiTest.h"
 #include "Gui/NodeGui.h"
 
 #include "Global/QtCompat.h"
@@ -393,7 +394,7 @@ NodeGraph::onAutoScrollTimerTriggered()
     bool isAutoScrollEnabled = appPTR->getCurrentSettings()->isAutoScrollEnabled();
 
     if (isAutoScrollEnabled) {
-        QPointF cursorPos = mapToScene( mapFromGlobal( QCursor::pos() ) );
+        QPointF cursorPos = mapToScene( mapFromGlobal( GuiTest::cursorPos() ) );
         scrollViewIfNeeded(cursorPos);
     }
 }

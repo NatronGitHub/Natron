@@ -41,6 +41,7 @@
 #include <QtCore/QTimer>
 #include <QAction>
 #include <QApplication>
+#include <QCursor>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QGraphicsView>
@@ -89,6 +90,7 @@ struct GuiTestState
     std::vector<DialogRecord> dialogs;
     int unexpectedDialogs; // dialogs that the test did not answer
     Qt::MouseButtons pressedButtons;
+    QPoint cursorPos; // global position of the last synthetic pen event (cursorPos())
     QPointer<QWidget> hovered; // the widget of the last synthetic pen event (for Enter/Leave)
 
     GuiTestState()
@@ -96,6 +98,7 @@ struct GuiTestState
         , dialogs()
         , unexpectedDialogs(0)
         , pressedButtons(Qt::NoButton)
+        , cursorPos()
         , hovered()
     {
     }
@@ -657,6 +660,8 @@ py_penEvent(PyObject* /*self*/,
         return 0;
     }
     const QPoint global = w->mapToGlobal( pos.toPoint() );
+    // the substitute of QCursor::pos() in test mode
+    state().cursorPos = global;
     updateHovered(w, pos);
     QMouseEvent e( evType, pos, QPointF(global), button, pressed, mods );
     QCoreApplication::sendEvent(w, &e);
@@ -1046,6 +1051,16 @@ runTestScript(const QString& path)
 } // anonymous namespace
 
 namespace GuiTest {
+QPoint
+cursorPos()
+{
+    if ( appPTR && appPTR->isTestMode() ) {
+        return state().cursorPos;
+    }
+
+    return QCursor::pos();
+}
+
 void
 install()
 {

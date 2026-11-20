@@ -72,6 +72,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiApplicationManager.h" // isMouseShortcut
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h" // buttonDownIsLeft...
+#include "Gui/GuiTest.h"
 #include "Gui/Histogram.h"
 #include "Gui/InfoViewerWidget.h"
 #include "Gui/Menu.h"
@@ -592,7 +593,7 @@ ViewerGL::toggleWipe()
 void
 ViewerGL::centerWipe()
 {
-    QPoint pos = mapFromGlobal( QCursor::pos() );
+    QPoint pos = mapFromGlobal( GuiTest::cursorPos() );
     int x = pos.x();
     int y = pos.y();
 
@@ -2720,16 +2721,16 @@ ViewerGL::updateColorPicker(int textureIndex,
     QPointF imgPosCanonical;
     if (!xInitialized || !yInitialized) {
         if ( !_imp->viewerTab->isViewersSynchroEnabled() ) {
-            pos = mapFromGlobal( QCursor::pos() );
+            pos = mapFromGlobal( GuiTest::cursorPos() );
             QMutexLocker l(&_imp->zoomCtxMutex);
             imgPosCanonical = _imp->zoomCtx.toZoomCoordinates( pos.x(), pos.y() );
         } else {
             ViewerTab* masterViewer = getViewerTab()->getGui()->getMasterSyncViewer();
             if (masterViewer) {
-                pos = masterViewer->getViewer()->mapFromGlobal( QCursor::pos() );
+                pos = masterViewer->getViewer()->mapFromGlobal( GuiTest::cursorPos() );
                 imgPosCanonical = masterViewer->getViewer()->toZoomCoordinates(pos);
             } else {
-                pos = mapFromGlobal( QCursor::pos() );
+                pos = mapFromGlobal( GuiTest::cursorPos() );
                 QMutexLocker l(&_imp->zoomCtxMutex);
                 imgPosCanonical = _imp->zoomCtx.toZoomCoordinates( pos.x(), pos.y() );
             }
@@ -3542,7 +3543,7 @@ void
 ViewerGL::getCursorPosition(double &x,
                             double &y) const
 {
-    QPoint p = QCursor::pos();
+    QPoint p = GuiTest::cursorPos();
 
     p = mapFromGlobal(p);
     QPointF mappedPos = toZoomCoordinates(p);

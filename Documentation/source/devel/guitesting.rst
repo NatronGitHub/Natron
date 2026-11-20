@@ -245,7 +245,9 @@ synthetic Qt events to the widgets; the real mouse cursor and the keyboard are n
    ``"none"``; *modifiers* is a ``+``-separated list of ``Shift``, ``Ctrl``, ``Alt`` and ``Meta``
    (``Ctrl`` is the Command key on macOS, as in Natron's shortcuts). A move has the buttons pressed by
    the previous press events. The widget gets *Enter* and *Leave* events as the pointer moves from a
-   widget to another.
+   widget to another. In test mode, the position of the last pen event is also the position of the
+   cursor for the code that works at the cursor (a node created in the node graph, a zoom with the
+   keyboard, a menu), which never reads the real cursor.
 
 .. function:: drag(target, x0, y0, x1, y1, steps=10, button='left', modifiers='')
 
