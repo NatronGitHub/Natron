@@ -1,0 +1,91 @@
+# Maintainer: The Natron developers
+# Based on MSYS2's mingw-w64-libtiff (Alexey Pavlov, Renato Silva)
+
+# libtiff for COMMERCIAL builds. MSYS2's libtiff is built with --enable-jbig
+# and links JBIG-KIT (libjbig), which is GPL-2.0-or-later, so it can't be
+# shipped in a COMMERCIAL build. This is the same version and configuration as
+# MSYS2's libtiff, without JBIG: the other codecs are kept, since their
+# licences allow it (LERC: Apache-2.0, libdeflate: MIT, xz/lzma: 0BSD,
+# zstd and libwebp: BSD, libjpeg-turbo: BSD-style). JBIG-compressed TIFF files
+# (very rare, black-and-white fax images) can't be read or written. Only the
+# shared library, no C++ library, no documentation. Installed in the private
+# prefix ${MINGW_PREFIX}/libtiff-lgpl, so that it doesn't clash with MSYS2's
+# libtiff: it has the same DLL name (libtiff-6.dll) and the same ABI, and
+# COMMERCIAL installers bundle it instead of MSYS2's
+# (tools/jenkins/genDllVersions.sh), which natron_openimageio, ImageMagick,
+# Qt's qtiff plug-in and tiffinfo link. Keep pkgver equal to MSYS2's libtiff
+# version: genDllVersions.sh checks it. (The libtiff licence itself is MIT-like;
+# "-lgpl" only means "for COMMERCIAL builds", as for the other packages.)
+# TODO(#1494): a CLANGARM64 build needs MSYS2's prepare() (autoreconf -fiv, for
+# the clang support in libtool) and 'clangarm64' in mingw_arch.
+
+_realname=libtiff
+pkgbase="mingw-w64-natron_${_realname}-lgpl"
+pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}-lgpl"
+pkgver=4.7.2
+pkgrel=1
+pkgdesc="Library for manipulation of TIFF images, without the GPL JBIG-KIT, for Natron COMMERCIAL builds (mingw-w64)"
+arch=('any')
+mingw_arch=('ucrt64')
+url="https://libtiff.gitlab.io/libtiff/"
+license=('spdx:MIT')
+depends=("${MINGW_PACKAGE_PREFIX}-cc-libs"
+         "${MINGW_PACKAGE_PREFIX}-lerc"
+         "${MINGW_PACKAGE_PREFIX}-libjpeg-turbo"
+         "${MINGW_PACKAGE_PREFIX}-libdeflate"
+         "${MINGW_PACKAGE_PREFIX}-libwebp"
+         "${MINGW_PACKAGE_PREFIX}-xz"
+         "${MINGW_PACKAGE_PREFIX}-zlib"
+         "${MINGW_PACKAGE_PREFIX}-zstd")
+makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
+             "${MINGW_PACKAGE_PREFIX}-autotools")
+source=("https://download.osgeo.org/libtiff/tiff-${pkgver}.tar.gz")
+sha256sums=('672bd7d10aee4606171afb864f3570b83340f6a33e2c186dc0512f7145ffdf6a')
+
+build() {
+  export CFLAGS+=" -fno-strict-aliasing"
+  export CXXFLAGS+=" -fno-strict-aliasing"
+
+  mkdir -p "${srcdir}/build-${MSYSTEM}" && cd "${srcdir}/build-${MSYSTEM}"
+
+  ../tiff-${pkgver}/configure \
+    --prefix=${MINGW_PREFIX}/libtiff-lgpl \
+    --disable-static \
+    --enable-shared \
+    --disable-cxx \
+    --disable-jbig \
+    --enable-lerc \
+    --enable-libdeflate \
+    --enable-webp \
+    --disable-docs \
+    --disable-tools \
+    --disable-tests \
+    --disable-contrib
+
+  make
+}
+
+check() {
+  cd "${srcdir}/build-${MSYSTEM}"
+  # COMMERCIAL builds must not ship GPL code: no JBIG-KIT
+  local dll
+  dll=$(find . -name 'libtiff-*.dll' | head -n 1)
+  [[ -n "${dll}" ]] || { echo "Error: libtiff DLL not found"; return 1; }
+  objdump -p "${dll}" | grep 'DLL Name'
+  if objdump -p "${dll}" | grep -i -E 'DLL Name: *libjbig'; then
+    echo "Error: ${dll} links JBIG-KIT (GPL)"
+    return 1
+  fi
+  if grep -q -E '^#define JBIG_SUPPORT' libtiff/tiffconf.h; then
+    echo "Error: libtiff is configured with JBIG"
+    return 1
+  fi
+}
+
+package() {
+  cd "${srcdir}/build-${MSYSTEM}"
+
+  make DESTDIR="${pkgdir}" install
+
+  install -Dm644 "${srcdir}/tiff-${pkgver}/LICENSE.md" "${pkgdir}${MINGW_PREFIX}/libtiff-lgpl/share/licenses/${_realname}/LICENSE.md"
+}

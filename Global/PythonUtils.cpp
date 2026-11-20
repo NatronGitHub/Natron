@@ -193,8 +193,6 @@ std::wstring setupPythonEnv(const std::string& binPath)
 
 #if defined(__NATRON_OSX__) && defined DEBUG
     // in debug mode, also prepend the local PySide directory
-    // homebrew's pyside directory
-    toPrepend.push_back("/usr/local/Cellar/pyside@1.2/1.2.2_2/lib/python" NATRON_PY_VERSION_STRING "/site-packages");
     // macport's pyside directory
     toPrepend.push_back("/opt/local/Library/Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING "/site-packages");
 #endif
