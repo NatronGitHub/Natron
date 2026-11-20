@@ -29,6 +29,8 @@
 #include <gtest/gtest.h>
 
 #include "Engine/Hash64.h"
+#include "Engine/ImagePlaneDesc.h"
+#include "Engine/PyNode.h" // ImageLayer
 
 NATRON_NAMESPACE_USING
 
@@ -91,3 +93,18 @@ TEST(Hash64,
     EXPECT_NE(hash1, hash2);
 } // TEST
 
+
+// Python ImageLayer.getHash() returned 0, because the hash was read before being computed (#1275).
+TEST(Hash64,
+     ImageLayerGetHash)
+{
+    typedef NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::ImageLayer ImageLayer;
+    ImageLayer rgba( ImagePlaneDesc::getRGBAComponents() );
+    ImageLayer rgbaCopy( ImagePlaneDesc::getRGBAComponents() );
+    ImageLayer rgb( ImagePlaneDesc::getRGBComponents() );
+
+    EXPECT_NE( 0, ImageLayer::getHash(rgba) );
+    EXPECT_NE( 0, ImageLayer::getHash(rgb) );
+    EXPECT_EQ( ImageLayer::getHash(rgba), ImageLayer::getHash(rgbaCopy) );
+    EXPECT_NE( ImageLayer::getHash(rgba), ImageLayer::getHash(rgb) );
+}

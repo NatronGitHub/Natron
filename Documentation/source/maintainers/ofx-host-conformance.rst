@@ -127,9 +127,9 @@ interacts page does not count the rows describing pull request #1349.
      - 0
    * - :ref:`Parameters <ofx-host-conformance-params>`
      - 105
-     - 71
-     - 18
-     - 10
+     - 75
+     - 16
+     - 8
      - 0
      - 4
      - 2
@@ -143,17 +143,17 @@ interacts page does not count the rows describing pull request #1349.
      - 0
    * - :ref:`Interacts, GPU, colour, packaging <ofx-host-conformance-interact-gpu-packaging>`
      - 72
-     - 40
+     - 42
      - 13
-     - 7
+     - 5
      - 4
      - 8
      - 0
    * - **Total**
      - 387
-     - 250
-     - 68
-     - 38
+     - 256
+     - 66
+     - 34
      - 7
      - 21
      - 2
