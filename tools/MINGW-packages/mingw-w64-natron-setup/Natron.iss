@@ -1,15 +1,6 @@
 ; NATRON WINDOWS INSTALLER
 ; Bump the pkgrel of PKGBUILD with every change of this file.
 
-#define MyAppName "Natron"
-#define MyAppPublisher "The Natron developers"
-#define MyAppURL "https://natrongithub.github.io"
-#define MyAppURLSupport "https://github.com/NatronGitHub/Natron/issues"
-#define MyAppURLUpdates "https://github.com/NatronGitHub/Natron/releases"
-#define MyAppExeName "Natron.exe"
-#define MyAppAssocName MyAppName + " Project"
-#define MyAppAssocExt ".ntp"
-#define MyAppAssocKey StringChange(MyAppAssocName, " ", "") + MyAppAssocExt
 ; The architecture of the Natron build that this Setup.exe installs: x64 (MSYS2 UCRT64), or arm64
 ; (MSYS2 CLANGARM64, #1494). The PKGBUILD passes /DNatronArch=arm64 for CLANGARM64.
 #ifndef NatronArch
@@ -18,9 +9,34 @@
 #if NatronArch != "x64" && NatronArch != "arm64"
   #error NatronArch must be x64 or arm64
 #endif
+#if NatronArch == "arm64"
+; The ARM64 Natron is a separate application, installed side by side with an x64 one: its own AppId,
+; name, folder, Start menu group, desktop icon and file-type ProgID. The x64 Setup.exe installs in
+; 32-bit mode (its uninstall key is in the 32-bit registry view) while the ARM64 one installs in
+; 64-bit mode, so with a shared AppId neither would find the other's installation: both would go to
+; Program Files\Natron, with two uninstall entries for the same files. The x64 values are unchanged.
+  #define MyAppId "{{7681096C-D482-4BD1-ADD2-CA824D32EEE2}"
+  #define MyAppName "Natron (ARM64)"
+#else
+  #define MyAppId "{{B1D54C04-B15B-4015-831A-CA5DACA60BD0}"
+  #define MyAppName "Natron"
+#endif
+#define MyAppPublisher "The Natron developers"
+#define MyAppURL "https://natrongithub.github.io"
+#define MyAppURLSupport "https://github.com/NatronGitHub/Natron/issues"
+#define MyAppURLUpdates "https://github.com/NatronGitHub/Natron/releases"
+#define MyAppExeName "Natron.exe"
+#define MyAppAssocName MyAppName + " Project"
+#define MyAppAssocExt ".ntp"
+#if NatronArch == "arm64"
+; a ProgID has no spaces or parentheses
+  #define MyAppAssocKey "NatronProjectARM64" + MyAppAssocExt
+#else
+  #define MyAppAssocKey StringChange(MyAppAssocName, " ", "") + MyAppAssocExt
+#endif
 
 [Setup]
-AppId={{B1D54C04-B15B-4015-831A-CA5DACA60BD0}
+AppId={#MyAppId}
 AppName={#MyAppName}
 AppVerName={#MyAppName}
 AppPublisher={#MyAppPublisher}
