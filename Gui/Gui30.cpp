@@ -329,6 +329,27 @@ Gui::onDoDialog(int type,
                 StandardButtons buttons,
                 int defaultB)
 {
+    // A dialog shown during a busy operation (e.g. a save error under the wait cursor) gets the normal cursor
+    class DialogCursor
+    {
+        bool _set;
+
+    public:
+        DialogCursor()
+            : _set(QApplication::overrideCursor() != 0)
+        {
+            if (_set) {
+                QApplication::setOverrideCursor(Qt::ArrowCursor);
+            }
+        }
+
+        ~DialogCursor()
+        {
+            if (_set) {
+                QApplication::restoreOverrideCursor();
+            }
+        }
+    } dialogCursor;
     QWidget* currentActiveWindow = qApp->activeWindow();
     QDialog* isActiveWindowADialog = 0;
 
