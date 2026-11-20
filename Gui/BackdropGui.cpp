@@ -182,7 +182,9 @@ BackdropGuiPrivate::refreshLabelText(int nameHeight,
     label->setHtml(textLabel);
 
 
-    QRectF bbox = _publicInterface->boundingRect();
+    // getSize(), not boundingRect(), which includes the outline pen width: the backdrop would grow
+    // at each label change (#1071)
+    QSizeF bbox = _publicInterface->getSize();
 
     //label->adjustSize();
     int w = std::max( bbox.width(), label->textWidth() * 1.2 );
