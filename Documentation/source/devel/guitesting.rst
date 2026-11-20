@@ -191,7 +191,9 @@ The test mode does not isolate everything:
   unless ``NATRON_DISK_CACHE_PATH`` is set (``ctest`` sets it to the build tree);
 - a test that opens a project file, and is ended by the watchdog or a crash, leaves that project's
   ``.lock`` file: give the tests copies of the projects;
-- ``NATRON_TEST_NO_FOCUS=0`` (set explicitly) lets the windows take the focus.
+- ``NATRON_TEST_NO_FOCUS=0`` (set explicitly) lets the windows take the focus;
+- debug builds do not trap floating point exceptions in test mode: the OpenGL driver's threads (e.g.
+  Mesa llvmpipe's, under Xvfb) inherit the trapping, and their shaders raise exceptions.
 
 A test script runs from the event loop, once the main window is shown: it needs no timer, and
 Natron quits when the script returns, as with
