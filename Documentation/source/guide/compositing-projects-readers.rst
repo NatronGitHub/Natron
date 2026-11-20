@@ -326,7 +326,10 @@ replaces with the frame number and the view name:
 ``#``
     One ``#`` per digit of the frame number: ``shot.####.exr`` is
     ``shot.0001.exr``, ``shot.0002.exr``, ... For Write nodes, the frame number
-    is padded with zeros to that number of digits.
+    is padded with zeros to that number of digits. Negative frames are written
+    as ``printf`` does, with the ``-`` counted in the width: frame -5 is
+    ``shot.-005.exr`` (Natron 2.5 and older wrote ``shot.00-5.exr``), and a
+    ``-`` right before the pattern is read as the sign of the frame number.
 
 ``%04d``
     The same in ``printf`` notation: ``shot.%04d.exr`` is the same as
@@ -338,6 +341,10 @@ replaces with the frame number and the view name:
 
 ``%v``
     The first letter of the view name, in upper case (``L`` and ``R``).
+
+When reading, the view patterns ignore case: ``%v`` matches ``l`` and ``L``,
+``%V`` matches ``left`` and ``Left`` (and ``view2``, ``view3``, ... for other
+views).
 
 When the file name of a Write node has no frame number pattern, every frame is
 written to the same file, and each one replaces the previous one. This is only
