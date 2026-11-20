@@ -55,33 +55,31 @@ exits with 0 on success and 1 on failure. It needs the openfx-io and openfx-misc
     IMAGE = "/path/to/image.png"
     OUT = "/tmp"
 
-    def test():
-        read = app.createNode("fr.inria.built-in.Read")
-        read.getParam("filename").set(IMAGE)
-        transform = app.createNode("net.sf.openfx.TransformPlugin")
-        transform.connectInput(0, read)
-        viewerNode = app.createNode("fr.inria.built-in.Viewer")  # Viewer1
-        viewerNode.connectInput(0, transform)
-        app.getViewer("Viewer1").renderCurrentFrame(True)
+    def setUp():
+        try:
+            read = app.createNode("fr.inria.built-in.Read")
+            read.getParam("filename").set(IMAGE)
+            transform = app.createNode("net.sf.openfx.TransformPlugin")
+            transform.connectInput(0, read)
+            viewerNode = app.createNode("fr.inria.built-in.Viewer")  # Viewer1
+            viewerNode.connectInput(0, transform)
+            app.getViewer("Viewer1").renderCurrentFrame(True)
+        except Exception:
+            natron.quit(1)
+            return
+        # let the viewer render and redraw, then check
+        QtCore.QTimer.singleShot(3000, check)
 
-        # let the viewer render and redraw
-        timer = QtCore.QElapsedTimer()
-        timer.start()
-        while timer.elapsed() < 3000:
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents, 50)
-
-        ok = app.saveScreenshot(OUT + "/mainWindow.png")
-        ok = app.saveScreenshot(OUT + "/Viewer1.png", "Viewer1") and ok
-        return 0 if ok else 1
-
-    def main():
+    def check():
         status = 1
         try:
-            status = test()
+            ok = app.saveScreenshot(OUT + "/mainWindow.png")
+            ok = app.saveScreenshot(OUT + "/Viewer1.png", "Viewer1") and ok
+            status = 0 if ok else 1
         finally:
-            natron.quit(status)
+            natron.quit(status)  # the last call of the callback
 
-    QtCore.QTimer.singleShot(500, main)
+    QtCore.QTimer.singleShot(500, setUp)
 
 Run it and check the exit status::
 
@@ -111,8 +109,12 @@ Tips
   script, a timer or a GUI callback. In render threads (e.g. the *afterFrameRender* callback)
   it does nothing and returns False.
 - :meth:`natron.quit()<NatronEngine.PyCoreApplication.quit>` removes the auto-saves of the
-  projects, and it waits until Natron has finished loading and no nested event loop of
-  Natron (e.g. a modal dialog) is running, so it can be called from anywhere in the script.
+  projects, and it waits until Natron has finished loading, no nested event loop of Natron (e.g. a
+  modal dialog) is running and no project is being saved. Make it the last call of the callback:
+  the projects may be closed as soon as the event loop runs, e.g. during a loop that calls PySide's
+  ``QCoreApplication.processEvents()``, which Natron doesn't know about. For the same reason, a
+  request to close the main window during such a loop is not deferred: wait with timers
+  (``QTimer.singleShot()``), as in the example above, rather than with such loops.
 - In the GUI, the output of the script (``print``) goes to the Script Editor. To see it in the
   terminal, write to ``sys.__stderr__``.
 - With some OpenFX plug-ins, Natron may crash at exit, after the projects were closed, which

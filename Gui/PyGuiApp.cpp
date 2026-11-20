@@ -56,7 +56,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/PythonPanels.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/TabWidget.h"
-#include "Gui/ViewerGL.h"
+#include "Gui/ViewerGL.h" // includes glad before QOpenGLWidget
 #include "Gui/ViewerTab.h"
 
 NATRON_NAMESPACE_ENTER

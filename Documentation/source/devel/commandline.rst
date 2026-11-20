@@ -86,14 +86,17 @@ General options
 
    Do not show the message and question dialogs: errors, warnings, questions and the startup
    prompts. Each dialog is printed to the standard error as ``[dialog dismissed] <title>: <message>``
-   and counts as dismissed. The answers never block and never destroy data:
+   and counts as dismissed. This option is meant for scripts only, not for an interactive session:
+   the answers never block and never delete or overwrite a file, but unsaved changes are discarded
+   when the project is closed, without warning:
 
    - a question returns its default button, as if Enter was pressed, or the button Escape would
      pick if there is no default button (Cancel, Close, Abort or No). The "Do not show this
      again" answers are not saved;
-   - "Save changes to <project>?", when closing or quitting, is answered **Discard**: the
-     default, Save, would open the Save As file dialog for an untitled project. Save the project
-     from the script if needed, e.g. with :meth:`app.saveProjectAs(filename)<NatronEngine.App.saveProjectAs>`;
+   - "Save changes to <project>?", when closing or quitting, is answered **Discard**, so the
+     unsaved changes are lost (the default, Save, would open the Save As file dialog for an
+     untitled project). Save the project from the script if needed, e.g. with
+     :meth:`app.saveProjectAs(filename)<NatronEngine.App.saveProjectAs>`;
    - the file dialogs opened by Natron (Open, Save As, the file of a new Read or Write node) and
      by :doc:`GuiApp<PythonReference/NatronGui/GuiApp>` (:meth:`getFilenameDialog<NatronGui.GuiApp.getFilenameDialog>`,
      :meth:`getRGBColorDialog<NatronGui.GuiApp.getRGBColorDialog>`...) count as cancelled;
@@ -118,8 +121,9 @@ General options
    for this session, and the questions about the new appearance or shortcuts are asked again at the
    next launch.
 
-   The main window is shown without taking the focus. This is meant to drive the graphical
-   interface from scripts and tests, see :ref:`guiTesting`. In background mode (NatronRenderer,
+   As a project that has an auto-save is not auto-saved during the session (see above), a crash
+   loses the changes made in that session. The main window is shown without taking the focus.
+   This is meant to drive the graphical interface from scripts, see :ref:`guiTesting`. In background mode (NatronRenderer,
    :option:`-b` or :option:`-t`), where dialogs are never shown, the questions are then also
    answered with their default button, instead of *Yes*.
 .. option:: --test <script.py>

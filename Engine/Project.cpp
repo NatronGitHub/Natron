@@ -2109,8 +2109,25 @@ Project::stopAutoSave()
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->autoSaveTimer->stop();
-    for (std::list<std::shared_ptr<QFutureWatcher<void> > >::iterator it = _imp->autoSaveFutures.begin(); it != _imp->autoSaveFutures.end(); ++it) {
-        (*it)->waitForFinished();
+    // A copy: onAutoSaveFutureFinished() removes the finished ones from the list while the events are processed.
+    const std::list<std::shared_ptr<QFutureWatcher<void> > > futures = _imp->autoSaveFutures;
+    if ( futures.empty() ) {
+        return;
+    }
+    // As saveProject_imp() waits for an auto-save (#825): the auto-save may need the main thread (e.g. its
+    // beforeProjectSave or onProjectSave callback shows a dialog) and the Python lock. Serve the events,
+    // but not user input.
+    std::unique_ptr<PythonGILUnlocker> gilUnlocker;
+    if ( Py_IsInitialized() && PyGILState_Check() ) {
+        gilUnlocker.reset(new PythonGILUnlocker);
+    }
+    for (std::list<std::shared_ptr<QFutureWatcher<void> > >::const_iterator it = futures.begin(); it != futures.end(); ++it) {
+        while ( !(*it)->isFinished() ) {
+            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents, 50);
+            if ( !(*it)->isFinished() ) {
+                QThread::msleep(10); // processEvents() returns at once when there is no event
+            }
+        }
     }
 }
 

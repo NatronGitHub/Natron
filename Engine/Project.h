@@ -276,6 +276,8 @@ public:
     /**
      * @brief Stops the pending auto-save and waits for the one in progress, if any, so that
      * no auto-save is written afterwards (e.g. before removeLastAutosave() when quitting).
+     * While it waits, it processes the events except user input (the auto-save may need the main
+     * thread), as saveProject_imp() does.
      **/
     void stopAutoSave();
 

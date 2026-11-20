@@ -351,9 +351,11 @@ public:
     bool isPythonInterpreterRunning() const;
 
     /**
-     * @brief Declares a nested event loop (QEventLoop::exec(), processEvents()...) for its
-     * lifetime. natron.quit() waits until there is none to close the projects,
-     * because the code that runs the nested loop would use the deleted objects afterwards.
+     * @brief Declares a nested event loop (e.g. the QEventLoop of checkForNewVersion()) for its
+     * lifetime. natron.quit() and the main window's close requests wait until there is none to
+     * close the projects, because the code that runs the nested loop would use the deleted objects
+     * afterwards. A loop that Python runs (QCoreApplication.processEvents() from PySide) is not
+     * declared.
      **/
     class NestedEventLoopRAII
     {
