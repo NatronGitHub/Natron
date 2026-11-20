@@ -233,6 +233,12 @@ static ActiveRegion *AddRegionBelow( GLUtesselator *tess,
   regNew->fixUpperEdge = FALSE;
   regNew->sentinel = FALSE;
   regNew->dirty = FALSE;
+  /* Natron: AddRightEdges() sets these, but on degenerate input its walk can
+   * stop before it reaches every new region, which then kept uninitialized
+   * values (the tessellation depended on the heap contents).
+   */
+  regNew->windingNumber = 0;
+  regNew->inside = FALSE;
 
   eNewUp->activeRegion = regNew;
   return regNew;
