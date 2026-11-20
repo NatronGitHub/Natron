@@ -2841,7 +2841,7 @@ KnobHelper::setExpressionInvalid(int dimension,
                 QMutexLocker k(&_imp->expressionMutex);
                 for (int i = 0; i < ndims; ++i) {
                     if (i != dimension) {
-                        if ( !_imp->expressions[dimension].exprInvalid.empty() ) {
+                        if ( !_imp->expressions[i].exprInvalid.empty() ) {
                             haveOtherExprInvalid = true;
                             break;
                         }
