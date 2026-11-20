@@ -2,6 +2,8 @@
 #ifndef FLOATING_POINT_EXCEPTIONS_H
 #define FLOATING_POINT_EXCEPTIONS_H
 
+#include <atomic>
+
 #ifdef __GNUC__
 #include <fenv.h>
 #ifdef __SSE2__
@@ -109,6 +111,14 @@ namespace boost_adaptbx { namespace floating_point {
     #endif
   }
 
+  /** Natron addition: when true, exception_trapping does not trap (it still restores the trapping on
+      exit). Set once, before the threads start, e.g. in the GUI test mode (see AppManager::loadFromArgs()).
+   */
+  inline std::atomic<bool>& trapping_disabled() {
+    static std::atomic<bool> disabled(false);
+    return disabled;
+  }
+
   class exception_trapping
   {
     private:
@@ -122,9 +132,9 @@ namespace boost_adaptbx { namespace floating_point {
         : division_by_zero_on_entry(is_division_by_zero_trapped()),
           invalid_on_entry(is_invalid_trapped()),
           overflow_on_entry(is_overflow_trapped()),
-          division_by_zero_(flag & division_by_zero),
-          invalid_(flag & invalid),
-          overflow_(flag & overflow)
+          division_by_zero_( (flag & division_by_zero) && !trapping_disabled() ),
+          invalid_( (flag & invalid) && !trapping_disabled() ),
+          overflow_( (flag & overflow) && !trapping_disabled() )
       {
         trap_exceptions(division_by_zero_, invalid_, overflow_);
       }
