@@ -65,6 +65,8 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/DocumentationGroups.h"
 #include "Engine/ProjectSerialization.h"
 #include "Engine/Node.h"
+#include "Engine/OutputEffectInstance.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
@@ -2106,6 +2108,37 @@ AppInstance::aboutToQuit()
     _imp->_currentProject->reset(true /*aboutToQuit*/, /*blocking*/true);
 }
 
+bool
+AppInstance::hasRenderInProgress() const
+{
+    {
+        QMutexLocker k(&_imp->renderQueueMutex);
+        if ( !_imp->activeRenders.empty() || !_imp->renderQueue.empty() ) {
+            return true;
+        }
+    }
+    ProjectPtr project = getProject();
+    if (!project) {
+        return false;
+    }
+    NodesList nodes;
+    project->getNodes_recursive(nodes, true /*onlyActive*/);
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ( (*it)->isNodeRendering() || (*it)->isRenderingPreview() ) {
+            return true;
+        }
+        OutputEffectInstance* output = dynamic_cast<OutputEffectInstance*>( (*it)->getEffectInstance().get() );
+        if (output) {
+            RenderEnginePtr engine = output->getRenderEngine();
+            if ( engine && engine->hasThreadsWorking() ) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 void
 AppInstance::quit()
 {
@@ -2384,11 +2417,25 @@ AppInstance::addInvalidExpressionKnob(const KnobIPtr& knob)
     QMutexLocker k(&_imp->invalidExprKnobsMutex);
 
     for (std::list<KnobIWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
-        if ( it->lock().get() ) {
+        if (it->lock() == knob) {
             return;
         }
     }
     _imp->invalidExprKnobs.push_back(knob);
+}
+
+bool
+AppInstance::isInvalidExpressionKnob(const KnobI* knob) const
+{
+    QMutexLocker k(&_imp->invalidExprKnobsMutex);
+
+    for (std::list<KnobIWPtr>::const_iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
+        if (it->lock().get() == knob) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void
