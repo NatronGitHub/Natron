@@ -48,6 +48,7 @@
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
+#include "Gui/GuiAppInstance.h"
 #include "Gui/Button.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
