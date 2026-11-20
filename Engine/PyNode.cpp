@@ -81,6 +81,8 @@ ImageLayer::getHash(const ImageLayer& layer)
     for (std::size_t i = 0; i < comps.size(); ++i) {
         Hash64_appendQString( &h, QString::fromUtf8( comps[i].c_str() ) );
     }
+    // value() is 0 until the appended data is hashed (#1275)
+    h.computeHash();
 
     return (int)h.value();
 }
