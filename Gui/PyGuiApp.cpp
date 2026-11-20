@@ -246,7 +246,8 @@ GuiApp::saveFilenameDialog(const QStringList& filters,
     std::vector<std::string> f;
 
     for (QStringList::const_iterator it = filters.begin(); it != filters.end(); ++it) {
-        f.push_back( it->toStdString() );
+        // The dialog wants extensions ("txt"); "*.txt" would give "name.*.txt" (#825)
+        f.push_back( ( it->startsWith( QString::fromUtf8("*.") ) ? it->mid(2) : *it ).toStdString() );
     }
     SequenceFileDialog dialog(gui,
                               f,
@@ -278,7 +279,8 @@ GuiApp::saveSequenceDialog(const QStringList& filters,
     std::vector<std::string> f;
 
     for (QStringList::const_iterator it = filters.begin(); it != filters.end(); ++it) {
-        f.push_back( it->toStdString() );
+        // The dialog wants extensions ("txt"); "*.txt" would give "name.*.txt" (#825)
+        f.push_back( ( it->startsWith( QString::fromUtf8("*.") ) ? it->mid(2) : *it ).toStdString() );
     }
     SequenceFileDialog dialog(gui,
                               f,

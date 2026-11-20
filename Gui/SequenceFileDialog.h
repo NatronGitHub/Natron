@@ -323,7 +323,7 @@ public:
     ///Works only in eFileDialogModeOpen mode.
     std::string selectedFiles();
 
-    ///Returns the content of the selection line edit, without what follows the extension, made absolute
+    ///Returns the content of the selection line edit, without a sequence's frame range, made absolute
     ///against currentDirectory() if it is relative, then remapped as absoluteFilePathInCurrentDirectory() does (#825).
     ///Works only in eFileDialogModeSave mode.
     std::string filesToSave();
@@ -450,6 +450,10 @@ private:
     bool sequenceModeEnabled() const;
 
     bool isDirectory(const QString & name) const;
+
+    ///Returns text without the frame range that the dialog may show after the extension of a sequence
+    ///(FileSystemModel::removeTextAfterExtension()), only in sequence mode with an extension filter (#825)
+    QString removeFrameRange(const QString& text) const;
 
     ///Returns filePath made absolute against the current directory (the home directory at the "Computer"
     ///level) if it is relative. If it was resolved and relative paths are allowed, it is then made relative to

@@ -259,7 +259,7 @@ public:
     /**
      * @brief Returns filePath with "." + extension appended, unless the suffix of its last path
      * component (after the last dot, compared case-insensitively) is extension or one of
-     * acceptedExtensions: "comp.v003" -> "comp.v003.ntp", "comp.NTP" is unchanged. Separators are
+     * acceptedExtensions: "comp.v003" -> "comp.v003.ntp", "comp." -> "comp.ntp", "comp.NTP" is unchanged. Separators are
      * '/' and, on Windows, '\\'. Unchanged if extension is empty or "*", or if filePath is empty or
      * ends with a separator.
      **/

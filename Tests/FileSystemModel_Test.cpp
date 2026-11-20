@@ -368,6 +368,8 @@ TEST(FileSystemModelTest, AddFileExtension) {
       {"comp", "ntp", "comp.ntp"},
       {"comp.v003", "ntp", "comp.v003.ntp"},
       {"/dir/comp.v003", "ntp", "/dir/comp.v003.ntp"},
+      {"comp.", "ntp", "comp.ntp"},
+      {"/dir/comp.", "ntp", "/dir/comp.ntp"},
       {"comp.ntp", "ntp", "comp.ntp"},
       {"comp.NTP", "ntp", "comp.NTP"},
       {"/data/a.b/out", "exr", "/data/a.b/out.exr"},

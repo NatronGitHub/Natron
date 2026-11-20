@@ -1390,7 +1390,7 @@ SequenceFileDialog::openSelectedFiles()
                 // filters, e.g. "comp.v003" -> "comp.v003.ntp", so that the check below sees the file
                 // that the caller writes (Save Project and Export layout append it otherwise) (#825)
                 {
-                    const QString name = FileSystemModel::removeTextAfterExtension(str);
+                    const QString name = removeFrameRange(str);
                     const QString withExt = FileSystemModel::addFileExtension(name, _fileExtensionCombo->getCurrentIndexText(), _filters);
                     if (withExt != name) {
                         str = withExt;
@@ -1713,7 +1713,7 @@ SequenceFileDialog::filesToSave()
     assert(_dialogMode == eFileDialogModeSave);
     // Remove everything after the extension which we might have added on the line edit, then save a bare
     // file name in the directory shown by the dialog, not in the working directory of the process (#825)
-    QString ret = absoluteFilePathInCurrentDirectory( FileSystemModel::removeTextAfterExtension( _selectionLineEdit->text() ) );
+    QString ret = absoluteFilePathInCurrentDirectory( removeFrameRange( _selectionLineEdit->text() ) );
 
 #ifdef __NATRON_WIN32__
     if (appPTR->getCurrentSettings()->isDriveLetterToUNCPathConversionEnabled()) {
@@ -1722,6 +1722,17 @@ SequenceFileDialog::filesToSave()
 #endif
 
     return ret.toStdString();
+}
+
+QString
+SequenceFileDialog::removeFrameRange(const QString& text) const
+{
+    // Only a sequence can show a frame range: elsewhere "notes.v2 1-3" is a name
+    if ( !sequenceModeEnabled() || ( _fileExtensionCombo->getCurrentIndexText() == QString::fromUtf8("*") ) ) {
+        return text;
+    }
+
+    return FileSystemModel::removeTextAfterExtension(text);
 }
 
 QString

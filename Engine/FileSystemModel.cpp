@@ -782,6 +782,11 @@ FileSystemModel::addFileExtension(const QString& filePath,
         }
     }
 
+    if ( filePath.endsWith( QLatin1Char('.') ) ) {
+        // "comp." -> "comp.ntp"
+        return filePath + extension;
+    }
+
     return filePath + QLatin1Char('.') + extension;
 }
 
