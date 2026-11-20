@@ -273,13 +273,51 @@ Exit status
 -----------
 
 NatronRenderer exits with status 0 when it succeeds (and after :option:`-h` or :option:`-v`),
-and with status 1 when the command line is wrong, or when the project can't be loaded
-(for example when a node given to :option:`-w` or :option:`-i` doesn't exist).
+and with status 1 when the command line is wrong, when the project can't be loaded
+(for example when a node given to :option:`-w` or :option:`-i` doesn't exist), or when a
+Python script raises an exception: Natron prints the error, and the Write nodes (those given
+with :option:`-w`, or all the Write nodes of the graph) are not rendered. Renders that the
+script started itself with :func:`app.render()<NatronEngine.App.render>` before the error
+have already run. This applies to:
 
-A Python error in the script does **not** set status 1: Natron prints the error and goes on, and
-if the script created a Write node before the error, that Write node is still rendered
-(`issue #1276 <https://github.com/NatronGitHub/Natron/issues/1276>`_). Check the output for
-Python errors and for errors that happen while frames are rendered.
+- the Python script given on the command line, including an exception raised by its
+  ``createInstance()`` function;
+- the :option:`--onload` script, also when it runs after a project (``.ntp``) that
+  loaded without error: a failing :option:`--onload` script stops the render of the project.
+
+A script can also call ``sys.exit(status)`` to exit with its own status.
+Up to Natron 2.5, a Python error in these scripts did not set status 1, and the Write nodes
+were still rendered (`issue #1276 <https://github.com/NatronGitHub/Natron/issues/1276>`_).
+
+In interpreter mode (:option:`-t`), a Python error in the script is printed, and the
+interpreter still starts, so that the error can be inspected.
+
+Check the output for errors that happen while frames are rendered.
+
+GUI tests in the background
+---------------------------
+
+GUI tests (Python scripts that drive the Natron interface with synthetic Qt events) can run on a
+desktop that someone is using. Set the ``NATRON_TEST_NO_FOCUS`` environment variable to any
+value except ``0`` (an empty value doesn't count), and Natron never takes the keyboard focus:
+
+- the windows are shown without being activated, and Natron doesn't raise or activate its windows
+  by itself;
+- on macOS, the process never becomes the active (frontmost) application: it has no Dock icon and
+  no Cmd-Tab entry, and App Nap is disabled. The "reopen windows?" alert shown after a crash is
+  also disabled.
+
+Natron prints a warning at startup when the variable is set. Don't set it for interactive use:
+the windows and dialogs open behind the other applications, and Natron looks hung.
+
+The test scripts must send their events directly to the target widgets
+(``QApplication.sendEvent``), never move the real pointer, and should read the viewer with
+``QOpenGLWidget.grabFramebuffer()``, which renders the viewer into an offscreen buffer, also when
+its window is not active. A screen capture only shows what is visible on the screen. For example::
+
+    NATRON_TEST_NO_FOCUS=1 Natron --no-settings
+
+with the test started from an ``initGui.py`` startup script (see :doc:`natronpath`).
 
 Example: converting an image sequence
 -------------------------------------

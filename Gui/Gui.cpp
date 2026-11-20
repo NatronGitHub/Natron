@@ -282,7 +282,9 @@ Gui::toggleFullScreen()
     QWidget* activeWin = qApp->activeWindow();
 
     if (!activeWin) {
-        qApp->setActiveWindow(this);
+        if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+            qApp->setActiveWindow(this);
+        }
         activeWin = this;
     }
 

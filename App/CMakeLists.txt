@@ -173,6 +173,7 @@ if(APPLE)
 endif()
 
 add_executable(Natron ${Natron_SOURCES})
+natron_set_main_thread_stack_size(Natron)
 if(WIN32)
     # GUI subsystem: no console window (qmake's default for an application).
     set_target_properties(Natron PROPERTIES WIN32_EXECUTABLE TRUE)

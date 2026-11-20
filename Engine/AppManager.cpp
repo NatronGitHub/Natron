@@ -2114,8 +2114,8 @@ AppManager::loadPythonGroups()
                 if ( line.startsWith( QString::fromUtf8("def createInstance(") ) ) {
                     isPyPlug = true;
                 }
-                // Or we could check if it implements getIsToolSet()
-                if ( line.startsWith( QString::fromUtf8("def getIsToolSet(") ) ) {
+                // Or we could check if it implements getIsToolset(), the name getGroupInfos() calls (#1262)
+                if ( line.startsWith( QString::fromUtf8("def getIsToolset(") ) ) {
                     isPyPlug = true;
                 }
                 // Or we could check for the magic line that is in the doc.
@@ -3385,9 +3385,13 @@ AppManager::initPython()
             throw std::runtime_error( tr("Error while loading StreamCatcher: %1").arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
         }
     }
-    // Set QT_API for QtPy
+    // Set QT_API for QtPy, to the PySide that matches the Qt version Natron is built with (#1262)
     // https://github.com/spyder-ide/qtpy
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    qputenv("QT_API", "pyside6");
+#else
     qputenv("QT_API", "pyside2");
+#endif
 } // AppManager::initPython
 
 void
