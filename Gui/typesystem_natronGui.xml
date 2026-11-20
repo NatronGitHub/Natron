@@ -147,7 +147,11 @@
                 // float32 RGBA, for array.array('f', data) or numpy.frombuffer(data, numpy.float32)
                 PyObject* data = PyBytes_FromStringAndSize( pixels.empty() ? "" : (const char*)&amp;pixels[0], (Py_ssize_t)(pixels.size() * sizeof(float)) );
                 %PYARG_0 = PyTuple_New(2);
-                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[RectD](bounds));
+                // RectD is an object type: a new one, owned by Python
+                RectD* boundsCopy = new RectD(bounds);
+                PyObject* pyBounds = %CONVERTTOPYTHON[RectD*](boundsCopy);
+                Shiboken::Object::getOwnership(pyBounds);
+                PyTuple_SET_ITEM(%PYARG_0, 0, pyBounds);
                 PyTuple_SET_ITEM(%PYARG_0, 1, data);
                 return %PYARG_0;
             </inject-code>
