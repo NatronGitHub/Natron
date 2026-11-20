@@ -4006,28 +4006,60 @@ NATRON_PYTHON_NAMESPACE::ensureScriptHasModuleImport(const std::string& moduleNa
 #endif
 
 namespace {
-// The nesting level of interpretPythonScript() calls in this thread
-thread_local int pythonScriptDepth = 0;
+// The number of interpretPythonScript() calls running, in all threads. It is only read and written with
+// the GIL held, which protects it.
+// The captured sys.stdout and sys.stderr are shared by all threads, so this counter is process-wide, not
+// per thread: a call made while another script is running (nested in it, or in another thread while the
+// running script released the GIL, e.g. a render callback during app.render()) must not take the text
+// that the running script wrote so far. Interleaving between threads is still only approximate: text
+// written by one thread while another thread's script runs may be attributed to that script, but no
+// text is lost, and it never makes a script fail.
+int pythonScriptDepth = 0;
 
 class PythonScriptDepth_RAII
 {
+    const bool _nested;
+
 public:
+    // The GIL must be held.
     PythonScriptDepth_RAII()
+        : _nested(pythonScriptDepth > 0)
     {
         ++pythonScriptDepth;
     }
 
+    // The GIL must still be held.
     ~PythonScriptDepth_RAII()
     {
         --pythonScriptDepth;
     }
 
-    // Whether this call is nested in another interpretPythonScript() call of the same thread
+    // Whether another interpretPythonScript() call was running when this one started
     bool isNested() const
     {
-        return pythonScriptDepth > 1;
+        return _nested;
     }
 };
+
+// Converts a Python str to UTF-8. Characters that cannot be encoded (lone surrogates, e.g. from a
+// non-UTF-8 file name decoded with surrogateescape) are written as backslash escapes, rather than
+// making the whole conversion fail (PyStringToStdString() returns an empty string then).
+// The GIL must be held.
+std::string
+pyUnicodeToUtf8(PyObject* str)
+{
+    std::string ret;
+    PyObject* bytes = PyUnicode_AsEncodedString(str, "utf-8", "backslashreplace"); // new ref
+
+    if (bytes) {
+        ret.assign( PyBytes_AS_STRING(bytes), (std::size_t)PyBytes_GET_SIZE(bytes) );
+        Py_DECREF(bytes);
+    } else {
+        PyErr_Clear();
+    }
+
+    return ret;
+}
 
 // In GUI sessions, sys.stdout and sys.stderr are the catchOut and catchErr StreamCatcher objects of the
 // __main__ module (see AppManager::initPython()). Returns the text in the catcher named catcherName and
@@ -4049,9 +4081,9 @@ takeCaughtStream(PyObject* mainModule,
         return ret;
     }
     PyObject* value = PyObject_GetAttrString(catcher, "value"); // new ref
-    if ( value && PyUnicode_Check(value) ) {
-        ret = NATRON_PYTHON_NAMESPACE::PyStringToStdString(value);
-        if ( !ret.empty() ) {
+    if ( value && PyUnicode_Check(value) && (PyUnicode_GetLength(value) > 0) ) {
+        ret = pyUnicodeToUtf8(value);
+        {
             PyObject* empty = PyUnicode_FromString("");
             PyObject_SetAttrString(catcher, "value", empty);
             Py_DECREF(empty);
@@ -4089,9 +4121,11 @@ setCaughtStream(PyObject* mainModule,
 }
 
 // Shows text that Python wrote to the captured sys.stdout or sys.stderr in the Script Editor of the
-// top-level project window, or on the standard error if there is none yet.
+// top-level project window, or on the standard error if there is none yet. header, if not empty, is
+// shown on the line before the text.
 void
-forwardToScriptEditor(std::string text)
+forwardToScriptEditor(std::string text,
+                      const char* header = "")
 {
     if ( text.empty() ) {
         return;
@@ -4100,11 +4134,17 @@ forwardToScriptEditor(std::string text)
     if (text[text.size() - 1] == '\n') {
         text.erase(text.size() - 1);
     }
+    if (*header) {
+        text = std::string(header) + '\n' + text;
+    }
     AppInstancePtr app = appPTR ? appPTR->getTopLevelInstance() : AppInstancePtr();
-    if (app) {
-        app->appendToScriptEditor(text);
-    } else {
+    if (!app) {
         std::cerr << text << std::endl;
+    } else if ( appPTR->isBackground() ) {
+        app->appendToScriptEditor(text); // prints to stdout
+    } else {
+        // The Script Editor output auto-detects rich text: show Python's output as plain text
+        app->appendToScriptEditor( NATRON_NAMESPACE::convertFromPlainText(QString::fromUtf8( text.c_str() ), NATRON_NAMESPACE::WhiteSpacePre).toStdString() );
     }
 }
 
@@ -4122,46 +4162,48 @@ takePythonException()
 
     PyObject* pyStr = pyExcValue ? PyObject_Str(pyExcValue) : 0;
     if (pyStr) {
-        std::string str = NATRON_PYTHON_NAMESPACE::PyStringToStdString(pyStr);
+        std::string str = PyUnicode_Check(pyStr) ? pyUnicodeToUtf8(pyStr) : std::string();
         if ( !str.empty() ) {
             ret += std::string("Python exception: ") + str + '\n';
         }
         Py_DECREF(pyStr);
+    } else {
+        // str() of the exception raised: still get the traceback
+        PyErr_Clear();
+    }
 
-        // See if we can get a full traceback
-        PyObject* module_name = PyUnicode_FromString("traceback");
-        PyObject* pyth_module = PyImport_Import(module_name);
-        Py_DECREF(module_name);
+    // See if we can get a full traceback
+    PyObject* module_name = PyUnicode_FromString("traceback");
+    PyObject* pyth_module = PyImport_Import(module_name);
+    Py_DECREF(module_name);
 
-        if (pyth_module != NULL) {
-            PyObject* pyth_func;
-            if (!pyExcTraceback) {
-                pyth_func = PyObject_GetAttrString(pyth_module, "format_exception_only");
-            } else {
-                pyth_func = PyObject_GetAttrString(pyth_module, "format_exception");
-            }
-            Py_DECREF(pyth_module);
-            if ( pyth_func && PyCallable_Check(pyth_func) ) {
-                PyObject *pyth_val = PyObject_CallFunctionObjArgs(pyth_func, pyExcType, pyExcValue, pyExcTraceback, NULL);
-                if (pyth_val) {
-                    PyObject *emptyString = PyUnicode_FromString("");
-                    PyObject *strList = PyObject_CallMethod(emptyString, (char*)"join", (char*)"(O)", pyth_val);
-                    Py_DECREF(emptyString);
-                    Py_DECREF(pyth_val);
-                    pyStr = strList ? PyObject_Str(strList) : 0;
-                    Py_XDECREF(strList);
-                    if (pyStr) {
-                        str = NATRON_PYTHON_NAMESPACE::PyStringToStdString(pyStr);
-                        if ( !str.empty() ) {
-                            ret += str + '\n';
-                        }
-                        Py_DECREF(pyStr);
+    if (pyth_module != NULL) {
+        PyObject* pyth_func;
+        if (!pyExcTraceback) {
+            pyth_func = PyObject_GetAttrString(pyth_module, "format_exception_only");
+        } else {
+            pyth_func = PyObject_GetAttrString(pyth_module, "format_exception");
+        }
+        Py_DECREF(pyth_module);
+        if ( pyth_func && PyCallable_Check(pyth_func) ) {
+            PyObject *pyth_val = PyObject_CallFunctionObjArgs(pyth_func, pyExcType, pyExcValue, pyExcTraceback, NULL);
+            if (pyth_val) {
+                PyObject *emptyString = PyUnicode_FromString("");
+                PyObject *strList = PyObject_CallMethod(emptyString, (char*)"join", (char*)"(O)", pyth_val);
+                Py_DECREF(emptyString);
+                Py_DECREF(pyth_val);
+                if ( strList && PyUnicode_Check(strList) ) {
+                    std::string str = pyUnicodeToUtf8(strList);
+                    if ( !str.empty() ) {
+                        ret += str + '\n';
                     }
                 }
+                Py_XDECREF(strList);
             }
-            Py_XDECREF(pyth_func);
         }
+        Py_XDECREF(pyth_func);
     }
+    PyErr_Clear();
     Py_XDECREF(pyExcType);
     Py_XDECREF(pyExcValue);
     Py_XDECREF(pyExcTraceback);
@@ -4197,16 +4239,16 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     PyErr_Clear();
 
     // In GUI sessions, sys.stdout and sys.stderr are StreamCatcher objects (see AppManager::initPython()).
-    // Text that is already there was not written by this script (#1436): in a nested call, it is the
-    // output of the calling script so far, which is put back when this script is done; otherwise, it
+    // Text that is already there was not written by this script (#1436): if another call is running
+    // (nested, or in another thread, see pythonScriptDepth), it is the output of that script so far,
+    // which is put back when this script is done; otherwise, it
     // was written outside of this function (e.g. a traceback from a PySide slot) and it is forwarded
     // to the Script Editor, rather than lost or taken for an error of this script.
     const bool captured = PyObject_HasAttrString(mainModule, "catchErr");
     const std::string previousErr = takeCaughtStream(mainModule, "catchErr");
     const std::string previousOut = takeCaughtStream(mainModule, "catchOut");
     if ( !depth.isNested() ) {
-        forwardToScriptEditor(previousOut);
-        forwardToScriptEditor(previousErr);
+        forwardToScriptEditor(previousOut + previousErr, "# Earlier output:");
     }
 
     int status = -1;
@@ -4234,6 +4276,11 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     if (output) {
         *output = scriptOut;
         scriptOut.clear();
+        if (status == 0) {
+            // e.g. the Script Editor shows it with the result of the script, after the script
+            *output += scriptErr;
+            scriptErr.clear();
+        }
     }
     if (error) {
         error->clear();

@@ -156,6 +156,41 @@ TEST_F(PythonScriptTest, StderrOfSuccessfulScript)
     EXPECT_TRUE( caughtStderr().empty() );
 }
 
+// When the caller asks for the output, the stderr of a successful script goes with it (the Script Editor
+// shows it after the script, with its result).
+TEST_F(PythonScriptTest, StderrGoesWithRequestedOutput)
+{
+    std::string err, output;
+    bool ok = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nprint('out-1436')\nsys.stderr.write('warning-1436\\n')\n", &err, &output);
+
+    EXPECT_TRUE(ok) << err;
+    EXPECT_EQ(std::string("out-1436\nwarning-1436\n"), output);
+    EXPECT_TRUE( caughtStderr().empty() );
+}
+
+// Text that cannot be encoded to UTF-8 (a lone surrogate, e.g. print() of a non-UTF-8 file name
+// decoded with surrogateescape) must still be taken from the buffer: it used to stay there, and every
+// later output was lost.
+TEST_F(PythonScriptTest, UnencodableOutput)
+{
+    runSimple("import sys\n"
+              "sys.stdout.write('bad\\udcff-1436\\n')\n");
+
+    std::string err, output;
+    testing::internal::CaptureStdout();
+    bool ok = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("print('bad\\udcfe-1436')\n", &err, &output);
+    std::string forwarded = testing::internal::GetCapturedStdout();
+
+    EXPECT_TRUE(ok) << err;
+    EXPECT_EQ(std::string("bad\\udcfe-1436\n"), output);
+    EXPECT_NE( std::string::npos, forwarded.find("bad\\udcff-1436") ) << forwarded;
+
+    // and the next output is not lost
+    ok = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("print('next-1436')\n", &err, &output);
+    EXPECT_TRUE(ok) << err;
+    EXPECT_EQ(std::string("next-1436\n"), output);
+}
+
 // A caller that does not ask for the error still gets false, and the traceback is not lost.
 TEST_F(PythonScriptTest, ExceptionWithoutErrorString)
 {
