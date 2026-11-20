@@ -426,10 +426,26 @@ scripts) do not have them:
   is usually not available either. When an algorithm is not available, the
   **Demosaic** parameter falls back to AHD.
 
-On Windows, there are no non-GPL builds of Natron yet. The build scripts
-already use a LibRaw without the demosaic packs for them, but the bundled
-libheif still depends on the GPL x264 encoder (see
-`issue #1177 <https://github.com/NatronGitHub/Natron/issues/1177>`_).
+- **WriteOIIO**, HEIF files: the H.264 (AVC) encoder of libheif is x264, and
+  its usual H.265/HEVC encoder is x265, both under the GPL. Builds made under a
+  non-GPL license use a libheif without them: HEIC (H.265) files are written
+  with the kvazaar encoder instead (the files may be larger at the same
+  quality), and HEIF files with H.264 can be read but not written. Reading
+  HEIF files does not depend on the license.
+- **ReadOIIO**, TIFF files, on Windows: the JBIG compression of libtiff comes
+  from JBIG-KIT, under the GPL, so JBIG-compressed TIFF files (black-and-white
+  fax images) cannot be read.
+- **ReadPDF**: this reader uses poppler, which is under the GPL, so non-GPL
+  builds do not have it.
+- **AudioCurve**: this node uses SoX, which links GPL libraries, so non-GPL
+  builds do not have it.
+
+A project that uses a node that a build does not have loads without that node
+(with a warning).
+
+On Windows and macOS, the build scripts check that a non-GPL build does not
+contain any of these GPL libraries. Non-GPL builds for Linux are not possible
+yet.
 
 The menus of WriteFFmpeg only show the codecs and containers of the FFmpeg
 libraries that Natron uses, so a codec that is missing from the **Codec** menu

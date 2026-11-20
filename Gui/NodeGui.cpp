@@ -732,10 +732,15 @@ NodeGui::createGui()
         _passThroughIndicator->setActive(false);
     }
 
+    // The cross shown on a disabled node: thick and red, so that it can't be missed (#796)
+    QPen disabledPen( QColor(230, 20, 20), TO_DPIX(4) );
+    disabledPen.setCapStyle(Qt::FlatCap); // stays inside the node corners
     _disabledBtmLeftTopRight = new QGraphicsLineItem(this);
+    _disabledBtmLeftTopRight->setPen(disabledPen);
     _disabledBtmLeftTopRight->setZValue(depth + 1);
     _disabledBtmLeftTopRight->hide();
     _disabledTopLeftBtmRight = new QGraphicsLineItem(this);
+    _disabledTopLeftBtmRight->setPen(disabledPen);
     _disabledTopLeftBtmRight->hide();
     _disabledTopLeftBtmRight->setZValue(depth + 1);
 } // NodeGui::createGui
@@ -848,7 +853,12 @@ NodeGui::removeSettingsPanel()
 void
 NodeGui::refreshSize()
 {
-    QRectF bbox = boundingRect();
+    // The node rectangle itself, not boundingRect(), which includes the outline pen width and the
+    // magnification scale: resizing to it would make the node grow at each refresh (#1071).
+    // (Only called for nodes with a persistent message item or a label, which DotGui has not, so
+    // _boundingBox, created with them in createGui(), exists.)
+    assert(_boundingBox);
+    QRectF bbox = _boundingBox->rect();
 
     QString& label = _nodeLabel;
     resize( bbox.width(), bbox.height(), false, !label.isEmpty() );
@@ -2824,9 +2834,17 @@ QSize
 NodeGui::getSize() const
 {
     if ( QThread::currentThread() == qApp->thread() ) {
-        QRectF bbox = boundingRect();
+        if (!_boundingBox) {
+            // DotGui has no _boundingBox (it doesn't call NodeGui::createGui()): use its boundingRect()
+            QRectF bbox = boundingRect();
 
-        return QSize( bbox.width(), bbox.height() );
+            return QSize( bbox.width(), bbox.height() );
+        }
+        // The node rectangle (as set by resize()) with the current scale, without the outline pen
+        // width that boundingRect() adds: otherwise each save and load makes the node wider (#1071).
+        QRectF bbox = _boundingBox->rect();
+
+        return QSize( bbox.width() * scale(), bbox.height() * scale() );
     } else {
         QMutexLocker k(&_mtSafeSizeMutex);
 
@@ -3187,7 +3205,8 @@ NodeGui::setNameItemHtml(const QString & name,
     _nameItem->adjustSize();
 
 
-    QRectF bbox = boundingRect();
+    // see refreshSize()
+    QRectF bbox = _boundingBox->rect();
     resize( bbox.width(), bbox.height(), false, !label.isEmpty() );
 } // setNameItemHtml
 

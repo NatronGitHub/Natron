@@ -117,6 +117,14 @@ The signature of the callback used on the :ref:`Effect<Effect>` is::
   the value by theirself) or due to another parameter changing the value of the parameter
   via a derivative of the :func:`setValue(value)<>` function.
 
+The callback is called for every parameter of the node, including the buttons, and also for the
+changes made by scripts and by the callback itself: test
+``thisParam.getScriptName()`` first, and ``userEdited`` if only the user's changes matter. A
+callback that sets the value of the parameter that triggered it is called again. It is not called
+when only the current frame changes, even if the parameter is animated. For a group or a PyPlug,
+the callback set on the group is called for the parameters of the group, not for those of the
+nodes inside it (see :ref:`pyplugWriting-ext` for an example).
+
 For the *parameter changed callback* of :ref:`PyPanel<pypanel>` and :ref:`PyModalDialog<pyModalDialog>`, the signature of the callback function is:
 
     callback(paramName, app, userEdited)

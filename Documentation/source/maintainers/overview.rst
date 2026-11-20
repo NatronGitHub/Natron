@@ -9,7 +9,7 @@ maintainer's point of view it is best understood as three things layered on top
 of each other:
 
 1. **An OpenFX host.** The heart of Natron is a complete implementation of the
-   `OpenFX <http://openeffects.org/>`_ image-effect plug-in API (OFX v1.4).
+   `OpenFX <http://openeffects.org/>`_ image-effect plug-in API (OFX v1.5).
    Most of the "nodes" a user sees — blur, transform, color correction, readers,
    writers — are OpenFX plug-ins loaded at run time from shared libraries.
    Natron hosts them: it loads plug-ins, describes clips and parameters to them,

@@ -39,6 +39,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/Node.h"
@@ -1547,20 +1548,32 @@ GroupFromSelectionCommand::undo()
     }
 
 
-    for (std::list<NodeGuiWPtr>::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
-        NodeGuiPtr node = it->lock();
-        if (node) {
-            node->getNode()->activate(NodesList(), true, false);
-            nodesToSelect.push_back(node);
-        }
-    }
-    _graph->setSelection(nodesToSelect);
+    // Deactivate the group (and the copies in it) before activating the originals: a single-instance
+    // OFX plug-in then never has two live instances (see OfxEffectInstance::suspendSingleInstance()),
+    // unless a copy is still rendering, whose instance lives until that render ends.
     _group.lock()->getNode()->deactivate(NodesList(),
                                          true,
                                          false,
                                          true,
                                          true,
                                          false);
+    std::set<ViewerInstance*> viewers;
+    for (std::list<NodeGuiWPtr>::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
+        NodeGuiPtr node = it->lock();
+        if (node) {
+            node->getNode()->activate(NodesList(), true, false);
+            nodesToSelect.push_back(node);
+            std::list<ViewerInstance*> connectedViewers;
+            node->getNode()->hasViewersConnected(&connectedViewers);
+            viewers.insert( connectedViewers.begin(), connectedViewers.end() );
+        }
+    }
+    _graph->setSelection(nodesToSelect);
+    // A render started when the outputs were reconnected above, while the originals were still
+    // deactivated (a single-instance OFX plug-in without its instance), failed: render them again.
+    for (std::set<ViewerInstance*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        (*it)->renderCurrentFrame(true);
+    }
 
     _isRedone = false;
 }
@@ -1679,9 +1692,32 @@ GroupFromSelectionCommand::redo()
                 // For each connected input of the original node, create a corresponding Input node with the appropriate name
                 NodePtr originalNodeInternal = foundOriginalNode->getNode();
                 const std::vector<NodeWPtr>& originalNodeInputs = originalNodeInternal->getInputs();
+                // Create an Input node only for the inputs that are connected or not optional: RotoPaint
+                // has 11 optional inputs, and Merge several A inputs and a mask (#223). If that leaves no
+                // input at all, keep the first non-mask input, so that the group can still be connected.
+                EffectInstancePtr originalEffect = originalNodeInternal->getEffectInstance();
+                std::vector<bool> mustCreateInput(originalNodeInputs.size(), false);
+                {
+                    bool hasInput = false;
+                    int firstNonMaskInput = -1;
+                    for (std::size_t i = 0; i < originalNodeInputs.size(); ++i) {
+                        if ( !originalNodeInternal->isInputVisible(i) ) {
+                            // do not create an Input node for an invisible input (example: Shadertoy node, which hides its inputs)
+                            continue;
+                        }
+                        if ( originalNodeInputs[i].lock() || !originalEffect->isInputOptional(i) ) {
+                            mustCreateInput[i] = true;
+                            hasInput = true;
+                        } else if ( (firstNonMaskInput == -1) && !originalEffect->isInputMask(i) ) {
+                            firstNonMaskInput = (int)i;
+                        }
+                    }
+                    if (!hasInput && firstNonMaskInput != -1) {
+                        mustCreateInput[firstNonMaskInput] = true;
+                    }
+                }
                 for (std::size_t i = 0; i < originalNodeInputs.size(); ++i) {
-                    if ( !originalNodeInternal->isInputVisible(i) ) {
-                        // do not create an Input node for an invisible input (example: Shadertoy node, which hides its inputs)
+                    if (!mustCreateInput[i]) {
                         continue;
                     }
                     NodePtr originalInput = originalNodeInputs[i].lock();
@@ -1877,7 +1913,12 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
             }
         }
         std::list<std::pair<std::string, NodeGuiPtr> > newNodes;
-        _graph->pasteCliboard(cb, &newNodes);
+        {
+            // The group is deactivated in redo(), right after its nodes are copied out of it: the
+            // copies of a single-instance OFX plug-in are not refused (as in GroupFromSelectionCommand).
+            OfxEffectInstance::AllowExtraSingleInstances allowMovingSingleInstances;
+            _graph->pasteCliboard(cb, &newNodes);
+        }
 
         NodeGuiIPtr groupGui_i = group->getNode()->getNodeGui();
         assert(groupGui_i);
@@ -2036,18 +2077,21 @@ InlineGroupCommand::undo()
     for (std::list<InlinedGroup>::iterator it = _groupNodes.begin(); it != _groupNodes.end(); ++it) {
         NodeGuiPtr groupNode = it->group.lock();
         if (groupNode) {
-            groupNode->getNode()->activate(NodesList(), true, false);
-            std::list<ViewerInstance*> connectedViewers;
-            groupNode->getNode()->hasViewersConnected(&connectedViewers);
-            for (std::list<ViewerInstance*>::iterator it2 = connectedViewers.begin(); it2 != connectedViewers.end(); ++it2) {
-                viewers.insert(*it2);
-            }
+            // Deactivate the inlined nodes before activating the group (and the nodes in it): a
+            // single-instance OFX plug-in then never has two live instances, unless an inlined node
+            // is still rendering, whose instance lives until that render ends.
             for (std::list<NodeGuiWPtr>::iterator it2 = it->inlinedNodes.begin();
                  it2 != it->inlinedNodes.end(); ++it2) {
                 NodeGuiPtr node = (*it2).lock();
                 if (node) {
                     node->getNode()->deactivate(NodesList(), false, false, true, false, false);
                 }
+            }
+            groupNode->getNode()->activate(NodesList(), true, false);
+            std::list<ViewerInstance*> connectedViewers;
+            groupNode->getNode()->hasViewersConnected(&connectedViewers);
+            for (std::list<ViewerInstance*>::iterator it2 = connectedViewers.begin(); it2 != connectedViewers.end(); ++it2) {
+                viewers.insert(*it2);
             }
         }
         nodesToSelect.push_back(groupNode);

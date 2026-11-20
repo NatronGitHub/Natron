@@ -92,7 +92,7 @@ sudo port selfupdate
 
 #### 3. Natron's custom ports
 
-Natron needs modified ports. Examples: the `+natron` variants of ImageMagick, ImageMagick7 and openimageio and the `+natronmini` variant of ffmpeg; libraw 0.22.3 with the GPL demosaic packs restored by a patch; freetype 2.15.0 with an upstream fix for rotated text backported; onetbb with a patch for a crash at exit (#1253). MacPorts reads them from a copy of `tools/MacPorts` in `/opt/MacPorts-Natron`. A copy is used rather than the source tree itself, because MacPorts accesses the ports as an unprivileged user that usually can't read your home directory.
+Natron needs modified ports. Examples: the `+natron` variants of ImageMagick, ImageMagick7 and openimageio and the `+natronmini` variant of ffmpeg; libraw 0.22.3 with the GPL demosaic packs restored by a patch; the subports `ffmpeg-lgpl`, `libraw-lgpl` and `libheif-lgpl` for COMMERCIAL builds; freetype 2.15.0 with an upstream fix for rotated text backported; onetbb with a patch for a crash at exit (#1253). MacPorts reads them from a copy of `tools/MacPorts` in `/opt/MacPorts-Natron`. A copy is used rather than the source tree itself, because MacPorts accesses the ports as an unprivileged user that usually can't read your home directory.
 
 ```Shell
 sudo mkdir -p /opt/MacPorts-Natron
@@ -225,6 +225,9 @@ sudo port -v -N install ImageMagick7 +natron -x11 -openexr
 
 # openfx-io
 sudo port -v -N install ffmpeg +gpl2 +highbitdepth +natronmini
+# COMMERCIAL builds (NATRON_LICENSE=COMMERCIAL) only: LGPL FFmpeg, LibRaw and libheif (no x264/x265),
+# installed in /opt/local/libexec next to the GPL ones (see "COMMERCIAL builds" in section 10)
+sudo port -v -N install ffmpeg-lgpl libraw-lgpl libheif-lgpl
 sudo port -v -N install openimageio +freetype +natron +opencolorio +openjpeg +python311 -python310 -python312 -python313 -python314
 ```
 
@@ -281,6 +284,8 @@ env NATRON_DEV_STATUS=STABLE RELEASE_TAG=2.6.0 NATRON_BUILD_NUMBER=1 NOUPDATE=1 
     UNIT_TESTS=true BUILD_NAME=natron_github_RB2 BUILD_NUMBER=1 COMPILE_TYPE=release MKJOBS=8 \
     ./launchBuildMain.sh
 ```
+
+**COMMERCIAL builds.** `NATRON_LICENSE=COMMERCIAL` builds a DMG without any GPL component (#1302, #1177). It needs the overlay's subports `ffmpeg-lgpl`, `libraw-lgpl` and `libheif-lgpl` (install section 7), which install an LGPL FFmpeg (the same as `ffmpeg +highbitdepth +natronmini`, without `+gpl2` and libzvbi), a LibRaw without the demosaic packs and a libheif without the x264 and x265 encoders in `/opt/local/libexec/ffmpeg-lgpl`, `/opt/local/libexec/libraw-lgpl` and `/opt/local/libexec/libheif-lgpl`. openfx-io is built against the first two (`tools/jenkins/common.sh`), and `build-plugins.sh` replaces the libheif and LibRaw that openimageio links in the plug-in bundles with theirs (same version and ABI). Both `build-plugins.sh` and `build-OSX-installer.sh` then run `tools/jenkins/check-commercial-bundle.sh`, which fails the build if a bundled library is GPL, links a GPL library (x264, x265, Xvid, poppler, SoX, FFTW, ...), is an FFmpeg library whose licence (`avcodec_license()`, `ffmpeg -L`) is not LGPL 2.1 or later, is a LibRaw with a GPL demosaic pack, or is one of the Qt modules that are GPL-3 only (Qt Charts, Data Visualization, Network Authorization, Designer, ...) or their PySide2 module. `build-OSX-installer.sh` leaves these Qt frameworks and PySide2 modules out of COMMERCIAL DMGs: Natron doesn't use them. The check can also be run by hand on any app, bundle or directory: `tools/jenkins/check-commercial-bundle.sh Natron.app`. With tart: `tools/tart/natron-build.sh -l COMMERCIAL`.
 
 Signing, notarization and the test suite are described in `Documentation/source/maintainers/build-macos.rst`.
 

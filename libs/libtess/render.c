@@ -431,6 +431,75 @@ static int ComputeNormal( GLUtesselator *tess, GLdouble norm[3], int check )
   return sign;
 }
 
+/* Natron: ComputeNormal( tess, norm, TRUE ) only checks that the triangles of
+ * the fan from v0 have consistent orientations, which is not enough: the fan
+ * is a valid tessellation only if its triangles do not overlap, i.e. if the
+ * direction from v0 to vc turns by at most one full turn around v0 as vc goes
+ * from v1 to vn-1. A contour which winds more than once around v0 (e.g. a
+ * spiral), or which passes through v0 again before its last vertex (the
+ * degenerate triangles at v0 hide a reversal of the orientation), was
+ * rendered with overlapping triangles: an area with winding number 2 was
+ * filled with the odd rule. FanIsSimple() returns FALSE in these cases (and
+ * when a degenerate triangle makes a half turn, whose direction is unknown),
+ * so that the polygon goes through the full sweep instead. sign is the
+ * result of ComputeNormal().
+ */
+static GLboolean FanIsSimple( GLUtesselator *tess, GLdouble norm[3], int sign )
+{
+  CachedVertex *v0 = tess->cache;
+  CachedVertex *vn = v0 + tess->cacheCount;
+  CachedVertex *vc;
+  GLdouble d1[3], dp[3], dc[3], n[3], turn, side;
+  int i, phase = 0; /* 0: on the ray of d1, 1: on its left (or opposite to
+                     * it), 2: on its right */
+
+#define FAN_CROSS(a,b) (n[0] = (a)[1]*(b)[2] - (a)[2]*(b)[1], \
+                        n[1] = (a)[2]*(b)[0] - (a)[0]*(b)[2], \
+                        n[2] = (a)[0]*(b)[1] - (a)[1]*(b)[0], \
+                        sign * (n[0]*norm[0] + n[1]*norm[1] + n[2]*norm[2]))
+#define FAN_DOT(a,b) ((a)[0]*(b)[0] + (a)[1]*(b)[1] + (a)[2]*(b)[2])
+
+  for( i = 0; i < 3; ++i ) {
+    d1[i] = dp[i] = v0[1].coords[i] - v0->coords[i];
+  }
+  if( d1[0] == 0 && d1[1] == 0 && d1[2] == 0 ) {
+    return FALSE;			/* v1 == v0 */
+  }
+  for( vc = v0 + 2; vc < vn; ++vc ) {
+    for( i = 0; i < 3; ++i ) {
+      dc[i] = vc->coords[i] - v0->coords[i];
+    }
+    if( dc[0] == 0 && dc[1] == 0 && dc[2] == 0 ) {
+      if( vc == vn - 1 ) {
+        break;				/* the contour is closed explicitly */
+      }
+      return FALSE;			/* the contour goes back to v0 */
+    }
+    turn = FAN_CROSS( dp, dc );	/* turn from vc-1 to vc, seen from v0 */
+    if( turn < 0 || (turn == 0 && FAN_DOT( dp, dc ) < 0) ) {
+      return FALSE;			/* backwards, or half turn */
+    }
+    side = FAN_CROSS( d1, dc );	/* side of vc wrt the ray v0 v1 */
+    if( side > 0 || (side == 0 && FAN_DOT( d1, dc ) < 0) ) {
+      if( phase == 2 ) {
+        return FALSE;			/* more than one turn */
+      }
+      phase = 1;
+    } else if( side < 0 ) {
+      phase = 2;
+    } else if( phase != 0 ) {
+      return FALSE;			/* one full turn (or more) */
+    }
+    for( i = 0; i < 3; ++i ) {
+      dp[i] = dc[i];
+    }
+  }
+#undef FAN_CROSS
+#undef FAN_DOT
+  return TRUE;
+}
+
+
 /* __gl_renderCache( tess ) takes a single contour and tries to render it
  * as a triangle fan.  This handles convex polygons, as well as some
  * non-convex polygons if we get lucky.
@@ -466,6 +535,10 @@ GLboolean __gl_renderCache( GLUtesselator *tess )
   if( sign == 0 ) {
     /* All triangles were degenerate */
     return TRUE;
+  }
+  if( ! FanIsSimple( tess, norm, sign ) ) {
+    /* Natron: the fan triangles would overlap */
+    return FALSE;
   }
 
   /* Make sure we do the right thing for each winding rule */
