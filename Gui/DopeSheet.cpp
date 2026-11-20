@@ -57,6 +57,7 @@
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/DopeSheetView.h"
 #include "Gui/Gui.h"
+#include "Gui/GuiTest.h"
 #include "Gui/KnobGui.h"
 #include "Gui/Menu.h"
 #include "Gui/NodeGui.h"
@@ -870,7 +871,7 @@ DopeSheet::renameSelectedNode()
     }
 
     EditNodeNameDialog* dialog = new EditNodeNameDialog(selectedNodes.front()->getNodeGui(), _imp->editor);
-    QPoint global = QCursor::pos();
+    QPoint global = GuiTest::cursorPos();
     QSize sizeH = dialog->sizeHint();
     global.rx() -= sizeH.width() / 2;
     global.ry() -= sizeH.height() / 2;

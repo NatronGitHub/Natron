@@ -42,6 +42,7 @@
 #include <QtCore/QTimer>
 #include <QAction>
 #include <QApplication>
+#include <QCursor>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QGraphicsView>
@@ -90,6 +91,8 @@ struct GuiTestState
     std::vector<DialogRecord> dialogs;
     int unexpectedDialogs; // dialogs that the test did not answer
     Qt::MouseButtons pressedButtons;
+    QPoint cursorPos; // global position of the last synthetic pen event (cursorPos())
+    bool cursorPosSet; // false before the first pen event
     QPointer<QWidget> hovered; // the widget of the last synthetic pen event (for Enter/Leave)
     QPointer<QWidget> focused; // the target of the last synthetic key event or press (for FocusIn/FocusOut)
     std::vector<QPointer<QWidget> > openedSubmenus; // submenus opened by a menu answer (not answered again)
@@ -99,6 +102,8 @@ struct GuiTestState
         , dialogs()
         , unexpectedDialogs(0)
         , pressedButtons(Qt::NoButton)
+        , cursorPos()
+        , cursorPosSet(false)
         , hovered()
         , focused()
         , openedSubmenus()
@@ -785,6 +790,9 @@ py_penEvent(PyObject* /*self*/,
         return 0;
     }
     const QPoint global = w->mapToGlobal( pos.toPoint() );
+    // the substitute of QCursor::pos() in test mode
+    state().cursorPos = global;
+    state().cursorPosSet = true;
     updateHovered(w, pos);
     if (evType == QEvent::MouseButtonPress) {
         // the target, not a graph's viewport
@@ -1188,6 +1196,25 @@ runTestScript(const QString& path)
 } // anonymous namespace
 
 namespace GuiTest {
+QPoint
+cursorPos()
+{
+    if ( appPTR && appPTR->isTestMode() ) {
+        if ( !state().cursorPosSet ) {
+            // before the first pen event: the centre of the main window, so that a node created at the
+            // cursor lands in the node graph and a dialog opened at the cursor is on the screen
+            Gui* gui = getGui();
+            if (gui) {
+                return gui->mapToGlobal( gui->rect().center() );
+            }
+        }
+
+        return state().cursorPos;
+    }
+
+    return QCursor::pos();
+}
+
 void
 install()
 {
