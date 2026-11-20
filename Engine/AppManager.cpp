@@ -4011,7 +4011,9 @@ NATRON_PYTHON_NAMESPACE::ensureScriptHasModuleImport(const std::string& moduleNa
 bool
 NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
                                                std::string* error,
-                                               std::string* output)
+                                               std::string* output,
+                                               PyObject* globals,
+                                               PyObject* locals)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
 
@@ -4031,12 +4033,12 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
 #if 0 //USE_PYRUN_SIMPLESTRING
     status = PyRun_SimpleString(script.c_str());
 #else
-    PyObject* dict = PyModule_GetDict(mainModule);
+    PyObject* dict = globals ? globals : PyModule_GetDict(mainModule);
 
     PyErr_Clear();
 
     ///This is faster than PyRun_SimpleString since is doesn't call PyImport_AddModule("__main__")
-    PyObject* v = PyRun_String(script.c_str(), Py_file_input, dict, 0);
+    PyObject* v = PyRun_String(script.c_str(), Py_file_input, dict, locals);
     if (v) {
         Py_DECREF(v);
         status = 0;
