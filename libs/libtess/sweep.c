@@ -163,21 +163,42 @@ static void DeleteRegion( GLUtesselator *tess, ActiveRegion *reg )
 }
 
 
-static void DeleteUnusedEdge( GLUtesselator *tess, GLUhalfEdge *e )
+#define UsesEdge(r,e)	((r) != NULL && ((r)->eUp == (e) || (r)->eUp == (e)->Sym))
+
+static void CheckEdgeUnused( GLUtesselator *tess, GLUhalfEdge *e,
+			     ActiveRegion *regAbove, ActiveRegion *regBelow )
 /*
- * Natron: delete the edge e (both halves), whose active region was just
- * deleted. On degenerate input (e.g. a self-loop made by CheckForRightSplice()
- * merging the endpoints of a zero-length edge, so that eLo == eUp->Sym in
- * WalkDirtyRegions(), or collinear edges along a diagonal with rounding noise)
- * the other half can still be the upper edge of an active region: deleting
- * the edge then left that region with a freed edge, which the sweep used
+ * Natron: before deleting the edge e (both halves), check that it is not
+ * the upper edge of an active region: of the regions regAbove and regBelow,
+ * next to the region of e that was just deleted (two regions can have the
+ * same upper edge, and deleting one of them cleared e->activeRegion), or of
+ * any region through the activeRegion back-pointers. On degenerate input
+ * (e.g. a self-loop made by CheckForRightSplice() merging the endpoints of a
+ * zero-length edge, so that eLo == eUp->Sym in WalkDirtyRegions(), or
+ * collinear edges along a diagonal with rounding noise) the edge was freed
+ * while a region still used it, and the sweep then used it
  * (heap-use-after-free). The sweep can't recover from this state: give up
  * on the polygon (see gluTessEndPolygon()).
  */
 {
-  if( e->activeRegion != NULL || e->Sym->activeRegion != NULL ) {
+  if( e->activeRegion != NULL || e->Sym->activeRegion != NULL
+      || UsesEdge( regAbove, e ) || UsesEdge( regBelow, e ) ) {
     longjmp(tess->env,TESS_JMP_DEGENERATE);
   }
+}
+
+static void DeleteRegionAndEdge( GLUtesselator *tess, ActiveRegion *reg,
+				 GLUhalfEdge *e )
+/*
+ * Natron: DeleteRegion( tess, reg ), then delete the edge e, which must not be
+ * used by any other active region (see CheckEdgeUnused()).
+ */
+{
+  ActiveRegion *regAbove = RegionAbove( reg );
+  ActiveRegion *regBelow = RegionBelow( reg );
+
+  DeleteRegion( tess, reg );
+  CheckEdgeUnused( tess, e, regAbove, regBelow );
   if ( !__gl_meshDelete( e ) ) longjmp(tess->env,1);
 }
 
@@ -188,9 +209,11 @@ static int FixUpperEdge( GLUtesselator *tess, ActiveRegion *reg,
  */
 {
   assert( reg->fixUpperEdge );
-  if( reg->eUp->Sym->activeRegion != NULL ) {
-    /* Natron: the other half of the edge is still used, see
-     * DeleteUnusedEdge() */
+  /* Natron: reg->eUp must not be used by another active region, see
+   * CheckEdgeUnused() */
+  if( reg->eUp->Sym->activeRegion != NULL
+      || UsesEdge( RegionAbove( reg ), reg->eUp )
+      || UsesEdge( RegionBelow( reg ), reg->eUp ) ) {
     longjmp(tess->env,TESS_JMP_DEGENERATE);
   }
   if ( !__gl_meshDelete( reg->eUp ) ) return 0;
@@ -425,8 +448,7 @@ static void AddRightEdges( GLUtesselator *tess, ActiveRegion *regUp,
     regPrev->dirty = TRUE;
     if( ! firstTime && CheckForRightSplice( tess, regPrev )) {
       AddWinding( e, ePrev );
-      DeleteRegion( tess, regPrev );
-      DeleteUnusedEdge( tess, ePrev );
+      DeleteRegionAndEdge( tess, regPrev, ePrev );
     }
     firstTime = FALSE;
     regPrev = reg;
@@ -830,13 +852,11 @@ static void WalkDirtyRegions( GLUtesselator *tess, ActiveRegion *regUp )
 	 * vertices which otherwise have no right-going edges).
 	 */
 	if( regLo->fixUpperEdge ) {
-	  DeleteRegion( tess, regLo );
-	  DeleteUnusedEdge( tess, eLo );
+	  DeleteRegionAndEdge( tess, regLo, eLo );
 	  regLo = RegionBelow( regUp );
 	  eLo = regLo->eUp;
 	} else if( regUp->fixUpperEdge ) {
-	  DeleteRegion( tess, regUp );
-	  DeleteUnusedEdge( tess, eUp );
+	  DeleteRegionAndEdge( tess, regUp, eUp );
 	  regUp = RegionAbove( regLo );
 	  eUp = regUp->eUp;
 	}
@@ -869,8 +889,7 @@ static void WalkDirtyRegions( GLUtesselator *tess, ActiveRegion *regUp )
     if( eUp->Org == eLo->Org && eUp->Dst == eLo->Dst ) {
       /* A degenerate loop consisting of only two edges -- delete it. */
       AddWinding( eLo, eUp );
-      DeleteRegion( tess, regUp );
-      DeleteUnusedEdge( tess, eUp );
+      DeleteRegionAndEdge( tess, regUp, eUp );
       regUp = RegionAbove( regLo );
     }
   }

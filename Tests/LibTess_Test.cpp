@@ -484,6 +484,10 @@ TEST(LibTess,
 // - diagonal, diagonal2: collinear points on the diagonal x == y with rounding
 //   noise (a Roto shape collapsed onto a 45 degree line). Freed edges were
 //   then used in WalkDirtyRegions() and FinishLeftRegions().
+// - collapsed: a Roto shape collapsed onto the diagonal x == y, with repeated
+//   points. Two active regions had the same upper edge, so deleting one of
+//   them cleared the edge's activeRegion, and AddRightEdges() then freed the
+//   edge that the other one still used.
 // - sentinel: a contour folding back along the diagonal: a face reaching the
 //   sentinels was marked inside.
 // Only with NDEBUG: with assertions, an assertion of the sweep fails before
@@ -512,6 +516,23 @@ TEST(LibTess,
         { 949.5469776518659, 949.5469776518659 }, { 949.5469776518657, 949.5469776518657 },
         { 948.5883779708273, 948.5883779708273 }
     };
+    const TessPoint collapsed[] = {
+        { 1492.703538304817, 1444.0105249271114 }, { 1484.5355915698049, 1435.8425781920996 },
+        { 1476.3676448347928, 1427.6746314570878 }, { 1468.199698099781, 1419.5066847220758 },
+        { 1460.0317513647692, 1411.338737987064 }, { 1451.8638046297572, 1403.170791252052 },
+        { 1443.6958578947454, 1395.00284451704 }, { 1443.6958578947454, 1395.00284451704 },
+        { 1451.4333301727079, 1402.7403167950026 }, { 1459.1708024506704, 1410.4777890729652 },
+        { 1466.908274728633, 1418.2152613509277 }, { 1474.6457470065957, 1425.9527336288902 },
+        { 1482.383219284558, 1433.690205906853 }, { 1490.1206915625207, 1441.4276781848155 },
+        { 1448.456086088662, 1399.7630727109567 }, { 1448.456086088662, 1399.7630727109567 },
+        { 1406.7914806148035, 1358.0984672370982 }, { 1365.1268751409448, 1316.4338617632395 },
+        { 1323.4622696670863, 1274.769256289381 }, { 1281.7976641932275, 1233.1046508155223 },
+        { 1281.7976641932275, 1233.1046508155223 }, { 1240.133058719369, 1191.4400453416638 },
+        { 1282.228138650277, 1233.5351252725718 }, { 1324.3232185811848, 1275.6302052034796 },
+        { 1324.3232185811848, 1275.6302052034796 }, { 1366.4182985120929, 1317.7252851343876 },
+        { 1408.5133784430009, 1359.8203650652956 }, { 1450.608458373909, 1401.9154449962036 },
+        { 1450.608458373909, 1401.9154449962036 }
+    };
     const TessPoint sentinel[] = {
         { 0.0, 0.0 }, { 2.9912378823166774, 2.9912378823166774 }, { 0.325072093554872, 0.325072093554872 },
         { 0.25253005332581946, 0.25253005332581946 }, { -0.08464818798407475, -0.08464818798407475 },
@@ -530,6 +551,7 @@ TEST(LibTess,
         { "selfLoop", selfLoop, sizeof(selfLoop) / sizeof(selfLoop[0]) },
         { "diagonal", diagonal, sizeof(diagonal) / sizeof(diagonal[0]) },
         { "diagonal2", diagonal2, sizeof(diagonal2) / sizeof(diagonal2[0]) },
+        { "collapsed", collapsed, sizeof(collapsed) / sizeof(collapsed[0]) },
         { "sentinel", sentinel, sizeof(sentinel) / sizeof(sentinel[0]) },
     };
 
