@@ -436,8 +436,9 @@ AppManager::loadFromArgs(const CLArgs& cl)
         // Before initPython(): the output of a test reaches the log even when the watchdog ends it
         qputenv("PYTHONUNBUFFERED", "1");
 #ifdef DEBUG
-        // Before qApp and any OpenGL context (see AppManagerPrivate::testModeNoTrap); the render threads
-        // still trap them
+        // No trapped floating point exception, in any thread: before qApp, any OpenGL context and any
+        // thread (see AppManagerPrivate::testModeNoTrap)
+        boost_adaptbx::floating_point::trapping_disabled() = true;
         _imp->testModeNoTrap.reset(new boost_adaptbx::floating_point::no_exception_trapping);
 #endif
     }
