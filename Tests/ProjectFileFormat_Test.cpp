@@ -177,7 +177,9 @@ createTestProject(const AppInstancePtr& app)
         "e.setValue(True)\n"
         "c.setExpression('thisNode.myDouble.get() * 2', False, 1)\n"
         "g.refreshUserParamsGUI()\n"
-        + a + ".getProjectParam('frameRange').set(-5, 123)\n";
+        + a + ".getProjectParam('frameRange').set(-5, 123)\n"
+        // an additional project format: a Format is serialized (see SerializedTypeVersions)
+        + a + ".addFormat('PR1056Format 1234x567 1.5')\n";
     std::string error, output;
     EXPECT_TRUE( ::Natron::Python::interpretPythonScript(script, &error, &output) ) << error << output;
 }
@@ -300,6 +302,21 @@ TEST(PortableBinaryArchive, Header)
     bigEndian[NATRON_PORTABLE_BINARY_ARCHIVE_MAGIC_SIZE + 2] = 0x40;
     std::istringstream is2(bigEndian);
     EXPECT_THROW(PortableBinaryIArchive ia2(is2), boost::archive::archive_exception);
+}
+
+// Every type serialized in a project has the same class version in every translation unit that
+// instantiates its (de)serializer, i.e. its BOOST_CLASS_VERSION is seen through the serialization header of
+// its owner. This file only includes ProjectSerialization.h: without FormatSerialization.h there, Format had
+// version 0 here and 3 in Project.cpp, and the MinGW linker kept this file's iserializer, which refused
+// the Formats saved by Project.cpp ("Unrecognized or damaged binary project file: class version N6Natron6FormatE").
+TEST(ProjectFileFormat, SerializedTypeVersions)
+{
+#ifdef FORMAT_SERIALIZATION_VERSION
+    EXPECT_EQ( (unsigned int)FORMAT_SERIALIZATION_VERSION, (unsigned int)boost::serialization::version<Format>::value );
+    EXPECT_NE( 0u, (unsigned int)boost::serialization::version<Format>::value );
+#else
+    ADD_FAILURE() << "ProjectSerialization.h serializes Format but doesn't include FormatSerialization.h (BOOST_CLASS_VERSION)";
+#endif
 }
 
 // The format is detected from the content of the file, not from its extension.
