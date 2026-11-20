@@ -404,7 +404,7 @@ ScriptEditor::onSaveScriptClicked()
         QDir currentDir = dialog.currentDirectory();
         getGui()->updateLastSavedProjectPath( currentDir.absolutePath() );
 
-        QString fileName( QString::fromUtf8( dialog.selectedFiles().c_str() ) );
+        QString fileName( QString::fromUtf8( dialog.filesToSave().c_str() ) );
         QFile file(fileName);
         if ( file.open(QIODevice::ReadWrite) ) {
             QTextStream ts(&file);

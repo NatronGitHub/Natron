@@ -238,6 +238,15 @@ public:
     static bool startsWithDriveName(const QString& name);
     static QStringList getSplitPath(const QString& path);
     static QString cleanPath(const QString& path);
+
+    /**
+     * @brief Returns filePath, a file name or path typed in a file dialog, made absolute against
+     * directory (the directory shown by the dialog) if it is relative (#825). Absolute paths, paths
+     * starting with a project variable (e.g. "[Project]/out.exr") and empty strings are returned
+     * unchanged; on Unix "~" is expanded to the home directory. If directory is empty (the
+     * "Computer" level that lists drives), a relative filePath is returned unchanged.
+     **/
+    static QString absoluteFilePath(const QString& directory, const QString& filePath);
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual Qt::ItemFlags flags(const QModelIndex &index) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int columnCount(const QModelIndex & parent) const OVERRIDE FINAL WARN_UNUSED_RETURN;

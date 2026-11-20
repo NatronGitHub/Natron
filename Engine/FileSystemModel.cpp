@@ -699,6 +699,33 @@ FileSystemModel::startsWithDriveName(const QString& name)
     return getDriveNameSize(name) > 0;
 }
 
+QString
+FileSystemModel::absoluteFilePath(const QString& directory,
+                                  const QString& filePath)
+{
+    // A project variable such as [Project] is resolved later, by the project
+    if ( filePath.isEmpty() || filePath.startsWith( QLatin1Char('[') ) ) {
+        return filePath;
+    }
+    QString path = filePath;
+#ifdef Q_OS_UNIX
+    path = AppManager::qt_tildeExpansion(path);
+#endif
+    // Same rule as Project::isRelative(), plus network shares
+    bool isAbsolute = startsWithDriveName(path) || path.startsWith( QLatin1Char('/') );
+#ifdef __NATRON_WIN32__
+    isAbsolute = isAbsolute || path.startsWith( QLatin1Char('\\') ) || ( path.size() >= 2 && path.at(1) == QLatin1Char(':') );
+#endif
+    if ( isAbsolute || directory.isEmpty() ) {
+        return path;
+    }
+    QString absolutePath = directory;
+    StrUtils::ensureLastPathSeparator(absolutePath);
+    absolutePath += path;
+
+    return cleanPath(absolutePath);
+}
+
 QString FileSystemModel::cleanPath(const QString& path) {
     if (path.isEmpty()) {
         return path;

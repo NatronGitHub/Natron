@@ -507,7 +507,8 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     bool hasRestoredDir;
     restoreState( settings.value( QLatin1String("FileDialog") ).toByteArray(), directoryArgs.empty(), &hasRestoredDir );
 
-    if (!hasRestoredDir) {
+    // An empty directory would be the "Computer" level, where a typed file name has no directory to go to (#825)
+    if ( !hasRestoredDir && !directoryArgs.empty() ) {
         hasRestoredDir = setDirectory( QString::fromUtf8( directoryArgs.c_str() ) );
     }
 
@@ -527,7 +528,11 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     }
 
     if (!hasRestoredDir) {
-        // All calls to setDirectory failed, default to something that can always succeed: the root
+        // No directory given or restored (e.g. fresh settings), or all calls to setDirectory failed:
+        // default to the home directory, else to something that can always succeed: the root (#825)
+        hasRestoredDir = setDirectory( QDir::homePath() );
+    }
+    if (!hasRestoredDir) {
         setDirectory( QDir::rootPath() );
     }
 
@@ -1392,7 +1397,9 @@ SequenceFileDialog::openSelectedFiles()
                 }
 
                 SequenceParsing::SequenceFromPattern sequence;
-                FileSystemModel::filesListFromPattern(str.toStdString(), &sequence);
+                // A bare file name is saved in the directory shown by the dialog (see filesToSave()),
+                // not in the working directory of the process: check that file (#825)
+                FileSystemModel::filesListFromPattern(FileSystemModel::absoluteFilePath(_requestedDir, str).toStdString(), &sequence);
                 if (sequence.size() > 0) {
                     QString text;
                     if (sequence.size() == 1) {
@@ -1707,6 +1714,9 @@ SequenceFileDialog::filesToSave()
     } else {
         ret = text;
     }
+    // A bare file name is saved in the directory shown by the dialog, not in the working directory
+    // of the process (#825)
+    ret = absoluteFilePathInCurrentDirectory(ret);
 
 #ifdef __NATRON_WIN32__
     if (appPTR->getCurrentSettings()->isDriveLetterToUNCPathConversionEnabled()) {
@@ -1715,6 +1725,24 @@ SequenceFileDialog::filesToSave()
 #endif
 
     return ret.toStdString();
+}
+
+QString
+SequenceFileDialog::absoluteFilePathInCurrentDirectory(const QString& filePath) const
+{
+    QString ret = FileSystemModel::absoluteFilePath(_requestedDir, filePath);
+
+    if ( (ret != filePath) && _relativePathsAllowed ) {
+        // The name was resolved against the directory: honour the "relative to" choice, as setDirectory() does
+        std::string stdRet = ret.toStdString();
+        std::string varName, varPath;
+        if ( getRelativeChoiceProjectPath(varName, varPath) ) {
+            Project::makeRelativeToVariable(varName, varPath, stdRet);
+        }
+        ret = QString::fromUtf8( stdRet.c_str() );
+    }
+
+    return ret;
 }
 
 QDir

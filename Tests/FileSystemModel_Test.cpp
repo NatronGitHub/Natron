@@ -27,6 +27,8 @@
 
 #include <gtest/gtest.h>
 
+#include <QDir>
+
 #include "Engine/FileSystemModel.h"
 
 NATRON_NAMESPACE_USING
@@ -259,4 +261,50 @@ TEST(FileSystemModelTest, CleanPath) {
     ASSERT_TRUE(!output.isNull());
     EXPECT_EQ(expectedOutput, output.toStdString()) << " input '" << testCase.input << "'";
   }
+}
+// A file name typed in a save dialog is resolved against the directory shown by the dialog,
+// not against the working directory of the process (#825).
+TEST(FileSystemModelTest, AbsoluteFilePath) {
+  struct AbsoluteFilePathTestCase {
+    const char* directory;
+    const char* filePath;
+    const char* expectedOutput;
+  };
+
+  std::vector<AbsoluteFilePathTestCase> testCases({
+      // Relative names are resolved against the directory, with or without a
+      // trailing slash.
+      {"/somedir", "project.ntp", "/somedir/project.ntp"},
+      {"/somedir/", "project.ntp", "/somedir/project.ntp"},
+      {"/", "project.ntp", "/project.ntp"},
+      {"/somedir/", "sub/out####.exr", "/somedir/sub/out####.exr"},
+      {"/somedir/", "../out_%04d.exr", "/out_%04d.exr"},
+      // Absolute paths and project variables are unchanged.
+      {"/somedir/", "/otherdir/project.ntp", "/otherdir/project.ntp"},
+      {"/somedir/", "[Project]/out.exr", "[Project]/out.exr"},
+      // Nothing to resolve.
+      {"/somedir/", "", ""},
+      // No directory (the "Computer" level): unchanged.
+      {"", "project.ntp", "project.ntp"},
+#ifdef __NATRON_WIN32__
+      {"C:/somedir/", "project.ntp", "C:/somedir/project.ntp"},
+      {"C:/somedir/", "D:/otherdir/project.ntp", "D:/otherdir/project.ntp"},
+      {"C:/somedir/", "//somehost/share/project.ntp", "//somehost/share/project.ntp"},
+      {"//SOMEHOST/share/", "project.ntp", "//SOMEHOST/share/project.ntp"},
+#endif
+  });
+
+  for (const auto& testCase : testCases) {
+    const QString output = FileSystemModel::absoluteFilePath(QString::fromUtf8(testCase.directory),
+                                                             QString::fromUtf8(testCase.filePath));
+    EXPECT_EQ(std::string(testCase.expectedOutput), output.toStdString())
+        << " directory '" << testCase.directory << "' filePath '" << testCase.filePath << "'";
+  }
+
+#ifdef Q_OS_UNIX
+  // "~" is the home directory.
+  EXPECT_EQ((QDir::homePath() + QString::fromUtf8("/project.ntp")).toStdString(),
+            FileSystemModel::absoluteFilePath(QString::fromUtf8("/somedir/"),
+                                              QString::fromUtf8("~/project.ntp")).toStdString());
+#endif
 }
