@@ -41,7 +41,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # a real axis, so that other axes (e.g. the licence) combine with every environment;
+        # a real axis, so that other axes combine with every environment;
         # include only adds the runner of each environment
         msystem: [UCRT64]
         include:
@@ -98,7 +98,8 @@ jobs:
 
           cd tools/jenkins
 
-          # CMake build (NATRON_BUILD_SYSTEM defaults to cmake), no crash reporter until #1183
+          # CMake build (NATRON_BUILD_SYSTEM defaults to cmake), no crash reporter until #1183. GPL
+          # only: there are no COMMERCIAL builds in CI, nightlies or releases.
           WORKSPACE=${NATRON_BUILD_WORKSPACE_UNIX} BUILD_NAME=natron BUILD_NUMBER=1 BITS=64 NATRON_LICENSE=GPL GIT_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git GIT_URL_IS_NATRON=1 SNAPSHOT_BRANCH=${GITHUB_REF_NAME} QT_VERSION_MAJOR=5 DISABLE_BREAKPAD=1 NOUPDATE=1 MKJOBS=$(nproc) MINIMIZE_DISK_USAGE=1 UNIT_TESTS=true ./launchBuildMain.sh
 
           # the architecture in the installer name, as common.sh sets WIN_ARCH
@@ -179,7 +180,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4.3.1
         with:
-          name:  compare-${{ steps.build.outputs.INSTALLER_NAME }}${{ env.ARTIFACT_SUFFIX }}
+          name:  compare-${{ steps.build.outputs.INSTALLER_NAME }}
           path:  ${{ github.workspace }}/compare
           if-no-files-found: ignore
 
