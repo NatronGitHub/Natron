@@ -6,9 +6,10 @@ OpenFX 1.5.1 host conformance
 This chapter records how well Natron, as an OpenFX host, follows what the
 OpenFX 1.5.1 specification asks of hosts. It is meant for maintainers who fix
 OFX host bugs, review changes to the host glue, or prepare Natron to advertise a
-newer OFX API version. Natron currently advertises OFX API 1.4
-(``kOfxPropAPIVersion``); advertising 1.5 is tracked in
-`#1107 <https://github.com/NatronGitHub/Natron/issues/1107>`__.
+newer OFX API version. Natron now advertises OFX API 1.5
+(``kOfxPropAPIVersion``, `#1107 <https://github.com/NatronGitHub/Natron/issues/1107>`__);
+it still advertised 1.4 at the audit commit 7dea437a6, and the tables below
+describe that state unless a row says otherwise.
 
 .. toctree::
     :maxdepth: 1
