@@ -289,9 +289,9 @@ CurveWidget::centerOn(const std::vector<CurveGuiPtr> & curves, bool useDisplayRa
                 rangeSet = true;
             } else {
                 displayRange.min = std::min(displayRange.min, thisCurveRange.min);
-                displayRange.max = std::min(displayRange.max, thisCurveRange.max);
+                displayRange.max = std::max(displayRange.max, thisCurveRange.max);
                 xRange.first = std::min(xRange.first, thisXRange.first);
-                xRange.second = std::min(xRange.second, thisXRange.second);
+                xRange.second = std::max(xRange.second, thisXRange.second);
             }
         } // for all curves
 
