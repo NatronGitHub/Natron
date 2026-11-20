@@ -227,8 +227,8 @@ Table 3: ofxParam.h, parameter properties
    * - P-Int2
      - `ofxParam.h:200-207 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L200-L207>`__ InteractSize double x2 "set by a host to indicate the current size of a custom interface" on the param **instance**
      - MUST (host sets)
-     - Natron writes the size (as int) to the *interact descriptor* (OfxOverlayInteract.cpp:382-387, from CustomParamInteract.cpp:162), never to the param instance, where it stays (0,0) (hP.cpp:462)
-     - PARTIAL
+     - Natron writes the size (as int) to the *interact descriptor* (OfxOverlayInteract.cpp:382-387, from CustomParamInteract.cpp:162), never to the param instance, where it stays (0,0) (hP.cpp:462) Fixed: ``OfxParamOverlayInteract::setSize()`` also sets the double kOfxParamPropInteractSize of the parameter instance.
+     - OK (fixed by `#1484 <https://github.com/NatronGitHub/Natron/pull/1484>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - P-Int3
@@ -449,8 +449,8 @@ Table 4: OfxParameterSuiteV1 (`ofxParam.h:905-1278 <https://github.com/AcademySo
    * - S1
      - paramDefine `ofxParam.h:908-932 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L908-L932>`__: OK / ErrBadHandle / ErrExists / **ErrUnknown if the type is unknown** / ErrUnsupported if known but unsupported
      - MUST
-     - hP.cpp:2217-2290. ErrBadHandle (2226) OK, ErrExists (2234-2246) OK, ErrUnsupported for StrChoice/Bytes (2252-2272) OK. **An unknown type** gets ``SetDescriptor::paramDefine`` → NULL (hP.cpp:688-689) → **kOfxStatErrUnsupported** (hP.cpp:2282-2288), not ErrUnknown. Natron's override (OIEI.cpp:1524-1529) passes through. A NULL paramType reaches ``std::string(paramType)`` / ``strcmp`` (crash), but a NULL type is invalid anyway
-     - WRONG (low, P10)
+     - hP.cpp:2217-2290. ErrBadHandle (2226) OK, ErrExists (2234-2246) OK, ErrUnsupported for StrChoice/Bytes (2252-2272) OK. **An unknown type** gets ``SetDescriptor::paramDefine`` → NULL (hP.cpp:688-689) → **kOfxStatErrUnsupported** (hP.cpp:2282-2288), not ErrUnknown. Natron's override (OIEI.cpp:1524-1529) passes through. A NULL paramType reaches ``std::string(paramType)`` / ``strcmp`` (crash), but a NULL type is invalid anyway Re-checked at HostSupport bdfb48d4: an unknown type gives kOfxStatErrUnknown, and a NULL type kOfxStatErrUnknown instead of a crash.
+     - OK (fixed by `NatronGitHub/openfx#187 <https://github.com/NatronGitHub/openfx/pull/187>`__, in libs/OpenFX since bb1f18a72 (`#1422 <https://github.com/NatronGitHub/Natron/pull/1422>`__); found fixed)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - S2
@@ -497,7 +497,7 @@ Table 4: OfxParameterSuiteV1 (`ofxParam.h:905-1278 <https://github.com/AcademySo
      - paramGetNumKeys `ofxParam.h:1134-1149 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L1134-L1149>`__
      - MUST
      - OPI.cpp:125-136. **An expression on dimension 0 reports exactly 2 fake keys at t=0 and t=1** (OPI.cpp:97-108, deliberate, for GeneratorPlugin isIdentity); paramGetKeyTime then returns these fake times. NULL numberOfKeys is dereferenced (hP.cpp:2729)
-     - PARTIAL (P12)
+     - PARTIAL (P12, deliberate, won't fix; the NULL dereference is fixed by `NatronGitHub/openfx#187 <https://github.com/NatronGitHub/openfx/pull/187>`__, in libs/OpenFX since bb1f18a72 (`#1422 <https://github.com/NatronGitHub/Natron/pull/1422>`__); found fixed)
 
        **Deliberate, won't fix.**
 
@@ -510,15 +510,15 @@ Table 4: OfxParameterSuiteV1 (`ofxParam.h:905-1278 <https://github.com/AcademySo
    * - S12
      - paramGetKeyIndex `ofxParam.h:1167-1185 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L1167-L1185>`__: direction 0/±; **index "set to -1 if no key was found"**; kOfxStatFailed if none
      - MUST
-     - OPI.cpp:158-224. (a) **direction<0 fails when a key exists exactly at** ``time``: with keys {1,5} and time=5 it returns kOfxStatFailed instead of index 0 (the loop returns Failed as soon as it reaches the key at ``time``, OPI.cpp:200-201). (b) index is never set to -1 on failure
-     - WRONG (P2)
+     - OPI.cpp:158-224. (a) **direction<0 fails when a key exists exactly at** ``time``: with keys {1,5} and time=5 it returns kOfxStatFailed instead of index 0 (the loop returns Failed as soon as it reaches the key at ``time``, OPI.cpp:200-201). (b) index is never set to -1 on failure Fixed: the last key before ``time`` is found (a key within 1e-6 of ``time`` is at ``time``), and ``index`` is set to -1 when no key is found.
+     - OK (fixed by `#1484 <https://github.com/NatronGitHub/Natron/pull/1484>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - S13
      - paramDeleteKey `ofxParam.h:1187-1198 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L1187-L1198>`__: **ErrBadIndex if no key at the given time**
      - MUST
-     - OPI.cpp:226-245 always returns kOfxStatOK (parametric returns BadIndex, ofxhParametricParam.cpp:269-272)
-     - WRONG (low, P9)
+     - OPI.cpp:226-245 always returns kOfxStatOK (parametric returns BadIndex, ofxhParametricParam.cpp:269-272) Fixed: kOfxStatErrBadIndex when no key is at ``time``.
+     - OK (fixed by `#1484 <https://github.com/NatronGitHub/Natron/pull/1484>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - S14
@@ -654,8 +654,8 @@ Table 6: ofxParametricParam.h (+ `ofxParameter.rst:929-1117 <https://github.com/
    * - R6
      - parametricParamGetValue `ofxParametricParam.h:143-160 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParametricParam.h#L143-L160>`__: OK / ErrBadHandle / **ErrBadIndex for a bad curve index**
      - MUST
-     - oPP.cpp:371-405 → OPI.cpp:4728-4743: a bad curveIndex → ``knob->getValue`` fails → **kOfxStatFailed**, not ErrBadIndex
-     - PARTIAL (low)
+     - oPP.cpp:371-405 → OPI.cpp:4728-4743: a bad curveIndex → ``knob->getValue`` fails → **kOfxStatFailed**, not ErrBadIndex Fixed: every parametric suite function of ``OfxParametricInstance`` returns kOfxStatErrBadIndex for a bad curve index, and for a bad control point index.
+     - OK (fixed by `#1484 <https://github.com/NatronGitHub/Natron/pull/1484>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - R7
@@ -708,7 +708,7 @@ Wrong results / data loss
 
 *Second check:* no other override (each OfxXxxInstance::copyFrom calls this helper; HostSupport's base ``Instance::copyFrom`` returns ErrMissingHostFeature, hP.cpp:857, and is overridden). ``KnobI::clone(..., dimension=-1)`` would mean "all dimensions" (Knob.cpp:4214-4219), but the loop never reaches it. ``git show 441a6d3d0`` (2016-04-14, "KnobGuiValue: add support for matrices...") replaced ``to->clone(from, offset, range)`` with the loop: a regression.
 
-**Problem 2.** ``paramGetKeyIndex`` **with direction<0 fails when a key exists at** ``time``\ **, and never sets index=-1 (WRONG).** Spec `ofxParam.h:1167-1185 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L1167-L1185>`__. OPI.cpp:181-208: with keys {1,5} and time=5 the loop doesn't return at i=0 (because ``*next > time`` is false), then sees ``*it == time``, which is not ``< time``, and returns kOfxStatFailed. The correct answer is index 0. This breaks "previous keyframe" navigation from a key, the most common call. On failure ``index`` is left unchanged (the spec says -1). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+**Problem 2.** ``paramGetKeyIndex`` **with direction<0 fails when a key exists at** ``time``\ **, and never sets index=-1 (WRONG).** Spec `ofxParam.h:1167-1185 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L1167-L1185>`__. OPI.cpp:181-208: with keys {1,5} and time=5 the loop doesn't return at i=0 (because ``*next > time`` is false), then sees ``*it == time``, which is not ``< time``, and returns kOfxStatFailed. The correct answer is index 0. This breaks "previous keyframe" navigation from a key, the most common call. On failure ``index`` is left unchanged (the spec says -1). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `#1484 <https://github.com/NatronGitHub/Natron/pull/1484>`__.
 
 *Second check:* all param types funnel into this one helper (OPI.cpp getKeyIndex methods), and HostSupport only forwards to it (hP.cpp:2805-2838). No other implementation.
 
@@ -744,9 +744,9 @@ Wrong undo grouping (no data loss, undo history wrong)
 Spec-only / UI / return codes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Problem 9.** ``paramDeleteKey`` **returns kOfxStatOK when there is no key at** ``time`` **(WRONG, low).** Spec `ofxParam.h:1192-1196 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L1192-L1196>`__ (ErrBadIndex). OPI.cpp:226-245 always returns OK. *Second check:* one helper for all types; parametric returns BadIndex (ofxhParametricParam.cpp:269-272). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+**Problem 9.** ``paramDeleteKey`` **returns kOfxStatOK when there is no key at** ``time`` **(WRONG, low).** Spec `ofxParam.h:1192-1196 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L1192-L1196>`__ (ErrBadIndex). OPI.cpp:226-245 always returns OK. *Second check:* one helper for all types; parametric returns BadIndex (ofxhParametricParam.cpp:269-272). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `#1484 <https://github.com/NatronGitHub/Natron/pull/1484>`__.
 
-**Problem 10.** ``paramDefine`` **with an unknown type returns kOfxStatErrUnsupported, not kOfxStatErrUnknown (WRONG, low).** Spec `ofxParam.h:922-927 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L922-L927>`__. hP.cpp:688-689 returns NULL, then hP.cpp:2282-2288 returns Unsupported. *Second check:* Natron's override OIEI.cpp:1524-1543 calls the base class first and doesn't change the status. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+**Problem 10.** ``paramDefine`` **with an unknown type returns kOfxStatErrUnsupported, not kOfxStatErrUnknown (WRONG, low).** Spec `ofxParam.h:922-927 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L922-L927>`__. hP.cpp:688-689 returns NULL, then hP.cpp:2282-2288 returns Unsupported. *Second check:* Natron's override OIEI.cpp:1524-1543 calls the base class first and doesn't change the status. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `NatronGitHub/openfx#187 <https://github.com/NatronGitHub/openfx/pull/187>`__ (in libs/OpenFX since bb1f18a72, `#1422 <https://github.com/NatronGitHub/Natron/pull/1422>`__).
 
 **Problem 11. Parametric UI colour: black when unset, and the default-colour code clobbers DisplayMax (WRONG, UI).** Spec `ofxParametricParam.h:58-71 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParametricParam.h#L58-L71>`__. OPI.cpp:4557-4566 reads a zero-filled vector, so unset colours give black curves. ofxhParametricParam.cpp:177-187 reads and writes **kOfxParamPropDisplayMax** where it means kOfxParamPropParametricUIColour (dim\*3 values, pattern [1,0,0,0,1,0,...]), which can set a 0 display max for curves 1 and 2 through the DisplayMax notify hook (OPI.cpp:4683-4698). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
@@ -760,7 +760,7 @@ Spec-only / UI / return codes
 
 **Problem 15. Custom params are always hidden and disabled, so their InteractV1 is never shown (PARTIAL).** Spec `ofxParameter.rst:381-394 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxParameter.rst?plain=1#L381-L394>`__. OIEI.cpp:618-619 forces it; OPI.cpp custom setSecret/setEnabled are no-ops. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
-**Problem 16. Param interact size properties are read from and written to the interact descriptor, not the param (PARTIAL).** Spec `ofxParam.h:200-240 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L200-L240>`__. Values the plug-in sets on the param descriptor (Aspect, MinimumSize, PreferedSize) are ignored; the instance's InteractSize is never updated; the aspect is read with ``getIntProperty`` on a double, which returns 0 (CustomParamInteract.cpp:76, OfxOverlayInteract.cpp:358-394, OEI.cpp:769-771). Hidden by the Support library, which sets them on the interact descriptor. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+**Problem 16. Param interact size properties are read from and written to the interact descriptor, not the param (PARTIAL).** Spec `ofxParam.h:200-240 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L200-L240>`__. Values the plug-in sets on the param descriptor (Aspect, MinimumSize, PreferedSize) are ignored; the instance's InteractSize is never updated; the aspect is read with ``getIntProperty`` on a double, which returns 0 (CustomParamInteract.cpp:76, OfxOverlayInteract.cpp:358-394, OEI.cpp:769-771). Hidden by the Support library, which sets them on the interact descriptor. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. The sizes are read from the parameter, and the current size is set on it, since `#1484 <https://github.com/NatronGitHub/Natron/pull/1484>`__; the aspect is still not applied.
 
 **Problem 17. IsAutoKeying means "between keys" (PARTIAL).** Spec `ofxParam.h:777-785 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L777-L785>`__. OPI.cpp:373; same GUI/dimension-0 limits as problem 4. **Issue:** `#1371 <https://github.com/NatronGitHub/Natron/issues/1371>`__.
 
@@ -768,13 +768,13 @@ Spec-only / UI / return codes
 
 **Problem 19. Project load replaces plug-in defaults with the defaults saved in the project (PARTIAL, low).** Spec `ofxParameter.rst:630 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxParameter.rst?plain=1#L630>`__ (step 4). Node.cpp:1174 ``cloneDefaultValues``; this only affects "reset to default" for knobs saved in the project. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
-**Problem 20. Small ones (PARTIAL, low):** ScriptName ignored (Python uses the param name); ShowTimeMarker ignored; parametricParamGetValue returns kOfxStatFailed instead of ErrBadIndex for a bad curve index (OPI.cpp:4728-4743); "instance (read only)" properties are writable on instances with no effect (hP.cpp:272-300, 481-488). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+**Problem 20. Small ones (PARTIAL, low):** ScriptName ignored (Python uses the param name); ShowTimeMarker ignored; parametricParamGetValue returns kOfxStatFailed instead of ErrBadIndex for a bad curve index (OPI.cpp:4728-4743); "instance (read only)" properties are writable on instances with no effect (hP.cpp:272-300, 481-488). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. The parametricParamGetValue bad curve index is fixed by `#1484 <https://github.com/NatronGitHub/Natron/pull/1484>`__.
 
 NEXT items seen (out of scope): kOfxParamInterpType (HostSupport hP.cpp:629-635, `#1138 <https://github.com/NatronGitHub/Natron/issues/1138>`__); instanceChanged after project load.
 
 Counts
 ------
 
-Table rows (105): OK 70, PARTIAL 18, WRONG 11, N/A 4, NEXT 2. Some bugs appear in more than one row: paramCopy in S15 and R13, custom interpolation in T15 and P32, ChoiceOrder in T9 and P25.
+Table rows (105): OK 75, PARTIAL 16, WRONG 8, N/A 4, NEXT 2. Some bugs appear in more than one row: paramCopy in S15 and R13, custom interpolation in T15 and P32, ChoiceOrder in T9 and P25.
 
 Distinct problems (1-20): 9 WRONG (1, 2, 3, 4, 5, 7, 9, 10, 11), 11 PARTIAL (6, 8, 12-20).

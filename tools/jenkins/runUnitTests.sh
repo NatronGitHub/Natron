@@ -89,7 +89,7 @@ if [ "$FAIL" = "0" ]; then
         env SRCDIR="$SRC_PATH" NATRON_CACHE_PATH="$CACHEDIR" OCIO="$ocio" FFMPEG="$TMP_PORTABLE_DIR/bin/ffmpeg" COMPARE="$TMP_PORTABLE_DIR/bin/idiff"  $TIMEOUT -s KILL 7200 bash runTests.sh "$bin" || FAIL=$?
         #FAIL=0
     elif [ "$PKGOS" = "Windows" ] && [ "${BITS}" = "64" ]; then
-        cp -a "$TMP_BINARIES_PATH"/Natron-installer/packages/*/data/* "$UNIT_TMP"/
+        # (the tests run the portable tree, TMP_PORTABLE_DIR, from which the zip is made)
         rm -rf "$LOCALAPPDATA\\INRIA\\Natron" || true
         mkdir -p "$LOCALAPPDATA\\INRIA\\Natron\\cache\\"{ViewerCache,DiskCache} || true
         ocio="$TMP_PORTABLE_DIR/Resources/OpenColorIO-Configs/blender/config.ocio"

@@ -118,7 +118,9 @@ engine: curves, LUT/color, images, hashing, tracking, the file-system model and
 GL contexts. Build and run the suite before opening a pull request. When you fix
 a bug that is unit-testable — anything in the color, image, curve, hashing or
 geometry code — add a regression test. Rendering and GUI behavior are harder to
-unit-test; for those, describe your manual test steps in the pull request.
+unit-test: GUI behaviour can be tested by a GUI test script in ``Tests/gui/``, run by
+``Natron --test`` (see :ref:`guiTests`; ``ctest -L gui`` runs them); otherwise, describe your
+manual test steps in the pull request.
 
 Two changes deserve special care because they can silently break users:
 

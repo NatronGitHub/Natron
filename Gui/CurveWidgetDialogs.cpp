@@ -217,6 +217,9 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
 
 ImportExportCurveDialog::~ImportExportCurveDialog()
 {
+    if ( appPTR->isTestMode() ) {
+        return; // a test does not change the user's dialog state
+    }
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
     if (_isExportDialog) {

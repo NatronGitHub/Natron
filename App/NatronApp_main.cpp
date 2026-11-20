@@ -169,8 +169,8 @@ int main(int argc, char *argv[])
 #else
         bool ret = manager.load(argc, argv, args);
 #endif
-        if ( manager.isQuitRequested() ) {
-            // natron.quit(exitCode)
+        if ( manager.isQuitRequested() || manager.isTestMode() ) {
+            // natron.quit(exitCode), or the status of a GUI test (Natron --test), which is 1 if it did not run
             return manager.getRequestedExitCode();
         }
 
