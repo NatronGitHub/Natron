@@ -1256,6 +1256,12 @@ Knob<T>::setValue(const T & v,
         if (!timeSet) {
             time = getCurrentTime();
         }
+        // Only the static value changed, which is not the value of an animated (e.g. while a project is loading, when
+        // no keyframe is added), linked or expression-driven dimension: the effective value did not change.
+        std::unique_ptr<KnobHolder::ValueChangesRecorder> notRecorded;
+        if ( !timeSet && ( (getAnimationLevel(dimension) != eAnimationLevelNone) || !getExpression(dimension).empty() || isSlave(dimension) ) ) {
+            notRecorded.reset( new KnobHolder::ValueChangesRecorder(NULL) );
+        }
         evaluateValueChange(dimension, time, view, reason);
     }
     {

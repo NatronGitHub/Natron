@@ -4944,7 +4944,6 @@ struct KnobHolder::KnobHolderPrivate
     int nbSignificantChangesDuringEvaluationBlock;
     int nbChangesDuringEvaluationBlock;
     int nbChangesRequiringMetadataRefresh;
-    U64 valueChangesCount; // see getValueChangesCount()
     QMutex knobsFrozenMutex;
     bool knobsFrozen;
     mutable QMutex hasAnimationMutex;
@@ -4971,7 +4970,6 @@ struct KnobHolder::KnobHolderPrivate
         , nbSignificantChangesDuringEvaluationBlock(0)
         , nbChangesDuringEvaluationBlock(0)
         , nbChangesRequiringMetadataRefresh(0)
-        , valueChangesCount(0)
         , knobsFrozenMutex()
         , knobsFrozen(false)
         , hasAnimationMutex()
@@ -5001,7 +4999,6 @@ struct KnobHolder::KnobHolderPrivate
     , nbSignificantChangesDuringEvaluationBlock(0)
     , nbChangesDuringEvaluationBlock(0)
     , nbChangesRequiringMetadataRefresh(0)
-    , valueChangesCount(0)
     , knobsFrozenMutex()
     , knobsFrozen(false)
     , hasAnimationMutex()
@@ -5913,6 +5910,9 @@ KnobHolder::onDoValueChangeOnMainThread(KnobI* knob,
     onKnobValueChanged_public(knob, (ValueChangedReasonEnum)reason, time, view, originatedFromMT);
 }
 
+// see KnobHolder::ValueChangesRecorder
+static thread_local std::set<KnobHolder*>* gValueChangesRecorded = 0;
+
 void
 KnobHolder::appendValueChange(const KnobIPtr& knob,
                               int dimension,
@@ -5941,7 +5941,9 @@ KnobHolder::appendValueChange(const KnobIPtr& knob,
         }
         assert(foundChange);
 
-        ++_imp->valueChangesCount;
+        if (gValueChangesRecorded) {
+            gValueChangesRecorded->insert(this);
+        }
         foundChange->reason = reason;
         foundChange->originalReason = originalReason;
         foundChange->originatedFromMainThread = QThread::currentThread() == qApp->thread();
@@ -5976,12 +5978,15 @@ KnobHolder::appendValueChange(const KnobIPtr& knob,
     }
 } // KnobHolder::appendValueChange
 
-U64
-KnobHolder::getValueChangesCount() const
+KnobHolder::ValueChangesRecorder::ValueChangesRecorder(std::set<KnobHolder*>* changedHolders)
+    : _previous(gValueChangesRecorded)
 {
-    QMutexLocker l(&_imp->evaluationBlockedMutex);
+    gValueChangesRecorded = changedHolders;
+}
 
-    return _imp->valueChangesCount;
+KnobHolder::ValueChangesRecorder::~ValueChangesRecorder()
+{
+    gValueChangesRecorded = _previous;
 }
 
 void

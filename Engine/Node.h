@@ -32,6 +32,7 @@
 #include <string>
 #include <map>
 #include <list>
+#include <set>
 #include <bitset>
 
 CLANG_DIAG_OFF(deprecated)
@@ -950,11 +951,19 @@ public:
     /**
      * @brief Called once on each node of a project that was just loaded, when all its nodes, links and input
      * connections are restored and the clip preferences are computed, before the first render: calls
-     * EffectInstance::onInputsRestoredAfterProjectLoad() if EffectInstance::wantsInputsRestoredAfterProjectLoad().
-     * Returns true if a knob of the effect changed meanwhile, in which case the node has a new age (and hash), and
-     * the caller must refresh the input related data (clip preferences, metadata) of the node and of its outputs.
+     * EffectInstance::onInputsRestoredAfterProjectLoad() if EffectInstance::wantsInputsRestoredAfterProjectLoad(), with
+     * the render thread storage of the caller if it covers this node (see createRenderArgsForInstanceChanged()).
+     * The holders whose knob values change meanwhile (the effect, and those that follow its knobs through links and
+     * expressions) are added to changedHolders: the knob changed handlers aren't called while a project is loading,
+     * so the caller must give their nodes a new age and refresh their input related data.
      **/
-    bool onInputsRestoredAfterProjectLoad();
+    void onInputsRestoredAfterProjectLoad(std::set<KnobHolder*>* changedHolders);
+
+    /**
+     * @brief A render thread storage on the tree of this node, at the current frame, as for an instance changed action
+     * (see onInputChanged()): set while the returned object exists.
+     **/
+    ParallelRenderArgsSetterPtr createRenderArgsForInstanceChanged();
 
     bool onEffectKnobValueChanged(KnobI* what, ValueChangedReasonEnum reason);
 

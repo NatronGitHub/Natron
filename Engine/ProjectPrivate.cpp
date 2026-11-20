@@ -45,6 +45,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/GroupInput.h"
+#include "Engine/Knob.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeSerialization.h"
@@ -61,18 +62,22 @@ NATRON_NAMESPACE_ENTER
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
-// Append node to ordered after the nodes upstream of it: its inputs, the input of the Group for a GroupInput node,
-// and the nodes inside it for a Group. A node is appended once.
+// Append the nodes of app to ordered, each once, a node after the nodes upstream of it: its inputs (Node::getInput()
+// already redirects a Group to its GroupOutput's input, a GroupInput to the input of its Group, and a Precomp to its
+// output node, which belongs to the Precomp's own app, loaded before), and the nodes inside it for a Group. The
+// GroupInput case below is redundant with the redirections, but keeps a GroupInput after the input of its Group if
+// getInput() is not redirected (e.g. when the Group has no GroupOutput).
 void
 appendUpstreamFirst(const NodePtr& node,
+                    const AppInstance* app,
                     std::set<Node*>* visited,
                     NodesList* ordered)
 {
-    if ( !node || !visited->insert( node.get() ).second ) {
+    if ( !node || (node->getApp().get() != app) || !visited->insert( node.get() ).second ) {
         return;
     }
     for (int i = 0; i < node->getNInputs(); ++i) {
-        appendUpstreamFirst(node->getInput(i), visited, ordered);
+        appendUpstreamFirst(node->getInput(i), app, visited, ordered);
     }
     if ( dynamic_cast<GroupInput*>( node->getEffectInstance().get() ) ) {
         NodeGroupPtr group = std::dynamic_pointer_cast<NodeGroup>( node->getGroup() );
@@ -81,7 +86,7 @@ appendUpstreamFirst(const NodePtr& node,
             group->getInputs(&groupInputs, false);
             for (std::size_t i = 0; i < groupInputs.size(); ++i) {
                 if (groupInputs[i] == node) {
-                    appendUpstreamFirst(group->getNode()->getInput( (int)i ), visited, ordered);
+                    appendUpstreamFirst(group->getNode()->getInput( (int)i ), app, visited, ordered);
                 }
             }
         }
@@ -91,7 +96,7 @@ appendUpstreamFirst(const NodePtr& node,
         NodesList children = isGroup->getNodes();
         for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
             if ( (*it)->isActivated() ) {
-                appendUpstreamFirst(*it, visited, ordered);
+                appendUpstreamFirst(*it, app, visited, ordered);
             }
         }
     }
@@ -286,19 +291,61 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     _publicInterface->forceComputeInputDependentDataOnAllTrees();
 
     // All the nodes, links and input connections are restored and the clip preferences computed: tell the effects
-    // that their inputs are connected, before anything is rendered (OFX 1.5, #1107). Upstream nodes first, so that
-    // an effect sees the metadata of its inputs as refreshed after their own action. If an effect changed a knob,
-    // refresh the input related data (clip preferences, metadata) of the node and of its outputs.
+    // that their inputs are connected, before anything is rendered (#1107, see OfxEffectInstance::onInputsRestoredAfterProjectLoad()). Upstream nodes first, so that
+    // an effect sees the metadata of its inputs as refreshed after their own action.
+    // The render thread storage that the actions need is set once on the tree of each root (a node that no node of
+    // the project reads), not once per effect: setting it walks the whole upstream tree, so once per effect costs
+    // O(n^2) on a chain of n effects (3 s for 1000 Multiply nodes, instead of 8 ms, #1447). It is set again after an
+    // action changed a knob (the hashes changed). Setting it may wait for an OpenGL context of the pool, as in
+    // Node::onInputChanged().
+    // The knob changed handlers aren't called while the project is loading (KnobHolder::endChanges()), and the knobs
+    // age isn't incremented: if a knob changed in an action, give its node, and the nodes whose links or expressions
+    // follow it, a new age (hence a new hash, so that no image cached for the old values is used), and refresh their
+    // input related data (clip preferences, metadata) and those of their outputs. Their hashes changed: set the
+    // render thread storage again for the next action.
     {
-        NodesList nodes, ordered;
-        std::set<Node*> visited;
+        const AppInstance* app = _publicInterface->getApp().get();
+        NodesList nodes, roots;
         _publicInterface->getNodes_recursive(nodes, true);
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            appendUpstreamFirst(*it, &visited, &ordered);
+            NodesList outputs;
+            (*it)->getOutputsWithGroupRedirection(outputs);
+            bool isRoot = true;
+            for (NodesList::iterator o = outputs.begin(); o != outputs.end() && isRoot; ++o) {
+                isRoot = ( (*o)->getApp().get() != app );
+            }
+            if (isRoot) {
+                roots.push_back(*it);
+            }
         }
-        for (NodesList::iterator it = ordered.begin(); it != ordered.end(); ++it) {
-            if ( (*it)->onInputsRestoredAfterProjectLoad() ) {
-                (*it)->forceRefreshAllInputRelatedData();
+        // the roots, then any node they don't reach
+        roots.insert( roots.end(), nodes.begin(), nodes.end() );
+        std::set<Node*> visited;
+        for (NodesList::iterator root = roots.begin(); root != roots.end(); ++root) {
+            NodesList tree;
+            appendUpstreamFirst(*root, app, &visited, &tree);
+            ParallelRenderArgsSetterPtr renderArgs;
+            for (NodesList::iterator it = tree.begin(); it != tree.end(); ++it) {
+                if ( !(*it)->getEffectInstance()->wantsInputsRestoredAfterProjectLoad() ) {
+                    continue;
+                }
+                if (!renderArgs) {
+                    renderArgs = (*root)->createRenderArgsForInstanceChanged();
+                }
+                std::set<KnobHolder*> changed;
+                (*it)->onInputsRestoredAfterProjectLoad(&changed);
+                if ( changed.empty() ) {
+                    continue;
+                }
+                renderArgs.reset();
+                for (std::set<KnobHolder*>::const_iterator h = changed.begin(); h != changed.end(); ++h) {
+                    EffectInstance* effect = dynamic_cast<EffectInstance*>(*h);
+                    NodePtr node = effect ? effect->getNode() : NodePtr();
+                    if ( node && (node->getApp().get() == app) ) {
+                        node->incrementKnobsAge();
+                        node->forceRefreshAllInputRelatedData();
+                    }
+                }
             }
         }
     }

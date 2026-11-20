@@ -289,7 +289,7 @@ Table 3: ofxParam.h, parameter properties
    * - P9
      - `ofxParam.h:345-356 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L345-L356>`__ Secret default 0, inst rw; hidden "but should otherwise behave as a normal parameter"
      - MUST
-     - hP.cpp:274; notify hook → setSecret (e.g. OPI.cpp:762). Custom params ignore it (T14). On project load Natron also restores Secret/Enabled from the project (Node.cpp:1216-1222): not a spec requirement, but it keeps plug-in logic that toggles visibility consistent; after the load, the plug-in also gets an instanceChanged with kOfxChangePluginEdited for each connected input clip (NEXT, #1107)
+     - hP.cpp:274; notify hook → setSecret (e.g. OPI.cpp:762). Custom params ignore it (T14). On project load Natron also restores Secret/Enabled from the project (Node.cpp:1216-1222): not a spec requirement, but it keeps plug-in logic that toggles visibility consistent; after the load, the plug-in also gets an instanceChanged with kOfxChangePluginEdited for each input clip with an input node (#1107)
      - OK
    * - P10
      - `ofxParam.h:358-367 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L358-L367>`__ ScriptName default = name: "the name of a parameter in [host] scripts"
@@ -770,7 +770,7 @@ Spec-only / UI / return codes
 
 **Problem 20. Small ones (PARTIAL, low):** ScriptName ignored (Python uses the param name); ShowTimeMarker ignored; parametricParamGetValue returns kOfxStatFailed instead of ErrBadIndex for a bad curve index (OPI.cpp:4728-4743); "instance (read only)" properties are writable on instances with no effect (hP.cpp:272-300, 481-488). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
-NEXT items seen (out of scope): kOfxParamInterpType (HostSupport hP.cpp:629-635, `#1138 <https://github.com/NatronGitHub/Natron/issues/1138>`__); instanceChanged after project load.
+NEXT items seen (out of scope): kOfxParamInterpType (HostSupport hP.cpp:629-635, `#1138 <https://github.com/NatronGitHub/Natron/issues/1138>`__). InstanceChanged after project load is sent for clips only (#1107): params whose value changes after createInstance (links and expressions restored later) are not notified.
 
 Counts
 ------

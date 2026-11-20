@@ -16,13 +16,14 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-// OFX 1.5 (ofxCore.h, kOfxActionInstanceChanged): "when a host loads a plugin instance from a saved project, if the
-// input clips are not connected at that time, the host must call `instanceChanged` after kOfxActionCreateInstance and
-// after the host has hooked up all clips, with property kOfxPropType = kOfxTypeClip and kOfxPropChangeReason =
-// kOfxChangePluginEdited, and ensure that OfxImageEffectSuiteV1::clipGetRegionOfDefinition works in this action"
-// (#1107). The test plug-in net.natron.test.ProjectLoad (Tests/OfxTestPlugin/NatronTestPluginProjectLoad.cpp) counts
-// these actions and, like a writer, sets parameters from its source clip when the user connects it: the values saved
-// in the project must be the ones it has after the project is loaded.
+// After a project load, when the inputs are connected and the clip preferences computed, Natron sends each OFX
+// effect one kOfxActionInstanceChanged per input clip with an input node, with kOfxTypeClip and
+// kOfxChangePluginEdited (#1107; openfx main, after 1.5.1, from #184/#191, asks for an instanceChanged then, with
+// kOfxChangeUserEdited: see kProjectLoadChangeReason in Engine/OfxEffectInstance.cpp and
+// https://github.com/AcademySoftwareFoundation/openfx/issues/294). The test plug-in net.natron.test.ProjectLoad
+// (Tests/OfxTestPlugin/NatronTestPluginProjectLoad.cpp) counts these actions and, like a writer, sets parameters from
+// its source clip when the user connects it: the values saved in the project must be the ones it has after the
+// project is loaded.
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -68,7 +69,7 @@ const char* const kCounters[] = {
     "ProjectLoad.clip." kOfxImageEffectOutputClipName "." kOfxChangeUserEdited,
     "ProjectLoad.clip." kOfxImageEffectOutputClipName "." kOfxChangePluginEdited,
     "ProjectLoad.param." kOfxChangeUserEdited, "ProjectLoad.param." kOfxChangePluginEdited,
-    "ProjectLoad.connected", "ProjectLoad.rod", "ProjectLoad.sourcePAR100",
+    "ProjectLoad.connected", "ProjectLoad.rod", "ProjectLoad.sourcePAR100", "ProjectLoad.sourceFrameRate",
     "ProjectLoad.error.outsideBracket", "ProjectLoad.error.reasonMismatch",
 };
 
@@ -175,6 +176,7 @@ TEST(OfxProjectLoad, InstanceChangedAfterLoadKeepsSavedValues)
     knob<KnobDouble>(alone, "frameRate")->setValue(30.);
     knob<KnobDouble>(generator, "par")->setValue(2.);
     const U64 savedAge = connected->getKnobsAge();
+    const double generatorFrameRate = generator->getEffectInstance()->getFrameRate();
     const std::string connectedName = connected->getScriptName();
     const std::string aloneName = alone->getScriptName();
     const QString dir = tmpDir.path() + QLatin1Char('/');
@@ -196,6 +198,7 @@ TEST(OfxProjectLoad, InstanceChangedAfterLoadKeepsSavedValues)
     expected["ProjectLoad.connected"] = 1;
     expected["ProjectLoad.rod"] = 1;
     expected["ProjectLoad.sourcePAR100"] = 200;
+    expected["ProjectLoad.sourceFrameRate"] = (int)( generatorFrameRate + 0.5 );
     EXPECT_EQ(expected, delta);
 
     connected = project->getNodeByName(connectedName);
@@ -217,7 +220,9 @@ TEST(OfxProjectLoad, InstanceChangedAfterLoadKeepsSavedValues)
 
 // Like AppendClip's "lastFrame", the plug-in sets a value derived from its source in the action, whatever the reason:
 // the saved value was stale (the user, or a shorter input). After the load, the node has a new age (hence hash), and
-// its clip preferences, which read that value, and those of the node downstream, are computed again.
+// its clip preferences, which read that value, and those of the node downstream, are computed again. The downstream
+// node was created first, but its action comes after the one of its input, and sees the new metadata; its hash
+// changes. A node that follows the value through a link, but is not downstream, also gets a new age.
 TEST(OfxProjectLoad, ValueChangedAfterLoadRefreshesMetadataAndHash)
 {
     if ( !pluginsAvailable() ) {
@@ -228,10 +233,12 @@ TEST(OfxProjectLoad, ValueChangedAfterLoadRefreshesMetadataAndHash)
     AppInstancePtr app = appPTR->getTopLevelInstance();
     ProjectPtr project = app->getProject();
 
+    // created downstream first, so that the order of the project is not the order of the graph
+    NodePtr downstream = NatronTestPlugin::createNode(kNatronTestPluginProjectLoad);
+    NodePtr follower = NatronTestPlugin::createNode(kNatronTestPluginProjectLoad);
     NodePtr generator = NatronTestPlugin::createNode(kNatronTestPluginGenerator);
     NodePtr deriving = NatronTestPlugin::createNode(kNatronTestPluginProjectLoad);
-    NodePtr downstream = NatronTestPlugin::createNode(kNatronTestPluginProjectLoad);
-    ASSERT_TRUE(generator && deriving && downstream);
+    ASSERT_TRUE(generator && deriving && downstream && follower);
     const int source = inputNamed(deriving, kOfxImageEffectSimpleSourceClipName);
     ASSERT_GE(source, 0);
     knob<KnobBool>(deriving, "setDerived")->setValue(true);
@@ -240,28 +247,44 @@ TEST(OfxProjectLoad, ValueChangedAfterLoadRefreshesMetadataAndHash)
     const double height = knob<KnobDouble>(deriving, "derived")->getValue();
     ASSERT_GT(height, 7.);
 
-    // a stale value is saved
+    // a stale value is saved; the follower's frameRate is linked to it
     knob<KnobDouble>(deriving, "derived")->setValue(7.);
+    ASSERT_TRUE( knob<KnobDouble>(follower, "frameRate")->slaveTo( 0, deriving->getKnobByName("derived"), 0 ) );
     const U64 savedAge = deriving->getKnobsAge();
+    const U64 savedFollowerAge = follower->getKnobsAge();
+    const U64 savedDownstreamHash = downstream->getHashValue();
     const std::string derivingName = deriving->getScriptName();
     const std::string downstreamName = downstream->getScriptName();
+    const std::string followerName = follower->getScriptName();
     const QString dir = tmpDir.path() + QLatin1Char('/');
     QString savedPath;
     ASSERT_TRUE( project->saveProject( dir, QString::fromUtf8("ProjectLoadDerived.ntp"), &savedPath ) );
     generator.reset();
     deriving.reset();
     downstream.reset();
+    follower.reset();
 
+    const std::map<std::string, int> start = readCounters();
     ASSERT_TRUE( project->loadProject( dir, QString::fromUtf8("ProjectLoadDerived.ntp") ) );
+    std::map<std::string, int> delta = countersSince(start);
     deriving = project->getNodeByName(derivingName);
     downstream = project->getNodeByName(downstreamName);
-    ASSERT_TRUE(deriving && downstream);
+    follower = project->getNodeByName(followerName);
+    ASSERT_TRUE(deriving && downstream && follower);
     EXPECT_EQ( height, knob<KnobDouble>(deriving, "derived")->getValue() );
     EXPECT_NE( savedAge, deriving->getKnobsAge() );
     EXPECT_EQ( height, deriving->getEffectInstance()->getFrameRate() );
     EXPECT_EQ( height, downstream->getEffectInstance()->getFrameRate() );
+    EXPECT_NE( savedDownstreamHash, downstream->getHashValue() );
+    // the actions of deriving (Source: the generator) and of downstream (Source: deriving, already refreshed)
+    EXPECT_EQ( 2, delta["ProjectLoad.clip." kOfxImageEffectSimpleSourceClipName "." kOfxChangePluginEdited] );
+    EXPECT_EQ( (int)( deriving->getInput(source)->getEffectInstance()->getFrameRate() + 0.5 ) + (int)(height + 0.5),
+               delta["ProjectLoad.sourceFrameRate"] );
+    EXPECT_EQ( height, knob<KnobDouble>(follower, "frameRate")->getValue() );
+    EXPECT_NE( savedFollowerAge, follower->getKnobsAge() );
     deriving.reset();
     downstream.reset();
+    follower.reset();
 
     project->resetProject();
 }
@@ -322,3 +345,4 @@ TEST(OfxProjectLoad, NodeInsideGroupAndAutoSaveLoad)
 
     project->resetProject();
 }
+

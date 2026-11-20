@@ -16,11 +16,11 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-// net.natron.test.ProjectLoad (Tests/OfxProjectLoad_Test.cpp): OFX 1.5 requires a host that loads a plug-in instance
-// from a saved project, with input clips that are not connected at kOfxActionCreateInstance, to call instanceChanged
-// "after kOfxActionCreateInstance and after the host has hooked up all clips, with property kOfxPropType =
-// kOfxTypeClip and kOfxPropChangeReason = kOfxChangePluginEdited, and ensure that
-// OfxImageEffectSuiteV1::clipGetRegionOfDefinition works in this action" (ofxCore.h, kOfxActionInstanceChanged).
+// net.natron.test.ProjectLoad (Tests/OfxProjectLoad_Test.cpp): after a project load, Natron calls instanceChanged on
+// the input clips of an instance "after kOfxActionCreateInstance and after the host has hooked up all clips, with
+// property kOfxPropType = kOfxTypeClip", and clipGetRegionOfDefinition must work in that action (openfx main, after
+// 1.5.1, from #184/#191; Natron uses kOfxChangePluginEdited, see kProjectLoadChangeReason in
+// Engine/OfxEffectInstance.cpp).
 //
 // Like a writer (GenericWriter, openfx-io), the plug-in sets its "premult" and "frameRate" parameters from its Source
 // clip when the user connects it (kOfxChangeUserEdited), and keeps them otherwise: a host that sent
@@ -36,6 +36,7 @@
 // - connected: the clip instanceChanged actions where the clip is connected (kOfxImageClipPropConnected);
 // - rod: the clip instanceChanged actions where clipGetRegionOfDefinition gives a non-empty region;
 // - sourcePAR100: the sum of 100 times the pixel aspect ratio of Source in those actions (the clip preferences);
+// - sourceFrameRate: the sum of the frame rates of Source in those actions (the metadata of the input);
 // - error.outsideBracket: an instanceChanged that is not between Begin and End;
 // - error.reasonMismatch: an instanceChanged or an End whose reason is not the one of the Begin.
 
@@ -194,6 +195,9 @@ clipChanged(OfxImageEffectHandle effect,
     double par = 0.;
     gPropSuite->propGetDouble(clipProps, kOfxImagePropPixelAspectRatio, 0, &par);
     natronTestIncrementCounter( "ProjectLoad.sourcePAR100", (int)(par * 100. + 0.5) );
+    double frameRate = 0.;
+    gPropSuite->propGetDouble(clipProps, kOfxImageEffectPropFrameRate, 0, &frameRate);
+    natronTestIncrementCounter( "ProjectLoad.sourceFrameRate", (int)(frameRate + 0.5) );
     OfxRectD rod = { 0., 0., 0., 0. };
     const bool hasRoD = (gEffectSuite->clipGetRegionOfDefinition(clip, time, &rod) == kOfxStatOK) && (rod.x2 > rod.x1) && (rod.y2 > rod.y1);
     if (hasRoD) {

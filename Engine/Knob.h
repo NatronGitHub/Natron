@@ -2587,11 +2587,20 @@ public:
                            Natron::ValueChangedReasonEnum reason);
 
     /**
-     * @brief The number of knob value changes of this holder so far (appendValueChange() calls), including those made
-     * while a project is loading, whose knob changed handlers are not called: compare two values to tell whether
-     * a knob changed in between.
+     * @brief While an object of this class exists, the holders whose knob values change on this thread
+     * (appendValueChange()) are added to the set given to the constructor. This includes the knobs that follow them
+     * through links and expressions, and the changes made while a project is loading, whose knob changed handlers
+     * are not called. NULL stops the recording until the object is destroyed, e.g. for a write that does not change
+     * the effective value of a knob. Objects nest.
      **/
-    U64 getValueChangesCount() const;
+    class ValueChangesRecorder
+    {
+        std::set<KnobHolder*>* _previous;
+
+    public:
+        explicit ValueChangesRecorder(std::set<KnobHolder*>* changedHolders);
+        ~ValueChangesRecorder();
+    };
 
     bool isSetValueCurrentlyPossible() const;
 
