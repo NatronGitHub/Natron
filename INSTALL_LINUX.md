@@ -254,7 +254,7 @@ Plugins/
 
 # Build
 
-Natron is built with CMake (3.16.7 or later). From the Natron source directory:
+Natron is built with CMake (3.21 or later). From the Natron source directory:
 
 ```
 cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo

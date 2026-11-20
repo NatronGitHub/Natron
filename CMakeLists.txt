@@ -17,7 +17,9 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-cmake_minimum_required(VERSION 3.16.7)
+# 3.21: libs/OpenFX (added below with add_subdirectory()) requires it (NatronGitHub/openfx#196). The
+# policies are those of CMake 3.31, as in libs/OpenFX.
+cmake_minimum_required(VERSION 3.21...3.31)
 
 # The version is the one of Global/Macros.h (NATRON_VERSION_MAJOR/MINOR/REVISION), so that the
 # macOS Info.plist (CFBundleShortVersionString, CFBundleVersion) can't disagree with the
