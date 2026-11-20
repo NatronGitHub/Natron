@@ -544,8 +544,8 @@ N: Engine/OfxClipInstance.cpp. HS: ofxhClip.cpp.
    * - 5.11
      - `ofxImageEffect.h:440-517 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L440-L517>`__ Begin/EndSequenceRender inArgs: FrameRange, FrameStep, IsInteractive, RenderScale, SequentialRenderStatus, InteractiveRenderStatus, ThumbnailRender (opt.); Begin also NoSpatialAwareness (`ofxImageEffect.h:1184 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L1184>`__)
      - MUST
-     - HS Begin :1437-1536 has all of them. End (:1666-1758) has no kOfxImageEffectPropThumbnailRender, which `ofxImageEffect.h:495 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L495>`__ lists as optional on End.
-     - PARTIAL (spec-only)
+     - HS Begin :1437-1536 has all of them. End (:1666-1758) has no kOfxImageEffectPropThumbnailRender, which `ofxImageEffect.h:495 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L495>`__ lists as optional on End. Fixed: End gets kOfxImageEffectPropThumbnailRender too, with the value of ``isThumbnailRender()`` ("false" in Natron).
+     - OK (fixed by `NatronGitHub/openfx#203 <https://github.com/NatronGitHub/openfx/pull/203>`__, in libs/OpenFX since `#1507 <https://github.com/NatronGitHub/Natron/pull/1507>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - 5.12
@@ -596,8 +596,8 @@ N: Engine/OfxClipInstance.cpp. HS: ofxhClip.cpp.
    * - 5.19
      - `ofxImageEffect.h:1197-1222 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L1197-L1222>`__ ThumbnailRender, optional, in RoD/RoI/FramesNeeded/ClipPrefs/IsIdentity/Begin/Render/End
      - MAY
-     - HS adds it to RoD, RoI, FramesNeeded, IsIdentity, Begin and Render, but not to End or GetClipPreferences (Natron's own clip-prefs path, OfxImageEffectInstance.cpp:1316). It is always "false": Natron never opens a ``ThumbnailRenderScope`` (no match in Engine/Gui), even for node-graph previews. Existing issue `#1105 <https://github.com/NatronGitHub/Natron/issues/1105>`__.
-     - PARTIAL (`#1105 <https://github.com/NatronGitHub/Natron/issues/1105>`__)
+     - HS adds it to RoD, RoI, FramesNeeded, IsIdentity, Begin and Render, but not to End or GetClipPreferences (Natron's own clip-prefs path, OfxImageEffectInstance.cpp:1316). It is always "false": Natron never opens a ``ThumbnailRenderScope`` (no match in Engine/Gui), even for node-graph previews. Existing issue `#1105 <https://github.com/NatronGitHub/Natron/issues/1105>`__. End has it since `NatronGitHub/openfx#203 <https://github.com/NatronGitHub/openfx/pull/203>`__. GetClipPreferences still lacks it: the upstream headers are inconsistent about it there. The value is always "false" (`#1105 <https://github.com/NatronGitHub/Natron/issues/1105>`__).
+     - PARTIAL (`#1105 <https://github.com/NatronGitHub/Natron/issues/1105>`__): the End part is fixed by `NatronGitHub/openfx#203 <https://github.com/NatronGitHub/openfx/pull/203>`__ (in libs/OpenFX since `#1507 <https://github.com/NatronGitHub/Natron/pull/1507>`__); Natron never marks previews as thumbnail renders
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - 5.20
@@ -719,8 +719,8 @@ HS ofxhImageEffect.cpp:3540-4006. Natron overrides ``getImage`` / ``getRegionOfD
    * - 7.6
      - clipGetImage returns: Failed when the image does not exist (plug-in assumes black), ErrMemory on OOM, ErrBadHandle on a bad clip
      - MUST
-     - Null image → Failed (:3720-3725). Bad clip → BadHandle. Every exception, std::bad_alloc included, → kOfxStatErrBadHandle (:3730-3734), never ErrMemory.
-     - PARTIAL
+     - Null image → Failed (:3720-3725). Bad clip → BadHandle. Every exception, std::bad_alloc included, → kOfxStatErrBadHandle (:3730-3734), never ErrMemory. Fixed: a ``std::bad_alloc`` gives kOfxStatErrMemory, with NULL outputs, in clipGetImage, clipGetImagePlane, clipGetStereoscopicImage, clipGetRegionOfDefinition and imageMemoryLock.
+     - OK (fixed by `NatronGitHub/openfx#202 <https://github.com/NatronGitHub/openfx/pull/202>`__, in libs/OpenFX since `#1507 <https://github.com/NatronGitHub/Natron/pull/1507>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - 7.7
@@ -808,9 +808,9 @@ Verdict counts
    * - verdict
      - count
    * - OK
-     - 72
+     - 74
    * - PARTIAL
-     - 22
+     - 20
    * - WRONG
      - 10
    * - MISSING
