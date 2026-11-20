@@ -450,11 +450,15 @@ rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"/{test,config,config-"${PYVER}${P
 
 # Copy PySide dependencies
 PYSIDE_DEPENDS=$(for p in "${pyside_packages[@]}"; do find "${SDK_HOME}/lib/python${PYVER}/site-packages/$p" -maxdepth 1 -type f -name '*.so*'; done | xargs ldd | grep "$SDK_HOME" | awk '{print $3}'|sort|uniq)
+# (to the portable tree and the installer package)
 for y in $PYSIDE_DEPENDS; do
     dep=$(basename "$y")
-    if [ ! -f "${TMP_PORTABLE_DIR}/lib/$dep" ]; then
-        cp -f "$y" "${TMP_PORTABLE_DIR}/lib/"
-    fi
+    for location in "${TMP_PORTABLE_DIR}" "$LIBS_PACKAGE_PATH/data"; do
+        mkdir -p "${location}/lib"
+        if [ ! -f "${location}/lib/$dep" ]; then
+            cp -f "$y" "${location}/lib/"
+        fi
+    done
 done
 
 # Remove any pycache
