@@ -27,6 +27,8 @@
 
 #include <cassert>
 #include <cstdarg>
+#include <cmath> // std::abs, std::floor
+#include <limits>
 #include <memory>
 #include <new> // std::bad_alloc
 #include <string>
@@ -77,41 +79,13 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Global/StrUtils.h"
 #ifdef DEBUG
 #include "Global/FloatingPointExceptions.h"
 #endif
 
 NATRON_NAMESPACE_ENTER
 
-// see second answer of http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
-static
-std::string
-string_format(const std::string fmt,
-              ...)
-{
-    int size = ( (int)fmt.size() ) * 2 + 50;   // Use a rubric appropriate for your code
-    std::string str;
-    va_list ap;
-
-    while (1) {     // Maximum two passes on a POSIX system...
-        str.resize(size);
-        va_start(ap, fmt);
-        int n = vsnprintf( (char *)str.data(), size, fmt.c_str(), ap );
-        va_end(ap);
-        if ( (n > -1) && (n < size) ) {  // Everything worked
-            str.resize(n);
-
-            return str;
-        }
-        if (n > -1) { // Needed size returned
-            size = n + 1;   // For null char
-        } else {
-            size *= 2;      // Guess at a larger size (OS specific)
-        }
-    }
-
-    return str;
-}
 
 OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                OFX::Host::ImageEffect::Descriptor & desc,
@@ -122,6 +96,7 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
     , _mainThreadActionDepth(0)
     , _pluginEditBlocks()
     , _pluginEditHolder()
+    , _progressStarted(false)
 {
     getProps().setGetHook(kNatronOfxExtraCreatedPlanes, (OFX::Host::Property::GetHook*)this);
 
@@ -133,6 +108,7 @@ OfxImageEffectInstance::OfxImageEffectInstance(const OfxImageEffectInstance& oth
     , _mainThreadActionDepth(0)
     , _pluginEditBlocks()
     , _pluginEditHolder()
+    , _progressStarted(false)
 {
 }
 
@@ -286,7 +262,7 @@ OfxImageEffectInstance::setPersistentMessage(const char* type,
 {
     assert(type);
     assert(format);
-    std::string message = string_format(format, args);
+    std::string message = StrUtils::vformat(format, args);
     OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
     assert(effect);
 
@@ -323,7 +299,7 @@ OfxImageEffectInstance::vmessage(const char* msgtype,
 {
     assert(msgtype);
     assert(format);
-    std::string message = string_format(format, args);
+    std::string message = StrUtils::vformat(format, args);
     std::string type(msgtype);
     OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
     if (!effect) {
@@ -357,9 +333,14 @@ OfxImageEffectInstance::vmessage(const char* msgtype,
 
             return kOfxStatFailed;
         }
+    } else {
+        // not one of the kOfxMessage* types: "kOfxStatFailed - if the message could not be posted for
+        // some reason" (ofxMessage.h)
+        return kOfxStatFailed;
     }
 
-    return kOfxStatReplyDefault;
+    // "kOfxStatOK - if the message was successfully posted" (ofxMessage.h)
+    return kOfxStatOK;
 }
 
 const std::vector<std::string>&
@@ -1175,6 +1156,7 @@ OfxImageEffectInstance::progressStart(const std::string & message,
 {
     OfxEffectInstancePtr effect = getOfxEffectInstance();
 
+    _progressStarted = true;
     effect->getApp()->progressStart(effect->getNode(), message, messageid);
 }
 
@@ -1184,6 +1166,7 @@ OfxImageEffectInstance::progressEnd()
 {
     OfxEffectInstancePtr effect = getOfxEffectInstance();
 
+    _progressStarted = false;
     effect->getApp()->progressEnd( effect->getNode() );
 }
 
@@ -1197,6 +1180,13 @@ OfxImageEffectInstance::progressEnd()
 bool
 OfxImageEffectInstance::progressUpdate(double t)
 {
+    // "kOfxStatErrBadHandle - the progress handle was invalid" (ofxProgress.h): there is no progress task
+    // to update (Natron's progress panel would return false, i.e. kOfxStatReplyNo, which tells the plug-in
+    // to abort). A HostSupport whose progress suite returns the status of an OFX::Host::Property::Exception
+    // gives kOfxStatErrBadHandle; an older one gives kOfxStatFailed, as for any exception.
+    if (!_progressStarted) {
+        throw OFX::Host::Property::Exception(kOfxStatErrBadHandle);
+    }
     OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     return effect->getApp()->progressUpdate(effect->getNode(), t);
@@ -1225,13 +1215,22 @@ OfxImageEffectInstance::timeLineGotoTime(double t)
 {
     OfxEffectInstancePtr effect = getOfxEffectInstance();
 
-    effect->updateThreadLocalRenderTime(t);
+    // Natron's timeline only has integer frames: go to the nearest one ((int)t would truncate, e.g.
+    // 4.9999999 to 4). A time that has no frame is "an illegal value" (kOfxStatErrValue, ofxTimeLine.h):
+    // HostSupport returns that for a NaN time; for an infinite or huge one, this exception gives
+    // kOfxStatFailed (HostSupport maps every exception of timeLineGotoTime() to it).
+    if ( !( std::abs(t) < (double)std::numeric_limits<int>::max() ) ) {
+        throw OFX::Host::Property::Exception(kOfxStatErrValue);
+    }
+    const int frame = (int)std::floor(t + 0.5);
+
+    effect->updateThreadLocalRenderTime(frame);
 
     ///Calling seek will force a re-render of the frame T so we wipe the overlay redraw needed counter
     bool redrawNeeded = effect->checkIfOverlayRedrawNeeded();
     Q_UNUSED(redrawNeeded);
 
-    effect->getApp()->getTimeLine()->seekFrame( (int)t, false, 0, eTimelineChangeReasonOtherSeek );
+    effect->getApp()->getTimeLine()->seekFrame( frame, false, 0, eTimelineChangeReasonOtherSeek );
 }
 
 /// get the first and last times available on the effect's timeline

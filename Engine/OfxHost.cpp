@@ -28,6 +28,7 @@
 #include <atomic>
 #include <cassert>
 #include <cstdarg>
+#include <cstdint> // std::uint64_t
 #include <memory>
 #include <fstream>
 #include <new> // std::bad_alloc
@@ -91,6 +92,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhParametricParam.h> //our version of parametric param suite support
 
 #include "Global/GlobalDefines.h"
+#include "Global/StrUtils.h"
 #include "Global/FStreamsSupport.h"
 #include "Global/QtCompat.h"
 #include "Global/KeySymbols.h"
@@ -123,35 +125,41 @@ CLANG_DIAG_ON(unknown-pragmas)
 NATRON_NAMESPACE_ENTER
 // to disambiguate with the global-scope ::OfxHost
 
-// see second answer of http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
-static
-std::string
-string_format(const std::string fmt,
-              ...)
+
+#ifdef OFX_SUPPORTS_MULTITHREAD
+// A mutex of the multithread suite: the OfxMutexHandle is its address. A suite function returns
+// kOfxStatErrBadHandle "if the handle was bad" (ofxMultiThread.h): the magic number tells a handle that
+// mutexCreate() returned from any other pointer, and from a destroyed mutex, as the property suite does
+// with the magic number of its property sets (OFX::Host::Property::Set::verifyMagic()). The magic is
+// atomic so that the store in the destructor is not optimized away.
+struct OfxSuiteMutex
 {
-    int size = ( (int)fmt.size() ) * 2 + 50;   // Use a rubric appropriate for your code
-    std::string str;
-    va_list ap;
+    static const std::uint64_t kMagic = 0x4f66784d75746578ULL; // "OfxMutex"
 
-    while (1) {     // Maximum two passes on a POSIX system...
-        str.reserve(size);
-        va_start(ap, fmt);
-        int n = vsnprintf( (char *)str.data(), size, fmt.c_str(), ap );
-        va_end(ap);
-        if ( (n > -1) && (n < size) ) {  // Everything worked
-            str.resize(n);
+    std::atomic<std::uint64_t> magic;
+    QRecursiveMutex mutex;
 
-            return str;
-        }
-        if (n > -1) { // Needed size returned
-            size = n + 1;   // For null char
-        } else {
-            size *= 2;      // Guess at a larger size (OS specific)
-        }
+    OfxSuiteMutex()
+        : magic(kMagic)
+        , mutex()
+    {
     }
 
-    return str;
+    ~OfxSuiteMutex()
+    {
+        magic = 0;
+    }
+};
+
+// The mutex of a suite handle, or NULL if the handle is NULL or not a live mutex of the suite.
+static OfxSuiteMutex*
+suiteMutexFromHandle(OfxMutexHandle handle)
+{
+    OfxSuiteMutex* m = reinterpret_cast<OfxSuiteMutex*>(handle);
+
+    return ( m && (m->magic == OfxSuiteMutex::kMagic) ) ? m : nullptr;
 }
+#endif
 
 struct OfxHostPrivate
 {
@@ -159,7 +167,7 @@ struct OfxHostPrivate
     std::shared_ptr<TLSHolder<OfxHost::OfxHostTLSData> > tlsData;
 
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-    std::list<QRecursiveMutex*> pluginsMutexes;
+    std::list<OfxSuiteMutex*> pluginsMutexes;
     QMutex* pluginsMutexesLock; //<protects _pluginsMutexes
 #endif
     // The state of the plug-in loading that the host name hook (getStringProperty(kOfxPropName)) reads.
@@ -529,8 +537,13 @@ OfxHost::getStringProperty(const std::string &name,
 
         // kOfxPropName was set at host creation, let the value decided by the user
         return _properties.getStringPropertyRaw(kOfxPropName);
+    } else if (name == kOfxPropName) {
+        // kOfxPropName has one dimension: "kOfxStatErrBadIndex - if the property index is invalid"
+        // (ofxProperty.h, the propGet* functions)
+        throw OFX::Host::Property::Exception(kOfxStatErrBadIndex);
     } else {
-        throw OFX::Host::Property::Exception(kOfxStatErrValue);
+        // the hook is only installed for kOfxPropName (see the OfxHost constructor)
+        throw OFX::Host::Property::Exception(kOfxStatErrUnknown);
     }
 }
 
@@ -587,7 +600,7 @@ OfxHost::vmessage(const char* msgtype,
 {
     assert(msgtype);
     assert(format);
-    std::string message = string_format(format, args);
+    std::string message = StrUtils::vformat(format, args);
     std::string type(msgtype);
 
     if (type == kOfxMessageLog) {
@@ -612,9 +625,14 @@ OfxHost::vmessage(const char* msgtype,
         } else {
             return kOfxStatReplyNo;
         }
+    } else {
+        // not one of the kOfxMessage* types: "kOfxStatFailed - if the message could not be posted for
+        // some reason" (ofxMessage.h)
+        return kOfxStatFailed;
     }
 
-    return kOfxStatReplyDefault;
+    // "kOfxStatOK - if the message was successfully posted" (ofxMessage.h)
+    return kOfxStatOK;
 }
 
 OfxStatus
@@ -1517,6 +1535,15 @@ OfxHost::multiThread(OfxThreadFunctionV1 func,
         return kOfxStatFailed;
     }
 
+    // "This function cannot be called recursively", "kOfxStatErrExists, failed in an attempt to call
+    // multiThread recursively" (ofxMultiThread.h): a thread function (in a spawned thread, or in the
+    // calling thread on the sequential path below) may not call multiThread. An action called from a
+    // thread function (e.g. the render of an upstream effect through clipGetImage) pushes -1 on the
+    // thread index stack (setThreadAsActionCaller()), so that effect may call multiThread again.
+    if ( multiThreadIsSpawnedThread() ) {
+        return kOfxStatErrExists;
+    }
+
     unsigned int maxConcurrentThread;
     OfxStatus st = multiThreadNumCPUS(&maxConcurrentThread);
     if (st != kOfxStatOK) {
@@ -1528,15 +1555,28 @@ OfxHost::multiThread(OfxThreadFunctionV1 func,
     // the threads will be limited to the number of CPUs returned by multiThreadNumCPUs."
 
     if ( (nThreads == 1) || (maxConcurrentThread <= 1) || (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) ) {
-        try {
-            for (unsigned int i = 0; i < nThreads; ++i) {
+        // Run the thread functions one after the other in the calling thread. Inside func(i, ...),
+        // multiThreadIndex() must give i ("the same as the threadIndex argument passed to the
+        // OfxThreadFunctionV1", ofxMultiThread.h) and multiThreadIsSpawnedThread() 1, as in the
+        // spawned threads: push the index as threadFunctionWrapper() does.
+        OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+        for (unsigned int i = 0; i < nThreads; ++i) {
+            tls->threadIndexes.push_back( (int)i );
+            OfxStatus stat = kOfxStatOK;
+            try {
                 func(i, nThreads, customArg);
+            } catch (const std::bad_alloc &) {
+                stat = kOfxStatErrMemory;
+            } catch (...) {
+                stat = kOfxStatFailed;
             }
-
-            return kOfxStatOK;
-        } catch (...) {
-            return kOfxStatFailed;
+            tls->threadIndexes.pop_back();
+            if (stat != kOfxStatOK) {
+                return stat;
+            }
         }
+
+        return kOfxStatOK;
     }
 
     QThread* spawnerThread = QThread::currentThread();
@@ -1718,10 +1758,10 @@ OfxHost::mutexCreate(OfxMutexHandle *mutex,
 
     // suite functions should not throw
     try {
-        QRecursiveMutex* m = new QRecursiveMutex();
+        OfxSuiteMutex* m = new OfxSuiteMutex();
 
         for (int i = 0; i < lockCount; ++i) {
-            m->lock();
+            m->mutex.lock();
         }
         *mutex = (OfxMutexHandle)(m);
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
@@ -1753,24 +1793,25 @@ OfxHost::mutexCreate(OfxMutexHandle *mutex,
 OfxStatus
 OfxHost::mutexDestroy(const OfxMutexHandle mutex)
 {
-    if (mutex == 0) {
+    OfxSuiteMutex* m = suiteMutexFromHandle(mutex);
+    if (!m) {
         return kOfxStatErrBadHandle;
     }
     // suite functions should not throw
     try {
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-        const QRecursiveMutex* mutexqt = reinterpret_cast<const QRecursiveMutex*>(mutex);
         {
             QMutexLocker l(_pluginsMutexesLock);
-            std::list<QRecursiveMutex*>::iterator found = std::find(_pluginsMutexes.begin(), _pluginsMutexes.end(), mutexqt);
+            std::list<OfxSuiteMutex*>::iterator found = std::find(_pluginsMutexes.begin(), _pluginsMutexes.end(), m);
             if ( found != _pluginsMutexes.end() ) {
                 delete *found;
                 _pluginsMutexes.erase(found);
             }
         }
 #else
-        // mutexCreate() allocates a QRecursiveMutex: delete it as one (in Qt6 it does not derive from QMutex)
-        delete reinterpret_cast<const QRecursiveMutex*>(mutex);
+        // mutexCreate() allocates an OfxSuiteMutex, whose QRecursiveMutex is destroyed as one (in Qt6 it
+        // does not derive from QMutex)
+        delete m;
 #endif
 
         return kOfxStatOK;
@@ -1796,12 +1837,13 @@ OfxHost::mutexDestroy(const OfxMutexHandle mutex)
 OfxStatus
 OfxHost::mutexLock(const OfxMutexHandle mutex)
 {
-    if (mutex == 0) {
+    OfxSuiteMutex* m = suiteMutexFromHandle(mutex);
+    if (!m) {
         return kOfxStatErrBadHandle;
     }
     // suite functions should not throw
     try {
-        reinterpret_cast<QRecursiveMutex*>(mutex)->lock();
+        m->mutex.lock();
 
         return kOfxStatOK;
     } catch (std::bad_alloc&) {
@@ -1825,12 +1867,13 @@ OfxHost::mutexLock(const OfxMutexHandle mutex)
 OfxStatus
 OfxHost::mutexUnLock(const OfxMutexHandle mutex)
 {
-    if (mutex == 0) {
+    OfxSuiteMutex* m = suiteMutexFromHandle(mutex);
+    if (!m) {
         return kOfxStatErrBadHandle;
     }
     // suite functions should not throw
     try {
-        reinterpret_cast<QRecursiveMutex*>(mutex)->unlock();
+        m->mutex.unlock();
 
         return kOfxStatOK;
     } catch (std::bad_alloc&) {
@@ -1855,12 +1898,13 @@ OfxHost::mutexUnLock(const OfxMutexHandle mutex)
 OfxStatus
 OfxHost::mutexTryLock(const OfxMutexHandle mutex)
 {
-    if (mutex == 0) {
+    OfxSuiteMutex* m = suiteMutexFromHandle(mutex);
+    if (!m) {
         return kOfxStatErrBadHandle;
     }
     // suite functions should not throw
     try {
-        if ( reinterpret_cast<QRecursiveMutex*>(mutex)->tryLock() ) {
+        if ( m->mutex.tryLock() ) {
             return kOfxStatOK;
         } else {
             return kOfxStatFailed;
@@ -1916,7 +1960,10 @@ OfxHost::notifyRedrawPending(OfxImageEffectHandle instance,
 OfxStatus
 OfxHost::flushOpenGLResources() const
 {
-    return kOfxStatOK;
+    // Natron releases no OpenGL resource here. "kOfxStatOK - the host has actually released some
+    // resources" would tell the plug-in to retry its allocation: "kOfxStatReplyDefault - nothing the host
+    // could do" (ofxGPURender.h).
+    return kOfxStatReplyDefault;
 }
 
 #endif
