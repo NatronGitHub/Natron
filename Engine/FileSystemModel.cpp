@@ -25,6 +25,7 @@
 
 #include "FileSystemModel.h"
 
+#include <algorithm> // std::max
 #include <vector>
 #include <cassert>
 #include <stdexcept>
@@ -701,11 +702,18 @@ FileSystemModel::startsWithDriveName(const QString& name)
 
 QString
 FileSystemModel::absoluteFilePath(const QString& directory,
-                                  const QString& filePath)
+                                  const QString& filePath,
+                                  const QStringList& variableNames)
 {
-    // A project variable such as [Project] is resolved later, by the project
-    if ( filePath.isEmpty() || filePath.startsWith( QLatin1Char('[') ) ) {
+    if ( filePath.isEmpty() ) {
         return filePath;
+    }
+    if ( filePath.startsWith( QLatin1Char('[') ) ) {
+        // A project variable such as [Project] is expanded later, by the project
+        int end = filePath.indexOf( QLatin1Char(']') );
+        if ( (end > 1) && variableNames.contains( filePath.mid(1, end - 1) ) ) {
+            return filePath;
+        }
     }
     QString path = filePath;
 #ifdef Q_OS_UNIX
@@ -724,6 +732,26 @@ FileSystemModel::absoluteFilePath(const QString& directory,
     absolutePath += path;
 
     return cleanPath(absolutePath);
+}
+
+QString
+FileSystemModel::removeTextAfterExtension(const QString& text)
+{
+    int lastSepPos = text.lastIndexOf( QLatin1Char('/') );
+#ifdef __NATRON_WIN32__
+    lastSepPos = std::max( lastSepPos, text.lastIndexOf( QLatin1Char('\\') ) );
+#endif
+    int lastDotPos = text.lastIndexOf( QLatin1Char('.') );
+    if (lastDotPos <= lastSepPos) {
+        // no extension in the last path component
+        return text;
+    }
+    int spacePos = text.indexOf(QLatin1Char(' '), lastDotPos + 1);
+    if (spacePos == -1) {
+        return text;
+    }
+
+    return text.left(spacePos);
 }
 
 QString FileSystemModel::cleanPath(const QString& path) {

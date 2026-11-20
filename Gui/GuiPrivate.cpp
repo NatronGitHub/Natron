@@ -655,28 +655,31 @@ GuiPrivate::restoreGuiGeometry()
 
     settings.endGroup();
 
-    if ( settings.contains( QString::fromUtf8("LastOpenProjectDialogPath") ) ) {
+    // With the default settings (--no-settings), the dialogs start in their default directory, as with
+    // fresh settings: do not read the user's last directories either (saveGuiGeometry() does not write them)
+    const bool restoreLastDirs = !appPTR->getCurrentSettings()->isUsingDefaultSettings();
+    if ( restoreLastDirs && settings.contains( QString::fromUtf8("LastOpenProjectDialogPath") ) ) {
         _lastLoadProjectOpenedDir = settings.value( QString::fromUtf8("LastOpenProjectDialogPath") ).toString();
         QDir d(_lastLoadProjectOpenedDir);
         if ( !d.exists() ) {
             _lastLoadProjectOpenedDir.clear();
         }
     }
-    if ( settings.contains( QString::fromUtf8("LastSaveProjectDialogPath") ) ) {
+    if ( restoreLastDirs && settings.contains( QString::fromUtf8("LastSaveProjectDialogPath") ) ) {
         _lastSaveProjectOpenedDir = settings.value( QString::fromUtf8("LastSaveProjectDialogPath") ).toString();
         QDir d(_lastSaveProjectOpenedDir);
         if ( !d.exists() ) {
             _lastSaveProjectOpenedDir.clear();
         }
     }
-    if ( settings.contains( QString::fromUtf8("LastLoadSequenceDialogPath") ) ) {
+    if ( restoreLastDirs && settings.contains( QString::fromUtf8("LastLoadSequenceDialogPath") ) ) {
         _lastLoadSequenceOpenedDir = settings.value( QString::fromUtf8("LastLoadSequenceDialogPath") ).toString();
         QDir d(_lastLoadSequenceOpenedDir);
         if ( !d.exists() ) {
             _lastLoadSequenceOpenedDir.clear();
         }
     }
-    if ( settings.contains( QString::fromUtf8("LastSaveSequenceDialogPath") ) ) {
+    if ( restoreLastDirs && settings.contains( QString::fromUtf8("LastSaveSequenceDialogPath") ) ) {
         _lastSaveSequenceOpenedDir = settings.value( QString::fromUtf8("LastSaveSequenceDialogPath") ).toString();
         QDir d(_lastSaveSequenceOpenedDir);
         if ( !d.exists() ) {

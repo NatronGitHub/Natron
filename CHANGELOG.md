@@ -15,7 +15,7 @@
 
 - NatronRenderer (and `Natron -b`) exits with status 1, without rendering the Write nodes, when the Python script given on the command line (also in its `createInstance()`) or the `--onload` script raises an exception. A failing `--onload` script now also stops the render of a project (.ntp) that loaded without error. Renders started by the script with `app.render()` before the error have already run. It used to print the error, render the Write nodes, and exit with status 0. #1276
 - Documentation: the Reference Guide has a "Nodes" section, with one page per node group and per sub-group (e.g. "G'MIC / Colors"), and the sidebar only expands the current branch.
-- File dialogs: a save dialog without a remembered directory (e.g. Save Project with fresh settings) opens in the home directory instead of the filesystem root, and a file name typed without a directory is saved in the directory shown by the dialog, not in Natron's working directory. #825
+- File dialogs: a dialog without a remembered directory (e.g. Save Project, Open Project or a Write node file with fresh settings or `--no-settings`) opens in the home directory instead of the filesystem root. In a save dialog, a file name typed without a directory is saved in the directory shown by the dialog, not in Natron's working directory; the file extension is added to it, and the "replace it?" question checks that file (also for `[Project]/...` paths). In a file parameter (e.g. of a Write node) with "Relative to: Absolute", such a name is stored as `[Project]/...` when the directory shown is inside the project's directory, as bare names were before (they went to the project directory), and as an absolute path otherwise. #825
 
 
 ## Version 2.5.0

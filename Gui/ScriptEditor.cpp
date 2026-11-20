@@ -406,7 +406,8 @@ ScriptEditor::onSaveScriptClicked()
 
         QString fileName( QString::fromUtf8( dialog.filesToSave().c_str() ) );
         QFile file(fileName);
-        if ( file.open(QIODevice::ReadWrite) ) {
+        // Truncate: a shorter script saved over a longer file must not keep the old tail
+        if ( file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text) ) {
             QTextStream ts(&file);
             ts << _imp->inputEdit->toPlainText();
         } else {

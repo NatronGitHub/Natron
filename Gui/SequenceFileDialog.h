@@ -323,7 +323,8 @@ public:
     ///Works only in eFileDialogModeOpen mode.
     std::string selectedFiles();
 
-   ///Returns  the content of the selection line edit, made absolute against currentDirectory() if it is relative (#825).
+    ///Returns the content of the selection line edit, without what follows the extension, made absolute
+    ///against currentDirectory() if it is relative, then remapped as absoluteFilePathInCurrentDirectory() does (#825).
     ///Works only in eFileDialogModeSave mode.
     std::string filesToSave();
 
@@ -450,8 +451,10 @@ private:
 
     bool isDirectory(const QString & name) const;
 
-    ///Returns filePath made absolute against the current directory if it is relative, then made relative
-    ///to the project path chosen in the "relative to" combo box, if any (#825)
+    ///Returns filePath made absolute against the current directory (the home directory at the "Computer"
+    ///level) if it is relative. If it was resolved and relative paths are allowed, it is then made relative to
+    ///the variable chosen in the "relative to" combo box, or, with "Absolute", stored as [Project]/... if it
+    ///is inside the directory of a saved project (as Project::canonicalizePath() did for bare names) (#825)
     QString absoluteFilePathInCurrentDirectory(const QString& filePath) const;
 
     ///the filter that shows the files with any of the extensions given to the dialog, e.g. "*.exr *.png"

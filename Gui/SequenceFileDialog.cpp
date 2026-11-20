@@ -551,8 +551,9 @@ SequenceFileDialog::~SequenceFileDialog()
 {
     _model->resetCompletly(false);
 
-    // With --no-settings, do not overwrite the user's dialog state (as GuiPrivate::saveGuiGeometry())
-    if ( appPTR->getCurrentSettings()->isUsingDefaultSettings() ) {
+    // Scripts and tests (--no-dialogs), or a session with the default settings (--no-settings):
+    // do not overwrite the user's dialog state (as GuiPrivate::saveGuiGeometry())
+    if ( appPTR->isDialogsDisabled() || appPTR->getCurrentSettings()->isUsingDefaultSettings() ) {
         return;
     }
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
@@ -1394,7 +1395,8 @@ SequenceFileDialog::openSelectedFiles()
                             lastSepPos = str.lastIndexOf( QString::fromUtf8("//") );
                         }
                         int lastDotPos = str.lastIndexOf( QLatin1Char('.') );
-                        if (lastDotPos < lastSepPos) {
+                        // <=: also a bare name without an extension, where both are -1
+                        if (lastDotPos <= lastSepPos) {
                             str.append( QLatin1Char('.') +  ext);
                             _selectionLineEdit->blockSignals(true);
                             _selectionLineEdit->setText(str);
@@ -1403,10 +1405,16 @@ SequenceFileDialog::openSelectedFiles()
                     }
                 }
 
+                // Check exactly the file that filesToSave() returns, i.e. what the caller will write,
+                // with the project variables (e.g. [Project]) expanded (#825)
+                std::string toSave = filesToSave();
+                {
+                    std::map<std::string, std::string> envVars;
+                    _gui->getApp()->getProject()->getEnvironmentVariables(envVars);
+                    Project::expandVariable(envVars, toSave);
+                }
                 SequenceParsing::SequenceFromPattern sequence;
-                // A bare file name is saved in the directory shown by the dialog (see filesToSave()),
-                // not in the working directory of the process: check that file (#825)
-                FileSystemModel::filesListFromPattern(FileSystemModel::absoluteFilePath(_requestedDir, str).toStdString(), &sequence);
+                FileSystemModel::filesListFromPattern(toSave, &sequence);
                 if (sequence.size() > 0) {
                     QString text;
                     if (sequence.size() == 1) {
@@ -1415,7 +1423,7 @@ SequenceFileDialog::openSelectedFiles()
 
                         text = tr("The file %1 already exists.\nWould you like to replace it?").arg( QString::fromUtf8( views.begin()->second.c_str() ) );
                     } else {
-                        text = tr("The sequence %1 already exists.\nWould you like to replace it?").arg(str);
+                        text = tr("The sequence %1 already exists.\nWould you like to replace it?").arg( QString::fromUtf8( toSave.c_str() ) );
                     }
 
                     QMessageBox ques(QMessageBox::Question, tr("Existing file"), text, QMessageBox::Yes | QMessageBox::No,
@@ -1708,22 +1716,9 @@ std::string
 SequenceFileDialog::filesToSave()
 {
     assert(_dialogMode == eFileDialogModeSave);
-    QString text = _selectionLineEdit->text();
-    ///Find last dot position and remove everything after the extension which we might added on the line edit
-    int lastDotPos = text.lastIndexOf( QLatin1Char('.') );
-    QString ret;
-    if (lastDotPos != -1) {
-        int i = lastDotPos + 1;
-        while ( i < text.size() && text.at(i) != QLatin1Char(' ') ) {
-            ++i;
-        }
-        ret =  text.mid(0, i);
-    } else {
-        ret = text;
-    }
-    // A bare file name is saved in the directory shown by the dialog, not in the working directory
-    // of the process (#825)
-    ret = absoluteFilePathInCurrentDirectory(ret);
+    // Remove everything after the extension which we might have added on the line edit, then save a bare
+    // file name in the directory shown by the dialog, not in the working directory of the process (#825)
+    QString ret = absoluteFilePathInCurrentDirectory( FileSystemModel::removeTextAfterExtension( _selectionLineEdit->text() ) );
 
 #ifdef __NATRON_WIN32__
     if (appPTR->getCurrentSettings()->isDriveLetterToUNCPathConversionEnabled()) {
@@ -1737,19 +1732,44 @@ SequenceFileDialog::filesToSave()
 QString
 SequenceFileDialog::absoluteFilePathInCurrentDirectory(const QString& filePath) const
 {
-    QString ret = FileSystemModel::absoluteFilePath(_requestedDir, filePath);
+    std::map<std::string, std::string> envVars;
+    _gui->getApp()->getProject()->getEnvironmentVariables(envVars);
+    QStringList varNames;
+    for (std::map<std::string, std::string>::const_iterator it = envVars.begin(); it != envVars.end(); ++it) {
+        varNames.push_back( QString::fromUtf8( it->first.c_str() ) );
+    }
+    // At the "Computer" level (Windows drive list), there is no directory: use the home directory
+    const QString directory = _requestedDir.isEmpty() ? QDir::homePath() : _requestedDir;
+    QString ret = FileSystemModel::absoluteFilePath(directory, filePath, varNames);
 
-    if ( (ret != filePath) && _relativePathsAllowed ) {
-        // The name was resolved against the directory: honour the "relative to" choice, as setDirectory() does
-        std::string stdRet = ret.toStdString();
-        std::string varName, varPath;
-        if ( getRelativeChoiceProjectPath(varName, varPath) ) {
-            Project::makeRelativeToVariable(varName, varPath, stdRet);
+    if ( (ret == filePath) || !_relativePathsAllowed ) {
+        return ret;
+    }
+    // The name was resolved against the directory: honour the "relative to" choice, as setDirectory() does
+    std::string stdRet = ret.toStdString();
+    std::string varName, varPath;
+    if ( getRelativeChoiceProjectPath(varName, varPath) ) {
+        Project::makeRelativeToVariable(varName, varPath, stdRet);
+    } else {
+        // "Absolute": a bare name in a file parameter (e.g. of a Write node) of a saved project used to
+        // go to the project directory, through Project::canonicalizePath(). Keep it portable: store a
+        // path inside the project directory as [Project]/...
+        std::map<std::string, std::string>::const_iterator project = envVars.find(NATRON_PROJECT_ENV_VAR_NAME);
+        if ( ( project != envVars.end() ) && !project->second.empty() ) {
+            QString projectDir = FileSystemModel::cleanPath( QString::fromUtf8( project->second.c_str() ) );
+            StrUtils::ensureLastPathSeparator(projectDir);
+#ifdef __NATRON_WIN32__
+            const Qt::CaseSensitivity cs = Qt::CaseInsensitive;
+#else
+            const Qt::CaseSensitivity cs = Qt::CaseSensitive;
+#endif
+            if ( ret.startsWith(projectDir, cs) ) {
+                stdRet = std::string("[" NATRON_PROJECT_ENV_VAR_NAME "]/") + ret.mid( projectDir.size() ).toStdString();
+            }
         }
-        ret = QString::fromUtf8( stdRet.c_str() );
     }
 
-    return ret;
+    return QString::fromUtf8( stdRet.c_str() );
 }
 
 QDir

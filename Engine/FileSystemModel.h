@@ -241,12 +241,22 @@ public:
 
     /**
      * @brief Returns filePath, a file name or path typed in a file dialog, made absolute against
-     * directory (the directory shown by the dialog) if it is relative (#825). Absolute paths, paths
-     * starting with a project variable (e.g. "[Project]/out.exr") and empty strings are returned
-     * unchanged; on Unix "~" is expanded to the home directory. If directory is empty (the
-     * "Computer" level that lists drives), a relative filePath is returned unchanged.
+     * directory (the directory shown by the dialog) if it is relative (#825).
+     * Returned unchanged: empty strings, absolute paths (not passed through cleanPath()), and paths
+     * starting with "[Name]" where Name is one of variableNames (a project variable, e.g.
+     * "[Project]/out.exr"); a bare "[v2] shot.ntp" is a relative name. On Unix, a leading "~" is
+     * expanded to the home directory. If directory is empty, a relative filePath is returned unchanged.
      **/
-    static QString absoluteFilePath(const QString& directory, const QString& filePath);
+    static QString absoluteFilePath(const QString& directory, const QString& filePath, const QStringList& variableNames);
+
+    /**
+     * @brief Removes what a file dialog may show after the extension of the last path component,
+     * from the first space after its last dot (e.g. the frame range of a sequence), as in
+     * "/data/a.b c/out.####.exr 1-10" -> "/data/a.b c/out.####.exr". Dots and spaces in the
+     * directories are kept: "/data/a.b c/out" is unchanged.
+     **/
+    static QString removeTextAfterExtension(const QString& text);
+
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual Qt::ItemFlags flags(const QModelIndex &index) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int columnCount(const QModelIndex & parent) const OVERRIDE FINAL WARN_UNUSED_RETURN;

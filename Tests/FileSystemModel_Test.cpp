@@ -262,6 +262,7 @@ TEST(FileSystemModelTest, CleanPath) {
     EXPECT_EQ(expectedOutput, output.toStdString()) << " input '" << testCase.input << "'";
   }
 }
+
 // A file name typed in a save dialog is resolved against the directory shown by the dialog,
 // not against the working directory of the process (#825).
 TEST(FileSystemModelTest, AbsoluteFilePath) {
@@ -270,6 +271,8 @@ TEST(FileSystemModelTest, AbsoluteFilePath) {
     const char* filePath;
     const char* expectedOutput;
   };
+
+  const QStringList variableNames({QString::fromUtf8("OCIO"), QString::fromUtf8("Project")});
 
   std::vector<AbsoluteFilePathTestCase> testCases({
       // Relative names are resolved against the directory, with or without a
@@ -282,6 +285,11 @@ TEST(FileSystemModelTest, AbsoluteFilePath) {
       // Absolute paths and project variables are unchanged.
       {"/somedir/", "/otherdir/project.ntp", "/otherdir/project.ntp"},
       {"/somedir/", "[Project]/out.exr", "[Project]/out.exr"},
+      {"/somedir/", "[OCIO]/config.ocio", "[OCIO]/config.ocio"},
+      // A leading "[Name]" that is not a project variable is part of a bare name.
+      {"/somedir/", "[v2] shot.ntp", "/somedir/[v2] shot.ntp"},
+      {"/somedir/", "[]out.exr", "/somedir/[]out.exr"},
+      {"/somedir/", "[Project", "/somedir/[Project"},
       // Nothing to resolve.
       {"/somedir/", "", ""},
       // No directory (the "Computer" level): unchanged.
@@ -296,7 +304,8 @@ TEST(FileSystemModelTest, AbsoluteFilePath) {
 
   for (const auto& testCase : testCases) {
     const QString output = FileSystemModel::absoluteFilePath(QString::fromUtf8(testCase.directory),
-                                                             QString::fromUtf8(testCase.filePath));
+                                                             QString::fromUtf8(testCase.filePath),
+                                                             variableNames);
     EXPECT_EQ(std::string(testCase.expectedOutput), output.toStdString())
         << " directory '" << testCase.directory << "' filePath '" << testCase.filePath << "'";
   }
@@ -305,6 +314,35 @@ TEST(FileSystemModelTest, AbsoluteFilePath) {
   // "~" is the home directory.
   EXPECT_EQ((QDir::homePath() + QString::fromUtf8("/project.ntp")).toStdString(),
             FileSystemModel::absoluteFilePath(QString::fromUtf8("/somedir/"),
-                                              QString::fromUtf8("~/project.ntp")).toStdString());
+                                              QString::fromUtf8("~/project.ntp"),
+                                              variableNames).toStdString());
 #endif
+}
+
+// The text a save dialog may show after the extension is removed, only in the last path
+// component (#825).
+TEST(FileSystemModelTest, RemoveTextAfterExtension) {
+  struct RemoveTextAfterExtensionTestCase {
+    const char* input;
+    const char* expectedOutput;
+  };
+
+  std::vector<RemoveTextAfterExtensionTestCase> testCases({
+      {"", ""},
+      {"out", "out"},
+      {"out.exr", "out.exr"},
+      {"out.####.exr 1-10", "out.####.exr"},
+      {"/data/out.####.exr 1-10", "/data/out.####.exr"},
+      // Dots and spaces in directories are kept.
+      {"/data/a.b c/out", "/data/a.b c/out"},
+      {"/Users/me/v1.2 final/curve", "/Users/me/v1.2 final/curve"},
+      {"/data/a.b c/out.exr 1-10", "/data/a.b c/out.exr"},
+      // A space in the name before the extension is kept.
+      {"/data/my out.exr", "/data/my out.exr"},
+  });
+
+  for (const auto& testCase : testCases) {
+    const QString output = FileSystemModel::removeTextAfterExtension(QString::fromUtf8(testCase.input));
+    EXPECT_EQ(std::string(testCase.expectedOutput), output.toStdString()) << " input '" << testCase.input << "'";
+  }
 }
