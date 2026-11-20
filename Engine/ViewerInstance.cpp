@@ -107,6 +107,7 @@ static void scaleToTexture32bits(const RectI& roi,
                                  const UpdateViewerParams::CachedTile& tile,
                                  float *output);
 static MinMaxVal findAutoContrastVminVmax(const ImagePtr inputImage,
+                                                         const Color::Lut* srcColorSpace,
                                                          DisplayChannelsEnum channels,
                                                          const RectI & rect);
 static void renderFunctor(const RectI& roi,
@@ -1807,7 +1808,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         if (singleThreaded) {
             if (inArgs.autoContrast && !inArgs.isDoingPartialUpdates) {
                 double vmin, vmax;
-                MinMaxVal vMinMax = findAutoContrastVminVmax(colorImage, inArgs.channels, viewerRenderRoI);
+                MinMaxVal vMinMax = findAutoContrastVminVmax(colorImage, lutFromColorspace(srcColorSpace), inArgs.channels, viewerRenderRoI);
                 vmin = vMinMax.min;
                 vmax = vMinMax.max;
 
@@ -1858,13 +1859,13 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 double vmax = std::numeric_limits<double>::lowest();
 
                 if (runInCurrentThread) {
-                    MinMaxVal vMinMax = findAutoContrastVminVmax(colorImage, inArgs.channels, viewerRenderRoI);
+                    MinMaxVal vMinMax = findAutoContrastVminVmax(colorImage, lutFromColorspace(srcColorSpace), inArgs.channels, viewerRenderRoI);
                     vmin = vMinMax.min;
                     vmax = vMinMax.max;
                 } else {
                     std::vector<RectI> splitRects = viewerRenderRoI.splitIntoSmallerRects( appPTR->getMaxThreadCount() );
                     std::function<MinMaxVal (const RectI&)> findAutoContrast = [&](const RectI &rect) {
-                        return findAutoContrastVminVmax(colorImage, inArgs.channels, rect);
+                        return findAutoContrastVminVmax(colorImage, lutFromColorspace(srcColorSpace), inArgs.channels, rect);
                     };
                     QFuture<MinMaxVal> future = QtConcurrent::mapped( splitRects, findAutoContrast );
                     future.waitForFinished();
@@ -1993,9 +1994,41 @@ renderFunctor(const RectI& roi,
     }
 }
 
+// A sample of the image as the texture paths see it before the gain and offset are applied: 8/16-bit
+// values in [0,1], and the colour channels in linear (srcColorSpace), see scaleToTexture8bits_generic.
+// alpha is never converted with a LUT.
+template <typename PIX>
+inline double autoContrastValue(PIX v, const Color::Lut* srcColorSpace);
+
+template <>
+inline double
+autoContrastValue<unsigned char>(unsigned char v,
+                                 const Color::Lut* srcColorSpace)
+{
+    return srcColorSpace ? srcColorSpace->fromColorSpaceUint8ToLinearFloatFast(v) : Image::convertPixelDepth<unsigned char, float>(v);
+}
+
+template <>
+inline double
+autoContrastValue<unsigned short>(unsigned short v,
+                                  const Color::Lut* srcColorSpace)
+{
+    return srcColorSpace ? srcColorSpace->fromColorSpaceUint16ToLinearFloatFast(v) : Image::convertPixelDepth<unsigned short, float>(v);
+}
+
+template <>
+inline double
+autoContrastValue<float>(float v,
+                         const Color::Lut* srcColorSpace)
+{
+    return srcColorSpace ? srcColorSpace->fromColorSpaceFloatToLinearFloat(v) : v;
+}
+
+template <typename PIX>
 inline
 MinMaxVal
 findAutoContrastVminVmax_generic(const ImagePtr inputImage,
+                                 const Color::Lut* srcColorSpace,
                                  int nComps,
                                  DisplayChannelsEnum channels,
                                  const RectI & rect)
@@ -2007,7 +2040,7 @@ findAutoContrastVminVmax_generic(const ImagePtr inputImage,
     Image::ReadAccess acc = inputImage->getReadRights();
 
     for (int y = rect.bottom(); y < rect.top(); ++y) {
-        const float* src_pixels = (const float*)acc.pixelAt(rect.left(), y);
+        const PIX* src_pixels = (const PIX*)acc.pixelAt(rect.left(), y);
         ///we fill the scan-line with all the pixels of the input image
         for (int x = rect.left(); x < rect.right(); ++x) {
             double r = 0.;
@@ -2016,25 +2049,25 @@ findAutoContrastVminVmax_generic(const ImagePtr inputImage,
             double a = 0.;
             switch (nComps) {
             case 4:
-                r = src_pixels[0];
-                g = src_pixels[1];
-                b = src_pixels[2];
-                a = src_pixels[3];
+                r = autoContrastValue<PIX>(src_pixels[0], srcColorSpace);
+                g = autoContrastValue<PIX>(src_pixels[1], srcColorSpace);
+                b = autoContrastValue<PIX>(src_pixels[2], srcColorSpace);
+                a = autoContrastValue<PIX>(src_pixels[3], NULL);
                 break;
             case 3:
-                r = src_pixels[0];
-                g = src_pixels[1];
-                b = src_pixels[2];
+                r = autoContrastValue<PIX>(src_pixels[0], srcColorSpace);
+                g = autoContrastValue<PIX>(src_pixels[1], srcColorSpace);
+                b = autoContrastValue<PIX>(src_pixels[2], srcColorSpace);
                 a = 1.;
                 break;
             case 2:
-                r = src_pixels[0];
-                g = src_pixels[1];
+                r = autoContrastValue<PIX>(src_pixels[0], srcColorSpace);
+                g = autoContrastValue<PIX>(src_pixels[1], srcColorSpace);
                 b = 0.;
                 a = 1.;
                 break;
             case 1:
-                a = src_pixels[0];
+                a = autoContrastValue<PIX>(src_pixels[0], NULL);
                 r = g = b = 0.;
                 break;
             default:
@@ -2086,30 +2119,52 @@ findAutoContrastVminVmax_generic(const ImagePtr inputImage,
     return MinMaxVal(localVmin, localVmax);
 } // findAutoContrastVminVmax_generic
 
-template <int nComps>
+template <typename PIX, int nComps>
 MinMaxVal
 findAutoContrastVminVmax_internal(const ImagePtr inputImage,
+                                  const Color::Lut* srcColorSpace,
                                   DisplayChannelsEnum channels,
                                   const RectI & rect)
 {
-    return findAutoContrastVminVmax_generic(inputImage, nComps, channels, rect);
+    return findAutoContrastVminVmax_generic<PIX>(inputImage, srcColorSpace, nComps, channels, rect);
 }
 
+template <typename PIX>
 MinMaxVal
-findAutoContrastVminVmax(const ImagePtr inputImage,
-                         DisplayChannelsEnum channels,
-                         const RectI & rect)
+findAutoContrastVminVmax_forDepth(const ImagePtr inputImage,
+                                  const Color::Lut* srcColorSpace,
+                                  DisplayChannelsEnum channels,
+                                  const RectI & rect)
 {
     int nComps = inputImage->getComponents().getNumComponents();
 
     if (nComps == 4) {
-        return findAutoContrastVminVmax_internal<4>(inputImage, channels, rect);
+        return findAutoContrastVminVmax_internal<PIX, 4>(inputImage, srcColorSpace, channels, rect);
     } else if (nComps == 3) {
-        return findAutoContrastVminVmax_internal<3>(inputImage, channels, rect);
+        return findAutoContrastVminVmax_internal<PIX, 3>(inputImage, srcColorSpace, channels, rect);
     } else if (nComps == 1) {
-        return findAutoContrastVminVmax_internal<1>(inputImage, channels, rect);
+        return findAutoContrastVminVmax_internal<PIX, 1>(inputImage, srcColorSpace, channels, rect);
     } else {
-        return findAutoContrastVminVmax_generic(inputImage, nComps, channels, rect);
+        return findAutoContrastVminVmax_generic<PIX>(inputImage, srcColorSpace, nComps, channels, rect);
+    }
+}
+
+MinMaxVal
+findAutoContrastVminVmax(const ImagePtr inputImage,
+                         const Color::Lut* srcColorSpace,
+                         DisplayChannelsEnum channels,
+                         const RectI & rect)
+{
+    switch ( inputImage->getBitDepth() ) {
+    case eImageBitDepthByte:
+
+        return findAutoContrastVminVmax_forDepth<unsigned char>(inputImage, srcColorSpace, channels, rect);
+    case eImageBitDepthShort:
+
+        return findAutoContrastVminVmax_forDepth<unsigned short>(inputImage, srcColorSpace, channels, rect);
+    default:
+
+        return findAutoContrastVminVmax_forDepth<float>(inputImage, srcColorSpace, channels, rect);
     }
 } // findAutoContrastVminVmax
 
@@ -2560,7 +2615,7 @@ scaleToTexture32bitsGeneric(const RectI& roi,
     const int y2 = args.renderOnlyRoI ? roi.y2 : tile.rect.y2;
     const int x1 = args.renderOnlyRoI ? roi.x1 : tile.rect.x1;
     const int x2 = args.renderOnlyRoI ? roi.x2 : tile.rect.x2;
-    const float* src_pixels = (const float*)acc.pixelAt(x1, y1);
+    const PIX* src_pixels = (const PIX*)acc.pixelAt(x1, y1);
     const int srcRowElements = (const int)args.inputImage->getRowElements();
 
     for (int y = y1; y < y2;
