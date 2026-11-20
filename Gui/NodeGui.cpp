@@ -842,7 +842,12 @@ NodeGui::removeSettingsPanel()
 void
 NodeGui::refreshSize()
 {
-    QRectF bbox = boundingRect();
+    // The node rectangle itself, not boundingRect(), which includes the outline pen width and the
+    // magnification scale: resizing to it would make the node grow at each refresh (#1071).
+    // (Only called for nodes with a persistent message item or a label, which DotGui has not, so
+    // _boundingBox, created with them in createGui(), exists.)
+    assert(_boundingBox);
+    QRectF bbox = _boundingBox->rect();
 
     QString& label = _nodeLabel;
     resize( bbox.width(), bbox.height(), false, !label.isEmpty() );
@@ -2818,9 +2823,17 @@ QSize
 NodeGui::getSize() const
 {
     if ( QThread::currentThread() == qApp->thread() ) {
-        QRectF bbox = boundingRect();
+        if (!_boundingBox) {
+            // DotGui has no _boundingBox (it doesn't call NodeGui::createGui()): use its boundingRect()
+            QRectF bbox = boundingRect();
 
-        return QSize( bbox.width(), bbox.height() );
+            return QSize( bbox.width(), bbox.height() );
+        }
+        // The node rectangle (as set by resize()) with the current scale, without the outline pen
+        // width that boundingRect() adds: otherwise each save and load makes the node wider (#1071).
+        QRectF bbox = _boundingBox->rect();
+
+        return QSize( bbox.width() * scale(), bbox.height() * scale() );
     } else {
         QMutexLocker k(&_mtSafeSizeMutex);
 
@@ -3181,7 +3194,8 @@ NodeGui::setNameItemHtml(const QString & name,
     _nameItem->adjustSize();
 
 
-    QRectF bbox = boundingRect();
+    // see refreshSize()
+    QRectF bbox = _boundingBox->rect();
     resize( bbox.width(), bbox.height(), false, !label.isEmpty() );
 } // setNameItemHtml
 
