@@ -38,6 +38,22 @@
 NATRON_NAMESPACE_ENTER
 NATRON_PYTHON_NAMESPACE_ENTER
 
+// While an undo group is open (App.beginUndoGroup()), records the state of a knob before the Python API
+// changes it, so that the group can undo the change (see PythonUndoGroupCommand).
+template <typename K>
+static void
+recordForUndoGroup(const std::shared_ptr<K>& knob)
+{
+    if (!knob) {
+        return;
+    }
+    KnobHolder* holder = knob->getHolder();
+    AppInstancePtr app = holder ? holder->getApp() : AppInstancePtr();
+    if ( app && (app->getUndoGroupDepth() > 0) ) {
+        app->recordKnobForUndoGroup(knob);
+    }
+}
+
 Param::Param(const KnobIPtr& knob)
     : _knob(knob)
 {
@@ -326,6 +342,7 @@ Param::copy(Param* other,
     if ( !thisKnob->isTypeCompatible(otherKnob) ) {
         return false;
     }
+    recordForUndoGroup(thisKnob);
     thisKnob->cloneAndUpdateGui(otherKnob.get(), dimension);
 
     return true;
@@ -346,6 +363,7 @@ Param::slaveTo(Param* other,
         return false;
     }
 
+    recordForUndoGroup(thisKnob);
     return thisKnob->slaveTo(thisDimension, otherKnob, otherDimension);
 }
 
@@ -357,6 +375,7 @@ Param::unslave(int dimension)
     if (!thisKnob) {
         return;
     }
+    recordForUndoGroup(thisKnob);
     thisKnob->unSlave(dimension, false);
 }
 
@@ -516,6 +535,7 @@ AnimatedParam::deleteValueAtTime(double time,
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     knob->deleteValueAtTime(eCurveChangeReasonInternal, time, ViewSpec::all(), dimension, false);
 }
 
@@ -527,6 +547,7 @@ AnimatedParam::removeAnimation(int dimension)
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     knob->removeAnimation(ViewSpec::all(), dimension);
 }
 
@@ -578,6 +599,7 @@ AnimatedParam::setInterpolationAtTime(double time,
     }
     KeyFrame newKey;
 
+    recordForUndoGroup(knob);
     return knob->setInterpolationAtTime(eCurveChangeReasonInternal, ViewSpec::current(), dimension, time, interpolation, &newKey);
 }
 
@@ -615,6 +637,7 @@ AnimatedParam::setExpression(const QString& expr,
         return false;
     }
     try {
+        recordForUndoGroup(thisKnob);
         thisKnob->setExpression(dimension, expr.toStdString(), hasRetVariable, true);
     } catch (...) {
         return false;
@@ -741,6 +764,7 @@ IntParam::set(int x)
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     knob->setValue(x, ViewSpec::current(), 0);
 }
 
@@ -753,7 +777,9 @@ Int2DParam::set(int x,
         return;
     }
     knob->beginChanges();
+    recordForUndoGroup(knob);
     knob->setValue(x, ViewSpec::current(), 0);
+    recordForUndoGroup(knob);
     knob->setValue(y, ViewSpec::current(), 1);
     knob->endChanges();
 }
@@ -769,8 +795,11 @@ Int3DParam::set(int x,
     }
 
     knob->beginChanges();
+    recordForUndoGroup(knob);
     knob->setValue(x, ViewSpec::current(), 0);
+    recordForUndoGroup(knob);
     knob->setValue(y, ViewSpec::current(), 1);
+    recordForUndoGroup(knob);
     knob->setValue(z, ViewSpec::current(), 2);
     knob->endChanges();
 }
@@ -783,6 +812,7 @@ IntParam::set(int x,
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     knob->setValueAtTime(frame, x, ViewSpec::current(), 0);
 }
 
@@ -795,6 +825,7 @@ Int2DParam::set(int x,
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     knob->setValuesAtTime(frame, x, y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
 }
 
@@ -808,6 +839,7 @@ Int3DParam::set(int x,
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     knob->setValuesAtTime(frame, x, y, z, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
 }
 
@@ -829,6 +861,7 @@ IntParam::setValue(int value,
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     knob->setValue(value, ViewSpec::current(), dimension);
 }
 
@@ -852,6 +885,7 @@ IntParam::setValueAtTime(int value,
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     knob->setValueAtTime(time, value, ViewSpec::current(), dimension);
 }
 
@@ -883,6 +917,7 @@ IntParam::restoreDefaultValue(int dimension)
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     knob->resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
 }
 
@@ -1085,6 +1120,7 @@ DoubleParam::set(double x)
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     knob->setValue(x, ViewSpec::current(), 0);
 }
 
@@ -1097,6 +1133,7 @@ Double2DParam::set(double x,
         return;
     }
 
+    recordForUndoGroup(knob);
     knob->setValues(x, y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
 }
 
@@ -1110,6 +1147,7 @@ Double3DParam::set(double x,
         return;
     }
 
+    recordForUndoGroup(knob);
     knob->setValues(x, y, z, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
 }
 
@@ -1121,6 +1159,7 @@ DoubleParam::set(double x,
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     return knob->setValueAtTime(frame, x, ViewSpec::current(), 0);
 }
 
@@ -1134,6 +1173,7 @@ Double2DParam::set(double x,
         return;
     }
 
+    recordForUndoGroup(knob);
     knob->setValuesAtTime(frame, x, y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
 }
 
@@ -1170,6 +1210,7 @@ Double3DParam::set(double x,
         return;
     }
 
+    recordForUndoGroup(knob);
     knob->setValuesAtTime(frame, x, y, z, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
 }
 
@@ -1191,6 +1232,7 @@ DoubleParam::setValue(double value,
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     knob->setValue(value, ViewSpec::current(), dimension);
 }
 
@@ -1214,6 +1256,7 @@ DoubleParam::setValueAtTime(double value,
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     return knob->setValueAtTime(time, value, ViewSpec::current(), dimension);
 }
 
@@ -1245,6 +1288,7 @@ DoubleParam::restoreDefaultValue(int dimension)
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     return knob->resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
 }
 
@@ -1401,10 +1445,14 @@ ColorParam::set(double r,
         return;
     }
     knob->beginChanges();
+    recordForUndoGroup(knob);
     knob->setValue(r, ViewSpec::current(), 0);
+    recordForUndoGroup(knob);
     knob->setValue(g, ViewSpec::current(), 1);
+    recordForUndoGroup(knob);
     knob->setValue(b, ViewSpec::current(), 2);
     if (knob->getDimension() == 4) {
+        recordForUndoGroup(knob);
         knob->setValue(a, ViewSpec::current(), 3);
     }
     knob->endChanges();
@@ -1422,11 +1470,15 @@ ColorParam::set(double r,
         return;
     }
     knob->beginChanges();
+    recordForUndoGroup(knob);
     knob->setValueAtTime(frame, r, ViewSpec::current(), 0);
+    recordForUndoGroup(knob);
     knob->setValueAtTime(frame, g, ViewSpec::current(), 1);
     int dims = knob->getDimension();
+    recordForUndoGroup(knob);
     knob->setValueAtTime(frame, b, ViewSpec::current(), 2);
     if (dims == 4) {
+        recordForUndoGroup(knob);
         knob->setValueAtTime(frame, a, ViewSpec::current(), 3);
     }
     knob->endChanges();
@@ -1450,6 +1502,7 @@ ColorParam::setValue(double value,
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     knob->setValue(value, ViewSpec::current(), dimension);
 }
 
@@ -1473,6 +1526,7 @@ ColorParam::setValueAtTime(double value,
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     knob->setValueAtTime(time, value, ViewSpec::current(), dimension);
 }
 
@@ -1504,6 +1558,7 @@ ColorParam::restoreDefaultValue(int dimension)
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     knob->resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
 }
 
@@ -1643,6 +1698,7 @@ ChoiceParam::set(int x)
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     knob->setValue(x, ViewSpec::current(), 0);
 }
 
@@ -1654,6 +1710,7 @@ ChoiceParam::set(int x,
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     knob->setValueAtTime(frame, x, ViewSpec::current(), 0);
 }
 
@@ -1672,6 +1729,7 @@ ChoiceParam::set(const QString& label)
         // If we found such a parameter, retrieve the string from it.
         filterKnobChoiceOptionCompat(std::string(), -1, -1, -1, -1, -1, knob->getName(), &choiceID);
     }
+    recordForUndoGroup(knob);
     KnobHelper::ValueChangedReturnCodeEnum s = knob->setValueFromID(choiceID, 0);
 
     Q_UNUSED(s);
@@ -1694,6 +1752,7 @@ ChoiceParam::setValue(int value)
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     knob->setValue(value, ViewSpec::current(), 0);
 }
 
@@ -1721,6 +1780,7 @@ ChoiceParam::setValueAtTime(int value,
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     knob->setValueAtTime(time, value, ViewSpec::current(), 0);
 }
 
@@ -1761,6 +1821,7 @@ ChoiceParam::restoreDefaultValue()
     if (!knob) {
         return;
     }
+    recordForUndoGroup(knob);
     knob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
 }
 
@@ -1894,6 +1955,7 @@ BooleanParam::set(bool x)
         return;
     }
 
+    recordForUndoGroup(knob);
     knob->setValue(x, ViewSpec::current(), 0);
 }
 
@@ -1906,6 +1968,7 @@ BooleanParam::set(bool x,
         return;
     }
 
+    recordForUndoGroup(knob);
     knob->setValueAtTime(frame, x, ViewSpec::current(), 0);
 }
 
@@ -1928,6 +1991,7 @@ BooleanParam::setValue(bool value)
         return;
     }
 
+    recordForUndoGroup(knob);
     knob->setValue(value, ViewSpec::current(), 0);
 }
 
@@ -1951,6 +2015,7 @@ BooleanParam::setValueAtTime(bool value,
         return;
     }
 
+    recordForUndoGroup(knob);
     knob->setValueAtTime(time, value, ViewSpec::current(), 0);
 }
 
@@ -1984,6 +2049,7 @@ BooleanParam::restoreDefaultValue()
         return;
     }
 
+    recordForUndoGroup(knob);
     knob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
 }
 
@@ -2045,6 +2111,7 @@ StringParamBase::set(const QString& x)
         return;
     }
 
+    recordForUndoGroup(knob);
     knob->setValue(x.toStdString(), ViewSpec::current(), 0);
 }
 
@@ -2057,6 +2124,7 @@ StringParamBase::set(const QString& x,
         return;
     }
 
+    recordForUndoGroup(knob);
     knob->setValueAtTime(frame, x.toStdString(), ViewSpec::current(), 0);
 }
 
@@ -2079,6 +2147,7 @@ StringParamBase::setValue(const QString& value)
         return;
     }
 
+    recordForUndoGroup(knob);
     knob->setValue(value.toStdString(), ViewSpec::current(), 0);
 }
 
@@ -2102,6 +2171,7 @@ StringParamBase::setValueAtTime(const QString& value,
         return;
     }
 
+    recordForUndoGroup(knob);
     knob->setValueAtTime(time, value.toStdString(), ViewSpec::current(), 0);
 }
 
@@ -2135,6 +2205,7 @@ StringParamBase::restoreDefaultValue()
         return;
     }
 
+    recordForUndoGroup(knob);
     return knob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
 }
 
@@ -2310,6 +2381,7 @@ PathParam::setTable(const std::list<std::vector<std::string> >& table)
         return;
     }
     try {
+        recordForUndoGroup(k);
         k->setTable(table);
     } catch (...) {
 
@@ -2399,6 +2471,7 @@ BytesParam::setValue(const std::string& value)
         return;
     }
 
+    recordForUndoGroup(knob);
     knob->setValue(value, ViewSpec::current(), 0);
 }
 
@@ -2421,6 +2494,7 @@ BytesParam::restoreDefaultValue()
         return;
     }
 
+    recordForUndoGroup(knob);
     knob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
 }
 
@@ -2477,6 +2551,7 @@ GroupParam::setOpened(bool opened)
     if (!group) {
         return;
     }
+    recordForUndoGroup(group);
     group->setValue(opened, ViewSpec::current(), 0);
 }
 
@@ -2567,6 +2642,7 @@ ParametricParam::addControlPoint(int dimension,
     if (!param) {
         return eStatusFailed;
     }
+    recordForUndoGroup(param);
     return param->addControlPoint(eValueChangedReasonNatronInternalEdited, dimension, key, value, interpolation);
 }
 
@@ -2582,6 +2658,7 @@ ParametricParam::addControlPoint(int dimension,
     if (!param) {
         return eStatusFailed;
     }
+    recordForUndoGroup(param);
     return param->addControlPoint(eValueChangedReasonNatronInternalEdited, dimension, key, value, leftDerivative, rightDerivative, interpolation);
 }
 
@@ -2647,6 +2724,7 @@ ParametricParam::setNthControlPoint(int dimension,
     if (!param) {
         return eStatusFailed;
     }
+    recordForUndoGroup(param);
     return param->setNthControlPoint(eValueChangedReasonNatronInternalEdited, dimension, nthCtl, key, value, leftDerivative, rightDerivative);
 }
 
@@ -2670,6 +2748,7 @@ ParametricParam::deleteControlPoint(int dimension,
     if (!param) {
         return eStatusFailed;
     }
+    recordForUndoGroup(param);
     return param->deleteControlPoint(eValueChangedReasonNatronInternalEdited, dimension, nthCtl);
 }
 
@@ -2680,6 +2759,7 @@ ParametricParam::deleteAllControlPoints(int dimension)
     if (!param) {
         return eStatusFailed;
     }
+    recordForUndoGroup(param);
     return param->deleteAllControlPoints(eValueChangedReasonNatronInternalEdited, dimension);
 }
 

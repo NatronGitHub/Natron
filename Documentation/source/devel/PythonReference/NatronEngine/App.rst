@@ -19,11 +19,13 @@ Functions
 
 - def :meth:`addProjectLayer<NatronEngine.App.addProjectLayer>` (layer)
 - def :meth:`addFormat<NatronEngine.App.addFormat>` (formatSpec)
+- def :meth:`beginUndoGroup<NatronEngine.App.beginUndoGroup>` (text)
 - def :meth:`canRedo<NatronEngine.App.canRedo>` ()
 - def :meth:`canUndo<NatronEngine.App.canUndo>` ()
 - def :meth:`createNode<NatronEngine.App.createNode>` (pluginID[, majorVersion=-1[, group=None] [, properties=None]])
 - def :meth:`createReader<NatronEngine.App.createReader>` (filename[, group=None] [, properties=None])
 - def :meth:`createWriter<NatronEngine.App.createWriter>` (filename[, group=None] [, properties=None])
+- def :meth:`endUndoGroup<NatronEngine.App.endUndoGroup>` ()
 - def :meth:`getAppID<NatronEngine.App.getAppID>` ()
 - def :meth:`getProjectParam<NatronEngine.App.getProjectParam>` (name)
 - def :meth:`getUndoHistory<NatronEngine.App.getUndoHistory>` ()
@@ -43,6 +45,7 @@ Functions
 - def :meth:`timelineGetRightBound<NatronEngine.App.timelineGetRightBound>` ()
 - def :meth:`timelineGetTime<NatronEngine.App.timelineGetTime>` ()
 - def :meth:`undo<NatronEngine.App.undo>` ()
+- def :meth:`undoGroup<NatronEngine.App.undoGroup>` (text)
 - def :meth:`waitForRenders<NatronEngine.App.waitForRenders>` ([timeout=-1.0])
 - def :meth:`writeToScriptEditor<NatronEngine.App.writeToScriptEditor>` (message)
 
@@ -573,8 +576,8 @@ inform the user of various information, warnings or errors.
     background mode, where there is no undo stack.
 
     Edits made from Python (e.g. :meth:`Param.setValue()<NatronEngine.IntParam.setValue>` or
-    :meth:`createNode()<NatronEngine.App.createNode>`) are not undoable: only the edits made in the
-    user interface are.
+    :meth:`createNode()<NatronEngine.App.createNode>`) are only undoable inside an undo group (see
+    :meth:`undoGroup()<NatronEngine.App.undoGroup>`).
 
 .. method:: App.redo()
 
@@ -629,3 +632,46 @@ inform the user of various information, warnings or errors.
         app.getViewer("Viewer1").renderCurrentFrame()
         if app.waitForRenders(30):
             print(app.getViewer("Viewer1").getPixel(960, 540))
+
+.. method:: App.undoGroup(text)
+
+    :param text: :class:`str`
+    :rtype: a context manager
+
+    Makes the edits of a block of Python code one undo step named *text*, used as::
+
+        with app.undoGroup("Bake"):
+            blur = app.createNode("net.sf.cimg.CImgBlur")
+            blur.connectInput(0, app.Read1)
+            blur.getParam("size").setValue(10, 0)
+            app.Viewer1.connectInput(0, blur)
+
+    *Edit > Undo* (or :meth:`undo()<NatronEngine.App.undo>`) then removes the Blur node and restores the
+    connection of the viewer in one step. Outside an undo group, the edits made from Python are not
+    undoable, as before. This is how a PyPlug button callback or a tool makes its edits one undo step.
+
+    The group records the parameter changes (values, keyframes, expressions, links, defaults restored),
+    the nodes created (:meth:`createNode()<NatronEngine.App.createNode>`,
+    :meth:`createReader()<NatronEngine.App.createReader>`, :meth:`createWriter()<NatronEngine.App.createWriter>`),
+    deleted (:meth:`Effect.destroy()<NatronEngine.Effect.destroy>`) and connected or disconnected
+    (:meth:`Effect.connectInput()<NatronEngine.Effect.connectInput>`,
+    :meth:`Effect.disconnectInput()<NatronEngine.Effect.disconnectInput>`). A node deleted in a group is
+    kept until the undo step is discarded, so that undo can restore it.
+
+    Groups nest: only the outermost one makes an undo step. The group ends when the block ends, also when
+    it raises an exception (the edits made until then are the undo step). The undo step is on the undo
+    stack of the node graph. In background mode (NatronRenderer), where there is no undo stack, it does
+    nothing.
+
+.. method:: App.beginUndoGroup(text)
+
+    :param text: :class:`str`
+
+    Starts an undo group, as entering ``with app.undoGroup(text):`` does: prefer the ``with`` statement,
+    which also ends the group on an exception. Every call must be followed by a call to
+    :meth:`endUndoGroup()<NatronEngine.App.endUndoGroup>`.
+
+.. method:: App.endUndoGroup()
+
+    Ends the undo group started by the last :meth:`beginUndoGroup()<NatronEngine.App.beginUndoGroup>`.
+    Raises :class:`RuntimeError` if no group is open.

@@ -170,6 +170,8 @@ App::createNode(const QString& pluginID,
 
     NodePtr node = getInternalApp()->createNode(args);
     if (node) {
+        // undoable in an undo group (App.beginUndoGroup())
+        getInternalApp()->recordNodeCreatedForUndoGroup(node);
         return new Effect(node);
     } else {
         return NULL;
@@ -190,6 +192,8 @@ App::createReader(const QString& filename,
 
     NodePtr node = getInternalApp()->createReader(filename.toStdString(), args);
     if (node) {
+        // undoable in an undo group (App.beginUndoGroup())
+        getInternalApp()->recordNodeCreatedForUndoGroup(node);
         return new Effect(node);
     } else {
         return NULL;
@@ -208,6 +212,8 @@ App::createWriter(const QString& filename,
     makeCreateNodeArgs(getInternalApp(), QString::fromUtf8(PLUGINID_NATRON_WRITE), -1, collection, props, &args);
     NodePtr node = getInternalApp()->createWriter(filename.toStdString(), args);
     if (node) {
+        // undoable in an undo group (App.beginUndoGroup())
+        getInternalApp()->recordNodeCreatedForUndoGroup(node);
         return new Effect(node);
     } else {
         return NULL;
@@ -523,6 +529,60 @@ int
 App::getUndoIndex() const
 {
     return getInternalApp()->getUndoIndex();
+}
+
+void
+App::beginUndoGroup(const QString& text)
+{
+    getInternalApp()->beginUndoGroup( text.toStdString() );
+}
+
+void
+App::endUndoGroup()
+{
+    if ( !getInternalApp()->endUndoGroup() ) {
+        PyErr_SetString(PyExc_RuntimeError, "App.endUndoGroup(): no undo group is open");
+    }
+}
+
+UndoGroup*
+App::undoGroup(const QString& text)
+{
+    return new UndoGroup(getInternalApp(), text);
+}
+
+UndoGroup::UndoGroup(const AppInstancePtr& app,
+                     const QString& text)
+    : _app(app)
+    , _text(text)
+    , _open(false)
+{
+}
+
+UndoGroup::~UndoGroup()
+{
+}
+
+void
+UndoGroup::begin()
+{
+    AppInstancePtr app = _app.lock();
+
+    if (app && !_open) {
+        app->beginUndoGroup( _text.toStdString() );
+        _open = true;
+    }
+}
+
+void
+UndoGroup::end()
+{
+    AppInstancePtr app = _app.lock();
+
+    if (app && _open) {
+        _open = false;
+        app->endUndoGroup();
+    }
 }
 
 bool

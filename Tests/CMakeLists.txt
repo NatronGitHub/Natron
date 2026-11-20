@@ -244,3 +244,9 @@ foreach(_natron_gui_test ${NatronGuiTests_SCRIPTS})
             "OFX_PLUGIN_PATH=${_natron_gui_test_ofx_path}")
     endif()
 endforeach()
+
+# Undo groups do nothing in background mode (App.undoGroup(), #1455): NatronRenderer runs the script,
+# which exits with natron.quit(status).
+add_test(NAME UndoGroupHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_undo_group.py")
+set_tests_properties(UndoGroupHeadless PROPERTIES TIMEOUT 120)

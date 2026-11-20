@@ -759,6 +759,26 @@
     </object-type>
     <object-type name="StringNodeCreationProperty">
     </object-type>
+    <object-type name="UndoGroup" copyable="false">
+        <modify-function signature="begin()" remove="all"/>
+        <modify-function signature="end()" remove="all"/>
+        <add-function signature="__enter__()" return-type="PyObject*">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.begin();
+                Py_INCREF(%PYSELF);
+                %PYARG_0 = %PYSELF;
+            </inject-code>
+        </add-function>
+        <add-function signature="__exit__(PyObject*,PyObject*,PyObject*)" return-type="PyObject*">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.end();
+                // do not swallow the exception, if any
+                Py_INCREF(Py_False);
+                %PYARG_0 = Py_False;
+            </inject-code>
+        </add-function>
+    </object-type>
+
     <object-type name="App" copyable="false">
         <inject-code class="native" position="beginning">
         #include &lt;limits&gt;
@@ -791,6 +811,11 @@
             </inject-code>
         </modify-function>
         <modify-function signature="getProjectParam(QString)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="undoGroup(QString)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>

@@ -74,6 +74,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/ProcessHandler.h"
+#include "Engine/PythonUndoGroup.h"
 #include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
 #include "Engine/WriteNode.h"
@@ -174,6 +175,10 @@ public:
 
     ProjectBeingLoadedInfo projectBeingLoaded;
 
+    // the undo group open in Python (beginUndoGroup()), its nesting level, and its command (only in the GUI)
+    int undoGroupDepth;
+    std::shared_ptr<PythonUndoGroupCommand> undoGroup;
+
     AppInstancePrivate(int appID,
                        AppInstance* app)
 
@@ -192,6 +197,8 @@ public:
         , invalidExprKnobsMutex()
         , invalidExprKnobs()
         , projectBeingLoaded()
+        , undoGroupDepth(0)
+        , undoGroup()
     {
     }
 
@@ -2131,6 +2138,81 @@ AppInstance::hasRenderInProgress() const
     }
 
     return false;
+}
+
+void
+AppInstance::beginUndoGroup(const std::string& text)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    if (_imp->undoGroupDepth++ > 0) {
+        return; // only the outermost group makes an undo step
+    }
+    // In background mode, there is no undo stack: nothing is recorded.
+    if ( !isBackground() ) {
+        _imp->undoGroup = std::make_shared<PythonUndoGroupCommand>(text);
+    }
+}
+
+bool
+AppInstance::endUndoGroup()
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    if (_imp->undoGroupDepth <= 0) {
+        return false;
+    }
+    if (--_imp->undoGroupDepth > 0) {
+        return true;
+    }
+    std::shared_ptr<PythonUndoGroupCommand> command = _imp->undoGroup;
+    _imp->undoGroup.reset();
+    if ( command && !command->isEmpty() ) {
+        command->finish();
+        pushUndoGroupCommand(command);
+    }
+
+    return true;
+}
+
+int
+AppInstance::getUndoGroupDepth() const
+{
+    return _imp->undoGroupDepth;
+}
+
+void
+AppInstance::recordKnobForUndoGroup(const KnobIPtr& knob)
+{
+    if (_imp->undoGroup) {
+        _imp->undoGroup->recordKnob(knob);
+    }
+}
+
+void
+AppInstance::recordInputsForUndoGroup(const NodePtr& node)
+{
+    if (_imp->undoGroup) {
+        _imp->undoGroup->recordInputs(node);
+    }
+}
+
+void
+AppInstance::recordNodeCreatedForUndoGroup(const NodePtr& node)
+{
+    if (_imp->undoGroup) {
+        _imp->undoGroup->recordNodeCreated(node);
+    }
+}
+
+bool
+AppInstance::deleteNodeInUndoGroup(const NodePtr& node,
+                                   bool autoReconnect)
+{
+    if (!_imp->undoGroup) {
+        return false;
+    }
+    _imp->undoGroup->deleteNode(node, autoReconnect);
+
+    return true;
 }
 
 bool

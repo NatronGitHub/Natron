@@ -263,6 +263,33 @@ public:
     bool waitForRenders(int timeoutMs, int settleMs);
 
     /**
+     * @brief Undo groups (App.beginUndoGroup(), "with app.undoGroup(text):"): the edits made from Python
+     * between beginUndoGroup() and endUndoGroup() are recorded, and become one undo step on the undo stack of
+     * the node graph when the outermost group ends (see PythonUndoGroupCommand). Groups nest. In background
+     * mode, nothing is recorded. endUndoGroup() returns false if no group is open.
+     **/
+    void beginUndoGroup(const std::string& text);
+    bool endUndoGroup();
+    int getUndoGroupDepth() const;
+
+    /**
+     * @brief Called by the Python API before it changes a knob, the inputs of a node, or after it creates a
+     * node, while an undo group is open (they do nothing otherwise). deleteNodeInUndoGroup() deactivates
+     * the node and returns true when a group records it; the caller destroys the node otherwise.
+     **/
+    void recordKnobForUndoGroup(const KnobIPtr& knob);
+    void recordInputsForUndoGroup(const NodePtr& node);
+    void recordNodeCreatedForUndoGroup(const NodePtr& node);
+    bool deleteNodeInUndoGroup(const NodePtr& node, bool autoReconnect);
+
+protected:
+
+    /// The GUI pushes the command of an undo group on the undo stack of the node graph.
+    virtual void pushUndoGroupCommand(const UndoCommandPtr& /*command*/) {}
+
+public:
+
+    /**
      * @brief Edit > Undo / Redo: the active undo stack of the GUI (the one of the last focused node panel
      * or node graph). In background mode, there is no undo stack: these do nothing.
      **/
