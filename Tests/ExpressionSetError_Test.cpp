@@ -89,8 +89,12 @@ protected:
                              ".doubleTo.setExpression(" + expr + ", False)\n";
         std::string error;
         testing::internal::CaptureStdout();
+        testing::internal::CaptureStderr();
         bool ok = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, 0);
+        std::string errOutput = testing::internal::GetCapturedStderr();
         std::string output = testing::internal::GetCapturedStdout();
+        // the exception is normalized before it is formatted (no secondary error from the traceback module)
+        EXPECT_EQ( std::string::npos, errOutput.find("__suppress_context__") ) << errOutput;
         EXPECT_TRUE(ok) << "setExpression() must not raise: " << error;
 
         PythonGILLocker pgl;
@@ -128,6 +132,26 @@ TEST_F(ExpressionSetErrorTest, InvalidExpressionIsReported)
     output = setExpression("'1 +'", &result);
     EXPECT_FALSE(result);
     EXPECT_NE( std::string::npos, output.find("invalid expression on") ) << output;
+    // only the Python error, not the generated script
+    EXPECT_EQ( std::string::npos, output.find("def expression") ) << output;
+}
+
+// A failed setExpression() also removes the previous expression of that dimension (as documented)
+TEST_F(ExpressionSetErrorTest, InvalidExpressionRemovesThePreviousOne)
+{
+    if ( skipped() ) {
+        return;
+    }
+    KnobDoublePtr to = std::dynamic_pointer_cast<KnobDouble>( _node->getKnobByName("doubleTo") );
+    ASSERT_TRUE( bool(to) );
+
+    bool result = false;
+    setExpression("'frame * 2'", &result);
+    EXPECT_TRUE(result);
+    EXPECT_FALSE( to->getExpression(0).empty() );
+    setExpression("'1/0'", &result);
+    EXPECT_FALSE(result);
+    EXPECT_TRUE( to->getExpression(0).empty() );
 }
 
 TEST_F(ExpressionSetErrorTest, ValidExpressionIsSilent)
