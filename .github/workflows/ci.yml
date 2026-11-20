@@ -1,8 +1,24 @@
 name: Tests
 
+# Build configurations (matrix.config):
+# - Fast: pull requests and pushes to master and RB-*. One build per OS, CMake
+#   Debug (assertions, Q_ASSERT and DEBUG on) but compiled with -O1 and no -g,
+#   which compiles and links much faster than -O0 -g or -O2 -g. Linux and
+#   Windows use ccache; its cache is saved only by pushes to master and RB-*
+#   (and by workflow_dispatch runs), so that pull requests restore the base
+#   branch's cache but never evict it with their own.
+# - Debug (-O0 -g; -O1 -g on Windows, see CMakeLists.txt) and Release
+#   (-O3 -DNDEBUG): nightly, on tags, and on workflow_dispatch unless
+#   "fast" is chosen. No compiler cache.
 on:
-  workflow_dispatch: {}
-  # nightly macOS build of the default branch, skipped if it didn't change in the last 25 hours
+  workflow_dispatch:
+    inputs:
+      build:
+        description: 'full: Debug and Release builds (as nightly); fast: the pull-request build'
+        type: choice
+        options: [full, fast]
+        default: full
+  # nightly Debug and Release builds of the default branch, skipped if it didn't change in the last 25 hours
   schedule:
   - cron: '17 3 * * *'
   # one run per change: push only on the main and release branches and on tags,
@@ -35,9 +51,13 @@ jobs:
   # This is the RB-2.7 Qt6 build log to watch after each forward merge of RB-2.6 (#1469,
   # Documentation/source/maintainers/qt6-migration.rst); the fixes go to RB-2.6.
   unix_test:
-    if: github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)
+    needs: changes
+    if: >-
+      !cancelled() && (
+      (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
+      (github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
     timeout-minutes: 180
-    name: Test ${{ matrix.os }} Qt6 Python ${{ matrix.python-version }}
+    name: Test ${{ matrix.os }} Qt6 Python ${{ matrix.python-version }} ${{ matrix.config }}
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -47,6 +67,12 @@ jobs:
       PYTHON_VERSION: ${{ matrix.python-version }}
       OCIO_CONFIG_VERSION: 2.5
       MATRIX_OS: ${{ matrix.os }}
+      # not CONFIG: MSYS2's pacman scripts read $CONFIG as their configuration file
+      CI_CONFIG: ${{ matrix.config }}
+      # ccache, used by the Fast builds only (see the top of this file)
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_MAXSIZE: 1500M
 
     strategy:
       fail-fast: false
@@ -54,9 +80,11 @@ jobs:
         # Ubuntu 26.04 (resolute) is the first Ubuntu LTS with PySide6: shiboken6,
         # libshiboken6-dev and libpyside6-dev 6.10.2 with their CMake config files
         # (Shiboken6, Shiboken6Tools, PySide6), Qt 6.10 and Python 3.14 (its only
-        # Python). Ubuntu 24.04 has no PySide6 package at all.
+        # Python; a CI-only exception, release builds use 3.13). Ubuntu 24.04 has no PySide6.
         os: [ubuntu-26.04]
         python-version: ['3.14']
+        # Fast on pull requests and branch pushes; Debug and Release nightly, on tags and by hand
+        config: ${{ fromJSON((github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.build != 'fast')) && '["Debug","Release"]' || '["Fast"]') }}
         include:
         - os: ubuntu-26.04
           special-invocation: 'xvfb-run --auto-servernum '
@@ -77,12 +105,13 @@ jobs:
           sudo apt-get update
           # No libboost-system-dev: Boost.System is header-only since Boost 1.89, and resolute
           # (Boost 1.90) has no such package. Natron only needs Boost's headers and serialization.
+          # libegl-dev and libx11-dev: on 24.04 the Qt5 packages pulled them in, qt6-base-dev doesn't.
           sudo apt-get install -y build-essential libboost-serialization-dev libexpat1-dev libcairo2-dev \
             qt6-base-dev qt6-base-dev-tools libgl-dev libegl-dev libx11-dev \
             python3-dev shiboken6 libshiboken6-dev libpyside6-dev \
             python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtwidgets python3-qtpy \
             libwayland-dev libwayland-client0 libwayland-egl1 \
-            extra-cmake-modules clang llvm xvfb wget unzip
+            extra-cmake-modules clang llvm ccache xvfb wget unzip
           # Fail here rather than in CMake if a package lacks what the Qt6 build needs.
           command -v shiboken6
           ls /usr/lib/x86_64-linux-gnu/cmake/Shiboken6/Shiboken6Config.cmake \
@@ -112,61 +141,79 @@ jobs:
           unzip openfx-io-build-ubuntu_24-testing.zip
           cd ..
 
-      - name: Build Unix (debug)
-        run: |
-          mkdir debug && cd debug
-          cmake -DCMAKE_BUILD_TYPE=Debug -DNATRON_QT6=ON ../
-          make -j$(nproc)
+      - name: Restore ccache
+        id: ccache
+        if: matrix.config == 'Fast'
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ matrix.os }}-gcc-${{ matrix.config }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.os }}-gcc-${{ matrix.config }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}-
+            ccache-${{ matrix.os }}-gcc-${{ matrix.config }}-
 
-      - name: Run Unix Tests (debug)
-        id: run-unix-tests-debug
-        # Allow continuing after error so logs can be uploaded.
-        continue-on-error: true
+      - name: Build Unix (${{ matrix.config }})
+        id: build
         run: |
-          cd debug
-          OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
-
-      - name: Build Unix (release)
-        run: |
-          mkdir release && cd release
-          cmake -DNATRON_QT6=ON ../
+          case "$CI_CONFIG" in
+            # CMake Debug (assertions on) without -g and at -O1: much faster to compile and link
+            Fast) cfg=(-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS_DEBUG=-O1 -DCMAKE_CXX_FLAGS_DEBUG=-O1
+                       -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache) ;;
+            *) cfg=(-DCMAKE_BUILD_TYPE=$CI_CONFIG) ;;
+          esac
+          ccache -z
+          mkdir build && cd build
+          cmake "${cfg[@]}" -DNATRON_QT6=ON ../
           make -j$(nproc)
 
       - name: Check that Natron links Qt6, not Qt5
         run: |
-          for b in debug/Tests/Tests release/Tests/Tests; do
-            echo "== $b"
-            ldd $b > ldd.txt
-            grep -E 'libQt[56]|pyside|shiboken|libpython' ldd.txt || true
-            grep -q 'libQt6Core' ldd.txt || { echo "::error::$b does not link libQt6Core"; exit 1; }
-            if grep -q 'libQt5' ldd.txt; then echo "::error::$b links Qt5"; exit 1; fi
-          done
+          ldd build/Tests/Tests > ldd.txt
+          grep -E 'libQt[56]|pyside|shiboken|libpython' ldd.txt || true
+          grep -q 'libQt6Core' ldd.txt || { echo "::error::Tests does not link libQt6Core"; exit 1; }
+          if grep -q 'libQt5' ldd.txt; then echo "::error::Tests links Qt5"; exit 1; fi
 
-      - name: Run Unix Tests (release)
-        id: run-unix-tests-release
+      - name: ccache statistics
+        if: ${{ !cancelled() && steps.build.outcome != 'skipped' }}
+        run: ccache -s
+
+      - name: Save ccache
+        # only from pushes to master and RB-* (and workflow_dispatch), never from pull requests
+        if: matrix.config == 'Fast' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ steps.ccache.outputs.cache-primary-key }}
+
+      - name: Run Unix Tests (${{ matrix.config }})
+        id: run-unix-tests
         # Allow continuing after error so logs can be uploaded.
         continue-on-error: true
         run: |
-          cd release
+          cd build
           OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
 
-      - name: Upload ${{ matrix.os }} Test Log artifacts
+      - name: Upload ${{ matrix.os }} ${{ matrix.config }} Test Log artifacts
         if: always()
         uses: actions/upload-artifact@v4.3.1
         with:
-          name: ${{ matrix.os }} Test Logs
-          path: ${{ github.workspace }}/release/Testing/Temporary/LastTest.log
+          name: ${{ matrix.os }} ${{ matrix.config }} Test Logs
+          path: ${{ github.workspace }}/build/Testing/Temporary/LastTest.log
 
       - name: Check for test failures
-        if: steps.run-unix-tests-debug.outcome == 'failure' || steps.run-unix-tests-release.outcome == 'failure'
+        if: steps.run-unix-tests.outcome == 'failure'
         run: exit 1
 
   win-test:
+    needs: changes
     # Disabled on RB-2.7 until the Linux Qt6 build passes (maintainer, 2026-11-20); re-enable with Qt6
     # by removing the leading "false &&".
-    if: false && github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)
+    if: >-
+      false && !cancelled() && (
+      (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
+      (github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
     timeout-minutes: 240
-    name: Test ${{ matrix.os }} UCRT64 Python ${{ matrix.python-version }}
+    name: Test ${{ matrix.os }} UCRT64 Python ${{ matrix.python-version }} ${{ matrix.config }}
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -176,12 +223,20 @@ jobs:
       PYTHON_VERSION: ${{ matrix.python-version }}
       OCIO_CONFIG_VERSION: 2.5
       MATRIX_OS: ${{ matrix.os }}
+      # not CONFIG: MSYS2's pacman scripts read $CONFIG as their configuration file
+      CI_CONFIG: ${{ matrix.config }}
+      # ccache, used by the Fast builds only (see the top of this file)
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_MAXSIZE: 1500M
 
     strategy:
       fail-fast: false
       matrix:
         os: [windows-latest]
         python-version: ['3.14']
+        # Fast on pull requests and branch pushes; Debug and Release nightly, on tags and by hand
+        config: ${{ fromJSON((github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.build != 'fast')) && '["Debug","Release"]' || '["Fast"]') }}
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4.1.1
@@ -205,7 +260,7 @@ jobs:
           pkgs=(
             git unzip
             ${MINGW_PACKAGE_PREFIX}-cc ${MINGW_PACKAGE_PREFIX}-cmake ${MINGW_PACKAGE_PREFIX}-ninja
-            ${MINGW_PACKAGE_PREFIX}-pkgconf ${MINGW_PACKAGE_PREFIX}-wget
+            ${MINGW_PACKAGE_PREFIX}-pkgconf ${MINGW_PACKAGE_PREFIX}-wget ${MINGW_PACKAGE_PREFIX}-ccache
             ${MINGW_PACKAGE_PREFIX}-boost ${MINGW_PACKAGE_PREFIX}-cairo ${MINGW_PACKAGE_PREFIX}-fontconfig
             ${MINGW_PACKAGE_PREFIX}-expat ${MINGW_PACKAGE_PREFIX}-python
             ${MINGW_PACKAGE_PREFIX}-qt5-base ${MINGW_PACKAGE_PREFIX}-pyside2 ${MINGW_PACKAGE_PREFIX}-shiboken2
@@ -228,7 +283,7 @@ jobs:
           done
           # Fail loudly here rather than later with "No CMAKE_CXX_COMPILER could be found".
           pacman -Q "${pkgs[@]}"
-          command -v g++ cmake ninja shiboken2 python
+          command -v g++ cmake ninja ccache shiboken2 python
           python -c 'import shiboken2; import PySide2.QtCore; print("PySide2", PySide2.__version__, "Qt", PySide2.QtCore.qVersion())'
 
       - name: Download OpenColorIO-Configs
@@ -237,13 +292,44 @@ jobs:
           tar xzf Natron-v${OCIO_CONFIG_VERSION}.tar.gz
           mv OpenColorIO-Configs-Natron-v${OCIO_CONFIG_VERSION} OpenColorIO-Configs
 
-      - name: Build Windows
+      - name: Restore ccache
+        id: ccache
+        if: matrix.config == 'Fast'
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ matrix.os }}-ucrt64-gcc-${{ matrix.config }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.os }}-ucrt64-gcc-${{ matrix.config }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}-
+            ccache-${{ matrix.os }}-ucrt64-gcc-${{ matrix.config }}-
+
+      - name: Build Windows (${{ matrix.config }})
+        id: build
         run: |
+          case "$CI_CONFIG" in
+            # CMake Debug (assertions on) without -g and at -O1: much faster to compile and link
+            Fast) cfg=(-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS_DEBUG=-O1 -DCMAKE_CXX_FLAGS_DEBUG=-O1
+                       -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache) ;;
+            *) cfg=(-DCMAKE_BUILD_TYPE=$CI_CONFIG) ;;
+          esac
+          ccache -z
           mkdir build && cd build
-          cmake ../
+          cmake -G Ninja "${cfg[@]}" ../
           ninja
 
-      - name: Run Windows Tests
+      - name: ccache statistics
+        if: ${{ !cancelled() && steps.build.outcome != 'skipped' }}
+        run: ccache -s
+
+      - name: Save ccache
+        # only from pushes to master and RB-* (and workflow_dispatch), never from pull requests
+        if: matrix.config == 'Fast' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ steps.ccache.outputs.cache-primary-key }}
+
+      - name: Run Windows Tests (${{ matrix.config }})
         id: run-windows-tests
         # Allow continuing after error so logs can be uploaded.
         continue-on-error: true
@@ -264,11 +350,11 @@ jobs:
           # (an MSYS2 Python extension) restores the PATH search.
           PYTHONLEGACYWINDOWSDLLLOADING=1 PYTHONHOME=${MINGW_PREFIX} OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
 
-      - name: Upload ${{ matrix.os }} Test Log artifacts
+      - name: Upload ${{ matrix.os }} ${{ matrix.config }} Test Log artifacts
         if: always()
         uses: actions/upload-artifact@v4.3.1
         with:
-          name: ${{ matrix.os }} Test Logs
+          name: ${{ matrix.os }} ${{ matrix.config }} Test Logs
           path: ${{ github.workspace }}/build/Testing/Temporary/LastTest.log
 
       - name: Check for test failures
@@ -300,7 +386,8 @@ jobs:
     # overlay (tools/MacPorts) and MACPORTS_CACHE_VERSION (bump it when the
     # port list below changes).
     # macOS arm64 runners are scarce: run only once Linux and Windows have passed. Merging only
-    # requires Linux and Windows; this job is informative. Nightly, it runs alone if the branch changed.
+    # requires Linux and Windows; this job is informative. Nightly, it runs if the branch changed,
+    # whatever the Linux and Windows results.
     needs: [changes, unix_test, win-test]
     # Disabled on RB-2.7 until the Linux Qt6 build passes (maintainer, 2026-11-20); re-enable with Qt6
     # by removing the leading "false &&". (Only that line changes, so that RB-2.6's edits of this
@@ -310,8 +397,13 @@ jobs:
       (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
       (github.event_name != 'schedule' && needs.unix_test.result == 'success' && needs.win-test.result == 'success' &&
        (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
-    name: Test macos-15 arm64 MacPorts Python 3.10
+    name: Test macos-15 arm64 MacPorts Python 3.11 ${{ matrix.config }}
     runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        # Fast on pull requests and branch pushes; Debug and Release nightly, on tags and by hand
+        config: ${{ fromJSON((github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.build != 'fast')) && '["Debug","Release"]' || '["Fast"]') }}
     timeout-minutes: 360
     defaults:
       run:
@@ -321,10 +413,12 @@ jobs:
       CI: 'True'
       OCIO_CONFIG_VERSION: 2.5
       MACPORTS_VERSION: 2.12.7
-      MACPORTS_CACHE_VERSION: 1
+      MACPORTS_CACHE_VERSION: 2
       MACPORTS_PORTS: >-
-        cmake pkgconfig zstd python310 py310-pyside2 py310-qtpy boost expat cairo
-      PYVER: '3.10'
+        cmake pkgconfig zstd python311 py311-pyside2 py311-qtpy boost expat cairo
+      PYVER: '3.11'
+      # not CONFIG: MSYS2's pacman scripts read $CONFIG as their configuration file
+      CI_CONFIG: ${{ matrix.config }}
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4.1.1
@@ -414,7 +508,7 @@ jobs:
             [ $i = 3 ] && exit 1
             sleep 30
           done
-          sudo port select --set python3 python310
+          sudo port select --set python3 python311
           sudo port -N clean --work --dist installed || true
 
       - name: Save MacPorts to cache
@@ -448,20 +542,25 @@ jobs:
           curl -fsSL --retry 5 https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v${OCIO_CONFIG_VERSION}.tar.gz | tar xzf -
           mv OpenColorIO-Configs-Natron-v${OCIO_CONFIG_VERSION} OpenColorIO-Configs
 
-      - name: Build Natron (CMake)
+      - name: Build Natron (CMake, ${{ matrix.config }})
         run: |
           # The MacPorts PySide2 has no CMake config files: CMake finds Shiboken2
           # and PySide2 through Python3_EXECUTABLE (cmake/PySide2FromPython.cmake).
           # Natron is built with the system (Xcode) clang, which fully supports C++20 on
           # macOS 15; MacPorts only provides the libraries (see #1134).
           /usr/bin/clang++ --version
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DNATRON_BUILD_TESTS=ON \
+          case "$CI_CONFIG" in
+            # CMake Debug (assertions on) without -g and at -O1: much faster to compile and link
+            Fast) cfg=(-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS_DEBUG=-O1 -DCMAKE_CXX_FLAGS_DEBUG=-O1) ;;
+            *) cfg=(-DCMAKE_BUILD_TYPE=$CI_CONFIG) ;;
+          esac
+          cmake -S . -B build "${cfg[@]}" -DNATRON_BUILD_TESTS=ON \
             -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
             -DCMAKE_PREFIX_PATH="/opt/local/libexec/qt5;/opt/local" \
             -DPython3_EXECUTABLE=/opt/local/bin/python${PYVER}
           cmake --build build -j$(sysctl -n hw.ncpu)
 
-      - name: Run macOS Tests
+      - name: Run macOS Tests (${{ matrix.config }})
         id: run-macos-tests
         continue-on-error: true
         run: |
@@ -475,7 +574,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4.3.1
         with:
-          name: macos-15 Test Logs
+          name: macos-15 ${{ matrix.config }} Test Logs
           path: ${{ github.workspace }}/build/Testing/Temporary/LastTest.log
 
       - name: Check for test failures

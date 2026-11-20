@@ -38,8 +38,6 @@
 #include <QFileInfo>
 #include <QSettings>
 
-#include <QScreen>
-
 #include <QAction>
 #include <QApplication> // qApp
 
@@ -112,8 +110,10 @@ void
 Gui::showAbout()
 {
     _imp->_aboutWindow->show();
-    _imp->_aboutWindow->raise();
-    _imp->_aboutWindow->activateWindow();
+    if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+        _imp->_aboutWindow->raise();
+        _imp->_aboutWindow->activateWindow();
+    }
     ignore_result( _imp->_aboutWindow->exec() );
 }
 
@@ -133,7 +133,9 @@ Gui::openRecentFile()
                 GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( instance.get() );
                 assert(guiApp);
                 if (guiApp) {
-                    guiApp->getGui()->activateWindow();
+                    if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+                        guiApp->getGui()->activateWindow();
+                    }
 
                     return;
                 }
@@ -244,7 +246,11 @@ Gui::updateRecentFileActions()
 QPixmap
 Gui::screenShot(QWidget* w)
 {
-    return QApplication::primaryScreen()->grabWindow( w->winId() );
+    // Render the widget (QWidget::grab() also renders its QOpenGLWidget children) instead of
+    // grabbing its window from the screen: w->winId() would turn w (a panel being dragged, which
+    // may hold a QOpenGLWidget) and its parents into native windows for the rest of the session.
+    // Dragging the Curve Editor tab crashes in GLX context creation on X11/Mesa (#536).
+    return w->grab();
 }
 
 void

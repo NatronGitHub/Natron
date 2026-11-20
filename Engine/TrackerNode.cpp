@@ -1305,7 +1305,8 @@ TrackerNode::onOverlayPenDown(double time,
                               const QPointF & pos,
                               double /*pressure*/,
                               double /*timestamp*/,
-                              PenType /*pen*/)
+                              PenType /*pen*/,
+                              KeyboardModifiers /*modifiers*/)
 {
     std::pair<double, double> pixelScale;
     OverlaySupport* overlay = getCurrentViewportForOverlays();
@@ -1547,7 +1548,8 @@ TrackerNode::onOverlayPenMotion(double time,
                                 const QPointF & viewportPos,
                                 const QPointF & pos,
                                 double /*pressure*/,
-                                double /*timestamp*/)
+                                double /*timestamp*/,
+                                KeyboardModifiers /*modifiers*/)
 {
     std::pair<double, double> pixelScale;
     OverlaySupport* overlay = getCurrentViewportForOverlays();
@@ -2285,7 +2287,8 @@ TrackerNode::onOverlayPenUp(double /*time*/,
                             const QPointF & /*viewportPos*/,
                             const QPointF & /*pos*/,
                             double /*pressure*/,
-                            double /*timestamp*/)
+                            double /*timestamp*/,
+                            KeyboardModifiers /*modifiers*/)
 {
     bool didSomething = false;
     TrackerMouseStateEnum state = _imp->ui->eventState;
@@ -2307,7 +2310,8 @@ TrackerNode::onOverlayKeyDown(double /*time*/,
                               const RenderScale & /*renderScale*/,
                               ViewIdx /*view*/,
                               Key key,
-                              KeyboardModifiers /*modifiers*/)
+                              KeyboardModifiers /*modifiers*/,
+                              const QString& /*keyText*/)
 {
     bool didSomething = false;
     bool isCtrl = false;
@@ -2340,7 +2344,8 @@ TrackerNode::onOverlayKeyUp(double /*time*/,
                             const RenderScale & /*renderScale*/,
                             ViewIdx /*view*/,
                             Key key,
-                            KeyboardModifiers /*modifiers*/)
+                            KeyboardModifiers /*modifiers*/,
+                            const QString& /*keyText*/)
 {
     bool didSomething = false;
     bool isAlt = false;
@@ -2382,7 +2387,8 @@ TrackerNode::onOverlayKeyRepeat(double /*time*/,
                                 const RenderScale & /*renderScale*/,
                                 ViewIdx /*view*/,
                                 Key /*key*/,
-                                KeyboardModifiers /* modifiers*/)
+                                KeyboardModifiers /* modifiers*/,
+                                const QString& /*keyText*/)
 {
     return false;
 } // keyrepeat
@@ -2409,7 +2415,7 @@ TrackerNode::onOverlayFocusLost(double /*time*/,
 } // loseFocus
 
 void
-TrackerNode::onInteractViewportSelectionCleared()
+TrackerNode::onInteractViewportSelectionCleared(KeyboardModifiers /*modifiers*/)
 {
     bool trackingPageSecret = getNode()->getTrackerContext()->getTrackingPageKnob()->getIsSecret();
 
@@ -2422,7 +2428,8 @@ TrackerNode::onInteractViewportSelectionCleared()
 
 void
 TrackerNode::onInteractViewportSelectionUpdated(const RectD& rectangle,
-                                                bool onRelease)
+                                                bool onRelease,
+                                                KeyboardModifiers /*modifiers*/)
 {
     if (!onRelease) {
         return;

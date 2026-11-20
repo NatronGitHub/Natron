@@ -78,9 +78,9 @@ This directory contains various tools to help building and maintaining Natron.
   
 - **MINGW-packages**
 
-  This directory contains Natron-specific packages for MSYS2. For example, therer are ffmpeg and libraw versions with different licences, a patched version of Qt4, and a version of OpenImageIO 1.7 (because later versions hang when quitting Natron, see [this OpenImageIO issue](https://github.com/OpenImageIO/oiio/issues/1795)).
-  
-  The `check.sh` script may be used to check whether packages need to be updated, supposing that `../../../MINGW-packages` contains a clone of [MINGW-packages](https://github.com/Alexpux/MINGW-packages)  (note that the `mingw-w64-pyside-qt4` and `mingw-w64-shiboken-qt4` have not been updated for a long time, because they just work).
+  Natron's own MSYS2 packages, built in the UCRT64 environment, for the plug-ins and the Windows installer: only what MSYS2 doesn't provide in the form Natron needs (FFmpeg built GPLv2, LibRaw with and without the GPL demosaic packs, OpenImageIO built against that LibRaw, SeExpr, a static ImageMagick 7, OSMesa, the Inno Setup installer and the build-deps meta-packages). See [MINGW-packages/README.md](MINGW-packages/README.md) for the list, and for how to rebuild and publish the package repository.
+
+  The `check.sh` script reports the packages whose upstream PKGBUILD changed, supposing that `../../../MINGW-packages` contains a clone of [msys2/MINGW-packages](https://github.com/msys2/MINGW-packages).
 
 - **license**
 
@@ -96,10 +96,6 @@ This directory contains various tools to help building and maintaining Natron.
 
   The source for the `normalize` utility from Qt4, which normalizes the signatures in SIGNAL() and SLOT() macros through the Natron source code. This gives a very small speedup at execution. Most code-formatting tools usually break normalized signatures, so this tool should be run afterwards.
   
-- **travis**
-
-  Scripts used for [Travis CI builds of Natron](https://travis-ci.org/NatronGitHub/Natron). See also the hidden file `.travis.yml` at the top source directory.
-
 - **uncrustify**
 
   Configuration file for [uncrustify](http://uncrustify.sourceforge.net/). Unfortunately, uncrustify also breaks things, so the source code needs to be fixed after running it:

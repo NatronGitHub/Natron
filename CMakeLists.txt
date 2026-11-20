@@ -19,8 +19,25 @@
 
 cmake_minimum_required(VERSION 3.16.7)
 
+# The version is the one of Global/Macros.h (NATRON_VERSION_MAJOR/MINOR/REVISION), so that the
+# macOS Info.plist (CFBundleShortVersionString, CFBundleVersion) can't disagree with the
+# version Natron reports. qmake's App/App.pro has its own copy (VERSION).
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/Global/Macros.h" _natron_macros_h)
+foreach(_part MAJOR MINOR REVISION)
+    # #define NATRON_VERSION_MAJOR NATRON_VERSION_MAJOR_26, then #define NATRON_VERSION_MAJOR_26 2
+    if(NOT _natron_macros_h MATCHES "#define NATRON_VERSION_${_part} (NATRON_VERSION_${_part}_[0-9]+)")
+        message(FATAL_ERROR "Global/Macros.h: no #define NATRON_VERSION_${_part} NATRON_VERSION_${_part}_<n>")
+    endif()
+    set(_natron_version_macro "${CMAKE_MATCH_1}")
+    if(NOT _natron_macros_h MATCHES "#define ${_natron_version_macro} ([0-9]+)")
+        message(FATAL_ERROR "Global/Macros.h: no #define ${_natron_version_macro} <number>")
+    endif()
+    set(_natron_version_${_part} "${CMAKE_MATCH_1}")
+endforeach()
+unset(_natron_macros_h)
+
 project(Natron
-    VERSION "2.6.0"
+    VERSION "${_natron_version_MAJOR}.${_natron_version_MINOR}.${_natron_version_REVISION}"
     DESCRIPTION "Open Source Compositing Software"
     HOMEPAGE_URL "https://natrongithub.github.io/"
     LANGUAGES CXX C
@@ -145,6 +162,49 @@ foreach(_v BUNDLEDIR BINDIR RESOURCESDIR PYPLUGSDIR OCIODIR DOCDIR TESTSDIR)
     set(_NATRON_INSTALL_${_v}_DEFAULT "${_${_lv}dir}" CACHE INTERNAL "")
 endforeach()
 set(_NATRON_INSTALL_LAYOUT_USED "${NATRON_INSTALL_LAYOUT}" CACHE INTERNAL "")
+
+# Release flavour (qmake: CONFIG+=snapshot/alpha/beta/RC/stable/custombuild, BUILD_NUMBER=N,
+# BUILD_USER_NAME=name). Empty means a "Devel" build. Only the build farm should set these.
+set(NATRON_BUILD_CONFIG "" CACHE STRING
+    "release flavour shown in the version string: empty (Devel), SNAPSHOT, ALPHA, BETA, RC, STABLE or CUSTOM")
+set_property(CACHE NATRON_BUILD_CONFIG PROPERTY STRINGS "" SNAPSHOT ALPHA BETA RC STABLE CUSTOM)
+# BUILD_NUMBER is the qmake variable (qmake BUILD_NUMBER=N).
+if(DEFINED BUILD_NUMBER)
+    set(_natron_build_number_default "${BUILD_NUMBER}")
+else()
+    set(_natron_build_number_default "0")
+endif()
+set(NATRON_BUILD_NUMBER "${_natron_build_number_default}" CACHE STRING
+    "build number of an ALPHA, BETA or RC release (e.g. 2 for RC2)")
+# BUILD_USER_NAME is the variable read by earlier versions of the CMake build.
+set(NATRON_CUSTOM_BUILD_USER_NAME "${BUILD_USER_NAME}" CACHE STRING
+    "for a CUSTOM build, the name shown instead of the version (\"Natron for <name>\")")
+
+# Build options (qmake: CONFIG+=openmp, noassertions, fast, addresssanitizer, threadsanitizer, coverage).
+if(NOT APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # libs.pri enables OpenMP by default only with GCC on systems other than macOS.
+    set(_natron_openmp_default ON)
+else()
+    set(_natron_openmp_default OFF)
+endif()
+# An explicit -DNATRON_USE_OPENMP=ON fails if OpenMP is missing; the default only warns.
+if(DEFINED NATRON_USE_OPENMP)
+    set(_natron_openmp_explicit ON)
+else()
+    set(_natron_openmp_explicit OFF)
+endif()
+option(NATRON_USE_OPENMP
+    "use OpenMP in the bundled ceres and openMVG (tracker); with Apple clang, needs libomp (MacPorts: found automatically, else set OpenMP_ROOT)"
+    ${_natron_openmp_default})
+option(NATRON_NO_ASSERTIONS
+    "define NDEBUG, QT_NO_DEBUG, QT_NO_DEBUG_OUTPUT and QT_NO_WARNING_OUTPUT in every configuration, as the installers do"
+    OFF)
+option(NATRON_FAST_MATH
+    "optimize with -O3 -ffast-math (MSVC: /O2 /fp:fast) in every configuration, allowing non-IEEE-conformant floating point; the installers don't use it"
+    OFF)
+set(NATRON_SANITIZE "" CACHE STRING
+    "sanitizers passed to -fsanitize=, comma-separated (e.g. address, thread, undefined, or address,undefined); use with a Debug or RelWithDebInfo build")
+option(NATRON_COVERAGE "instrument for code coverage with --coverage (GCC/Clang); use with a Debug build" OFF)
 
 set(IS_DEBUG_BUILD OFF)
 if(CMAKE_BUILD_TYPE MATCHES "^(debug|Debug|DEBUG)$")
@@ -308,6 +368,75 @@ else()
     endif()
 endif()
 
+if(NATRON_NO_ASSERTIONS)
+    add_compile_definitions(NDEBUG QT_NO_DEBUG QT_NO_DEBUG_OUTPUT QT_NO_WARNING_OUTPUT)
+endif()
+
+if(NATRON_FAST_MATH)
+    # Compile options come after CMAKE_<LANG>_FLAGS_<CONFIG> on the command line, so this
+    # overrides the -O level of every configuration, like qmake's CONFIG+=fast.
+    # -O3 -ffast-math is the documented equivalent of -Ofast, which clang >= 19 deprecates.
+    if(MSVC)
+        add_compile_options(/O2 /fp:fast)
+    else()
+        add_compile_options(-O3 -ffast-math)
+    endif()
+endif()
+
+if(NOT NATRON_SANITIZE STREQUAL "")
+    if(MSVC)
+        add_compile_options(/fsanitize=${NATRON_SANITIZE})
+    else()
+        add_compile_options(-fsanitize=${NATRON_SANITIZE} -fno-omit-frame-pointer -fno-optimize-sibling-calls)
+        add_link_options(-fsanitize=${NATRON_SANITIZE})
+    endif()
+endif()
+
+if(NATRON_COVERAGE)
+    if(MSVC)
+        message(FATAL_ERROR "NATRON_COVERAGE needs GCC or Clang")
+    endif()
+    add_compile_options(--coverage)
+    add_link_options(--coverage)
+endif()
+
+if(NATRON_USE_OPENMP)
+    # With Apple clang, FindOpenMP needs omp.h and libomp, which MacPorts installs
+    # in non-standard subdirectories (sudo port install libomp).
+    if(APPLE AND NOT DEFINED OpenMP_ROOT AND NOT DEFINED ENV{OpenMP_ROOT}
+       AND EXISTS "/opt/local/lib/libomp/libomp.dylib")
+        set(OpenMP_ROOT "/opt/local/include/libomp;/opt/local/lib/libomp")
+    endif()
+    find_package(OpenMP COMPONENTS CXX)
+    if(NOT OpenMP_CXX_FOUND AND _natron_openmp_explicit)
+        message(FATAL_ERROR "NATRON_USE_OPENMP is ON but OpenMP was not found. "
+            "Install libomp (or your compiler's OpenMP runtime) and set OpenMP_ROOT to its prefix, or configure with -DNATRON_USE_OPENMP=OFF.")
+    elseif(NOT OpenMP_CXX_FOUND)
+        message(WARNING "OpenMP was not found: building ceres and openMVG without it (NATRON_USE_OPENMP=OFF)")
+        set(NATRON_USE_OPENMP OFF CACHE BOOL "" FORCE)
+    endif()
+endif()
+
+# Bundled third-party code (libs/*, Tests/google-test, Tests/google-mock) is
+# compiled without warnings: they are not ours to fix, and they hid Natron's
+# own warnings. Use as a PRIVATE target option or a per-source COMPILE_OPTIONS.
+# The bundled include directories are also SYSTEM, so that their headers don't
+# warn in Natron's translation units.
+if (MSVC)
+    set(NATRON_THIRD_PARTY_NO_WARNINGS /w)
+else()
+    set(NATRON_THIRD_PARTY_NO_WARNINGS -w)
+endif()
+# The Python bindings generated by Shiboken (Engine/Qt*/NatronEngine/*.cpp,
+# Gui/Qt*/NatronGui/*.cpp) trigger these by design (method tables, init
+# functions without prototypes, unused self/args parameters). All the other
+# warnings stay enabled on them.
+set(NATRON_BINDINGS_NO_WARNINGS)
+if (NOT MSVC)
+    set(NATRON_BINDINGS_NO_WARNINGS -Wno-cast-function-type -Wno-missing-field-initializers
+                                    -Wno-unused-parameter -Wno-missing-declarations)
+endif()
+
 if(NATRON_SYSTEM_LIBS)
     find_package(glog)
     find_package(Ceres)
@@ -323,7 +452,6 @@ elseif(APPLE)
 elseif(WIN32)
     enable_language(RC)
     add_compile_definitions(WINDOWS WIN32 _UNICODE UNICODE NOMINMAX QHTTP_SERVER_STATIC)
-    add_compile_definitions(COMPILED_FROM_DSP XML_STATIC) # for expat
     if (NOT MSVC)
         add_compile_options(-municode)
         if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -344,11 +472,93 @@ endif()
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+# The stack reserve of the main thread of the Windows executables (Natron, NatronRenderer, natron-python,
+# Tests). Keep it in sync with NATRON_MAIN_THREAD_STACK_SIZE in global.pri (qmake).
+# The main thread of a Windows program gets the stack reserve of the executable header, set at link
+# time: by default 2 MB with GNU ld (MinGW-w64), 1 MB with lld and MSVC link.exe, much less than the main
+# thread of Linux and macOS programs (8 MB). Renders can run on the main thread
+# (QFuture::waitForFinished() runs a queued QtConcurrent task on the waiting thread), as well as
+# GUI-thread recursions such as getRegionOfDefinition() from the viewer, so with a deep node graph the
+# main thread can overflow long before the render threads (NATRON_RENDER_THREAD_STACK_SIZE in
+# Engine/ThreadPool.h: 4 MB on Windows) (#1440).
+# The reserve is only address space: the main thread commits its stack pages as it touches them (the
+# commit size of the header stays at its default, 4 KB), unlike threads created with a stack size, whose
+# stack is committed at creation. It is also the default reserve of the threads created without a stack
+# size, which commit their stack in the same way.
+set(NATRON_MAIN_THREAD_STACK_SIZE 8388608) # 8 MB
+function(natron_set_main_thread_stack_size target)
+    if(WIN32)
+        if(MSVC) # MSVC and clang-cl
+            target_link_options(${target} PRIVATE "/STACK:${NATRON_MAIN_THREAD_STACK_SIZE}")
+        else() # MinGW-w64 (GNU ld or lld)
+            target_link_options(${target} PRIVATE "-Wl,--stack,${NATRON_MAIN_THREAD_STACK_SIZE}")
+        endif()
+    endif()
+endfunction()
+
 enable_testing()
 
 add_subdirectory(libs)
 
-add_subdirectory(HostSupport)
+# HostSupport: openfx's OfxHost target (openfx::HostSupport), with Natron's options and the
+# parametric parameters of libs/OpenFX_extensions. It links ${CMAKE_DL_LIBS} itself (dlopen in
+# ofxhBinary.cpp). HostSupport/HostSupport.pro is the qmake equivalent: keep them in sync.
+# These normal variables intentionally force openfx's options: a user's -DOFX_*=... has no effect.
+set(OFX_BUILD_HOSTSUPPORT ON)
+set(OFX_EXTENSIONS_NATRON ON)
+set(OFX_EXTENSIONS_NUKE ON)
+set(OFX_EXTENSIONS_TUTTLE ON)
+set(OFX_EXTENSIONS_VEGAS ON)
+set(OFX_EXTENSIONS_RESOLVE ON)
+set(OFX_SUPPORTS_OPENGLRENDER ON)
+set(OFX_SUPPORTS_MULTITHREAD ON)
+set(OFX_SUPPORTS_DIALOG ON)
+set(OFX_SUPPORTS_PARAMETRIC ON)
+add_subdirectory(libs/OpenFX EXCLUDE_FROM_ALL)
+target_sources(OfxHost PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/libs/OpenFX_extensions/ofxhParametricParam.cpp)
+target_include_directories(OfxHost PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libs/OpenFX_extensions>)
+add_library(HostSupport ALIAS OfxHost)
+
+# Release flavour, read by Global/Macros.h. Set after the bundled libs and
+# HostSupport so that changing the build number does not rebuild them.
+string(TOUPPER "${NATRON_BUILD_CONFIG}" _natron_build_config)
+if(NOT NATRON_BUILD_NUMBER MATCHES "^[0-9]+$")
+    message(FATAL_ERROR "NATRON_BUILD_NUMBER must be a non-negative integer, not '${NATRON_BUILD_NUMBER}'")
+endif()
+if(_natron_build_config STREQUAL "")
+    # Devel build
+elseif(_natron_build_config MATCHES "^(SNAPSHOT|ALPHA|BETA|RC|STABLE)$")
+    add_compile_definitions(NATRON_CONFIG_${_natron_build_config})
+elseif(_natron_build_config STREQUAL "CUSTOM")
+    # Like tools/jenkins/build-natron.sh: a stable build that shows the user name.
+    if(NATRON_CUSTOM_BUILD_USER_NAME STREQUAL "")
+        message(FATAL_ERROR "NATRON_BUILD_CONFIG=CUSTOM needs NATRON_CUSTOM_BUILD_USER_NAME")
+    endif()
+    # Global/Macros.h stringizes the name as a preprocessor token (see below): a comma, a
+    # quote, a backslash, a parenthesis, a '#' or a comment ("//", "/*") breaks that, and a
+    # ';' splits the CMake list.
+    if(NATRON_CUSTOM_BUILD_USER_NAME MATCHES "[,\"'\\();#]|//|/\\*")
+        message(FATAL_ERROR "NATRON_CUSTOM_BUILD_USER_NAME '${NATRON_CUSTOM_BUILD_USER_NAME}' "
+            "can't contain any of , \" ' \\ ( ) ; # // /*")
+    endif()
+    add_compile_definitions(NATRON_CONFIG_STABLE)
+else()
+    message(FATAL_ERROR "Unknown NATRON_BUILD_CONFIG '${NATRON_BUILD_CONFIG}': "
+        "use an empty value (Devel), SNAPSHOT, ALPHA, BETA, RC, STABLE or CUSTOM")
+endif()
+if(NOT _natron_build_config STREQUAL "")
+    message(STATUS "Natron release flavour: ${_natron_build_config}, build number ${NATRON_BUILD_NUMBER}")
+endif()
+add_compile_definitions(NATRON_BUILD_NUMBER=${NATRON_BUILD_NUMBER})
+if(_natron_build_config STREQUAL "CUSTOM")
+    # Only for a CUSTOM build, as qmake's CONFIG+=custombuild: Global/Macros.h stringizes the
+    # token, so it must be the bare name. Quotes, or an empty token, would end up in the
+    # name shown by the splash screen and the About window (e.g. 'Natron for ""').
+    add_compile_definitions(NATRON_CUSTOM_BUILD_USER_TOKEN=${NATRON_CUSTOM_BUILD_USER_NAME})
+elseif(NOT NATRON_CUSTOM_BUILD_USER_NAME STREQUAL "")
+    message(WARNING "NATRON_CUSTOM_BUILD_USER_NAME is only used with NATRON_BUILD_CONFIG=CUSTOM: ignored")
+endif()
+
 
 add_subdirectory(Engine)
 

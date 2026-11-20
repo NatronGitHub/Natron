@@ -40,7 +40,8 @@ if [ "$(uname -s)" = "Darwin" ]; then
 fi
 
 if [ -d "$DOC_FOLDER/source" ]; then
-    rm -rf "$DOC_FOLDER/source/_group*" "$DOC_FOLDER/source/_prefs.rst" "$DOC_FOLDER/source/plugins" || true
+    # the glob must stay outside the quotes, or stale node group pages are kept
+    rm -rf "$DOC_FOLDER"/source/_group*.rst "$DOC_FOLDER/source/_nodes.rst" "$DOC_FOLDER/source/_prefs.rst" "$DOC_FOLDER/source/plugins" || true
 fi
 
 if [ ! -d "$TMP_FOLDER" ]; then

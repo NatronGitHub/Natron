@@ -103,6 +103,10 @@ public Q_SLOTS:
 private:
 
     virtual void initializeGL() OVERRIDE FINAL;
+    // Called before the OpenGL context is destroyed (e.g. when the widget moves to another window)
+    void onContextAboutToBeDestroyed();
+    // Deletes the OpenGL objects of the current context
+    void releaseGLResources();
     virtual void paintGL() OVERRIDE FINAL;
     virtual void resizeGL(int w, int h) OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;

@@ -8,37 +8,65 @@
 Project setup
 =============
 
-Natron will automatically adjust the project settings when importing media using a Read Node or by drag'n'dropping content into the Node Graph.
-
-
-- To access the Project Settings, go to  "Display > Show Project Settings" or  press "S" on the keyboard. 
-
+To open the Project Settings, choose **Display > Show Project Settings...**, or
+press :kbd:`S` with the mouse over the Node Graph.
 
 .. image:: _images/project_setup_Settings.png
  :width: 600px
 
-Output Format
-~~~~~~~~~~~~~
-While clicking on Output Format, a dropdown appears with various standard formats to choose from.
-If the desired format is not in the menu:
+The settings are on the **Settings**, **Views**, **Layers**, **LUT**, **Info**
+and **Python** tabs. This page covers the **Settings** tab. See
+:doc:`compositing-stereo` for the **Views** tab.
 
-1. Select New Format.
-2. Copy a format from any viewer by selecting the viewer and choose Copy From or define a custom width and height in the w and h fields. 
-3. Enter a new for your new format.
-4. Click OK to save the new format, it now appears in the Output Format dropdown menu.
+Natron fills in some settings from the first media you read, with a Read node
+or by dragging files onto the Node Graph:
 
+- the **Project Format** is set to the format of the first image or video read,
+  if **First image read set project format** is checked in
+  **Preferences > Project Setup** (the default);
+- the **Frame Range** is set to the range of the first sequence or video, and
+  then grows to include the range of each new Read node, unless **Lock Range**
+  is checked.
+
+Project Format
+~~~~~~~~~~~~~~
+
+The project format is the default size of the viewers, of the generators (for
+example Constant or CheckerBoard) and of the Write nodes. It should usually
+match the resolution of your plates. Choose it from the **Project Format**
+menu.
+
+If the format you need is not in the menu:
+
+1. Click **New Format...**.
+2. Either choose a viewer and click **Copy from** to copy the format of the
+   image it shows, or type the width and height in the **w** and **h** fields,
+   and the **pixel aspect** ratio.
+3. Type a **Name** for the format.
+4. Click **OK**. The new format is selected, and is added to the
+   **Project Format** menu.
 
 Frame Range and Frame Rate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
-- Define the lenght of the project with Frame Range first and last frames value. 
-- Enter the desired FPS in the Frame Rate field. 
+
+- **Frame Range** sets the first and last frames of the project. New viewers
+  use this range, and it is the default range of the Write nodes. Check
+  **Lock Range** to stop Read nodes from changing it. See
+  :doc:`compositing-projects-framerange`.
+- **Frame Rate** is the default frame rate, in frames per second, of the
+  nodes that do not get one from their inputs (generators, for example).
 
 GPU Rendering
 ~~~~~~~~~~~~~
-User can select when to activate GPU rendering for plug-ins. Note that if the OpenGL Rendering parameter in the Preferences/GPU Rendering is set to disabled then GPU rendering will not be activated regardless of that value.
-Enabled: Enable GPU rendering if required resources are available and the plugin supports it.
-Disabled: Disable GPU rendering for all plug-ins.
-Disabled if background: Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.
 
-.. toctree::
-   :maxdepth: 2
+**GPU Rendering** sets when plug-ins that support it may render on the GPU
+with OpenGL:
+
+- **Enabled**: when the plug-in supports it and the GPU resources are
+  available.
+- **Disabled**: never.
+- **Disabled if background**: not when rendering from the command line with
+  NatronRenderer, but enabled in the GUI.
+
+If **OpenGL Rendering** is disabled in **Preferences > GPU Rendering**, GPU
+rendering is never used, whatever this setting.

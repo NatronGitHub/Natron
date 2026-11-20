@@ -28,6 +28,8 @@
 
 #include "Global/Macros.h"
 
+#include <atomic>
+
 #include "Node.h"
 #include "Timer.h" // gettimeofday()
 
@@ -240,7 +242,7 @@ public:
         , currentThreadSafety(eRenderSafetyInstanceSafe)
         , currentSupportTiles(false)
         , currentSupportOpenGLRender(ePluginOpenGLRenderSupportNone)
-        , currentSupportSequentialRender(eSequentialPreferenceNotSequential)
+        , openGLContextAttachFailed(false)
         , currentCanTransform(false)
         , draftModeUsed(false)
         , mustComputeInputRelatedData(true)
@@ -318,7 +320,7 @@ public:
     AppInstanceWPtr app; // pointer to the app: needed to access the application's default-project's format
     bool isPartOfProject;
     bool knobsInitialized;
-    bool inputsInitialized;
+    std::atomic<bool> inputsInitialized; // written by the main thread, read by render threads
     mutable QMutex outputsMutex;
     NodesWList outputs, guiOutputs;
     mutable QMutex inputsMutex; //< protects guiInputs so the serialization thread can access them
@@ -459,7 +461,9 @@ public:
     RenderSafetyEnum pluginSafety, currentThreadSafety;
     bool currentSupportTiles;
     PluginOpenGLRenderSupport currentSupportOpenGLRender;
-    SequentialPreferenceEnum currentSupportSequentialRender;
+    // kOfxActionOpenGLContextAttached failed: "the host should not attempt to run the plug-in in OpenGL
+    // render mode" (until the instance changes its OpenGL render support)
+    bool openGLContextAttachFailed;
     bool currentCanTransform;
     bool draftModeUsed, mustComputeInputRelatedData;
     bool duringPaintStrokeCreation; // protected by lastStrokeMovementMutex

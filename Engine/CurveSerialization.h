@@ -46,10 +46,89 @@ GCC_DIAG_ON(unused-parameter)
 // clang-format on
 #endif
 
+#include <locale>
+#include <sstream>
+#include <string>
+#include <type_traits>
+
+#include "Global/MathUtils.h"
 #include "Engine/CurvePrivate.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
+
+namespace CurveSerializationDetail {
+// Number of non-finite values read by KeyFrame::serialize() in this thread,
+// so that Curve::serialize() knows that it must recompute the derivatives.
+inline thread_local int nonFiniteValuesRead = 0;
+
+// Write a finite value: a NaN or an infinity can't be read back by an XML archive
+// (projects saved by Natron before the fix for #1267 contain NaN derivatives).
+template<class Archive>
+void
+saveFinite(Archive & ar,
+           const char* name,
+           double v)
+{
+    if ( !MathUtils::isFinite(v) ) {
+        v = 0.;
+    }
+    ar & ::boost::serialization::make_nvp(name, v);
+}
+
+// Parse a number written by an XML archive. The stream uses the "C" locale, as the
+// archive does, so the result doesn't depend on the process locale: after a Python
+// script called locale.setlocale(LC_ALL, "") on a French or German system, strtod()
+// stops at the '.' of "5.5656800000000001e+02" (556.568, as written by Boost) and
+// returns 5. The whole string must be a number: "nan", "inf" or the
+// old MSVCRT "1.#QNAN" fail, and are reported as such.
+inline bool
+parseDouble(const std::string& s,
+            double* v)
+{
+    thread_local std::istringstream iss = [] {
+        std::istringstream i;
+        i.imbue( std::locale::classic() );
+        return i;
+    }();
+    iss.clear();
+    iss.str(s);
+    iss >> *v;
+    // Note: libc++ also fails on subnormal values (strtod sets ERANGE), so they are read
+    // as 0 and the derivatives are recomputed. Boost's own reader failed on them too.
+    if ( iss.fail() ) {
+        return false;
+    }
+    iss >> std::ws;
+
+    return iss.eof() && MathUtils::isFinite(*v);
+}
+
+// Read a value that may be "nan" or "inf" in an XML archive (xml_iarchive fails on
+// them with "input stream error"): read the text and parse it. A value that isn't a
+// finite number is replaced by 0 and counted in nonFiniteValuesRead.
+template<class Archive>
+void
+loadFinite(Archive & ar,
+           const char* name,
+           double* v)
+{
+    if ( std::is_same<Archive, boost::archive::xml_iarchive>::value ) {
+        std::string s;
+        ar & ::boost::serialization::make_nvp(name, s);
+        if ( !parseDouble(s, v) ) {
+            *v = 0.;
+            ++nonFiniteValuesRead;
+        }
+    } else {
+        ar & ::boost::serialization::make_nvp(name, *v);
+        if ( !MathUtils::isFinite(*v) ) {
+            *v = 0.;
+            ++nonFiniteValuesRead;
+        }
+    }
+}
+} // namespace CurveSerializationDetail
 
 template<class Archive>
 void
@@ -57,10 +136,19 @@ KeyFrame::serialize(Archive & ar,
                     const unsigned int /*version*/)
 {
     ar & ::boost::serialization::make_nvp("Time", _time);
-    ar & ::boost::serialization::make_nvp("Value", _value);
+    if (Archive::is_saving::value) {
+        CurveSerializationDetail::saveFinite(ar, "Value", _value);
+    } else {
+        CurveSerializationDetail::loadFinite(ar, "Value", &_value);
+    }
     ar & ::boost::serialization::make_nvp("InterpolationMethod", _interpolation);
-    ar & ::boost::serialization::make_nvp("LeftDerivative", _leftDerivative);
-    ar & ::boost::serialization::make_nvp("RightDerivative", _rightDerivative);
+    if (Archive::is_saving::value) {
+        CurveSerializationDetail::saveFinite(ar, "LeftDerivative", _leftDerivative);
+        CurveSerializationDetail::saveFinite(ar, "RightDerivative", _rightDerivative);
+    } else {
+        CurveSerializationDetail::loadFinite(ar, "LeftDerivative", &_leftDerivative);
+        CurveSerializationDetail::loadFinite(ar, "RightDerivative", &_rightDerivative);
+    }
 }
 
 template<class Archive>
@@ -69,7 +157,16 @@ Curve::serialize(Archive & ar,
                  const unsigned int /*version*/)
 {
     QMutexLocker l(&_imp->_lock);
+    const int nonFiniteBefore = CurveSerializationDetail::nonFiniteValuesRead;
     ar & ::boost::serialization::make_nvp("KeyFrameSet", _imp->keyFrames);
+    if ( Archive::is_loading::value && (CurveSerializationDetail::nonFiniteValuesRead != nonFiniteBefore) ) {
+        // NaN values (#1267) were replaced by 0: recompute the automatic derivatives.
+        // If this curve is a temporary whose keys are then copied into a knob of a temporary
+        // KnobSerialization, the caller marks that knob's curve with setMustRefreshDerivatives()
+        // (see KnobSerialization::load()), so that the final curve recomputes them with its own
+        // properties (e.g. periodicity).
+        refreshAutomaticDerivatives();
+    }
 }
 
 NATRON_NAMESPACE_EXIT

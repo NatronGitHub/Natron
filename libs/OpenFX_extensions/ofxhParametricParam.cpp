@@ -246,29 +246,34 @@ void ParametricInstance::setDisplayRange()
 
 }
 
-OfxStatus ParametricInstance::getNumKeys(unsigned int &/*nKeys*/) const
+// The parametric parameter has no keyframes. Return the statuses that ofxParam.h allows for
+// a parameter without keys, as HostSupport's Param::KeyframeParam defaults do (openfx #128):
+// kOfxStatErrMissingHostFeature is not one of them.
+OfxStatus ParametricInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return kOfxStatErrMissingHostFeature;
+    nKeys = 0;
+    return kOfxStatOK;
 }
 
 OfxStatus ParametricInstance::getKeyTime(int /*nth*/, OfxTime& /*time*/) const
 {
-    return kOfxStatErrMissingHostFeature;
+    return kOfxStatErrBadIndex; // "the nthKey does not exist"
 }
 
-OfxStatus ParametricInstance::getKeyIndex(OfxTime /*time*/, int /*direction*/, int & /*index*/) const
+OfxStatus ParametricInstance::getKeyIndex(OfxTime /*time*/, int /*direction*/, int &index) const
 {
-    return kOfxStatErrMissingHostFeature;
+    index = -1; // "set to -1 if no key was found"
+    return kOfxStatFailed; // "the search failed to find a key"
 }
 
 OfxStatus ParametricInstance::deleteKey(OfxTime /*time*/)
 {
-    return kOfxStatErrMissingHostFeature;
+    return kOfxStatErrBadIndex; // "no key at the given time"
 }
 
 OfxStatus ParametricInstance::deleteAllKeys()
 {
-    return kOfxStatErrMissingHostFeature;
+    return kOfxStatOK; // no keys
 }
 
 OfxStatus ParametricInstance::getNControlPoints(int /*curveIndex*/,double /*time*/,int */*returnValue*/)
@@ -807,7 +812,7 @@ static OfxStatus parametricParamAddControlPointV2(OfxParamHandle param,
         descProps.setDoublePropertyN(name, &cp.key, 2);
     } else {
         //the property already exists
-        int cpsCount = descProps.getDimension(name.str()) / 2;
+        int cpsCount = descProps.getDimension(name) / 2;
         //if the property exists it must be > 0 !
         assert(cpsCount > 0);
 

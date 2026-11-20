@@ -33,6 +33,8 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QDebug>
+#include <QTimer>
+#include <QUndoStack>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -41,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/GroupOutput.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
+#include "Engine/OfxEffectInstance.h"
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/TimeLine.h"
@@ -1145,6 +1148,20 @@ LoadNodePresetsCommand::undo()
     NodePtr internalNode = node->getNode();
     MultiInstancePanelPtr panel = node->getMultiInstancePanel();
     internalNode->loadKnobs(*_oldSerialization.front(), true);
+    if ( internalNode->getRotoContext() || internalNode->getTrackerContext() ) {
+        // loadKnobs() replaced the shapes or tracks by new ones (#1247). The
+        // commands after this one in the node's undo stack (already undone)
+        // refer to the replaced items and to their settings panel tree items,
+        // which are deleted: redoing them would use deleted items. If there
+        // are any, clear the stack once this undo is finished.
+        std::weak_ptr<QUndoStack> weakStack = node->getUndoStack();
+        QTimer::singleShot(0, [weakStack]() {
+            QUndoStackPtr stack = weakStack.lock();
+            if ( stack && ( stack->count() > stack->index() + 1 ) ) {
+                stack->clear();
+            }
+        });
+    }
     // loadKnobs() may have created user knobs: rebuild the settings panel (#480)
     internalNode->getEffectInstance()->recreateUserKnobs(true);
     if (panel) {
@@ -1603,9 +1620,13 @@ GroupFromSelectionCommand::redo()
         // Set the position of the group
         container_i->setPosition( groupPosition.x(), groupPosition.y() );
 
-        // Copy all the selected nodes and paste them in the newly created Group
+        // Copy all the selected nodes and paste them in the newly created Group. The originals are
+        // deleted below, so the copies of a single-instance plug-in are not refused.
         std::list<std::pair<std::string, NodeGuiPtr> > newNodes;
-        _graph->copyNodesAndCreateInGroup(originalNodes, isGrp, newNodes);
+        {
+            OfxEffectInstance::AllowExtraSingleInstances allowMovingSingleInstances;
+            _graph->copyNodesAndCreateInGroup(originalNodes, isGrp, newNodes);
+        }
 
         for (std::list<std::pair<std::string, NodeGuiPtr> >::iterator it = newNodes.begin(); it != newNodes.end(); ++it) {
             internalNewNodes.push_back( it->second->getNode() );
@@ -1894,7 +1915,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                 NodeToConnect ntc;
 
                 assert(groupInputs[i]);
-                std::map<NodePtr, int> outputConnected;
+                std::list<std::pair<NodePtr, int> > outputConnected;
                 groupInputs[i]->getOutputsConnectedToThisNode(&outputConnected);
 
                 NodeGuiIPtr inputGui_i = input->getNodeGui();
@@ -1908,7 +1929,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                     inputY = p.y();
                 }
 
-                for (std::map<NodePtr, int>::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
+                for (std::list<std::pair<NodePtr, int> >::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
                     NodeGuiPtr outputGui;
                     ///Find the new node that was inlined, based on the script name of the old node in the group
                     for (std::list<std::pair<std::string, NodeGuiPtr> >::iterator it3 = newNodes.begin(); it3 != newNodes.end(); ++it3) {
@@ -1918,7 +1939,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                         }
                     }
                     assert(outputGui);
-                    ntc.outputs.insert( std::make_pair(outputGui, it2->second) );
+                    ntc.outputs.push_back( std::make_pair(outputGui, it2->second) );
                 }
 
                 expandedGroup.connections[i] = ntc;
@@ -1949,20 +1970,23 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                 firstInputPos = inputGui->mapToScene( inputGui->mapFromParent( inputGui->getPos_mt_safe() ) );
                 outputConnection.input = inputGui;
 
-                std::map<NodePtr, int> outputConnected;
+                std::list<std::pair<NodePtr, int> > outputConnected;
                 group->getNode()->getOutputsConnectedToThisNode(&outputConnected);
-                for (std::map<NodePtr, int>::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
+                for (std::list<std::pair<NodePtr, int> >::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
                     NodeGuiIPtr outputGui_i = it2->first->getNodeGui();
                     assert(outputGui_i);
                     NodeGuiPtr outputGui = std::dynamic_pointer_cast<NodeGui>(outputGui_i);
                     assert(outputGui);
-                    outputsConnectedToGroup.push_back(outputGui);
+                    // an output node connected to the group through several inputs is listed once per input
+                    if ( std::find(outputsConnectedToGroup.begin(), outputsConnectedToGroup.end(), outputGui) == outputsConnectedToGroup.end() ) {
+                        outputsConnectedToGroup.push_back(outputGui);
+                    }
 
                     QPointF p = outputGui->mapToScene( outputGui->mapFromParent( outputGui->getPos_mt_safe() ) );
                     if (p.y() < outputY) {
                         outputY = p.y();
                     }
-                    outputConnection.outputs.insert( std::make_pair(outputGui, it2->second) );
+                    outputConnection.outputs.push_back( std::make_pair(outputGui, it2->second) );
                 }
                 expandedGroup.connections[-1] = outputConnection;
             }
@@ -2067,7 +2091,7 @@ InlineGroupCommand::redo()
                 if (!input) {
                     continue;
                 }
-                for (NodeGuisMap::iterator it3 = it2->second.outputs.begin();
+                for (NodeGuiLinks::iterator it3 = it2->second.outputs.begin();
                      it3 != it2->second.outputs.end(); ++it3) {
                     NodeGuiPtr node = it3->first.lock();
                     if (node) {

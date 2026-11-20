@@ -66,7 +66,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
             OfxEffectInstance* effect = dynamic_cast<OfxEffectInstance*>( n->getEffectInstance().get() );
             assert(effect);
             if (effect) {
-                effect->syncPrivateData_other_thread();
+                effect->syncPrivateDataForSerialization();
             }
         }
 

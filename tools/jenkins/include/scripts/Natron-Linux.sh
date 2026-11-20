@@ -80,58 +80,8 @@ done
 # normally, patchelf was used on every binary, so that the correct libraries should be found
 #export LD_LIBRARY_PATH="$BUNDLE_LIBRARY_PATH${LD_LIBRARY_PATH+:}${LD_LIBRARY_PATH:-}"
 
-# The following code was used before we resorted to patchelf the Natron binaries, but now it is
-# optionally run by setting the env variable NATRON_USE_SYSTEM_LIBS.
-# If the system libs can be used to run Natron, we just remove the Natron libs and put links
-# to the system libs instead
-if [ "${NATRON_USE_SYSTEM_LIBS:+x}" = "x" ]; then # if NATRON_USE_SYSTEM_LIBS is set...
-    # Check gcc compat
-    compat_arch="$(uname -m)"
-    # compat_version is changed by build-Linux-installer.sh to the
-    # C++ ABI version of the libstdc++.so.6 shipped with Natron
-    # GLIBCXX_3.4.19 corresponds to GCC 4.8.3.
-    # see https://gcc.gnu.org/onlinedocs/libstdc++/manual/abi.html
-    compat_version=3.4.19
-    if [ "$compat_arch" = "x86_64" ]; then
-        compat_suffix=64
-    fi
-    stdc_lib=
-    if [ -f "/usr/lib${compat_suffix}/libstdc++.so.6" ]; then
-        stdc_lib="/usr/lib${compat_suffix}/libstdc++.so.6"
-    elif [ -f "/usr/lib/libstdc++.so.6" ]; then
-        stdc_lib="/usr/lib/libstdc++.so.6"
-    elif [ -f "/usr/lib/${compat_arch}-linux-gnu/libstdc++.so.6" ]; then
-        stdc_lib="/usr/lib/${compat_arch}-linux-gnu/libstdc++.so.6"
-    elif [ -f "/usr/lib/i386-linux-gnu/libstdc++.so.6" ]; then
-        stdc_lib="/usr/lib/i386-linux-gnu/libstdc++.so.6"
-    fi
-    compat_gcc=false
-    if [ -n "${stdc_lib}" ]; then
-        grep -q -F "GLIBCXX_${compat_version}" "$stdc_lib" || compat_gcc=true
-    fi
-
-    if "${compat_gcc}"; then
-        if [ -f "$dir/lib/libstdc++.so.6" ]; then
-            rm -f "$dir/lib/libstdc++.so.6" || echo "Failed to remove symlink, please run as root to fix."
-        fi
-        if [ -f "$dir/lib/libgcc_s.so.1" ]; then
-            rm -f "$dir/lib/libgcc_s.so.1" || echo "Failed to remove symlink, please run as root to fix."
-        fi
-        if [ -f "$dir/lib/libgomp.so.1" ]; then
-            rm -f "$dir/lib/libgomp.so.1" || echo "Failed to remove symlink, please run as root to fix."
-        fi
-    else
-        if [ ! -f "$dir/lib/libstdc++.so.6" ]; then
-            ln -sf compat/libstdc++.so.6 "$dir/lib" || echo "Failed to create symlink, please run as root to fix."
-        fi
-        if [ ! -f "$dir/lib/libgcc_s.so.1" ]; then
-            ln -sf compat/libgcc_s.so.1 "$dir/lib" || echo "Failed to create symlink, please run as root to fix."
-        fi
-        if [ ! -f "$dir/lib/libgomp.so.1" ]; then
-            ln -sf compat/libgomp.so.1 "$dir/lib" || echo "Failed to create symlink, please run as root to fix."
-        fi
-    fi
-fi # NATRON_USE_SYSTEM_LIBS is set
+# libc, libstdc++, libgcc_s, libgomp, OpenGL and X11 are never bundled: they always come
+# from the system (see SYSTEM_LIBS_RE in build-Linux-installer.sh)
 
 # Check for updates
 if [ "$update" = 1 ] && [ -x "$dir/NatronSetup" ]; then

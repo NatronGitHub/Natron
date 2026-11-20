@@ -491,16 +491,23 @@ matScaleAdjoint(const Matrix3x3 & M,
     return ret;
 }
 
+// A singular matrix has no inverse: return the identity, as callers that check
+// the determinant do (e.g. EffectInstance::transformInputRois()), rather
+// than a matrix full of NaN and infinities.
 Matrix3x3
 matInverse(const Matrix3x3 & M)
 {
-    return matScaleAdjoint( M, 1. / matDeterminant(M) );
+    return matInverse( M, matDeterminant(M) );
 }
 
 Matrix3x3
 matInverse(const Matrix3x3 & M,
            double det)
 {
+    if (det == 0.) {
+        return Matrix3x3();
+    }
+
     return matScaleAdjoint(M, 1. / det);
 }
 
@@ -513,7 +520,7 @@ matRotation(double rads)
     return Matrix3x3(c, s, 0, -s, c, 0, 0, 0, 1);
 }
 
-Matrix3x3
+static Matrix3x3
 matTranslation(double x,
                double y)
 {
@@ -593,6 +600,11 @@ matInverseTransformCanonical(double translateX,
     ///4) We rotate
     ///5) We apply the global translation
     ///5) We translate back to the origin
+
+    if ( (scaleX == 0.) || (scaleY == 0.) ) {
+        // a zero scale is not invertible: return the identity, like matInverse() does, rather than NaNs
+        return Matrix3x3();
+    }
 
     // since this is the inverse, oerations are in reverse order
     return matMul( matMul( matMul( matMul( matMul( matTranslation(centerX, centerY),

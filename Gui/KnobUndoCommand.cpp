@@ -195,7 +195,9 @@ PasteUndoCommand::copyFrom(const KnobIPtr& serializedKnob,
                 } else if (isDouble && isFromDouble) {
                     double f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromDouble->getValue(_imp->fromDimension) : isFromDouble->getValue(i);
                     isDouble->setValue(f, ViewIdx(0), i, eValueChangedReasonNatronInternalEdited, 0);
-                } else if (isString && isFromString) {
+                } else if ( isString && isFromString &&
+                            ( ( dynamic_cast<KnobBytes*>(isString) != NULL ) == ( dynamic_cast<KnobBytes*>(isFromString) != NULL ) ) ) {
+                    // (raw bytes and text are not pasted into each other, see Knob<T>::isTypeCompatible())
                     std::string f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromString->getValue(_imp->fromDimension) : isFromString->getValue(i);
                     isString->setValue(f, ViewIdx(0), i, eValueChangedReasonNatronInternalEdited, 0);
                 }
@@ -261,7 +263,15 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobGuiPtr& kno
         holderName = QString::fromUtf8( effect->getNode()->getLabel().c_str() );
     }
 
-    setText( tr("Multiple edits of %1").arg(holderName) );
+    // "label to attach to any undo/redo string" (paramEditBegin() of an OpenFX plug-in): plug-ins often pass an
+    // internal name (e.g. "setTransform"), so it is attached to the usual text, not a replacement. HostSupport turns a
+    // NULL name into "": the usual text alone.
+    const std::string label = holder ? holder->getMultipleParamsEditLabel() : std::string();
+    if ( !label.empty() ) {
+        setText( tr("Multiple edits of %1 (%2)").arg( holderName, QString::fromUtf8( label.c_str() ) ) );
+    } else {
+        setText( tr("Multiple edits of %1").arg(holderName) );
+    }
 }
 
 MultipleKnobEditsUndoCommand::~MultipleKnobEditsUndoCommand()
@@ -285,6 +295,8 @@ MultipleKnobEditsUndoCommand::createCopyForKnob(const KnobIPtr & originalKnob)
         copy = std::make_shared<KnobChoice>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobString::typeNameStatic() ) {
         copy = std::make_shared<KnobString>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobBytes::typeNameStatic() ) {
+        copy = std::make_shared<KnobBytes>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobParametric::typeNameStatic() ) {
         copy = std::make_shared<KnobParametric>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobColor::typeNameStatic() ) {
@@ -357,7 +369,7 @@ MultipleKnobEditsUndoCommand::undo()
                         knobUI->setValueAtTime<double>(it2->dimension, it2->oldValue.toDouble(), it2->time, ViewIdx(0), &k, refreshGui, _reason);
                     } else if (isString) {
                         //qDebug() << "Undo " << knob->getName().c_str() << "[" << it2->dimension << "] to " << it2->oldValue.toString() << "at time" << it2->time;
-                        knobUI->setValueAtTime<std::string>(it2->dimension, it2->oldValue.toString().toStdString(), it2->time, ViewIdx(0), &k, refreshGui, _reason);
+                        knobUI->setValueAtTime<std::string>(it2->dimension, KnobBytes::stringFromVariant(knob.get(), it2->oldValue), it2->time, ViewIdx(0), &k, refreshGui, _reason);
                     } else {
                         assert(false);
                     }
@@ -386,7 +398,7 @@ MultipleKnobEditsUndoCommand::undo()
                             knobUI->setValue<double>(it2->dimension, oldValue, &k, true, _reason);
                         }
                     } else if (isString) {
-                        std::string oldValue = it2->oldValue.toString().toStdString();
+                        std::string oldValue = KnobBytes::stringFromVariant(knob.get(), it2->oldValue);
                         if (isString->getValueAtTime(it2->time, it2->dimension) != oldValue) {
                             //qDebug() << "Undo" << knob->getName().c_str() << "[" << it2->dimension << "] to " << it2->oldValue.toString();
                             knobUI->setValue<std::string>(it2->dimension, oldValue,
@@ -445,7 +457,12 @@ MultipleKnobEditsUndoCommand::redo()
                 } else if (isDouble) {
                     it2->oldValue.setValue( isDouble->getValueAtTime(it2->time, it2->dimension) );
                 } else if (isString) {
-                    it2->oldValue.setValue( isString->getValueAtTime(it2->time, it2->dimension) );
+                    if ( dynamic_cast<KnobBytes*>( knob.get() ) ) {
+                        // raw bytes: a QByteArray (see KnobBytes::stringToVariant())
+                        KnobBytes::stringToVariant(knob.get(), isString->getValueAtTime(it2->time, it2->dimension), &it2->oldValue);
+                    } else {
+                        it2->oldValue.setValue( isString->getValueAtTime(it2->time, it2->dimension) );
+                    }
                 }
             }
 
@@ -459,7 +476,7 @@ MultipleKnobEditsUndoCommand::redo()
                 } else if (isDouble) {
                     keyAdded = knobUI->setValueAtTime<double>(it2->dimension, it2->newValue.toDouble(), it2->time, ViewIdx(0), &k, refreshGui, _reason);
                 } else if (isString) {
-                    keyAdded = knobUI->setValueAtTime<std::string>(it2->dimension, it2->newValue.toString().toStdString(), it2->time,
+                    keyAdded = knobUI->setValueAtTime<std::string>(it2->dimension, KnobBytes::stringFromVariant(knob.get(), it2->newValue), it2->time,
                                                                    ViewIdx(0), &k, refreshGui, _reason);
                 } else {
                     assert(false);
@@ -482,7 +499,7 @@ MultipleKnobEditsUndoCommand::redo()
                         it2->setValueRetCode = knobUI->setValue<double>(it2->dimension, newValue, &k, true, _reason);
                     }
                 } else if (isString) {
-                    std::string newValue = it2->newValue.toString().toStdString();
+                    std::string newValue = KnobBytes::stringFromVariant(knob.get(), it2->newValue);
                     if (isString->getValueAtTime(it2->time, it2->dimension) != newValue) {
                         it2->setValueRetCode = knobUI->setValue<std::string>(it2->dimension, newValue, &k, true, _reason);
                     }
@@ -716,14 +733,14 @@ RestoreDefaultsCommand::redo()
     }
 
 
-    /*
-       First reset all knobs values, this will not call instanceChanged action
-     */
+    // the keyframes that are removed
+    std::list<KnobIPtr> knobs;
     for (std::list<KnobIWPtr>::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
         KnobIPtr itKnob = it->lock();
         if (!itKnob) {
             continue;
         }
+        knobs.push_back(itKnob);
         if ( itKnob->getHolder() && itKnob->getHolder()->getApp() ) {
             int dim = itKnob->getDimension();
             for (int i = 0; i < dim; ++i) {
@@ -738,40 +755,22 @@ RestoreDefaultsCommand::redo()
                 }
             }
         }
-
-        if ( itKnob->getHolder() ) {
-            itKnob->getHolder()->beginChanges();
-        }
-       // itKnob->blockValueChanges();
-
-        for (int d = 0; d < itKnob->getDimension(); ++d) {
-            if ( (d == _targetDim) || (_targetDim == -1) ) {
-                itKnob->resetToDefaultValue(d);
-            }
-        }
-
-        // itKnob->unblockValueChanges();
-
-        if ( itKnob->getHolder() ) {
-            itKnob->getHolder()->endChanges(true);
-        }
     }
 
-    /*
-       Block value changes and call instanceChange on all knobs  afterwards to put back the plug-in
-       in a correct state
-     */
     double time = 0;
     if (app) {
         time = app->getTimeLine()->currentFrame();
     }
-    for (std::list<KnobIWPtr>::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
-        KnobIPtr itKnob = it->lock();
-        if (!itKnob) {
-            continue;
-        }
-        if ( itKnob->getHolder() ) {
-            itKnob->getHolder()->onKnobValueChanged_public(itKnob.get(), eValueChangedReasonRestoreDefault, time, ViewIdx(0), true);
+    if (holder) {
+        // reset the values, then call the knob changed handlers (instanceChanged) once per knob, in one group of changes
+        holder->resetKnobsToDefaultValues(knobs, _targetDim, time);
+    } else {
+        for (std::list<KnobIPtr>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+            for (int d = 0; d < (*it)->getDimension(); ++d) {
+                if ( (d == _targetDim) || (_targetDim == -1) ) {
+                    (*it)->resetToDefaultValue(d);
+                }
+            }
         }
     }
 

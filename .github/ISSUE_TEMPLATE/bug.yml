@@ -16,7 +16,7 @@ body:
         - label: I'm using the latest version of Natron (not required but recommended)
         - label: I've restarted Natron and the issue persists
           required: true
-        - label: I've run Natron via the [command line](https://natron.readthedocs.io/en/rb-2.4/devel/natronexecution.html) and the issue persists
+        - label: I've run Natron via the [command line](https://natron.readthedocs.io/en/rb-2.6/devel/commandline.html) and the issue persists
         - label: I've followed the [contributing guidelines](https://github.com/NatronGitHub/Natron/blob/RB-2.4/CONTRIBUTING.md) to the best of my understanding
           required: true
         - label: My issue is not on the [issue tracker](https://github.com/NatronGitHub/Natron/issues?q=is%3Aissue+type%3Abug) or in a [pull request](https://github.com/NatronGitHub/Natron/pulls) already (go search for it and dig around a little bit!)

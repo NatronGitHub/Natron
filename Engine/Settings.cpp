@@ -697,6 +697,18 @@ Settings::initializeKnobsColorManagement()
 
     _ocioStartupCheck = AppManager::createKnob<KnobBool>( this, tr("Warn on startup if OpenColorIO config is not the default") );
     _ocioStartupCheck->setName("startupCheckOCIO");
+    _ocioStartupCheck->setHintToolTip( tr("When the %1 user interface starts, check the OpenColorIO config selected above, "
+                                          "and offer to switch to the default config (%2) if another config is selected.\n"
+                                          "If the selected config is invalid, or if \"%3\" is selected but the custom OpenColorIO "
+                                          "configuration file is not set or does not exist, the suggested answer is to switch to the "
+                                          "default config (the custom file path is kept). If another bundled config is selected, the "
+                                          "suggested answer is to keep it. A custom config whose file exists is kept without asking. "
+                                          "If the default config is not bundled, a warning is shown only when the selected config "
+                                          "cannot be used.\n"
+                                          "Checking \"Do Not Show This Again\" in the question unchecks this setting.")
+                                       .arg( QString::fromUtf8(NATRON_APPLICATION_NAME),
+                                             QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME),
+                                             QString::fromUtf8(NATRON_CUSTOM_OCIO_CONFIG_NAME) ) );
     _ocioTab->addKnob(_ocioStartupCheck);
 } // Settings::initializeKnobsColorManagement
 
@@ -1158,6 +1170,17 @@ Settings::initializeKnobsViewers()
                                             "displayed only for the render path for the current viewer "
                                             "inputs.") );
     _viewersTab->addKnob(_viewerOverlaysPath);
+
+    _drawSuiteShadows = AppManager::createKnob<KnobBool>( this, tr("Draw shadows on plug-in overlays drawn without OpenGL") );
+    _drawSuiteShadows->setName("drawSuiteShadows");
+    _drawSuiteShadows->setHintToolTip( tr("Some plug-ins draw their viewer overlays (handles, outlines, labels) with the "
+                                          "OpenFX DrawSuite instead of OpenGL. When this is checked, the lines and the text "
+                                          "of these overlays get a dark drop shadow, like Natron's own overlays and the "
+                                          "OpenGL overlays of most plug-ins, so that they stay visible on any image. "
+                                          "It also applies to the OpenGL overlays of plug-ins that draw them with the DrawSuite "
+                                          "emulation of the OpenFX Support library. Other OpenGL overlays draw their own "
+                                          "shadows.") );
+    _viewersTab->addKnob(_drawSuiteShadows);
 } // Settings::initializeKnobsViewers
 
 void
@@ -1557,6 +1580,8 @@ Settings::setDefaultValues()
     _maximumNodeViewerUIOpened->setDefaultValue(2);
     _viewerNumberKeys->setDefaultValue(true);
     _viewerOverlaysPath->setDefaultValue(true);
+    // on by default, like the shadows of Natron's own OpenGL overlays
+    _drawSuiteShadows->setDefaultValue(true);
 
     // Nodegraph
     _autoScroll->setDefaultValue(false);
@@ -2290,11 +2315,16 @@ Settings::onKnobValueChanged(KnobI* k,
         }
         setCachingLabels();
     } else if ( k == _diskCachePath.get() ) {
-        QString path = QString::fromUtf8(_diskCachePath->getValue().c_str());
-        qputenv(NATRON_DISK_CACHE_PATH_ENV_VAR, path.toUtf8());
+        // The environment variable, if set, takes precedence over the preference (#1265): don't overwrite it
         appPTR->refreshDiskCacheLocation();
     } else if ( k == _wipeDiskCache.get() ) {
-        appPTR->wipeAndCreateDiskCacheStructure();
+        if ( !appPTR->wipeAndCreateDiskCacheStructure() ) {
+            Dialogs::warningDialog( tr("Wipe Disk Cache").toStdString(),
+                                    tr("The disk cache folder is used by another %1 process, so its files were not deleted: "
+                                       "only the cache entries of this process were removed. Quit the other %1 processes "
+                                       "(including the background renders), then wipe the disk cache again.")
+                                    .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
+        }
     } else if ( k == _numberOfThreads.get() ) {
         int nbThreads = getNumberOfThreads();
         appPTR->setNThreadsToRender(nbThreads);
@@ -2351,6 +2381,12 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->toggleAutoHideGraphInputs();
     } else if ( k == _autoProxyWhenScrubbingTimeline.get() ) {
         _autoProxyLevel->setSecret( !_autoProxyWhenScrubbingTimeline->getValue() );
+    } else if ( ( k == _drawSuiteShadows.get() ) && !_restoringSettings ) {
+        // the overlays drawn with the DrawSuite get or lose their shadows
+        const AppInstanceVec& apps = appPTR->getAppInstances();
+        for (AppInstanceVec::const_iterator it = apps.begin(); it != apps.end(); ++it) {
+            (*it)->redrawAllViewers();
+        }
     } else if ( !_restoringSettings &&
                 ( ( k == _sunkenColor.get() ) ||
                   ( k == _baseColor.get() ) ||
@@ -2514,6 +2550,12 @@ Settings::viewerOverlaysPath() const
     return _viewerOverlaysPath->getValue();
 }
 
+bool
+Settings::drawSuiteShadows() const
+{
+    return _drawSuiteShadows->getValue();
+}
+
 ///////////////////////////////////////////////////////
 // "Caching" pane
 
@@ -2539,6 +2581,12 @@ U64
 Settings::getMaximumDiskCacheNodeSize() const
 {
     return (U64)( _maxDiskCacheNodeGB->getValue() ) * 1024 * 1024 * 1024;
+}
+
+QString
+Settings::getDiskCachePath() const
+{
+    return _diskCachePath ? QString::fromUtf8( _diskCachePath->getValue().c_str() ) : QString();
 }
 
 ///////////////////////////////////////////////////
@@ -2716,19 +2764,7 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         "</ul>\n"
         "</li>\n"
         "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_environment.html\">Environment Variables</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupImage.html\">Image nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupDraw.html\">Draw nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupTime.html\">Time nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupChannel.html\">Channel nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupColor.html\">Color nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupFilter.html\">Filter nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupKeyer.html\">Keyer nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupMerge.html\">Merge nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupTransform.html\">Transform nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupViews.html\">Views nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupOther.html\">Other nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupGMIC.html\">GMIC nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_groupExtra.html\">Extra nodes</a></li>\n"
+        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"_nodes.html\">Nodes</a></li>\n"
         "</ul>\n"
         "</li>\n"
         "<li class=\"toctree-l1\"><a class=\"reference internal\" href=\"devel/index.html\">Developers Guide</a></li>\n"

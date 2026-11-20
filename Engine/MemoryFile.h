@@ -129,6 +129,17 @@ public:
     void resize(size_t new_size);
 
     /**
+     * @brief Makes sure that the disk space of the bytes [offset, offset + length) of the file is allocated,
+     * so that writing them through data() cannot fail later.
+     * resize() creates a sparse file on Unix, and writing to a page of the mapping that has no disk space
+     * when the disk is full raises SIGBUS, which crashes Natron (#192).
+     * The content of this part of the file is undefined afterwards: only call it for bytes that are going
+     * to be written. The range must be within size().
+     * This function throws a std::runtime_error if the disk space could not be allocated (e.g. the disk is full).
+     **/
+    void reserve(size_t offset, size_t length);
+
+    /**
      * @brief Returns the size of the file in bytes.
      **/
     size_t size() const;

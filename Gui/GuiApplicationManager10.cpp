@@ -44,6 +44,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QGuiApplication>
 #include <QScreen>
 #include <QFileOpenEvent>
+#include <QWindow>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -288,16 +289,65 @@ Application::event(QEvent* e)
     }
 }
 
+/**
+ * @brief In GUI test mode (GuiApplicationManager::isGuiTestNoFocus()), show every top-level
+ * window (main window, splash screen, dialogs, floating panels...) without activating it.
+ * The Show event is sent before the native window is shown (QWidgetPrivate::show_helper), but
+ * after it was created, so the QWindow property that Qt reads from Qt::WA_ShowWithoutActivating
+ * at creation is set too.
+ **/
+class ShowWithoutActivatingFilter
+    : public QObject
+{
+public:
+    explicit ShowWithoutActivatingFilter(QObject* parent)
+        : QObject(parent)
+    {
+    }
+
+    virtual bool eventFilter(QObject* watched,
+                             QEvent* e) OVERRIDE FINAL
+    {
+        if ( (e->type() == QEvent::Show) && watched->isWidgetType() ) {
+            QWidget* w = static_cast<QWidget*>(watched);
+            if ( w->isWindow() ) {
+                w->setAttribute(Qt::WA_ShowWithoutActivating);
+                if ( QWindow* window = w->windowHandle() ) {
+                    window->setProperty("_q_showWithoutActivating", true);
+                }
+            }
+        }
+
+        return false;
+    }
+};
+
 void
 GuiApplicationManager::initializeQApp(int &argc,
                                       char** argv)
 {
+    if ( isGuiTestNoFocus() ) {
+        // Without a Dock icon and with windows that open behind the other applications, an
+        // interactive session would look hung: say why.
+        qWarning("NATRON_TEST_NO_FOCUS is set: Natron runs in the background and never takes the keyboard focus (GUI tests).");
+        // GUI tests on a desktop someone is using: never bring Natron to the front.
+        // These are read by Qt's cocoa platform plugin (macOS):
+        // - don't make the process a foreground application, and don't activate it at launch;
+        // - QWidget::raise() must not activate the application.
+        qputenv("QT_MAC_DISABLE_FOREGROUND_APPLICATION_TRANSFORM", "1");
+        qputenv("QT_MAC_SET_RAISE_PROCESS", "0");
+    }
     QApplication* app;
     {
 #ifdef DEBUG
         // division_by_zero happens here - don't trap it
         boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::overflow);
 #endif
+        // All the QOpenGLWidget contexts share their objects, and a QOpenGLWidget keeps its context
+        // when it moves to another top-level window (e.g. a panel dragged into a floating window),
+        // so the OpenGL objects of the widgets and of the OFX overlays drawn in them stay valid
+        // (#536). This must be set before the QApplication is created.
+        QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
         app = new Application(this, argc, argv);
     }
     // QDesktopWidget is gone in Qt6. Its logicalDpiX()/logicalDpiY() rounded
@@ -314,6 +364,15 @@ GuiApplicationManager::initializeQApp(int &argc,
     setCurrentLogicalDPI(dpiX, dpiY);
 
     app->setQuitOnLastWindowClosed(true);
+
+    if ( isGuiTestNoFocus() ) {
+#ifdef Q_OS_DARWIN
+        // A .app bundle (or a binary that was already transformed) is a regular application:
+        // make it an accessory one, with no Dock icon, that macOS never activates by itself.
+        QtMac::setupGuiTestNoFocus();
+#endif
+        app->installEventFilter( new ShowWithoutActivatingFilter(app) );
+    }
 
     // use namespace workaround
     // https://doc.qt.io/qt-5/qdir.html#Q_INIT_RESOURCE

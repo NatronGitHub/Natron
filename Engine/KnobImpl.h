@@ -40,6 +40,7 @@
 #include <QCoreApplication>
 #include <QThread>
 
+#include "Global/MathUtils.h"
 #include "Global/PythonUtils.h"
 
 #include "Engine/Curve.h"
@@ -98,6 +99,7 @@ Knob<T>::Knob(KnobHolder*  holder,
     , _guiValues(dimension)
     , _defaultValues(dimension)
     , _exprRes(dimension)
+    , _exprResGeneration(0)
     , _minMaxMutex()
     , _minimums(dimension)
     , _maximums(dimension)
@@ -477,7 +479,7 @@ Knob<T>::getValueFromExpression(double time,
 
 
     ///Check first if a value was already computed:
-
+    unsigned int generation;
     {
         QMutexLocker k(&_valueMutex);
         typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
@@ -486,10 +488,13 @@ Knob<T>::getValueFromExpression(double time,
 
             return true;
         }
+        generation = _exprResGeneration;
     }
 
     bool exprWasValid = isExpressionValid(dimension, 0);
     {
+        // Evaluate without holding _valueMutex: Python takes the GIL, and an expression that holds the GIL
+        // may read this knob (which locks _valueMutex)
         EXPR_RECURSION_LEVEL();
         std::string error;
         bool exprOk = evaluateExpression(time, view,  dimension, ret, &error);
@@ -509,7 +514,12 @@ Knob<T>::getValueFromExpression(double time,
     }
 
     QMutexLocker k(&_valueMutex);
-    _exprRes[dimension].insert( std::make_pair(time, *ret) );
+    // If the results were cleared during the evaluation (e.g. a parameter used by the expression changed
+    // in another thread), this result may be computed from the old values: return it, but don't store it,
+    // else later renders would keep using it.
+    if (_exprResGeneration == generation) {
+        _exprRes[dimension].insert( std::make_pair(time, *ret) );
+    }
 
     return true;
 }
@@ -565,19 +575,23 @@ Knob<T>::getValueFromExpression_pod(double time,
 
 
     ///Check first if a value was already computed:
+    unsigned int generation;
+    {
+        QMutexLocker k(&_valueMutex);
+        typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
+        if ( found != _exprRes[dimension].end() ) {
+            *ret = found->second;
 
-
-    QMutexLocker k(&_valueMutex);
-    typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
-    if ( found != _exprRes[dimension].end() ) {
-        *ret = found->second;
-
-        return true;
+            return true;
+        }
+        generation = _exprResGeneration;
     }
 
 
     bool exprWasValid = isExpressionValid(dimension, 0);
     {
+        // Evaluate without holding _valueMutex (see getValueFromExpression()): holding it while waiting for the
+        // Python GIL could deadlock with a thread that holds the GIL and reads this knob.
         EXPR_RECURSION_LEVEL();
         std::string error;
         bool exprOk = evaluateExpression_pod(time, view, dimension, ret, &error);
@@ -596,8 +610,11 @@ Knob<T>::getValueFromExpression_pod(double time,
         *ret =  clampToMinMax(*ret, dimension);
     }
 
-    //QWriteLocker k(&_valueMutex);
-    _exprRes[dimension].insert( std::make_pair(time, *ret) );
+    QMutexLocker k(&_valueMutex);
+    // as in getValueFromExpression()
+    if (_exprResGeneration == generation) {
+        _exprRes[dimension].insert( std::make_pair(time, *ret) );
+    }
 
     return true;
 }
@@ -778,14 +795,10 @@ KnobStringBase::getValueFromCurve(double time,
 {
     AnimatingKnobStringHelper* isStringAnimated = dynamic_cast<AnimatingKnobStringHelper* >(this);
 
-    if (isStringAnimated) {
-        *ret = isStringAnimated->getStringAtTime(time, view, dimension);
-        ///ret is not empty if the animated string knob has a custom interpolation
-        if ( !ret->empty() ) {
-            return true;
-        }
+    if (!isStringAnimated) {
+        // only animating string knobs have keyframes
+        return false;
     }
-    assert( ret->empty() );
     CurvePtr curve;
     if (useGuiCurve) {
         curve = getGuiCurve(view, dimension, byPassMaster);
@@ -793,16 +806,11 @@ KnobStringBase::getValueFromCurve(double time,
     if (!curve) {
         curve = getCurve(view, dimension, byPassMaster);
     }
-    if ( curve && (curve->getKeyFramesCount() > 0) ) {
-        assert(isStringAnimated);
-        if (isStringAnimated) {
-            isStringAnimated->stringFromInterpolatedValue(curve->getValueAt(time), view, ret);
-        }
-
-        return true;
+    if (!curve) {
+        return false;
     }
 
-    return false;
+    return isStringAnimated->getStringFromCurve(*curve, time, ret);
 }
 
 template<typename T>
@@ -862,8 +870,8 @@ KnobStringBase::getRawCurveValueAt(double time,
     CurvePtr curve  = getCurve(view, dimension, true);
 
     if ( curve && (curve->getKeyFramesCount() > 0) ) {
-        //getValueAt already clamps to the range for us
-        return curve->getValueAt(time, false); //< no clamping to range!
+        // the index of the keyframe at or before time (see Curve::getValueAt())
+        return curve->getValueAt(time, false);
     }
 
     return 0;
@@ -928,10 +936,8 @@ void
 KnobStringBase::valueToVariant(const std::string & v,
                                   Variant* vari)
 {
-    KnobStringBase* isString = dynamic_cast<KnobStringBase*>(this);
-    if (isString) {
-        vari->setValue<QString>( QString::fromUtf8( v.c_str() ) );
-    }
+    // KnobBytes holds raw bytes: a QByteArray, not a QString (see KnobBytes::stringToVariant())
+    KnobBytes::stringToVariant(this, v, vari);
 }
 
 template<typename T>
@@ -1051,8 +1057,33 @@ Knob<T>::setValue(const T & v,
     }
 #endif
 
-    if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() ) {
-        KnobHolder::MultipleParamsEditEnum paramEditLevel = holder->getMultipleParamsEditLevel();
+    // A knob that can't undo is set now: it must not start the undo command of a block of changes (paramEditBegin()),
+    // or the next changes of the block would be merged into the previous undo command.
+    // Same for a write that doesn't change the value (not animated, no expression, not linked, same value): its undo
+    // command would undo nothing. Issue #1443: when the user drags the center of a rectangle interact, the plug-in sets
+    // the position, then the size, unchanged, outside an edit block; the size made a second undo command, which
+    // MultipleKnobEditsUndoCommand::mergeWith() merged into the first one or not depending on heap addresses (its subset
+    // check walks maps ordered by std::owner_less, i.e. by control block, compares the stored pointers, and stops when the
+    // previous command runs out of knobs), so that the first Undo of the drag sometimes did nothing.
+    // The write still goes the normal path: in Knob<T>::setValues(), when an earlier dimension changed through the undo
+    // path (whose redo runs with the value changes blocked), hasChanged is true here, and the evaluateValueChange() of this
+    // write is the one knob changed notification (kOfxActionInstanceChanged) of the change, as when the last dimension
+    // changes. When nothing changed, the normal path changes nothing and notifies nothing.
+    const auto unchangedStaticValue = [&]() {
+        if ( isAnimated(dimension, view) || !getExpression(dimension).empty() || isSlave(dimension) ) {
+            return false;
+        }
+        // also the GUI value: it holds the last value set while a set may be queued (isSetValueCurrentlyPossible())
+        QMutexLocker l(&_valueMutex);
+
+        return (v == _values[dimension]) && (v == _guiValues[dimension]);
+    };
+    if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() && getCanUndo() && !unchangedStaticValue() ) {
+        // The first write of a block creates its undo command: takeMultipleParamsEditCreateNewCommand() reads the level and
+        // turns eMultipleParamsEditOnCreateNewCommand into eMultipleParamsEditOn atomically.
+        KnobHolder::MultipleParamsEditEnum paramEditLevel = get_SetValueRecursionLevel() ?
+                                                            holder->getMultipleParamsEditLevel() :
+                                                            holder->takeMultipleParamsEditCreateNewCommand();
         switch (paramEditLevel) {
         case KnobHolder::eMultipleParamsEditOff:
         default:
@@ -1061,7 +1092,6 @@ Knob<T>::setValue(const T & v,
             if ( !get_SetValueRecursionLevel() ) {
                 Variant vari;
                 valueToVariant(v, &vari);
-                holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOn);
                 {
                     QMutexLocker l(&_setValueRecursionLevelMutex);
                     ++_setValueRecursionLevel;
@@ -1103,6 +1133,11 @@ Knob<T>::setValue(const T & v,
         ///basically if we enter this if condition, for each dimension the undo stack will create a new command.
         ///the caller should have tested this prior to calling this function and correctly called editBegin() editEnd()
         ///to bracket the setValue()  calls within the same undo/redo command.
+        // Outside a block, only the changes made by an interact (overlay) action are undo commands. The changes that
+        // the plug-in makes in kOfxActionInstanceChanged are not: they follow a change of another parameter, whose own
+        // undo and redo make the plug-in recompute them, and pushing undo commands while the undo stack undoes or
+        // redoes that change would corrupt the redo history. A plug-in that wants its changes to be undoable as one
+        // step (e.g. the result of an analysis) brackets them with paramEditBegin()/paramEditEnd().
         if ( holder->isDoingInteractAction() ) {
             if ( !get_SetValueRecursionLevel() ) {
                 Variant vari;
@@ -1114,7 +1149,7 @@ Knob<T>::setValue(const T & v,
                 return ret;
             }
         }
-    } // if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() ) {
+    } // if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() && getCanUndo() ) {
 
 
     if ( holder && !holder->isSetValueCurrentlyPossible() ) {
@@ -1404,7 +1439,7 @@ Knob<T>::makeKeyFrame(Curve* curve,
     } else {
         keyFrameValue = (double)v;
     }
-    if ( std::isnan(keyFrameValue) || std::isinf(keyFrameValue) ) { // check for NaN or infinity
+    if ( !MathUtils::isFinite(keyFrameValue) ) { // reject NaN and infinity (works with -ffast-math)
         *key = KeyFrame( (double)time, getMaximum(0) );
     } else {
         *key = KeyFrame( (double)time, keyFrameValue );
@@ -1462,8 +1497,14 @@ Knob<T>::setValueAtTime(double time,
     }
 #endif
 
-    if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() ) {
-        KnobHolder::MultipleParamsEditEnum paramEditLevel = holder->getMultipleParamsEditLevel();
+    // A knob that can't undo is set now: it must not start the undo command of a block of changes (paramEditBegin()),
+    // or the next changes of the block would be merged into the previous undo command.
+    if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() && getCanUndo() ) {
+        // The first write of a block creates its undo command: takeMultipleParamsEditCreateNewCommand() reads the level and
+        // turns eMultipleParamsEditOnCreateNewCommand into eMultipleParamsEditOn atomically.
+        KnobHolder::MultipleParamsEditEnum paramEditLevel = get_SetValueRecursionLevel() ?
+                                                            holder->getMultipleParamsEditLevel() :
+                                                            holder->takeMultipleParamsEditCreateNewCommand();
         switch (paramEditLevel) {
         case KnobHolder::eMultipleParamsEditOff:
         default:
@@ -1477,7 +1518,6 @@ Knob<T>::setValueAtTime(double time,
 
                 Variant vari;
                 valueToVariant(v, &vari);
-                holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOn);
                 if (_signalSlotHandler) {
                     _signalSlotHandler->s_appendParamEditChange(reason, vari, view, dimension, time, true, true);
                 }
@@ -1756,7 +1796,19 @@ Knob<T>::unSlaveInternal(int dimension,
     std::pair<int, KnobIPtr> master = getMaster(dimension);
     KnobHelperPtr masterHelper = std::dynamic_pointer_cast<KnobHelper>(master.second);
 
-    if (masterHelper->getSignalSlotHandler() && _signalSlotHandler) {
+    resetMaster(dimension);
+
+    // The signals of the master knob are connected once for all the dimensions of this knob that are
+    // slaved to it (see KnobHelper::slaveToInternal()): only disconnect them if no other dimension of this
+    // knob is still slaved to the same master.
+    bool stillSlavedToMaster = false;
+    for (int i = 0; i < getDimension(); ++i) {
+        if (getMaster(i).second == master.second) {
+            stillSlavedToMaster = true;
+            break;
+        }
+    }
+    if (!stillSlavedToMaster && masterHelper && masterHelper->getSignalSlotHandler() && _signalSlotHandler) {
         QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL( keyFrameSet(double, ViewSpec, int, int, bool) ),
                              _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(double, ViewSpec, int, int, bool) ) );
         QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL( keyFrameRemoved(double, ViewSpec, int, int) ),
@@ -1767,7 +1819,6 @@ Knob<T>::unSlaveInternal(int dimension,
                              _signalSlotHandler.get(), SLOT( onMasterAnimationRemoved(ViewSpec, int) ) );
     }
 
-    resetMaster(dimension);
     bool hasChanged = false;
     setEnabled(dimension, true);
     if (copyState) {
@@ -1931,7 +1982,7 @@ KnobStringBase::getKeyFrameValueByIndex(ViewSpec view,
         *ok =  curve->getKeyFrameWithIndex(index, &kf);
 
         if (*ok) {
-            animatedString->stringFromInterpolatedValue(kf.getValue(), view, &value);
+            *ok = animatedString->stringFromKeyFrameValue(kf.getValue(), &value);
         }
     }
 
@@ -2177,7 +2228,11 @@ template<typename T>
 bool
 Knob<T>::isTypeCompatible(const KnobIPtr & other) const
 {
-    return isTypePOD() == other->isTypePOD();
+    // Raw bytes are not text: a KnobBytes and another string knob refuse each other (copy/paste, links)
+    const bool isBytes = dynamic_cast<const KnobBytes*>(this) != NULL;
+    const bool otherIsBytes = dynamic_cast<const KnobBytes*>( other.get() ) != NULL;
+
+    return ( isTypePOD() == other->isTypePOD() ) && (isBytes == otherIsBytes);
 }
 
 template<typename T>
@@ -2211,6 +2266,13 @@ Knob<T>::setKeyFrame(const KeyFrame& key,
                      int dimension,
                      ValueChangedReasonEnum reason)
 {
+    const AnimatingKnobStringHelper* isString = dynamic_cast<const AnimatingKnobStringHelper*>(this);
+    std::string str;
+    if ( isString && !isString->stringFromKeyFrameValue(key.getValue(), &str) ) {
+        // the value of a string keyframe must reference a string (see StringAnimationManager)
+        return false;
+    }
+
     CurvePtr curve;
     KnobHolder* holder = getHolder();
     bool useGuiCurve = ( !holder || !holder->isSetValueCurrentlyPossible() ) && getKnobGuiPointer();
@@ -2707,6 +2769,7 @@ Knob<T>::cloneExpressionsResults(KnobI* other,
             otherKnob->getExpressionResults(i, results);
             QMutexLocker k(&_valueMutex);
             _exprRes[i] = results;
+            ++_exprResGeneration;
         }
     } else {
         if (otherDimension == -1) {
@@ -2716,6 +2779,7 @@ Knob<T>::cloneExpressionsResults(KnobI* other,
         otherKnob->getExpressionResults(otherDimension, results);
         QMutexLocker k(&_valueMutex);
         _exprRes[dimension] = results;
+        ++_exprResGeneration;
     }
 }
 

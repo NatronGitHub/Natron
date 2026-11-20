@@ -28,6 +28,7 @@
 
 #include <cassert>
 #include <algorithm> // min, max
+#include <cmath> // floor
 #include <limits>
 #include <cstring> // for std::memcpy, std::memset, std::strcmp, std::strchr
 #include <stdexcept>
@@ -37,6 +38,7 @@
 #include <QMenu>
 #include <QToolButton>
 #include <QApplication> // qApp
+#include <QGuiApplication> // queryKeyboardModifiers
 #include <QScreen>
 #include <QWindow>
 
@@ -77,11 +79,13 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeGui.h"
 #include "Gui/KnobGuiParametric.h"
 #include "Gui/NodeSettingsPanel.h"
+#include "Gui/QtEnumConvert.h"
 #include "Gui/Shaders.h"
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerTab.h"
 
 #include <QOpenGLContext>
+#include <QTimer>
 #include <QRegularExpression>
 
 
@@ -120,6 +124,8 @@ ViewerGL::ViewerGL(ViewerTab* parent,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    // Unlike QGLWidget, QOpenGLWidget takes no share widget: the argument is kept for API compatibility.
+    Q_UNUSED(shareWidget);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     //setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
@@ -134,6 +140,12 @@ ViewerGL::~ViewerGL()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    if ( QOpenGLContext* glContext = context() ) {
+        // ~QOpenGLWidget destroys the context after this object is gone: don't get its signal
+        glContext->disconnect(this);
+        makeCurrent();
+        releaseGLResources();
+    }
 }
 
 QSize
@@ -260,6 +272,23 @@ ViewerGL::paintGL()
         return;
     }
     glCheckError();
+
+    // query the keyboard modifiers once per paint, not once per overlay draw action
+    struct PaintKeyboardModifiersSetter
+    {
+        ViewerGL::Implementation* const imp;
+        PaintKeyboardModifiersSetter(ViewerGL::Implementation* i)
+            : imp(i)
+        {
+            imp->paintKeyboardModifiers = QGuiApplication::queryKeyboardModifiers();
+            imp->inPaintGL = true;
+        }
+
+        ~PaintKeyboardModifiersSetter()
+        {
+            imp->inPaintGL = false;
+        }
+    } paintKeyboardModifiersSetter( _imp.get() );
 
 
     {
@@ -1219,7 +1248,73 @@ ViewerGL::initializeGL()
     if ( !appPTR->isOpenGLLoaded() ) {
         throw std::runtime_error("OpenGL was not loaded");
     }
+    // QOpenGLWidget destroys its context and creates a new one when it moves to another top-level
+    // window, e.g. when the viewer is dragged into a floating window (#536), and then calls
+    // initializeGL() again. The OpenGL objects of the old context must be released with it.
+    QObject::connect( context(), &QOpenGLContext::aboutToBeDestroyed, this, &ViewerGL::onContextAboutToBeDestroyed );
     _imp->initializeGL();
+
+    if (_imp->glResourcesReleased) {
+        // The textures of the previous context held the displayed images: render them again.
+        _imp->glResourcesReleased = false;
+        QTimer::singleShot( 0, this, [this]() {
+            ViewerInstance* viewer = getInternalNode();
+            if (viewer) {
+                viewer->renderCurrentFrame(true);
+            }
+        } );
+    }
+}
+
+void
+ViewerGL::onContextAboutToBeDestroyed()
+{
+    makeCurrent();
+    releaseGLResources();
+    _imp->glResourcesReleased = true;
+    // The context stays current: it is destroyed right after this signal, and the overlays'
+    // TextRenderer may still delete its textures from its own aboutToBeDestroyed() slot.
+}
+
+void
+ViewerGL::releaseGLResources()
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    assert( QOpenGLContext::currentContext() == context() );
+
+    _imp->textRenderer.releaseGLResources();
+
+    if (_imp->shaderRGB) {
+        _imp->shaderRGB->removeAllShaders();
+        _imp->shaderRGB.reset();
+    }
+    if (_imp->shaderBlack) {
+        _imp->shaderBlack->removeAllShaders();
+        _imp->shaderBlack.reset();
+    }
+    _imp->shaderLoaded = false;
+    // the Texture destructor deletes the OpenGL texture, so this must be done in its context
+    for (int i = 0; i < 2; ++i) {
+        _imp->displayTextures[i].texture.reset();
+    }
+    _imp->partialUpdateTextures.clear();
+
+    if ( appPTR && appPTR->isOpenGLLoaded() ) {
+        glCheckError();
+        for (U32 i = 0; i < _imp->pboIds.size(); ++i) {
+            glDeleteBuffers(1, &_imp->pboIds[i]);
+        }
+        _imp->pboIds.clear();
+        glCheckError();
+        glDeleteBuffers(1, &_imp->vboVerticesId);
+        glDeleteBuffers(1, &_imp->vboTexturesId);
+        glDeleteBuffers(1, &_imp->iboTriangleStripId);
+        _imp->vboVerticesId = _imp->vboTexturesId = _imp->iboTriangleStripId = 0;
+        glCheckError();
+        glDeleteTextures(1, &_imp->checkerboardTextureID);
+        _imp->checkerboardTextureID = 0;
+    }
 }
 
 GLuint
@@ -1494,6 +1589,12 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
     }
 
     if (isPartialRect) {
+        if (!texture) {
+            // Nothing was uploaded (no OpenGL context, see transferBufferFromRAMtoGPU()): a partial
+            // texture without a texture can't be drawn. The non-partial branch below works with a
+            // null texture, as it did before (e.g. when every tile had a null ramBuffer).
+            return;
+        }
         TextureInfo info;
         info.texture = std::dynamic_pointer_cast<Texture>(texture);
         info.gain = gain;
@@ -1526,23 +1627,28 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
         }
 
 
+        {
+            // The color picker and the info bar read these images: forget the images of the previous frames,
+            // which may be at other mipmap levels. The image is not available when the texture comes from the
+            // viewer cache and the image was evicted from the node cache (or after a restart): showing the values
+            // of another frame would be wrong (#1121).
+            QMutexLocker k(&_imp->lastRenderedImageMutex);
+            std::vector<ImagePtr>& lastRenderedTiles = _imp->displayTextures[textureIndex].lastRenderedTiles;
+            for (std::size_t i = 0; i < lastRenderedTiles.size(); ++i) {
+                lastRenderedTiles[i].reset();
+            }
+            if (image) {
+                lastRenderedTiles[mipmapLevel] = image;
+            }
+        }
         if (image) {
             _imp->viewerTab->setImageFormat(textureIndex, image->getComponents(), depth);
-            {
-                QMutexLocker k(&_imp->lastRenderedImageMutex);
-                _imp->displayTextures[textureIndex].lastRenderedTiles[mipmapLevel] = image;
-            }
-            _imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages = 0;
-            _imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages += image->size();
+            _imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages = image->size();
 
             internalNode->registerPluginMemory(_imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages);
             Q_EMIT imageChanged(textureIndex, true);
         } else {
-            if ( !_imp->displayTextures[textureIndex].lastRenderedTiles[mipmapLevel] ) {
-                Q_EMIT imageChanged(textureIndex, false);
-            } else {
-                Q_EMIT imageChanged(textureIndex, true);
-            }
+            Q_EMIT imageChanged(textureIndex, false);
         }
         setRegionOfDefinition(rod, par, textureIndex);
     }
@@ -1551,6 +1657,7 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
 void
 ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      size_t bytesCount,
+                                     ImageBitDepthEnum depth,
                                      const RectI &roiRoundedToTileSize,
                                      const RectI& roi,
                                      const TextureRect & tileRect,
@@ -1561,6 +1668,12 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    if ( !isValid() || !_imp->displayTextures[textureIndex].texture ) {
+        // No OpenGL context: the widget is hidden and its context was destroyed (see
+        // onContextAboutToBeDestroyed()). initializeGL() renders the frame again; *texture stays
+        // null, and endTransferBufferFromRAMToGPU() ignores it.
+        return;
+    }
     assert( QOpenGLContext::currentContext() == context() );
     GLenum e = glGetError();
     Q_UNUSED(e);
@@ -1575,10 +1688,10 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     // We use 2 PBOs to make use of asynchronous data uploading
     GLuint pboId = getPboID(_imp->updateViewerPboIndex);
 
-    // The bitdepth of the texture
-    ImageBitDepthEnum bd = getBitDepth();
+    // The bitdepth of the texture: the one of the buffer, which was rendered with the "Viewer
+    // textures" setting of that time. The setting may have changed since (#1120).
     Texture::DataTypeEnum dataType;
-    if (bd == eImageBitDepthByte) {
+    if (depth == eImageBitDepthByte) {
         dataType = Texture::eDataTypeByte;
     } else {
         //do 32bit fp textures either way, don't bother with half float. We might support it further on.
@@ -1609,6 +1722,8 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                 Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
             }
             _imp->displayTextures[textureIndex].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, dataType, format, internalFormat, glType) );
+            // upload into the new texture, not into the one it replaces
+            tex = _imp->displayTextures[textureIndex].texture;
         }
         textureRectangle.set(roiRoundedToTileSize);
         _imp->displayTextures[textureIndex].roiNotRoundedToTileSize.set(roi);
@@ -1735,7 +1850,9 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     _imp->viewerTab->onMousePressCalledInViewer();
 
     _imp->hasMovedSincePress = false;
-    _imp->pressureOnRelease = 1.;
+    // the pressure of the next pen up, if no tablet event sets it: "If a pen has only two states (eg: a
+    // mouse button), these should map to 0.0 and 1.0" (ofxInteract.h)
+    _imp->pressureOnRelease = 0.;
     if ( (e->buttons() == Qt::LeftButton) && !(e->modifiers() &  Qt::MetaModifier) ) {
         _imp->pointerTypeOnPress = ePenTypeLMB;
     } else if ( (e->buttons() == Qt::RightButton) || (e->buttons() == Qt::LeftButton  && (e->modifiers() &  Qt::MetaModifier)) ) {
@@ -1844,7 +1961,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     if (!overlaysCaught &&
         (_imp->ms == eMouseStateUndefined) &&
         _imp->overlay) {
-        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), _imp->pointerTypeOnPress, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e));
+        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), _imp->pointerTypeOnPress, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e), QtEnumConvert::fromQtModifiers( e->modifiers() ));
         if (overlaysCaught) {
             mustRedraw = true;
         }
@@ -1996,7 +2113,9 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->lastDragStartPos = zoomPos;
         _imp->ms = eMouseStateSelecting;
         if ( !modCASIsControl(e) ) {
-            Q_EMIT selectionCleared();
+            // when the overlays are shown, they got this pen down (notifyOverlaysPenDown above)
+            // before the clear, so the OFX plug-ins know its modifiers (ofxNatron.h extensions 7, 13)
+            Q_EMIT selectionCleared( e->modifiers() );
             mustRedraw = true;
         }
         overlaysCaught = true;
@@ -2027,7 +2146,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
 
     if (_imp->ms == eMouseStateSelecting) {
         if (_imp->hasMovedSincePress) {
-            Q_EMIT selectionRectangleChanged(true);
+            Q_EMIT selectionRectangleChanged( true, e->modifiers() );
         }
     } else if (_imp->ms == eMouseStateBuildingUserRoI) {
         QMutexLocker k(&_imp->userRoIMutex);
@@ -2045,7 +2164,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
         QMutexLocker l(&_imp->zoomCtxMutex);
         zoomPos = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
     }
-    if ( _imp->viewerTab->notifyOverlaysPenUp(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), QMouseEventLocalPos(e), zoomPos, currentTimeForEvent(e), _imp->pressureOnRelease) ) {
+    if ( _imp->viewerTab->notifyOverlaysPenUp(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), QMouseEventLocalPos(e), zoomPos, _imp->pressureOnRelease, currentTimeForEvent(e), QtEnumConvert::fromQtModifiers( e->modifiers() )) ) {
         mustRedraw = true;
     }
     updateOverlayCursor();
@@ -2062,7 +2181,9 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
 void
 ViewerGL::mouseMoveEvent(QMouseEvent* e)
 {
-    if ( !penMotionInternal(e->x(), e->y(), /*pressure=*/ 1., currentTimeForEvent(e), e) ) {
+    // mouse tracking is on: the pen is up (pressure 0) unless a button is down
+    const double pressure = (e->buttons() == Qt::NoButton) ? 0. : 1.;
+    if ( !penMotionInternal(e->x(), e->y(), pressure, currentTimeForEvent(e), e) ) {
         QOpenGLWidget::mouseMoveEvent(e);
     }
 } // mouseMoveEvent
@@ -2105,11 +2226,16 @@ ViewerGL::tabletEvent(QTabletEvent* e)
         break;
     }
     case QEvent::TabletRelease: {
-        _imp->pressureOnRelease = pressure;
+        // the pen has left the tablet: pressure 0 (the fix-up above turns the tablet's 0 into 1)
+        _imp->pressureOnRelease = 0.;
         QOpenGLWidget::tabletEvent(e);
         break;
     }
     case QEvent::TabletMove: {
+        if (e->buttons() == Qt::NoButton) {
+            // the pen hovers over the tablet (the pressure fix above turns its 0 into 1)
+            pressure = 0.;
+        }
         if ( !penMotionInternal(e->x(), e->y(), pressure, currentTimeForEvent(e), e) ) {
             QOpenGLWidget::tabletEvent(e);
         } else {
@@ -2129,7 +2255,6 @@ ViewerGL::penMotionInternal(int x,
                             double timestamp,
                             QInputEvent* e)
 {
-    Q_UNUSED(e);
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
@@ -2475,12 +2600,13 @@ ViewerGL::penMotionInternal(int x,
     case eMouseStateSelecting: {
         _imp->refreshSelectionRectangle(zoomPos);
         mustRedraw = true;
-        Q_EMIT selectionRectangleChanged(false);
+        Q_EMIT selectionRectangleChanged( false, e ? e->modifiers() : QGuiApplication::queryKeyboardModifiers() );
     }; break;
     default: {
         QPointF localPos(x, y);
         if ( _imp->overlay &&
-             _imp->viewerTab->notifyOverlaysPenMotion(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), localPos, zoomPos, pressure, timestamp)) {
+             _imp->viewerTab->notifyOverlaysPenMotion(RenderScale::fromMipmapLevel(getCurrentMipmapLevel()), localPos, zoomPos, pressure, timestamp,
+                                                      QtEnumConvert::fromQtModifiers( e ? e->modifiers() : QGuiApplication::queryKeyboardModifiers() ))) {
             mustRedraw = true;
             overlaysCaughtByPlugin = true;
         }
@@ -2691,6 +2817,10 @@ ViewerGL::setParametricParamsPickerColor(const OfxRGBAColourD& color, bool setCo
 bool
 ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
 {
+    if (!_imp->displayTextures[texIndex].texture) {
+        // No OpenGL context (see transferBufferFromRAMtoGPU()): initializeGL() renders the frame again
+        return true;
+    }
 
     unsigned int mipmapLevel = std::max(getInternalNode()->getMipmapLevelFromZoomFactor(), getInternalNode()->getMipmapLevel());
     int closestPo2 = 1 << mipmapLevel;
@@ -3245,12 +3375,15 @@ ViewerGL::renderText(double x,
                      double r,
                      double g,
                      double b,
-                     int flags)
+                     int flags,
+                     double a)
 {
     QColor c;
 
-    c.setRgbF( Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.) );
-    renderText(x, y, QString::fromUtf8( string.c_str() ), c, font(), flags);
+    c.setRgbF( Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.), Image::clamp(a, 0., 1.) );
+    // the text font, scaled by the screen pixel ratio, as the widget's own labels (renderText() draws one
+    // font pixel per device pixel)
+    renderText(x, y, QString::fromUtf8( string.c_str() ), c, _imp->_textFont ? *_imp->_textFont : font(), flags);
 
     return true;
 }
@@ -3622,6 +3755,14 @@ ViewerGL::getScreenPixelRatio() const
 }
 #endif
 
+KeyboardModifiers
+ViewerGL::getKeyboardModifiers() const
+{
+    // the actual state of the keyboard, not the last event's: this is used by the overlay
+    // actions that are not triggered by an input event (draw, gain/lose focus)
+    return QtEnumConvert::fromQtModifiers( _imp->inPaintGL ? _imp->paintKeyboardModifiers : QGuiApplication::queryKeyboardModifiers() );
+}
+
 /**
  * @brief Returns the colour of the background (i.e: clear color) of the viewport.
  **/
@@ -3643,7 +3784,34 @@ ViewerGL::getBackgroundColour(double &r,
 int
 ViewerGL::getWidgetFontHeight() const
 {
-    return fontMetrics().height();
+    // in widget pixels, for the font that renderText() draws with
+    if ( !_imp->_textFont || !(_imp->_screenPixelRatio > 0.) ) {
+        return fontMetrics().height();
+    }
+
+    return (int)std::floor(QFontMetrics(*_imp->_textFont).height() / _imp->_screenPixelRatio + 0.5);
+}
+
+int
+ViewerGL::getWidgetFontAscent() const
+{
+    // in widget pixels, for the font that renderText() draws with
+    if ( !_imp->_textFont || !(_imp->_screenPixelRatio > 0.) ) {
+        return fontMetrics().ascent();
+    }
+
+    return (int)std::floor(QFontMetrics(*_imp->_textFont).ascent() / _imp->_screenPixelRatio + 0.5);
+}
+
+int
+ViewerGL::getWidgetFontDescent() const
+{
+    // in widget pixels, for the font that renderText() draws with
+    if ( !_imp->_textFont || !(_imp->_screenPixelRatio > 0.) ) {
+        return fontMetrics().descent();
+    }
+
+    return (int)std::floor(QFontMetrics(*_imp->_textFont).descent() / _imp->_screenPixelRatio + 0.5);
 }
 
 /**
@@ -3652,7 +3820,13 @@ ViewerGL::getWidgetFontHeight() const
 int
 ViewerGL::getStringWidthForCurrentFont(const std::string& string) const
 {
-    return fontMetrics().horizontalAdvance( QString::fromUtf8( string.c_str() ) );
+    // the width that renderText() draws, in widget pixels
+    const QString text = QString::fromUtf8( string.c_str() );
+    if ( !_imp->_textFont || !(_imp->_screenPixelRatio > 0.) ) {
+        return TextRenderer::textWidth(fontMetrics(), text);
+    }
+
+    return (int)std::floor(TextRenderer::textWidth(QFontMetrics(*_imp->_textFont), text) / _imp->_screenPixelRatio + 0.5);
 }
 
 void
@@ -4108,6 +4282,9 @@ ViewerGL::clearLastRenderedTexture()
                 _imp->displayTextures[i].lastRenderedTiles[j].reset();
             }
             toUnRegister += _imp->displayTextures[i].memoryHeldByLastRenderedImages;
+            // Otherwise the next endTransferBufferFromRAMToGPU() unregisters it again, and the size_t memory
+            // count of the viewer node wraps around (#1122)
+            _imp->displayTextures[i].memoryHeldByLastRenderedImages = 0;
         }
         if (toUnRegister > 0) {
             getInternalNode()->unregisterPluginMemory(toUnRegister);

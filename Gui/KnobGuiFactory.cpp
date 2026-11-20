@@ -44,6 +44,7 @@
 #include "Gui/KnobGuiGroup.h"
 #include "Gui/KnobGuiColor.h"
 #include "Gui/KnobGuiString.h"
+#include "Gui/KnobGuiBytes.h"
 #include "Gui/KnobGuiBool.h"
 #include "Gui/KnobGuiParametric.h"
 #include "Gui/DockablePanel.h"
@@ -100,6 +101,7 @@ KnobGuiFactory::loadBultinKnobs()
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobGroup, KnobGuiGroup>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobColor, KnobGuiColor>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobString, KnobGuiString>() );
+    _loadedKnobs.insert( knobGuiFactoryEntry<KnobBytes, KnobGuiBytes>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobBool, KnobGuiBool>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobParametric, KnobGuiParametric>() );
     _loadedKnobs.insert( knobGuiFactoryEntry<KnobPath, KnobGuiPath>() );

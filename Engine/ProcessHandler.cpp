@@ -281,7 +281,6 @@ ProcessInputChannel::ProcessInputChannel(const QString & mainProcessServerName)
     , _backgroundIPCServer(0)
     , _backgroundInputPipe(0)
     , _mustQuitMutex()
-    , _mustQuitCond()
     , _mustQuit(false)
 {
     initialize();
@@ -291,14 +290,14 @@ ProcessInputChannel::ProcessInputChannel(const QString & mainProcessServerName)
 
 ProcessInputChannel::~ProcessInputChannel()
 {
-    if ( isRunning() ) {
-        assert( !_mustQuitMutex.tryLock() );
-        assert(!_mustQuit);
+    // Tell run() to return, and wait until the thread is finished, so that the QThread can be
+    // destroyed (else Qt aborts with "QThread: Destroyed while thread is still running").
+    // run() may already have returned by itself, after the abort message.
+    {
+        QMutexLocker l(&_mustQuitMutex);
         _mustQuit = true;
-        while (_mustQuit) {
-            _mustQuitCond.wait(&_mustQuitMutex);
-        }
     }
+    wait();
 
     delete _backgroundIPCServer;
     delete _backgroundOutputPipe;
@@ -365,9 +364,6 @@ ProcessInputChannel::run()
 
         QMutexLocker l(&_mustQuitMutex);
         if (_mustQuit) {
-            _mustQuit = false;
-            _mustQuitCond.wakeOne();
-
             return;
         }
     }

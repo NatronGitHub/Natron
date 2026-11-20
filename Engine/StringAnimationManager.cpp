@@ -25,12 +25,13 @@
 
 #include "StringAnimationManager.h"
 
-#include <set>
+#include <map>
+#include <vector>
 #include <cmath>
 #include <cassert>
 #include <stdexcept>
 
-#include <QMutex>
+#include <QReadWriteLock>
 
 #include <ofxParam.h>
 #include <ofxhPropertySuite.h> // PropSpec
@@ -42,22 +43,66 @@ NATRON_NAMESPACE_ENTER
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
-struct StringKeyFrame
+// The strings referenced by string keyframes. It is shared by all knobs, so that a keyframe value has the same
+// meaning in every curve: keyframes can be copied between knobs without converting their values.
+// Strings are never removed, because a keyframe referencing a string may come back at any time (undo/redo,
+// copy/paste). This is bounded by the number of distinct strings set on keyframes during the session.
+class StringKeyFrameTable
 {
-    std::string value;
-    double time;
-};
-
-struct StringKeyFrame_compare_time
-{
-    bool operator() (const StringKeyFrame & lhs,
-                     const StringKeyFrame & rhs) const
+public:
+    static StringKeyFrameTable& instance()
     {
-        return lhs.time < rhs.time;
-    }
-};
+        static StringKeyFrameTable table; // thread-safe initialization (C++11)
 
-typedef std::set<StringKeyFrame, StringKeyFrame_compare_time> Keyframes;
+        return table;
+    }
+
+    double valueFromString(const std::string & v)
+    {
+        {
+            QReadLocker l(&_lock);
+            std::map<std::string, int>::const_iterator found = _ids.find(v);
+            if ( found != _ids.end() ) {
+                return found->second;
+            }
+        }
+        QWriteLocker l(&_lock);
+        // another thread may have added it in-between
+        std::pair<std::map<std::string, int>::iterator, bool> ret = _ids.insert( std::make_pair( v, (int)_strings.size() ) );
+        if (ret.second) {
+            _strings.push_back(v);
+        }
+
+        return ret.first->second;
+    }
+
+    bool stringFromValue(double value,
+                         std::string* ret) const
+    {
+        // The value of a string keyframe is an integer
+        double id = std::floor(value + 0.5);
+        QReadLocker l(&_lock);
+
+        if ( !(id >= 0) || ( id >= (double)_strings.size() ) ) { // also catches NaN
+            return false;
+        }
+        *ret = _strings[(std::size_t)id];
+
+        return true;
+    }
+
+private:
+    StringKeyFrameTable()
+        : _lock()
+        , _ids()
+        , _strings()
+    {
+    }
+
+    mutable QReadWriteLock _lock;
+    std::map<std::string, int> _ids;
+    std::vector<std::string> _strings;
+};
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
@@ -65,16 +110,12 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 struct StringAnimationManagerPrivate
 {
     StringAnimationManager::customParamInterpolationV1Entry_t customInterpolation;
-    void* ofxParamHandle;
-    mutable QMutex keyframesMutex;
-    Keyframes keyframes;
+    void* ofxParamSetHandle;
     const KnobI* knob;
 
     StringAnimationManagerPrivate(const KnobI* knob)
         : customInterpolation(NULL)
-        , ofxParamHandle(NULL)
-        , keyframesMutex()
-        , keyframes()
+        , ofxParamSetHandle(NULL)
         , knob(knob)
     {
     }
@@ -97,63 +138,22 @@ StringAnimationManager::hasCustomInterp() const
 
 void
 StringAnimationManager::setCustomInterpolation(customParamInterpolationV1Entry_t func,
-                                               void* ofxParamHandle)
+                                               void* ofxParamSetHandle)
 {
     _imp->customInterpolation = func;
-    _imp->ofxParamHandle = ofxParamHandle;
+    _imp->ofxParamSetHandle = ofxParamSetHandle;
 }
 
 bool
 StringAnimationManager::customInterpolation(double time,
+                                            double lowerTime,
+                                            const std::string& lowerValue,
+                                            double upperTime,
+                                            const std::string& upperValue,
                                             std::string* ret) const
 {
-    QMutexLocker l(&_imp->keyframesMutex);
-
     assert(_imp->customInterpolation);
-    ///if there's a single keyframe, return it
-
-    if ( _imp->keyframes.empty() ) {
-        return false;
-    }
-
-    if (_imp->keyframes.size() == 1) {
-        *ret = _imp->keyframes.begin()->value;
-
-        return true;
-    }
-
-    /// get the keyframes surrounding the time
-    Keyframes::const_iterator upper = _imp->keyframes.end();
-    Keyframes::const_iterator lower = _imp->keyframes.end();
-    for (Keyframes::const_iterator it = _imp->keyframes.begin(); it != _imp->keyframes.end(); ++it) {
-        if (it->time > time) {
-            upper = it;
-            break;
-        } else if (it->time == time) {
-            ///if there's a keyframe exactly at this time, return its value
-            *ret = it->value;
-
-            return true;
-        }
-    }
-
-    if ( upper == _imp->keyframes.end() ) {
-        ///if the time is greater than the time of all keyframes return the last
-
-        --upper;
-        *ret = upper->value;
-
-        return true;
-    } else if ( upper == _imp->keyframes.begin() ) {
-        ///if the time is lesser than the time of all keyframes, return the first
-        *ret = upper->value;
-
-        return true;
-    } else {
-        ///general case, we're in-between 2 keyframes
-        lower = upper;
-        --lower;
-    }
+    assert(lowerTime < time && time < upperTime);
 
     OFX::Host::Property::PropSpec inArgsSpec[] = {
         { kOfxPropName,    OFX::Host::Property::eString, 1, true, "" },
@@ -167,11 +167,11 @@ StringAnimationManager::customInterpolation(double time,
     inArgs.setStringProperty( kOfxPropName, _imp->knob->getName() );
     inArgs.setDoubleProperty(kOfxPropTime, time);
 
-    inArgs.setStringProperty(kOfxParamPropCustomValue, lower->value, 0);
-    inArgs.setStringProperty(kOfxParamPropCustomValue, upper->value, 1);
-    inArgs.setDoubleProperty(kOfxParamPropInterpolationTime, lower->time, 0);
-    inArgs.setDoubleProperty(kOfxParamPropInterpolationTime, upper->time, 1);
-    inArgs.setDoubleProperty( kOfxParamPropInterpolationAmount, (time - lower->time) / (double)(upper->time - lower->time) );
+    inArgs.setStringProperty(kOfxParamPropCustomValue, lowerValue, 0);
+    inArgs.setStringProperty(kOfxParamPropCustomValue, upperValue, 1);
+    inArgs.setDoubleProperty(kOfxParamPropInterpolationTime, lowerTime, 0);
+    inArgs.setDoubleProperty(kOfxParamPropInterpolationTime, upperTime, 1);
+    inArgs.setDoubleProperty( kOfxParamPropInterpolationAmount, (time - lowerTime) / (double)(upperTime - lowerTime) );
 
 
     OFX::Host::Property::PropSpec outArgsSpec[] = {
@@ -180,170 +180,28 @@ StringAnimationManager::customInterpolation(double time,
     };
     OFX::Host::Property::Set outArgs(outArgsSpec);
 
-    l.unlock();
-    _imp->customInterpolation( _imp->ofxParamHandle, inArgs.getHandle(), outArgs.getHandle() );
+    OfxStatus stat = _imp->customInterpolation( _imp->ofxParamSetHandle, inArgs.getHandle(), outArgs.getHandle() );
+    if (stat != kOfxStatOK) {
+        // outArgs holds its default value, "", which is not a value of the parameter
+        return false;
+    }
 
     *ret = outArgs.getStringProperty(kOfxParamPropCustomValue, 0).c_str();
 
     return true;
 } // customInterpolation
 
-void
-StringAnimationManager::insertKeyFrame(double time,
-                                       const std::string & v,
-                                       double* index)
+double
+StringAnimationManager::stringToKeyFrameValue(const std::string & v)
 {
-    StringKeyFrame k;
-
-    k.time = time;
-    k.value = v;
-    QMutexLocker l(&_imp->keyframesMutex);
-    std::pair<Keyframes::iterator, bool> ret = _imp->keyframes.insert(k);
-    if (!ret.second) {
-        _imp->keyframes.erase(ret.first);
-        ret = _imp->keyframes.insert(k);
-        assert(ret.second);
-    }
-    *index = std::distance(_imp->keyframes.begin(), ret.first);
-}
-
-void
-StringAnimationManager::removeKeyFrame(double time)
-{
-    QMutexLocker l(&_imp->keyframesMutex);
-
-    for (Keyframes::iterator it = _imp->keyframes.begin(); it != _imp->keyframes.end(); ++it) {
-        if (it->time == time) {
-            _imp->keyframes.erase(it);
-
-            return;
-        }
-    }
-}
-
-void
-StringAnimationManager::clearKeyFrames()
-{
-    QMutexLocker l(&_imp->keyframesMutex);
-
-    _imp->keyframes.clear();
-}
-
-void
-StringAnimationManager::stringFromInterpolatedIndex(double interpolated,
-                                                    std::string* returnValue) const
-{
-    int index = std::floor(interpolated + 0.5);
-    QMutexLocker l(&_imp->keyframesMutex);
-
-    if ( _imp->keyframes.empty() ) {
-        return;
-    }
-
-    ///if the index is not in the range, just return the last
-    if ( index >= (int)_imp->keyframes.size() ) {
-        Keyframes::const_iterator it = _imp->keyframes.end();
-        --it;
-        *returnValue = it->value;
-
-        return;
-    }
-
-    int i = 0;
-    for (Keyframes::const_iterator it = _imp->keyframes.begin(); it != _imp->keyframes.end(); ++it) {
-        if (i == index) {
-            *returnValue = it->value;
-
-            return;
-        }
-        ++i;
-    }
-}
-
-void
-StringAnimationManager::clone(const StringAnimationManager & other)
-{
-    QMutexLocker l(&_imp->keyframesMutex);
-    QMutexLocker l2(&other._imp->keyframesMutex);
-
-    _imp->keyframes = other._imp->keyframes;
+    return StringKeyFrameTable::instance().valueFromString(v);
 }
 
 bool
-StringAnimationManager::cloneAndCheckIfChanged(const StringAnimationManager & other)
+StringAnimationManager::keyFrameValueToString(double value,
+                                              std::string* ret)
 {
-    QMutexLocker l(&_imp->keyframesMutex);
-    QMutexLocker l2(&other._imp->keyframesMutex);
-    bool hasChanged = false;
-
-    if ( _imp->keyframes.size() != other._imp->keyframes.size() ) {
-        hasChanged = true;
-    }
-    if (!hasChanged) {
-        Keyframes::const_iterator oit = other._imp->keyframes.begin();
-        for (Keyframes::const_iterator it = _imp->keyframes.begin(); it != _imp->keyframes.end(); ++it, ++oit) {
-            if ( (it->time != oit->time) || (it->value != oit->value) ) {
-                hasChanged = true;
-                break;
-            }
-        }
-    }
-    if (hasChanged) {
-        _imp->keyframes = other._imp->keyframes;
-    }
-
-    return hasChanged;
-}
-
-void
-StringAnimationManager::clone(const StringAnimationManager & other,
-                              SequenceTime offset,
-                              const RangeD* range)
-{
-    // The range=[0,0] case is obviously a bug in the spec of paramCopy() from the parameter suite:
-    // it prevents copying the value of frame 0.
-    bool copyRange = range != NULL /*&& (range->min != 0 || range->max != 0)*/;
-    QMutexLocker l(&_imp->keyframesMutex);
-
-    _imp->keyframes.clear();
-    QMutexLocker l2(&other._imp->keyframesMutex);
-    for (Keyframes::const_iterator it = other._imp->keyframes.begin(); it != other._imp->keyframes.end(); ++it) {
-        if ( copyRange && ( (it->time < range->min) || (it->time > range->max) ) ) {
-            continue;
-        }
-        StringKeyFrame k;
-        k.time = it->time + offset;
-        k.value = it->value;
-        _imp->keyframes.insert(k);
-    }
-}
-
-void
-StringAnimationManager::load(const std::map<int, std::string> & keyframes)
-{
-    QMutexLocker l(&_imp->keyframesMutex);
-
-    assert( _imp->keyframes.empty() );
-    for (std::map<int, std::string>::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
-        StringKeyFrame k;
-        k.time = it->first;
-        k.value = it->second;
-        std::pair<Keyframes::iterator, bool> ret = _imp->keyframes.insert(k);
-        assert(ret.second);
-        Q_UNUSED(ret);
-    }
-}
-
-void
-StringAnimationManager::save(std::map<int, std::string>* keyframes) const
-{
-    QMutexLocker l(&_imp->keyframesMutex);
-
-    for (Keyframes::const_iterator it = _imp->keyframes.begin(); it != _imp->keyframes.end(); ++it) {
-        std::pair<std::map<int, std::string>::iterator, bool> success = keyframes->insert( std::make_pair(it->time, it->value) );
-        assert(success.second);
-        Q_UNUSED(success);
-    }
+    return StringKeyFrameTable::instance().stringFromValue(value, ret);
 }
 
 NATRON_NAMESPACE_EXIT

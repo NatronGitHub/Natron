@@ -168,7 +168,8 @@ KnobGui::getLastUndoCommand() const
 void
 KnobGui::pushUndoCommand(QUndoCommand* cmd)
 {
-    if ( getKnob()->getCanUndo() && getKnob()->getEvaluateOnChange() ) {
+    // getCanUndo(): for an OpenFX parameter, kOfxParamPropCanUndo, whatever kOfxParamPropEvaluateOnChange
+    if ( getKnob()->getCanUndo() ) {
         _imp->container->pushUndoCommand(cmd);
     } else {
         cmd->redo();

@@ -14,8 +14,11 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/glew.pc" ] |
     pushd "glew-${GLEW_VERSION}"
     if [ "$ARCH" = "i686" ]; then
         make -j${MKJOBS} 'CFLAGS.EXTRA=-O2 -g -march=i686 -mtune=i686' includedir=/usr/include GLEW_DEST= libdir=/usr/lib bindir=/usr/bin
-    else
+    elif [ "$ARCH" = "x86_64" ]; then
         make -j${MKJOBS} 'CFLAGS.EXTRA=-O2 -g -m64 -fPIC -mtune=generic' includedir=/usr/include GLEW_DEST= libdir=/usr/lib64 bindir=/usr/bin
+    else
+        # -m64 is x86-only
+        make -j${MKJOBS} 'CFLAGS.EXTRA=-O2 -g -fPIC' includedir=/usr/include GLEW_DEST= libdir=/usr/lib64 bindir=/usr/bin
     fi
     make install GLEW_DEST="$SDK_HOME" libdir=/lib bindir=/bin includedir=/include
     chmod +x "$SDK_HOME/lib/libGLEW.so.$GLEW_VERSION"

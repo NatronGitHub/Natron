@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _BezierCurve:
 
 BezierCurve
@@ -103,18 +103,18 @@ Member functions description
 
 
 
-.. attribute:: NatronEngine.BezierCurve.CairoOperatorEnum
+.. attribute:: BezierCurve.CairoOperatorEnum
 
     This enumeration represents the different blending modes of a shape. See the user interface
     for the different modes, or type help(NatronEngine.BezierCurve.CairoOperatorEnum) to see
     the different values.
 
 
-.. method:: NatronEngine.BezierCurve.addControlPoint(x, y)
+.. method:: BezierCurve.addControlPoint(x, y)
 
 
-    :param x: :class:`float<PySide.QtCore.double>`
-    :param y: :class:`float<PySide.QtCore.double>`
+    :param x: :class:`float`
+    :param y: :class:`float`
 
 
 Adds a new control point to an *opened* shape (see :func:`isCurveFinished()<NatronEngine.BezierCurve.isCurveFinished>`) at coordinates (x,y).
@@ -124,11 +124,11 @@ the timeline's current time for this shape.
 
 
 
-.. method:: NatronEngine.BezierCurve.addControlPointOnSegment(index, t)
+.. method:: BezierCurve.addControlPointOnSegment(index, t)
 
 
-    :param index: :class:`PySide.QtCore.int`
-    :param t: :class:`PySide.QtCore.double`
+    :param index: :class:`int`
+    :param t: :class:`float`
 
 Adds a new control point to a *closed* shape (see :func:`isCurveFinished()<NatronEngine.BezierCurve.isCurveFinished>`).
 The *index* is the index of the Bezier segment linking the control points at *index* and *index + 1*.
@@ -140,7 +140,7 @@ If the auto-keying is enabled in the user interface, then this function will set
 the timeline's current time for this shape.
 
 
-.. method:: NatronEngine.BezierCurve.getActivatedParam()
+.. method:: BezierCurve.getActivatedParam()
 
 
     :rtype: :class:`BooleanParam<NatronEngine.BooleanParam>`
@@ -150,10 +150,10 @@ Returns the :doc:`Param` controlling the enabled state of the Bezier.
 
 
 
-.. method:: NatronEngine.BezierCurve.getColor(time)
+.. method:: BezierCurve.getColor(time)
 
 
-    :param time: :class:`int<PySide.QtCore.int>`
+    :param time: :class:`int`
     :rtype: :class:`ColorTuple<NatronEngine.ColorTuple>`
 
 Returns the value of the color parameter at the given time as an [R,G,B,A] tuple. Note that
@@ -161,7 +161,7 @@ alpha will always be 1.
 
 
 
-.. method:: NatronEngine.BezierCurve.getColorParam()
+.. method:: BezierCurve.getColorParam()
 
 
     :rtype: :class:`ColorParam<NatronEngine.ColorParam>`
@@ -171,7 +171,7 @@ Returns the :doc:`Param` controlling the color of the Bezier.
 
 
 
-.. method:: NatronEngine.BezierCurve.getCompositingOperator()
+.. method:: BezierCurve.getCompositingOperator()
 
 
     :rtype: :attr:`NatronEngine.BezierCurve.CairoOperatorEnum`
@@ -182,7 +182,7 @@ to see the different values possible.
 
 
 
-.. method:: NatronEngine.BezierCurve.getCompositingOperatorParam()
+.. method:: BezierCurve.getCompositingOperatorParam()
 
 
     :rtype: :class:`NatronEngine.ChoiceParam`
@@ -190,10 +190,10 @@ to see the different values possible.
 
 Returns the :doc:`Param` controlling the blending mode of the Bezier.
 
-.. method:: NatronEngine.BezierCurve.getControlPointPosition(index, time)
+.. method:: BezierCurve.getControlPointPosition(index, time)
 
-    :param index: :class:`int<PySide.QtCore.int>`
-    :param time: :class:`float<PySide.QtCore.float>`
+    :param index: :class:`int`
+    :param time: :class:`float`
     :rtype: :class:`PyTuple`
 
 Returns a tuple with the position of the control point at the given *index* as well as the
@@ -213,18 +213,18 @@ otherwise the position is sampled between the surrounding keyframes.
 To get a list of all keyframes time for a Bezier call the function :func:`getKeyframes()<NatronEngine.BezierCurve.getKeyframes>`.
 
 
-.. method:: NatronEngine.BezierCurve.getFeatherDistance(time)
+.. method:: BezierCurve.getFeatherDistance(time)
 
 
-    :param time: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`float<PySide.QtCore.double>`
+    :param time: :class:`int`
+    :rtype: :class:`float`
 
 
 Returns the feather distance of this shape at the given *time*.
 
 
 
-.. method:: NatronEngine.BezierCurve.getFeatherDistanceParam()
+.. method:: BezierCurve.getFeatherDistanceParam()
 
 
     :rtype: :class:`NatronEngine.DoubleParam`
@@ -235,18 +235,18 @@ Returns the :doc:`Param` controlling the feather distance of the Bezier.
 
 
 
-.. method:: NatronEngine.BezierCurve.getFeatherFallOff(time)
+.. method:: BezierCurve.getFeatherFallOff(time)
 
 
-    :param time: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`float<PySide.QtCore.double>`
+    :param time: :class:`int`
+    :rtype: :class:`float`
 
 
 Returns the feather fall-off of this shape at the given *time*.
 
 
 
-.. method:: NatronEngine.BezierCurve.getFeatherFallOffParam()
+.. method:: BezierCurve.getFeatherFallOffParam()
 
 
     :rtype: :class:`DoubleParam<NatronEngine.DoubleParam>`
@@ -255,10 +255,10 @@ Returns the feather fall-off of this shape at the given *time*.
 Returns the :doc:`Param` controlling the color of the Bezier.
 
 
-.. method:: NatronEngine.BezierCurve.getFeatherPointPosition(index, time)
+.. method:: BezierCurve.getFeatherPointPosition(index, time)
 
-    :param index: :class:`int<PySide.QtCore.int>`
-    :param time: :class:`float<PySide.QtCore.float>`
+    :param index: :class:`int`
+    :param time: :class:`float`
     :rtype: :class:`PyTuple`
 
 Returns a tuple with the position of the feather point at the given *index* as well as the
@@ -279,18 +279,18 @@ To get a list of all keyframes time for a Bezier call the function :func:`getKey
 
 
 
-.. method:: NatronEngine.BezierCurve.getIsActivated(time)
+.. method:: BezierCurve.getIsActivated(time)
 
 
-    :param time: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :param time: :class:`int`
+    :rtype: :class:`bool`
 
 
 Returns whether the curve is enabled or not at the given *time*. When
 not activated the curve will not be rendered at all in the image.
 
 
-.. method:: NatronEngine.BezierCurve.getKeyframes()
+.. method:: BezierCurve.getKeyframes()
 
 
     :rtype: :class:`PyList`
@@ -299,27 +299,27 @@ not activated the curve will not be rendered at all in the image.
 Returns a list of all keyframes set on the Bezier animation.
 
 
-.. method:: NatronEngine.BezierCurve.getNumControlPoints()
+.. method:: BezierCurve.getNumControlPoints()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Returns the number of control points for this shape.
 
 
 
 
-.. method:: NatronEngine.BezierCurve.getOpacity(time)
+.. method:: BezierCurve.getOpacity(time)
 
 
-    :param time: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`float<PySide.QtCore.double>`
+    :param time: :class:`int`
+    :rtype: :class:`float`
 
 Returns the opacity of the curve at the given *time*.
 
 
 
-.. method:: NatronEngine.BezierCurve.getOpacityParam()
+.. method:: BezierCurve.getOpacityParam()
 
 
     :rtype: :class:`DoubleParam<NatronEngine.DoubleParam>`
@@ -329,7 +329,7 @@ Returns the :doc:`Param` controlling the opacity of the Bezier.
 
 
 
-.. method:: NatronEngine.BezierCurve.getOverlayColor()
+.. method:: BezierCurve.getOverlayColor()
 
 
     :rtype: :class:`ColorTuple<NatronEngine.ColorTuple>`
@@ -339,10 +339,10 @@ Returns the overlay color of this shape as a [R,G,B,A] tuple. Alpha will always 
 
 
 
-.. method:: NatronEngine.BezierCurve.isCurveFinished()
+.. method:: BezierCurve.isCurveFinished()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 
 Returns whether the curve is finished or not. A finished curve will have a Bezier segment between
@@ -350,13 +350,13 @@ the last control point and the first control point and the Bezier will be render
 
 
 
-.. method:: NatronEngine.BezierCurve.moveFeatherByIndex(index, time, dx, dy)
+.. method:: BezierCurve.moveFeatherByIndex(index, time, dx, dy)
 
 
-    :param index: :class:`int<PySide.QtCore.int>`
-    :param time: :class:`int<PySide.QtCore.int>`
-    :param dx: :class:`float<PySide.QtCore.double>`
-    :param dy: :class:`float<PySide.QtCore.double>`
+    :param index: :class:`int`
+    :param time: :class:`int`
+    :param dx: :class:`float`
+    :param dy: :class:`float`
 
 Moves the feather point at the given *index* (zero-based) by the given delta (dx,dy).
 The *time* parameter is given so that if auto-keying is enabled a new keyframe will be set.
@@ -364,26 +364,26 @@ The *time* parameter is given so that if auto-keying is enabled a new keyframe w
 
 
 
-.. method:: NatronEngine.BezierCurve.moveLeftBezierPoint(index, time, dx, dy)
+.. method:: BezierCurve.moveLeftBezierPoint(index, time, dx, dy)
 
 
-    :param index: :class:`int<PySide.QtCore.int>`
-    :param time: :class:`int<PySide.QtCore.int>`
-    :param dx: :class:`float<PySide.QtCore.double>`
-    :param dy: :class:`float<PySide.QtCore.double>`
+    :param index: :class:`int`
+    :param time: :class:`int`
+    :param dx: :class:`float`
+    :param dy: :class:`float`
 
 
 Moves the left Bezier point of the control point at the given *index* by the given delta.
 The *time* parameter is given so that if auto-keying is enabled a new keyframe will be set.
 
 
-.. method:: NatronEngine.BezierCurve.movePointByIndex(index, time, dx, dy)
+.. method:: BezierCurve.movePointByIndex(index, time, dx, dy)
 
 
-    :param index: :class:`int<PySide.QtCore.int>`
-    :param time: :class:`int<PySide.QtCore.int>`
-    :param dx: :class:`float<PySide.QtCore.double>`
-    :param dy: :class:`float<PySide.QtCore.double>`
+    :param index: :class:`int`
+    :param time: :class:`int`
+    :param dx: :class:`float`
+    :param dy: :class:`float`
 
 Moves the point at the given *index* (zero-based) by the given delta (dx,dy).
 The *time* parameter is given so that if auto-keying is enabled a new keyframe will be set.
@@ -391,13 +391,13 @@ The *time* parameter is given so that if auto-keying is enabled a new keyframe w
 
 
 
-.. method:: NatronEngine.BezierCurve.moveRightBezierPoint(index, time, dx, dy)
+.. method:: BezierCurve.moveRightBezierPoint(index, time, dx, dy)
 
 
-    :param index: :class:`int<PySide.QtCore.int>`
-    :param time: :class:`int<PySide.QtCore.int>`
-    :param dx: :class:`float<PySide.QtCore.double>`
-    :param dy: :class:`float<PySide.QtCore.double>`
+    :param index: :class:`int`
+    :param time: :class:`int`
+    :param dx: :class:`float`
+    :param dy: :class:`float`
 
 Moves the right Bezier point at the given *index* (zero-based) by the given delta (dx,dy).
 The *time* parameter is given so that if auto-keying is enabled a new keyframe will be set.
@@ -405,33 +405,33 @@ The *time* parameter is given so that if auto-keying is enabled a new keyframe w
 
 
 
-.. method:: NatronEngine.BezierCurve.removeControlPointByIndex(index)
+.. method:: BezierCurve.removeControlPointByIndex(index)
 
 
-    :param index: :class:`int<PySide.QtCore.int>`
+    :param index: :class:`int`
 
 Removes the control point at the given *index* (zero-based).
 
 
 
 
-.. method:: NatronEngine.BezierCurve.setActivated(time, activated)
+.. method:: BezierCurve.setActivated(time, activated)
 
 
-    :param time: :class:`int<PySide.QtCore.int>`
-    :param activated: :class:`bool<PySide.QtCore.bool>`
+    :param time: :class:`int`
+    :param activated: :class:`bool`
 
 
 Set a new keyframe for the *activated* parameter at the given *time*
 
 
-.. method:: NatronEngine.BezierCurve.setColor(time, r, g, b)
+.. method:: BezierCurve.setColor(time, r, g, b)
 
 
-    :param time: :class:`int<PySide.QtCore.int>`
-    :param r: :class:`float<PySide.QtCore.double>`
-    :param g: :class:`float<PySide.QtCore.double>`
-    :param b: :class:`float<PySide.QtCore.double>`
+    :param time: :class:`int`
+    :param r: :class:`float`
+    :param g: :class:`float`
+    :param b: :class:`float`
 
 
 Set a new keyframe for the *color* parameter at the given *time*
@@ -439,7 +439,7 @@ Set a new keyframe for the *color* parameter at the given *time*
 
 
 
-.. method:: NatronEngine.BezierCurve.setCompositingOperator(op)
+.. method:: BezierCurve.setCompositingOperator(op)
 
 
     :param op: :attr:`NatronEngine.BezierCurve.CairoOperatorEnum`
@@ -449,49 +449,49 @@ Set the compositing operator for this shape.
 
 
 
-.. method:: NatronEngine.BezierCurve.setCurveFinished(finished)
+.. method:: BezierCurve.setCurveFinished(finished)
 
 
-    :param finished: :class:`bool<PySide.QtCore.bool>`
+    :param finished: :class:`bool`
 
 
 Set whether the curve should be finished or not. See :func:`isCurveFinished()<NatronEngine.BezierCurve.isCurveFinished>`
 
 
 
-.. method:: NatronEngine.BezierCurve.setFeatherDistance(dist, time)
+.. method:: BezierCurve.setFeatherDistance(dist, time)
 
 
-    :param dist: :class:`float<PySide.QtCore.double>`
-    :param time: :class:`int<PySide.QtCore.int>`
+    :param dist: :class:`float`
+    :param time: :class:`int`
 
 
 
 Set a new keyframe for the *feather distance* parameter at the given *time*
 
 
-.. method:: NatronEngine.BezierCurve.setFeatherFallOff(falloff, time)
+.. method:: BezierCurve.setFeatherFallOff(falloff, time)
 
 
-    :param falloff: :class:`float<PySide.QtCore.double>`
-    :param time: :class:`int<PySide.QtCore.int>`
+    :param falloff: :class:`float`
+    :param time: :class:`int`
 
 
 Set a new keyframe for the *feather fall-off* parameter at the given *time*
 
 
 
-.. method:: NatronEngine.BezierCurve.setFeatherPointAtIndex(index, time, x, y, lx, ly, rx, ry)
+.. method:: BezierCurve.setFeatherPointAtIndex(index, time, x, y, lx, ly, rx, ry)
 
 
-    :param index: :class:`int<PySide.QtCore.int>`
-    :param time: :class:`int<PySide.QtCore.int>`
-    :param x: :class:`float<PySide.QtCore.double>`
-    :param y: :class:`float<PySide.QtCore.double>`
-    :param lx: :class:`float<PySide.QtCore.double>`
-    :param ly: :class:`float<PySide.QtCore.double>`
-    :param rx: :class:`float<PySide.QtCore.double>`
-    :param ry: :class:`float<PySide.QtCore.double>`
+    :param index: :class:`int`
+    :param time: :class:`int`
+    :param x: :class:`float`
+    :param y: :class:`float`
+    :param lx: :class:`float`
+    :param ly: :class:`float`
+    :param rx: :class:`float`
+    :param ry: :class:`float`
 
 Set the feather point at the given *index* at  the position (x,y) with the left Bezier point
 at (lx,ly) and right Bezier point at (rx,ry).
@@ -499,40 +499,40 @@ at (lx,ly) and right Bezier point at (rx,ry).
 The *time* parameter is given so that if auto-keying is enabled a new keyframe will be set.
 
 
-.. method:: NatronEngine.BezierCurve.setOpacity(opacity, time)
+.. method:: BezierCurve.setOpacity(opacity, time)
 
 
-    :param opacity: :class:`float<PySide.QtCore.double>`
-    :param time: :class:`int<PySide.QtCore.int>`
+    :param opacity: :class:`float`
+    :param time: :class:`int`
 
 
 Set a new keyframe for the *opacity* parameter at the given *time*
 
 
 
-.. method:: NatronEngine.BezierCurve.setOverlayColor(r, g, b)
+.. method:: BezierCurve.setOverlayColor(r, g, b)
 
 
-    :param r: :class:`float<PySide.QtCore.double>`
-    :param g: :class:`float<PySide.QtCore.double>`
-    :param b: :class:`float<PySide.QtCore.double>`
+    :param r: :class:`float`
+    :param g: :class:`float`
+    :param b: :class:`float`
 
 
 
 Set the overlay color of this shape
 
 
-.. method:: NatronEngine.BezierCurve.setPointAtIndex(index, time, x, y, lx, ly, rx, ry)
+.. method:: BezierCurve.setPointAtIndex(index, time, x, y, lx, ly, rx, ry)
 
 
-    :param index: :class:`int<PySide.QtCore.int>`
-    :param time: :class:`int<PySide.QtCore.int>`
-    :param x: :class:`float<PySide.QtCore.double>`
-    :param y: :class:`float<PySide.QtCore.double>`
-    :param lx: :class:`float<PySide.QtCore.double>`
-    :param ly: :class:`float<PySide.QtCore.double>`
-    :param rx: :class:`float<PySide.QtCore.double>`
-    :param ry: :class:`float<PySide.QtCore.double>`
+    :param index: :class:`int`
+    :param time: :class:`int`
+    :param x: :class:`float`
+    :param y: :class:`float`
+    :param lx: :class:`float`
+    :param ly: :class:`float`
+    :param rx: :class:`float`
+    :param ry: :class:`float`
 
 
 Set the point at the given *index* at  the position (x,y) with the left Bezier point

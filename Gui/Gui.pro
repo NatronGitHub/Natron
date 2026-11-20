@@ -132,6 +132,7 @@ SOURCES += \
     KnobGui20.cpp \
     KnobGuiBool.cpp \
     KnobGuiButton.cpp \
+    KnobGuiBytes.cpp \
     KnobGuiChoice.cpp \
     KnobGuiColor.cpp \
     KnobGuiContainerHelper.cpp \
@@ -223,7 +224,6 @@ SOURCES += \
     ViewerTabPrivate.cpp \
     ViewerToolButton.cpp \
     ticks.cpp \
-    $${GUI_WRAPPER_DIR}/natrongui_module_wrapper.cpp \
 
 HEADERS += \
     AboutWindow.h \
@@ -278,6 +278,7 @@ HEADERS += \
     KnobGui.h \
     KnobGuiBool.h \
     KnobGuiButton.h \
+    KnobGuiBytes.h \
     KnobGuiChoice.h \
     KnobGuiColor.h \
     KnobGuiContainerHelper.h \
@@ -390,8 +391,10 @@ GUI_GENERATED_SOURCES = \
     pytabwidget_wrapper \
     pyviewer_wrapper
 
+# generated bindings: see warnings.pri
+NATRON_BINDINGS_SOURCES += $${GUI_WRAPPER_DIR}/natrongui_module_wrapper.cpp
 for(name, GUI_GENERATED_SOURCES) {
-    SOURCES += $${GUI_WRAPPER_DIR}/$${name}.cpp
+    NATRON_BINDINGS_SOURCES += $${GUI_WRAPPER_DIR}/$${name}.cpp
     HEADERS += $${GUI_WRAPPER_DIR}/$${name}.h
 }
 
@@ -422,3 +425,5 @@ OBJECTIVE_SOURCES += \
     $$PWD/../Gui/QtMac.mm \
     $$PWD/../Gui/TaskBarMac.mm
 }
+
+include(../warnings.pri)

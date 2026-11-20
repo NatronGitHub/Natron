@@ -76,6 +76,7 @@ public:
     static bool isVideoReader(const std::string& pluginID);
 
     virtual bool isReader() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isOutputFormatFromFile() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isVideoReader() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isGenerator() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -107,6 +108,13 @@ public:
     virtual void purgeCaches() OVERRIDE FINAL;
     virtual void onEffectCreated(bool mayCreateFileDialog,
                                  const CreateNodeArgs& defaultParamValues) OVERRIDE FINAL;
+    virtual bool hasOverlay() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getOverlayCursor(CursorEnum* cursor,
+                                  std::string* customImage,
+                                  int* hotSpotX,
+                                  int* hotSpotY) const OVERRIDE FINAL;
+    virtual void onInteractViewportSelectionCleared(KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual void onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease, KeyboardModifiers modifiers) OVERRIDE FINAL;
 
 private:
 
@@ -156,6 +164,21 @@ private:
                                       ViewIdx view,
                                       RoIMap* ret) OVERRIDE FINAL;
     virtual FramesNeededMap getFramesNeeded(double time, ViewIdx view) OVERRIDE WARN_UNUSED_RETURN;
+
+    // Overlay interacts: forwarded to the embedded reader plug-in, which owns the OFX overlay interact
+    EffectInstancePtr getEmbeddedReaderEffect() const;
+    virtual void setCurrentViewportForOverlays(OverlaySupport* viewport) OVERRIDE FINAL;
+    virtual void setInteractColourPicker(const OfxRGBAColourD& color, bool setColor, bool hasColor) OVERRIDE FINAL;
+    virtual void drawOverlay(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual bool onOverlayPenDown(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen, KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenDoubleClicked(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenMotion(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenUp(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyDown(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers, const QString& keyText) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyUp(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers, const QString& keyText) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyRepeat(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers, const QString& keyText) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayFocusGained(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayFocusLost(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
     std::unique_ptr<ReadNodePrivate> _imp;
 };
 

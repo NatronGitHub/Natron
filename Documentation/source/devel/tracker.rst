@@ -32,7 +32,7 @@ You can access the parameters directly with their script-name::
 
     app.Tracker1.tracker.track1.centerPoint
 
-Or you can use the :func:`getParam(paramScriptName)<NatronEngine.Track.getScriptName>` function::
+Or you can use the :func:`getParam(paramScriptName)<NatronEngine.Track.getParam>` function::
 
     app.Tracker1.tracker.track1.getParam("centerPoint")
 
@@ -70,7 +70,7 @@ track::
 
         keyframes.append((x,y))
 
-    print keyframes
+    print(keyframes)
 
 
 Creating Tracks
@@ -78,3 +78,10 @@ Creating Tracks
 
 To create a new :ref:`track<Track>`, use the :func:`createTrack()<NatronEngine.Tracker.createTrack>` function made available by the :ref:`Tracker<Tracker>` class.
 You can then set values on parameters much like everything else in Natron.
+
+See also
+--------
+
+The User Guide tutorial :doc:`/guide/tutorials-tracking` shows the same
+workflow in the GUI: tracking points, then stabilizing and match-moving with
+the tracks.

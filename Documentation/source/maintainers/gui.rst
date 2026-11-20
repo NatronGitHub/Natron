@@ -5,9 +5,9 @@ The Gui Module
 
 ``Gui`` is the Qt desktop application built on top of ``Engine``. Every class
 here may use ``Engine``; several implement the ``…I`` interfaces the Engine
-calls back into (see :ref:`maint-design`). Like some Engine classes, several
-large Gui classes are split across numbered ``.cpp`` files
-(``Gui20.cpp``, ``ViewerTab30.cpp`` …) that all implement one class.
+calls back into (see :ref:`maint-design-interfaces`). Several large Gui
+classes are split across numbered ``.cpp`` files (``Gui20.cpp``,
+``ViewerTab30.cpp`` …) that all implement one class (see :ref:`maint-naming`).
 
 Main window and application
 ---------------------------
