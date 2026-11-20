@@ -22,8 +22,10 @@
 #include <QtGlobal> // for Q_OS_*
 #ifdef Q_OS_DARWIN
 
+#include <AppKit/NSApplication.h>
 #include <AppKit/NSView.h>
 #include <AppKit/NSWindow.h>
+#include <Foundation/Foundation.h>
 #include <objc/runtime.h>
 
 //See:
@@ -96,6 +98,45 @@ QtMac::setupDockClickHandler(void (*dockClickHandler)(void)) {
     class_replaceMethod(delClass, shouldHandle, (IMP)dockClickHandler, "B@:");
 }
 #endif
+
+void
+QtMac::setupGuiTestNoFocus()
+{
+    NSApplication* app = [NSApplication sharedApplication];
+    // At launch, AppKit activates the application when it handles the "open application" Apple
+    // event (-[NSApplication _reopenWindowsAsNecessaryIncludingRestorableState:...]), before
+    // NSApplicationDidFinishLaunchingNotification, whatever the activation policy, except for a
+    // "prohibited" application, which can't be activated.
+    [app setActivationPolicy:NSApplicationActivationPolicyProhibited];
+    // Once launched, become an accessory application: its windows are shown normally, it has no
+    // Dock icon (so no Dock bounce), and macOS doesn't activate it by itself.
+    if ([[NSRunningApplication currentApplication] isFinishedLaunching]) {
+        [app setActivationPolicy:NSApplicationActivationPolicyAccessory];
+    } else {
+        __block id observer = nil;
+        observer = [[NSNotificationCenter defaultCenter] addObserverForName:NSApplicationDidFinishLaunchingNotification
+                                                                     object:app
+                                                                      queue:[NSOperationQueue mainQueue]
+                                                                 usingBlock:^(NSNotification*) {
+            [[NSNotificationCenter defaultCenter] removeObserver:observer];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [[NSApplication sharedApplication] setActivationPolicy:NSApplicationActivationPolicyAccessory];
+            });
+        }];
+    }
+    // After a crash, AppKit asks whether to reopen the windows with an alert, which would open
+    // behind the other applications and block the run. Set ApplePersistenceIgnoreState in the
+    // registration domain: it is not saved, and a value set by the user takes precedence.
+    [[NSUserDefaults standardUserDefaults] registerDefaults:@{ @"ApplePersistenceIgnoreState": @YES }];
+    // A background application whose windows are hidden by other windows gets App Nap: its timers
+    // and its rendering are throttled. Keep it running at full speed (the activity is never ended:
+    // it lasts as long as the process).
+    static id activity = nil;
+    if (!activity) {
+        activity = [[[NSProcessInfo processInfo] beginActivityWithOptions:(NSActivityUserInitiatedAllowingIdleSystemSleep | NSActivityLatencyCritical)
+                                                                   reason:@"Natron GUI test"] retain];
+    }
+}
 
 NATRON_NAMESPACE_EXIT
 

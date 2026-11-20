@@ -2,7 +2,15 @@
 
 # Install librsvg (without vala support)
 # see http://www.linuxfromscratch.org/blfs/view/systemd/general/librsvg.html
-LIBRSVG_VERSION=2.40.20 # 2.41 requires rust
+if [ "${ROCKY:-0}" -ge 9 ]; then
+    # Rust comes from rust-toolset (see the Dockerfile generation in build-Linux-sdk.sh).
+    # 2.52 or later is needed by openfx-arena's ReadSVG for the exact document size
+    # (rsvg_handle_get_intrinsic_size_in_pixels). 2.58 is the last series built with autotools.
+    # Its tarball doesn't vendor the Rust crates: cargo downloads them.
+    LIBRSVG_VERSION=2.58.5
+else
+    LIBRSVG_VERSION=2.40.20 # 2.41 requires rust
+fi
 LIBRSVG_VERSION_SHORT=${LIBRSVG_VERSION%.*}
 LIBRSVG_TAR="librsvg-${LIBRSVG_VERSION}.tar.xz"
 LIBRSVG_SITE="https://download.gnome.org/sources/librsvg/${LIBRSVG_VERSION_SHORT}"
@@ -16,22 +24,34 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/librsvg-2.0.
     start_build
     if version_gt "$LIBRSVG_VERSION_SHORT" 2.40; then
         # librsvg 2.41 requires rust
-        if [ ! -s "$HOME/.cargo/env" ]; then
-            (>&2 echo "Error: librsvg requires rust. Please install rust by executing:")
-            (>&2 echo "$SDK_HOME/bin/curl https://sh.rustup.rs -sSf | sh")
-            exit 1
+        if ! command -v cargo > /dev/null; then
+            if [ ! -s "$HOME/.cargo/env" ]; then
+                (>&2 echo "Error: librsvg requires rust. Please install rust by executing:")
+                (>&2 echo "$SDK_HOME/bin/curl https://sh.rustup.rs -sSf | sh")
+                exit 1
+            fi
+            source "$HOME/.cargo/env"
         fi
-        source "$HOME/.cargo/env"
         if [ "$ARCH" = "x86_64" ]; then
             RUSTFLAGS="-C target-cpu=x86-64"
-        else
+        elif [ "$ARCH" = "i686" ]; then
             RUSTFLAGS="-C target-cpu=i686"
+        else
+            RUSTFLAGS="-C target-cpu=generic"
         fi
         export RUSTFLAGS
     fi
     untar "$SRC_PATH/$LIBRSVG_TAR"
     pushd "librsvg-${LIBRSVG_VERSION}"
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-static --enable-shared --disable-introspection --disable-vala --disable-pixbuf-loader
+    if version_gt "$LIBRSVG_VERSION_SHORT" 2.40; then
+        # The tarball doesn't vendor the Rust crates. Fetch them first, without the SDK's
+        # libraries: a system cargo (e.g. rust-toolset) uses the system libcurl, which may not
+        # work with them. Then build offline, with the SDK's libraries (the linker must find
+        # the SDK's glib, not the system one).
+        env -u LD_LIBRARY_PATH cargo fetch
+        export CARGO_NET_OFFLINE=true
+    fi
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-gtk-doc --disable-static --enable-shared --disable-introspection --disable-vala --disable-pixbuf-loader
     make -j${MKJOBS}
     make install
     popd

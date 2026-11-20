@@ -6,7 +6,10 @@
 if download_step; then
     download "$QT4WEBKIT_SITE" "$QT4WEBKIT_TAR"
 fi
-if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtWebKit.pc" ] || [ "$(env PKG_CONFIG_PATH=$QT4PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion QtWebKit)" != "$QT4WEBKIT_VERSION_PKG" ]; }; }; then
+# QtWebKit 2.3 (JavaScriptCore) has no aarch64 support, and Natron only needs Qt 4 for
+# legacy builds: skip it on non-x86 architectures (build_step must still be called first,
+# for the Dockerfile generation).
+if build_step && { [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; } && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtWebKit.pc" ] || [ "$(env PKG_CONFIG_PATH=$QT4PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion QtWebKit)" != "$QT4WEBKIT_VERSION_PKG" ]; }; }; then
     start_build
     if [ -s /etc/redhat-release ] && [ -x /usr/bin/yum ]; then
         # Most scripts in webkit point to /usr/bin/perl, which is outdated in centos,
