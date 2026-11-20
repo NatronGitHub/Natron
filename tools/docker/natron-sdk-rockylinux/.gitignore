@@ -27,3 +27,5 @@ include
 pkg
 builds
 artifacts
+fixMacPortsDeps.sh
+zip-python-mingw.sh
