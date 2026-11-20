@@ -450,6 +450,9 @@ private:
 
     bool isDirectory(const QString & name) const;
 
+    ///the filter that shows the files with any of the extensions given to the dialog, e.g. "*.exr *.png"
+    QString combinedFilter() const;
+
     QFileSystemModel* getFavoriteSystemModel() const;
 
     SequenceDialogView* getSequenceView() const

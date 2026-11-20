@@ -127,6 +127,30 @@ Two changes deserve special care because they can silently break users:
 - **The Python API** (``Py*`` classes and typesystems): keep it backward
   compatible (see :ref:`maint-python`).
 
+Testing the GUI from scripts
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+GUI behavior can also be tested by a Python script run by the Natron GUI with
+``--no-dialogs``: the script builds a graph, checks the result, saves screenshots
+of Natron's own widgets (``GuiApp.saveScreenshot()``, never a screen capture) and
+exits with ``natron.quit(status)``. The Developers Guide chapter :ref:`guiTesting` has a
+complete example. ``Tests/gui/run_gui_smoke_test.py`` is the smoke test of the
+sources, run by CTest as *GuiSmokeTest*::
+
+    cd build
+    OFX_PLUGIN_PATH=/path/to/Plugins OCIO=/path/to/config.ocio ctest -R GuiSmokeTest -V
+    # or, keeping the screenshots:
+    python3 ../Tests/gui/run_gui_smoke_test.py App/Natron.app/Contents/MacOS/Natron --keep
+
+It is skipped (exit status 77) without a display, in CI unless
+``NATRON_GUI_TESTS=1`` is set, or without the openfx-io and openfx-misc
+plug-ins. It opens Natron windows (without taking the focus): run GUI tests one at
+a time. A crash at exit with some plug-ins (#1253) only prints a warning, unless
+``--strict-exit`` is given. ``--debugger`` (or ``NATRON_TEST_WRAPPER=/path/to/wrapper``)
+runs Natron under lldb with ``Tests/gui/natron-lldb.sh``: a crash prints the backtraces
+of all threads and exits with status 139, without the macOS crash dialog. The same
+script can run ``NatronRenderer``, ``natron-python`` or ``Tests``.
+
 Debugging and profiling
 -----------------------
 

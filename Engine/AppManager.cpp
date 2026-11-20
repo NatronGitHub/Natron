@@ -800,6 +800,8 @@ AppManager::loadInternal(const CLArgs& cl)
     // see http://doc.qt.io/qt-4.8/qcoreapplication.html#locale-settings
     setApplicationLocale();
     
+    _imp->dialogsDisabled = cl.areDialogsDisabled();
+
     Log::instance(); //< enable logging
     bool mustSetSignalsHandlers = true;
 #ifdef NATRON_USE_BREAKPAD
@@ -1186,12 +1188,8 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
                 }
             }
             if (!wasKilled) {
-                try {
-                    mainInstance->getProject()->reset(true/*aboutToQuit*/, true /*blocking*/);
-                } catch (std::logic_error&) {
-                    // ignore
-                }
-
+                // quitNow() resets the project (AppInstance::aboutToQuit()): resetting it here
+                // too ran the beforeProjectClose callback twice
                 try {
                     mainInstance->quitNow();
                 } catch (std::logic_error&) {
@@ -2114,8 +2112,8 @@ AppManager::loadPythonGroups()
                 if ( line.startsWith( QString::fromUtf8("def createInstance(") ) ) {
                     isPyPlug = true;
                 }
-                // Or we could check if it implements getIsToolSet()
-                if ( line.startsWith( QString::fromUtf8("def getIsToolSet(") ) ) {
+                // Or we could check if it implements getIsToolset(), the name getGroupInfos() calls (#1262)
+                if ( line.startsWith( QString::fromUtf8("def getIsToolset(") ) ) {
                     isPyPlug = true;
                 }
                 // Or we could check for the magic line that is in the doc.
@@ -2979,6 +2977,73 @@ AppManager::onQueueRendersChanged(bool queuingEnabled)
     }
 }
 
+bool
+AppManager::isDialogsDisabled() const
+{
+    return _imp->dialogsDisabled;
+}
+
+void
+AppManager::setDialogsDisabled(bool disabled)
+{
+    _imp->dialogsDisabled = disabled;
+}
+
+void
+AppManager::requestQuit(int exitCode)
+{
+    // Background mode: there is no event loop to leave. Record the exit code (returned by
+    // main()), and stop what is running. AppInstance::load() skips the renders and the
+    // interpreter that were not started yet, then the instance quits as usual.
+    _imp->requestedExitCode = exitCode;
+    _imp->quitRequested = true;
+    if ( isBackground() || ( QThread::currentThread() == qApp->thread() ) ) {
+        // abortAnyProcessing() does not block. In background mode, call it even from a render
+        // thread (e.g. natron.quit() in afterFrameRender): the main thread waits for the render
+        // and runs no event loop, so a queued call would only run once all frames are rendered.
+        abortAnyProcessing();
+    } else {
+        // GUI, called from a render thread: stop the renders from the main thread
+        QMetaObject::invokeMethod( this, [this]() {
+            abortAnyProcessing();
+        }, Qt::QueuedConnection );
+    }
+}
+
+bool
+AppManager::isQuitRequested() const
+{
+    return _imp->quitRequested;
+}
+
+int
+AppManager::getRequestedExitCode() const
+{
+    return _imp->requestedExitCode;
+}
+
+bool
+AppManager::isPythonInterpreterRunning() const
+{
+    return _imp->pythonInterpreterRunning;
+}
+
+AppManager::NestedEventLoopRAII::NestedEventLoopRAII()
+{
+    ++appPTR->_imp->nestedEventLoops;
+}
+
+AppManager::NestedEventLoopRAII::~NestedEventLoopRAII()
+{
+    --appPTR->_imp->nestedEventLoops;
+}
+
+int
+AppManager::getNestedEventLoopsCount() const
+{
+    return _imp->nestedEventLoops;
+}
+
 int
 AppManager::exec()
 {
@@ -3385,9 +3450,13 @@ AppManager::initPython()
             throw std::runtime_error( tr("Error while loading StreamCatcher: %1").arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
         }
     }
-    // Set QT_API for QtPy
+    // Set QT_API for QtPy, to the PySide that matches the Qt version Natron is built with (#1262)
     // https://github.com/spyder-ide/qtpy
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    qputenv("QT_API", "pyside6");
+#else
     qputenv("QT_API", "pyside2");
+#endif
 } // AppManager::initPython
 
 void
@@ -3541,7 +3610,9 @@ AppManager::launchPythonInterpreter()
     assert(PyGILState_Check()); // Not available prior to Python 3.4
 #endif
 
+    _imp->pythonInterpreterRunning = true;
     Py_Main(1, &_imp->commandLineArgsWide[0]);
+    _imp->pythonInterpreterRunning = false;
 }
 
 int
@@ -3826,6 +3897,12 @@ Dialogs::errorDialog(const std::string & title,
                      const std::string & message,
                      bool useHtml)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+
+        return;
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3841,6 +3918,13 @@ Dialogs::errorDialog(const std::string & title,
                      bool* stopAsking,
                      bool useHtml)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+        *stopAsking = false;
+
+        return;
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3855,6 +3939,12 @@ Dialogs::warningDialog(const std::string & title,
                        const std::string & message,
                        bool useHtml)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+
+        return;
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3870,6 +3960,13 @@ Dialogs::warningDialog(const std::string & title,
                        bool* stopAsking,
                        bool useHtml)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+        *stopAsking = false;
+
+        return;
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3884,6 +3981,12 @@ Dialogs::informationDialog(const std::string & title,
                            const std::string & message,
                            bool useHtml)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+
+        return;
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3899,6 +4002,13 @@ Dialogs::informationDialog(const std::string & title,
                            bool* stopAsking,
                            bool useHtml)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+        *stopAsking = false;
+
+        return;
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3915,6 +4025,12 @@ Dialogs::questionDialog(const std::string & title,
                         StandardButtons buttons,
                         StandardButtonEnum defaultButton)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+
+        return getDismissedDialogAnswer(buttons, defaultButton);
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3935,6 +4051,13 @@ Dialogs::questionDialog(const std::string & title,
                         StandardButtonEnum defaultButton,
                         bool* stopAsking)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+        *stopAsking = false;
+
+        return getDismissedDialogAnswer(buttons, defaultButton);
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3945,6 +4068,34 @@ Dialogs::questionDialog(const std::string & title,
 
         return eStandardButtonYes;
     }
+}
+
+StandardButtonEnum
+Dialogs::getDismissedDialogAnswer(StandardButtons buttons,
+                                  StandardButtonEnum defaultButton)
+{
+    // Enter picks the default button
+    if ( (defaultButton != eStandardButtonNoButton) && (defaultButton != eStandardButtonEscape) ) {
+        return defaultButton;
+    }
+    // otherwise, pick the button Escape would pick (see QMessageBox::detectEscapeButton())
+    const StandardButtonEnum escapeButtons[] = {
+        eStandardButtonCancel, eStandardButtonClose, eStandardButtonAbort, eStandardButtonNo, eStandardButtonNoToAll
+    };
+    for (std::size_t i = 0; i < sizeof(escapeButtons) / sizeof(escapeButtons[0]); ++i) {
+        if ( buttons.testFlag(escapeButtons[i]) ) {
+            return escapeButtons[i];
+        }
+    }
+
+    return eStandardButtonEscape;
+}
+
+void
+Dialogs::printDismissedDialog(const std::string & title,
+                              const std::string & message)
+{
+    std::cerr << "[dialog dismissed] " << title << ": " << message << std::endl;
 }
 
 #if 0 // dead code
@@ -4004,6 +4155,27 @@ NATRON_PYTHON_NAMESPACE::ensureScriptHasModuleImport(const std::string& moduleNa
 
 #endif
 
+// The number of interpretPythonScript() calls running in this thread
+static thread_local int pythonScriptDepth = 0;
+
+// Raises SystemExit at the interactive prompt of the -t option, once no
+// interpretPythonScript() is running (see interpretPythonScript())
+static int
+raiseSystemExitAtPrompt(void*)
+{
+    if (pythonScriptDepth > 0) {
+        // still in a script run by Natron (e.g. a callback): try again when it returns
+        Py_AddPendingCall(raiseSystemExitAtPrompt, 0);
+
+        return 0;
+    }
+    PyObject* code = PyLong_FromLong( appPTR->getRequestedExitCode() );
+    PyErr_SetObject(PyExc_SystemExit, code);
+    Py_XDECREF(code);
+
+    return -1;
+}
+
 bool
 NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
                                                std::string* error,
@@ -4032,7 +4204,9 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     PyErr_Clear();
 
     ///This is faster than PyRun_SimpleString since is doesn't call PyImport_AddModule("__main__")
+    ++pythonScriptDepth;
     PyObject* v = PyRun_String(script.c_str(), Py_file_input, dict, 0);
+    --pythonScriptDepth;
     if (v) {
         Py_DECREF(v);
         status = 0;
@@ -4043,6 +4217,13 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
         error->clear();
     }
     PyObject* ex = PyErr_Occurred();
+    if ( ex && PyErr_GivenExceptionMatches(ex, PyExc_SystemExit) &&
+         appPTR->isQuitRequested() && appPTR->isPythonInterpreterRunning() ) {
+        // natron.quit() was called from a script run by Natron (e.g. a callback) while the
+        // interactive prompt of the -t option runs: the SystemExit it raised stops here, so
+        // raise it again at the prompt to end the session.
+        Py_AddPendingCall(raiseSystemExitAtPrompt, 0);
+    }
     if (ex) {
         assert(status < 0);
         if (!error) {
