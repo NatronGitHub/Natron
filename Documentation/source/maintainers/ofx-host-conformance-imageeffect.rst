@@ -544,8 +544,8 @@ N: Engine/OfxClipInstance.cpp. HS: ofxhClip.cpp.
    * - 5.11
      - `ofxImageEffect.h:440-517 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L440-L517>`__ Begin/EndSequenceRender inArgs: FrameRange, FrameStep, IsInteractive, RenderScale, SequentialRenderStatus, InteractiveRenderStatus, ThumbnailRender (opt.); Begin also NoSpatialAwareness (`ofxImageEffect.h:1184 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L1184>`__)
      - MUST
-     - HS Begin :1437-1536 has all of them. End (:1666-1758) has no kOfxImageEffectPropThumbnailRender, which `ofxImageEffect.h:495 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L495>`__ lists as optional on End.
-     - PARTIAL (spec-only)
+     - HS Begin :1437-1536 has all of them. End (:1666-1758) has no kOfxImageEffectPropThumbnailRender, which `ofxImageEffect.h:495 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L495>`__ lists as optional on End. Fixed: End gets kOfxImageEffectPropThumbnailRender too, with the value of ``isThumbnailRender()`` ("false" in Natron).
+     - OK (fixed by `NatronGitHub/openfx#203 <https://github.com/NatronGitHub/openfx/pull/203>`__, in libs/OpenFX since `#1507 <https://github.com/NatronGitHub/Natron/pull/1507>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - 5.12
@@ -596,8 +596,8 @@ N: Engine/OfxClipInstance.cpp. HS: ofxhClip.cpp.
    * - 5.19
      - `ofxImageEffect.h:1197-1222 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L1197-L1222>`__ ThumbnailRender, optional, in RoD/RoI/FramesNeeded/ClipPrefs/IsIdentity/Begin/Render/End
      - MAY
-     - HS adds it to RoD, RoI, FramesNeeded, IsIdentity, Begin and Render, but not to End or GetClipPreferences (Natron's own clip-prefs path, OfxImageEffectInstance.cpp:1316). It is always "false": Natron never opens a ``ThumbnailRenderScope`` (no match in Engine/Gui), even for node-graph previews. Existing issue `#1105 <https://github.com/NatronGitHub/Natron/issues/1105>`__.
-     - PARTIAL (`#1105 <https://github.com/NatronGitHub/Natron/issues/1105>`__)
+     - HS adds it to RoD, RoI, FramesNeeded, IsIdentity, Begin and Render, but not to End or GetClipPreferences (Natron's own clip-prefs path, OfxImageEffectInstance.cpp:1316). It is always "false": Natron never opens a ``ThumbnailRenderScope`` (no match in Engine/Gui), even for node-graph previews. Existing issue `#1105 <https://github.com/NatronGitHub/Natron/issues/1105>`__. End has it since `NatronGitHub/openfx#203 <https://github.com/NatronGitHub/openfx/pull/203>`__. GetClipPreferences still lacks it: the upstream headers are inconsistent about it there. The value is always "false" (`#1105 <https://github.com/NatronGitHub/Natron/issues/1105>`__).
+     - OK except GetClipPreferences (End: `NatronGitHub/openfx#203 <https://github.com/NatronGitHub/openfx/pull/203>`__, in libs/OpenFX since `#1507 <https://github.com/NatronGitHub/Natron/pull/1507>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - 5.20
@@ -808,9 +808,9 @@ Verdict counts
    * - verdict
      - count
    * - OK
-     - 70
+     - 72
    * - PARTIAL
-     - 21
+     - 19
    * - WRONG
      - 13
    * - MISSING
