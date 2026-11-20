@@ -203,6 +203,23 @@ TEST_F(PythonScriptTest, ExceptionWithoutErrorString)
     EXPECT_TRUE( caughtStderr().empty() );
 }
 
+// What a failed script printed before raising is not lost: it is forwarded (before the caller shows
+// the error), since most callers ignore the output when the script fails.
+TEST_F(PythonScriptTest, OutputOfFailedScript)
+{
+    std::string err, output;
+
+    testing::internal::CaptureStdout();
+    bool ok = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("print('printed-1436')\nraise ValueError('failed-1436')\n", &err, &output);
+    std::string forwarded = testing::internal::GetCapturedStdout();
+
+    EXPECT_FALSE(ok);
+    EXPECT_NE( std::string::npos, err.find("failed-1436") ) << err;
+    EXPECT_TRUE( output.empty() ) << output;
+    EXPECT_NE( std::string::npos, forwarded.find("printed-1436") ) << forwarded;
+    EXPECT_TRUE( caughtStderr().empty() );
+}
+
 // A script that calls the Natron API, which runs another script through interpretPythonScript()
 // (createNode() declares the node variable): the nested script must succeed although the calling script
 // already wrote to sys.stderr, and the calling script must get all of its own stderr back.

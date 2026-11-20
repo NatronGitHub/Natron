@@ -1262,14 +1262,16 @@ AppManager::newAppInstanceInternal(const CLArgs& cl,
         instance->load(cl, makeEmptyInstance);
     } catch (const std::exception & e) {
         Dialogs::errorDialog( NATRON_APPLICATION_NAME, e.what(), false );
-        removeInstance(_imp->_availableID);
+        // _availableID was already incremented: remove the instance that failed to load by its own ID
+        removeInstance( instance->getAppID() );
         instance.reset();
         --_imp->_availableID;
 
         return instance;
     } catch (...) {
         Dialogs::errorDialog( NATRON_APPLICATION_NAME, tr("Cannot load project").toStdString(), false );
-        removeInstance(_imp->_availableID);
+        // _availableID was already incremented: remove the instance that failed to load by its own ID
+        removeInstance( instance->getAppID() );
         instance.reset();
         --_imp->_availableID;
 
@@ -4167,6 +4169,12 @@ namespace {
 // text is lost, and it never makes a script fail.
 int pythonScriptDepth = 0;
 
+// The number of interpretPythonScript() calls running in this thread, for raiseSystemExitAtPrompt().
+// It covers the whole call, not only PyRun_String(): Natron runs Python code after the script too
+// (traceback.format_exception() in takePythonException()), where a pending call may fire, and a
+// SystemExit raised there would be cleared with the exception of the script.
+thread_local int pythonScriptDepthInThread = 0;
+
 class PythonScriptDepth_RAII
 {
     const bool _nested;
@@ -4177,11 +4185,13 @@ public:
         : _nested(pythonScriptDepth > 0)
     {
         ++pythonScriptDepth;
+        ++pythonScriptDepthInThread;
     }
 
     // The GIL must still be held.
     ~PythonScriptDepth_RAII()
     {
+        --pythonScriptDepthInThread;
         --pythonScriptDepth;
     }
 
@@ -4361,17 +4371,15 @@ takePythonException()
 }
 } // anon namespace
 
-// The number of PyRun_String() calls of interpretPythonScript() running in this thread (unlike
-// pythonScriptDepth, which counts the interpretPythonScript() calls running in all threads)
-static thread_local int pythonScriptRunDepthInThread = 0;
-
 // Raises SystemExit at the interactive prompt of the -t option, once no
-// interpretPythonScript() is running (see interpretPythonScript())
+// interpretPythonScript() is running in this thread, the main thread, where CPython runs the pending
+// calls (see interpretPythonScript())
 static int
 raiseSystemExitAtPrompt(void*)
 {
-    if (pythonScriptRunDepthInThread > 0) {
-        // still in a script run by Natron (e.g. a callback): try again when it returns
+    if (pythonScriptDepthInThread > 0) {
+        // still in a script run by Natron (e.g. a callback), or in the code that handles its result:
+        // try again when it returns. This re-polls at every check of the interpreter until then.
         Py_AddPendingCall(raiseSystemExitAtPrompt, 0);
 
         return 0;
@@ -4403,6 +4411,8 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     PythonGILLocker pgl;
     // Re-entrant: the script may call the Natron API, which may run other scripts through this function
     // (e.g. app.createNode() declares the node variable).
+    // It also delays a SystemExit raised for the -t prompt until this call has returned (see
+    // raiseSystemExitAtPrompt()). It is destroyed before the GIL is released.
     PythonScriptDepth_RAII depth;
     PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
 
@@ -4425,9 +4435,7 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     PyObject* dict = PyModule_GetDict(mainModule);
 
     ///This is faster than PyRun_SimpleString since is doesn't call PyImport_AddModule("__main__")
-    ++pythonScriptRunDepthInThread;
     PyObject* v = PyRun_String(script.c_str(), Py_file_input, dict, 0);
-    --pythonScriptRunDepthInThread;
     if (v) {
         Py_DECREF(v);
         status = 0;
@@ -4454,13 +4462,15 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     std::string scriptOut = takeCaughtStream(mainModule, "catchOut");
 
     if (output) {
-        *output = scriptOut;
-        scriptOut.clear();
+        output->clear();
         if (status == 0) {
             // e.g. the Script Editor shows it with the result of the script, after the script
-            *output += scriptErr;
+            *output = scriptOut + scriptErr;
+            scriptOut.clear();
             scriptErr.clear();
         }
+        // else most callers only show the error: the output of the failed script is forwarded
+        // below, so that it is shown before the error
     }
     if (error) {
         error->clear();
@@ -4476,8 +4486,8 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
         scriptErr.insert(0, exceptionText);
     }
 
-    // Text that the caller did not take (stderr of a successful script, output not requested by the
-    // caller) goes where the script would have written it: to the calling script in a nested call, or
+    // Text that the caller did not take (stderr of a successful script, output of a failed script or not
+    // requested by the caller) goes where the script would have written it: to the calling script in a nested call, or
     // to the Script Editor.
     if ( captured && depth.isNested() ) {
         setCaughtStream(mainModule, "catchErr", previousErr + scriptErr);

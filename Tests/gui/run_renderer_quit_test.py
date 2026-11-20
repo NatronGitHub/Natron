@@ -27,6 +27,11 @@ of Write1 calls natron.quit(3) at the first frame. The render must stop after a 
 frames (it rendered all of them when the abort was queued to the main thread, which
 waits for the render without running an event loop), and the exit status must be 3.
 
+Then NatronRenderer -t runs the commands of its prompt from stdin: the afterNodeCreated callback
+of the project calls natron.quit(4) when the prompt creates a node. The SystemExit raised in the
+callback must end the prompt once the callback has returned (the commands after it must not
+run), and the exit status must be 4.
+
 Exit status: 0 on success, 77 if skipped (in CI unless NATRON_GUI_TESTS=1, or the Read/Write
 PNG plug-ins of openfx-io are not available: set OFX_PLUGIN_PATH), 1 on failure.
 --debugger runs NatronRenderer under natron-lldb.sh (see run_gui_smoke_test.py), or set
@@ -74,6 +79,64 @@ else:
 """
 
 
+PROMPT_SETUP = """
+from NatronEngine import natron
+
+def quitOnNodeCreated(thisNode, app, userEdited):
+    natron.quit(4)
+
+import __main__
+__main__.quitOnNodeCreated = quitOnNodeCreated
+app1.getProjectParam("afterNodeCreated").set("quitOnNodeCreated")
+"""
+
+# the commands typed at the -t prompt
+PROMPT_STDIN = """
+import sys, time
+sys.stdout.write("prompt started\\n"); sys.stdout.flush()
+app.createNode("fr.inria.built-in.Dot")
+for i in range(20):
+    time.sleep(0.05)
+sys.stdout.write("prompt still running after natron.quit()\\n"); sys.stdout.flush()
+"""
+
+
+def runPromptQuit(renderer, wrapper, outDir):
+    """natron.quit() in a callback while the -t prompt runs (#1292): returns True on success."""
+    setup = os.path.join(outDir, "prompt_setup.py")
+    with open(setup, "w") as f:
+        f.write(PROMPT_SETUP)
+    stdinPath = os.path.join(outDir, "prompt_stdin.py")
+    with open(stdinPath, "w") as f:
+        f.write(PROMPT_STDIN)
+    env = dict(os.environ)
+    env["NATRON_LLDB_STDIN"] = stdinPath  # natron-lldb.sh reads stdin from there
+    cmd = wrapper + [renderer, "--no-settings", "-t", setup]
+    print("Running: " + " ".join(cmd) + " < " + stdinPath)
+    sys.stdout.flush()
+    try:
+        with open(stdinPath, "rb") as stdin:
+            proc = subprocess.run(cmd, env=env, stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                  timeout=300)
+    except subprocess.TimeoutExpired:
+        print("FAILED: timeout (-t prompt)")
+        return False
+    out = proc.stdout.decode(errors="replace")
+    sys.stdout.write(out)
+    print("NatronRenderer -t exited with status %d" % proc.returncode)
+    ok = True
+    if "prompt started" not in out:
+        print("FAILED: the commands of the -t prompt did not run")
+        ok = False
+    if "prompt still running" in out:
+        print("FAILED: natron.quit() in a callback did not end the -t prompt")
+        ok = False
+    if proc.returncode != 4:
+        print("FAILED: the exit status of the -t prompt should be 4, given to natron.quit()")
+        ok = False
+    return ok
+
+
 def main(argv):
     if len(argv) < 2:
         sys.stderr.write(__doc__)
@@ -106,7 +169,8 @@ def main(argv):
         sys.stdout.write(out)
         if "SKIP:" in out:
             print("skipped: the PNG Read/Write plug-ins are not available (set OFX_PLUGIN_PATH to openfx-io)")
-            return SKIP
+            # the -t prompt test needs no plug-in
+            return SKIP if runPromptQuit(argv[1], wrapper, outDir) else 1
         frames = [f for f in os.listdir(outDir) if f.startswith("out_") and f.endswith(".png")]
         print("NatronRenderer exited with status %d after rendering %d of %d frames" % (proc.returncode, len(frames), LAST_FRAME))
         ok = True
@@ -118,6 +182,8 @@ def main(argv):
             ok = False
         if len(frames) > MAX_FRAMES:
             print("FAILED: natron.quit() in afterFrameRender should stop the render (at most %d frames)" % MAX_FRAMES)
+            ok = False
+        if not runPromptQuit(argv[1], wrapper, outDir):
             ok = False
         if ok:
             print("renderer quit test passed")
