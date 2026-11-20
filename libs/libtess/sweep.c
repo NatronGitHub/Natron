@@ -163,12 +163,36 @@ static void DeleteRegion( GLUtesselator *tess, ActiveRegion *reg )
 }
 
 
-static int FixUpperEdge( ActiveRegion *reg, GLUhalfEdge *newEdge )
+static void DeleteUnusedEdge( GLUtesselator *tess, GLUhalfEdge *e )
+/*
+ * Natron: delete the edge e (both halves), whose active region was just
+ * deleted. On degenerate input (e.g. a self-loop made by CheckForRightSplice()
+ * merging the endpoints of a zero-length edge, so that eLo == eUp->Sym in
+ * WalkDirtyRegions(), or collinear edges along a diagonal with rounding noise)
+ * the other half can still be the upper edge of an active region: deleting
+ * the edge then left that region with a freed edge, which the sweep used
+ * (heap-use-after-free). The sweep can't recover from this state: give up
+ * on the polygon (see gluTessEndPolygon()).
+ */
+{
+  if( e->activeRegion != NULL || e->Sym->activeRegion != NULL ) {
+    longjmp(tess->env,TESS_JMP_DEGENERATE);
+  }
+  if ( !__gl_meshDelete( e ) ) longjmp(tess->env,1);
+}
+
+static int FixUpperEdge( GLUtesselator *tess, ActiveRegion *reg,
+			 GLUhalfEdge *newEdge )
 /*
  * Replace an upper edge which needs fixing (see ConnectRightVertex).
  */
 {
   assert( reg->fixUpperEdge );
+  if( reg->eUp->Sym->activeRegion != NULL ) {
+    /* Natron: the other half of the edge is still used, see
+     * DeleteUnusedEdge() */
+    longjmp(tess->env,TESS_JMP_DEGENERATE);
+  }
   if ( !__gl_meshDelete( reg->eUp ) ) return 0;
   reg->fixUpperEdge = FALSE;
   reg->eUp = newEdge;
@@ -177,7 +201,7 @@ static int FixUpperEdge( ActiveRegion *reg, GLUhalfEdge *newEdge )
   return 1;
 }
 
-static ActiveRegion *TopLeftRegion( ActiveRegion *reg )
+static ActiveRegion *TopLeftRegion( GLUtesselator *tess, ActiveRegion *reg )
 {
   GLUvertex *org = reg->eUp->Org;
   GLUhalfEdge *e;
@@ -193,7 +217,7 @@ static ActiveRegion *TopLeftRegion( ActiveRegion *reg )
   if( reg->fixUpperEdge ) {
     e = __gl_meshConnect( RegionBelow(reg)->eUp->Sym, reg->eUp->Lnext );
     if (e == NULL) return NULL;
-    if ( !FixUpperEdge( reg, e ) ) return NULL;
+    if ( !FixUpperEdge( tess, reg, e ) ) return NULL;
     reg = RegionAbove( reg );
   }
   return reg;
@@ -330,7 +354,7 @@ static GLUhalfEdge *FinishLeftRegions( GLUtesselator *tess,
        */
       e = __gl_meshConnect( ePrev->Lprev, e->Sym );
       if (e == NULL) longjmp(tess->env,1);
-      if ( !FixUpperEdge( reg, e ) ) longjmp(tess->env,1);
+      if ( !FixUpperEdge( tess, reg, e ) ) longjmp(tess->env,1);
     }
 
     /* Relink edges so that ePrev->Onext == e */
@@ -402,7 +426,7 @@ static void AddRightEdges( GLUtesselator *tess, ActiveRegion *regUp,
     if( ! firstTime && CheckForRightSplice( tess, regPrev )) {
       AddWinding( e, ePrev );
       DeleteRegion( tess, regPrev );
-      if ( !__gl_meshDelete( ePrev ) ) longjmp(tess->env,1);
+      DeleteUnusedEdge( tess, ePrev );
     }
     firstTime = FALSE;
     regPrev = reg;
@@ -703,7 +727,7 @@ static int CheckForIntersect( GLUtesselator *tess, ActiveRegion *regUp )
       /* Splice dstLo into eUp, and process the new region(s) */
       if (__gl_meshSplitEdge( eUp->Sym ) == NULL) longjmp(tess->env,1);
       if ( !__gl_meshSplice( eLo->Sym, eUp ) ) longjmp(tess->env,1);
-      regUp = TopLeftRegion( regUp );
+      regUp = TopLeftRegion( tess, regUp );
       if (regUp == NULL) longjmp(tess->env,1);
       eUp = RegionBelow(regUp)->eUp;
       FinishLeftRegions( tess, RegionBelow(regUp), regLo );
@@ -807,12 +831,12 @@ static void WalkDirtyRegions( GLUtesselator *tess, ActiveRegion *regUp )
 	 */
 	if( regLo->fixUpperEdge ) {
 	  DeleteRegion( tess, regLo );
-	  if ( !__gl_meshDelete( eLo ) ) longjmp(tess->env,1);
+	  DeleteUnusedEdge( tess, eLo );
 	  regLo = RegionBelow( regUp );
 	  eLo = regLo->eUp;
 	} else if( regUp->fixUpperEdge ) {
 	  DeleteRegion( tess, regUp );
-	  if ( !__gl_meshDelete( eUp ) ) longjmp(tess->env,1);
+	  DeleteUnusedEdge( tess, eUp );
 	  regUp = RegionAbove( regLo );
 	  eUp = regUp->eUp;
 	}
@@ -842,21 +866,11 @@ static void WalkDirtyRegions( GLUtesselator *tess, ActiveRegion *regUp )
 	(void) CheckForRightSplice( tess, regUp );
       }
     }
-    if( eLo == eUp->Sym ) {
-      /* Natron: eUp is a self-loop (eUp->Org == eUp->Dst), which
-       * CheckForRightSplice() can make by merging the endpoints of a
-       * zero-length edge, and which is in the dictionary in both directions.
-       * The case below would delete eUp, which also frees eUp->Sym, the
-       * upper edge of regLo, which the sweep then used after it was freed.
-       * The sweep can't recover from this state: give up on the polygon.
-       */
-      longjmp(tess->env,TESS_JMP_DEGENERATE);
-    }
     if( eUp->Org == eLo->Org && eUp->Dst == eLo->Dst ) {
       /* A degenerate loop consisting of only two edges -- delete it. */
       AddWinding( eLo, eUp );
       DeleteRegion( tess, regUp );
-      if ( !__gl_meshDelete( eUp ) ) longjmp(tess->env,1);
+      DeleteUnusedEdge( tess, eUp );
       regUp = RegionAbove( regLo );
     }
   }
@@ -913,7 +927,7 @@ static void ConnectRightVertex( GLUtesselator *tess, ActiveRegion *regUp,
    */
   if( VertEq( eUp->Org, tess->event )) {
     if ( !__gl_meshSplice( eTopLeft->Oprev, eUp ) ) longjmp(tess->env,1);
-    regUp = TopLeftRegion( regUp );
+    regUp = TopLeftRegion( tess, regUp );
     if (regUp == NULL) longjmp(tess->env,1);
     eTopLeft = RegionBelow( regUp )->eUp;
     FinishLeftRegions( tess, RegionBelow(regUp), regLo );
@@ -1070,7 +1084,7 @@ static void ConnectLeftVertex( GLUtesselator *tess, GLUvertex *vEvent )
       eNew = tempHalfEdge->Sym;
     }
     if( reg->fixUpperEdge ) {
-      if ( !FixUpperEdge( reg, eNew ) ) longjmp(tess->env,1);
+      if ( !FixUpperEdge( tess, reg, eNew ) ) longjmp(tess->env,1);
     } else {
       ComputeWinding( tess, AddRegionBelow( tess, regUp, eNew ));
     }
@@ -1117,7 +1131,7 @@ static void SweepEvent( GLUtesselator *tess, GLUvertex *vEvent )
    * to their winding number, and delete the edges from the dictionary.
    * This takes care of all the left-going edges from vEvent.
    */
-  regUp = TopLeftRegion( e->activeRegion );
+  regUp = TopLeftRegion( tess, e->activeRegion );
   if (regUp == NULL) longjmp(tess->env,1);
   reg = RegionBelow( regUp );
   eTopLeft = reg->eUp;

@@ -472,28 +472,60 @@ TEST(LibTess,
     }
 }
 
-// On this degenerate contour (overlapping edges and repeated points on a small
-// integer grid), CheckForRightSplice() merged the two endpoints of a zero-length
-// edge into a self-loop, and WalkDirtyRegions() then deleted it as a "two-edge
-// loop" while another active region still used it (heap-use-after-free, found
-// with AddressSanitizer). The polygon is now dropped with an error instead.
-// With assertions, an assertion of the sweep fails before (in AddRightEdges()).
+// Degenerate contours which libtess can't tessellate: each made the sweep use an
+// edge after it was freed (heap-use-after-free, found with AddressSanitizer).
+// The polygon is now dropped with
+// GLU_INVALID_OPERATION, and the tessellator stays usable.
+// - selfLoop: overlapping edges and repeated points on a small integer grid.
+//   CheckForRightSplice() merged the two endpoints of a zero-length edge into a
+//   self-loop, which WalkDirtyRegions() deleted as a "two-edge loop" while
+//   another active region still used it.
+// - diagonal, diagonal2: collinear points on the diagonal x == y with rounding
+//   noise (a Roto shape collapsed onto a 45 degree line). Freed edges were
+//   then used in WalkDirtyRegions() and FinishLeftRegions().
+// Only with NDEBUG: with assertions, an assertion of the sweep fails before
+// (e.g. in AddRightEdges()), as it did before these fixes. So the Debug builds
+// of the per-PR CI don't run this test; the release builds do.
 #ifdef NDEBUG
 TEST(LibTess,
-     SelfLoopDoesNotUseFreedEdge)
+     DegenerateContoursAreDropped)
 {
-    const TessPoint p[] = {
+    const TessPoint selfLoop[] = {
         { 4, 4 }, { 1, 1 }, { 1, 5 }, { 2, 2 }, { 3, 3 }, { 4, 5 }, { 0, 0 }, { 2, 3 }, { 0, 4 }, { 3, 0 },
         { 0, 3 }, { 5, 4 }, { 0, 4 }, { 1, 0 }, { 4, 5 }, { 0, 3 }, { 5, 1 }, { 1, 5 }, { 0, 0 }, { 4, 0 },
         { 1, 2 }, { 5, 3 }, { 1, 0 }, { 0, 3 }, { 5, 2 }, { 5, 5 }, { 0, 3 }, { 3, 5 }, { 5, 0 }, { 0, 4 },
         { 3, 0 }, { 1, 3 }, { 3, 2 }, { 0, 2 }, { 2, 5 }, { 4, 1 }, { 1, 2 }, { 3, 1 }, { 0, 1 }, { 0, 3 },
         { 4, 1 }
     };
-    std::vector<TessPoint> c( p, p + sizeof(p) / sizeof(p[0]) );
-    TessResult r = tessellate(c);
+    const TessPoint diagonal[] = {
+        { 2.8593724757887253, 2.8593724757887253 }, { 0.3311291254383543, 0.3311291254383543 },
+        { 0.41163672074104585, 0.41163672074104585 }, { 0.38654025246153023, 0.38654025246153023 },
+        { -0.1699246436876148, -0.1699246436876148 }, { 7.74596319687721, 7.74596319687721 }
+    };
+    const TessPoint diagonal2[] = {
+        { 1024.2185654768973, 1024.2185654768973 }, { 949.6820899775199, 949.6820899775199 },
+        { 949.454134087798, 949.454134087798 }, { 949.2291316844357, 949.2291316844357 },
+        { 950.2348319234983, 950.2348319234983 }, { 949.5469776518655, 949.5469776518655 },
+        { 949.5469776518659, 949.5469776518659 }, { 949.5469776518657, 949.5469776518657 },
+        { 948.5883779708273, 948.5883779708273 }
+    };
+    const struct
+    {
+        const char* name;
+        const TessPoint* p;
+        std::size_t n;
+    } cases[] = {
+        { "selfLoop", selfLoop, sizeof(selfLoop) / sizeof(selfLoop[0]) },
+        { "diagonal", diagonal, sizeof(diagonal) / sizeof(diagonal[0]) },
+        { "diagonal2", diagonal2, sizeof(diagonal2) / sizeof(diagonal2[0]) },
+    };
 
-    EXPECT_TRUE( hasError(r, LIBTESS_GLU_INVALID_OPERATION) );
-    EXPECT_EQ(0, r.protocolErrors);
+    for (std::size_t k = 0; k < sizeof(cases) / sizeof(cases[0]); ++k) {
+        std::vector<TessPoint> c(cases[k].p, cases[k].p + cases[k].n);
+        TessResult r = tessellate(c);
+        EXPECT_TRUE( hasError(r, LIBTESS_GLU_INVALID_OPERATION) ) << cases[k].name;
+        EXPECT_EQ(0, r.protocolErrors) << cases[k].name;
+    }
 
     // the tessellator is still usable
     std::vector<TessPoint> square = circle(4, 1.);
