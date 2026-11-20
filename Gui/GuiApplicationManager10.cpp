@@ -525,9 +525,21 @@ GuiApplicationManager::quitWhenIdle()
 {
     // Not while the application is loading (the script given on the command line runs during
     // GuiAppInstance::load()), nor from a nested event loop (QEventLoop in checkForNewVersion(),
-    // a modal dialog): the code that
-    // runs it would use the deleted projects afterwards. Try again later.
-    if ( !isLoaded() || (getNestedEventLoopsCount() > 0) || QApplication::activeModalWidget() ) {
+    // a modal dialog), nor while a project is being saved (Project::saveProject_imp() processes the
+    // events while it waits for the auto-save, #825, as Gui::closeEvent() checks): the code that runs
+    // it would use the deleted projects afterwards. Try again later.
+    bool saving = false;
+    {
+        const AppInstanceVec instances = getAppInstances();
+        for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+            ProjectPtr project = (*it)->getProject();
+            if ( project && project->isSaveInProgress() ) {
+                saving = true;
+                break;
+            }
+        }
+    }
+    if ( !isLoaded() || (getNestedEventLoopsCount() > 0) || QApplication::activeModalWidget() || saving ) {
         QTimer::singleShot( 50, this, [this]() {
             quitWhenIdle();
         } );
