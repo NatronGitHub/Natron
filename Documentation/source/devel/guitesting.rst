@@ -142,7 +142,7 @@ CMake registers each one as a ``ctest`` test named ``gui.<name>`` with the ``gui
 ``ctest -L gui`` runs only the GUI tests, and ``ctest -LE gui`` all the other tests. They need a
 display and OpenGL: without them (e.g. on Linux without ``DISPLAY``: run them under ``xvfb-run``),
 they are reported as skipped. In CI (``CI`` set), they only run where the job sets
-``NATRON_GUI_TESTS=1``, and are skipped otherwise. Configure with ``-DNATRON_GUI_TESTS=OFF`` not to
+``NATRON_GUI_TESTS=1``, and are skipped otherwise. Configure with ``-DNATRON_BUILD_GUI_TESTS=OFF`` (a CMake option, unlike the environment variable ``NATRON_GUI_TESTS``) not to
 register them. Their caches go to the build tree (``NATRON_DISK_CACHE_PATH``). The plug-ins of ``Tests/OfxTestPlugin`` are on their ``OFX_PLUGIN_PATH``,
 before the user's one (with CMake older than 3.22, before the ``OFX_PLUGIN_PATH`` of the configure
 step); a test that needs another plug-in (e.g. openfx-misc's Transform) is skipped
