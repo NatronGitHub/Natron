@@ -1861,6 +1861,11 @@ Settings::saveAllSettings()
 void
 Settings::restorePluginSettings()
 {
+    if ( isUsingDefaultSettings() ) {
+        // --no-settings (and --test, which implies it): the plug-ins keep their defaults, and the
+        // user's plug-in preferences are neither read nor written
+        return;
+    }
     const PluginsMap& plugins = appPTR->getPluginsList();
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
@@ -3460,6 +3465,9 @@ void
 Settings::appendPythonGroupsPath(const std::string& path)
 {
     _templatesPluginPaths->appendPath(path);
+    if ( isUsingDefaultSettings() ) {
+        return; // --no-settings (and --test): the path is not saved in the user's preferences
+    }
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
     settings.setValue( QString::fromUtf8( _templatesPluginPaths->getName().c_str() ), QVariant( QString::fromUtf8( _templatesPluginPaths->getValue(0).c_str() ) ) );
 }

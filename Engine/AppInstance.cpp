@@ -65,6 +65,8 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/DocumentationGroups.h"
 #include "Engine/ProjectSerialization.h"
 #include "Engine/Node.h"
+#include "Engine/OutputEffectInstance.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
@@ -2104,6 +2106,37 @@ AppInstance::aboutToQuit()
     ///Clear nodes now, not in the destructor of the project as
     ///deleting nodes might reference the project.
     _imp->_currentProject->reset(true /*aboutToQuit*/, /*blocking*/true);
+}
+
+bool
+AppInstance::hasRenderInProgress() const
+{
+    {
+        QMutexLocker k(&_imp->renderQueueMutex);
+        if ( !_imp->activeRenders.empty() || !_imp->renderQueue.empty() ) {
+            return true;
+        }
+    }
+    ProjectPtr project = getProject();
+    if (!project) {
+        return false;
+    }
+    NodesList nodes;
+    project->getNodes_recursive(nodes, true /*onlyActive*/);
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ( (*it)->isNodeRendering() || (*it)->isRenderingPreview() ) {
+            return true;
+        }
+        OutputEffectInstance* output = dynamic_cast<OutputEffectInstance*>( (*it)->getEffectInstance().get() );
+        if (output) {
+            RenderEnginePtr engine = output->getRenderEngine();
+            if ( engine && engine->hasThreadsWorking() ) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 void

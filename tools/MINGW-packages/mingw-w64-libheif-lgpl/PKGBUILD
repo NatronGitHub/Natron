@@ -1,0 +1,108 @@
+# Maintainer: The Natron developers
+# Based on MSYS2's mingw-w64-libheif (Edward E.)
+
+# libheif for COMMERCIAL builds (#1177). MSYS2's libheif is built with
+# ENABLE_PLUGIN_LOADING=OFF and links its encoders directly, including the GPL
+# x264 (AVC) and x265 (HEVC) encoders, so it can't be shipped in a COMMERCIAL
+# build. This is the same version and configuration as MSYS2's libheif, without
+# x264 and x265: HEIC (HEVC) files are still decoded (libde265, LGPL) and
+# encoded with kvazaar (BSD-3-Clause), and AVIF with aom, rav1e and SVT-AV1
+# (BSD). H.264 HEIF files can be decoded (openh264), not encoded. No
+# gdk-pixbuf loader, no examples. Installed in the private prefix
+# ${MINGW_PREFIX}/libheif-lgpl, so that it doesn't clash with MSYS2's libheif:
+# it has the same DLL name and the same ABI, and COMMERCIAL installers bundle
+# its libheif.dll instead of MSYS2's (tools/jenkins/genDllVersions.sh), which
+# natron_openimageio links. Keep pkgver equal to MSYS2's libheif version.
+
+_realname=libheif
+pkgbase="mingw-w64-natron_${_realname}-lgpl"
+pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}-lgpl"
+pkgver=1.23.7
+pkgrel=1
+pkgdesc="HEIF image decoder/encoder library, without the GPL x264 and x265 encoders, for Natron COMMERCIAL builds (mingw-w64)"
+arch=('any')
+mingw_arch=('ucrt64')
+url="https://github.com/strukturag/libheif"
+license=('spdx:LGPL-3.0 AND MIT')
+depends=(
+  "${MINGW_PACKAGE_PREFIX}-aom"
+  "${MINGW_PACKAGE_PREFIX}-brotli"
+  "${MINGW_PACKAGE_PREFIX}-cc-libs"
+  "${MINGW_PACKAGE_PREFIX}-dav1d"
+  "${MINGW_PACKAGE_PREFIX}-kvazaar"
+  "${MINGW_PACKAGE_PREFIX}-libde265"
+  "${MINGW_PACKAGE_PREFIX}-libjpeg-turbo"
+  "${MINGW_PACKAGE_PREFIX}-libpng"
+  "${MINGW_PACKAGE_PREFIX}-libsharpyuv"
+  "${MINGW_PACKAGE_PREFIX}-libtiff"
+  "${MINGW_PACKAGE_PREFIX}-openh264"
+  "${MINGW_PACKAGE_PREFIX}-openjpeg2"
+  "${MINGW_PACKAGE_PREFIX}-openjph"
+  "${MINGW_PACKAGE_PREFIX}-rav1e"
+  "${MINGW_PACKAGE_PREFIX}-svt-av1"
+  "${MINGW_PACKAGE_PREFIX}-zlib"
+)
+makedepends=(
+  "${MINGW_PACKAGE_PREFIX}-cc"
+  "${MINGW_PACKAGE_PREFIX}-cmake"
+  "${MINGW_PACKAGE_PREFIX}-ninja"
+)
+source=("https://github.com/strukturag/libheif/releases/download/v${pkgver}/${_realname}-${pkgver}.tar.gz")
+sha256sums=('f7483e818503ea6224c8863e4a56ac02c7089021a98472c811c12aa19faf2475')
+
+build() {
+  mkdir -p "${srcdir}"/build-${MSYSTEM} && cd "${srcdir}"/build-${MSYSTEM}
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+    cmake -Wno-dev \
+      -GNinja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX}/libheif-lgpl \
+      -DBUILD_SHARED_LIBS=ON \
+      -DBUILD_TESTING=OFF \
+      -DENABLE_PLUGIN_LOADING=OFF \
+      -DWITH_EXAMPLES=OFF \
+      -DWITH_GDK_PIXBUF=OFF \
+      -DWITH_HEADER_COMPRESSION=ON \
+      -DWITH_X264=OFF \
+      -DWITH_X265=OFF \
+      -DWITH_FFMPEG_DECODER=OFF \
+      -DWITH_KVAZAAR=ON \
+      -DWITH_LIBDE265=ON \
+      -DWITH_DAV1D=ON \
+      -DWITH_RAV1E=ON \
+      -DWITH_SvtEnc=ON \
+      -DWITH_JPEG_DECODER=ON \
+      -DWITH_JPEG_ENCODER=ON \
+      -DWITH_OpenJPEG_DECODER=ON \
+      -DWITH_OpenJPEG_ENCODER=ON \
+      -DWITH_OPENJPH_ENCODER=ON \
+      ../${_realname}-${pkgver}
+
+  cmake --build .
+}
+
+check() {
+  cd "${srcdir}"/build-${MSYSTEM}
+  # COMMERCIAL builds must not ship GPL code: no x264 or x265 (#1177)
+  local dll
+  dll=$(find . -name 'libheif*.dll' | head -n 1)
+  [[ -n "${dll}" ]] || { echo "Error: libheif DLL not found"; return 1; }
+  objdump -p "${dll}" | grep 'DLL Name'
+  if objdump -p "${dll}" | grep -i -E 'DLL Name: *lib(x264|x265)'; then
+    echo "Error: ${dll} links x264 or x265 (GPL)"
+    return 1
+  fi
+  if grep -q -E '^WITH_X26[45]:BOOL=ON' CMakeCache.txt; then
+    echo "Error: libheif is configured with x264 or x265"
+    return 1
+  fi
+}
+
+package() {
+  cd "${srcdir}"/build-${MSYSTEM}
+
+  DESTDIR="${pkgdir}" cmake --install .
+
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/COPYING" "${pkgdir}${MINGW_PREFIX}/libheif-lgpl/share/licenses/${_realname}/COPYING"
+}

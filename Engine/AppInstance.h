@@ -254,6 +254,14 @@ public:
         return false;
     }
 
+    /**
+     * @brief True if a render of this project is running or queued: a viewer or Write render,
+     * a node preview, or a Write render waiting in the render queue.
+     * Renders that are posting their results to the main thread are not finished: the caller must
+     * also process the events (see NatronGuiTest.waitIdle()).
+     **/
+    bool hasRenderInProgress() const;
+
     virtual bool isGuiFrozen() const { return false; }
 
     virtual void progressStart(const NodePtr& node,
