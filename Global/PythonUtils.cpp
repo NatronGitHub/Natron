@@ -20,9 +20,13 @@
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#undef Py_LIMITED_API  // Needed for Py_NoUserSiteDirectory, PyBytes_AS_STRING
+#undef Py_LIMITED_API  // Needed for PyConfig, PyBytes_AS_STRING
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+
+#if PY_VERSION_HEX < 0x03080000
+#error "Natron needs Python 3.8 or later (the PyConfig initialization API, PEP 587)"
+#endif
 
 #include "PythonUtils.h"
 
@@ -31,9 +35,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifdef _MSC_VER
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#endif
+#include <windows.h> // GetFullPathNameW
+#endif
+#ifdef _MSC_VER
 #pragma warning (disable : 4996)
 #else
 #include <dirent.h>
@@ -66,20 +74,20 @@ static bool dirExists(const std::string& path)
     return false;
 }
 
-void setupPythonEnv(const std::string& binPath)
+std::wstring setupPythonEnv(const std::string& binPath)
 {
     //Disable user sites as they could conflict with Natron bundled packages.
     //If this is set, Python won’t add the user site-packages directory to sys.path.
     //See https://www.python.org/dev/peps/pep-0370/
+    // (the PyConfig used to initialize Python also sets user_site_directory = 0;
+    // the environment variable is for the Python subprocesses)
     ProcInfo::putenv_wrapper("PYTHONNOUSERSITE", "1");
-    ++Py_NoUserSiteDirectory;
 
     //
     // set up paths, clear those that don't exist or are not valid
     //
 #ifdef __NATRON_WIN32__
-    static std::string pythonHome = binPath + "\\.."; // must use static storage
-    static const std::wstring pythonHomeW = StrUtils::utf8_to_utf16(pythonHome);
+    std::string pythonHome = binPath + "\\..";
     std::string pyPathZip = pythonHome + "\\lib\\python" NATRON_PY_VERSION_STRING_NO_DOT ".zip";
     std::string pyPath = pythonHome +  "\\lib\\python" NATRON_PY_VERSION_STRING;
     std::string pyPathDynLoad = pyPath + "\\lib-dynload";
@@ -87,13 +95,12 @@ void setupPythonEnv(const std::string& binPath)
     std::string pluginPath = binPath + "\\..\\Plugins";
 #else
 #  if defined(__NATRON_LINUX__)
-    static std::string pythonHome = binPath + "/.."; // must use static storage
+    std::string pythonHome = binPath + "/..";
 #  elif defined(__NATRON_OSX__)
-    static std::string pythonHome = binPath+ "/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING; // must use static storage
+    std::string pythonHome = binPath+ "/../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING;
 #  else
 #    error "unsupported platform"
 #  endif
-    static const std::wstring pythonHomeW = StrUtils::utf8_to_utf16(pythonHome);
     std::string pyPathZip = pythonHome + "/lib/python" NATRON_PY_VERSION_STRING_NO_DOT ".zip";
     std::string pyPath = pythonHome + "/lib/python" NATRON_PY_VERSION_STRING;
     std::string pyPathDynLoad = pyPath + "/lib-dynload";
@@ -139,19 +146,17 @@ void setupPythonEnv(const std::string& binPath)
     }
 
     /////////////////////////////////////////
-    // Py_SetPythonHome
+    // Python home
     /////////////////////////////////////////
     //
-    // Must be done before Py_Initialize (see doc of Py_Initialize)
-    //
-    // The argument should point to a zero-terminated character string in static storage whose contents will not change for the duration of the program’s execution
+    // Returned to the caller, which passes it to initializePython3() or runPythonMain()
+    // (PyConfig.home, formerly Py_SetPythonHome()).
 
+#   if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
     if ( !pythonHome.empty() ) {
-#     if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-        printf( "Py_SetPythonHome(\"%s\")\n", pythonHome.c_str() );
-#     endif
-        Py_SetPythonHome( const_cast<wchar_t*>( pythonHomeW.c_str() ) );
+        printf( "Python home: \"%s\"\n", pythonHome.c_str() );
     }
+#   endif
 
 
     /////////////////////////////////////////
@@ -188,8 +193,6 @@ void setupPythonEnv(const std::string& binPath)
 
 #if defined(__NATRON_OSX__) && defined DEBUG
     // in debug mode, also prepend the local PySide directory
-    // homebrew's pyside directory
-    toPrepend.push_back("/usr/local/Cellar/pyside@1.2/1.2.2_2/lib/python" NATRON_PY_VERSION_STRING "/site-packages");
     // macport's pyside directory
     toPrepend.push_back("/opt/local/Library/Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib/python" NATRON_PY_VERSION_STRING "/site-packages");
 #endif
@@ -217,9 +220,66 @@ void setupPythonEnv(const std::string& binPath)
 #     endif
     }
 
+    return pythonHome.empty() ? std::wstring() : StrUtils::utf8_to_utf16(pythonHome);
 } // setupPythonEnv
 
-PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide)
+// Exit on a Python initialization error, as Py_Initialize() and Py_Main() do.
+static void
+exitIfPyStatusException(PyStatus status,
+                        PyConfig* config)
+{
+    if ( PyStatus_Exception(status) ) {
+        PyConfig_Clear(config);
+        Py_ExitStatusException(status); // prints the error message and exits
+    }
+}
+
+// The first item of sys.path, as computed by PySys_SetArgv(), which is deprecated since
+// Python 3.11 (see _PyPathConfig_ComputeSysPath0() in CPython's Python/pathconfig.c):
+// the directory of argv[0], with symbolic links resolved, or "" if argv[0] has no directory.
+static std::wstring
+sysPath0FromArgv0(const wchar_t* argv0)
+{
+#ifdef __NATRON_WIN32__
+    std::wstring path0(argv0);
+    wchar_t fullpath[MAX_PATH];
+    wchar_t* filePart;
+    DWORD len = GetFullPathNameW(argv0, MAX_PATH, fullpath, &filePart);
+    if ( (len > 0) && (len < MAX_PATH) ) {
+        path0 = fullpath;
+    }
+    std::size_t sep = path0.find_last_of(L"\\/");
+    if (sep == std::wstring::npos) {
+        return std::wstring();
+    }
+    std::size_t n = sep + 1;
+    if ( (n > 1) && (path0[sep - 1] != L':') ) {
+        --n; // drop the trailing separator, except after a drive letter
+    }
+
+    return path0.substr(0, n);
+#else
+    std::string path0 = StrUtils::utf16_to_utf8(argv0);
+    char* fullpath = realpath(path0.c_str(), NULL);
+    if (fullpath) {
+        path0 = fullpath;
+        std::free(fullpath);
+    }
+    std::size_t sep = path0.rfind('/');
+    if (sep == std::string::npos) {
+        return std::wstring();
+    }
+    std::size_t n = sep + 1;
+    if (n > 1) {
+        --n; // drop the trailing separator, except for "/"
+    }
+
+    return StrUtils::utf8_to_utf16( path0.substr(0, n) );
+#endif
+}
+
+PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide,
+                            const std::wstring& pythonHome)
 {
     //See https://developer.blender.org/T31507
     //Python will not load anything in site-packages if this is set
@@ -237,39 +297,97 @@ PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide)
     //Py_NoSiteFlag = 1;
 
     /////////////////////////////////////////
-    // Py_SetProgramName
+    // Py_InitializeFromConfig
     /////////////////////////////////////////
     //
-    // Must be done before Py_Initialize (see doc of Py_Initialize)
-    //
-
-    Py_SetProgramName(commandLineArgsWide[0]);
-
-    /////////////////////////////////////////
-    // Py_Initialize
-    /////////////////////////////////////////
-    //
-    // Initialize the Python interpreter. In an application embedding Python, this should be called before using any other Python/C API functions; with the exception of Py_SetProgramName(), Py_SetPythonHome() and Py_SetPath().
+    // Initialize the Python interpreter with the PyConfig API (PEP 587), which replaces
+    // Py_SetProgramName(), Py_SetPythonHome(), Py_NoUserSiteDirectory and PySys_SetArgv(),
+    // deprecated since Python 3.11.
+    // The configuration is the one Py_Initialize() used (its "compat" configuration, which is
+    // not public): the "Python configuration" without command line parsing, without
+    // configuring the C standard streams, and without the UTF-8 mode or the C locale
+    // coercion, which Py_Initialize() did not enable either.
 #if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
-    printf("Py_Initialize()\n");
+    printf("Py_InitializeFromConfig()\n");
 #endif
-    Py_Initialize();
-    // pythonHome must be const, so that the c_str() pointer is never invalidated
+    PyStatus status;
+    {
+        PyPreConfig preconfig;
+        PyPreConfig_InitPythonConfig(&preconfig);
+        preconfig.parse_argv = 0;
+        preconfig.utf8_mode = 0;
+        preconfig.coerce_c_locale = 0;
+        preconfig.coerce_c_locale_warn = 0;
+        status = Py_PreInitialize(&preconfig);
+        if ( PyStatus_Exception(status) ) {
+            Py_ExitStatusException(status);
+        }
+    }
+    {
+        PyConfig config;
+        PyConfig_InitPythonConfig(&config);
+        config.parse_argv = 0; // the Natron command line is not a Python command line
+        config.configure_c_stdio = 0;
+        config.user_site_directory = 0; // see setupPythonEnv()
+        // the program name (formerly Py_SetProgramName())
+        status = PyConfig_SetString(&config, &config.program_name, commandLineArgsWide[0]);
+        exitIfPyStatusException(status, &config);
+        // the Python home (formerly Py_SetPythonHome()): if empty, PYTHONHOME is used, as before
+        if ( !pythonHome.empty() ) {
+            status = PyConfig_SetString( &config, &config.home, pythonHome.c_str() );
+            exitIfPyStatusException(status, &config);
+        }
+        status = Py_InitializeFromConfig(&config);
+        exitIfPyStatusException(status, &config);
+        PyConfig_Clear(&config);
+    }
 
-    // Py_SetPath clears sys.prefix and sys.exec_prefix
+    // sys.prefix and sys.exec_prefix are the Python home
     // https://github.com/NatronGitHub/Natron/issues/696
-    PyObject *prefix = PyUnicode_FromWideChar(Py_GetPythonHome(), -1);
-    PySys_SetObject(const_cast<char*>("prefix"), prefix);
-    Py_XDECREF(prefix);
-    PyObject *exec_prefix = PyUnicode_FromWideChar(Py_GetPythonHome(), -1);
-    PySys_SetObject(const_cast<char*>("exec_prefix"), exec_prefix);
-    Py_XDECREF(exec_prefix);
+    if ( !pythonHome.empty() ) {
+        PyObject *prefix = PyUnicode_FromWideChar(pythonHome.c_str(), -1);
+        PySys_SetObject(const_cast<char*>("prefix"), prefix);
+        PySys_SetObject(const_cast<char*>("exec_prefix"), prefix);
+        Py_XDECREF(prefix);
+    }
 
     /////////////////////////////////////////
-    // PySys_SetArgv
+    // sys.argv and sys.path[0]
     /////////////////////////////////////////
     //
-    PySys_SetArgv( commandLineArgsWide.size(), const_cast<wchar_t**>(&commandLineArgsWide[0]) ); /// relative module import
+    // As PySys_SetArgv() did (PyConfig.argv would also set sys.argv, but only Py_RunMain()
+    // would insert sys.path[0]): sys.argv is the Natron command line, and the directory of
+    // argv[0] is prepended to sys.path (relative module import).
+    {
+        // On errors, abort as PySys_SetArgv() did (Py_FatalError), rather than set a shifted sys.argv.
+        PyObject* argv = PyList_New( (Py_ssize_t)commandLineArgsWide.size() );
+        if (!argv) {
+            Py_FatalError("can't create sys.argv");
+        }
+        for (std::size_t i = 0; i < commandLineArgsWide.size(); ++i) {
+            PyObject* arg = PyUnicode_FromWideChar(commandLineArgsWide[i], -1);
+            if (!arg) {
+                Py_FatalError("can't create sys.argv");
+            }
+            PyList_SET_ITEM(argv, (Py_ssize_t)i, arg); // steals the reference
+        }
+        if (PySys_SetObject(const_cast<char*>("argv"), argv) != 0) {
+            Py_FatalError("can't assign sys.argv");
+        }
+        Py_DECREF(argv);
+
+        PyObject* path0 = PyUnicode_FromWideChar(sysPath0FromArgv0(commandLineArgsWide[0]).c_str(), -1);
+        if (!path0) {
+            Py_FatalError("can't compute path0 from argv");
+        }
+        PyObject* sysPath = PySys_GetObject("path"); // borrowed reference
+        if (sysPath) {
+            if (PyList_Insert(sysPath, 0, path0) != 0) {
+                Py_FatalError("can't prepend path0 to sys.path");
+            }
+        }
+        Py_DECREF(path0);
+    }
 
     PyObject* mainModule = PyImport_ImportModule("__main__"); //create main module , new ref
 
@@ -297,26 +415,6 @@ PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide)
         printf( "PATH is %s\n", Py_GETENV("PATH") );
         printf( "PYTHONPATH is %s\n", Py_GETENV("PYTHONPATH") );
         printf( "PYTHONHOME is %s\n", Py_GETENV("PYTHONHOME") );
-        printf( "Py_DebugFlag is %d\n", Py_DebugFlag );
-        printf( "Py_VerboseFlag is %d\n", Py_VerboseFlag );
-        printf( "Py_InteractiveFlag is %d\n", Py_InteractiveFlag );
-        printf( "Py_InspectFlag is %d\n", Py_InspectFlag );
-        printf( "Py_OptimizeFlag is %d\n", Py_OptimizeFlag );
-        printf( "Py_NoSiteFlag is %d\n", Py_NoSiteFlag );
-        printf( "Py_BytesWarningFlag is %d\n", Py_BytesWarningFlag );
-        printf( "Py_FrozenFlag is %d\n", Py_FrozenFlag );
-        printf( "Py_HashRandomizationFlag is %d\n", Py_HashRandomizationFlag );
-        printf( "Py_IsolatedFlag is %d\n", Py_IsolatedFlag );
-        printf( "Py_QuietFlag is %d\n", Py_QuietFlag );
-        printf( "Py_IgnoreEnvironmentFlag is %d\n", Py_IgnoreEnvironmentFlag );
-        printf( "Py_DontWriteBytecodeFlag is %d\n", Py_DontWriteBytecodeFlag );
-        printf( "Py_NoUserSiteDirectory is %d\n", Py_NoUserSiteDirectory );
-        printf( "Py_GetProgramName is %ls\n", Py_GetProgramName() );
-        printf( "Py_GetPrefix is %ls\n", Py_GetPrefix() );
-        printf( "Py_GetExecPrefix is %ls\n", Py_GetPrefix() );
-        printf( "Py_GetProgramFullPath is %ls\n", Py_GetProgramFullPath() );
-        printf( "Py_GetPath is %ls\n", Py_GetPath() );
-        printf( "Py_GetPythonHome is %ls\n", Py_GetPythonHome() );
 
 #define DUMP_SYS(NAME) \
             do { \
@@ -333,6 +431,7 @@ PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide)
 
         PyObject *obj;
         DUMP_SYS(version);
+        DUMP_SYS(flags); // formerly printed from the deprecated Py_*Flag global variables
         DUMP_SYS(_base_executable);
         DUMP_SYS(base_prefix);
         DUMP_SYS(base_exec_prefix);
@@ -371,9 +470,40 @@ PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide)
     PyThreadState *_save = PyEval_SaveThread();
     // The lock should be released just before PyFinalize() using:
     // PyEval_RestoreThread(_save);
+    (void)_save; // unused for now
 
     return mainModule;
 } // initializePython
+
+int
+runPythonMain(int argc,
+              wchar_t** argv,
+              const std::wstring& pythonHome)
+{
+    // What Py_Main() does, with the Python home (formerly Py_SetPythonHome()).
+    // The user site is disabled by the PYTHONNOUSERSITE environment variable set by
+    // setupPythonEnv(), as before (Py_Main() ignored Py_NoUserSiteDirectory): as with
+    // python, -s and -I disable it too, and -E ignores PYTHONNOUSERSITE.
+    PyConfig config;
+    PyConfig_InitPythonConfig(&config);
+    // also pre-initializes Python from the command line (-E, -I, -X utf8...), as Py_Main()
+    PyStatus status = PyConfig_SetArgv(&config, argc, argv);
+    if ( !PyStatus_Exception(status) && !pythonHome.empty() ) {
+        status = PyConfig_SetString( &config, &config.home, pythonHome.c_str() );
+    }
+    if ( !PyStatus_Exception(status) ) {
+        status = Py_InitializeFromConfig(&config);
+    }
+    PyConfig_Clear(&config);
+    if ( PyStatus_Exception(status) ) {
+        if ( PyStatus_IsExit(status) ) {
+            return status.exitcode; // e.g. --help or --version
+        }
+        Py_ExitStatusException(status);
+    }
+
+    return Py_RunMain();
+}
 
 
 std::string

@@ -44,7 +44,11 @@ Before `update`, reintegrate upstream MacPorts changes into the overlay on the h
 ```sh
 tools/tart/natron-build.sh                 # RB-2.6, release, no tests
 tools/tart/natron-build.sh -b RB-2.6 -t    # also run the unit/regression tests
+tools/tart/natron-build.sh -s qmake        # build Natron with the deprecated qmake build
+tools/tart/natron-build.sh -l COMMERCIAL   # a COMMERCIAL DMG, without GPL components (needs the ffmpeg-lgpl, libraw-lgpl and libheif-lgpl subports)
 ```
+
+Natron is built with CMake (`NATRON_BUILD_SYSTEM=cmake`, see `tools/jenkins/build-natron.sh`); `NATRON_EXTRA_CMAKE_FLAGS` in the environment is passed on to it.
 
 Each build runs in a fresh clone of the SDK image. Clones are copy-on-write, so they are fast and small. The clone is deleted afterwards (`-k` keeps it). The results (`.dmg`, test results, logs) are copied to `./natron-builds/<vm-name>/`.
 
@@ -54,7 +58,7 @@ Only one Natron VM can run at a time: clones of an image share their IPv6 link-l
 
 ## Settings
 
-Environment variables (see `tart-common.sh`): `BASE_IMAGE`, `SDK_IMAGE`, `VM_CPU` (8), `VM_MEMORY` (16384 MB), `VM_DISK` (250 GB), `TART_KEY` (`~/.ssh/natron-tart_ed25519`), `OSMESA_INSTALL_SRC`, `GUEST_PROXY_ALLOW` (`*:80 *:443`), and `RSYNC`. `MACPORTS_VERSION` is at the top of `provision.sh`; the Python version (3.10) is spelled out in `step_python_qt` and `step_fixups`. Runtime files (address cache, VM logs) go to `$TMPDIR/natron-tart` (`TART_RUN`); SSH control sockets go to `/tmp/natron-tart-$UID` (`TART_SOCK`), because macOS's `$TMPDIR` path is too long for a Unix socket. Only one `natron-sdk.sh` or `natron-build.sh` runs at a time (lock in that directory).
+Environment variables (see `tart-common.sh`): `BASE_IMAGE`, `SDK_IMAGE`, `VM_CPU` (8), `VM_MEMORY` (16384 MB), `VM_DISK` (250 GB), `TART_KEY` (`~/.ssh/natron-tart_ed25519`), `OSMESA_INSTALL_SRC`, `GUEST_PROXY_ALLOW` (`*:80 *:443`), and `RSYNC`. `MACPORTS_VERSION` and the Python version (`pyver`, 3.11) are at the top of `provision.sh`. On an SDK image made with an older Python, `natron-sdk.sh update` installs the new Python ports and switches `openimageio`'s python variant (`step_python_migrate`). Runtime files (address cache, VM logs) go to `$TMPDIR/natron-tart` (`TART_RUN`); SSH control sockets go to `/tmp/natron-tart-$UID` (`TART_SOCK`), because macOS's `$TMPDIR` path is too long for a Unix socket. Only one `natron-sdk.sh` or `natron-build.sh` runs at a time (lock in that directory).
 
 ## Networking
 
@@ -69,5 +73,5 @@ The scripts don't rely on the VM getting an IPv4 address. On hosts with corporat
 - The VMs use tart's default shared (NAT) network: they can only be reached from the host, not from the LAN. Don't attach them to a bridged network.
 - The SOCKS proxy opens no port on the host, but whatever runs in the guest (port builds, pip, build scripts) can reach, through the host, anything the host can reach on the allowed ports: the internet, but also services on the host's loopback and the intranet or VPN. `GUEST_PROXY_ALLOW` (passed to ssh's `PermitRemoteOpen`) limits the destinations to ports 80 and 443 by default.
 - The cirruslabs images have the well-known `admin`/`admin` account with passwordless sudo. The scripts use the password once to install a dedicated SSH key, then log in with the key. The account and its password are still in the SDK image.
-- Downloads are verified: the MacPorts `.pkg` (checksum and Developer ID signature of the MacPorts release manager), the QtPy wheel (pinned sha256), and, in `build-plugins.sh`, the G'MIC sources (pinned sha256).
+- Downloads are verified: the MacPorts `.pkg` (checksum and Developer ID signature of the MacPorts release manager), the QtPy wheel (pinned sha256), and the G'MIC sources (sha256 pinned in openfx-gmic's Makefile, checked by its CMake build, which `build-plugins.sh` uses).
 - Only files tracked by git under `tools/` are copied from the Natron checkout, and the copies are removed from the image at the end of `create`/`update`. `push` publishes the image, including the default credentials above: check the registry's visibility first.

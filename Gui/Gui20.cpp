@@ -141,6 +141,21 @@ getPixmapForGrouping(QPixmap* pixmap,
     appPTR->getIcon(e, size, pixmap);
 }
 
+// Shows the busy cursor while saving: a save may first wait for a running auto-save (#825).
+class SaveWaitCursor
+{
+public:
+    SaveWaitCursor()
+    {
+        QApplication::setOverrideCursor(Qt::WaitCursor);
+    }
+
+    ~SaveWaitCursor()
+    {
+        QApplication::restoreOverrideCursor();
+    }
+};
+
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 void
@@ -1011,9 +1026,8 @@ AppInstancePtr
 Gui::createNewProject()
 {
     CLArgs cl;
+    // GuiAppInstance::load() already runs the onProjectCreated callback for the new project (#489)
     AppInstancePtr app = appPTR->newAppInstance(cl, false);
-
-    app->execOnProjectCreatedCallback();
 
     return app;
 }
@@ -1067,7 +1081,9 @@ Gui::openProjectInternal(const std::string & absoluteFileName,
         if (instance) {
             GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( instance.get() );
             if (guiApp) {
-                guiApp->getGui()->activateWindow();
+                if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+                    guiApp->getGui()->activateWindow();
+                }
 
                 return instance;
             }
@@ -1134,7 +1150,11 @@ Gui::saveProject()
             return false;
         }
 
-        bool ret = project->saveProject(projectPath, projectFilename, 0);
+        bool ret;
+        {
+            SaveWaitCursor waitCursor;
+            ret = project->saveProject(projectPath, projectFilename, 0);
+        }
 
         ///update the open recents
         if ( !projectPath.endsWith( QLatin1Char('/') ) ) {
@@ -1166,7 +1186,11 @@ Gui::saveProjectAs(const std::string& filename)
     }
     _imp->_lastSaveProjectOpenedDir = QString::fromUtf8( path.c_str() );
 
-    bool ret = getApp()->getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( fileCopy.c_str() ), 0);
+    bool ret;
+    {
+        SaveWaitCursor waitCursor;
+        ret = getApp()->getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( fileCopy.c_str() ), 0);
+    }
 
     if (ret) {
         QString filePath = QString::fromUtf8( path.c_str() ) + QString::fromUtf8( fileCopy.c_str() );
@@ -1182,7 +1206,15 @@ Gui::saveProjectAs()
     std::vector<std::string> filter;
 
     filter.push_back(NATRON_PROJECT_FILE_EXT);
-    std::string outFile = popSaveFileDialog( false, filter, _imp->_lastSaveProjectOpenedDir.toStdString(), false );
+    // Start in the directory of the current project if it has one and it is writable (not e.g. a read-only
+    // template folder), else in the last directory used to save a project (#343)
+    QString initialDir = _imp->_lastSaveProjectOpenedDir;
+    ProjectPtr project = getApp()->getProject();
+    if ( project->hasProjectBeenSavedByUser() && !project->getProjectPath().isEmpty() &&
+         QFileInfo( project->getProjectPath() ).isWritable() ) {
+        initialDir = project->getProjectPath();
+    }
+    std::string outFile = popSaveFileDialog( false, filter, initialDir.toStdString(), false );
     if (outFile.size() > 0) {
         return saveProjectAs(outFile);
     }
@@ -1219,8 +1251,9 @@ Gui::saveAndIncrVersion()
 
         if ( !versionStr.isEmpty() ) {
             name.remove( i, versionStr.size() );
-            --i; //move 1 char backward, if the char is a '_' remove it
-            if ( (i >= 0) && ( name.at(i) == QLatin1Char('_') ) ) {
+            // if the version number is preceded by a '_', remove it too
+            if ( (i >= 1) && ( name.at(i - 1) == QLatin1Char('_') ) ) {
+                --i;
                 name.remove(i, 1);
             }
             currentVersion = versionStr.toInt();
@@ -1253,10 +1286,15 @@ Gui::saveAndIncrVersion()
         name.insert(positionToInsertVersion, toInsert);
     }
 
-    project->saveProject(path, name, 0);
-
-    QString filename = path + QLatin1Char('/') + name;
-    updateRecentFiles(filename);
+    bool ret;
+    {
+        SaveWaitCursor waitCursor;
+        ret = project->saveProject(path, name, 0);
+    }
+    if (ret) {
+        QString filename = path + QLatin1Char('/') + name;
+        updateRecentFiles(filename);
+    }
 } // Gui::saveAndIncrVersion
 
 void
@@ -1378,6 +1416,12 @@ Gui::popOpenFileDialog(bool sequenceDialog,
                        const std::string & initialDir,
                        bool allowRelativePaths)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        // --no-dialogs: the file dialog counts as cancelled
+        Dialogs::printDismissedDialog( tr("Open").toStdString(), tr("File dialog not shown, cancelled.").toStdString() );
+
+        return std::string();
+    }
     SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::eFileDialogModeOpen, initialDir, this, allowRelativePaths);
 
     if ( dialog.exec() ) {
@@ -1418,6 +1462,12 @@ Gui::popSaveFileDialog(bool sequenceDialog,
                        const std::string & initialDir,
                        bool allowRelativePaths)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        // --no-dialogs: the file dialog counts as cancelled (e.g. Save As for an untitled project)
+        Dialogs::printDismissedDialog( tr("Save").toStdString(), tr("File dialog not shown, cancelled.").toStdString() );
+
+        return std::string();
+    }
     SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::eFileDialogModeSave, initialDir, this, allowRelativePaths);
 
     if ( dialog.exec() ) {
@@ -1443,6 +1493,13 @@ int
 Gui::saveWarning()
 {
     if ( !getApp()->getProject()->isSaveUpToDate() ) {
+        if ( appPTR->isDialogsDisabled() ) {
+            // --no-dialogs: do not save. The default answer, Save, would open the Save As
+            // file dialog for an untitled project, which would block a script.
+            Dialogs::printDismissedDialog( NATRON_APPLICATION_NAME, tr("Save changes to %1? Answered Discard.").arg( getApp()->getProject()->getProjectFilename() ).toStdString() );
+
+            return 1;
+        }
         StandardButtonEnum ret =  Dialogs::questionDialog(NATRON_APPLICATION_NAME, tr("Save changes to %1?").arg( getApp()->getProject()->getProjectFilename() ).toStdString(),
                                                           false,
                                                           StandardButtons(eStandardButtonSave | eStandardButtonDiscard | eStandardButtonCancel), eStandardButtonSave);

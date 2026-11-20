@@ -3,48 +3,85 @@
 Natron plug-in paths
 =====================
 
-When looking for startup scripts or Python group plug-ins, Natron will look into
-the following search paths in order:
+When looking for startup scripts (:ref:`init.py and initGui.py<startupScripts>`) and
+PyPlugs (Python group plug-ins and toolsets), Natron looks into the following search paths, in this order:
 
-- The bundled plug-ins path. There are 2 kinds of plug-ins: PyPlugs and OpenFX plug-ins.
-  The bundled OpenFX plug-ins are located in Plugins/OFX/Natron in your Natron installation and
-  the bundled PyPlugs in the directory Plugins/PyPlugs.
+1. The bundled PyPlugs, in ``Plugins/PyPlugs`` next to the ``bin`` directory of your Natron installation
+   (``Natron.app/Contents/Plugins/PyPlugs`` on macOS), but only if both "Use bundled plug-ins" and
+   "Prefer bundled plug-ins over system-wide plug-ins" are checked in the *Plug-ins* tab of the
+   Preferences (both are checked by default).
 
-- The standard user location for non OpenFX plug-ins (i.e. PyPlugs): that is the directory
-  .Natron in the home directory, e.g.:
+2. The standard user location: the directory ``.Natron`` in your home directory. Natron creates it
+   if it doesn't exist.
 
-            On Windows that would be::
+   Windows::
 
-                C:\Users\<username>\.Natron
+       C:\Users\<username>\.Natron
 
-            On OS X & Linux that would be::
+   macOS and Linux::
 
-                ~/.Natron
+       ~/.Natron
 
-- The standard system location for non OpenFX plug-ins (i.e. PyPlugs):
+3. The standard system location:
 
-            Windows::
+   Windows::
 
-                C:\Program Files\Common Files\Natron\Plugins
+       C:\Program Files\Common Files\Natron\Plugins
 
-            OS X::
+   macOS::
 
-                /Library/Application Support/Natron/Plugins
+       /Library/Application Support/Natron/Plugins
 
-            Linux::
+   Linux::
 
-                /usr/share/Natron/Plugins
+       /usr/share/Natron/Plugins
 
-- All the paths indicated by the **NATRON_PLUGIN_PATH** environment variable. This
-  environment variable should contain the separator *;* between each path, such as::
+4. All the directories listed in the **NATRON_PLUGIN_PATH** environment variable. The directories
+   are separated by ``;`` on Windows and by ``:`` on macOS and Linux, as in ``PATH``:
 
-        /home/<username>/NatronPluginsA;/home/<username>/NatronPluginsB
+   Windows::
 
-- The user extra search paths in the Plug-ins tab of the Preferences of Natron.
+       C:\NatronPluginsA;D:\Studio\NatronPluginsB
 
-If the setting "Prefer bundled plug-ins over system-wide plug-ins" is checked in the preferences
-then Natron will first look into the bundled plug-ins before checking the standard location.
-Otherwise, Natron will check bundled plug-ins as the *last* location.
+   macOS and Linux::
 
-Note that if the "User bundled plug-ins" setting in the preferences is unchecked, Natron
-will not attempt to load any bundled plug-ins.
+       /home/<username>/NatronPluginsA:/studio/NatronPluginsB
+
+5. The directories of the "PyPlugs search path" setting in the *Plug-ins* tab of the Preferences.
+
+6. The bundled PyPlugs (see 1.), if "Use bundled plug-ins" is checked and
+   "Prefer bundled plug-ins over system-wide plug-ins" is not.
+
+If "Use bundled plug-ins" is unchecked, Natron loads no bundled PyPlugs at all.
+
+.. mermaid::
+   :alt: The search order is: the bundled PyPlugs if "Use bundled plug-ins" and "Prefer
+         bundled plug-ins" are both checked; ~/.Natron; the system location; the directories of
+         NATRON_PLUGIN_PATH; the "PyPlugs search path" preference; and last the bundled PyPlugs
+         if "Use bundled plug-ins" is checked but "Prefer bundled plug-ins" is not.
+   :caption: Order of the PyPlug search paths. The bundled PyPlugs are searched first or last,
+             depending on the preferences, or not at all.
+
+   flowchart LR
+       b1["Bundled PyPlugs<br/>(if Use bundled and<br/>Prefer bundled)"] --> user["~/.Natron"]
+       user --> sys["System location"]
+       sys --> env["NATRON_PLUGIN_PATH<br/>(; on Windows, : elsewhere)"]
+       env --> pref["Preferences:<br/>PyPlugs search path"]
+       pref --> b2["Bundled PyPlugs<br/>(if Use bundled and<br/>not Prefer bundled)"]
+
+
+Each of these directories is searched **recursively**: Natron also looks into all its sub-directories.
+Every directory and sub-directory is also added to the Python path (``sys.path``), so that your
+scripts can import the Python modules that are stored next to them. Because of this, a PyPlug is
+imported by its file name alone: two PyPlugs with the same file name, in different directories,
+can't both be loaded (see :ref:`pyplugWriting-pitfalls`, and :ref:`pyplugWriting-distribute` to
+install PyPlugs).
+
+A startup script can add a directory with
+:func:`natron.appendToNatronPath(path)<NatronEngine.PyCoreApplication.appendToNatronPath>`.
+This adds the directory to the "PyPlugs search path" setting, which is saved in the Preferences,
+and to the Python path. Because Natron gathers the PyPlug files while it runs the startup scripts,
+the PyPlugs of a directory added this way are only registered the next time Natron starts.
+
+OpenFX plug-ins have their own search paths, and they are set with the ``OFX_PLUGIN_PATH``
+environment variable (see :doc:`../_environment`) and in the *Plug-ins* tab of the Preferences.

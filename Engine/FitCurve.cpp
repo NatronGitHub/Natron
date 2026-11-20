@@ -25,6 +25,7 @@
 
 #include "FitCurve.h"
 
+#include <algorithm> // min
 #include <cmath>
 #include <cassert>
 #include <stdexcept>
@@ -568,7 +569,8 @@ FitCurve::fit_cubic(const std::vector<Point>& points,
             double distU = std::sqrt(u.x * u.x + u.y * u.y);
             double distV = std::sqrt(v.x * v.x + v.y * v.y);
             assert(distV != 0);
-            double alpha = std::acos(distU / distV);
+            // clamp: acos() is NaN outside of [-1, 1]
+            double alpha = std::acos( distV > 0. ? std::min(distU / distV, 1.) : 1. );
             if (alpha > M_PI_2) {
                 std::vector<Point> subset;
 

@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _Int2DTuple:
 
 Int2DTuple
@@ -20,13 +20,13 @@ Detailed Description
 
 .. class:: Int2DTuple()
 
-.. attribute:: NatronEngine.Int2DTuple.x
+.. attribute:: Int2DTuple.x
 
-.. attribute:: NatronEngine.Int2DTuple.y
+.. attribute:: Int2DTuple.y
 
-.. method:: NatronEngine.Int2DTuple.__getitem__(index)
+.. method:: Int2DTuple.__getitem__(index)
 
-    :param index: :class:`int<PySide.QtCore.int>`
+    :param index: :class:`int`
     :rtype: :class:`PyObject`
 
 Returns the item at the given index. This is the bracket operator *[]*

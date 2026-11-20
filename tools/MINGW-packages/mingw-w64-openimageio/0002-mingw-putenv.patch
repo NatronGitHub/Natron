@@ -1,0 +1,11 @@
+--- openimageio-3.0.7.0/src/iv/ivmain.cpp.orig	2025-06-09 14:56:34.484203000 +0300
++++ openimageio-3.0.7.0/src/iv/ivmain.cpp	2025-06-09 14:57:13.978061400 +0300
+@@ -117,7 +117,7 @@
+     bool use_ocio       = color_space != "" && display != "" && view != "";
+     std::string ocioenv = Sysutil::getenv("OCIO");
+     if (ocioenv.empty() || !Filesystem::exists(ocioenv)) {
+-#ifdef _MSC_VER
++#ifdef _WIN32
+         _putenv_s("OCIO", "ocio://default");
+ #else
+         setenv("OCIO", "ocio://default", 1);

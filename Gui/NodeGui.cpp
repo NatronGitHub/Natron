@@ -427,7 +427,14 @@ NodeGui::ensurePanelCreated(bool minimized, bool hideUnmodified)
     _settingsPanel = createPanel(propsLayout, thisShared);
 
     initializeKnobs();
-    beginEditKnobs();
+    // kOfxActionBeginInstanceEdit if the panel was created open: a panel created closed (Output node, nodes
+    // of a Python group, panels restored closed) begins editing when it is opened (onSettingsPanelClosed()).
+    // A multi-instance child is edited through the panel of its parent: it begins now (see activate()).
+    NodePtr internalNode = getNode();
+    if ( ( _settingsPanel && !_settingsPanel->isClosed() ) ||
+         ( internalNode && !internalNode->getParentMultiInstanceName().empty() ) ) {
+        beginEditKnobs();
+    }
 
     if (_settingsPanel) {
         QObject::connect( _settingsPanel, SIGNAL(nameChanged(QString)), this, SLOT(setName(QString)) );
@@ -454,7 +461,6 @@ NodeGui::ensurePanelCreated(bool minimized, bool hideUnmodified)
          * We just do one redraw when all children are created
          */
         NodesList children;
-        NodePtr internalNode = getNode();
         if (internalNode) {
             internalNode->getChildrenMultiInstance(&children);
         }
@@ -488,6 +494,16 @@ void
 NodeGui::onSettingsPanelClosed(bool closed)
 {
     NodePtr internalNode = getNode();
+    // The settings panel is the editor of the node (the curve editor, the dope sheet and the node graph
+    // open it to edit the node): kOfxActionEndInstanceEdit when it is closed, and
+    // kOfxActionBeginInstanceEdit when it is opened again.
+    if (internalNode) {
+        if (closed) {
+            internalNode->endEditKnobs();
+        } else {
+            beginEditKnobs();
+        }
+    }
     if (internalNode && internalNode->hasAnyPersistentMessage()) {
         const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
@@ -710,10 +726,15 @@ NodeGui::createGui()
         _passThroughIndicator->setActive(false);
     }
 
+    // The cross shown on a disabled node: thick and red, so that it can't be missed (#796)
+    QPen disabledPen( QColor(230, 20, 20), TO_DPIX(4) );
+    disabledPen.setCapStyle(Qt::FlatCap); // stays inside the node corners
     _disabledBtmLeftTopRight = new QGraphicsLineItem(this);
+    _disabledBtmLeftTopRight->setPen(disabledPen);
     _disabledBtmLeftTopRight->setZValue(depth + 1);
     _disabledBtmLeftTopRight->hide();
     _disabledTopLeftBtmRight = new QGraphicsLineItem(this);
+    _disabledTopLeftBtmRight->setPen(disabledPen);
     _disabledTopLeftBtmRight->hide();
     _disabledTopLeftBtmRight->setZValue(depth + 1);
 } // NodeGui::createGui
@@ -826,7 +847,12 @@ NodeGui::removeSettingsPanel()
 void
 NodeGui::refreshSize()
 {
-    QRectF bbox = boundingRect();
+    // The node rectangle itself, not boundingRect(), which includes the outline pen width and the
+    // magnification scale: resizing to it would make the node grow at each refresh (#1071).
+    // (Only called for nodes with a persistent message item or a label, which DotGui has not, so
+    // _boundingBox, created with them in createGui(), exists.)
+    assert(_boundingBox);
+    QRectF bbox = _boundingBox->rect();
 
     QString& label = _nodeLabel;
     resize( bbox.width(), bbox.height(), false, !label.isEmpty() );
@@ -1330,7 +1356,11 @@ NodeGui::updatePreviewImage(double time)
 {
     NodePtr node = getNode();
 
-    if ( isVisible() && node && node->isPreviewEnabled() && node->isActivated() && node->getApp()->getProject()->isAutoPreviewEnabled() ) {
+    // No preview while a node tree is being created (pasted, cloned, PyPlug...): the graph is incomplete, and the
+    // preview thread would render it while the main thread modifies it (see #814). The previews are refreshed
+    // once the tree is created.
+    if ( isVisible() && node && node->isPreviewEnabled() && node->isActivated() && node->getApp()->getProject()->isAutoPreviewEnabled() &&
+         !node->getApp()->isCreatingNodeTree() ) {
         if ( (node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos) ||
              ( node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) != std::string::npos) ) {
             return;
@@ -1352,7 +1382,11 @@ NodeGui::forceComputePreview(double time)
     if ( !node || !node->isActivated() ) {
         return;
     }
-    if ( isVisible() && node->isPreviewEnabled() && !node->getApp()->getProject()->isLoadingProject() ) {
+    // No preview while the project is loading or a node tree is being created (pasted, cloned, PyPlug...):
+    // the graph is incomplete, and the preview thread would render it while the main thread modifies it
+    // (see #814). The previews are refreshed once the project is loaded or the tree is created.
+    if ( isVisible() && node->isPreviewEnabled() && !node->getApp()->getProject()->isLoadingProject() &&
+         !node->getApp()->isCreatingNodeTree() ) {
         if ( (node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos) ||
              ( node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) != std::string::npos) ) {
             return;
@@ -1513,7 +1547,6 @@ NodeGui::initializeInputs()
     ///Make new edge for all non existing inputs
     NodeGuiPtr thisShared = shared_from_this();
     int inputsCount = 0;
-    int emptyInputsCount = 0;
     for (U32 i = 0; i < inputs.size(); ++i) {
         Edge* edge = new Edge( i, 0., thisShared, parentItem() );
         if ( ( node && node->getEffectInstance()->isInputRotoBrush(i) ) || !isVisible() ) {
@@ -1532,9 +1565,6 @@ NodeGui::initializeInputs()
         if ( node &&
              !node->getEffectInstance()->isInputMask(i) &&
              !node->getEffectInstance()->isInputRotoBrush(i) ) {
-            if (!input) {
-                ++emptyInputsCount;
-            }
             ++inputsCount;
         }
         _inputEdges.push_back(edge);
@@ -1972,10 +2002,10 @@ NodeGui::showGui()
         }
         NodeGuiPtr thisShared = shared_from_this();
         _graph->getGui()->setNodeViewerInterface(thisShared);
-
-        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( node->getEffectInstance().get() );
-        if (ofxNode) {
-            ofxNode->effectInstance()->beginInstanceEditAction();
+        // Opening the settings panel again above calls beginEditKnobs() (see onSettingsPanelClosed()). A
+        // minimized panel was not closed by hideGui(): it is still open, so begin editing again too.
+        if ( _settingsPanel && !_settingsPanel->isClosed() ) {
+            beginEditKnobs();
         }
     }
 
@@ -2006,10 +2036,8 @@ NodeGui::activate(bool triggerRender)
         showGui();
     } else {
         ///don't show gui if it is a multi instance child, but still Q_EMIT the begin edit action
-        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( node->getEffectInstance().get() );
-        if (ofxNode) {
-            ofxNode->effectInstance()->beginInstanceEditAction();
-        }
+        ///(Node::deactivate() sent the end edit action)
+        beginEditKnobs();
     }
     _graph->restoreFromTrash(this);
     //_graph->getGui()->getCurveEditor()->addNode(shared_from_this());
@@ -2091,10 +2119,7 @@ NodeGui::deactivate(bool triggerRender)
     if (!isMultiInstanceChild) {
         hideGui();
     }
-    OfxEffectInstance* ofxNode = !node ? 0 : dynamic_cast<OfxEffectInstance*>( node->getEffectInstance().get() );
-    if (ofxNode) {
-        ofxNode->effectInstance()->endInstanceEditAction();
-    }
+    // (Node::deactivate() sent kOfxActionEndInstanceEdit if kOfxActionBeginInstanceEdit was sent)
     if (_graph) {
         _graph->moveToTrash(this);
         if ( _graph->getGui() ) {
@@ -2255,28 +2280,46 @@ NodeGui::restoreInternal(const NodeGuiPtr& thisShared,
 {
     assert(internalSerialization.size() >= 1);
 
+    NodePtr node = getNode();
+    if ( node && ( node->getRotoContext() || node->getTrackerContext() ) ) {
+        // Loading presets replaces the shapes or tracks by new ones (#1247).
+        // The commands already in the node's undo stack (settings panel and
+        // viewer interacts) refer to the replaced items and to their settings
+        // panel tree items, which are deleted: undoing them would use deleted
+        // items, so drop them.
+        _undoStack->clear();
+    }
     getSettingPanel()->pushUndoCommand( new LoadNodePresetsCommand(thisShared, internalSerialization) );
 }
 
 void
-NodeGui::copyFrom(const NodeGuiSerialization & obj)
+NodeGui::copyFrom(const NodeGuiSerialization & obj,
+                  bool restorePreview)
 {
     float r, g, b;
     double overlayR, overlayB, overlayG;
     obj.getColor(&r, &g, &b);
     setCurrentColor( QColor::fromRgbF(r, g, b) );
     if (obj.getOverlayColor(&overlayR, &overlayG, &overlayB)) {
-        setOverlayColor( QColor::fromRgbF(overlayR, overlayB, overlayG) );
+        setOverlayColor( QColor::fromRgbF(overlayR, overlayG, overlayB) );
     }
     setPos_mt_safe( QPointF( obj.getX(), obj.getY() ) );
-    NodePtr node = getNode();
-    assert(node);
-    if ( node && ( node->isPreviewEnabled() != obj.isPreviewEnabled() ) ){
-        togglePreview();
+    if (restorePreview) {
+        restorePreviewFrom(obj);
     }
     double w, h;
     obj.getSize(&w, &h);
     resize(w, h);
+}
+
+void
+NodeGui::restorePreviewFrom(const NodeGuiSerialization & obj)
+{
+    NodePtr node = getNode();
+    assert(node);
+    if ( node && ( node->isPreviewEnabled() != obj.isPreviewEnabled() ) ) {
+        togglePreview();
+    }
 }
 
 QUndoStackPtr
@@ -2768,6 +2811,15 @@ NodeGui::destroyGui()
     }
 
     //Delete settings panel
+    if (_settingsPanel) {
+        // The Gui keeps raw pointers to the opened panels (Gui::getVisiblePanels()), used by the
+        // viewer for overlays and color pickers, so the panel must be closed before it is deleted (#1431).
+        // When the node is deleted from the Node Graph, hideGui() closes it before the node goes to
+        // the trash, but Node::destroyNode() (e.g. Python's Effect.destroy()) does not call hideGui().
+        _settingsPanel->closeBeforeDeletion();
+        // Make sure no dangling pointer is left in any case.
+        guiObj->removeVisibleDockablePanel(_settingsPanel);
+    }
     delete _settingsPanel;
     _settingsPanel = 0;
 } // NodeGui::destroyGui
@@ -2776,9 +2828,17 @@ QSize
 NodeGui::getSize() const
 {
     if ( QThread::currentThread() == qApp->thread() ) {
-        QRectF bbox = boundingRect();
+        if (!_boundingBox) {
+            // DotGui has no _boundingBox (it doesn't call NodeGui::createGui()): use its boundingRect()
+            QRectF bbox = boundingRect();
 
-        return QSize( bbox.width(), bbox.height() );
+            return QSize( bbox.width(), bbox.height() );
+        }
+        // The node rectangle (as set by resize()) with the current scale, without the outline pen
+        // width that boundingRect() adds: otherwise each save and load makes the node wider (#1071).
+        QRectF bbox = _boundingBox->rect();
+
+        return QSize( bbox.width() * scale(), bbox.height() * scale() );
     } else {
         QMutexLocker k(&_mtSafeSizeMutex);
 
@@ -3139,7 +3199,8 @@ NodeGui::setNameItemHtml(const QString & name,
     _nameItem->adjustSize();
 
 
-    QRectF bbox = boundingRect();
+    // see refreshSize()
+    QRectF bbox = _boundingBox->rect();
     resize( bbox.width(), bbox.height(), false, !label.isEmpty() );
 } // setNameItemHtml
 

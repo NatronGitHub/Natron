@@ -25,10 +25,13 @@
 
 #include "NodePrivate.h"
 
+#include <cassert>
+
 #include <QTextStream>
 #include <QFile>
 #include <QRegularExpression>
 
+#include "Engine/DocumentationGroups.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Utils.h"
@@ -465,11 +468,16 @@ OUTPUT:
         // use hoedown to convert to HTML
         // See Documentation/templates for how to grab header/footer from the latest Sphinx version
 
-        QString groupString; // %2 in plugin_head
-        if ( !pluginGroup.isEmpty() ) {
-            QString group = pluginGroup.at(0);
-            if (!group.isEmpty()) {
-                groupString = QString::fromUtf8("<li><a href=\"../_group.html?id=%1\">%1 nodes</a> &raquo;</li>").arg(group);
+        QString groupString; // %2 in plugin_head: the node group, and its parents
+        {
+            DocumentationGroups docGroups;
+            QStringList groupIds = docGroups.getGroupIdsForGrouping(pluginGroup);
+            Q_FOREACH(const QString& groupId, groupIds) {
+                const DocumentationGroups::Group* group = docGroups.getGroup(groupId);
+                assert(group);
+                groupString += QString::fromUtf8("<li><a href=\"../_group.html?id=%1\">%2</a> &raquo;</li>")
+                               .arg(groupId)
+                               .arg( DocumentationGroups::makeGroupTitle(group->path).toHtmlEscaped() );
             }
         }
 
@@ -521,19 +529,7 @@ OUTPUT:
         "<li class=\"toctree-l1 current\"><a class=\"reference internal\" href=\"../_group.html\">Reference Guide</a><ul class=\"current\">\n"
         "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"../_prefs.html\">Preferences</a></li>\n"
         "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"../_environment.html\">Environment Variables</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"../_groupImage.html\">Image nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"../_groupDraw.html\">Draw nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"../_groupTime.html\">Time nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"../_groupChannel.html\">Channel nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"../_groupColor.html\">Color nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"../_groupFilter.html\">Filter nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"../_groupKeyer.html\">Keyer nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"../_groupMerge.html\">Merge nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"../_groupTransform.html\">Transform nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"../_groupViews.html\">Views nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"../_groupOther.html\">Other nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"../_groupGMIC.html\">GMIC nodes</a></li>\n"
-        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"../_groupExtra.html\">Extra nodes</a></li>\n"
+        "<li class=\"toctree-l2\"><a class=\"reference internal\" href=\"../_nodes.html\">Nodes</a></li>\n"
         "</ul>\n"
         "</li>\n"
         "<li class=\"toctree-l1\"><a class=\"reference internal\" href=\"../devel/index.html\">Developers Guide</a></li>\n"
@@ -552,6 +548,7 @@ OUTPUT:
         "<ul class=\"wy-breadcrumbs\">\n"
         "<li><a href=\"../index.html\">Docs</a> &raquo;</li>\n"
         "<li><a href=\"../_group.html\">Reference Guide</a> &raquo;</li>\n"
+        "<li><a href=\"../_nodes.html\">Nodes</a> &raquo;</li>\n"
         "%2\n"
         "<li>%1 node</li>\n"
         "</ul>\n"
@@ -587,7 +584,7 @@ OUTPUT:
         "</body>\n"
         "</html>\n");
 
-        ts << plugin_head.arg(pluginLabel, groupString);
+        ts << plugin_head.arg(pluginLabel.toHtmlEscaped(), groupString);
         QString html = Markdown::convert2html(markdown);
         ts << Markdown::fixNodeHTML(html);
         ts << plugin_foot;

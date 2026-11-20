@@ -25,6 +25,7 @@ set(NatronPython_SOURCES
     ../Global/StrUtils.cpp 
 )
 add_executable(NatronPython ${NatronPython_SOURCES})
+natron_set_main_thread_stack_size(NatronPython)
 set_target_properties(NatronPython PROPERTIES OUTPUT_NAME "natron-python")
 target_link_libraries(NatronPython
     PRIVATE
@@ -39,4 +40,4 @@ if(APPLE)
     find_library(COREFOUNDATION_LIBRARY CoreFoundation)
     target_link_libraries(NatronPython PRIVATE ${COREFOUNDATION_LIBRARY})
 endif()
-install(TARGETS NatronPython DESTINATION "${CMAKE_INSTALL_BINDIR}")
+install(TARGETS NatronPython DESTINATION "${NATRON_INSTALL_BINDIR}")

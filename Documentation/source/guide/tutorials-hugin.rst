@@ -1,246 +1,229 @@
-Using PanoTools projects within Natron
-======================================
+.. _tutorials-hugin:
 
-Those are preliminary notes on using PanoTools or Hugin projects from
-within Natron.
+Using Hugin (PanoTools) projects in Natron
+==========================================
 
-Creating a PanoTools (pto) project
-----------------------------------
+`Hugin <https://hugin.sourceforge.io/>`__ aligns overlapping photos and
+saves the result as a PanoTools project (a ``.pto`` file). This page shows
+how to rebuild a Hugin panorama in Natron from the values in that file,
+using a :ref:`LensDistortion <net.sf.openfx.LensDistortion>` node and a
+:ref:`Card3D <net.sf.openfx.Card3D>` node per image. You can then animate
+the camera, use videos instead of still images, and paint the seams with
+Roto masks.
+
+This method only handles rectilinear (normal, non-fisheye) source images
+and a rectilinear output projection. See :ref:`tutorials-hugin-limits`.
+
+Creating a PanoTools project
+----------------------------
+
+Installing Hugin
+~~~~~~~~~~~~~~~~
+
+- **macOS:** install it with `MacPorts <https://www.macports.org/>`__:
+  ``sudo port install hugin-app``. The applications (Hugin, PTBatcherGUI,
+  HuginStitchProject, calibrate_lens_gui) go to
+  ``/Applications/MacPorts/Hugin``, and the command-line tools, including
+  ``enblend``, go to ``/opt/local/bin``. The official Hugin download for
+  macOS is an old version (2019.0) that does not run on Apple Silicon Macs.
+- **Linux:** install the ``hugin`` package of your distribution (on Debian
+  and Ubuntu, the command-line tools are in ``hugin-tools``, and
+  ``enblend`` is a separate package), or the Flathub Flatpak.
+- **Windows:** use the 64-bit installer from the
+  `Hugin download page <https://hugin.sourceforge.io/download/>`__.
 
 Using the Hugin GUI
 ~~~~~~~~~~~~~~~~~~~
 
--  download `Hugin <http://hugin.sourceforge.net/>`__ - on macOS this
-   can be done using `homebrew <https://brew.sh/>`__, by typing the
-   command ``brew cask install hugin`` in a terminal.
--  read the `Hugin documentation <http://wiki.panotools.org/Hugin>`__ or
-   start with a `Hugin
-   tutorial <http://hugin.sourceforge.net/tutorials/overview/>`__
--  make your panorama
+Read the `Hugin documentation <https://wiki.panotools.org/Hugin>`__ or
+follow a `Hugin tutorial <https://hugin.sourceforge.io/tutorials/overview/en.shtml>`__,
+make your panorama, and save the project. Choose the **Rectilinear**
+projection before saving (see :ref:`tutorials-hugin-limits`).
 
-Using command-line tools
-~~~~~~~~~~~~~~~~~~~~~~~~
+Using the command-line tools
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Full details on using command-line tools are given in the `Panorama
-scripting in a
-nutshell <http://wiki.panotools.org/Panorama_scripting_in_a_nutshell>`__
-documentation.
+The `Panorama scripting in a nutshell
+<https://wiki.panotools.org/Panorama_scripting_in_a_nutshell>`__ page
+describes the command-line tools in detail. The following commands make a
+project from the JPEG images in the current directory (file names are case
+sensitive: use ``*.JPG`` if your files end with ``.JPG``):
 
-On macOS, if Hugin was installed using homebrew, the tools are available
-in various directories, and they can be added to the PATH using:
+.. code-block:: bash
 
-::
-
-    PATH="$PATH:/Applications/Hugin/tools_mac:/Applications/Hugin/Hugin.app/Contents/MacOS:/Applications/Hugin/HuginStitchProject.app/Contents/MacOS"
-
-Here is an example of running the panorama tools from a set of JPEG
-images (with suffix ``.jpg``) placed in the current directory to
-generate e perspective panorama (other options are described in the
-documentation):
-
-::
-
-    pto_gen -o project.pto *.JPG
+    pto_gen -o project.pto *.jpg
     cpfind --multirow -o project.pto project.pto
-
     celeste_standalone -i project.pto -o project.pto
     cpclean -v --output project.pto project.pto
-
     autooptimiser -a -l -s -m -o project.pto project.pto
+    pano_modify -p 0 --fov=AUTO --canvas=AUTO -o project.pto project.pto
+
+- ``pto_gen`` creates the project, ``cpfind`` finds control points
+  between the images, ``celeste_standalone`` removes control points on
+  clouds, and ``cpclean`` removes outliers.
+- ``autooptimiser -a`` aligns the images, ``-l`` levels the horizon,
+  ``-s`` picks an output projection and size, and ``-m`` optimizes the
+  photometric parameters (exposure, white balance, vignetting).
+- ``pano_modify -p 0`` sets the output projection to rectilinear, and
+  ``--fov=AUTO --canvas=AUTO`` recompute the field of view and the size of
+  the panorama.
+
+To get Hugin's own stitched result, for comparison:
+
+.. code-block:: bash
 
     nona -m TIFF_m -o project project.pto
-
     enblend --save-masks -o panorama.tif project*.tif
 
-The result is:
+``nona`` writes one remapped image per input (``project0000.tif``,
+``project0001.tif``, …), and ``enblend`` blends them into ``panorama.tif``
+and saves its seam masks as ``mask-1.tif``, ``mask-2.tif``, …
 
--  A ``project.pto`` file, which is the Hugin project itself
--  The ``project*.tif`` images, which are images warped to the reference
-   projection.
--  The ``mask-*.tif`` images, which are masks generated by ``enblend``.
--  The ``panorama.tif`` image, which is the final panorama.
+Reading the project file
+------------------------
 
-Using Hugin/PanoTools parameters in Natron
-------------------------------------------
+A ``.pto`` file is a text file. Its syntax is described in the
+`PTOptimizer <https://wiki.panotools.org/PTOptimizer>`__ and
+`PTStitcher <https://wiki.panotools.org/PTStitcher>`__ documentation.
+The lines used here are:
 
-The ``pto`` file syntax is described is the
-`PTOptimizer <http://wiki.panotools.org/PTOptimizer>`__ and
-`PTStitcher <http://wiki.panotools.org/PTStitcher>`__ docs.
+- the ``p`` line (near the top of the file), which describes the output
+  panorama: ``w`` and ``h`` are its size in pixels, ``v`` is its
+  horizontal field of view in degrees, and ``f`` is its projection
+  (``f0`` is rectilinear);
+- one ``i`` line per input image, in the same order as the images: ``v``
+  is the horizontal field of view of the image, ``y``, ``p`` and ``r`` are
+  its yaw, pitch and roll in degrees, and ``a``, ``b``, ``c``, ``d``,
+  ``e``, ``g``, ``t`` are its lens distortion parameters.
 
-This file can be viewed and edited in any text editor.
-
-Project size
-~~~~~~~~~~~~
-
-The project size, or format, should be set to the panorama size, which
-is given in pixels on the ``p`` line (at the start of the file).
-
-Distortion correction
-~~~~~~~~~~~~~~~~~~~~~
-
-The distortion correction parameters for the input images are given in
-the ``i`` lines (one for each image).
-
-The values for the ``a``, ``b``, ``c``, ``d``, ``e``, ``g``, ``t``
-parameters should be entered in a **LensDistortion** node, with
-*Model*/``model``\ =PanoTools and *Direction*/``direction``\ =Undistort,
-placed after the **Read** node for each input image or video. The script
-name for these values are ``pt_a``, ``pt_b``, ``pt_c``, ``pt_d``,
-``pt_e``, ``pt_g``, ``pt_t``.
-
-Note that if all images share the same distortion parameters (this is
-written as ``a=0 b=0 c=0 d=0 e=0 g=0 t=0`` on the ``i`` line), the
-**LensDistortion** node can be cloned in Natron (right-click on node,
-*Edit*, *Clone Nodes*).
-
-Projection
-~~~~~~~~~~
-
-The projection (which can be performed by the
-`Nona <http://wiki.panotools.org/Nona>`__ tool) can be done using
-**Card3D** nodes placed after each **LensDistortion** node.
-
-Each **Card3D** node must have its *Transform Order*/``cardXFormOrder``
-set to STR, and the *Rotation Order*/``cardRotOrder`` should be left to
-the default value (ZXY). Be careful, these are neither the Axis nor the
-Cam Transform Order, which are in the two first groups of the
-**Card3D**\ node.
-
-Set the *Output Format* to Project.
-
-The ``r`` ``p`` and ``y`` values from the ``i`` line are roll, yaw,
-pitch angles. Their values should be put in the *Rotate* parameter of
-the **Card3D** (script name is ``cardRotate``), using the following
-convention: ``cardRotate.x = p``, ``cardRotate.y = -y``,
-``cardRotate.z = -r``.
-
-The ``v`` value from the ``i`` line corresponds to the horizontal field
-of view, and has to be converted to an aperture value. The **Lens-In
-H.Aperture**/``lensInHAperture`` param should be set to
-``2*tan(v*pi/360)``. This expression can be directly typed in the value
-field, with ``v`` replaced by the actual value from the corresponding
-``i`` line of the ``pto`` file.
-
-Setup all the Card3D nodes for each input image that way.
-
-Camera
-~~~~~~
-
-In Natron 2, the camera used by the **Card3D** node is set in the *Cam*
-group at the top of the parameters list.
-
-In the **Card3D** node for the first image, unfold this group, and
-unfold the *Cam Projection* group.
-
-The ``v`` value on the ``p`` line (usually at the top of the ``pto``
-file) gives the horizontal field of view of the output panorama.
-
-Set the *Focal Length*/``camfocal`` to 1., and set the *Horiz.
-Aperture*/``camhaperture`` to ``2*tan(v*pi/360)``, replacing ``v`` with
-its actual value.
-
-You can then copy these two parameters to all the **Card3D** nodes, or -
-even better - link these parameters, so that the output camera for the
-panorama can then be modified: Right-click on the parameter from the
-first **Card3D**, Copy Link, then right-click on the same parameter of
-every other **Card3D** node, Paste Link.
-
-If you intend to modify the camera orientation later, you can also link
-the same way the *Rotate*/``camRotate`` parameter (those for the camera,
-not the card).
-
-Note that when the Natron **Card3D** node is used in Nuke (where it
-appears as **Card3DOFX**), the node has an external Cam input, to which
-a Camera node may be connected. There may be a similar concept in future
-versions of Natron.
+A value written as ``name=N``, such as ``v=0`` or ``a=0``, is linked to
+image ``N``: use the value from the ``i`` line of image ``N`` (images are
+numbered from 0).
 
 Building the panorama in Natron
 -------------------------------
 
-First sketch: overlap the images
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Project format
+~~~~~~~~~~~~~~
 
-Make sure that the *Output Components* parameter in all readers is set
-to RGBA, so that images have a transparent value outside of their
-domain.
+In the project settings (see :ref:`compositing-projects-setup`), set the
+output format to the size of the panorama, given by ``w`` and ``h`` on the
+``p`` line.
 
-Now, connect the outpput of the first *Card3D* to the B input of a
-**Merge** node, connect the secont to the A input, the third to the A2
-input, etc...
+Reading the images
+~~~~~~~~~~~~~~~~~~
 
-The output of the **Merge** node should show a first panorama, obtained
-by overlapping all images.
+Add a :ref:`Read <fr.inria.built-in.Read>` node for each image (or video),
+and set its **Output Components** to **RGBA**, so that the area outside each
+image is transparent after the projection.
+
+Distortion correction
+~~~~~~~~~~~~~~~~~~~~~
+
+After each Read node, add a :ref:`LensDistortion <net.sf.openfx.LensDistortion>`
+node. Set **Model** to **PanoTools** and **Direction** to **Undistort**, then
+copy the ``a``, ``b``, ``c``, ``d``, ``e``, ``g`` and ``t`` values from the
+image's ``i`` line into the **a**, **b**, **c**, **d**, **e**, **g** and
+**t** parameters (script names ``pt_a`` … ``pt_t``).
+
+If all images share the same lens (the ``i`` lines of the other images
+contain ``a=0 b=0 c=0 d=0 e=0 g=0 t=0``), set up the first LensDistortion
+node, then clone it: select it, right-click in the Node Graph and choose
+**Edit > Clone Nodes** (:kbd:`Alt+K`). Clones share their parameter values.
+
+Projection
+~~~~~~~~~~
+
+After each LensDistortion node, add a :ref:`Card3D <net.sf.openfx.Card3D>`
+node, which places the image on a card in front of a camera, as the
+``nona`` remapping tool does. In each Card3D node:
+
+- Set the card's **Transform Order** (``cardXformOrder``) to **STR**, so
+  that the card rotates around the camera. Leave the card's **Rotation
+  Order** (``cardRotOrder``) at its default, **ZXY**, which matches the
+  PanoTools order (roll, then pitch, then yaw). These are the card
+  parameters, not those of the **Axis** and **Cam** groups at the top of
+  the parameters.
+- Leave **Output Format** at its default, **Project**.
+- Set the card's **Rotate** (``cardRotate``) from the ``i`` line:
+  ``cardRotate.x = p``, ``cardRotate.y = -y`` and ``cardRotate.z = -r``.
+  In PanoTools, a positive yaw moves the image to the right and a positive
+  roll turns it clockwise, the opposite of the Card3D rotations.
+- Set **Lens-In H.Aperture** (``lensInHAperture``) to
+  ``2*tan(v*pi/360)``, where ``v`` is the field of view from the ``i``
+  line, and leave **Lens-In Focal** at 1. You can type the expression
+  directly in the value field, with ``v`` replaced by its value.
+
+Camera
+~~~~~~
+
+The camera defines the view of the panorama. In the first Card3D node, open
+the **Cam** group:
+
+- Check **Enable Camera**. When it is unchecked, Card3D uses a default
+  camera with a horizontal field of view of about 53°.
+- In the **Cam Projection** group, set **Focal Length** (``camfocal``) to 1
+  and **Horiz. Aperture** (``camhaperture``) to ``2*tan(v*pi/360)``, where
+  ``v`` is the field of view from the ``p`` line.
+
+All Card3D nodes must use the same camera. Natron's Card3D node has no
+camera input, so link the camera parameters instead: right-click
+**Enable Camera** in the first Card3D node, choose **Copy Link**, then
+right-click the same parameter in each other Card3D node and choose
+**Paste Link**. Do the same for **Focal Length** and **Horiz. Aperture**,
+and for **Cam Rotate** (``camRotate``) if you want to change the view
+direction later.
+
+Overlapping the images
+~~~~~~~~~~~~~~~~~~~~~~
+
+Connect the first Card3D node to the **B** input of a
+:ref:`Merge <net.sf.openfx.MergePlugin>` node, the second one to the
+**A** input, the third one to **A2**, and so on. The Merge node now shows a
+first version of the panorama, with the images stacked on top of each other.
 
 Drawing the masks
 ~~~~~~~~~~~~~~~~~
 
-Add a **Roto** node after each **LensDistortion**, before each
-**Card3D**.
+To hide the seams, add a :ref:`Roto <fr.inria.built-in.Roto>` node between
+each LensDistortion node and its Card3D node, and draw a mask for each
+image:
 
-Only leave connected the A and B inputs to the **Merge** node to the two
-first **Card3D** nodes.
+1. Connect only the first two Card3D nodes to the Merge node (inputs B and
+   A), and view the Merge output.
+2. In the Roto node of the second image, check **Premultiply**, and uncheck
+   **R**, **G** and **B**, so that only the alpha channel is affected.
+3. Draw a shape on the second image, and set its **Operator** to **min**
+   (the default is **over**), so that the shape masks the image's own alpha.
+   Feather the shape, especially in the overlap area.
+4. Connect the third Card3D node to the **A2** input, and draw its mask the
+   same way. Repeat for each image.
 
-Check *Premultiply* in each Roto node, check that only the A channel is
-affected by **Roto** in its parameters, and start editing the roto mask
-on the second image, for which the **LensDistortion** output is
-connected to the A input of the **Merge**, while viewing the output of
-the **Merge**.
+.. _tutorials-hugin-limits:
 
-Set the compositing operator of each roto shape to "min" instead of
-"over", so that the original image alpha gets masked by the roto shape.
-
-Do not forget to add feather, especially in the overlap area.
-
-Then, reconnect the A2 input to the third **Card3D**, and start editing
-its roto mask, always in "min" compositing mode.
-
-Do the same with A3, A4, etc... and you should end up with a full
-panorama.
-
-Future work
+Limitations
 -----------
 
-Camera response
-~~~~~~~~~~~~~~~
+- **Projections:** Card3D is a pinhole camera, so the source images must be
+  rectilinear (``f0`` on the ``i`` lines) and the output must be rectilinear
+  (``f0`` on the ``p`` line), with a field of view well under 180°.
+  Fisheye images and cylindrical or equirectangular panoramas are not
+  supported.
+- **Camera translation:** the ``TrX``, ``TrY`` and ``TrZ`` parameters
+  (mosaic mode) are not used by this method.
+- **Photometric parameters:** this method ignores the camera response
+  (``Ra`` … ``Re``, see
+  `Camera response curve <https://wiki.panotools.org/Camera_response_curve>`__),
+  the exposure (``Eev``), the white balance multipliers (``Er`` and ``Eb``),
+  and the vignetting correction (``Va`` … ``Vd``, center shift ``Vx`` and
+  ``Vy``, see `Vignetting <https://wiki.panotools.org/Vignetting>`__). If
+  the images differ in brightness or color, correct them with a Grade or
+  ColorCorrect node before the Card3D node.
+- **Blending:** the ``enblend`` seams are not imported. You can read the
+  ``mask-*.tif`` files that ``enblend --save-masks`` writes and use them as
+  masks, but they are in the panorama space, after the Card3D projection.
 
-See `Camera response
-curve <http://wiki.panotools.org/Camera_response_curve>`__ and
-`Vig\_optimize <http://wiki.panotools.org/Vig_optimize>`__.
+See also
+--------
 
-The values ``Ra`` ``Rb`` ``Rc`` ``Rd`` ``Re`` on the ``i`` line encode a
-color response curve (EMoR). See ``EMoRParams``\ in the hugin source
-code.
-
-Exposure and color
-~~~~~~~~~~~~~~~~~~
-
-See `Vignetting <http://wiki.panotools.org/Vignetting>`__ and
-`Vig\_optimize <http://wiki.panotools.org/Vig_optimize>`__.
-
-``Eev`` encodes the exposure, see ``ExposureValue`` in the hugin source
-code.
-
-``Er`` and ``Eb`` encode the red and blue multipliers, see
-``WhiteBalanceRed`` and ``WhiteBalanceBlue`` in the hugin source code.
-
-Vignetting
-~~~~~~~~~~
-
-See `Vignetting <http://wiki.panotools.org/Vignetting>`__ and
-`Vig\_optimize <http://wiki.panotools.org/Vig_optimize>`__.
-
-``Va`` is always 1, see ``VigCorrMode`` in the hugin source code.
-
-``Vb`` ``Vc`` ``Vd`` encode the degree 2, 4 and 6 coefficients for
-vignette correction, see ``RadialVigCorrCoeff`` in the hugin source
-code.
-
-``Vx`` and ``Vy`` encode the vignetting center shift, see
-``RadialVigCorrCenterShift`` in the hugin source code.
-
-Blending
-~~~~~~~~
-
--  importing enblend masks, using them as roto masks
-
--  executing enblend externally (using RunScript maybe?)
+- :doc:`compositing-transform`: the Transform and CornerPin nodes.

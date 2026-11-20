@@ -3,11 +3,14 @@
 #file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #Created by Alexandre GAUTHIER-FOICHAT on 01/27/2015.
 
-from qtpy.QtGui import *
-from qtpy.QtCore import *
+# qtpy picks the Qt binding that Natron was built with: PySide2 (Qt 5) or PySide6 (Qt 6)
+from qtpy import QtCore, QtGui, QtWidgets
 
-#To import the variable "natron"
-from NatronGui import *
+import NatronEngine
+import NatronGui
+
+#The variable "natron" (a PyGuiApplication) gives access to the application
+from NatronGui import natron
 
 #Callback called when a parameter of the player changes
 #The variable paramName is declared by Natron; indicating the name of the parameter which just had its value changed
@@ -70,7 +73,7 @@ class IconViewer(NatronGui.PyPanel):
     userFileChanged = QtCore.Signal()
 
     #Slots should be decorated:
-    #http://qt-project.org/wiki/Signals_and_Slots_in_PySide
+    #https://doc.qt.io/qtforpython-6/tutorials/basictutorial/signals_and_slots.html
     
     #This is called upon a user click on the button
     @QtCore.Slot()
@@ -94,7 +97,7 @@ class IconViewer(NatronGui.PyPanel):
     #This is called when our custom userFileChanged signal is emitted
     @QtCore.Slot()
     def onFileChanged(self):
-        self.label.setPixmap(QPixmap(self.locationEdit.text()))
+        self.label.setPixmap(QtGui.QPixmap(self.locationEdit.text()))
     
     
     def __init__(self,scriptName,label,app):
@@ -107,29 +110,29 @@ class IconViewer(NatronGui.PyPanel):
         self.currentApp = app
         
         #Set the layout
-        self.setLayout( QVBoxLayout())
+        self.setLayout( QtWidgets.QVBoxLayout())
         
         #Create a widget container for the line edit + button
-        fileContainer = QWidget(self)
-        fileLayout = QHBoxLayout()
+        fileContainer = QtWidgets.QWidget(self)
+        fileLayout = QtWidgets.QHBoxLayout()
         fileContainer.setLayout(fileLayout)
         
         #Create the line edit, make it expand horizontally
-        self.locationEdit = QLineEdit(fileContainer)
-        self.locationEdit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.locationEdit = QtWidgets.QLineEdit(fileContainer)
+        self.locationEdit.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Preferred)
         
         #Create a pushbutton
-        self.button = QPushButton(fileContainer)
+        self.button = QtWidgets.QPushButton(fileContainer)
         #Decorate it with the open-file pixmap built-in into Natron
         buttonPixmap = natron.getIcon(NatronEngine.Natron.PixmapEnum.NATRON_PIXMAP_OPEN_FILE)
-        self.button.setIcon(QIcon(buttonPixmap))
+        self.button.setIcon(QtGui.QIcon(buttonPixmap))
         
         #Add widgets to the layout
         fileLayout.addWidget(self.locationEdit)
         fileLayout.addWidget(self.button)
         
         #Use a QLabel to display the images
-        self.label = QLabel(self)
+        self.label = QtWidgets.QLabel(self)
         
         #Init the label with the icon of Natron
         natronPixmap = natron.getIcon(NatronEngine.Natron.PixmapEnum.NATRON_PIXMAP_APP_ICON)
@@ -138,7 +141,7 @@ class IconViewer(NatronGui.PyPanel):
         self.locationEdit.setText(":/Resources/Images/natronIcon256_linux.png")
         
         #Make it expand in both directions so it takes all space
-        self.label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.label.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding)
 
         #Add widgets to the layout
         self.layout().addWidget(fileContainer)
@@ -157,13 +160,13 @@ class IconViewer(NatronGui.PyPanel):
     def restore(self,data):
 
         self.locationEdit.setText(data)
-        self.label.setPixmap(QPixmap(data))
+        self.label.setPixmap(QtGui.QPixmap(data))
 
 #To be called to create a new icon viewer panel:
 #Note that *app* should be defined. Generally when called from onProjectCreatedCallback
 #this is set, but when called from the Script Editor you should set it yourself beforehand:
 #app = app1
-#See http://natron.readthedocs.org/en/python/natronobjects.html for more info
+#See https://natron.readthedocs.io/en/rb-2.6/devel/natronobjects.html for more info
 def createIconViewer():
     
     if hasattr(app,"p"):

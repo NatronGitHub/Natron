@@ -679,7 +679,6 @@ fi
 # OFX GMIC
 if [ "${BUNDLE_GMIC:-}" = "1" ]; then
     GMIC_DLL=(
-        libfftw3-3.dll
         libcurl-4.dll
         libbrotlidec.dll
         libbrotlicommon.dll

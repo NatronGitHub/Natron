@@ -48,5 +48,6 @@ set(tess_SOURCES
         tessmono.c
 )
 add_library(tess STATIC ${tess_HEADERS} ${tess_SOURCES})
-target_include_directories(tess PUBLIC .)
+target_include_directories(tess SYSTEM PUBLIC .)
+target_compile_options(tess PRIVATE ${NATRON_THIRD_PARTY_NO_WARNINGS})
 set_target_properties(tess PROPERTIES POSITION_INDEPENDENT_CODE ON)

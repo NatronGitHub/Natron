@@ -31,35 +31,61 @@ Effects
   point to rendering (:ref:`maint-rendering`). Defines the *actions* an effect
   supports — region of definition, region of interest, frames needed, get
   metadata, and render.
-- ``OutputEffectInstance``: base for effects that *drive* a render (writers,
-  the viewer).
-- OpenFX effects: ``OfxEffectInstance`` wraps a plug-in; see
-  :ref:`maint-openfx`.
-- Built-in effects: ``ViewerInstance``, ``RotoPaint``, ``TrackerNode``,
-  ``ReadNode``/``WriteNode`` (which themselves dispatch to OFX reader/writer
-  plug-ins), ``Backdrop``, ``Dot``, ``PrecompNode``, ``DiskCacheNode``,
-  ``OneViewNode``, ``JoinViewsNode``, ``NoOpBase`` subclasses.
+- ``OutputEffectInstance``: base for effects that can *drive* a render (it
+  owns a ``RenderEngine``). Despite the name, it is the base of most effects:
+  OpenFX effects, the Viewer, groups and the no-op nodes (see
+  :ref:`maint-architecture`).
+- OpenFX effects: ``OfxEffectInstance`` (through ``AbstractOfxEffectInstance``)
+  wraps a plug-in; see :ref:`maint-openfx`.
+- Built-in effects, by base class:
+
+  - ``OutputEffectInstance``: ``ViewerInstance``, ``DiskCacheNode``,
+    ``NoOpBase`` (and its subclasses ``Dot``, ``Backdrop``, ``GroupInput``,
+    ``GroupOutput``), ``NodeGroup``;
+  - ``NodeGroup``: ``WriteNode`` (which embeds an OFX writer plug-in) and
+    ``TrackerNode``;
+  - ``EffectInstance``: ``ReadNode`` (which embeds an OFX reader plug-in),
+    ``RotoPaint`` (and its subclass ``RotoNode``), ``RotoSmear`` (internal,
+    used by smear strokes), ``PrecompNode``, ``OneViewNode``,
+    ``JoinViewsNode``.
+
+  They are registered in ``AppManager::loadBuiltinNodePlugins()``; see
+  :ref:`maint-builtin-node` to add one.
 
 Parameters: the Knob system
 ---------------------------
 
 Knobs are Natron's animated, expression-driven parameters. The hierarchy is:
 
-- ``KnobI`` (``Knob.h``) — the interface.
-- ``KnobHelper`` — the base implementation (animation, expressions, listeners,
-  cloning). ``KnobImpl.h`` provides the templated value machinery.
+- ``KnobI`` (``Knob.h``) — the interface. It derives from ``OverlaySupport``
+  and ``std::enable_shared_from_this<KnobI>``.
+- ``KnobHelper`` — the base implementation (animation curves, expressions,
+  links, listeners).
+- ``Knob<T>`` (``Knob.h``, implemented in ``KnobImpl.h``) — the class template
+  that stores the values of type ``T``, with the typedefs ``KnobIntBase``,
+  ``KnobDoubleBase``, ``KnobBoolBase`` and ``KnobStringBase``.
 - Concrete knobs (``KnobTypes.h``/``KnobTypes.cpp``, ``KnobFile.*``):
   ``KnobInt``, ``KnobDouble``, ``KnobBool``, ``KnobChoice``, ``KnobColor``,
   ``KnobString``, ``KnobPath``, ``KnobFile``, ``KnobOutputFile``, ``KnobGroup``,
   ``KnobPage``, ``KnobButton``, ``KnobSeparator``, ``KnobParametric``,
   ``KnobTable``, ``KnobLayers``.
-- ``KnobHolder`` — anything that owns knobs (every ``EffectInstance``, and
-  ``Settings``). ``KnobFactory`` (``KnobFactory.cpp``) constructs them.
+- ``KnobHolder`` (a ``QObject``) — anything that owns knobs (every
+  ``EffectInstance``, the ``Project`` and the ``Settings``). ``KnobFactory``
+  (``KnobFactory.cpp``) constructs them.
 - ``KnobSignalSlotHandler`` — the ``QObject`` companion that emits a knob's
-  signals (knobs are not ``QObject``).
+  signals.
 - Related: ``Curve`` (``Curve.cpp``) and ``KeyFrame`` for animation;
-  ``Interpolation.cpp`` for keyframe interpolation; ``StringAnimationManager``
-  for animating string values.
+  ``Interpolation.cpp`` for keyframe interpolation.
+- ``StringAnimationManager`` animates string values (``AnimatingKnobStringHelper``).
+  The curve value of a string keyframe is the id of its string in a table of
+  interned strings, which is only valid inside one Natron process. Projects store
+  the strings by time (``StringsAnimation``) and the keyframe indices as curve values,
+  which is the format older versions such as 2.5 read.
+  Never expose or persist the ids: ``Curve::getValueAt()`` and
+  ``Curve::getKeyFramesForDisplay_mt_safe()`` return keyframe indices for string curves.
+
+How values, animation, links and expressions interact is explained in
+:ref:`maint-knobs`.
 
 Rendering, scheduling and caching
 ---------------------------------
@@ -68,7 +94,7 @@ Covered in depth in :ref:`maint-rendering`. Key files: ``EffectInstanceRenderRoI
 ``ParallelRenderArgs.*``, ``OutputSchedulerThread.*``, ``GenericSchedulerThread.*``,
 ``ThreadPool.*``, ``AbortableRenderInfo.*``, ``RenderStats.*``, and the cache
 (``Cache.h``, ``CacheEntry.h``, ``LRUHashTable.h``, ``MemoryFile.*``,
-``FrameEntry.*`` for the viewer texture cache).
+``FrameEntry.*`` for the viewer texture cache; see :ref:`maint-cache`).
 
 Images and color
 ----------------
@@ -106,7 +132,8 @@ Application services
 --------------------
 
 - ``AppManager`` (``AppManager.cpp``, ``AppManagerPrivate.*``): the singleton;
-  plug-in discovery/registry, OFX host, global cache, settings, factories.
+  plug-in discovery/registry, OFX host, caches, settings, factories, and the
+  startup sequence (see :ref:`maint-startup`).
 - ``AppInstance`` (``AppInstance.cpp``): one document/session.
 - ``Settings`` (``Settings.cpp`` — very large): the user preferences, themselves
   modeled as a ``KnobHolder`` so the preferences panel is built from knobs.
@@ -128,3 +155,16 @@ The classes prefixed ``Py`` (``PyNode``, ``PyParameter``, ``PyRoto``,
 ``PyExprUtils``) are the C++ side of Natron's Python API. They are thin,
 scripting-friendly facades over the engine objects, exposed to Python through
 Shiboken using ``typesystem_engine.xml``. See :ref:`maint-python`.
+
+More on the Engine
+------------------
+
+The following chapters go deeper into the knob system, the project file format,
+and how to add a built-in node.
+
+.. toctree::
+   :maxdepth: 1
+
+   knobs
+   serialization
+   builtin-node

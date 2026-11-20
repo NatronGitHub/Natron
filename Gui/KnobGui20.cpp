@@ -470,7 +470,7 @@ KnobGui::onSetValueUsingUndoStack(const Variant & v,
     } else if (isDouble) {
         pushUndoCommand( new KnobUndoCommand<double>(shared_from_this(), isDouble->getValue(dim), v.toDouble(), dim) );
     } else if (isString) {
-        pushUndoCommand( new KnobUndoCommand<std::string>(shared_from_this(), isString->getValue(dim), v.toString().toStdString(), dim) );
+        pushUndoCommand( new KnobUndoCommand<std::string>(shared_from_this(), isString->getValue(dim), KnobBytes::stringFromVariant(knob.get(), v), dim) );
     }
 }
 

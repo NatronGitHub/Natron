@@ -1244,10 +1244,7 @@ insidebbox(const Point& a,
 {
     RectD bbox;
 
-    bbox.x1 = std::numeric_limits<double>::infinity();
-    bbox.x2 = -std::numeric_limits<double>::infinity();
-    bbox.y1 = std::numeric_limits<double>::infinity();
-    bbox.y2 = -std::numeric_limits<double>::infinity();
+    bbox.setupInfinity();
     bbox.merge( RectD(a.x, a.y, a.x, a.y) );
     bbox.merge( RectD(b.x, b.y, b.x, b.y) );
     bbox.merge( RectD(c.x, c.y, c.x, c.y) );
@@ -1391,10 +1388,7 @@ CoonsRegularization::regularize(const BezierCPs &patch,
     int sign;
     {
         RectD bbox;
-        bbox.x1 = std::numeric_limits<double>::infinity();
-        bbox.x2 = -std::numeric_limits<double>::infinity();
-        bbox.y1 = std::numeric_limits<double>::infinity();
-        bbox.y2 = -std::numeric_limits<double>::infinity();
+        bbox.setupInfinity();
         Bezier::bezierSegmentListBboxUpdate(false, patch, true, false, time, ViewIdx(0), 0, Transform::Matrix3x3(), &bbox);
         if ( !bbox.contains(pointInside.x, pointInside.y) ) {
             sign = 0;

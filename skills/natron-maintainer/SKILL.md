@@ -88,7 +88,7 @@ cmake -S . -B build -DNATRON_QT6=ON           # Qt6.3+PySide6+OpenGLWidgets
 cmake --build build -j
 ctest --test-dir build                        # unit tests (or -DNATRON_BUILD_TESTS=OFF)
 ```
-Build (qmake, Qt5 only today): ``qmake Project.pro && make`` (see ``INSTALL_*.md``).
+The qmake build (``qmake -r Project.pro && make``) is **deprecated** (#1181): it still works on RB-2.6, where the release scripts in ``tools/jenkins`` use it, and will be removed on RB-2.7 first. qmake doesn't run shiboken, so only CMake builds the Qt6 bindings. Use CMake (see ``INSTALL_*.md``).
 
 Code style (enforced by ``.git-hooks/pre-commit``):
 ```bash
@@ -111,8 +111,17 @@ Do NOT hand-edit ``index.rst`` (except to add a whole new guide to the toctree),
   ``QtCompat::wildcardToRegularExpression()`` (``*`` matches ``/``), not Qt's
   path-aware ``QRegularExpression::wildcardToRegularExpression()``; add
   ``UseUnicodePropertiesOption`` when a pattern uses ``\w``/``\b``/``\d``.
-- **To do:** regenerate PySide6/Shiboken6 bindings (fixes enum/flag issue
-  #854); bring qmake build to Qt6 parity.
+- **Done (#1186–#1188):** Engine, Gui and the bindings compile with Qt6
+  (checked on Windows and Linux, Qt5 unchanged); CMake ``NATRON_QT6=ON``
+  generates the Shiboken6/PySide6 bindings; qmake has an untested Qt6 path that
+  generates no bindings; ``QtCompat::MutexLock`` (QMutex or QRecursiveMutex,
+  null locks nothing) and ``QtCompat::QEnterEvent`` (for ``enterEvent``
+  overrides) in ``Global/QtCompat.h``.
+- **To do:** validate PySide6 bindings and the Qt6 GUI at run time (enum/flag
+  issue #854; ``QT_API`` is ``pyside6`` with Qt6, #1262); Qt6 CI build (nightly/on demand, not
+  per PR); C++20 with Qt6 (#1148). No more Qt6 work on the deprecated qmake
+  build (CMake is the Qt6 build). Qt5-preserving Qt6 work goes to RB-2.6;
+  RB-2.7 is the Qt6 branch.
 - Keep Qt 5.15 working: prefer APIs present in both; else shim in
   ``QtCompat.h``; else guard with ``#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)``.
 - Full plan: ``Documentation/source/maintainers/qt6-migration.rst``.
@@ -139,4 +148,4 @@ popular features, **P3** polish. Full analysis:
   project files).
 - Making a core value-type a ``QObject`` for signals — use the
   ``KnobSignalSlotHandler`` companion pattern.
-- Editing only one of the two build systems (qmake **and** CMake must stay in sync).
+- Adding or removing a source file in CMake only: while the deprecated qmake build exists, the ``*.pro`` files must list the same sources (``tools/utils/checkQmakeSources.py``).

@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _ChoiceParam:
 
 ChoiceParam
@@ -53,92 +53,93 @@ Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-.. method:: NatronEngine.ChoiceParam.addOption(option, help)
+.. method:: ChoiceParam.addOption(option, help)
 
 
-    :param option: :class:`str<NatronEngine.std::string>`
-    :param help: :class:`str<NatronEngine.std::string>`
+    :param option: :class:`str`
+    :param help: :class:`str`
 
 Adds a new *option* to the menu. If *help* is not empty, it will be displayed when the user
 hovers the entry with the mouse.
 
 
 
-.. method:: NatronEngine.ChoiceParam.get(frame)
+.. method:: ChoiceParam.get(frame)
 
 
-    :param frame: :class:`float<PySide.QtCore.float>`
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :param frame: :class:`float`
+    :rtype: :class:`int`
 
 Get the value of the parameter at the given *frame*.
 
 
 
 
-.. method:: NatronEngine.ChoiceParam.get()
+.. method:: ChoiceParam.get()
+    :noindex:
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Get the value of the parameter at the current timeline's time.
 
 
 
 
-.. method:: NatronEngine.ChoiceParam.getDefaultValue()
+.. method:: ChoiceParam.getDefaultValue()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Get the default value for this parameter.
 
 
 
 
-.. method:: NatronEngine.ChoiceParam.getOption(index)
+.. method:: ChoiceParam.getOption(index)
 
 
-    :param index: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :param index: :class:`int`
+    :rtype: :class:`str`
 
 Get the menu entry at the given *index*.
 
 
 
-.. method:: NatronEngine.ChoiceParam.getNumOptions()
+.. method:: ChoiceParam.getNumOptions()
 
     :rtype: :class:`int`
 
 Returns the number of menu entries.
 
-.. method:: NatronEngine.ChoiceParam.getOptions()
+.. method:: ChoiceParam.getOptions()
 
     :rtype: :class:`sequence`
 
 Returns a sequence of string with all menu entries from top to bottom.
 
-.. method:: NatronEngine.ChoiceParam.getValue()
+.. method:: ChoiceParam.getValue()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Same as :func:`get()<NatronEngine.ChoiceParam.get>`
 
 
 
 
-.. method:: NatronEngine.ChoiceParam.getValueAtTime(time)
+.. method:: ChoiceParam.getValueAtTime(time)
 
 
-    :param time: :class:`float<PySide.QtCore.float>`
-    :rtype: :class:`float<PySide.QtCore.float>`
+    :param time: :class:`float`
+    :rtype: :class:`float`
 
 Same as :func:`get(frame)<NatronEngine.ChoiceParam.get>`
 
 
 
 
-.. method:: NatronEngine.ChoiceParam.restoreDefaultValue()
+.. method:: ChoiceParam.restoreDefaultValue()
 
 
 
@@ -148,10 +149,10 @@ to be the default value.
 
 
 
-.. method:: NatronEngine.ChoiceParam.set(x)
+.. method:: ChoiceParam.set(x)
 
 
-    :param x: :class:`int<PySide.QtCore.int>`
+    :param x: :class:`int`
 
 Set the value of this parameter to be *x*. If this parameter is animated (see :func:`getIsAnimated(dimension)<NatronEngine.AnimatedParam.getIsAnimated>`
 then this function will automatically add a keyframe at the timeline's current time.
@@ -159,37 +160,40 @@ then this function will automatically add a keyframe at the timeline's current t
 
 
 
-.. method:: NatronEngine.ChoiceParam.set(x, frame)
+.. method:: ChoiceParam.set(x, frame)
+    :noindex:
 
 
-    :param x: :class:`int<PySide.QtCore.int>`
-    :param frame: :class:`float<PySide.QtCore.float>`
+    :param x: :class:`int`
+    :param frame: :class:`float`
 
 Set a new keyframe on the parameter with the value *x* at the given *frame*.
 
 
 
-.. method:: NatronEngine.ChoiceParam.set(label)
+.. method:: ChoiceParam.set(label)
+    :noindex:
 
 
-    :param label: :class:`str<NatronEngine.std::string>`
+    :param label: :class:`str`
 
 Set the value of this parameter given a *label*. The *label* must match an existing option.
 Strings will be compared without case sensitivity. If not found, nothing happens.
 
 
-.. method:: NatronEngine.ChoiceParam.setDefaultValue(value)
+.. method:: ChoiceParam.setDefaultValue(value)
 
 
-    :param value: :class:`int<PySide.QtCore.int>`
+    :param value: :class:`int`
 
 
 Set the default *value* for this parameter.
 
-.. method:: NatronEngine.ChoiceParam.setDefaultValue(label)
+.. method:: ChoiceParam.setDefaultValue(label)
+    :noindex:
 
 
-    :param label: :class:`str<Natron.std::string>`
+    :param label: :class:`str`
 
 
 Set the default value from the *label* for this parameter. The *label* must match an existing option.
@@ -197,7 +201,7 @@ Strings will be compared without case sensitivity. If not found, nothing happens
 
 
 
-.. method:: NatronEngine.ChoiceParam.setOptions(options)
+.. method:: ChoiceParam.setOptions(options)
 
 
     :param options: class::`sequence`
@@ -207,21 +211,21 @@ to the menu.
 
 
 
-.. method:: NatronEngine.ChoiceParam.setValue(value)
+.. method:: ChoiceParam.setValue(value)
 
 
-    :param value: :class:`int<PySide.QtCore.int>`
+    :param value: :class:`int`
 
 Same as :func:`set<NatronEngine.ChoiceParam.setValue>`
 
 
 
 
-.. method:: NatronEngine.ChoiceParam.setValueAtTime(value, time)
+.. method:: ChoiceParam.setValueAtTime(value, time)
 
 
-    :param value: :class:`int<PySide.QtCore.int>`
-    :param time: :class:`int<PySide.QtCore.int>`
+    :param value: :class:`int`
+    :param time: :class:`int`
 
 Same as :func:`set(time)<NatronEngine.ChoiceParam.set`
 

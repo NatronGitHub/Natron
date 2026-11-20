@@ -81,8 +81,12 @@ ImageLayer::getHash(const ImageLayer& layer)
     for (std::size_t i = 0; i < comps.size(); ++i) {
         Hash64_appendQString( &h, QString::fromUtf8( comps[i].c_str() ) );
     }
+    // value() is 0 until the appended data is hashed (#1275)
+    h.computeHash();
+    int ret = (int)h.value();
 
-    return (int)h.value();
+    // This is also the Python hash of the layer (hash-function in typesystem_engine.xml), and Python reserves -1 for errors
+    return ret == -1 ? -2 : ret;
 }
 
 bool
@@ -401,6 +405,7 @@ Effect::createParamWrapperForKnob(const KnobIPtr& knob)
     KnobPagePtr isPage = std::dynamic_pointer_cast<KnobPage>(knob);
     KnobParametricPtr isParametric = std::dynamic_pointer_cast<KnobParametric>(knob);
     KnobSeparatorPtr isSep = std::dynamic_pointer_cast<KnobSeparator>(knob);
+    KnobBytesPtr isBytes = std::dynamic_pointer_cast<KnobBytes>(knob);
 
     if (isInt) {
         switch (dims) {
@@ -454,6 +459,8 @@ Effect::createParamWrapperForKnob(const KnobIPtr& knob)
         return new ButtonParam(isButton);
     } else if (isSep) {
         return new SeparatorParam(isSep);
+    } else if (isBytes) {
+        return new BytesParam(isBytes);
     }
 
     return NULL;

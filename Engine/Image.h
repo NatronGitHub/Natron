@@ -127,6 +127,9 @@ public:
 #if NATRON_ENABLE_TRIMAP
     ///Fill with 2 the roi
     void markForRendering(const RectI & roi);
+
+    ///Set to 0 the pixels marked as being rendered (2), and return how many there were
+    std::size_t clearPixelsBeingRendered();
 #endif
 
     void clear(const RectI& roi) { markFor(roi, 0); }
@@ -413,6 +416,14 @@ public:
 
             return img->getBitmapAt(x, y);
         }
+
+        /// The bounds of the image, which can't change while this object lives
+        const RectI& getBounds() const
+        {
+            assert(img);
+
+            return img->_bounds;
+        }
     };
 
     typedef std::shared_ptr<ReadAccess> ReadAccessPtr;
@@ -464,6 +475,14 @@ public:
             assert(img);
 
             return img->getBitmapAt(x, y);
+        }
+
+        /// The bounds of the image, which can't change while this object lives
+        const RectI& getBounds() const
+        {
+            assert(img);
+
+            return img->_bounds;
         }
     };
 
@@ -756,7 +775,8 @@ public:
 
     /**
      * @brief Upscales a portion of this image into output.
-     * If the upscaled roi does not fit into output's bounds, it is cropped first.
+     * roi is clamped to the bounds of this image. The upscaled roi is then clipped to the RoD
+     * and to output's bounds. The pixels of output outside of that rectangle are not written.
      **/
     void upscaleMipmap(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, Image* output) const;
 

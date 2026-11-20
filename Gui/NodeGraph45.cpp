@@ -207,7 +207,9 @@ NodeGraph::popFindDialog(const QPoint& p)
     QObject::connect( dialog, SIGNAL(rejected()), this, SLOT(onFindNodeDialogFinished()) );
     QObject::connect( dialog, SIGNAL(accepted()), this, SLOT(onFindNodeDialogFinished()) );
     dialog->move( realPos.x(), realPos.y() );
-    dialog->raise();
+    if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+        dialog->raise();
+    }
     dialog->show();
 }
 
@@ -247,7 +249,9 @@ NodeGraph::renameNode()
     QObject::connect( dialog, SIGNAL(rejected()), this, SLOT(onNodeNameEditDialogFinished()) );
     QObject::connect( dialog, SIGNAL(accepted()), this, SLOT(onNodeNameEditDialogFinished()) );
     dialog->move( realPos.x(), realPos.y() );
-    dialog->raise();
+    if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+        dialog->raise();
+    }
     dialog->show();
 }
 
@@ -655,6 +659,9 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
                                      const NodeCollectionPtr& group,
                                      std::list<std::pair<std::string, NodeGuiPtr> >& createdNodes)
 {
+    // Previews are not computed while the node tree is created: compute those of the created nodes
+    // when this function returns, including on error. Declared before createNodeTree.
+    RefreshPreviewsOfCreatedNodes_RAII refreshPreviews( getGui()->getApp(), group );
     {
         CreatingNodeTreeFlag_RAII createNodeTree( getGui()->getApp() );
         NodeClipBoard clipboard;

@@ -25,10 +25,12 @@ VERSION_22 = 2.2.10
 VERSION_23 = 2.3.16
 VERSION_24 = 2.4.4
 VERSION_25 = 2.5.0
+VERSION_26 = 2.6.0
 VERSION_30 = 3.0.0
 
-# The version for this branch
-VERSION = $$VERSION_25
+# The version for this branch. It goes into the macOS Info.plist, and must
+# match NATRON_VERSION_* in Global/Macros.h (see LATEST_VERSION_README.txt).
+VERSION = $$VERSION_26
 
 TEMPLATE = app
 win32 {
@@ -44,7 +46,7 @@ QT += gui core opengl network widgets concurrent
 # QOpenGLWidget moved to its own module in Qt6; CMake already appends it.
 equals(QT_MAJOR_VERSION, 6): QT += openglwidgets
 
-!noexpat: CONFIG += expat
+CONFIG += expat
 
 macx {
   ### custom variables for the Info.plist file
@@ -72,6 +74,10 @@ win32-msvc* {
 
 include(../OpenColorIO-Configs.pri)
 include(../global.pri)
+
+# Windows: stack reserve of the main thread (see NATRON_MAIN_THREAD_STACK_SIZE in global.pri)
+win32-g++: QMAKE_LFLAGS += -Wl,--stack,$$NATRON_MAIN_THREAD_STACK_SIZE
+win32-msvc*: QMAKE_LFLAGS += /STACK:$$NATRON_MAIN_THREAD_STACK_SIZE
 
 macx {
     Resources.files += $$PWD/../Gui/Resources/Images/natronProjectIcon_osx.icns

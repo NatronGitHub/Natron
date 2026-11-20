@@ -4,92 +4,110 @@
 Write Node
 ==========
 
-.. toctree::
-   :maxdepth: 2
+The Write node renders the result of the graph to disk, as a movie file or as
+an image sequence.
 
-The Write node is where the result of the script is rendered out. This may be formatted as a .mov file, or as an image sequence.
+- Create a Write node (**Image > Write**, or :kbd:`W` in the Node Graph).
+- Connect it to the last node of your graph.
+- Click the folder icon next to **File**, then choose where to write the
+  result and type the file name.
 
-- Create a write node (shortcut  ``w``).
-- Connect the write node to the last node of your NodeTree.
-- Press the little folder icon next to the 'file' value, then navigate to Where you wish the result to be rendered.
+See :doc:`The File Browser <getstarted-environment-fileselect>` section for
+more information.
 
-See :doc:`The File Browser <getstarted-environment-fileselect>` section for more informations.
-
-- The name of the output must be followed by the file extension of the format (.mov, .tga, .tiff etc). Once this is in place, the parameters in the Write node will expand to include those that are specific to that format.
-- The "frame range" "First Frame" "Last Frame" parameter should be specified. In the screen shot below, a frame range of 1 to 665 has been set.
+- The file name must end with the extension of the format (``.mov``,
+  ``.exr``, ``.tif``, ``.png``, ...). Natron picks the writer from the
+  extension, and the Write node then shows the parameters of that format.
+  For an image sequence, put ``#`` characters where the frame number goes,
+  one per digit: ``render.####.exr`` writes ``render.0001.exr``,
+  ``render.0002.exr``, and so on.
+- Choose the frames to render with **Frame Range**: **Union of input
+  ranges**, **Project frame range**, or **Manual** with **First Frame** and
+  **Last Frame**. In the screenshot below, the range is 1 to 665.
 
 .. image:: _images/TheNodes-Image/node_image_write_properties.gif
 
-- Start the Render (ie. start calculation of the result)
+- Start the render:
 
-   * press the "Render" button in the node properties.
+   * click the **Render** button in the node's properties,
 
    .. image:: _images/TheNodes-Image/node_image_write_render.gif
 
-   * Or go to the menu select Render->Render Selected Writers
+   * or select the Write node and choose **Render > Render Selected Writers**.
 
-Filename
---------
-
-Click on the folder icon to open the file browser and choose the file you want to read from disk.
-
-See :doc:`The File Browser <file_browser>` section for more informations
+See :doc:`Rendering projects <compositing-projects-render>` for the other ways
+to render, including from the command line.
 
 Format Type
 -----------
 
-The size of the output image in pixels. This size is not influenced by the proxy setting of the viewer
+**Format Type** sets the size of the output image in pixels:
+
+- **Input Format**: the format of the Write node's input;
+- **Project Format**: the project format;
+- **Fixed Format**: the format chosen in the **Format** parameter.
+
+The proxy mode of the Viewer does not change the size of the rendered files.
 
 Color
 -----
 
-The write node can change the color space of the output image.
+The Write node converts the colors of the image before writing it.
 
 .. image:: _images/TheNodes-Image/node_image_write_color.gif
 
-The file will be converted from "Input colorspace" to "File Colorspace"
+The image is converted from **Input Colorspace** to **File Colorspace**.
 
 .. note::
-   **Tips:** Natron
-     * It is recommended to leave "Input" to linear as this is the recommended basic workflow in Natron
-     * When file and Input spaces are the same, no conversion will occur
-     * Output usually is set to the same colorspace as the main read node. This results in an unmodified image.
+   **Tips:**
+     * Leave **Input Colorspace** set to the linear colorspace (the default):
+       Natron is designed to work on linear images.
+     * When the two colorspaces are the same, no conversion is done.
+     * **File Colorspace** is often set to the colorspace of the main Read
+       node, so that the written image matches the original footage.
 
 Interpretation
 --------------
 
-The Write node can change how the image is exported to disk
+These settings change how the image is written to disk.
 
 .. image:: _images/TheNodes-Image/read_node_interpret_footage.jpg
 
-- Premultiplication.
+- **Input Premult**
 
-   If the processed image has transparent areas and the state of the "premultiplied" flag has been treated properly in your node tree, Natron will guess the value of the "Input Premult".
-   If the result is not correct you can force the "Input Premult" to your liking.
+   If the image has transparent areas and the graph keeps track of
+   premultiplication correctly, Natron sets **Input Premult** for you. If
+   the result is wrong, set it by hand.
 
-   when writing RGBA to a file format that does not support alpha, the write node just drop alpha and don't premultiply (This is new from v2.4 to avoid that the file written to disk look different from the viewer in Nuke
+   When writing an RGBA image to a format that has no alpha channel, the
+   Write node drops the alpha channel and does not premultiply the colors.
+   Since Natron 2.4, this makes the written file look the same as in the
+   Viewer.
 
+- **Output Components**
 
-
-- Output Components
-   tells Natron wether or not to ditch the Alpha channel. The A option is disabled when image format doesn't support alpha channel
+   Chooses whether to write the alpha channel. **RGBA** is not available if
+   the format has no alpha channel.
 
 .. image:: _images/TheNodes-Image/node_image_write_channels.gif
 
 .. note::
-   For Quicktime files the Alpha support is located in the encoder options. Beware that most codecs don't actually support alpha channel (DNxHD, Prores do)
+   For QuickTime and other movie files, alpha is also an encoder option
+   (**Alpha**). Most codecs cannot store an alpha channel: among those
+   Natron can write, ProRes 4444 and Hap Alpha can, but DNxHD and DNxHR
+   cannot.
 
 
 Encoding
 --------
 
-The read node can change the way an image is rendered from the values in the disk file. These options change with the type of file being read.
+The encoder options depend on the file format.
 
+QuickTime and other movie options:
 
-quicktime options:
-
-* Frame rate
-   defaults to the value in the project settings. It can be overridden for movie file types. Image sequence don't have Frame rate.
+* **FPS**
+   defaults to the frame rate of the input; **Reset FPS** sets it back to
+   that value. Image sequences have no frame rate.
 
 
 .. image:: _images/TheNodes-Image/node_image_write_encoder_mov.gif
@@ -97,6 +115,15 @@ quicktime options:
 
 .. note::
    **Tip:**
-   Natron behaves way better with image sequence (numbered) files rather than Movies (quicktime, mp4, ...). More reliable, faster access, possibility to overwrite parts of sequence when (re)rendering are the main reasons for this
+   Natron works better with image sequences (numbered files) than with movie
+   files (QuickTime, MP4, ...): they are more reliable, faster to access, and
+   you can re-render only part of a sequence.
 
-See :doc:`Rendering projects <compositing-projects-render>` section for more information.
+See also
+--------
+
+- :ref:`tutorials-ffmpeg-di`: producing ProRes, DNxHR and other digital
+  intermediates.
+- :ref:`tutorials-ffmpeg-hevc`: encoding HEVC (H.265) from Natron or with
+  ffmpeg.
+- :ref:`tutorials-ffmpeg-audio`: adding sound to the videos written by Natron.

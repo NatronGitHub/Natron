@@ -31,6 +31,7 @@
 #include "ViewerInstance.h"
 
 #include <map>
+#include <memory>
 #include <set>
 #include <vector>
 #include <cmath>
@@ -56,6 +57,61 @@
 
 NATRON_NAMESPACE_ENTER
 
+/**
+ * @brief The lookup table of x^(1/gamma) used to convert images to 8-bit viewer textures.
+ * It is immutable, so that a render keeps using the table of the gamma of its cache key while the user
+ * changes the gamma (#1114).
+ **/
+class GammaLut
+{
+public:
+    explicit GammaLut(double gamma)
+        : _gamma(gamma)
+        , _lut(GAMMA_LUT_NB_VALUES + 1)
+    {
+        if (gamma <= 0) {
+            // gamma = 0: everything is zero, except gamma(1)=1
+            std::fill(_lut.begin(), _lut.begin() + GAMMA_LUT_NB_VALUES, 0.f);
+            _lut[GAMMA_LUT_NB_VALUES] = 1.f;
+
+            return;
+        }
+        for (int position = 0; position <= GAMMA_LUT_NB_VALUES; ++position) {
+            double parametricPos = double(position) / GAMMA_LUT_NB_VALUES;
+            double value = std::pow(parametricPos, 1. / gamma);
+            // set that in the lut
+            _lut[position] = (float)std::max( 0., std::min(1., value) );
+        }
+    }
+
+    double getGamma() const
+    {
+        return _gamma;
+    }
+
+    float lookup(float value) const
+    {
+        if (value < 0.) {
+            return 0.;
+        } else if (value > 1.) {
+            return 1.;
+        } else {
+            int i = (int)(value * GAMMA_LUT_NB_VALUES);
+            assert(0 <= i && i <= GAMMA_LUT_NB_VALUES);
+            float alpha = std::max( 0.f, std::min(value * GAMMA_LUT_NB_VALUES - i, 1.f) );
+            float a = _lut[i];
+            float b = (i  < GAMMA_LUT_NB_VALUES) ? _lut[i + 1] : 0.f;
+
+            return a * (1.f - alpha) + b * alpha;
+        }
+    }
+
+private:
+    const double _gamma;
+    std::vector<float> _lut;
+};
+
+typedef std::shared_ptr<const GammaLut> GammaLutConstPtr;
 
 struct AbortableRenderInfo_CompareAge
 {
@@ -78,6 +134,7 @@ struct RenderViewerArgs
                      int bitDepth_,
                      double gain_,
                      double gamma_,
+                     const GammaLutConstPtr& gammaLut_,
                      double offset_,
                      const Color::Lut* srcColorSpace_,
                      const Color::Lut* colorSpace_,
@@ -91,6 +148,7 @@ struct RenderViewerArgs
         , bitDepth(bitDepth_)
         , gain(gain_)
         , gamma(gamma_)
+        , gammaLut(gammaLut_)
         , offset(offset_)
         , srcColorSpace(srcColorSpace_)
         , colorSpace(colorSpace_)
@@ -107,6 +165,7 @@ struct RenderViewerArgs
     int bitDepth;
     double gain;
     double gamma;
+    GammaLutConstPtr gammaLut; // the table for gamma, used by the 8-bit conversion
     double offset;
     const Color::Lut* srcColorSpace;
     const Color::Lut* colorSpace;
@@ -315,39 +374,18 @@ public:
         return false;
     }
 
-    void fillGammaLut(double gamma)
+    /**
+     * @brief Returns the gamma LUT for the given gamma. The last one is kept, so that renders with the same gamma
+     * share it. Each render gets the LUT of the gamma of its cache key (#1114): the gamma may change during the render.
+     **/
+    GammaLutConstPtr getGammaLut(double gamma) const
     {
-        // gammaLookupMutex should already be locked
-        gammaLookup.resize(GAMMA_LUT_NB_VALUES + 1);
-        if (gamma <= 0) {
-            // gamma = 0: everything is zero, except gamma(1)=1
-            std::fill(gammaLookup.begin(), gammaLookup.begin() + GAMMA_LUT_NB_VALUES, 0.f);
-            gammaLookup[GAMMA_LUT_NB_VALUES] = 1.f;
-            return;
+        QMutexLocker k(&gammaLookupMutex);
+        if ( !gammaLookup || (gammaLookup->getGamma() != gamma) ) {
+            gammaLookup = std::make_shared<const GammaLut>(gamma);
         }
-        for (int position = 0; position <= GAMMA_LUT_NB_VALUES; ++position) {
-            double parametricPos = double(position) / GAMMA_LUT_NB_VALUES;
-            double value = std::pow(parametricPos, 1. / gamma);
-            // set that in the lut
-            gammaLookup[position] = (float)std::max( 0., std::min(1., value) );
-        }
-    }
 
-    float lookupGammaLut(float value) const
-    {
-        if (value < 0.) {
-            return 0.;
-        } else if (value > 1.) {
-            return 1.;
-        } else {
-            int i = (int)(value * GAMMA_LUT_NB_VALUES);
-            assert(0 <= i && i <= GAMMA_LUT_NB_VALUES);
-            float alpha = std::max( 0.f, std::min(value * GAMMA_LUT_NB_VALUES - i, 1.f) );
-            float a = gammaLookup[i];
-            float b = (i  < GAMMA_LUT_NB_VALUES) ? gammaLookup[i + 1] : 0.f;
-
-            return a * (1.f - alpha) + b * alpha;
-        }
+        return gammaLookup;
     }
 
 public Q_SLOTS:
@@ -395,8 +433,8 @@ public:
     mutable QMutex textureBeingRenderedMutex;
     QWaitCondition textureBeingRenderedCond;
     std::list<FrameEntryPtr> textureBeingRendered; ///< a list of all the texture being rendered simultaneously
-    mutable QReadWriteLock gammaLookupMutex;
-    std::vector<float> gammaLookup; // protected by gammaLookupMutex
+    mutable QMutex gammaLookupMutex;
+    mutable GammaLutConstPtr gammaLookup; // protected by gammaLookupMutex
 
     //When painting, this is the last texture we've drawn onto so that we can update only the specific portion needed
     mutable QMutex lastRenderParamsMutex;

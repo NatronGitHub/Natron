@@ -7,7 +7,8 @@
 BOOST_VERSION=1.82.0
 BOOST_LIB_VERSION=$(echo "${BOOST_VERSION//./_}" | sed -e 's/_0$//')
 BOOST_TAR="boost_${BOOST_VERSION//./_}.tar.bz2"
-BOOST_SITE="https://boostorg.jfrog.io/artifactory/main/release/${BOOST_VERSION}/source"
+# boostorg.jfrog.io is dead (it now serves an HTML page)
+BOOST_SITE="https://archives.boost.io/release/${BOOST_VERSION}/source"
 if download_step; then
     download "$BOOST_SITE" "$BOOST_TAR"
 fi

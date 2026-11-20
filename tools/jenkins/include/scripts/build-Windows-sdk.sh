@@ -393,7 +393,6 @@ install_prebuilt_package openal
 install_prebuilt_package opencore-amr
 install_prebuilt_package celt
 install_prebuilt_package gnutls
-install_prebuilt_package fftw
 
 #more dependencies
 install_prebuilt_package c-ares

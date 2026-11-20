@@ -1,6 +1,6 @@
 ---
 name: macports-natron-upgrade
-description: Upgrade the local Natron MacPorts portfile overlay against upstream MacPorts, and build Natron into a macOS arm64 DMG. Use when asked to update/upgrade the Natron MacPorts ports, run check.sh, reintegrate upstream Portfile changes, resolve failing Natron patchfiles after a MacPorts sync, regenerate Portfile.patch files, or build Natron / produce a DMG via tools/jenkins/launchBuildMain.sh. Enforces that the pinned port (libraw) keeps its Portfile.
+description: Upgrade the local Natron MacPorts portfile overlay against upstream MacPorts, and build Natron into a macOS arm64 DMG. Use when asked to update/upgrade the Natron MacPorts ports, run check.sh, reintegrate upstream Portfile changes, resolve failing Natron patchfiles after a MacPorts sync, regenerate Portfile.patch files, or build Natron / produce a DMG via tools/jenkins/launchBuildMain.sh. Enforces that pinned ports (those with a PINNED file: libraw, opencolorio) keep their Portfile.
 version: 1.0.0
 tags: [skill, macports, natron, portfile, upgrade]
 ---
@@ -28,7 +28,7 @@ Each port dir under `tools/MacPorts/<category>/<port>/` follows this convention:
 - `files/` — patchfiles referenced by the Portfile.
 
 Key tooling in `tools/MacPorts/` (run from that dir):
-- `./check.sh` — for every local `Portfile`, compares its `Portfile.orig` against the freshly-synced upstream tree. Prints each obsolete port plus the suggested reintegration command, and reports missing/updated `files/*`.
+- `./check.sh [--all]` — for every installed overlay port (every overlay port with `--all`), compares `Portfile.orig` (or the `Portfile` itself when there is no `.orig`) and `files/*` against the freshly-synced upstream tree, by content. Prints each obsolete port plus the suggested reintegration command, `files/*` that are missing, differ from upstream, or are unused (not referenced by the Portfile and not shipped upstream), port directories without a `Portfile`, and whether `/opt/MacPorts-Natron` differs from the tree (then re-run `./sync.sh`). Exit status 1 when something needs action. Read-only.
 - `./sync.sh` — `rsync`s the whole repo into the overlay `/opt/MacPorts-Natron` and runs `portindex`.
 - `./clean.sh` — removes `work/` build dirs and editor backups.
 
@@ -42,11 +42,12 @@ From 2021 to 2026-11-15, `lang/libomp` was pinned to 11.1.0. Both upstream bugs 
 
 ## Pinned ports
 
-These overlay ports are deliberately older than upstream, or carry patches that must survive reintegration. On reintegration, update only `Portfile.orig` (and regenerate `Portfile.patch`); keep the effective `Portfile` unless the user explicitly approves a version change:
+These overlay ports (each has a `PINNED` file: `ahead` of upstream, unpin when upstream's version is >= ours; or `older`, held back) are deliberately at another version than upstream, or carry patches that must survive reintegration. On reintegration, update only `Portfile.orig` (and regenerate `Portfile.patch`); keep the effective `Portfile` unless the user explicitly approves a version change. Each pinned port has a `PINNED` file: line 1 is the kind, `ahead` (newer than upstream: unpin as soon as upstream catches up, which `check.sh` reports as "upstream caught up: unpin") or `older` (held back until the reason is gone); line 2 is the reason. `check.sh` prints only the `Portfile.orig` update for pinned ports:
 
 | port | pinned | why |
 |---|---|---|
 | `graphics/libraw` | 0.22.3 + `patch-libraw-0.22.3-gpl-demosaic-packs.diff` | upstream LibRaw dropped the GPL demosaic packs in 0.19; the patch restores them (`+gpl2`: AHD-Mod, AFD, VCD, Mixed, LMMSE; `+gpl3`: AMaZE, not shipped). When bumping the version, check that the patch still applies and that `make check` (tests/demosaic_test) reports the packs; rev-bump openimageio so it rebuilds against the same libraw |
+| `graphics/opencolorio` | 2.6.0 (ahead of upstream 2.5.1) | VFX Reference Platform CY2027; keep it until upstream reaches 2.6, and rev-bump openimageio when the OCIO minor version changes |
 
 MacPorts never downgrades: if a pinned port was installed in a newer version, `sudo port -f uninstall <port>` and install it again with the same variants.
 
@@ -97,7 +98,7 @@ This updates MacPorts base and syncs the upstream ports tree that `check.sh` dif
 ```bash
 ./check.sh
 ```
-For each diverged port it prints `<path>/Portfile is obsolete:` and a suggested `cp ...; patch < Portfile.patch` command, plus any missing/updated `files/*`.
+For each diverged port it prints `<path>/Portfile is obsolete:` and a suggested `cp ...; patch < Portfile.patch` command, plus any `files/*` that are missing, differ from upstream, or are unused. Use `./check.sh --all` to include ports that aren't installed.
 
 ### Step 3 — Reintegrate upstream changes (fix everything)
 `Portfile.orig` always becomes the upstream version. For **each** obsolete port (`$P` = the port dir, `$ports` = upstream tree from `check.sh`):
@@ -108,7 +109,7 @@ cp "$ports/$P/Portfile" "$P/Portfile"        # start from new upstream
 ```
 - Naming `Portfile` as the patch target is deterministic (avoids patch guessing between `Portfile.orig`/`Portfile`).
 - If hunks reject (`.rej` files), open each `.rej`, merge the change into `Portfile` by hand to fit the new upstream context, then delete the `.rej` (and any `.orig` left by `patch`).
-- Copy any `files/*` that `check.sh` reported as missing or updated.
+- Copy any `files/*` that `check.sh` reported as missing or differing from upstream, and `git rm` the ones it reports as unused.
 
 **Pinned-port exception:** for the pinned ports above, do the first line only (`cp upstream → Portfile.orig`); **skip** the second `cp` and the re-patch so the pinned `Portfile` is preserved.
 
@@ -164,7 +165,7 @@ The failure is almost always a **context mismatch**: the patch was written for a
 The full macOS build (Natron + OpenFX plugins, bundled into a `.dmg`) is driven by `tools/jenkins/launchBuildMain.sh`, which runs 6 steps: (1) checkout sources, (2) build plugins, (3) build Natron, (4) build installer/DMG, (5) unit tests, (6) archive/cleanup.
 
 **Prerequisites** (installed into `/opt/local` via MacPorts — sudo; see the MacPorts section of `INSTALL_MACOS.md`):
-- Full SDK: qt5, python310, **py310-pyside2** (provides the shiboken2 generator), openimageio, ffmpeg, cairo, librsvg, boost, openexr, seexpr/seexpr211, ImageMagick, etc.
+- Full SDK: qt5, python311, **py311-pyside2** (provides the shiboken2 generator), openimageio, ffmpeg, cairo, librsvg, boost, openexr, seexpr/seexpr211, ImageMagick, etc.
 - **OSMesa** at `/opt/osmesa` (or `$SDK_HOME/osmesa`), built separately via `osmesa-install.sh`.
 - Symlinks the build checks (else it hard-exits): `…/site-packages/shiboken2_generator/shiboken2-<PYVER>` **must resolve to a real file**, `/opt/local/bin/shiboken2 → shiboken2-<PYVER>`, and `${SDK_HOME}/Library/lib → Frameworks`.
 - The `/opt/MacPorts-Natron` overlay declared in `sources.conf` (this skill's upgrade workflow).
@@ -187,7 +188,7 @@ nohup env NOUPDATE=1 WORKSPACE=$HOME/Development/workspace \
 - **partial runs:** `BUILD_FROM`/`BUILD_TO` restrict which of the 6 steps run; `DEBUG_SCRIPTS=1` keeps prior binaries to resume.
 - **release build:** set `RELEASE_TAG=x.y.z NATRON_DEV_STATUS=STABLE NATRON_BUILD_NUMBER=1` instead of a branch CI build.
 
-**Common prerequisite failure:** `Error: broken MacPort install … shiboken2` means `py310-pyside2` isn't installed (or its generator symlink dangles) → `sudo port -v -N install py310-pyside2`, then ensure the two shiboken symlinks above resolve to real files.
+**Common prerequisite failure:** `Error: broken MacPort install … shiboken2` means `py311-pyside2` isn't installed (or its generator symlink dangles) → `sudo port -v -N install py311-pyside2`, then ensure the two shiboken symlinks above resolve to real files.
 
 ## Quick reference
 | Action | Command |

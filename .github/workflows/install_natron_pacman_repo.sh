@@ -19,11 +19,52 @@ fi
 cd ${NATRON_REPO_DIR}
 
 WINDOWS_PACMAN_REPO_VERSION=`cat ${NATRON_DIR}/tools/MINGW-packages/windows_pacman_repo_version.txt`
-ZIP_FILENAME="natron_package_repo-${WINDOWS_PACMAN_REPO_VERSION}.zip"
-wget https://github.com/NatronGitHub/Natron/releases/download/windows-mingw-package-repo/${ZIP_FILENAME}
+# One repository per MSYS2 environment: the UCRT64 one keeps its original name.
+if [[ "${MSYSTEM}" == "UCRT64" ]]; then
+    ZIP_FILENAME="natron_package_repo-${WINDOWS_PACMAN_REPO_VERSION}.zip"
+else
+    ZIP_FILENAME="natron_package_repo-${MSYSTEM,,}-${WINDOWS_PACMAN_REPO_VERSION}.zip"
+fi
 
-if [[ -e ${ZIP_FILENAME} ]]; then
+# Try the repository the build is running from before upstream, so a fork that
+# has rebuilt the packages can publish them on its own release instead of being
+# limited to whatever upstream last shipped. Falling straight through to the
+# upstream release keeps behaviour identical for NatronGitHub itself.
+UPSTREAM_REPO_URL="https://github.com/NatronGitHub/Natron"
+REPO_RELEASE_PATH="releases/download/windows-mingw-package-repo/${ZIP_FILENAME}"
+REPO_URLS=()
+if [[ -n "${GITHUB_REPOSITORY:-}" ]]; then
+    REPO_URLS+=("${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY}")
+fi
+if [[ "${REPO_URLS[0]:-}" != "${UPSTREAM_REPO_URL}" ]]; then
+    REPO_URLS+=("${UPSTREAM_REPO_URL}")
+fi
+# A repository that is already there (e.g. the artifact of a "Build pacman repo" run, downloaded by
+# build_installer.yml) is used as is.
+if [[ -e "${NATRON_REPO_DIR}/natron.db.tar.gz" ]]; then
+    echo "Using the package repository already in ${NATRON_REPO_DIR}"
+    REPO_URLS=()
+fi
+for repo_url in "${REPO_URLS[@]}"; do
+    echo "Trying ${repo_url}/${REPO_RELEASE_PATH}"
+    # -O always writes to ${ZIP_FILENAME} (never ${ZIP_FILENAME}.1). wget leaves
+    # an empty or truncated file behind on failure, and a truncated zip can also
+    # come from an interrupted transfer, so remove it unless it is a valid zip.
+    if wget --no-verbose -O "${ZIP_FILENAME}" "${repo_url}/${REPO_RELEASE_PATH}" && unzip -tq "${ZIP_FILENAME}" > /dev/null; then
+        echo "Fetched ${ZIP_FILENAME} from ${repo_url}"
+        break
+    fi
+    rm -f "${ZIP_FILENAME}"
+done
+
+if [[ -e "${NATRON_REPO_DIR}/natron.db.tar.gz" && ! -e ${ZIP_FILENAME} ]]; then
+    :
+elif [[ -e ${ZIP_FILENAME} ]]; then
     unzip ${ZIP_FILENAME}
+elif [[ "${NATRON_REPO_NO_LOCAL_BUILD:-}" == "1" ]]; then
+    # (build_installer.yml: building the whole repository takes hours, and needs Inno Setup)
+    echo "::error::${ZIP_FILENAME} is not on the windows-mingw-package-repo release: publish it, or run the workflow with pacman_repo_run_id set to a \"Build pacman repo\" run of version ${WINDOWS_PACMAN_REPO_VERSION}"
+    exit 1
 else
     echo "Failed to fetch ${ZIP_FILENAME}"
 
@@ -37,3 +78,7 @@ fi
 
 UNIX_NATRON_REPO_DIR=`cygpath -u ${NATRON_REPO_DIR}`
 natron_repo_init ${UNIX_NATRON_REPO_DIR}
+
+# Natron packages that replace MSYS2's (e.g. freetype with the ULABS fix, #1287)
+# are never picked by pacman from the [natron] repository on its own.
+natron_repo_install_overrides || exit 1
