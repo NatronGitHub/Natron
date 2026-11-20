@@ -86,6 +86,7 @@ public:
     qint64 breakpadProcessPID;
 #endif
     QString exportDocsPath;
+    QString testScript;
 
     CLArgsPrivate()
         : args()
@@ -116,6 +117,7 @@ public:
         , breakpadProcessPID(-1)
 #endif
         , exportDocsPath()
+        , testScript()
     {
     }
 
@@ -271,6 +273,8 @@ CLArgs::operator=(const CLArgs& other)
     _imp->isEmpty = other._imp->isEmpty;
     _imp->imageFilename = other._imp->imageFilename;
     _imp->exportDocsPath = other._imp->exportDocsPath;
+    _imp->useDefaultSettings = other._imp->useDefaultSettings;
+    _imp->testScript = other._imp->testScript;
 }
 
 bool
@@ -348,6 +352,11 @@ CLArgs::printUsage(const std::string& programName)
         "    Choice can be one of \"enabled\" (enables OpenGL rendering if available)\n"
         "    \"disabled\" and \"foreground\" (uses OpenGL only\n"
         "    if not using %1Renderer and rendering is running in the foreground)\"\n"
+        "  --test <Python script path>\n"
+        "    Run a GUI test script (see the Python reference, \"GUI tests\"), then quit.\n"
+        "    The exit status is 0 if the script succeeds, 77 if it is skipped and 1\n"
+        "    otherwise. This implies --no-settings; auto-saves are neither written\n"
+        "    nor restored. A dialog that the test does not answer fails it.\n"
         "  -c [ --cmd ] \"PythonCommand\"\n"
         "    Execute custom Python code passed as a script prior to executing the Python\n"
         "    script or loading the project passed as parameter. This option may be used\n"
@@ -628,6 +637,12 @@ const QString &
 CLArgs::getExportDocsPath() const
 {
     return _imp->exportDocsPath;
+}
+
+const QString&
+CLArgs::getTestScript() const
+{
+    return _imp->testScript;
 }
 
 QStringList::iterator
@@ -1041,6 +1056,43 @@ CLArgsPrivate::parse()
 
                 return;
             }
+        }
+    }
+
+    {
+        // Parsed before the positional arguments, which take the first .py file as the script to load.
+        QStringList::iterator it = hasToken( QString::fromUtf8("test"), QString() );
+        if ( it != args.end() ) {
+            it = args.erase(it);
+
+            if ( it == args.end() || it->startsWith( QChar::fromLatin1('-') ) ) {
+                std::cout << tr("--test specified, you must enter a script filename afterwards.").toStdString() << std::endl;
+                error = 1;
+
+                return;
+            }
+            testScript = *it;
+            it = args.erase(it);
+
+#ifdef __NATRON_UNIX__
+            testScript = AppManager::qt_tildeExpansion(testScript);
+#endif
+            QFileInfo fi(testScript);
+            if ( !fi.exists() ) {
+                std::cout << tr("--test: the file %1 does not exist.").arg(testScript).toStdString() << std::endl;
+                error = 1;
+
+                return;
+            }
+            testScript = fi.canonicalFilePath();
+            if (isBackground) {
+                std::cout << tr("--test runs a GUI test: it cannot be used in background mode.").toStdString() << std::endl;
+                error = 1;
+
+                return;
+            }
+            // tests run with the default settings, and never save them
+            useDefaultSettings = true;
         }
     }
 

@@ -122,6 +122,11 @@ General options
    interface from scripts and tests, see :ref:`guiTesting`. In background mode (NatronRenderer,
    :option:`-b` or :option:`-t`), where dialogs are never shown, the questions are then also
    answered with their default button, instead of *Yes*.
+.. option:: --test <script.py>
+
+   Run a GUI test script, then quit with its status (0: passed, 77: skipped, 1: failed). It
+   implies :option:`--no-settings`, not :option:`--no-dialogs`: a dialog that the test does not
+   answer fails it. See :ref:`guiTests`.
 
 .. option:: --opengl <enabled|disabled|foreground>
 

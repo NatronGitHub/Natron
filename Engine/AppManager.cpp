@@ -384,6 +384,9 @@ AppManager::loadFromArgs(const CLArgs& cl)
     }
 #endif
 
+    // Before creating qApp and before initPython(): the GUI registers the test module only in test mode.
+    _imp->testMode = !cl.getTestScript().isEmpty() && !cl.isBackgroundMode();
+
     // This needs to be done BEFORE creating qApp because
     // on Linux, X11 will create a context that would corrupt
     // the XUniqueContext created by Qt
@@ -3503,6 +3506,29 @@ AppManager::initBuiltinPythonModules()
     if (ret == -1) {
         throw std::runtime_error("Failed to initialize built-in Python module.");
     }
+}
+
+bool
+AppManager::isTestMode() const
+{
+    return _imp->testMode;
+}
+
+bool
+AppManager::hasRenderInProgress() const
+{
+    AppInstanceVec instances;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        instances = _imp->_appInstances;
+    }
+    for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        if ( *it && (*it)->hasRenderInProgress() ) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void

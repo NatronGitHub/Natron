@@ -215,7 +215,8 @@ Project::loadProject(const QString & path,
         StrUtils::ensureLastPathSeparator(realPath);
         QString realName = name;
         bool isAutoSave = isUntitledAutosave;
-        if (!getApp()->isBackground() && !isUntitledAutosave) {
+        // In test mode (--test), auto-saves are neither restored nor removed: they may be the user's.
+        if ( !getApp()->isBackground() && !isUntitledAutosave && !appPTR->isTestMode() ) {
             // In Gui mode, attempt to load an auto-save for this project if there's one.
             QString autosaveFileName;
             bool hasAutoSave = findAutoSaveForProject(realPath, name, &autosaveFileName);
@@ -916,7 +917,8 @@ Project::triggerAutoSave()
     ///Should only be called in the main-thread, that is upon user interaction.
     assert( QThread::currentThread() == qApp->thread() );
 
-    if ( getApp()->isBackground() || !appPTR->isLoaded() || isProjectClosing() || _imp->autoSaveDisabled ) {
+    // no auto-saves in test mode (--test): a crash would leave one for the user's next session
+    if ( getApp()->isBackground() || !appPTR->isLoaded() || isProjectClosing() || _imp->autoSaveDisabled || appPTR->isTestMode() ) {
         return;
     }
 

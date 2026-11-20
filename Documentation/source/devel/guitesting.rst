@@ -4,7 +4,7 @@ Testing Natron's GUI from scripts
 =================================
 
 A Python script can drive the graphical interface of Natron and check the result, e.g. to
-write a regression test or to make screenshots for the documentation. Three features make this
+write a regression test or to make screenshots for the documentation. These features make this
 possible:
 
 - the :option:`--no-dialogs` command-line option: the message and question dialogs,
@@ -17,7 +17,10 @@ possible:
   the exit status of Natron;
 - :meth:`app.saveScreenshot(filePath, scriptName)<NatronGui.GuiApp.saveScreenshot>`: saves an
   image of the main window, or of a tab or pane, including the content of the viewers and of
-  the other OpenGL widgets. Only the widgets of Natron are captured, never the screen.
+  the other OpenGL widgets. Only the widgets of Natron are captured, never the screen;
+- the test runner, :option:`--test`, and its test-only module ``NatronGuiTest`` (synthetic mouse and
+  key events in the viewer and the node graph, a wait for the renders, dialog answers):
+  see :ref:`guiTests`.
 
 How the script runs
 -------------------
@@ -118,3 +121,161 @@ Tips
   :meth:`natron.quit()<NatronEngine.PyCoreApplication.quit>`.
 - :meth:`natron.quit()<NatronEngine.PyCoreApplication.quit>` also works with
   *NatronRenderer*, e.g. to make a rendering script exit with an error status.
+
+.. _guiTests:
+
+Automated GUI tests (Natron --test)
+-----------------------------------
+
+A GUI test is a Python script that drives the Natron user interface the way a user would (key
+presses, mouse drags in the viewer and the node graph, dialog answers) and checks the result. Natron
+runs it with :option:`--test`, then quits with a status that tells whether the test passed:
+
+.. code-block:: sh
+
+    Natron --test Tests/gui/test_smoke.py
+
+The in-tree tests are in ``Tests/gui/`` (``test_*.py``, with the helpers of ``natrontest.py``).
+CMake registers each one as a ``ctest`` test named ``gui.<name>`` with the ``gui`` label:
+``ctest -L gui`` runs only the GUI tests, and ``ctest -LE gui`` all the other tests. They need a
+display (on Linux without one, run them under ``xvfb-run``) and OpenGL; without OpenGL, they are
+reported as skipped. The plug-ins of ``Tests/OfxTestPlugin`` are on their ``OFX_PLUGIN_PATH``,
+before the user's one; a test that needs another plug-in (e.g. openfx-misc's Transform) is skipped
+when that plug-in is not found.
+
+Test mode
+~~~~~~~~~
+
+``Natron --test script.py`` runs the script once the user interface is shown and the project is
+created (or loaded, if a project file is also given on the command line), then quits. The exit
+status is 0 if the script returns normally, 77 if it is skipped (:func:`NatronGuiTest.skip`, or no
+OpenGL), and 1 if it raises an exception (e.g. a failed ``assert``) or Natron crashes. A
+``sys.exit(status)`` in the script sets the exit status.
+
+The test mode implies :option:`--no-settings` (and the default shortcuts). It does **not** imply
+:option:`--no-dialogs`, which hides parts of the user interface: the tests run in a clean environment
+(e.g. a valid OpenColorIO configuration, so that there is no startup dialog), and the dialogs are shown
+and work as usual. The test mode also isolates the test from the user's session:
+
+- auto-saves are neither written nor restored, and the "An auto-saved project was found" question
+  is never asked (the user's auto-saves are left untouched);
+- Natron does not check for updates, and does not ask about the default appearance or shortcuts;
+- a test that expects a modal dialog gives its answer beforehand with
+  :func:`NatronGuiTest.setDialogAnswers`: when the dialog is shown, its button is clicked, so that the
+  real dialog code runs. A modal dialog that gets no answer is **unexpected**: it is printed, rejected
+  (closed with *Cancel*) so that it does not block, and the test fails;
+- the dialogs are recorded (:func:`NatronGuiTest.getDialogLog`).
+
+A test script runs from the event loop, once the main window is shown: it needs no timer, and
+Natron quits when the script returns, as with
+:meth:`natron.quit(status)<NatronEngine.PyCoreApplication.quit>`.
+
+The output of the script (``print()``, tracebacks) goes to the terminal, not to the Script Editor.
+
+Writing a test
+~~~~~~~~~~~~~~
+
+The script runs with the variable ``app`` set to the application instance (as ``app1``), and its
+directory on ``sys.path``. A test is a sequence of user actions, each followed by a wait for the
+renders and events it triggers, then checks:
+
+.. code-block:: python
+
+    import NatronGuiTest
+    from natrontest import *          # Tests/gui/natrontest.py
+
+    require_plugin(GENERATOR)         # skips the test if the plug-in is missing
+
+    gen = app.createNode(GENERATOR)
+    app.getNode("Viewer1").connectInput(0, gen)
+    NatronGuiTest.sendKey("Viewer1", "F")   # fit the image in the viewer
+    assert NatronGuiTest.waitIdle()
+
+    app.selectNode(gen, True)
+    NatronGuiTest.sendKey("NodeGraph", "Backspace")   # delete, as the user does
+    NatronGuiTest.sendKey("NodeGraph", "Ctrl+Z")      # and undo
+    assert NatronGuiTest.waitIdle()
+    assert app.getNode(gen.getScriptName()) is not None
+
+Never use fixed delays: :func:`NatronGuiTest.waitIdle` returns as soon as the renders are done and
+their results are displayed.
+
+The NatronGuiTest module
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+``NatronGuiTest`` is a test-only module: it exists only in Natron's test mode (:option:`--test`) and is
+not part of the Natron Python API, which keeps its backward compatibility commitment. It sends
+synthetic Qt events to the widgets; the real mouse cursor and the keyboard are not used.
+
+.. module:: NatronGuiTest
+
+.. function:: waitIdle(timeout=30.0, settle=0.2)
+
+   Process the events until no render (viewer, Write, node preview) has been running for *settle*
+   seconds, so that the results of the renders are displayed. Return ``True``, or ``False`` if this
+   did not happen within *timeout* seconds. The Python lock is released while waiting, so that
+   the renders can run Python expressions.
+
+.. function:: isRendering()
+
+   Return ``True`` if a render is running or queued.
+
+.. function:: penEvent(target, type, x, y, button='left', modifiers='')
+
+   Send a mouse event to *target*: a viewer (its node script name, e.g. ``"Viewer1"``), at the
+   canvas coordinates (*x*, *y*) (the coordinates of the image and of the overlays), or
+   ``"NodeGraph"`` (the node graph of the project), at the node graph coordinates (*x*, *y*) (as
+   returned by :func:`Effect.getPosition()<NatronEngine.Effect.getPosition>`). *type* is
+   ``"press"``, ``"move"`` or ``"release"``; *button* is ``"left"``, ``"middle"``, ``"right"`` or
+   ``"none"``; *modifiers* is a ``+``-separated list of ``Shift``, ``Ctrl``, ``Alt`` and ``Meta``
+   (``Ctrl`` is the Command key on macOS, as in Natron's shortcuts). A move has the buttons pressed by
+   the previous press events. The widget gets *Enter* and *Leave* events as the pointer moves from a
+   widget to another.
+
+.. function:: drag(target, x0, y0, x1, y1, steps=10, button='left', modifiers='')
+
+   Drag from (*x0*, *y0*) to (*x1*, *y1*) in *target* (see :func:`penEvent`): a move, a press,
+   *steps* moves, and a release.
+
+.. function:: sendKey(target, keys)
+
+   Send *keys* to *target* (a viewer node script name, or ``"NodeGraph"``). *keys* uses the portable
+   text of ``QKeySequence``, e.g. ``"F"``, ``"Ctrl+Z"``, ``"Backspace"``, ``"Return"``, or several keys
+   separated by commas. As for a real key press, a key that the target does not handle itself
+   triggers the matching shortcut of the window's menus, e.g. *Edit > Undo*.
+
+.. function:: getDisplayedPixel(viewer, x, y)
+
+   Return the 8-bit ``(r, g, b, a)`` colour that the viewer displays at the canvas coordinates
+   (*x*, *y*), after the display LUT.
+
+.. function:: setDialogAnswers(answers)
+
+   Set the answers of the next modal dialogs: a list of button names (``"yes"``, ``"no"``,
+   ``"ok"``, ``"cancel"``, ``"save"``, ``"discard"``, ``"close"``, …), used in order: when a dialog is
+   shown, the next answer clicks that button. A dialog shown when the list is empty, or that has no
+   such button, is unexpected: it is rejected and the test fails.
+
+.. function:: getDialogLog()
+
+   Return the modal dialogs shown so far, as a list of dictionaries with the keys ``type``
+   (``"dialog"`` for an answered dialog, ``"unexpected"`` for one that was rejected), ``title``,
+   ``text`` and ``answer`` (the name of the button that was clicked, or ``"reject"``).
+
+.. function:: clearDialogLog()
+
+   Clear the list returned by :func:`getDialogLog`.
+
+.. function:: requireInteractive(reason='needs the real focus or mouse')
+
+   Skip the test (exit status 77) unless the environment variable ``NATRON_TEST_INTERACTIVE`` is ``1``.
+   A test that needs the real keyboard focus or mouse (which the synthetic events of this module do not
+   use) calls it first, and has the line ``# NatronGuiTest: interactive``, which gives it the ctest label
+   ``gui-interactive`` (in addition to ``gui``). These tests run on CI under Xvfb, where the variable is
+   set, or in a virtual machine; on a desktop, they only run when the user opts in, because they take the
+   keyboard and mouse.
+
+.. function:: skip(reason)
+
+   Stop the test and report it as skipped (exit status 77), e.g. when a plug-in it needs is missing.
+   It raises the ``NatronGuiTest.Skip`` exception.

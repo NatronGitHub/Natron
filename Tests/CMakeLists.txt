@@ -194,3 +194,40 @@ endif()
 # in Natron.app/Contents/MacOS on macOS PORTABLE, in bin/ elsewhere.
 install(TARGETS Tests DESTINATION "${NATRON_INSTALL_TESTSDIR}"
     COMPONENT Tests EXCLUDE_FROM_ALL)
+
+# GUI tests (Tests/gui/test_*.py, see Documentation/source/devel/guiTests.rst): each script is run by
+# "Natron --test script.py", which exits with 0 (pass), 77 (skipped, e.g. without OpenGL or without a
+# plug-in that the test needs) or another status (fail). They need a display (Xvfb on Linux), and
+# have the "gui" label: "ctest -L gui" runs only them, "ctest -LE gui" all the other tests; the
+# interactive ones also have the "gui-interactive" label.
+# The Natron target is defined later (App/), which generator expressions allow.
+file(GLOB NatronGuiTests_SCRIPTS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/gui/test_*.py")
+foreach(_natron_gui_test ${NatronGuiTests_SCRIPTS})
+    get_filename_component(_natron_gui_test_name "${_natron_gui_test}" NAME_WE)
+    string(REGEX REPLACE "^test_" "" _natron_gui_test_name "${_natron_gui_test_name}")
+    set(_natron_gui_test_target "gui.${_natron_gui_test_name}")
+    add_test(NAME ${_natron_gui_test_target} COMMAND Natron --test "${_natron_gui_test}")
+    # A test that needs the real focus or mouse calls NatronGuiTest.requireInteractive() (it is skipped
+    # unless NATRON_TEST_INTERACTIVE=1) and has the line "# NatronGuiTest: interactive": label gui-interactive.
+    file(STRINGS "${_natron_gui_test}" _natron_gui_test_interactive REGEX "^# NatronGuiTest: interactive")
+    if(_natron_gui_test_interactive)
+        set(_natron_gui_test_labels "gui;gui-interactive")
+    else()
+        set(_natron_gui_test_labels "gui")
+    endif()
+    set_tests_properties(${_natron_gui_test_target} PROPERTIES
+        LABELS "${_natron_gui_test_labels}"
+        SKIP_RETURN_CODE 77
+        TIMEOUT 180
+        # one Natron GUI at a time
+        RESOURCE_LOCK NatronGui
+        ENVIRONMENT "NATRON_TESTS_OFX_PLUGIN_BINARY=$<TARGET_FILE:NatronTestPlugin>")
+    # the test plug-ins first, then the user's OFX_PLUGIN_PATH (e.g. openfx-misc for the Transform test)
+    if(NOT CMAKE_VERSION VERSION_LESS 3.22)
+        set_property(TEST ${_natron_gui_test_target} PROPERTY ENVIRONMENT_MODIFICATION
+            "OFX_PLUGIN_PATH=path_list_prepend:${NATRON_TESTS_OFX_PLUGIN_DIR}")
+    else()
+        set_property(TEST ${_natron_gui_test_target} APPEND PROPERTY ENVIRONMENT
+            "OFX_PLUGIN_PATH=${NATRON_TESTS_OFX_PLUGIN_DIR}")
+    endif()
+endforeach()

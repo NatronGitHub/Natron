@@ -163,6 +163,9 @@ public:
     //To by-pass a bug introduced in RC2 / RC3 with the serialization of bezier curves
     bool lastProjectLoadedCreatedDuringRC2Or3;
 
+    // GUI test mode (--test)
+    bool testMode;
+
     ///Python needs wide strings as from Python 3.x onwards everything is unicode based
 #if PY_MAJOR_VERSION >= 3
     // Python 3

@@ -25,6 +25,7 @@
 
 #include "GuiAppInstance.h"
 
+#include <iostream>
 #include <stdexcept>
 #include <sstream> // stringstream
 
@@ -56,6 +57,7 @@
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
+#include "Gui/GuiTest.h"
 #include "Gui/BackdropGui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
@@ -309,7 +311,8 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
     SettingsPtr nSettings = appPTR->getCurrentSettings();
     QObject::connect( getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(projectFormatChanged(Format)) );
 
-    {
+    // no update check in test mode (--test): no network access, no question
+    if ( !appPTR->isTestMode() ) {
         QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
         if ( !settings.contains( QString::fromUtf8("checkForUpdates") ) ) {
             const std::string title = tr("Updates").toStdString();
@@ -331,7 +334,8 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
         }
     }
 
-    if ( nSettings->isDefaultAppearanceOutdated() ) {
+    // a GUI test (--test) uses the default settings: no question about the user's appearance
+    if ( !appPTR->isTestMode() && nSettings->isDefaultAppearanceOutdated() ) {
         StandardButtonEnum reply = Dialogs::questionDialog(tr("Appearance").toStdString(),
                                                            tr("The default appearance of %1 changed since last version.\n"
                                                               "Would you like to use the new default appearance?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false);
@@ -348,6 +352,11 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
     if (getAppID() == 0) {
         QString missingOpenGLError;
         if ( !appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeViewer, &missingOpenGLError) ) {
+            if ( appPTR->isTestMode() ) {
+                // a GUI test cannot run without the OpenGL of the viewer: it is skipped, not failed
+                std::cout << "SKIP: " << missingOpenGLError.toStdString() << std::endl;
+                appPTR->requestQuit(77);
+            }
             throw std::runtime_error( missingOpenGLError.toStdString() );
         }
 
@@ -375,7 +384,8 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
     executeCommandLinePythonCommands(cl);
 
     /// If this is the first instance of the software, try to load an autosave
-    if ( (getAppID() == 0) && cl.getScriptFilename().isEmpty() ) {
+    /// (never in test mode: the auto-saves may be the user's, and they are neither restored nor removed)
+    if ( (getAppID() == 0) && cl.getScriptFilename().isEmpty() && !appPTR->isTestMode() ) {
         if ( findAndTryLoadUntitledAutoSave() ) {
             ///if we successfully loaded an autosave ignore the specified project in the launch args.
             return;
@@ -422,6 +432,10 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
         if ( cbInfo.exists() ) {
             loadPythonScript(cbInfo);
         }
+    }
+
+    if ( (getAppID() == 0) && appPTR->isTestMode() && !cl.getTestScript().isEmpty() ) {
+        GuiTest::scheduleTestScript( cl.getTestScript() );
     }
 } // load
 
