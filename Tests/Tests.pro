@@ -53,6 +53,7 @@ NATRON_THIRD_PARTY_SOURCES += \
 # per-file flags); here it runs the same tests without -ffast-math.
 SOURCES += \
     BaseTest.cpp \
+    CLArgs_Test.cpp \
     Curve_Test.cpp \
     DeepGraphRender_Test.cpp \
     DiskCache_Test.cpp \
@@ -64,6 +65,7 @@ SOURCES += \
     KnobFile_Test.cpp \
     KnobSlave_Test.cpp \
     KnobStringAnimation_Test.cpp \
+    LoadPythonScript_Test.cpp \
     Lut_Test.cpp \
     MultiInputLinks_Test.cpp \
     NaNGuards_FastMath.cpp \
@@ -105,6 +107,7 @@ SOURCES += \
     RenderThreads_Test.cpp \
     RotoPaint_Test.cpp \
     SequentialRender_Test.cpp \
+    StrUtilsFormat_Test.cpp \
     Tracker_Test.cpp \
     ViewerCache_Test.cpp \
     WriteNodeViews_Test.cpp \

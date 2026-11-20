@@ -22,6 +22,7 @@ set(Tests_SOURCES
     google-test/src/gtest-all.cc
     google-mock/src/gmock-all.cc
     BaseTest.cpp
+    CLArgs_Test.cpp
     Curve_Test.cpp
     DeepGraphRender_Test.cpp
     DiskCache_Test.cpp
@@ -33,6 +34,7 @@ set(Tests_SOURCES
     KnobFile_Test.cpp
     KnobSlave_Test.cpp
     KnobStringAnimation_Test.cpp
+    LoadPythonScript_Test.cpp
     Lut_Test.cpp
     MultiInputLinks_Test.cpp
     NaNGuards_FastMath.cpp
@@ -74,6 +76,7 @@ set(Tests_SOURCES
     RenderThreads_Test.cpp
     RotoPaint_Test.cpp
     SequentialRender_Test.cpp
+    StrUtilsFormat_Test.cpp
     Tracker_Test.cpp
     ViewerCache_Test.cpp
     WriteNodeViews_Test.cpp
