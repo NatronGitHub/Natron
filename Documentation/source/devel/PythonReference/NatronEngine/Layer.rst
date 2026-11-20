@@ -47,7 +47,11 @@ Member functions description
     :param item: :class:`ItemBase<NatronEngine.ItemBase>`
 
 
-Adds a new item at the bottom of the layer.
+Adds a new item at the bottom of the layer. If *item* is already in a layer, it is moved
+to this layer: to move an item, call :func:`addItem()<NatronEngine.Layer.addItem>` or
+:func:`insertItem()<NatronEngine.Layer.insertItem>` alone, without removing it first.
+An item removed with :func:`removeItem()<NatronEngine.Layer.removeItem>` can be added back:
+it then appears again in the Roto panel, with its children, and the node is rendered again.
 
 
 
@@ -69,7 +73,8 @@ Returns a sequence with all :doc:`items<ItemBase>` in the layer.
 
 
 Inserts a new item at the given *pos* (0 based index) in the layer. If *pos* is out of range,
-it will be inserted at the bottom of the layer.
+it will be inserted at the bottom of the layer. As for :func:`addItem()<NatronEngine.Layer.addItem>`,
+an item that is already in a layer is moved.
 
 
 
@@ -81,7 +86,8 @@ it will be inserted at the bottom of the layer.
 
 Removes the *item* from the layer, as the Roto panel does: the item and its children are
 deselected and removed from the Roto panel. Nothing is done if *item* is not a child of
-this layer. Up to Natron 2.5, the removed item stayed in the Roto panel as an empty item
+this layer. The node is then rendered again, once per call.
+Up to Natron 2.5, the removed item stayed in the Roto panel as an empty item
 (`issue #405 <https://github.com/NatronGitHub/Natron/issues/405>`_).
 
 

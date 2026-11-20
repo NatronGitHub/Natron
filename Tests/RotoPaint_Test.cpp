@@ -443,3 +443,47 @@ TEST_F(RotoPaintOverlayTest, PythonRotoGetSelectedItems)
     _context->clearSelection(RotoItem::eSelectionReasonOther);
     EXPECT_TRUE( roto.getSelectedItems().empty() );
 }
+
+// A layer removed with Layer.removeItem() and added back with Layer.addItem() must be registered in the context
+// again and shown in the Roto panel (itemInserted), with its children: removeItem() takes it out of the context.
+TEST_F(RotoPaintOverlayTest, PythonLayerAddItemAfterRemoveItem)
+{
+    if (!_havePlugins) {
+        return;
+    }
+    typedef NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::Roto PyRotoContext;
+    typedef NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::Layer PyLayer;
+    typedef NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::BezierCurve PyBezierCurve;
+    PyRotoContext roto(_context);
+    std::unique_ptr<PyLayer> baseLayer( roto.getBaseLayer() );
+    std::unique_ptr<PyLayer> layer( roto.createLayer() );
+    std::unique_ptr<PyBezierCurve> ellipse( roto.createEllipse(500., 500., 100., true, kTime) );
+    ASSERT_TRUE( baseLayer && layer && ellipse );
+    RotoLayerPtr internalLayer = std::dynamic_pointer_cast<RotoLayer>( layer->getInternalItem() );
+    ASSERT_TRUE( bool(internalLayer) );
+    layer->addItem( ellipse.get() ); // a move: the ellipse is in a layer
+    ASSERT_EQ( internalLayer, ellipse->getInternalItem()->getParentLayer() );
+
+    baseLayer->removeItem( layer.get() );
+    const std::list<RotoLayerPtr>& layersAfterRemove = _context->getLayers();
+    EXPECT_TRUE( std::find(layersAfterRemove.begin(), layersAfterRemove.end(), internalLayer) == layersAfterRemove.end() );
+
+    int insertedCount = 0;
+    QMetaObject::Connection connection =
+        QObject::connect( _context.get(), &RotoContext::itemInserted, [&insertedCount](int, int) {
+        ++insertedCount;
+    } );
+    baseLayer->addItem( layer.get() );
+    QObject::disconnect(connection);
+
+    EXPECT_EQ(1, insertedCount) << "itemInserted must be emitted, for the Roto panel";
+    EXPECT_EQ( baseLayer->getInternalItem(), internalLayer->getParentLayer() );
+    EXPECT_EQ( layer->getInternalItem(), _context->getLastInsertedItem() );
+    const std::list<RotoLayerPtr>& layers = _context->getLayers();
+    EXPECT_TRUE( std::find(layers.begin(), layers.end(), internalLayer) != layers.end() ) << "the layer must be in the context again";
+    EXPECT_EQ( internalLayer, ellipse->getInternalItem()->getParentLayer() ) << "the children stay in the layer";
+
+    // Python None is ignored
+    baseLayer->addItem(NULL);
+    baseLayer->insertItem(0, NULL);
+}

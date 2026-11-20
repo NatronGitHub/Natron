@@ -143,17 +143,46 @@ Layer::~Layer()
 {
 }
 
+// Adds item to layer at index (at the end if index < 0).
+// An item that is in no layer, e.g. after Layer.removeItem(), is added back as the Roto panel's undo does, with
+// RotoContext::addItem(): it registers a layer in the context again, and tells the Roto panel (itemInserted).
+// An item that is in a layer is moved, as before.
+static void
+addItemToLayer(const RotoLayerPtr& layer,
+               ItemBase* item,
+               int index)
+{
+    // item is NULL if Python passed None
+    RotoItemPtr internalItem = item ? item->getInternalItem() : RotoItemPtr();
+
+    if (!internalItem) {
+        return;
+    }
+    if ( internalItem->getParentLayer() ) {
+        if (index < 0) {
+            layer->addItem(internalItem);
+        } else {
+            layer->insertItem(internalItem, index);
+        }
+
+        return;
+    }
+    RotoContextPtr ctx = layer->getContext();
+    ctx->addItem(layer, index < 0 ? (int)layer->getItems().size() : index, internalItem, RotoItem::eSelectionReasonOther);
+    ctx->evaluateChange();
+}
+
 void
 Layer::addItem(ItemBase* item)
 {
-    _layer->addItem( item->getInternalItem() );
+    addItemToLayer(_layer, item, -1);
 }
 
 void
 Layer::insertItem(int pos,
                   ItemBase* item)
 {
-    _layer->insertItem(item->getInternalItem(), pos);
+    addItemToLayer(_layer, item, pos);
 }
 
 void

@@ -13,6 +13,7 @@
 
 ### Changes
 
+- Python: `Layer.removeItem()` removes the item from the Roto panel and deselects it, and re-renders the node; `Layer.addItem()`/`insertItem()` add a removed item back to the Roto panel. New `Roto.getSelectedItems()`. #405 #406
 - Documentation: the Reference Guide has a "Nodes" section, with one page per node group and per sub-group (e.g. "G'MIC / Colors"), and the sidebar only expands the current branch.
 
 
