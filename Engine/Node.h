@@ -472,6 +472,22 @@ public:
     void setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support);
     PluginOpenGLRenderSupport getCurrentOpenGLRenderSupport() const;
 
+    /**
+     * @brief Attaching an OpenGL context to the effect failed (kOfxActionOpenGLContextAttached returned
+     * kOfxStatFailed): the effect is not rendered with OpenGL any more (getCurrentOpenGLRenderSupport()
+     * returns ePluginOpenGLRenderSupportNone, or the render fails if it needs OpenGL), until it changes
+     * its OpenGL render support.
+     **/
+    // returns true if it was not set before
+    bool setOpenGLContextAttachFailed();
+    bool hasOpenGLContextAttachFailed() const;
+
+    /**
+     * @brief If the plug-in needs OpenGL rendering and this process can't render with OpenGL, the
+     * reason, for the user. Empty otherwise.
+     **/
+    QString getOpenGLRenderUnavailableMessage() const;
+
     SequentialPreferenceEnum getCurrentSequentialRenderSupport() const;
 
     void setCurrentCanTransform(bool support);

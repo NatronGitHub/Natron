@@ -346,6 +346,10 @@ Node::getCurrentOpenGLRenderSupport() const
         }
     }
 
+    if ( hasOpenGLContextAttachFailed() ) {
+        return ePluginOpenGLRenderSupportNone;
+    }
+
     if (!getApp()->getProject()->isGPURenderingEnabledInProject()) {
         return ePluginOpenGLRenderSupportNone;
     }
@@ -365,6 +369,49 @@ Node::getCurrentOpenGLRenderSupport() const
     QMutexLocker k(&_imp->pluginsPropMutex);
 
     return _imp->currentSupportOpenGLRender;
+}
+
+bool
+Node::setOpenGLContextAttachFailed()
+{
+    QMutexLocker k(&_imp->pluginsPropMutex);
+    bool wasSet = _imp->openGLContextAttachFailed;
+
+    _imp->openGLContextAttachFailed = true;
+
+    return !wasSet;
+}
+
+bool
+Node::hasOpenGLContextAttachFailed() const
+{
+    QMutexLocker k(&_imp->pluginsPropMutex);
+
+    return _imp->openGLContextAttachFailed;
+}
+
+QString
+Node::getOpenGLRenderUnavailableMessage() const
+{
+    if ( !_imp->plugin || (_imp->plugin->getPluginOpenGLRenderSupport() != ePluginOpenGLRenderSupportNeeded) ) {
+        return QString();
+    }
+    QString missingOpenGLError;
+    if ( !appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, &missingOpenGLError) ) {
+        return tr("%1 needs OpenGL rendering, which is not available: %2")
+               .arg( QString::fromUtf8( getLabel_mt_safe().c_str() ) ).arg(missingOpenGLError);
+    }
+    if ( !appPTR->getCurrentSettings()->isOpenGLRenderingEnabled() ) {
+        return tr("%1 needs OpenGL rendering, which is disabled: see Preferences > GPU Rendering, or pass "
+                  "`--opengl enabled` to %2.")
+               .arg( QString::fromUtf8( getLabel_mt_safe().c_str() ) ).arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    }
+    if ( !_imp->plugin->isOpenGLEnabled() ) {
+        return tr("%1 needs OpenGL rendering, which is disabled in the Preferences for this plug-in: please enable it and restart %2.")
+               .arg( QString::fromUtf8( getLabel_mt_safe().c_str() ) ).arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    }
+
+    return QString();
 }
 
 SequentialPreferenceEnum
@@ -420,6 +467,13 @@ Node::refreshDynamicProperties()
     }
 
 
+    {
+        QMutexLocker k(&_imp->pluginsPropMutex);
+        if (pluginGLSupport != _imp->currentSupportOpenGLRender) {
+            // the instance changed its OpenGL render support: OpenGL may be tried again
+            _imp->openGLContextAttachFailed = false;
+        }
+    }
     setCurrentOpenGLRenderSupport(pluginGLSupport);
     bool tilesSupported = _imp->effect->supportsTiles();
     bool multiResSupported = _imp->effect->supportsMultiResolution();

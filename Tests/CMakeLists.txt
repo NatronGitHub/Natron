@@ -53,6 +53,7 @@ set(Tests_SOURCES
     OfxMultiplePAR_Test.cpp
     OfxParamAnimating_Test.cpp
     OfxParamCopy_Test.cpp
+    OfxOpenGLSupport_Test.cpp
     OfxParamInteract_Test.cpp
     OfxParamUndo_Test.cpp
     OfxPluginDeprecated_Test.cpp
