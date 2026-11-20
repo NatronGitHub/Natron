@@ -40,6 +40,7 @@ set(Tests_SOURCES
     LibTess_Test.cpp
     LoadPythonScript_Test.cpp
     Lut_Test.cpp
+    Markdown_Test.cpp
     MultiInputLinks_Test.cpp
     NaNGuards_FastMath.cpp
     NaNGuards_Test.cpp
@@ -68,7 +69,9 @@ set(Tests_SOURCES
     OfxParamUndo_Test.cpp
     OfxPluginObsolete_Test.cpp
     OfxPluginScan_Test.cpp
+    OfxProjectLoad_Test.cpp
     OfxQuestion_Test.cpp
+    OfxSequenceRenderArgs_Test.cpp
     OfxSingleInstance_Test.cpp
     OfxSuiteStatus_Test.cpp
     OfxSyncPrivateData_Test.cpp
@@ -79,6 +82,7 @@ set(Tests_SOURCES
     PluginGrouping_Test.cpp
     ProjectAutoSave_Test.cpp
     PyEffectEquality_Test.cpp
+    ProjectFileFormat_Test.cpp
     PythonExpressionScope_Test.cpp
     ReadNodeOverlay_Test.cpp
     RenderThreadSafety_Test.cpp
@@ -89,6 +93,7 @@ set(Tests_SOURCES
     StrUtilsFormat_Test.cpp
     Tracker_Test.cpp
     ViewerCache_Test.cpp
+    ViewerTexture_Test.cpp
     WriteNodeViews_Test.cpp
     wmain.cpp
 )
@@ -188,7 +193,8 @@ endforeach()
 add_dependencies(Tests NatronTestPlugin)
 target_compile_definitions(Tests PRIVATE
     NATRON_TESTS_OFX_PLUGIN_DIR="${NATRON_TESTS_OFX_PLUGIN_DIR}"
-    NATRON_TESTS_OFX_PLUGIN_BINARY="$<TARGET_FILE:NatronTestPlugin>")
+    NATRON_TESTS_OFX_PLUGIN_BINARY="$<TARGET_FILE:NatronTestPlugin>"
+    NATRON_TESTS_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data")
 
 # GUI smoke test (see gui/run_gui_smoke_test.py): runs the Natron GUI with --no-dialogs.
 # It is skipped (exit status 77) without a display, in CI unless NATRON_GUI_TESTS=1, or

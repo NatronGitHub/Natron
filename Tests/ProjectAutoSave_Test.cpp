@@ -270,6 +270,7 @@ TEST(ProjectAutoSave, SaveDuringAutoSave)
         EXPECT_TRUE( autoSave.join() );
     }
     // the save after the auto-save made it obsolete: it was removed
+    EXPECT_FALSE( QFile::exists(dir + name + QString::fromUtf8(".binautosave")) );
     EXPECT_FALSE( QFile::exists(dir + name + QString::fromUtf8(".autosave")) );
     project->resetProject();
 }

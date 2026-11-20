@@ -35,6 +35,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
 
+#include "Gui/GuiTest.h"
 #include "Gui/KnobGuiPrivate.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiApplicationManager.h"
@@ -326,7 +327,7 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
 
     createAnimationMenu(_imp->copyRightClickMenu, dimension);
     addRightClickMenuEntries(_imp->copyRightClickMenu);
-    _imp->copyRightClickMenu->exec( QCursor::pos() );
+    _imp->copyRightClickMenu->exec( GuiTest::cursorPos() );
 } // showRightClickMenuForDimension
 
 Menu*
