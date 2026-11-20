@@ -26,10 +26,12 @@ set(Tests_SOURCES
     Curve_Test.cpp
     DeepGraphRender_Test.cpp
     DiskCache_Test.cpp
+    ExpressionSetError_Test.cpp
     FileSystemModel_Test.cpp
     Hash64_Test.cpp
     ImageCache_Test.cpp
     Image_Test.cpp
+    KnobDuplicate_Test.cpp
     KnobExpressionCache_Test.cpp
     KnobFile_Test.cpp
     KnobSlave_Test.cpp
@@ -42,6 +44,7 @@ set(Tests_SOURCES
     NodeGroup_Test.cpp
     NodePresets_Test.cpp
     NodePreview_Test.cpp
+    NoDialogs_Test.cpp
     OfxBytesParam_Test.cpp
     OfxContexts_Test.cpp
     OfxCPURenderSupport_Test.cpp
@@ -61,7 +64,7 @@ set(Tests_SOURCES
     OfxOverlayInput_Test.cpp
     OfxParamInteract_Test.cpp
     OfxParamUndo_Test.cpp
-    OfxPluginDeprecated_Test.cpp
+    OfxPluginObsolete_Test.cpp
     OfxPluginScan_Test.cpp
     OfxQuestion_Test.cpp
     OfxSingleInstance_Test.cpp
@@ -70,6 +73,7 @@ set(Tests_SOURCES
     OfxTestPlugin_Test.cpp
     OpenGLRenderFailed_Test.cpp
     OSGLContext_Test.cpp
+    ParamRandom_Test.cpp
     PluginGrouping_Test.cpp
     ProjectAutoSave_Test.cpp
     ReadNodeOverlay_Test.cpp
@@ -77,6 +81,7 @@ set(Tests_SOURCES
     RenderThreads_Test.cpp
     RotoPaint_Test.cpp
     SequentialRender_Test.cpp
+    ShuffleAutoConnect_Test.cpp
     StrUtilsFormat_Test.cpp
     Tracker_Test.cpp
     ViewerCache_Test.cpp
@@ -119,7 +124,7 @@ add_test(NAME Tests COMMAND Tests)
 # scan: the binaries are loaded at the first use of their plug-ins (OfxHost::getPluginContextAndDescribe()).
 # Tests sets up the fixture (it scans with --clear-openfx-cache and writes the cache), so
 # `ctest -R TestsOfxCache` runs Tests first too.
-add_test(NAME TestsOfxCache COMMAND Tests "--gtest_filter=OfxHostProperties.*:OfxTestPlugin*")
+add_test(NAME TestsOfxCache COMMAND Tests "--gtest_filter=OfxHostProperties.*:OfxTestPlugin*:OfxPluginObsolete.*")
 set_tests_properties(Tests PROPERTIES FIXTURES_SETUP OfxPluginCache)
 set_tests_properties(TestsOfxCache PROPERTIES FIXTURES_REQUIRED OfxPluginCache ENVIRONMENT "NATRON_TESTS_KEEP_OFX_CACHE=1")
 
@@ -180,6 +185,19 @@ add_dependencies(Tests NatronTestPlugin)
 target_compile_definitions(Tests PRIVATE
     NATRON_TESTS_OFX_PLUGIN_DIR="${NATRON_TESTS_OFX_PLUGIN_DIR}"
     NATRON_TESTS_OFX_PLUGIN_BINARY="$<TARGET_FILE:NatronTestPlugin>")
+
+# GUI smoke test (see gui/run_gui_smoke_test.py): runs the Natron GUI with --no-dialogs.
+# It is skipped (exit status 77) without a display, in CI unless NATRON_GUI_TESTS=1, or
+# without the Read and Transform plug-ins (set OFX_PLUGIN_PATH as for the Tests binary).
+if(Python3_Interpreter_FOUND)
+    add_test(NAME GuiSmokeTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_gui_smoke_test.py $<TARGET_FILE:Natron>)
+    set_tests_properties(GuiSmokeTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 960)
+    # natron.quit() from a render callback stops a NatronRenderer render (headless)
+    add_test(NAME RendererQuitTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_quit_test.py $<TARGET_FILE:NatronRenderer>)
+    set_tests_properties(RendererQuitTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
+endif()
 
 # Not part of a normal install. The installer scripts install it separately
 # (cmake --install <build> --component Tests) and run it from the bundled tree:

@@ -94,6 +94,8 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
     : OFX::Host::ImageEffect::Instance(plugin, desc, context, interactive)
     , _ofxEffectInstance()
     , _mainThreadActionDepth(0)
+    , _suspendState(eSuspendStateNone)
+    , _actionsInFlightOnOtherThreads(0)
     , _pluginEditBlocks()
     , _pluginEditHolder()
     , _progressStarted(false)
@@ -106,6 +108,8 @@ OfxImageEffectInstance::OfxImageEffectInstance(const OfxImageEffectInstance& oth
     : OFX::Host::ImageEffect::Instance(other)
     , _ofxEffectInstance()
     , _mainThreadActionDepth(0)
+    , _suspendState(eSuspendStateNone)
+    , _actionsInFlightOnOtherThreads(0)
     , _pluginEditBlocks()
     , _pluginEditHolder()
     , _progressStarted(false)
@@ -195,6 +199,32 @@ OfxImageEffectInstance::MainThreadAction_RAII::~MainThreadAction_RAII()
     --_effect->_mainThreadActionDepth;
 }
 
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
+// counts an action in flight while it exists (nothing if the counter is NULL)
+class ActionInFlight_RAII
+{
+    std::atomic<int>* _count;
+
+public:
+    explicit ActionInFlight_RAII(std::atomic<int>* count)
+        : _count(count)
+    {
+        if (_count) {
+            ++*_count;
+        }
+    }
+
+    ~ActionInFlight_RAII()
+    {
+        if (_count) {
+            --*_count;
+        }
+    }
+};
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 OfxStatus
 OfxImageEffectInstance::mainEntry(const char *action,
                                   const void *handle,
@@ -204,6 +234,22 @@ OfxImageEffectInstance::mainEntry(const char *action,
 #ifdef DEBUG
     boost_adaptbx::floating_point::exception_trapping trap(0);
 #endif
+    // An action of another thread is counted before the suspension state is read, and the main thread
+    // sets the state before it reads the count (OfxEffectInstance::suspendSingleInstance()): either the
+    // main thread sees the action in flight, or the action sees the suspension.
+    const bool onMainThread = ( QThread::currentThread() == qApp->thread() );
+    ActionInFlight_RAII inFlight(onMainThread ? NULL : &_actionsInFlightOnOtherThreads);
+    const int suspendState = _suspendState;
+    if ( (suspendState == eSuspendStateSuspended) ||
+         ( (suspendState == eSuspendStateSuspending) && !onMainThread ) ) {
+        // the plug-in instance is being destroyed or was destroyed, or is being created again
+        // (OfxEffectInstance::suspendSingleInstance(), resumeSingleInstance())
+#ifdef DEBUG
+        qDebug() << "OfxImageEffectInstance::mainEntry: action" << action << "not sent: the instance is suspended";
+#endif
+
+        return kOfxStatFailed;
+    }
     ThreadIsActionCaller_RAII t(this);
     MainThreadAction_RAII mainThreadAction(this);
 

@@ -32,6 +32,7 @@
 #include <string>
 #include <cstdarg>
 #include <vector>
+#include <atomic>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -71,6 +72,35 @@ public:
     void setOfxEffectInstance(const OfxEffectInstancePtr& node)
     {
         _ofxEffectInstance = node;
+    }
+
+    /**
+     * @brief The suspension of the plug-in instance (see OfxEffectInstance::suspendSingleInstance()):
+     * while it is being suspended, mainEntry() sends nothing from the other threads, and once it is
+     * suspended (its plug-in instance destroyed), nothing at all: it returns kOfxStatFailed.
+     **/
+    enum SuspendStateEnum
+    {
+        eSuspendStateNone = 0,
+        eSuspendStateSuspending,
+        eSuspendStateSuspended
+    };
+
+    void setSuspendState(SuspendStateEnum state)
+    {
+        _suspendState = (int)state;
+    }
+
+    /// true while an action of another thread than the main thread is in the plug-in (see mainEntry())
+    bool hasActionsInFlightOnOtherThreads() const
+    {
+        return _actionsInFlightOnOtherThreads > 0;
+    }
+
+    /// true while an action of this instance or of one of its interacts runs on the main thread (main thread only)
+    bool isInMainThreadAction() const
+    {
+        return _mainThreadActionDepth > 0;
     }
 
     /**
@@ -290,6 +320,11 @@ private:
     // kOfxActionInstanceChanged, may trigger another one (when a value it sets changes a parameter).
     // Only read and written on the main thread.
     int _mainThreadActionDepth;
+    // see setSuspendState(); written on the main thread
+    std::atomic<int> _suspendState;
+    // the actions of the other threads than the main thread in mainEntry(), counted before _suspendState
+    // is read (both sequentially consistent): see OfxEffectInstance::suspendSingleInstance()
+    std::atomic<int> _actionsInFlightOnOtherThreads;
     // The edit blocks that the plug-in opened (paramEditBegin()) and did not end yet (paramEditEnd()), innermost last:
     // true for a block opened on _pluginEditHolder, false for a block that was ignored (while a PyPlug is created), so
     // that each paramEditEnd() ends the block of its paramEditBegin(). When the outermost action returns, these blocks,

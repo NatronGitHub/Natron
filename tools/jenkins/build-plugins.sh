@@ -349,7 +349,7 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
     fi
     GLULIB="-lMangledGLU"
 
-    # Build static on Windows so that openfx-misc are usable on other hosts without DLL's and manifests (note Shadertoy will require osmesa dll)
+    # Build static on Windows so that openfx-misc are usable on other hosts without DLLs and manifests (OSMesa is linked statically into Shadertoy)
     # Could/Should also be done on OSX?
     # On Linux this is not the best solution, as Nuke forces gcc, so static won't help. as-is the plugins should work in Nuke10+ (CY2015),
     # but will not work on older versions. The best solution on Nuke9 and lower is to build the plugins using RHEL devtoolset (gcc4.7).

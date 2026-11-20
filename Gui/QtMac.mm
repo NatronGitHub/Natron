@@ -100,6 +100,15 @@ QtMac::setupDockClickHandler(void (*dockClickHandler)(void)) {
 #endif
 
 void
+QtMac::ignorePersistentUIState()
+{
+    // After a crash, macOS asks whether to reopen the windows with a modal alert, which would
+    // block a script or a test. Set ApplePersistenceIgnoreState in the registration domain:
+    // it is not saved in the preferences, and a value set by the user takes precedence.
+    [[NSUserDefaults standardUserDefaults] registerDefaults:@{ @"ApplePersistenceIgnoreState": @YES }];
+}
+
+void
 QtMac::setupGuiTestNoFocus()
 {
     NSApplication* app = [NSApplication sharedApplication];
