@@ -127,33 +127,33 @@ interacts page does not count the rows describing pull request #1349.
      - 0
    * - :ref:`Parameters <ofx-host-conformance-params>`
      - 105
-     - 72
-     - 17
-     - 10
+     - 76
+     - 15
+     - 8
      - 0
      - 4
      - 2
    * - :ref:`Image effects <ofx-host-conformance-imageeffect>`
      - 111
-     - 72
-     - 19
+     - 71
+     - 20
      - 13
      - 2
      - 4
      - 0
    * - :ref:`Interacts, GPU, colour, packaging <ofx-host-conformance-interact-gpu-packaging>`
      - 72
-     - 40
+     - 42
      - 13
-     - 7
+     - 5
      - 4
      - 8
      - 0
    * - **Total**
      - 387
-     - 257
-     - 61
-     - 38
+     - 262
+     - 60
+     - 34
      - 7
      - 21
      - 2
