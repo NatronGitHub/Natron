@@ -13,6 +13,7 @@
 
 ### Changes
 
+- Python: `Tracker.startTracking(tracks, start, end, False)` tracks backward from *start* down to *end* (excluded); it tracked nothing. #1255
 - Documentation: the Reference Guide has a "Nodes" section, with one page per node group and per sub-group (e.g. "G'MIC / Colors"), and the sidebar only expands the current branch.
 
 
