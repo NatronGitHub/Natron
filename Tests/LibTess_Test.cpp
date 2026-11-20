@@ -433,3 +433,41 @@ TEST(LibTess,
     EXPECT_EQ(0, r.protocolErrors);
     EXPECT_EQ(0, countCoverageErrors(c, r) );
 }
+
+// Nearly parallel overlapping edges: the intersection of two edges on the
+// diagonal x == y was computed at (4, 3.24), far from both, and the edges were
+// moved there, which filled wrong areas.
+TEST(LibTess,
+     OverlappingCollinearEdges)
+{
+    const TessPoint diagonal[] = {
+        { 4, 4 }, { 0, 0 }, { 5, 5 }, { 1, 1 }, { 0, 5 }, { 0, 0 }, { 2, 5 }, { 4, 0 }, { 0, 2 }, { 3, 0 }
+    };
+    const struct
+    {
+        const TessPoint* p;
+        std::size_t n;
+    } cases[] = {
+        { diagonal, sizeof(diagonal) / sizeof(diagonal[0]) },
+    };
+
+    for (std::size_t k = 0; k < sizeof(cases) / sizeof(cases[0]); ++k) {
+        std::vector<TessPoint> c(cases[k].p, cases[k].p + cases[k].n);
+        // both orientations, and the vertices mirrored
+        for (int variant = 0; variant < 4; ++variant) {
+            std::vector<TessPoint> v = c;
+            if (variant & 1) {
+                std::reverse( v.begin(), v.end() );
+            }
+            if (variant & 2) {
+                for (std::size_t i = 0; i < v.size(); ++i) {
+                    v[i].y = -v[i].y;
+                }
+            }
+            TessResult r = tessellate(v);
+            EXPECT_TRUE( r.errors.empty() ) << "case " << k << " variant " << variant;
+            EXPECT_EQ(0, r.protocolErrors) << "case " << k << " variant " << variant;
+            EXPECT_EQ(0, countCoverageErrors(v, r) ) << "case " << k << " variant " << variant;
+        }
+    }
+}
