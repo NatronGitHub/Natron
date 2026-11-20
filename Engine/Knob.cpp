@@ -2866,7 +2866,7 @@ KnobHelper::setExpressionInvalid(int dimension,
                 std::lock_guard<std::mutex> k(_imp->expressionMutex);
                 for (int i = 0; i < ndims; ++i) {
                     if (i != dimension) {
-                        if ( !_imp->expressions[dimension].exprInvalid.empty() ) {
+                        if ( !_imp->expressions[i].exprInvalid.empty() ) {
                             haveOtherExprInvalid = true;
                             break;
                         }
