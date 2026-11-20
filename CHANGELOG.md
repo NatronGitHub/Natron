@@ -13,6 +13,8 @@
 
 - OpenFX: a plug-in that calls the multithread suite's `multiThread()` from one of its own thread functions now gets `kOfxStatErrExists`, as OFX requires ("This function cannot be called recursively"), instead of a nested run. A plug-in built with the OpenFX Support library that nests an `OFX::MultiThread::Processor` in another one works if its Support library is at NatronGitHub/openfx 66f4231f or later (openfx#199 runs the inner processor in the calling thread); a third-party plug-in binary built with an older Support library that nests processors fails to render. No bundled plug-in nests processors. #1385
 
+- OpenFX: the memory suite (`memoryAlloc`/`memoryFree`) puts a header before each block, so that `memoryFree` can reject a pointer it did not allocate (`kOfxStatErrBadHandle`, as OpenFX requires). A third-party plug-in that frees a `memoryAlloc` block with `free()`, or passes a `malloc()` pointer to `memoryFree`, now crashes or leaks; that was already wrong by the OpenFX spec, and no bundled plug-in does it. #1385
+
 ### Changes
 
 - OpenFX: the text of plug-in messages with arguments (errors, warnings, logs, and the messages shown on nodes and in the viewer) is no longer garbage. #1483
