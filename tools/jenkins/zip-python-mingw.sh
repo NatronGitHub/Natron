@@ -8,12 +8,17 @@ set -x
 
 # PYDIR: Path to python lib path
 PYTEMP=${PYTEMP:-${PYDIR}/zip_tmp}
-PYVER=${PYVER:-3.10}
+PYVER=${PYVER:?PYVER must be set, e.g. 3.14}
 PYVERNODOT=${PYVERNODOT:-`echo ${PYVER} | sed -e 's/\.//g'`}
 
-PY_PKG=`pacman -Q mingw-w64-x86_64-python | awk '{print $2}'`
-PY_PKG_FILE="mingw-w64-x86_64-python-${PY_PKG}-any.pkg.tar.zst"
-PY_PKG_URL="https://repo.msys2.org/mingw/x86_64/${PY_PKG_FILE}"
+# The Python package of the MSYS2 environment (UCRT64, CLANG64, CLANGARM64...), for its
+# pristine standard library
+: "${MINGW_PACKAGE_PREFIX:?run this in an MSYS2 MinGW shell}"
+: "${MINGW_PREFIX:?run this in an MSYS2 MinGW shell}"
+: "${MSYSTEM:?run this in an MSYS2 MinGW shell}"
+PY_PKG=`pacman -Q ${MINGW_PACKAGE_PREFIX}-python | awk '{print $2}'`
+PY_PKG_FILE="${MINGW_PACKAGE_PREFIX}-python-${PY_PKG}-any.pkg.tar.zst"
+PY_PKG_URL="https://repo.msys2.org/mingw/${MSYSTEM,,}/${PY_PKG_FILE}"
 PACMAN_CACHE="/var/cache/pacman/pkg"
 
 # Stdlib packages to embed. Plain top-level modules are picked up by the *.py
@@ -58,7 +63,7 @@ zoneinfo
 "
 
 EMBED="${PYTEMP}/python${PYVERNODOT}"
-SRC="${PYTEMP}/mingw64/lib/python${PYVER}"
+SRC="${PYTEMP}${MINGW_PREFIX}/lib/python${PYVER}"
 
 mkdir -p "${EMBED}"
 

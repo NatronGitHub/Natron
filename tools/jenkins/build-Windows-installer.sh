@@ -40,15 +40,22 @@ popd () {
     command popd "$@" > /dev/null
 }
 
-# Generate dll versions with dlls on the system
-env BITS="$BITS" PYVER="$PYVER" PYV="${PYV}" QT_VERSION_MAJOR="${QT_VERSION_MAJOR}" NATRON_LICENSE="$NATRON_LICENSE" ./genDllVersions.sh
+# List the DLLs to bundle, from the import tables of the binaries (updateBuildOptions first, for
+# TMP_BINARIES_PATH). The FFmpeg and LibRaw of the licence come first, as on PATH at run time.
+updateBuildOptions
+env MINGW_PREFIX="$SDK_HOME" TMP_BINARIES_PATH="$TMP_BINARIES_PATH" PYVER="$PYVER" QT_VERSION_MAJOR="${QT_VERSION_MAJOR}" NATRON_LICENSE="$NATRON_LICENSE" \
+    FFMPEG_PATH="$FFMPEG_PATH" DLL_SEARCH_DIRS="$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$SDK_HOME/bin" ./genDllVersions.sh
 
 source dllVersions.sh
 
 updateBuildOptions
 
 # Pretty architecture/platform identifier (used for breakpad symbol files)
-PKGOS_BITS="${PKGOS}-x86_${BITS}bit"
+if [ "$ARCH" = "x86_64" ]; then
+    PKGOS_BITS="${PKGOS}-x86_${BITS}bit"
+else
+    PKGOS_BITS="${PKGOS}-${WIN_ARCH}"
+fi
 
 if [ -z "${NATRON_BUILD_CONFIG:-}" ]; then
     echo "NATRON_BUILD_CONFIG empty"
@@ -78,6 +85,8 @@ if [ -d "${BUILD_ARCHIVE_DIRECTORY}" ]; then
 fi
 
 mkdir -p "${BUILD_ARCHIVE_DIRECTORY}"
+# the list of bundled DLLs, for comparing installers
+cp dllVersions.txt "${BUILD_ARCHIVE_DIRECTORY}/${INSTALLER_BASENAME}-dlls.txt"
 if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
     mkdir "${BUILD_ARCHIVE_DIRECTORY}/symbols"
 fi
@@ -130,14 +139,22 @@ $GSED -e "s/_VERSION_/${NATRON_VERSION_FULL}/;s#_RBVERSION_#${NATRON_GIT_BRANCH}
 # Copy installer images to the config folder
 cp "$INC_PATH/config/"*.png "$INSTALLER_PATH/config/"
 
-# make sure we have mt and qtifw
+# make sure we have mt (to embed the plug-in manifests) and the Inno Setup installer
 
 MT_BIN=mt.exe
 if ! which ${MT_BIN}; then
-    # Add Windows SDK to path so that mt.exe is available.
+    # Add Windows SDK to path so that mt.exe is available: the one for the build machine (the x64
+    # one also runs emulated on ARM64).
     WIN_SDK_MAJOR_VERSION=10
     WIN_SDK_BASE_PATH="/c/Program Files (x86)/Windows Kits/${WIN_SDK_MAJOR_VERSION}/bin"
-    MT_BIN=$(find "${WIN_SDK_BASE_PATH}" -name mt.exe | grep x64 | sort -n | tail -1)
+    MT_HOST_ARCH=x64
+    if [ "$ARCH" = "aarch64" ]; then
+        MT_HOST_ARCH=arm64
+    fi
+    MT_BIN=$(find "${WIN_SDK_BASE_PATH}" -name mt.exe | grep "/${MT_HOST_ARCH}/" | sort -n | tail -1)
+    if [[ -z "${MT_BIN}" ]]; then
+        MT_BIN=$(find "${WIN_SDK_BASE_PATH}" -name mt.exe | grep "/x64/" | sort -n | tail -1)
+    fi
 
     if [[ -z "${MT_BIN}" ]]; then
         echo "Failed to find mt.exe"
@@ -145,13 +162,12 @@ if ! which ${MT_BIN}; then
     fi
 fi
 
-if ! which binarycreator.exe && [ ! -f "/Setup.exe" ]; then
-    pacman -S mingw-w64-x86_64-qt-installer-framework
-
-    if ! which binarycreator.exe; then
-        echo "Failed to find binarycreator.exe"
-        exit 1
-    fi
+# The installer is Inno Setup's Setup.exe (${MINGW_PACKAGE_PREFIX}-natron-setup, from
+# natron-build-deps-common), embedded in the portable zip. The Qt Installer Framework installers
+# are retired (#1133).
+if [ ! -f "/Setup.exe" ]; then
+    echo "Error: /Setup.exe not found: install ${MINGW_PACKAGE_PREFIX}-natron-setup (tools/MINGW-packages)"
+    exit 1
 fi
 
 function installPlugin() {
@@ -190,7 +206,7 @@ function installPlugin() {
 
         # Dump symbols
     if [ "${DISABLE_BREAKPAD:-}" != "1" ] && [ -d "${TMP_BINARIES_PATH}/OFX/Plugins/${OFX_BINARY}.ofx.bundle" ]; then
-        dump_syms_safe "$PKG_PATH/data/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}/${OFX_BINARY}.ofx" "${BUILD_ARCHIVE_DIRECTORY}/symbols/${OFX_BINARY}.ofx-${VERSION_TAG}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
+        dump_syms_safe "$PKG_PATH/data/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/${OFX_ARCHDIR}/${OFX_BINARY}.ofx" "${BUILD_ARCHIVE_DIRECTORY}/symbols/${OFX_BINARY}.ofx-${VERSION_TAG}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
     fi
 
     # Strip ofx binaries (must be done before manifest)
@@ -204,25 +220,25 @@ function installPlugin() {
 
     if [ ! -z "$DEPENDENCIES_DLL" ]; then
         for depend in ${DEPENDENCIES_DLL}; do
-            cp "$depend" "$PKG_PATH/data/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}/"
-            cp "$depend" "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}/"
+            cp "$depend" "$PKG_PATH/data/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/${OFX_ARCHDIR}/"
+            cp "$depend" "${TMP_PORTABLE_DIR}/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/${OFX_ARCHDIR}/"
         done
 
         # The plug-in needs a manifest embedeed into its own DLL to indicate the relative path of its own
         # dependencies.
         # If some of them are shared with Natron, its better to install them with Natron dependencies.
-        PLUGIN_MANIFEST="$PKG_PATH/data/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}/manifest"
+        PLUGIN_MANIFEST="$PKG_PATH/data/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/${OFX_ARCHDIR}/manifest"
         echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" > "$PLUGIN_MANIFEST"
         echo "<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">" >> "$PLUGIN_MANIFEST"
-        echo "<assemblyIdentity name=\"${OFX_BINARY}.ofx\" version=\"1.0.0.0\" type=\"win32\" processorArchitecture=\"amd64\"/>" >> "$PLUGIN_MANIFEST"
-        DEPS_DLL="$(cd "$PKG_PATH/data/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}";ls ./*.dll)" || true
+        echo "<assemblyIdentity name=\"${OFX_BINARY}.ofx\" version=\"1.0.0.0\" type=\"win32\" processorArchitecture=\"${WIN_MANIFEST_ARCH}\"/>" >> "$PLUGIN_MANIFEST"
+        DEPS_DLL="$(cd "$PKG_PATH/data/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/${OFX_ARCHDIR}";ls ./*.dll)" || true
         for depend in $DEPS_DLL; do
             trimmeddep="$(basename "$depend")"
             echo "<file name=\"${trimmeddep}\"></file>" >> "$PLUGIN_MANIFEST"
         done
         echo "</assembly>" >> "$PLUGIN_MANIFEST"
         for location in "$PKG_PATH/data" "${TMP_PORTABLE_DIR}"; do
-            (cd "$location/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/Win${BITS}"; "${MT_BIN}" -nologo -manifest "$PLUGIN_MANIFEST" -outputresource:"${OFX_BINARY}.ofx;2")
+            (cd "$location/Plugins/OFX/Natron/${OFX_BINARY}.ofx.bundle/Contents/${OFX_ARCHDIR}"; "${MT_BIN}" -nologo -manifest "$PLUGIN_MANIFEST" -outputresource:"${OFX_BINARY}.ofx;2")
         done
 
     fi
@@ -295,9 +311,8 @@ for location in "${COPY_LOCATIONS[@]}"; do
         cp "${TMP_BINARIES_PATH}/bin/natron-python.exe" "$location/bin/natron-python.exe"
     fi
 
-    cp "$SDK_HOME"/bin/{iconvert.exe,idiff.exe,igrep.exe,iinfo.exe} "$location/bin/"
-    cp "$SDK_HOME"/bin/{exrheader.exe,tiffinfo.exe} "$location/bin/"
-    cp "${FFMPEG_PATH}"/bin/{ffmpeg.exe,ffprobe.exe} "$location/bin/"
+    # OIIO, OpenEXR, libtiff and FFmpeg tools (listed by genDllVersions.sh)
+    cp "${NATRON_TOOLS[@]}" "$location/bin/"
 
     mkdir -p "${location}"/Resources/{pixmaps,stylesheets}
     cp "$CWD/include/config/natronProjectIcon_windows.ico" "$location/Resources/pixmaps/"
@@ -484,21 +499,28 @@ $GSED "s/_VERSION_/${CLIBS_VERSION}/;s/_DATE_/${INSTALLER_XML_DATE}/" < "$XML/co
 cp "$QS/$PKGOS/corelibs.qs" "$DLLS_PACKAGE_PATH/meta/installscript.qs"
 
 # Mesa opengl32.dll is an optional package in the installer, so that the user can still fallback
-# on a software renderer if OpenGL driver is not good enough
-if [ ! -d "$SRC_PATH/natron-windows-mesa" ]; then
-    ( cd "$SRC_PATH";
-      $CURL "$THIRD_PARTY_BIN_URL/natron-windows-mesa.tar.xz" --output "$SRC_PATH/natron-windows-mesa.tar.xz"
-      tar xvf natron-windows-mesa.tar.xz
-    )
-fi
+# on a software renderer if OpenGL driver is not good enough.
+# natron-windows-mesa only has x86 builds. On ARM64, MSYS2's mesa package (opengl32.dll and
+# libgallium_wgl.dll, with their dependencies) should be bundled instead, which is not done yet
+# (#1494): the ARM64 installer has no software OpenGL component.
+if [ "$ARCH" = "x86_64" ]; then
+    if [ ! -d "$SRC_PATH/natron-windows-mesa" ]; then
+        ( cd "$SRC_PATH";
+          $CURL "$THIRD_PARTY_BIN_URL/natron-windows-mesa.tar.xz" --output "$SRC_PATH/natron-windows-mesa.tar.xz"
+          tar xvf natron-windows-mesa.tar.xz
+        )
+    fi
 
-PACKAGES="${PACKAGES},fr.inria.mesa"
-MESA_PKG_PATH="$INSTALLER_PATH/packages/fr.inria.mesa"
-mkdir -p "$MESA_PKG_PATH/meta" "$MESA_PKG_PATH/data/bin" "${TMP_PORTABLE_DIR}/bin/mesa"
-$GSED "s/_DATE_/${INSTALLER_XML_DATE}/" < "$XML/mesa.xml" > "$MESA_PKG_PATH/meta/package.xml"
-cp "$QS/mesa.qs" "$MESA_PKG_PATH/meta/installscript.qs"
-cp "$SRC_PATH/natron-windows-mesa/win${BITS}/opengl32.dll" "$MESA_PKG_PATH/data/bin/"
-cp "$SRC_PATH/natron-windows-mesa/win${BITS}/opengl32.dll" "${TMP_PORTABLE_DIR}/bin/mesa/"
+    PACKAGES="${PACKAGES},fr.inria.mesa"
+    MESA_PKG_PATH="$INSTALLER_PATH/packages/fr.inria.mesa"
+    mkdir -p "$MESA_PKG_PATH/meta" "$MESA_PKG_PATH/data/bin" "${TMP_PORTABLE_DIR}/bin/mesa"
+    $GSED "s/_DATE_/${INSTALLER_XML_DATE}/" < "$XML/mesa.xml" > "$MESA_PKG_PATH/meta/package.xml"
+    cp "$QS/mesa.qs" "$MESA_PKG_PATH/meta/installscript.qs"
+    cp "$SRC_PATH/natron-windows-mesa/win${BITS}/opengl32.dll" "$MESA_PKG_PATH/data/bin/"
+    cp "$SRC_PATH/natron-windows-mesa/win${BITS}/opengl32.dll" "${TMP_PORTABLE_DIR}/bin/mesa/"
+else
+    echo "Warning: no software OpenGL (Mesa opengl32.dll) for $WIN_ARCH yet (#1494)"
+fi
 
 # Generate documentation
 bash "$CWD"/gen-natron-doc.sh
@@ -523,39 +545,15 @@ echo "Done"
 
 # Create installers
 
-ONLINE_INSTALL_DIR="online_installer"
-#BUNDLED_INSTALL_DIR="offline_installer"
-#ZIP_INSTALL_DIR="compressed_no_installer"
-
-# These have easily identifiable filenames and extensions anyway:
-BUNDLED_INSTALL_DIR="."
+# The Qt Installer Framework installers (online and offline: repogen, binarycreator) are retired:
+# the installer is the portable zip with Inno Setup's Setup.exe (#1133). The
+# $INSTALLER_PATH/packages tree is still used by runUnitTests.sh.
 ZIP_INSTALL_DIR="."
 
-mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR"
-
-# Online installer (legacy)
-if [ "$WITH_ONLINE_INSTALLER" = "1" ] && [ ! -f "/Setup.exe" ]; then
-    mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR"
-    mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR/packages"
-
-    # Gen repo for online install
-    "$SDK_HOME/bin/repogen" -v --update-new-components -p "$INSTALLER_PATH/packages" -c "$INSTALLER_PATH/config/config.xml" "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR/packages"
-
-    # Online installer
-    "$SDK_HOME/bin/binarycreator" -v -n -p "$INSTALLER_PATH/packages" -c "$INSTALLER_PATH/config/config.xml" "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR/${INSTALLER_BASENAME}-online.exe"
-fi
-
-# Offline installer (legacy)
-if [ ! -f "/Setup.exe" ]; then
-    "$SDK_HOME/bin/binarycreator" -v -f -p "$INSTALLER_PATH/packages" -c "$INSTALLER_PATH/config/config.xml" -i "${PACKAGES}" "${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR/${INSTALLER_BASENAME}.exe"
-fi
-
-# Portable zip (+ setup if found)
+# Portable zip, with Setup.exe
 if [ "$DISABLE_PORTABLE_ARCHIVE" != "1" ]; then
     mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR"
-    if [ -f "/Setup.exe" ]; then
-        cp -a /Setup.exe "${TMP_BINARIES_PATH}/${PORTABLE_DIRNAME}/"
-    fi
+    cp -a /Setup.exe "${TMP_BINARIES_PATH}/${PORTABLE_DIRNAME}/"
     (cd "${TMP_BINARIES_PATH}" && zip -9 -q -r "${PORTABLE_DIRNAME}.zip" "${PORTABLE_DIRNAME}"; mv "${PORTABLE_DIRNAME}.zip" "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR/${PORTABLE_DIRNAME}.zip")
 fi
 
