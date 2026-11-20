@@ -105,7 +105,7 @@ convertFromPlainText(const QString &plain,
     return rich;
 } // convertFromPlainText
 
-// use genHTML=true when generating markdown for hoedown. false for pandoc
+// use genHTML=true when generating markdown for md4c. false for pandoc
 QString
 convertFromPlainTextToMarkdown(const QString &plain_, bool genHTML, bool isTableElement)
 {
@@ -127,6 +127,13 @@ convertFromPlainTextToMarkdown(const QString &plain_, bool genHTML, bool isTable
     // !    exclamation mark
 
     // We must also escape angle brackets < and > , so that they don't become HTML tags
+
+    // With genHTML, the Markdown extensions enabled in Markdown::convert2html() also
+    // make these characters special, so they are backslash-escaped too:
+    // ^    superscript (^text^)
+    // ~    strikethrough (~text~ and ~~text~~)
+    // $    LaTeX math ($...$ and $$...$$)
+    // =    highlight (==text==), and setext headers (a line of =)
 
     // we do a hack for multiline elements, because the markdown->rst conversion by pandoc doesn't use the line block syntax.
     // what we do here is put a supplementary dot at the beginning of each line, which is then converted to a pipe '|' in the
@@ -151,7 +158,11 @@ convertFromPlainTextToMarkdown(const QString &plain_, bool genHTML, bool isTable
             plain[i] == QLatin1Char('+') ||
             plain[i] == QLatin1Char('-') ||
             plain[i] == QLatin1Char('.') ||
-            plain[i] == QLatin1Char('!')) {
+            plain[i] == QLatin1Char('!') ||
+            ( genHTML && ( plain[i] == QLatin1Char('^') ||
+                           plain[i] == QLatin1Char('~') ||
+                           plain[i] == QLatin1Char('$') ||
+                           plain[i] == QLatin1Char('=') ) ) ) {
             escaped += QLatin1Char('\\');
         } else if ( plain[i] == QLatin1Char('<') ) {
             escaped += QString::fromUtf8("&lt;");
@@ -166,7 +177,7 @@ convertFromPlainTextToMarkdown(const QString &plain_, bool genHTML, bool isTable
             } else if (plain[i] == QLatin1Char('\n')) {
                 assert(isMultilineElement);
                 if (genHTML) {
-                    // we are generating markdown for hoedown
+                    // we are generating markdown for md4c
 
                     // "<br />" should work, but actually it doesn't work well and is ignored by pandoc in many cases
                     escaped += QString::fromUtf8("<br />");

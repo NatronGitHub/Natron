@@ -147,8 +147,25 @@ Markdown
 ~~~~~~~~
 
 The plug-in description and the parameter hints can be written in
-`Markdown <https://daringfireball.net/projects/markdown/syntax>`_ instead of
-plain text, which gives more control over the layout.
+Markdown instead of plain text, which gives more control over the layout. The
+extra documentation file (``pluginId.md``, see above), for OpenFX plug-ins as
+well as PyPlugs, is also Markdown.
+
+Since Natron 2.6, Markdown follows the
+`CommonMark <https://spec.commonmark.org/0.31.2/>`_ specification, as on GitHub
+or GitLab: Natron converts it to HTML with
+`md4c <https://github.com/mity/md4c>`_. These extensions are enabled: tables,
+footnotes (``[^1]``), ``~~strikethrough~~``, ``==highlight==``,
+``^superscript^``, LaTeX math (``$...$`` and ``$$...$$``, shown with MathJax in
+the HTML documentation), and URLs, ``www.`` links and e-mail addresses as
+links. Raw HTML is passed through. To write one of the characters ``^``, ``~``,
+``$`` or ``=`` literally where it would start one of these, escape it with a
+backslash (``\^``). The `CommonMark tutorial <https://commonmark.org/help/>`_
+is a quick reference. Natron 2.5 and earlier used hoedown, which followed the
+older rules of the original Markdown, so a few constructs render differently:
+``_text_`` is emphasis (it was underlined), ``^superscript`` needs a closing
+``^``, ``"text"`` is no longer a quotation (``<q>``), and some lists follow the
+CommonMark rules.
 
 The plug-in must tell Natron that its description is in Markdown, and keep a
 plain-text description for other OpenFX hosts. See the

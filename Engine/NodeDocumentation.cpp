@@ -397,7 +397,7 @@ Node::makeDocumentation(bool genHTML) const
         ms << "![pluginIcon](" << pluginIconUrl << ")";
         if (!genHTML) {
             // specify image width for pandoc-generated printed doc
-            // (for hoedown-generated HTML, this handled by the CSS using the alt=pluginIcon attribute)
+            // (for md4c-generated HTML, this handled by the CSS using the alt=pluginIcon attribute)
             // see http://pandoc.org/MANUAL.html#images
             // note that only % units are understood both by pandox and sphinx
             ms << "{ width=10% }";
@@ -465,7 +465,7 @@ Node::makeDocumentation(bool genHTML) const
 OUTPUT:
     // output
     if (genHTML) {
-        // use hoedown to convert to HTML
+        // use md4c to convert to HTML
         // See Documentation/templates for how to grab header/footer from the latest Sphinx version
 
         QString groupString; // %2 in plugin_head: the node group, and its parents
