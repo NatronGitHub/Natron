@@ -143,6 +143,10 @@ TEST_F(ParamRandomTest, RandomWithFrameAndSeed)
     double r = to->random(0., 1.);
     (void)r;
     EXPECT_EQ( a, to->random(0., 1., 5., 0) );
+    // it does not depend on the parameter (as documented: use a different seed per parameter and dimension)
+    KnobDoublePtr from = knob("doubleFrom");
+    ASSERT_TRUE( bool(from) );
+    EXPECT_EQ( a, from->random(0., 1., 5., 0) );
 
     // the same in an expression
     to->setExpression(0, "random(0, 1, frame, 0)", false /*hasRetVariable*/, false /*failIfInvalid*/);
