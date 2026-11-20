@@ -17,7 +17,9 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-cmake_minimum_required(VERSION 3.16.7)
+# 3.21: libs/OpenFX (added below with add_subdirectory()) requires it (NatronGitHub/openfx#196). The
+# policies are those of CMake 3.31, as in libs/OpenFX.
+cmake_minimum_required(VERSION 3.21...3.31)
 
 # The version is the one of Global/Macros.h (NATRON_VERSION_MAJOR/MINOR/REVISION), so that the
 # macOS Info.plist (CFBundleShortVersionString, CFBundleVersion) can't disagree with the
@@ -256,6 +258,7 @@ set(QT_COMPONENTS Core Gui Network Widgets Concurrent)
 if(NATRON_QT6)
     list(APPEND QT_COMPONENTS OpenGLWidgets)
     find_package(Qt6 6.3 CONFIG REQUIRED COMPONENTS ${QT_COMPONENTS})
+    # No CMP0148 counterpart of the Qt5 block below: Shiboken6Config.cmake uses FindPython3.
     find_package(Shiboken6 6.3 CONFIG REQUIRED COMPONENTS libshiboken6)
     find_package(Shiboken6Tools 6.3 CONFIG REQUIRED COMPONENTS shiboken6)
     find_package(PySide6 6.3 CONFIG REQUIRED COMPONENTS pyside6)
@@ -272,8 +275,16 @@ if(NATRON_QT6)
     set(PYSIDE_LIB PySide6::pyside6)
 else()
     find_package(Qt5 5.15 CONFIG REQUIRED COMPONENTS ${QT_COMPONENTS})
+    # Shiboken2 5.15's CMake config uses FindPythonInterp/FindPythonLibs (CMP0148). RB-2.6 only: remove in RB-2.7.
+    if(POLICY CMP0148)
+        cmake_policy(PUSH)
+        cmake_policy(SET CMP0148 OLD)
+    endif()
     find_package(Shiboken2 5.15 CONFIG QUIET COMPONENTS libshiboken2 shiboken2)
     find_package(PySide2 5.15 CONFIG QUIET COMPONENTS pyside2)
+    if(POLICY CMP0148)
+        cmake_policy(POP)
+    endif()
     if(NOT Shiboken2_FOUND AND NOT PySide2_FOUND)
         # No CMake config files (PySide2 built with setup.py, e.g. MacPorts' py*-pyside2,
         # or the download.qt.io wheels): locate them from the Python installation.
@@ -453,6 +464,30 @@ endif()
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+# The stack reserve of the main thread of the Windows executables (Natron, NatronRenderer, natron-python,
+# Tests). Keep it in sync with NATRON_MAIN_THREAD_STACK_SIZE in global.pri (qmake).
+# The main thread of a Windows program gets the stack reserve of the executable header, set at link
+# time: by default 2 MB with GNU ld (MinGW-w64), 1 MB with lld and MSVC link.exe, much less than the main
+# thread of Linux and macOS programs (8 MB). Renders can run on the main thread
+# (QFuture::waitForFinished() runs a queued QtConcurrent task on the waiting thread), as well as
+# GUI-thread recursions such as getRegionOfDefinition() from the viewer, so with a deep node graph the
+# main thread can overflow long before the render threads (NATRON_RENDER_THREAD_STACK_SIZE in
+# Engine/ThreadPool.h: 4 MB on Windows) (#1440).
+# The reserve is only address space: the main thread commits its stack pages as it touches them (the
+# commit size of the header stays at its default, 4 KB), unlike threads created with a stack size, whose
+# stack is committed at creation. It is also the default reserve of the threads created without a stack
+# size, which commit their stack in the same way.
+set(NATRON_MAIN_THREAD_STACK_SIZE 8388608) # 8 MB
+function(natron_set_main_thread_stack_size target)
+    if(WIN32)
+        if(MSVC) # MSVC and clang-cl
+            target_link_options(${target} PRIVATE "/STACK:${NATRON_MAIN_THREAD_STACK_SIZE}")
+        else() # MinGW-w64 (GNU ld or lld)
+            target_link_options(${target} PRIVATE "-Wl,--stack,${NATRON_MAIN_THREAD_STACK_SIZE}")
+        endif()
+    endif()
+endfunction()
+
 enable_testing()
 
 add_subdirectory(libs)
@@ -471,6 +506,8 @@ set(OFX_SUPPORTS_OPENGLRENDER ON)
 set(OFX_SUPPORTS_MULTITHREAD ON)
 set(OFX_SUPPORTS_DIALOG ON)
 set(OFX_SUPPORTS_PARAMETRIC ON)
+# openfx's HostSupport Python bindings (HostSupport/python, which needs nanobind): not used by Natron
+set(OFX_PYTHON_BINDINGS OFF)
 add_subdirectory(libs/OpenFX EXCLUDE_FROM_ALL)
 target_sources(OfxHost PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/libs/OpenFX_extensions/ofxhParametricParam.cpp)
 target_include_directories(OfxHost PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libs/OpenFX_extensions>)

@@ -1273,11 +1273,9 @@ Histogram::resizeGL(int width,
         height = 1;
     }
     glViewport (0, 0, width, height);
+    // width and height are in device-independent pixels, the unit of zoomCtx: see CurveWidget::resizeGL() (#971)
     double zoomWidth = width;
     double zoomHeight = height;
-    double screenPixelRatio = getScreenPixelRatio();
-    zoomWidth /= screenPixelRatio;
-    zoomHeight /= screenPixelRatio;
 
     _imp->zoomCtx.setScreenSize(zoomWidth, zoomHeight);
     if (!_imp->hasBeenModifiedSinceResize) {

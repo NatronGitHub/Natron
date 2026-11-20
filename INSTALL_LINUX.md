@@ -61,7 +61,9 @@ cd tools/jenkins
 include/scripts/build-Linux-sdk.sh
 ```
 
-It puts build logs and the list of files installed by each package in the directory `/opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK` or `/opt/Natron-sdk/var/log/Natron-Linux-i686-SDK`.
+It puts build logs and the list of files installed by each package in the directory `/opt/Natron-sdk/var/log/Natron-Linux-<arch>-SDK`, where `<arch>` is `x86_64`, `aarch64` or `i686`.
+
+The official Linux binaries are built with the Rocky Linux 9 SDK (`ROCKY=9`). It uses GCC 14 from `gcc-toolset-14`, Python 3.11, Qt 5.15.19, PySide2/Shiboken2 5.15.19 (built from source with EPEL's libclang 19), and librsvg 2.58 (built with Rust from `rust-toolset`). It doesn't build Qt 4 or the Qt installer framework (`WITH_QT4=false`): the Linux releases are portable archives. The Rocky Linux 8 SDK (`ROCKY=8`) is the same, except for libclang 18, librsvg 2.40 and Qt 4. Both build natively on x86_64 and aarch64: the Docker image is built by `[ROCKY=8] tools/docker/natron-sdk-rockylinux/build.sh [amd64|arm64]` (see `tools/docker/README.md`).
 
 Some packages, especially Qt 4.8.7, have Natron-specific patches. Take a look at the SDK script to see which patches are applied to each packages, and what configuration options are used.
 
@@ -252,7 +254,9 @@ Plugins/
 
 # Build
 
-Natron is built with CMake (3.16.7 or later). From the Natron source directory:
+Natron is built with CMake (3.21 or later). The distribution package is recent enough on Ubuntu 22.04 and later, Debian 12 and later, Fedora, and RHEL/Rocky/Alma 8.8 and later and 9 (`dnf install cmake`). On older systems, install a newer CMake with `pip install cmake` (in a virtual environment or with `--user`), or from https://cmake.org/download/ (or Kitware's APT repository on Ubuntu).
+
+From the Natron source directory:
 
 ```
 cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo

@@ -26,6 +26,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <atomic>
+
 #include "Global/Macros.h"
 
 #include <list>
@@ -43,6 +45,7 @@
 #include <QAtomicInt>
 #include <QCoreApplication>
 #include <QFile>
+#include <QTemporaryDir>
 
 
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
@@ -78,6 +81,7 @@ GCC_DIAG_ON(deprecated)
 #endif
 
 #include "Engine/EngineFwd.h"
+#include "Global/FloatingPointExceptions.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -91,6 +95,14 @@ public:
     typedef Cache<FrameEntry> FrameEntryCache;
     typedef std::shared_ptr<FrameEntryCache> FrameEntryCachePtr;
 
+#ifdef DEBUG
+    // Test mode, debug builds: no trapped floating point exception, in the main thread (which main()
+    // enables) or in the threads that trap them (trapping_disabled()). Mesa llvmpipe's threads inherit
+    // the floating point environment of the thread that starts them (a context creation, the first draw
+    // or shader compilation), and their JIT-compiled shaders raise exceptions (SIGFPE). The first
+    // member, so that it is destroyed last.
+    std::unique_ptr<boost_adaptbx::floating_point::no_exception_trapping> testModeNoTrap;
+#endif
     AppTLS globalTLS;
     AppManager::AppTypeEnum _appType; //< the type of app
     mutable QMutex _appInstancesMutex;
@@ -126,6 +138,11 @@ public:
     std::unique_ptr<ProcessInputChannel> _backgroundIPC; //< object used to communicate with the main app
     //if this app is background, see the ProcessInputChannel def
     bool _loaded; //< true when the first instance is completely loaded.
+    bool dialogsDisabled; //< --no-dialogs was given
+    std::atomic<bool> quitRequested; //< natron.quit() was called
+    std::atomic<int> requestedExitCode; //< the exit code given to natron.quit()
+    std::atomic<int> nestedEventLoops; //< see AppManager::NestedEventLoopRAII
+    bool pythonInterpreterRunning; //< Py_Main() of the -t option is running
     QString _binaryPath; //< the path to the application's binary
     U64 _nodesGlobalMemoryUse; //< how much memory all the nodes are using (besides the cache)
     mutable QMutex errorLogMutex;
@@ -155,6 +172,10 @@ public:
 
     //To by-pass a bug introduced in RC2 / RC3 with the serialization of bezier curves
     bool lastProjectLoadedCreatedDuringRC2Or3;
+
+    // GUI test mode (--test)
+    bool testMode;
+    std::unique_ptr<QTemporaryDir> testSettingsDir; // test mode: the settings of this run (removed at exit)
 
     ///Python needs wide strings as from Python 3.x onwards everything is unicode based
 #if PY_MAJOR_VERSION >= 3
