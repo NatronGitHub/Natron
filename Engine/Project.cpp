@@ -2601,6 +2601,8 @@ inline ViewerColorSpaceEnum colorspaceParamIndexToEnum(int index)
             return eViewerColorSpaceSRGB;
         case 2:
             return eViewerColorSpaceRec709;
+        case 3:
+            return eViewerColorSpaceBT1886;
         default:
             return eViewerColorSpaceLinear;
     }
