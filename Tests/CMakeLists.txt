@@ -42,6 +42,7 @@ set(Tests_SOURCES
     NodeGroup_Test.cpp
     NodePresets_Test.cpp
     NodePreview_Test.cpp
+    NoDialogs_Test.cpp
     OfxBytesParam_Test.cpp
     OfxContexts_Test.cpp
     OfxCPURenderSupport_Test.cpp
@@ -179,6 +180,19 @@ add_dependencies(Tests NatronTestPlugin)
 target_compile_definitions(Tests PRIVATE
     NATRON_TESTS_OFX_PLUGIN_DIR="${NATRON_TESTS_OFX_PLUGIN_DIR}"
     NATRON_TESTS_OFX_PLUGIN_BINARY="$<TARGET_FILE:NatronTestPlugin>")
+
+# GUI smoke test (see gui/run_gui_smoke_test.py): runs the Natron GUI with --no-dialogs.
+# It is skipped (exit status 77) without a display, in CI unless NATRON_GUI_TESTS=1, or
+# without the Read and Transform plug-ins (set OFX_PLUGIN_PATH as for the Tests binary).
+if(Python3_Interpreter_FOUND)
+    add_test(NAME GuiSmokeTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_gui_smoke_test.py $<TARGET_FILE:Natron>)
+    set_tests_properties(GuiSmokeTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 960)
+    # natron.quit() from a render callback stops a NatronRenderer render (headless)
+    add_test(NAME RendererQuitTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_quit_test.py $<TARGET_FILE:NatronRenderer>)
+    set_tests_properties(RendererQuitTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
+endif()
 
 # Not part of a normal install. The installer scripts install it separately
 # (cmake --install <build> --component Tests) and run it from the bundled tree:

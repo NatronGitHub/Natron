@@ -340,6 +340,19 @@ PyModalDialog::minimumSizeHint() const
     return QWidget::minimumSizeHint();
 }
 
+int
+PyModalDialog::exec()
+{
+    if ( appPTR->isDialogsDisabled() ) {
+        // --no-dialogs: the dialog counts as rejected (cancelled)
+        Dialogs::printDismissedDialog( windowTitle().toStdString(), tr("Dialog not shown, rejected.").toStdString() );
+
+        return QDialog::Rejected;
+    }
+
+    return QDialog::exec();
+}
+
 QSize
 PyModalDialog::sizeHint() const
 {

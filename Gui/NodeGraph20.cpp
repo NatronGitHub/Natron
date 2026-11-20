@@ -324,6 +324,11 @@ NodeGraph::moveSelectedNodesBy(bool shiftdown,
     if (!ignoreMagnet && nodesToMove.size() > 1) {
         ignoreMagnet = true;
     }
+    if (!userEdit) {
+        // Not a mouse move (e.g. auto-scroll compensation, #135): newPos is not the cursor position,
+        // which the magnet would use to re-centre the node when it releases it
+        ignoreMagnet = true;
+    }
 
     //The delta
     double dxScene = newPos.x() - lastMousePosScene.x();

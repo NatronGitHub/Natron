@@ -312,6 +312,49 @@ public:
      **/
     int exec();
 
+    /**
+     * @brief True if --no-dialogs was given on the command line: message and question
+     * dialogs are then not shown, see Dialogs::getDismissedDialogAnswer().
+     * This is never saved in the settings.
+     **/
+    bool isDialogsDisabled() const;
+    void setDialogsDisabled(bool disabled);
+
+    /**
+     * @brief Implements natron.quit(exitCode): closes all projects without asking to save
+     * them, stops any processing, and makes the process exit with exitCode.
+     * In GUI mode, this is done at the end of the current event-loop iteration, so that it
+     * may be called from a Python callback. In background mode, the renders that were not
+     * started yet are skipped and the Python interpreter (-t) is not started.
+     **/
+    virtual void requestQuit(int exitCode);
+
+    /// True once requestQuit() was called
+    bool isQuitRequested() const;
+
+    /// The exit code given to requestQuit(), or 0
+    int getRequestedExitCode() const;
+
+    /// True while the interactive Python interpreter of the -t option is running
+    bool isPythonInterpreterRunning() const;
+
+    /**
+     * @brief Declares a nested event loop (e.g. the QEventLoop of checkForNewVersion()) for its
+     * lifetime. natron.quit() and the main window's close requests wait until there is none to
+     * close the projects, because the code that runs the nested loop would use the deleted objects
+     * afterwards. A loop that Python runs (QCoreApplication.processEvents() from PySide) is not
+     * declared.
+     **/
+    class NestedEventLoopRAII
+    {
+    public:
+        NestedEventLoopRAII();
+        ~NestedEventLoopRAII();
+    };
+
+    /// The number of nested event loops currently running, see NestedEventLoopRAII
+    int getNestedEventLoopsCount() const;
+
     virtual void setUndoRedoStackLimit(int /*limit*/)
     {
     }
@@ -770,6 +813,21 @@ Natron::StandardButtonEnum questionDialog(const std::string & title, const std::
                                   Natron::StandardButtons buttons,
                                   Natron::StandardButtonEnum defaultButton,
                                   bool* stopAsking);
+
+/**
+ * @brief The answer of a question dialog that is not shown because of --no-dialogs: the
+ * default button, as if Enter was pressed, or, if there is no default button, the button
+ * Escape would pick (Cancel, Close, Abort, No or NoToAll, in that order). Returns
+ * eStandardButtonEscape if there is none of these.
+ **/
+Natron::StandardButtonEnum getDismissedDialogAnswer(Natron::StandardButtons buttons,
+                                                    Natron::StandardButtonEnum defaultButton);
+
+/**
+ * @brief Prints "[dialog dismissed] <title>: <message>" to stderr. Called instead of
+ * showing a dialog when --no-dialogs was given.
+ **/
+void printDismissedDialog(const std::string & title, const std::string & message);
 } // namespace Dialogs
 
 // put global functions in a namespace, see https://google.github.io/styleguide/cppguide.html#Nonmember,_Static_Member,_and_Global_Functions

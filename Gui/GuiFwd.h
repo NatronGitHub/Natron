@@ -242,6 +242,8 @@ namespace QtMac {
 #if OBJC_OLD_DISPATCH_PROTOTYPES != 1
 void setupDockClickHandler(void (*)(void));
 #endif
+// --no-dialogs: do not ask to reopen the windows after a crash (not saved in the preferences)
+void ignorePersistentUIState();
 // GUI tests (GuiApplicationManager::isGuiTestNoFocus()): keep the process in the background, with
 // no Dock icon, and without App Nap
 void setupGuiTestNoFocus();

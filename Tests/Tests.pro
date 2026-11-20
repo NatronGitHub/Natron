@@ -73,6 +73,7 @@ SOURCES += \
     NodeGroup_Test.cpp \
     NodePresets_Test.cpp \
     NodePreview_Test.cpp \
+    NoDialogs_Test.cpp \
     OfxBytesParam_Test.cpp \
     OfxContexts_Test.cpp \
     OfxCPURenderSupport_Test.cpp \
