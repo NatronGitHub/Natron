@@ -47,14 +47,25 @@ include(GNUInstallDirs)
 
 option(NATRON_QT6 "use Qt6" OFF)
 
-# C++ standard policy (RB-2.6): C++17 with Qt5, C++20 with Qt6.
-# The shiboken parser gets the same standard (NATRON_SHIBOKEN_STD, Engine/ and Gui/CMakeLists.txt).
-if(NATRON_QT6)
-    set(CMAKE_CXX_STANDARD 20)
-else()
-    set(CMAKE_CXX_STANDARD 17)
+# C++ standard: C++17 with Qt5, C++20 with Qt6 (#1148, Documentation/source/maintainers/qt6-migration.rst).
+# -DCMAKE_CXX_STANDARD=... overrides it (e.g. the C++23 builds).
+# The shiboken parser gets the same standard (NATRON_SHIBOKEN_STD, Engine/ and Gui/CMakeLists.txt),
+# at most C++20; Qt5's shiboken2 keeps C++17.
+if(NOT DEFINED CMAKE_CXX_STANDARD)
+    if(NATRON_QT6)
+        set(CMAKE_CXX_STANDARD 20)
+    else()
+        set(CMAKE_CXX_STANDARD 17)
+    endif()
 endif()
-set(NATRON_SHIBOKEN_STD "-std=c++${CMAKE_CXX_STANDARD}")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if(NOT NATRON_QT6)
+    set(NATRON_SHIBOKEN_STD "-std=c++17")
+elseif(CMAKE_CXX_STANDARD GREATER 20)
+    set(NATRON_SHIBOKEN_STD "-std=c++20")
+else()
+    set(NATRON_SHIBOKEN_STD "-std=c++${CMAKE_CXX_STANDARD}")
+endif()
 
 option(NATRON_SYSTEM_LIBS "use system versions of dependencies instead of bundled ones" OFF)
 option(NATRON_BUILD_TESTS "build the Natron test suite" ON)
