@@ -1580,10 +1580,6 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
                                         const Point& viewportCenter,
                                         bool isPartialRect)
 {
-    if (!texture) {
-        // nothing was uploaded, see transferBufferFromRAMtoGPU()
-        return;
-    }
     if (recenterViewer) {
         QMutexLocker k(&_imp->zoomCtxMutex);
         double curCenterX = ( _imp->zoomCtx.left() + _imp->zoomCtx.right() ) / 2.;
@@ -1592,6 +1588,12 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
     }
 
     if (isPartialRect) {
+        if (!texture) {
+            // Nothing was uploaded (no OpenGL context, see transferBufferFromRAMtoGPU()): a partial
+            // texture without a texture can't be drawn. The non-partial branch below works with a
+            // null texture, as it did before (e.g. when every tile had a null ramBuffer).
+            return;
+        }
         TextureInfo info;
         info.texture = std::dynamic_pointer_cast<Texture>(texture);
         info.gain = gain;
