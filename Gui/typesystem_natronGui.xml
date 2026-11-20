@@ -127,7 +127,7 @@
     </object-type>
     
     <object-type name="PyViewer">
-        <modify-function signature="getImage(RectD*,std::vector&lt;float&gt;*,int,RectD)const">
+        <modify-function signature="getImage(RectD*,std::vector&lt;float&gt;*,int,const RectD*)const">
             <modify-argument index="return">
                 <replace-type modified-type="PyObject"/>
             </modify-argument>
