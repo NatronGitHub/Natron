@@ -27,6 +27,7 @@
 #include "ViewerTabPrivate.h"
 
 #include <cassert>
+#include <set>
 #include <stdexcept>
 
 #include <QDebug>
@@ -65,6 +66,57 @@
 
 NATRON_NAMESPACE_ENTER
 
+QString
+ViewerTab::getInputDisplayName(const NodePtr& input)
+{
+    // Dots only route links: show the name of the first node upstream that is not a Dot (#179).
+    // A Dot without input shows its own name. Follow the Dots that are traversed and the node found,
+    // so that the name follows a reconnection of a Dot or a rename of that node.
+    NodePtr node = input;
+    std::set<Node*> visited;
+
+    while ( node && (node->getPluginID() == PLUGINID_NATRON_DOT) && visited.insert( node.get() ).second ) {
+        QObject::connect( node.get(), SIGNAL(inputChanged(int)), this, SLOT(refreshInputNames()), Qt::UniqueConnection );
+        NodePtr upstream = node->getGuiInput(0);
+        if (!upstream) {
+            break;
+        }
+        node = upstream;
+    }
+    if ( !node ) {
+        return QString();
+    }
+    if (node != input) {
+        QObject::connect( node.get(), SIGNAL(labelChanged(QString)), this, SLOT(refreshInputNames()), Qt::UniqueConnection );
+    }
+
+    return QString::fromUtf8( node->getLabel().c_str() );
+}
+
+void
+ViewerTab::refreshInputNames()
+{
+    for (ViewerTabPrivate::InputNamesMap::iterator it = _imp->inputNamesMap.begin(); it != _imp->inputNamesMap.end(); ++it) {
+        NodePtr input = it->second.input.lock();
+        if (!input) {
+            continue;
+        }
+        QString name = getInputDisplayName(input);
+        if ( name.isEmpty() || (name == it->second.name) ) {
+            continue;
+        }
+        int indexInA = _imp->firstInputImage->itemIndex(it->second.name);
+        int indexInB = _imp->secondInputImage->itemIndex(it->second.name);
+        if (indexInA != -1) {
+            _imp->firstInputImage->setItemText(indexInA, name);
+        }
+        if (indexInB != -1) {
+            _imp->secondInputImage->setItemText(indexInB, name);
+        }
+        it->second.name = name;
+    }
+}
+
 void
 ViewerTab::onInputChanged(int inputNb)
 {
@@ -84,18 +136,17 @@ ViewerTab::onInputChanged(int inputNb)
             if (!input) {
                 return;
             }
-            const std::string & curInputName = input->getLabel();
             found->second.input = inp;
-            int indexInA = _imp->firstInputImage->itemIndex( QString::fromUtf8( curInputName.c_str() ) );
-            int indexInB = _imp->secondInputImage->itemIndex( QString::fromUtf8( curInputName.c_str() ) );
+            int indexInA = _imp->firstInputImage->itemIndex(found->second.name);
+            int indexInB = _imp->secondInputImage->itemIndex(found->second.name);
             assert(indexInA != -1 && indexInB != -1);
-            found->second.name = QString::fromUtf8( inp->getLabel().c_str() );
+            found->second.name = getInputDisplayName(inp);
             _imp->firstInputImage->setItemText(indexInA, found->second.name);
             _imp->secondInputImage->setItemText(indexInB, found->second.name);
         } else {
             ViewerTabPrivate::InputName inpName;
             inpName.input = inp;
-            inpName.name = QString::fromUtf8( inp->getLabel().c_str() );
+            inpName.name = getInputDisplayName(inp);
             _imp->inputNamesMap.insert( std::make_pair(inputNb, inpName) );
             _imp->firstInputImage->addItem(inpName.name);
             _imp->secondInputImage->addItem(inpName.name);
@@ -109,11 +160,10 @@ ViewerTab::onInputChanged(int inputNb)
             if (!input) {
                 return;
             }
-            const std::string & curInputName = input->getLabel();
             _imp->firstInputImage->blockSignals(true);
             _imp->secondInputImage->blockSignals(true);
-            _imp->firstInputImage->removeItem( QString::fromUtf8( curInputName.c_str() ) );
-            _imp->secondInputImage->removeItem( QString::fromUtf8( curInputName.c_str() ) );
+            _imp->firstInputImage->removeItem(found->second.name);
+            _imp->secondInputImage->removeItem(found->second.name);
             _imp->firstInputImage->blockSignals(false);
             _imp->secondInputImage->blockSignals(false);
             _imp->inputNamesMap.erase(found);
@@ -125,11 +175,17 @@ ViewerTab::onInputChanged(int inputNb)
 
 void
 ViewerTab::onInputNameChanged(int inputNb,
-                              const QString & name)
+                              const QString & /*label*/)
 {
     ViewerTabPrivate::InputNamesMap::iterator found = _imp->inputNamesMap.find(inputNb);
 
     assert( found != _imp->inputNamesMap.end() );
+    NodePtr input = found->second.input.lock();
+    if (!input) {
+        return;
+    }
+    // the label of a Dot input changed: the name shown is still the one of the node upstream
+    QString name = getInputDisplayName(input);
     int indexInA = _imp->firstInputImage->itemIndex(found->second.name);
     int indexInB = _imp->secondInputImage->itemIndex(found->second.name);
     assert(indexInA != -1 && indexInB != -1);
