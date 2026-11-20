@@ -299,3 +299,49 @@ TEST(OfxHostProperties, HostPropertiesReadOnly)
     OFX::Host::Property::setPluginReadOnlyPolicy(policy);
     EXPECT_EQ( label, set.getStringProperty(kOfxPropLabel) );
 }
+
+// The host name that a plug-in sees depends on the effect whose action is running on the thread
+// (getHostNameProxy() in OfxHost.cpp). When an action returns, the host must go back to the action
+// that called it on the same thread, if any, and to no effect at all after the outermost action:
+// it used to keep the effect whose action returned last, and read its plug-in at the next host-name
+// query, even after the effect was destroyed (#1497).
+TEST(OfxHostProperties, ActionCallerStack)
+{
+    const NATRON_NAMESPACE::OfxHost* ofxHost = appPTR->getOFXHost();
+    ASSERT_TRUE(ofxHost != NULL);
+    NATRON_NAMESPACE::OfxHost::OfxHostDataTLSPtr tls = ofxHost->getTLSData();
+    ASSERT_TRUE(tls != NULL);
+    ASSERT_TRUE(tls->effectCallingMainEntry() == NULL);
+
+    // only compared, never dereferenced
+    char outerStorage, innerStorage;
+    OfxImageEffectInstance* outer = reinterpret_cast<OfxImageEffectInstance*>(&outerStorage);
+    OfxImageEffectInstance* inner = reinterpret_cast<OfxImageEffectInstance*>(&innerStorage);
+
+    appPTR->setThreadAsActionCaller(outer, true);
+    EXPECT_TRUE(tls->effectCallingMainEntry() == outer);
+    // e.g. the render of an upstream effect, from clipGetImage in the action of outer
+    appPTR->setThreadAsActionCaller(inner, true);
+    EXPECT_TRUE(tls->effectCallingMainEntry() == inner);
+    appPTR->setThreadAsActionCaller(inner, false);
+    EXPECT_TRUE(tls->effectCallingMainEntry() == outer);
+    appPTR->setThreadAsActionCaller(outer, false);
+    EXPECT_TRUE(tls->effectCallingMainEntry() == NULL);
+    EXPECT_EQ( 0, ofxHost->multiThreadIsSpawnedThread() );
+}
+
+// Create and destroy a node: no action is running any more, so the host-name query, outside actions,
+// must not read the destroyed effect (#1497: it was a use after free).
+TEST(OfxHostProperties, HostNameAfterEffectDestroyed)
+{
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParamInteract) ) {
+        NatronTestPlugin::reportSkipped(kNatronTestPluginParamInteract);
+
+        return;
+    }
+    ASSERT_TRUE( createTestNode(kNatronTestPluginParamInteract) );
+    NATRON_NAMESPACE::OfxHost::OfxHostDataTLSPtr tls = appPTR->getOFXHost()->getTLSData();
+    ASSERT_TRUE(tls != NULL);
+    EXPECT_TRUE(tls->effectCallingMainEntry() == NULL);
+    EXPECT_EQ( appPTR->getCurrentSettings()->getHostName(), hostProps().getStringProperty(kOfxPropName) );
+}

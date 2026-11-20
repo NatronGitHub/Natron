@@ -516,10 +516,13 @@ OfxHost::getStringProperty(const std::string &name,
             pluginVersionMinor = _imp->loadingPluginVersionMinor;
         } else {
             OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-            if (tls && tls->lastEffectCallingMainEntry) {
-                pluginID = tls->lastEffectCallingMainEntry->getPlugin()->getIdentifier();
-                pluginVersionMajor = tls->lastEffectCallingMainEntry->getPlugin()->getVersionMajor();
-                pluginVersionMinor = tls->lastEffectCallingMainEntry->getPlugin()->getVersionMinor();
+            // the effect whose action is running on this thread: outside actions (e.g. in a thread of the
+            // plug-in), there is none
+            OfxImageEffectInstance* effect = tls ? tls->effectCallingMainEntry() : NULL;
+            if (effect) {
+                pluginID = effect->getPlugin()->getIdentifier();
+                pluginVersionMajor = effect->getPlugin()->getVersionMajor();
+                pluginVersionMinor = effect->getPlugin()->getVersionMinor();
             }
         }
 
@@ -1395,10 +1398,15 @@ OfxHost::setThreadAsActionCaller(OfxImageEffectInstance* instance,
 {
     OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
 
-    tls->lastEffectCallingMainEntry = instance;
     if (actionCaller) {
+        tls->effectsCallingMainEntry.push_back(instance);
         tls->threadIndexes.push_back(-1);
     } else {
+        // back to the action that called this one on this thread, if any: keeping the effect whose action
+        // returned would give a later action of the caller its host name, and the effect may be destroyed
+        // after its action returned (#1497)
+        assert( !tls->effectsCallingMainEntry.empty() && (tls->effectsCallingMainEntry.back() == instance) );
+        tls->effectsCallingMainEntry.pop_back();
         assert( !tls->threadIndexes.empty() );
         tls->threadIndexes.pop_back();
     }
