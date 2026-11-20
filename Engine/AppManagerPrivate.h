@@ -81,6 +81,7 @@ GCC_DIAG_ON(deprecated)
 #endif
 
 #include "Engine/EngineFwd.h"
+#include "Global/FloatingPointExceptions.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -94,6 +95,13 @@ public:
     typedef Cache<FrameEntry> FrameEntryCache;
     typedef std::shared_ptr<FrameEntryCache> FrameEntryCachePtr;
 
+#ifdef DEBUG
+    // Test mode, debug builds: no trapped floating point exception in the main thread, which main() enables.
+    // The OpenGL contexts that Qt creates there (the viewer, the backing store) start Mesa llvmpipe's
+    // rasterizer threads, which inherit the floating point environment, and their JIT-compiled shaders
+    // raise exceptions (SIGFPE). The first member, so that it is destroyed last.
+    std::unique_ptr<boost_adaptbx::floating_point::no_exception_trapping> testModeNoTrap;
+#endif
     AppTLS globalTLS;
     AppManager::AppTypeEnum _appType; //< the type of app
     mutable QMutex _appInstancesMutex;
