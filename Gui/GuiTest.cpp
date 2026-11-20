@@ -93,6 +93,7 @@ struct GuiTestState
     QPoint cursorPos; // global position of the last synthetic pen event (cursorPos())
     bool cursorPosSet; // false before the first pen event
     QPointer<QWidget> hovered; // the widget of the last synthetic pen event (for Enter/Leave)
+    QPointer<QWidget> focused; // the target of the last synthetic key event or press (for FocusIn/FocusOut)
 
     GuiTestState()
         : answers(0)
@@ -102,6 +103,7 @@ struct GuiTestState
         , cursorPos()
         , cursorPosSet(false)
         , hovered()
+        , focused()
     {
     }
 };
@@ -618,6 +620,27 @@ updateHovered(QWidget* w,
     QCoreApplication::sendEvent(w, &enter);
 }
 
+// FocusOut and FocusIn events, as when the user clicks or types in another widget. They are synthetic: the
+// window is not activated and QApplication::focusWidget() does not change (NATRON_TEST_NO_FOCUS), but the
+// widgets react as usual, e.g. the node graph becomes the "last focused graph" (paste, render with F7) and a
+// panel's undo stack becomes active.
+void
+updateFocused(QWidget* w)
+{
+    QPointer<QWidget>& focused = state().focused;
+
+    if ( !w || (focused == w) ) {
+        return;
+    }
+    if (focused) {
+        QFocusEvent out(QEvent::FocusOut, Qt::OtherFocusReason);
+        QCoreApplication::sendEvent(focused.data(), &out);
+    }
+    focused = w;
+    QFocusEvent in(QEvent::FocusIn, Qt::OtherFocusReason);
+    QCoreApplication::sendEvent(w, &in);
+}
+
 PyObject*
 py_penEvent(PyObject* /*self*/,
             PyObject* args,
@@ -666,6 +689,10 @@ py_penEvent(PyObject* /*self*/,
     state().cursorPos = global;
     state().cursorPosSet = true;
     updateHovered(w, pos);
+    if (evType == QEvent::MouseButtonPress) {
+        // the target, not a graph's viewport
+        updateFocused( findTarget(targetName) );
+    }
     QMouseEvent e( evType, pos, QPointF(global), button, pressed, mods );
     QCoreApplication::sendEvent(w, &e);
     QCoreApplication::processEvents();
@@ -750,6 +777,7 @@ py_sendKey(PyObject* /*self*/,
     if (!w) {
         return 0;
     }
+    updateFocused(w);
     const QKeySequence seq = QKeySequence::fromString(QString::fromUtf8(keys), QKeySequence::PortableText);
     if ( seq.isEmpty() ) {
         PyErr_Format(PyExc_ValueError, "invalid key sequence %s", keys);
