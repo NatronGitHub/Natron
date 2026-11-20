@@ -189,6 +189,7 @@ ViewerGL::resizeGL(int w,
     }
     glCheckError();
     glViewport (0, 0, w, h);
+    _imp->updateDitherAmplitude();
     double zoomWidth = w;
     double zoomHeight = h;
 
@@ -1253,6 +1254,7 @@ ViewerGL::initializeGL()
     // initializeGL() again. The OpenGL objects of the old context must be released with it.
     QObject::connect( context(), &QOpenGLContext::aboutToBeDestroyed, this, &ViewerGL::onContextAboutToBeDestroyed );
     _imp->initializeGL();
+    _imp->updateDitherAmplitude();
 
     if (_imp->glResourcesReleased) {
         // The textures of the previous context held the displayed images: render them again.
