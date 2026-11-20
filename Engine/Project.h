@@ -253,6 +253,34 @@ public:
     static void clearAutoSavesDir();
     void removeLastAutosave();
 
+    /**
+     * @brief Can removeLastAutosave() remove this auto-save file? Always, except with
+     * --no-dialogs, where only the auto-saves this session wrote may be removed.
+     **/
+    bool canRemoveAutoSave(const QString& filePath) const;
+
+    /// Did this project write this auto-save file during this session (--no-dialogs only)?
+    bool wroteAutoSave(const QString& filePath) const;
+
+    /// Did a project of this session write this auto-save file (--no-dialogs only)?
+    static bool isAutoSaveOfThisSession(const QString& filePath);
+
+private:
+    void forgetAutoSave(const QString& filePath);
+
+    /// --no-dialogs: do not auto-save if an auto-save of another session exists for this project
+    void refreshAutoSaveDisabled();
+
+public:
+
+    /**
+     * @brief Stops the pending auto-save and waits for the one in progress, if any, so that
+     * no auto-save is written afterwards (e.g. before removeLastAutosave() when quitting).
+     * While it waits, it processes the events except user input (the auto-save may need the main
+     * thread), as saveProject_imp() does.
+     **/
+    void stopAutoSave();
+
     QString getLockAbsoluteFilePath() const;
     void createLockFile();
     void removeLockFile();

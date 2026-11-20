@@ -170,8 +170,16 @@ public:
     void unslave(int dimension);
 
     /**
-     * @brief Returns a pseudo-random number. This will always be the same for the same time on the timeline.
-     * The version with the seed can be used to retrieve the same value for 2 successive randoms, or at different time frames.
+     * @brief Returns a pseudo-random number, the next one of the sequence of this parameter.
+     * Each evaluation of the expression of this parameter starts that sequence again from the frame, the
+     * dimension and the state of the node and its inputs (its hash), so in its own expression the value is
+     * the same each time a frame is computed. Elsewhere (in a script, or in the expression of another
+     * parameter) it depends on the calls made before.
+     * The version with time and seed only depends on them and on the state of the node and its inputs, not on
+     * the parameter nor on the dimension: use a different seed for each parameter and dimension (e.g. the
+     * dimension), to get the same value anywhere, or several independent values.
+     * With both versions, the values change after any edit of the node or of a node upstream (the node hash
+     * includes a knobs age, random since #1124), and undo does not restore them.
      **/
     double random(double min = 0., double max = 1.) const;
     double random(double min, double max, double time, unsigned int seed = 0) const;

@@ -36,7 +36,13 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/libexec/opencolorio1/lib/p
     $GSED -i 's/if(node\["ocio_profile_version"\] == NULL)/if(!node["ocio_profile_version"])/' src/core/OCIOYaml.cpp
     mkdir build
     pushd build
-    cmake .. -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF"   -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DCMAKE_INSTALL_PREFIX="$SDK_HOME/libexec/opencolorio1" -DOCIO_BUILD_JNIGLUE=OFF -DOCIO_BUILD_NUKE=OFF -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_STATIC_JNIGLUE=OFF -DOCIO_BUILD_TRUELIGHT=OFF -DUSE_EXTERNAL_LCMS=ON -DUSE_EXTERNAL_TINYXML=ON -DUSE_EXTERNAL_YAML=ON -DOCIO_BUILD_APPS=OFF -DOCIO_USE_BOOST_PTR=ON
+    # OCIO 1 adds -msse2 unconditionally when OCIO_USE_SSE is ON (the default); OCIO 2
+    # checks that the target supports SSE2.
+    OCIO1_SSE=ON
+    if [ "$ARCH" != "x86_64" ] && [ "$ARCH" != "i686" ]; then
+        OCIO1_SSE=OFF
+    fi
+    cmake .. -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF"   -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DCMAKE_INSTALL_PREFIX="$SDK_HOME/libexec/opencolorio1" -DOCIO_BUILD_JNIGLUE=OFF -DOCIO_BUILD_NUKE=OFF -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_STATIC_JNIGLUE=OFF -DOCIO_BUILD_TRUELIGHT=OFF -DUSE_EXTERNAL_LCMS=ON -DUSE_EXTERNAL_TINYXML=ON -DUSE_EXTERNAL_YAML=ON -DOCIO_BUILD_APPS=OFF -DOCIO_USE_BOOST_PTR=ON -DOCIO_USE_SSE="$OCIO1_SSE"
     make -j${MKJOBS}
     make install
     popd

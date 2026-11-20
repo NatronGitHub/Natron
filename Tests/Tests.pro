@@ -40,6 +40,10 @@ QMAKE_CLEAN += ofxTestLog.txt test_dot_generator0.jpg
 
 include(../global.pri)
 
+# Windows: stack reserve of the main thread (see NATRON_MAIN_THREAD_STACK_SIZE in global.pri)
+win32-g++: QMAKE_LFLAGS += -Wl,--stack,$$NATRON_MAIN_THREAD_STACK_SIZE
+win32-msvc*: QMAKE_LFLAGS += /STACK:$$NATRON_MAIN_THREAD_STACK_SIZE
+
 # bundled third-party code: see warnings.pri
 NATRON_THIRD_PARTY_SOURCES += \
     google-test/src/gtest-all.cc \
@@ -49,17 +53,23 @@ NATRON_THIRD_PARTY_SOURCES += \
 # per-file flags); here it runs the same tests without -ffast-math.
 SOURCES += \
     BaseTest.cpp \
+    CLArgs_Test.cpp \
     Curve_Test.cpp \
     DeepGraphRender_Test.cpp \
     DiskCache_Test.cpp \
+    ExpressionSetError_Test.cpp \
     FileSystemModel_Test.cpp \
     Hash64_Test.cpp \
     ImageCache_Test.cpp \
     Image_Test.cpp \
+    KnobDuplicate_Test.cpp \
     KnobExpressionCache_Test.cpp \
+    KnobInvalidExpression_Test.cpp \
     KnobFile_Test.cpp \
     KnobSlave_Test.cpp \
     KnobStringAnimation_Test.cpp \
+    LibTess_Test.cpp \
+    LoadPythonScript_Test.cpp \
     Lut_Test.cpp \
     MultiInputLinks_Test.cpp \
     NaNGuards_FastMath.cpp \
@@ -67,6 +77,7 @@ SOURCES += \
     NodeGroup_Test.cpp \
     NodePresets_Test.cpp \
     NodePreview_Test.cpp \
+    NoDialogs_Test.cpp \
     OfxBytesParam_Test.cpp \
     OfxContexts_Test.cpp \
     OfxCPURenderSupport_Test.cpp \
@@ -79,27 +90,33 @@ SOURCES += \
     OfxInstanceEdit_Test.cpp \
     OfxMultiThreadSuite_Test.cpp \
     OfxMultiplePAR_Test.cpp \
+    OfxParamKeys_Test.cpp \
     OfxParamAnimating_Test.cpp \
     OfxParamCopy_Test.cpp \
     OfxOpenGLSupport_Test.cpp \
     OfxOverlayInput_Test.cpp \
     OfxParamInteract_Test.cpp \
     OfxParamUndo_Test.cpp \
-    OfxPluginDeprecated_Test.cpp \
+    OfxPluginObsolete_Test.cpp \
     OfxPluginScan_Test.cpp \
     OfxQuestion_Test.cpp \
     OfxSingleInstance_Test.cpp \
+    OfxSuiteStatus_Test.cpp \
     OfxSyncPrivateData_Test.cpp \
     OfxTestPlugin_Test.cpp \
     OpenGLRenderFailed_Test.cpp \
     OSGLContext_Test.cpp \
+    ParamRandom_Test.cpp \
     PluginGrouping_Test.cpp \
     ProjectAutoSave_Test.cpp \
+    PythonExpressionScope_Test.cpp \
     ReadNodeOverlay_Test.cpp \
     RenderThreadSafety_Test.cpp \
     RenderThreads_Test.cpp \
     RotoPaint_Test.cpp \
     SequentialRender_Test.cpp \
+    ShuffleAutoConnect_Test.cpp \
+    StrUtilsFormat_Test.cpp \
     Tracker_Test.cpp \
     ViewerCache_Test.cpp \
     WriteNodeViews_Test.cpp \

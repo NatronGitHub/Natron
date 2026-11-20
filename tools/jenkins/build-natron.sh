@@ -59,13 +59,8 @@ fi
 if [ "$PKGOS" = "Linux" ]; then
     #export PYTHONHOME="$SDK_HOME"
     export LD_LIBRARY_PATH="$SDK_HOME/lib:$SDK_HOME/qt${QT_VERSION_MAJOR}/lib"
-    export PATH="$SDK_HOME/gcc/bin:$SDK_HOME/bin:$SDK_HOME/qt${QT_VERSION_MAJOR}/bin:$HOME/.cabal/bin:$PATH"
-    if [ "$ARCH" = "x86_64" ]; then
-        export LD_LIBRARY_PATH="$SDK_HOME/gcc/lib64:$LD_LIBRARY_PATH"
-    else
-        export LD_LIBRARY_PATH="$SDK_HOME/gcc/lib:$LD_LIBRARY_PATH"
-    fi
-    export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${SDK_HOME}/qt${QT_VERSION_MAJOR}/include"
+    export PATH="$SDK_HOME/bin:$SDK_HOME/qt${QT_VERSION_MAJOR}/bin:$HOME/.cabal/bin:$PATH"
+    export C_INCLUDE_PATH="${SDK_HOME}/include:${SDK_HOME}/qt${QT_VERSION_MAJOR}/include"
     export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
 fi
 # QMAKE is resolved by common.sh, which knows about version-suffixed qmake names
@@ -163,7 +158,7 @@ if [ "$NATRON_BUILD_SYSTEM" = "qmake" ] && [ "$QT_VERSION_MAJOR" = 5 ]; then
     Linux)
 
         ;;
-    Msys|MINGW64_NT-*|MINGW32_NT-*)
+    Msys|MSYS_NT-*|MINGW64_NT-*|MINGW32_NT-*|UCRT64_NT-*|CLANG64_NT-*|CLANGARM64_NT-*)
         UNIX_PYTHON_HOME="$(cygpath -u "${PYTHON_HOME}")"
         UNIX_SDK_HOME="$(cygpath -u "${SDK_HOME}")"
         ;;
@@ -664,7 +659,7 @@ if [ "$PKGOS" = "Linux" ]; then
     # Note: Several suppression files can be passed to valgrind.
     # There is an automatic tool to generate libc/libstdc++/Qt
     # suppressions at https://github.com/AlekSi/valgrind-suppressions
-    env LD_LIBRARY_PATH="$SDK_HOME/gcc/lib:$SDK_HOME/gcc/lib64:$SDK_HOME/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib:$QTDIR/lib" $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" ${TEST_BINARY_TO_RUN}
+    env LD_LIBRARY_PATH="$SDK_HOME/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib:$QTDIR/lib" $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" ${TEST_BINARY_TO_RUN}
     rm -f lib || true
     # ITS NOT POSSIBLE TO RUN THE WIN TESTS HERE, DO IT IN THE INSTALLER SCRIPT
 elif [ "$PKGOS" = "Windows" ]; then
@@ -682,7 +677,10 @@ elif [ "$PKGOS" = "Windows" ]; then
     #rm -rf /c/Users/NatronWin/AppData/Local/INRIA/Natron &> /dev/null || true
     rm -rf "$LOCALAPPDATA\\INRIA\\Natron"* &> /dev/null || true
     testfail=0
-    env PYTHONHOME="$SDK_HOME" PATH="$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$QTDIR/bin:$SDK_HOME/osmesa/lib:$SDK_HOME/bin:${PATH:-}" $TIMEOUT -s KILL 1800 "${TEST_BINARY_TO_RUN}" || testfail=1
+    # MSYS2's Python loads extension modules with LOAD_LIBRARY_SEARCH_DEFAULT_DIRS, which ignores
+    # PATH, and Tests.exe is not next to the DLLs: PYTHONLEGACYWINDOWSDLLLOADING=1 (an MSYS2
+    # Python extension) restores the PATH search, as in ci.yml (#1147)
+    env PYTHONHOME="$SDK_HOME" PYTHONLEGACYWINDOWSDLLLOADING=1 PATH="$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$QTDIR/bin:$SDK_HOME/osmesa/lib:$SDK_HOME/bin:${PATH:-}" $TIMEOUT -s KILL 1800 "${TEST_BINARY_TO_RUN}" || testfail=1
     if [ $testfail != 0 ]; then
         echo "*** WARNING: Natron tests FAILED"
     fi

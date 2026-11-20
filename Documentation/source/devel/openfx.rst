@@ -22,11 +22,11 @@ Natron and OpenFX
 -----------------
 
 OpenFX version
-    Natron implements OpenFX 1.4, and declares it in ``kOfxPropAPIVersion``
+    Natron implements OpenFX 1.5, and declares it in ``kOfxPropAPIVersion``
     (its own version is in ``kOfxPropVersion``). The reference below describes
-    OpenFX 1.5.1: the features added in 1.5, such as GPU rendering (CUDA,
-    Metal, OpenCL), the Draw suite and colour management, are **not available
-    in Natron**. Check the host properties before using them, and keep a
+    OpenFX 1.5.1. Natron supports the 1.5 Draw suite and Bytes parameters, but
+    not string choice parameters, color management or GPU rendering (CUDA,
+    Metal, OpenCL). Check the host properties before using them, and keep a
     fallback.
 
 Where Natron looks for plug-ins

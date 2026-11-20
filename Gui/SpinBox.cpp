@@ -247,7 +247,8 @@ SpinBox::setText(const QString &str,
     QLineEdit::setText(str);
 
     //qDebug() << "text:" << str << " cursorpos: " << cursorPos;
-    setCursorPosition(cursorPos);
+    // Without focus, show the beginning of the number: a long number shows its first digits (#174).
+    setCursorPosition( hasFocus() ? cursorPos : 0 );
     _imp->hasChangedSinceLastValidation = false;
     _imp->valueAfterLastValidation = value();
 }
@@ -701,6 +702,12 @@ SpinBox::focusOutEvent(QFocusEvent* e)
         }
     }
     LineEdit::focusOutEvent(e);
+    if ( (e->reason() != Qt::PopupFocusReason) && (e->reason() != Qt::ActiveWindowFocusReason) ) {
+        // QLineEdit::setText() puts the cursor at the end, and the field scrolls to show it: a number that
+        // doesn't fit (e.g. 32258.06451612903, the result of 100000/3.1) would show its last digits (#174).
+        // Show its beginning. Not for a context menu or a window switch, after which editing continues.
+        home(false);
+    }
 }
 
 void
