@@ -380,7 +380,8 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename,
             }
             std::string appID = _publicInterface->getApp()->getAppIDString();
             std::stringstream ss;
-            if (appID != "app") {
+            // In background mode, "app" stays app1, also for a Precomp's instance (see AppInstance::getAppIDString()).
+            if ( (appID != "app") && !appPTR->isBackground() ) {
                 ss << "app = " << appID << "\n";
             }
             ss << "ret = " << onProjectSave << "(\"" << filename << "\"," << appID << ",";
@@ -466,7 +467,8 @@ ProjectPrivate::runOnProjectCloseCallback()
         }
         std::string appID = _publicInterface->getApp()->getAppIDString();
         std::string script;
-        if (appID != "app") {
+        // In background mode, "app" stays app1, also for a Precomp's instance (see AppInstance::getAppIDString()).
+        if ( (appID != "app") && !appPTR->isBackground() ) {
             script = script +  "app = " + appID;
         }
         script = script + "\n" + onProjectClose + "(" + appID + ")\n";
@@ -516,7 +518,8 @@ ProjectPrivate::runOnProjectLoadCallback()
 
         std::string appID = _publicInterface->getApp()->getAppIDString();
         std::string script;
-        if (appID != "app") {
+        // In background mode, "app" stays app1, also for a Precomp's instance (see AppInstance::getAppIDString()).
+        if ( (appID != "app") && !appPTR->isBackground() ) {
             script =  script + "app = " + appID;
         }
         script =  script + "\n" + cb + "(" + appID + ")\n";

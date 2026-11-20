@@ -732,12 +732,15 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         args.setProperty(kCreateNodeArgsPropOutOfProject, true);
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
         output = _publicInterface->getApp()->createNode(args);
+        if (!output) {
+            // createNode() already reported why.
+            throw std::runtime_error( tr("Cannot create the internal Output node of %1.").arg( QString::fromUtf8( _publicInterface->getScriptName_mt_safe().c_str() ) ).toStdString() );
+        }
         try {
             output->setScriptName("Output");
         } catch (...) {
         }
 
-        assert(output);
         outputNode = output;
     }
     if (!input) {
@@ -747,7 +750,9 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Source");
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
         input = _publicInterface->getApp()->createNode(args);
-        assert(input);
+        if (!input) {
+            throw std::runtime_error( tr("Cannot create the internal Source node of %1.").arg( QString::fromUtf8( _publicInterface->getScriptName_mt_safe().c_str() ) ).toStdString() );
+        }
         inputNode = input;
     }
 

@@ -863,7 +863,12 @@ Node::onProcessingQuitInDestroyNodeInternal(int taskID,
     assert(args);
     NodeDestroyNodeInternalArgs* thisArgs = dynamic_cast<NodeDestroyNodeInternalArgs*>( args.get() );
     assert(thisArgs);
-    doDestroyNodeInternalEnd(thisArgs ? thisArgs->autoReconnect : false);
+    // The app may have been destroyed while the node waited for its renders to quit: e.g. the
+    // internal app of a Precomp node, which quits when the Precomp node is destroyed (#1501).
+    // Its project and all its nodes are gone with it: there is nothing to remove this node from.
+    if ( getApp() ) {
+        doDestroyNodeInternalEnd(thisArgs ? thisArgs->autoReconnect : false);
+    }
     _imp->renderWatcher.reset();
 }
 

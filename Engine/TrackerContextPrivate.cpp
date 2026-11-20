@@ -131,12 +131,14 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
             args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
 
             output = node->getApp()->createNode(args);
+            if (!output) {
+                // createNode() already reported why.
+                throw std::runtime_error( tr("Cannot create the internal Output node of the Tracker node").toStdString() );
+            }
             try {
                 output->setScriptName("Output");
             } catch (...) {
             }
-
-            assert(output);
         }
         {
             CreateNodeArgs args(PLUGINID_NATRON_INPUT, isTrackerNode);
@@ -144,7 +146,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
             args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
             args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Source");
             input = node->getApp()->createNode(args);
-            assert(input);
+            if (!input) {
+                throw std::runtime_error( tr("Cannot create the internal Source node of the Tracker node").toStdString() );
+            }
         }
 
 
@@ -169,6 +173,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
             args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
             args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, transformName.toStdString());
             NodePtr tNode = node->getApp()->createNode(args);
+            if (!tNode) {
+                throw std::runtime_error( tr("The Tracker node requires the Misc.ofx.bundle plug-in to be installed").toStdString() );
+            }
             tNode->setNodeDisabled(true);
             transformNode = tNode;
 

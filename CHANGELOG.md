@@ -17,6 +17,7 @@
 
 ### Changes
 
+- NatronRenderer (and every background run): a project with a Precomp node whose project has a Write node no longer crashes, and the nodes inside the groups of a Precomp's project are no longer lost. The Python variables of the nodes of a Precomp's project were declared on the main project's `app`. #1501
 - Python expressions no longer write their variables into the `__main__` namespace of the interpreter (`ret`, `frame`, `thisNode`, `thisParam`, `random`, node names, and the variables an expression assigns), which overwrote the variables of the user scripts. An expression that only worked because of a name leaked there by another expression now fails with a `NameError`: for example a bare root-level node name used inside a Group, or a module imported by another expression. Use `app.NodeName` or `thisGroup.NodeName`, and import modules inside the expression. This also removes a race between render threads evaluating expressions at the same time. #1252
 - OpenFX: the text of plug-in messages with arguments (errors, warnings, logs, and the messages shown on nodes and in the viewer) is no longer garbage. #1483
 - OpenFX: the multithread, message, progress, timeline and OpenGL render suites return the status codes of OFX 1.5.1. #1385

@@ -1324,7 +1324,11 @@ AppManager::newAppInstanceInternal(const CLArgs& cl,
         _imp->_appInstances.push_back(instance);
     }
 
-    setAsTopLevelInstance( instance->getAppID() );
+    // A background instance (the one a Precomp node loads its project in, see newBackgroundInstance())
+    // is internal: it must not replace the instance the user works in as the top-level one (#1501).
+    if ( !alwaysBackground || !getTopLevelInstance() ) {
+        setAsTopLevelInstance( instance->getAppID() );
+    }
 
     ++_imp->_availableID;
 

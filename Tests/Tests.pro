@@ -108,6 +108,7 @@ SOURCES += \
     OSGLContext_Test.cpp \
     ParamRandom_Test.cpp \
     PluginGrouping_Test.cpp \
+    PrecompLoad_Test.cpp \
     ProjectAutoSave_Test.cpp \
     PythonExpressionScope_Test.cpp \
     ReadNodeOverlay_Test.cpp \
