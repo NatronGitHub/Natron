@@ -136,6 +136,29 @@ namespace boost_adaptbx { namespace floating_point {
       }
   };
 
+  /** Natron addition: no trapping in a scope that calls code which is not written for trapped floating
+      point exceptions (e.g. an OpenGL driver), and on exit, clear the exception flags that this code
+      raised (so that they don't fire once trapping is restored), then restore the trapping.
+   */
+  class no_exception_trapping
+  {
+    private:
+      exception_trapping trap_;
+
+    public:
+      no_exception_trapping()
+        : trap_(exception_trapping::dont_trap)
+      {
+      }
+
+      ~no_exception_trapping() {
+      #ifdef __GNUC__
+        feclearexcept(FE_ALL_EXCEPT);
+      #endif
+        // then trap_ restores the trapping
+      }
+  };
+
 }} // boost_adaptbx::floating_point
 
 #endif // GUARD
