@@ -11,7 +11,7 @@ This page is part of the :ref:`OpenFX 1.5.1 host conformance audit <ofx-host-con
 ``ofxPropertiesByObject.rst``; and, for binary loading, the plug-in cache and plug-in versions,
 ``ofxPackaging.rst``, ``ofxPluginStruct.rst`` and ``ofxLoadingSequence.rst``.
 Section 3 describes pull request `#1349 <https://github.com/NatronGitHub/Natron/pull/1349>`__ (DrawSuite support, branch ``ofx15-draw-suite``), which
-was open and not yet on RB-2.6 at the time of the audit.
+was open and not yet on RB-2.6 at the time of the audit. It has since been merged into RB-2.6.
 
 **Spec reference abbreviations.** A bare ``:line`` in the spec column is in the header of that
 section (``ofxInteract.h``, ``ofxDrawSuite.h``, ``ofxGPURender.h`` or ``ofxColour.h``).
@@ -131,7 +131,7 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - I17
      - `ofxInteract.h:236-238 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxInteract.h#L236-L238>`__ / `ofxInteracts.rst:85 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxInteracts.rst?plain=1#L85>`__ "If this is called via ...OverlayInteractV2, drawing MUST use DrawSuite"; V1 SHOULD use OpenGL
      - MUST (host side: choose entry)
-     - HS ``Base::getOverlayInteractMainEntry`` uses V2 only if ``gImageEffectHost->supportsDrawSuite()`` (ofxhIE:278-301). RB-2.6 Natron does not override ``supportsDrawSuite`` (default false, ofxhIE:4792-4795), so V1 is used, a V2-only plug-in gets no overlay, and fetchSuite(kOfxDrawSuite) returns NULL (ofxhIE:4833-4836). Consistent: Natron does not claim DrawSuite. See section 3 for `#1349 <https://github.com/NatronGitHub/Natron/pull/1349>`__.
+     - HS ``Base::getOverlayInteractMainEntry`` uses V2 only if ``gImageEffectHost->supportsDrawSuite()`` (ofxhIE:278-301). RB-2.6 Natron does not override ``supportsDrawSuite`` (default false, ofxhIE:4792-4795), so V1 is used, a V2-only plug-in gets no overlay, and fetchSuite(kOfxDrawSuite) returns NULL (ofxhIE:4833-4836). Consistent: Natron does not claim DrawSuite. See section 3 for `#1349 <https://github.com/NatronGitHub/Natron/pull/1349>`__. Since #1349 was merged, ``supportsDrawSuite()`` returns true: a V2-only plug-in gets its V2 overlay, and a plug-in with both gets V1 (``preferOverlayInteractV1()``, Engine/OfxHost.h).
      - OK (DrawSuite not supported; `#1103 <https://github.com/NatronGitHub/Natron/issues/1103>`__/#1136)
    * - I18
      - `ofxInteract.h:240-242 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxInteract.h#L240-L242>`__, `ofxInteracts.rst:97-100 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxInteracts.rst?plain=1#L97-L100>`__ overlays must not swap buffers; `ofxInteracts.rst:142-144 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxInteracts.rst?plain=1#L142-L144>`__ "A parameter's interact draw function will have full responsibility for ... swapping buffers"
@@ -226,7 +226,7 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - D1
      - `ofxDrawSuite.h:21-22 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxDrawSuite.h#L21-L22>`__, ofxCore "If the host does not implement a requested suite ... it should return NULL"
      - MUST
-     - fetchSuite(kOfxDrawSuite) returns NULL unless ``supportsDrawSuite()`` (ofxhIE:4833-4836); RB-2.6 Natron doesn't override it.
+     - fetchSuite(kOfxDrawSuite) returns NULL unless ``supportsDrawSuite()`` (ofxhIE:4833-4836); RB-2.6 Natron doesn't override it. Since #1349 was merged, ``supportsDrawSuite()`` returns true and fetchSuite(kOfxDrawSuite, 1) succeeds.
      - OK (not supported)
    * - D2
      - `ofxDrawSuite.h:28-34 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxDrawSuite.h#L28-L34>`__ kOfxInteractPropDrawContext, pointer, RO in Draw inArgs
@@ -246,6 +246,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
 
 3. What PR `#1349 <https://github.com/NatronGitHub/Natron/pull/1349>`__ changes (open, head ``ofx15-draw-suite``)
 -------------------------------------------------------------------------------------------------------------------
+
+#1349 has since been merged into RB-2.6. As merged, a plug-in that has both a V1 and a V2 overlay gets the V1 (OpenGL) one (``OfxHost::preferOverlayInteractV1()``).
 
 - ``OfxHost::supportsDrawSuite()`` returns true (Engine/OfxHost.h), so fetchSuite(kOfxDrawSuite,1) succeeds and V2 overlays are used, V2 preferred when a plug-in has both (Tests/OfxDrawSuite_Test.cpp ``OverlayEntryPoint``). Closes I17/D1 (`#1103 <https://github.com/NatronGitHub/Natron/issues/1103>`__, `#1136 <https://github.com/NatronGitHub/Natron/issues/1136>`__).
 

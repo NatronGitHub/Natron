@@ -5,7 +5,7 @@ Natron as an OpenFX Host
 
 `OpenFX (OFX) <http://openeffects.org/>`_ is the industry-standard C API for
 image-effect plug-ins, also used by Nuke, DaVinci Resolve, Fusion and others.
-Natron implements the **host** side of OFX v1.4 (with many extensions), which is
+Natron implements the **host** side of OFX v1.5 (with many extensions), which is
 why Natron can load the same plug-ins as those commercial applications, and why
 its own bundled effects (``openfx-io``, ``openfx-misc``, ``openfx-arena``,
 ``openfx-gmic``) are just OFX plug-ins living in separate repositories.

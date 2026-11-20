@@ -223,7 +223,7 @@ OfxImageEffectInstance::createInstanceAction()
     // now tell the plug-in to create instance
     OfxStatus st = mainEntry(kOfxActionCreateInstance, this->getHandle(), 0, 0);
 #       ifdef OFX_DEBUG_ACTIONS
-    std::cout << "OFX: " << (void*)this << "->" << kOfxActionCreateInstance << "()->" << StatStr(st) << std::endl;
+    std::cout << "OFX: " << (void*)this << "->" << kOfxActionCreateInstance << "()->" << OFX::StatStr(st) << std::endl;
 #       endif
 
     // kOfxStatReplyDefault means "the action was ignored, but all was well anyway" (OFX spec):

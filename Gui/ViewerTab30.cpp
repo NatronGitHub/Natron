@@ -1004,6 +1004,7 @@ ViewerTab::switchInputAAndB()
     _imp->viewerNode->setInputA(inputBIndex);
     _imp->viewerNode->setInputB(inputAIndex);
 
+    _imp->viewer->updatePersistentMessage(); // the viewed nodes' messages come first (#459)
     abortViewersAndRefresh();
 }
 
@@ -1021,6 +1022,7 @@ ViewerTab::onFirstInputNameChanged(const QString & text)
     }
     _imp->viewerNode->setInputA(inputIndex);
 
+    _imp->viewer->updatePersistentMessage(); // the viewed nodes' messages come first (#459)
     abortViewersAndRefresh();
 }
 
@@ -1052,6 +1054,7 @@ ViewerTab::onSecondInputNameChanged(const QString & text)
             }
         }
     }
+    _imp->viewer->updatePersistentMessage(); // the viewed nodes' messages come first (#459)
     abortViewersAndRefresh();
 }
 
@@ -1108,6 +1111,9 @@ ViewerTab::onActiveInputsChanged()
         //_imp->viewer->resetWipeControls();
         setCompositingOperator(eViewerCompositingOperatorWipeUnder);
     }
+
+    // the messages of the viewed nodes are shown first (#459)
+    _imp->viewer->updatePersistentMessage();
 }
 
 void

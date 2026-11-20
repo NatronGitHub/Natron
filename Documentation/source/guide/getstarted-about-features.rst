@@ -17,7 +17,7 @@ Features
   Other OpenFX plug-ins can be installed: add their folder to "OpenFX plug-ins search path" in Edit → Preferences → Plug-ins.
 
 * **Commercial OpenFX plug-ins**, for example from `RE:Vision Effects <https://revisionfx.com/>`_, `Boris FX <https://borisfx.com/>`_ (Sapphire) or `Neat Video <https://www.neatvideo.com/>`_. See the FAQ about :doc:`commercial plug-ins <getstarted-about-faq>`.
-* **OpenFX support:** Natron implements the OpenFX 1.4 host API, with the Natron and Nuke extensions. It is built with the OpenFX 1.5.1 headers, but the features added in OpenFX 1.5 (string choice parameters, the Draw suite, OpenFX color management, CUDA, Metal and OpenCL rendering) are not supported yet.
+* **OpenFX support:** Natron implements the OpenFX 1.5 host API, with the Natron and Nuke extensions. It supports the OpenFX 1.5 Draw suite (overlays) and Bytes parameters, but not yet string choice parameters, OpenFX color management, or CUDA, Metal and OpenCL rendering (Natron renders on the CPU, or with OpenGL).
 * **Familiar user interface:** the interface follows the conventions of other node-based compositors. Its panes can be rearranged and spread over several screens, and layouts can be saved and reused.
 * **Fast feedback:** the multi-threaded rendering pipeline and proxy rendering (computing at a lower resolution) keep the viewer responsive.
 * **Multi-tasking:** Natron can render several graphs at the same time, and use all the cores of the CPU.
