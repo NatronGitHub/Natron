@@ -25,6 +25,10 @@
 
 #include "Global/Macros.h"
 
+#include <algorithm>
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include <QString>
@@ -624,8 +628,66 @@ TEST(SequenceFromFiles, ComplexTest) {
         EXPECT_TRUE( sequence.tryInsertFile( FileNameContent("/Users/Test/23489.jpg") ) );
         EXPECT_TRUE( sequence.tryInsertFile( FileNameContent("/Users/Test/00001.jpg") ) );
         EXPECT_FALSE( sequence.tryInsertFile( FileNameContent("/Users/Test/0001.jpg") ) );
-        EXPECT_FALSE( sequence.tryInsertFile( FileNameContent("/Users/Test/122938.jpg") ) );
+        // 122938 is what %05d writes for frame 122938
+        EXPECT_TRUE( sequence.tryInsertFile( FileNameContent("/Users/Test/122938.jpg") ) );
         EXPECT_FALSE( sequence.tryInsertFile( FileNameContent("/Users/Test/000002.jpg") ) );
         EXPECT_TRUE(sequence.generateValidSequencePattern() == "/Users/Test/#####.jpg");
     }
+}
+
+// Files written with generateFileNameFromPattern() (as the Write nodes do) must be found
+// with the same pattern: stereo views named "Left" and "Right", and negative frames.
+TEST(SequenceParsing, WrittenFilesAreFound) {
+    QString tempPath = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
+    QDir dir(tempPath);
+    QString dirName = QString::fromUtf8("NatronUnitTest") + QString::number( QRandomGenerator::global()->generate() );
+
+    dir.mkpath( QString::fromUtf8(".") );
+    dir.mkdir(dirName);
+    dir.cd(dirName);
+
+    std::vector<std::string> views;
+    views.push_back("Left");
+    views.push_back("Right");
+    const char* patterns[] = { "shot_%V.####.unittest", "shot_%v_%03d.unittest" };
+    for (int p = 0; p < 2; ++p) {
+        std::string pattern = dir.absoluteFilePath( QString::fromUtf8(patterns[p]) ).toStdString();
+        QStringList filesCreated;
+        for (int f = -2; f <= 11; ++f) {
+            for (int v = 0; v < 2; ++v) {
+                QFile file( QString::fromUtf8( generateFileNameFromPattern(pattern, views, f, v).c_str() ) );
+                filesCreated << file.fileName();
+                file.open(QIODevice::WriteOnly | QIODevice::Text);
+                file.close();
+            }
+        }
+        SequenceFromPattern sequence;
+        FileSystemModel::filesListFromPattern(pattern, &sequence);
+        EXPECT_EQ( 14, (int)sequence.size() );
+        EXPECT_EQ( -2, sequence.begin()->first );
+        for (SequenceFromPattern::iterator it = sequence.begin(); it != sequence.end(); ++it) {
+            EXPECT_EQ( 2, (int)it->second.size() );
+        }
+        for (int i = 0; i < filesCreated.size(); ++i) {
+            QFile::remove( filesCreated.at(i) );
+        }
+    }
+    dir.cdUp();
+    dir.rmdir(dirName);
+}
+
+// An unpadded sequence that contains frame 0 and frames >= 10 is a single sequence,
+// whatever the order of the files (e.g. alphabetical: test_0, test_1, test_10, ..., test_2).
+TEST(SequenceFromFiles, UnpaddedFromZero) {
+    std::vector<std::string> files;
+    for (int i = 0; i < 12; ++i) {
+        files.push_back( "/Users/Test/test_" + std::to_string(i) + ".jpg" );
+    }
+    std::sort( files.begin(), files.end() );
+    SequenceFromFiles sequence( FileNameContent(files[0]), false );
+    for (std::size_t i = 1; i < files.size(); ++i) {
+        EXPECT_TRUE( sequence.tryInsertFile( FileNameContent(files[i]) ) );
+    }
+    EXPECT_EQ( 12, sequence.count() );
+    EXPECT_EQ( "/Users/Test/test_#.jpg", sequence.generateValidSequencePattern() );
 }

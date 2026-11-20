@@ -14,6 +14,7 @@
 ### Changes
 
 - NatronRenderer (and `Natron -b`) exits with status 1, without rendering the Write nodes, when the Python script given on the command line (also in its `createInstance()`) or the `--onload` script raises an exception. A failing `--onload` script now also stops the render of a project (.ntp) that loaded without error. Renders started by the script with `app.render()` before the error have already run. It used to print the error, render the Write nodes, and exit with status 0. #1276
+- File sequences: a stereo sequence written with `%V` or `%v` in the file name (views "Left"/"Right", files `_Left`/`_L`) is found again when read with the same pattern; negative frames are written as printf does (`-005` for `####`, it was `00-5`) and read back; `%d` matches frame 0; the file dialog no longer splits unpadded sequences that start at frame 0 (`img_0` … `img_12`) or gives them a pattern that misses frames; file names with numbers too large for a frame number, or with non-ASCII characters, are handled correctly. #1511
 - Documentation: the Reference Guide has a "Nodes" section, with one page per node group and per sub-group (e.g. "G'MIC / Colors"), and the sidebar only expands the current branch.
 
 
