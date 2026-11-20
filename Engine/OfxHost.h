@@ -81,10 +81,11 @@ public:
     static PluginOpenGLRenderSupport applyCPURenderSupport(PluginOpenGLRenderSupport openGLSupport,
                                                            const OFX::Host::Property::Set& effectProps);
 
-    /// Is a plug-in with this descriptor deprecated, i.e. only kept to load old projects and not offered
-    /// to users for new nodes? True if it sets kNatronOfxImageEffectPropDeprecated (Natron extension) or
-    /// kOfxImageEffectPluginPropObsolete (OFX, after 1.5.1), which have the same meaning.
-    static bool isPluginDeprecated(const OFX::Host::Property::Set& descriptorProps);
+    /// Is a plug-in with this descriptor obsolete, i.e. only kept to load old projects and not offered
+    /// to users for new nodes? True if it sets kOfxImageEffectPluginPropObsolete (OFX, after 1.5.1).
+    /// The Natron extension kNatronOfxImageEffectPropDeprecated, which had the same meaning, is not
+    /// read any more (#1491): the plug-ins that ship with Natron 2.6 set the standard property.
+    static bool isPluginObsolete(const OFX::Host::Property::Set& descriptorProps);
 
     /// The contexts of a plug-in that Natron supports, by order of preference: a node is created in
     /// the first one whose kOfxImageEffectActionDescribeInContext succeeds. Empty if the plug-in
