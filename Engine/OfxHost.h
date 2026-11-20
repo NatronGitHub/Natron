@@ -29,6 +29,9 @@
 #include "Global/Macros.h"
 
 #include <list>
+#include <set>
+#include <string>
+#include <vector>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -82,6 +85,11 @@ public:
     /// to users for new nodes? True if it sets kNatronOfxImageEffectPropDeprecated (Natron extension) or
     /// kOfxImageEffectPluginPropObsolete (OFX, after 1.5.1), which have the same meaning.
     static bool isPluginDeprecated(const OFX::Host::Property::Set& descriptorProps);
+
+    /// The contexts of a plug-in that Natron supports, by order of preference: a node is created in
+    /// the first one whose kOfxImageEffectActionDescribeInContext succeeds. Empty if the plug-in
+    /// supports none of them, in which case it is not loaded.
+    static std::vector<std::string> getSupportedContexts(const std::set<std::string> & pluginContexts);
 
     /// Create a new instance of an image effect plug-in.
     ///
