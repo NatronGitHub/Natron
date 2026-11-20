@@ -3954,7 +3954,8 @@ Node::question(const std::string & content) const
 
 void
 Node::setPersistentMessage(MessageTypeEnum type,
-                           const std::string & content)
+                           const std::string & content,
+                           bool fromPlugin)
 {
     if (!_imp->nodeCreated && _imp->wasCreatedSilently) {
         std::cerr << getScriptName_mt_safe() << " message: " << content << std::endl;
@@ -3966,7 +3967,7 @@ Node::setPersistentMessage(MessageTypeEnum type,
 #ifdef NATRON_ENABLE_IO_META_NODES
         NodePtr ioContainer = getIOContainer();
         if (ioContainer) {
-            ioContainer->setPersistentMessage(type, content);
+            ioContainer->setPersistentMessage(type, content, fromPlugin);
 
             return;
         }
@@ -3989,10 +3990,13 @@ Node::setPersistentMessage(MessageTypeEnum type,
             QMutexLocker k(&_imp->persistentMessageMutex);
             QString mess = QString::fromUtf8( content.c_str() );
             if (mess == _imp->persistentMessage) {
+                _imp->persistentMessageFromPlugin = fromPlugin;
+
                 return;
             }
             _imp->persistentMessageType = (int)type;
             _imp->persistentMessage = mess;
+            _imp->persistentMessageFromPlugin = fromPlugin;
         }
         Q_EMIT persistentMessageChanged();
     } else {
@@ -4054,7 +4058,7 @@ Node::clearPersistentMessageRecursive(std::list<Node*>& markedNodes)
         return;
     }
     markedNodes.push_back(this);
-    clearPersistentMessageInternal();
+    clearPersistentMessageInternal(false);
 
     int nInputs = getNInputs();
     ///No need to lock, guiInputs is only written to by the main-thread
@@ -4067,12 +4071,12 @@ Node::clearPersistentMessageRecursive(std::list<Node*>& markedNodes)
 }
 
 void
-Node::clearPersistentMessageInternal()
+Node::clearPersistentMessageInternal(bool clearPluginMessage)
 {
 #ifdef NATRON_ENABLE_IO_META_NODES
     NodePtr ioContainer = getIOContainer();
     if (ioContainer) {
-        ioContainer->clearPersistentMessageInternal();
+        ioContainer->clearPersistentMessageInternal(clearPluginMessage);
 
         return;
     }
@@ -4080,9 +4084,11 @@ Node::clearPersistentMessageInternal()
     bool changed;
     {
         QMutexLocker k(&_imp->persistentMessageMutex);
-        changed = !_imp->persistentMessage.isEmpty();
+        // a message set by an OpenFX plug-in stays until the plug-in clears it (see setPersistentMessage())
+        changed = !_imp->persistentMessage.isEmpty() && (clearPluginMessage || !_imp->persistentMessageFromPlugin);
         if (changed) {
             _imp->persistentMessage.clear();
+            _imp->persistentMessageFromPlugin = false;
         }
     }
 
@@ -4092,7 +4098,8 @@ Node::clearPersistentMessageInternal()
 }
 
 void
-Node::clearPersistentMessage(bool recurse)
+Node::clearPersistentMessage(bool recurse,
+                             bool clearPluginMessage)
 {
     AppInstancePtr app = getApp();
 
@@ -4106,7 +4113,7 @@ Node::clearPersistentMessage(bool recurse)
         std::list<Node*> markedNodes;
         clearPersistentMessageRecursive(markedNodes);
     } else {
-        clearPersistentMessageInternal();
+        clearPersistentMessageInternal(clearPluginMessage);
     }
 }
 
