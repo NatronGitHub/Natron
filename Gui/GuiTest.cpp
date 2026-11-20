@@ -91,6 +91,7 @@ struct GuiTestState
     int unexpectedDialogs; // dialogs that the test did not answer
     Qt::MouseButtons pressedButtons;
     QPoint cursorPos; // global position of the last synthetic pen event (cursorPos())
+    bool cursorPosSet; // false before the first pen event
     QPointer<QWidget> hovered; // the widget of the last synthetic pen event (for Enter/Leave)
 
     GuiTestState()
@@ -99,6 +100,7 @@ struct GuiTestState
         , unexpectedDialogs(0)
         , pressedButtons(Qt::NoButton)
         , cursorPos()
+        , cursorPosSet(false)
         , hovered()
     {
     }
@@ -662,6 +664,7 @@ py_penEvent(PyObject* /*self*/,
     const QPoint global = w->mapToGlobal( pos.toPoint() );
     // the substitute of QCursor::pos() in test mode
     state().cursorPos = global;
+    state().cursorPosSet = true;
     updateHovered(w, pos);
     QMouseEvent e( evType, pos, QPointF(global), button, pressed, mods );
     QCoreApplication::sendEvent(w, &e);
@@ -1055,6 +1058,15 @@ QPoint
 cursorPos()
 {
     if ( appPTR && appPTR->isTestMode() ) {
+        if ( !state().cursorPosSet ) {
+            // before the first pen event: the centre of the main window, so that a node created at the
+            // cursor lands in the node graph and a dialog opened at the cursor is on the screen
+            Gui* gui = getGui();
+            if (gui) {
+                return gui->mapToGlobal( gui->rect().center() );
+            }
+        }
+
         return state().cursorPos;
     }
 

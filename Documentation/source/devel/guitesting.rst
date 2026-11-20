@@ -247,7 +247,8 @@ synthetic Qt events to the widgets; the real mouse cursor and the keyboard are n
    the previous press events. The widget gets *Enter* and *Leave* events as the pointer moves from a
    widget to another. In test mode, the position of the last pen event is also the position of the
    cursor for the code that works at the cursor (a node created in the node graph, a zoom with the
-   keyboard, a menu), which never reads the real cursor.
+   keyboard, a menu), which never reads the real cursor. Before the first pen event, that position is
+   the centre of the main window.
 
 .. function:: drag(target, x0, y0, x1, y1, steps=10, button='left', modifiers='')
 
