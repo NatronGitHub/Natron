@@ -956,6 +956,12 @@ GuiApplicationManager::initGui(const CLArgs& args)
     _imp->documentation.reset(new DocumentationManager);
     _imp->documentation->startServer();
 
+#ifdef Q_OS_DARWIN
+    if ( isDialogsDisabled() ) {
+        QtMac::ignorePersistentUIState();
+    }
+#endif
+
     return exec();
 } // GuiApplicationManager::initGui
 

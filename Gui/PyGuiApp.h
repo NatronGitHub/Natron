@@ -166,6 +166,16 @@ public:
 
     void renderBlocking(Effect* writeNode, int firstFrame, int lastFrame, int frameStep = 1);
     void renderBlocking(const std::list<Effect*>& effects, const std::list<int>& firstFrames, const std::list<int>& lastFrames, const std::list<int>& frameSteps);
+
+    /**
+     * @brief Saves an image of the main window, or of the tab or pane with the given
+     * script name (e.g. "Viewer1", "nodeGraph", "properties", "pane1"), to filePath.
+     * Only Natron's own widgets are captured (QWidget::grab()), never the screen.
+     * The content of OpenGL widgets (viewers, curve editor, dope sheet...) is read from
+     * their framebuffer. The file format follows the extension of filePath.
+     * Returns true on success, false when not called from the main thread.
+     **/
+    bool saveScreenshot( const QString& filePath, const QString& scriptName = QString() ) const;
 };
 
 NATRON_PYTHON_NAMESPACE_EXIT;
