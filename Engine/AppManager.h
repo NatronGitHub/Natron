@@ -151,6 +151,24 @@ public:
 
     bool isLoaded() const;
 
+    /**
+     * @brief True when a GUI test script was given with --test: auto-saves are neither written nor
+     * restored, and the GUI test module answers the dialogs that the test expects.
+     **/
+    bool isTestMode() const;
+
+    /**
+     * @brief With --no-dialogs and in test mode (--test), the auto-saves that other sessions wrote (the
+     * user's crash recovery) are never overwritten nor removed (see Project::canRemoveAutoSave()).
+     **/
+    bool keepsOtherSessionsAutoSaves() const;
+
+
+    /**
+     * @brief True if a render of any project is running or queued (see AppInstance::hasRenderInProgress()).
+     **/
+    bool hasRenderInProgress() const;
+
     AppInstancePtr newAppInstance(const CLArgs& cl, bool makeEmptyInstance);
     AppInstancePtr newBackgroundInstance(const CLArgs& cl, bool makeEmptyInstance);
 
@@ -855,9 +873,13 @@ PyObject* getMainModule();
  * @param error[out] If an error occurs, this will be set to the error printed by the Python interpreter. This argument may be passed NULL,
  * however in Gui sessions, the error will not be printed in the console so it will just ignore any Python error.
  * @param output[out] The string will contain any result printed by the script on stdout. This argument may be passed NULL
+ * @param globals The dictionary of the global variables of the script. If NULL, the dictionary of the __main__ module.
+ * @param locals The dictionary of the local variables of the script, where it stores the variables it assigns.
+ * If NULL, the same as globals. Pass a new dictionary to run a script that must not write into globals.
  * @returns True on success, false on failure.
  **/
-bool interpretPythonScript(const std::string& script, std::string* error, std::string* output);
+bool interpretPythonScript(const std::string& script, std::string* error, std::string* output,
+                           PyObject* globals = NULL, PyObject* locals = NULL);
 
 
 //void compilePyScript(const std::string& script,PyObject** code);

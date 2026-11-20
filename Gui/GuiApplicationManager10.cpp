@@ -66,6 +66,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/CurveWidget.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/GuiTest.h"
 #include "Gui/KnobGuiFactory.h"
 #include "Gui/SplashScreen.h"
 
@@ -405,7 +406,10 @@ void
 GuiApplicationManager::onAllPluginsLoaded()
 {
     ///Restore user shortcuts only when all plug-ins are populated.
-    loadShortcuts();
+    ///A GUI test (--test) uses the default shortcuts, as the default settings (--no-settings).
+    if ( !isTestMode() ) {
+        loadShortcuts();
+    }
     AppManager::onAllPluginsLoaded();
 }
 
@@ -1303,6 +1307,11 @@ GuiApplicationManager::initBuiltinPythonModules()
     int ret = PyImport_AppendInittab(NATRON_GUI_PYTHON_MODULE_NAME, &PyInit_NatronGui);
     if (ret == -1) {
         throw std::runtime_error("Failed to initialize built-in Python module.");
+    }
+
+    // the test-only module, not part of the Python API
+    if ( isTestMode() ) {
+        GuiTest::install();
     }
 }
 

@@ -157,6 +157,8 @@ def main(argv):
             f.write(SCRIPT)
         env = dict(os.environ)
         env["NATRON_QUIT_TEST_DIR"] = outDir
+        # Debug builds: no trapped floating point exception (#1537), as with Natron --test
+        env["NATRON_NO_FP_TRAPS"] = "1"
         cmd = wrapper + [argv[1], "--no-settings", "-w", "Write1", "1-%d" % LAST_FRAME, script]
         print("Running: " + " ".join(cmd))
         sys.stdout.flush()
