@@ -435,6 +435,11 @@ AppManager::loadFromArgs(const CLArgs& cl)
     if (_imp->testMode) {
         // Before initPython(): the output of a test reaches the log even when the watchdog ends it
         qputenv("PYTHONUNBUFFERED", "1");
+#ifdef DEBUG
+        // Before qApp and any OpenGL context (see AppManagerPrivate::testModeNoTrap); the render threads
+        // still trap them
+        _imp->testModeNoTrap.reset(new boost_adaptbx::floating_point::no_exception_trapping);
+#endif
     }
 
     // This needs to be done BEFORE creating qApp because
