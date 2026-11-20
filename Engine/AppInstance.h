@@ -218,7 +218,7 @@ public:
     {
     }
 
-    virtual void loadProjectGui(bool /*isAutosave*/, boost::archive::binary_iarchive & /*archive*/) const
+    virtual void loadProjectGui(bool /*isAutosave*/, PortableBinaryIArchive & /*archive*/) const
     {
     }
 
@@ -226,7 +226,7 @@ public:
     {
     }
 
-    virtual void saveProjectGui(boost::archive::binary_oarchive & /*archive*/)
+    virtual void saveProjectGui(PortableBinaryOArchive & /*archive*/)
     {
     }
 

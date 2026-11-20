@@ -789,7 +789,7 @@ GuiAppInstance::loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & a
 }
 
 void
-GuiAppInstance::loadProjectGui(bool isAutosave, boost::archive::binary_iarchive & archive) const
+GuiAppInstance::loadProjectGui(bool isAutosave, PortableBinaryIArchive & archive) const
 {
     _imp->_gui->loadProjectGui(isAutosave, archive);
 }
@@ -803,7 +803,7 @@ GuiAppInstance::saveProjectGui(boost::archive::xml_oarchive & archive)
 }
 
 void
-GuiAppInstance::saveProjectGui(boost::archive::binary_oarchive & archive)
+GuiAppInstance::saveProjectGui(PortableBinaryOArchive & archive)
 {
     if (_imp->_gui) {
         _imp->_gui->saveProjectGui(archive);

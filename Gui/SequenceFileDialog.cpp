@@ -1710,6 +1710,13 @@ SequenceFileDialog::selectedFiles()
     return selection;
 }
 
+void
+SequenceFileDialog::addSelectionLineWidget(QWidget* widget)
+{
+    widget->setParent(_selectionWidget);
+    _selectionLayout->addWidget(widget);
+}
+
 std::string
 SequenceFileDialog::filesToSave()
 {

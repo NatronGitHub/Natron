@@ -207,11 +207,15 @@ Settings::initializeKnobsGeneral()
                                       "last saved), *.~2~ (third last saved).") );
     _generalTab->addKnob(_saveVersions);
 
-    _saveAsBinary = AppManager::createKnob<KnobBool>( this, tr("Save projects as binary") );
+    _saveAsBinary = AppManager::createKnob<KnobBool>( this, tr("Save projects as binary by default") );
     _saveAsBinary->setName("saveAsBinary");
-    _saveAsBinary->setHintToolTip( tr("When checked, %1 will save projects in a binary format which is faster to load and save. "
-                                      "When unchecked, projects will be saved in a human-readable text format. "
-                                      "Note that the text format is not guaranteed to be stable across versions of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+    _saveAsBinary->setHintToolTip( tr("The format of new projects, when they are saved for the first time. "
+                                      "Binary projects are faster to load and save, and smaller, but can only be opened by %1 2.6 and later. "
+                                      "Text (XML) projects can also be opened by %1 2.5 and earlier, and are human-readable and diffable.\n"
+                                      "A project keeps its format: a project opened from a text file is saved as text, and a binary project as binary. "
+                                      "\"Save As...\" can change the format of a project.\n"
+                                      "Auto-saves are always binary, but a project restored from an auto-save is saved in its original format.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+    _generalTab->addKnob(_saveAsBinary);
 
     _hostName = AppManager::createKnob<KnobChoice>( this, tr("Appear to plug-ins as") );
     _hostName->setName("pluginHostName");
@@ -1498,7 +1502,7 @@ Settings::setDefaultValues()
     _autoSaveUnSavedProjects->setDefaultValue(true);
     _autoSaveDelay->setDefaultValue(5, 0);
     _saveVersions->setDefaultValue(1);
-    _saveAsBinary->setDefaultValue(false);
+    _saveAsBinary->setDefaultValue(true);
     _hostName->setDefaultValue(0);
     _customHostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
 

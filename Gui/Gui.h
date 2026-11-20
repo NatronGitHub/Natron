@@ -305,10 +305,10 @@ public:
     static QPixmap screenShot(QWidget* w);
 
     void loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & obj) const;
-    void loadProjectGui(bool isAutosave, boost::archive::binary_iarchive & obj) const;
+    void loadProjectGui(bool isAutosave, PortableBinaryIArchive & obj) const;
 
     void saveProjectGui(boost::archive::xml_oarchive & archive);
-    void saveProjectGui(boost::archive::binary_oarchive & archive);
+    void saveProjectGui(PortableBinaryOArchive & archive);
 
     void setColorPickersColor(double r, double g, double b, double a);
 
@@ -518,6 +518,11 @@ public:
     void setApplicationConsoleActionVisible(bool visible);
 
     bool saveProjectAs(const std::string& filename);
+
+    /**
+     * @brief Saves the project to filename in the given format, which becomes the format of the project.
+     **/
+    bool saveProjectAs(const std::string& filename, ProjectFileFormatEnum format);
 
     static void fileSequencesFromUrls(const QList<QUrl>& urls, std::vector<SequenceParsing::SequenceFromFilesPtr>* sequences);
 

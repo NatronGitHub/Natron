@@ -53,6 +53,17 @@ NATRON_NAMESPACE_ENTER
 
 struct ProjectPrivate;
 
+/**
+ * @brief The format of a project file. Both use the .ntp extension: the format is detected from the
+ * first bytes of the file (see Project::detectFileFormat()).
+ **/
+enum ProjectFileFormatEnum : int
+{
+    eProjectFileFormatNone = -1, // no format yet (a new project, never saved), or not a project file
+    eProjectFileFormatText = 0, // XML text: readable, diffable, and compatible with Natron 2.5 and earlier
+    eProjectFileFormatBinary = 1, // portable binary (see PortableBinaryArchive.h): faster and smaller, Natron 2.6 and later
+};
+
 class Project
     : public KnobHolder
     , public NodeCollection
@@ -151,6 +162,32 @@ public:
     QString getProjectPath() const WARN_UNUSED_RETURN;
 
     bool hasProjectBeenSavedByUser() const WARN_UNUSED_RETURN;
+
+    /**
+     * @brief The format of the file of this project: the format of the file it was loaded from, or the
+     * one chosen when it was last saved by the user. eProjectFileFormatNone for a new project.
+     * Restoring an auto-save (always binary) restores the format of the original project.
+     **/
+    ProjectFileFormatEnum getFileFormat() const WARN_UNUSED_RETURN;
+
+    /**
+     * @brief The format used by the next save: getFileFormat(), or the "Save projects as binary by
+     * default" preference for a project that has no format yet.
+     **/
+    ProjectFileFormatEnum getFileFormatForSave() const WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Sets the format of the next saves, e.g. the one chosen in the "Save As..." dialog.
+     **/
+    void setFileFormat(ProjectFileFormatEnum format);
+
+    /**
+     * @brief Detects the format of a project file from its first bytes: an XML file starts with "<?xml"
+     * (after an optional UTF-8 byte order mark and white space), a binary project with the signature of
+     * PortableBinaryOArchive. Returns eProjectFileFormatNone if it is neither.
+     **/
+    static ProjectFileFormatEnum detectFileFormat(const char* data, std::size_t size) WARN_UNUSED_RETURN;
+    static ProjectFileFormatEnum detectFileFormat(const QString& filePath) WARN_UNUSED_RETURN;
 
     bool isSaveUpToDate() const WARN_UNUSED_RETURN;
 

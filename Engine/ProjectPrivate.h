@@ -65,6 +65,7 @@ public:
     mutable QMutex projectLock; //< protects the whole project
     QString lastAutoSaveFilePath; //< absolute file path of the last auto-save file
     bool hasProjectBeenSavedByUser; //< has this project ever been saved by the user?
+    ProjectFileFormatEnum fileFormat; //< see Project::getFileFormat(), protected by projectLock
     QDateTime ageSinceLastSave; //< the last time the user saved
     QDateTime lastAutoSave; //< the last time since autosave
     QDateTime projectCreationTime; //< the project creation time

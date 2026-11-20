@@ -43,8 +43,6 @@ namespace boost {
 namespace archive {
 class xml_iarchive;
 class xml_oarchive;
-class binary_iarchive;
-class binary_oarchive;
 }
 namespace serialization {
 class access;
@@ -231,6 +229,9 @@ class ParallelRenderArgsSetter;
 class Plugin;
 class PluginGroupNode;
 class PluginMemory;
+enum ProjectFileFormatEnum : int; // see Project.h
+class PortableBinaryIArchive;
+class PortableBinaryOArchive;
 class PrecompNode;
 class ProcessHandler;
 class ProcessInputChannel;
