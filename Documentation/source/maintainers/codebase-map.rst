@@ -62,7 +62,7 @@ Top-level directories
     Bundled third-party libraries built from source: ``OpenFX`` and
     ``OpenFX_extensions`` (the plug-in API), ``ceres``/``openMVG``/``libmv``
     (the tracker's solver and matcher), ``Eigen3`` (linear algebra headers),
-    ``hoedown`` (Markdown), ``libtess`` (tessellation), ``gflags``/``glog``,
+    ``md4c`` (Markdown), ``libtess`` (tessellation), ``gflags``/``glog``,
     ``qhttpserver`` (internal docs server), ``SequenceParsing`` and
     ``google-breakpad`` (crash reporting).
 

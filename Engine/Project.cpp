@@ -397,7 +397,8 @@ Project::loadProjectInternal(const QString & path,
         QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
         Q_EMIT projectNameChanged(projectPath + projectFilename, true);
     } else {
-        Q_EMIT projectNameChanged(path + name, false);
+        // modified if plug-ins changed values while it was loading (see ProjectPrivate::restoreFromSerialization())
+        Q_EMIT projectNameChanged( path + name, !isSaveUpToDate() );
     }
 
     ///Try to take the project lock by creating a lock file
@@ -1222,7 +1223,7 @@ Project::initializeKnobs()
 
     KnobPagePtr lutPages = AppManager::createKnob<KnobPage>( this, tr("LUT") );
     std::vector<ChoiceOption> colorSpaces;
-    // Keep it in sync with ViewerColorSpaceEnum
+    // Keep it in sync with colorspaceParamIndexToEnum(): the choice index is not a ViewerColorSpaceEnum value
     colorSpaces.push_back(ChoiceOption("Linear","",""));
     colorSpaces.push_back(ChoiceOption("sRGB","",""));
     colorSpaces.push_back(ChoiceOption("Rec.709","",""));
@@ -2731,6 +2732,8 @@ inline ViewerColorSpaceEnum colorspaceParamIndexToEnum(int index)
             return eViewerColorSpaceSRGB;
         case 2:
             return eViewerColorSpaceRec709;
+        case 3:
+            return eViewerColorSpaceBT1886;
         default:
             return eViewerColorSpaceLinear;
     }

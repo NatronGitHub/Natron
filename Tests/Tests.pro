@@ -71,6 +71,7 @@ SOURCES += \
     LibTess_Test.cpp \
     LoadPythonScript_Test.cpp \
     Lut_Test.cpp \
+    Markdown_Test.cpp \
     MultiInputLinks_Test.cpp \
     NaNGuards_FastMath.cpp \
     NaNGuards_Test.cpp \
@@ -99,7 +100,9 @@ SOURCES += \
     OfxParamUndo_Test.cpp \
     OfxPluginObsolete_Test.cpp \
     OfxPluginScan_Test.cpp \
+    OfxProjectLoad_Test.cpp \
     OfxQuestion_Test.cpp \
+    OfxSequenceRenderArgs_Test.cpp \
     OfxSingleInstance_Test.cpp \
     OfxSuiteStatus_Test.cpp \
     OfxSyncPrivateData_Test.cpp \
@@ -119,6 +122,7 @@ SOURCES += \
     StrUtilsFormat_Test.cpp \
     Tracker_Test.cpp \
     ViewerCache_Test.cpp \
+    ViewerTexture_Test.cpp \
     WriteNodeViews_Test.cpp \
     wmain.cpp
 

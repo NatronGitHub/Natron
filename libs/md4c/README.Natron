@@ -1,0 +1,45 @@
+Project: MD4C (Markdown for C), a CommonMark 0.31.2 Markdown parser, with its HTML renderer
+URL: https://github.com/mity/md4c
+License: MIT (LICENSE.md)
+Upstream version: v0.6.0-46-gf9e5eb2, i.e. the master branch 46 commits after
+the v0.6.0 tag (7fc1815a5eeba2af7d6120a76202bf59f3b6e6e4, 2026-09-17). These
+commits fix bugs of the permissive autolinks that the bundled plug-ins hit (an
+URL with a ':' in its path, e.g. a web.archive.org link, was not a link in
+v0.6.0) and a quadratic parsing time on a crafted autolink.
+Git URL=https://github.com/mity/md4c.git
+Git HEAD version=f9e5eb232b95b737373ae706648cb75bd259ed1a (2026-10-19)
+
+Copied files, unmodified:
+    LICENSE.md
+    src/entity.c
+    src/entity.h
+    src/md4c.c
+    src/md4c.h
+    src/md4c-html.c
+    src/md4c-html.h
+
+Local modifications: none.
+
+There is no option to use an installed md4c (NATRON_SYSTEM_LIBS): the packaged
+versions (e.g. MacPorts devel/md4c, Linux distributions) are 0.5.x, which lack
+MD_FLAG_FOOTNOTES, MD_FLAG_SUPERSCRIPTS and MD_FLAG_HIGHLIGHT (new in 0.6.0)
+and the autolink fixes above. Engine/Markdown.cpp includes the bundled header
+by path (libs/md4c/src/md4c-html.h), so that an installed md4c-html.h, for
+example in /opt/local/include, is never used instead.
+
+Natron files (not from upstream): README.Natron, CMakeLists.txt, md4c.pro.
+The md4c version (`git describe --tags`) is also stated in CMakeLists.txt (md4c_VERSION) and in the
+md4c-flags section of ../../libs.pri (NATRON_MD4C_VERSION): update them
+together. It is shown in the About dialog (AppManager::getMd4cVersion()).
+
+To update:
+
+    git clone https://github.com/mity/md4c.git
+    cd md4c
+    git checkout <tag or commit>
+    cp LICENSE.md /path-to-natron/libs/md4c/
+    cp src/entity.[ch] src/md4c.[ch] src/md4c-html.[ch] /path-to-natron/libs/md4c/src/
+    cp LICENSE.md /path-to-natron/tools/license/components/LICENSE-md4c.txt
+
+then update this file and the version in CMakeLists.txt and libs.pri, build,
+and run the Markdown.* unit tests (Tests/Markdown_Test.cpp).
