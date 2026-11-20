@@ -106,6 +106,7 @@ SOURCES += \
     SequentialRender_Test.cpp \
     Tracker_Test.cpp \
     ViewerCache_Test.cpp \
+    ViewerTexture_Test.cpp \
     WriteNodeViews_Test.cpp \
     wmain.cpp
 

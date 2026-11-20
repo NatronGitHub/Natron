@@ -77,39 +77,7 @@ NATRON_NAMESPACE_ENTER
 using std::make_pair;
 using std::shared_ptr;
 
-NATRON_NAMESPACE_ANONYMOUS_ENTER
-
-struct MinMaxVal {
-    MinMaxVal(double min_, double max_)
-    : min(min_)
-    , max(max_)
-    {
-    }
-    MinMaxVal()
-    : min(std::numeric_limits<double>::max())
-    , max(std::numeric_limits<double>::lowest())
-    {
-    }
-
-    double min;
-    double max;
-};
-
-NATRON_NAMESPACE_ANONYMOUS_EXIT
-
-static void scaleToTexture8bits(const RectI& roi,
-                                const RenderViewerArgs & args,
-                                ViewerInstance* viewer,
-                                const UpdateViewerParams::CachedTile& tile,
-                                U32* output);
-static void scaleToTexture32bits(const RectI& roi,
-                                 const RenderViewerArgs & args,
-                                 const UpdateViewerParams::CachedTile& tile,
-                                 float *output);
-static MinMaxVal findAutoContrastVminVmax(const ImagePtr inputImage,
-                                                         const Color::Lut* srcColorSpace,
-                                                         DisplayChannelsEnum channels,
-                                                         const RectI & rect);
+// scaleToTexture8bits(), scaleToTexture32bits() and findAutoContrastVminVmax() are declared in ViewerInstancePrivate.h
 static void renderFunctor(const RectI& roi,
                           const RenderViewerArgs & args,
                           ViewerInstance* viewer,
@@ -1808,7 +1776,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         if (singleThreaded) {
             if (inArgs.autoContrast && !inArgs.isDoingPartialUpdates) {
                 double vmin, vmax;
-                MinMaxVal vMinMax = findAutoContrastVminVmax(colorImage, lutFromColorspace(srcColorSpace), inArgs.channels, viewerRenderRoI);
+                MinMaxVal vMinMax = findAutoContrastVminVmax(colorImage, lutFromColorspace(srcColorSpace), inArgs.channels, alphaChannelIndex, viewerRenderRoI);
                 vmin = vMinMax.min;
                 vmax = vMinMax.max;
 
@@ -1859,13 +1827,13 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 double vmax = std::numeric_limits<double>::lowest();
 
                 if (runInCurrentThread) {
-                    MinMaxVal vMinMax = findAutoContrastVminVmax(colorImage, lutFromColorspace(srcColorSpace), inArgs.channels, viewerRenderRoI);
+                    MinMaxVal vMinMax = findAutoContrastVminVmax(colorImage, lutFromColorspace(srcColorSpace), inArgs.channels, alphaChannelIndex, viewerRenderRoI);
                     vmin = vMinMax.min;
                     vmax = vMinMax.max;
                 } else {
                     std::vector<RectI> splitRects = viewerRenderRoI.splitIntoSmallerRects( appPTR->getMaxThreadCount() );
                     std::function<MinMaxVal (const RectI&)> findAutoContrast = [&](const RectI &rect) {
-                        return findAutoContrastVminVmax(colorImage, lutFromColorspace(srcColorSpace), inArgs.channels, rect);
+                        return findAutoContrastVminVmax(colorImage, lutFromColorspace(srcColorSpace), inArgs.channels, alphaChannelIndex, rect);
                     };
                     QFuture<MinMaxVal> future = QtConcurrent::mapped( splitRects, findAutoContrast );
                     future.waitForFinished();
@@ -1995,8 +1963,7 @@ renderFunctor(const RectI& roi,
 }
 
 // A sample of the image as the texture paths see it before the gain and offset are applied: 8/16-bit
-// values in [0,1], and the colour channels in linear (srcColorSpace), see scaleToTexture8bits_generic.
-// alpha is never converted with a LUT.
+// values in [0,1], converted to linear with srcColorSpace if it is not NULL (see scaleToTexture8bits_generic).
 template <typename PIX>
 inline double autoContrastValue(PIX v, const Color::Lut* srcColorSpace);
 
@@ -2024,6 +1991,39 @@ autoContrastValue<float>(float v,
     return srcColorSpace ? srcColorSpace->fromColorSpaceFloatToLinearFloat(v) : v;
 }
 
+// The channel offsets read by the texture paths for each display mode, see scaleToTexture8bitsForPremult()
+// and scaleToTexture32bitsForPremultForComponents().
+static void
+displayChannelOffsets(DisplayChannelsEnum channels,
+                      int alphaChannelIndex,
+                      int* rOffset,
+                      int* gOffset,
+                      int* bOffset)
+{
+    switch (channels) {
+    case eDisplayChannelsRGB:
+    case eDisplayChannelsY:
+    case eDisplayChannelsMatte:
+        *rOffset = 0;
+        *gOffset = 1;
+        *bOffset = 2;
+        break;
+    case eDisplayChannelsG:
+        *rOffset = *gOffset = *bOffset = 1;
+        break;
+    case eDisplayChannelsB:
+        *rOffset = *gOffset = *bOffset = 2;
+        break;
+    case eDisplayChannelsA:
+        *rOffset = *gOffset = *bOffset = (0 <= alphaChannelIndex && alphaChannelIndex <= 3) ? alphaChannelIndex : 3;
+        break;
+    case eDisplayChannelsR:
+    default:
+        *rOffset = *gOffset = *bOffset = 0;
+        break;
+    }
+}
+
 template <typename PIX>
 inline
 MinMaxVal
@@ -2031,6 +2031,7 @@ findAutoContrastVminVmax_generic(const ImagePtr inputImage,
                                  const Color::Lut* srcColorSpace,
                                  int nComps,
                                  DisplayChannelsEnum channels,
+                                 int alphaChannelIndex,
                                  const RectI & rect)
 {
     // initialized so that the first min/max found replaces them (+/-infinity would be UB with -ffast-math).
@@ -2038,6 +2039,13 @@ findAutoContrastVminVmax_generic(const ImagePtr inputImage,
     double localVmin = std::numeric_limits<double>::max();
     double localVmax = std::numeric_limits<double>::lowest();
     Image::ReadAccess acc = inputImage->getReadRights();
+    // read the same channels as the texture paths, and convert them the same way: alpha (A display) is linear,
+    // so it is never converted with the LUT.
+    int rOffset, gOffset, bOffset;
+    displayChannelOffsets(channels, alphaChannelIndex, &rOffset, &gOffset, &bOffset);
+    if (channels == eDisplayChannelsA) {
+        srcColorSpace = NULL;
+    }
 
     for (int y = rect.bottom(); y < rect.top(); ++y) {
         const PIX* src_pixels = (const PIX*)acc.pixelAt(rect.left(), y);
@@ -2046,32 +2054,21 @@ findAutoContrastVminVmax_generic(const ImagePtr inputImage,
             double r = 0.;
             double g = 0.;
             double b = 0.;
-            double a = 0.;
-            switch (nComps) {
-            case 4:
-                r = autoContrastValue<PIX>(src_pixels[0], srcColorSpace);
-                g = autoContrastValue<PIX>(src_pixels[1], srcColorSpace);
-                b = autoContrastValue<PIX>(src_pixels[2], srcColorSpace);
-                a = autoContrastValue<PIX>(src_pixels[3], NULL);
-                break;
-            case 3:
-                r = autoContrastValue<PIX>(src_pixels[0], srcColorSpace);
-                g = autoContrastValue<PIX>(src_pixels[1], srcColorSpace);
-                b = autoContrastValue<PIX>(src_pixels[2], srcColorSpace);
-                a = 1.;
-                break;
-            case 2:
-                r = autoContrastValue<PIX>(src_pixels[0], srcColorSpace);
-                g = autoContrastValue<PIX>(src_pixels[1], srcColorSpace);
-                b = 0.;
-                a = 1.;
-                break;
-            case 1:
-                a = autoContrastValue<PIX>(src_pixels[0], NULL);
-                r = g = b = 0.;
-                break;
-            default:
-                r = g = b = a = 0.;
+            if (nComps >= 4) {
+                r = autoContrastValue<PIX>(src_pixels[rOffset], srcColorSpace);
+                g = autoContrastValue<PIX>(src_pixels[gOffset], srcColorSpace);
+                b = autoContrastValue<PIX>(src_pixels[bOffset], srcColorSpace);
+            } else if (nComps == 3) {
+                r = autoContrastValue<PIX>(rOffset < nComps ? src_pixels[rOffset] : PIX(0), srcColorSpace);
+                g = autoContrastValue<PIX>(gOffset < nComps ? src_pixels[gOffset] : PIX(0), srcColorSpace);
+                b = autoContrastValue<PIX>(bOffset < nComps ? src_pixels[bOffset] : PIX(0), srcColorSpace);
+            } else if (nComps == 2) {
+                r = autoContrastValue<PIX>(rOffset < nComps ? src_pixels[rOffset] : PIX(0), srcColorSpace);
+                g = autoContrastValue<PIX>(gOffset < nComps ? src_pixels[gOffset] : PIX(0), srcColorSpace);
+                b = autoContrastValue<PIX>(PIX(0), srcColorSpace);
+            } else if (nComps == 1) {
+                r = autoContrastValue<PIX>(rOffset < nComps ? src_pixels[rOffset] : PIX(0), srcColorSpace);
+                g = b = r;
             }
 
             double mini, maxi;
@@ -2085,19 +2082,11 @@ findAutoContrastVminVmax_generic(const ImagePtr inputImage,
                 maxi = mini;
                 break;
             case eDisplayChannelsR:
-                mini = r;
-                maxi = mini;
-                break;
             case eDisplayChannelsG:
-                mini = g;
-                maxi = mini;
-                break;
             case eDisplayChannelsB:
-                mini = b;
-                maxi = mini;
-                break;
             case eDisplayChannelsA:
-                mini = a;
+                // r = g = b: the selected channel
+                mini = r;
                 maxi = mini;
                 break;
             default:
@@ -2124,9 +2113,10 @@ MinMaxVal
 findAutoContrastVminVmax_internal(const ImagePtr inputImage,
                                   const Color::Lut* srcColorSpace,
                                   DisplayChannelsEnum channels,
+                                  int alphaChannelIndex,
                                   const RectI & rect)
 {
-    return findAutoContrastVminVmax_generic<PIX>(inputImage, srcColorSpace, nComps, channels, rect);
+    return findAutoContrastVminVmax_generic<PIX>(inputImage, srcColorSpace, nComps, channels, alphaChannelIndex, rect);
 }
 
 template <typename PIX>
@@ -2134,18 +2124,19 @@ MinMaxVal
 findAutoContrastVminVmax_forDepth(const ImagePtr inputImage,
                                   const Color::Lut* srcColorSpace,
                                   DisplayChannelsEnum channels,
+                                  int alphaChannelIndex,
                                   const RectI & rect)
 {
     int nComps = inputImage->getComponents().getNumComponents();
 
     if (nComps == 4) {
-        return findAutoContrastVminVmax_internal<PIX, 4>(inputImage, srcColorSpace, channels, rect);
+        return findAutoContrastVminVmax_internal<PIX, 4>(inputImage, srcColorSpace, channels, alphaChannelIndex, rect);
     } else if (nComps == 3) {
-        return findAutoContrastVminVmax_internal<PIX, 3>(inputImage, srcColorSpace, channels, rect);
+        return findAutoContrastVminVmax_internal<PIX, 3>(inputImage, srcColorSpace, channels, alphaChannelIndex, rect);
     } else if (nComps == 1) {
-        return findAutoContrastVminVmax_internal<PIX, 1>(inputImage, srcColorSpace, channels, rect);
+        return findAutoContrastVminVmax_internal<PIX, 1>(inputImage, srcColorSpace, channels, alphaChannelIndex, rect);
     } else {
-        return findAutoContrastVminVmax_generic<PIX>(inputImage, srcColorSpace, nComps, channels, rect);
+        return findAutoContrastVminVmax_generic<PIX>(inputImage, srcColorSpace, nComps, channels, alphaChannelIndex, rect);
     }
 }
 
@@ -2153,18 +2144,19 @@ MinMaxVal
 findAutoContrastVminVmax(const ImagePtr inputImage,
                          const Color::Lut* srcColorSpace,
                          DisplayChannelsEnum channels,
+                         int alphaChannelIndex,
                          const RectI & rect)
 {
     switch ( inputImage->getBitDepth() ) {
     case eImageBitDepthByte:
 
-        return findAutoContrastVminVmax_forDepth<unsigned char>(inputImage, srcColorSpace, channels, rect);
+        return findAutoContrastVminVmax_forDepth<unsigned char>(inputImage, srcColorSpace, channels, alphaChannelIndex, rect);
     case eImageBitDepthShort:
 
-        return findAutoContrastVminVmax_forDepth<unsigned short>(inputImage, srcColorSpace, channels, rect);
+        return findAutoContrastVminVmax_forDepth<unsigned short>(inputImage, srcColorSpace, channels, alphaChannelIndex, rect);
     default:
 
-        return findAutoContrastVminVmax_forDepth<float>(inputImage, srcColorSpace, channels, rect);
+        return findAutoContrastVminVmax_forDepth<float>(inputImage, srcColorSpace, channels, alphaChannelIndex, rect);
     }
 } // findAutoContrastVminVmax
 
@@ -2178,6 +2170,9 @@ scaleToTexture8bits_generic(const RectI& roi,
                             U32* tileBuffer)
 {
     const size_t pixelSize = sizeof(PIX);
+    // The A display shows the alpha channel (alphaChannelIndex) in r, g and b: alpha is linear, so it is not
+    // converted with the LUT of the input bit depth (findAutoContrastVminVmax() does the same).
+    const Color::Lut* const srcColorSpace = (args.channels == eDisplayChannelsA) ? NULL : args.srcColorSpace;
     const bool luminance = (args.channels == eDisplayChannelsY);
     Image::ReadAccess acc = Image::ReadAccess( args.inputImage.get() );
     const RectI srcImgBounds = args.inputImage->getBounds();
@@ -2238,7 +2233,8 @@ scaleToTexture8bits_generic(const RectI& roi,
                         a = 1;
                         uA = 255;
                     } else {
-                        a = src_pixels ? src_pixels[index * nComps + 3] : 0;
+                        // alpha in [0,1] whatever the bit depth (it is never converted with a LUT)
+                        a = src_pixels ? Image::convertPixelDepth<PIX, float>(src_pixels[index * nComps + 3]) : 0.;
                         uA = Color::floatToInt<256>(a);
                     }
                 } else if (nComps == 3) {
@@ -2271,10 +2267,10 @@ scaleToTexture8bits_generic(const RectI& roi,
 
                 switch (pixelSize) {
                 case sizeof(unsigned char):     //byte
-                    if (args.srcColorSpace) {
-                        r = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)r );
-                        g = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)g );
-                        b = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)b );
+                    if (srcColorSpace) {
+                        r = srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)r );
+                        g = srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)g );
+                        b = srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)b );
                     } else {
                         r = (double)Image::convertPixelDepth<unsigned char, float>( (unsigned char)r );
                         g = (double)Image::convertPixelDepth<unsigned char, float>( (unsigned char)g );
@@ -2282,10 +2278,10 @@ scaleToTexture8bits_generic(const RectI& roi,
                     }
                     break;
                 case sizeof(unsigned short):     //short
-                    if (args.srcColorSpace) {
-                        r = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)r );
-                        g = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)g );
-                        b = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)b );
+                    if (srcColorSpace) {
+                        r = srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)r );
+                        g = srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)g );
+                        b = srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)b );
                     } else {
                         r = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned short)r );
                         g = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned short)g );
@@ -2293,10 +2289,10 @@ scaleToTexture8bits_generic(const RectI& roi,
                     }
                     break;
                 case sizeof(float):     //float
-                    if (args.srcColorSpace) {
-                        r = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(r);
-                        g = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(g);
-                        b = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(b);
+                    if (srcColorSpace) {
+                        r = srcColorSpace->fromColorSpaceFloatToLinearFloat(r);
+                        g = srcColorSpace->fromColorSpaceFloatToLinearFloat(g);
+                        b = srcColorSpace->fromColorSpaceFloatToLinearFloat(b);
                     }
                     break;
                 default:
@@ -2592,6 +2588,9 @@ scaleToTexture32bitsGeneric(const RectI& roi,
                             float *tileBuffer)
 {
     const size_t pixelSize = sizeof(PIX);
+    // The A display shows the alpha channel (alphaChannelIndex) in r, g and b: alpha is linear, so it is not
+    // converted with the LUT of the input bit depth (findAutoContrastVminVmax() does the same).
+    const Color::Lut* const srcColorSpace = (args.channels == eDisplayChannelsA) ? NULL : args.srcColorSpace;
     const bool luminance = (args.channels == eDisplayChannelsY);
     const int dstRowElements = args.renderOnlyRoI ? tile.rect.width() * 4 : args.tileRowElements;
     Image::ReadAccess acc = Image::ReadAccess( args.inputImage.get() );
@@ -2635,7 +2634,8 @@ scaleToTexture32bitsGeneric(const RectI& roi,
                 if (opaque) {
                     a = 1.;
                 } else {
-                    a = src_pixels ? src_pixels[x * nComps + 3] : 0.;
+                    // alpha in [0,1] whatever the bit depth (it is never converted with a LUT)
+                    a = src_pixels ? Image::convertPixelDepth<PIX, float>(src_pixels[x * nComps + 3]) : 0.;
                 }
             } else if (nComps == 3) {
                 // coverity[dead_error_line]
@@ -2664,10 +2664,10 @@ scaleToTexture32bitsGeneric(const RectI& roi,
 
             switch (pixelSize) {
             case sizeof(unsigned char):
-                if (args.srcColorSpace) {
-                    r = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)r );
-                    g = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)g );
-                    b = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)b );
+                if (srcColorSpace) {
+                    r = srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)r );
+                    g = srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)g );
+                    b = srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)b );
                 } else {
                     r = (double)Image::convertPixelDepth<unsigned char, float>( (unsigned char)r );
                     g = (double)Image::convertPixelDepth<unsigned char, float>( (unsigned char)g );
@@ -2675,10 +2675,10 @@ scaleToTexture32bitsGeneric(const RectI& roi,
                 }
                 break;
             case sizeof(unsigned short):
-                if (args.srcColorSpace) {
-                    r = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)r );
-                    g = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)g );
-                    b = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)b );
+                if (srcColorSpace) {
+                    r = srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)r );
+                    g = srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)g );
+                    b = srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)b );
                 } else {
                     r = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned short)r );
                     g = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned short)g );
@@ -2686,10 +2686,10 @@ scaleToTexture32bitsGeneric(const RectI& roi,
                 }
                 break;
             case sizeof(float):
-                if (args.srcColorSpace) {
-                    r = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(r);
-                    g = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(g);
-                    b = args.srcColorSpace->fromColorSpaceFloatToLinearFloat(b);
+                if (srcColorSpace) {
+                    r = srcColorSpace->fromColorSpaceFloatToLinearFloat(r);
+                    g = srcColorSpace->fromColorSpaceFloatToLinearFloat(g);
+                    b = srcColorSpace->fromColorSpaceFloatToLinearFloat(b);
                 }
                 break;
             default:
