@@ -734,24 +734,55 @@ FileSystemModel::absoluteFilePath(const QString& directory,
     return cleanPath(absolutePath);
 }
 
+// Position of the last path separator in a typed path ('/', and '\\' on Windows), or -1
+static int
+lastPathSeparatorPos(const QString& path)
+{
+    int pos = path.lastIndexOf( QLatin1Char('/') );
+#ifdef __NATRON_WIN32__
+    pos = std::max( pos, path.lastIndexOf( QLatin1Char('\\') ) );
+#endif
+
+    return pos;
+}
+
 QString
 FileSystemModel::removeTextAfterExtension(const QString& text)
 {
-    int lastSepPos = text.lastIndexOf( QLatin1Char('/') );
-#ifdef __NATRON_WIN32__
-    lastSepPos = std::max( lastSepPos, text.lastIndexOf( QLatin1Char('\\') ) );
-#endif
-    int lastDotPos = text.lastIndexOf( QLatin1Char('.') );
-    if (lastDotPos <= lastSepPos) {
-        // no extension in the last path component
+    // A frame range such as " 1-10" or " -5--1", at the end
+    static const QRegularExpression frameRange( QString::fromUtf8("\\s+-?\\d+\\s*-\\s*-?\\d+$") );
+    QRegularExpressionMatch match = frameRange.match(text);
+    if ( !match.hasMatch() ) {
         return text;
     }
-    int spacePos = text.indexOf(QLatin1Char(' '), lastDotPos + 1);
-    if (spacePos == -1) {
+    const QString ret = text.left( match.capturedStart() );
+    // Only after an extension in the last path component ("/proj/take 1-2" is a name)
+    if ( ret.lastIndexOf( QLatin1Char('.') ) <= lastPathSeparatorPos(ret) ) {
         return text;
     }
 
-    return text.left(spacePos);
+    return ret;
+}
+
+QString
+FileSystemModel::addFileExtension(const QString& filePath,
+                                  const QString& extension,
+                                  const QStringList& acceptedExtensions)
+{
+    const int lastSepPos = lastPathSeparatorPos(filePath);
+    if ( extension.isEmpty() || ( extension == QString::fromUtf8("*") ) || ( lastSepPos == filePath.size() - 1 ) ) {
+        // no extension to add, or a directory (also an empty filePath)
+        return filePath;
+    }
+    const int lastDotPos = filePath.lastIndexOf( QLatin1Char('.') );
+    if (lastDotPos > lastSepPos) {
+        const QString suffix = filePath.mid(lastDotPos + 1);
+        if ( ( suffix.compare(extension, Qt::CaseInsensitive) == 0 ) || acceptedExtensions.contains(suffix, Qt::CaseInsensitive) ) {
+            return filePath;
+        }
+    }
+
+    return filePath + QLatin1Char('.') + extension;
 }
 
 QString FileSystemModel::cleanPath(const QString& path) {

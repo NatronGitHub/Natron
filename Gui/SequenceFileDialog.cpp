@@ -1386,27 +1386,22 @@ SequenceFileDialog::openSelectedFiles()
                     QDialog::accept();
                 }
             } else {
-                ///check if str contains already the selected file extension, otherwise append it
+                // Append the selected extension unless the name already has it or another one of the
+                // filters, e.g. "comp.v003" -> "comp.v003.ntp", so that the check below sees the file
+                // that the caller writes (Save Project and Export layout append it otherwise) (#825)
                 {
-                    QString ext = _fileExtensionCombo->getCurrentIndexText();
-                    if ( ext != QString::fromUtf8("*") ) {
-                        int lastSepPos = str.lastIndexOf( QLatin1Char('/') );
-                        if (lastSepPos == -1) {
-                            lastSepPos = str.lastIndexOf( QString::fromUtf8("//") );
-                        }
-                        int lastDotPos = str.lastIndexOf( QLatin1Char('.') );
-                        // <=: also a bare name without an extension, where both are -1
-                        if (lastDotPos <= lastSepPos) {
-                            str.append( QLatin1Char('.') +  ext);
-                            _selectionLineEdit->blockSignals(true);
-                            _selectionLineEdit->setText(str);
-                            _selectionLineEdit->blockSignals(false);
-                        }
+                    const QString name = FileSystemModel::removeTextAfterExtension(str);
+                    const QString withExt = FileSystemModel::addFileExtension(name, _fileExtensionCombo->getCurrentIndexText(), _filters);
+                    if (withExt != name) {
+                        str = withExt;
+                        _selectionLineEdit->blockSignals(true);
+                        _selectionLineEdit->setText(str);
+                        _selectionLineEdit->blockSignals(false);
                     }
                 }
 
-                // Check exactly the file that filesToSave() returns, i.e. what the caller will write,
-                // with the project variables (e.g. [Project]) expanded (#825)
+                // Check the file that filesToSave() returns, i.e. what the caller writes, with the
+                // project variables (e.g. [Project]) expanded (#825)
                 std::string toSave = filesToSave();
                 {
                     std::map<std::string, std::string> envVars;

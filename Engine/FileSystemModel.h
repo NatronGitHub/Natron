@@ -250,12 +250,20 @@ public:
     static QString absoluteFilePath(const QString& directory, const QString& filePath, const QStringList& variableNames);
 
     /**
-     * @brief Removes what a file dialog may show after the extension of the last path component,
-     * from the first space after its last dot (e.g. the frame range of a sequence), as in
-     * "/data/a.b c/out.####.exr 1-10" -> "/data/a.b c/out.####.exr". Dots and spaces in the
-     * directories are kept: "/data/a.b c/out" is unchanged.
+     * @brief Removes the frame range that a file dialog may show after the extension of a sequence,
+     * e.g. "/data/out.####.exr 1-10" -> "/data/out.####.exr". Anything else is kept, including dots
+     * and spaces: "/data/a.b c/out", "/proj/Mr. Smith project", "v1.0 final", "/proj/take 1-2".
      **/
     static QString removeTextAfterExtension(const QString& text);
+
+    /**
+     * @brief Returns filePath with "." + extension appended, unless the suffix of its last path
+     * component (after the last dot, compared case-insensitively) is extension or one of
+     * acceptedExtensions: "comp.v003" -> "comp.v003.ntp", "comp.NTP" is unchanged. Separators are
+     * '/' and, on Windows, '\\'. Unchanged if extension is empty or "*", or if filePath is empty or
+     * ends with a separator.
+     **/
+    static QString addFileExtension(const QString& filePath, const QString& extension, const QStringList& acceptedExtensions);
 
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual Qt::ItemFlags flags(const QModelIndex &index) const OVERRIDE FINAL WARN_UNUSED_RETURN;

@@ -319,8 +319,8 @@ TEST(FileSystemModelTest, AbsoluteFilePath) {
 #endif
 }
 
-// The text a save dialog may show after the extension is removed, only in the last path
-// component (#825).
+// Only the frame range that a save dialog may show after the extension of a sequence is
+// removed (#825).
 TEST(FileSystemModelTest, RemoveTextAfterExtension) {
   struct RemoveTextAfterExtensionTestCase {
     const char* input;
@@ -333,16 +333,63 @@ TEST(FileSystemModelTest, RemoveTextAfterExtension) {
       {"out.exr", "out.exr"},
       {"out.####.exr 1-10", "out.####.exr"},
       {"/data/out.####.exr 1-10", "/data/out.####.exr"},
-      // Dots and spaces in directories are kept.
+      {"/data/out.####.exr  -5 - -1", "/data/out.####.exr"},
+      {"/data/a.b c/out.exr 1-10", "/data/a.b c/out.exr"},
+      // Everything else is kept, including dots and spaces.
       {"/data/a.b c/out", "/data/a.b c/out"},
       {"/Users/me/v1.2 final/curve", "/Users/me/v1.2 final/curve"},
-      {"/data/a.b c/out.exr 1-10", "/data/a.b c/out.exr"},
-      // A space in the name before the extension is kept.
+      {"/proj/Mr. Smith project", "/proj/Mr. Smith project"},
+      {"v1.0 final", "v1.0 final"},
       {"/data/my out.exr", "/data/my out.exr"},
+      {"/data/out.exr 1-10 final", "/data/out.exr 1-10 final"},
+      // A range without an extension before it is part of the name.
+      {"/proj/take 1-2", "/proj/take 1-2"},
+      {"/data/a.b/take 1-2", "/data/a.b/take 1-2"},
   });
 
   for (const auto& testCase : testCases) {
     const QString output = FileSystemModel::removeTextAfterExtension(QString::fromUtf8(testCase.input));
     EXPECT_EQ(std::string(testCase.expectedOutput), output.toStdString()) << " input '" << testCase.input << "'";
+  }
+}
+
+// A save dialog appends the selected extension unless the name already has it or another
+// accepted one (#825).
+TEST(FileSystemModelTest, AddFileExtension) {
+  struct AddFileExtensionTestCase {
+    const char* filePath;
+    const char* extension;
+    const char* expectedOutput;
+  };
+
+  const QStringList accepted({QString::fromUtf8("exr"), QString::fromUtf8("png")});
+
+  std::vector<AddFileExtensionTestCase> testCases({
+      {"comp", "ntp", "comp.ntp"},
+      {"comp.v003", "ntp", "comp.v003.ntp"},
+      {"/dir/comp.v003", "ntp", "/dir/comp.v003.ntp"},
+      {"comp.ntp", "ntp", "comp.ntp"},
+      {"comp.NTP", "ntp", "comp.NTP"},
+      {"/data/a.b/out", "exr", "/data/a.b/out.exr"},
+      {"/data/out.png", "exr", "/data/out.png"},
+      {"/data/out.PNG", "exr", "/data/out.PNG"},
+      {"/data/out.####", "exr", "/data/out.####.exr"},
+      {"/data/out.####.exr", "exr", "/data/out.####.exr"},
+      // Nothing to add.
+      {"comp", "*", "comp"},
+      {"comp", "", "comp"},
+      {"", "ntp", ""},
+      {"/data/", "ntp", "/data/"},
+#ifdef __NATRON_WIN32__
+      {"C:\\dir.v2\\out", "ntp", "C:\\dir.v2\\out.ntp"},
+      {"C:\\dir\\", "ntp", "C:\\dir\\"},
+#endif
+  });
+
+  for (const auto& testCase : testCases) {
+    const QString output = FileSystemModel::addFileExtension(QString::fromUtf8(testCase.filePath),
+                                                             QString::fromUtf8(testCase.extension), accepted);
+    EXPECT_EQ(std::string(testCase.expectedOutput), output.toStdString())
+        << " filePath '" << testCase.filePath << "' extension '" << testCase.extension << "'";
   }
 }

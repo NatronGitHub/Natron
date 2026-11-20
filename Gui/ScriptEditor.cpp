@@ -339,7 +339,7 @@ ScriptEditor::sourceScript(const QString& filename)
 {
     QFile file(filename);
 
-    if ( file.open(QIODevice::ReadOnly) ) {
+    if ( file.open(QIODevice::ReadOnly | QIODevice::Text) ) {
         QTextStream ts(&file);
         QString content = ts.readAll();
         _imp->inputEdit->setPlainText(content);
@@ -381,7 +381,7 @@ ScriptEditor::onLoadScriptClicked()
         getGui()->updateLastOpenedProjectPath( currentDir.absolutePath() );
         QString fileName( QString::fromUtf8( dialog.selectedFiles().c_str() ) );
         QFile file(fileName);
-        if ( file.open(QIODevice::ReadOnly) ) {
+        if ( file.open(QIODevice::ReadOnly | QIODevice::Text) ) {
             QTextStream ts(&file);
             QString content = ts.readAll();
             _imp->inputEdit->setPlainText(content);
