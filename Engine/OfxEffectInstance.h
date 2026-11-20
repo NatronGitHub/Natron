@@ -203,6 +203,9 @@ public:
                              double time,
                              bool originatedFromMainThread) OVERRIDE;
     virtual void beginEditKnobs() OVERRIDE;
+    virtual void endEditKnobs() OVERRIDE;
+    virtual bool isEditingKnobs() const OVERRIDE;
+    virtual void refreshRenderCloneState(const EffectInstancePtr& clone) OVERRIDE;
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isIdentity(double time,
                             const RenderScale & scale,

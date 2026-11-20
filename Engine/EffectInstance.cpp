@@ -4069,6 +4069,7 @@ EffectInstance::getOrCreateRenderInstance()
         EffectInstancePtr ret =  _imp->renderClonesPool.front();
         _imp->renderClonesPool.pop_front();
         ret->_imp->isDoingInstanceSafeRender = true;
+        refreshRenderCloneState(ret);
         return ret;
     }
 
@@ -4079,6 +4080,7 @@ EffectInstance::getOrCreateRenderInstance()
         return shared_from_this();
     }
     clone->_imp->isDoingInstanceSafeRender = true;
+    refreshRenderCloneState(clone);
     return clone;
 }
 

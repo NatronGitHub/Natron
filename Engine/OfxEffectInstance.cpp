@@ -30,6 +30,8 @@
 #include <cassert>
 #include <map>
 #include <set>
+#include <atomic>
+#include <iostream>
 #include <stdexcept>
 
 #include <QDebug>
@@ -257,6 +259,12 @@ struct OfxEffectInstancePrivate
     // the single-instance plug-in of which this is an instance, or NULL (see gSingleInstances)
     const OFX::Host::ImageEffect::ImageEffectPlugin* singleInstancePlugin;
     OfxEffectInstance* publicInterface; // for gSingleInstances
+    // true between kOfxActionBeginInstanceEdit and kOfxActionEndInstanceEdit (main thread only; always
+    // false on render clones, which get neither action)
+    bool instanceEditOpen;
+    // the kOfxPropIsInteractive of the main instance, written on the main thread and read by the render
+    // threads to update the render clones (see refreshRenderCloneState())
+    std::atomic<int> isInteractive;
 
     // The kOfxActionBeginInstanceChanged/kOfxActionEndInstanceChanged brackets in progress on the main thread, innermost
     // last (see InstanceChangedBracket_RAII).
@@ -306,6 +314,8 @@ struct OfxEffectInstancePrivate
         , outputFormatFromPlugin(false)
         , singleInstancePlugin(NULL)
         , publicInterface(NULL)
+        , instanceEditOpen(false)
+        , isInteractive(0)
         , instanceChangedBrackets()
     {
     }
@@ -351,6 +361,8 @@ struct OfxEffectInstancePrivate
         , outputFormatFromPlugin(other.outputFormatFromPlugin)
         , singleInstancePlugin(NULL) // render clones are not made for single-instance plug-ins
         , publicInterface(NULL)
+        , instanceEditOpen(false)
+        , isInteractive(0)
         , instanceChangedBrackets()
     {
     }
@@ -763,6 +775,17 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
 OfxEffectInstance::~OfxEffectInstance()
 {
+    // "kOfxActionEndInstanceEdit ... \post no user interface is open on the instance": the last editor
+    // is closed before the instance is destroyed (e.g. when the project is closed with the panel open).
+    // Normally the node was deactivated before (Node::deactivate() sends End), so this is a safety net.
+    if (_imp->instanceEditOpen) {
+        if ( qApp && ( QThread::currentThread() == qApp->thread() ) ) {
+            endEditKnobs();
+        } else {
+            std::cerr << getScriptName_mt_safe() << ": kOfxActionEndInstanceEdit not sent: the instance is destroyed outside the main thread" << std::endl;
+        }
+    }
+
     // The interacts must be destroyed before their effect (ofxInteracts.rst). The parameter
     // interacts are held by their knob, which outlives this object (the knobs belong to the
     // KnobHolder base, or to the Read/Write node of an embedded reader/writer), and maybe by the
@@ -3055,10 +3078,61 @@ OfxEffectInstance::supportsMultiResolution() const
 void
 OfxEffectInstance::beginEditKnobs()
 {
+    assert( QThread::currentThread() == qApp->thread() );
+    // kOfxActionBeginInstanceEdit "is called when an instance is first actively edited by a user": once
+    // per editing session, until kOfxActionEndInstanceEdit.
+    if ( _imp->instanceEditOpen || !effectInstance() ) {
+        return;
+    }
+    _imp->instanceEditOpen = true;
+    // kOfxPropIsInteractive: "Indicates if a host is actively editing the effect with some GUI."
+    _imp->isInteractive = 1;
+    effectInstance()->getProps().setIntProperty(kOfxPropIsInteractive, 1);
+
     ///Take the preferences lock so that it cannot be modified throughout the action.
     QReadLocker preferencesLocker(&_imp->preferencesLock);
 
     effectInstance()->beginInstanceEditAction();
+}
+
+void
+OfxEffectInstance::endEditKnobs()
+{
+    // kOfxActionEndInstanceEdit "is called when the last user interface on an instance closed", with
+    // "\pre kOfxActionBeginInstanceEdit has been called on the instance handle".
+    if ( !_imp->instanceEditOpen || !effectInstance() ) {
+        return;
+    }
+    assert( QThread::currentThread() == qApp->thread() );
+    _imp->instanceEditOpen = false;
+
+    {
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(&_imp->preferencesLock);
+
+        effectInstance()->endInstanceEditAction();
+    }
+    _imp->isInteractive = 0;
+    effectInstance()->getProps().setIntProperty(kOfxPropIsInteractive, 0);
+}
+
+bool
+OfxEffectInstance::isEditingKnobs() const
+{
+    return _imp->instanceEditOpen;
+}
+
+void
+OfxEffectInstance::refreshRenderCloneState(const EffectInstancePtr& clone)
+{
+    OfxEffectInstance* ofxClone = dynamic_cast<OfxEffectInstance*>( clone.get() );
+
+    if ( !ofxClone || !ofxClone->effectInstance() || !effectInstance() ) {
+        return;
+    }
+    // kOfxPropIsInteractive of the render clones follows the main instance (read from the atomic copy:
+    // the property set of the main instance is written on the main thread)
+    ofxClone->effectInstance()->getProps().setIntProperty( kOfxPropIsInteractive, _imp->isInteractive.load() );
 }
 
 void
