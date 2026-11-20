@@ -23,11 +23,14 @@ The steps, from a first PyPlug to its distribution:
    expressions or links (:ref:`pyplugWriting-params`).
 3. **Callbacks.** React to the user, e.g. to a button, in the ``Ext.py`` file
    (:ref:`pyplugWriting-ext`, and :ref:`callbacks` for every callback).
-4. **Groups inside the PyPlug, and updates.** Edit an installed PyPlug and export it again
-   (:ref:`pyplugWriting-update`), and choose the plug-in ID and version
-   (:ref:`pyplugWriting-versions`).
+4. **IDs, versions and updates.** Choose the plug-in ID and version
+   (:ref:`pyplugWriting-versions`), and edit an installed PyPlug and export it again
+   (:ref:`pyplugWriting-update`). A script that adds nodes to the graph instead of making a
+   node is a :ref:`toolset<pyplugWriting-toolsets>`.
 5. **Distribution.** Install it on other computers, with its icon and its menu
-   (:ref:`pyplugWriting-distribute`).
+   (:ref:`pyplugWriting-menus`, :ref:`pyplugWriting-distribute`), make sure it works on render
+   farms (:ref:`pyplugWriting-background`), and port PyPlugs written for Natron 2.3 or older
+   (:ref:`pyplugWriting-python3`).
 6. **Debugging.** Find out why a PyPlug doesn't appear or fails (:ref:`pyplugWriting-debug`),
    and avoid the usual mistakes (:ref:`pyplugWriting-pitfalls`).
 
@@ -83,7 +86,7 @@ file name, and reads these functions:
        (see :ref:`below<pyplugWriting-createInstance>`).
    * - ``getPluginID()``
      - no
-     - The unique plug-in ID, e.g. ``"fr.inria.groups.MyBlur"``. Defaults to the label.
+     - The unique plug-in ID, e.g. ``"org.example.MyBlur"``. Defaults to the label.
    * - ``getVersion()``
      - no
      - The major version, an integer (not a string). Defaults to 1.
@@ -102,7 +105,8 @@ file name, and reads these functions:
    * - ``getIsToolset()``
      - no
      - ``True`` if the file is a :ref:`toolset<pyplugWriting-toolsets>`. Defaults to ``False``.
-       It must return the boolean ``True``: any other value, even ``1``, makes a regular PyPlug.
+       It must return ``True`` or ``False``: other values, even ``1``, are not supported (see
+       `#1528 <https://github.com/NatronGitHub/Natron/issues/1528>`_).
 
 If the module can't be imported (for example because of a syntax error), Natron writes
 *Was not recognized as a PyPlug* and the Python error to the error log
@@ -134,6 +138,12 @@ group. Save it as ``SimpleBlur.py`` in ``~/.Natron`` (or another search path) an
     # Natron PyPlug
 
     import NatronEngine
+
+    # Optional hand-written additions, see "The Ext.py file" below
+    try:
+        from SimpleBlurExt import *
+    except ImportError:
+        pass
 
     def getPluginID():
         return "org.example.SimpleBlur"
@@ -174,6 +184,10 @@ group. Save it as ``SimpleBlur.py`` in ``~/.Natron`` (or another search path) an
         blur.getParam("size").setExpression("thisGroup.blurSize.get()", False, 0)
         blur.getParam("size").setExpression("thisGroup.blurSize.get()", False, 1)
 
+        # Let SimpleBlurExt.py, if it exists, add to the group
+        if "createInstanceExt" in globals():
+            createInstanceExt(app, group)
+
 Then create it from the node menus (:menuselection:`Filter --> Examples --> SimpleBlur`), or with::
 
     app.createNode("org.example.SimpleBlur")
@@ -197,8 +211,9 @@ The parameters that the user sees on a PyPlug node are the *user parameters* of 
 user interface, add them with *Manage user parameters...* (see :ref:`groups`); in a script, create
 them with the ``create...Param(name, label)`` functions of the group, put them on a page, and call
 :func:`group.refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>` once they are all
-created. Set the label, the animation and the layout (``setAddNewLine()``) before that call: they
-can't be changed afterwards. The help, the range, the visibility and the value can change at any
+created. Set the label, the animation, the layout (``setAddNewLine()``), and the type of string,
+group and path parameters (``setType()``, ``setAsTab()``, ``setAsMultiPathTable()``) before that
+call: they can't be changed afterwards. The help, the range, the visibility and the value can change at any
 time.
 
 A group parameter can drive the nodes inside the group in three ways:
@@ -226,8 +241,10 @@ Exported PyPlugs and the Ext.py file
 
 The **Export as PyPlug** button, in the *Node* tab of a Group's settings panel, writes the
 Group as a PyPlug (see :ref:`groups-export` for the dialog). The *Label* is also the file name,
-``<Label>.py``: Natron replaces its spaces with underscores and removes the characters that a
-Python module name can't contain, and ``getLabel()`` returns the label after this change.
+``<Label>.py``, so Natron makes it a valid Python module name: spaces become underscores, the
+other characters that a module name can't contain are removed, a leading digit gets a ``p``
+prefix, and ``from`` and ``lambda`` become ``pFrom`` and ``pLambda``. ``getLabel()`` returns the
+label after this change, and the menus show it.
 
 The exported file has this layout:
 
@@ -245,10 +262,14 @@ Exporting the Group again overwrites the file, so don't edit it.
 Put hand-written code in a second file, ``<Label>Ext.py``, in the same directory. The exported
 script imports everything from it (``from <Label>Ext import *``) if it exists, and its
 ``createInstance()`` ends by calling ``createInstanceExt(app, group)`` if the Ext module defines it.
-Use it to set callbacks, or to change the group after it is built. This Ext file adds a button that
-puts the *Size* parameter of the example above back to its default value::
+Use it to set callbacks, or to change the group after it is built. A hand-written PyPlug only gets
+these two hooks if it has the same lines, as the ``SimpleBlur.py`` example above does.
 
-    # This is MyPyPlugExt.py, next to MyPyPlug.py
+This Ext file adds a button that puts the *Size* parameter of ``SimpleBlur`` back to its default
+value (with an exported PyPlug, use its parameter and page names instead of ``blurSize`` and
+``controls``)::
+
+    # This is SimpleBlurExt.py, next to SimpleBlur.py
 
     def paramChanged(thisParam, thisNode, thisGroup, app, userEdited):
         # Called for every parameter of the group: check which one changed
@@ -260,13 +281,14 @@ puts the *Size* parameter of the example above back to its default value::
         reset.setHelp("Puts the Size parameter back to its default value.")
         group.getParam("controls").addParam(reset)
         group.refreshUserParamsGUI()
-        group.onParamChanged.set("MyPyPlug.paramChanged")
+        group.onParamChanged.set("SimpleBlur.paramChanged")
 
 Pressing a button calls the *param changed* callback of its node, with the button as
-``thisParam``. Since the callback is called for every parameter, test the script name first.
+``thisParam`` (unless the node is disabled). Since the callback is called for every parameter, test
+the script name first.
 
 A callback defined in a PyPlug is registered with the **module name of the PyPlug** as prefix
-(``MyPyPlug.paramChangedCallback``), even when it is defined in the Ext file, because the PyPlug
+(``SimpleBlur.paramChanged``), even when it is defined in the Ext file, because the PyPlug
 module imports the content of the Ext module. See :ref:`callbacks` for the signatures.
 
 .. _pyplugWriting-versions:
@@ -297,14 +319,17 @@ inside it nor its list of parameters. Its node graph shows a lock at the top rig
    tab, or click the lock in its node graph. *Manage user parameters...* also offers to convert it;
 2. make the changes;
 3. click **Export as PyPlug**. When the Group comes from a PyPlug, the dialog starts with the
-   values of that PyPlug (ID, label, grouping, version, icon, description and directory), so OK
-   overwrites the same file. Increase the *Version* if the change modifies the result of existing
-   projects (see :ref:`pyplugWriting-versions`);
+   values of that PyPlug (ID, label, grouping, icon, description and directory), so OK
+   overwrites the same file. The *Version* always starts at 1 (see
+   `#1527 <https://github.com/NatronGitHub/Natron/issues/1527>`_): enter the version of the
+   PyPlug again, plus one if the change modifies the result of existing projects (see
+   :ref:`pyplugWriting-versions`). Otherwise a version 2 PyPlug is overwritten as version 1;
 4. restart Natron: PyPlugs are read only at startup, and so are their Ext files.
 
-A PyPlug can hide the lock, and keep its graph locked, with
+A PyPlug can hide the lock of its node graph with
 :func:`group.setSubGraphEditable(False)<NatronEngine.Effect.setSubGraphEditable>`, e.g. in
-``createInstanceExt()``.
+``createInstanceExt()``. This only hides the lock: **Convert to Group** and *Manage user
+parameters...* still make the node editable.
 
 A project stores the whole content of each PyPlug node (its nodes, parameters and connections),
 with the path and the version of the PyPlug file. A project therefore opens on a computer where the
@@ -314,10 +339,12 @@ don't run.
 .. note::
 
     In Natron 2.6, the *Load PyPlugs in projects from .py if possible* preference (*Python* tab)
-    has the opposite effect of its name. When it is checked (the default), Natron loads each PyPlug
-    node from the content saved in the project, even if a newer version of the PyPlug is
-    installed. When it is unchecked, Natron runs the installed PyPlug file again, and asks whether
-    to use it when its version differs from the one saved in the project.
+    has the opposite effect of its name (`#1524
+    <https://github.com/NatronGitHub/Natron/issues/1524>`_). When it is checked (the default),
+    Natron loads each PyPlug node from the content saved in the project, even if a newer version
+    of the PyPlug is installed. When it is unchecked, Natron runs the installed PyPlug file
+    again, and asks whether to use it when its version differs from the one saved in the
+    project.
 
 .. _pyplugWriting-menus:
 
@@ -329,7 +356,7 @@ Menus and icons
 
 - if it is the name of a Natron category (``Image``, ``Draw``, ``Time``, ``Channel``, ``Color``,
   ``Filter``, ``Keyer``, ``Merge``, ``Transform``, ``3D``, ``Deep``, ``Views``, ``ToolSets``,
-  ``Other``), the PyPlug goes into that menu, which keeps its icon;
+  ``Other``, ``Misc``), the PyPlug goes into that menu, which keeps its icon;
 - any other name adds a new toolbar button, with a generic icon. A PyPlug can't set the icon of a
   toolbar button, only its own icon.
 
@@ -441,11 +468,14 @@ When a PyPlug doesn't appear in the menus, check the error log
 NatronRenderer is a quick way to test the PyPlug without starting the user interface: this script
 lists the plug-in IDs that contain a word, and creates the PyPlug::
 
-    # testMyEffect.py, run with: NatronRenderer -t testMyEffect.py
+    # testMyEffect.py, run with: NatronRenderer -t testMyEffect.py < /dev/null
     from NatronEngine import natron
     print(natron.getPluginIDs("mystudio"))
     node = natron.getInstance(0).createNode("org.mystudio.MyEffect")
     print(node, [n.getScriptName() for n in node.getChildren()])
+
+``-t`` opens a Python prompt once the script has run: ``< /dev/null`` ends it at once (on Windows,
+end the script with ``quit()`` instead), or leave it out to inspect the nodes at the prompt.
 
 Errors in ``createInstance()`` are printed in the terminal, or shown in a dialog in the user
 interface. Errors in callbacks are printed in the Script Editor. Set ``NATRON_PLUGIN_PATH`` to the
@@ -464,8 +494,9 @@ These mistakes are the most frequent ones, and most of them fail without any mes
     already exists (``colorsys.py``, ``string.py``...) is ignored. Prefix your file names.
 
 **The values returned by the functions must have the right type.**
-    ``getVersion()`` returns an integer, and ``getIsToolset()`` returns ``True`` or ``False``: a
-    toolset whose ``getIsToolset()`` returns ``1`` is loaded as a regular PyPlug.
+    ``getVersion()`` returns an integer, and ``getIsToolset()`` must return ``True`` or ``False``:
+    other values, even ``1``, are not supported
+    (`#1528 <https://github.com/NatronGitHub/Natron/issues/1528>`_).
 
 **Callbacks need the module name, and a public name.**
     Register a callback as ``MyPyPlug.myCallback``, with the arguments named as in
@@ -477,7 +508,8 @@ These mistakes are the most frequent ones, and most of them fail without any mes
     the user may have opened several. In a script run by Natron or NatronRenderer, never assign to
     the global variables ``app`` or ``app1``, e.g. ``app = natron.getInstance(0)``: Natron uses them
     to find the nodes that a script creates, and in NatronRenderer the PyPlug nodes can then no
-    longer be created. Use another name.
+    longer be created (`#1525 <https://github.com/NatronGitHub/Natron/issues/1525>`_). Use another
+    name.
 
 **Expressions inside a PyPlug start with thisGroup.**
     See the note in :ref:`pyplugWriting-createInstance`.
@@ -490,9 +522,9 @@ These mistakes are the most frequent ones, and most of them fail without any mes
     layer once the input is connected.
 
 **Some settings are not exported.**
-    The *Use Point Interact* option of a 2D parameter is not written to the exported file. Set it
-    again in ``createInstanceExt()``, e.g. ``group.getParam("center").setUsePointInteract(True)``,
-    followed by ``group.refreshUserParamsGUI()``.
+    The *Use Point Interact* option of a 2D parameter is not written to the exported file
+    (`#1526 <https://github.com/NatronGitHub/Natron/issues/1526>`_), so the exported PyPlug has no
+    point to drag in the viewer for that parameter.
 
 **A Group needs an Output node to be exported.**
     *Export as PyPlug* refuses a Group without an Output node, even if its last node is a Write

@@ -133,18 +133,21 @@ have an icon too.
     :align: center
 
 The *Unique ID* identifies the plug-in, in projects and in scripts, e.g.
-``org.mystudio.MyBlurGroup`` (see :ref:`pyplugWriting-versions`). If you leave it empty, Natron
-uses the label.
+``org.example.MyBlurGroup`` (see :ref:`pyplugWriting-versions`). When you finish editing the
+*Label* and the *Unique ID* is empty, the dialog fills it with the label, as typed. The dialog
+refuses an empty *Unique ID*.
 
-The *Label* is the name of the plug-in as it will appear in the user interface. It is also the
-name of the Python file, ``<Label>.py``: Natron replaces its spaces with underscores, and removes
-the other characters that a Python module name can't contain.
+The *Label* is the name of the plug-in in the user interface, and the name of the Python file,
+``<Label>.py``. Natron first makes it a valid Python module name (see :ref:`pyplugWriting-ext`),
+and the menus show the result: ``My Blur`` becomes ``My_Blur``.
 
 The *Grouping* is the menu where the plug-in appears, with ``/`` between the sub-menus, e.g.
 ``Filter/MyStudio`` (see :ref:`pyplugWriting-menus`).
 
-The *Version* is the major version of the plug-in, 1 by default. Increase it when a change
-modifies the result of existing projects.
+The *Version* is the major version of the plug-in. It always starts at 1, even when you export
+again a Group made from a PyPlug of a higher version
+(`#1527 <https://github.com/NatronGitHub/Natron/issues/1527>`_): enter it again. Increase it when a
+change modifies the result of existing projects.
 
 The *Icon relative path* is the file name of an image to use as icon for the plug-in, relative to
 the directory of the Python script, e.g. ``MyBlurGroup.png``.
@@ -157,7 +160,7 @@ hence if you select a directory that is not yet in the search-paths, it will pro
 to add it.
 
 When the Group was made from a PyPlug (see :ref:`pyplugWriting-update`), the dialog starts with
-the values of that PyPlug.
+the values of that PyPlug, except the version.
 
 
 .. note::
@@ -183,7 +186,7 @@ and even in the tab menu of the node-graph:
     the exported script returns it from its *getPluginID()* function. To create a node using
     the group from a Python script, pass that ID to createNode, e.g.::
 
-        app.createNode("fr.inria.groups.MyBlurGroup")
+        app.createNode("org.example.MyBlurGroup")
 
     If several plug-ins have the same *pluginID*, Natron will then sort plug-ins by version.
 
@@ -224,7 +227,7 @@ Moving nodes between groups
 You can create a group from the selection with *Group from Selection* (:kbd:`Ctrl+G`,
 :kbd:`Cmd+G` on macOS), in the *Edit* sub-menu of the right-click menu of the node graph.
 This will effectively move all nodes selected into a new sub-group.
-*Expand Group* (:kbd:`Ctrl+Alt+G`) moves the nodes of the selected group back into its parent.
+*Expand Group* (:kbd:`Ctrl+Alt+G`, :kbd:`Cmd+Option+G` on macOS) moves the nodes of the selected group back into its parent.
 
 You can also copy/cut/paste in-between groups and projects.
 
