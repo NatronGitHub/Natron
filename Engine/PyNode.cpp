@@ -83,8 +83,10 @@ ImageLayer::getHash(const ImageLayer& layer)
     }
     // value() is 0 until the appended data is hashed (#1275)
     h.computeHash();
+    int ret = (int)h.value();
 
-    return (int)h.value();
+    // This is also the Python hash of the layer (hash-function in typesystem_engine.xml), and Python reserves -1 for errors
+    return ret == -1 ? -2 : ret;
 }
 
 bool
