@@ -323,6 +323,8 @@ public:
 
     void addInvalidExpressionKnob(const KnobIPtr& knob);
     void removeInvalidExpressionKnob(const KnobI* knob);
+    // whether knob has an invalid expression in at least one dimension
+    bool isInvalidExpressionKnob(const KnobI* knob) const;
     void recheckInvalidExpressions();
 
     virtual void clearViewersLastRenderedTexture() {}

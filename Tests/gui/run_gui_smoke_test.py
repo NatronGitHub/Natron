@@ -255,6 +255,9 @@ def main(argv):
         print("GUI smoke test skipped: no display")
         return SKIP
 
+    # Debug builds: no trapped floating point exception (Mesa llvmpipe's threads inherit the trapping and
+    # its shaders raise exceptions, #1537), as with Natron --test
+    os.environ["NATRON_NO_FP_TRAPS"] = "1"
     outDir = tempfile.mkdtemp(prefix="natron-gui-test-")
     try:
         # 1. natron.quit(exitCode) sets the exit status, and

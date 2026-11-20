@@ -103,9 +103,10 @@ Member functions description
     :param layer: :class:`ImageLayer<NatronEngine.ImageLayer>`
     :rtype: :class:`int`
 
-This static function is meant to return a hash of the components name (e.g. "RGBA") and of
-the channel names of *layer*, but in Natron 2.6 it always returns 0
-(`issue #1275 <https://github.com/NatronGitHub/Natron/issues/1275>`_). Don't rely on it.
+This static function returns a hash computed from the components name (e.g. "RGBA") and
+the channel names of *layer*. The layer name itself is not part of the hash.
+Up to Natron 2.5, it always returned 0
+(`issue #1275 <https://github.com/NatronGitHub/Natron/issues/1275>`_).
 
 .. method:: ImageLayer.getNoneComponents()
 
