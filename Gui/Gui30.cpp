@@ -664,7 +664,8 @@ Gui::removeUndoStack(QUndoStack* stack)
     if ( it == _imp->_undoStacksActions.end() ) {
         return;
     }
-    // The undo/redo actions are children of the stack, and are deleted with it: they must not stay
+    // This is called before the stack is deleted (with its NodeGui or its group's NodeGraph). Its
+    // undo/redo actions are children of the stack and will be deleted with it: they must not stay
     // the current actions of the Edit menu, which setUndoRedoActions() removes from the menu the
     // next time another stack becomes active (#1441).
     if ( (_imp->_currentUndoAction == it->second.first) || (_imp->_currentRedoAction == it->second.second) ) {
