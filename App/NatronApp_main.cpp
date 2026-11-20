@@ -65,6 +65,12 @@ int main(int argc, char *argv[])
 #endif
 {
 #ifdef DEBUG
+    // NATRON_NO_FP_TRAPS=1: no trapped floating point exception, in any thread. Mesa llvmpipe's threads
+    // inherit the trapping of the thread that starts them, and its JIT-compiled shaders raise
+    // exceptions (SIGFPE, #1537). The GUI tests use it (--test does the same).
+    if (qEnvironmentVariableIntValue("NATRON_NO_FP_TRAPS") == 1) {
+        boost_adaptbx::floating_point::trapping_disabled() = true;
+    }
     boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
                                                            boost_adaptbx::floating_point::exception_trapping::invalid |
                                                            boost_adaptbx::floating_point::exception_trapping::overflow);

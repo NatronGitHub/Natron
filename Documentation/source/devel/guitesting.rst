@@ -193,7 +193,8 @@ The test mode does not isolate everything:
   ``.lock`` file: give the tests copies of the projects;
 - ``NATRON_TEST_NO_FOCUS=0`` (set explicitly) lets the windows take the focus;
 - debug builds do not trap floating point exceptions in test mode: the OpenGL driver's threads (e.g.
-  Mesa llvmpipe's, under Xvfb) inherit the trapping, and their shaders raise exceptions.
+  Mesa llvmpipe's, under Xvfb) inherit the trapping, and their shaders raise exceptions. Outside test
+  mode, ``NATRON_NO_FP_TRAPS=1`` does the same (the *GuiSmokeTest* sets it).
 
 A test script runs from the event loop, once the main window is shown: it needs no timer, and
 Natron quits when the script returns, as with
