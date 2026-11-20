@@ -1026,9 +1026,8 @@ AppInstancePtr
 Gui::createNewProject()
 {
     CLArgs cl;
+    // GuiAppInstance::load() already runs the onProjectCreated callback for the new project (#489)
     AppInstancePtr app = appPTR->newAppInstance(cl, false);
-
-    app->execOnProjectCreatedCallback();
 
     return app;
 }
