@@ -32,8 +32,8 @@ concurrency:
 
 jobs:
   # RB-2.7 is the Qt6 branch: its Linux job builds with Qt6 + PySide6 (-DNATRON_QT6=ON, C++20).
-  # This is the RB-2.7 Qt6 build log to watch after each forward merge of RB-2.6 (CLAUDE.md,
-  # "Qt6 build verification goes through RB-2.7"); fixes go to RB-2.6.
+  # This is the RB-2.7 Qt6 build log to watch after each forward merge of RB-2.6 (#1469,
+  # Documentation/source/maintainers/qt6-migration.rst); the fixes go to RB-2.6.
   unix_test:
     if: github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)
     timeout-minutes: 180
@@ -75,7 +75,9 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev \
+          # No libboost-system-dev: Boost.System is header-only since Boost 1.89, and resolute
+          # (Boost 1.90) has no such package. Natron only needs Boost's headers and serialization.
+          sudo apt-get install -y build-essential libboost-serialization-dev libexpat1-dev libcairo2-dev \
             qt6-base-dev qt6-base-dev-tools libgl-dev \
             python3-dev shiboken6 libshiboken6-dev libpyside6-dev \
             python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtwidgets python3-qtpy \
@@ -124,6 +126,16 @@ jobs:
           cmake -DNATRON_QT6=ON ../
           make -j$(nproc)
 
+      - name: Check that Natron links Qt6, not Qt5
+        run: |
+          for b in debug/Tests/Tests release/Tests/Tests; do
+            echo "== $b"
+            ldd $b > ldd.txt
+            grep -E 'libQt[56]|pyside|shiboken|libpython' ldd.txt || true
+            grep -q 'libQt6Core' ldd.txt || { echo "::error::$b does not link libQt6Core"; exit 1; }
+            if grep -q 'libQt5' ldd.txt; then echo "::error::$b links Qt5"; exit 1; fi
+          done
+
       - name: Run Unix Tests (release)
         id: run-unix-tests-release
         # Allow continuing after error so logs can be uploaded.
@@ -144,9 +156,9 @@ jobs:
         run: exit 1
 
   win-test:
-    # Disabled on RB-2.7 until the Linux Qt6 build passes (maintainer, 2026-11-20); re-enable with Qt6.
-    # Original condition: github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)
-    if: false
+    # Disabled on RB-2.7 until the Linux Qt6 build passes (maintainer, 2026-11-20); re-enable with Qt6
+    # by removing the leading "false &&".
+    if: false && github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)
     timeout-minutes: 240
     name: Test ${{ matrix.os }} UCRT64 Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
@@ -259,9 +271,8 @@ jobs:
 
   changes:
     # nightly runs only: did the default branch change in the last 25 hours?
-    # Disabled on RB-2.7 with the macOS job (maintainer, 2026-11-20); original condition:
-    # github.event_name == 'schedule'
-    if: false
+    # Disabled on RB-2.7 with the macOS job (maintainer, 2026-11-20); re-enable it by removing the leading "false &&".
+    if: false && github.event_name == 'schedule'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
