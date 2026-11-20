@@ -1228,8 +1228,8 @@ OfxImageEffectInstance::progressUpdate(double t)
 {
     // "kOfxStatErrBadHandle - the progress handle was invalid" (ofxProgress.h): there is no progress task
     // to update (Natron's progress panel would return false, i.e. kOfxStatReplyNo, which tells the plug-in
-    // to abort). A HostSupport whose progress suite returns the status of an OFX::Host::Property::Exception
-    // gives kOfxStatErrBadHandle; an older one gives kOfxStatFailed, as for any exception.
+    // to abort). The HostSupport progress suite returns the kOfxStatErrBadHandle of this exception
+    // (NatronGitHub/openfx#201).
     if (!_progressStarted) {
         throw OFX::Host::Property::Exception(kOfxStatErrBadHandle);
     }
@@ -1263,8 +1263,8 @@ OfxImageEffectInstance::timeLineGotoTime(double t)
 
     // Natron's timeline only has integer frames: go to the nearest one ((int)t would truncate, e.g.
     // 4.9999999 to 4). A time that has no frame is "an illegal value" (kOfxStatErrValue, ofxTimeLine.h):
-    // HostSupport returns that for a NaN time; for an infinite or huge one, this exception gives
-    // kOfxStatFailed (HostSupport maps every exception of timeLineGotoTime() to it).
+    // HostSupport returns that for a NaN or infinite time (NatronGitHub/openfx#187, #201), and the
+    // kOfxStatErrValue of this exception for a huge one.
     if ( !( std::abs(t) < (double)std::numeric_limits<int>::max() ) ) {
         throw OFX::Host::Property::Exception(kOfxStatErrValue);
     }
