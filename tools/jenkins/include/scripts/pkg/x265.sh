@@ -79,9 +79,15 @@ EOF
         popd
     else
         pushd build-8
+        # The aarch64 NEON assembly of this x265 snapshot doesn't link on Rocky Linux 9
+        # (undefined x265_interp_*_neon): build it without assembly there.
+        X265_ASM=()
+        if [ "${ARCH:-}" = "aarch64" ] && [ "${ROCKY:-0}" -ge 9 ]; then
+            X265_ASM=("-DENABLE_ASSEMBLY=OFF")
+        fi
         cmake ../source \
               -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF"  -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" \
-              -DENABLE_SHARED='TRUE'
+              -DENABLE_SHARED='TRUE' "${X265_ASM[@]}"
         make -j${MKJOBS}
         popd
     fi

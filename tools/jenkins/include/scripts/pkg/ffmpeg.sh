@@ -18,7 +18,7 @@ if build_step && { force_build || { [ ! -d "$SDK_HOME/ffmpeg-gpl2" ] || [ ! -d "
     untar "$SRC_PATH/$FFMPEG_TAR"
     pushd "ffmpeg-${FFMPEG_VERSION}"
     LGPL_SETTINGS=(
-        "--enable-x86asm" "--enable-swscale" "--enable-avfilter"
+        "--enable-swscale" "--enable-avfilter"
         "--enable-libmp3lame" "--enable-libvorbis" "--enable-libopus" "--enable-librsvg"
         "--enable-libtheora" "--enable-libopenh264" "--enable-libopenjpeg"
         "--enable-libsnappy" "--enable-libmodplug" "--enable-libvpx" "--enable-libsoxr"
@@ -27,7 +27,14 @@ if build_step && { force_build || { [ ! -d "$SDK_HOME/ffmpeg-gpl2" ] || [ ! -d "
         "--enable-gnutls" "--enable-fontconfig" "--enable-libfreetype" "--enable-libfribidi"
         "--disable-libxcb" "--disable-libxcb-shm" "--disable-libxcb-xfixes"
         "--disable-indev=jack" "--disable-outdev=xv" "--disable-xlib" "--disable-debug" )
-    GPL_SETTINGS=( "${LGPL_SETTINGS[@]}" "--enable-gpl" "--enable-libx264" "--enable-libx265" "--enable-libxvid" "--enable-version3" )
+    if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then
+        LGPL_SETTINGS+=( "--enable-x86asm" )
+    fi
+    # GPL version 2 or later: no --enable-version3, which would make the binaries GPL 3 (or LGPL 3
+    # for the LGPL build). None of the enabled libraries requires it (configure fails otherwise):
+    # the version3 ones are gmp, libaribb24, liblensfun, libopencore-amr*, libvmaf, libvo-amrwbenc,
+    # mbedtls, rkmpp, and libsmbclient (GPL 3).
+    GPL_SETTINGS=( "${LGPL_SETTINGS[@]}" "--enable-gpl" "--enable-libx264" "--enable-libx265" "--enable-libxvid" )
 
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME/ffmpeg-gpl2" --libdir="$SDK_HOME/ffmpeg-gpl2/lib" --enable-shared --disable-static "${GPL_SETTINGS[@]}"
     make -j${MKJOBS}
