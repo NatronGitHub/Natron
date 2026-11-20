@@ -118,6 +118,12 @@ To run the unit tests, which need the OpenFX IO plug-ins and an OpenColorIO conf
 
 `cmake --install build --prefix <dir>` installs Natron; `-DNATRON_INSTALL_LAYOUT=PORTABLE` gives the self-contained layout that the release scripts will use once they move to CMake. See the Maintainer Guide (`Documentation/source/maintainers/building.rst`).
 
+### Windows on ARM64 (CLANGARM64)
+
+Native ARM64 Natron (#1494) is built the same way in an MSYS2 **CLANGARM64** shell (`C:\msys64\clangarm64.exe`, on a Windows on Arm machine; see [MSYS2 on ARM64](https://www.msys2.org/docs/arm64/)), with clang, libc++ and LLVM's OpenMP runtime instead of gcc, libstdc++ and libgomp. Every package above exists there: use `${MINGW_PACKAGE_PREFIX}-` (here `mingw-w64-clang-aarch64-`) instead of `mingw-w64-ucrt-x86_64-`, and add `${MINGW_PACKAGE_PREFIX}-llvm-openmp`, which clang doesn't pull in. OpenMP is then on by default (`NATRON_USE_OPENMP`). The OFX plug-ins must be ARM64 builds in `Contents/Win-arm64` (x64 plug-ins can't be loaded by an ARM64 process): build openfx-io in the same shell for the tests.
+
+MSYS2's `qt5-base` 5.15.19 has the QMutex lost wake-up of #1451, which can hang a render thread on ARM64: install the `qt5-base` of Natron's package repository instead, which has the fix of #1453 (`tools/MINGW-packages/mingw-w64-qt5-base`, built for CLANGARM64 only), or build it with `makepkg-mingw -sCLf --nocheck` in that directory and `pacman -U` it. The `windows_arm64.yml` workflow (run by hand, on GitHub's `windows-11-arm` runner) does all this and runs the unit tests.
+
 ### Deprecated: building with qmake
 
 *The qmake build is deprecated. It still works on RB-2.6, where the release scripts in `tools/jenkins` still use it, but it will be removed in a future release (first on RB-2.7, see [#1181](https://github.com/NatronGitHub/Natron/issues/1181)). It needs a [config.pri](#configpri) file.*

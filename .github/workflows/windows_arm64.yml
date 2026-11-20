@@ -1,0 +1,199 @@
+name: Windows ARM64
+
+# Native Windows on ARM64 (#1494): Natron built with CMake in MSYS2 CLANGARM64 (clang, libc++,
+# libomp) on GitHub's windows-11-arm runner, and its unit tests, with openfx-io built in the same
+# environment (its plug-ins go in Contents/Win-arm64). Not per pull request (CI policy): run it by
+# hand (Actions -> Windows ARM64 -> Run workflow). The runner has no GPU: headless tests only.
+#
+# Qt 5 comes from MSYS2, except qt5-base, which is rebuilt with the QMutex lost wake-up fix of
+# #1453 (tools/MINGW-packages/mingw-w64-qt5-base) unless patched_qt is off: without it, a test can
+# hang on an unlocked mutex (#1451). The package is cached, keyed on its PKGBUILD directory, so
+# only the first run (about 1-2 hours) builds it.
+on:
+  workflow_dispatch:
+    inputs:
+      config:
+        description: 'CMake build type'
+        type: choice
+        options: [Release, Debug, RelWithDebInfo]
+        default: Release
+      qt:
+        description: 'Qt major version (Qt 6: RB-2.7 only)'
+        type: choice
+        options: ['5', '6']
+        default: '5'
+      patched_qt:
+        description: 'Build and install the qt5-base with the QMutex fix of #1453 (tools/MINGW-packages/mingw-w64-qt5-base)'
+        type: boolean
+        default: true
+      openfx_io_ref:
+        description: 'NatronGitHub/openfx-io branch, tag or commit for the plug-ins of the tests'
+        type: string
+        default: master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  OCIO_CONFIG_VERSION: 2.5
+
+jobs:
+  windows_arm64:
+    name: Windows ARM64 (CLANGARM64, Qt ${{ inputs.qt }}, ${{ inputs.config }})
+    runs-on: windows-11-arm
+    timeout-minutes: 360
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Qt 6
+        if: inputs.qt == '6'
+        shell: bash
+        run: |
+          # RB-2.6 has no Qt 6 CI jobs: the Qt 6 build is verified on RB-2.7 (CLAUDE.md)
+          echo "::error::TODO(Qt6): port the CLANGARM64 job of #1494 to Qt 6 (qt6-base, qt6-5compat, pyside6, shiboken6) on RB-2.7"
+          exit 1
+
+      - name: Checkout branch
+        uses: actions/checkout@v4.1.1
+        with:
+          submodules: recursive
+
+      - name: Set up MSYS2 CLANGARM64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: CLANGARM64
+          update: true
+          install: git unzip base-devel
+          # pacboy's "name:p" is ${MINGW_PACKAGE_PREFIX}-name: no hard-coded environment.
+          # Natron (as ci.yml; llvm-openmp: libomp, which clang doesn't pull in), then openfx-io
+          # (as its ci.yml)
+          pacboy: >-
+            cc:p cmake:p ninja:p pkgconf:p wget:p
+            boost:p cairo:p fontconfig:p expat:p python:p
+            qt5-base:p pyside2:p shiboken2:p python-qtpy:p clang:p llvm-tools:p llvm-openmp:p
+            openimageio:p opencolorio:p openexr:p libraw:p ffmpeg:p seexpr:p libpng:p fmt:p
+
+      - name: Check the environment
+        run: |
+          set -eo pipefail
+          # uname -m may report the emulated x86_64 MSYS runtime: the target is MSYSTEM_CARCH
+          echo "MSYSTEM=${MSYSTEM} MSYSTEM_CARCH=${MSYSTEM_CARCH} MINGW_PREFIX=${MINGW_PREFIX} uname -m: $(uname -m)"
+          if [ "${MSYSTEM_CARCH}" != aarch64 ]; then
+            echo "::error::not a CLANGARM64 environment (MSYSTEM_CARCH=${MSYSTEM_CARCH})"
+            exit 1
+          fi
+          clang++ --version
+          cmake --version | head -1
+          python -c 'import shiboken2; import PySide2.QtCore; print("PySide2", PySide2.__version__, "Qt", PySide2.QtCore.qVersion())'
+
+      - name: Restore the patched qt5-base package
+        id: qt5-base-cache
+        if: inputs.patched_qt
+        uses: actions/cache/restore@v4
+        with:
+          path: qt5-base-pkg
+          key: qt5-base-clangarm64-${{ hashFiles('tools/MINGW-packages/mingw-w64-qt5-base/**') }}
+
+      - name: Build the patched qt5-base package
+        if: inputs.patched_qt && steps.qt5-base-cache.outputs.cache-hit != 'true'
+        run: |
+          set -eo pipefail
+          cd tools/MINGW-packages/mingw-w64-qt5-base
+          # -s installs the makedepends; no check(): Qt is configured with -nomake tests
+          MINGW_ARCH=clangarm64 MAKEFLAGS="-j$(nproc)" makepkg-mingw -sCLf --noconfirm --nocheck
+          mkdir -p "${GITHUB_WORKSPACE}/qt5-base-pkg"
+          cp ${MINGW_PACKAGE_PREFIX}-qt5-base-[0-9]*.pkg.tar.* "${GITHUB_WORKSPACE}/qt5-base-pkg/"
+
+      - name: Save the patched qt5-base package
+        if: inputs.patched_qt && steps.qt5-base-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: qt5-base-pkg
+          key: ${{ steps.qt5-base-cache.outputs.cache-primary-key }}
+
+      - name: Install the patched qt5-base package
+        if: inputs.patched_qt
+        run: |
+          set -eo pipefail
+          # over MSYS2's qt5-base (same files; pacman -U may report a downgrade if MSYS2 rebuilt it)
+          pacman -U --noconfirm qt5-base-pkg/${MINGW_PACKAGE_PREFIX}-qt5-base-[0-9]*.pkg.tar.*
+          if ! pacman -Qi ${MINGW_PACKAGE_PREFIX}-qt5-base | grep -q 'QMutex lost wake-up fix'; then
+            echo "::error::the installed ${MINGW_PACKAGE_PREFIX}-qt5-base is not Natron's (tools/MINGW-packages/mingw-w64-qt5-base)"
+            exit 1
+          fi
+          pacman -Q ${MINGW_PACKAGE_PREFIX}-qt5-base
+
+      - name: Download OpenColorIO-Configs
+        run: |
+          set -eo pipefail
+          wget -q https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v${OCIO_CONFIG_VERSION}.tar.gz
+          tar xzf Natron-v${OCIO_CONFIG_VERSION}.tar.gz
+          mv OpenColorIO-Configs-Natron-v${OCIO_CONFIG_VERSION} OpenColorIO-Configs
+
+      - name: Build Natron (${{ inputs.config }})
+        run: |
+          set -eo pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ inputs.config }}
+          # OpenMP (NATRON_USE_OPENMP, on by default with clang on Windows) must have been found
+          grep -E '^NATRON_USE_OPENMP:BOOL=ON$' build/CMakeCache.txt || echo "::warning::NATRON_USE_OPENMP is off: libomp (llvm-openmp) was not found"
+          cmake --build build
+          # the test plug-in is in the ARM64 folder that HostSupport searches (ofxhArchDirs.h)
+          ls build/Tests/OfxPlugins/NatronTestPlugin.ofx.bundle/Contents/Win-arm64/
+
+      - name: Checkout openfx-io
+        uses: actions/checkout@v4.1.1
+        with:
+          repository: NatronGitHub/openfx-io
+          ref: ${{ inputs.openfx_io_ref }}
+          path: openfx-io
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Build openfx-io
+        id: openfx-io
+        # The tests still run without it (without the BaseTest.* tests, which need its plug-ins)
+        continue-on-error: true
+        run: |
+          set -eo pipefail
+          # cmake.exe is a native program: pass Windows paths. Installs build/Plugins/IO.ofx.bundle.
+          cmake -S openfx-io -B build-openfx-io -G Ninja -DCMAKE_BUILD_TYPE=Release -DOFX_CXX_STANDARD=17 \
+            -DSEEXPR_HOME="$(cygpath -m "$MINGW_PREFIX")" \
+            -DCMAKE_INSTALL_PREFIX="$(cygpath -m "$PWD/build")" -DPLUGIN_INSTALLDIR=Plugins
+          cmake --build build-openfx-io
+          cmake --install build-openfx-io
+          ls build/Plugins/IO.ofx.bundle/Contents/Win-arm64/
+
+      - name: Run the tests (${{ inputs.config }})
+        id: tests
+        # Allow continuing after error so logs can be uploaded.
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          cd build || exit 1
+          if [ "${{ steps.openfx-io.outcome }}" = success ] && [ -e Plugins/IO.ofx.bundle/Contents/Win-arm64/IO.ofx ]; then
+            export OFX_PLUGIN_PATH=$PWD/Plugins
+          else
+            echo "::warning::openfx-io was not built for CLANGARM64: running the tests without BaseTest.*"
+            export GTEST_FILTER='-BaseTest.*'
+          fi
+          # PYTHONLEGACYWINDOWSDLLLOADING: see ci.yml (#1147). The timeouts stop a hang (#1451)
+          # instead of the job.
+          PYTHONLEGACYWINDOWSDLLLOADING=1 PYTHONHOME=${MINGW_PREFIX} OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio \
+            timeout -k 10 5400 ctest -V --timeout 3600
+
+      - name: Upload the test log
+        if: always()
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: windows-arm64-clangarm64-qt${{ inputs.qt }}-${{ inputs.config }}-test-logs
+          path: ${{ github.workspace }}/build/Testing/Temporary/LastTest.log
+          if-no-files-found: ignore
+
+      - name: Check for test failures
+        if: steps.tests.outcome == 'failure'
+        run: exit 1
