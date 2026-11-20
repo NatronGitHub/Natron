@@ -307,7 +307,7 @@ visible when the number of views in the project settings has been set to a value
     :rtype: :class:`tuple`
 
     Returns the linear RGBA image of the last render for the input A (0) or B (1), before the display
-    LUT, within *region* (canvas coordinates; the whole image if omitted), as a tuple
+    LUT, within *region* (canvas coordinates; the whole image if omitted or *None*), as a tuple
     ``(bounds, pixels)``. *bounds* is a :class:`RectD<NatronEngine.RectD>` with the area of the returned
     pixels in canvas coordinates. *pixels* is a :class:`bytes` object holding four 32-bit floats (R, G, B,
     A) per pixel, row by row from the bottom row: read it with ``array.array('f', pixels)`` or

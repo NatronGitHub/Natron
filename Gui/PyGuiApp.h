@@ -140,11 +140,11 @@ public:
 
     /**
      * @brief The linear RGBA image displayed for the input A (0) or B (1), before the display LUT, at the
-     * mipmap level of the last render, within region (canvas coordinates; the whole image if null).
-     * Python: getImage(input=0, region=RectD()) -> (RectD bounds, bytes of float32 RGBA, row-major from the
+     * mipmap level of the last render, within region (canvas coordinates; the whole image if NULL).
+     * Python: getImage(input=0, region=None) -> (RectD bounds, bytes of float32 RGBA, row-major from the
      * bottom row). Call App.waitForRenders() first: during a render, it is the previous image.
      **/
-    bool getImage(RectD* bounds, std::vector<float>* pixels, int input = 0, const RectD& region = RectD()) const;
+    bool getImage(RectD* bounds, std::vector<float>* pixels, int input = 0, const RectD* region = 0) const;
 
 private:
 

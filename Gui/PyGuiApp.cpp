@@ -874,7 +874,7 @@ bool
 PyViewer::getImage(RectD* bounds,
                    std::vector<float>* pixels,
                    int input,
-                   const RectD& region) const
+                   const RectD* region) const
 {
     ViewerGL* gl = getViewerGL();
 
@@ -890,7 +890,7 @@ PyViewer::getImage(RectD* bounds,
 
         return false;
     }
-    if ( !gl || !gl->getLinearImage(input, region, bounds, pixels) ) {
+    if ( !gl || !gl->getLinearImage(input, region ? *region : RectD(), bounds, pixels) ) {
         PyErr_SetString(PyExc_ValueError, "the viewer shows no image (in that region)");
 
         return false;
