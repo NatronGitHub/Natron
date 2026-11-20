@@ -1079,7 +1079,7 @@ GuiApplicationManager::isSplashcreenVisible() const
 bool
 GuiApplicationManager::isGuiTestNoFocus()
 {
-    static const bool noFocus = qEnvironmentVariableIntValue("NATRON_GUI_TEST_NO_FOCUS") != 0;
+    static const bool noFocus = !qEnvironmentVariableIsEmpty("NATRON_TEST_NO_FOCUS") && (qgetenv("NATRON_TEST_NO_FOCUS") != "0");
 
     return noFocus;
 }

@@ -327,6 +327,9 @@ GuiApplicationManager::initializeQApp(int &argc,
                                       char** argv)
 {
     if ( isGuiTestNoFocus() ) {
+        // Without a Dock icon and with windows that open behind the other applications, an
+        // interactive session would look hung: say why.
+        qWarning("NATRON_TEST_NO_FOCUS is set: Natron runs in the background and never takes the keyboard focus (GUI tests).");
         // GUI tests on a desktop someone is using: never bring Natron to the front.
         // These are read by Qt's cocoa platform plugin (macOS):
         // - don't make the process a foreground application, and don't activate it at launch;
