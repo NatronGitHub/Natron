@@ -64,6 +64,8 @@ public:
 
     bool isModified();
     void clearModified();
+    // false for an empty (cleared) slot; unlike isModified(), not reset when the palette wraps around
+    bool hasColor() const;
 
     void getColor(float *r, float *g, float *b, float *a);
 
@@ -86,6 +88,7 @@ private:
     float _b;
     float _a;
     bool _modified;
+    bool _hasColor;
 
     void updateColor(bool signal = true);
 

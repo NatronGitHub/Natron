@@ -48,6 +48,7 @@ ColorSelectorPaletteButton::ColorSelectorPaletteButton(QWidget *parent)
     , _b(COLOR_SELECTOR_PALETTE_DEFAULT_COLOR)
     , _a(1.0)
     , _modified(false)
+    , _hasColor(false)
 {
     initButton();
 }
@@ -63,6 +64,7 @@ ColorSelectorPaletteButton::ColorSelectorPaletteButton(float r,
     , _b(b)
     , _a(a)
     , _modified(true)
+    , _hasColor(true)
 {
     initButton();
 }
@@ -71,6 +73,12 @@ bool
 ColorSelectorPaletteButton::isModified()
 {
     return _modified;
+}
+
+bool
+ColorSelectorPaletteButton::hasColor() const
+{
+    return _hasColor;
 }
 
 void
@@ -99,6 +107,7 @@ ColorSelectorPaletteButton::clearColor()
     _b = COLOR_SELECTOR_PALETTE_DEFAULT_COLOR;
     _a = 1.0;
     _modified = false;
+    _hasColor = false;
     updateColor(false);
 }
 
@@ -113,6 +122,7 @@ ColorSelectorPaletteButton::setColor(float r,
     _b = b;
     _a = a;
     _modified = true;
+    _hasColor = true;
     updateColor();
 }
 
@@ -938,7 +948,7 @@ ColorSelectorWidget::savePaletteButton(QSettings& settings,
 {
     ColorSelectorPaletteButton* button = _paletteButtons.at(id);
 
-    if ( !button->isModified() ) {
+    if ( !button->hasColor() ) {
         // an empty (cleared) slot: remove it, so that it stays empty when the palette is loaded again
         settings.remove( QString::number(id) );
 
@@ -1127,13 +1137,13 @@ ColorSelectorWidget::handleSpinAChanged(double value)
 
 void ColorSelectorWidget::handleHexChanged()
 {
-    QString value = _hex->text();
-    if ( !value.startsWith( QString::fromUtf8("#") ) ) {
-        value.prepend( QString::fromUtf8("#") );
-    }
-
+    // a color name (e.g. "red") or #RRGGBB, also without the '#'
+    QString value = _hex->text().trimmed();
     QColor color;
     color.setNamedColor(value);
+    if ( !color.isValid() && !value.startsWith( QLatin1Char('#') ) ) {
+        color.setNamedColor( QString( QLatin1Char('#') ) + value );
+    }
     if ( !color.isValid() ) {
         return;
     }
