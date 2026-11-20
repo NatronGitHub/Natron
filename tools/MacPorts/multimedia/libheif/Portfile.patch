@@ -1,0 +1,40 @@
+--- Portfile.orig	2026-11-20 08:26:03
++++ Portfile	2026-11-20 08:26:27
+@@ -111,6 +111,37 @@
+ configure.args-append \
+                             -DENABLE_PLUGIN_LOADING:BOOL=OFF
+ 
++# Natron: subport libheif-lgpl, the libheif of COMMERCIAL Natron builds (#1177): libheif links its
++# encoders directly (ENABLE_PLUGIN_LOADING=OFF), including the GPL x264 and x265. This is the same
++# libheif without x264 and x265: HEIC (HEVC) files are still decoded (libde265) and encoded (kvazaar),
++# AVIF files too (dav1d, aom, SVT-AV1), and H.264 HEIF files are decoded (openh264), not encoded.
++# No gdk-pixbuf loader and no examples. It is installed in ${prefix}/libexec/libheif-lgpl, with the
++# same library name and ABI as libheif, so that it can be installed next to it: COMMERCIAL builds
++# bundle its libheif.1.dylib instead of libheif's, which openimageio links.
++subport libheif-lgpl {
++    description             libheif without the GPL x264 and x265 encoders, for Natron's COMMERCIAL builds
++    long_description        {*}${description}.
++    conflicts
++    cmake.install_prefix    ${prefix}/libexec/${subport}
++    depends_lib-delete      path:lib/pkgconfig/gdk-pixbuf-2.0.pc:gdk-pixbuf2 \
++                            port:x264 \
++                            port:x265
++    configure.args-replace  -DWITH_X264:BOOL=ON \
++                            -DWITH_X264:BOOL=OFF
++    configure.args-replace  -DWITH_X265:BOOL=ON \
++                            -DWITH_X265:BOOL=OFF
++    configure.args-append   -DWITH_GDK_PIXBUF:BOOL=OFF
++    # (before the default variants below: the first default of a variant wins)
++    default_variants-append -examples +kvazaar
++    post-destroot {
++        foreach lib [glob ${destroot}${cmake.install_prefix}/lib/libheif*.dylib] {
++            if {![catch {exec otool -L ${lib} | grep -E {/lib(x264|x265)[.]}}]} {
++                return -code error "${lib} links x264 or x265 (GPL)"
++            }
++        }
++    }
++}
++
+ # error: unknown warning option '-Werror=potentially-evaluated-expression'
+ compiler.blacklist-append   {clang < 700}
+ 
