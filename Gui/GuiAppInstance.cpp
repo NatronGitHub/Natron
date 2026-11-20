@@ -47,6 +47,7 @@
 #include "Engine/DiskCacheNode.h"
 #include "Engine/KnobFile.h"
 #include "Engine/RotoStrokeItem.h"
+#include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
@@ -936,6 +937,17 @@ GuiAppInstance::appendToScriptEditor(const std::string& str)
         _imp->_gui->appendToScriptEditor(str);
     } else {
         AppInstance::appendToScriptEditor(str);
+    }
+}
+
+void
+GuiAppInstance::appendPlainTextToScriptEditor(const std::string& str)
+{
+    if (_imp->_gui) {
+        // The Script Editor output auto-detects rich text
+        _imp->_gui->appendToScriptEditor( NATRON_NAMESPACE::convertFromPlainText(QString::fromUtf8( str.c_str() ), NATRON_NAMESPACE::WhiteSpacePre).toStdString() );
+    } else {
+        AppInstance::appendPlainTextToScriptEditor(str);
     }
 }
 

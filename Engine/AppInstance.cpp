@@ -2178,6 +2178,12 @@ AppInstance::appendToScriptEditor(const std::string& str)
 }
 
 void
+AppInstance::appendPlainTextToScriptEditor(const std::string& str)
+{
+    std::cout << str <<  std::endl;
+}
+
+void
 AppInstance::printAutoDeclaredVariable(const std::string& /*str*/)
 {
 }

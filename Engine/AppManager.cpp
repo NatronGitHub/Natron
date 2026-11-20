@@ -4138,13 +4138,10 @@ forwardToScriptEditor(std::string text,
         text = std::string(header) + '\n' + text;
     }
     AppInstancePtr app = appPTR ? appPTR->getTopLevelInstance() : AppInstancePtr();
-    if (!app) {
-        std::cerr << text << std::endl;
-    } else if ( appPTR->isBackground() ) {
-        app->appendToScriptEditor(text); // prints to stdout
+    if (app) {
+        app->appendPlainTextToScriptEditor(text);
     } else {
-        // The Script Editor output auto-detects rich text: show Python's output as plain text
-        app->appendToScriptEditor( NATRON_NAMESPACE::convertFromPlainText(QString::fromUtf8( text.c_str() ), NATRON_NAMESPACE::WhiteSpacePre).toStdString() );
+        std::cerr << text << std::endl;
     }
 }
 
@@ -4816,8 +4813,8 @@ NATRON_PYTHON_NAMESPACE::getFunctionArguments(const std::string& pyFunc,
     ss << "import inspect\n";
     ss << "args_spec = inspect.getfullargspec(" << pyFunc << ")\n";
     std::string script = ss.str();
-    std::string output;
-    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, error, &output);
+    // no output: what the script writes is forwarded rather than dropped
+    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, error, 0);
     if (!ok) {
         throw std::runtime_error("NATRON_PYTHON_NAMESPACE::getFunctionArguments(): interpretPythonScript(" + script + " failed!");
     }

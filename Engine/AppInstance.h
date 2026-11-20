@@ -328,6 +328,8 @@ public:
     void setIsCreatingNodeTree(bool b);
 
     virtual void appendToScriptEditor(const std::string& str);
+    // Same as appendToScriptEditor(), for plain text (e.g. Python output), which must not be taken for HTML
+    virtual void appendPlainTextToScriptEditor(const std::string& str);
     virtual void printAutoDeclaredVariable(const std::string& str);
 
     void getFrameRange(double* first, double* last) const;
