@@ -466,8 +466,15 @@ public Q_SLOTS:
 
 private:
 
-    ///the name of a viewer input in the A/B menus: the name of the node, or of the first non-Dot node upstream of a Dot
-    QString getInputDisplayName(const NodePtr& input);
+    ///the name of a viewer input in the A/B menus: the name of the node, or of the first non-Dot node upstream of a Dot,
+    ///made unique among the inputs
+    QString getInputDisplayName(const NodePtr& input, int inputNb);
+
+    ///is this name used by another input than inputNb in the A/B menus?
+    bool isInputNameUsed(const QString& name, int inputNb) const;
+
+    ///rename an input in the A/B menus
+    void setInputName(int inputNb, const QString& name);
 
     void abortViewersAndRefresh();
 
