@@ -25,6 +25,7 @@
 
 #include "Global/Macros.h"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <list>
@@ -288,8 +289,10 @@ countCoverageErrors(const std::vector<TessPoint>& contour,
     int errors = 0;
     for (int j = 0; j < gridSize; ++j) {
         for (int i = 0; i < gridSize; ++i) {
-            double px = xmin + (xmax - xmin) * (i + 0.5) / gridSize;
-            double py = ymin + (ymax - ymin) * (j + 0.5) / gridSize;
+            // offsets which keep the points off the lines through the vertices
+            // (and so off the triangle edges) for the integer coordinates below
+            double px = xmin + (xmax - xmin) * (i + 0.381966) / gridSize;
+            double py = ymin + (ymax - ymin) * (j + 0.618034) / gridSize;
             bool nearEdge = false;
             for (std::size_t k = 0, l = contour.size() - 1; k < contour.size() && !nearEdge; l = k++) {
                 nearEdge = segmentDistance(contour[l], contour[k], px, py) < eps;
@@ -364,4 +367,69 @@ TEST(LibTess,
         EXPECT_EQ(0, r.protocolErrors) << "case " << which;
         EXPECT_EQ(0, countCoverageErrors(ref, r) ) << "case " << which;
     }
+}
+
+// Contours of fewer than 100 vertices are first tried as a single triangle fan
+// from their first vertex (__gl_renderCache()). That fan was used whenever its
+// triangles had consistent orientations, even when they overlapped: for a
+// contour winding twice around its first vertex, or passing through it again,
+// an area with winding number 2 was filled although the odd rule makes it a hole.
+TEST(LibTess,
+     FanFastPathOverlap)
+{
+    // winds twice around the first vertex: (0.2,0.2) has winding number 2
+    const TessPoint spiral[] = {
+        { 0, 0 }, { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 }, { 2, 0.1 }, { 0, 2 }
+    };
+    // passes through its first vertex again
+    const TessPoint touching[] = {
+        { 0, 3 }, { 4, 3 }, { 2, 2 }, { 0, 2 }, { 0, 2 }, { 0, 3 }, { 2, 3 }, { 4, 1 }, { 2, 0 }
+    };
+    const struct
+    {
+        const TessPoint* p;
+        std::size_t n;
+    } cases[] = {
+        { spiral, sizeof(spiral) / sizeof(spiral[0]) },
+        { touching, sizeof(touching) / sizeof(touching[0]) },
+    };
+
+    for (std::size_t k = 0; k < sizeof(cases) / sizeof(cases[0]); ++k) {
+        std::vector<TessPoint> c(cases[k].p, cases[k].p + cases[k].n);
+        // both orientations, and the vertices mirrored
+        for (int variant = 0; variant < 4; ++variant) {
+            std::vector<TessPoint> v = c;
+            if (variant & 1) {
+                std::reverse( v.begin() + 1, v.end() );
+            }
+            if (variant & 2) {
+                for (std::size_t i = 0; i < v.size(); ++i) {
+                    v[i].y = -v[i].y;
+                }
+            }
+            TessResult r = tessellate(v);
+            EXPECT_TRUE( r.errors.empty() ) << "case " << k << " variant " << variant;
+            EXPECT_EQ(0, r.protocolErrors) << "case " << k << " variant " << variant;
+            EXPECT_EQ(0, countCoverageErrors(v, r) ) << "case " << k << " variant " << variant;
+        }
+    }
+
+    std::vector<TessPoint> c( spiral, spiral + sizeof(spiral) / sizeof(spiral[0]) );
+    TessResult r = tessellate(c);
+    EXPECT_FALSE( insideOdd(c, 0.2, 0.2) );
+    EXPECT_EQ( 0, coverage(r, 0.2, 0.2) );
+}
+
+// The fast path still renders simple contours, including an explicitly closed one
+// (last vertex == first vertex).
+TEST(LibTess,
+     FanFastPathSimple)
+{
+    std::vector<TessPoint> c = circle(64, 10.);
+
+    c.push_back(c[0]);
+    TessResult r = tessellate(c);
+    EXPECT_TRUE( r.errors.empty() );
+    EXPECT_EQ(0, r.protocolErrors);
+    EXPECT_EQ(0, countCoverageErrors(c, r) );
 }
