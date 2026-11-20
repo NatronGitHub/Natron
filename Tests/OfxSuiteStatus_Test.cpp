@@ -308,8 +308,10 @@ TEST_F(OfxSuiteStatusTest, GotoTime)
     EXPECT_EQ( -3, timeline->currentFrame() );
     EXPECT_EQ( kOfxStatErrValue, suite->gotoTime( _effect, std::numeric_limits<double>::quiet_NaN() ) );
     EXPECT_EQ( -3, timeline->currentFrame() );
-    // an infinite time has no frame: the timeline does not move
-    (void)suite->gotoTime( _effect, std::numeric_limits<double>::infinity() );
+    // an infinite time has no frame: an error (kOfxStatFailed, kOfxStatErrValue when HostSupport also checks
+    // it), and the timeline does not move
+    const OfxStatus infStat = suite->gotoTime( _effect, std::numeric_limits<double>::infinity() );
+    EXPECT_TRUE( (infStat == kOfxStatErrValue) || (infStat == kOfxStatFailed) ) << infStat;
     EXPECT_EQ( -3, timeline->currentFrame() );
 
     timeline->seekFrame(startFrame, false, 0, eTimelineChangeReasonOtherSeek);

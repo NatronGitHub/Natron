@@ -1718,7 +1718,9 @@ TabWidget::setDrawDropRect(DropRectType type,
 
         if ( !_imp->transparentFloatingWidget->isVisible() ) {
             _imp->transparentFloatingWidget->show();
-            activateWindow();
+            if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+                activateWindow();
+            }
         }
         QPoint globalPos = mapToGlobal( QPoint(0, 0) );
         _imp->transparentFloatingWidget->move(globalPos);

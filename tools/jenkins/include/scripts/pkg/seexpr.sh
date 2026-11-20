@@ -14,7 +14,13 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/share/pkgconfig/seexpr2.pc
     pushd "SeExpr-${SEEXPR_VERSION}"
     mkdir build
     pushd build
-    cmake .. -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF"  -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DENABLE_LLVM_BACKEND=FALSE -DENABLE_QT5=FALSE -DUSE_PYTHON=FALSE
+    # ENABLE_SSE4 (the default) adds -msse4.1, which is x86-only; without it, Noise.cpp
+    # uses floor/round instead of the SSE4.1 intrinsics.
+    SEEXPR_SSE4=TRUE
+    if [ "$ARCH" != "x86_64" ] && [ "$ARCH" != "i686" ]; then
+        SEEXPR_SSE4=FALSE
+    fi
+    cmake .. -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF"  -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DENABLE_LLVM_BACKEND=FALSE -DENABLE_QT5=FALSE -DUSE_PYTHON=FALSE -DENABLE_SSE4="$SEEXPR_SSE4"
     make -j${MKJOBS}
     make install
     #cp "$SDK_HOME/share/pkgconfig/seexpr2.pc" "$SDK_HOME/lib/pkgconfig/seexpr2.pc"

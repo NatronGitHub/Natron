@@ -624,7 +624,7 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
      - `ofxProgress.h:46-57 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxProgress.h#L46-L57>`__ progressStart: effectInstance "cannot be NULL"; ErrBadHandle "effectInstance was invalid"; OK or Failed
      - MUST
      - Only NULL is checked. Any other pointer is ``reinterpret_cast`` to ``Instance*`` without a magic check (HS/ofxhImageEffect.cpp:4430-4450). It always returns OK. In background mode it is a no-op that returns OK (Engine/AppInstance.h:251-260). Re-checked at HostSupport bdfb48d4: a NULL or descriptor handle gives kOfxStatErrBadHandle (``effectHandleToInstance()``), and an exception kOfxStatFailed. ``ImageEffect::Base`` has no magic number, so another pointer is still undefined behaviour.
-     - OK (fixed by `NatronGitHub/openfx#187 <https://github.com/NatronGitHub/openfx/pull/187>`__, in libs/OpenFX since `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__)
+     - OK (fixed by `NatronGitHub/openfx#187 <https://github.com/NatronGitHub/openfx/pull/187>`__, in libs/OpenFX since bb1f18a72 (`#1422 <https://github.com/NatronGitHub/Natron/pull/1422>`__); found fixed)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - S3
@@ -673,7 +673,7 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - L2
      - `ofxTimeLine.h:32-46 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxTimeLine.h#L32-L46>`__ gotoTime "moves the timeline… Any side effects of the timeline change are also triggered and completed before this returns (… instance changed actions and renders…)"; ErrValue "the time was an illegal value"; time in the effect's temporal coordinates (double)
      - MUST
-     - ``seekFrame((int)t, …)`` (Engine/OfxImageEffectInstance.cpp:1138-1150): it **truncates** fractional times, re-renders asynchronously (renders are not completed on return), always returns OK, and never ErrValue. Fixed: the time is rounded to the nearest frame instead of truncated; a NaN time gives kOfxStatErrValue (`NatronGitHub/openfx#187 <https://github.com/NatronGitHub/openfx/pull/187>`__) and an infinite one is ignored (kOfxStatErrValue with the proposed HostSupport change). Still open: the renders that follow the seek are asynchronous, so they are not "completed before this returns".
+     - ``seekFrame((int)t, …)`` (Engine/OfxImageEffectInstance.cpp:1138-1150): it **truncates** fractional times, re-renders asynchronously (renders are not completed on return), always returns OK, and never ErrValue. Fixed: the time is rounded to the nearest frame instead of truncated; a NaN time gives kOfxStatErrValue (`NatronGitHub/openfx#187 <https://github.com/NatronGitHub/openfx/pull/187>`__) and an infinite one kOfxStatFailed (kOfxStatErrValue with the proposed HostSupport change, still open). Still open: the renders that follow the seek are asynchronous, so they are not "completed before this returns".
      - PARTIAL (rounding fixed by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
@@ -686,7 +686,7 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
      - ErrBadHandle "the effect handle was invalid"
      - MUST
      - Only NULL is checked; no magic check (HS/ofxhImageEffect.cpp:4490-4520). Re-checked at HostSupport bdfb48d4: NULL and descriptor handles, and NULL return pointers, give kOfxStatErrBadHandle (no magic number, see S2).
-     - OK (fixed by `NatronGitHub/openfx#187 <https://github.com/NatronGitHub/openfx/pull/187>`__, in libs/OpenFX since `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__)
+     - OK (fixed by `NatronGitHub/openfx#187 <https://github.com/NatronGitHub/openfx/pull/187>`__, in libs/OpenFX since bb1f18a72 (`#1422 <https://github.com/NatronGitHub/Natron/pull/1422>`__); found fixed)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
 
@@ -794,7 +794,7 @@ Spec-only
 
 17. **S3/S4:** progress is not modal, and ``progressUpdate`` without a start returns ReplyNo instead of BadHandle (Gui/ProgressPanel.cpp:539-576). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. ``progressUpdate`` without a start no longer answers ReplyNo (`#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__); it gives kOfxStatFailed until HostSupport passes kOfxStatErrBadHandle through. S3 (modal progress) is still open.
 
-18. **S2/L4/T9/R6/M3:** handles are not validated. The progress and timeline suites ``reinterpret_cast`` without a magic check (HS/ofxhImageEffect.cpp:4430-4520). ``propGetDimension`` lacks ``verifyMagic`` (HS/ofxhPropertySuite.cpp:1077-1110). The mutex functions check only NULL. ``memoryFree`` calls ``free()`` on anything (HS/ofxhHost.cpp:65-69). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. S2 and L4 are fixed by `NatronGitHub/openfx#187 <https://github.com/NatronGitHub/openfx/pull/187>`__ (in libs/OpenFX since `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__), T9 by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__. R6 and M3 are still open (HostSupport).
+18. **S2/L4/T9/R6/M3:** handles are not validated. The progress and timeline suites ``reinterpret_cast`` without a magic check (HS/ofxhImageEffect.cpp:4430-4520). ``propGetDimension`` lacks ``verifyMagic`` (HS/ofxhPropertySuite.cpp:1077-1110). The mutex functions check only NULL. ``memoryFree`` calls ``free()`` on anything (HS/ofxhHost.cpp:65-69). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. S2 and L4 are fixed by `NatronGitHub/openfx#187 <https://github.com/NatronGitHub/openfx/pull/187>`__ (in libs/OpenFX since bb1f18a72, `#1422 <https://github.com/NatronGitHub/Natron/pull/1422>`__), T9 by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__. R6 and M3 are still open (HostSupport).
 
 19. **R4:** the host kOfxPropName get-hook returns ErrValue instead of ErrBadIndex for index≠0 (Engine/OfxHost.cpp:483-484). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__.
 

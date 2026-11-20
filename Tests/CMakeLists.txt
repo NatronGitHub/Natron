@@ -23,6 +23,7 @@ set(Tests_SOURCES
     google-mock/src/gmock-all.cc
     BaseTest.cpp
     Curve_Test.cpp
+    DeepGraphRender_Test.cpp
     DiskCache_Test.cpp
     FileSystemModel_Test.cpp
     Hash64_Test.cpp
@@ -75,12 +76,14 @@ set(Tests_SOURCES
     RenderThreads_Test.cpp
     RotoPaint_Test.cpp
     SequentialRender_Test.cpp
+    StrUtilsFormat_Test.cpp
     Tracker_Test.cpp
     ViewerCache_Test.cpp
     WriteNodeViews_Test.cpp
     wmain.cpp
 )
 add_executable(Tests ${Tests_HEADERS} ${Tests_SOURCES})
+natron_set_main_thread_stack_size(Tests)
 # NaNGuards_FastMath.cpp checks that MathUtils::isFinite()/isNaN() still work in code
 # compiled with -ffast-math, which assumes that NaN and infinity never happen.
 if(MSVC) # MSVC and clang-cl

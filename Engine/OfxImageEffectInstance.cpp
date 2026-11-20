@@ -27,7 +27,6 @@
 
 #include <cassert>
 #include <cstdarg>
-#include <cstdio> // vsnprintf
 #include <cmath> // std::abs, std::floor
 #include <limits>
 #include <memory>
@@ -82,36 +81,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ViewerInstance.h"
 #ifdef DEBUG
 #include "Global/FloatingPointExceptions.h"
+#include "Global/StrUtils.h"
 #endif
 
 NATRON_NAMESPACE_ENTER
 
-// Format a message of the message suite: the suite passes the plug-in's arguments as a va_list
-// (vmessage(), setPersistentMessage()). They used to be passed to a variadic function as one argument,
-// which vsnprintf() then read as the first value of the format, so "%s" printed garbage.
-static
-std::string
-string_vformat(const char* fmt,
-               va_list args)
-{
-    if (!fmt) {
-        return std::string();
-    }
-    va_list ap;
-    va_copy(ap, args);
-    int n = vsnprintf(NULL, 0, fmt, ap);
-    va_end(ap);
-    if (n <= 0) {
-        return std::string();
-    }
-    std::string str( (std::size_t)n + 1, '\0' );
-    va_copy(ap, args);
-    vsnprintf(&str[0], str.size(), fmt, ap);
-    va_end(ap);
-    str.resize(n);
-
-    return str;
-}
 
 OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                OFX::Host::ImageEffect::Descriptor & desc,
@@ -288,7 +262,7 @@ OfxImageEffectInstance::setPersistentMessage(const char* type,
 {
     assert(type);
     assert(format);
-    std::string message = string_vformat(format, args);
+    std::string message = StrUtils::vformat(format, args);
     OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
     assert(effect);
 
@@ -326,7 +300,7 @@ OfxImageEffectInstance::vmessage(const char* msgtype,
 {
     assert(msgtype);
     assert(format);
-    std::string message = string_vformat(format, args);
+    std::string message = StrUtils::vformat(format, args);
     std::string type(msgtype);
     OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
     if (!effect) {
@@ -1243,10 +1217,11 @@ OfxImageEffectInstance::timeLineGotoTime(double t)
     OfxEffectInstancePtr effect = getOfxEffectInstance();
 
     // Natron's timeline only has integer frames: go to the nearest one ((int)t would truncate, e.g.
-    // 4.9999999 to 4). HostSupport returns kOfxStatErrValue for a NaN time ("the time was an illegal
-    // value", ofxTimeLine.h); ignore a time that has no frame.
+    // 4.9999999 to 4). A time that has no frame is "an illegal value" (kOfxStatErrValue, ofxTimeLine.h):
+    // HostSupport returns that for a NaN time; for an infinite or huge one, this exception gives
+    // kOfxStatFailed (HostSupport maps every exception of timeLineGotoTime() to it).
     if ( !( std::abs(t) < (double)std::numeric_limits<int>::max() ) ) {
-        return;
+        throw OFX::Host::Property::Exception(kOfxStatErrValue);
     }
     const int frame = (int)std::floor(t + 0.5);
 

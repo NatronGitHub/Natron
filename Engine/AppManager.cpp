@@ -440,6 +440,10 @@ AppManager::loadFromArgs(const CLArgs& cl)
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
     //otherwise it might crash with thread-local storage
 
+    // The pooled threads render too (QtConcurrent tasks, viewer renders): give them the same stack as
+    // the render threads (#1434). This only applies to threads that the pool creates from now on.
+    QThreadPool::globalInstance()->setStackSize( getRenderThreadStackSize() );
+
 
     ///the QCoreApplication must have been created so far.
     assert(qApp);

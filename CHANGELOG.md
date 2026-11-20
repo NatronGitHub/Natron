@@ -11,8 +11,13 @@
 
 - openfx-gmic now groups its nodes under "G'MIC" instead of "GMIC". A PyPlug whose grouping starts with "GMIC/" gets its own "GMIC" toolbar button, next to the "G'MIC" one: change its grouping to "G'MIC/...". The documentation lists both under "G'MIC nodes".
 
+- OpenFX: a plug-in that calls the multithread suite's `multiThread()` from one of its own thread functions now gets `kOfxStatErrExists`, as OFX requires ("This function cannot be called recursively"), instead of a nested run. A plug-in built with the OpenFX Support library that nests an `OFX::MultiThread::Processor` in another one fails to render until it is rebuilt with a Support library that runs the inner processor in the calling thread. No bundled plug-in does this. #1385
+
 ### Changes
 
+- OpenFX: the text of plug-in messages with arguments (errors, warnings, logs, and the messages shown on nodes and in the viewer) is no longer garbage. #1483
+- OpenFX: the multithread, message, progress, timeline and OpenGL render suites return the status codes of OFX 1.5.1. #1385
+- OpenFX: `paramDeleteKey` returns `kOfxStatErrBadIndex` when there is no key at that time, and `paramGetKeyIndex` finds the previous key of a key; the parametric parameter suite returns `kOfxStatErrBadIndex` for a bad curve or control point index. Plug-ins built with an OpenFX Support library older than 0bec2e63 throw on `kOfxStatErrBadIndex` from `deleteKeyAtTime()` (e.g. clearing a frame without a key). #1385
 - Documentation: the Reference Guide has a "Nodes" section, with one page per node group and per sub-group (e.g. "G'MIC / Colors"), and the sidebar only expands the current branch.
 
 
