@@ -304,9 +304,10 @@ OfxHost::setProperties()
     _properties.setGetHook(kOfxPropName, this);
     _properties.setStringProperty(kOfxPropLabel, NATRON_APPLICATION_NAME); // "nuke" //< use this to pass for nuke
     // OpenFX API v1.5 (1.5.1). The 1.5 features are opt-ins that each have their own host property or
-    // suite (DrawSuite, colour management, StrChoice and Bytes params, CUDA/Metal/OpenCL render...),
-    // which HostSupport declares as "not supported" until Natron implements them, so plug-ins must not
-    // rely on the version number alone.
+    // suite, so plug-ins must not rely on the version number alone. Natron supports the DrawSuite
+    // (supportsDrawSuite()) and Bytes params (kOfxHostSupportHostPropSupportsBytes, below); HostSupport
+    // declares the others (colour management, StrChoice params, CUDA/Metal/OpenCL render...) as
+    // "not supported" until Natron implements them.
     _properties.setIntProperty(kOfxPropAPIVersion, 1, 0);
     _properties.setIntProperty(kOfxPropAPIVersion, 5, 1);
     _properties.setIntProperty(kOfxPropVersion, NATRON_VERSION_MAJOR, 0);
