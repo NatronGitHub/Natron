@@ -28,6 +28,7 @@
 
 #include "Global/Macros.h"
 
+#include <atomic>
 #include <string>
 #include <cstdarg>
 #include <vector>
@@ -298,6 +299,9 @@ private:
     // The holder of the knobs (getParamsEditHolder()) on which these blocks are open, e.g. the Read/Write node of an
     // embedded reader/writer.
     EffectInstanceWPtr _pluginEditHolder;
+    // true between progressStart() and progressEnd(): progressUpdate() without a started progress task returns
+    // kOfxStatErrBadHandle ("the progress handle was invalid", ofxProgress.h). Any thread may call these.
+    std::atomic<bool> _progressStarted;
 
     // End the blocks of _pluginEditBlocks (main thread only).
     void endPluginEditBlocks();

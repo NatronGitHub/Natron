@@ -61,6 +61,7 @@ set(Tests_SOURCES
     OfxPluginScan_Test.cpp
     OfxQuestion_Test.cpp
     OfxSingleInstance_Test.cpp
+    OfxSuiteStatus_Test.cpp
     OfxSyncPrivateData_Test.cpp
     OfxTestPlugin_Test.cpp
     OpenGLRenderFailed_Test.cpp
