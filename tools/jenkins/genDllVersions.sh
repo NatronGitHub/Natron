@@ -54,6 +54,17 @@ if [ -z "${FFMPEG_PATH:-}" ]; then
     echo "FFMPEG_PATH not set, assuming this is $FFMPEG_PATH"
 fi
 
+# libheif: MSYS2's links the GPL x264 and x265 encoders (ENABLE_PLUGIN_LOADING=OFF), so COMMERCIAL
+# builds bundle natron_libheif-lgpl's libheif.dll instead (the same version and DLL name, without
+# x264/x265, #1177). natron_openimageio links libheif.dll by name, so it loads either.
+if [ -z "${LIBHEIF_PATH:-}" ]; then
+    if [ "$NATRON_LICENSE" = "GPL" ]; then
+        LIBHEIF_PATH="$SDK_HOME_BIN"
+    else
+        LIBHEIF_PATH="$SDK_HOME/libheif-lgpl/bin"
+    fi
+fi
+
 function findDll() {
     #Try with given name first, otherwise try with * suffix
     DLL_NAME=$(cd "$BIN_PATH"; ls "$1".dll 2>/dev/null || true)
@@ -248,12 +259,10 @@ catDll libthai
 catDll libdatrie-
 catDll libsnappy
 #catDll libpugixml
-catDll libheif
 catDll libkvazaar-
 catDll libcryptopp
 catDll librav1e
 catDll libde265-
-catDll libx265
 catDll libdav1d
 catDll libaom
 catDll libdeflate
@@ -293,11 +302,15 @@ else
 fi
 
 if [ "$NATRON_LICENSE" = "GPL" ]; then
+    # GPL: x264 and x265 (linked by natron_ffmpeg-gpl2 and MSYS2's libheif), Xvid
     catAllDlls libx264-
-    #catDll libx265
+    catDll libx265
     #catDll libx265_main
     catDll xvidcore
 fi
+
+BIN_PATH="$LIBHEIF_PATH"
+catDll libheif
 
 BIN_PATH="$SDK_HOME/osmesa/lib"
 catDll osmesa

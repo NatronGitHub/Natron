@@ -1,8 +1,19 @@
 name: Build Installer
 
 # Installers are release artifacts: built on demand or for (pre-)release tags only.
+# NATRON_LICENSE: a manual run builds the licence chosen in its "license" input, and a tag builds
+# both. COMMERCIAL builds contain no GPL component (#1302, #1177): build-Windows-installer.sh fails
+# if tools/jenkins/check-commercial-bundle.sh finds one.
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      license:
+        description: 'NATRON_LICENSE of the Windows installer'
+        type: choice
+        options:
+        - GPL
+        - COMMERCIAL
+        default: GPL
   push:
     tags:
     - 'v*'
@@ -20,9 +31,17 @@ env:
 
 jobs:
   win-installer:
-    name: Windows Installer
+    name: Windows Installer (${{ matrix.license }})
     runs-on: windows-2022
     timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        license: ${{ fromJSON(github.event_name == 'workflow_dispatch' && format('["{0}"]', inputs.license) || '["GPL","COMMERCIAL"]') }}
+    env:
+      NATRON_LICENSE: ${{ matrix.license }}
+      # artifact names: the GPL ones are unchanged
+      ARTIFACT_SUFFIX: ${{ matrix.license == 'COMMERCIAL' && '-COMMERCIAL' || '' }}
     defaults:
       run:
         shell: msys2 {0}
@@ -59,7 +78,7 @@ jobs:
 
           cd tools/jenkins
 
-          WORKSPACE=${NATRON_BUILD_WORKSPACE_UNIX} BUILD_NAME=natron BUILD_NUMBER=1 BITS=64 NATRON_LICENSE=GPL GIT_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git GIT_URL_IS_NATRON=1 SNAPSHOT_BRANCH=${GITHUB_REF_NAME} QT_VERSION_MAJOR=5 DISABLE_BREAKPAD=1 NOUPDATE=1 MKJOBS=$(nproc) MINIMIZE_DISK_USAGE=1 UNIT_TESTS=true ./launchBuildMain.sh
+          WORKSPACE=${NATRON_BUILD_WORKSPACE_UNIX} BUILD_NAME=natron BUILD_NUMBER=1 BITS=64 NATRON_LICENSE=${NATRON_LICENSE} GIT_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git GIT_URL_IS_NATRON=1 SNAPSHOT_BRANCH=${GITHUB_REF_NAME} QT_VERSION_MAJOR=5 DISABLE_BREAKPAD=1 NOUPDATE=1 MKJOBS=$(nproc) MINIMIZE_DISK_USAGE=1 UNIT_TESTS=true ./launchBuildMain.sh
 
           ARCHIVE_DIR=${NATRON_BUILD_WORKSPACE_UNIX}/builds_archive/natron/1
           INSTALLER_ZIP_UNIX=$(ls ${ARCHIVE_DIR}/Natron*Windows-x86_64.zip)
@@ -96,19 +115,19 @@ jobs:
       - name: Upload installer
         uses: actions/upload-artifact@v4.3.1
         with:
-          name:  ${{ steps.build.outputs.INSTALLER_NAME }}
+          name:  ${{ steps.build.outputs.INSTALLER_NAME }}${{ env.ARTIFACT_SUFFIX }}
           path:  ${{ steps.build.outputs.INSTALLER_DIR }}
 
       - name: Upload test results
         uses: actions/upload-artifact@v4.3.1
         with:
-          name:  ${{ steps.build.outputs.TEST_RESULTS_NAME }}
+          name:  ${{ steps.build.outputs.TEST_RESULTS_NAME }}${{ env.ARTIFACT_SUFFIX }}
           path:  ${{ steps.build.outputs.TEST_RESULTS_FILE }}
 
       - name: Upload test failures
         uses: actions/upload-artifact@v4.3.1
         with:
-          name:  ${{ steps.build.outputs.TEST_FAILURES_NAME }}
+          name:  ${{ steps.build.outputs.TEST_FAILURES_NAME }}${{ env.ARTIFACT_SUFFIX }}
           path:  ${{ steps.build.outputs.TEST_FAILURES_DIR }}
 
       - name: Verify plugin loading
