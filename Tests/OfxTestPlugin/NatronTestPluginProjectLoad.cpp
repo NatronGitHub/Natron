@@ -25,13 +25,17 @@
 // Like a writer (GenericWriter, openfx-io), the plug-in sets its "premult" and "frameRate" parameters from its Source
 // clip when the user connects it (kOfxChangeUserEdited), and keeps them otherwise: a host that sent
 // kOfxChangeUserEdited after a project load would overwrite the values saved in the project. "file" is never set by
-// the plug-in. Clips: Source, Mask (optional), Output. Counters ("ProjectLoad.*"):
+// the plug-in. Like AppendClip (openfx-misc) with its read-only "lastFrame", if "setDerived" is on, the plug-in sets
+// "derived" to the height of the Source RoD on any clip change of Source, and getClipPreferences gives the output that
+// frame rate: a value changed in the action after the project load must update the metadata.
+// Clips: Source, Mask (optional), Output. Counters ("ProjectLoad.*"):
 // - created: the instances created;
 // - begin.<reason>, end.<reason>: the kOfxActionBegin/EndInstanceChanged actions;
 // - clip.<clip>.<reason>: the kOfxActionInstanceChanged actions with kOfxPropType = kOfxTypeClip;
 // - param.<reason>: the kOfxActionInstanceChanged actions with kOfxPropType = kOfxTypeParameter;
 // - connected: the clip instanceChanged actions where the clip is connected (kOfxImageClipPropConnected);
 // - rod: the clip instanceChanged actions where clipGetRegionOfDefinition gives a non-empty region;
+// - sourcePAR100: the sum of 100 times the pixel aspect ratio of Source in those actions (the clip preferences);
 // - error.outsideBracket: an instanceChanged that is not between Begin and End;
 // - error.reasonMismatch: an instanceChanged or an End whose reason is not the one of the Begin.
 
@@ -138,8 +142,34 @@ describeInContext(OfxImageEffectHandle effect)
         return kOfxStatFailed;
     }
     gPropSuite->propSetString(props, kOfxParamPropDefault, 0, "");
+    if (gParamSuite->paramDefine(paramSet, kOfxParamTypeBoolean, "setDerived", &props) != kOfxStatOK) {
+        return kOfxStatFailed;
+    }
+    gPropSuite->propSetInt(props, kOfxParamPropDefault, 0, 0);
+    if (gParamSuite->paramDefine(paramSet, kOfxParamTypeDouble, "derived", &props) != kOfxStatOK) {
+        return kOfxStatFailed;
+    }
+    gPropSuite->propSetDouble(props, kOfxParamPropDefault, 0, 0.);
 
     return kOfxStatOK;
+}
+
+bool
+getSetDerived(OfxImageEffectHandle effect,
+              double* derived)
+{
+    OfxParamHandle setDerived = getParam(effect, "setDerived");
+    OfxParamHandle derivedParam = getParam(effect, "derived");
+    int on = 0;
+
+    if ( !setDerived || !derivedParam || (gParamSuite->paramGetValue(setDerived, &on) != kOfxStatOK) || !on ) {
+        return false;
+    }
+    if (derived) {
+        gParamSuite->paramGetValue(derivedParam, derived);
+    }
+
+    return true;
 }
 
 void
@@ -161,9 +191,18 @@ clipChanged(OfxImageEffectHandle effect,
         return;
     }
     natronTestIncrementCounter("ProjectLoad.connected");
+    double par = 0.;
+    gPropSuite->propGetDouble(clipProps, kOfxImagePropPixelAspectRatio, 0, &par);
+    natronTestIncrementCounter( "ProjectLoad.sourcePAR100", (int)(par * 100. + 0.5) );
     OfxRectD rod = { 0., 0., 0., 0. };
-    if ( (gEffectSuite->clipGetRegionOfDefinition(clip, time, &rod) == kOfxStatOK) && (rod.x2 > rod.x1) && (rod.y2 > rod.y1) ) {
+    const bool hasRoD = (gEffectSuite->clipGetRegionOfDefinition(clip, time, &rod) == kOfxStatOK) && (rod.x2 > rod.x1) && (rod.y2 > rod.y1);
+    if (hasRoD) {
         natronTestIncrementCounter("ProjectLoad.rod");
+    }
+
+    // on any change of the source: the value derived from it
+    if ( hasRoD && (clipName == kOfxImageEffectSimpleSourceClipName) && getSetDerived(effect, 0) ) {
+        gParamSuite->paramSetValue(getParam(effect, "derived"), rod.y2 - rod.y1);
     }
 
     // the user connected the source: set the parameters from it, as a writer does
@@ -183,7 +222,7 @@ OfxStatus
 projectLoadPluginMain(const char* action,
                       const void* handle,
                       OfxPropertySetHandle inArgs,
-                      OfxPropertySetHandle /*outArgs*/)
+                      OfxPropertySetHandle outArgs)
 {
     OfxImageEffectHandle effect = (OfxImageEffectHandle)handle;
 
@@ -202,6 +241,15 @@ projectLoadPluginMain(const char* action,
     }
     if (std::strcmp(action, kOfxImageEffectActionDescribeInContext) == 0) {
         return describeInContext(effect);
+    }
+    if (std::strcmp(action, kOfxImageEffectActionGetClipPreferences) == 0) {
+        double derived = 0.;
+        if ( !getSetDerived(effect, &derived) || (derived <= 0.) ) {
+            return kOfxStatReplyDefault;
+        }
+        gPropSuite->propSetDouble(outArgs, kOfxImageEffectPropFrameRate, 0, derived);
+
+        return kOfxStatOK;
     }
     if (std::strcmp(action, kOfxActionCreateInstance) == 0) {
         natronTestIncrementCounter("ProjectLoad.created");

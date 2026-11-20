@@ -1441,6 +1441,20 @@ OfxEffectInstance::onInputChanged(int inputNo)
     }
 }
 
+bool
+OfxEffectInstance::wantsInputsRestoredAfterProjectLoad() const
+{
+    // an input clip is connected (see onInputsRestoredAfterProjectLoad())
+    NodePtr node = getNode();
+    for (int i = 0; i < (int)_imp->clipsInfos.size(); ++i) {
+        if ( node->getInput(i) ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void
 OfxEffectInstance::onInputsRestoredAfterProjectLoad()
 {

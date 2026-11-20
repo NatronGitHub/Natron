@@ -44,8 +44,11 @@
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
+#include "Engine/CreateNodeArgs.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
+#include "Engine/NodeGroup.h"
 #include "Engine/Project.h"
 
 #include "OfxTestPlugin.h"
@@ -65,7 +68,7 @@ const char* const kCounters[] = {
     "ProjectLoad.clip." kOfxImageEffectOutputClipName "." kOfxChangeUserEdited,
     "ProjectLoad.clip." kOfxImageEffectOutputClipName "." kOfxChangePluginEdited,
     "ProjectLoad.param." kOfxChangeUserEdited, "ProjectLoad.param." kOfxChangePluginEdited,
-    "ProjectLoad.connected", "ProjectLoad.rod",
+    "ProjectLoad.connected", "ProjectLoad.rod", "ProjectLoad.sourcePAR100",
     "ProjectLoad.error.outsideBracket", "ProjectLoad.error.reasonMismatch",
 };
 
@@ -112,6 +115,19 @@ inputNamed(const NodePtr& node,
     return -1;
 }
 
+bool
+pluginsAvailable()
+{
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginProjectLoad) ||
+         !NatronTestPlugin::isAvailable(kNatronTestPluginGenerator) ) {
+        NatronTestPlugin::reportSkipped(kNatronTestPluginProjectLoad);
+
+        return false;
+    }
+
+    return true;
+}
+
 template <typename KNOB>
 std::shared_ptr<KNOB>
 knob(const NodePtr& node,
@@ -123,14 +139,12 @@ knob(const NodePtr& node,
 
 // A project with a source connected to the plug-in, whose parameters the user changed after connecting it: after the
 // load, the plug-in gets exactly one kOfxActionInstanceChanged, on the connected Source clip, with
-// kOfxChangePluginEdited, in a bracket, with a working clipGetRegionOfDefinition; a plug-in without connected inputs
-// gets none; and every value is the one that was saved.
+// kOfxChangePluginEdited, in a bracket, with a working clipGetRegionOfDefinition and the clip preferences of the source
+// (its pixel aspect ratio); a plug-in without connected inputs gets none; every value is the one that was saved, and
+// the node keeps its age (hence its hash).
 TEST(OfxProjectLoad, InstanceChangedAfterLoadKeepsSavedValues)
 {
-    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginProjectLoad) ||
-         !NatronTestPlugin::isAvailable(kNatronTestPluginGenerator) ) {
-        NatronTestPlugin::reportSkipped(kNatronTestPluginProjectLoad);
-
+    if ( !pluginsAvailable() ) {
         return;
     }
     QTemporaryDir tmpDir;
@@ -159,6 +173,8 @@ TEST(OfxProjectLoad, InstanceChangedAfterLoadKeepsSavedValues)
     knob<KnobDouble>(connected, "frameRate")->setValue(12.5);
     knob<KnobString>(connected, "file")->setValue("/path/to/out_####.exr");
     knob<KnobDouble>(alone, "frameRate")->setValue(30.);
+    knob<KnobDouble>(generator, "par")->setValue(2.);
+    const U64 savedAge = connected->getKnobsAge();
     const std::string connectedName = connected->getScriptName();
     const std::string aloneName = alone->getScriptName();
     const QString dir = tmpDir.path() + QLatin1Char('/');
@@ -179,6 +195,7 @@ TEST(OfxProjectLoad, InstanceChangedAfterLoadKeepsSavedValues)
     expected["ProjectLoad.clip." kOfxImageEffectSimpleSourceClipName "." kOfxChangePluginEdited] = 1;
     expected["ProjectLoad.connected"] = 1;
     expected["ProjectLoad.rod"] = 1;
+    expected["ProjectLoad.sourcePAR100"] = 200;
     EXPECT_EQ(expected, delta);
 
     connected = project->getNodeByName(connectedName);
@@ -190,9 +207,118 @@ TEST(OfxProjectLoad, InstanceChangedAfterLoadKeepsSavedValues)
     EXPECT_EQ( std::string("/path/to/out_####.exr"), knob<KnobString>(connected, "file")->getValue() );
     EXPECT_FALSE( knob<KnobBool>(alone, "premult")->getValue() );
     EXPECT_EQ( 30., knob<KnobDouble>(alone, "frameRate")->getValue() );
+    EXPECT_EQ( savedAge, connected->getKnobsAge() );
     connected.reset();
     alone.reset();
 
     // leave the shared app with an untitled empty project, before the directory is removed
+    project->resetProject();
+}
+
+// Like AppendClip's "lastFrame", the plug-in sets a value derived from its source in the action, whatever the reason:
+// the saved value was stale (the user, or a shorter input). After the load, the node has a new age (hence hash), and
+// its clip preferences, which read that value, and those of the node downstream, are computed again.
+TEST(OfxProjectLoad, ValueChangedAfterLoadRefreshesMetadataAndHash)
+{
+    if ( !pluginsAvailable() ) {
+        return;
+    }
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+
+    NodePtr generator = NatronTestPlugin::createNode(kNatronTestPluginGenerator);
+    NodePtr deriving = NatronTestPlugin::createNode(kNatronTestPluginProjectLoad);
+    NodePtr downstream = NatronTestPlugin::createNode(kNatronTestPluginProjectLoad);
+    ASSERT_TRUE(generator && deriving && downstream);
+    const int source = inputNamed(deriving, kOfxImageEffectSimpleSourceClipName);
+    ASSERT_GE(source, 0);
+    knob<KnobBool>(deriving, "setDerived")->setValue(true);
+    ASSERT_TRUE( deriving->connectInput(generator, source) );
+    ASSERT_TRUE( downstream->connectInput(deriving, source) );
+    const double height = knob<KnobDouble>(deriving, "derived")->getValue();
+    ASSERT_GT(height, 7.);
+
+    // a stale value is saved
+    knob<KnobDouble>(deriving, "derived")->setValue(7.);
+    const U64 savedAge = deriving->getKnobsAge();
+    const std::string derivingName = deriving->getScriptName();
+    const std::string downstreamName = downstream->getScriptName();
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    QString savedPath;
+    ASSERT_TRUE( project->saveProject( dir, QString::fromUtf8("ProjectLoadDerived.ntp"), &savedPath ) );
+    generator.reset();
+    deriving.reset();
+    downstream.reset();
+
+    ASSERT_TRUE( project->loadProject( dir, QString::fromUtf8("ProjectLoadDerived.ntp") ) );
+    deriving = project->getNodeByName(derivingName);
+    downstream = project->getNodeByName(downstreamName);
+    ASSERT_TRUE(deriving && downstream);
+    EXPECT_EQ( height, knob<KnobDouble>(deriving, "derived")->getValue() );
+    EXPECT_NE( savedAge, deriving->getKnobsAge() );
+    EXPECT_EQ( height, deriving->getEffectInstance()->getFrameRate() );
+    EXPECT_EQ( height, downstream->getEffectInstance()->getFrameRate() );
+    deriving.reset();
+    downstream.reset();
+
+    project->resetProject();
+}
+
+// A node inside a Group, connected to the GroupInput, gets the action too, with the RoD of the source outside the
+// group; and so does a project loaded as an auto-save (the path of Project::loadProject() for a recovered project).
+TEST(OfxProjectLoad, NodeInsideGroupAndAutoSaveLoad)
+{
+    if ( !pluginsAvailable() ) {
+        return;
+    }
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+
+    NodePtr generator = NatronTestPlugin::createNode(kNatronTestPluginGenerator);
+    CreateNodeArgs groupArgs( PLUGINID_NATRON_GROUP, project );
+    groupArgs.setProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, true);
+    groupArgs.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    groupArgs.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    NodePtr groupNode = app->createNode(groupArgs);
+    ASSERT_TRUE(generator && groupNode);
+    NodeGroupPtr group = std::dynamic_pointer_cast<NodeGroup>( groupNode->getEffectInstance() );
+    ASSERT_TRUE( bool(group) );
+    NodePtr inside[2];
+    const char* insideIDs[2] = { PLUGINID_NATRON_INPUT, kNatronTestPluginProjectLoad };
+    for (int i = 0; i < 2; ++i) {
+        CreateNodeArgs args(insideIDs[i], group);
+        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+        inside[i] = app->createNode(args);
+        ASSERT_TRUE( bool(inside[i]) );
+    }
+    const int source = inputNamed(inside[1], kOfxImageEffectSimpleSourceClipName);
+    ASSERT_GE(source, 0);
+    ASSERT_TRUE( inside[1]->connectInput(inside[0], source) );
+    ASSERT_TRUE( groupNode->connectInput(generator, 0) );
+    knob<KnobDouble>(inside[1], "frameRate")->setValue(12.5);
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    QString savedPath;
+    ASSERT_TRUE( project->saveProject( dir, QString::fromUtf8("ProjectLoadGroup.ntp"), &savedPath ) );
+    generator.reset();
+    groupNode.reset();
+    group.reset();
+    inside[0].reset();
+    inside[1].reset();
+
+    for (int autoSave = 0; autoSave < 2; ++autoSave) {
+        const std::map<std::string, int> start = readCounters();
+        ASSERT_TRUE( project->loadProject( dir, QString::fromUtf8("ProjectLoadGroup.ntp"), autoSave != 0 ) );
+        std::map<std::string, int> delta = countersSince(start);
+        EXPECT_EQ( 1, delta["ProjectLoad.clip." kOfxImageEffectSimpleSourceClipName "." kOfxChangePluginEdited] ) << "autoSave " << autoSave;
+        EXPECT_EQ( 0, delta["ProjectLoad.clip." kOfxImageEffectSimpleSourceClipName "." kOfxChangeUserEdited] ) << "autoSave " << autoSave;
+        EXPECT_EQ( 1, delta["ProjectLoad.rod"] ) << "autoSave " << autoSave;
+        EXPECT_EQ( 0, delta["ProjectLoad.error.outsideBracket"] + delta["ProjectLoad.error.reasonMismatch"] );
+    }
+
     project->resetProject();
 }

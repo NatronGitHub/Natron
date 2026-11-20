@@ -1742,41 +1742,59 @@ Node::onInputChanged(int inputNb,
     }
 } // Node::onInputChanged
 
-void
+bool
 Node::onInputsRestoredAfterProjectLoad()
 {
     assert( QThread::currentThread() == qApp->thread() );
-    bool hasInput = false;
-    for (int i = 0; i < getNInputs() && !hasInput; ++i) {
-        hasInput = bool( getInput(i) );
+    // most effects (Dot, Viewer, Group, GroupInput/Output, effects without a connected input) have nothing to do:
+    // don't set up a render thread storage on their tree
+    if ( !_imp->effect->wantsInputsRestoredAfterProjectLoad() ) {
+        return false;
     }
-    if (!hasInput) {
-        return;
+    const U64 valueChangesBefore = _imp->effect->getValueChangesCount();
+
+    {
+        // As in onInputChanged(): the plug-in may call clipGetRegionOfDefinition, set a valid thread storage on the tree.
+        double time = getApp()->getTimeLine()->currentFrame();
+        AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
+        const bool isRenderUserInteraction = true;
+        const bool isSequentialRender = false;
+        AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
+        if (isAbortable) {
+            isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, getEffectInstance() );
+        }
+        ParallelRenderArgsSetter frameRenderArgs( time,
+                                                  ViewIdx(0),
+                                                  isRenderUserInteraction,
+                                                  isSequentialRender,
+                                                  abortInfo,
+                                                  shared_from_this(),
+                                                  0, //texture index
+                                                  getApp()->getTimeLine().get(),
+                                                  NodePtr(),
+                                                  false,
+                                                  false,
+                                                  RenderStatsPtr() );
+
+        _imp->effect->onInputsRestoredAfterProjectLoad();
     }
 
-    // As in onInputChanged(): the plug-in may call clipGetRegionOfDefinition, set a valid thread storage on the tree.
-    double time = getApp()->getTimeLine()->currentFrame();
-    AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
-    const bool isRenderUserInteraction = true;
-    const bool isSequentialRender = false;
-    AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
-    if (isAbortable) {
-        isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, getEffectInstance() );
+    // As in onInputChanged(): the plug-in might have changed its internal state, kill the render clones, and redraw
+    // the overlay if a knob changed
+    _imp->effect->clearRenderInstances();
+    if ( !_imp->effect->isDequeueingValuesSet() &&
+         ( _imp->effect->getRecursionLevel() == 0) && _imp->effect->checkIfOverlayRedrawNeeded() ) {
+        _imp->effect->redrawOverlayInteract();
     }
-    ParallelRenderArgsSetter frameRenderArgs( time,
-                                              ViewIdx(0),
-                                              isRenderUserInteraction,
-                                              isSequentialRender,
-                                              abortInfo,
-                                              shared_from_this(),
-                                              0, //texture index
-                                              getApp()->getTimeLine().get(),
-                                              NodePtr(),
-                                              false,
-                                              false,
-                                              RenderStatsPtr() );
 
-    _imp->effect->onInputsRestoredAfterProjectLoad();
+    // The knob changed handlers aren't called while the project is loading (KnobHolder::endChanges()): if the plug-in
+    // changed a knob, give the node a new age, hence a new hash, so that no image cached for the old values is used.
+    if (_imp->effect->getValueChangesCount() == valueChangesBefore) {
+        return false;
+    }
+    incrementKnobsAge();
+
+    return true;
 }
 
 

@@ -1409,9 +1409,18 @@ public:
     /**
      * @brief Called once on each node of a project that was just loaded, when all its nodes, links and input
      * connections are restored and the clip preferences are computed, before the first render
-     * (see Node::onInputsRestoredAfterProjectLoad()).
+     * (see Node::onInputsRestoredAfterProjectLoad()), if wantsInputsRestoredAfterProjectLoad().
      **/
     virtual void onInputsRestoredAfterProjectLoad() {}
+
+    /**
+     * @brief Whether onInputsRestoredAfterProjectLoad() does something: if not, the render thread storage it needs is
+     * not set up.
+     **/
+    virtual bool wantsInputsRestoredAfterProjectLoad() const
+    {
+        return false;
+    }
 
     /**
      * @brief If the plug-in calls timelineGoTo and we're during a render/instance changed action,

@@ -2586,6 +2586,13 @@ public:
                            Natron::ValueChangedReasonEnum originalReason,
                            Natron::ValueChangedReasonEnum reason);
 
+    /**
+     * @brief The number of knob value changes of this holder so far (appendValueChange() calls), including those made
+     * while a project is loading, whose knob changed handlers are not called: compare two values to tell whether
+     * a knob changed in between.
+     **/
+    U64 getValueChangesCount() const;
+
     bool isSetValueCurrentlyPossible() const;
 
     void getAllExpressionDependenciesRecursive(std::set<NodePtr>& nodes) const;

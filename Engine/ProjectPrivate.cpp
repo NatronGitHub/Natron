@@ -26,6 +26,8 @@
 #include "ProjectPrivate.h"
 
 #include <list>
+#include <set>
+#include <vector>
 #include <cassert>
 #include <stdexcept>
 #include <sstream> // stringstream
@@ -42,7 +44,9 @@
 #include "Engine/AppManager.h"
 #include "Engine/AppManager.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/GroupInput.h"
 #include "Engine/Node.h"
+#include "Engine/NodeGroup.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Project.h"
@@ -54,6 +58,47 @@
 
 
 NATRON_NAMESPACE_ENTER
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
+// Append node to ordered after the nodes upstream of it: its inputs, the input of the Group for a GroupInput node,
+// and the nodes inside it for a Group. A node is appended once.
+void
+appendUpstreamFirst(const NodePtr& node,
+                    std::set<Node*>* visited,
+                    NodesList* ordered)
+{
+    if ( !node || !visited->insert( node.get() ).second ) {
+        return;
+    }
+    for (int i = 0; i < node->getNInputs(); ++i) {
+        appendUpstreamFirst(node->getInput(i), visited, ordered);
+    }
+    if ( dynamic_cast<GroupInput*>( node->getEffectInstance().get() ) ) {
+        NodeGroupPtr group = std::dynamic_pointer_cast<NodeGroup>( node->getGroup() );
+        if (group) {
+            std::vector<NodePtr> groupInputs;
+            group->getInputs(&groupInputs, false);
+            for (std::size_t i = 0; i < groupInputs.size(); ++i) {
+                if (groupInputs[i] == node) {
+                    appendUpstreamFirst(group->getNode()->getInput( (int)i ), visited, ordered);
+                }
+            }
+        }
+    }
+    NodeGroup* isGroup = node->isEffectGroup();
+    if (isGroup) {
+        NodesList children = isGroup->getNodes();
+        for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
+            if ( (*it)->isActivated() ) {
+                appendUpstreamFirst(*it, visited, ordered);
+            }
+        }
+    }
+    ordered->push_back(node);
+}
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 ProjectPrivate::ProjectPrivate(Project* project)
     : _publicInterface(project)
@@ -241,12 +286,20 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     _publicInterface->forceComputeInputDependentDataOnAllTrees();
 
     // All the nodes, links and input connections are restored and the clip preferences computed: tell the effects
-    // that their inputs are connected, before anything is rendered (OFX 1.5, #1107).
+    // that their inputs are connected, before anything is rendered (OFX 1.5, #1107). Upstream nodes first, so that
+    // an effect sees the metadata of its inputs as refreshed after their own action. If an effect changed a knob,
+    // refresh the input related data (clip preferences, metadata) of the node and of its outputs.
     {
-        NodesList nodes;
+        NodesList nodes, ordered;
+        std::set<Node*> visited;
         _publicInterface->getNodes_recursive(nodes, true);
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->onInputsRestoredAfterProjectLoad();
+            appendUpstreamFirst(*it, &visited, &ordered);
+        }
+        for (NodesList::iterator it = ordered.begin(); it != ordered.end(); ++it) {
+            if ( (*it)->onInputsRestoredAfterProjectLoad() ) {
+                (*it)->forceRefreshAllInputRelatedData();
+            }
         }
     }
 

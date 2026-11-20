@@ -950,9 +950,11 @@ public:
     /**
      * @brief Called once on each node of a project that was just loaded, when all its nodes, links and input
      * connections are restored and the clip preferences are computed, before the first render: calls
-     * EffectInstance::onInputsRestoredAfterProjectLoad() if an input is connected.
+     * EffectInstance::onInputsRestoredAfterProjectLoad() if EffectInstance::wantsInputsRestoredAfterProjectLoad().
+     * Returns true if a knob of the effect changed meanwhile, in which case the node has a new age (and hash), and
+     * the caller must refresh the input related data (clip preferences, metadata) of the node and of its outputs.
      **/
-    void onInputsRestoredAfterProjectLoad();
+    bool onInputsRestoredAfterProjectLoad();
 
     bool onEffectKnobValueChanged(KnobI* what, ValueChangedReasonEnum reason);
 

@@ -4944,6 +4944,7 @@ struct KnobHolder::KnobHolderPrivate
     int nbSignificantChangesDuringEvaluationBlock;
     int nbChangesDuringEvaluationBlock;
     int nbChangesRequiringMetadataRefresh;
+    U64 valueChangesCount; // see getValueChangesCount()
     QMutex knobsFrozenMutex;
     bool knobsFrozen;
     mutable QMutex hasAnimationMutex;
@@ -4970,6 +4971,7 @@ struct KnobHolder::KnobHolderPrivate
         , nbSignificantChangesDuringEvaluationBlock(0)
         , nbChangesDuringEvaluationBlock(0)
         , nbChangesRequiringMetadataRefresh(0)
+        , valueChangesCount(0)
         , knobsFrozenMutex()
         , knobsFrozen(false)
         , hasAnimationMutex()
@@ -4999,6 +5001,7 @@ struct KnobHolder::KnobHolderPrivate
     , nbSignificantChangesDuringEvaluationBlock(0)
     , nbChangesDuringEvaluationBlock(0)
     , nbChangesRequiringMetadataRefresh(0)
+    , valueChangesCount(0)
     , knobsFrozenMutex()
     , knobsFrozen(false)
     , hasAnimationMutex()
@@ -5938,6 +5941,7 @@ KnobHolder::appendValueChange(const KnobIPtr& knob,
         }
         assert(foundChange);
 
+        ++_imp->valueChangesCount;
         foundChange->reason = reason;
         foundChange->originalReason = originalReason;
         foundChange->originatedFromMainThread = QThread::currentThread() == qApp->thread();
@@ -5971,6 +5975,14 @@ KnobHolder::appendValueChange(const KnobIPtr& knob,
            }*/
     }
 } // KnobHolder::appendValueChange
+
+U64
+KnobHolder::getValueChangesCount() const
+{
+    QMutexLocker l(&_imp->evaluationBlockedMutex);
+
+    return _imp->valueChangesCount;
+}
 
 void
 KnobHolder::beginChanges()
