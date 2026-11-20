@@ -332,6 +332,11 @@ win32 {
   LIBS += -lole32
 }
 
+# The stack reserve of the main thread of the Windows executables (App, Renderer, PythonBin, Tests
+# add it to QMAKE_LFLAGS). Keep it in sync with NATRON_MAIN_THREAD_STACK_SIZE in CMakeLists.txt, which
+# explains it (#1440).
+NATRON_MAIN_THREAD_STACK_SIZE = 8388608
+
 win32-g++ {
     # -municode is needed for linking because it uses wmain() instead of the traditional main()
     # https://sourceforge.net/p/mingw-w64/wiki2/Unicode%20apps/

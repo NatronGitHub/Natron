@@ -207,7 +207,9 @@ NodeGraph::popFindDialog(const QPoint& p)
     QObject::connect( dialog, SIGNAL(rejected()), this, SLOT(onFindNodeDialogFinished()) );
     QObject::connect( dialog, SIGNAL(accepted()), this, SLOT(onFindNodeDialogFinished()) );
     dialog->move( realPos.x(), realPos.y() );
-    dialog->raise();
+    if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+        dialog->raise();
+    }
     dialog->show();
 }
 
@@ -247,7 +249,9 @@ NodeGraph::renameNode()
     QObject::connect( dialog, SIGNAL(rejected()), this, SLOT(onNodeNameEditDialogFinished()) );
     QObject::connect( dialog, SIGNAL(accepted()), this, SLOT(onNodeNameEditDialogFinished()) );
     dialog->move( realPos.x(), realPos.y() );
-    dialog->raise();
+    if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+        dialog->raise();
+    }
     dialog->show();
 }
 
