@@ -165,40 +165,33 @@ static void DeleteRegion( GLUtesselator *tess, ActiveRegion *reg )
 
 #define UsesEdge(r,e)	((r) != NULL && ((r)->eUp == (e) || (r)->eUp == (e)->Sym))
 
-static void CheckEdgeUnused( GLUtesselator *tess, GLUhalfEdge *e,
-			     ActiveRegion *regAbove, ActiveRegion *regBelow )
-/*
- * Natron: before deleting the edge e (both halves), check that it is not
- * the upper edge of an active region: of the regions regAbove and regBelow,
- * next to the region of e that was just deleted (two regions can have the
- * same upper edge, and deleting one of them cleared e->activeRegion), or of
- * any region through the activeRegion back-pointers. On degenerate input
- * (e.g. a self-loop made by CheckForRightSplice() merging the endpoints of a
- * zero-length edge, so that eLo == eUp->Sym in WalkDirtyRegions(), or
- * collinear edges along a diagonal with rounding noise) the edge was freed
- * while a region still used it, and the sweep then used it
- * (heap-use-after-free). The sweep can't recover from this state: give up
- * on the polygon (see gluTessEndPolygon()).
- */
-{
-  if( e->activeRegion != NULL || e->Sym->activeRegion != NULL
-      || UsesEdge( regAbove, e ) || UsesEdge( regBelow, e ) ) {
-    longjmp(tess->env,TESS_JMP_DEGENERATE);
-  }
-}
-
 static void DeleteRegionAndEdge( GLUtesselator *tess, ActiveRegion *reg,
 				 GLUhalfEdge *e )
 /*
- * Natron: DeleteRegion( tess, reg ), then delete the edge e, which must not be
- * used by any other active region (see CheckEdgeUnused()).
+ * Natron: DeleteRegion( tess, reg ), then delete the edge e (both halves),
+ * which must not be the upper edge of any other active region. On degenerate
+ * input (e.g. a self-loop made by CheckForRightSplice() merging the endpoints
+ * of a zero-length edge, so that eLo == eUp->Sym in WalkDirtyRegions(), or
+ * collinear edges along a diagonal with rounding noise) the edge was freed
+ * while a region still used it, and the sweep then used it
+ * (heap-use-after-free). Neither the activeRegion back-pointers (two regions
+ * can have the same upper edge, and deleting one clears it) nor the regions
+ * next to reg are enough to tell, so all the active regions are checked: the
+ * callers (two-edge loops, fixable edges, edges with the same slope) are only
+ * reached on degenerate input. If the edge is still used, the sweep can't
+ * recover: give up on the polygon (see gluTessEndPolygon()).
  */
 {
-  ActiveRegion *regAbove = RegionAbove( reg );
-  ActiveRegion *regBelow = RegionBelow( reg );
+  DictNode *node;
+  ActiveRegion *r;
 
   DeleteRegion( tess, reg );
-  CheckEdgeUnused( tess, e, regAbove, regBelow );
+  for( node = dictMin( tess->dict ); (r = (ActiveRegion *)dictKey( node )) != NULL;
+       node = dictSucc( node )) {
+    if( UsesEdge( r, e ) ) {
+      longjmp(tess->env,TESS_JMP_DEGENERATE);
+    }
+  }
   if ( !__gl_meshDelete( e ) ) longjmp(tess->env,1);
 }
 
@@ -209,8 +202,10 @@ static int FixUpperEdge( GLUtesselator *tess, ActiveRegion *reg,
  */
 {
   assert( reg->fixUpperEdge );
-  /* Natron: reg->eUp must not be used by another active region, see
-   * CheckEdgeUnused() */
+  /* Natron: reg->eUp must not be used by another active region (see
+   * DeleteRegionAndEdge()). This is reached on every polygon, so only the
+   * back-pointer and the neighbouring regions are checked, which caught every
+   * case found by fuzzing. */
   if( reg->eUp->Sym->activeRegion != NULL
       || UsesEdge( RegionAbove( reg ), reg->eUp )
       || UsesEdge( RegionBelow( reg ), reg->eUp ) ) {
