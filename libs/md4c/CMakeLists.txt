@@ -18,7 +18,7 @@
 # ***** END LICENSE BLOCK *****
 
 # md4c, the CommonMark Markdown parser, and its HTML renderer (see README.Natron).
-# libs/md4c/md4c.pro and the static-md4c section of libs.pri are the qmake
+# libs/md4c/md4c.pro and the md4c-flags section of libs.pri are the qmake
 # equivalents: keep them in sync, including the version below.
 set(md4c_VERSION "0.6.0-46-gf9e5eb2")
 set(md4c_HEADERS

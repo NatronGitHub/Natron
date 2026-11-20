@@ -34,7 +34,8 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "md4c-html.h" // libs/md4c
+// by path, so that an installed md4c-html.h (e.g. MacPorts md4c 0.5) cannot be used instead
+#include "libs/md4c/src/md4c-html.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -67,16 +68,18 @@ mathElementsToMathJax(const QByteArray& html)
     if ( !html.contains("<x-equation") ) {
         return html;
     }
+    // int in Qt 5, qsizetype in Qt 6
+    typedef decltype( html.size() ) Size;
     QByteArray result;
     result.reserve( html.size() );
-    qsizetype pos = 0;
+    Size pos = 0;
     while (true) {
-        qsizetype open = html.indexOf("<x-equation", pos);
+        Size open = html.indexOf("<x-equation", pos);
         if (open < 0) {
             break;
         }
         bool display;
-        qsizetype contentStart;
+        Size contentStart;
         if ( html.mid( open, inlineOpen.size() ) == inlineOpen ) {
             display = false;
             contentStart = open + inlineOpen.size();
@@ -89,9 +92,16 @@ mathElementsToMathJax(const QByteArray& html)
             pos = open + 1;
             continue;
         }
-        qsizetype end = html.indexOf(close, contentStart);
+        Size end = html.indexOf(close, contentStart);
         if (end < 0) {
             break;
+        }
+        if ( html.mid(contentStart, end - contentStart).contains("<x-equation") ) {
+            // md4c escapes '<' in math spans, so this opener is raw HTML
+            // (e.g. an unclosed <x-equation> written by the author): leave it as is
+            result.append( html.mid( pos, open + 1 - pos ) );
+            pos = open + 1;
+            continue;
         }
         result.append( html.mid(pos, open - pos) );
         result.append(display ? "\\[" : "\\(");
@@ -123,12 +133,17 @@ Markdown::convert2html(const QString& markdown)
         //   <u><u>text</u></u>, where hoedown wrote <strong>text</strong>, and
         //   the bundled plug-ins use __text__ for bold. Without it, _text_ is
         //   emphasis, as in CommonMark.
+        // - subscripts, which hoedown didn't have, are enabled: with them, a
+        //   single ~ is no longer strikethrough (md4c's strikethrough accepts
+        //   ~text~, so "x ~ 3 and y ~ 4" would be struck through), ~text~ is
+        //   a subscript, as in pandoc, and ~~text~~ is strikethrough.
         // Fenced code blocks and the space required after the '#' of ATX
         // headers are part of CommonMark. Indented code blocks stay enabled, as
         // they were with hoedown (HOEDOWN_EXT_DISABLE_INDENTED_CODE was not set).
         const unsigned parserFlags = (MD_FLAG_TABLES |
                                       MD_FLAG_FOOTNOTES |
                                       MD_FLAG_STRIKETHROUGH |
+                                      MD_FLAG_SUBSCRIPTS |
                                       MD_FLAG_HIGHLIGHT |
                                       MD_FLAG_SUPERSCRIPTS |
                                       MD_FLAG_LATEXMATHSPANS |
@@ -142,6 +157,10 @@ Markdown::convert2html(const QString& markdown)
             // md4c only fails when it runs out of memory
             qDebug() << "Markdown::convert2html: md4c failed to convert the Markdown text";
         }
+
+        // a rule before the footnotes, as hoedown wrote, so that they are
+        // separated from the text in the tooltips too
+        result.replace( "<section class=\"footnotes\">", "<hr />\n<section class=\"footnotes\">" );
 
         html = QString::fromUtf8( mathElementsToMathJax(result) );
     }

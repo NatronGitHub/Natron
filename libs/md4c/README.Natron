@@ -20,9 +20,16 @@ Copied files, unmodified:
 
 Local modifications: none.
 
+There is no option to use an installed md4c (NATRON_SYSTEM_LIBS): the packaged
+versions (e.g. MacPorts devel/md4c, Linux distributions) are 0.5.x, which lack
+MD_FLAG_FOOTNOTES, MD_FLAG_SUPERSCRIPTS and MD_FLAG_HIGHLIGHT (new in 0.6.0)
+and the autolink fixes above. Engine/Markdown.cpp includes the bundled header
+by path (libs/md4c/src/md4c-html.h), so that an installed md4c-html.h, for
+example in /opt/local/include, is never used instead.
+
 Natron files (not from upstream): README.Natron, CMakeLists.txt, md4c.pro.
 The md4c version (`git describe --tags`) is also stated in CMakeLists.txt (md4c_VERSION) and in the
-static-md4c section of ../../libs.pri (NATRON_MD4C_VERSION): update them
+md4c-flags section of ../../libs.pri (NATRON_MD4C_VERSION): update them
 together. It is shown in the About dialog (AppManager::getMd4cVersion()).
 
 To update:

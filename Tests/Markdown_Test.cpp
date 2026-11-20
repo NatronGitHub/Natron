@@ -75,6 +75,7 @@ TEST(Markdown, Table)
 TEST(Markdown, Footnote)
 {
     EXPECT_EQ( QString::fromUtf8("<p>Text<sup><a href=\"#fn-1\" id=\"fnref-1-1\">1</a></sup>.</p>\n"
+                                 "<hr />\n"
                                  "<section class=\"footnotes\">\n"
                                  "<ol>\n"
                                  "<li id=\"fn-1\">\n"
@@ -137,6 +138,9 @@ TEST(Markdown, Math)
     // an <x-equation> element written as raw HTML is left as is
     EXPECT_EQ( QString::fromUtf8("<p><x-equation-foo>a</x-equation-foo> \\(b\\)</p>\n"),
                md2html("<x-equation-foo>a</x-equation-foo> $b$\n") );
+    // an unclosed raw <x-equation> is not paired with the closer of a math span
+    EXPECT_EQ( QString::fromUtf8("<p><x-equation> raw \\(m\\)</p>\n"),
+               md2html("<x-equation> raw $m$\n") );
 }
 
 // raw HTML is passed through, as with hoedown
@@ -177,12 +181,19 @@ TEST(Markdown, NestedLists)
                        "- three\n") );
 }
 
-// no underline extension: _text_ is emphasis and __text__ is strong, as in CommonMark
+// no underline extension: _text_ is emphasis and __text__ is strong, as in CommonMark;
+// with subscripts, ~text~ is a subscript (as in pandoc), only ~~text~~ is strikethrough,
+// and a lone ~ is literal
 TEST(Markdown, Spans)
 {
     EXPECT_EQ( QString::fromUtf8("<p><del>del</del> <em>em</em> <em>em</em> <strong>strong</strong> <strong>strong</strong>"
-                                 " <mark>hl</mark> <sup>sup</sup> foo_bar_baz</p>\n"),
-               md2html("~~del~~ _em_ *em* **strong** __strong__ ==hl== ^sup^ foo_bar_baz\n") );
+                                 " <mark>hl</mark> <sup>sup</sup> H<sub>2</sub>O foo_bar_baz</p>\n"),
+               md2html("~~del~~ _em_ *em* **strong** __strong__ ==hl== ^sup^ H~2~O foo_bar_baz\n") );
+    EXPECT_EQ( QString::fromUtf8("<p>x ~ 3 and y ~ 4</p>\n"),
+               md2html("x ~ 3 and y ~ 4\n") );
+    // intra-word * is emphasis in CommonMark (hoedown had no intra-word emphasis)
+    EXPECT_EQ( QString::fromUtf8("<p>A<em>b+B</em>(1-a) A*b+B*(1-a)</p>\n"),
+               md2html("A*b+B*(1-a) A\\*b+B\\*(1-a)\n") );
 }
 
 // plain text (the hints of parameters without Markdown hints, in the generated
@@ -238,6 +249,20 @@ TEST(Markdown, FixNodeHTML)
                                                     "<table class=\"inputTable\">\n") ) ) << html.toStdString();
     EXPECT_TRUE( html.contains( QString::fromUtf8("<h2>Controls <span class=\"showHideTable\">(<a class=\"toggleControlTable\" href=\"#\">+/-</a>)</span></h2>\n"
                                                   "<table class=\"controlTable\">\n") ) ) << html.toStdString();
+}
+
+// Node::makeDocumentation() writes a blank line after the extra pluginId.md
+// Markdown, which may not end with a newline: the Inputs header and table must
+// not be merged into its last paragraph or table
+TEST(Markdown, ExtraMarkdownWithoutFinalNewline)
+{
+    const char* inputs = "\nInputs\n------\n\nInput | Description\n--- | ---\nSource | The image\n";
+    Q_FOREACH(const QString &extra, QStringList() << QString::fromUtf8("Last line") << QString::fromUtf8("a | b\n--- | ---\n1 | 2")) {
+        QString html = Markdown::fixNodeHTML( Markdown::convert2html( extra + QString::fromUtf8("\n\n") + QString::fromUtf8(inputs) ) );
+        EXPECT_TRUE( html.contains( QString::fromUtf8("<h2>Inputs <span class=\"showHideTable\">") ) ) << html.toStdString();
+        EXPECT_TRUE( html.contains( QString::fromUtf8("<table class=\"inputTable\">") ) ) << html.toStdString();
+        EXPECT_FALSE( html.contains( QString::fromUtf8("<hr") ) ) << html.toStdString();
+    }
 }
 
 // the headers of the Preferences documentation get an id

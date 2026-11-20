@@ -131,7 +131,7 @@ convertFromPlainTextToMarkdown(const QString &plain_, bool genHTML, bool isTable
     // With genHTML, the Markdown extensions enabled in Markdown::convert2html() also
     // make these characters special, so they are backslash-escaped too:
     // ^    superscript (^text^)
-    // ~    strikethrough (~text~ and ~~text~~)
+    // ~    subscript (~text~) and strikethrough (~~text~~)
     // $    LaTeX math ($...$ and $$...$$)
     // =    highlight (==text==), and setext headers (a line of =)
 

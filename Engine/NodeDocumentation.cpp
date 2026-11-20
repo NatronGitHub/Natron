@@ -428,6 +428,9 @@ Node::makeDocumentation(bool genHTML) const
     if ( !extraMarkdown.isEmpty() ) {
         ms << "\n\n";
         ms << extraMarkdown;
+        // the file may not end with a newline: without a blank line, its last line
+        // would become part of the "Inputs" header or of a table
+        ms << "\n\n";
     }
 
     // create markdown table
