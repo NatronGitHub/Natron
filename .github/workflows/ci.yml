@@ -158,6 +158,13 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ steps.ccache.outputs.cache-primary-key }}
 
+      - name: TEMPORARY diagnosis (GuiSmokeTest SIGFPE, #1537)
+        continue-on-error: true
+        run: |
+          cd build
+          export OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio
+          for i in 1 2 3 4 5; do ctest -R '^gui\.|GuiSmokeTest' 2>&1 | grep -E "Test #|tests passed|FAILED" || true; done
+
       - name: Run Unix Tests (${{ matrix.config }})
         id: run-unix-tests
         # Allow continuing after error so logs can be uploaded.
