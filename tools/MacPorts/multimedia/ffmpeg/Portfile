@@ -148,6 +148,23 @@ compiler.blacklist-append {clang < 900}
 compiler.blacklist-append \
                     *gcc-4.0 *gcc-4.2
 
+# Natron: subport ffmpeg-lgpl, the FFmpeg of COMMERCIAL Natron builds (#1302): the same version
+# and configuration as "ffmpeg +gpl2 +highbitdepth +natronmini", without +gpl2 (no x264, x265, Xvid
+# or vid.stab) and without libzvbi, so LGPL-2.1+. It is installed in ${prefix}/libexec/ffmpeg-lgpl, with no links in
+# ${prefix}/bin, so that it can be installed next to ffmpeg. tools/jenkins/common.sh uses it when
+# NATRON_LICENSE=COMMERCIAL.
+subport ffmpeg-lgpl {
+    description     LGPL build of FFmpeg for Natron (no GPL or nonfree code)
+    # before the default +gpl2 below: the first default of a variant wins
+    default_variants-append \
+                    -gpl2 \
+                    -gpl3 \
+                    -nonfree \
+                    -vmaf \
+                    +highbitdepth \
+                    +natronmini
+}
+
 # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
 # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
 default_variants-append +gpl2
@@ -168,6 +185,33 @@ configure.cflags-append \
 
 set port_sharedir   ${prefix}/share
 set port_docdir     ${port_sharedir}/doc/${my_name}
+
+if {${subport} eq "ffmpeg-lgpl"} {
+    set port_prefix     ${prefix}/libexec/${subport}
+    set port_sharedir   ${port_prefix}/share
+    set port_docdir     ${port_sharedir}/doc/${my_name}
+    configure.pre_args-delete \
+                    --prefix=${prefix}
+    configure.pre_args-append \
+                    --prefix=${port_prefix}
+
+    pre-configure {
+        if {[variant_isset gpl2] || [variant_isset gpl3] || [variant_isset nonfree]} {
+            return -code error "${subport} is the LGPL FFmpeg of Natron's COMMERCIAL builds: install it without +gpl2, +gpl3 or +nonfree"
+        }
+    }
+    # check the licence that "ffmpeg -L" and av*_license() report, and the configuration
+    post-build {
+        if {![catch {exec grep -E -e {--enable-(gpl|nonfree|version3)} ${worksrcpath}/config.h}]} {
+            return -code error "${subport} is configured with GPL, version3 or nonfree code"
+        }
+        foreach lib {libavcodec libavdevice libavfilter libavformat libavutil libswresample libswscale} {
+            if {[catch {exec grep -a -q "${lib} license: LGPL version 2.1 or later" {*}[glob ${worksrcpath}/${lib}/${lib}.*.dylib]}]} {
+                return -code error "${lib} of ${subport} is not LGPL 2.1 or later"
+            }
+        }
+    }
+}
 
 configure.pre_args-append \
                     --cxx="${configure.cxx}" \
@@ -218,6 +262,16 @@ configure.args-append \
                     --enable-shared \
                     --enable-swscale \
                     --enable-zlib
+
+# Natron: ffmpeg-lgpl has no teletext (after the configure.args above, which enable libzvbi):
+# libzvbi is GPL-2+ and is kept out of COMMERCIAL builds (maintainer's decision, 2026-11-20)
+if {${subport} eq "ffmpeg-lgpl"} {
+    depends_lib-delete \
+                    port:zvbi
+    configure.args-replace \
+                    --enable-libzvbi \
+                    --disable-libzvbi
+}
 
 post-extract {
     # fix file perms; tarball contents deny group and world read

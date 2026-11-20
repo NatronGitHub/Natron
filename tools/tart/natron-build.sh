@@ -8,6 +8,8 @@
 #     -k          keep the build VM afterwards (default: delete it)
 #     -i IMAGE    SDK image to clone (default: $SDK_IMAGE, see tart-common.sh)
 #     -s SYSTEM   build system for Natron: cmake (default) or qmake (deprecated)
+#     -l LICENSE  NATRON_LICENSE: GPL (default) or COMMERCIAL (LGPL FFmpeg, LibRaw and libheif,
+#                 no GPL component: checked by tools/jenkins/check-commercial-bundle.sh)
 #
 # NATRON_EXTRA_CMAKE_FLAGS in the environment is passed on to the CMake build.
 # The local tools/jenkins scripts and tools/MacPorts overlay are used (copied into the VM);
@@ -20,7 +22,8 @@ UNIT_TESTS=false
 OUT=
 KEEP=0
 BUILD_SYSTEM=cmake
-while getopts "b:to:ki:s:h" opt; do
+LICENSE=GPL
+while getopts "b:to:ki:s:l:h" opt; do
     case $opt in
         b) BRANCH=$OPTARG ;;
         t) UNIT_TESTS=true ;;
@@ -28,9 +31,14 @@ while getopts "b:to:ki:s:h" opt; do
         k) KEEP=1 ;;
         i) SDK_IMAGE=$OPTARG ;;
         s) BUILD_SYSTEM=$OPTARG ;;
-        *) sed -n 2,15p "$0"; exit 1 ;;
+        l) LICENSE=$OPTARG ;;
+        *) sed -n 2,17p "$0"; exit 1 ;;
     esac
 done
+case "$LICENSE" in
+    GPL|COMMERCIAL) ;;
+    *) echo "-l: GPL or COMMERCIAL, not $LICENSE"; exit 1 ;;
+esac
 
 tart_lock
 trap tart_unlock EXIT   # replaced by cleanup once the clone exists
@@ -51,7 +59,7 @@ vm_configure "$VM"
 vm_start "$VM"
 vm_sync "$VM"
 status=0
-vm_provision "$VM" GIT_BRANCH="$BRANCH" UNIT_TESTS="$UNIT_TESTS" NATRON_BUILD_SYSTEM="$BUILD_SYSTEM" \
+vm_provision "$VM" GIT_BRANCH="$BRANCH" UNIT_TESTS="$UNIT_TESTS" NATRON_BUILD_SYSTEM="$BUILD_SYSTEM" NATRON_LICENSE="$LICENSE" \
     NATRON_EXTRA_CMAKE_FLAGS="${NATRON_EXTRA_CMAKE_FLAGS:-}" -- sync build || status=$?
 
 log "copying results to $OUT"
