@@ -16,7 +16,7 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-// net.natron.test.SequenceArgs (Tests/OfxSuiteStatus_Test.cpp): a generator that checks the inArgs of
+// net.natron.test.SequenceArgs (Tests/OfxSequenceRenderArgs_Test.cpp): a generator that checks the inArgs of
 // kOfxImageEffectActionBeginSequenceRender and kOfxImageEffectActionEndSequenceRender (ofxImageEffect.h).
 // It counts:
 // - "SequenceArgs.begin" and "SequenceArgs.end": the actions;
