@@ -13,6 +13,7 @@
 
 ### Changes
 
+- NatronRenderer (and `Natron -b`) exits with status 1, and renders nothing, when the Python script given on the command line or the `--onload` script raises an exception. It used to print the error, render the Write nodes created before the error, and exit with status 0. #1276
 - Documentation: the Reference Guide has a "Nodes" section, with one page per node group and per sub-group (e.g. "G'MIC / Colors"), and the sidebar only expands the current branch.
 
 
