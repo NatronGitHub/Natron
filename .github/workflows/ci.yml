@@ -286,13 +286,13 @@ jobs:
     # requires Linux and Windows; this job is informative. Nightly, it runs alone if the branch changed.
     needs: [changes, unix_test, win-test]
     # Disabled on RB-2.7 until the Linux Qt6 build passes (maintainer, 2026-11-20); re-enable with Qt6
-    # by restoring the original condition, commented out below.
-    if: false
-    # if: >-
-    #  !cancelled() && (
-    #  (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
-    #  (github.event_name != 'schedule' && needs.unix_test.result == 'success' && needs.win-test.result == 'success' &&
-    #   (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
+    # by removing the leading "false &&". (Only that line changes, so that RB-2.6's edits of this
+    # job keep forward-merging without conflicts.)
+    if: >-
+      false && !cancelled() && (
+      (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
+      (github.event_name != 'schedule' && needs.unix_test.result == 'success' && needs.win-test.result == 'success' &&
+       (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
     name: Test macos-15 arm64 MacPorts Python 3.10
     runs-on: macos-15
     timeout-minutes: 360
