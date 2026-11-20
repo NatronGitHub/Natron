@@ -799,10 +799,11 @@ fi
 
 # At this point we can run Natron unit tests to check that the deployment is ok.
 rm -rf "$HOME/.cache/INRIA/Natron"* &> /dev/null || true
+# The tests need no display: use Qt's offscreen platform with or without valgrind.
 if command -v valgrind > /dev/null 2>&1; then
-    $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" "${TMP_PORTABLE_DIR}/bin/Tests"
+    env QT_QPA_PLATFORM=offscreen $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" "${TMP_PORTABLE_DIR}/bin/Tests"
 else
-    # The Rocky Linux SDK images have no valgrind
+    # If valgrind is not installed in the build environment, run the tests without it.
     echo "Warning: valgrind not found, running the bundled unit tests without it"
     env QT_QPA_PLATFORM=offscreen $TIMEOUT -s KILL 1800 "${TMP_PORTABLE_DIR}/bin/Tests"
 fi
