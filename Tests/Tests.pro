@@ -49,6 +49,7 @@ NATRON_THIRD_PARTY_SOURCES += \
 # per-file flags); here it runs the same tests without -ffast-math.
 SOURCES += \
     BaseTest.cpp \
+    CLArgs_Test.cpp \
     Curve_Test.cpp \
     DeepGraphRender_Test.cpp \
     DiskCache_Test.cpp \
