@@ -1059,7 +1059,20 @@ Knob<T>::setValue(const T & v,
 
     // A knob that can't undo is set now: it must not start the undo command of a block of changes (paramEditBegin()),
     // or the next changes of the block would be merged into the previous undo command.
-    if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() && getCanUndo() ) {
+    // Same for a write that doesn't change the value (not animated, no expression, not linked, same value): its undo
+    // command would undo nothing. Issue #1443: when the user drags the center of a rectangle interact, the plug-in sets
+    // the position, then the size, unchanged, outside an edit block; the size made a second undo command, which
+    // MultipleKnobEditsUndoCommand::mergeWith() merged into the first one or not depending on the order of the
+    // addresses of the knobs, so that the first Undo of the drag sometimes did nothing.
+    const auto unchangedStaticValue = [&]() {
+        if ( isAnimated(dimension, view) || !getExpression(dimension).empty() || isSlave(dimension) ) {
+            return false;
+        }
+        QMutexLocker l(&_valueMutex);
+
+        return v == _values[dimension];
+    };
+    if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() && getCanUndo() && !unchangedStaticValue() ) {
         // The first write of a block creates its undo command: takeMultipleParamsEditCreateNewCommand() reads the level and
         // turns eMultipleParamsEditOnCreateNewCommand into eMultipleParamsEditOn atomically.
         KnobHolder::MultipleParamsEditEnum paramEditLevel = get_SetValueRecursionLevel() ?
