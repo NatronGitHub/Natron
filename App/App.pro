@@ -75,6 +75,10 @@ win32-msvc* {
 include(../OpenColorIO-Configs.pri)
 include(../global.pri)
 
+# Windows: stack reserve of the main thread (see NATRON_MAIN_THREAD_STACK_SIZE in global.pri)
+win32-g++: QMAKE_LFLAGS += -Wl,--stack,$$NATRON_MAIN_THREAD_STACK_SIZE
+win32-msvc*: QMAKE_LFLAGS += /STACK:$$NATRON_MAIN_THREAD_STACK_SIZE
+
 macx {
     Resources.files += $$PWD/../Gui/Resources/Images/natronProjectIcon_osx.icns
     Resources.path = Contents/Resources

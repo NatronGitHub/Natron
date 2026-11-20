@@ -74,13 +74,8 @@ if [ "$PKGOS" = "Linux" ]; then
     export OPENJPEG_HOME="$SDK_HOME"
     export THIRD_PARTY_TOOLS_HOME="$SDK_HOME"
     export LD_LIBRARY_PATH="$SDK_HOME/lib:$FFMPEG_PATH/lib"
-    export PATH="$SDK_HOME/gcc/bin:$SDK_HOME/bin:$SDK_HOME/cmake/bin:$PATH"
-    if [ "$ARCH" = "x86_64" ]; then
-        export LD_LIBRARY_PATH="$SDK_HOME/gcc/lib64:$LD_LIBRARY_PATH"
-    else
-        export LD_LIBRARY_PATH="$SDK_HOME/gcc/lib:$LD_LIBRARY_PATH"
-    fi
-    export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${FFMPEG_PATH}/include:$LIBRAW_PATH/include"
+    export PATH="$SDK_HOME/bin:$SDK_HOME/cmake/bin:$PATH"
+    export C_INCLUDE_PATH="${SDK_HOME}/include:${FFMPEG_PATH}/include:$LIBRAW_PATH/include"
     export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
 
 elif [ "$PKGOS" = "Windows" ]; then
@@ -89,7 +84,7 @@ elif [ "$PKGOS" = "Windows" ]; then
     export GIT_SSL_NO_VERIFY="true"
     # https://github.com/msys2/MINGW-packages/issues/10761
     # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70129
-    # export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${FFMPEG_PATH}/include:$LIBRAW_PATH/include"
+    # export C_INCLUDE_PATH="${SDK_HOME}/include:${FFMPEG_PATH}/include:$LIBRAW_PATH/include"
     export C_INCLUDE_PATH="${FFMPEG_PATH}/include:${LIBRAW_PATH}/include"
     export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
     BUILDID="-Wl,--build-id"

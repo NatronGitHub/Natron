@@ -189,6 +189,7 @@ ViewerGL::resizeGL(int w,
     }
     glCheckError();
     glViewport (0, 0, w, h);
+    _imp->updateDitherAmplitude();
     double zoomWidth = w;
     double zoomHeight = h;
 
@@ -1253,6 +1254,7 @@ ViewerGL::initializeGL()
     // initializeGL() again. The OpenGL objects of the old context must be released with it.
     QObject::connect( context(), &QOpenGLContext::aboutToBeDestroyed, this, &ViewerGL::onContextAboutToBeDestroyed );
     _imp->initializeGL();
+    _imp->updateDitherAmplitude();
 
     if (_imp->glResourcesReleased) {
         // The textures of the previous context held the displayed images: render them again.
@@ -1657,6 +1659,7 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
 void
 ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      size_t bytesCount,
+                                     ImageBitDepthEnum depth,
                                      const RectI &roiRoundedToTileSize,
                                      const RectI& roi,
                                      const TextureRect & tileRect,
@@ -1687,10 +1690,10 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     // We use 2 PBOs to make use of asynchronous data uploading
     GLuint pboId = getPboID(_imp->updateViewerPboIndex);
 
-    // The bitdepth of the texture
-    ImageBitDepthEnum bd = getBitDepth();
+    // The bitdepth of the texture: the one of the buffer, which was rendered with the "Viewer
+    // textures" setting of that time. The setting may have changed since (#1120).
     Texture::DataTypeEnum dataType;
-    if (bd == eImageBitDepthByte) {
+    if (depth == eImageBitDepthByte) {
         dataType = Texture::eDataTypeByte;
     } else {
         //do 32bit fp textures either way, don't bother with half float. We might support it further on.
@@ -1721,6 +1724,8 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                 Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
             }
             _imp->displayTextures[textureIndex].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, dataType, format, internalFormat, glType) );
+            // upload into the new texture, not into the one it replaces
+            tex = _imp->displayTextures[textureIndex].texture;
         }
         textureRectangle.set(roiRoundedToTileSize);
         _imp->displayTextures[textureIndex].roiNotRoundedToTileSize.set(roi);

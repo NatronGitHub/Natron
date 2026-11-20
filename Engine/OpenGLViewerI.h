@@ -106,9 +106,12 @@ public:
      * 2) memcpy to copy the ramBuffer to previously mapped buffer.
      * 3) glUnmapBuffer to unmap the GPU buffer
      * 4) glTexSubImage2D or glTexImage2D depending whether yo need to resize the texture or not.
+     * depth is the bit depth of ramBuffer (eImageBitDepthByte or eImageBitDepthFloat): the one the
+     * frame was rendered with, which may not be the current getBitDepth() if the setting changed since.
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                             size_t bytesCount,
+                                            ImageBitDepthEnum depth,
                                             const RectI &roiRoundedToTileSize,
                                             const RectI& roi,
                                             const TextureRect & tileRect,

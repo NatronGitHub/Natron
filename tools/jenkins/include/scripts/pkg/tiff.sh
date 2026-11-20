@@ -16,7 +16,10 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libtiff-4.pc
     start_build
     untar "$SRC_PATH/$TIFF_TAR"
     pushd "tiff-${TIFF_VERSION}"
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --libdir="$SDK_HOME/lib" --enable-shared --disable-static
+    # --disable-sphinx: the SDK's Python has sphinx, and the doc-man and doc-html targets then
+    # run in parallel on the same doctree cache, which randomly fails with
+    # "_pickle.UnpicklingError: pickle data was truncated". The SDK does not need the libtiff docs.
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --libdir="$SDK_HOME/lib" --enable-shared --disable-static --disable-sphinx
     make -j${MKJOBS}
     make install
     popd

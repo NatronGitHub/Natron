@@ -1082,7 +1082,9 @@ Gui::openProjectInternal(const std::string & absoluteFileName,
         if (instance) {
             GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( instance.get() );
             if (guiApp) {
-                guiApp->getGui()->activateWindow();
+                if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+                    guiApp->getGui()->activateWindow();
+                }
 
                 return instance;
             }
