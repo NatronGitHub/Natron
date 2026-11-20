@@ -59,13 +59,8 @@ fi
 if [ "$PKGOS" = "Linux" ]; then
     #export PYTHONHOME="$SDK_HOME"
     export LD_LIBRARY_PATH="$SDK_HOME/lib:$SDK_HOME/qt${QT_VERSION_MAJOR}/lib"
-    export PATH="$SDK_HOME/gcc/bin:$SDK_HOME/bin:$SDK_HOME/qt${QT_VERSION_MAJOR}/bin:$HOME/.cabal/bin:$PATH"
-    if [ "$ARCH" = "x86_64" ]; then
-        export LD_LIBRARY_PATH="$SDK_HOME/gcc/lib64:$LD_LIBRARY_PATH"
-    else
-        export LD_LIBRARY_PATH="$SDK_HOME/gcc/lib:$LD_LIBRARY_PATH"
-    fi
-    export C_INCLUDE_PATH="${SDK_HOME}/gcc/include:${SDK_HOME}/include:${SDK_HOME}/qt${QT_VERSION_MAJOR}/include"
+    export PATH="$SDK_HOME/bin:$SDK_HOME/qt${QT_VERSION_MAJOR}/bin:$HOME/.cabal/bin:$PATH"
+    export C_INCLUDE_PATH="${SDK_HOME}/include:${SDK_HOME}/qt${QT_VERSION_MAJOR}/include"
     export CPLUS_INCLUDE_PATH="${C_INCLUDE_PATH}"
 fi
 # QMAKE is resolved by common.sh, which knows about version-suffixed qmake names
@@ -663,7 +658,7 @@ if [ "$PKGOS" = "Linux" ]; then
     # Note: Several suppression files can be passed to valgrind.
     # There is an automatic tool to generate libc/libstdc++/Qt
     # suppressions at https://github.com/AlekSi/valgrind-suppressions
-    env LD_LIBRARY_PATH="$SDK_HOME/gcc/lib:$SDK_HOME/gcc/lib64:$SDK_HOME/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib:$QTDIR/lib" $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" ${TEST_BINARY_TO_RUN}
+    env LD_LIBRARY_PATH="$SDK_HOME/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib:$QTDIR/lib" $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" ${TEST_BINARY_TO_RUN}
     rm -f lib || true
     # ITS NOT POSSIBLE TO RUN THE WIN TESTS HERE, DO IT IN THE INSTALLER SCRIPT
 elif [ "$PKGOS" = "Windows" ]; then

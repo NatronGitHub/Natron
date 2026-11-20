@@ -403,7 +403,7 @@ Gui::onDoDialog(int type,
         --_imp->_uiUsingMainThread;
         _imp->_uiUsingMainThreadCond.wakeAll();
     }
-    if (currentActiveWindow && !isActiveWindowADialog) {
+    if (currentActiveWindow && !isActiveWindowADialog && !GuiApplicationManager::isGuiTestNoFocus()) {
         currentActiveWindow->activateWindow();
     }
 } // Gui::onDoDialog
@@ -662,8 +662,10 @@ Gui::showSettings()
         _imp->_settingsGui->createGui();
     }
     _imp->_settingsGui->show();
-    _imp->_settingsGui->raise();
-    _imp->_settingsGui->activateWindow();
+    if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+        _imp->_settingsGui->raise();
+        _imp->_settingsGui->activateWindow();
+    }
 }
 
 void

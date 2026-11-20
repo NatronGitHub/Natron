@@ -25,6 +25,7 @@ set(NatronPython_SOURCES
     ../Global/StrUtils.cpp 
 )
 add_executable(NatronPython ${NatronPython_SOURCES})
+natron_set_main_thread_stack_size(NatronPython)
 set_target_properties(NatronPython PROPERTIES OUTPUT_NAME "natron-python")
 target_link_libraries(NatronPython
     PRIVATE

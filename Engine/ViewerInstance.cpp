@@ -2893,7 +2893,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(UpdateViewerParamsPtr params
             texRect.set(it->rectRounded);
     
             assert(params->roi.contains(texRect));
-            uiContext->transferBufferFromRAMtoGPU(it->ramBuffer, it->bytesCount, params->roi, params->roiNotRoundedToTileSize, texRect, params->textureIndex, params->isPartialRect, isFirstTile, &texture);
+            uiContext->transferBufferFromRAMtoGPU(it->ramBuffer, it->bytesCount, params->depth, params->roi, params->roiNotRoundedToTileSize, texRect, params->textureIndex, params->isPartialRect, isFirstTile, &texture);
             isFirstTile = false;
         }
 
