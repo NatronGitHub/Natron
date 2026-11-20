@@ -178,8 +178,9 @@ and work as usual. The test mode also isolates the test from the user's session:
   item triggered), so that the real code runs. A modal dialog or menu that gets no answer is
   **unexpected**: it is printed, closed so that it does not block, and the test fails, even if it is
   skipped afterwards;
-- the settings are not written to the user's preferences: the Natron settings, the shortcuts, the
-  window geometry, the file dialog state, the Tab dialog's plug-in ranking, the colour palette and the
+- the settings are not written to the user's preferences: the Natron settings, the plug-in
+  settings (which are not read either: the plug-ins keep their defaults), the paths added with
+  ``natron.appendToNatronPath()``, the shortcuts, the window geometry, the file dialog state, the Tab dialog's plug-in ranking, the colour palette and the
   cache version are not saved, and the other settings (e.g. the recent files) go to a temporary
   directory of the run, removed when Natron exits;
 - the dialogs are recorded (:func:`NatronGuiTest.getDialogLog`).
@@ -295,7 +296,8 @@ synthetic Qt events to the widgets; the real mouse cursor and the keyboard are n
    - a button name (``"yes"``, ``"no"``, ``"ok"``, ``"cancel"``, ``"save"``, ``"discard"``,
      ``"close"``, …): clicks that button of the dialog;
    - for a menu, the text of the item to trigger (without ``&``), in the menu or, if not found there, in
-     its submenus: it is selected as the user does (the item is made active and *Return* is pressed,
+     its submenus (breadth first: the first match wins), or its path, the item texts separated by ``/``
+     (e.g. ``"Other/Dot"``): it is selected as the user does (the item is made active and *Return* is pressed,
      which opens the submenus on the way), so that the code that runs the menu gets that item;
    - a callable, called with ``(title, text, className)`` while the window is shown: it returns one of
      the above, or ``None`` if it handled the window itself (e.g. a file dialog, through PySide's
