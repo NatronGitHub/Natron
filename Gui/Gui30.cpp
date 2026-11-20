@@ -664,15 +664,15 @@ Gui::removeUndoStack(QUndoStack* stack)
     if ( it == _imp->_undoStacksActions.end() ) {
         return;
     }
-    if (_imp->_currentUndoAction == it->second.first) {
-        _imp->menuEdit->removeAction(_imp->_currentUndoAction);
+    // The undo/redo actions are children of the stack, and are deleted with it: they must not stay
+    // the current actions of the Edit menu, which setUndoRedoActions() removes from the menu the
+    // next time another stack becomes active (#1441).
+    if ( (_imp->_currentUndoAction == it->second.first) || (_imp->_currentRedoAction == it->second.second) ) {
+        _imp->setUndoRedoActions(0, 0);
     }
-    if (_imp->_currentRedoAction == it->second.second) {
-        _imp->menuEdit->removeAction(_imp->_currentRedoAction);
-    }
-    if ( it != _imp->_undoStacksActions.end() ) {
-        _imp->_undoStacksActions.erase(it);
-    }
+    _imp->_undoStacksActions.erase(it);
+    // Do not leave the stack in the group, where it may still be the active stack.
+    _imp->_undoStacksGroup->removeStack(stack);
 }
 
 void
