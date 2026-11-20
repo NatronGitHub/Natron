@@ -1646,11 +1646,12 @@ ReadNode::onOverlayKeyDown(double time,
                            const RenderScale & renderScale,
                            ViewIdx view,
                            Key key,
-                           KeyboardModifiers modifiers)
+                           KeyboardModifiers modifiers,
+                           const QString& keyText)
 {
     EffectInstancePtr effect = getEmbeddedReaderEffect();
 
-    return effect ? effect->onOverlayKeyDown_public(time, renderScale, view, key, modifiers) : false;
+    return effect ? effect->onOverlayKeyDown_public(time, renderScale, view, key, modifiers, keyText) : false;
 }
 
 bool
@@ -1658,11 +1659,12 @@ ReadNode::onOverlayKeyUp(double time,
                          const RenderScale & renderScale,
                          ViewIdx view,
                          Key key,
-                         KeyboardModifiers modifiers)
+                         KeyboardModifiers modifiers,
+                         const QString& keyText)
 {
     EffectInstancePtr effect = getEmbeddedReaderEffect();
 
-    return effect ? effect->onOverlayKeyUp_public(time, renderScale, view, key, modifiers) : false;
+    return effect ? effect->onOverlayKeyUp_public(time, renderScale, view, key, modifiers, keyText) : false;
 }
 
 bool
@@ -1670,11 +1672,12 @@ ReadNode::onOverlayKeyRepeat(double time,
                              const RenderScale & renderScale,
                              ViewIdx view,
                              Key key,
-                             KeyboardModifiers modifiers)
+                             KeyboardModifiers modifiers,
+                             const QString& keyText)
 {
     EffectInstancePtr effect = getEmbeddedReaderEffect();
 
-    return effect ? effect->onOverlayKeyRepeat_public(time, renderScale, view, key, modifiers) : false;
+    return effect ? effect->onOverlayKeyRepeat_public(time, renderScale, view, key, modifiers, keyText) : false;
 }
 
 bool

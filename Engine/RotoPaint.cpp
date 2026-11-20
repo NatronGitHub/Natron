@@ -3221,7 +3221,8 @@ RotoPaint::onOverlayKeyDown(double /*time*/,
                             const RenderScale & /*renderScale*/,
                             ViewIdx /*view*/,
                             Key key,
-                            KeyboardModifiers /*modifiers*/)
+                            KeyboardModifiers /*modifiers*/,
+                            const QString& /*keyText*/)
 {
     bool didSomething = false;
 
@@ -3261,7 +3262,8 @@ RotoPaint::onOverlayKeyUp(double /*time*/,
                           const RenderScale & /*renderScale*/,
                           ViewIdx /*view*/,
                           Key key,
-                          KeyboardModifiers /*modifiers*/)
+                          KeyboardModifiers /*modifiers*/,
+                          const QString& /*keyText*/)
 {
     bool didSomething = false;
 
@@ -3307,7 +3309,8 @@ RotoPaint::onOverlayKeyRepeat(double /*time*/,
                               const RenderScale & /*renderScale*/,
                               ViewIdx /*view*/,
                               Key /*key*/,
-                              KeyboardModifiers /*modifiers*/)
+                              KeyboardModifiers /*modifiers*/,
+                              const QString& /*keyText*/)
 {
     return false;
 } // onOverlayKeyRepeat

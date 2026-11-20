@@ -3520,7 +3520,8 @@ EffectInstance::onOverlayKeyDown_public(double time,
                                         const RenderScale & renderScale,
                                         ViewIdx view,
                                         Key key,
-                                        KeyboardModifiers modifiers)
+                                        KeyboardModifiers modifiers,
+                                        const QString& keyText)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3540,7 +3541,7 @@ EffectInstance::onOverlayKeyDown_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayKeyDown(time, actualScale, view, key, modifiers);
+        ret = onOverlayKeyDown(time, actualScale, view, key, modifiers, keyText);
         if (!ret && shouldDrawHostOverlay()) {
             ret |= getNode()->onOverlayKeyDownDefault(time, actualScale, view, key, modifiers);
         }
@@ -3556,7 +3557,8 @@ EffectInstance::onOverlayKeyUp_public(double time,
                                       const RenderScale & renderScale,
                                       ViewIdx view,
                                       Key key,
-                                      KeyboardModifiers modifiers)
+                                      KeyboardModifiers modifiers,
+                                      const QString& keyText)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3576,7 +3578,7 @@ EffectInstance::onOverlayKeyUp_public(double time,
         NON_RECURSIVE_ACTION();
 
         _imp->setDuringInteractAction(true);
-        ret = onOverlayKeyUp(time, actualScale, view, key, modifiers);
+        ret = onOverlayKeyUp(time, actualScale, view, key, modifiers, keyText);
         if (!ret && shouldDrawHostOverlay()) {
             ret |= getNode()->onOverlayKeyUpDefault(time, actualScale, view, key, modifiers);
         }
@@ -3592,7 +3594,8 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
                                           const RenderScale & renderScale,
                                           ViewIdx view,
                                           Key key,
-                                          KeyboardModifiers modifiers)
+                                          KeyboardModifiers modifiers,
+                                          const QString& keyText)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3611,7 +3614,7 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayKeyRepeat(time, actualScale, view, key, modifiers);
+        ret = onOverlayKeyRepeat(time, actualScale, view, key, modifiers, keyText);
         if (!ret && shouldDrawHostOverlay()) {
             ret |= getNode()->onOverlayKeyRepeatDefault(time, actualScale, view, key, modifiers);
         }

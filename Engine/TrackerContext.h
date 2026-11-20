@@ -247,15 +247,15 @@ public:
 
     bool onOverlayKeyDownInternalNodes(double time,
                                        const RenderScale & renderScale,
-                                       ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+                                       ViewIdx view, Key key, KeyboardModifiers modifiers, const QString& keyText, OverlaySupport* viewer) WARN_UNUSED_RETURN;
 
     bool onOverlayKeyUpInternalNodes(double time,
                                      const RenderScale & renderScale,
-                                     ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+                                     ViewIdx view, Key key, KeyboardModifiers modifiers, const QString& keyText, OverlaySupport* viewer) WARN_UNUSED_RETURN;
 
     bool onOverlayKeyRepeatInternalNodes(double time,
                                          const RenderScale & renderScale,
-                                         ViewIdx view, Key key, KeyboardModifiers modifiers, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+                                         ViewIdx view, Key key, KeyboardModifiers modifiers, const QString& keyText, OverlaySupport* viewer) WARN_UNUSED_RETURN;
 
     bool onOverlayFocusGainedInternalNodes(double time,
                                            const RenderScale & renderScale,

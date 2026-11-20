@@ -2455,9 +2455,9 @@ OfxEffectInstance::onOverlayPenDown(double time,
         OfxPointD penPos;
         penPos.x = pos.x();
         penPos.y = pos.y();
-        OfxPointI penPosViewport;
-        penPosViewport.x = viewportPos.x();
-        penPosViewport.y = viewportPos.y();
+        // the viewer gives widget coordinates: kOfxInteractPropPenViewportPosition has its origin at the
+        // bottom left
+        OfxPointI penPosViewport = _imp->overlayInteract->toPenViewportPosition(viewportPos);
 
         SET_CAN_SET_VALUE(true);
 
@@ -2498,9 +2498,9 @@ OfxEffectInstance::onOverlayPenMotion(double time,
         OfxPointD penPos;
         penPos.x = pos.x();
         penPos.y = pos.y();
-        OfxPointI penPosViewport;
-        penPosViewport.x = viewportPos.x();
-        penPosViewport.y = viewportPos.y();
+        // the viewer gives widget coordinates: kOfxInteractPropPenViewportPosition has its origin at the
+        // bottom left
+        OfxPointI penPosViewport = _imp->overlayInteract->toPenViewportPosition(viewportPos);
         OfxStatus stat;
 
         SET_CAN_SET_VALUE(true);
@@ -2537,9 +2537,9 @@ OfxEffectInstance::onOverlayPenUp(double time,
         OfxPointD penPos;
         penPos.x = pos.x();
         penPos.y = pos.y();
-        OfxPointI penPosViewport;
-        penPosViewport.x = viewportPos.x();
-        penPosViewport.y = viewportPos.y();
+        // the viewer gives widget coordinates: kOfxInteractPropPenViewportPosition has its origin at the
+        // bottom left
+        OfxPointI penPosViewport = _imp->overlayInteract->toPenViewportPosition(viewportPos);
 
         SET_CAN_SET_VALUE(true);
         _imp->overlayInteract->setKeyModifiers(modifiers);
@@ -2603,13 +2603,14 @@ OfxEffectInstance::onOverlayKeyDown(double time,
                                     const RenderScale & renderScale,
                                     ViewIdx view,
                                     Key key,
-                                    KeyboardModifiers modifiers)
+                                    KeyboardModifiers modifiers,
+                                    const QString& keyText)
 {
     if (!_imp->initialized) {
         return false;;
     }
     if (_imp->overlayInteract) {
-        QByteArray keyStr;
+        QByteArray keyStr = OfxOverlayInteract::keyStringFromText(keyText);
         SET_CAN_SET_VALUE(true);
         _imp->overlayInteract->setKeyModifiers( keyModifiersAfterKeyEvent(key, modifiers, true) );
         OfxStatus stat = _imp->overlayInteract->keyDownAction( time, renderScale.toOfxPointD(), view,_imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
@@ -2632,13 +2633,14 @@ OfxEffectInstance::onOverlayKeyUp(double time,
                                   const RenderScale & renderScale,
                                   ViewIdx view,
                                   Key key,
-                                  KeyboardModifiers modifiers)
+                                  KeyboardModifiers modifiers,
+                                  const QString& keyText)
 {
     if (!_imp->initialized) {
         return false;
     }
     if (_imp->overlayInteract) {
-        QByteArray keyStr;
+        QByteArray keyStr = OfxOverlayInteract::keyStringFromText(keyText);
         SET_CAN_SET_VALUE(true);
         _imp->overlayInteract->setKeyModifiers( keyModifiersAfterKeyEvent(key, modifiers, false) );
         OfxStatus stat = _imp->overlayInteract->keyUpAction( time, renderScale.toOfxPointD(), view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
@@ -2663,13 +2665,14 @@ OfxEffectInstance::onOverlayKeyRepeat(double time,
                                       const RenderScale & renderScale,
                                       ViewIdx view,
                                       Key key,
-                                      KeyboardModifiers modifiers)
+                                      KeyboardModifiers modifiers,
+                                      const QString& keyText)
 {
     if (!_imp->initialized) {
         return false;
     }
     if (_imp->overlayInteract) {
-        QByteArray keyStr;
+        QByteArray keyStr = OfxOverlayInteract::keyStringFromText(keyText);
 
         SET_CAN_SET_VALUE(true);
         _imp->overlayInteract->setKeyModifiers( keyModifiersAfterKeyEvent(key, modifiers, true) );

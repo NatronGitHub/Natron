@@ -1670,11 +1670,11 @@ public:
 
     bool onOverlayPenUp_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyDown_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyDown_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers, const QString& keyText) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyUp_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyUp_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers, const QString& keyText) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyRepeat_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyRepeat_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers, const QString& keyText) WARN_UNUSED_RETURN;
 
     bool onOverlayFocusGained_public(double time, const RenderScale & renderScale, ViewIdx view) WARN_UNUSED_RETURN;
 
@@ -2135,7 +2135,8 @@ protected:
                                   const RenderScale & /*renderScale*/,
                                   ViewIdx /*view*/,
                                   Key /*key*/,
-                                  KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
+                                  KeyboardModifiers /*modifiers*/,
+                                  const QString& /*keyText*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -2144,7 +2145,8 @@ protected:
                                 const RenderScale & /*renderScale*/,
                                 ViewIdx /*view*/,
                                 Key /*key*/,
-                                KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
+                                KeyboardModifiers /*modifiers*/,
+                                const QString& /*keyText*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -2153,7 +2155,8 @@ protected:
                                     const RenderScale & /*renderScale*/,
                                     ViewIdx /*view*/,
                                     Key /*key*/,
-                                    KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
+                                    KeyboardModifiers /*modifiers*/,
+                                    const QString& /*keyText*/) WARN_UNUSED_RETURN
     {
         return false;
     }

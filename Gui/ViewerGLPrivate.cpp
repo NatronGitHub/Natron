@@ -125,7 +125,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , sizeH()
     , pointerTypeOnPress(ePenTypeLMB)
     , pressureOnPress(1.)
-    , pressureOnRelease(1.)
+    , pressureOnRelease(0.)
     , wheelDeltaSeekFrame(0)
     , isUpdatingTexture(false)
     , renderOnPenUp(false)
