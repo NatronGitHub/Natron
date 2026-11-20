@@ -254,7 +254,9 @@ Plugins/
 
 # Build
 
-Natron is built with CMake (3.16.7 or later). From the Natron source directory:
+Natron is built with CMake (3.21 or later). The distribution package is recent enough on Ubuntu 22.04 and later, Debian 12 and later, Fedora, and RHEL/Rocky/Alma 8.8 and later and 9 (`dnf install cmake`). On older systems, install a newer CMake with `pip install cmake` (in a virtual environment or with `--user`), or from https://cmake.org/download/ (or Kitware's APT repository on Ubuntu).
+
+From the Natron source directory:
 
 ```
 cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo

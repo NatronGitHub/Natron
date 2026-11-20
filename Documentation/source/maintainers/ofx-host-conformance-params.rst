@@ -423,8 +423,8 @@ Table 3: ofxParam.h, parameter properties
    * - P33
      - Read-only properties on instances ("instance (read only)": Animates, CanUndo, Persistant, ScriptName, DoubleType, DimensionLabel, StringMode, ...)
      - MUST
-     - Instances copy the descriptor PropSpecs with the same "host only" flag, which is false for these (hP.cpp:272-300, 481-488). A plug-in can write them on an instance with kOfxStatOK and nothing happens. Only Type is enforced (hP.cpp:281)
-     - PARTIAL (spec-only)
+     - Instances copy the descriptor PropSpecs with the same "host only" flag, which is false for these (hP.cpp:272-300, 481-488). A plug-in can write them on an instance with kOfxStatOK and nothing happens. Only Type is enforced (hP.cpp:281) Fixed: the instance copies of these properties (and kOfxParamInterpType) are plug-in read-only; kOfxParamPropGroupOpen stays writable (a Natron extension, ofxNatron.h). With Natron's ``ePluginReadOnlyWarn`` policy (Engine/OfxHost.cpp, core R2, deliberate), a write still succeeds, with one warning per property name.
+     - OK (warns, deliberate: core R2). Fixed by `NatronGitHub/openfx#205 <https://github.com/NatronGitHub/openfx/pull/205>`__, in libs/OpenFX since `#1507 <https://github.com/NatronGitHub/Natron/pull/1507>`__.
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - P34
@@ -768,13 +768,13 @@ Spec-only / UI / return codes
 
 **Problem 19. Project load replaces plug-in defaults with the defaults saved in the project (PARTIAL, low).** Spec `ofxParameter.rst:630 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxParameter.rst?plain=1#L630>`__ (step 4). Node.cpp:1174 ``cloneDefaultValues``; this only affects "reset to default" for knobs saved in the project. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
-**Problem 20. Small ones (PARTIAL, low):** ScriptName ignored (Python uses the param name); ShowTimeMarker ignored; parametricParamGetValue returns kOfxStatFailed instead of ErrBadIndex for a bad curve index (OPI.cpp:4728-4743); "instance (read only)" properties are writable on instances with no effect (hP.cpp:272-300, 481-488). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. The parametricParamGetValue bad curve index is fixed by `#1484 <https://github.com/NatronGitHub/Natron/pull/1484>`__.
+**Problem 20. Small ones (PARTIAL, low):** ScriptName ignored (Python uses the param name); ShowTimeMarker ignored; parametricParamGetValue returns kOfxStatFailed instead of ErrBadIndex for a bad curve index (OPI.cpp:4728-4743); "instance (read only)" properties are writable on instances with no effect (hP.cpp:272-300, 481-488). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. The parametricParamGetValue bad curve index is fixed by `#1484 <https://github.com/NatronGitHub/Natron/pull/1484>`__. The "instance (read only)" properties are plug-in read-only on instances since `NatronGitHub/openfx#205 <https://github.com/NatronGitHub/openfx/pull/205>`__ (in libs/OpenFX since `#1507 <https://github.com/NatronGitHub/Natron/pull/1507>`__); Natron warns and accepts the write.
 
 NEXT items seen (out of scope): kOfxParamInterpType (HostSupport hP.cpp:629-635, `#1138 <https://github.com/NatronGitHub/Natron/issues/1138>`__); instanceChanged after project load.
 
 Counts
 ------
 
-Table rows (105): OK 75, PARTIAL 16, WRONG 8, N/A 4, NEXT 2. Some bugs appear in more than one row: paramCopy in S15 and R13, custom interpolation in T15 and P32, ChoiceOrder in T9 and P25.
+Table rows (105): OK 76, PARTIAL 15, WRONG 8, N/A 4, NEXT 2. Some bugs appear in more than one row: paramCopy in S15 and R13, custom interpolation in T15 and P32, ChoiceOrder in T9 and P25.
 
 Distinct problems (1-20): 9 WRONG (1, 2, 3, 4, 5, 7, 9, 10, 11), 11 PARTIAL (6, 8, 12-20).

@@ -597,6 +597,10 @@ paramsDescribeInContext(OfxImageEffectHandle effect)
          (paramsDefine(paramSet, kOfxParamTypeDouble, "presetC", &props) != kOfxStatOK) ) {
         return kOfxStatFailed;
     }
+    // a group (Tests/OfxSuiteStatus_Test.cpp: kOfxParamPropGroupOpen written on the instance)
+    if (paramsDefine(paramSet, kOfxParamTypeGroup, "group", &props) != kOfxStatOK) {
+        return kOfxStatFailed;
+    }
     if (paramsDefine(paramSet, kOfxParamTypeBoolean, "uiOnly", &props) != kOfxStatOK) {
         return kOfxStatFailed;
     }
