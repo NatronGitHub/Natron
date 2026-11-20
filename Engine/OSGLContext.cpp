@@ -643,6 +643,11 @@ OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR,
 void
 OSGLContext::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 {
+#ifdef DEBUG
+    // the platform contexts are created and destroyed here too: no trapped floating point exception
+    // in the OpenGL driver (see the OSGLContext constructor)
+    boost_adaptbx::floating_point::no_exception_trapping noTrap;
+#endif
 #ifdef __NATRON_WIN32__
     OSGLContext_win::getGPUInfos(renderers);
 #elif defined(__NATRON_OSX__)

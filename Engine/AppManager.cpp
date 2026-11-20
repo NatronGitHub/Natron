@@ -408,10 +408,21 @@ AppManager::loadFromArgs(const CLArgs& cl)
 #endif
     if (_imp->testMode) {
         // The settings written with the default QSettings constructor (e.g. the recent files) go to a
-        // directory of the tests, not to the user's preferences (the explicit Natron settings are not
-        // saved with --no-settings, which --test implies).
-        QSettings::setDefaultFormat(QSettings::IniFormat);
-        QSettings::setPath( QSettings::IniFormat, QSettings::UserScope, QDir::tempPath() + QString::fromUtf8("/NatronGuiTest-settings") );
+        // temporary directory of this run, removed at exit, not to the user's preferences. The Natron
+        // settings are not saved with --no-settings, which --test implies, and the other writers of
+        // QSettings(organization, application) skip their writes in test mode.
+        _imp->testSettingsDir.reset( new QTemporaryDir( QDir::tempPath() + QString::fromUtf8("/NatronGuiTest-settings-XXXXXX") ) );
+        if ( _imp->testSettingsDir->isValid() ) {
+            QSettings::setDefaultFormat(QSettings::IniFormat);
+            QSettings::setPath( QSettings::IniFormat, QSettings::UserScope, _imp->testSettingsDir->path() );
+        } else {
+            std::cout << "NatronGuiTest: FAIL: cannot create a temporary settings directory in "
+                      << QDir::tempPath().toStdString() << std::endl;
+            _imp->requestedExitCode = 1;
+            _imp->quitRequested = true;
+
+            return false;
+        }
         // A GUI test that fails to start (e.g. an error while loading) fails: only the test runner (or a
         // skip) sets another exit status (see main()).
         _imp->requestedExitCode = 1;
@@ -420,6 +431,10 @@ AppManager::loadFromArgs(const CLArgs& cl)
         // A GUI test never takes the user's keyboard focus or activates its windows (#1464). Set before
         // the QApplication exists. (--no-dialogs does not imply it.)
         qputenv("NATRON_TEST_NO_FOCUS", "1");
+    }
+    if (_imp->testMode) {
+        // Before initPython(): the output of a test reaches the log even when the watchdog ends it
+        qputenv("PYTHONUNBUFFERED", "1");
     }
 
     // This needs to be done BEFORE creating qApp because
@@ -1134,7 +1149,11 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
     }
 
     int oldCacheVersion = 0;
-    {
+    if ( isTestMode() ) {
+        // a test does not record its cache version in the user's preferences (the next launch of an
+        // installed Natron would clear the user's caches)
+        oldCacheVersion = NATRON_CACHE_VERSION;
+    } else {
         QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
         if ( settings.contains( QString::fromUtf8(kNatronCacheVersionSettingsKey) ) ) {
