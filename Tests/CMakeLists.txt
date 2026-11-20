@@ -51,6 +51,7 @@ set(Tests_SOURCES
     OfxInstanceEdit_Test.cpp
     OfxMultiThreadSuite_Test.cpp
     OfxMultiplePAR_Test.cpp
+    OfxParamKeys_Test.cpp
     OfxParamAnimating_Test.cpp
     OfxParamCopy_Test.cpp
     OfxOpenGLSupport_Test.cpp
