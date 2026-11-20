@@ -83,6 +83,10 @@ public:
 
     /// Is a plug-in with this descriptor obsolete, i.e. only kept to load old projects and not offered
     /// to users for new nodes? True if it sets kOfxImageEffectPluginPropObsolete (OFX, after 1.5.1).
+    /// The spec means a plug-in "made obsolete by a different version of the same plugin contained in
+    /// the same bundle", at least one version of which is not obsolete. Natron is more lenient: it hides
+    /// any plug-in that sets the property, even with no newer version (e.g. openfx-misc's JoinViews,
+    /// OneView, Roto and TrackerPM, which are obsolete only in Natron and have a single version).
     /// The Natron extension kNatronOfxImageEffectPropDeprecated, which had the same meaning, is not
     /// read any more (#1491): the plug-ins that ship with Natron 2.6 set the standard property.
     static bool isPluginObsolete(const OFX::Host::Property::Set& descriptorProps);

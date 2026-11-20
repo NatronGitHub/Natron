@@ -123,7 +123,12 @@ TEST(OfxPluginObsolete, HiddenButCreatableByID)
     EXPECT_FALSE( DocumentationGroups::isDocumented(plugin) );
 
     // the user can't create it...
-    EXPECT_FALSE( bool( createNodeByID(kNatronTestPluginObsolete, false) ) );
+    NodePtr userNode = createNodeByID(kNatronTestPluginObsolete, false);
+    EXPECT_FALSE( bool(userNode) );
+    if (userNode) {
+        // don't leave it in the project shared with the next tests
+        userNode->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
+    }
 
     // ...but a project or a Python script can (both set kCreateNodeArgsPropAllowNonUserCreatablePlugins)
     NodePtr node = createNodeByID(kNatronTestPluginObsolete, true);

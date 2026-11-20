@@ -256,7 +256,13 @@ Obsolete plug-ins
     It is not offered for new nodes: it is hidden from the node menus, the
     toolbars, the Tab node-creation dialog and the documentation, and it is
     not registered as a reader or writer for its file extensions
-    (``OfxHost::isPluginObsolete``, ``Plugin::getIsUserCreatable``). Natron
+    (``OfxHost::isPluginObsolete``, ``Plugin::getIsUserCreatable``). The
+    spec uses the property for a plug-in "made obsolete by a different
+    version of the same plugin contained in the same bundle", and requires
+    at least one version that is not obsolete. Natron is more lenient: it
+    hides any plug-in that sets it, even when there is no newer version
+    (openfx-misc's JoinViews, OneView, Roto and TrackerPM, which are obsolete
+    only in Natron and have a single version). Natron
     2.6 no longer reads the Natron extension
     ``kNatronOfxImageEffectPropDeprecated``, which had the same meaning (`#1491 <https://github.com/NatronGitHub/Natron/issues/1491>`_):
     plug-ins must set the standard property (``setIsObsolete(true)`` in the
