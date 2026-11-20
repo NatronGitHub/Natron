@@ -113,7 +113,7 @@ NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode)
                             }
                             parent = parent->parentWidget();
                         }
-                        if (floating) {
+                        if ( floating && !GuiApplicationManager::isGuiTestNoFocus() ) {
                             floating->activateWindow();
                         }
                     }
