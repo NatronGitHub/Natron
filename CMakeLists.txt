@@ -164,12 +164,13 @@ set(NATRON_CUSTOM_BUILD_USER_NAME "${BUILD_USER_NAME}" CACHE STRING
     "for a CUSTOM build, the name shown instead of the version (\"Natron for <name>\")")
 
 # Build options (qmake: CONFIG+=openmp, noassertions, fast, addresssanitizer, threadsanitizer, coverage).
+# libs.pri enables OpenMP by default with the qmake specs that match *g++*, except on macOS: GCC
+# (linux-g++, win32-g++) and MSYS2's clang (win32-clang-g++), but not linux-clang or freebsd-clang.
 if(NOT APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    # libs.pri enables OpenMP by default only with GCC on systems other than macOS.
     set(_natron_openmp_default ON)
 elseif(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    # MSYS2's clang environments (CLANGARM64, #1494) have LLVM's libomp (llvm-openmp), as the GCC
-    # environments have libgomp.
+    # win32-clang-g++: MSYS2's clang environments (CLANGARM64, #1494) have LLVM's libomp
+    # (llvm-openmp), as the GCC environments have libgomp.
     set(_natron_openmp_default ON)
 else()
     set(_natron_openmp_default OFF)
