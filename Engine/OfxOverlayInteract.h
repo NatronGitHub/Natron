@@ -427,7 +427,7 @@ class OfxParamOverlayInteract
 {
     OfxImageEffectInstance* _effect; // NULL after destroyInstanceAction()
     // The parameter instance of the interact, which belongs to _effect, for the size properties (see
-    // getMinimumSize()).
+    // getMinimumSize()), NULL after destroyInstanceAction().
     OFX::Host::Param::Instance* _param;
 
 public:
