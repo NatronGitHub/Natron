@@ -449,8 +449,8 @@ Table 4: OfxParameterSuiteV1 (`ofxParam.h:905-1278 <https://github.com/AcademySo
    * - S1
      - paramDefine `ofxParam.h:908-932 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L908-L932>`__: OK / ErrBadHandle / ErrExists / **ErrUnknown if the type is unknown** / ErrUnsupported if known but unsupported
      - MUST
-     - hP.cpp:2217-2290. ErrBadHandle (2226) OK, ErrExists (2234-2246) OK, ErrUnsupported for StrChoice/Bytes (2252-2272) OK. **An unknown type** gets ``SetDescriptor::paramDefine`` → NULL (hP.cpp:688-689) → **kOfxStatErrUnsupported** (hP.cpp:2282-2288), not ErrUnknown. Natron's override (OIEI.cpp:1524-1529) passes through. A NULL paramType reaches ``std::string(paramType)`` / ``strcmp`` (crash), but a NULL type is invalid anyway
-     - WRONG (low, P10)
+     - hP.cpp:2217-2290. ErrBadHandle (2226) OK, ErrExists (2234-2246) OK, ErrUnsupported for StrChoice/Bytes (2252-2272) OK. **An unknown type** gets ``SetDescriptor::paramDefine`` → NULL (hP.cpp:688-689) → **kOfxStatErrUnsupported** (hP.cpp:2282-2288), not ErrUnknown. Natron's override (OIEI.cpp:1524-1529) passes through. A NULL paramType reaches ``std::string(paramType)`` / ``strcmp`` (crash), but a NULL type is invalid anyway Re-checked at HostSupport bdfb48d4: an unknown type gives kOfxStatErrUnknown, and a NULL type kOfxStatErrUnknown instead of a crash.
+     - OK (fixed by `NatronGitHub/openfx#187 <https://github.com/NatronGitHub/openfx/pull/187>`__, in libs/OpenFX since `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - S2
@@ -497,7 +497,7 @@ Table 4: OfxParameterSuiteV1 (`ofxParam.h:905-1278 <https://github.com/AcademySo
      - paramGetNumKeys `ofxParam.h:1134-1149 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L1134-L1149>`__
      - MUST
      - OPI.cpp:125-136. **An expression on dimension 0 reports exactly 2 fake keys at t=0 and t=1** (OPI.cpp:97-108, deliberate, for GeneratorPlugin isIdentity); paramGetKeyTime then returns these fake times. NULL numberOfKeys is dereferenced (hP.cpp:2729)
-     - PARTIAL (P12)
+     - PARTIAL (P12, deliberate, won't fix; the NULL dereference is fixed by `NatronGitHub/openfx#187 <https://github.com/NatronGitHub/openfx/pull/187>`__, in libs/OpenFX since `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__)
 
        **Deliberate, won't fix.**
 
@@ -746,7 +746,7 @@ Spec-only / UI / return codes
 
 **Problem 9.** ``paramDeleteKey`` **returns kOfxStatOK when there is no key at** ``time`` **(WRONG, low).** Spec `ofxParam.h:1192-1196 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L1192-L1196>`__ (ErrBadIndex). OPI.cpp:226-245 always returns OK. *Second check:* one helper for all types; parametric returns BadIndex (ofxhParametricParam.cpp:269-272). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
-**Problem 10.** ``paramDefine`` **with an unknown type returns kOfxStatErrUnsupported, not kOfxStatErrUnknown (WRONG, low).** Spec `ofxParam.h:922-927 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L922-L927>`__. hP.cpp:688-689 returns NULL, then hP.cpp:2282-2288 returns Unsupported. *Second check:* Natron's override OIEI.cpp:1524-1543 calls the base class first and doesn't change the status. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+**Problem 10.** ``paramDefine`` **with an unknown type returns kOfxStatErrUnsupported, not kOfxStatErrUnknown (WRONG, low).** Spec `ofxParam.h:922-927 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L922-L927>`__. hP.cpp:688-689 returns NULL, then hP.cpp:2282-2288 returns Unsupported. *Second check:* Natron's override OIEI.cpp:1524-1543 calls the base class first and doesn't change the status. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `NatronGitHub/openfx#187 <https://github.com/NatronGitHub/openfx/pull/187>`__ (in libs/OpenFX since `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__).
 
 **Problem 11. Parametric UI colour: black when unset, and the default-colour code clobbers DisplayMax (WRONG, UI).** Spec `ofxParametricParam.h:58-71 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParametricParam.h#L58-L71>`__. OPI.cpp:4557-4566 reads a zero-filled vector, so unset colours give black curves. ofxhParametricParam.cpp:177-187 reads and writes **kOfxParamPropDisplayMax** where it means kOfxParamPropParametricUIColour (dim\*3 values, pattern [1,0,0,0,1,0,...]), which can set a 0 display max for curves 1 and 2 through the DisplayMax notify hook (OPI.cpp:4683-4698). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
@@ -775,6 +775,6 @@ NEXT items seen (out of scope): kOfxParamInterpType (HostSupport hP.cpp:629-635,
 Counts
 ------
 
-Table rows (105): OK 70, PARTIAL 18, WRONG 11, N/A 4, NEXT 2. Some bugs appear in more than one row: paramCopy in S15 and R13, custom interpolation in T15 and P32, ChoiceOrder in T9 and P25.
+Table rows (105): OK 71, PARTIAL 18, WRONG 10, N/A 4, NEXT 2. Some bugs appear in more than one row: paramCopy in S15 and R13, custom interpolation in T15 and P32, ChoiceOrder in T9 and P25.
 
 Distinct problems (1-20): 9 WRONG (1, 2, 3, 4, 5, 7, 9, 10, 11), 11 PARTIAL (6, 8, 12-20).
