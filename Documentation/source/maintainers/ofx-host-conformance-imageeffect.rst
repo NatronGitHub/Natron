@@ -558,7 +558,7 @@ N: Engine/OfxClipInstance.cpp. HS: ofxhClip.cpp.
    * - 5.13
      - `ofxImageEffect.h:452 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L452>`__ and `ofxImageEffect.h:491 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L491>`__ kOfxPropIsInteractive "is this a single frame render due to user interaction in a GUI, or a proper full sequence render"
      - MUST
-     - Per-render Begin: ``!appPTR->isBackground()`` (EffectInstanceRenderRoI.cpp:1988), so 1 even during a GUI disk render. Per-render End: ``false`` (:2076), which does not match the Begin. Scheduler: Begin ``false`` (OutputSchedulerThread.cpp:1090), End ``!isBackground()`` (:1182). Fixed: a render is interactive if it is in the GUI and not a render on disk (whose tree root is an output effect that is not a viewer), with the same value in Begin and End; the scheduler's Begin and End (renders on disk) pass 0.
+     - Per-render Begin: ``!appPTR->isBackground()`` (EffectInstanceRenderRoI.cpp:1988), so 1 even during a GUI disk render. Per-render End: ``false`` (:2076), which does not match the Begin. Scheduler: Begin ``false`` (OutputSchedulerThread.cpp:1090), End ``!isBackground()`` (:1182). Fixed: a render is interactive if it is in the GUI and not a render on disk (whose tree root is a writer or a DiskCache; a group's Output node, the root of its preview render, is a GUI render), with the same value in Begin and End; the scheduler's Begin and End (renders on disk) pass 0.
      - OK (fixed by `#1485 <https://github.com/NatronGitHub/Natron/pull/1485>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
