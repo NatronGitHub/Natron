@@ -8,10 +8,8 @@ import NatronGuiTest
 
 natron = NatronGui.natron
 
-# In CI, the GUI tests only run where the job enables them (NATRON_GUI_TESTS=1, e.g. under Xvfb):
-# a runner without a usable display or OpenGL would only report them as skipped anyway.
-if os.environ.get("CI") and os.environ.get("NATRON_GUI_TESTS") != "1":
-    NatronGuiTest.skip("GUI tests in CI need NATRON_GUI_TESTS=1")
+# In CI, the GUI tests only run where the job enables them (NATRON_GUI_TESTS=1): Natron --test skips
+# them itself (exit status 77) before it starts.
 
 GENERATOR = "net.natron.test.Generator"  # fills its output with 0.5 (Tests/OfxTestPlugin)
 

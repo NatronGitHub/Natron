@@ -169,7 +169,8 @@ and work as usual. The test mode also isolates the test from the user's session:
 
 - auto-saves are neither written nor restored, and the "An auto-saved project was found" question
   is never asked (the user's auto-saves are left untouched);
-- Natron does not check for updates, and does not ask about the default appearance or shortcuts;
+- Natron does not check for updates, and does not ask about the default appearance, the shortcuts or
+  the OpenColorIO configuration (set ``OCIO``);
 - a test that expects a modal dialog or a menu gives its answer beforehand with
   :func:`NatronGuiTest.setDialogAnswers`: when the dialog is shown, its button is clicked (or the menu
   item triggered), so that the real code runs. A modal dialog or menu that gets no answer is
@@ -245,7 +246,10 @@ synthetic Qt events to the widgets; the real mouse cursor and the keyboard are n
    ``"none"``; *modifiers* is a ``+``-separated list of ``Shift``, ``Ctrl``, ``Alt`` and ``Meta``
    (``Ctrl`` is the Command key on macOS, as in Natron's shortcuts). A move has the buttons pressed by
    the previous press events. The widget gets *Enter* and *Leave* events as the pointer moves from a
-   widget to another.
+   widget to another. A press, and a key sent with :func:`sendKey`, first send *FocusOut* to the previous target and
+   *FocusIn* to the new one, as a click or typing would: the window is not activated (no focus is
+   taken from the user), but the widgets react as usual, e.g. the node graph becomes the last focused
+   graph, which pasting and rendering with *F7* use.
 
 .. function:: drag(target, x0, y0, x1, y1, steps=10, button='left', modifiers='')
 
