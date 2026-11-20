@@ -7,8 +7,9 @@ name: Windows ARM64
 #
 # Qt 5 comes from MSYS2, except qt5-base, which is rebuilt with the QMutex lost wake-up fix of
 # #1453 (tools/MINGW-packages/mingw-w64-qt5-base) unless patched_qt is off: without it, a test can
-# hang on an unlocked mutex (#1451). The package is cached, keyed on its PKGBUILD directory, so
-# only the first run (about 1-2 hours) builds it.
+# hang on an unlocked mutex (#1451). The package is cached, keyed on its PKGBUILD directory and on
+# the MSYS2 versions of qt5-base and its main dependencies (ICU, OpenSSL, ...), so only the first run
+# after a change (about 1-2 hours) builds it.
 on:
   workflow_dispatch:
     inputs:
@@ -91,13 +92,34 @@ jobs:
           cmake --version | head -1
           python -c 'import shiboken2; import PySide2.QtCore; print("PySide2", PySide2.__version__, "Qt", PySide2.QtCore.qVersion())'
 
+      - name: MSYS2 versions for the qt5-base cache key
+        id: qt5-base-deps
+        if: inputs.patched_qt
+        run: |
+          set -eo pipefail
+          # MSYS2's qt5-base (a rebuild or an update means a new PKGBUILD.orig to rebase on) and the
+          # libraries whose DLL names or ABI the package depends on: a bump of any of them invalidates
+          # the cached package
+          versions=""
+          for name in qt5-base icu openssl pcre2 zstd harfbuzz freetype libpng libjpeg-turbo double-conversion md4c; do
+            pkg="${MINGW_PACKAGE_PREFIX}-${name}"
+            ver=$(pacman -Si "${pkg}" | awk '$1 == "Version" {print $3; exit}')
+            if [ -z "${ver}" ]; then
+              echo "::error::no version for ${pkg} in the MSYS2 repositories"
+              exit 1
+            fi
+            echo "${pkg} ${ver}"
+            versions="${versions}${name}-${ver}_"
+          done
+          echo "versions=${versions}" >> "${GITHUB_OUTPUT}"
+
       - name: Restore the patched qt5-base package
         id: qt5-base-cache
         if: inputs.patched_qt
         uses: actions/cache/restore@v4
         with:
           path: qt5-base-pkg
-          key: qt5-base-clangarm64-${{ hashFiles('tools/MINGW-packages/mingw-w64-qt5-base/**') }}
+          key: qt5-base-clangarm64-${{ hashFiles('tools/MINGW-packages/mingw-w64-qt5-base/**') }}-${{ steps.qt5-base-deps.outputs.versions }}
 
       - name: Build the patched qt5-base package
         if: inputs.patched_qt && steps.qt5-base-cache.outputs.cache-hit != 'true'
