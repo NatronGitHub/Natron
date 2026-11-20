@@ -833,8 +833,10 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
                 bool fileKnobUnchanged = ( fileKnob->setValue(filename) == KnobHelper::eValueChangedReturnCodeNothingChanged );
                 // As in ReadNodePrivate::createReadNode(): the new encoder shares the filename knob of this
                 // node, which already has the filename, so it did not get the instance changed action for
-                // its filename. Call it, as when the encoder is the same (see above). Never when a project
-                // is loaded (serialization), as before (#1288).
+                // its filename. Call it, as when the encoder is the same (see above). Never when the encoder
+                // is created from a serialization, as before (#1288).
+                // Note: the new encoder is not connected to the input yet (see below), unlike when the
+                // encoder is kept; the openfx-io writers don't read their input clip in this action.
                 if (fileKnobUnchanged && userEdited && !serialization) {
                     writeNode->getEffectInstance()->onKnobValueChanged_public(fileKnob.get(), eValueChangedReasonNatronInternalEdited, _publicInterface->getCurrentTime(), ViewSpec(0), true);
                 }
