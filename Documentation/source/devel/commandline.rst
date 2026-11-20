@@ -82,6 +82,57 @@ General options
 
    Ignore the preferences file and use the default settings. The settings are not saved either.
 
+.. option:: --no-dialogs
+
+   Do not show the message and question dialogs: errors, warnings, questions and the startup
+   prompts. Each dialog is printed to the standard error as ``[dialog dismissed] <title>: <message>``
+   and counts as dismissed. This option is meant for scripts only, not for an interactive session:
+   the answers never block and never delete or overwrite a file, but unsaved changes are discarded
+   when the project is closed, without warning:
+
+   - a question returns its default button, as if Enter was pressed, or the button Escape would
+     pick if there is no default button (Cancel, Close, Abort or No). The "Do not show this
+     again" answers are not saved;
+   - "Save changes to <project>?", when closing or quitting, is answered **Discard**, so the
+     unsaved changes are lost (the default, Save, would open the Save As file dialog for an
+     untitled project). Save the project from the script if needed, e.g. with
+     :meth:`app.saveProjectAs(filename)<NatronEngine.App.saveProjectAs>`;
+   - the file dialogs opened by Natron (Open, Save As, the file of a new Read or Write node) and
+     by :doc:`GuiApp<PythonReference/NatronGui/GuiApp>` (:meth:`getFilenameDialog<NatronGui.GuiApp.getFilenameDialog>`,
+     :meth:`getRGBColorDialog<NatronGui.GuiApp.getRGBColorDialog>`...) count as cancelled;
+   - the startup prompts: the OpenColorIO configuration check answers Yes (use the default
+     configuration) only if the selected one is unusable, No otherwise; the auto-saves are
+     never recovered nor deleted: the question to restore an auto-saved untitled project is not
+     asked, and a project given on the command line is loaded from its file even if a more recent
+     auto-save exists, and that project is then not auto-saved during the session, so that its
+     auto-save is not overwritten (the same applies after a Save As to a project that has an
+     auto-save). Only the auto-saves written during the session are removed: when quitting, when
+     answering Discard, and by *Clear All Caches* (or :option:`--clear-cache`); the new default
+     appearance and the new default shortcuts are not applied (No); the question about checking
+     for updates is not answered, so it is asked again at the next launch without
+     :option:`--no-dialogs`;
+   - custom modal dialogs (:doc:`PyModalDialog<PythonReference/NatronGui/PyModalDialog>`, group
+     parameters shown as a dialog) count as rejected, and the error log is printed to the
+     standard error instead of opening the log window.
+
+   None of these answers is saved in the preferences, and neither are the window geometry and the
+   last directories of the file dialogs (they are not saved with :option:`--no-settings` either):
+   e.g. when the OpenColorIO configuration check switches to the default configuration, it is only
+   for this session, and the questions about the new appearance or shortcuts are asked again at the
+   next launch.
+
+   As a project that has an auto-save is not auto-saved during the session (see above), a crash
+   loses the changes made in that session. The main window is shown without taking the focus.
+   This is meant to drive the graphical interface from scripts, see :ref:`guiTesting`. In background mode (NatronRenderer,
+   :option:`-b` or :option:`-t`), where dialogs are never shown, the questions are then also
+   answered with their default button, instead of *Yes*.
+
+.. option:: --test <script.py>
+
+   Run a GUI test script, then quit with its status (0: passed, 77: skipped, 1: failed). It
+   implies :option:`--no-settings`, not :option:`--no-dialogs`: a dialog that the test does not
+   answer fails it. See :ref:`guiTests`.
+
 .. option:: --opengl <enabled|disabled|foreground>
 
    Select whether OpenGL rendering is used: ``enabled`` (if available), ``disabled`` (even if a
@@ -273,13 +324,26 @@ Exit status
 -----------
 
 NatronRenderer exits with status 0 when it succeeds (and after :option:`-h` or :option:`-v`),
-and with status 1 when the command line is wrong, or when the project can't be loaded
-(for example when a node given to :option:`-w` or :option:`-i` doesn't exist).
+and with status 1 when the command line is wrong, when the project can't be loaded
+(for example when a node given to :option:`-w` or :option:`-i` doesn't exist), or when a
+Python script raises an exception: Natron prints the error, and the Write nodes (those given
+with :option:`-w`, or all the Write nodes of the graph) are not rendered. Renders that the
+script started itself with :func:`app.render()<NatronEngine.App.render>` before the error
+have already run. This applies to:
 
-A Python error in the script does **not** set status 1: Natron prints the error and goes on, and
-if the script created a Write node before the error, that Write node is still rendered
-(`issue #1276 <https://github.com/NatronGitHub/Natron/issues/1276>`_). Check the output for
-Python errors and for errors that happen while frames are rendered.
+- the Python script given on the command line, including an exception raised by its
+  ``createInstance()`` function;
+- the :option:`--onload` script, also when it runs after a project (``.ntp``) that
+  loaded without error: a failing :option:`--onload` script stops the render of the project.
+
+A script can also call ``sys.exit(status)`` to exit with its own status.
+Up to Natron 2.5, a Python error in these scripts did not set status 1, and the Write nodes
+were still rendered (`issue #1276 <https://github.com/NatronGitHub/Natron/issues/1276>`_).
+
+In interpreter mode (:option:`-t`), a Python error in the script is printed, and the
+interpreter still starts, so that the error can be inspected.
+
+Check the output for errors that happen while frames are rendered.
 
 GUI tests in the background
 ---------------------------

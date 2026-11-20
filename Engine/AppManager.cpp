@@ -384,6 +384,67 @@ AppManager::loadFromArgs(const CLArgs& cl)
     }
 #endif
 
+    // Before creating qApp and before initPython(): the GUI registers the test module only in test mode.
+    _imp->testMode = !cl.getTestScript().isEmpty() && !cl.isBackgroundMode();
+    if ( _imp->testMode && !qEnvironmentVariableIsEmpty("CI") && (qgetenv("NATRON_GUI_TESTS") != "1") ) {
+        // In CI, the GUI tests only run where the job enables them (NATRON_GUI_TESTS=1, e.g. under Xvfb with
+        // Mesa): skipped here, before anything is initialized, not in the test script, which runs much later.
+        std::cout << "SKIP: GUI tests in CI need NATRON_GUI_TESTS=1" << std::endl;
+        _imp->requestedExitCode = 77;
+        _imp->quitRequested = true;
+
+        return false;
+    }
+#if defined(__NATRON_UNIX__) && !defined(__NATRON_OSX__)
+    if ( _imp->testMode && qgetenv("DISPLAY").isEmpty() && qgetenv("WAYLAND_DISPLAY").isEmpty() &&
+         qgetenv("QT_QPA_PLATFORM").isEmpty() ) {
+        // Qt would abort: a GUI test without a display is skipped, not failed
+        std::cout << "SKIP: no display (DISPLAY and WAYLAND_DISPLAY are not set): run the GUI tests under xvfb-run" << std::endl;
+        _imp->requestedExitCode = 77;
+        _imp->quitRequested = true;
+
+        return false;
+    }
+#endif
+    if (_imp->testMode) {
+        // The settings written with the default QSettings constructor (e.g. the recent files) go to a
+        // temporary directory of this run, removed at exit, not to the user's preferences. The Natron
+        // settings are not saved with --no-settings, which --test implies, and the other writers of
+        // QSettings(organization, application) skip their writes in test mode.
+        _imp->testSettingsDir.reset( new QTemporaryDir( QDir::tempPath() + QString::fromUtf8("/NatronGuiTest-settings-XXXXXX") ) );
+        if ( _imp->testSettingsDir->isValid() ) {
+            QSettings::setDefaultFormat(QSettings::IniFormat);
+            QSettings::setPath( QSettings::IniFormat, QSettings::UserScope, _imp->testSettingsDir->path() );
+        } else {
+            std::cout << "NatronGuiTest: FAIL: cannot create a temporary settings directory in "
+                      << QDir::tempPath().toStdString() << std::endl;
+            _imp->requestedExitCode = 1;
+            _imp->quitRequested = true;
+
+            return false;
+        }
+        // A GUI test that fails to start (e.g. an error while loading) fails: only the test runner (or a
+        // skip) sets another exit status (see main()).
+        _imp->requestedExitCode = 1;
+    }
+    if ( _imp->testMode && !qEnvironmentVariableIsSet("NATRON_TEST_NO_FOCUS") ) {
+        // A GUI test never takes the user's keyboard focus or activates its windows (#1464). Set before
+        // the QApplication exists. (--no-dialogs does not imply it.)
+        qputenv("NATRON_TEST_NO_FOCUS", "1");
+    }
+    if (_imp->testMode) {
+        // Before initPython(): the output of a test reaches the log even when the watchdog ends it
+        qputenv("PYTHONUNBUFFERED", "1");
+#ifdef DEBUG
+        // No trapped floating point exception, in any thread: before qApp, any OpenGL context and any
+        // thread (see AppManagerPrivate::testModeNoTrap)
+        boost_adaptbx::floating_point::trapping_disabled() = true;
+        // and in the child processes, e.g. NatronRenderer
+        qputenv("NATRON_NO_FP_TRAPS", "1");
+        _imp->testModeNoTrap.reset(new boost_adaptbx::floating_point::no_exception_trapping);
+#endif
+    }
+
     // This needs to be done BEFORE creating qApp because
     // on Linux, X11 will create a context that would corrupt
     // the XUniqueContext created by Qt
@@ -800,6 +861,8 @@ AppManager::loadInternal(const CLArgs& cl)
     // see http://doc.qt.io/qt-4.8/qcoreapplication.html#locale-settings
     setApplicationLocale();
     
+    _imp->dialogsDisabled = cl.areDialogsDisabled();
+
     Log::instance(); //< enable logging
     bool mustSetSignalsHandlers = true;
 #ifdef NATRON_USE_BREAKPAD
@@ -953,6 +1016,12 @@ AppManager::hasOpenGLForRequirements(OpenGLRequirementsTypeEnum type, QString* m
 bool
 AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
 {
+#ifdef DEBUG
+    // The floating point exceptions that main() traps in debug builds must not be trapped in the OpenGL
+    // driver: Mesa's llvmpipe raises them while it creates a context (SIGFPE in driCreateContextAttribs()
+    // under Xvfb). This runs before the event loop, which does not trap them (see exec()).
+    boost_adaptbx::floating_point::no_exception_trapping noTrap;
+#endif
     QMutexLocker k(&_imp->openGLFunctionsMutex);
 
     if (!_imp->hasInitializedOpenGLFunctions) {
@@ -1088,7 +1157,11 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
     }
 
     int oldCacheVersion = 0;
-    {
+    if ( isTestMode() ) {
+        // a test does not record its cache version in the user's preferences (the next launch of an
+        // installed Natron would clear the user's caches)
+        oldCacheVersion = NATRON_CACHE_VERSION;
+    } else {
         QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
         if ( settings.contains( QString::fromUtf8(kNatronCacheVersionSettingsKey) ) ) {
@@ -1186,12 +1259,8 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
                 }
             }
             if (!wasKilled) {
-                try {
-                    mainInstance->getProject()->reset(true/*aboutToQuit*/, true /*blocking*/);
-                } catch (std::logic_error&) {
-                    // ignore
-                }
-
+                // quitNow() resets the project (AppInstance::aboutToQuit()): resetting it here
+                // too ran the beforeProjectClose callback twice
                 try {
                     mainInstance->quitNow();
                 } catch (std::logic_error&) {
@@ -2114,8 +2183,8 @@ AppManager::loadPythonGroups()
                 if ( line.startsWith( QString::fromUtf8("def createInstance(") ) ) {
                     isPyPlug = true;
                 }
-                // Or we could check if it implements getIsToolSet()
-                if ( line.startsWith( QString::fromUtf8("def getIsToolSet(") ) ) {
+                // Or we could check if it implements getIsToolset(), the name getGroupInfos() calls (#1262)
+                if ( line.startsWith( QString::fromUtf8("def getIsToolset(") ) ) {
                     isPyPlug = true;
                 }
                 // Or we could check for the magic line that is in the doc.
@@ -2979,6 +3048,73 @@ AppManager::onQueueRendersChanged(bool queuingEnabled)
     }
 }
 
+bool
+AppManager::isDialogsDisabled() const
+{
+    return _imp->dialogsDisabled;
+}
+
+void
+AppManager::setDialogsDisabled(bool disabled)
+{
+    _imp->dialogsDisabled = disabled;
+}
+
+void
+AppManager::requestQuit(int exitCode)
+{
+    // Background mode: there is no event loop to leave. Record the exit code (returned by
+    // main()), and stop what is running. AppInstance::load() skips the renders and the
+    // interpreter that were not started yet, then the instance quits as usual.
+    _imp->requestedExitCode = exitCode;
+    _imp->quitRequested = true;
+    if ( isBackground() || ( QThread::currentThread() == qApp->thread() ) ) {
+        // abortAnyProcessing() does not block. In background mode, call it even from a render
+        // thread (e.g. natron.quit() in afterFrameRender): the main thread waits for the render
+        // and runs no event loop, so a queued call would only run once all frames are rendered.
+        abortAnyProcessing();
+    } else {
+        // GUI, called from a render thread: stop the renders from the main thread
+        QMetaObject::invokeMethod( this, [this]() {
+            abortAnyProcessing();
+        }, Qt::QueuedConnection );
+    }
+}
+
+bool
+AppManager::isQuitRequested() const
+{
+    return _imp->quitRequested;
+}
+
+int
+AppManager::getRequestedExitCode() const
+{
+    return _imp->requestedExitCode;
+}
+
+bool
+AppManager::isPythonInterpreterRunning() const
+{
+    return _imp->pythonInterpreterRunning;
+}
+
+AppManager::NestedEventLoopRAII::NestedEventLoopRAII()
+{
+    ++appPTR->_imp->nestedEventLoops;
+}
+
+AppManager::NestedEventLoopRAII::~NestedEventLoopRAII()
+{
+    --appPTR->_imp->nestedEventLoops;
+}
+
+int
+AppManager::getNestedEventLoopsCount() const
+{
+    return _imp->nestedEventLoops;
+}
+
 int
 AppManager::exec()
 {
@@ -3385,9 +3521,13 @@ AppManager::initPython()
             throw std::runtime_error( tr("Error while loading StreamCatcher: %1").arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
         }
     }
-    // Set QT_API for QtPy
+    // Set QT_API for QtPy, to the PySide that matches the Qt version Natron is built with (#1262)
     // https://github.com/spyder-ide/qtpy
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    qputenv("QT_API", "pyside6");
+#else
     qputenv("QT_API", "pyside2");
+#endif
 } // AppManager::initPython
 
 void
@@ -3438,6 +3578,35 @@ AppManager::initBuiltinPythonModules()
     if (ret == -1) {
         throw std::runtime_error("Failed to initialize built-in Python module.");
     }
+}
+
+bool
+AppManager::isTestMode() const
+{
+    return _imp->testMode;
+}
+
+bool
+AppManager::keepsOtherSessionsAutoSaves() const
+{
+    return isDialogsDisabled() || isTestMode();
+}
+
+bool
+AppManager::hasRenderInProgress() const
+{
+    AppInstanceVec instances;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        instances = _imp->_appInstances;
+    }
+    for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        if ( *it && (*it)->hasRenderInProgress() ) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void
@@ -3541,7 +3710,9 @@ AppManager::launchPythonInterpreter()
     assert(PyGILState_Check()); // Not available prior to Python 3.4
 #endif
 
+    _imp->pythonInterpreterRunning = true;
     Py_Main(1, &_imp->commandLineArgsWide[0]);
+    _imp->pythonInterpreterRunning = false;
 }
 
 int
@@ -3826,6 +3997,12 @@ Dialogs::errorDialog(const std::string & title,
                      const std::string & message,
                      bool useHtml)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+
+        return;
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3841,6 +4018,13 @@ Dialogs::errorDialog(const std::string & title,
                      bool* stopAsking,
                      bool useHtml)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+        *stopAsking = false;
+
+        return;
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3855,6 +4039,12 @@ Dialogs::warningDialog(const std::string & title,
                        const std::string & message,
                        bool useHtml)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+
+        return;
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3870,6 +4060,13 @@ Dialogs::warningDialog(const std::string & title,
                        bool* stopAsking,
                        bool useHtml)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+        *stopAsking = false;
+
+        return;
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3884,6 +4081,12 @@ Dialogs::informationDialog(const std::string & title,
                            const std::string & message,
                            bool useHtml)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+
+        return;
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3899,6 +4102,13 @@ Dialogs::informationDialog(const std::string & title,
                            bool* stopAsking,
                            bool useHtml)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+        *stopAsking = false;
+
+        return;
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3915,6 +4125,12 @@ Dialogs::questionDialog(const std::string & title,
                         StandardButtons buttons,
                         StandardButtonEnum defaultButton)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+
+        return getDismissedDialogAnswer(buttons, defaultButton);
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3935,6 +4151,13 @@ Dialogs::questionDialog(const std::string & title,
                         StandardButtonEnum defaultButton,
                         bool* stopAsking)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        printDismissedDialog(title, message);
+        *stopAsking = false;
+
+        return getDismissedDialogAnswer(buttons, defaultButton);
+    }
+
     appPTR->hideSplashScreen();
     AppInstancePtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
@@ -3945,6 +4168,34 @@ Dialogs::questionDialog(const std::string & title,
 
         return eStandardButtonYes;
     }
+}
+
+StandardButtonEnum
+Dialogs::getDismissedDialogAnswer(StandardButtons buttons,
+                                  StandardButtonEnum defaultButton)
+{
+    // Enter picks the default button
+    if ( (defaultButton != eStandardButtonNoButton) && (defaultButton != eStandardButtonEscape) ) {
+        return defaultButton;
+    }
+    // otherwise, pick the button Escape would pick (see QMessageBox::detectEscapeButton())
+    const StandardButtonEnum escapeButtons[] = {
+        eStandardButtonCancel, eStandardButtonClose, eStandardButtonAbort, eStandardButtonNo, eStandardButtonNoToAll
+    };
+    for (std::size_t i = 0; i < sizeof(escapeButtons) / sizeof(escapeButtons[0]); ++i) {
+        if ( buttons.testFlag(escapeButtons[i]) ) {
+            return escapeButtons[i];
+        }
+    }
+
+    return eStandardButtonEscape;
+}
+
+void
+Dialogs::printDismissedDialog(const std::string & title,
+                              const std::string & message)
+{
+    std::cerr << "[dialog dismissed] " << title << ": " << message << std::endl;
 }
 
 #if 0 // dead code
@@ -4004,10 +4255,33 @@ NATRON_PYTHON_NAMESPACE::ensureScriptHasModuleImport(const std::string& moduleNa
 
 #endif
 
+// The number of interpretPythonScript() calls running in this thread
+static thread_local int pythonScriptDepth = 0;
+
+// Raises SystemExit at the interactive prompt of the -t option, once no
+// interpretPythonScript() is running (see interpretPythonScript())
+static int
+raiseSystemExitAtPrompt(void*)
+{
+    if (pythonScriptDepth > 0) {
+        // still in a script run by Natron (e.g. a callback): try again when it returns
+        Py_AddPendingCall(raiseSystemExitAtPrompt, 0);
+
+        return 0;
+    }
+    PyObject* code = PyLong_FromLong( appPTR->getRequestedExitCode() );
+    PyErr_SetObject(PyExc_SystemExit, code);
+    Py_XDECREF(code);
+
+    return -1;
+}
+
 bool
 NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
                                                std::string* error,
-                                               std::string* output)
+                                               std::string* output,
+                                               PyObject* globals,
+                                               PyObject* locals)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
 
@@ -4027,12 +4301,14 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
 #if 0 //USE_PYRUN_SIMPLESTRING
     status = PyRun_SimpleString(script.c_str());
 #else
-    PyObject* dict = PyModule_GetDict(mainModule);
+    PyObject* dict = globals ? globals : PyModule_GetDict(mainModule);
 
     PyErr_Clear();
 
     ///This is faster than PyRun_SimpleString since is doesn't call PyImport_AddModule("__main__")
-    PyObject* v = PyRun_String(script.c_str(), Py_file_input, dict, 0);
+    ++pythonScriptDepth;
+    PyObject* v = PyRun_String(script.c_str(), Py_file_input, dict, locals);
+    --pythonScriptDepth;
     if (v) {
         Py_DECREF(v);
         status = 0;
@@ -4043,6 +4319,13 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
         error->clear();
     }
     PyObject* ex = PyErr_Occurred();
+    if ( ex && PyErr_GivenExceptionMatches(ex, PyExc_SystemExit) &&
+         appPTR->isQuitRequested() && appPTR->isPythonInterpreterRunning() ) {
+        // natron.quit() was called from a script run by Natron (e.g. a callback) while the
+        // interactive prompt of the -t option runs: the SystemExit it raised stops here, so
+        // raise it again at the prompt to end the session.
+        Py_AddPendingCall(raiseSystemExitAtPrompt, 0);
+    }
     if (ex) {
         assert(status < 0);
         if (!error) {
@@ -4052,7 +4335,8 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
             PyObject *pyExcValue;
             PyObject *pyExcTraceback;
             PyErr_Fetch(&pyExcType, &pyExcValue, &pyExcTraceback); // also clears the error indicator
-            //PyErr_NormalizeException(&pyExcType, &pyExcValue, &pyExcTraceback);
+            // normalize, else traceback.format_exception() fails on a non-exception value (e.g. a tuple)
+            PyErr_NormalizeException(&pyExcType, &pyExcValue, &pyExcTraceback);
 
             PyObject* pyStr = PyObject_Str(pyExcValue);
             if (pyStr) {

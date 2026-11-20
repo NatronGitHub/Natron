@@ -228,3 +228,27 @@ TEST(NodeGroup, DeactivateGroupInputDoesNotDeadlockWithRenderThread)
     source->destroyNode(true, false);
     groupNode->destroyNode(true, false);
 }
+
+// The header of an exported PyPlug links to the documentation of this Natron version, not to the "master"
+// documentation of natron.readthedocs.org (#1272).
+TEST(NodeGroup, ExportedPyPlugLinksToVersionDocumentation)
+{
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ASSERT_TRUE( bool(app) );
+
+    NodePtr groupNode = createNodeIn(app, PLUGINID_NATRON_GROUP, app->getProject(), false);
+    ASSERT_TRUE( bool(groupNode) );
+    NodeGroupPtr group = std::dynamic_pointer_cast<NodeGroup>( groupNode->getEffectInstance() );
+    ASSERT_TRUE( bool(group) );
+
+    QString output;
+    group->exportGroupToPython( QString::fromUtf8("fr.inria.test.ExportTest"), QString::fromUtf8("ExportTest"), QString(),
+                                QString(), QString::fromUtf8("Other"), 1, output );
+    const QString docUrl = QString::fromUtf8("# See https://natron.readthedocs.io/en/rb-%1.%2/devel/pyplug-writing.html#pyplugwriting-ext")
+                           .arg(NATRON_VERSION_MAJOR).arg(NATRON_VERSION_MINOR);
+    EXPECT_TRUE( output.contains(docUrl) ) << output.left(600).toStdString();
+    EXPECT_FALSE( output.contains( QString::fromUtf8("/en/master/") ) );
+    EXPECT_TRUE( output.contains( QString::fromUtf8("named ExportTestExt.py") ) );
+
+    groupNode->destroyNode(true, false);
+}

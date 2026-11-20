@@ -139,6 +139,12 @@ public:
 
     bool areRenderStatsEnabled() const;
 
+    /*
+     * @brief Was --no-dialogs given? Message and question dialogs are then not shown:
+     * they print their text to stderr and return their default button.
+     */
+    bool areDialogsDisabled() const;
+
 #ifdef NATRON_USE_BREAKPAD
     const QString& getBreakpadProcessExecutableFilePath() const;
     qint64 getBreakpadProcessPID() const;
@@ -147,6 +153,11 @@ public:
     const QString& getBreakpadComPipeFilePath() const;
 #endif
     const QString& getExportDocsPath() const;
+
+    /*
+     * @brief The GUI test script given with --test (empty if none).
+     */
+    const QString& getTestScript() const;
 
 private:
 

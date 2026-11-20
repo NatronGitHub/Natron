@@ -59,6 +59,13 @@ extern "C" {
 #endif
 {
 #ifdef DEBUG
+    // NATRON_NO_FP_TRAPS=1: no trapped floating point exception, in any thread. Mesa llvmpipe's threads
+    // inherit the trapping of the thread that starts them, and its JIT-compiled shaders raise
+    // exceptions (SIGFPE, #1537). The GUI tests use it (--test does the same).
+    if (qEnvironmentVariableIntValue("NATRON_NO_FP_TRAPS") == 1) {
+        boost_adaptbx::floating_point::trapping_disabled() = true;
+        qWarning("NATRON_NO_FP_TRAPS=1: floating point exceptions are not trapped (debug build)");
+    }
     boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
                                                            //boost_adaptbx::floating_point::exception_trapping::invalid | // crashes on macOS
                                                            boost_adaptbx::floating_point::exception_trapping::overflow);
@@ -110,10 +117,9 @@ extern "C" {
 #endif
         return 1;
     } else {
-        return 0;
+        // 0, or the exit code given to natron.quit(exitCode)
+        return manager.getRequestedExitCode();
     }
-
-    return 0;
 } //main
 #ifdef Q_OS_WIN
 } // extern "C"
