@@ -45,6 +45,7 @@
 #include <QAtomicInt>
 #include <QCoreApplication>
 #include <QFile>
+#include <QTemporaryDir>
 
 
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
@@ -165,6 +166,7 @@ public:
 
     // GUI test mode (--test)
     bool testMode;
+    std::unique_ptr<QTemporaryDir> testSettingsDir; // test mode: the settings of this run (removed at exit)
 
     ///Python needs wide strings as from Python 3.x onwards everything is unicode based
 #if PY_MAJOR_VERSION >= 3

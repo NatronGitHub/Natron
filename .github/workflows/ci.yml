@@ -70,6 +70,9 @@ jobs:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_BASEDIR: ${{ github.workspace }}
       CCACHE_MAXSIZE: 1500M
+      # The GUI tests (Tests/gui, ctest label gui) run under Xvfb (in CI they are skipped unless
+      # NATRON_GUI_TESTS=1); without an OpenGL context they are skipped (exit status 77).
+      NATRON_GUI_TESTS: '1'
 
     strategy:
       fail-fast: false
