@@ -488,7 +488,7 @@ Curve::getMaximumTimeCovered() const
 bool
 Curve::addKeyFrame(KeyFrame key)
 {
-    std::unique_lock<std::recursive_mutex> l(_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     // the default interpolation for bool, string, chaice, int is constant
     if ( (_imp->type == CurvePrivate::eCurveTypeBool) || (_imp->type == CurvePrivate::eCurveTypeString) ||
@@ -501,7 +501,6 @@ Curve::addKeyFrame(KeyFrame key)
     std::pair<KeyFrameSet::iterator, bool> it = addKeyFrameNoUpdate(key);
 
     it.first = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, it.first);
-    l.unlock();
 
     return it.second;
 }
