@@ -556,8 +556,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - G7
      - `ofxMessage.h:134 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxMessage.h#L134>`__ "Persistent messages are associated with an effect handle until explicitly cleared by an effect"
      - MUST
-     - Natron also clears them itself: on node deactivate (Engine/Node.cpp:2815) and at the start of ``Node::makePreviewImage`` (Engine/Node.cpp:3352).
-     - PARTIAL
+     - Natron also clears them itself: on node deactivate (Engine/Node.cpp:2815) and at the start of ``Node::makePreviewImage`` (Engine/Node.cpp:3352). Also when the viewer is refreshed (Gui/ViewerTab10.cpp:418, recursively upstream) and when a file is reloaded (Engine/KnobFile.cpp). Kept on purpose: most bundled plug-ins (about 70 in openfx-misc, several openfx-io and openfx-arena readers) set a persistent error and never clear it, and rely on Natron clearing it when the node renders again; a change that kept the plug-in's messages (in a first version of `#1485 <https://github.com/NatronGitHub/Natron/pull/1485>`__) left fixed errors on the nodes, and hid Natron's own errors. To be revisited when the plug-ins, or the Support library, clear their own messages.
+     - PARTIAL (deliberate, until the plug-ins clear their own messages)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - G8
@@ -804,7 +804,7 @@ Spec-only
 
 22. **P7:** effect descriptor Short/Long labels default to "", and resetting or setting kOfxPropLabel does not reset them. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
-23. **G5/G7:** host-level Error and Warning messages go only to the log (deliberate, because of Sapphire). Natron also clears persistent messages itself (Engine/Node.cpp:2815, 3352). Host-level messages going to the log is deliberate, won't fix. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+23. **G5/G7:** host-level Error and Warning messages go only to the log (deliberate, because of Sapphire). Natron also clears persistent messages itself (Engine/Node.cpp:2815, 3352). Host-level messages going to the log is deliberate, won't fix. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. Clearing the plug-in's persistent messages is kept, deliberately, until the plug-ins clear their own (see G7).
 
 24. **A14:** asserts on legal PurgeCaches and SyncPrivateData return codes (Engine/OfxEffectInstance.cpp:2781, 2808). This affects debug builds only. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 

@@ -1159,11 +1159,14 @@ OutputSchedulerThread::startRender()
     }
     SequentialPreferenceEnum pref = effect->getSequentialPreference();
     if ( (pref == eSequentialPreferenceOnlySequential) || (pref == eSequentialPreferencePreferSequential) ) {
+        // A render on disk: kOfxPropIsInteractive is 0 ("a proper full sequence render") and so is
+        // kOfxImageEffectPropInteractiveRenderStatus (not "rendered because a user is modifying parameters",
+        // ofxImageEffect.h). endSequenceRender_public() below gets the same arguments.
         if (effect->beginSequenceRender_public( firstFrame, lastFrame,
                                                 frameStep,
-                                                false,
+                                                false, // interactive
                                                 RenderScale::identity, true,
-                                                true,
+                                                false, // isRenderResponseToUserInteraction
                                                 false,
                                                 ViewIdx(0),
                                                 false /*useOpenGL*/,
@@ -1248,16 +1251,18 @@ OutputSchedulerThread::stopRender()
     }
     SequentialPreferenceEnum pref = effect->getSequentialPreference();
     if ( (pref == eSequentialPreferenceOnlySequential) || (pref == eSequentialPreferencePreferSequential) ) {
-        int firstFrame, lastFrame;
+        int firstFrame, lastFrame, frameStep;
         OutputSchedulerThreadStartArgsPtr args = _imp->runArgs.lock();
         firstFrame = args->firstFrame;
         lastFrame = args->lastFrame;
+        frameStep = args->frameStep;
 
+        // the arguments of beginSequenceRender_public() in startRender()
         ignore_result( effect->endSequenceRender_public( firstFrame, lastFrame,
-                                                         1,
-                                                         !appPTR->isBackground(),
+                                                         frameStep,
+                                                         false, // interactive
                                                          RenderScale::identity, true,
-                                                         !appPTR->isBackground(),
+                                                         false, // isRenderResponseToUserInteraction
                                                          false,
                                                          ViewIdx(0),
                                                          false /*use OpenGL render*/,
