@@ -72,6 +72,7 @@ set(Tests_SOURCES
     OfxTestPlugin_Test.cpp
     OpenGLRenderFailed_Test.cpp
     OSGLContext_Test.cpp
+    ParamRandom_Test.cpp
     PluginGrouping_Test.cpp
     ProjectAutoSave_Test.cpp
     ReadNodeOverlay_Test.cpp
