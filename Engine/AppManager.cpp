@@ -997,7 +997,7 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
     // The floating point exceptions that main() traps in debug builds must not be trapped in the OpenGL
     // driver: Mesa's llvmpipe raises them while it creates a context (SIGFPE in driCreateContextAttribs()
     // under Xvfb). This runs before the event loop, which does not trap them (see exec()).
-    boost_adaptbx::floating_point::exception_trapping trap(0);
+    boost_adaptbx::floating_point::no_exception_trapping noTrap;
 #endif
     QMutexLocker k(&_imp->openGLFunctionsMutex);
 

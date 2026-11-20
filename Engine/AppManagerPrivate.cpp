@@ -1346,7 +1346,7 @@ AppManagerPrivate::tearDownGL()
 #ifdef DEBUG
     // no trapped floating point exception in the OpenGL driver (e.g. Mesa's llvmpipe): this runs after the
     // event loop, where main() traps them in debug builds
-    boost_adaptbx::floating_point::exception_trapping trap(0);
+    boost_adaptbx::floating_point::no_exception_trapping noTrap;
 #endif
     // Kill all rendering context
     renderingContextPool.reset();
