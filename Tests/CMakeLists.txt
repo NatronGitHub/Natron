@@ -61,7 +61,7 @@ set(Tests_SOURCES
     OfxOverlayInput_Test.cpp
     OfxParamInteract_Test.cpp
     OfxParamUndo_Test.cpp
-    OfxPluginDeprecated_Test.cpp
+    OfxPluginObsolete_Test.cpp
     OfxPluginScan_Test.cpp
     OfxQuestion_Test.cpp
     OfxSingleInstance_Test.cpp
@@ -118,7 +118,7 @@ add_test(NAME Tests COMMAND Tests)
 # scan: the binaries are loaded at the first use of their plug-ins (OfxHost::getPluginContextAndDescribe()).
 # Tests sets up the fixture (it scans with --clear-openfx-cache and writes the cache), so
 # `ctest -R TestsOfxCache` runs Tests first too.
-add_test(NAME TestsOfxCache COMMAND Tests "--gtest_filter=OfxHostProperties.*:OfxTestPlugin*")
+add_test(NAME TestsOfxCache COMMAND Tests "--gtest_filter=OfxHostProperties.*:OfxTestPlugin*:OfxPluginObsolete.*")
 set_tests_properties(Tests PROPERTIES FIXTURES_SETUP OfxPluginCache)
 set_tests_properties(TestsOfxCache PROPERTIES FIXTURES_REQUIRED OfxPluginCache ENVIRONMENT "NATRON_TESTS_KEEP_OFX_CACHE=1")
 
