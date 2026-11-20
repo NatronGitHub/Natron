@@ -30,13 +30,14 @@
 
 #include "Global/Macros.h"
 
+#include <future>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include <QThread>
 #include <QThreadPool>
-#include <QtConcurrentRun> // QtConcurrent on Qt5
 
 #include "Engine/ThreadPool.h"
 
@@ -183,9 +184,17 @@ TEST(DeepGraphRender, GlobalThreadPool)
 
     const int rendersBefore = NatronTestPlugin::counter("MultiPAR.render");
     const NodePtr node = chain.lastFilter();
-    QFuture<bool> rendered = QtConcurrent::run( [node]() {
-        return bool( NatronTestPlugin::renderFrame(node, 1.) );
+    // Not QtConcurrent::run(): QFuture::result() and waitForFinished() run the task on the calling
+    // thread (the main thread, with the stack set by the linker) if no pool thread took it yet.
+    std::promise<std::pair<bool, bool> > promise; // rendered, ran on a pool thread
+    std::future<std::pair<bool, bool> > rendered = promise.get_future();
+    QThread* const testThread = QThread::currentThread();
+    QThreadPool::globalInstance()->start( [node, testThread, &promise]() {
+        const bool onPoolThread = QThread::currentThread() != testThread;
+        promise.set_value( std::make_pair(bool( NatronTestPlugin::renderFrame(node, 1.) ), onPoolThread) );
     } );
-    EXPECT_TRUE( rendered.result() );
+    const std::pair<bool, bool> result = rendered.get();
+    EXPECT_TRUE(result.second) << "the render must run on a thread of the global thread pool";
+    EXPECT_TRUE(result.first);
     EXPECT_EQ( kChainLength, NatronTestPlugin::counter("MultiPAR.render") - rendersBefore );
 }

@@ -89,7 +89,6 @@ target_link_libraries(Tests
         openMVG
         NatronEngine
         Qt::Core
-        Qt::Concurrent
         Python3::Python
 )
 target_include_directories(Tests PRIVATE ..)
