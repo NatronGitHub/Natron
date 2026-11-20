@@ -551,9 +551,9 @@ SequenceFileDialog::~SequenceFileDialog()
 {
     _model->resetCompletly(false);
 
-    // Scripts and tests (--no-dialogs), or a session with the default settings (--no-settings):
-    // do not overwrite the user's dialog state (as GuiPrivate::saveGuiGeometry())
-    if ( appPTR->isDialogsDisabled() || appPTR->getCurrentSettings()->isUsingDefaultSettings() ) {
+    // Scripts and tests (--no-dialogs), a GUI test (Natron --test), or a session with the default
+    // settings (--no-settings): do not overwrite the user's dialog state (as GuiPrivate::saveGuiGeometry())
+    if ( appPTR->isDialogsDisabled() || appPTR->isTestMode() || appPTR->getCurrentSettings()->isUsingDefaultSettings() ) {
         return;
     }
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );

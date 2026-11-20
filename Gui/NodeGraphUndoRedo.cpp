@@ -1548,20 +1548,32 @@ GroupFromSelectionCommand::undo()
     }
 
 
-    for (std::list<NodeGuiWPtr>::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
-        NodeGuiPtr node = it->lock();
-        if (node) {
-            node->getNode()->activate(NodesList(), true, false);
-            nodesToSelect.push_back(node);
-        }
-    }
-    _graph->setSelection(nodesToSelect);
+    // Deactivate the group (and the copies in it) before activating the originals: a single-instance
+    // OFX plug-in then never has two live instances (see OfxEffectInstance::suspendSingleInstance()),
+    // unless a copy is still rendering, whose instance lives until that render ends.
     _group.lock()->getNode()->deactivate(NodesList(),
                                          true,
                                          false,
                                          true,
                                          true,
                                          false);
+    std::set<ViewerInstance*> viewers;
+    for (std::list<NodeGuiWPtr>::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
+        NodeGuiPtr node = it->lock();
+        if (node) {
+            node->getNode()->activate(NodesList(), true, false);
+            nodesToSelect.push_back(node);
+            std::list<ViewerInstance*> connectedViewers;
+            node->getNode()->hasViewersConnected(&connectedViewers);
+            viewers.insert( connectedViewers.begin(), connectedViewers.end() );
+        }
+    }
+    _graph->setSelection(nodesToSelect);
+    // A render started when the outputs were reconnected above, while the originals were still
+    // deactivated (a single-instance OFX plug-in without its instance), failed: render them again.
+    for (std::set<ViewerInstance*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        (*it)->renderCurrentFrame(true);
+    }
 
     _isRedone = false;
 }
@@ -1901,7 +1913,12 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
             }
         }
         std::list<std::pair<std::string, NodeGuiPtr> > newNodes;
-        _graph->pasteCliboard(cb, &newNodes);
+        {
+            // The group is deactivated in redo(), right after its nodes are copied out of it: the
+            // copies of a single-instance OFX plug-in are not refused (as in GroupFromSelectionCommand).
+            OfxEffectInstance::AllowExtraSingleInstances allowMovingSingleInstances;
+            _graph->pasteCliboard(cb, &newNodes);
+        }
 
         NodeGuiIPtr groupGui_i = group->getNode()->getNodeGui();
         assert(groupGui_i);
@@ -2060,18 +2077,21 @@ InlineGroupCommand::undo()
     for (std::list<InlinedGroup>::iterator it = _groupNodes.begin(); it != _groupNodes.end(); ++it) {
         NodeGuiPtr groupNode = it->group.lock();
         if (groupNode) {
-            groupNode->getNode()->activate(NodesList(), true, false);
-            std::list<ViewerInstance*> connectedViewers;
-            groupNode->getNode()->hasViewersConnected(&connectedViewers);
-            for (std::list<ViewerInstance*>::iterator it2 = connectedViewers.begin(); it2 != connectedViewers.end(); ++it2) {
-                viewers.insert(*it2);
-            }
+            // Deactivate the inlined nodes before activating the group (and the nodes in it): a
+            // single-instance OFX plug-in then never has two live instances, unless an inlined node
+            // is still rendering, whose instance lives until that render ends.
             for (std::list<NodeGuiWPtr>::iterator it2 = it->inlinedNodes.begin();
                  it2 != it->inlinedNodes.end(); ++it2) {
                 NodeGuiPtr node = (*it2).lock();
                 if (node) {
                     node->getNode()->deactivate(NodesList(), false, false, true, false, false);
                 }
+            }
+            groupNode->getNode()->activate(NodesList(), true, false);
+            std::list<ViewerInstance*> connectedViewers;
+            groupNode->getNode()->hasViewersConnected(&connectedViewers);
+            for (std::list<ViewerInstance*>::iterator it2 = connectedViewers.begin(); it2 != connectedViewers.end(); ++it2) {
+                viewers.insert(*it2);
             }
         }
         nodesToSelect.push_back(groupNode);

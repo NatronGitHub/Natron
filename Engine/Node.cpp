@@ -3115,6 +3115,15 @@ Node::deactivate(const std::list<NodePtr> & outputsToDisconnect,
     }
 
     deleteNodeVariableToPython( getFullyQualifiedName() );
+
+    // A deleted node of a single-instance OFX plug-in doesn't keep its plug-in instance while it is
+    // in the undo history (it is created again by activate()).
+    if (!beingDestroyed) {
+        OfxEffectInstance* isOfx = dynamic_cast<OfxEffectInstance*>( _imp->effect.get() );
+        if (isOfx) {
+            isOfx->suspendSingleInstance();
+        }
+    }
 } // deactivate
 
 void
@@ -3128,6 +3137,12 @@ Node::activate(const std::list<NodePtr> & outputsToRestore,
         return;
     }
 
+    // Create the plug-in instance of a single-instance OFX plug-in again (see deactivate()), before
+    // the inputs and outputs are restored.
+    OfxEffectInstance* isOfx = dynamic_cast<OfxEffectInstance*>( _imp->effect.get() );
+    if (isOfx) {
+        isOfx->resumeSingleInstance();
+    }
 
     ///No need to lock, guiInputs is only written to by the main-thread
     NodePtr thisShared = shared_from_this();
