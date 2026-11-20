@@ -4,8 +4,8 @@
 # FFmpeg for openfx-io in COMMERCIAL builds, LGPL-2.1-or-later (#1302): MSYS2 has
 # no LGPL FFmpeg (its ffmpeg is GPLv3). The same version and configuration as
 # natron_ffmpeg-gpl2 without --enable-gpl and the GPL libraries (x264, x265,
-# Xvid, vid.stab) and without libzvbi (teletext: FFmpeg considers zvbi >= 0.2.28
-# LGPL, but zvbi as a whole is labelled GPL-2+), and as Natron's macOS COMMERCIAL build
+# Xvid, vid.stab) and without libzvbi (GPL-2+, kept out of COMMERCIAL builds by
+# the maintainer's decision: no teletext), and as Natron's macOS COMMERCIAL build
 # (tools/MacPorts/multimedia/ffmpeg, subport ffmpeg-lgpl). No --enable-version3
 # and no --enable-nonfree either. H.264 can still be encoded with openh264
 # (BSD-2-Clause). Installed in the private prefix ${MINGW_PREFIX}/ffmpeg-lgpl,

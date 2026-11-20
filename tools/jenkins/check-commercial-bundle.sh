@@ -27,7 +27,7 @@
 #    be a GPL, AGPL or nonfree library: x264, x265, Xvid, libpostproc, vid.stab, Rubber Band,
 #    FFTW, poppler, SoX, libmad, GSL, readline, gdbm, frei0r, libcdio, libdvdread, libdvdnav,
 #    libdvdcss, libmpeg2, liba52, libfaad, libdca, xavs, xavs2, davs2, libsmbclient, libzvbi
-#    (labelled GPL-2+ by MacPorts), Ghostscript (libgs, AGPL), fdk-aac (nonfree). A library that is
+#    (GPL-2+), Ghostscript (libgs, AGPL), fdk-aac (nonfree). A library that is
 #    linked but not bundled is reported too: that is how a COMMERCIAL IO.ofx failed to load on
 #    Windows (libheif linked x264, which only GPL builds bundle, #1177);
 # 2. the FFmpeg libraries it contains must be LGPL: the "libavcodec license: ..." strings, which

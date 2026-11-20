@@ -1,5 +1,5 @@
 --- Portfile.orig	2026-11-20 08:07:24
-+++ Portfile	2026-11-20 08:51:50
++++ Portfile	2026-11-20 08:55:37
 @@ -97,6 +97,8 @@
                      port:libvorbis \
                      path:lib/pkgconfig/vpx.pc:libvpx \
@@ -88,7 +88,7 @@
                      --enable-zlib
  
 +# Natron: ffmpeg-lgpl has no teletext (after the configure.args above, which enable libzvbi):
-+# FFmpeg considers libzvbi >= 0.2.28 LGPL, but MacPorts' zvbi is labelled GPL-2+
++# libzvbi is GPL-2+ and is kept out of COMMERCIAL builds (maintainer's decision, 2026-11-20)
 +if {${subport} eq "ffmpeg-lgpl"} {
 +    depends_lib-delete \
 +                    port:zvbi
