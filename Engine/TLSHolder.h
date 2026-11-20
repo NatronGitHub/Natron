@@ -33,10 +33,11 @@
 #include <vector>
 #include <string>
 #include <set>
+#include <mutex>
+#include <shared_mutex>
 
 #include "Global/GlobalDefines.h"
 
-#include <QReadWriteLock>
 #include <QThread>
 
 #include "Engine/EngineFwd.h"
@@ -153,12 +154,12 @@ private:
 
 
     //This is the "TLS" object: it stores a set of all TLSHolder's who used the TLS to clean it up afterwards
-    mutable QReadWriteLock _objectMutex;
+    mutable std::shared_mutex _objectMutex;
     GlobalTLSObjectPtr _object;
 
     //if a thread is a spawned thread, then copy the tls from the spawner thread instead
     //of creating a new object and no longer mark it as spawned
-    mutable QReadWriteLock _spawnsMutex;
+    mutable std::shared_mutex _spawnsMutex;
     ThreadSpawnMap _spawns;
 };
 
@@ -201,7 +202,7 @@ private:
     std::shared_ptr<T> copyAndReturnNewTLS(const QThread* fromThread, const QThread* toThread) const WARN_UNUSED_RETURN;
 
     //Store a cache on the object to be faster than using the getOrCreate... function from AppTLS
-    mutable QReadWriteLock perThreadDataMutex;
+    mutable std::shared_mutex perThreadDataMutex;
     mutable ThreadDataMap perThreadData;
 };
 

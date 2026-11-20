@@ -1,10 +1,10 @@
-.. module:: NatronGui
+.. currentmodule:: NatronGui
 .. _pyModalDialog:
 
 PyModalDialog
 ******************
 
-**Inherits** `QDialog <https://pyside.github.io/docs/pyside/PySide/QtGui/QDialog.html>`_ :doc:`../NatronEngine/UserParamHolder`
+**Inherits** `QDialog <https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/QDialog.html>`_, :doc:`../NatronEngine/UserParamHolder`
 
 
 Synopsis
@@ -88,17 +88,17 @@ You can then retrieve the value of a parameter once the dialog is finished using
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. method:: NatronGui.PyModalDialog.addWidget(widget)
+.. method:: PyModalDialog.addWidget(widget)
 
-    :param widget: `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>`_
+    :param widget: `QWidget <https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/QWidget.html>`_
 
-Append a QWidget inherited *widget* at the bottom of the dialog. This allows one to add custom GUI created directly using PySide
+Append a QWidget inherited *widget* at the bottom of the dialog. This allows one to add custom GUI created directly with Qt
 that will be inserted **after** any custom parameter.
 
 
 
 
-.. method:: NatronGui.PyModalDialog.getParam(scriptName)
+.. method:: PyModalDialog.getParam(scriptName)
 
     :param scriptName: :class:`str`
     :rtype: :class:`Param<NatronEngine.Param>`
@@ -108,18 +108,18 @@ Returns the user parameter with the given *scriptName* if it exists or *None* ot
 
 
 
-.. method:: NatronGui.PyModalDialog.insertWidget(index,widget)
+.. method:: PyModalDialog.insertWidget(index,widget)
 
     :param index: :class:`int`
-    :param widget: :class:`PySide.QtGui.QWidget`
+    :param widget: `QWidget <https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/QWidget.html>`_
 
-Inserts a QWidget inherited *widget* at the given *index* of the layout in the dialog. This allows one to add custom GUI created directly using PySide.
+Inserts a QWidget inherited *widget* at the given *index* of the layout in the dialog. This allows one to add custom GUI created directly with Qt.
 The widget will always be inserted **after** any user parameter.
 
 
 
 
-.. method:: NatronGui.PyModalDialog.setParamChangedCallback(callback)
+.. method:: PyModalDialog.setParamChangedCallback(callback)
 
     :param callback: :class:`str`
 

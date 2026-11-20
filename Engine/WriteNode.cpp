@@ -1328,6 +1328,217 @@ WriteNode::onSequenceRenderFinished()
 
 }
 
+// Overlay interacts.
+// The OFX overlay interact belongs to the embedded writer plug-in (it is created when the embedded node
+// is loaded, see Node::load()), but the viewer only asks the nodes that have a settings panel,
+// i.e. this WriteNode. Forward every overlay action to the embedded effect through its _public
+// function, so that the embedded effect handles its own render scale, recursion and
+// "doing interact action" state (which its interact uses to redraw and to get its render scale).
+// The embedded writer may change when the file type changes: it is fetched on every call, and the
+// new one gets its viewport before each draw or event (see setCurrentViewportForOverlays).
+
+EffectInstancePtr
+WriteNode::getEmbeddedWriterEffect() const
+{
+    NodePtr p = getEmbeddedWriter();
+
+    return p ? p->getEffectInstance() : EffectInstancePtr();
+}
+
+bool
+WriteNode::hasOverlay() const
+{
+    EffectInstancePtr effect = getEmbeddedWriterEffect();
+
+    return effect ? effect->hasOverlay() : false;
+}
+
+bool
+WriteNode::getOverlayCursor(CursorEnum* cursor,
+                            std::string* customImage,
+                            int* hotSpotX,
+                            int* hotSpotY) const
+{
+    EffectInstancePtr effect = getEmbeddedWriterEffect();
+
+    return effect ? effect->getOverlayCursor(cursor, customImage, hotSpotX, hotSpotY) : false;
+}
+
+void
+WriteNode::onInteractViewportSelectionCleared(KeyboardModifiers modifiers)
+{
+    EffectInstancePtr effect = getEmbeddedWriterEffect();
+
+    if (effect) {
+        effect->onInteractViewportSelectionCleared(modifiers);
+    }
+}
+
+void
+WriteNode::onInteractViewportSelectionUpdated(const RectD& rectangle,
+                                              bool onRelease,
+                                              KeyboardModifiers modifiers)
+{
+    EffectInstancePtr effect = getEmbeddedWriterEffect();
+
+    if (effect) {
+        effect->onInteractViewportSelectionUpdated(rectangle, onRelease, modifiers);
+    }
+}
+
+void
+WriteNode::setCurrentViewportForOverlays(OverlaySupport* viewport)
+{
+    EffectInstancePtr effect = getEmbeddedWriterEffect();
+
+    if (effect) {
+        effect->setCurrentViewportForOverlays_public(viewport);
+    }
+}
+
+void
+WriteNode::setInteractColourPicker(const OfxRGBAColourD& color,
+                                   bool setColor,
+                                   bool hasColor)
+{
+    EffectInstancePtr effect = getEmbeddedWriterEffect();
+
+    // Not setInteractColourPicker_public(): the parameter interacts were already updated by ours,
+    // since the knobs of the embedded writer are also the knobs of this node.
+    if (effect) {
+        effect->setInteractColourPicker(color, setColor, hasColor);
+    }
+}
+
+void
+WriteNode::drawOverlay(double time,
+                       const RenderScale & renderScale,
+                       ViewIdx view)
+{
+    EffectInstancePtr effect = getEmbeddedWriterEffect();
+
+    if (effect) {
+        effect->drawOverlay_public(time, renderScale, view);
+    }
+}
+
+bool
+WriteNode::onOverlayPenDown(double time,
+                            const RenderScale & renderScale,
+                            ViewIdx view,
+                            const QPointF & viewportPos,
+                            const QPointF & pos,
+                            double pressure,
+                            double timestamp,
+                            PenType pen,
+                            KeyboardModifiers modifiers)
+{
+    EffectInstancePtr effect = getEmbeddedWriterEffect();
+
+    return effect ? effect->onOverlayPenDown_public(time, renderScale, view, viewportPos, pos, pressure, timestamp, pen, modifiers) : false;
+}
+
+bool
+WriteNode::onOverlayPenDoubleClicked(double time,
+                                     const RenderScale & renderScale,
+                                     ViewIdx view,
+                                     const QPointF & viewportPos,
+                                     const QPointF & pos)
+{
+    EffectInstancePtr effect = getEmbeddedWriterEffect();
+
+    return effect ? effect->onOverlayPenDoubleClicked_public(time, renderScale, view, viewportPos, pos) : false;
+}
+
+bool
+WriteNode::onOverlayPenMotion(double time,
+                              const RenderScale & renderScale,
+                              ViewIdx view,
+                              const QPointF & viewportPos,
+                              const QPointF & pos,
+                              double pressure,
+                              double timestamp,
+                              KeyboardModifiers modifiers)
+{
+    EffectInstancePtr effect = getEmbeddedWriterEffect();
+
+    return effect ? effect->onOverlayPenMotion_public(time, renderScale, view, viewportPos, pos, pressure, timestamp, modifiers) : false;
+}
+
+bool
+WriteNode::onOverlayPenUp(double time,
+                          const RenderScale & renderScale,
+                          ViewIdx view,
+                          const QPointF & viewportPos,
+                          const QPointF & pos,
+                          double pressure,
+                          double timestamp,
+                          KeyboardModifiers modifiers)
+{
+    EffectInstancePtr effect = getEmbeddedWriterEffect();
+
+    return effect ? effect->onOverlayPenUp_public(time, renderScale, view, viewportPos, pos, pressure, timestamp, modifiers) : false;
+}
+
+bool
+WriteNode::onOverlayKeyDown(double time,
+                            const RenderScale & renderScale,
+                            ViewIdx view,
+                            Key key,
+                            KeyboardModifiers modifiers,
+                            const QString& keyText)
+{
+    EffectInstancePtr effect = getEmbeddedWriterEffect();
+
+    return effect ? effect->onOverlayKeyDown_public(time, renderScale, view, key, modifiers, keyText) : false;
+}
+
+bool
+WriteNode::onOverlayKeyUp(double time,
+                          const RenderScale & renderScale,
+                          ViewIdx view,
+                          Key key,
+                          KeyboardModifiers modifiers,
+                          const QString& keyText)
+{
+    EffectInstancePtr effect = getEmbeddedWriterEffect();
+
+    return effect ? effect->onOverlayKeyUp_public(time, renderScale, view, key, modifiers, keyText) : false;
+}
+
+bool
+WriteNode::onOverlayKeyRepeat(double time,
+                              const RenderScale & renderScale,
+                              ViewIdx view,
+                              Key key,
+                              KeyboardModifiers modifiers,
+                              const QString& keyText)
+{
+    EffectInstancePtr effect = getEmbeddedWriterEffect();
+
+    return effect ? effect->onOverlayKeyRepeat_public(time, renderScale, view, key, modifiers, keyText) : false;
+}
+
+bool
+WriteNode::onOverlayFocusGained(double time,
+                                const RenderScale & renderScale,
+                                ViewIdx view)
+{
+    EffectInstancePtr effect = getEmbeddedWriterEffect();
+
+    return effect ? effect->onOverlayFocusGained_public(time, renderScale, view) : false;
+}
+
+bool
+WriteNode::onOverlayFocusLost(double time,
+                              const RenderScale & renderScale,
+                              ViewIdx view)
+{
+    EffectInstancePtr effect = getEmbeddedWriterEffect();
+
+    return effect ? effect->onOverlayFocusLost_public(time, renderScale, view) : false;
+}
+
 NATRON_NAMESPACE_EXIT
 
 NATRON_NAMESPACE_USING

@@ -84,6 +84,7 @@ if [ "$PKGOS" = "Linux" ]; then
     if [ -z "${ARCH:-}" ]; then
         case $(uname -m) in
             i?86) ARCH=i686 ;;
+            arm64) ARCH=aarch64 ;; # e.g. when generating a Dockerfile on macOS
             *) ARCH=$(uname -m) ;;
         esac
         export ARCH
@@ -91,9 +92,10 @@ if [ "$PKGOS" = "Linux" ]; then
     
     if [ "$ARCH" = "i686" ]; then
         BITS=32
-    elif [ "$ARCH" = "x86_64" ]; then
+    elif [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "aarch64" ]; then
         BITS=64
     else
+        (>&2 echo "Error: unsupported Linux architecture: $ARCH")
         exit 1
     fi
     SDK_HOME="/opt/Natron-$SDK_VERSION"
@@ -367,6 +369,23 @@ elif [ "$PKGOS" = "OSX" ]; then
     fi
 fi
 
+# ImageMagick 7, used by openfx-arena (build-plugins.sh). On Linux and macOS, ImageMagick 6
+# stays in SDK_HOME (on macOS, MacPorts' ImageMagick, which other ports use).
+# - Linux: the SDK's $SDK_HOME/magick7 (include/scripts/pkg/imagemagick7.sh);
+# - macOS: MacPorts' ImageMagick7 +natron (tools/MacPorts/graphics/ImageMagick7), installed in
+#   $SDK_HOME/lib/ImageMagick7;
+# - Windows: natron_imagemagick (tools/MINGW-packages/mingw-w64-imagemagick), which replaces
+#   ImageMagick 6 in the MSYS2 prefix.
+if [ -z "${MAGICK7_PREFIX:-}" ]; then
+    if [ "$PKGOS" = "Linux" ]; then
+        MAGICK7_PREFIX="$SDK_HOME/magick7"
+    elif [ "$PKGOS" = "OSX" ]; then
+        MAGICK7_PREFIX="$SDK_HOME/lib/ImageMagick7"
+    elif [ "$PKGOS" = "Windows" ]; then
+        MAGICK7_PREFIX="${MINGW_PREFIX:-$SDK_HOME}"
+    fi
+fi
+
 if [ -n "${OSMESA_PREFIX:-}" ] && [ -z "${LLVM_PREFIX:-}" ]; then
     # an OSMesa install needs the LLVM it was built with (e.g. Mesa 25.0.7 needs LLVM >= 15)
     (>&2 echo "Error: OSMESA_PREFIX=$OSMESA_PREFIX is set, so LLVM_PREFIX must be set too (e.g. /opt/llvm-19.1.7)")
@@ -460,10 +479,12 @@ BOOST_ROOT="$SDK_HOME"
 
 PKG_CONFIG_PATH=
 if [ "$PKGOS" = "Linux" ]; then
-    PATH="$SDK_HOME/bin:$QTDIR/bin:$SDK_HOME/gcc/bin:$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$PATH"
-    LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib64:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
-    LD_LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib64:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
-    #LD_RUN_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
+    # The compiler is gcc-toolset (Rocky Linux 9), and its C++ runtime is the system one:
+    # don't use the SDK's old self-built GCC ($SDK_HOME/gcc).
+    PATH="$SDK_HOME/bin:$QTDIR/bin:$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$PATH"
+    LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
+    LD_LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
+    #LD_RUN_PATH="$SDK_HOME/lib:$QTDIR/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
     PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig:$SDK_HOME/libdata/pkgconfig:$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$PYTHON_HOME/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 elif [ "$PKGOS" = "Windows" ]; then
     PKG_CONFIG_PATH="$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$(cygpath -u ${PYTHON_HOME})/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
@@ -472,10 +493,11 @@ elif [ "$PKGOS" = "OSX" ]; then
 fi
 export LD_LIBRARY_PATH LD_RUN_PATH DYLD_LIBRARY_PATH LIBRARY_PATH CPATH PKG_CONFIG_PATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH BOOST_ROOT
 
+# Qt may not be installed yet, e.g. when building the SDK or generating its Dockerfile
 if [ "${QT_VERSION_MAJOR}" = 4 ]; then
-    QT_VERSION=$(pkg-config --modversion QtCore)
+    QT_VERSION=$(pkg-config --modversion QtCore 2>/dev/null || true)
 else
-    QT_VERSION=$(pkg-config --modversion Qt${QT_VERSION_MAJOR}Core)
+    QT_VERSION=$(pkg-config --modversion Qt${QT_VERSION_MAJOR}Core 2>/dev/null || true)
 fi
 QT_VERSION_MINOR=$(echo $QT_VERSION | cut -d. -f2)
 

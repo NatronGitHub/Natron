@@ -381,13 +381,12 @@ public:
                        const std::list<DSKnobPtr>& dstKnobs,
                        bool pasteRelativeToRefTime,
                        DopeSheetEditor *model,
+                       bool setValuesFromDestination = false,
                        QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
     void redo() OVERRIDE FINAL;
 
-
-    static void setKeyValueFromKnob(const KnobIPtr& knob, double keyTime, KeyFrame* key);
 private:
     /**
      * @brief If 'add' is true, paste the keyframes contained in the dope
@@ -402,6 +401,9 @@ private:
     int _refTime;
     int _refKeyindex;
     bool _pasteRelativeToRefTime;
+    // If true, only the times of the keys are pasted: each new keyframe gets the value of its parameter dimension
+    // at that time (KnobI::onKeyFrameSet())
+    bool _setValuesFromDestination;
     std::vector<DopeSheetKey> _keys;
     std::list<DSKnobWPtr> _dstKnobs;
     DopeSheetEditor *_model;

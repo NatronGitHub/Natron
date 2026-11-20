@@ -30,6 +30,7 @@
 
 #include <string>
 #include <cstdarg>
+#include <vector>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -70,6 +71,20 @@ public:
     {
         _ofxEffectInstance = node;
     }
+
+    /**
+     * @brief Brackets an action of the instance or of one of its interacts (overlay or parameter interact), which don't
+     * go through mainEntry(). On the main thread, it counts the nesting depth of these actions, and when the outermost one
+     * returns, it ends the edit blocks that the plug-in opened and left open (paramEditBegin() without paramEditEnd()).
+     **/
+    class MainThreadAction_RAII
+    {
+        OfxImageEffectInstance* _effect;
+
+    public:
+        explicit MainThreadAction_RAII(OfxImageEffectInstance* effect);
+        ~MainThreadAction_RAII();
+    };
 
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
@@ -156,9 +171,11 @@ public:
                                               std::map<OfxClipInstance*, int>& clipsMapping);
 
     /**
-     * We add some output parameters to the function so that we can delay the actual setting of the clip preferences
+     * We add some output parameters to the function so that we can delay the actual setting of the clip preferences.
+     * For Readers, *outputFormatSet (if not NULL) is set to true if the plug-in set the output format, i.e. if it could
+     * read the format from the file.
      **/
-    StatusEnum getClipPreferences_safe(NodeMetadata& defaultPrefs);
+    StatusEnum getClipPreferences_safe(NodeMetadata& defaultPrefs, bool* outputFormatSet = NULL);
 
     virtual OfxStatus createInstanceAction() OVERRIDE FINAL;
 
@@ -234,6 +251,10 @@ public:
         return _ofxEffectInstance.lock();
     }
 
+    /// The knob holder whose multiple params edit level groups the edits of the plug-in in one undo command:
+    /// the effect, or the Read/Write node of a reader/writer embedded in a Read/Write node.
+    EffectInstancePtr getParamsEditHolder() const WARN_UNUSED_RETURN;
+
     /// to be called right away after populate() is called. It adds to their group all the params.
     /// This is done in a deferred manner as some params can sometimes not be defined in a good order.
     void addParamsToTheirParents();
@@ -264,6 +285,22 @@ private:
                                                               to an OfxParamInstance. Without this pointer we would be unable
                                                               to track the knobs that have been created for 1 Node since OfxParamInstance
                                                               is totally dissociated from Node.*/
+    // Nesting depth of the actions of this instance on the main thread (see mainEntry()): an action, e.g.
+    // kOfxActionInstanceChanged, may trigger another one (when a value it sets changes a parameter).
+    // Only read and written on the main thread.
+    int _mainThreadActionDepth;
+    // The edit blocks that the plug-in opened (paramEditBegin()) and did not end yet (paramEditEnd()), innermost last:
+    // true for a block opened on _pluginEditHolder, false for a block that was ignored (while a PyPlug is created), so
+    // that each paramEditEnd() ends the block of its paramEditBegin(). When the outermost action returns, these blocks,
+    // and only these, are ended: the blocks opened by Natron (e.g. an overlay drag of a host interact) stay open.
+    // Only used on the Qt main thread (see editBegin()).
+    std::vector<bool> _pluginEditBlocks;
+    // The holder of the knobs (getParamsEditHolder()) on which these blocks are open, e.g. the Read/Write node of an
+    // embedded reader/writer.
+    EffectInstanceWPtr _pluginEditHolder;
+
+    // End the blocks of _pluginEditBlocks (main thread only).
+    void endPluginEditBlocks();
 };
 
 class OfxImageEffectDescriptor

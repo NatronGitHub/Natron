@@ -495,6 +495,27 @@ public:
     }
 };
 
+/**
+ * @brief On destruction, computes the previews of the nodes that were added to the collection during the
+ * lifetime of this object (and, for groups, of the nodes inside them), including on error paths.
+ * Previews are not computed while a node tree is being created (see NodeGui::forceComputePreview() and #814):
+ * declare this object before the CreatingNodeTreeFlag_RAII, so that it is destroyed after it.
+ * Does nothing if this is part of a larger node tree: the outermost one refreshes the previews once complete.
+ **/
+class RefreshPreviewsOfCreatedNodes_RAII
+{
+    AppInstanceWPtr _app;
+    NodeCollectionWPtr _collection;
+    NodesList _nodesBefore;
+
+public:
+
+    RefreshPreviewsOfCreatedNodes_RAII(const AppInstancePtr& app,
+                                       const NodeCollectionPtr& collection);
+
+    ~RefreshPreviewsOfCreatedNodes_RAII();
+};
+
 NATRON_NAMESPACE_EXIT
 
 #endif // APPINSTANCE_H

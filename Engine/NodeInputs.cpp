@@ -25,6 +25,8 @@
 
 #include "NodePrivate.h"
 
+#include <set>
+
 #include <QDebug>
 #include <QThread>
 
@@ -204,12 +206,18 @@ Node::getInputInternal(bool useGuiInput,
     if (!_imp->inputsInitialized) {
         qDebug() << "Node::getInput(): inputs not initialized";
     }
-    QMutexLocker l(&_imp->inputsMutex);
-    if ( ( index >= (int)_imp->inputs.size() ) || (index < 0) ) {
-        return NodePtr();
-    }
+    NodePtr ret;
+    {
+        QMutexLocker l(&_imp->inputsMutex);
+        if ( ( index >= (int)_imp->inputs.size() ) || (index < 0) ) {
+            return NodePtr();
+        }
 
-    NodePtr ret =  useGuiInput ? _imp->guiInputs[index].lock() : _imp->inputs[index].lock();
+        ret = useGuiInput ? _imp->guiInputs[index].lock() : _imp->inputs[index].lock();
+    }
+    // Apply the redirections without holding inputsMutex: they take the locks of other nodes and groups
+    // (e.g. NodeGroup::getRealInputForInput() takes the group's nodesLock), and the main thread may hold
+    // these while taking this node's inputsMutex (see #814).
     if (ret && useGroupRedirections) {
         ret = applyNodeRedirectionsUpstream(ret, useGuiInput);
     }
@@ -401,7 +409,14 @@ Node::isInputOnlyAlpha(int inputNb) const
 {
     assert(_imp->inputsInitialized);
 
+    // Called by render threads, while the main thread may change inputsComponents (initializeInputs()).
+    // While a GroupInput is being activated, getNInputs() may be larger than inputsComponents.size().
+    QMutexLocker l(&_imp->inputsMutex);
+    if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputsComponents.size() ) ) {
+        return false;
+    }
     const std::list<ImagePlaneDesc>& inputSupportedComps = _imp->inputsComponents[inputNb];
+
     return (inputSupportedComps.size() == 1 && inputSupportedComps.front().getNumComponents() == 1);
 }
 
@@ -421,19 +436,39 @@ Node::initializeInputs()
     assert( QThread::currentThread() == qApp->thread() );
     const int inputCount = getNInputs();
     InputsV oldInputs;
+
+    // Query the effect (input labels and hints, accepted components) before taking this node's mutexes:
+    // for a group, NodeGroup::getInputLabel() and NodeGroup::isInputMask() take the group's nodesLock, and
+    // render threads take nodesLock then inputsMutex (NodeGroup::getRealInputForInput() calls
+    // Node::getInput()). Calling them with inputsMutex held could deadlock (see #814).
+    std::vector<std::string> inputLabels(inputCount);
+    std::vector<std::string> inputHints(inputCount);
+    for (int i = 0; i < inputCount; ++i) {
+        inputLabels[i] = _imp->effect->getInputLabel(i);
+        inputHints[i] = _imp->effect->getInputHint(i);
+    }
     {
         QMutexLocker k(&_imp->inputsLabelsMutex);
-        _imp->inputLabels.resize(inputCount);
-        _imp->inputHints.resize(inputCount);
-        for (int i = 0; i < inputCount; ++i) {
-            _imp->inputLabels[i] = _imp->effect->getInputLabel(i);
-            _imp->inputHints[i] = _imp->effect->getInputHint(i);
-        }
+        _imp->inputLabels.swap(inputLabels);
+        _imp->inputHints.swap(inputHints);
     }
     {
         QMutexLocker l(&_imp->lastRenderStartedMutex);
         _imp->inputIsRenderingCounter.resize(inputCount);
     }
+
+    std::vector<std::list<ImagePlaneDesc> > inputsComponents(inputCount);
+    for (int i = 0; i < inputCount; ++i) {
+        if ( _imp->effect->isInputMask(i) ) {
+            //Force alpha for masks
+            inputsComponents[i].push_back( ImagePlaneDesc::getAlphaComponents() );
+        } else {
+            _imp->effect->addAcceptedComponents(i, &inputsComponents[i]);
+        }
+    }
+    std::list<ImagePlaneDesc> outputComponents;
+    _imp->effect->addAcceptedComponents(-1, &outputComponents);
+
     {
         QMutexLocker l(&_imp->inputsMutex);
         oldInputs = _imp->inputs;
@@ -461,18 +496,8 @@ Node::initializeInputs()
 
 
         ///Set the components the plug-in accepts
-        _imp->inputsComponents.resize(inputCount);
-        for (int i = 0; i < inputCount; ++i) {
-            _imp->inputsComponents[i].clear();
-            if ( _imp->effect->isInputMask(i) ) {
-                //Force alpha for masks
-                _imp->inputsComponents[i].push_back( ImagePlaneDesc::getAlphaComponents() );
-            } else {
-                _imp->effect->addAcceptedComponents(i, &_imp->inputsComponents[i]);
-            }
-        }
-        _imp->outputComponents.clear();
-        _imp->effect->addAcceptedComponents(-1, &_imp->outputComponents);
+        _imp->inputsComponents.swap(inputsComponents);
+        _imp->outputComponents.swap(outputComponents);
     }
     _imp->inputsInitialized = true;
 
@@ -512,10 +537,14 @@ Node::hasInputConnected() const
 bool
 Node::hasMandatoryInputDisconnected() const
 {
-    QMutexLocker l(&_imp->inputsMutex);
-
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if ( !_imp->inputs[i].lock() && !_imp->effect->isInputOptional(i) ) {
+    InputsV inputs;
+    {
+        QMutexLocker l(&_imp->inputsMutex);
+        inputs = _imp->inputs;
+    }
+    // Call isInputOptional() without holding inputsMutex: for a group, it takes the group's nodesLock (see #814).
+    for (U32 i = 0; i < inputs.size(); ++i) {
+        if ( !inputs[i].lock() && !_imp->effect->isInputOptional(i) ) {
             return true;
         }
     }
@@ -1106,7 +1135,7 @@ Node::disconnectInput(int inputNumber)
     {
         QMutexLocker l(&_imp->inputsMutex);
         if ( (inputNumber < 0) ||
-             ( inputNumber > (int)_imp->inputs.size() ) ||
+             ( inputNumber >= (int)_imp->inputs.size() ) ||
              ( !useGuiValues && !_imp->inputs[inputNumber].lock() ) ||
              ( useGuiValues && !_imp->guiInputs[inputNumber].lock() ) ) {
             return -1;
@@ -1255,16 +1284,14 @@ Node::disconnectOutput(bool useGuiValues,
     {
         QMutexLocker l(&_imp->outputsMutex);
         if (!useGuiValues) {
-            int ret = 0;
-            for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it, ++ret) {
+            for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
                 if (it->lock().get() == output) {
                     _imp->outputs.erase(it);
                     break;
                 }
             }
         }
-        int ret = 0;
-        for (NodesWList::iterator it = _imp->guiOutputs.begin(); it != _imp->guiOutputs.end(); ++it, ++ret) {
+        for (NodesWList::iterator it = _imp->guiOutputs.begin(); it != _imp->guiOutputs.end(); ++it) {
             if (it->lock().get() == output) {
                 _imp->guiOutputs.erase(it);
                 break;
@@ -1318,22 +1345,26 @@ Node::getInputLabels() const
 
 
 void
-Node::getOutputsConnectedToThisNode(std::map<NodePtr, int>* outputs)
+Node::getOutputsConnectedToThisNode(std::list<std::pair<NodePtr, int> >* outputs)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
 
-    NodePtr thisSHared = shared_from_this();
+    NodePtr thisShared = shared_from_this();
+    // An output node appears once per link in _imp->outputs: visit each one once,
+    // and list every input through which it is connected to this node.
+    std::set<NodePtr> visited;
     for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
         NodePtr output = it->lock();
-        if (!output) {
+        if ( !output || !visited.insert(output).second ) {
             continue;
         }
 
-        int indexOfThis = output->inputIndex(thisSHared);
-        assert(indexOfThis != -1);
-        if (indexOfThis >= 0) {
-            outputs->insert( std::make_pair(output, indexOfThis) );
+        const int nInputs = output->getNInputs();
+        for (int i = 0; i < nInputs; ++i) {
+            if (output->getRealInput(i) == thisShared) {
+                outputs->push_back( std::make_pair(output, i) );
+            }
         }
     }
 }
@@ -1671,9 +1702,9 @@ Node::onInputChanged(int inputNb,
         std::vector<NodePtr> groupInputs;
         isGroup->getInputs(&groupInputs, false);
         if ( (inputNb >= 0) && ( inputNb < (int)groupInputs.size() ) && groupInputs[inputNb] ) {
-            std::map<NodePtr, int> inputOutputs;
+            std::list<std::pair<NodePtr, int> > inputOutputs;
             groupInputs[inputNb]->getOutputsConnectedToThisNode(&inputOutputs);
-            for (std::map<NodePtr, int> ::iterator it = inputOutputs.begin(); it != inputOutputs.end(); ++it) {
+            for (std::list<std::pair<NodePtr, int> >::iterator it = inputOutputs.begin(); it != inputOutputs.end(); ++it) {
                 it->first->onInputChanged(it->second);
             }
         }
@@ -1686,9 +1717,9 @@ Node::onInputChanged(int inputNb,
     if (isOutput) {
         NodeGroup* containerGroup = dynamic_cast<NodeGroup*>( isOutput->getNode()->getGroup().get() );
         if (containerGroup) {
-            std::map<NodePtr, int> groupOutputs;
+            std::list<std::pair<NodePtr, int> > groupOutputs;
             containerGroup->getNode()->getOutputsConnectedToThisNode(&groupOutputs);
-            for (std::map<NodePtr, int> ::iterator it = groupOutputs.begin(); it != groupOutputs.end(); ++it) {
+            for (std::list<std::pair<NodePtr, int> >::iterator it = groupOutputs.begin(); it != groupOutputs.end(); ++it) {
                 it->first->onInputChanged(it->second);
             }
         }
@@ -1699,9 +1730,9 @@ Node::onInputChanged(int inputNb,
      */
     PrecompNodePtr isInPrecomp = isPartOfPrecomp();
     if ( isInPrecomp && (isInPrecomp->getOutputNode().get() == this) ) {
-        std::map<NodePtr, int> inputOutputs;
+        std::list<std::pair<NodePtr, int> > inputOutputs;
         isInPrecomp->getNode()->getOutputsConnectedToThisNode(&inputOutputs);
-        for (std::map<NodePtr, int> ::iterator it = inputOutputs.begin(); it != inputOutputs.end(); ++it) {
+        for (std::list<std::pair<NodePtr, int> >::iterator it = inputOutputs.begin(); it != inputOutputs.end(); ++it) {
             it->first->onInputChanged(it->second);
         }
     }

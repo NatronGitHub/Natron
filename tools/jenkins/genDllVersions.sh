@@ -323,19 +323,23 @@ BIN_PATH="$SDK_HOME_BIN"
 catDll libcdr-
 #catDll libcroco-
 catDll libicuin
-catDll libpoppler-117
-catDll libpoppler-glib-
+if [ "$NATRON_LICENSE" = "GPL" ]; then
+    # ReadPDF (poppler is GPL); COMMERCIAL builds leave it out
+    catDll libpoppler-117
+    catDll libpoppler-glib-
+fi
 catDll librevenge-0
 catDll librevenge-stream-
 catDll libzip
-catDll libmad-0
-catDll libsox-
+if [ "$NATRON_LICENSE" = "GPL" ]; then
+    # AudioCurve (libsox links GPL libraries); COMMERCIAL builds leave it out (AUDIO=OFF)
+    catDll libmad-0
+    catDll libsox-
+fi
 
 INIT_VAR=1
 DLL_VAR_PREFIX="GMIC"
 BIN_PATH="$SDK_HOME_BIN"
-catDll libfftw3-
-catDll libfftw3_threads-
 catDll libcurl-
 catDll libnghttp2-
 catDll libngtcp2-

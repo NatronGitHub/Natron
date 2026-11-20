@@ -7,17 +7,18 @@ Instructions for installing Natron from sources on Microsoft Windows
 
 Natron is built with **CMake** in an MSYS2 **UCRT64** shell, with MSYS2's own packages: see [Build](#build). The qmake build is deprecated: it still works on RB-2.6, but will be removed in a future release.
 
-The [SDK instructions](tools/MINGW-packages/README.md) set up the environment for the OFX plug-ins and the release installers, which need Natron's own MSYS2 packages (`tools/MINGW-packages`). That SDK still uses a MINGW64 shell and qmake; its move to UCRT64 is tracked in [#1133](https://github.com/NatronGitHub/Natron/issues/1133). You don't need it to build Natron itself.
+The [SDK instructions](tools/MINGW-packages/README.md) set up the environment for the OFX plug-ins and the release installers, which need Natron's own MSYS2 packages (`tools/MINGW-packages`). That package repository is built in UCRT64, like Natron (#1197). The installer scripts (`tools/jenkins`, `build_installer.yml`) still assume MINGW64 and qmake, so they can't run until they move to UCRT64 too, step 5 of [#1133](https://github.com/NatronGitHub/Natron/issues/1133). You don't need any of this to build Natron itself.
 
 ## Maintaining the Windows build
 
 MSYS2 is a rolling distribution, so the Windows build sometimes breaks with no change in Natron. [tools/MINGW-packages/README.md](tools/MINGW-packages/README.md) describes the known cases ("Toolchain drift") and how to rebuild and publish the Natron package repository ("The package repository"). In short:
 
 - Qt5's qmake is now `qmake-qt5`. `tools/jenkins/common.sh` finds it (`qmake-qt5`, `qmake5`, then `qmake`), and `launchBuildMain.sh` stops early if it doesn't work or is the qmake of another Qt major version. To use another qmake, set `NATRON_QMAKE`; a `QMAKE` inherited from the environment is ignored, with a warning.
-- Two x264 ABIs are installed, and bundled in GPL builds (COMMERCIAL builds: see #1177): `libx264-164.dll` (from `natron_x264`, for `natron_ffmpeg-gpl2`) and `libx264-165.dll` (from MSYS2's `libx264`, for `libheif`). `natron_x264` keeps its headers and import library in `${MINGW_PREFIX}/natron_x264` so that the two packages don't conflict.
+- Natron's `natron_ffmpeg-gpl2` (FFmpeg 9.0.2, GPLv2) uses MSYS2's `libx264` (`libx264-165.dll`), the same one MSYS2's `libheif` uses: there is only one x264. It is bundled in GPL builds only (COMMERCIAL builds: see #1177).
 - The installer bundles `libpyside2`/`libshiboken2` for Qt5 and `libpyside6`/`libshiboken6` for Qt6.
 - The bundled Python standard library is listed in `tools/jenkins/zip-python-mingw.sh`. Modules removed from the stdlib (e.g. `lib2to3` and `msilib` in Python 3.13) are skipped, and modules that became packages (`pathlib` and `sysconfig` in 3.13, `string` in 3.14) must be listed there.
-- `mingw-w64-dump_syms` builds only `dump_syms.exe`, because `microdump_stackwalk` doesn't link with GCC 16.
+- Natron's package repository is built in MSYS2 UCRT64 and contains only what MSYS2 doesn't provide in the form Natron needs (see "Which packages Natron builds" in [tools/MINGW-packages/README.md](tools/MINGW-packages/README.md)). The Breakpad tools are no longer built: releases ship no crash reporter until #1183.
+- Natron's package repository also has a `freetype` (2.15.0-1.1, MSYS2's 2.15.0-1 with the upstream fix 05f343a for rotated mirrored text, #1287) that replaces MSYS2's. pacman never takes it from `[natron]` by itself: `natron_repo_install_overrides` (`tools/MINGW-packages/natron_repo_common.sh`) installs it as long as it is newer than MSYS2's. Delete it once MSYS2 ships the fix (see "Packages that replace MSYS2's" in [tools/MINGW-packages/README.md](tools/MINGW-packages/README.md)).
 - The installer workflow downloads `natron_package_repo-<version>.zip` (`<version>` from `tools/MINGW-packages/windows_pacman_repo_version.txt`) from the `windows-mingw-package-repo` release of the repository it runs from, then from NatronGitHub/Natron, and builds the packages locally if neither has it. After an MSYS2 toolchain change (e.g. the `__emutls_v.*` symbols removed when GCC moved to native TLS, or new sonames of libx265 or libbluray), every package must be rebuilt, the zip published, and `windows_pacman_repo_version.txt` bumped.
 
 ### OpenFX
@@ -102,7 +103,7 @@ Natron is built with CMake and Ninja, in an MSYS2 **UCRT64** shell. The Windows 
       mingw-w64-ucrt-x86_64-python-qtpy \
       mingw-w64-ucrt-x86_64-clang mingw-w64-ucrt-x86_64-llvm-tools
 
-(shiboken2 needs clang and llvm-tools. The release installers are still built in a MINGW64 environment with the SDK above; their move to UCRT64 is tracked in #1133.) Then, from the Natron source directory:
+(shiboken2 needs clang and llvm-tools. The release installer scripts don't work yet: see the SDK paragraph above and #1133.) Then, from the Natron source directory:
 
     cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
     cmake --build build
@@ -137,234 +138,4 @@ global.pri file. To enable an option just add `CONFIG+=<option>` in the qmake ca
 
 # Installing with Visual Studio
 
-These instructions are outdated (they use the deprecated qmake build), and the preferred way to compile
-Natron on Windows is using MSYS2. Feel free to contribute updated
-Visual Studio instructions.
-
-Required: Install git, best is the github app.
-
-## Install libraries
-
-In order to have Natron compiling, first you need to install the required libraries.
-An alternative is to download the
-[pre-compiled binaries provided by MrKepzie](https://sourceforge.net/projects/natron/files/Natron_Windows_3rdParty.zip/download)
-
-They contain:
-* Qt 4.8.5 compiled for 64 bits as dlls. 32 bits version can be downloaded from the Qt website (see below)
-* Qt 5.3.0  compiled for 64 bits as dlls. 32 bits version can be downloaded from the Qt website (see below)
-* lib jpeg 8d/9a static MT. You should use the 9a version for OpenImageIO
-* libpng 1.2.51/ 1.6.9 static MT, you should use version 1.6.9 for OpenImageIO and cairo
-* OpenEXR 2.1 static MT
-* OpenImageIO 1.4.8 static MT release
-* libtiff 4.0.3 static MT release
-* zlib 1.2.8 static MT release
-* OpenColorIO 1.0.9 static MT release
-* cairo 1.12.4 static MT release
-* pixman 0.32.4 static MT release (64 bits only, it's easy to compile the 32 bits version yourself and it shouldn't be needed if 
-you use the provided pre-built binary of cairo.).
-
-### *Qt 5.3*
-
-You'll need to install Qt libraries from [Qt download](http://qt-project.org/downloads). 
-You probably want Qt 5.3.0 for Windows 32-bit (VS 2010, OpenGL, 593 MB)
-Note that by default the binaries provided by Qt are 32 bits, which means you have to compile the 64 bits version yourself... or download
-the pre-compiled binaries we provide (see above).
-
-### *boost*
-
-You can download boost from 
-(boost download)[http://www.boost.org/users/download/]
-For now only boost serialisation is required. Follow the build instructions to compile
-boost. You'll need to build a shared | multi-threaded version of the libraries.
-Pre-compiled binaries for boost are available here:
-http://boost.teeks99.com/
-
-### *OpenFX*
-
-At the source tree's root, type the following command in the command prompt:
-
-	git submodule update -i --recursive
-	
-(If you cloned the repository with the github app you probably don't need this command.)
-
-### *Expat*
-
-You need to build expat in order to make OpenFX work.
-The expat sources are located under the HostSupport folder within OpenFX.
-You should find a .vcxproj file under
-\libs\OpenFX\HostSupport\expat-2.0.1\lib
-Open it with visual studio and build a static MT release version of expat.
-
-We're done here for libraries.
-
-### *Cairo 1.14.2*
-
-You can get the release from http://www.cairographics.org/releases/
-Then this page has a complete answer on how to compile the dependencies:
-http://stackoverflow.com/questions/85622/how-to-compile-cairo-for-visual-c-2008-express-edition
-This will work successfully.
-
-### Download OpenColorIO-Configs
-
-In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
-to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz).
-Place it at the root of Natron repository.
-
-
-### Add the config.pri file
-
-You have to define the locations of the required libraries.
-This is done by creating a .pri file that will tell the .pro where to find those libraries.
-
-- create the config.pri file next to the Project.pro file.
-
-You can fill it with the following proposed code to point to the libraries.
-Of course you need to provide valid paths that are valid on your system.
-
-`INCLUDEPATH` is the path to the include files
-
-`LIBS` is the path to the libs
-
-Here's an example of a config.pri file that supports both 32bit and 64bit builds:
-
-```
-64bit {
-
-boost {
-        INCLUDEPATH +=  $$quote(C:\\boost)
-        CONFIG(release, debug|release): LIBS += -L$$quote(C:\\boost\\x64) -lboost_serialization-vc100-mt-1_57
-		CONFIG(debug, debug|release):  LIBS += -L$$quote(C:\\boost\\x64) -lboost_serialization-vc100-mt-gd-1_57
-}
-
-expat{
-    INCLUDEPATH += $$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\lib)
-    LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\x64\\bin\\Release) -llibexpatMT
-    LIBS += shell32.lib
-}
-
-cairo {
-	INCLUDEPATH += $$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\cairo_1.12\\include)
-	LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\cairo_1.12\\lib\\x64) -lcairo
-}
-
-python {
-	INCLUDEPATH += $$quote(C:\\Python34\\include)
-	LIBS += -L$$quote(C:\\Python34\\libs) -lpython3
-}
-
-pyside {
-	INCLUDEPATH += $$quote(C:\\Python34\\Lib\\site-packages\\PySide\\include\\PySide)
-	INCLUDEPATH += $$quote(C:\\Python34\\Lib\\site-packages\\PySide\\include\\PySide\\QtGui)
-	INCLUDEPATH += $$quote(C:\\Python34\\Lib\\site-packages\\PySide\\include\\PySide\\QtCore)
-	INCLUDEPATH += $$quote(C:\\Qt\\4.8.6_win32\\include\\QtGui)
-	LIBS += -L$$quote(C:\\Python34\\Lib\\site-packages\\PySide) -lpyside-python3.4
-}
-
-shiboken {
-	INCLUDEPATH += $$quote(C:\\Python34\\Lib\\site-packages\\PySide\\include\\shiboken)
-	LIBS += -L$$quote(C:\\Python34\\Lib\\site-packages\\PySide) -lshiboken-python3.4
-}
-
-}
-
-32bit {
-
-
-boost {
-        INCLUDEPATH +=  $$quote(C:\\boost)
-        CONFIG(release, debug|release): LIBS += -L$$quote(C:\\boost\\win32) -lboost_serialization-vc100-mt-1_57
-		CONFIG(debug, debug|release): LIBS += -L$$quote(C:\\boost\\win32) -lboost_serialization-vc100-mt-gd-1_57
-}
-
-expat{
-    INCLUDEPATH += $$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\lib)
-    LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\win32\\bin\\Release) -llibexpatMT
-    LIBS += shell32.lib
-}
-
-cairo {
-	INCLUDEPATH += $$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\cairo_1.12\\include)
-	LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\cairo_1.12\\lib\\win32) -lcairo
-}
-
-python {
-	INCLUDEPATH += $$quote(C:\\Python34_win32\\include)
-	LIBS += -L$$quote(C:\\Python34_win32\\libs) -lpython3
-}
-
-pyside {
-	INCLUDEPATH += $$quote(C:\\Python34_win32\\Lib\\site-packages\\PySide\\include\\PySide)
-	INCLUDEPATH += $$quote(C:\\Python34_win32\\Lib\\site-packages\\PySide\\include\\PySide\\QtGui)
-	INCLUDEPATH += $$quote(C:\\Python34_win32\\Lib\\site-packages\\PySide\\include\\PySide\\QtCore)
-	INCLUDEPATH += $$quote(C:\\Qt\\4.8.6_win32\\include\\QtGui)
-	LIBS += -L$$quote(C:\\Python34_win32\\Lib\\site-packages\\PySide) -lpyside-python3.4
-}
-
-shiboken {
-	INCLUDEPATH += $$quote(C:\\Python34_win32\\Lib\\site-packages\\PySide\\include\\shiboken)
-	LIBS += -L$$quote(C:\\Python34_win32\\Lib\\site-packages\\PySide) -lshiboken-python3.4
-}
-}
-```
-
-
-### *Copy the dll's over*
-
-Copy all the required dll's to the executable directory. (Next to Natron.exe)
-If Natron launches that means you got it all right;) Otherwise windows will prompt you
-for the missing dll's when launching Natron.
-
-### *Build*
-
-
-	qmake -r -tp vc -spec win32-msvc2010 CONFIG+=64bit Project.pro -o Project64.sln
-
-(adjust the qmake executable path to your system or add it to the path environment variable).
-
-The vcproj "Natron" might complain of missing includes or linkage errors, if so adjust
-the settings in the Additional include directories and Additional dependencies tab of
-the property page of the project.
-
-If you get the following linker error:
-error LNK2019: unresolved external symbol WinMain referenced in function __tmainCRTStartup
-Open the Natron project property pages. Go to Configuration Properties --> Linker --> Command Line.
-In the Additional Options, add the following: 
-     /ENTRY:"mainCRTStartup" 
-(add a white space after the previous command)
-
-In 64 bits mode (target x64), qmake doesn't set the target machine, it leaves the default value which is x86.
-You'll have to set it manually in the properties of the HostSupport/Gui/Engine projects, as following:
-Right click on the project, Configuration Properties,Librarian,General, Target Machine. Set it to Machinex64
-
-	
-### Generating Python bindings
-
-This is not required as generated files are already in the repository. You would need to run it if you were to extend or modify the Python bindings via the
-typesystem.xml file. See the documentation of shiboken for an explanation of the command line arguments.
-
-```
-shiboken  --avoid-protected-hack --enable-pyside-extensions --include-paths=..\Engine;..\Global;C:\Qt\4.8.6_win32\include;C:\Python34\Lib\site-packages\PySide\include\PySide --typesystem-paths=C:\Python34\Lib\site-packages\PySide\typesystems --output-directory=Engine Engine\Pyside_Engine_Python.h Engine\typesystem_engine.xml
-shiboken  --avoid-protected-hack --enable-pyside-extensions --include-paths=..\Engine;..\Gui;..\Global;C:\Qt\4.8.6_win32\includeC;\Python34\Lib\site-packages\PySide\include\PySide  --typesystem-paths=C:\Python34\Lib\site-packages\PySide\typesystems;Engine --output-directory=Gui Gui\Pyside_Gui_Python.h  Gui\typesystem_natronGui.xml
-```
-
-### 32 bits vs 64 bits builds
-
-Depending on the target architecture the dependencies are not the same. This can be achieved with the switch CONFIG+=64bit or CONFIG+=32bit
-in the qmake call. 
-Note that depending on the binary of qmake you're using to generate the visual studio solution file, it will set the Qt libraries in the
-visual studio solution file to be the ones qmake was compiled with. In other words if you use the qmake downloaded from the qt website, then
-probably this is 32 bits (you can check it with dumpbin /HEADERS C:\PATH\TO\qmake.exe , in the very first lines of the output: either x86 or x64).
-
-So if you want to generate the 64 bits solution file with good dependencies make sure to make the qmake call with the 64 bits qmake binary
-provided in the pre-built binaries.
-
-In other words, if one wants to build both 32bits and 64bits version, one would call:
-
-	C:\PATH\TO\32BITS\QT\qmake -r -tp vc -spec win32-msvc2010 CONFIG+=32bit Project.pro -o Project32.sln
-	C:\PATH\TO\64BITS\QT\qmake -r -tp vc -spec win32-msvc2010 CONFIG+=64bit Project.pro -o Project64.sln
-
-### Build from the command line with MSBuild
-
-	MSBuild Project32.sln /p:Configuration=Release;Platform=win32 /t:Natron /m
-	MSBuild Project64.sln /p:Configuration=Release;Platform=x64 /t:Natron /m
-
+Building Natron with Visual Studio (MSVC) is not supported or tested: use MSYS2 as described above. The old Visual Studio instructions were removed, since they used Qt 4, Python 3.4, the deprecated qmake build, and the copy of expat in `libs/OpenFX/HostSupport`, which openfx is removing (openfx#143). Whether to add an MSVC build is discussed in [#1133](https://github.com/NatronGitHub/Natron/issues/1133); contributions are welcome.

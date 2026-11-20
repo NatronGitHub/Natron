@@ -56,6 +56,34 @@ if [ -z "${WITH_MARIADB+x}" ]; then
     fi
 fi
 
+# GCC_TOOLSET=N gcc-toolset version used on Rocky Linux 8 and 9 (default: 14, i.e. GCC 14.2,
+# as in the VFX Reference Platform CY2026/CY2027)
+GCC_TOOLSET="${GCC_TOOLSET:-14}"
+# libclang used by the shiboken2 generator on Rocky Linux (see the Dockerfile generation below).
+# Shiboken2 5.15.19, even with the libclang >= 16 patches, misparses some default arguments with
+# libclang 22 (e.g. QEvent::Type values resolved in the wrong class): use an older libclang.
+if [ "${ROCKY:-0}" -ge 9 ]; then
+    # SHIBOKEN2_CLANG_VERSION=N: major version of EPEL's clangN-devel compat package
+    SHIBOKEN2_CLANG_VERSION="${SHIBOKEN2_CLANG_VERSION:-19}"
+    SHIBOKEN2_CLANG_PKGS="clang${SHIBOKEN2_CLANG_VERSION}-devel llvm${SHIBOKEN2_CLANG_VERSION}-devel"
+    SHIBOKEN2_LLVM_DIR="/usr/lib64/llvm${SHIBOKEN2_CLANG_VERSION}"
+else
+    # SHIBOKEN2_CLANG_VERSION=X.Y.Z: version of AppStream's clang-devel (as in MacPorts)
+    SHIBOKEN2_CLANG_VERSION="${SHIBOKEN2_CLANG_VERSION:-18.1.8}"
+    SHIBOKEN2_CLANG_PKGS="clang-devel-${SHIBOKEN2_CLANG_VERSION} llvm-devel-${SHIBOKEN2_CLANG_VERSION}"
+    SHIBOKEN2_LLVM_DIR="/usr"
+fi
+# WITH_QT4=true|false build Qt 4 (with QtWebKit, PySide and Shiboken) and the Qt installer
+# framework (with its static Qt 4). Not needed on Rocky Linux 9 and later: Natron 2.6 is
+# built with Qt 5, and the Linux releases are portable archives, without the IFW installer.
+if [ -z "${WITH_QT4+x}" ]; then
+    if [ "${ROCKY:-0}" -ge 9 ]; then
+        WITH_QT4=false
+    else
+        WITH_QT4=true
+    fi
+fi
+
 if [ "${DOWNLOAD:-}" = "1" ] && [ -z "${GEN_DOCKERFILE+x}" ]; then
     echo "*** downloading all source distributions"
     if [ -z "${WORKSPACE+x}" ]; then
@@ -107,7 +135,7 @@ EOF
     PATH=\"\$SDK/bin:\$QTDIR/bin:\$GCC/bin:\$FFMPEG/bin:\$LIBRAW_PATH:\$PATH\" \\
     WORKSPACE=/home \\
     GIT_URL=https://github.com/NatronGitHub/Natron.git \\
-    GIT_BRANCH=RB-2.5 \\
+    GIT_BRANCH=RB-2.6 \\
     GIT_COMMIT= \\
     RELEASE_TAG=  \\
     SNAPSHOT_BRANCH= \\
@@ -118,6 +146,8 @@ EOF
     COMPILE_TYPE=release \\
     NATRON_DEV_STATUS=RC \\
     NATRON_CUSTOM_BUILD_USER_NAME= \\
+    NATRON_BUILD_SYSTEM=cmake \\
+    NATRON_EXTRA_CMAKE_FLAGS= \\
     NATRON_EXTRA_QMAKE_FLAGS= \\
     BUILD_NAME=natron_github_RB2 \\
     DISABLE_RPM_DEB_PKGS=1 \\
@@ -153,13 +183,16 @@ EOF
             PREYUM='echo "i686" > /etc/yum/vars/arch && echo "i386" > /etc/yum/vars/basearch && '
             ARCH=i686
         elif [ -n "${ROCKY+x}" ]; then
+            # rockylinux/rockylinux images are multi-arch (amd64, arm64): the
+            # architecture is the one of the image (docker build --platform),
+            # and common.sh takes it from uname -m inside the container.
             DOCKER_BASE="rockylinux/rockylinux:${ROCKY}"
             PREYUM=
-            ARCH=x86_64
+            ARCH=
         else
             DOCKER_BASE="centos:${CENTOS}"
             PREYUM=
-            ARCH=x86_64
+            ARCH=
         fi
         # Also install a recent Developer Toolset to get C++11 support while building GCC
         # yum -y install centos-release-scl && \\
@@ -173,10 +206,14 @@ EOF
             PREYUM="sed -i -e 's/^mirrorlist/#mirrorlist/' -e 's@^#[ ]*baseurl=http://mirror.centos.org@baseurl=http://vault.centos.org@' /etc/yum.repos.d/CentOS*.repo && $PREYUM"
         fi
         if [ "${CENTOS:-7}"  -ge 8 ] || [ -n "${ROCKY+x}" ]; then
-            # Enable powertools on CentOS >= 8 / Rocky Linux 8
+            # Enable powertools on CentOS >= 8 / Rocky Linux 8, CRB on Rocky Linux >= 9
             # https://www.how2shout.com/linux/how-to-enable-powertools-repository-on-rocky-linux-8/
             # https://computingforgeeks.com/enable-powertools-repository-on-centos-rhel-linux/
-            DTSYUM+="dnf -y install dnf-plugins-core && dnf -y install epel-release && dnf config-manager --set-enabled powertools && dnf -y update && dnf -y groupinstall 'Development Tools' && "
+            EL_DEVEL_REPO=powertools
+            if [ "${ROCKY:-0}" -ge 9 ]; then
+                EL_DEVEL_REPO=crb
+            fi
+            DTSYUM+="dnf -y install dnf-plugins-core && dnf -y install epel-release && dnf config-manager --set-enabled ${EL_DEVEL_REPO} && dnf -y update && dnf -y groupinstall 'Development Tools' && "
             YUM_DEVEL_EXTRA=""
         else
             YUM_DEVEL_EXTRA="libXevie-devel libdmx-devel" # only available on CentOS <= 7
@@ -192,17 +229,45 @@ EOF
             fi
             DTSYUM+="yum -y install devtoolset-${DTS} && "
         fi
+        if [ "${ROCKY:-0}" -ge 8 ]; then
+            # The system GCC of Rocky Linux 8 (8.5) has incomplete C++17 and no C++20 support,
+            # and the one of Rocky Linux 9 (11.5) has incomplete C++20 support: use the
+            # gcc-toolset (GCC 14.2, as in the VFX Reference Platform CY2026/CY2027),
+            # available for x86_64 and aarch64. The system GCC is still used to build
+            # the installer's static Qt 4 and qtifw, if WITH_QT4 (see DTSSDK below).
+            # libclang, for the shiboken2 generator (see pkg/pyside2.sh), which also needs
+            # LLVM_INSTALL_DIR to find clang's builtin headers (see SHIBOKEN2_CLANG_VERSION).
+            DTSYUM+="dnf -y install gcc-toolset-${GCC_TOOLSET} ${SHIBOKEN2_CLANG_PKGS} && "
+            if [ "${SHIBOKEN2_LLVM_DIR}" != /usr ]; then
+                # shiboken2 looks for the builtin headers in $LLVM_INSTALL_DIR/lib/clang/<version>/include,
+                # but EPEL's clangN-resource-filesystem puts them in /usr/lib/clang/N/include
+                DTSYUM+="ln -sfn /usr/lib/clang ${SHIBOKEN2_LLVM_DIR}/lib/clang && "
+            fi
+            DOCKER_ENV_TOOLSET="ENV PATH=\"/opt/rh/gcc-toolset-${GCC_TOOLSET}/root/usr/bin:\$PATH\" \\
+    LLVM_INSTALL_DIR=${SHIBOKEN2_LLVM_DIR}"
+        fi
+        # libXvMC was removed in EL9
+        YUM_XVMC=libXvMC-devel
+        if [ "${ROCKY:-0}" -ge 9 ]; then
+            YUM_XVMC=
+            # Rust (cargo, rustc), to build librsvg >= 2.41 (see pkg/librsvg.sh)
+            DTSYUM+="dnf -y install rust-toolset && "
+        fi
+        # The xcb platform plug-in of Qt 5.15 (pkg/qt5.sh) needs libxcb with its extensions
+        # (randr, render, shape, shm, sync, xfixes, xinerama, xkb, xinput, glx), the xcb-util
+        # libraries (icccm/wm, image, keysyms, renderutil), libX11-xcb and libxkbcommon-x11.
+        YUM_XCB="libxcb-devel xcb-util-devel xcb-util-wm-devel xcb-util-image-devel xcb-util-keysyms-devel xcb-util-renderutil-devel libxkbcommon-x11-devel"
         # Note: perl-version added for qt4webkit, see https://github.com/NatronGitHub/Natron/issues/351#issuecomment-524068232
         # perl-Encode and perl-Data-Dumper needed to build texinfo before perl
-        YUM_PKGS="ca-certificates make util-linux git tar bzip2 wget glibc-devel diffutils patch zip unzip alsa-lib-devel libX11-devel mesa-libGL-devel mesa-libEGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel libXvMC-devel libXxf86vm-devel libxkbcommon-devel libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXres-devel libXtst-devel xorg-x11-proto-devel libXxf86dga-devel libXpm-devel perl-Digest-MD5 perl-version perl-Encode perl-Data-Dumper"
+        YUM_PKGS="ca-certificates make util-linux git tar bzip2 wget glibc-devel diffutils patch zip unzip alsa-lib-devel libX11-devel mesa-libGL-devel mesa-libEGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel ${YUM_XVMC} libXxf86vm-devel libxkbcommon-devel ${YUM_XCB} libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXres-devel libXtst-devel xorg-x11-proto-devel libXxf86dga-devel libXpm-devel perl-Digest-MD5 perl-version perl-Encode perl-Data-Dumper"
         SDKPREP="RUN ${PREYUM}${DTSYUM}yum -y install ${YUM_PKGS} ${YUM_DEVEL_EXTRA} && yum -y clean all"
         cat <<EOF
 FROM $DOCKER_BASE as intermediate
 MAINTAINER https://github.com/NatronGitHub/Natron
 WORKDIR /home
 ARG SDK=$SDK_HOME
-ARG ARCH=$ARCH
-ARG SETARCH="$LINUX32"
+${ARCH:+ARG ARCH=$ARCH
+}ARG SETARCH="$LINUX32"
 RUN ${PREYUM}${DTSYUM}\\
     yum -y install gcc gcc-c++ ${YUM_PKGS} ${YUM_DEVEL_EXTRA} && \\
     yum clean all
@@ -219,7 +284,7 @@ EOF
         else
             DOCKER_BASE="ubuntu:${UBUNTU}"
             LINUX32=
-            ARCH=x86_64
+            ARCH=
         fi
         SDKPREP="ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y build-essential xorg-dev libgl-dev libegl1-mesa-dev libglu-dev wget git valgrind zip && rm -rf /var/lib/apt/lists/*"
@@ -228,8 +293,8 @@ FROM $DOCKER_BASE as intermediate
 MAINTAINER https://github.com/NatronGitHub/Natron
 WORKDIR /home
 ARG SDK=$SDK_HOME
-ARG ARCH=$ARCH
-ARG SETARCH="$LINUX32"
+${ARCH:+ARG ARCH=$ARCH
+}ARG SETARCH="$LINUX32"
 $SDKPREP
 COPY include/patches/ include/patches/
 COPY include/scripts/build-Linux-sdk.sh common.sh compiler-common.sh ./
@@ -275,7 +340,7 @@ function checkpoint()
             checkpointstep="$s"
         done
         echo "$copyline pkg/"
-        echo "RUN ${DTSSDK:-}\$SETARCH env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd \$SDK/var/log/Natron-Linux-\${ARCH}-SDK/ && cat "'`ls -t |grep -e '"'\.log$'"'|head -1`'" && false)"
+        echo "RUN ${DTSSDK:-}\$SETARCH env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd \$SDK/var/log/Natron-Linux-*-SDK/ && cat "'`ls -t |grep -e '"'\.log$'"'|head -1`'" && false)"
         pkgs=()
     fi
     return 0
@@ -429,17 +494,20 @@ function download() {
                 # or wget fails on Ubuntu for sourceforge and all letsencrypt-certified sites
                 SET_SSL_CERT_DIR="env SSL_CERT_DIR=/etc/ssl/certs"
             fi
-            $SET_SSL_CERT_DIR wget -q "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || fail=true
+            # wget is the system one: don't let it load the SDK's libraries (on Rocky Linux 9, the
+            # system gnutls fails with the SDK's older nettle)
+            SYSWGET="env -u LD_LIBRARY_PATH wget"
+            $SET_SSL_CERT_DIR $SYSWGET -q "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || fail=true
             if $fail; then
                 echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
                 echo "*** downloading $package from $master_site"
                 fail=false
-                $SET_SSL_CERT_DIR wget -q "$master_site/$package" -O "$SRC_PATH/$package" || fail=true
+                $SET_SSL_CERT_DIR $SYSWGET -q "$master_site/$package" -O "$SRC_PATH/$package" || fail=true
                 if $fail; then
                     echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
                     echo "*** downloading $package from $master_site without checking certificate"
                     fail=false
-                    wget -q --no-check-certificate "$master_site/$package" -O "$SRC_PATH/$package" || fail=true
+                    $SYSWGET -q --no-check-certificate "$master_site/$package" -O "$SRC_PATH/$package" || fail=true
                     if $fail; then
                         echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
                         rm "$SRC_PATH/$package" > /dev/null 2>&1 || true
@@ -516,7 +584,9 @@ function git_clone_branch_or_tag() {
 function untar() {
     if dobuild; then
         echo "*** extracting $1"
-        tar xf "$1"
+        # --no-same-owner: some tarballs have uids that are not mapped in rootless
+        # docker/podman user namespaces ("Cannot change ownership to uid ...")
+        tar --no-same-owner -xf "$1"
     fi
 }
 
@@ -561,7 +631,7 @@ if dobuild; then
         mkdir -v  "$SDK_HOME"/libexec
         mkdir -pv "$SDK_HOME"/share/man/man{1..8}
         case $(uname -m) in
-            x86_64) ln -sfv lib "$SDK_HOME"/lib64 ;;
+            x86_64|aarch64|ppc64le) ln -sfv lib "$SDK_HOME"/lib64 ;;
         esac
     fi
 
@@ -572,17 +642,20 @@ if dobuild; then
     echo "*** Info: Build logs are in $LOGDIR"
 fi
 
+step="" # the last package built (none yet, e.g. if WITH_QT4 is false)
 checkpointstep=""
 prevstep=""
 reachedstep=0 # becomes 1 when LAST_STEP is reached
 pkgs=()
 
-build openssl-installer
+if $WITH_QT4; then
+    build openssl-installer
 
-checkpoint
+    checkpoint
 
-build qt-installer
-build qtifw
+    build qt-installer
+    build qtifw
+fi
 
 checkpoint
 
@@ -627,8 +700,40 @@ elif [ "${UBUNTU:-0}" = 18.04 ]; then
 elif [ "${CENTOS:-7}" = 8 ]; then
     GCC_VERSION=8.3.1
     BOOTSTRAP_GCC_VERSION=$GCC_VERSION
-elif [ "${ROCKY:-0}" = 8 ]; then
-    GCC_VERSION=8.4.1
+elif [ "${ROCKY:-0}" -ge 8 ]; then
+    # gcc-toolset-${GCC_TOOLSET} (installed with dnf, see the Dockerfile generation above)
+    if dobuild; then
+        export LLVM_INSTALL_DIR="${LLVM_INSTALL_DIR:-$SHIBOKEN2_LLVM_DIR}"
+    fi
+    DTSSDK="source scl_source enable gcc-toolset-${GCC_TOOLSET} && "
+    if dobuild; then
+        case " ${X_SCLS:-} " in
+            *" gcc-toolset-${GCC_TOOLSET} "*)
+                ;;
+            *)
+                # not enabled yet (e.g. this script is run outside of the Dockerfile)
+                if [ -f "/opt/rh/gcc-toolset-${GCC_TOOLSET}/enable" ]; then
+                    set +u
+                    source "/opt/rh/gcc-toolset-${GCC_TOOLSET}/enable"
+                    set -u
+                fi
+                ;;
+        esac
+    fi
+    if dobuild; then
+        GCC_VERSION=$(gcc -dumpfullversion)
+        if version_gt "$GCC_VERSION" 13.99; then
+            # GCC 14 turned obsolete C constructs into errors (implicit function
+            # declarations, implicit int, int-conversion, incompatible pointer types),
+            # and many of the older packages of the SDK still have some, e.g. libffi 3.4.4
+            # on aarch64. Make them warnings again. These options are C-only: g++ just
+            # prints a warning when they appear in CXXFLAGS.
+            GCC14_CFLAGS="-Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-error=int-conversion -Wno-error=incompatible-pointer-types"
+            BF="$BF $GCC14_CFLAGS"
+        fi
+    else
+        GCC_VERSION="${GCC_TOOLSET}"
+    fi
     BOOTSTRAP_GCC_VERSION=$GCC_VERSION
 elif [ -n "${CENTOS:-}" ] && [ -n "${DTS:-}" ]; then
     DTSSDK="source scl_source enable devtoolset-${DTS} && "
@@ -688,6 +793,7 @@ build patchelf
 build gettext
 build intltool
 build zlib
+build zstd # (for tiff, curl, libarchive, boost_iostreams, Qt and others: they would link the system libzstd otherwise)
 
 checkpoint
 
@@ -794,7 +900,6 @@ build xmlto # (required by shared-mime-info)
 build shared-mime-info # (required by gdk-pixbuf)
 build gdk-pixbuf
 build librsvg # (without vala support)
-build fftw # (GPLv2, for openfx-gmic)
 
 checkpoint
 
@@ -863,6 +968,7 @@ checkpoint
 
 checkpoint
 
+if $WITH_QT4; then
 build qt4
 
 checkpoint
@@ -888,6 +994,7 @@ if dobuild; then
         LD_LIBRARY_PATH="$LD_LIBRARY_PATH_SAVE"
     fi
 fi
+fi # WITH_QT4
 
 checkpoint
 
@@ -933,20 +1040,25 @@ fi
 checkpoint
 
 if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ]; then
+    SDK_DEFAULT_QT=qt4
+    if ! $WITH_QT4; then
+        SDK_DEFAULT_QT=qt5
+    fi
     cat <<EOF
-RUN xz $SDK_HOME/var/log/Natron-Linux-x86_64-SDK/*
+RUN xz $SDK_HOME/var/log/Natron-Linux-*-SDK/*
 FROM $DOCKER_BASE
 MAINTAINER https://github.com/NatronGitHub/Natron
 WORKDIR /home
 COPY --from=intermediate $SDK_HOME $SDK_HOME
 ARG SDK=$SDK_HOME
-ARG QTDIR=\$SDK/qt4
+ARG QTDIR=\$SDK/${SDK_DEFAULT_QT}
 ARG GCC=\$SDK/gcc
 ARG FFMPEG=\$SDK/ffmpeg-gpl2
 ARG LIBRAW=\$SDK/libraw-gpl2
 ARG OSMESA=\$SDK/osmesa
 $SDKPREP
 $DOCKER_ENV
+${DOCKER_ENV_TOOLSET:-}
 
 COPY \\
     common.sh \\
@@ -980,6 +1092,10 @@ EOF
     DTSENABLE=
     if [ -n "${DTS:-}" ]; then
         DTSENABLE="scl enable devtoolset-${DTS} "
+    elif [ "${ROCKY:-0}" -ge 8 ]; then
+        # gcc-toolset-${GCC_TOOLSET} is also first in PATH (see ENV above), so that
+        # "docker run <image> bash -c ..." uses it too.
+        DTSENABLE="scl enable gcc-toolset-${GCC_TOOLSET} "
     fi
     cat <<EOF
 CMD ${DTSENABLE}launchBuildMain.sh

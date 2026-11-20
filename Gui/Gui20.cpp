@@ -141,6 +141,21 @@ getPixmapForGrouping(QPixmap* pixmap,
     appPTR->getIcon(e, size, pixmap);
 }
 
+// Shows the busy cursor while saving: a save may first wait for a running auto-save (#825).
+class SaveWaitCursor
+{
+public:
+    SaveWaitCursor()
+    {
+        QApplication::setOverrideCursor(Qt::WaitCursor);
+    }
+
+    ~SaveWaitCursor()
+    {
+        QApplication::restoreOverrideCursor();
+    }
+};
+
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 void
@@ -1067,7 +1082,9 @@ Gui::openProjectInternal(const std::string & absoluteFileName,
         if (instance) {
             GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( instance.get() );
             if (guiApp) {
-                guiApp->getGui()->activateWindow();
+                if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+                    guiApp->getGui()->activateWindow();
+                }
 
                 return instance;
             }
@@ -1134,7 +1151,11 @@ Gui::saveProject()
             return false;
         }
 
-        bool ret = project->saveProject(projectPath, projectFilename, 0);
+        bool ret;
+        {
+            SaveWaitCursor waitCursor;
+            ret = project->saveProject(projectPath, projectFilename, 0);
+        }
 
         ///update the open recents
         if ( !projectPath.endsWith( QLatin1Char('/') ) ) {
@@ -1166,7 +1187,11 @@ Gui::saveProjectAs(const std::string& filename)
     }
     _imp->_lastSaveProjectOpenedDir = QString::fromUtf8( path.c_str() );
 
-    bool ret = getApp()->getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( fileCopy.c_str() ), 0);
+    bool ret;
+    {
+        SaveWaitCursor waitCursor;
+        ret = getApp()->getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( fileCopy.c_str() ), 0);
+    }
 
     if (ret) {
         QString filePath = QString::fromUtf8( path.c_str() ) + QString::fromUtf8( fileCopy.c_str() );
@@ -1219,8 +1244,9 @@ Gui::saveAndIncrVersion()
 
         if ( !versionStr.isEmpty() ) {
             name.remove( i, versionStr.size() );
-            --i; //move 1 char backward, if the char is a '_' remove it
-            if ( (i >= 0) && ( name.at(i) == QLatin1Char('_') ) ) {
+            // if the version number is preceded by a '_', remove it too
+            if ( (i >= 1) && ( name.at(i - 1) == QLatin1Char('_') ) ) {
+                --i;
                 name.remove(i, 1);
             }
             currentVersion = versionStr.toInt();
@@ -1253,10 +1279,15 @@ Gui::saveAndIncrVersion()
         name.insert(positionToInsertVersion, toInsert);
     }
 
-    project->saveProject(path, name, 0);
-
-    QString filename = path + QLatin1Char('/') + name;
-    updateRecentFiles(filename);
+    bool ret;
+    {
+        SaveWaitCursor waitCursor;
+        ret = project->saveProject(path, name, 0);
+    }
+    if (ret) {
+        QString filename = path + QLatin1Char('/') + name;
+        updateRecentFiles(filename);
+    }
 } // Gui::saveAndIncrVersion
 
 void

@@ -89,15 +89,15 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    bool integerIncrement = false;
     double xstart, xend;
     QString incr;
     if ( parent->hasTimeline() ) {
         gui->getApp()->getFrameRange(&xstart, &xend);
         incr = QString::fromUtf8("1");
     } else {
-        xstart = std::numeric_limits<double>::infinity();
-        xend = -std::numeric_limits<double>::infinity();
+        // unbounded is +/-DBL_MAX (not +/-infinity, which -ffast-math assumes never happens)
+        xstart = std::numeric_limits<double>::max();
+        xend = std::numeric_limits<double>::lowest();
         for (size_t i = 0; i < curves.size(); ++i) {
             std::pair<double, double> r = curves[i]->getInternalCurve()->getXRange();
             if (r.first < xstart) {
@@ -107,10 +107,11 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
                 xend = r.second;
             }
         }
-        if ( xstart == std::numeric_limits<double>::infinity() ) {
+        // no curve, or an unbounded range: xend - xstart below would overflow
+        if ( (xstart >= std::numeric_limits<double>::max()) || (xstart <= std::numeric_limits<double>::lowest()) ) {
             xstart = 0.;
         }
-        if ( xend == -std::numeric_limits<double>::infinity() ) {
+        if ( (xend <= std::numeric_limits<double>::lowest()) || (xend >= std::numeric_limits<double>::max()) ) {
             xend = 1.;
         }
         if (xstart == 0. && xend == 1.) {
@@ -118,9 +119,6 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
         } else {
             incr = QString::number(xend - xstart) + QString::fromUtf8("/100.");
         }
-    }
-    for (size_t i = 0; i < curves.size(); ++i) {
-        integerIncrement |= curves[i]->areKeyFramesTimeClampedToIntegers();
     }
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setContentsMargins(0, 3, 0, 0);
@@ -486,7 +484,10 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,
             _imp->ySpinbox->setMaximum(range.max);
         }
 
-        _imp->ySpinbox->setValue(_imp->originalY);
+        // the keyframe index for string curves (see CurveGui::getKeyFrameDisplayValue())
+        _imp->ySpinbox->setValue( key->curve->getKeyFrameDisplayValue(key->key) );
+        // e.g. the keyframe values of string curves cannot be edited (see StringAnimationManager)
+        _imp->ySpinbox->setEnabled( key->curve->isYComponentMovable() );
         QObject::connect( _imp->ySpinbox, SIGNAL(valueChanged(double)), this, SLOT(onYSpinBoxValueChanged(double)) );
         QObject::connect( _imp->ySpinbox, SIGNAL(returnPressed()), this, SLOT(onEditingFinished()) );
         _imp->boxLayout->addWidget(_imp->ySpinbox);
@@ -534,7 +535,9 @@ EditKeyFrameDialog::moveKeyTo(double newX,
         }
     }
 
-    _imp->curveWidget->pushUndoCommand( new MoveKeysCommand(_imp->curveWidget, keysToMove, newX - curX, newY - curY, true) );
+    // the value of string keyframes cannot change (see StringAnimationManager)
+    double dv = _imp->key->curve->isYComponentMovable() ? newY - curY : 0.;
+    _imp->curveWidget->pushUndoCommand( new MoveKeysCommand(_imp->curveWidget, keysToMove, newX - curX, dv, true) );
 }
 
 void

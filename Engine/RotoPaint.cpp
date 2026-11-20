@@ -1789,10 +1789,8 @@ RotoPaint::drawOverlay(double time,
 
                 ///draw the feather points
                 std::list<ParametricPoint > featherPoints;
-                RectD featherBBox( std::numeric_limits<double>::infinity(),
-                                   std::numeric_limits<double>::infinity(),
-                                   -std::numeric_limits<double>::infinity(),
-                                   -std::numeric_limits<double>::infinity() );
+                RectD featherBBox;
+                featherBBox.setupInfinity();
                 bool clockWise = isBezier->isFeatherPolygonClockwiseOriented(true, time);
 
 
@@ -1845,7 +1843,6 @@ RotoPaint::drawOverlay(double time,
                     glColor3d(0.85, 0.67, 0.);
 
                     std::list<BezierCPPtr>::const_iterator itF = featherPts.begin();
-                    int index = 0;
                     std::list<BezierCPPtr>::const_iterator prevCp = cps.end();
                     if ( prevCp != cps.begin() ) {
                         --prevCp;
@@ -2042,7 +2039,6 @@ RotoPaint::drawOverlay(double time,
                         if ( prevCp != cps.end() ) {
                             ++prevCp;
                         }
-                        ++index;
                     } // for(it2)
                 } // if ( ( selected != _imp->ui->selectedBeziers.end() ) && !locked ) {
             } // if (isBezier)
@@ -2121,7 +2117,7 @@ RotoPaint::drawOverlay(double time,
 } // drawOverlay
 
 void
-RotoPaint::onInteractViewportSelectionCleared()
+RotoPaint::onInteractViewportSelectionCleared(KeyboardModifiers /*modifiers*/)
 {
     if (!_imp->ui->isStickySelectionEnabled()  && !_imp->ui->shiftDown) {
         _imp->ui->clearSelection();
@@ -2141,7 +2137,8 @@ RotoPaint::onInteractViewportSelectionCleared()
 
 void
 RotoPaint::onInteractViewportSelectionUpdated(const RectD& rectangle,
-                                              bool onRelease)
+                                              bool onRelease,
+                                              KeyboardModifiers /*modifiers*/)
 {
     if ( !onRelease || !getNode()->isSettingsPanelVisible() ) {
         return;
@@ -2257,7 +2254,8 @@ RotoPaint::onOverlayPenDown(double time,
                             const QPointF & pos,
                             double pressure,
                             double timestamp,
-                            PenType pen)
+                            PenType pen,
+                            KeyboardModifiers /*modifiers*/)
 {
     NodePtr node = getNode();
 
@@ -2704,7 +2702,8 @@ RotoPaint::onOverlayPenMotion(double time,
                               const QPointF & /*viewportPos*/,
                               const QPointF & pos,
                               double pressure,
-                              double timestamp)
+                              double timestamp,
+                              KeyboardModifiers /*modifiers*/)
 {
     std::pair<double, double> pixelScale;
 
@@ -3131,7 +3130,8 @@ RotoPaint::onOverlayPenUp(double /*time*/,
                           const QPointF & /*viewportPos*/,
                           const QPointF & /*pos*/,
                           double /*pressure*/,
-                          double /*timestamp*/)
+                          double /*timestamp*/,
+                          KeyboardModifiers /*modifiers*/)
 {
     RotoContextPtr context = getNode()->getRotoContext();
 
@@ -3221,7 +3221,8 @@ RotoPaint::onOverlayKeyDown(double /*time*/,
                             const RenderScale & /*renderScale*/,
                             ViewIdx /*view*/,
                             Key key,
-                            KeyboardModifiers /*modifiers*/)
+                            KeyboardModifiers /*modifiers*/,
+                            const QString& /*keyText*/)
 {
     bool didSomething = false;
 
@@ -3261,7 +3262,8 @@ RotoPaint::onOverlayKeyUp(double /*time*/,
                           const RenderScale & /*renderScale*/,
                           ViewIdx /*view*/,
                           Key key,
-                          KeyboardModifiers /*modifiers*/)
+                          KeyboardModifiers /*modifiers*/,
+                          const QString& /*keyText*/)
 {
     bool didSomething = false;
 
@@ -3307,7 +3309,8 @@ RotoPaint::onOverlayKeyRepeat(double /*time*/,
                               const RenderScale & /*renderScale*/,
                               ViewIdx /*view*/,
                               Key /*key*/,
-                              KeyboardModifiers /*modifiers*/)
+                              KeyboardModifiers /*modifiers*/,
+                              const QString& /*keyText*/)
 {
     return false;
 } // onOverlayKeyRepeat

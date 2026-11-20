@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _Tracker:
 
 Tracker
@@ -32,14 +32,14 @@ and also allows one to start and stop tracking from a Python script.
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. method:: NatronEngine.Tracker.createTrack()
+.. method:: Tracker.createTrack()
 
     :rtype: :class:`Track<NatronEngine.Track>`
 
     Creates a new track in the tracker with default values
 
 
-.. method:: NatronEngine.Tracker.getTrackByName(scriptName)
+.. method:: Tracker.getTrackByName(scriptName)
 
     :rtype: :class:`Track<NatronEngine.Track>`
 
@@ -47,24 +47,24 @@ Member functions description
 
 
 
-.. method:: NatronEngine.Tracker.getAllTracks()
+.. method:: Tracker.getAllTracks()
 
     :rtype: :class:`sequence`
 
     Returns all the tracks in this Tracker.
 
-.. method:: NatronEngine.Tracker.getSelectedTracks()
+.. method:: Tracker.getSelectedTracks()
 
     :rtype: :class:`sequence`
 
     Returns the user selected tracks
 
-.. method:: NatronEngine.Tracker.startTracking (tracks, start, end, forward)
+.. method:: Tracker.startTracking(tracks, start, end, forward)
 
     Start tracking the given *tracks* from *start* frame to *end* frame (*end* frame will
     not be tracked) in the direction given by *forward*.
     If *forward* is **False**, then *end* is expected to be lesser than *start*.
 
-.. method::  NatronEngine.Tracker.stopTracking ()
+.. method:: Tracker.stopTracking()
 
     Stop any ongoing tracking for this Tracker.

@@ -60,7 +60,7 @@ AppTLS::registerTLSHolder(const TLSHolderBaseConstPtr& holder)
     //This must be the first time for this thread that we reach here since cleanupTLSForThread() was made, otherwise
     //the TLS data should always be available on the TLSHolder
     {
-        QWriteLocker k(&_objectMutex);
+        std::unique_lock<std::shared_mutex> k(_objectMutex);
         //The insert call might not succeed because another thread inserted this holder in the set already, that's fine
         _object->objects.insert(holder);
     }
@@ -92,7 +92,7 @@ AppTLS::copyTLS(QThread* fromThread,
 
     copyAbortInfo(fromThread, toThread);
 
-    QReadLocker k(&_objectMutex);
+    std::shared_lock<std::shared_mutex> k(_objectMutex);
     const TLSObjects& objectsCRef = _object->objects; // take a const ref, since it's a read lock
     for (TLSObjects::const_iterator it = objectsCRef.begin();
          it != objectsCRef.end(); ++it) {
@@ -113,7 +113,7 @@ AppTLS::softCopy(QThread* fromThread,
 
     copyAbortInfo(fromThread, toThread);
 
-    QWriteLocker k(&_spawnsMutex);
+    std::unique_lock<std::shared_mutex> k(_spawnsMutex);
     _spawns[uintptr_t(toThread)] = fromThread;
 }
 
@@ -129,7 +129,7 @@ AppTLS::cleanupTLSForThread()
 
     //Cleanup any cached data on the TLSHolder
     {
-        QWriteLocker l(&_spawnsMutex);
+        std::unique_lock<std::shared_mutex> l(_spawnsMutex);
 
         //This thread was spawned, but TLS not used, do not bother to clean-up
         ThreadSpawnMap::iterator foundSpawned = _spawns.find(uintptr_t(curThread));
@@ -141,7 +141,7 @@ AppTLS::cleanupTLSForThread()
     }
     std::list<TLSHolderBaseConstPtr> objectsToClean;
     {
-        QReadLocker k (&_objectMutex);
+        std::shared_lock<std::shared_mutex> k(_objectMutex);
         const TLSObjects& objectsCRef = _object->objects;
         for (TLSObjects::iterator it = objectsCRef.begin();
              it != objectsCRef.end();
@@ -158,7 +158,7 @@ AppTLS::cleanupTLSForThread()
 #if 1
         // version from 1a0712b
         // should be OK, since the bug in 1a0712b was in canCleanupPerThreadData
-        QWriteLocker k (&_objectMutex);
+        std::unique_lock<std::shared_mutex> k(_objectMutex);
         for (std::list<TLSHolderBaseConstPtr>::iterator it = objectsToClean.begin();
              it != objectsToClean.end();
              ++it) {
@@ -172,7 +172,7 @@ AppTLS::cleanupTLSForThread()
 #else
         // original version
         TLSObjects newObjects;
-        QWriteLocker k (&_objectMutex);
+        std::unique_lock<std::shared_mutex> k(_objectMutex);
         for (TLSObjects::iterator it = _object->objects.begin();
              it != _object->objects.end(); ++it) {
             TLSHolderBaseConstPtr p = (*it).lock();

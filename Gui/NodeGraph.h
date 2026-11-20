@@ -243,6 +243,11 @@ public Q_SLOTS:
 
     void onAutoScrollTimerTriggered();
 
+public:
+
+    // public, for Gui::removeGroupGui()
+    virtual QUndoStack* getUndoStack() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
 private:
 
     NodeGraph(const NodeGraph&) = delete;
@@ -275,7 +280,6 @@ private:
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
-    virtual QUndoStack* getUndoStack() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 private:
 

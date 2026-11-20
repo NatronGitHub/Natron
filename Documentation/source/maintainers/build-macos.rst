@@ -7,8 +7,10 @@ This chapter documents how the **official macOS binaries and ``.dmg`` are
 produced** — the MacPorts-based release/packaging build driven by
 ``tools/jenkins/launchBuildMain.sh``. It is the packaging counterpart to
 :ref:`maint-building` (which explains the CMake source build used for
-day-to-day development). On RB-2.6, ``launchBuildMain.sh`` still builds Natron
-with the deprecated qmake build, until the release scripts move to CMake
+day-to-day development). ``launchBuildMain.sh`` builds Natron with CMake
+(see :ref:`maint-building`, "Release builds"). On RB-2.6,
+``NATRON_BUILD_SYSTEM=qmake`` selects the deprecated qmake build instead, until
+the CMake-built installers are shown to be equivalent
 (`#1181 <https://github.com/NatronGitHub/Natron/issues/1181>`_).
 
 The full, copy-pasteable dependency setup lives at the repository root in
@@ -28,6 +30,11 @@ of **custom ports** in ``tools/MacPorts``. Homebrew is intentionally not used
 for releases (MacPorts is easier to customize and can build universal binaries).
 ``launchBuildMain.sh`` performs six steps: checkout sources, build the plugins,
 build Natron, build the installer/DMG, run unit tests, archive artifacts.
+The plugins are built by ``tools/jenkins/build-plugins.sh``: openfx-misc,
+openfx-io and openfx-arena with CMake (#1203, #1280), openfx-gmic with its
+Makefile, all at ``-O3`` without fast math.
+To build them by hand, see "Developing with the MacPorts SDK" in
+``INSTALL_MACOS.md``.
 
 Prerequisites
 -------------
@@ -38,8 +45,8 @@ Prerequisites
 - **macOS packaging tools**, verified early by ``launchBuildMain.sh`` and
   documented in ``INSTALL_MACOS.md``:
 
-  - ``dmgbuild`` — ``sudo port install py310-dmgbuild`` and
-    ``sudo ln -s dmgbuild-3.10 /opt/local/bin/dmgbuild`` (or
+  - ``dmgbuild`` — ``sudo port install py311-dmgbuild`` and
+    ``sudo ln -sfn dmgbuild-3.11 /opt/local/bin/dmgbuild`` (or
     ``python3 -m pip install dmgbuild``); writes the DMG ``.DS_Store`` layout
     without Finder/TCC.
   - ``oiiotool`` — from the ``openimageio`` port (DMG background processing).
@@ -170,8 +177,9 @@ default source in ``/opt/local/etc/macports/sources.conf`` is the HTTPS one.
 
    **Pinned ports are the exception.** A port directory with a ``PINNED`` file
    is deliberately kept at a version other than upstream's (the table is in
-   ``INSTALL_MACOS.md``, section 11; today ``graphics/libraw`` and
-   ``graphics/opencolorio``). The file says which kind of pin it is:
+   ``INSTALL_MACOS.md``, section 11; today ``graphics/libraw``,
+   ``graphics/opencolorio`` and ``print/freetype``). The file says which
+   kind of pin it is:
    ``ahead`` (our version is newer than upstream's: unpin it, by deleting
    ``PINNED`` and taking upstream's Portfile, as soon as upstream's version
    is greater than or equal to ours, which ``check.sh`` reports as

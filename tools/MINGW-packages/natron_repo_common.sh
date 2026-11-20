@@ -61,9 +61,9 @@ natron_repo_add_package() {
   fi
 
   local pkg_file=$1
-  cp ${pkg_file} ${REPO_DIR}
-  cd ${REPO_DIR}
-  repo-add -n -p ${REPO_DB_FILENAME} ${pkg_file}
+  cp "${pkg_file}" "${REPO_DIR}"
+  # In a subshell, so that the caller stays in its package directory.
+  (cd "${REPO_DIR}" && repo-add -n -p "${REPO_DB_FILENAME}" "$(basename "${pkg_file}")")
 
   # If the natron repository hasn't been added to pacman.conf yet, do it
   # now since we should now have a valid database with at least one package
@@ -74,4 +74,38 @@ natron_repo_add_package() {
     # Sync so that the new packages are available to package builds that follow.
     pacman -Sy
   fi
+}
+
+# Natron packages with the same name as an MSYS2 package, which they replace
+# (e.g. a backported fix that MSYS2 doesn't ship yet). pacman takes a package
+# from the first repository in pacman.conf that has it, without comparing
+# versions, and [natron] comes after the MSYS2 repositories: neither
+# "pacman -S <deps>" nor "pacman -Syu" would ever pick these. Install them
+# explicitly, as natron/<package>, but only if they are newer than MSYS2's, so
+# that an MSYS2 rebuild or update with the fix wins automatically (and the
+# Natron package should then be removed from tools/MINGW-packages).
+# Names without ${MINGW_PACKAGE_PREFIX}-.
+NATRON_REPO_OVERRIDES="
+freetype
+"
+
+natron_repo_install_overrides() {
+  local msys_repo="${MSYSTEM,,}"
+  local name pkg natron_ver msys_ver
+  for name in ${NATRON_REPO_OVERRIDES}; do
+    pkg="${MINGW_PACKAGE_PREFIX}-${name}"
+    natron_ver=$(pacman -Sl natron 2>/dev/null | awk -v p="${pkg}" '$2 == p {print $3}')
+    if [[ -z ${natron_ver} ]]; then
+      continue
+    fi
+    msys_ver=$(pacman -Sl "${msys_repo}" 2>/dev/null | awk -v p="${pkg}" '$2 == p {print $3}')
+    if [[ -n ${msys_ver} && $(vercmp "${natron_ver}" "${msys_ver}") -le 0 ]]; then
+      echo "WARNING: ${msys_repo}/${pkg} ${msys_ver} is not older than natron/${pkg} ${natron_ver}: keeping MSYS2's."
+      echo "WARNING: if it has the fix, delete tools/MINGW-packages/mingw-w64-${name}."
+      continue
+    fi
+    echo "Installing natron/${pkg} ${natron_ver} (${msys_repo} has ${msys_ver:-none}) ..."
+    pacman -S --needed --noconfirm "natron/${pkg}" || return 1
+  done
+  return 0
 }

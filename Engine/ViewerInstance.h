@@ -298,8 +298,6 @@ public:
 
     struct ViewerInstancePrivate;
 
-    float interpolateGammaLut(float value);
-
     void markAllOnGoingRendersAsAborted(bool keepOldestRender);
 
     /**

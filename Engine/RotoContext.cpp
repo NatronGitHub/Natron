@@ -1024,11 +1024,38 @@ RotoContext::load(const RotoContextSerialization & obj)
         it->lock()->setDefaultAllDimensionsEnabled(false);
     }
 
-    assert(_imp->layers.size() == 1);
+    assert( !_imp->layers.empty() );
 
     RotoLayerPtr baseLayer = _imp->layers.front();
 
+    // The serialization replaces the current items: when presets are loaded on
+    // an existing node (or that is undone), or when a PyPlug child made by its
+    // script is restored from the project, remove the current items first
+    // (they would otherwise be kept, and the loaded ones appended to them, #1247).
+    // While _imp->isCurrentlyLoading is set, the Python attributes are removed
+    // and declared without printing them in the Script Editor.
+    {
+        RotoItems oldItems = baseLayer->getItems();
+        for (RotoItems::iterator it = oldItems.begin(); it != oldItems.end(); ++it) {
+            removeItem(*it, RotoItem::eSelectionReasonOther);
+        }
+    }
+    assert(_imp->layers.size() == 1);
+
     baseLayer->load(obj._baseLayer);
+
+    // Tell the GUI (settings panel, curve editor) about the loaded items
+    {
+        const RotoItems newItems = baseLayer->getItems();
+        int index = 0;
+        for (RotoItems::const_iterator it = newItems.begin(); it != newItems.end(); ++it, ++index) {
+            {
+                QMutexLocker l(&_imp->rotoContextMutex);
+                _imp->lastInsertedItem = *it;
+            }
+            Q_EMIT itemInserted(index, RotoItem::eSelectionReasonOther);
+        }
+    }
 
     for (std::list<std::string>::const_iterator it = obj._selectedItems.begin(); it != obj._selectedItems.end(); ++it) {
         RotoItemPtr item = getItemByName(*it);
@@ -1040,6 +1067,13 @@ RotoContext::load(const RotoContextSerialization & obj)
             linkItemsKnobsRecursively(this, isLayer);
         }
     }
+    // A node that is already created had its items declared to Python
+    // (Node::declareRotoPythonField()): declare the loaded ones. When the node
+    // is being created, Node::load() declares them after loading.
+    if ( getNode()->isNodeCreated() ) {
+        declarePythonFields();
+    }
+
     _imp->isCurrentlyLoading = false;
     refreshRotoPaintTree();
 }
@@ -3551,8 +3585,7 @@ RotoContextPrivate::renderFeather_cairo(const std::list<RotoFeatherVertex>& vert
     ++next;
     std::list<RotoFeatherVertex>::const_iterator nextNext = next;
     ++nextNext;
-    int index = 0;
-    for (std::list<RotoFeatherVertex>::const_iterator it = vertices.begin(); it!=vertices.end(); index += 3) {
+    for (std::list<RotoFeatherVertex>::const_iterator it = vertices.begin(); it!=vertices.end(); ) {
 
 
         cairo_mesh_pattern_begin_patch(mesh);
@@ -4631,7 +4664,7 @@ RotoContext::removeItemAsPythonField(const RotoItemPtr& item)
     std::string nodeFullName = appID + "." + nodeName;
     std::string err;
     std::string script = "del " + nodeFullName + ".roto." + item->getFullyQualifiedName() + "\n";
-    if ( !appPTR->isBackground() ) {
+    if ( !appPTR->isBackground() && !_imp->isCurrentlyLoading ) {
         getNode()->getApp()->printAutoDeclaredVariable(script);
     }
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0) ) {
@@ -4785,7 +4818,7 @@ RotoContext::declareItemAsPythonField(const RotoItemPtr& item)
     std::string err;
     std::string script = (nodeFullName + ".roto." + item->getFullyQualifiedName() + " = " +
                           nodeFullName + ".roto.getItemByName(\"" + item->getScriptName() + "\")\n");
-    if ( !appPTR->isBackground() ) {
+    if ( !appPTR->isBackground() && !_imp->isCurrentlyLoading ) {
         getNode()->getApp()->printAutoDeclaredVariable(script);
     }
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0) ) {

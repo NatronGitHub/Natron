@@ -19,8 +19,55 @@ There are 2 different initialization scripts that Natron will look for in the :r
         This script is only run in GUI mode (that is with the user interface). It should
         initialize all gui-specific stuff like new menus or windows.
 
-All the scripts with the above name found in the search paths will be run in the order
-of the :ref:`search paths<natronPath>`.
+All the scripts with these names that are found in the search paths are run, in this order:
+
+- the :ref:`search paths<natronPath>` are processed one after the other, in their order;
+- each search path is explored depth-first: in each directory, Natron first runs **init.py**, then
+  **initGui.py** (in GUI mode only), and then explores the sub-directories, in alphabetical order.
+
+So the initGui.py of a directory runs before the init.py of the next directory or search path.
+All the startup scripts run before any PyPlug is loaded, so a startup script can define
+functions and modules that the PyPlugs use.
+
+The diagram shows the whole startup, from the command line to the project, and where the
+startup scripts and PyPlugs are loaded.
+
+.. mermaid::
+   :alt: Natron or NatronRenderer parses the command line, initializes Python and the
+         NatronEngine and NatronGui modules, reads the preferences and applies the --setting
+         options, then loads the built-in nodes and the OpenFX plug-ins. It then adds every
+         plug-in search path to sys.path, imports qtpy, runs init.py and initGui.py for each
+         directory, and imports and registers the PyPlugs, skipping those that import NatronGui
+         in background mode. Finally it creates the project instance app1, runs the -c commands,
+         loads the project or the script, runs the --onload script, and renders or starts the
+         interpreter.
+   :caption: Startup of Natron and NatronRenderer, and where the startup scripts run.
+
+   flowchart TD
+       start(["Natron / NatronRenderer"]) --> cl["Parse the command line"]
+       cl --> py["Initialize Python,<br/>the NatronEngine (and NatronGui) modules"]
+       py --> set["Read the preferences<br/>(unless --no-settings),<br/>apply --setting and --opengl"]
+       set --> plug["Load the built-in nodes<br/>and the OpenFX plug-ins"]
+       plug --> path["Add every plug-in search path<br/>and sub-directory to sys.path;<br/>import qtpy"]
+       path --> init["For each search path, depth-first:<br/>run init.py, then initGui.py (GUI only)"]
+       init --> pyplugs["Import the PyPlugs found<br/>(skip NatronGui imports in background)<br/>and register them"]
+       pyplugs --> app["Create the project instance:<br/>app1 (and app in background)"]
+       app --> cmd["Run the -c commands"]
+       cmd --> load["Load the .ntp project,<br/>or run the .py script"]
+       load --> onload["Run the --onload script"]
+       onload --> mode{"Mode?"}
+       mode -- "background" --> render["Apply -w, -o, then -i, and render"]
+       mode -- "interpreter (-t)" --> repl["Read Python commands<br/>from the standard input"]
+       mode -- "GUI" --> gui["Show the main window"]
+
+
+The startup scripts are run in the ``__main__`` Python module, so the functions they define are
+referenced without a module prefix, e.g. ``NatronEngine.natron.setOnProjectCreatedCallback("myCallback")``.
+
+In GUI mode, Natron prints a line such as ``Info: init.py script found and loaded at ...``
+for each startup script that it runs, in the terminal and in the splash screen.
+If a startup script raises an exception, the error is written to the terminal and to the
+error log (:menuselection:`Display --> Show Project Errors Log...`), and Natron goes on with the other scripts.
 
 .. warning::
 
@@ -35,19 +82,19 @@ of the :ref:`search paths<natronPath>`.
     will be called only later on, when a project will actually be created.
 
 Examples
-=========
+--------
 
 
 initGui.py
------------
+^^^^^^^^^^^
 
-A complete example of a **iniGui.py** can be found :ref:`here<sourcecodeEx>` .
+A complete example of a **initGui.py** can be found :ref:`here<sourcecodeEx>` .
 
 
 .. _initExample:
 
 init.py
--------
+^^^^^^^
 
 Here is an example of a **init.py** script, featuring:
 

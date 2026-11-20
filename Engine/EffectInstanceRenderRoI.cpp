@@ -38,6 +38,7 @@
 #include <QThreadPool>
 #include <QReadWriteLock>
 #include <QCoreApplication>
+#include <QDateTime>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 
@@ -223,16 +224,26 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstancePtr& app,
 }
 
 #if NATRON_ENABLE_TRIMAP
+/**
+ * @brief Marks the pixels of the RoI left to render as being rendered by this thread in the bitmaps of the
+ * images of all planes, and releases them when destroyed: as rendered if setRendered() was called, as not
+ * rendered otherwise (render aborted or failed, exception...).
+ **/
 class ImageBitMapMarker_RAII
 {
+    struct MarkedImage
+    {
+        ImagePtr image;
+        std::list<RectI> rects; // the rectangles of image marked as being rendered by this thread
+    };
 
-    std::map<ImagePlaneDesc, EffectInstance::PlaneToRender> _image;
+    std::list<MarkedImage> _images;
     RectI _roi;
     EffectInstance* _effect;
-    std::list<RectI> _rectsToRender;
+    std::list<RectI> _rectsToRender; // the rectangles of all planes
     bool _isBeingRenderedElseWhere;
-    bool _isValid;
-    bool _renderFullScale;
+    bool _rendered;
+    bool _released;
 
 public:
 
@@ -240,72 +251,83 @@ public:
                            bool renderFullScale,
                            const RectI& roi,
                            EffectInstance* effect)
-    : _image(image)
+    : _images()
     , _roi(roi)
     , _effect(effect)
     , _rectsToRender()
     , _isBeingRenderedElseWhere(false)
-    , _isValid(true)
-    , _renderFullScale(renderFullScale)
+    , _rendered(false)
+    , _released(false)
     {
-        for (std::map<ImagePlaneDesc,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
-            ImagePtr cacheImage;
-            if (!renderFullScale) {
-                cacheImage = it->second.downscaleImage;
-            } else {
-                cacheImage = it->second.fullscaleImage;
-            }
+        for (std::map<ImagePlaneDesc,EffectInstance::PlaneToRender>::const_iterator it = image.begin(); it != image.end(); ++it) {
+            const ImagePtr& cacheImage = renderFullScale ? it->second.fullscaleImage : it->second.downscaleImage;
             if (cacheImage && cacheImage->usesBitMap()) {
-                _effect->_imp->markImageAsBeingRendered(cacheImage, roi, &_rectsToRender, &_isBeingRenderedElseWhere);
+                MarkedImage m;
+                m.image = cacheImage;
+                bool renderedElsewhere = false;
+                _effect->_imp->markImageAsBeingRendered(cacheImage, roi, &m.rects, &renderedElsewhere);
+                _isBeingRenderedElseWhere |= renderedElsewhere;
+                _rectsToRender.insert( _rectsToRender.end(), m.rects.begin(), m.rects.end() );
+                _images.push_back(m);
             }
         }
-
     }
 
+    /// The rectangles to render, for all planes
     const std::list<RectI>& getRectsToRender() const
     {
         return _rectsToRender;
     }
 
-    void invalidate()
+    /// Call when the rectangles returned by getRectsToRender() were successfully rendered
+    void setRendered()
     {
-        _isValid = false;
+        _rendered = true;
     }
 
-    void waitForPendingRegions()
+    /**
+     * @brief Release the rectangles marked by this thread (see the destructor), then wait for the portions of
+     * the RoI that other threads are rendering.
+     * The rectangles must be released before waiting: otherwise they would still be PIXEL_UNAVAILABLE, and
+     * this thread would wait for its own pixels, possibly forever (#811).
+     * Returns false if some pixels of the RoI are still not rendered (another thread released pixels without
+     * rendering them, or the render was aborted): the caller must render them.
+     **/
+    bool waitForPendingRegions()
     {
-        if (!_isBeingRenderedElseWhere || !_isValid) {
-            return;
+        if (!_isBeingRenderedElseWhere) {
+            return true;
         }
-        for (std::map<ImagePlaneDesc,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
-            ImagePtr cacheImage;
-            if (!_renderFullScale) {
-                cacheImage = it->second.downscaleImage;
-            } else {
-                cacheImage = it->second.fullscaleImage;
-            }
-            if (cacheImage && cacheImage->usesBitMap()) {
-                if (!_effect->_imp->waitForImageBeingRenderedElsewhere(_roi, cacheImage)) {
-                    _isValid = false;
-                }
+        release();
+        bool complete = true;
+        for (std::list<MarkedImage>::const_iterator it = _images.begin(); it != _images.end(); ++it) {
+            if ( !_effect->_imp->waitForImageBeingRenderedElsewhere(_roi, it->image) ) {
+                complete = false;
             }
         }
+
+        return complete;
     }
 
     ~ImageBitMapMarker_RAII()
     {
-        for (std::map<ImagePlaneDesc,EffectInstance::PlaneToRender>::const_iterator it = _image.begin(); it != _image.end(); ++it) {
-            ImagePtr cacheImage;
-            if (!_renderFullScale) {
-                cacheImage = it->second.downscaleImage;
-            } else {
-                cacheImage = it->second.fullscaleImage;
-            }
-            if (cacheImage && cacheImage->usesBitMap()) {
-                _effect->_imp->unmarkImageAsBeingRendered(cacheImage, _rectsToRender, !_isValid);
-            }
+        release();
+        for (std::list<MarkedImage>::const_iterator it = _images.begin(); it != _images.end(); ++it) {
+            _effect->_imp->unmarkImageAsBeingRendered(it->image);
         }
- 
+    }
+
+private:
+
+    void release()
+    {
+        if (_released) {
+            return;
+        }
+        _released = true;
+        for (std::list<MarkedImage>::const_iterator it = _images.begin(); it != _images.end(); ++it) {
+            _effect->_imp->releaseImageRects(it->image, it->rects, _rendered);
+        }
     }
 };
 #endif // #if NATRON_ENABLE_TRIMAP
@@ -796,6 +818,16 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             setPersistentMessage(eMessageTypeError, message.toStdString());
             return eRenderRoIRetCodeFailed;
         }
+        if ( (openGLSupport == ePluginOpenGLRenderSupportNeeded) && getNode()->hasOpenGLContextAttachFailed() ) {
+            // kOfxActionOpenGLContextAttached failed before: "the host should not attempt to run the plug-in
+            // in OpenGL render mode", and it can't render without OpenGL
+            if ( !getNode()->hasPersistentMessage() ) {
+                setPersistentMessage( eMessageTypeError, tr("%1 needs OpenGL rendering, but it failed to attach the OpenGL context.")
+                                      .arg( QString::fromUtf8( getNode()->getLabel().c_str() ) ).toStdString() );
+            }
+
+            return eRenderRoIRetCodeFailed;
+        }
 
         /*
            We only render using OpenGL if this effect is the preferred input of the calling node (to avoid recursions in the graph
@@ -855,13 +887,56 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 }
             }
         }
-    } else if ( appPTR->isOpenGLLoaded() && !appPTR->getCurrentSettings()->isOpenGLRenderingEnabled() && openGLSupport == ePluginOpenGLRenderSupportNeeded ) {
-        QString message = tr("OpenGL render is required for a plugin but it's currently disabled, please consider passing `--opengl enabled` to %1").arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
-        setPersistentMessage(eMessageTypeError, message.toStdString());
+    } else if (openGLSupport == ePluginOpenGLRenderSupportNeeded) {
+        // No OpenGL context for this render: OpenGL rendering is disabled or not available (or, in a render
+        // without abort info or thread-local render args, Natron can't manage an OpenGL context), and the
+        // plug-in can't render without it: fail, rather than calling it without OpenGL.
+        QString message = getNode()->getOpenGLRenderUnavailableMessage();
+        if ( message.isEmpty() ) {
+            message = tr("%1 needs OpenGL rendering, but no OpenGL context is available for this render.").arg( QString::fromUtf8( getNode()->getLabel().c_str() ) );
+        }
+        setPersistentMessage( eMessageTypeError, message.toStdString() );
         return eRenderRoIRetCodeFailed;
     }
 
 
+    // When rendering in frame order because of a plug-in that must be rendered sequentially, its frames, and the
+    // frames of the nodes downstream, may have been rendered and cached out of order: "If eventually rendering the
+    // sequence, the host *must* ignore all frames rendered out of order and not cache them for use in the final
+    // result" (kOfxImageEffectInstancePropSequentialRender). Only use the images rendered by this render: the input
+    // images of the caller (args.inputImagesList, rendered for this frame), and the cached images that this render
+    // rendered (e.g. the frames t-1..t+1 fetched by a temporal node downstream).
+    const FrameOrderRenderPtr& frameOrderRender = frameArgs->frameOrderRender;
+    const bool isFrameOrderAffected = frameOrderRender && frameOrderRender->isAffected( getNode().get() );
+    auto mayUseCachedImage = [&](const ImageKey& lookupKey) {
+        return !isFrameOrderAffected || frameOrderRender->isClaimed( lookupKey.getHash() );
+    };
+    // The claim of the first render of this image by the frame-order render (see FrameOrderRender): released when
+    // renderRoI() returns, unless the image was rendered.
+    struct FrameOrderClaim
+    {
+        FrameOrderRenderPtr render;
+        U64 keyHash;
+        bool claimed;
+        bool rendered;
+
+        FrameOrderClaim() : render(), keyHash(0), claimed(false), rendered(false) {}
+
+        ~FrameOrderClaim()
+        {
+            if (claimed && !rendered) {
+                render->releaseClaim(keyHash);
+            }
+        }
+
+        void setRendered()
+        {
+            if (claimed && !rendered) {
+                render->setRendered(keyHash);
+                rendered = true;
+            }
+        }
+    } frameOrderClaim;
     const bool draftModeSupported = getNode()->isDraftModeUsed();
     const bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
     bool createInCache;
@@ -872,12 +947,25 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         // in Analysis, the node upstream of the analysis node should always cache
         createInCache = (frameArgs->isAnalysis && frameArgs->treeRoot->getEffectInstance().get() == args.caller) ? true : shouldCacheOutput(isFrameVaryingOrAnimated, args.time, args.view, frameArgs->visitsCount);
     }
+    if ( !createInCache && (storage != eStorageModeGLTex) && isFrameOrderAffected &&
+         (getSequentialPreference() == eSequentialPreferenceOnlySequential) ) {
+        // A node downstream may fetch this frame again in a later frame of the render (e.g. a temporal node fetching
+        // t-1..t+1): it must come from the cache, since rendering it again would be out of frame order.
+        createInCache = true;
+    }
+    // Note: if the cache evicts such a frame before a node downstream fetches it again, it is rendered again, out of
+    // frame order. The cache would have to be full for that to happen during a render.
     ///Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
     bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = getNode()->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
     ///For multi-resolution we want input images with exactly the same size as the output image
     if ( !renderScaleOneUpstreamIfRenderScaleSupportDisabled && !supportsMultiResolution() ) {
         renderScaleOneUpstreamIfRenderScaleSupportDisabled = true;
     }
+    // The image is rendered at full scale from downscaled (thus blurry) inputs only when the effect doesn't support
+    // render scale and the inputs are not rendered at full scale: it must not be found in the cache by a render
+    // at full scale (#1123). ImageKey has no mipmap level, so this flag is what distinguishes these images.
+    // (It used to be set from renderMappedMipmapLevel == 0, which is also true for a real full-scale render.)
+    const bool fullScaleWithDownscaleInputs = renderFullScaleThenDownscale && !renderScaleOneUpstreamIfRenderScaleSupportDisabled;
 
     std::unique_ptr<ImageKey> key( new ImageKey(getNode().get(),
                                                   nodeHash,
@@ -886,7 +974,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                   args.view,
                                                   1.,
                                                   draftModeSupported && frameArgs->draftMode,
-                                                  renderMappedMipmapLevel == 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled) );
+                                                  fullScaleWithDownscaleInputs) );
     std::unique_ptr<ImageKey> nonDraftKey( new ImageKey(getNode().get(),
                                                           nodeHash,
                                                           isFrameVaryingOrAnimated,
@@ -894,7 +982,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                           args.view,
                                                           1.,
                                                           false,
-                                                          renderMappedMipmapLevel == 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled) );
+                                                          fullScaleWithDownscaleInputs) );
 
     bool isDuringPaintStroke = isDuringPaintStrokeCreationThreadLocal();
 
@@ -908,6 +996,22 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ImagePlanesToRenderPtr planesToRender = std::make_shared<ImagePlanesToRender>();
     planesToRender->useOpenGL = storage == eStorageModeGLTex;
     FramesNeededMapPtr framesNeeded = std::make_shared<FramesNeededMap>();
+    if (isFrameOrderAffected && createInCache) {
+        // A cache entry with this key, rendered out of order (e.g. in the Viewer), would be returned by
+        // getImageOrCreate() when the planes are allocated below: only the RoI would be rendered into it, while its
+        // bitmap marks the rest as rendered. The first render of this key in this render removes it, atomically
+        // with the claim, so that another thread rendering the same image now uses this one.
+        const U64 keyHash = key->getHash();
+        const U64 nonDraftKeyHash = nonDraftKey->getHash();
+        frameOrderClaim.render = frameOrderRender;
+        frameOrderClaim.keyHash = keyHash;
+        frameOrderClaim.claimed = frameOrderRender->claimFirstRender(keyHash, [keyHash, nonDraftKeyHash]() {
+            appPTR->removeFromNodeCache(keyHash);
+            if (nonDraftKeyHash != keyHash) {
+                appPTR->removeFromNodeCache(nonDraftKeyHash);
+            }
+        });
+    }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Look-up the cache ///////////////////////////////////////////////////////////////
 
@@ -955,7 +1059,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                         args.inputImagesList,
                                                         frameArgs->stats,
                                                         glContextLocker,
-                                                        &plane.fullscaleImage);
+                                                        &plane.fullscaleImage,
+                                                        mayUseCachedImage(n == 0 ? *nonDraftKey : *key));
                     if (plane.fullscaleImage) {
                         if (byPassCache) {
                             if (plane.fullscaleImage) {
@@ -987,7 +1092,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                             args.inputImagesList,
                                                             frameArgs->stats,
                                                             glContextLocker,
-                                                            &plane.fullscaleImage);
+                                                            &plane.fullscaleImage,
+                                                            mayUseCachedImage(n == 0 ? *nonDraftKey : *key));
                         if (plane.fullscaleImage) {
                             if (byPassCache) {
                                 if (plane.fullscaleImage) {
@@ -1130,9 +1236,46 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
         ///We check what is left to render.
 #if NATRON_ENABLE_TRIMAP
-        // scoped_ptr
-        guard.reset(new ImageBitMapMarker_RAII(planesToRender->planes, renderFullScaleThenDownscale, roi, this));
-        rectsLeftToRender = guard->getRectsToRender();
+        /*
+         * When called from getImage(), a cached image that is too small is not resized in place: it is copied
+         * into a larger image (copyAndResizeIfNeeded() below), which replaces it in the cache once rendered.
+         * Other threads keep rendering into the old image, so the pixels they marked as being rendered will
+         * never be rendered in the copy. In that case, render everything that is not rendered yet in the
+         * copy (including those pixels), and mark the copy, not the old image: the guard is created on the
+         * copy after the allocation below.
+         * This is decided before the input images are rendered. If another thread grows the cached image in
+         * place meanwhile (bounds only grow), no copy is made and the guard is created on the cached image:
+         * this is harmless, since the rectangles rendered (computed here) contain the ones the guard marks then
+         * (pixels only go from "not rendered" to "being rendered" to "rendered", or back to "not rendered").
+         */
+        bool willCopyAndResize = false;
+        if (args.calledFromGetImage && !planesToRender->useOpenGL) {
+            const RectI& neededBounds = renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds;
+            for (std::map<ImagePlaneDesc, EffectInstance::PlaneToRender>::const_iterator it2 = planesToRender->planes.begin();
+                 it2 != planesToRender->planes.end(); ++it2) {
+                if ( it2->second.fullscaleImage && !it2->second.fullscaleImage->getBounds().contains(neededBounds) ) {
+                    willCopyAndResize = true;
+                    break;
+                }
+            }
+        }
+        if (willCopyAndResize) {
+            // getRestToRender() treats pixels being rendered by other threads as not rendered. Render what is
+            // missing in any plane, since the guard marks all planes.
+            for (std::map<ImagePlaneDesc, EffectInstance::PlaneToRender>::const_iterator it2 = planesToRender->planes.begin();
+                 it2 != planesToRender->planes.end(); ++it2) {
+                const ImagePtr& planeImage = renderFullScaleThenDownscale ? it2->second.fullscaleImage : it2->second.downscaleImage;
+                if (planeImage) {
+                    std::list<RectI> planeRects;
+                    planeImage->getRestToRender(roi, planeRects);
+                    rectsLeftToRender.insert( rectsLeftToRender.end(), planeRects.begin(), planeRects.end() );
+                }
+            }
+        } else {
+            // scoped_ptr
+            guard.reset(new ImageBitMapMarker_RAII(planesToRender->planes, renderFullScaleThenDownscale, roi, this));
+            rectsLeftToRender = guard->getRectsToRender();
+        }
 #else // !NATRON_ENABLE_TRIMAP
         isPlaneCached->getRestToRender(roi, rectsLeftToRender);
 #endif // NATRON_ENABLE_TRIMAP
@@ -1145,6 +1288,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if ( !intersection.isNull() ) {
                 rectsLeftToRender.push_back(intersection);
             }
+            // If nothing is rendered, the guard releases its rectangles as not rendered.
         }
 
         // If doing opengl renders, we don't allow retrieving partial images from the cache
@@ -1156,6 +1300,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             ///instead of the rest to render. This way, even if the image is cleared from the cache we already have rendered the full RoI anyway.
             rectsLeftToRender.clear();
             rectsLeftToRender.push_back(roi);
+#if NATRON_ENABLE_TRIMAP
+            // The cached images are not rendered into: release their rectangles as not rendered. The guard is
+            // created again on the newly allocated images.
+            guard.reset();
+#endif
             for (std::map<ImagePlaneDesc, EffectInstance::PlaneToRender>::iterator it2 = planesToRender->planes.begin(); it2 != planesToRender->planes.end(); ++it2) {
                 //Keep track of the original cached image for the re-lookup afterward, if the pointer doesn't match the first look-up, don't consider
                 //the image because the region to render might have changed and we might have to re-trigger a render on inputs again.
@@ -1342,11 +1491,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
         //Render was aborted
         if (inputCode != eRenderRoIRetCodeOk) {
-#if NATRON_ENABLE_TRIMAP
-            if (guard) {
-                guard->invalidate();
-            }
-#endif
+            // The guard (if any) releases its rectangles as not rendered
             return inputCode;
         }
     }
@@ -1479,13 +1624,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     ( ( it->second.fullscaleImage != it->second.downscaleImage || it->second.fullscaleImage->getMipmapLevel() == it->second.downscaleImage->getMipmapLevel() ) && renderFullScaleThenDownscale ) );
         } // for each plane
 
-#if NATRON_ENABLE_TRIMAP
-        if (!guard) {
-            // scoped_ptr
-            guard.reset(new ImageBitMapMarker_RAII(planesToRender->planes, renderFullScaleThenDownscale, roi, this));
-        }
-#endif // NATRON_ENABLE_TRIMAP
     } // hasSomethingToRender
+#if NATRON_ENABLE_TRIMAP
+    if (!guard) {
+        // scoped_ptr
+        guard.reset(new ImageBitMapMarker_RAII(planesToRender->planes, renderFullScaleThenDownscale, roi, this));
+    }
+#endif // NATRON_ENABLE_TRIMAP
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       ////////////////////////////// End allocation of planes ///////////////////////////////////////////////////////////////
 
@@ -1499,12 +1644,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     bool renderAborted;
 
     renderAborted = aborted();
-#if NATRON_ENABLE_TRIMAP
-    if (renderAborted) {
-        assert(guard);
-        guard->invalidate();
-    }
-#endif // NATRON_ENABLE_TRIMAP
     if (!renderAborted && hasSomethingToRender) {
 
         // eRenderSafetyInstanceSafe means that there is at most one render per instance
@@ -1534,7 +1673,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
         assert(renderInstance);
 
-        if (safety == eRenderSafetyInstanceSafe) {
+        if ( (safety == eRenderSafetyInstanceSafe) ||
+             ( useRenderClone && ( renderInstance.get() == this ) ) ) {
+            // (the second case: no concurrent OpenGL renders, and the main instance is used, which
+            // also happens when the effect makes no render clones, e.g. a single-instance OFX plug-in)
             locker.reset( new QtCompat::MutexLock( &getNode()->getRenderInstancesSharedMutex() ) );
         } else if (safety == eRenderSafetyUnsafe) {
             const Plugin* p = getNode()->getPlugin();
@@ -1577,7 +1719,24 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 renderRetCode = eRenderRoIStatusRenderOutOfGPUMemory;
                 attachGLOK = false;
             } else if (stat == eStatusFailed) {
-                renderRetCode = eRenderRoIStatusRenderFailed;
+                // kOfxActionOpenGLContextAttached returned kOfxStatFailed: "the host should not attempt to
+                // run the plug-in in OpenGL render mode" (ofxGPURender.h). Don't try OpenGL again for this
+                // node, and render on the CPU now if the plug-in can (as when it runs out of GPU memory).
+                // (log it once: other frames may be in flight with the same failure)
+                const bool firstFailure = getNode()->setOpenGLContextAttachFailed();
+                if (openGLSupport == ePluginOpenGLRenderSupportYes) {
+                    if (firstFailure) {
+                        appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( getNode()->getLabel_mt_safe().c_str() ), QDateTime::currentDateTime(),
+                                                         tr("Attaching the OpenGL context failed: rendering without OpenGL.") );
+                    }
+                    renderRetCode = eRenderRoIStatusRenderOutOfGPUMemory;
+                } else {
+                    if (firstFailure) {
+                        setPersistentMessage( eMessageTypeError, tr("%1 needs OpenGL rendering, but it failed to attach the OpenGL context.")
+                                              .arg( QString::fromUtf8( getNode()->getLabel().c_str() ) ).toStdString() );
+                    }
+                    renderRetCode = eRenderRoIStatusRenderFailed;
+                }
                 attachGLOK = false;
             }
         }
@@ -1591,7 +1750,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                               rod,
                                               par,
                                               planesToRender,
-                                              frameArgs->isSequentialRender,
+                                              // kOfxImageEffectPropSequentialRenderStatus: "the host is currently rendering in a way so that it
+                                              // guarantees sequential rendering", i.e. "in frame order on a single effect instance". The Writer
+                                              // of a sequential render (e.g. WriteFFmpeg) always gets it: it may only write a movie then.
+                                              // (No special case for Readers: ReadOIIO's "isPlayback" use of the status only matters with its
+                                              // OIIO cache, which it creates only on Natron < 2.2, openfx-io d3e96ca; ReadFFmpeg ignores it.)
+                                              frameArgs->isSequentialRender && ( frameArgs->frameOrderRender ||
+                                                                                 ( isWriter() && (frameArgs->treeRoot == getNode()) ) ),
                                               frameArgs->isRenderResponseToUserInteraction,
                                               nodeHash,
                                               renderFullScaleThenDownscale,
@@ -1618,18 +1783,43 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     } // if (!hasSomethingToRender) {
 
-#if NATRON_ENABLE_TRIMAP
-    assert(guard);
-    if (renderAborted && renderRetCode != EffectInstance::eRenderRoIStatusImageRendered  && renderRetCode != EffectInstance::eRenderRoIStatusImageAlreadyRendered) {
-        guard->invalidate();
-    } else {
-        guard->waitForPendingRegions();
+    if ( !renderAborted && ( (renderRetCode == eRenderRoIStatusImageRendered) || (renderRetCode == eRenderRoIStatusImageAlreadyRendered) ) ) {
+        // rendered in frame order by this render, into the cache entry of this key, by this thread or by another one
+        // of the frame (already rendered): it may be used from the cache in the next frames of the render. Releasing
+        // the claim would make a later frame remove that entry and render the frame again, out of order.
+        frameOrderClaim.setRendered();
     }
-#endif // NATRON_ENABLE_TRIMAP
 
 #if NATRON_ENABLE_TRIMAP
+    assert(guard);
+    bool regionsComplete = true;
+    // If the render was aborted or failed (or ran out of GPU memory), or an exception is thrown, the guard
+    // releases its rectangles as not rendered.
+    if ( !renderAborted && ( (renderRetCode == eRenderRoIStatusImageRendered) || (renderRetCode == eRenderRoIStatusImageAlreadyRendered) ) ) {
+        if (renderRetCode == eRenderRoIStatusImageRendered) {
+            guard->setRendered();
+        }
+        regionsComplete = guard->waitForPendingRegions();
+    }
     guard.reset();
-#endif
+
+    if (!regionsComplete) {
+        if ( aborted() ) {
+            return eRenderRoIRetCodeAborted;
+        }
+        // Another thread released pixels of the RoI without rendering them (its render was aborted or
+        // failed): render them now. This should converge quickly; give up after a few attempts.
+        if (args.renderAgainCount < 3) {
+            std::unique_ptr<RenderRoIArgs> newArgs( new RenderRoIArgs(args) );
+            ++newArgs->renderAgainCount;
+
+            return renderRoI(*newArgs, outputPlanes);
+        }
+        qDebug() << getScriptName_mt_safe().c_str() << "renderRoI: some pixels of the RoI could not be rendered";
+
+        return eRenderRoIRetCodeFailed;
+    }
+#endif // NATRON_ENABLE_TRIMAP
 
     if ( renderAborted && (renderRetCode != eRenderRoIStatusImageAlreadyRendered) ) {
         ///Return a NULL image
@@ -1646,9 +1836,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         ///use the ret code instead.
         throw std::runtime_error("Rendering Failed");
     } else if (renderRetCode == eRenderRoIStatusRenderOutOfGPUMemory) {
-        /// Recall renderRoI on this node, but don't use GPU this time if possible
+        /// The OpenGL render ran out of memory or failed (kOfxStatGPUOutOfMemory, kOfxStatGPURenderFailed):
+        /// recall renderRoI on this node, but don't use GPU this time if possible
         if (openGLSupport != ePluginOpenGLRenderSupportYes) {
             // The plug-in can only use GPU or doesn't support GPU
+            if ( !getNode()->hasPersistentMessage() ) {
+                setPersistentMessage( eMessageTypeError, tr("The OpenGL render failed or ran out of GPU memory, and this plug-in cannot render without OpenGL.").toStdString() );
+            }
             throw std::runtime_error("Rendering Failed");
         }
         std::unique_ptr<RenderRoIArgs> newArgs( new RenderRoIArgs(args) );
@@ -1846,19 +2040,19 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
 
     assert( !planesToRender->planes.empty() );
 
-    ///Add the window to the project's available formats if the effect is a reader
-    ///This is the only reliable place where I could put these lines...which don't seem to feel right here.
-    ///Plus setOrAddProjectFormat will actually set the project format the first time we read an image in the project
-    ///hence ask for a new render... which can be expensive!
-    ///Any solution how to work around this ?
-    ///Edit: do not do this if in the main-thread (=noRenderThread = -1) otherwise we will change the parallel render args TLS
-    ///which will lead to asserts down the stream
+    ///Add the window to the project's available formats if the effect is a reader.
+    ///Do not do this if in the main-thread (=noRenderThread = -1) otherwise we will change the parallel render args TLS
+    ///which will lead to asserts down the stream.
+    ///The project format must not change during a render (#1294): Writers and the RoD of the nodes that
+    ///depend on the project format would differ between the first frames and the next ones. The project format is
+    ///auto-set from the first Reader on the main thread, when its metadata is computed (see refreshMetadata_internal),
+    ///so here it may only be auto-set if it is already equal to the Reader's format.
     if ( self->isReader() && ( QThread::currentThread() != qApp->thread() ) ) {
         Format frmt;
         RectI formatRect = self->getOutputFormat();
         frmt.set(formatRect);
         frmt.setPixelAspectRatio(par);
-        self->getApp()->getProject()->setOrAddProjectFormat(frmt);
+        self->getApp()->getProject()->setOrAddProjectFormat(frmt, /*skipAdd=*/false, /*mayChangeFormat=*/false);
     }
 
     unsigned int renderMappedMipmapLevel = 0;

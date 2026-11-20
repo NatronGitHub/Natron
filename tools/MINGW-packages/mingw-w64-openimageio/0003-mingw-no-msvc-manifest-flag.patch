@@ -1,0 +1,15 @@
+--- a/src/cmake/fancy_add_executable.cmake
++++ b/src/cmake/fancy_add_executable.cmake
+@@ -45,8 +45,10 @@
+     if (_target_NAME_enabled)
+         add_executable (${_target_NAME} ${_target_SRC})
+         if (WIN32)
+-            # Disable default manifest generation to avoid conflicts.
+-            target_link_options(${_target_NAME} PRIVATE "/MANIFEST:NO")
++            if (MSVC)
++                # Disable default manifest generation to avoid conflicts.
++                target_link_options(${_target_NAME} PRIVATE "/MANIFEST:NO")
++            endif ()
+             # Include Windows resource file, which will in turn embed our exe manifest.
+             target_sources(${_target_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/src/windows/oiio_exe.rc")
+         endif ()

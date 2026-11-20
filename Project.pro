@@ -41,6 +41,7 @@ SUBDIRS += \
     Engine \
     Renderer \
     Gui \
+    NatronTestPlugin \
     Tests \
     PythonBin \
     App
@@ -54,6 +55,7 @@ openMVG.subdir     = libs/openMVG
 qhttpserver.subdir = libs/qhttpserver
 hoedown.subdir     = libs/hoedown
 libtess.subdir     = libs/libtess
+NatronTestPlugin.subdir = Tests/OfxTestPlugin
 
 # what subproject depends on others
 glog.depends = gflags
@@ -63,7 +65,7 @@ openMVG.depends = ceres
 Engine.depends = libmv openMVG HostSupport libtess ceres
 Renderer.depends = Engine
 Gui.depends = Engine qhttpserver
-Tests.depends = Gui Engine
+Tests.depends = Gui Engine NatronTestPlugin
 App.depends = Gui Engine
 
 OTHER_FILES += \
