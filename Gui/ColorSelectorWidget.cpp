@@ -55,6 +55,7 @@ ColorSelectorPaletteButton::ColorSelectorPaletteButton(QWidget *parent)
     , _b(COLOR_SELECTOR_PALETTE_DEFAULT_COLOR)
     , _a(1.0)
     , _modified(false)
+    , _hasColor(false)
 {
     initButton();
 }
@@ -70,6 +71,7 @@ ColorSelectorPaletteButton::ColorSelectorPaletteButton(float r,
     , _b(b)
     , _a(a)
     , _modified(true)
+    , _hasColor(true)
 {
     initButton();
 }
@@ -78,6 +80,12 @@ bool
 ColorSelectorPaletteButton::isModified()
 {
     return _modified;
+}
+
+bool
+ColorSelectorPaletteButton::hasColor() const
+{
+    return _hasColor;
 }
 
 void
@@ -106,6 +114,7 @@ ColorSelectorPaletteButton::clearColor()
     _b = COLOR_SELECTOR_PALETTE_DEFAULT_COLOR;
     _a = 1.0;
     _modified = false;
+    _hasColor = false;
     updateColor(false);
 }
 
@@ -120,6 +129,7 @@ ColorSelectorPaletteButton::setColor(float r,
     _b = b;
     _a = a;
     _modified = true;
+    _hasColor = true;
     updateColor();
 }
 
@@ -171,6 +181,7 @@ ColorSelectorPaletteButton::mouseReleaseEvent(QMouseEvent *e)
 {
     if (e->button() == Qt::RightButton) {
         clearColor();
+        Q_EMIT colorCleared();
     }
     Button::mouseReleaseEvent(e);
 }
@@ -889,6 +900,8 @@ ColorSelectorWidget::initPaletteButtons(QWidget *widget,
             ColorSelectorPaletteButton *button = new ColorSelectorPaletteButton(colWidget);
             QObject::connect( button, SIGNAL( colorPicked(float,float,float,float) ),
                               this, SLOT( setColorFromPalette(float,float,float,float) ) );
+            QObject::connect( button, SIGNAL( colorCleared() ),
+                              this, SLOT( onPaletteButtonCleared() ) );
             colLayout->addWidget(button);
             _paletteButtons << button;
         }
@@ -904,6 +917,8 @@ ColorSelectorWidget::updatePaletteButtons()
 
     for (int i = 0; i < _paletteButtons.size(); ++i) {
         if ( !settings.value( QString::number(i) ).isValid() ) {
+            // no saved color: the slot is empty (it may have been cleared in another color selector)
+            _paletteButtons.at(i)->clearColor();
             continue;
         }
         QStringList colorValues = settings.value( QString::number(i) ).toStringList();
@@ -932,14 +947,29 @@ ColorSelectorWidget::savePaletteButton(int id)
                         QString::fromUtf8(NATRON_APPLICATION_NAME) );
     settings.beginGroup( QString::fromUtf8(COLOR_SELECTOR_PALETTE_SETTINGS) );
 
+    savePaletteButton(settings, id);
+
+    settings.endGroup();
+}
+
+void
+ColorSelectorWidget::savePaletteButton(QSettings& settings,
+                                       int id)
+{
+    ColorSelectorPaletteButton* button = _paletteButtons.at(id);
+
+    if ( !button->hasColor() ) {
+        // an empty (cleared) slot: remove it, so that it stays empty when the palette is loaded again
+        settings.remove( QString::number(id) );
+
+        return;
+    }
     QStringList colorValues;
     float r, g, b, a;
-    _paletteButtons.at(id)->getColor(&r, &g, &b, &a);
+    button->getColor(&r, &g, &b, &a);
     colorValues << QString::number(r) << QString::number(g);
     colorValues << QString::number(b) << QString::number(a);
     settings.setValue(QString::number(id), colorValues);
-
-    settings.endGroup();
 }
 
 void
@@ -953,15 +983,21 @@ ColorSelectorWidget::savePaletteButtons()
     settings.beginGroup( QString::fromUtf8(COLOR_SELECTOR_PALETTE_SETTINGS) );
 
     for (int i = 0; i < _paletteButtons.size(); ++i) {
-        QStringList colorValues;
-        float r, g, b, a;
-        _paletteButtons.at(i)->getColor(&r, &g, &b, &a);
-        colorValues << QString::number(r) << QString::number(g);
-        colorValues << QString::number(b) << QString::number(a);
-        settings.setValue(QString::number(i), colorValues);
+        savePaletteButton(settings, i);
     }
 
     settings.endGroup();
+}
+
+void
+ColorSelectorWidget::onPaletteButtonCleared()
+{
+    ColorSelectorPaletteButton* button = qobject_cast<ColorSelectorPaletteButton*>( sender() );
+    int id = _paletteButtons.indexOf(button);
+
+    if (id >= 0) {
+        savePaletteButton(id);
+    }
 }
 
 void
@@ -1114,13 +1150,13 @@ ColorSelectorWidget::handleSpinAChanged(double value)
 
 void ColorSelectorWidget::handleHexChanged()
 {
-    QString value = _hex->text();
-    if ( !value.startsWith( QString::fromUtf8("#") ) ) {
-        value.prepend( QString::fromUtf8("#") );
-    }
-
+    // a color name (e.g. "red") or #RRGGBB, also without the '#'
+    QString value = _hex->text().trimmed();
     QColor color;
-    color.setNamedColor( _hex->text() );
+    color.setNamedColor(value);
+    if ( !color.isValid() && !value.startsWith( QLatin1Char('#') ) ) {
+        color.setNamedColor( QString( QLatin1Char('#') ) + value );
+    }
     if ( !color.isValid() ) {
         return;
     }

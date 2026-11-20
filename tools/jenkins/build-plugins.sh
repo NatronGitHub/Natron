@@ -26,6 +26,16 @@ esac
 # ARENA_ALLOW_ANY_MAGICK=1 allows another one, e.g. ImageMagick 6).
 
 
+# macOS COMMERCIAL builds need the LGPL FFmpeg, LibRaw and libheif of the MacPorts overlay
+# (tools/MacPorts: subports ffmpeg-lgpl, libraw-lgpl and libheif-lgpl, see common.sh), #1302, #1177
+if [ "$PKGOS" = "OSX" ] && [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
+    if [ "$FFMPEG_PATH" = "$SDK_HOME" ] || [ "$LIBRAW_PATH" = "$SDK_HOME" ] || [ -z "$LIBHEIF_PATH" ]; then
+        echo "Error: NATRON_LICENSE=COMMERCIAL needs the LGPL FFmpeg, LibRaw and libheif in $SDK_HOME/libexec (FFMPEG_PATH=$FFMPEG_PATH, LIBRAW_PATH=$LIBRAW_PATH, LIBHEIF_PATH=$LIBHEIF_PATH). Install them with:"
+        echo "sudo port -v -N install ffmpeg-lgpl libraw-lgpl libheif-lgpl"
+        exit 1
+    fi
+fi
+
 BUILD_IO=1
 BUILD_MISC=1
 BUILD_ARENA=1
@@ -349,7 +359,7 @@ if [ "$BUILD_MISC" = "1" ] && [ -d "$TMP_PATH/openfx-misc" ]; then
     fi
     GLULIB="-lMangledGLU"
 
-    # Build static on Windows so that openfx-misc are usable on other hosts without DLL's and manifests (note Shadertoy will require osmesa dll)
+    # Build static on Windows so that openfx-misc are usable on other hosts without DLLs and manifests (OSMesa is linked statically into Shadertoy)
     # Could/Should also be done on OSX?
     # On Linux this is not the best solution, as Nuke forces gcc, so static won't help. as-is the plugins should work in Nuke10+ (CY2015),
     # but will not work on older versions. The best solution on Nuke9 and lower is to build the plugins using RHEL devtoolset (gcc4.7).
@@ -477,21 +487,22 @@ if [ "$BUILD_IO" = "1" ] && [ -d "$TMP_PATH/openfx-io" ]; then
         io_seexpr="$SDK_HOME"
         io_ffmpeg_pc="${FFMPEG_PKG_CONFIG_PATH:-}"
         io_prefix_args=()
-        if [ "$PKGOS" != "OSX" ]; then
+        if [ "$PKGOS" != "OSX" ] || [ "$FFMPEG_PATH" != "$SDK_HOME" ] || [ "$LIBRAW_PATH" != "$SDK_HOME" ]; then
             # Linux and Windows: the FFmpeg and LibRaw of the license (common.sh), as the
-            # make path gets them through C_INCLUDE_PATH and pkg-config
+            # make path gets them through C_INCLUDE_PATH and pkg-config. macOS: only if they are
+            # not MacPorts' own (COMMERCIAL builds: ffmpeg-lgpl and libraw-lgpl in libexec)
             io_ffmpeg_pc="${io_ffmpeg_pc:-${FFMPEG_PATH}/lib/pkgconfig}"
-            io_prefix_args+=(-DCMAKE_PREFIX_PATH="${SDK_HOME};${LIBRAW_PATH};${FFMPEG_PATH}")
+            io_prefix_args+=(-DCMAKE_PREFIX_PATH="${LIBRAW_PATH};${FFMPEG_PATH};${SDK_HOME}")
         fi
         if [ "$PKGOS" = "Windows" ]; then
             # cmake.exe is a native program: pass Windows paths (untested here)
             io_seexpr="$(cygpath -m "$io_seexpr")"
             [ -n "$io_ffmpeg_pc" ] && io_ffmpeg_pc="$(cygpath -m "$io_ffmpeg_pc")"
-            io_prefix_args=(-DCMAKE_PREFIX_PATH="$(cygpath -m "$SDK_HOME");$(cygpath -m "$LIBRAW_PATH");$(cygpath -m "$FFMPEG_PATH")")
+            io_prefix_args=(-DCMAKE_PREFIX_PATH="$(cygpath -m "$LIBRAW_PATH");$(cygpath -m "$FFMPEG_PATH");$(cygpath -m "$SDK_HOME")")
         fi
         # OFX_IO_REQUIRE_ALL: fail on missing plug-in groups (ofx_cmake_build also checks the log)
         io_saved_pkg_config_path="${PKG_CONFIG_PATH:-}"
-        if [ "$PKGOS" != "OSX" ]; then
+        if [ "$PKGOS" != "OSX" ] || [ "$LIBRAW_PATH" != "$SDK_HOME" ]; then
             # LibRaw's libraw_r.pc (only for this build, not for the next plug-ins)
             export PKG_CONFIG_PATH="${LIBRAW_PATH}/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
         fi
@@ -795,6 +806,73 @@ if [ "$BUILD_CV" = "1" ] && [ -d "$TMP_PATH/openfx-opencv" ]; then
 
     maybe_cleanup_binary_files
 
+fi
+
+# macOS COMMERCIAL builds (#1302, #1177): openimageio links MacPorts' libheif, which links the GPL
+# x264 and x265, and MacPorts' libraw (+gpl2), so osxDeploy.sh (ofx_deploy_bundle) bundles them,
+# and also bundles only one of the two libraw_r.*.dylib that openimageio and openfx-io link. In
+# every plug-in bundle, replace each library that the LGPL prefixes (common.sh) also have with
+# theirs: the same file name, version and ABI. Then remove the bundled libraries that only the
+# replaced ones linked (x264 and x265), and check that no GPL component is left.
+function osx_replace_bundled_dylibs() {
+    local libdir="$1"
+    shift
+    local bundle lib name new dep depname r old_deps used
+    for bundle in "$@"; do
+        [ -d "$bundle/Contents/Libraries" ] || continue
+        for lib in "$bundle"/Contents/Libraries/*.dylib; do
+            name="$(basename "$lib")"
+            new="$libdir/$name"
+            if [ -h "$lib" ] || [ ! -f "$lib" ] || [ ! -f "$new" ]; then
+                continue
+            fi
+            echo "Info: $(basename "$bundle"): bundling $new instead of $(otool -D "$lib" | tail -n 1)"
+            old_deps="$(otool -L "$lib" | sed -n -e '2,$s/^[[:space:]]*\([^ ]*\) (.*/\1/p' | sed -e 's@.*/@@')"
+            rm -f "$lib"
+            cp "$new" "$lib"
+            chmod u+w "$lib"
+            install_name_tool -id "@rpath/$name" "$lib"
+            for dep in $(otool -L "$lib" | sed -n -e '2,$s/^[[:space:]]*\([^ ]*\) (.*/\1/p'); do
+                case "$dep" in
+                    /usr/lib/*|/System/*|@*) continue;;
+                esac
+                depname="$(basename "$dep")"
+                [ "$depname" != "$name" ] || continue
+                if [ ! -e "$bundle/Contents/Libraries/$depname" ]; then
+                    echo "Error: $new links $dep, which $(basename "$bundle") doesn't bundle"
+                    exit 1
+                fi
+                install_name_tool -change "$dep" "@rpath/$depname" "$lib"
+            done
+            for r in $(otool -l "$lib" | awk '$1 == "cmd" {c = $2} c == "LC_RPATH" && $1 == "path" {print $2}'); do
+                install_name_tool -delete_rpath "$r" "$lib"
+            done
+            codesign --force -s - "$lib"
+            # the libraries that only the replaced library linked
+            for depname in $old_deps; do
+                [ "$depname" != "$name" ] && [ -f "$bundle/Contents/Libraries/$depname" ] || continue
+                used=0
+                for f in "$bundle"/Contents/MacOS/* "$bundle"/Contents/Libraries/*; do
+                    [ -f "$f" ] && [ "$(basename "$f")" != "$depname" ] || continue
+                    if otool -L "$f" 2>/dev/null | grep -q -F "/$depname "; then
+                        used=1
+                        break
+                    fi
+                done
+                if [ "$used" = 0 ]; then
+                    echo "Info: $(basename "$bundle"): removing $depname, which nothing links any more"
+                    rm -f "$bundle/Contents/Libraries/$depname"
+                fi
+            done
+        done
+    done
+}
+
+if [ "$PKGOS" = "OSX" ] && [ "$NATRON_LICENSE" = "COMMERCIAL" ] && [ "$PLUGINS_DEBUG" != "1" ]; then
+    for libdir in "$FFMPEG_PATH/lib" "$LIBRAW_PATH/lib" "$LIBHEIF_PATH/lib"; do
+        osx_replace_bundled_dylibs "$libdir" "$TMP_BINARIES_PATH/OFX/Plugins"/*.ofx.bundle
+    done
+    "$CWD"/check-commercial-bundle.sh "$TMP_BINARIES_PATH/OFX/Plugins"
 fi
 
 #rm -f $KILLSCRIPT || true

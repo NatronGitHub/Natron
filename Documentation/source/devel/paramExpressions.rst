@@ -233,8 +233,8 @@ Sometimes it might be useful to add a random generator to produce noise on a val
 However the noise produced must be reproducible such that when rendering multiple times the same
 frame or when loading the project again it would use the same value.
 
-We had to add a specific random function in Natron that takes into account the state of a
-parameter and the current time on the timeline as a seed function to random.
+We had to add a specific random function in Natron that takes into account the state of the
+node and its inputs and the frame as a seed function to random.
 
 .. warning::
 
@@ -258,6 +258,30 @@ the range into which the return value should fall in. The range is defined by \[
 
     #Returns a random floating point value in the range [1., 10.[
     random(1.,10.)
+
+Without a frame, ``random()`` returns the next value of a sequence that belongs to the parameter.
+Each evaluation of the expression of the parameter starts that sequence again from the frame, the
+dimension and the state of the node and its inputs, so in the expression of the parameter itself,
+the values are the same each time a frame is computed. Elsewhere, e.g. ``Blur1.size.random()`` called from the
+expression of another parameter or from a script, the value depends on the calls made before, and
+is not reproducible.
+
+The functions that take a frame and a seed only depend on them and on the state of the node and
+its inputs: they return the same value anywhere, and each seed gives an independent value. They
+do not depend on the parameter nor on the dimension, so give each parameter and each dimension
+its own seed, else they all get the same value (e.g. a position that only moves along the
+diagonal)::
+
+    #Returns a random floating point value in the range [1., 10.[, the same for a given frame,
+    #and different for each dimension of the parameter
+    random(1.,10.,frame,dimension)
+
+    #On another parameter of the same node, use other seeds
+    random(1.,10.,frame,10 + dimension)
+
+With both forms, the values change after any edit of a parameter of the node or of a node
+upstream (an undo does not bring the previous values back), and two identical new nodes give
+different values. They only stay the same for a saved project that is not modified.
 
 For integers, use the :func:`randomInt(min,max)<>` function instead::
 

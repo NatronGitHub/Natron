@@ -156,7 +156,7 @@ void
 Curve::serialize(Archive & ar,
                  const unsigned int /*version*/)
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
     const int nonFiniteBefore = CurveSerializationDetail::nonFiniteValuesRead;
     ar & ::boost::serialization::make_nvp("KeyFrameSet", _imp->keyFrames);
     if ( Archive::is_loading::value && (CurveSerializationDetail::nonFiniteValuesRead != nonFiniteBefore) ) {

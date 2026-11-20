@@ -59,6 +59,7 @@ struct CustomParamInteractPrivate
     QSize preferredSize;
     double par;
     GLuint savedTexture;
+    bool inPaintGL; // paintGL() is calling kOfxInteractActionDraw
 
     CustomParamInteractPrivate(const KnobGuiPtr& knob,
                                void* ofxParamHandle,
@@ -69,12 +70,13 @@ struct CustomParamInteractPrivate
         , preferredSize()
         , par(0)
         , savedTexture(0)
+        , inPaintGL(false)
     {
         assert(entryPoint && ofxParamHandle);
         ofxParam = reinterpret_cast<OFX::Host::Param::Instance*>(ofxParamHandle);
         assert( ofxParam->verifyMagic() );
 
-        par = entryPoint->getProperties().getIntProperty(kOfxParamPropInteractSizeAspect);
+        entryPoint->getPixelAspectRatio(par); // kOfxParamPropInteractSizeAspect, a double
         int pW, pH;
         entryPoint->getPreferredSize(pW, pH);
         preferredSize.setWidth(pW);
@@ -136,6 +138,14 @@ CustomParamInteract::paintGL()
         OfxPointD scale;
         scale.x = scale.y = 1.;
         double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+        // inPaintGL is true during the Draw action, and false again when it returns or throws (see
+        // swapOpenGLBuffers())
+        struct InPaintGL_RAII
+        {
+            bool& flag;
+            explicit InPaintGL_RAII(bool& f) : flag(f) { flag = true; }
+            ~InPaintGL_RAII() { flag = false; }
+        } inPaintGL(_imp->inPaintGL);
         _imp->entryPoint->drawAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0);
         glCheckError();
     } // GLProtectAttrib a(GL_TRANSFORM_BIT);
@@ -177,7 +187,13 @@ CustomParamInteract::sizeHint() const
 void
 CustomParamInteract::swapOpenGLBuffers()
 {
-    update();
+    // "A parameter's interact draw function will have full responsibility for ... swapping buffers"
+    // (ofxInteracts.rst): the plug-in calls swapBuffers at the end of its Draw action. The QOpenGLWidget
+    // presents its frame buffer itself when paintGL() returns, so there is nothing to do then: update()
+    // would schedule another paintGL(), i.e. another Draw, and repaint forever.
+    if (!_imp->inPaintGL) {
+        update();
+    }
 }
 
 void

@@ -1,5 +1,5 @@
---- Portfile.orig	2026-11-16 10:49:37
-+++ Portfile	2026-11-16 11:50:10
+--- Portfile.orig	2026-11-20 08:07:24
++++ Portfile	2026-11-20 08:55:37
 @@ -97,6 +97,8 @@
                      port:libvorbis \
                      path:lib/pkgconfig/vpx.pc:libvpx \
@@ -9,27 +9,72 @@
                      port:soxr \
                      path:lib/libspeex.dylib:speex \
                      port:webp \
-@@ -140,6 +142,11 @@
- # warning: unknown warning option '-Werror=partial-availability'; did you mean '-Werror=availability'? [-Wunknown-warning-option]
+@@ -141,6 +143,28 @@
  # warning: unknown warning option '-Wno-bool-operation'; did you mean '-Wno-bool-conversion'? [-Wunknown-warning-option]
  compiler.blacklist-append {clang < 900}
-+
+ 
 +# gcc > 4.2 is required, https://trac.ffmpeg.org/ticket/1464
 +# WARNING: gcc 4.2 is outdated and may miscompile FFmpeg. Please use a newer compiler.
 +compiler.blacklist-append \
 +                    *gcc-4.0 *gcc-4.2
- 
++
++# Natron: subport ffmpeg-lgpl, the FFmpeg of COMMERCIAL Natron builds (#1302): the same version
++# and configuration as "ffmpeg +gpl2 +highbitdepth +natronmini", without +gpl2 (no x264, x265, Xvid
++# or vid.stab) and without libzvbi, so LGPL-2.1+. It is installed in ${prefix}/libexec/ffmpeg-lgpl, with no links in
++# ${prefix}/bin, so that it can be installed next to ffmpeg. tools/jenkins/common.sh uses it when
++# NATRON_LICENSE=COMMERCIAL.
++subport ffmpeg-lgpl {
++    description     LGPL build of FFmpeg for Natron (no GPL or nonfree code)
++    # before the default +gpl2 below: the first default of a variant wins
++    default_variants-append \
++                    -gpl2 \
++                    -gpl3 \
++                    -nonfree \
++                    -vmaf \
++                    +highbitdepth \
++                    +natronmini
++}
++
  # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
  # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
-@@ -163,6 +170,7 @@
+ default_variants-append +gpl2
+@@ -162,7 +186,35 @@
+ set port_sharedir   ${prefix}/share
  set port_docdir     ${port_sharedir}/doc/${my_name}
  
++if {${subport} eq "ffmpeg-lgpl"} {
++    set port_prefix     ${prefix}/libexec/${subport}
++    set port_sharedir   ${port_prefix}/share
++    set port_docdir     ${port_sharedir}/doc/${my_name}
++    configure.pre_args-delete \
++                    --prefix=${prefix}
++    configure.pre_args-append \
++                    --prefix=${port_prefix}
++
++    pre-configure {
++        if {[variant_isset gpl2] || [variant_isset gpl3] || [variant_isset nonfree]} {
++            return -code error "${subport} is the LGPL FFmpeg of Natron's COMMERCIAL builds: install it without +gpl2, +gpl3 or +nonfree"
++        }
++    }
++    # check the licence that "ffmpeg -L" and av*_license() report, and the configuration
++    post-build {
++        if {![catch {exec grep -E -e {--enable-(gpl|nonfree|version3)} ${worksrcpath}/config.h}]} {
++            return -code error "${subport} is configured with GPL, version3 or nonfree code"
++        }
++        foreach lib {libavcodec libavdevice libavfilter libavformat libavutil libswresample libswscale} {
++            if {[catch {exec grep -a -q "${lib} license: LGPL version 2.1 or later" {*}[glob ${worksrcpath}/${lib}/${lib}.*.dylib]}]} {
++                return -code error "${lib} of ${subport} is not LGPL 2.1 or later"
++            }
++        }
++    }
++}
++
  configure.pre_args-append \
 +                    --cxx="${configure.cxx}" \
                      --cc="${configure.cc}"
  
  configure.args-append \
-@@ -193,6 +201,8 @@
+@@ -193,6 +245,8 @@
                      --enable-libmodplug \
                      --enable-libmp3lame \
                      --enable-libopenjpeg \
@@ -38,35 +83,50 @@
                      --enable-libopus \
                      --enable-librsvg \
                      --enable-libsoxr \
-@@ -342,7 +352,16 @@
+@@ -209,6 +263,16 @@
+                     --enable-swscale \
+                     --enable-zlib
+ 
++# Natron: ffmpeg-lgpl has no teletext (after the configure.args above, which enable libzvbi):
++# libzvbi is GPL-2+ and is kept out of COMMERCIAL builds (maintainer's decision, 2026-11-20)
++if {${subport} eq "ffmpeg-lgpl"} {
++    depends_lib-delete \
++                    port:zvbi
++    configure.args-replace \
++                    --enable-libzvbi \
++                    --disable-libzvbi
++}
++
+ post-extract {
+     # fix file perms; tarball contents deny group and world read
+     system "find ${worksrcpath} -type d -print0 | xargs -0 chmod a+rx"
+@@ -342,6 +406,15 @@
                      --disable-dependency-tracking
  
  if {${universal_possible} && [variant_isset universal]} {
 +    # the following is inspired by the icu Portfile
 +    # if we can't run executables for the target arch, mark it as a cross-compile
-     foreach arch ${configure.universal_archs} {
++    foreach arch ${configure.universal_archs} {
 +        if {((${os.major} < 9 || [sysctl hw.cpu64bit_capable] == 0) && ($arch == "x86_64" || $arch == "ppc64"))
 +            || (${os.arch} == "powerpc" && ($arch == "x86_64" || $arch == "i386"))
 +            || (${os.arch} == "i386" && ($arch == "ppc" || $arch == "ppc64"))} {
 +            set merger_configure_args($arch) "--enable-cross-compile --target-os=${os.platform}"
 +        }
 +    }
-+    foreach arch ${configure.universal_archs} {
+     foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) \
-                     --arch=${arch}
-@@ -376,7 +395,25 @@
- test.run            yes
+@@ -377,6 +450,24 @@
  
  destroot.env-append V=1
-+
+ 
 +post-extract {
 +    if {${configure.cxx_stdlib} eq "libc++"} {
 +        # fix configure, which contains many references to libstdc++
 +        reinplace -E {s|-lstdc|-lc|g} ${worksrcpath}/configure
 +    }
 +}
- 
++
 +post-configure {
 +    if {[variant_isset universal]} {
 +        # fix *.pc for universal build (i386 version may miss these extra bits on Leopard)
@@ -81,12 +141,10 @@
  post-destroot {
      # Copy docs
      file mkdir ${destroot}${port_docdir}
-@@ -384,6 +421,46 @@
-     foreach f [glob ${worksrcpath}/doc/*.txt] {
-         file copy $f ${destroot}${port_docdir}
+@@ -386,6 +477,46 @@
      }
-+}
-+
+ }
+ 
 +variant natronmini requires highbitdepth conflicts x11 vmaf description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display, VMAF support.} {
 +
 +    depends_lib-delete \
@@ -125,10 +183,12 @@
 +                    --cc=${configure.cc} \
 +                    --cxx=${configure.cxx}
 +
- }
- 
++}
++
  variant x11 {
-@@ -448,6 +525,14 @@
+     # enable x11grab_xcb input device
+     depends_lib-append \
+@@ -448,6 +579,14 @@
                      path:lib/pkgconfig/gnutls.pc:gnutls
  }
  
@@ -143,7 +203,7 @@
  variant gpl2 description {Enable GPL code, license will be GPL-2+} {
      license         GPL-2+
  
-@@ -509,8 +594,11 @@
+@@ -509,8 +648,11 @@
                      port:libvmaf
  }
  

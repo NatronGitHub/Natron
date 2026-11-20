@@ -439,6 +439,8 @@ AppManager::loadFromArgs(const CLArgs& cl)
         // No trapped floating point exception, in any thread: before qApp, any OpenGL context and any
         // thread (see AppManagerPrivate::testModeNoTrap)
         boost_adaptbx::floating_point::trapping_disabled() = true;
+        // and in the child processes, e.g. NatronRenderer
+        qputenv("NATRON_NO_FP_TRAPS", "1");
         _imp->testModeNoTrap.reset(new boost_adaptbx::floating_point::no_exception_trapping);
 #endif
     }
@@ -2181,8 +2183,8 @@ AppManager::loadPythonGroups()
                 if ( line.startsWith( QString::fromUtf8("def createInstance(") ) ) {
                     isPyPlug = true;
                 }
-                // Or we could check if it implements getIsToolSet()
-                if ( line.startsWith( QString::fromUtf8("def getIsToolSet(") ) ) {
+                // Or we could check if it implements getIsToolset(), the name getGroupInfos() calls (#1262)
+                if ( line.startsWith( QString::fromUtf8("def getIsToolset(") ) ) {
                     isPyPlug = true;
                 }
                 // Or we could check for the magic line that is in the doc.
@@ -3519,9 +3521,13 @@ AppManager::initPython()
             throw std::runtime_error( tr("Error while loading StreamCatcher: %1").arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
         }
     }
-    // Set QT_API for QtPy
+    // Set QT_API for QtPy, to the PySide that matches the Qt version Natron is built with (#1262)
     // https://github.com/spyder-ide/qtpy
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    qputenv("QT_API", "pyside6");
+#else
     qputenv("QT_API", "pyside2");
+#endif
 } // AppManager::initPython
 
 void
@@ -4273,7 +4279,9 @@ raiseSystemExitAtPrompt(void*)
 bool
 NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
                                                std::string* error,
-                                               std::string* output)
+                                               std::string* output,
+                                               PyObject* globals,
+                                               PyObject* locals)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
 
@@ -4293,13 +4301,13 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
 #if 0 //USE_PYRUN_SIMPLESTRING
     status = PyRun_SimpleString(script.c_str());
 #else
-    PyObject* dict = PyModule_GetDict(mainModule);
+    PyObject* dict = globals ? globals : PyModule_GetDict(mainModule);
 
     PyErr_Clear();
 
     ///This is faster than PyRun_SimpleString since is doesn't call PyImport_AddModule("__main__")
     ++pythonScriptDepth;
-    PyObject* v = PyRun_String(script.c_str(), Py_file_input, dict, 0);
+    PyObject* v = PyRun_String(script.c_str(), Py_file_input, dict, locals);
     --pythonScriptDepth;
     if (v) {
         Py_DECREF(v);
@@ -4327,7 +4335,8 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
             PyObject *pyExcValue;
             PyObject *pyExcTraceback;
             PyErr_Fetch(&pyExcType, &pyExcValue, &pyExcTraceback); // also clears the error indicator
-            //PyErr_NormalizeException(&pyExcType, &pyExcValue, &pyExcTraceback);
+            // normalize, else traceback.format_exception() fails on a non-exception value (e.g. a tuple)
+            PyErr_NormalizeException(&pyExcType, &pyExcValue, &pyExcTraceback);
 
             PyObject* pyStr = PyObject_Str(pyExcValue);
             if (pyStr) {

@@ -1221,7 +1221,8 @@ CLArgsPrivate::parse()
         // A clean solution would be to separate the scriptName and the fileName with a comma.
         if ( it != args.end() && !it->startsWith( QChar::fromLatin1('-') ) ) {
             // Check that it's neither a python script, a natron project, nor a frame range.
-            QRegularExpression re( QRegularExpression::anchoredPattern( QString::fromUtf8("[0-9\\-,]*") ) ); // Matches frame ranges.
+            // Matches frame ranges, including those with a frame step (e.g. 30-50:2), see tryParseFrameRange().
+            QRegularExpression re( QRegularExpression::anchoredPattern( QString::fromUtf8("[0-9\\-,:]*") ) );
             if (!it->endsWith(QString::fromUtf8(".py"), Qt::CaseInsensitive) &&
                 !it->endsWith(QString::fromUtf8(".ntp"), Qt::CaseInsensitive) &&
                 !re.match(*it).hasMatch()) {

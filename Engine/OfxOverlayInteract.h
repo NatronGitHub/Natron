@@ -426,14 +426,16 @@ class OfxParamOverlayInteract
     : public OFX::Host::Interact::Instance, public NatronOverlayInteractSupport
 {
     OfxImageEffectInstance* _effect; // NULL after destroyInstanceAction()
-
-
+    // The parameter instance of the interact, which belongs to _effect, for the size properties (see
+    // getMinimumSize()), NULL after destroyInstanceAction().
+    OFX::Host::Param::Instance* _param;
 
 public:
 
     OfxParamOverlayInteract(KnobI* knob,
                             OFX::Host::Interact::Descriptor &desc,
-                            OfxImageEffectInstance* effect);
+                            OfxImageEffectInstance* effect,
+                            OFX::Host::Param::Instance* param);
 
 
     virtual ~OfxParamOverlayInteract()

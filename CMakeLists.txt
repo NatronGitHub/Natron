@@ -17,7 +17,9 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-cmake_minimum_required(VERSION 3.16.7)
+# 3.21: libs/OpenFX (added below with add_subdirectory()) requires it (NatronGitHub/openfx#196). The
+# policies are those of CMake 3.31, as in libs/OpenFX.
+cmake_minimum_required(VERSION 3.21...3.31)
 
 # The version is the one of Global/Macros.h (NATRON_VERSION_MAJOR/MINOR/REVISION), so that the
 # macOS Info.plist (CFBundleShortVersionString, CFBundleVersion) can't disagree with the
@@ -256,6 +258,7 @@ set(QT_COMPONENTS Core Gui Network Widgets Concurrent)
 if(NATRON_QT6)
     list(APPEND QT_COMPONENTS OpenGLWidgets)
     find_package(Qt6 6.3 CONFIG REQUIRED COMPONENTS ${QT_COMPONENTS})
+    # No CMP0148 counterpart of the Qt5 block below: Shiboken6Config.cmake uses FindPython3.
     find_package(Shiboken6 6.3 CONFIG REQUIRED COMPONENTS libshiboken6)
     find_package(Shiboken6Tools 6.3 CONFIG REQUIRED COMPONENTS shiboken6)
     find_package(PySide6 6.3 CONFIG REQUIRED COMPONENTS pyside6)
@@ -272,8 +275,16 @@ if(NATRON_QT6)
     set(PYSIDE_LIB PySide6::pyside6)
 else()
     find_package(Qt5 5.15 CONFIG REQUIRED COMPONENTS ${QT_COMPONENTS})
+    # Shiboken2 5.15's CMake config uses FindPythonInterp/FindPythonLibs (CMP0148). RB-2.6 only: remove in RB-2.7.
+    if(POLICY CMP0148)
+        cmake_policy(PUSH)
+        cmake_policy(SET CMP0148 OLD)
+    endif()
     find_package(Shiboken2 5.15 CONFIG QUIET COMPONENTS libshiboken2 shiboken2)
     find_package(PySide2 5.15 CONFIG QUIET COMPONENTS pyside2)
+    if(POLICY CMP0148)
+        cmake_policy(POP)
+    endif()
     if(NOT Shiboken2_FOUND AND NOT PySide2_FOUND)
         # No CMake config files (PySide2 built with setup.py, e.g. MacPorts' py*-pyside2,
         # or the download.qt.io wheels): locate them from the Python installation.
@@ -495,6 +506,8 @@ set(OFX_SUPPORTS_OPENGLRENDER ON)
 set(OFX_SUPPORTS_MULTITHREAD ON)
 set(OFX_SUPPORTS_DIALOG ON)
 set(OFX_SUPPORTS_PARAMETRIC ON)
+# openfx's HostSupport Python bindings (HostSupport/python, which needs nanobind): not used by Natron
+set(OFX_PYTHON_BINDINGS OFF)
 add_subdirectory(libs/OpenFX EXCLUDE_FROM_ALL)
 target_sources(OfxHost PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/libs/OpenFX_extensions/ofxhParametricParam.cpp)
 target_include_directories(OfxHost PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libs/OpenFX_extensions>)

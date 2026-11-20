@@ -3228,11 +3228,9 @@ DopeSheetView::resizeGL(int w,
     }
 
     glViewport(0, 0, w, h);
+    // w and h are in device-independent pixels, the unit of zoomContext: see CurveWidget::resizeGL() (#971)
     double zoomWidth = w;
     double zoomHeight = h;
-    double screenPixelRatio = getScreenPixelRatio();
-    zoomWidth /= screenPixelRatio;
-    zoomHeight /= screenPixelRatio;
 
     _imp->zoomContext.setScreenSize(zoomWidth, zoomHeight);
 
