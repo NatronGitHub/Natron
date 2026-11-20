@@ -7,7 +7,7 @@ These scripts build Natron for macOS in [tart](https://tart.run) virtual machine
 | SDK image (all build dependencies) | `natron-sdk` | `natron-sdk.sh` → local image `natron-sdk-sequoia` |
 | build | `natron-build` | `natron-build.sh` |
 
-The baseline for distribution is **macOS 15 Sequoia** (base image `ghcr.io/cirruslabs/macos-sequoia-xcode:latest`). The SDK is installed with the same procedure as the MacPorts section of `INSTALL_MACOS.md`: Xcode, MacPorts + the `tools/MacPorts` overlay, OSMesa/LLVM via [osmesa-install](https://github.com/devernay/osmesa-install), the MacPorts clang matching the OS, libraries, Qt5/PySide2, and the DMG tools.
+The SDK image runs **macOS 15 Sequoia** (base image `ghcr.io/cirruslabs/macos-sequoia-xcode:latest`), and everything in it is built for **macOS 14 Sonoma**, the oldest macOS that Natron 2.6 supports: MacPorts has `macosx_deployment_target 14.0` and `buildfromsource always` in `macports.conf` (its binary archives are built for the macOS they were made on), OSMesa/LLVM are built with `MACOSX_DEPLOYMENT_TARGET=14.0`, and `tools/jenkins/common.sh` builds Natron and the plug-ins for 14.0. The SDK is installed with the same procedure as the MacPorts section of `INSTALL_MACOS.md`: Xcode, MacPorts + the `tools/MacPorts` overlay, OSMesa/LLVM via [osmesa-install](https://github.com/devernay/osmesa-install), the MacPorts clang matching the OS, libraries, Qt5/PySide2, and the DMG tools.
 
 ## Requirements
 
@@ -37,6 +37,8 @@ Both `create` and `update` work on a copy named `natron-sdk-sequoia-wip`. The im
 
 If a step fails, the `-wip` VM is left running. Fix the cause on the host (for example in `tools/MacPorts`), then resume with `natron-sdk.sh create`, for both `create` and `update` (an interrupted update is finished first): steps that already succeeded are skipped, and `REDO="step…"` re-runs some of them. `update` re-runs only new steps and the steps you name: after adding a port to an existing step (e.g. `libs`), run `natron-sdk.sh update libs`. The logs are in `~admin/provision-logs/<step>.log` inside the VM. To look at them, source `tart-common.sh` and run `vm_ssh natron-sdk-sequoia-wip`.
 
+`create` and `update` also rebuild, from source and in dependency order, every installed port that has a Mach-O file built for a macOS newer than 14.0 (`step_rebuild_target`), and OSMesa/LLVM if they are (`step_osmesa`). On an image made before the deployment target was set, the first `update` therefore rebuilds almost every port, which takes many hours. A port still too new after its rebuild is listed in `~admin/provision-logs/rebuild_target.skip` and not rebuilt again until its version changes.
+
 Before `update`, reintegrate upstream MacPorts changes into the overlay on the host (`tools/MacPorts/check.sh`, see `tools/MacPorts/skills/macports-natron-upgrade/SKILL.md`). The `update` step only warns when the overlay is out of date.
 
 ## Build Natron
@@ -47,6 +49,8 @@ tools/tart/natron-build.sh -b RB-2.6 -t    # also run the unit/regression tests
 tools/tart/natron-build.sh -s qmake        # build Natron with the deprecated qmake build
 tools/tart/natron-build.sh -l COMMERCIAL   # a COMMERCIAL DMG, without GPL components (needs the ffmpeg-lgpl, libraw-lgpl and libheif-lgpl subports)
 ```
+
+At the end, `check-minos.sh` checks that every Mach-O file in the DMG (the executables, the bundled dylibs and frameworks, the Python framework and modules, and the OFX bundles) has a minimum macOS (`minos`) of 14.0 or older (`MACOS_MIN`). The build fails otherwise, and the files are listed in `<dmg name>-minos.txt` next to the DMG. `check-minos.sh [-t TARGET] [-v] PATH…` also works on directories, files, or any other DMG.
 
 Natron is built with CMake (`NATRON_BUILD_SYSTEM=cmake`, see `tools/jenkins/build-natron.sh`); `NATRON_EXTRA_CMAKE_FLAGS` in the environment is passed on to it.
 

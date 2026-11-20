@@ -8,7 +8,8 @@
 #   ~/Documents/third_party/osmesa-install   osmesa-install checkout
 #
 # Usage: provision.sh [STEP...]   (default: all SDK steps; finished steps are skipped)
-#   SDK steps: disk xcode macports overlay sync pins osmesa compiler tools libs python_qt dmgtools
+#   SDK steps: disk xcode macports macports_conf overlay sync pins osmesa compiler tools libs python_qt
+#              dmgtools rebuild_target fixups
 #   env:       REDO="step..." re-runs steps already marked done; PROXY=socks5h://... for internet access
 #   others:    sync (re-publish the overlay), update (refresh an existing SDK), cleanup (shrink the image), build (build Natron)
 # Logs:  ~/provision-logs/<step>.log ; done markers in ~/provision-logs/<step>.done
@@ -21,6 +22,12 @@ WORKSPACE=$HOME/Development/workspace
 LOGDIR=$HOME/provision-logs
 MACPORTS_VERSION=2.12.7
 JOBS=${MKJOBS:-$(sysctl -n hw.ncpu)}
+# Oldest macOS supported by Natron's macOS release (maintainer decision, 2026-11-18). Every port
+# (their dylibs are bundled), OSMesa/LLVM and Natron itself are built for it. MacPorts' binary
+# archives are built for the OS they were made on (minos 15.0 on Sequoia), so ports are built
+# from source. Keep in sync with NATRON_MACOS_MIN in tools/jenkins/common.sh.
+macos_target=14.0
+CHECK_MINOS=$NATRON/tools/tart/check-minos.sh
 export PATH=/opt/local/bin:/opt/local/sbin:$PATH
 
 os_major=$(uname -r | cut -d. -f1)
@@ -119,6 +126,26 @@ step_macports() {
     port version
 }
 
+# Build every port for $macos_target, and from source (see macos_target above), in macports.conf.
+# This applies to the ports built afterwards; step_rebuild_target rebuilds the installed ones.
+# macosx_sdk_version keeps MacPorts' default (this OS's SDK): an older deployment target with a
+# newer SDK is the normal setup, and Xcode only ships the newest SDK.
+# Never marked done: a MacPorts upgrade (step_macports) must not lose the settings.
+set_macports_conf() { # key value
+    local conf=/opt/local/etc/macports/macports.conf
+    if grep -q "^$1[[:space:]]" $conf; then
+        sudo perl -pi -e "s|^$1\\s.*|$1\\t$2|" $conf
+    else
+        printf '# Natron (tools/tart/provision.sh)\n%s\t%s\n' "$1" "$2" | sudo tee -a $conf > /dev/null
+    fi
+}
+step_macports_conf() {
+    set_macports_conf macosx_deployment_target "$macos_target"
+    set_macports_conf buildfromsource always
+    grep -E '^(macosx_deployment_target|macosx_sdk_version|buildfromsource)[[:space:]]' /opt/local/etc/macports/macports.conf
+    grep -q "^macosx_deployment_target[[:space:]]*$macos_target\$" /opt/local/etc/macports/macports.conf
+}
+
 # Fetch the ports tree over HTTPS (works through the SOCKS proxy; rsync would not).
 ports_https_source() {
     local conf=/opt/local/etc/macports/sources.conf
@@ -149,16 +176,26 @@ step_overlay() {
     port file openimageio | grep -q '^/opt/MacPorts-Natron/' || { echo "overlay not used"; exit 1; }
 }
 
+# OSMesa and LLVM are static libraries linked into Natron: build them for $macos_target too
+# (osmesa-install.sh honours MACOSX_DEPLOYMENT_TARGET). Rebuilt if built for a newer macOS.
+osmesa_ok() {
+    [ -f /opt/osmesa/lib/libMangledOSMesa32.a ] && [ -x /opt/llvm/bin/llvm-config ] &&
+        "$CHECK_MINOS" -t "$macos_target" /opt/osmesa/lib /opt/llvm/lib/libLLVMSupport.a > /dev/null
+}
 step_osmesa() {
-    if [ -f /opt/osmesa/lib/libMangledOSMesa32.a ] && [ -x /opt/llvm/bin/llvm-config ]; then return; fi
+    if osmesa_ok; then return; fi
+    if [ -d /opt/osmesa/lib ] || [ -d /opt/llvm/lib ]; then
+        echo "OSMesa/LLVM missing or built for a macOS newer than $macos_target: rebuilding them"
+        sudo rm -rf /opt/osmesa /opt/llvm
+    fi
     sudo mkdir -p /opt/osmesa /opt/llvm
     sudo chown "$(id -un):staff" /opt/osmesa /opt/llvm
     $PORT install python27 cmake autoconf automake libtool pkgconfig gsed
     sudo port select --set python python27
     mkdir -p "$OSMESA_SRC/build"
-    (cd "$OSMESA_SRC/build" && env LLVM_BUILD=1 MKJOBS="$JOBS" ../osmesa-install.sh)
+    (cd "$OSMESA_SRC/build" && env LLVM_BUILD=1 MKJOBS="$JOBS" MACOSX_DEPLOYMENT_TARGET="$macos_target" ../osmesa-install.sh)
     sudo port select --set python none
-    [ -f /opt/osmesa/lib/libMangledOSMesa32.a ] && [ -x /opt/llvm/bin/llvm-config ]
+    osmesa_ok
 }
 
 step_compiler() {
@@ -345,12 +382,86 @@ step_python_migrate() {
     fi
 }
 
+# The active ports that have a Mach-O file built for a macOS newer than $macos_target: installed
+# from MacPorts' binary archives, or built before step_macports_conf set the deployment target.
+ports_newer_than_target() {
+    local p rc
+    for p in $(port -q installed active | awk '{print $1}'); do
+        rc=0
+        port -q contents "$p" | "$CHECK_MINOS" -t "$macos_target" -l > /dev/null 2>&1 || rc=$?
+        case $rc in
+            0) ;;
+            1) echo "$p" ;;
+            *) echo "check-minos.sh failed (status $rc) on the files of $p" >&2; return 1 ;;
+        esac
+    done
+}
+
+# Print the given ports in dependency order (dependencies first; tsort(1) breaks cycles).
+deps_order() {
+    local set=" $* " p rest d
+    {
+        for p in "$@"; do echo "$p $p"; done
+        port -q info --line --name --depends_fetch --depends_extract --depends_patch \
+            --depends_build --depends_lib --depends_run "$@" |
+            while IFS=$'\t' read -r p rest; do
+                for d in $(echo "$rest" | tr ',' ' '); do
+                    case "$set" in *" $d "*) [ "$d" = "$p" ] || echo "$d $p" ;; esac
+                done
+            done
+    } | tsort 2>/dev/null
+}
+
+# Rebuild from source, for $macos_target, every installed port built for a newer macOS, in
+# dependency order (so that static libraries and headers come from rebuilt dependencies).
+# Resumable: a port is selected by its files, so the ports already rebuilt are skipped.
+# A port still too new after its rebuild (prebuilt binaries, or a build system ignoring
+# MACOSX_DEPLOYMENT_TARGET) is listed in rebuild_target.skip with its version, and only rebuilt
+# again when its version changes; the minos check of the DMG (check-minos.sh, natron-build.sh)
+# tells whether that matters. Never marked done: run after every update.
+step_rebuild_target() {
+    local skip=$LOGDIR/rebuild_target.skip p v todo=() failed=() n=0
+    touch "$skip"
+    local newer
+    newer=$(ports_newer_than_target)   # not in the for: a failure must stop the step
+    for p in $newer; do
+        v=$(port -q installed "$p" | awk '/\(active\)/ {print $2}')
+        if grep -qxF "$p $v" "$skip"; then
+            echo "$p $v: still built for a macOS newer than $macos_target after a rebuild, skipped"
+            continue
+        fi
+        todo+=("$p")
+    done
+    [ ${#todo[@]} -gt 0 ] || { echo "all installed ports are built for macOS $macos_target or older"; return 0; }
+    echo "===== ${#todo[@]} ports built for a macOS newer than $macos_target: ${todo[*]}"
+    for p in $(deps_order "${todo[@]}"); do
+        n=$((n + 1))
+        echo "===== [$n/${#todo[@]}] rebuilding $p for macOS $macos_target $(date '+%F %T')"
+        if ! $PORT -n -s upgrade --force "$p"; then
+            # the previous build stays installed: go on with the other ports, fail at the end
+            echo "ERROR: could not rebuild $p"
+            failed+=("$p")
+            continue
+        fi
+        if port -q contents "$p" | "$CHECK_MINOS" -t "$macos_target" -l; then :; else
+            v=$(port -q installed "$p" | awk '/\(active\)/ {print $2}')
+            echo "WARNING: $p $v is still built for a macOS newer than $macos_target"
+            echo "$p $v" >> "$skip"
+        fi
+    done
+    echo "===== ports still built for a macOS newer than $macos_target (see $skip):"
+    cat "$skip"
+    if [ ${#failed[@]} -gt 0 ]; then echo "===== ports that could not be rebuilt: ${failed[*]}"; return 1; fi
+}
+
 # Update an existing SDK image: refresh MacPorts and the overlay, upgrade outdated ports.
 step_update() {
     # resumable: "natron-sdk.sh create" re-runs the update while this marker exists
     date '+%F %T' > "$LOGDIR/update.pending"
     # MacPorts base: install the .pkg of MACPORTS_VERSION if it differs from the installed one
     step_macports
+    # build for $macos_target, from source (also after a MacPorts upgrade)
+    step_macports_conf
     ports_https_source
     (cd "$NATRON/tools/MacPorts" && { ./check.sh --all || true; }) | tee "$LOGDIR/check.txt"
     if grep -q "is obsolete\|is missing\|differs from upstream\|is unused\|has no Portfile" "$LOGDIR/check.txt"; then
@@ -394,7 +505,7 @@ step_update() {
         echo "===== installing ImageMagick7 +natron"
         $PORT install ImageMagick7 +natron -x11 -openexr
     fi
-    # rebuild OSMesa/LLVM only if missing (delete /opt/osmesa/lib to force a rebuild)
+    # rebuild OSMesa/LLVM if missing or built for a newer macOS (delete /opt/osmesa/lib to force a rebuild)
     step_osmesa
     rm -f "$LOGDIR/update.pending"
 }
@@ -433,9 +544,9 @@ step_build() {
     ls "$WORKSPACE"/builds_archive/natron_github_RB2/1/*.dmg
 }
 
-SDK_STEPS="disk xcode macports overlay sync pins osmesa compiler tools libs python_qt dmgtools fixups"
+SDK_STEPS="disk xcode macports macports_conf overlay sync pins osmesa compiler tools libs python_qt dmgtools rebuild_target fixups"
 # steps that are never marked done (they are meant to be re-run)
-NO_MARKER_STEPS="disk sync pins update fixups cleanup build"
+NO_MARKER_STEPS="disk macports_conf sync pins rebuild_target update fixups cleanup build"
 mkdir -p "$LOGDIR"
 # REDO="step ...": forget that these steps were done (e.g. after fixing a step)
 for s in ${REDO:-}; do rm -f "$LOGDIR/$s.done"; done

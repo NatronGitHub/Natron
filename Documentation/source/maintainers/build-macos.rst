@@ -101,6 +101,45 @@ global ``variants.conf`` is needed (a global ``+quartz`` would conflict with the
 Installing the dependencies is a long ``sudo port install ...`` sequence; it is
 maintained in ``INSTALL_MACOS.md`` — follow it there rather than duplicating it.
 
+.. _maint-macos-minimum-version:
+
+Minimum macOS version
+---------------------
+
+Natron 2.6 for macOS runs on **macOS 14 (Sonoma) or later** (maintainer
+decision, 2026-11-18), although the SDK image is built on macOS 15. Every
+Mach-O file in the ``.dmg`` must have a minimum macOS (``minos`` in
+``otool -l``'s ``LC_BUILD_VERSION``) of 14.0 or older:
+
+- ``tools/jenkins/common.sh`` exports ``MACOSX_DEPLOYMENT_TARGET=14.0``
+  (``NATRON_MACOS_MIN``) on macOS 14 and later, and the build Mac's own version
+  on older systems. An explicit ``MACOSX_DEPLOYMENT_TARGET`` wins.
+  ``compiler-common.sh`` keeps it. qmake gets it as
+  ``QMAKE_MACOSX_DEPLOYMENT_TARGET``, the plug-ins' CMake builds as
+  ``CMAKE_OSX_DEPLOYMENT_TARGET`` (``OFX_DEPLOY_STRICT_MINOS`` then rejects a
+  bundled library that is too new), and openfx's ``Makefile.master`` reads it
+  from the environment.
+- The bundled libraries, Qt, PySide2 and the Python framework come from
+  MacPorts, so ``macports.conf`` has ``macosx_deployment_target 14.0`` and
+  ``buildfromsource always``: MacPorts' binary archives are built for the macOS
+  they were made on. ``macosx_sdk_version`` keeps its default (the build OS's
+  SDK).
+- OSMesa and LLVM are built with ``MACOSX_DEPLOYMENT_TARGET=14.0``
+  (osmesa-install honours it).
+- ``tools/tart/check-minos.sh`` lists the Mach-O files (in directories, files,
+  or a ``.dmg``) that need a newer macOS than ``-t TARGET``.
+  ``tools/tart/natron-build.sh`` runs it on the ``.dmg`` and fails the build if
+  any file needs one. ``tools/tart/provision.sh`` uses it to find the installed
+  ports, and the OSMesa/LLVM builds, that must be rebuilt (``step_rebuild_target``).
+  For a MacPorts install outside tart, see "Building for an older macOS" in
+  ``INSTALL_MACOS.md``.
+
+To change the minimum version, change ``NATRON_MACOS_MIN`` in
+``tools/jenkins/common.sh``, ``macos_target`` in ``tools/tart/provision.sh``,
+and ``MACOS_MIN`` in ``tools/tart/natron-build.sh``, run
+``tools/tart/natron-sdk.sh update`` (which rebuilds the ports built for a
+newer target), and update the system requirements in the User Guide.
+
 .. _maint-macos-update-macports:
 
 Keeping the local MacPorts up to date
@@ -260,8 +299,9 @@ Release artifacts follow a common ``INSTALLER_BASENAME`` (assembled in
   builds. It is set during the **checkout** step; if you *resume* a build from a
   later step (``BUILD_FROM=4/5``) the checkout is skipped and this field can be
   empty, producing a ``--`` in the name.
-- ``macOS<version>`` comes from a ``sw_vers -productVersion`` ``case`` in
-  ``launchBuildMain.sh``. That table must list current OS versions; unlisted
+- ``macOS<version>`` is the oldest macOS the build runs on: it comes from a
+  ``case`` on ``MACOSX_DEPLOYMENT_TARGET`` (or ``sw_vers -productVersion`` if
+  it is unset) in ``launchBuildMain.sh``. That table must list current OS versions; unlisted
   versions fall through to the literal ``OSX``. It now covers 10.5–10.15, 11–16
   and the year-based 26–30, with a ``macOS<major>`` catch-all for the future.
   (The ``tools/docker/natron-sdk`` SDK build uses a *gitignored copy* of this
