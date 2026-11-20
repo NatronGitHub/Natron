@@ -471,3 +471,34 @@ TEST(LibTess,
         }
     }
 }
+
+// On this degenerate contour (overlapping edges and repeated points on a small
+// integer grid), CheckForRightSplice() merged the two endpoints of a zero-length
+// edge into a self-loop, and WalkDirtyRegions() then deleted it as a "two-edge
+// loop" while another active region still used it (heap-use-after-free, found
+// with AddressSanitizer). The polygon is now dropped with an error instead.
+// With assertions, an assertion of the sweep fails before (in AddRightEdges()).
+#ifdef NDEBUG
+TEST(LibTess,
+     SelfLoopDoesNotUseFreedEdge)
+{
+    const TessPoint p[] = {
+        { 4, 4 }, { 1, 1 }, { 1, 5 }, { 2, 2 }, { 3, 3 }, { 4, 5 }, { 0, 0 }, { 2, 3 }, { 0, 4 }, { 3, 0 },
+        { 0, 3 }, { 5, 4 }, { 0, 4 }, { 1, 0 }, { 4, 5 }, { 0, 3 }, { 5, 1 }, { 1, 5 }, { 0, 0 }, { 4, 0 },
+        { 1, 2 }, { 5, 3 }, { 1, 0 }, { 0, 3 }, { 5, 2 }, { 5, 5 }, { 0, 3 }, { 3, 5 }, { 5, 0 }, { 0, 4 },
+        { 3, 0 }, { 1, 3 }, { 3, 2 }, { 0, 2 }, { 2, 5 }, { 4, 1 }, { 1, 2 }, { 3, 1 }, { 0, 1 }, { 0, 3 },
+        { 4, 1 }
+    };
+    std::vector<TessPoint> c( p, p + sizeof(p) / sizeof(p[0]) );
+    TessResult r = tessellate(c);
+
+    EXPECT_TRUE( hasError(r, LIBTESS_GLU_INVALID_OPERATION) );
+    EXPECT_EQ(0, r.protocolErrors);
+
+    // the tessellator is still usable
+    std::vector<TessPoint> square = circle(4, 1.);
+    TessResult r2 = tessellate(square);
+    EXPECT_TRUE( r2.errors.empty() );
+    EXPECT_EQ(0, countCoverageErrors(square, r2) );
+}
+#endif // NDEBUG

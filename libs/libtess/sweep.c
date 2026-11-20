@@ -836,6 +836,16 @@ static void WalkDirtyRegions( GLUtesselator *tess, ActiveRegion *regUp )
 	(void) CheckForRightSplice( tess, regUp );
       }
     }
+    if( eLo == eUp->Sym ) {
+      /* Natron: eUp is a self-loop (eUp->Org == eUp->Dst), which
+       * CheckForRightSplice() can make by merging the endpoints of a
+       * zero-length edge, and which is in the dictionary in both directions.
+       * The case below would delete eUp, which also frees eUp->Sym, the
+       * upper edge of regLo, which the sweep then used after it was freed.
+       * The sweep can't recover from this state: give up on the polygon.
+       */
+      longjmp(tess->env,TESS_JMP_DEGENERATE);
+    }
     if( eUp->Org == eLo->Org && eUp->Dst == eLo->Dst ) {
       /* A degenerate loop consisting of only two edges -- delete it. */
       AddWinding( eLo, eUp );

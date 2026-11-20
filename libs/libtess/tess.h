@@ -121,6 +121,8 @@ struct GLUtesselator {
 				    void *polygonData );
 
   jmp_buf env;			/* place to jump to when memAllocs fail */
+#define TESS_JMP_DEGENERATE 2	/* Natron: longjmp() value for an unhandled
+                                   degeneracy (1 is out of memory) */
 
   void *polygonData;		/* client data for current polygon */
 };

@@ -539,7 +539,18 @@ gluTessEndPolygon( GLUtesselator *tess )
 {
   GLUmesh *mesh;
 
-  if (setjmp(tess->env) != 0) { 
+  switch (setjmp(tess->env)) {
+  case 0:
+     break;
+  case TESS_JMP_DEGENERATE:
+     /* Natron: the sweep met a degeneracy it cannot handle (see
+      * WalkDirtyRegions()): drop the polygon */
+     CALL_ERROR_OR_ERROR_DATA( GLU_INVALID_OPERATION );
+     __gl_sweepCleanup( tess );
+     MakeDormant( tess );
+     tess->polygonData= NULL;
+     return;
+  default:
      /* come back here if out of memory */
      CALL_ERROR_OR_ERROR_DATA( GLU_OUT_OF_MEMORY );
      /* Natron: free the sweep structures and the mesh, which leaked: the
