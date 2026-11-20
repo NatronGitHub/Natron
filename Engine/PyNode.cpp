@@ -220,6 +220,25 @@ Effect::getInternalNode() const
 }
 
 bool
+Effect::operator==(const Effect& other) const
+{
+    return getInternalNode() == other.getInternalNode();
+}
+
+bool
+Effect::operator!=(const Effect& other) const
+{
+    return !(*this == other);
+}
+
+std::size_t
+hashEffect(const Effect* effect)
+{
+    // The address of the node: never -1, which Python reserves for errors. 0 for a destroyed node.
+    return effect ? reinterpret_cast<std::size_t>( effect->getInternalNode().get() ) : 0;
+}
+
+bool
 Effect::isReaderNode()
 {
     NodePtr n = getInternalNode();

@@ -68,6 +68,7 @@ set(Tests_SOURCES
     OSGLContext_Test.cpp
     PluginGrouping_Test.cpp
     ProjectAutoSave_Test.cpp
+    PyEffectEquality_Test.cpp
     ReadNodeOverlay_Test.cpp
     RenderThreadSafety_Test.cpp
     RenderThreads_Test.cpp

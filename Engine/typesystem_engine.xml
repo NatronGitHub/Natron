@@ -972,7 +972,8 @@
         </modify-function>
     </object-type>
         
-    <object-type name="Effect" copyable="false">
+    <!-- Effects are equal (operator==) if they refer to the same node, and hashEffect() keeps them hashable (#777) -->
+    <object-type name="Effect" copyable="false" hash-function="hashEffect">
         <inject-documentation format="target">
             This object represents a single node in Natron, that is, an instance of a plug-in.
             You cannot create Effects directly by calling their constructor, instead you must use the
