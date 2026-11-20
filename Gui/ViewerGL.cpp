@@ -1580,6 +1580,10 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
                                         const Point& viewportCenter,
                                         bool isPartialRect)
 {
+    if (!texture) {
+        // nothing was uploaded, see transferBufferFromRAMtoGPU()
+        return;
+    }
     if (recenterViewer) {
         QMutexLocker k(&_imp->zoomCtxMutex);
         double curCenterX = ( _imp->zoomCtx.left() + _imp->zoomCtx.right() ) / 2.;
@@ -1660,6 +1664,12 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    if ( !isValid() || !_imp->displayTextures[textureIndex].texture ) {
+        // No OpenGL context: the widget is hidden and its context was destroyed (see
+        // onContextAboutToBeDestroyed()). initializeGL() renders the frame again; *texture stays
+        // null, and endTransferBufferFromRAMToGPU() ignores it.
+        return;
+    }
     assert( QOpenGLContext::currentContext() == context() );
     GLenum e = glGetError();
     Q_UNUSED(e);
@@ -2792,6 +2802,10 @@ ViewerGL::setParametricParamsPickerColor(const OfxRGBAColourD& color, bool setCo
 bool
 ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
 {
+    if (!_imp->displayTextures[texIndex].texture) {
+        // No OpenGL context (see transferBufferFromRAMtoGPU()): initializeGL() renders the frame again
+        return true;
+    }
 
     unsigned int mipmapLevel = std::max(getInternalNode()->getMipmapLevelFromZoomFactor(), getInternalNode()->getMipmapLevel());
     int closestPo2 = 1 << mipmapLevel;
