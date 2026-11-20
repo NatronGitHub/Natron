@@ -37,6 +37,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QElapsedTimer>
 #include <QtCore/QPointer>
+#include <QtCore/QStringList>
 #include <QtCore/QThread>
 #include <QtCore/QTimer>
 #include <QAction>
@@ -252,12 +253,53 @@ rejectUnexpected(QWidget* window,
     }
 }
 
-// Finds the item with that text (without '&') in the menu, or else in its submenus (breadth first):
+bool findMenuItemByText(QMenu* menu, const QString& itemText, QList<QAction*>* path);
+
+bool
+usableMenuItem(const QAction* a)
+{
+    return !a->isSeparator() && a->isVisible() && a->isEnabled();
+}
+
+// Finds the item with that text (without '&') in the menu, or else in its submenus (breadth first: the
+// first match wins), or else the item at that path ("Other/Dot": the item texts separated by '/'):
 // *path is the submenu items to open, then the item.
 bool
 findMenuItem(QMenu* menu,
              const QString& itemText,
              QList<QAction*>* path)
+{
+    if ( findMenuItemByText(menu, itemText, path) ) {
+        return true;
+    }
+    const QStringList parts = itemText.split( QLatin1Char('/') );
+    if (parts.size() < 2) {
+        return false;
+    }
+    path->clear();
+    QMenu* m = menu;
+    for (int i = 0; i < parts.size(); ++i) {
+        QAction* found = 0;
+        for (QAction* a : m ? m->actions() : QList<QAction*>()) {
+            if ( usableMenuItem(a) && (a->text().remove( QLatin1Char('&') ) == parts[i]) ) {
+                found = a;
+                break;
+            }
+        }
+        if (!found) {
+            return false;
+        }
+        path->push_back(found);
+        m = found->menu();
+    }
+
+    return true;
+}
+
+bool
+findMenuItemByText(QMenu* menu,
+                   const QString& itemText,
+                   QList<QAction*>* path)
 {
     QList<QList<QAction*> > queue;
 
@@ -267,7 +309,7 @@ findMenuItem(QMenu* menu,
     while ( !queue.isEmpty() ) {
         const QList<QAction*> p = queue.takeFirst();
         QAction* a = p.back();
-        if ( a->isSeparator() || !a->isVisible() || !a->isEnabled() ) {
+        if ( !usableMenuItem(a) ) {
             continue;
         }
         if ( a->text().remove( QLatin1Char('&') ) == itemText ) {
@@ -288,7 +330,7 @@ findMenuItem(QMenu* menu,
 // A modal dialog, or a popup (a menu), is shown. They are shown as usual, so that the tests run the real
 // code, and the next answer of setDialogAnswers() answers them:
 // - a button name ("ok", "yes"...) clicks that standard button of a dialog;
-// - for a menu, the text of the item to trigger, in the menu or its submenus;
+// - for a menu, the text of the item to trigger, in the menu or its submenus, or its path ("Other/Dot");
 // - a callable is called with (title, text, className): it may return one of the above, or None if it
 //   handled the window itself (e.g. through PySide's QApplication.activeModalWidget()).
 // A window that the test does not answer is unexpected: it is closed, and the test fails.

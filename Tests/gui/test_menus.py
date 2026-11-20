@@ -27,7 +27,7 @@ gen = app.createNode(GENERATOR)
 check(gen is not None, "createNode(%s) failed" % GENERATOR)
 wait_idle()
 
-# a top-level item of the menu: "Duplicate Nodes" (QMenu::exec() returns it)
+# "Duplicate Nodes", in the Edit submenu (QMenu::exec() of the node graph menu returns it)
 app.clearSelection()
 app.selectNode(gen, True)
 before = len(nodes_of(GENERATOR))
@@ -41,14 +41,14 @@ check(len(log) == 1 and log[0]["type"] == "menu" and log[0]["answer"] == "Duplic
 check(len(nodes_of(GENERATOR)) == before + 1,
       "Duplicate Nodes did not duplicate %s: %d nodes" % (gen.getScriptName(), len(nodes_of(GENERATOR))))
 
-# an item in a submenu: Other > Dot (the submenu is opened on the way, and is not answered again)
+# an item given by its path: Other > Dot (the submenus are opened on the way, and are not answered again)
 DOT = "fr.inria.built-in.Dot"
 before = len(nodes_of(DOT))
 NatronGuiTest.clearDialogLog()
-NatronGuiTest.setDialogAnswers(["Dot"])
+NatronGuiTest.setDialogAnswers(["Other/Dot"])
 right_click("NodeGraph", x - 300, y - 300)  # empty area
 log = NatronGuiTest.getDialogLog()
-check(len(log) == 1 and log[0]["answer"] == "Dot", "dialog log: %r" % log)
+check(len(log) == 1 and log[0]["answer"] == "Other/Dot", "dialog log: %r" % log)
 check(len(nodes_of(DOT)) == before + 1, "the Dot item of the Other submenu did not create a Dot")
 
 print("dialogs: %r" % NatronGuiTest.getDialogLog())
