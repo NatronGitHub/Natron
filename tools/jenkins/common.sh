@@ -479,10 +479,12 @@ BOOST_ROOT="$SDK_HOME"
 
 PKG_CONFIG_PATH=
 if [ "$PKGOS" = "Linux" ]; then
-    PATH="$SDK_HOME/bin:$QTDIR/bin:$SDK_HOME/gcc/bin:$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$PATH"
-    LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib64:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
-    LD_LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib64:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
-    #LD_RUN_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
+    # The compiler is gcc-toolset (Rocky Linux 9), and its C++ runtime is the system one:
+    # don't use the SDK's old self-built GCC ($SDK_HOME/gcc).
+    PATH="$SDK_HOME/bin:$QTDIR/bin:$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$PATH"
+    LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
+    LD_LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
+    #LD_RUN_PATH="$SDK_HOME/lib:$QTDIR/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
     PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig:$SDK_HOME/libdata/pkgconfig:$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$PYTHON_HOME/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 elif [ "$PKGOS" = "Windows" ]; then
     PKG_CONFIG_PATH="$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$(cygpath -u ${PYTHON_HOME})/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
