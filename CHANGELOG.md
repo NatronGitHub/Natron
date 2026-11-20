@@ -13,6 +13,7 @@
 
 ### Changes
 
+- Python: two `Effect` objects that refer to the same node are equal (`app.getNode("Blur1") == app.getNode("Blur1")`), and have the same hash, so `node in group.getChildren()` works; they used to compare the Python objects. #777
 - Documentation: the Reference Guide has a "Nodes" section, with one page per node group and per sub-group (e.g. "G'MIC / Colors"), and the sidebar only expands the current branch.
 
 

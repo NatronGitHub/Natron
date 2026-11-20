@@ -101,3 +101,63 @@ TEST(PyEffect, EqualityAndHash)
     dot1->destroyNode(true, false);
     dot2->destroyNode(true, false);
 }
+
+// An Effect whose node is gone is only equal to itself (two null nodes would compare equal otherwise).
+// Effect.destroy() doesn't free the node at once in background mode, so this uses Effects without a node.
+TEST(PyEffect, NoNodeOnlyEqualsItself)
+{
+    typedef NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::Effect PyEffect;
+    PyEffect dead1( (NodePtr()) ), dead2( (NodePtr()) );
+
+    EXPECT_TRUE(dead1 == dead1);
+    EXPECT_FALSE(dead1 == dead2);
+    EXPECT_TRUE(dead1 != dead2);
+
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ASSERT_TRUE( bool(app) );
+    NodePtr dot = createDot(app);
+    ASSERT_TRUE( bool(dot) );
+    {
+        PyEffect alive(dot);
+        EXPECT_FALSE(alive == dead1);
+        EXPECT_FALSE(dead1 == alive);
+    }
+    dot->destroyNode(true, false);
+}
+
+// The hash of an Effect doesn't change when its node is destroyed, so it can still be found in a set or dict.
+TEST(PyEffect, DestroyedNode)
+{
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ASSERT_TRUE( bool(app) );
+    NodePtr dot1 = createDot(app);
+    NodePtr dot2 = createDot(app);
+    ASSERT_TRUE( dot1 && dot2 );
+    const std::string name1 = dot1->getScriptName();
+    const std::string name2 = dot2->getScriptName();
+    // Only Python refers to the nodes: destroy() deletes them
+    dot1.reset();
+    dot2.reset();
+
+    const std::string app_ = app->getAppIDString();
+    const std::string script =
+        "a = " + app_ + ".getNode('" + name1 + "')\n"
+        "aAgain = " + app_ + ".getNode('" + name1 + "')\n"
+        "b = " + app_ + ".getNode('" + name2 + "')\n"
+        "h = hash(a)\n"
+        "s = set([a, b])\n"
+        "d = {a: 1}\n"
+        "a.destroy()\n"
+        "b.destroy()\n"
+        "assert hash(a) == h\n"
+        "assert a in s\n"
+        "assert d[a] == 1\n"
+        "assert a == a\n"
+        "assert a != b\n"
+        "s.remove(a)\n"
+        "del a, aAgain, b, h, s, d\n";
+    std::string err, output;
+    bool ok = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, &output);
+    EXPECT_TRUE(ok) << script << err;
+    EXPECT_EQ(std::string(), err) << script;
+}

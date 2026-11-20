@@ -95,6 +95,9 @@ put in a set or used as dictionary keys::
     assert node == app.getNode("Blur1")
     assert node in app.getChildren()
 
+The hash doesn't change when the node is destroyed, and an Effect whose node was destroyed
+is only equal to itself.
+
 Up to Natron 2.5, ``==`` compared the Python objects, and was always *False* for two calls to
 :func:`getNode()<NatronEngine.Group.getNode>`
 (`issue #777 <https://github.com/NatronGitHub/Natron/issues/777>`_): compare the
