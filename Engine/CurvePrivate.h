@@ -28,8 +28,7 @@
 
 #include "Global/Macros.h"
 
-#include <QMutex>
-#include <QRecursiveMutex>
+#include <mutex>
 
 #include "Engine/Variant.h"
 #include "Engine/Knob.h"
@@ -64,7 +63,9 @@ struct CurvePrivate
     CurveTypeEnum type;
     double xMin, xMax;
     double yMin, yMax;
-    mutable QRecursiveMutex _lock;
+    // std::recursive_mutex rather than QRecursiveMutex: render threads lock it for every curve
+    // evaluation, and the non-futex QMutex of Qt 5 (macOS) can lose a wake-up on arm64 (#1451).
+    mutable std::recursive_mutex _lock;
 
     bool isParametric;
     bool isPeriodic;
