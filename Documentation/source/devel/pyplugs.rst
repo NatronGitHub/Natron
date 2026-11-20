@@ -12,3 +12,12 @@ create, write and distribute them.
 
     groups.rst
     pyplug-writing.rst
+
+Start with :ref:`the steps of Writing a PyPlug<pyplugWriting-path>`, which go from a first PyPlug to its distribution, and end
+with :ref:`the most frequent mistakes<pyplugWriting-pitfalls>`. The other pages about PyPlugs are:
+
+- :ref:`callbacks`: the functions that Natron calls when a parameter, an input or the project
+  changes;
+- :ref:`natronPath`: where Natron looks for PyPlugs, and ``NATRON_PLUGIN_PATH``;
+- :ref:`startupScripts`: ``init.py`` and ``initGui.py``, which run before the PyPlugs are loaded;
+- :ref:`debuggingPython`: where the errors of PyPlugs and callbacks are shown.

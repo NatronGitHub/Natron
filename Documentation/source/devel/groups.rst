@@ -106,6 +106,8 @@ and the node on the node-graph has a green "E" indicator.
     :align: center
 
 
+.. _groups-export:
+
 Exporting a group
 ------------------
 
@@ -113,7 +115,7 @@ Once your group is setup correctly, you can *export* it as a Python script that 
 generate automatically. We call them *PyPlugs*.
 
 To do so, click the **Export as PyPlug** button in the "Node" page of the settings panel
-of the Group node.
+of the Group node. The Group must contain an *Output* node.
 
 .. figure:: exportButton.png
     :width: 400px
@@ -130,21 +132,32 @@ have an icon too.
     :width: 400px
     :align: center
 
-The *Label* is the name of the plug-in as it will appear in the user interface. It should not
-contain spaces or non Python friendly characters as it is going to be used as variable names
-in several places.
+The *Unique ID* identifies the plug-in, in projects and in scripts, e.g.
+``org.mystudio.MyBlurGroup`` (see :ref:`pyplugWriting-versions`). If you leave it empty, Natron
+uses the label.
 
-The *Grouping* is the tool-button under which the plug-in should appear. It accepts
-sub-menus notation like this: "Inria/StereoGroups"
+The *Label* is the name of the plug-in as it will appear in the user interface. It is also the
+name of the Python file, ``<Label>.py``: Natron replaces its spaces with underscores, and removes
+the other characters that a Python module name can't contain.
 
+The *Grouping* is the menu where the plug-in appears, with ``/`` between the sub-menus, e.g.
+``Filter/MyStudio`` (see :ref:`pyplugWriting-menus`).
 
-The *Icon relative path* is the filepath to an image which should be used as icon for the plug-in.
-Note that it is a relative path to the location of the python script.
+The *Version* is the major version of the plug-in, 1 by default. Increase it when a change
+modifies the result of existing projects.
 
-The *directory* is the location where the script should be written to.
+The *Icon relative path* is the file name of an image to use as icon for the plug-in, relative to
+the directory of the Python script, e.g. ``MyBlurGroup.png``.
+
+The *Description* is shown by the **?** button of the settings panel of the node.
+
+The *Directory* is where the script is written.
 For the plug-in to be loaded by Natron, it should be in its :ref:`search-paths<natronPath>`
 hence if you select a directory that is not yet in the search-paths, it will prompt you
 to add it.
+
+When the Group was made from a PyPlug (see :ref:`pyplugWriting-update`), the dialog starts with
+the values of that PyPlug.
 
 
 .. note::
@@ -174,26 +187,10 @@ and even in the tab menu of the node-graph:
 
     If several plug-ins have the same *pluginID*, Natron will then sort plug-ins by version.
 
-The version of a plug-in by default when exporting it via Natron is 1.
-
-.. warning::
-
-    If 2 plug-ins happen to have the same pluginID and version, Natron will then load the first one
-    found in the search paths.
-
-To change the **pluginID** and **version** of your group plug-in, you must implement the 2
-following functions in the python script of the group::
-
-    # This function should return an int specifying the version of the plug-in
-    # If not implemented, Natron will use 1 by default
-    def getVersion():
-        return VERSION
-
-    # This function should return a string specifying the ID of the plug-in, for example
-    # "fr.inria.groups.customBlur"
-    # If not implemented, Natron will use the label as a pluginID
-    def getPluginID():
-        return UNIQUE_ID
+The exported script returns the *Unique ID* and the *Version* from its ``getPluginID()`` and
+``getVersion()`` functions. To change them, export the Group again rather than editing the
+script. See :ref:`pyplugWriting-versions`, and :ref:`pyplugWriting-ext` for what the script
+contains.
 
 
 Exporting a project as group
@@ -224,8 +221,10 @@ From the "File" menu, select "Export project as group".
 Moving nodes between groups
 ----------------------------
 
-You can create a group from the selection in Natron by holding CTRL+SHIFT+G.
-This will effectively move all nodes selected into a new sub-group
+You can create a group from the selection with *Group from Selection* (:kbd:`Ctrl+G`,
+:kbd:`Cmd+G` on macOS), in the *Edit* sub-menu of the right-click menu of the node graph.
+This will effectively move all nodes selected into a new sub-group.
+*Expand Group* (:kbd:`Ctrl+Alt+G`) moves the nodes of the selected group back into its parent.
 
 You can also copy/cut/paste in-between groups and projects.
 
