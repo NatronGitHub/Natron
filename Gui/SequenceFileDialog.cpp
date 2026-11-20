@@ -1793,8 +1793,9 @@ SequenceFileDialog::showFilterMenu()
 
     QStringList filters = _filters;
     if (filters.size() > 1) {
-        // make sure *.* is first if we got multiple filters (for easy access)
+        // make sure the filter with all the extensions and *.* come first if we got multiple filters (for easy access)
         filters.prepend( QString::fromUtf8("*.*") );
+        filters.prepend( combinedFilter() );
     } else {
         filters << QString::fromUtf8("*.*");
     }
@@ -1805,7 +1806,9 @@ SequenceFileDialog::showFilterMenu()
         if ( !filter.contains( QString::fromUtf8("*") ) ) {
             filter.prepend( QString::fromUtf8("*.") );
         }
-        QAction *filterAction = new QAction(filter, this);
+        // the filter with all the extensions may be very long (e.g. all the formats a Read node can read)
+        QAction *filterAction = new QAction(fm.elidedText(filter, Qt::ElideRight, 400), this);
+        filterAction->setData(filter);
         QObject::connect( filterAction, SIGNAL(triggered()), this, SLOT(handleFilterSlot()) );
         actions.append(filterAction);
     }
@@ -1827,7 +1830,7 @@ SequenceFileDialog::handleFilterSlot()
         return;
     }
 
-    QString filter = action->text();
+    QString filter = action->data().toString();
     if ( filter.isEmpty() ) {
         return;
     }
@@ -1846,9 +1849,29 @@ SequenceFileDialog::setDefaultFilter()
     QString filter = QString::fromUtf8("*.*");
     if (_filters.size() == 1) { // only set if we got a single filter (ntp/nl/nps etc)
         filter = QString::fromUtf8("*.%1").arg( _filters.at(0) );
+    } else if ( (_filters.size() > 1) && (_dialogMode == eFileDialogModeOpen) ) {
+        // several extensions: show the files that have any of them (the filter is a space-separated list of patterns)
+        filter = combinedFilter();
     }
     _filterLineEdit->setText(filter);
     applyFilter(filter);
+}
+
+QString
+SequenceFileDialog::combinedFilter() const
+{
+    QStringList patterns;
+
+    for (int i = 0; i < _filters.size(); ++i) {
+        const QString& f = _filters[i];
+        if ( f.contains( QLatin1Char('*') ) ) {
+            patterns << f;
+        } else {
+            patterns << QString::fromUtf8("*.") + f;
+        }
+    }
+
+    return patterns.join( QLatin1Char(' ') );
 }
 
 void
