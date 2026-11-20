@@ -18,6 +18,7 @@
 - OpenFX: the text of plug-in messages with arguments (errors, warnings, logs, and the messages shown on nodes and in the viewer) is no longer garbage. #1483
 - OpenFX: the multithread, message, progress, timeline and OpenGL render suites return the status codes of OFX 1.5.1. #1385
 - OpenFX: `paramDeleteKey` returns `kOfxStatErrBadIndex` when there is no key at that time, and `paramGetKeyIndex` finds the previous key of a key; the parametric parameter suite returns `kOfxStatErrBadIndex` for a bad curve or control point index. Plug-ins built with an OpenFX Support library older than 0bec2e63 throw on `kOfxStatErrBadIndex` from `deleteKeyAtTime()` (e.g. clearing a frame without a key). #1385
+- NatronRenderer (and `Natron -b`) exits with status 1, without rendering the Write nodes, when the Python script given on the command line (also in its `createInstance()`) or the `--onload` script raises an exception. A failing `--onload` script now also stops the render of a project (.ntp) that loaded without error. Renders started by the script with `app.render()` before the error have already run. It used to print the error, render the Write nodes, and exit with status 0. #1276
 - Documentation: the Reference Guide has a "Nodes" section, with one page per node group and per sub-group (e.g. "G'MIC / Colors"), and the sidebar only expands the current branch.
 
 

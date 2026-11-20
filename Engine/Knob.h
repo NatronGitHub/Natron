@@ -32,6 +32,7 @@
 #include <string>
 #include <set>
 #include <map>
+#include <mutex>
 
 #include <QReadWriteLock>
 #include <QMutex>
@@ -2092,7 +2093,7 @@ public:
     void getExpressionResults(int dim,
                               FrameValueMap& map)
     {
-        QMutexLocker k(&_valueMutex);
+        std::lock_guard<std::recursive_mutex> k(_valueMutex);
 
         map = _exprRes[dim];
     }
@@ -2135,7 +2136,7 @@ private:
 
     int get_SetValueRecursionLevel() const
     {
-        QMutexLocker l(&_setValueRecursionLevelMutex);
+        std::lock_guard<std::recursive_mutex> l(_setValueRecursionLevelMutex);
 
         return _setValueRecursionLevel;
     }
@@ -2144,7 +2145,7 @@ private:
 
     virtual void clearExpressionsResults(int dimension) OVERRIDE FINAL
     {
-        QMutexLocker k(&_valueMutex);
+        std::lock_guard<std::recursive_mutex> k(_valueMutex);
 
         _exprRes[dimension].clear();
         ++_exprResGeneration;
@@ -2237,7 +2238,10 @@ private:
     typedef std::shared_ptr<QueuedSetValueAtTime> QueuedSetValueAtTimePtr;
 
     ///Here is all the stuff we couldn't get rid of the template parameter
-    mutable QRecursiveMutex _valueMutex;
+    // The value mutexes are std::recursive_mutex rather than QRecursiveMutex: render threads
+    // lock them on every getValue(), and the non-futex QMutex of Qt 5 (macOS) can lose a
+    // wake-up on arm64 (#1451).
+    mutable std::recursive_mutex _valueMutex;
 
     std::vector<T> _values, _guiValues;
 
@@ -2255,12 +2259,12 @@ private:
     //Only for double and int
     mutable QReadWriteLock _minMaxMutex;
     std::vector<T>  _minimums, _maximums, _displayMins, _displayMaxs;
-    mutable QRecursiveMutex _setValuesQueueMutex;
+    mutable std::recursive_mutex _setValuesQueueMutex;
 
     std::list<std::shared_ptr<QueuedSetValue> > _setValuesQueue;
 
     ///this flag is to avoid recursive setValue calls
-    mutable QRecursiveMutex _setValueRecursionLevelMutex;
+    mutable std::recursive_mutex _setValueRecursionLevelMutex;
 
     int _setValueRecursionLevel;
 };

@@ -118,7 +118,7 @@ Do NOT hand-edit ``index.rst`` (except to add a whole new guide to the toctree),
   null locks nothing) and ``QtCompat::QEnterEvent`` (for ``enterEvent``
   overrides) in ``Global/QtCompat.h``.
 - **To do:** validate PySide6 bindings and the Qt6 GUI at run time (enum/flag
-  issue #854, ``QT_API=pyside2`` #1262); Qt6 CI build (nightly/on demand, not
+  issue #854; ``QT_API`` is ``pyside6`` with Qt6, #1262); Qt6 CI build (nightly/on demand, not
   per PR); C++20 with Qt6 (#1148). No more Qt6 work on the deprecated qmake
   build (CMake is the Qt6 build). Qt5-preserving Qt6 work goes to RB-2.6;
   RB-2.7 is the Qt6 branch.

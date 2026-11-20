@@ -137,9 +137,15 @@ CustomParamInteract::paintGL()
         OfxPointD scale;
         scale.x = scale.y = 1.;
         double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-        _imp->inPaintGL = true;
+        // inPaintGL is true during the Draw action, and false again when it returns or throws (see
+        // swapOpenGLBuffers())
+        struct InPaintGL_RAII
+        {
+            bool& flag;
+            explicit InPaintGL_RAII(bool& f) : flag(f) { flag = true; }
+            ~InPaintGL_RAII() { flag = false; }
+        } inPaintGL(_imp->inPaintGL);
         _imp->entryPoint->drawAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0);
-        _imp->inPaintGL = false;
         glCheckError();
     } // GLProtectAttrib a(GL_TRANSFORM_BIT);
 }
