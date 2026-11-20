@@ -327,6 +327,9 @@ public:
 
     bool isSingleInstanceSuspended() const;
 
+    /// true while a suspension waits for the node to stop rendering (the plug-in instance still exists)
+    bool isSingleInstanceSuspendPending() const;
+
     static ContextEnum mapToContextEnum(const std::string &s);
     static std::string mapContextToString(ContextEnum ctx);
     static std::string natronValueChangedReasonToOfxValueChangedReason(ValueChangedReasonEnum reason);

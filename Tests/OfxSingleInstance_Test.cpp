@@ -34,7 +34,9 @@
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/LogEntry.h"
 #include "Engine/Node.h"
+#include "Engine/NodeGroup.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Project.h"
 
@@ -44,10 +46,11 @@ NATRON_NAMESPACE_USING
 
 namespace {
 NodePtr
-createSingleInstanceNode(bool outOfProject = false)
+createSingleInstanceNode(bool outOfProject = false,
+                         const NodeCollectionPtr& group = NodeCollectionPtr())
 {
     AppInstancePtr app = appPTR->getTopLevelInstance();
-    CreateNodeArgs args( kNatronTestPluginSingleInstance, app->getProject() );
+    CreateNodeArgs args( kNatronTestPluginSingleInstance, group ? group : NodeCollectionPtr( app->getProject() ) );
 
     args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
     args.setProperty<bool>(kCreateNodeArgsPropSilent, true); // no error dialog
@@ -57,6 +60,22 @@ createSingleInstanceNode(bool outOfProject = false)
     }
 
     return app->createNode(args);
+}
+
+// the number of "allows only one instance" warnings in the log
+int
+countSingleInstanceWarnings()
+{
+    std::list<LogEntry> entries;
+    appPTR->getErrorLog_mt_safe(&entries);
+    int n = 0;
+    for (std::list<LogEntry>::const_iterator it = entries.begin(); it != entries.end(); ++it) {
+        if ( it->message.contains( QString::fromUtf8("allows only one instance at a time") ) ) {
+            ++n;
+        }
+    }
+
+    return n;
 }
 
 void
@@ -188,7 +207,7 @@ TEST(OfxSingleInstance, UndoDeleteRecreatesTheInstance)
     EXPECT_TRUE( aEffect->isEffectCreated() );
     EXPECT_EQ( 1, NatronTestPlugin::counter("SingleInstance.live") );
     EXPECT_EQ( created + 3, NatronTestPlugin::counter("SingleInstance.created") ); // A, B, and A again
-    // while A is active, B can't be created, and a new node is still refused
+    // while A is active, a new node C is still refused
     NodePtr c = createSingleInstanceNode();
     EXPECT_FALSE( bool(c) );
     destroy(c);
@@ -221,8 +240,10 @@ TEST(OfxSingleInstance, ActivateWithAnotherActiveInstance)
     a->deactivate();
     NodePtr b = createSingleInstanceNode();
     ASSERT_TRUE( bool(b) );
+    const int warnings = countSingleInstanceWarnings();
     a->activate();
     EXPECT_TRUE( a->isActivated() );
+    EXPECT_EQ( warnings + 1, countSingleInstanceWarnings() );
     EXPECT_EQ( 2, NatronTestPlugin::counter("SingleInstance.live") );
     // with two active nodes, a third one is refused
     NodePtr c = createSingleInstanceNode();
@@ -269,5 +290,54 @@ TEST(OfxSingleInstance, LoadProjectWithTwoInstances)
 
     // leave the shared app with an untitled empty project, before the directory is removed
     project->resetProject();
+    EXPECT_EQ( 0, NatronTestPlugin::counter("SingleInstance.live") );
+}
+
+// The undo of Group From Selection deactivates the group (and the copies in it) before it activates
+// the originals, and the undo of Expand Group deactivates the expanded nodes before it activates the
+// group: a node in a deactivated group holds no plug-in instance, and no warning is logged.
+TEST(OfxSingleInstance, GroupDeactivationSuspendsItsNodes)
+{
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
+        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+
+        return;
+    }
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    CreateNodeArgs groupArgs( PLUGINID_NATRON_GROUP, app->getProject() );
+    groupArgs.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    groupArgs.setProperty<bool>(kCreateNodeArgsPropSilent, true);
+    NodePtr group = app->createNode(groupArgs);
+    ASSERT_TRUE( bool(group) );
+    NodeGroupPtr isGroup = std::dynamic_pointer_cast<NodeGroup>( group->getEffectInstance() );
+    ASSERT_TRUE( bool(isGroup) );
+
+    // Group From Selection: the original is deleted, a copy is in the group
+    NatronTestPlugin::setCounter("SingleInstance.maxLive", 0);
+    NodePtr original = createSingleInstanceNode();
+    ASSERT_TRUE( bool(original) );
+    original->deactivate();
+    NodePtr copy = createSingleInstanceNode(false, isGroup);
+    ASSERT_TRUE( bool(copy) );
+    EXPECT_EQ( 1, NatronTestPlugin::counter("SingleInstance.live") );
+    const int warnings = countSingleInstanceWarnings();
+
+    // its undo, in GroupFromSelectionCommand::undo()'s order
+    group->deactivate();
+    EXPECT_FALSE( copy->isActivated() );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("SingleInstance.live") );
+    original->activate();
+    EXPECT_EQ( 1, NatronTestPlugin::counter("SingleInstance.live") );
+    // and the redo
+    original->deactivate();
+    group->activate();
+    EXPECT_TRUE( copy->isActivated() );
+    EXPECT_EQ( 1, NatronTestPlugin::counter("SingleInstance.live") );
+    EXPECT_EQ( 1, NatronTestPlugin::counter("SingleInstance.maxLive") );
+    EXPECT_EQ( warnings, countSingleInstanceWarnings() );
+
+    destroy(original);
+    destroy(copy);
+    destroy(group);
     EXPECT_EQ( 0, NatronTestPlugin::counter("SingleInstance.live") );
 }

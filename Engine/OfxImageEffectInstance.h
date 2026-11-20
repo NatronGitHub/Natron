@@ -74,12 +74,20 @@ public:
     }
 
     /**
-     * @brief While the instance is suspended (its plug-in instance was destroyed, see
-     * OfxEffectInstance::suspendSingleInstance()), mainEntry() calls nothing and returns kOfxStatFailed.
+     * @brief The suspension of the plug-in instance (see OfxEffectInstance::suspendSingleInstance()):
+     * while it is being suspended, mainEntry() sends nothing from the other threads, and once it is
+     * suspended (its plug-in instance destroyed), nothing at all: it returns kOfxStatFailed.
      **/
-    void setSuspended(bool suspended)
+    enum SuspendStateEnum
     {
-        _suspended = suspended;
+        eSuspendStateNone = 0,
+        eSuspendStateSuspending,
+        eSuspendStateSuspended
+    };
+
+    void setSuspendState(SuspendStateEnum state)
+    {
+        _suspendState = (int)state;
     }
 
     /// true while an action of this instance or of one of its interacts runs on the main thread (main thread only)
@@ -305,8 +313,8 @@ private:
     // kOfxActionInstanceChanged, may trigger another one (when a value it sets changes a parameter).
     // Only read and written on the main thread.
     int _mainThreadActionDepth;
-    // see setSuspended(); written on the main thread while the node is deactivated and doesn't render
-    std::atomic<bool> _suspended;
+    // see setSuspendState(); written on the main thread
+    std::atomic<int> _suspendState;
     // The edit blocks that the plug-in opened (paramEditBegin()) and did not end yet (paramEditEnd()), innermost last:
     // true for a block opened on _pluginEditHolder, false for a block that was ignored (while a PyPlug is created), so
     // that each paramEditEnd() ends the block of its paramEditBegin(). When the outermost action returns, these blocks,

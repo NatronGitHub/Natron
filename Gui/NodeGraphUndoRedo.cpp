@@ -1547,6 +1547,14 @@ GroupFromSelectionCommand::undo()
     }
 
 
+    // Deactivate the group (and the copies in it) before activating the originals: a single-instance
+    // OFX plug-in then never has two live instances (see OfxEffectInstance::suspendSingleInstance()).
+    _group.lock()->getNode()->deactivate(NodesList(),
+                                         true,
+                                         false,
+                                         true,
+                                         true,
+                                         false);
     for (std::list<NodeGuiWPtr>::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
         NodeGuiPtr node = it->lock();
         if (node) {
@@ -1555,12 +1563,6 @@ GroupFromSelectionCommand::undo()
         }
     }
     _graph->setSelection(nodesToSelect);
-    _group.lock()->getNode()->deactivate(NodesList(),
-                                         true,
-                                         false,
-                                         true,
-                                         true,
-                                         false);
 
     _isRedone = false;
 }
@@ -2036,18 +2038,20 @@ InlineGroupCommand::undo()
     for (std::list<InlinedGroup>::iterator it = _groupNodes.begin(); it != _groupNodes.end(); ++it) {
         NodeGuiPtr groupNode = it->group.lock();
         if (groupNode) {
-            groupNode->getNode()->activate(NodesList(), true, false);
-            std::list<ViewerInstance*> connectedViewers;
-            groupNode->getNode()->hasViewersConnected(&connectedViewers);
-            for (std::list<ViewerInstance*>::iterator it2 = connectedViewers.begin(); it2 != connectedViewers.end(); ++it2) {
-                viewers.insert(*it2);
-            }
+            // Deactivate the inlined nodes before activating the group (and the nodes in it): a
+            // single-instance OFX plug-in then never has two live instances.
             for (std::list<NodeGuiWPtr>::iterator it2 = it->inlinedNodes.begin();
                  it2 != it->inlinedNodes.end(); ++it2) {
                 NodeGuiPtr node = (*it2).lock();
                 if (node) {
                     node->getNode()->deactivate(NodesList(), false, false, true, false, false);
                 }
+            }
+            groupNode->getNode()->activate(NodesList(), true, false);
+            std::list<ViewerInstance*> connectedViewers;
+            groupNode->getNode()->hasViewersConnected(&connectedViewers);
+            for (std::list<ViewerInstance*>::iterator it2 = connectedViewers.begin(); it2 != connectedViewers.end(); ++it2) {
+                viewers.insert(*it2);
             }
         }
         nodesToSelect.push_back(groupNode);
