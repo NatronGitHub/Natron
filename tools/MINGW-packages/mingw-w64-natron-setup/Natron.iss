@@ -10,6 +10,14 @@
 #define MyAppAssocName MyAppName + " Project"
 #define MyAppAssocExt ".ntp"
 #define MyAppAssocKey StringChange(MyAppAssocName, " ", "") + MyAppAssocExt
+; The architecture of the Natron build that this Setup.exe installs: x64 (MSYS2 UCRT64), or arm64
+; (MSYS2 CLANGARM64, #1494). The PKGBUILD passes /DNatronArch=arm64 for CLANGARM64.
+#ifndef NatronArch
+  #define NatronArch "x64"
+#endif
+#if NatronArch != "x64" && NatronArch != "arm64"
+  #error NatronArch must be x64 or arm64
+#endif
 
 [Setup]
 AppId={{B1D54C04-B15B-4015-831A-CA5DACA60BD0}
@@ -33,6 +41,12 @@ WizardStyle=modern
 WizardImageFile=WizardImageFile.bmp
 WizardSmallImageFile=WizardSmallImageFile.bmp
 WizardImageStretch=yes
+#if NatronArch == "arm64"
+; Native ARM64 binaries: only on Windows on Arm, installed in 64-bit mode (Program Files, the
+; 64-bit registry view)
+ArchitecturesAllowed=arm64
+ArchitecturesInstallIn64BitMode=arm64
+#endif
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -51,7 +65,10 @@ Name: "cimg"; Description: "OpenFX CImg"; Types: full
 Name: "stoy"; Description: "OpenFX Shadertoy"; Types: full
 Name: "arena"; Description: "OpenFX Arena"; Types: full
 Name: "gmic"; Description: "OpenFX G'MIC"; Types: full
+#if NatronArch == "x64"
+; Mesa's opengl32.dll: build-Windows-installer.sh only bundles one for x64 so far (#1494)
 Name: "sgl"; Description: "OpenGL Software Renderer (FOR LEGACY HARDWARE ONLY)"
+#endif
 
 ; Installing over an older Natron: remove the files whose names change between versions, so
 ; that no stale DLL, Qt plug-in or Python extension module stays behind: the DLLs of bin\ (not its
@@ -128,7 +145,9 @@ Source: "{src}\Resources\pixmaps\*"; DestDir: "{app}\Resources\pixmaps\"; Compon
 Source: "{src}\Resources\poppler\*"; DestDir: "{app}\Resources\poppler\"; Components: arena; Flags: ignoreversion recursesubdirs createallsubdirs external skipifsourcedoesntexist
 Source: "{src}\Resources\stylesheets\*"; DestDir: "{app}\Resources\stylesheets\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external
 
+#if NatronArch == "x64"
 Source: "{src}\bin\mesa\opengl32.dll"; DestDir: "{app}\bin\"; Components: sgl; Flags: ignoreversion external skipifsourcedoesntexist
+#endif
 
 [Registry]
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocExt}\OpenWithProgids"; ValueType: string; ValueName: "{#MyAppAssocKey}"; ValueData: ""; Flags: uninsdeletevalue
