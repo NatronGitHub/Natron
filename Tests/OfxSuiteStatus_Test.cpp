@@ -40,6 +40,7 @@
 #include <ofxGPURender.h>
 #include <ofxMessage.h>
 #include <ofxMultiThread.h>
+#include <ofxParam.h>
 #include <ofxProgress.h>
 #include <ofxProperty.h>
 #include <ofxTimeLine.h>
@@ -47,6 +48,7 @@
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/LogEntry.h"
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
@@ -342,3 +344,31 @@ TEST(OfxSuiteStatus, FlushResources)
 }
 
 #endif
+
+// The parameter properties that ofxParam.h documents as "instance (read only)" are plug-in read-only on
+// instances (NatronGitHub/openfx#205), but Natron's read-only policy (ePluginReadOnlyWarn, Engine/OfxHost.cpp,
+// for old plug-ins) still accepts a write, with a warning. kOfxParamPropGroupOpen stays writable on instances
+// (a Natron extension, ofxNatron.h), and a write opens or closes the group knob (OfxGroupInstance::setOpen()).
+TEST_F(OfxSuiteStatusTest, InstanceReadOnlyParamProperties)
+{
+    if ( skipped() ) {
+        return;
+    }
+    const OfxParameterSuiteV1* params = NatronTestPlugin::parameterSuite();
+    const OfxPropertySuiteV1* props = NatronTestPlugin::propertySuite();
+    OFX::Host::Param::Instance* value = NatronTestPlugin::ofxParam(_node, "doubleFrom");
+    ASSERT_TRUE(params && props && value);
+    OfxPropertySetHandle valueProps = 0;
+    ASSERT_EQ( kOfxStatOK, params->paramGetPropertySet( (OfxParamHandle)value->getHandle(), &valueProps ) );
+    EXPECT_EQ( kOfxStatOK, props->propSetInt(valueProps, kOfxParamPropAnimates, 0, 0) );
+
+    OFX::Host::Param::Instance* group = NatronTestPlugin::ofxParam(_node, "group");
+    KnobGroupPtr groupKnob = std::dynamic_pointer_cast<KnobGroup>( _node->getKnobByName("group") );
+    ASSERT_TRUE(group && groupKnob);
+    OfxPropertySetHandle groupProps = 0;
+    ASSERT_EQ( kOfxStatOK, params->paramGetPropertySet( (OfxParamHandle)group->getHandle(), &groupProps ) );
+    EXPECT_EQ( kOfxStatOK, props->propSetInt(groupProps, kOfxParamPropGroupOpen, 0, 0) );
+    EXPECT_FALSE( groupKnob->getValue() );
+    EXPECT_EQ( kOfxStatOK, props->propSetInt(groupProps, kOfxParamPropGroupOpen, 0, 1) );
+    EXPECT_TRUE( groupKnob->getValue() );
+}

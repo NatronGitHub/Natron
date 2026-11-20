@@ -637,7 +637,7 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - S4
      - `ofxProgress.h:65-70 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxProgress.h#L65-L70>`__ progressUpdate: OK, ReplyNo (abort), or ErrBadHandle "the progress handle was invalid"
      - MUST
-     - With no started task, ``updateTask`` returns false → **ReplyNo** (Gui/ProgressPanel.cpp:549-551), not BadHandle. Background: always OK. Fixed in Natron: without a started progress, ``OfxImageEffectInstance::progressUpdate()`` throws kOfxStatErrBadHandle instead of answering kOfxStatReplyNo ("abort"). The HostSupport progress suite returns its kOfxStatErrBadHandle (`NatronGitHub/openfx#201 <https://github.com/NatronGitHub/openfx/pull/201>`__).
+     - With no started task, ``updateTask`` returns false → **ReplyNo** (Gui/ProgressPanel.cpp:549-551), not BadHandle. Background: always OK. Fixed in Natron: without a started progress, ``OfxImageEffectInstance::progressUpdate()`` throws kOfxStatErrBadHandle instead of answering kOfxStatReplyNo ("abort"). The HostSupport progress suite returns its kOfxStatErrBadHandle (`NatronGitHub/openfx#201 <https://github.com/NatronGitHub/openfx/pull/201>`__). Remaining deviation: ``progressEnd`` without ``progressStart`` returns kOfxStatOK, where the spec allows kOfxStatErrBadHandle.
      - OK (fixed by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__ and `NatronGitHub/openfx#201 <https://github.com/NatronGitHub/openfx/pull/201>`__, in libs/OpenFX since `#1507 <https://github.com/NatronGitHub/Natron/pull/1507>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__

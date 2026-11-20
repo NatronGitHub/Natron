@@ -319,8 +319,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - G7
      - `ofxGPURender.h:199-282 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxGPURender.h#L199-L282>`__ clipLoadTexture: format honoured, Output clip binds the render target (may be done before Render), region clipped to RoD / default RoI; returns Failed (black), ErrBadHandle, ErrMemory
      - MUST
-     - ofxhIE:4182-4223 -> ``OfxClipInstance::loadTexture`` (OfxClipInstance.cpp:703-719) via the clipGetImage path; output FBO bound before render (EffectInstance.cpp:2650). Every failure returns kOfxStatFailed (ofxhIE:4205-4209): kOfxStatErrMemory is never returned.
-     - PARTIAL
+     - ofxhIE:4182-4223 -> ``OfxClipInstance::loadTexture`` (OfxClipInstance.cpp:703-719) via the clipGetImage path; output FBO bound before render (EffectInstance.cpp:2650). Every failure returns kOfxStatFailed (ofxhIE:4205-4209): kOfxStatErrMemory is never returned. HostSupport now returns kOfxStatErrMemory for a ``std::bad_alloc`` in clipLoadTexture. Still open: Natron's OpenGL texture path reports an OpenGL out-of-memory as a NULL texture (kOfxStatFailed), not as a ``std::bad_alloc``.
+     - PARTIAL (HostSupport part fixed by `NatronGitHub/openfx#202 <https://github.com/NatronGitHub/openfx/pull/202>`__, in libs/OpenFX since `#1507 <https://github.com/NatronGitHub/Natron/pull/1507>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - G8

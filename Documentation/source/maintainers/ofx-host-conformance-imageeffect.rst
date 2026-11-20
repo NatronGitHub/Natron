@@ -719,8 +719,8 @@ HS ofxhImageEffect.cpp:3540-4006. Natron overrides ``getImage`` / ``getRegionOfD
    * - 7.6
      - clipGetImage returns: Failed when the image does not exist (plug-in assumes black), ErrMemory on OOM, ErrBadHandle on a bad clip
      - MUST
-     - Null image → Failed (:3720-3725). Bad clip → BadHandle. Every exception, std::bad_alloc included, → kOfxStatErrBadHandle (:3730-3734), never ErrMemory.
-     - PARTIAL
+     - Null image → Failed (:3720-3725). Bad clip → BadHandle. Every exception, std::bad_alloc included, → kOfxStatErrBadHandle (:3730-3734), never ErrMemory. Fixed: a ``std::bad_alloc`` gives kOfxStatErrMemory, with NULL outputs, in clipGetImage, clipGetImagePlane, clipGetStereoscopicImage, clipGetRegionOfDefinition and imageMemoryLock.
+     - OK (fixed by `NatronGitHub/openfx#202 <https://github.com/NatronGitHub/openfx/pull/202>`__, in libs/OpenFX since `#1507 <https://github.com/NatronGitHub/Natron/pull/1507>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - 7.7
@@ -808,9 +808,9 @@ Verdict counts
    * - verdict
      - count
    * - OK
-     - 69
+     - 70
    * - PARTIAL
-     - 22
+     - 21
    * - WRONG
      - 13
    * - MISSING

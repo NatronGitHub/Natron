@@ -424,7 +424,7 @@ Table 3: ofxParam.h, parameter properties
      - Read-only properties on instances ("instance (read only)": Animates, CanUndo, Persistant, ScriptName, DoubleType, DimensionLabel, StringMode, ...)
      - MUST
      - Instances copy the descriptor PropSpecs with the same "host only" flag, which is false for these (hP.cpp:272-300, 481-488). A plug-in can write them on an instance with kOfxStatOK and nothing happens. Only Type is enforced (hP.cpp:281) Fixed: the instance copies of these properties (and kOfxParamInterpType) are plug-in read-only; kOfxParamPropGroupOpen stays writable (a Natron extension, ofxNatron.h). With Natron's ``ePluginReadOnlyWarn`` policy (Engine/OfxHost.cpp, core R2, deliberate), a write still succeeds, with one warning per property name.
-     - OK (fixed by `NatronGitHub/openfx#205 <https://github.com/NatronGitHub/openfx/pull/205>`__, in libs/OpenFX since `#1507 <https://github.com/NatronGitHub/Natron/pull/1507>`__)
+     - OK (warns, deliberate: core R2). Fixed by `NatronGitHub/openfx#205 <https://github.com/NatronGitHub/openfx/pull/205>`__, in libs/OpenFX since `#1507 <https://github.com/NatronGitHub/Natron/pull/1507>`__.
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - P34
