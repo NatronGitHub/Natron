@@ -32,6 +32,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <cstdio> // vsnprintf
 #include <locale>
 
 
@@ -454,6 +455,27 @@ namespace StrUtils {
         std::string::size_type trailing = input.find_last_not_of(" \t\r\n\v\f");
 
         return input.substr(leading, trailing - leading + 1);
+    }
+
+    std::string vformat(const char* fmt, va_list args)
+    {
+        if (!fmt) {
+            return std::string();
+        }
+        va_list ap;
+        va_copy(ap, args);
+        int n = std::vsnprintf(NULL, 0, fmt, ap);
+        va_end(ap);
+        if (n <= 0) {
+            return std::string();
+        }
+        std::string str( (std::size_t)n + 1, '\0' );
+        va_copy(ap, args);
+        std::vsnprintf(&str[0], str.size(), fmt, ap);
+        va_end(ap);
+        str.resize(n);
+
+        return str;
     }
 
 } // StrUtils
