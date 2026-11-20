@@ -161,6 +161,10 @@ private:
     void setBoundariesInternal(SequenceTime first, SequenceTime last, bool emitSignal);
 
     virtual void initializeGL() OVERRIDE FINAL;
+    // Called before the OpenGL context is destroyed (e.g. when the widget moves to another window)
+    void onContextAboutToBeDestroyed();
+    // Deletes the OpenGL objects of the current context
+    void releaseGLResources();
     virtual void resizeGL(int width, int height) OVERRIDE FINAL;
     virtual void paintGL() OVERRIDE FINAL;
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;

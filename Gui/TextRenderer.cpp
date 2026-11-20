@@ -26,6 +26,8 @@
 #include "TextRenderer.h"
 
 #include <stdexcept>
+#include <list>
+#include <map>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -39,7 +41,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 
 #include <QPainter>
-#include <QOpenGLWidget>
+#include <QObject>
+#include <QOpenGLContext>
 
 NATRON_NAMESPACE_ENTER
 
@@ -237,15 +240,62 @@ TextRendererPrivate::createCharacter(QChar c)
 #endif
 } // createCharacter
 
+typedef std::map<QOpenGLContext*, FontRenderers> ContextRenderers;
+
 struct TextRenderer::Implementation
 {
     Implementation()
-        : renderers()
+        : contexts()
+        , guard()
     {
     }
 
-    FontRenderers renderers;
+    // Returns the glyph cache of the current OpenGL context, creating it if needed.
+    FontRenderers& currentContextRenderers();
+
+    // Forget the textures of the given context, deleting them if the context is current.
+    void releaseContext(QOpenGLContext* context);
+
+    ContextRenderers contexts;
+    // Receiver of the QOpenGLContext::aboutToBeDestroyed connections: they are disconnected when
+    // the TextRenderer is destroyed.
+    QObject guard;
 };
+
+FontRenderers&
+TextRenderer::Implementation::currentContextRenderers()
+{
+    QOpenGLContext* context = QOpenGLContext::currentContext();
+    assert(context);
+    ContextRenderers::iterator it = contexts.find(context);
+    if ( it != contexts.end() ) {
+        return it->second;
+    }
+    // A new context. Drop its cache when it is destroyed: a new context could get the same address.
+    QObject::connect( context, &QOpenGLContext::aboutToBeDestroyed, &guard, [this, context]() {
+        releaseContext(context);
+    } );
+
+    return contexts[context];
+}
+
+void
+TextRenderer::Implementation::releaseContext(QOpenGLContext* context)
+{
+    ContextRenderers::iterator it = contexts.find(context);
+    if ( it == contexts.end() ) {
+        return;
+    }
+    if (QOpenGLContext::currentContext() != context) {
+        // The textures can only be deleted in their own context (or one that shares with it).
+        // If it isn't current, they are freed with the context (or with its share group).
+        for (FontRenderers::iterator itf = it->second.begin(); itf != it->second.end(); ++itf) {
+            itf->second->_usedTextures.clear();
+        }
+    }
+    contexts.erase(it); // the TextRendererPrivate destructors delete the remaining textures
+    QObject::disconnect(context, &QOpenGLContext::aboutToBeDestroyed, &guard, nullptr);
+}
 
 TextRenderer::TextRenderer()
     : _imp(new Implementation)
@@ -254,6 +304,18 @@ TextRenderer::TextRenderer()
 
 TextRenderer::~TextRenderer()
 {
+    while ( !_imp->contexts.empty() ) {
+        _imp->releaseContext(_imp->contexts.begin()->first);
+    }
+}
+
+void
+TextRenderer::releaseGLResources()
+{
+    QOpenGLContext* context = QOpenGLContext::currentContext();
+    if (context) {
+        _imp->releaseContext(context);
+    }
 }
 
 int
@@ -282,12 +344,13 @@ TextRenderer::renderText(float x,
 {
     glCheckError();
     TextRendererPrivatePtr p;
-    FontRenderers::iterator it = _imp->renderers.find(font);
-    if ( it != _imp->renderers.end() ) {
+    FontRenderers& renderers = _imp->currentContextRenderers();
+    FontRenderers::iterator it = renderers.find(font);
+    if ( it != renderers.end() ) {
         p = it->second;
     } else {
         p = TextRendererPrivatePtr( new TextRendererPrivate(font) );
-        _imp->renderers[font] = p;
+        renderers[font] = p;
     }
     assert(p);
 

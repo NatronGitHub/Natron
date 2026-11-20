@@ -85,6 +85,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerTab.h"
 
 #include <QOpenGLContext>
+#include <QTimer>
 #include <QRegularExpression>
 
 
@@ -139,6 +140,12 @@ ViewerGL::~ViewerGL()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    if ( QOpenGLContext* glContext = context() ) {
+        // ~QOpenGLWidget destroys the context after this object is gone: don't get its signal
+        glContext->disconnect(this);
+        makeCurrent();
+        releaseGLResources();
+    }
 }
 
 QSize
@@ -1241,7 +1248,73 @@ ViewerGL::initializeGL()
     if ( !appPTR->isOpenGLLoaded() ) {
         throw std::runtime_error("OpenGL was not loaded");
     }
+    // QOpenGLWidget destroys its context and creates a new one when it moves to another top-level
+    // window, e.g. when the viewer is dragged into a floating window (#536), and then calls
+    // initializeGL() again. The OpenGL objects of the old context must be released with it.
+    QObject::connect( context(), &QOpenGLContext::aboutToBeDestroyed, this, &ViewerGL::onContextAboutToBeDestroyed );
     _imp->initializeGL();
+
+    if (_imp->glResourcesReleased) {
+        // The textures of the previous context held the displayed images: render them again.
+        _imp->glResourcesReleased = false;
+        QTimer::singleShot( 0, this, [this]() {
+            ViewerInstance* viewer = getInternalNode();
+            if (viewer) {
+                viewer->renderCurrentFrame(true);
+            }
+        } );
+    }
+}
+
+void
+ViewerGL::onContextAboutToBeDestroyed()
+{
+    makeCurrent();
+    releaseGLResources();
+    _imp->glResourcesReleased = true;
+    // The context stays current: it is destroyed right after this signal, and the overlays'
+    // TextRenderer may still delete its textures from its own aboutToBeDestroyed() slot.
+}
+
+void
+ViewerGL::releaseGLResources()
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    assert( QOpenGLContext::currentContext() == context() );
+
+    _imp->textRenderer.releaseGLResources();
+
+    if (_imp->shaderRGB) {
+        _imp->shaderRGB->removeAllShaders();
+        _imp->shaderRGB.reset();
+    }
+    if (_imp->shaderBlack) {
+        _imp->shaderBlack->removeAllShaders();
+        _imp->shaderBlack.reset();
+    }
+    _imp->shaderLoaded = false;
+    // the Texture destructor deletes the OpenGL texture, so this must be done in its context
+    for (int i = 0; i < 2; ++i) {
+        _imp->displayTextures[i].texture.reset();
+    }
+    _imp->partialUpdateTextures.clear();
+
+    if ( appPTR && appPTR->isOpenGLLoaded() ) {
+        glCheckError();
+        for (U32 i = 0; i < _imp->pboIds.size(); ++i) {
+            glDeleteBuffers(1, &_imp->pboIds[i]);
+        }
+        _imp->pboIds.clear();
+        glCheckError();
+        glDeleteBuffers(1, &_imp->vboVerticesId);
+        glDeleteBuffers(1, &_imp->vboTexturesId);
+        glDeleteBuffers(1, &_imp->iboTriangleStripId);
+        _imp->vboVerticesId = _imp->vboTexturesId = _imp->iboTriangleStripId = 0;
+        glCheckError();
+        glDeleteTextures(1, &_imp->checkerboardTextureID);
+        _imp->checkerboardTextureID = 0;
+    }
 }
 
 GLuint
@@ -1516,6 +1589,12 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
     }
 
     if (isPartialRect) {
+        if (!texture) {
+            // Nothing was uploaded (no OpenGL context, see transferBufferFromRAMtoGPU()): a partial
+            // texture without a texture can't be drawn. The non-partial branch below works with a
+            // null texture, as it did before (e.g. when every tile had a null ramBuffer).
+            return;
+        }
         TextureInfo info;
         info.texture = std::dynamic_pointer_cast<Texture>(texture);
         info.gain = gain;
@@ -1588,6 +1667,12 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    if ( !isValid() || !_imp->displayTextures[textureIndex].texture ) {
+        // No OpenGL context: the widget is hidden and its context was destroyed (see
+        // onContextAboutToBeDestroyed()). initializeGL() renders the frame again; *texture stays
+        // null, and endTransferBufferFromRAMToGPU() ignores it.
+        return;
+    }
     assert( QOpenGLContext::currentContext() == context() );
     GLenum e = glGetError();
     Q_UNUSED(e);
@@ -2729,6 +2814,10 @@ ViewerGL::setParametricParamsPickerColor(const OfxRGBAColourD& color, bool setCo
 bool
 ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
 {
+    if (!_imp->displayTextures[texIndex].texture) {
+        // No OpenGL context (see transferBufferFromRAMtoGPU()): initializeGL() renders the frame again
+        return true;
+    }
 
     unsigned int mipmapLevel = std::max(getInternalNode()->getMipmapLevelFromZoomFactor(), getInternalNode()->getMipmapLevel());
     int closestPo2 = 1 << mipmapLevel;

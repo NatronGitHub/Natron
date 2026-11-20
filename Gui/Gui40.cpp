@@ -38,8 +38,6 @@
 #include <QFileInfo>
 #include <QSettings>
 
-#include <QScreen>
-
 #include <QAction>
 #include <QApplication> // qApp
 
@@ -244,7 +242,11 @@ Gui::updateRecentFileActions()
 QPixmap
 Gui::screenShot(QWidget* w)
 {
-    return QApplication::primaryScreen()->grabWindow( w->winId() );
+    // Render the widget (QWidget::grab() also renders its QOpenGLWidget children) instead of
+    // grabbing its window from the screen: w->winId() would turn w (a panel being dragged, which
+    // may hold a QOpenGLWidget) and its parents into native windows for the rest of the session.
+    // Dragging the Curve Editor tab crashes in GLX context creation on X11/Mesa (#536).
+    return w->grab();
 }
 
 void
