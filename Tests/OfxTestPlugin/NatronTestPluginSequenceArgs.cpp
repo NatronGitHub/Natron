@@ -23,7 +23,8 @@
 // - "SequenceArgs.badStep": a kOfxImageEffectPropFrameStep that is not positive ("can be any positive
 //   value");
 // - "SequenceArgs.mismatch": an End whose frame range, frame step, kOfxPropIsInteractive or
-//   kOfxImageEffectPropInteractiveRenderStatus differ from those of the last Begin of the same instance
+//   kOfxImageEffectPropInteractiveRenderStatus or kOfxImageEffectPropThumbnailRender (absent: "false") differ
+//   from those of the last Begin of the same instance
 //   (End is called "after a sequence of renders" with the same arguments);
 // - "SequenceArgs.interactive": a Begin with kOfxPropIsInteractive set.
 // Its render action does not write the output image.
@@ -50,10 +51,23 @@ struct SequenceArgs
     double step;
     int interactive;
     int interactiveRenderStatus;
+    bool thumbnail; // kOfxImageEffectPropThumbnailRender, optional: absent means "false"
 };
 
 std::mutex gBeginsMutex;
 std::map<const void*, SequenceArgs> gBegins; // the last Begin of each instance
+
+bool
+getThumbnail(OfxPropertySetHandle inArgs,
+             bool* thumbnail)
+{
+    const char* value = 0;
+
+    *thumbnail = (gPropSuite->propGetString(inArgs, kOfxImageEffectPropThumbnailRender, 0, &value) == kOfxStatOK) &&
+                 value && (std::strcmp(value, "true") == 0);
+
+    return true;
+}
 
 bool
 getSequenceArgs(OfxPropertySetHandle inArgs,
@@ -63,7 +77,8 @@ getSequenceArgs(OfxPropertySetHandle inArgs,
            (gPropSuite->propGetDoubleN(inArgs, kOfxImageEffectPropFrameRange, 2, args->range) == kOfxStatOK) &&
            (gPropSuite->propGetDouble(inArgs, kOfxImageEffectPropFrameStep, 0, &args->step) == kOfxStatOK) &&
            (gPropSuite->propGetInt(inArgs, kOfxPropIsInteractive, 0, &args->interactive) == kOfxStatOK) &&
-           (gPropSuite->propGetInt(inArgs, kOfxImageEffectPropInteractiveRenderStatus, 0, &args->interactiveRenderStatus) == kOfxStatOK);
+           (gPropSuite->propGetInt(inArgs, kOfxImageEffectPropInteractiveRenderStatus, 0, &args->interactiveRenderStatus) == kOfxStatOK) &&
+           getThumbnail(inArgs, &args->thumbnail);
 }
 
 OfxStatus
@@ -138,7 +153,8 @@ sequenceArgsMain(const char* action,
         if ( ( found == gBegins.end() ) ||
              (found->second.range[0] != args.range[0]) || (found->second.range[1] != args.range[1]) ||
              (found->second.step != args.step) || (found->second.interactive != args.interactive) ||
-             (found->second.interactiveRenderStatus != args.interactiveRenderStatus) ) {
+             (found->second.interactiveRenderStatus != args.interactiveRenderStatus) ||
+             (found->second.thumbnail != args.thumbnail) ) {
             natronTestIncrementCounter("SequenceArgs.mismatch");
         }
 

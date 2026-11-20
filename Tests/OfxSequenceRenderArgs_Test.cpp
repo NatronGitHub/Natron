@@ -19,7 +19,8 @@
 // The inArgs of kOfxImageEffectActionBeginSequenceRender and kOfxImageEffectActionEndSequenceRender
 // (ofxImageEffect.h, #1385): kOfxImageEffectPropFrameStep "can be any positive value" (the End of a single
 // frame render passed the frame as its step, so 0 at frame 0 and negative before), and End gets the frame
-// range, frame step, kOfxPropIsInteractive and kOfxImageEffectPropInteractiveRenderStatus of its Begin.
+// range, frame step, kOfxPropIsInteractive, kOfxImageEffectPropInteractiveRenderStatus and
+// kOfxImageEffectPropThumbnailRender (optional, absent means "false") of its Begin.
 // The test plug-in net.natron.test.SequenceArgs (Tests/OfxTestPlugin/NatronTestPluginSequenceArgs.cpp)
 // counts the arguments that are wrong.
 
