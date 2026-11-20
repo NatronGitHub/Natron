@@ -4235,7 +4235,8 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
             PyObject *pyExcValue;
             PyObject *pyExcTraceback;
             PyErr_Fetch(&pyExcType, &pyExcValue, &pyExcTraceback); // also clears the error indicator
-            //PyErr_NormalizeException(&pyExcType, &pyExcValue, &pyExcTraceback);
+            // normalize, else traceback.format_exception() fails on a non-exception value (e.g. a tuple)
+            PyErr_NormalizeException(&pyExcType, &pyExcValue, &pyExcTraceback);
 
             PyObject* pyStr = PyObject_Str(pyExcValue);
             if (pyStr) {
