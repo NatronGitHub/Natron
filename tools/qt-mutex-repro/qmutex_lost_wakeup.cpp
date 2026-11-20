@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (C) 2026 Frédéric Devernay <devernay@users.noreply.github.com>
+//
 // qmutex_lost_wakeup: stress test for a lost wake-up in QMutex's non-futex implementation.
 //
 // Qt 5 on macOS, and Qt 6 where futexes are not used (Qt 6.0-6.6 on macOS, App Store-compliant
@@ -34,7 +37,6 @@
 #include <memory>
 #include <thread>
 #include <vector>
-#include <unistd.h>
 
 namespace {
 
@@ -51,7 +53,7 @@ long long nowNs()
 }
 
 // a short, variable pause, so that the two threads of a pair keep arriving at different moments
-inline void pause(unsigned &seed, unsigned maxSpins)
+inline void spinPause(unsigned &seed, unsigned maxSpins)
 {
     seed = seed * 1103515245u + 12345u;
     for (unsigned i = (seed >> 16) % maxSpins; i > 0; --i) {
@@ -85,10 +87,10 @@ int run(int seconds, int pairs, int stallSeconds, const char *kind)
                 m.lock();
                 w.inLock.store(false, std::memory_order_release);
                 ++shared[(t / 2) * 16];
-                pause(seed, 64);
+                spinPause(seed, 64);
                 m.unlock();
                 w.iterations.fetch_add(1, std::memory_order_relaxed);
-                pause(seed, 256);
+                spinPause(seed, 256);
             }
         });
     }
@@ -108,23 +110,40 @@ int run(int seconds, int pairs, int stallSeconds, const char *kind)
                 continue;
             }
             Mutex &m = *mutexes[t / 2];
-            // The other thread of the pair may hold the mutex: then it is not a lost wake-up.
-            if ( m.tryLock() ) {
-                const bool stillStuck = w.inLock.load(std::memory_order_acquire) &&
-                                        w.lockEnteredNs.load(std::memory_order_relaxed) == now - waited;
-                m.unlock();
-                if (stillStuck) {
-                    unsigned long long total = 0;
-                    for (const Worker &x : workers) {
-                        total += x.iterations.load();
-                    }
-                    std::printf("FAIL: lost wake-up after %.1f s and %llu lock/unlock cycles: thread %d has been "
-                                "blocked in QMutex::lock() for %.1f s, but the mutex is unlocked (tryLock() "
-                                "from the watchdog succeeded).\n",
-                                (now - start) / 1e9, total, t, waited / 1e9);
-                    std::fflush(stdout);
-                    _exit(1);   // the stuck thread can't be joined
+            const long long entered = now - waited;
+            // Confirm twice, one stall period apart, so that a thread that was only descheduled
+            // is not reported: each time, the thread must still be in the same lock() call while
+            // the watchdog can take the mutex. The other thread of the pair may hold the mutex
+            // in between, which is fine.
+            bool stuck = true;
+            for (int check = 0; check < 2 && stuck; ++check) {
+                if (check > 0) {
+                    std::this_thread::sleep_for(std::chrono::seconds(stallSeconds));
                 }
+                bool freeMutex = false;
+                for (int attempt = 0; attempt < 1000 && !freeMutex; ++attempt) {
+                    if ( m.tryLock() ) {
+                        freeMutex = true;
+                        m.unlock();
+                    } else {
+                        std::this_thread::yield();
+                    }
+                }
+                stuck = freeMutex && w.inLock.load(std::memory_order_acquire) &&
+                        w.lockEnteredNs.load(std::memory_order_relaxed) == entered;
+            }
+            if (stuck) {
+                unsigned long long total = 0;
+                for (const Worker &x : workers) {
+                    total += x.iterations.load();
+                }
+                const long long end = nowNs();
+                std::printf("FAIL: lost wake-up after %.1f s and %llu lock/unlock cycles: thread %d has been "
+                            "blocked in QMutex::lock() for %.1f s, but the mutex is unlocked (tryLock() "
+                            "from the watchdog succeeded, twice, %d s apart).\n",
+                            (end - start) / 1e9, total, t, (end - entered) / 1e9, stallSeconds);
+                std::fflush(stdout);
+                std::_Exit(1);   // the stuck thread can't be joined
             }
         }
         if (now - start >= seconds * 1000000000LL) {

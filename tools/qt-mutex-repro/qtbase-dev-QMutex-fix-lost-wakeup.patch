@@ -1,5 +1,5 @@
 From: Frédéric Devernay <devernay@users.noreply.github.com>
-Subject: [PATCH] QMutex: fix a lost wake-up in the non-futex lockInternal()/unlockInternal()
+Subject: [PATCH] QMutex: fix a lost wake-up in the non-futex implementation
 
 When unlockInternal() finds no waiter, it does:
   (2) d->waiters.fetchAndAddRelease(-BigNumber)
@@ -28,7 +28,8 @@ Make (4) a release and (5) an acquire, so that (3) happens before (6) in
 both cases. On x86 both CASes are already full barriers, so this changes
 no code there. On AArch64 the bad outcome is allowed by the
 architecture's memory model with the relaxed operations and forbidden
-with this change (herd7 litmus tests in the bug report). It was seen as
+with this change (herd7 litmus tests in the bug report; the compiled
+acquire loads are LDAPR, with the same results). It was seen as
 a hang in Natron on Apple Silicon with Qt 5.15.19.
 
 The non-futex path is used where QT_ALWAYS_USE_FUTEX is not defined:

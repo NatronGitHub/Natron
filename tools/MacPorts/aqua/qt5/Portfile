@@ -1094,6 +1094,9 @@ foreach {module module_info} [array get modules] {
 
             # Natron: fix a lost wake-up in the non-futex QMutex on arm64 (NatronGitHub/Natron#1451):
             # derefWaiters() must be a release, the waiters CAS in lockInternal() an acquire
+            # (repro, litmus tests and the Qt dev patch: tools/qt-mutex-repro). No Qt6 counterpart needed:
+            # Natron's Qt6 builds (MacPorts qt6-qtbase 6.12, Windows) always use futexes; the Qt dev
+            # patch in tools/qt-mutex-repro is for upstream.
             patchfiles-append patch-qtbase-qmutex-arm64-lost-wakeup.diff
 
             # find the Rez program

@@ -70,18 +70,23 @@ cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/qt && cmake --build build
 - **Exit status:** 0 (`PASS`) if no thread got stuck within N seconds (default 60). 1 (`FAIL: lost
   wake-up ...`) on a hang. 2 on a usage error.
 
-Results on an Apple Silicon Mac (macOS 26, arm64), `--pairs 4`:
+Results on an Apple Silicon Mac (macOS 26, arm64), `--pairs 4`, run at `nice 19`. All rows except
+the last two used this file's watchdog, which confirms a hang twice. The first row was run with
+the committed file itself; the others ran before three cosmetic edits (licence header,
+`std::_Exit`, a renamed helper). The two earlier runs at the bottom used a first version that
+confirmed a hang once, after 5 s.
 
 | QtCore | Mutex | Runs | Result |
 |---|---|---|---|
-| MacPorts qt5-qtbase 5.15.19 (stock) | QMutex | 1 | **FAIL** after 187 s |
-| MacPorts qt5-qtbase 5.15.19 (stock) | QRecursiveMutex | 1 | **FAIL** after 6.7 s |
+| MacPorts qt5-qtbase 5.15.19 (stock) | QRecursiveMutex | 1 | **FAIL** after 24 s |
 | 5.15.19 from source, unpatched | QRecursiveMutex | 3 | **FAIL** 3/3, after 18, 26 and 73 s |
 | 5.15.19 from source, unpatched | QMutex | 2 | **FAIL** 2/2, after 30 and 61 s |
-| 5.15.19 from source, patched | QRecursiveMutex | 3 × 300 s | PASS 3/3 (1.1·10⁹ cycles) |
-| 5.15.19 from source, patched | QMutex | 2 × 300 s | PASS 2/2 (1.4·10⁹ cycles) |
-| 6.11.3, App Store-compliant, unpatched | QMutex | 3 | **FAIL** 3/3, after 16, 93 and 568 s |
-| 6.11.3, App Store-compliant, patched | QMutex | 2 × 300 s + 600 s | PASS 3/3 (3.2·10⁹ cycles) |
+| 5.15.19 from source, patched | QRecursiveMutex | 4 × 300 s | PASS 4/4 |
+| 5.15.19 from source, patched | QMutex | 2 × 300 s | PASS 2/2 |
+| 6.11.3, App Store-compliant, unpatched | QMutex | 2 | **FAIL** 2/2, after 16 and 93 s |
+| 6.11.3, App Store-compliant, patched | QMutex | 2 × 300 s | PASS 2/2 |
+| *first version:* MacPorts qt5-qtbase 5.15.19 (stock) | QMutex / QRecursiveMutex | 1 + 1 | **FAIL** after 187 s / 6.7 s |
+| *first version:* 6.11.3, App Store-compliant | QMutex | 1 + 1 | unpatched **FAIL** after 568 s; patched PASS 600 s |
 
 The Qt 6.11.3 builds are QtCore only. They were configured with `-DFEATURE_appstore_compliant=ON`:
 - That is the App Store configuration, which doesn't use the private `__ulock` API.
@@ -93,7 +98,8 @@ patch. In the patched builds, the disassembly shows `casl` in `derefWaiters()` a
 
 ## Litmus tests (herd7, AArch64 model)
 
-Run them with `herd7 -model aarch64.cat litmus/*.litmus` (herdtools7 7.58, `opam install herdtools7`).
+Run them with `herd7 -model aarch64.cat litmus/*.litmus` (herdtools7 7.58, `opam install herdtools7`,
+no other options). `litmus/herd7-aarch64.txt` is that output; a rerun differs only in the `Time` lines.
 The tests model the two threads directly:
 - `x` is `d_ptr` (1 means "points to d"), and `y` is `d->waiters` (2 stands for -BigNumber).
 - P0 is U: (2) `LDADDL`, (3) `CASL`, (4) `CAS` or `CASL`.
@@ -103,14 +109,20 @@ The bad outcome has three parts: U saw no waiter, W's CAS (5) succeeded after re
 count, and W still read the old `d_ptr`. In race A, (4) writes 3 instead of 0, only so that a
 read from (4) can be told apart from the initial 0. Memory ordering doesn't depend on the values.
 
-| Test | (4) | (5) | Bad outcome |
-|---|---|---|---|
-| `QMutexA-qt5_15_19` | relaxed | relaxed | **Sometimes** (8 of 112) |
-| `QMutexA-release-only` | release | relaxed | Never |
-| `QMutexA-patched` | release | acquire | Never |
-| `QMutexB-qt5_15_19` | relaxed | relaxed | **Sometimes** (16 of 104) |
-| `QMutexB-release-only` | release | relaxed | **Sometimes** (8 of 96) |
-| `QMutexB-patched` | release | acquire | Never |
+The tests use `LDAR` for the acquire loads. Clang compiles them to `LDAPR` on Apple Silicon, and
+the same tests with `LDAPR` give the same results.
+
+herd7 reports, for each test, the number of candidate executions where the condition holds ("Positive")
+and where it doesn't ("Negative"):
+
+| Test | (4) | (5) | Bad outcome | herd7 Positive / Negative |
+|---|---|---|---|---|
+| `QMutexA-qt5_15_19` | relaxed | relaxed | **Sometimes** | 8 / 104 |
+| `QMutexA-release-only` | release | relaxed | Never | 0 / 104 |
+| `QMutexA-patched` | release | acquire | Never | 0 / 80 |
+| `QMutexB-qt5_15_19` | relaxed | relaxed | **Sometimes** | 16 / 88 |
+| `QMutexB-release-only` | release | relaxed | **Sometimes** | 8 / 88 |
+| `QMutexB-patched` | release | acquire | Never | 0 / 76 |
 
 So both changes are needed. The release on (4) alone fixes race A but not race B.
 
