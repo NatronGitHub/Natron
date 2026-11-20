@@ -930,7 +930,13 @@ GuiAppInstance::toggleAutoHideGraphInputs()
 void
 GuiAppInstance::appendToScriptEditor(const std::string& str)
 {
-    _imp->_gui->appendToScriptEditor(str);
+    // There is no Gui (and no Script Editor) yet while loadInternal() declares the app variable,
+    // and no longer after aboutToQuit(): print to stdout like AppInstance does.
+    if (_imp->_gui) {
+        _imp->_gui->appendToScriptEditor(str);
+    } else {
+        AppInstance::appendToScriptEditor(str);
+    }
 }
 
 void
@@ -992,7 +998,9 @@ GuiAppInstance::declareCurrentAppVariable_Python()
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         const std::string& name = (*it)->getName();
         if ( NATRON_PYTHON_NAMESPACE::isKeyword(name) ) {
-            throw std::runtime_error(name + " is a Python keyword");
+            // Report instead of throwing: this is reached from Qt slots (e.g. File > New Project) (#1436).
+            appendToScriptEditor("GuiAppInstance::declareCurrentAppVariable_Python(): " + name + " is a Python keyword");
+            continue;
         }
         ss << appIDStr << "." << name << " = "  << appIDStr  << ".getProjectParam('" << name << "')\n";
     }
@@ -1002,7 +1010,9 @@ GuiAppInstance::declareCurrentAppVariable_Python()
     _imp->declareAppAndParamsString = script;
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
     if (!ok) {
-        throw std::runtime_error("GuiAppInstance::declareCurrentAppVariable_Python() failed!");
+        // Report instead of throwing: this is reached from Qt slots (e.g. File > New Project), and the
+        // exception would abort the creation of the project window (#1436).
+        appendToScriptEditor("GuiAppInstance::declareCurrentAppVariable_Python(): " + err);
     }
 }
 
