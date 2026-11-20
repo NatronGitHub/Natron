@@ -56,6 +56,9 @@ typedef struct CachedVertex {
   void		*data;
 } CachedVertex;
 
+/* Natron: longjmp() value for an unhandled degeneracy (1 is out of memory) */
+#define TESS_JMP_DEGENERATE 2
+
 struct GLUtesselator {
 
   /*** state needed for collecting the input data ***/
@@ -65,6 +68,8 @@ struct GLUtesselator {
   GLUhalfEdge	*lastEdge;	/* lastEdge->Org is the most recent vertex */
   GLUmesh	*mesh;		/* stores the input contours, and eventually
                                    the tessellation itself */
+  GLboolean	outOfMemory;	/* Natron: an allocation failed while collecting
+                                   the input, the mesh may be inconsistent */
 
   void		(GLAPIENTRY *callError)( GLenum errnum );
 
