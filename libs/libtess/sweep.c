@@ -226,7 +226,10 @@ static ActiveRegion *AddRegionBelow( GLUtesselator *tess,
   regNew->eUp = eNewUp;
   /* __gl_dictListInsertBefore */
   regNew->nodeUp = dictInsertBefore( tess->dict, regAbove->nodeUp, regNew );
-  if (regNew->nodeUp == NULL) longjmp(tess->env,1);
+  if (regNew->nodeUp == NULL) {
+    memFree( regNew ); /* Natron: not in the dictionary, see __gl_sweepCleanup() */
+    longjmp(tess->env,1);
+  }
   regNew->fixUpperEdge = FALSE;
   regNew->sentinel = FALSE;
   regNew->dirty = FALSE;
@@ -1136,7 +1139,10 @@ static void AddSentinel( GLUtesselator *tess, GLdouble t )
   if (reg == NULL) longjmp(tess->env,1);
 
   e = __gl_meshMakeEdge( tess->mesh );
-  if (e == NULL) longjmp(tess->env,1);
+  if (e == NULL) {
+    memFree( reg ); /* Natron: not in the dictionary, see __gl_sweepCleanup() */
+    longjmp(tess->env,1);
+  }
 
   e->Org->s = SENTINEL_COORD;
   e->Org->t = t;
@@ -1151,7 +1157,10 @@ static void AddSentinel( GLUtesselator *tess, GLdouble t )
   reg->sentinel = TRUE;
   reg->dirty = FALSE;
   reg->nodeUp = dictInsert( tess->dict, reg ); /* __gl_dictListInsertBefore */
-  if (reg->nodeUp == NULL) longjmp(tess->env,1);
+  if (reg->nodeUp == NULL) {
+    memFree( reg ); /* Natron: not in the dictionary, see __gl_sweepCleanup() */
+    longjmp(tess->env,1);
+  }
 }
 
 
@@ -1193,6 +1202,7 @@ static void DoneEdgeDict( GLUtesselator *tess )
 /*    __gl_meshDelete( reg->eUp );*/
   }
   dictDeleteDict( tess->dict ); /* __gl_dictListDeleteDict */
+  tess->dict = NULL; /* Natron: see __gl_sweepCleanup() */
 }
 
 
@@ -1261,6 +1271,7 @@ static int InitPriorityQ( GLUtesselator *tess )
 static void DonePriorityQ( GLUtesselator *tess )
 {
   pqDeletePriorityQ( tess->pq ); /* __gl_pqSortDeletePriorityQ */
+  tess->pq = NULL; /* Natron: see __gl_sweepCleanup() */
 }
 
 
@@ -1358,4 +1369,27 @@ int __gl_computeInterior( GLUtesselator *tess )
   __gl_meshCheckMesh( tess->mesh );
 
   return 1;
+}
+
+
+/* Natron: free the sweep data structures (edge dictionary, active regions and
+ * priority queue) after an out-of-memory longjmp() out of
+ * __gl_computeInterior(), which leaked them. The mesh is freed by the caller.
+ */
+void __gl_sweepCleanup( GLUtesselator *tess )
+{
+  ActiveRegion *reg;
+
+  if( tess->dict != NULL ) {
+    while( (reg = (ActiveRegion *)dictKey( dictMin( tess->dict ))) != NULL ) {
+      dictDelete( tess->dict, reg->nodeUp );
+      memFree( reg );
+    }
+    dictDeleteDict( tess->dict );
+    tess->dict = NULL;
+  }
+  if( tess->pq != NULL ) {
+    pqDeletePriorityQ( tess->pq );
+    tess->pq = NULL;
+  }
 }

@@ -136,6 +136,14 @@ gluNewTess( void )
 
   tess->polygonData= NULL;
 
+  /* Natron: checked by MakeDormant() and __gl_sweepCleanup() after an
+   * out-of-memory error
+   */
+  tess->mesh = NULL;
+  tess->outOfMemory = FALSE;
+  tess->dict = NULL;
+  tess->pq = NULL;
+
   return tess;
 }
 
@@ -432,8 +440,13 @@ gluTessVertex( GLUtesselator *tess, GLdouble coords[3], void *data )
 
   RequireState( tess, T_IN_CONTOUR );
 
+  if( tess->outOfMemory ) {
+    /* Natron: the polygon is dropped, see gluTessEndPolygon() */
+    return;
+  }
   if( tess->emptyCache ) {
     if ( !EmptyCache( tess ) ) {
+       tess->outOfMemory = TRUE;
        CALL_ERROR_OR_ERROR_DATA( GLU_OUT_OF_MEMORY );
        return;
     }
@@ -470,11 +483,13 @@ gluTessVertex( GLUtesselator *tess, GLdouble coords[3], void *data )
       return;
     }
     if ( !EmptyCache( tess ) ) {
+       tess->outOfMemory = TRUE;
        CALL_ERROR_OR_ERROR_DATA( GLU_OUT_OF_MEMORY );
        return;
     }
   }
   if ( !AddVertex( tess, clamped, data ) ) {
+       tess->outOfMemory = TRUE;
        CALL_ERROR_OR_ERROR_DATA( GLU_OUT_OF_MEMORY );
   }
 }
@@ -489,6 +504,7 @@ gluTessBeginPolygon( GLUtesselator *tess, void *data )
   tess->cacheCount = 0;
   tess->emptyCache = FALSE;
   tess->mesh = NULL;
+  tess->outOfMemory = FALSE;
 
   tess->polygonData= data;
 }
@@ -526,11 +542,28 @@ gluTessEndPolygon( GLUtesselator *tess )
   if (setjmp(tess->env) != 0) { 
      /* come back here if out of memory */
      CALL_ERROR_OR_ERROR_DATA( GLU_OUT_OF_MEMORY );
+     /* Natron: free the sweep structures and the mesh, which leaked: the
+      * state is already T_DORMANT, so neither gluDeleteTess() nor the next
+      * gluTessBeginPolygon() freed them.
+      */
+     __gl_sweepCleanup( tess );
+     MakeDormant( tess );
+     tess->polygonData= NULL;
      return;
   }
 
   RequireState( tess, T_IN_POLYGON );
   tess->state = T_DORMANT;
+
+  if( tess->outOfMemory ) {
+    /* Natron: gluTessVertex() ran out of memory (and reported it): a mesh
+     * operation may have failed half-way, so the mesh must not be swept
+     * (that crashed in RemoveDegenerateEdges()). Just free it.
+     */
+    MakeDormant( tess );
+    tess->polygonData= NULL;
+    return;
+  }
 
   if( tess->mesh == NULL ) {
     if( ! tess->flagBoundary && tess->callMesh == &noMesh ) {
