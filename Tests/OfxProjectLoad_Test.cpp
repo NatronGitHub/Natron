@@ -187,8 +187,14 @@ TEST(OfxProjectLoad, InstanceChangedAfterLoadKeepsSavedValues)
     alone.reset();
 
     start = readCounters();
-    ASSERT_TRUE( project->loadProject( dir, QString::fromUtf8("ProjectLoad.ntp") ) );
+    testing::internal::CaptureStdout();
+    const bool loaded = project->loadProject( dir, QString::fromUtf8("ProjectLoad.ntp") );
+    const std::string output = testing::internal::GetCapturedStdout();
+    ASSERT_TRUE(loaded);
     delta = countersSince(start);
+    // no value changed: not modified, nothing logged
+    EXPECT_TRUE( project->isSaveUpToDate() );
+    EXPECT_EQ( std::string::npos, output.find("Project load: plug-ins changed parameter values") ) << output;
 
     std::map<std::string, int> expected;
     expected["ProjectLoad.created"] = 2;
@@ -219,7 +225,8 @@ TEST(OfxProjectLoad, InstanceChangedAfterLoadKeepsSavedValues)
 }
 
 // Like AppendClip's "lastFrame", the plug-in sets a value derived from its source in the action, whatever the reason:
-// the saved value was stale (the user, or a shorter input). After the load, the node has a new age (hence hash), and
+// the saved value was stale (the user, or a shorter input). After the load, the project is marked modified and the
+// changed nodes are logged. The node has a new age (hence hash), and
 // its clip preferences, which read that value, and those of the node downstream, are computed again. The downstream
 // node was created first, but its action comes after the one of its input, and sees the new metadata; its hash
 // changes. A node that follows the value through a link, but is not downstream, also gets a new age.
@@ -265,8 +272,21 @@ TEST(OfxProjectLoad, ValueChangedAfterLoadRefreshesMetadataAndHash)
     follower.reset();
 
     const std::map<std::string, int> start = readCounters();
-    ASSERT_TRUE( project->loadProject( dir, QString::fromUtf8("ProjectLoadDerived.ntp") ) );
+    testing::internal::CaptureStdout();
+    const bool loaded = project->loadProject( dir, QString::fromUtf8("ProjectLoadDerived.ntp") );
+    const std::string output = testing::internal::GetCapturedStdout();
+    ASSERT_TRUE(loaded);
     std::map<std::string, int> delta = countersSince(start);
+    // the values are not the saved ones: the project is modified, and the changed nodes are logged (stdout in
+    // background mode, the Script Editor in the GUI), the follower too, but not the node downstream
+    EXPECT_FALSE( project->isSaveUpToDate() );
+    const std::size_t logged = output.find("Project load: plug-ins changed parameter values in: ");
+    ASSERT_NE(std::string::npos, logged) << output;
+    const std::string line = output.substr( logged, output.find('\n', logged) - logged );
+    EXPECT_NE( std::string::npos, line.find(derivingName) ) << line;
+    EXPECT_NE( std::string::npos, line.find(followerName) ) << line;
+    EXPECT_EQ( std::string::npos, line.find(downstreamName) ) << line;
+    EXPECT_NE( std::string::npos, line.find("(the project is marked modified)") ) << line;
     deriving = project->getNodeByName(derivingName);
     downstream = project->getNodeByName(downstreamName);
     follower = project->getNodeByName(followerName);

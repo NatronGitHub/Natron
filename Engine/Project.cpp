@@ -381,7 +381,8 @@ Project::loadProjectInternal(const QString & path,
         QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
         Q_EMIT projectNameChanged(projectPath + projectFilename, true);
     } else {
-        Q_EMIT projectNameChanged(path + name, false);
+        // modified if plug-ins changed values while it was loading (see ProjectPrivate::restoreFromSerialization())
+        Q_EMIT projectNameChanged( path + name, !isSaveUpToDate() );
     }
 
     ///Try to take the project lock by creating a lock file

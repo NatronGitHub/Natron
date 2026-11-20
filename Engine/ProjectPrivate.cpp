@@ -25,6 +25,7 @@
 
 #include "ProjectPrivate.h"
 
+#include <algorithm>
 #include <list>
 #include <set>
 #include <vector>
@@ -302,7 +303,9 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     // age isn't incremented: if a knob changed in an action, give its node, and the nodes whose links or expressions
     // follow it, a new age (hence a new hash, so that no image cached for the old values is used), and refresh their
     // input related data (clip preferences, metadata) and those of their outputs. Their hashes changed: set the
-    // render thread storage again for the next action.
+    // render thread storage again for the next action. The values the project has are then not the saved ones: the
+    // project is marked as modified, and the nodes are listed in the Script Editor (stdout in background mode).
+    std::vector<std::string> changedDuringLoad; // the nodes whose values changed, in the order of the changes
     {
         const AppInstance* app = _publicInterface->getApp().get();
         NodesList nodes, roots;
@@ -344,6 +347,10 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                     if ( node && (node->getApp().get() == app) ) {
                         node->incrementKnobsAge();
                         node->forceRefreshAllInputRelatedData();
+                        const std::string name = node->getFullyQualifiedName();
+                        if ( std::find(changedDuringLoad.begin(), changedDuringLoad.end(), name) == changedDuringLoad.end() ) {
+                            changedDuringLoad.push_back(name);
+                        }
                     }
                 }
             }
@@ -357,6 +364,16 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     projectPath->setValue( path.toStdString() );
     ageSinceLastSave = time;
     lastAutoSave = time;
+    if ( !changedDuringLoad.empty() ) {
+        // modified, as after loading an auto-save (see Project::loadProjectInternal() and Project::isSaveUpToDate())
+        ageSinceLastSave = QDateTime();
+        std::string names;
+        for (std::size_t i = 0; i < changedDuringLoad.size(); ++i) {
+            names += (i ? ", " : "") + changedDuringLoad[i];
+        }
+        _publicInterface->getApp()->appendToScriptEditor( tr("Project load: plug-ins changed parameter values in: %1 (the project is marked modified)")
+                                                          .arg( QString::fromUtf8( names.c_str() ) ).toStdString() );
+    }
     _publicInterface->getApp()->setProjectWasCreatedWithLowerCaseIDs(false);
 
     if (obj.getVersion() < PROJECT_SERIALIZATION_REMOVES_TIMELINE_BOUNDS) {
