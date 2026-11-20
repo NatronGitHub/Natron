@@ -25,8 +25,15 @@
 
 #include "ThreadPool.h"
 
+#include <algorithm> // min
+#include <cstddef>
+#include <limits>
 #include <string>
 #include <sstream> // stringstream
+
+#ifndef __NATRON_WIN32__
+#include <pthread.h>
+#endif
 
 #include <QAtomicInt>
 #include <QMutex>
@@ -65,12 +72,34 @@ struct AbortableThreadPrivate
     }
 };
 
+unsigned int
+getRenderThreadStackSize()
+{
+    static const unsigned int stackSize = []() {
+        std::size_t size = NATRON_RENDER_THREAD_STACK_SIZE;
+#ifndef __NATRON_WIN32__
+        // The default stack size of new threads (on Linux, RLIMIT_STACK, i.e. `ulimit -s`)
+        pthread_attr_t attr;
+        if (pthread_attr_init(&attr) == 0) {
+            std::size_t defaultSize = 0;
+            if ( (pthread_attr_getstacksize(&attr, &defaultSize) == 0) && (defaultSize > size) ) {
+                size = defaultSize;
+            }
+            pthread_attr_destroy(&attr);
+        }
+#endif
+        return (unsigned int)std::min<std::size_t>( size, std::numeric_limits<unsigned int>::max() );
+    }();
+
+    return stackSize;
+}
+
 AbortableThread::AbortableThread(QThread* thread)
     : _imp( new AbortableThreadPrivate(thread) )
 {
     // Every thread that renders derives from AbortableThread (#1434)
     assert( !thread->isRunning() );
-    thread->setStackSize(NATRON_RENDER_THREAD_STACK_SIZE);
+    thread->setStackSize( getRenderThreadStackSize() );
 }
 
 AbortableThread::~AbortableThread()

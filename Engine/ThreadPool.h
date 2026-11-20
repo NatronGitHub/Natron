@@ -36,16 +36,31 @@
 NATRON_NAMESPACE_ENTER
 
 /**
- * @brief Stack size, in bytes, of the threads that render (render threads, scheduler threads, the
- * OFX multi-thread suite threads and the global thread pool, which runs QtConcurrent tasks).
+ * @brief Minimum stack size, in bytes, of the threads that render (render threads, scheduler
+ * threads, the OFX multi-thread suite threads and the global thread pool, which runs QtConcurrent
+ * tasks).
  *
  * A render recurses through the whole graph upstream of the rendered node (renderRoI,
- * getRegionOfDefinition, isFrameVaryingOrAnimated...), using a few KB of stack per node. The default
- * stack size of secondary threads (512 KB on macOS, 1 MB on Windows) overflows with a chain of
- * about 200 to 300 nodes (#1434). This is the default stack size of the main thread on macOS and of
- * all threads on Linux.
+ * getRegionOfDefinition, isFrameVaryingOrAnimated...), using a few KB of stack per node. With the
+ * default stack size of secondary threads on macOS (512 KB), a chain of about 300 nodes overflowed
+ * it (#1434). 8 MB is the default stack size of the main thread on macOS and of all threads on Linux,
+ * and lets a chain of about 3400 nodes render.
+ *
+ * On Windows, Qt passes the stack size to CreateThread()/_beginthreadex() without
+ * STACK_SIZE_PARAM_IS_A_RESERVATION, so the whole stack is committed (charged to the commit limit)
+ * when the thread starts, rather than only reserved: use 4 MB there (about 1700 nodes).
  **/
+#ifdef __NATRON_WIN32__
+#define NATRON_RENDER_THREAD_STACK_SIZE (4 * 1024 * 1024)
+#else
 #define NATRON_RENDER_THREAD_STACK_SIZE (8 * 1024 * 1024)
+#endif
+
+/**
+ * @brief The stack size of the threads that render: NATRON_RENDER_THREAD_STACK_SIZE, or the default
+ * stack size of new threads if it is larger (on Linux, it follows `ulimit -s`).
+ **/
+unsigned int getRenderThreadStackSize();
 
 /**
  * @brief This class provides a fast way to determine whether a render thread
@@ -56,7 +71,7 @@ class AbortableThread
 {
 public:
 
-    // Sets the stack size of thread to NATRON_RENDER_THREAD_STACK_SIZE: it must not be started yet.
+    // Sets the stack size of thread to getRenderThreadStackSize(): it must not be started yet.
     AbortableThread(QThread* thread);
 
     virtual ~AbortableThread();

@@ -442,7 +442,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
 
     // The pooled threads render too (QtConcurrent tasks, viewer renders): give them the same stack as
     // the render threads (#1434). This only applies to threads that the pool creates from now on.
-    QThreadPool::globalInstance()->setStackSize(NATRON_RENDER_THREAD_STACK_SIZE);
+    QThreadPool::globalInstance()->setStackSize( getRenderThreadStackSize() );
 
 
     ///the QCoreApplication must have been created so far.

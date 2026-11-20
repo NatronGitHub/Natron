@@ -20,7 +20,7 @@
 // renderInputImagesForRoI, getRegionOfDefinition...), on a render thread or a thread of the global
 // thread pool. With the default stack size of secondary threads (512 KB on macOS), a linear chain of
 // about 300 nodes overflowed the stack and crashed (#1434). The render threads and the global thread
-// pool now have a stack of NATRON_RENDER_THREAD_STACK_SIZE bytes.
+// pool now have a stack of getRenderThreadStackSize() bytes (at least NATRON_RENDER_THREAD_STACK_SIZE).
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -34,6 +34,7 @@
 
 #include <gtest/gtest.h>
 
+#include <QThread>
 #include <QThreadPool>
 #include <QtConcurrentRun> // QtConcurrent on Qt5
 
@@ -117,10 +118,42 @@ canRunTest()
 }
 } // anon namespace
 
+// At least NATRON_RENDER_THREAD_STACK_SIZE, and never less than the default stack size of new threads
+TEST(DeepGraphRender, StackSize)
+{
+    EXPECT_GE( getRenderThreadStackSize(), (unsigned int)NATRON_RENDER_THREAD_STACK_SIZE );
+}
+
 // The stack size applies to the threads that the global pool creates after AppManager::load().
 TEST(DeepGraphRender, GlobalThreadPoolStackSize)
 {
-    EXPECT_EQ( (uint)NATRON_RENDER_THREAD_STACK_SIZE, QThreadPool::globalInstance()->stackSize() );
+    EXPECT_EQ( getRenderThreadStackSize(), QThreadPool::globalInstance()->stackSize() );
+}
+
+namespace {
+// Derives from AbortableThread like RenderThreadTask, GenericSchedulerThread and OfxThread
+class TestAbortableThread
+    : public QThread
+    , public AbortableThread
+{
+public:
+    TestAbortableThread()
+        : QThread()
+        , AbortableThread(this)
+    {
+    }
+
+private:
+    void run() OVERRIDE {}
+};
+} // anon namespace
+
+// Every thread that renders derives from AbortableThread, which sets its stack size.
+TEST(DeepGraphRender, AbortableThreadStackSize)
+{
+    TestAbortableThread thread;
+
+    EXPECT_EQ( getRenderThreadStackSize(), thread.stackSize() );
 }
 
 // Render a frame of the chain on disk: on a render thread (RenderThreadTask), as NatronRenderer does.
