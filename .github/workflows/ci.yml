@@ -83,11 +83,11 @@ jobs:
             libgl1-mesa-dri mesa-utils x11-utils
 
       # The GUI tests need an OpenGL context (Mesa llvmpipe under Xvfb, see #536); without one,
-      # they are skipped (exit status 77), so check it here to see why in the log.
+      # they are skipped (exit status 77), not failed. This step only explains that in the log.
       - name: Check GLX under Xvfb
         run: |
           xdpyinfo | grep -E "dimensions|depths" || true
-          glxinfo -B
+          glxinfo -B || echo "::warning::no GLX context under Xvfb: the GUI tests will be skipped"
 
       - name: Download OpenColorIO-Configs
         run: |
@@ -114,7 +114,8 @@ jobs:
         continue-on-error: true
         run: |
           cd debug
-          OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
+          # the GUI tests (label gui) run once, in the release build below
+          OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V -LE gui
 
       - name: Build Unix (release)
         run: |
