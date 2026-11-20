@@ -253,7 +253,7 @@ array set modules {
         {"Qt Core" "Qt GUI" "Qt Network" "Qt SQL" "Qt Test" "Qt Widgets" "Qt Concurrent" "Qt D-Bus" "Qt OpenGL" "Qt Platform Headers" "Qt Print Support" "Qt XML"}
         ""
         "variant overrides: "
-        "revision 0"
+        "revision 1"
         "License: "
     }
     qtcharts {
@@ -1091,6 +1091,10 @@ foreach {module module_info} [array get modules] {
             # macOS Tahoe removed AGL.framework
             # https://trac.macports.org/ticket/72729
             patchfiles-append patch-qtbase-tahoe-no-agl-framework.diff
+
+            # Natron: fix a lost wake-up in the non-futex QMutex on arm64 (NatronGitHub/Natron#1451):
+            # QMutexPrivate::derefWaiters() must use release ordering
+            patchfiles-append patch-qtbase-qmutex-arm64-lost-wakeup.diff
 
             # find the Rez program
             patchfiles-append patch-find_rez.diff

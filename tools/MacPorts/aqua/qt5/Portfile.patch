@@ -1,13 +1,33 @@
---- Portfile.orig	2026-11-15 17:34:26
-+++ Portfile	2026-11-15 17:34:26
-@@ -88,6 +88,10 @@
- 
+--- Portfile.orig	2026-11-20 09:04:34
++++ Portfile	2026-11-20 09:05:24
+@@ -89,6 +89,10 @@
      # Backport fix for bundled libpng
      patchfiles-append   patch-qtwebengine-libpng.diff
-+
+ 
 +    # Natron: the macOS 27 SDK no longer declares the kSBXProfile* constants
 +    # in <sandbox.h> (libsystem_sandbox still exports them)
 +    patchfiles-append   patch-qtwebengine-sandbox-kSBXProfile-macos27.diff
- 
++
      # fixes for newer LLVM/Clang; Sequoia or newer
      if {${os.platform} eq "darwin" && ${os.major} >= 24} {
+         patchfiles-append \
+@@ -249,7 +253,7 @@
+         {"Qt Core" "Qt GUI" "Qt Network" "Qt SQL" "Qt Test" "Qt Widgets" "Qt Concurrent" "Qt D-Bus" "Qt OpenGL" "Qt Platform Headers" "Qt Print Support" "Qt XML"}
+         ""
+         "variant overrides: "
+-        "revision 0"
++        "revision 1"
+         "License: "
+     }
+     qtcharts {
+@@ -1087,6 +1091,10 @@
+             # macOS Tahoe removed AGL.framework
+             # https://trac.macports.org/ticket/72729
+             patchfiles-append patch-qtbase-tahoe-no-agl-framework.diff
++
++            # Natron: fix a lost wake-up in the non-futex QMutex on arm64 (NatronGitHub/Natron#1451):
++            # QMutexPrivate::derefWaiters() must use release ordering
++            patchfiles-append patch-qtbase-qmutex-arm64-lost-wakeup.diff
+ 
+             # find the Rez program
+             patchfiles-append patch-find_rez.diff
