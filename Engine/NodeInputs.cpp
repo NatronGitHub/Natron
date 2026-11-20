@@ -1451,14 +1451,18 @@ Node::getPreferredInputInternal(bool connected) const
         }
     }
     bool useInputA = false;
-    if (!connected) {
+    if (getPluginID() == PLUGINID_OFX_SHUFFLE) {
+        // Shuffle outputs B by default since version 3, A before: connect that input, whatever the
+        // preference, which is meant for merging (#818)
+        useInputA = getMajorVersion() < 3;
+    } else if (!connected) {
         // For the merge node, use the preference (only when not connected)
         useInputA = appPTR->getCurrentSettings()->useInputAForMergeAutoConnect();
     }
 
     ///Find an input named A
     int inputToFind = -1, foundOther = -1;
-    if ( useInputA || (getPluginID() == PLUGINID_OFX_SHUFFLE && getMajorVersion() < 3) ) {
+    if (useInputA) {
         inputToFind = inputA;
         foundOther = inputB;
     } else {
@@ -1920,7 +1924,10 @@ int
 InspectorNode::getPreferredInputInternal(bool connected) const
 {
     bool useInputA = false;
-    if (!connected) {
+    if (getPluginID() == PLUGINID_OFX_SHUFFLE) {
+        // as in Node::getPreferredInputInternal()
+        useInputA = getMajorVersion() < 3;
+    } else if (!connected) {
         // For the merge node, use the preference (only when not connected)
         useInputA = appPTR->getCurrentSettings()->useInputAForMergeAutoConnect();
     }
@@ -1928,7 +1935,7 @@ InspectorNode::getPreferredInputInternal(bool connected) const
     ///Find an input named A
     std::string inputNameToFind, otherName;
 
-    if ( useInputA || (getPluginID() == PLUGINID_OFX_SHUFFLE && getMajorVersion() < 3) ) {
+    if (useInputA) {
         inputNameToFind = "A";
         otherName = "B";
     } else {

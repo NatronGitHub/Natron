@@ -331,8 +331,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - G9
      - `ofxGPURender.h:308-324 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxGPURender.h#L308-L324>`__ flushResources: kOfxStatOK "the host has actually released some resources", kOfxStatReplyDefault "nothing the host could do"
      - MUST (return semantics)
-     - ``OfxHost::flushOpenGLResources`` returns kOfxStatOK and releases nothing (Engine/OfxHost.cpp:1766-1770); the only override.
-     - WRONG
+     - ``OfxHost::flushOpenGLResources`` returns kOfxStatOK and releases nothing (Engine/OfxHost.cpp:1766-1770); the only override. Fixed: ``flushOpenGLResources()`` returns kOfxStatReplyDefault.
+     - OK (fixed by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - G10
@@ -551,7 +551,7 @@ Wrong results / wrong behaviour
 
 9. **K7 WRONG (MUST): bundles whose name starts with '@' are not skipped.** ofxhPC:596 handles ``*.ofx.bundle`` before the '@' test, which only guards recursion into plain directories (ofxhPC:663). Second check: no other name filter in HostSupport (``scanDirectory``, ``scanPluginFiles``) or Natron (``OfxHost::loadOFXPlugins``). **Issue:** `#1380 <https://github.com/NatronGitHub/Natron/issues/1380>`__.
 
-10. **G9 WRONG: flushResources always returns kOfxStatOK without releasing anything** (OfxHost.cpp:1766-1770), telling the plug-in to retry its GPU allocation; should be kOfxStatReplyDefault, or actually purge the GL texture cache. Second check: the only override of ``flushOpenGLResources``. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+10. **G9 WRONG: flushResources always returns kOfxStatOK without releasing anything** (OfxHost.cpp:1766-1770), telling the plug-in to retry its GPU allocation; should be kOfxStatReplyDefault, or actually purge the GL texture cache. Second check: the only override of ``flushOpenGLResources``. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__.
 
 11. **I16 MISSING: an interact whose Draw returns kOfxStatFailed is not ignored afterwards.** HS drawAction keeps ``_state`` (ofxhI:450-489); Natron ignores the status (OfxEffectInstance.cpp:2230, CustomParamInteract.cpp:133). Second check: ``_state = eFailed`` is only set by describe/createInstance. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
@@ -599,11 +599,11 @@ Over the 72 table rows (sections 1, 2, 4, 5, 6; the `#1349 <https://github.com/N
    * - verdict
      - count
    * - OK
-     - 39
+     - 40
    * - PARTIAL
      - 13
    * - WRONG
-     - 8
+     - 7
    * - MISSING
      - 4
    * - N/A
