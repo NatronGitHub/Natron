@@ -726,10 +726,15 @@ NodeGui::createGui()
         _passThroughIndicator->setActive(false);
     }
 
+    // The cross shown on a disabled node: thick and red, so that it can't be missed (#796)
+    QPen disabledPen( QColor(230, 20, 20), TO_DPIX(4) );
+    disabledPen.setCapStyle(Qt::FlatCap); // stays inside the node corners
     _disabledBtmLeftTopRight = new QGraphicsLineItem(this);
+    _disabledBtmLeftTopRight->setPen(disabledPen);
     _disabledBtmLeftTopRight->setZValue(depth + 1);
     _disabledBtmLeftTopRight->hide();
     _disabledTopLeftBtmRight = new QGraphicsLineItem(this);
+    _disabledTopLeftBtmRight->setPen(disabledPen);
     _disabledTopLeftBtmRight->hide();
     _disabledTopLeftBtmRight->setZValue(depth + 1);
 } // NodeGui::createGui
