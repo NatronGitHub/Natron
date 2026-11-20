@@ -1,11 +1,12 @@
 # Maintainer: The Natron developers
 
 pkgname="${MINGW_PACKAGE_PREFIX}-natron-build-deps-qt5"
-pkgver=2025.5
+pkgver=2026.11
 pkgrel=1
 pkgdesc="Minimal package set for building Natron installer with QT5"
 url="https://natrongithub.github.io/"
 arch=("any")
+mingw_arch=('ucrt64')
 license=("GPL")
 depends=(
   "git"

@@ -115,9 +115,9 @@ public Q_SLOTS:
      * which means this is the last selection desired by the user.
      * Receivers can either update the selection always or just on mouse release.
      **/
-    void updateSelectionFromViewerSelectionRectangle(bool onRelease);
+    void updateSelectionFromViewerSelectionRectangle(bool onRelease, Qt::KeyboardModifiers modifiers);
 
-    void onViewerSelectionCleared();
+    void onViewerSelectionCleared(Qt::KeyboardModifiers modifiers);
 
     void onToolActionTriggered();
 

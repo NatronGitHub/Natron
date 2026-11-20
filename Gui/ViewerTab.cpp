@@ -319,7 +319,6 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->refreshButton->setFixedSize(buttonSize);
     _imp->refreshButton->setIconSize(buttonIconSize);
     {
-        QKeySequence seq(Qt::CTRL + Qt::SHIFT);
         std::list<std::string> refreshActions;
         refreshActions.push_back(kShortcutIDActionRefresh);
         refreshActions.push_back(kShortcutIDActionRefreshWithStats);
@@ -338,7 +337,6 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->pauseButton->setChecked(false);
     _imp->pauseButton->setDown(false);
     {
-        QKeySequence seq(Qt::CTRL + Qt::SHIFT);
         std::list<std::string> actions;
         actions.push_back(kShortcutIDActionPauseViewerInputA);
         actions.push_back(kShortcutIDActionPauseViewer);
@@ -523,24 +521,6 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->checkerboardButton->setIconSize(buttonIconSize);
     QObject::connect( _imp->checkerboardButton, SIGNAL(clicked(bool)), this, SLOT(onCheckerboardButtonClicked()) );
     _imp->secondRowLayout->addWidget(_imp->checkerboardButton);
-
-    QPixmap ditheringEnabled, ditheringDisabled;
-    appPTR->getIcon(NATRON_PIXMAP_VIEWER_DITHER_ENABLED, pixmapIconSize, &ditheringEnabled);
-    appPTR->getIcon(NATRON_PIXMAP_VIEWER_DITHER_DISABLED, pixmapIconSize, &ditheringDisabled);
-    QIcon icDthr;
-    icDthr.addPixmap(ditheringEnabled, QIcon::Normal, QIcon::On);
-    icDthr.addPixmap(ditheringDisabled, QIcon::Normal, QIcon::Off);
-    _imp->ditherButton = new Button(icDthr, QString(), _imp->secondSettingsRow);
-    _imp->ditherButton->setFocusPolicy(Qt::NoFocus);
-    _imp->ditherButton->setCheckable(true);
-    _imp->ditherButton->setChecked(false);
-    _imp->ditherButton->setDown(false);
-    _imp->ditherButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("If checked, it will activate a dithering filter to avoid banding artifacts (needs 32 bits floating point rendering)"), NATRON_NAMESPACE::WhiteSpaceNormal) );
-    _imp->ditherButton->setFixedSize(buttonSize);
-    _imp->ditherButton->setIconSize(buttonIconSize);
-    QObject::connect( _imp->ditherButton, SIGNAL(clicked(bool)), this, SLOT(onDitherButtonClicked()) );
-    _imp->secondRowLayout->addWidget(_imp->ditherButton);
-
 
     _imp->viewsComboBox = new ComboBox(_imp->secondSettingsRow);
     _imp->viewsComboBox->setToolTip( QString::fromUtf8("<p><b>") + tr("Active view:") + QString::fromUtf8("</b></p>") + tr(

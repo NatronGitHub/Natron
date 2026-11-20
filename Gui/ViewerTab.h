@@ -85,13 +85,26 @@ public:
     /*All the overlay methods are forwarding calls to the default node instance*/
     void drawOverlays(double time, const RenderScale & renderScale) const;
 
-    bool notifyOverlaysPenDown(const RenderScale & renderScale, PenType pen, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
+    bool notifyOverlaysPenDown(const RenderScale & renderScale, PenType pen, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers);
 
     bool notifyOverlaysPenDoubleClick(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos);
 
-    bool notifyOverlaysPenMotion(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
+    bool notifyOverlaysPenMotion(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers);
 
-    bool notifyOverlaysPenUp(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
+    bool notifyOverlaysPenUp(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers);
+
+    /**
+     * @brief Compute the cursor requested by the overlays shown on this viewer (OFX interact
+     * cursors), from the current requests of the overlays that received the last pen or key
+     * event: the overlay that caught the event wins, else the first non-default request in
+     * dispatch order. Returns false for the default (viewer) cursor.
+     **/
+    bool getOverlaysCursor(QCursor* cursor);
+
+private:
+    bool getOverlayCursorFor(const NodePtr& node, QCursor* cursor);
+
+public:
 
     bool notifyOverlaysKeyDown(const RenderScale & renderScale, QKeyEvent* e);
 
@@ -105,16 +118,16 @@ public:
 
 private:
 
-    bool notifyOverlaysPenDown_internal(const NodePtr& node, const RenderScale & renderScale, PenType pen, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
+    bool notifyOverlaysPenDown_internal(const NodePtr& node, const RenderScale & renderScale, PenType pen, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers);
 
-    bool notifyOverlaysPenMotion_internal(const NodePtr& node, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
+    bool notifyOverlaysPenMotion_internal(const NodePtr& node, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers);
     bool notifyOverlaysKeyDown_internal(const NodePtr& node, const RenderScale & renderScale, Key k,
-                                        KeyboardModifiers km, Qt::Key qKey, const Qt::KeyboardModifiers& mods);
+                                        KeyboardModifiers km, const QString& keyText, Qt::Key qKey, const Qt::KeyboardModifiers& mods);
 
     bool checkNodeViewerContextShortcuts(const NodePtr& node, Qt::Key qKey, const Qt::KeyboardModifiers& mods);
 
     bool notifyOverlaysKeyRepeat_internal(const NodePtr& node, const RenderScale & renderScale, Key k,
-                                          KeyboardModifiers km, Qt::Key qKey, const Qt::KeyboardModifiers& mods);
+                                          KeyboardModifiers km, const QString& keyText, Qt::Key qKey, const Qt::KeyboardModifiers& mods);
 
 public:
 
@@ -397,7 +410,6 @@ public Q_SLOTS:
     void hideAllToolbars();
 
     void onCheckerboardButtonClicked();
-    void onDitherButtonClicked();
 
     void onPickerButtonClicked(bool);
 

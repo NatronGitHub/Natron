@@ -1626,7 +1626,8 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                                                     const EffectInstance::InputImagesMap & inputImages,
                                                     const RenderStatsPtr & stats,
                                                     const OSGLContextAttacherPtr& glContextAttacher,
-                                                    ImagePtr* image)
+                                                    ImagePtr* image,
+                                                    bool lookupPersistentCache)
 {
     ImageList cachedImages;
     bool isCached = false;
@@ -1647,7 +1648,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
         }
     }
 
-    if (!isCached) {
+    if (!isCached && lookupPersistentCache) {
         // For textures, we lookup for a RAM image, if found we convert it to a texture
         if ( (storage == eStorageModeRAM) || (storage == eStorageModeGLTex) ) {
             isCached = appPTR->getImage(key, &cachedImages);
@@ -2796,6 +2797,11 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
                                                 it->second.tmpImage->getPremultiplication(),
                                                 it->second.tmpImage->getFieldingOrder(),
                                                 false);
+                        if ( !originalInputImage->getBounds().contains(downscaledRectToRender) ) {
+                            // upscaleMipmap only writes the part of tmp covered by originalInputImage,
+                            // and copyUnProcessedChannels reads all of renderMappedRectToRender.
+                            tmp->fillZero(renderMappedRectToRender);
+                        }
                         originalInputImage->upscaleMipmap( downscaledRectToRender, originalInputImage->getMipmapLevel(), 0, tmp.get() );
                         mappedOriginalInputImage = tmp;
                     }
@@ -3086,6 +3092,14 @@ EffectInstance::message(MessageTypeEnum type,
     return node ? node->message(type, content) : false;
 }
 
+StandardButtonEnum
+EffectInstance::question(const std::string & content) const
+{
+    NodePtr node = getNode();
+    assert(node);
+    return node ? node->question(content) : eStandardButtonNoButton;
+}
+
 void
 EffectInstance::setPersistentMessage(MessageTypeEnum type,
                                      const std::string & content)
@@ -3323,7 +3337,8 @@ EffectInstance::onOverlayPenDown_public(double time,
                                         const QPointF & pos,
                                         double pressure,
                                         double timestamp,
-                                        PenType pen)
+                                        PenType pen,
+                                        KeyboardModifiers modifiers)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3346,10 +3361,10 @@ EffectInstance::onOverlayPenDown_public(double time,
         if (!shouldPreferPluginOverlayOverHostOverlay()) {
             ret = drawHostOverlay ? getNode()->onOverlayPenDownDefault(time, actualScale, view, viewportPos, pos, pressure) : false;
             if (!ret) {
-                ret |= onOverlayPenDown(time, actualScale, view, viewportPos, pos, pressure, timestamp, pen);
+                ret |= onOverlayPenDown(time, actualScale, view, viewportPos, pos, pressure, timestamp, pen, modifiers);
             }
         } else {
-            ret = onOverlayPenDown(time, actualScale, view, viewportPos, pos, pressure, timestamp, pen);
+            ret = onOverlayPenDown(time, actualScale, view, viewportPos, pos, pressure, timestamp, pen, modifiers);
             if (!ret && drawHostOverlay) {
                 ret |= getNode()->onOverlayPenDownDefault(time, actualScale, view, viewportPos, pos, pressure);
             }
@@ -3413,7 +3428,8 @@ EffectInstance::onOverlayPenMotion_public(double time,
                                           const QPointF & viewportPos,
                                           const QPointF & pos,
                                           double pressure,
-                                          double timestamp)
+                                          double timestamp,
+                                          KeyboardModifiers modifiers)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3436,10 +3452,10 @@ EffectInstance::onOverlayPenMotion_public(double time,
     if (!shouldPreferPluginOverlayOverHostOverlay()) {
         ret = drawHostOverlay ? getNode()->onOverlayPenMotionDefault(time, actualScale, view, viewportPos, pos, pressure) : false;
         if (!ret) {
-            ret |= onOverlayPenMotion(time, actualScale, view, viewportPos, pos, pressure, timestamp);
+            ret |= onOverlayPenMotion(time, actualScale, view, viewportPos, pos, pressure, timestamp, modifiers);
         }
     } else {
-        ret = onOverlayPenMotion(time, actualScale, view, viewportPos, pos, pressure, timestamp);
+        ret = onOverlayPenMotion(time, actualScale, view, viewportPos, pos, pressure, timestamp, modifiers);
         if (!ret && drawHostOverlay) {
             ret |= getNode()->onOverlayPenMotionDefault(time, actualScale, view, viewportPos, pos, pressure);
         }
@@ -3459,7 +3475,8 @@ EffectInstance::onOverlayPenUp_public(double time,
                                       const QPointF & viewportPos,
                                       const QPointF & pos,
                                       double pressure,
-                                      double timestamp)
+                                      double timestamp,
+                                      KeyboardModifiers modifiers)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3482,10 +3499,10 @@ EffectInstance::onOverlayPenUp_public(double time,
         if (!shouldPreferPluginOverlayOverHostOverlay()) {
             ret = drawHostOverlay ? getNode()->onOverlayPenUpDefault(time, actualScale, view, viewportPos, pos, pressure) : false;
             if (!ret) {
-                ret |= onOverlayPenUp(time, actualScale, view, viewportPos, pos, pressure, timestamp);
+                ret |= onOverlayPenUp(time, actualScale, view, viewportPos, pos, pressure, timestamp, modifiers);
             }
         } else {
-            ret = onOverlayPenUp(time, actualScale, view, viewportPos, pos, pressure, timestamp);
+            ret = onOverlayPenUp(time, actualScale, view, viewportPos, pos, pressure, timestamp, modifiers);
             if (!ret && drawHostOverlay) {
                 ret |= getNode()->onOverlayPenUpDefault(time, actualScale, view, viewportPos, pos, pressure);
             }
@@ -3503,7 +3520,8 @@ EffectInstance::onOverlayKeyDown_public(double time,
                                         const RenderScale & renderScale,
                                         ViewIdx view,
                                         Key key,
-                                        KeyboardModifiers modifiers)
+                                        KeyboardModifiers modifiers,
+                                        const QString& keyText)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3523,7 +3541,7 @@ EffectInstance::onOverlayKeyDown_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayKeyDown(time, actualScale, view, key, modifiers);
+        ret = onOverlayKeyDown(time, actualScale, view, key, modifiers, keyText);
         if (!ret && shouldDrawHostOverlay()) {
             ret |= getNode()->onOverlayKeyDownDefault(time, actualScale, view, key, modifiers);
         }
@@ -3539,7 +3557,8 @@ EffectInstance::onOverlayKeyUp_public(double time,
                                       const RenderScale & renderScale,
                                       ViewIdx view,
                                       Key key,
-                                      KeyboardModifiers modifiers)
+                                      KeyboardModifiers modifiers,
+                                      const QString& keyText)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3559,7 +3578,7 @@ EffectInstance::onOverlayKeyUp_public(double time,
         NON_RECURSIVE_ACTION();
 
         _imp->setDuringInteractAction(true);
-        ret = onOverlayKeyUp(time, actualScale, view, key, modifiers);
+        ret = onOverlayKeyUp(time, actualScale, view, key, modifiers, keyText);
         if (!ret && shouldDrawHostOverlay()) {
             ret |= getNode()->onOverlayKeyUpDefault(time, actualScale, view, key, modifiers);
         }
@@ -3575,7 +3594,8 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
                                           const RenderScale & renderScale,
                                           ViewIdx view,
                                           Key key,
-                                          KeyboardModifiers modifiers)
+                                          KeyboardModifiers modifiers,
+                                          const QString& keyText)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3594,7 +3614,7 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayKeyRepeat(time, actualScale, view, key, modifiers);
+        ret = onOverlayKeyRepeat(time, actualScale, view, key, modifiers, keyText);
         if (!ret && shouldDrawHostOverlay()) {
             ret |= getNode()->onOverlayKeyRepeatDefault(time, actualScale, view, key, modifiers);
         }
@@ -4052,6 +4072,7 @@ EffectInstance::getOrCreateRenderInstance()
         EffectInstancePtr ret =  _imp->renderClonesPool.front();
         _imp->renderClonesPool.pop_front();
         ret->_imp->isDoingInstanceSafeRender = true;
+        refreshRenderCloneState(ret);
         return ret;
     }
 
@@ -4062,6 +4083,7 @@ EffectInstance::getOrCreateRenderInstance()
         return shared_from_this();
     }
     clone->_imp->isDoingInstanceSafeRender = true;
+    refreshRenderCloneState(clone);
     return clone;
 }
 
@@ -4097,9 +4119,9 @@ EffectInstance::attachOpenGLContext_public(const OSGLContextPtr& glContext,
 {
     NON_RECURSIVE_ACTION();
     bool concurrentGLRender = supportsConcurrentOpenGLRenders();
-    std::unique_ptr<QMutexLocker> locker;
+    std::unique_ptr<QtCompat::MutexLock> locker;
     if (concurrentGLRender) {
-        locker.reset( new QMutexLocker(&_imp->attachedContextsMutex) );
+        locker.reset( new QtCompat::MutexLock(&_imp->attachedContextsMutex) );
     } else {
         _imp->attachedContextsMutex.lock();
     }
@@ -4120,7 +4142,8 @@ EffectInstance::attachOpenGLContext_public(const OSGLContextPtr& glContext,
             (*data)->setHasTakenLock(true);
         }
         _imp->attachedContexts.insert( std::make_pair(glContext, *data) );
-    } else {
+    } else if (!concurrentGLRender) {
+        // the lock taken above without a locker (concurrent renders: the locker releases it)
         _imp->attachedContextsMutex.unlock();
     }
 
@@ -4158,9 +4181,9 @@ EffectInstance::dettachOpenGLContext_public(const OSGLContextPtr& glContext, con
 {
     NON_RECURSIVE_ACTION();
     bool concurrentGLRender = supportsConcurrentOpenGLRenders();
-    std::unique_ptr<QMutexLocker> locker;
+    std::unique_ptr<QtCompat::MutexLock> locker;
     if (concurrentGLRender) {
-        locker.reset( new QMutexLocker(&_imp->attachedContextsMutex) );
+        locker.reset( new QtCompat::MutexLock(&_imp->attachedContextsMutex) );
     }
 
 
@@ -5447,6 +5470,10 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
         double par;
         if (!multipleClipsPAR) {
             par = inputParSet ? inputPar : projectPAR;
+        } else if ( (i >= 0) && effect ) {
+            // The plug-in maps each clip itself (kOfxImageEffectPropSupportsMultipleClipPARs): a connected input
+            // gets the PAR of its own input, "the pixel aspect ratio of a clip or image", not the first one's.
+            par = effect->getAspectRatio(-1);
         } else {
             if (inputParSet) {
                 par = inputPar;
@@ -5700,6 +5727,22 @@ EffectInstance::refreshMetadata_internal()
         ImagePlaneDesc plane, pairedPlane;
         getMetadataComponents(-1, &plane, &pairedPlane);
         node->refreshEnabledKnobsLabel(plane);
+    }
+
+    // Auto-set the project format from the first Reader now, on the main thread, rather than
+    // when the Reader first renders, which may be in the middle of a sequence render (#1294).
+    // Changing the project format re-enters Project::onKnobValueChanged() ->
+    // forceComputeInputDependentDataOnAllTrees(), which refreshes the metadata of all nodes while we are
+    // still refreshing this one. This is safe: our metadata is already stored above, and when called from
+    // refreshMetadata_recursive() the runningClipPreferences guard (ClipPreferencesRunning_RAII) makes the
+    // nested refresh skip this node, while the other nodes (e.g. Writers using the project format) are
+    // refreshed with the new format. The auto-set then is disabled, so the nested call doesn't recurse again.
+    if ( isReader() ) {
+        AppInstancePtr app = getApp();
+        ProjectPtr project = app ? app->getProject() : ProjectPtr();
+        if (project) {
+            project->autoSetProjectFormatFromReader( getNode() );
+        }
     }
 
     return ret;

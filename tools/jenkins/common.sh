@@ -84,6 +84,7 @@ if [ "$PKGOS" = "Linux" ]; then
     if [ -z "${ARCH:-}" ]; then
         case $(uname -m) in
             i?86) ARCH=i686 ;;
+            arm64) ARCH=aarch64 ;; # e.g. when generating a Dockerfile on macOS
             *) ARCH=$(uname -m) ;;
         esac
         export ARCH
@@ -91,9 +92,10 @@ if [ "$PKGOS" = "Linux" ]; then
     
     if [ "$ARCH" = "i686" ]; then
         BITS=32
-    elif [ "$ARCH" = "x86_64" ]; then
+    elif [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "aarch64" ]; then
         BITS=64
     else
+        (>&2 echo "Error: unsupported Linux architecture: $ARCH")
         exit 1
     fi
     SDK_HOME="/opt/Natron-$SDK_VERSION"
@@ -367,7 +369,32 @@ elif [ "$PKGOS" = "OSX" ]; then
     fi
 fi
 
-if [ -d "$SDK_HOME/osmesa" ]; then
+# ImageMagick 7, used by openfx-arena (build-plugins.sh). On Linux and macOS, ImageMagick 6
+# stays in SDK_HOME (on macOS, MacPorts' ImageMagick, which other ports use).
+# - Linux: the SDK's $SDK_HOME/magick7 (include/scripts/pkg/imagemagick7.sh);
+# - macOS: MacPorts' ImageMagick7 +natron (tools/MacPorts/graphics/ImageMagick7), installed in
+#   $SDK_HOME/lib/ImageMagick7;
+# - Windows: natron_imagemagick (tools/MINGW-packages/mingw-w64-imagemagick), which replaces
+#   ImageMagick 6 in the MSYS2 prefix.
+if [ -z "${MAGICK7_PREFIX:-}" ]; then
+    if [ "$PKGOS" = "Linux" ]; then
+        MAGICK7_PREFIX="$SDK_HOME/magick7"
+    elif [ "$PKGOS" = "OSX" ]; then
+        MAGICK7_PREFIX="$SDK_HOME/lib/ImageMagick7"
+    elif [ "$PKGOS" = "Windows" ]; then
+        MAGICK7_PREFIX="${MINGW_PREFIX:-$SDK_HOME}"
+    fi
+fi
+
+if [ -n "${OSMESA_PREFIX:-}" ] && [ -z "${LLVM_PREFIX:-}" ]; then
+    # an OSMesa install needs the LLVM it was built with (e.g. Mesa 25.0.7 needs LLVM >= 15)
+    (>&2 echo "Error: OSMESA_PREFIX=$OSMESA_PREFIX is set, so LLVM_PREFIX must be set too (e.g. /opt/llvm-19.1.7)")
+    exit 1
+fi
+if [ -n "${OSMESA_PREFIX:-}" ]; then
+    # e.g. OSMESA_PREFIX=/opt/osmesa-25.0.7 (with LLVM_PREFIX=/opt/llvm-19.1.7)
+    OSMESA_PATH="${OSMESA_PREFIX}"
+elif [ -d "$SDK_HOME/osmesa" ]; then
     OSMESA_PATH="$SDK_HOME/osmesa"
 elif [ -d "/opt/osmesa" ]; then
     OSMESA_PATH="/opt/osmesa"
@@ -390,27 +417,74 @@ else
 fi
 
 
+# Print the qmake binary of a Qt prefix, if there is one.
+# MSYS2 renamed Qt5's qmake to qmake-qt5 when it made Qt6 the default Qt
+# (msys2/MINGW-packages 389f888c), so an unsuffixed qmake is now either absent
+# or belongs to a different Qt major version. Probe the suffixed names first.
+find_qmake() {
+    local prefix="$1"
+    local name exe
+    for name in "qmake-qt${QT_VERSION_MAJOR}" "qmake${QT_VERSION_MAJOR}" qmake; do
+        for exe in "$prefix/bin/$name" "$prefix/bin/$name.exe"; do
+            if [ -x "$exe" ]; then
+                echo "$exe"
+                return 0
+            fi
+        done
+    done
+    return 1
+}
+
+QMAKE_IN_SDK_HOME=
 if [ -d "$SDK_HOME/qt${QT_VERSION_MAJOR}" ]; then
     QTDIR="$SDK_HOME/qt${QT_VERSION_MAJOR}"
 elif [ -d "$SDK_HOME/libexec/qt${QT_VERSION_MAJOR}" ]; then
     QTDIR="$SDK_HOME/libexec/qt${QT_VERSION_MAJOR}"
-elif [ -x "$SDK_HOME/bin/qmake" ] || [ -x "$SDK_HOME/bin/qmake.exe" ]; then
+elif QMAKE_IN_SDK_HOME=$(find_qmake "$SDK_HOME"); then
     QTDIR="$SDK_HOME"
 else
     (>&2 echo "Warning: Qt cannot be found in $SDK_HOME or $SDK_HOME/qt${QT_VERSION_MAJOR}")
     (>&2 echo "Info: setting QTDIR=$SDK_HOME/qt${QT_VERSION_MAJOR}")
     QTDIR="$SDK_HOME/qt${QT_VERSION_MAJOR}"
 fi
-export QTDIR
+
+# The qmake binary can be overridden explicitly with NATRON_QMAKE, e.g. to build
+# against a Qt that does not follow any of the layouts probed above (QTDIR is
+# still the probed one). A QMAKE inherited from the environment is not trusted:
+# it may come from an unrelated tool or shell profile, and would silently take
+# precedence over the probe. It is replaced by the probe result, with a warning
+# when it differs (common.sh is sourced again by child scripts, which inherit
+# the QMAKE exported below, so an identical value is expected and silent).
+if [ -n "$QMAKE_IN_SDK_HOME" ]; then
+    QMAKE_PROBED="$QMAKE_IN_SDK_HOME"
+else
+    QMAKE_PROBED=$(find_qmake "$QTDIR") || QMAKE_PROBED="$QTDIR/bin/qmake"
+fi
+if [ -n "${NATRON_QMAKE:-}" ]; then
+    if [ "${NATRON_QMAKE}" != "${QMAKE:-}" ]; then
+        (>&2 echo "Info: using NATRON_QMAKE=${NATRON_QMAKE} instead of the probed ${QMAKE_PROBED}")
+    fi
+    QMAKE="${NATRON_QMAKE}"
+else
+    if [ -n "${QMAKE:-}" ] && [ "${QMAKE}" != "${QMAKE_PROBED}" ]; then
+        (>&2 echo "Warning: ignoring QMAKE=${QMAKE} from the environment, using ${QMAKE_PROBED}")
+        (>&2 echo "Info: set NATRON_QMAKE to override the qmake binary")
+    fi
+    QMAKE="${QMAKE_PROBED}"
+fi
+unset QMAKE_PROBED
+export QTDIR QMAKE
 
 BOOST_ROOT="$SDK_HOME"
 
 PKG_CONFIG_PATH=
 if [ "$PKGOS" = "Linux" ]; then
-    PATH="$SDK_HOME/bin:$QTDIR/bin:$SDK_HOME/gcc/bin:$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$PATH"
-    LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib64:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
-    LD_LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib64:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
-    #LD_RUN_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
+    # The compiler is gcc-toolset (Rocky Linux 9), and its C++ runtime is the system one:
+    # don't use the SDK's old self-built GCC ($SDK_HOME/gcc).
+    PATH="$SDK_HOME/bin:$QTDIR/bin:$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$PATH"
+    LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
+    LD_LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
+    #LD_RUN_PATH="$SDK_HOME/lib:$QTDIR/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
     PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig:$SDK_HOME/libdata/pkgconfig:$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$PYTHON_HOME/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 elif [ "$PKGOS" = "Windows" ]; then
     PKG_CONFIG_PATH="$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$(cygpath -u ${PYTHON_HOME})/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
@@ -419,10 +493,11 @@ elif [ "$PKGOS" = "OSX" ]; then
 fi
 export LD_LIBRARY_PATH LD_RUN_PATH DYLD_LIBRARY_PATH LIBRARY_PATH CPATH PKG_CONFIG_PATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH BOOST_ROOT
 
+# Qt may not be installed yet, e.g. when building the SDK or generating its Dockerfile
 if [ "${QT_VERSION_MAJOR}" = 4 ]; then
-    QT_VERSION=$(pkg-config --modversion QtCore)
+    QT_VERSION=$(pkg-config --modversion QtCore 2>/dev/null || true)
 else
-    QT_VERSION=$(pkg-config --modversion Qt${QT_VERSION_MAJOR}Core)
+    QT_VERSION=$(pkg-config --modversion Qt${QT_VERSION_MAJOR}Core 2>/dev/null || true)
 fi
 QT_VERSION_MINOR=$(echo $QT_VERSION | cut -d. -f2)
 

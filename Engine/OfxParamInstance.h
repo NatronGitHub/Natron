@@ -86,10 +86,28 @@ class OfxParamToKnob
 
     friend class PropertyModified_RAII;
 
+    // Computes kOfxParamPropIsAnimating and kOfxParamPropIsAutoKeying when they are read
+    class AnimationPropertiesHook
+        : public OFX::Host::Property::GetHook
+    {
+        const OfxParamToKnob* _param;
+
+    public:
+        explicit AnimationPropertiesHook(const OfxParamToKnob* param)
+            : _param(param)
+        {
+        }
+
+        virtual int getIntProperty(const std::string &name, int index = 0) const OFX_EXCEPTION_SPEC OVERRIDE FINAL;
+        virtual void getIntPropertyN(const std::string &name, int *values, int count) const OFX_EXCEPTION_SPEC OVERRIDE FINAL;
+        virtual int getDimension(const std::string &name) const OFX_EXCEPTION_SPEC OVERRIDE FINAL;
+    };
+
     OFX::Host::Interact::Descriptor interactDesc;
     mutable QMutex dynamicPropModifiedMutex;
     int _dynamicPropModified;
     EffectInstanceWPtr _effect;
+    AnimationPropertiesHook _animationPropertiesHook;
 
 public:
 
@@ -98,6 +116,7 @@ public:
         : dynamicPropModifiedMutex()
         , _dynamicPropModified(0)
         , _effect(effect)
+        , _animationPropertiesHook(this)
     {
     }
 
@@ -119,11 +138,41 @@ public:
 
     void connectDynamicProperties();
 
+    /**
+     * @brief Compute kOfxParamPropIsAnimating and kOfxParamPropIsAutoKeying from the knob when the plug-in reads
+     * them, with or without a GUI.
+     **/
+    void connectAnimationProperties();
+
+    /**
+     * @brief kOfxParamPropIsAnimating: the value of the parameter may change with time, in any of its dimensions:
+     * it has keyframes or an expression, or it is linked to a parameter that has.
+     **/
+    bool isAnimatingForOfx() const;
+
+    /**
+     * @brief kOfxParamPropIsAutoKeying: a value change adds a keyframe, which Natron does in the dimensions that
+     * are animated by keyframes.
+     **/
+    bool isAutoKeyingForOfx() const;
+
+protected:
+
+    /**
+     * @brief The dimensions of the knob that hold the parameter: [*first, *first + *count).
+     * All of them, except for the parameters that share a knob (see OfxDouble2DInstance).
+     **/
+    virtual void getKnobDimensions(int* first, int* count) const;
+
+public:
+
     //these are per ofxparam thread-local data
     struct OfxParamTLSData
     {
         //only for string-param for now
         std::string str;
+        // the value returned to the plug-in by a Bytes param (OfxBytesInstance)
+        std::string bytes;
     };
 
     static std::string getParamLabel(OFX::Host::Param::Instance* param)
@@ -177,7 +226,6 @@ public Q_SLOTS:
     void onLabelChanged();
     void onDisplayMinMaxChanged(double min, double max, int index);
     void onMinMaxChanged(double min, double max, int index);
-    void onKnobAnimationLevelChanged(ViewSpec view, int dimension);
     void onChoiceMenuReset();
     void onChoiceMenuPopulated();
     void onChoiceMenuEntryAppended();
@@ -564,6 +612,14 @@ public:
     //bool isAnimated(int dimension) const;
     bool isAnimated() const;
 
+protected:
+
+    virtual void getKnobDimensions(int* first, int* count) const OVERRIDE FINAL
+    {
+        *first = _startIndex;
+        *count = 2;
+    }
+
 private:
 
     int _startIndex;
@@ -903,6 +959,51 @@ private:
 
 
     std::unique_ptr<OfxCustomInstancePrivate> _imp;
+};
+
+struct OfxBytesInstancePrivate;
+/**
+ * @brief An OFX 1.5 Bytes parameter (kOfxParamTypeBytes): opaque plug-in data, held by a KnobBytes.
+ * Like Custom parameters, it has no user interface, and it doesn't animate.
+ **/
+class OfxBytesInstance
+    : public OfxParamToKnob, public OFX::Host::Param::BytesInstance
+{
+public:
+    OfxBytesInstance(const OfxEffectInstancePtr& node,
+                     OFX::Host::Param::Descriptor & descriptor);
+
+    virtual ~OfxBytesInstance();
+
+    virtual OfxStatus get(std::vector<unsigned char> &) OVERRIDE FINAL;
+    virtual OfxStatus get(OfxTime time, std::vector<unsigned char> &) OVERRIDE FINAL;
+    virtual OfxStatus set(const unsigned char *data, size_t length) OVERRIDE FINAL;
+    virtual OfxStatus set(OfxTime time, const unsigned char *data, size_t length) OVERRIDE FINAL;
+
+    /// implementation of var args function
+    /// The data is only valid until the next API call on this param in the same thread.
+    virtual OfxStatus getV(va_list arg) OVERRIDE FINAL;
+
+    /// implementation of var args function
+    /// The data is only valid until the next API call on this param in the same thread.
+    virtual OfxStatus getV(OfxTime time, va_list arg) OVERRIDE FINAL;
+
+    virtual void setHint() OVERRIDE FINAL;
+    virtual void setDefault() OVERRIDE FINAL;
+    virtual void setLabel() OVERRIDE FINAL;
+
+    /// callback which should set evaluate on change
+    virtual void setEvaluateOnChange() OVERRIDE FINAL;
+    virtual KnobIPtr getKnob() const OVERRIDE FINAL;
+    virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
+
+    virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
+
+private:
+
+    OfxStatus getAtTime(bool atTime, OfxTime time, va_list arg);
+
+    std::unique_ptr<OfxBytesInstancePrivate> _imp;
 };
 
 

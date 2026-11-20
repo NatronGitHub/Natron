@@ -29,6 +29,7 @@
 #include <algorithm> // min, max
 #include <ios>
 #include <limits>
+#include <set>
 #include <cstdlib> // strtoul
 #include <cerrno> // errno
 #include <cassert>
@@ -54,6 +55,7 @@
 #include <QDebug>
 #include <QTextStream>
 #include <QHostInfo>
+#include <QRegularExpression>
 #include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 
 #include <ofxhXml.h> // OFX::XML::escape
@@ -73,6 +75,7 @@
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Node.h"
+#include "Engine/OfxEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/ProjectPrivate.h"
 #include "Engine/ProjectSerialization.h"
@@ -287,6 +290,11 @@ Project::loadProjectInternal(const QString & path,
     }
 
     bool ret = false;
+    FStreamsSupport::ifstream ifile;
+    FStreamsSupport::open( &ifile, filePath.toStdString() );
+    if (!ifile) {
+        throw std::runtime_error( tr("Failed to open %1").arg(filePath).toStdString() );
+    }
 
     if ( (NATRON_VERSION_MAJOR == 1) && (NATRON_VERSION_MINOR == 0) && (NATRON_VERSION_REVISION == 0) ) {
         ///Try to determine if the project was made during Natron v1.0.0 - RC2 or RC3 to detect a bug we introduced at that time
@@ -310,28 +318,21 @@ Project::loadProjectInternal(const QString & path,
     }
 
     LoadProjectSplashScreen_RAII __raii_splashscreen__(getApp(), name);
-    bool xml_loaded = false;
 
     try {
-        // XML loading tests first, then binary loading
-        FStreamsSupport::ifstream ifile;
-        FStreamsSupport::open( &ifile, filePath.toStdString());
-        if (ifile) {
-            bool bgProject;
-            boost::archive::xml_iarchive iArchive(ifile);
-            {
-                FlagSetter __raii_loadingProjectInternal__(true, &_imp->isLoadingProjectInternal, &_imp->isLoadingProjectMutex);
+        bool bgProject;
+        boost::archive::xml_iarchive iArchive(ifile);
+        {
+            FlagSetter __raii_loadingProjectInternal__(true, &_imp->isLoadingProjectInternal, &_imp->isLoadingProjectMutex);
 
-                iArchive >> boost::serialization::make_nvp("Background_project", bgProject);
-                ProjectSerialization projectSerializationObj( getApp() );
-                iArchive >> boost::serialization::make_nvp("Project", projectSerializationObj);
-                ret = load(projectSerializationObj, name, path, mustSave);
-            } // __raii_loadingProjectInternal__
+            iArchive >> boost::serialization::make_nvp("Background_project", bgProject);
+            ProjectSerialization projectSerializationObj( getApp() );
+            iArchive >> boost::serialization::make_nvp("Project", projectSerializationObj);
+            ret = load(projectSerializationObj, name, path, mustSave);
+        } // __raii_loadingProjectInternal__
 
-            if (!bgProject) {
-                getApp()->loadProjectGui(isAutoSave, iArchive);
-            }
-            xml_loaded = true;
+        if (!bgProject) {
+            getApp()->loadProjectGui(isAutoSave, iArchive);
         }
     } catch (const std::exception &e) {
         const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
@@ -341,6 +342,7 @@ Project::loadProjectInternal(const QString & path,
             QString message = tr("This project was saved with a more recent version (%1.%2.%3) of %4. Projects are not forward compatible and may only be opened in a version of %4 equal or more recent than the version that saved it.").arg(pInfo.vMajor).arg(pInfo.vMinor).arg(pInfo.vRev).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
             throw std::runtime_error(message.toStdString());
         }
+        throw std::runtime_error( tr("Unrecognized or damaged project file:").toStdString() + ' ' + e.what());
     } catch (...) {
         const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
         if (pInfo.vMajor > NATRON_VERSION_MAJOR ||
@@ -349,48 +351,7 @@ Project::loadProjectInternal(const QString & path,
             QString message = tr("This project was saved with a more recent version (%1.%2.%3) of %4. Projects are not forward compatible and may only be opened in a version of %4 equal or more recent than the version that saved it.").arg(pInfo.vMajor).arg(pInfo.vMinor).arg(pInfo.vRev).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
             throw std::runtime_error(message.toStdString());
         }
-    }
-
-    if (!xml_loaded){
-        try {
-            FStreamsSupport::ifstream ifile;
-            FStreamsSupport::open( &ifile, filePath.toStdString(), std::ios::in | std::ios::binary );
-            if (!ifile) {
-                throw std::runtime_error( tr("Failed to open %1").arg(filePath).toStdString() );
-            }
-            bool bgProject;
-            boost::archive::binary_iarchive iArchive(ifile);
-            {
-                FlagSetter __raii_loadingProjectInternal__(true, &_imp->isLoadingProjectInternal, &_imp->isLoadingProjectMutex);
-
-                iArchive >> boost::serialization::make_nvp("Background_project", bgProject);
-                ProjectSerialization projectSerializationObj( getApp() );
-                iArchive >> boost::serialization::make_nvp("Project", projectSerializationObj);
-                ret = load(projectSerializationObj, name, path, mustSave);
-            } // __raii_loadingProjectInternal__
-
-            if (!bgProject) {
-                getApp()->loadProjectGui(isAutoSave, iArchive);
-            }
-        } catch (const std::exception &e) {
-            const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
-            if (pInfo.vMajor > NATRON_VERSION_MAJOR ||
-                (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor > NATRON_VERSION_MINOR) ||
-                (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor == NATRON_VERSION_MINOR && pInfo.vRev > NATRON_VERSION_REVISION)) {
-                QString message = tr("This project was saved with a more recent version (%1.%2.%3) of %4. Projects are not forward compatible and may only be opened in a version of %4 equal or more recent than the version that saved it.").arg(pInfo.vMajor).arg(pInfo.vMinor).arg(pInfo.vRev).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
-                throw std::runtime_error(message.toStdString());
-            }
-            throw std::runtime_error( tr("Unrecognized or damaged project file:").toStdString() + ' ' + e.what());
-        } catch (...) {
-            const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
-            if (pInfo.vMajor > NATRON_VERSION_MAJOR ||
-                (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor > NATRON_VERSION_MINOR) ||
-                (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor == NATRON_VERSION_MINOR && pInfo.vRev > NATRON_VERSION_REVISION)) {
-                QString message = tr("This project was saved with a more recent version (%1.%2.%3) of %4. Projects are not forward compatible and may only be opened in a version of %4 equal or more recent than the version that saved it.").arg(pInfo.vMajor).arg(pInfo.vMinor).arg(pInfo.vRev).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
-                throw std::runtime_error(message.toStdString());
-            }
-            throw std::runtime_error( tr("Unrecognized or damaged project file").toStdString() );
-        }
+        throw std::runtime_error( tr("Unrecognized or damaged project file").toStdString() );
     }
 
     Format f;
@@ -453,62 +414,205 @@ Project::saveProject(const QString & path,
     return saveProject_imp(path, name, false, true, newFilePath);
 }
 
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+// Reports a save error or warning. A dialog shown from another thread waits for the main thread,
+// which may itself be waiting for this save (see Project::saveProject_imp()): only log it there.
+void
+reportSaveProblem(const QString& title,
+                  const QString& message,
+                  bool isError)
+{
+    if ( QThread::currentThread() == qApp->thread() ) {
+        if (isError) {
+            Dialogs::errorDialog( title.toStdString(), message.toStdString() );
+        } else {
+            Dialogs::warningDialog( title.toStdString(), message.toStdString() );
+        }
+    } else {
+        std::cerr << (isError ? "ERROR: " : "WARNING: ") << title.toStdString() << ": " << message.toStdString() << std::endl;
+        if (appPTR) {
+            appPTR->writeToErrorLog_mt_safe( title, QDateTime::currentDateTime(), message );
+        }
+    }
+}
+
+// Clears isSavingProject and wakes the saves waiting for it, also if the save throws.
+class SavingProjectFlagResetter
+{
+    ProjectPrivate* _imp;
+
+public:
+    explicit SavingProjectFlagResetter(ProjectPrivate* imp)
+        : _imp(imp)
+    {
+    }
+
+    ~SavingProjectFlagResetter()
+    {
+        QMutexLocker l(&_imp->isSavingProjectMutex);
+        _imp->isSavingProject = false;
+        _imp->savingProjectThread = 0;
+        _imp->isSavingProjectCond.wakeAll();
+    }
+};
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
+bool
+Project::isSaveInProgress() const
+{
+    QMutexLocker l(&_imp->isSavingProjectMutex);
+
+    return _imp->isSavingProject || _imp->waitingSaves > 0;
+}
+
 bool
 Project::saveProject_imp(const QString & path,
                          const QString & name,
                          bool autoS,
                          bool updateProjectProperties,
-                         QString* newFilePath)
+                         QString* newFilePath,
+                         QString* errorMessage)
 {
+    // A background auto-save (see autoSave()) may be dropped: the project will be saved again later.
+    // Any other save (user save, Save As, saveTemp, render save) must not be dropped silently (#825).
+    const bool isBackgroundAutoSave = autoS && updateProjectProperties;
+    const bool isMainThread = ( QThread::currentThread() == qApp->thread() );
+
+    if (errorMessage) {
+        errorMessage->clear();
+    }
+
     {
         QMutexLocker l(&_imp->isLoadingProjectMutex);
         if (_imp->isLoadingProject) {
+            l.unlock();
+            QString message = tr("The project cannot be saved while it is being loaded.");
+            if (!autoS) {
+                reportSaveProblem(tr("Save"), message, true);
+            }
+            if (errorMessage) {
+                *errorMessage = message;
+            }
+
             return false;
         }
     }
 
+    if (!autoS && isMainThread) {
+        //We are saving, do not autosave (QTimer can only be stopped from its thread)
+        _imp->autoSaveTimer->stop();
+    }
+
+    bool aborted = false;
     {
         QMutexLocker l(&_imp->isSavingProjectMutex);
-        if (_imp->isSavingProject) {
+        if ( _imp->isSavingProject && !isBackgroundAutoSave && (_imp->savingProjectThread != QThread::currentThread()) ) {
+            // Another save is running in another thread, usually the background auto-save
+            // started by onAutoSaveTimerTriggered(). Wait for it to finish, then save (#825).
+            // That save may run Python (the beforeProjectSave callback, expressions), so release
+            // the Python GIL if this thread holds it, e.g. if called from app.saveProject().
+            // The main thread processes events while waiting, which could reset or close the project:
+            // then this save must not save the new project to this path.
+            ++_imp->waitingSaves;
+            const unsigned int resetCount = _imp->resetCount;
+            l.unlock();
+            std::unique_ptr<PythonGILUnlocker> gilUnlocker;
+            if ( Py_IsInitialized() && PyGILState_Check() ) {
+                gilUnlocker.reset(new PythonGILUnlocker);
+            }
+            l.relock();
+            while (_imp->isSavingProject) {
+                if ( !_imp->isSavingProjectCond.wait(&_imp->isSavingProjectMutex, 50) && isMainThread ) {
+                    // The running save may need the main thread, e.g. if the beforeProjectSave callback
+                    // shows a dialog. Serve it, but not user input, which could edit the project or close it.
+                    // A save started from these events (a Python timer...) waits here too, then saves.
+                    l.unlock();
+                    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents, 50);
+                    l.relock();
+                }
+            }
+            _imp->isSavingProject = true;
+            _imp->savingProjectThread = QThread::currentThread();
+            --_imp->waitingSaves;
+            l.unlock();
+            gilUnlocker.reset(); // take the GIL back, after isSavingProjectMutex was released
+            if (_imp->resetCount != resetCount) {
+                SavingProjectFlagResetter savingFlagResetter( _imp.get() );
+                aborted = true;
+            }
+        } else if (_imp->isSavingProject) {
+            // A background auto-save while another save is running (that save is at least as
+            // recent), or a save from within a save on the same thread (e.g. from the beforeProjectSave callback).
+            l.unlock();
+            QString message = tr("The project cannot be saved while it is being saved.");
+            if (!autoS) {
+                reportSaveProblem(tr("Save"), message, true);
+            }
+            if (errorMessage) {
+                *errorMessage = message;
+            }
+
             return false;
         } else {
             _imp->isSavingProject = true;
+            _imp->savingProjectThread = QThread::currentThread();
         }
+    }
+
+    if (aborted) {
+        QString message = tr("The project was closed while this save was waiting for the auto-save to finish: it was not saved.");
+        if (!autoS) {
+            reportSaveProblem(tr("Save"), message, true);
+        }
+        if (errorMessage) {
+            *errorMessage = message;
+        }
+
+        return false;
     }
 
     QString ret;
-
-    try {
-        if (!autoS) {
-            //if  (!isSaveUpToDate() || !QFile::exists(path+name)) {
-            //We are saving, do not autosave.
-            _imp->autoSaveTimer->stop();
-
-            ret = saveProjectInternal(path, name, false, updateProjectProperties);
-
-            ///We just saved, remove the last auto-save which is now obsolete
-            removeLastAutosave();
-
-            //}
-        } else {
-            if (updateProjectProperties) {
-                ///Replace the last auto-save with a more recent one
-                removeLastAutosave();
-            }
-
-            ret = saveProjectInternal(path, name, true, updateProjectProperties);
-        }
-    } catch (const std::exception & e) {
-        if (!autoS) {
-            Dialogs::errorDialog( tr("Save").toStdString(), e.what() );
-        } else {
-            qDebug() << "Save failure: " << e.what();
-        }
-    }
+    QString error;
+    QStringList warnings;
+    bool ok = false;
 
     {
-        QMutexLocker l(&_imp->isSavingProjectMutex);
-        _imp->isSavingProject = false;
+        SavingProjectFlagResetter savingFlagResetter( _imp.get() );
+        try {
+            if (!autoS) {
+                ret = saveProjectInternal(path, name, false, updateProjectProperties, &warnings);
+
+                ///We just saved, remove the last auto-save which is now obsolete
+                removeLastAutosave();
+            } else {
+                if (updateProjectProperties) {
+                    ///Replace the last auto-save with a more recent one
+                    removeLastAutosave();
+                }
+
+                ret = saveProjectInternal(path, name, true, updateProjectProperties, &warnings);
+            }
+            ok = true;
+        } catch (const std::exception & e) {
+            error = QString::fromUtf8( e.what() );
+        } catch (...) {
+            error = tr("Unknown error while saving the project.");
+        }
+    } // savingFlagResetter
+
+    if ( !warnings.isEmpty() ) {
+        // shown after isSavingProject was cleared, like errors: the dialog runs an event loop
+        reportSaveProblem( tr("Save"), warnings.join( QLatin1Char('\n') ), false );
+    }
+    if (!ok) {
+        if (!autoS) {
+            reportSaveProblem(tr("Save"), error, true);
+        } else {
+            qDebug() << "Save failure: " << error;
+        }
+        if (errorMessage) {
+            *errorMessage = error;
+        }
     }
 
     ///Save caches ToC
@@ -518,7 +622,7 @@ Project::saveProject_imp(const QString & path,
         *newFilePath = ret;
     }
 
-    return true;
+    return ok;
 } // Project::saveProject_imp
 
 static bool
@@ -546,7 +650,7 @@ findBackups(const QString & filePath)
         ret.append(filePath);
     }
     // find files matching filePath.~[0-9]+~
-    QRegExp rx(QString::fromUtf8("\\.~(\\d+)~$"));
+    QRegularExpression rx( QString::fromUtf8("\\.~(\\d+)~\\z"), QRegularExpression::UseUnicodePropertiesOption );
     QFileInfo fileInfo(filePath);
     QString fileName = fileInfo.fileName();
     QDirIterator it(fileInfo.dir());
@@ -560,7 +664,12 @@ findBackups(const QString & filePath)
 
         // If the filename contains target string - put it in the hitlist
         QString fn = file.fileName();
-        if (fn.startsWith(fileName) && rx.lastIndexIn(fn) == fileName.size()) {
+        // The pattern ends with \z (PCRE's $ would also match before a final
+        // newline), so there is at most one match and lastIndexIn() is just
+        // that match.
+        QRegularExpressionMatch backupMatch = rx.match(fn);
+        if ( fn.startsWith(fileName) && backupMatch.hasMatch() &&
+             ( backupMatch.capturedStart() == fileName.size() ) ) {
             ret.append(file.filePath());
         }
     }
@@ -574,11 +683,11 @@ findBackups(const QString & filePath)
 static QString
 nextBackup(const QString & filePath)
 {
-    QRegExp rx(QString::fromUtf8("\\.~(\\d+)~$"));
-    int pos = rx.lastIndexIn(filePath);
-    if (pos >= 0) {
-        int i = rx.cap(1).toInt();
-        return filePath.left(pos) + QString::fromUtf8(".~%1~").arg(i+1);
+    QRegularExpression rx( QString::fromUtf8("\\.~(\\d+)~\\z"), QRegularExpression::UseUnicodePropertiesOption );
+    QRegularExpressionMatch match = rx.match(filePath);
+    if ( match.hasMatch() ) {
+        int i = match.captured(1).toInt();
+        return filePath.left( match.capturedStart() ) + QString::fromUtf8(".~%1~").arg(i+1);
     } else {
         return filePath + QString::fromUtf8(".~1~");
     }
@@ -588,7 +697,8 @@ QString
 Project::saveProjectInternal(const QString & path,
                              const QString & name,
                              bool autoSave,
-                             bool updateProjectProperties)
+                             bool updateProjectProperties,
+                             QStringList* warnings)
 {
     bool isRenderSave = name.contains( QString::fromUtf8("RENDER_SAVE") );
     QDateTime time = QDateTime::currentDateTime();
@@ -641,6 +751,12 @@ Project::saveProjectInternal(const QString & path,
     tmpFilename.append( QString::number( time.toMSecsSinceEpoch() ) );
 
     {
+        FStreamsSupport::ofstream ofile;
+        FStreamsSupport::open( &ofile, tmpFilename.toStdString() );
+        if (!ofile) {
+            throw std::runtime_error( tr("Failed to open file ").toStdString() + tmpFilename.toStdString() );
+        }
+
         ///Fix file paths before saving.
         QString oldProjectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
 
@@ -651,63 +767,29 @@ Project::saveProjectInternal(const QString & path,
             _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName() );
         }
 
-        if (!appPTR->getCurrentSettings()->saveAsBinary()){
-            try {
-                FStreamsSupport::ofstream ofile;
-                FStreamsSupport::open( &ofile, tmpFilename.toStdString(), std::ios::out);
-                if (!ofile) {
-                    throw std::runtime_error( tr("Failed to open file ").toStdString() + tmpFilename.toStdString() );
+        try {
+            boost::archive::xml_oarchive oArchive(ofile);
+            bool bgProject = getApp()->isBackground();
+            oArchive << boost::serialization::make_nvp("Background_project", bgProject);
+            ProjectSerialization projectSerializationObj( getApp() );
+            save(&projectSerializationObj);
+            oArchive << boost::serialization::make_nvp("Project", projectSerializationObj);
+            if (!bgProject) {
+                AppInstancePtr app = getApp();
+                if (app) {
+                    app->saveProjectGui(oArchive);
                 }
-                boost::archive::xml_oarchive oArchive(ofile);
-                bool bgProject = getApp()->isBackground();
-                oArchive << boost::serialization::make_nvp("Background_project", bgProject);
-                ProjectSerialization projectSerializationObj( getApp() );
-                save(&projectSerializationObj);
-                oArchive << boost::serialization::make_nvp("Project", projectSerializationObj);
-                if (!bgProject) {
-                    AppInstancePtr app = getApp();
-                    if (app) {
-                        app->saveProjectGui(oArchive);
-                    }
-                }
-            } catch (...) {
-                if (!autoSave && updateProjectProperties) {
-                    ///Reset the old project path in case of failure.
-                    _imp->autoSetProjectDirectory(oldProjectPath);
-                }
-                throw;
             }
-        }
-        else
-        {
-            try {
-                FStreamsSupport::ofstream ofile;
-                FStreamsSupport::open( &ofile, tmpFilename.toStdString(), std::ios::out | std::ios::binary);
-                if (!ofile) {
-                    throw std::runtime_error( tr("Failed to open file ").toStdString() + tmpFilename.toStdString() );
-                }
-                boost::archive::binary_oarchive oArchive(ofile);
-                bool bgProject = getApp()->isBackground();
-                oArchive << boost::serialization::make_nvp("Background_project", bgProject);
-                ProjectSerialization projectSerializationObj( getApp() );
-                save(&projectSerializationObj);
-                oArchive << boost::serialization::make_nvp("Project", projectSerializationObj);
-                if (!bgProject) {
-                    AppInstancePtr app = getApp();
-                    if (app) {
-                        app->saveProjectGui(oArchive);
-                    }
-                }
-            } catch (...) {
-                if (!autoSave && updateProjectProperties) {
-                    ///Reset the old project path in case of failure.
-                    _imp->autoSetProjectDirectory(oldProjectPath);
-                }
-                throw;
+        } catch (...) {
+            if (!autoSave && updateProjectProperties) {
+                ///Reset the old project path in case of failure.
+                _imp->autoSetProjectDirectory(oldProjectPath);
             }
+            throw;
         }
-    }
+    } // ofile
 
+    QStringList backupErrors;
     if (!autoSave) {
         // rotate backups
         int saveVersions = appPTR->getCurrentSettings()->saveVersions();
@@ -715,14 +797,16 @@ Project::saveProjectInternal(const QString & path,
         QStringList backups = findBackups(filePath);
         // remove extra backups
         for (int i = backups.size() - 1; i >= saveVersions; --i) {
-            if ( QFile::exists(backups.last()) ) {
-                QFile::remove(backups.last());
+            if ( QFile::exists( backups.last() ) && !QFile::remove( backups.last() ) ) {
+                backupErrors.append( tr("Could not remove %1.").arg( backups.last() ) );
             }
             backups.removeLast();
         }
         // rename existing backups
         for (int i = backups.size() - 1; i >= 0; --i) {
-            QFile::rename(backups.at(i), nextBackup(backups.at(i)));
+            if ( !QFile::rename( backups.at(i), nextBackup( backups.at(i) ) ) ) {
+                backupErrors.append( tr("Could not rename %1 to %2.").arg( backups.at(i), nextBackup( backups.at(i) ) ) );
+            }
         }
     }
 
@@ -736,11 +820,18 @@ Project::saveProjectInternal(const QString & path,
             }
 
             if (nAttemps >= 10) {
+                QFile::remove(tmpFilename);
                 throw std::runtime_error( "Failed to save to " + filePath.toStdString() );
             }
         }
 
         QFile::remove(tmpFilename);
+    }
+
+    if ( !backupErrors.isEmpty() && warnings ) {
+        // The project was saved, but its previous versions may not have been kept
+        warnings->append( tr("The project was saved to %1, but its backups could not be updated:").arg(filePath) );
+        *warnings += backupErrors;
     }
 
     if (!autoSave && updateProjectProperties) {
@@ -761,7 +852,11 @@ Project::saveProjectInternal(const QString & path,
         //Create the lock file corresponding to the project
         createLockFile();
     } else if (updateProjectProperties) {
-        if (!isRenderSave) {
+        // A background auto-save runs in another thread: onAutoSaveFutureFinished() marks the
+        // project as modified, in the main thread. A signal emitted here would be queued, and could
+        // arrive after the one of a user save that waited for this auto-save, marking the saved
+        // project as modified (#825).
+        if ( !isRenderSave && ( QThread::currentThread() == qApp->thread() ) ) {
             QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
             QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
             Q_EMIT projectNameChanged(projectPath + projectFilename, true);
@@ -825,14 +920,36 @@ Project::onAutoSaveTimerTriggered()
     bool canAutoSave = !hasNodeRendering() && !getApp()->isShowingDialog();
 
     if (canAutoSave) {
+        // "SyncPrivateData ... generally occurs when an effect is about to be saved or copied"
+        // (ofxCore.h): the autosave thread can't do it.
+        syncOpenFXPrivateData();
         std::shared_ptr<QFutureWatcher<void> > watcher = std::make_shared<QFutureWatcher<void> >();
         QObject::connect( watcher.get(), SIGNAL(finished()), this, SLOT(onAutoSaveFutureFinished()) );
-        watcher->setFuture( QtConcurrent::run(this, &Project::autoSave) );
+        // Qt6 dropped the run(object, memberFunction) overload; a lambda is the
+        // one spelling both versions accept.
+        watcher->setFuture( QtConcurrent::run( [this]() { autoSave(); } ) );
         _imp->autoSaveFutures.push_back(watcher);
     } else {
         ///If the auto-save failed because a render is in progress, try every 2 seconds to auto-save.
         ///We don't use the user-provided timeout interval here because it could be an inapropriate value.
         _imp->autoSaveTimer->start(2000);
+    }
+}
+
+void
+Project::syncOpenFXPrivateData()
+{
+    assert( QThread::currentThread() == qApp->thread() );
+
+    NodesList nodes;
+    getNodes_recursive(nodes, true /*onlyActive*/);
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ( (*it)->isOpenFXNode() ) {
+            OfxEffectInstance* effect = dynamic_cast<OfxEffectInstance*>( (*it)->getEffectInstance().get() );
+            if (effect) {
+                effect->syncPrivateDataForSerialization();
+            }
+        }
     }
 }
 
@@ -847,6 +964,13 @@ Project::onAutoSaveFutureFinished()
             _imp->autoSaveFutures.erase(it);
             break;
         }
+    }
+
+    // Mark the project as modified, unless it was saved since (see saveProjectInternal())
+    if ( !isSaveUpToDate() ) {
+        QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
+        QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
+        Q_EMIT projectNameChanged(projectPath + projectFilename, true);
     }
 }
 
@@ -1755,6 +1879,20 @@ Project::onKnobValueChanged(KnobI* knob,
         }
     } else if ( knob == _imp->addFormatKnob.get() ) {
         Q_EMIT mustCreateFormat();
+    } else if ( knob == _imp->colorSpace8u.get() ||
+                knob == _imp->colorSpace16u.get() ||
+                knob == _imp->colorSpace32f.get() ) {
+        if ( !isLoadingProject() ) {
+            // These LUTs are used to convert images between bit depths, in the nodes and in the viewers, but they
+            // are neither in the node hash nor in the viewer cache key: change the hash of all the nodes, so that
+            // the images and textures computed with the previous LUTs are not used (#1116), and render again.
+            NodesList nodes;
+            getNodes_recursive(nodes, true);
+            for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+                (*it)->incrementKnobsAge();
+            }
+            getApp()->renderAllViewers(true);
+        }
     } else if ( knob == _imp->previewMode.get() ) {
         Q_EMIT autoPreviewChanged( _imp->previewMode->getValue() );
         shouldAutoSave = true;
@@ -2034,6 +2172,18 @@ void
 Project::reset(bool aboutToQuit, bool blocking)
 {
     assert( QThread::currentThread() == qApp->thread() );
+    // An onProjectClose callback that resets the project (app.resetProject()) would recurse forever.
+    if (_imp->resetting) {
+        return;
+    }
+    struct ResettingGuard
+    {
+        bool& flag;
+        ResettingGuard(bool& f) : flag(f) { flag = true; }
+        ~ResettingGuard() { flag = false; }
+    } resettingGuard(_imp->resetting);
+    // a save waiting for the auto-save (see saveProject_imp()) must not save the new project
+    ++_imp->resetCount;
     {
         QMutexLocker k(&_imp->projectClosingMutex);
         _imp->projectClosing = true;
@@ -2107,12 +2257,30 @@ Project::doResetEnd(bool aboutToQuit)
         {
             QMutexLocker l(&_imp->projectLock);
             _imp->autoSetProjectFormat = appPTR->getCurrentSettings()->isAutoProjectFormatEnabled();
+            _imp->autoSetProjectFormatPendingReaders.clear();
             _imp->hasProjectBeenSavedByUser = false;
             _imp->projectCreationTime = QDateTime::currentDateTime();
             _imp->setProjectFilename(NATRON_PROJECT_UNTITLED);
             _imp->setProjectPath("");
             _imp->autoSaveTimer->stop();
             _imp->additionalFormats.clear();
+        }
+        {
+            // The format choices must match builtinFormats + additionalFormats: remove the formats that were added
+            // to the closed project, otherwise the indices of the formats added afterwards point to the wrong entries.
+            std::vector<ChoiceOption> entries;
+            {
+                QMutexLocker l(&_imp->formatMutex);
+                for (std::list<Format>::const_iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
+                    QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
+                    if ( !it->getName().empty() ) {
+                        entries.push_back( ChoiceOption(it->getName(), formatStr.toStdString(), "") );
+                    } else {
+                        entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+                    }
+                }
+            }
+            _imp->formatKnob->populateChoices(entries);
         }
         getApp()->removeAllKeyframesIndicators();
 
@@ -2216,9 +2384,144 @@ Project::setAutoSetProjectFormatEnabled(bool enabled)
     _imp->autoSetProjectFormat = enabled;
 }
 
+// Returns true if a Reader can auto-set the project format, i.e. it has a decodable file.
+static bool
+canAutoSetProjectFormatFromReader(const NodePtr& reader)
+{
+    // a deleted Reader may still be referenced (e.g. by a pending list), but must be ignored
+    if ( !reader || !reader->isActivated() ) {
+        return false;
+    }
+    EffectInstancePtr effect = reader->getEffectInstance();
+
+    // A Reader without a decodable file (no file name, no decoder, unreadable file) reports the
+    // project rectangle as its default output format: it must not set the format nor disable the auto-set.
+    return effect && effect->isReader() && effect->isOutputFormatFromFile();
+}
+
+bool
+Project::isSequenceRenderRunning(const QObject* ignoredEngine)
+{
+    bool renderRunning = false;
+    NodesList nodes;
+
+    getNodes_recursive(nodes, true);
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        OutputEffectInstance* output = dynamic_cast<OutputEffectInstance*>( (*it)->getEffectInstance().get() );
+        if ( !output || !output->isDoingSequentialRender() ) {
+            continue;
+        }
+        RenderEnginePtr engine = output->getRenderEngine();
+        if ( engine && (engine.get() == ignoredEngine) ) {
+            // this engine emitted renderFinished, but it only becomes idle a bit later
+            continue;
+        }
+        renderRunning = true;
+        if (engine) {
+            QObject::connect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onSequenceRenderFinishedAutoSetProjectFormat()), Qt::UniqueConnection );
+        }
+    }
+
+    return renderRunning;
+}
+
+void
+Project::autoSetProjectFormatFromReader(const NodePtr& reader)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    if ( !isAutoSetProjectFormatEnabled() || !canAutoSetProjectFormatFromReader(reader) ) {
+        return;
+    }
+
+    // Never change the project format while a sequence render is running: wait for it to finish.
+    if ( isSequenceRenderRunning(NULL) ) {
+        for (std::list<NodeWPtr>::const_iterator it = _imp->autoSetProjectFormatPendingReaders.begin(); it != _imp->autoSetProjectFormatPendingReaders.end(); ++it) {
+            if (it->lock() == reader) {
+                return;
+            }
+        }
+        _imp->autoSetProjectFormatPendingReaders.push_back(reader);
+        // The render may already have emitted renderFinished before we connected to it (it is still
+        // seen as running until its engine becomes idle): also poll until no render is running.
+        scheduleAutoSetProjectFormatRetry();
+
+        return;
+    }
+    _imp->autoSetProjectFormatPendingReaders.clear();
+    setProjectFormatFromReader(reader);
+}
+
+void
+Project::setProjectFormatFromReader(const NodePtr& reader)
+{
+    EffectInstancePtr effect = reader->getEffectInstance();
+    Format frmt;
+
+    frmt.set( effect->getOutputFormat() );
+    frmt.setPixelAspectRatio( effect->getAspectRatio(-1) );
+    setOrAddProjectFormat(frmt);
+}
+
+void
+Project::applyPendingAutoSetProjectFormat(const QObject* ignoredEngine)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    if ( !isAutoSetProjectFormatEnabled() ) {
+        _imp->autoSetProjectFormatPendingReaders.clear();
+
+        return;
+    }
+    if ( _imp->autoSetProjectFormatPendingReaders.empty() ) {
+        return;
+    }
+    if ( isSequenceRenderRunning(ignoredEngine) ) {
+        // Another render is running, or the engine that finished is not idle yet: check again soon.
+        // (A running render also triggers this check when it finishes.)
+        scheduleAutoSetProjectFormatRetry();
+
+        return;
+    }
+    // The first pending Reader that still exists and can still decode its file sets the format.
+    std::list<NodeWPtr> pending;
+    pending.swap(_imp->autoSetProjectFormatPendingReaders);
+    for (std::list<NodeWPtr>::const_iterator it = pending.begin(); it != pending.end(); ++it) {
+        NodePtr reader = it->lock();
+        if ( canAutoSetProjectFormatFromReader(reader) ) {
+            // don't call autoSetProjectFormatFromReader(): it would see the engine that just finished as running
+            setProjectFormatFromReader(reader);
+
+            return;
+        }
+    }
+}
+
+void
+Project::scheduleAutoSetProjectFormatRetry()
+{
+    if (!_imp->autoSetProjectFormatRetryScheduled) {
+        _imp->autoSetProjectFormatRetryScheduled = true;
+        QTimer::singleShot( 100, this, SLOT(onAutoSetProjectFormatRetry()) );
+    }
+}
+
+void
+Project::onSequenceRenderFinishedAutoSetProjectFormat()
+{
+    // renderFinished is emitted by the scheduler thread before its engine becomes idle: ignore that engine.
+    applyPendingAutoSetProjectFormat( sender() );
+}
+
+void
+Project::onAutoSetProjectFormatRetry()
+{
+    _imp->autoSetProjectFormatRetryScheduled = false;
+    applyPendingAutoSetProjectFormat(NULL);
+}
+
 void
 Project::setOrAddProjectFormat(const Format & frmt,
-                               bool skipAdd)
+                               bool skipAdd,
+                               bool mayChangeFormat)
 {
     if ( frmt.isNull() ) {
         return;
@@ -2229,7 +2532,13 @@ Project::setOrAddProjectFormat(const Format & frmt,
     {
         QMutexLocker l(&_imp->formatMutex);
 
-        if (_imp->autoSetProjectFormat) {
+        bool autoSet = _imp->autoSetProjectFormat;
+        if (autoSet && !mayChangeFormat) {
+            Format current;
+            getProjectDefaultFormat(&current);
+            autoSet = (frmt == current);
+        }
+        if (autoSet) {
             _imp->autoSetProjectFormat = false;
             dispW = frmt;
 
@@ -2327,63 +2636,9 @@ Project::getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const
 std::string
 Project::escapeXML(const std::string &istr)
 {
-    std::string str( istr );
-
-    for (size_t i = 0; i < str.size(); ++i) {
-        switch (str[i]) {
-        case '<':
-            str.replace(i, 1, "&lt;");
-            i += 3;
-            break;
-
-        case '>':
-            str.replace(i, 1, "&gt;");
-            i += 3;
-            break;
-        case '&':
-            str.replace(i, 1, "&amp;");
-            i += 4;
-            break;
-        case '"':
-            str.replace(i, 1, "&quot;");
-            i += 5;
-            break;
-        case '\'':
-            str.replace(i, 1, "&apos;");
-            i += 5;
-            break;
-        default: {
-            unsigned char c = (unsigned char)(str[i]);
-            // Escape even the whitespace characters '\n' '\r' '\t', although they are valid
-            // XML, because they would be converted to space when re-read.
-            // See http://www.w3.org/TR/xml/#AVNormalize
-            if ( ( ( 0x01 <= c) && ( c <= 0x1f) ) || ( ( 0x7F <= c) && ( c <= 0x9F) ) ) {
-                // these characters must be escaped in XML 1.1
-                // http://www.w3.org/TR/xml/#sec-references
-                std::string ns = "&#x";
-                if (c > 0xf) {
-                    int d = c / 0x10;
-                    ns += ('0' + d);     // d cannot be more than 9 (because c <= 0x9F)
-                }
-                int d = c & 0xf;
-                ns += d < 10 ? ('0' + d) : ('A' + d - 10);
-                ns += ';';
-                str.replace(i, 1, ns);
-                i += ns.size() + 1;
-            } else if (0xC0 <= c && c < 0xE0) { // 2-byte UTF-8
-                i += 1;
-            } else if (0xE0 <= c && c < 0xF0) { // 3-byte UTF-8
-                i += 2;
-            } else if (0xF0 <= c && c < 0xF8) { // 4-byte UTF-8
-                i += 3;
-            }
-
-            break;
-        }
-        }
-    }
-    assert( str == OFX::XML::escape(istr) ); // check that this escaped string is consistent with the one in HostSupport
-    return str;
+    // Same escaping as OFX HostSupport (UTF-8 aware, '\t' '\n' '\r' kept as character references,
+    // characters that are illegal in XML 1.0 replaced by U+FFFD)
+    return OFX::XML::escape(istr);
 } // Project::escapeXML
 
 std::string
@@ -2413,7 +2668,7 @@ Project::unescapeXML(const std::string &istr)
             } else if ( !str.compare(i + 1, 1, "#") ) {
                 size_t end = str.find_first_of(";", i + 2);
                 if (end == std::string::npos) {
-                    // malformed XML
+                    // malformed XML: keep the rest as is
                     return str;
                 }
                 char *tail = NULL;
@@ -2424,13 +2679,33 @@ Project::unescapeXML(const std::string &istr)
 
                 errno = 0;
                 unsigned long cp = std::strtoul(head, &tail, hex ? 16 : 10);
-                bool fail = errno || (tail - &str[0]) != (long)end || cp > 0xff; // only handle 0x01-0xff
+                bool fail = errno || (tail - &str[0]) != (long)end || cp > 0x10ffff;
                 errno = errno_save;
                 if (fail) {
-                    return str;
+                    // not a valid character reference: leave it, and go on with the rest of the string
+                    continue;
                 }
-                // replace from '&' to ';' (thus the +1)
-                str.replace(i, tail - head + 1 + prefix, 1, (char)cp);
+                if (cp <= 0xff) {
+                    // 0x01-0xff: the byte itself (how Natron wrote these, see escapeXML)
+                    // replace from '&' to ';' (thus the +1)
+                    str.replace(i, tail - head + 1 + prefix, 1, (char)cp);
+                } else {
+                    // e.g. &#xFFFD; written by OFX::XML::escape: UTF-8 encode the code point
+                    std::string utf8;
+                    if (cp < 0x800) {
+                        utf8 += (char)(0xC0 | (cp >> 6));
+                    } else if (cp < 0x10000) {
+                        utf8 += (char)(0xE0 | (cp >> 12));
+                        utf8 += (char)(0x80 | ( (cp >> 6) & 0x3F ));
+                    } else {
+                        utf8 += (char)(0xF0 | (cp >> 18));
+                        utf8 += (char)(0x80 | ( (cp >> 12) & 0x3F ));
+                        utf8 += (char)(0x80 | ( (cp >> 6) & 0x3F ));
+                    }
+                    utf8 += (char)(0x80 | (cp & 0x3F));
+                    str.replace(i, tail - head + 1 + prefix, utf8);
+                    i += utf8.size() - 1; // the loop's ++i skips the last byte
+                }
             }
         }
     }
@@ -2890,14 +3165,21 @@ Project::extractTreesFromNodes(const NodesList& nodes,
         if (isOutput) {
             NodesTree tree;
             tree.output.node = *it;
+            // An output node appears once per link in getGuiOutputs(), and it may be connected
+            // to this node through several of its inputs: record every (input number, output node) link once.
             const NodesWList& outputs = (*it)->getGuiOutputs();
+            std::set<NodePtr> visitedOutputs;
             for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
                 NodePtr output = it2->lock();
-                if (!output) {
+                if ( !output || !visitedOutputs.insert(output).second ) {
                     continue;
                 }
-                int idx = output->inputIndex(*it);
-                tree.output.outputs.push_back( std::make_pair(idx, *it2) );
+                int nInputs = output->getNInputs();
+                for (int idx = 0; idx < nInputs; ++idx) {
+                    if (output->getRealInput(idx) == *it) {
+                        tree.output.outputs.push_back( std::make_pair(idx, *it2) );
+                    }
+                }
             }
 
             const std::vector<NodeWPtr>& inputs = (*it)->getGuiInputs();

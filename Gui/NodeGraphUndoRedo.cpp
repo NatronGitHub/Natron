@@ -27,11 +27,14 @@
 
 #include <algorithm> // min, max
 #include <limits>
+#include <set>
 #include <stdexcept>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QDebug>
+#include <QTimer>
+#include <QUndoStack>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -40,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/GroupOutput.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
+#include "Engine/OfxEffectInstance.h"
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/TimeLine.h"
@@ -501,10 +505,10 @@ ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
             if (connectionOk) {
                 internalDst->replaceInput(internalNewSrc, inputNb);
             } else {
-                internalDst->disconnectInput( internalDst->getInputIndex( internalOldSrc.get() ) );
+                internalDst->disconnectInput(inputNb);
             }
         } else if (internalOldSrc && !internalNewSrc) {
-            internalDst->disconnectInput( internalDst->getInputIndex( internalOldSrc.get() ) );
+            internalDst->disconnectInput(inputNb);
         } else if (!internalOldSrc && internalNewSrc) {
             Node::CanConnectInputReturnValue ret = internalDst->canConnectInput(internalNewSrc, inputNb);
             bool connectionOk = ret == Node::eCanConnectInput_ok ||
@@ -513,7 +517,7 @@ ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
             if (connectionOk) {
                 internalDst->connectInput(internalNewSrc, inputNb);
             } else {
-                internalDst->disconnectInput( internalDst->getInputIndex( internalOldSrc.get() ) );
+                internalDst->disconnectInput(inputNb);
             }
         }
     }
@@ -1144,6 +1148,22 @@ LoadNodePresetsCommand::undo()
     NodePtr internalNode = node->getNode();
     MultiInstancePanelPtr panel = node->getMultiInstancePanel();
     internalNode->loadKnobs(*_oldSerialization.front(), true);
+    if ( internalNode->getRotoContext() || internalNode->getTrackerContext() ) {
+        // loadKnobs() replaced the shapes or tracks by new ones (#1247). The
+        // commands after this one in the node's undo stack (already undone)
+        // refer to the replaced items and to their settings panel tree items,
+        // which are deleted: redoing them would use deleted items. If there
+        // are any, clear the stack once this undo is finished.
+        std::weak_ptr<QUndoStack> weakStack = node->getUndoStack();
+        QTimer::singleShot(0, [weakStack]() {
+            QUndoStackPtr stack = weakStack.lock();
+            if ( stack && ( stack->count() > stack->index() + 1 ) ) {
+                stack->clear();
+            }
+        });
+    }
+    // loadKnobs() may have created user knobs: rebuild the settings panel (#480)
+    internalNode->getEffectInstance()->recreateUserKnobs(true);
     if (panel) {
         std::list<NodePtr> newChildren, oldChildren;
         getListAsShared(_newChildren, newChildren);
@@ -1190,6 +1210,8 @@ LoadNodePresetsCommand::redo()
     }
 
     internalNode->loadKnobs(*_newSerializations.front(), true);
+    // loadKnobs() may have created user knobs: rebuild the settings panel (#480)
+    internalNode->getEffectInstance()->recreateUserKnobs(true);
     if (panel) {
         std::list<NodePtr> oldChildren, newChildren;
         getListAsShared(_oldChildren, oldChildren);
@@ -1288,14 +1310,21 @@ extractTreesFromNodes(const std::list<NodeGuiPtr> & nodes,
             ExtractedTree tree;
             tree.output.node = *it;
             NodePtr n = (*it)->getNode();
+            // An output node appears once per link in getGuiOutputs(), and it may be connected
+            // to n through several of its inputs: record every (input number, output node) link once.
             const NodesWList& outputs = n->getGuiOutputs();
+            std::set<NodePtr> visitedOutputs;
             for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
                 NodePtr output = it2->lock();
-                if (!output) {
+                if ( !output || !visitedOutputs.insert(output).second ) {
                     continue;
                 }
-                int idx = output->inputIndex(n);
-                tree.output.outputs.push_back( std::make_pair(idx, output) );
+                int nInputs = output->getNInputs();
+                for (int idx = 0; idx < nInputs; ++idx) {
+                    if (output->getRealInput(idx) == n) {
+                        tree.output.outputs.push_back( std::make_pair(idx, output) );
+                    }
+                }
             }
 
             const std::vector<Edge*>& inputs = (*it)->getInputsArrows();
@@ -1505,16 +1534,16 @@ GroupFromSelectionCommand::undo()
 {
     std::list<NodeGuiPtr> nodesToSelect;
 
-    for (OutputLinksMap::iterator it = _outputLinks.begin(); it != _outputLinks.end(); ++it) {
-        NodePtr outputNode = it->first.lock();
+    for (OutputLinks::iterator it = _outputLinks.begin(); it != _outputLinks.end(); ++it) {
+        NodePtr outputNode = it->outputNode.lock();
         if (!outputNode) {
             continue;
         }
-        NodePtr input = it->second.inputNode.lock();
+        NodePtr input = it->inputNode.lock();
         if (!input) {
             continue;
         }
-        outputNode->replaceInput(input, it->second.inputIdx);
+        outputNode->replaceInput(input, it->inputIdx);
     }
 
 
@@ -1591,9 +1620,13 @@ GroupFromSelectionCommand::redo()
         // Set the position of the group
         container_i->setPosition( groupPosition.x(), groupPosition.y() );
 
-        // Copy all the selected nodes and paste them in the newly created Group
+        // Copy all the selected nodes and paste them in the newly created Group. The originals are
+        // deleted below, so the copies of a single-instance plug-in are not refused.
         std::list<std::pair<std::string, NodeGuiPtr> > newNodes;
-        _graph->copyNodesAndCreateInGroup(originalNodes, isGrp, newNodes);
+        {
+            OfxEffectInstance::AllowExtraSingleInstances allowMovingSingleInstances;
+            _graph->copyNodesAndCreateInGroup(originalNodes, isGrp, newNodes);
+        }
 
         for (std::list<std::pair<std::string, NodeGuiPtr> >::iterator it = newNodes.begin(); it != newNodes.end(); ++it) {
             internalNewNodes.push_back( it->second->getNode() );
@@ -1735,20 +1768,23 @@ GroupFromSelectionCommand::redo()
                 int inputIdx = output->getInputIndex(foundOriginalOutputNode->getNode().get());
                 assert(inputIdx != -1);
                 output->replaceInput(isGrp->getNode(), inputIdx);
-                OutputLink& link = _outputLinks[*it2];
-                link.inputNode = foundOriginalOutputNode->getNode();
+                // One entry per link: output may be connected to several of its inputs.
+                OutputLink link;
+                link.outputNode = output;
                 link.inputIdx = inputIdx;
+                link.inputNode = foundOriginalOutputNode->getNode();
+                _outputLinks.push_back(link);
             }
         } // for all trees
     } // !_firstRedoCalled
 
     if (_firstRedoCalled) {
-        for (OutputLinksMap::iterator it = _outputLinks.begin(); it != _outputLinks.end(); ++it) {
-            NodePtr outputNode = it->first.lock();
+        for (OutputLinks::iterator it = _outputLinks.begin(); it != _outputLinks.end(); ++it) {
+            NodePtr outputNode = it->outputNode.lock();
             if (!outputNode) {
                 continue;
             }
-            outputNode->replaceInput(isGrp->getNode(), it->second.inputIdx);
+            outputNode->replaceInput(isGrp->getNode(), it->inputIdx);
         }
     }
 
@@ -1879,7 +1915,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                 NodeToConnect ntc;
 
                 assert(groupInputs[i]);
-                std::map<NodePtr, int> outputConnected;
+                std::list<std::pair<NodePtr, int> > outputConnected;
                 groupInputs[i]->getOutputsConnectedToThisNode(&outputConnected);
 
                 NodeGuiIPtr inputGui_i = input->getNodeGui();
@@ -1893,7 +1929,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                     inputY = p.y();
                 }
 
-                for (std::map<NodePtr, int>::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
+                for (std::list<std::pair<NodePtr, int> >::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
                     NodeGuiPtr outputGui;
                     ///Find the new node that was inlined, based on the script name of the old node in the group
                     for (std::list<std::pair<std::string, NodeGuiPtr> >::iterator it3 = newNodes.begin(); it3 != newNodes.end(); ++it3) {
@@ -1903,7 +1939,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                         }
                     }
                     assert(outputGui);
-                    ntc.outputs.insert( std::make_pair(outputGui, it2->second) );
+                    ntc.outputs.push_back( std::make_pair(outputGui, it2->second) );
                 }
 
                 expandedGroup.connections[i] = ntc;
@@ -1934,20 +1970,23 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                 firstInputPos = inputGui->mapToScene( inputGui->mapFromParent( inputGui->getPos_mt_safe() ) );
                 outputConnection.input = inputGui;
 
-                std::map<NodePtr, int> outputConnected;
+                std::list<std::pair<NodePtr, int> > outputConnected;
                 group->getNode()->getOutputsConnectedToThisNode(&outputConnected);
-                for (std::map<NodePtr, int>::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
+                for (std::list<std::pair<NodePtr, int> >::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
                     NodeGuiIPtr outputGui_i = it2->first->getNodeGui();
                     assert(outputGui_i);
                     NodeGuiPtr outputGui = std::dynamic_pointer_cast<NodeGui>(outputGui_i);
                     assert(outputGui);
-                    outputsConnectedToGroup.push_back(outputGui);
+                    // an output node connected to the group through several inputs is listed once per input
+                    if ( std::find(outputsConnectedToGroup.begin(), outputsConnectedToGroup.end(), outputGui) == outputsConnectedToGroup.end() ) {
+                        outputsConnectedToGroup.push_back(outputGui);
+                    }
 
                     QPointF p = outputGui->mapToScene( outputGui->mapFromParent( outputGui->getPos_mt_safe() ) );
                     if (p.y() < outputY) {
                         outputY = p.y();
                     }
-                    outputConnection.outputs.insert( std::make_pair(outputGui, it2->second) );
+                    outputConnection.outputs.push_back( std::make_pair(outputGui, it2->second) );
                 }
                 expandedGroup.connections[-1] = outputConnection;
             }
@@ -2052,7 +2091,7 @@ InlineGroupCommand::redo()
                 if (!input) {
                     continue;
                 }
-                for (NodeGuisMap::iterator it3 = it2->second.outputs.begin();
+                for (NodeGuiLinks::iterator it3 = it2->second.outputs.begin();
                      it3 != it2->second.outputs.end(); ++it3) {
                     NodeGuiPtr node = it3->first.lock();
                     if (node) {

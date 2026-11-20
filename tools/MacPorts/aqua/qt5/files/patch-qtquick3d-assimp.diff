@@ -1,0 +1,14 @@
+See https://bugreports.qt.io/browse/QTBUG-84037 (incorrectly closed as fixed in 5.15.1; only fixed in Qt 6.0)
+Adapted from Arch Linux patch: https://git.io/JtJs8
+Upstream-Status: Backport
+--- src/plugins/assetimporters/assimp/assimp.pro.orig
++++ src/plugins/assetimporters/assimp/assimp.pro
+@@ -10,7 +10,7 @@ QT_FOR_CONFIG += assetimporters-private
+ include($$OUT_PWD/../qtassetimporters-config.pri)
+ 
+ qtConfig(system-assimp):!if(cross_compile:host_build) {
+-    QMAKE_USE_PRIVATE += assimp
++    QMAKE_USE_PRIVATE += quick3d-assimp
+ } else {
+     include(../../../3rdparty/assimp/assimp.pri)
+ }

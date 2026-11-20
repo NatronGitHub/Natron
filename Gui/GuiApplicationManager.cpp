@@ -790,12 +790,6 @@ GuiApplicationManager::getIcon(PixmapEnum e,
             path = NATRON_IMAGES_PATH "interp_curve_z.png";
             break;
             // DON'T add a default: case here
-        case NATRON_PIXMAP_VIEWER_DITHER_ENABLED:
-            path = NATRON_IMAGES_PATH "dither_enabled.png";
-            break;
-        case NATRON_PIXMAP_VIEWER_DITHER_DISABLED:
-            path = NATRON_IMAGES_PATH "dither_disabled.png";
-            break;
         } // switch
         if ( path.empty() ) {
             assert(!"Missing image.");
@@ -952,7 +946,9 @@ GuiApplicationManager::initGui(const CLArgs& args)
     QObject::connect( &_imp->updateSplashscreenTimer, SIGNAL(timeout()), this, SLOT(onFontconfigTimerTriggered()) );
     _imp->updateSplashscreenTimer.start(1000);
 
-    _imp->fontconfigUpdateWatcher->setFuture( QtConcurrent::run(_imp.get(), &GuiApplicationManagerPrivate::updateFontConfigCache) );
+    // Qt6 dropped the run(object, memberFunction) overload; a lambda is the one
+    // spelling both versions accept.
+    _imp->fontconfigUpdateWatcher->setFuture( QtConcurrent::run( [p = _imp.get()]() { p->updateFontConfigCache(); } ) );
 
     Gui::loadStyleSheet();
 
@@ -1078,6 +1074,14 @@ bool
 GuiApplicationManager::isSplashcreenVisible() const
 {
     return _imp->_splashScreen ? true : false;
+}
+
+bool
+GuiApplicationManager::isGuiTestNoFocus()
+{
+    static const bool noFocus = !qEnvironmentVariableIsEmpty("NATRON_TEST_NO_FOCUS") && (qgetenv("NATRON_TEST_NO_FOCUS") != "0");
+
+    return noFocus;
 }
 
 void

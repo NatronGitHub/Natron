@@ -209,7 +209,7 @@ AddFormatDialog::AddFormatDialog(Project *project,
     _pixelAspectLabel = new Label(tr("pixel aspect:"), _parametersLine);
     _parametersLineLayout->addWidget(_pixelAspectLabel);
     _pixelAspectSpinBox = new SpinBox(this, SpinBox::eSpinBoxTypeDouble);
-    _pixelAspectSpinBox->setMinimum(0.);
+    _pixelAspectSpinBox->setMinimum(0.01); // the pixel aspect ratio must be positive
     _pixelAspectSpinBox->setValue(1.);
     _parametersLineLayout->addWidget(_pixelAspectSpinBox);
 
@@ -261,18 +261,10 @@ AddFormatDialog::getFormat() const
     return Format(0, 0, w, h, name.toStdString(), pa);
 }
 
-template
-void
-ProjectGui::save<boost::archive::xml_oarchive>(boost::archive::xml_oarchive & archive) const;
-
-template
-void
-ProjectGui::save<boost::archive::binary_oarchive>(boost::archive::binary_oarchive & archive) const;
-
 // Version is handled in ProjectGuiSerialization
-template<class Archive>
+template<>
 void
-ProjectGui::save(Archive & archive) const
+ProjectGui::save<boost::archive::xml_oarchive>(boost::archive::xml_oarchive & archive) const
 {
     ProjectGuiSerialization projectGuiSerializationObj;
 
@@ -438,15 +430,9 @@ loadNodeGuiSerialization(Gui* gui,
     }
 } // loadNodeGuiSerialization
 
-template void
-ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive::xml_iarchive & archive);
-
-template void
-ProjectGui::load<boost::archive::binary_iarchive>(bool isAutosave,  boost::archive::binary_iarchive & archive);
-
-template<class Archive>
+template<>
 void
-ProjectGui::load(bool isAutosave,  Archive & archive)
+ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive::xml_iarchive & archive)
 {
     ProjectGuiSerialization obj;
 

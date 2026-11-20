@@ -7,9 +7,8 @@ PortGroup           boost 1.0
 
 boost.depends_type  build
 
-github.setup        AcademySoftwareFoundation OpenColorIO 2.3.2 v
-# Change github.tarball_from to 'releases' or 'archive' next update
-github.tarball_from tarball
+github.setup        AcademySoftwareFoundation OpenColorIO 2.5.1 v
+github.tarball_from archive
 revision            0
 name                opencolorio
 categories          graphics
@@ -21,15 +20,16 @@ long_description    OpenColorIO (OCIO) is a complete color management solution \
                     geared towards motion picture production with an emphasis on \
                     visual effects and computer animation.
 
-checksums           rmd160  297c061816895bd4d02a9450c0415d8769e188ab \
-                    sha256  6e437aa8c09f5d870212847af7788d92c3a5c34c739b212a9947a4ef3e8542b8 \
-                    size    11444813
+checksums           rmd160  33e754f50c4d281c8571c1e52d0f4e33964405f5 \
+                    sha256  08cb6213ea4edee550ab050509d38204004bee6742c658166b1cf825d0a9381b \
+                    size    14181252
 
 # Exclude pre-releases from livecheck
 github.livecheck.regex  {([0-9.]+)}
 
 configure.args-append \
-    -DCMAKE_CONFIGURATION_TYPES=MacPorts
+    -DCMAKE_CONFIGURATION_TYPES=MacPorts \
+    -DOCIO_BUILD_TESTS=OFF
 
 # Keep this condition the same in the opencolorio, openimageio, and osl ports.
 set port_latest [expr {${os.platform} ne "darwin" || ${os.major} >= 20}]
@@ -39,6 +39,8 @@ if {!${port_latest}} {
     # Change github.tarball_from to 'releases' or 'archive' next update
     github.tarball_from tarball
     revision            4
+
+    depends_lib-append  port:tinyxml
 
     checksums           rmd160  81534822cb8350e1b7ba171c91226de996494d02 \
                         sha256  b7def3b5383c9b35dc9c0bdd26da74e2199c2b283d52bb84847aa307f70a0bc4 \
@@ -60,6 +62,11 @@ if {!${port_latest}} {
     patchfiles-append   patch-CMakeLists.txt.diff
 
     livecheck.type      none
+
+    configure.args-append \
+        -DUSE_EXTERNAL_YAML=ON \
+        -DUSE_EXTERNAL_TINYXML=ON \
+        -DUSE_EXTERNAL_LCMS=ON
 
     # see https://github.com/imageworks/OpenColorIO/issues/563
     # https://trac.macports.org/ticket/67904
@@ -87,7 +94,8 @@ configure.cxxflags-append \
     -Wno-deprecated-declarations
 
 depends_build-append \
-    port:pkgconfig
+    path:bin/pkg-config:pkgconfig \
+    port:sse2neon
 
 # not in MacPorts
 configure.args-append \
@@ -95,13 +103,12 @@ configure.args-append \
     -DOCIO_BUILD_NUKE=OFF
 
 depends_lib-append  \
+    port:expat \
+    port:imath \
+    port:minizip-ng \
+    port:pystring \
     port:yaml-cpp \
-    port:tinyxml
-
-configure.args-append \
-    -DUSE_EXTERNAL_YAML=ON \
-    -DUSE_EXTERNAL_TINYXML=ON \
-    -DUSE_EXTERNAL_LCMS=ON
+    port:zlib
 
 if {${configure.build_arch} in [list ppc ppc64]} {
     # This option is ON by default:
@@ -112,33 +119,7 @@ if {${configure.build_arch} in [list ppc ppc64]} {
 # OpenColorIO intentionally installs Python module in lib
 # see https://github.com/imageworks/OpenColorIO/blob/15e96c1f579d3640947a5fcb5ec831383cc3956e/src/pyglue/CMakeLists.txt#L85
 
-variant python38 description {Build the Python 3.8 bindings} conflicts python39 python310 python311 python312 {
-    depends_lib-append port:python38
-    configure.args-append \
-        -DPYTHON=${prefix}/bin/python3.8
-    post-destroot {
-        xinstall -d -m 0755 \
-            ${destroot}${frameworks_dir}/Python.framework/Versions/3.8/lib/python3.8/site-packages
-        ln -s \
-            ${prefix}/lib/python3.8/site-packages/PyOpenColorIO.so \
-            ${destroot}${frameworks_dir}/Python.framework/Versions/3.8/lib/python3.8/site-packages/
-    }
-}
-
-variant python39 description {Build the Python 3.9 bindings} conflicts python38 python310 python311 python312 {
-    depends_lib-append port:python39
-    configure.args-append \
-        -DPYTHON=${prefix}/bin/python3.9
-    post-destroot {
-        xinstall -d -m 0755 \
-            ${destroot}${frameworks_dir}/Python.framework/Versions/3.9/lib/python3.9/site-packages
-        ln -s \
-            ${prefix}/lib/python3.9/site-packages/PyOpenColorIO.so \
-            ${destroot}${frameworks_dir}/Python.framework/Versions/3.9/lib/python3.9/site-packages/
-    }
-}
-
-variant python310 description {Build the Python 3.10 bindings} conflicts python38 python39 python311 python312 {
+variant python310 description {Build the Python 3.10 bindings} conflicts python311 python312 python313 python314 {
     depends_lib-append port:python310
     configure.args-append \
         -DPYTHON=${prefix}/bin/python3.10
@@ -151,8 +132,7 @@ variant python310 description {Build the Python 3.10 bindings} conflicts python3
     }
 }
 
-
-variant python311 description {Build the Python 3.11 bindings} conflicts python38 python39 python310 python312 {
+variant python311 description {Build the Python 3.11 bindings} conflicts python310 python312 python313 python314 {
     depends_lib-append port:python311
     configure.args-append \
         -DPYTHON=${prefix}/bin/python3.11
@@ -165,7 +145,7 @@ variant python311 description {Build the Python 3.11 bindings} conflicts python3
     }
 }
 
-variant python312 description {Build the Python 3.12 bindings} conflicts python38 python39 python310 python311 {
+variant python312 description {Build the Python 3.12 bindings} conflicts python310 python311 python313 python314 {
     depends_lib-append port:python312
     configure.args-append \
         -DPYTHON=${prefix}/bin/python3.12
@@ -178,11 +158,48 @@ variant python312 description {Build the Python 3.12 bindings} conflicts python3
     }
 }
 
-if {![variant_isset python38] && ![variant_isset python39] && ![variant_isset python310] && ![variant_isset python311] && ![variant_isset python312]} {
-    default_variants +python312
+variant python313 description {Build the Python 3.13 bindings} conflicts python310 python311 python312 python314 {
+    depends_lib-append port:python313
+    configure.args-append \
+        -DPYTHON=${prefix}/bin/python3.13
+    post-destroot {
+        xinstall -d -m 0755 \
+            ${destroot}${frameworks_dir}/Python.framework/Versions/3.13/lib/python3.13/site-packages
+        ln -s \
+            ${prefix}/lib/python3.13/site-packages/PyOpenColorIO.so \
+            ${destroot}${frameworks_dir}/Python.framework/Versions/3.13/lib/python3.13/site-packages/
+    }
 }
 
-if {![variant_isset python38] && ![variant_isset python39] && ![variant_isset python310] && ![variant_isset python311] && ![variant_isset python312]} {
+variant python314 description {Build the Python 3.14 bindings} conflicts python310 python311 python312 python313 {
+    depends_lib-append port:python314
+    configure.args-append \
+        -DPYTHON=${prefix}/bin/python3.14
+    post-destroot {
+        xinstall -d -m 0755 \
+            ${destroot}${frameworks_dir}/Python.framework/Versions/3.14/lib/python3.14/site-packages
+        ln -s \
+            ${prefix}/lib/python3.14/site-packages/PyOpenColorIO.so \
+            ${destroot}${frameworks_dir}/Python.framework/Versions/3.14/lib/python3.14/site-packages/
+    }
+}
+
+if {
+    ![variant_isset python310] &&
+    ![variant_isset python311] &&
+    ![variant_isset python312] &&
+    ![variant_isset python313]
+} {
+    default_variants +python314
+}
+
+if {
+    ![variant_isset python310] &&
+    ![variant_isset python311] &&
+    ![variant_isset python312] &&
+    ![variant_isset python313] &&
+    ![variant_isset python314]
+} {
     configure.args-append \
         -DOCIO_BUILD_PYGLUE=OFF
 }
@@ -215,6 +232,9 @@ variant x11 {
 }
 
 variant quartz {
+    # Use OpenGL framework instead of mesa
+    configure.pre_args-delete   -DCMAKE_FIND_FRAMEWORK=LAST
+
     if {${port_latest}} {
         depends_lib-append  port:openexr
     } else {
@@ -222,10 +242,7 @@ variant quartz {
     }
 
     depends_lib-append \
-        port:lcms2 \
-        port:glew
-    configure.args-append \
-        -DGLUT_glut_LIBRARY=/System/Library/Frameworks/GLUT.framework
+        port:lcms2
 }
 
 if {![variant_isset x11] && ![variant_isset quartz]} {
@@ -241,7 +258,8 @@ variant tests description "Enable testing" {
     configure.pre_args-replace \
         -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=ON \
         -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=OFF
-    configure.args-append \
+    configure.args-replace \
+        -DOCIO_BUILD_TESTS=OFF \
         -DOCIO_BUILD_TESTS=ON
 
     test.run    yes

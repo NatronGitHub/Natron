@@ -1,0 +1,22 @@
+--- mkspecs/common/mac.conf.orig	2015-10-12 21:35:32.000000000 -0700
++++ mkspecs/common/mac.conf	2017-11-04 22:43:45.000000000 -0700
+@@ -12,7 +12,7 @@
+ 
+ include(unix.conf)
+ 
+-QMAKE_RESOURCE          = /Developer/Tools/Rez
++QMAKE_RESOURCE          = __MACPORTS_Rez__
+ QMAKE_EXTENSION_SHLIB   = dylib
+ QMAKE_LIBDIR            =
+ 
+--- mkspecs/features/mac/rez.prf.orig	2015-10-12 21:35:32.000000000 -0700
++++ mkspecs/features/mac/rez.prf	2017-11-04 22:44:49.000000000 -0700
+@@ -1,7 +1,7 @@
+ 
+ #global defaults
+ isEmpty(QMAKE_REZ) {
+-    QMAKE_REZ = /Developer/Tools/Rez
++    QMAKE_REZ = __MACPORTS_Rez__
+ }
+ isEmpty(REZ_DIR):REZ_DIR = .
+ isEmpty(QMAKE_EXT_REZ):QMAKE_EXT_REZ = .rsrc

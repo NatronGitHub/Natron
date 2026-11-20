@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _ColorTuple:
 
 ColorTuple
@@ -19,22 +19,22 @@ Functions
 .. class:: ColorTuple()
 
 
-.. attribute:: NatronEngine.ColorTuple.g
+.. attribute:: ColorTuple.g
 
 
-.. attribute:: NatronEngine.ColorTuple.r
+.. attribute:: ColorTuple.r
 
 
-.. attribute:: NatronEngine.ColorTuple.a
+.. attribute:: ColorTuple.a
 
 
-.. attribute:: NatronEngine.ColorTuple.b
+.. attribute:: ColorTuple.b
 
 
-.. method:: NatronEngine.ColorTuple.__getitem__(index)
+.. method:: ColorTuple.__getitem__(index)
 
 
-    :param arg__1: :class:`int<PySide.QtCore.int>`
+    :param arg__1: :class:`int`
     :rtype: :class:`float`
 
 Returns the item at the given index. This is the bracket operator *[]*

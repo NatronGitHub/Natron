@@ -10,11 +10,11 @@ Accessing a node's parameters:
 As for nodes, :doc:`parameters<PythonReference/NatronEngine/Param>` are :ref:`auto-declared<autoVar>` objects.
 You can access an existing parameter of a node by its *script-name*::
 
-    app.BlurCImg1.size
+    app.Blur1.size
 
 Note that you can also access a parameter with the :func:`getParam(scriptName)<NatronEngine.Effect.getParam>` function::
 
-    param = app.BlurCImg1.getParam("size")
+    param = app.Blur1.getParam("size")
 
 but you should not ever need it because Natron pre-declared all variables for you.
 
@@ -49,7 +49,9 @@ all existing parameters:
 
     * :doc:`ChoiceParam<PythonReference/NatronEngine/ChoiceParam>` a 1-dimensional drop-down (combobox)
 
-    * :doc:`StringParam<PythonReference/NatronEngine/DoubleParam>` to store a 1-dimensional string
+    * :doc:`ColorParam<PythonReference/NatronEngine/ColorParam>` to store an RGB or RGBA color
+
+    * :doc:`StringParam<PythonReference/NatronEngine/StringParam>` to store a 1-dimensional string
 
     * :doc:`FileParam<PythonReference/NatronEngine/FileParam>` to specify an input-file
 
@@ -62,6 +64,8 @@ all existing parameters:
     * :doc:`GroupParam<PythonReference/NatronEngine/GroupParam>` to graphically gather parameters under a group
 
     * :doc:`PageParam<PythonReference/NatronEngine/PageParam>` to store parameters into a page
+
+    * SeparatorParam to draw a horizontal separator line between parameters
 
 
 Retrieving a parameter's value:

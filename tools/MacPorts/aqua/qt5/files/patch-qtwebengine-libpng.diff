@@ -1,0 +1,67 @@
+From eb486f33ed1109a78f2794c98aad624023ea26ea Mon Sep 17 00:00:00 2001
+From: Anu Aliyas <anu.aliyas@qt.io>
+Date: Tue, 15 Jul 2025 15:02:08 +0200
+Subject: [PATCH] [Backport][libpng] Apply 893b811 from upstream to fix macro
+ issue
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The latest version of Clang changed what macros it predefines on Apple
+targets, causing errors about predefined macros in libpng.
+
+This applies
+https://github.com/pnggroup/libpng/commit/893b8113f04d408cc6177c6de19c9889a48faa24
+from upstream, which fixed the issue.
+
+Bug: 1519899
+Change-Id: I98c568083e2784e02c47d611bf957b1373babe0f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5237620
+Auto-Submit: Hans Wennborg <hans@chromium.org>
+Commit-Queue: Leon Scroggins <scroggo@google.com>
+Reviewed-by: Leon Scroggins <scroggo@google.com>
+Cr-Commit-Position: refs/heads/main@{#1252638}
+Task-number: QTBUG-138485
+Reviewed-on: https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/661294
+Reviewed-by: Michael Brüning <michael.bruning@qt.io>
+---
+ chromium/third_party/libpng/README.chromium |  3 +++
+ chromium/third_party/libpng/pngpriv.h       | 14 ++------------
+ 2 files changed, 5 insertions(+), 12 deletions(-)
+
+diff --git a/chromium/third_party/libpng/README.chromium b/chromium/third_party/libpng/README.chromium
+index c17fcbfe9fafe75c1faa5c6ca2d937f1b9f08151..761710b8c2a9ba1b806b8c6ff69ac46a74da948f 100644
+--- src/3rdparty/chromium/third_party/libpng/README.chromium.orig
++++ src/3rdparty/chromium/third_party/libpng/README.chromium
+@@ -22,3 +22,6 @@ Updated to 1.6.37, stripped all unneeded files.
+   running into OOM errors.
+ - Applies the patch from https://github.com/glennrp/libpng/pull/285 to keep
+   clang-cl build working.
++- Applies the commit from
++  https://github.com/pnggroup/libpng/commit/893b8113f04d408cc6177c6de19c9889a48faa24
++  to address a build failure with the latest Clang for Apple targets.
+diff --git a/chromium/third_party/libpng/pngpriv.h b/chromium/third_party/libpng/pngpriv.h
+index 583c26f9bdecfc8bf5b885d6b2b6187f9665ff37..9346feeedf09db231b4d1adef71f82619fb7f18e 100644
+--- src/3rdparty/chromium/third_party/libpng/pngpriv.h.orig
++++ src/3rdparty/chromium/third_party/libpng/pngpriv.h
+@@ -517,18 +517,8 @@
+     */
+ #  include <float.h>
+
+-#  if (defined(__MWERKS__) && defined(macintosh)) || defined(applec) || \
+-    defined(THINK_C) || defined(__SC__) || defined(TARGET_OS_MAC)
+-   /* We need to check that <math.h> hasn't already been included earlier
+-    * as it seems it doesn't agree with <fp.h>, yet we should really use
+-    * <fp.h> if possible.
+-    */
+-#    if !defined(__MATH_H__) && !defined(__MATH_H) && !defined(__cmath__)
+-#      include <fp.h>
+-#    endif
+-#  else
+-#    include <math.h>
+-#  endif
++#  include <math.h>
++
+ #  if defined(_AMIGA) && defined(__SASC) && defined(_M68881)
+    /* Amiga SAS/C: We must include builtin FPU functions when compiling using
+     * MATH=68881

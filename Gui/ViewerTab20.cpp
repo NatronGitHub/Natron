@@ -32,19 +32,26 @@
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 
 #include <QDebug>
+#include <QCursor>
+#include <QFile>
+#include <QFileInfo>
+#include <QPixmap>
 
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QKeyEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
+#include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
+#include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/WriteNode.h"
 
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h" // isKeybind
@@ -167,7 +174,8 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
                                           const QPointF & viewportPos,
                                           const QPointF & pos,
                                           double pressure,
-                                          double timestamp)
+                                          double timestamp,
+                                          KeyboardModifiers modifiers)
 {
     QPointF transformPos;
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
@@ -218,7 +226,8 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
         EffectInstancePtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenDown_public(time, renderScale, view, viewportPos, transformPos, pressure, timestamp, pen);
+        bool didSmthing = effect->onOverlayPenDown_public(time, renderScale, view, viewportPos, transformPos, pressure, timestamp, pen, modifiers);
+        _imp->recordOverlayEvent(node, didSmthing);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -238,7 +247,8 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
                                  const QPointF & viewportPos,
                                  const QPointF & pos,
                                  double pressure,
-                                 double timestamp)
+                                 double timestamp,
+                                 KeyboardModifiers modifiers)
 {
     if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
@@ -260,6 +270,7 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
 
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
+    _imp->beginOverlayEvent();
 
     ViewIdx view = getCurrentView();
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -269,7 +280,7 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
             // overlay is not visible in current viewer, even though its parameter panel is open.
             continue;
         }
-        if ( notifyOverlaysPenDown_internal(*it, renderScale, pen, viewportPos, pos, pressure, transformedTime) ) {
+        if ( notifyOverlaysPenDown_internal(*it, renderScale, pen, viewportPos, pos, pressure, transformedTime, modifiers) ) {
             return true;
         }
     }
@@ -293,6 +304,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
 
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
+    _imp->beginOverlayEvent();
 
 
     ViewIdx view = getCurrentView();
@@ -339,6 +351,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
             effect->setCurrentViewportForOverlays_public(_imp->viewer);
 
             bool didSmthing = effect->onOverlayPenDoubleClicked_public(time, renderScale, view, viewportPos, transformPos);
+            _imp->recordOverlayEvent(*it, didSmthing);
             if (didSmthing) {
                 //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
                 // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -358,7 +371,8 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
                                             const QPointF & viewportPos,
                                             const QPointF & pos,
                                             double pressure,
-                                            double timestamp)
+                                            double timestamp,
+                                            KeyboardModifiers modifiers)
 {
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
     ViewIdx view = getCurrentView();
@@ -418,7 +432,8 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
         EffectInstancePtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenMotion_public(time, renderScale, view, viewportPos, transformPos, pressure, timestamp);
+        bool didSmthing = effect->onOverlayPenMotion_public(time, renderScale, view, viewportPos, transformPos, pressure, timestamp, modifiers);
+        _imp->recordOverlayEvent(node, didSmthing);
         if (didSmthing) {
             if (_imp->hasPenDown) {
                 _imp->hasCaughtPenMotionWhileDragging = true;
@@ -440,7 +455,8 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
                                    const QPointF & viewportPos,
                                    const QPointF & pos,
                                    double pressure,
-                                   double timestamp)
+                                   double timestamp,
+                                   KeyboardModifiers modifiers)
 {
     bool didSomething = false;
 
@@ -460,9 +476,10 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
 
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
+    _imp->beginOverlayEvent();
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( notifyOverlaysPenMotion_internal(*it, renderScale, viewportPos, pos, pressure, timestamp) ) {
+        if ( notifyOverlaysPenMotion_internal(*it, renderScale, viewportPos, pos, pressure, timestamp, modifiers) ) {
             return true;
         }
     }
@@ -476,11 +493,113 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
 }
 
 bool
+ViewerTab::getOverlayCursorFor(const NodePtr& node,
+                               QCursor* cursor)
+{
+    EffectInstancePtr effect = node->getEffectInstance();
+    if (!effect) {
+        return false;
+    }
+    CursorEnum c;
+    std::string image;
+    int hx = 0, hy = 0;
+    if ( !effect->getOverlayCursor(&c, &image, &hx, &hy) ) {
+        return false;
+    }
+    if ( image.empty() ) {
+        Qt::CursorShape shape;
+        if ( !QtEnumConvert::toQtCursor(c, &shape) ) {
+            return false;
+        }
+        *cursor = QCursor(shape);
+
+        return true;
+    }
+    // "the file name, without any directory, of a PNG file in the Contents/Resources directory"
+    QString name = QString::fromUtf8( image.c_str() );
+    if ( name.contains( QLatin1Char('/') ) || name.contains( QLatin1Char('\\') ) ) {
+        return false;
+    }
+    NodePtr resourcesNode = node;
+#ifdef NATRON_ENABLE_IO_META_NODES
+    // The overlay of a Read/Write node is the one of its embedded reader/writer plug-in
+    // (see ReadNode::getOverlayCursor): the image is in the resources of that plug-in.
+    NodePtr embeddedNode;
+    if ( ReadNode* isRead = dynamic_cast<ReadNode*>( effect.get() ) ) {
+        embeddedNode = isRead->getEmbeddedReader();
+    } else if ( WriteNode* isWrite = dynamic_cast<WriteNode*>( effect.get() ) ) {
+        embeddedNode = isWrite->getEmbeddedWriter();
+    }
+    if (embeddedNode) {
+        resourcesNode = embeddedNode;
+    }
+#endif
+    QString resourcesPath = QString::fromUtf8( resourcesNode->getPluginResourcesPath().c_str() );
+    if ( !resourcesPath.isEmpty() && !resourcesPath.endsWith( QLatin1Char('/') ) ) {
+        resourcesPath += QLatin1Char('/');
+    }
+    QString filePath = resourcesPath + name;
+    bool hiDpi = _imp->viewer->devicePixelRatioF() > 1.;
+    QString key = filePath + QString::fromUtf8(hiDpi ? "@2x:" : ":") + QString::number(hx) + QLatin1Char(',') + QString::number(hy);
+    // loading the PNG on every pen motion would be too slow: remember successes and failures
+    std::map<QString, QCursor>::const_iterator found = _imp->overlayCursorCache.find(key);
+    if ( found != _imp->overlayCursorCache.end() ) {
+        *cursor = found->second;
+
+        return true;
+    }
+    if ( _imp->overlayCursorFailures.count(key) ) {
+        return false;
+    }
+    QPixmap pix;
+    if (hiDpi) {
+        QFileInfo fi(filePath);
+        QString hiDpiPath = fi.path() + QLatin1Char('/') + fi.completeBaseName() + QString::fromUtf8("@2x.") + fi.suffix();
+        if ( QFile::exists(hiDpiPath) && pix.load(hiDpiPath) ) {
+            pix.setDevicePixelRatio(2.);
+        }
+    }
+    if ( pix.isNull() && !pix.load(filePath) ) {
+        _imp->overlayCursorFailures.insert(key);
+
+        return false;
+    }
+    // the hot spot is in pixels of the 1x image
+    *cursor = QCursor(pix, hx, hy);
+    _imp->overlayCursorCache[key] = *cursor;
+
+    return true;
+}
+
+bool
+ViewerTab::getOverlaysCursor(QCursor* cursor)
+{
+    if ( !getGui() || !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
+        return false;
+    }
+    // only the overlays that received the last event: the one that caught it wins (even with
+    // the default cursor), else the first non-default request in dispatch order
+    NodePtr catcher = _imp->overlayEventCatcher.lock();
+    if (catcher) {
+        return getOverlayCursorFor(catcher, cursor);
+    }
+    for (std::list<NodeWPtr>::const_iterator it = _imp->overlayEventNodes.begin(); it != _imp->overlayEventNodes.end(); ++it) {
+        NodePtr node = it->lock();
+        if ( node && getOverlayCursorFor(node, cursor) ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool
 ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
                                const QPointF & viewportPos,
                                const QPointF & pos,
                                double pressure,
-                               double timestamp)
+                               double timestamp,
+                               KeyboardModifiers modifiers)
 {
     bool didSomething = false;
 
@@ -511,6 +630,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
 
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
+    _imp->beginOverlayEvent();
 
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
     ViewIdx view = getCurrentView();
@@ -565,7 +685,9 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
             EffectInstancePtr effect = (*it)->getEffectInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public(_imp->viewer);
-            didSomething |= effect->onOverlayPenUp_public(time, renderScale, view, viewportPos, transformPos, pressure, timestamp);
+            bool caught = effect->onOverlayPenUp_public(time, renderScale, view, viewportPos, transformPos, pressure, timestamp, modifiers);
+            _imp->recordOverlayEvent(*it, caught);
+            didSomething |= caught;
         }
     }
 
@@ -652,6 +774,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
                                           const RenderScale & renderScale,
                                           Key k,
                                           KeyboardModifiers km,
+                                          const QString& keyText,
                                           Qt::Key qKey,
                                           const Qt::KeyboardModifiers& mods)
 {
@@ -687,7 +810,8 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
         bool didSmthing = checkNodeViewerContextShortcuts(node, qKey, mods);
 
         if (!didSmthing) {
-            didSmthing = effect->onOverlayKeyDown_public(time, renderScale, view, k, km);
+            didSmthing = effect->onOverlayKeyDown_public(time, renderScale, view, k, km, keyText);
+            _imp->recordOverlayEvent(node, didSmthing);
         }
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
@@ -725,9 +849,10 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers(qMods);
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
+    _imp->beginOverlayEvent();
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( notifyOverlaysKeyDown_internal(*it, renderScale, natronKey, natronMod, qKey, qMods) ) {
+        if ( notifyOverlaysKeyDown_internal(*it, renderScale, natronKey, natronMod, e->text(), qKey, qMods) ) {
             if (isModifier) {
                 continue;
             }
@@ -764,6 +889,7 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
     ViewIdx view = getCurrentView();
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
+    _imp->beginOverlayEvent();
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         EffectInstancePtr effect = (*it)->getEffectInstance();
         assert(effect);
@@ -792,8 +918,11 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
         bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
         if (!isInActiveViewerUI) {
             effect->setCurrentViewportForOverlays_public(_imp->viewer);
-            didSomething |= effect->onOverlayKeyUp_public( time, renderScale, view,
-                                                           QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), QtEnumConvert::fromQtModifiers( e->modifiers() ) );
+            bool caught = effect->onOverlayKeyUp_public( time, renderScale, view,
+                                                         QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), QtEnumConvert::fromQtModifiers( e->modifiers() ),
+                                                         e->text() );
+            _imp->recordOverlayEvent(*it, caught);
+            didSomething |= caught;
         }
     }
 
@@ -823,6 +952,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
                                             const RenderScale & renderScale,
                                             Key k,
                                             KeyboardModifiers km,
+                                            const QString& keyText,
                                             Qt::Key qKey,
                                             const Qt::KeyboardModifiers& mods)
 {
@@ -858,7 +988,8 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
         bool didSmthing = checkNodeViewerContextShortcuts(node, qKey, mods);
 
         if (!didSmthing) {
-            didSmthing = effect->onOverlayKeyRepeat_public(time, renderScale, view, k, km);
+            didSmthing = effect->onOverlayKeyRepeat_public(time, renderScale, view, k, km, keyText);
+            _imp->recordOverlayEvent(node, didSmthing);
         }
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
@@ -888,7 +1019,7 @@ ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
     NodesList nodes;
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( notifyOverlaysKeyRepeat_internal(*it, renderScale, natronKey, natronMod, qKey, qMods) ) {
+        if ( notifyOverlaysKeyRepeat_internal(*it, renderScale, natronKey, natronMod, e->text(), qKey, qMods) ) {
             return true;
         }
     }

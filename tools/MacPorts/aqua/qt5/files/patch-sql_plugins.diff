@@ -1,0 +1,18 @@
+--- sqlite.pro.orig	2017-06-28 02:54:29.000000000 -0700
++++ sqlite.pro	2017-09-10 07:26:38.000000000 -0700
+@@ -6,11 +6,11 @@
+ include($$OUT_PWD/../qtsqldrivers-config.pri)
+ QT_FOR_CONFIG += sqldrivers-private
+ 
+-qtConfig(system-sqlite) {
++#qtConfig(system-sqlite) {
+     QMAKE_USE += sqlite
+-} else {
+-    include($$PWD/../../../3rdparty/sqlite.pri)
+-}
++#} else {
++#    include($$PWD/../../../3rdparty/sqlite.pri)
++#}
+ 
+ OTHER_FILES += sqlite.json
+ 

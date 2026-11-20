@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _OutputFileParam:
 
 OutputFileParam
@@ -21,7 +21,7 @@ Functions
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. method:: NatronEngine.OutputFileParam.openFile()
+.. method:: OutputFileParam.openFile()
 
    When called in GUI mode, this will open a file dialog for the user. Does nothing in
    background mode.
@@ -29,10 +29,10 @@ Member functions description
 
 
 
-.. method:: NatronEngine.OutputFileParam.setSequenceEnabled(enabled)
+.. method:: OutputFileParam.setSequenceEnabled(enabled)
 
 
-    :param enabled: :class:`bool<PySide.QtCore.bool>`
+    :param enabled: :class:`bool`
 
    Determines whether the file dialog opened by :func:`openFile()<NatronEngine.FileParam.openFile>`
    should have support for file sequences or not.

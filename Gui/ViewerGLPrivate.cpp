@@ -75,12 +75,12 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , shaderRGB()
     , shaderBlack()
     , shaderLoaded(false)
+    , glResourcesReleased(false)
     , infoViewer()
     , viewerTab(parent)
     , zoomOrPannedSinceLastFit(false)
     , oldClick()
     , displayingImageLut(eViewerColorSpaceSRGB)
-    , enableDisplayDither(false)
     , ms(eMouseStateUndefined)
     , hs(eHoverStateNothing)
     , textRenderingColor(200, 200, 200, 255)
@@ -100,6 +100,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , lastDragStartPos()
     , hasMovedSincePress(false)
     , setColorPickerCursor(false)
+    , setOverlayCursor(false)
     , currentViewerInfo_btmLeftBBOXoverlay()
     , currentViewerInfo_topRightBBOXoverlay()
     , currentViewerInfo_resolutionOverlay()
@@ -125,7 +126,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , sizeH()
     , pointerTypeOnPress(ePenTypeLMB)
     , pressureOnPress(1.)
-    , pressureOnRelease(1.)
+    , pressureOnRelease(0.)
     , wheelDeltaSeekFrame(0)
     , isUpdatingTexture(false)
     , renderOnPenUp(false)
@@ -148,33 +149,7 @@ ViewerGL::Implementation::~Implementation()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    _this->makeCurrent();
-
-    if (shaderRGB) {
-        shaderRGB->removeAllShaders();
-        shaderRGB.reset();
-    }
-    if (shaderBlack) {
-        shaderBlack->removeAllShaders();
-        shaderBlack.reset();
-    }
-    for (int i = 0; i < 2; ++i) {
-        displayTextures[i].texture.reset();
-    }
-    partialUpdateTextures.clear();
-
-    if ( appPTR && appPTR->isOpenGLLoaded() ) {
-        glCheckError();
-        for (U32 i = 0; i < this->pboIds.size(); ++i) {
-            glDeleteBuffers(1, &this->pboIds[i]);
-        }
-        glCheckError();
-        glDeleteBuffers(1, &this->vboVerticesId);
-        glDeleteBuffers(1, &this->vboTexturesId);
-        glDeleteBuffers(1, &this->iboTriangleStripId);
-        glCheckError();
-        glDeleteTextures(1, &this->checkerboardTextureID);
-    }
+    // the OpenGL objects are deleted by ViewerGL::releaseGLResources(), in their context
 }
 
 //static const GLfloat renderingTextureCoordinates[32] = {
@@ -234,7 +209,10 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipmapLevel,
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QOpenGLContext::currentContext() == _this->context() );
 
-    bool useShader = _this->getBitDepth() != eImageBitDepthByte;
+    // The float textures are displayed with the shader, which applies the viewer's colour transform;
+    // the byte ones were converted by the CPU. This is the type of the texture, which may differ
+    // from the current "Viewer textures" setting until a frame rendered with it is displayed (#1120).
+    bool useShader = this->displayTextures[textureIndex].texture->type() != Texture::eDataTypeByte;
 
 
     ///the texture rectangle in image coordinates. The values in it are multiples of tile size.
@@ -857,7 +835,15 @@ ViewerGL::Implementation::activateShaderRGB(int texIndex)
     shaderRGB->setUniformValue("lut", (GLint)displayingImageLut);
     float gamma = displayTextures[texIndex].gamma;
     shaderRGB->setUniformValue("gamma", gamma);
-    shaderRGB->setUniformValue("dither", (GLint)enableDisplayDither);
+    // Float textures are dithered by +/- half a quantisation step of the framebuffer we
+    // draw into, like 8-bit textures are on the CPU (QOpenGLWidget's FBO is GL_RGBA8 by
+    // default, but don't assume it).
+    GLint redBits = 0;
+    glGetIntegerv(GL_RED_BITS, &redBits);
+    if ( (redBits <= 0) || (redBits > 16) ) {
+        redBits = 8;
+    }
+    shaderRGB->setUniformValue( "ditherAmplitude", 1.f / ( (1 << redBits) - 1 ) );
 }
 
 bool

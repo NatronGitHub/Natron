@@ -1,0 +1,11 @@
+--- src/multimedia/configure.json.orig	2025-09-19 00:39:40
++++ src/multimedia/configure.json	2025-09-19 00:40:13
+@@ -127,7 +127,7 @@
+             "label": "OpenAL",
+             "test": "openal",
+             "sources": [
+-                { "type": "pkgConfig", "args": "openal" },
++                { "type": "pkgConfig", "args": "openal, condition: !config.darwin" },
+                 { "libs": "-lOpenAL32", "condition": "config.win32" },
+                 { "libs": "-framework OpenAL", "condition": "config.darwin" },
+                 { "libs": "-lopenal", "condition": "config.unix && !config.darwin" }

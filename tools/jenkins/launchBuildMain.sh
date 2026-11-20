@@ -28,7 +28,9 @@ set -u # Treat unset variables as an error when substituting.
 # NATRON_DEV_STATUS: ALPHA, BETA, RC, STABLE, CUSTOM: this is useful when doing a release (i.e: if specifying RELEASE_TAG.)
 # NATRON_CUSTOM_BUILD_USER_NAME: For a release, Tag the build with a specific user/client name
 # NATRON_BUILD_NUMBER: When doing a release this is the number of the release (if doing a rebuild)
-# NATRON_EXTRA_QMAKE_FLAGS: Optional qmake flags to pass when building Natron
+# NATRON_BUILD_SYSTEM: cmake (the default) or qmake (deprecated, kept on RB-2.6 as a fallback, see #1181). The CMake build has no crash reporter: it implies DISABLE_BREAKPAD=1.
+# NATRON_EXTRA_CMAKE_FLAGS: Optional cmake flags to pass when building Natron with CMake, e.g. "-DNATRON_FAST_MATH=ON"
+# NATRON_EXTRA_QMAKE_FLAGS: Optional qmake flags to pass when building Natron with qmake
 # BUILD_NAME: Give a name to the build so that it can be found in the archive
 # DISABLE_RPM_DEB_PKGS: If set to 1, deb and rpm packages will not be built. Otherwise they are only built for a release
 # DISABLE_PORTABLE_ARCHIVE: If set to 1, a portable archive will not be built
@@ -111,6 +113,8 @@ echo "NATRON_DEV_STATUS                 : \"${NATRON_DEV_STATUS:-}\""
 echo "NATRON_BUILD_NUMBER               : \"${NATRON_BUILD_NUMBER:-}\""
 echo "NATRON_CUSTOM_BUILD_USER_NAME     : \"${NATRON_CUSTOM_BUILD_USER_NAME:-}\""
 echo "COMPILE_TYPE                      : \"${COMPILE_TYPE:-}\""
+echo "NATRON_BUILD_SYSTEM               : \"${NATRON_BUILD_SYSTEM:-}\""
+echo "NATRON_EXTRA_CMAKE_FLAGS          : \"${NATRON_EXTRA_CMAKE_FLAGS:-}\""
 echo "NATRON_EXTRA_QMAKE_FLAGS          : \"${NATRON_EXTRA_QMAKE_FLAGS:-}\""
 echo "DISABLE_RPM_DEB_PKGS              : \"${DISABLE_RPM_DEB_PKGS:-}\""
 echo "DISABLE_PORTABLE_ARCHIVE          : \"${DISABLE_PORTABLE_ARCHIVE:-}\""
@@ -159,6 +163,26 @@ echo "OBJECTIVE_CC                      : \"${OBJECTIVE_CC:-}\""
 echo "OBJECTIVE_CXX                     : \"${OBJECTIVE_CXX:-}\""
 echo "-----------------------------------------------------------------------"
 
+# --- Early macOS packaging-dependency check ---------------------------------
+# Packaging (build-OSX-installer.sh) runs late in the build. Verify the extra
+# macOS packaging tools now so we fail fast instead of after a multi-hour build.
+# Any NEW macOS build dependency should be added here and documented in
+# INSTALL_MACOS.md ("macOS packaging tools").
+if [ "${PKGOS:-}" = "OSX" ]; then
+    macos_missing=""
+    for macos_tool in dmgbuild oiiotool identify; do
+        command -v "$macos_tool" >/dev/null 2>&1 || macos_missing="$macos_missing $macos_tool"
+    done
+    if [ -n "$macos_missing" ]; then
+        echo "Error: missing required macOS packaging tool(s):$macos_missing"
+        echo "  dmgbuild -> sudo port install py311-dmgbuild && sudo ln -sfn dmgbuild-3.11 /opt/local/bin/dmgbuild  (or: python3 -m pip install dmgbuild; writes the DMG .DS_Store layout without Finder/TCC)"
+        echo "  oiiotool -> sudo port install openimageio    (DMG background processing)"
+        echo "  identify -> sudo port install ImageMagick    (DMG background dimensions)"
+        echo "See INSTALL_MACOS.md, section 'macOS packaging tools'."
+        exit 1
+    fi
+fi
+
 # Source known git repositories
 source gitRepositories.sh
 
@@ -183,6 +207,7 @@ echo "PYTHON_HOME=${PYTHON_HOME}"
 echo "Qt config:"
 echo "QT_VERSION_MAJOR=${QT_VERSION_MAJOR}"
 echo "QTDIR=${QTDIR}"
+echo "QMAKE=${QMAKE}"
 
 # check that TIMEOUT works
 $TIMEOUT 1 true && echo "$TIMEOUT works"
@@ -216,6 +241,22 @@ else
     echo "DEBUG_SCRIPTS specified: picking up any existing previous compilation"
 fi
 
+# Natron is built with CMake by default; qmake is deprecated (#1181)
+NATRON_BUILD_SYSTEM="${NATRON_BUILD_SYSTEM:-cmake}"
+case "$NATRON_BUILD_SYSTEM" in
+    cmake|qmake) ;;
+    *)
+        echo "Error: NATRON_BUILD_SYSTEM must be cmake or qmake, not \"$NATRON_BUILD_SYSTEM\""
+        exit 1
+        ;;
+esac
+if [ "$NATRON_BUILD_SYSTEM" = "cmake" ] && [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
+    # Breakpad is being replaced by sentry-native (#1183), which the CMake build will support
+    echo "The CMake build has no Breakpad crash reporter (#1183): building without it (DISABLE_BREAKPAD=1)."
+    echo "Set NATRON_BUILD_SYSTEM=qmake for a build with Breakpad."
+    DISABLE_BREAKPAD=1
+fi
+
 # By default breakpad is enabled
 if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
     DISABLE_BREAKPAD=0
@@ -234,6 +275,32 @@ fi
 if [ -z "${GIT_URL_IS_NATRON:-}" ]; then
     GIT_URL_IS_NATRON=0
     isNatronRepo "$GIT_URL" && GIT_URL_IS_NATRON=1
+fi
+
+# A wrong QTDIR otherwise surfaces much later as a missing Qt header during the
+# shiboken run, which is a long way from the actual cause. Plug-in CI builds
+# (GIT_URL_IS_NATRON != 1, TYPE=PLUGIN_CI) do not need Qt, so they only
+# get a warning.
+# The Qt major version is checked too: when qt5-base is missing, the
+# unsuffixed qmake found on PATH may be Qt6's.
+qmake_error=""
+if qmake_qt_version=$("$QMAKE" -query QT_VERSION 2> /dev/null) && [ -n "$qmake_qt_version" ]; then
+    if [ "${qmake_qt_version%%.*}" = "$QT_VERSION_MAJOR" ]; then
+        echo "$QMAKE works (Qt $qmake_qt_version)"
+    else
+        qmake_error="$QMAKE is the qmake of Qt $qmake_qt_version, not Qt ${QT_VERSION_MAJOR}."
+    fi
+else
+    qmake_error="$QMAKE is not usable."
+fi
+if [ -n "$qmake_error" ]; then
+    if [ "${GIT_URL_IS_NATRON:-}" = "1" ]; then
+        (>&2 echo "Error: $qmake_error")
+        (>&2 echo "Set NATRON_QMAKE to the qmake of the Qt ${QT_VERSION_MAJOR} to build against.")
+        exit 1
+    else
+        (>&2 echo "Warning: $qmake_error (Qt is not needed for plug-in builds.)")
+    fi
 fi
 
 
@@ -332,6 +399,8 @@ echo "TYPE is $TYPE"
 
 # Can be set to relwithdebinfo, release, debug
 setBuildOption "COMPILE_TYPE" "$COMPILE_TYPE"
+setBuildOption "NATRON_BUILD_SYSTEM" "$NATRON_BUILD_SYSTEM"
+setBuildOption "NATRON_EXTRA_CMAKE_FLAGS" "${NATRON_EXTRA_CMAKE_FLAGS:-}"
 setBuildOption "NATRON_EXTRA_QMAKE_FLAGS" "${NATRON_EXTRA_QMAKE_FLAGS:-}"
 
 setBuildOption "BUILD_TYPE" "$TYPE"
@@ -557,10 +626,21 @@ if [ "${INSTALLER_OS}" = "OSX" ]; then
         10.13.*) INSTALLER_OS="macOS1013";; 
         10.14.*) INSTALLER_OS="macOS1014";; 
         10.15.*) INSTALLER_OS="macOS1015";; 
-        11.*) INSTALLER_OS="macOS11";; 
-        12.*) INSTALLER_OS="macOS12";; 
-        13.*) INSTALLER_OS="macOS13";; 
-        14.*) INSTALLER_OS="macOS14";; 
+        11.*) INSTALLER_OS="macOS11";;
+        12.*) INSTALLER_OS="macOS12";;
+        13.*) INSTALLER_OS="macOS13";;
+        14.*) INSTALLER_OS="macOS14";;
+        15.*) INSTALLER_OS="macOS15";;
+        16.*) INSTALLER_OS="macOS16";;
+        # Apple switched to year-based version numbers with macOS 26 (Tahoe, 2025);
+        # there is no macOS 17..25. List a few future years explicitly.
+        26.*) INSTALLER_OS="macOS26";;
+        27.*) INSTALLER_OS="macOS27";;
+        28.*) INSTALLER_OS="macOS28";;
+        29.*) INSTALLER_OS="macOS29";;
+        30.*) INSTALLER_OS="macOS30";;
+        # Fallback for any unlisted/future release: use macOS<major>.
+        *) INSTALLER_OS="macOS$(sw_vers -productVersion | cut -d. -f1)";;
     esac
 
     case "${BITS}" in

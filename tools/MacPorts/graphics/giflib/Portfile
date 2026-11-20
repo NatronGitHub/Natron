@@ -40,7 +40,7 @@ use_parallel_build              yes
 set docdir ${prefix}/share/doc/${name}
 post-destroot {
     xinstall -d ${destroot}${docdir}
-    xinstall -W ${worksrcpath}-m 0644 COPYING NEWS README TODO history.adoc ${destroot}${docdir}
+    xinstall -W ${worksrcpath} -m 0644 COPYING NEWS README TODO history.adoc ${destroot}${docdir}
     xinstall -m 0444 {*}[glob ${worksrcpath}/doc/*.1] ${destroot}${prefix}/share/man/man1
 }
 

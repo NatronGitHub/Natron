@@ -1,18 +1,21 @@
 .. for help on writing/extending this file, see the reStructuredText cheatsheet
    http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
-   
+
+.. _tutorials-ffmpeg:
+
 FFmpeg
 ======
 
-FFmpeg is a complete, cross-platform solution to record, convert and stream audio and video.
+`FFmpeg <https://ffmpeg.org/>`__ is a free, cross-platform command-line tool
+to convert, record and stream audio and video. Its full documentation is at
+https://ffmpeg.org/documentation.html.
 
-Get all information about it FFmpeg here: https://ffmpeg.org/
-There you find also an indepth documentation.
-
-|
-|
-
-
+Natron reads and writes video files with FFmpeg, through the
+:ref:`ReadFFmpeg <fr.inria.openfx.ReadFFmpeg>` and
+:ref:`WriteFFmpeg <fr.inria.openfx.WriteFFmpeg>` nodes, but some tasks are
+easier with the ``ffmpeg`` command-line tool, before or after compositing in
+Natron. These tutorials show a few of them. See also
+:ref:`tutorials-imagesequence`.
 
 .. toctree::
    :maxdepth: 2
@@ -20,3 +23,10 @@ There you find also an indepth documentation.
    tutorials-ffmpeg-di
    tutorials-ffmpeg-audio
    tutorials-ffmpeg-hevc
+
+See also
+--------
+
+- :ref:`compositing-projects-readers-video`: reading and writing video files
+  in Natron.
+- :doc:`thenodes-image-write`: the parameters of the Write node.

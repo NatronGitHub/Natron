@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _PageParam:
 
 PageParam
@@ -40,7 +40,7 @@ On the graphical interface a PageParam looks like this (e.g. the *Controls* tab 
 
 
 
-.. method:: NatronEngine.PageParam.addParam(param)
+.. method:: PageParam.addParam(param)
 
 
     :param param: :class:`Param<NatronEngine.Param>`
@@ -56,7 +56,7 @@ On the graphical interface a PageParam looks like this (e.g. the *Controls* tab 
 
 .. warning::
 
-    Once called, you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+    Once called, you should call :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>`
     to update the user interface.
 
 

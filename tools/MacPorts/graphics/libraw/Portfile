@@ -3,7 +3,10 @@
 PortSystem          1.0
 
 name                libraw
-version             0.18.13
+# Natron: 0.22.3 with the GPL demosaic packs restored (patch-libraw-0.22.3-gpl-demosaic-packs.diff,
+# variants gpl2/gpl3). Keep this Portfile when reintegrating upstream (only Portfile.orig follows upstream).
+version             0.22.3
+revision            0
 set demosaicversion 0.18.8
 
 description         Library for RAW image manipulation
@@ -11,9 +14,9 @@ long_description    A library for reading RAW files obtained from digital photo 
                     cameras (CRW/CR2, NEF, RAF, DNG, and others).
 
 categories          graphics
-platforms           darwin
-license             LGPL-2.1 CDDL GPL-2+ GPL-3+
-maintainers         nomaintainer
+license             {LGPL-2.1 CDDL}
+maintainers         {@Dave-Allured noaa.gov:dave.allured} \
+                    openmaintainer
 
 homepage            https://www.libraw.org
 master_sites        ${homepage}/data/
@@ -21,9 +24,9 @@ distname            LibRaw-${version}
 
 checksums \
     LibRaw-${version}${extract.suffix} \
-        rmd160  85b6bd331d631167ebcdf39a0492e607334d9902 \
-        sha256  cb1f9d0d1fabc8967d501d95c05d2b53d97a2b917345c66553b1abbea06757ca \
-        size    1287631 \
+        rmd160  879e786e8aaab140d88e6eb3eb167fd1dacb4764 \
+        sha256  789f3c33466210a1a0907f747a97c715d21bbf4af712f257fcbbd90111b227e4 \
+        size    1689119 \
     LibRaw-demosaic-pack-GPL2-${demosaicversion}${extract.suffix} \
         rmd160  b86ee8d0e790b2976f90ac7adecf8df4a3d92cd4 \
         sha256  0b24bcf7bbb5d13fde58bb071f94dc9354be09bc44b2bba0698493065e99f8da \
@@ -33,36 +36,55 @@ checksums \
         sha256  ffd6916cd66c8101e4e6b589799f256c897748d2fd2486aa34c3705146dbc701 \
         size    39002
 
-patchfiles          libraw_x3f.diff
-
 depends_build       port:pkgconfig
 
 depends_lib         port:jasper \
                     path:include/turbojpeg.h:libjpeg-turbo \
                     port:lcms2
 
+# Natron: restore the GPL demosaic packs (AHD-Mod, AFD, VCD, Mixed, LMMSE; AMaZE with GPL3);
+# it changes configure.ac and Makefile.am, hence the autoreconf below
+patchfiles          patch-libraw-0.22.3-gpl-demosaic-packs.diff
+
+use_autoreconf      yes
+autoreconf.args     -fvi
+
+# libraw_datastream.h:125:8: error: no template named 'unique_ptr' in namespace 'std'
+compiler.cxx_standard 2011
+
+# disable openmp as it is not consistently applicable in MacPorts at present
+configure.args-append --disable-openmp
+configure.cppflags-append -DUSE_X3FTOOLS
+
+# don't hardcode a link against libstc++
+patchfiles-append   patch-libraw-no-libstdcxx.diff
+
 post-destroot {
     set htmlDir ${destroot}${prefix}/share/doc/${name}/html
     xinstall -d -m 0755 ${htmlDir}
     xinstall -m 644 {*}[glob -directory ${worksrcpath}/doc/ *.html] ${htmlDir}
-    if {${configure.cxx_stdlib} eq "libc++"} {
-        # fix pkg-config files, which contains many references to libstdc++
-        reinplace -E {s|-lstdc|-lc|g} ${destroot}${prefix}/lib/pkgconfig/libraw.pc
-        reinplace -E {s|-lstdc|-lc|g} ${destroot}${prefix}/lib/pkgconfig/libraw_r.pc
-    }
 }
 
-variant gpl2 description {Enable GPL demosaic pack, license will be GPL-2+} {
-    distfiles-append \
-        LibRaw-demosaic-pack-GPL2-${demosaicversion}${extract.suffix} \
+# tests/demosaic_test checks which demosaic packs are active: run it on every build
+test.run            yes
+test.target         check
+post-build {
+    system -W ${worksrcpath} "${build.cmd} check"
+}
 
+variant gpl2 description {Enable the GPL2 demosaic pack (AHD-Mod, AFD, VCD, Mixed, LMMSE), license will be GPL-2+} {
+    distfiles-append \
+        LibRaw-demosaic-pack-GPL2-${demosaicversion}${extract.suffix}
+    configure.args-append \
+        --enable-demosaic-pack-gpl2=${workpath}/LibRaw-demosaic-pack-GPL2-${demosaicversion}
     license                 GPL-2+
 }
 
-variant gpl3 requires gpl2 description {Enable GPL demosaic pack, license will be GPL-3+} {
+variant gpl3 requires gpl2 description {Also enable the GPL3 demosaic pack (AMaZE), license will be GPL-3+} {
     distfiles-append \
         LibRaw-demosaic-pack-GPL3-${demosaicversion}${extract.suffix}
-
+    configure.args-append \
+        --enable-demosaic-pack-gpl3=${workpath}/LibRaw-demosaic-pack-GPL3-${demosaicversion}
     license                 GPL-3+
 }
 

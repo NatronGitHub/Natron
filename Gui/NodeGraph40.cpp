@@ -303,35 +303,44 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
     std::list<NodeSerializationPtr> serializations;
     std::list<NodeGuiPtr> newNodesList;
     std::map<std::string, std::string> oldNewScriptNamesMapping;
-    for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        NodeSerializationPtr  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
-        NodeGuiSerializationPtr guiSerialization = std::make_shared<NodeGuiSerialization>();
-        (*it)->serialize( guiSerialization.get() );
-        NodeGuiPtr clone = _imp->pasteNode(internalSerialization, guiSerialization, offset,
-                                           _imp->group.lock(), std::string(), true, &oldNewScriptNamesMapping);
 
-        newNodes.push_back( std::make_pair(internalSerialization->getNodeScriptName(), clone) );
-        newNodesList.push_back(clone);
-        serializations.push_back(internalSerialization);
+    // As when pasting: no preview while the clones are created and connected (see #814). The previews of
+    // the clones are computed when this function returns. refreshPreviews is declared before createNodeTree.
+    RefreshPreviewsOfCreatedNodes_RAII refreshPreviews( getGui()->getApp(), _imp->group.lock() );
+    {
+        CreatingNodeTreeFlag_RAII createNodeTree( getGui()->getApp() );
+        for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
+            NodeSerializationPtr  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
+            NodeGuiSerializationPtr guiSerialization = std::make_shared<NodeGuiSerialization>();
+            (*it)->serialize( guiSerialization.get() );
+            NodeGuiPtr clone = _imp->pasteNode(internalSerialization, guiSerialization, offset,
+                                               _imp->group.lock(), std::string(), true, &oldNewScriptNamesMapping);
 
-        oldNewScriptNamesMapping[internalSerialization->getNodeScriptName()] = clone->getNode()->getScriptName();
-    }
+            newNodes.push_back( std::make_pair(internalSerialization->getNodeScriptName(), clone) );
+            newNodesList.push_back(clone);
+            serializations.push_back(internalSerialization);
+
+            oldNewScriptNamesMapping[internalSerialization->getNodeScriptName()] = clone->getNode()->getScriptName();
+        }
 
 
-    assert( serializations.size() == newNodes.size() );
-    ///restore connections
-    _imp->restoreConnections(serializations, newNodes, oldNewScriptNamesMapping);
+        assert( serializations.size() == newNodes.size() );
+        ///restore connections
+        _imp->restoreConnections(serializations, newNodes, oldNewScriptNamesMapping);
 
 
-    NodesList allNodes;
-    getGui()->getApp()->getProject()->getActiveNodesExpandGroups(&allNodes);
+        NodesList allNodes;
+        getGui()->getApp()->getProject()->getActiveNodesExpandGroups(&allNodes);
 
-    //Restore links once all children are created for alias knobs/expressions
-    std::list<NodeSerializationPtr>::iterator itS = serializations.begin();
-    for (std::list<NodeGuiPtr> ::iterator it = newNodesList.begin(); it != newNodesList.end(); ++it, ++itS) {
-        (*it)->getNode()->storeKnobsLinks(**itS, oldNewScriptNamesMapping);
-        (*it)->getNode()->restoreKnobsLinks(allNodes, oldNewScriptNamesMapping, true); // clone should never fail
-    }
+        //Restore links once all children are created for alias knobs/expressions
+        std::list<NodeSerializationPtr>::iterator itS = serializations.begin();
+        for (std::list<NodeGuiPtr> ::iterator it = newNodesList.begin(); it != newNodesList.end(); ++it, ++itS) {
+            (*it)->getNode()->storeKnobsLinks(**itS, oldNewScriptNamesMapping);
+            (*it)->getNode()->restoreKnobsLinks(allNodes, oldNewScriptNamesMapping, true); // clone should never fail
+        }
+    } // CreatingNodeTreeFlag_RAII createNodeTree
+
+    getGui()->getApp()->getProject()->forceComputeInputDependentDataOnAllTrees();
 
 
     pushUndoCommand( new AddMultipleNodesCommand(this, newNodesList) );

@@ -1,0 +1,20 @@
+--- src/3rdparty/chromium/components/history/core/browser/BUILD.gn	2024-09-29 17:51:16
++++ src/3rdparty/chromium/components/history/core/browser/BUILD.gn	2024-09-29 17:52:37
+@@ -106,6 +106,7 @@
+     "//components/prefs",
+     "//components/query_parser",
+     "//components/signin/public/identity_manager",
++    "//components/signin/public/base:signin_buildflags",
+     "//components/sync",
+     "//components/url_formatter",
+     "//components/variations",
+--- src/3rdparty/chromium/content/public/browser/BUILD.gn	2024-09-29 19:28:09
++++ src/3rdparty/chromium/content/public/browser/BUILD.gn	2024-09-29 19:29:18
+@@ -469,6 +469,7 @@
+     "//build:chromeos_buildflags",
+     "//cc",
+     "//components/viz/host",
++    "//components/spellcheck:buildflags",
+     "//content/browser",  # Must not be public_deps!
+     "//device/fido",
+     "//gpu",

@@ -58,6 +58,7 @@ NATRON_NAMESPACE_USING
 // If it fails to compile it means either UNICODE or _UNICODE is not defined (it should be in global.pri) and
 // the project is not linking against -municode
 extern "C" {
+int wmain(int argc, wchar_t** argv); // declared, for -Wmissing-declarations
 int wmain(int argc, wchar_t** argv)
 #else
 int main(int argc, char *argv[])

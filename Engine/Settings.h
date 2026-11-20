@@ -111,6 +111,9 @@ public:
 
     U64 getMaximumDiskCacheNodeSize() const;
 
+    // The "Disk cache path" preference (may be empty)
+    QString getDiskCachePath() const;
+
     double getUnreachableRamPercent() const;
 
     bool getColorPickerLinear() const;
@@ -180,8 +183,6 @@ public:
     bool isAutoSaveEnabledForUnsavedProjects() const;
 
     int saveVersions() const;
-
-    bool saveAsBinary() const;
 
     bool isSnapToNodeEnabled() const;
 
@@ -258,6 +259,7 @@ public:
     int getMaxOpenedNodesViewerContext() const;
     bool viewerNumberKeys() const;
     bool viewerOverlaysPath() const;
+    bool drawSuiteShadows() const;
     ///////////////////////////////////////////////////////
 
     bool areRGBPixelComponentsSupported() const;
@@ -268,7 +270,7 @@ public:
 
     /**
      * @brief If the OCIO startup check parameter is set to true, warn the user if the OCIO config is different
-     * from the default value held by NATRON_CUSTOM_OCIO_CONFIG_NAME
+     * from the default one, and offer to switch to it. A custom config whose file exists is never questioned.
      * This can only be called once the 1st AppInstance has been loaded otherwise dialogs could not be created.
      **/
     void doOCIOStartupCheckIfNeeded();
@@ -436,7 +438,6 @@ private:
     KnobBoolPtr _autoSaveUnSavedProjects;
     KnobIntPtr _autoSaveDelay;
     KnobIntPtr _saveVersions;
-    KnobBoolPtr _saveAsBinary;
     KnobChoicePtr _hostName;
     KnobStringPtr _customHostName;
 
@@ -542,6 +543,7 @@ private:
     KnobIntPtr _maximumNodeViewerUIOpened;
     KnobBoolPtr _viewerNumberKeys;
     KnobBoolPtr _viewerOverlaysPath;
+    KnobBoolPtr _drawSuiteShadows;
 
     // Nodegraph
     KnobPagePtr _nodegraphTab;

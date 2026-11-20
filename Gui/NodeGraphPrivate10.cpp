@@ -92,6 +92,10 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
         NodesGuiList newNodesList;
         std::list<std::pair<NodeSerializationPtr, NodePtr> > newNodesMap;
 
+        // Previews are not computed while the node tree is created: compute those of the pasted nodes
+        // when this function returns, including on error. Declared before createNodeTree.
+        RefreshPreviewsOfCreatedNodes_RAII refreshPreviews( _publicInterface->getGui()->getApp(), group.lock() );
+
         std::set<std::string> missingNodePlugins;
 
         ///The script-name of the copy node is different than the one of the original one
@@ -152,10 +156,7 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
             newNodesList.front()->getNode()->getEffectInstance()->refreshMetadata_public(true);
         }
 
-        // Now that meta-datas are refreshed, compute preview
-        for (NodesGuiList::const_iterator it = newNodesList.begin(); it!=newNodesList.end(); ++it) {
-            (*it)->forceComputePreview(_publicInterface->getGui()->getApp()->getTimeLine()->currentFrame());
-        }
+        // The previews are computed by refreshPreviews when this function returns, now that meta-datas are refreshed
 
         if (useUndoCommand) {
             _publicInterface->pushUndoCommand( new AddMultipleNodesCommand(_publicInterface, newNodesList) );
@@ -249,7 +250,8 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
     //We don't want the clone to have the same hash as the original
     n->incrementKnobsAge();
     if (guiSerialization) {
-        gui->copyFrom(*guiSerialization);
+        // The preview is restored at the end, once the node is complete (see below).
+        gui->copyFrom(*guiSerialization, false);
     }
     QPointF newPos = gui->getPos_mt_safe() + offset;
     gui->setPosition( newPos.x(), newPos.y() );
@@ -313,6 +315,13 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
             it->second->storeKnobsLinks(*(it->first), *oldNewScriptNamesMapping);
             it->second->restoreKnobsLinks(allNodes, *oldNewScriptNamesMapping, false); // may fail
         }
+    }
+
+    // Restore the preview state only once the node is complete, including the sub-graph of a group:
+    // enabling the preview renders it on the preview thread, which must not run while the main thread
+    // is still creating and connecting the nodes inside the group (see #814).
+    if (guiSerialization) {
+        gui->restorePreviewFrom(*guiSerialization);
     }
 
     return gui;

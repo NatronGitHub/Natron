@@ -33,6 +33,7 @@
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QCloseEvent>
+#include <QTimer>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QApplication> // qApp
 #include <QMenuBar>
@@ -167,9 +168,9 @@ Gui::closeProject()
 {
     bool ret = abortProject(true, true, true);
 
-    ///When closing a project we can remove the ViewerCache from memory and put it on disk
-    ///since we're not sure it will be used right away
-    appPTR->clearPlaybackCache();
+    ///When closing a project we can release the textures of the viewers.
+    ///Keep the viewer cache (which is on disk, see AppManager::clearPlaybackCache()): the project may be opened again.
+    appPTR->clearLastRenderedTextures();
 
     return ret;
 }
@@ -281,7 +282,9 @@ Gui::toggleFullScreen()
     QWidget* activeWin = qApp->activeWindow();
 
     if (!activeWin) {
-        qApp->setActiveWindow(this);
+        if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+            qApp->setActiveWindow(this);
+        }
         activeWin = this;
     }
 
@@ -299,6 +302,12 @@ Gui::closeEvent(QCloseEvent* e)
     GuiAppInstancePtr app = getApp();
     if ( app && app->isClosing() ) {
         e->ignore();
+    } else if ( app && app->getProject()->isSaveInProgress() ) {
+        // A save is running, or waiting for the auto-save while the main thread processes
+        // non-user-input events, which include the window manager's close requests (#825).
+        // Closing the project now would reset it under the save: close once the save is done.
+        e->ignore();
+        QTimer::singleShot( 200, this, SLOT(close()) );
     } else {
         if ( !abortProject(true, true, true) ) {
             e->ignore();

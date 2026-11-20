@@ -242,7 +242,7 @@ if [ "$BUNDLE_IO" = "1" ]; then
         cp -fv "$x" "$IO_LIBS/"
     done
 
-    cp -v "$LIBRAW_PATH"/lib/libraw_r.so.16 "$IO_LIBS/"
+    cp -v "$LIBRAW_PATH"/lib/libraw_r.so.25 "$IO_LIBS/"
     cp -v "${FFMPEG_PATH}"/lib/{libavcodec.so.58,libavdevice.so.58,libavfilter.so.7,libavformat.so.58,libavresample.so.4,libavutil.so.56,libpostproc.so.55,libswresample.so.3,libswscale.so.5} "$IO_LIBS/"
     OFX_LIB_DEP=$(env LD_LIBRARY_PATH="$IO_LIBS:$LD_LIBRARY_PATH" ldd "$IO_LIBS"/*|grep /opt | awk '{print $3}'|sort|uniq)
     for y in $OFX_LIB_DEP; do

@@ -1331,18 +1331,15 @@ void
 RotoPanel::onItemRemoved(const RotoItemPtr& item,
                          int reason)
 {
-    Bezier* b = qobject_cast<Bezier*>( sender() );
-    BezierPtr isBezier;
-
-    if (b) {
-        isBezier = std::dynamic_pointer_cast<Bezier>( b->shared_from_this() );
-    }
+    // The sender is the RotoContext, not the Bezier
+    BezierPtr isBezier = std::dynamic_pointer_cast<Bezier>(item);
 
     if (isBezier) {
         ItemKeys::iterator it = _imp->keyframes.find(isBezier);
         if ( it != _imp->keyframes.end() ) {
-            for (std::set<double>::iterator it2 = it->second.keys.begin(); it2 != it->second.keys.end(); ++it2) {
-                getNode()->getNode()->getApp()->removeKeyFrameIndicator(*it2);
+            // The timeline only shows the keyframes of the selected Beziers
+            if (it->second.visible) {
+                _imp->setVisibleItemKeyframes(it->second.keys, false, true);
             }
             _imp->keyframes.erase(it);
         }
@@ -2235,17 +2232,17 @@ RotoPanel::showItemMenu(QTreeWidgetItem* item,
     deleteAct->setShortcut( QKeySequence(Qt::Key_Backspace) );
     QObject::connect( deleteAct, SIGNAL(triggered()), this, SLOT(onDeleteItemActionTriggered()) );
     QAction* cutAct = menu.addAction( tr("Cut") );
-    cutAct->setShortcut( QKeySequence(Qt::Key_X + Qt::CTRL) );
+    cutAct->setShortcut( QKeySequence(Qt::CTRL | Qt::Key_X) );
     QObject::connect( cutAct, SIGNAL(triggered()), this, SLOT(onCutItemActionTriggered()) );
     QAction* copyAct = menu.addAction( tr("Copy") );
-    copyAct->setShortcut( QKeySequence(Qt::Key_C + Qt::CTRL) );
+    copyAct->setShortcut( QKeySequence(Qt::CTRL | Qt::Key_C) );
     QObject::connect( copyAct, SIGNAL(triggered()), this, SLOT(onCopyItemActionTriggered()) );
     QAction* pasteAct = menu.addAction( tr("Paste") );
-    pasteAct->setShortcut( QKeySequence(Qt::Key_V + Qt::CTRL) );
+    pasteAct->setShortcut( QKeySequence(Qt::CTRL | Qt::Key_V) );
     QObject::connect( pasteAct, SIGNAL(triggered()), this, SLOT(onPasteItemActionTriggered()) );
     pasteAct->setEnabled( !_imp->clipBoard.empty() );
     QAction* duplicateAct = menu.addAction( tr("Duplicate") );
-    duplicateAct->setShortcut( QKeySequence(Qt::Key_C + Qt::ALT) );
+    duplicateAct->setShortcut( QKeySequence(Qt::ALT | Qt::Key_C) );
     QObject::connect( duplicateAct, SIGNAL(triggered()), this, SLOT(onDuplicateItemActionTriggered()) );
 
     ///The base layer cannot be duplicated

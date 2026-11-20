@@ -12,6 +12,10 @@ QT -= gui
 include(../../../global.pri)
 include(../../../libs.pri)
 
+# bundled third-party code: no warnings (-w), as NATRON_THIRD_PARTY_NO_WARNINGS in CMake
+CONFIG -= warn_on
+CONFIG += warn_off
+
 DEFINES += QHTTP_SERVER_STATIC
 DEFINES += QHTTPSERVER_EXPORT
 INCLUDEPATH += $$QHTTPSERVER_BASE/http-parser

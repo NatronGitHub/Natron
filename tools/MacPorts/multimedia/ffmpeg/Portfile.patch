@@ -1,43 +1,35 @@
---- Portfile.orig	2025-04-30 10:53:14.000000000 +0200
-+++ Portfile	2025-04-30 11:00:36.000000000 +0200
-@@ -93,6 +93,8 @@
+--- Portfile.orig	2026-11-16 10:49:37
++++ Portfile	2026-11-16 11:50:10
+@@ -97,6 +97,8 @@
+                     port:libvorbis \
                      path:lib/pkgconfig/vpx.pc:libvpx \
-                     port:lzo2 \
                      port:openjpeg \
 +                    port:openh264 \
 +                    port:snappy \
                      port:soxr \
                      path:lib/libspeex.dylib:speex \
                      port:webp \
-@@ -142,6 +144,11 @@
+@@ -140,6 +142,11 @@
+ # warning: unknown warning option '-Werror=partial-availability'; did you mean '-Werror=availability'? [-Wunknown-warning-option]
  # warning: unknown warning option '-Wno-bool-operation'; did you mean '-Wno-bool-conversion'? [-Wunknown-warning-option]
- compiler.blacklist-append {clang < 800}
- 
+ compiler.blacklist-append {clang < 900}
++
 +# gcc > 4.2 is required, https://trac.ffmpeg.org/ticket/1464
 +# WARNING: gcc 4.2 is outdated and may miscompile FFmpeg. Please use a newer compiler.
 +compiler.blacklist-append \
 +                    *gcc-4.0 *gcc-4.2
-+
+ 
  # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
  # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
- default_variants-append +gpl2
-@@ -167,6 +174,7 @@
- set port_mandir     ${port_sharedir}/man
+@@ -163,6 +170,7 @@
+ set port_docdir     ${port_sharedir}/doc/${my_name}
  
  configure.pre_args-append \
 +                    --cxx="${configure.cxx}" \
-                     --cc="${configure.cc}" \
-                     --datadir=${port_datadir} \
-                     --docdir=${port_docdir} \
-@@ -186,6 +194,7 @@
-                     --disable-sdl2 \
-                     --disable-securetransport \
-                     --disable-videotoolbox \
-+                    --disable-xlib \
-                     --enable-avfilter \
-                     --enable-avresample \
-                     --enable-fontconfig \
-@@ -198,6 +207,8 @@
+                     --cc="${configure.cc}"
+ 
+ configure.args-append \
+@@ -193,6 +201,8 @@
                      --enable-libmodplug \
                      --enable-libmp3lame \
                      --enable-libopenjpeg \
@@ -46,33 +38,35 @@
                      --enable-libopus \
                      --enable-librsvg \
                      --enable-libsoxr \
-@@ -360,6 +371,15 @@
+@@ -342,7 +352,16 @@
                      --disable-dependency-tracking
  
  if {${universal_possible} && [variant_isset universal]} {
 +    # the following is inspired by the icu Portfile
 +    # if we can't run executables for the target arch, mark it as a cross-compile
-+    foreach arch ${configure.universal_archs} {
+     foreach arch ${configure.universal_archs} {
 +        if {((${os.major} < 9 || [sysctl hw.cpu64bit_capable] == 0) && ($arch == "x86_64" || $arch == "ppc64"))
 +            || (${os.arch} == "powerpc" && ($arch == "x86_64" || $arch == "i386"))
 +            || (${os.arch} == "i386" && ($arch == "ppc" || $arch == "ppc64"))} {
 +            set merger_configure_args($arch) "--enable-cross-compile --target-os=${os.platform}"
 +        }
 +    }
-     foreach arch ${configure.universal_archs} {
++    foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) \
-@@ -395,6 +415,24 @@
+                     --arch=${arch}
+@@ -376,7 +395,25 @@
+ test.run            yes
  
  destroot.env-append V=1
- 
++
 +post-extract {
 +    if {${configure.cxx_stdlib} eq "libc++"} {
 +        # fix configure, which contains many references to libstdc++
 +        reinplace -E {s|-lstdc|-lc|g} ${worksrcpath}/configure
 +    }
 +}
-+
+ 
 +post-configure {
 +    if {[variant_isset universal]} {
 +        # fix *.pc for universal build (i386 version may miss these extra bits on Leopard)
@@ -87,11 +81,13 @@
  post-destroot {
      # Copy docs
      file mkdir ${destroot}${port_docdir}
-@@ -404,6 +442,46 @@
+@@ -384,6 +421,46 @@
+     foreach f [glob ${worksrcpath}/doc/*.txt] {
+         file copy $f ${destroot}${port_docdir}
      }
- }
- 
-+variant natronmini requires highbitdepth conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
++}
++
++variant natronmini requires highbitdepth conflicts x11 vmaf description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display, VMAF support.} {
 +
 +    depends_lib-delete \
 +                    port:libiconv \
@@ -129,12 +125,10 @@
 +                    --cc=${configure.cc} \
 +                    --cxx=${configure.cxx}
 +
-+}
-+
+ }
+ 
  variant x11 {
-     # enable x11grab_xcb input device
-     # Re libXv see: https://trac.macports.org/ticket/58617
-@@ -469,6 +547,14 @@
+@@ -448,6 +525,14 @@
                      path:lib/pkgconfig/gnutls.pc:gnutls
  }
  
@@ -149,16 +143,16 @@
  variant gpl2 description {Enable GPL code, license will be GPL-2+} {
      license         GPL-2+
  
-@@ -496,6 +582,12 @@
-     depends_lib-append \
-                     port:libaribb24 \
-                     path:lib/pkgconfig/smbclient.pc:samba3
-+
-+    # samba3 cannot be built universal (http://trac.macports.org/ticket/34558)
-+    if {[variant_isset universal]} {
-+        depends_lib-delete    port:samba3
-+        configure.args-delete --enable-libsmbclient
-+    }
+@@ -509,8 +594,11 @@
+                     port:libvmaf
  }
  
- # the build server uses the default variants, and we want distributable binaries
+-default_variants-append \
++# Natron: +natronmini doesn't bundle libvmaf
++if {![variant_isset natronmini]} {
++    default_variants-append \
+                     +vmaf
++}
+ 
+ if {![variant_isset rav1e]} {
+     notes-append "Support for rav1e now disabled by default; enable via +rav1e"

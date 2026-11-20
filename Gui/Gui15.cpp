@@ -43,6 +43,7 @@
 #include "Engine/ViewIdx.h"
 
 #include "Gui/DockablePanel.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/Menu.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/ProjectGuiSerialization.h" // PaneLayout, GuiLayoutSerialization
@@ -147,43 +148,43 @@ Gui::keySequenceForView(ViewIdx v)
     switch ( static_cast<int>(v) ) {
     case 0:
 
-        return QKeySequence(Qt::CTRL + Qt::ALT +  Qt::Key_1);
+        return QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_1);
         break;
     case 1:
 
-        return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_2);
+        return QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_2);
         break;
     case 2:
 
-        return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_3);
+        return QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_3);
         break;
     case 3:
 
-        return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_4);
+        return QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_4);
         break;
     case 4:
 
-        return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_5);
+        return QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_5);
         break;
     case 5:
 
-        return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_6);
+        return QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_6);
         break;
     case 6:
 
-        return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_7);
+        return QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_7);
         break;
     case 7:
 
-        return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_8);
+        return QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_8);
         break;
     case 8:
 
-        return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_9);
+        return QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_9);
         break;
     case 9:
 
-        return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_0);
+        return QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_0);
         break;
     default:
 
@@ -250,13 +251,13 @@ Gui::updateViewsActions(int viewsCount)
     if (viewsCount == 2) {
         QAction* left = new QAction(this);
         left->setCheckable(false);
-        left->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_1) );
+        left->setShortcut( QKeySequence(Qt::CTRL | Qt::Key_1) );
         _imp->viewersViewMenu->addAction(left);
         left->setText( tr("Display Left View") );
         QObject::connect( left, SIGNAL(triggered()), this, SLOT(showView0()) );
         QAction* right = new QAction(this);
         right->setCheckable(false);
-        right->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_2) );
+        right->setShortcut( QKeySequence(Qt::CTRL | Qt::Key_2) );
         _imp->viewersViewMenu->addAction(right);
         right->setText( tr("Display Right View") );
         QObject::connect( right, SIGNAL(triggered()), this, SLOT(showView1()) );
@@ -307,7 +308,7 @@ Gui::putSettingsPanelFirst(DockablePanel* panel)
                     panel->setVisible(true);
                 }
                 buildTabFocusOrderPropertiesBin();
-            } else {
+            } else if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
                 (*it)->activateWindow();
             }
         } else {

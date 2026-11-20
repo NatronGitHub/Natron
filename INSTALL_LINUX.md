@@ -8,6 +8,7 @@ This file is supposed to guide you step by step to have working (compiling) vers
 * If you are on Fedora or RHEL, see [here](#fedorarhel-based) for specific instructions
 * If you are on Debian or a Debian-based system (such as Ubuntu, Linux Mint, KDE Neon, ElementaryOS etc.) see [here](#debian-based) for details
 * If you are willing to try the complete installation process, the instructions are below
+* Natron is built with **CMake** (see [Build](#build)). The qmake build is deprecated: it still works on RB-2.6, but will be removed in a future release (see [Deprecated: building with qmake](#deprecated-building-with-qmake))
 
 0. [Using Docker](#using-docker)
 1. [Dependencies](#dependencies)
@@ -27,9 +28,10 @@ This file is supposed to guide you step by step to have working (compiling) vers
 2. [Configuration](#configuration)
     - [OpenFX](#openfx)
     - [OpenColorIO-Configs](#download-opencolorio-configs)
-    - [config.pri](#configpri)
+    - [config.pri](#configpri) (qmake only, deprecated)
     - [Nodes](#nodes)
 3. [Build](#build)
+    - [Deprecated: building with qmake](#deprecated-building-with-qmake)
 4. [Distribution specific](#distribution-specific)
     - [Arch Linux](#arch-linux)
     - [Debian-based](#debian-based)
@@ -59,11 +61,37 @@ cd tools/jenkins
 include/scripts/build-Linux-sdk.sh
 ```
 
-It puts build logs and the list of files installed by each package in the directory `/opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK` or `/opt/Natron-sdk/var/log/Natron-Linux-i686-SDK`.
+It puts build logs and the list of files installed by each package in the directory `/opt/Natron-sdk/var/log/Natron-Linux-<arch>-SDK`, where `<arch>` is `x86_64`, `aarch64` or `i686`.
+
+The official Linux binaries are built with the Rocky Linux 9 SDK (`ROCKY=9`). It uses GCC 14 from `gcc-toolset-14`, Python 3.11, Qt 5.15.19, PySide2/Shiboken2 5.15.19 (built from source with EPEL's libclang 19), and librsvg 2.58 (built with Rust from `rust-toolset`). It doesn't build Qt 4 or the Qt installer framework (`WITH_QT4=false`): the Linux releases are portable archives. The Rocky Linux 8 SDK (`ROCKY=8`) is the same, except for libclang 18, librsvg 2.40 and Qt 4. Both build natively on x86_64 and aarch64: the Docker image is built by `[ROCKY=8] tools/docker/natron-sdk-rockylinux/build.sh [amd64|arm64]` (see `tools/docker/README.md`).
 
 Some packages, especially Qt 4.8.7, have Natron-specific patches. Take a look at the SDK script to see which patches are applied to each packages, and what configuration options are used.
 
 The SDK may be updated by pulling the last modifications to the script and re-executing it.
+
+The release scripts (`tools/jenkins/launchBuildMain.sh`) build Natron with CMake, from the SDK; extra CMake options go in `NATRON_EXTRA_CMAKE_FLAGS`. On RB-2.6, `NATRON_BUILD_SYSTEM=qmake` selects the deprecated qmake build instead (see `Documentation/source/maintainers/building.rst`, "Release builds").
+
+### Runtime requirements of the Linux binaries
+
+The official Linux binaries are built on Rocky Linux 9 with the Natron SDK. They bundle the SDK libraries: Qt, Python, Boost, OpenImageIO, OpenColorIO, OpenEXR, FFmpeg, LibRaw, and so on. They never bundle the following system libraries, which must be installed on the system that runs Natron:
+
+- glibc 2.34 or later: libc, libm, libdl, libpthread, librt and ld-linux.
+- libstdc++ and libgcc_s from GCC 11 or later. On Rocky Linux 9 these are the system ones. Natron is compiled with a newer GCC, from `gcc-toolset`, but the libstdc++ symbols that are newer than GCC 11 are linked statically, from `libstdc++_nonshared.a`, so the binaries only need the system libstdc++.
+- libgomp (OpenMP runtime), from GCC 11 or later. It is a separate package (`libgomp` on RHEL/Rocky, `libgomp1` on Debian/Ubuntu). Most systems have it, but minimal images such as `rockylinux:9-minimal` don't.
+- libGL from GLVND (libGL, libEGL, libGLX, libGLdispatch), and an OpenGL driver. Also libdrm.
+- The X11 client libraries, at least as recent as those of Rocky Linux 9.0 (libX11 1.7.0, libxcb 1.13.1, libxkbcommon 1.0.3): libX11, libX11-xcb, libXext, libXrender, libXau, libXdmcp and the other libX\* libraries, libxcb and its extensions, the xcb-util libraries (libxcb-icccm, libxcb-image, libxcb-keysyms, libxcb-render-util), libSM, libICE, libxkbcommon and libxkbcommon-x11. Qt's X11 platform plug-in (`libqxcb.so`) needs them.
+- ALSA (libasound), for Qt Multimedia.
+
+Everything else comes from the SDK and is bundled. In particular, Python's `crypt` module (deprecated since Python 3.11) is not included: it needs libcrypt.so.2, which Debian and Ubuntu don't have.
+
+`tools/jenkins/build-Linux-installer.sh` checks this (`checkBundle`, on the portable tree and on the installer packages). It fails if:
+- the directory doesn't exist or contains no ELF file;
+- one of the system libraries above is bundled;
+- an ELF file needs (DT_NEEDED) a library that is neither bundled nor one of the system libraries above;
+- a bundled binary needs a symbol version of a system library that is newer than Rocky Linux 9.0 provides, as found by `objdump -p` (Version References): GLIBC_2.34, GLIBCXX_3.4.29, CXXABI_1.3.13, GCC_7.0.0 on x86_64 or GCC_11.0 on aarch64, GOMP_5.0.1 and OMP_5.0.1. Later EL9 updates of glibc define a few GLIBC_2.35 symbols, backported from glibc 2.35: a binary that needs them would not run on older EL9 systems;
+- a bundled binary needs a version of these libraries without a number, such as GLIBC_PRIVATE or GLIBC_ABI_DT_RELR (glibc 2.36 and later), except libstdc++'s CXXABI_TM_1 and CXXABI_FLOAT128.
+
+It then runs openfx's `Support/include/linuxCheckBundle.sh` (from `libs/OpenFX`, if it has it) on the OFX plug-in bundles of the portable tree, which also checks their rpaths.
 
 ### Environment to use the Natron SDK
 
@@ -77,12 +105,10 @@ This must be done in every shell/terminal where you intend to compile and/or run
 
 ## Installing dependencies from Ubuntu
 
-The scripts `tools/travis/install_dependencies.sh` and
-`tools/travis/build.sh` respectively install the correct dependencies
-and build Natron and the standard set of plugins on Ubuntu
-18.04 (Bionic Beaver).
-These scripts are used to make the [Travis CI builds](https://travis-ci.org/github/NatronGitHub/Natron).
-You can use them as a reference, but the resulting binaries are not guaranteed to be fully functional.
+The Linux job of the [GitHub Actions CI](https://github.com/NatronGitHub/Natron/actions/workflows/ci.yml)
+(`.github/workflows/ci.yml`) installs the dependencies and builds Natron and the tests on Ubuntu 24.04:
+read it for the exact package list and build commands.
+You can use it as a reference, but the resulting binaries are not guaranteed to be fully functional.
 
 ## Installing dependencies manually
 
@@ -144,22 +170,22 @@ Natron uses the OpenFX API, before building you should make sure its submodule i
 For that, go under Natron and type
 
 ```
-git submodule update -i --recursive
+git submodule update --init --recursive
 ```
 
 ### Download OpenColorIO-Configs
 
 In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
-to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.4.tar.gz).
+to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.5.tar.gz).
 Place it at the root of Natron repository.
 
-***note:*** *If it is named something like: `OpenColorIO-Configs-Natron-v2.4` rename it to `OpenColorIO-Configs`*
+***note:*** *If it is named something like: `OpenColorIO-Configs-Natron-v2.5` rename it to `OpenColorIO-Configs`*
 
 
 ```
-wget https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.4.tar.gz
-tar -xvzf Natron-v2.4.tar.gz
-mv OpenColorIO-Configs-Natron-v2.4 OpenColorIO-Configs
+wget https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.5.tar.gz
+tar -xvzf Natron-v2.5.tar.gz
+mv OpenColorIO-Configs-Natron-v2.5 OpenColorIO-Configs
 ```
 
 ***note:*** In order to reclaim disk space, you may keep only the following subfolders : blender\*, natron, nuke-default
@@ -169,6 +195,8 @@ cd OpenColorIO-Configs && rm -v !("blender"|"blender-cycles"|"natron"|"nuke-defa
 ```
 
 ### config.pri
+
+***note:*** *`config.pri` is only used by the deprecated qmake build. The CMake build finds the dependencies itself (with pkg-config and the CMake packages of Qt, Shiboken2 and PySide2), so you can skip this section.*
 
 The `config.pri` is used to define the locations of the dependencies. It is probably the most
 confusing part of the build process.
@@ -226,6 +254,37 @@ Plugins/
 
 # Build
 
+Natron is built with CMake (3.16.7 or later). From the Natron source directory:
+
+```
+cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build -j$(nproc)
+```
+
+This is what the Linux CI job does on Ubuntu 24.04 (see `.github/workflows/ci.yml`); see [Debian-based](#debian-based) for the packages it installs.
+
+Useful options (add them to the first `cmake` command):
+
+- `-DCMAKE_BUILD_TYPE=Debug`, `Release` or `RelWithDebInfo` (the default).
+- `-DNATRON_QT6=ON` builds with Qt 6 and PySide6 instead of Qt 5 and PySide2.
+- `-DNATRON_BUILD_TESTS=OFF` skips the unit tests.
+- `-DNATRON_SYSTEM_LIBS=ON` uses the system copies of the libraries that Natron otherwise builds from `libs/`.
+- `-DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang` builds with Clang.
+
+To run the unit tests, which need the OpenFX IO plug-ins and an OpenColorIO config:
+
+```
+(cd build && OFX_PLUGIN_PATH=/path/to/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V)
+```
+
+The tests open windows: on a machine without a display, run them under `xvfb-run` (package `xvfb`), as the CI job does: `xvfb-run --auto-servernum ctest -V`.
+
+To install, run `cmake --install build --prefix /usr/local` (or another prefix). The default layout is the usual Unix one (`bin/`, `share/`); `-DNATRON_INSTALL_LAYOUT=PORTABLE` gives the self-contained layout that the release scripts will use once they move to CMake. See the Maintainer Guide (`Documentation/source/maintainers/building.rst`) for details.
+
+## Deprecated: building with qmake
+
+***note:*** *The qmake build is deprecated. It still works on RB-2.6, where the release scripts in `tools/jenkins` use it with `NATRON_BUILD_SYSTEM=qmake` (they build with CMake by default), but it will be removed in a future release (first on RB-2.7, see [#1181](https://github.com/NatronGitHub/Natron/issues/1181)). It needs a [config.pri](#configpri) file.*
+
 To build, go into the Natron directory and type:
 
 ```
@@ -282,7 +341,7 @@ sudo pacman -S expat boost-libs gcc
 You will also need additional Boost libraries, cairo, and Qt5 (provided by PySide2). They can be installed with the following command:
 
 ```
-sudo pacman -S boost cairo pyside2 python-pyqt
+sudo pacman -S cmake boost cairo pyside2 python-pyqt
 ```
 
 Then, clone Natron's repo:
@@ -295,10 +354,17 @@ Update submodules:
 
 ```
 git submodule init
-git submodule update -i --recursive
+git submodule update --init --recursive
 ```
 
-And make a build folder:
+Build it with CMake, as described in [Build](#build):
+
+```
+cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build -j$(nproc)
+```
+
+The rest of this section is for the deprecated qmake build. Make a build folder:
 
 ```
 mkdir build && cd build
@@ -368,25 +434,37 @@ The binaries will be found in the `build/App` folder. In order to launch Natron 
 Installing dependencies using `apt-get` or `apt` should work on
 any Debian-based distribution.
 
+For Ubuntu 24.04 (Python 3.12, Qt 5.15), these are the packages that the Linux CI job installs (`.github/workflows/ci.yml`), plus `cmake`, which the GitHub runner already has:
+
+```
+sudo apt install build-essential cmake libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev \
+  qt5-qmake qtbase5-dev qtdeclarative5-dev \
+  python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy \
+  libwayland-dev libwayland-client0 libwayland-egl1 \
+  extra-cmake-modules clang
+```
+
+(`qt5-qmake` is only needed for the deprecated qmake build.)
+
 For Ubuntu 22.04 using Python 3.10 and Qt 5.15, install the required dependencies:
 
 ```
-sudo apt install build-essential libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev qt5-qmake qtbase5-dev python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy
+sudo apt install build-essential cmake libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev qt5-qmake qtbase5-dev python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy
 ```
 
 For Debian 12, install the following packages instead:
 
 ```
-sudo apt install qtbase5-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python3-dev python3-pyside2.qtcore libpyside2-dev libshiboken2-dev
+sudo apt install build-essential cmake qtbase5-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python3-dev python3-pyside2.qtcore libpyside2-dev libshiboken2-dev
 ```
 
 For most Debian/Ubuntu-based systems, install the required packages:
 
 ```
-sudo apt install qt5base-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python3-dev python3-pyside2 libpyside2-dev libshiboken2-dev
+sudo apt install build-essential cmake qtbase5-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python3-dev python3-pyside2 libpyside2-dev libshiboken2-dev
 ```
 
-For the Qt4 config.pri use:
+For the Qt4 config.pri (deprecated qmake build) use:
 
 ```
 boost-serialization-lib: LIBS += -lboost_serialization
@@ -416,7 +494,7 @@ Get Natron:
 
 ```
 git clone https://github.com/NatronGitHub/Natron && cd Natron
-git submodule update -i --recursive
+git submodule update --init --recursive
 wget https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.5.tar.gz
 tar xzf Natron-v2.5.tar.gz
 mv OpenColorIO-Configs-Natron-v2.5 OpenColorIO-Configs
@@ -442,14 +520,14 @@ On RHEL and derivative distributions you need the EPEL repository:
 Install required packages:
 
 ```
-yum install fontconfig-devel gcc-c++ expat-devel python-pyside2-devel shiboken2-devel qt5-qtbase-devel boost-devel pixman-devel cairo-devel
+yum install cmake fontconfig-devel gcc-c++ expat-devel python-pyside2-devel shiboken2-devel qt5-qtbase-devel boost-devel pixman-devel cairo-devel
 ```
 or
 ```
-dnf install fontconfig-devel gcc-c++ expat-devel python-pyside2-devel shiboken2-devel qt5-qtbase-devel boost-devel pixman-devel cairo-devel
+dnf install cmake fontconfig-devel gcc-c++ expat-devel python-pyside2-devel shiboken2-devel qt5-qtbase-devel boost-devel pixman-devel cairo-devel
 ```
 
-Qt4 config.pri:
+Then build with CMake, as described in [Build](#build). For the deprecated qmake build, here is a Qt4 config.pri:
 ```pri
 boost-serialization-lib: LIBS += -lboost_serialization
 boost: LIBS += -lboost_thread -lboost_system
