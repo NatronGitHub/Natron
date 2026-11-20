@@ -481,7 +481,7 @@ Knob<T>::getValueFromExpression(double time,
     ///Check first if a value was already computed:
     unsigned int generation;
     {
-        std::lock_guard<std::recursive_mutex> k(_valueMutex);
+        std::lock_guard<std::mutex> k(_exprResMutex);
         typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
         if ( found != _exprRes[dimension].end() ) {
             *ret = found->second;
@@ -513,7 +513,7 @@ Knob<T>::getValueFromExpression(double time,
         *ret =  clampToMinMax(*ret, dimension);
     }
 
-    std::lock_guard<std::recursive_mutex> k(_valueMutex);
+    std::lock_guard<std::mutex> k(_exprResMutex);
     // If the results were cleared during the evaluation (e.g. a parameter used by the expression changed
     // in another thread), this result may be computed from the old values: return it, but don't store it,
     // else later renders would keep using it.
@@ -577,7 +577,7 @@ Knob<T>::getValueFromExpression_pod(double time,
     ///Check first if a value was already computed:
     unsigned int generation;
     {
-        std::lock_guard<std::recursive_mutex> k(_valueMutex);
+        std::lock_guard<std::mutex> k(_exprResMutex);
         typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
         if ( found != _exprRes[dimension].end() ) {
             *ret = found->second;
@@ -610,7 +610,7 @@ Knob<T>::getValueFromExpression_pod(double time,
         *ret =  clampToMinMax(*ret, dimension);
     }
 
-    std::lock_guard<std::recursive_mutex> k(_valueMutex);
+    std::lock_guard<std::mutex> k(_exprResMutex);
     // as in getValueFromExpression()
     if (_exprResGeneration == generation) {
         _exprRes[dimension].insert( std::make_pair(time, *ret) );
@@ -2618,10 +2618,12 @@ Knob<T>::copyValueForType(Knob<OTHERTYPE>* other,
                           int otherDimension)
 {
     assert( (dimension == otherDimension) || (dimension != -1) );
-    std::lock_guard<std::recursive_mutex> k(_valueMutex);
+    // Read other's values under other's _valueMutex only, before locking this one: holding both
+    // (A.clone(B) and B.clone(A) at the same time) could deadlock (#1543). See Curve::clone().
     if (dimension == -1) {
         int dimMin = std::min( getDimension(), other->getDimension() );
         std::vector<OTHERTYPE> v = other->getValueForEachDimension_mt_safe_vector();
+        std::lock_guard<std::recursive_mutex> k(_valueMutex);
         for (int i = 0; i < dimMin; ++i) {
             _values[i] = v[i];
             _guiValues[i] = v[i];
@@ -2632,7 +2634,9 @@ Knob<T>::copyValueForType(Knob<OTHERTYPE>* other,
         }
         assert( dimension >= 0 && dimension < getDimension() &&
                 otherDimension >= 0 && otherDimension < other->getDimension() );
-        _values[dimension] = _guiValues[dimension] = T( other->getRawValue(otherDimension) );
+        const T otherValue = T( other->getRawValue(otherDimension) );
+        std::lock_guard<std::recursive_mutex> k(_valueMutex);
+        _values[dimension] = _guiValues[dimension] = otherValue;
     }
 }
 
@@ -2645,10 +2649,11 @@ Knob<T>::copyValueForTypeAndCheckIfChanged(Knob<OTHERTYPE>* other,
 {
     assert( (dimension == otherDimension) || (dimension != -1) );
     bool ret = false;
-    std::lock_guard<std::recursive_mutex> k(_valueMutex);
+    // Read other's values before locking this knob (see copyValueForType()).
     if (dimension == -1) {
         int dimMin = std::min( getDimension(), other->getDimension() );
         std::vector<OTHERTYPE> v = other->getValueForEachDimension_mt_safe_vector();
+        std::lock_guard<std::recursive_mutex> k(_valueMutex);
         for (int i = 0; i < dimMin; ++i) {
             const T convertedV = static_cast<T>(v[i]);
             if (_values[i] != convertedV) {
@@ -2665,6 +2670,7 @@ Knob<T>::copyValueForTypeAndCheckIfChanged(Knob<OTHERTYPE>* other,
                 otherDimension >= 0 && otherDimension < other->getDimension() );
 
         T otherValue = (T)other->getRawValue(otherDimension);
+        std::lock_guard<std::recursive_mutex> k(_valueMutex);
         if (otherValue != _values[dimension]) {
             _values[dimension] = _guiValues[dimension] = otherValue;
             ret = true;
@@ -2699,7 +2705,7 @@ Knob<T>::cloneValues(KnobI* other,
     KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase* >(other);
     assert(isInt || isBool || isDouble);
 
-    std::lock_guard<std::recursive_mutex> k(_valueMutex);
+    // Don't lock _valueMutex here: copyValueForType*() must read other's values without holding it.
     if (isInt) {
         copyValueForType<int>(isInt, dimension, otherDimension);
     } else if (isBool) {
@@ -2737,7 +2743,7 @@ Knob<T>::cloneValuesAndCheckIfChanged(KnobI* other,
     KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase* >(other);
     assert(isInt || isBool || isDouble);
 
-    std::lock_guard<std::recursive_mutex> k(_valueMutex);
+    // Don't lock _valueMutex here: copyValueForType*() must read other's values without holding it.
     if (isInt) {
         return copyValueForTypeAndCheckIfChanged<int>(isInt, dimension, otherDimension);
     } else if (isBool) {
@@ -2767,7 +2773,7 @@ Knob<T>::cloneExpressionsResults(KnobI* other,
         for (int i = 0; i < dimMin; ++i) {
             FrameValueMap results;
             otherKnob->getExpressionResults(i, results);
-            std::lock_guard<std::recursive_mutex> k(_valueMutex);
+            std::lock_guard<std::mutex> k(_exprResMutex);
             _exprRes[i] = results;
             ++_exprResGeneration;
         }
@@ -2777,7 +2783,7 @@ Knob<T>::cloneExpressionsResults(KnobI* other,
         }
         FrameValueMap results;
         otherKnob->getExpressionResults(otherDimension, results);
-        std::lock_guard<std::recursive_mutex> k(_valueMutex);
+        std::lock_guard<std::mutex> k(_exprResMutex);
         _exprRes[dimension] = results;
         ++_exprResGeneration;
     }
