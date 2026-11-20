@@ -142,7 +142,8 @@ CMake registers each one as a ``ctest`` test named ``gui.<name>`` with the ``gui
 ``ctest -L gui`` runs only the GUI tests, and ``ctest -LE gui`` all the other tests. They need a
 display and OpenGL: without them (e.g. on Linux without ``DISPLAY``: run them under ``xvfb-run``),
 they are reported as skipped. In CI (``CI`` set), they only run where the job sets
-``NATRON_GUI_TESTS=1``, and are skipped otherwise. Configure with ``-DNATRON_BUILD_GUI_TESTS=OFF`` (a CMake option, unlike the environment variable ``NATRON_GUI_TESTS``) not to
+``NATRON_GUI_TESTS=1``, and are skipped otherwise: the Linux job of ``.github/workflows/ci.yml``
+sets it, and runs them under ``xvfb-run`` (they are skipped if there is no OpenGL context). Configure with ``-DNATRON_BUILD_GUI_TESTS=OFF`` (a CMake option, unlike the environment variable ``NATRON_GUI_TESTS``) not to
 register them. Their caches go to the build tree (``NATRON_DISK_CACHE_PATH``). The plug-ins of ``Tests/OfxTestPlugin`` are on their ``OFX_PLUGIN_PATH``,
 before the user's one (with CMake older than 3.22, before the ``OFX_PLUGIN_PATH`` of the configure
 step); a test that needs another plug-in (e.g. openfx-misc's Transform) is skipped
@@ -156,10 +157,11 @@ created (or loaded, if a project file is also given on the command line), then q
 status is 0 if the script returns normally, 77 if it is skipped (:func:`NatronGuiTest.skip`, no
 display or no OpenGL), and 1 if it raises an exception (e.g. a failed ``assert``), if Natron fails to
 start, if a dialog or menu was unexpected, or if the test runs longer than ``NATRON_TEST_TIMEOUT``
-seconds (120 by default: the test is then killed). A crash ends Natron with the signal (ctest reports
-it as a failure). A
+seconds (120 by default: the test is then killed, after printing the Python tracebacks of all
+threads). A crash ends Natron with the signal (ctest reports it as a failure). A
 ``sys.exit(status)`` or :meth:`natron.quit(status)<NatronEngine.PyCoreApplication.quit>` in the
-script sets the exit status (the script still runs to its end after ``natron.quit()``).
+script sets the exit status. The script still runs to its end after ``natron.quit()``, and if it
+fails afterwards, the test fails. The Python output is not buffered (``PYTHONUNBUFFERED=1``).
 
 The test mode implies :option:`--no-settings` (and the default shortcuts), and sets
 ``NATRON_TEST_NO_FOCUS=1``, so that the test never takes the keyboard focus or activates a window. It does **not** imply
@@ -176,9 +178,19 @@ and work as usual. The test mode also isolates the test from the user's session:
   item triggered), so that the real code runs. A modal dialog or menu that gets no answer is
   **unexpected**: it is printed, closed so that it does not block, and the test fails, even if it is
   skipped afterwards;
-- the settings written by the recent files and the file dialogs go to a directory of the tests, not to
-  the user's preferences;
+- the settings are not written to the user's preferences: the Natron settings, the shortcuts, the
+  window geometry, the file dialog state, the Tab dialog's plug-in ranking, the colour palette and the
+  cache version are not saved, and the other settings (e.g. the recent files) go to a temporary
+  directory of the run, removed when Natron exits;
 - the dialogs are recorded (:func:`NatronGuiTest.getDialogLog`).
+
+The test mode does not isolate everything:
+
+- a test run by hand (not through ``ctest``) uses the user's disk cache and OpenFX plug-in cache,
+  unless ``NATRON_DISK_CACHE_PATH`` is set (``ctest`` sets it to the build tree);
+- a test that opens a project file, and is ended by the watchdog or a crash, leaves that project's
+  ``.lock`` file: give the tests copies of the projects;
+- ``NATRON_TEST_NO_FOCUS=0`` (set explicitly) lets the windows take the focus.
 
 A test script runs from the event loop, once the main window is shown: it needs no timer, and
 Natron quits when the script returns, as with
@@ -275,13 +287,17 @@ synthetic Qt events to the widgets; the real mouse cursor and the keyboard are n
 
    - a button name (``"yes"``, ``"no"``, ``"ok"``, ``"cancel"``, ``"save"``, ``"discard"``,
      ``"close"``, …): clicks that button of the dialog;
-   - for a menu, the text of the item to trigger (without ``&``);
+   - for a menu, the text of the item to trigger (without ``&``), in the menu or, if not found there, in
+     its submenus: it is selected as the user does (the item is made active and *Return* is pressed,
+     which opens the submenus on the way), so that the code that runs the menu gets that item;
    - a callable, called with ``(title, text, className)`` while the window is shown: it returns one of
      the above, or ``None`` if it handled the window itself (e.g. a file dialog, through PySide's
      ``QApplication.activeModalWidget()``).
 
    A dialog or menu shown when the list is empty, or without such a button or item, is unexpected: it
-   is closed and the test fails.
+   is closed and the test fails. Every popup is watched: a popup that is not a menu (e.g. the list of a
+   Qt combo box or of a completer) can only be answered with a callable. A callable that returns
+   ``None`` without closing a modal dialog leaves the test blocked until the watchdog ends it.
 
 .. function:: getDialogLog()
 
@@ -299,9 +315,10 @@ synthetic Qt events to the widgets; the real mouse cursor and the keyboard are n
    Skip the test (exit status 77) unless the environment variable ``NATRON_TEST_INTERACTIVE`` is ``1``.
    A test that needs the real keyboard focus or mouse (which the synthetic events of this module do not
    use) calls it first, and has the line ``# NatronGuiTest: interactive``, which gives it the ctest label
-   ``gui-interactive`` (in addition to ``gui``). These tests run on CI under Xvfb, where the job sets
-   the variable, or in a virtual machine; on a desktop, they only run when the user opts in, because they take the
-   keyboard and mouse.
+   ``gui-interactive`` (in addition to ``gui``). They are meant for a display that no user works on, e.g. a
+   CI job under Xvfb that sets the variable, or a virtual machine; on a desktop, they only run when the
+   user opts in, because they take the keyboard and mouse. No CI job sets ``NATRON_TEST_INTERACTIVE``
+   yet.
 
 .. function:: skip(reason)
 
