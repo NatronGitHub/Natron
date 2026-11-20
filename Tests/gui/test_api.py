@@ -85,22 +85,32 @@ names = set(w.objectName() for w in QtWidgets.QApplication.allWidgets())
 for n in ("nodeGraph", "Viewer1", "TimeLine", "PropertiesBin"):
     check(n in names, "a widget is named %s" % n)
 
-# a choice parameter, through its combo box (named after the parameter): the popup menu is answered
+# a choice parameter, through its combo box: the popup menu is answered
 # with the item text, and the combo box gets the item that QMenu::exec() returns
 PARAMS = "net.natron.test.Params"
 if PARAMS in natron.getPluginIDs():
-    params = app.createNode(PARAMS)
-    check(params is not None, "createNode(%s) failed" % PARAMS)
+    # created as the user does (Other > Test > ParamsTest in the node graph menu), so that its settings
+    # panel, with the parameter widgets, is open
+    vx, vy = viewer.getPosition()
+    NatronGuiTest.setDialogAnswers(["ParamsTest"])
+    NatronGuiTest.penEvent("NodeGraph", "press", vx - 300, vy - 300, button="right")
+    NatronGuiTest.penEvent("NodeGraph", "release", vx - 300, vy - 300, button="right")
     wait_idle()
+    created = [n for n in app.getChildren() if n.getPluginID() == PARAMS]
+    check(len(created) == 1, "the node graph menu created %d %s nodes" % (len(created), PARAMS))
+    params = created[0]
     choice = params.getParam("choiceFrom")
     check(choice is not None and choice.getValue() == 0, "choiceFrom is 0")
+    # its combo box has the paramName property (its object name, dim-0, is used by the right-click
+    # menu): give it a name that penEvent() can find
     combos = [w for w in QtWidgets.QApplication.allWidgets()
-              if w.objectName() == "choiceFrom" and w.metaObject().className().endswith("ComboBox")]
-    check(len(combos) == 1, "one combo box is named choiceFrom: %r" % [w.metaObject().className() for w in combos])
+              if w.property("paramName") == "choiceFrom" and w.metaObject().className().endswith("ComboBox")]
+    check(len(combos) == 1, "one combo box has paramName choiceFrom: %d" % len(combos))
+    combos[0].setObjectName("testChoiceFromComboBox")
     NatronGuiTest.clearDialogLog()
     NatronGuiTest.setDialogAnswers(["two"])
-    NatronGuiTest.penEvent("choiceFrom", "press", 5, 5)  # the popup runs in the press
-    NatronGuiTest.penEvent("choiceFrom", "release", 5, 5)
+    NatronGuiTest.penEvent("testChoiceFromComboBox", "press", 5, 5)  # the popup runs in the press
+    NatronGuiTest.penEvent("testChoiceFromComboBox", "release", 5, 5)
     wait_idle()
     log = NatronGuiTest.getDialogLog()
     check(len(log) == 1 and log[0]["type"] == "menu" and log[0]["answer"] == "two", "dialog log: %r" % log)
