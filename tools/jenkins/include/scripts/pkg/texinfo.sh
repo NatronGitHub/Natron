@@ -4,9 +4,10 @@
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/texinfo.html
 TEXINFO_VERSION=7.3
 TEXINFO_TAR="texinfo-${TEXINFO_VERSION}.tar.gz"
+TEXINFO_SHA256=4fc30d71e00416f0b4884994f1db9db2901f03603f8e69d92dd46fa018d998d7
 TEXINFO_SITE="https://ftp.gnu.org/gnu/texinfo"
 if download_step; then
-    download "$TEXINFO_SITE" "$TEXINFO_TAR"
+    download "$TEXINFO_SITE" "$TEXINFO_TAR" "$TEXINFO_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/makeinfo" ]; }; }; then
     start_build

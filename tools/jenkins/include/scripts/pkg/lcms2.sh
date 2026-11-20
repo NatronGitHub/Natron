@@ -6,9 +6,10 @@ LCMS_VERSION=2.20
 #LCMS_VERSION_SHORT=${LCMS_VERSION%.*} # for 2.13.1
 LCMS_VERSION_SHORT=${LCMS_VERSION} # for 2.14
 LCMS_TAR="lcms2-${LCMS_VERSION}.tar.gz"
+LCMS_SHA256=18ff5504fa9cc8a2b1f3591180d90ead16c8a2ea78e530523b46eab70e1ca6b9
 LCMS_SITE="https://sourceforge.net/projects/lcms/files/lcms/${LCMS_VERSION_SHORT}"
 if download_step; then
-    download "$LCMS_SITE" "$LCMS_TAR"
+    download "$LCMS_SITE" "$LCMS_TAR" "$LCMS_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/lcms2.pc" ] || [ "$(pkg-config --modversion lcms2)" != "$LCMS_VERSION_SHORT" ]; }; }; then
     start_build

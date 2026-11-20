@@ -4,9 +4,10 @@
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/pixman.html
 PIXMAN_VERSION=0.46.4
 PIXMAN_TAR="pixman-${PIXMAN_VERSION}.tar.gz"
+PIXMAN_SHA256=d09c44ebc3bd5bee7021c79f922fe8fb2fb57f7320f55e97ff9914d2346a591c
 PIXMAN_SITE="https://www.cairographics.org/releases"
 if download_step; then
-    download "$PIXMAN_SITE" "$PIXMAN_TAR"
+    download "$PIXMAN_SITE" "$PIXMAN_TAR" "$PIXMAN_SHA256"
 fi
 if build_step && { force_build || { [ "${REBUILD_PIXMAN:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/{lib,include}/*pixman* || true

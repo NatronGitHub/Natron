@@ -7,6 +7,7 @@
 QT5_VERSION=5.15.19
 QT5_VERSION_SHORT=${QT5_VERSION%.*}
 QT5_TAR="qt-everywhere-opensource-src-${QT5_VERSION}.tar.xz"
+QT5_SHA256=173c2326dae138bbb0d98921e9d911e55c00163d93a6db29f294b5e19ff306ae
 QT5_SITE="https://download.qt.io/archive/qt/${QT5_VERSION_SHORT}/${QT5_VERSION}/single"
 # Until 5.15.9, the open-source Qt 5.15 releases lagged behind the commercial ones, and
 # the BLFS aggregation of the KDE Qt5 patch collection was applied
@@ -17,7 +18,7 @@ QT5_PATCH=
 QT5_PATCH_SITE="https://www.linuxfromscratch.org/patches/blfs/svn"
 
 if download_step; then
-    download "$QT5_SITE" "$QT5_TAR"
+    download "$QT5_SITE" "$QT5_TAR" "$QT5_SHA256"
     if [ -n "$QT5_PATCH" ]; then
         download "$QT5_PATCH_SITE" "$QT5_PATCH"
     fi

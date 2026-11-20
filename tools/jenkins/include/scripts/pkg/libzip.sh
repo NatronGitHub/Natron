@@ -4,9 +4,10 @@
 # see https://libzip.org/download/
 ZIP_VERSION=1.12.1
 ZIP_TAR="libzip-${ZIP_VERSION}.tar.xz"
+ZIP_SHA256=c40062022a1963c80573d48f6070792297cecd7c6bffe3aefcac0d8b9bee8913
 ZIP_SITE="https://libzip.org/download"
 if download_step; then
-    download "$ZIP_SITE" "$ZIP_TAR"
+    download "$ZIP_SITE" "$ZIP_TAR" "$ZIP_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libzip.pc" ] || [ "$(pkg-config --modversion libzip)" != "$ZIP_VERSION" ]; }; }; then
     start_build

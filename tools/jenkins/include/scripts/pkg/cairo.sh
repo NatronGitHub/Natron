@@ -6,9 +6,10 @@ CAIRO_VERSION=1.18.6
 CAIRO_VERSION_SHORT=${CAIRO_VERSION%.*}
 CAIRO_VERSION_PKGCONFIG=${CAIRO_VERSION}
 CAIRO_TAR="cairo-${CAIRO_VERSION}.tar.xz"
+CAIRO_SHA256=1c767308174337a74694da0f3ec069c271452163a1ef4540964c50c301f157d4
 CAIRO_SITE="https://www.cairographics.org/releases"
 if download_step; then
-    download "$CAIRO_SITE" "$CAIRO_TAR"
+    download "$CAIRO_SITE" "$CAIRO_TAR" "$CAIRO_SHA256"
 fi
 if build_step && { force_build || { [ "${REBUILD_CAIRO:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/include/cairo || true

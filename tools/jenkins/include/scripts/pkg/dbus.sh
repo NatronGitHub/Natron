@@ -4,9 +4,10 @@
 # see https://www.linuxfromscratch.org/blfs/view/systemd/general/dbus.html
 DBUS_VERSION=1.16.2
 DBUS_TAR="dbus-${DBUS_VERSION}.tar.xz"
+DBUS_SHA256=0ba2a1a4b16afe7bceb2c07e9ce99a8c2c3508e5dec290dbb643384bd6beb7e2
 DBUS_SITE="https://dbus.freedesktop.org/releases/dbus"
 if download_step; then
-    download "$DBUS_SITE" "$DBUS_TAR"
+    download "$DBUS_SITE" "$DBUS_TAR" "$DBUS_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/dbus-1.pc" ] || [ "$(pkg-config --modversion dbus-1)" != "$DBUS_VERSION" ]; }; }; then
     start_build

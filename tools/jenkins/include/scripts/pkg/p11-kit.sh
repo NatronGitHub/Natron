@@ -6,9 +6,10 @@ P11KIT_VERSION=0.26.6 # select P11KIT_VERSION_SHORT below
 P11KIT_VERSION_SHORT=${P11KIT_VERSION} # if P11KIT_VERSION has 3 components, eg 0.23.16
 #P11KIT_VERSION_SHORT=${P11KIT_VERSION%.*} # if P11KIT_VERSION has 4 components, eg 0.23.16.1
 P11KIT_TAR="p11-kit-${P11KIT_VERSION}.tar.xz"
+P11KIT_SHA256=5fda95dc89964af32dbd8e01b139c166717cf96c4fee3d601bcd60bdb23d23c6
 P11KIT_SITE="https://github.com/p11-glue/p11-kit/releases/download/${P11KIT_VERSION}"
 if download_step; then
-    download "$P11KIT_SITE" "$P11KIT_TAR"
+    download "$P11KIT_SITE" "$P11KIT_TAR" "$P11KIT_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/p11-kit-1.pc" ] || [ "$(pkg-config --modversion p11-kit-1)" != "$P11KIT_VERSION_SHORT" ]; }; }; then
     start_build

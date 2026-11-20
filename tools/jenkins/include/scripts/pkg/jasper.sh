@@ -4,9 +4,10 @@
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/jasper.html
 JASPER_VERSION=4.2.9
 JASPER_TAR="jasper-${JASPER_VERSION}.tar.gz"
+JASPER_SHA256=b0e5af6b54c274b9670c7e32ddbf6c802d88c896062d760267695dd0aa7014ff
 JASPER_SITE="https://github.com/jasper-software/jasper/archive/version-${JASPER_VERSION}"
 if download_step; then
-    download "$JASPER_SITE" "$JASPER_TAR"
+    download "$JASPER_SITE" "$JASPER_TAR" "$JASPER_SHA256"
 fi
 if build_step && { force_build || { [ "${REBUILD_JASPER:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/{include,lib}/*jasper* || true

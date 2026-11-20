@@ -5,9 +5,10 @@
 LAME_VERSION=4.0
 #LAME_VERSION_SHORT=${LAME_VERSION%.*}
 LAME_TAR="lame-${LAME_VERSION}.tar.gz"
+LAME_SHA256=3df5124d5ad3a98312ffd7ba6a9b36230e4f8a3e66d3ce0f425e336c32d216eb
 LAME_SITE="https://sourceforge.net/projects/lame/files/lame/${LAME_VERSION}"
 if download_step; then
-    download "$LAME_SITE" "$LAME_TAR"
+    download "$LAME_SITE" "$LAME_TAR" "$LAME_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libmp3lame.so" ] || [ "$("$SDK_HOME/bin/lame" --version |head -1 | sed -e 's/^.*[Vv]ersion \([^ ]*\) .*$/\1/')" != "$LAME_VERSION" ]; }; }; then
     start_build

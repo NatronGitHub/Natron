@@ -4,9 +4,10 @@
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/libogg.html
 LIBOGG_VERSION=1.3.6
 LIBOGG_TAR="libogg-${LIBOGG_VERSION}.tar.gz"
-LIBOGG_SITE="http://downloads.xiph.org/releases/ogg"
+LIBOGG_SHA256=83e6704730683d004d20e21b8f7f55dcb3383cdf84c0daedf30bde175f774638
+LIBOGG_SITE="https://downloads.xiph.org/releases/ogg"
 if download_step; then
-    download "$LIBOGG_SITE" "$LIBOGG_TAR"
+    download "$LIBOGG_SITE" "$LIBOGG_TAR" "$LIBOGG_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/ogg.pc" ] || [ "$(pkg-config --modversion ogg)" != "$LIBOGG_VERSION" ]; }; }; then
     start_build

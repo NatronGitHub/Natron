@@ -6,10 +6,11 @@ LIBXML2_VERSION=2.15.4
 LIBXML2_VERSION_SHORT=${LIBXML2_VERSION%.*}
 
 LIBXML2_TAR="libxml2-${LIBXML2_VERSION}.tar.xz"
+LIBXML2_SHA256=98087fd181d9070724f3fbc65c7377db03038eb92bd882374daff44940138821
 LIBXML2_SITE="https://download.gnome.org/sources/libxml2/${LIBXML2_VERSION_SHORT}"
 LIBXML2_ICU=1 # set to 1 if libxml2 should be compiled with ICU support. This implies things for Qt4 and QtWebkit.
 if download_step; then
-    download "$LIBXML2_SITE" "$LIBXML2_TAR"
+    download "$LIBXML2_SITE" "$LIBXML2_TAR" "$LIBXML2_SHA256"
 fi
 if build_step && { force_build || { [ "${REBUILD_XML:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/include/libxml2 "$SDK_HOME"/lib/libxml* "$SDK_HOME"/lib/pkgconfig/libxml* || true

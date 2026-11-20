@@ -6,9 +6,10 @@
 GDKPIXBUF_VERSION=2.44.8 # requires meson
 GDKPIXBUF_VERSION_SHORT=${GDKPIXBUF_VERSION%.*}
 GDKPIXBUF_TAR="gdk-pixbuf-${GDKPIXBUF_VERSION}.tar.xz"
+GDKPIXBUF_SHA256=919f529512961a12e81cd4b4b466a48c3933469e7f9a310c6513cd4fb252ba3c
 GDKPIXBUF_SITE="https://download.gnome.org/sources/gdk-pixbuf/${GDKPIXBUF_VERSION_SHORT}"
 if download_step; then
-    download "$GDKPIXBUF_SITE" "$GDKPIXBUF_TAR"
+    download "$GDKPIXBUF_SITE" "$GDKPIXBUF_TAR" "$GDKPIXBUF_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/gdk-pixbuf-2.0.pc" ] || [ "$(pkg-config --modversion gdk-pixbuf-2.0)" != "$GDKPIXBUF_VERSION" ]; }; }; then
     start_build

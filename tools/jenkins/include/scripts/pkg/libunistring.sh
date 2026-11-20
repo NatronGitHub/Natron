@@ -6,9 +6,10 @@ LIBUNISTRING_VERSION=1.5
 LIBUNISTRING_VERSION_HEX=0x010500
 #LIBUNISTRING_VERSION_SHORT=${LIBUNISTRING_VERSION%.*}
 LIBUNISTRING_TAR="libunistring-${LIBUNISTRING_VERSION}.tar.xz"
+LIBUNISTRING_SHA256=fe89007a8a414ae4790b816b86859e877d3ab135db3c37f06541ff7e85ac344b
 LIBUNISTRING_SITE="https://ftp.gnu.org/gnu/libunistring"
 if download_step; then
-    download "$LIBUNISTRING_SITE" "$LIBUNISTRING_TAR"
+    download "$LIBUNISTRING_SITE" "$LIBUNISTRING_TAR" "$LIBUNISTRING_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/include/unistring/version.h" ] || ! fgrep "${LIBUNISTRING_VERSION_HEX}" "$SDK_HOME/include/unistring/version.h" &>/dev/null; }; }; then
     start_build

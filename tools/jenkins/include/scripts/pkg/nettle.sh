@@ -7,9 +7,10 @@ NETTLE_VERSION=3.10.2
 NETTLE_VERSION_SHORT=${NETTLE_VERSION%.*} # egg 3.7.3
 #NETTLE_VERSION_SHORT=${NETTLE_VERSION} # egg 3.8
 NETTLE_TAR="nettle-${NETTLE_VERSION}.tar.gz"
+NETTLE_SHA256=fe9ff51cb1f2abb5e65a6b8c10a92da0ab5ab6eaf26e7fc2b675c45f1fb519b5
 NETTLE_SITE="https://ftp.gnu.org/gnu/nettle"
 if download_step; then
-    download "$NETTLE_SITE" "$NETTLE_TAR"
+    download "$NETTLE_SITE" "$NETTLE_TAR" "$NETTLE_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/nettle.pc" ] || [ "$(pkg-config --modversion nettle)" != "$NETTLE_VERSION" ]; }; }; then
     start_build

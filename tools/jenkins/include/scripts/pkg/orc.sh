@@ -5,9 +5,10 @@
 #ORC_VERSION=0.4.29 # last version before meson
 ORC_VERSION=0.4.44 # 0.4.30 and later use meson to build
 ORC_TAR="orc-${ORC_VERSION}.tar.xz"
-ORC_SITE="http://gstreamer.freedesktop.org/src/orc"
+ORC_SHA256=4aeb97aea2b58224029dc2b23d7d064cfa990cb4fb8c4da440bcbe9c95bc5d2d
+ORC_SITE="https://gstreamer.freedesktop.org/src/orc"
 if download_step; then
-    download "$ORC_SITE" "$ORC_TAR"
+    download "$ORC_SITE" "$ORC_TAR" "$ORC_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/orc-0.4.pc" ] || [ "$(pkg-config --modversion orc-0.4)" != "$ORC_VERSION" ]; }; }; then
     start_build

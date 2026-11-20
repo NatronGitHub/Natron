@@ -7,10 +7,11 @@
 BOOST_VERSION=1.90.0
 BOOST_LIB_VERSION=$(echo "${BOOST_VERSION//./_}" | sed -e 's/_0$//')
 BOOST_TAR="boost_${BOOST_VERSION//./_}.tar.bz2"
+BOOST_SHA256=49551aff3b22cbc5c5a9ed3dbc92f0e23ea50a0f7325b0d198b705e8ee3fc305
 # boostorg.jfrog.io is dead (it now serves an HTML page)
 BOOST_SITE="https://archives.boost.io/release/${BOOST_VERSION}/source"
 if download_step; then
-    download "$BOOST_SITE" "$BOOST_TAR"
+    download "$BOOST_SITE" "$BOOST_TAR" "$BOOST_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libboost_atomic.so" ] || ! fgrep "define BOOST_LIB_VERSION \"${BOOST_LIB_VERSION}\"" "$SDK_HOME/include/boost/version.hpp" &>/dev/null ; }; }; then
     start_build

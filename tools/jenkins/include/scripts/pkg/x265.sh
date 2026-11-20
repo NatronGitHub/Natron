@@ -8,9 +8,10 @@
 X265_VERSION=4.2
 X265_MODVERSION=4.2
 X265_TAR="x265_${X265_VERSION}.tar.gz"
+X265_SHA256=40b1ea0453e0309f0eba934e0ddf533f8f6295966679e8894e8f1c1c8d5e1210
 X265_SITE="https://bitbucket.org/multicoreware/x265_git/downloads"
 if download_step; then
-    download "$X265_SITE" "$X265_TAR"
+    download "$X265_SITE" "$X265_TAR" "$X265_SHA256"
 fi
 if build_step && { force_build || { [ "${REBUILD_X265:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/lib/libx265* || true

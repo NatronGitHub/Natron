@@ -4,10 +4,11 @@
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/libvpx.html
 LIBVPX_VERSION=1.17.0
 LIBVPX_TAR="libvpx-${LIBVPX_VERSION}.tar.gz"
+LIBVPX_SHA256=1020f184046187baa2985dbde38e0691f49c44088bca7a1842b0236c6081dc0a
 #LIBVPX_SITE=http://storage.googleapis.com/downloads.webmproject.org/releases/webm
 if download_step; then
     #download "$LIBVPX_SITE" "$LIBVPX_TAR"
-    download_github webmproject libvpx "${LIBVPX_VERSION}" v "${LIBVPX_TAR}"
+    download_github webmproject libvpx "${LIBVPX_VERSION}" v "${LIBVPX_TAR}" "$LIBVPX_SHA256"
 fi
 if build_step && { force_build || { [ "${REBUILD_LIBVPX:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/lib/libvpx* || true

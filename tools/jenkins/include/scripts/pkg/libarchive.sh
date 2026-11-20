@@ -4,10 +4,11 @@
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libarchive.html
 LIBARCHIVE_VERSION=3.8.11
 LIBARCHIVE_TAR="libarchive-${LIBARCHIVE_VERSION}.tar.xz"
+LIBARCHIVE_SHA256=a3dc0872b1b39da34dc18ef1b944f0f11ffd37425d70ae04be679279f1cf43d2
 #LIBARCHIVE_SITE="http://www.libarchive.org/downloads" # up to 3.3.3
 LIBARCHIVE_SITE="https://github.com/libarchive/libarchive/releases/download/v${LIBARCHIVE_VERSION}"
 if download_step; then
-    download "$LIBARCHIVE_SITE" "$LIBARCHIVE_TAR"
+    download "$LIBARCHIVE_SITE" "$LIBARCHIVE_TAR" "$LIBARCHIVE_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libarchive.pc" ] || [ "$(pkg-config --modversion libarchive)" != "$LIBARCHIVE_VERSION" ]; }; }; then
     start_build

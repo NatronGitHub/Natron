@@ -3,9 +3,10 @@
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/flac.html
 FLAC_VERSION=1.5.0
 FLAC_TAR="flac-${FLAC_VERSION}.tar.xz"
+FLAC_SHA256=f2c1c76592a82ffff8413ba3c4a1299b6c7ab06c734dee03fd88630485c2b920
 FLAC_SITE="https://downloads.xiph.org/releases/flac"
 if download_step; then
-    download "$FLAC_SITE" "$FLAC_TAR"
+    download "$FLAC_SITE" "$FLAC_TAR" "$FLAC_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/flac.pc" ] || [ "$(pkg-config --modversion flac)" != "$FLAC_VERSION" ]; }; }; then
     start_build

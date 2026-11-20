@@ -10,9 +10,10 @@ if $WITH_MARIADB; then
 MARIADB_VERSION=10.6.28
 
 MARIADB_TAR="mariadb-${MARIADB_VERSION}.tar.gz"
-MARIADB_SITE="http://archive.mariadb.org/mariadb-${MARIADB_VERSION}/source"
+MARIADB_SHA256=13d9330f3120c739757b215a3220a9c9e2ddf3c3c1b8beff5cd43942868f3d72
+MARIADB_SITE="https://archive.mariadb.org/mariadb-${MARIADB_VERSION}/source"
 if download_step; then
-    download "$MARIADB_SITE" "$MARIADB_TAR"
+    download "$MARIADB_SITE" "$MARIADB_TAR" "$MARIADB_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/mariadb_config" ] || [ "$("${SDK_HOME}/bin/mariadb_config" --version)" != "$MARIADB_VERSION" ] ; }; }; then
     start_build

@@ -5,6 +5,7 @@
 X264_VERSION=20250815
 X264_VERSION_PKG=0.165.x # fgrep X264_BUILD x264.h
 X264_TAR="x264-${X264_VERSION}.tar.xz"
+X264_SHA256=eb9c8febcf4889d01a4fd97f67a9bec74981a67c89d04e492b74e81edd720031
 X264_SITE="https://anduin.linuxfromscratch.org/BLFS/x264"
 
 #X264_VERSION=20190815-2245-stable
@@ -12,7 +13,7 @@ X264_SITE="https://anduin.linuxfromscratch.org/BLFS/x264"
 #X264_TAR="x264-snapshot-${X264_VERSION}.tar.bz2"
 #X264_SITE="https://download.videolan.org/x264/snapshots"
 if download_step; then
-    download "$X264_SITE" "$X264_TAR"
+    download "$X264_SITE" "$X264_TAR" "$X264_SHA256"
 fi
 if build_step && { force_build || { [ "${REBUILD_X264:-}" = "1" ]; }; }; then
     REBUILD_FFMPEG=1

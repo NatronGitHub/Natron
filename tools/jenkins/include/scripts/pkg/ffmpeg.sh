@@ -6,9 +6,10 @@ FFMPEG_VERSION=9.0.2
 # see https://ffmpeg.org/download.html
 FFMPEG_VERSION_LIBAVCODEC=63.1.102
 FFMPEG_TAR="ffmpeg-${FFMPEG_VERSION}.tar.xz"
+FFMPEG_SHA256=8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
 FFMPEG_SITE="https://ffmpeg.org/releases"
 if download_step; then
-    download "$FFMPEG_SITE" "$FFMPEG_TAR"
+    download "$FFMPEG_SITE" "$FFMPEG_TAR" "$FFMPEG_SHA256"
 fi
 if build_step && { force_build || { [ "${REBUILD_FFMPEG:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/ffmpeg-* || true

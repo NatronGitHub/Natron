@@ -4,9 +4,10 @@
 # see https://github.com/strukturag/libheif/releases
 LIBHEIF_VERSION=1.23.7
 LIBHEIF_TAR="libheif-${LIBHEIF_VERSION}.tar.gz"
+LIBHEIF_SHA256=f7483e818503ea6224c8863e4a56ac02c7089021a98472c811c12aa19faf2475
 LIBHEIF_SITE="https://github.com/strukturag/libheif/releases/download/v${LIBHEIF_VERSION}"
 if download_step; then
-    download "$LIBHEIF_SITE" "$LIBHEIF_TAR"
+    download "$LIBHEIF_SITE" "$LIBHEIF_TAR" "$LIBHEIF_SHA256"
     #download_github strukturag libheif "$LIBHEIF_VERSION" v "$LIBHEIF_TAR"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libheif.pc" ] || [ "$(pkg-config --modversion libheif)" != "$LIBHEIF_VERSION" ]; }; }; then

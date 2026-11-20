@@ -4,9 +4,10 @@
 # see https://code.videolan.org/videolan/dav1d/-/releases
 DAV1D_VERSION=1.5.4
 DAV1D_TAR="dav1d-${DAV1D_VERSION}.tar.bz2"
+DAV1D_SHA256=2abfb0c89212e6e4733a54e0ae509ec00a5b845a6360946f918806e14aedb011
 DAV1D_SITE="https://code.videolan.org/videolan/dav1d/-/archive/${DAV1D_VERSION}"
 if download_step; then
-    download "$DAV1D_SITE" "$DAV1D_TAR"
+    download "$DAV1D_SITE" "$DAV1D_TAR" "$DAV1D_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/dav1d.pc" ] || [ "$(pkg-config --modversion dav1d)" != "$DAV1D_VERSION" ]; }; }; then
     start_build

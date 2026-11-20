@@ -4,10 +4,11 @@
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/harfbuzz.html
 HARFBUZZ_VERSION=15.1.0
 HARFBUZZ_TAR="harfbuzz-${HARFBUZZ_VERSION}.tar.xz"
+HARFBUZZ_SHA256=0fc7c565443a5f4be7da65ac5ee5bd737d9b158dc908708b7689a0a5796b0c8d
 #HARFBUZZ_SITE="https://www.freedesktop.org/software/harfbuzz/release"
 HARFBUZZ_SITE="https://github.com/harfbuzz/harfbuzz/releases/download/${HARFBUZZ_VERSION}"
 if download_step; then
-    download "$HARFBUZZ_SITE" "$HARFBUZZ_TAR"
+    download "$HARFBUZZ_SITE" "$HARFBUZZ_TAR" "$HARFBUZZ_SHA256"
 fi
 if build_step && { force_build || { [ "${REBUILD_HARFBUZZ:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME/lib/libharfbuzz*" "$SDK_HOME/include/harfbuzz" "$SDK_HOME/lib/pkgconfig/"*harfbuzz* || true

@@ -13,9 +13,10 @@ GLIB_VERSION=2.88.3 # requires meson, but also a recent version of binutils
 #fi
 GLIB_VERSION_SHORT=${GLIB_VERSION%.*}
 GLIB_TAR="glib-${GLIB_VERSION}.tar.xz"
+GLIB_SHA256=ab24d24e698dfa1e408b7bcdb508f4aafc906185a8b8ce72fdf79bbbdc9b383b
 GLIB_SITE="https://download.gnome.org/sources/glib/${GLIB_VERSION_SHORT}"
 if download_step; then
-    download "$GLIB_SITE" "$GLIB_TAR"
+    download "$GLIB_SITE" "$GLIB_TAR" "$GLIB_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/glib-2.0.pc" ] || [ "$(pkg-config --modversion glib-2.0)" != "$GLIB_VERSION" ]; }; }; then
     start_build

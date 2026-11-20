@@ -4,9 +4,10 @@
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libwebp.html
 WEBP_VERSION=1.6.0
 WEBP_TAR="libwebp-${WEBP_VERSION}.tar.gz"
+WEBP_SHA256=e4ab7009bf0629fd11982d4c2aa83964cf244cffba7347ecd39019a9e38c4564
 WEBP_SITE="https://storage.googleapis.com/downloads.webmproject.org/releases/webp"
 if download_step; then
-    download "$WEBP_SITE" "$WEBP_TAR"
+    download "$WEBP_SITE" "$WEBP_TAR" "$WEBP_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libwebp.pc" ] || [ "$(pkg-config --modversion libwebp)" != "$WEBP_VERSION" ]; }; }; then
     start_build

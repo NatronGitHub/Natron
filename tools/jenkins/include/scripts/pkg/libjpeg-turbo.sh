@@ -6,9 +6,10 @@ LIBJPEGTURBO_VERSION=3.2.1
 LIBJPEGTURBO_VERSION_MAJOR=3 # ${LIBJPEGTURBO_VERSION%.*.*} # works for 2.1.5, not for 2.1.5.1
 
 LIBJPEGTURBO_TAR="libjpeg-turbo-${LIBJPEGTURBO_VERSION}.tar.gz"
+LIBJPEGTURBO_SHA256=c27ad72a68da151177929aa969ae773a2da5ac2af9ce946079314fdac8cece7f
 LIBJPEGTURBO_SITE="https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/${LIBJPEGTURBO_VERSION}"
 if download_step; then
-    download "$LIBJPEGTURBO_SITE" "$LIBJPEGTURBO_TAR"
+    download "$LIBJPEGTURBO_SITE" "$LIBJPEGTURBO_TAR" "$LIBJPEGTURBO_SHA256"
 fi
 #if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libturbojpeg.so.0.${LIBJPEGTURBO_VERSION_MAJOR}.0" ]; }; }; then
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libturbojpeg.pc" ] || [ "$(pkg-config --modversion libturbojpeg)" != "$LIBJPEGTURBO_VERSION" ]; }; }; then

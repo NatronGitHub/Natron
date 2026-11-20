@@ -5,11 +5,12 @@
 SHAREDMIMEINFO_VERSION=2.5.1
 #SHAREDMIMEINFO_VERSION=2.1 # requires docbook-xml. Warning: SHAREDMIMEINFO_SITE changes with every release
 SHAREDMIMEINFO_TAR="shared-mime-info-${SHAREDMIMEINFO_VERSION}.tar.bz2"
+SHAREDMIMEINFO_SHA256=b75b420da9b0be9a3d99b1bee6ed87957b56ab54583ac1a97fbd0dc98ddddb25
 #SHAREDMIMEINFO_SITE="http://freedesktop.org/~hadess"
 SHAREDMIMEINFO_SITE="https://gitlab.freedesktop.org/xdg/shared-mime-info/-/archive/${SHAREDMIMEINFO_VERSION}"
 #SHAREDMIMEINFO_SITE="https://gitlab.freedesktop.org/xdg/shared-mime-info/-/archive/${SHAREDMIMEINFO_VERSION}" # 2.1
 if download_step; then
-    download "$SHAREDMIMEINFO_SITE" "$SHAREDMIMEINFO_TAR"
+    download "$SHAREDMIMEINFO_SITE" "$SHAREDMIMEINFO_TAR" "$SHAREDMIMEINFO_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/share/pkgconfig/shared-mime-info.pc" ] || [ "$(pkg-config --modversion shared-mime-info)" != "$SHAREDMIMEINFO_VERSION" ]; }; }; then
     start_build

@@ -52,8 +52,9 @@ else
 # see https://github.com/AcademySoftwareFoundation/Imath/releases
 IMATH_VERSION=3.2.3
 IMATH_TAR="Imath-${IMATH_VERSION}.tar.gz"
+IMATH_SHA256=e10c12b3f21f45bf08e09d4215d9c7691368d747beebd840de0b6fefed2df9f8
 if download_step; then
-    download_github AcademySoftwareFoundation Imath "${IMATH_VERSION}" v "${IMATH_TAR}"
+    download_github AcademySoftwareFoundation Imath "${IMATH_VERSION}" v "${IMATH_TAR}" "$IMATH_SHA256"
 fi
 if build_step && { force_build || { [ "${REBUILD_EXR:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/lib/libImath* "$SDK_HOME"/include/Imath "$SDK_HOME"/lib/cmake/Imath || true

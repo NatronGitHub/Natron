@@ -4,9 +4,10 @@
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/fribidi.html
 FRIBIDI_VERSION=1.0.18
 FRIBIDI_TAR="fribidi-${FRIBIDI_VERSION}.tar.xz"
+FRIBIDI_SHA256=1de5e8073d035388b71d0b2d452b1da1f8caeea8a7702997b401fe1b6250727f
 FRIBIDI_SITE="https://github.com/fribidi/fribidi/releases/download/v${FRIBIDI_VERSION}"
 if download_step; then
-    download "$FRIBIDI_SITE" "$FRIBIDI_TAR"
+    download "$FRIBIDI_SITE" "$FRIBIDI_TAR" "$FRIBIDI_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/fribidi.pc" ] || [ "$(pkg-config --modversion fribidi)" != "$FRIBIDI_VERSION" ]; }; }; then
     REBUILD_FFMPEG=1

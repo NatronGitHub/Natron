@@ -3,8 +3,10 @@
 # Install ImageMagick6
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/imagemagick6.html
 MAGICK_VERSION=6.9.13-59
+MAGICK_SHA256=867f2194939459047475475f7c15413e46c529acb57f779080298901508cc4e3
 if [ "${CENTOS:-0}" = 6 ] && [ -z "${DTS+x}" ]; then
     MAGICK_VERSION=6.9.10-78 # 6.9.10-79 and later fail to compile on CentOS6 with "undefined reference to `aligned_alloc'"
+    MAGICK_SHA256= # (not checked)
 fi
 MAGICK_VERSION_SHORT=${MAGICK_VERSION%-*}
 #MAGICK_TAR="ImageMagick6-${MAGICK_VERSION}.tar.gz"
@@ -14,7 +16,7 @@ MAGICK_TAR="ImageMagick6-${MAGICK_VERSION}.tar.gz"
 #MAGICK_TAR="ImageMagick-${MAGICK_VERSION}.tar.xz"
 #MAGICK_SITE="https://imagemagick.org/archive/releases"
 if download_step; then
-    download_github ImageMagick ImageMagick6 "$MAGICK_VERSION" "" "$MAGICK_TAR"
+    download_github ImageMagick ImageMagick6 "$MAGICK_VERSION" "" "$MAGICK_TAR" "$MAGICK_SHA256"
 fi
 if build_step && { force_build || { [ "${REBUILD_MAGICK:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/include/ImageMagick-6/ "$SDK_HOME"/lib/libMagick* "$SDK_HOME"/share/ImageMagick-6/ "$SDK_HOME"/lib/pkgconfig/{Image,Magick}* "$SDK_HOME"/magick7 || true

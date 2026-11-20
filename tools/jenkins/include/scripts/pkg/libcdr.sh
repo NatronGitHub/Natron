@@ -4,9 +4,10 @@
 # see https://dev-www.libreoffice.org/src/libcdr/
 LIBCDR_VERSION=0.1.8
 LIBCDR_TAR="libcdr-${LIBCDR_VERSION}.tar.xz"
-LIBCDR_SITE="http://dev-www.libreoffice.org/src/libcdr"
+LIBCDR_SHA256=ced677c8300b29c91d3004bb1dddf0b99761bf5544991c26c2ee8f427e87193c
+LIBCDR_SITE="https://dev-www.libreoffice.org/src/libcdr"
 if download_step; then
-    download "$LIBCDR_SITE" "$LIBCDR_TAR"
+    download "$LIBCDR_SITE" "$LIBCDR_TAR" "$LIBCDR_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libcdr-0.1.pc" ] || [ "$(pkg-config --modversion libcdr-0.1)" != "$LIBCDR_VERSION" ]; }; }; then
     start_build

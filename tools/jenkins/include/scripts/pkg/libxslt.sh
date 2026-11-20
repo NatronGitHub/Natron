@@ -6,9 +6,10 @@ LIBXSLT_VERSION=1.1.45
 LIBXSLT_VERSION_SHORT=${LIBXSLT_VERSION%.*}
 
 LIBXSLT_TAR="libxslt-${LIBXSLT_VERSION}.tar.xz"
+LIBXSLT_SHA256=9acfe68419c4d06a45c550321b3212762d92f41465062ca4ea19e632ee5d216e
 LIBXSLT_SITE="https://download.gnome.org/sources/libxslt/${LIBXSLT_VERSION_SHORT}"
 if download_step; then
-    download "$LIBXSLT_SITE" "$LIBXSLT_TAR"
+    download "$LIBXSLT_SITE" "$LIBXSLT_TAR" "$LIBXSLT_SHA256"
 fi
 if build_step && { force_build || { [ "${REBUILD_XSLT:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/include/libxslt "$SDK_HOME"/lib/libxsl* "$SDK_HOME"/lib/pkgconfig/libxslt* || true

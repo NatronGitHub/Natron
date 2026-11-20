@@ -4,9 +4,10 @@
 # see https://github.com/strukturag/libde265/releases
 LIBDE265_VERSION=1.1.1
 LIBDE265_TAR="libde265-${LIBDE265_VERSION}.tar.gz"
+LIBDE265_SHA256=fd48a927e94ed74fc7ce8829d222b9d8599fcbfe8b6448ba66705babc56ab219
 LIBDE265_SITE="https://github.com/strukturag/libde265/releases/download/v${LIBDE265_VERSION}"
 if download_step; then
-    download "$LIBDE265_SITE" "$LIBDE265_TAR"
+    download "$LIBDE265_SITE" "$LIBDE265_TAR" "$LIBDE265_SHA256"
     #download_github strukturag libde265 "$LIBDE265_VERSION" v "$LIBDE265_TAR"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libde265.pc" ] || [ "$(pkg-config --modversion libde265)" != "$LIBDE265_VERSION" ]; }; }; then

@@ -5,8 +5,9 @@
 OPENJPEG2_VERSION=2.5.4
 OPENJPEG2_VERSION_SHORT=${OPENJPEG2_VERSION%.*}
 OPENJPEG2_TAR="openjpeg-${OPENJPEG2_VERSION}.tar.gz"
+OPENJPEG2_SHA256=a695fbe19c0165f295a8531b1e4e855cd94d0875d2f88ec4b61080677e27188a
 if download_step; then
-    download_github uclouvain openjpeg "${OPENJPEG2_VERSION}" v "${OPENJPEG2_TAR}"
+    download_github uclouvain openjpeg "${OPENJPEG2_VERSION}" v "${OPENJPEG2_TAR}" "$OPENJPEG2_SHA256"
 fi
 if build_step && { force_build || { [ "${REBUILD_OPENJPEG:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/lib/libopenjp* || true

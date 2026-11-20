@@ -4,9 +4,10 @@
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/xz.html
 XZ_VERSION=5.8.4
 XZ_TAR="xz-${XZ_VERSION}.tar.bz2"
+XZ_SHA256=3340ae48f88665abc78d71dc43446fb3f7e70b48fd59844ac0e14958cef6e00b
 XZ_SITE="https://github.com/tukaani-project/xz/releases/download/v${XZ_VERSION}"
 if download_step; then
-    download "$XZ_SITE" "$XZ_TAR"
+    download "$XZ_SITE" "$XZ_TAR" "$XZ_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/liblzma.pc" ] || [ "$(pkg-config --modversion liblzma)" != "$XZ_VERSION" ]; }; }; then
     start_build

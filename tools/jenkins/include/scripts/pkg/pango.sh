@@ -6,9 +6,10 @@
 PANGO_VERSION=1.58.2 # requires meson
 PANGO_VERSION_SHORT=${PANGO_VERSION%.*}
 PANGO_TAR="pango-${PANGO_VERSION}.tar.xz"
-PANGO_SITE="http://ftp.gnome.org/pub/GNOME/sources/pango/${PANGO_VERSION_SHORT}"
+PANGO_SHA256=342385b6ca3b7c73455d7c80a13b7dbe4489e00bc3bd4c5bd6ed4dce421e374a
+PANGO_SITE="https://download.gnome.org/sources/pango/${PANGO_VERSION_SHORT}"
 if download_step; then
-    download "$PANGO_SITE" "$PANGO_TAR"
+    download "$PANGO_SITE" "$PANGO_TAR" "$PANGO_SHA256"
 fi
 if build_step && { force_build || { [ "${REBUILD_PANGO:-}" = "1" ]; }; }; then
     rm -rf $SDK_HOME/include/pango* $SDK_HOME/lib/libpango* $SDK_HOME/lib/pkgconfig/pango* || true

@@ -4,9 +4,10 @@
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/poppler.html
 POPPLER_VERSION=26.02.0
 POPPLER_TAR="poppler-${POPPLER_VERSION}.tar.xz"
+POPPLER_SHA256=dded8621f7b2f695c91063aab1558691c8418374cd583501e89ed39487e7ab77
 POPPLER_SITE="https://poppler.freedesktop.org"
 if download_step; then
-    download "$POPPLER_SITE" "$POPPLER_TAR"
+    download "$POPPLER_SITE" "$POPPLER_TAR" "$POPPLER_SHA256"
 fi
 if build_step && { force_build || { [ "${REBUILD_POPPLER:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME/include/poppler" "$SDK_HOME/lib/"libpoppler* "$SDK_HOME/lib/pkgconfig/"*poppler* || true 

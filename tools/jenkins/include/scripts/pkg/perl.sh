@@ -4,9 +4,10 @@
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/perl.html
 PERL_VERSION=5.36.3
 PERL_TAR="perl-${PERL_VERSION}.tar.gz"
-PERL_SITE="http://www.cpan.org/src/5.0"
+PERL_SHA256=f2a1ad88116391a176262dd42dfc52ef22afb40f4c0e9810f15d561e6f1c726a
+PERL_SITE="https://www.cpan.org/src/5.0"
 if download_step; then
-    download "$PERL_SITE" "$PERL_TAR"
+    download "$PERL_SITE" "$PERL_TAR" "$PERL_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/perl" ]; }; }; then
     start_build
