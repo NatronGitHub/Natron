@@ -95,6 +95,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #define USER_ROI_CLICK_TOLERANCE 8.f
 
 #define PERSISTENT_MESSAGE_LEFT_OFFSET_PIXELS 20
+// at most that many node messages at the top of the viewer (#459)
+#define NATRON_VIEWER_MAX_PERSISTENT_MESSAGES 3
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -3476,6 +3478,17 @@ ViewerGL::updatePersistentMessageToWidth(int w)
 
     assert(_imp->_textFont);
     QFontMetrics fm(*_imp->_textFont);
+
+    // Each node with an open panel may have a message, which would fill the viewer (#459): show the first
+    // ones only, and say how many are not shown.
+    const int maxMessages = NATRON_VIEWER_MAX_PERSISTENT_MESSAGES;
+    if (allMessages.size() > maxMessages) {
+        int nHidden = allMessages.size() - maxMessages;
+        allMessages.erase( allMessages.begin() + maxMessages, allMessages.end() );
+        allMessages.append( (nHidden == 1) ?
+                            tr("(1 more message is not shown: see the parameters panel of the node.)") :
+                            tr("(%1 more messages are not shown: see the parameters panels of the nodes.)").arg(nHidden) );
+    }
 
     for (int i = 0; i < allMessages.size(); ++i) {
         QStringList wordWrapped = wordWrap( fm, allMessages[i],
