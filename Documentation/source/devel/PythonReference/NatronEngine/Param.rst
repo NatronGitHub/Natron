@@ -382,9 +382,16 @@ Returns the type-name of the parameter.
     :param max: :class:`float`
     :rtype: :class:`float`
 
-Returns a pseudo-random value in the interval \[*min*, *max*\[.
-The value is produced such that for a given parameter it will always be the same for a
-given time on the timeline, so that the value can be reproduced exactly.
+Returns a pseudo-random value in the interval \[*min*, *max*\[: the next value of a sequence
+that belongs to the parameter. Each evaluation of the expression of the parameter starts that
+sequence again from the frame, the dimension and the state of the node and its inputs, so in the
+expression of the parameter itself the value is the same each time a frame is computed.
+Elsewhere (in a script, or when called on another parameter in an expression), the value
+depends on the calls made before: use :func:`random(min,max,time,seed)<NatronEngine.Param.random>`.
+
+The state of the node and its inputs changes after any edit of a parameter of the node or of a
+node upstream, and an undo does not bring the previous values back. Two identical new nodes also
+give different values. The values only stay the same for a saved project that is not modified.
 
 
 .. note::
@@ -409,7 +416,11 @@ function :func:`random(min,max,time,seed)<NatronEngine.Param.random>` instead.
     :rtype: :class:`float`
 
 Same as :func:`random()<NatronEngine.Param.random>` but takes **time** and **seed** in parameters to control
-the value returned by the function. E.g::
+the value returned by the function. The value only depends on *time*, *seed* and the state of the
+node and its inputs, not on the parameter nor on the dimension: with the same *seed*, all the
+parameters and dimensions of a node get the same value. Pass a different *seed* for each of them,
+e.g. ``random(0,1,frame,dimension)`` in the expression of each dimension, plus a different offset
+for each parameter. E.g::
 
     ret = random(0,1,frame,2) - random(0,1,frame,2)
     # ret == 0 always

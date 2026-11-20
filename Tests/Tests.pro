@@ -57,10 +57,12 @@ SOURCES += \
     Curve_Test.cpp \
     DeepGraphRender_Test.cpp \
     DiskCache_Test.cpp \
+    ExpressionSetError_Test.cpp \
     FileSystemModel_Test.cpp \
     Hash64_Test.cpp \
     ImageCache_Test.cpp \
     Image_Test.cpp \
+    KnobDuplicate_Test.cpp \
     KnobExpressionCache_Test.cpp \
     KnobFile_Test.cpp \
     KnobSlave_Test.cpp \
@@ -73,6 +75,7 @@ SOURCES += \
     NodeGroup_Test.cpp \
     NodePresets_Test.cpp \
     NodePreview_Test.cpp \
+    NoDialogs_Test.cpp \
     OfxBytesParam_Test.cpp \
     OfxContexts_Test.cpp \
     OfxCPURenderSupport_Test.cpp \
@@ -91,14 +94,16 @@ SOURCES += \
     OfxOverlayInput_Test.cpp \
     OfxParamInteract_Test.cpp \
     OfxParamUndo_Test.cpp \
-    OfxPluginDeprecated_Test.cpp \
+    OfxPluginObsolete_Test.cpp \
     OfxPluginScan_Test.cpp \
     OfxQuestion_Test.cpp \
     OfxSingleInstance_Test.cpp \
+    OfxSuiteStatus_Test.cpp \
     OfxSyncPrivateData_Test.cpp \
     OfxTestPlugin_Test.cpp \
     OpenGLRenderFailed_Test.cpp \
     OSGLContext_Test.cpp \
+    ParamRandom_Test.cpp \
     PluginGrouping_Test.cpp \
     ProjectAutoSave_Test.cpp \
     PyEffectEquality_Test.cpp \
@@ -107,6 +112,7 @@ SOURCES += \
     RenderThreads_Test.cpp \
     RotoPaint_Test.cpp \
     SequentialRender_Test.cpp \
+    ShuffleAutoConnect_Test.cpp \
     StrUtilsFormat_Test.cpp \
     Tracker_Test.cpp \
     ViewerCache_Test.cpp \
