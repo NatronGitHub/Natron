@@ -11,7 +11,7 @@
 
 - openfx-gmic now groups its nodes under "G'MIC" instead of "GMIC". A PyPlug whose grouping starts with "GMIC/" gets its own "GMIC" toolbar button, next to the "G'MIC" one: change its grouping to "G'MIC/...". The documentation lists both under "G'MIC nodes".
 
-- OpenFX: a plug-in that calls the multithread suite's `multiThread()` from one of its own thread functions now gets `kOfxStatErrExists`, as OFX requires ("This function cannot be called recursively"), instead of a nested run. A plug-in built with the OpenFX Support library that nests an `OFX::MultiThread::Processor` in another one fails to render until it is rebuilt with a Support library that runs the inner processor in the calling thread. No bundled plug-in does this. #1385
+- OpenFX: a plug-in that calls the multithread suite's `multiThread()` from one of its own thread functions now gets `kOfxStatErrExists`, as OFX requires ("This function cannot be called recursively"), instead of a nested run. A plug-in built with the OpenFX Support library that nests an `OFX::MultiThread::Processor` in another one works if its Support library is at NatronGitHub/openfx 66f4231f or later (openfx#199 runs the inner processor in the calling thread); a third-party plug-in binary built with an older Support library that nests processors fails to render. No bundled plug-in nests processors. #1385
 
 ### Changes
 
