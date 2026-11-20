@@ -404,8 +404,14 @@ mkdir -p "${TMP_PORTABLE_DIR}/Plugins"
 cp -a "$SDK_HOME/lib/python${PYVER}" "${TMP_PORTABLE_DIR}/lib/"
 
 
-PYSIDE_PLUGIN_PATH="${TMP_PORTABLE_DIR}/Plugins/PySide2"
-mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide2" "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/shiboken2" "${TMP_PORTABLE_DIR}/Plugins"
+# PySide2/shiboken2 go with Qt5 and PySide6/shiboken6 with Qt6, as in genDllVersions.sh.
+if [ "$QT_VERSION_MAJOR" = 5 ]; then
+    PYSIDE_MAJOR=2
+else
+    PYSIDE_MAJOR="$QT_VERSION_MAJOR"
+fi
+PYSIDE_PLUGIN_PATH="${TMP_PORTABLE_DIR}/Plugins/PySide${PYSIDE_MAJOR}"
+mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide${PYSIDE_MAJOR}" "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/shiboken${PYSIDE_MAJOR}" "${TMP_PORTABLE_DIR}/Plugins"
 
 rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"/{test,config,config-"${PYVER}"m}
 
