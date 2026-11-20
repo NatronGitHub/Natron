@@ -103,7 +103,7 @@ jobs:
             qt5-qmake qtbase5-dev qtdeclarative5-dev \
             python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy \
             libwayland-dev libwayland-client0 libwayland-egl1 \
-            extra-cmake-modules clang ccache
+            extra-cmake-modules clang ccache gdb mesa-utils
 
       - name: Download OpenColorIO-Configs
         run: |
@@ -161,7 +161,12 @@ jobs:
         continue-on-error: true
         run: |
           cd build
-          OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
+          # DIAGNOSIS of #1466 (temporary branch): backtrace of the SIGFPE of Natron --test under Xvfb
+          export OFX_PLUGIN_PATH=$PWD/../Plugins:$PWD/Tests/OfxPlugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio
+          glxinfo -B || true
+          gdb -batch -ex run -ex "info registers" -ex "bt" -ex "thread apply all bt 8" --args App/Natron --test $PWD/../Tests/gui/test_smoke.py 2>&1 | tail -150
+          echo "=== plain Natron (no --test), 20 s"
+          timeout 20 gdb -batch -ex run -ex bt --args App/Natron --no-settings 2>&1 | tail -60 || true
 
       - name: Upload ${{ matrix.os }} ${{ matrix.config }} Test Log artifacts
         if: always()
@@ -175,11 +180,8 @@ jobs:
         run: exit 1
 
   win-test:
+    if: false
     needs: changes
-    if: >-
-      !cancelled() && (
-      (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
-      (github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
     timeout-minutes: 240
     name: Test ${{ matrix.os }} UCRT64 Python ${{ matrix.python-version }} ${{ matrix.config }}
     runs-on: ${{ matrix.os }}
@@ -356,11 +358,7 @@ jobs:
     # requires Linux and Windows; this job is informative. Nightly, it runs if the branch changed,
     # whatever the Linux and Windows results.
     needs: [changes, unix_test, win-test]
-    if: >-
-      !cancelled() && (
-      (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
-      (github.event_name != 'schedule' && needs.unix_test.result == 'success' && needs.win-test.result == 'success' &&
-       (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
+    if: false
     name: Test macos-15 arm64 MacPorts Python 3.11 ${{ matrix.config }}
     runs-on: macos-15
     strategy:
