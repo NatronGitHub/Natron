@@ -167,7 +167,7 @@ jobs:
           # DIAGNOSIS of #1466 (temporary branch): backtrace of the SIGFPE of Natron --test under Xvfb
           export OFX_PLUGIN_PATH=$PWD/../Plugins:$PWD/Tests/OfxPlugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio
           glxinfo -B || true
-          NATRON_GUI_TESTS=1 NATRON_TESTS_OFX_PLUGIN_BINARY=$(ls $PWD/Tests/OfxPlugins/NatronTestPlugin.ofx.bundle/Contents/*/NatronTestPlugin.ofx) gdb -batch -ex run -ex "bt 40" -ex "info threads" --args App/Natron --test $PWD/../Tests/gui/test_smoke.py 2>&1 | grep -v "^\[New Thread\|^\[Thread" | tail -120 || true
+          for t in test_overlay_transform test_smoke; do echo "=== gdb $t"; NATRON_GUI_TESTS=1 NATRON_DISK_CACHE_PATH=$PWD/Tests/gui-tests-cache NATRON_TESTS_OFX_PLUGIN_BINARY=$(ls $PWD/Tests/OfxPlugins/NatronTestPlugin.ofx.bundle/Contents/*/NatronTestPlugin.ofx) gdb -batch -ex "handle SIGFPE stop" -ex run -ex "bt 40" -ex "info threads" -ex "thread apply all bt 8" --args App/Natron --test $PWD/../Tests/gui/$t.py 2>&1 | grep -v "^\[New Thread\|^\[Thread" | tail -250 || true; done
           NATRON_GUI_TESTS=1 ctest -L gui --output-on-failure || true
           echo "=== plain Natron (no --test), 20 s"
           timeout 20 gdb -batch -ex run -ex bt --args App/Natron --no-settings 2>&1 | tail -60 || true
