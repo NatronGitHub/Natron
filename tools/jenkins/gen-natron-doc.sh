@@ -57,6 +57,12 @@ if "$GENDOCS"; then
         #SPHINX_BIN="sphinx-build-${PYVER}"
         SPHINX_BIN="sphinx-build" # select with 'sudo port select --set sphinx py37-sphinx'
     fi
+    # The OpenFX Programming Guide and Reference (Developers Guide) add about
+    # 10 MB: leave them out of the bundled documentation (they are online).
+    # The diagrams are drawn only if sphinxcontrib-mermaid is installed and
+    # Documentation/node_modules exists (npm ci); otherwise they are shown as
+    # source.
+    export NATRON_DOCS_OPENFX=0
     $SPHINX_BIN -b html source html
     cp -R html "$RES_DIR/docs/"
 fi

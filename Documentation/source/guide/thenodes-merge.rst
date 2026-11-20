@@ -4,7 +4,7 @@
 Merge Nodes Menu
 ================
    
-These are the nodes located in the layered paper sheets icon of the toolbar.
+These nodes are in the **Merge** menu of the toolbar.
    
 .. toctree::
       :maxdepth: 2

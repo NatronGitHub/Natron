@@ -42,7 +42,7 @@
 #include <QWaitCondition>
 #include <QTextStream>
 #include <QFile>
-#include <QRegExp>
+#include <QRandomGenerator>
 
 #include <ofxNatron.h>
 
@@ -120,7 +120,33 @@ using std::shared_ptr;
 // protect local classes in anonymous namespace
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
+// Advance the knobs age after a change of the node's parameters. knobsAgeMutex must be locked for writing.
+//
+// The age is mixed into the node hash, which keys the RAM, disk and viewer caches. The disk and viewer caches
+// persist across sessions, and the age is saved in the project. Simply incrementing the loaded age would reproduce,
+// in a new session, ages (and hashes) that were already reached in an earlier session (for example one that was
+// closed without saving), but with different parameter values: the persistent caches would then return images
+// computed with those other values (#1124). The first change after a load thus jumps to a random 64-bit age, and the
+// following changes increment it, so that hashes stay reproducible for the saved state of a project (its cached
+// images remain usable after reopening it) but are unique to the session as soon as a parameter changes.
+void
+advanceKnobsAge(U64* age,
+                bool* isUniqueToSession)
+{
+    if (*isUniqueToSession) {
+        ++*age;
+    } else {
+        *age = QRandomGenerator::global()->generate64();
+        *isUniqueToSession = true;
+    }
 
+    ///if the age of an effect somehow reaches the maximum age (will never happen)
+    ///handle it by clearing the cache and resetting the age to 0.
+    if ( *age == std::numeric_limits<U64>::max() ) {
+        appPTR->clearAllCaches();
+        *age = 0;
+    }
+}
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
@@ -271,14 +297,26 @@ Node::setRenderThreadSafety(RenderSafetyEnum safety)
 }
 
 RenderSafetyEnum
-Node::getCurrentRenderThreadSafety() const
+Node::applyMultiThreadingPreference(RenderSafetyEnum pluginSafety,
+                                    bool multiThreadingEnabled)
 {
-    if ( !isMultiThreadingSupportEnabledForPlugin() ) {
+    if ( !multiThreadingEnabled && (pluginSafety > eRenderSafetyInstanceSafe) ) {
         return eRenderSafetyInstanceSafe;
     }
-    QMutexLocker k(&_imp->pluginsPropMutex);
 
-    return _imp->currentThreadSafety;
+    return pluginSafety;
+}
+
+RenderSafetyEnum
+Node::getCurrentRenderThreadSafety() const
+{
+    RenderSafetyEnum safety;
+    {
+        QMutexLocker k(&_imp->pluginsPropMutex);
+        safety = _imp->currentThreadSafety;
+    }
+
+    return applyMultiThreadingPreference( safety, isMultiThreadingSupportEnabledForPlugin() );
 }
 
 void
@@ -308,6 +346,10 @@ Node::getCurrentOpenGLRenderSupport() const
         }
     }
 
+    if ( hasOpenGLContextAttachFailed() ) {
+        return ePluginOpenGLRenderSupportNone;
+    }
+
     if (!getApp()->getProject()->isGPURenderingEnabledInProject()) {
         return ePluginOpenGLRenderSupportNone;
     }
@@ -329,20 +371,55 @@ Node::getCurrentOpenGLRenderSupport() const
     return _imp->currentSupportOpenGLRender;
 }
 
-void
-Node::setCurrentSequentialRenderSupport(SequentialPreferenceEnum support)
+bool
+Node::setOpenGLContextAttachFailed()
+{
+    QMutexLocker k(&_imp->pluginsPropMutex);
+    bool wasSet = _imp->openGLContextAttachFailed;
+
+    _imp->openGLContextAttachFailed = true;
+
+    return !wasSet;
+}
+
+bool
+Node::hasOpenGLContextAttachFailed() const
 {
     QMutexLocker k(&_imp->pluginsPropMutex);
 
-    _imp->currentSupportSequentialRender = support;
+    return _imp->openGLContextAttachFailed;
+}
+
+QString
+Node::getOpenGLRenderUnavailableMessage() const
+{
+    if ( !_imp->plugin || (_imp->plugin->getPluginOpenGLRenderSupport() != ePluginOpenGLRenderSupportNeeded) ) {
+        return QString();
+    }
+    QString missingOpenGLError;
+    if ( !appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, &missingOpenGLError) ) {
+        return tr("%1 needs OpenGL rendering, which is not available: %2")
+               .arg( QString::fromUtf8( getLabel_mt_safe().c_str() ) ).arg(missingOpenGLError);
+    }
+    if ( !appPTR->getCurrentSettings()->isOpenGLRenderingEnabled() ) {
+        return tr("%1 needs OpenGL rendering, which is disabled: see Preferences > GPU Rendering, or pass "
+                  "`--opengl enabled` to %2.")
+               .arg( QString::fromUtf8( getLabel_mt_safe().c_str() ) ).arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    }
+    if ( !_imp->plugin->isOpenGLEnabled() ) {
+        return tr("%1 needs OpenGL rendering, which is disabled in the Preferences for this plug-in: please enable it and restart %2.")
+               .arg( QString::fromUtf8( getLabel_mt_safe().c_str() ) ).arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    }
+
+    return QString();
 }
 
 SequentialPreferenceEnum
 Node::getCurrentSequentialRenderSupport() const
 {
-    QMutexLocker k(&_imp->pluginsPropMutex);
-
-    return _imp->currentSupportSequentialRender;
+    // Not cached in refreshDynamicProperties(): an OFX plug-in may set kOfxImageEffectInstancePropSequentialRender on
+    // its instance in any action, and OfxEffectInstance::getSequentialPreference() reads it.
+    return _imp->effect ? _imp->effect->getSequentialPreference() : eSequentialPreferenceNotSequential;
 }
 
 void
@@ -390,6 +467,13 @@ Node::refreshDynamicProperties()
     }
 
 
+    {
+        QMutexLocker k(&_imp->pluginsPropMutex);
+        if (pluginGLSupport != _imp->currentSupportOpenGLRender) {
+            // the instance changed its OpenGL render support: OpenGL may be tried again
+            _imp->openGLContextAttachFailed = false;
+        }
+    }
     setCurrentOpenGLRenderSupport(pluginGLSupport);
     bool tilesSupported = _imp->effect->supportsTiles();
     bool multiResSupported = _imp->effect->supportsMultiResolution();
@@ -397,7 +481,6 @@ Node::refreshDynamicProperties()
     RenderSafetyEnum safety = _imp->effect->renderThreadSafety();
     setRenderThreadSafety(safety);
     setCurrentSupportTiles(multiResSupported && tilesSupported);
-    setCurrentSequentialRenderSupport( _imp->effect->getSequentialPreference() );
     setCurrentCanTransform(canTransform);
 }
 
@@ -1139,6 +1222,12 @@ Node::loadKnob(const KnobIPtr & knob,
             continue;
         }
 
+        // The visibility of the Views parameter of writers is not restored: it follows the format (set
+        // by the plug-in) and the file name (refreshViewsSelectorVisibility()). Projects saved by Natron
+        // 2.5 or older may have it hidden by mistake (#1312).
+        const bool keepSecret = _imp->effect->isWriter() && (knob->getName() == kWriteOIIOParamViewsSelector);
+        const bool wasSecret = knob->getIsSecret();
+
         knob->cloneDefaultValues( serializedKnob.get() );
 
         if (isChoice) {
@@ -1187,6 +1276,10 @@ Node::loadKnob(const KnobIPtr & knob,
                     knob->setEnabled( i, serializedKnob->isEnabled(i) );
                 }
             }
+        }
+
+        if (keepSecret) {
+            knob->setSecret(wasSecret);
         }
 
         if (knob->getName() == kOfxImageEffectFileParamName) {
@@ -1253,6 +1346,8 @@ Node::setKnobsAge(U64 newAge)
         if (changed) {
             _imp->knobsAge = newAge;
         }
+        // newAge comes from a serialization or from the master node: the next change must give a fresh age (#1124)
+        _imp->knobsAgeIsUniqueToSession = false;
     }
     if (changed) {
         Q_EMIT knobsAgeChanged(newAge);
@@ -1265,31 +1360,17 @@ Node::incrementKnobsAge_internal()
 {
     {
         QWriteLocker l(&_imp->knobsAgeMutex);
-        ++_imp->knobsAge;
-
-        ///if the age of an effect somehow reaches the maximum age (will never happen)
-        ///handle it by clearing the cache and resetting the age to 0.
-        if ( _imp->knobsAge == std::numeric_limits<U64>::max() ) {
-            appPTR->clearAllCaches();
-            _imp->knobsAge = 0;
-        }
+        advanceKnobsAge(&_imp->knobsAge, &_imp->knobsAgeIsUniqueToSession);
     }
 }
 
 void
 Node::incrementKnobsAge()
 {
-    U32 newAge;
+    U64 newAge;
     {
         QWriteLocker l(&_imp->knobsAgeMutex);
-        ++_imp->knobsAge;
-
-        ///if the age of an effect somehow reaches the maximum age (will never happen)
-        ///handle it by clearing the cache and resetting the age to 0.
-        if ( _imp->knobsAge == std::numeric_limits<U64>::max() ) {
-            appPTR->clearAllCaches();
-            _imp->knobsAge = 0;
-        }
+        advanceKnobsAge(&_imp->knobsAge, &_imp->knobsAgeIsUniqueToSession);
         newAge = _imp->knobsAge;
     }
     Q_EMIT knobsAgeChanged(newAge);
@@ -2629,6 +2710,14 @@ Node::beginEditKnobs()
 }
 
 void
+Node::endEditKnobs()
+{
+    if (_imp->effect) {
+        _imp->effect->endEditKnobs();
+    }
+}
+
+void
 Node::setEffect(const EffectInstancePtr& effect)
 {
     ////Only called by the main-thread
@@ -2952,7 +3041,7 @@ Node::deactivate(const std::list<NodePtr> & outputsToDisconnect,
         if (dc) {
             int inputNb = output->getInputIndex(this);
             if (inputNb != -1) {
-                _imp->deactivatedState.insert( make_pair(*it, inputNb) );
+                _imp->deactivatedState.push_back( std::make_pair(*it, inputNb) );
 
                 ///reconnect if inputToConnectTo is not null
                 if (inputToConnectTo) {
@@ -2966,6 +3055,10 @@ Node::deactivate(const std::list<NodePtr> & outputsToDisconnect,
 
     // If the effect was doing OpenGL rendering and had context(s) bound, detach them.
     _imp->effect->dettachAllOpenGLContexts();
+
+    // A deactivated (deleted) node has no editor: the GUI also closes its settings panel, and opens it
+    // again (with a new kOfxActionBeginInstanceEdit) if the node is activated again.
+    _imp->effect->endEditKnobs();
 
 
 #if NATRON_VERSION_ENCODED < NATRON_VERSION_ENCODE(3,0,0)
@@ -3072,11 +3165,10 @@ Node::activate(const std::list<NodePtr> & outputsToRestore,
             ///before connecting the outputs to this node, disconnect any link that has been made
             ///between the outputs by the user. This should normally never happen as the undo/redo
             ///stack follow always the same order.
-            NodePtr outputHasInput = output->getInput(it->second);
-            if (outputHasInput) {
-                bool ok = getApp()->getProject()->disconnectNodes(outputHasInput, output);
-                assert(ok);
-                Q_UNUSED(ok);
+            if ( output->getRealInput(it->second) ) {
+                int dc = output->disconnectInput(it->second);
+                assert(dc == it->second);
+                Q_UNUSED(dc);
             }
 
             ///and connect the output to this node
@@ -3300,18 +3392,31 @@ Node::makePreviewImage(SequenceTime time,
     ComputingPreviewSetter_RAII computingPreviewRAII( _imp.get() );
     RectD rod;
     bool isProjectFormat;
-    U64 nodeHash = getHashValue();
-    EffectInstance* effect = 0;
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>( _imp->effect.get() );
-    if (isGroup) {
-        effect = isGroup->getOutputNode(false)->getEffectInstance().get();
-    } else {
-        effect = _imp->effect.get();
-    }
-
     if (!_imp->effect) {
         return false;
     }
+    EffectInstancePtr effect;
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>( _imp->effect.get() );
+    if (isGroup) {
+        // A group renders through its Output node. A group may have no Output node: the user may
+        // have deleted it, or the group is being pasted/duplicated and its sub-graph is not
+        // created yet (see #814). There is nothing to preview then.
+        NodePtr outputNode = isGroup->getOutputNode(false);
+        if (outputNode) {
+            effect = outputNode->getEffectInstance();
+        }
+    } else {
+        effect = _imp->effect;
+    }
+    if (!effect) {
+        return false;
+    }
+    // The node that is actually rendered, and thus the root of the render tree: for a group, its
+    // Output node, so that the Output node and the nodes inside the group get the rendering flag,
+    // the thread-local render args, the frame requests and the abort info.
+    NodePtr rootNode = effect->getNode();
+    assert(rootNode);
+    U64 nodeHash = rootNode->getHashValue();
 
     effect->clearPersistentMessage(false);
 
@@ -3332,8 +3437,7 @@ Node::makePreviewImage(SequenceTime time,
     const double par = effect->getAspectRatio(-1);
     const RectI renderWindow = rod.toPixelEnclosing(mipmapLevel, par);
 
-    NodePtr thisNode = shared_from_this();
-    RenderingFlagSetter flagIsRendering(thisNode);
+    RenderingFlagSetter flagIsRendering(rootNode);
 
 
     {
@@ -3342,14 +3446,14 @@ Node::makePreviewImage(SequenceTime time,
         const bool isSequentialRender = false;
         AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
         if (isAbortable) {
-            isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, thisNode->getEffectInstance() );
+            isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, effect );
         }
         ParallelRenderArgsSetter frameRenderArgs( time,
                                                   ViewIdx(0), //< preview only renders view 0 (left)
                                                   isRenderUserInteraction, //<isRenderUserInteraction
                                                   isSequentialRender, //isSequential
                                                   abortInfo, // abort info
-                                                  thisNode, // viewer requester
+                                                  rootNode, // tree root
                                                   0, //texture index
                                                   getApp()->getTimeLine().get(), // timeline
                                                   NodePtr(), //rotoPaint node
@@ -3357,7 +3461,7 @@ Node::makePreviewImage(SequenceTime time,
                                                   true, // isDraft
                                                   RenderStatsPtr() );
         FrameRequestMap request;
-        stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipmapLevel, rod, thisNode, request);
+        stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipmapLevel, rod, rootNode, request);
         if (stat == eStatusFailed) {
             return false;
         }
@@ -3387,7 +3491,7 @@ Node::makePreviewImage(SequenceTime time,
                                                                                                            requestedComps, //< preview is always rgb...
                                                                                                            depth,
                                                                                                            false,
-                                                                                                           effect,
+                                                                                                           effect.get(),
                                                                                                            eStorageModeRAM /*returnStorage*/,
                                                                                                            time /*callerRenderTime*/) );
             EffectInstance::RenderRoIRetCode retCode;
@@ -3736,6 +3840,10 @@ bool
 Node::message(MessageTypeEnum type,
               const std::string & content) const
 {
+    if (type == eMessageTypeQuestion) {
+        return question(content) == eStandardButtonYes;
+    }
+
     ///If the node was aborted, don't transmit any message because we could cause a deadlock
     if ( _imp->effect->aborted() || (!_imp->nodeCreated && _imp->wasCreatedSilently)) {
         std::cerr << getScriptName_mt_safe() << " message: " << content << std::endl;
@@ -3785,13 +3893,63 @@ Node::message(MessageTypeEnum type,
         Dialogs::errorDialog(getLabel_mt_safe(), content);
 
         return true;
-    case eMessageTypeQuestion:
-
-        return Dialogs::questionDialog(getLabel_mt_safe(), content, false) == eStandardButtonYes;
+    case eMessageTypeQuestion: // handled by question()
     default:
 
         return false;
     }
+}
+
+StandardButtonEnum
+Node::question(const std::string & content) const
+{
+    // Only the user may answer: whenever nobody is asked, return eStandardButtonNoButton, never a reply
+    // (OFX: "It is an error to post a question message if the plugin is not in an interactive session").
+
+    ///If the node was aborted, don't transmit any message because we could cause a deadlock
+    if ( _imp->effect->aborted() || (!_imp->nodeCreated && _imp->wasCreatedSilently) ) {
+        std::cerr << getScriptName_mt_safe() << " question (not asked): " << content << std::endl;
+
+        return eStandardButtonNoButton;
+    }
+
+    // As for the other messages, a question from a separate thread (e.g. a render thread) is not shown
+    // in a dialog (see https://github.com/MrKepzie/Natron/issues/1313): it is logged, and not answered.
+    if ( QThread::currentThread() != qApp->thread() ) {
+        LogEntry::LogEntryColor c;
+        if ( getColor(&c.r, &c.g, &c.b) ) {
+            c.colorSet = true;
+        }
+        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( getLabel_mt_safe().c_str() ), QDateTime::currentDateTime(),
+                                        tr("Question not asked (posted from a thread other than the main thread): %1").arg( QString::fromUtf8( content.c_str() ) ),
+                                        false, c);
+
+        return eStandardButtonNoButton;
+    }
+
+#ifdef NATRON_ENABLE_IO_META_NODES
+    // the user is asked through the Read/Write container node: its answer is the answer
+    NodePtr ioContainer = getIOContainer();
+    if (ioContainer) {
+        return ioContainer->question(content);
+    }
+#endif
+    // Some nodes may be hidden from the user but may still report errors (such that the group is in fact hidden to the user)
+    if ( !isPartOfProject() && getGroup() ) {
+        NodeGroup* isGroup = dynamic_cast<NodeGroup*>( getGroup().get() );
+        if (isGroup) {
+            return isGroup->question(content);
+        }
+    }
+
+    // no interactive session (NatronRenderer, natron-python): nobody can answer
+    if ( appPTR->isBackground() ) {
+        std::cerr << getScriptName_mt_safe() << " question (not asked, no interactive session): " << content << std::endl;
+
+        return eStandardButtonNoButton;
+    }
+
+    return Dialogs::questionDialog(getLabel_mt_safe(), content, false) == eStandardButtonYes ? eStandardButtonYes : eStandardButtonNo;
 }
 
 void
@@ -4352,8 +4510,11 @@ Node::findClosestSupportedComponents(int inputNb,
         QMutexLocker l(&_imp->inputsMutex);
 
         if (inputNb >= 0) {
-            assert( inputNb < (int)_imp->inputsComponents.size() );
-            comps = _imp->inputsComponents[inputNb];
+            // While a GroupInput is being activated, getNInputs() may be larger than inputsComponents.size():
+            // no supported components then.
+            if ( inputNb < (int)_imp->inputsComponents.size() ) {
+                comps = _imp->inputsComponents[inputNb];
+            }
         } else {
             assert(inputNb == -1);
             comps = _imp->outputComponents;
@@ -4498,29 +4659,27 @@ Node::onFileNameParameterChanged(KnobI* fileKnob)
             }
         }
 
-        /*
-           Check if the filename param has a %V in it, in which case make sure to hide the Views parameter
-         */
-        KnobOutputFile* fileParam = dynamic_cast<KnobOutputFile*>(fileKnob);
-        if (fileParam) {
-            std::string pattern = fileParam->getValue();
-            std::size_t foundViewPattern = pattern.find_first_of("%v");
-            if (foundViewPattern == std::string::npos) {
-                foundViewPattern = pattern.find_first_of("%V");
-            }
-            if (foundViewPattern != std::string::npos) {
-                //We found view pattern
-                KnobIPtr viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
-                if (viewsKnob) {
-                    KnobChoice* viewsSelector = dynamic_cast<KnobChoice*>( viewsKnob.get() );
-                    if (viewsSelector) {
-                        viewsSelector->setSecret(true);
-                    }
-                }
-            }
-        }
+        refreshViewsSelectorVisibility();
     }
 } // Node::onFileNameParameterChanged
+
+void
+Node::refreshViewsSelectorVisibility()
+{
+    if ( !_imp->effect || !_imp->effect->isWriter() ) {
+        return;
+    }
+    KnobChoicePtr viewsSelector = std::dynamic_pointer_cast<KnobChoice>( getKnobByName(kWriteOIIOParamViewsSelector) );
+    KnobOutputFilePtr fileParam = std::dynamic_pointer_cast<KnobOutputFile>( getKnobByName(kOfxImageEffectFileParamName) );
+    if (!viewsSelector || !fileParam) {
+        return;
+    }
+    // Look for the two-character pattern: find_first_of("%v") would match any '%' or 'v' (#1312).
+    std::string pattern = fileParam->getValue();
+    if ( ( pattern.find("%v") != std::string::npos ) || ( pattern.find("%V") != std::string::npos ) ) {
+        viewsSelector->setSecret(true);
+    }
+}
 
 void
 Node::getOriginalFrameRangeForReader(const std::string& pluginID,
@@ -6559,6 +6718,12 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
         return;
     }
     if ( getParentMultiInstance() ) {
+        return;
+    }
+    // The project may be reset after Python was finalized: in interpreter mode (-t),
+    // Py_Main() finalizes Python before it returns. The variable went away with the
+    // interpreter, and taking the GIL now would crash (#1253).
+    if ( !Py_IsInitialized() ) {
         return;
     }
 

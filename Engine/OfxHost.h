@@ -29,6 +29,9 @@
 #include "Global/Macros.h"
 
 #include <list>
+#include <set>
+#include <string>
+#include <vector>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -71,6 +74,23 @@ public:
 
     void setOfxHostOSHandle(void* handle);
 
+    /// The OpenGL render support of a plug-in descriptor or instance, given the support read from its
+    /// kOfxImageEffectPropOpenGLRenderSupported: a plug-in that supports OpenGL render ("true") but
+    /// sets kOfxImageEffectPropCPURenderSupported (OFX 1.5.1) to "false" can't render on the CPU, so it
+    /// needs OpenGL, like a plug-in that sets kOfxImageEffectPropOpenGLRenderSupported to "needed".
+    static PluginOpenGLRenderSupport applyCPURenderSupport(PluginOpenGLRenderSupport openGLSupport,
+                                                           const OFX::Host::Property::Set& effectProps);
+
+    /// Is a plug-in with this descriptor deprecated, i.e. only kept to load old projects and not offered
+    /// to users for new nodes? True if it sets kNatronOfxImageEffectPropDeprecated (Natron extension) or
+    /// kOfxImageEffectPluginPropObsolete (OFX, after 1.5.1), which have the same meaning.
+    static bool isPluginDeprecated(const OFX::Host::Property::Set& descriptorProps);
+
+    /// The contexts of a plug-in that Natron supports, by order of preference: a node is created in
+    /// the first one whose kOfxImageEffectActionDescribeInContext succeeds. Empty if the plug-in
+    /// supports none of them, in which case it is not loaded.
+    static std::vector<std::string> getSupportedContexts(const std::set<std::string> & pluginContexts);
+
     /// Create a new instance of an image effect plug-in.
     ///
     /// It is called by ImageEffectPlugin::createInstance which the
@@ -110,7 +130,51 @@ public:
     /// clearPersistentMessage
     virtual OfxStatus clearPersistentMessage() OVERRIDE;
     virtual void loadingStatus(bool loading, const std::string & pluginId, int versionMajor, int versionMinor) OVERRIDE;
+
+    /// Called by HostSupport just before it calls the OfxSetHost entry point (OFX 1.5) of a plug-in
+    /// binary, once per load of the binary, before any of its plug-ins is known: the host name that
+    /// OfxSetHost sees (kOfxPropName, see getStringProperty()) is chosen from the binary's bundle
+    /// identifier, not from the plug-in that was loaded before, at the scan and when a binary known
+    /// from the plug-in cache is loaded (getPluginContextAndDescribe()) alike.
+    virtual void loadingBinary(const std::string& filePath) OVERRIDE;
+
+    /// The CFBundleIdentifier in the Info.plist of the OFX bundle that contains a plug-in binary
+    /// (e.g. ".../Foo.ofx.bundle/Contents/MacOS/Foo.ofx"), or "" if there is none.
+    static std::string getBundleIdentifier(const std::string& binaryFilePath);
+
+    /// The version of the OFX plug-in cache (PluginCache::setCacheVersion()) for a host name
+    /// (kOfxPropName): only letters, digits and '-', so that it can go unescaped in the cache's XML.
+    static std::string getPluginCacheVersion(const std::string& hostName);
+
+    /// The plug-ins found by the scan stay loaded until exit (HostSupport's default since openfx #174
+    /// is to unload each binary after the scan and load it again at first use). Natron keeps them: each
+    /// binary gets one OfxSetHost, and each plug-in one kOfxActionLoad and kOfxActionDescribe, kept
+    /// until the plug-in cache is cleared at exit, with no dlclose and no reload in between. Unloading
+    /// and reloading a plug-in binary is risky: its static destructors run at dlclose (e.g. TBB's
+    /// teardown, #1253), and on macOS thread-local statics can keep the image mapped or crash at the
+    /// next load. It also avoids loading every new or changed binary twice at startup.
+    virtual bool keepPluginsLoadedAfterScan() const OVERRIDE { return true; }
+
     virtual bool pluginSupported(OFX::Host::ImageEffect::ImageEffectPlugin *plugin, std::string &reason) const OVERRIDE;
+
+    /// OFX 1.5 DrawSuite: Natron's overlay interacts implement the DrawSuite hooks (see
+    /// OfxDrawSuiteGL), so fetchSuite(kOfxDrawSuite, 1) succeeds, and a plug-in that registers
+    /// only a kOfxImageEffectPluginPropOverlayInteractV2 overlay gets it. A plug-in that registers
+    /// both gets its V1 overlay (see preferOverlayInteractV1()).
+    virtual bool supportsDrawSuite() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
+    /// When a plug-in registers both kOfxImageEffectPluginPropOverlayInteractV1 and V2, Natron uses
+    /// the V1 (OpenGL) overlay: OpenGL can draw more than the DrawSuite, and that is the overlay
+    /// these plug-ins were written and tested with. Constant for the session, as HostSupport
+    /// requires. Natron calls every kOfxInteractActionDraw from the paintGL() of the viewport's
+    /// OpenGL widget, so the OpenGL context is current around every V1 draw.
+    virtual bool preferOverlayInteractV1() const OVERRIDE FINAL
+    {
+        return true;
+    }
 
     ///fetch the parametric parameters suite or returns the base class version
     virtual const void* fetchSuite(const char *suiteName, int suiteVersion) OVERRIDE;
@@ -161,6 +225,9 @@ public:
 
     void setThreadAsActionCaller(OfxImageEffectInstance* instance, bool actionCaller);
 
+    /// Load the plug-in if needed (OfxSetHost of its binary, kOfxActionLoad, kOfxActionDescribe) and
+    /// describe it in its context. Serialized between threads. Throws std::exception on failure, and if
+    /// called again from the thread that is in it (e.g. from a modal dialog opened by a plug-in's action).
     OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                                     ContextEnum* ctx);
 

@@ -1106,6 +1106,47 @@ public:
     virtual ~SeparatorParam();
 };
 
+/**
+ * @brief An OFX 1.5 Bytes parameter: opaque binary data, defined by a plug-in (Python: bytes).
+ **/
+class BytesParam
+    : public Param
+{
+protected:
+    KnobBytesWPtr _bytesKnob;
+
+public:
+
+    BytesParam(const KnobBytesPtr& knob);
+
+    virtual ~BytesParam();
+
+    /**
+     * @brief The value, as raw bytes (Python: bytes).
+     **/
+    std::string getValue() const;
+
+    /**
+     * @brief Set the value (Python: any bytes-like object, e.g. bytes or bytearray).
+     **/
+    void setValue(const std::string& value);
+
+    /**
+     * @brief The default value, as raw bytes (Python: bytes).
+     **/
+    std::string getDefaultValue() const;
+
+    /**
+     * @brief Restores the default value.
+     **/
+    void restoreDefaultValue();
+
+    /**
+     * @brief The largest value, in bytes (not in Python: the bindings check the size).
+     **/
+    std::size_t getMaxLength() const;
+};
+
 class GroupParam
     : public Param
 {

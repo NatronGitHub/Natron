@@ -1010,13 +1010,14 @@ public:
     virtual void setIsPersistent(bool b) = 0;
 
     /**
-     * @brief If set to false, the knob will not be able to use undo/redo actions.
-     * By default this is set to true.
+     * @brief Whether the changes of the knob are put on the undo/redo stack (e.g. kOfxParamPropCanUndo for the OpenFX
+     * parameters). By default, see getCanUndo().
      **/
     virtual void setCanUndo(bool val) = 0;
 
     /**
      * @brief Can the knob use undo/redo actions ?
+     * If setCanUndo() was never called, only the knobs that evaluate on change (getEvaluateOnChange()) can.
      **/
     virtual bool getCanUndo() const = 0;
 
@@ -1724,10 +1725,10 @@ protected:
                                          int /*dimension = -1*/,
                                          int /*otherDimension = -1*/) {}
 
-    void cloneOneCurve(KnobI* other, int offset, const RangeD* range, int dimension, int otherDimension);
+    void cloneOneCurve(KnobI* other, double offset, const RangeD* range, int dimension, int otherDimension);
     bool cloneOneCurveAndCheckIfChanged(KnobI* other, bool updateGui, int dimension, int otherDimension);
 
-    void cloneCurves(KnobI* other, int offset, const RangeD* range, int dimension = -1, int otherDimension = -1);
+    void cloneCurves(KnobI* other, double offset, const RangeD* range, int dimension = -1, int otherDimension = -1);
     bool cloneCurvesAndCheckIfChanged(KnobI* other, bool updateGui, int dimension = -1, int otherDimension = -1);
 
 
@@ -2146,6 +2147,7 @@ private:
         QMutexLocker k(&_valueMutex);
 
         _exprRes[dimension].clear();
+        ++_exprResGeneration;
     }
 
 
@@ -2246,6 +2248,9 @@ private:
     };
     std::vector<DefaultValue> _defaultValues;
     mutable ExprResults _exprRes;
+    // Incremented whenever _exprRes is cleared or replaced (protected by _valueMutex): a result computed
+    // from the values before that must not be stored (see getValueFromExpression())
+    mutable unsigned int _exprResGeneration;
 
     //Only for double and int
     mutable QReadWriteLock _minMaxMutex;
@@ -2288,6 +2293,10 @@ public:
 
     virtual ~AnimatingKnobStringHelper();
 
+    /**
+     * @brief Returns in returnValue the value of a keyframe holding the string v.
+     * See StringAnimationManager: the value only depends on v.
+     **/
     void stringToKeyFrameValue(double time, ViewSpec view, const std::string & v, double* returnValue);
 
     //for integration of openfx custom params
@@ -2295,29 +2304,36 @@ public:
                                                            OfxPropertySetHandle inArgsRaw,
                                                            OfxPropertySetHandle outArgsRaw);
 
-
-    const StringAnimationManager & getAnimation() const
-    {
-        return *_animation;
-    }
-
+    /**
+     * @brief Set the strings of the keyframes from the strings saved by saveAnimation().
+     * The curves must already be loaded: their keyframe values are replaced by the values of the strings saved at
+     * the same times.
+     **/
     void loadAnimation(const std::map<int, std::string> & keyframes);
 
+    /**
+     * @brief Returns the string of each keyframe of the curve of the first dimension, by time.
+     **/
     void saveAnimation(std::map<int, std::string>* keyframes) const;
 
-    void setCustomInterpolation(customParamInterpolationV1Entry_t func, void* ofxParamHandle);
+    /**
+     * @brief Returns in curve a copy of the curve of the given dimension in which the value of each keyframe is
+     * its index, as saved in projects. See saveAnimation().
+     **/
+    void getCurveForSerialization(int dimension, Curve* curve) const;
 
-    void stringFromInterpolatedValue(double interpolated, ViewSpec view, std::string* returnValue) const;
+    void setCustomInterpolation(customParamInterpolationV1Entry_t func, void* ofxParamSetHandle);
 
-    std::string getStringAtTime(double time, ViewSpec view, int dimension);
+    /**
+     * @brief Returns in returnValue the string held by a keyframe value, or false if the value does not hold a string.
+     **/
+    bool stringFromKeyFrameValue(double value, std::string* returnValue) const;
 
-protected:
-
-    virtual void cloneExtraData(KnobI* other, int dimension = -1, int otherDimension = -1) OVERRIDE;
-    virtual bool cloneExtraDataAndCheckIfChanged(KnobI* other, int dimension = -1, int otherDimension = -1) OVERRIDE;
-    virtual void cloneExtraData(KnobI* other, double offset, const RangeD* range, int dimension = -1, int otherDimension = -1) OVERRIDE;
-    virtual void keyframeRemoved_virtual(int dimension, double time) OVERRIDE;
-    virtual void animationRemoved_virtual(int dimension) OVERRIDE;
+    /**
+     * @brief Returns in ret the string of the given curve of this knob at the given time, or false if the curve
+     * has no keyframe.
+     **/
+    bool getStringFromCurve(const Curve& curve, double time, std::string* ret) const;
 
 private:
     std::unique_ptr<StringAnimationManager> _animation;
@@ -2446,7 +2462,24 @@ public:
     void refreshInstanceSpecificKnobsOnly(bool isPlayback, double time);
     KnobHolder::MultipleParamsEditEnum getMultipleParamsEditLevel() const;
 
-    void setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level);
+    /**
+     * @brief Start (eMultipleParamsEditOnCreateNewCommand) or end (eMultipleParamsEditOff) a block of changes that are
+     * one undo command, e.g. paramEditBegin()/paramEditEnd() of an OpenFX effect. Blocks may be nested: the
+     * outermost one is the undo command, and label, if not empty, is attached to the text of its undo command.
+     **/
+    void setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level, const std::string& label = std::string());
+
+    /**
+     * @brief The label attached to the text of the undo command of the block of changes in progress, or empty.
+     **/
+    std::string getMultipleParamsEditLabel() const;
+
+    /**
+     * @brief Returns the level of the block of changes in progress, and if it is eMultipleParamsEditOnCreateNewCommand,
+     * sets it to eMultipleParamsEditOn, atomically: the caller makes the first change of the block, which creates its
+     * undo command.
+     **/
+    KnobHolder::MultipleParamsEditEnum takeMultipleParamsEditCreateNewCommand();
 
     virtual bool isProject() const
     {
@@ -2465,6 +2498,12 @@ public:
      * @brief Restore all knobs to their default values
      **/
     void restoreDefaultValues();
+
+    /**
+     * @brief Reset the given knobs (of this holder) to their default values, in all their dimensions if dimension is -1,
+     * then call the knob changed handler once per knob, in one group of value changes (Restore Defaults).
+     **/
+    void resetKnobsToDefaultValues(const std::list<KnobIPtr>& knobs, int dimension, double time);
     virtual void aboutToRestoreDefaultValues()
     {
     }
@@ -2833,6 +2872,51 @@ public:
  * @brief Should be called in the beginning of any action that can be called recursively
  **/
 #define RECURSIVE_ACTION() MANAGE_RECURSION(false)
+
+/**
+ * @brief A group of value changes with the same reason of a holder (beginKnobsValuesChanged_public()/
+ * endKnobsValuesChanged_public(), main thread only): setReason() starts it, or ends it and starts another one if the
+ * reason changes. It is ended by end(), or at the latest by the destructor, also on exceptions.
+ **/
+class KnobsValuesChangedGroup_RAII
+{
+    KnobHolder* _holder;
+    bool _inGroup;
+    ValueChangedReasonEnum _reason;
+
+public:
+    explicit KnobsValuesChangedGroup_RAII(KnobHolder* holder)
+        : _holder(holder)
+        , _inGroup(false)
+        , _reason(eValueChangedReasonUserEdited)
+    {
+    }
+
+    ~KnobsValuesChangedGroup_RAII()
+    {
+        end();
+    }
+
+    void setReason(ValueChangedReasonEnum reason)
+    {
+        if ( _inGroup && (reason == _reason) ) {
+            return;
+        }
+        end();
+        _reason = reason;
+        _inGroup = true;
+        _holder->beginKnobsValuesChanged_public(reason);
+    }
+
+    void end()
+    {
+        if (_inGroup) {
+            _inGroup = false;
+            _holder->endKnobsValuesChanged_public(_reason);
+        }
+    }
+};
+
 
 
 class InitializeKnobsFlag_RAII

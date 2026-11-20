@@ -1068,7 +1068,9 @@ TrackerNodeInteract::findLineIntersection(const Point& p,
     u.x = l2.x - l1.x;
     u.y = l2.y - l1.y;
 
-    a = (u.x * h.x + u.y * h.y) / (u.x * u.x + u.y * u.y);
+    double u2 = u.x * u.x + u.y * u.y;
+    // if l1 == l2, the line is a point: project on l1
+    a = u2 > 0. ? (u.x * h.x + u.y * h.y) / u2 : 0.;
     inter->x = l1.x + u.x * a;
     inter->y = l1.y + u.y * a;
 }
@@ -1099,7 +1101,11 @@ TrackerNodeInteract::refreshSelectedMarkerTexture()
 
     imageGetterWatcher = std::make_shared<TrackWatcher>();
     QObject::connect( imageGetterWatcher.get(), SIGNAL(finished()), this, SLOT(onTrackImageRenderingFinished()) );
-    imageGetterWatcher->setFuture( QtConcurrent::run(marker.get(), &TrackMarker::getMarkerImage, time, roi) );
+    // Qt6 dropped the run(object, memberFunction, args...) overload; a lambda
+    // is the one spelling both versions accept. Capture the bare pointer the
+    // old call passed rather than the shared pointer, to keep the lifetime
+    // rules of this call unchanged.
+    imageGetterWatcher->setFuture( QtConcurrent::run( [m = marker.get(), time, roi]() { return m->getMarkerImage(time, roi); } ) );
 }
 
 void
@@ -1130,7 +1136,7 @@ TrackerNodeInteract::makeMarkerKeyTexture(int time,
         TrackWatcherPtr watcher( new TrackWatcher() );
         QObject::connect( watcher.get(), SIGNAL(finished()), this, SLOT(onKeyFrameImageRenderingFinished()) );
         trackRequestsMap[k] = watcher;
-        watcher->setFuture( QtConcurrent::run(track.get(), &TrackMarker::getMarkerImage, time, k.roi) );
+        watcher->setFuture( QtConcurrent::run( [m = track.get(), time, roi = k.roi]() { return m->getMarkerImage(time, roi); } ) );
     }
 }
 

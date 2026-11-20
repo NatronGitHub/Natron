@@ -7,6 +7,10 @@ PortGroup           github 1.0
 
 name                seexpr211
 github.setup        wdas SeExpr 2.11 v
+# GitHub tarballs extract to <author>-<project>-<hash>; tarball_from enables
+# extract.rename so the source is renamed to ${worksrcdir} (else patch runs in
+# the wrong directory: "No file to patch").
+github.tarball_from tarball
 license             Apache-2
 categories          graphics
 maintainers         nomaintainer
@@ -39,3 +43,10 @@ patchfiles          0001-seexpr-2.11-fix-cxxflags.patch \
 patch.pre_args      -p1
 
 build.target-append doc
+
+# SeExpr 2.11 gates the x86-only flag -msse4.1 behind USE_SSE41 (see
+# 0001-seexpr-2.11-fix-cxxflags.patch). Force it off on non-x86 archs so the
+# arm64 build does not receive -msse4.1 ("unsupported option" from clang).
+if {${configure.build_arch} ni {i386 x86_64}} {
+    configure.args-append -DUSE_SSE41:BOOL=FALSE
+}

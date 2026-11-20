@@ -1,0 +1,38 @@
+--- Tools/qmake/config.tests/icu/icu.pro.orig	2015-07-16 11:45:20.000000000 -0700
++++ Tools/qmake/config.tests/icu/icu.pro	2015-07-16 11:46:05.000000000 -0700
+@@ -14,6 +14,7 @@
+         LIBS += -licuin -licuuc -licudt
+     }
+ } else:qtConfig(pkg-config):packagesExist("icu-i18n") {
++    CONFIG += link_pkgconfig
+     PKGCONFIG += icu-i18n
+ } else {
+     LIBS += -licui18n -licuuc -licudata
+--- Source/WTF/WTF.pri.orig	2015-10-12 21:37:08.000000000 -0700
++++ Source/WTF/WTF.pri	2016-05-04 04:22:48.000000000 -0700
+@@ -9,10 +9,8 @@
+ INCLUDEPATH += $$PWD
+
+ mac {
+-    # Mac OS does ship libicu but not the associated header files.
+-    # Therefore WebKit provides adequate header files.
+-    INCLUDEPATH = $${ROOT_WEBKIT_DIR}/Source/WTF/icu $$INCLUDEPATH
+-    LIBS += -licucore
++    CONFIG += link_pkgconfig
++    PKGCONFIG *= icu-i18n icu-uc
+ } else:!use?(wchar_unicode): {
+     win32 {
+         CONFIG(static, static|shared) {
+--- Source/WebCore/Target.pri.orig	2015-10-12 21:37:22.000000000 -0700
++++ Source/WebCore/Target.pri	2016-05-04 09:47:10.000000000 -0700
+@@ -2986,9 +2986,7 @@
+ }
+ 
+ mac {
+-    # For Mac we use the same SmartReplace implementation as the Apple port.
+-    SOURCES += editing/SmartReplaceCF.cpp
+-    INCLUDEPATH += $$PWD/icu
++    SOURCES += editing/SmartReplaceICU.cpp
+ } else {
+     SOURCES += editing/SmartReplaceICU.cpp
+ }

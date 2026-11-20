@@ -1,0 +1,44 @@
+--- libavcodec/videotoolbox.c.orig	2022-07-21 13:09:43.000000000 -0400
++++ libavcodec/videotoolbox.c	2022-07-21 13:24:45.000000000 -0400
+@@ -36,6 +36,9 @@
+ #include <Availability.h>
+ #include <AvailabilityMacros.h>
+ #include <TargetConditionals.h>
++#if defined(MAC_OS_X_VERSION_10_9) && !TARGET_OS_IPHONE && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
++#include <VideoToolbox/VTProfessionalVideoWorkflow.h>
++#endif
+ 
+ #ifndef kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder
+ #  define kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder CFSTR("RequireHardwareAcceleratedVideoDecoder")
+--- libavcodec/videotoolboxenc.c.orig	2026-03-17 05:13:05
++++ libavcodec/videotoolboxenc.c	2026-03-28 19:56:05
+@@ -19,6 +19,7 @@
+  */
+ 
+ #include <Availability.h>
++#include <AvailabilityMacros.h>
+ #include <CoreMedia/CoreMedia.h>
+ #include <CoreVideo/CoreVideo.h>
+ #include <dlfcn.h>
+@@ -41,6 +42,10 @@
+ #include "hwconfig.h"
+ #include "internal.h"
+ 
++#if defined(MAC_OS_X_VERSION_10_9) && !TARGET_OS_IPHONE && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
++#include <VideoToolbox/VTProfessionalVideoWorkflow.h>
++#endif
++
+ #if !HAVE_KCMVIDEOCODECTYPE_HEVC
+ enum { kCMVideoCodecType_HEVC = 'hvc1' };
+ #endif
+@@ -1650,9 +1655,7 @@
+ 
+ #if defined(MAC_OS_X_VERSION_10_9) && !TARGET_OS_IPHONE && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
+     if (avctx->codec_id == AV_CODEC_ID_PRORES) {
+-        if (__builtin_available(macOS 10.10, *)) {
+-            VTRegisterProfessionalVideoWorkflowVideoEncoders();
+-        }
++        VTRegisterProfessionalVideoWorkflowVideoEncoders();
+     }
+ #endif
+ 

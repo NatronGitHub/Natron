@@ -35,12 +35,12 @@ The Read node will have a special “V” mark on its top-left corner, indicatin
 .. image:: _images/multiview10.png
    :width: 30%
 
-Hovering your mouse over the Output Layer parameter will detail which layer is available in which view:
+Hovering over an entry of the **Output Layer** menu shows in which views that layer is present:
 
 .. image:: _images/multiview11.png
    :width: 30%
 
-When the project has multiple views available, each viewer will have a drop-down with available views. You can select with view to display:
+When the project has more than one view, each Viewer has a menu to choose the view to display:
 
 .. image:: _images/multiview03.png
    :width: 40%
@@ -54,7 +54,7 @@ If we take a look at our Read node's properties, you can see that we have 2 laye
 Joining separate views
 ----------------------
 
-In Natron you can join different simple-view files to a multiple-view stream by using the JoinViews node, like this:
+To join single-view clips into one multi-view stream, use the JoinViews node (**Views > JoinViews**). It has one input per view of the project, labelled with the view name:
 
 .. image:: _images/multiview12.png
    :width: 40%
@@ -62,45 +62,40 @@ In Natron you can join different simple-view files to a multiple-view stream by 
 Exporting stereoscopic sequences
 --------------------------------
 
-Exporting multi-view files in Natron can be done multiple ways: Either you want to have a separate file for each view, or you want all views to be in the same file. The later is only supported by the EXR file format.
-When exporting to EXR, the Write node properties panel will have an extra “Views” parameter:
+You can write each view to a separate file, or all views to the same file. Only the EXR format can store several views in one file.
+When writing to EXR, the Write node has a **Views** parameter, set to **All** by default:
 
 .. image:: _images/multiview05.png
    :width: 40%
 
-This is quite straight-forward: you can select which views you decide to export. 
+It selects the views to write.
 
-You can also select which layer you would like to export: 
+The **Layer(s)** menu selects the layer to write. To write all the layers of the input, check **All Planes**. Only formats that can store several layers in one file, such as EXR, can hold them all.
 
-.. image:: _images/multiview06.png
-   :width: 40%
-
-The “All” choice is only available for the EXR and TIFF file formats which allow embedding more than 1 layer per-file. 
-
-Another interesting parameter controls how the EXR/TIFF file is written, this is the “Parts” parameter:
+The **Parts** parameter controls how views and layers are stored in an EXR file. Its default is **Split Views,Layers**:
 
 .. image:: _images/multiview07.png
    :width: 40%
 
 
-When set to “Single Part”, the Write node will aggregate all views requested to render in a single “part” of the file. Single part files are what is written by OpenEXR 1.x applications, thus selecting “Single Part” ensures compatibility with other applications that do not support OpenEXR 2.
+With **Single Part**, all the views are written to a single “part” of the file. OpenEXR 1.x applications write single-part files, so choose **Single Part** for applications that do not support OpenEXR 2.
 
-When set to “Split Views”, all views will be scattered in different parts of the file. The resulting file will only be readable in applications that support OpenEXR 2 but with the advantage of being faster to read than the single-part files. Note that if you select “All” layers to render all layers will be aggregated for each view. 
+With **Split Views**, each view is written to a separate part of the file. The file is smaller, but only applications that support OpenEXR 2 can read it. If **All Planes** is checked, all the layers of a view are stored in the part of that view.
 
-When set to “Split Views,Layers” each layer of each view will be written to a separate part, ensuring EXR optimized for decoding speed, though the file will be larger.
+With **Split Views,Layers**, each layer of each view is written to a separate part. The file is faster to decode, but larger.
 
 Writing to separate files
 -------------------------
 
-You can choose to export views to a separate files by adding a %v (which will expand to the letter 'l' or 'r') or %V (which will expand to the word “left” or “right”) to the output filename:
+To write each view to a separate file, add ``%v`` or ``%V`` to the output file name. ``%v`` expands to the first letter of the view name, in uppercase (for example ``L`` or ``R``), and ``%V`` to the view name as written in the project (for example ``Left`` or ``Right``):
 
 .. image:: _images/multiview13.png
    :width: 30%
 
-In that case the “Views” parameter will no longer be available. This is how you should proceed if you want to output multiple views but do not want to write EXR's.
+The **Views** parameter is then hidden. Use this to write several views to a format other than EXR.
 
-By default for files that do not support multi-view (I.e: anything besides EXR), if requesting to write multiple views to the same file, Natron will only write the first view in the project's views. 
-If you do not want to render all views but a specific one, you can use a “OneView” node prior to your Write node to specify which view you would like to write-out:
+Formats other than EXR cannot store several views in one file: if the file name contains neither ``%v`` nor ``%V``, Natron warns you and writes only the first view of the project. Video writers (WriteFFmpeg) always write only the first view.
+To write one specific view, put a OneView node (**Views > OneView**) before the Write node, and choose the view in its **View** parameter:
 
 .. image:: _images/multiview14.png
    :width: 40%

@@ -621,9 +621,11 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     Qt::Key key = (Qt::Key)Gui::handleNativeKeys( e->key(), e->nativeScanCode(), e->nativeVirtualKey() );
 
     const unsigned int mipmapLevel = _imp->viewer->getCurrentMipmapLevel();
-    if ( e->isAutoRepeat() && notifyOverlaysKeyRepeat(RenderScale::fromMipmapLevel(mipmapLevel), e) ) {
-        update();
-    } else if ( notifyOverlaysKeyDown(RenderScale::fromMipmapLevel(mipmapLevel), e) ) {
+    // the overlays may change their cursor on a key event, even when they don't catch it
+    bool overlaysCaught = e->isAutoRepeat() ? notifyOverlaysKeyRepeat(RenderScale::fromMipmapLevel(mipmapLevel), e)
+                                             : notifyOverlaysKeyDown(RenderScale::fromMipmapLevel(mipmapLevel), e);
+    _imp->viewer->updateOverlayCursor();
+    if (overlaysCaught) {
         update();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
@@ -864,7 +866,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         QWheelEvent e(mapFromGlobal( QCursor::pos() ), QCursor::pos(), QPoint(), QPoint(0, -120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
         wheelEvent(&e);
     } else if (key == Qt::Key_Escape) {
-        _imp->viewer->s_selectionCleared();
+        _imp->viewer->s_selectionCleared( e->modifiers() );
         update();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDSwitchInputAAndB, modifiers, key) ) {
         ///Put it after notifyOverlaysKeyDown() because Roto may intercept Enter
@@ -896,7 +898,9 @@ ViewerTab::keyReleaseEvent(QKeyEvent* e)
         return QWidget::keyPressEvent(e);
     }
     const unsigned int mipmapLevel = _imp->viewer->getCurrentMipmapLevel();
-    if ( notifyOverlaysKeyUp(RenderScale::fromMipmapLevel(mipmapLevel), e) ) {
+    bool overlaysCaught = notifyOverlaysKeyUp(RenderScale::fromMipmapLevel(mipmapLevel), e);
+    _imp->viewer->updateOverlayCursor();
+    if (overlaysCaught) {
         _imp->viewer->redraw();
     } else {
         handleUnCaughtKeyUpEvent(e);

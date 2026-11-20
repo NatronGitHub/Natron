@@ -1,0 +1,14 @@
+--- libavdevice/avfoundation.m
++++ libavdevice/avfoundation.m
+@@ -763,6 +763,11 @@ static int get_audio_config(AVFormatContext *s)
+     return 0;
+ }
+
++#if (defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MAX_ALLOWED < 110000) || \
++    ((!defined(TARGET_OS_OSX) || TARGET_OS_OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED < 101300)
++typedef NSString* AVMediaType;
++#endif
++
+ static NSArray* getDevicesWithMediaType(AVMediaType mediaType) {
+ #if ((TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MIN_REQUIRED >= 100000) || (TARGET_OS_OSX && __MAC_OS_X_VERSION_MIN_REQUIRED >= 101500))
+     NSMutableArray *deviceTypes = nil;

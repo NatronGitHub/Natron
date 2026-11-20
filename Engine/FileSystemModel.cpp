@@ -34,6 +34,7 @@
 #endif
 
 #include "Global/Macros.h"
+#include "Global/QtCompat.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -47,6 +48,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QDebug>
 #include <QUrl>
 #include <QMimeData>
+#include <QRegularExpression>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -193,7 +195,7 @@ struct FileSystemModelPrivate
     QStringList headers;
     QDir::Filters filters;
     QString encodedRegexps;
-    std::list<QRegExp> regexps;
+    std::list<QRegularExpression> regexps;
     mutable QMutex filtersMutex;
     mutable QMutex sequenceModeEnabledMutex;
     bool sequenceModeEnabled;
@@ -1041,7 +1043,8 @@ FileSystemModel::setRegexpFilters(const QString& filters)
                 ++i;
             }
             if ( regExp != QString( QLatin1Char('*') ) ) {
-                QRegExp rx(regExp, Qt::CaseInsensitive, QRegExp::Wildcard);
+                QRegularExpression rx(QtCompat::wildcardToRegularExpression(regExp),
+                                      QRegularExpression::CaseInsensitiveOption);
                 if ( rx.isValid() ) {
                     _imp->regexps.push_back(rx);
                 }
@@ -1082,8 +1085,8 @@ FileSystemModel::isAcceptedByRegexps(const QString & path) const
         return true;
     }
 
-    for (std::list<QRegExp>::const_iterator it = _imp->regexps.begin(); it != _imp->regexps.end(); ++it) {
-        if ( it->exactMatch(path) ) {
+    for (std::list<QRegularExpression>::const_iterator it = _imp->regexps.begin(); it != _imp->regexps.end(); ++it) {
+        if ( it->match(path).hasMatch() ) {
             return true;
         }
     }
@@ -1574,6 +1577,10 @@ FileGathererThread::quitGatherer()
             _imp->mustQuitCond.wait(k.mutex());
         }
     }
+    // run() has reset mustQuit but may not have returned yet: wait until the thread is finished,
+    // so that the QThread can be destroyed (else Qt aborts with "QThread: Destroyed while thread
+    // is still running").
+    wait();
 }
 
 struct WorkingSetter

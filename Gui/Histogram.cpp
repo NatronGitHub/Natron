@@ -32,7 +32,6 @@
 #include <QVBoxLayout>
 #include <QCheckBox>
 #include <QSplitter>
-#include <QDesktopWidget>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>
@@ -290,6 +289,8 @@ Histogram::Histogram(Gui* gui,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    // Unlike QGLWidget, QOpenGLWidget takes no share widget: the argument is kept for API compatibility.
+    Q_UNUSED(shareWidget);
 
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     setMouseTracking(true);
@@ -423,9 +424,38 @@ Histogram::~Histogram()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    if ( QOpenGLContext* glContext = context() ) {
+        // ~QOpenGLWidget destroys the context after this object is gone: don't get its signal
+        glContext->disconnect(this);
+        makeCurrent();
+        releaseGLResources();
+    }
+}
+
+void
+Histogram::onContextAboutToBeDestroyed()
+{
     makeCurrent();
+    releaseGLResources();
+    // The context stays current: it is destroyed right after this signal.
+}
+
+void
+Histogram::releaseGLResources()
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    assert( QOpenGLContext::currentContext() == context() );
+
+    _imp->textRenderer.releaseGLResources();
 
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
+    _imp->histogramComputingShader.reset();
+    _imp->histogramMaximumShader.reset();
+    _imp->histogramRenderingShader.reset();
+    _imp->leftImageTexture.reset();
+    _imp->rightImageTexture.reset();
+
     glDeleteTextures(3, &_imp->histogramTexture[0]);
     glDeleteTextures(3, &_imp->histogramReductionsTexture[0]);
     glDeleteTextures(3, &_imp->histogramRenderTexture[0]);
@@ -687,6 +717,10 @@ Histogram::initializeGL()
 
     assert( QOpenGLContext::currentContext() == context() );
 
+    // QOpenGLWidget destroys its context and creates a new one when it moves to another top-level
+    // window, e.g. when the panel is dragged into a floating window (#536), and then calls
+    // initializeGL() again. The OpenGL objects of the old context must be released with it.
+    QObject::connect( context(), &QOpenGLContext::aboutToBeDestroyed, this, &Histogram::onContextAboutToBeDestroyed );
 
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
     _imp->histogramComputingShader.reset( new QOpenGLShaderProgram( context() ) );
@@ -1727,7 +1761,6 @@ HistogramPrivate::drawViewerPicker()
 
     //QFontMetrics fm(_textFont, 0);
     //double yPos = zoomCtx.toZoomCoordinates(0,wHeight - fm.height() * 2. / _screenPixelRatio).y();
-    QColor color;
     double imgColor[4] = {0., 0., 0., 0.};
     for (std::size_t i = 0; i < (std::size_t)std::min( (int)viewerPickerColor.size(), 3 ); ++i) {
         imgColor[i] = viewerPickerColor[i];

@@ -1,0 +1,55 @@
+--- src/buildtools/configure.json.orig
++++ src/buildtools/configure.json
+@@ -35,31 +35,31 @@
+         "webengine-xcomposite": {
+             "label": "xcomposite",
+             "sources": [
+-                { "type": "pkgConfig", "args": "xcomposite" }
++                { "type": "pkgConfig", "args": "xcomposite-fail-on-macports" }
+             ]
+         },
+         "webengine-xcursor": {
+             "label": "xcursor",
+             "sources": [
+-                { "type": "pkgConfig", "args": "xcursor" }
++                { "type": "pkgConfig", "args": "xcursor-fail-on-macports" }
+             ]
+         },
+         "webengine-xi": {
+             "label": "xi",
+             "sources": [
+-                { "type": "pkgConfig", "args": "xi" }
++                { "type": "pkgConfig", "args": "xi-fail-on-macports" }
+             ]
+         },
+         "webengine-xtst": {
+             "label": "xtst",
+             "sources": [
+-                { "type": "pkgConfig", "args": "xtst" }
++                { "type": "pkgConfig", "args": "xtst-fail-on-macports" }
+             ]
+         },
+         "webengine-xkbfile": {
+             "label": "xkbfile",
+             "sources": [
+-                { "type": "pkgConfig", "args": "xkbfile" }
++                { "type": "pkgConfig", "args": "xkbfile-fail-on-macports" }
+             ]
+         },
+         "webengine-nss": {
+@@ -71,13 +71,13 @@
+         "webengine-x11" : {
+             "label" : "x11",
+             "sources": [
+-                { "type": "pkgConfig", "args": "x11" }
++                { "type": "pkgConfig", "args": "x11-fail-on-macports" }
+             ]
+         },
+         "webengine-xproto-gl": {
+             "label": "xproto (glproto)",
+             "sources": [
+-                { "type": "pkgConfig", "args": "glproto" }
++                { "type": "pkgConfig", "args": "glproto-fail-on-macports" }
+             ]
+         },
+         "webengine-glib": {

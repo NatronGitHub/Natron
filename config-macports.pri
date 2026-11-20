@@ -18,13 +18,16 @@ equals(QT_MAJOR_VERSION, 5) {
 }
 
 macx:openmp {
-  # libomp 12+ has a bug on macOS when lanching tasks from a background thread,
-  # see tools/MacPorts/lang/libomp/README.md
+  # libomp 12-15 had bugs with OpenMP on non-OpenMP threads; fixed since libomp 13/16/18
+  # (see tools/MacPorts/lang/libomp/README.md). MacPorts' current libomp is used.
   LIBS += -L/opt/local/lib  -L/opt/local/lib/libomp -liomp5
-  # clang 17 and 18 with -fopenmp links with @rpath/libc++.1.dylib instead
-  # of /usr/lib/libc++.1.dylib, so let's use clang 16 for now.
-  QMAKE_CC = /opt/local/bin/clang-mp-16
-  QMAKE_CXX = /opt/local/bin/clang++-mp-16
+  # MacPorts clang used with OpenMP: qmake ... CLANG_MP_VERSION=22 (the MacPorts default for
+  # the OS: 22 on macOS 26+, 18 on macOS 15, 17 before). Without it, QMAKE_CC/QMAKE_CXX from
+  # the command line (or the default compiler) are used.
+  !isEmpty(CLANG_MP_VERSION) {
+    QMAKE_CC = /opt/local/bin/clang-mp-$$CLANG_MP_VERSION
+    QMAKE_CXX = /opt/local/bin/clang++-mp-$$CLANG_MP_VERSION
+  }
   # Recent clang cannot compile QtMac.mm
   QMAKE_OBJECTIVE_CC = clang
   QMAKE_OBJECTIVE_CXX = clang++

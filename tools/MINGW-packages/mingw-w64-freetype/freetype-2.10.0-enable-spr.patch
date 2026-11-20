@@ -1,0 +1,12 @@
+diff -Naur freetype-2.10.0.orig/include/freetype/config/ftoption.h freetype-2.10.0/include/freetype/config/ftoption.h
+--- freetype-2.10.0.orig/include/freetype/config/ftoption.h	2019-03-15 18:09:32.842668200 -0400
++++ freetype-2.10.0/include/freetype/config/ftoption.h	2019-03-15 18:20:57.389665500 -0400
+@@ -126,7 +126,7 @@
+    * macro is not defined, FreeType offers alternative LCD rendering
+    * technology that produces excellent output without LCD filtering.
+    */
+-/* #define FT_CONFIG_OPTION_SUBPIXEL_RENDERING */
++#define FT_CONFIG_OPTION_SUBPIXEL_RENDERING
+ 
+ 
+   /**************************************************************************

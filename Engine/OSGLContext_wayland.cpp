@@ -140,6 +140,9 @@ struct OSGLContext_waylandPrivate
     void createWindow(OSGLContext_egl_data* eglInfo,
                       const EGLConfig& native,
                       int depth);
+
+    // Release the EGL surface and context and the Wayland window, whichever exist.
+    void destroy(const OSGLContext_egl_data* eglInfo);
 };
 
 static bool
@@ -293,13 +296,14 @@ OSGLContext_wayland::initEGLData(OSGLContext_egl_data* eglInfo)
 } // initGLXData
 
 void
-OSGLContext_wayland::destroyEGLData(OSGLContext_egl_data* eglInfo)
+OSGLContext_wayland::destroyEGLData(OSGLContext_egl_data* eglInfo, bool unloadLibrary)
 {
     if (eglInfo->_imp->dpy != EGL_NO_DISPLAY) {
         eglInfo->_imp->Terminate(eglInfo->_imp->dpy);
         eglInfo->_imp->ReleaseThread();
+        eglInfo->_imp->dpy = EGL_NO_DISPLAY;
     }
-    if (eglInfo->_imp->handle != nullptr) {
+    if (unloadLibrary && eglInfo->_imp->handle != nullptr) {
         dlclose(eglInfo->_imp->handle);
         eglInfo->_imp->handle = nullptr;
     }
@@ -524,8 +528,38 @@ OSGLContext_wayland::OSGLContext_wayland(const FramebufferConfig& pixelFormatAtt
     int depth;
 
     chooseFBConfig(eglInfo, pixelFormatAttrs, &native);
-    _imp->createWindow(eglInfo, native, depth);
-    _imp->createContextEGL(eglInfo, pixelFormatAttrs, major, minor, coreProfile, rendererID.renderID, shareContext);
+    try {
+        _imp->createWindow(eglInfo, native, depth);
+        _imp->createContextEGL(eglInfo, pixelFormatAttrs, major, minor, coreProfile, rendererID.renderID, shareContext);
+    } catch (...) {
+        // The destructor won't run: release what was created so far.
+        _imp->destroy(eglInfo);
+        throw;
+    }
+}
+
+void
+OSGLContext_waylandPrivate::destroy(const OSGLContext_egl_data* eglInfo)
+{
+    if (eglSurfaceHandle != EGL_NO_SURFACE) {
+        eglInfo->_imp->DestroySurface(eglInfo->_imp->dpy, eglSurfaceHandle);
+        eglSurfaceHandle = EGL_NO_SURFACE;
+    }
+    if (waylandWindow.native != nullptr) {
+        wl_egl_window_destroy(waylandWindow.native);
+        waylandWindow.native = nullptr;
+    }
+    if (eglContextHandle != EGL_NO_CONTEXT) {
+        if (eglInfo->_imp->GetCurrentContext() == eglContextHandle) {
+            OSGLContext_wayland::makeContextCurrent(nullptr);
+        }
+        eglInfo->_imp->DestroyContext(eglInfo->_imp->dpy, eglContextHandle);
+        eglContextHandle = EGL_NO_CONTEXT;
+    }
+    if (waylandWindow.handle != nullptr) {
+        wl_surface_destroy(waylandWindow.handle);
+        waylandWindow.handle = nullptr;
+    }
 }
 
 OSGLContext_wayland::~OSGLContext_wayland()
@@ -534,25 +568,7 @@ OSGLContext_wayland::~OSGLContext_wayland()
 
     assert(eglInfo);
 
-    if (_imp->eglSurfaceHandle != EGL_NO_SURFACE) {
-        eglInfo->_imp->DestroySurface(eglInfo->_imp->dpy, _imp->eglSurfaceHandle);
-        _imp->eglSurfaceHandle = EGL_NO_SURFACE;
-    }
-    if (_imp->waylandWindow.native != nullptr) {
-        wl_egl_window_destroy(_imp->waylandWindow.native);
-        _imp->waylandWindow.native = nullptr;
-    }
-    if (_imp->eglContextHandle != EGL_NO_CONTEXT) {
-        if (eglInfo->_imp->GetCurrentContext() == _imp->eglContextHandle) {
-            OSGLContext_wayland::makeContextCurrent(nullptr);
-        }
-        eglInfo->_imp->DestroyContext(eglInfo->_imp->dpy, _imp->eglContextHandle);
-        _imp->eglContextHandle = EGL_NO_CONTEXT;
-    }
-    if (_imp->waylandWindow.handle != nullptr) {
-        wl_surface_destroy(_imp->waylandWindow.handle);
-        _imp->waylandWindow.handle = nullptr;
-    }
+    _imp->destroy(eglInfo);
 }
 
 bool
@@ -696,7 +712,7 @@ OSGLContext_wayland::initEGLData(OSGLContext_egl_data*)
 }
 
 void
-OSGLContext_wayland::destroyEGLData(OSGLContext_egl_data*)
+OSGLContext_wayland::destroyEGLData(OSGLContext_egl_data*, bool)
 {
 }
 

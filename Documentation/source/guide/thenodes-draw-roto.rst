@@ -4,14 +4,14 @@
 Roto Node
 =========
 
-Using a Roto node a vector shape may be drawn (like the pen tool in Photoshop or Illustrator). There are two main uses for this node:
+The Roto node draws vector shapes, like the pen tool in Photoshop or Illustrator. It has two main uses:
 
-    - To make a mask: In a situation where a node such as Multiply is being used to darken an image, a Roto shape may be used as a mask: to limit the effects of that node.
-    - To make an alpha channel: In a situation when the alpha of an image needs editing, a Roto shape may be used to add to, remove from or replace that alpha.
+    - To make a mask: for example, when a Multiply node darkens an image, a Roto shape connected to its Mask input limits the effect to the shape.
+    - To make an alpha channel: a Roto shape can add to, remove from or replace the alpha of an image.
 
-Added to this is a host of other functionality. It may, for example, be used to hide or revel one layer from another. This functionality can be used to hide glitches in an image using something called a 'clean plate'.
+It can also hide or reveal one image over another, for example to cover glitches with a "clean plate".
 
-Natron's Roto node has many parameters parameters in the tabs. However, most day to day usage is covered effectively by the first two tabs. 
+The Roto node has many parameters, but the first two tabs cover most everyday work.
     
 .. image:: _images/TheNodes-Draw/thenodes-draw-roto-interface02.gif
 
@@ -20,11 +20,11 @@ Usage
 --------
 
 Basic usage:
-    - create the node with 'o' or 'p' shortcut
-    - start click+dragging in the viewer
-    - click on the firs point to close it
-    - If you want soft edges around your shape, pull the little red lines protruding from each control points. The dotted line that appear is the limit of the soft edgea
-    - That's it you image now have your shape drawn (in the alpha channel by default)
+    - create a Roto node with :kbd:`O` in the Node Graph (:kbd:`P` creates a RotoPaint node)
+    - click in the Viewer to add points; click and drag to add a smooth point
+    - click the first point to close the shape
+    - for soft edges, drag the feather points out from the shape: the dotted line shows the outer limit of the soft edge
+    - the shape is drawn in the alpha channel by default
 
     .. image:: _images/TheNodes-Draw/nodes_draw_roto03_feather.jpg
 
@@ -33,26 +33,26 @@ Basic usage:
 To edit the shape you have tools in the viewer window:
 
 In the viewer the tools to create or edit shapes are:
-    - 1: "Autokey" create a new key to your shape each time you move any part of it. If this is disabled click on the "+" (25) to create a key
-    - 2: "FeatherLink" lets you move a point on the shape and the feather point follows.
-    - 3: "display feather" can disable viewing/editing the feather points (dotted line)
-    - 4: sticky selection of vertices. Helps editing the shape with constant selection
-    - 5: sticky bounding box: Helps editing the shape with constant selection.
-    - 6: "Ripple Edit" let you change the shape on all keyframes in an offset manner
-    - 7-8: Add / Delete keyframe to the currently selected shape (similar to 25/26 in the properties
-    - 9: show transform. Let you move the whole shape without the need to edit each point of the shape. Good for rotoscoping "hard objects" wich shape doesn't change much over time.
-    - 10: Select/transform "arrow" tools. Select it after the creation of the Curve
-    - 11: Add/remove points tool
-    - 12:create shape tool. Long click to get the choice between freeform, rectangle, ellipse shapes.
-    - 13: pencil tools
+    - 1: **Auto-keying**: sets a keyframe on the shape each time you move any part of it. When it is off, click the "+" button (25) to set a keyframe
+    - 2: **Feather-link**: when you move a point of the shape, its feather point follows
+    - 3: **Display feather**: shows or hides the feather points (dotted line)
+    - 4: **Sticky selection**: clicking outside of any shape does not clear the selection
+    - 5: **Sticky bounding box**: you can click anywhere in the bounding box of the selection to move it
+    - 6: **Ripple edit**: applies the same offset to the shape on all keyframes
+    - 7-8: add / remove a keyframe on the selected shape (like 25/26 in the properties)
+    - 9: **Show transform**: moves, rotates and scales the whole shape at once. This is good for rigid objects, whose shape changes little over time
+    - 10: selection tools (the arrow). Choose them after drawing the shape
+    - 11: point editing tools: add, remove, cusp and smooth points, open or close the shape, remove the feather
+    - 12: shape tools. Click and hold to choose between Bezier, rectangle and ellipse
+    - 13: paint tools (RotoPaint only)
 
 .. image:: _images/TheNodes-Draw/thenodes-draw-roto-interface03.gif
 
 
 .. note::
-    The layers don't have geometric properties. Their only purpose is to group paint dabs/masks to enable/disable these in  s ingle click
+    Layers have no geometric properties. They only group shapes and strokes, so that you can enable or disable them with a single click.
 
-See :doc:`The Rotopaint <compositing-rotopaint>` section for more informations.
+See :doc:`The Rotopaint <compositing-rotopaint>` section for more information.
 
 .. toctree::
     :maxdepth: 2

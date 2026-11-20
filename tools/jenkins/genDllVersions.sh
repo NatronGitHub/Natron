@@ -64,6 +64,15 @@ function findDll() {
     fi
 }
 
+function emitDll() {
+    if [ "$INIT_VAR" = "1" ]; then
+    	echo "${DLL_VAR_PREFIX}_DLL="'('"${BIN_PATH}/$1"')' >> "$OUTPUT_FILE_NAME"
+	INIT_VAR=0
+    else
+        echo "${DLL_VAR_PREFIX}_DLL="'('"\"\${${DLL_VAR_PREFIX}_DLL[@]}\" ${BIN_PATH}/$1"')' >> "$OUTPUT_FILE_NAME"
+    fi
+}
+
 function catDll() {
     DLL_NAME=""
     findDll $1
@@ -78,12 +87,23 @@ function catDll() {
 	return 1
     fi
 #    echo "Found DLL: $DLL_NAME"
-    if [ "$INIT_VAR" = "1" ]; then
-    	echo "${DLL_VAR_PREFIX}_DLL="'('"${BIN_PATH}/${DLL_NAME}"')' >> "$OUTPUT_FILE_NAME"
-	INIT_VAR=0
-    else
-        echo "${DLL_VAR_PREFIX}_DLL="'('"\"\${${DLL_VAR_PREFIX}_DLL[@]}\" ${BIN_PATH}/${DLL_NAME}"')' >> "$OUTPUT_FILE_NAME"
+    emitDll "$DLL_NAME"
+}
+
+# For libraries that ship several ABI-versioned DLLs side by side, where more
+# than one match is expected rather than ambiguous. x264 is one: ffmpeg links
+# libx264-164.dll while libheif links libx264-165.dll, and both get bundled.
+function catAllDlls() {
+    DLL_NAME=""
+    findDll $1
+    if [ "$(echo "$DLL_NAME" | wc -w)" = "0" ]; then
+        echo "WARNING, dll $1 was not found!"
+	return 1
     fi
+    local dll
+    for dll in $DLL_NAME; do
+        emitDll "$dll"
+    done
 }
 
 INIT_VAR=1
@@ -248,8 +268,21 @@ if [ "$PYV" = 2 ]; then
     catDll libpyside-python${PYVER}
     catDll libshiboken-python${PYVER}
 else
-    catDll libpyside
-    catDll libshiboken
+    # PySide2 goes with Qt5 and PySide6 with Qt6, so the binding major does not
+    # track QT_VERSION_MAJOR. Name it explicitly: an unqualified libpyside also
+    # matches libpyside6 and libpyside6qml once Qt6 is installed alongside Qt5,
+    # which natron-build-deps-qt6 does.
+    if [ "$QT_VERSION_MAJOR" = 5 ]; then
+        PYSIDE_MAJOR=2
+    else
+        PYSIDE_MAJOR="$QT_VERSION_MAJOR"
+    fi
+    # findDll globs "<name>*.dll", so "libpyside6" would also pick up
+    # libpyside6qml. The main DLLs carry the Python extension suffix after a
+    # dot (libpyside6.cp313-mingw_x86_64_ucrt_gnu.dll and the like), so
+    # match "libpyside6." and "libshiboken6." to get exactly the main DLL.
+    catDll libpyside${PYSIDE_MAJOR}.
+    catDll libshiboken${PYSIDE_MAJOR}.
 fi
 
 # gcc
@@ -260,7 +293,7 @@ else
 fi
 
 if [ "$NATRON_LICENSE" = "GPL" ]; then
-    catDll libx264-
+    catAllDlls libx264-
     #catDll libx265
     #catDll libx265_main
     catDll xvidcore
@@ -290,19 +323,23 @@ BIN_PATH="$SDK_HOME_BIN"
 catDll libcdr-
 #catDll libcroco-
 catDll libicuin
-catDll libpoppler-117
-catDll libpoppler-glib-
+if [ "$NATRON_LICENSE" = "GPL" ]; then
+    # ReadPDF (poppler is GPL); COMMERCIAL builds leave it out
+    catDll libpoppler-117
+    catDll libpoppler-glib-
+fi
 catDll librevenge-0
 catDll librevenge-stream-
 catDll libzip
-catDll libmad-0
-catDll libsox-
+if [ "$NATRON_LICENSE" = "GPL" ]; then
+    # AudioCurve (libsox links GPL libraries); COMMERCIAL builds leave it out (AUDIO=OFF)
+    catDll libmad-0
+    catDll libsox-
+fi
 
 INIT_VAR=1
 DLL_VAR_PREFIX="GMIC"
 BIN_PATH="$SDK_HOME_BIN"
-catDll libfftw3-
-catDll libfftw3_threads-
 catDll libcurl-
 catDll libnghttp2-
 catDll libngtcp2-

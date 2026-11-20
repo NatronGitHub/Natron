@@ -20,7 +20,7 @@
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
-#undef Py_LIMITED_API  // Needed for PyRun_SimpleString, PyRun_String, Py_NoUserSiteDirectory
+#undef Py_LIMITED_API  // Needed for PyRun_SimpleString, PyRun_String
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
@@ -69,6 +69,18 @@
 #ifdef Q_OS_UNIX
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <fcntl.h> // fcntl
+#include <signal.h> // sigaction, raise
+#include <unistd.h> // pipe, read, write
+#include <sys/file.h> // flock
+#include <sys/stat.h> // fstat, stat
+#ifdef __linux__
+#include <sys/vfs.h> // statfs
+#else
+#include <sys/param.h>
+#include <sys/mount.h> // statfs, MNT_LOCAL
+#endif
 #ifdef Q_OS_DARWIN
 #include <sys/sysctl.h>
 #include <libproc.h>
@@ -89,7 +101,13 @@
 #include <QDebug>
 #include <QDir>
 #include <QCoreApplication>
+#include <QFile>
+#include <QSysInfo>
+#include <QThread>
+#include <QUuid>
+#include <QRegularExpression>
 #include <QSettings>
+#include <QSocketNotifier>
 #include <QThreadPool>
 #include <QTextStream>
 #include <QAbstractSocket>
@@ -148,14 +166,53 @@ AppManager* AppManager::_instance = 0;
 
 #ifdef __NATRON_UNIX__
 
+// Set by the first termination signal caught while an event loop can quit the application.
+static volatile std::sig_atomic_t shutDownSignalCaught = 0;
+// Self-pipe that wakes up the main thread, see AppManager::setUpShutDownSignalNotifier().
+// The write end is -1 when there is no event loop to quit (background mode).
+static int shutDownSignalPipe[2] = { -1, -1 };
+
 //namespace  {
+// A signal handler runs on any thread, interrupting whatever it was doing (maybe while
+// it holds a lock), so it may only call async-signal-safe functions (see signal-safety(7)).
+// Quitting the application from here crashed or deadlocked (#1253).
 static void
-handleShutDownSignal( int /*signalId*/ )
+handleShutDownSignal(int signalId)
 {
-    if (appPTR) {
-        std::cerr << "\nCaught termination signal, exiting!" << std::endl;
-        appPTR->quitApplication();
+    const int savedErrno = errno; // write() may change it under the interrupted code
+    static const char msg[] = "\nCaught termination signal, exiting!\n";
+    ssize_t ret = ::write(STDERR_FILENO, msg, sizeof(msg) - 1);
+
+    (void)ret;
+    if ( !shutDownSignalCaught && (shutDownSignalPipe[1] != -1) ) {
+        // Let the main thread quit the application, see AppManager::onShutDownSignalReceived().
+        shutDownSignalCaught = 1;
+        const char c = 0;
+        ret = ::write(shutDownSignalPipe[1], &c, 1);
+        (void)ret;
+        errno = savedErrno;
+
+        return;
     }
+    // No event loop can quit the application (background mode, where the main thread
+    // may be rendering or running the Python interpreter; the event loop has ended), or
+    // the signal was sent again: terminate now, with the default action of the signal.
+    // Nothing is cleaned up: the disk cache index is not saved (the disk cache is lost),
+    // and the project lock file stays (a lock whose process is gone is ignored).
+    struct sigaction sa;
+    sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_handler = SIG_DFL;
+    sigaction(signalId, &sa, NULL);
+    raise(signalId); // delivered when the handler returns
+    errno = savedErrno;
+}
+
+// Called when no event loop will run again: from then on, handleShutDownSignal() terminates.
+static void
+disarmShutDownSignalPipe()
+{
+    shutDownSignalPipe[1] = -1;
 }
 
 static void
@@ -182,6 +239,24 @@ setShutDownSignal(int signalId)
 
 #define NATRON_UNIX_BACKTRACE_STACK_DEPTH 16
 
+// The address of the faulting instruction, or NULL on architectures not handled here.
+static void*
+faultInstructionAddress(const ucontext_t* uc)
+{
+#if defined(__x86_64__)
+    return (void*)uc->uc_mcontext.gregs[REG_RIP];
+#elif defined(__i386__)
+    return (void*)uc->uc_mcontext.gregs[REG_EIP];
+#elif defined(__aarch64__)
+    return (void*)uc->uc_mcontext.pc;
+#elif defined(__arm__)
+    return (void*)uc->uc_mcontext.arm_pc;
+#else
+    (void)uc;
+    return NULL;
+#endif
+}
+
 static void
 backTraceSigSegvHandler(int sig,
                         siginfo_t *info,
@@ -200,23 +275,17 @@ backTraceSigSegvHandler(int sig,
             threadName = (qApp && qApp->thread() == curThread) ? "Main" : curThread->objectName().toStdString();
         }
         std::cerr << "Caught segmentation fault (SIGSEGV) from thread "  << threadName << "(" << curThread << "), faulty address is " <<
-             #ifndef __x86_64__
-        (void*)uc->uc_mcontext.gregs[REG_EIP]
-             #else
-            (void*) uc->uc_mcontext.gregs[REG_RIP]
-             #endif
-            << " from " << info->si_addr << std::endl;
+            faultInstructionAddress(uc) << " from " << info->si_addr << std::endl;
     } else {
         printf("Got signal %d#92;n", sig);
     }
 
     trace_size = backtrace(trace, NATRON_UNIX_BACKTRACE_STACK_DEPTH);
     /* overwrite sigaction with caller's address */
-#ifndef __x86_64__
-    trace[1] = (void *) uc->uc_mcontext.gregs[REG_EIP];
-#else
-    trace[1] = (void *) uc->uc_mcontext.gregs[REG_RIP];
-#endif
+    void* faultAddress = faultInstructionAddress(uc);
+    if (faultAddress && trace_size > 1) {
+        trace[1] = faultAddress;
+    }
 
 
     messages = backtrace_symbols(trace, trace_size);
@@ -371,6 +440,10 @@ AppManager::loadFromArgs(const CLArgs& cl)
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
     //otherwise it might crash with thread-local storage
 
+    // The pooled threads render too (QtConcurrent tasks, viewer renders): give them the same stack as
+    // the render threads (#1434). This only applies to threads that the pool creates from now on.
+    QThreadPool::globalInstance()->setStackSize( getRenderThreadStackSize() );
+
 
     ///the QCoreApplication must have been created so far.
     assert(qApp);
@@ -412,6 +485,9 @@ AppManager::loadW(int argc,
 
 AppManager::~AppManager()
 {
+#ifdef __NATRON_UNIX__
+    disarmShutDownSignalPipe();
+#endif
 #ifdef NATRON_USE_BREAKPAD
     if (_imp->breakpadAliveThread) {
         _imp->breakpadAliveThread->quitThread();
@@ -577,6 +653,44 @@ AppManager::quitApplication()
 }
 
 void
+AppManager::setUpShutDownSignalNotifier()
+{
+#ifdef __NATRON_UNIX__
+    // Only an event loop can quit the application on a termination signal: in background
+    // mode, the main thread doesn't run one, and handleShutDownSignal() terminates.
+    if ( isBackground() || (shutDownSignalPipe[0] != -1) ) {
+        return;
+    }
+    int fds[2];
+    if (::pipe(fds) == -1) {
+        std::perror("setting up termination signal pipe");
+
+        return;
+    }
+    for (int i = 0; i < 2; ++i) {
+        ::fcntl(fds[i], F_SETFD, FD_CLOEXEC);
+        ::fcntl(fds[i], F_SETFL, ::fcntl(fds[i], F_GETFL) | O_NONBLOCK); // the handler must never block
+    }
+    shutDownSignalPipe[0] = fds[0];
+    shutDownSignalPipe[1] = fds[1];
+    QSocketNotifier* notifier = new QSocketNotifier(fds[0], QSocketNotifier::Read, this);
+    QObject::connect( notifier, SIGNAL(activated(QSocketDescriptor,QSocketNotifier::Type)), this, SLOT(onShutDownSignalReceived()) );
+#endif
+}
+
+void
+AppManager::onShutDownSignalReceived()
+{
+#ifdef __NATRON_UNIX__
+    // Called on the main thread by the event loop, after handleShutDownSignal().
+    char c;
+    while (::read(shutDownSignalPipe[0], &c, 1) > 0) {
+    }
+    quitApplication();
+#endif
+}
+
+void
 AppManager::initializeQApp(int &argc,
                            char **argv)
 {
@@ -705,6 +819,7 @@ AppManager::loadInternal(const CLArgs& cl)
 
 # ifdef __NATRON_UNIX__
     if (mustSetSignalsHandlers) {
+        setUpShutDownSignalNotifier();
         setShutDownSignal(SIGINT);   // shut down on ctrl-c
         setShutDownSignal(SIGTERM);   // shut down on killall
 #     if defined(__NATRON_LINUX__) && !defined(__FreeBSD__)
@@ -845,9 +960,22 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
         bool checkRenderingReq = true;
         if (createOpenGLContext) {
             try {
-                _imp->initGLAPISpecific();
-
-                glContext = _imp->renderingContextPool->attachGLContextToRender(false /*checkIfGLLoaded*/);
+                try {
+                    _imp->initGLAPISpecific();
+                    glContext = _imp->renderingContextPool->attachGLContextToRender(false /*checkIfGLLoaded*/);
+                } catch (const std::exception& e) {
+                    // On Linux, retry once with X11/GLX if Wayland/EGL failed.
+                    if ( !_imp->fallBackToGLX( e.what() ) ) {
+                        throw;
+                    }
+                    const std::string eglError = e.what();
+                    try {
+                        glContext = _imp->renderingContextPool->attachGLContextToRender(false /*checkIfGLLoaded*/);
+                    } catch (const std::exception& e2) {
+                        // Report both failures, not only the last one.
+                        throw std::runtime_error("Wayland/EGL: " + eglError + "; X11/GLX: " + e2.what());
+                    }
+                }
                 if (glContext) {
                     // Make the context current and check its version
                     glContext->setContextCurrentNoRender();
@@ -971,7 +1099,12 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
 
     if (oldCacheVersion != NATRON_CACHE_VERSION || cl.isCacheClearRequestedOnLaunch()) {
         setLoadingStatus( tr("Clearing the image cache...") );
-        wipeAndCreateDiskCacheStructure();
+        // If another process uses the caches, they are not wiped (it would delete its files): start with empty caches
+        if ( !wipeAndCreateDiskCacheStructure() ) {
+            std::cerr << "Warning: the disk caches in " << getDiskCacheLocation().toStdString()
+                      << " were not cleared, because another " NATRON_APPLICATION_NAME " process uses them. "
+                      << "Starting with empty caches." << std::endl;
+        }
     } else {
         setLoadingStatus( tr("Restoring the image cache...") );
         _imp->restoreCaches();
@@ -1229,8 +1362,10 @@ AppManager::clearPlaybackCache()
     if (!_imp->_viewerCache) {
         return;
     }
-    _imp->_viewerCache->clearInMemoryPortion();
     clearLastRenderedTextures();
+    // The viewer cache is tiled: its entries are always in its disk portion (the tiles are memory-mapped),
+    // so clearing its memory portion would do nothing (#1119).
+    _imp->_viewerCache->clear();
 }
 
 void
@@ -1302,10 +1437,12 @@ AppManager::clearAllCaches()
         (*it)->renderAllViewers(true);
     }
 
-    Project::clearAutoSavesDir();
+    // Do not remove the auto-saves here (#1258): they are not a cache, but the crash-recovery files of the
+    // unsaved projects of every running Natron. This is also called when the disk cache is wiped at
+    // startup (--clear-cache or a new cache version), before the user is offered to restore them.
 }
 
-void
+bool
 AppManager::wipeAndCreateDiskCacheStructure()
 {
     //Should be called on the main-thread because potentially can interact with rendering
@@ -1315,10 +1452,19 @@ AppManager::wipeAndCreateDiskCacheStructure()
 
     clearAllCaches();
 
+    // The files of the cache folders may be used by another Natron process: only delete them if there is none.
+    // (clearAllCaches() only removed the files of the entries of this process.)
+    if ( isDiskCacheUsedByAnotherProcess() ) {
+        qDebug() << "The disk caches in" << getDiskCacheLocation() << "are used by another Natron process: they are not wiped.";
+
+        return false;
+    }
     assert(_imp->_diskCache);
     _imp->cleanUpCacheDiskStructure( _imp->_diskCache->getCachePath(), false );
     assert(_imp->_viewerCache);
     _imp->cleanUpCacheDiskStructure( _imp->_viewerCache->getCachePath() , true);
+
+    return true;
 }
 
 AppInstancePtr
@@ -2372,6 +2518,13 @@ AppManager::removeAllTexturesFromCacheWithMatchingIDAndDifferentKey(const CacheE
 }
 
 void
+AppManager::removeAllTexturesFromCacheForHolderAtTime(const CacheEntryHolder* holder,
+                                                      double time)
+{
+    _imp->_viewerCache->removeAllEntriesForHolderAtTime(holder, time);
+}
+
+void
 AppManager::removeAllCacheEntriesForHolder(const CacheEntryHolder* holder,
                                            bool blocking)
 {
@@ -2506,20 +2659,245 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<std::list<double> >("std::list<double>");
 }
 
+// The disk caches of all the Natron processes (Natron, NatronRenderer, the background renders) are in the same
+// folder. Each process keeps a file of its own open in the "Instances" sub-folder, named <host>@<pid>-<uuid>.lock,
+// locked with flock() on Unix (the lock is released when the process exits, even if it crashes), and open without
+// sharing deletion on Windows (a file that is open, also by another host on an SMB share, can't be removed).
+// A process only restores or wipes the caches (and deletes the cache files it doesn't know) when no other process
+// uses them.
+// - On a local file system, the lock tells everything: the host name is ignored (on macOS it changes with the network).
+// - On a network file system, the lock of another host can't be trusted (e.g. NFS mounted with "nolock" makes flock()
+//   local to each host): the file of another host is in use if it was touched by its owner in the last
+//   kDiskCacheInstanceStaleHours (the owner touches it every 10 minutes, from a thread: see
+//   AppManagerPrivate::startDiskCachesInstanceFileToucher()).
+// - The files whose lock can't be tested (another user's file, a file system without flock(), which gives an error
+//   other than EWOULDBLOCK) are considered in use, so the cleanup is disabled on such file systems.
+// - Unlocked files with an older name format (no UUID) are stale and removed.
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
+const int kDiskCacheInstanceStaleHours = 2;
+
+QString
+diskCacheInstancesFolder(const QString& diskCachesLocation)
+{
+    return diskCachesLocation + QString::fromUtf8("/Instances");
+}
+
+// The file names start with "<host>@": hostnames can't contain '@'
+QString
+diskCacheInstanceFilePrefix()
+{
+    return QSysInfo::machineHostName() + QLatin1Char('@');
+}
+
+#ifdef Q_OS_UNIX
+// Returns false if the folder is on a network file system
+bool
+isLocalFileSystem(const QString& folder)
+{
+    struct statfs fsStat;
+    if (::statfs(folder.toUtf8().constData(), &fsStat) != 0) {
+        return false; // can't tell: the safe side
+    }
+#if defined(__linux__)
+    // Only the file systems that are known to be local: the others are considered as network file systems (the safe side)
+    switch ( (unsigned long)(unsigned int)fsStat.f_type ) { // the magic numbers are 32-bit
+    case 0xEF53UL:     // ext2, ext3, ext4
+    case 0x58465342UL: // XFS
+    case 0x9123683EUL: // Btrfs
+    case 0x01021994UL: // tmpfs
+    case 0x2FC12FC1UL: // ZFS
+    case 0xF2F52010UL: // F2FS
+    case 0x794C7630UL: // overlayfs
+    case 0x858458F6UL: // ramfs
+    case 0x73717368UL: // squashfs
+    case 0x3153464AUL: // JFS
+    case 0x52654973UL: // ReiserFS
+    case 0xCA451A4EUL: // bcachefs
+    case 0x4D44UL:     // FAT
+    case 0x5346544EUL: // NTFS (ntfs3)
+        return true;
+    default:
+        return false;
+    }
+#elif defined(MNT_LOCAL)
+    return (fsStat.f_flags & MNT_LOCAL) != 0;
+#else
+    return false;
+#endif
+}
+
+// True if the name has the format <host>@<pid>-<uuid>.lock
+bool
+isCurrentDiskCacheInstanceFileName(const QString& name)
+{
+    static const QRegularExpression re( QString::fromUtf8("^.+@[0-9]+-[0-9a-fA-F-]{36}\\.lock$") );
+
+    return re.match(name).hasMatch();
+}
+#endif
+
+// Opens and locks the file of this process. Returns NULL on failure.
+QFile*
+createDiskCacheInstanceFile(const QString& diskCachesLocation)
+{
+    const QString folder = diskCacheInstancesFolder(diskCachesLocation);
+    QDir().mkpath(folder);
+    // The PID is not enough: containers may share the hostname and the PID
+    const QString path = folder + QLatin1Char('/') + diskCacheInstanceFilePrefix() +
+                         QString::fromUtf8("%1-%2.lock").arg( QCoreApplication::applicationPid() ).arg( QUuid::createUuid().toString(QUuid::WithoutBraces) );
+    for (int attempt = 0; attempt < 100; ++attempt) {
+        std::unique_ptr<QFile> file( new QFile(path) );
+        if ( !file->open(QIODevice::ReadWrite) ) {
+            return NULL;
+        }
+#ifdef Q_OS_UNIX
+        // Another process checking the files may hold a lock on it for a short time (see isDiskCacheInstanceFileInUse())
+        int rc;
+        while ( (rc = ::flock(file->handle(), LOCK_EX | LOCK_NB)) != 0 && (errno == EINTR) ) {
+        }
+        if (rc != 0) {
+            if (errno == EWOULDBLOCK) {
+                QThread::msleep(10);
+                continue;
+            }
+            // No flock() on this file system: keep the file anyway, the other processes then consider it in use
+            qDebug() << "Warning: could not lock" << path << ":" << std::strerror(errno);
+
+            return file.release();
+        }
+        // A process checking the files may have locked it before this one, and removed it as stale: check that the
+        // locked file is the one at this path
+        struct stat fdStat, pathStat;
+        if ( (::fstat(file->handle(), &fdStat) == 0) && (::stat(path.toUtf8().constData(), &pathStat) == 0) &&
+             (fdStat.st_dev == pathStat.st_dev) && (fdStat.st_ino == pathStat.st_ino) ) {
+            return file.release();
+        }
+        // Removed meanwhile: create it again
+#else
+        return file.release();
+#endif
+    }
+
+    return NULL;
+}
+
+// Returns true if the file of another process is in use, and removes it otherwise (the process is gone).
+bool
+isDiskCacheInstanceFileInUse(const QString& path,
+                             bool isLocal)
+{
+#ifdef Q_OS_UNIX
+    QFile file(path);
+    if ( !file.open(QIODevice::ReadWrite) ) {
+        // e.g. another user's file: can't tell, and don't remove it
+        return file.exists();
+    }
+    int rc;
+    while ( (rc = ::flock(file.handle(), LOCK_EX | LOCK_NB)) != 0 && (errno == EINTR) ) {
+    }
+    if (rc != 0) {
+        // EWOULDBLOCK: locked by a running process. Other errors (no flock()): can't tell
+        return true;
+    }
+    const QString name = QFileInfo(path).fileName();
+    if ( !isLocal && isCurrentDiskCacheInstanceFileName(name) && !name.startsWith( diskCacheInstanceFilePrefix() ) ) {
+        // Another host, on a network file system: the lock can't be trusted, use the time it was last touched
+        const QDateTime lastTouched = QFileInfo(path).lastModified();
+        if ( lastTouched.secsTo( QDateTime::currentDateTime() ) < kDiskCacheInstanceStaleHours * 3600LL ) {
+            return true;
+        }
+    }
+    // Remove it while it is locked: a process that creates it again checks that its file is still there
+    QFile::remove(path);
+
+    return false;
+#else
+    Q_UNUSED(isLocal);
+    // A file that is open by a running process can't be removed
+    return !QFile::remove(path) && QFile::exists(path);
+#endif
+}
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 void
 AppManager::refreshDiskCacheLocation()
 {
+    // The environment variable takes precedence over the "Disk cache path" preference, as documented (#1265).
+    // The settings do not exist yet when this is first called by loadInternal().
+    QStringList paths;
+    paths << QString::fromUtf8( qgetenv(NATRON_DISK_CACHE_PATH_ENV_VAR) );
+    if (_imp->_settings) {
+        paths << _imp->_settings->getDiskCachePath();
+    }
     QMutexLocker k(&_imp->diskCachesLocationMutex);
-    QString path = QString::fromUtf8(qgetenv(NATRON_DISK_CACHE_PATH_ENV_VAR));
-    if ( !path.isEmpty() ) {
-        QDir d(path);
-        // create the full path if the directory does not exist
-        if ( d.exists() || d.mkpath(path) ) {
-            _imp->diskCachesLocation = path;
-            return;
+    QString location;
+    Q_FOREACH(const QString &path, paths) {
+        if ( !path.isEmpty() ) {
+            QDir d(path);
+            // create the full path if the directory does not exist
+            if ( d.exists() || d.mkpath(path) ) {
+                location = path;
+                break;
+            }
         }
     }
-    _imp->diskCachesLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
+    if ( location.isEmpty() ) {
+        location = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
+    }
+    if ( (location != _imp->diskCachesLocation) || !_imp->diskCachesInstanceFile ) {
+        // Tell the other processes that this one uses the caches in the new location
+        if (_imp->diskCachesInstanceFile) {
+            const QString oldPath = _imp->diskCachesInstanceFile->fileName();
+            _imp->diskCachesInstanceFile.reset();
+            QFile::remove(oldPath);
+        }
+        _imp->diskCachesInstanceFile.reset( createDiskCacheInstanceFile(location) );
+        if (!_imp->diskCachesInstanceFile) {
+            qDebug() << "Warning: could not create the instance file of the disk cache in" << diskCacheInstancesFolder(location);
+        }
+        // Touch it periodically: on a network file system, the other hosts consider it stale if it is not touched
+        _imp->startDiskCachesInstanceFileToucher();
+    }
+    _imp->diskCachesLocation = location;
+}
+
+void
+AppManager::setDiskCacheInstanceFileTouchInterval(int milliseconds)
+{
+    {
+        std::lock_guard<std::mutex> l(_imp->diskCachesInstanceFileToucherMutex);
+        _imp->diskCachesInstanceFileTouchMs = milliseconds;
+    }
+    _imp->diskCachesInstanceFileToucherCond.notify_all();
+}
+
+bool
+AppManager::isDiskCacheUsedByAnotherProcess() const
+{
+    QString folder;
+    QString ownFile;
+    {
+        QMutexLocker k(&_imp->diskCachesLocationMutex);
+        folder = diskCacheInstancesFolder(_imp->diskCachesLocation);
+        if (_imp->diskCachesInstanceFile) {
+            ownFile = QFileInfo( _imp->diskCachesInstanceFile->fileName() ).fileName();
+        }
+    }
+    const QStringList files = QDir(folder).entryList(QStringList() << QString::fromUtf8("*.lock"), QDir::Files);
+#ifdef Q_OS_UNIX
+    const bool isLocal = files.isEmpty() || isLocalFileSystem(folder);
+#else
+    const bool isLocal = true; // unused
+#endif
+    Q_FOREACH(const QString &file, files) {
+        if ( (file != ownFile) && isDiskCacheInstanceFileInUse(folder + QLatin1Char('/') + file, isLocal) ) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 const QString&
@@ -2607,7 +2985,13 @@ AppManager::exec()
 #ifdef DEBUG
     boost_adaptbx::floating_point::exception_trapping trap(0);
 #endif
-    return qApp->exec();
+    int ret = qApp->exec();
+#ifdef __NATRON_UNIX__
+    // The event loop is over: it can't quit the application on a signal anymore.
+    disarmShutDownSignalPipe();
+#endif
+
+    return ret;
 }
 
 void
@@ -2939,20 +3323,20 @@ AppManager::initPython()
     //Disable user sites as they could conflict with Natron bundled packages.
     //If this is set, Python won’t add the user site-packages directory to sys.path.
     //See https://www.python.org/dev/peps/pep-0370/
+    // (initializePython3() also disables it in the Python configuration)
     qputenv("PYTHONNOUSERSITE", "1");
-    ++Py_NoUserSiteDirectory;
 
     //
     // set up paths, clear those that don't exist or are not valid
     //
     QString binPath = QCoreApplication::applicationDirPath();
     binPath = QDir::toNativeSeparators(binPath);
-    NATRON_PYTHON_NAMESPACE::setupPythonEnv(binPath.toStdString());
+    std::wstring pythonHome = NATRON_PYTHON_NAMESPACE::setupPythonEnv(binPath.toStdString());
 
     ///Must be called prior to Py_Initialize (calls PyImport_AppendInittab())
     initBuiltinPythonModules();
     
-    _imp->mainModule = NATRON_PYTHON_NAMESPACE::initializePython3(_imp->commandLineArgsWide);
+    _imp->mainModule = NATRON_PYTHON_NAMESPACE::initializePython3(_imp->commandLineArgsWide, pythonHome);
 
     std::string err;
     std::string modulename = NATRON_ENGINE_PYTHON_MODULE_NAME;
@@ -3081,6 +3465,61 @@ AppManager::toggleAutoHideGraphInputs()
     for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
         (*it)->toggleAutoHideGraphInputs();
     }
+}
+
+// Registered with atexit by registerCloseProjectsAtPythonExit() in the background modes that run
+// scripts: Py_Main() (-t), or sys.exit() in a script, finalizes Python, so close the projects while Python
+// still runs, for the onProjectClose callbacks and the removal of the node variables (#1253).
+// After Py_Main(), loadInternalAfterInitGui() then quits the instances.
+static PyObject*
+closeProjectsAtPythonExit(PyObject* /*self*/,
+                          PyObject* /*args*/)
+{
+    // SystemExit raised on another thread (e.g. sys.exit() in an expression evaluated by a
+    // render thread) also finalizes Python: the projects can only be reset on the main thread.
+    if ( !qApp || (QThread::currentThread() != qApp->thread()) ) {
+        Py_RETURN_NONE;
+    }
+    if (appPTR) {
+        const AppInstanceVec instances = appPTR->getAppInstances();
+        // Release the GIL while the nodes are deleted: they may wait for threads that need it.
+        // The callbacks take it again with PythonGILLocker.
+        Py_BEGIN_ALLOW_THREADS
+        for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+            try {
+                (*it)->getProject()->reset(true /*aboutToQuit*/, true /*blocking*/);
+            } catch (const std::exception& e) {
+                std::cerr << e.what() << std::endl;
+            }
+        }
+        Py_END_ALLOW_THREADS
+    }
+    Py_RETURN_NONE;
+}
+
+static PyMethodDef closeProjectsAtPythonExitDef = {
+    "_natronCloseProjectsAtExit", closeProjectsAtPythonExit, METH_NOARGS, NULL
+};
+
+void
+AppManager::registerCloseProjectsAtPythonExit()
+{
+    // Before the scripts of the background modes run: sys.exit() in a script finalizes Python too (#1253).
+    static bool registered = false;
+    if (registered) {
+        return;
+    }
+    registered = true;
+    PythonGILLocker pgl;
+    PyObject* atexitModule = PyImport_ImportModule("atexit");
+    PyObject* func = PyCFunction_New(&closeProjectsAtPythonExitDef, NULL);
+    PyObject* ret = (atexitModule && func) ? PyObject_CallMethod(atexitModule, "register", "O", func) : NULL;
+    if (!ret) {
+        PyErr_Print();
+    }
+    Py_XDECREF(ret);
+    Py_XDECREF(func);
+    Py_XDECREF(atexitModule);
 }
 
 void
@@ -3574,6 +4013,14 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
 
     return true;
 #endif
+    if ( !Py_IsInitialized() ) {
+        // e.g. after Py_Main() returned in interpreter mode (#1253)
+        if (error) {
+            *error = "Python is not initialized or was already finalized";
+        }
+
+        return false;
+    }
     PythonGILLocker pgl;
     PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
     int status = -1;
@@ -3798,13 +4245,18 @@ QMap<QString,int> PythonGILLocker::natronCount;
 // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
 PythonGILLocker::PythonGILLocker()
     : state(PyGILState_UNLOCKED)
+    , locked(false)
 {
 #ifdef DEBUG_PYTHON_GIL
     if (!Py_IsInitialized()) {
         throw std::runtime_error("Trying to execute python code, but Py_IsInitialized() returns false");
     }
 #endif
-    assert(Py_IsInitialized());
+    if ( !Py_IsInitialized() ) {
+        // Taking the GIL of a finalized interpreter crashes (#1253): lock nothing.
+        return;
+    }
+    locked = true;
 
     // Also take the Python GIL, since not doing so seems to crash Natron during recursive Natron->Python->Natron->Python calls, see https://github.com/NatronGitHub/Natron/issues/379
     // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
@@ -3845,6 +4297,9 @@ PythonGILLocker::PythonGILLocker()
 
 PythonGILLocker::~PythonGILLocker()
 {
+    if (!locked) {
+        return;
+    }
     // Release the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
 #ifdef DEBUG_PYTHON_GIL
     QThread* curThread = QThread::currentThread();
@@ -4187,9 +4642,17 @@ NATRON_PYTHON_NAMESPACE::getFunctionArguments(const std::string& pyFunc,
 
     return;
 #endif
+    if ( !Py_IsInitialized() ) {
+        // e.g. after Py_Main() returned in interpreter mode (#1253)
+        if (error) {
+            *error = "Python is not initialized or was already finalized";
+        }
+
+        return;
+    }
     std::stringstream ss;
     ss << "import inspect\n";
-    ss << "args_spec = inspect.getargspec(" << pyFunc << ")\n";
+    ss << "args_spec = inspect.getfullargspec(" << pyFunc << ")\n";
     std::string script = ss.str();
     std::string output;
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, error, &output);

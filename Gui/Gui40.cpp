@@ -38,8 +38,6 @@
 #include <QFileInfo>
 #include <QSettings>
 
-#include <QScreen>
-
 #include <QAction>
 #include <QApplication> // qApp
 
@@ -112,8 +110,10 @@ void
 Gui::showAbout()
 {
     _imp->_aboutWindow->show();
-    _imp->_aboutWindow->raise();
-    _imp->_aboutWindow->activateWindow();
+    if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+        _imp->_aboutWindow->raise();
+        _imp->_aboutWindow->activateWindow();
+    }
     ignore_result( _imp->_aboutWindow->exec() );
 }
 
@@ -133,7 +133,9 @@ Gui::openRecentFile()
                 GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( instance.get() );
                 assert(guiApp);
                 if (guiApp) {
-                    guiApp->getGui()->activateWindow();
+                    if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+                        guiApp->getGui()->activateWindow();
+                    }
 
                     return;
                 }
@@ -182,7 +184,7 @@ Gui::updateRecentFileActions()
     assert(files.size() <= (int)NATRON_MAX_RECENT_FILES);
     assert(files.size() == fileNames.size());
     assert(dirNames.size() == fileNames.size());
-    int numRecentFiles = std::min(fileNames.size(), (int)NATRON_MAX_RECENT_FILES);
+    int numRecentFiles = std::min((int)fileNames.size(), (int)NATRON_MAX_RECENT_FILES);
 
     // the dirname can be the same too. for each fileName with count > 1, collect the indices of the identical filenames. if dirname and directory up-level is the same for at least two files, raise the directory level up until the two dirnames are different
     for (std::map<QString,QStringList>::const_iterator it = allDirNames.begin(); it != allDirNames.end(); ++it) {
@@ -196,7 +198,7 @@ Gui::updateRecentFileActions()
             }
             int minComps = dirParts[0].size();
             for (int i = 1; i < dirs.size(); ++i) {
-                minComps = std::min(minComps, dirParts[i].size());
+                minComps = std::min( minComps, (int)dirParts[i].size() );
             }
             // count the number of elements to remove
             int commonComps = 0;
@@ -244,7 +246,11 @@ Gui::updateRecentFileActions()
 QPixmap
 Gui::screenShot(QWidget* w)
 {
-    return QApplication::primaryScreen()->grabWindow( w->winId() );
+    // Render the widget (QWidget::grab() also renders its QOpenGLWidget children) instead of
+    // grabbing its window from the screen: w->winId() would turn w (a panel being dragged, which
+    // may hold a QOpenGLWidget) and its parents into native windows for the rest of the session.
+    // Dragging the Curve Editor tab crashes in GLX context creation on X11/Mesa (#536).
+    return w->grab();
 }
 
 void

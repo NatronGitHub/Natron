@@ -3,7 +3,6 @@
 PortSystem          1.0
 PortGroup           xcodeversion 1.0
 PortGroup           muniversal 1.0
-PortGroup           compiler_blacklist_versions 1.0
 PortGroup           active_variants 1.1
 
 # For 'TARGET_OS_OSX', 'TARGET_CPU_ARM64' macros
@@ -18,8 +17,8 @@ set my_name         ffmpeg
 conflicts           ffmpeg-devel
 
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
-version             4.4.5
-revision            7
+version             9.0.2
+revision            3
 epoch               1
 
 license             LGPL-2.1+
@@ -62,9 +61,9 @@ distname            ${my_name}-${version}
 dist_subdir         ${my_name}
 use_xz              yes
 
-checksums           rmd160  51d7e4cd1beec0c44c93f466732d11c2573fd77a \
-                    sha256  f9514e0d3515aee5a271283df71636e1d1ff7274b15853bcd84e144be416ab07 \
-                    size    9575596
+checksums           rmd160  e4eb22bca3395ecb499dd6fd256e16e7d74cd4ce \
+                    sha256  8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e \
+                    size    12040788
 
 depends_build-append \
                     port:cctools \
@@ -74,24 +73,29 @@ depends_build-append \
 
 depends_lib-append \
                     port:bzip2 \
+                    path:lib/pkgconfig/cairo.pc:cairo \
                     port:dav1d \
                     port:fontconfig \
                     port:freetype \
                     port:fribidi \
+                    path:lib/pkgconfig/gdk-pixbuf-2.0.pc:gdk-pixbuf2 \
+                    port:gettext-runtime \
+                    path:lib/pkgconfig/glib-2.0.pc:glib2 \
                     path:lib/pkgconfig/gnutls.pc:gnutls \
                     path:lib/pkgconfig/harfbuzz.pc:harfbuzz \
                     port:lame \
+                    port:lcms2 \
                     path:lib/pkgconfig/libass.pc:libass \
                     port:libbluray \
                     port:libiconv \
                     port:libmodplug \
                     port:libogg \
                     port:libopus \
+                    port:libpng \
                     path:lib/pkgconfig/librsvg-2.0.pc:librsvg \
                     port:libtheora \
                     port:libvorbis \
                     path:lib/pkgconfig/vpx.pc:libvpx \
-                    port:lzo2 \
                     port:openjpeg \
                     port:openh264 \
                     port:snappy \
@@ -105,15 +109,9 @@ depends_lib-append \
 
 patchfiles-append   patch-libavcodec-audiotoolboxenc.c.diff
 
-# Fix an upstream bug that overrides the max_b_frames setting
-# https://trac.ffmpeg.org/ticket/9231
-# Fixed via upstream commit: 55d9d6767967794edcdd6e1bbd8840fc6f4e9315
-patchfiles-append   patch-libavcodec-videotoolboxenc.c.diff
-
-# Patch for upstream bug related to non-B-frame encoding
-# https://trac.ffmpeg.org/ticket/9439
-# Fixed via upstream commit: b786bc7433dfe082441a57c1ba9ae9ea47904b78
-patchfiles-append   patch-issue-9439-non-b-frame-encoding.diff
+# Additional fixes related to use of '__builtin_available'
+# TODO: Submit patches to upstream
+patchfiles-append   patch-libavcodec-profvidworkflow.diff
 
 # add retina resolution capabilities via -movflags write_pixeldensity flag
 # this patch is by daniel kaiser who posted on the ffmpeg bugtracker:
@@ -123,13 +121,14 @@ patchfiles-append   patch-issue-9439-non-b-frame-encoding.diff
 # so the FFMpeg team does not seem to care to include this functionality
 patchfiles-append   patch-add-pixeldensity.diff
 
-# SVT-AV1 v3 has API changes
-# See https://gitlab.com/AOMediaCodec/SVT-AV1/-/commit/988e930c1083ce518ead1d364e3a486e9209bf73
-patchfiles-append   patch-svt-av1-v3.diff
+# Typedef AVMediaType to NSString* on older systems
+# Patch submitted to upstream, remove once upstream has included it
+if {${os.platform} eq "darwin" && ${os.major} < 17} {
+    patchfiles-append   patch-libavdevice-avfoundation.diff
+}
 
-# doc/t2h: Support texinfo 7.1 and 7.2 pretest
-# https://trac.macports.org/ticket/72110
-patchfiles-append   patch-texinfo7x-pretest-support.diff
+# error: call to undeclared function 'VTRegisterProfessionalVideoWorkflowVideoEncoders' on 10.9
+patchfiles-append   patch-libavcodec-videotoolboxenc.c.diff
 
 # enable auto configure of asm optimizations
 # requires Xcode 3.1 or better on Leopard
@@ -142,7 +141,7 @@ compiler.c_standard 2011
 # clang-139 hits https://trac.macports.org/ticket/38141
 # warning: unknown warning option '-Werror=partial-availability'; did you mean '-Werror=availability'? [-Wunknown-warning-option]
 # warning: unknown warning option '-Wno-bool-operation'; did you mean '-Wno-bool-conversion'? [-Wunknown-warning-option]
-compiler.blacklist-append {clang < 800}
+compiler.blacklist-append {clang < 900}
 
 # gcc > 4.2 is required, https://trac.ffmpeg.org/ticket/1464
 # WARNING: gcc 4.2 is outdated and may miscompile FFmpeg. Please use a newer compiler.
@@ -167,18 +166,12 @@ configure.cflags-append \
                     -Wno-deprecated-declarations \
                     ${configure.cppflags}
 
-set port_prefix     ${prefix}
-set port_sharedir   ${port_prefix}/share
-set port_datadir    ${port_sharedir}/data/ffmpeg
-set port_docdir     ${port_sharedir}/doc/ffmpeg
-set port_mandir     ${port_sharedir}/man
+set port_sharedir   ${prefix}/share
+set port_docdir     ${port_sharedir}/doc/${my_name}
 
 configure.pre_args-append \
                     --cxx="${configure.cxx}" \
-                    --cc="${configure.cc}" \
-                    --datadir=${port_datadir} \
-                    --docdir=${port_docdir} \
-                    --mandir=${port_mandir}
+                    --cc="${configure.cc}"
 
 configure.args-append \
                     --disable-audiotoolbox \
@@ -186,24 +179,25 @@ configure.args-append \
                     --disable-libjack \
                     --disable-libopencore-amrnb \
                     --disable-libopencore-amrwb \
+                    --disable-libplacebo \
+                    --disable-libvmaf \
                     --disable-libxcb \
-                    --disable-libxcb-shm \
-                    --disable-libxcb-xfixes \
+                    --disable-metal \
                     --disable-opencl \
-                    --disable-outdev=xv \
                     --disable-sdl2 \
                     --disable-securetransport \
                     --disable-videotoolbox \
                     --disable-xlib \
                     --enable-avfilter \
-                    --enable-avresample \
                     --enable-fontconfig \
                     --enable-gnutls \
+                    --enable-lcms2 \
                     --enable-libass \
                     --enable-libbluray \
                     --enable-libdav1d \
                     --enable-libfreetype \
                     --enable-libfribidi \
+                    --enable-libharfbuzz \
                     --enable-libmodplug \
                     --enable-libmp3lame \
                     --enable-libopenjpeg \
@@ -274,9 +268,8 @@ platform darwin {
                     --enable-audiotoolbox
     }
 
-    if {${os.major} > 9 && ${build_arch} ni [list ppc ppc64]} {
-        # libsdl2 requires minimum Xcode 10.7 SDK to build successfully
-        # but builds on Snow Leopard x86. Exclude ppc until fixed.
+    if {${os.major} > 9 || ${configure.build_arch} in [list ppc ppc64]} {
+        # libsdl2 uses X11 backend on PowerPC and builds on 10.4+.
         configure.args-replace \
                     --disable-sdl2 \
                     --enable-sdl2
@@ -329,22 +322,6 @@ platform darwin {
             error "Variant rav1e not supported for macOS 10.5 and earlier, or PPC"
         }
     }
-
-    # due to the new linker (which was introduced in Xcode 15: https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes),
-    # this port requires '-ld_classic' to build successfully with the toolchains from Xcode 15 or Command Line Tools 15.
-    #
-    # TODO: This is a temporary solution, the classic linker will be removed in a future release by Apple.
-    if { ( [vercmp ${xcodeversion} 15 ] >= 0 ) || ( [vercmp ${xcodecltversion} 15 ] >= 0 ) } {
-        configure.ldflags-append \
-                    -Wl,-ld_classic
-    }
-}
-
-# libavcodec/pcm-bluray.c:172:45: error: passing argument 2 of 'bytestream2_get_buffer' from incompatible pointer type [-Wincompatible-pointer-types]
-# libavcodec/pcm-dvd.c:155:37: error: passing argument 2 of 'bytestream2_get_buffer' from incompatible pointer type [-Wincompatible-pointer-types]
-if {[string match *gcc* ${configure.compiler}]} {
-    configure.cflags-append \
-                    -Wno-error=incompatible-pointer-types
 }
 
 platform powerpc {
@@ -365,6 +342,10 @@ platform powerpc {
     configure.ldflags-append \
                     -latomic
 }
+
+# libavcodec/pcm-bluray.c: error: passing argument 2 of 'bytestream2_get_buffer' from incompatible pointer type [-Wincompatible-pointer-types]
+configure.cflags-append \
+                    -Wno-error=incompatible-pointer-types
 
 # configure isn't autoconf and they do use a dep cache
 configure.universal_args-delete \
@@ -442,7 +423,7 @@ post-destroot {
     }
 }
 
-variant natronmini requires highbitdepth conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
+variant natronmini requires highbitdepth conflicts x11 vmaf description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display, VMAF support.} {
 
     depends_lib-delete \
                     port:libiconv \
@@ -484,17 +465,14 @@ variant natronmini requires highbitdepth conflicts x11 description {Minimal FFmp
 
 variant x11 {
     # enable x11grab_xcb input device
-    # Re libXv see: https://trac.macports.org/ticket/58617
     depends_lib-append \
                     port:xorg-libxcb \
+                    port:xorg-libX11 \
                     port:xorg-libXext \
-                    port:xorg-libXfixes \
                     port:xorg-libXv
     configure.args-delete \
                     --disable-xlib \
-                    --disable-libxcb \
-                    --disable-libxcb-shm \
-                    --disable-libxcb-xfixes
+                    --disable-libxcb
 }
 
 # On PowerPC libsdl2 is a stub for libsdl2-powerpc, which is always built
@@ -563,8 +541,7 @@ variant gpl2 description {Enable GPL code, license will be GPL-2+} {
                     --enable-libvidstab \
                     --enable-libx264 \
                     --enable-libx265 \
-                    --enable-libxvid \
-                    --enable-postproc
+                    --enable-libxvid
     depends_lib-append \
                     port:libvidstab \
                     port:x264 \
@@ -581,13 +558,7 @@ variant gpl3 requires gpl2 description {Enable GPL code, license will be GPL-3+}
                     --enable-version3
     depends_lib-append \
                     port:libaribb24 \
-                    path:lib/pkgconfig/smbclient.pc:samba3
-
-    # samba3 cannot be built universal (http://trac.macports.org/ticket/34558)
-    if {[variant_isset universal]} {
-        depends_lib-delete    port:samba3
-        configure.args-delete --enable-libsmbclient
-    }
+                    path:lib/pkgconfig/smbclient.pc:samba4
 }
 
 # the build server uses the default variants, and we want distributable binaries
@@ -614,6 +585,19 @@ variant flite description {Enable flite audio source} {
                     --enable-libflite
     depends_lib-append \
                     port:flite
+}
+
+variant vmaf description {Enable VMAF perceptual video quality assessment} {
+    configure.args-append \
+                    --enable-libvmaf
+    depends_lib-append \
+                    port:libvmaf
+}
+
+# Natron: +natronmini doesn't bundle libvmaf
+if {![variant_isset natronmini]} {
+    default_variants-append \
+                    +vmaf
 }
 
 if {![variant_isset rav1e]} {
@@ -652,4 +636,4 @@ This build of ${name} includes no GPLed or nonfree code and is therefore license
 
 livecheck.type      regex
 livecheck.url       ${master_sites}
-livecheck.regex     "${my_name}-(4(?:\\.\\d+)*)${extract.suffix}"
+livecheck.regex     "${my_name}-(\\d+(?:\\.\\d+)*)${extract.suffix}"

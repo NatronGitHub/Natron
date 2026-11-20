@@ -6,10 +6,10 @@ PortGroup                       clang_dependency 1.0
 # Increase the revision of p5-www-curl whenever the version of curl gets updated.
 
 name                            curl
-version                         8.13.0
-checksums                       rmd160  9d259af2206988c36e548394b8bbf26fdada0ca2 \
-                                sha256  4a093979a3c2d02de2fbc00549a32771007f2e78032c6faa5ecd2f7a9e152025 \
-                                size    2773628
+version                         8.23.0
+checksums                       rmd160  3cfb4da5138fecb8483582adea9c024d3765bf41 \
+                                sha256  8dadd7d2536a314f982ad05a651b713f426bf7d02cc2c76cffb9796f2218e6c5 \
+                                size    2990916
 
 categories                      net www
 platforms                       darwin freebsd
@@ -35,7 +35,7 @@ checksums-prepend               ${curl_distfile}
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
 
-    revision                    0
+    revision                    1
 
     depends_build               path:bin/pkg-config:pkgconfig
 
@@ -49,7 +49,6 @@ if {${name} eq ${subport}} {
                                 --without-libgsasl \
                                 --without-libidn2 \
                                 --without-libpsl \
-                                --without-librtmp \
                                 --without-libssh2 \
                                 --without-mbedtls \
                                 --without-nghttp2 \
@@ -57,7 +56,6 @@ if {${name} eq ${subport}} {
                                 --without-ngtcp2 \
                                 --without-openssl \
                                 --without-ssl \
-                                --without-secure-transport \
                                 --without-wolfssl \
                                 --without-zstd \
                                 --disable-ares \
@@ -105,6 +103,14 @@ if {${name} eq ${subport}} {
     global merger_dont_diff
     set merger_dont_diff "${prefix}/include/curl/curlbuild.h"
 
+    pre-activate {
+        # Curl bundles and installs wcurl starting with 8.14.0.
+        if {![catch {registry_active wcurl}]} {
+            ui_msg "Deactivating wcurl because it is now installed by curl."
+            registry_deactivate_composite wcurl "" [list ports_nodepcheck 1]
+        }
+    }
+
     post-destroot {
         set docdir ${prefix}/share/doc/${name}
         xinstall -d ${destroot}${docdir}/html/libcurl ${destroot}${docdir}/pdf/libcurl \
@@ -122,22 +128,22 @@ if {${name} eq ${subport}} {
             CODE_OF_CONDUCT.md \
             CONTRIBUTE.md \
             CURL-DISABLE.md \
+            DEPENDENCIES.md \
             DEPRECATE.md \
-            FAQ \
+            FAQ.md \
             FEATURES.md \
             GOVERNANCE.md \
             HELP-US.md \
             HISTORY.md \
             HTTP-COOKIES.md \
-            INTERNALS.md \
-            KNOWN_BUGS \
+            KNOWN_BUGS.md \
             MAIL-ETIQUETTE.md \
             ROADMAP.md \
             SECURITY-ADVISORY.md \
             SSL-PROBLEMS.md \
             SSLCERTS.md \
             THANKS \
-            TODO \
+            TODO.md \
             TheArtOfHttpScripting.md \
             URL-SYNTAX.md \
             VERSIONS.md \
@@ -162,10 +168,15 @@ if {${name} eq ${subport}} {
         configure.args-replace  --without-brotli --with-brotli
     }
 
-    variant darwinssl conflicts gnutls mbedtls ssl wolfssl description {Allow secure connections using Apple OS native TLS} {
+    variant sectrust conflicts darwinssl mbedtls wolfssl description {Use Apple SecTrust for native certificate verification with OpenSSL or GnuTLS} {
+        configure.args-append   --with-apple-sectrust
+    }
+
+    variant darwinssl conflicts gnutls mbedtls sectrust ssl wolfssl description {Compatibility variant preserving macOS native trust/keychain behavior via OpenSSL} {
+        depends_lib-append      path:lib/libssl.dylib:openssl
         configure.args-delete   --without-ssl
-        configure.args-replace  --without-secure-transport --with-secure-transport
-        configure.args-append   --without-ca-bundle
+        configure.args-replace  --without-openssl --with-openssl
+        configure.args-append   --with-apple-sectrust --without-ca-bundle
     }
 
     variant gnutls conflicts darwinssl mbedtls ssl wolfssl description {Allow secure connections using GNU TLS} {
@@ -173,11 +184,16 @@ if {${name} eq ${subport}} {
                                 path:share/curl/curl-ca-bundle.crt:curl-ca-bundle
         configure.args-delete   --without-ssl
         configure.args-replace  --without-gnutls --with-gnutls
-        configure.args-append   --with-ca-bundle=${prefix}/share/curl/curl-ca-bundle.crt
+        if {[variant_isset sectrust]} {
+            # curl tries a CA bundle before SecTrust, so leave it out.
+            configure.args-append   --without-ca-bundle
+        } else {
+            configure.args-append   --with-ca-bundle=${prefix}/share/curl/curl-ca-bundle.crt
+        }
     }
 
     variant mbedtls conflicts darwinssl gnutls ssl wolfssl description {Allow secure connections using mbed TLS (formerly PolarSSL)} {
-        depends_lib-append      port:mbedtls \
+        depends_lib-append      port:mbedtls3 \
                                 path:share/curl/curl-ca-bundle.crt:curl-ca-bundle
         configure.args-delete   --without-ssl
         configure.args-replace  --without-mbedtls --with-mbedtls
@@ -233,11 +249,6 @@ if {${name} eq ${subport}} {
         configure.args-replace  --without-libpsl --with-libpsl
     }
 
-    variant rtmp description {Support RTMP media streams} {
-        depends_lib-append      port:rtmpdump
-        configure.args-replace  --without-librtmp --with-librtmp
-    }
-
     variant sftp_scp description {Support SFTP/SCP connections via libssh2} {
         depends_lib-append      port:libssh2
         configure.args-replace  --without-libssh2 --with-libssh2
@@ -248,7 +259,12 @@ if {${name} eq ${subport}} {
                                 path:share/curl/curl-ca-bundle.crt:curl-ca-bundle
         configure.args-delete   --without-ssl
         configure.args-replace  --without-openssl --with-openssl
-        configure.args-append   --with-ca-bundle=${prefix}/share/curl/curl-ca-bundle.crt
+        if {[variant_isset sectrust]} {
+            # curl tries a CA bundle before SecTrust, so leave it out.
+            configure.args-append   --without-ca-bundle
+        } else {
+            configure.args-append   --with-ca-bundle=${prefix}/share/curl/curl-ca-bundle.crt
+        }
     }
 
     variant zstd description {Support zstd compression} {
@@ -262,10 +278,29 @@ if {${name} eq ${subport}} {
         default_variants-append +ssl
     }
 
-    if {[variant_isset darwinssl] || [variant_isset mbedtls]} {
+    pre-fetch {
+        if {([variant_isset sectrust] || [variant_isset darwinssl]) && ${os.platform} ne "darwin"} {
+            ui_error "The +sectrust and +darwinssl variants are only supported on Darwin."
+            return -code error "unsupported platform"
+        }
+
+        if {[variant_isset sectrust] && ![variant_isset ssl] && ![variant_isset gnutls]} {
+            ui_error "+sectrust requires either the +ssl or +gnutls variant."
+            return -code error "+sectrust requires either the +ssl or +gnutls variant."
+        }
+    }
+
+    if {[variant_isset mbedtls]} {
         notes-append {
             The selected TLS library does not support TLS 1.3; you may want to\
             use one that does by choosing the +ssl, +gnutls, or +wolfssl variant.
+        }
+    }
+
+    if {[variant_isset darwinssl]} {
+        notes-append {
+            The +darwinssl variant now uses OpenSSL with Apple SecTrust because\
+            upstream removed Secure Transport support in curl 8.15.0.
         }
     }
 
@@ -278,7 +313,7 @@ if {${name} eq ${subport}} {
 
 subport curl-ca-bundle {
     # Also increase the revision of privoxy-pki-bundle whenever curl-ca-bundle contents change.
-    revision                    0
+    revision                    1
     categories                  net
     license                     {MPL-2 LGPL-2.1+}
     supported_archs             noarch
@@ -304,17 +339,17 @@ subport curl-ca-bundle {
 
     # The approximate time (in seconds since the epoch) when the port maintainer
     # updated the certdata.txt file in this port. (The output of "date +%s".)
-    set certdata_updated        1734045673
+    set certdata_updated        1792667555
     # The upstream commit in which certdata.txt was last updated.
-    set certdata_commit         fc857d1685f9cd017a2cf656a52d871b02a4cc89
+    set certdata_commit         fee2fc492a7d62689a724c01c2b810cd49f43212
     # The date (in YYYYMMDD format) that commit was pushed.
-    set certdata_date           20241119
+    set certdata_date           20261022
     set certdata_file           certdata.txt
     # Using tar.bz2 would be preferable because it's smaller but upstream has
     # disabled the creation of all but zip archives:
     # https://bugzilla.mozilla.org/show_bug.cgi?id=1596135
     set certdata_extract_suffix .zip
-    set certdata_distfile       certdata-${certdata_date}-${certdata_commit}${certdata_extract_suffix}
+    set certdata_distfile       mozilla-central-${certdata_commit}${certdata_extract_suffix}
     set certdata_path           security/nss/lib/ckfw/builtins/${certdata_file}
 
     # Only try to fetch from upstream shortly after the port is updated,
@@ -329,9 +364,9 @@ subport curl-ca-bundle {
     distfiles-append            ${certdata_distfile}:certdata
 
     checksums-append            ${certdata_distfile} \
-                                rmd160  84fe81fcee192f13de1a21fb44b9a529515db8f9 \
-                                sha256  3112344e7742a3372e756f8c080765cc98dc7b2807b813cdef5b9d5421ec0784 \
-                                size    291100
+                                rmd160  8e3f5ffa6337bbfef0d89028b7788079944a258f \
+                                sha256  c59677cf2cd03854bf491a5f41ecb02cedec179338ad702ad19d5cef3d08cb6b \
+                                size    285559
 
     extract.only                ${curl_distfile}
     extract.post_args-append    ${worksrcdir}/scripts/mk-ca-bundle.pl

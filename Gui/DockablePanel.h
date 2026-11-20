@@ -87,6 +87,12 @@ public:
     bool isFloating() const;
     bool isHideUnmodified() const;
 
+    /**
+     * @brief Close the panel before it is deleted (see NodeGui::destroyGui()). Unlike setClosed(true),
+     * a floating panel is not docked back: its floating window is deleted instead.
+     **/
+    void closeBeforeDeletion();
+
     /*Creates a new button and inserts it in the header
        at position headerPosition. You can then take
        the pointer to the Button to customize it the

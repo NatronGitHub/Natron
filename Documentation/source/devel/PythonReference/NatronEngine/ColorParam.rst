@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _ColorParam:
 
 ColorParam
@@ -52,10 +52,10 @@ Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-.. method:: NatronEngine.ColorParam.get(frame)
+.. method:: ColorParam.get(frame)
 
 
-    :param frame: :class:`float<PySide.QtCore.float>`
+    :param frame: :class:`float`
     :rtype: :class:`ColorTuple<NatronEngine.ColorTuple>`
 
 Returns a :doc:`ColorTuple` of the color held by the parameter at the given *frame*.
@@ -63,7 +63,8 @@ Returns a :doc:`ColorTuple` of the color held by the parameter at the given *fra
 
 
 
-.. method:: NatronEngine.ColorParam.get()
+.. method:: ColorParam.get()
+    :noindex:
 
 
     :rtype: :class:`ColorTuple<NatronEngine.ColorTuple>`
@@ -73,22 +74,22 @@ Returns a :doc:`ColorTuple` of the color held by the parameter at the current ti
 
 
 
-.. method:: NatronEngine.ColorParam.getDefaultValue([dimension=0])
+.. method:: ColorParam.getDefaultValue([dimension=0])
 
 
-    :param dimension: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`float<PySide.QtCore.double>`
+    :param dimension: :class:`int`
+    :rtype: :class:`float`
 
 Returns the default value for this parameter at the given *dimension*.
 
 
 
 
-.. method:: NatronEngine.ColorParam.getDisplayMaximum(dimension)
+.. method:: ColorParam.getDisplayMaximum(dimension)
 
 
-    :param dimension: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`float<PySide.QtCore.double>`
+    :param dimension: :class:`int`
+    :rtype: :class:`float`
 
 Returns the display maximum for this parameter at the given *dimension*.
 The display maximum is the maximum value visible on the slider, internally the value
@@ -97,11 +98,11 @@ can exceed this range.
 
 
 
-.. method:: NatronEngine.ColorParam.getDisplayMinimum(dimension)
+.. method:: ColorParam.getDisplayMinimum(dimension)
 
 
-    :param dimension: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`float<PySide.QtCore.double>`
+    :param dimension: :class:`int`
+    :rtype: :class:`float`
     
 Returns the display minimum for this parameter at the given *dimension*.
 The display minimum is the minimum value visible on the slider, internally the value
@@ -111,11 +112,11 @@ can exceed this range.
 
 
 
-.. method:: NatronEngine.ColorParam.getMaximum([dimension=0])
+.. method:: ColorParam.getMaximum([dimension=0])
 
 
-    :param dimension: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`float<PySide.QtCore.double>`
+    :param dimension: :class:`int`
+    :rtype: :class:`float`
 
 Returns the maximum for this parameter at the given *dimension*.
 The maximum value cannot be exceeded and any higher value will be clamped to this value.
@@ -123,11 +124,11 @@ The maximum value cannot be exceeded and any higher value will be clamped to thi
 
 
 
-.. method:: NatronEngine.ColorParam.getMinimum([dimension=0])
+.. method:: ColorParam.getMinimum([dimension=0])
 
 
-    :param dimension: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`float<PySide.QtCore.double>`
+    :param dimension: :class:`int`
+    :rtype: :class:`float`
 
 Returns the minimum for this parameter at the given *dimension*.
 The minimum value cannot be exceeded and any lower value will be clamped to this value.
@@ -135,32 +136,32 @@ The minimum value cannot be exceeded and any lower value will be clamped to this
 
 
 
-.. method:: NatronEngine.ColorParam.getValue([dimension=0])
+.. method:: ColorParam.getValue([dimension=0])
 
 
-    :param dimension: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`float<PySide.QtCore.double>`
+    :param dimension: :class:`int`
+    :rtype: :class:`float`
 
 Returns the value of this parameter at the given *dimension* at the current timeline's time.
 
 
 
-.. method:: NatronEngine.ColorParam.getValueAtTime(time[, dimension=0])
+.. method:: ColorParam.getValueAtTime(time[, dimension=0])
 
 
-    :param time: :class:`float<PySide.QtCore.float>`
-    :param dimension: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`float<PySide.QtCore.double>`
+    :param time: :class:`float`
+    :param dimension: :class:`int`
+    :rtype: :class:`float`
 
 
 Returns the value of this parameter at the given *dimension* at the given *time*.
 
 
 
-.. method:: NatronEngine.ColorParam.restoreDefaultValue([dimension=0])
+.. method:: ColorParam.restoreDefaultValue([dimension=0])
 
 
-    :param dimension: :class:`int<PySide.QtCore.int>`
+    :param dimension: :class:`int`
 
 Removes all animation and expression set on this parameter and set the value
 to be the default value.
@@ -168,26 +169,27 @@ to be the default value.
 
 
 
-.. method:: NatronEngine.ColorParam.set(r, g, b, a, frame)
+.. method:: ColorParam.set(r, g, b, a, frame)
 
 
-    :param r: :class:`float<PySide.QtCore.double>`
-    :param g: :class:`float<PySide.QtCore.double>`
-    :param b: :class:`float<PySide.QtCore.double>`
-    :param a: :class:`float<PySide.QtCore.double>`
-    :param frame: :class:`float<PySide.QtCore.float>`
+    :param r: :class:`float`
+    :param g: :class:`float`
+    :param b: :class:`float`
+    :param a: :class:`float`
+    :param frame: :class:`float`
 
 Set a keyframe on each of the 4 animations curves at [r,g,b,a] for the given *frame*.
 If this parameter is 3-dimensional, the *a* value is ignored.
 
 
-.. method:: NatronEngine.ColorParam.set(r, g, b, a)
+.. method:: ColorParam.set(r, g, b, a)
+    :noindex:
 
 
-    :param r: :class:`float<PySide.QtCore.double>`
-    :param g: :class:`float<PySide.QtCore.double>`
-    :param b: :class:`float<PySide.QtCore.double>`
-    :param a: :class:`float<PySide.QtCore.double>`
+    :param r: :class:`float`
+    :param g: :class:`float`
+    :param b: :class:`float`
+    :param a: :class:`float`
 
 
 Set the value of this parameter to be [*r*,*g*,*b*,*a*].
@@ -197,22 +199,22 @@ then this function will automatically add a keyframe at the timeline's current t
 
 
 
-.. method:: NatronEngine.ColorParam.setDefaultValue(value[, dimension=0])
+.. method:: ColorParam.setDefaultValue(value[, dimension=0])
 
 
-    :param value: :class:`float<PySide.QtCore.double>`
-    :param dimension: :class:`int<PySide.QtCore.int>`
+    :param value: :class:`float`
+    :param dimension: :class:`int`
 
 Set the default value of this parameter at the given *dimension* to be *value*.
 
 
 
 
-.. method:: NatronEngine.ColorParam.setDisplayMaximum(maximum[, dimension=0])
+.. method:: ColorParam.setDisplayMaximum(maximum[, dimension=0])
 
 
-    :param maximum: :class:`float<PySide.QtCore.double>`
-    :param dimension: :class:`int<PySide.QtCore.int>`
+    :param maximum: :class:`float`
+    :param dimension: :class:`int`
 
 Set the display maximum of the parameter to be *maximum* for the given *dimension*.
 See :func:`getDisplayMaximum<Natron.ColorParam.getDisplayMaximum>`
@@ -220,11 +222,11 @@ See :func:`getDisplayMaximum<Natron.ColorParam.getDisplayMaximum>`
 
 
 
-.. method:: NatronEngine.ColorParam.setDisplayMinimum(minimum[, dimension=0])
+.. method:: ColorParam.setDisplayMinimum(minimum[, dimension=0])
 
 
-    :param minimum: :class:`float<PySide.QtCore.double>`
-    :param dimension: :class:`int<PySide.QtCore.int>`
+    :param minimum: :class:`float`
+    :param dimension: :class:`int`
 
 Set the display minimum of the parameter to be *minmum* for the given *dimension*.
 See :func:`getDisplayMinimum<Natron.ColorParam.getDisplayMinimum>`
@@ -232,11 +234,11 @@ See :func:`getDisplayMinimum<Natron.ColorParam.getDisplayMinimum>`
 
 
 
-.. method:: NatronEngine.ColorParam.setMaximum(maximum[, dimension=0])
+.. method:: ColorParam.setMaximum(maximum[, dimension=0])
 
 
-    :param maximum: :class:`float<PySide.QtCore.double>`
-    :param dimension: :class:`int<PySide.QtCore.int>`
+    :param maximum: :class:`float`
+    :param dimension: :class:`int`
 
 Set the maximum of the parameter to be *maximum* for the given *dimension*.
 See :func:`getMaximum<Natron.ColorParam.getMaximum>`
@@ -244,11 +246,11 @@ See :func:`getMaximum<Natron.ColorParam.getMaximum>`
 
 
 
-.. method:: NatronEngine.ColorParam.setMinimum(minimum[, dimension=0])
+.. method:: ColorParam.setMinimum(minimum[, dimension=0])
 
 
-    :param minimum: :class:`float<PySide.QtCore.double>`
-    :param dimension: :class:`int<PySide.QtCore.int>`
+    :param minimum: :class:`float`
+    :param dimension: :class:`int`
 
 
 Set the minimum of the parameter to be *minimum* for the given *dimension*.
@@ -256,11 +258,11 @@ See :func:`getMinimum<Natron.ColorParam.getMinimum>`
 
 
 
-.. method:: NatronEngine.ColorParam.setValue(value[, dimension=0])
+.. method:: ColorParam.setValue(value[, dimension=0])
 
 
-    :param value: :class:`float<PySide.QtCore.double>`
-    :param dimension: :class:`int<PySide.QtCore.int>`
+    :param value: :class:`float`
+    :param dimension: :class:`int`
 
 Set the value of this parameter at the given *dimension* to be *value*.
 If this parameter is animated (see :func:`getIsAnimated(dimension)<NatronEngine.AnimatedParam.getIsAnimated>`
@@ -268,12 +270,12 @@ then this function will automatically add a keyframe at the timeline's current t
 
 
 
-.. method:: NatronEngine.ColorParam.setValueAtTime(value, time[, dimension=0])
+.. method:: ColorParam.setValueAtTime(value, time[, dimension=0])
 
 
-    :param value: :class:`float<PySide.QtCore.double>`
-    :param time: :class:`int<PySide.QtCore.int>`
-    :param dimension: :class:`int<PySide.QtCore.int>`
+    :param value: :class:`float`
+    :param time: :class:`int`
+    :param dimension: :class:`int`
 
 
 Set a keyframe on each of the animation curve at the given *dimension*. The keyframe will

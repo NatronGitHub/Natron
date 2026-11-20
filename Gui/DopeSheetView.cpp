@@ -346,7 +346,7 @@ DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq)
 
 DopeSheetViewPrivate::~DopeSheetViewPrivate()
 {
-    glDeleteTextures(KF_TEXTURES_COUNT, kfTexturesIDs);
+    // the OpenGL objects are deleted by DopeSheetView::releaseGLResources(), in their context
 }
 
 /*
@@ -2579,6 +2579,12 @@ DopeSheetView::DopeSheetView(DopeSheet *model,
  */
 DopeSheetView::~DopeSheetView()
 {
+    if ( QOpenGLContext* glContext = context() ) {
+        // ~QOpenGLWidget destroys the context after this object is gone: don't get its signal
+        glContext->disconnect(this);
+        makeCurrent();
+        releaseGLResources();
+    }
 }
 
 void
@@ -3171,7 +3177,31 @@ DopeSheetView::initializeGL()
         return;
     }
 
+    // QOpenGLWidget destroys its context and creates a new one when it moves to another top-level
+    // window, e.g. when the Dope Sheet is dragged into a floating window (#536), and then calls
+    // initializeGL() again. The OpenGL objects of the old context must be released with it.
+    QObject::connect( context(), &QOpenGLContext::aboutToBeDestroyed, this, &DopeSheetView::onContextAboutToBeDestroyed );
+
     _imp->generateKeyframeTextures();
+}
+
+void
+DopeSheetView::onContextAboutToBeDestroyed()
+{
+    makeCurrent();
+    releaseGLResources();
+    // The context stays current: it is destroyed right after this signal.
+}
+
+void
+DopeSheetView::releaseGLResources()
+{
+    running_in_main_thread_and_context(this);
+    _imp->textRenderer.releaseGLResources();
+    if (_imp->kfTexturesIDs[0] != 0) {
+        glDeleteTextures(KF_TEXTURES_COUNT, _imp->kfTexturesIDs);
+        std::fill(_imp->kfTexturesIDs, _imp->kfTexturesIDs + KF_TEXTURES_COUNT, 0);
+    }
 }
 
 /**
@@ -3626,11 +3656,11 @@ DopeSheetView::mouseDoubleClickEvent(QMouseEvent *e)
                 _imp->timeline->seekFrame(SequenceTime(keyframeTime), false, 0,
                                           eTimelineChangeReasonDopeSheetEditorSeek);
 
+                // only the time is used: each keyframe gets the value of its dimension (setValuesFromDestination)
                 KeyFrame k(keyframeTime, 0);
                 DopeSheetKey key(dsKnob, k);
                 toPaste.push_back(key);
-                DSPasteKeysCommand::setKeyValueFromKnob(knob, keyframeTime, &k);
-                _imp->model->pasteKeys(toPaste, true);
+                _imp->model->pasteKeys(toPaste, true, true);
             }
         }
     }

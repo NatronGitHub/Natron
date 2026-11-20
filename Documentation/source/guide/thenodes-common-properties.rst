@@ -1,102 +1,141 @@
 .. for help on writing/extending this file, see the reStructuredText cheatsheet
    http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
 
-.. toctree::
-   :maxdepth: 2
-
-
 Common Properties
 =================
 
-We describe here the type of parameters that can be found on many nodes. And how to use the properties window.
+This page describes the properties panel, and the parameters found on many
+nodes.
 
-The properties window
----------------------
+The properties pane
+-------------------
 
 .. image:: _images/TheNodes-Various/nodes_properties.gif
 
-1: Clears the properties panel. It is a quick way to close everything in the properties panel.
+1: Close all the panels in the properties pane.
 
-2: Minimize the panels to keep only the node names visible. One can then choose wich ones to close completely with their own close button (see 14).
+2: Minimize all the panels, so that only their headers are visible, or
+maximize them again. You can then close each panel with its own close button
+(see 14 below).
 
-3: Maximum number of nodes simultaneously opened in the propoerties pane. Too many opened panes can be confusing as some are not visible anymore because of limited screen space. Too many nodes opened can also slow down the user interface.
+3: The maximum number of panels open at the same time in the properties pane.
+When you open one more, the oldest one is closed. Too many open panels are hard
+to find in the pane, and can slow down the user interface.
 
 
-The Utility icons
------------------
+The panel header
+----------------
 
 .. image:: _images/TheNodes-Various/nodes_utility_tools.gif
 
-1: The node icon. Just a visual clue to see what a node really is (in case its name was changed). It is the same icon used in the node Graph.
+1: The node icon, the same as in the Node Graph. Hover over it to see the
+plug-in name and version, which tells you what the node is even if it was
+renamed.
 
-2: Special settings of the nodes. If a node is often used with the same settings, these can be saved/loaded as a preset file. This function is not used very much as it can be more convenient to copy-paste the node from a dummy Natron project used as a node presets library.
+2: **Settings and presets**: a menu to **Import presets**, **Export as
+presets**, **Manage user parameters...**, **Set key on all parameters** and
+**Remove animation on all parameters**. Removing the animation keeps the
+current values; it complements **Restore defaults** (9). See
+:doc:`getstarted-environment-presets` for presets.
 
-One can also remove animations while keeping parameter values. This complements the "Restore Defaults" button (cf. 9).
+3: Center the Node Graph on this node, to check which node you are about to
+change.
 
-3: Center the node graph on this node. This can be useful to check wich node your are about to make changes on.
+4: The name of the node, as shown in the Node Graph. Typing a new name here
+sets both the label of the node and its script name, the name used in Python
+and in expressions (``getScriptName()`` in Python). Natron makes the script
+name unique and replaces the characters that are not allowed in it, such as
+spaces.
 
-4: The script name of the node as it appears on the top of the box in the node graph
+It is often better to keep the name and to type a description in the
+**Label** parameter of the **Node** tab instead: it is shown under the name in
+the Node Graph, so you can see what the node does by looking at the graph.
 
-It is considered a good practice to leave this name unchanged and change the Label in the node tab instead. It helps see what the node really does just by looking at the graph. There cannot be 2 nodes with the same name. The names cannot contain spaces.
+5: The color of the node in the Node Graph. Click to change it. It has no
+effect on the image.
 
-In Python, this name is accessed through the ``getLabel`` function.
+6: The overlay color: the color of the handles that the node draws in the
+Viewer. When several Transform nodes are open, give them different colors to
+tell their handles apart.
 
-5: The node color as seen in the graph. Click to change. This is just a visual cue and has no effect on the resulting image.
+7 / 8: Undo / Redo the last changes made to this node. Each panel has its own
+undo history, separate from the history of the Node Graph.
 
-6: Overlay color. For nodes that draw helpers in the viewer, a color can be specified here. This can be used if multiple transform nodes are opened to help you tell wich one belongs wich handle.
+9: Restore the default value of all the parameters of this node, and remove
+their animation.
 
-7 / 8: Undo / Redo. These functions are specific to the node. It is separate from the global Undo / Redo of Natron and thus gives you more control on your changes.
+10: Help: opens the reference documentation of this node.
 
-9: Restore default values for this node on all parameters, and delete animations.
+11: Show or hide all the parameters that have their default value.
 
-10: Help brings you to the reference documentation for this node.
-
-11: Hide parameters without modifications.
 .. note::
    **Tip:**
-   This button is a quick way to find what parameters were modified in a node.
+   This button is a quick way to see which parameters were changed in a node.
 
+12 / 13 / 14: Minimize the panel, make it a floating window, or close it.
 
-Layers Properties
------------------
+Layers and masks
+----------------
 
-Channels to process
-Output Layer
-Mask
+- **Output Layer**: the layer the node processes and writes, **Color.RGBA**
+  by default. Nodes that take an input image also have an *input* **Layer**
+  menu for each input. Check **All Planes** to process all the layers of the
+  input, for example to transform all the passes of a multi-layer EXR at once.
+- **R**, **G**, **B**, **A**: the channels to process. The other channels are
+  copied from the main input.
+- **Mask**: nodes with a **Mask** input apply their effect only where the mask
+  is not zero. When a mask is connected, the menu next to the **Mask**
+  checkbox selects the channel used as the mask. **Invert Mask** applies the
+  effect where the mask is zero instead.
+- **Mix**: blends the original image (at 0) and the result of the node (at 1).
 
-Time Properties
----------------
-
-Frame Range
-
-Lifetime Range
-
-Enable Lifetime
-
-
-Geometric Properties
+Generator parameters
 --------------------
 
-Extent
+Generators (CheckerBoard, Constant, Radial, Rectangle, ...) have parameters
+that set the size and the time span of the image:
 
-Transform
+- **Extent**: **Format** (a format chosen in the **Format** menu), **Size**
+  (the **Bottom Left** corner and **Size** given in the parameters),
+  **Project** (the project format), or **Default** (the default extent, for
+  example the extent of the input if one is connected). **Center** centers the
+  image in the input or the project format.
+- **Frame Range**: the frames over which the generator produces an image, 1
+  to 1 by default (see :doc:`compositing-projects-framerange`).
 
-Filtering
+Transform parameters
+--------------------
 
-Functional Properties
----------------------
+Nodes that move or resize pixels (Transform, CornerPin, Reformat, ...) share
+these parameters:
 
-Mix
+- **Filter**: the interpolation filter used to compute the new pixels.
+- **Clamp**: clamps the result of filters that can overshoot (such as Cubic or
+  Lanczos) to the range of the input values.
+- **Black outside**: fades the edges of the image to transparent black,
+  instead of repeating the edge pixels. It is on by default in Transform and
+  CornerPin, and off in Reformat.
+- **Motion Blur** and **Shutter**: the motion blur quality and the shutter
+  duration, when the transform is animated.
 
+See :doc:`compositing-reformat` for an explanation of the filters and
+**Black outside**.
 
-Utility
+The Node tab
+------------
 
-Hide Inputs
+Every node has a **Node** tab with these parameters:
 
-Force caching
+- **Label**: a text shown under the node name in the Node Graph.
+- **Hide inputs**: hides the input arrows of the node in the Node Graph.
+- **Force caching**: always keeps the output of the node in the RAM cache.
+- **Preview**: shows a preview image on the node in the Node Graph.
+- **Disable**: the node passes its main input through unchanged.
+- **Lifetime Range** and **Enable Lifetime**: when **Enable Lifetime** is
+  checked, the node is active only during **Lifetime Range**, and acts as if
+  disabled outside of it.
+- Python callbacks (**After param changed callback**, **After input changed
+  callback**, ...): see the Developers Guide.
 
-Preview
-
-Disable
-
-
+The **Info** tab shows information about the inputs and the output of the
+node: format, region of definition, frame range, layers, premultiplication.

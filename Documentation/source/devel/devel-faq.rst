@@ -15,5 +15,5 @@ Q: How can I get the location of the current Natron executable?
 
 Q: How can I get all widgets from a :doc:`modal dialog <PythonReference/NatronGui/PyModalDialog>`?
 
-:doc:`PythonReference/NatronGui/PyModalDialog` inherits from `Qdialog <https://pyside.github.io/docs/pyside/PySide/QtGui/QDialog.html>`_, which inherits from `QObject <https://pyside.github.io/docs/pyside/PySide/QtCore/QObject.html>`_, which has a `QObject::children() <https://pyside.github.io/docs/pyside/PySide/QtCore/QObject.html#PySide.QtCore.PySide.QtCore.QObject.children>`_ method.
+:doc:`PythonReference/NatronGui/PyModalDialog` inherits from `QDialog <https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/QDialog.html>`_, which inherits from `QObject <https://doc.qt.io/qtforpython-6/PySide6/QtCore/QObject.html>`_, which has a `children() <https://doc.qt.io/qtforpython-6/PySide6/QtCore/QObject.html#PySide6.QtCore.QObject.children>`_ method.
 

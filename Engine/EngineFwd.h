@@ -28,6 +28,10 @@
 
 #include "Global/Macros.h"
 
+// QStringList is a class in Qt5 but an alias for QList<QString> in Qt6, so it
+// cannot be forward declared by hand. This header spells it correctly on both.
+#include <QtCore/qcontainerfwd.h>
+
 #include <memory>
 #include <list>
 #include <vector>
@@ -63,7 +67,6 @@ class QNetworkRequest;
 class QProcess;
 class QSettings;
 class QString;
-class QStringList;
 class QThread;
 class QTimer;
 class QUrl;
@@ -169,6 +172,7 @@ class ImagePlaneDesc;
 class KeyFrame;
 class KnobBool;
 class KnobButton;
+class KnobBytes;
 class KnobChoice;
 class KnobColor;
 class KnobDouble;
@@ -221,6 +225,7 @@ class OpenGLViewerI;
 class OutputEffectInstance;
 class OutputSchedulerThreadStartArgs;
 class OverlaySupport;
+class FrameOrderRender;
 class ParallelRenderArgs;
 class ParallelRenderArgsSetter;
 class Plugin;
@@ -357,6 +362,7 @@ typedef std::shared_ptr<ImageParams> ImageParamsPtr;
 typedef std::shared_ptr<ImagePlaneDesc> ImagePlaneDescPtr;
 typedef std::shared_ptr<KnobBool> KnobBoolPtr;
 typedef std::shared_ptr<KnobButton> KnobButtonPtr;
+typedef std::shared_ptr<KnobBytes> KnobBytesPtr;
 typedef std::shared_ptr<KnobChoice> KnobChoicePtr;
 typedef std::shared_ptr<KnobColor> KnobColorPtr;
 typedef std::shared_ptr<KnobDouble> KnobDoublePtr;
@@ -395,6 +401,7 @@ typedef std::shared_ptr<OfxEffectInstance> OfxEffectInstancePtr;
 typedef std::shared_ptr<OfxParamOverlayInteract> OfxParamOverlayInteractPtr;
 typedef std::shared_ptr<OutputEffectInstance> OutputEffectInstancePtr;
 typedef std::shared_ptr<OutputSchedulerThreadStartArgs> OutputSchedulerThreadStartArgsPtr;
+typedef std::shared_ptr<FrameOrderRender> FrameOrderRenderPtr;
 typedef std::shared_ptr<ParallelRenderArgs> ParallelRenderArgsPtr;
 typedef std::shared_ptr<ParallelRenderArgsSetter> ParallelRenderArgsSetterPtr;
 typedef std::shared_ptr<PluginGroupNode> PluginGroupNodePtr;
@@ -445,6 +452,7 @@ typedef std::weak_ptr<FileSystemModel> FileSystemModelWPtr;
 typedef std::weak_ptr<Image> ImageWPtr;
 typedef std::weak_ptr<KnobBool> KnobBoolWPtr;
 typedef std::weak_ptr<KnobButton> KnobButtonWPtr;
+typedef std::weak_ptr<KnobBytes> KnobBytesWPtr;
 typedef std::weak_ptr<KnobChoice> KnobChoiceWPtr;
 typedef std::weak_ptr<KnobColor> KnobColorWPtr;
 typedef std::weak_ptr<KnobDouble> KnobDoubleWPtr;

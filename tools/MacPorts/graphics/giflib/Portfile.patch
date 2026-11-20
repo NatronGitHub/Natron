@@ -1,5 +1,5 @@
---- Portfile.orig	2024-07-19 16:46:49
-+++ Portfile	2024-07-19 16:48:39
+--- Portfile.orig	2025-05-13 15:14:23
++++ Portfile	2026-07-15 13:29:08
 @@ -1,38 +1,46 @@
  # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
  
@@ -54,7 +54,7 @@
  post-destroot {
      xinstall -d ${destroot}${docdir}
 -    xinstall -W ${worksrcpath} -m 0644 AUTHORS BUGS COPYING NEWS README TODO api.txt history.txt ${destroot}${docdir}
-+    xinstall -W ${worksrcpath}-m 0644 COPYING NEWS README TODO history.adoc ${destroot}${docdir}
++    xinstall -W ${worksrcpath} -m 0644 COPYING NEWS README TODO history.adoc ${destroot}${docdir}
      xinstall -m 0444 {*}[glob ${worksrcpath}/doc/*.1] ${destroot}${prefix}/share/man/man1
  }
  

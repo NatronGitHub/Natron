@@ -165,6 +165,7 @@ public:
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                             size_t bytesCount,
+                                            ImageBitDepthEnum depth,
                                             const RectI &roiRoundedToTileSize,
                                             const RectI& roi,
                                             const TextureRect & tileRect,
@@ -276,13 +277,19 @@ public:
 
 public:
 
+    virtual bool canRenderText() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
     virtual bool renderText(double x,
                             double y,
                             const std::string &string,
                             double r,
                             double g,
                             double b,
-                            int flags = 0) OVERRIDE FINAL; //!< see http://doc.qt.io/qt-4.8/qpainter.html#drawText-10
+                            int flags = 0, //!< see http://doc.qt.io/qt-4.8/qpainter.html#drawText-10
+                            double a = 1.) OVERRIDE FINAL;
 
 
     void renderText(double x,
@@ -334,6 +341,8 @@ public:
     virtual double getScreenPixelRatio() const OVERRIDE FINAL;
 #endif
 
+    virtual KeyboardModifiers getKeyboardModifiers() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     /**
      * @brief Returns the colour of the background (i.e: clear color) of the viewport.
      **/
@@ -368,6 +377,16 @@ public:
      * @brief Returns the font height, i.e: the height of the highest letter for this font
      **/
     virtual int getWidgetFontHeight() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Returns the font ascent, i.e: the distance from the baseline to the top of the font height
+     **/
+    virtual int getWidgetFontAscent() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Returns the font descent, i.e: the distance from the baseline to the bottom of the font height
+     **/
+    virtual int getWidgetFontDescent() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns for a string the estimated pixel size it would take on the widget
@@ -457,10 +476,18 @@ public:
 
     void checkIfViewPortRoIValidOrRender();
 
-    void s_selectionCleared()
+    void s_selectionCleared(Qt::KeyboardModifiers modifiers)
     {
-        Q_EMIT selectionCleared();
+        Q_EMIT selectionCleared(modifiers);
     }
+
+public:
+    /**
+     * @brief Show the cursor requested by the OpenFX overlays (see ViewerTab::getOverlaysCursor()),
+     * or restore the viewer's cursor if they all request the default one.
+     * Called after each pen event dispatched to the overlays, unless the viewer shows its own cursor.
+     **/
+    void updateOverlayCursor();
 
 Q_SIGNALS:
 
@@ -479,10 +506,16 @@ Q_SIGNALS:
      * @param onRelease When true, this signal is emitted on the mouse release event
      * which means this is the last selection desired by the user.
      * Receivers can either update the selection always or just on mouse release.
+     * @param modifiers The keyboard modifiers of the mouse event.
      **/
-    void selectionRectangleChanged(bool onRelease);
+    void selectionRectangleChanged(bool onRelease, Qt::KeyboardModifiers modifiers);
 
-    void selectionCleared();
+    /**
+     * @brief Emitted when the selection is cleared.
+     * @param modifiers The keyboard modifiers of the event that clears the selection (the
+     * mouse press that starts a selection rectangle, or the Escape key press).
+     **/
+    void selectionCleared(Qt::KeyboardModifiers modifiers);
 
 private:
     /**
@@ -504,6 +537,12 @@ private:
      *@brief initializes OpenGL context related stuff. This is called once after widget creation.
      **/
     virtual void initializeGL() OVERRIDE FINAL;
+
+    // Called before the OpenGL context is destroyed (e.g. when the widget moves to another window)
+    void onContextAboutToBeDestroyed();
+
+    // Deletes the OpenGL objects of the current context
+    void releaseGLResources();
 
     /**
      *@brief Handles the resizing of the viewer

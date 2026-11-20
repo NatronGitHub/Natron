@@ -34,6 +34,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Global/KeySymbols.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/RectD.h"
 
@@ -101,6 +102,13 @@ public:
     virtual unsigned int getCurrentMipmapLevel() const { return 0; }
 
     /**
+     * @brief Get the current state of the keyboard modifiers, for overlay actions that are not
+     * triggered by an input event (draw, gain/lose focus). Actions triggered by an input event
+     * use the modifiers of that event instead.
+     **/
+    virtual KeyboardModifiers getKeyboardModifiers() const { return KeyboardModifiers(); }
+
+    /**
      * @brief Returns whether the given rectangle in canonical coords is visible in the viewport
      **/
     bool isVisibleInViewport(const RectD& rect) const
@@ -155,7 +163,19 @@ public:
     }
 
     /**
-     * @brief May be implemented to draw text using the widget's current font
+     * @brief Whether renderText() draws text in this viewport. The default is false; the viewports
+     * that implement renderText() return true.
+     **/
+    virtual bool canRenderText() const
+    {
+        return false;
+    }
+
+    /**
+     * @brief May be implemented to draw text using the widget's current font, in the colour (r, g, b)
+     * with opacity a ("over" compositing). (x, y) is the bottom-left corner of the line box (one
+     * descent below the baseline), in canonical coordinates. Returns false if the viewport can't
+     * draw text.
      **/
     virtual bool renderText(double x,
                             double y,
@@ -163,7 +183,8 @@ public:
                             double r,
                             double g,
                             double b,
-                            int flags = 0) //!< see http://doc.qt.io/qt-4.8/qpainter.html#drawText-10
+                            int flags = 0, //!< see http://doc.qt.io/qt-4.8/qpainter.html#drawText-10
+                            double a = 1.)
     {
         Q_UNUSED(x);
         Q_UNUSED(y);
@@ -172,6 +193,7 @@ public:
         Q_UNUSED(g);
         Q_UNUSED(b);
         Q_UNUSED(flags);
+        Q_UNUSED(a);
 
         return false;
     }
@@ -182,7 +204,26 @@ public:
     virtual int getWidgetFontHeight() const = 0;
 
     /**
-     * @brief Returns for a string the estimated pixel size it would take on the widget
+     * @brief Returns the font ascent, i.e: the distance from the baseline to the top of the font height
+     * (in widget pixels, for the font that renderText() draws with)
+     **/
+    virtual int getWidgetFontAscent() const
+    {
+        return getWidgetFontHeight() - getWidgetFontDescent();
+    }
+
+    /**
+     * @brief Returns the font descent, i.e: the distance from the baseline to the bottom of the font height
+     * (in widget pixels, for the font that renderText() draws with)
+     **/
+    virtual int getWidgetFontDescent() const
+    {
+        return getWidgetFontHeight() / 4;
+    }
+
+    /**
+     * @brief Returns for a string the estimated pixel size it would take on the widget (for the
+     * viewports that implement renderText(), the width that renderText() draws)
      **/
     virtual int getStringWidthForCurrentFont(const std::string& string) const = 0;
 };

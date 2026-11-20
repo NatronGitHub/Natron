@@ -38,5 +38,6 @@ set(hoedown_SOURCES
     src/version.c
 )
 add_library(hoedown STATIC ${hoedown_SOURCES} ${hoedown_HEADERS})
-target_include_directories(hoedown PUBLIC src)
+target_include_directories(hoedown SYSTEM PUBLIC src)
+target_compile_options(hoedown PRIVATE ${NATRON_THIRD_PARTY_NO_WARNINGS})
 set_target_properties(hoedown PROPERTIES POSITION_INDEPENDENT_CODE ON)

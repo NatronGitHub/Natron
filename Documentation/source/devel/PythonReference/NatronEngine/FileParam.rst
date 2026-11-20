@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _FileParam:
 
 FileParam
@@ -21,14 +21,14 @@ Functions
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. method:: NatronEngine.FileParam.openFile()
+.. method:: FileParam.openFile()
 
 
 When called in GUI mode, this will open a file dialog for the user. Does nothing in 
 background mode.
 
 
-.. method:: NatronEngine.FileParam.reloadFile()
+.. method:: FileParam.reloadFile()
 
 
 Force a refresh of the data read from the file. Any cached data associated to the file will be 
@@ -37,10 +37,10 @@ discarded.
 
 
 
-.. method:: NatronEngine.FileParam.setSequenceEnabled(enabled)
+.. method:: FileParam.setSequenceEnabled(enabled)
 
 
-    :param enabled: :class:`bool<PySide.QtCore.bool>`
+    :param enabled: :class:`bool`
 
 Determines whether the file dialog opened by :func:`openFile()<NatronEngine.FileParam.openFile>`
 should have support for file sequences or not.

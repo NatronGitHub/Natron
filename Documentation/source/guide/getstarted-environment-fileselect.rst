@@ -4,93 +4,96 @@
 Using the file browser
 ======================
 
+The file browser opens when you click the folder button of a file parameter,
+for example the *File* parameter of a Read or Write node.
 
-The File browser in Natron has some specific features.
+Relative paths
+--------------
 
-Relative Path
--------------
+A path can be relative to a *project path*, so that you can move a project
+and its files, or open it on another computer with a different folder layout,
+without breaking the paths.
 
-in order to allow moving files without breaking links or to allow sharing files between computers with different storage setups, Natron allows relative path.
+Paths relative to the project file
+::::::::::::::::::::::::::::::::::
 
-The Short method 
-:::::::::::::::::
-To use path relative to the current Natron .ntp project file
-
-- Save your current project where you want but in the disk tree as your video files. This creates a [project] entry in the Project Paths list
-- Create a read or write file. You have now access to Files path relative to the current .ntp file by selecting Relative to:[project]
+1. Save the project in a folder that also contains your images, or a parent
+   folder of them. Natron then sets the ``[Project]`` project path to the
+   folder of the project file.
+2. In the file browser of a Read or Write node, choose ``Project`` in the
+   *Relative to:* menu.
 
 .. image:: _images/File_Browser-Project_Path.gif
 
-The complete method
-:::::::::::::::::::
-First create a "base path"
-   .. image:: _images/Project_Settings-Project_Path.jpg
+Your own project paths
+::::::::::::::::::::::
 
-- open "Project settings" (shortcut "s")
-- create a "project path" by clicking "add..." then choose a folder
-- rename the path shortcut by clicking on its name
+First create a project path:
 
-Then use it to read or write a file in relative path.
-   .. image:: _images/File_Browser-Relative_Paths.jpg
+.. image:: _images/Project_Settings-Project_Path.jpg
 
-- open the browser from the read or write node you want
-- navigate to your file
-- switch Relative to the preset name you have created before
+1. Open the project settings (:kbd:`S`).
+2. Under *Project Paths*, click *Add...* and choose a folder.
+3. Click the name of the new path to rename it.
 
-Your path is now converted to relative.
-Should you move your files, you would only have to edit the shortcut in the settings with the 'Edit...' button
+Then use it in the file browser:
 
+.. image:: _images/File_Browser-Relative_Paths.jpg
+
+1. Open the file browser from the Read or Write node.
+2. Go to your file.
+3. Choose the name of your project path in the *Relative to:* menu.
+
+The path is now relative. If you move the files, select the project path in
+the project settings, click *Edit...* and choose the new folder.
 
 Favorites
 ---------
-If you want fast access to often used folders you can create favorites.
-   .. image:: _images/File_Browser-Favorites.jpg
 
-When the browser is opened, click the ``+`` icon to make the current folder a favorite.
+Favorites give quick access to the folders you use often.
 
-Click the ``-`` to remove the favorite from the list.
+.. image:: _images/File_Browser-Favorites.jpg
 
-.. note::
-   **Tip:**
-   It's good practice to create a folder to store the different layouts you use for working in Natron and create a Favorite to this folder
+Click ``+`` to add the current folder to the favorites, and ``-`` to remove
+the selected favorite.
 
-File sequence
--------------
+.. tip::
+   Keep your layout files (``.nl``) in one folder and add it to the favorites.
 
-|  In Natron, videos can be made of a list of image files instead of a single video file.
-|  image.0001.jpg
-|  image.0002.jpg
-|  image.0003.jpg
-|  ...
-|  
-|  instead of:
-|  image.mp4
+Image sequences
+---------------
 
-.. note::
-   **Tip:**
-   Natron behaves way better with image sequence (numbered) files rather than Movies (quicktime, mp4, ...). More reliable, faster access, possibility to overwrite parts of sequence when (re)rendering are the main reasons for this
+In Natron, a clip can be a sequence of numbered image files instead of a
+single video file::
+
+   image.0001.jpg
+   image.0002.jpg
+   image.0003.jpg
+   ...
+
+.. tip::
+   Natron works better with image sequences than with video files (QuickTime,
+   MP4, ...): reading them is faster and more reliable, and you can render
+   again only part of a sequence. See
+   :doc:`tutorials-imagesequence`.
 
 .. warning::
-   To have a consistent behavior, all images must be of the same resolution. (ie. number of pixels)
+   All the images of a sequence should have the same size.
 
-for this reason the file browser automatically groups numbered files and would display in the list:
-image.####.jpg 1-3
+The file browser groups the numbered files and shows them as a single
+sequence, for example ``image.####.jpg 1-3``. To see and pick the individual
+files, switch the menu next to the file name from *Sequence:* to *File:*.
 
-If you want to pick a single image of the list you should switch the 'sequence' button to 'File' to see each individual file.
+In the file name, the number of ``#`` characters, or the ``%04d`` notation,
+tells Natron how many digits the frame number has (the *padding*).
+``image.####.jpg`` and ``image.%04d.jpg`` both mean four digits, as in
+``image.0001.jpg``.
 
-|  When you set the filename in the bottom line you can tell Natron  how many digits it should use to write or read the files:
-|  image.####.jpg
-|  or
-|  image.%04d.jpg
+.. tip::
+   Put the frame number between two dots, as in ``image.0001.jpg``.
 
-These are two different ways to tell Natron to use 4 digits in the file name. This is called padding
+Slash and backslash
+-------------------
 
-.. note::
-   **Tip:**
-   It's good practice to put the image number between two dots
-
-
-Slash/Backslash
----------------
-In Linux and macOS, the directory separator is "`/`" (slash), whereas Windows uses "`\\`" (backslash).
-Natron support both syntaxes in the file path of the browser.
+Linux and macOS separate folders with ``/`` (slash), and Windows with ``\``
+(backslash). Natron accepts both in the file browser.

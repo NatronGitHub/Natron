@@ -5,6 +5,17 @@
 # History
 
 
+## Version 2.6.0
+
+### Known issues
+
+- openfx-gmic now groups its nodes under "G'MIC" instead of "GMIC". A PyPlug whose grouping starts with "GMIC/" gets its own "GMIC" toolbar button, next to the "G'MIC" one: change its grouping to "G'MIC/...". The documentation lists both under "G'MIC nodes".
+
+### Changes
+
+- Documentation: the Reference Guide has a "Nodes" section, with one page per node group and per sub-group (e.g. "G'MIC / Colors"), and the sidebar only expands the current branch.
+
+
 ## Version 2.5.0
 
 ### Known issues
@@ -151,8 +162,8 @@
 
 - Fix bugs in DenoiseSharpen that caused crashes. #300
 - Add support for chromatic aberration correction when reading RAW files. #309
-- Update CImg and G'MIC to 2.8.4 and fix several issues in GMIC plugins (which are still beta).
-- Many new GMIC plugins, including GMIC Custom Code.
+- Update CImg and G'MIC to 2.8.4 and fix several issues in G'MIC plugins (which are still beta).
+- Many new G'MIC plugins, including G'MIC Custom Code.
 - FrameRange: New options "Loop" and "Bounce". #411
 - Update OpenImageIO to 2.1.11.0. #350
 - Fix reading multi-view EXRs. #429
@@ -759,7 +770,7 @@ The pass-through input will also be indicated with a plain arrow whereas all oth
   - LensDistortion
   - TimeBlur
   - OCIODisplay node
-  - GmicEXPR, to enter GMIC expressions
+  - GmicEXPR, to enter G'MIC expressions
 - Rewrote entirely the WriteFFMPEG and ReadFFMPEG nodes. Most widely used codecs are supported
 - New merge operators: grain-extract, grain-merge, color, hue, luminosity
 - New gamma and gain controllers on the viewer

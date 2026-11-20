@@ -161,6 +161,7 @@ struct ViewerGL::Implementation
     std::unique_ptr<QOpenGLShaderProgram> shaderRGB; /*!< The shader program used to render RGB data*/
     std::unique_ptr<QOpenGLShaderProgram> shaderBlack; /*!< The shader program used when the viewer is disconnected.*/
     bool shaderLoaded; /*!< Flag to check whether the shaders have already been loaded.*/
+    bool glResourcesReleased; /*!< The OpenGL context was destroyed: the next initializeGL() must render the images again.*/
     InfoViewerWidget* infoViewer[2]; /*!< Pointer to the info bar below the viewer holding pixel/mouse/format related info*/
     ViewerTab* const viewerTab; /*!< Pointer to the viewer tab GUI*/
     bool zoomOrPannedSinceLastFit; //< true if the user zoomed or panned the image since the last call to fitToRoD
@@ -185,6 +186,7 @@ struct ViewerGL::Implementation
     QPointF lastDragStartPos; //< in zoom coordinates
     bool hasMovedSincePress;
     bool setColorPickerCursor; //< was the color picker cursor set?
+    bool setOverlayCursor; //< was a cursor requested by an OpenFX overlay set?
 
     /////// currentViewerInfo
     QString currentViewerInfo_btmLeftBBOXoverlay[2]; /*!< The string holding the bottom left corner coordinates of the dataWindow*/
@@ -224,6 +226,10 @@ struct ViewerGL::Implementation
     QSize sizeH;
     PenType pointerTypeOnPress;
     double pressureOnPress, pressureOnRelease;
+    // the keyboard modifiers queried once at the start of paintGL(), for the overlay draw actions
+    // (see ViewerGL::getKeyboardModifiers())
+    bool inPaintGL = false;
+    Qt::KeyboardModifiers paintKeyboardModifiers;
     int wheelDeltaSeekFrame; // accumulated wheel delta for frame seeking (crtl+wheel)
     bool isUpdatingTexture;
     bool renderOnPenUp;

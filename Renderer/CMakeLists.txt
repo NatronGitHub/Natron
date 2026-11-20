@@ -18,10 +18,11 @@
 # ***** END LICENSE BLOCK *****
 
 set(NatronRenderer_SOURCES NatronRenderer_main.cpp)
-if(WINDOWS)
+if(WIN32)
     list(APPEND NatronRenderer_SOURCES ../Natron.rc)
 endif()
 add_executable(NatronRenderer ${NatronRenderer_SOURCES})
+natron_set_main_thread_stack_size(NatronRenderer)
 target_link_libraries(NatronRenderer
     PRIVATE
         NatronEngine
@@ -37,4 +38,4 @@ target_include_directories(NatronRenderer
         ../Global
 )
 
-install(TARGETS NatronRenderer DESTINATION "${CMAKE_INSTALL_BINDIR}")
+install(TARGETS NatronRenderer DESTINATION "${NATRON_INSTALL_BINDIR}")
