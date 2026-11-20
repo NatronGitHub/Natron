@@ -141,7 +141,11 @@ set(_natron_test_bundle "${NATRON_TESTS_OFX_PLUGIN_DIR}/NatronTestPlugin.ofx.bun
 if(APPLE)
     set(_natron_test_archdir "MacOS")
 elseif(WIN32)
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    # native Windows on ARM64 (MSYS2 CLANGARM64, #1494): HostSupport looks in Win-arm64, then
+    # Win-arm64x (ofxhArchDirs.h), never in Win64
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(ARM64|arm64|aarch64|AARCH64)$")
+        set(_natron_test_archdir "Win-arm64")
+    elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
         set(_natron_test_archdir "Win64")
     else()
         set(_natron_test_archdir "Win32")

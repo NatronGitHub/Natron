@@ -25,6 +25,9 @@ macx {
 } else:win32 {
     contains(QT_ARCH, x86_64) {
         NATRON_TEST_OFX_ARCHDIR = Win64
+    } else:contains(QT_ARCH, arm64) {
+        # native Windows on ARM64 (#1494): HostSupport looks in Win-arm64, then Win-arm64x
+        NATRON_TEST_OFX_ARCHDIR = Win-arm64
     } else {
         NATRON_TEST_OFX_ARCHDIR = Win32
     }
