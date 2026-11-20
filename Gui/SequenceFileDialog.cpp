@@ -109,24 +109,6 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER
 
-static inline bool
-isCaseSensitiveFileSystem(const QString &path)
-{
-    Q_UNUSED(path)
-#if defined(Q_OS_WIN)
-    // Return case insensitive unconditionally, even if someone has a case sensitive
-
-    // file system mounted, wrongly capitalized drive letters will cause mismatches.
-    return false;
-#elif defined(Q_OS_OSX)
-
-    return pathconf(QFile::encodeName(path).constData(), _PC_CASE_SENSITIVE);
-#else
-
-    return true;
-#endif
-}
-
 static void removeTrailingSlash(QString& str) {
     if ( (str.size() > 1) && ( str.endsWith( QLatin1Char('/') ) || str.endsWith( QLatin1Char('\\') ) ) ) {
         str = str.remove(str.size() - 1, 1);
@@ -370,8 +352,6 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
 
     _model.reset( new FileSystemModel() );
     _model->initialize(this);
-
-    _view->setSortingEnabled( isCaseSensitiveFileSystem( rootPath() ) );
 
     _model->setSequenceModeEnabled(isSequenceDialog ? true : false);
 
