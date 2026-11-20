@@ -36,6 +36,7 @@
 #include <map>
 #include <string>
 
+#include <QtCore/QFile>
 #include <QtCore/QTemporaryDir>
 
 #include <gtest/gtest.h>
@@ -50,7 +51,9 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/Plugin.h"
 #include "Engine/Project.h"
+#include "Engine/Settings.h"
 
 #include "OfxTestPlugin.h"
 
@@ -135,6 +138,44 @@ knob(const NodePtr& node,
      const std::string& name)
 {
     return std::dynamic_pointer_cast<KNOB>( node->getKnobByName(name) );
+}
+
+// the "Project load: ..." line of output that starts with prefix, or an empty string
+std::string
+loggedLine(const std::string& output,
+           const std::string& prefix)
+{
+    const std::size_t logged = output.find(prefix);
+
+    if (logged == std::string::npos) {
+        return std::string();
+    }
+
+    return output.substr( logged, output.find('\n', logged) - logged );
+}
+
+#define kChangedLog "Project load: plug-ins changed parameter values in: "
+#define kAnimatedLog "Project load: plug-ins tried to change animated parameters, which keep their animation, in: "
+
+QByteArray
+readFile(const QString& path)
+{
+    QFile file(path);
+
+    if ( !file.open(QIODevice::ReadOnly) ) {
+        return QByteArray();
+    }
+
+    return file.readAll();
+}
+
+bool
+writeFile(const QString& path,
+          const QByteArray& contents)
+{
+    QFile file(path);
+
+    return file.open(QIODevice::WriteOnly | QIODevice::Truncate) && (file.write(contents) == contents.size());
 }
 } // anonymous namespace
 
@@ -229,7 +270,8 @@ TEST(OfxProjectLoad, InstanceChangedAfterLoadKeepsSavedValues)
 // changed nodes are logged. The node has a new age (hence hash), and
 // its clip preferences, which read that value, and those of the node downstream, are computed again. The downstream
 // node was created first, but its action comes after the one of its input, and sees the new metadata; its hash
-// changes. A node that follows the value through a link, but is not downstream, also gets a new age.
+// changes. The nodes that follow the value through a link or an expression, but are not downstream, also get a new
+// age.
 TEST(OfxProjectLoad, ValueChangedAfterLoadRefreshesMetadataAndHash)
 {
     if ( !pluginsAvailable() ) {
@@ -243,9 +285,10 @@ TEST(OfxProjectLoad, ValueChangedAfterLoadRefreshesMetadataAndHash)
     // created downstream first, so that the order of the project is not the order of the graph
     NodePtr downstream = NatronTestPlugin::createNode(kNatronTestPluginProjectLoad);
     NodePtr follower = NatronTestPlugin::createNode(kNatronTestPluginProjectLoad);
+    NodePtr exprFollower = NatronTestPlugin::createNode(kNatronTestPluginProjectLoad);
     NodePtr generator = NatronTestPlugin::createNode(kNatronTestPluginGenerator);
     NodePtr deriving = NatronTestPlugin::createNode(kNatronTestPluginProjectLoad);
-    ASSERT_TRUE(generator && deriving && downstream && follower);
+    ASSERT_TRUE(generator && deriving && downstream && follower && exprFollower);
     const int source = inputNamed(deriving, kOfxImageEffectSimpleSourceClipName);
     ASSERT_GE(source, 0);
     knob<KnobBool>(deriving, "setDerived")->setValue(true);
@@ -254,15 +297,19 @@ TEST(OfxProjectLoad, ValueChangedAfterLoadRefreshesMetadataAndHash)
     const double height = knob<KnobDouble>(deriving, "derived")->getValue();
     ASSERT_GT(height, 7.);
 
-    // a stale value is saved; the follower's frameRate is linked to it
+    // a stale value is saved; the follower's frameRate is linked to it, the exprFollower's follows it by an expression
     knob<KnobDouble>(deriving, "derived")->setValue(7.);
     ASSERT_TRUE( knob<KnobDouble>(follower, "frameRate")->slaveTo( 0, deriving->getKnobByName("derived"), 0 ) );
+    knob<KnobDouble>(exprFollower, "frameRate")->setExpression(0, deriving->getScriptName() + ".derived.get()", false /*hasRetVariable*/, true /*failIfInvalid*/);
+    ASSERT_EQ( 7., knob<KnobDouble>(exprFollower, "frameRate")->getValue() );
     const U64 savedAge = deriving->getKnobsAge();
     const U64 savedFollowerAge = follower->getKnobsAge();
+    const U64 savedExprFollowerAge = exprFollower->getKnobsAge();
     const U64 savedDownstreamHash = downstream->getHashValue();
     const std::string derivingName = deriving->getScriptName();
     const std::string downstreamName = downstream->getScriptName();
     const std::string followerName = follower->getScriptName();
+    const std::string exprFollowerName = exprFollower->getScriptName();
     const QString dir = tmpDir.path() + QLatin1Char('/');
     QString savedPath;
     ASSERT_TRUE( project->saveProject( dir, QString::fromUtf8("ProjectLoadDerived.ntp"), &savedPath ) );
@@ -270,6 +317,7 @@ TEST(OfxProjectLoad, ValueChangedAfterLoadRefreshesMetadataAndHash)
     deriving.reset();
     downstream.reset();
     follower.reset();
+    exprFollower.reset();
 
     const std::map<std::string, int> start = readCounters();
     testing::internal::CaptureStdout();
@@ -285,6 +333,7 @@ TEST(OfxProjectLoad, ValueChangedAfterLoadRefreshesMetadataAndHash)
     const std::string line = output.substr( logged, output.find('\n', logged) - logged );
     EXPECT_NE( std::string::npos, line.find(derivingName) ) << line;
     EXPECT_NE( std::string::npos, line.find(followerName) ) << line;
+    EXPECT_NE( std::string::npos, line.find(exprFollowerName) ) << line;
     EXPECT_EQ( std::string::npos, line.find(downstreamName) ) << line;
     EXPECT_NE( std::string::npos, line.find("(the project is marked modified)") ) << line;
     deriving = project->getNodeByName(derivingName);
@@ -302,6 +351,11 @@ TEST(OfxProjectLoad, ValueChangedAfterLoadRefreshesMetadataAndHash)
                delta["ProjectLoad.sourceFrameRate"] );
     EXPECT_EQ( height, knob<KnobDouble>(follower, "frameRate")->getValue() );
     EXPECT_NE( savedFollowerAge, follower->getKnobsAge() );
+    NodePtr exprFollowerLoaded = project->getNodeByName(exprFollowerName);
+    ASSERT_TRUE( bool(exprFollowerLoaded) );
+    EXPECT_EQ( height, knob<KnobDouble>(exprFollowerLoaded, "frameRate")->getValue() );
+    EXPECT_NE( savedExprFollowerAge, exprFollowerLoaded->getKnobsAge() );
+    exprFollowerLoaded.reset();
     deriving.reset();
     downstream.reset();
     follower.reset();
@@ -366,3 +420,217 @@ TEST(OfxProjectLoad, NodeInsideGroupAndAutoSaveLoad)
     project->resetProject();
 }
 
+
+// Like WriteFFmpeg with its info parameters, the plug-in sets a display-only value (neither saved nor rendered) from
+// its source in the action: the value is set, but the project is not modified, nothing is logged, and neither the
+// node nor the node downstream gets a new age or hash (their cached images stay valid).
+TEST(OfxProjectLoad, DisplayOnlyValueChangedAfterLoadKeepsProjectUnmodified)
+{
+    if ( !pluginsAvailable() ) {
+        return;
+    }
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+
+    NodePtr generator = NatronTestPlugin::createNode(kNatronTestPluginGenerator);
+    NodePtr informing = NatronTestPlugin::createNode(kNatronTestPluginProjectLoad);
+    NodePtr downstream = NatronTestPlugin::createNode(kNatronTestPluginProjectLoad);
+    ASSERT_TRUE(generator && informing && downstream);
+    const int source = inputNamed(informing, kOfxImageEffectSimpleSourceClipName);
+    ASSERT_GE(source, 0);
+    knob<KnobBool>(informing, "setInfo")->setValue(true);
+    ASSERT_TRUE( informing->connectInput(generator, source) );
+    ASSERT_TRUE( downstream->connectInput(informing, source) );
+    const double width = knob<KnobDouble>(informing, "info")->getValue();
+    ASSERT_GT(width, 0.);
+    ASSERT_FALSE( informing->getKnobByName("info")->getIsPersistent() );
+    ASSERT_FALSE( informing->getKnobByName("info")->getEvaluateOnChange() );
+
+    const U64 savedAge = informing->getKnobsAge();
+    const U64 savedHash = informing->getHashValue();
+    const U64 savedDownstreamHash = downstream->getHashValue();
+    const std::string informingName = informing->getScriptName();
+    const std::string downstreamName = downstream->getScriptName();
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    QString savedPath;
+    ASSERT_TRUE( project->saveProject( dir, QString::fromUtf8("ProjectLoadInfo.ntp"), &savedPath ) );
+    generator.reset();
+    informing.reset();
+    downstream.reset();
+
+    testing::internal::CaptureStdout();
+    const bool loaded = project->loadProject( dir, QString::fromUtf8("ProjectLoadInfo.ntp") );
+    const std::string output = testing::internal::GetCapturedStdout();
+    ASSERT_TRUE(loaded);
+    informing = project->getNodeByName(informingName);
+    downstream = project->getNodeByName(downstreamName);
+    ASSERT_TRUE(informing && downstream);
+    // the value is not saved: the plug-in set it again in the action
+    EXPECT_EQ( width, knob<KnobDouble>(informing, "info")->getValue() );
+    EXPECT_TRUE( project->isSaveUpToDate() );
+    EXPECT_EQ( std::string::npos, output.find("Project load: plug-ins") ) << output;
+    EXPECT_EQ( savedAge, informing->getKnobsAge() );
+    EXPECT_EQ( savedHash, informing->getHashValue() );
+    EXPECT_EQ( savedDownstreamHash, downstream->getHashValue() );
+    informing.reset();
+    downstream.reset();
+
+    project->resetProject();
+}
+
+// The plug-in sets its saved value "derived" in the action, but the user animated it: no keyframe is set while a
+// project is loading, so the animation is kept, the project is not modified, and the node is logged.
+TEST(OfxProjectLoad, AnimatedValueChangedAfterLoadIsLogged)
+{
+    if ( !pluginsAvailable() ) {
+        return;
+    }
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+
+    NodePtr generator = NatronTestPlugin::createNode(kNatronTestPluginGenerator);
+    NodePtr deriving = NatronTestPlugin::createNode(kNatronTestPluginProjectLoad);
+    ASSERT_TRUE(generator && deriving);
+    const int source = inputNamed(deriving, kOfxImageEffectSimpleSourceClipName);
+    ASSERT_GE(source, 0);
+    knob<KnobBool>(deriving, "setDerived")->setValue(true);
+    ASSERT_TRUE( deriving->connectInput(generator, source) );
+    ASSERT_GT(knob<KnobDouble>(deriving, "derived")->getValue(), 7.);
+    KnobDoublePtr derived = knob<KnobDouble>(deriving, "derived");
+    derived->setValue(7.); // the static value, which the plug-in sets in the action
+    derived->setValueAtTime(0., 7., ViewSpec::all(), 0);
+    derived->setValueAtTime(100., 7., ViewSpec::all(), 0);
+    derived.reset();
+    const std::string derivingName = deriving->getScriptName();
+    const U64 savedAge = deriving->getKnobsAge();
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    QString savedPath;
+    ASSERT_TRUE( project->saveProject( dir, QString::fromUtf8("ProjectLoadAnimated.ntp"), &savedPath ) );
+    generator.reset();
+    deriving.reset();
+
+    testing::internal::CaptureStdout();
+    const bool loaded = project->loadProject( dir, QString::fromUtf8("ProjectLoadAnimated.ntp") );
+    const std::string output = testing::internal::GetCapturedStdout();
+    ASSERT_TRUE(loaded);
+    deriving = project->getNodeByName(derivingName);
+    ASSERT_TRUE( bool(deriving) );
+    derived = knob<KnobDouble>(deriving, "derived");
+    EXPECT_TRUE( derived->isAnimated(0) );
+    EXPECT_EQ( 7., derived->getValueAtTime(50.) );
+    EXPECT_TRUE( project->isSaveUpToDate() );
+    EXPECT_EQ( std::string(), loggedLine(output, kChangedLog) ) << output;
+    const std::string line = loggedLine(output, kAnimatedLog);
+    EXPECT_NE( std::string::npos, line.find(derivingName) ) << output;
+    EXPECT_EQ( savedAge, deriving->getKnobsAge() );
+    derived.reset();
+    deriving.reset();
+
+    project->resetProject();
+}
+
+// A project whose PyPlug was updated at load is saved right after the load (Project::loadProject()), but not if the
+// plug-ins changed saved values in the actions after the load: the project stays modified, and the user decides.
+// The PyPlug makes a node that derives "derived" from its Source, through the GroupInput: the action changes it only
+// when the PyPlug is connected.
+TEST(OfxProjectLoad, PyPlugUpdateIsNotSavedWhenValuesChanged)
+{
+    if ( !pluginsAvailable() ) {
+        return;
+    }
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const char* const pyPlugID = "net.natron.test.ProjectLoadPyPlug";
+    const QString moduleName = QString::fromUtf8("NatronTestProjectLoadPyPlug");
+    const std::string script = std::string("from NatronEngine import *\n"
+                                           "def getPluginID():\n"
+                                           "    return '") + pyPlugID + "'\n"
+                               "def getLabel():\n"
+                               "    return 'ProjectLoadPyPlug'\n"
+                               "def getVersion():\n"
+                               "    return 2\n"
+                               "def getGrouping():\n"
+                               "    return 'Other/Test'\n"
+                               "def createInstance(app, group):\n"
+                               "    inp = app.createNode('" + PLUGINID_NATRON_INPUT + "', -1, group)\n"
+                               "    n = app.createNode('" kNatronTestPluginProjectLoad "', -1, group)\n"
+                               "    n.getParam('setDerived').setValue(True)\n"
+                               "    for i in range(n.getMaxInputCount()):\n"
+                               "        if n.getInputLabel(i) == '" kOfxImageEffectSimpleSourceClipName "':\n"
+                               "            n.connectInput(i, inp)\n"
+                               "    out = app.createNode('" + PLUGINID_NATRON_OUTPUT + "', -1, group)\n"
+                               "    out.connectInput(0, n)\n";
+    ASSERT_TRUE( writeFile( dir + moduleName + QString::fromUtf8(".py"), QByteArray( script.c_str() ) ) );
+    std::string err, output;
+    ASSERT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nsys.path.insert(0, '" + tmpDir.path().toStdString() + "')\n", &err, &output) ) << err;
+    Plugin* plugin = appPTR->registerPlugin( dir, QStringList() << QString::fromUtf8("Other") << QString::fromUtf8("Test"),
+                                             QString::fromUtf8(pyPlugID), QString::fromUtf8("ProjectLoadPyPlug"), QString(), QStringList(),
+                                             false, false, 0, false, 2, 0, false );
+    ASSERT_TRUE(plugin);
+    plugin->setPythonModule(dir + moduleName);
+    // NodeCollectionSerialization::restoreFromSerialization() offers the PyPlug update only when the preference
+    // "loadFromPyFile" is off (the reverse of its tooltip, since 2015)
+    KnobBoolPtr loadFromPyFile = std::dynamic_pointer_cast<KnobBool>( appPTR->getCurrentSettings()->getKnobByName("loadFromPyFile") );
+    ASSERT_TRUE( bool(loadFromPyFile) );
+    const bool oldLoadFromPyFile = loadFromPyFile->getValue();
+    loadFromPyFile->setValue(false);
+
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    // two projects with the PyPlug, version 1: connected to a source (the action changes "derived") or not
+    for (int connected = 0; connected < 2; ++connected) {
+        const QString name = QString::fromUtf8("ProjectLoadPyPlug%1.ntp").arg(connected);
+        project->resetProject();
+        CreateNodeArgs args( pyPlugID, project );
+        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+        NodePtr pyPlug = app->createNode(args);
+        ASSERT_TRUE( bool(pyPlug) );
+        ASSERT_EQ( 1, pyPlug->getNInputs() );
+        if (connected) {
+            NodePtr generator = NatronTestPlugin::createNode(kNatronTestPluginGenerator);
+            ASSERT_TRUE( pyPlug->connectInput(generator, 0) );
+        }
+        pyPlug.reset();
+        QString savedPath;
+        ASSERT_TRUE( project->saveProject( dir, name, &savedPath ) );
+        QByteArray contents = readFile(dir + name);
+        const QByteArray version2("<PythonModuleVersion>2</PythonModuleVersion>");
+        const QByteArray version1("<PythonModuleVersion>1</PythonModuleVersion>");
+        ASSERT_EQ( 1, contents.count(version2) );
+        contents.replace(version2, version1);
+        ASSERT_TRUE( writeFile(dir + name, contents) );
+    }
+    project->resetProject();
+
+    for (int connected = 0; connected < 2; ++connected) {
+        const QString name = QString::fromUtf8("ProjectLoadPyPlug%1.ntp").arg(connected);
+        testing::internal::CaptureStdout();
+        const bool loaded = project->loadProject(dir, name);
+        output = testing::internal::GetCapturedStdout();
+        ASSERT_TRUE(loaded) << output;
+        // the update was offered and accepted (the background app answers yes): see the unconnected case
+        const QByteArray contents = readFile(dir + name);
+        const std::string line = loggedLine(output, kChangedLog);
+        if (connected) {
+            // not saved: the file still has version 1, and the project is modified
+            EXPECT_EQ( 1, contents.count("<PythonModuleVersion>1</PythonModuleVersion>") ) << "connected " << connected;
+            EXPECT_FALSE( project->isSaveUpToDate() );
+            EXPECT_NE( std::string::npos, line.find("The updated PyPlugs were not saved") ) << output;
+        } else {
+            // saved right after the load, with version 2
+            EXPECT_EQ( 1, contents.count("<PythonModuleVersion>2</PythonModuleVersion>") ) << "connected " << connected;
+            EXPECT_TRUE( project->isSaveUpToDate() );
+            EXPECT_EQ( std::string(), line ) << output;
+        }
+    }
+
+    project->resetProject();
+    loadFromPyFile->setValue(oldLoadFromPyFile);
+    ASSERT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nsys.path.remove('" + tmpDir.path().toStdString() + "')\n", &err, &output) ) << err;
+}

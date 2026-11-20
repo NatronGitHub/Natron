@@ -27,7 +27,9 @@
 // kOfxChangeUserEdited after a project load would overwrite the values saved in the project. "file" is never set by
 // the plug-in. Like AppendClip (openfx-misc) with its read-only "lastFrame", if "setDerived" is on, the plug-in sets
 // "derived" to the height of the Source RoD on any clip change of Source, and getClipPreferences gives the output that
-// frame rate: a value changed in the action after the project load must update the metadata.
+// frame rate: a value changed in the action after the project load must update the metadata. Like WriteFFmpeg with its
+// info parameters, if "setInfo" is on, the plug-in sets "info", which is neither saved (kOfxParamPropPersistent = 0)
+// nor rendered (kOfxParamPropEvaluateOnChange = 0), to the width of the Source RoD on any clip change of Source.
 // Clips: Source, Mask (optional), Output. Counters ("ProjectLoad.*"):
 // - created: the instances created;
 // - begin.<reason>, end.<reason>: the kOfxActionBegin/EndInstanceChanged actions;
@@ -151,6 +153,17 @@ describeInContext(OfxImageEffectHandle effect)
         return kOfxStatFailed;
     }
     gPropSuite->propSetDouble(props, kOfxParamPropDefault, 0, 0.);
+    if (gParamSuite->paramDefine(paramSet, kOfxParamTypeBoolean, "setInfo", &props) != kOfxStatOK) {
+        return kOfxStatFailed;
+    }
+    gPropSuite->propSetInt(props, kOfxParamPropDefault, 0, 0);
+    if (gParamSuite->paramDefine(paramSet, kOfxParamTypeDouble, "info", &props) != kOfxStatOK) {
+        return kOfxStatFailed;
+    }
+    gPropSuite->propSetDouble(props, kOfxParamPropDefault, 0, 0.);
+    gPropSuite->propSetInt(props, kOfxParamPropPersistent, 0, 0);
+    gPropSuite->propSetInt(props, kOfxParamPropEvaluateOnChange, 0, 0);
+    gPropSuite->propSetInt(props, kOfxParamPropAnimates, 0, 0);
 
     return kOfxStatOK;
 }
@@ -207,6 +220,15 @@ clipChanged(OfxImageEffectHandle effect,
     // on any change of the source: the value derived from it
     if ( hasRoD && (clipName == kOfxImageEffectSimpleSourceClipName) && getSetDerived(effect, 0) ) {
         gParamSuite->paramSetValue(getParam(effect, "derived"), rod.y2 - rod.y1);
+    }
+
+    // on any change of the source: a display-only value derived from it
+    if ( hasRoD && (clipName == kOfxImageEffectSimpleSourceClipName) ) {
+        OfxParamHandle setInfo = getParam(effect, "setInfo");
+        int on = 0;
+        if ( setInfo && (gParamSuite->paramGetValue(setInfo, &on) == kOfxStatOK) && on ) {
+            gParamSuite->paramSetValue(getParam(effect, "info"), rod.x2 - rod.x1);
+        }
     }
 
     // the user connected the source: set the parameters from it, as a writer does

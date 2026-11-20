@@ -2587,19 +2587,37 @@ public:
                            Natron::ValueChangedReasonEnum reason);
 
     /**
+     * @brief The holders whose knob values changed while a ValueChangesRecorder existed.
+     **/
+    struct ValueChanges
+    {
+        // a knob that affects the render or the metadata changed (KnobI::getEvaluateOnChange(),
+        // KnobI::getIsMetadataSlave(), as in endChanges()): the node needs a new age and its metadata refreshed
+        std::set<KnobHolder*> significant;
+        // a saved knob changed (KnobI::getIsPersistent()): the values are not the ones of the project file
+        std::set<KnobHolder*> persistent;
+        // a saved knob that is animated got a static value only (no keyframe is set while a project is loading,
+        // see Knob<T>::setValue()): the effective value did not change, and the write is lost
+        std::set<KnobHolder*> animatedNotSet;
+    };
+
+    /**
      * @brief While an object of this class exists, the holders whose knob values change on this thread
-     * (appendValueChange()) are added to the set given to the constructor. This includes the knobs that follow them
+     * (appendValueChange()) are added to the given ValueChanges. This includes the knobs that follow them
      * through links and expressions, and the changes made while a project is loading, whose knob changed handlers
      * are not called. NULL stops the recording until the object is destroyed, e.g. for a write that does not change
      * the effective value of a knob. Objects nest.
      **/
     class ValueChangesRecorder
     {
-        std::set<KnobHolder*>* _previous;
+        ValueChanges* _previous;
 
     public:
-        explicit ValueChangesRecorder(std::set<KnobHolder*>* changedHolders);
+        explicit ValueChangesRecorder(ValueChanges* changes);
         ~ValueChangesRecorder();
+
+        // the ValueChanges recorded on this thread, or NULL
+        static ValueChanges* current();
     };
 
     bool isSetValueCurrentlyPossible() const;

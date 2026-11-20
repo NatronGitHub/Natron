@@ -32,7 +32,6 @@
 #include <string>
 #include <map>
 #include <list>
-#include <set>
 #include <bitset>
 
 CLANG_DIAG_OFF(deprecated)
@@ -953,11 +952,11 @@ public:
      * connections are restored and the clip preferences are computed, before the first render: calls
      * EffectInstance::onInputsRestoredAfterProjectLoad() if EffectInstance::wantsInputsRestoredAfterProjectLoad(), with
      * the render thread storage of the caller if it covers this node (see createRenderArgsForInstanceChanged()).
-     * The holders whose knob values change meanwhile (the effect, and those that follow its knobs through links and
-     * expressions) are added to changedHolders: the knob changed handlers aren't called while a project is loading,
-     * so the caller must give their nodes a new age and refresh their input related data.
+     * The knob changed handlers aren't called while a project is loading: the caller records the holders whose knob
+     * values change meanwhile (the effect, and those that follow its knobs through links and expressions) with a
+     * KnobHolder::ValueChangesRecorder, and gives their nodes a new age and refreshes their input related data.
      **/
-    void onInputsRestoredAfterProjectLoad(std::set<KnobHolder*>* changedHolders);
+    void onInputsRestoredAfterProjectLoad();
 
     /**
      * @brief A render thread storage on the tree of this node, at the current frame, as for an instance changed action

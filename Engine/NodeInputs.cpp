@@ -30,7 +30,6 @@
 #include <QDebug>
 #include <QThread>
 
-#include "Engine/Knob.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/PrecompNode.h"
 #include "Engine/GroupInput.h"
@@ -1771,7 +1770,7 @@ Node::createRenderArgsForInstanceChanged()
 }
 
 void
-Node::onInputsRestoredAfterProjectLoad(std::set<KnobHolder*>* changedHolders)
+Node::onInputsRestoredAfterProjectLoad()
 {
     assert( QThread::currentThread() == qApp->thread() );
     // most effects (Dot, Viewer, Group, GroupInput/Output, effects without an input node) have nothing to do
@@ -1786,8 +1785,6 @@ Node::onInputsRestoredAfterProjectLoad(std::set<KnobHolder*>* changedHolders)
         if ( !_imp->effect->getParallelRenderArgsTLS() ) {
             frameRenderArgs = createRenderArgsForInstanceChanged();
         }
-
-        KnobHolder::ValueChangesRecorder recorder(changedHolders);
         _imp->effect->onInputsRestoredAfterProjectLoad();
     }
 

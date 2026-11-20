@@ -1256,12 +1256,20 @@ Knob<T>::setValue(const T & v,
         if (!timeSet) {
             time = getCurrentTime();
         }
-        // Only the static value changed, which is not the value of an animated (e.g. while a project is loading, when
-        // no keyframe is added), linked or expression-driven dimension: the effective value did not change.
-        std::unique_ptr<KnobHolder::ValueChangesRecorder> notRecorded;
-        if ( !timeSet && ( (getAnimationLevel(dimension) != eAnimationLevelNone) || !getExpression(dimension).empty() || isSlave(dimension) ) ) {
-            notRecorded.reset( new KnobHolder::ValueChangesRecorder(NULL) );
+        // If only the static value changed, which is not the value of an animated (e.g. while a project is loading,
+        // when no keyframe is added), linked or expression-driven dimension, the effective value did not change: it
+        // is not recorded (see KnobHolder::ValueChangesRecorder). A lost write to a saved animated knob is.
+        KnobHolder::ValueChanges* recording = KnobHolder::ValueChangesRecorder::current();
+        if ( recording && !timeSet ) {
+            const bool animated = isAnimated(dimension, view);
+            if ( animated && holder && getIsPersistent() ) {
+                recording->animatedNotSet.insert(holder);
+            }
+            if ( animated || !getExpression(dimension).empty() || isSlave(dimension) ) {
+                recording = NULL;
+            }
         }
+        KnobHolder::ValueChangesRecorder recorder(recording);
         evaluateValueChange(dimension, time, view, reason);
     }
     {

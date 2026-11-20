@@ -5911,7 +5911,7 @@ KnobHolder::onDoValueChangeOnMainThread(KnobI* knob,
 }
 
 // see KnobHolder::ValueChangesRecorder
-static thread_local std::set<KnobHolder*>* gValueChangesRecorded = 0;
+static thread_local KnobHolder::ValueChanges* gValueChangesRecorded = 0;
 
 void
 KnobHolder::appendValueChange(const KnobIPtr& knob,
@@ -5942,7 +5942,12 @@ KnobHolder::appendValueChange(const KnobIPtr& knob,
         assert(foundChange);
 
         if (gValueChangesRecorded) {
-            gValueChangesRecorded->insert(this);
+            if ( knob->getEvaluateOnChange() || knob->getIsMetadataSlave() ) {
+                gValueChangesRecorded->significant.insert(this);
+            }
+            if ( knob->getIsPersistent() ) {
+                gValueChangesRecorded->persistent.insert(this);
+            }
         }
         foundChange->reason = reason;
         foundChange->originalReason = originalReason;
@@ -5978,15 +5983,21 @@ KnobHolder::appendValueChange(const KnobIPtr& knob,
     }
 } // KnobHolder::appendValueChange
 
-KnobHolder::ValueChangesRecorder::ValueChangesRecorder(std::set<KnobHolder*>* changedHolders)
+KnobHolder::ValueChangesRecorder::ValueChangesRecorder(ValueChanges* changes)
     : _previous(gValueChangesRecorded)
 {
-    gValueChangesRecorded = changedHolders;
+    gValueChangesRecorded = changes;
 }
 
 KnobHolder::ValueChangesRecorder::~ValueChangesRecorder()
 {
     gValueChangesRecorded = _previous;
+}
+
+KnobHolder::ValueChanges*
+KnobHolder::ValueChangesRecorder::current()
+{
+    return gValueChangesRecorded;
 }
 
 void
