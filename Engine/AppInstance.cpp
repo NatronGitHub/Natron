@@ -649,7 +649,10 @@ AppInstance::loadInternal(const CLArgs& cl,
             }
         } else if ( info.suffix() == QString::fromUtf8("py") ) {
             ///Load the python script
-            loadPythonScript(info);
+            // A Python error stops the run, so that the exit status is not 0 (#1276)
+            if ( !loadPythonScript(info) ) {
+                throw std::invalid_argument( tr("%1: Python script failed.").arg(scriptFilename).toStdString() );
+            }
         } else {
             throw std::invalid_argument( tr("%1 only accepts python scripts or .ntp project files.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
         }
@@ -659,7 +662,9 @@ AppInstance::loadInternal(const CLArgs& cl,
         if ( !extraOnProjectCreatedScript.isEmpty() ) {
             QFileInfo cbInfo(extraOnProjectCreatedScript);
             if ( cbInfo.exists() ) {
-                loadPythonScript(cbInfo);
+                if ( !loadPythonScript(cbInfo) ) {
+                    throw std::invalid_argument( tr("%1: Python script failed.").arg(extraOnProjectCreatedScript).toStdString() );
+                }
             }
         }
 
@@ -828,7 +833,8 @@ AppInstance::loadPythonScript(const QFileInfo& file)
     } else {
         PythonGILLocker pgl;
 
-        PyRun_SimpleString( content.toStdString().c_str() );
+        // -1 if the script raised an exception (Python printed it)
+        const bool scriptFailed = PyRun_SimpleString( content.toStdString().c_str() ) != 0;
 
         PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
         std::string error;
@@ -858,6 +864,9 @@ AppInstance::loadPythonScript(const QFileInfo& file)
             message.append( QString::fromUtf8(": ") );
             message.append( QString::fromUtf8( error.c_str() ) );
             appendToScriptEditor( message.toStdString() );
+        }
+        if (scriptFailed) {
+            return false;
         }
     }
 

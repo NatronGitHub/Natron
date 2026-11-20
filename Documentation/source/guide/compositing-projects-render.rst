@@ -162,9 +162,10 @@ Write node named ``Write1`` from frame 1 to frame 100::
 - The frame ranges are optional, and go after the project file: without them,
   each Write node renders its own **Frame Range**. Several ranges and single
   frames can be given, separated by commas, and a step can follow a colon, for
-  example ``1-10,20,30-50:2``. Put the frame ranges after the project file
-  rather than right after ``-w <Write node>``: there, a range with a step is
-  taken as an output file name (`issue #1263 <https://github.com/NatronGitHub/Natron/issues/1263>`_).
+  example ``1-10,20,30-50:2``. Up to Natron 2.5, put the frame ranges after
+  the project file rather than right after ``-w <Write node>``: there, a range
+  with a step was taken as an output file name
+  (`issue #1263 <https://github.com/NatronGitHub/Natron/issues/1263>`_).
 - ``-s`` writes the ``-stats.txt`` render statistics described above. It
   does not work when writing video files.
 

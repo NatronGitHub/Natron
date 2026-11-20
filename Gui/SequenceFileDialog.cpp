@@ -109,24 +109,6 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER
 
-static inline bool
-isCaseSensitiveFileSystem(const QString &path)
-{
-    Q_UNUSED(path)
-#if defined(Q_OS_WIN)
-    // Return case insensitive unconditionally, even if someone has a case sensitive
-
-    // file system mounted, wrongly capitalized drive letters will cause mismatches.
-    return false;
-#elif defined(Q_OS_OSX)
-
-    return pathconf(QFile::encodeName(path).constData(), _PC_CASE_SENSITIVE);
-#else
-
-    return true;
-#endif
-}
-
 static void removeTrailingSlash(QString& str) {
     if ( (str.size() > 1) && ( str.endsWith( QLatin1Char('/') ) || str.endsWith( QLatin1Char('\\') ) ) ) {
         str = str.remove(str.size() - 1, 1);
@@ -370,8 +352,6 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
 
     _model.reset( new FileSystemModel() );
     _model->initialize(this);
-
-    _view->setSortingEnabled( isCaseSensitiveFileSystem( rootPath() ) );
 
     _model->setSequenceModeEnabled(isSequenceDialog ? true : false);
 
@@ -1813,8 +1793,9 @@ SequenceFileDialog::showFilterMenu()
 
     QStringList filters = _filters;
     if (filters.size() > 1) {
-        // make sure *.* is first if we got multiple filters (for easy access)
+        // make sure the filter with all the extensions and *.* come first if we got multiple filters (for easy access)
         filters.prepend( QString::fromUtf8("*.*") );
+        filters.prepend( combinedFilter() );
     } else {
         filters << QString::fromUtf8("*.*");
     }
@@ -1825,7 +1806,9 @@ SequenceFileDialog::showFilterMenu()
         if ( !filter.contains( QString::fromUtf8("*") ) ) {
             filter.prepend( QString::fromUtf8("*.") );
         }
-        QAction *filterAction = new QAction(filter, this);
+        // the filter with all the extensions may be very long (e.g. all the formats a Read node can read)
+        QAction *filterAction = new QAction(fm.elidedText(filter, Qt::ElideRight, 400), this);
+        filterAction->setData(filter);
         QObject::connect( filterAction, SIGNAL(triggered()), this, SLOT(handleFilterSlot()) );
         actions.append(filterAction);
     }
@@ -1847,7 +1830,7 @@ SequenceFileDialog::handleFilterSlot()
         return;
     }
 
-    QString filter = action->text();
+    QString filter = action->data().toString();
     if ( filter.isEmpty() ) {
         return;
     }
@@ -1866,9 +1849,34 @@ SequenceFileDialog::setDefaultFilter()
     QString filter = QString::fromUtf8("*.*");
     if (_filters.size() == 1) { // only set if we got a single filter (ntp/nl/nps etc)
         filter = QString::fromUtf8("*.%1").arg( _filters.at(0) );
+    } else if ( (_filters.size() > 1) && (_dialogMode == eFileDialogModeOpen) ) {
+        // several extensions: show the files that have any of them (the filter is a space-separated list of patterns)
+        filter = combinedFilter();
     }
     _filterLineEdit->setText(filter);
     applyFilter(filter);
+}
+
+QString
+SequenceFileDialog::combinedFilter() const
+{
+    QStringList patterns;
+
+    for (int i = 0; i < _filters.size(); ++i) {
+        const QString& f = _filters[i];
+        if ( f == QString( QLatin1Char('*') ) ) {
+            // any file: FileSystemModel::setRegexpFilters() ignores a "*" pattern, so the other patterns
+            // would hide the files that only "*" matches. Use what a single "*" filter gives (setDefaultFilter()).
+            return QString::fromUtf8("*.*");
+        }
+        if ( f.contains( QLatin1Char('*') ) ) {
+            patterns << f;
+        } else {
+            patterns << QString::fromUtf8("*.") + f;
+        }
+    }
+
+    return patterns.join( QLatin1Char(' ') );
 }
 
 void

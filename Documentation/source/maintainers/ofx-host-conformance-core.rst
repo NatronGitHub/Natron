@@ -285,7 +285,7 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - P1
      - `ofxCore.h:593-603 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxCore.h#L593-L603>`__ kOfxPropAPIVersion "int X N… version… implemented by a host"
      - DEFAULT / MUST
-     - {1,4} (Engine/OfxHost.cpp:261-262). Natron honestly claims 1.4, not 1.5.
+     - {1,4} (Engine/OfxHost.cpp:261-262). Natron honestly claims 1.4, not 1.5. Since then, Natron advertises 1.5 (#1107).
      - OK (tracked as `#1107 <https://github.com/NatronGitHub/Natron/issues/1107>`__ "Advertise OFX API 1.5")
    * - P2
      - `ofxCore.h:648-661 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxCore.h#L648-L661>`__ kOfxPropType valid values incl. kOfxTypeImageEffectHost, kOfxTypeImageEffectInstance, kOfxTypeParameterInstance (`ofxImageEffect.h:80-81 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L80-L81>`__, `ofxParam.h:20-21 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L20-L21>`__)
