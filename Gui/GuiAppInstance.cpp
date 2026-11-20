@@ -461,10 +461,8 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
     QStringList foundAutosaves;
     for (int i = 0; i < entries.size(); ++i) {
         const QString & entry = entries.at(i);
-        QString searchStr( QLatin1Char('.') );
-        searchStr.append( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) );
-        searchStr.append( QString::fromUtf8(".autosave") );
-        int suffixPos = entry.indexOf(searchStr);
+        // text auto-saves (by Natron 2.5 and earlier) and binary ones
+        int suffixPos = Project::findAutoSaveSuffix(entry);
         if ( (suffixPos == -1) || entry.contains( QString::fromUtf8("RENDER_SAVE") ) ) {
             continue;
         }
@@ -827,7 +825,21 @@ GuiAppInstance::loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & a
 }
 
 void
+GuiAppInstance::loadProjectGui(bool isAutosave, PortableBinaryIArchive & archive) const
+{
+    _imp->_gui->loadProjectGui(isAutosave, archive);
+}
+
+void
 GuiAppInstance::saveProjectGui(boost::archive::xml_oarchive & archive)
+{
+    if (_imp->_gui) {
+        _imp->_gui->saveProjectGui(archive);
+    }
+}
+
+void
+GuiAppInstance::saveProjectGui(PortableBinaryOArchive & archive)
 {
     if (_imp->_gui) {
         _imp->_gui->saveProjectGui(archive);
@@ -1228,24 +1240,27 @@ GuiAppInstance::isRenderStatsActionChecked() const
 }
 
 bool
-GuiAppInstance::save(const std::string& filename)
+GuiAppInstance::save(const std::string& filename,
+                     ProjectFileFormatEnum format)
 {
     if ( filename.empty() ) {
         ProjectPtr project = getProject();
         if ( project->hasProjectBeenSavedByUser() ) {
-            return _imp->_gui->saveProject();
+            return _imp->_gui->saveProject(format);
         } else {
-            return _imp->_gui->saveProjectAs();
+            // the Save As dialog: format is its default, the user's choice wins
+            return _imp->_gui->saveProjectAs(format);
         }
     } else {
-        return _imp->_gui->saveProjectAs(filename);
+        return _imp->_gui->saveProjectAs(filename, format);
     }
 }
 
 bool
-GuiAppInstance::saveAs(const std::string& filename)
+GuiAppInstance::saveAs(const std::string& filename,
+                       ProjectFileFormatEnum format)
 {
-    return _imp->_gui->saveProjectAs(filename);
+    return _imp->_gui->saveProjectAs(filename, format);
 }
 
 AppInstancePtr

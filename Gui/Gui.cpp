@@ -55,6 +55,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"
+#include "Gui/GuiTest.h"
 #include "Gui/Menu.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/ProjectGui.h"
@@ -155,7 +156,7 @@ void
 Gui::setLeftToolBarDisplayedOnMouseHoverOnly(bool b)
 {
     _imp->leftToolBarDisplayedOnHoverOnly = b;
-    QPoint p = QCursor::pos();
+    QPoint p = GuiTest::cursorPos();
 
     if (b) {
         _imp->refreshLeftToolBarVisibility( mapFromGlobal(p) );
@@ -440,7 +441,7 @@ Gui::createGui()
     setupUi();
 
     ///post a fake event so the qt handlers are called and the proper widget receives the focus
-    QMouseEvent e(QEvent::MouseMove, QCursor::pos(), Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+    QMouseEvent e(QEvent::MouseMove, GuiTest::cursorPos(), Qt::NoButton, Qt::NoButton, Qt::NoModifier);
     qApp->sendEvent(this, &e);
 }
 

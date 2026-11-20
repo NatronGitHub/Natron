@@ -414,31 +414,46 @@ App::addFormat(const QString& formatSpec)
 }
 
 bool
-App::saveTempProject(const QString& filename)
+App::saveTempProject(const QString& filename,
+                     ProjectFileFormatEnum format)
 {
-    return getInternalApp()->saveTemp( filename.toStdString() );
+    return getInternalApp()->saveTemp(filename.toStdString(), format);
 }
 
 bool
-App::saveProject(const QString& filename)
+App::saveProject(const QString& filename,
+                 ProjectFileFormatEnum format)
 {
     std::string outFile = filename.toStdString();
     std::map<std::string, std::string> env;
     getInternalApp()->getProject()->getEnvironmentVariables(env);
     Project::expandVariable(env, outFile);
 
-    return getInternalApp()->save(outFile);
+    return getInternalApp()->save(outFile, format);
 }
 
 bool
-App::saveProjectAs(const QString& filename)
+App::saveProjectAs(const QString& filename,
+                   ProjectFileFormatEnum format)
 {
     std::string outFile = filename.toStdString();
     std::map<std::string, std::string> env;
     getInternalApp()->getProject()->getEnvironmentVariables(env);
     Project::expandVariable(env, outFile);
 
-    return getInternalApp()->saveAs(outFile);
+    return getInternalApp()->saveAs(outFile, format);
+}
+
+ProjectFileFormatEnum
+App::getProjectFormat() const
+{
+    return getInternalApp()->getProject()->getFileFormat();
+}
+
+void
+App::setProjectFormat(ProjectFileFormatEnum format)
+{
+    getInternalApp()->getProject()->setFileFormat(format);
 }
 
 App*

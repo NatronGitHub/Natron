@@ -272,7 +272,7 @@ google-breakpad/
 libs/ceres/ceres.xcodeproj/
 libs/gflags/gflags.xcodeproj/
 libs/glog/glog.xcodeproj/
-libs/hoedown/hoedown.xcodeproj/
+libs/md4c/md4c.xcodeproj/
 libs/libmv/LibMV.xcodeproj/
 libs/libtess/libtess.xcodeproj/
 libs/libtess/tess.xcodeproj/
