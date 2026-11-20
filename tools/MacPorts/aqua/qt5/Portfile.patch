@@ -1,5 +1,5 @@
 --- Portfile.orig	2026-11-20 09:04:34
-+++ Portfile	2026-11-20 09:05:24
++++ Portfile	2026-11-20 13:47:08
 @@ -89,6 +89,10 @@
      # Backport fix for bundled libpng
      patchfiles-append   patch-qtwebengine-libpng.diff
@@ -26,7 +26,7 @@
              patchfiles-append patch-qtbase-tahoe-no-agl-framework.diff
 +
 +            # Natron: fix a lost wake-up in the non-futex QMutex on arm64 (NatronGitHub/Natron#1451):
-+            # QMutexPrivate::derefWaiters() must use release ordering
++            # derefWaiters() must be a release, the waiters CAS in lockInternal() an acquire
 +            patchfiles-append patch-qtbase-qmutex-arm64-lost-wakeup.diff
  
              # find the Rez program

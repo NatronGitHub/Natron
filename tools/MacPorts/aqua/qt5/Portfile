@@ -1093,7 +1093,7 @@ foreach {module module_info} [array get modules] {
             patchfiles-append patch-qtbase-tahoe-no-agl-framework.diff
 
             # Natron: fix a lost wake-up in the non-futex QMutex on arm64 (NatronGitHub/Natron#1451):
-            # QMutexPrivate::derefWaiters() must use release ordering
+            # derefWaiters() must be a release, the waiters CAS in lockInternal() an acquire
             patchfiles-append patch-qtbase-qmutex-arm64-lost-wakeup.diff
 
             # find the Rez program
