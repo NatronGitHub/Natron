@@ -1849,6 +1849,20 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
+        <modify-function signature="getSelectedItems()const">
+            <inject-code class="target" position="beginning">
+                std::list&lt;ItemBase*&gt; items = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+                PyObject* ret = PyList_New((int) items.size());
+                int idx = 0;
+                for (std::list&lt;ItemBase*&gt;::iterator it = items.begin(); it!=items.end(); ++it,++idx) {
+                PyObject* item = %CONVERTTOPYTHON[ItemBase*](*it);
+                // Ownership transferences.
+                Shiboken::Object::getOwnership(item);
+                PyList_SET_ITEM(ret, idx, item);
+                }
+                return ret;
+            </inject-code>
+        </modify-function>
         <modify-function signature="createLayer()">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>

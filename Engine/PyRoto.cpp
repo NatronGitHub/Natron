@@ -159,7 +159,18 @@ Layer::insertItem(int pos,
 void
 Layer::removeItem(ItemBase* item)
 {
-    _layer->removeItem( item->getInternalItem() );
+    // item is NULL if Python passed None
+    RotoItemPtr internalItem = item ? item->getInternalItem() : RotoItemPtr();
+
+    // Only the children of this layer are removed, as before
+    if ( !internalItem || (internalItem->getParentLayer() != _layer) ) {
+        return;
+    }
+    // Remove it as the Roto panel does: RotoContext::removeItem() also deselects the item and its children,
+    // and tells the Roto panel and the curve editor, which otherwise kept showing an empty item (#405).
+    RotoContextPtr ctx = internalItem->getContext();
+    ctx->removeItem(internalItem, RotoItem::eSelectionReasonOther);
+    ctx->evaluateChange();
 }
 
 std::list<ItemBase*>
@@ -550,11 +561,10 @@ Roto::getBaseLayer() const
     return 0;
 }
 
-ItemBase*
-Roto::getItemByName(const QString& name) const
+// Returns a new wrapper of the type of item: Layer, BezierCurve, or ItemBase for strokes
+static ItemBase*
+createItemWrapper(const RotoItemPtr& item)
 {
-    RotoItemPtr item =  _ctx->getItemByName( name.toStdString() );
-
     if (!item) {
         return 0;
     }
@@ -572,6 +582,29 @@ Roto::getItemByName(const QString& name) const
     }
 
     return 0;
+}
+
+ItemBase*
+Roto::getItemByName(const QString& name) const
+{
+    return createItemWrapper( _ctx->getItemByName( name.toStdString() ) );
+}
+
+std::list<ItemBase*>
+Roto::getSelectedItems() const
+{
+    std::list<ItemBase*> ret;
+    // A copy of the selection, which getSelectedItems() returns by reference
+    const std::list<RotoItemPtr> items = _ctx->getSelectedItems();
+
+    for (std::list<RotoItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
+        ItemBase* item = createItemWrapper(*it);
+        if (item) {
+            ret.push_back(item);
+        }
+    }
+
+    return ret;
 }
 
 Layer*

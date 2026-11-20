@@ -32,7 +32,10 @@
 
 #include "Global/Macros.h"
 
+#include <algorithm>
 #include <iostream>
+#include <list>
+#include <memory>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -50,8 +53,10 @@
 #include "Engine/OverlaySupport.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
+#include "Engine/PyRoto.h"
 #include "Engine/RenderScale.h"
 #include "Engine/RotoContext.h"
+#include "Engine/RotoLayer.h"
 #include "Engine/RotoPaintInteract.h"
 #include "Engine/ViewIdx.h"
 
@@ -355,4 +360,86 @@ TEST_F(RotoPaintOverlayTest, FinishingBezierByChangingToolEvaluatesNode)
     EXPECT_TRUE( bezier->isCurveFinished() );
     EXPECT_GT(_context->getAge(), ageBeforeToolChange);
     EXPECT_NE(_node->getHashValue(), hashBeforeToolChange);
+}
+
+// Python Layer.removeItem() must remove the item as the Roto panel does: deselect it and emit itemRemoved,
+// which the Roto panel uses to remove the item from its tree. It used to call RotoLayer::removeItem() only,
+// which left an empty item in the panel: issue 405.
+TEST_F(RotoPaintOverlayTest, PythonLayerRemoveItemDeselectsAndNotifies)
+{
+    if (!_havePlugins) {
+        return;
+    }
+    typedef NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::Roto PyRotoContext;
+    typedef NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::Layer PyLayer;
+    typedef NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::BezierCurve PyBezierCurve;
+    PyRotoContext roto(_context);
+    std::unique_ptr<PyBezierCurve> ellipse( roto.createEllipse(500., 500., 100., true, kTime) );
+    ASSERT_TRUE( bool(ellipse) );
+    BezierPtr bezier = std::dynamic_pointer_cast<Bezier>( ellipse->getInternalItem() );
+    ASSERT_TRUE( bool(bezier) );
+    RotoLayerPtr layer = bezier->getParentLayer();
+    ASSERT_TRUE( bool(layer) );
+
+    // Created before the selection is set: creating a layer selects it.
+    std::unique_ptr<PyLayer> otherLayer( roto.createLayer() );
+    ASSERT_TRUE( bool(otherLayer) );
+
+    _context->clearSelection(RotoItem::eSelectionReasonOther);
+    _context->select(bezier, RotoItem::eSelectionReasonOther);
+    ASSERT_EQ( 1u, _context->getSelectedItems().size() );
+
+    int removedCount = 0;
+    QMetaObject::Connection connection =
+        QObject::connect( _context.get(), &RotoContext::itemRemoved, [&removedCount, &bezier](const RotoItemPtr& item, int) {
+        if (item == bezier) {
+            ++removedCount;
+        }
+    } );
+
+    // Removing an item from a layer it doesn't belong to does nothing.
+    otherLayer->removeItem( ellipse.get() );
+    EXPECT_EQ( layer, bezier->getParentLayer() );
+    EXPECT_EQ(0, removedCount);
+    EXPECT_EQ( 1u, _context->getSelectedItems().size() );
+
+    PyLayer pyLayer(layer);
+    pyLayer.removeItem( ellipse.get() );
+    QObject::disconnect(connection);
+
+    EXPECT_FALSE( bool( bezier->getParentLayer() ) );
+    EXPECT_TRUE( _context->getSelectedItems().empty() ) << "the removed item must be deselected";
+    EXPECT_EQ(1, removedCount) << "itemRemoved must be emitted, for the Roto panel";
+    const std::list<RotoItemPtr>& items = layer->getItems();
+    EXPECT_TRUE( std::find(items.begin(), items.end(), RotoItemPtr(bezier)) == items.end() );
+}
+
+// Python Roto.getSelectedItems() returns the selected items, with the wrapper of their type: issue 406.
+TEST_F(RotoPaintOverlayTest, PythonRotoGetSelectedItems)
+{
+    if (!_havePlugins) {
+        return;
+    }
+    typedef NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::Roto PyRotoContext;
+    typedef NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::ItemBase PyItemBase;
+    typedef NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::BezierCurve PyBezierCurve;
+    PyRotoContext roto(_context);
+    std::unique_ptr<PyBezierCurve> ellipse( roto.createEllipse(500., 500., 100., true, kTime) );
+    std::unique_ptr<PyBezierCurve> rectangle( roto.createRectangle(100., 100., 50., kTime) );
+    ASSERT_TRUE( ellipse && rectangle );
+
+    _context->clearSelection(RotoItem::eSelectionReasonOther);
+    EXPECT_TRUE( roto.getSelectedItems().empty() );
+
+    _context->select(rectangle->getInternalItem(), RotoItem::eSelectionReasonOther);
+    std::list<PyItemBase*> selected = roto.getSelectedItems();
+    ASSERT_EQ( 1u, selected.size() );
+    EXPECT_EQ( rectangle->getInternalItem(), selected.front()->getInternalItem() );
+    EXPECT_TRUE( dynamic_cast<PyBezierCurve*>( selected.front() ) != NULL ) << "a Bezier is returned as a BezierCurve";
+    for (std::list<PyItemBase*>::iterator it = selected.begin(); it != selected.end(); ++it) {
+        delete *it;
+    }
+
+    _context->clearSelection(RotoItem::eSelectionReasonOther);
+    EXPECT_TRUE( roto.getSelectedItems().empty() );
 }

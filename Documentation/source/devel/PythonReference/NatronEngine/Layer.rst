@@ -79,7 +79,10 @@ it will be inserted at the bottom of the layer.
     :param item: :class:`ItemBase<NatronEngine.ItemBase>`
 
 
-Removes the *item* from the layer.
+Removes the *item* from the layer, as the Roto panel does: the item and its children are
+deselected and removed from the Roto panel. Nothing is done if *item* is not a child of
+this layer. Up to Natron 2.5, the removed item stayed in the Roto panel as an empty item
+(`issue #405 <https://github.com/NatronGitHub/Natron/issues/405>`_).
 
 
 
