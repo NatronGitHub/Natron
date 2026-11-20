@@ -503,9 +503,12 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     } else {
         setWindowTitle( tr("Select Directory") );
     }
-    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
-    bool hasRestoredDir;
-    restoreState( settings.value( QLatin1String("FileDialog") ).toByteArray(), directoryArgs.empty(), &hasRestoredDir );
+    bool hasRestoredDir = false;
+    // With --no-settings, the dialog starts with its default state, as with fresh settings
+    if ( !appPTR->getCurrentSettings()->isUsingDefaultSettings() ) {
+        QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
+        restoreState( settings.value( QLatin1String("FileDialog") ).toByteArray(), directoryArgs.empty(), &hasRestoredDir );
+    }
 
     // An empty directory would be the "Computer" level, where a typed file name has no directory to go to (#825)
     if ( !hasRestoredDir && !directoryArgs.empty() ) {
@@ -548,6 +551,10 @@ SequenceFileDialog::~SequenceFileDialog()
 {
     _model->resetCompletly(false);
 
+    // With --no-settings, do not overwrite the user's dialog state (as GuiPrivate::saveGuiGeometry())
+    if ( appPTR->getCurrentSettings()->isUsingDefaultSettings() ) {
+        return;
+    }
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
     settings.setValue( QLatin1String("FileDialog"), saveState() );
