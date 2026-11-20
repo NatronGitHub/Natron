@@ -772,7 +772,8 @@ DockablePanel::onLineEditNameEditingFinished()
     }
 
     // editingFinished is also emitted when the line edit loses focus, e.g. to the error dialogs below
-    // (QTBUG-40, #592): only handle text that the user edited since it was last handled.
+    // (QTBUG-40, #592): only handle text that the user edited since it was last handled. setText() also
+    // resets the modified flag, e.g. when the node is renamed elsewhere.
     if ( !_imp->_nameLineEdit->isModified() ) {
         return;
     }
