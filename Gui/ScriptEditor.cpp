@@ -484,7 +484,12 @@ ScriptEditor::onExecScriptClicked()
     }
     std::string error, output;
 
-    if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script.toStdString(), &error, &output) ) {
+    const bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script.toStdString(), &error, &output);
+    // an undo group (App.beginUndoGroup()) ends with the script that started it
+    if ( getGui() && getGui()->getApp() ) {
+        getGui()->getApp()->closeUndoGroups("end of the Script Editor script", true);
+    }
+    if (!ok) {
         _imp->outputEdit->append( NATRON_NAMESPACE::convertFromPlainText(QString::fromUtf8( error.c_str() ), NATRON_NAMESPACE::WhiteSpaceNormal) );
     } else {
         QString toAppend(script);

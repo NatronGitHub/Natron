@@ -29,7 +29,9 @@
 #include "Global/Macros.h"
 
 #include <list>
+#include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "Engine/EngineFwd.h"
@@ -81,11 +83,25 @@ public:
 
 private:
 
+    // the state of a knob: its values and animation (a copy made with createKnobCopy(), which has no
+    // holder, so no links), and, per dimension, its expression and its master (link)
+    struct KnobState
+    {
+        KnobIPtr copy;
+        std::vector<std::string> expressions;
+        std::vector<bool> expressionsHaveRet;
+        std::vector<std::pair<int, KnobIWPtr> > masters;
+    };
+
     struct KnobRecord
     {
         KnobIWPtr knob;
-        KnobIPtr before, after; // copies (createKnobCopy())
+        KnobState before, after;
     };
+
+    static bool getKnobState(const KnobIPtr& knob, KnobState* state);
+    static bool knobHasState(const KnobIPtr& knob, const KnobState& state);
+    static void setKnobState(const KnobIPtr& knob, const KnobState& state);
 
     struct InputsRecord
     {
@@ -105,7 +121,9 @@ private:
     void setNodesActivated(bool done);
 
     std::list<KnobRecord> _knobs;
+    std::set<KnobI*> _recordedKnobs; // the knobs of _knobs (only compared, never dereferenced)
     std::list<InputsRecord> _inputs;
+    std::set<Node*> _recordedInputs; // the nodes of _inputs (only compared, never dereferenced)
     std::list<NodeRecord> _nodes; // in the order of the changes
     bool _done; // the state after the group (initially, and after redo())
     bool _firstRedo;

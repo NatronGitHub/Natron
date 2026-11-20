@@ -997,6 +997,11 @@ runTestScript(const QString& path)
         }
         Py_XDECREF(module);
     }
+    // the undo groups that the test left open end with it
+    AppInstancePtr topLevel = appPTR->getTopLevelInstance();
+    if (topLevel) {
+        topLevel->closeUndoGroups("end of the GUI test", true);
+    }
     if ( appPTR->isQuitRequested() ) {
         // the script called natron.quit(n): n is the exit status
         status = appPTR->getRequestedExitCode();

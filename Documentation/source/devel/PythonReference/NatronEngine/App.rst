@@ -655,7 +655,8 @@ inform the user of various information, warnings or errors.
     connection of the viewer in one step. Outside an undo group, the edits made from Python are not
     undoable, as before. This is how a PyPlug button callback or a tool makes its edits one undo step.
 
-    The group records the parameter changes (values, keyframes, expressions, links, defaults restored),
+    The group records the parameter changes (values, keyframes, expressions, links and aliases, defaults
+    restored),
     the nodes created (:meth:`createNode()<NatronEngine.App.createNode>`,
     :meth:`createReader()<NatronEngine.App.createReader>`, :meth:`createWriter()<NatronEngine.App.createWriter>`),
     deleted (:meth:`Effect.destroy()<NatronEngine.Effect.destroy>`) and connected or disconnected
@@ -667,6 +668,23 @@ inform the user of various information, warnings or errors.
     it raises an exception (the edits made until then are the undo step). The undo step is on the undo
     stack of the node graph. In background mode (NatronRenderer), where there is no undo stack, it does
     nothing.
+
+    Undoing restores, for each parameter, its values, keyframes, expressions and links as they were
+    before the group, unless the parameter was changed after the group (e.g. in its settings panel, whose
+    undo stack is another one): it then keeps its value. Redo does the same the other way round.
+
+    Not recorded: the changes that a plug-in makes by itself in reaction to an edit (e.g. a Read node's
+    format after its file name changes), which happen again or not when the edit is undone or redone;
+    the label, position and colour of the nodes (:meth:`Effect.setLabel()<NatronEngine.Effect.setLabel>`,
+    ``setPosition()``, ``setColor()``). A node deleted in a group keeps its script name taken, so a node
+    created afterwards with the same name gets another one, as after a deletion in the node graph.
+
+    A group that a script leaves open (a :meth:`beginUndoGroup()<NatronEngine.App.beginUndoGroup>`
+    without :meth:`endUndoGroup()<NatronEngine.App.endUndoGroup>`) is ended, with a warning, when the
+    Script Editor script or the GUI test that started it ends, and dropped when the project is closed.
+    :meth:`undo()<NatronEngine.App.undo>` and :meth:`redo()<NatronEngine.App.redo>` raise
+    :class:`RuntimeError` while a group is open, and the undo group functions raise it when not called
+    from the main thread.
 
 .. method:: App.beginUndoGroup(text)
 

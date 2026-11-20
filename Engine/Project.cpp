@@ -2306,6 +2306,10 @@ Project::reset(bool aboutToQuit, bool blocking)
         ResettingGuard(bool& f) : flag(f) { flag = true; }
         ~ResettingGuard() { flag = false; }
     } resettingGuard(_imp->resetting);
+    // the undo groups of a script that did not end them: the edits of this project are not undoable any more
+    if ( getApp() ) {
+        getApp()->closeUndoGroups("the project is closed", false);
+    }
     // a save waiting for the auto-save (see saveProject_imp()) must not save the new project
     ++_imp->resetCount;
     {

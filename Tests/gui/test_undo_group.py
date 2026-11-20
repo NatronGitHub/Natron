@@ -67,3 +67,39 @@ try:
     raise AssertionError("endUndoGroup() without a group did not raise")
 except RuntimeError:
     pass
+
+# app.undo() inside an open group raises
+with app.undoGroup("Open"):
+    try:
+        app.undo()
+        raise AssertionError("app.undo() in an open group did not raise")
+    except RuntimeError:
+        pass
+
+# an expression and a link added in a group are removed by undo, and restored by redo
+g1 = app.createNode(GENERATOR)
+g2 = app.createNode(GENERATOR)
+p1, p2 = g1.getParam("par"), g2.getParam("par")
+with app.undoGroup("Links"):
+    p1.setExpression("frame * 2", False)
+    p2.slaveTo(p1, 0, 0)
+wait_idle()
+check(p1.getExpression(0) != "", "the expression is set")
+app.undo()
+wait_idle()
+check(p1.getExpression(0) == "", "undo removed the expression: %r" % (p1.getExpression(0),))
+p1.setValue(3.0)
+check_close(p2.getValue(), 1.0, 1e-9, "undo removed the link (p2 does not follow p1)")
+p1.setValue(1.0)  # back to its state before the group: otherwise redo would keep it (see below)
+app.redo()
+wait_idle()
+check(p1.getExpression(0) == "frame * 2", "redo restored the expression")
+
+# a knob changed after the group keeps its value when the group is undone
+p3 = app.createNode(GENERATOR).getParam("par")
+with app.undoGroup("Later"):
+    p3.setValue(7.0)
+p3.setValue(9.0)  # outside a group: not undoable, like an edit on another undo stack
+app.undo()
+wait_idle()
+check_close(p3.getValue(), 9.0, 1e-9, "undo kept the value changed after the group")

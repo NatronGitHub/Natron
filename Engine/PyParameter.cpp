@@ -49,6 +49,7 @@ recordForUndoGroup(const std::shared_ptr<K>& knob)
     }
     KnobHolder* holder = knob->getHolder();
     AppInstancePtr app = holder ? holder->getApp() : AppInstancePtr();
+    // (recordKnobForUndoGroup() does nothing off the main thread, e.g. in a render callback)
     if ( app && (app->getUndoGroupDepth() > 0) ) {
         app->recordKnobForUndoGroup(knob);
     }
@@ -455,6 +456,9 @@ Param::setAsAlias(Param* other)
          ( otherKnob->getDimension() != thisKnob->getDimension() ) ) {
         return false;
     }
+    // the alias is a link of each dimension (getMaster()), which an undo group restores
+    recordForUndoGroup(thisKnob);
+    recordForUndoGroup(otherKnob);
 
     return otherKnob->setKnobAsAliasOfThis(thisKnob, true);
 }

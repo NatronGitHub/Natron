@@ -266,11 +266,18 @@ public:
      * @brief Undo groups (App.beginUndoGroup(), "with app.undoGroup(text):"): the edits made from Python
      * between beginUndoGroup() and endUndoGroup() are recorded, and become one undo step on the undo stack of
      * the node graph when the outermost group ends (see PythonUndoGroupCommand). Groups nest. In background
-     * mode, nothing is recorded. endUndoGroup() returns false if no group is open.
+     * mode, nothing is recorded. endUndoGroup() returns false if no group is open. Only on the main thread:
+     * elsewhere they return false and the record functions do nothing.
      **/
-    void beginUndoGroup(const std::string& text);
+    bool beginUndoGroup(const std::string& text); // false if not called from the main thread
     bool endUndoGroup();
     int getUndoGroupDepth() const;
+
+    /**
+     * @brief Ends the undo groups that a script left open, with a warning: when a script run by Natron ends
+     * (keepEdits: the edits become one undo step), or when the project is closed (they are dropped).
+     **/
+    void closeUndoGroups(const std::string& reason, bool keepEdits);
 
     /**
      * @brief Called by the Python API before it changes a knob, the inputs of a node, or after it creates a

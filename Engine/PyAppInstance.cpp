@@ -507,17 +507,31 @@ checkMainThread(const char* function)
 void
 App::undo()
 {
-    if ( checkMainThread("App.undo()") ) {
-        getInternalApp()->undo();
+    if ( !checkMainThread("App.undo()") ) {
+        return;
     }
+    if (getInternalApp()->getUndoGroupDepth() > 0) {
+        // the group would record the state of what the undo changes, and its step would undo it
+        PyErr_SetString(PyExc_RuntimeError, "App.undo() cannot be called in an open undo group");
+
+        return;
+    }
+    getInternalApp()->undo();
 }
 
 void
 App::redo()
 {
-    if ( checkMainThread("App.redo()") ) {
-        getInternalApp()->redo();
+    if ( !checkMainThread("App.redo()") ) {
+        return;
     }
+    if (getInternalApp()->getUndoGroupDepth() > 0) {
+        // the group would record the state of what the undo changes, and its step would undo it
+        PyErr_SetString(PyExc_RuntimeError, "App.redo() cannot be called in an open undo group");
+
+        return;
+    }
+    getInternalApp()->redo();
 }
 
 bool
@@ -557,13 +571,15 @@ App::getUndoIndex() const
 void
 App::beginUndoGroup(const QString& text)
 {
-    getInternalApp()->beginUndoGroup( text.toStdString() );
+    if ( checkMainThread("App.beginUndoGroup()") ) {
+        getInternalApp()->beginUndoGroup( text.toStdString() );
+    }
 }
 
 void
 App::endUndoGroup()
 {
-    if ( !getInternalApp()->endUndoGroup() ) {
+    if ( checkMainThread("App.endUndoGroup()") && !getInternalApp()->endUndoGroup() ) {
         PyErr_SetString(PyExc_RuntimeError, "App.endUndoGroup(): no undo group is open");
     }
 }
@@ -584,6 +600,8 @@ UndoGroup::UndoGroup(const AppInstancePtr& app,
 
 UndoGroup::~UndoGroup()
 {
+    // a context manager entered and never exited (e.g. __enter__() called by hand) ends its group
+    end();
 }
 
 void
@@ -591,9 +609,8 @@ UndoGroup::begin()
 {
     AppInstancePtr app = _app.lock();
 
-    if (app && !_open) {
-        app->beginUndoGroup( _text.toStdString() );
-        _open = true;
+    if ( app && !_open && checkMainThread("App.undoGroup()") ) {
+        _open = app->beginUndoGroup( _text.toStdString() );
     }
 }
 

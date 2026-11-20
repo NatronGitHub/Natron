@@ -27,6 +27,7 @@
 #include "AppInstance.h"
 
 #include <fstream>
+#include <iostream>
 #include <limits>
 #include <list>
 #include <set>
@@ -2140,24 +2141,34 @@ AppInstance::hasRenderInProgress() const
     return false;
 }
 
-void
+static bool
+isMainThread()
+{
+    return QThread::currentThread() == qApp->thread();
+}
+
+bool
 AppInstance::beginUndoGroup(const std::string& text)
 {
-    assert( QThread::currentThread() == qApp->thread() );
+    // the undo group state is not locked: only the main thread uses it
+    if ( !isMainThread() ) {
+        return false;
+    }
     if (_imp->undoGroupDepth++ > 0) {
-        return; // only the outermost group makes an undo step
+        return true; // only the outermost group makes an undo step
     }
     // In background mode, there is no undo stack: nothing is recorded.
     if ( !isBackground() ) {
         _imp->undoGroup = std::make_shared<PythonUndoGroupCommand>(text);
     }
+
+    return true;
 }
 
 bool
 AppInstance::endUndoGroup()
 {
-    assert( QThread::currentThread() == qApp->thread() );
-    if (_imp->undoGroupDepth <= 0) {
+    if ( !isMainThread() || (_imp->undoGroupDepth <= 0) ) {
         return false;
     }
     if (--_imp->undoGroupDepth > 0) {
@@ -2173,6 +2184,25 @@ AppInstance::endUndoGroup()
     return true;
 }
 
+void
+AppInstance::closeUndoGroups(const std::string& reason,
+                             bool keepEdits)
+{
+    if ( !isMainThread() || (_imp->undoGroupDepth <= 0) ) {
+        return;
+    }
+    std::cerr << "Warning: " << reason << ": " << _imp->undoGroupDepth
+              << " undo group(s) of the Python API were not ended (App.endUndoGroup())" << std::endl;
+    if (keepEdits) {
+        _imp->undoGroupDepth = 1;
+        endUndoGroup();
+    } else {
+        // the project is closed: its edits are not undoable any more
+        _imp->undoGroupDepth = 0;
+        _imp->undoGroup.reset();
+    }
+}
+
 int
 AppInstance::getUndoGroupDepth() const
 {
@@ -2182,7 +2212,7 @@ AppInstance::getUndoGroupDepth() const
 void
 AppInstance::recordKnobForUndoGroup(const KnobIPtr& knob)
 {
-    if (_imp->undoGroup) {
+    if ( _imp->undoGroup && isMainThread() ) {
         _imp->undoGroup->recordKnob(knob);
     }
 }
@@ -2190,7 +2220,7 @@ AppInstance::recordKnobForUndoGroup(const KnobIPtr& knob)
 void
 AppInstance::recordInputsForUndoGroup(const NodePtr& node)
 {
-    if (_imp->undoGroup) {
+    if ( _imp->undoGroup && isMainThread() ) {
         _imp->undoGroup->recordInputs(node);
     }
 }
@@ -2198,7 +2228,7 @@ AppInstance::recordInputsForUndoGroup(const NodePtr& node)
 void
 AppInstance::recordNodeCreatedForUndoGroup(const NodePtr& node)
 {
-    if (_imp->undoGroup) {
+    if ( _imp->undoGroup && isMainThread() ) {
         _imp->undoGroup->recordNodeCreated(node);
     }
 }
@@ -2207,7 +2237,7 @@ bool
 AppInstance::deleteNodeInUndoGroup(const NodePtr& node,
                                    bool autoReconnect)
 {
-    if (!_imp->undoGroup) {
+    if ( !_imp->undoGroup || !isMainThread() ) {
         return false;
     }
     _imp->undoGroup->deleteNode(node, autoReconnect);
