@@ -35,6 +35,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
+#include "Engine/OfxEffectInstance.h"
 #include "Engine/Project.h"
 
 #include "OfxTestPlugin.h"
@@ -135,10 +136,100 @@ TEST(OfxSingleInstance, DeactivatedNodeDoesNotCount)
     NodePtr first = createSingleInstanceNode();
     ASSERT_TRUE( bool(first) );
     first->deactivate();
+    // and it doesn't keep its plug-in instance (#1402)
+    EXPECT_EQ( 0, NatronTestPlugin::counter("SingleInstance.live") );
     NodePtr second = createSingleInstanceNode();
     EXPECT_TRUE( bool(second) );
+    EXPECT_EQ( 1, NatronTestPlugin::counter("SingleInstance.live") );
     destroy(second);
+    // destroying a deactivated node doesn't destroy its plug-in instance twice
+    const int destroyed = NatronTestPlugin::counter("SingleInstance.destroyed");
     destroy(first);
+    EXPECT_EQ( destroyed, NatronTestPlugin::counter("SingleInstance.destroyed") );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("SingleInstance.live") );
+}
+
+// #1402: delete a node (deactivate it, as the GUI does, keeping it for undo), create a new one,
+// then undo both and redo them: there is never more than one plug-in instance, and the deleted node
+// gets a new plug-in instance when it is activated again.
+TEST(OfxSingleInstance, UndoDeleteRecreatesTheInstance)
+{
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
+        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+
+        return;
+    }
+    NatronTestPlugin::setCounter("SingleInstance.maxLive", 0);
+    const int created = NatronTestPlugin::counter("SingleInstance.created");
+    const int destroyed = NatronTestPlugin::counter("SingleInstance.destroyed");
+    NodePtr a = createSingleInstanceNode();
+    ASSERT_TRUE( bool(a) );
+    OfxEffectInstance* aEffect = dynamic_cast<OfxEffectInstance*>( a->getEffectInstance().get() );
+    ASSERT_TRUE(aEffect != NULL);
+
+    // delete A
+    a->deactivate();
+    EXPECT_TRUE( aEffect->isSingleInstanceSuspended() );
+    EXPECT_EQ( destroyed + 1, NatronTestPlugin::counter("SingleInstance.destroyed") );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("SingleInstance.live") );
+    // the plug-in gets no action while its instance is destroyed
+    EXPECT_FALSE( aEffect->isEffectCreated() );
+
+    // create B
+    NodePtr b = createSingleInstanceNode();
+    ASSERT_TRUE( bool(b) );
+    EXPECT_EQ( 1, NatronTestPlugin::counter("SingleInstance.live") );
+
+    // undo the creation of B, then the deletion of A
+    b->deactivate();
+    EXPECT_EQ( 0, NatronTestPlugin::counter("SingleInstance.live") );
+    a->activate();
+    EXPECT_FALSE( aEffect->isSingleInstanceSuspended() );
+    EXPECT_TRUE( aEffect->isEffectCreated() );
+    EXPECT_EQ( 1, NatronTestPlugin::counter("SingleInstance.live") );
+    EXPECT_EQ( created + 3, NatronTestPlugin::counter("SingleInstance.created") ); // A, B, and A again
+    // while A is active, B can't be created, and a new node is still refused
+    NodePtr c = createSingleInstanceNode();
+    EXPECT_FALSE( bool(c) );
+    destroy(c);
+
+    // redo both
+    a->deactivate();
+    b->activate();
+    EXPECT_EQ( 1, NatronTestPlugin::counter("SingleInstance.live") );
+    EXPECT_EQ( 1, NatronTestPlugin::counter("SingleInstance.maxLive") );
+
+    destroy(a);
+    destroy(b);
+    EXPECT_EQ( 0, NatronTestPlugin::counter("SingleInstance.live") );
+    // every instance the plug-in created was destroyed once
+    EXPECT_EQ( NatronTestPlugin::counter("SingleInstance.created") - created,
+               NatronTestPlugin::counter("SingleInstance.destroyed") - destroyed );
+}
+
+// Undoing a deletion can't be refused: if another node of the plug-in is active (e.g. created in
+// another node graph, which has its own undo history), the node is activated with a warning.
+TEST(OfxSingleInstance, ActivateWithAnotherActiveInstance)
+{
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
+        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+
+        return;
+    }
+    NodePtr a = createSingleInstanceNode();
+    ASSERT_TRUE( bool(a) );
+    a->deactivate();
+    NodePtr b = createSingleInstanceNode();
+    ASSERT_TRUE( bool(b) );
+    a->activate();
+    EXPECT_TRUE( a->isActivated() );
+    EXPECT_EQ( 2, NatronTestPlugin::counter("SingleInstance.live") );
+    // with two active nodes, a third one is refused
+    NodePtr c = createSingleInstanceNode();
+    EXPECT_FALSE( bool(c) );
+    destroy(c);
+    destroy(a);
+    destroy(b);
     EXPECT_EQ( 0, NatronTestPlugin::counter("SingleInstance.live") );
 }
 

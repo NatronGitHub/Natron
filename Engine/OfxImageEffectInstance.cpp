@@ -120,6 +120,7 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
     : OFX::Host::ImageEffect::Instance(plugin, desc, context, interactive)
     , _ofxEffectInstance()
     , _mainThreadActionDepth(0)
+    , _suspended(false)
     , _pluginEditBlocks()
     , _pluginEditHolder()
 {
@@ -131,6 +132,7 @@ OfxImageEffectInstance::OfxImageEffectInstance(const OfxImageEffectInstance& oth
     : OFX::Host::ImageEffect::Instance(other)
     , _ofxEffectInstance()
     , _mainThreadActionDepth(0)
+    , _suspended(false)
     , _pluginEditBlocks()
     , _pluginEditHolder()
 {
@@ -228,6 +230,14 @@ OfxImageEffectInstance::mainEntry(const char *action,
 #ifdef DEBUG
     boost_adaptbx::floating_point::exception_trapping trap(0);
 #endif
+    if (_suspended) {
+        // the plug-in instance was destroyed (OfxEffectInstance::suspendSingleInstance())
+#ifdef DEBUG
+        qDebug() << "OfxImageEffectInstance::mainEntry: action" << action << "not sent: the instance is suspended";
+#endif
+
+        return kOfxStatFailed;
+    }
     ThreadIsActionCaller_RAII t(this);
     MainThreadAction_RAII mainThreadAction(this);
 

@@ -311,6 +311,22 @@ public:
         ~AllowExtraSingleInstances();
     };
 
+    /**
+     * @brief For a plug-in that sets kOfxImageEffectPluginPropSingleInstance, called by
+     * Node::deactivate(): destroys the plug-in instance of a deactivated (deleted) node, so that
+     * only the nodes in use hold one. The host side of the instance (parameters, clips) is kept.
+     * Deferred while the node renders. Does nothing for the other plug-ins (main thread only).
+     **/
+    void suspendSingleInstance();
+
+    /**
+     * @brief Called by Node::activate(): creates the plug-in instance again after
+     * suspendSingleInstance(), with the current parameter values (main thread only).
+     **/
+    void resumeSingleInstance();
+
+    bool isSingleInstanceSuspended() const;
+
     static ContextEnum mapToContextEnum(const std::string &s);
     static std::string mapContextToString(ContextEnum ctx);
     static std::string natronValueChangedReasonToOfxValueChangedReason(ValueChangedReasonEnum reason);
@@ -328,6 +344,8 @@ private:
 
 
     void tryInitializeOverlayInteracts();
+
+    void destroyInteracts();
 
 private:
 

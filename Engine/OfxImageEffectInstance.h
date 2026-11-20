@@ -31,6 +31,7 @@
 #include <string>
 #include <cstdarg>
 #include <vector>
+#include <atomic>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -70,6 +71,21 @@ public:
     void setOfxEffectInstance(const OfxEffectInstancePtr& node)
     {
         _ofxEffectInstance = node;
+    }
+
+    /**
+     * @brief While the instance is suspended (its plug-in instance was destroyed, see
+     * OfxEffectInstance::suspendSingleInstance()), mainEntry() calls nothing and returns kOfxStatFailed.
+     **/
+    void setSuspended(bool suspended)
+    {
+        _suspended = suspended;
+    }
+
+    /// true while an action of this instance or of one of its interacts runs on the main thread (main thread only)
+    bool isInMainThreadAction() const
+    {
+        return _mainThreadActionDepth > 0;
     }
 
     /**
@@ -289,6 +305,8 @@ private:
     // kOfxActionInstanceChanged, may trigger another one (when a value it sets changes a parameter).
     // Only read and written on the main thread.
     int _mainThreadActionDepth;
+    // see setSuspended(); written on the main thread while the node is deactivated and doesn't render
+    std::atomic<bool> _suspended;
     // The edit blocks that the plug-in opened (paramEditBegin()) and did not end yet (paramEditEnd()), innermost last:
     // true for a block opened on _pluginEditHolder, false for a block that was ignored (while a PyPlug is created), so
     // that each paramEditEnd() ends the block of its paramEditBegin(). When the outermost action returns, these blocks,
