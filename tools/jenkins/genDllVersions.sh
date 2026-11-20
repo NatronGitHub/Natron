@@ -212,7 +212,17 @@ trap cleanup EXIT
 #   "	api-ms-win-crt-runtime-l1-1-0.dll => not found"
 # A DLL whose name is in the search directories is bundled, wherever ntldd found it (bin/ will
 # have all the bundled ones). Otherwise it must be a Windows DLL (WINDOWS_DIR, or an API set), or a
-# DLL next to the file itself (shipped with its directory, e.g. a Python package).
+# DLL next to the file in a directory that the installer copies whole (shipped_whole).
+# Not $TMP_BINARIES_PATH/bin: only its .exe files are copied.
+shipped_whole() { # shipped_whole <directory>
+    case "$1" in
+        "$PY_LIBDIR"/lib-dynload|"$PY_LIBDIR"/site-packages/PySide*|"$PY_LIBDIR"/site-packages/shiboken*) return 0 ;;
+        "$QT_PLUGINS_DIR"/*) return 0 ;;
+        "$TMP_BINARIES_PATH"/OFX/Plugins/*.ofx.bundle/*) return 0 ;;
+    esac
+    return 1
+}
+
 scan_deps() {
     local f="$1" target="$1" tmpdir="" out line name path dir deps="" missing="" foreign=""
     if [ -n "${DEPS[$f]+x}" ]; then
@@ -229,9 +239,14 @@ scan_deps() {
             ;;
     esac
     dir="$(dirname "$f")"
+    if ! shipped_whole "$dir"; then
+        dir=""
+    fi
     if command -v cygpath > /dev/null; then
         target="$(cygpath -m "$target")"
-        dir="$(cygpath -m "$dir")"
+        if [ -n "$dir" ]; then
+            dir="$(cygpath -m "$dir")"
+        fi
     fi
     if ! out="$("$NTLDD" "$target" 2>&1)"; then
         echo "Error: $NTLDD failed on $f:"
@@ -267,8 +282,12 @@ scan_deps() {
         path="${path//\\//}"
         case "${path,,}" in
             "${WINDOWS_DIR,,}"/*) ;; # a Windows DLL
-            "${dir,,}"/*) ;; # next to the file, shipped with it
-            *) foreign="$foreign$name ($path)"$'\n' ;;
+            *)
+                # next to the file, in a directory that is copied whole
+                if [ -z "$dir" ] || [[ "${path,,}" != "${dir,,}"/* ]]; then
+                    foreign="$foreign$name ($path)"$'\n'
+                fi
+                ;;
         esac
     done <<< "$out"
     DEPS[$f]="$deps"
