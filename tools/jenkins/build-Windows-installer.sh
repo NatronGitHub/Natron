@@ -521,6 +521,11 @@ echo "Done"
 # Clean and perms
 (cd "$INSTALLER_PATH" && find . -type d -name .git -exec rm -rf {} \;)
 
+# A COMMERCIAL build must not contain or link any GPL library (#1302, #1177)
+if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
+    "$CWD"/check-commercial-bundle.sh "${TMP_PORTABLE_DIR}" "$INSTALLER_PATH/packages"
+fi
+
 # Create installers
 
 ONLINE_INSTALL_DIR="online_installer"

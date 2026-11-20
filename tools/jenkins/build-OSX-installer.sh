@@ -377,8 +377,13 @@ MACDEPLOYQT_OPTS+=( -libpath="${SDK_HOME}/lib/nss" -libpath="${SDK_HOME}/lib/nsp
 
 for bin in "${natronbins[@]}" "${otherbins[@]}"; do
     binary="$app_for_macdeployqt/Contents/MacOS/${bin}"
-    if [ ! -e "${binary}" ] && [ -e "${SDK_HOME}/bin/${bin}" ]; then
-        cp "${SDK_HOME}/bin/${bin}" "${binary}"
+    bindir="${SDK_HOME}/bin"
+    case "${bin}" in
+        # the FFmpeg of the license (COMMERCIAL: ffmpeg-lgpl, see common.sh)
+        ffmpeg|ffprobe) bindir="${FFMPEG_PATH}/bin";;
+    esac
+    if [ ! -e "${binary}" ] && [ -e "${bindir}/${bin}" ]; then
+        cp "${bindir}/${bin}" "${binary}"
     fi
     if [ -e "${binary}" ]; then
         MACDEPLOYQT_OPTS+=( -executable="${binary}" )
@@ -1363,6 +1368,12 @@ if [ "${macosx}" -ge 15 ]; then
 fi
 "${CODESIGN}" "${CODE_SIGN_VERIFY_OPTS[@]}" "${package}"
 
+
+# A COMMERCIAL build must not contain or link any GPL library (#1302, #1177)
+if [ "${NATRON_LICENSE:-}" = "COMMERCIAL" ]; then
+    echo "*** Checking that the COMMERCIAL app has no GPL component"
+    "${CWD}"/check-commercial-bundle.sh "${package}"
+fi
 
 echo "*** Creating the disk image"
 # Make the dmg
