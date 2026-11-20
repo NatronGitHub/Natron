@@ -29,6 +29,8 @@
 
 #include <gtest/gtest.h>
 
+#include <QtCore/QCoreApplication>
+#include <QtCore/QElapsedTimer>
 #include <QtCore/QTemporaryDir>
 
 #include "Engine/AppInstance.h"
@@ -296,6 +298,9 @@ TEST(OfxSingleInstance, LoadProjectWithTwoInstances)
 // The undo of Group From Selection deactivates the group (and the copies in it) before it activates
 // the originals, and the undo of Expand Group deactivates the expanded nodes before it activates the
 // group: a node in a deactivated group holds no plug-in instance, and no warning is logged.
+// GroupFromSelectionCommand and InlineGroupCommand are Gui classes, which the Tests binary doesn't
+// link: this test replays their order of deactivations and activations by hand, so a change of that
+// order in Gui/NodeGraphUndoRedo.cpp would not be caught here.
 TEST(OfxSingleInstance, GroupDeactivationSuspendsItsNodes)
 {
     if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
@@ -336,8 +341,59 @@ TEST(OfxSingleInstance, GroupDeactivationSuspendsItsNodes)
     EXPECT_EQ( 1, NatronTestPlugin::counter("SingleInstance.maxLive") );
     EXPECT_EQ( warnings, countSingleInstanceWarnings() );
 
+    // Expand Group, then its undo, in InlineGroupCommand::undo()'s order: the expanded node is
+    // deactivated before the group is activated again
+    group->deactivate();
+    NodePtr expanded = createSingleInstanceNode();
+    ASSERT_TRUE( bool(expanded) );
+    expanded->deactivate();
+    group->activate();
+    EXPECT_TRUE( copy->isActivated() );
+    EXPECT_EQ( 1, NatronTestPlugin::counter("SingleInstance.live") );
+    EXPECT_EQ( 1, NatronTestPlugin::counter("SingleInstance.maxLive") );
+    EXPECT_EQ( warnings, countSingleInstanceWarnings() );
+
+    destroy(expanded);
     destroy(original);
     destroy(copy);
     destroy(group);
+    EXPECT_EQ( 0, NatronTestPlugin::counter("SingleInstance.live") );
+}
+
+// A node deleted while it renders keeps its plug-in instance until the render is done (the
+// suspension is retried): meanwhile it still counts, and a new node is refused.
+TEST(OfxSingleInstance, DeleteWhileRendering)
+{
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
+        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+
+        return;
+    }
+    NodePtr a = createSingleInstanceNode();
+    ASSERT_TRUE( bool(a) );
+    OfxEffectInstance* aEffect = dynamic_cast<OfxEffectInstance*>( a->getEffectInstance().get() );
+    ASSERT_TRUE(aEffect != NULL);
+    {
+        RenderingFlagSetter rendering(a); // as a render of a viewer or a writer does
+        a->deactivate();
+        EXPECT_TRUE( aEffect->isSingleInstanceSuspendPending() );
+        EXPECT_FALSE( aEffect->isSingleInstanceSuspended() );
+        EXPECT_EQ( 1, NatronTestPlugin::counter("SingleInstance.live") );
+        NodePtr b = createSingleInstanceNode();
+        EXPECT_FALSE( bool(b) );
+        destroy(b);
+    }
+    // the retry (every 50 ms) destroys the instance once the render is done
+    QElapsedTimer timer;
+    timer.start();
+    while ( aEffect->isSingleInstanceSuspendPending() && (timer.elapsed() < 5000) ) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+    }
+    EXPECT_TRUE( aEffect->isSingleInstanceSuspended() );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("SingleInstance.live") );
+    NodePtr c = createSingleInstanceNode();
+    EXPECT_TRUE( bool(c) );
+    destroy(c);
+    destroy(a);
     EXPECT_EQ( 0, NatronTestPlugin::counter("SingleInstance.live") );
 }

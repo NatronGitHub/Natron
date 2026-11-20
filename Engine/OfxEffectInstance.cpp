@@ -244,8 +244,10 @@ struct OfxEffectInstancePrivate
     bool supportsConcurrentGLRenders;
     bool isOutput; //if the OfxNode can output a file somehow
     bool penDown; // true when the overlay trapped a penDow action
-    bool created; // true after the call to createInstance
-    bool initialized; //true when the image effect instance has been created and populated
+    // atomic: a single-instance plug-in's instance is suspended and resumed on the main thread while
+    // other threads may read them (see OfxEffectInstance::suspendSingleInstance())
+    std::atomic<bool> created; // true after the call to createInstance
+    std::atomic<bool> initialized; //true when the image effect instance has been created and populated
 
     /*
        Some OpenFX do not handle render scale properly when it comes to overlay interacts.
@@ -369,8 +371,8 @@ struct OfxEffectInstancePrivate
         , supportsConcurrentGLRenders(other.supportsConcurrentGLRenders)
         , isOutput(other.isOutput)
         , penDown(other.penDown)
-        , created(other.created)
-        , initialized(other.initialized)
+        , created( other.created.load() )
+        , initialized( other.initialized.load() )
         , overlaysCanHandleRenderScale(other.overlaysCanHandleRenderScale)
         , supportsMultipleClipPARs(other.supportsMultipleClipPARs)
         , supportsMultipleClipDepths(other.supportsMultipleClipDepths)
@@ -582,6 +584,11 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 // Refuse it: the node is not created, and the error is reported.
                 const QString label = QString::fromUtf8( plugin->getDescriptor().getLabel().c_str() );
                 const QString other = QString::fromUtf8( activeNode->getFullyQualifiedName().c_str() );
+                if ( !activeNode->isActivated() ) {
+                    // its suspension is pending (see suspendSingleInstance())
+                    throw std::runtime_error( tr("%1 allows only one instance at a time, and %2 is still being deleted: try again in a moment.")
+                                              .arg(label).arg(other).toStdString() );
+                }
                 throw std::runtime_error( tr("%1 allows only one instance at a time, and %2 is already one.")
                                           .arg(label).arg(other).toStdString() );
             }
@@ -896,12 +903,13 @@ OfxEffectInstance::suspendSingleInstance()
         // activated again before a pending suspension
         return;
     }
-    // From now on, the other threads can't enter the plug-in. A render that is still running holds the
-    // node's rendering counter (Node::setNodeIsRendering(), set before the render calls any action, under
-    // the same mutex that isNodeRendering() takes): if it is 0 here, no render thread is in the plug-in,
-    // and any render that starts later sees the suspension and fails without calling it.
+    // From now on, no new action of another thread enters the plug-in (OfxImageEffectInstance::mainEntry()
+    // counts these actions before it reads the state, so if the count is 0 here, none is in the plug-in,
+    // and any later one fails without calling it). Not all the threads that call the plug-in take the
+    // node's rendering counter (the tracker's do not), but a render that does is not cut between two of
+    // its actions.
     _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateSuspending);
-    if ( node->isNodeRendering() || _imp->effect->isInMainThreadAction() ) {
+    if ( _imp->effect->hasActionsInFlightOnOtherThreads() || node->isNodeRendering() || _imp->effect->isInMainThreadAction() ) {
         // Node::deactivate() aborted the renders, but doesn't wait for them; or the plug-in deleted
         // its own node in one of its actions: retry once it is done. Meanwhile, the instance still
         // counts as live (findOtherActiveSingleInstance()), so no new node of the plug-in is created.
@@ -951,7 +959,8 @@ OfxEffectInstance::resumeSingleInstance()
         warnExtraSingleInstance(plugin, getNode(), otherNode);
     }
     _imp->registerSingleInstance(plugin, this);
-    _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateNone);
+    // only the main thread enters the plug-in until kOfxActionCreateInstance has succeeded
+    _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateSuspending);
 
     // As in createOfxImageEffectInstance(): while kOfxActionCreateInstance runs, the values the
     // plug-in sets in its constructor send no kOfxActionInstanceChanged (initialized is false, and
@@ -978,6 +987,7 @@ OfxEffectInstance::resumeSingleInstance()
     }
     _imp->created = true;
     _imp->initialized = true;
+    _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateNone);
     endChanges();
     // the plug-in gets kOfxImageEffectActionGetClipPreferences before it renders, as after its creation
     ignore_result( refreshMetadata_public(false) );

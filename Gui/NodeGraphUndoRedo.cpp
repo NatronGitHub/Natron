@@ -1555,14 +1555,23 @@ GroupFromSelectionCommand::undo()
                                          true,
                                          true,
                                          false);
+    std::set<ViewerInstance*> viewers;
     for (std::list<NodeGuiWPtr>::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
         NodeGuiPtr node = it->lock();
         if (node) {
             node->getNode()->activate(NodesList(), true, false);
             nodesToSelect.push_back(node);
+            std::list<ViewerInstance*> connectedViewers;
+            node->getNode()->hasViewersConnected(&connectedViewers);
+            viewers.insert( connectedViewers.begin(), connectedViewers.end() );
         }
     }
     _graph->setSelection(nodesToSelect);
+    // A render started when the outputs were reconnected above, while the originals were still
+    // deactivated (a single-instance OFX plug-in without its instance), failed: render them again.
+    for (std::set<ViewerInstance*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        (*it)->renderCurrentFrame(true);
+    }
 
     _isRedone = false;
 }

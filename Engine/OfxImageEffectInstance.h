@@ -90,6 +90,12 @@ public:
         _suspendState = (int)state;
     }
 
+    /// true while an action of another thread than the main thread is in the plug-in (see mainEntry())
+    bool hasActionsInFlightOnOtherThreads() const
+    {
+        return _actionsInFlightOnOtherThreads > 0;
+    }
+
     /// true while an action of this instance or of one of its interacts runs on the main thread (main thread only)
     bool isInMainThreadAction() const
     {
@@ -315,6 +321,9 @@ private:
     int _mainThreadActionDepth;
     // see setSuspendState(); written on the main thread
     std::atomic<int> _suspendState;
+    // the actions of the other threads than the main thread in mainEntry(), counted before _suspendState
+    // is read (both sequentially consistent): see OfxEffectInstance::suspendSingleInstance()
+    std::atomic<int> _actionsInFlightOnOtherThreads;
     // The edit blocks that the plug-in opened (paramEditBegin()) and did not end yet (paramEditEnd()), innermost last:
     // true for a block opened on _pluginEditHolder, false for a block that was ignored (while a PyPlug is created), so
     // that each paramEditEnd() ends the block of its paramEditBegin(). When the outermost action returns, these blocks,
