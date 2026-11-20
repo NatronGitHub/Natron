@@ -35,6 +35,7 @@ const char* fragRGB =
     "uniform float offset;\n"
     "uniform int lut;\n"
     "uniform float gamma;\n"
+    "uniform float ditherAmplitude;\n" // one quantisation step of the framebuffer, 0 to disable
     "\n"
     "float linear_to_srgb(float c) {\n"
     "    return (c<=0.0031308) ? (12.92*c) : (((1.0+0.055)*pow(c,1.0/2.4))-0.055);\n"
@@ -76,6 +77,16 @@ const char* fragRGB =
     "       color_tmp.g = pow(color_tmp.g, 1./gamma);\n"
     "       color_tmp.b = pow(color_tmp.b, 1./gamma);\n"
     "   }\n"
+// << DITHER
+// The framebuffer has a few bits per channel (8 for the QOpenGLWidget FBO), so a
+// smooth gradient shows bands. Add +/- half a quantisation step of noise after the
+// display transform, just before quantisation (8-bit textures are dithered on the CPU
+// instead, see scaleToTexture8bits_generic()). The noise is interleaved gradient noise
+// (Jimenez 2014) of the window coordinates: it is uniform, cheap, and constant in time,
+// so it does not flicker during playback. Values exactly on a level are left unchanged.
+    "   float noise = fract( 52.9829189 * fract( dot( gl_FragCoord.xy, vec2(0.06711056, 0.00583715) ) ) );\n"
+    "   color_tmp.rgb += (noise - 0.5) * ditherAmplitude;\n"
+// << END DITHER
     "	gl_FragColor = color_tmp;\n"
     "}\n"
 ;

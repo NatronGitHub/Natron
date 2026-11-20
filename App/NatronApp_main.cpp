@@ -156,18 +156,25 @@ int main(int argc, char *argv[])
 #endif
             return 1;
         } else {
-            return 0;
+            // natron.quit(exitCode)
+            return manager.getRequestedExitCode();
         }
     } else {
         GuiApplicationManager manager;
 
         // coverity[tainted_data]
-#ifdef Q_OS_WIN
-        return manager.loadW(argc, argv, args);
-#else
-        return manager.load(argc, argv, args);
-#endif
         //exec() is called within the GuiApplicationManager
+#ifdef Q_OS_WIN
+        bool ret = manager.loadW(argc, argv, args);
+#else
+        bool ret = manager.load(argc, argv, args);
+#endif
+        if ( manager.isQuitRequested() ) {
+            // natron.quit(exitCode)
+            return manager.getRequestedExitCode();
+        }
+
+        return ret;
     }
 } // main
 #ifdef Q_OS_WIN
