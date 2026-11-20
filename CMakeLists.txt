@@ -275,6 +275,12 @@ set(QT_COMPONENTS Core Gui Network Widgets Concurrent)
 if(NATRON_QT6)
     list(APPEND QT_COMPONENTS OpenGLWidgets)
     find_package(Qt6 6.3 CONFIG REQUIRED COMPONENTS ${QT_COMPONENTS})
+    # Shiboken6Config.cmake looks for Python with find_package(Python), not Python3, so it
+    # ignores Python3_EXECUTABLE and may pick another Python (on macOS, Xcode's Python 3.9,
+    # which shiboken6 rejects). Use the Python found above unless Python_EXECUTABLE is set.
+    if(NOT DEFINED Python_EXECUTABLE AND Python3_EXECUTABLE)
+        set(Python_EXECUTABLE "${Python3_EXECUTABLE}")
+    endif()
     find_package(Shiboken6 6.3 CONFIG REQUIRED COMPONENTS libshiboken6)
     find_package(Shiboken6Tools 6.3 CONFIG REQUIRED COMPONENTS shiboken6)
     find_package(PySide6 6.3 CONFIG REQUIRED COMPONENTS pyside6)
