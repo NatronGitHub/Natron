@@ -882,4 +882,4 @@ Spec-only
 
 22. **kOfxImageEffectPropPluginHandle is the OfxPlugin\*, not the describe handle** (8.3, PARTIAL, ambiguous wording). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
-NEXT items met: HostSupport descriptor inheritance of SupportsTiles (#177 upstream). It is already correct in this HostSupport (2.8).
+NEXT items met: HostSupport descriptor inheritance of SupportsTiles (#177 upstream). It is already correct in this HostSupport (2.8). kOfxImageEffectPluginPropObsolete: plug-ins that set it are loaded but not offered for new nodes (`#1139 <https://github.com/NatronGitHub/Natron/issues/1139>`__); since `#1491 <https://github.com/NatronGitHub/Natron/issues/1491>`__ it replaces the Natron extension kNatronOfxImageEffectPropDeprecated, which Natron no longer reads.
