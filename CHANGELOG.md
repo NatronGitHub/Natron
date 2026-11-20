@@ -15,6 +15,7 @@
 
 ### Changes
 
+- Python expressions no longer write their variables into the `__main__` namespace of the interpreter (`ret`, `frame`, `thisNode`, `thisParam`, `random`, node names, and the variables an expression assigns), which overwrote the variables of the user scripts. An expression that only worked because of a name leaked there by another expression now fails with a `NameError`: for example a bare root-level node name used inside a Group, or a module imported by another expression. Use `app.NodeName` or `thisGroup.NodeName`, and import modules inside the expression. This also removes a race between render threads evaluating expressions at the same time. #1252
 - OpenFX: the text of plug-in messages with arguments (errors, warnings, logs, and the messages shown on nodes and in the viewer) is no longer garbage. #1483
 - OpenFX: the multithread, message, progress, timeline and OpenGL render suites return the status codes of OFX 1.5.1. #1385
 - OpenFX: `paramDeleteKey` returns `kOfxStatErrBadIndex` when there is no key at that time, and `paramGetKeyIndex` finds the previous key of a key; the parametric parameter suite returns `kOfxStatErrBadIndex` for a bad curve or control point index. Plug-ins built with an OpenFX Support library older than 0bec2e63 throw on `kOfxStatErrBadIndex` from `deleteKeyAtTime()` (e.g. clearing a frame without a key). #1385
