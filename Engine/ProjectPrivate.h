@@ -30,6 +30,7 @@
 
 #include <map>
 #include <list>
+#include <atomic>
 #include <set>
 
 CLANG_DIAG_OFF(deprecated)
@@ -40,6 +41,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QFuture>
 #include <QFutureWatcher>
 #include <QMutex>
+#include <QWaitCondition>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -108,6 +110,10 @@ public:
     bool isLoadingProjectInternal; //< true when loading the internal project (not gui)
     mutable QMutex isSavingProjectMutex;
     bool isSavingProject; //< true when the project is saving
+    QWaitCondition isSavingProjectCond; //< signaled when isSavingProject becomes false
+    QThread* savingProjectThread; //< the thread running the save while isSavingProject is true
+    int waitingSaves; //< number of saves waiting for the running one (protected by isSavingProjectMutex)
+    std::atomic<unsigned int> resetCount; //< incremented by Project::reset(): a waiting save must not save another project
     std::shared_ptr<QTimer> autoSaveTimer;
     std::list<std::shared_ptr<QFutureWatcher<void> > > autoSaveFutures;
     mutable QMutex projectClosingMutex;

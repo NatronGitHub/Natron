@@ -1,4 +1,4 @@
-.. module:: NatronGui
+.. currentmodule:: NatronGui
 .. _pyViewer:
 
 PyViewer
@@ -74,7 +74,7 @@ passing it the *script-name* of a viewer node.
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. method:: NatronGui.PyTabWidget.seek(frame)
+.. method:: PyTabWidget.seek(frame)
 
     :param frame: :class:`int`
 
@@ -83,35 +83,35 @@ to that frame.
 
 
 
-.. method:: NatronGui.PyTabWidget.getCurrentFrame()
+.. method:: PyTabWidget.getCurrentFrame()
 
     :rtype: :class:`int`
 
 Returns the current frame on the timeline.
 
 
-.. method:: NatronGui.PyTabWidget.startForward()
+.. method:: PyTabWidget.startForward()
 
 Starts playback, playing the video normally.
 
 
-.. method:: NatronGui.PyTabWidget.startBackward()
+.. method:: PyTabWidget.startBackward()
 
 Starts playback backward, like a rewind.
 
 
-.. method:: NatronGui.PyTabWidget.pause()
+.. method:: PyTabWidget.pause()
 
 Pauses the viewer if the playback is ongoing.
 
 
-.. method:: NatronGui.PyTabWidget.redraw()
+.. method:: PyTabWidget.redraw()
 
 Redraws the OpenGL widget without actually re-rendering the internal image. This is
 provided for convenience as sometimes the viewer might need refreshing for OpenGL overlays.
 
 
-.. method:: NatronGui.PyTabWidget.renderCurrentFrame([useCache=True])
+.. method:: PyTabWidget.renderCurrentFrame([useCache=True])
 
     :param useCache: :class:`bool`
 
@@ -119,7 +119,7 @@ Renders the current frame on the timeline. If *useCache* is False, the cache wil
 and the frame will be completely re-rendered.
 
 
-.. method:: NatronGui.PyTabWidget.setFrameRange(firstFrame,lastFrame)
+.. method:: PyTabWidget.setFrameRange(firstFrame,lastFrame)
 
         :param firstFrame: :class:`int`
         :param lastFrame: :class:`int`
@@ -127,14 +127,14 @@ and the frame will be completely re-rendered.
 Set the frame range on the Viewer to be \[*firstFrame* , *lastFrame*\] (included).
 
 
-.. method:: NatronGui.PyTabWidget.getFrameRange()
+.. method:: PyTabWidget.getFrameRange()
 
     :rtype: :class:`Tuple`
 
 Returns a 2-dimensional tuple of :class:`int` containing \[*firstFrame* , *lastFrame*\].
 
 
-.. method:: NatronGui.PyTabWidget.setPlaybackMode(mode)
+.. method:: PyTabWidget.setPlaybackMode(mode)
 
     :param mode: :class:`NatronEngine.Natron.PlaybackModeEnum`
 
@@ -142,28 +142,28 @@ Set the playback mode for the Viewer, it can be either **bouncing**, **looping**
 **playing once**.
 
 
-.. method:: NatronGui.PyTabWidget.getPlaybackMode()
+.. method:: PyTabWidget.getPlaybackMode()
 
     :rtype: :class:`NatronEngine.Natron.PlaybackModeEnum`
 
 Returns the playback mode for this Viewer.
 
 
-.. method:: NatronGui.PyTabWidget.getCompositingOperator()
+.. method:: PyTabWidget.getCompositingOperator()
 
     :rtype: :class:`NatronEngine.Natron.ViewerCompositingOperatorEnum`
 
 Returns the current compositing operator applied by the Viewer.
 
 
-.. method:: NatronGui.PyTabWidget.setCompositingOperator(operator)
+.. method:: PyTabWidget.setCompositingOperator(operator)
 
     :param operator: :class:`NatronEngine.Natron.ViewerCompositingOperatorEnum`
 
 Set the current compositing operator applied by the Viewer.
 
 
-.. method:: NatronGui.PyTabWidget.getAInput()
+.. method:: PyTabWidget.getAInput()
 
     :rtype: :class:`int`
 
@@ -171,7 +171,7 @@ Returns the **index** of the input (the same index used by :func:`getInput(index
 the **A** choice of the Viewer.
 
 
-.. method:: NatronGui.PyTabWidget.setAInput(index)
+.. method:: PyTabWidget.setAInput(index)
 
     :param index: :class:`int`
 
@@ -180,7 +180,7 @@ the **A** choice of the Viewer.
 
 
 
-.. method:: NatronGui.PyTabWidget.getBInput()
+.. method:: PyTabWidget.getBInput()
 
     :rtype: :class:`int`
 
@@ -188,7 +188,7 @@ Returns the **index** of the input (the same index used by :func:`getInput(index
 the **B** choice of the Viewer.
 
 
-.. method:: NatronGui.PyTabWidget.setBInput(index)
+.. method:: PyTabWidget.setBInput(index)
 
     :param index: :class:`int`
 
@@ -196,41 +196,41 @@ Set the **index** of the input (the same index used by :func:`getInput(index)<Na
 the **B** choice of the Viewer.
 
 
-.. method:: NatronGui.PyTabWidget.setChannels(channels)
+.. method:: PyTabWidget.setChannels(channels)
 
     :param channels: :class:`NatronEngine.Natron.DisplayChannelsEnum`
 
 Set the *channels* to be displayed on the Viewer.
 
 
-.. method:: NatronGui.PyTabWidget.getChannels()
+.. method:: PyTabWidget.getChannels()
 
     :rtype: :class:`NatronEngine.Natron.DisplayChannelsEnum`
 
 Returns the current *channels*  displayed on the Viewer.
 
 
-.. method:: NatronGui.PyTabWidget.setProxyModeEnabled(enabled)
+.. method:: PyTabWidget.setProxyModeEnabled(enabled)
 
     :param enabled: :class:`bool`
 
 Set the proxy mode *enabled*.
 
-.. method:: NatronGui.PyTabWidget.isProxyModeEnabled(enabled)
+.. method:: PyTabWidget.isProxyModeEnabled(enabled)
 
     :rtype: :class:`bool`
 
 Returns whether the proxy mode is *enabled*.
 
 
-.. method:: NatronGui.PyTabWidget.setProxyIndex(index)
+.. method:: PyTabWidget.setProxyIndex(index)
 
     :param index: :class:`int`
 
 Set the *index* of the proxy to use. This is the index in the combobox on the graphical
 user interface, e.g.  *index = 0* will be *2*
 
-.. method:: NatronGui.PyTabWidget.getProxyIndex()
+.. method:: PyTabWidget.getProxyIndex()
 
     :rtype: :class:`int`
 
@@ -238,14 +238,14 @@ Returns the *index* of the proxy in use. This is the index in the combobox on th
 user interface, e.g.  *index = 0* will be *2*
 
 
-.. method:: NatronGui.PyTabWidget.setCurrentView(viewIndex)
+.. method:: PyTabWidget.setCurrentView(viewIndex)
 
     :param viewIndex: :class:`int`
 
 Set the view to display the given *viewIndex*. This is the index in the multi-view combobox
 visible when the number of views in the project settings has been set to a value greater than 1.
 
-.. method:: NatronGui.PyTabWidget.getCurrentView()
+.. method:: PyTabWidget.getCurrentView()
 
     :param viewIndex: :class:`int`
 

@@ -122,12 +122,12 @@ private:
 
     bool notifyOverlaysPenMotion_internal(const NodePtr& node, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers);
     bool notifyOverlaysKeyDown_internal(const NodePtr& node, const RenderScale & renderScale, Key k,
-                                        KeyboardModifiers km, Qt::Key qKey, const Qt::KeyboardModifiers& mods);
+                                        KeyboardModifiers km, const QString& keyText, Qt::Key qKey, const Qt::KeyboardModifiers& mods);
 
     bool checkNodeViewerContextShortcuts(const NodePtr& node, Qt::Key qKey, const Qt::KeyboardModifiers& mods);
 
     bool notifyOverlaysKeyRepeat_internal(const NodePtr& node, const RenderScale & renderScale, Key k,
-                                          KeyboardModifiers km, Qt::Key qKey, const Qt::KeyboardModifiers& mods);
+                                          KeyboardModifiers km, const QString& keyText, Qt::Key qKey, const Qt::KeyboardModifiers& mods);
 
 public:
 

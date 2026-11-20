@@ -68,3 +68,9 @@ Despill and Color Suppression Pipeline
 .. figure::  _images/AlternativeMatteExtraction/ReversedMatte.jpg
     :width: 200px
     :align: center
+
+See also
+~~~~~~~~
+
+- :doc:`compositing-keying`: the keyer nodes and how to combine mattes.
+- :doc:`tutorials-keying`: the other keying tutorials.

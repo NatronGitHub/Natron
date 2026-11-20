@@ -161,7 +161,12 @@ CurveWidget::~CurveWidget()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    makeCurrent();
+    if ( QOpenGLContext* glContext = context() ) {
+        // ~QOpenGLWidget destroys the context after this object is gone: don't get its signal
+        glContext->disconnect(this);
+        makeCurrent();
+        releaseGLResources();
+    }
 }
 
 bool
@@ -176,6 +181,25 @@ CurveWidget::initializeGL()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     appPTR->initializeOpenGLFunctionsOnce();
+    // QOpenGLWidget destroys its context and creates a new one when it moves to another top-level
+    // window, e.g. when the Curve Editor is dragged into a floating window (#536), and then calls
+    // initializeGL() again. The OpenGL objects of the old context must be released with it.
+    QObject::connect( context(), &QOpenGLContext::aboutToBeDestroyed, this, &CurveWidget::onContextAboutToBeDestroyed );
+}
+
+void
+CurveWidget::onContextAboutToBeDestroyed()
+{
+    makeCurrent();
+    releaseGLResources();
+    // The context stays current: it is destroyed right after this signal.
+}
+
+void
+CurveWidget::releaseGLResources()
+{
+    assert( QOpenGLContext::currentContext() == context() );
+    _imp->textRenderer.releaseGLResources();
 }
 
 void
@@ -218,8 +242,8 @@ CurveWidget::centerOn(const std::vector<CurveGuiPtr> & curves, bool useDisplayRa
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     // First try to center curves given their display range
-    Curve::YRange displayRange(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
-    std::pair<double, double> xRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+    Curve::YRange displayRange( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
+    std::pair<double, double> xRange = std::make_pair( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
     bool rangeSet = false;
 
     std::vector<CurveGuiPtr> curvesToFrame;
@@ -245,13 +269,15 @@ CurveWidget::centerOn(const std::vector<CurveGuiPtr> & curves, bool useDisplayRa
             std::pair<double, double> thisXRange = curve->getXRange();
 
 
-            if (thisCurveRange.min == -std::numeric_limits<double>::infinity() ||
+            // unbounded ranges are +/-DBL_MAX (or INT_MIN/INT_MAX for integer knobs).
+            // Test them with <= and >=, which also catch an infinite bound, even with -ffast-math.
+            if (thisCurveRange.min <= std::numeric_limits<double>::lowest() ||
                 thisCurveRange.min == std::numeric_limits<int>::min() ||
-                thisCurveRange.max == std::numeric_limits<double>::infinity() ||
+                thisCurveRange.max >= std::numeric_limits<double>::max() ||
                 thisCurveRange.max == std::numeric_limits<int>::max() ||
-                thisXRange.first == -std::numeric_limits<double>::infinity() ||
+                thisXRange.first <= std::numeric_limits<double>::lowest() ||
                 thisXRange.first == std::numeric_limits<int>::min() ||
-                thisXRange.second == std::numeric_limits<double>::infinity() ||
+                thisXRange.second >= std::numeric_limits<double>::max() ||
                 thisXRange.second == std::numeric_limits<int>::max()) {
                 continue;
             }
@@ -355,7 +381,7 @@ CurveWidget::updateSelectionAfterCurveChange(CurveGui* curve)
 
     CurvePtr internalCurve = found->first->getInternalCurve();
     bool isPeriodic = false;
-    std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+    std::pair<double,double> parametricRange = std::make_pair( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
     if (internalCurve) {
         isPeriodic = internalCurve->isCurvePeriodic();
         parametricRange = internalCurve->getXRange();
@@ -717,12 +743,15 @@ CurveWidget::renderText(double x,
                         double r,
                         double g,
                         double b,
-                        int flags)
+                        int flags,
+                        double a)
 {
     QColor c;
 
-    c.setRgbF( Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.) );
-    renderText( x, y, QString::fromUtf8( string.c_str() ), c, font(), flags );
+    c.setRgbF( Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.), Image::clamp(a, 0., 1.) );
+    // the text font, scaled by the screen pixel ratio, as the widget's own labels (renderText() draws one
+    // font pixel per device pixel)
+    renderText(x, y, QString::fromUtf8( string.c_str() ), c, _imp->_textFont ? *_imp->_textFont : font(), flags);
 
     return true;
 }
@@ -1515,7 +1544,34 @@ CurveWidget::toCanonicalCoordinates(double *x,
 int
 CurveWidget::getWidgetFontHeight() const
 {
-    return fontMetrics().height();
+    // in widget pixels, for the font that renderText() draws with
+    if ( !_imp->_textFont || !(_imp->_screenPixelRatio > 0.) ) {
+        return fontMetrics().height();
+    }
+
+    return (int)std::floor(QFontMetrics(*_imp->_textFont).height() / _imp->_screenPixelRatio + 0.5);
+}
+
+int
+CurveWidget::getWidgetFontAscent() const
+{
+    // in widget pixels, for the font that renderText() draws with
+    if ( !_imp->_textFont || !(_imp->_screenPixelRatio > 0.) ) {
+        return fontMetrics().ascent();
+    }
+
+    return (int)std::floor(QFontMetrics(*_imp->_textFont).ascent() / _imp->_screenPixelRatio + 0.5);
+}
+
+int
+CurveWidget::getWidgetFontDescent() const
+{
+    // in widget pixels, for the font that renderText() draws with
+    if ( !_imp->_textFont || !(_imp->_screenPixelRatio > 0.) ) {
+        return fontMetrics().descent();
+    }
+
+    return (int)std::floor(QFontMetrics(*_imp->_textFont).descent() / _imp->_screenPixelRatio + 0.5);
 }
 
 /**
@@ -1524,7 +1580,13 @@ CurveWidget::getWidgetFontHeight() const
 int
 CurveWidget::getStringWidthForCurrentFont(const std::string& string) const
 {
-    return fontMetrics().horizontalAdvance( QString::fromUtf8( string.c_str() ) );
+    // the width that renderText() draws, in widget pixels
+    const QString text = QString::fromUtf8( string.c_str() );
+    if ( !_imp->_textFont || !(_imp->_screenPixelRatio > 0.) ) {
+        return TextRenderer::textWidth(fontMetrics(), text);
+    }
+
+    return (int)std::floor(TextRenderer::textWidth(QFontMetrics(*_imp->_textFont), text) / _imp->_screenPixelRatio + 0.5);
 }
 
 QSize
@@ -1824,7 +1886,7 @@ CurveWidget::selectAllKeyFrames()
 
             CurvePtr internalCurve = (*it)->getInternalCurve();
             bool isPeriodic = false;
-            std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+            std::pair<double,double> parametricRange = std::make_pair( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
             if (internalCurve) {
                 isPeriodic = internalCurve->isCurvePeriodic();
                 parametricRange = internalCurve->getXRange();
@@ -2367,7 +2429,7 @@ CurveWidget::addKey(const CurveGuiPtr& curve, double xCurve, double yCurve)
 
     CurvePtr internalCurve = curve->getInternalCurve();
     bool isPeriodic = false;
-    std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+    std::pair<double,double> parametricRange = std::make_pair( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
     if (internalCurve) {
         isPeriodic = internalCurve->isCurvePeriodic();
         parametricRange = internalCurve->getXRange();

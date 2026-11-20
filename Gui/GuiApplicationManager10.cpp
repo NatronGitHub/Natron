@@ -299,6 +299,11 @@ GuiApplicationManager::initializeQApp(int &argc,
         // division_by_zero happens here - don't trap it
         boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::overflow);
 #endif
+        // All the QOpenGLWidget contexts share their objects, and a QOpenGLWidget keeps its context
+        // when it moves to another top-level window (e.g. a panel dragged into a floating window),
+        // so the OpenGL objects of the widgets and of the OFX overlays drawn in them stay valid
+        // (#536). This must be set before the QApplication is created.
+        QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
         app = new Application(this, argc, argv);
     }
     // QDesktopWidget is gone in Qt6. Its logicalDpiX()/logicalDpiY() rounded

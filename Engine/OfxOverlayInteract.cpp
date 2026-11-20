@@ -59,6 +59,7 @@ OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
     : OFX::Host::ImageEffect::OverlayInteract(v, bitDepthPerComponent, hasAlpha)
     , NatronOverlayInteractSupport()
     , _keyModifiers(0)
+    , _effect(&v)
 {
 }
 
@@ -123,7 +124,11 @@ OfxOverlayInteract::drawAction(OfxTime time,
                                int view,
                                const OfxRGBAColourD* pickerColour)
 {
+    // Natron calls kOfxInteractActionDraw from the paintGL() of the viewport (ViewerGL), so its
+    // OpenGL context is current, as V1 (OpenGL) overlays need (see OfxHost::preferOverlayInteractV1()).
     NatronOverlayInteractSupport::OGLContextSaver s(_viewport);
+    // the same shadows value as the one HostSupport passes to the plug-in
+    _drawSuite.beginDraw( _viewport, drawSuiteShadows() );
     OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::drawAction(time, renderScale, view, pickerColour);
 
     return stat;
@@ -260,17 +265,75 @@ OfxOverlayInteract::redraw()
 
 OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,
                                                  OFX::Host::Interact::Descriptor &desc,
-                                                 void *effectInstance)
-    : OFX::Host::Interact::Instance(desc, effectInstance)
+                                                 OfxImageEffectInstance* effect)
+    : OFX::Host::Interact::Instance( desc, effect->getHandle() )
     , NatronOverlayInteractSupport()
+    , _effect(effect)
 {
     setCallingViewport(knob);
+}
+
+OfxStatus
+OfxParamOverlayInteract::callEntry(const char *action,
+                                   OFX::Host::Property::Set *inArgs)
+{
+    // _effect is NULL once the interact is destroyed, when the effect may be gone too (see destroyInstanceAction())
+    OfxImageEffectInstance::MainThreadAction_RAII mainThreadAction(_effect);
+
+    return OFX::Host::Interact::Instance::callEntry(action, inArgs);
+}
+
+OfxStatus
+OfxOverlayInteract::callEntry(const char *action,
+                              OFX::Host::Property::Set *inArgs)
+{
+    OfxImageEffectInstance::MainThreadAction_RAII mainThreadAction(_effect);
+
+    return OFX::Host::ImageEffect::OverlayInteract::callEntry(action, inArgs);
+}
+
+void
+OfxParamOverlayInteract::destroyInstanceAction()
+{
+    if (_state == OFX::Host::Interact::eCreated) {
+        callEntry(kOfxActionDestroyInstance, NULL);
+    }
+    // Instance::callEntry() doesn't call the plug-in for a failed instance, and ~Instance() only
+    // calls kOfxActionDestroyInstance for a created one.
+    _state = OFX::Host::Interact::eFailed;
+    _effect = NULL;
 }
 
 bool
 OfxParamOverlayInteract::isColorPickerRequired() const
 {
     return (bool)getProperties().getIntProperty(kNatronOfxInteractColourPicking);
+}
+
+QByteArray
+NatronOverlayInteractSupport::keyStringFromText(const QString& text)
+{
+    for (int i = 0; i < text.size(); ++i) {
+        if (text.at(i).category() == QChar::Other_Control) {
+            return QByteArray();
+        }
+    }
+
+    return text.toUtf8();
+}
+
+OfxPointI
+NatronOverlayInteractSupport::toPenViewportPosition(const QPointF& widgetPos) const
+{
+    double width = 0., height = 0.;
+
+    n_getViewportSize(width, height);
+    OfxPointI ret;
+    ret.x = (int)widgetPos.x();
+    // flip y, as the parameter interacts do (CustomParamInteract)
+    ret.y = (height > 0.) ? (int)(height - 1. - widgetPos.y()) : (int)widgetPos.y();
+
+    return ret;
 }
 
 NatronOverlayInteractSupport::NatronOverlayInteractSupport()
@@ -390,6 +453,20 @@ void
 OfxParamOverlayInteract::getPixelAspectRatio(double & par) const
 {
     par = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractSizeAspect);
+}
+
+OfxStatus
+OfxParamOverlayInteract::drawAction(OfxTime time,
+                                    const OfxPointD &renderScale,
+                                    int view,
+                                    const OfxRGBAColourD* pickerColour)
+{
+    // Natron calls kOfxInteractActionDraw from the paintGL() of the parameter's widget
+    // (CustomParamInteract, CurveWidget), so its OpenGL context is current, as V1 (OpenGL)
+    // interacts need. The same shadows value as the one HostSupport passes to the plug-in.
+    _drawSuite.beginDraw( _viewport, drawSuiteShadows() );
+
+    return OFX::Host::Interact::Instance::drawAction(time, renderScale, view, pickerColour);
 }
 
 OfxStatus

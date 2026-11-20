@@ -91,7 +91,10 @@ target_link_libraries(NatronEngine
         Qt::Core
         Qt::Concurrent
         Qt::Network
-        Python3::Module
+        # Python3::Python, not Python3::Module: on macOS, Module brings
+        # "-undefined dynamic_lookup", which the executables inherit, so a missing
+        # library becomes a crash at run time instead of a link error.
+        Python3::Python
         ${XDG_LIBS}
         # LibraryBinary.cpp, OSGLContext_x11/wayland.cpp and glad use dlopen/dlsym:
         # libdl is separate in glibc < 2.34
@@ -124,8 +127,6 @@ set_property(SOURCE ../libs/SequenceParsing/SequenceParsing.cpp
     APPEND PROPERTY COMPILE_OPTIONS ${NATRON_THIRD_PARTY_NO_WARNINGS})
 target_compile_definitions(NatronEngine
     PRIVATE
-        NATRON_CUSTOM_BUILD_USER_TOKEN="${BUILD_USER_NAME}"
-        NATRON_BUILD_NUMBER=0
         QT_NO_KEYWORDS
         ${XDG_DEFS}
 )

@@ -427,7 +427,14 @@ NodeGui::ensurePanelCreated(bool minimized, bool hideUnmodified)
     _settingsPanel = createPanel(propsLayout, thisShared);
 
     initializeKnobs();
-    beginEditKnobs();
+    // kOfxActionBeginInstanceEdit if the panel was created open: a panel created closed (Output node, nodes
+    // of a Python group, panels restored closed) begins editing when it is opened (onSettingsPanelClosed()).
+    // A multi-instance child is edited through the panel of its parent: it begins now (see activate()).
+    NodePtr internalNode = getNode();
+    if ( ( _settingsPanel && !_settingsPanel->isClosed() ) ||
+         ( internalNode && !internalNode->getParentMultiInstanceName().empty() ) ) {
+        beginEditKnobs();
+    }
 
     if (_settingsPanel) {
         QObject::connect( _settingsPanel, SIGNAL(nameChanged(QString)), this, SLOT(setName(QString)) );
@@ -454,7 +461,6 @@ NodeGui::ensurePanelCreated(bool minimized, bool hideUnmodified)
          * We just do one redraw when all children are created
          */
         NodesList children;
-        NodePtr internalNode = getNode();
         if (internalNode) {
             internalNode->getChildrenMultiInstance(&children);
         }
@@ -488,6 +494,16 @@ void
 NodeGui::onSettingsPanelClosed(bool closed)
 {
     NodePtr internalNode = getNode();
+    // The settings panel is the editor of the node (the curve editor, the dope sheet and the node graph
+    // open it to edit the node): kOfxActionEndInstanceEdit when it is closed, and
+    // kOfxActionBeginInstanceEdit when it is opened again.
+    if (internalNode) {
+        if (closed) {
+            internalNode->endEditKnobs();
+        } else {
+            beginEditKnobs();
+        }
+    }
     if (internalNode && internalNode->hasAnyPersistentMessage()) {
         const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
@@ -1976,10 +1992,10 @@ NodeGui::showGui()
         }
         NodeGuiPtr thisShared = shared_from_this();
         _graph->getGui()->setNodeViewerInterface(thisShared);
-
-        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( node->getEffectInstance().get() );
-        if (ofxNode) {
-            ofxNode->effectInstance()->beginInstanceEditAction();
+        // Opening the settings panel again above calls beginEditKnobs() (see onSettingsPanelClosed()). A
+        // minimized panel was not closed by hideGui(): it is still open, so begin editing again too.
+        if ( _settingsPanel && !_settingsPanel->isClosed() ) {
+            beginEditKnobs();
         }
     }
 
@@ -2010,10 +2026,8 @@ NodeGui::activate(bool triggerRender)
         showGui();
     } else {
         ///don't show gui if it is a multi instance child, but still Q_EMIT the begin edit action
-        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( node->getEffectInstance().get() );
-        if (ofxNode) {
-            ofxNode->effectInstance()->beginInstanceEditAction();
-        }
+        ///(Node::deactivate() sent the end edit action)
+        beginEditKnobs();
     }
     _graph->restoreFromTrash(this);
     //_graph->getGui()->getCurveEditor()->addNode(shared_from_this());
@@ -2095,10 +2109,7 @@ NodeGui::deactivate(bool triggerRender)
     if (!isMultiInstanceChild) {
         hideGui();
     }
-    OfxEffectInstance* ofxNode = !node ? 0 : dynamic_cast<OfxEffectInstance*>( node->getEffectInstance().get() );
-    if (ofxNode) {
-        ofxNode->effectInstance()->endInstanceEditAction();
-    }
+    // (Node::deactivate() sent kOfxActionEndInstanceEdit if kOfxActionBeginInstanceEdit was sent)
     if (_graph) {
         _graph->moveToTrash(this);
         if ( _graph->getGui() ) {
@@ -2259,6 +2270,15 @@ NodeGui::restoreInternal(const NodeGuiPtr& thisShared,
 {
     assert(internalSerialization.size() >= 1);
 
+    NodePtr node = getNode();
+    if ( node && ( node->getRotoContext() || node->getTrackerContext() ) ) {
+        // Loading presets replaces the shapes or tracks by new ones (#1247).
+        // The commands already in the node's undo stack (settings panel and
+        // viewer interacts) refer to the replaced items and to their settings
+        // panel tree items, which are deleted: undoing them would use deleted
+        // items, so drop them.
+        _undoStack->clear();
+    }
     getSettingPanel()->pushUndoCommand( new LoadNodePresetsCommand(thisShared, internalSerialization) );
 }
 
@@ -2781,6 +2801,15 @@ NodeGui::destroyGui()
     }
 
     //Delete settings panel
+    if (_settingsPanel) {
+        // The Gui keeps raw pointers to the opened panels (Gui::getVisiblePanels()), used by the
+        // viewer for overlays and color pickers, so the panel must be closed before it is deleted (#1431).
+        // When the node is deleted from the Node Graph, hideGui() closes it before the node goes to
+        // the trash, but Node::destroyNode() (e.g. Python's Effect.destroy()) does not call hideGui().
+        _settingsPanel->closeBeforeDeletion();
+        // Make sure no dangling pointer is left in any case.
+        guiObj->removeVisibleDockablePanel(_settingsPanel);
+    }
     delete _settingsPanel;
     _settingsPanel = 0;
 } // NodeGui::destroyGui

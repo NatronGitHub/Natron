@@ -340,8 +340,6 @@ fi
 INIT_VAR=1
 DLL_VAR_PREFIX="GMIC"
 BIN_PATH="$SDK_HOME_BIN"
-catDll libfftw3-
-catDll libfftw3_threads-
 catDll libcurl-
 catDll libnghttp2-
 catDll libngtcp2-

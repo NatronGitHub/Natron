@@ -33,6 +33,9 @@
 #include <cstddef>
 #include <stdexcept>
 
+#include <QDir>
+#include <QFileInfo>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // clang-format off
@@ -88,7 +91,8 @@ Cache<EntryType>::save(CacheTOC* tableOfContents)
                     serialization.hash = (*it2)->getHashKey();
                     serialization.params = (*it2)->getParams();
                     serialization.key = (*it2)->getKey();
-                    serialization.size = (*it2)->dataSize();
+                    // Non-tiled entries are not mapped any more after clearInMemoryPortion(), so their dataSize() is 0
+                    serialization.size = _isTiled ? (*it2)->dataSize() : (*it2)->getSizeInBytesFromParams();
                     serialization.filePath = (*it2)->getFilePath();
                     serialization.dataOffsetInFile = (*it2)->getOffsetInFile();
 
@@ -141,62 +145,61 @@ Cache<EntryType>::restore(const CacheTOC & tableOfContents)
 
         try {
             value = new EntryType(it->key, it->params, this);
-            if (it->size != getTileSizeBytes()) {
-                delete value;
-                continue;
+            std::size_t size;
+            if (_isTiled) {
+                // Tiles of another size can't be restored (the tile size changed)
+                if ( it->size != getTileSizeBytes() ) {
+                    delete value;
+                    continue;
+                }
+                size = it->size;
+            } else {
+                // The size of the file (#1128: older versions saved 0 here)
+                size = value->getSizeInBytesFromParams();
             }
             ///This will not put the entry back into RAM, instead we just insert back the entry into the disk cache
-            value->restoreMetadataFromFile(it->size, it->filePath, it->dataOffsetInFile);
+            value->restoreMetadataFromFile(size, it->filePath, it->dataOffsetInFile);
         } catch (const std::exception & e) {
             qDebug() << e.what();
             delete value;
             continue;
         }
         const std::string& filePath = value->getFilePath();
-        usedFilePaths.insert(QString::fromUtf8(filePath.c_str()));
+        // Compare cleaned absolute paths, as below
+        usedFilePaths.insert( QDir::cleanPath( QFileInfo( QString::fromUtf8( filePath.c_str() ) ).absoluteFilePath() ) );
         {
             QMutexLocker locker(&_lock);
             sealEntry(EntryTypePtr(value), false /*inMemory*/);
         }
     }
 
-    // Remove from the cache all files that are not referenced by the table of contents
-    QString cachePath = getCachePath();
-    if (isTileCache()) {
-        QDir cacheFolder(cachePath);
-        QString absolutePath = cacheFolder.absolutePath();
-        QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
-        for (QStringList::iterator it = etr.begin(); it!=etr.end(); ++it) {
-            QString entryFilePath = absolutePath + QLatin1Char('/') + *it;
-
-            std::set<QString>::iterator foundUsed = usedFilePaths.find(entryFilePath);
-            if (foundUsed == usedFilePaths.end()) {
+    // Remove from the cache all files that are not referenced by the table of contents (#1112).
+    // Only list files: without QDir::Files, entryList() returns nothing. A tiled cache keeps its files
+    // in its folder, a non-tiled cache in the 256 sub-folders 00..ff (see CacheEntryHelper::generateStringFromHash()).
+    QStringList folders;
+    const QString cachePath = getCachePath();
+    if ( isTileCache() ) {
+        folders << cachePath;
+    } else {
+        const char* hexDigits = "0123456789abcdef";
+        for (int i = 0; i < 16; ++i) {
+            for (int j = 0; j < 16; ++j) {
+                const char subFolder[3] = { hexDigits[i], hexDigits[j], 0 };
+                folders << cachePath + QLatin1Char('/') + QString::fromUtf8(subFolder);
+            }
+        }
+    }
+    for (QStringList::const_iterator itFolder = folders.begin(); itFolder != folders.end(); ++itFolder) {
+        QDir cacheFolder(*itFolder);
+        const QStringList etr = cacheFolder.entryList(QDir::Files | QDir::Hidden | QDir::NoDotAndDotDot);
+        for (QStringList::const_iterator it = etr.begin(); it != etr.end(); ++it) {
+            const QString entryFilePath = QDir::cleanPath( cacheFolder.absoluteFilePath(*it) );
+            if ( usedFilePaths.find(entryFilePath) == usedFilePaths.end() ) {
                 cacheFolder.remove(*it);
             }
         }
-    } else {
-        for (U32 i = 0x00; i <= 0xF; ++i) {
-            for (U32 j = 0x00; j <= 0xF; ++j) {
-                char str[3] = { '0', '0', 0 };
-                str[0] += i;
-                str[1] += j;
-
-                QDir cacheFolder(cachePath + QLatin1Char('/') + QString::fromUtf8(str));
-                QString absolutePath = cacheFolder.absolutePath();
-                QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
-                for (QStringList::iterator it = etr.begin(); it!=etr.end(); ++it) {
-                    QString entryFilePath = absolutePath + QLatin1Char('/') + *it;
-
-                    std::set<QString>::iterator foundUsed = usedFilePaths.find(entryFilePath);
-                    if (foundUsed == usedFilePaths.end()) {
-                        cacheFolder.remove(*it);
-                    }
-                }
-            }
-        }
-
     }
-}
+} // restore
 
 template<typename EntryType>
 struct Cache<EntryType>::SerializedEntry

@@ -700,7 +700,7 @@ CurveWidgetPrivate::isNearbyKeyFrame(const QPoint & pt,
                 ++next;
             }
             bool isPeriodic = false;
-            std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+            std::pair<double,double> parametricRange = std::make_pair( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
             CurvePtr internalCurve = (*it)->getInternalCurve();
             if (internalCurve) {
                 isPeriodic = internalCurve->isCurvePeriodic();
@@ -1082,7 +1082,7 @@ CurveWidgetPrivate::keyFramesWithinRect(const QRectF & rect,
             }
             CurvePtr internalCurve = (*it)->getInternalCurve();
             bool isPeriodic = false;
-            std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+            std::pair<double,double> parametricRange = std::make_pair( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
             if (internalCurve) {
                 isPeriodic = internalCurve->isCurvePeriodic();
                 parametricRange = internalCurve->getXRange();

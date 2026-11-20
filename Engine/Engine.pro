@@ -143,6 +143,7 @@ SOURCES += \
     OSGLContext_win.cpp \
     OSGLContext_x11.cpp \
     OfxClipInstance.cpp \
+    OfxDrawSuiteGL.cpp \
     OfxEffectInstance.cpp \
     OfxHost.cpp \
     OfxImageEffectInstance.cpp \
@@ -307,6 +308,7 @@ HEADERS += \
     OSGLContext_win.h \
     OSGLContext_x11.h \
     OfxClipInstance.h \
+    OfxDrawSuiteGL.h \
     OfxEffectInstance.h \
     OfxHost.h \
     OfxImageEffectInstance.h \
@@ -436,6 +438,7 @@ ENGINE_GENERATED_SOURCES = \
     booleanparam_wrapper \
     boolnodecreationproperty_wrapper \
     buttonparam_wrapper \
+    bytesparam_wrapper \
     choiceparam_wrapper \
     colorparam_wrapper \
     colortuple_wrapper \

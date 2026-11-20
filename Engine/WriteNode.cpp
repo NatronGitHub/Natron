@@ -1485,11 +1485,12 @@ WriteNode::onOverlayKeyDown(double time,
                             const RenderScale & renderScale,
                             ViewIdx view,
                             Key key,
-                            KeyboardModifiers modifiers)
+                            KeyboardModifiers modifiers,
+                            const QString& keyText)
 {
     EffectInstancePtr effect = getEmbeddedWriterEffect();
 
-    return effect ? effect->onOverlayKeyDown_public(time, renderScale, view, key, modifiers) : false;
+    return effect ? effect->onOverlayKeyDown_public(time, renderScale, view, key, modifiers, keyText) : false;
 }
 
 bool
@@ -1497,11 +1498,12 @@ WriteNode::onOverlayKeyUp(double time,
                           const RenderScale & renderScale,
                           ViewIdx view,
                           Key key,
-                          KeyboardModifiers modifiers)
+                          KeyboardModifiers modifiers,
+                          const QString& keyText)
 {
     EffectInstancePtr effect = getEmbeddedWriterEffect();
 
-    return effect ? effect->onOverlayKeyUp_public(time, renderScale, view, key, modifiers) : false;
+    return effect ? effect->onOverlayKeyUp_public(time, renderScale, view, key, modifiers, keyText) : false;
 }
 
 bool
@@ -1509,11 +1511,12 @@ WriteNode::onOverlayKeyRepeat(double time,
                               const RenderScale & renderScale,
                               ViewIdx view,
                               Key key,
-                              KeyboardModifiers modifiers)
+                              KeyboardModifiers modifiers,
+                              const QString& keyText)
 {
     EffectInstancePtr effect = getEmbeddedWriterEffect();
 
-    return effect ? effect->onOverlayKeyRepeat_public(time, renderScale, view, key, modifiers) : false;
+    return effect ? effect->onOverlayKeyRepeat_public(time, renderScale, view, key, modifiers, keyText) : false;
 }
 
 bool

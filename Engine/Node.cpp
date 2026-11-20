@@ -297,14 +297,26 @@ Node::setRenderThreadSafety(RenderSafetyEnum safety)
 }
 
 RenderSafetyEnum
-Node::getCurrentRenderThreadSafety() const
+Node::applyMultiThreadingPreference(RenderSafetyEnum pluginSafety,
+                                    bool multiThreadingEnabled)
 {
-    if ( !isMultiThreadingSupportEnabledForPlugin() ) {
+    if ( !multiThreadingEnabled && (pluginSafety > eRenderSafetyInstanceSafe) ) {
         return eRenderSafetyInstanceSafe;
     }
-    QMutexLocker k(&_imp->pluginsPropMutex);
 
-    return _imp->currentThreadSafety;
+    return pluginSafety;
+}
+
+RenderSafetyEnum
+Node::getCurrentRenderThreadSafety() const
+{
+    RenderSafetyEnum safety;
+    {
+        QMutexLocker k(&_imp->pluginsPropMutex);
+        safety = _imp->currentThreadSafety;
+    }
+
+    return applyMultiThreadingPreference( safety, isMultiThreadingSupportEnabledForPlugin() );
 }
 
 void
@@ -334,6 +346,10 @@ Node::getCurrentOpenGLRenderSupport() const
         }
     }
 
+    if ( hasOpenGLContextAttachFailed() ) {
+        return ePluginOpenGLRenderSupportNone;
+    }
+
     if (!getApp()->getProject()->isGPURenderingEnabledInProject()) {
         return ePluginOpenGLRenderSupportNone;
     }
@@ -355,20 +371,55 @@ Node::getCurrentOpenGLRenderSupport() const
     return _imp->currentSupportOpenGLRender;
 }
 
-void
-Node::setCurrentSequentialRenderSupport(SequentialPreferenceEnum support)
+bool
+Node::setOpenGLContextAttachFailed()
+{
+    QMutexLocker k(&_imp->pluginsPropMutex);
+    bool wasSet = _imp->openGLContextAttachFailed;
+
+    _imp->openGLContextAttachFailed = true;
+
+    return !wasSet;
+}
+
+bool
+Node::hasOpenGLContextAttachFailed() const
 {
     QMutexLocker k(&_imp->pluginsPropMutex);
 
-    _imp->currentSupportSequentialRender = support;
+    return _imp->openGLContextAttachFailed;
+}
+
+QString
+Node::getOpenGLRenderUnavailableMessage() const
+{
+    if ( !_imp->plugin || (_imp->plugin->getPluginOpenGLRenderSupport() != ePluginOpenGLRenderSupportNeeded) ) {
+        return QString();
+    }
+    QString missingOpenGLError;
+    if ( !appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, &missingOpenGLError) ) {
+        return tr("%1 needs OpenGL rendering, which is not available: %2")
+               .arg( QString::fromUtf8( getLabel_mt_safe().c_str() ) ).arg(missingOpenGLError);
+    }
+    if ( !appPTR->getCurrentSettings()->isOpenGLRenderingEnabled() ) {
+        return tr("%1 needs OpenGL rendering, which is disabled: see Preferences > GPU Rendering, or pass "
+                  "`--opengl enabled` to %2.")
+               .arg( QString::fromUtf8( getLabel_mt_safe().c_str() ) ).arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    }
+    if ( !_imp->plugin->isOpenGLEnabled() ) {
+        return tr("%1 needs OpenGL rendering, which is disabled in the Preferences for this plug-in: please enable it and restart %2.")
+               .arg( QString::fromUtf8( getLabel_mt_safe().c_str() ) ).arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    }
+
+    return QString();
 }
 
 SequentialPreferenceEnum
 Node::getCurrentSequentialRenderSupport() const
 {
-    QMutexLocker k(&_imp->pluginsPropMutex);
-
-    return _imp->currentSupportSequentialRender;
+    // Not cached in refreshDynamicProperties(): an OFX plug-in may set kOfxImageEffectInstancePropSequentialRender on
+    // its instance in any action, and OfxEffectInstance::getSequentialPreference() reads it.
+    return _imp->effect ? _imp->effect->getSequentialPreference() : eSequentialPreferenceNotSequential;
 }
 
 void
@@ -416,6 +467,13 @@ Node::refreshDynamicProperties()
     }
 
 
+    {
+        QMutexLocker k(&_imp->pluginsPropMutex);
+        if (pluginGLSupport != _imp->currentSupportOpenGLRender) {
+            // the instance changed its OpenGL render support: OpenGL may be tried again
+            _imp->openGLContextAttachFailed = false;
+        }
+    }
     setCurrentOpenGLRenderSupport(pluginGLSupport);
     bool tilesSupported = _imp->effect->supportsTiles();
     bool multiResSupported = _imp->effect->supportsMultiResolution();
@@ -423,7 +481,6 @@ Node::refreshDynamicProperties()
     RenderSafetyEnum safety = _imp->effect->renderThreadSafety();
     setRenderThreadSafety(safety);
     setCurrentSupportTiles(multiResSupported && tilesSupported);
-    setCurrentSequentialRenderSupport( _imp->effect->getSequentialPreference() );
     setCurrentCanTransform(canTransform);
 }
 
@@ -1165,6 +1222,12 @@ Node::loadKnob(const KnobIPtr & knob,
             continue;
         }
 
+        // The visibility of the Views parameter of writers is not restored: it follows the format (set
+        // by the plug-in) and the file name (refreshViewsSelectorVisibility()). Projects saved by Natron
+        // 2.5 or older may have it hidden by mistake (#1312).
+        const bool keepSecret = _imp->effect->isWriter() && (knob->getName() == kWriteOIIOParamViewsSelector);
+        const bool wasSecret = knob->getIsSecret();
+
         knob->cloneDefaultValues( serializedKnob.get() );
 
         if (isChoice) {
@@ -1213,6 +1276,10 @@ Node::loadKnob(const KnobIPtr & knob,
                     knob->setEnabled( i, serializedKnob->isEnabled(i) );
                 }
             }
+        }
+
+        if (keepSecret) {
+            knob->setSecret(wasSecret);
         }
 
         if (knob->getName() == kOfxImageEffectFileParamName) {
@@ -2643,6 +2710,14 @@ Node::beginEditKnobs()
 }
 
 void
+Node::endEditKnobs()
+{
+    if (_imp->effect) {
+        _imp->effect->endEditKnobs();
+    }
+}
+
+void
 Node::setEffect(const EffectInstancePtr& effect)
 {
     ////Only called by the main-thread
@@ -2980,6 +3055,10 @@ Node::deactivate(const std::list<NodePtr> & outputsToDisconnect,
 
     // If the effect was doing OpenGL rendering and had context(s) bound, detach them.
     _imp->effect->dettachAllOpenGLContexts();
+
+    // A deactivated (deleted) node has no editor: the GUI also closes its settings panel, and opens it
+    // again (with a new kOfxActionBeginInstanceEdit) if the node is activated again.
+    _imp->effect->endEditKnobs();
 
 
 #if NATRON_VERSION_ENCODED < NATRON_VERSION_ENCODE(3,0,0)
@@ -3761,6 +3840,10 @@ bool
 Node::message(MessageTypeEnum type,
               const std::string & content) const
 {
+    if (type == eMessageTypeQuestion) {
+        return question(content) == eStandardButtonYes;
+    }
+
     ///If the node was aborted, don't transmit any message because we could cause a deadlock
     if ( _imp->effect->aborted() || (!_imp->nodeCreated && _imp->wasCreatedSilently)) {
         std::cerr << getScriptName_mt_safe() << " message: " << content << std::endl;
@@ -3810,13 +3893,63 @@ Node::message(MessageTypeEnum type,
         Dialogs::errorDialog(getLabel_mt_safe(), content);
 
         return true;
-    case eMessageTypeQuestion:
-
-        return Dialogs::questionDialog(getLabel_mt_safe(), content, false) == eStandardButtonYes;
+    case eMessageTypeQuestion: // handled by question()
     default:
 
         return false;
     }
+}
+
+StandardButtonEnum
+Node::question(const std::string & content) const
+{
+    // Only the user may answer: whenever nobody is asked, return eStandardButtonNoButton, never a reply
+    // (OFX: "It is an error to post a question message if the plugin is not in an interactive session").
+
+    ///If the node was aborted, don't transmit any message because we could cause a deadlock
+    if ( _imp->effect->aborted() || (!_imp->nodeCreated && _imp->wasCreatedSilently) ) {
+        std::cerr << getScriptName_mt_safe() << " question (not asked): " << content << std::endl;
+
+        return eStandardButtonNoButton;
+    }
+
+    // As for the other messages, a question from a separate thread (e.g. a render thread) is not shown
+    // in a dialog (see https://github.com/MrKepzie/Natron/issues/1313): it is logged, and not answered.
+    if ( QThread::currentThread() != qApp->thread() ) {
+        LogEntry::LogEntryColor c;
+        if ( getColor(&c.r, &c.g, &c.b) ) {
+            c.colorSet = true;
+        }
+        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( getLabel_mt_safe().c_str() ), QDateTime::currentDateTime(),
+                                        tr("Question not asked (posted from a thread other than the main thread): %1").arg( QString::fromUtf8( content.c_str() ) ),
+                                        false, c);
+
+        return eStandardButtonNoButton;
+    }
+
+#ifdef NATRON_ENABLE_IO_META_NODES
+    // the user is asked through the Read/Write container node: its answer is the answer
+    NodePtr ioContainer = getIOContainer();
+    if (ioContainer) {
+        return ioContainer->question(content);
+    }
+#endif
+    // Some nodes may be hidden from the user but may still report errors (such that the group is in fact hidden to the user)
+    if ( !isPartOfProject() && getGroup() ) {
+        NodeGroup* isGroup = dynamic_cast<NodeGroup*>( getGroup().get() );
+        if (isGroup) {
+            return isGroup->question(content);
+        }
+    }
+
+    // no interactive session (NatronRenderer, natron-python): nobody can answer
+    if ( appPTR->isBackground() ) {
+        std::cerr << getScriptName_mt_safe() << " question (not asked, no interactive session): " << content << std::endl;
+
+        return eStandardButtonNoButton;
+    }
+
+    return Dialogs::questionDialog(getLabel_mt_safe(), content, false) == eStandardButtonYes ? eStandardButtonYes : eStandardButtonNo;
 }
 
 void
@@ -4526,29 +4659,27 @@ Node::onFileNameParameterChanged(KnobI* fileKnob)
             }
         }
 
-        /*
-           Check if the filename param has a %V in it, in which case make sure to hide the Views parameter
-         */
-        KnobOutputFile* fileParam = dynamic_cast<KnobOutputFile*>(fileKnob);
-        if (fileParam) {
-            std::string pattern = fileParam->getValue();
-            std::size_t foundViewPattern = pattern.find_first_of("%v");
-            if (foundViewPattern == std::string::npos) {
-                foundViewPattern = pattern.find_first_of("%V");
-            }
-            if (foundViewPattern != std::string::npos) {
-                //We found view pattern
-                KnobIPtr viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
-                if (viewsKnob) {
-                    KnobChoice* viewsSelector = dynamic_cast<KnobChoice*>( viewsKnob.get() );
-                    if (viewsSelector) {
-                        viewsSelector->setSecret(true);
-                    }
-                }
-            }
-        }
+        refreshViewsSelectorVisibility();
     }
 } // Node::onFileNameParameterChanged
+
+void
+Node::refreshViewsSelectorVisibility()
+{
+    if ( !_imp->effect || !_imp->effect->isWriter() ) {
+        return;
+    }
+    KnobChoicePtr viewsSelector = std::dynamic_pointer_cast<KnobChoice>( getKnobByName(kWriteOIIOParamViewsSelector) );
+    KnobOutputFilePtr fileParam = std::dynamic_pointer_cast<KnobOutputFile>( getKnobByName(kOfxImageEffectFileParamName) );
+    if (!viewsSelector || !fileParam) {
+        return;
+    }
+    // Look for the two-character pattern: find_first_of("%v") would match any '%' or 'v' (#1312).
+    std::string pattern = fileParam->getValue();
+    if ( ( pattern.find("%v") != std::string::npos ) || ( pattern.find("%V") != std::string::npos ) ) {
+        viewsSelector->setSecret(true);
+    }
+}
 
 void
 Node::getOriginalFrameRangeForReader(const std::string& pluginID,

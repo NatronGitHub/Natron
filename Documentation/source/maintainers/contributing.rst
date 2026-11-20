@@ -64,11 +64,35 @@ Where to open a pull request:
   Qt 5 builds): these wait for RB-2.8, which doesn't exist yet. Open an issue
   instead of a pull request.
 
-You don't need to open the same pull request twice. RB-2.6 is *forward
-merged* into RB-2.7: a workflow (``.github/workflows/forward_merge.yml``)
-keeps a "Merge RB-2.6 into RB-2.7" pull request open and up to date, and a
-maintainer merges it, resolves any conflicts, and adapts the Qt 5-specific
-changes on RB-2.7.
+You don't need to open the same pull request twice: open it on RB-2.6 only.
+RB-2.6 is *forward merged* into RB-2.7, as described below.
+
+.. _maint-forward-merge:
+
+Forward-merging RB-2.6 into RB-2.7
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``.github/workflows/forward_merge.yml`` workflow (#1169) runs on every push
+to RB-2.6 (and to RB-2.7, or by hand). It keeps one pull request open, "Merge
+RB-2.6 into RB-2.7", whose head branch is RB-2.6 itself, so GitHub updates it
+with every push. The workflow never pushes anything. Maintainers handle that
+pull request as follows:
+
+- Check that the Tests run passes. A pull request opened by a workflow doesn't
+  start Tests by itself the first time: close and reopen it.
+- Merge it with a **merge commit**, never squash or rebase, so that the next
+  forward merge only brings the new commits.
+- Then revert or adapt the Qt 5-only changes (PySide2, the MacPorts
+  ``aqua/qt5`` ports, Qt 5 workarounds) in a follow-up commit or pull request
+  on RB-2.7.
+- If the two branches conflict, the workflow opens an issue, "Forward-merge of
+  RB-2.6 into RB-2.7 has conflicts", with the commands to run. Resolve the
+  conflicts on a separate branch, ``merge-RB-2.6-into-RB-2.7``, made from
+  RB-2.7, keeping RB-2.7's Qt 6 code. Open a pull request from that branch to
+  RB-2.7 and merge it with a merge commit. Don't use GitHub's "Resolve
+  conflicts" button: it would merge RB-2.7 into the head branch, RB-2.6. The
+  workflow closes the issue once RB-2.7 contains RB-2.6 or the conflicts are
+  gone.
 
 When a pull request mixes these kinds of changes, split it along the same
 lines. Smaller pull requests, one topic each, are much easier to review and
@@ -166,6 +190,60 @@ the consolidated list (several are referenced from the P0 leads in
   the "random crash" tail; see the crash-reporting notes in
   :ref:`maint-subsystems`.
 
+.. _maint-ci:
+
+Continuous integration
+----------------------
+
+The CI runs on GitHub Actions, and is kept small on purpose: hosted runners,
+macOS ones above all, are scarce, and every related repository (openfx,
+openfx-misc, openfx-io, openfx-arena, openfx-gmic, …) follows the same rules.
+
+**Per pull request and per push** (``.github/workflows/ci.yml``, workflow
+*Tests*), there are three jobs, each building Natron with CMake and running the
+``Tests`` suite:
+
+- **Linux**: Ubuntu 24.04 with its Qt 5, PySide2 and Python 3.12. It also
+  checks that qmake and CMake build the same sources, and builds and tests
+  twice, in Debug and in RelWithDebInfo.
+- **Windows**: MSYS2 UCRT64, with the stock MSYS2 packages (Qt 5, PySide2
+  and MSYS2's Python).
+- **macOS**: macOS 15 arm64, the system (Xcode) clang and MacPorts libraries
+  (never Homebrew), with ``/opt/local`` restored from a cache. It starts only
+  after the Linux and Windows jobs have passed.
+
+Linux and Windows must pass before a pull request is merged. The macOS job is
+informative: it is never a required check, so a pull request doesn't wait for
+it.
+
+The workflow also:
+
+- runs on pushes to ``master``, the ``RB-*`` branches and ``v*`` tags only, and
+  on pull requests against ``master`` and ``RB-*``, so that a change on a topic
+  branch is built once, through its pull request;
+- skips draft pull requests (marking one as ready starts the run);
+- ignores changes under ``Documentation/`` (``paths-ignore``): Read the Docs
+  builds the documentation;
+- cancels a pull request's previous run when it gets a new push
+  (``concurrency``), but never a run for a push to a branch or a tag;
+- runs with read-only ``permissions`` (``contents: read``).
+
+**Nightly** (03:17 UTC), the macOS job runs alone on the default branch, and is
+skipped if the branch didn't change in the last 25 hours. Any branch can also
+be run by hand (``workflow_dispatch``). Other configurations (Qt 6, extra C++
+standards such as C++23, other compilers or OS versions) are meant to run
+nightly, weekly or by hand, never per pull request; none is set up yet.
+
+**Installers and packages are release artifacts.** They are built only by hand
+or for pre-release tags, never for pull requests: ``build_installer.yml``
+builds the Windows installer and ``build_pacman_repo.yml`` the Windows package
+repository, both uploaded as workflow artifacts. The macOS and Linux installers
+are built outside GitHub Actions: the macOS release builds with ``tools/tart``
+(in a macOS VM on a maintainer's Apple Silicon Mac), the Linux installers with
+the ``tools/jenkins`` scripts in the Rocky Linux 9 SDK Docker image (being
+adapted from ``tools/docker/natron-sdk-rockylinux8``, see `#1343
+<https://github.com/NatronGitHub/Natron/pull/1343>`_).
+
 Where to start
 --------------
 
@@ -178,15 +256,80 @@ Building this manual
 --------------------
 
 The documentation is `Sphinx <https://www.sphinx-doc.org/>`_ using the Read the
-Docs theme; sources are under ``Documentation/source``. Build the HTML with::
+Docs theme; sources are under ``Documentation/source``. Install the Python
+requirements in a virtual environment, then build the HTML with::
 
+    pip install -r Documentation/source/requirements.txt
     cd Documentation
     sphinx-build -b html source html
 
 and the PDF with::
 
     sphinx-build -b latex source pdf
-    (cd pdf; pdflatex Natron)
+    (cd pdf; latexmk -pdf Natron)
+
+The Developers Guide includes the OpenFX documentation of the ``libs/OpenFX``
+submodule (``Documentation/source/_ext/natron_openfx.py`` copies it into
+``devel/openfx/``, which git ignores). It needs the submodule
+(``git submodule update --init libs/OpenFX``), breathe and Doxygen; without
+them, or with ``NATRON_DOCS_OPENFX=0`` (which the installers set, to keep the
+documentation bundled with Natron small), those pages are placeholders.
+
+Use Doxygen 1.17 or earlier (Read the Docs uses the Doxygen of Ubuntu 22.04,
+1.9.1). Doxygen 1.18 writes the suite function pointers in a form that breathe
+cannot parse, so the reference would lose those declarations, with about 330
+warnings: with Doxygen 1.18 or later, ``natron_openfx.py`` writes the
+placeholders instead and says so in the build log (look for
+``natron_openfx:``). ``NATRON_DOCS_OPENFX=force`` builds the OpenFX pages
+anyway, e.g. to check a change to them; MacPorts and Homebrew ship Doxygen
+1.18 or later.
+
+Read the Docs builds HTML, PDF and ePub for each push to a release branch
+(see ``.readthedocs.yaml``), but only the HTML for a pull request: check the
+PDF and ePub locally when a change can affect them.
+
+Diagrams
+~~~~~~~~
+
+Write diagrams as `Mermaid <https://mermaid.js.org/>`_ text in a ``mermaid``
+directive (from `sphinxcontrib-mermaid
+<https://github.com/mgaitan/sphinxcontrib-mermaid>`_), not as image files, so
+that they can be reviewed and updated like the rest of the text. For example::
+
+    .. mermaid::
+       :alt: Gui links Engine, Engine links HostSupport.
+       :caption: What links what.
+
+       flowchart TB
+           Gui["Gui/"] --> Engine["Engine/"]
+           Engine --> HostSupport["HostSupport/"]
+
+- Use the diagram types of `Mermaid 11 <https://mermaid.js.org/intro/>`_
+  (``flowchart``, ``sequenceDiagram``, ``classDiagram``, ``stateDiagram-v2``,
+  …), and try them in the `Mermaid live editor <https://mermaid.live/>`_.
+- Always give an ``:alt:`` text that says what the diagram shows, and keep
+  diagrams small: a diagram complements the text, it does not replace it.
+- Quote labels that contain punctuation (``A["Engine/ (NatronEngine)"]``);
+  ``<br/>`` breaks a line.
+
+The pictures come from the Node.js packages of ``Documentation/package.json``
+(versions locked in ``package-lock.json``). Install them once, with Node.js 20
+or later::
+
+    cd Documentation
+    npm ci    # node_modules/ is ignored by git
+
+The HTML pages draw the diagrams in the browser, with the mermaid.js of
+``node_modules`` (copied to ``_static/mermaid/``, so that a local or offline
+build works without a network connection). ``tools/jenkins/gen-natron-doc.sh``,
+which builds the documentation bundled with Natron, does not run ``npm ci``:
+unless ``Documentation/node_modules`` already exists there, the bundled
+documentation shows the diagrams as source. The PDF and ePub need pictures,
+which `mermaid-cli <https://github.com/mermaid-js/mermaid-cli>`_ draws with a
+headless Chrome; ``_ext/natron_mermaid.py`` checks that it works before the PDF
+or ePub build. Without sphinxcontrib-mermaid or ``node_modules``, or if
+mermaid-cli doesn't work, the diagrams are shown as source, and the build log
+says why (look for ``mermaid:``).
 
 Two rules from ``Documentation/README-Natron-documentation.md`` are important:
 

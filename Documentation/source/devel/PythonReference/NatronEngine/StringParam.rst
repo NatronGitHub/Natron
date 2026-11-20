@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _StringParam:
 
 StringParam
@@ -23,7 +23,7 @@ Detailed Description
 --------------------
 
 A StringParam can have several forms on the user interface, depending on its
-:ref:`type<NatronEngine.StringParam.TypeEnum>`
+:attr:`type<NatronEngine.StringParam.TypeEnum>`.
 
 Here are the different types of string parameters:
 
@@ -49,7 +49,7 @@ Here are the different types of string parameters:
    :width: 400px
    :align: center
 
-   A multi-line string with rich text support with a `subset of html <https://qt-project.org/doc/qt-4.8/richtext-html-subset.html>`_
+   A multi-line string with rich text support with a `subset of html <https://doc.qt.io/qt-6/richtext-html-subset.html>`_
 
 String parameters that animate hold the string of a keyframe until the next keyframe
 (the value steps, there is no interpolation between strings, except for the custom parameters
@@ -65,7 +65,19 @@ delete the string of the keyframe at a given time.
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. method:: NatronEngine.StringParam.setType(type)
+.. attribute:: StringParam.TypeEnum
+
+    Can have the following values:
+
+    - eStringTypeLabel: a label shown in the user interface; it cannot be edited and does not animate
+    - eStringTypeMultiLine: a multi-line plain text area
+    - eStringTypeRichTextMultiLine: a multi-line text area with Qt rich text (HTML subset) support
+    - eStringTypeCustom: a custom string that can hold anything; it animates but the user cannot edit it
+    - eStringTypeDefault: the same as eStringTypeCustom, except that the user can edit it
+
+    For example: ``param.setType(NatronEngine.StringParam.TypeEnum.eStringTypeMultiLine)``
+
+.. method:: StringParam.setType(type)
 
 
     :param type: :attr:`NatronEngine.StringParam.TypeEnum`
@@ -75,7 +87,7 @@ time.
 
 .. warning::
 
-    Once called, you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+    Once called, you should call :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>`
     to update the user interface.
 
 

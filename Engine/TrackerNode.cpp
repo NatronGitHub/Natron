@@ -2310,7 +2310,8 @@ TrackerNode::onOverlayKeyDown(double /*time*/,
                               const RenderScale & /*renderScale*/,
                               ViewIdx /*view*/,
                               Key key,
-                              KeyboardModifiers /*modifiers*/)
+                              KeyboardModifiers /*modifiers*/,
+                              const QString& /*keyText*/)
 {
     bool didSomething = false;
     bool isCtrl = false;
@@ -2343,7 +2344,8 @@ TrackerNode::onOverlayKeyUp(double /*time*/,
                             const RenderScale & /*renderScale*/,
                             ViewIdx /*view*/,
                             Key key,
-                            KeyboardModifiers /*modifiers*/)
+                            KeyboardModifiers /*modifiers*/,
+                            const QString& /*keyText*/)
 {
     bool didSomething = false;
     bool isAlt = false;
@@ -2385,7 +2387,8 @@ TrackerNode::onOverlayKeyRepeat(double /*time*/,
                                 const RenderScale & /*renderScale*/,
                                 ViewIdx /*view*/,
                                 Key /*key*/,
-                                KeyboardModifiers /* modifiers*/)
+                                KeyboardModifiers /* modifiers*/,
+                                const QString& /*keyText*/)
 {
     return false;
 } // keyrepeat

@@ -95,7 +95,18 @@ public:
     bool saveProject(const QString & path, const QString & name, QString* newFilePath);
 
 
-    bool saveProject_imp(const QString & path, const QString & name, bool autoSave, bool updateProjectProperties, QString* newFilePath = 0);
+    /**
+     * @brief Saves the project. A save other than the background auto-save waits for a running save to finish.
+     * @param errorMessage If not null, set to the reason of the failure.
+     * @returns false if the project could not be saved.
+     **/
+    bool saveProject_imp(const QString & path, const QString & name, bool autoSave, bool updateProjectProperties, QString* newFilePath = 0, QString* errorMessage = 0);
+
+    /**
+     * @brief True while the project is being saved (also by the background auto-save), or a save waits to start.
+     * The main thread processes events while a save waits (see saveProject_imp()): the project must not be closed then.
+     **/
+    bool isSaveInProgress() const WARN_UNUSED_RETURN;
 
     /**
      * @brief Same as saveProject except that it will save the project in a temporary file
@@ -108,6 +119,13 @@ public:
      * @brief Same as autoSave() but the auto-save is run in a separate thread instead.
      **/
     void triggerAutoSave();
+
+    /**
+     * @brief Calls kOfxActionSyncPrivateData on all the OpenFX nodes of the project, as before a
+     * save. Main thread only: the autosave calls it before it serializes the project in another
+     * thread, where the nodes can't be synced.
+     **/
+    void syncOpenFXPrivateData();
 
     /**
      * @brief Returns the path to where the auto save files are stored on disk.
@@ -439,7 +457,7 @@ private:
     bool loadProjectInternal(const QString & path, const QString & name, bool isAutoSave,
                              bool isUntitledAutosave, bool* mustSave);
 
-    QString saveProjectInternal(const QString & path, const QString & name, bool autosave, bool updateProjectProperties);
+    QString saveProjectInternal(const QString & path, const QString & name, bool autosave, bool updateProjectProperties, QStringList* warnings);
 
 
 

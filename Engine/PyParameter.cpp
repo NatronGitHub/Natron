@@ -2368,6 +2368,68 @@ SeparatorParam::~SeparatorParam()
 {
 }
 
+///////////////////BytesParam
+
+BytesParam::BytesParam(const KnobBytesPtr& knob)
+    : Param(knob)
+    , _bytesKnob(knob)
+{
+}
+
+BytesParam::~BytesParam()
+{
+}
+
+std::string
+BytesParam::getValue() const
+{
+    KnobBytesPtr knob = _bytesKnob.lock();
+    if (!knob) {
+        return std::string();
+    }
+
+    return knob->getValue(0);
+}
+
+void
+BytesParam::setValue(const std::string& value)
+{
+    KnobBytesPtr knob = _bytesKnob.lock();
+    if ( !knob || ( value.size() > KnobBytes::maxLength() ) ) {
+        return;
+    }
+
+    knob->setValue(value, ViewSpec::current(), 0);
+}
+
+std::string
+BytesParam::getDefaultValue() const
+{
+    KnobBytesPtr knob = _bytesKnob.lock();
+    if (!knob) {
+        return std::string();
+    }
+
+    return knob->getDefaultValue(0);
+}
+
+void
+BytesParam::restoreDefaultValue()
+{
+    KnobBytesPtr knob = _bytesKnob.lock();
+    if (!knob) {
+        return;
+    }
+
+    knob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
+}
+
+std::size_t
+BytesParam::getMaxLength() const
+{
+    return KnobBytes::maxLength();
+}
+
 ///////////////////GroupParam
 
 GroupParam::GroupParam(const KnobGroupPtr& knob)

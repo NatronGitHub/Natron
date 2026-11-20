@@ -38,6 +38,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Smooth1D.h"
+#include "Global/MathUtils.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -335,19 +336,85 @@ Curve::areKeyFramesTimeClampedToIntegers() const
 void
 Curve::clone(const Curve & other)
 {
-    KeyFrameSet otherKeys = other.getKeyFrames_mt_safe();
+    // Read other's keys and flag under other's lock only, before locking this:
+    // locking both (A.clone(B) and B.clone(A) at the same time) could deadlock.
+    KeyFrameSet otherKeys;
+    bool mustRefreshDerivatives;
+    {
+        QMutexLocker lo(&other._imp->_lock);
+        otherKeys = other._imp->keyFrames;
+        mustRefreshDerivatives = other._imp->mustRefreshDerivatives;
+    }
     QMutexLocker l(&_imp->_lock);
 
     _imp->keyFrames.clear();
     std::transform( otherKeys.begin(), otherKeys.end(), std::inserter( _imp->keyFrames, _imp->keyFrames.begin() ), KeyFrameCloner() );
+    // The flag is not propagated to this curve: it is set explicitly only on the curves of
+    // the temporary knobs of KnobSerialization (see setMustRefreshDerivatives()), and the
+    // final curve, cloned from them, keeps no flag.
+    if (mustRefreshDerivatives) {
+        // other was loaded from a file with NaN values: its derivatives must be recomputed
+        // with this curve's properties (e.g. periodicity)
+        refreshAutomaticDerivatives();
+    }
     onCurveChanged();
+}
+
+void
+Curve::setMustRefreshDerivatives()
+{
+    QMutexLocker l(&_imp->_lock);
+
+    _imp->mustRefreshDerivatives = true;
+}
+
+bool
+Curve::getMustRefreshDerivatives() const
+{
+    QMutexLocker l(&_imp->_lock);
+
+    return _imp->mustRefreshDerivatives;
+}
+
+void
+Curve::refreshAutomaticDerivatives()
+{
+    QMutexLocker l(&_imp->_lock);
+
+    for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
+        KeyframeTypeEnum interp = it->getInterpolation();
+        if ( (interp != eKeyframeTypeFree) && (interp != eKeyframeTypeBroken) && (interp != eKeyframeTypeNone) ) {
+            // refreshDerivatives() replaces the keyframe, and returns an iterator on the new one
+            it = refreshDerivatives(eCurveChangedReasonDerivativesChanged, it);
+        }
+    }
 }
 
 bool
 Curve::cloneAndCheckIfChanged(const Curve& other)
 {
-    KeyFrameSet otherKeys = other.getKeyFrames_mt_safe();
+    // Read other's keys and flag under other's lock only, before locking this (see clone()).
+    KeyFrameSet otherKeys;
+    bool mustRefreshDerivatives;
+    {
+        QMutexLocker lo(&other._imp->_lock);
+        otherKeys = other._imp->keyFrames;
+        mustRefreshDerivatives = other._imp->mustRefreshDerivatives;
+    }
     QMutexLocker l(&_imp->_lock);
+
+    if (mustRefreshDerivatives) {
+        // other was loaded from a file with NaN values (#1267): copy the keys and recompute
+        // the derivatives with this curve's properties (e.g. periodicity), as clone() does.
+        // This is the last step of loading a project (Node::loadKnob() -> cloneAndUpdateGui()).
+        _imp->keyFrames.clear();
+        std::transform( otherKeys.begin(), otherKeys.end(), std::inserter( _imp->keyFrames, _imp->keyFrames.begin() ), KeyFrameCloner() );
+        refreshAutomaticDerivatives();
+        onCurveChanged();
+
+        return true;
+    }
+
     bool hasChanged = false;
 
     if ( otherKeys.size() != _imp->keyFrames.size() ) {
@@ -374,13 +441,13 @@ Curve::cloneAndCheckIfChanged(const Curve& other)
 
 void
 Curve::clone(const Curve & other,
-             SequenceTime offset,
+             double offset,
              const RangeD* range)
 {
     KeyFrameSet otherKeys = other.getKeyFrames_mt_safe();
-    // The range=[0,0] case is obviously a bug in the spec of paramCopy() from the parameter suite:
-    // it prevents copying the value of frame 0.
-    bool copyRange = range != NULL /*&& (range->min != 0 || range->max != 0)*/;
+    // NULL means all the keyframes. In paramCopy() from the OFX parameter suite, [0, 0] also means all the
+    // keyframes: OfxKeyFrame::copyFrom() passes NULL then.
+    bool copyRange = range != NULL;
     QMutexLocker l(&_imp->_lock);
 
     _imp->keyFrames.clear();
@@ -803,17 +870,31 @@ interParams(const KeyFrameSet &keyFrames,
     assert(keyFrames.size() >= 1);
     assert( itup == keyFrames.end() || *t < itup->getTime() );
     double period = xMax - xMin;
+    // the default range is unbounded, and its period (DBL_MAX - lowest()) is infinite:
+    // such a curve is not periodic
+    if ( !(period > 0.) || !MathUtils::isFinite(period) ) {
+        isPeriodic = false;
+    }
     if (isPeriodic) {
-        // if the curve is periodic, bring back t in the curve keyframes range
-        double minKeyFrameX = keyFrames.begin()->getTime() + xMin;
+        // If the curve is periodic, bring t back into the half-open period
+        // [minKeyFrameX, minKeyFrameX + period), which starts at the first keyframe.
+        // The period must be half-open: a keyframe at minKeyFrameX + period is the same
+        // point as the first keyframe, and t = minKeyFrameX + period must not use the
+        // zero-width segment between them (see #1267).
+        double minKeyFrameX = keyFrames.begin()->getTime();
         assert(xMin < xMax);
-        if (*t < minKeyFrameX || *t > minKeyFrameX + period) {
-            // This will bring t either in minTime <= t <= maxTime or t in the range minTime - (maxTime - minTime) < t < minTime
+        if (*t < minKeyFrameX || *t >= minKeyFrameX + period) {
+            // This brings t into minKeyFrameX - period < t < minKeyFrameX + period
             *t = std::fmod(*t - minKeyFrameX, period ) + minKeyFrameX;
             if (*t < minKeyFrameX) {
                 *t += period;
             }
-            assert(*t >= minKeyFrameX && *t <= minKeyFrameX + period);
+            if (*t >= minKeyFrameX + period) {
+                // rounding error in the line above
+                *t = minKeyFrameX;
+            }
+            // (with large times, minKeyFrameX + period may round to minKeyFrameX)
+            assert( *t >= minKeyFrameX && (*t < minKeyFrameX + period || minKeyFrameX + period == minKeyFrameX) );
         }
         itup = keyFrames.upper_bound(KeyFrame(*t, 0.));
     }
@@ -1190,7 +1271,7 @@ Curve::getCurveDisplayYRange() const
     QMutexLocker l(&_imp->_lock);
 
     if ( !mustClamp() ) {
-        return YRange( -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() );
+        return YRange( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
     }
     if (!_imp->owner) {
         return YRange(_imp->yMin, _imp->yMax);
@@ -1201,11 +1282,11 @@ Curve::getCurveDisplayYRange() const
     if (isDouble) {
         double min = isDouble->getDisplayMinimum(_imp->dimensionInOwner);
         if (min <= std::numeric_limits<double>::lowest()) {
-            min = -std::numeric_limits<double>::infinity();
+            min = std::numeric_limits<double>::lowest();
         }
         double max = isDouble->getDisplayMaximum(_imp->dimensionInOwner);
         if (max >= std::numeric_limits<double>::max()) {
-            max = std::numeric_limits<double>::infinity();
+            max = std::numeric_limits<double>::max();
         }
 
         return YRange(min, max);
@@ -1215,7 +1296,7 @@ Curve::getCurveDisplayYRange() const
 
         return YRange(min, max);
     } else {
-        return YRange( -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() );
+        return YRange( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
     }
 }
 
@@ -1224,7 +1305,7 @@ Curve::YRange Curve::getCurveYRange() const
     QMutexLocker l(&_imp->_lock);
 
     if ( !mustClamp() ) {
-        return YRange( -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() );
+        return YRange( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
     }
     if (!_imp->owner) {
         return YRange(_imp->yMin, _imp->yMax);
@@ -1235,11 +1316,11 @@ Curve::YRange Curve::getCurveYRange() const
     if (isDouble) {
         double min = isDouble->getMinimum(_imp->dimensionInOwner);
         if (min <= std::numeric_limits<double>::lowest()) {
-            min = -std::numeric_limits<double>::infinity();
+            min = std::numeric_limits<double>::lowest();
         }
         double max = isDouble->getMaximum(_imp->dimensionInOwner);
         if (max >= std::numeric_limits<double>::max()) {
-            max = std::numeric_limits<double>::infinity();
+            max = std::numeric_limits<double>::max();
         }
 
         return YRange(min, max);
@@ -1249,7 +1330,7 @@ Curve::YRange Curve::getCurveYRange() const
 
         return YRange(min, max);
     } else {
-        return YRange( -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() );
+        return YRange( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
     }
 
 }
@@ -1636,10 +1717,21 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
     KeyframeTypeEnum prevType, nextType;
 
     double period = _imp->xMax - _imp->xMin;
+    // periodic, with a positive finite period (the default range is unbounded, and its period is infinite)
+    const bool effectivelyPeriodic = _imp->isPeriodic && (period > 0.) && MathUtils::isFinite(period);
     assert( key != _imp->keyFrames.end() );
     if ( key == _imp->keyFrames.begin() ) {
-        if (_imp->isPeriodic && _imp->keyFrames.size() > 1) {
+        if (effectivelyPeriodic && _imp->keyFrames.size() > 1) {
+            // The previous keyframe is the last one, shifted by one period.
+            // Skip the keyframes that would not be strictly before tcur once shifted, e.g.
+            // a keyframe at tcur + period, which is the same point as this one (see #1267).
+            // At most size() - 1 keys are skipped: the loop normally ends on key itself, since
+            // period > 0, but with large times tcur - period may round to tcur. The degenerate
+            // neighbour that remains is then ignored by Interpolation::autoComputeDerivatives().
             KeyFrameSet::const_reverse_iterator prev = _imp->keyFrames.rbegin();
+            for (std::size_t skipped = 1; skipped < _imp->keyFrames.size() && prev->getTime() - period >= tcur; ++skipped) {
+                ++prev;
+            }
             tprev = prev->getTime() - period;
             vprev = prev->getValue();
             vprevDerivRight = prev->getRightDerivative();
@@ -1661,7 +1753,7 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
         prevType = prev->getInterpolation();
 
         //if prev is the first keyframe, and not edited by the user then interpolate linearly
-        if ( !_imp->isPeriodic && ( prev == _imp->keyFrames.begin() ) && (prevType != eKeyframeTypeFree) &&
+        if ( !effectivelyPeriodic && ( prev == _imp->keyFrames.begin() ) && (prevType != eKeyframeTypeFree) &&
              ( prevType != eKeyframeTypeBroken) ) {
             prevType = eKeyframeTypeLinear;
         }
@@ -1672,8 +1764,15 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
         ++next;
     }
     if ( next == _imp->keyFrames.end() ) {
-        if (_imp->isPeriodic && _imp->keyFrames.size() > 1) {
+        if (effectivelyPeriodic && _imp->keyFrames.size() > 1) {
+            // The next keyframe is the first one, shifted by one period.
+            // Skip the keyframes that would not be strictly after tcur once shifted, e.g.
+            // a keyframe at tcur - period, which is the same point as this one (see #1267).
+            // At most size() - 1 keys are skipped (see the previous keyframe above).
             KeyFrameSet::const_iterator start = _imp->keyFrames.begin();
+            for (std::size_t skipped = 1; skipped < _imp->keyFrames.size() && start->getTime() + period <= tcur; ++skipped) {
+                ++start;
+            }
             tnext = start->getTime() + period;
             vnext = start->getValue();
             vnextDerivLeft = start->getLeftDerivative();
@@ -1695,7 +1794,7 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
             ++nextnext;
         }
         //if next is thelast keyframe, and not edited by the user then interpolate linearly
-        if ( !_imp->isPeriodic && ( nextnext == _imp->keyFrames.end() ) && (nextType != eKeyframeTypeFree) &&
+        if ( !effectivelyPeriodic && ( nextnext == _imp->keyFrames.end() ) && (nextType != eKeyframeTypeFree) &&
              ( nextType != eKeyframeTypeBroken) ) {
             nextType = eKeyframeTypeLinear;
         }
@@ -1902,7 +2001,8 @@ bool
 Curve::mustClamp() const
 {
     // PRIVATE - should not lock
-    return _imp->owner || _imp->yMin != -std::numeric_limits<double>::infinity() || _imp->yMax != std::numeric_limits<double>::infinity();
+    // unbounded is +/-DBL_MAX (an infinite bound would also be unbounded)
+    return _imp->owner || _imp->yMin > std::numeric_limits<double>::lowest() || _imp->yMax < std::numeric_limits<double>::max();
 }
 
 void

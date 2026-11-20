@@ -1,4 +1,4 @@
-.. module:: NatronGui
+.. currentmodule:: NatronGui
 .. _GuiApp:
 
 GuiApp
@@ -22,8 +22,10 @@ Functions
 - def :meth:`getSequenceDialog<NatronGui.GuiApp.getSequenceDialog>` (filters[, location=None])
 - def :meth:`getDirectoryDialog<NatronGui.GuiApp.getDirectoryDialog>` ([location=None])
 - def :meth:`getRGBColorDialog<NatronGui.GuiApp.getRGBColorDialog>` ()
+- def :meth:`getActiveTabWidget<NatronGui.GuiApp.getActiveTabWidget>` ()
 - def :meth:`getTabWidget<NatronGui.GuiApp.getTabWidget>` (scriptName)
 - def :meth:`getSelectedNodes<NatronGui.GuiApp.getSelectedNodes>` ([group=None])
+- def :meth:`getActiveViewer<NatronGui.GuiApp.getActiveViewer>` ()
 - def :meth:`getViewer<NatronGui.GuiApp.getViewer>` (scriptName)
 - def :meth:`getUserPanel<NatronGui.GuiApp.getUserPanel>` (scriptName)
 - def :meth:`moveTab<NatronGui.GuiApp.moveTab>` (tabScriptName,pane)
@@ -40,8 +42,8 @@ Functions
 - def :meth:`clearSelection<NatronGui.GuiApp.clearSelection>` ([group=None])
 - def :meth:`registerPythonPanel<NatronGui.GuiApp.registerPythonPanel>` (panel,pythonFunction)
 - def :meth:`unregisterPythonPanel<NatronGui.GuiApp.unregisterPythonPanel>` (panel)
-- def :meth:`renderBlocking<NatronGui.GuiApp.render>` (effect,firstFrame,lastFrame,frameStep)
-- def :meth:`renderBlocking<NatronGui.GuiApp.render>` (tasks)
+- def :meth:`renderBlocking<NatronGui.GuiApp.renderBlocking>` (effect,firstFrame,lastFrame,frameStep)
+- def :meth:`renderBlocking<NatronGui.GuiApp.renderBlocking>` (tasks)
 
 .. _guiApp.details:
 
@@ -59,7 +61,7 @@ See :func:`getFilenameDialog(filters,location)<NatronGui.GuiApp.getFilenameDialo
 
 To create a new custom python panel, there are several ways to do it:
 
-    * Sub-class the :doc:`PyPanel` class and make your own PySide widget
+    * Sub-class the :doc:`PyPanel` class and make your own Qt widget
     * Create a :doc:`PyPanel` object and add controls using user parameters (as done for modal dialogs)
 
 Once created, you can register the panel in the project so that it gets saved into the layout
@@ -68,17 +70,17 @@ by calling :func:`registerPythonPanel(panel,pythonFunction)<NatronGui.GuiApp.reg
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. method:: NatronGui.GuiApp.createModalDialog()
+.. method:: GuiApp.createModalDialog()
 
     :rtype: :doc:`PyModalDialog<PyModalDialog>`
 
 Creates a :doc:`modal dialog<PyModalDialog>` : the control will not be returned to the user until the dialog is not closed.
 Once the dialog is created, you can enrich it with :doc:`parameters<../NatronEngine/Param>` or even
-raw PySide Qt widgets.
+raw Qt widgets.
 To show the dialog call the function :func:`exec()<>` on the dialog.
 
 
-.. method:: NatronGui.GuiApp.getFilenameDialog(filters[, location=None])
+.. method:: GuiApp.getFilenameDialog(filters[, location=None])
 
     :param filters: :class:`sequence`
     :param location: :class:`str`
@@ -92,7 +94,7 @@ Opens-up a file dialog to ask the user for a single filename which already exist
 case the dialog will display the last location that was opened previously by a dialog.
 
 
-.. method:: NatronGui.GuiApp.getSequenceDialog(filters[, location=None])
+.. method:: GuiApp.getSequenceDialog(filters[, location=None])
 
     :param filters: :class:`sequence`
     :param location: :class:`str`
@@ -102,7 +104,7 @@ Same as :func:`getFilenameDialog(filters,location)<NatronGui.GuiApp.getFilenameD
 the dialog will accept sequence of files.
 
 
-.. method:: NatronGui.GuiApp.getDirectoryDialog([location=None])
+.. method:: GuiApp.getDirectoryDialog([location=None])
 
     :param location: :class:`str`
     :rtype: :class:`str`
@@ -112,7 +114,7 @@ the dialog will only accept directories as a result.
 
 
 
-.. method:: NatronGui.GuiApp.saveFilenameDialog(filters[, location=None])
+.. method:: GuiApp.saveFilenameDialog(filters[, location=None])
 
     :param filters: :class:`sequence`
     :param location: :class:`str`
@@ -128,7 +130,7 @@ case the dialog will display the last location that was opened previously by a d
 
 
 
-.. method:: NatronGui.GuiApp.saveSequenceDialog(filters[, location=None])
+.. method:: GuiApp.saveSequenceDialog(filters[, location=None])
 
     :param filters: :class:`sequence`
     :param location: :class:`str`
@@ -140,7 +142,7 @@ the dialog will accept sequence of files.
 
 
 
-.. method:: NatronGui.GuiApp.saveScreenshot(filePath[, scriptName=""])
+.. method:: GuiApp.saveScreenshot(filePath[, scriptName=""])
 
     :param filePath: :class:`str<PySide.QtCore.QString>`
     :param scriptName: :class:`str<PySide.QtCore.QString>`
@@ -165,13 +167,13 @@ thread, e.g. from the *afterFrameRender* callback.
 
 See :ref:`guiTesting` for an example.
 
-.. method:: NatronGui.GuiApp.processEvents()
+.. method:: GuiApp.processEvents()
 
 Processes the pending GUI events (redraws, queued signals), e.g. to let a viewer redraw its
 overlays after :meth:`PyViewer.keyPress()<NatronGui.PyViewer.keyPress>`. Does nothing when not
 called from the main (GUI) thread.
 
-.. method:: NatronGui.GuiApp.getRGBColorDialog()
+.. method:: GuiApp.getRGBColorDialog()
 
     :rtype: :class:`ColorTuple<NatronEngine.ColorTuple>`
 
@@ -181,7 +183,13 @@ Opens-up a color dialog to ask the user for an RGB color.
 
 
 
-.. method:: NatronGui.GuiApp.getTabWidget(scriptName)
+.. method:: GuiApp.getActiveTabWidget()
+
+    :rtype: :class:`PyTabWidget<NatronGui.PyTabWidget>`
+
+Returns the tab-widget (pane) that the mouse last entered, or *None* if there is none.
+
+.. method:: GuiApp.getTabWidget(scriptName)
 
     :param scriptName: :class:`str`
     :rtype: :class:`PyTabWidget<NatronGui.PyTabWidget>`
@@ -196,7 +204,7 @@ corner of the pane)
 
 
 
-.. method:: NatronGui.GuiApp.moveTab(tabScriptName,pane)
+.. method:: GuiApp.moveTab(tabScriptName,pane)
 
     :param tabScriptName: :class:`str`
     :param pane: :class:`PyTabWidget<NatronGui.PyTabWidget>`
@@ -212,7 +220,7 @@ This function returns True upon success or False otherwise.
     will not work.
 
 
-.. method:: NatronGui.GuiApp.registerPythonPanel(panel,pythonFunction)
+.. method:: GuiApp.registerPythonPanel(panel,pythonFunction)
 
     :param panel: :class:`PyPanel<NatronGui.PyPanel>`
     :param scriptName: :class:`str`
@@ -224,14 +232,14 @@ for this panel.
 *pythonFunction* is the name of a python-defined function that takes no argument that should
 be used to re-create the panel.
 
-.. method:: NatronGui.GuiApp.unregisterPythonPanel(panel)
+.. method:: GuiApp.unregisterPythonPanel(panel)
 
     :param panel: :class:`PyPanel<NatronGui.PyPanel>`
 
 Unregisters a previously registered panel.
 
 
-.. method:: NatronGui.GuiApp.getSelectedNodes([group = None])
+.. method:: GuiApp.getSelectedNodes([group = None])
 
     :rtype: :class:`sequence`
 
@@ -246,37 +254,43 @@ NodeGraph. If passing None, the last user-selected NodeGraph will be used::
     groupSelection = app.getSelectedNodes(group)
 
 
-.. method:: NatronGui.GuiApp.getViewer(scriptName)
+.. method:: GuiApp.getActiveViewer()
+
+    :rtype: :class:`PyViewer<NatronGui.PyViewer>`
+
+Returns the active viewer (the viewer that the user last interacted with), or *None* if there is none.
+
+.. method:: GuiApp.getViewer(scriptName)
 
     :param scriptName: :class:`str`
 
 Returns the viewer with the given *scriptName* if one can be found.
 
 
-.. method:: NatronGui.GuiApp.getUserPanel(scriptName)
+.. method:: GuiApp.getUserPanel(scriptName)
 
     :param scriptName: :class:`str`
 
 Returns a user panel matching the given *scriptName* if there is any.
 
 
-.. method:: NatronGui.GuiApp.selectNode(node,clearPreviousSelection)
+.. method:: GuiApp.selectNode(node,clearPreviousSelection)
 
     :param node: :class:`Effect<NatronEngine.Effect>`
-    :param clearPreviousSelection: :class:`bool<PySide.QtCore.bool>`
+    :param clearPreviousSelection: :class:`bool`
 
     Select the given *node* in its containing nodegraph. If *clearPreviousSelection* is set to *True*, all
     the current selection will be wiped prior to selecting the *node*; otherwise the *node*
     will just be added to the selection.
 
-.. method:: NatronGui.GuiApp.deselectNode(node)
+.. method:: GuiApp.deselectNode(node)
 
     :param node: :class:`Effect<NatronEngine.Effect>`
 
     Deselect the given *node* in its containing nodegraph. If the *node* is not selected,
     this function does nothing.
 
-.. method:: NatronGui.GuiApp.setSelection(nodes)
+.. method:: GuiApp.setSelection(nodes)
 
     :param nodes: :class:`sequence`
 
@@ -286,43 +300,43 @@ Returns a user panel matching the given *scriptName* if there is any.
     .. note::
         All nodes must be part of the same nodegraph (group), otherwise this function will fail.
 
-.. method:: NatronGui.GuiApp.selectAllNodes([group=None])
+.. method:: GuiApp.selectAllNodes([group=None])
 
     :param group: :class:`Group<NatronEngine.Group>`
 
     Select all nodes in the given *group*. You can pass the *app* object to get the top-level
     NodeGraph. If passing None, the last user-selected NodeGraph will be used.
 
-.. method:: NatronGui.GuiApp.copySelectedNodes([group=None])
+.. method:: GuiApp.copySelectedNodes([group=None])
 
     :param group: :class:`Group<NatronEngine.Group>`
 
     Copy all nodes in the given *group*. You can pass the *app* object to get the top-level
     NodeGraph. If passing None, the last user-selected NodeGraph will be used.
 
-.. method:: NatronGui.GuiApp.pasteNodes([group=None])
+.. method:: GuiApp.pasteNodes([group=None])
 
     :param group: :class:`Group<NatronEngine.Group>`
 
     Paste copied nodes in the given *group*. You can pass the *app* object to get the top-level
     NodeGraph. If passing None, the last user-selected NodeGraph will be used.
 
-.. method:: NatronGui.GuiApp.clearSelection([group=None])
+.. method:: GuiApp.clearSelection([group=None])
 
     Wipe any current selection in the given *group*. You can pass the *app* object to get the top-level
     NodeGraph. If passing None, the last user-selected NodeGraph will be used.
 
 
 
-.. method:: NatronGui.GuiApp.renderBlocking(effect,firstFrame,lastFrame,frameStep)
+.. method:: GuiApp.renderBlocking(effect,firstFrame,lastFrame,frameStep)
 
     :param effect: :class:`Effect<NatronEngine.Effect>`
 
-    :param firstFrame: :class:`int<PySide.QtCore.int>`
+    :param firstFrame: :class:`int`
 
-    :param lastFrame: :class:`int<PySide.QtCore.int>`
+    :param lastFrame: :class:`int`
 
-    :param frameStep: :class:`int<PySide.QtCore.int>`
+    :param frameStep: :class:`int`
 
 Starts rendering the given *effect* on the frame-range defined by [*firstFrame*,*lastFrame*].
 The *frameStep* parameter indicates how many frames the timeline should step after rendering
@@ -343,7 +357,8 @@ A blocking render means that this function returns only when the render finishes
 This function should only be used to render with a Write node or DiskCache node.
 
 
-.. method:: NatronGui.GuiApp.renderBlocking(tasks)
+.. method:: GuiApp.renderBlocking(tasks)
+   :noindex:
 
 
    :param tasks: :class:`sequence`

@@ -112,6 +112,9 @@ public:
 
     U64 getMaximumDiskCacheNodeSize() const;
 
+    // The "Disk cache path" preference (may be empty)
+    QString getDiskCachePath() const;
+
     double getUnreachableRamPercent() const;
 
     bool getColorPickerLinear() const;
@@ -257,6 +260,7 @@ public:
     int getMaxOpenedNodesViewerContext() const;
     bool viewerNumberKeys() const;
     bool viewerOverlaysPath() const;
+    bool drawSuiteShadows() const;
     ///////////////////////////////////////////////////////
 
     bool areRGBPixelComponentsSupported() const;
@@ -546,6 +550,7 @@ private:
     KnobIntPtr _maximumNodeViewerUIOpened;
     KnobBoolPtr _viewerNumberKeys;
     KnobBoolPtr _viewerOverlaysPath;
+    KnobBoolPtr _drawSuiteShadows;
 
     // Nodegraph
     KnobPagePtr _nodegraphTab;

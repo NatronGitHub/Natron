@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _Roto:
 
 Roto
@@ -47,12 +47,12 @@ Member functions description
 
 
 
-.. method:: NatronEngine.Roto.createBezier(x, y, time)
+.. method:: Roto.createBezier(x, y, time)
 
 
-    :param x: :class:`float<PySide.QtCore.double>`
-    :param y: :class:`float<PySide.QtCore.double>`
-    :param time: :class:`int<PySide.QtCore.int>`
+    :param x: :class:`float`
+    :param y: :class:`float`
+    :param time: :class:`int`
     :rtype: :class:`BezierCurve<NatronEngine.BezierCurve>`
 
 Creates a new :doc:`BezierCurve` with one control point at position (x,y) and a keyframe
@@ -61,14 +61,14 @@ at the given *time*.
 
 
 
-.. method:: NatronEngine.Roto.createEllipse(x, y, diameter, fromCenter, time)
+.. method:: Roto.createEllipse(x, y, diameter, fromCenter, time)
 
 
-    :param x: :class:`float<PySide.QtCore.double>`
-    :param y: :class:`float<PySide.QtCore.double>`
-    :param diameter: :class:`float<PySide.QtCore.double>`
-    :param fromCenter: :class:`bool<PySide.QtCore.bool>`
-    :param time: :class:`int<PySide.QtCore.int>`
+    :param x: :class:`float`
+    :param y: :class:`float`
+    :param diameter: :class:`float`
+    :param fromCenter: :class:`bool`
+    :param time: :class:`int`
     :rtype: :class:`BezierCurve<NatronEngine.BezierCurve>`
 
 Creates a new ellipse. This is a convenience function that uses :func:`createBezier(x,y,time)<NatronEngine.Roto.createBezier>`
@@ -81,7 +81,7 @@ rectangle of the ellipse.
 
 
 
-.. method:: NatronEngine.Roto.createLayer()
+.. method:: Roto.createLayer()
 
 
     :rtype: :class:`Layer<NatronEngine.Layer>`
@@ -91,13 +91,13 @@ Creates a new layer.
 
 
 
-.. method:: NatronEngine.Roto.createRectangle(x, y, size, time)
+.. method:: Roto.createRectangle(x, y, size, time)
 
 
-    :param x: :class:`float<PySide.QtCore.double>`
-    :param y: :class:`float<PySide.QtCore.double>`
-    :param size: :class:`float<PySide.QtCore.double>`
-    :param time: :class:`int<PySide.QtCore.int>`
+    :param x: :class:`float`
+    :param y: :class:`float`
+    :param size: :class:`float`
+    :param time: :class:`int`
     :rtype: :class:`BezierCurve<NatronEngine.BezierCurve>`
 
 
@@ -107,7 +107,7 @@ rectangle of the given *size* on each of its sides. A new keyframe will be set a
 
 
 
-.. method:: NatronEngine.Roto.getBaseLayer()
+.. method:: Roto.getBaseLayer()
 
 
     :rtype: :class:`Layer<NatronEngine.Layer>`
@@ -118,10 +118,10 @@ to a :doc:`Layer`, the base layer being the top-level parent of all the hierarch
 
 
 
-.. method:: NatronEngine.Roto.getItemByName(name)
+.. method:: Roto.getItemByName(name)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
+    :param name: :class:`str`
     :rtype: :class:`ItemBase<NatronEngine.ItemBase>`
 
 Returns an item by its *script-name*. See :ref:`this section<autoVar>` for the details of what is the

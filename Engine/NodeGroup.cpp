@@ -25,6 +25,7 @@
 
 #include "NodeGroup.h"
 
+#include <iostream>
 #include <set>
 #include <locale>
 #include <limits>
@@ -718,9 +719,9 @@ NodeCollection::autoConnectNodes(const NodePtr& selected,
         if ( !created->isOutputNode() ) {
             ///we find all the nodes that were previously connected to the selected node,
             ///and connect them to the created node instead.
-            std::map<NodePtr, int> outputsConnectedToSelectedNode;
+            std::list<std::pair<NodePtr, int> > outputsConnectedToSelectedNode;
             selected->getOutputsConnectedToThisNode(&outputsConnectedToSelectedNode);
-            for (std::map<NodePtr, int>::iterator it = outputsConnectedToSelectedNode.begin();
+            for (std::list<std::pair<NodePtr, int> >::iterator it = outputsConnectedToSelectedNode.begin();
                  it != outputsConnectedToSelectedNode.end(); ++it) {
                 if ( it->first->getParentMultiInstanceName().empty() ) {
                     bool ok = disconnectNodes(selected, it->first);
@@ -854,7 +855,8 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,
             for (U32 j = 0; j < knobs.size(); ++j) {
                 KnobStringBase* isString = dynamic_cast< KnobStringBase* >( knobs[j].get() );
                 KnobString* isStringKnob = dynamic_cast<KnobString*>(isString);
-                if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
+                // (a KnobBytes holds binary data, not a file path)
+                if ( !isString || isStringKnob || dynamic_cast<KnobBytes*>(isString) || ( knobs[j] == project->getEnvVarKnob() ) ) {
                     continue;
                 }
 
@@ -894,7 +896,8 @@ NodeCollection::fixPathName(const std::string& oldName,
             for (U32 j = 0; j < knobs.size(); ++j) {
                 KnobStringBase* isString = dynamic_cast< KnobStringBase* >( knobs[j].get() );
                 KnobString* isStringKnob = dynamic_cast<KnobString*>(isString);
-                if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
+                // (a KnobBytes holds binary data, not a file path)
+                if ( !isString || isStringKnob || dynamic_cast<KnobBytes*>(isString) || ( knobs[j] == project->getEnvVarKnob() ) ) {
                     continue;
                 }
 
@@ -1734,6 +1737,10 @@ escapeString(const std::string& str)
 
 /* *INDENT-ON* */
 
+// The bytes of the KnobBytes values written by the current exportGroupToPython() (main thread): their total must
+// stay below KnobBytes::maxExportLength(), for the script to fit in a QString.
+static std::size_t gExportedBytes = 0;
+
 static bool
 exportKnobValues(int indentLevel,
                  const KnobIPtr knob,
@@ -1885,6 +1892,19 @@ exportKnobValues(int indentLevel,
                     int v = std::min( 1., std::max( 0., std::floor(isGrp->getValue(i, ViewIdx(0), true) + 0.5) ) );
                     QString vStr = v ? QString::fromUtf8("True") : QString::fromUtf8("False");
                     WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setOpened(") + vStr + QString::fromUtf8(")") );
+                } else if ( dynamic_cast<KnobBytes*>(isStr) ) {
+                    // binary data (Python bytes), which a string literal can't hold: hexadecimal
+                    std::string v = isStr->getValue(i, ViewIdx(0), true);
+                    if ( v.size() > KnobBytes::maxExportLength() - std::min(gExportedBytes, KnobBytes::maxExportLength()) ) {
+                        // the script is a QString: 2 characters per byte, 2 bytes per character
+                        std::cerr << knob->getName() << ": Warning: the value (" << v.size() << " bytes) is too large for the Python script (all the Bytes values of a script: "
+                                  << KnobBytes::maxExportLength() << " bytes at most), it is not exported" << std::endl;
+                        WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("# the value of this Bytes parameter is too large to be exported (%1 bytes)").arg( (qulonglong)v.size() ) );
+                    } else {
+                        gExportedBytes += v.size();
+                        const QByteArray hex = QByteArray::fromRawData( v.data(), (int)v.size() ).toHex();
+                        WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setValue(bytes.fromhex(\"") + QString::fromLatin1(hex) + QString::fromUtf8("\"))") );
+                    }
                 } else if (isStr) {
                     std::string v = isStr->getValue(i, ViewIdx(0), true);
                     WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setValue(") + ESC(v)  + QString::fromUtf8(")") );
@@ -2862,6 +2882,7 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     extModule.append( QString::fromUtf8("Ext") );
 
     QTextStream ts(&output);
+    gExportedBytes = 0;
     // coding must be set in first or second line, see https://www.python.org/dev/peps/pep-0263/
     WRITE_STATIC_LINE("# -*- coding: utf-8 -*-");
     WRITE_STATIC_LINE("# DO NOT EDIT THIS FILE");

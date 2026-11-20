@@ -241,6 +241,9 @@ public:
     void  removeAllImagesFromDiskCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
     void  removeAllTexturesFromCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
 
+    // Synchronously removes from the viewer cache the textures of the viewer at the given time
+    void removeAllTexturesFromCacheForHolderAtTime(const CacheEntryHolder* holder, double time);
+
     void removeAllCacheEntriesForHolder(const CacheEntryHolder* holder, bool blocking);
 
     SettingsPtr getCurrentSettings() const WARN_UNUSED_RETURN;
@@ -499,6 +502,15 @@ public:
     void refreshDiskCacheLocation();
     const QString& getDiskCacheLocation() const;
 
+    /**
+     * @brief Returns true if another Natron process (Natron, NatronRenderer, a background render...) uses the disk caches
+     * in the same location. The cache files that are not known to this process must then not be deleted.
+     **/
+    bool isDiskCacheUsedByAnotherProcess() const;
+
+    // For the tests: how often the file of this process in <disk cache location>/Instances is touched (default: 10 minutes)
+    void setDiskCacheInstanceFileTouchInterval(int milliseconds);
+
     void saveCaches() const;
 
     PyObject* getMainModule();
@@ -641,6 +653,9 @@ public:
 
     static void setApplicationLocale();
 
+    // Releases the textures displayed by the viewers, and the images they hold for the color picker
+    virtual void clearLastRenderedTextures() {}
+
 public Q_SLOTS:
 
     void exitAppWithSaveWarning()
@@ -666,7 +681,12 @@ public Q_SLOTS:
 
     void clearAllCaches();
 
-    void wipeAndCreateDiskCacheStructure();
+    /**
+     * @brief Clears all the caches and deletes the cache folders. Returns false if another Natron process uses the
+     * disk caches (see isDiskCacheUsedByAnotherProcess()): the caches are then only cleared, and the files of the
+     * other process are kept.
+     **/
+    bool wipeAndCreateDiskCacheStructure();
 
     void onNodeMemoryRegistered(qint64 mem);
 
@@ -715,7 +735,6 @@ protected:
     virtual void onPluginLoaded(Plugin* /*plugin*/) {}
 
     virtual void onAllPluginsLoaded();
-    virtual void clearLastRenderedTextures() {}
 
     virtual void initBuiltinPythonModules();
 

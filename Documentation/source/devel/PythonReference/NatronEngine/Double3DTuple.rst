@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _Double3DTuple:
 
 Double3DTuple
@@ -26,19 +26,19 @@ Detailed Description
 
 
 
-.. attribute:: NatronEngine.Double3DTuple.x
+.. attribute:: Double3DTuple.x
 
 
-.. attribute:: NatronEngine.Double3DTuple.y
+.. attribute:: Double3DTuple.y
 
 
-.. attribute:: NatronEngine.Double3DTuple.z
+.. attribute:: Double3DTuple.z
 
 
-.. method:: NatronEngine.Double3DTuple.__getitem__(index)
+.. method:: Double3DTuple.__getitem__(index)
 
 
-    :param index: :class:`int<PySide.QtCore.int>`
+    :param index: :class:`int`
     :rtype: :class:`float`
 
 

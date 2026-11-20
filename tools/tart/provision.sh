@@ -191,13 +191,12 @@ step_libs() {
     sudo sed -i '' -e 's/^find_dependency(zstd/#find_dependency(zstd/' /opt/local/lib/cmake/minizip-ng/minizip-ng-config.cmake
     $PORT install opencolorio  -quartz $nopy
     $PORT install opencolorio1 -quartz $nopy
-    $PORT install seexpr seexpr211
+    $PORT install seexpr211
     $PORT install librsvg -quartz
     $PORT install poppler librevenge libcdr-0.1 sox libzip
     sudo sed -i '' -e 's/Zstd::Zstd/zstd/' /opt/local/lib/pkgconfig/libzip.pc
     $PORT install ImageMagick +natron -x11
     $PORT install ImageMagick7 +natron -x11 -openexr
-    $PORT install fftw-3 -gfortran fftw-3-single -gfortran
     $PORT install ffmpeg +gpl2 +highbitdepth +natronmini
     $PORT install openimageio +freetype +natron +opencolorio +openjpeg $(oiio_python_variants)
 }
@@ -221,7 +220,6 @@ print(u["url"], u["digests"]["sha256"])')
 
 step_python_qt() {
     $PORT install py$pyv-pip
-    $PORT install openblas
     $PORT install py$pyv-numpy -gfortran
     $PORT install py$pyv-sphinx py$pyv-sphinx_rtd_theme
     $PORT install qt5 qt5-qtwebengine
@@ -410,6 +408,7 @@ step_build() {
         GIT_URL=https://github.com/NatronGitHub/Natron.git GIT_BRANCH="${GIT_BRANCH:-RB-2.6}" \
         UNIT_TESTS="${UNIT_TESTS:-false}" BUILD_NAME=natron_github_RB2 BUILD_NUMBER=1 \
         COMPILE_TYPE=release MKJOBS="$JOBS" \
+        NATRON_BUILD_SYSTEM="${NATRON_BUILD_SYSTEM:-cmake}" NATRON_EXTRA_CMAKE_FLAGS="${NATRON_EXTRA_CMAKE_FLAGS:-}" \
         ./launchBuildMain.sh
     # launchBuildMain.sh can exit 0 after a failed sub-step: require the DMG
     ls -l "$WORKSPACE/builds_archive/natron_github_RB2/1/"

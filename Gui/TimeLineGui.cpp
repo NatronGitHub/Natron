@@ -250,6 +250,12 @@ TimeLineGui::TimeLineGui(ViewerInstance* viewer,
 
 TimeLineGui::~TimeLineGui()
 {
+    if ( QOpenGLContext* glContext = context() ) {
+        // ~QOpenGLWidget destroys the context after this object is gone: don't get its signal
+        glContext->disconnect(this);
+        makeCurrent();
+        releaseGLResources();
+    }
 }
 
 void
@@ -289,6 +295,25 @@ void
 TimeLineGui::initializeGL()
 {
     appPTR->initializeOpenGLFunctionsOnce();
+    // QOpenGLWidget destroys its context and creates a new one when it moves to another top-level
+    // window, e.g. when a viewer is dragged into a floating window (#536), and then calls
+    // initializeGL() again. The OpenGL objects of the old context must be released with it.
+    QObject::connect( context(), &QOpenGLContext::aboutToBeDestroyed, this, &TimeLineGui::onContextAboutToBeDestroyed );
+}
+
+void
+TimeLineGui::onContextAboutToBeDestroyed()
+{
+    makeCurrent();
+    releaseGLResources();
+    // The context stays current: it is destroyed right after this signal.
+}
+
+void
+TimeLineGui::releaseGLResources()
+{
+    assert( QOpenGLContext::currentContext() == context() );
+    _imp->textRenderer.releaseGLResources();
 }
 
 void
@@ -1151,6 +1176,10 @@ TimeLineGui::centerOn_tripleSync(SequenceTime left,
     double curveWidth = right - left;
     double w = width();
 
+    if ( (curveWidth <= 0) || (w <= 0) ) {
+        // empty range or widget: the zoom factor would be zero or infinite
+        return;
+    }
     _imp->tlZoomCtx.left = left;
     _imp->tlZoomCtx.zoomFactor = w / curveWidth;
 
@@ -1175,6 +1204,10 @@ TimeLineGui::centerOn(SequenceTime left,
     double curveWidth = right - left + 2 * margin;
     double w = width();
 
+    if ( (curveWidth <= 0) || (w <= 0) ) {
+        // empty range or widget: the zoom factor would be zero or infinite
+        return;
+    }
     _imp->tlZoomCtx.left = left - margin;
     _imp->tlZoomCtx.zoomFactor = w / curveWidth;
 
