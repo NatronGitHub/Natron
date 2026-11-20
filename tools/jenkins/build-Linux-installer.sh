@@ -538,6 +538,19 @@ rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"/{test,config,config-"${PYVER}${P
 # which is not a system library everywhere: Debian and Ubuntu only have libcrypt.so.1.
 rm -f "${TMP_PORTABLE_DIR}/lib/python${PYVER}/lib-dynload"/_crypt.*so
 
+# Copy the SDK libraries needed by the Python extension modules (e.g. libreadline and
+# libncursesw for readline and _curses), to the portable tree and the installer package
+PYDYNLOAD_DEPENDS=$(sdkDepends $(find "${TMP_PORTABLE_DIR}/lib/python${PYVER}/lib-dynload" -maxdepth 1 -type f -name '*.so'))
+for y in $PYDYNLOAD_DEPENDS; do
+    dep=$(basename "$y")
+    for location in "${TMP_PORTABLE_DIR}" "$LIBS_PACKAGE_PATH/data"; do
+        mkdir -p "${location}/lib"
+        if [ ! -f "${location}/lib/$dep" ]; then
+            cp -f "$y" "${location}/lib/"
+        fi
+    done
+done
+
 # Copy PySide dependencies
 PYSIDE_DEPENDS=$(sdkDepends $(find "${SDK_HOME}/lib/python${PYVER}/site-packages/PySide" -maxdepth 1 -type f))
 for y in $PYSIDE_DEPENDS; do
