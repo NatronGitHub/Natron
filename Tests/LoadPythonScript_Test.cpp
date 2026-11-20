@@ -29,6 +29,8 @@
 
 #include "Global/Macros.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include <QtCore/QByteArray>
@@ -83,4 +85,17 @@ TEST(LoadPythonScript, ReturnValue)
                                                      "def createInstance(app, group):\n"
                                                      "    print('natronTest1276CreateRaise.py: the RuntimeError below is expected')\n"
                                                      "    raise RuntimeError('expected error, see issue 1276')\n") ) );
+
+    // Clean up what the scripts left in Python: the directory added to sys.path, the imported modules, the variable
+    std::string err;
+    const std::string dirPath = dir.path().toStdString();
+    const std::string cleanup =
+        "import sys, __main__\n"
+        "while '" + dirPath + "' in sys.path:\n"
+        "    sys.path.remove('" + dirPath + "')\n"
+        "for m in [m for m in sys.modules if m.startswith('natronTest1276')]:\n"
+        "    del sys.modules[m]\n"
+        "__main__.__dict__.pop('natronTest1276Value', None)\n"
+        "assert not [m for m in sys.modules if m.startswith('natronTest1276')]\n";
+    EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(cleanup, &err, 0) ) << err;
 }

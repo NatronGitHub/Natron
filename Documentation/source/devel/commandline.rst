@@ -274,12 +274,20 @@ Exit status
 
 NatronRenderer exits with status 0 when it succeeds (and after :option:`-h` or :option:`-v`),
 and with status 1 when the command line is wrong, when the project can't be loaded
-(for example when a node given to :option:`-w` or :option:`-i` doesn't exist), or when the
-Python script, or the :option:`--onload` script, raises an exception: Natron prints the error
-and renders nothing. A script can also call ``sys.exit(status)`` to exit with its own status.
-Up to Natron 2.5, a Python error in the script did not set status 1, and the Write nodes
-created before the error were still rendered
-(`issue #1276 <https://github.com/NatronGitHub/Natron/issues/1276>`_).
+(for example when a node given to :option:`-w` or :option:`-i` doesn't exist), or when a
+Python script raises an exception: Natron prints the error, and the Write nodes (those given
+with :option:`-w`, or all the Write nodes of the graph) are not rendered. Renders that the
+script started itself with :func:`app.render()<NatronEngine.App.render>` before the error
+have already run. This applies to:
+
+- the Python script given on the command line, including an exception raised by its
+  ``createInstance()`` function;
+- the :option:`--onload` script, also when it runs after a project (``.ntp``) that
+  loaded without error: a failing :option:`--onload` script stops the render of the project.
+
+A script can also call ``sys.exit(status)`` to exit with its own status.
+Up to Natron 2.5, a Python error in these scripts did not set status 1, and the Write nodes
+were still rendered (`issue #1276 <https://github.com/NatronGitHub/Natron/issues/1276>`_).
 
 In interpreter mode (:option:`-t`), a Python error in the script is printed, and the
 interpreter still starts, so that the error can be inspected.
