@@ -249,6 +249,25 @@ Cursors
     (proposed extension)" in ``ofxInteract.h``). None of the bundled plug-ins
     used the old mechanism.
 
+Obsolete plug-ins
+    A plug-in that sets ``kOfxImageEffectPluginPropObsolete`` to 1 (OFX, after
+    1.5.1) on its descriptor is still loaded, so existing projects that use it
+    open, and it can be created by ID (from Python, ``app.createNode()``).
+    It is not offered for new nodes: it is hidden from the node menus, the
+    toolbars, the Tab node-creation dialog and the documentation, and it is
+    not registered as a reader or writer for its file extensions
+    (``OfxHost::isPluginObsolete``, ``Plugin::getIsUserCreatable``). The
+    spec uses the property for a plug-in "made obsolete by a different
+    version of the same plugin contained in the same bundle", and requires
+    at least one version that is not obsolete. Natron is more lenient: it
+    hides any plug-in that sets it, even when no version of it is left offered
+    (openfx-misc's JoinViews, OneView, Roto and TrackerPM, which are obsolete
+    only in Natron, where none of their versions is left offered). Natron
+    2.6 no longer reads the Natron extension
+    ``kNatronOfxImageEffectPropDeprecated``, which had the same meaning (`#1491 <https://github.com/NatronGitHub/Natron/issues/1491>`_):
+    plug-ins must set the standard property (``setIsObsolete(true)`` in the
+    Support library, instead of ``setIsDeprecated(true)``).
+
 Practical guidance
 ------------------
 
