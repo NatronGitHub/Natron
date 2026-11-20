@@ -3061,7 +3061,7 @@ private:
         if (clearTexture[0]) {
             viewer->disconnectTexture(0, status[0] == ViewerInstance::eViewerRenderRetCodeFail);
         }
-        if (clearTexture[0]) {
+        if (clearTexture[1]) {
             viewer->disconnectTexture(1, status[1] == ViewerInstance::eViewerRenderRetCodeFail);
         }
 
@@ -4106,7 +4106,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         if (clearTexture[0]) {
             _imp->viewer->disconnectTexture(0, status[0] == ViewerInstance::eViewerRenderRetCodeFail);
         }
-        if (clearTexture[0]) {
+        if (clearTexture[1]) {
             _imp->viewer->disconnectTexture(1, status[1] == ViewerInstance::eViewerRenderRetCodeFail);
         }
 
