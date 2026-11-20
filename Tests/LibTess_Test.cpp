@@ -473,8 +473,9 @@ TEST(LibTess,
 }
 
 // Degenerate contours which libtess can't tessellate: each made the sweep use an
-// edge after it was freed (heap-use-after-free, found with AddressSanitizer).
-// The polygon is now dropped with
+// edge after it was freed (heap-use-after-free, found with AddressSanitizer) or
+// output a face which reaches the sweep sentinels, with NULL vertex data (the
+// Roto callbacks then crashed). The polygon is now dropped with
 // GLU_INVALID_OPERATION, and the tessellator stays usable.
 // - selfLoop: overlapping edges and repeated points on a small integer grid.
 //   CheckForRightSplice() merged the two endpoints of a zero-length edge into a
@@ -483,6 +484,8 @@ TEST(LibTess,
 // - diagonal, diagonal2: collinear points on the diagonal x == y with rounding
 //   noise (a Roto shape collapsed onto a 45 degree line). Freed edges were
 //   then used in WalkDirtyRegions() and FinishLeftRegions().
+// - sentinel: a contour folding back along the diagonal: a face reaching the
+//   sentinels was marked inside.
 // Only with NDEBUG: with assertions, an assertion of the sweep fails before
 // (e.g. in AddRightEdges()), as it did before these fixes. So the Debug builds
 // of the per-PR CI don't run this test; the release builds do.
@@ -509,6 +512,15 @@ TEST(LibTess,
         { 949.5469776518659, 949.5469776518659 }, { 949.5469776518657, 949.5469776518657 },
         { 948.5883779708273, 948.5883779708273 }
     };
+    const TessPoint sentinel[] = {
+        { 0.0, 0.0 }, { 2.9912378823166774, 2.9912378823166774 }, { 0.325072093554872, 0.325072093554872 },
+        { 0.25253005332581946, 0.25253005332581946 }, { -0.08464818798407475, -0.08464818798407475 },
+        { 9.431137480475272, 9.431137480475272 }, { 9.260410117151062, 9.260410117151062 },
+        { 11.83533486484881, 11.83533486484881 }, { 14.923815445781248, 14.923815445781248 },
+        { 6.246650031036572, 2.5294825052934717 }, { 4.726345628711513, 4.726345628711513 },
+        { 2.815603780993113, 2.815603780993113 }, { 1.1433086976458517, 1.1433086976458517 },
+        { 9.364772280504637, 9.364772280504637 }
+    };
     const struct
     {
         const char* name;
@@ -518,13 +530,14 @@ TEST(LibTess,
         { "selfLoop", selfLoop, sizeof(selfLoop) / sizeof(selfLoop[0]) },
         { "diagonal", diagonal, sizeof(diagonal) / sizeof(diagonal[0]) },
         { "diagonal2", diagonal2, sizeof(diagonal2) / sizeof(diagonal2[0]) },
+        { "sentinel", sentinel, sizeof(sentinel) / sizeof(sentinel[0]) },
     };
 
     for (std::size_t k = 0; k < sizeof(cases) / sizeof(cases[0]); ++k) {
         std::vector<TessPoint> c(cases[k].p, cases[k].p + cases[k].n);
         TessResult r = tessellate(c);
         EXPECT_TRUE( hasError(r, LIBTESS_GLU_INVALID_OPERATION) ) << cases[k].name;
-        EXPECT_EQ(0, r.protocolErrors) << cases[k].name;
+        EXPECT_EQ(0, r.protocolErrors) << cases[k].name; // includes NULL vertex data
     }
 
     // the tessellator is still usable

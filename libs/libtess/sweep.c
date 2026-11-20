@@ -1339,6 +1339,31 @@ static int RemoveDegenerateFaces( GLUmesh *mesh )
   return 1;
 }
 
+static void CheckInsideFaces( GLUtesselator *tess )
+/*
+ * Natron: on degenerate input (e.g. many collinear edges along a diagonal
+ * with rounding noise), the winding numbers can become inconsistent, and a
+ * face which touches a sentinel vertex (at +/-SENTINEL_COORD, with NULL client
+ * data) was marked inside: it was rendered with NULL vertex data (the client
+ * crashed) and huge triangles. Give up on the polygon instead.
+ */
+{
+  GLUface *f;
+  GLUhalfEdge *e;
+
+  for( f = tess->mesh->fHead.next; f != &tess->mesh->fHead; f = f->next ) {
+    if( ! f->inside ) continue;
+    e = f->anEdge;
+    do {
+      if( e->Org->s == SENTINEL_COORD || e->Org->s == -SENTINEL_COORD
+	  || e->Org->t == SENTINEL_COORD || e->Org->t == -SENTINEL_COORD ) {
+	longjmp(tess->env,TESS_JMP_DEGENERATE);
+      }
+      e = e->Lnext;
+    } while( e != f->anEdge );
+  }
+}
+
 int __gl_computeInterior( GLUtesselator *tess )
 /*
  * __gl_computeInterior( tess ) computes the planar arrangement specified
@@ -1397,6 +1422,7 @@ int __gl_computeInterior( GLUtesselator *tess )
 
   if ( !RemoveDegenerateFaces( tess->mesh ) ) return 0;
   __gl_meshCheckMesh( tess->mesh );
+  CheckInsideFaces( tess );
 
   return 1;
 }
