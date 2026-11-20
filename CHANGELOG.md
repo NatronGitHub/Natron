@@ -14,7 +14,7 @@
 ### Changes
 
 - NatronRenderer (and `Natron -b`) exits with status 1, without rendering the Write nodes, when the Python script given on the command line (also in its `createInstance()`) or the `--onload` script raises an exception. A failing `--onload` script now also stops the render of a project (.ntp) that loaded without error. Renders started by the script with `app.render()` before the error have already run. It used to print the error, render the Write nodes, and exit with status 0. #1276
-- Roto/RotoPaint: fixes in the bundled GLU tessellator (libs/libtess), which fills the shapes: a self-intersecting shape whose outline winds twice around its first point, or goes back over itself along a line, could be filled where it should have a hole (or have wrong areas filled); a shape with a NaN point crashed; some degenerate shapes made it use freed memory (they are now not filled); memory is no longer leaked after an out-of-memory error. #1510
+- Roto/RotoPaint: fixes in the bundled GLU tessellator (libs/libtess), which fills the shapes: a self-intersecting shape whose outline winds twice around its first point, or goes back over itself along a line, could be filled where it should have a hole (or have wrong areas filled); a shape with a NaN point crashed; some degenerate shapes (e.g. a shape collapsed onto a line) made it use freed memory or crash: they are now not filled, and the error is logged; memory is no longer leaked after an out-of-memory error. #1510
 - Documentation: the Reference Guide has a "Nodes" section, with one page per node group and per sub-group (e.g. "G'MIC / Colors"), and the sidebar only expands the current branch.
 
 
