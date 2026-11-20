@@ -2311,10 +2311,10 @@ scaleToTexture8bits_generic(const RectI& roi,
                             alphaMatteValue = (double)src_pixels[args.alphaChannelIndex];
                             switch (pixelSize) {
                             case sizeof(unsigned char):     //byte
-                                alphaMatteValue = (double)Image::convertPixelDepth<unsigned char, float>( (unsigned char)r );
+                                alphaMatteValue = (double)Image::convertPixelDepth<unsigned char, float>( (unsigned char)alphaMatteValue );
                                 break;
                             case sizeof(unsigned short):     //short
-                                alphaMatteValue = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned short)r );
+                                alphaMatteValue = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned short)alphaMatteValue );
                                 break;
                             default:
                                 break;
@@ -2668,15 +2668,15 @@ scaleToTexture32bitsGeneric(const RectI& roi,
                         break;
                     }
                 } else {
-                    const PIX* src_pixels = (const PIX*)matteAcc->pixelAt(x, y);
+                    const PIX* src_pixels = (const PIX*)matteAcc->pixelAt(x1 + x, y);
                     if (src_pixels) {
                         alphaMatteValue = (double)src_pixels[args.alphaChannelIndex];
                         switch (pixelSize) {
                         case sizeof(unsigned char):     //byte
-                            alphaMatteValue = (double)Image::convertPixelDepth<unsigned char, float>( (unsigned char)r );
+                            alphaMatteValue = (double)Image::convertPixelDepth<unsigned char, float>( (unsigned char)alphaMatteValue );
                             break;
                         case sizeof(unsigned short):     //short
-                            alphaMatteValue = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned short)r );
+                            alphaMatteValue = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned short)alphaMatteValue );
                             break;
                         default:
                             break;
