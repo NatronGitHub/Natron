@@ -291,7 +291,7 @@ OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs,
 #ifdef DEBUG
     // no trapped floating point exception in the OpenGL driver (e.g. Mesa's llvmpipe), see
     // AppManager::initializeOpenGLFunctionsOnce(): the render threads trap them in debug builds
-    boost_adaptbx::floating_point::exception_trapping trap(0);
+    boost_adaptbx::floating_point::no_exception_trapping noTrap;
 #endif
     if (coreProfile) {
         // Don't bother with core profile with OpenGL < 3
@@ -317,7 +317,7 @@ OSGLContext::~OSGLContext()
 #ifdef DEBUG
     // no trapped floating point exception in the OpenGL driver, see the constructor: the contexts are also
     // destroyed after the event loop, where main() traps them
-    boost_adaptbx::floating_point::exception_trapping trap(0);
+    boost_adaptbx::floating_point::no_exception_trapping noTrap;
 #endif
     setContextCurrentNoRender();
     if (_imp->pboID) {
@@ -327,6 +327,9 @@ OSGLContext::~OSGLContext()
         glDeleteFramebuffers(1, &_imp->fboID);
     }
     unsetCurrentContextNoRender();
+    // the platform context (e.g. glXDestroyContext()) is destroyed here, while the guard above is in scope,
+    // not after the body with the other members
+    _imp->_platformContext.reset();
 }
 
 void
