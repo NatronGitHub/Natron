@@ -40,6 +40,7 @@ set(Tests_SOURCES
     LibTess_Test.cpp
     LoadPythonScript_Test.cpp
     Lut_Test.cpp
+    Markdown_Test.cpp
     MultiInputLinks_Test.cpp
     NaNGuards_FastMath.cpp
     NaNGuards_Test.cpp

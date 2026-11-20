@@ -74,7 +74,7 @@ add_library(NatronEngine STATIC ${NatronEngine_HEADERS} ${NatronEngine_SOURCES})
 target_link_libraries(NatronEngine
     PRIVATE
         ceres
-        hoedown
+        md4c
         mv
         openMVG
         tess

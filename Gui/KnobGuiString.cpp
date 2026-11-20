@@ -50,6 +50,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Global/QtCompat.h" // Qt::CTRL | Qt::Key_X with Qt5
+
 #include "Engine/Image.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Lut.h"
