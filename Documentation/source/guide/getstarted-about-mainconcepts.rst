@@ -4,101 +4,97 @@
 Main Concepts
 =============
 
-.. toctree::
-  :maxdepth: 2
-
 Generic Description
 ###################
-The purpose of Natron is to process video images using elementary "effect" bricks called nodes.
+Natron processes images and videos with elementary effects called *nodes*.
 
 
 Image Layers and Channels
 #########################
 
-In natron an image is only a stack of black and white images called channels. channels are grouped in layers.
-The Color layer is the base layer. Color layer has channels R,G,B,A.
-R,G,B codes the color of the pixels in Red Green blue.
-A codes the transparency of the pixel called Alpha. When A=0 the pixel is transparent. When A=1 the pixel is opaque
-The image can have as many layers as you want describing, the motion, the depth of your image or whatever else you want
+In Natron, an image is a stack of grayscale images called *channels*, and channels are grouped in *layers*.
+The base layer is the Color layer, with the channels R, G, B and A.
+R, G and B hold the red, green and blue components of each pixel.
+A, the alpha channel, holds its opacity: the pixel is transparent when A=0 and opaque when A=1.
+An image can have any number of other layers, for example motion vectors or depth.
 
-.. note::  You cannot see the stacking of the layers as in  as in Photoshop or After Effects. In Natron you will have different branches of your node tree that are Merged together. The Merge node is the good way to stack layers.
+.. note::  Natron has no layer stack like Photoshop or After Effects. Instead, different branches of the node graph are combined with Merge nodes.
 
 Image Flow
 ##########
-The image is processed, in order, passing through each node. The nodes are connected with links that define the order of the processing.
-These connected nodes are called the node graph.
+The image goes through the nodes one after the other. Links between the nodes define the order of the processing.
+The connected nodes form the *node graph*.
 
-.. note::  If you place your nodes in a top to bottom order you can compare your process to water flowing in pipes that will be collected as a result in the last node of the graph.
+.. note::  If you place the nodes from top to bottom, the processing is like water flowing down pipes and collected in the last node of the graph.
 
 .. image:: _images/mainconcepts_tree_01.png
  :width: 600px
 
 Here is what happens in the node graph shown above.
 
-We bring an image with the read node (grey).
+A Read node (gray) reads an image.
 
 .. image:: _images/mainconcepts_tree_03.png
  :width: 200px
 
-Then we blur it with the Blur Node (orange).
+A Blur node (orange) blurs it.
 
-We create a repetitive texture with the cell node.
+Another node creates a repetitive texture.
 
 .. image:: _images/mainconcepts_tree_02.png
  :width: 200px
 
-Sometimes procedural images can be generated from scratch in Natron. This is the only case when a node has no input.
+Such *generator* nodes create images from scratch, so they need no input.
 
-We mix together both images with a merge node (blue). The mixer nodes can have several inputs
+A Merge node (blue) combines both images. Merge nodes can have several inputs.
 
-To see the result in the viewer we connect the Viewer node to the output of the Merge.
+To see the result, the output of the Merge node is connected to a Viewer node.
 
 .. image:: _images/mainconcepts_tree_04.png
  :width: 200px
 
-To save the result to disk, we connect the Write node (yellow).
-The result will only be saved to disk if we launch the render of the image 
-by clicking "render" in the node properties or Render menu 
-A node can have only one resulting output image. This one result can still be used by several nodes (here Write and Viewer, thus appearing like multiple output connections).
-Here we use a "dot" node to avoid this ambiguous situation
+To save the result to disk, the output is also connected to a Write node (yellow).
+The file is written only when you start the render, with the "Render" button in the properties of the Write node or with the Render menu.
+A node has a single output image, but several nodes can use it: here, both the Write node and the Viewer.
+A Dot node makes this branching easier to see.
 
 Parameters
 ############
 
-Each node has parameters allowing to customize the effect produced on the incoming image. (e.g. the size of the blur in the Blur node). We can modify these parameters in several ways:
+Each node has parameters that control its effect, such as the size of the blur in the Blur node. They can be changed in several places:
 
 Properties pane:
-  Here we can move sliders, type in numbers to change their values
+  Move the sliders or type values.
   
   .. image:: _images/properties_01.png
     :width: 600px
 Curve editor:
-  When parameters are animated along time, their value can be displayed and modified as a curve.
+  Animated parameters are displayed as curves, which can be edited.
   
   .. image:: _images/curve_editor_01.png
     :width: 600px
 
 Dope sheet:
-  Here each keyframe value you entered for parameters are displayed as small blocks that you can move in time (left-right). This is handy to retime an  animation without modifying its content.
+  Each keyframe is displayed as a small block that can be moved in time (left or right). This retimes an animation without changing its values.
   
   .. image:: _images/dopesheet_01.png
     :width: 600px
 
 
-.. note::  One big difference with a paint program is we don't often paint on the image. This would not be handy for processing video as the paint strokes would appear as jittering artifacts if we painted one frame after the other.
+.. note::  Unlike in a paint program, you rarely paint directly on the image: strokes painted frame by frame on a video would jitter.
 
 
 
 Non destructive workflow
 ########################
 
-In the ``.ntp`` project files saved by Natron no actual pixels are stored. Only the description of the graph is stored.
+Natron project files (``.ntp``) contain no pixels, only the description of the node graph.
 
-To display an image in the viewer, Natron reloads the source files, reprocesses each node one after the other then bring it to the display.
+To display an image, Natron reads the source files, processes each node in turn, and displays the result.
 
 This has several implications:
 
-- Your source files will never be damaged by Natron (unless you use a write node to overwrite your source, wich you should never do).
-- You have unlimited undos in Natron as you can always remove a node from the graph. You can always change your mind. (regular undos are still provided in the menus).
-- You must keep your source video files as they are not stored in the project file. If you change their folder location you will have to update the paths in Natron. If you want to bring a project to another computer you must carry the source files too.
-- A lot of reprocessing is required. To keep your computer responsive, Natron provides a caching mechanism to limit recalcutions. This is very memory hungry and you have a "Cache" menu (and preferences) to help you keep Natron's responsiveness.
+- Natron never modifies your source files, unless a Write node overwrites them (never do that).
+- You can always change your mind: any node can be changed or removed later. Undo and redo are also available in the Edit menu.
+- Keep your source files, because they are not stored in the project. If you move them, update the paths in Natron. To move a project to another computer, copy its source files too.
+- Images must be processed again and again. To keep Natron responsive, it caches the results to avoid recomputing them. The cache uses a lot of memory: the Cache menu and the Caching page of the preferences control it.

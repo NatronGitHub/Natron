@@ -39,6 +39,7 @@
 #include <QDebug>
 #include <QFile>
 #include <QFileInfo>
+#include <QRegularExpression>
 
 #include "Global/GlobalDefines.h"
 #include "Global/GitVersion.h"
@@ -74,6 +75,7 @@ public:
     std::list<std::pair<int, std::pair<int, int> > > frameRanges;
     bool rangeSet;
     bool enableRenderStats;
+    bool noDialogs;
     bool isEmpty;
     mutable QString imageFilename;
 #ifdef NATRON_USE_BREAKPAD
@@ -84,6 +86,7 @@ public:
     qint64 breakpadProcessPID;
 #endif
     QString exportDocsPath;
+    QString testScript;
 
     CLArgsPrivate()
         : args()
@@ -103,6 +106,7 @@ public:
         , frameRanges()
         , rangeSet(false)
         , enableRenderStats(false)
+        , noDialogs(false)
         , isEmpty(true)
         , imageFilename()
 #ifdef NATRON_USE_BREAKPAD
@@ -113,6 +117,7 @@ public:
         , breakpadProcessPID(-1)
 #endif
         , exportDocsPath()
+        , testScript()
     {
     }
 
@@ -264,9 +269,12 @@ CLArgs::operator=(const CLArgs& other)
     _imp->frameRanges = other._imp->frameRanges;
     _imp->rangeSet = other._imp->rangeSet;
     _imp->enableRenderStats = other._imp->enableRenderStats;
+    _imp->noDialogs = other._imp->noDialogs;
     _imp->isEmpty = other._imp->isEmpty;
     _imp->imageFilename = other._imp->imageFilename;
     _imp->exportDocsPath = other._imp->exportDocsPath;
+    _imp->useDefaultSettings = other._imp->useDefaultSettings;
+    _imp->testScript = other._imp->testScript;
 }
 
 bool
@@ -323,6 +331,16 @@ CLArgs::printUsage(const std::string& programName)
         "  --no-settings\n"
         "    When passed on the command-line, the %1 settings will not be restored\n"
         "    from the preferences file on disk so that %1 uses the default ones.\n"
+        "  --no-dialogs\n"
+        "    Do not show message or question dialogs (errors, warnings, questions,\n"
+        "    startup prompts). Each one is printed to the standard error as\n"
+        "    \"[dialog dismissed] <title>: <message>\" and answered with its default\n"
+        "    button, as if Enter or Escape had been pressed. Answers are not saved.\n"
+        "    \"Save changes?\" is answered Discard, and file dialogs count as cancelled,\n"
+        "    so that nothing blocks.\n"
+        "    Useful to drive the graphical interface from scripts and tests. In\n"
+        "    background mode, where dialogs are never shown, questions are then also\n"
+        "    answered with their default button (instead of Yes).\n"
         "  --setting name=value\n"
         "    Sets the named %1 setting to the given value. This is done after loading\n"
         "    the settings and prior to executing Python commands or loading the project.\n"
@@ -334,6 +352,12 @@ CLArgs::printUsage(const std::string& programName)
         "    Choice can be one of \"enabled\" (enables OpenGL rendering if available)\n"
         "    \"disabled\" and \"foreground\" (uses OpenGL only\n"
         "    if not using %1Renderer and rendering is running in the foreground)\"\n"
+        "  --test <Python script path>\n"
+        "    Run a GUI test script (see the Developers Guide, \"Testing Natron's GUI\n"
+        "    from scripts\"), then quit.\n"
+        "    The exit status is 0 if the script succeeds, 77 if it is skipped and 1\n"
+        "    otherwise. This implies --no-settings; auto-saves are neither written\n"
+        "    nor restored. A dialog that the test does not answer fails it.\n"
         "  -c [ --cmd ] \"PythonCommand\"\n"
         "    Execute custom Python code passed as a script prior to executing the Python\n"
         "    script or loading the project passed as parameter. This option may be used\n"
@@ -567,6 +591,12 @@ CLArgs::areRenderStatsEnabled() const
 }
 
 bool
+CLArgs::areDialogsDisabled() const
+{
+    return _imp->noDialogs;
+}
+
+bool
 CLArgs::isPythonScript() const
 {
     return _imp->isPythonScript;
@@ -608,6 +638,12 @@ const QString &
 CLArgs::getExportDocsPath() const
 {
     return _imp->exportDocsPath;
+}
+
+const QString&
+CLArgs::getTestScript() const
+{
+    return _imp->testScript;
 }
 
 QStringList::iterator
@@ -840,6 +876,15 @@ CLArgsPrivate::parse()
     }
 
     {
+        QStringList::iterator it = hasToken( QString::fromUtf8("no-dialogs"), QString() );
+        if ( it != args.end() ) {
+            it = args.erase(it);
+
+            noDialogs = true;
+        }
+    }
+
+    {
         QStringList::iterator it = hasToken( QString::fromUtf8("background"), QString::fromUtf8("b") );
         if ( it != args.end() ) {
             it = args.erase(it);
@@ -1016,6 +1061,43 @@ CLArgsPrivate::parse()
     }
 
     {
+        // Parsed before the positional arguments, which take the first .py file as the script to load.
+        QStringList::iterator it = hasToken( QString::fromUtf8("test"), QString() );
+        if ( it != args.end() ) {
+            it = args.erase(it);
+
+            if ( it == args.end() || it->startsWith( QChar::fromLatin1('-') ) ) {
+                std::cout << tr("--test specified, you must enter a script filename afterwards.").toStdString() << std::endl;
+                error = 1;
+
+                return;
+            }
+            testScript = *it;
+            it = args.erase(it);
+
+#ifdef __NATRON_UNIX__
+            testScript = AppManager::qt_tildeExpansion(testScript);
+#endif
+            QFileInfo fi(testScript);
+            if ( !fi.exists() ) {
+                std::cout << tr("--test: the file %1 does not exist.").arg(testScript).toStdString() << std::endl;
+                error = 1;
+
+                return;
+            }
+            testScript = fi.canonicalFilePath();
+            if (isBackground) {
+                std::cout << tr("--test runs a GUI test: it cannot be used in background mode.").toStdString() << std::endl;
+                error = 1;
+
+                return;
+            }
+            // tests run with the default settings, and never save them
+            useDefaultSettings = true;
+        }
+    }
+
+    {
         QStringList::iterator it = hasToken( QString::fromUtf8("opengl"), QString() );
         if ( it != args.end() ) {
             it = args.erase(it);
@@ -1139,10 +1221,11 @@ CLArgsPrivate::parse()
         // A clean solution would be to separate the scriptName and the fileName with a comma.
         if ( it != args.end() && !it->startsWith( QChar::fromLatin1('-') ) ) {
             // Check that it's neither a python script, a natron project, nor a frame range.
-            QRegExp re( QString::fromUtf8("[0-9\\-,]*") ); // Matches frame ranges.
+            // Matches frame ranges, including those with a frame step (e.g. 30-50:2), see tryParseFrameRange().
+            QRegularExpression re( QRegularExpression::anchoredPattern( QString::fromUtf8("[0-9\\-,:]*") ) );
             if (!it->endsWith(QString::fromUtf8(".py"), Qt::CaseInsensitive) &&
                 !it->endsWith(QString::fromUtf8(".ntp"), Qt::CaseInsensitive) &&
-                !re.exactMatch(*it)) {
+                !re.match(*it).hasMatch()) {
                 w.filename = *it;
 #ifdef __NATRON_UNIX__
                 w.filename = AppManager::qt_tildeExpansion(w.filename);
@@ -1308,6 +1391,7 @@ CLArgsPrivate::parse()
     qDebug() << "isBackground:" << isBackground;
     qDebug() << "isInterpreterMode:" << isInterpreterMode;
     qDebug() << "enableRenderStats:" << enableRenderStats;
+    qDebug() << "noDialogs:" << noDialogs;
 #ifdef NATRON_USE_BREAKPAD
     qDebug() << "breakpadProcessPID:" << breakpadProcessPID;
     qDebug() << "breakpadProcessFilePath:" << breakpadProcessFilePath;

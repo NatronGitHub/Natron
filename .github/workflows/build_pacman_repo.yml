@@ -1,19 +1,19 @@
 name: Build pacman repo
 
+# The package repository is a release artifact: built on demand, or for (pre-)release tags.
+# Run it by hand (workflow_dispatch) after changing tools/MINGW-packages.
 on:
   workflow_dispatch: {}
-  pull_request:
-    paths:
-      - 'tools/MINGW-packages/**'
-      - '.github/workflows/build_pacman_repo.yml'
   push:
-    paths:
-      - 'tools/MINGW-packages/**'
-      - '.github/workflows/build_pacman_repo.yml'
+    tags:
+    - 'v*'
+
+permissions:
+  contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 env:
   cache-name: cache-natron-repo
@@ -22,6 +22,7 @@ jobs:
   build_repo:
     name: Build pacman repo
     runs-on: windows-2022
+    timeout-minutes: 360
     defaults:
       run:
         shell: msys2 {0}
@@ -30,24 +31,26 @@ jobs:
         uses: actions/checkout@v4.1.1
         with:
           submodules: recursive
-      - name: Setup MinGW environment
+      - name: Setup MSYS2 UCRT64 environment
         uses: msys2/setup-msys2@v2
         with:
-          msystem: mingw64
+          # UCRT64 is MSYS2's default environment; MINGW64 is legacy and no longer
+          # ships some of Natron's dependencies (PySide2, OpenColorIO, OpenImageIO).
+          msystem: ucrt64
           update: true
           install: git base-devel
       - name: Install Inno Setup
         run: choco install innosetup
         shell: pwsh
-      - name: Prep MinGW package version list
+      - name: Prep MSYS2 package version list
         run: |
-          pacman -Sl mingw64 msys > mingw-package-version-list.txt
+          pacman -Sl ${MSYSTEM,,} msys > mingw-package-version-list.txt
       - name: Restore natron repo directory from cache
         id: restore-natron-repo-cache
         uses: actions/cache/restore@v4
         with:
           path: natron_repo
-          key: ${{ env.cache-name }}-${{ hashFiles('mingw-package-version-list.txt', 'tools/MINGW-packages/**/PKGBUILD') }}
+          key: ${{ env.cache-name }}-${{ hashFiles('mingw-package-version-list.txt', 'tools/MINGW-packages/**/PKGBUILD', 'tools/MINGW-packages/**/*.iss') }}
       - name: Build natron package repo
         id: build-package-repo
         # Allow continuing after error so cache gets updated and makes reruns faster.
@@ -64,7 +67,7 @@ jobs:
         if: always()
         with:
           path: natron_repo
-          key: ${{ env.cache-name }}-${{ hashFiles('mingw-package-version-list.txt', 'tools/MINGW-packages/**/PKGBUILD') }}
+          key: ${{ env.cache-name }}-${{ hashFiles('mingw-package-version-list.txt', 'tools/MINGW-packages/**/PKGBUILD', 'tools/MINGW-packages/**/*.iss') }}
       - name: Upload natron_package_repo artifacts
         uses: actions/upload-artifact@v4.3.1
         with:

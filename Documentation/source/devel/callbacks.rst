@@ -8,8 +8,9 @@ They are Python-defined methods that you declare yourself and then register to N
 in a different manner for each callback.
 
 This document describes the signature that your different callbacks must have in order
-to work for each event. The parameters of your declaration must match exactly the same
-signature otherwise the function call will not work.
+to work for each event. Natron checks the **names** of the arguments, not only their number:
+``def cb(thisParam, thisNode, thisGroup, app, userEdited)`` works as a param changed callback,
+but ``def cb(p, n, g, a, u)`` is rejected, and an error is printed in the Script Editor.
 
 .. warning::
 
@@ -19,12 +20,76 @@ signature otherwise the function call will not work.
         if not NatronEngine.natron.isBackground():
             #...do gui stuff
 
+.. _callbacksTable:
+
+Summary of the callbacks
+------------------------
+
+The callbacks are string parameters that hold the name of a Python function. The table
+lists, for each callback, the script name of that parameter, where it is set, and the exact
+signature of the function. The sections below describe each callback.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 22 33 45
+
+   * - Callback (script name)
+     - Where to set it
+     - Signature
+   * - ``onParamChanged``
+     - *Node* tab of any node
+     - ``callback(thisParam, thisNode, thisGroup, app, userEdited)``
+   * - ``onInputChanged``
+     - *Node* tab of any node
+     - ``callback(inputIndex, thisNode, thisGroup, app)``
+   * - ``afterNodeCreated``
+     - *Python* tab of the Project Settings; *Node* tab of a Group or PyPlug; default for new
+       projects: ``defOnNodeCreated`` in the Preferences
+     - ``callback(thisNode, app, userEdited)``
+   * - ``beforeNodeRemoval``
+     - Same as afterNodeCreated; default: ``defOnNodeDelete``
+     - ``callback(thisNode, app)``
+   * - ``beforeRender``
+     - *Node* tab of a Write node
+     - ``callback(thisNode, app)``
+   * - ``beforeFrameRender``
+     - *Node* tab of a Write node
+     - ``callback(frame, thisNode, app)``
+   * - ``afterFrameRender``
+     - *Node* tab of a Write node
+     - ``callback(frame, thisNode, app)``
+   * - ``afterRender``
+     - *Node* tab of a Write node
+     - ``callback(aborted, thisNode, app)``
+   * - ``afterProjectLoad``
+     - *Python* tab of the Project Settings; default: ``defOnProjectLoaded``
+     - ``callback(app)``
+   * - ``beforeProjectSave``
+     - *Python* tab of the Project Settings; default: ``defOnProjectSave``
+     - ``callback(filename, app, autoSave)``, returns the file name to save to
+   * - ``beforeProjectClose``
+     - *Python* tab of the Project Settings; default: ``defOnProjectClose``
+     - ``callback(app)``
+   * - ``afterProjectCreated``
+     - *Python* tab of the Preferences
+     - ``callback(app)``
+   * - param changed of a panel or dialog
+     - ``setParamChangedCallback()`` of a :ref:`PyPanel<pypanel>` or :ref:`PyModalDialog<pyModalDialog>`
+     - ``callback(paramName, app, userEdited)``
+
+From Python, set a callback parameter like any string parameter, e.g.
+``app.Blur1.onParamChanged.set("myCallback")``, ``app.afterProjectLoad.set("myCallback")`` or
+``natron.getSettings().getParam("afterProjectCreated").set("myCallback")``.
+
+An exception raised in *beforeRender*, *beforeFrameRender* or *afterFrameRender* aborts the render.
+Errors in the other callbacks are printed in the Script Editor (see :ref:`debuggingPython`).
+
 Callback persistence
 --------------------
 
 If you want your callback to persist 2 runs of Natron; it is necessary that you define it
 in a script that is loaded by Natron, that is, either the **init.py** script (or **initGui.py** if you want it only available in GUI mode)
-or the script of a Python group plug-in (or its extension script, see :ref:`here<pyPlugHandWritten>`).
+or the script of a Python group plug-in (or its extension script, see :ref:`here<pyplugWriting-ext>`).
 See :ref:`this section<startupScripts>` for more infos.
 
 Here is the list of the different callbacks:
@@ -52,6 +117,14 @@ The signature of the callback used on the :ref:`Effect<Effect>` is::
   the value by theirself) or due to another parameter changing the value of the parameter
   via a derivative of the :func:`setValue(value)<>` function.
 
+The callback is called for every parameter of the node, including the buttons, and also for the
+changes made by scripts and by the callback itself: test
+``thisParam.getScriptName()`` first, and ``userEdited`` if only the user's changes matter. A
+callback that sets the value of the parameter that triggered it is called again. It is not called
+when only the current frame changes, even if the parameter is animated. For a group or a PyPlug,
+the callback set on the group is called for the parameters of the group, not for those of the
+nodes inside it (see :ref:`pyplugWriting-ext` for an example).
+
 For the *parameter changed callback* of :ref:`PyPanel<pypanel>` and :ref:`PyModalDialog<pyModalDialog>`, the signature of the callback function is:
 
     callback(paramName, app, userEdited)
@@ -67,6 +140,29 @@ For the *parameter changed callback* of :ref:`PyPanel<pypanel>` and :ref:`PyModa
     :ref:`PyPanel<pypanel>` class and :ref:`PyModalDialog<pyModalDialog>` are not declared
     as attributes of the object.
 
+
+.. mermaid::
+   :alt: When the user edits a parameter, or a script calls setValue, the parameter notifies
+         its node (EffectInstance::onKnobValueChanged_public). For an OpenFX plug-in, Natron
+         first sends the kOfxActionInstanceChanged action to the plug-in. Then, unless the change
+         only comes from a time change, Natron reads the name of the node's onParamChanged
+         function, checks the names of its arguments, and calls it with thisParam, thisNode,
+         thisGroup, app and userEdited. Errors are printed in the Script Editor.
+   :caption: How a parameter change reaches the onParamChanged callback.
+
+   sequenceDiagram
+       actor User
+       participant Param as Parameter (knob)
+       participant Node as Node (EffectInstance)
+       participant Plugin as OpenFX plug-in
+       participant Py as Python callback
+       User->>Param: edit in the settings panel,<br/>or Param.setValue() from a script
+       Param->>Node: onKnobValueChanged_public()
+       Node->>Plugin: kOfxActionInstanceChanged<br/>(OpenFX nodes only)
+       Note over Node: stop here if the change<br/>is only a time change
+       Node->>Node: check the argument names<br/>of the onParamChanged function
+       Node->>Py: cb(thisParam, thisNode, thisGroup, app, userEdited)
+       Py-->>Node: errors are printed in the Script Editor
 
 Registering the param changed callback
 ----------------------------------------
@@ -86,26 +182,26 @@ of the node, on which you can call :func:`setValue(value)<>` to set the name of 
     def myBlurCallback(thisParam, thisNode, thisGroup, app, userEdited):
         ...
 
-    app.BlurCImg1.onParamChanged.set("myBlurCallback")
+    app.Blur1.onParamChanged.set("myBlurCallback")
 
 .. note::
 
     If the callback is defined in a separate python file, such as the python script of a
     python group plug-in, then do not forget the module prefix, e.g.:
 
-        app.MyPlugin1.BlurCImg1.onParamChanged.set("MyPlugin.myBlurCallback")
+        app.MyPlugin1.Blur1.onParamChanged.set("MyPlugin.myBlurCallback")
 
 Example
 ^^^^^^^^
 ::
 
-    # This simple callback just prints a string when the "size" parameter of the BlurCImg
+    # This simple callback just prints a string when the "size" parameter of the Blur
     # node changes
     def myBlurCallback(thisParam, thisNode, thisGroup, app, userEdited):
         if thisParam == thisNode.size:
             print("The size of the blur just changed!")
 
-    app.BlurCImg1.onParamChanged.set("myBlurCallback")
+    app.Blur1.onParamChanged.set("myBlurCallback")
 
 
 
@@ -215,8 +311,11 @@ without loading a project, or when clicking "Create a new project" or "Close pro
     Note that this function is never called when a project is loaded either via an auto-save
     or from user interaction.
 
-The **app** variable will be set so it points to the correct :ref:`application instance<App>`
-being created.
+The signature is::
+
+    callback(app)
+
+- **app** : points to the correct :ref:`application instance<App>` being created.
 
 You can set the callback via the *afterProjectCreated* parameter of the settings of Natron.
 
@@ -230,13 +329,13 @@ Example, taken from the initGui.py script provided as example in :ref:`this sect
 
 ::
 
-    def onProjectCreated():
+    def onProjectCreated(app):
 
         #Always create our icon viewer on project creation
         createIconViewer()
 
 
-    natron.settings.afterProjectCreated.set("onProjectCreated")
+    natron.getSettings().getParam("afterProjectCreated").set("onProjectCreated")
 
 
 
@@ -334,7 +433,7 @@ You can set the callback from the project settings:
 ::
 
     def beforeProjectClose(app):
-        print("Closing project)
+        print("Closing project")
 
     app.beforeProjectClose.set("beforeProjectClose")
 
@@ -423,6 +522,31 @@ You can set the callback from the project settings:
 This callback can also be set in the *Node* tab of any **Group** node (or *PyPlug*).
 If set on the Group, the callback will be invoked for the *Group* node and all its direct children (not recursively).
 
+The render callbacks of a Write node are called in this order:
+
+.. mermaid::
+   :alt: When a render starts, with app.render() or the -w option, Natron calls the
+         beforeRender callback with thisNode and app. Then for each frame it calls
+         beforeFrameRender with frame, thisNode and app, renders the frame, and calls
+         afterFrameRender with frame, thisNode and app. At the end, or when the render is
+         aborted, it calls afterRender with aborted, thisNode and app. An exception in
+         beforeRender, beforeFrameRender or afterFrameRender aborts the render.
+   :caption: The render callbacks of a Write node.
+
+   sequenceDiagram
+       participant S as Script or command line
+       participant W as Write node
+       participant Py as Python callbacks
+       S->>W: app.render(), or -w
+       W->>Py: beforeRender(thisNode, app)
+       loop each frame
+           W->>Py: beforeFrameRender(frame, thisNode, app)
+           W->>W: render the frame
+           W->>Py: afterFrameRender(frame, thisNode, app)
+       end
+       W->>Py: afterRender(aborted, thisNode, app)
+       Note over Py,W: an exception in beforeRender, beforeFrameRender<br/>or afterFrameRender aborts the render
+
 The Before frame render callback:
 ---------------------------------
 
@@ -442,7 +566,7 @@ To execute code specific when in background render mode or in GUI mode, use the 
     if natron.isBackground():
         #We are in background mode
 
-You can set the callback from the Write node settings panel in the "Python" tab.
+You can set the callback in the "Node" tab of the Write node settings panel.
 
 .. figure:: writePython.png
     :width: 400px
@@ -458,7 +582,7 @@ The After frame rendered callback:
 -----------------------------------
 
 This function is called after each frame is finished rendering with a Write node.
- The signature is::
+The signature is::
 
     callback(frame, thisNode, app)
 
@@ -466,7 +590,7 @@ This function is called after each frame is finished rendering with a Write node
 
 - **app** : points to the correct :ref:`application instance<App>`.
 
-- **frame**: The frame that is about to be rendered
+- **frame**: The frame that was just rendered
 
 To execute code specific when in background render mode or in GUI mode, use the following condition
 ::
@@ -474,7 +598,7 @@ To execute code specific when in background render mode or in GUI mode, use the 
     if natron.isBackground():
         #We are in background mode
 
-You can set the callback from the Write node settings panel in the "Python" tab.
+You can set the callback in the "Node" tab of the Write node settings panel.
 
 .. figure:: writePython.png
     :width: 400px
@@ -492,7 +616,7 @@ The Before render callback:
 This function is called once before starting rendering the first frame of a sequence with
 the Write node.  The signature is::
 
-    callback(frame, thisNode, app)
+    callback(thisNode, app)
 
 - **thisNode** : points to the :ref:`write node<Effect>`.
 
@@ -504,7 +628,7 @@ To execute code specific when in background render mode or in GUI mode, use the 
     if natron.isBackground():
         #We are in background mode
 
-You can set the callback from the Write node settings panel in the "Python" tab.
+You can set the callback in the "Node" tab of the Write node settings panel.
 
 .. figure:: writePython.png
     :width: 400px
@@ -539,7 +663,7 @@ To execute code specific when in background render mode or in GUI mode, use the 
     if natron.isBackground():
         #We are in background mode
 
-You can set the callback from the Write node settings panel in the "Python" tab.
+You can set the callback in the "Node" tab of the Write node settings panel.
 
 .. figure:: writePython.png
     :width: 400px

@@ -1,4 +1,4 @@
-.. module:: NatronGui
+.. currentmodule:: NatronGui
 .. _PyGuiApplication:
 
 PyGuiApplication
@@ -19,6 +19,7 @@ Functions
 - def :meth:`addMenuCommand<NatronGui.PyGuiApplication.addMenuCommand>` (grouping,function)
 - def :meth:`addMenuCommand<NatronGui.PyGuiApplication.addMenuCommand>` (grouping,function,key,modifiers)
 - def :meth:`getGuiInstance<NatronGui.PyGuiApplication.getGuiInstance>` (idx)
+- def :meth:`getIcon<NatronGui.PyGuiApplication.getIcon>` (val)
 - def :meth:`informationDialog<NatronGui.PyGuiApplication.informationDialog>` (title,message)
 - def :meth:`warningDialog<NatronGui.PyGuiApplication.warningDialog>` (title,message)
 - def :meth:`errorDialog<NatronGui.PyGuiApplication.errorDialog>` (title,message)
@@ -29,10 +30,10 @@ Member functions description
 
 .. class:: PyGuiApplication()
 
-See :func:`PyCoreApplication()<NatronEngine.PyCoreApplication.PyCoreApplication>`
+See :class:`PyCoreApplication<NatronEngine.PyCoreApplication>`
 
 
-.. method:: NatronGui.PyGuiApplication.addMenuCommand(grouping, function)
+.. method:: PyGuiApplication.addMenuCommand(grouping, function)
 
 
     :param grouping: :class:`str`
@@ -66,25 +67,26 @@ Example::
 This registers in the menu *Inria-->Scripts* an entry named *Print lala script* which will
 print *Lala* to the Script Editor when triggered.
 
-.. method:: NatronGui.PyGuiApplication.addMenuCommand(grouping, function, key, modifiers)
+.. method:: PyGuiApplication.addMenuCommand(grouping, function, key, modifiers)
+    :noindex:
 
     :param grouping: :class:`str`
     :param function: :class:`str`
-    :param key: :class:`PySide.QtCore.Qt.Key`
-    :param modifiers: :class:`PySide.QtCore.Qt.KeyboardModifiers`
+    :param key: `QtCore.Qt.Key <https://doc.qt.io/qtforpython-6/PySide6/QtCore/Qt.html>`_
+    :param modifiers: `QtCore.Qt.KeyboardModifiers <https://doc.qt.io/qtforpython-6/PySide6/QtCore/Qt.html>`_
 
 Same as :func:`addMenuCommand(grouping,function)<NatronGui.PyGuiApplication.addMenuCommand>`
 excepts that it accepts a default shortcut for the action.
-See PySide documentation for possible keys and modifiers.
+See the `Qt for Python <https://doc.qt.io/qtforpython-6/>`_ documentation of the ``Qt`` namespace for the possible keys and modifiers.
 
 The user will always be able to modify the shortcut from the built-in shortcut editor of Natron anyway.
 
 
 
-.. method:: NatronGui.PyGuiApplication.getGuiInstance(idx)
+.. method:: PyGuiApplication.getGuiInstance(idx)
 
 
-    :param idx: :class:`int<PySide.QtCore.int>`
+    :param idx: :class:`int`
     :rtype: :class:`GuiApp<NatronGui.GuiApp>`
 
 Same as :func:`getInstance(idx)<NatronEngine.PyCoreApplication.getInstance>` but returns
@@ -95,7 +97,17 @@ with the following variables: *app1* for the first opened project, *app2* for th
 
 
 
-.. method:: NatronGui.PyGuiApplication.informationDialog(title,message)
+.. method:: PyGuiApplication.getIcon(val)
+
+    :param val: :attr:`PixmapEnum<NatronEngine.Natron.PixmapEnum>`
+    :rtype: `QPixmap <https://doc.qt.io/qtforpython-6/PySide6/QtGui/QPixmap.html>`_
+
+Returns one of Natron's built-in icons as a QPixmap, which you can use in your own
+Qt widgets. For example::
+
+    pixmap = natron.getIcon(NatronEngine.Natron.PixmapEnum.NATRON_PIXMAP_OPEN_FILE)
+
+.. method:: PyGuiApplication.informationDialog(title,message)
 
     :param title: :class:`str`
     :param message: :class:`str`
@@ -103,7 +115,7 @@ with the following variables: *app1* for the first opened project, *app2* for th
 Shows a modal information dialog to the user with the given window *title* and
 containing the given *message*.
 
-.. method:: NatronGui.PyGuiApplication.warningDialog(title,message)
+.. method:: PyGuiApplication.warningDialog(title,message)
 
     :param title: :class:`str`
     :param message: :class:`str`
@@ -111,7 +123,7 @@ containing the given *message*.
 Shows a modal warning dialog to the user with the given window *title* and
 containing the given *message*.
 
-.. method:: NatronGui.PyGuiApplication.errorDialog(title,message)
+.. method:: PyGuiApplication.errorDialog(title,message)
 
     :param title: :class:`str`
     :param message: :class:`str`
@@ -119,7 +131,7 @@ containing the given *message*.
 Shows a modal error dialog to the user with the given window *title* and
 containing the given *message*.
 
-.. method:: NatronGui.PyGuiApplication.questionDialog(title,message)
+.. method:: PyGuiApplication.questionDialog(title,message)
 
     :param title: :class:`str`
     :param message: :class:`str`

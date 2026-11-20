@@ -37,14 +37,14 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QApplication>
 #include <QListView>
 #include <QSettings>
-#include <QDesktopWidget>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QApplication>
 #include <QStringListModel>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/AppManager.h"
+#include "Global/QtCompat.h"
 #include "Engine/Plugin.h"
 #include "Gui/LineEdit.h"
 #include "Gui/GuiApplicationManager.h"
@@ -145,19 +145,29 @@ CompleterLineEdit::filterText(const QString & txt)
             sl.push_front(it->second.second);
         }
     } else {
-        QString pattern;
+        // Match the typed characters in order, with anything in between, as the
+        // QRegExp::WildcardUnix pattern "*g*r*d*" did: the typed characters are
+        // themselves wildcards ('*', '?', "[...]").
+        QString wildcard;
         for (int i = 0; i < txt.size(); ++i) {
-            pattern.push_back( QLatin1Char('*') );
-            pattern.push_back(txt[i]);
+            if ( !txt[i].isLowSurrogate() ) { // keep surrogate pairs (e.g. emoji) together
+                wildcard.push_back( QLatin1Char('*') );
+            }
+            wildcard.push_back(txt[i]);
         }
-        pattern.push_back( QLatin1Char('*') );
-        QRegExp expr(pattern, Qt::CaseInsensitive, QRegExp::WildcardUnix);
+        wildcard.push_back( QLatin1Char('*') );
+        // anchored: matching the whole label is the same as the old contains()
+        const QString pattern = QtCompat::wildcardToRegularExpression(wildcard);
+        QRegularExpression expr(pattern, QRegularExpression::CaseInsensitiveOption);
 
 #ifdef NODE_TAB_DIALOG_USE_MATCHED_LENGTH
         std::map<int, QStringList> matchOrdered;
+        // exactMatch() used to match the whole name.
+        const QRegularExpression& exprWhole = expr; // already anchored
         for (PluginsNamesMap::iterator it = _imp->names.begin(); it != _imp->names.end(); ++it) {
-            if ( expr.exactMatch(it->second.first) ) {
-                QStringList& matchedForLength =  matchOrdered[expr.matchedLength()];
+            QRegularExpressionMatch match = exprWhole.match(it->second.first);
+            if ( match.hasMatch() ) {
+                QStringList& matchedForLength =  matchOrdered[match.capturedLength()];
                 matchedForLength.push_front(it->second.second);
             }
         }
@@ -356,6 +366,9 @@ static void
 incrementPluginWeight(const QString& pluginID,
                       int majVersion)
 {
+    if ( appPTR->isTestMode() ) {
+        return; // a test does not change the user's Tab completion ranking
+    }
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
     QString propName( pluginID + QString::number(majVersion) + QString::fromUtf8("_tab_weight") );
     int curValue = settings.value( propName, QVariant(0) ).toInt();
@@ -380,7 +393,6 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
     CompleterLineEdit::PluginsNamesMap pluginsMap;
     QString initialFilterName;
     std::string stdInitialFilter = initialFilter.toStdString();
-    int i = 0;
     for (PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
         if ( it->second.empty() ) {
             continue;
@@ -407,7 +419,6 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
             if (it->first == stdInitialFilter) {
                 initialFilterName = idNamePair.first;
             }
-            ++i;
         } else {
             QString bestMajorName;
             for (PluginVersionsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
@@ -427,8 +438,6 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
                 if (indexOfBracket != -1) {
                     idNamePair.first = idNamePair.second.left(indexOfBracket);
                 }
-
-                ++i;
 
                 int weight = getPluginWeight( (*it2)->getPluginID(), (*it2)->getMajorVersion() );
                 pluginsMap.insert( std::make_pair(weight, idNamePair) );

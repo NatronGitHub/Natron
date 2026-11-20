@@ -12,6 +12,8 @@ In order to have Natron compiling, first you need to install the required librar
 pkg install qt5 boost-all pyside2 expat cairo pkgconf
 ```
 
+For the CMake build, also install `cmake` (`pkg install cmake`).
+
 ### Submodules
 
 Go under Natron and type
@@ -21,6 +23,8 @@ git submodule update -i --recursive
 ```
 
 ### Add the config.pri file
+
+*`config.pri` is only used by the deprecated qmake build (see [Deprecated: building with qmake](#deprecated-building-with-qmake)); the CMake build doesn't need it.*
 
 You might need to define the locations of some of the required libraries.
 This is done by creating a `.pri` file next to the `Project.pro` that will tell the `.pro` where to find those libraries.
@@ -54,6 +58,21 @@ to make a tarball release and let you download it [here](https://github.com/Natr
 Place it at the root of Natron repository.
 
 ### Build
+
+Natron is built with CMake. From the Natron source directory:
+
+```
+cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build -j$(sysctl -n hw.ncpu)
+```
+
+*These commands are the ones used on Linux, macOS and Windows; they haven't been tested on FreeBSD, where there is no CI. Please report problems (or fixes) on GitHub.*
+
+Useful options (add them to the first `cmake` command): `-DCMAKE_BUILD_TYPE=Debug` or `Release`, `-DNATRON_QT6=ON` (Qt 6 and PySide6), `-DNATRON_BUILD_TESTS=OFF` (skip the unit tests), `-DNATRON_SYSTEM_LIBS=ON` (use system copies of the libraries in `libs/`). `cmake --install build --prefix /usr/local` installs Natron.
+
+### Deprecated: building with qmake
+
+*The qmake build is deprecated and will be removed in a future release (first on RB-2.7, see [#1181](https://github.com/NatronGitHub/Natron/issues/1181)). It needs a [config.pri](#add-the-configpri-file) file.*
 
 The `<srcPath>` must be absolute and `<buildPath>` must not be a subdir of `<srcPath>`
 

@@ -1,56 +1,100 @@
-# Maintainer: ole.andre.rodlie@gmail.com
+# Maintainer: The Natron developers
 
-_osmesa=17.1.10
-_glu=9.0.0
-_llvm=3.9.1
-_demos=8.3.0
-_mkjobs=4
+# OSMesa (off-screen Mesa, llvmpipe driver) and GLU, built by osmesa-install
+# (https://github.com/devernay/osmesa-install), installed in the private prefix
+# ${MINGW_PREFIX}/osmesa. Mesa 25.0 is the last Mesa with OSMesa. On Windows,
+# osmesa-install only builds static libraries, linked with MSYS2's static LLVM.
+# This replaces the old prebuilt MINGW64 package (Mesa 17.1.10 and LLVM 3.9.1),
+# which was downloaded from SourceForge because it could no longer be built.
+
 _realname=osmesa-install
+_osmesa=25.0.7
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-osmesa"
-gitcommit=471db69
-pkgver=111.471db69.17.1.10.3.9.1
-pkgrel=2
-pkgdesc="OSMesa"
+gitcommit=7b47351
+pkgver=0.${gitcommit}.${_osmesa}
+pkgrel=1
+pkgdesc="OSMesa, off-screen Mesa with the llvmpipe driver, and GLU (mingw-w64)"
 arch=('any')
+mingw_arch=('ucrt64')
 url="https://github.com/devernay/osmesa-install"
-license=('BSD')
-provides=("${MINGW_PACKAGE_PREFIX}-${_realname}")
-conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}")
-makedepends=("git")
-options=('strip')
+license=('spdx:MIT' 'spdx:SGI-B-2.0')  # Mesa; GLU
+# OSMesa links MSYS2's static LLVM libraries, which must be the exact LLVM
+# version it was built with: package() pins it. Rebuild this package on every
+# MSYS2 LLVM update.
+depends=("${MINGW_PACKAGE_PREFIX}-llvm"
+         "${MINGW_PACKAGE_PREFIX}-zstd"
+         "${MINGW_PACKAGE_PREFIX}-libxml2"
+         "${MINGW_PACKAGE_PREFIX}-zlib")
+makedepends=("git"
+             "curl"
+             "xz"
+             "make"
+             "patch"
+             "diffutils"
+             "tar"
+             "bison"
+             "flex"
+             "autoconf"
+             "automake"
+             "libtool"
+             "${MINGW_PACKAGE_PREFIX}-cc"
+             "${MINGW_PACKAGE_PREFIX}-binutils"
+             "${MINGW_PACKAGE_PREFIX}-pkgconf"
+             "${MINGW_PACKAGE_PREFIX}-cmake"
+             "${MINGW_PACKAGE_PREFIX}-meson"
+             "${MINGW_PACKAGE_PREFIX}-ninja"
+             "${MINGW_PACKAGE_PREFIX}-python"
+             "${MINGW_PACKAGE_PREFIX}-python-mako"
+             "${MINGW_PACKAGE_PREFIX}-python-yaml"
+             "${MINGW_PACKAGE_PREFIX}-python-packaging"
+             "${MINGW_PACKAGE_PREFIX}-zlib"
+             "${MINGW_PACKAGE_PREFIX}-llvm"
+             "${MINGW_PACKAGE_PREFIX}-freeglut")
+options=('staticlibs' '!strip')
 source=("${_realname}"::"git+https://github.com/devernay/osmesa-install#commit=${gitcommit}")
 sha256sums=('SKIP')
-
-pkgver() {
-  cd "${srcdir}/${_realname}"
-  printf "%s.%s.%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)" "${_osmesa}" "${_llvm}"
-}
 
 build() {
   cd "${srcdir}/${_realname}"
   [[ -d "build" ]] && rm -rf "build"
   mkdir -p build && cd build
 
-  if [ -d "${MINGW_PREFIX}/llvm" ] || [ -d "${MINGW_PREFIX}/osmesa" ]; then
-    echo "Please remove existing OSMesa!"
+  # osmesa-install installs into its prefix during the build; package() moves
+  # it into the package.
+  if [ -d "${MINGW_PREFIX}/osmesa" ]; then
+    echo "Please remove the existing ${MINGW_PREFIX}/osmesa first!"
     exit 1
   fi
+  # osmesa-install wants an existing, writable prefix.
+  mkdir -p "${MINGW_PREFIX}/osmesa"
 
-  wget ftp://ftp.freedesktop.org/pub/mesa/older-versions/17.x/mesa-${_osmesa}.tar.gz
-  wget ftp://ftp.freedesktop.org/pub/mesa/glu/glu-${_glu}.tar.gz
-  wget ftp://ftp.freedesktop.org/pub/mesa/demos/${_demos}/mesa-demos-${_demos}.tar.gz
-  wget http://releases.llvm.org/${_llvm}/llvm-${_llvm}.src.tar.xz
-
-  mkdir -p ${MINGW_PREFIX}/{llvm,osmesa}
-
-  env OSMESA_DRIVER=3 OSMESA_PREFIX="${MINGW_PREFIX}/osmesa" OSMESA_VERSION="${_osmesa}" \
-  LLVM_PREFIX="${MINGW_PREFIX}/llvm" LLVM_VERSION="${_llvm}" MKJOBS="${_mkjobs}" LLVM_BUILD=1 \
-  ../osmesa-install.sh
+  env OSMESA_VERSION="${_osmesa}" OSMESA_DRIVER=3 \
+    OSMESA_PREFIX="${MINGW_PREFIX}/osmesa" \
+    LLVM_PREFIX="${MINGW_PREFIX}" LLVM_BUILD=auto \
+    PYTHON="${MINGW_PREFIX}/bin/python3" \
+    MKJOBS="$(nproc)" \
+    bash ../osmesa-install.sh
 }
 
 package() {
-  mkdir -p ${pkgdir}/mingw64
-  mv ${MINGW_PREFIX}/llvm ${pkgdir}/mingw64/
-  mv ${MINGW_PREFIX}/osmesa ${pkgdir}/mingw64/
+  # pin the exact LLVM version the static libraries were built against
+  local _llvmver=$(pacman -Q "${MINGW_PACKAGE_PREFIX}-llvm" | cut -d' ' -f2 | sed 's/-[^-]*$//')
+  depends=("${MINGW_PACKAGE_PREFIX}-llvm=${_llvmver}"
+           "${MINGW_PACKAGE_PREFIX}-zstd"
+           "${MINGW_PACKAGE_PREFIX}-libxml2"
+           "${MINGW_PACKAGE_PREFIX}-zlib")
+
+  mkdir -p "${pkgdir}${MINGW_PREFIX}"
+  mv "${MINGW_PREFIX}/osmesa" "${pkgdir}${MINGW_PREFIX}/"
+  local _osmesa_dir="${pkgdir}${MINGW_PREFIX}/osmesa"
+
+  # Only static libraries are built on Windows: don't ship import libraries
+  # without their DLLs (-lopengl32 could otherwise resolve to Mesa's).
+  rm -f "${_osmesa_dir}"/lib/*.dll.a
+  find "${_osmesa_dir}" -name "*.bak" -delete
+
+  # fix the hard-coded Windows paths (D:/.../ucrt64) in the .pc and .la files
+  local PREFIX_WIN=$(cygpath -m ${MINGW_PREFIX})
+  find "${_osmesa_dir}" \( -name '*.pc' -o -name '*.la' \) -exec sed -i -e "s|${PREFIX_WIN}|${MINGW_PREFIX}|g" {} \;
 }

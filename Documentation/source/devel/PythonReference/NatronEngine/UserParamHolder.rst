@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 
 .. _UserParamHolder:
 
@@ -31,6 +31,7 @@ Functions
 - def :meth:`createIntParam<NatronEngine.UserParamHolder.createIntParam>` (name, label)
 - def :meth:`createOutputFileParam<NatronEngine.UserParamHolder.createOutputFileParam>` (name, label)
 - def :meth:`createPageParam<NatronEngine.UserParamHolder.createPageParam>` (name, label)
+- def :meth:`createSeparatorParam<NatronEngine.UserParamHolder.createSeparatorParam>` (name, label)
 - def :meth:`createParametricParam<NatronEngine.UserParamHolder.createParametricParam>` (name, label, nbCurves)
 - def :meth:`createPathParam<NatronEngine.UserParamHolder.createPathParam>` (name, label)
 - def :meth:`createStringParam<NatronEngine.UserParamHolder.createStringParam>` (name, label)
@@ -56,11 +57,11 @@ Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-.. method:: NatronEngine.UserParamHolder.createBooleanParam(name, label)
+.. method:: UserParamHolder.createBooleanParam(name, label)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
+    :param name: :class:`str`
+    :param label: :class:`str`
     :rtype: :class:`BooleanParam<NatronEngine.BooleanParam>`
 
 
@@ -76,11 +77,11 @@ interface as a checkbox.
     be expensive and thus allows you to make multiple changes to user parameters at once
     while keeping the user interface responsive.
 
-.. method:: NatronEngine.UserParamHolder.createButtonParam(name, label)
+.. method:: UserParamHolder.createButtonParam(name, label)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
+    :param name: :class:`str`
+    :param label: :class:`str`
     :rtype: :class:`ButtonParam<NatronEngine.ButtonParam>`
 
 
@@ -98,11 +99,11 @@ push button. Use the onParamChanged callback of the Effect to handle user clicks
 
 
 
-.. method:: NatronEngine.UserParamHolder.createChoiceParam(name, label)
+.. method:: UserParamHolder.createChoiceParam(name, label)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
+    :param name: :class:`str`
+    :param label: :class:`str`
     :rtype: :class:`ChoiceParam<NatronEngine.ChoiceParam>`
 
 Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
@@ -118,12 +119,12 @@ dropdown combobox.
     while keeping the user interface responsive.
 
 
-.. method:: NatronEngine.UserParamHolder.createColorParam(name, label, useAlpha)
+.. method:: UserParamHolder.createColorParam(name, label, useAlpha)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
-    :param useAlpha: :class:`bool<PySide.QtCore.bool>`
+    :param name: :class:`str`
+    :param label: :class:`str`
+    :param useAlpha: :class:`bool`
     :rtype: :class:`ColorParam<NatronEngine.ColorParam>`
 
 Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
@@ -138,11 +139,11 @@ This function will return a new parameter of type color.
     while keeping the user interface responsive.
 
 
-.. method:: NatronEngine.UserParamHolder.createDouble2DParam(name, label)
+.. method:: UserParamHolder.createDouble2DParam(name, label)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
+    :param name: :class:`str`
+    :param label: :class:`str`
     :rtype: :class:`Double2DParam<NatronEngine.Double2DParam>`
 
 Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
@@ -157,11 +158,11 @@ This function will return a new parameter of type double with 2 dimensions.
     be expensive and thus allows you to make multiple changes to user parameters at once
     while keeping the user interface responsive.
 
-.. method:: NatronEngine.UserParamHolder.createDouble3DParam(name, label)
+.. method:: UserParamHolder.createDouble3DParam(name, label)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
+    :param name: :class:`str`
+    :param label: :class:`str`
     :rtype: :class:`Double3DParam<NatronEngine.Double3DParam>`
 
 
@@ -176,11 +177,11 @@ This function will return a new parameter of type double with 3 dimensions.
     be expensive and thus allows you to make multiple changes to user parameters at once
     while keeping the user interface responsive.
 
-.. method:: NatronEngine.UserParamHolder.createDoubleParam(name, label)
+.. method:: UserParamHolder.createDoubleParam(name, label)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
+    :param name: :class:`str`
+    :param label: :class:`str`
     :rtype: :class:`DoubleParam<NatronEngine.DoubleParam>`
 
 
@@ -196,11 +197,11 @@ A double is similar to a floating point value.
     be expensive and thus allows you to make multiple changes to user parameters at once
     while keeping the user interface responsive.
 
-.. method:: NatronEngine.UserParamHolder.createFileParam(name, label)
+.. method:: UserParamHolder.createFileParam(name, label)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
+    :param name: :class:`str`
+    :param label: :class:`str`
     :rtype: :class:`FileParam<NatronEngine.FileParam>`
 
 
@@ -215,11 +216,11 @@ This function will return a new parameter of type double with 2 dimensions.
     be expensive and thus allows you to make multiple changes to user parameters at once
     while keeping the user interface responsive.
 
-.. method:: NatronEngine.UserParamHolder.createGroupParam(name, label)
+.. method:: UserParamHolder.createGroupParam(name, label)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
+    :param name: :class:`str`
+    :param label: :class:`str`
     :rtype: :class:`GroupParam<NatronEngine.GroupParam>`
 
 
@@ -235,11 +236,11 @@ children parameters and can be expanded or folded.
     be expensive and thus allows you to make multiple changes to user parameters at once
     while keeping the user interface responsive.
 
-.. method:: NatronEngine.UserParamHolder.createInt2DParam(name, label)
+.. method:: UserParamHolder.createInt2DParam(name, label)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
+    :param name: :class:`str`
+    :param label: :class:`str`
     :rtype: :class:`Int2DParam<NatronEngine.Int2DParam>`
 
 Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
@@ -254,11 +255,11 @@ This function will return a new parameter of type integer with 2 dimensions.
     while keeping the user interface responsive.
 
 
-.. method:: NatronEngine.UserParamHolder.createInt3DParam(name, label)
+.. method:: UserParamHolder.createInt3DParam(name, label)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
+    :param name: :class:`str`
+    :param label: :class:`str`
     :rtype: :class:`Int3DParam<NatronEngine.Int3DParam>`
 
 
@@ -273,11 +274,11 @@ This function will return a new parameter of type integer with 3 dimensions.
     be expensive and thus allows you to make multiple changes to user parameters at once
     while keeping the user interface responsive.
 
-.. method:: NatronEngine.UserParamHolder.createIntParam(name, label)
+.. method:: UserParamHolder.createIntParam(name, label)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
+    :param name: :class:`str`
+    :param label: :class:`str`
     :rtype: :class:`IntParam<NatronEngine.IntParam>`
 
 Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
@@ -292,11 +293,11 @@ This function will return a new parameter of type integer with a single dimensio
     while keeping the user interface responsive.
 
 
-.. method:: NatronEngine.UserParamHolder.createOutputFileParam(name, label)
+.. method:: UserParamHolder.createOutputFileParam(name, label)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
+    :param name: :class:`str`
+    :param label: :class:`str`
     :rtype: :class:`OutputFileParam<NatronEngine.OutputFileParam>`
 
 Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
@@ -312,11 +313,11 @@ paths to output files.
     while keeping the user interface responsive.
 
 
-.. method:: NatronEngine.UserParamHolder.createPageParam(name, label)
+.. method:: UserParamHolder.createPageParam(name, label)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
+    :param name: :class:`str`
+    :param label: :class:`str`
     :rtype: :class:`PageParam<NatronEngine.PageParam>`
 
 
@@ -332,12 +333,32 @@ settings panel of the node.
     be expensive and thus allows you to make multiple changes to user parameters at once
     while keeping the user interface responsive.
 
-.. method:: NatronEngine.UserParamHolder.createParametricParam(name, label, nbCurves)
+.. method:: UserParamHolder.createSeparatorParam(name, label)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
-    :param nbCurves: :class:`int<PySide.QtCore.int>`
+    :param name: :class:`str`
+    :param label: :class:`str`
+    :rtype: :class:`SeparatorParam<NatronEngine.SeparatorParam>`
+
+
+Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
+:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
+This function will return a new parameter of type separator: a horizontal line
+that visually separates groups of parameters in the settings panel.
+
+.. warning::
+
+    After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>`
+    to refresh the user interface. The refreshing is done in a separate function because it may
+    be expensive and thus allows you to make multiple changes to user parameters at once
+    while keeping the user interface responsive.
+
+.. method:: UserParamHolder.createParametricParam(name, label, nbCurves)
+
+
+    :param name: :class:`str`
+    :param label: :class:`str`
+    :param nbCurves: :class:`int`
     :rtype: :class:`ParametricParam<NatronEngine.ParametricParam>`
 
 
@@ -354,11 +375,11 @@ node.
     be expensive and thus allows you to make multiple changes to user parameters at once
     while keeping the user interface responsive.
 
-.. method:: NatronEngine.UserParamHolder.createPathParam(name, label)
+.. method:: UserParamHolder.createPathParam(name, label)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
+    :param name: :class:`str`
+    :param label: :class:`str`
     :rtype: :class:`PathParam<NatronEngine.PathParam>`
 
 
@@ -374,11 +395,11 @@ to specify path to single or multiple directories.
     be expensive and thus allows you to make multiple changes to user parameters at once
     while keeping the user interface responsive.
 
-.. method:: NatronEngine.UserParamHolder.createStringParam(name, label)
+.. method:: UserParamHolder.createStringParam(name, label)
 
 
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
+    :param name: :class:`str`
+    :param label: :class:`str`
     :rtype: :class:`StringParam<NatronEngine.StringParam>`
 
 Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
@@ -392,11 +413,11 @@ This function will return a new parameter of type string.
     be expensive and thus allows you to make multiple changes to user parameters at once
     while keeping the user interface responsive.
 
-.. method:: NatronEngine.UserParamHolder.removeParam(param)
+.. method:: UserParamHolder.removeParam(param)
 
 
     :param param: :class:`Param<NatronEngine.Param>`
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Removes the given *param* from the parameters of this Effect.
 This function works only if *param* is a user parameter and does nothing otherwise.
@@ -412,7 +433,7 @@ This function returns True upon success and False otherwise.
 
 
 
-.. method:: NatronEngine.UserParamHolder.refreshUserParamsGUI()
+.. method:: UserParamHolder.refreshUserParamsGUI()
 
 
 

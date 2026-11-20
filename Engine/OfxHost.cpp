@@ -25,8 +25,10 @@
 
 #include "OfxHost.h"
 
+#include <atomic>
 #include <cassert>
 #include <cstdarg>
+#include <cstdint> // std::uint64_t
 #include <memory>
 #include <fstream>
 #include <new> // std::bad_alloc
@@ -42,10 +44,14 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 #include <QDateTime>
 #include <QDir>
+#include <QFile>
 #include <QMutex>
 #include <QThreadPool>
 #include <QCoreApplication>
+#include <QCryptographicHash>
 #include <QDebug>
+#include <QRegularExpression>
+#include <QRegularExpressionMatch>
 #include <QTemporaryFile>
 CLANG_DIAG_ON(deprecated-register)
 // clang-format on
@@ -86,6 +92,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhParametricParam.h> //our version of parametric param suite support
 
 #include "Global/GlobalDefines.h"
+#include "Global/StrUtils.h"
 #include "Global/FStreamsSupport.h"
 #include "Global/QtCompat.h"
 #include "Global/KeySymbols.h"
@@ -118,35 +125,41 @@ CLANG_DIAG_ON(unknown-pragmas)
 NATRON_NAMESPACE_ENTER
 // to disambiguate with the global-scope ::OfxHost
 
-// see second answer of http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
-static
-std::string
-string_format(const std::string fmt,
-              ...)
+
+#ifdef OFX_SUPPORTS_MULTITHREAD
+// A mutex of the multithread suite: the OfxMutexHandle is its address. A suite function returns
+// kOfxStatErrBadHandle "if the handle was bad" (ofxMultiThread.h): the magic number tells a handle that
+// mutexCreate() returned from any other pointer, and from a destroyed mutex, as the property suite does
+// with the magic number of its property sets (OFX::Host::Property::Set::verifyMagic()). The magic is
+// atomic so that the store in the destructor is not optimized away.
+struct OfxSuiteMutex
 {
-    int size = ( (int)fmt.size() ) * 2 + 50;   // Use a rubric appropriate for your code
-    std::string str;
-    va_list ap;
+    static const std::uint64_t kMagic = 0x4f66784d75746578ULL; // "OfxMutex"
 
-    while (1) {     // Maximum two passes on a POSIX system...
-        str.reserve(size);
-        va_start(ap, fmt);
-        int n = vsnprintf( (char *)str.data(), size, fmt.c_str(), ap );
-        va_end(ap);
-        if ( (n > -1) && (n < size) ) {  // Everything worked
-            str.resize(n);
+    std::atomic<std::uint64_t> magic;
+    QRecursiveMutex mutex;
 
-            return str;
-        }
-        if (n > -1) { // Needed size returned
-            size = n + 1;   // For null char
-        } else {
-            size *= 2;      // Guess at a larger size (OS specific)
-        }
+    OfxSuiteMutex()
+        : magic(kMagic)
+        , mutex()
+    {
     }
 
-    return str;
+    ~OfxSuiteMutex()
+    {
+        magic = 0;
+    }
+};
+
+// The mutex of a suite handle, or NULL if the handle is NULL or not a live mutex of the suite.
+static OfxSuiteMutex*
+suiteMutexFromHandle(OfxMutexHandle handle)
+{
+    OfxSuiteMutex* m = reinterpret_cast<OfxSuiteMutex*>(handle);
+
+    return ( m && (m->magic == OfxSuiteMutex::kMagic) ) ? m : nullptr;
 }
+#endif
 
 struct OfxHostPrivate
 {
@@ -154,12 +167,40 @@ struct OfxHostPrivate
     std::shared_ptr<TLSHolder<OfxHost::OfxHostTLSData> > tlsData;
 
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-    std::list<QMutex*> pluginsMutexes;
+    std::list<OfxSuiteMutex*> pluginsMutexes;
     QMutex* pluginsMutexesLock; //<protects _pluginsMutexes
 #endif
+    // The state of the plug-in loading that the host name hook (getStringProperty(kOfxPropName)) reads.
+    // Only the thread that loads plug-ins (loadingThread) writes and reads the members below: the scan
+    // (loadOFXPlugins(), loadingStatus(), loadingBinary()), or getPluginContextAndDescribe(), under
+    // describeMutex. The other threads (renders...) only read loadingThread, which is never theirs, and
+    // use the plug-in of the effect that is calling the action instead.
+    std::atomic<QThread*> loadingThread;
     std::string loadingPluginID; // ID of the plugin being loaded
     int loadingPluginVersionMajor;
     int loadingPluginVersionMinor;
+    bool settingHost; // the OfxSetHost (OFX 1.5) of a binary is being called, see loadingBinary()
+    std::string setHostBundleID; // if settingHost, the bundle identifier of the binary, or ""
+    // Serializes the loading and description of the plug-ins after the scan (getPluginContextAndDescribe()):
+    // HostSupport requires that the getPluginHandle() call that loads a plug-in (OfxSetHost of its binary if
+    // the binary was only known from the cache, kOfxActionLoad, kOfxActionDescribe) and getContext()
+    // (kOfxImageEffectActionDescribeInContext) be serialized with every other getPluginHandle(),
+    // getContext() and createInstance() call for all the plug-ins of the binary. The other callers are the
+    // instances, which exist only once their plug-in is loaded and described: they only call
+    // getPluginHandle() on a loaded plug-in, which only reads, and nothing is unloaded before exit
+    // (keepPluginsLoadedAfterScan()).
+    QMutex describeMutex;
+    std::atomic<QThread*> describeThread; // the thread that holds describeMutex, or NULL
+
+    void clearLoadingState()
+    {
+        loadingPluginID.clear();
+        loadingPluginVersionMajor = 0;
+        loadingPluginVersionMinor = 0;
+        settingHost = false;
+        setHostBundleID.clear();
+        loadingThread = nullptr;
+    }
 
     OfxHostPrivate()
         : imageEffectPluginCache()
@@ -168,9 +209,14 @@ struct OfxHostPrivate
         , pluginsMutexes()
         , pluginsMutexesLock(0)
 #endif
+        , loadingThread(nullptr)
         , loadingPluginID()
         , loadingPluginVersionMajor(0)
         , loadingPluginVersionMinor(0)
+        , settingHost(false)
+        , setHostBundleID()
+        , describeMutex()
+        , describeThread(nullptr)
     {
     }
 };
@@ -257,8 +303,13 @@ OfxHost::setProperties()
     _properties.setStringProperty( kOfxPropName, appPTR->getCurrentSettings()->getHostName() );
     _properties.setGetHook(kOfxPropName, this);
     _properties.setStringProperty(kOfxPropLabel, NATRON_APPLICATION_NAME); // "nuke" //< use this to pass for nuke
-    _properties.setIntProperty(kOfxPropAPIVersion, 1, 0);  //OpenFX API v1.4
-    _properties.setIntProperty(kOfxPropAPIVersion, 4, 1);
+    // OpenFX API v1.5 (1.5.1). The 1.5 features are opt-ins that each have their own host property or
+    // suite, so plug-ins must not rely on the version number alone. Natron supports the DrawSuite
+    // (supportsDrawSuite()) and Bytes params (kOfxHostSupportHostPropSupportsBytes, below); HostSupport
+    // declares the others (colour management, StrChoice params, CUDA/Metal/OpenCL render...) as
+    // "not supported" until Natron implements them.
+    _properties.setIntProperty(kOfxPropAPIVersion, 1, 0);
+    _properties.setIntProperty(kOfxPropAPIVersion, 5, 1);
     _properties.setIntProperty(kOfxPropVersion, NATRON_VERSION_MAJOR, 0);
     _properties.setIntProperty(kOfxPropVersion, NATRON_VERSION_MINOR, 1);
     _properties.setIntProperty(kOfxPropVersion, NATRON_VERSION_REVISION, 2);
@@ -300,6 +351,9 @@ OfxHost::setProperties()
     _properties.setIntProperty( kOfxParamHostPropSupportsChoiceAnimation, KnobChoice::canAnimateStatic() );
     _properties.setIntProperty( kOfxParamHostPropSupportsBooleanAnimation, KnobBool::canAnimateStatic() );
     _properties.setIntProperty( kOfxParamHostPropSupportsCustomAnimation, KnobString::canAnimateStatic() );
+    // OFX 1.5 Bytes params (OfxBytesInstance). The standard has no host property for them (plug-ins learn
+    // that a host doesn't support them from paramDefine): this HostSupport property lets paramDefine accept them.
+    _properties.setIntProperty(kOfxHostSupportHostPropSupportsBytes, 1);
     _properties.setPointerProperty(kOfxPropHostOSHandle, NULL);
     _properties.setIntProperty(kOfxParamHostPropSupportsParametricAnimation, 0);
 
@@ -337,6 +391,11 @@ OfxHost::setProperties()
 
     _properties.setIntProperty(kNatronOfxPropDescriptionIsMarkdown, 1);
 
+    // keyboard modifiers in the interact actions (ofxNatron.h extension 13): HostSupport then
+    // declares kNatronOfxInteractPropKeyModifiers in the inArgs of the actions of the interacts
+    // whose supportsKeyModifiers() returns true (OfxOverlayInteract).
+    _properties.setIntProperty(kNatronOfxInteractHostPropSupportsKeyModifiers, 1);
+
     // interact cursors (NatronGitHub/openfx#4): the CSS cursor names Natron can display,
     // plus custom PNG cursors from the plug-in resources
     {
@@ -349,6 +408,31 @@ OfxHost::setProperties()
     }
 #endif
 } // OfxHost::setProperties
+
+PluginOpenGLRenderSupport
+OfxHost::applyCPURenderSupport(PluginOpenGLRenderSupport openGLSupport,
+                               const OFX::Host::Property::Set& effectProps)
+{
+    // HostSupport declares kOfxImageEffectPropCPURenderSupported on every descriptor, and so on every
+    // instance, with its spec default "true". Natron can't render with CUDA, Metal or OpenCL, so a
+    // plug-in that supports neither the CPU nor OpenGL keeps ePluginOpenGLRenderSupportNone.
+    if ( (openGLSupport == ePluginOpenGLRenderSupportYes) &&
+         (effectProps.getStringProperty(kOfxImageEffectPropCPURenderSupported) == "false") ) {
+        return ePluginOpenGLRenderSupportNeeded;
+    }
+
+    return openGLSupport;
+}
+
+bool
+OfxHost::isPluginObsolete(const OFX::Host::Property::Set& descriptorProps)
+{
+    // kOfxImageEffectPluginPropObsolete: "available for use in old projects but not offered to users for
+    // new use", which is what Natron does with these plug-ins (see Plugin::getIsUserCreatable()).
+    // HostSupport declares it, with a default of 0, on every image effect descriptor, including the
+    // ones loaded from the plug-in cache.
+    return descriptorProps.getIntProperty(kOfxImageEffectPluginPropObsolete) != 0;
+}
 
 static
 Settings::KnownHostNameEnum
@@ -415,7 +499,17 @@ OfxHost::getStringProperty(const std::string &name,
         std::string pluginID;
         int pluginVersionMajor = 0;
         int pluginVersionMinor = 0;
-        if ( !_imp->loadingPluginID.empty() ) {
+        // the loading state is only that of the thread that loads plug-ins (see OfxHostPrivate)
+        const bool loadingThread = ( _imp->loadingThread.load() == QThread::currentThread() );
+        if (loadingThread && _imp->settingHost) {
+            // OfxSetHost of a binary, before any of its plug-ins is known, at the scan and when a binary
+            // known from the cache is loaded: the vendor prefixes of getHostNameProxy() are those of the
+            // bundle identifier too. With no bundle identifier, the host name is Natron's.
+            pluginID = _imp->setHostBundleID;
+            if ( pluginID.empty() ) {
+                return _properties.getStringPropertyRaw(kOfxPropName);
+            }
+        } else if ( loadingThread && !_imp->loadingPluginID.empty() ) {
             // plugin is not yet created: we are loading or describing it
             pluginID = _imp->loadingPluginID;
             pluginVersionMajor = _imp->loadingPluginVersionMajor;
@@ -443,8 +537,13 @@ OfxHost::getStringProperty(const std::string &name,
 
         // kOfxPropName was set at host creation, let the value decided by the user
         return _properties.getStringPropertyRaw(kOfxPropName);
+    } else if (name == kOfxPropName) {
+        // kOfxPropName has one dimension: "kOfxStatErrBadIndex - if the property index is invalid"
+        // (ofxProperty.h, the propGet* functions)
+        throw OFX::Host::Property::Exception(kOfxStatErrBadIndex);
     } else {
-        throw OFX::Host::Property::Exception(kOfxStatErrValue);
+        // the hook is only installed for kOfxPropName (see the OfxHost constructor)
+        throw OFX::Host::Property::Exception(kOfxStatErrUnknown);
     }
 }
 
@@ -501,7 +600,7 @@ OfxHost::vmessage(const char* msgtype,
 {
     assert(msgtype);
     assert(format);
-    std::string message = string_format(format, args);
+    std::string message = StrUtils::vformat(format, args);
     std::string type(msgtype);
 
     if (type == kOfxMessageLog) {
@@ -526,9 +625,14 @@ OfxHost::vmessage(const char* msgtype,
         } else {
             return kOfxStatReplyNo;
         }
+    } else {
+        // not one of the kOfxMessage* types: "kOfxStatFailed - if the message could not be posted for
+        // some reason" (ofxMessage.h)
+        return kOfxStatFailed;
     }
 
-    return kOfxStatReplyDefault;
+    // "kOfxStatOK - if the message was successfully posted" (ofxMessage.h)
+    return kOfxStatOK;
 }
 
 OfxStatus
@@ -549,96 +653,95 @@ OfxHost::clearPersistentMessage()
     return kOfxStatOK;
 }
 
-static std::string
-getContext_internal(const std::set<std::string> & contexts)
+std::vector<std::string>
+OfxHost::getSupportedContexts(const std::set<std::string> & pluginContexts)
 {
-    std::string context;
+    // The contexts Natron can instantiate a plug-in in, by order of preference. Generator, Filter,
+    // General and Transition are the ones it advertises in kOfxImageEffectPropSupportedContexts (see
+    // setProperties()); Reader, Writer and Tracker (a Natron extension) are not advertised, but Natron
+    // implements them; Paint is handled like General with the clips of the Paint context. Retimer is not
+    // supported: Natron does not drive the "SourceTime" parameter.
+    static const char* const supportedContexts[] = {
+        kOfxImageEffectContextReader,
+        kOfxImageEffectContextWriter,
+        kNatronOfxImageEffectContextTracker,
+        kOfxImageEffectContextGeneral,
+        kOfxImageEffectContextFilter,
+        kOfxImageEffectContextPaint,
+        kOfxImageEffectContextGenerator,
+        kOfxImageEffectContextTransition,
+    };
+    std::vector<std::string> ret;
 
-    if (contexts.size() == 0) {
-        throw std::runtime_error( std::string("Error: Plug-in does not support any context") );
-        //context = kOfxImageEffectContextGeneral;
-        //plugin->addContext(kOfxImageEffectContextGeneral);
-    } else if (contexts.size() == 1) {
-        context = ( *contexts.begin() );
-
-        return context;
-    } else {
-        std::set<std::string>::iterator found = contexts.find(kOfxImageEffectContextReader);
-        bool reader = found != contexts.end();
-        if (reader) {
-            context = kOfxImageEffectContextReader;
-
-            return context;
-        }
-
-        found = contexts.find(kOfxImageEffectContextWriter);
-        bool writer = found != contexts.end();
-        if (writer) {
-            context = kOfxImageEffectContextWriter;
-
-            return context;
-        }
-
-        found = contexts.find(kNatronOfxImageEffectContextTracker);
-        bool tracker = found != contexts.end();
-        if (tracker) {
-            context = kNatronOfxImageEffectContextTracker;
-
-            return context;
-        }
-
-
-        found = contexts.find(kOfxImageEffectContextGeneral);
-        bool general = found != contexts.end();
-        if (general) {
-            context = kOfxImageEffectContextGeneral;
-
-            return context;
-        }
-
-        found = contexts.find(kOfxImageEffectContextFilter);
-        bool filter = found != contexts.end();
-        if (filter) {
-            context = kOfxImageEffectContextFilter;
-
-            return context;
-        }
-
-        found = contexts.find(kOfxImageEffectContextPaint);
-        bool paint = found != contexts.end();
-        if (paint) {
-            context = kOfxImageEffectContextPaint;
-
-            return context;
-        }
-
-        found = contexts.find(kOfxImageEffectContextGenerator);
-        bool generator = found != contexts.end();
-        if (generator) {
-            context = kOfxImageEffectContextGenerator;
-
-            return context;
-        }
-
-        found = contexts.find(kOfxImageEffectContextTransition);
-        bool transition = found != contexts.end();
-        if (transition) {
-            context = kOfxImageEffectContextTransition;
-
-            return context;
+    for (std::size_t i = 0; i < sizeof(supportedContexts) / sizeof(supportedContexts[0]); ++i) {
+        if ( pluginContexts.count(supportedContexts[i]) ) {
+            ret.push_back(supportedContexts[i]);
         }
     }
 
-    return context;
-} // getContext_internal
+    return ret;
+}
 
 OFX::Host::ImageEffect::Descriptor*
 OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                      ContextEnum* ctx)
 {
+    // Re-entry from the thread that is describing a plug-in: e.g. a plug-in opens a modal dialog in
+    // kOfxActionLoad or a describe action, and the user creates a node from its nested event loop.
+    // describeMutex is not recursive, so this would deadlock, and a recursive mutex would be no better:
+    // the nested call would overwrite the loading state of the plug-in being described, and could
+    // describe a plug-in of the same binary (or the same plug-in) while it is half-loaded, which
+    // HostSupport forbids. Refuse it: the node is not created, and the error is reported.
+    if ( _imp->describeThread.load() == QThread::currentThread() ) {
+        throw std::runtime_error( tr("Cannot load %1 while another OpenFX plug-in is being loaded.")
+                                  .arg( QString::fromUtf8( plugin->getIdentifier().c_str() ) ).toStdString() );
+    }
+    QMutexLocker l(&_imp->describeMutex);
+
+    // clear the loading state on every exit, including the exceptions
+    struct DescribeScope
+    {
+        OfxHostPrivate* imp;
+        explicit DescribeScope(OfxHostPrivate* imp_)
+            : imp(imp_)
+        {
+            imp->clearLoadingState();
+            imp->describeThread = QThread::currentThread();
+            imp->loadingThread = QThread::currentThread();
+        }
+
+        ~DescribeScope()
+        {
+            imp->clearLoadingState();
+            imp->describeThread = nullptr;
+        }
+    };
+    DescribeScope scope( _imp.get() );
+
+    OFX::Host::PluginBinary* binary = plugin->getBinary();
+    std::unique_ptr<OFX::Host::PluginHandle> binaryHandle;
+    if ( binary && !binary->isLoaded() ) {
+        // A binary known from the plug-in cache, loaded at the first use of one of its plug-ins: load it
+        // with no plug-in being loaded, so that its OfxSetHost (OFX 1.5) sees the same host name as at the
+        // scan (from the bundle identifier, see loadingBinary()), and kOfxActionLoad and the describe
+        // actions the same as at the scan too (from the plug-in, set below). HostSupport calls OfxSetHost
+        // and Load from the same getPluginHandle() call, with no hook in between. This handle keeps the
+        // binary loaded until getPluginHandle() below has taken its own reference, so that OfxSetHost is
+        // called once. (It also calls the plug-in's OfxPlugin::setHost, which getPluginHandle() calls
+        // again with the same host.) If OfxSetHost refuses this host, getPluginHandle() returns NULL.
+        try {
+            binaryHandle.reset( new OFX::Host::PluginHandle(plugin, this) );
+        } catch (...) {
+            throw std::runtime_error( tr("Error: Loading the binary (OfxSetHost) failed while loading %1.")
+                                      .arg( QString::fromUtf8( plugin->getIdentifier().c_str() ) ).toStdString() );
+        }
+        _imp->settingHost = false;
+        _imp->setHostBundleID.clear();
+    }
+
     _imp->loadingPluginID = plugin->getRawIdentifier();
     _imp->loadingPluginVersionMajor = plugin->getVersionMajor();
-    _imp->loadingPluginVersionMinor = plugin->getVersionMajor();
+    _imp->loadingPluginVersionMinor = plugin->getVersionMinor();
 
     OFX::Host::PluginHandle *pluginHandle;
     // getPluginHandle() must be called before getContexts():
@@ -656,9 +759,13 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
     }
     assert(pluginHandle->getOfxPlugin() && pluginHandle->getOfxPlugin()->mainEntry);
 
-    const std::set<std::string> & contexts = plugin->getContexts();
-    std::string context = getContext_internal(contexts);
-    if ( context.empty() ) {
+    // "kOfxImageEffectActionDescribeInContext will be called once for each context that the host and
+    // plug-in mutually support" (ofxCore.h). A Natron node has a single context, so the contexts are
+    // described lazily, by order of preference, until one succeeds: a context whose description returns
+    // kOfxStatErrMissingHostFeature "will be ignored by the host" (ofxImageEffect.h), and the next one
+    // is tried.
+    const std::vector<std::string> contexts = getSupportedContexts( plugin->getContexts() );
+    if ( contexts.empty() ) {
         throw std::invalid_argument( tr("OpenFX plug-in does not have any valid context.").toStdString() );
     }
 
@@ -667,11 +774,25 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
     assert(ph->getOfxPlugin()->mainEntry);
     Q_UNUSED(ph);
     OFX::Host::ImageEffect::Descriptor* desc = NULL;
-    //This will call kOfxImageEffectActionDescribeInContext
-    desc = plugin->getContext(context);
+    std::string context;
+    QStringList failedContexts;
+    for (std::vector<std::string>::const_iterator it = contexts.begin(); it != contexts.end(); ++it) {
+        //This will call kOfxImageEffectActionDescribeInContext
+        desc = plugin->getContext(*it);
+        if (desc) {
+            context = *it;
+            break;
+        }
+        failedContexts.push_back( QString::fromUtf8( it->c_str() ) );
+        if ( (*it == kOfxImageEffectContextReader) || (*it == kOfxImageEffectContextWriter) ) {
+            // Natron registers the plug-in as a reader or a writer (Plugin::isReader(), isWriter()), and
+            // creates its nodes as such: don't make it a General or Filter effect instead.
+            break;
+        }
+    }
     if (!desc) {
         throw std::runtime_error( tr("Plug-in parameters and inputs description (kOfxImageEffectActionDescribeInContext) failed in context %1.")
-                                  .arg( QString::fromUtf8( context.c_str() ) ).toStdString() );
+                                  .arg( failedContexts.join( QString::fromUtf8(", ") ) ).toStdString() );
     }
 
     //Create the mask clip if needed
@@ -693,7 +814,6 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
 
 
     *ctx = OfxEffectInstance::mapToContextEnum(context);
-    _imp->loadingPluginID.clear();
 
     return desc;
 } // OfxHost::getPluginContextAndDescribe
@@ -838,6 +958,8 @@ getPluginShortcuts(const OFX::Host::ImageEffect::Descriptor& desc, std::list<Plu
     }
 }
 
+#ifndef QT_NO_DEBUG_OUTPUT
+// used by qDebug() below (with QT_NO_DEBUG_OUTPUT, qDebug() accepts anything)
 static inline
 QDebug operator<<(QDebug dbg, const std::list<std::string> &l)
 {
@@ -847,6 +969,7 @@ QDebug operator<<(QDebug dbg, const std::list<std::string> &l)
 
     return dbg.space();
 }
+#endif
 
 void
 OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
@@ -865,7 +988,11 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     assert(pluginCache);
     /// set the version label in the global cache
     // v2: HostSupport of openfx 4476791d (read-only properties, bundle architecture folders): describe the plug-ins again
-    pluginCache->setCacheVersion(NATRON_APPLICATION_NAME "OFXCachev2");
+    pluginCache->setCacheVersion( getPluginCacheVersion( appPTR->getCurrentSettings()->getHostName() ) );
+
+    // the host passed to each binary's OfxSetHost (OFX 1.5) at the scan: the same host as when a plug-in
+    // known from the cache is loaded later (HostSupport's default, the image effect host, is this one too)
+    pluginCache->setScanHost(this);
 
     /// register the image effect cache with the global plugin cache
     _imp->imageEffectPluginCache->registerInCache( *pluginCache );
@@ -929,7 +1056,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     qDebug() << "Load OFX Plugins: scan plugins...";
     pluginCache->scanPluginFiles();
     qDebug() << "Load OFX Plugins: scan plugins... done!";
-    _imp->loadingPluginID.clear(); // finished loading plugins
+    _imp->clearLoadingState(); // finished loading plugins
 
     if ( pluginCache->dirty() ) {
         // write the cache NOW (it won't change anyway)
@@ -949,7 +1076,20 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
          it != ofxPlugins.end(); ++it) {
         OFX::Host::ImageEffect::ImageEffectPlugin* p = it->second;
         assert(p);
-        if (p->getContexts().size() == 0) {
+        // "If a plug-in does not report to support any context supported by host, host should not enable
+        // the plug-in." (ofxCore.h)
+        if ( getSupportedContexts( p->getContexts() ).empty() ) {
+            if ( !p->getContexts().empty() ) {
+                QStringList pluginContexts;
+                for (std::set<std::string>::const_iterator itc = p->getContexts().begin(); itc != p->getContexts().end(); ++itc) {
+                    pluginContexts.push_back( QString::fromUtf8( itc->c_str() ) );
+                }
+                QString message = tr("%1 is not loaded: none of its contexts (%2) is supported.")
+                                  .arg( QString::fromUtf8( p->getIdentifier().c_str() ) )
+                                  .arg( pluginContexts.join( QString::fromUtf8(", ") ) );
+                qDebug() << "Load OFX Plugins:" << message;
+                appPTR->writeToErrorLog_mt_safe( QLatin1String("OpenFX"), QDateTime::currentDateTime(), message );
+            }
             continue;
         }
         assert( p->getBinary() );
@@ -988,26 +1128,26 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         }
         iconFileName.append(resourcesPath);
         iconFileName.append( QString::fromUtf8( pngIcon.c_str() ) );
-        QString groupIconFilename;
-        if (groups.size() > 0) {
-            groupIconFilename = resourcesPath;
-            // the plugin grouping has no descriptor, just try the default filename.
-            groupIconFilename.append(groups[0]);
-            groupIconFilename.append( QString::fromUtf8(".png") );
-        } else {
+        // the plugin grouping has no descriptor, just try the default filename:
+        // Resources/<group>.png, Resources/<group>/<subgroup>.png, etc.
+        // If that file does not exist, use the safe slug of each level (see Plugin::makeGroupingId()),
+        // e.g. Resources/GMIC.png for the "G'MIC" group.
+        QStringList groupIcons;
+        if ( groups.isEmpty() ) {
             //Use default Misc group when the plug-in doesn't belong to a group
             groups.push_back( QString::fromUtf8(PLUGIN_GROUP_DEFAULT) );
+            groupIcons << QString();
         }
-        QStringList groupIcons;
-        groupIcons << groupIconFilename;
-        for (int i = 1; i < groups.size(); ++i) {
-            QString groupIconPath = resourcesPath;
-            for (int j = 0; j <= i; ++j) {
-                groupIconPath += groups[j];
-                if (j < i) {
-                    groupIconPath += QLatin1Char('/');
-                } else {
-                    groupIconPath.append( QString::fromUtf8(".png") );
+        for (int i = groupIcons.size(); i < groups.size(); ++i) {
+            QString groupIconPath = resourcesPath + groups.mid(0, i + 1).join( QLatin1Char('/') ) + QString::fromUtf8(".png");
+            if ( !QFile::exists(groupIconPath) ) {
+                QStringList slugs;
+                for (int j = 0; j <= i; ++j) {
+                    slugs << Plugin::makeGroupingId( QStringList(groups[j]) );
+                }
+                QString slugIconPath = resourcesPath + slugs.join( QLatin1Char('/') ) + QString::fromUtf8(".png");
+                if ( QFile::exists(slugIconPath) ) {
+                    groupIconPath = slugIconPath;
                 }
             }
             groupIcons << groupIconPath;
@@ -1016,7 +1156,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         const std::set<std::string> & contexts = p->getContexts();
         std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
         std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
-        const bool isDeprecated = p->getDescriptor().isDeprecated();
+        const bool isObsolete = isPluginObsolete( p->getDescriptor().getProps() );
         Plugin* natronPlugin = appPTR->registerPlugin( resourcesPath,
                                                        groups,
                                                        QString::fromUtf8( openfxId.c_str() ),
@@ -1027,7 +1167,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
                                                        foundWriter != contexts.end(),
                                                        new LibraryBinary(LibraryBinary::eLibraryTypeBuiltin),
                                                        p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe,
-                                                       p->getVersionMajor(), p->getVersionMinor(), isDeprecated );
+                                                       p->getVersionMajor(), p->getVersionMinor(), isObsolete );
         bool isInternalOnly = openfxId == PLUGINID_OFX_ROTO;
         if (isInternalOnly) {
             natronPlugin->setForInternalUseOnly(true);
@@ -1044,6 +1184,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
                 glSupport = ePluginOpenGLRenderSupportYes;
             }
         }
+        glSupport = applyCPURenderSupport( glSupport, p->getDescriptor().getProps() );
         natronPlugin->setOpenGLRenderSupport(glSupport);
 
         natronPlugin->setOfxPlugin(p);
@@ -1064,13 +1205,13 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         double evaluation = p->getDescriptor().getProps().getDoubleProperty(kTuttleOfxImageEffectPropEvaluation);
 
 
-        if (!isDeprecated && ( foundReader != contexts.end() ) && (formatsCount > 0) && readersMap) {
+        if (!isObsolete && ( foundReader != contexts.end() ) && (formatsCount > 0) && readersMap) {
             ///we're safe to assume that this plugin is a reader
             for (std::size_t k = 0; k < formats.size(); ++k) {
                 IOPluginSetForFormat& evalForFormat = (*readersMap)[formats[k]];
                 evalForFormat.insert( IOPluginEvaluation(openfxId, evaluation) );
             }
-        } else if (!isDeprecated && ( foundWriter != contexts.end() ) && (formatsCount > 0) && writersMap) {
+        } else if (!isObsolete && ( foundWriter != contexts.end() ) && (formatsCount > 0) && writersMap) {
             ///we're safe to assume that this plugin is a writer.
             for (std::size_t k = 0; k < formats.size(); ++k) {
                 IOPluginSetForFormat& evalForFormat = (*writersMap)[formats[k]];
@@ -1130,16 +1271,76 @@ OfxHost::loadingStatus(bool loading,
                        int versionMajor,
                        int versionMinor)
 {
-    // set the pluginID in case the plug-in tries to fetch the hostname property
+    // set the pluginID in case the plug-in tries to fetch the hostname property (called by the scan,
+    // before kOfxActionLoad and kOfxActionDescribe, and after them)
+    _imp->loadingThread = QThread::currentThread();
     _imp->loadingPluginID = pluginId;
     _imp->loadingPluginVersionMajor = versionMajor;
     _imp->loadingPluginVersionMinor = versionMinor;
+    _imp->settingHost = false;
+    _imp->setHostBundleID.clear();
     if (loading && appPTR) {
         appPTR->setLoadingStatus( QString::fromUtf8("OpenFX: loading ") + QString::fromUtf8( pluginId.c_str() ) + QString::fromUtf8(" v") + QString::number(versionMajor) + QLatin1Char('.') + QString::number(versionMinor) );
 #     ifdef DEBUG
         qDebug() << QString::fromUtf8("OpenFX: loading ") + QString::fromUtf8( pluginId.c_str() ) + QString::fromUtf8(" v") + QString::number(versionMajor) + QLatin1Char('.') + QString::number(versionMinor);
 #     endif
     }
+}
+
+void
+OfxHost::loadingBinary(const std::string& filePath)
+{
+    // OfxSetHost is called next, before any plug-in of the binary is known: at the scan, and when a
+    // binary known from the cache is loaded (see getPluginContextAndDescribe(), which loads it with no
+    // plug-in being loaded). The host name it sees follows the bundle identifier, not the plug-in that
+    // was loaded before (the last plug-in of the scan, from another binary). The next loadingStatus()
+    // or getPluginContextAndDescribe() ends it.
+    _imp->loadingThread = QThread::currentThread();
+    _imp->loadingPluginID.clear();
+    _imp->loadingPluginVersionMajor = 0;
+    _imp->loadingPluginVersionMinor = 0;
+    _imp->settingHost = true;
+    _imp->setHostBundleID = getBundleIdentifier(filePath);
+}
+
+std::string
+OfxHost::getPluginCacheVersion(const std::string& hostName)
+{
+    // v3: OfxSetHost (OFX 1.5). A binary whose OfxSetHost refuses this host is cached with no plug-ins,
+    // and its answer may depend on the host name and version (kOfxPropName, kOfxPropVersion): the
+    // plug-ins are scanned again when they change. The version is in the cache file name (see
+    // getCacheFilePath()). The host name, which the user can set in the preferences, goes in as a hash:
+    // HostSupport writes the version unescaped in an XML attribute (<cache version="...">), so a '"',
+    // '<' or '&' would make the cache unreadable, and the plug-ins would be scanned at every launch.
+    const QByteArray hash = QCryptographicHash::hash(QByteArray( hostName.data(), (int)hostName.size() ),
+                                                     QCryptographicHash::Sha1).toHex();
+
+    return std::string(NATRON_APPLICATION_NAME "OFXCachev3-") + std::string( hash.constData(), hash.size() );
+}
+
+std::string
+OfxHost::getBundleIdentifier(const std::string& binaryFilePath)
+{
+    // The bundle is the ancestor directory whose name ends with ".bundle". HostSupport builds the paths
+    // with the native separator ("\\" on Windows, see DIRSEP in ofxhPluginCache.cpp), and a directory of
+    // OFX_PLUGIN_PATH may use either one: on Windows, the separators are made "/" first, and a "\\" after
+    // ".bundle" is a separator on every system (a directory name that ends with ".bundle\\" is unlikely).
+    const QString path = QDir::fromNativeSeparators( QString::fromUtf8( binaryFilePath.c_str() ) );
+    const QString bundleSuffix = QString::fromUtf8(".bundle");
+    const int pos = std::max( path.lastIndexOf(bundleSuffix + QLatin1Char('/'), -1, Qt::CaseInsensitive),
+                              path.lastIndexOf(bundleSuffix + QLatin1Char('\\'), -1, Qt::CaseInsensitive) );
+    if (pos < 0) {
+        return std::string();
+    }
+    QFile plist( path.left( pos + bundleSuffix.size() ) + QString::fromUtf8("/Contents/Info.plist") );
+    if ( !plist.open(QIODevice::ReadOnly) ) {
+        return std::string();
+    }
+    const QString contents = QString::fromUtf8( plist.readAll() );
+    const QRegularExpression re( QString::fromUtf8("<key>\\s*CFBundleIdentifier\\s*</key>\\s*<string>\\s*([^<]*?)\\s*</string>") );
+    const QRegularExpressionMatch m = re.match(contents);
+
+    return m.hasMatch() ? m.captured(1).toStdString() : std::string();
 }
 
 bool
@@ -1167,9 +1368,15 @@ OfxHost::newMemoryInstance(size_t nBytes)
     OfxMemory* ret = new OfxMemory( OfxEffectInstancePtr() );
     bool allocated = ret->alloc(nBytes);
 
-    if ( ( (nBytes != 0) && !ret->getPtr() ) || !allocated ) {
-        Dialogs::errorDialog( tr("Out of memory").toStdString(),
-                              tr("Failed to allocate memory (%1).").arg( printAsRAM(nBytes) ).toStdString() );
+    // (test allocated first: after a failed allocation, PluginMemory::getPtr() must not be called)
+    if ( !allocated || ( (nBytes != 0) && !ret->getPtr() ) ) {
+        delete ret;
+        // This may be called from a render thread: log the error, never open a dialog.
+        appPTR->writeToErrorLog_mt_safe( QLatin1String("OpenFX"), QDateTime::currentDateTime(),
+                                         tr("Failed to allocate memory (%1).").arg( printAsRAM(nBytes) ) );
+        // Returning NULL would make HostSupport allocate the memory itself. Throwing bad_alloc makes
+        // imageMemoryAlloc() return kOfxStatErrMemory and set *memoryHandle to NULL, as the spec says.
+        throw std::bad_alloc();
     }
 
     return ret;
@@ -1328,6 +1535,15 @@ OfxHost::multiThread(OfxThreadFunctionV1 func,
         return kOfxStatFailed;
     }
 
+    // "This function cannot be called recursively", "kOfxStatErrExists, failed in an attempt to call
+    // multiThread recursively" (ofxMultiThread.h): a thread function (in a spawned thread, or in the
+    // calling thread on the sequential path below) may not call multiThread. An action called from a
+    // thread function (e.g. the render of an upstream effect through clipGetImage) pushes -1 on the
+    // thread index stack (setThreadAsActionCaller()), so that effect may call multiThread again.
+    if ( multiThreadIsSpawnedThread() ) {
+        return kOfxStatErrExists;
+    }
+
     unsigned int maxConcurrentThread;
     OfxStatus st = multiThreadNumCPUS(&maxConcurrentThread);
     if (st != kOfxStatOK) {
@@ -1339,15 +1555,28 @@ OfxHost::multiThread(OfxThreadFunctionV1 func,
     // the threads will be limited to the number of CPUs returned by multiThreadNumCPUs."
 
     if ( (nThreads == 1) || (maxConcurrentThread <= 1) || (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) ) {
-        try {
-            for (unsigned int i = 0; i < nThreads; ++i) {
+        // Run the thread functions one after the other in the calling thread. Inside func(i, ...),
+        // multiThreadIndex() must give i ("the same as the threadIndex argument passed to the
+        // OfxThreadFunctionV1", ofxMultiThread.h) and multiThreadIsSpawnedThread() 1, as in the
+        // spawned threads: push the index as threadFunctionWrapper() does.
+        OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+        for (unsigned int i = 0; i < nThreads; ++i) {
+            tls->threadIndexes.push_back( (int)i );
+            OfxStatus stat = kOfxStatOK;
+            try {
                 func(i, nThreads, customArg);
+            } catch (const std::bad_alloc &) {
+                stat = kOfxStatErrMemory;
+            } catch (...) {
+                stat = kOfxStatFailed;
             }
-
-            return kOfxStatOK;
-        } catch (...) {
-            return kOfxStatFailed;
+            tls->threadIndexes.pop_back();
+            if (stat != kOfxStatOK) {
+                return stat;
+            }
         }
+
+        return kOfxStatOK;
     }
 
     QThread* spawnerThread = QThread::currentThread();
@@ -1529,10 +1758,10 @@ OfxHost::mutexCreate(OfxMutexHandle *mutex,
 
     // suite functions should not throw
     try {
-        QRecursiveMutex* m = new QRecursiveMutex();
+        OfxSuiteMutex* m = new OfxSuiteMutex();
 
         for (int i = 0; i < lockCount; ++i) {
-            m->lock();
+            m->mutex.lock();
         }
         *mutex = (OfxMutexHandle)(m);
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
@@ -1564,23 +1793,25 @@ OfxHost::mutexCreate(OfxMutexHandle *mutex,
 OfxStatus
 OfxHost::mutexDestroy(const OfxMutexHandle mutex)
 {
-    if (mutex == 0) {
+    OfxSuiteMutex* m = suiteMutexFromHandle(mutex);
+    if (!m) {
         return kOfxStatErrBadHandle;
     }
     // suite functions should not throw
     try {
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-        const QMutex* mutexqt = reinterpret_cast<const QMutex*>(mutex);
         {
             QMutexLocker l(_pluginsMutexesLock);
-            std::list<QMutex*>::iterator found = std::find(_pluginsMutexes.begin(), _pluginsMutexes.end(), mutexqt);
+            std::list<OfxSuiteMutex*>::iterator found = std::find(_pluginsMutexes.begin(), _pluginsMutexes.end(), m);
             if ( found != _pluginsMutexes.end() ) {
                 delete *found;
                 _pluginsMutexes.erase(found);
             }
         }
 #else
-        delete reinterpret_cast<const QMutex*>(mutex);
+        // mutexCreate() allocates an OfxSuiteMutex, whose QRecursiveMutex is destroyed as one (in Qt6 it
+        // does not derive from QMutex)
+        delete m;
 #endif
 
         return kOfxStatOK;
@@ -1606,12 +1837,13 @@ OfxHost::mutexDestroy(const OfxMutexHandle mutex)
 OfxStatus
 OfxHost::mutexLock(const OfxMutexHandle mutex)
 {
-    if (mutex == 0) {
+    OfxSuiteMutex* m = suiteMutexFromHandle(mutex);
+    if (!m) {
         return kOfxStatErrBadHandle;
     }
     // suite functions should not throw
     try {
-        reinterpret_cast<QMutex*>(mutex)->lock();
+        m->mutex.lock();
 
         return kOfxStatOK;
     } catch (std::bad_alloc&) {
@@ -1635,12 +1867,13 @@ OfxHost::mutexLock(const OfxMutexHandle mutex)
 OfxStatus
 OfxHost::mutexUnLock(const OfxMutexHandle mutex)
 {
-    if (mutex == 0) {
+    OfxSuiteMutex* m = suiteMutexFromHandle(mutex);
+    if (!m) {
         return kOfxStatErrBadHandle;
     }
     // suite functions should not throw
     try {
-        reinterpret_cast<QMutex*>(mutex)->unlock();
+        m->mutex.unlock();
 
         return kOfxStatOK;
     } catch (std::bad_alloc&) {
@@ -1665,12 +1898,13 @@ OfxHost::mutexUnLock(const OfxMutexHandle mutex)
 OfxStatus
 OfxHost::mutexTryLock(const OfxMutexHandle mutex)
 {
-    if (mutex == 0) {
+    OfxSuiteMutex* m = suiteMutexFromHandle(mutex);
+    if (!m) {
         return kOfxStatErrBadHandle;
     }
     // suite functions should not throw
     try {
-        if ( reinterpret_cast<QMutex*>(mutex)->tryLock() ) {
+        if ( m->mutex.tryLock() ) {
             return kOfxStatOK;
         } else {
             return kOfxStatFailed;
@@ -1726,7 +1960,10 @@ OfxHost::notifyRedrawPending(OfxImageEffectHandle instance,
 OfxStatus
 OfxHost::flushOpenGLResources() const
 {
-    return kOfxStatOK;
+    // Natron releases no OpenGL resource here. "kOfxStatOK - the host has actually released some
+    // resources" would tell the plug-in to retry its allocation: "kOfxStatReplyDefault - nothing the host
+    // could do" (ofxGPURender.h).
+    return kOfxStatReplyDefault;
 }
 
 #endif

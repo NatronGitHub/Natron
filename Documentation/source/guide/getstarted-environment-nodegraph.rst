@@ -4,20 +4,19 @@
 Navigating inside the Node Graph
 ================================
 
-Pan the nodes view: ``middle mouse drag``
-
-zoom the nodes view: ``ALT + middle mouse drag``
-
-Frame all nodes: shortcut ``f``
-
-Frame only selected nodes: shortcut ``f``
+- Pan: drag with the middle mouse button.
+- Zoom: turn the mouse wheel, or drag with :kbd:`Alt` and the middle mouse
+  button.
+- Frame the nodes: press :kbd:`F`. If nodes are selected, the view is framed
+  on them, otherwise on all the nodes.
+- Find a node by name: :kbd:`Ctrl+F`.
 
 .. image:: _images/Environment/environment-big-node-graph.gif
 
-Mini Node Graph
-   The bottom right rectangle shows a minified view of the graph.
-   
-   Click and drag the yellow rectangle to change the part of the graph that is displayed
+Navigator
+   When some nodes are outside the view, a small view of the whole graph
+   appears in the bottom right corner of the Node Graph. Click and drag in it
+   to change the part of the graph that is displayed.
 
 .. image:: _images/Environment/environment-mini-node-graph.gif
 
@@ -29,68 +28,56 @@ Node Graph Tidiness
 
 Rearrange Nodes
 ---------------
-- Select several nodes connected in chain
-- press shortcut ``L``
-
-Nodes are automatically aligned vertically without moving the last one
+Select several nodes connected in a chain and press :kbd:`L`
+(*Rearrange Nodes*). The nodes are aligned vertically above the last one,
+which does not move.
 
 .. image:: _images/Environment/environment-rearrange-node-graph.gif
 
 Natron's Tidy Nodes
 -------------------
 
-Natron has a couple of nodes devoted entirely to script housekeeping.
+A few nodes only exist to keep the graph readable.
 
 Backdrop
 ::::::::
 
-A Backdrop is a flat colored sheet that can be placed behind a bunch of nodes. This is useful for making a complex script easier to read. I use backdrops in many of my. The other useful thing about a backdrop, is that its entire contents can be moved about by simply dragging on its header bar.
-Colored backdrops in a node graph.
+A Backdrop is a colored rectangle placed behind a group of nodes, to make a
+complex graph easier to read. Drag its title bar to move it together with all
+the nodes on it. Drag its bottom right corner to resize it.
 
 .. image:: _images/Environment/environment-nodegraph-backdrop.gif
 
-Create a backdrop
-  - Tools Palette "Other"
-  - Select "Backdrop
+To create a Backdrop, choose :menuselection:`Other --> Backdrop` in the
+toolbar, or press :kbd:`Tab` in the Node Graph, type ``bac`` and choose
+*Backdrop* in the list.
 
-  or
+Give backdrops colors by content, for example gray for mattes, blue for CG
+elements and green for live-action footage.
 
-  - Press ``Tab``
-  - Type "bac"
-  - Select Backdrop in the list
-
-Backdrops can be color coded. 
-   A common  convention is:
-   
-   - Grey 	   Mattes
-   - Blue 	   CG
-   - Green 	Live action footage
-   - Yellow 	Made in Nuke
-   - Pink 	   Other
-
-
-.. note:: A backdrop can be used as a sticky note to store text information inside nuke's project.
-      
-   Use the "Control"/"label" text field to type in
+.. note:: A Backdrop can also hold notes: type the text in the *Label*
+   parameter of its *Controls* tab.
 
 Dot
 :::
 
-A Dot can be added to any arrow that runs between nodes. This can be used to maintain tidiness. One general rule of node graph tidiness is that arrows should run vertically or horizontally, not diagonally. To add a dot, hold down the 'command' key and click the yellow dot that appears.
+A Dot is a small node that only passes its input through. Use Dots to bend
+the connections, so that they run vertically or horizontally instead of
+diagonally. To add a Dot on a connection, hold :kbd:`Ctrl` (:kbd:`Cmd` on
+macOS): a handle appears in the middle of each connection. Click a handle to
+insert a Dot there. You can also create a Dot with the :kbd:`.` key.
 
 .. image:: _images/Environment/environment-dot-drag.gif
 
 Group
 :::::
 
-Many nodes can be grouped together to make the graph easier to read.
-
-- select the Nodes
-- hit ``CTRL+G``. 
-  The nodes will be replaced by a group node containing them all. 
-  
-  Its content is automatically opened in a new node graph tab called "Group"
-  To reopen later this node graph click the eye icon in the top bar of the group node.
+Select nodes and press :kbd:`Ctrl+G` to replace them by a single Group node
+that contains them. The nodes inside the group are shown in their own Node
+Graph tab. To open this tab again later, click the button at the top of the
+Group's properties panel (tooltip: *Pressing this button will show the
+underlying node graph...*). To put the nodes back in the main graph, select
+the Group and press :kbd:`Ctrl+Alt+G` (*Expand group*).
 
 .. image:: _images/Environment/environment-nodes-group-opengraph.gif 
 
@@ -100,21 +87,25 @@ Nodes properties
 Nodes naming
 ::::::::::::
 
-Label everything (using NoOps with preview enabled, BackDrops etc)
-
-Rename the "Label" of a node not the "script name"
+Name your nodes so that the graph explains itself. To rename a node, select it
+and press :kbd:`N` in the Node Graph, or edit the name at the top of its
+properties panel. Renaming a node also changes its script name, the name that
+expressions and Python scripts use to refer to it. To add a description
+without renaming the node, type it in the *Label* parameter of the *Node* tab:
+it is shown under the node name.
 
 .. image:: _images/Environment/environment-nodes-rename.gif
 
 Previews
 ::::::::
 
-A node can show a thumbnail of it's output by ticking the Preview checkbox.
+A node can show a thumbnail of its output: check *Preview* in its *Node* tab,
+or select the node and press :kbd:`Alt+P`.
 
 
 .. image:: _images/Environment/environment-nodes-preview.gif
 
-.. note:: If a node graph has many previews it can slow down the display. You can disable the auto refresh of these previews disabling the "Auto Previews" checkbox of the project settings (shortcut ``S`` in the node graph)
+.. note:: If a node graph has many previews it can slow down the display. You can disable the auto refresh of these previews unchecking *Auto Previews* in the project settings (:kbd:`S`). Press :kbd:`Shift+P` to refresh the previews of the selected nodes
    
    .. image:: _images/Environment/environment-nodes-autopreview.gif
 
@@ -122,45 +113,42 @@ A node can show a thumbnail of it's output by ticking the Preview checkbox.
 Hide input
 ::::::::::
 
-When nodes have very long connections they can make the node graph difficult to read. To avoid this you can hide the input arrow of a node.
-
-The input arrows only disappear when the node is not selected.
-
-To make the script easy to read you often enable the preview and rename the node with the input hiddens
+Long connections make the graph hard to read. To hide the input connections
+of a node, check *Hide inputs* in its *Node* tab, or choose *Hide inputs* in
+the context menu of the Node Graph. The connections are still shown while the
+node is selected. Give such nodes a clear label, or turn on their preview, so
+that it is clear where their input comes from.
 
 .. image:: _images/Environment/environment-nodes-hide_input.gif
 
 Nodes placement convention
 --------------------------
 
-Scripts should be readable: laid out in a rational and consistent manner. This is to enable their easy reading by you and anyone else who might review your script.
+Lay out the graph in a consistent way, so that you and others can read it
+easily.
 
 A common  convention is:
 
-- Main input feed from the top.
-  
-   the B input of the merge that is transmitted when the node is disabled
-- Masks feed in from the right 
-   
-   usually labelled mask
-- Image secondary inputs feed in from the left.
-   
-   the A input for the Merge
-- Favour vertical connections for main branches. 
-  
-   They allow naming the nodes without overlap and take less screen room. The autoarrange functions is coded for this.
-- Favour horizontal connections over diagonal ones to connect several branches.
-  
-   Dots can be used to make this happen.
-- Put everything inside backdrops.
-  
-   This useful even for moving groups of nodes, to ensure you don't forget part of a function
-- Label everything.
-  
-   Using backdrops, postage stamps, and the Labels of the nodes.
-- Don't change the script name.
-  
-   This can be confusing for humans and the expression engine.
-   It's not a viable option because no two nodes can have the same name. Hence  Natron does some automatic renaming when duplicating nodes
+- The main input comes from the top: for a Merge, this is the B input, which
+  is passed through when the node is disabled.
+- Masks come from the right.
+- Secondary image inputs, such as the A input of a Merge, come from the left.
+- Use vertical connections for the main branches: the node names do not
+  overlap, and the graph takes less room. *Rearrange Nodes* (:kbd:`L`) lays
+  out nodes this way.
+- Connect branches with horizontal connections rather than diagonal ones,
+  using Dots.
+- Put related nodes on Backdrops, which also makes it easy to move them
+  together.
+- Label everything: Backdrops, previews and node labels.
+- Name the nodes before you write expressions that refer to them, since
+  expressions use the script names. Two nodes cannot have the same script
+  name, so Natron gives a new name to the nodes you copy.
 
-   For more in depth information on Nodes see :doc:`Nodes <getstarted-environment-nodes>`
+For more about nodes, see :doc:`getstarted-environment-nodes`.
+
+See also
+--------
+
+- :ref:`evaluating-script-structure`: common bad practices that make a project
+  hard to read, fix or hand over.

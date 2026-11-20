@@ -333,16 +333,22 @@ NodeGraph::scrollViewIfNeeded(const QPointF& scenePos)
 
     if ( (dx != 0) || (dy != 0) ) {
         moveRootInternal(-dx, -dy);
-        /*if (_imp->_evtState == eEventStateDraggingArrow && _imp->_arrowSelected) {
-
-           } else if (_imp->_evtState == eEventStateDraggingNode && !_imp->_selection.empty()) {
+        // The whole graph has moved by (-dx, -dy), but the mouse has not: move what is being dragged
+        // by (dx, dy), so that it stays under the cursor (#135). The node motion goes through
+        // moveSelectedNodesBy(), which also records it for the undo command created on mouse release
+        // (with userEdit=false, so that the magnet is not applied: the cursor did not move).
+        if ( (_imp->_evtState == eEventStateDraggingNode) && !_imp->_selection.empty() ) {
             Qt::KeyboardModifiers mods = qApp->keyboardModifiers();
             QPointF lastMousePosScene = mapToScene(_imp->_lastMousePos);
-            QPoint newPos = _imp->_lastMousePos + QPoint(dx,dy);
-            QPointF newPosScene = mapToScene(newPos);
-            moveSelectedNodesBy(mods.testFlag(Qt::ShiftModifier), mods.testFlag(Qt::ControlModifier), lastMousePosScene, newPosScene, visibleSceneRect(), false);
-            _imp->_lastMousePos = newPos;
-           }*/
+            moveSelectedNodesBy(mods.testFlag(Qt::ShiftModifier), mods.testFlag(Qt::ControlModifier), lastMousePosScene, lastMousePosScene + QPointF(dx, dy), visibleSceneRect(), false);
+        } else if ( (_imp->_evtState == eEventStateDraggingArrow) && _imp->_arrowSelected ) {
+            QPointF np = _imp->_arrowSelected->mapFromScene(scenePos);
+            if ( _imp->_arrowSelected->isOutputEdge() ) {
+                _imp->_arrowSelected->dragDest(np);
+            } else {
+                _imp->_arrowSelected->dragSource(np);
+            }
+        }
 
         _imp->_refreshOverlays = true;
         update();

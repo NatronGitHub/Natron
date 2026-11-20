@@ -23,6 +23,8 @@ CONFIG += staticlib
 CONFIG += moc rcc
 CONFIG += boost opengl qt cairo python shiboken pyside 
 QT += gui core network concurrent widgets
+# QOpenGLWidget moved to its own module in Qt6; CMake already appends it.
+equals(QT_MAJOR_VERSION, 6): QT += openglwidgets
 
 GUI_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronGui
 ENGINE_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronEngine
@@ -122,6 +124,7 @@ SOURCES += \
     GuiApplicationManager10.cpp \
     GuiApplicationManagerPrivate.cpp \
     GuiPrivate.cpp \
+    GuiTest.cpp \
     Histogram.cpp \
     HostOverlay.cpp \
     InfoViewerWidget.cpp \
@@ -130,6 +133,7 @@ SOURCES += \
     KnobGui20.cpp \
     KnobGuiBool.cpp \
     KnobGuiButton.cpp \
+    KnobGuiBytes.cpp \
     KnobGuiChoice.cpp \
     KnobGuiColor.cpp \
     KnobGuiContainerHelper.cpp \
@@ -221,7 +225,6 @@ SOURCES += \
     ViewerTabPrivate.cpp \
     ViewerToolButton.cpp \
     ticks.cpp \
-    $${GUI_WRAPPER_DIR}/natrongui_module_wrapper.cpp \
 
 HEADERS += \
     AboutWindow.h \
@@ -270,12 +273,14 @@ HEADERS += \
     GuiFwd.h \
     GuiMacros.h \
     GuiPrivate.h \
+    GuiTest.h \
     Histogram.h \
     HostOverlay.h \
     InfoViewerWidget.h \
     KnobGui.h \
     KnobGuiBool.h \
     KnobGuiButton.h \
+    KnobGuiBytes.h \
     KnobGuiChoice.h \
     KnobGuiColor.h \
     KnobGuiContainerHelper.h \
@@ -388,8 +393,10 @@ GUI_GENERATED_SOURCES = \
     pytabwidget_wrapper \
     pyviewer_wrapper
 
+# generated bindings: see warnings.pri
+NATRON_BINDINGS_SOURCES += $${GUI_WRAPPER_DIR}/natrongui_module_wrapper.cpp
 for(name, GUI_GENERATED_SOURCES) {
-    SOURCES += $${GUI_WRAPPER_DIR}/$${name}.cpp
+    NATRON_BINDINGS_SOURCES += $${GUI_WRAPPER_DIR}/$${name}.cpp
     HEADERS += $${GUI_WRAPPER_DIR}/$${name}.h
 }
 
@@ -420,3 +427,5 @@ OBJECTIVE_SOURCES += \
     $$PWD/../Gui/QtMac.mm \
     $$PWD/../Gui/TaskBarMac.mm
 }
+
+include(../warnings.pri)

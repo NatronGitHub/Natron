@@ -32,13 +32,22 @@ GUEST_PROXY_ALLOW=${GUEST_PROXY_ALLOW:-"*:80 *:443"}
 # per-user runtime files (sockets, address cache, logs): not in the shared /tmp
 TART_RUN=${TART_RUN:-${TMPDIR:-/tmp}/natron-tart}
 mkdir -p "$TART_RUN" && chmod 700 "$TART_RUN"
+# ssh control sockets: a Unix socket path is limited to 104 bytes, and macOS's $TMPDIR
+# (/var/folders/xx/.../T/) is too long for "<dir>/<vm>.sock" plus ssh's temporary suffix.
+TART_SOCK=${TART_SOCK:-/tmp/natron-tart-$(id -u)}
+mkdir -p -m 700 "$TART_SOCK"
+if [ -L "$TART_SOCK" ] || [ ! -O "$TART_SOCK" ]; then
+    echo "error: $TART_SOCK is not a directory owned by $(id -un)" >&2
+    exit 1
+fi
+chmod 700 "$TART_SOCK"
 
 # cloned VMs share host keys and get new addresses: don't pin host keys (host-only network).
 # -F /dev/null: the user's ~/.ssh/config (agent forwarding, ProxyCommand...) never applies to the guest
 tart_sshopts() { # vm
     echo "-F /dev/null -i $TART_KEY -o IdentitiesOnly=yes -o ForwardAgent=no -o ForwardX11=no" \
          "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR" \
-         "-o ServerAliveInterval=60 -o ControlPath=$TART_RUN/$1.sock"
+         "-o ServerAliveInterval=60 -o ControlPath=$TART_SOCK/$1.sock"
 }
 
 # one run at a time: clones share their IPv6 link-local address, and a WIP must not be provisioned twice
@@ -150,7 +159,7 @@ vm_start() { # vm : boot (if needed), install the SSH key, open the SSH master c
         sleep 5
     done
     [ "$ok" = 1 ] || die "cannot log into $vm at $addr"
-    sock=$TART_RUN/$vm.sock
+    sock=$TART_SOCK/$vm.sock
     if ! ssh $(tart_sshopts "$vm") -O check admin@"$addr" 2>/dev/null; then
         rm -f "$sock"   # stale socket of a killed master
         ssh $(tart_sshopts "$vm") -fN -M -o ExitOnForwardFailure=yes \
@@ -180,14 +189,22 @@ vm_stop() { # vm
 vm_sync() { # vm : copy tools/ of the Natron checkout (tracked files, with local changes) and osmesa-install
     local vm=$1
     log "syncing sources into $vm"
-    vm_ssh "$vm" "mkdir -p Documents/third_party/Natron"
+    # tools/ in the VM must be an exact copy of the checkout. A finished image has no copy at all
+    # (provision.sh's cleanup step deletes it), but a -wip VM resumed by `natron-sdk.sh create`
+    # keeps the previous one, and a file deleted from the checkout since then (e.g. a port removed
+    # from the MacPorts overlay) would survive there and be published again by tools/MacPorts/sync.sh.
+    # --files-from below can't delete, so start from an empty tools/. Nothing else lives there
+    # (provision.sh logs go to ~/provision-logs).
+    vm_ssh "$vm" "mkdir -p Documents/third_party/Natron && rm -rf Documents/third_party/Natron/tools"
     # only the files git tracks under tools/ (the build checks out Natron itself from GitHub):
-    # untracked notes or credentials in the checkout never end up in the image
+    # untracked notes or credentials in the checkout never end up in the image. Local changes to
+    # tracked files are copied; to include a new file, `git add -N` it. A tracked file deleted in
+    # the working tree but not yet committed is skipped (--ignore-missing-args).
     (cd "$NATRON_SRC" && git ls-files -z tools) |
-        vm_rsync "$vm" "$NATRON_SRC/" Documents/third_party/Natron/ --from0 --files-from=-
+        vm_rsync "$vm" "$NATRON_SRC/" Documents/third_party/Natron/ --from0 --files-from=- --ignore-missing-args
     if [ -d "$OSMESA_INSTALL_SRC" ]; then
         (cd "$OSMESA_INSTALL_SRC" && git ls-files -z -c -- . ':!CLAUDE.md') |
-            vm_rsync "$vm" "$OSMESA_INSTALL_SRC/" Documents/third_party/osmesa-install/ --from0 --files-from=-
+            vm_rsync "$vm" "$OSMESA_INSTALL_SRC/" Documents/third_party/osmesa-install/ --from0 --files-from=- --ignore-missing-args
     else
         vm_ssh "$vm" "[ -d Documents/third_party/osmesa-install ] || ALL_PROXY=$GUEST_PROXY git clone https://github.com/devernay/osmesa-install.git Documents/third_party/osmesa-install"
     fi

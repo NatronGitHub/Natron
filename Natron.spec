@@ -6,10 +6,11 @@ Version22: 2.2.10
 Version23: 2.3.16
 Version24: 2.4.4
 Version25: 2.5.0
+Version26: 2.6.0
 Version30: 3.0.0
 
 # The version for this branch of the sources
-Version: %{version25}
+Version: %{version26}
 
 # The release number (must be incremented whenever changes to this file generate different binaries)
 Release: 1%{?dist}

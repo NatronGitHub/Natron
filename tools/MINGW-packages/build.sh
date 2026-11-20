@@ -2,23 +2,20 @@
 set -e -x
 CWD=`pwd`
 PKGS="
-mingw-w64-imath
-mingw-w64-openexr
+mingw-w64-freetype
 mingw-w64-libraw-gpl2
 mingw-w64-libraw-lgpl
-mingw-w64-opencolorio2-git
 mingw-w64-openimageio
 mingw-w64-seexpr-git
-mingw-w64-x264-git
 mingw-w64-ffmpeg-gpl2
-mingw-w64-sox
-mingw-w64-poppler
+mingw-w64-ffmpeg-lgpl
+mingw-w64-libheif-lgpl
+mingw-w64-libtiff-lgpl
 mingw-w64-imagemagick
+mingw-w64-osmesa
 "
-echo "mingw-w64-osmesa is currently BROKEN https://github.com/SCons/scons/wiki/LongCmdLinesOnWin32"
-sleep 10
 for pkg in ${PKGS}; do
     cd "${CWD}/$pkg"
     ${CWD}/makepkg.sh
-    pacman -U mingw-w64-x86_64-*-any.pkg.tar.*
+    pacman -U "${MINGW_PACKAGE_PREFIX}"-*-any.pkg.tar.*
 done

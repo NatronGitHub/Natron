@@ -37,7 +37,7 @@ Natron binaries include components from the following libraries:
 
 * OpenImageIO (Modified BSD) https://openimageio.org
 * OpenColorIO (Modified BSD) http://opencolorio.org/License.html
-* FFmpeg (LGPL 2.1) https://www.ffmpeg.org/legal.html
+* FFmpeg (GPL 2.0 or later in GPL builds, LGPL 2.1 or later in COMMERCIAL builds) https://www.ffmpeg.org/legal.html
 * SeExpr (modified Apache 2.0) http://www.disneyanimation.com/technology/seexpr.html
 * pstream (Boost Software License) http://pstreams.sourceforge.net
 
@@ -60,6 +60,7 @@ Natron binaries include components from the following libraries:
 
 * OpenEXR & IlmBase (Modified BSD)  http://www.openexr.com/license.html (used by openfx-io via OpenImageIO) 
 * libtiff (Modified BSD) http://www.remotesensing.org/libtiff (used by openfx-io via OpenImageIO) 
+* JBIG-KIT (GPL 2.0 or later) https://www.cl.cam.ac.uk/~mgk25/jbigkit/ (Windows GPL builds only, used by libtiff; COMMERCIAL builds use a libtiff without it)
 * libpng (libpng/zlib License) http://www.libpng.org (used by openfx-io via OpenImageIO and openfx-arena via ImageMagick)
 * libjpeg (Modified BSD) http://ijg.org (used by openfx-io via OpenImageIO) 
 * openjpeg (2-clauses BSD) http://www.openjpeg.org (used by openfx-io via OpenImageIO) 
@@ -67,8 +68,11 @@ Natron binaries include components from the following libraries:
 * HDF5 (Modified BSD) https://www.hdfgroup.org/HDF5 (used by openfx-io via OpenImageIO) 
 * Field3D (Modified BSD) https://github.com/imageworks/Field3D (used by openfx-io via OpenImageIO) 
 * GIFLIB (X Consortium-like licence) http://giflib.sourceforge.net (used by openfx-io via OpenImageIO) 
-* LibRaw (LGPL 2.1 or CDDL 1.0 license) http://www.libraw.org (used by openfx-io via OpenImageIO) 
+* LibRaw (LGPL 2.1 or CDDL 1.0 license; GPL builds also include LibRaw's GPL 2.0 demosaic pack, with the AHD-Mod, AFD, VCD, Mixed and LMMSE methods, which makes that LibRaw GPL 2.0 or later; the GPL 3.0 pack is not included) https://www.libraw.org (used by openfx-io directly and via OpenImageIO) 
 * JasPer (MIT) http://www.ece.uvic.ca/~frodo/jasper/ (used by openfx-io via LibRaw) 
+* libheif (LGPL 3.0; GPL builds also include its x264 and x265 encoders, which are GPL 2.0, COMMERCIAL builds a libheif without them) https://github.com/strukturag/libheif (used by openfx-io via OpenImageIO)
+* libde265 (LGPL 3.0) https://github.com/strukturag/libde265 (used by openfx-io via libheif)
+* kvazaar (3-clause BSD) https://github.com/ultravideo/kvazaar (used by openfx-io via libheif)
 
 ## openfx-arena
 
@@ -89,7 +93,7 @@ Natron binaries include components from the following libraries:
 
 * G'MIC (CeCILL-C, LGPL-like) http://gmic.eu/
 * CImg (CeCILL-C, LGPL-like) http://cimg.eu/
-* FFTW (GPLv2) http://www.fftw.org/
+* pocketfft (3-clause BSD) https://github.com/mreineck/pocketfft
 
 ## Indirect dependencies
 

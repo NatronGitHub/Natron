@@ -37,6 +37,8 @@ CLANG_DIAG_OFF(deprecated)
 
 CLANG_DIAG_ON(deprecated)
 
+#include "Engine/AppManager.h" // appPTR
+
 #ifdef DEBUG
 #include "Global/FloatingPointExceptions.h"
 #endif
@@ -74,6 +76,10 @@ SplashScreen::SplashScreen(const QString & filePath)
 
     setAttribute( Qt::WA_TransparentForMouseEvents );
     setAttribute(Qt::WA_TranslucentBackground, true);
+    if ( appPTR && appPTR->isDialogsDisabled() ) {
+        // --no-dialogs (scripts and tests): do not steal the focus from the user's work
+        setAttribute(Qt::WA_ShowWithoutActivating);
+    }
 
     _pixmap.load(filePath);
     _scale = 1.;
@@ -112,7 +118,7 @@ SplashScreen::paintEvent(QPaintEvent*)
 {
     QStyleOption opt;
 
-    opt.init(this);
+    opt.initFrom(this);
     QPainter p(this);
 
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
@@ -165,7 +171,7 @@ LoadProjectSplashScreen::paintEvent(QPaintEvent* /*e*/)
 {
     QStyleOption opt;
 
-    opt.init(this);
+    opt.initFrom(this);
     QPainter p(this);
 
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);

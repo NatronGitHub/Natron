@@ -20,6 +20,7 @@ without importing anything.
     BezierCurve
     BooleanParam
     ButtonParam
+    BytesParam
     ChoiceParam
     ColorParam
     ColorTuple
@@ -42,6 +43,7 @@ without importing anything.
     ItemBase
     Layer
     Natron
+    NodeCreationProperty
     OutputFileParam
     PageParam
     Param
@@ -51,6 +53,7 @@ without importing anything.
     RectD
     RectI
     Roto
+    SeparatorParam
     StringParam
     StringParamBase
     Track

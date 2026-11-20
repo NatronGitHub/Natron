@@ -244,7 +244,9 @@ namespace openMVG {
     const Vec3 &center3D = Vec3::Zero(),
     const Vec3 &upVector3D = Vec3::UnitY() );
 
-#define SUM_OR_DYNAMIC(x,y) (x==Eigen::Dynamic||y==Eigen::Dynamic)?Eigen::Dynamic:(x+y)
+// The operands are Eigen enumerators, and adding two different enumeration
+// types is deprecated in C++20 and ill-formed in C++23, so widen them first.
+#define SUM_OR_DYNAMIC(x,y) (x==Eigen::Dynamic||y==Eigen::Dynamic)?Eigen::Dynamic:(int(x)+int(y))
 
   template<typename Derived1, typename Derived2>
   struct hstack_return {

@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _ButtonParam:
 
 ButtonParam
@@ -26,7 +26,7 @@ Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-.. method:: NatronEngine.ButtonParam.trigger()
+.. method:: ButtonParam.trigger()
 
 Triggers the button action as though the user had pressed it.
 

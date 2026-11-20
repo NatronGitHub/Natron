@@ -183,9 +183,9 @@ public:
 
     /**
      * @brief Same as the other version clone except that keyframes will be offset by the given offset
-     * and only the keyframes lying in the given range will be copied.
+     * and only the keyframes lying in the given range (all of them if range is NULL) will be copied.
      **/
-    void clone(const Curve & other, SequenceTime offset, const RangeD* range);
+    void clone(const Curve & other, double offset, const RangeD* range);
 
     bool isAnimated() const WARN_UNUSED_RETURN;
 
@@ -194,6 +194,10 @@ public:
      * modify the Y component of the curve.
      **/
     bool isYComponentMovable() const WARN_UNUSED_RETURN;
+
+    /// The keyframe values of a string curve reference strings (see StringAnimationManager and
+    /// getKeyFramesForDisplay_mt_safe())
+    bool isStringCurve() const WARN_UNUSED_RETURN;
 
     /**whether the curve will clamp possible keyframe X values to integers or not.**/
     bool areKeyFramesTimeClampedToIntegers() const WARN_UNUSED_RETURN;
@@ -248,6 +252,8 @@ public:
     /*
      * The interpolated curve value.
      * An empty curve has a value of zero everywhere/
+     * The value of a string curve is the index of the keyframe at or before t (0 before the first keyframe),
+     * see getKeyFramesForDisplay_mt_safe().
      */
     double getValueAt(double t, bool clamp = true) const WARN_UNUSED_RETURN;
 
@@ -256,6 +262,21 @@ public:
     double getIntegrateFromTo(double t1, double t2) const WARN_UNUSED_RETURN;
 
     KeyFrameSet getKeyFrames_mt_safe() const WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Same as getKeyFrames_mt_safe(), except that the value of each keyframe of a string curve is its index.
+     * The keyframe values of a string curve reference strings (see StringAnimationManager): they are only
+     * meaningful within the process, and must not be shown to users or saved.
+     **/
+    KeyFrameSet getKeyFramesForDisplay_mt_safe() const WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Find, in a single query, the last keyframe at or before time and the first keyframe after time.
+     * @param prev If not NULL, receives the keyframe at or before time, if any.
+     * @param next If not NULL, receives the first keyframe after time, if any; *hasNext tells whether there is one.
+     * @returns the index of the keyframe at or before time, or -1 if there is none.
+     **/
+    int getKeyFramesAround(double time, KeyFrame* prev, KeyFrame* next, bool* hasNext) const WARN_UNUSED_RETURN;
 
     void clearKeyFrames();
 
@@ -351,6 +372,22 @@ public:
     void smooth(const RangeD* range);
 
     void setKeyframes(const KeyFrameSet& keys, bool refreshDerivatives);
+
+    /**
+     * @brief Recompute the derivatives of all the keyframes that are not Free or Broken
+     * (used after loading a project that contained NaN derivatives, see #1267).
+     **/
+    void refreshAutomaticDerivatives();
+
+    /**
+     * @brief Mark this curve as loaded from a file that contained non-finite values (#1267):
+     * clone() and cloneAndCheckIfChanged() from this curve then recompute the automatic
+     * derivatives of their target with the target's properties (e.g. periodicity).
+     * The flag is never propagated by clone(): it is only set on the curves of the temporary
+     * knobs of KnobSerialization::load(), which are then cloned into the real knobs.
+     **/
+    void setMustRefreshDerivatives();
+    bool getMustRefreshDerivatives() const WARN_UNUSED_RETURN;
 
 private:
     friend class ::boost::serialization::access;

@@ -47,7 +47,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QStringList>
 #include <QDir>
 #include <QUrl>
-#include <QRegExp>
 #include <QLatin1Char>
 #include <QSize>
 #include <QComboBox>
@@ -450,6 +449,9 @@ private:
     bool sequenceModeEnabled() const;
 
     bool isDirectory(const QString & name) const;
+
+    ///the filter that shows the files with any of the extensions given to the dialog, e.g. "*.exr *.png"
+    QString combinedFilter() const;
 
     QFileSystemModel* getFavoriteSystemModel() const;
 

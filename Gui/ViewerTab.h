@@ -85,13 +85,13 @@ public:
     /*All the overlay methods are forwarding calls to the default node instance*/
     void drawOverlays(double time, const RenderScale & renderScale) const;
 
-    bool notifyOverlaysPenDown(const RenderScale & renderScale, PenType pen, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
+    bool notifyOverlaysPenDown(const RenderScale & renderScale, PenType pen, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers);
 
     bool notifyOverlaysPenDoubleClick(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos);
 
-    bool notifyOverlaysPenMotion(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
+    bool notifyOverlaysPenMotion(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers);
 
-    bool notifyOverlaysPenUp(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
+    bool notifyOverlaysPenUp(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers);
 
     /**
      * @brief Compute the cursor requested by the overlays shown on this viewer (OFX interact
@@ -118,16 +118,16 @@ public:
 
 private:
 
-    bool notifyOverlaysPenDown_internal(const NodePtr& node, const RenderScale & renderScale, PenType pen, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
+    bool notifyOverlaysPenDown_internal(const NodePtr& node, const RenderScale & renderScale, PenType pen, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers);
 
-    bool notifyOverlaysPenMotion_internal(const NodePtr& node, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
+    bool notifyOverlaysPenMotion_internal(const NodePtr& node, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers);
     bool notifyOverlaysKeyDown_internal(const NodePtr& node, const RenderScale & renderScale, Key k,
-                                        KeyboardModifiers km, Qt::Key qKey, const Qt::KeyboardModifiers& mods);
+                                        KeyboardModifiers km, const QString& keyText, Qt::Key qKey, const Qt::KeyboardModifiers& mods);
 
     bool checkNodeViewerContextShortcuts(const NodePtr& node, Qt::Key qKey, const Qt::KeyboardModifiers& mods);
 
     bool notifyOverlaysKeyRepeat_internal(const NodePtr& node, const RenderScale & renderScale, Key k,
-                                          KeyboardModifiers km, Qt::Key qKey, const Qt::KeyboardModifiers& mods);
+                                          KeyboardModifiers km, const QString& keyText, Qt::Key qKey, const Qt::KeyboardModifiers& mods);
 
 public:
 
@@ -385,6 +385,9 @@ public Q_SLOTS:
 
     void onInputChanged(int inputNb);
 
+    ///refresh the names of the inputs in the A/B menus, e.g. after a Dot input was reconnected
+    void refreshInputNames();
+
     void onCanSetFPSClicked(bool toggled);
     void onCanSetFPSLabelClicked(bool toggled);
     void setFPSLocked(bool fpsLocked);
@@ -462,6 +465,16 @@ public Q_SLOTS:
     void toggleTripleSync(bool toggled);
 
 private:
+
+    ///the name of a viewer input in the A/B menus: the name of the node, or of the first non-Dot node upstream of a Dot,
+    ///made unique among the inputs
+    QString getInputDisplayName(const NodePtr& input, int inputNb);
+
+    ///is this name used by another input than inputNb in the A/B menus?
+    bool isInputNameUsed(const QString& name, int inputNb) const;
+
+    ///rename an input in the A/B menus
+    void setInputName(int inputNb, const QString& name);
 
     void abortViewersAndRefresh();
 

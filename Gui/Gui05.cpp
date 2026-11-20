@@ -281,6 +281,8 @@ Gui::removeGroupGui(NodeGraph* tab,
         }
 
         unregisterTab(tab);
+        // The graph's undo stack, and its undo/redo actions, are deleted with the graph (#1441)
+        removeUndoStack( tab->getUndoStack() );
         tab->deleteLater();
     }
 }

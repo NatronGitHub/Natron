@@ -131,18 +131,24 @@ public:
         if ( !isRunning() ) {
             return;
         }
-        QMutexLocker k(&mustQuitMutex);
-        assert(!mustQuit);
-        mustQuit = true;
-
         {
-            QMutexLocker k2(&_entriesQueueMutex);
-            _entriesQueue.push_back( std::shared_ptr<T>() );
-            _entriesQueueNotEmptyCond.wakeOne();
+            QMutexLocker k(&mustQuitMutex);
+            assert(!mustQuit);
+            mustQuit = true;
+
+            {
+                QMutexLocker k2(&_entriesQueueMutex);
+                _entriesQueue.push_back( std::shared_ptr<T>() );
+                _entriesQueueNotEmptyCond.wakeOne();
+            }
+            while (mustQuit) {
+                mustQuitCond.wait(k.mutex());
+            }
         }
-        while (mustQuit) {
-            mustQuitCond.wait(k.mutex());
-        }
+        // run() has reset mustQuit but may not have returned yet: wait until the thread is
+        // finished, so that the QThread can be destroyed (else Qt aborts with "QThread:
+        // Destroyed while thread is still running").
+        wait();
     }
 
     bool isWorking() const
@@ -260,19 +266,23 @@ public:
         if ( !isRunning() ) {
             return;
         }
-        QMutexLocker k(&mustQuitMutex);
-        assert(!mustQuit);
-        mustQuit = true;
-
         {
-            QMutexLocker k2(&_requestQueueMutex);
-            CleanRequest r;
-            _requestsQueues.push_back(r);
-            _requestsQueueNotEmptyCond.wakeOne();
+            QMutexLocker k(&mustQuitMutex);
+            assert(!mustQuit);
+            mustQuit = true;
+
+            {
+                QMutexLocker k2(&_requestQueueMutex);
+                CleanRequest r;
+                _requestsQueues.push_back(r);
+                _requestsQueueNotEmptyCond.wakeOne();
+            }
+            while (mustQuit) {
+                mustQuitCond.wait(k.mutex());
+            }
         }
-        while (mustQuit) {
-            mustQuitCond.wait(k.mutex());
-        }
+        // as in DeleterThread::quitThread(): wait until run() has returned
+        wait();
     }
 
     bool isWorking() const
@@ -524,6 +534,10 @@ private:
     // When set these are used for fast search of a free tile
     TileCacheFileWPtr _nextAvailableCacheFile;
     int _nextAvailableCacheFileIndex;
+
+    // Index used to name the next tile cache file, protected by _tileCacheMutex.
+    // It only increases, so that a new file never reuses the name of an existing one.
+    int _nextCacheFileIndex;
 public:
 
 
@@ -557,12 +571,18 @@ public:
         , _cacheFiles()
         , _nextAvailableCacheFile()
         , _nextAvailableCacheFileIndex(-1)
+        , _nextCacheFileIndex(0)
     {
         _signalEmitter = std::make_shared<CacheSignalEmitter>();
     }
 
     virtual ~Cache()
     {
+        // The threads must be finished before their QThread is destroyed (else Qt aborts with
+        // "QThread: Destroyed while thread is still running"), and before the containers are
+        // cleared, since they use them. They also take _lock, so do this before locking it.
+        waitForDeleterThread();
+
         QMutexLocker locker(&_lock);
 
         _tearingDown = true;
@@ -590,6 +610,26 @@ public:
     void setTiled(bool tiled, std::size_t tileByteSize)
     {
         QMutexLocker k(&_tileCacheMutex);
+        if (tileByteSize != _tileByteSize) {
+            // Tiles of the previous size can no longer be allocated (see allocTile()).
+            // Delete the files that have no tile in use. The files that still have tiles used by
+            // live entries are kept, so that these entries remain valid, and they are deleted
+            // when their last tile is freed (see freeTile()).
+            for (std::set<TileCacheFilePtr>::iterator it = _cacheFiles.begin(); it != _cacheFiles.end();) {
+                if ( !(*it)->hasUsedTiles() ) {
+                    try {
+                        (*it)->file->remove();
+                    } catch (const std::exception& e) {
+                        qDebug() << "Cache: could not delete an unused tile file:" << e.what();
+                    }
+                    _cacheFiles.erase(it++);
+                } else {
+                    ++it;
+                }
+            }
+            _nextAvailableCacheFile.reset();
+            _nextAvailableCacheFileIndex = -1;
+        }
         _isTiled = tiled;
         _tileByteSize = tileByteSize;
     }
@@ -597,8 +637,10 @@ public:
 
     void waitForDeleterThread()
     {
-        _deleterThread.quitThread();
+        // The cleaner thread first: it gives the entries that it removes to the deleter thread,
+        // which would start again if it was quit first.
         _cleanerThread.quitThread();
+        _deleterThread.quitThread();
     }
 
     /**
@@ -637,29 +679,44 @@ private:
         }
         for (std::set<TileCacheFilePtr>::iterator it = _cacheFiles.begin(); it != _cacheFiles.end(); ++it) {
             if ((*it)->file->path() == filepath) {
-                int index = dataOffset / _tileByteSize;
+                std::size_t index = dataOffset / (*it)->tileByteSize;
 
-                // The dataOffset should be a multiple of the tile size
-                assert(_tileByteSize * index == dataOffset);
-                assert(!(*it)->usedTiles[index]);
+                // The dataOffset should be a multiple of the tile size, and the tile
+                // must not be used by another entry (this could happen with a cache
+                // written by an older version, where two files could share a name).
+                if ( (*it)->tileByteSize * index != dataOffset ||
+                     index >= (*it)->usedTiles.size() ||
+                     (*it)->usedTiles[index] ) {
+                    return TileCacheFilePtr();
+                }
                 (*it)->usedTiles[index] = true;
+                // The tile was written by a previous session, so it has disk space
+                (*it)->reservedTiles[index] = true;
                 return *it;
             }
         }
         if (!fileExists(filepath)) {
             return TileCacheFilePtr();
         } else {
-            TileCacheFilePtr ret = std::make_shared<TileCacheFile>();
-            ret->file = std::make_shared<MemoryFile>(filepath, MemoryFile::eFileOpenModeEnumIfExistsKeepElseFail);
             std::size_t nTilesPerFile = std::floor( ( (double)NATRON_TILE_CACHE_FILE_SIZE_BYTES ) / _tileByteSize );
-            ret->usedTiles.resize(nTilesPerFile, false);
-            int index = dataOffset / _tileByteSize;
+            std::size_t index = dataOffset / _tileByteSize;
 
             // The dataOffset should be a multiple of the tile size
-            assert(_tileByteSize * index == dataOffset);
-            assert(index >= 0 && index < (int)ret->usedTiles.size());
-            assert(!ret->usedTiles[index]);
+            if (_tileByteSize * index != dataOffset || index >= nTilesPerFile) {
+                return TileCacheFilePtr();
+            }
+            TileCacheFilePtr ret = std::make_shared<TileCacheFile>();
+            ret->file = std::make_shared<MemoryFile>(filepath, MemoryFile::eFileOpenModeEnumIfExistsKeepElseFail);
+            ret->tileByteSize = _tileByteSize;
+            // Make sure that all tiles of the file are mapped, since any of them may be handed out by allocTile()
+            std::size_t cacheFileSize = nTilesPerFile * _tileByteSize;
+            if (ret->file->size() < cacheFileSize) {
+                ret->file->resize(cacheFileSize);
+            }
+            ret->usedTiles.resize(nTilesPerFile, false);
             ret->usedTiles[index] = true;
+            ret->reservedTiles.resize(nTilesPerFile, false);
+            ret->reservedTiles[index] = true;
             _cacheFiles.insert(ret);
             return ret;
 
@@ -690,7 +747,10 @@ private:
         int foundTileIndex = -1;
         {
             foundAvailableFile = _nextAvailableCacheFile.lock();
-            if (_nextAvailableCacheFileIndex != -1 && foundAvailableFile) {
+            if (_nextAvailableCacheFileIndex != -1 && foundAvailableFile &&
+                foundAvailableFile->tileByteSize == _tileByteSize &&
+                _nextAvailableCacheFileIndex < (int)foundAvailableFile->usedTiles.size() &&
+                !foundAvailableFile->usedTiles[_nextAvailableCacheFileIndex]) {
                 foundTileIndex = _nextAvailableCacheFileIndex;
                 *dataOffset = foundTileIndex * _tileByteSize;
                 _nextAvailableCacheFileIndex = -1;
@@ -698,10 +758,17 @@ private:
             } else {
                 foundTileIndex = -1;
                 foundAvailableFile.reset();
+                _nextAvailableCacheFileIndex = -1;
+                _nextAvailableCacheFile.reset();
             }
         }
         if (foundTileIndex == -1) {
             for (std::set<TileCacheFilePtr>::iterator it = _cacheFiles.begin(); it != _cacheFiles.end(); ++it) {
+                // Files with tiles of another size (the tile size changed) are only kept
+                // until their last tile is freed: never allocate in them.
+                if ( (*it)->tileByteSize != _tileByteSize ) {
+                    continue;
+                }
                 for (std::size_t i = 0; i < (*it)->usedTiles.size(); ++i) {
                     if (!(*it)->usedTiles[i])  {
                         foundTileIndex = i;
@@ -719,16 +786,47 @@ private:
         if (!foundAvailableFile) {
             // Create a file if all space is taken
             foundAvailableFile = std::make_shared<TileCacheFile>();
-            int nCacheFiles = (int)_cacheFiles.size();
-            std::stringstream cacheFilePathSs;
-            cacheFilePathSs << getCachePath().toStdString() << "/CachePart" << nCacheFiles;
-            std::string cacheFilePath = cacheFilePathSs.str();
-            foundAvailableFile->file = std::make_shared<MemoryFile>(cacheFilePath, MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate);
+            foundAvailableFile->tileByteSize = _tileByteSize;
+            // Pick a name that is not used by any file of the cache nor by any file on disk:
+            // reopening an existing file would hand out tiles that are still used by
+            // other entries. The number of files cannot be used as an index, since
+            // there may be gaps in the numbering (files are removed individually).
+            // The file is created exclusively, so it fails if the file exists.
+            std::string cachePath = getCachePath().toStdString();
+            for (;;) {
+                std::stringstream cacheFilePathSs;
+                cacheFilePathSs << cachePath << "/CachePart" << _nextCacheFileIndex;
+                ++_nextCacheFileIndex;
+                std::string cacheFilePath = cacheFilePathSs.str();
+                bool nameUsed = false;
+                for (std::set<TileCacheFilePtr>::iterator it = _cacheFiles.begin(); it != _cacheFiles.end(); ++it) {
+                    if ( (*it)->file->path() == cacheFilePath ) {
+                        nameUsed = true;
+                        break;
+                    }
+                }
+                if ( nameUsed || fileExists(cacheFilePath) ) {
+                    continue;
+                }
+                // This throws if the file could not be created; allocateTileCache() then falls back on RAM
+                foundAvailableFile->file = std::make_shared<MemoryFile>(cacheFilePath, MemoryFile::eFileOpenModeEnumIfExistsFailElseCreate);
+                break;
+            }
 
             std::size_t nTilesPerFile = std::floor(((double)NATRON_TILE_CACHE_FILE_SIZE_BYTES) / _tileByteSize);
             std::size_t cacheFileSize = nTilesPerFile * _tileByteSize;
-            foundAvailableFile->file->resize(cacheFileSize);
+            try {
+                foundAvailableFile->file->resize(cacheFileSize);
+            } catch (...) {
+                // e.g. disk full: don't leave an unlisted file behind
+                try {
+                    foundAvailableFile->file->remove();
+                } catch (...) {
+                }
+                throw;
+            }
             foundAvailableFile->usedTiles.resize(nTilesPerFile, false);
+            foundAvailableFile->reservedTiles.resize(nTilesPerFile, false);
             *dataOffset = 0;
             foundTileIndex = 0;
             _cacheFiles.insert(foundAvailableFile);
@@ -736,9 +834,46 @@ private:
             _nextAvailableCacheFileIndex = 1;
         }
 
-        // Notify the memory file that this portion of the file is valid
+        // Mark the tile as used before unlocking: no other thread can then get it, and the file is not removed
         foundAvailableFile->usedTiles[foundTileIndex] = true;
-        return foundAvailableFile;
+        if (foundAvailableFile->reservedTiles[foundTileIndex]) {
+            return foundAvailableFile;
+        }
+
+        // Allocate the disk space of the tile now, the first time it is used: the tile files are sparse, and if the
+        // disk is full, writing to the mapping would crash (#192). This may write the tile (see MemoryFile::reserve()),
+        // so don't block the other threads meanwhile.
+        const std::size_t tileOffset = *dataOffset;
+        const std::size_t tileByteSize = _tileByteSize;
+        bool reserved = true;
+        k.unlock();
+        try {
+            foundAvailableFile->file->reserve(tileOffset, tileByteSize);
+        } catch (const std::exception& e) {
+            qDebug() << "Cache:" << e.what();
+            reserved = false;
+        }
+        k.relock();
+        if (reserved) {
+            foundAvailableFile->reservedTiles[foundTileIndex] = true;
+
+            return foundAvailableFile;
+        }
+        foundAvailableFile->usedTiles[foundTileIndex] = false;
+        if ( !foundAvailableFile->hasUsedTiles() ) {
+            // Don't keep an empty file that may take disk space
+            _cacheFiles.erase(foundAvailableFile);
+            if (_nextAvailableCacheFile.lock() == foundAvailableFile) {
+                _nextAvailableCacheFile.reset();
+                _nextAvailableCacheFileIndex = -1;
+            }
+            try {
+                foundAvailableFile->file->remove();
+            } catch (...) {
+            }
+        }
+        // allocateTileCache() then falls back on RAM
+        throw std::runtime_error("Cache: could not allocate the disk space of a tile");
     }
 
             /**
@@ -757,13 +892,33 @@ private:
         if (foundTileFile == _cacheFiles.end()) {
             return;
         }
-        int index = dataOffset / _tileByteSize;
+        // Use the tile size of the file, which may differ from the current tile size of the cache
+        const std::size_t fileTileByteSize = (*foundTileFile)->tileByteSize;
+        int index = dataOffset / fileTileByteSize;
 
         // The dataOffset should be a multiple of the tile size
-        assert(_tileByteSize * index == dataOffset);
+        assert(fileTileByteSize * index == dataOffset);
         assert(index >= 0 && index < (int)(*foundTileFile)->usedTiles.size());
         assert((*foundTileFile)->usedTiles[index]);
+        if ( index < 0 || index >= (int)(*foundTileFile)->usedTiles.size() ) {
+            return;
+        }
         (*foundTileFile)->usedTiles[index] = false;
+
+        if (fileTileByteSize != _tileByteSize) {
+            // The tile size changed since this file was created: its tiles can not be reused.
+            // Delete the file once none of its tiles is used anymore.
+            if ( !(*foundTileFile)->hasUsedTiles() ) {
+                try {
+                    (*foundTileFile)->file->remove();
+                } catch (const std::exception& e) {
+                    qDebug() << "Cache: could not delete an old tile file:" << e.what();
+                }
+                _cacheFiles.erase(foundTileFile);
+            }
+
+            return;
+        }
 
         // If the file does not have any tile associated, remove it
         // A use_count of 2 means that the tile file is only referenced by the cache itself and the entry calling
@@ -775,7 +930,7 @@ private:
                 _cacheFiles.erase(foundTileFile);
             } else {
                 // Invalidate this portion of the cache
-                (*foundTileFile)->file->flush(MemoryFile::eFlushTypeInvalidate, (*foundTileFile)->file->data() + dataOffset, _tileByteSize);
+                (*foundTileFile)->file->flush(MemoryFile::eFlushTypeInvalidate, (*foundTileFile)->file->data() + dataOffset, fileTileByteSize);
             }
         } else {
             _nextAvailableCacheFile = *foundTileFile;
@@ -900,8 +1055,9 @@ private:
                 *returnValue = EntryTypePtr();
             }
 
-            // For a tiled cache, all entries must have the same size
-            assert(!_isTiled || (*returnValue)->getSizeInBytesFromParams() == _tileByteSize);
+            // For a tiled cache, entries normally have the cache's tile size. A render that started before a change of
+            // the tile size (see setTiled()) may still create an entry of the previous size: allocateTileCache() then
+            // gives the tile back and stores the entry in RAM if it does not fit (#1126).
 
             if (*returnValue) {
 
@@ -1106,7 +1262,8 @@ public:
                 }
 
                 /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
-                while (diskCacheSize + evictedFromMemory.second->size() >= maximumCacheSize) {
+                // size() is 0 (plus the bitmap) once the file is unmapped: use the size of the file
+                while (diskCacheSize + evictedFromMemory.second->getSizeInBytesFromParams() >= maximumCacheSize) {
                     {
                         std::pair<hash_type, EntryTypePtr> evictedFromDisk = _diskCache.evict();
                         //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
@@ -1129,6 +1286,10 @@ public:
                 /*if the entry doesn't exist on the disk cache,make a new list and insert it*/
                 if ( existingDiskCacheEntry == _diskCache.end() ) {
                     _diskCache.insert(evictedFromMemory.second->getHashKey(), evictedFromMemory.second);
+                } else {
+                    // Append to the existing list: other entries may have the same hash (e.g. other mipmap
+                    // levels), and dropping this one would orphan its file (#1128)
+                    getValueFromIterator(existingDiskCacheEntry).push_back(evictedFromMemory.second);
                 }
             }
 
@@ -1484,34 +1645,10 @@ public:
 
         {
             QMutexLocker l(&_lock);
-            CacheIterator existingEntry = _memoryCache( entry->getHashKey() );
-            if ( existingEntry != _memoryCache.end() ) {
-                std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
-                for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
-                    if ( (*it)->getKey() == entry->getKey() ) {
-                        toRemove.push_back(*it);
-                        ret.erase(it);
-                        break;
-                    }
-                }
-                if ( ret.empty() ) {
-                    _memoryCache.erase(existingEntry);
-                }
-            } else {
-                existingEntry = _diskCache( entry->getHashKey() );
-                if ( existingEntry != _diskCache.end() ) {
-                    std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
-                    for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
-                        if ( (*it)->getKey() == entry->getKey() ) {
-                            toRemove.push_back(*it);
-                            ret.erase(it);
-                            break;
-                        }
-                    }
-                    if ( ret.empty() ) {
-                        _diskCache.erase(existingEntry);
-                    }
-                }
+            // The entry may be in the disk portion even if other entries of its hash are in the memory portion
+            // (e.g. other mipmap levels), so look in both
+            if ( !removeEntryFromContainer(_memoryCache, entry, &toRemove) ) {
+                removeEntryFromContainer(_diskCache, entry, &toRemove);
             }
         } // QMutexLocker l(&_lock);
         if ( !toRemove.empty() ) {
@@ -1522,6 +1659,40 @@ public:
             toRemove.clear();
         }
     } // removeEntry
+
+private:
+    /**
+     * @brief Removes the entry from the container and appends it to toRemove. Returns false if it is not in the container.
+     * _lock must be locked.
+     **/
+    static bool removeEntryFromContainer(CacheContainer& container,
+                                         const EntryTypePtr& entry,
+                                         std::list<EntryTypePtr>* toRemove)
+    {
+        CacheIterator existingEntry = container( entry->getHashKey() );
+        if ( existingEntry == container.end() ) {
+            return false;
+        }
+        std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
+        bool found = false;
+        for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
+            // Compare the entries, not their keys: several entries may have equal keys,
+            // e.g. the images of a frame at several mipmap levels (#1129)
+            if (*it == entry) {
+                toRemove->push_back(*it);
+                ret.erase(it);
+                found = true;
+                break;
+            }
+        }
+        if ( ret.empty() ) {
+            container.erase(existingEntry);
+        }
+
+        return found;
+    }
+
+public:
 
     void removeEntry(U64 hash)
     {
@@ -1561,7 +1732,8 @@ public:
     void save(CacheTOC* tableOfContents);
 
 
-    /*Restores the cache from disk.*/
+    /*Restores the cache from disk. Must not be called if another process uses the cache
+       (see AppManager::isDiskCacheUsedByAnotherProcess()): the files that are not in the table of contents are deleted.*/
     void restore(const CacheTOC & tableOfContents);
 
 
@@ -1578,6 +1750,41 @@ public:
             removeAllEntriesWithDifferentNodeHashForHolderPrivate(holder->getCacheID(), 0, true);
         } else {
             _cleanerThread.appendToQueue(holder->getCacheID(), 0, true);
+        }
+    }
+
+    /**
+     * @brief Synchronously removes from the cache the entries of the holder at the given time (e.g. the textures
+     * of a frame of a viewer). The order of the other entries is kept.
+     **/
+    void removeAllEntriesForHolderAtTime(const CacheEntryHolder* holder,
+                                         double time)
+    {
+        const std::string holderID = holder->getCacheID();
+        std::list<EntryTypePtr> toDelete;
+        {
+            QMutexLocker locker(&_lock);
+            CacheContainer* containers[2] = { &_memoryCache, &_diskCache };
+            for (int i = 0; i < 2; ++i) {
+                for (CacheIterator it = containers[i]->begin(); it != containers[i]->end();) {
+                    const std::list<EntryTypePtr> & entries = getValueFromIterator(it);
+                    // All the entries of a list have the same hash, hence the same holder and time
+                    if ( !entries.empty() && (entries.front()->getKey().getCacheHolderID() == holderID) &&
+                         (entries.front()->getTime() == time) ) {
+                        toDelete.insert( toDelete.end(), entries.begin(), entries.end() );
+                        // Erasing an element only invalidates the iterators to that element
+                        CacheIterator next = it;
+                        ++next;
+                        containers[i]->erase(it);
+                        it = next;
+                    } else {
+                        ++it;
+                    }
+                }
+            }
+        }
+        if ( !toDelete.empty() ) {
+            _deleterThread.appendToQueue(toDelete);
         }
     }
 
@@ -1625,46 +1832,13 @@ private:
                                                                        bool removeAll) OVERRIDE FINAL
     {
         std::list<EntryTypePtr> toDelete;
-        CacheContainer newMemCache, newDiskCache;
         {
             QMutexLocker locker(&_lock);
 
-            for (ConstCacheIterator memIt = _memoryCache.begin(); memIt != _memoryCache.end(); ++memIt) {
-                const std::list<EntryTypePtr> & entries = getValueFromIterator(memIt);
-                if ( !entries.empty() ) {
-                    const EntryTypePtr & front = entries.front();
-
-                    if ( (front->getKey().getCacheHolderID() == holderID) &&
-                         ( ( front->getKey().getTreeVersion() != nodeHash) || removeAll ) ) {
-                        for (typename std::list<EntryTypePtr>::const_iterator it = entries.begin(); it != entries.end(); ++it) {
-                            toDelete.push_back(*it);
-                        }
-                    } else {
-                        typename EntryType::hash_type hash = front->getHashKey();
-                        newMemCache.insert(hash, entries);
-                    }
-                }
-            }
-
-            for (ConstCacheIterator dIt = _diskCache.begin(); dIt != _diskCache.end(); ++dIt) {
-                const std::list<EntryTypePtr> & entries = getValueFromIterator(dIt);
-                if ( !entries.empty() ) {
-                    const EntryTypePtr & front = entries.front();
-
-                    if ( (front->getKey().getCacheHolderID() == holderID) &&
-                         ( ( front->getKey().getTreeVersion() != nodeHash) || removeAll ) ) {
-                        for (typename std::list<EntryTypePtr>::const_iterator it = entries.begin(); it != entries.end(); ++it) {
-                            toDelete.push_back(*it);
-                        }
-                    } else {
-                        typename EntryType::hash_type hash = front->getHashKey();
-                        newDiskCache.insert(hash, entries);
-                    }
-                }
-            }
-
-            _memoryCache = newMemCache;
-            _diskCache = newDiskCache;
+            // Erase the entries in place: rebuilding the containers by iterating them would lose their LRU order,
+            // since begin() iterates in hash order (#1130). This is called on every change of a node hash.
+            removeEntriesOfHolder(_memoryCache, holderID, nodeHash, removeAll, &toDelete);
+            removeEntriesOfHolder(_diskCache, holderID, nodeHash, removeAll, &toDelete);
         } // QMutexLocker locker(&_lock);
 
         if ( !toDelete.empty() ) {
@@ -1675,6 +1849,37 @@ private:
             toDelete.clear();
         }
     } // removeAllEntriesWithDifferentNodeHashForHolderPrivate
+
+    /**
+     * @brief Remove from the container, and append to toDelete, the entries of the holder with a different
+     * nodeHash (or all of them if removeAll is true). The order of the other entries is kept. _lock must be locked.
+     **/
+    static void removeEntriesOfHolder(CacheContainer& container,
+                                      const std::string & holderID,
+                                      U64 nodeHash,
+                                      bool removeAll,
+                                      std::list<EntryTypePtr>* toDelete)
+    {
+        for (CacheIterator it = container.begin(); it != container.end();) {
+            const std::list<EntryTypePtr> & entries = getValueFromIterator(it);
+            bool remove = true; // also remove empty lists
+            if ( !entries.empty() ) {
+                const EntryTypePtr & front = entries.front();
+                remove = (front->getKey().getCacheHolderID() == holderID) &&
+                         ( ( front->getKey().getTreeVersion() != nodeHash) || removeAll );
+            }
+            if (remove) {
+                toDelete->insert( toDelete->end(), entries.begin(), entries.end() );
+                // Erasing an element only invalidates the iterators to that element
+                CacheIterator next = it;
+                ++next;
+                container.erase(it);
+                it = next;
+            } else {
+                ++it;
+            }
+        }
+    }
 
     bool getInternal(const typename EntryType::key_type & key,
                      std::list<EntryTypePtr>* returnValue) const
@@ -1728,11 +1933,17 @@ private:
                             } catch (const std::exception & e) {
                                 qDebug() << "Error while reopening cache file: " << e.what();
                                 ret.erase(it);
+                                if ( ret.empty() ) {
+                                    _diskCache.erase(diskCached);
+                                }
 
                                 return false;
                             } catch (...) {
                                 qDebug() << "Error while reopening cache file";
                                 ret.erase(it);
+                                if ( ret.empty() ) {
+                                    _diskCache.erase(diskCached);
+                                }
 
                                 return false;
                             }
@@ -1771,11 +1982,12 @@ private:
                         }
 
                         if (!_isTiled) {
-
+                            // Remove it from the disk cache. Only remove the list of the hash if it is empty:
+                            // it may contain other entries with the same hash (e.g. other mipmap levels, #1128).
                             ret.erase(it);
-
-                            ///Remove it from the disk cache
-                            _diskCache.erase(diskCached);
+                            if ( ret.empty() ) {
+                                _diskCache.erase(diskCached);
+                            }
                         }
 
                         return true;
@@ -1851,7 +2063,8 @@ private:
             }
 
             /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
-            while ( ( diskCacheSize  + evicted.second->size() ) >= (maximumCacheSize - maximumInMemorySize) ) {
+            // size() is 0 (plus the bitmap) once the file is unmapped: use the size of the file
+            while ( ( diskCacheSize  + evicted.second->getSizeInBytesFromParams() ) >= (maximumCacheSize - maximumInMemorySize) ) {
                 std::pair<hash_type, EntryTypePtr> evictedFromDisk = _diskCache.evict();
                 //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
                 //we'll let the user of these entries purge the extra entries left in the cache later on

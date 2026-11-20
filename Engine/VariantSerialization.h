@@ -55,45 +55,48 @@ Variant::save(Archive & ar,
               const unsigned int version) const
 {
     Q_UNUSED(version);
-    QVariant::Type t = type();
+    // QVariant::Type and QVariant::type() are deprecated in Qt6 in favour of
+    // the metatype id. userType() returns that id in both Qt 5.15 and Qt 6, and
+    // the QMetaType constants below are the same values QVariant::Type used.
+    const int t = userType();
     std::string typeStr;
     switch (t) {
-    case QVariant::Bool: {
+    case QMetaType::Bool: {
         bool v = toBool();
         typeStr = "bool";
         ar & ::boost::serialization::make_nvp("Type", typeStr);
         ar & ::boost::serialization::make_nvp("Value", v);
         break;
     }
-    case QVariant::Int: {
+    case QMetaType::Int: {
         int v = toInt();
         typeStr = "int";
         ar & ::boost::serialization::make_nvp("Type", typeStr);
         ar & ::boost::serialization::make_nvp("Value", v);
         break;
     }
-    case QVariant::UInt: {
+    case QMetaType::UInt: {
         int v = toUInt();
         typeStr = "uint";
         ar & ::boost::serialization::make_nvp("Type", typeStr);
         ar & ::boost::serialization::make_nvp("Value", v);
         break;
     }
-    case QVariant::Double: {
+    case QMetaType::Double: {
         double v = toDouble();
         typeStr = "double";
         ar & ::boost::serialization::make_nvp("Type", typeStr);
         ar & ::boost::serialization::make_nvp("Value", v);
         break;
     }
-    case QVariant::String: {
+    case QMetaType::QString: {
         typeStr = "string";
         ar & ::boost::serialization::make_nvp("Type", typeStr);
         std::string str = toString().toStdString();
         ar & ::boost::serialization::make_nvp("Value", str);
         break;
     }
-    case QVariant::StringList: {
+    case QMetaType::QStringList: {
         typeStr = "stringlist";
         ar & ::boost::serialization::make_nvp("Type", typeStr);
         std::list<std::string> list;

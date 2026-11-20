@@ -946,13 +946,21 @@ GuiApplicationManager::initGui(const CLArgs& args)
     QObject::connect( &_imp->updateSplashscreenTimer, SIGNAL(timeout()), this, SLOT(onFontconfigTimerTriggered()) );
     _imp->updateSplashscreenTimer.start(1000);
 
-    _imp->fontconfigUpdateWatcher->setFuture( QtConcurrent::run(_imp.get(), &GuiApplicationManagerPrivate::updateFontConfigCache) );
+    // Qt6 dropped the run(object, memberFunction) overload; a lambda is the one
+    // spelling both versions accept.
+    _imp->fontconfigUpdateWatcher->setFuture( QtConcurrent::run( [p = _imp.get()]() { p->updateFontConfigCache(); } ) );
 
     Gui::loadStyleSheet();
 
     // Init documentation manager
     _imp->documentation.reset(new DocumentationManager);
     _imp->documentation->startServer();
+
+#ifdef Q_OS_DARWIN
+    if ( isDialogsDisabled() ) {
+        QtMac::ignorePersistentUIState();
+    }
+#endif
 
     return exec();
 } // GuiApplicationManager::initGui
@@ -1072,6 +1080,14 @@ bool
 GuiApplicationManager::isSplashcreenVisible() const
 {
     return _imp->_splashScreen ? true : false;
+}
+
+bool
+GuiApplicationManager::isGuiTestNoFocus()
+{
+    static const bool noFocus = !qEnvironmentVariableIsEmpty("NATRON_TEST_NO_FOCUS") && (qgetenv("NATRON_TEST_NO_FOCUS") != "0");
+
+    return noFocus;
 }
 
 void

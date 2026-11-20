@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _PyCoreApplication:
 
 PyCoreApplication
@@ -37,6 +37,7 @@ Functions
 - def :meth:`isMacOSX<NatronEngine.PyCoreApplication.isMacOSX>` ()
 - def :meth:`isUnix<NatronEngine.PyCoreApplication.isUnix>` ()
 - def :meth:`isWindows<NatronEngine.PyCoreApplication.isWindows>` ()
+- def :meth:`quit<NatronEngine.PyCoreApplication.quit>` ([exitCode=0])
 - def :meth:`setOnProjectCreatedCallback<NatronEngine.PyCoreApplication.setOnProjectCreatedCallback>` (pythonFunctionName)
 - def :meth:`setOnProjectLoadedCallback<NatronEngine.PyCoreApplication.setOnProjectLoadedCallback>` (pythonFunctionName)
 
@@ -126,17 +127,17 @@ points to. This is equivalent to calling::
     myVar = natron
 
 
-.. method:: NatronEngine.PyCoreApplication.appendToNatronPath(path)
+.. method:: PyCoreApplication.appendToNatronPath(path)
 
 
-    :param path: :class:`str<NatronEngine.std::string>`
+    :param path: :class:`str`
 
 Adds a new path to the Natron search paths. See :ref:`this section<natronPath>` for a detailed explanation
 of Natron search paths.
 
 
 
-.. method:: NatronEngine.PyCoreApplication.getSettings()
+.. method:: PyCoreApplication.getSettings()
 
 
     :rtype: :class:`AppSettings<NatronEngine.AppSettings>`
@@ -148,10 +149,10 @@ the preferences of Natron.
 
 
 
-.. method:: NatronEngine.PyCoreApplication.getBuildNumber()
+.. method:: PyCoreApplication.getBuildNumber()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Returns the build-number of the current version of Natron. Generally this is used for
 release candidates, e.g.:
@@ -162,27 +163,27 @@ release candidates, e.g.:
 
 
 
-.. method:: NatronEngine.PyCoreApplication.getInstance(idx)
+.. method:: PyCoreApplication.getInstance(idx)
 
 
-    :param idx: :class:`int<PySide.QtCore.int>`
+    :param idx: :class:`int`
     :rtype: :class:`App<NatronEngine.App>`
 
 Returns the :doc:`App` instance at the given *idx*. Note that *idx* is 0-based, e.g.:
 0 would return what's pointed to by *app1*.
 
 
-.. method:: NatronEngine.PyCoreApplication.getActiveInstance()
+.. method:: PyCoreApplication.getActiveInstance()
 
     :rtype: :class:`App<NatronEngine.App>`
 
 Returns the :doc:`App` instance corresponding to the last project the user interacted with.
 
 
-.. method:: NatronEngine.PyCoreApplication.getNatronDevelopmentStatus()
+.. method:: PyCoreApplication.getNatronDevelopmentStatus()
 
 
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :rtype: :class:`str`
 
 Returns a string describing the development status of Natron. This can be one of the following values:
 
@@ -194,7 +195,7 @@ Returns a string describing the development status of Natron. This can be one of
 
 
 
-.. method:: NatronEngine.PyCoreApplication.getNatronPath()
+.. method:: PyCoreApplication.getNatronPath()
 
 
     :rtype: :class:`sequence`
@@ -204,10 +205,10 @@ Returns a sequence of string with all natron :ref:`search paths<natronPath>`.
 
 
 
-.. method:: NatronEngine.PyCoreApplication.getNatronVersionEncoded()
+.. method:: PyCoreApplication.getNatronVersionEncoded()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Returns an *int* with the version of Natron encoded so that you can compare versions
 of Natron like this::
@@ -218,50 +219,50 @@ of Natron like this::
 In that example, Natron's version would be 2.1.1
 
 
-.. method:: NatronEngine.PyCoreApplication.getNatronVersionMajor()
+.. method:: PyCoreApplication.getNatronVersionMajor()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Returns the major version of Natron. If the version is 1.0.0, that would return 1.
 
 
 
 
-.. method:: NatronEngine.PyCoreApplication.getNatronVersionMinor()
+.. method:: PyCoreApplication.getNatronVersionMinor()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Get the minor version of Natron. If the version is 1.2.0, that would return 2.
 
 
 
 
-.. method:: NatronEngine.PyCoreApplication.getNatronVersionRevision()
+.. method:: PyCoreApplication.getNatronVersionRevision()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Returns the revision number of the version. If the version is 1.2.3, that would return 3.
 
 
 
 
-.. method:: NatronEngine.PyCoreApplication.getNatronVersionString()
+.. method:: PyCoreApplication.getNatronVersionString()
 
 
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :rtype: :class:`str`
 
 Returns the version of Natron as a string, e.g.: *"1.1.0"*
 
 
 
 
-.. method:: NatronEngine.PyCoreApplication.getNumCpus()
+.. method:: PyCoreApplication.getNumCpus()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Returns the maximum hardware concurrency of the computer. If the computer has 8
 hyper-threaded cores, that would return 16.
@@ -269,17 +270,17 @@ hyper-threaded cores, that would return 16.
 
 
 
-.. method:: NatronEngine.PyCoreApplication.getNumInstances()
+.. method:: PyCoreApplication.getNumInstances()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Returns the number of :doc`App` instances currently active.
 
 
 
 
-.. method:: NatronEngine.PyCoreApplication.getPluginIDs()
+.. method:: PyCoreApplication.getPluginIDs()
 
 
     :rtype: :class:`sequence`
@@ -287,7 +288,8 @@ Returns the number of :doc`App` instances currently active.
 Returns a sequence of strings with all plugin-IDs currently loaded.
 
 
-.. method:: NatronEngine.PyCoreApplication.getPluginIDs(filter)
+.. method:: PyCoreApplication.getPluginIDs(filter)
+    :noindex:
 
 
     :param filter: :class:`str`
@@ -297,10 +299,10 @@ Same as :func:`getPluginIDs()<NatronEngine.PyCoreApplication.getPluginIDs>` but 
 only plug-ins *containing* the given *filter*. Comparison is done **without** case-sensitivity.
 
 
-.. method:: NatronEngine.PyCoreApplication.isBackground()
+.. method:: PyCoreApplication.isBackground()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Returns True if Natron is executed in background mode, i.e: from the command-line, without
 any graphical user interface displayed.
@@ -308,40 +310,40 @@ any graphical user interface displayed.
 
 
 
-.. method:: NatronEngine.PyCoreApplication.is64Bit()
+.. method:: PyCoreApplication.is64Bit()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Returns True if Natron is executed on a 64 bit computer.
 
 
 
 
-.. method:: NatronEngine.PyCoreApplication.isLinux()
+.. method:: PyCoreApplication.isLinux()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Returns True if Natron is executed on a Linux or FreeBSD distribution.
 
 
 
 
-.. method:: NatronEngine.PyCoreApplication.isMacOSX()
+.. method:: PyCoreApplication.isMacOSX()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Returns True if Natron is executed on MacOSX.
 
 
 
 
-.. method:: NatronEngine.PyCoreApplication.isUnix()
+.. method:: PyCoreApplication.isUnix()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Returns True if Natron is executed on Unix. Basically this is equivalent to::
 
@@ -350,19 +352,19 @@ Returns True if Natron is executed on Unix. Basically this is equivalent to::
 
 
 
-.. method:: NatronEngine.PyCoreApplication.isWindows()
+.. method:: PyCoreApplication.isWindows()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 
 Returns True if Natron is executed on Windows.
 
 
 
-.. method:: NatronEngine.PyCoreApplication.setOnProjectCreatedCallback(pythonFunctionName)
+.. method:: PyCoreApplication.setOnProjectCreatedCallback(pythonFunctionName)
 
-    :param: :class:`str<NatronEngine.std::string>`
+    :param: :class:`str`
 
 Convenience function to set the After Project Created callback. Note that this will override
 any callback set in the Preferences-->Python-->After Project created.
@@ -376,9 +378,64 @@ This is exactly the same as calling::
     for all projects (whether they are new projects or loaded projects). For instance
     one might want to add a list of Formats to the project. See the example :ref:`here<startupScripts>`
 
-.. method:: NatronEngine.PyCoreApplication.setOnProjectLoadedCallback(pythonFunctionName)
+.. method:: PyCoreApplication.quit([exitCode=0])
 
-    :param: :class:`str<NatronEngine.std::string>`
+    :param exitCode: :class:`int`
+
+Quits Natron, and makes the process exit with the status *exitCode*.
+The projects are closed **without** asking to save them, and the renders in progress are
+stopped. This is meant for scripts and tests, see :ref:`guiTesting`.
+
+- In the GUI (*Natron*), the projects are closed at the end of the current event-loop
+  iteration, so it is safe to call it from a callback or from a timer. The function returns
+  immediately and the rest of the calling script is executed: make it the last call of the
+  callback. If Natron is still loading (e.g. :func:`quit` is called by the script given on the
+  command line), a nested event loop of Natron is running (e.g. a modal dialog), or a project is
+  being saved, the projects are closed once it is done. A loop that the script runs itself
+  (PySide's ``QCoreApplication.processEvents()``) is not protected: the projects may be closed
+  during it, so don't call :func:`quit` before such a loop. The last auto-save of each project is
+  removed, as when answering *Discard* to "Save changes?", so that the next launch does not offer
+  to restore it. If :func:`quit` is called more than once, the last *exitCode* is the exit
+  status.
+- In background mode (*NatronRenderer*, or *Natron -b*), the rest of the script is executed,
+  then the renders that were not started yet (the Write nodes given with *-w* or *-o*) are
+  skipped, and *NatronRenderer* exits with *exitCode*. Called from a render callback (e.g.
+  *afterFrameRender*), it stops the render in progress.
+- In interpreter mode (*-t*): when called from the script given on the command line, the
+  interactive interpreter is not started; when called from the interactive interpreter, this
+  raises :class:`SystemExit` (*exitCode*), as :func:`sys.exit` does. When called from a callback
+  run by Natron while the interactive interpreter runs, the callback stops, and the interpreter
+  exits once it returns to the prompt.
+- *natron-python* is a plain Python interpreter where :doc:`PyCoreApplication` does not exist:
+  use :func:`sys.exit` there.
+
+For example, to run a check in the GUI and report its result in the exit status::
+
+    Natron --no-dialogs check.py; echo $?
+
+with *check.py*::
+
+    from NatronGui import natron
+    from PySide2 import QtCore  # or PySide6
+
+    def check():
+        app = natron.getGuiInstance(0)
+        ok = app.getViewer("Viewer1") is not None
+        natron.quit(0 if ok else 1)
+
+    # wait until the main window is shown and the event loop is running
+    QtCore.QTimer.singleShot(500, check)
+
+.. note::
+
+    With some OpenFX plug-ins, Natron may crash at exit, after closing the projects, which
+    changes the exit status to that of the crash (e.g. 139 for a segmentation fault): see
+    `issue #1253 <https://github.com/NatronGitHub/Natron/issues/1253>`_.
+    A test can also write its result to a file before calling :func:`quit`.
+
+.. method:: PyCoreApplication.setOnProjectLoadedCallback(pythonFunctionName)
+
+    :param: :class:`str`
 
 Convenience function to set the Default After Project Loaded callback. Note that this will override
 any callback set in the Preferences-->Python-->Default After Project Loaded.

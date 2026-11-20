@@ -95,7 +95,18 @@ public:
     bool saveProject(const QString & path, const QString & name, QString* newFilePath);
 
 
-    bool saveProject_imp(const QString & path, const QString & name, bool autoSave, bool updateProjectProperties, QString* newFilePath = 0);
+    /**
+     * @brief Saves the project. A save other than the background auto-save waits for a running save to finish.
+     * @param errorMessage If not null, set to the reason of the failure.
+     * @returns false if the project could not be saved.
+     **/
+    bool saveProject_imp(const QString & path, const QString & name, bool autoSave, bool updateProjectProperties, QString* newFilePath = 0, QString* errorMessage = 0);
+
+    /**
+     * @brief True while the project is being saved (also by the background auto-save), or a save waits to start.
+     * The main thread processes events while a save waits (see saveProject_imp()): the project must not be closed then.
+     **/
+    bool isSaveInProgress() const WARN_UNUSED_RETURN;
 
     /**
      * @brief Same as saveProject except that it will save the project in a temporary file
@@ -108,6 +119,13 @@ public:
      * @brief Same as autoSave() but the auto-save is run in a separate thread instead.
      **/
     void triggerAutoSave();
+
+    /**
+     * @brief Calls kOfxActionSyncPrivateData on all the OpenFX nodes of the project, as before a
+     * save. Main thread only: the autosave calls it before it serializes the project in another
+     * thread, where the nodes can't be synced.
+     **/
+    void syncOpenFXPrivateData();
 
     /**
      * @brief Returns the path to where the auto save files are stored on disk.
@@ -165,7 +183,36 @@ public:
 
     void addProjectDefaultLayer(const ImagePlaneDesc& comps);
 
-    void setOrAddProjectFormat(const Format & frmt, bool skipAdd = false);
+    /**
+     * @brief Add frmt to the project formats. If the project format is still to be auto-set
+     * (empty project, see the "Auto-set project format" preference), it is set to frmt.
+     * If mayChangeFormat is false (e.g. during a render), the project format is only auto-set
+     * if it is already equal to frmt, so that it never changes while a render is running (#1294).
+     **/
+    void setOrAddProjectFormat(const Format & frmt, bool skipAdd = false, bool mayChangeFormat = true);
+
+    /**
+     * @brief Called on the main thread when the metadata of a Reader is computed: if the project
+     * format is still to be auto-set and the Reader could decode its file, set the project format
+     * from the Reader's format (if they are equal, just disable the auto-set), before any render starts (#1294).
+     * If a sequence render (Writer or playback) is running, this is postponed until it finishes.
+     **/
+    void autoSetProjectFormatFromReader(const NodePtr& reader);
+
+private:
+    /// true if a sequence render (other than the one of ignoredEngine) is running; connects to their renderFinished signal
+    bool isSequenceRenderRunning(const QObject* ignoredEngine);
+
+    /// auto-set the project format from the first pending Reader, once no sequence render is running
+    void applyPendingAutoSetProjectFormat(const QObject* ignoredEngine);
+
+    /// set (or add) the project format from the Reader's output format
+    void setProjectFormatFromReader(const NodePtr& reader);
+
+    /// check the pending Readers again in 100 ms (at most one check is scheduled at a time)
+    void scheduleAutoSetProjectFormatRetry();
+
+public:
 
     bool isAutoSetProjectFormatEnabled() const;
 
@@ -205,6 +252,34 @@ public:
      **/
     static void clearAutoSavesDir();
     void removeLastAutosave();
+
+    /**
+     * @brief Can removeLastAutosave() remove this auto-save file? Always, except with
+     * --no-dialogs, where only the auto-saves this session wrote may be removed.
+     **/
+    bool canRemoveAutoSave(const QString& filePath) const;
+
+    /// Did this project write this auto-save file during this session (--no-dialogs only)?
+    bool wroteAutoSave(const QString& filePath) const;
+
+    /// Did a project of this session write this auto-save file (--no-dialogs only)?
+    static bool isAutoSaveOfThisSession(const QString& filePath);
+
+private:
+    void forgetAutoSave(const QString& filePath);
+
+    /// --no-dialogs: do not auto-save if an auto-save of another session exists for this project
+    void refreshAutoSaveDisabled();
+
+public:
+
+    /**
+     * @brief Stops the pending auto-save and waits for the one in progress, if any, so that
+     * no auto-save is written afterwards (e.g. before removeLastAutosave() when quitting).
+     * While it waits, it processes the events except user input (the auto-save may need the main
+     * thread), as saveProject_imp() does.
+     **/
+    void stopAutoSave();
 
     QString getLockAbsoluteFilePath() const;
     void createLockFile();
@@ -354,6 +429,10 @@ public Q_SLOTS:
 
     void onProjectFormatPopulated();
 
+    void onSequenceRenderFinishedAutoSetProjectFormat();
+
+    void onAutoSetProjectFormatRetry();
+
 Q_SIGNALS:
 
     void mustCreateFormat();
@@ -380,7 +459,7 @@ private:
     bool loadProjectInternal(const QString & path, const QString & name, bool isAutoSave,
                              bool isUntitledAutosave, bool* mustSave);
 
-    QString saveProjectInternal(const QString & path, const QString & name, bool autosave, bool updateProjectProperties);
+    QString saveProjectInternal(const QString & path, const QString & name, bool autosave, bool updateProjectProperties, QStringList* warnings);
 
 
 

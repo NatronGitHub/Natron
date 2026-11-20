@@ -363,6 +363,20 @@ case "${QT_VERSION_MAJOR}" in
     SBKVER="${QT_VERSION_MAJOR}.${QT_VERSION_MINOR}"
     ;;
 esac
+# Qt modules that are GPL-3 only (no LGPL): a COMMERCIAL build must not ship them, nor their PySide
+# modules. Natron doesn't use them. check-commercial-bundle.sh (is_gpl_lib) also rejects them.
+qt_gpl_libs=( QtCharts QtDataVisualization QtNetworkAuth QtDesigner QtDesignerComponents )
+if [ "${NATRON_LICENSE:-}" = "COMMERCIAL" ]; then
+    qt_lgpl_libs=()
+    for qtlib in "${qt_libs[@]}"; do
+        case " ${qt_gpl_libs[*]} " in
+            *" ${qtlib} "*) ;;
+            *) qt_lgpl_libs+=( "${qtlib}" );;
+        esac
+    done
+    qt_libs=( "${qt_lgpl_libs[@]}" )
+    unset qt_lgpl_libs
+fi
 STRIP=1
 
 # macdeployqt only works if the package name has the same name as the executable inside:
@@ -377,8 +391,13 @@ MACDEPLOYQT_OPTS+=( -libpath="${SDK_HOME}/lib/nss" -libpath="${SDK_HOME}/lib/nsp
 
 for bin in "${natronbins[@]}" "${otherbins[@]}"; do
     binary="$app_for_macdeployqt/Contents/MacOS/${bin}"
-    if [ ! -e "${binary}" ] && [ -e "${SDK_HOME}/bin/${bin}" ]; then
-        cp "${SDK_HOME}/bin/${bin}" "${binary}"
+    bindir="${SDK_HOME}/bin"
+    case "${bin}" in
+        # the FFmpeg of the license (COMMERCIAL: ffmpeg-lgpl, see common.sh)
+        ffmpeg|ffprobe) bindir="${FFMPEG_PATH}/bin";;
+    esac
+    if [ ! -e "${binary}" ] && [ -e "${bindir}/${bin}" ]; then
+        cp "${bindir}/${bin}" "${binary}"
     fi
     if [ -e "${binary}" ]; then
         MACDEPLOYQT_OPTS+=( -executable="${binary}" )
@@ -655,14 +674,21 @@ PYLIB="Python.framework/Versions/${PYVER}/lib/python${PYVER}"
 PYSIDE="${PYLIB}/site-packages/${PYSIDE_PKG}"
 rm -rf "${package}/Contents/Frameworks/${PYSIDE}"
 cp -a "${SDK_HOME}/Library/Frameworks/${PYSIDE}" "${package}/Contents/Frameworks/${PYSIDE}"
+if [ "${NATRON_LICENSE:-}" = "COMMERCIAL" ]; then
+    # the PySide modules of the GPL-3 Qt modules (e.g. QtCharts.cpython-311-darwin.so, QtCharts.pyi)
+    for qtlib in "${qt_gpl_libs[@]}"; do
+        rm -f "${package}/Contents/Frameworks/${PYSIDE}/${qtlib}".*
+    done
+fi
 if [ "${QT_VERSION_MAJOR}" = 5 ]; then
     PYSHIBOKEN="${PYLIB}/site-packages/shiboken2"
     cp -a "${SDK_HOME}/Library/Frameworks/${PYSHIBOKEN}" "${package}/Contents/Frameworks/${PYSHIBOKEN}"
     rm -rf "${package}/Contents/Frameworks/${PYSHIBOKEN}/docs"
     (cd "${package}/Contents/Frameworks" && ln -sf "${PYLIB}/site-packages/shiboken2/libshiboken2"*.dylib .)
-    install_name_tool -rpath "${SDK_HOME}/Library/Frameworks/${PYSHIBOKEN}" "@executable_path/../Frameworks/${PYSHIBOKEN}" "${natron_binary}"
     (cd "${package}/Contents/Frameworks" && ln -sf "${PYSIDE}/libpyside2"*.dylib .)
-    install_name_tool -rpath "${SDK_HOME}/Library/Frameworks/${PYSIDE}" "@executable_path/../Frameworks/${PYSIDE}" "${natron_binary}"
+    # The PySide2/Shiboken2 rpaths of every binary (Natron, NatronRenderer, natron-python, ...) are
+    # rewritten further down, in the loop over "${bins[@]}", with "|| true": binaries built with
+    # "cmake -DNATRON_INSTALL_LAYOUT=PORTABLE" have relative rpaths only, and nothing to rewrite.
     for binary in  "${package}/Contents/Frameworks/${PYSHIBOKEN}"/lib*.dylib "${package}/Contents/Frameworks/${PYSIDE}"/lib*.dylib; do
         for f in "${qt_libs[@]}"; do
             install_name_tool -change "${qt_frameworks_dir}/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/${QT_VERSION_MAJOR}/${f}" "${binary}"
@@ -1362,6 +1388,12 @@ if [ "${macosx}" -ge 15 ]; then
 fi
 "${CODESIGN}" "${CODE_SIGN_VERIFY_OPTS[@]}" "${package}"
 
+
+# A COMMERCIAL build must not contain or link any GPL library (#1302, #1177)
+if [ "${NATRON_LICENSE:-}" = "COMMERCIAL" ]; then
+    echo "*** Checking that the COMMERCIAL app has no GPL component"
+    "${CWD}"/check-commercial-bundle.sh "${package}"
+fi
 
 echo "*** Creating the disk image"
 # Make the dmg

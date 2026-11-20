@@ -86,6 +86,7 @@ public:
 };
 
 struct OfxEffectInstancePrivate;
+class InstanceChangedBracket_RAII;
 class OfxEffectInstance
     : public AbstractOfxEffectInstance
 {
@@ -124,10 +125,12 @@ public:
     const std::string & ofxGetOutputPremultiplication() const;
 
     /**
-     * @brief Calls syncPrivateDataAction from another thread than the main thread. The actual
-     * call of the action will take place in the main-thread.
+     * @brief Calls kOfxActionSyncPrivateData before the node is serialized (saved or copied), if
+     * this is the main thread, and no dialog is shown. A serialization in another thread (the
+     * autosave) can't wait for the main thread: the caller must sync before it starts the thread,
+     * see Project::syncOpenFXPrivateData().
      **/
-    void syncPrivateData_other_thread();
+    void syncPrivateDataForSerialization();
 
 public:
     /********OVERRIDDEN FROM EFFECT INSTANCE*************/
@@ -135,6 +138,7 @@ public:
     virtual int getMinorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isGenerator() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isReader() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isOutputFormatFromFile() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isVideoReader() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isVideoWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -180,13 +184,13 @@ public:
                                   int* hotSpotY) const OVERRIDE FINAL;
     virtual void redrawOverlayInteract() OVERRIDE FINAL;
     virtual void drawOverlay(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
-    virtual bool onOverlayPenDown(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenDown(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen, KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool onOverlayPenMotion(double time, const RenderScale & renderScale, ViewIdx view,
-                                    const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenUp(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayKeyDown(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayKeyUp(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayKeyRepeat(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+                                    const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenUp(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyDown(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers, const QString& keyText) OVERRIDE FINAL;
+    virtual bool onOverlayKeyUp(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers, const QString& keyText) OVERRIDE FINAL;
+    virtual bool onOverlayKeyRepeat(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers, const QString& keyText) OVERRIDE FINAL;
     virtual bool onOverlayFocusGained(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
     virtual bool onOverlayFocusLost(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
     virtual bool canHandleRenderScaleForOverlays() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -199,6 +203,9 @@ public:
                              double time,
                              bool originatedFromMainThread) OVERRIDE;
     virtual void beginEditKnobs() OVERRIDE;
+    virtual void endEditKnobs() OVERRIDE;
+    virtual bool isEditingKnobs() const OVERRIDE;
+    virtual void refreshRenderCloneState(const EffectInstancePtr& clone) OVERRIDE;
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isIdentity(double time,
                             const RenderScale & scale,
@@ -273,8 +280,8 @@ public:
     virtual StatusEnum attachOpenGLContext(OpenGLContextEffectDataPtr* data) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum dettachOpenGLContext(const OpenGLContextEffectDataPtr& data) OVERRIDE FINAL;
     virtual EffectInstancePtr createRenderClone() OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void onInteractViewportSelectionCleared() OVERRIDE FINAL;
-    virtual void onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease) OVERRIDE FINAL;
+    virtual void onInteractViewportSelectionCleared(KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual void onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease, KeyboardModifiers modifiers) OVERRIDE FINAL;
     virtual void setInteractColourPicker(const OfxRGBAColourD& color, bool setColor, bool hasColor) OVERRIDE FINAL;
 public:
 
@@ -291,6 +298,38 @@ public:
 
     /********OVERRIDDEN FROM EFFECT INSTANCE: END*************/
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
+    /**
+     * @brief While an object of this class exists (main thread), a second active instance of a
+     * plug-in that sets kOfxImageEffectPluginPropSingleInstance is created with a warning in the
+     * log, instead of being refused: when nodes are moved by copying them and then deleting the
+     * originals (Group From Selection).
+     **/
+    class AllowExtraSingleInstances
+    {
+public:
+        AllowExtraSingleInstances();
+        ~AllowExtraSingleInstances();
+    };
+
+    /**
+     * @brief For a plug-in that sets kOfxImageEffectPluginPropSingleInstance, called by
+     * Node::deactivate(): destroys the plug-in instance of a deactivated (deleted) node, so that
+     * only the nodes in use hold one. The host side of the instance (parameters, clips) is kept.
+     * Deferred while the node renders. Does nothing for the other plug-ins (main thread only).
+     **/
+    void suspendSingleInstance();
+
+    /**
+     * @brief Called by Node::activate(): creates the plug-in instance again after
+     * suspendSingleInstance(), with the current parameter values (main thread only).
+     **/
+    void resumeSingleInstance();
+
+    bool isSingleInstanceSuspended() const;
+
+    /// true while a suspension waits for the node to stop rendering (the plug-in instance still exists)
+    bool isSingleInstanceSuspendPending() const;
+
     static ContextEnum mapToContextEnum(const std::string &s);
     static std::string mapContextToString(ContextEnum ctx);
     static std::string natronValueChangedReasonToOfxValueChangedReason(ValueChangedReasonEnum reason);
@@ -304,18 +343,16 @@ public Q_SLOTS:
 
     void onSyncPrivateDataRequested();
 
-
-Q_SIGNALS:
-
-    void syncPrivateDataRequested();
-
 private:
 
 
     void tryInitializeOverlayInteracts();
 
+    void destroyInteracts();
+
 private:
 
+    friend class InstanceChangedBracket_RAII;
     std::unique_ptr<OfxEffectInstancePrivate> _imp;
 };
 

@@ -68,6 +68,15 @@ port_retry() {
     return 1
 }
 nopy="-python27 -python38 -python39 -python310 -python311 -python312 -python313 -python314"
+# Python of the Qt5 SDK: 3.11 (Python version policy, see INSTALL_MACOS.md section 8; 3.10 is EOL)
+pyver=3.11
+pyv=${pyver/./}
+# openimageio's python variants: only the SDK's (its Portfile defaults to the newest Python)
+oiio_python_variants() {
+    local v out=+python$pyv
+    for v in 310 311 312 313 314; do [ "$v" = "$pyv" ] || out="$out -python$v"; done
+    echo "$out"
+}
 
 # Grow the APFS container to the (possibly enlarged) virtual disk (see tart docs, "disk resizing").
 step_disk() {
@@ -128,8 +137,8 @@ ports_https_source() {
 
 step_overlay() {
     ports_https_source
-    (cd "$NATRON/tools/MacPorts" && ./check.sh) | tee "$LOGDIR/check.txt"
-    if grep -q "is obsolete\|is missing" "$LOGDIR/check.txt"; then
+    (cd "$NATRON/tools/MacPorts" && { ./check.sh --all || true; }) | tee "$LOGDIR/check.txt"
+    if grep -q "is obsolete\|is missing\|differs from upstream\|is unused\|has no Portfile" "$LOGDIR/check.txt"; then
         echo "WARNING: overlay is out of date with this upstream tree (see $LOGDIR/check.txt)"
     fi
     sudo mkdir -p /opt/MacPorts-Natron
@@ -182,14 +191,16 @@ step_libs() {
     sudo sed -i '' -e 's/^find_dependency(zstd/#find_dependency(zstd/' /opt/local/lib/cmake/minizip-ng/minizip-ng-config.cmake
     $PORT install opencolorio  -quartz $nopy
     $PORT install opencolorio1 -quartz $nopy
-    $PORT install seexpr seexpr211
+    $PORT install seexpr211
     $PORT install librsvg -quartz
     $PORT install poppler librevenge libcdr-0.1 sox libzip
     sudo sed -i '' -e 's/Zstd::Zstd/zstd/' /opt/local/lib/pkgconfig/libzip.pc
     $PORT install ImageMagick +natron -x11
-    $PORT install fftw-3 -gfortran fftw-3-single -gfortran
+    $PORT install ImageMagick7 +natron -x11 -openexr
     $PORT install ffmpeg +gpl2 +highbitdepth +natronmini
-    $PORT install openimageio +freetype +natron +opencolorio +openjpeg +python310 -python312 -python313 -python314
+    # COMMERCIAL builds (NATRON_LICENSE=COMMERCIAL): LGPL FFmpeg, LibRaw and libheif in libexec
+    $PORT install ffmpeg-lgpl libraw-lgpl libheif-lgpl
+    $PORT install openimageio +freetype +natron +opencolorio +openjpeg $(oiio_python_variants)
 }
 
 # pip can't use a SOCKS proxy (vendored urllib3 bug), so fetch the wheel with curl,
@@ -198,34 +209,33 @@ pip_install_wheel() { # project version sha256
     local json url file sha d
     d=$(mktemp -d /tmp/wheel.XXXX)
     json=$(curl -fsSL "https://pypi.org/pypi/$1/$2/json")
-    read -r url sha < <(printf '%s' "$json" | python3.10 -c 'import json,sys
+    read -r url sha < <(printf '%s' "$json" | python$pyver -c 'import json,sys
 u=[u for u in json.load(sys.stdin)["urls"] if u["packagetype"]=="bdist_wheel"][0]
 print(u["url"], u["digests"]["sha256"])')
     file=$d/$(basename "$url")
     curl -fsSL -o "$file" "$url"
     [ "$sha" = "$3" ] || { echo "PyPI lists sha256 $sha for $1 $2, expected $3"; return 1; }
     [ "$(shasum -a 256 "$file" | cut -d" " -f1)" = "$3" ] || { echo "sha256 mismatch for $file"; return 1; }
-    sudo pip-3.10 install --no-index --no-deps "$file"
-    python3.10 -c "import importlib.metadata as m; assert m.version('$1') == '$2'"
+    sudo pip-$pyver install --no-index --no-deps "$file"
+    python$pyver -c "import importlib.metadata as m; assert m.version('$1') == '$2'"
 }
 
 step_python_qt() {
-    $PORT install py310-pip
-    $PORT install openblas
-    $PORT install py310-numpy -gfortran
-    $PORT install py310-sphinx py310-sphinx_rtd_theme
+    $PORT install py$pyv-pip
+    $PORT install py$pyv-numpy -gfortran
+    $PORT install py$pyv-sphinx py$pyv-sphinx_rtd_theme
     $PORT install qt5 qt5-qtwebengine
-    $PORT install py310-pyside2
-    sudo port select --set python python310
-    sudo port select --set python3 python310
-    sudo port select --set sphinx py310-sphinx
+    $PORT install py$pyv-pyside2
+    sudo port select --set python python$pyv
+    sudo port select --set python3 python$pyv
+    sudo port select --set sphinx py$pyv-sphinx
     pip_install_wheel QtPy 1.11.2 83c502973e9fdd7b648d8267a421229ea3d9a0651c22e4c65a4d9228479c39b6
-    local py=/opt/local/Library/Frameworks/Python.framework/Versions/3.10
-    [ -e $py/lib/python3.10/site-packages/shiboken2_generator/shiboken2-3.10 ] ||
-        sudo ln -s shiboken2 $py/lib/python3.10/site-packages/shiboken2_generator/shiboken2-3.10
-    sudo ln -sf shiboken2-3.10 /opt/local/bin/shiboken2
+    local py=/opt/local/Library/Frameworks/Python.framework/Versions/$pyver
+    [ -e $py/lib/python$pyver/site-packages/shiboken2_generator/shiboken2-$pyver ] ||
+        sudo ln -s shiboken2 $py/lib/python$pyver/site-packages/shiboken2_generator/shiboken2-$pyver
+    sudo ln -sf shiboken2-$pyver /opt/local/bin/shiboken2
     [ -e /opt/local/Library/lib ] || sudo ln -s Frameworks /opt/local/Library/lib
-    [ -f $py/lib/python3.10/site-packages/shiboken2_generator/shiboken2-3.10 ]
+    [ -f $py/lib/python$pyver/site-packages/shiboken2_generator/shiboken2-$pyver ]
 }
 
 # Idempotent fixes of installed files that a port upgrade may undo, and the port selections
@@ -234,21 +244,21 @@ step_fixups() {
     [ -e /opt/local/include/minizip-ng ] || sudo ln -s . /opt/local/include/minizip-ng
     sudo sed -i '' -e 's/^find_dependency(zstd/#find_dependency(zstd/' /opt/local/lib/cmake/minizip-ng/minizip-ng-config.cmake
     sudo sed -i '' -e 's/Zstd::Zstd/zstd/' /opt/local/lib/pkgconfig/libzip.pc
-    sudo port select --set python python310
-    sudo port select --set python3 python310
-    sudo port select --set sphinx py310-sphinx
-    local py=/opt/local/Library/Frameworks/Python.framework/Versions/3.10
-    [ -e $py/lib/python3.10/site-packages/shiboken2_generator/shiboken2-3.10 ] ||
-        sudo ln -s shiboken2 $py/lib/python3.10/site-packages/shiboken2_generator/shiboken2-3.10
-    sudo ln -sf shiboken2-3.10 /opt/local/bin/shiboken2
+    sudo port select --set python python$pyv
+    sudo port select --set python3 python$pyv
+    sudo port select --set sphinx py$pyv-sphinx
+    local py=/opt/local/Library/Frameworks/Python.framework/Versions/$pyver
+    [ -e $py/lib/python$pyver/site-packages/shiboken2_generator/shiboken2-$pyver ] ||
+        sudo ln -s shiboken2 $py/lib/python$pyver/site-packages/shiboken2_generator/shiboken2-$pyver
+    sudo ln -sf shiboken2-$pyver /opt/local/bin/shiboken2
     [ -e /opt/local/Library/lib ] || sudo ln -s Frameworks /opt/local/Library/lib
-    if [ -x /opt/local/bin/dmgbuild-3.10 ]; then sudo ln -sf dmgbuild-3.10 /opt/local/bin/dmgbuild; fi
+    if [ -x /opt/local/bin/dmgbuild-$pyver ]; then sudo ln -sf dmgbuild-$pyver /opt/local/bin/dmgbuild; fi
 }
 
 step_dmgtools() {
-    $PORT install py310-dmgbuild
-    # the port only installs dmgbuild-3.10 (no port select group)
-    [ -e /opt/local/bin/dmgbuild ] || sudo ln -s dmgbuild-3.10 /opt/local/bin/dmgbuild
+    $PORT install py$pyv-dmgbuild
+    # the port only installs dmgbuild-$pyver (no port select group)
+    [ -e /opt/local/bin/dmgbuild ] || sudo ln -s dmgbuild-$pyver /opt/local/bin/dmgbuild
     command -v dmgbuild || { echo "dmgbuild not in PATH"; ls /opt/local/bin | grep -i dmgbuild || true; exit 1; }
     dmgbuild --help > /dev/null
     command -v oiiotool && command -v identify
@@ -261,14 +271,28 @@ step_sync() {
     (cd "$NATRON/tools/MacPorts" && ./sync.sh) > "$LOGDIR/sync-portindex.txt" 2>&1
     tail -5 "$LOGDIR/sync-portindex.txt"
     grep -q "Ports failed:[[:space:]]*0" "$LOGDIR/sync-portindex.txt" || { echo "portindex failed on the overlay"; return 1; }
+    # an empty or partial overlay also gives "Ports failed: 0": check that MacPorts really uses it
+    port file openimageio | grep -q '^/opt/MacPorts-Natron/' || { echo "overlay not used (port file openimageio)"; return 1; }
 }
 
-# Ports pinned in the overlay (older than upstream): MacPorts never downgrades by itself,
-# so reinstall them (same variants) when the installed version differs from the overlay's.
-PINNED_PORTS="ffmpeg libraw"
+# Ports pinned in the overlay: the port directories with a PINNED file
+# (tools/MacPorts/README.txt), pinned either ahead of upstream (a newer version)
+# or held at an older one. MacPorts never downgrades, and an "ahead" port may
+# have been installed from upstream before, so reinstall a pinned port whenever
+# its installed version differs from the overlay's.
+pinned_ports() {
+    local f d n
+    for f in "$NATRON"/tools/MacPorts/*/*/PINNED; do
+        [ -f "$f" ] || continue
+        d=$(dirname "$f")
+        n=$(awk '$1 == "name" {print $2; exit}' "$d/Portfile" 2>/dev/null)
+        case "$n" in ''|*'$'*|*'['*) n=$(basename "$d") ;; esac
+        echo "$n"
+    done
+}
 step_pins() {
-    local p want have variants vfile
-    for p in $PINNED_PORTS; do
+    local p v want have variants vfile
+    for p in $(pinned_ports); do
         vfile=$LOGDIR/pins-$p.variants
         have=$(port -q installed "$p" 2>/dev/null | awk '/\(active\)/{print $2}')
         if [ -z "$have" ]; then
@@ -287,12 +311,38 @@ step_pins() {
                 variants=$(echo "$have" | sed -e 's/^@[^+]*//' -e 's/+/ +/g')
                 echo "$variants" > "$vfile"
                 echo "$p: installed $have, overlay has $want: reinstalling with$variants"
-                $SUDO port -v -N -f uninstall "$p"
+                # one version at a time: with several installed, "port uninstall $p" refuses to choose
+                for v in $(port -q installed "$p" | awk '{print $2}'); do
+                    $SUDO port -v -N -f uninstall "$p" "$v"
+                done
                 $PORT install "$p" $variants
                 ;;
         esac
         rm -f "$vfile"
     done
+}
+
+# An SDK provisioned with an older Python (3.10 until 2026-11-17): install the py$pyv ports
+# and switch openimageio's python variant. Each check looks at the result of the step, not at
+# a marker, so that an interrupted migration is completed by the next update (python_qt and
+# dmgtools are idempotent). The fixups step, run after update, then selects python$pyv and
+# re-creates the links. The old pyNNN ports are left installed (see INSTALL_MACOS.md to remove them).
+step_python_migrate() {
+    local site=/opt/local/Library/Frameworks/Python.framework/Versions/$pyver/lib/python$pyver/site-packages
+    if ! port -q installed py$pyv-pyside2 2>/dev/null | grep -q '(active)' ||
+        ! [ -f $site/shiboken2_generator/shiboken2-$pyver ] ||
+        ! python$pyver -c 'import qtpy, PySide2.QtCore' 2>/dev/null; then
+        echo "===== installing the Python $pyver ports"
+        step_python_qt
+    fi
+    if ! [ -x /opt/local/bin/dmgbuild-$pyver ]; then
+        echo "===== installing dmgbuild for Python $pyver"
+        step_dmgtools
+    fi
+    if ! port -q installed openimageio 2>/dev/null | grep '(active)' | grep -q "+python$pyv"; then
+        echo "===== switching openimageio to +python$pyv"
+        $PORT -n upgrade --enforce-variants openimageio +freetype +natron +opencolorio +openjpeg $(oiio_python_variants)
+    fi
 }
 
 # Update an existing SDK image: refresh MacPorts and the overlay, upgrade outdated ports.
@@ -302,8 +352,8 @@ step_update() {
     # MacPorts base: install the .pkg of MACPORTS_VERSION if it differs from the installed one
     step_macports
     ports_https_source
-    (cd "$NATRON/tools/MacPorts" && ./check.sh) | tee "$LOGDIR/check.txt"
-    if grep -q "is obsolete\|is missing" "$LOGDIR/check.txt"; then
+    (cd "$NATRON/tools/MacPorts" && { ./check.sh --all || true; }) | tee "$LOGDIR/check.txt"
+    if grep -q "is obsolete\|is missing\|differs from upstream\|is unused\|has no Portfile" "$LOGDIR/check.txt"; then
         echo "WARNING: overlay is out of date with upstream (see $LOGDIR/check.txt); reintegrate it on the host first"
     fi
     step_sync
@@ -315,6 +365,35 @@ step_update() {
         echo "===== upgrading $p"
         $PORT upgrade "$p"
     done
+    # FFmpeg 9's default +vmaf pulls libvmaf into the bundle: +natronmini no longer selects it,
+    # but "upgrade" keeps the installed variants, so reinstall an ffmpeg that has +vmaf.
+    # The marker makes an interrupted reinstall resumable (ffmpeg uninstalled but not reinstalled).
+    if [ -f "$LOGDIR/ffmpeg-novmaf.pending" ] || port -q installed ffmpeg 2>/dev/null | grep '(active)' | grep -q '+vmaf'; then
+        echo "===== reinstalling ffmpeg without +vmaf"
+        touch "$LOGDIR/ffmpeg-novmaf.pending"
+        # uninstall every installed version (e.g. an inactive 8.1.2 next to the active 9.x):
+        # "port uninstall ffmpeg" refuses to choose when there are several
+        for v in $(port -q installed ffmpeg 2>/dev/null | awk '{print $2}'); do
+            $PORT -f uninstall ffmpeg "$v"
+        done
+        $PORT install ffmpeg +gpl2 +highbitdepth +natronmini
+        rm -f "$LOGDIR/ffmpeg-novmaf.pending"
+        # libvmaf is no longer needed by anything
+        $PORT -N uninstall libvmaf 2>/dev/null || true
+    fi
+    # COMMERCIAL builds: LGPL FFmpeg, LibRaw and libheif (images made before these subports)
+    for p in ffmpeg-lgpl libraw-lgpl libheif-lgpl; do
+        if ! port -q installed "$p" 2>/dev/null | grep -q '(active)'; then
+            echo "===== installing $p"
+            $PORT install "$p"
+        fi
+    done
+    step_python_migrate
+    # ImageMagick 7 for openfx-arena (Natron 2.6), for the images created before step_libs had it
+    if ! port -q installed ImageMagick7 2>/dev/null | grep -q '+natron.*(active)'; then
+        echo "===== installing ImageMagick7 +natron"
+        $PORT install ImageMagick7 +natron -x11 -openexr
+    fi
     # rebuild OSMesa/LLVM only if missing (delete /opt/osmesa/lib to force a rebuild)
     step_osmesa
     rm -f "$LOGDIR/update.pending"
@@ -332,12 +411,22 @@ step_cleanup() {
 
 step_build() {
     start_http_proxy
+    if [ "${NATRON_LICENSE:-GPL}" = "COMMERCIAL" ]; then
+        # step_libs and step_update install them: fail now rather than after building Natron
+        for p in ffmpeg-lgpl libraw-lgpl libheif-lgpl; do
+            if ! port -q installed "$p" 2>/dev/null | grep -q '(active)'; then
+                echo "Error: $p is not installed in this image, update it with: tools/tart/natron-sdk.sh update"
+                return 1
+            fi
+        done
+    fi
     mkdir -p "$WORKSPACE"
     cd "$NATRON/tools/jenkins"
-    env NOUPDATE=1 WORKSPACE="$WORKSPACE" DISABLE_BREAKPAD=1 NATRON_LICENSE=GPL \
+    env NOUPDATE=1 WORKSPACE="$WORKSPACE" DISABLE_BREAKPAD=1 NATRON_LICENSE="${NATRON_LICENSE:-GPL}" \
         GIT_URL=https://github.com/NatronGitHub/Natron.git GIT_BRANCH="${GIT_BRANCH:-RB-2.6}" \
         UNIT_TESTS="${UNIT_TESTS:-false}" BUILD_NAME=natron_github_RB2 BUILD_NUMBER=1 \
         COMPILE_TYPE=release MKJOBS="$JOBS" \
+        NATRON_BUILD_SYSTEM="${NATRON_BUILD_SYSTEM:-cmake}" NATRON_EXTRA_CMAKE_FLAGS="${NATRON_EXTRA_CMAKE_FLAGS:-}" \
         ./launchBuildMain.sh
     # launchBuildMain.sh can exit 0 after a failed sub-step: require the DMG
     ls -l "$WORKSPACE/builds_archive/natron_github_RB2/1/"

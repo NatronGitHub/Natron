@@ -19,6 +19,11 @@
 
 TEMPLATE = subdirs
 
+# The qmake build is deprecated: CMake (CMakeLists.txt) is the supported build.
+# qmake still works on RB-2.6, where the release scripts (tools/jenkins) still
+# use it, and will be removed in a future release (first on RB-2.7, see #1181).
+warning("The qmake build of Natron is deprecated and will be removed in a future release. The release scripts in tools/jenkins still use it on RB-2.6, so this warning is expected in their logs. For your own builds, use CMake: see INSTALL_LINUX.md, INSTALL_MACOS.md, INSTALL_WINDOWS.md or INSTALL_FREEBSD.md, and the Maintainer Guide (Documentation/source/maintainers/building.rst).")
+
 CONFIG(enable-breakpad) {
     include(breakpadpro.pri)
 }
@@ -36,6 +41,7 @@ SUBDIRS += \
     Engine \
     Renderer \
     Gui \
+    NatronTestPlugin \
     Tests \
     PythonBin \
     App
@@ -49,6 +55,7 @@ openMVG.subdir     = libs/openMVG
 qhttpserver.subdir = libs/qhttpserver
 hoedown.subdir     = libs/hoedown
 libtess.subdir     = libs/libtess
+NatronTestPlugin.subdir = Tests/OfxTestPlugin
 
 # what subproject depends on others
 glog.depends = gflags
@@ -58,7 +65,7 @@ openMVG.depends = ceres
 Engine.depends = libmv openMVG HostSupport libtess ceres
 Renderer.depends = Engine
 Gui.depends = Engine qhttpserver
-Tests.depends = Gui Engine
+Tests.depends = Gui Engine NatronTestPlugin
 App.depends = Gui Engine
 
 OTHER_FILES += \

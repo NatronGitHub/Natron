@@ -17,10 +17,8 @@ set my_name         ffmpeg
 conflicts           ffmpeg-devel
 
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
-# Natron: pinned to 8.1.x. FFmpeg 9 removed AVCodec::pix_fmts, which openfx-io uses.
-# Keep this Portfile when reintegrating upstream (only Portfile.orig follows upstream).
-version             8.1.2
-revision            0
+version             9.0.2
+revision            3
 epoch               1
 
 license             LGPL-2.1+
@@ -63,9 +61,9 @@ distname            ${my_name}-${version}
 dist_subdir         ${my_name}
 use_xz              yes
 
-checksums           rmd160  7b6b2b982a22338f38022a0149f7c9f15f6df4ff \
-                    sha256  464beb5e7bf0c311e68b45ae2f04e9cc2af88851abb4082231742a74d97b524c \
-                    size    11710924
+checksums           rmd160  e4eb22bca3395ecb499dd6fd256e16e7d74cd4ce \
+                    sha256  8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e \
+                    size    12040788
 
 depends_build-append \
                     port:cctools \
@@ -110,7 +108,6 @@ depends_lib-append \
                     port:zvbi
 
 patchfiles-append   patch-libavcodec-audiotoolboxenc.c.diff
-patchfiles-append   patch-avutil-builtin-available.diff
 
 # Additional fixes related to use of '__builtin_available'
 # TODO: Submit patches to upstream
@@ -131,7 +128,7 @@ if {${os.platform} eq "darwin" && ${os.major} < 17} {
 }
 
 # error: call to undeclared function 'VTRegisterProfessionalVideoWorkflowVideoEncoders' on 10.9
-patchfiles-append   patch-ibavcodec-videotoolboxenc.c.diff
+patchfiles-append   patch-libavcodec-videotoolboxenc.c.diff
 
 # enable auto configure of asm optimizations
 # requires Xcode 3.1 or better on Leopard
@@ -150,6 +147,23 @@ compiler.blacklist-append {clang < 900}
 # WARNING: gcc 4.2 is outdated and may miscompile FFmpeg. Please use a newer compiler.
 compiler.blacklist-append \
                     *gcc-4.0 *gcc-4.2
+
+# Natron: subport ffmpeg-lgpl, the FFmpeg of COMMERCIAL Natron builds (#1302): the same version
+# and configuration as "ffmpeg +gpl2 +highbitdepth +natronmini", without +gpl2 (no x264, x265, Xvid
+# or vid.stab) and without libzvbi, so LGPL-2.1+. It is installed in ${prefix}/libexec/ffmpeg-lgpl, with no links in
+# ${prefix}/bin, so that it can be installed next to ffmpeg. tools/jenkins/common.sh uses it when
+# NATRON_LICENSE=COMMERCIAL.
+subport ffmpeg-lgpl {
+    description     LGPL build of FFmpeg for Natron (no GPL or nonfree code)
+    # before the default +gpl2 below: the first default of a variant wins
+    default_variants-append \
+                    -gpl2 \
+                    -gpl3 \
+                    -nonfree \
+                    -vmaf \
+                    +highbitdepth \
+                    +natronmini
+}
 
 # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
 # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
@@ -170,7 +184,34 @@ configure.cflags-append \
                     ${configure.cppflags}
 
 set port_sharedir   ${prefix}/share
-set port_docdir     ${port_sharedir}/doc
+set port_docdir     ${port_sharedir}/doc/${my_name}
+
+if {${subport} eq "ffmpeg-lgpl"} {
+    set port_prefix     ${prefix}/libexec/${subport}
+    set port_sharedir   ${port_prefix}/share
+    set port_docdir     ${port_sharedir}/doc/${my_name}
+    configure.pre_args-delete \
+                    --prefix=${prefix}
+    configure.pre_args-append \
+                    --prefix=${port_prefix}
+
+    pre-configure {
+        if {[variant_isset gpl2] || [variant_isset gpl3] || [variant_isset nonfree]} {
+            return -code error "${subport} is the LGPL FFmpeg of Natron's COMMERCIAL builds: install it without +gpl2, +gpl3 or +nonfree"
+        }
+    }
+    # check the licence that "ffmpeg -L" and av*_license() report, and the configuration
+    post-build {
+        if {![catch {exec grep -E -e {--enable-(gpl|nonfree|version3)} ${worksrcpath}/config.h}]} {
+            return -code error "${subport} is configured with GPL, version3 or nonfree code"
+        }
+        foreach lib {libavcodec libavdevice libavfilter libavformat libavutil libswresample libswscale} {
+            if {[catch {exec grep -a -q "${lib} license: LGPL version 2.1 or later" {*}[glob ${worksrcpath}/${lib}/${lib}.*.dylib]}]} {
+                return -code error "${lib} of ${subport} is not LGPL 2.1 or later"
+            }
+        }
+    }
+}
 
 configure.pre_args-append \
                     --cxx="${configure.cxx}" \
@@ -221,6 +262,16 @@ configure.args-append \
                     --enable-shared \
                     --enable-swscale \
                     --enable-zlib
+
+# Natron: ffmpeg-lgpl has no teletext (after the configure.args above, which enable libzvbi):
+# libzvbi is GPL-2+ and is kept out of COMMERCIAL builds (maintainer's decision, 2026-11-20)
+if {${subport} eq "ffmpeg-lgpl"} {
+    depends_lib-delete \
+                    port:zvbi
+    configure.args-replace \
+                    --enable-libzvbi \
+                    --disable-libzvbi
+}
 
 post-extract {
     # fix file perms; tarball contents deny group and world read
@@ -426,7 +477,7 @@ post-destroot {
     }
 }
 
-variant natronmini requires highbitdepth conflicts x11 description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display support.} {
+variant natronmini requires highbitdepth conflicts x11 vmaf description {Minimal FFmpeg for Natron, without bluray, subtitles, network, display, VMAF support.} {
 
     depends_lib-delete \
                     port:libiconv \
@@ -588,6 +639,19 @@ variant flite description {Enable flite audio source} {
                     --enable-libflite
     depends_lib-append \
                     port:flite
+}
+
+variant vmaf description {Enable VMAF perceptual video quality assessment} {
+    configure.args-append \
+                    --enable-libvmaf
+    depends_lib-append \
+                    port:libvmaf
+}
+
+# Natron: +natronmini doesn't bundle libvmaf
+if {![variant_isset natronmini]} {
+    default_variants-append \
+                    +vmaf
 }
 
 if {![variant_isset rav1e]} {

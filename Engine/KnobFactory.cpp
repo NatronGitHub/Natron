@@ -89,6 +89,7 @@ KnobFactory::loadBultinKnobs()
     _loadedKnobs.insert( knobFactoryEntry<KnobGroup>() );
     _loadedKnobs.insert( knobFactoryEntry<KnobColor>() );
     _loadedKnobs.insert( knobFactoryEntry<KnobString>() );
+    _loadedKnobs.insert( knobFactoryEntry<KnobBytes>() );
     _loadedKnobs.insert( knobFactoryEntry<KnobParametric>() );
     _loadedKnobs.insert( knobFactoryEntry<KnobPath>() );
     _loadedKnobs.insert( knobFactoryEntry<KnobPage>() );

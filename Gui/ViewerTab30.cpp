@@ -161,6 +161,10 @@ ViewerTab::setColorSpace(const std::string & colorSpaceName)
 void
 ViewerTab::setGain(double d)
 {
+    if (d <= 0.) {
+        // the gain is a power of 2 (it comes from a project file here): log(d) would be -infinity or NaN
+        d = 1.;
+    }
     double fstop = std::log(d) / M_LN2;
 
     _imp->gainBox->setValue(fstop);
@@ -1000,6 +1004,7 @@ ViewerTab::switchInputAAndB()
     _imp->viewerNode->setInputA(inputBIndex);
     _imp->viewerNode->setInputB(inputAIndex);
 
+    _imp->viewer->updatePersistentMessage(); // the viewed nodes' messages come first (#459)
     abortViewersAndRefresh();
 }
 
@@ -1017,6 +1022,7 @@ ViewerTab::onFirstInputNameChanged(const QString & text)
     }
     _imp->viewerNode->setInputA(inputIndex);
 
+    _imp->viewer->updatePersistentMessage(); // the viewed nodes' messages come first (#459)
     abortViewersAndRefresh();
 }
 
@@ -1048,6 +1054,7 @@ ViewerTab::onSecondInputNameChanged(const QString & text)
             }
         }
     }
+    _imp->viewer->updatePersistentMessage(); // the viewed nodes' messages come first (#459)
     abortViewersAndRefresh();
 }
 
@@ -1104,6 +1111,9 @@ ViewerTab::onActiveInputsChanged()
         //_imp->viewer->resetWipeControls();
         setCompositingOperator(eViewerCompositingOperatorWipeUnder);
     }
+
+    // the messages of the viewed nodes are shown first (#459)
+    _imp->viewer->updatePersistentMessage();
 }
 
 void

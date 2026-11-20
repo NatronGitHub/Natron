@@ -86,6 +86,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
     , _mustSetDragOrientation(false)
     , _mouseDragOrientation()
     , _keyFramesClipBoard()
+    , _keyFramesClipBoardIsString()
     , _selectionRectangle()
     , _dragStartPoint()
     , _drawSelectedKeyFramesBbox(false)
@@ -189,20 +190,20 @@ CurveWidgetPrivate::createMenu()
 
     QAction* copyKeyFramesAction = new ActionWithShortcut(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCopy,
                                                           kShortcutDescActionCurveEditorCopy, editMenu);
-    copyKeyFramesAction->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_C) );
+    copyKeyFramesAction->setShortcut( QKeySequence(Qt::CTRL | Qt::Key_C) );
 
     QObject::connect( copyKeyFramesAction, SIGNAL(triggered()), _widget, SLOT(copySelectedKeyFramesToClipBoard()) );
     editMenu->addAction(copyKeyFramesAction);
 
     QAction* pasteKeyFramesAction = new ActionWithShortcut(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorPaste,
                                                            kShortcutDescActionCurveEditorPaste, editMenu);
-    pasteKeyFramesAction->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_V) );
+    pasteKeyFramesAction->setShortcut( QKeySequence(Qt::CTRL | Qt::Key_V) );
     QObject::connect( pasteKeyFramesAction, SIGNAL(triggered()), _widget, SLOT(pasteKeyFramesFromClipBoardToSelectedCurve()) );
     editMenu->addAction(pasteKeyFramesAction);
 
     QAction* selectAllAction = new ActionWithShortcut(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorSelectAll,
                                                       kShortcutDescActionCurveEditorSelectAll, editMenu);
-    selectAllAction->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_A) );
+    selectAllAction->setShortcut( QKeySequence(Qt::CTRL | Qt::Key_A) );
     QObject::connect( selectAllAction, SIGNAL(triggered()), _widget, SLOT(selectAllKeyFrames()) );
     editMenu->addAction(selectAllAction);
 
@@ -699,14 +700,14 @@ CurveWidgetPrivate::isNearbyKeyFrame(const QPoint & pt,
                 ++next;
             }
             bool isPeriodic = false;
-            std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+            std::pair<double,double> parametricRange = std::make_pair( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
             CurvePtr internalCurve = (*it)->getInternalCurve();
             if (internalCurve) {
                 isPeriodic = internalCurve->isCurvePeriodic();
                 parametricRange = internalCurve->getXRange();
             }
             for (; it2 != set.end(); ++it2) {
-                QPointF keyFramewidgetPos = zoomCtx.toWidgetCoordinates( it2->getTime(), it2->getValue() );
+                QPointF keyFramewidgetPos = zoomCtx.toWidgetCoordinates( it2->getTime(), (*it)->getKeyFrameDisplayValue(*it2) );
                 if ( (std::abs( pt.y() - keyFramewidgetPos.y() ) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
                      (std::abs( pt.x() - keyFramewidgetPos.x() ) < CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) {
                     KeyFrame prevK;
@@ -770,10 +771,11 @@ CurveWidgetPrivate::isNearbyKeyFrameText(const QPoint& pt) const
         BezierCPCurveGui* isBezier = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
         if (!isBezier) {
             for (std::list<KeyPtr>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                QPointF topLeftWidget = zoomCtx.toWidgetCoordinates( (*it2)->key.getTime(), (*it2)->key.getValue() );
+                double y = it->first->getKeyFrameDisplayValue( (*it2)->key );
+                QPointF topLeftWidget = zoomCtx.toWidgetCoordinates( (*it2)->key.getTime(), y );
                 topLeftWidget.ry() += yOffset;
 
-                QString coordStr =  QString::fromUtf8("x: %1, y: %2").arg( (*it2)->key.getTime() ).arg( (*it2)->key.getValue() );
+                QString coordStr =  QString::fromUtf8("x: %1, y: %2").arg( (*it2)->key.getTime() ).arg(y);
                 QPointF btmRightWidget( topLeftWidget.x() + fm.horizontalAdvance(coordStr) / _screenPixelRatio, topLeftWidget.y() + fm.height() / _screenPixelRatio );
 
                 if ( (pt.x() >= topLeftWidget.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) && (pt.x() <= btmRightWidget.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) &&
@@ -1080,7 +1082,7 @@ CurveWidgetPrivate::keyFramesWithinRect(const QRectF & rect,
             }
             CurvePtr internalCurve = (*it)->getInternalCurve();
             bool isPeriodic = false;
-            std::pair<double,double> parametricRange = std::make_pair(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
+            std::pair<double,double> parametricRange = std::make_pair( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
             if (internalCurve) {
                 isPeriodic = internalCurve->isCurvePeriodic();
                 parametricRange = internalCurve->getXRange();
@@ -1091,7 +1093,7 @@ CurveWidgetPrivate::keyFramesWithinRect(const QRectF & rect,
             KeyFrameSet::const_iterator next = it2;
             ++next;
             for (; it2 != set.end(); ++it2) {
-                double y = it2->getValue();
+                double y = (*it)->getKeyFrameDisplayValue(*it2);
                 double x = it2->getTime();
                 if ( (x <= right) && (x >= left) && (y <= top) && (y >= bottom) ) {
                     KeyFrame prevKey;
@@ -1448,7 +1450,7 @@ CurveWidgetPrivate::moveSelectedTangent(const QPointF & pos)
 
 
     KeyPtr & key = _selectedDerivative.second;
-    double dy = key->key.getValue() - pos.y();
+    double dy = key->curve->getKeyFrameDisplayValue(key->key) - pos.y();
     double dx = key->key.getTime() - pos.x();
 
 
@@ -1468,7 +1470,7 @@ CurveWidgetPrivate::refreshKeyTangents(KeyPtr & key)
     double w = (double)_widget->width();
     double h = (double)_widget->height();
     double x = key->key.getTime();
-    double y = key->key.getValue();
+    double y = key->curve->getKeyFrameDisplayValue(key->key);
     QPointF keyWidgetCoord = zoomCtx.toWidgetCoordinates(x, y);
     double leftTanX, leftTanY;
     {

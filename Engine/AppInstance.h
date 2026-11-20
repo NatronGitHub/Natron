@@ -246,6 +246,14 @@ public:
         return false;
     }
 
+    /**
+     * @brief True if a render of this project is running or queued: a viewer or Write render,
+     * a node preview, or a Write render waiting in the render queue.
+     * Renders that are posting their results to the main thread are not finished: the caller must
+     * also process the events (see NatronGuiTest.waitIdle()).
+     **/
+    bool hasRenderInProgress() const;
+
     virtual bool isGuiFrozen() const { return false; }
 
     virtual void progressStart(const NodePtr& node,
@@ -307,6 +315,8 @@ public:
 
     void addInvalidExpressionKnob(const KnobIPtr& knob);
     void removeInvalidExpressionKnob(const KnobI* knob);
+    // whether knob has an invalid expression in at least one dimension
+    bool isInvalidExpressionKnob(const KnobI* knob) const;
     void recheckInvalidExpressions();
 
     virtual void clearViewersLastRenderedTexture() {}
@@ -493,6 +503,27 @@ public:
             a->setIsCreatingNodeTree(false);
         }
     }
+};
+
+/**
+ * @brief On destruction, computes the previews of the nodes that were added to the collection during the
+ * lifetime of this object (and, for groups, of the nodes inside them), including on error paths.
+ * Previews are not computed while a node tree is being created (see NodeGui::forceComputePreview() and #814):
+ * declare this object before the CreatingNodeTreeFlag_RAII, so that it is destroyed after it.
+ * Does nothing if this is part of a larger node tree: the outermost one refreshes the previews once complete.
+ **/
+class RefreshPreviewsOfCreatedNodes_RAII
+{
+    AppInstanceWPtr _app;
+    NodeCollectionWPtr _collection;
+    NodesList _nodesBefore;
+
+public:
+
+    RefreshPreviewsOfCreatedNodes_RAII(const AppInstancePtr& app,
+                                       const NodeCollectionPtr& collection);
+
+    ~RefreshPreviewsOfCreatedNodes_RAII();
 };
 
 NATRON_NAMESPACE_EXIT

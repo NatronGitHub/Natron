@@ -250,6 +250,14 @@ fi
 
 
 
+if [ "$PKGOS" = "Windows" ] && [ "${MINGW_TOOLCHAIN:-gcc}" = "clang" ]; then
+    # MSYS2 CLANG64 and CLANGARM64 have no gcc: clang, with LLVM's OpenMP (llvm-openmp), which
+    # COMPILER=clang-omp enables for Natron and the plug-ins (common.sh sets MINGW_TOOLCHAIN)
+    COMPILER=${COMPILER:-clang-omp}
+    CC=${CC:-clang}
+    CXX=${CXX:-clang++ -std=${STD17}}
+fi
+
 COMPILER=${COMPILER:-gcc}
 CC=${CC:-gcc}
 CXX=${CXX:-g++ -std=${CXXSTD}}

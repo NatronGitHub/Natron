@@ -1,207 +1,211 @@
 .. for help on writing/extending this file, see the reStructuredText cheatsheet
    http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
-   
-   .. _evaluating-script-structure:
 
-   
+.. _evaluating-script-structure:
+
 Evaluating Script Structure
 ===========================
 
-Natron is a very 'adult' application that lets you handle your material in any way that you wish.
-It will not give you a warning beep or forbid you from doing anything.
-For this reason it is very easy to accidentally do things in the 'wrong' way. 
-This is a short (non comprehensive) list of common 'bad practice' items.
-Of course, sometimes these 'rules' may be broken, but only as an exception.
+Natron rarely stops you from doing things in an unusual way, so it is easy to
+build a project that works but is hard to read, fix or hand over. This page
+lists common bad practices. These are guidelines, not rules: break them when
+you have a good reason.
 
+Project and files
+-----------------
 
+**Set the format and frame rate before you start**
 
-File Do's and Dont's
---------------------
+Open the :ref:`project settings <compositing-projects-setup>` (press :kbd:`S`
+in the node graph) and set the **Project Format** and **Frame Rate** before you
+add nodes. Generators such as Constant use the project format by default. If
+it is wrong, many nodes end up with a format different from the one you work
+in, which is tedious to fix later.
 
-Folders and files should be well managed: consistently and rationally named.
+**Keep files organized, and use names that are consistent and meaningful.**
 
+**Use paths relative to the project**
 
-**Always set the format and FPS in settings before you start**
+An absolute path, such as ``/Users/me/school/lesson_one/asset.jpg``, breaks
+as soon as the project folder is moved to another computer or another disk,
+and every file path then has to be fixed by hand. A path relative to the
+project keeps working.
 
+In Natron, relative paths use the ``[Project]`` project path, which is the
+folder that contains the saved ``.ntp`` file (see **Project Paths** in the
+project settings, where you can also add your own path variables). For
+example, with this folder layout:
 
-The format once set (see :ref:`compositing-projects-setup`) , will determine all default formats after that.
-This is very important as a wrongly set format can cause the format of all default nodes to be set to something other than the format that you are working in.
-This can be infuriating and make script maintains very difficult.
+.. code-block:: none
 
+   comp/
+       comp-out/
+       _setup/
+           01_01_qua_v1.ntp
+           sources/
+               paving.jpg
 
+- a file in a folder below the project: ``[Project]/sources/paving.jpg``;
+- a file in a folder above the project:
+  ``[Project]/../comp-out/01_01_qua_v1.jpg``. Add one ``../`` for each level
+  up.
 
-Manage folders and files
--------------------------
+The ``[Project]`` path exists only once the project is saved, so save the
+project before you add Read or Write nodes. The file dialog then has a
+**Relative to** menu: choose **Project** to get a relative path. To convert an
+existing path, right-click on the file name field of a Read or Write node and
+choose **Make relative to project** (or **Make absolute**).
 
-**Donʼt use absolute file paths**
+.. note::
 
-An absolute path is one that specifies the location of the file with respect to the computer 
-e.g.
-``My_Computer/school/lesson_one/asset.jpg``.
-A relative path is one that defines the location relative to a file or a folder.
+   Nuke users may know the Tcl expression
+   ``[file dirname [value root.name]]``. Natron does not understand Tcl in
+   file paths: use ``[Project]`` instead.
 
-An absolute path 'breaks' when the project folder is moved to a new computer, and each filepath will then have to be manually repaired.
-A relative path, on the other hand, is far more durable.
+**Read image sequences rather than movies**
 
-There are two flavours of relative paths:
-those that look 'downstream' (i.e. into the same folder in which the Natron file is located, or other folders within it) or 'upstream' (i.e. in the parent folders of the folders in which the Natron file is located).
+Movie files, such as QuickTime or MP4, are slower to seek in and can cause
+problems with time edits. Convert them to image sequences before you read them
+into Natron (see :ref:`tutorials-imagesequence`).
 
-.. image:: _images/tutorials-evaluating-script-structure-file_stream.png
- :width: 600px
+Node graph housekeeping
+-----------------------
 
+**Consider masking still images in GIMP or Krita**
 
-For downstream, the following relative filepath is recommend.
-This writes or reads into a folder called 'sources', which is located in the same folder as the Natron file. 
-The image below illustrates this relationship:
+For a still image with a complex shape, painting the mask in GIMP or Krita is
+often faster and better than drawing a Roto shape. Save the result as TIFF or
+PNG with an alpha channel.
 
-``[file dirname [value root.name]]/sources/Asset_Name.jpg`` 
+**Keep the B input as the main stream**
 
-.. image:: _images/tutorials-evaluating-script-structure-file_relative.png
- :width: 600px
+In a Merge node, B is the background and A is composited over it. Keep the
+main branch of the comp on the B inputs, so that it reads as a straight line
+down the node graph, and bring each new element in through A.
 
-For upstream, the following relative filepath is recommend.
-This writes or reads into a folder called 'comp-out', which is located 'upstream' to the Natron file.
-The image below illustrates this relationship. To go further upstream, the value end-n needs to be increased.
+**Use separate Merge nodes rather than many A inputs**
 
-``[join [lrange [split [file dirname [knob root.name]] "/"] 0 end-1] "/"]/comp-out/01_01_qua_v1.jpg``
+A Merge node accepts many inputs: A is merged with B first, then A2 with the
+result, then A3, and so on. But all the A inputs share the same operator, mix
+and channel settings. Separate Merge nodes stacked on the B stream are easier
+to adjust and to read.
 
-.. image:: _images/tutorials-evaluating-script-structure-file_relative2.png
- :width: 600px
+**Use the Mask input for effects, and alpha for transparency**
 
+The Mask input of a node limits where its effect is applied. To control the
+transparency of an element in a Merge, set the alpha of the A input instead,
+for example by copying a matte into its alpha channel with a
+:ref:`Shuffle <net.sf.openfx.ShufflePlugin>` node.
 
-Read node movies should be formatted as image sequences
--------------------------------------------------------
+**Use as few points as you can in Roto shapes**
 
-Movies rendered as QuickTime files can sometimes be difficult to perform time edits upon.
-It is highly recommended that movies read into Natron should be rendered first as image sequences (see :ref:`tutorials-imagesequence`).
+Shapes with many points are hard to edit and to animate.
 
+**Don't reuse one mask for a chain of nodes**
 
-Script Housekeeping Do's and Dont's
------------------------------------
+If several consecutive nodes are masked by the same matte, the edges of the
+mask are processed several times. Apply the effects without masks, then mix
+the result with the original once, with a
+:ref:`KeyMix <net.sf.openfx.KeyMix>` node and that matte.
 
-Comb your hair and clean your shoes.
+Color grading
+-------------
 
-**Consider masking stills in Gimp or Krita.**
+**Think in hue, saturation and lightness**
 
-A Natron roto is not always a good way to mask a still image. Consider masking in Gimp/Krita instead: for complex shapes they are quicker to make and better.
-Save the result as tiff or png.
+A color can be described by three coordinates. Images are processed in red,
+green and blue (RGB), but artists usually think in terms of hue, saturation
+and lightness (HSL), which are easier to judge by eye.
 
-**Avoid side masking a merge node**
+Hue
+   The name of the color: blue, green, pink, and so on.
 
-Side masks are for things like color corrections, filters etc. They are not to be used to determine transparency in a Merge node.
-If the same shape that you were recklessly going to use as a layer mask can be added to the Merge feeds as a Matte value.
+Saturation
+   The intensity, or purity, of the color. Black, white and gray have zero
+   saturation. Hue and saturation together make up the chroma of the color.
 
-**Observe the primacy of the B feed**
+Lightness
+   What is left when the saturation is set to zero. To see it, hover the
+   viewer and press :kbd:`Y` (**Display Luminance**); press :kbd:`Y` again to
+   go back to RGB.
 
-A script can be bothersome to manage if B feed primacy is not observed.
+Lightness and saturation are bounded: zero or maximum lightness (black or
+white) means zero saturation. Hue is usually shown on a color wheel.
 
-**Avoid feeding more than two inputs into a merge node**
+When grading, adjust lightness first, then hue, then saturation. Changing one
+of them often changes how the others look.
 
-Though the Merge node will accept many inputs, it does not do so in a way that is consistent and predictable. Consider instead stacking a whole bunch of merge nodes on top of each other.
+**Know what each channel carries**
 
-**Avoid using too many points when you roto**
+On typical photographic footage:
 
-Too many points in a roto can be difficult to edit and hell to animate. Use as few as you can.
+Red
+   Often carries the fine detail of the image.
 
-**Avoid recycling masks**
+Green
+   Contributes most to the lightness of the image. When you adjust the hue,
+   try to leave the green channel alone, as changing it also changes the
+   lightness.
 
-Two or more sequential nodes masked by the same channel can sometimes cause problems.
-Better instead to use a KeyMix.
+Blue
+   Carries the large masses of the image, and is usually the noisiest
+   channel.
 
+**Grade in order**
 
-Color Grading Do's and Dont's
-=============================
-Some general rules to follow in color grading:
+Color grading is usually done in three stages, in this order:
 
-**Use HSL 'color thinking' space**
+#. Color correction
+#. Color matching
+#. Color stylization
 
-Color is a volume, with a single color value being a point in that volume.
-Describing a point within a volume requires at least three coordinates (e.g. x, y and z).
-Such a three point system is referred to as a color space. In digital imaging the color space most commonly used is red, green and blue (RGB).
-This may be referred to as our 'working' space. However, when artists are thinking about color they traditionally refer to hue, saturation and lightness (HSL) color space. This is more perceptually agreeable that RGB... artists find it far easier to make aesthetic judgments in this space.
+**Split up compound color edits**
 
-+-----------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|HUE        |This can be understood as the 'name space' of the color (i.e. whether it is a blue, green, pink etc).                                                                                                               |
-+-----------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|Saturation |This refers to the intensity (or purity) of the color. Hence black, white and grey all have zero saturation value. Hue and saturation together make up the chroma component of the color.                           |
-+-----------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|Lightness  |The lightness values of an image is what we are left looking at if we pull the saturation of an image down to zero. To see the lightness values of an image, hover the cursor over the viewer and press the 'Y' key.|
-+-----------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+Don't adjust the lightness and the hue in the same node. Smaller, separate
+adjustments are easier to edit and to troubleshoot.
 
-Both lightness and saturation are expressed in terms of intensity. They are bound by terminal extremes (maximum and minimum).
-They are also related: zero or maximum lightness (i.e. Black and white) both result in zero saturation.
-Hue is traditionally expressed as values arranged around a wheel (i.e. A color wheel).
+**Try simple color tools first**
 
+For much color correction work, a simple node such as Multiply or Saturation
+is enough. Simple nodes are faster, and the node graph is easier to read.
 
-When color grading, it is usual to first address lightness, followed by hue, then saturation.
-Sometimes an adjustment to one will result in a slight perpetual change to another.
+**Don't leave "fiddle" values in the parameters**
 
-**Respect the difference between R, G and B**
+A ColorCorrect with a multiply of 1.0003 has no visible effect, but whoever
+opens the project has to wonder why it is there. Either change a value on
+purpose or leave it at its default.
 
-As already stated, the working space of digital color grading is RGB.
-These channel are not identical in what they express:
-
-+-----------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|Red        |This is where details live. Look at the red channel, and see how even-form it is and how well it contains all the fine features of the image.                                                                                                                                                      |
-+-----------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|Green      |Green is where the lightness values of the image live. Look at the green channel and see how closely it matches the lightness values of the image. When making a hue adjustment, it is customary to leave the green channel alone, as any adjustment to it could effect the lightness of the image.|
-+-----------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|Blue       |Blue is where the large masses of the image lives. It also has the reputation of being the naughty channel, being much inclined to noisiness.                                                                                                                                                      |
-+-----------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-
-**Color grade in order**
-
-Color grading may be divided into three stages, delivered in the following order:
-
-   1. Color correction
-   2. Color matching
-   3. Color stylization
-
-**Splitting up compound color edits**
-
-Complex color edits are best split up into small components. For example, don't try to adjust the lightness and the hue in one operation. Splitting up such compound adjustments into smaller chunks makes them easier to edit and troubleshoot.
-
-**Consider using simple color tools before using complex ones**
-
-Fancy nodes with lots of sliders might look fun to play with but are they necessary?
-You will find that for a lot of color correction work simple nodes like Multiply or Saturation is enough.
-These require less processing, but also make the script easier to read.
-
-**Donʼt leave 'fiddle' values in the parameters**
-
-When reading someone else's script, it can be very annoying to open something like a ColorCorrect to discover that a multiply has been set to .0003 (or some other random, completely ineffectual value).
-If you intend to change a value then do so. If not, then leave it at its default value.
-
-
-Merging and Premultiplication Do's and Dont's
----------------------------------------------
-The following rules apply to any merging operation:
+Merging and premultiplication
+-----------------------------
 
 **Don't color correct premultiplied images**
 
-Color correction should not be done on images that are premultiplied.
-To un-premultiply you may use an Unpremult node, or use the (un)premult option within the node.
+Unpremultiply the image first, either with an Unpremult node before the color
+correction and a Premult node after it, or with the **(Un)premult** checkbox
+that many color nodes have.
 
-**Don't composite pre-multiplied images**
+**Composite premultiplied images**
 
-Don't composite a FG that is not pre-multiplied
+The Merge operators expect premultiplied inputs: premultiply the foreground
+before you merge it.
 
-**Don't Double pre-multiplication**
+**Don't premultiply twice**
 
-Do not apply premultiplication twice in a row to the same image. It can damage the edges of the alpha.
+Premultiplying an image that is already premultiplied darkens the edges of
+the alpha.
 
-**Donʼt use the composite image that comes out of a keyer**
+**Don't use the composite output of a keyer**
 
-Most high end keyers output a composite image (the foreground over the background). generally, this should not be used, as no color corrections can be done to the foreground. Better instead to use the keyer's alpha channel ina merging operation further down the node tree.
+Keyers can output the foreground already composited over the background.
+Don't use that composite: it leaves no room to color correct the foreground.
+Use the keyer's premultiplied or unpremultiplied output, or its alpha, and do
+the Merge yourself further down the node graph.
 
+See also
+--------
 
-
-
-
-
-
-
-
-
-
-
+- :ref:`transition-from-nuke`: the differences between Nuke and Natron.
+- :doc:`getstarted-environment-nodegraph`: arranging and labeling the nodes of
+  the Node Graph.
+- :doc:`compositing-color`: the color correction nodes.
+- :doc:`compositing-channels`: alpha, mattes and premultiplication.

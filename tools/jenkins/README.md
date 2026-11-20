@@ -177,7 +177,7 @@ The following options can be passed to `launchBuildMain.sh` as environment varia
 
 `UNIT_TESTS`: Run unit tests after build. Value can be "false" or "true" (for compatibility with jenkins).
 
-`NATRON_LICENSE`: Must be `GPL` or `COMMERCIAL`. When GPL is selected, GPL components (such as certain codecs of ffmpeg or demosaic patterns of libraw) will be included.
+`NATRON_LICENSE`: Must be `GPL` or `COMMERCIAL`. When GPL is selected, GPL components (such as certain codecs of ffmpeg or demosaic patterns of libraw) will be included. COMMERCIAL builds also leave out openfx-arena's ReadPDF (poppler) and AudioCurve (libsox, which links GPL libraries), and build openfx-gmic with only the G'MIC filters under CeCILL-C. openfx-gmic uses pocketfft (BSD-3-Clause) for its FFT in both licences (openfx-gmic#94): the SDKs don't provide FFTW. `build-plugins.sh` passes the licence to the plug-in repositories that have the option (`-DOFX_LICENSE`: openfx-arena, openfx-gmic, and openfx-misc once it has it; `LICENSE=` for the Makefiles), and openfx-io gets the FFmpeg and LibRaw of the licence. COMMERCIAL builds use an LGPL FFmpeg, a LibRaw without the demosaic packs and a libheif without the x264 and x265 encoders: on Windows the packages `natron_ffmpeg-lgpl`, `natron_libraw-lgpl` and `natron_libheif-lgpl` (`tools/MINGW-packages`), plus `natron_libtiff-lgpl` (MSYS2's libtiff without the GPL JBIG-KIT), on macOS the MacPorts subports `ffmpeg-lgpl`, `libraw-lgpl` and `libheif-lgpl` (`tools/MacPorts`, installed in `$SDK_HOME/libexec`), on Linux COMMERCIAL builds are not done yet, and `launchBuildMain.sh` refuses them (the SDK's libheif links x265 and its OpenImageIO links the GPL LibRaw). On Windows and macOS, the installer scripts (and, on macOS, `build-plugins.sh`) run `check-commercial-bundle.sh`, which fails a COMMERCIAL build if a bundled binary is or links a GPL library, contains an FFmpeg whose licence is not LGPL 2.1 or later, or a LibRaw with a GPL demosaic pack (#1302, #1177). The installers also leave out the Qt modules that are GPL-3 only (Qt Charts, Data Visualization, Network Authorization, Designer, ...) and their PySide modules, which the check rejects too. COMMERCIAL builds are never made in CI, nightlies or releases (`build_installer.yml` builds GPL only): they are only built by hand, e.g. `tools/tart/natron-build.sh -l COMMERCIAL` on macOS, or `launchBuildMain.sh` with `NATRON_LICENSE=COMMERCIAL` in an MSYS2 UCRT64 shell on Windows. In COMMERCIAL builds, projects that use a left-out node (one of the G'MIC filters that are not under CeCILL-C, ReadPDF, AudioCurve) load without that node. A build of an openfx-gmic without `license.mk` is refused with `PLUGINS_BUILD_SYSTEM=make`, since it would link FFTW.
 
 `DISABLE_BREAKPAD`: If set to 1, natron will be built without crash reporting capabilities.
 
@@ -191,7 +191,11 @@ The following options can be passed to `launchBuildMain.sh` as environment varia
 
 `NATRON_BUILD_NUMBER`: When doing a release this is the number of the release (if doing a rebuild).
 
-`NATRON_EXTRA_QMAKE_FLAGS`: Optional qmake flags to pass when building Natron.
+`NATRON_BUILD_SYSTEM`: `cmake` (the default) or `qmake`. The qmake build is deprecated and is kept on RB-2.6 as a fallback until the CMake-built installers are shown to be equivalent (#1181). The CMake build has no crash reporter yet (#1183), so it implies `DISABLE_BREAKPAD=1`.
+
+`NATRON_EXTRA_CMAKE_FLAGS`: Optional cmake flags to pass when building Natron with CMake, separated by spaces, e.g. `-DNATRON_FAST_MATH=ON`. The options are listed in `Documentation/source/maintainers/building.rst`.
+
+`NATRON_EXTRA_QMAKE_FLAGS`: Optional qmake flags to pass when building Natron with qmake.
 
 `BUILD_NAME`: Set this to label the project build. On the slave, the build artifacts are stored for some amount of time in `$WORKSPACE/builds_archive/$BUILD_NAME/$BUILD_NUMBER`.
 
@@ -210,9 +214,15 @@ This should be consistent with the `REMOTE_USER` value passed to the upload-arti
 `REMOTE_PREFIX`: The prefix to upload artifacts to, relative to `REMOTE_USER@REMOTE_URL`'s home dir.
 This should be consistent with the `REMOTE_PREFIX_USER` value passed to the upload-artifacts project.
 
-`WITH_ONLINE_INSTALLER`: Set to 1 to also build a online installer for `SNAPSHOT` and `RELEASE` builds (only available for Windows and Linux).
+`WITH_ONLINE_INSTALLER`: Set to 1 to also build a online installer for `SNAPSHOT` and `RELEASE` builds (Linux only: the Windows installer is the portable zip with Inno Setup's `Setup.exe`, #1133).
 
 `DEBUG_SCRIPTS`: If set to 1, binaries from previous build with same options are not cleaned so that the scripts can continue the same compilation.
+
+`PLUGINS_BUILD_SYSTEM`: `cmake` (default) or `make`. With `cmake`, openfx-misc, openfx-io, openfx-arena and openfx-gmic are built with their CMake builds (`build-plugins.sh`, function `ofx_cmake_build`), and a checkout without one is an error (the buildmaster scripts build it with its Makefiles). `make` builds them with their Makefiles, the fallback while RB-2.6 is maintained. The CMake builds ignore `OPTFLAG`: they use `-O3` (with `-g` for `relwithdebinfo`); `COMPILE_TYPE=debug` gives `CMAKE_BUILD_TYPE=RelWithDebInfo` with `-O1 -g`, as the Makefiles' `CONFIG=relwithdebinfo OPTFLAG=-O`, so that the macOS bundles are still made self-contained. On macOS, `-DCMAKE_OSX_DEPLOYMENT_TARGET` is `MACOSX_DEPLOYMENT_TARGET` from `common.sh` (14.0 with #1347), as for the Makefiles. On macOS, a release build without OpenMP (Apple clang without MacPorts' `libomp`) is an error. They download the G'MIC sources into `$WORKSPACE/src`, which is kept across builds.
+
+`MAGICK7_PREFIX`: Prefix of the ImageMagick 7 that openfx-arena is built with (its `lib/pkgconfig` is put first in `PKG_CONFIG_PATH` for that build). Defaults to `$SDK_HOME/magick7` on Linux (`include/scripts/pkg/imagemagick7.sh`), `$SDK_HOME/lib/ImageMagick7` on macOS (MacPorts' `ImageMagick7 +natron`, from `tools/MacPorts`), and the MSYS2 prefix on Windows (`natron_imagemagick`, from `tools/MINGW-packages`).
+
+`ARENA_ALLOW_ANY_MAGICK`: `build-plugins.sh` stops if the `Magick++` that pkg-config finds for openfx-arena is not Natron's ImageMagick 7 build (version 7, and a Q32 HDRI `libname` or a prefix in `MAGICK7_PREFIX`). Set to 1 to build openfx-arena with that ImageMagick anyway, e.g. ImageMagick 6 (Natron 2.5's; the output of some plug-ins differs, see openfx-arena's `ChangeLog.md`) or a stock Q16 ImageMagick 7.
 
 `EXTRA_PYTHON_MODULES_SCRIPT`: Path to a python script that should install extra modules with `pip` or `easy_install`.
 
