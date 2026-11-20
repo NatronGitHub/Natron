@@ -75,9 +75,8 @@ applications menu, with its icons, and to open Natron project files
 
    Natron-<version>-Linux-x86_64-no-installer/bin/natron-mime.sh
 
-Run it as your normal user: it registers Natron for you only, in
-``~/.local/share``. Run as root, it registers Natron for all users, in
-``/usr/share``.
+Run it as your normal user, not with ``sudo``. It registers Natron for you
+only, in ``~/.local/share``.
 
 The menu entry starts the copy of Natron that registered it. If you move or
 update Natron, run ``natron-mime.sh`` from the new folder again.
@@ -96,9 +95,9 @@ To uninstall Natron, delete its folder. Your settings and your projects are
 not in that folder, so they stay.
 
 If you ran ``natron-mime.sh``, also remove the Natron menu entry, icons and
-file type from ``~/.local/share`` (or ``/usr/share``, if you ran it as root):
-the Natron files in its ``applications``, ``icons`` and ``mime/packages``
-folders. Then update the desktop databases:
+file type: delete the Natron files in the ``applications``, ``icons`` and
+``mime/packages`` folders of ``~/.local/share``. Then update the desktop
+databases:
 
 .. code-block:: bash
 
