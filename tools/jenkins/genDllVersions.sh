@@ -33,7 +33,8 @@
 #   TMP_BINARIES_PATH  Natron's and the plug-ins' binaries (bin/*.exe, OFX/Plugins/*.ofx.bundle)
 #   QT_VERSION_MAJOR, PYVER, NATRON_LICENSE
 #   DLL_SEARCH_DIRS    the directories of the DLLs to bundle, in priority order, separated by ':'
-#                      (default: FFmpeg's and LibRaw's of the licence, then $MINGW_PREFIX/bin)
+#                      (default: FFmpeg's and LibRaw's of the licence, COMMERCIAL: libheif-lgpl's
+#                      and libtiff-lgpl's, then $MINGW_PREFIX/bin)
 #   FFMPEG_PATH        prefix of the FFmpeg to bundle (default: from NATRON_LICENSE), for ffmpeg.exe
 #   NTLDD              the ntldd program (default: ntldd, from ${MINGW_PACKAGE_PREFIX}-ntldd)
 
@@ -83,13 +84,15 @@ if [ -z "${DLL_SEARCH_DIRS:-}" ]; then
     if [ "$NATRON_LICENSE" = "GPL" ]; then
         DLL_SEARCH_DIRS="$FFMPEG_PATH/bin:$SDK_HOME/libraw-gpl2/bin:$SDK_HOME/bin"
     else
-        DLL_SEARCH_DIRS="$FFMPEG_PATH/bin:$SDK_HOME/libraw-lgpl/bin:$SDK_HOME/bin"
+        DLL_SEARCH_DIRS="$FFMPEG_PATH/bin:$SDK_HOME/libraw-lgpl/bin:$SDK_HOME/libheif-lgpl/bin:$SDK_HOME/libtiff-lgpl/bin:$SDK_HOME/bin"
     fi
     echo "DLL_SEARCH_DIRS not set, assuming $DLL_SEARCH_DIRS"
 fi
 # Split DLL_SEARCH_DIRS on ':', but keep Windows drive letters ("C:/msys64/ucrt64/bin"). Empty
-# entries (e.g. from an empty LIBHEIF_PATH) and missing directories are skipped: an empty prefix
-# must never turn into /bin, which is MSYS's /usr/bin.
+# entries (e.g. from an empty LIBHEIF_PATH) are skipped: an empty prefix must never turn into /bin,
+# which is MSYS's /usr/bin. A missing directory is an error: the licence-specific ones (FFmpeg,
+# LibRaw, libheif, libtiff) must be there, or the DLL of the wrong licence would be bundled from
+# $MINGW_PREFIX/bin (e.g. MSYS2's LibRaw, without the GPL demosaic packs, in a GPL build).
 SEARCH_DIRS=()
 IFS=: read -r -a _dirs <<< "$DLL_SEARCH_DIRS"
 _i=0
@@ -109,16 +112,40 @@ while [ "$_i" -lt "${#_dirs[@]}" ]; do
             exit 1
             ;;
     esac
-    if [ -d "$d" ]; then
-        SEARCH_DIRS+=("$d")
-    else
-        echo "Warning: DLL search directory $d does not exist, skipped"
+    if [ ! -d "$d" ]; then
+        echo "Error: the DLL search directory $d does not exist (DLL_SEARCH_DIRS=$DLL_SEARCH_DIRS): install the package that provides it"
+        exit 1
     fi
+    SEARCH_DIRS+=("$d")
 done
 unset _dirs _i
 if [ "${#SEARCH_DIRS[@]}" = 0 ]; then
-    echo "Error: none of DLL_SEARCH_DIRS=$DLL_SEARCH_DIRS exists"
+    echo "Error: DLL_SEARCH_DIRS is empty"
     exit 1
+fi
+
+# COMMERCIAL builds: MSYS2's libheif links the GPL x264 and x265 encoders, and MSYS2's libtiff
+# links JBIG-KIT (GPL), so the DLLs of natron_libheif-lgpl and natron_libtiff-lgpl (#1449, #1177),
+# whose bin/ are in DLL_SEARCH_DIRS before $MINGW_PREFIX/bin, replace them: same DLL names
+# (libheif.dll, libtiff-6.dll), without the GPL parts. natron_openimageio and the other DLLs are
+# built against MSYS2's rolling libheif and libtiff, while the -lgpl packages are pinned: the DLL
+# that replaces MSYS2's must be the same version (same ABI). (The GPL check below catches a
+# libheif.dll or libtiff-6.dll that still links x265 or libjbig, not an ABI mismatch.)
+if [ "$NATRON_LICENSE" = "COMMERCIAL" ] && command -v pacman > /dev/null; then
+    if [ -z "${MINGW_PACKAGE_PREFIX:-}" ]; then
+        echo "Error: MINGW_PACKAGE_PREFIX is not set (run this in an MSYS2 UCRT64, CLANG64 or CLANGARM64 shell)"
+        exit 1
+    fi
+    for lib in libheif libtiff; do
+        v_msys2="$(pacman -Q "${MINGW_PACKAGE_PREFIX}-${lib}" 2>/dev/null | awk '{print $2}')"
+        v_lgpl="$(pacman -Q "${MINGW_PACKAGE_PREFIX}-natron_${lib}-lgpl" 2>/dev/null | awk '{print $2}')"
+        # (the versions without the pkgrel)
+        if [ -z "$v_lgpl" ] || [ "${v_msys2%-*}" != "${v_lgpl%-*}" ]; then
+            echo "Error: ${MINGW_PACKAGE_PREFIX}-natron_${lib}-lgpl (${v_lgpl:-not installed}) must have the version of MSYS2's ${MINGW_PACKAGE_PREFIX}-${lib} (${v_msys2:-not installed}), which natron_openimageio links: update tools/MINGW-packages/mingw-w64-${lib}-lgpl"
+            exit 1
+        fi
+    done
+    unset lib v_msys2 v_lgpl
 fi
 
 # Windows' own DLLs are the ones that ntldd finds under the Windows directory (cygpath -W), and the
@@ -136,8 +163,9 @@ WINDOWS_DIR="${WINDOWS_DIR%/}"
 
 # Never bundled, even if an MSYS2 package installed them in a search directory: Mesa's
 # opengl32.dll would replace the OpenGL driver of the system (the software renderer is an optional
-# installer component, see build-Windows-installer.sh).
-NEVER_BUNDLED="opengl32.dll glu32.dll libgallium_wgl.dll"
+# installer component, see build-Windows-installer.sh), and the Vulkan loader and the Direct3D
+# shader compiler are always the system's.
+NEVER_BUNDLED="opengl32.dll glu32.dll libgallium_wgl.dll vulkan-1.dll d3dcompiler_47.dll"
 
 # The DLLs that only the Arena or the G'MIC plug-in uses, and that go into its bundle (shell
 # patterns, lower case), as in the hand-written lists of Natron 2.5. Whatever else a plug-in needs
@@ -192,6 +220,20 @@ for d in "${SEARCH_DIRS[@]}"; do
 done
 shopt -u nullglob nocaseglob
 
+# COMMERCIAL builds: libheif.dll and libtiff-6.dll must be the ones of natron_libheif-lgpl and
+# natron_libtiff-lgpl (checked above), not MSYS2's.
+if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
+    for name in libheif.dll libtiff-6.dll; do
+        lib="${name%%[-.]*}" # libheif, libtiff
+        f="${DLL_PATH[$name]:-}"
+        if [ -n "$f" ] && [[ "${f,,}" != */"$lib"-lgpl/bin/* ]]; then
+            echo "Error: COMMERCIAL build, but $name would come from $f, not from natron_${lib}-lgpl: put $SDK_HOME/${lib}-lgpl/bin before $SDK_HOME/bin in DLL_SEARCH_DIRS"
+            exit 1
+        fi
+    done
+    unset name lib f
+fi
+
 # Set REPLY to the file of the DLL named $1 (lower case) in the search directories, or "" (a
 # system DLL, or a missing one).
 dll_path() {
@@ -210,15 +252,19 @@ trap cleanup EXIT
 # ntldd prints one line per imported DLL:
 #   "	libfoo-1.dll => C:\msys64\ucrt64\bin\libfoo-1.dll (0x0000000012340000)"
 #   "	api-ms-win-crt-runtime-l1-1-0.dll => not found"
+# (Not verified yet: whether ntldd lists the delay-load imports too. If it does, an optional DLL
+# that is absent and delay-loaded would become an Error; compare with objdump -p before a tag.)
 # A DLL whose name is in the search directories is bundled, wherever ntldd found it (bin/ will
 # have all the bundled ones). Otherwise it must be a Windows DLL (WINDOWS_DIR, or an API set), or a
-# DLL next to the file in a directory that the installer copies whole (shipped_whole).
-# Not $TMP_BINARIES_PATH/bin: only its .exe files are copied.
+# DLL next to the file in a directory that the installer copies whole and where Windows also finds
+# it at run time (shipped_whole): only the Python extension directories, since Python (3.8 and
+# later) loads extension modules with LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR. Not the Qt plug-in
+# directories: Qt loads plug-ins with plain LoadLibrary, which looks for their dependencies in bin/,
+# not next to the plug-in. Not $TMP_BINARIES_PATH/bin: only its .exe files are copied. (The .ofx
+# files are scanned from a temporary copy, see scan_deps.)
 shipped_whole() { # shipped_whole <directory>
     case "$1" in
         "$PY_LIBDIR"/lib-dynload|"$PY_LIBDIR"/site-packages/PySide*|"$PY_LIBDIR"/site-packages/shiboken*) return 0 ;;
-        "$QT_PLUGINS_DIR"/*) return 0 ;;
-        "$TMP_BINARIES_PATH"/OFX/Plugins/*.ofx.bundle/*) return 0 ;;
     esac
     return 1
 }
@@ -231,7 +277,11 @@ scan_deps() {
     case "${f,,}" in
         *.dll|*.exe|*.pyd) ;;
         *)
-            # e.g. a .ofx: give ntldd a name it recognizes as a module
+            # e.g. a .ofx: give ntldd a name it recognizes as a module. ntldd then searches the
+            # temporary directory, not the plug-in bundle: a DLL shipped inside the bundle at build
+            # time (none is today: the private DLLs are added by build-Windows-installer.sh) would
+            # be reported "not found", which is an Error for plug-ins (check_missing). To ship one,
+            # copy the bundle's DLLs next to the copy, or accept MISSING names that the bundle has.
             tmpdir="$(mktemp -d)"
             TMPDIRS+=("$tmpdir")
             target="$tmpdir/$(basename "$f").dll"

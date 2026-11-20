@@ -52,6 +52,20 @@ Name: "arena"; Description: "OpenFX Arena"; Types: full
 Name: "gmic"; Description: "OpenFX G'MIC"; Types: full
 Name: "sgl"; Description: "OpenGL Software Renderer (FOR LEGACY HARDWARE ONLY)"
 
+; Installing over an older version: remove the directories whose files change names between
+; versions (DLLs, Qt plug-ins, Python extension modules, OFX plug-ins), so that no stale DLL (or a GPL
+; one, over a COMMERCIAL install) stays behind. Not {app}\lib, whose site-packages may have the
+; user's pip packages, nor {app}\Plugins\PyPlugs.
+[InstallDelete]
+Type: filesandordirs; Name: "{app}\bin"
+Type: filesandordirs; Name: "{app}\Plugins\OFX\Natron"
+Type: filesandordirs; Name: "{app}\Plugins\PySide"
+Type: filesandordirs; Name: "{app}\Plugins\PySide2"
+Type: filesandordirs; Name: "{app}\Plugins\shiboken2"
+Type: filesandordirs; Name: "{app}\Plugins\PySide6"
+Type: filesandordirs; Name: "{app}\Plugins\shiboken6"
+Type: filesandordirs; Name: "{app}\lib\python*.zip"
+
 [Files]
 Source: "{src}\bin\*"; DestDir: "{app}\bin\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external
 Source: "{src}\docs\*"; DestDir: "{app}\docs\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external
@@ -74,7 +88,7 @@ Source: "{src}\Resources\docs\*"; DestDir: "{app}\Resources\docs\"; Components: 
 Source: "{src}\Resources\etc\*"; DestDir: "{app}\Resources\etc\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external
 Source: "{src}\Resources\OpenColorIO-Configs\*"; DestDir: "{app}\Resources\OpenColorIO-Configs\"; Components: ocio; Flags: ignoreversion recursesubdirs createallsubdirs external
 Source: "{src}\Resources\pixmaps\*"; DestDir: "{app}\Resources\pixmaps\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external
-Source: "{src}\Resources\poppler\*"; DestDir: "{app}\Resources\poppler\"; Components: arena; Flags: ignoreversion recursesubdirs createallsubdirs external
+Source: "{src}\Resources\poppler\*"; DestDir: "{app}\Resources\poppler\"; Components: arena; Flags: ignoreversion recursesubdirs createallsubdirs external skipifsourcedoesntexist
 Source: "{src}\Resources\stylesheets\*"; DestDir: "{app}\Resources\stylesheets\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external
 
 Source: "{src}\bin\mesa\opengl32.dll"; DestDir: "{app}\bin\"; Components: sgl; Flags: ignoreversion external skipifsourcedoesntexist

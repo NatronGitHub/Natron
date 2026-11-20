@@ -391,13 +391,21 @@ elif [ "$PKGOS" = "OSX" ]; then
     fi
 fi
 
-# Windows COMMERCIAL builds: the libheif without x264/x265 (natron_libheif-lgpl, #1449, #1177),
-# whose bin/ comes first in the DLL search directories of genDllVersions.sh. Empty if it is not
-# installed (genDllVersions.sh skips empty entries).
+# Windows COMMERCIAL builds: the libheif without x264/x265 and the libtiff without JBIG-KIT
+# (natron_libheif-lgpl and natron_libtiff-lgpl, #1449, #1177), whose bin/ come first in the DLL
+# search directories of genDllVersions.sh. Empty if they are not installed (genDllVersions.sh skips
+# empty entries, and fails on a COMMERCIAL build without them).
+# shellcheck disable=SC2034 # (LIBTIFF_PATH is used by build-Windows-installer.sh)
 if [ "$PKGOS" = "Windows" ]; then
     LIBHEIF_PATH=""
-    if [ "${NATRON_LICENSE:-}" = "COMMERCIAL" ] && [ -d "$SDK_HOME/libheif-lgpl" ]; then
-        LIBHEIF_PATH="$SDK_HOME/libheif-lgpl"
+    LIBTIFF_PATH=""
+    if [ "${NATRON_LICENSE:-}" = "COMMERCIAL" ]; then
+        if [ -d "$SDK_HOME/libheif-lgpl" ]; then
+            LIBHEIF_PATH="$SDK_HOME/libheif-lgpl"
+        fi
+        if [ -d "$SDK_HOME/libtiff-lgpl" ]; then
+            LIBTIFF_PATH="$SDK_HOME/libtiff-lgpl"
+        fi
     fi
 fi
 

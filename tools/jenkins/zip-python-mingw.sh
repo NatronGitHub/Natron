@@ -71,7 +71,13 @@ if [ ! -d "${PACMAN_CACHE}" ]; then
     mkdir -p "${PACMAN_CACHE}"
 fi
 if [ ! -f "${PACMAN_CACHE}/${PY_PKG_FILE}" ]; then
-    wget ${PY_PKG_URL} -O "${PACMAN_CACHE}/${PY_PKG_FILE}"
+    # (pacman checks the package signature; the installed version must still be the one of the
+    # sync database)
+    pacman -Sw --noconfirm --cachedir "${PACMAN_CACHE}" "${MINGW_PACKAGE_PREFIX}-python"
+fi
+if [ ! -f "${PACMAN_CACHE}/${PY_PKG_FILE}" ]; then
+    echo "Error: ${PY_PKG_FILE} (the installed ${MINGW_PACKAGE_PREFIX}-python) is not in ${PACMAN_CACHE}, and pacman -Sw got another version: update ${MINGW_PACKAGE_PREFIX}-python (${PY_PKG_URL})"
+    exit 1
 fi
 if [ ! -d "${SRC}" ]; then
     tar xf "${PACMAN_CACHE}/${PY_PKG_FILE}" -C "${PYTEMP}"

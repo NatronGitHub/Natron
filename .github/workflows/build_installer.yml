@@ -213,6 +213,81 @@ jobs:
             PATH=${INSTALLER_DIR}/bin ./verify_plugin_loads.exe "${x}"
           done
 
+      - name: Run the bundle without MSYS2
+        # After the build dependencies are uninstalled, with only the bundle's bin/ and the Windows
+        # directories on PATH: a DLL, Python module or PySide module missing from the bundle fails
+        # here (Tests.exe, the docs and Natron-Tests ran with /ucrt64/bin on PATH).
+        run: |
+          INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
+          SYSPATH="$(cygpath -u -S):$(cygpath -u -W)"
+          if [ -d "${INSTALLER_DIR}/Plugins/PySide6" ]; then PYSIDE=PySide6; else PYSIDE=PySide2; fi
+          cat > import_check.py <<EOF
+          import sys
+          import NatronEngine
+          import ${PYSIDE}.QtCore
+          print("Python", sys.version.split()[0], "NatronEngine", NatronEngine.natron.getNatronVersionString(), "${PYSIDE}", ${PYSIDE}.QtCore.qVersion())
+          print("IMPORT_OK")
+          EOF
+          # run_bundle <bin dir> <program> <args>...: the program, with only <bin dir> and Windows on PATH
+          # (env sets PATH for the program only: timeout and env are looked up on the normal PATH)
+          run_bundle() { local b="$1" p="$2"; shift 2; timeout -k 10 600 env PATH="$b:$SYSPATH" "$b/$p" "$@" < /dev/null; }
+          check_bundle() { # check_bundle <tree>
+            local b="$1/bin" out
+            run_bundle "$b" NatronRenderer.exe -v || { echo "::error::NatronRenderer -v failed in $1"; return 1; }
+            out=$(run_bundle "$b" NatronRenderer.exe -t "$(cygpath -w import_check.py)" 2>&1) || true
+            echo "$out"
+            echo "$out" | grep -q 'IMPORT_OK' || { echo "::error::NatronRenderer could not import NatronEngine and ${PYSIDE}.QtCore from $1"; return 1; }
+            run_bundle "$b" natron-python.exe -c "import sys, encodings, ssl, sqlite3, ctypes, ${PYSIDE}.QtCore, ${PYSIDE}.QtWidgets; print('natron-python', sys.version.split()[0], ${PYSIDE}.QtCore.qVersion())" || { echo "::error::natron-python failed in $1"; return 1; }
+          }
+          check_bundle "${INSTALLER_DIR}"
+
+      - name: Install, run and uninstall with Setup.exe
+        # Setup.exe installs from the unzipped tree next to it (Natron.iss, "external" files):
+        # install every component silently for the current user, check that each unconditional
+        # "Source:" of Natron.iss was installed completely, run the installed programs, then
+        # uninstall and check that everything was removed.
+        run: |
+          INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
+          ISS=tools/MINGW-packages/mingw-w64-natron-setup/Natron.iss
+          APP_W='D:\ni'
+          APP=$(cygpath -u "${APP_W}")
+          SYSPATH="$(cygpath -u -S):$(cygpath -u -W)"
+          if [ -e "${APP}" ]; then echo "::error::${APP} already exists"; exit 1; fi
+          # all the components of the [Components] section
+          COMPONENTS=$(sed -n -e '/^\[Components\]/,/^\[/s/^Name: "\([a-z]*\)";.*/\1/p' "$ISS" | paste -s -d, -)
+          echo "Components: ${COMPONENTS}"
+          # (no MSYS2 path conversion of the /OPTIONS)
+          MSYS2_ARG_CONV_EXCL='*' "${INSTALLER_DIR}/Setup.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CURRENTUSER "/DIR=${APP_W}" "/COMPONENTS=${COMPONENTS}" "/LOG=$(cygpath -w "${GITHUB_WORKSPACE}/setup.log")" || { cat setup.log; echo "::error::Setup.exe failed"; exit 1; }
+          # every Source: without skipifsourcedoesntexist: "{src}\<dir>\*" -> "{app}\<dir>\"
+          errors=0
+          while IFS= read -r src; do
+            dir=${src//\\//}
+            if [ ! -d "${INSTALLER_DIR}/${dir}" ]; then
+              echo "::error::${dir} is missing from the portable tree"; errors=1; continue
+            fi
+            missing=$(comm -23 <(cd "${INSTALLER_DIR}/${dir}" && find . -type f | sort) <(cd "${APP}/${dir}" 2>/dev/null && find . -type f | sort) | wc -l)
+            echo "${dir}: $(cd "${INSTALLER_DIR}/${dir}" && find . -type f | wc -l) files, ${missing} not installed"
+            if [ "${missing}" != 0 ]; then echo "::error::${missing} files of ${dir} were not installed"; errors=1; fi
+          done < <(grep '^Source: "{src}\\' "$ISS" | grep -v skipifsourcedoesntexist | sed -e 's/^Source: "{src}\\\(.*\)\\\*".*/\1/')
+          if [ ! -x "${APP}/unins000.exe" ]; then echo "::error::no uninstaller in ${APP}"; errors=1; fi
+          # the installed programs (no .pyc written into the installation, so that it can be removed)
+          export PYTHONDONTWRITEBYTECODE=1
+          timeout -k 10 600 env PATH="${APP}/bin:${SYSPATH}" "${APP}/bin/NatronRenderer.exe" -v < /dev/null || { echo "::error::the installed NatronRenderer -v failed"; errors=1; }
+          timeout -k 10 600 env PATH="${APP}/bin:${SYSPATH}" "${APP}/bin/natron-python.exe" -c "import sys, ssl; print('natron-python', sys.version.split()[0])" < /dev/null || { echo "::error::the installed natron-python failed"; errors=1; }
+          # The uninstaller copies itself to %TEMP% and returns at once: wait for the directory to go.
+          MSYS2_ARG_CONV_EXCL='*' "${APP}/unins000.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART || { echo "::error::the uninstaller failed"; errors=1; }
+          for _ in $(seq 120); do
+            [ -e "${APP}/unins000.exe" ] || [ -e "${APP}/bin" ] || break
+            sleep 2
+          done
+          if [ -e "${APP}" ]; then
+            left=$(find "${APP}" -type f | grep -v -E '/__pycache__/|\.pyc$' || true)
+            if [ -n "${left}" ]; then
+              echo "::error::the uninstaller left files in ${APP}:"; echo "${left}" | head -50; errors=1
+            fi
+          fi
+          exit ${errors}
+
       - name: Compare the passing tests with the 2.5.0 release
         # Informative: 2.5.0 was a Qt4 MINGW64 build, so differences are expected
         run: |

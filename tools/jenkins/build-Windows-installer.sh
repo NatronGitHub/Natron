@@ -41,11 +41,11 @@ popd () {
 }
 
 # List the DLLs to bundle, from the import tables of the binaries (updateBuildOptions first, for
-# TMP_BINARIES_PATH). The FFmpeg, LibRaw and (COMMERCIAL) libheif of the licence come first, as
-# on PATH at run time (common.sh). An empty LIBHEIF_PATH adds no entry.
+# TMP_BINARIES_PATH). The FFmpeg, LibRaw and (COMMERCIAL) libheif and libtiff of the licence come
+# first, as on PATH at run time (common.sh). An empty LIBHEIF_PATH or LIBTIFF_PATH adds no entry.
 updateBuildOptions
 env MINGW_PREFIX="$SDK_HOME" TMP_BINARIES_PATH="$TMP_BINARIES_PATH" PYVER="$PYVER" QT_VERSION_MAJOR="${QT_VERSION_MAJOR}" NATRON_LICENSE="$NATRON_LICENSE" \
-    FFMPEG_PATH="$FFMPEG_PATH" DLL_SEARCH_DIRS="$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:${LIBHEIF_PATH:+$LIBHEIF_PATH/bin:}$SDK_HOME/bin" ./genDllVersions.sh
+    FFMPEG_PATH="$FFMPEG_PATH" DLL_SEARCH_DIRS="$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:${LIBHEIF_PATH:+$LIBHEIF_PATH/bin:}${LIBTIFF_PATH:+$LIBTIFF_PATH/bin:}$SDK_HOME/bin" ./genDllVersions.sh
 
 source dllVersions.sh
 
@@ -176,12 +176,15 @@ function installPlugin() {
         dump_syms_safe "$bindir/${OFX_BINARY}.ofx" "${BUILD_ARCHIVE_DIRECTORY}/symbols/${OFX_BINARY}.ofx-${VERSION_TAG}${BPAD_TAG:-}-${PKGOS_BITS}.sym"
     fi
 
-    # Strip the ofx binary (must be done before the manifest is embedded)
+    if [ "${#deps[@]}" -gt 0 ]; then
+        cp "${deps[@]}" "$bindir/"
+    fi
+
+    # Strip the ofx binary and its private DLLs. This must be done before the manifest is embedded
+    # (mt.exe below): nothing may touch the .ofx after that.
     strip_binaries "$bindir"
 
     if [ "${#deps[@]}" -gt 0 ]; then
-        cp "${deps[@]}" "$bindir/"
-
         # The plug-in needs a manifest embedded into its own DLL that lists its private DLLs, which
         # are next to it. The DLLs that it shares with Natron are in bin/ (genDllVersions.sh).
         # The manifest file itself is not shipped.
@@ -197,9 +200,6 @@ function installPlugin() {
         } > "$manifest"
         (cd "$bindir" && "${MT_BIN}" -nologo -manifest "$manifest" -outputresource:"${OFX_BINARY}.ofx;2")
         rm -f "$manifest"
-
-        # Strip the private DLLs
-        strip_binaries "$bindir"
     fi
 
     return 0
@@ -247,7 +247,10 @@ cp "$CWD/include/config/natronProjectIcon_windows.ico" "$location/Resources/pixm
 cp "${TMP_BINARIES_PATH}/Resources/stylesheets/mainstyle.qss" "$location/Resources/stylesheets/"
 cp -LR "${TMP_BINARIES_PATH}/Resources/OpenColorIO-Configs" "$location/Resources/"
 cp -a "${TMP_BINARIES_PATH}/Resources/etc/fonts"/* "$location/Resources/etc/fonts/"
-cp -a "$SDK_HOME/share/poppler" "$location/Resources/"
+# poppler-data, for Arena's ReadPDF, which only GPL builds have (parts of poppler-data are GPL)
+if [ "$NATRON_LICENSE" = "GPL" ]; then
+    cp -a "$SDK_HOME/share/poppler" "$location/Resources/"
+fi
 
 # Qt plug-ins, and the DLLs of genDllVersions.sh (all the Qt DLLs among them, for PySide)
 cp -a "$SDK_HOME/share/qt${QT_VERSION_MAJOR}/plugins"/* "$location/bin/"
@@ -307,10 +310,16 @@ NATRON_PYTHON="${TMP_PORTABLE_DIR}/bin/natron-python"
 # Install pip
 if [ -x "${NATRON_PYTHON}" ]; then
     pushd "$PYDIR/../.."
-    if [ "$PYV" = "2" ]; then
-        $CURL --remote-name --insecure https://bootstrap.pypa.io/pip/${PYVER}/get-pip.py
-    else
-        $CURL --remote-name --insecure https://bootstrap.pypa.io/get-pip.py
+    # get-pip.py of a fixed pypa/get-pip commit (pip 26.3, Python 3.10 or later), checked against
+    # its sha256 before it runs: the bundle's Python runs it (ensurepip is not shipped, see
+    # python-exclude.txt). To update: take the commit of a newer pypa/get-pip tag and its sha256.
+    GET_PIP_COMMIT=03f582d4710047617da50bd36a871b596e651363
+    GET_PIP_SHA256=f7654c5589318e1d0789575b2586ce76937eb9943602adda8b15b3be3aa0dac3
+    rm -f get-pip.py
+    $CURL --fail --output get-pip.py "https://raw.githubusercontent.com/pypa/get-pip/${GET_PIP_COMMIT}/public/get-pip.py"
+    if ! echo "${GET_PIP_SHA256}  get-pip.py" | sha256sum -c -; then
+        echo "Error: get-pip.py does not have the expected sha256"
+        exit 1
     fi
     "${NATRON_PYTHON}" get-pip.py
     rm get-pip.py
@@ -334,9 +343,15 @@ fi
 # libgallium_wgl.dll, with their dependencies) should be bundled instead, which is not done yet
 # (#1494): the ARM64 installer has no software OpenGL component.
 if [ "$ARCH" = "x86_64" ]; then
+    MESA_SHA256=123500be4539357c8055c7057cf5a11ef2557b893bee2458f595b5febff5dce5
     if [ ! -d "$SRC_PATH/natron-windows-mesa" ]; then
         ( cd "$SRC_PATH";
-          $CURL "$THIRD_PARTY_BIN_URL/natron-windows-mesa.tar.xz" --output "$SRC_PATH/natron-windows-mesa.tar.xz"
+          rm -f natron-windows-mesa.tar.xz
+          $CURL --fail "$THIRD_PARTY_BIN_URL/natron-windows-mesa.tar.xz" --output "$SRC_PATH/natron-windows-mesa.tar.xz"
+          if ! echo "${MESA_SHA256}  natron-windows-mesa.tar.xz" | sha256sum -c -; then
+              echo "Error: natron-windows-mesa.tar.xz does not have the expected sha256"
+              exit 1
+          fi
           tar xvf natron-windows-mesa.tar.xz
         )
     fi
@@ -352,13 +367,28 @@ bash "$CWD"/gen-natron-doc.sh
 
 # At this point we can run Natron unit tests to check that the deployment is ok.
 echo "Running Tests program..."
-# Do not fail tests temporarily
-$TIMEOUT -s KILL 1800 "${TMP_PORTABLE_DIR}/bin/Tests" || true
+# With only the bundle's bin/ and the Windows directories on PATH (not $SDK_HOME/bin), so that a
+# DLL missing from bin/ makes it fail to start. Starting must succeed; the test results do not
+# fail the build yet.
+BUNDLE_PATH="${TMP_PORTABLE_DIR}/bin:$(cygpath -u -S):$(cygpath -u -W)"
+if ! $TIMEOUT -s KILL 300 env PATH="$BUNDLE_PATH" "${TMP_PORTABLE_DIR}/bin/Tests.exe" --gtest_list_tests > /dev/null; then
+    echo "Error: Tests.exe does not start with PATH=$BUNDLE_PATH: a DLL is probably missing from bin/ (genDllVersions.sh)"
+    exit 1
+fi
+$TIMEOUT -s KILL 1800 env PATH="$BUNDLE_PATH" "${TMP_PORTABLE_DIR}/bin/Tests.exe" || true
 rm "${TMP_PORTABLE_DIR}/bin/Tests"
 echo "Done"
 
 # Clean and perms
 (cd "${TMP_PORTABLE_DIR}" && find . -type d -name .git -prune -exec rm -rf {} \;)
+
+# A COMMERCIAL build must not contain or link any GPL library (#1302, #1177). This runs on the
+# finished tree (after Mesa, the docs and pip), just before it is zipped: it inspects the contents
+# of the binaries, where genDllVersions.sh only checked the DLL names. The portable tree is the
+# only one (there is no IFW packages/ tree any more).
+if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
+    "$CWD"/check-commercial-bundle.sh "${TMP_PORTABLE_DIR}"
+fi
 
 # Create the installer: the portable zip, with Inno Setup's Setup.exe
 ZIP_INSTALL_DIR="."
