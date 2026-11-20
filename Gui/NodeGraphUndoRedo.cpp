@@ -1888,7 +1888,12 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
             }
         }
         std::list<std::pair<std::string, NodeGuiPtr> > newNodes;
-        _graph->pasteCliboard(cb, &newNodes);
+        {
+            // The group is deactivated in redo(), right after its nodes are copied out of it: the
+            // copies of a single-instance OFX plug-in are not refused (as in GroupFromSelectionCommand).
+            OfxEffectInstance::AllowExtraSingleInstances allowMovingSingleInstances;
+            _graph->pasteCliboard(cb, &newNodes);
+        }
 
         NodeGuiIPtr groupGui_i = group->getNode()->getNodeGui();
         assert(groupGui_i);
