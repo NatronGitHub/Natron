@@ -1192,7 +1192,7 @@ Project::initializeKnobs()
 
     KnobPagePtr lutPages = AppManager::createKnob<KnobPage>( this, tr("LUT") );
     std::vector<ChoiceOption> colorSpaces;
-    // Keep it in sync with ViewerColorSpaceEnum
+    // Keep it in sync with colorspaceParamIndexToEnum(): the choice index is not a ViewerColorSpaceEnum value
     colorSpaces.push_back(ChoiceOption("Linear","",""));
     colorSpaces.push_back(ChoiceOption("sRGB","",""));
     colorSpaces.push_back(ChoiceOption("Rec.709","",""));

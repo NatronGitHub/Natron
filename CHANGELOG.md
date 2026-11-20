@@ -14,6 +14,9 @@
 ### Changes
 
 - Documentation: the Reference Guide has a "Nodes" section, with one page per node group and per sub-group (e.g. "G'MIC / Colors"), and the sidebar only expands the current branch.
+- Project Settings > LUT: the "BT1886" choice of the 8-bit, 16-bit and 32-bit LUTs now uses BT.1886; it used to behave as "Linear". This LUT is also used to convert images between bit depths in the renders, so a project saved with "BT1886" may now render differently, NatronRenderer included. #1117
+- Viewer: 8-bit and 16-bit images are displayed correctly. With a Linear 16-bit LUT, the 16-bit values are no longer truncated to their low byte (#1118). With 32-bit (float) textures, the image is no longer read as float data, and autocontrast reads the image with its own bit depth (#1110). The matte overlay from another layer is at the right place and uses the matte value (#1111). Alpha is in [0,1], so a semi-transparent pixel is no longer shown as opaque over the checkerboard. The "A" display shows alpha without the LUT of the image bit depth, as autocontrast does.
+- Viewer: with a wipe or compare, the B image is cleared when B fails to render, not when A does. #1109
 
 
 ## Version 2.5.0
