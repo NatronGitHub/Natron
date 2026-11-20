@@ -364,7 +364,7 @@ Project::loadProjectImpl(const QString & path,
                 Dialogs::printDismissedDialog( tr("Auto-save").toStdString(),
                                                tr("A recent auto-save of %1 was found. It is not used, and kept.").arg(name).toStdString() );
                 hasAutoSave = false;
-                // The auto-saves of this project would overwrite it (<dir>/<name>.autosave):
+                // The auto-saves of this project would overwrite it (<dir>/<name>.binautosave):
                 // do not auto-save it in this session (see refreshAutoSaveDisabled())
                 _imp->autoSaveDisabled = true;
             }
@@ -1280,7 +1280,10 @@ Project::findAutoSaveForProject(const QString& projectPath,
         }
         const QDateTime time = QFileInfo(projectPath + entry).lastModified();
         if ( !includeOlderThanProject && (time < projectInfo.lastModified()) ) {
-            qDebug() << "Auto-save" << (projectPath + entry) << "is older than the project file: not offered";
+            // qDebug() is silenced by QT_NO_DEBUG_OUTPUT: the error log and stderr are always shown
+            const QString message = tr("The auto-save %1 is older than the project file: it is not offered.").arg(projectPath + entry);
+            std::cerr << message.toStdString() << std::endl;
+            appPTR->writeToErrorLog_mt_safe( tr("Auto-save"), QDateTime::currentDateTime(), message );
             continue;
         }
         candidates.append(entry);
