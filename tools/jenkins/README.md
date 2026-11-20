@@ -214,7 +214,7 @@ This should be consistent with the `REMOTE_USER` value passed to the upload-arti
 `REMOTE_PREFIX`: The prefix to upload artifacts to, relative to `REMOTE_USER@REMOTE_URL`'s home dir.
 This should be consistent with the `REMOTE_PREFIX_USER` value passed to the upload-artifacts project.
 
-`WITH_ONLINE_INSTALLER`: Set to 1 to also build a online installer for `SNAPSHOT` and `RELEASE` builds (only available for Windows and Linux).
+`WITH_ONLINE_INSTALLER`: Set to 1 to also build a online installer for `SNAPSHOT` and `RELEASE` builds (Linux only: the Windows installer is the portable zip with Inno Setup's `Setup.exe`, #1133).
 
 `DEBUG_SCRIPTS`: If set to 1, binaries from previous build with same options are not cleaned so that the scripts can continue the same compilation.
 

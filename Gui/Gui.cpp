@@ -38,6 +38,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QApplication> // qApp
 #include <QMenuBar>
 #include <QUndoGroup>
+#include <QTimer>
 #include <QDesktopServices>
 #include <QUrl>
 
@@ -123,6 +124,18 @@ Gui::~Gui()
     qDebug() << "Gui::~Gui()" << (void*)(this);
 #endif
     _imp->_nodeGraphArea->invalidateAllNodesParenting();
+
+    // Delete the viewers now: they are child widgets, which QWidget::~QWidget() would delete
+    // after _imp, but ~ViewerTab() uses the Gui (getApp(), getNodeGraph()).
+    std::list<ViewerTab*> viewers;
+    {
+        QMutexLocker k(&_imp->_viewerTabsMutex);
+        viewers.swap(_imp->_viewerTabs);
+    }
+    for (std::list<ViewerTab*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        delete *it;
+    }
+
     delete _imp->_errorLog;
     delete _imp->_projectGui;
     delete _imp->_undoStacksGroup;
@@ -282,7 +295,9 @@ Gui::toggleFullScreen()
     QWidget* activeWin = qApp->activeWindow();
 
     if (!activeWin) {
-        qApp->setActiveWindow(this);
+        if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+            qApp->setActiveWindow(this);
+        }
         activeWin = this;
     }
 
@@ -300,6 +315,15 @@ Gui::closeEvent(QCloseEvent* e)
     GuiAppInstancePtr app = getApp();
     if ( app && app->isClosing() ) {
         e->ignore();
+    } else if ( appPTR->isQuitRequested() ) {
+        // natron.quit() will close everything, without asking to save
+        e->ignore();
+    } else if (appPTR->getNestedEventLoopsCount() > 0) {
+        // A nested event loop is running (see AppManager::NestedEventLoopRAII): closing now
+        // would delete this window (Qt::WA_DeleteOnClose) and the project in that loop, under
+        // the code that runs it. Close once it is done.
+        e->ignore();
+        QTimer::singleShot( 50, this, SLOT(close()) );
     } else if ( app && app->getProject()->isSaveInProgress() ) {
         // A save is running, or waiting for the auto-save while the main thread processes
         // non-user-input events, which include the window manager's close requests (#825).

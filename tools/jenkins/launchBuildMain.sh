@@ -34,7 +34,7 @@ set -u # Treat unset variables as an error when substituting.
 # BUILD_NAME: Give a name to the build so that it can be found in the archive
 # DISABLE_RPM_DEB_PKGS: If set to 1, deb and rpm packages will not be built. Otherwise they are only built for a release
 # DISABLE_PORTABLE_ARCHIVE: If set to 1, a portable archive will not be built
-# BITS: Windows only: Must indicate if this is a 64 or 32 bits build
+# BITS: Windows only: 64 (the default; the architecture, x86_64 or arm64, comes from the MSYS2 environment, MSYSTEM_CARCH)
 # DEBUG_SCRIPTS: If set to 1, binaries from previous build with same options are not cleaned so that the scripts can continue the same compilation
 # EXTRA_PYTHON_MODULES_SCRIPT: Path to a python script that should install extra modules with pip or easy_install.
 # MKJOBS: number of parallel build jobs
@@ -669,10 +669,8 @@ if [ "${INSTALLER_OS}" = "Linux" ] || [ "${INSTALLER_OS}" = "FreeBSD" ]; then
 fi
 
 if [ "${INSTALLER_OS}" = "Windows" ]; then
-    case "${BITS}" in
-        32) INSTALLER_ARCH="i386";; 
-        64) INSTALLER_ARCH="x86_64";;
-    esac
+    # x86_64 or arm64, from MSYSTEM_CARCH (common.sh)
+    INSTALLER_ARCH="${WIN_ARCH}"
 fi
 
 INSTALLER_BASENAME="${INSTALLER_BASENAME}-${NATRON_VERSION_STRING}-${INSTALLER_OS}-${INSTALLER_ARCH}"

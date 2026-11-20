@@ -6,9 +6,10 @@ OpenFX 1.5.1 host conformance
 This chapter records how well Natron, as an OpenFX host, follows what the
 OpenFX 1.5.1 specification asks of hosts. It is meant for maintainers who fix
 OFX host bugs, review changes to the host glue, or prepare Natron to advertise a
-newer OFX API version. Natron currently advertises OFX API 1.4
-(``kOfxPropAPIVersion``); advertising 1.5 is tracked in
-`#1107 <https://github.com/NatronGitHub/Natron/issues/1107>`__.
+newer OFX API version. Natron now advertises OFX API 1.5
+(``kOfxPropAPIVersion``, `#1107 <https://github.com/NatronGitHub/Natron/issues/1107>`__);
+it still advertised 1.4 at the audit commit 7dea437a6, and the tables below
+describe that state unless a row says otherwise.
 
 .. toctree::
     :maxdepth: 1
@@ -118,17 +119,17 @@ interacts page does not count the rows describing pull request #1349.
      - NEXT
    * - :ref:`Core <ofx-host-conformance-core>`
      - 99
-     - 61
-     - 22
-     - 10
+     - 70
+     - 15
+     - 8
      - 1
      - 5
      - 0
    * - :ref:`Parameters <ofx-host-conformance-params>`
      - 105
-     - 70
+     - 71
      - 18
-     - 11
+     - 10
      - 0
      - 4
      - 2
@@ -142,17 +143,17 @@ interacts page does not count the rows describing pull request #1349.
      - 0
    * - :ref:`Interacts, GPU, colour, packaging <ofx-host-conformance-interact-gpu-packaging>`
      - 72
-     - 39
+     - 40
      - 13
-     - 8
+     - 7
      - 4
      - 8
      - 0
    * - **Total**
      - 387
-     - 239
-     - 75
-     - 42
+     - 250
+     - 68
+     - 38
      - 7
      - 21
      - 2
@@ -295,8 +296,8 @@ marked "[plug-in visible]" in the issue and can be split into their own issues
 when someone works on them. The area pages link every such row to #1385.
 
 Related issues that were already open: `#1107 <https://github.com/NatronGitHub/Natron/issues/1107>`__ (advertise OFX API 1.5), `#1105 <https://github.com/NatronGitHub/Natron/issues/1105>`__
-(thumbnail renders), `#1106 <https://github.com/NatronGitHub/Natron/issues/1106>`__ (OFX 1.5 tracking: ChoiceOrder, InterpType, Obsolete,
-CPURenderSupported), `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__ (ChoiceOrder), `#1145 <https://github.com/NatronGitHub/Natron/issues/1145>`__ (CUDA rendering), `#6 <https://github.com/NatronGitHub/Natron/issues/6>`__ (parameter
+(thumbnail renders), `#1106 <https://github.com/NatronGitHub/Natron/issues/1106>`__ (OFX 1.5 / 1.5.1 / next: ChoiceOrder (1.5),
+CPURenderSupported (1.5.1), InterpType and Obsolete (next)), `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__ (ChoiceOrder), `#1145 <https://github.com/NatronGitHub/Natron/issues/1145>`__ (CUDA rendering), `#6 <https://github.com/NatronGitHub/Natron/issues/6>`__ (parameter
 interacts), `#7 <https://github.com/NatronGitHub/Natron/issues/7>`__ (fields and field rendering) and `#87 <https://github.com/NatronGitHub/Natron/issues/87>`__ (Transition context).
 
 Deliberate deviations (won't fix)

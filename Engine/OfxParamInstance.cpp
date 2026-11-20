@@ -4804,18 +4804,16 @@ void
 OfxBytesInstance::setDefault()
 {
     DYNAMIC_PROPERTY_CHECK();
-    // the plug-in's data is only valid during the call that sets the property: copy it
-    const OfxBytes *def = (const OfxBytes *)getProperties().getPointerProperty(kOfxParamPropDefault);
-    std::string value;
-    if ( def && def->data && (def->length > KnobBytes::maxLength()) ) {
-        std::cerr << getName() << ": Warning: the default value of this Bytes parameter (" << def->length
+    // BytesInstance::notify() copied the new default (kOfxParamPropDefault points to the copy) before
+    // calling setDefault()
+    const std::vector<unsigned char>& def = getDefault();
+    if ( def.size() > KnobBytes::maxLength() ) {
+        std::cerr << getName() << ": Warning: the default value of this Bytes parameter (" << def.size()
                   << " bytes) is larger than " << KnobBytes::maxLength() << " bytes, ignoring it" << std::endl;
 
         return;
-    } else if ( def && def->data && (def->length > 0) ) {
-        value.assign( (const char*)def->data, def->length );
     }
-    _imp->knob.lock()->setDefaultValueWithoutApplying(value, 0);
+    _imp->knob.lock()->setDefaultValueWithoutApplying(std::string( def.begin(), def.end() ), 0);
 }
 
 void

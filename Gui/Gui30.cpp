@@ -76,6 +76,12 @@ Gui::errorDialog(const std::string & title,
         }
     }
 
+    if ( appPTR->isDialogsDisabled() ) {
+        Dialogs::printDismissedDialog(title, text);
+
+        return;
+    }
+
 
     StandardButtons buttons(eStandardButtonYes | eStandardButtonNo);
 
@@ -112,6 +118,13 @@ Gui::errorDialog(const std::string & title,
         if (_imp->_aboutToClose) {
             return;
         }
+    }
+
+    if ( appPTR->isDialogsDisabled() ) {
+        Dialogs::printDismissedDialog(title, text);
+        *stopAsking = false;
+
+        return;
     }
 
     StandardButtons buttons(eStandardButtonOk);
@@ -152,6 +165,12 @@ Gui::warningDialog(const std::string & title,
         }
     }
 
+    if ( appPTR->isDialogsDisabled() ) {
+        Dialogs::printDismissedDialog(title, text);
+
+        return;
+    }
+
     StandardButtons buttons(eStandardButtonYes | eStandardButtonNo);
 
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
@@ -187,6 +206,13 @@ Gui::warningDialog(const std::string & title,
         if (_imp->_aboutToClose) {
             return;
         }
+    }
+
+    if ( appPTR->isDialogsDisabled() ) {
+        Dialogs::printDismissedDialog(title, text);
+        *stopAsking = false;
+
+        return;
     }
 
     StandardButtons buttons(eStandardButtonOk);
@@ -227,6 +253,12 @@ Gui::informationDialog(const std::string & title,
         }
     }
 
+    if ( appPTR->isDialogsDisabled() ) {
+        Dialogs::printDismissedDialog(title, text);
+
+        return;
+    }
+
     StandardButtons buttons(eStandardButtonYes | eStandardButtonNo);
 
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
@@ -263,6 +295,13 @@ Gui::informationDialog(const std::string & title,
         if (_imp->_aboutToClose) {
             return;
         }
+    }
+
+    if ( appPTR->isDialogsDisabled() ) {
+        Dialogs::printDismissedDialog(title, message);
+        *stopAsking = false;
+
+        return;
     }
 
     StandardButtons buttons(eStandardButtonOk);
@@ -403,7 +442,7 @@ Gui::onDoDialog(int type,
         --_imp->_uiUsingMainThread;
         _imp->_uiUsingMainThreadCond.wakeAll();
     }
-    if (currentActiveWindow && !isActiveWindowADialog) {
+    if (currentActiveWindow && !isActiveWindowADialog && !GuiApplicationManager::isGuiTestNoFocus()) {
         currentActiveWindow->activateWindow();
     }
 } // Gui::onDoDialog
@@ -421,6 +460,12 @@ Gui::questionDialog(const std::string & title,
         if (_imp->_aboutToClose) {
             return eStandardButtonNo;
         }
+    }
+
+    if ( appPTR->isDialogsDisabled() ) {
+        Dialogs::printDismissedDialog(title, message);
+
+        return Dialogs::getDismissedDialogAnswer(buttons, defaultButton);
     }
 
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
@@ -461,6 +506,13 @@ Gui::questionDialog(const std::string & title,
         if (_imp->_aboutToClose) {
             return eStandardButtonNo;
         }
+    }
+
+    if ( appPTR->isDialogsDisabled() ) {
+        Dialogs::printDismissedDialog(title, message);
+        *stopAsking = false;
+
+        return Dialogs::getDismissedDialogAnswer(buttons, defaultButton);
     }
 
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
@@ -662,8 +714,10 @@ Gui::showSettings()
         _imp->_settingsGui->createGui();
     }
     _imp->_settingsGui->show();
-    _imp->_settingsGui->raise();
-    _imp->_settingsGui->activateWindow();
+    if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+        _imp->_settingsGui->raise();
+        _imp->_settingsGui->activateWindow();
+    }
 }
 
 void

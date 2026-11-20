@@ -11,6 +11,10 @@
 #
 # Working config for the SDK openssl:
 #OPENSSL_CONFIG="enable-cms enable-camellia enable-idea enable-mdc2 enable-tlsext enable-rfc3779 enable-ssl3-method"
+# The version is set by openssl-installer.sh, which is only built with WITH_QT4 (keep them in sync)
+OPENSSL_VERSION="${OPENSSL_VERSION:-1.1.1t}"
+OPENSSL_TAR="openssl-${OPENSSL_VERSION}.tar.gz"
+OPENSSL_SITE="https://www.openssl.org/source"
 OPENSSL_CONFIG="enable-camellia enable-seed enable-rfc3779 enable-cms enable-md2 enable-rc5 enable-ssl3 enable-ssl3-method enable-weak-ssl-ciphers no-mdc2 no-ec2m no-sm2 no-sm4"
 if download_step; then
     download "$OPENSSL_SITE" "$OPENSSL_TAR"

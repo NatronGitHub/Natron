@@ -375,6 +375,17 @@ if build_step && { force_build || { [ ! -s "$QT4PREFIX/lib/pkgconfig/QtCore.pc" 
         QT_CONF+=("-no-pch")
     fi
 
+    if version_gt "$GCC_VERSION" 10.99; then
+        # GCC >= 11 defaults to C++17, which Qt 4 doesn't support: use C++14, the default
+        # of the older GCCs Qt 4 was built with. qmake doesn't read CFLAGS/CXXFLAGS.
+        for spec in linux-g++ linux-g++-64; do
+            echo "QMAKE_CXXFLAGS += -std=gnu++14" >> "mkspecs/$spec/qmake.conf"
+            if [ -n "${GCC14_CFLAGS:-}" ]; then
+                echo "QMAKE_CFLAGS += ${GCC14_CFLAGS}" >> "mkspecs/$spec/qmake.conf"
+            fi
+        done
+    fi
+
     #QT_SRC="$(pwd)/src"
     env CFLAGS="$BF" CXXFLAGS="$BF" OPENSSL_LIBS="-L$SDK_HOME/lib -lssl -lcrypto" ./configure -prefix "$QT4PREFIX" "${QT_CONF[@]}" -shared
 

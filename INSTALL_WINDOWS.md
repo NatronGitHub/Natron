@@ -7,7 +7,7 @@ Instructions for installing Natron from sources on Microsoft Windows
 
 Natron is built with **CMake** in an MSYS2 **UCRT64** shell, with MSYS2's own packages: see [Build](#build). The qmake build is deprecated: it still works on RB-2.6, but will be removed in a future release.
 
-The [SDK instructions](tools/MINGW-packages/README.md) set up the environment for the OFX plug-ins and the release installers, which need Natron's own MSYS2 packages (`tools/MINGW-packages`). That package repository is built in UCRT64, like Natron (#1197). The installer scripts (`tools/jenkins`, `build_installer.yml`) still assume MINGW64 and qmake, so they can't run until they move to UCRT64 too, step 5 of [#1133](https://github.com/NatronGitHub/Natron/issues/1133). You don't need any of this to build Natron itself.
+The [SDK instructions](tools/MINGW-packages/README.md) set up the environment for the OFX plug-ins and the release installers, which need Natron's own MSYS2 packages (`tools/MINGW-packages`). That package repository is built in UCRT64, like Natron (#1197). The installer scripts (`tools/jenkins`, `build_installer.yml`) build Natron with CMake in UCRT64 too (step 5 of [#1133](https://github.com/NatronGitHub/Natron/issues/1133)). You don't need any of this to build Natron itself.
 
 ## Maintaining the Windows build
 

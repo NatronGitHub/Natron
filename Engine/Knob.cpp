@@ -513,7 +513,8 @@ struct KnobHelperPrivate
     ///not shared between instances whereas non instance specifics are shared.
     bool isInstanceSpecific;
     std::vector<std::string> dimensionNames;
-    mutable QMutex expressionMutex;
+    // std::mutex rather than QMutex: render threads lock it on every getValue() (see #1451)
+    mutable std::mutex expressionMutex;
     std::vector<Expr> expressions;
     mutable QMutex lastRandomHashMutex;
     mutable U32 lastRandomHash;
@@ -2561,7 +2562,7 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     std::string expressionCopy;
 
     {
-        QMutexLocker k(&expressionMutex);
+        std::lock_guard<std::mutex> k(expressionMutex);
         expressionCopy = expressions[dimension].originalExpression;
     }
     std::string script;
@@ -2772,7 +2773,7 @@ KnobHelper::checkInvalidExpressions()
     int ndims = getDimension();
     std::vector<std::pair<std::string, bool> > exprToReapply(ndims);
     {
-        QMutexLocker k(&_imp->expressionMutex);
+        std::lock_guard<std::mutex> k(_imp->expressionMutex);
         for (int i = 0; i < ndims; ++i) {
             if ( !_imp->expressions[i].exprInvalid.empty() ) {
                 exprToReapply[i] = std::make_pair(_imp->expressions[i].originalExpression, _imp->expressions[i].hasRet);
@@ -2804,7 +2805,7 @@ KnobHelper::isExpressionValid(int dimension,
         return false;
     }
     {
-        QMutexLocker k(&_imp->expressionMutex);
+        std::lock_guard<std::mutex> k(_imp->expressionMutex);
         if (error) {
             *error = _imp->expressions[dimension].exprInvalid;
         }
@@ -2825,7 +2826,7 @@ KnobHelper::setExpressionInvalid(int dimension,
     }
     bool wasValid;
     {
-        QMutexLocker k(&_imp->expressionMutex);
+        std::lock_guard<std::mutex> k(_imp->expressionMutex);
         wasValid = _imp->expressions[dimension].exprInvalid.empty();
         _imp->expressions[dimension].exprInvalid = error;
     }
@@ -2838,7 +2839,7 @@ KnobHelper::setExpressionInvalid(int dimension,
         } else if (!wasValid && valid) {
             bool haveOtherExprInvalid = false;
             {
-                QMutexLocker k(&_imp->expressionMutex);
+                std::lock_guard<std::mutex> k(_imp->expressionMutex);
                 for (int i = 0; i < ndims; ++i) {
                     if (i != dimension) {
                         if ( !_imp->expressions[dimension].exprInvalid.empty() ) {
@@ -2889,14 +2890,14 @@ KnobHelper::setExpressionInternal(int dimension,
         exprInvalid = e.what();
         exprCpy = expression;
         if (failIfInvalid) {
-            throw e;
+            throw; // not "throw e", which would throw a std::exception without the message
         }
     }
 
     //Set internal fields
 
     {
-        QMutexLocker k(&_imp->expressionMutex);
+        std::lock_guard<std::mutex> k(_imp->expressionMutex);
         _imp->expressions[dimension].hasRet = hasRetVariable;
         _imp->expressions[dimension].expression = exprCpy;
         _imp->expressions[dimension].originalExpression = expression;
@@ -2961,7 +2962,7 @@ KnobHelper::replaceNodeNameInExpression(int dimension,
 bool
 KnobHelper::isExpressionUsingRetVariable(int dimension) const
 {
-    QMutexLocker k(&_imp->expressionMutex);
+    std::lock_guard<std::mutex> k(_imp->expressionMutex);
 
     return _imp->expressions[dimension].hasRet;
 }
@@ -2970,7 +2971,7 @@ bool
 KnobHelper::getExpressionDependencies(int dimension,
                                       std::list<std::pair<KnobIWPtr, int> >& dependencies) const
 {
-    QMutexLocker k(&_imp->expressionMutex);
+    std::lock_guard<std::mutex> k(_imp->expressionMutex);
 
     if ( !_imp->expressions[dimension].expression.empty() ) {
         dependencies = _imp->expressions[dimension].dependencies;
@@ -2988,7 +2989,7 @@ KnobHelper::clearExpression(int dimension,
     PythonGILLocker pgl;
     bool hadExpression;
     {
-        QMutexLocker k(&_imp->expressionMutex);
+        std::lock_guard<std::mutex> k(_imp->expressionMutex);
         hadExpression = !_imp->expressions[dimension].originalExpression.empty();
         _imp->expressions[dimension].expression.clear();
         _imp->expressions[dimension].originalExpression.clear();
@@ -3115,7 +3116,7 @@ KnobHelper::executeExpression(double time,
 {
     std::string expr;
     {
-        QMutexLocker k(&_imp->expressionMutex);
+        std::lock_guard<std::mutex> k(_imp->expressionMutex);
         expr = _imp->expressions[dimension].expression;
     }
     std::stringstream ss;
@@ -3176,7 +3177,7 @@ KnobHelper::getExpression(int dimension) const
     if (dimension == -1) {
         dimension = 0;
     }
-    QMutexLocker k(&_imp->expressionMutex);
+    std::lock_guard<std::mutex> k(_imp->expressionMutex);
 
     return _imp->expressions[dimension].originalExpression;
 }
@@ -4365,7 +4366,7 @@ KnobHelper::addListener(const bool isExpression,
     }
 
     if (isExpression) {
-        QMutexLocker k(&listenerIsHelper->_imp->expressionMutex);
+        std::lock_guard<std::mutex> k(listenerIsHelper->_imp->expressionMutex);
         assert(listenerDimension >= 0 && listenerDimension < listenerIsHelper->_imp->dimension);
         listenerIsHelper->_imp->expressions[listenerDimension].dependencies.push_back( std::make_pair(thisShared, listenedToDimension) );
     }
@@ -4762,10 +4763,12 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
         } else {
             ss << "app." << otherIsEffect->getNode()->getFullyQualifiedName() << "." << newScriptName;
         }
+        // get(frame), not get(): get() returns the value at the current time, so a link
+        // to an animated parameter would not be animated (#1336)
         if (output->getDimension() > 1) {
-            ss << ".get()[dimension]";
+            ss << ".get(frame)[dimension]";
         } else {
-            ss << ".get()";
+            ss << ".get(frame)";
         }
 
         try {
@@ -4874,7 +4877,7 @@ KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr>& nodes) cons
 {
     std::set<KnobIPtr> deps;
     {
-        QMutexLocker k(&_imp->expressionMutex);
+        std::lock_guard<std::mutex> k(_imp->expressionMutex);
         for (int i = 0; i < _imp->dimension; ++i) {
             for (std::list<std::pair<KnobIWPtr, int> >::const_iterator it = _imp->expressions[i].dependencies.begin();
                  it != _imp->expressions[i].dependencies.end(); ++it) {
