@@ -83,7 +83,7 @@ TEST(OfxPluginObsolete, Default)
 {
     OFX::Host::Property::Set props(descriptorProps);
 
-    EXPECT_FALSE( OfxHost::isPluginObsolete(props) );
+    EXPECT_FALSE( NATRON_NAMESPACE::OfxHost::isPluginObsolete(props) );
 }
 
 TEST(OfxPluginObsolete, Obsolete)
@@ -91,7 +91,7 @@ TEST(OfxPluginObsolete, Obsolete)
     OFX::Host::Property::Set props(descriptorProps);
 
     props.setIntProperty(kOfxImageEffectPluginPropObsolete, 1);
-    EXPECT_TRUE( OfxHost::isPluginObsolete(props) );
+    EXPECT_TRUE( NATRON_NAMESPACE::OfxHost::isPluginObsolete(props) );
 }
 
 // the Natron extension property is ignored (#1491)
@@ -100,7 +100,7 @@ TEST(OfxPluginObsolete, FormerNatronDeprecatedIgnored)
     OFX::Host::Property::Set props(descriptorProps);
 
     props.setIntProperty(kFormerNatronDeprecatedProp, 1);
-    EXPECT_FALSE( OfxHost::isPluginObsolete(props) );
+    EXPECT_FALSE( NATRON_NAMESPACE::OfxHost::isPluginObsolete(props) );
 }
 
 // a plug-in that sets kOfxImageEffectPluginPropObsolete is loaded but not offered for new nodes, and
