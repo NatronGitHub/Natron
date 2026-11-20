@@ -29,6 +29,7 @@ depends=(
   "${MINGW_PACKAGE_PREFIX}-natron_ffmpeg-gpl2"
   "${MINGW_PACKAGE_PREFIX}-natron_ffmpeg-lgpl"   # for COMMERCIAL builds (common.sh)
   "${MINGW_PACKAGE_PREFIX}-natron_libheif-lgpl"  # without x264/x265: COMMERCIAL builds bundle it (#1177)
+  "${MINGW_PACKAGE_PREFIX}-natron_libtiff-lgpl"  # without JBIG-KIT (GPL): COMMERCIAL builds bundle it
   "${MINGW_PACKAGE_PREFIX}-fmt"
   "${MINGW_PACKAGE_PREFIX}-opencolorio"
   "${MINGW_PACKAGE_PREFIX}-openexr"

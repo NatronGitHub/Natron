@@ -26,14 +26,19 @@
 # 1. its file name, and the names of the libraries it links (otool -L, or objdump -p), must not
 #    be a GPL, AGPL or nonfree library: x264, x265, Xvid, libpostproc, vid.stab, Rubber Band,
 #    FFTW, poppler, SoX, libmad, GSL, readline, gdbm, frei0r, libcdio, libdvdread, libdvdnav,
-#    libdvdcss, libmpeg2, liba52, libfaad, libdca, xavs, xavs2, davs2, libsmbclient, libzvbi
-#    (GPL-2+), Ghostscript (libgs, AGPL), fdk-aac (nonfree). A library that is
+#    libdvdcss, libmpeg2, liba52, libfaad, libdca, xavs, xavs2, davs2, libsmbclient, libzvbi,
+#    JBIG-KIT (libjbig, linked by MSYS2's libtiff), libao and libid3tag (linked by SoX) (GPL-2+),
+#    Ghostscript (libgs, AGPL), fdk-aac (nonfree), and the Qt modules that are GPL-3 only (Qt
+#    Charts, Data Visualization, Network Authorization, Designer, Virtual Keyboard, Quick 3D,
+#    Lottie/Bodymovin) and their PySide modules, e.g. QtCharts, Qt5Charts.dll,
+#    libQt5Charts.so.5, QtCharts.cpython-311-darwin.so or QtCharts.pyd. A library that is
 #    linked but not bundled is reported too: that is how a COMMERCIAL IO.ofx failed to load on
 #    Windows (libheif linked x264, which only GPL builds bundle, #1177);
 # 2. the FFmpeg libraries it contains must be LGPL: the "libavcodec license: ..." strings, which
 #    avcodec_license() and the other *_license() functions (and "ffmpeg -L") return, must all
-#    be "LGPL version ...", and FFmpeg's configuration string must have neither --enable-gpl
-#    nor --enable-nonfree;
+#    be "LGPL version 2.1 or later" (as the natron_ffmpeg-lgpl package and the ffmpeg-lgpl
+#    subport require: --enable-version3 would make it LGPL 3), and FFmpeg's configuration string
+#    must have neither --enable-gpl nor --enable-nonfree;
 # 3. LibRaw must be built without the GPL demosaic packs: none of the pack's functions
 #    (exported class members, so they survive strip) may be present;
 # 4. the file must not contain the entry points of x264, x265, Xvid, vid.stab or FFTW, which
@@ -79,6 +84,19 @@ is_gpl_lib() {
         libdvdcss*|libmpeg2[-_.]*|libmpeg2|libmpeg2convert*|liba52[-_.]*|liba52|libfaad*) return 0;;
         libdca[-_.]*|libdca|libxavs*|libdavs2*|libsmbclient*|libzvbi*) return 0;;
         libgs[-_.]*|libgs|gsdll*|libfdk-aac*) return 0;;
+        libjbig*|libao[-_.]*|libao|libid3tag*) return 0;;
+    esac
+    # Qt modules that are GPL-3 only, without a linking exception ("QT_BEGIN_LICENSE:GPL" or
+    # "GPL-EXCEPT" in their headers), and their PySide modules: QtCharts (macOS framework, PySide),
+    # Qt5Charts.dll, libQt5Charts.so.5, ...
+    local qtmod="${1#lib}"
+    case "$qtmod" in
+        Qt[0-9]*) qtmod="${qtmod#Qt?}";;
+        Qt*) qtmod="${qtmod#Qt}";;
+        *) return 1;;
+    esac
+    case "$qtmod" in
+        Charts*|DataVisualization*|NetworkAuth*|Designer*|VirtualKeyboard*|Quick3D*|Bodymovin*) return 0;;
     esac
     return 1
 }
@@ -130,7 +148,8 @@ check_file() {
     while read -r s; do
         [ -n "$s" ] || continue
         case "$s" in
-            *" license: LGPL version "*) echo "Info: $base: $s";;
+            *" license: LGPL version 2.1 or later") echo "Info: $base: $s";;
+            *" license: LGPL version "*) error "$f: $s (expected LGPL version 2.1 or later: FFmpeg configured with --enable-version3?)";;
             *) error "$f: $s";;
         esac
     done < <(LC_ALL=C grep -a -o -E 'lib(av(codec|device|filter|format|util)|sw(resample|scale)|postproc) license: [A-Za-z0-9 .+-]*' "$f" 2>/dev/null | sort -u)

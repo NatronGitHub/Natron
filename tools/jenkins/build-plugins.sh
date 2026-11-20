@@ -503,7 +503,7 @@ if [ "$BUILD_IO" = "1" ] && [ -d "$TMP_PATH/openfx-io" ]; then
             # cmake.exe is a native program: pass Windows paths (untested here)
             io_seexpr="$(cygpath -m "$io_seexpr")"
             [ -n "$io_ffmpeg_pc" ] && io_ffmpeg_pc="$(cygpath -m "$io_ffmpeg_pc")"
-            io_prefix_args=(-DCMAKE_PREFIX_PATH="$(cygpath -m "$SDK_HOME");$(cygpath -m "$LIBRAW_PATH");$(cygpath -m "$FFMPEG_PATH")")
+            io_prefix_args=(-DCMAKE_PREFIX_PATH="$(cygpath -m "$LIBRAW_PATH");$(cygpath -m "$FFMPEG_PATH");$(cygpath -m "$SDK_HOME")")
         fi
         # OFX_IO_REQUIRE_ALL: fail on missing plug-in groups (ofx_cmake_build also checks the log)
         io_saved_pkg_config_path="${PKG_CONFIG_PATH:-}"

@@ -412,8 +412,13 @@ step_cleanup() {
 step_build() {
     start_http_proxy
     if [ "${NATRON_LICENSE:-GPL}" = "COMMERCIAL" ]; then
-        # (images made before these subports existed)
-        $PORT install ffmpeg-lgpl libraw-lgpl libheif-lgpl
+        # step_libs and step_update install them: fail now rather than after building Natron
+        for p in ffmpeg-lgpl libraw-lgpl libheif-lgpl; do
+            if ! port -q installed "$p" 2>/dev/null | grep -q '(active)'; then
+                echo "Error: $p is not installed in this image, update it with: tools/tart/natron-sdk.sh update"
+                return 1
+            fi
+        done
     fi
     mkdir -p "$WORKSPACE"
     cd "$NATRON/tools/jenkins"

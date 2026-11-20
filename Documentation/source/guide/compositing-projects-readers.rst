@@ -432,6 +432,15 @@ scripts) do not have them:
   with the kvazaar encoder instead (the files may be larger at the same
   quality), and HEIF files with H.264 can be read but not written. Reading
   HEIF files does not depend on the license.
+- **ReadOIIO**, TIFF files, on Windows: the JBIG compression of libtiff comes
+  from JBIG-KIT, under the GPL, so JBIG-compressed TIFF files (black-and-white
+  fax images) cannot be read.
+- **ReadPDF**: this reader uses poppler, which is under the GPL, so non-GPL
+  builds do not have it.
+- **AudioCurve**: this node uses SoX, which links GPL libraries, so non-GPL
+  builds do not have it.
+
+A project that uses a node that a build does not have loads without that node.
 
 The build scripts check that a non-GPL build does not contain any of these GPL
 libraries.

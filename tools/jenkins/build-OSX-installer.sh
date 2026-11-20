@@ -363,6 +363,20 @@ case "${QT_VERSION_MAJOR}" in
     SBKVER="${QT_VERSION_MAJOR}.${QT_VERSION_MINOR}"
     ;;
 esac
+# Qt modules that are GPL-3 only (no LGPL): a COMMERCIAL build must not ship them, nor their PySide
+# modules. Natron doesn't use them. check-commercial-bundle.sh (is_gpl_lib) also rejects them.
+qt_gpl_libs=( QtCharts QtDataVisualization QtNetworkAuth QtDesigner QtDesignerComponents )
+if [ "${NATRON_LICENSE:-}" = "COMMERCIAL" ]; then
+    qt_lgpl_libs=()
+    for qtlib in "${qt_libs[@]}"; do
+        case " ${qt_gpl_libs[*]} " in
+            *" ${qtlib} "*) ;;
+            *) qt_lgpl_libs+=( "${qtlib}" );;
+        esac
+    done
+    qt_libs=( "${qt_lgpl_libs[@]}" )
+    unset qt_lgpl_libs
+fi
 STRIP=1
 
 # macdeployqt only works if the package name has the same name as the executable inside:
@@ -660,6 +674,12 @@ PYLIB="Python.framework/Versions/${PYVER}/lib/python${PYVER}"
 PYSIDE="${PYLIB}/site-packages/${PYSIDE_PKG}"
 rm -rf "${package}/Contents/Frameworks/${PYSIDE}"
 cp -a "${SDK_HOME}/Library/Frameworks/${PYSIDE}" "${package}/Contents/Frameworks/${PYSIDE}"
+if [ "${NATRON_LICENSE:-}" = "COMMERCIAL" ]; then
+    # the PySide modules of the GPL-3 Qt modules (e.g. QtCharts.cpython-311-darwin.so, QtCharts.pyi)
+    for qtlib in "${qt_gpl_libs[@]}"; do
+        rm -f "${package}/Contents/Frameworks/${PYSIDE}/${qtlib}".*
+    done
+fi
 if [ "${QT_VERSION_MAJOR}" = 5 ]; then
     PYSHIBOKEN="${PYLIB}/site-packages/shiboken2"
     cp -a "${SDK_HOME}/Library/Frameworks/${PYSHIBOKEN}" "${package}/Contents/Frameworks/${PYSHIBOKEN}"

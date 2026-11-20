@@ -64,16 +64,29 @@ if [ -z "${LIBHEIF_PATH:-}" ]; then
         LIBHEIF_PATH="$SDK_HOME/libheif-lgpl/bin"
     fi
 fi
-if [ "$NATRON_LICENSE" = "COMMERCIAL" ] && command -v pacman > /dev/null; then
-    # natron_openimageio is built against MSYS2's rolling libheif, natron_libheif-lgpl is pinned:
-    # the libheif.dll that replaces MSYS2's must be the same libheif version (same ABI)
-    pkgprefix="${MINGW_PACKAGE_PREFIX:-mingw-w64-x86_64}"
-    heif_msys2="$(pacman -Q "${pkgprefix}-libheif" 2>/dev/null | awk '{print $2}')"
-    heif_lgpl="$(pacman -Q "${pkgprefix}-natron_libheif-lgpl" 2>/dev/null | awk '{print $2}')"
-    if [ -z "$heif_lgpl" ] || [ "${heif_msys2%-*}" != "${heif_lgpl%-*}" ]; then
-        echo "Error: ${pkgprefix}-natron_libheif-lgpl (${heif_lgpl:-not installed}) must have the version of MSYS2's ${pkgprefix}-libheif (${heif_msys2:-not installed}), which natron_openimageio links: update tools/MINGW-packages/mingw-w64-libheif-lgpl (#1177)"
-        exit 1
+# libtiff: MSYS2's links JBIG-KIT (libjbig, GPL-2.0-or-later), so COMMERCIAL builds bundle
+# natron_libtiff-lgpl's libtiff-6.dll instead (the same version and DLL name, without JBIG), and
+# no libjbig.
+if [ -z "${LIBTIFF_PATH:-}" ]; then
+    if [ "$NATRON_LICENSE" = "GPL" ]; then
+        LIBTIFF_PATH="$SDK_HOME_BIN"
+    else
+        LIBTIFF_PATH="$SDK_HOME/libtiff-lgpl/bin"
     fi
+fi
+if [ "$NATRON_LICENSE" = "COMMERCIAL" ] && command -v pacman > /dev/null; then
+    # natron_openimageio (and the other DLLs) are built against MSYS2's rolling libheif and
+    # libtiff, natron_libheif-lgpl and natron_libtiff-lgpl are pinned: the DLL that replaces
+    # MSYS2's must be the same version (same ABI)
+    pkgprefix="${MINGW_PACKAGE_PREFIX:-mingw-w64-x86_64}"
+    for lib in libheif libtiff; do
+        v_msys2="$(pacman -Q "${pkgprefix}-${lib}" 2>/dev/null | awk '{print $2}')"
+        v_lgpl="$(pacman -Q "${pkgprefix}-natron_${lib}-lgpl" 2>/dev/null | awk '{print $2}')"
+        if [ -z "$v_lgpl" ] || [ "${v_msys2%-*}" != "${v_lgpl%-*}" ]; then
+            echo "Error: ${pkgprefix}-natron_${lib}-lgpl (${v_lgpl:-not installed}) must have the version of MSYS2's ${pkgprefix}-${lib} (${v_msys2:-not installed}), which natron_openimageio links: update tools/MINGW-packages/mingw-w64-${lib}-lgpl"
+            exit 1
+        fi
+    done
 fi
 
 function findDll() {
@@ -241,7 +254,6 @@ catDll libSvtAv1Enc
 catDll libtasn1-
 catDll libtheoradec-
 catDll libtheoraenc-
-catDll libtiff-
 catDll libunistring-
 catDll libunibreak-
 catDll libvorbis-
@@ -277,7 +289,6 @@ catDll libde265-
 catDll libdav1d
 catDll libaom
 catDll libdeflate
-catDll libjbig-
 catDll liblerc
 catDll libpsl-5
 catDll libcairo-gobject-
@@ -318,7 +329,12 @@ if [ "$NATRON_LICENSE" = "GPL" ]; then
     catDll libx265
     #catDll libx265_main
     catDll xvidcore
+    # JBIG-KIT, linked by MSYS2's libtiff
+    catDll libjbig-
 fi
+
+BIN_PATH="$LIBTIFF_PATH"
+catDll libtiff-
 
 BIN_PATH="$LIBHEIF_PATH"
 catDll libheif

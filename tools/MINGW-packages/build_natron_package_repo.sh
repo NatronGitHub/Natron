@@ -20,6 +20,7 @@ mingw-w64-seexpr-git
 mingw-w64-ffmpeg-gpl2
 mingw-w64-ffmpeg-lgpl
 mingw-w64-libheif-lgpl
+mingw-w64-libtiff-lgpl
 mingw-w64-imagemagick
 mingw-w64-osmesa
 mingw-w64-natron-build-deps-common

@@ -57,6 +57,11 @@ fi
 
 DUMP_SYMS="$SDK_HOME/bin/natron_dump_syms_dwarf.exe"
 
+# Qt modules that are GPL-3 only (no LGPL), left out of COMMERCIAL builds with their PySide modules
+# (Qt5Charts*.dll, QtCharts.pyd, ...; Designer also matches DesignerComponents, Quick3D the
+# Quick3D* libraries). check-commercial-bundle.sh (is_gpl_lib) rejects the same modules.
+QT_GPL_LIBS=( Charts DataVisualization NetworkAuth Designer VirtualKeyboard Quick3D Bodymovin )
+
 dump_syms_safe() {
     if [ $# != 2 ]; then
         echo "Usage: dump_syms_safe <bin> <output>"
@@ -386,6 +391,16 @@ for location in "${COPY_LOCATIONS[@]}"; do
 
     #Copy Qt dlls (required for all PySide modules to work correctly)
     cp "$SDK_HOME/bin"/Qt${QT_VERSION_MAJOR}*.dll "$location/bin/"
+    if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
+        # Qt modules that are GPL-3 only (installed with MSYS2's optional pyside2 dependencies or
+        # qt5-tools), and the Qt plug-ins that link them: Natron doesn't use them
+        # (check-commercial-bundle.sh rejects them)
+        for qtlib in "${QT_GPL_LIBS[@]}"; do
+            rm -f "$location/bin/Qt${QT_VERSION_MAJOR}${qtlib}"*.dll
+        done
+        rm -rf "$location/bin/designer" "$location/bin/virtualkeyboard"
+        rm -f "$location/bin/platforminputcontexts"/*virtualkeyboard*.dll
+    fi
 
     rm "$location/bin/sqldrivers"/{*mysql*,*psql*} || true
 
@@ -406,6 +421,12 @@ cp -a "$SDK_HOME/lib/python${PYVER}" "${TMP_PORTABLE_DIR}/lib/"
 
 PYSIDE_PLUGIN_PATH="${TMP_PORTABLE_DIR}/Plugins/PySide2"
 mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide2" "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/shiboken2" "${TMP_PORTABLE_DIR}/Plugins"
+if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
+    # the PySide modules of the GPL-3 Qt modules (QtCharts.pyd, QtCharts.pyi, ...)
+    for qtlib in "${QT_GPL_LIBS[@]}"; do
+        rm -f "${PYSIDE_PLUGIN_PATH}/Qt${qtlib}".*
+    done
+fi
 
 rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"/{test,config,config-"${PYVER}"m}
 
