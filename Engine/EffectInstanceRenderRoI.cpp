@@ -2105,9 +2105,17 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
     }
 
 
+    // kOfxPropIsInteractive of Begin/EndSequenceRender: "is this a single frame render due to user interaction
+    // in a GUI, or a proper full sequence render" (ofxImageEffect.h). A render in the GUI is interactive,
+    // except a render on disk, whose tree root is an output effect that is not a viewer (a writer, a DiskCache).
+    // Begin and End get the same value, and a frame step of 1 (a single frame is rendered).
+    EffectInstancePtr rootEffect = frameArgs->treeRoot ? frameArgs->treeRoot->getEffectInstance() : EffectInstancePtr();
+    const bool isInteractiveRender = !appPTR->isBackground() &&
+                                     !( rootEffect && rootEffect->isOutput() && !dynamic_cast<ViewerInstance*>( rootEffect.get() ) );
+
     if (callBegin) {
         assert( self->isSupportedRenderScale(self->supportsRenderScaleMaybe(), renderMappedScale) );
-        if (self->beginSequenceRender_public(time, time, 1, !appPTR->isBackground(), renderMappedScale, isSequentialRender,
+        if (self->beginSequenceRender_public(time, time, 1, isInteractiveRender, renderMappedScale, isSequentialRender,
                                        isRenderMadeInResponseToUserInteraction, frameArgs->draftMode, view, planesToRender->useOpenGL, planesToRender->glContextData) == eStatusFailed) {
             renderStatus = eRenderingFunctorRetFailed;
         }
@@ -2195,7 +2203,7 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
     ///never call endsequence render here if the render is sequential
     if (callBegin) {
         assert( self->isSupportedRenderScale(self->supportsRenderScaleMaybe(), renderMappedScale) );
-        if (self->endSequenceRender_public(time, time, time, false, renderMappedScale,
+        if (self->endSequenceRender_public(time, time, 1, isInteractiveRender, renderMappedScale,
                                      isSequentialRender,
                                      isRenderMadeInResponseToUserInteraction,
                                      frameArgs->draftMode,

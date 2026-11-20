@@ -88,6 +88,7 @@ SOURCES += \
     OfxPluginDeprecated_Test.cpp \
     OfxPluginScan_Test.cpp \
     OfxQuestion_Test.cpp \
+    OfxSequenceRenderArgs_Test.cpp \
     OfxSingleInstance_Test.cpp \
     OfxSuiteStatus_Test.cpp \
     OfxSyncPrivateData_Test.cpp \
