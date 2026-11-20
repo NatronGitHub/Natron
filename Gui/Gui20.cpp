@@ -1206,7 +1206,15 @@ Gui::saveProjectAs()
     std::vector<std::string> filter;
 
     filter.push_back(NATRON_PROJECT_FILE_EXT);
-    std::string outFile = popSaveFileDialog( false, filter, _imp->_lastSaveProjectOpenedDir.toStdString(), false );
+    // Start in the directory of the current project if it has one and it is writable (not e.g. a read-only
+    // template folder), else in the last directory used to save a project (#343)
+    QString initialDir = _imp->_lastSaveProjectOpenedDir;
+    ProjectPtr project = getApp()->getProject();
+    if ( project->hasProjectBeenSavedByUser() && !project->getProjectPath().isEmpty() &&
+         QFileInfo( project->getProjectPath() ).isWritable() ) {
+        initialDir = project->getProjectPath();
+    }
+    std::string outFile = popSaveFileDialog( false, filter, initialDir.toStdString(), false );
     if (outFile.size() > 0) {
         return saveProjectAs(outFile);
     }
