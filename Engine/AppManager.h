@@ -151,6 +151,24 @@ public:
 
     bool isLoaded() const;
 
+    /**
+     * @brief True when a GUI test script was given with --test: auto-saves are neither written nor
+     * restored, and the GUI test module answers the dialogs that the test expects.
+     **/
+    bool isTestMode() const;
+
+    /**
+     * @brief With --no-dialogs and in test mode (--test), the auto-saves that other sessions wrote (the
+     * user's crash recovery) are never overwritten nor removed (see Project::canRemoveAutoSave()).
+     **/
+    bool keepsOtherSessionsAutoSaves() const;
+
+
+    /**
+     * @brief True if a render of any project is running or queued (see AppInstance::hasRenderInProgress()).
+     **/
+    bool hasRenderInProgress() const;
+
     AppInstancePtr newAppInstance(const CLArgs& cl, bool makeEmptyInstance);
     AppInstancePtr newBackgroundInstance(const CLArgs& cl, bool makeEmptyInstance);
 

@@ -171,50 +171,34 @@ getKeyIndex(const KnobIPtr& knob,
             int startDim = -1,
             int endDim = -1)
 {
-    OfxKeyFramesSet keyframes;
+    // "index: pointer to an integer which in which the index is returned set to -1 if no key was found"
+    // (ofxParam.h, paramGetKeyIndex)
+    index = -1;
 
+    OfxKeyFramesSet keyframes;
     getOfxKeyFrames(knob.get(), keyframes, startDim, endDim);
+    // A key within NATRON_CURVE_X_SPACING_EPSILON of time is the key "at the indicated time (some small
+    // delta)": it is neither before nor after time.
     int i = 0;
-    if (direction == 0) {
-        //search for key at indicated time
-        for (OfxKeyFramesSet::iterator it = keyframes.begin(); it != keyframes.end(); ++it, ++i) {
+    for (OfxKeyFramesSet::iterator it = keyframes.begin(); it != keyframes.end(); ++it, ++i) {
+        if (direction == 0) {
+            // search for key at indicated time
             if (std::abs(*it - time) < NATRON_CURVE_X_SPACING_EPSILON) {
                 index = i;
 
                 return kOfxStatOK;
             }
-        }
-    } else if (direction < 0) {
-        //search for key before indicated time
-        OfxKeyFramesSet::iterator next = keyframes.begin();
-        if ( !keyframes.empty() ) {
-            ++next;
-        }
-        for (OfxKeyFramesSet::iterator it = keyframes.begin(); it != keyframes.end(); ++it, ++i) {
-            if (*it < time) {
-                if ( next != keyframes.end() ) {
-                    if (*next > time) {
-                        index = i;
-
-                        return kOfxStatOK;
-                    }
-                } else {
-                    index = i;
-                    assert(i == (int)keyframes.size() - 1);
-
-                    return kOfxStatOK;
-                }
+        } else if (direction < 0) {
+            // search for the previous key before the indicated time: the last key before time. The keys
+            // are sorted, so stop at the first key that is not before time.
+            if (*it <= time - NATRON_CURVE_X_SPACING_EPSILON) {
+                index = i;
             } else {
-                return kOfxStatFailed;
+                break;
             }
-            if ( !keyframes.empty() ) {
-                ++next;
-            }
-        }
-    } else if (direction > 0) {
-        ///Find the first keyframe that is considered to be after the given time
-        for (OfxKeyFramesSet::iterator it = keyframes.begin(); it != keyframes.end(); ++it, ++i) {
-            if (*it > time) {
+        } else {
+            // search for the next key after the indicated time: the first key after time
+            if (*it >= time + NATRON_CURVE_X_SPACING_EPSILON) {
                 index = i;
 
                 return kOfxStatOK;
@@ -222,7 +206,7 @@ getKeyIndex(const KnobIPtr& knob,
         }
     }
 
-    return kOfxStatFailed;
+    return (index == -1) ? kOfxStatFailed : kOfxStatOK;
 } // getKeyIndex
 
 static
@@ -239,6 +223,11 @@ deleteKey(const KnobIPtr& knob,
         endDim = knob->getDimension();
     }
     assert(startDim < endDim && startDim >= 0);
+    // "kOfxStatErrBadIndex - no key at the given time" (ofxParam.h, paramDeleteKey)
+    int index;
+    if (getKeyIndex(knob, time, 0, index, startDim, endDim) != kOfxStatOK) {
+        return kOfxStatErrBadIndex;
+    }
     for (int i = startDim; i < endDim; ++i) {
         knob->deleteValueAtTime(eCurveChangeReasonInternal, time, ViewSpec::all(), i, false);
     }
@@ -5030,6 +5019,27 @@ OfxParametricInstance::setRange()
 }
 
 
+// The parametric suite returns "kOfxStatErrBadIndex - the curve index was invalid" (and "the curve index
+// or the control point index was invalid" for the functions that take a control point index,
+// ofxParametricParam.h). nthCtl < 0 means no control point index.
+static bool
+isParametricIndexValid(const KnobParametricPtr& knob,
+                       int curveIndex,
+                       int nthCtl = -1)
+{
+    if ( (curveIndex < 0) || ( curveIndex >= knob->getDimension() ) ) {
+        return false;
+    }
+    if (nthCtl >= 0) {
+        int n = 0;
+        if ( (knob->getNControlPoints(curveIndex, &n) != eStatusOK) || (nthCtl >= n) ) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 OfxStatus
 OfxParametricInstance::getValue(int curveIndex,
                                 OfxTime /*time*/,
@@ -5039,6 +5049,9 @@ OfxParametricInstance::getValue(int curveIndex,
     KnobParametricPtr knob = _knob.lock();
     if (!knob) {
         return kOfxStatFailed;
+    }
+    if ( !isParametricIndexValid(knob, curveIndex) ) {
+        return kOfxStatErrBadIndex;
     }
     StatusEnum stat = knob->getValue(curveIndex, parametricPosition, returnValue);
 
@@ -5057,6 +5070,9 @@ OfxParametricInstance::getNControlPoints(int curveIndex,
     KnobParametricPtr knob = _knob.lock();
     if (!knob) {
         return kOfxStatFailed;
+    }
+    if ( !isParametricIndexValid(knob, curveIndex) ) {
+        return kOfxStatErrBadIndex;
     }
     StatusEnum stat = knob->getNControlPoints(curveIndex, returnValue);
 
@@ -5077,6 +5093,9 @@ OfxParametricInstance::getNthControlPoint(int curveIndex,
     KnobParametricPtr knob = _knob.lock();
     if (!knob) {
         return kOfxStatFailed;
+    }
+    if ( (nthCtl < 0) || !isParametricIndexValid(knob, curveIndex, nthCtl) ) {
+        return kOfxStatErrBadIndex;
     }
     StatusEnum stat = knob->getNthControlPoint(curveIndex, nthCtl, key, value);
 
@@ -5099,6 +5118,9 @@ OfxParametricInstance::setNthControlPoint(int curveIndex,
     KnobParametricPtr knob = _knob.lock();
     if (!knob) {
         return kOfxStatFailed;
+    }
+    if ( (nthCtl < 0) || !isParametricIndexValid(knob, curveIndex, nthCtl) ) {
+        return kOfxStatErrBadIndex;
     }
     StatusEnum stat = knob->setNthControlPoint(eValueChangedReasonPluginEdited, curveIndex, nthCtl, key, value);
 
@@ -5126,6 +5148,9 @@ OfxParametricInstance::addControlPoint(int curveIndex,
     KnobParametricPtr knob = _knob.lock();
     if (!knob) {
         return kOfxStatFailed;
+    }
+    if ( !isParametricIndexValid(knob, curveIndex) ) {
+        return kOfxStatErrBadIndex;
     }
     StatusEnum stat;
     EffectInstance* effect = dynamic_cast<EffectInstance*>( knob->getHolder() );
@@ -5158,6 +5183,9 @@ OfxParametricInstance::deleteControlPoint(int curveIndex,
     if (!knob) {
         return kOfxStatFailed;
     }
+    if ( (nthCtl < 0) || !isParametricIndexValid(knob, curveIndex, nthCtl) ) {
+        return kOfxStatErrBadIndex;
+    }
     StatusEnum stat = knob->deleteControlPoint(eValueChangedReasonPluginEdited, curveIndex, nthCtl);
 
     if (stat == eStatusOK) {
@@ -5173,6 +5201,9 @@ OfxParametricInstance::deleteAllControlPoints(int curveIndex)
     KnobParametricPtr knob = _knob.lock();
     if (!knob) {
         return kOfxStatFailed;
+    }
+    if ( !isParametricIndexValid(knob, curveIndex) ) {
+        return kOfxStatErrBadIndex;
     }
     StatusEnum stat = knob->deleteAllControlPoints(eValueChangedReasonPluginEdited, curveIndex);
 
