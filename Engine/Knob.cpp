@@ -4763,10 +4763,12 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
         } else {
             ss << "app." << otherIsEffect->getNode()->getFullyQualifiedName() << "." << newScriptName;
         }
+        // get(frame), not get(): get() returns the value at the current time, so a link
+        // to an animated parameter would not be animated (#1336)
         if (output->getDimension() > 1) {
-            ss << ".get()[dimension]";
+            ss << ".get(frame)[dimension]";
         } else {
-            ss << ".get()";
+            ss << ".get(frame)";
         }
 
         try {
