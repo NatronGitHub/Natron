@@ -15,6 +15,7 @@
 
 - NatronRenderer (and `Natron -b`) exits with status 1, without rendering the Write nodes, when the Python script given on the command line (also in its `createInstance()`) or the `--onload` script raises an exception. A failing `--onload` script now also stops the render of a project (.ntp) that loaded without error. Renders started by the script with `app.render()` before the error have already run. It used to print the error, render the Write nodes, and exit with status 0. #1276
 - Documentation: the Reference Guide has a "Nodes" section, with one page per node group and per sub-group (e.g. "G'MIC / Colors"), and the sidebar only expands the current branch.
+- The expression created by "Create link on group" and by "Pick" in Manage User Params reads the linked parameter at the frame being computed (`get(frame)`), so a link to an animated parameter is animated. Links created before keep `get()`: edit their expression to add `frame`. #1336
 
 
 ## Version 2.5.0
