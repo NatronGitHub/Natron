@@ -439,6 +439,8 @@ AppManager::loadFromArgs(const CLArgs& cl)
         // No trapped floating point exception, in any thread: before qApp, any OpenGL context and any
         // thread (see AppManagerPrivate::testModeNoTrap)
         boost_adaptbx::floating_point::trapping_disabled() = true;
+        // and in the child processes, e.g. NatronRenderer
+        qputenv("NATRON_NO_FP_TRAPS", "1");
         _imp->testModeNoTrap.reset(new boost_adaptbx::floating_point::no_exception_trapping);
 #endif
     }

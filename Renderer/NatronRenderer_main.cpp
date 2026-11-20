@@ -64,6 +64,7 @@ extern "C" {
     // exceptions (SIGFPE, #1537). The GUI tests use it (--test does the same).
     if (qEnvironmentVariableIntValue("NATRON_NO_FP_TRAPS") == 1) {
         boost_adaptbx::floating_point::trapping_disabled() = true;
+        qWarning("NATRON_NO_FP_TRAPS=1: floating point exceptions are not trapped (debug build)");
     }
     boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
                                                            //boost_adaptbx::floating_point::exception_trapping::invalid | // crashes on macOS
