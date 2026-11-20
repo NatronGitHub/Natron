@@ -52,8 +52,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - C4
      - ofxLoadingSequence.rst 4.5, `ofxCore.h:118-137 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxCore.h#L118-L137>`__ ``setHost``: "The very first function called… \\pre nothing else has been called"
      - MUST
-     - Called lazily in the ``PluginHandle`` ctor (HS/ofxhPluginCache.cpp:418), right before Load. The Guide allows this ("If the host decides it wants to use one of the plugins… call setHost"). But a second ``PluginHandle`` calls setHost again after Load/Describe/Unload already ran (see C9).
-     - PARTIAL
+     - Called lazily in the ``PluginHandle`` ctor (HS/ofxhPluginCache.cpp:418), right before Load. The Guide allows this ("If the host decides it wants to use one of the plugins… call setHost"). But a second ``PluginHandle`` calls setHost again after Load/Describe/Unload already ran (see C9). Re-checked at Natron ec40fa6a7, HostSupport bdfb48d4: Load and Describe are sent once per load of the binary, and Natron keeps the scanned plug-ins loaded (``OfxHost::keepPluginsLoadedAfterScan()``), so setHost, Load and Describe are not sent again.
+     - OK (fixed by `NatronGitHub/openfx#174 <https://github.com/NatronGitHub/openfx/pull/174>`__, in libs/OpenFX since `#1348 <https://github.com/NatronGitHub/Natron/pull/1348>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - C5
@@ -81,8 +81,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - C9
      - `ofxCore.h:174 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxCore.h#L174>`__ kOfxActionLoad \\post "This action will not be called again while the binary containing the plug-in remains loaded"; `ofxCore.h:251 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxCore.h#L251>`__ Unload \\post "No other actions will be called"; `ofxCore.h:212 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxCore.h#L212>`__ Describe "will not be called again, unless it fails"
      - MUST (header). The Guide (`ofxExample1_Basics.rst:446 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Guide/ofxExample1_Basics.rst?plain=1#L446>`__, 779-783) instead allows Load again after Unload "even if it doesn't dynamically unload the binary".
-     - When the cache is dirty (first run, or the binary changed), the scan runs Load → Describe → Unload (``PluginCache::loadFromPlugin``, HS/ofxhImageEffectAPI.cpp:413-490). The binary stays dlopen'ed: ``loadPluginInfo`` keeps a ref "once per session" (HS/ofxhPluginCache.cpp:334-340). The first instance creation then runs setHost → Load → Describe again on the same loaded binary (``getPluginHandle``, HS/ofxhImageEffectAPI.cpp:164-216).
-     - PARTIAL (the header is violated, the Guide is satisfied)
+     - When the cache is dirty (first run, or the binary changed), the scan runs Load → Describe → Unload (``PluginCache::loadFromPlugin``, HS/ofxhImageEffectAPI.cpp:413-490). The binary stays dlopen'ed: ``loadPluginInfo`` keeps a ref "once per session" (HS/ofxhPluginCache.cpp:334-340). The first instance creation then runs setHost → Load → Describe again on the same loaded binary (``getPluginHandle``, HS/ofxhImageEffectAPI.cpp:164-216). Re-checked at Natron ec40fa6a7: see C4.
+     - OK (fixed by `NatronGitHub/openfx#174 <https://github.com/NatronGitHub/openfx/pull/174>`__, in libs/OpenFX since `#1348 <https://github.com/NatronGitHub/Natron/pull/1348>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - C10
@@ -374,8 +374,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - R4
      - `ofxProperty.h:154-276 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxProperty.h#L154-L276>`__ getters: OK / BadHandle / Unknown / BadIndex
      - MUST
-     - ``propGet``/``propGetN`` (HS/ofxhPropertySuite.cpp:944-1030). Out-of-range → BadIndex (HS/ofxhPropertySuite.cpp:369-397). They follow the chained (descriptor) set. **Exception:** the host's kOfxPropName get-hook throws **kOfxStatErrValue** for index ≠ 0 (Engine/OfxHost.cpp:483-484) instead of ErrBadIndex.
-     - PARTIAL
+     - ``propGet``/``propGetN`` (HS/ofxhPropertySuite.cpp:944-1030). Out-of-range → BadIndex (HS/ofxhPropertySuite.cpp:369-397). They follow the chained (descriptor) set. **Exception:** the host's kOfxPropName get-hook throws **kOfxStatErrValue** for index ≠ 0 (Engine/OfxHost.cpp:483-484) instead of ErrBadIndex. Fixed: the hook throws kOfxStatErrBadIndex for an index other than 0.
+     - OK (fixed by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - R5
@@ -386,8 +386,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - R6
      - `ofxProperty.h:290-301 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxProperty.h#L290-L301>`__ propGetDimension: OK / BadHandle / Unknown
      - MUST
-     - Checks only ``properties != NULL``, **not** ``verifyMagic()``, unlike every other suite function (HS/ofxhPropertySuite.cpp:1077-1110). A stale or non-property handle is dereferenced instead of returning BadHandle.
-     - PARTIAL
+     - Checks only ``properties != NULL``, **not** ``verifyMagic()``, unlike every other suite function (HS/ofxhPropertySuite.cpp:1077-1110). A stale or non-property handle is dereferenced instead of returning BadHandle. Fixed: it checks the magic number, and a NULL count.
+     - OK (fixed by `NatronGitHub/openfx#200 <https://github.com/NatronGitHub/openfx/pull/200>`__, in libs/OpenFX since `#1507 <https://github.com/NatronGitHub/Natron/pull/1507>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - R7
@@ -427,8 +427,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - M3
      - `ofxMemory.h:41-50 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxMemory.h#L41-L50>`__ memoryFree: kOfxStatErrBadHandle "allocatedData was not a valid pointer returned by memoryAlloc"
      - MUST
-     - Plain ``free()`` (HS/ofxhHost.cpp:65-69), always OK. An invalid pointer is UB or a crash, not BadHandle.
-     - PARTIAL
+     - Plain ``free()`` (HS/ofxhHost.cpp:65-69), always OK. An invalid pointer is UB or a crash, not BadHandle. Fixed: each block has a 64-byte header with a magic number (alignment kept up to 64 bytes); memoryFree of a pointer that memoryAlloc did not return, or of NULL, gives kOfxStatErrBadHandle; memoryAlloc with a NULL output gives kOfxStatErrBadHandle, and a size overflow kOfxStatErrMemory.
+     - OK (fixed by `NatronGitHub/openfx#204 <https://github.com/NatronGitHub/openfx/pull/204>`__, in libs/OpenFX since `#1507 <https://github.com/NatronGitHub/Natron/pull/1507>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
 
@@ -463,15 +463,15 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - T4
      - `ofxMultiThread.h:56-61 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxMultiThread.h#L56-L61>`__ "This function cannot be called recursively"; kOfxStatErrExists on a recursive attempt
      - MUST
-     - No check: a nested call from a spawned thread is executed (pool or sequential) and returns OK.
-     - WRONG (more permissive)
+     - No check: a nested call from a spawned thread is executed (pool or sequential) and returns OK. Fixed: a call from a thread function (``multiThreadIsSpawnedThread()``) returns kOfxStatErrExists; an action called from a thread function (e.g. an upstream render) may still call it. The proposed Support change runs a nested ``OFX::MultiThread::Processor`` in the calling thread.
+     - OK (fixed by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - T5
      - `ofxMultiThread.h:84-86 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxMultiThread.h#L84-L86>`__ multiThreadIndex "same as the threadIndex argument… If there are no threads currently spawned… 0"
      - MUST
-     - Correct on the threaded paths (TLS stack). On the **sequential path** (``nThreads==1 || maxConcurrentThread<=1 || single-thread setting``, Engine/OfxHost.cpp:1380-1390), ``func(i,…)`` runs without pushing ``i``, so multiThreadIndex returns 0 for i>0, and multiThreadIsSpawnedThread returns 0 inside func.
-     - PARTIAL
+     - Correct on the threaded paths (TLS stack). On the **sequential path** (``nThreads==1 || maxConcurrentThread<=1 || single-thread setting``, Engine/OfxHost.cpp:1380-1390), ``func(i,…)`` runs without pushing ``i``, so multiThreadIndex returns 0 for i>0, and multiThreadIsSpawnedThread returns 0 inside func. Fixed: the sequential path pushes ``i`` on the thread index stack around ``func(i, ...)``.
+     - OK (fixed by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - T6
@@ -494,8 +494,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - T9
      - `ofxMultiThread.h:120 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxMultiThread.h#L120>`__,132,142,155 kOfxStatErrBadHandle "if the handle was bad"
      - MUST
-     - Only NULL is detected.
-     - PARTIAL (spec-only)
+     - Only NULL is detected. Fixed: the handle is an ``OfxSuiteMutex`` with a magic number (Engine/OfxHost.cpp), so a pointer that is not a live mutex of the suite gives kOfxStatErrBadHandle.
+     - OK (fixed by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - T10
@@ -530,8 +530,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - G3
      - `ofxMessage.h:74-78 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxMessage.h#L74-L78>`__, `ofxMessage.h:106-110 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxMessage.h#L106-L110>`__ message returns "kOfxStatOK - if the message was successfully posted"
      - MUST
-     - Both ``OfxImageEffectInstance::vmessage`` (Engine/OfxImageEffectInstance.cpp:327) and ``OfxHost::vmessage`` (Engine/OfxHost.cpp:566) return **kOfxStatReplyDefault** for Log, Error, Fatal, Warning and Message, and for unknown types.
-     - WRONG
+     - Both ``OfxImageEffectInstance::vmessage`` (Engine/OfxImageEffectInstance.cpp:327) and ``OfxHost::vmessage`` (Engine/OfxHost.cpp:566) return **kOfxStatReplyDefault** for Log, Error, Fatal, Warning and Message, and for unknown types. Fixed: kOfxStatOK after posting, kOfxStatFailed for an unknown message type.
+     - OK (fixed by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - G4
@@ -623,8 +623,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - S2
      - `ofxProgress.h:46-57 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxProgress.h#L46-L57>`__ progressStart: effectInstance "cannot be NULL"; ErrBadHandle "effectInstance was invalid"; OK or Failed
      - MUST
-     - Only NULL is checked. Any other pointer is ``reinterpret_cast`` to ``Instance*`` without a magic check (HS/ofxhImageEffect.cpp:4430-4450). It always returns OK. In background mode it is a no-op that returns OK (Engine/AppInstance.h:251-260).
-     - PARTIAL
+     - Only NULL is checked. Any other pointer is ``reinterpret_cast`` to ``Instance*`` without a magic check (HS/ofxhImageEffect.cpp:4430-4450). It always returns OK. In background mode it is a no-op that returns OK (Engine/AppInstance.h:251-260). Re-checked at HostSupport bdfb48d4: a NULL or descriptor handle gives kOfxStatErrBadHandle (``effectHandleToInstance()``), and an exception kOfxStatFailed. ``ImageEffect::Base`` has no magic number, so another pointer is still undefined behaviour.
+     - OK (fixed by `NatronGitHub/openfx#187 <https://github.com/NatronGitHub/openfx/pull/187>`__, in libs/OpenFX since bb1f18a72 (`#1422 <https://github.com/NatronGitHub/Natron/pull/1422>`__); found fixed)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - S3
@@ -637,8 +637,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - S4
      - `ofxProgress.h:65-70 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxProgress.h#L65-L70>`__ progressUpdate: OK, ReplyNo (abort), or ErrBadHandle "the progress handle was invalid"
      - MUST
-     - With no started task, ``updateTask`` returns false → **ReplyNo** (Gui/ProgressPanel.cpp:549-551), not BadHandle. Background: always OK.
-     - PARTIAL
+     - With no started task, ``updateTask`` returns false → **ReplyNo** (Gui/ProgressPanel.cpp:549-551), not BadHandle. Background: always OK. Fixed in Natron: without a started progress, ``OfxImageEffectInstance::progressUpdate()`` throws kOfxStatErrBadHandle instead of answering kOfxStatReplyNo ("abort"). The HostSupport progress suite returns its kOfxStatErrBadHandle (`NatronGitHub/openfx#201 <https://github.com/NatronGitHub/openfx/pull/201>`__). Remaining deviation: ``progressEnd`` without ``progressStart`` returns kOfxStatOK, where the spec allows kOfxStatErrBadHandle.
+     - OK (fixed by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__ and `NatronGitHub/openfx#201 <https://github.com/NatronGitHub/openfx/pull/201>`__, in libs/OpenFX since `#1507 <https://github.com/NatronGitHub/Natron/pull/1507>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - S5
@@ -673,8 +673,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - L2
      - `ofxTimeLine.h:32-46 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxTimeLine.h#L32-L46>`__ gotoTime "moves the timeline… Any side effects of the timeline change are also triggered and completed before this returns (… instance changed actions and renders…)"; ErrValue "the time was an illegal value"; time in the effect's temporal coordinates (double)
      - MUST
-     - ``seekFrame((int)t, …)`` (Engine/OfxImageEffectInstance.cpp:1138-1150): it **truncates** fractional times, re-renders asynchronously (renders are not completed on return), always returns OK, and never ErrValue.
-     - PARTIAL
+     - ``seekFrame((int)t, …)`` (Engine/OfxImageEffectInstance.cpp:1138-1150): it **truncates** fractional times, re-renders asynchronously (renders are not completed on return), always returns OK, and never ErrValue. Fixed: the time is rounded to the nearest frame instead of truncated; a NaN time gives kOfxStatErrValue (`NatronGitHub/openfx#187 <https://github.com/NatronGitHub/openfx/pull/187>`__) and an infinite one too (`NatronGitHub/openfx#201 <https://github.com/NatronGitHub/openfx/pull/201>`__, in libs/OpenFX since `#1507 <https://github.com/NatronGitHub/Natron/pull/1507>`__). Still open: the renders that follow the seek are asynchronous, so they are not "completed before this returns".
+     - PARTIAL (rounding and ErrValue fixed by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__ and `NatronGitHub/openfx#201 <https://github.com/NatronGitHub/openfx/pull/201>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - L3
@@ -685,8 +685,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - L4
      - ErrBadHandle "the effect handle was invalid"
      - MUST
-     - Only NULL is checked; no magic check (HS/ofxhImageEffect.cpp:4490-4520).
-     - PARTIAL (spec-only)
+     - Only NULL is checked; no magic check (HS/ofxhImageEffect.cpp:4490-4520). Re-checked at HostSupport bdfb48d4: NULL and descriptor handles, and NULL return pointers, give kOfxStatErrBadHandle (no magic number, see S2).
+     - OK (fixed by `NatronGitHub/openfx#187 <https://github.com/NatronGitHub/openfx/pull/187>`__, in libs/OpenFX since bb1f18a72 (`#1422 <https://github.com/NatronGitHub/Natron/pull/1422>`__); found fixed)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
 
@@ -771,7 +771,7 @@ Wrong results or behaviour visible to plug-ins
 
 7. **C17: DescribeInContext is called for one context only, and plug-ins are not filtered by mutually supported contexts.** Plug-ins whose contexts are all unsupported are still listed, and creating them then fails. The code is Engine/OfxHost.cpp:585-711 and 990. Second check: there is no other ``getContext()`` call (``git grep``). Natron uses Reader/Writer/Paint/Tracker contexts without advertising them, and Reader/Writer are deliberately not advertised because of Furnace (Engine/OfxHost.cpp:291-293). **Issue:** `#1383 <https://github.com/NatronGitHub/Natron/issues/1383>`__.
 
-8. **C9/C4: Load, Describe and setHost are sent again on a binary that was never unloaded, after Unload.** This happens on the first launch or after a plug-in binary changes. The sequence is Load→Describe→Unload during the scan (HS/ofxhImageEffectAPI.cpp:413-490), then setHost→Load→Describe at the first instance (HS/ofxhImageEffectAPI.cpp:164-216). The binary is kept loaded by ``loadPluginInfo``'s session reference (HS/ofxhPluginCache.cpp:334-340). This contradicts `ofxCore.h:174 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxCore.h#L174>`__, 212 and 251, but the Guide (`ofxExample1_Basics.rst:446 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Guide/ofxExample1_Basics.rst?plain=1#L446>`__, 779-783) explicitly allows it. Second check: Natron has no override of ``loadFromPlugin`` or ``PluginHandle``. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+8. **C9/C4: Load, Describe and setHost are sent again on a binary that was never unloaded, after Unload.** This happens on the first launch or after a plug-in binary changes. The sequence is Load→Describe→Unload during the scan (HS/ofxhImageEffectAPI.cpp:413-490), then setHost→Load→Describe at the first instance (HS/ofxhImageEffectAPI.cpp:164-216). The binary is kept loaded by ``loadPluginInfo``'s session reference (HS/ofxhPluginCache.cpp:334-340). This contradicts `ofxCore.h:174 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxCore.h#L174>`__, 212 and 251, but the Guide (`ofxExample1_Basics.rst:446 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Guide/ofxExample1_Basics.rst?plain=1#L446>`__, 779-783) explicitly allows it. Second check: Natron has no override of ``loadFromPlugin`` or ``PluginHandle``. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `NatronGitHub/openfx#174 <https://github.com/NatronGitHub/openfx/pull/174>`__ (in libs/OpenFX since `#1348 <https://github.com/NatronGitHub/Natron/pull/1348>`__), with ``OfxHost::keepPluginsLoadedAfterScan()``.
 
 9. **P2: kOfxPropType is wrong on instances.** Effect instances report "OfxTypeImageEffect" and parameter instances report "OfxTypeParameter", instead of the ``*Instance`` values (HS/ofxhImageEffect.cpp:742; HS/ofxhParam.cpp:277, 706-708). Second check: ``grep kOfxTypeImageEffectInstance|kOfxTypeParameterInstance`` finds nothing in HS or Engine. (Also relevant to the params area.) **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
@@ -780,23 +780,23 @@ Wrong results or behaviour visible to plug-ins
 Spec-only
 ~~~~~~~~~
 
-11. **G3:** ``message()`` returns kOfxStatReplyDefault instead of kOfxStatOK on success (Engine/OfxImageEffectInstance.cpp:327; Engine/OfxHost.cpp:566). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+11. **G3:** ``message()`` returns kOfxStatReplyDefault instead of kOfxStatOK on success (Engine/OfxImageEffectInstance.cpp:327; Engine/OfxHost.cpp:566). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__.
 
 12. **C1:** ``OfxSetHost`` is not supported, which is optional for the host. It is related to `#1107 <https://github.com/NatronGitHub/Natron/issues/1107>`__, which mentions only the API version. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__, `#1107 <https://github.com/NatronGitHub/Natron/issues/1107>`__.
 
 13. **R2:** read-only properties are writable with a warning (``ePluginReadOnlyWarn``, Engine/OfxHost.cpp:186). This is deliberate (openfx #91). **Deliberate, won't fix.** Listed in `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__ for completeness.
 
-14. **T4:** recursive ``multiThread`` is allowed instead of returning kOfxStatErrExists (Engine/OfxHost.cpp:1362-1465). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+14. **T4:** recursive ``multiThread`` is allowed instead of returning kOfxStatErrExists (Engine/OfxHost.cpp:1362-1465). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__.
 
-15. **T5:** on the sequential multiThread path, multiThreadIndex and IsSpawnedThread return 0 (Engine/OfxHost.cpp:1380-1390). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+15. **T5:** on the sequential multiThread path, multiThreadIndex and IsSpawnedThread return 0 (Engine/OfxHost.cpp:1380-1390). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__.
 
-16. **L2:** ``gotoTime`` truncates to int, does not wait for side effects, and never returns ErrValue (Engine/OfxImageEffectInstance.cpp:1138-1150). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+16. **L2:** ``gotoTime`` truncates to int, does not wait for side effects, and never returns ErrValue (Engine/OfxImageEffectInstance.cpp:1138-1150). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. The truncation is fixed by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__ (nearest frame), and a NaN time gives kOfxStatErrValue (`NatronGitHub/openfx#187 <https://github.com/NatronGitHub/openfx/pull/187>`__); the asynchronous renders remain.
 
-17. **S3/S4:** progress is not modal, and ``progressUpdate`` without a start returns ReplyNo instead of BadHandle (Gui/ProgressPanel.cpp:539-576). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+17. **S3/S4:** progress is not modal, and ``progressUpdate`` without a start returns ReplyNo instead of BadHandle (Gui/ProgressPanel.cpp:539-576). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. ``progressUpdate`` without a start no longer answers ReplyNo (`#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__); HostSupport passes its kOfxStatErrBadHandle through since `NatronGitHub/openfx#201 <https://github.com/NatronGitHub/openfx/pull/201>`__ (in libs/OpenFX since `#1507 <https://github.com/NatronGitHub/Natron/pull/1507>`__). S3 (modal progress) is still open.
 
-18. **S2/L4/T9/R6/M3:** handles are not validated. The progress and timeline suites ``reinterpret_cast`` without a magic check (HS/ofxhImageEffect.cpp:4430-4520). ``propGetDimension`` lacks ``verifyMagic`` (HS/ofxhPropertySuite.cpp:1077-1110). The mutex functions check only NULL. ``memoryFree`` calls ``free()`` on anything (HS/ofxhHost.cpp:65-69). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+18. **S2/L4/T9/R6/M3:** handles are not validated. The progress and timeline suites ``reinterpret_cast`` without a magic check (HS/ofxhImageEffect.cpp:4430-4520). ``propGetDimension`` lacks ``verifyMagic`` (HS/ofxhPropertySuite.cpp:1077-1110). The mutex functions check only NULL. ``memoryFree`` calls ``free()`` on anything (HS/ofxhHost.cpp:65-69). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. S2 and L4 are fixed by `NatronGitHub/openfx#187 <https://github.com/NatronGitHub/openfx/pull/187>`__ (in libs/OpenFX since bb1f18a72, `#1422 <https://github.com/NatronGitHub/Natron/pull/1422>`__), T9 by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__. R6 is fixed by `NatronGitHub/openfx#200 <https://github.com/NatronGitHub/openfx/pull/200>`__ (in libs/OpenFX since `#1507 <https://github.com/NatronGitHub/Natron/pull/1507>`__); M3 is fixed by `NatronGitHub/openfx#204 <https://github.com/NatronGitHub/openfx/pull/204>`__ (in libs/OpenFX since `#1507 <https://github.com/NatronGitHub/Natron/pull/1507>`__).
 
-19. **R4:** the host kOfxPropName get-hook returns ErrValue instead of ErrBadIndex for index≠0 (Engine/OfxHost.cpp:483-484). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+19. **R4:** the host kOfxPropName get-hook returns ErrValue instead of ErrBadIndex for index≠0 (Engine/OfxHost.cpp:483-484). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__.
 
 20. **P4:** render clones start with the main instance's kOfxPropInstanceData instead of NULL (HS/ofxhImageEffect.cpp:780-797). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 

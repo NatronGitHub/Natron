@@ -34,7 +34,9 @@ Availability of x265
 x265 is distributed under the GNU GPL. Natron's GPL builds include FFmpeg
 built with x265 (and x264 for H.264). Builds made with the ``COMMERCIAL``
 license option leave out the GPL components, so they cannot write HEVC (or
-H.264): use the ``ffmpeg`` command-line tool instead.
+H.264): use the ``ffmpeg`` command-line tool instead. The ``ffmpeg`` that
+comes with these builds has no ``libx264``, ``libx265`` or ``libxvid``
+either, so the commands below need another ``ffmpeg``, built with x265.
 
 x265 can be built with 8-bit, 10-bit and 12-bit support, or with only some of
 them. To see which pixel formats your copy supports, run:

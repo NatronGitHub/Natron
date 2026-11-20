@@ -5,7 +5,8 @@ Building Natron from Source
 
 Natron is built with **CMake**. The entry point is ``CMakeLists.txt`` at the
 repository root, with one ``CMakeLists.txt`` per module. It requires CMake ≥
-3.16.7. The CI builds and tests Natron with CMake on Linux, macOS and Windows.
+3.21, which libs/OpenFX requires too (its policies are those of CMake 3.31).
+The CI builds and tests Natron with CMake on Linux, macOS and Windows.
 
 The **qmake** build is **deprecated** (`#1181
 <https://github.com/NatronGitHub/Natron/issues/1181>`_). Its entry point is

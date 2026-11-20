@@ -4053,9 +4053,12 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
     libtess_gluTessEndPolygon(tesselator);
     libtess_gluDeleteTess(tesselator);
 
-    // check for errors
-    assert(tessData.error == 0);
-
+    // libtess reports the errors it recovers from: a NaN control point is skipped
+    // (GLU_TESS_COORD_TOO_LARGE), and a degenerate shape which it can't tessellate
+    // is not filled (GLU_INVALID_OPERATION, e.g. a shape collapsed onto a line).
+    if (tessData.error != 0) {
+        qDebug() << "Roto: tessellation error" << tessData.error << "for the shape" << QString::fromUtf8( bezier->getScriptName().c_str() ) << "at time" << time;
+    }
 } // RotoContextPrivate::computeFeatherTriangles
 
 void
