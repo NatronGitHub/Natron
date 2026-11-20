@@ -622,11 +622,12 @@ CurveWidget::resizeGL(int width,
         height = 1;
     }
     glViewport (0, 0, width, height);
+    // QOpenGLWidget::resizeGL() gets the size in device-independent pixels, the unit of the mouse
+    // event positions and of zoomCtx: don't divide it by the device pixel ratio (that was right for
+    // QGLWidget, which got it in device pixels). On a Retina display, the zoom context was half the
+    // widget size, and a click was mapped to the wrong curve point (#971).
     double zoomWidth = width;
     double zoomHeight = height;
-    double screenPixelRatio = getScreenPixelRatio();
-    zoomWidth /= screenPixelRatio;
-    zoomHeight /= screenPixelRatio;
 
     // Width and height may be 0 when tearing off a viewer tab to another panel
     if ( (width > 0) && (height > 0) ) {
