@@ -29,6 +29,7 @@
 #include <stdexcept>
 
 #include <ofxNatron.h>
+#include <ofxhParam.h>
 
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
@@ -265,11 +266,14 @@ OfxOverlayInteract::redraw()
 
 OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,
                                                  OFX::Host::Interact::Descriptor &desc,
-                                                 OfxImageEffectInstance* effect)
+                                                 OfxImageEffectInstance* effect,
+                                                 OFX::Host::Param::Instance* param)
     : OFX::Host::Interact::Instance( desc, effect->getHandle() )
     , NatronOverlayInteractSupport()
     , _effect(effect)
+    , _param(param)
 {
+    assert(_param);
     setCallingViewport(knob);
 }
 
@@ -417,20 +421,41 @@ NatronOverlayInteractSupport::n_getSuggestedColour(double & /*r*/,
     return false;
 }
 
+// The size properties of a parameter interact. ofxParam.h puts them on the parameter: the plug-in sets
+// kOfxParamPropInteractSizeAspect, MinimumSize and PreferedSize on the parameter descriptor (copied by the
+// instance), and the host sets kOfxParamPropInteractSize on the parameter instance. The Support library
+// (OFX::ParamInteractDescriptor, OFX::ParamInteract::getInteractSize()) uses the interact descriptor and
+// instance instead, where Natron declares them too (OfxImageEffectInstance::getOfxParamOverlayInteractDescProps()).
+// A value the plug-in set on the parameter (one that is not the default) wins over the interact descriptor's,
+// and the current size is set on both.
+
 void
 OfxParamOverlayInteract::getMinimumSize(double & minW,
                                         double & minH) const
 {
-    minW = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractMinimumSize, 0);
-    minH = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractMinimumSize, 1);
+    // "Any custom interface will not be less than this size"; default 10x10
+    const OFX::Host::Property::Set& paramProps = _param->getProperties();
+    minW = paramProps.getDoubleProperty(kOfxParamPropInteractMinimumSize, 0);
+    minH = paramProps.getDoubleProperty(kOfxParamPropInteractMinimumSize, 1);
+    if ( (minW == 10.) && (minH == 10.) ) {
+        minW = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractMinimumSize, 0);
+        minH = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractMinimumSize, 1);
+    }
 }
 
 void
 OfxParamOverlayInteract::getPreferredSize(int & pW,
                                           int & pH) const
 {
-    pW = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractPreferedSize, 0);
-    pH = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractPreferedSize, 1);
+    // "A host should attempt to set a parameter's custom interface on a parameter to be this size if
+    // possible"; default 10x10
+    const OFX::Host::Property::Set& paramProps = _param->getProperties();
+    pW = paramProps.getIntProperty(kOfxParamPropInteractPreferedSize, 0);
+    pH = paramProps.getIntProperty(kOfxParamPropInteractPreferedSize, 1);
+    if ( (pW == 10) && (pH == 10) ) {
+        pW = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractPreferedSize, 0);
+        pH = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractPreferedSize, 1);
+    }
 }
 
 void
@@ -445,6 +470,10 @@ void
 OfxParamOverlayInteract::setSize(int w,
                                  int h)
 {
+    // "set by a host to indicate the current size of a custom interface if the plug-in has one", on the
+    // parameter instance, a double x 2 (ofxParam.h), and for the Support library on the interact
+    _param->getProperties().setDoubleProperty(kOfxParamPropInteractSize, w, 0);
+    _param->getProperties().setDoubleProperty(kOfxParamPropInteractSize, h, 1);
     _descriptor.getProperties().setIntProperty(kOfxParamPropInteractSize, w, 0);
     _descriptor.getProperties().setIntProperty(kOfxParamPropInteractSize, h, 1);
 }
@@ -452,7 +481,11 @@ OfxParamOverlayInteract::setSize(int w,
 void
 OfxParamOverlayInteract::getPixelAspectRatio(double & par) const
 {
-    par = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractSizeAspect);
+    // "the custom interface ... will be of a size with this aspect ratio"; default 1
+    par = _param->getProperties().getDoubleProperty(kOfxParamPropInteractSizeAspect);
+    if (par == 1.) {
+        par = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractSizeAspect);
+    }
 }
 
 OfxStatus

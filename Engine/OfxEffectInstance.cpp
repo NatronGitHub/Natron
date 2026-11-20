@@ -965,7 +965,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         interactDesc.setEntryPoint(interactEntryPoint);
 //#pragma message WARN("FIXME: bitdepth and hasalpha are probably wrong")
         interactDesc.describe(/*bitdepthPerComponent=*/ 8, /*hasAlpha=*/ false);
-        OfxParamOverlayInteractPtr overlayInteract( new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance() ) );
+        OfxParamOverlayInteractPtr overlayInteract( new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance(), *it ) );
         knob->setCustomInteract(overlayInteract);
         overlayInteract->createInstanceAction();
     }
