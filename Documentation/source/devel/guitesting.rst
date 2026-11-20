@@ -234,6 +234,13 @@ renders and events it triggers, then checks:
 Never use fixed delays: :func:`NatronGuiTest.waitIdle` returns as soon as the renders are done and
 their results are displayed.
 
+To find a widget (e.g. with PySide's ``QWidget.findChild()``), use its stable name (see
+:ref:`widgetNames`): ``nodeGraph`` for the node graph, the fully qualified node name for a settings
+panel, the param script name for the first widget of a parameter (and the ``paramName`` Qt
+property for all its widgets), the tab script name (e.g. ``Viewer1``) for a viewer, ``TimeLine``,
+``PropertiesBin``, and ``nodeCreationDialog`` (with its ``NodeCreationDialogLineEdit``) for the node
+creation dialog.
+
 The NatronGuiTest module
 ~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -731,6 +731,12 @@ Gui::registerNewUndoStack(QUndoStack* stack)
     _imp->_undoStacksActions.insert( std::make_pair( stack, std::make_pair(undo, redo) ) );
 }
 
+QUndoStack*
+Gui::getActiveUndoStack() const
+{
+    return _imp->_undoStacksGroup ? _imp->_undoStacksGroup->activeStack() : 0;
+}
+
 void
 Gui::removeUndoStack(QUndoStack* stack)
 {
