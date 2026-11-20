@@ -79,9 +79,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Global/StrUtils.h"
 #ifdef DEBUG
 #include "Global/FloatingPointExceptions.h"
-#include "Global/StrUtils.h"
 #endif
 
 NATRON_NAMESPACE_ENTER
