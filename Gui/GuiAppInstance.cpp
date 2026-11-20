@@ -34,6 +34,7 @@
 #include <QMutex>
 #include <QCoreApplication>
 #include <QPointer>
+#include <QUndoStack>
 
 #include "Engine/CLArgs.h"
 #include "Engine/Project.h"
@@ -1684,6 +1685,71 @@ void
 GuiAppInstance::reloadScriptEditorFonts()
 {
     _imp->_gui->getScriptEditor()->reloadFont();
+}
+
+QUndoStack*
+GuiAppInstance::getActiveUndoStack() const
+{
+    return _imp->_gui ? _imp->_gui->getActiveUndoStack() : 0;
+}
+
+void
+GuiAppInstance::undo()
+{
+    QUndoStack* stack = getActiveUndoStack();
+
+    if (stack) {
+        stack->undo();
+    }
+}
+
+void
+GuiAppInstance::redo()
+{
+    QUndoStack* stack = getActiveUndoStack();
+
+    if (stack) {
+        stack->redo();
+    }
+}
+
+bool
+GuiAppInstance::canUndo() const
+{
+    QUndoStack* stack = getActiveUndoStack();
+
+    return stack && stack->canUndo();
+}
+
+bool
+GuiAppInstance::canRedo() const
+{
+    QUndoStack* stack = getActiveUndoStack();
+
+    return stack && stack->canRedo();
+}
+
+std::list<std::string>
+GuiAppInstance::getUndoHistory() const
+{
+    std::list<std::string> ret;
+    QUndoStack* stack = getActiveUndoStack();
+
+    if (stack) {
+        for (int i = 0; i < stack->count(); ++i) {
+            ret.push_back( stack->text(i).toStdString() );
+        }
+    }
+
+    return ret;
+}
+
+int
+GuiAppInstance::getUndoIndex() const
+{
+    QUndoStack* stack = getActiveUndoStack();
+
+    return stack ? stack->index() : 0;
 }
 
 NATRON_NAMESPACE_EXIT

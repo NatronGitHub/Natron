@@ -846,6 +846,8 @@ ViewerTab::onInternalNodeScriptNameChanged(const QString& /*name*/)
     assert( qApp && qApp->thread() == QThread::currentThread() );
     getGui()->unregisterTab(this);
     setScriptName(newName);
+    setObjectName( QString::fromUtf8( newName.c_str() ) );
+    _imp->viewer->setObjectName( objectName() );
     getGui()->registerTab(this, this);
     TabWidget* parent = dynamic_cast<TabWidget*>( parentWidget() );
     if (parent) {

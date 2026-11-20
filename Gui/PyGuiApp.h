@@ -30,6 +30,7 @@
 
 #include "Engine/PyAppInstance.h"
 #include "Engine/PyParameter.h" // ColorTuple
+#include "Engine/RectD.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
@@ -107,6 +108,45 @@ public:
 
     /* Python API: do not use ViewIdx */
     int getCurrentView() const;
+
+    /// fits the image to the viewer, as the F key does
+    void fit();
+
+    /// the zoom factor: 1 shows one image pixel per screen pixel (100%)
+    double getZoom() const;
+
+    /// sets the zoom factor, keeping the canvas point at the centre of the viewport fixed
+    void setZoom(double zoom);
+
+    /// the canvas coordinates of the centre of the viewport
+    Double2DTuple getCenter() const;
+
+    /// pans so that the canvas point (x, y) is at the centre of the viewport
+    void setCenter(double x, double y);
+
+    /// canvas coordinates to the coordinates of the viewer widget (Qt logical pixels, origin top-left)
+    Double2DTuple canvasToWidget(double x, double y) const;
+
+    /// the coordinates of the viewer widget to canvas coordinates
+    Double2DTuple widgetToCanvas(double x, double y) const;
+
+    /**
+     * @brief The linear RGBA value displayed at the canvas point (x, y) for the input A (0) or B (1),
+     * before the display LUT. Raises a Python exception if there is no image there.
+     **/
+    ColorTuple getPixel(double x, double y, int input = 0) const;
+
+    /**
+     * @brief The linear RGBA image displayed for the input A (0) or B (1), before the display LUT, at the
+     * displayed mipmap level: its bounds in canvas coordinates, and its pixels (RGBA floats, row-major
+     * from the bottom row). Python: getImage(input=0) -> (RectD, list of float).
+     **/
+    std::list<double> getImage(RectD* bounds, int input = 0) const;
+
+private:
+
+    // the viewer widget, or NULL if the viewer node is deactivated
+    ViewerGL* getViewerGL() const;
 };
 
 class GuiApp

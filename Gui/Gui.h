@@ -161,6 +161,12 @@ public:
 
     void registerNewUndoStack(QUndoStack* stack);
 
+    /**
+     * @brief The undo stack of Edit > Undo / Redo: the active stack of the undo group (the stack of the last
+     * focused node panel or node graph), or NULL.
+     **/
+    QUndoStack* getActiveUndoStack() const;
+
     void removeUndoStack(QUndoStack* stack);
 
     /**

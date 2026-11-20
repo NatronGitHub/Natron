@@ -34,7 +34,9 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
+#include <QAbstractEventDispatcher>
 #include <QCoreApplication>
+#include <QElapsedTimer>
 #include <QDir>
 #include <QTextStream>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
@@ -42,6 +44,7 @@
 #include <QFileInfo>
 #include <QEventLoop>
 #include <QSettings>
+#include <QThread>
 #include <QNetworkReply>
 
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
@@ -2128,6 +2131,42 @@ AppInstance::hasRenderInProgress() const
     }
 
     return false;
+}
+
+bool
+AppInstance::waitForRenders(int timeoutMs,
+                            int settleMs)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    // natron.quit() and the close requests wait until this loop is done
+    AppManager::NestedEventLoopRAII nestedLoop;
+    QElapsedTimer total;
+    total.start();
+    QElapsedTimer idle;
+    bool idleStarted = false;
+    QAbstractEventDispatcher* dispatcher = QAbstractEventDispatcher::instance( qApp->thread() );
+    for (;;) {
+        // the results of the renders (e.g. viewer texture uploads) are posted to the main thread
+        QCoreApplication::sendPostedEvents();
+        const bool processed = dispatcher ? dispatcher->processEvents(QEventLoop::AllEvents) : false;
+        if ( hasRenderInProgress() ) {
+            idleStarted = false;
+        } else if (!idleStarted) {
+            if (settleMs <= 0) {
+                return true;
+            }
+            idle.start();
+            idleStarted = true;
+        } else if (idle.elapsed() >= settleMs) {
+            return true;
+        }
+        if ( (timeoutMs >= 0) && (total.elapsed() >= timeoutMs) ) {
+            return false;
+        }
+        if (!processed) {
+            QThread::msleep(5);
+        }
+    }
 }
 
 void

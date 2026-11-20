@@ -324,6 +324,28 @@ public:
 
     void addProjectLayer(const ImageLayer& layer);
 
+    /**
+     * @brief Edit > Undo / Redo: the active undo stack (the one of the last focused node panel or
+     * node graph). They do nothing in background mode, where there is no undo stack.
+     **/
+    void undo();
+    void redo();
+    bool canUndo() const;
+    bool canRedo() const;
+
+    /// The texts of the commands of the active undo stack, oldest first ([] in background mode)
+    std::list<QString> getUndoHistory() const;
+
+    /// The number of commands of getUndoHistory() that are done (the next redo is at this index)
+    int getUndoIndex() const;
+
+    /**
+     * @brief Returns when no render of this project runs or is queued (viewer, Write, previews), and,
+     * in the GUI, the events they posted (viewer texture uploads) are processed. Returns false if
+     * timeout seconds elapsed first (no limit if timeout < 0). Must be called from the main thread.
+     **/
+    bool waitForRenders(double timeout = -1.);
+
 protected:
 
     void renderInternal(bool forceBlocking, Effect* writeNode, int firstFrame, int lastFrame, int frameStep);

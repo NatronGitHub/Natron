@@ -236,6 +236,17 @@ public Q_SLOTS:
     void zoomSlot(int v);
 
     /**
+     * @brief Sets the zoom factor (1: one image pixel per screen pixel), keeping the canvas point at the
+     * centre of the viewport fixed, as the zoom menu does (PyViewer.setZoom()).
+     **/
+    void setZoomFactorAroundCenter(double zoomFactor);
+
+    /**
+     * @brief Pans so that the canvas point (x, y) is at the centre of the viewport (PyViewer.setCenter()).
+     **/
+    void setCenter(double x, double y);
+
+    /**
      *@brief Convenience function. See ViewerGL::zoomSlot(int)
      **/
     void zoomSlot(double v);

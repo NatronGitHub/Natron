@@ -19,13 +19,18 @@ Functions
 
 - def :meth:`addProjectLayer<NatronEngine.App.addProjectLayer>` (layer)
 - def :meth:`addFormat<NatronEngine.App.addFormat>` (formatSpec)
+- def :meth:`canRedo<NatronEngine.App.canRedo>` ()
+- def :meth:`canUndo<NatronEngine.App.canUndo>` ()
 - def :meth:`createNode<NatronEngine.App.createNode>` (pluginID[, majorVersion=-1[, group=None] [, properties=None]])
 - def :meth:`createReader<NatronEngine.App.createReader>` (filename[, group=None] [, properties=None])
 - def :meth:`createWriter<NatronEngine.App.createWriter>` (filename[, group=None] [, properties=None])
 - def :meth:`getAppID<NatronEngine.App.getAppID>` ()
 - def :meth:`getProjectParam<NatronEngine.App.getProjectParam>` (name)
+- def :meth:`getUndoHistory<NatronEngine.App.getUndoHistory>` ()
+- def :meth:`getUndoIndex<NatronEngine.App.getUndoIndex>` ()
 - def :meth:`getViewNames<NatronEngine.App.getViewNames>` ()
 - def :meth:`render<NatronEngine.App.render>` (effect,firstFrame,lastFrame[,frameStep])
+- def :meth:`redo<NatronEngine.App.redo>` ()
 - def :meth:`render<NatronEngine.App.render>` (tasks)
 - def :meth:`saveTempProject<NatronEngine.App.saveTempProject>` (filename)
 - def :meth:`saveProject<NatronEngine.App.saveProject>` (filename)
@@ -37,6 +42,8 @@ Functions
 - def :meth:`timelineGetLeftBound<NatronEngine.App.timelineGetLeftBound>` ()
 - def :meth:`timelineGetRightBound<NatronEngine.App.timelineGetRightBound>` ()
 - def :meth:`timelineGetTime<NatronEngine.App.timelineGetTime>` ()
+- def :meth:`undo<NatronEngine.App.undo>` ()
+- def :meth:`waitForRenders<NatronEngine.App.waitForRenders>` ([timeout=-1.0])
 - def :meth:`writeToScriptEditor<NatronEngine.App.writeToScriptEditor>` (message)
 
 .. _app.details:
@@ -559,3 +566,66 @@ inform the user of various information, warnings or errors.
     Upon success, the :class:`App<NatronEngine.App>` object is returned, otherwise *None*
     is returned.
 
+.. method:: App.undo()
+
+    Undoes the last command of the active undo stack, as *Edit > Undo* does: the stack of the node
+    settings panel or node graph that was used last. Does nothing if there is nothing to undo, and in
+    background mode, where there is no undo stack.
+
+    Edits made from Python (e.g. :meth:`Param.setValue()<NatronEngine.IntParam.setValue>` or
+    :meth:`createNode()<NatronEngine.App.createNode>`) are not undoable: only the edits made in the
+    user interface are.
+
+.. method:: App.redo()
+
+    Redoes the last undone command of the active undo stack, as *Edit > Redo* does. Does nothing if
+    there is nothing to redo, and in background mode.
+
+.. method:: App.canUndo()
+
+    :rtype: :class:`bool`
+
+    Returns whether :meth:`undo()<NatronEngine.App.undo>` would undo something (whether *Edit > Undo*
+    is enabled). Always *False* in background mode.
+
+.. method:: App.canRedo()
+
+    :rtype: :class:`bool`
+
+    Returns whether :meth:`redo()<NatronEngine.App.redo>` would redo something. Always *False* in
+    background mode.
+
+.. method:: App.getUndoHistory()
+
+    :rtype: :class:`sequence`
+
+    Returns the texts of the commands of the active undo stack, oldest first, as in the undo history
+    (e.g. ``['Delete node', 'Paste node']``). Commands at an index greater than or equal to
+    :meth:`getUndoIndex()<NatronEngine.App.getUndoIndex>` were undone and can be redone. Returns an empty
+    list in background mode.
+
+.. method:: App.getUndoIndex()
+
+    :rtype: :class:`int`
+
+    Returns the number of commands of :meth:`getUndoHistory()<NatronEngine.App.getUndoHistory>` that are
+    done: :meth:`undo()<NatronEngine.App.undo>` undoes the command just before this index, and
+    :meth:`redo()<NatronEngine.App.redo>` redoes the one at this index. Returns 0 in background mode.
+
+.. method:: App.waitForRenders([timeout=-1.0])
+
+    :param timeout: :class:`float`
+    :rtype: :class:`bool`
+
+    Waits until no render of this project runs or is queued: the viewers, the Write nodes and the node
+    previews. In the user interface, the events are processed while waiting, until the results of the
+    renders are displayed. Returns *True*, or *False* if *timeout* seconds elapsed first (no limit if
+    *timeout* is negative). Must be called from the main thread (e.g. a script, a callback or a
+    PyPanel), not from a render callback.
+
+    For example, a button callback that changes a parameter, then reads the result of the render::
+
+        transform.getParam("translate").set(100, 50)
+        app.getViewer("Viewer1").renderCurrentFrame()
+        if app.waitForRenders(30):
+            print(app.getViewer("Viewer1").getPixel(960, 540))

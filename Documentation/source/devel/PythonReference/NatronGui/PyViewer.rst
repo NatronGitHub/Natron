@@ -39,6 +39,15 @@ Functions
 - def :meth:`getProxyIndex<NatronGui.PyTabWidget.getProxyIndex>` ()
 - def :meth:`setCurrentView<NatronGui.PyTabWidget.setCurrentView>` (viewIndex)
 - def :meth:`getCurrentView<NatronGui.PyTabWidget.getCurrentView>` (channels)
+- def :meth:`fit<NatronGui.PyViewer.fit>` ()
+- def :meth:`getZoom<NatronGui.PyViewer.getZoom>` ()
+- def :meth:`setZoom<NatronGui.PyViewer.setZoom>` (zoom)
+- def :meth:`getCenter<NatronGui.PyViewer.getCenter>` ()
+- def :meth:`setCenter<NatronGui.PyViewer.setCenter>` (x,y)
+- def :meth:`canvasToWidget<NatronGui.PyViewer.canvasToWidget>` (x,y)
+- def :meth:`widgetToCanvas<NatronGui.PyViewer.widgetToCanvas>` (x,y)
+- def :meth:`getPixel<NatronGui.PyViewer.getPixel>` (x,y[,input=0])
+- def :meth:`getImage<NatronGui.PyViewer.getImage>` ([input=0])
 
 .. _pyViewer.details:
 
@@ -233,3 +242,70 @@ visible when the number of views in the project settings has been set to a value
 
 Returns the currently  displayed view index. This is the index in the multi-view combobox
 visible when the number of views in the project settings has been set to a value greater than 1.
+
+.. method:: PyViewer.fit()
+
+    Fits the image to the viewer, as the *F* key does.
+
+.. method:: PyViewer.getZoom()
+
+    :rtype: :class:`float`
+
+    Returns the zoom factor of the viewer: 1 shows one image pixel per screen pixel (100%).
+
+.. method:: PyViewer.setZoom(zoom)
+
+    :param zoom: :class:`float`
+
+    Sets the zoom factor of the viewer (see :meth:`getZoom()<NatronGui.PyViewer.getZoom>`), keeping the
+    point at the centre of the viewport fixed, as the zoom menu of the viewer does.
+
+.. method:: PyViewer.getCenter()
+
+    :rtype: :class:`Double2DTuple<NatronEngine.Double2DTuple>`
+
+    Returns the canvas coordinates of the centre of the viewport. The canvas coordinates are the
+    coordinates of the image and of the overlays: the origin is the bottom-left corner of the project
+    format, *y* points up, and the pixel aspect ratio is included.
+
+.. method:: PyViewer.setCenter(x, y)
+
+    :param x: :class:`float`
+    :param y: :class:`float`
+
+    Pans the viewer so that the canvas point (*x*, *y*) is at the centre of the viewport.
+
+.. method:: PyViewer.canvasToWidget(x, y)
+
+    :rtype: :class:`Double2DTuple<NatronEngine.Double2DTuple>`
+
+    Converts the canvas coordinates (*x*, *y*) to the coordinates of the viewer widget, in Qt logical
+    pixels with the origin at the top-left corner, e.g. to place a PySide widget over the viewer.
+
+.. method:: PyViewer.widgetToCanvas(x, y)
+
+    :rtype: :class:`Double2DTuple<NatronEngine.Double2DTuple>`
+
+    Converts the coordinates of the viewer widget to canvas coordinates
+    (the inverse of :meth:`canvasToWidget()<NatronGui.PyViewer.canvasToWidget>`).
+
+.. method:: PyViewer.getPixel(x, y[, input=0])
+
+    :param input: :class:`int`
+    :rtype: :class:`ColorTuple<NatronEngine.ColorTuple>`
+
+    Returns the linear RGBA value of the image displayed at the canvas point (*x*, *y*) for the input A
+    (0) or B (1), before the display LUT: the value of the colour picker. Raises :class:`ValueError` if
+    the viewer shows no image at that point.
+
+.. method:: PyViewer.getImage([input=0])
+
+    :param input: :class:`int`
+    :rtype: :class:`tuple`
+
+    Returns the linear RGBA image displayed for the input A (0) or B (1), before the display LUT, at the
+    mipmap level that the viewer displays (which depends on the zoom), as a tuple
+    ``(bounds, pixels)``: *bounds* is a :class:`RectD<NatronEngine.RectD>` with the bounds of the image in
+    canvas coordinates, and *pixels* a list of floats, four (R, G, B, A) per pixel, row by row from the
+    bottom row. Raises :class:`ValueError` if the viewer shows no image. For a few values, prefer
+    :meth:`getPixel()<NatronGui.PyViewer.getPixel>`: a full HD image is a list of 8 million floats.

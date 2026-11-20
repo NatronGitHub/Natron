@@ -33,11 +33,8 @@
 #include <string>
 #include <vector>
 
-#include <QtCore/QAbstractEventDispatcher>
 #include <QtCore/QCoreApplication>
-#include <QtCore/QElapsedTimer>
 #include <QtCore/QPointer>
-#include <QtCore/QThread>
 #include <QtCore/QTimer>
 #include <QAction>
 #include <QApplication>
@@ -497,39 +494,6 @@ parseButton(const char* str,
     return true;
 }
 
-// Processes the events until no render runs for settleMs, or timeoutMs elapsed. Returns true when idle.
-bool
-waitIdleInternal(int timeoutMs,
-                 int settleMs)
-{
-    QElapsedTimer total;
-
-    total.start();
-    QElapsedTimer idle;
-    bool idleStarted = false;
-    QAbstractEventDispatcher* dispatcher = QAbstractEventDispatcher::instance( qApp->thread() );
-    for (;;) {
-        QCoreApplication::sendPostedEvents();
-        bool processed = dispatcher ? dispatcher->processEvents(QEventLoop::AllEvents) : false;
-        // A render may be posting its results (e.g. a viewer texture upload): the posted events are
-        // processed in the next iterations, while no render is running.
-        if ( appPTR->hasRenderInProgress() ) {
-            idleStarted = false;
-        } else if (!idleStarted) {
-            idle.start();
-            idleStarted = true;
-        } else if (idle.elapsed() >= settleMs) {
-            return true;
-        }
-        if (total.elapsed() >= timeoutMs) {
-            return false;
-        }
-        if (!processed) {
-            QThread::msleep(5);
-        }
-    }
-}
-
 // ----------------------------------------------------------------- Python functions
 
 PyObject*
@@ -544,10 +508,16 @@ py_waitIdle(PyObject* /*self*/,
     if ( !PyArg_ParseTupleAndKeywords(args, kwds, "|dd", const_cast<char**>(kwlist), &timeout, &settle) ) {
         return 0;
     }
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    if (!app) {
+        PyErr_SetString(PyExc_RuntimeError, "no project");
+
+        return 0;
+    }
     bool ok;
     // The renders may need the GIL (expressions, Python callbacks): release it while waiting.
     Py_BEGIN_ALLOW_THREADS
-    ok = waitIdleInternal( (int)(timeout * 1000.), (int)(settle * 1000.) );
+    ok = app->waitForRenders( (int)(timeout * 1000.), (int)(settle * 1000.) );
     Py_END_ALLOW_THREADS
 
     return PyBool_FromLong(ok);

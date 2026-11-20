@@ -393,6 +393,7 @@ GuiPrivate::createNodeGraphGui()
     scene->setItemIndexMethod(QGraphicsScene::NoIndex);
     _nodeGraphArea = new NodeGraph(_gui, _appInstance.lock()->getProject(), scene, _gui);
     _nodeGraphArea->setScriptName(kNodeGraphObjectName);
+    _nodeGraphArea->setObjectName( QString::fromUtf8(kNodeGraphObjectName) );
     _nodeGraphArea->setLabel( tr("Node Graph").toStdString() );
     _nodeGraphArea->setVisible(false);
     _gui->registerTab(_nodeGraphArea, _nodeGraphArea);

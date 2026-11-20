@@ -229,6 +229,9 @@ KnobGui::createGUI(QWidget* fieldContainer,
         label->setToolTip( toolTip() );
     }
 
+    // the widgets of the param are the ones it adds to the layout (see nameParamWidgets())
+    const int firstLayoutItem = layout->count();
+
     // Parmetric knobs use the customInteract to actually draw something on top of the background
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
     OfxParamOverlayInteractPtr customInteract = knob->getCustomInteract();
@@ -243,6 +246,26 @@ KnobGui::createGUI(QWidget* fieldContainer,
 
 
     _imp->widgetCreated = true;
+
+    // Stable names, for PySide code, stylesheets, accessibility and the GUI tests: the widgets of this
+    // param have the "paramName" property, and the param script name as objectName unless they have
+    // one (e.g. "dim-0", used by the right-click menu). A row is named after its first param.
+    const QString paramName = QString::fromUtf8( knob->getName().c_str() );
+    if ( isOnNewLine && fieldContainer && fieldContainer->objectName().isEmpty() ) {
+        fieldContainer->setObjectName(paramName);
+    }
+    for (int i = firstLayoutItem; i < layout->count(); ++i) {
+        QWidget* w = layout->itemAt(i) ? layout->itemAt(i)->widget() : 0;
+        if ( w && (w != label) && (w != _imp->warningIndicator) ) {
+            w->setProperty("paramName", paramName);
+            if ( w->objectName().isEmpty() ) {
+                w->setObjectName(paramName);
+            }
+        }
+    }
+    if (label) {
+        label->setProperty("paramName", paramName);
+    }
 
     for (int i = 0; i < knob->getDimension(); ++i) {
         onExprChanged(i);

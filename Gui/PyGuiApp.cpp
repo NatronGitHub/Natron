@@ -25,6 +25,7 @@
 
 #include "PyGuiApp.h"
 
+#include <algorithm> // max
 #include <stdexcept>
 
 CLANG_DIAG_OFF(deprecated)
@@ -38,6 +39,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/PyNodeGroup.h"
@@ -726,6 +728,179 @@ PyViewer::redraw()
         return;
     }
     _viewer->redrawGLWidgets();
+}
+
+ViewerGL*
+PyViewer::getViewerGL() const
+{
+    NodePtr node = getInternalNode();
+
+    if ( !node || !node->isActivated() || !_viewer ) {
+        return 0;
+    }
+
+    return _viewer->getViewer();
+}
+
+void
+PyViewer::fit()
+{
+    if ( getViewerGL() ) {
+        _viewer->centerViewer();
+    }
+}
+
+double
+PyViewer::getZoom() const
+{
+    ViewerGL* gl = getViewerGL();
+
+    return gl ? gl->getZoomFactor() : 1.;
+}
+
+void
+PyViewer::setZoom(double zoom)
+{
+    ViewerGL* gl = getViewerGL();
+
+    if (!gl) {
+        return;
+    }
+    if ( !(zoom > 0.) ) {
+        PyErr_SetString(PyExc_ValueError, "the zoom factor must be positive");
+
+        return;
+    }
+    gl->setZoomFactorAroundCenter(zoom);
+    Q_EMIT gl->zoomChanged( std::max(1, (int)(100. * gl->getZoomFactor() + 0.5)) ); // the zoom menu
+    gl->update();
+}
+
+Double2DTuple
+PyViewer::getCenter() const
+{
+    Double2DTuple ret = {0., 0.};
+    ViewerGL* gl = getViewerGL();
+
+    if (gl) {
+        const RectD r = gl->getViewportRect();
+        ret.x = (r.x1 + r.x2) / 2.;
+        ret.y = (r.y1 + r.y2) / 2.;
+    }
+
+    return ret;
+}
+
+void
+PyViewer::setCenter(double x,
+                    double y)
+{
+    ViewerGL* gl = getViewerGL();
+
+    if (gl) {
+        gl->setCenter(x, y);
+    }
+}
+
+Double2DTuple
+PyViewer::canvasToWidget(double x,
+                         double y) const
+{
+    Double2DTuple ret = {x, y};
+    ViewerGL* gl = getViewerGL();
+
+    if (gl) {
+        const QPointF p = gl->toWidgetCoordinates( QPointF(x, y) );
+        ret.x = p.x();
+        ret.y = p.y();
+    }
+
+    return ret;
+}
+
+Double2DTuple
+PyViewer::widgetToCanvas(double x,
+                         double y) const
+{
+    Double2DTuple ret = {x, y};
+    ViewerGL* gl = getViewerGL();
+
+    if (gl) {
+        const QPointF p = gl->toZoomCoordinates( QPointF(x, y) );
+        ret.x = p.x();
+        ret.y = p.y();
+    }
+
+    return ret;
+}
+
+ColorTuple
+PyViewer::getPixel(double x,
+                   double y,
+                   int input) const
+{
+    ColorTuple ret = {0., 0., 0., 0.};
+    ViewerGL* gl = getViewerGL();
+
+    if ( (input != 0) && (input != 1) ) {
+        PyErr_SetString(PyExc_ValueError, "input must be 0 (A) or 1 (B)");
+
+        return ret;
+    }
+    float r, g, b, a;
+    unsigned int mipmapLevel;
+    if ( !gl || !gl->getColorAt(x, y, true /*forceLinear*/, input, &r, &g, &b, &a, &mipmapLevel) ) {
+        PyErr_Format(PyExc_ValueError, "the viewer shows no image at (%g, %g)", x, y);
+
+        return ret;
+    }
+    ret.r = r;
+    ret.g = g;
+    ret.b = b;
+    ret.a = a;
+
+    return ret;
+}
+
+std::list<double>
+PyViewer::getImage(RectD* bounds,
+                   int input) const
+{
+    std::list<double> ret;
+    ViewerGL* gl = getViewerGL();
+
+    bounds->clear();
+    if ( (input != 0) && (input != 1) ) {
+        PyErr_SetString(PyExc_ValueError, "input must be 0 (A) or 1 (B)");
+
+        return ret;
+    }
+    ImagePtr image = gl ? gl->getLastRenderedImageByMipmapLevel( input, gl->getMipmapLevelCombinedToZoomFactor() ) : ImagePtr();
+    if (!image) {
+        PyErr_SetString(PyExc_ValueError, "the viewer shows no image");
+
+        return ret;
+    }
+    const RectI pixels = image->getBounds();
+    const double par = image->getPixelAspectRatio();
+    const double scale = (double)(1u << image->getMipmapLevel()); // mipmap level to canvas
+    bounds->set(pixels.x1 * scale * par, pixels.y1 * scale, pixels.x2 * scale * par, pixels.y2 * scale);
+    // the colour picker's values (ViewerGL::getColorAt()), at the centre of each pixel
+    for (int y = pixels.y1; y < pixels.y2; ++y) {
+        for (int x = pixels.x1; x < pixels.x2; ++x) {
+            float r = 0.f, g = 0.f, b = 0.f, a = 0.f;
+            unsigned int mipmapLevel;
+            if ( !gl->getColorAt( (x + 0.5) * scale * par, (y + 0.5) * scale, true /*forceLinear*/, input, &r, &g, &b, &a, &mipmapLevel ) ) {
+                r = g = b = a = 0.f; // outside the image (cannot happen within its bounds)
+            }
+            ret.push_back(r);
+            ret.push_back(g);
+            ret.push_back(b);
+            ret.push_back(a);
+        }
+    }
+
+    return ret;
 }
 
 void

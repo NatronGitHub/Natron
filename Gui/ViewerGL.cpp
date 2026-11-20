@@ -2955,11 +2955,17 @@ ViewerGL::zoomSlot(double v)
 void
 ViewerGL::zoomSlot(int v)
 {
+    assert(v > 0);
+    setZoomFactorAroundCenter(v / 100.);
+}
+
+void
+ViewerGL::setZoomFactorAroundCenter(double newZoomFactor)
+{
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    assert(v > 0);
-    double newZoomFactor = v / 100.;
+    assert(newZoomFactor > 0.);
     unsigned int oldMipmapLevel, newMipmapLevel;
     //newMipmapLevel = std::log( newZoomFactor >= 1 ? 1 :
     //                           std::pow( 2, -std::ceil(std::log(newZoomFactor) / M_LN2) ) ) / M_LN2;
@@ -2982,6 +2988,26 @@ ViewerGL::zoomSlot(int v)
     }
 
     checkIfViewPortRoIValidOrRender();
+}
+
+void
+ViewerGL::setCenter(double x,
+                    double y)
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    {
+        QMutexLocker l(&_imp->zoomCtxMutex);
+        double centerX = ( _imp->zoomCtx.left() + _imp->zoomCtx.right() ) / 2.;
+        double centerY = ( _imp->zoomCtx.top() + _imp->zoomCtx.bottom() ) / 2.;
+        _imp->zoomCtx.translate(x - centerX, y - centerY);
+        _imp->zoomOrPannedSinceLastFit = true;
+    }
+    if ( _imp->viewerTab->isViewersSynchroEnabled() ) {
+        _imp->viewerTab->synchronizeOtherViewersProjection();
+    }
+    checkIfViewPortRoIValidOrRender();
+    update();
 }
 
 void

@@ -224,6 +224,14 @@ NodeGui::initialize(NodeGraph* dag,
     internalNode->setNodeGuiPointer(thisAsShared);
 
     QObject::connect( internalNode.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInternalNameChanged(QString)) );
+    // the objectName of the settings panel is the fully qualified name of the node
+    NodeWPtr weakNode = internalNode;
+    QObject::connect( internalNode.get(), &Node::scriptNameChanged, this, [this, weakNode](const QString&) {
+        NodePtr n = weakNode.lock();
+        if ( n && _settingsPanel ) {
+            _settingsPanel->setObjectName( QString::fromUtf8( n->getFullyQualifiedName().c_str() ) );
+        }
+    } );
     QObject::connect( internalNode.get(), SIGNAL(refreshEdgesGUI()), this, SLOT(refreshEdges()) );
     QObject::connect( internalNode.get(), SIGNAL(knobsInitialized()), this, SLOT(initializeKnobs()) );
     QObject::connect( internalNode.get(), SIGNAL(inputsInitialized()), this, SLOT(initializeInputs()) );
@@ -563,6 +571,8 @@ NodeGui::createPanel(QVBoxLayout* container,
             _mainInstancePanel->initializeKnobs();
         }
         panel = new NodeSettingsPanel( multiPanel, _graph->getGui(), thisAsShared, container, container->parentWidget() );
+        // stable name (PySide, stylesheets, GUI tests): the fully qualified name of the node
+        panel->setObjectName( QString::fromUtf8( node->getFullyQualifiedName().c_str() ) );
 
         if (panel) {
             bool isCreatingPythonGroup = getDagGui()->getGui()->getApp()->isCreatingPythonGroup();

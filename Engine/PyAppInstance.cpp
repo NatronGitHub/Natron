@@ -29,7 +29,9 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
+#include <QCoreApplication>
 #include <QDebug>
+#include <QThread>
 
 #include "Engine/AppInstance.h"
 #include "Engine/CreateNodeArgs.h"
@@ -478,6 +480,73 @@ App::newProject()
     }
 
     return new App(app);
+}
+
+void
+App::undo()
+{
+    getInternalApp()->undo();
+}
+
+void
+App::redo()
+{
+    getInternalApp()->redo();
+}
+
+bool
+App::canUndo() const
+{
+    return getInternalApp()->canUndo();
+}
+
+bool
+App::canRedo() const
+{
+    return getInternalApp()->canRedo();
+}
+
+std::list<QString>
+App::getUndoHistory() const
+{
+    std::list<QString> ret;
+    const std::list<std::string> history = getInternalApp()->getUndoHistory();
+
+    for (std::list<std::string>::const_iterator it = history.begin(); it != history.end(); ++it) {
+        ret.push_back( QString::fromUtf8( it->c_str() ) );
+    }
+
+    return ret;
+}
+
+int
+App::getUndoIndex() const
+{
+    return getInternalApp()->getUndoIndex();
+}
+
+bool
+App::waitForRenders(double timeout)
+{
+    AppInstancePtr app = getInternalApp();
+
+    if ( QThread::currentThread() != qApp->thread() ) {
+        // the events are processed by the main thread
+        PyErr_SetString(PyExc_RuntimeError, "App.waitForRenders() must be called from the main thread");
+
+        return false;
+    }
+    // In the GUI, wait until the events posted by the renders (e.g. viewer textures) are processed:
+    // no render for a little while. In background mode, nothing is displayed.
+    const int settleMs = app->isBackground() ? 0 : 200;
+    const int timeoutMs = (timeout < 0.) ? -1 : (int)(timeout * 1000.);
+    bool ok;
+    // the renders may need the Python lock (expressions, callbacks)
+    Py_BEGIN_ALLOW_THREADS
+    ok = app->waitForRenders(timeoutMs, settleMs);
+    Py_END_ALLOW_THREADS
+
+    return ok;
 }
 
 std::list<QString>
