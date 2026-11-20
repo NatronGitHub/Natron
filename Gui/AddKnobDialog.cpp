@@ -1729,7 +1729,9 @@ AddKnobDialog::onOkClicked()
                     break;
                 }
             }
-        } else {
+        } else if ( !isParentGrp && !_imp->getSelectedGroup() ) {
+            // Keep the position only if the parameter stays at the top level of the same page: if it moves
+            // into a group, or to another group or page, it goes last there (#128).
             KnobsVec children;
             if ( oldParentPage && ( oldParentPage == _imp->getSelectedPage() ) ) {
                 children = oldParentPage->getChildren();
