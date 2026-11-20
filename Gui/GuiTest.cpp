@@ -88,6 +88,7 @@ struct GuiTestState
     Qt::MouseButtons pressedButtons;
     QPointer<QWidget> hovered; // the widget of the last synthetic pen event (for Enter/Leave)
     QPointer<QWidget> focused; // the target of the last synthetic key event or press (for FocusIn/FocusOut)
+    std::vector<QPointer<QWidget> > openedSubmenus; // submenus opened by a menu answer (not answered again)
 
     GuiTestState()
         : answers(0)
@@ -96,6 +97,7 @@ struct GuiTestState
         , pressedButtons(Qt::NoButton)
         , hovered()
         , focused()
+        , openedSubmenus()
     {
     }
 };
@@ -242,17 +244,65 @@ rejectUnexpected(QWidget* window,
     }
 }
 
+// Finds the item with that text (without '&') in the menu, or else in its submenus (breadth first):
+// *path is the submenu items to open, then the item.
+bool
+findMenuItem(QMenu* menu,
+             const QString& itemText,
+             QList<QAction*>* path)
+{
+    QList<QList<QAction*> > queue;
+
+    for (QAction* a : menu->actions()) {
+        queue.push_back( QList<QAction*>() << a );
+    }
+    while ( !queue.isEmpty() ) {
+        const QList<QAction*> p = queue.takeFirst();
+        QAction* a = p.back();
+        if ( a->isSeparator() || !a->isVisible() || !a->isEnabled() ) {
+            continue;
+        }
+        if ( a->text().remove( QLatin1Char('&') ) == itemText ) {
+            *path = p;
+
+            return true;
+        }
+        if ( a->menu() && (p.size() < 8) ) {
+            for (QAction* sub : a->menu()->actions()) {
+                queue.push_back( QList<QAction*>(p) << sub );
+            }
+        }
+    }
+
+    return false;
+}
+
 // A modal dialog, or a popup (a menu), is shown. They are shown as usual, so that the tests run the real
 // code, and the next answer of setDialogAnswers() answers them:
 // - a button name ("ok", "yes"...) clicks that standard button of a dialog;
-// - for a menu, the text of the item to trigger;
+// - for a menu, the text of the item to trigger, in the menu or its submenus;
 // - a callable is called with (title, text, className): it may return one of the above, or None if it
 //   handled the window itself (e.g. through PySide's QApplication.activeModalWidget()).
 // A window that the test does not answer is unexpected: it is closed, and the test fails.
 void
 handleWindow(QWidget* window)
 {
-    if ( !window || !window->isVisible() ) {
+    if (!window) {
+        return;
+    }
+    std::vector<QPointer<QWidget> >& submenus = state().openedSubmenus;
+    for (std::vector<QPointer<QWidget> >::iterator it = submenus.begin(); it != submenus.end(); ) {
+        if ( !it->data() ) {
+            it = submenus.erase(it);
+        } else if (it->data() == window) {
+            submenus.erase(it);
+
+            return; // a submenu opened by the answer of its parent menu
+        } else {
+            ++it;
+        }
+    }
+    if ( !window->isVisible() ) {
         return;
     }
     const bool isMenu = (window->windowType() == Qt::Popup);
@@ -299,18 +349,28 @@ handleWindow(QWidget* window)
     }
     if (isMenu) {
         QMenu* menu = qobject_cast<QMenu*>(window);
-        QList<QAction*> actions = menu ? menu->actions() : QList<QAction*>();
-        for (QAction* action : actions) {
-            if ( action->text().remove( QLatin1Char('&') ) == QString::fromUtf8( answer.c_str() ) ) {
-                recordDialog("menu", title, text, answer);
-                menu->setActiveAction(action);
-                menu->close();
-                action->trigger();
+        QList<QAction*> path;
+        if ( !menu || !findMenuItem(menu, QString::fromUtf8( answer.c_str() ), &path) ) {
+            rejectUnexpected(window, title, text, menu ? ( "no item \"" + answer + "\" in the menu" ) :
+                             ( "a popup that is not a menu (answer it with a callable), answer \"" + answer + "\"," ) );
 
-                return;
+            return;
+        }
+        recordDialog("menu", title, text, answer);
+        // as the user does: make each item active and press Return, which opens a submenu, or
+        // triggers the item and sets the action that QMenu::exec() returns
+        for (QAction* action : path) {
+            if ( !menu || !menu->isVisible() ) {
+                break;
+            }
+            menu->setActiveAction(action);
+            QKeyEvent press(QEvent::KeyPress, Qt::Key_Return, Qt::NoModifier);
+            QCoreApplication::sendEvent(menu, &press);
+            menu = action->menu(); // the submenu, now shown (its own Show event finds it hidden)
+            if (menu) {
+                state().openedSubmenus.push_back( QPointer<QWidget>(menu) );
             }
         }
-        rejectUnexpected(window, title, text, "no item \"" + answer + "\" in the menu");
 
         return;
     }
@@ -395,7 +455,7 @@ findViewer(const char* name)
     return gl;
 }
 
-// The widget with that objectName (see devel/python-gui.rst, "Widget names"), the visible one first
+// The widget with that objectName, the visible one first
 QWidget*
 lookupWidget(const char* name)
 {
@@ -534,15 +594,17 @@ py_isRendering(PyObject* /*self*/,
 
 // The widget that receives the mouse events of a pen event target (see findTarget()), and the position in
 // that widget of the target coordinates: canvas coordinates for a viewer, scene coordinates for a node graph
-// (a QGraphicsView), widget coordinates for another widget.
+// (a QGraphicsView), widget coordinates for another widget. *target is the target itself.
 QWidget*
 penEventWidget(const char* targetName,
                double x,
                double y,
-               QPointF* pos)
+               QPointF* pos,
+               QWidget** target)
 {
     QWidget* w = findTarget(targetName);
 
+    *target = w;
     if (!w) {
         return 0;
     }
@@ -623,7 +685,8 @@ py_penEvent(PyObject* /*self*/,
         return 0;
     }
     QPointF pos;
-    QWidget* w = penEventWidget(targetName, x, y, &pos);
+    QWidget* target = 0;
+    QWidget* w = penEventWidget(targetName, x, y, &pos, &target);
     if (!w) {
         return 0;
     }
@@ -653,7 +716,7 @@ py_penEvent(PyObject* /*self*/,
     updateHovered(w, pos);
     if (evType == QEvent::MouseButtonPress) {
         // the target, not a graph's viewport
-        updateFocused( findTarget(targetName) );
+        updateFocused(target);
     }
     QMouseEvent e( evType, pos, QPointF(global), button, pressed, mods );
     QCoreApplication::sendEvent(w, &e);
@@ -810,8 +873,6 @@ py_setDialogAnswers(PyObject* /*self*/,
 
             return 0;
         }
-        StandardButtonEnum b;
-        (void)b;
     }
     Py_XDECREF(state().answers);
     state().answers = answers;
@@ -916,8 +977,8 @@ const char* guiTestPythonSource =
     "        penEvent(target, 'move', x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, 'none', modifiers)\n"
     "    penEvent(target, 'release', x1, y1, button, modifiers)\n"
     "\n"
-    "def _run(path):\n"
-    "    import os, sys, traceback\n"
+    "def _run(path, timeout=0):\n"
+    "    import faulthandler, os, sys, traceback\n"
     "    import NatronGui\n"
     "    saved = (sys.stdout, sys.stderr)\n"
     "    # the GUI redirects the output to the Script Editor: print to the terminal\n"
@@ -926,6 +987,10 @@ const char* guiTestPythonSource =
     "    if sys.__stderr__ is not None:\n"
     "        sys.stderr = sys.__stderr__\n"
     "    status = 1\n"
+    "    if timeout > 0 and sys.__stderr__ is not None:\n"
+    "        # if the main thread is blocked, so that the watchdog timer can't fire: print the\n"
+    "        # tracebacks and exit (from another thread)\n"
+    "        faulthandler.dump_traceback_later(timeout + 10, exit=True, file=sys.__stderr__)\n"
     "    try:\n"
     "        d = os.path.dirname(path)\n"
     "        if d not in sys.path:\n"
@@ -947,6 +1012,7 @@ const char* guiTestPythonSource =
     "        traceback.print_exc()\n"
     "        status = 1\n"
     "    finally:\n"
+    "        faulthandler.cancel_dump_traceback_later()\n"
     "        sys.stdout.flush()\n"
     "        sys.stderr.flush()\n"
     "        (sys.stdout, sys.stderr) = saved\n"
@@ -1003,6 +1069,12 @@ runTestScript(const QString& path)
         std::cout << "NatronGuiTest: " << path.toStdString() << ": FAIL: timeout after " << timeoutSec
                   << " s (NATRON_TEST_TIMEOUT)" << std::endl;
         std::cout.flush();
+        {
+            // where the script is (it called a function that processes the events, e.g. waitIdle())
+            PythonGILLocker pgl;
+            PyRun_SimpleString("import faulthandler, sys\n"
+                               "faulthandler.dump_traceback(sys.__stderr__ or sys.stderr, all_threads=True)\n");
+        }
         std::fflush(0);
         // the test is blocked: nothing can be closed cleanly (no auto-save was written in test mode)
         std::_Exit(1);
@@ -1014,7 +1086,7 @@ runTestScript(const QString& path)
         AppManager::NestedEventLoopRAII nestedLoop;
         PythonGILLocker pgl;
         PyObject* module = PyImport_ImportModule(NATRON_GUI_TEST_PYTHON_MODULE_NAME);
-        PyObject* r = module ? PyObject_CallMethod( module, "_run", "s", path.toStdString().c_str() ) : 0;
+        PyObject* r = module ? PyObject_CallMethod( module, "_run", "si", path.toStdString().c_str(), timeoutSec ) : 0;
         if (r) {
             status = (int)PyLong_AsLong(r);
             Py_DECREF(r);
@@ -1025,8 +1097,8 @@ runTestScript(const QString& path)
         }
         Py_XDECREF(module);
     }
-    if ( appPTR->isQuitRequested() ) {
-        // the script called natron.quit(n): n is the exit status
+    if ( (status == 0) && appPTR->isQuitRequested() ) {
+        // the script called natron.quit(n): n is the exit status, unless the script failed afterwards
         status = appPTR->getRequestedExitCode();
     }
     watchdog->stop();

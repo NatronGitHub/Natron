@@ -17,6 +17,12 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
 #include "ColorSelectorWidget.h"
 
 CLANG_DIAG_OFF(deprecated)
@@ -32,6 +38,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/AppManager.h"
 #include "Engine/Lut.h"
 #include "Gui/Label.h"
 
@@ -917,6 +924,9 @@ ColorSelectorWidget::savePaletteButton(int id)
     if (_paletteButtons.size() < 1 || id >= _paletteButtons.size() || id < 0) {
         return;
     }
+    if ( appPTR->isTestMode() ) {
+        return; // a test does not change the user's palette
+    }
 
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME),
                         QString::fromUtf8(NATRON_APPLICATION_NAME) );
@@ -935,6 +945,9 @@ ColorSelectorWidget::savePaletteButton(int id)
 void
 ColorSelectorWidget::savePaletteButtons()
 {
+    if ( appPTR->isTestMode() ) {
+        return; // a test does not change the user's palette
+    }
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME),
                         QString::fromUtf8(NATRON_APPLICATION_NAME) );
     settings.beginGroup( QString::fromUtf8(COLOR_SELECTOR_PALETTE_SETTINGS) );
