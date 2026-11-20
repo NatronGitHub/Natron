@@ -295,8 +295,8 @@ marked "[plug-in visible]" in the issue and can be split into their own issues
 when someone works on them. The area pages link every such row to #1385.
 
 Related issues that were already open: `#1107 <https://github.com/NatronGitHub/Natron/issues/1107>`__ (advertise OFX API 1.5), `#1105 <https://github.com/NatronGitHub/Natron/issues/1105>`__
-(thumbnail renders), `#1106 <https://github.com/NatronGitHub/Natron/issues/1106>`__ (OFX 1.5 tracking: ChoiceOrder, InterpType, Obsolete,
-CPURenderSupported), `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__ (ChoiceOrder), `#1145 <https://github.com/NatronGitHub/Natron/issues/1145>`__ (CUDA rendering), `#6 <https://github.com/NatronGitHub/Natron/issues/6>`__ (parameter
+(thumbnail renders), `#1106 <https://github.com/NatronGitHub/Natron/issues/1106>`__ (OFX 1.5.1 / next: ChoiceOrder, CPURenderSupported (1.5.1),
+InterpType, Obsolete (next)), `#1137 <https://github.com/NatronGitHub/Natron/issues/1137>`__ (ChoiceOrder), `#1145 <https://github.com/NatronGitHub/Natron/issues/1145>`__ (CUDA rendering), `#6 <https://github.com/NatronGitHub/Natron/issues/6>`__ (parameter
 interacts), `#7 <https://github.com/NatronGitHub/Natron/issues/7>`__ (fields and field rendering) and `#87 <https://github.com/NatronGitHub/Natron/issues/87>`__ (Transition context).
 
 Deliberate deviations (won't fix)
