@@ -337,6 +337,9 @@ fi
 
 FFMPEG_PATH="$CUSTOM_BUILDS_PATH"
 LIBRAW_PATH="$CUSTOM_BUILDS_PATH"
+# macOS COMMERCIAL builds only: the prefix of the libheif without x264/x265 that replaces the
+# bundled libheif (build-plugins.sh)
+LIBHEIF_PATH=""
 if [ "$PKGOS" = "Windows" ]; then
     if [ "${NATRON_LICENSE:-}" = "GPL" ]; then
         if [ -d "$CUSTOM_BUILDS_PATH/ffmpeg-gpl" ]; then
@@ -382,12 +385,28 @@ elif [ "$PKGOS" = "OSX" ]; then
             LIBRAW_PATH="$CUSTOM_BUILDS_PATH/libraw-gpl2"
         fi
     elif [ -z "${NATRON_LICENSE+x}" ] || [ "${NATRON_LICENSE:-}" = "COMMERCIAL" ]; then
-        if [ -d "$CUSTOM_BUILDS_PATH/ffmpeg-lgpl" ]; then
-            FFMPEG_PATH="$CUSTOM_BUILDS_PATH/ffmpeg-lgpl"
-        fi
-        if [ -d "$CUSTOM_BUILDS_PATH/libraw-lgpl" ]; then
-            LIBRAW_PATH="$CUSTOM_BUILDS_PATH/libraw-lgpl"
-        fi
+        # the MacPorts overlay's subports ffmpeg-lgpl, libraw-lgpl and libheif-lgpl
+        # (tools/MacPorts), installed in $SDK_HOME/libexec next to the GPL ffmpeg and libraw
+        # and to libheif (which links the GPL x264 and x265), or a custom build (#1302, #1177)
+        for _lgpl_prefix in "$SDK_HOME/libexec/ffmpeg-lgpl" "$CUSTOM_BUILDS_PATH/ffmpeg-lgpl"; do
+            if [ -d "$_lgpl_prefix" ]; then
+                FFMPEG_PATH="$_lgpl_prefix"
+                break
+            fi
+        done
+        for _lgpl_prefix in "$SDK_HOME/libexec/libraw-lgpl" "$CUSTOM_BUILDS_PATH/libraw-lgpl"; do
+            if [ -d "$_lgpl_prefix" ]; then
+                LIBRAW_PATH="$_lgpl_prefix"
+                break
+            fi
+        done
+        for _lgpl_prefix in "$SDK_HOME/libexec/libheif-lgpl" "$CUSTOM_BUILDS_PATH/libheif-lgpl"; do
+            if [ -d "$_lgpl_prefix" ]; then
+                LIBHEIF_PATH="$_lgpl_prefix"
+                break
+            fi
+        done
+        unset _lgpl_prefix
     fi
 fi
 

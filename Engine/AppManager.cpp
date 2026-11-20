@@ -384,6 +384,65 @@ AppManager::loadFromArgs(const CLArgs& cl)
     }
 #endif
 
+    // Before creating qApp and before initPython(): the GUI registers the test module only in test mode.
+    _imp->testMode = !cl.getTestScript().isEmpty() && !cl.isBackgroundMode();
+    if ( _imp->testMode && !qEnvironmentVariableIsEmpty("CI") && (qgetenv("NATRON_GUI_TESTS") != "1") ) {
+        // In CI, the GUI tests only run where the job enables them (NATRON_GUI_TESTS=1, e.g. under Xvfb with
+        // Mesa): skipped here, before anything is initialized, not in the test script, which runs much later.
+        std::cout << "SKIP: GUI tests in CI need NATRON_GUI_TESTS=1" << std::endl;
+        _imp->requestedExitCode = 77;
+        _imp->quitRequested = true;
+
+        return false;
+    }
+#if defined(__NATRON_UNIX__) && !defined(__NATRON_OSX__)
+    if ( _imp->testMode && qgetenv("DISPLAY").isEmpty() && qgetenv("WAYLAND_DISPLAY").isEmpty() &&
+         qgetenv("QT_QPA_PLATFORM").isEmpty() ) {
+        // Qt would abort: a GUI test without a display is skipped, not failed
+        std::cout << "SKIP: no display (DISPLAY and WAYLAND_DISPLAY are not set): run the GUI tests under xvfb-run" << std::endl;
+        _imp->requestedExitCode = 77;
+        _imp->quitRequested = true;
+
+        return false;
+    }
+#endif
+    if (_imp->testMode) {
+        // The settings written with the default QSettings constructor (e.g. the recent files) go to a
+        // temporary directory of this run, removed at exit, not to the user's preferences. The Natron
+        // settings are not saved with --no-settings, which --test implies, and the other writers of
+        // QSettings(organization, application) skip their writes in test mode.
+        _imp->testSettingsDir.reset( new QTemporaryDir( QDir::tempPath() + QString::fromUtf8("/NatronGuiTest-settings-XXXXXX") ) );
+        if ( _imp->testSettingsDir->isValid() ) {
+            QSettings::setDefaultFormat(QSettings::IniFormat);
+            QSettings::setPath( QSettings::IniFormat, QSettings::UserScope, _imp->testSettingsDir->path() );
+        } else {
+            std::cout << "NatronGuiTest: FAIL: cannot create a temporary settings directory in "
+                      << QDir::tempPath().toStdString() << std::endl;
+            _imp->requestedExitCode = 1;
+            _imp->quitRequested = true;
+
+            return false;
+        }
+        // A GUI test that fails to start (e.g. an error while loading) fails: only the test runner (or a
+        // skip) sets another exit status (see main()).
+        _imp->requestedExitCode = 1;
+    }
+    if ( _imp->testMode && !qEnvironmentVariableIsSet("NATRON_TEST_NO_FOCUS") ) {
+        // A GUI test never takes the user's keyboard focus or activates its windows (#1464). Set before
+        // the QApplication exists. (--no-dialogs does not imply it.)
+        qputenv("NATRON_TEST_NO_FOCUS", "1");
+    }
+    if (_imp->testMode) {
+        // Before initPython(): the output of a test reaches the log even when the watchdog ends it
+        qputenv("PYTHONUNBUFFERED", "1");
+#ifdef DEBUG
+        // No trapped floating point exception, in any thread: before qApp, any OpenGL context and any
+        // thread (see AppManagerPrivate::testModeNoTrap)
+        boost_adaptbx::floating_point::trapping_disabled() = true;
+        _imp->testModeNoTrap.reset(new boost_adaptbx::floating_point::no_exception_trapping);
+#endif
+    }
+
     // This needs to be done BEFORE creating qApp because
     // on Linux, X11 will create a context that would corrupt
     // the XUniqueContext created by Qt
@@ -955,6 +1014,12 @@ AppManager::hasOpenGLForRequirements(OpenGLRequirementsTypeEnum type, QString* m
 bool
 AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
 {
+#ifdef DEBUG
+    // The floating point exceptions that main() traps in debug builds must not be trapped in the OpenGL
+    // driver: Mesa's llvmpipe raises them while it creates a context (SIGFPE in driCreateContextAttribs()
+    // under Xvfb). This runs before the event loop, which does not trap them (see exec()).
+    boost_adaptbx::floating_point::no_exception_trapping noTrap;
+#endif
     QMutexLocker k(&_imp->openGLFunctionsMutex);
 
     if (!_imp->hasInitializedOpenGLFunctions) {
@@ -1090,7 +1155,11 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
     }
 
     int oldCacheVersion = 0;
-    {
+    if ( isTestMode() ) {
+        // a test does not record its cache version in the user's preferences (the next launch of an
+        // installed Natron would clear the user's caches)
+        oldCacheVersion = NATRON_CACHE_VERSION;
+    } else {
         QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
         if ( settings.contains( QString::fromUtf8(kNatronCacheVersionSettingsKey) ) ) {
@@ -3507,6 +3576,35 @@ AppManager::initBuiltinPythonModules()
     if (ret == -1) {
         throw std::runtime_error("Failed to initialize built-in Python module.");
     }
+}
+
+bool
+AppManager::isTestMode() const
+{
+    return _imp->testMode;
+}
+
+bool
+AppManager::keepsOtherSessionsAutoSaves() const
+{
+    return isDialogsDisabled() || isTestMode();
+}
+
+bool
+AppManager::hasRenderInProgress() const
+{
+    AppInstanceVec instances;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        instances = _imp->_appInstances;
+    }
+    for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        if ( *it && (*it)->hasRenderInProgress() ) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void

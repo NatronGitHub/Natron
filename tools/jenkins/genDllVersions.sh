@@ -418,11 +418,30 @@ done
 # Modules loaded at run time (LoadLibrary, Python imports): missing dependencies only warn, since
 # a module that can't load (e.g. the PySide module of a Qt module that MSYS2 doesn't install) is
 # no worse than before.
-RUNTIME_ROOTS=("$SDK_HOME"/bin/Qt"${QT_VERSION_MAJOR}"*.dll)
+# COMMERCIAL builds leave out the Qt modules that are GPL-3 only, and the Qt plug-ins that link
+# them (build-Windows-installer.sh removes these plug-ins and the PySide modules). GPL builds keep
+# them all.
+qt_gpl_root() {
+    [ "$NATRON_LICENSE" = "COMMERCIAL" ] || return 1
+    local mod
+    case "${1#"$QT_PLUGINS_DIR"/}" in
+        designer/*|virtualkeyboard/*|assetimporters/*|platforminputcontexts/*virtualkeyboard*) return 0 ;;
+    esac
+    for mod in charts datavisualization networkauth designer virtualkeyboard quick3d bodymovin; do
+        case "$(basename "${1,,}")" in
+            qt"${QT_VERSION_MAJOR}${mod}"*.dll|qt"${mod}".*pyd) return 0 ;; # (Qt5Charts.dll, QtCharts.pyd)
+        esac
+    done
+    return 1
+}
+RUNTIME_ROOTS=()
+for m in "$SDK_HOME"/bin/Qt"${QT_VERSION_MAJOR}"*.dll; do
+    qt_gpl_root "$m" || RUNTIME_ROOTS+=("$m")
+done
 for m in "$QT_PLUGINS_DIR"/*/*.dll; do
     case "${m,,}" in
         *mysql*|*psql*) ;; # removed by build-Windows-installer.sh
-        *) RUNTIME_ROOTS+=("$m") ;;
+        *) qt_gpl_root "$m" || RUNTIME_ROOTS+=("$m") ;;
     esac
 done
 for m in "$PY_LIBDIR"/lib-dynload/*.pyd \
@@ -430,7 +449,7 @@ for m in "$PY_LIBDIR"/lib-dynload/*.pyd \
          "$PY_LIBDIR"/site-packages/shiboken"${PYSIDE_MAJOR}"/*.pyd; do
     case "$(basename "${m,,}")" in
         _tkinter.*) ;; # Tcl/Tk are not shipped
-        *) RUNTIME_ROOTS+=("$m") ;;
+        *) qt_gpl_root "$m" || RUNTIME_ROOTS+=("$m") ;;
     esac
 done
 
@@ -564,23 +583,15 @@ if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
     # (only the functions is_gpl_lib*, e.g. is_gpl_lib and the is_gpl_lib_nocase that it calls:
     # the script itself checks its arguments and exits)
     eval "$(sed -n -e '/^is_gpl_lib[A-Za-z0-9_]*() {/,/^}/p' "$CHECK_COMMERCIAL")"
-    is_gpl_dll() {
-        is_gpl_lib "$1" && return 0
-        # SoX's GPL dependencies, until is_gpl_lib lists them
-        case "$1" in
-            libao-*|libid3tag-*) return 0 ;;
-        esac
-        return 1
-    }
     # Self-test: a function that is missing after the eval (e.g. a helper that is_gpl_lib calls)
     # would make every test fail silently inside the && lists below, and every DLL pass.
-    if ! is_gpl_dll libx265-215.dll || ! is_gpl_dll qt5charts.dll || is_gpl_dll libpng16-16.dll; then
+    if ! is_gpl_lib libx265-215.dll || ! is_gpl_lib qt5charts.dll || is_gpl_lib libpng16-16.dll; then
         echo "Error: is_gpl_lib from $CHECK_COMMERCIAL does not work here (libx265-215.dll and qt5charts.dll must be GPL, libpng16-16.dll not): update the extraction in genDllVersions.sh"
         exit 1
     fi
     gpl_found=0
     for d in "${!NATRON_SET[@]}" "${!ARENA_SET[@]}" "${!GMIC_SET[@]}"; do
-        if is_gpl_dll "$(basename "${d,,}")"; then
+        if is_gpl_lib "$(basename "${d,,}")"; then
             gpl_found=1
             echo "Error: COMMERCIAL build, but the GPL library $(basename "$d") would be bundled. It is needed by:"
             for f in "${!DEPS[@]}"; do

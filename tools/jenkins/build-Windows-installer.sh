@@ -63,6 +63,11 @@ fi
 
 DUMP_SYMS="$SDK_HOME/bin/natron_dump_syms_dwarf.exe"
 
+# Qt modules that are GPL-3 only (no LGPL), left out of COMMERCIAL builds with their PySide modules
+# (QtCharts.pyd, ...) and the Qt plug-ins that link them; genDllVersions.sh doesn't bundle their
+# DLLs. check-commercial-bundle.sh (is_gpl_lib) rejects the same modules. GPL builds keep them.
+QT_GPL_LIBS=( Charts DataVisualization NetworkAuth Designer VirtualKeyboard Quick3D Bodymovin )
+
 dump_syms_safe() {
     if [ $# != 2 ]; then
         echo "Usage: dump_syms_safe <bin> <output>"
@@ -255,6 +260,11 @@ fi
 # Qt plug-ins, and the DLLs of genDllVersions.sh (all the Qt DLLs among them, for PySide)
 cp -a "$SDK_HOME/share/qt${QT_VERSION_MAJOR}/plugins"/* "$location/bin/"
 rm "$location/bin/sqldrivers"/{*mysql*,*psql*} || true
+if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
+    # the Qt plug-ins that link the GPL-3-only Qt modules
+    rm -rf "$location/bin/designer" "$location/bin/virtualkeyboard" "$location/bin/assetimporters"
+    rm -f "$location/bin/platforminputcontexts"/*virtualkeyboard*.dll
+fi
 cp "${NATRON_DLL[@]}" "$location/bin/"
 
 strip_binaries "$location/bin"
@@ -272,6 +282,12 @@ cp -a "$SDK_HOME/lib/python${PYVER}" "${TMP_PORTABLE_DIR}/lib/"
 
 PYSIDE_PLUGIN_PATH="${TMP_PORTABLE_DIR}/Plugins/PySide2"
 mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide2" "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/shiboken2" "${TMP_PORTABLE_DIR}/Plugins"
+if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
+    # the PySide modules of the GPL-3 Qt modules (QtCharts.pyd, QtCharts.pyi, ...)
+    for qtlib in "${QT_GPL_LIBS[@]}"; do
+        rm -f "${PYSIDE_PLUGIN_PATH}/Qt${qtlib}".*
+    done
+fi
 
 rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"/{test,config,config-"${PYVER}"m}
 
