@@ -556,8 +556,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - G7
      - `ofxMessage.h:134 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxMessage.h#L134>`__ "Persistent messages are associated with an effect handle until explicitly cleared by an effect"
      - MUST
-     - Natron also clears them itself: on node deactivate (Engine/Node.cpp:2815) and at the start of ``Node::makePreviewImage`` (Engine/Node.cpp:3352).
-     - PARTIAL
+     - Natron also clears them itself: on node deactivate (Engine/Node.cpp:2815) and at the start of ``Node::makePreviewImage`` (Engine/Node.cpp:3352). Fixed: a message set by the plug-in (``Node::setPersistentMessage(..., fromPlugin=true)``) is only cleared by the plug-in's clearPersistentMessage; Natron still clears its own messages.
+     - OK (fixed by `#1485 <https://github.com/NatronGitHub/Natron/pull/1485>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - G8
@@ -804,7 +804,7 @@ Spec-only
 
 22. **P7:** effect descriptor Short/Long labels default to "", and resetting or setting kOfxPropLabel does not reset them. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
-23. **G5/G7:** host-level Error and Warning messages go only to the log (deliberate, because of Sapphire). Natron also clears persistent messages itself (Engine/Node.cpp:2815, 3352). Host-level messages going to the log is deliberate, won't fix. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+23. **G5/G7:** host-level Error and Warning messages go only to the log (deliberate, because of Sapphire). Natron also clears persistent messages itself (Engine/Node.cpp:2815, 3352). Host-level messages going to the log is deliberate, won't fix. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. G7 is **fixed** by `#1485 <https://github.com/NatronGitHub/Natron/pull/1485>`__.
 
 24. **A14:** asserts on legal PurgeCaches and SyncPrivateData return codes (Engine/OfxEffectInstance.cpp:2781, 2808). This affects debug builds only. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 

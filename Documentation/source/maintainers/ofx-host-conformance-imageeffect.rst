@@ -551,22 +551,22 @@ N: Engine/OfxClipInstance.cpp. HS: ofxhClip.cpp.
    * - 5.12
      - `ofxImageEffect.h:451 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L451>`__ and `ofxImageEffect.h:490 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L490>`__ kOfxImageEffectPropFrameStep "generally ... 1 ... or 0.5"; `ofxImageEffect.h:1082-1090 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L1082-L1090>`__ "can be any positive value"
      - MUST
-     - The per-render End passes ``step = time``: EffectInstanceRenderRoI.cpp:2076 ``endSequenceRender_public(time, time, time, false, ...)`` (signature EffectInstance.cpp:4027-4029), while Begin passes 1 (:1988). Frame 0 gives a step of 0, and negative frames give negative steps. Since abff4c933. The scheduler's End for sequential writers passes 1 while its Begin passes ``frameStep`` (OutputSchedulerThread.cpp:1088-1089 vs 1180-1181).
-     - WRONG
+     - The per-render End passes ``step = time``: EffectInstanceRenderRoI.cpp:2076 ``endSequenceRender_public(time, time, time, false, ...)`` (signature EffectInstance.cpp:4027-4029), while Begin passes 1 (:1988). Frame 0 gives a step of 0, and negative frames give negative steps. Since abff4c933. The scheduler's End for sequential writers passes 1 while its Begin passes ``frameStep`` (OutputSchedulerThread.cpp:1088-1089 vs 1180-1181). Fixed: the per-render End passes a step of 1, as its Begin, and the scheduler's End passes the frame step of its Begin.
+     - OK (fixed by `#1485 <https://github.com/NatronGitHub/Natron/pull/1485>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - 5.13
      - `ofxImageEffect.h:452 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L452>`__ and `ofxImageEffect.h:491 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L491>`__ kOfxPropIsInteractive "is this a single frame render due to user interaction in a GUI, or a proper full sequence render"
      - MUST
-     - Per-render Begin: ``!appPTR->isBackground()`` (EffectInstanceRenderRoI.cpp:1988), so 1 even during a GUI disk render. Per-render End: ``false`` (:2076), which does not match the Begin. Scheduler: Begin ``false`` (OutputSchedulerThread.cpp:1090), End ``!isBackground()`` (:1182).
-     - WRONG
+     - Per-render Begin: ``!appPTR->isBackground()`` (EffectInstanceRenderRoI.cpp:1988), so 1 even during a GUI disk render. Per-render End: ``false`` (:2076), which does not match the Begin. Scheduler: Begin ``false`` (OutputSchedulerThread.cpp:1090), End ``!isBackground()`` (:1182). Fixed: a render is interactive if it is in the GUI and not a render on disk (whose tree root is an output effect that is not a viewer), with the same value in Begin and End; the scheduler's Begin and End (renders on disk) pass 0.
+     - OK (fixed by `#1485 <https://github.com/NatronGitHub/Natron/pull/1485>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - 5.14
      - `ofxImageEffect.h:770-783 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L770-L783>`__ InteractiveRenderStatus "1 - the instance is being rendered because a user is modifying parameters"
      - MUST
-     - Per frame: correct (ParallelRenderArgs). The scheduler's Begin for sequential writers passes ``true`` for a disk render (OutputSchedulerThread.cpp:1092). Its End passes ``!isBackground()`` (:1184).
-     - WRONG (sequential writers only)
+     - Per frame: correct (ParallelRenderArgs). The scheduler's Begin for sequential writers passes ``true`` for a disk render (OutputSchedulerThread.cpp:1092). Its End passes ``!isBackground()`` (:1184). Fixed: the scheduler's Begin and End pass 0.
+     - OK (fixed by `#1485 <https://github.com/NatronGitHub/Natron/pull/1485>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - 5.15
@@ -808,11 +808,11 @@ Verdict counts
    * - verdict
      - count
    * - OK
-     - 69
+     - 72
    * - PARTIAL
      - 22
    * - WRONG
-     - 13
+     - 10
    * - MISSING
      - 2
    * - N/A
@@ -854,7 +854,7 @@ Spec-only
 
 11. **GetClipPreferences is called with mandatory clips disconnected** (3.2, WRONG, deliberate since 90d644baa). Second check: Node.cpp:6133. Neither ``areAllNonOptionalClipsConnected`` nor ``checkClipConnectionStatus`` has a caller. **Deliberate, won't fix.** Listed in `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__ for completeness.
 
-12. **Begin/EndSequenceRender argument inconsistencies** (5.12-5.14, WRONG): **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+12. **Begin/EndSequenceRender argument inconsistencies** (5.12-5.14, WRONG): **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `#1485 <https://github.com/NatronGitHub/Natron/pull/1485>`__.
 
     - The per-render End passes FrameStep = time (EffectInstanceRenderRoI.cpp:2076, since abff4c933).
 
