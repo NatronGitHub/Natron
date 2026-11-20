@@ -198,6 +198,8 @@ step_libs() {
     $PORT install ImageMagick +natron -x11
     $PORT install ImageMagick7 +natron -x11 -openexr
     $PORT install ffmpeg +gpl2 +highbitdepth +natronmini
+    # COMMERCIAL builds (NATRON_LICENSE=COMMERCIAL): LGPL FFmpeg, LibRaw and libheif in libexec
+    $PORT install ffmpeg-lgpl libraw-lgpl libheif-lgpl
     $PORT install openimageio +freetype +natron +opencolorio +openjpeg $(oiio_python_variants)
 }
 
@@ -379,6 +381,13 @@ step_update() {
         # libvmaf is no longer needed by anything
         $PORT -N uninstall libvmaf 2>/dev/null || true
     fi
+    # COMMERCIAL builds: LGPL FFmpeg, LibRaw and libheif (images made before these subports)
+    for p in ffmpeg-lgpl libraw-lgpl libheif-lgpl; do
+        if ! port -q installed "$p" 2>/dev/null | grep -q '(active)'; then
+            echo "===== installing $p"
+            $PORT install "$p"
+        fi
+    done
     step_python_migrate
     # ImageMagick 7 for openfx-arena (Natron 2.6), for the images created before step_libs had it
     if ! port -q installed ImageMagick7 2>/dev/null | grep -q '+natron.*(active)'; then
@@ -402,9 +411,18 @@ step_cleanup() {
 
 step_build() {
     start_http_proxy
+    if [ "${NATRON_LICENSE:-GPL}" = "COMMERCIAL" ]; then
+        # step_libs and step_update install them: fail now rather than after building Natron
+        for p in ffmpeg-lgpl libraw-lgpl libheif-lgpl; do
+            if ! port -q installed "$p" 2>/dev/null | grep -q '(active)'; then
+                echo "Error: $p is not installed in this image, update it with: tools/tart/natron-sdk.sh update"
+                return 1
+            fi
+        done
+    fi
     mkdir -p "$WORKSPACE"
     cd "$NATRON/tools/jenkins"
-    env NOUPDATE=1 WORKSPACE="$WORKSPACE" DISABLE_BREAKPAD=1 NATRON_LICENSE=GPL \
+    env NOUPDATE=1 WORKSPACE="$WORKSPACE" DISABLE_BREAKPAD=1 NATRON_LICENSE="${NATRON_LICENSE:-GPL}" \
         GIT_URL=https://github.com/NatronGitHub/Natron.git GIT_BRANCH="${GIT_BRANCH:-RB-2.6}" \
         UNIT_TESTS="${UNIT_TESTS:-false}" BUILD_NAME=natron_github_RB2 BUILD_NUMBER=1 \
         COMPILE_TYPE=release MKJOBS="$JOBS" \

@@ -1,0 +1,212 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem                  1.0
+PortGroup                   cmake 1.1
+PortGroup                   github 1.0
+PortGroup                   legacysupport 1.1
+
+name                        libheif
+conflicts                   libheif-devel
+set my_name                 libheif
+
+categories                  multimedia
+license                     LGPL-3+
+maintainers                 {mascguy @mascguy} openmaintainer
+description                 An ISO/IEC 23008-12:2017 HEIF file format decoder and encoder
+long_description            {*}${description}.
+
+dist_subdir                 ${my_name}
+
+# filesystem
+legacysupport.newest_darwin_requires_legacy 18
+legacysupport.use_mp_libcxx yes
+
+set which_version latest
+platform darwin {
+    if {${configure.cxx_stdlib} eq "libc++"} {
+        if {${os.major} < 11} {
+            # Fall back to last pre-C++20 release.
+            # On 10.6 a failure happens during the linking phase
+            # even with the latest compatible version of ld.
+            set which_version "1.18"
+        }
+    }
+}
+
+if {${which_version} eq "latest"} {
+    github.setup            strukturag libheif 1.23.7 v
+    revision                0
+
+    checksums               rmd160  11635573dd073c94ad9344f5ead4d6a7ac8a2e90 \
+                            sha256  f7483e818503ea6224c8863e4a56ac02c7089021a98472c811c12aa19faf2475 \
+                            size    2439383
+
+    compiler.cxx_standard   2020
+} else {
+    github.setup            strukturag libheif 1.18.2 v
+    revision                8
+
+    checksums               rmd160  fb41f7c4d109883a214b8db5db1039809a3fb8eb \
+                            sha256  c4002a622bec9f519f29d84bfdc6024e33fd67953a5fb4dc2c2f11f67d5e45bf \
+                            size    1525096
+
+    compiler.cxx_standard   2011
+
+    patchfiles-append       patch-1.18.2-svtav1.diff
+}
+
+github.tarball_from         releases
+
+depends_build-append \
+                            path:bin/pkg-config:pkgconfig
+
+depends_lib-append \
+                            port:aom \
+                            port:brotli \
+                            port:dav1d \
+                            path:lib/pkgconfig/gdk-pixbuf-2.0.pc:gdk-pixbuf2 \
+                            port:libde265 \
+                            path:include/turbojpeg.h:libjpeg-turbo \
+                            port:libpng \
+                            port:openh264 \
+                            port:openjpeg \
+                            port:svt-av1 \
+                            port:webp \
+                            port:x264 \
+                            port:x265 \
+                            port:zlib
+
+# Shared options
+configure.args-append \
+                            -DBUILD_TESTING:BOOL=OFF \
+                            -DWITH_EXAMPLES:BOOL=OFF \
+                            -DWITH_EXAMPLE_HEIF_VIEW:BOOL=OFF
+
+# Codec-specific options
+configure.args-append \
+                            -DWITH_AOM_DECODER:BOOL=ON \
+                            -DWITH_AOM_ENCODER:BOOL=ON \
+                            -DWITH_DAV1D:BOOL=ON \
+                            -DWITH_FFMPEG_DECODER:BOOL=OFF \
+                            -DWITH_JPEG_DECODER:BOOL=ON \
+                            -DWITH_JPEG_ENCODER:BOOL=ON \
+                            -DWITH_KVAZAAR:BOOL=OFF \
+                            -DWITH_LIBDE265:BOOL=ON \
+                            -DWITH_OpenH264_DECODER:BOOL=ON \
+                            -DWITH_OPENJPH_ENCODER:BOOL=OFF \
+                            -DWITH_OpenJPEG_DECODER:BOOL=ON \
+                            -DWITH_OpenJPEG_ENCODER:BOOL=ON \
+                            -DWITH_RAV1E:BOOL=OFF \
+                            -DWITH_SvtEnc:BOOL=ON \
+                            -DWITH_UNCOMPRESSED_CODEC:BOOL=ON \
+                            -DWITH_UVG266:BOOL=OFF \
+                            -DWITH_VVDEC:BOOL=OFF \
+                            -DWITH_VVENC:BOOL=OFF \
+                            -DWITH_X264:BOOL=ON \
+                            -DWITH_X265:BOOL=ON
+
+# Disable dynamic plugin loading, due to upstream issue:
+#   clang: error: invalid argument '-compatibility_version 1.0.0' only allowed with '-dynamiclib'
+# We don't lose any functionality though, as we're building with everything enabled as built-ins.
+configure.args-append \
+                            -DENABLE_PLUGIN_LOADING:BOOL=OFF
+
+# Natron: subport libheif-lgpl, the libheif of COMMERCIAL Natron builds (#1177): libheif links its
+# encoders directly (ENABLE_PLUGIN_LOADING=OFF), including the GPL x264 and x265. This is the same
+# libheif without x264 and x265: HEIC (HEVC) files are still decoded (libde265) and encoded (kvazaar),
+# AVIF files too (dav1d, aom, SVT-AV1), and H.264 HEIF files are decoded (openh264), not encoded.
+# No gdk-pixbuf loader and no examples. It is installed in ${prefix}/libexec/libheif-lgpl, with the
+# same library name and ABI as libheif, so that it can be installed next to it: COMMERCIAL builds
+# bundle its libheif.1.dylib instead of libheif's, which openimageio links.
+subport libheif-lgpl {
+    description             libheif without the GPL x264 and x265 encoders, for Natron's COMMERCIAL builds
+    long_description        {*}${description}.
+    conflicts
+    cmake.install_prefix    ${prefix}/libexec/${subport}
+    depends_lib-delete      path:lib/pkgconfig/gdk-pixbuf-2.0.pc:gdk-pixbuf2 \
+                            port:x264 \
+                            port:x265
+    configure.args-replace  -DWITH_X264:BOOL=ON \
+                            -DWITH_X264:BOOL=OFF
+    configure.args-replace  -DWITH_X265:BOOL=ON \
+                            -DWITH_X265:BOOL=OFF
+    configure.args-append   -DWITH_GDK_PIXBUF:BOOL=OFF
+    # (before the default variants below: the first default of a variant wins)
+    default_variants-append -examples +kvazaar
+    post-destroot {
+        foreach lib [glob ${destroot}${cmake.install_prefix}/lib/libheif*.dylib] {
+            if {![catch {exec otool -L ${lib} | grep -E {/lib(x264|x265)[.]}}]} {
+                return -code error "${lib} links x264 or x265 (GPL)"
+            }
+        }
+    }
+}
+
+# error: unknown warning option '-Werror=potentially-evaluated-expression'
+compiler.blacklist-append   {clang < 700}
+
+platform darwin {
+    if {${os.major} >= 10 && [string match *clang* ${configure.compiler}]} {
+        # Fix for error: non-portable path to file <DAV1D/xxx.h> and <AOM/xxx.h>
+        # https://trac.macports.org/ticket/67404
+        # Flags are Clang-specific, they break build with GCC.
+        configure.cxxflags-append \
+                            -Wno-nonportable-include-path \
+                            -Wno-error=nonportable-include-path \
+                            -Wno-unknown-warning-option \
+                            -Wno-error=unknown-warning-option
+    }
+
+    if {${os.major} < 10 || (${os.major} == 10 && ${configure.build_arch} eq "ppc")} {
+        # TODO: Disable rav1e on <10.6, due to issues with cargo-c; enable if fixed.
+        # Do not enable on PPC until Rust is fixed or it becomes possible to build with gccrs.
+        # See: https://trac.macports.org/ticket/65434
+        if {[variant_isset rav1e]} {
+            error "Variant rav1e not supported for macOS 10.5 and earlier, or PPC"
+        }
+    }
+}
+
+variant kvazaar description {Use kvazaar for HEIC encoding} {
+    depends_lib-append \
+                            port:kvazaar
+
+    configure.args-replace \
+                            -DWITH_KVAZAAR:BOOL=OFF \
+                            -DWITH_KVAZAAR:BOOL=ON
+}
+
+variant rav1e description {Enable codec rav1e} {
+    depends_lib-append \
+                            port:rav1e
+
+    configure.args-replace \
+                            -DWITH_RAV1E:BOOL=OFF \
+                            -DWITH_RAV1E:BOOL=ON
+}
+
+variant examples description {Enable building examples} {
+    configure.args-replace \
+                            -DWITH_EXAMPLES:BOOL=OFF \
+                            -DWITH_EXAMPLES:BOOL=ON
+}
+
+variant tests description {Enable tests} {
+    configure.args-replace \
+                            -DBUILD_TESTING:BOOL=OFF \
+                            -DBUILD_TESTING:BOOL=ON
+
+    configure.args-append \
+                            -DWITH_REDUCED_VISIBILITY:BOOL=OFF
+
+    test.run                yes
+}
+
+default_variants-append     +examples +kvazaar
+
+if {![variant_isset rav1e]} {
+    notes-append "Support for rav1e now disabled by default; enable via +rav1e"
+}
+
+# Exclude pre-release candidates
+github.livecheck.regex {([0-9.]+)}
