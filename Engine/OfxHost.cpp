@@ -425,17 +425,13 @@ OfxHost::applyCPURenderSupport(PluginOpenGLRenderSupport openGLSupport,
 }
 
 bool
-OfxHost::isPluginDeprecated(const OFX::Host::Property::Set& descriptorProps)
+OfxHost::isPluginObsolete(const OFX::Host::Property::Set& descriptorProps)
 {
     // kOfxImageEffectPluginPropObsolete: "available for use in old projects but not offered to users for
-    // new use", which is what Natron does with deprecated plug-ins (see Plugin::getIsUserCreatable()).
-    // Both properties are declared, with a default of 0, on every HostSupport descriptor, including the
+    // new use", which is what Natron does with these plug-ins (see Plugin::getIsUserCreatable()).
+    // HostSupport declares it, with a default of 0, on every image effect descriptor, including the
     // ones loaded from the plug-in cache.
-    return ( descriptorProps.getIntProperty(kOfxImageEffectPluginPropObsolete) != 0
-#ifdef OFX_EXTENSIONS_NATRON
-             || descriptorProps.getIntProperty(kNatronOfxImageEffectPropDeprecated) != 0
-#endif
-             );
+    return descriptorProps.getIntProperty(kOfxImageEffectPluginPropObsolete) != 0;
 }
 
 static
@@ -1160,7 +1156,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         const std::set<std::string> & contexts = p->getContexts();
         std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
         std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
-        const bool isDeprecated = isPluginDeprecated( p->getDescriptor().getProps() );
+        const bool isObsolete = isPluginObsolete( p->getDescriptor().getProps() );
         Plugin* natronPlugin = appPTR->registerPlugin( resourcesPath,
                                                        groups,
                                                        QString::fromUtf8( openfxId.c_str() ),
@@ -1171,7 +1167,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
                                                        foundWriter != contexts.end(),
                                                        new LibraryBinary(LibraryBinary::eLibraryTypeBuiltin),
                                                        p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe,
-                                                       p->getVersionMajor(), p->getVersionMinor(), isDeprecated );
+                                                       p->getVersionMajor(), p->getVersionMinor(), isObsolete );
         bool isInternalOnly = openfxId == PLUGINID_OFX_ROTO;
         if (isInternalOnly) {
             natronPlugin->setForInternalUseOnly(true);
@@ -1209,13 +1205,13 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         double evaluation = p->getDescriptor().getProps().getDoubleProperty(kTuttleOfxImageEffectPropEvaluation);
 
 
-        if (!isDeprecated && ( foundReader != contexts.end() ) && (formatsCount > 0) && readersMap) {
+        if (!isObsolete && ( foundReader != contexts.end() ) && (formatsCount > 0) && readersMap) {
             ///we're safe to assume that this plugin is a reader
             for (std::size_t k = 0; k < formats.size(); ++k) {
                 IOPluginSetForFormat& evalForFormat = (*readersMap)[formats[k]];
                 evalForFormat.insert( IOPluginEvaluation(openfxId, evaluation) );
             }
-        } else if (!isDeprecated && ( foundWriter != contexts.end() ) && (formatsCount > 0) && writersMap) {
+        } else if (!isObsolete && ( foundWriter != contexts.end() ) && (formatsCount > 0) && writersMap) {
             ///we're safe to assume that this plugin is a writer.
             for (std::size_t k = 0; k < formats.size(); ++k) {
                 IOPluginSetForFormat& evalForFormat = (*writersMap)[formats[k]];

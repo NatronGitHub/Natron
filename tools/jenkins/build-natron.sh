@@ -158,7 +158,7 @@ if [ "$NATRON_BUILD_SYSTEM" = "qmake" ] && [ "$QT_VERSION_MAJOR" = 5 ]; then
     Linux)
 
         ;;
-    Msys|MINGW64_NT-*|MINGW32_NT-*)
+    Msys|MSYS_NT-*|MINGW64_NT-*|MINGW32_NT-*|UCRT64_NT-*|CLANG64_NT-*|CLANGARM64_NT-*)
         UNIX_PYTHON_HOME="$(cygpath -u "${PYTHON_HOME}")"
         UNIX_SDK_HOME="$(cygpath -u "${SDK_HOME}")"
         ;;
@@ -676,7 +676,10 @@ elif [ "$PKGOS" = "Windows" ]; then
     #rm -rf /c/Users/NatronWin/AppData/Local/INRIA/Natron &> /dev/null || true
     rm -rf "$LOCALAPPDATA\\INRIA\\Natron"* &> /dev/null || true
     testfail=0
-    env PYTHONHOME="$SDK_HOME" PATH="$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$QTDIR/bin:$SDK_HOME/osmesa/lib:$SDK_HOME/bin:${PATH:-}" $TIMEOUT -s KILL 1800 "${TEST_BINARY_TO_RUN}" || testfail=1
+    # MSYS2's Python loads extension modules with LOAD_LIBRARY_SEARCH_DEFAULT_DIRS, which ignores
+    # PATH, and Tests.exe is not next to the DLLs: PYTHONLEGACYWINDOWSDLLLOADING=1 (an MSYS2
+    # Python extension) restores the PATH search, as in ci.yml (#1147)
+    env PYTHONHOME="$SDK_HOME" PYTHONLEGACYWINDOWSDLLLOADING=1 PATH="$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$QTDIR/bin:$SDK_HOME/osmesa/lib:$SDK_HOME/bin:${PATH:-}" $TIMEOUT -s KILL 1800 "${TEST_BINARY_TO_RUN}" || testfail=1
     if [ $testfail != 0 ]; then
         echo "*** WARNING: Natron tests FAILED"
     fi

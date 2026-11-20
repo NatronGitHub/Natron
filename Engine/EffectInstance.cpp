@@ -4713,6 +4713,12 @@ EffectInstance::addOverlaySlaveParam(const KnobIPtr& knob)
     _imp->overlaySlaves.push_back(knob);
 }
 
+void
+EffectInstance::clearOverlaySlaveParams()
+{
+    _imp->overlaySlaves.clear();
+}
+
 bool
 EffectInstance::isOverlaySlaveParam(const KnobI* knob) const
 {
