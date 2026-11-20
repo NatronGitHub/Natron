@@ -616,6 +616,24 @@ AnimatedParam::setExpression(const QString& expr,
     }
     try {
         thisKnob->setExpression(dimension, expr.toStdString(), hasRetVariable, true);
+    } catch (const std::exception& e) {
+        // Keep returning False (no exception, for the scripts that test the result), but say why,
+        // else the failure is easy to miss (#1250)
+        KnobHolder* holder = thisKnob->getHolder();
+        AppInstancePtr app = holder ? holder->getApp() : AppInstancePtr();
+        if (app) {
+            std::string name = thisKnob->getName();
+            EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+            if ( effect && effect->getNode() ) {
+                name = effect->getNode()->getFullyQualifiedName() + '.' + name;
+            }
+            app->appendToScriptEditor( QString::fromUtf8("setExpression(): invalid expression on %1 (dimension %2): %3")
+                                       .arg( QString::fromUtf8( name.c_str() ) )
+                                       .arg(dimension)
+                                       .arg( QString::fromUtf8( e.what() ) ).toStdString() );
+        }
+
+        return false;
     } catch (...) {
         return false;
     }

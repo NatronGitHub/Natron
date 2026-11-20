@@ -189,6 +189,10 @@ Set the Python expression *expr* on the parameter at the given *dimension*
 If *hasRetVariable* is True, then *expr* is assumed to have a variable *ret* declared.
 Otherwise, Natron will declare the *ret* variable itself.
 
+Returns True on success. If the expression is invalid (a syntax error, an unknown name,
+or an exception when it is evaluated at the current frame), it is not set: the method
+prints the error (in the Script Editor of the GUI) and returns False. Check the returned value.
+
 .. method:: AnimatedParam.setInterpolationAtTime(time, interpolation[, dimension=0])
 
     :param time: :class:`float`

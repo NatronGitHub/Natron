@@ -2890,7 +2890,7 @@ KnobHelper::setExpressionInternal(int dimension,
         exprInvalid = e.what();
         exprCpy = expression;
         if (failIfInvalid) {
-            throw e;
+            throw; // not "throw e", which would throw a std::exception without the message
         }
     }
 
