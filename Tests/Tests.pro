@@ -40,6 +40,10 @@ QMAKE_CLEAN += ofxTestLog.txt test_dot_generator0.jpg
 
 include(../global.pri)
 
+# Windows: stack reserve of the main thread (see NATRON_MAIN_THREAD_STACK_SIZE in global.pri)
+win32-g++: QMAKE_LFLAGS += -Wl,--stack,$$NATRON_MAIN_THREAD_STACK_SIZE
+win32-msvc*: QMAKE_LFLAGS += /STACK:$$NATRON_MAIN_THREAD_STACK_SIZE
+
 # bundled third-party code: see warnings.pri
 NATRON_THIRD_PARTY_SOURCES += \
     google-test/src/gtest-all.cc \
