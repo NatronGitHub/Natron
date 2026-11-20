@@ -22,16 +22,23 @@ set(Tests_SOURCES
     google-test/src/gtest-all.cc
     google-mock/src/gmock-all.cc
     BaseTest.cpp
+    CLArgs_Test.cpp
     Curve_Test.cpp
+    DeepGraphRender_Test.cpp
     DiskCache_Test.cpp
+    ExpressionSetError_Test.cpp
     FileSystemModel_Test.cpp
     Hash64_Test.cpp
     ImageCache_Test.cpp
     Image_Test.cpp
+    KnobDuplicate_Test.cpp
     KnobExpressionCache_Test.cpp
+    KnobInvalidExpression_Test.cpp
     KnobFile_Test.cpp
     KnobSlave_Test.cpp
     KnobStringAnimation_Test.cpp
+    LibTess_Test.cpp
+    LoadPythonScript_Test.cpp
     Lut_Test.cpp
     MultiInputLinks_Test.cpp
     NaNGuards_FastMath.cpp
@@ -39,6 +46,7 @@ set(Tests_SOURCES
     NodeGroup_Test.cpp
     NodePresets_Test.cpp
     NodePreview_Test.cpp
+    NoDialogs_Test.cpp
     OfxBytesParam_Test.cpp
     OfxContexts_Test.cpp
     OfxCPURenderSupport_Test.cpp
@@ -51,33 +59,40 @@ set(Tests_SOURCES
     OfxInstanceEdit_Test.cpp
     OfxMultiThreadSuite_Test.cpp
     OfxMultiplePAR_Test.cpp
+    OfxParamKeys_Test.cpp
     OfxParamAnimating_Test.cpp
     OfxParamCopy_Test.cpp
     OfxOpenGLSupport_Test.cpp
     OfxOverlayInput_Test.cpp
     OfxParamInteract_Test.cpp
     OfxParamUndo_Test.cpp
-    OfxPluginDeprecated_Test.cpp
+    OfxPluginObsolete_Test.cpp
     OfxPluginScan_Test.cpp
     OfxQuestion_Test.cpp
     OfxSingleInstance_Test.cpp
+    OfxSuiteStatus_Test.cpp
     OfxSyncPrivateData_Test.cpp
     OfxTestPlugin_Test.cpp
     OpenGLRenderFailed_Test.cpp
     OSGLContext_Test.cpp
+    ParamRandom_Test.cpp
     PluginGrouping_Test.cpp
     ProjectAutoSave_Test.cpp
+    PythonExpressionScope_Test.cpp
     ReadNodeOverlay_Test.cpp
     RenderThreadSafety_Test.cpp
     RenderThreads_Test.cpp
     RotoPaint_Test.cpp
     SequentialRender_Test.cpp
+    ShuffleAutoConnect_Test.cpp
+    StrUtilsFormat_Test.cpp
     Tracker_Test.cpp
     ViewerCache_Test.cpp
     WriteNodeViews_Test.cpp
     wmain.cpp
 )
 add_executable(Tests ${Tests_HEADERS} ${Tests_SOURCES})
+natron_set_main_thread_stack_size(Tests)
 # NaNGuards_FastMath.cpp checks that MathUtils::isFinite()/isNaN() still work in code
 # compiled with -ffast-math, which assumes that NaN and infinity never happen.
 if(MSVC) # MSVC and clang-cl
@@ -112,7 +127,7 @@ add_test(NAME Tests COMMAND Tests)
 # scan: the binaries are loaded at the first use of their plug-ins (OfxHost::getPluginContextAndDescribe()).
 # Tests sets up the fixture (it scans with --clear-openfx-cache and writes the cache), so
 # `ctest -R TestsOfxCache` runs Tests first too.
-add_test(NAME TestsOfxCache COMMAND Tests "--gtest_filter=OfxHostProperties.*:OfxTestPlugin*")
+add_test(NAME TestsOfxCache COMMAND Tests "--gtest_filter=OfxHostProperties.*:OfxTestPlugin*:OfxPluginObsolete.*")
 set_tests_properties(Tests PROPERTIES FIXTURES_SETUP OfxPluginCache)
 set_tests_properties(TestsOfxCache PROPERTIES FIXTURES_REQUIRED OfxPluginCache ENVIRONMENT "NATRON_TESTS_KEEP_OFX_CACHE=1")
 
@@ -174,8 +189,71 @@ target_compile_definitions(Tests PRIVATE
     NATRON_TESTS_OFX_PLUGIN_DIR="${NATRON_TESTS_OFX_PLUGIN_DIR}"
     NATRON_TESTS_OFX_PLUGIN_BINARY="$<TARGET_FILE:NatronTestPlugin>")
 
+# GUI smoke test (see gui/run_gui_smoke_test.py): runs the Natron GUI with --no-dialogs.
+# It is skipped (exit status 77) without a display, in CI unless NATRON_GUI_TESTS=1, or
+# without the Read and Transform plug-ins (set OFX_PLUGIN_PATH as for the Tests binary).
+if(Python3_Interpreter_FOUND)
+    add_test(NAME GuiSmokeTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_gui_smoke_test.py $<TARGET_FILE:Natron>)
+    set_tests_properties(GuiSmokeTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 960)
+    # natron.quit() from a render callback stops a NatronRenderer render (headless)
+    add_test(NAME RendererQuitTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_quit_test.py $<TARGET_FILE:NatronRenderer>)
+    set_tests_properties(RendererQuitTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
+endif()
+
 # Not part of a normal install. The installer scripts install it separately
 # (cmake --install <build> --component Tests) and run it from the bundled tree:
 # in Natron.app/Contents/MacOS on macOS PORTABLE, in bin/ elsewhere.
 install(TARGETS Tests DESTINATION "${NATRON_INSTALL_TESTSDIR}"
     COMPONENT Tests EXCLUDE_FROM_ALL)
+
+# GUI tests (Tests/gui/test_*.py, see Documentation/source/devel/guitesting.rst): each script is run by
+# "Natron --test script.py", which exits with 0 (pass), 77 (skipped, e.g. without OpenGL or without a
+# plug-in that the test needs) or another status (fail). They need a display (Xvfb on Linux), and
+# have the "gui" label: "ctest -L gui" runs only them, "ctest -LE gui" all the other tests; the
+# interactive ones also have the "gui-interactive" label.
+# The Natron target is defined later (App/), which generator expressions allow.
+# They are skipped (77) without a display on Linux; -DNATRON_BUILD_GUI_TESTS=OFF does not register them (not to be confused with the environment variable NATRON_GUI_TESTS, which enables them in CI).
+option(NATRON_BUILD_GUI_TESTS "register the GUI tests (Tests/gui/test_*.py, Natron --test) in ctest" ON)
+if(NATRON_BUILD_GUI_TESTS)
+    file(GLOB NatronGuiTests_SCRIPTS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/gui/test_*.py")
+else()
+    set(NatronGuiTests_SCRIPTS)
+endif()
+foreach(_natron_gui_test ${NatronGuiTests_SCRIPTS})
+    get_filename_component(_natron_gui_test_name "${_natron_gui_test}" NAME_WE)
+    string(REGEX REPLACE "^test_" "" _natron_gui_test_name "${_natron_gui_test_name}")
+    set(_natron_gui_test_target "gui.${_natron_gui_test_name}")
+    add_test(NAME ${_natron_gui_test_target} COMMAND Natron --test "${_natron_gui_test}")
+    # A test that needs the real focus or mouse calls NatronGuiTest.requireInteractive() (it is skipped
+    # unless NATRON_TEST_INTERACTIVE=1) and has the line "# NatronGuiTest: interactive": label gui-interactive.
+    file(STRINGS "${_natron_gui_test}" _natron_gui_test_interactive REGEX "^# NatronGuiTest: interactive")
+    if(_natron_gui_test_interactive)
+        set(_natron_gui_test_labels "gui;gui-interactive")
+    else()
+        set(_natron_gui_test_labels "gui")
+    endif()
+    set_tests_properties(${_natron_gui_test_target} PROPERTIES
+        LABELS "${_natron_gui_test_labels}"
+        SKIP_RETURN_CODE 77
+        TIMEOUT 180
+        # one Natron GUI at a time
+        RESOURCE_LOCK NatronGui
+        # the caches (images, OFX plug-ins) in the build tree, not in the user's cache directory
+        ENVIRONMENT "NATRON_TESTS_OFX_PLUGIN_BINARY=$<TARGET_FILE:NatronTestPlugin>;NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/gui-tests-cache")
+    # the test plug-ins first, then the user's OFX_PLUGIN_PATH (e.g. openfx-misc for the Transform test)
+    if(NOT CMAKE_VERSION VERSION_LESS 3.22)
+        set_property(TEST ${_natron_gui_test_target} PROPERTY ENVIRONMENT_MODIFICATION
+            "OFX_PLUGIN_PATH=path_list_prepend:${NATRON_TESTS_OFX_PLUGIN_DIR}")
+    else()
+        # the user's OFX_PLUGIN_PATH at configure time
+        if(WIN32)
+            set(_natron_gui_test_ofx_path "${NATRON_TESTS_OFX_PLUGIN_DIR}\\;$ENV{OFX_PLUGIN_PATH}")
+        else()
+            set(_natron_gui_test_ofx_path "${NATRON_TESTS_OFX_PLUGIN_DIR}:$ENV{OFX_PLUGIN_PATH}")
+        endif()
+        set_property(TEST ${_natron_gui_test_target} APPEND PROPERTY ENVIRONMENT
+            "OFX_PLUGIN_PATH=${_natron_gui_test_ofx_path}")
+    endif()
+endforeach()

@@ -44,6 +44,8 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QGuiApplication>
 #include <QScreen>
 #include <QFileOpenEvent>
+#include <QTimer>
+#include <QWindow>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -64,6 +66,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/CurveWidget.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/GuiTest.h"
 #include "Gui/KnobGuiFactory.h"
 #include "Gui/SplashScreen.h"
 
@@ -288,10 +291,54 @@ Application::event(QEvent* e)
     }
 }
 
+/**
+ * @brief In GUI test mode (GuiApplicationManager::isGuiTestNoFocus()), show every top-level
+ * window (main window, splash screen, dialogs, floating panels...) without activating it.
+ * The Show event is sent before the native window is shown (QWidgetPrivate::show_helper), but
+ * after it was created, so the QWindow property that Qt reads from Qt::WA_ShowWithoutActivating
+ * at creation is set too.
+ **/
+class ShowWithoutActivatingFilter
+    : public QObject
+{
+public:
+    explicit ShowWithoutActivatingFilter(QObject* parent)
+        : QObject(parent)
+    {
+    }
+
+    virtual bool eventFilter(QObject* watched,
+                             QEvent* e) OVERRIDE FINAL
+    {
+        if ( (e->type() == QEvent::Show) && watched->isWidgetType() ) {
+            QWidget* w = static_cast<QWidget*>(watched);
+            if ( w->isWindow() ) {
+                w->setAttribute(Qt::WA_ShowWithoutActivating);
+                if ( QWindow* window = w->windowHandle() ) {
+                    window->setProperty("_q_showWithoutActivating", true);
+                }
+            }
+        }
+
+        return false;
+    }
+};
+
 void
 GuiApplicationManager::initializeQApp(int &argc,
                                       char** argv)
 {
+    if ( isGuiTestNoFocus() ) {
+        // Without a Dock icon and with windows that open behind the other applications, an
+        // interactive session would look hung: say why.
+        qWarning("NATRON_TEST_NO_FOCUS is set: Natron runs in the background and never takes the keyboard focus (GUI tests).");
+        // GUI tests on a desktop someone is using: never bring Natron to the front.
+        // These are read by Qt's cocoa platform plugin (macOS):
+        // - don't make the process a foreground application, and don't activate it at launch;
+        // - QWidget::raise() must not activate the application.
+        qputenv("QT_MAC_DISABLE_FOREGROUND_APPLICATION_TRANSFORM", "1");
+        qputenv("QT_MAC_SET_RAISE_PROCESS", "0");
+    }
     QApplication* app;
     {
 #ifdef DEBUG
@@ -319,6 +366,15 @@ GuiApplicationManager::initializeQApp(int &argc,
     setCurrentLogicalDPI(dpiX, dpiY);
 
     app->setQuitOnLastWindowClosed(true);
+
+    if ( isGuiTestNoFocus() ) {
+#ifdef Q_OS_DARWIN
+        // A .app bundle (or a binary that was already transformed) is a regular application:
+        // make it an accessory one, with no Dock icon, that macOS never activates by itself.
+        QtMac::setupGuiTestNoFocus();
+#endif
+        app->installEventFilter( new ShowWithoutActivatingFilter(app) );
+    }
 
     // use namespace workaround
     // https://doc.qt.io/qt-5/qdir.html#Q_INIT_RESOURCE
@@ -350,7 +406,10 @@ void
 GuiApplicationManager::onAllPluginsLoaded()
 {
     ///Restore user shortcuts only when all plug-ins are populated.
-    loadShortcuts();
+    ///A GUI test (--test) uses the default shortcuts, as the default settings (--no-settings).
+    if ( !isTestMode() ) {
+        loadShortcuts();
+    }
     AppManager::onAllPluginsLoaded();
 }
 
@@ -481,7 +540,10 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
         GuiAppInstancePtr app = guiApps.front();
         if (app) {
             triedInstances.insert(app);
-            app->getGui()->abortProject(true, warnUserForSave, true);
+            Gui* gui = app->getGui();
+            if (gui) { // null if the Gui was already closed and deleted
+                gui->abortProject(true, warnUserForSave, true);
+            }
         }
 
         //refreshg ui instances
@@ -494,6 +556,72 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
             }
         }
     }
+}
+
+void
+GuiApplicationManager::requestQuit(int exitCode)
+{
+    bool alreadyRequested = isQuitRequested();
+
+    // records the exit code returned by main() and stops the renders
+    AppManager::requestQuit(exitCode);
+    if (alreadyRequested) {
+        return;
+    }
+    // Do not close the projects now: this may be called from a Python callback, by a node
+    // or a knob that would be destroyed. Close them once the event loop is back, without
+    // asking to save. When the last one is closed, the event loop exits.
+    // This may be called from a render thread (e.g. natron.quit() in afterFrameRender),
+    // where QTimer::singleShot() would need an event loop: queue the call to the main thread.
+    QMetaObject::invokeMethod( this, [this]() {
+        quitWhenIdle();
+    }, Qt::QueuedConnection );
+}
+
+void
+GuiApplicationManager::quitWhenIdle()
+{
+    // Not while the application is loading (the script given on the command line runs during
+    // GuiAppInstance::load()), nor from a nested event loop (QEventLoop in checkForNewVersion(),
+    // a modal dialog), nor while a project is being saved (Project::saveProject_imp() processes the
+    // events while it waits for the auto-save, #825, as Gui::closeEvent() checks): the code that runs
+    // it would use the deleted projects afterwards. Try again later.
+    bool saving = false;
+    {
+        const AppInstanceVec instances = getAppInstances();
+        for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+            ProjectPtr project = (*it)->getProject();
+            if ( project && project->isSaveInProgress() ) {
+                saving = true;
+                break;
+            }
+        }
+    }
+    if ( !isLoaded() || (getNestedEventLoopsCount() > 0) || QApplication::activeModalWidget() || saving ) {
+        QTimer::singleShot( 50, this, [this]() {
+            quitWhenIdle();
+        } );
+
+        return;
+    }
+
+    // No preview may be computed while the nodes are deleted: the preview thread holds a
+    // NodeGui and emits its signals from a worker thread. Natron is quitting, so stop it.
+    _imp->previewRenderThread.quitThread(false);
+    _imp->previewRenderThread.waitForThreadToQuit_enforce_blocking();
+
+    // The projects are closed without asking to save them: remove their last auto-save, as
+    // answering Discard does, or the next launch would offer to restore it. First stop the
+    // auto-save, so that one running in a worker thread doesn't write the file again.
+    const AppInstanceVec instances = getAppInstances();
+    for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        ProjectPtr project = (*it)->getProject();
+        if (project) {
+            project->stopAutoSave();
+            project->removeLastAutosave();
+        }
+    }
+    exitApp(false);
 }
 
 static bool
@@ -675,7 +803,10 @@ GuiApplicationManager::loadShortcuts()
         _imp->_shortcutsChangedVersion = true;
     }
 
-    settings.setValue(QString::fromUtf8("NATRON_SHORTCUTS_DEFAULT_VERSION"), NATRON_SHORTCUTS_DEFAULT_VERSION);
+    // --no-dialogs: the question about the new default shortcuts is not shown, ask it next time
+    if ( !isDialogsDisabled() ) {
+        settings.setValue(QString::fromUtf8("NATRON_SHORTCUTS_DEFAULT_VERSION"), NATRON_SHORTCUTS_DEFAULT_VERSION);
+    }
 
 
     for (AppShortcuts::iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
@@ -1111,6 +1242,17 @@ GuiApplicationManager::notifyShortcutChanged(KeyBoundAction* action)
 void
 GuiApplicationManager::showErrorLog()
 {
+    if ( isDialogsDisabled() ) {
+        // --no-dialogs: print the log to stderr instead of showing the log window
+        std::list<LogEntry> log;
+        getErrorLog_mt_safe(&log);
+        for (std::list<LogEntry>::const_iterator it = log.begin(); it != log.end(); ++it) {
+            Dialogs::printDismissedDialog( tr("Error log").toStdString(),
+                                           ( it->context + QString::fromUtf8(": ") + it->message ).toStdString() );
+        }
+
+        return;
+    }
     hideSplashScreen();
     GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( getTopLevelInstance().get() );
     if (app) {
@@ -1165,6 +1307,11 @@ GuiApplicationManager::initBuiltinPythonModules()
     int ret = PyImport_AppendInittab(NATRON_GUI_PYTHON_MODULE_NAME, &PyInit_NatronGui);
     if (ret == -1) {
         throw std::runtime_error("Failed to initialize built-in Python module.");
+    }
+
+    // the test-only module, not part of the Python API
+    if ( isTestMode() ) {
+        GuiTest::install();
     }
 }
 

@@ -31,6 +31,7 @@ Functions
 - def :meth:`moveTab<NatronGui.GuiApp.moveTab>` (tabScriptName,pane)
 - def :meth:`saveFilenameDialog<NatronGui.GuiApp.saveFilenameDialog>` (filters[, location=None])
 - def :meth:`saveSequenceDialog<NatronGui.GuiApp.saveSequenceDialog>` (filters[, location=None])
+- def :meth:`saveScreenshot<NatronGui.GuiApp.saveScreenshot>` (filePath[, scriptName=""])
 - def :meth:`selectNode<NatronGui.GuiApp.selectNode>` (node,clearPreviousSelection)
 - def :meth:`deselectNode<NatronGui.GuiApp.deselectNode>` (node)
 - def :meth:`setSelection<NatronGui.GuiApp.setSelection>` (nodes)
@@ -139,6 +140,31 @@ the dialog will accept sequence of files.
 
 
 
+
+.. method:: GuiApp.saveScreenshot(filePath[, scriptName=""])
+
+    :param filePath: :class:`str<PySide.QtCore.QString>`
+    :param scriptName: :class:`str<PySide.QtCore.QString>`
+    :rtype: :class:`bool<PySide.QtCore.bool>`
+
+Saves an image of the main window, or, if *scriptName* is given, of the tab or pane with that
+script name: a viewer (e.g. *"Viewer1"*), *"nodeGraph"*, *"properties"*, *"curveEditor"*,
+*"dopeSheetEditor"*, *"scriptEditor"*, a Python panel, or a pane (e.g. *"pane1"*).
+The image format is given by the extension of *filePath* (e.g. *.png* or *.jpg*).
+Returns True on success, False if the tab or pane does not exist or is not visible, or if the
+file could not be written.
+
+Only the widgets of Natron are captured, with :meth:`QWidget.grab()`, never the screen: the
+window does not need to be on top or visible on the screen. The content of the OpenGL widgets
+(the viewers, the curve editor, the dope sheet...) is read from their framebuffer and pasted at
+their position. Floating windows are not part of the main window: capture them with their
+script name. The image has the resolution of the screen, e.g. twice the size of the window in
+each direction on a HiDPI display.
+
+It must be called from the main (GUI) thread: it returns False when called from a render
+thread, e.g. from the *afterFrameRender* callback.
+
+See :ref:`guiTesting` for an example.
 
 .. method:: GuiApp.getRGBColorDialog()
 

@@ -137,9 +137,11 @@ To do: validate the PySide6 bindings at run time
     CMake generates them (see above), but they have only been exercised by the
     unit tests and a render. Validate them against the tutorials and PyPlugs,
     and check the ``devel/PythonReference`` docs against them. This is where
-    most *run-time* (as opposed to compile-time) surprises will appear. Known
-    leftover: ``AppManager.cpp`` sets ``QT_API=pyside2`` in Qt 6 builds too
-    (`#1262 <https://github.com/NatronGitHub/Natron/issues/1262>`_).
+    most *run-time* (as opposed to compile-time) surprises will appear.
+    ``AppManager.cpp`` sets ``QT_API`` for QtPy to ``pyside6`` in Qt 6 builds
+    (``pyside2`` in Qt 5 builds,
+    `#1262 <https://github.com/NatronGitHub/Natron/issues/1262>`_): the QtPy
+    bundled with a Qt 6 build must support PySide6.
 
 To do: C++20 with Qt 6
     The RB-2.6 policy is C++17 with Qt 5 and C++20 with Qt 6, but
