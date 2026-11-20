@@ -2,7 +2,7 @@ name: Build Installer
 
 # Installers are release artifacts: built on demand or for (pre-)release tags only.
 # NATRON_LICENSE: a manual run builds the licence chosen in its "license" input, and a tag builds
-# both. COMMERCIAL builds contain no GPL component (#1302, #1177): build-Windows-installer.sh fails
+# GPL only, until a COMMERCIAL Windows installer has been shown to work. COMMERCIAL builds contain no GPL component (#1302, #1177): build-Windows-installer.sh fails
 # if tools/jenkins/check-commercial-bundle.sh finds one.
 on:
   workflow_dispatch:
@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        license: ${{ fromJSON(github.event_name == 'workflow_dispatch' && format('["{0}"]', inputs.license) || '["GPL","COMMERCIAL"]') }}
+        license: ${{ fromJSON(github.event_name == 'workflow_dispatch' && format('["{0}"]', inputs.license) || '["GPL"]') }}
     env:
       NATRON_LICENSE: ${{ matrix.license }}
       # artifact names: the GPL ones are unchanged

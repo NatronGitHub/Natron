@@ -64,6 +64,17 @@ if [ -z "${LIBHEIF_PATH:-}" ]; then
         LIBHEIF_PATH="$SDK_HOME/libheif-lgpl/bin"
     fi
 fi
+if [ "$NATRON_LICENSE" = "COMMERCIAL" ] && command -v pacman > /dev/null; then
+    # natron_openimageio is built against MSYS2's rolling libheif, natron_libheif-lgpl is pinned:
+    # the libheif.dll that replaces MSYS2's must be the same libheif version (same ABI)
+    pkgprefix="${MINGW_PACKAGE_PREFIX:-mingw-w64-x86_64}"
+    heif_msys2="$(pacman -Q "${pkgprefix}-libheif" 2>/dev/null | awk '{print $2}')"
+    heif_lgpl="$(pacman -Q "${pkgprefix}-natron_libheif-lgpl" 2>/dev/null | awk '{print $2}')"
+    if [ -z "$heif_lgpl" ] || [ "${heif_msys2%-*}" != "${heif_lgpl%-*}" ]; then
+        echo "Error: ${pkgprefix}-natron_libheif-lgpl (${heif_lgpl:-not installed}) must have the version of MSYS2's ${pkgprefix}-libheif (${heif_msys2:-not installed}), which natron_openimageio links: update tools/MINGW-packages/mingw-w64-libheif-lgpl (#1177)"
+        exit 1
+    fi
+fi
 
 function findDll() {
     #Try with given name first, otherwise try with * suffix

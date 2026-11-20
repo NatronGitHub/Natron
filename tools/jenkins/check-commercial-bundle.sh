@@ -24,8 +24,10 @@
 # Checks every executable or shared library (Mach-O, ELF or PE, found by its magic number, so
 # that .ofx, .pyd and extension-less executables are included) under the arguments:
 # 1. its file name, and the names of the libraries it links (otool -L, or objdump -p), must not
-#    be a GPL-only library: x264, x265, Xvid, libpostproc, vid.stab, Rubber Band, FFTW, poppler,
-#    SoX, libmad, GSL, readline, gdbm, frei0r, libcdio, libdvdread, libdvdnav. A library that is
+#    be a GPL, AGPL or nonfree library: x264, x265, Xvid, libpostproc, vid.stab, Rubber Band,
+#    FFTW, poppler, SoX, libmad, GSL, readline, gdbm, frei0r, libcdio, libdvdread, libdvdnav,
+#    libdvdcss, libmpeg2, liba52, libfaad, libdca, xavs, xavs2, davs2, libsmbclient, libzvbi
+#    (labelled GPL-2+ by MacPorts), Ghostscript (libgs, AGPL), fdk-aac (nonfree). A library that is
 #    linked but not bundled is reported too: that is how a COMMERCIAL IO.ofx failed to load on
 #    Windows (libheif linked x264, which only GPL builds bundle, #1177);
 # 2. the FFmpeg libraries it contains must be LGPL: the "libavcodec license: ..." strings, which
@@ -33,7 +35,9 @@
 #    be "LGPL version ...", and FFmpeg's configuration string must have neither --enable-gpl
 #    nor --enable-nonfree;
 # 3. LibRaw must be built without the GPL demosaic packs: none of the pack's functions
-#    (exported class members, so they survive strip) may be present.
+#    (exported class members, so they survive strip) may be present;
+# 4. the file must not contain the entry points of x264, x265, Xvid, vid.stab or FFTW, which
+#    catch a static or renamed copy of these libraries.
 # The file contents are inspected, nothing is executed, so the check also works on a bundle for
 # another architecture.
 #
@@ -47,6 +51,16 @@ if [ $# -eq 0 ]; then
 fi
 
 OBJDUMP="${OBJDUMP:-objdump}"
+for tool in "$OBJDUMP" od grep find; do
+    if ! command -v "$tool" > /dev/null; then
+        echo "Error: $tool not found" >&2
+        exit 2
+    fi
+done
+if [ "$(uname -s)" = "Darwin" ] && ! command -v otool > /dev/null; then
+    echo "Error: otool not found (install the Xcode command line tools)" >&2
+    exit 2
+fi
 nfiles=0
 nerrors=0
 
@@ -62,6 +76,9 @@ is_gpl_lib() {
         libpostproc[-_.]*|postproc-*|libvidstab[-_.]*|librubberband[-_.]*) return 0;;
         libfftw3*|fftw3*|libpoppler*|libsox[-_.]*|libsox|libmad[-_.]*|libmad) return 0;;
         libgsl[-_.]*|libgslcblas*|libreadline*|libgdbm*|libfrei0r*|libcdio*|libdvdread*|libdvdnav*) return 0;;
+        libdvdcss*|libmpeg2[-_.]*|libmpeg2|libmpeg2convert*|liba52[-_.]*|liba52|libfaad*) return 0;;
+        libdca[-_.]*|libdca|libxavs*|libdavs2*|libsmbclient*|libzvbi*) return 0;;
+        libgs[-_.]*|libgs|gsdll*|libfdk-aac*) return 0;;
     esac
     return 1
 }
@@ -117,7 +134,7 @@ check_file() {
             *) error "$f: $s";;
         esac
     done < <(LC_ALL=C grep -a -o -E 'lib(av(codec|device|filter|format|util)|sw(resample|scale)|postproc) license: [A-Za-z0-9 .+-]*' "$f" 2>/dev/null | sort -u)
-    if LC_ALL=C grep -a -q -E -e '--enable-(gpl|nonfree)( |$)' "$f" 2>/dev/null \
+    if LC_ALL=C grep -a -q -E -e '--enable-(gpl|nonfree)([^a-z0-9_-]|$)' "$f" 2>/dev/null \
        && LC_ALL=C grep -a -q -E 'lib(avcodec|avutil|avformat) license: ' "$f" 2>/dev/null; then
         error "$f: FFmpeg configured with --enable-gpl or --enable-nonfree"
     fi
@@ -125,6 +142,11 @@ check_file() {
     s="$(LC_ALL=C grep -a -o -E 'ahd_interpolate_mod|afd_interpolate_pl|vcd_interpolate|lmmse_interpolate|amaze_demosaic' "$f" 2>/dev/null | sort -u | tr '\n' ' ')"
     if [ -n "$s" ]; then
         error "$f: LibRaw with a GPL demosaic pack (${s% })"
+    fi
+    # entry points of GPL libraries: a static or renamed copy, or a reference to one
+    s="$(LC_ALL=C grep -a -o -E 'x264_encoder_open|x265_api_get|xvid_global|xvid_encore|vsMotionDetectInit|fftwf?l?_plan_dft' "$f" 2>/dev/null | sort -u | tr '\n' ' ')"
+    if [ -n "$s" ]; then
+        error "$f contains or references GPL code (${s% })"
     fi
 }
 

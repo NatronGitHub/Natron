@@ -194,12 +194,6 @@ if {${subport} eq "ffmpeg-lgpl"} {
                     --prefix=${prefix}
     configure.pre_args-append \
                     --prefix=${port_prefix}
-    # no teletext: FFmpeg considers libzvbi >= 0.2.28 LGPL, but MacPorts' zvbi is labelled GPL-2+
-    depends_lib-delete \
-                    port:zvbi
-    configure.args-replace \
-                    --enable-libzvbi \
-                    --disable-libzvbi
 
     pre-configure {
         if {[variant_isset gpl2] || [variant_isset gpl3] || [variant_isset nonfree]} {
@@ -268,6 +262,16 @@ configure.args-append \
                     --enable-shared \
                     --enable-swscale \
                     --enable-zlib
+
+# Natron: ffmpeg-lgpl has no teletext (after the configure.args above, which enable libzvbi):
+# FFmpeg considers libzvbi >= 0.2.28 LGPL, but MacPorts' zvbi is labelled GPL-2+
+if {${subport} eq "ffmpeg-lgpl"} {
+    depends_lib-delete \
+                    port:zvbi
+    configure.args-replace \
+                    --enable-libzvbi \
+                    --disable-libzvbi
+}
 
 post-extract {
     # fix file perms; tarball contents deny group and world read
