@@ -1028,7 +1028,10 @@ Gui::createNewProject()
     CLArgs cl;
     AppInstancePtr app = appPTR->newAppInstance(cl, false);
 
-    app->execOnProjectCreatedCallback();
+    // newAppInstance() returns NULL, after showing an error dialog, if the new window could not be loaded
+    if (app) {
+        app->execOnProjectCreatedCallback();
+    }
 
     return app;
 }

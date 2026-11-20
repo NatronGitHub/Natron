@@ -461,7 +461,8 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
         } else {
             CLArgs cl;
             AppInstancePtr newApp = appPTR->newAppInstance(cl, false);
-            if ( !newApp->getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true) ) {
+            // newAppInstance() returns NULL, after showing an error dialog, if the new window could not be loaded
+            if ( !newApp || !newApp->getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true) ) {
                 return false;
             }
         }
