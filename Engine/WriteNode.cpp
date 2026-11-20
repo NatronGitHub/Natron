@@ -238,7 +238,13 @@ public:
 
     void createReadNodeAndConnectGraph(const std::string& filename);
 
-    void createWriteNode(bool throwErrors, const std::string& filename, const NodeSerializationPtr& serialization);
+    /**
+     * @param userEdited True when called from knobChanged() because the file or the encoder was
+     * changed (not when the node is created or loaded): a new encoder then gets the instance changed
+     * action of its filename (see the implementation).
+     **/
+    void createWriteNode(bool throwErrors, const std::string& filename, const NodeSerializationPtr& serialization,
+                         bool userEdited = false);
 
     void destroyWriteNode();
 
@@ -709,7 +715,8 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
 void
 WriteNodePrivate::createWriteNode(bool throwErrors,
                                   const std::string& filename,
-                                  const NodeSerializationPtr& serialization)
+                                  const NodeSerializationPtr& serialization,
+                                  bool userEdited)
 {
     if (creatingWriteNode) {
         return;
@@ -823,7 +830,14 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         if (writeNode) {
             KnobOutputFilePtr fileKnob = std::dynamic_pointer_cast<KnobOutputFile>(writeNode->getKnobByName(kOfxImageEffectFileParamName));
             if (fileKnob) {
-                fileKnob->setValue(filename);
+                bool fileKnobUnchanged = ( fileKnob->setValue(filename) == KnobHelper::eValueChangedReturnCodeNothingChanged );
+                // As in ReadNodePrivate::createReadNode(): the new encoder shares the filename knob of this
+                // node, which already has the filename, so it did not get the instance changed action for
+                // its filename. Call it, as when the encoder is the same (see above). Never when a project
+                // is loaded (serialization), as before (#1288).
+                if (fileKnobUnchanged && userEdited && !serialization) {
+                    writeNode->getEffectInstance()->onKnobValueChanged_public(fileKnob.get(), eValueChangedReasonNatronInternalEdited, _publicInterface->getCurrentTime(), ViewSpec(0), true);
+                }
             }
         }
 
@@ -1190,7 +1204,7 @@ WriteNode::knobChanged(KnobI* k,
         std::string filename = fileKnob->getValue();
 
         try {
-            _imp->createWriteNode( false, filename, NodeSerializationPtr() );
+            _imp->createWriteNode( false, filename, NodeSerializationPtr(), true /*userEdited*/ );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
@@ -1215,7 +1229,7 @@ WriteNode::knobChanged(KnobI* k,
         std::string filename = fileKnob->getValue();
 
         try {
-            _imp->createWriteNode( false, filename, NodeSerializationPtr() );
+            _imp->createWriteNode( false, filename, NodeSerializationPtr(), true /*userEdited*/ );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
