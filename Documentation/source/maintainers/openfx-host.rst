@@ -260,7 +260,7 @@ Obsolete plug-ins
     spec uses the property for a plug-in "made obsolete by a different
     version of the same plugin contained in the same bundle", and requires
     at least one version that is not obsolete. Natron is more lenient: it
-    hides any plug-in that sets it, even when there is no newer version
+    hides any plug-in that sets it, even when no version of it is left offered
     (openfx-misc's JoinViews, OneView, Roto and TrackerPM, which are obsolete
     only in Natron, where none of their versions is left offered). Natron
     2.6 no longer reads the Natron extension
