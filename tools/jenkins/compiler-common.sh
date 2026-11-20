@@ -255,7 +255,7 @@ if [ "$PKGOS" = "Windows" ] && [ "${MINGW_TOOLCHAIN:-gcc}" = "clang" ]; then
     # COMPILER=clang-omp enables for Natron and the plug-ins (common.sh sets MINGW_TOOLCHAIN)
     COMPILER=${COMPILER:-clang-omp}
     CC=${CC:-clang}
-    CXX=${CXX:-clang++ -std=${STD17}}
+    CXX=${CXX:-clang++ -std=${CXXSTD}}
 fi
 
 COMPILER=${COMPILER:-gcc}
