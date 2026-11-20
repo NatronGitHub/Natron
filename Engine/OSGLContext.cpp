@@ -314,6 +314,11 @@ OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs,
 
 OSGLContext::~OSGLContext()
 {
+#ifdef DEBUG
+    // no trapped floating point exception in the OpenGL driver, see the constructor: the contexts are also
+    // destroyed after the event loop, where main() traps them
+    boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
     setContextCurrentNoRender();
     if (_imp->pboID) {
         glDeleteBuffers(1, &_imp->pboID);
