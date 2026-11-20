@@ -87,16 +87,52 @@ if [ -z "${DLL_SEARCH_DIRS:-}" ]; then
     fi
     echo "DLL_SEARCH_DIRS not set, assuming $DLL_SEARCH_DIRS"
 fi
+# Split DLL_SEARCH_DIRS on ':', but keep Windows drive letters ("C:/msys64/ucrt64/bin"). Empty
+# entries (e.g. from an empty LIBHEIF_PATH) and missing directories are skipped: an empty prefix
+# must never turn into /bin, which is MSYS's /usr/bin.
 SEARCH_DIRS=()
 IFS=: read -r -a _dirs <<< "$DLL_SEARCH_DIRS"
-for d in "${_dirs[@]}"; do
+_i=0
+while [ "$_i" -lt "${#_dirs[@]}" ]; do
+    d="${_dirs[$_i]}"
+    _i=$((_i + 1))
+    if [[ "$d" =~ ^[A-Za-z]$ ]] && [ "$_i" -lt "${#_dirs[@]}" ] && [[ "${_dirs[$_i]}" == [/\\]* ]]; then
+        d="$d:${_dirs[$_i]}"
+        _i=$((_i + 1))
+    fi
+    if [ -z "$d" ]; then
+        continue
+    fi
+    case "$d" in
+        /bin|/bin/|/usr/bin|/usr/bin/)
+            echo "Error: DLL_SEARCH_DIRS contains $d, the MSYS runtime (an empty prefix?): $DLL_SEARCH_DIRS"
+            exit 1
+            ;;
+    esac
     if [ -d "$d" ]; then
         SEARCH_DIRS+=("$d")
     else
-        echo "Warning: DLL search directory $d does not exist"
+        echo "Warning: DLL search directory $d does not exist, skipped"
     fi
 done
-unset _dirs
+unset _dirs _i
+if [ "${#SEARCH_DIRS[@]}" = 0 ]; then
+    echo "Error: none of DLL_SEARCH_DIRS=$DLL_SEARCH_DIRS exists"
+    exit 1
+fi
+
+# Windows' own DLLs are the ones that ntldd finds under the Windows directory (cygpath -W), and the
+# API sets (api-ms-win-*, ext-ms-*). A DLL that ntldd finds anywhere else, but not in the search
+# directories, would be missing on the users' machines: that is an error.
+if [ -n "${WINDOWS_DIR:-}" ]; then
+    : # (set by the caller, e.g. for a test outside Windows)
+elif command -v cygpath > /dev/null; then
+    WINDOWS_DIR="$(cygpath -m -W)"
+else
+    WINDOWS_DIR="C:/Windows"
+fi
+WINDOWS_DIR="${WINDOWS_DIR//\\//}"
+WINDOWS_DIR="${WINDOWS_DIR%/}"
 
 # Never bundled, even if an MSYS2 package installed them in a search directory: Mesa's
 # opengl32.dll would replace the OpenGL driver of the system (the software renderer is an optional
@@ -106,8 +142,10 @@ NEVER_BUNDLED="opengl32.dll glu32.dll libgallium_wgl.dll"
 # The DLLs that only the Arena or the G'MIC plug-in uses, and that go into its bundle (shell
 # patterns, lower case), as in the hand-written lists of Natron 2.5. Whatever else a plug-in needs
 # goes to bin/, as do these if anything in bin/ needs them too.
-ARENA_PRIVATE_DLLS="libcdr-*.dll libpoppler-*.dll librevenge-*.dll libzip*.dll libmad-*.dll libsox-*.dll"
-GMIC_PRIVATE_DLLS="libcurl-*.dll"
+# shellcheck disable=SC2034 # (used through a nameref, plugin_dlls)
+ARENA_PRIVATE_DLLS=('libcdr-*.dll' 'libpoppler-*.dll' 'librevenge-*.dll' 'libzip*.dll' 'libmad-*.dll' 'libsox-*.dll')
+# shellcheck disable=SC2034 # (used through a nameref, plugin_dlls)
+GMIC_PRIVATE_DLLS=('libcurl-*.dll')
 
 # The command-line tools that the installer ships in bin/ (build-Windows-installer.sh copies
 # NATRON_TOOLS).
@@ -133,7 +171,8 @@ QT_PLUGINS_DIR="$SDK_HOME/share/qt${QT_VERSION_MAJOR}/plugins"
 
 declare -A DLL_PATH=()   # lower-case DLL name -> its file in SEARCH_DIRS (the first directory wins)
 declare -A DEPS=()       # file -> its bundled direct dependencies (files), one per line
-declare -A MISSING=()    # lower-case DLL name -> the files that need it, for DLLs that nothing provides
+declare -A MISSING=()    # file -> the DLLs it needs that nothing provides (names, one per line)
+declare -A FOREIGN=()    # file -> the DLLs it needs that ntldd found outside the search directories
 
 # Index the DLLs of the search directories by lower-case name (Windows file names are
 # case-insensitive, and import tables don't always use the case of the file), keeping the case of
@@ -159,14 +198,23 @@ dll_path() {
     REPLY="${DLL_PATH[$1]:-}"
 }
 
-# Fill DEPS[$1] with the bundled direct dependencies of the PE file $1.
+TMPDIRS=()
+cleanup() {
+    if [ "${#TMPDIRS[@]}" -gt 0 ]; then
+        rm -rf "${TMPDIRS[@]}"
+    fi
+}
+trap cleanup EXIT
+
+# Fill DEPS[$1], MISSING[$1] and FOREIGN[$1] for the PE file $1.
 # ntldd prints one line per imported DLL:
 #   "	libfoo-1.dll => C:\msys64\ucrt64\bin\libfoo-1.dll (0x0000000012340000)"
 #   "	api-ms-win-crt-runtime-l1-1-0.dll => not found"
-# Only the names are used: where ntldd found them doesn't matter, since bin/ will have all the
-# bundled ones.
+# A DLL whose name is in the search directories is bundled, wherever ntldd found it (bin/ will
+# have all the bundled ones). Otherwise it must be a Windows DLL (WINDOWS_DIR, or an API set), or a
+# DLL next to the file itself (shipped with its directory, e.g. a Python package).
 scan_deps() {
-    local f="$1" target="$1" tmpdir="" out line name deps=""
+    local f="$1" target="$1" tmpdir="" out line name path dir deps="" missing="" foreign=""
     if [ -n "${DEPS[$f]+x}" ]; then
         return 0
     fi
@@ -175,12 +223,15 @@ scan_deps() {
         *)
             # e.g. a .ofx: give ntldd a name it recognizes as a module
             tmpdir="$(mktemp -d)"
+            TMPDIRS+=("$tmpdir")
             target="$tmpdir/$(basename "$f").dll"
             cp "$f" "$target"
             ;;
     esac
+    dir="$(dirname "$f")"
     if command -v cygpath > /dev/null; then
         target="$(cygpath -m "$target")"
+        dir="$(cygpath -m "$dir")"
     fi
     if ! out="$("$NTLDD" "$target" 2>&1)"; then
         echo "Error: $NTLDD failed on $f:"
@@ -202,19 +253,34 @@ scan_deps() {
         dll_path "$name"
         if [ -n "$REPLY" ]; then
             deps="$deps$REPLY"$'\n'
-        elif [[ "$line" == *"=> not found"* ]]; then
-            case "$name" in
-                api-ms-win-*|ext-ms-*) ;; # API sets, resolved by Windows
-                *) MISSING[$name]="${MISSING[$name]:-}    $f"$'\n' ;;
-            esac
+            continue
         fi
+        case "$name" in
+            api-ms-win-*|ext-ms-*) continue ;; # API sets, resolved by Windows
+        esac
+        path="${line#* => }"
+        if [ "$path" = "not found" ]; then
+            missing="$missing$name"$'\n'
+            continue
+        fi
+        path="${path% (0x*}"
+        path="${path//\\//}"
+        case "${path,,}" in
+            "${WINDOWS_DIR,,}"/*) ;; # a Windows DLL
+            "${dir,,}"/*) ;; # next to the file, shipped with it
+            *) foreign="$foreign$name ($path)"$'\n' ;;
+        esac
     done <<< "$out"
     DEPS[$f]="$deps"
+    MISSING[$f]="$missing"
+    FOREIGN[$f]="$foreign"
 }
 
 # CLOSURE[file]=1 for every bundled DLL that the files given as arguments need, directly or not
-# (not the arguments themselves). Accumulates over calls, until reset with CLOSURE=().
+# (not the arguments themselves). Accumulates over calls, until reset with CLOSURE=(). VISITED
+# lists the files of the last call (the arguments and their dependencies), for check_missing.
 declare -A CLOSURE=()
+VISITED=()
 closure() {
     local -a queue=("$@")
     local i=0 f d
@@ -229,29 +295,35 @@ closure() {
             fi
         done <<< "${DEPS[$f]}"
     done
+    VISITED=("${queue[@]}")
 }
 
-# Fail (programs and plug-ins) or warn (modules loaded at run time) about the DLLs that nothing
-# provides.
+# Report the DLLs that the files of the last closure need but that would not be bundled: the ones
+# that ntldd found outside the search directories and the Windows directory are always an error.
+# The ones that nothing provides are an error for programs and plug-ins, and a warning for the
+# modules loaded at run time.
 check_missing() {
-    local level="$1" name
-    if [ "${#MISSING[@]}" = 0 ]; then
-        return 0
-    fi
-    echo "$level: these DLLs are neither in $DLL_SEARCH_DIRS nor in the system:"
-    for name in "${!MISSING[@]}"; do
-        if [ "$level" = "Error" ]; then
-            echo "  $name, needed by:"
-            printf '%s' "${MISSING[$name]}"
-        else
-            # (the modules that need them won't load, as without this script)
-            echo "  $name, needed by: $(printf '%s' "${MISSING[$name]}" | sed -e 's@.*/@@' | tr '\n' ' ')"
+    local level="$1" f errors=0
+    for f in "${VISITED[@]}"; do
+        if [ -n "${FOREIGN[$f]}" ]; then
+            echo "Error: $f needs DLLs that are neither in $DLL_SEARCH_DIRS nor in $WINDOWS_DIR (add their directory to DLL_SEARCH_DIRS):"
+            printf '%s' "${FOREIGN[$f]}" | sed -e 's/^/    /'
+            errors=1
+        fi
+        if [ -n "${MISSING[$f]}" ]; then
+            if [ "$level" = "Error" ]; then
+                echo "Error: $f needs DLLs that are nowhere (not found by ntldd): $(printf '%s' "${MISSING[$f]}" | tr '\n' ' ')"
+                errors=1
+            else
+                # (these modules won't load, as before this script)
+                echo "Warning: $(basename "$f") needs DLLs that are nowhere: $(printf '%s' "${MISSING[$f]}" | tr '\n' ' ')"
+            fi
         fi
     done
-    if [ "$level" = "Error" ]; then
+    if [ "$errors" = 1 ]; then
         exit 1
     fi
-    MISSING=()
+    return 0
 }
 
 ### Roots
@@ -317,9 +389,9 @@ done
 # A plug-in's private DLLs: the ones matching its *_PRIVATE_DLLS patterns that bin/ doesn't have.
 # The other DLLs it needs go to bin/.
 declare -A ARENA_SET=() GMIC_SET=()
-plugin_dlls() { # plugin_dlls <ofx> <patterns> <name of the associative array to fill>
-    local ofx="$1" patterns="$2" d p name private
-    local -n set_ref="$3" # (a nameref: fills the caller's array)
+plugin_dlls() { # plugin_dlls <ofx> <name of the array of patterns> <name of the associative array to fill>
+    local ofx="$1" d p name private
+    local -n patterns_ref="$2" set_ref="$3" # (namerefs: read and fill the caller's arrays)
     if [ -z "$ofx" ]; then
         return 0
     fi
@@ -332,7 +404,7 @@ plugin_dlls() { # plugin_dlls <ofx> <patterns> <name of the associative array to
         fi
         name="$(basename "${d,,}")"
         private=0
-        for p in $patterns; do
+        for p in "${patterns_ref[@]}"; do
             # shellcheck disable=SC2254 # (p is a pattern)
             case "$name" in
                 $p) private=1 ;;
@@ -346,8 +418,8 @@ plugin_dlls() { # plugin_dlls <ofx> <patterns> <name of the associative array to
         fi
     done
 }
-plugin_dlls "$ARENA_OFX" "$ARENA_PRIVATE_DLLS" ARENA_SET
-plugin_dlls "$GMIC_OFX" "$GMIC_PRIVATE_DLLS" GMIC_SET
+plugin_dlls "$ARENA_OFX" ARENA_PRIVATE_DLLS ARENA_SET
+plugin_dlls "$GMIC_OFX" GMIC_PRIVATE_DLLS GMIC_SET
 
 # A DLL in bin/ must find all its dependencies in bin/: move the ones it needs out of the plug-in
 # bundles, as well as the private DLLs that both plug-ins need.
@@ -372,6 +444,7 @@ while [ "$changed" = 1 ]; do
         unset "ARENA_SET[$d]" "GMIC_SET[$d]"
     done
 done
+VISITED=("${!NATRON_SET[@]}")
 check_missing Warning
 
 ### Checks
@@ -410,31 +483,36 @@ fi
 
 # COMMERCIAL builds: no GPL-only library may be bundled (#1302, #1177). The DLL set is the
 # closure of what the binaries link, so a GPL library here means that something links it (e.g. an
-# FFmpeg or libheif built with x264): fail, and say what needs it. The same list as
-# check-commercial-bundle.sh (which also inspects the binaries' contents), plus SoX's GPL
-# dependencies libao and libid3tag.
-GPL_DLL_PATTERNS="libx264* x264-* libx265* xvidcore* libxvidcore* postproc-* libpostproc* libvidstab* librubberband*
- libfftw3* fftw3* libpoppler* libsox-* libsox.dll libmad* libao-* libid3tag* libgsl* libreadline* libgdbm* libfrei0r* libcdio*
- libdvdread* libdvdnav* libdvdcss* libmpeg2* liba52* libfaad* libdca* libxavs* libdavs2* libsmbclient* libzvbi*
- libgs-* libgs.dll gsdll* libfdk-aac*"
+# FFmpeg or libheif built with x264): fail, and say what needs it. The list of GPL libraries is
+# is_gpl_lib of check-commercial-bundle.sh (#1449), which build-Windows-installer.sh also runs on
+# the finished bundle (it inspects the binaries' contents too).
 if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
+    CHECK_COMMERCIAL="$(dirname "$0")/check-commercial-bundle.sh"
+    if [ ! -f "$CHECK_COMMERCIAL" ] || ! grep -q '^is_gpl_lib() {' "$CHECK_COMMERCIAL"; then
+        echo "Error: COMMERCIAL builds need is_gpl_lib from $CHECK_COMMERCIAL (#1449)"
+        exit 1
+    fi
+    # (only the function: the script itself checks its arguments and exits)
+    eval "$(sed -n -e '/^is_gpl_lib() {/,/^}/p' "$CHECK_COMMERCIAL")"
+    is_gpl_dll() {
+        is_gpl_lib "$1" && return 0
+        # SoX's GPL dependencies, until is_gpl_lib lists them
+        case "$1" in
+            libao-*|libid3tag-*) return 0 ;;
+        esac
+        return 1
+    }
     gpl_found=0
     for d in "${!NATRON_SET[@]}" "${!ARENA_SET[@]}" "${!GMIC_SET[@]}"; do
-        name="$(basename "${d,,}")"
-        for p in $GPL_DLL_PATTERNS; do
-            # shellcheck disable=SC2254 # (p is a pattern)
-            case "$name" in
-                $p)
-                    gpl_found=1
-                    echo "Error: COMMERCIAL build, but the GPL library $(basename "$d") would be bundled. It is needed by:"
-                    for f in "${!DEPS[@]}"; do
-                        case $'\n'"${DEPS[$f]}" in
-                            *$'\n'"$d"$'\n'*) echo "    $f" ;;
-                        esac
-                    done
-                    ;;
-            esac
-        done
+        if is_gpl_dll "$(basename "${d,,}")"; then
+            gpl_found=1
+            echo "Error: COMMERCIAL build, but the GPL library $(basename "$d") would be bundled. It is needed by:"
+            for f in "${!DEPS[@]}"; do
+                case $'\n'"${DEPS[$f]}" in
+                    *$'\n'"$d"$'\n'*) echo "    $f" ;;
+                esac
+            done
+        fi
     done
     if [ "$gpl_found" = 1 ]; then
         exit 1

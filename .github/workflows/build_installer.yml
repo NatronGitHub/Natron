@@ -41,6 +41,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # a real axis, so that other axes (e.g. the licence) combine with every environment;
+        # include only adds the runner of each environment
+        msystem: [UCRT64]
         include:
         - msystem: UCRT64
           runner: windows-2022
@@ -167,7 +170,8 @@ jobs:
             cat ${OUT}/dlls.diff
             echo '```'
           } >> $GITHUB_STEP_SUMMARY
-          # the imported DLLs and unresolved references of each binary (tools/compare-builds.sh)
+          # the imported DLLs of each binary present in both trees (tools/compare-builds.sh; it doesn't
+          # look for unresolved references on Windows)
           tools/compare-builds.sh -k -o ${OUT}/compare-builds -x '^Resources/docs/' -x '^lib/python' "${BASELINE_DIR}" "${INSTALLER_DIR}" > ${OUT}/compare-builds.txt 2>&1 || true
           rm -rf baseline baseline.zip
 
@@ -175,7 +179,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4.3.1
         with:
-          name:  compare-${{ steps.build.outputs.INSTALLER_NAME }}
+          name:  compare-${{ steps.build.outputs.INSTALLER_NAME }}${{ env.ARTIFACT_SUFFIX }}
           path:  ${{ github.workspace }}/compare
           if-no-files-found: ignore
 
@@ -204,17 +208,17 @@ jobs:
       - name: Verify plugin loading
         run: |
           INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
-          for x in $(find ${INSTALLER_DIR}/Plugins -name *.ofx); do
+          for x in $(find "${INSTALLER_DIR}/Plugins" -name '*.ofx'); do
             echo "Testing $(basename ${x}) ..."
             PATH=${INSTALLER_DIR}/bin ./verify_plugin_loads.exe "${x}"
           done
 
-      - name: Verify passing tests match 2.5.0 release
+      - name: Compare the passing tests with the 2.5.0 release
+        # Informative: 2.5.0 was a Qt4 MINGW64 build, so differences are expected
         run: |
-          wget https://github.com/NatronGitHub/Natron/releases/download/v2.5.0/Natron-2.5.0-Windows-x86_64-tests.txt
-          if diff Natron-2.5.0-Windows-x86_64-tests.txt ${{ steps.build.outputs.TEST_RESULTS_FILE }}; then
-            echo "Test results match 2.5.0 release : PASS"
+          wget -q https://github.com/NatronGitHub/Natron/releases/download/v2.5.0/Natron-2.5.0-Windows-x86_64-tests.txt
+          if diff Natron-2.5.0-Windows-x86_64-tests.txt '${{ steps.build.outputs.TEST_RESULTS_FILE }}'; then
+            echo "Test results match the 2.5.0 release"
           else
-            echo "Test results match 2.5.0 release : FAILED"
-            exit 1
+            echo "::warning::Natron-Tests results differ from the 2.5.0 release (see the diff above)"
           fi

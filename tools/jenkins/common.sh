@@ -193,9 +193,8 @@ elif [ "$PKGOS" = "Windows" ]; then
         *-clang-*) MINGW_TOOLCHAIN=clang ;;
         *) MINGW_TOOLCHAIN=gcc ;;
     esac
-    # define TMP, which is used by QDir::tempPath http://doc.qt.io/qt-4.8/qdir.html#tempPath
-    # so that the repogen binary uses different temp directories
-    # https://github.com/olear/qtifw/blob/d3f31b3359af8415f9347347bb62e4d4ef94cf0d/src/libs/installer/fileutils.cpp#L503
+    # define TMP, which is used by QDir::tempPath http://doc.qt.io/qt-4.8/qdir.html#tempPath,
+    # so that the Qt programs of each MSYS2 environment use their own temporary directory
     TMP="$TMPDIR/${MSYSTEM:-mingw64}"
     export TMP
     if [ ! -d "$TMP" ]; then
@@ -389,6 +388,16 @@ elif [ "$PKGOS" = "OSX" ]; then
         if [ -d "$CUSTOM_BUILDS_PATH/libraw-lgpl" ]; then
             LIBRAW_PATH="$CUSTOM_BUILDS_PATH/libraw-lgpl"
         fi
+    fi
+fi
+
+# Windows COMMERCIAL builds: the libheif without x264/x265 (natron_libheif-lgpl, #1449, #1177),
+# whose bin/ comes first in the DLL search directories of genDllVersions.sh. Empty if it is not
+# installed (genDllVersions.sh skips empty entries).
+if [ "$PKGOS" = "Windows" ]; then
+    LIBHEIF_PATH=""
+    if [ "${NATRON_LICENSE:-}" = "COMMERCIAL" ] && [ -d "$SDK_HOME/libheif-lgpl" ]; then
+        LIBHEIF_PATH="$SDK_HOME/libheif-lgpl"
     fi
 fi
 
