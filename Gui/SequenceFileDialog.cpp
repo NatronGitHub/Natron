@@ -1864,6 +1864,11 @@ SequenceFileDialog::combinedFilter() const
 
     for (int i = 0; i < _filters.size(); ++i) {
         const QString& f = _filters[i];
+        if ( f == QString( QLatin1Char('*') ) ) {
+            // any file: FileSystemModel::setRegexpFilters() ignores a "*" pattern, so the other patterns
+            // would hide the files that only "*" matches. Use what a single "*" filter gives (setDefaultFilter()).
+            return QString::fromUtf8("*.*");
+        }
         if ( f.contains( QLatin1Char('*') ) ) {
             patterns << f;
         } else {
