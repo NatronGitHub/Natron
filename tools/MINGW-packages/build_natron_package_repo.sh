@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 #set -x
 BUILD_SCRIPT_DIR=$(realpath $(dirname "${BASH_SOURCE[0]}"))
@@ -83,7 +83,7 @@ for pkg_dir in ${PKGS}; do
   echo -e "\n\nEntering package directory ${pkg_dir}."
   cd "${BUILD_SCRIPT_DIR}/${pkg_dir}"
 
-  # the first pkgname: a split package (qt5-base) also builds qt5-base-debug
+  # the first pkgname: a split package (qt5-base) also builds qt5-base-debug, which is not added
   PACKAGE_NAME=`makepkg --printsrcinfo | awk '$1 == "pkgname" {print $3; exit}'`
 
   # Check to see if the package is already in the natron repository. Only look
@@ -113,6 +113,12 @@ for pkg_dir in ${PKGS}; do
     echo "Build complete."
 
     for pkg_file in `find . -name "${MINGW_PACKAGE_PREFIX}-*-any.pkg.tar.*"`; do
+      # not the separate debug info of a split package (qt5-base-debug: hundreds of MB, which
+      # neither the builds nor the installers use)
+      if [[ $(basename "${pkg_file}") == "${PACKAGE_NAME}"-debug-[0-9]* ]]; then
+        echo "Not adding ${pkg_file} (debug info) to package repo."
+        continue
+      fi
       echo "Adding ${pkg_file} to package repo ..."
       natron_repo_add_package ${pkg_file}
     done
