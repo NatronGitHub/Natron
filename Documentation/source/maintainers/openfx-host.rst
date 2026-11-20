@@ -262,7 +262,7 @@ Obsolete plug-ins
     at least one version that is not obsolete. Natron is more lenient: it
     hides any plug-in that sets it, even when there is no newer version
     (openfx-misc's JoinViews, OneView, Roto and TrackerPM, which are obsolete
-    only in Natron and have a single version). Natron
+    only in Natron, where none of their versions is left offered). Natron
     2.6 no longer reads the Natron extension
     ``kNatronOfxImageEffectPropDeprecated``, which had the same meaning (`#1491 <https://github.com/NatronGitHub/Natron/issues/1491>`_):
     plug-ins must set the standard property (``setIsObsolete(true)`` in the
