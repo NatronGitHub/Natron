@@ -57,7 +57,10 @@ fi
 export LD_LIBRARY_PATH
 
 # Pretty architecture/platform identifier (used for breakpad symbol files)
-PKGOS_BITS="${PKGOS}-x86_${BITS}bit"
+case "${ARCH}" in
+    aarch64) PKGOS_BITS="${PKGOS}-aarch64" ;;
+    *) PKGOS_BITS="${PKGOS}-x86_${BITS}bit" ;;
+esac
 
 if [ -d "${BUILD_ARCHIVE_DIRECTORY}" ]; then
     rm -rf "${BUILD_ARCHIVE_DIRECTORY}"
@@ -698,7 +701,15 @@ if [ "$DISABLE_PORTABLE_ARCHIVE" != "1" ]; then
     (cd "${TMP_BINARIES_PATH}" && tar Jcf "${PORTABLE_DIRNAME}.tar.xz" "${PORTABLE_DIRNAME}"; mv "${PORTABLE_DIRNAME}.tar.xz" "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR/${PORTABLE_DIRNAME}.tar.xz")
 fi
 
-if [ "$WITH_ONLINE_INSTALLER" = "1" ]; then
+# The Qt installer framework (built with WITH_QT4 in the SDK) is not in the Rocky Linux >= 9 SDK:
+# the Linux releases are portable archives.
+WITH_IFW=1
+if [ ! -x "${SDK_HOME}/installer/bin/binarycreator" ]; then
+    echo "*** No Qt installer framework in ${SDK_HOME}/installer: only the portable archive is built"
+    WITH_IFW=0
+fi
+
+if [ "$WITH_ONLINE_INSTALLER" = "1" ] && [ "$WITH_IFW" = "1" ]; then
     mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR"
     mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$ONLINE_INSTALL_DIR/packages"
     # Gen online repo
@@ -711,9 +722,11 @@ if [ "$WITH_ONLINE_INSTALLER" = "1" ]; then
 fi
 
 # Offline installer
-echo "*** Creating offline installer ${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR/$INSTALLER_BASENAME"
-"${SDK_HOME}/installer/bin"/binarycreator -v -f -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" -i "$PACKAGES" "${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR/$INSTALLER_BASENAME"
-(cd "${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR" && tar zcf "${INSTALLER_BASENAME}.tgz" "$INSTALLER_BASENAME" && rm "$INSTALLER_BASENAME")
+if [ "$WITH_IFW" = "1" ]; then
+    echo "*** Creating offline installer ${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR/$INSTALLER_BASENAME"
+    "${SDK_HOME}/installer/bin"/binarycreator -v -f -p "${INSTALLER_PATH}/packages" -c "${INSTALLER_PATH}/config/config.xml" -i "$PACKAGES" "${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR/$INSTALLER_BASENAME"
+    (cd "${BUILD_ARCHIVE_DIRECTORY}/$BUNDLED_INSTALL_DIR" && tar zcf "${INSTALLER_BASENAME}.tgz" "$INSTALLER_BASENAME" && rm "$INSTALLER_BASENAME")
+fi
 
 
 
@@ -779,7 +792,9 @@ if ( [ "$NATRON_BUILD_CONFIG" = "RELEASE" ] || [ "$NATRON_BUILD_CONFIG" = "STABL
     cp "$INC_PATH/debian"/post* DEBIAN/
     chmod +x DEBIAN/post*
 
-    if [ "${BITS}" = "64" ]; then
+    if [ "${ARCH}" = "aarch64" ]; then
+        DEB_ARCH=arm64
+    elif [ "${BITS}" = "64" ]; then
         DEB_ARCH=amd64
     else
         DEB_ARCH=i386
