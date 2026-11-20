@@ -1062,15 +1062,21 @@ Knob<T>::setValue(const T & v,
     // Same for a write that doesn't change the value (not animated, no expression, not linked, same value): its undo
     // command would undo nothing. Issue #1443: when the user drags the center of a rectangle interact, the plug-in sets
     // the position, then the size, unchanged, outside an edit block; the size made a second undo command, which
-    // MultipleKnobEditsUndoCommand::mergeWith() merged into the first one or not depending on the order of the
-    // addresses of the knobs, so that the first Undo of the drag sometimes did nothing.
+    // MultipleKnobEditsUndoCommand::mergeWith() merged into the first one or not depending on heap addresses (its subset
+    // check walks maps ordered by std::owner_less, i.e. by control block, compares the stored pointers, and stops when the
+    // previous command runs out of knobs), so that the first Undo of the drag sometimes did nothing.
+    // The write still goes the normal path: in Knob<T>::setValues(), when an earlier dimension changed through the undo
+    // path (whose redo runs with the value changes blocked), hasChanged is true here, and the evaluateValueChange() of this
+    // write is the one knob changed notification (kOfxActionInstanceChanged) of the change, as when the last dimension
+    // changes. When nothing changed, the normal path changes nothing and notifies nothing.
     const auto unchangedStaticValue = [&]() {
         if ( isAnimated(dimension, view) || !getExpression(dimension).empty() || isSlave(dimension) ) {
             return false;
         }
+        // also the GUI value: it holds the last value set while a set may be queued (isSetValueCurrentlyPossible())
         QMutexLocker l(&_valueMutex);
 
-        return v == _values[dimension];
+        return (v == _values[dimension]) && (v == _guiValues[dimension]);
     };
     if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() && getCanUndo() && !unchangedStaticValue() ) {
         // The first write of a block creates its undo command: takeMultipleParamsEditCreateNewCommand() reads the level and
