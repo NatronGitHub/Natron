@@ -1273,9 +1273,8 @@ public:
      * eMessageTypeWarning : you want to inform the user that something important happened.
      * eMessageTypeError : you want to inform the user an error occurred.
      * @param content The message you want to pass.
-     * @param fromPlugin see Node::setPersistentMessage()
      **/
-    void setPersistentMessage(MessageTypeEnum type, const std::string & content, bool fromPlugin = false);
+    void setPersistentMessage(MessageTypeEnum type, const std::string & content);
 
     /**
      * @brief Test if a persistent message is set.
@@ -1284,9 +1283,8 @@ public:
 
     /**
      * @brief Clears any message posted previously by setPersistentMessage.
-     * @param clearPluginMessage see Node::clearPersistentMessage()
      **/
-    void clearPersistentMessage(bool recurse, bool clearPluginMessage = false);
+    void clearPersistentMessage(bool recurse);
 
     /**
      * @brief Does this effect supports tiling ?

@@ -852,25 +852,20 @@ public:
      * eMessageTypeWarning : you want to inform the user that something important happened.
      * eMessageTypeError : you want to inform the user an error occurred.
      * @param content The message you want to pass.
-     * @param fromPlugin true if the message was set by an OpenFX plug-in (setPersistentMessage of the
-     * message suite V2): "Persistent messages are associated with an effect handle until explicitly cleared
-     * by an effect" (ofxMessage.h), so clearPersistentMessage() only clears it if clearPluginMessage is true.
      **/
-    void setPersistentMessage(MessageTypeEnum type, const std::string & content, bool fromPlugin = false);
+    void setPersistentMessage(MessageTypeEnum type, const std::string & content);
 
     /**
      * @brief Clears any message posted previously by setPersistentMessage.
      * This function will also be called on all inputs
-     * @param clearPluginMessage also clear a message set by an OpenFX plug-in: only the plug-in clears it
-     * (clearPersistentMessage of the message suite V2), not Natron.
      **/
-    void clearPersistentMessage(bool recurse, bool clearPluginMessage = false);
+    void clearPersistentMessage(bool recurse);
 
 private:
 
     void clearPersistentMessageRecursive(std::list<Node*>& markedNodes);
 
-    void clearPersistentMessageInternal(bool clearPluginMessage);
+    void clearPersistentMessageInternal();
 
 public:
 

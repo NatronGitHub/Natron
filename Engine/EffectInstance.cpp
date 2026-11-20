@@ -3102,13 +3102,12 @@ EffectInstance::question(const std::string & content) const
 
 void
 EffectInstance::setPersistentMessage(MessageTypeEnum type,
-                                     const std::string & content,
-                                     bool fromPlugin)
+                                     const std::string & content)
 {
     NodePtr node = getNode();
     assert(node);
     if (node) {
-        node->setPersistentMessage(type, content, fromPlugin);
+        node->setPersistentMessage(type, content);
     }
 }
 
@@ -3121,14 +3120,14 @@ EffectInstance::hasPersistentMessage()
 }
 
 void
-EffectInstance::clearPersistentMessage(bool recurse,
-                                       bool clearPluginMessage)
+EffectInstance::clearPersistentMessage(bool recurse)
 {
     NodePtr node = getNode();
     assert(node);
     if (node) {
-        node->clearPersistentMessage(recurse, clearPluginMessage);
+        node->clearPersistentMessage(recurse);
     }
+    assert( !hasPersistentMessage() );
 }
 
 int

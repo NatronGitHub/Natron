@@ -267,13 +267,12 @@ OfxImageEffectInstance::setPersistentMessage(const char* type,
     assert(effect);
 
     if (effect) {
-        // the message stays until the plug-in clears it (see Node::setPersistentMessage())
         if (std::strcmp(type, kOfxMessageError) == 0) {
-            effect->setPersistentMessage(eMessageTypeError, message, true);
+            effect->setPersistentMessage(eMessageTypeError, message);
         } else if (std::strcmp(type, kOfxMessageWarning) == 0) {
-            effect->setPersistentMessage(eMessageTypeWarning, message, true);
+            effect->setPersistentMessage(eMessageTypeWarning, message);
         } else if (std::strcmp(type, kOfxMessageMessage) == 0) {
-            effect->setPersistentMessage(eMessageTypeInfo, message, true);
+            effect->setPersistentMessage(eMessageTypeInfo, message);
         }
     }
 
@@ -287,7 +286,7 @@ OfxImageEffectInstance::clearPersistentMessage()
     if (!effect) {
         return kOfxStatFailed;
     }
-    effect->clearPersistentMessage(false, true);
+    effect->clearPersistentMessage(false);
 
     return kOfxStatOK;
 }

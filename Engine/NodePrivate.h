@@ -229,7 +229,6 @@ public:
         , nodeIsRenderingMutex()
         , persistentMessage()
         , persistentMessageType(0)
-        , persistentMessageFromPlugin(false)
         , persistentMessageMutex()
         , guiPointer()
         , nativeOverlays()
@@ -448,7 +447,6 @@ public:
     mutable QMutex nodeIsRenderingMutex;
     QString persistentMessage;
     int persistentMessageType;
-    bool persistentMessageFromPlugin; // set by an OpenFX plug-in, see Node::setPersistentMessage()
     mutable QMutex persistentMessageMutex;
     NodeGuiIWPtr guiPointer;
     std::list<HostOverlayKnobsPtr> nativeOverlays;
