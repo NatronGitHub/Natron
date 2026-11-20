@@ -481,7 +481,7 @@ Knob<T>::getValueFromExpression(double time,
     ///Check first if a value was already computed:
     unsigned int generation;
     {
-        QMutexLocker k(&_valueMutex);
+        std::lock_guard<std::recursive_mutex> k(_valueMutex);
         typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
         if ( found != _exprRes[dimension].end() ) {
             *ret = found->second;
@@ -513,7 +513,7 @@ Knob<T>::getValueFromExpression(double time,
         *ret =  clampToMinMax(*ret, dimension);
     }
 
-    QMutexLocker k(&_valueMutex);
+    std::lock_guard<std::recursive_mutex> k(_valueMutex);
     // If the results were cleared during the evaluation (e.g. a parameter used by the expression changed
     // in another thread), this result may be computed from the old values: return it, but don't store it,
     // else later renders would keep using it.
@@ -577,7 +577,7 @@ Knob<T>::getValueFromExpression_pod(double time,
     ///Check first if a value was already computed:
     unsigned int generation;
     {
-        QMutexLocker k(&_valueMutex);
+        std::lock_guard<std::recursive_mutex> k(_valueMutex);
         typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
         if ( found != _exprRes[dimension].end() ) {
             *ret = found->second;
@@ -610,7 +610,7 @@ Knob<T>::getValueFromExpression_pod(double time,
         *ret =  clampToMinMax(*ret, dimension);
     }
 
-    QMutexLocker k(&_valueMutex);
+    std::lock_guard<std::recursive_mutex> k(_valueMutex);
     // as in getValueFromExpression()
     if (_exprResGeneration == generation) {
         _exprRes[dimension].insert( std::make_pair(time, *ret) );
@@ -735,7 +735,7 @@ Knob<T>::getValue(int dimension,
         return getValueFromMaster(view, master.first, master.second.get(), clamp);
     }
 
-    QMutexLocker l(&_valueMutex);
+    std::lock_guard<std::recursive_mutex> l(_valueMutex);
     if (useGuiValues) {
         if (clamp) {
             T ret = _guiValues[dimension];
@@ -851,7 +851,7 @@ Knob<T>::getValueAtTime(double time,
     if (master.second && !byPassMaster) {
         return getValueFromMaster(view, master.first, master.second.get(), clamp);
     }
-    QMutexLocker l(&_valueMutex);
+    std::lock_guard<std::recursive_mutex> l(_valueMutex);
     if (clamp) {
         ret = _values[dimension];
 
@@ -889,7 +889,7 @@ Knob<T>::getRawCurveValueAt(double time,
         //getValueAt already clamps to the range for us
         return curve->getValueAt(time, false); //< no clamping to range!
     }
-    QMutexLocker l(&_valueMutex);
+    std::lock_guard<std::recursive_mutex> l(_valueMutex);
     T ret = _values[dimension];
 
     return clampToMinMax(ret, dimension);
@@ -1074,7 +1074,7 @@ Knob<T>::setValue(const T & v,
             return false;
         }
         // also the GUI value: it holds the last value set while a set may be queued (isSetValueCurrentlyPossible())
-        QMutexLocker l(&_valueMutex);
+        std::lock_guard<std::recursive_mutex> l(_valueMutex);
 
         return (v == _values[dimension]) && (v == _guiValues[dimension]);
     };
@@ -1093,14 +1093,14 @@ Knob<T>::setValue(const T & v,
                 Variant vari;
                 valueToVariant(v, &vari);
                 {
-                    QMutexLocker l(&_setValueRecursionLevelMutex);
+                    std::lock_guard<std::recursive_mutex> l(_setValueRecursionLevelMutex);
                     ++_setValueRecursionLevel;
                 }
                 if (_signalSlotHandler) {
                     _signalSlotHandler->s_appendParamEditChange(reason, vari, view, dimension, 0, true, false);
                 }
                 {
-                    QMutexLocker l(&_setValueRecursionLevelMutex);
+                    std::lock_guard<std::recursive_mutex> l(_setValueRecursionLevelMutex);
                     --_setValueRecursionLevel;
                 }
 
@@ -1113,14 +1113,14 @@ Knob<T>::setValue(const T & v,
                 Variant vari;
                 valueToVariant(v, &vari);
                 {
-                    QMutexLocker l(&_setValueRecursionLevelMutex);
+                    std::lock_guard<std::recursive_mutex> l(_setValueRecursionLevelMutex);
                     ++_setValueRecursionLevel;
                 }
                 if (_signalSlotHandler) {
                     _signalSlotHandler->s_appendParamEditChange(reason, vari, view, dimension, 0, false, false);
                 }
                 {
-                    QMutexLocker l(&_setValueRecursionLevelMutex);
+                    std::lock_guard<std::recursive_mutex> l(_setValueRecursionLevelMutex);
                     --_setValueRecursionLevel;
                 }
 
@@ -1197,12 +1197,12 @@ Knob<T>::setValue(const T & v,
         debugHook();
 #endif
         {
-            QMutexLocker kql(&_setValuesQueueMutex);
+            std::lock_guard<std::recursive_mutex> kql(_setValuesQueueMutex);
             _setValuesQueue.push_back(qv);
         }
         if ( QThread::currentThread() == qApp->thread() ) {
             {
-                QMutexLocker k(&_valueMutex);
+                std::lock_guard<std::recursive_mutex> k(_valueMutex);
                 _guiValues[dimension] = v;
             }
             if ( !isValueChangesBlocked() ) {
@@ -1221,12 +1221,12 @@ Knob<T>::setValue(const T & v,
     }
 
     {
-        QMutexLocker l(&_setValueRecursionLevelMutex);
+        std::lock_guard<std::recursive_mutex> l(_setValueRecursionLevelMutex);
         ++_setValueRecursionLevel;
     }
 
     {
-        QMutexLocker l(&_valueMutex);
+        std::lock_guard<std::recursive_mutex> l(_valueMutex);
         hasChanged |= (v != _values[dimension]);
         _values[dimension] = v;
         _guiValues[dimension] = v;
@@ -1273,7 +1273,7 @@ Knob<T>::setValue(const T & v,
         evaluateValueChange(dimension, time, view, reason);
     }
     {
-        QMutexLocker l(&_setValueRecursionLevelMutex);
+        std::lock_guard<std::recursive_mutex> l(_setValueRecursionLevelMutex);
         --_setValueRecursionLevel;
         assert(_setValueRecursionLevel >= 0);
     }
@@ -1526,7 +1526,7 @@ Knob<T>::setValueAtTime(double time,
         case KnobHolder::eMultipleParamsEditOnCreateNewCommand: {
             if ( !get_SetValueRecursionLevel() ) {
                 {
-                    QMutexLocker l(&_setValueRecursionLevelMutex);
+                    std::lock_guard<std::recursive_mutex> l(_setValueRecursionLevelMutex);
                     ++_setValueRecursionLevel;
                 }
 
@@ -1536,7 +1536,7 @@ Knob<T>::setValueAtTime(double time,
                     _signalSlotHandler->s_appendParamEditChange(reason, vari, view, dimension, time, true, true);
                 }
                 {
-                    QMutexLocker l(&_setValueRecursionLevelMutex);
+                    std::lock_guard<std::recursive_mutex> l(_setValueRecursionLevelMutex);
                     --_setValueRecursionLevel;
                 }
 
@@ -1547,7 +1547,7 @@ Knob<T>::setValueAtTime(double time,
         case KnobHolder::eMultipleParamsEditOn: {
             if ( !get_SetValueRecursionLevel() ) {
                 {
-                    QMutexLocker l(&_setValueRecursionLevelMutex);
+                    std::lock_guard<std::recursive_mutex> l(_setValueRecursionLevelMutex);
                     ++_setValueRecursionLevel;
                 }
 
@@ -1557,7 +1557,7 @@ Knob<T>::setValueAtTime(double time,
                     _signalSlotHandler->s_appendParamEditChange(reason, vari, view, dimension, time, false, true);
                 }
                 {
-                    QMutexLocker l(&_setValueRecursionLevelMutex);
+                    std::lock_guard<std::recursive_mutex> l(_setValueRecursionLevelMutex);
                     --_setValueRecursionLevel;
                 }
 
@@ -1587,7 +1587,7 @@ Knob<T>::setValueAtTime(double time,
         debugHook();
 #endif
         {
-            QMutexLocker kql(&_setValuesQueueMutex);
+            std::lock_guard<std::recursive_mutex> kql(_setValuesQueueMutex);
             _setValuesQueue.push_back(qv);
         }
 
@@ -2007,7 +2007,7 @@ template<typename T>
 std::list<T>
 Knob<T>::getValueForEachDimension_mt_safe() const
 {
-    QMutexLocker l(&_valueMutex);
+    std::lock_guard<std::recursive_mutex> l(_valueMutex);
     std::list<T> ret;
 
     for (U32 i = 0; i < _values.size(); ++i) {
@@ -2021,7 +2021,7 @@ template<typename T>
 std::vector<T>
 Knob<T>::getValueForEachDimension_mt_safe_vector() const
 {
-    QMutexLocker l(&_valueMutex);
+    std::lock_guard<std::recursive_mutex> l(_valueMutex);
 
     return _values;
 }
@@ -2031,7 +2031,7 @@ T
 Knob<T>::getRawValue(int dimension) const
 {
     assert( dimension >= 0 && dimension < getDimension() );
-    QMutexLocker l(&_valueMutex);
+    std::lock_guard<std::recursive_mutex> l(_valueMutex);
 
     return _values[dimension];
 }
@@ -2040,7 +2040,7 @@ template<typename T>
 std::vector<T>
 Knob<T>::getDefaultValues_mt_safe() const
 {
-    QMutexLocker l(&_valueMutex);
+    std::lock_guard<std::recursive_mutex> l(_valueMutex);
     int dims = getDimension();
     std::vector<T> ret(dims);
     for (int i = 0; i < dims; ++i) {
@@ -2053,7 +2053,7 @@ template<typename T>
 T
 Knob<T>::getDefaultValue(int dimension) const
 {
-    QMutexLocker l(&_valueMutex);
+    std::lock_guard<std::recursive_mutex> l(_valueMutex);
 
     return _defaultValues[dimension].value;
 }
@@ -2062,7 +2062,7 @@ template<typename T>
 bool
 Knob<T>::hasDefaultValueChanged(int dimension) const
 {
-    QMutexLocker l(&_valueMutex);
+    std::lock_guard<std::recursive_mutex> l(_valueMutex);
     return _defaultValues[dimension].initialValue != _defaultValues[dimension].value;
 }
 
@@ -2070,7 +2070,7 @@ template<typename T>
 bool
 Knob<T>::isDefaultValueSet(int dimension) const
 {
-    QMutexLocker l(&_valueMutex);
+    std::lock_guard<std::recursive_mutex> l(_valueMutex);
     return _defaultValues[dimension].defaultValueSet;
 }
 
@@ -2081,7 +2081,7 @@ Knob<T>::setDefaultValue(const T & v,
 {
     assert( dimension < getDimension() );
     {
-        QMutexLocker l(&_valueMutex);
+        std::lock_guard<std::recursive_mutex> l(_valueMutex);
         _defaultValues[dimension].value = v;
         if (!_defaultValues[dimension].defaultValueSet) {
             _defaultValues[dimension].defaultValueSet = true;
@@ -2098,7 +2098,7 @@ Knob<T>::setDefaultValueWithoutApplying(const T& v,
 {
     assert( dimension < getDimension() );
     {
-        QMutexLocker l(&_valueMutex);
+        std::lock_guard<std::recursive_mutex> l(_valueMutex);
         _defaultValues[dimension].value = v;
         if (!_defaultValues[dimension].defaultValueSet) {
             _defaultValues[dimension].defaultValueSet = true;
@@ -2115,7 +2115,7 @@ Knob<T>::setDefaultValuesWithoutApplying(const T& v1, const T& v2)
 {
     assert(getDimension() == 2);
     {
-        QMutexLocker l(&_valueMutex);
+        std::lock_guard<std::recursive_mutex> l(_valueMutex);
         _defaultValues[0].value = v1;
         if (!_defaultValues[0].defaultValueSet) {
             _defaultValues[0].defaultValueSet = true;
@@ -2138,7 +2138,7 @@ Knob<T>::setDefaultValuesWithoutApplying(const T& v1, const T& v2, const T& v3)
 {
     assert(getDimension() == 3);
     {
-        QMutexLocker l(&_valueMutex);
+        std::lock_guard<std::recursive_mutex> l(_valueMutex);
         _defaultValues[0].value = v1;
         if (!_defaultValues[0].defaultValueSet) {
             _defaultValues[0].defaultValueSet = true;
@@ -2167,7 +2167,7 @@ Knob<T>::setDefaultValuesWithoutApplying(const T& v1, const T& v2, const T& v3, 
 {
     assert(getDimension() == 4);
     {
-        QMutexLocker l(&_valueMutex);
+        std::lock_guard<std::recursive_mutex> l(_valueMutex);
         _defaultValues[0].value = v1;
         if (!_defaultValues[0].defaultValueSet) {
             _defaultValues[0].defaultValueSet = true;
@@ -2469,7 +2469,7 @@ Knob<T>::getIntegrateFromTimeToTime(double time1,
         return curve->getIntegrateFromTo(time1, time2);
     } else {
         // if the knob as no keys at this dimension, the integral is trivial
-        QMutexLocker l(&_valueMutex);
+        std::lock_guard<std::recursive_mutex> l(_valueMutex);
 
         return (double)_values[dimension] * (time2 - time1);
     }
@@ -2503,7 +2503,7 @@ KnobDoubleBase::resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension
     KnobI::removeAnimation(ViewSpec::all(), dimension);
     double defaultV;
     {
-        QMutexLocker l(&_valueMutex);
+        std::lock_guard<std::recursive_mutex> l(_valueMutex);
         defaultV = _defaultValues[dimension].value;
     }
 
@@ -2542,7 +2542,7 @@ Knob<T>::resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension)
     KnobI::removeAnimation(ViewSpec::all(), dimension);
     T defaultV;
     {
-        QMutexLocker l(&_valueMutex);
+        std::lock_guard<std::recursive_mutex> l(_valueMutex);
         defaultV = _defaultValues[dimension].value;
     }
 
@@ -2594,7 +2594,7 @@ KnobDoubleBase::resetToDefaultValue(int dimension)
     clearExpression(dimension, true);
 
     {
-        QMutexLocker l(&_valueMutex);
+        std::lock_guard<std::recursive_mutex> l(_valueMutex);
         def = _defaultValues[dimension].value;
     }
 
@@ -2632,7 +2632,7 @@ Knob<T>::copyValueForType(Knob<OTHERTYPE>* other,
                           int otherDimension)
 {
     assert( (dimension == otherDimension) || (dimension != -1) );
-    QMutexLocker k(&_valueMutex);
+    std::lock_guard<std::recursive_mutex> k(_valueMutex);
     if (dimension == -1) {
         int dimMin = std::min( getDimension(), other->getDimension() );
         std::vector<OTHERTYPE> v = other->getValueForEachDimension_mt_safe_vector();
@@ -2659,7 +2659,7 @@ Knob<T>::copyValueForTypeAndCheckIfChanged(Knob<OTHERTYPE>* other,
 {
     assert( (dimension == otherDimension) || (dimension != -1) );
     bool ret = false;
-    QMutexLocker k(&_valueMutex);
+    std::lock_guard<std::recursive_mutex> k(_valueMutex);
     if (dimension == -1) {
         int dimMin = std::min( getDimension(), other->getDimension() );
         std::vector<OTHERTYPE> v = other->getValueForEachDimension_mt_safe_vector();
@@ -2713,7 +2713,7 @@ Knob<T>::cloneValues(KnobI* other,
     KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase* >(other);
     assert(isInt || isBool || isDouble);
 
-    QMutexLocker k(&_valueMutex);
+    std::lock_guard<std::recursive_mutex> k(_valueMutex);
     if (isInt) {
         copyValueForType<int>(isInt, dimension, otherDimension);
     } else if (isBool) {
@@ -2751,7 +2751,7 @@ Knob<T>::cloneValuesAndCheckIfChanged(KnobI* other,
     KnobDoubleBase* isDouble = dynamic_cast<KnobDoubleBase* >(other);
     assert(isInt || isBool || isDouble);
 
-    QMutexLocker k(&_valueMutex);
+    std::lock_guard<std::recursive_mutex> k(_valueMutex);
     if (isInt) {
         return copyValueForTypeAndCheckIfChanged<int>(isInt, dimension, otherDimension);
     } else if (isBool) {
@@ -2781,7 +2781,7 @@ Knob<T>::cloneExpressionsResults(KnobI* other,
         for (int i = 0; i < dimMin; ++i) {
             FrameValueMap results;
             otherKnob->getExpressionResults(i, results);
-            QMutexLocker k(&_valueMutex);
+            std::lock_guard<std::recursive_mutex> k(_valueMutex);
             _exprRes[i] = results;
             ++_exprResGeneration;
         }
@@ -2791,7 +2791,7 @@ Knob<T>::cloneExpressionsResults(KnobI* other,
         }
         FrameValueMap results;
         otherKnob->getExpressionResults(otherDimension, results);
-        QMutexLocker k(&_valueMutex);
+        std::lock_guard<std::recursive_mutex> k(_valueMutex);
         _exprRes[dimension] = results;
         ++_exprResGeneration;
     }
@@ -2932,7 +2932,7 @@ Knob<T>::cloneDefaultValues(KnobI* other)
 
     std::vector<DefaultValue> otherDef;
     {
-        QMutexLocker l(&otherT->_valueMutex);
+        std::lock_guard<std::recursive_mutex> l(otherT->_valueMutex);
         otherDef = otherT->_defaultValues;
     }
     for (int i = 0; i < dims; ++i) {
@@ -2951,8 +2951,8 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
 
     cloneGuiCurvesIfNeeded(dimensionChanged);
     {
-        QMutexLocker kql(&_setValuesQueueMutex);
-        QMutexLocker k(&_valueMutex);
+        std::lock_guard<std::recursive_mutex> kql(_setValuesQueueMutex);
+        std::lock_guard<std::recursive_mutex> k(_valueMutex);
         for (typename std::list<QueuedSetValuePtr>::const_iterator it = _setValuesQueue.begin(); it != _setValuesQueue.end(); ++it) {
             QueuedSetValueAtTime* isAtTime = dynamic_cast<QueuedSetValueAtTime*>( it->get() );
             bool blockValueChanges = (*it)->valueChangesBlocked();
@@ -3055,7 +3055,7 @@ Knob<T>::computeHasModifications()
 
         ///Check expressions too in the future
         if (!hasModif) {
-            QMutexLocker k(&_valueMutex);
+            std::lock_guard<std::recursive_mutex> k(_valueMutex);
             if ( computeValuesHaveModifications(i, _values[i], _defaultValues[i].value) ) {
                 hasModif = true;
             }
@@ -3080,7 +3080,7 @@ Knob<T>::copyValuesFromCurve(int dim)
     double time = getCurrentTime();
     assert(dim >= 0 && dim < getDimension());
     T v = getValueAtTime(time, dim);
-    QMutexLocker l(&_valueMutex);
+    std::lock_guard<std::recursive_mutex> l(_valueMutex);
     _guiValues[dim] = _values[dim] = v;
 
 }

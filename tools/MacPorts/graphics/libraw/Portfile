@@ -36,6 +36,20 @@ checksums \
         sha256  ffd6916cd66c8101e4e6b589799f256c897748d2fd2486aa34c3705146dbc701 \
         size    39002
 
+# Natron: subport libraw-lgpl, the LibRaw of COMMERCIAL Natron builds (#1302): the same LibRaw
+# without any demosaic pack (LGPL-2.1/CDDL), installed in ${prefix}/libexec/libraw-lgpl so that it
+# can be installed next to "libraw +gpl2". tools/jenkins/common.sh uses it when NATRON_LICENSE=COMMERCIAL.
+subport libraw-lgpl {
+    description     LibRaw without the GPL demosaic packs, for Natron's COMMERCIAL builds
+    configure.pre_args-delete --prefix=${prefix}
+    configure.pre_args-append --prefix=${prefix}/libexec/${subport}
+    pre-configure {
+        if {[variant_isset gpl2] || [variant_isset gpl3]} {
+            return -code error "${subport} is the LGPL LibRaw of Natron's COMMERCIAL builds: install it without +gpl2 or +gpl3"
+        }
+    }
+}
+
 depends_build       port:pkgconfig
 
 depends_lib         port:jasper \
@@ -60,7 +74,11 @@ configure.cppflags-append -DUSE_X3FTOOLS
 patchfiles-append   patch-libraw-no-libstdcxx.diff
 
 post-destroot {
-    set htmlDir ${destroot}${prefix}/share/doc/${name}/html
+    if {${subport} eq "libraw-lgpl"} {
+        set htmlDir ${destroot}${prefix}/libexec/${subport}/share/doc/libraw/html
+    } else {
+        set htmlDir ${destroot}${prefix}/share/doc/${name}/html
+    }
     xinstall -d -m 0755 ${htmlDir}
     xinstall -m 644 {*}[glob -directory ${worksrcpath}/doc/ *.html] ${htmlDir}
 }
@@ -70,6 +88,10 @@ test.run            yes
 test.target         check
 post-build {
     system -W ${worksrcpath} "${build.cmd} check"
+    if {${subport} eq "libraw-lgpl"} {
+        # no demosaic pack: LGPL
+        system -W ${worksrcpath} "grep -q 'GPL2: no, GPL3: no' tests/demosaic_test.log"
+    }
 }
 
 variant gpl2 description {Enable the GPL2 demosaic pack (AHD-Mod, AFD, VCD, Mixed, LMMSE), license will be GPL-2+} {

@@ -5,7 +5,7 @@ Natron as an OpenFX Host
 
 `OpenFX (OFX) <http://openeffects.org/>`_ is the industry-standard C API for
 image-effect plug-ins, also used by Nuke, DaVinci Resolve, Fusion and others.
-Natron implements the **host** side of OFX v1.4 (with many extensions), which is
+Natron implements the **host** side of OFX v1.5 (with many extensions), which is
 why Natron can load the same plug-ins as those commercial applications, and why
 its own bundled effects (``openfx-io``, ``openfx-misc``, ``openfx-arena``,
 ``openfx-gmic``) are just OFX plug-ins living in separate repositories.
@@ -248,6 +248,25 @@ Cursors
     ``kOfxInteractPropCursor`` on the overlay interact (see "Interact cursors
     (proposed extension)" in ``ofxInteract.h``). None of the bundled plug-ins
     used the old mechanism.
+
+Obsolete plug-ins
+    A plug-in that sets ``kOfxImageEffectPluginPropObsolete`` to 1 (OFX, after
+    1.5.1) on its descriptor is still loaded, so existing projects that use it
+    open, and it can be created by ID (from Python, ``app.createNode()``).
+    It is not offered for new nodes: it is hidden from the node menus, the
+    toolbars, the Tab node-creation dialog and the documentation, and it is
+    not registered as a reader or writer for its file extensions
+    (``OfxHost::isPluginObsolete``, ``Plugin::getIsUserCreatable``). The
+    spec uses the property for a plug-in "made obsolete by a different
+    version of the same plugin contained in the same bundle", and requires
+    at least one version that is not obsolete. Natron is more lenient: it
+    hides any plug-in that sets it, even when no version of it is left offered
+    (openfx-misc's JoinViews, OneView, Roto and TrackerPM, which are obsolete
+    only in Natron, where none of their versions is left offered). Natron
+    2.6 no longer reads the Natron extension
+    ``kNatronOfxImageEffectPropDeprecated``, which had the same meaning (`#1491 <https://github.com/NatronGitHub/Natron/issues/1491>`_):
+    plug-ins must set the standard property (``setIsObsolete(true)`` in the
+    Support library, instead of ``setIsDeprecated(true)``).
 
 Practical guidance
 ------------------

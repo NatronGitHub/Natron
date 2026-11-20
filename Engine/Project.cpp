@@ -208,16 +208,28 @@ Project::loadProject(const QString & path,
                      bool attemptToLoadAutosave)
 {
     reset(false, true);
+    _imp->autoSaveDisabled = false;
 
     try {
         QString realPath = path;
         StrUtils::ensureLastPathSeparator(realPath);
         QString realName = name;
         bool isAutoSave = isUntitledAutosave;
-        if (!getApp()->isBackground() && !isUntitledAutosave) {
+        // In test mode (--test), auto-saves are neither restored nor removed: they may be the user's.
+        if ( !getApp()->isBackground() && !isUntitledAutosave && !appPTR->isTestMode() ) {
             // In Gui mode, attempt to load an auto-save for this project if there's one.
             QString autosaveFileName;
             bool hasAutoSave = findAutoSaveForProject(realPath, name, &autosaveFileName);
+            if ( hasAutoSave && appPTR->isDialogsDisabled() ) {
+                // --no-dialogs: load the project itself, and keep its auto-save, which may be
+                // the user's crash recovery: using it would delete it when quitting
+                Dialogs::printDismissedDialog( tr("Auto-save").toStdString(),
+                                               tr("A recent auto-save of %1 was found. It is not used, and kept.").arg(name).toStdString() );
+                hasAutoSave = false;
+                // The auto-saves of this project would overwrite it (<dir>/<name>.autosave):
+                // do not auto-save it in this session (see refreshAutoSaveDisabled())
+                _imp->autoSaveDisabled = true;
+            }
             if (hasAutoSave) {
                 StandardButtonEnum ret = eStandardButtonNo;
                 if (attemptToLoadAutosave) {
@@ -236,6 +248,10 @@ Project::loadProject(const QString & path,
                     {
                         QMutexLocker k(&_imp->projectLock);
                         _imp->lastAutoSaveFilePath = realPath + realName;
+                        // the user chose to use it: this session owns it now
+                        if ( appPTR->isDialogsDisabled() ) {
+                            _imp->autoSavesWrittenBySession.insert( QDir::cleanPath(realPath + realName) );
+                        }
                     }
                 }
             }
@@ -735,9 +751,14 @@ Project::saveProjectInternal(const QString & path,
             }
         }
 
-        if (updateProjectProperties) {
+        {
             QMutexLocker l(&_imp->projectLock);
-            _imp->lastAutoSaveFilePath = filePath;
+            if (updateProjectProperties) {
+                _imp->lastAutoSaveFilePath = filePath;
+            }
+            if ( !isRenderSave && appPTR->keepsOtherSessionsAutoSaves() ) {
+                _imp->autoSavesWrittenBySession.insert( QDir::cleanPath(filePath) );
+            }
         }
     } else {
         filePath = path + name;
@@ -745,6 +766,11 @@ Project::saveProjectInternal(const QString & path,
 
     std::string newFilePath = _imp->runOnProjectSaveCallback(filePath.toStdString(), autoSave);
     filePath = QString::fromUtf8( newFilePath.c_str() );
+    if ( autoSave && !isRenderSave && appPTR->keepsOtherSessionsAutoSaves() ) {
+        // the onProjectSave callback may have changed the file name
+        QMutexLocker l(&_imp->projectLock);
+        _imp->autoSavesWrittenBySession.insert( QDir::cleanPath(filePath) );
+    }
 
     ///Use a temporary file to save, so if Natron crashes it doesn't corrupt the user save.
     QString tmpFilename = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
@@ -852,6 +878,9 @@ Project::saveProjectInternal(const QString & path,
 
         //Create the lock file corresponding to the project
         createLockFile();
+
+        // --no-dialogs: the name changed (Save As), check for an auto-save of another session
+        refreshAutoSaveDisabled();
     } else if (updateProjectProperties) {
         // A background auto-save runs in another thread: onAutoSaveFutureFinished() marks the
         // project as modified, in the main thread. A signal emitted here would be queued, and could
@@ -874,7 +903,7 @@ void
 Project::autoSave()
 {
     ///don't autosave in background mode...
-    if ( getApp()->isBackground() ) {
+    if ( getApp()->isBackground() || _imp->autoSaveDisabled ) {
         return;
     }
 
@@ -889,7 +918,8 @@ Project::triggerAutoSave()
     ///Should only be called in the main-thread, that is upon user interaction.
     assert( QThread::currentThread() == qApp->thread() );
 
-    if ( getApp()->isBackground() || !appPTR->isLoaded() || isProjectClosing() ) {
+    // no auto-saves in test mode (--test): a crash would leave one for the user's next session
+    if ( getApp()->isBackground() || !appPTR->isLoaded() || isProjectClosing() || _imp->autoSaveDisabled || appPTR->isTestMode() ) {
         return;
     }
 
@@ -2076,6 +2106,33 @@ Project::getLockFileInfos(const QString& projectPath,
 }
 
 void
+Project::stopAutoSave()
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    _imp->autoSaveTimer->stop();
+    // A copy: onAutoSaveFutureFinished() removes the finished ones from the list while the events are processed.
+    const std::list<std::shared_ptr<QFutureWatcher<void> > > futures = _imp->autoSaveFutures;
+    if ( futures.empty() ) {
+        return;
+    }
+    // As saveProject_imp() waits for an auto-save (#825): the auto-save may need the main thread (e.g. its
+    // beforeProjectSave or onProjectSave callback shows a dialog) and the Python lock. Serve the events,
+    // but not user input.
+    std::unique_ptr<PythonGILUnlocker> gilUnlocker;
+    if ( Py_IsInitialized() && PyGILState_Check() ) {
+        gilUnlocker.reset(new PythonGILUnlocker);
+    }
+    for (std::list<std::shared_ptr<QFutureWatcher<void> > >::const_iterator it = futures.begin(); it != futures.end(); ++it) {
+        while ( !(*it)->isFinished() ) {
+            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents, 50);
+            if ( !(*it)->isFinished() ) {
+                QThread::msleep(10); // processEvents() returns at once when there is no event
+            }
+        }
+    }
+}
+
+void
 Project::removeLastAutosave()
 {
     /*
@@ -2083,8 +2140,9 @@ Project::removeLastAutosave()
      */
     QString filepath = getLastAutoSaveFilePath();
 
-    if ( !filepath.isEmpty() ) {
+    if ( !filepath.isEmpty() && canRemoveAutoSave(filepath) ) {
         QFile::remove(filepath);
+        forgetAutoSave(filepath);
     }
 
     /*
@@ -2095,9 +2153,49 @@ Project::removeLastAutosave()
     QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
     StrUtils::ensureLastPathSeparator(projectPath);
     QString autoSaveFilePath = projectPath + projectFilename + QString::fromUtf8(".autosave");
-    if ( QFile::exists(autoSaveFilePath) ) {
+    if ( QFile::exists(autoSaveFilePath) && canRemoveAutoSave(autoSaveFilePath) ) {
         QFile::remove(autoSaveFilePath);
+        forgetAutoSave(autoSaveFilePath);
     }
+}
+
+void
+Project::forgetAutoSave(const QString& filePath)
+{
+    QMutexLocker l(&_imp->projectLock);
+
+    _imp->autoSavesWrittenBySession.erase( QDir::cleanPath(filePath) );
+}
+
+void
+Project::refreshAutoSaveDisabled()
+{
+    _imp->autoSaveDisabled = false;
+    if ( !appPTR->keepsOtherSessionsAutoSaves() || getApp()->isBackground() || !hasProjectBeenSavedByUser() ) {
+        return;
+    }
+    // --no-dialogs: an auto-save of this project written by another session (the user's crash
+    // recovery) would be overwritten by the auto-saves of this session (<dir>/<name>.autosave)
+    QString path = QString::fromUtf8( _imp->getProjectPath().c_str() );
+    StrUtils::ensureLastPathSeparator(path);
+    const QString name = QString::fromUtf8( _imp->getProjectFilename().c_str() );
+    QString autoSaveFileName;
+    if ( findAutoSaveForProject(path, name, &autoSaveFileName) && !wroteAutoSave(path + autoSaveFileName) ) {
+        Dialogs::printDismissedDialog( tr("Auto-save").toStdString(),
+                                       tr("An auto-save of %1 exists: it is kept, and %1 is not auto-saved in this session.").arg(name).toStdString() );
+        _imp->autoSaveDisabled = true;
+    }
+}
+
+bool
+Project::canRemoveAutoSave(const QString& filePath) const
+{
+    if ( !appPTR->keepsOtherSessionsAutoSaves() ) {
+        return true;
+    }
+    // --no-dialogs: only remove the auto-saves this session wrote (or chose to use), never
+    // an auto-save that may be the user's crash recovery
+    return wroteAutoSave(filePath);
 }
 
 void
@@ -2124,9 +2222,35 @@ Project::clearAutoSavesDir()
                 dirToRemove += QLatin1Char('/');
             }
             dirToRemove += entry;
+            if ( appPTR->keepsOtherSessionsAutoSaves() && !isAutoSaveOfThisSession(dirToRemove) ) {
+                // --no-dialogs: keep the auto-saves of other sessions (the user's crash recovery)
+                continue;
+            }
             QFile::remove(dirToRemove);
         }
     }
+}
+
+bool
+Project::isAutoSaveOfThisSession(const QString& filePath)
+{
+    const AppInstanceVec instances = appPTR->getAppInstances();
+    for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        ProjectPtr project = (*it)->getProject();
+        if ( project && project->wroteAutoSave(filePath) ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool
+Project::wroteAutoSave(const QString& filePath) const
+{
+    QMutexLocker l(&_imp->projectLock);
+
+    return _imp->autoSavesWrittenBySession.count( QDir::cleanPath(filePath) ) > 0;
 }
 
 QString
@@ -2188,6 +2312,12 @@ Project::reset(bool aboutToQuit, bool blocking)
     {
         QMutexLocker k(&_imp->projectClosingMutex);
         _imp->projectClosing = true;
+    }
+    // a new project: it may auto-save, and it wrote no auto-save yet
+    _imp->autoSaveDisabled = false;
+    {
+        QMutexLocker l(&_imp->projectLock);
+        _imp->autoSavesWrittenBySession.clear();
     }
 
     if (!blocking) {
