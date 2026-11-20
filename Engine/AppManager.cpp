@@ -386,6 +386,15 @@ AppManager::loadFromArgs(const CLArgs& cl)
 
     // Before creating qApp and before initPython(): the GUI registers the test module only in test mode.
     _imp->testMode = !cl.getTestScript().isEmpty() && !cl.isBackgroundMode();
+    if ( _imp->testMode && !qEnvironmentVariableIsEmpty("CI") && (qgetenv("NATRON_GUI_TESTS") != "1") ) {
+        // In CI, the GUI tests only run where the job enables them (NATRON_GUI_TESTS=1, e.g. under Xvfb with
+        // Mesa): skipped here, before anything is initialized, not in the test script, which runs much later.
+        std::cout << "SKIP: GUI tests in CI need NATRON_GUI_TESTS=1" << std::endl;
+        _imp->requestedExitCode = 77;
+        _imp->quitRequested = true;
+
+        return false;
+    }
 #if defined(__NATRON_UNIX__) && !defined(__NATRON_OSX__)
     if ( _imp->testMode && qgetenv("DISPLAY").isEmpty() && qgetenv("WAYLAND_DISPLAY").isEmpty() &&
          qgetenv("QT_QPA_PLATFORM").isEmpty() ) {
@@ -984,6 +993,12 @@ AppManager::hasOpenGLForRequirements(OpenGLRequirementsTypeEnum type, QString* m
 bool
 AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
 {
+#ifdef DEBUG
+    // The floating point exceptions that main() traps in debug builds must not be trapped in the OpenGL
+    // driver: Mesa's llvmpipe raises them while it creates a context (SIGFPE in driCreateContextAttribs()
+    // under Xvfb). This runs before the event loop, which does not trap them (see exec()).
+    boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
     QMutexLocker k(&_imp->openGLFunctionsMutex);
 
     if (!_imp->hasInitializedOpenGLFunctions) {
