@@ -1,6 +1,8 @@
 name: Build Installer
 
 # Installers are release artifacts: built on demand or for (pre-)release tags only.
+# GPL only: COMMERCIAL (non-GPL) builds are never made in CI, nightlies or releases, only by hand
+# (NATRON_LICENSE=COMMERCIAL, see tools/jenkins/README.md).
 on:
   workflow_dispatch:
     inputs:

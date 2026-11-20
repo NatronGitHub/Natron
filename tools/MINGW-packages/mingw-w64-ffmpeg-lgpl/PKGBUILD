@@ -1,0 +1,157 @@
+# Maintainer: The Natron developers
+# Based on MSYS2's mingw-w64-ffmpeg (Alexey Pavlov, Zach Bacon, wirx6)
+
+# FFmpeg for openfx-io in COMMERCIAL builds, LGPL-2.1-or-later (#1302): MSYS2 has
+# no LGPL FFmpeg (its ffmpeg is GPLv3). The same version and configuration as
+# natron_ffmpeg-gpl2 without --enable-gpl and the GPL libraries (x264, x265,
+# Xvid, vid.stab) and without libzvbi (GPL-2+, kept out of COMMERCIAL builds by
+# the maintainer's decision: no teletext), and as Natron's macOS COMMERCIAL build
+# (tools/MacPorts/multimedia/ffmpeg, subport ffmpeg-lgpl). No --enable-version3
+# and no --enable-nonfree either. H.264 can still be encoded with openh264
+# (BSD-2-Clause). Installed in the private prefix ${MINGW_PREFIX}/ffmpeg-lgpl,
+# which NATRON_LICENSE=COMMERCIAL builds use (tools/jenkins/common.sh).
+
+_realname=ffmpeg
+pkgbase="mingw-w64-natron_${_realname}-lgpl"
+pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}-lgpl"
+pkgver=9.0.2
+pkgrel=1
+pkgdesc="Complete solution to record, convert and stream audio and video, LGPL build for Natron (COMMERCIAL builds) (mingw-w64)"
+arch=('any')
+mingw_arch=('ucrt64')
+url="https://ffmpeg.org/"
+license=('spdx:LGPL-2.1-or-later')
+options=('staticlibs' 'strip')
+depends=("${MINGW_PACKAGE_PREFIX}-aom"
+         "${MINGW_PACKAGE_PREFIX}-bzip2"
+         "${MINGW_PACKAGE_PREFIX}-dav1d"
+         "${MINGW_PACKAGE_PREFIX}-harfbuzz"
+         "${MINGW_PACKAGE_PREFIX}-lame"
+         "${MINGW_PACKAGE_PREFIX}-lcms2"
+         "${MINGW_PACKAGE_PREFIX}-libmodplug"
+         "${MINGW_PACKAGE_PREFIX}-librsvg"
+         "${MINGW_PACKAGE_PREFIX}-libsoxr"
+         "${MINGW_PACKAGE_PREFIX}-libtheora"
+         "${MINGW_PACKAGE_PREFIX}-libvorbis"
+         "${MINGW_PACKAGE_PREFIX}-libvpx"
+         "${MINGW_PACKAGE_PREFIX}-libwebp"
+         "${MINGW_PACKAGE_PREFIX}-openh264"
+         "${MINGW_PACKAGE_PREFIX}-openjpeg2"
+         "${MINGW_PACKAGE_PREFIX}-opus"
+         "${MINGW_PACKAGE_PREFIX}-snappy"
+         "${MINGW_PACKAGE_PREFIX}-speex"
+         "${MINGW_PACKAGE_PREFIX}-svt-av1"
+         "${MINGW_PACKAGE_PREFIX}-xz"
+         "${MINGW_PACKAGE_PREFIX}-zlib")
+makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
+             "${MINGW_PACKAGE_PREFIX}-pkgconf"
+             "${MINGW_PACKAGE_PREFIX}-nasm")
+source=(https://ffmpeg.org/releases/${_realname}-${pkgver}.tar.xz)
+sha256sums=('8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e')
+
+prepare() {
+  cd "${srcdir}/${_realname}-${pkgver}"
+  # rename VERSION to avoid a conflict with the C++20 <version> header (as MSYS2 does)
+  mv VERSION VERSION.txt
+}
+
+build() {
+  # Do not let version.sh discover a surrounding git repository
+  export GIT_DIR=/dev/null
+
+  [[ -d "build-${MINGW_CHOST}" ]] && rm -rf "build-${MINGW_CHOST}"
+  mkdir -p "${srcdir}/build-${MINGW_CHOST}"
+  cd "${srcdir}/build-${MINGW_CHOST}"
+
+  ../${_realname}-${pkgver}/configure \
+    --prefix=${MINGW_PREFIX}/ffmpeg-lgpl \
+    --target-os=mingw32 \
+    --arch=${CARCH%%-*} \
+    --cc=${CC:-gcc} \
+    --cxx=${CXX:-g++} \
+    --disable-debug \
+    --disable-stripping \
+    --disable-doc \
+    --enable-shared \
+    --enable-static \
+    --enable-pic \
+    --enable-runtime-cpudetect \
+    --enable-avfilter \
+    --enable-swscale \
+    --enable-swresample \
+    --enable-dxva2 \
+    --enable-d3d11va \
+    --enable-lcms2 \
+    --enable-libaom \
+    --enable-libdav1d \
+    --enable-libharfbuzz \
+    --enable-libmodplug \
+    --enable-libmp3lame \
+    --enable-libopenh264 \
+    --enable-libopenjpeg \
+    --enable-libopus \
+    --enable-librsvg \
+    --enable-libsnappy \
+    --enable-libsoxr \
+    --enable-libspeex \
+    --enable-libsvtav1 \
+    --enable-libtheora \
+    --enable-libvorbis \
+    --enable-libvpx \
+    --enable-libwebp \
+    --disable-libzvbi \
+    --enable-lzma \
+    --enable-zlib \
+    --disable-libass \
+    --disable-libbluray \
+    --disable-gnutls \
+    --disable-schannel \
+    --disable-fontconfig \
+    --disable-libfreetype \
+    --disable-libfribidi \
+    --disable-sdl2 \
+    --disable-iconv \
+    --disable-libzimg \
+    --disable-libvmaf \
+    --disable-libplacebo \
+    --disable-opencl \
+    --disable-vulkan \
+    --logfile=config.log
+
+  make
+}
+
+check() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  # COMMERCIAL builds must not ship GPL code (#1302): check the licence that
+  # "ffmpeg -L" and av*_license() report, and the configuration
+  local license
+  license=$(PATH="${PWD}/libavcodec:${PWD}/libavdevice:${PWD}/libavfilter:${PWD}/libavformat:${PWD}/libavutil:${PWD}/libswresample:${PWD}/libswscale:${PATH}" \
+    ./ffmpeg.exe -hide_banner -L | tr -d '\r' | tr '\n' ' ')
+  echo "ffmpeg -L: ${license}"
+  case "${license}" in
+    *"GNU Lesser General Public License as published by the Free Software Foundation; either version 2.1 "*) ;;
+    *) echo "Error: natron_ffmpeg-lgpl is not LGPL 2.1 or later"; return 1;;
+  esac
+  if grep -E -e '--enable-(gpl|nonfree|version3)' config.h; then
+    echo "Error: natron_ffmpeg-lgpl is configured with GPL, version3 or nonfree code"
+    return 1
+  fi
+  for lib in libavcodec libavdevice libavfilter libavformat libavutil libswresample libswscale; do
+    if ! grep -a -q "${lib} license: LGPL version 2.1 or later" ${lib}/*.dll; then
+      echo "Error: ${lib} is not LGPL 2.1 or later"
+      return 1
+    fi
+  done
+}
+
+package() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  make DESTDIR="${pkgdir}" install
+
+  rm -f "${pkgdir}${MINGW_PREFIX}/ffmpeg-lgpl"/lib/*.def
+  rm -f "${pkgdir}${MINGW_PREFIX}/ffmpeg-lgpl"/bin/*.lib
+
+  local PREFIX_DEPS=$(cygpath -am ${MINGW_PREFIX})
+  find "${pkgdir}${MINGW_PREFIX}/ffmpeg-lgpl/lib/pkgconfig" -name '*.pc' -exec sed -i -e"s|${PREFIX_DEPS}/ffmpeg-lgpl|${MINGW_PREFIX}/ffmpeg-lgpl|g;s|${PREFIX_DEPS}|${MINGW_PREFIX}|g" {} \;
+}
