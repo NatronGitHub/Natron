@@ -33,6 +33,7 @@ set(Tests_SOURCES
     Image_Test.cpp
     KnobDuplicate_Test.cpp
     KnobExpressionCache_Test.cpp
+    KnobInvalidExpression_Test.cpp
     KnobFile_Test.cpp
     KnobSlave_Test.cpp
     KnobStringAnimation_Test.cpp
