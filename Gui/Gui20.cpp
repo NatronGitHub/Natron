@@ -1409,6 +1409,12 @@ Gui::popOpenFileDialog(bool sequenceDialog,
                        const std::string & initialDir,
                        bool allowRelativePaths)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        // --no-dialogs: the file dialog counts as cancelled
+        Dialogs::printDismissedDialog( tr("Open").toStdString(), tr("File dialog not shown, cancelled.").toStdString() );
+
+        return std::string();
+    }
     SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::eFileDialogModeOpen, initialDir, this, allowRelativePaths);
 
     if ( dialog.exec() ) {
@@ -1449,6 +1455,12 @@ Gui::popSaveFileDialog(bool sequenceDialog,
                        const std::string & initialDir,
                        bool allowRelativePaths)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        // --no-dialogs: the file dialog counts as cancelled (e.g. Save As for an untitled project)
+        Dialogs::printDismissedDialog( tr("Save").toStdString(), tr("File dialog not shown, cancelled.").toStdString() );
+
+        return std::string();
+    }
     SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::eFileDialogModeSave, initialDir, this, allowRelativePaths);
 
     if ( dialog.exec() ) {
@@ -1474,6 +1486,13 @@ int
 Gui::saveWarning()
 {
     if ( !getApp()->getProject()->isSaveUpToDate() ) {
+        if ( appPTR->isDialogsDisabled() ) {
+            // --no-dialogs: do not save. The default answer, Save, would open the Save As
+            // file dialog for an untitled project, which would block a script.
+            Dialogs::printDismissedDialog( NATRON_APPLICATION_NAME, tr("Save changes to %1? Answered Discard.").arg( getApp()->getProject()->getProjectFilename() ).toStdString() );
+
+            return 1;
+        }
         StandardButtonEnum ret =  Dialogs::questionDialog(NATRON_APPLICATION_NAME, tr("Save changes to %1?").arg( getApp()->getProject()->getProjectFilename() ).toStdString(),
                                                           false,
                                                           StandardButtons(eStandardButtonSave | eStandardButtonDiscard | eStandardButtonCancel), eStandardButtonSave);
