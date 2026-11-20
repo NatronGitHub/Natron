@@ -52,19 +52,55 @@ Name: "arena"; Description: "OpenFX Arena"; Types: full
 Name: "gmic"; Description: "OpenFX G'MIC"; Types: full
 Name: "sgl"; Description: "OpenGL Software Renderer (FOR LEGACY HARDWARE ONLY)"
 
-; Installing over an older version: remove the directories whose files change names between
-; versions (DLLs, Qt plug-ins, Python extension modules, OFX plug-ins), so that no stale DLL (or a GPL
-; one, over a COMMERCIAL install) stays behind. Not {app}\lib, whose site-packages may have the
-; user's pip packages, nor {app}\Plugins\PyPlugs.
+; Installing over an older Natron: remove the files whose names change between versions, so
+; that no stale DLL, Qt plug-in or Python extension module stays behind: the DLLs of bin\ (not its
+; .exe files, which may include the console scripts of the user's pip packages), the Qt plug-in
+; directories, Mesa, the OFX plug-ins that Natron ships (not the user's own ones next to them),
+; PySide/Shiboken and the Python zip. Not lib\, whose site-packages may hold the user's pip
+; packages, nor the PyPlugs. Only if the directory is a Natron installation (IsNatronInstall), so
+; that choosing an existing folder (e.g. D:\Tools) never deletes its bin\.
 [InstallDelete]
-Type: filesandordirs; Name: "{app}\bin"
-Type: filesandordirs; Name: "{app}\Plugins\OFX\Natron"
-Type: filesandordirs; Name: "{app}\Plugins\PySide"
-Type: filesandordirs; Name: "{app}\Plugins\PySide2"
-Type: filesandordirs; Name: "{app}\Plugins\shiboken2"
-Type: filesandordirs; Name: "{app}\Plugins\PySide6"
-Type: filesandordirs; Name: "{app}\Plugins\shiboken6"
-Type: filesandordirs; Name: "{app}\lib\python*.zip"
+Type: files; Name: "{app}\bin\*.dll"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\audio"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\bearer"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\generic"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\geometryloaders"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\iconengines"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\imageformats"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\mediaservice"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\multimedia"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\networkinformation"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\platforminputcontexts"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\platforms"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\platformthemes"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\playlistformats"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\position"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\printsupport"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\qmltooling"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\renderers"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\renderplugins"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\sceneparsers"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\sensors"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\sqldrivers"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\styles"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\texttospeech"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\tls"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\designer"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\virtualkeyboard"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\assetimporters"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\bin\mesa"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\Plugins\OFX\Natron\Arena.ofx.bundle"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\Plugins\OFX\Natron\CImg.ofx.bundle"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\Plugins\OFX\Natron\GMIC.ofx.bundle"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\Plugins\OFX\Natron\IO.ofx.bundle"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\Plugins\OFX\Natron\Misc.ofx.bundle"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\Plugins\OFX\Natron\Shadertoy.ofx.bundle"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\Plugins\PySide"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\Plugins\PySide2"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\Plugins\shiboken2"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\Plugins\PySide6"; Check: IsNatronInstall
+Type: filesandordirs; Name: "{app}\Plugins\shiboken6"; Check: IsNatronInstall
+Type: files; Name: "{app}\lib\python*.zip"; Check: IsNatronInstall
 
 [Files]
 Source: "{src}\bin\*"; DestDir: "{app}\bin\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external
@@ -108,3 +144,9 @@ Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\bin\{#MyAppExeName}"; Tas
 [Run]
 Filename: "{app}\bin\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
+[Code]
+// True if {app} already has a Natron installation (for [InstallDelete])
+function IsNatronInstall: Boolean;
+begin
+  Result := FileExists(ExpandConstant('{app}\bin\Natron.exe'));
+end;

@@ -321,13 +321,14 @@ if [ -x "${NATRON_PYTHON}" ]; then
         echo "Error: get-pip.py does not have the expected sha256"
         exit 1
     fi
-    "${NATRON_PYTHON}" get-pip.py
+    # pip and the Python packages that Natron ships, at fixed versions (pure Python)
+    "${NATRON_PYTHON}" get-pip.py pip==26.3
     rm get-pip.py
     # Install qtpy
-    "${NATRON_PYTHON}" -m pip install qtpy
+    "${NATRON_PYTHON}" -m pip install qtpy==2.4.3
 
     # Useful Python packages
-    "${NATRON_PYTHON}" -m pip install future six #psutil
+    "${NATRON_PYTHON}" -m pip install future==1.0.0 six==1.17.0 #psutil
     # Run extra user provided pip install scripts
     if [ -f "${EXTRA_PYTHON_MODULES_SCRIPT:-}" ]; then
         "${NATRON_PYTHON}" "$EXTRA_PYTHON_MODULES_SCRIPT" || true
@@ -376,7 +377,7 @@ if ! $TIMEOUT -s KILL 300 env PATH="$BUNDLE_PATH" "${TMP_PORTABLE_DIR}/bin/Tests
     exit 1
 fi
 $TIMEOUT -s KILL 1800 env PATH="$BUNDLE_PATH" "${TMP_PORTABLE_DIR}/bin/Tests.exe" || true
-rm "${TMP_PORTABLE_DIR}/bin/Tests"
+rm -f "${TMP_PORTABLE_DIR}/bin/Tests.exe"
 echo "Done"
 
 # Clean and perms

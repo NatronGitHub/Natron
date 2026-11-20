@@ -561,8 +561,9 @@ if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
         echo "Error: COMMERCIAL builds need is_gpl_lib from $CHECK_COMMERCIAL (#1449)"
         exit 1
     fi
-    # (only the function: the script itself checks its arguments and exits)
-    eval "$(sed -n -e '/^is_gpl_lib() {/,/^}/p' "$CHECK_COMMERCIAL")"
+    # (only the functions is_gpl_lib*, e.g. is_gpl_lib and the is_gpl_lib_nocase that it calls:
+    # the script itself checks its arguments and exits)
+    eval "$(sed -n -e '/^is_gpl_lib[A-Za-z0-9_]*() {/,/^}/p' "$CHECK_COMMERCIAL")"
     is_gpl_dll() {
         is_gpl_lib "$1" && return 0
         # SoX's GPL dependencies, until is_gpl_lib lists them
@@ -571,6 +572,12 @@ if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
         esac
         return 1
     }
+    # Self-test: a function that is missing after the eval (e.g. a helper that is_gpl_lib calls)
+    # would make every test fail silently inside the && lists below, and every DLL pass.
+    if ! is_gpl_dll libx265-215.dll || ! is_gpl_dll qt5charts.dll || is_gpl_dll libpng16-16.dll; then
+        echo "Error: is_gpl_lib from $CHECK_COMMERCIAL does not work here (libx265-215.dll and qt5charts.dll must be GPL, libpng16-16.dll not): update the extraction in genDllVersions.sh"
+        exit 1
+    fi
     gpl_found=0
     for d in "${!NATRON_SET[@]}" "${!ARENA_SET[@]}" "${!GMIC_SET[@]}"; do
         if is_gpl_dll "$(basename "${d,,}")"; then
