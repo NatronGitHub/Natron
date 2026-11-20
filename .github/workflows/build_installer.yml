@@ -247,7 +247,8 @@ jobs:
       - name: Install, upgrade, run and uninstall with Setup.exe
         # Setup.exe installs from the unzipped tree next to it (Natron.iss, "external" files):
         # install every component silently for the current user, and check that each
-        # unconditional "Source:" of Natron.iss was installed completely. Then install again over
+        # unconditional "Source:" of Natron.iss was installed completely (the first install goes
+        # into a folder that already has a bin\keep.dll, which must survive). Then install again over
         # it (the upgrade path, [InstallDelete]): a stale DLL must be gone, the user's files must
         # stay. Run the installed programs, then uninstall and check that everything was removed.
         run: |
@@ -273,6 +274,13 @@ jobs:
             done < <(sources)
             if [ "$covered" = 0 ]; then echo "::error::${e} is in the portable tree but no Source: of Natron.iss installs it"; errors=1; fi
           done
+          # every subdirectory of the portable bin/ (Qt plug-in directories, mesa) needs an
+          # [InstallDelete] entry, so that an upgrade removes its stale files
+          for d in $(cd "${INSTALLER_DIR}/bin" && find . -mindepth 1 -maxdepth 1 -type d | sed -e 's@^\./@@'); do
+            if ! grep -q -F "Type: filesandordirs; Name: \"{app}\\bin\\${d}\"" "$ISS"; then
+              echo "::error::bin/${d} has no [InstallDelete] entry in Natron.iss"; errors=1
+            fi
+          done
           # all the components of the [Components] section
           COMPONENTS=$(sed -n -e '/^\[Components\]/,/^\[/s/^Name: "\([a-z]*\)";.*/\1/p' "$ISS" | paste -s -d, -)
           echo "Components: ${COMPONENTS}"
@@ -291,8 +299,14 @@ jobs:
               if [ "${missing}" != 0 ]; then echo "::error::${missing} files of ${src} were not installed"; errors=1; fi
             done < <(required_sources)
           }
+          # the first install goes into an existing folder that is not a Natron installation (no
+          # bin\Natron.exe): [InstallDelete] must not touch its bin\keep.dll
+          mkdir -p "${APP}/bin"
+          touch "${APP}/bin/keep.dll"
           setup setup-1.log || exit 1
           check_installed
+          if [ ! -e "${APP}/bin/keep.dll" ]; then echo "::error::installing into a folder that was not a Natron installation deleted its bin/keep.dll"; errors=1; fi
+          rm -f "${APP}/bin/keep.dll"
           # upgrade: a stale DLL (as left by an older version) must be removed by [InstallDelete];
           # the user's own files (a pip console script in bin/, an OFX plug-in next to Natron's)
           # must stay

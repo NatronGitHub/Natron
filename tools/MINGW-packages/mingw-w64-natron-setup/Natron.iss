@@ -1,4 +1,5 @@
 ; NATRON WINDOWS INSTALLER
+; Bump the pkgrel of PKGBUILD with every change of this file.
 
 #define MyAppName "Natron"
 #define MyAppPublisher "The Natron developers"

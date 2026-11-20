@@ -10,7 +10,9 @@ _realname=natron-setup
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
 pkgver=1.0
-pkgrel=4
+# Bump pkgrel with every change of Natron.iss (and of the other sources): the package repository
+# and its CI cache only pick up a new Setup.exe through a new pkgrel.
+pkgrel=5
 pkgdesc="Natron Inno Setup"
 arch=('any')
 mingw_arch=('ucrt64')
