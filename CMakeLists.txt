@@ -497,6 +497,8 @@ set(OFX_SUPPORTS_OPENGLRENDER ON)
 set(OFX_SUPPORTS_MULTITHREAD ON)
 set(OFX_SUPPORTS_DIALOG ON)
 set(OFX_SUPPORTS_PARAMETRIC ON)
+# openfx's HostSupport Python bindings (HostSupport/python, which needs nanobind): not used by Natron
+set(OFX_PYTHON_BINDINGS OFF)
 add_subdirectory(libs/OpenFX EXCLUDE_FROM_ALL)
 target_sources(OfxHost PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/libs/OpenFX_extensions/ofxhParametricParam.cpp)
 target_include_directories(OfxHost PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libs/OpenFX_extensions>)
