@@ -26,11 +26,17 @@ project(Natron
     LANGUAGES CXX C
 )
 
-set(CMAKE_CXX_STANDARD 17)
-
 include(GNUInstallDirs)
 
 option(NATRON_QT6 "use Qt6" OFF)
+
+# C++ standard policy (CLAUDE.md): C++17 with Qt5, C++20 with Qt6.
+if(NATRON_QT6)
+    set(CMAKE_CXX_STANDARD 20)
+else()
+    set(CMAKE_CXX_STANDARD 17)
+endif()
+
 option(NATRON_SYSTEM_LIBS "use system versions of dependencies instead of bundled ones" OFF)
 option(NATRON_BUILD_TESTS "build the Natron test suite" ON)
 
