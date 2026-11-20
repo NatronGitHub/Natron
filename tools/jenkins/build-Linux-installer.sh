@@ -520,7 +520,7 @@ python_site_packages=(PySide shiboken.so)
 mkdir -p "${TMP_PORTABLE_DIR}/lib/python${PYVER}"
 
 for pydir in "${SDK_HOME}/lib/python${PYVER}"; do
-    (cd "$pydir"; tar cf - . --exclude site-packages)|(cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}"; tar xf -)
+    (cd "$pydir"; tar cf - --exclude site-packages .)|(cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}"; tar xf -)
     for p in "${python_site_packages[@]}"; do
         if [ -e "$pydir/site-packages/$p" ]; then
             (cd "$pydir"; tar cf - "site-packages/$p") | (cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}"; tar xf -)
