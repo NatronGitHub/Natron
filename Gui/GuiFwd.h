@@ -242,6 +242,9 @@ namespace QtMac {
 #if OBJC_OLD_DISPATCH_PROTOTYPES != 1
 void setupDockClickHandler(void (*)(void));
 #endif
+// GUI tests (GuiApplicationManager::isGuiTestNoFocus()): keep the process in the background, with
+// no Dock icon, and without App Nap
+void setupGuiTestNoFocus();
 }
 #endif
 
