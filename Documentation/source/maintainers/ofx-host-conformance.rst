@@ -127,8 +127,8 @@ interacts page does not count the rows describing pull request #1349.
      - 0
    * - :ref:`Parameters <ofx-host-conformance-params>`
      - 105
-     - 71
-     - 18
+     - 72
+     - 17
      - 10
      - 0
      - 4
@@ -151,8 +151,8 @@ interacts page does not count the rows describing pull request #1349.
      - 0
    * - **Total**
      - 387
-     - 252
-     - 66
+     - 253
+     - 65
      - 38
      - 7
      - 21
