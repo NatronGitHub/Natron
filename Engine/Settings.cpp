@@ -1246,7 +1246,8 @@ Settings::initializeKnobsNodeGraph()
     _useInputAForMergeAutoConnect->setName("mergeConnectToA");
     _useInputAForMergeAutoConnect->setHintToolTip( tr("If checked, upon creation of a new Merge node, or any other node with inputs named "
                                                       "A and B, input A is be preferred "
-                                                      "for auto-connection. When the node is disabled, B is always output, whether this is checked or not.") );
+                                                      "for auto-connection. Shuffle ignores this setting: it connects the input it outputs by default (B). "
+                                                      "When the node is disabled, B is always output, whether this is checked or not.") );
     _nodegraphTab->addKnob(_useInputAForMergeAutoConnect);
 } // Settings::initializeKnobsNodeGraph
 
