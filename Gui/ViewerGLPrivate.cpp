@@ -209,7 +209,10 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipmapLevel,
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QOpenGLContext::currentContext() == _this->context() );
 
-    bool useShader = _this->getBitDepth() != eImageBitDepthByte;
+    // The float textures are displayed with the shader, which applies the viewer's colour transform;
+    // the byte ones were converted by the CPU. This is the type of the texture, which may differ
+    // from the current "Viewer textures" setting until a frame rendered with it is displayed (#1120).
+    bool useShader = this->displayTextures[textureIndex].texture->type() != Texture::eDataTypeByte;
 
 
     ///the texture rectangle in image coordinates. The values in it are multiples of tile size.
