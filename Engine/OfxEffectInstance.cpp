@@ -1441,6 +1441,51 @@ OfxEffectInstance::onInputChanged(int inputNo)
     }
 }
 
+void
+OfxEffectInstance::onInputsRestoredAfterProjectLoad()
+{
+    // OFX 1.5 (ofxCore.h, kOfxActionInstanceChanged): "when a host loads a plugin instance from a saved project, if the
+    // input clips are not connected at that time, the host must call `instanceChanged` after kOfxActionCreateInstance
+    // and after the host has hooked up all clips, with property kOfxPropType = kOfxTypeClip and kOfxPropChangeReason =
+    // kOfxChangePluginEdited, and ensure that OfxImageEffectSuiteV1::clipGetRegionOfDefinition works in this action."
+    // Natron creates the instances of a project before it connects their inputs (ProjectPrivate::restoreFromSerialization()),
+    // and does not call onInputChanged() while it connects them: one kOfxActionInstanceChanged per connected input clip,
+    // in one bracket. Plug-ins only set parameters from an input clip when the user connects it (kOfxChangeUserEdited),
+    // so kOfxChangePluginEdited keeps the values loaded from the project (#1107).
+    assert(_imp->context != eContextNone);
+    NodePtr node = getNode();
+    std::vector<std::string> clips;
+    for (int i = 0; i < (int)_imp->clipsInfos.size(); ++i) {
+        if ( node->getInput(i) ) {
+            OfxClipInstance* clip = getClipCorrespondingToInput(i);
+            assert(clip);
+            if (clip) {
+                clips.push_back( clip->getName() );
+            }
+        }
+    }
+    if ( clips.empty() ) {
+        return;
+    }
+    double time = getApp()->getTimeLine()->currentFrame();
+    const OfxPointD scale = {1., 1.};
+
+    {
+        RECURSIVE_ACTION();
+        REPORT_CURRENT_THREAD_ACTION( kOfxActionInstanceChanged, node );
+        SET_CAN_SET_VALUE(true);
+        ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                            ViewIdx(0),
+                                            0);
+        assert(_imp->effect);
+
+        InstanceChangedBracket_RAII bracket(this, kOfxChangePluginEdited, ViewIdx(0), 0);
+        for (std::vector<std::string>::const_iterator it = clips.begin(); it != clips.end(); ++it) {
+            ignore_result( _imp->effect->clipInstanceChangedAction(*it, kOfxChangePluginEdited, time, scale) );
+        }
+    }
+}
+
 /** @brief map a std::string to a context */
 ContextEnum
 OfxEffectInstance::mapToContextEnum(const std::string &s)

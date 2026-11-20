@@ -240,6 +240,16 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
 
     _publicInterface->forceComputeInputDependentDataOnAllTrees();
 
+    // All the nodes, links and input connections are restored and the clip preferences computed: tell the effects
+    // that their inputs are connected, before anything is rendered (OFX 1.5, #1107).
+    {
+        NodesList nodes;
+        _publicInterface->getNodes_recursive(nodes, true);
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            (*it)->onInputsRestoredAfterProjectLoad();
+        }
+    }
+
     QDateTime time = QDateTime::currentDateTime();
     autoSetProjectFormat = false;
     hasProjectBeenSavedByUser = true;

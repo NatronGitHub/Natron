@@ -289,7 +289,7 @@ Table 3: ofxParam.h, parameter properties
    * - P9
      - `ofxParam.h:345-356 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L345-L356>`__ Secret default 0, inst rw; hidden "but should otherwise behave as a normal parameter"
      - MUST
-     - hP.cpp:274; notify hook → setSecret (e.g. OPI.cpp:762). Custom params ignore it (T14). On project load Natron also restores Secret/Enabled from the project (Node.cpp:1216-1222): not a spec requirement, but plug-in logic that toggles visibility stays consistent only because of it (no instanceChanged after load: NEXT)
+     - hP.cpp:274; notify hook → setSecret (e.g. OPI.cpp:762). Custom params ignore it (T14). On project load Natron also restores Secret/Enabled from the project (Node.cpp:1216-1222): not a spec requirement, but it keeps plug-in logic that toggles visibility consistent; after the load, the plug-in also gets an instanceChanged with kOfxChangePluginEdited for each connected input clip (NEXT, #1107)
      - OK
    * - P10
      - `ofxParam.h:358-367 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L358-L367>`__ ScriptName default = name: "the name of a parameter in [host] scripts"

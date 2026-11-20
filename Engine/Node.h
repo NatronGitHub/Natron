@@ -947,6 +947,13 @@ public:
 
     void onInputChanged(int inputNb, bool isInputA = true);
 
+    /**
+     * @brief Called once on each node of a project that was just loaded, when all its nodes, links and input
+     * connections are restored and the clip preferences are computed, before the first render: calls
+     * EffectInstance::onInputsRestoredAfterProjectLoad() if an input is connected.
+     **/
+    void onInputsRestoredAfterProjectLoad();
+
     bool onEffectKnobValueChanged(KnobI* what, ValueChangedReasonEnum reason);
 
     bool isNodeDisabled() const;

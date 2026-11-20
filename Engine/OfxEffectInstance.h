@@ -240,6 +240,7 @@ public:
     virtual bool supportsMultipleClipDepths() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
+    virtual void onInputsRestoredAfterProjectLoad() OVERRIDE FINAL;
     virtual StatusEnum beginSequenceRender(double first,
                                            double last,
                                            double step,

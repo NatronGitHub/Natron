@@ -209,7 +209,7 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - A9
      - `ofxCore.h:409-419 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxCore.h#L409-L419>`__ / `ofxCore.h:753-762 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxCore.h#L753-L762>`__ kOfxPropChangeReason values: UserEdited "includes undo/redos, resets and loading values from files or presets"; PluginEdited; Time
      - MUST
-     - Mapped in ``natronValueChangedReasonToOfxValueChangedReason`` (Engine/OfxEffectInstance.cpp:2593-2614). Values loaded with a project are set before CreateInstance, so no InstanceChanged is sent. Sending it after project load is a NEXT item, out of scope.
+     - Mapped in ``natronValueChangedReasonToOfxValueChangedReason`` (Engine/OfxEffectInstance.cpp:2593-2614). Values loaded with a project are set before CreateInstance, so no InstanceChanged is sent for them. After a project load, when all the inputs are connected and the clip preferences computed, each effect gets one InstanceChanged per connected input clip with kOfxChangePluginEdited (NEXT item, `#1107 <https://github.com/NatronGitHub/Natron/issues/1107>`__; ``OfxEffectInstance::onInputsRestoredAfterProjectLoad()``).
      - OK
    * - A10
      - `ofxCore.h:428-429 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxCore.h#L428-L429>`__ InstanceChanged \\pre CreateInstance has been called
@@ -810,4 +810,4 @@ Spec-only
 
 25. **D1:** the standard OfxDialogSuiteV1 is not provided; a fork-only V2 is served under the standard name. This is allowed (optional suite). Allowed by the spec: no issue.
 
-NEXT items met: InstanceChanged after project load (`#1107 <https://github.com/NatronGitHub/Natron/issues/1107>`__ mentions it). It is out of scope.
+NEXT items met: InstanceChanged after project load, with kOfxTypeClip and kOfxChangePluginEdited, for each connected input clip (`#1107 <https://github.com/NatronGitHub/Natron/issues/1107>`__, see A9).

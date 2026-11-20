@@ -1742,6 +1742,43 @@ Node::onInputChanged(int inputNb,
     }
 } // Node::onInputChanged
 
+void
+Node::onInputsRestoredAfterProjectLoad()
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    bool hasInput = false;
+    for (int i = 0; i < getNInputs() && !hasInput; ++i) {
+        hasInput = bool( getInput(i) );
+    }
+    if (!hasInput) {
+        return;
+    }
+
+    // As in onInputChanged(): the plug-in may call clipGetRegionOfDefinition, set a valid thread storage on the tree.
+    double time = getApp()->getTimeLine()->currentFrame();
+    AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
+    const bool isRenderUserInteraction = true;
+    const bool isSequentialRender = false;
+    AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
+    if (isAbortable) {
+        isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, getEffectInstance() );
+    }
+    ParallelRenderArgsSetter frameRenderArgs( time,
+                                              ViewIdx(0),
+                                              isRenderUserInteraction,
+                                              isSequentialRender,
+                                              abortInfo,
+                                              shared_from_this(),
+                                              0, //texture index
+                                              getApp()->getTimeLine().get(),
+                                              NodePtr(),
+                                              false,
+                                              false,
+                                              RenderStatsPtr() );
+
+    _imp->effect->onInputsRestoredAfterProjectLoad();
+}
+
 
 bool
 Node::duringInputChangedAction() const
