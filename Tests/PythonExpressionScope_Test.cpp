@@ -49,7 +49,7 @@ NATRON_NAMESPACE_USING
 namespace {
 // the variables of __main__ that the expressions used to overwrite
 const char* const kUserVariables[] = {
-    "ret", "frame", "view", "thisNode", "thisParam", "thisGroup", "random", "dimension", "s", "expression0",
+    "ret", "frame", "view", "thisNode", "thisParam", "thisGroup", "random", "randomInt", "curve", "dimension", "s", "expression0",
 };
 
 class PythonExpressionScopeTest
@@ -73,7 +73,12 @@ protected:
         for (std::size_t i = 0; i < sizeof(kUserVariables) / sizeof(kUserVariables[0]); ++i) {
             script += std::string(kUserVariables[i]) + " = 'user " + kUserVariables[i] + "'\n";
         }
+        // the script name of the node, which the expressions declare as a variable
+        if (_node) {
+            script += _node->getScriptName_mt_safe() + " = 'user node'\n";
+        }
         script += "def natronTestTwice(x):\n    return 2 * x\n";
+        script += "natronTestAppId = id(app)\n";
         std::string error;
         EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, 0) ) << error;
     }
@@ -88,7 +93,10 @@ protected:
         for (std::size_t i = 0; i < sizeof(kUserVariables) / sizeof(kUserVariables[0]); ++i) {
             script += std::string("del ") + kUserVariables[i] + "\n";
         }
-        script += "del natronTestTwice\n";
+        if (_node) {
+            script += "del " + _node->getScriptName_mt_safe() + "\n";
+        }
+        script += "del natronTestTwice\ndel natronTestAppId\n";
         std::string error;
         NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, 0);
     }
@@ -109,11 +117,22 @@ protected:
         return std::dynamic_pointer_cast<KnobDouble>( _node->getKnobByName(name) );
     }
 
-    // the user variables of __main__ were not changed
-    static void expectUserVariablesUnchanged()
+    // the user variables of __main__ were not changed, nor app
+    void expectUserVariablesUnchanged() const
     {
+        {
+            std::string error;
+            EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("assert id(app) == natronTestAppId, 'app was replaced'\n", &error, 0) ) << error;
+        }
         PythonGILLocker pgl;
         PyObject* mainModule = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::getMainModule();
+        {
+            PyObject* value = PyObject_GetAttrString( mainModule, _node->getScriptName_mt_safe().c_str() ); // new ref
+            std::string str = ( value && PyUnicode_Check(value) ) ? NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::PyStringToStdString(value) : std::string("(not a string)");
+            Py_XDECREF(value);
+            PyErr_Clear();
+            EXPECT_EQ(std::string("user node"), str) << "the node name was overwritten in __main__";
+        }
 
         for (std::size_t i = 0; i < sizeof(kUserVariables) / sizeof(kUserVariables[0]); ++i) {
             PyObject* value = PyObject_GetAttrString(mainModule, kUserVariables[i]); // new ref
@@ -202,4 +221,24 @@ TEST_F(PythonExpressionScopeTest, ExpressionSeesGlobalsAndItsOwnVariables)
     expectUserVariablesUnchanged();
 
     to->clearExpression(0, true);
+}
+
+// The static evaluation used by the curve import/export dialog: ret is read from the expression's own
+// variables, not from __main__ (a stale __main__.ret must not be returned)
+TEST_F(PythonExpressionScopeTest, StaticEvaluationDoesNotUseMain)
+{
+    if ( skipped() ) {
+        return;
+    }
+    double v = 0.;
+    std::string error;
+    EXPECT_TRUE( KnobDoubleBase::evaluateExpression("ret = float(2 + 3)", &v, &error) ) << error;
+    EXPECT_EQ(5., v);
+    expectUserVariablesUnchanged();
+
+    // no ret: an error, even though __main__ has a ret
+    v = -1.;
+    EXPECT_FALSE( KnobDoubleBase::evaluateExpression("x = 1", &v, &error) );
+    EXPECT_EQ(-1., v);
+    expectUserVariablesUnchanged();
 }

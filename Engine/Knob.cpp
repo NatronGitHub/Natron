@@ -2601,9 +2601,13 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     // overwrite those of the user scripts (#1252). A copy, not new local variables, so that the
     // functions and comprehensions of the expression see its variables, as in __main__.
     PyObject* globals = PyDict_Copy( PyModule_GetDict( NATRON_PYTHON_NAMESPACE::getMainModule() ) );
+    if (!globals) {
+        PyErr_Clear();
+        throw std::runtime_error("KnobHelperPrivate::parseListenersFromExpression(): cannot copy the global variables of __main__");
+    }
     std::string error;
-    bool ok = globals && NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, NULL, globals);
-    Py_XDECREF(globals);
+    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, NULL, globals);
+    Py_DECREF(globals);
     if ( !error.empty() ) {
         qDebug() << error.c_str();
     }
