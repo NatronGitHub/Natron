@@ -233,8 +233,8 @@ Sometimes it might be useful to add a random generator to produce noise on a val
 However the noise produced must be reproducible such that when rendering multiple times the same
 frame or when loading the project again it would use the same value.
 
-We had to add a specific random function in Natron that takes into account the state of a
-parameter and the current time on the timeline as a seed function to random.
+We had to add a specific random function in Natron that takes into account the state of the
+node and the frame as a seed function to random.
 
 .. warning::
 
@@ -258,6 +258,19 @@ the range into which the return value should fall in. The range is defined by \[
 
     #Returns a random floating point value in the range [1., 10.[
     random(1.,10.)
+
+Without a frame, ``random()`` returns the next value of a sequence that belongs to the parameter.
+Each evaluation of the expression of the parameter starts that sequence again from the frame, the
+dimension and the state of the node, so in the expression of the parameter itself, the values are
+the same each time a frame is computed. Elsewhere, e.g. ``Blur1.size.random()`` called from the
+expression of another parameter or from a script, the value depends on the calls made before, and
+is not reproducible.
+
+The functions that take a frame and a seed only depend on them and on the state of the node:
+they return the same value anywhere, and each seed gives an independent value. We recommend them::
+
+    #Returns a random floating point value in the range [1., 10.[, the same for a given frame
+    random(1.,10.,frame,0)
 
 For integers, use the :func:`randomInt(min,max)<>` function instead::
 

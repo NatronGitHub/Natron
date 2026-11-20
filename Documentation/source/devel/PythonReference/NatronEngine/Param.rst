@@ -382,9 +382,12 @@ Returns the type-name of the parameter.
     :param max: :class:`float`
     :rtype: :class:`float`
 
-Returns a pseudo-random value in the interval \[*min*, *max*\[.
-The value is produced such that for a given parameter it will always be the same for a
-given time on the timeline, so that the value can be reproduced exactly.
+Returns a pseudo-random value in the interval \[*min*, *max*\[: the next value of a sequence
+that belongs to the parameter. Each evaluation of the expression of the parameter starts that
+sequence again from the frame, the dimension and the state of the node, so in the expression of
+the parameter itself the value is the same each time a frame is computed, and can be reproduced
+exactly. Elsewhere (in a script, or when called on another parameter in an expression), the value
+depends on the calls made before: use :func:`random(min,max,time,seed)<NatronEngine.Param.random>`.
 
 
 .. note::

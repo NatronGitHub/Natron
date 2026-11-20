@@ -178,8 +178,11 @@ These variables are defined in every expression:
     and changing a parameter of the node, or of a node upstream, gives new
     random values. Use a different ``seed`` to get several independent random
     values in one expression. Always pass ``frame``: ``random(min, max)``
-    without it is not tied to the frame, and its value depends on the values
-    computed before, so a render is not reproducible. ``randomInt`` rounds
+    without it continues a sequence of the parameter. Natron starts that
+    sequence again from the frame when it computes the expression of the
+    parameter, but anywhere else (a script, or ``Node1.param.random()`` in
+    another expression) its value depends on the values computed before, so
+    it is not reproducible. ``randomInt`` rounds
     toward zero, so with a negative ``min`` the results are uneven:
     ``randomInt(-5, 5, frame)`` practically never returns -5, and returns 0
     twice as often as the other values.
