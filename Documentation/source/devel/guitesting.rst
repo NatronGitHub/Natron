@@ -142,7 +142,7 @@ CMake registers each one as a ``ctest`` test named ``gui.<name>`` with the ``gui
 ``ctest -L gui`` runs only the GUI tests, and ``ctest -LE gui`` all the other tests. They need a
 display and OpenGL: without them (e.g. on Linux without ``DISPLAY``: run them under ``xvfb-run``),
 they are reported as skipped. In CI (``CI`` set), they only run where the job sets
-``NATRON_GUI_TESTS=1``, and are skipped otherwise. Configure with ``-DNATRON_GUI_TESTS=OFF`` not to
+``NATRON_GUI_TESTS=1``, and are skipped otherwise. Configure with ``-DNATRON_BUILD_GUI_TESTS=OFF`` (a CMake option, unlike the environment variable ``NATRON_GUI_TESTS``) not to
 register them. Their caches go to the build tree (``NATRON_DISK_CACHE_PATH``). The plug-ins of ``Tests/OfxTestPlugin`` are on their ``OFX_PLUGIN_PATH``,
 before the user's one (with CMake older than 3.22, before the ``OFX_PLUGIN_PATH`` of the configure
 step); a test that needs another plug-in (e.g. openfx-misc's Transform) is skipped
@@ -215,9 +215,10 @@ their results are displayed.
 
 To find a widget (e.g. with PySide's ``QWidget.findChild()``), use its stable name (see
 :ref:`widgetNames`): ``nodeGraph`` for the node graph, the fully qualified node name for a settings
-panel, the param script name (or the ``paramName`` Qt property, for the widgets that already have a
-name, such as the ``dim-0`` fields) for the widgets of a parameter, the tab script name (e.g.
-``Viewer1``) for a viewer, and ``nodeCreationDialog`` for the node creation dialog.
+panel, the param script name for the first widget of a parameter (and the ``paramName`` Qt
+property for all its widgets), the tab script name (e.g. ``Viewer1``) for a viewer, ``TimeLine``,
+``PropertiesBin``, and ``nodeCreationDialog`` (with its ``NodeCreationDialogLineEdit``) for the node
+creation dialog.
 
 The NatronGuiTest module
 ~~~~~~~~~~~~~~~~~~~~~~~~

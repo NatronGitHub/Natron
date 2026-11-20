@@ -467,6 +467,15 @@ public:
     bool getColorAt(double x, double y, bool forceLinear, int textureIndex, float* r,
                     float* g, float* b, float* a, unsigned int* mipmapLevel) WARN_UNUSED_RETURN;
 
+    /**
+     * @brief The linear RGBA values (as getColorAt() with forceLinear) of the last rendered image of the
+     * texture, at the displayed mipmap level (or the closest one rendered), within region (in canonical
+     * coordinates; the whole image if it is null). bounds is the area of the returned pixels, in canonical
+     * coordinates; rgba has 4 floats per pixel, row by row from the bottom row. Returns false if there is no
+     * image or the region is outside of it.
+     **/
+    bool getLinearImage(int textureIndex, const RectD& region, RectD* bounds, std::vector<float>* rgba) WARN_UNUSED_RETURN;
+
     // same as getColor, but computes the mean over a given rectangle
     bool getColorAtRect(const RectD &rect, // rectangle in canonical coordinates
                         bool forceLinear, int textureIndex, float* r, float* g, float* b, float* a, unsigned int* mipmapLevel);

@@ -730,6 +730,9 @@ PyViewer::redraw()
     _viewer->redrawGLWidgets();
 }
 
+// defined below, with saveScreenshot()
+static bool isMainThread();
+
 ViewerGL*
 PyViewer::getViewerGL() const
 {
@@ -847,6 +850,11 @@ PyViewer::getPixel(double x,
 
         return ret;
     }
+    if ( !isMainThread() ) {
+        PyErr_SetString(PyExc_RuntimeError, "PyViewer.getPixel() must be called from the main thread");
+
+        return ret;
+    }
     float r, g, b, a;
     unsigned int mipmapLevel;
     if ( !gl || !gl->getColorAt(x, y, true /*forceLinear*/, input, &r, &g, &b, &a, &mipmapLevel) ) {
@@ -862,45 +870,33 @@ PyViewer::getPixel(double x,
     return ret;
 }
 
-std::list<double>
+bool
 PyViewer::getImage(RectD* bounds,
-                   int input) const
+                   std::vector<float>* pixels,
+                   int input,
+                   const RectD& region) const
 {
-    std::list<double> ret;
     ViewerGL* gl = getViewerGL();
 
     bounds->clear();
+    pixels->clear();
     if ( (input != 0) && (input != 1) ) {
         PyErr_SetString(PyExc_ValueError, "input must be 0 (A) or 1 (B)");
 
-        return ret;
+        return false;
     }
-    ImagePtr image = gl ? gl->getLastRenderedImageByMipmapLevel( input, gl->getMipmapLevelCombinedToZoomFactor() ) : ImagePtr();
-    if (!image) {
-        PyErr_SetString(PyExc_ValueError, "the viewer shows no image");
+    if ( !isMainThread() ) {
+        PyErr_SetString(PyExc_RuntimeError, "PyViewer.getImage() must be called from the main thread");
 
-        return ret;
+        return false;
     }
-    const RectI pixels = image->getBounds();
-    const double par = image->getPixelAspectRatio();
-    const double scale = (double)(1u << image->getMipmapLevel()); // mipmap level to canvas
-    bounds->set(pixels.x1 * scale * par, pixels.y1 * scale, pixels.x2 * scale * par, pixels.y2 * scale);
-    // the colour picker's values (ViewerGL::getColorAt()), at the centre of each pixel
-    for (int y = pixels.y1; y < pixels.y2; ++y) {
-        for (int x = pixels.x1; x < pixels.x2; ++x) {
-            float r = 0.f, g = 0.f, b = 0.f, a = 0.f;
-            unsigned int mipmapLevel;
-            if ( !gl->getColorAt( (x + 0.5) * scale * par, (y + 0.5) * scale, true /*forceLinear*/, input, &r, &g, &b, &a, &mipmapLevel ) ) {
-                r = g = b = a = 0.f; // outside the image (cannot happen within its bounds)
-            }
-            ret.push_back(r);
-            ret.push_back(g);
-            ret.push_back(b);
-            ret.push_back(a);
-        }
+    if ( !gl || !gl->getLinearImage(input, region, bounds, pixels) ) {
+        PyErr_SetString(PyExc_ValueError, "the viewer shows no image (in that region)");
+
+        return false;
     }
 
-    return ret;
+    return true;
 }
 
 void

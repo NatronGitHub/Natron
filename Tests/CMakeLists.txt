@@ -201,9 +201,9 @@ install(TARGETS Tests DESTINATION "${NATRON_INSTALL_TESTSDIR}"
 # have the "gui" label: "ctest -L gui" runs only them, "ctest -LE gui" all the other tests; the
 # interactive ones also have the "gui-interactive" label.
 # The Natron target is defined later (App/), which generator expressions allow.
-# They are skipped (77) without a display on Linux; -DNATRON_GUI_TESTS=OFF does not register them.
-option(NATRON_GUI_TESTS "register the GUI tests (Tests/gui/test_*.py, Natron --test) in ctest" ON)
-if(NATRON_GUI_TESTS)
+# They are skipped (77) without a display on Linux; -DNATRON_BUILD_GUI_TESTS=OFF does not register them (not to be confused with the environment variable NATRON_GUI_TESTS, which enables them in CI).
+option(NATRON_BUILD_GUI_TESTS "register the GUI tests (Tests/gui/test_*.py, Natron --test) in ctest" ON)
+if(NATRON_BUILD_GUI_TESTS)
     file(GLOB NatronGuiTests_SCRIPTS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/gui/test_*.py")
 else()
     set(NatronGuiTests_SCRIPTS)

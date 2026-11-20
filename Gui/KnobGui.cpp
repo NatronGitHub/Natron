@@ -247,19 +247,22 @@ KnobGui::createGUI(QWidget* fieldContainer,
 
     _imp->widgetCreated = true;
 
-    // Stable names, for PySide code, stylesheets, accessibility and the GUI tests: the widgets of this
-    // param have the "paramName" property, and the param script name as objectName unless they have
-    // one (e.g. "dim-0", used by the right-click menu). A row is named after its first param.
+    // Stable names, for PySide code, stylesheets, accessibility and the GUI tests, unique in the panel:
+    // the first widget of the param that has no name gets the param script name ("dim-0"... are used by the
+    // right-click menu), and all of them get the "paramName" property. A row is named "<param>Row", after
+    // its first param.
     const QString paramName = QString::fromUtf8( knob->getName().c_str() );
     if ( isOnNewLine && fieldContainer && fieldContainer->objectName().isEmpty() ) {
-        fieldContainer->setObjectName(paramName);
+        fieldContainer->setObjectName( paramName + QString::fromUtf8("Row") );
     }
+    bool named = false;
     for (int i = firstLayoutItem; i < layout->count(); ++i) {
         QWidget* w = layout->itemAt(i) ? layout->itemAt(i)->widget() : 0;
         if ( w && (w != label) && (w != _imp->warningIndicator) ) {
             w->setProperty("paramName", paramName);
-            if ( w->objectName().isEmpty() ) {
+            if ( !named && w->objectName().isEmpty() ) {
                 w->setObjectName(paramName);
+                named = true;
             }
         }
     }

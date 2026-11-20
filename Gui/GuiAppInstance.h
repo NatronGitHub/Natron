@@ -160,7 +160,7 @@ protected:
     virtual void pushUndoGroupCommand(const UndoCommandPtr& command) OVERRIDE FINAL;
 
 private:
-    // the undo stack of Edit > Undo (see Gui::getActiveUndoStack())
+    // the undo stack of the node graph of the project, where the undo groups go
     QUndoStack* getActiveUndoStack() const;
 
 public:

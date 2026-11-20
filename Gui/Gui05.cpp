@@ -232,7 +232,9 @@ Gui::createGroupGui(const NodePtr & group,
     QGraphicsScene* scene = new QGraphicsScene(this);
     scene->setItemIndexMethod(QGraphicsScene::NoIndex);
     NodeGraph* nodeGraph = new NodeGraph(this, collection, scene, this);
-    nodeGraph->setObjectName( QString::fromUtf8( group->getLabel().c_str() ) );
+    // stable name (PySide, stylesheets, GUI tests): the fully qualified name of the group, updated when it
+    // is renamed (NodeGui)
+    nodeGraph->setObjectName( QString::fromUtf8( group->getFullyQualifiedName().c_str() ) );
     _imp->_groups.push_back(nodeGraph);
     
     NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);

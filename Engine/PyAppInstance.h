@@ -347,15 +347,16 @@ public:
     void addProjectLayer(const ImageLayer& layer);
 
     /**
-     * @brief Edit > Undo / Redo: the active undo stack (the one of the last focused node panel or
-     * node graph). They do nothing in background mode, where there is no undo stack.
+     * @brief Undo / redo on the node graph's undo stack (node creation, deletion, connections, moves,
+     * and the undo groups), whatever widget has the focus. They do nothing in background mode, where
+     * there is no undo stack.
      **/
     void undo();
     void redo();
     bool canUndo() const;
     bool canRedo() const;
 
-    /// The texts of the commands of the active undo stack, oldest first ([] in background mode)
+    /// The texts of the commands of the node graph's undo stack, oldest first ([] in background mode)
     std::list<QString> getUndoHistory() const;
 
     /// The number of commands of getUndoHistory() that are done (the next redo is at this index)

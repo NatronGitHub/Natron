@@ -47,7 +47,7 @@ Functions
 - def :meth:`canvasToWidget<NatronGui.PyViewer.canvasToWidget>` (x,y)
 - def :meth:`widgetToCanvas<NatronGui.PyViewer.widgetToCanvas>` (x,y)
 - def :meth:`getPixel<NatronGui.PyViewer.getPixel>` (x,y[,input=0])
-- def :meth:`getImage<NatronGui.PyViewer.getImage>` ([input=0])
+- def :meth:`getImage<NatronGui.PyViewer.getImage>` ([input=0[, region]])
 
 .. _pyViewer.details:
 
@@ -294,18 +294,25 @@ visible when the number of views in the project settings has been set to a value
     :param input: :class:`int`
     :rtype: :class:`ColorTuple<NatronEngine.ColorTuple>`
 
-    Returns the linear RGBA value of the image displayed at the canvas point (*x*, *y*) for the input A
-    (0) or B (1), before the display LUT: the value of the colour picker. Raises :class:`ValueError` if
-    the viewer shows no image at that point.
+    Returns the linear RGBA value of the last rendered image at the canvas point (*x*, *y*) for the input
+    A (0) or B (1), before the display LUT: the value of the colour picker. Call
+    :meth:`App.waitForRenders()<NatronEngine.App.waitForRenders>` first: during a render, it is the value
+    of the previous image. Raises :class:`ValueError` if there is no image at that point, and
+    :class:`RuntimeError` when not called from the main thread.
 
-.. method:: PyViewer.getImage([input=0])
+.. method:: PyViewer.getImage([input=0[, region]])
 
     :param input: :class:`int`
+    :param region: :class:`RectD<NatronEngine.RectD>`
     :rtype: :class:`tuple`
 
-    Returns the linear RGBA image displayed for the input A (0) or B (1), before the display LUT, at the
-    mipmap level that the viewer displays (which depends on the zoom), as a tuple
-    ``(bounds, pixels)``: *bounds* is a :class:`RectD<NatronEngine.RectD>` with the bounds of the image in
-    canvas coordinates, and *pixels* a list of floats, four (R, G, B, A) per pixel, row by row from the
-    bottom row. Raises :class:`ValueError` if the viewer shows no image. For a few values, prefer
-    :meth:`getPixel()<NatronGui.PyViewer.getPixel>`: a full HD image is a list of 8 million floats.
+    Returns the linear RGBA image of the last render for the input A (0) or B (1), before the display
+    LUT, within *region* (canvas coordinates; the whole image if omitted), as a tuple
+    ``(bounds, pixels)``. *bounds* is a :class:`RectD<NatronEngine.RectD>` with the area of the returned
+    pixels in canvas coordinates. *pixels* is a :class:`bytes` object holding four 32-bit floats (R, G, B,
+    A) per pixel, row by row from the bottom row: read it with ``array.array('f', pixels)`` or
+    ``numpy.frombuffer(pixels, numpy.float32)``. The image is at the mipmap level that the viewer
+    rendered for its zoom (1 image pixel per 2\ :sup:`level` canvas units; the bounds tell the size), or
+    the closest level rendered. Call :meth:`App.waitForRenders()<NatronEngine.App.waitForRenders>` first:
+    during a render, it is the previous image. Raises :class:`ValueError` if the viewer shows no image
+    (in that region), and :class:`RuntimeError` when not called from the main thread.

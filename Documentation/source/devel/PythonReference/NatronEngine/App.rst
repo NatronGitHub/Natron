@@ -31,8 +31,8 @@ Functions
 - def :meth:`getUndoHistory<NatronEngine.App.getUndoHistory>` ()
 - def :meth:`getUndoIndex<NatronEngine.App.getUndoIndex>` ()
 - def :meth:`getViewNames<NatronEngine.App.getViewNames>` ()
-- def :meth:`render<NatronEngine.App.render>` (effect,firstFrame,lastFrame[,frameStep])
 - def :meth:`redo<NatronEngine.App.redo>` ()
+- def :meth:`render<NatronEngine.App.render>` (effect,firstFrame,lastFrame[,frameStep])
 - def :meth:`render<NatronEngine.App.render>` (tasks)
 - def :meth:`saveTempProject<NatronEngine.App.saveTempProject>` (filename)
 - def :meth:`saveProject<NatronEngine.App.saveProject>` (filename)
@@ -571,9 +571,12 @@ inform the user of various information, warnings or errors.
 
 .. method:: App.undo()
 
-    Undoes the last command of the active undo stack, as *Edit > Undo* does: the stack of the node
-    settings panel or node graph that was used last. Does nothing if there is nothing to undo, and in
-    background mode, where there is no undo stack.
+    Undoes the last command of the undo stack of the node graph: node creations, deletions,
+    connections and moves, and the undo groups (see below), whatever widget has the focus. *Edit >
+    Undo* undoes the last command of the panel or graph used last instead, which may be a parameter
+    change in a settings panel. Does nothing if there is nothing to undo, and in background mode,
+    where there is no undo stack. Raises :class:`RuntimeError` when not called from the main thread
+    (e.g. from a render callback); so do the other undo functions.
 
     Edits made from Python (e.g. :meth:`Param.setValue()<NatronEngine.IntParam.setValue>` or
     :meth:`createNode()<NatronEngine.App.createNode>`) are only undoable inside an undo group (see
@@ -581,15 +584,16 @@ inform the user of various information, warnings or errors.
 
 .. method:: App.redo()
 
-    Redoes the last undone command of the active undo stack, as *Edit > Redo* does. Does nothing if
-    there is nothing to redo, and in background mode.
+    Redoes the last undone command of the node graph's undo stack (see
+    :meth:`undo()<NatronEngine.App.undo>`). Does nothing if there is nothing to redo, and in background
+    mode.
 
 .. method:: App.canUndo()
 
     :rtype: :class:`bool`
 
-    Returns whether :meth:`undo()<NatronEngine.App.undo>` would undo something (whether *Edit > Undo*
-    is enabled). Always *False* in background mode.
+    Returns whether :meth:`undo()<NatronEngine.App.undo>` would undo something. Always *False* in
+    background mode.
 
 .. method:: App.canRedo()
 
@@ -602,7 +606,7 @@ inform the user of various information, warnings or errors.
 
     :rtype: :class:`sequence`
 
-    Returns the texts of the commands of the active undo stack, oldest first, as in the undo history
+    Returns the texts of the commands of the node graph's undo stack, oldest first, as in the undo history
     (e.g. ``['Delete node', 'Paste node']``). Commands at an index greater than or equal to
     :meth:`getUndoIndex()<NatronEngine.App.getUndoIndex>` were undone and can be redone. Returns an empty
     list in background mode.
@@ -620,10 +624,11 @@ inform the user of various information, warnings or errors.
     :param timeout: :class:`float`
     :rtype: :class:`bool`
 
-    Waits until no render of this project runs or is queued: the viewers, the Write nodes and the node
-    previews. In the user interface, the events are processed while waiting, until the results of the
-    renders are displayed. Returns *True*, or *False* if *timeout* seconds elapsed first (no limit if
-    *timeout* is negative). Must be called from the main thread (e.g. a script, a callback or a
+    Waits until no render runs or is queued, in any project: the viewers, the Write nodes and the node
+    previews. In the user interface, the events (except the user input) are processed while waiting,
+    until the results of the renders are displayed: there it waits until no render has run for 200
+    ms, so a call takes at least 200 ms. Returns *True*, or *False* if *timeout* seconds elapsed first
+    (no limit if *timeout* is negative). Must be called from the main thread (e.g. a script, a callback or a
     PyPanel), not from a render callback.
 
     For example, a button callback that changes a parameter, then reads the result of the render::

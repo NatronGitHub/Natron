@@ -2230,8 +2230,10 @@ AppInstance::waitForRenders(int timeoutMs,
     for (;;) {
         // the results of the renders (e.g. viewer texture uploads) are posted to the main thread
         QCoreApplication::sendPostedEvents();
-        const bool processed = dispatcher ? dispatcher->processEvents(QEventLoop::AllEvents) : false;
-        if ( hasRenderInProgress() ) {
+        // not the user input: a click could close the project under the script that waits
+        const bool processed = dispatcher ? dispatcher->processEvents(QEventLoop::ExcludeUserInputEvents) : false;
+        // all the projects: a render of a project can wait for another one (e.g. a Precomp)
+        if ( appPTR->hasRenderInProgress() ) {
             idleStarted = false;
         } else if (!idleStarted) {
             if (settleMs <= 0) {
