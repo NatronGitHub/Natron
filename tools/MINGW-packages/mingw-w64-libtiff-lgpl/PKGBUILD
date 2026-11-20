@@ -16,8 +16,8 @@
 # Qt's qtiff plug-in and tiffinfo link. Keep pkgver equal to MSYS2's libtiff
 # version: genDllVersions.sh checks it. (The libtiff licence itself is MIT-like;
 # "-lgpl" only means "for COMMERCIAL builds", as for the other packages.)
-# TODO(#1494): a CLANGARM64 build needs MSYS2's prepare() (autoreconf -fiv, for
-# the clang support in libtool) and 'clangarm64' in mingw_arch.
+# CLANGARM64 (#1494): prepare() runs autoreconf there, as MSYS2's libtiff does,
+# for the clang support in libtool. Not on UCRT64, whose build stays unchanged.
 
 _realname=libtiff
 pkgbase="mingw-w64-natron_${_realname}-lgpl"
@@ -26,7 +26,7 @@ pkgver=4.7.2
 pkgrel=1
 pkgdesc="Library for manipulation of TIFF images, without the GPL JBIG-KIT, for Natron COMMERCIAL builds (mingw-w64)"
 arch=('any')
-mingw_arch=('ucrt64')
+mingw_arch=('ucrt64' 'clangarm64')
 url="https://libtiff.gitlab.io/libtiff/"
 license=('spdx:MIT')
 depends=("${MINGW_PACKAGE_PREFIX}-cc-libs"
@@ -41,6 +41,13 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
              "${MINGW_PACKAGE_PREFIX}-autotools")
 source=("https://download.osgeo.org/libtiff/tiff-${pkgver}.tar.gz")
 sha256sums=('672bd7d10aee4606171afb864f3570b83340f6a33e2c186dc0512f7145ffdf6a')
+
+prepare() {
+  if [[ ${MINGW_PACKAGE_PREFIX} == *-clang-* ]]; then
+    cd tiff-${pkgver}
+    autoreconf -fiv
+  fi
+}
 
 build() {
   export CFLAGS+=" -fno-strict-aliasing"

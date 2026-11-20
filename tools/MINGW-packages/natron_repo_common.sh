@@ -85,8 +85,11 @@ natron_repo_add_package() {
 # that an MSYS2 rebuild or update with the fix wins automatically (and the
 # Natron package should then be removed from tools/MINGW-packages).
 # Names without ${MINGW_PACKAGE_PREFIX}-.
+# A package that is not built for the current environment (qt5-base: CLANGARM64 only) is not in
+# its [natron] repository, and is skipped.
 NATRON_REPO_OVERRIDES="
 freetype
+qt5-base
 "
 
 natron_repo_install_overrides() {

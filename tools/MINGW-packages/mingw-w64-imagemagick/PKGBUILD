@@ -1,8 +1,8 @@
 #
 # ImageMagick 7 for openfx-arena <https://github.com/NatronGitHub/openfx-arena>
 #
-# A static, Q32 HDRI build, without modules, with Magick++ and OpenMP (GCC's
-# libgomp), and only the coders and delegates openfx-arena uses: PSD, XCF
+# A static, Q32 HDRI build, without modules, with Magick++ and OpenMP (libgomp
+# on UCRT64, LLVM's libomp on CLANGARM64), and only the coders and delegates openfx-arena uses: PSD, XCF
 # (GIMP 2.10 files), BMP, XPM, MIFF, PCX and the built-in pseudo-formats
 # (plasma:, pattern:, gradient:, radial-gradient:), which need no delegate.
 # - lcms2 for the ICC profiles in ReadPSD
@@ -21,7 +21,7 @@ pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}"
 pkgrel=1
 pkgdesc="An image viewing/manipulation program, static Q32 HDRI build for openfx-arena (mingw-w64)"
 arch=('any')
-mingw_arch=('ucrt64')
+mingw_arch=('ucrt64' 'clangarm64')
 url="https://www.imagemagick.org/"
 license=("spdx:ImageMagick")
 makedepends=("${MINGW_PACKAGE_PREFIX}-cc")
@@ -33,7 +33,7 @@ depends=(
          "${MINGW_PACKAGE_PREFIX}-freetype"
          "${MINGW_PACKAGE_PREFIX}-fontconfig"
          "${MINGW_PACKAGE_PREFIX}-lcms2"
-         "${MINGW_PACKAGE_PREFIX}-gcc-libs"  # libgomp (OpenMP)
+         "${MINGW_PACKAGE_PREFIX}-omp"  # OpenMP: libgomp (UCRT64) or llvm-openmp (CLANGARM64)
         )
 conflicts=("${MINGW_PACKAGE_PREFIX}-${_realname}")
 options=('strip' '!debug' 'libtool' 'staticlibs')

@@ -10,13 +10,15 @@ pkgver=0.22.3
 pkgrel=1
 pkgdesc="Library for reading RAW files obtained from digital photo cameras (mingw-w64)"
 arch=('any')
-mingw_arch=('ucrt64')
+mingw_arch=('ucrt64' 'clangarm64')
 url="https://www.libraw.org/"
 license=("LGPL2.1" "CDDL")   # no demosaic pack: for COMMERCIAL builds
-makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
+makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
              "${MINGW_PACKAGE_PREFIX}-pkg-config"
              "${MINGW_PACKAGE_PREFIX}-autotools")
-depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs"
+# cc-libs and omp: libstdc++ and libgomp on UCRT64 (gcc), libc++ and libomp on CLANGARM64 (#1494)
+depends=("${MINGW_PACKAGE_PREFIX}-cc-libs"
+         "${MINGW_PACKAGE_PREFIX}-omp"
          "${MINGW_PACKAGE_PREFIX}-lcms2"
          "${MINGW_PACKAGE_PREFIX}-jasper")
 options=('staticlibs' 'strip')
@@ -43,6 +45,10 @@ build() {
   cd "${srcdir}/build-${MINGW_CHOST}"
 
   CPPFLAGS+=" -DLIBRAW_BUILDLIB -D__STDC_LIMIT_MACROS"
+  # libtool doesn't pass clang's -fopenmp to the link of the DLL: link libomp explicitly, as MSYS2's libraw does
+  if [[ ${MINGW_PACKAGE_PREFIX} == *-clang-* ]]; then
+    LDFLAGS+=" -lomp"
+  fi
   ../${_realname}-${pkgver}/configure \
       --prefix=${MINGW_PREFIX}/libraw-lgpl \
       --build=${MINGW_CHOST} \

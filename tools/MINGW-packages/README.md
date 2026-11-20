@@ -105,11 +105,12 @@ A download that fails, or that isn't a valid zip, is removed before trying the n
 
 ### Which packages Natron builds
 
-The repository is built in MSYS2 UCRT64 (`build_pacman_repo.yml`, `build_natron_package_repo.sh`, which take the environment from the calling shell: `$MSYSTEM`, `$MINGW_PREFIX`, `$MINGW_PACKAGE_PREFIX`). It contains only what MSYS2 doesn't provide in the form Natron and its plug-ins need:
+The repository is built in MSYS2 UCRT64, and in CLANGARM64 for Windows on ARM64 (#1494, see "Windows on ARM64" below) (`build_pacman_repo.yml`, `build_natron_package_repo.sh`, which take the environment from the calling shell: `$MSYSTEM`, `$MINGW_PREFIX`, `$MINGW_PACKAGE_PREFIX`, and skip the packages whose `mingw_arch` doesn't list it). It contains only what MSYS2 doesn't provide in the form Natron and its plug-ins need:
 
 | Package | Why Natron builds it |
 |---|---|
 | `freetype` 2.15.0-1.1 | MSYS2's FreeType 2.15.0-1 with the upstream fix [05f343a](https://gitlab.freedesktop.org/freetype/freetype/-/commit/05f343a) ("Fix macros", not in a release yet). FreeType 2.15.0 defines `ULABS( a )` without parentheses, so `FT_Set_Transform` resets a y flip combined with a rotation within about 1.8° of 45°, 135°, 225° or 315° to the identity, and rotated text comes out unrotated in openfx-arena's Text (#1287). It replaces MSYS2's package, see "Packages that replace MSYS2's" below. macOS has the same backport in `tools/MacPorts/print/freetype` (#1286). |
+| `qt5-base` 5.15.19+kde+r96-2.1 (CLANGARM64 only) | MSYS2's qt5-base with the QMutex lost wake-up fix of #1453 (`0031-qmutex-fix-lost-wakeup-arm64.patch`, the `-p1` version of `tools/MacPorts/aqua/qt5/files/patch-qtbase-qmutex-arm64-lost-wakeup.diff`). Qt 5's QMutex never uses futexes on Windows, and on a weakly ordered CPU (ARM64) a thread can sleep forever on an unlocked mutex (#1451). x86-64 is not affected in practice (every CAS is a full barrier there), so UCRT64 keeps MSYS2's. It replaces MSYS2's package, see "Packages that replace MSYS2's" below; delete it once MSYS2 ships the fix (a KDE `kde/5.15` backport, #1546). MSYS2's qt6-base (6.12) uses `WaitOnAddress` and is not affected. |
 | `natron_ffmpeg-gpl2` 9.0.2 | FFmpeg for openfx-io, GPL-2.0-or-later (`--enable-gpl` without `--enable-version3`; MSYS2's FFmpeg is GPLv3), with the same version and configuration as Natron's macOS build (MacPorts `+gpl2 +natronmini`), in the private prefix `${MINGW_PREFIX}/ffmpeg-gpl2`. It uses MSYS2's `libx264` (ABI 165), so there is only one x264. |
 | `natron_ffmpeg-lgpl` 9.0.2 | FFmpeg for openfx-io in COMMERCIAL builds, LGPL-2.1-or-later (#1302): MSYS2 has no LGPL FFmpeg. The configuration of `natron_ffmpeg-gpl2` without `--enable-gpl`, x264, x265, Xvid, vid.stab and libzvbi (the same as the macOS subport `ffmpeg-lgpl`), in `${MINGW_PREFIX}/ffmpeg-lgpl`. Its `check()` fails if `ffmpeg -L` or the libraries' licence strings are not LGPL 2.1. |
 | `natron_libheif-lgpl` 1.23.7 | MSYS2's libheif links its encoders directly (`ENABLE_PLUGIN_LOADING=OFF`), including the GPL x264 and x265 (#1177). This is the same libheif without them, in `${MINGW_PREFIX}/libheif-lgpl`: HEIC is still decoded (libde265) and encoded (kvazaar), AVIF too; H.264 HEIF is only decoded. COMMERCIAL installers bundle its `libheif.dll` instead of MSYS2's (same name and ABI, so `natron_openimageio` loads it). Keep its version equal to MSYS2's libheif. |
@@ -117,9 +118,9 @@ The repository is built in MSYS2 UCRT64 (`build_pacman_repo.yml`, `build_natron_
 | `natron_libraw-gpl2`, `natron_libraw-lgpl` 0.22.3 | LibRaw with the GPL demosaic packs (GPL builds), and without them (COMMERCIAL builds). |
 | `natron_openimageio` 3.1.17.0 | OIIO, the same version as Natron's macOS build, built against `natron_libraw-gpl2` and MSYS2's OpenColorIO, OpenEXR and Imath, without FFmpeg, for openfx-io. |
 | `natron_seexpr-git` 2.11 | SeExpr 2.11 (the SeExpr 1 API), with Natron's build patches, for openfx-io. |
-| `natron_imagemagick` 7.1.2-36 | ImageMagick 7, static, Q32 HDRI, no modules, with Magick++ and OpenMP (libgomp), with only the coders and delegates openfx-arena uses. MSYS2's imagemagick is a shared Q16 build with modules. |
+| `natron_imagemagick` 7.1.2-36 | ImageMagick 7, static, Q32 HDRI, no modules, with Magick++ and OpenMP (libgomp on UCRT64, libomp on CLANGARM64), with only the coders and delegates openfx-arena uses. MSYS2's imagemagick is a shared Q16 build with modules. |
 | `osmesa` (Mesa 25.0.7) | Off-screen Mesa (llvmpipe) and GLU, built by [osmesa-install](https://github.com/devernay/osmesa-install) into `${MINGW_PREFIX}/osmesa`. MSYS2's Mesa no longer has OSMesa. It links MSYS2's static LLVM libraries and depends on the exact LLVM version it was built with: **rebuild it on every MSYS2 LLVM update** (until the repository also snapshots MSYS2's own packages, #1133). Only static libraries are shipped. |
-| `natron-setup` | The Inno Setup installer. |
+| `natron-setup` | The Inno Setup installer, `${MINGW_PREFIX}/share/natron-setup/Setup.exe` (`/Setup.exe` before pkgrel 6): for x64 on UCRT64, for arm64 on CLANGARM64 (`NatronArch` in `Natron.iss`: `ArchitecturesAllowed=arm64`, and no Mesa component yet). |
 | `natron-build-deps-common`, `-qt5`, `-qt6` | Meta-packages that install everything needed to build Natron, the plug-ins and the installer. |
 
 OpenColorIO, OpenEXR, Imath, poppler (with the private headers that ReadPDF uses) and SoX now come from MSYS2. The Breakpad tools (`dump_syms`, `breakdown`) are gone: releases ship no crash reporter until #1183.
@@ -145,6 +146,8 @@ Every package must then be rebuilt against the current toolchain (a full rebuild
 
 ### Rebuilding and publishing it
 
+For CLANGARM64, run the workflow with `msystem` set to `CLANGARM64` (or `both`): it runs on GitHub's `windows-11-arm` runner, and its artifact and zip are `natron_package_repo-clangarm64-<version>` (`install_natron_pacman_repo.sh` looks for `natron_package_repo-<msystem>-<version>.zip` in environments other than UCRT64). `build_installer.yml` has the same `msystem` input.
+
 1. On a branch, bump `windows_pacman_repo_version.txt` to a new version, e.g. today's date: `20261116-1` (increment the last number for a second build on the same day). Bump the `pkgrel` of any PKGBUILD whose output changes.
 2. Run the "Build pacman repo" workflow on that branch (Actions → Build pacman repo → Run workflow; it also runs on `v*` tags). It runs `build_natron_package_repo.sh` on a clean runner and uploads the repository as the artifact `natron_package_repo-<version>`, named after the version read from `windows_pacman_repo_version.txt`. Check that the run passes: the job continues after a package failure so that its cache is saved, then fails in its last step.
 3. Download the artifact. GitHub serves it as `natron_package_repo-<version>.zip`, with the repository files (`*.pkg.tar.*` and the repository database) at the top level, which is the layout that `install_natron_pacman_repo.sh` expects.
@@ -152,6 +155,18 @@ Every package must then be rebuilt against the current toolchain (a full rebuild
 5. Run "Build Installer" on the branch and check that it finds the zip and that the plug-ins load. Then merge the branch.
 
 Until the new zip is published, every installer run on that branch falls back to building the whole repository locally.
+
+## Windows on ARM64 (CLANGARM64)
+
+Native ARM64 Natron (#1494) uses MSYS2's CLANGARM64 environment: clang, libc++, libunwind and LLVM's libomp (`llvm-openmp`), never gcc or MSVC. MSYS2 has no gcc, `gcc-libs` or `libgomp` there, so the PKGBUILDs depend on the virtual packages `cc`, `cc-libs` and `omp` (`omp` is provided by `libgomp` on UCRT64 and by `llvm-openmp` on CLANGARM64). Every MSYS2 package that Natron, its package repository and the plug-ins (openfx-misc, openfx-io, openfx-arena, openfx-gmic) use on UCRT64 exists in CLANGARM64, with the same versions (checked against the repository databases on 2026-11-20, see #1494). Only OSMesa is not an MSYS2 package on either environment (Natron's `osmesa`).
+
+What is built differently there:
+- `qt5-base`: Natron's, with the QMutex fix (see the table above).
+- `natron_libraw-*`: `-lomp` is added to the link with clang, as MSYS2's libraw does.
+- `natron_libtiff-lgpl`: `prepare()` runs `autoreconf -fiv` with clang, as MSYS2's libtiff does (libtool's clang support).
+- `natron-setup`: Setup.exe is compiled with `/DNatronArch=arm64`.
+
+Not verified on ARM64 hardware yet (#1494): OSMesa (llvmpipe) for Shadertoy, the OpenMP link of the static ImageMagick in openfx-arena, and a software OpenGL (Mesa `opengl32.dll`) component for the installer (MSYS2's mesa has an ARM64 `opengl32.dll`, but its `libgallium_wgl.dll` needs LLVM's DLL).
 
 ## Toolchain drift
 
