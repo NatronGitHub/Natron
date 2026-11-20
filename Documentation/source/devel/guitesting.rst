@@ -195,6 +195,11 @@ The test mode does not isolate everything:
 - debug builds do not trap floating point exceptions in test mode: the OpenGL driver's threads (e.g.
   Mesa llvmpipe's, under Xvfb) inherit the trapping, and their shaders raise exceptions.
 
+In debug builds only, ``Natron`` and ``NatronRenderer`` trap floating point exceptions (e.g. a division
+by zero). With the environment variable ``NATRON_NO_FP_TRAPS`` set to ``1``,
+they don't, in any thread, and print a warning at startup. The test mode sets it for its child
+processes, and the *GuiSmokeTest* and *RendererQuitTest* set it (#1537).
+
 A test script runs from the event loop, once the main window is shown: it needs no timer, and
 Natron quits when the script returns, as with
 :meth:`natron.quit(status)<NatronEngine.PyCoreApplication.quit>`.

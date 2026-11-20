@@ -64,9 +64,11 @@ SOURCES += \
     Image_Test.cpp \
     KnobDuplicate_Test.cpp \
     KnobExpressionCache_Test.cpp \
+    KnobInvalidExpression_Test.cpp \
     KnobFile_Test.cpp \
     KnobSlave_Test.cpp \
     KnobStringAnimation_Test.cpp \
+    LibTess_Test.cpp \
     LoadPythonScript_Test.cpp \
     Lut_Test.cpp \
     MultiInputLinks_Test.cpp \
@@ -108,6 +110,7 @@ SOURCES += \
     PluginGrouping_Test.cpp \
     ProjectAutoSave_Test.cpp \
     PyEffectEquality_Test.cpp \
+    PythonExpressionScope_Test.cpp \
     ReadNodeOverlay_Test.cpp \
     RenderThreadSafety_Test.cpp \
     RenderThreads_Test.cpp \
