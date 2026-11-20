@@ -167,8 +167,12 @@ jobs:
           # DIAGNOSIS of #1466 (temporary branch): backtrace of the SIGFPE of Natron --test under Xvfb
           export OFX_PLUGIN_PATH=$PWD/../Plugins:$PWD/Tests/OfxPlugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio
           glxinfo -B || true
-          for t in test_overlay_transform test_smoke; do echo "=== gdb $t"; NATRON_GUI_TESTS=1 NATRON_DISK_CACHE_PATH=$PWD/Tests/gui-tests-cache NATRON_TESTS_OFX_PLUGIN_BINARY=$(ls $PWD/Tests/OfxPlugins/NatronTestPlugin.ofx.bundle/Contents/*/NatronTestPlugin.ofx) gdb -batch -ex "handle SIGFPE stop" -ex run -ex "bt 40" -ex "info threads" -ex "thread apply all bt 8" --args App/Natron --test $PWD/../Tests/gui/$t.py 2>&1 | grep -v "^\[New Thread\|^\[Thread" | tail -250 || true; done
-          NATRON_GUI_TESTS=1 ctest -L gui --output-on-failure || true
+          # core dumps of the SIGFPE (it does not happen under gdb)
+          sudo sysctl -w kernel.core_pattern=/tmp/core.%p || true
+          ulimit -c unlimited
+          for i in 1 2 3 4 5; do NATRON_GUI_TESTS=1 ctest -L gui 2>&1 | grep -E "Test #|tests passed" || true; done
+          ls -la /tmp/core.* 2>/dev/null || echo "no core"
+          n=0; for c in /tmp/core.*; do [ -f "$c" ] || continue; n=$((n+1)); [ $n -le 3 ] || break; echo "=== core $c"; gdb -batch -ex "info signal SIGFPE" -ex "bt 40" -ex "info registers rip" -ex "x/3i \$pc" -ex "thread apply all bt 6" App/Natron "$c" 2>&1 | grep -v "^\[New LWP" | tail -200; done
           echo "=== plain Natron (no --test), 20 s"
           timeout 20 gdb -batch -ex run -ex bt --args App/Natron --no-settings 2>&1 | tail -60 || true
 
