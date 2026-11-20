@@ -279,8 +279,10 @@ public:
     std::string popOpenFileDialog(bool sequenceDialog,
                                   const std::vector<std::string> & initialfilters, const std::string & initialDir,
                                   bool allowRelativePaths);
+    // extraWidget, if not null, is added at the end of the file name line (e.g. a file format choice);
+    // it is owned by the dialog, and only valid until this function returns.
     std::string popSaveFileDialog(bool sequenceDialog, const std::vector<std::string> & initialfilters, const std::string & initialDir,
-                                  bool allowRelativePaths);
+                                  bool allowRelativePaths, QWidget* extraWidget = 0);
     std::string openImageSequenceDialog();
     std::string saveImageSequenceDialog();
 

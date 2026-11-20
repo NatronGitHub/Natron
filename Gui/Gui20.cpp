@@ -1030,9 +1030,8 @@ AppInstancePtr
 Gui::createNewProject()
 {
     CLArgs cl;
+    // GuiAppInstance::load() already runs the onProjectCreated callback for the new project (#489)
     AppInstancePtr app = appPTR->newAppInstance(cl, false);
-
-    app->execOnProjectCreatedCallback();
 
     return app;
 }
@@ -1224,18 +1223,25 @@ Gui::saveProjectAs()
     std::vector<std::string> filter;
 
     filter.push_back(NATRON_PROJECT_FILE_EXT);
-    SequenceFileDialog dialog(this, filter, false, SequenceFileDialog::eFileDialogModeSave, _imp->_lastSaveProjectOpenedDir.toStdString(), this, false);
+    // Start in the directory of the current project if it has one and it is writable (not e.g. a read-only
+    // template folder), else in the last directory used to save a project (#343)
+    QString initialDir = _imp->_lastSaveProjectOpenedDir;
+    ProjectPtr project = getApp()->getProject();
+    if ( project->hasProjectBeenSavedByUser() && !project->getProjectPath().isEmpty() &&
+         QFileInfo( project->getProjectPath() ).isWritable() ) {
+        initialDir = project->getProjectPath();
+    }
 
-    // The format choice. It defaults to the format of the project, or to the preference for a new project.
+    // The file format choice. It defaults to the format of the project, or to the preference for a new project.
     QWidget* formatWidget = new QWidget;
     QHBoxLayout* formatLayout = new QHBoxLayout(formatWidget);
     formatLayout->setContentsMargins(0, 0, 0, 0);
-    Label* formatLabel = new Label(tr("Format:"), formatWidget);
+    Label* formatLabel = new Label(tr("File format:"), formatWidget);
     formatLayout->addWidget(formatLabel);
     ComboBox* formatCombo = new ComboBox(formatWidget);
     formatCombo->setObjectName( QString::fromUtf8("projectFileFormat") );
     const QString appName = QString::fromUtf8(NATRON_APPLICATION_NAME);
-    const QString binaryHint = tr("Binary: faster to load and save, and smaller. Needs %1 2.6 or later.").arg(appName);
+    const QString binaryHint = tr("Binary: faster to save and to parse, and smaller. Needs %1 2.6 or later.").arg(appName);
     const QString textHint = tr("Text (XML): compatible with %1 2.5 and earlier, readable and diffable.").arg(appName);
     formatCombo->addItem( tr("Binary"), QIcon(), QKeySequence(), binaryHint );
     formatCombo->addItem( tr("Text (%1 2.5 compatible)").arg(appName), QIcon(), QKeySequence(), textHint );
@@ -1244,20 +1250,21 @@ Gui::saveProjectAs()
                                                                    tr("The project keeps this format: later saves use it. Auto-saves are always binary."),
                                                                    NATRON_NAMESPACE::WhiteSpaceNormal) );
     const int textIndex = 1;
-    formatCombo->setCurrentIndex_no_emit( (getApp()->getProject()->getFileFormatForSave() == eProjectFileFormatText) ? textIndex : 0 );
+    formatCombo->setCurrentIndex_no_emit( (project->getFileFormatForSave() == eProjectFileFormatText) ? textIndex : 0 );
     formatLayout->addWidget(formatCombo);
-    dialog.addSelectionLineWidget(formatWidget);
 
-    if ( !dialog.exec() ) {
-        return false;
-    }
-    _imp->_lastSaveProjectOpenedDir = dialog.currentDirectory().absolutePath();
-    std::string outFile = dialog.filesToSave();
+    // the dialog owns formatWidget: read the choice before it returns
+    ProjectFileFormatEnum format = eProjectFileFormatNone;
+    QObject::connect( formatCombo, static_cast<void (ComboBox::*)(int)>(&ComboBox::currentIndexChanged), formatWidget, [&format, textIndex](int i) {
+        format = (i == textIndex) ? eProjectFileFormatText : eProjectFileFormatBinary;
+    } );
+    format = (formatCombo->activeIndex() == textIndex) ? eProjectFileFormatText : eProjectFileFormatBinary;
+    std::string outFile = popSaveFileDialog( false, filter, initialDir.toStdString(), false, formatWidget );
     if ( outFile.empty() ) {
         return false;
     }
 
-    return saveProjectAs(outFile, (formatCombo->activeIndex() == textIndex) ? eProjectFileFormatText : eProjectFileFormatBinary);
+    return saveProjectAs(outFile, format);
 }
 
 void
@@ -1454,6 +1461,12 @@ Gui::popOpenFileDialog(bool sequenceDialog,
                        const std::string & initialDir,
                        bool allowRelativePaths)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        // --no-dialogs: the file dialog counts as cancelled
+        Dialogs::printDismissedDialog( tr("Open").toStdString(), tr("File dialog not shown, cancelled.").toStdString() );
+
+        return std::string();
+    }
     SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::eFileDialogModeOpen, initialDir, this, allowRelativePaths);
 
     if ( dialog.exec() ) {
@@ -1492,9 +1505,20 @@ std::string
 Gui::popSaveFileDialog(bool sequenceDialog,
                        const std::vector<std::string> & initialfilters,
                        const std::string & initialDir,
-                       bool allowRelativePaths)
+                       bool allowRelativePaths,
+                       QWidget* extraWidget)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        // --no-dialogs: the file dialog counts as cancelled (e.g. Save As for an untitled project)
+        Dialogs::printDismissedDialog( tr("Save").toStdString(), tr("File dialog not shown, cancelled.").toStdString() );
+        delete extraWidget;
+
+        return std::string();
+    }
     SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::eFileDialogModeSave, initialDir, this, allowRelativePaths);
+    if (extraWidget) {
+        dialog.addSelectionLineWidget(extraWidget);
+    }
 
     if ( dialog.exec() ) {
         if (sequenceDialog) {
@@ -1519,6 +1543,13 @@ int
 Gui::saveWarning()
 {
     if ( !getApp()->getProject()->isSaveUpToDate() ) {
+        if ( appPTR->isDialogsDisabled() ) {
+            // --no-dialogs: do not save. The default answer, Save, would open the Save As
+            // file dialog for an untitled project, which would block a script.
+            Dialogs::printDismissedDialog( NATRON_APPLICATION_NAME, tr("Save changes to %1? Answered Discard.").arg( getApp()->getProject()->getProjectFilename() ).toStdString() );
+
+            return 1;
+        }
         StandardButtonEnum ret =  Dialogs::questionDialog(NATRON_APPLICATION_NAME, tr("Save changes to %1?").arg( getApp()->getProject()->getProjectFilename() ).toStdString(),
                                                           false,
                                                           StandardButtons(eStandardButtonSave | eStandardButtonDiscard | eStandardButtonCancel), eStandardButtonSave);

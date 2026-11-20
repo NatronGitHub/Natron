@@ -32,6 +32,7 @@
 #include <QSettings>
 #include <QMutex>
 #include <QCoreApplication>
+#include <QPointer>
 
 #include "Engine/CLArgs.h"
 #include "Engine/Project.h"
@@ -115,7 +116,10 @@ struct KnobDnDData
 
 struct GuiAppInstancePrivate
 {
-    Gui* _gui; //< ptr to the Gui interface
+    // ptr to the Gui interface. A QPointer, because the Gui deletes itself when its window is
+    // closed (Qt::WA_DeleteOnClose), possibly before this instance quits, e.g. if the event loop
+    // exits before the renders are aborted: aboutToQuit() must not use a deleted Gui.
+    QPointer<Gui> _gui;
     bool _isClosing;
 
     //////////////
@@ -295,6 +299,10 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
     Q_EMIT pluginsPopulated();
 
     ///show the gui
+    if ( appPTR->isDialogsDisabled() ) {
+        // --no-dialogs (scripts and tests): do not steal the focus from the user's work
+        _imp->_gui->setAttribute(Qt::WA_ShowWithoutActivating);
+    }
     _imp->_gui->show();
 
 
@@ -304,11 +312,17 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
     {
         QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
         if ( !settings.contains( QString::fromUtf8("checkForUpdates") ) ) {
-            StandardButtonEnum reply = Dialogs::questionDialog(tr("Updates").toStdString(),
-                                                               tr("Do you want %1 to check for updates "
-                                                                  "on launch of the application?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false);
-            bool checkForUpdates = reply == eStandardButtonYes;
-            nSettings->setCheckUpdatesEnabled(checkForUpdates);
+            const std::string title = tr("Updates").toStdString();
+            const std::string question = tr("Do you want %1 to check for updates "
+                                            "on launch of the application?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString();
+            if ( appPTR->isDialogsDisabled() ) {
+                // --no-dialogs: do not save an answer the user did not give, ask again on the next launch
+                Dialogs::printDismissedDialog(title, question);
+            } else {
+                StandardButtonEnum reply = Dialogs::questionDialog(title, question, false);
+                bool checkForUpdates = reply == eStandardButtonYes;
+                nSettings->setCheckUpdatesEnabled(checkForUpdates);
+            }
         }
 
         if ( nSettings->isCheckForUpdatesEnabled() ) {
@@ -415,6 +429,12 @@ bool
 GuiAppInstance::findAndTryLoadUntitledAutoSave()
 {
     if ( !appPTR->getCurrentSettings()->isAutoSaveEnabledForUnsavedProjects() ) {
+        return false;
+    }
+    if ( appPTR->isDialogsDisabled() ) {
+        // --no-dialogs: never touch the user's crash-recovery auto-saves. Restoring one (the
+        // default answer) would load it in this session, which then deletes it when quitting
+        // without saving; answering No would delete it right away.
         return false;
     }
 
