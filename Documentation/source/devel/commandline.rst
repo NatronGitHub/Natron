@@ -281,6 +281,31 @@ if the script created a Write node before the error, that Write node is still re
 (`issue #1276 <https://github.com/NatronGitHub/Natron/issues/1276>`_). Check the output for
 Python errors and for errors that happen while frames are rendered.
 
+GUI tests in the background
+---------------------------
+
+GUI tests (Python scripts that drive the Natron interface with synthetic Qt events) can run on a
+desktop that someone is using. Set the ``NATRON_TEST_NO_FOCUS`` environment variable to any
+value except ``0`` (an empty value doesn't count), and Natron never takes the keyboard focus:
+
+- the windows are shown without being activated, and Natron doesn't raise or activate its windows
+  by itself;
+- on macOS, the process never becomes the active (frontmost) application: it has no Dock icon and
+  no Cmd-Tab entry, and App Nap is disabled. The "reopen windows?" alert shown after a crash is
+  also disabled.
+
+Natron prints a warning at startup when the variable is set. Don't set it for interactive use:
+the windows and dialogs open behind the other applications, and Natron looks hung.
+
+The test scripts must send their events directly to the target widgets
+(``QApplication.sendEvent``), never move the real pointer, and should read the viewer with
+``QOpenGLWidget.grabFramebuffer()``, which renders the viewer into an offscreen buffer, also when
+its window is not active. A screen capture only shows what is visible on the screen. For example::
+
+    NATRON_TEST_NO_FOCUS=1 Natron --no-settings
+
+with the test started from an ``initGui.py`` startup script (see :doc:`natronpath`).
+
 Example: converting an image sequence
 -------------------------------------
 

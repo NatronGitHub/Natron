@@ -22,6 +22,7 @@ if(WIN32)
     list(APPEND NatronRenderer_SOURCES ../Natron.rc)
 endif()
 add_executable(NatronRenderer ${NatronRenderer_SOURCES})
+natron_set_main_thread_stack_size(NatronRenderer)
 target_link_libraries(NatronRenderer
     PRIVATE
         NatronEngine

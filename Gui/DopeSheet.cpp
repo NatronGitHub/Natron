@@ -54,6 +54,7 @@
 #include "Gui/DopeSheetEditor.h"
 #include "Gui/DopeSheetEditorUndoRedo.h"
 #include "Gui/DopeSheetHierarchyView.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/DopeSheetView.h"
 #include "Gui/Gui.h"
 #include "Gui/KnobGui.h"
@@ -877,7 +878,9 @@ DopeSheet::renameSelectedNode()
     QObject::connect( dialog, SIGNAL(rejected()), this, SLOT(onNodeNameEditDialogFinished()) );
     QObject::connect( dialog, SIGNAL(accepted()), this, SLOT(onNodeNameEditDialogFinished()) );
     dialog->move( realPos.x(), realPos.y() );
-    dialog->raise();
+    if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+        dialog->raise();
+    }
     dialog->show();
 }
 
