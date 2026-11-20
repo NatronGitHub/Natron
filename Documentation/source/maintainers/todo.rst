@@ -20,12 +20,16 @@ Toolkit and build modernization
 **Complete Qt 6 support while keeping Qt 5 (P1).**
 This is a first-class goal with its own chapter, :ref:`maint-qt6`, which is the
 single source of truth for the audited work items and counts. In short: the
-CMake build already has a ``NATRON_QT6`` switch and the viewer already uses
-``QOpenGLWidget``, and the removed Qt APIs (``QRegExp``, ``QDesktopWidget``,
-``setMargin``) have been replaced (PR #1084), so the remaining work is bounded:
-regenerate the
-PySide6/Shiboken6 bindings (resolving the enum/flag issue
-`#854 <https://github.com/NatronGitHub/Natron/issues/854>`_). Tracks
+removed Qt APIs (``QRegExp``, ``QDesktopWidget``, ``setMargin``) have been
+replaced (PR #1084), and Engine, Gui and the Python bindings compile with Qt 6
+(PRs #1186–#1188): CMake's ``NATRON_QT6`` generates the Shiboken6/PySide6
+bindings, qmake has an untested Qt 6 path without bindings, and
+``Global/QtCompat.h`` has the ``QtCompat::MutexLock`` and ``QEnterEvent``
+shims. What remains: validate the PySide6 bindings and the GUI at run time
+(including the enum/flag issue
+`#854 <https://github.com/NatronGitHub/Natron/issues/854>`_), build Qt 6 in CI
+(nightly or on demand), and use C++20 with Qt 6 (#1148). Qt 6 work that keeps
+Qt 5 unchanged goes to RB-2.6; RB-2.7 is the Qt 6 branch. Tracks
 `#1011 <https://github.com/NatronGitHub/Natron/issues/1011>`_ and
 `#827 <https://github.com/NatronGitHub/Natron/issues/827>`_.
 
@@ -39,12 +43,15 @@ keep the ``*.pro``/``*.pri`` files in sync with CMake
 (``tools/utils/checkQmakeSources.py`` checks the source lists in CI). The qmake
 build gets no new features, in particular no further Qt 6 work.
 
-**Modernize CI (P1).**
-Migrate CI from Travis to GitHub Actions
-(`#601 <https://github.com/NatronGitHub/Natron/issues/601>`_; the ``.travis.yml``
-is already disabled). Build **both** Qt 5 and Qt 6 and run the ``Tests`` suite on
-all three platforms so regressions in the dual-toolkit build are caught
-automatically.
+**Add the scheduled CI builds (P1).**
+CI runs on GitHub Actions (``.github/workflows/ci.yml``; the migration from
+Travis, `#601 <https://github.com/NatronGitHub/Natron/issues/601>`_, is done):
+each pull request builds Qt 5 and runs the ``Tests`` suite on Linux, Windows
+and macOS (see :ref:`maint-ci`). What is missing are the builds that the CI
+policy keeps out of pull requests: Qt 6 with tests on all three platforms,
+extra C++ standards (C++23), and other compilers or OS versions, to run
+nightly, weekly or by hand, so that regressions in the dual-toolkit build are
+still caught.
 
 **Adopt a modern C++ baseline consistently (P3).**
 The CMake build already compiles as C++17, and the code has largely moved from
@@ -148,7 +155,6 @@ Issue                Summary                                             Priorit
 `#864`_              CLI renders zero frames                              P0
 `#1011`_ / `#854`_   Qt 6 support / Qt flag binding bug                   P1
 `#827`_              Qt version tracker                                   P1
-`#601`_              Migrate CI to GitHub Actions                         P1
 `#215`_ / `#990`_    Ubuntu PPA-Debian repo / Linux binary distrib        P1
 `#557`_              Reliable crash reporting                             P1
 `#209`_              Viewer 8-bit textures                                P2
@@ -167,7 +173,6 @@ Issue                Summary                                             Priorit
 .. _#1011: https://github.com/NatronGitHub/Natron/issues/1011
 .. _#854: https://github.com/NatronGitHub/Natron/issues/854
 .. _#827: https://github.com/NatronGitHub/Natron/issues/827
-.. _#601: https://github.com/NatronGitHub/Natron/issues/601
 .. _#215: https://github.com/NatronGitHub/Natron/issues/215
 .. _#990: https://github.com/NatronGitHub/Natron/issues/990
 .. _#557: https://github.com/NatronGitHub/Natron/issues/557

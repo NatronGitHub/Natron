@@ -1,16 +1,16 @@
-.. module:: NatronGui
+.. currentmodule:: NatronGui
 .. _pypanel:
 
 PyPanel
 ********
 
-**Inherits** :`QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>` :doc:`../NatronEngine/UserParamHolder`
+**Inherits** `QWidget <https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/QWidget.html>`_, :doc:`../NatronEngine/UserParamHolder`
 
 
 Synopsis
 -------------
 
-A custom PySide pane that can be docked into :doc:`PyTabWidget`.
+A custom Qt pane that can be docked into :doc:`PyTabWidget`.
 See :ref:`detailed<pypanel.details>` description...
 
 
@@ -35,12 +35,12 @@ Functions
 Detailed Description
 ---------------------------
 
-The :doc:`PyPanel` class can be used to implement custom PySide widgets that can then be
+The :doc:`PyPanel` class can be used to implement custom Qt widgets that can then be
 inserted as tabs into :doc:`tab-widgets<PyTabWidget>` .
 
 There are 2 possible usage of this class:
 
-    * Sub-class it and create your own GUI using `PySide <http://qt-project.org/wiki/PySideDocumentation>`_
+    * Sub-class it and create your own GUI using `Qt for Python <https://doc.qt.io/qtforpython-6/>`_ (see :ref:`pysideExample`)
     * Use the API proposed by :doc:`PyPanel` to add custom user :doc:`parameters<../NatronEngine/Param>` as done for :doc:`PyModalDialog`.
 
 Sub-classing:
@@ -51,12 +51,14 @@ constructor that you do not want to use user parameters, as this might conflict 
 layout that you will use::
 
     class MyPanel(NatronGui.PyPanel):
-        def __init__(scriptName,label,app):
-            NatronGui.PyPanel.__init__(scriptName,label,False,app)
+        def __init__(self, scriptName, label, app):
+            NatronGui.PyPanel.__init__(self, scriptName, label, False, app)
             ...
 
-You're then free to use all features proposed by `PySide <http://qt-project.org/wiki/PySideDocumentation>`_
-in your class, including `signal/slots <http://qt-project.org/wiki/Signals_and_Slots_in_PySide>`_
+You're then free to use all features of `Qt for Python <https://doc.qt.io/qtforpython-6/>`_
+in your class, including `signals and slots <https://doc.qt.io/qtforpython-6/tutorials/basictutorial/signals_and_slots.html>`_.
+Import Qt through `qtpy <https://github.com/spyder-ide/qtpy>`_ (``from qtpy import QtCore, QtWidgets``), so that the same
+code works with PySide2 (Qt 5 builds of Natron) and PySide6 (Qt 6 builds).
 See the following :ref:`example <pysideExample>`.
 
 
@@ -121,7 +123,7 @@ to add this panel to the pane.
 
 
 If you want the panel to persist in the project so that it gets recreated and placed at its original position
-when the user loads the project, you must use the :func:`registerPythonPanel(panel,function)< NatronGui.GuiApp.registerPythonPanel>` function.
+when the user loads the project, you must use the :func:`registerPythonPanel(panel,function)<NatronGui.GuiApp.registerPythonPanel>` function.
 
 Note that the *function* parameter is the **name** of a Python-defined function that takes no parameter used to create the widget, e.g.:
 
@@ -179,7 +181,7 @@ a value that you want to be persistent has changed (unless this is a user parame
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. method:: NatronGui.PyPanel.PyPanel(label,useUserParameters,app)
+.. method:: PyPanel.PyPanel(label,useUserParameters,app)
 
     :param label: :class:`str`
     :param useUserParameters: :class:`bool`
@@ -189,11 +191,11 @@ Make a new PyPanel with the given *label* that will be used to display in the ta
 If *useUserParameters* is True then user parameters support will be activated,
 attempting to modify the underlying layout in these circumstances will result in undefined behaviour.
 
-.. method:: NatronGui.PyPanel.addWidget(widget)
+.. method:: PyPanel.addWidget(widget)
 
-    :param widget: `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>`
+    :param widget: `QWidget <https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/QWidget.html>`_
 
-Append a `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>` inherited *widget* at the bottom of the dialog. This allows one to add custom GUI created directly using PySide
+Append a `QWidget <https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/QWidget.html>`_ inherited *widget* at the bottom of the dialog. This allows one to add custom GUI created directly with Qt
 that will be inserted **after** any custom parameter.
 
 .. warning::
@@ -203,7 +205,7 @@ that will be inserted **after** any custom parameter.
 
 
 
-.. method:: NatronGui.PyPanel.getParam(scriptName)
+.. method:: PyPanel.getParam(scriptName)
 
     :param scriptName: :class:`str`
     :rtype: :class:`Param<NatronEngine.Param>`
@@ -215,7 +217,7 @@ Returns the user parameter with the given *scriptName* if it exists or *None* ot
     This function should be used exclusively when the widget was created using *useUserParameters = True*
 
 
-.. method:: NatronGui.PyPanel.getParams()
+.. method:: PyPanel.getParams()
 
     :rtype: :class:`sequence`
 
@@ -228,12 +230,12 @@ Returns all the user parameters used by the panel.
 
 
 
-.. method:: NatronGui.PyPanel.insertWidget(index,widget)
+.. method:: PyPanel.insertWidget(index,widget)
 
     :param index: :class:`int`
-    :param widget: `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>`
+    :param widget: `QWidget <https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/QWidget.html>`_
 
-Inserts a `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>` inherited *widget* at the given *index* of the layout in the dialog. This allows one to add custom GUI created directly using PySide.
+Inserts a `QWidget <https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/QWidget.html>`_ inherited *widget* at the given *index* of the layout in the dialog. This allows one to add custom GUI created directly with Qt.
 The widget will always be inserted **after** any user parameter.
 
 .. warning::
@@ -243,7 +245,7 @@ The widget will always be inserted **after** any user parameter.
 
 
 
-.. method:: NatronGui.PyPanel.setParamChangedCallback(callback)
+.. method:: PyPanel.setParamChangedCallback(callback)
 
     :param callback: :class:`str`
 
@@ -275,21 +277,21 @@ Example::
     This function should be used exclusively when the widget was created using *useUserParameters = True*
 
 
-.. method:: NatronGui.PyPanel.setPanelLabel(label)
+.. method:: PyPanel.setPanelLabel(label)
 
     :param callback: :class:`str`
 
 Set the label of the panel as it will be displayed on the tab header of the :doc:`PyTabWidget`.
 This name should be unique.
 
-.. method:: NatronGui.PyPanel.getPanelLabel()
+.. method:: PyPanel.getPanelLabel()
 
     :rtype: :class:`str`
 
 Get the label of the panel as displayed on the tab header of the :doc:`PyTabWidget`.
 
 
-.. method:: NatronGui.PyPanel.getPanelScriptName()
+.. method:: PyPanel.getPanelScriptName()
 
     :rtype: :class:`str`
 
@@ -297,14 +299,14 @@ Get the script-name of the panel as used internally. This is a unique string ide
 
 
 
-.. method:: NatronGui.PyPanel.onUserDataChanged()
+.. method:: PyPanel.onUserDataChanged()
 
 Callback to be called whenever a parameter/value (that is not a user parameter) that you want to be
 saved has changed.
 
 .. warning ::
 
-    If you do not call   :func:`onUserDataChanged()<NatronGui.PyPanel.onUserDataChanged>`, the :func:`save()NatronGui.PyPanel.save` function
+    If you do not call   :func:`onUserDataChanged()<NatronGui.PyPanel.onUserDataChanged>`, the :func:`save()<NatronGui.PyPanel.save>` function
     will never be called, and the data never serialized.
 
 
@@ -314,7 +316,7 @@ saved has changed.
 
 
 
-.. method:: NatronGui.PyPanel.save()
+.. method:: PyPanel.save()
 
     :rtype: :class:`str`
 
@@ -330,7 +332,7 @@ saved has changed.
 
 Returns a string with the serialization of your custom data you need to be persistent.
 
-.. method:: NatronGui.PyPanel.restore(data)
+.. method:: PyPanel.restore(data)
 
     :param data: :class:`str`
 

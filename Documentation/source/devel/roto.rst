@@ -44,7 +44,7 @@ You can re-organize the tree using the functions available in the :ref:`Layer<La
 Creating layers
 ----------------
 
-To create a new :ref:`BezierCurve<BezierCurve>`, use the :func:`createLayer()<>` function made available by the :ref:`Roto<Roto>` class.
+To create a new :ref:`Layer<Layer>`, use the :func:`createLayer()<NatronEngine.Roto.createLayer>` function made available by the :ref:`Roto<Roto>` class.
 
 Creating shapes
 ----------------
@@ -59,15 +59,15 @@ Once created, the Bezier will have at least 1 control point (4 for ellipses and 
 at the time specified in parameter.
 
 A Bezier initially is in an *opened* state, meaning it doesn't produce a shape yet (unless it is a rectangle or ellipse).
-At this stage you can then add control points using the :func`addControlPoint(x,y)<NatronEngine.BezierCurve.addControlPoint>`
+At this stage you can then add control points using the :func:`addControlPoint(x,y)<NatronEngine.BezierCurve.addControlPoint>`
 function.
-Once you're one adding control points, call the function :func:`setCurveFinished(finished)<NatronEngine.BezierCurve.setCurveFinished>`
+Once you're done adding control points, call the function :func:`setCurveFinished(finished)<NatronEngine.BezierCurve.setCurveFinished>`
 to close the shape by connecting the last control point with the first.
 
 Once finished, you can refine the Bezier curve by adding control points with the :func:`addControlPointOnSegment(index,t)<NatronEngine.BezierCurve.addControlPointOnSegment>` function.
 You can then move and remove control points of the Bezier.
 
-You can also slave a control point to a track using the :func:`slavePointToTrack(index,trackTime,trackCenter)<NatronEngine.BezierCurve.slavePointToTrac>` function.
+You can also slave a control point to a track using the :func:`slavePointToTrack(index,trackTime,trackCenter)<NatronEngine.BezierCurve.slavePointToTrack>` function.
 
 A Bezier curve has several properties that the API allows you to modify:
 

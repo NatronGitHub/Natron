@@ -1,0 +1,59 @@
+#==================================================================================================
+# From 4bc4cfb66055a997f03d57649bf5456fe09a5a97
+# From: stefantalpalaru
+# Date: Sun, 23 Feb 2025 20:21:44 +0100
+# Subject: [PATCH] support SVT-AV1 3.0.0
+#==================================================================================================
+--- libheif/plugins/encoder_svt.cc
++++ libheif/plugins/encoder_svt.cc
+@@ -678,7 +678,11 @@ struct heif_error svt_encode_image(void* encoder_raw, const struct heif_image* i
+   EbSvtAv1EncConfiguration svt_config;
+   memset(&svt_config, 0, sizeof(EbSvtAv1EncConfiguration));
+ 
++#if SVT_AV1_CHECK_VERSION(3, 0, 0)
++  res = svt_av1_enc_init_handle(&svt_encoder, &svt_config);
++#else
+   res = svt_av1_enc_init_handle(&svt_encoder, nullptr, &svt_config);
++#endif
+   if (res != EB_ErrorNone) {
+     //goto cleanup;
+     return heif_error_codec_library_error;
+@@ -698,7 +702,9 @@ struct heif_error svt_encode_image(void* encoder_raw, const struct heif_image* i
+   auto nclx_deleter = std::unique_ptr<heif_color_profile_nclx, void (*)(heif_color_profile_nclx*)>(nclx, heif_nclx_color_profile_free);
+ 
+   if (nclx) {
++#if !SVT_AV1_CHECK_VERSION(3, 0, 0)
+     svt_config.color_description_present_flag = true;
++#endif
+ #if SVT_AV1_VERSION_MAJOR >= 1
+     svt_config.color_primaries = static_cast<EbColorPrimaries>(nclx->color_primaries);
+     svt_config.transfer_characteristics = static_cast<EbTransferCharacteristics>(nclx->transfer_characteristics);
+@@ -712,20 +718,28 @@ struct heif_error svt_encode_image(void* encoder_raw, const struct heif_image* i
+ #endif
+ 
+ 
++#if !SVT_AV1_CHECK_VERSION(3, 0, 0)
+     // Follow comment in svt header: set if input is HDR10 BT2020 using SMPTE ST2084.
+     svt_config.high_dynamic_range_input = (bitdepth_y == 10 && // TODO: should this be >8 ?
+                                            nclx->color_primaries == heif_color_primaries_ITU_R_BT_2020_2_and_2100_0 &&
+                                            nclx->transfer_characteristics == heif_transfer_characteristic_ITU_R_BT_2100_0_PQ &&
+                                            nclx->matrix_coefficients == heif_matrix_coefficients_ITU_R_BT_2020_2_non_constant_luminance);
++#endif
+   }
+   else {
++#if !SVT_AV1_CHECK_VERSION(3, 0, 0)
+     svt_config.color_description_present_flag = false;
++#endif
+   }
+ 
+ 
+   svt_config.source_width = encoded_width;
+   svt_config.source_height = encoded_height;
++#if SVT_AV1_CHECK_VERSION(3, 0, 0)
++  svt_config.level_of_parallelism = encoder->threads;
++#else
+   svt_config.logical_processors = encoder->threads;
++#endif
+ 
+   // disable 2-pass
+   svt_config.rc_stats_buffer = SvtAv1FixedBuf {nullptr, 0};

@@ -25,12 +25,12 @@ introduced where needed.
     building
     build-macos
     codebase-map
-    architecture
     design-techniques
     engine
     gui
     rendering
     openfx-host
+    ofx-host-conformance
     python-bindings
     subsystems
     contributing

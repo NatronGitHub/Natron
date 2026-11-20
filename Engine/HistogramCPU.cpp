@@ -179,6 +179,11 @@ HistogramCPU::quitAnyComputation()
         while (_imp->mustQuit) {
             _imp->mustQuitCond.wait(l.mutex());
         }
+        l.unlock();
+        // run() has reset mustQuit but may not have returned yet: wait until the thread is
+        // finished, so that the QThread can be destroyed (else Qt aborts with "QThread:
+        // Destroyed while thread is still running").
+        wait();
     }
 }
 

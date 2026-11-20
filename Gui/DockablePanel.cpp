@@ -324,7 +324,17 @@ DockablePanel::DockablePanel(Gui* gui,
             }
 
 
-            if ( node && node->hasOverlay() ) {
+            // The overlay of a Read/Write node is the one of its embedded reader/writer, which
+            // changes with the file type: always create the button, shown only when there is an
+            // overlay (see onKnobsRecreated()).
+            bool isIONode = false;
+#ifdef NATRON_ENABLE_IO_META_NODES
+            if (node) {
+                EffectInstancePtr effect = node->getEffectInstance();
+                isIONode = dynamic_cast<ReadNode*>( effect.get() ) || dynamic_cast<WriteNode*>( effect.get() );
+            }
+#endif
+            if ( node && ( isIONode || node->hasOverlay() ) ) {
                 QPixmap pixOverlay;
                 appPTR->getIcon(NATRON_PIXMAP_OVERLAY, iconSize, &pixOverlay);
                 _imp->_overlayColor.setRgbF(1., 1., 1.);
@@ -336,6 +346,9 @@ DockablePanel::DockablePanel(Gui* gui,
                                                                                     "the overlay."), NATRON_NAMESPACE::WhiteSpaceNormal) );
                 _imp->_overlayButton->setFocusPolicy(Qt::NoFocus);
                 QObject::connect( _imp->_overlayButton, SIGNAL(clicked()), this, SLOT(onOverlayButtonClicked()) );
+                if (isIONode) {
+                    _imp->_overlayButton->setVisible( node->hasOverlay() );
+                }
             }
         }
         QPixmap pixUndo;
@@ -385,7 +398,9 @@ DockablePanel::DockablePanel(Gui* gui,
                 QObject::connect( node.get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onNodeScriptChanged(QString)) );
             }
             _imp->_nameLineEdit->setText(initialName);
-            QObject::connect( _imp->_nameLineEdit, SIGNAL(returnPressed()), this, SLOT(onLineEditNameEditingFinished()) );
+            // editingFinished is emitted on Return and when the line edit loses focus: the user expects both
+            // to rename the node (#664). onLineEditNameEditingFinished() ignores it if the text wasn't edited.
+            QObject::connect( _imp->_nameLineEdit, SIGNAL(editingFinished()), this, SLOT(onLineEditNameEditingFinished()) );
             _imp->_headerLayout->addWidget(_imp->_nameLineEdit);
         } else {
             _imp->_nameLabel = new Label(initialName, _imp->_headerWidget);
@@ -580,6 +595,15 @@ DockablePanel::onKnobsRecreated()
             gui->removeNodeGuiFromDopeSheetEditor(node);
             gui->addNodeGuiToDopeSheetEditor(node);
         }
+        // A Read/Write node gets the overlay of its new reader/writer (see initializeKnobsInternal())
+        NodeGuiPtr nodeUi = isNodePanel->getNode();
+        NodePtr internalNode = nodeUi ? nodeUi->getNode() : NodePtr();
+#ifdef NATRON_ENABLE_IO_META_NODES
+        EffectInstancePtr effect = internalNode ? internalNode->getEffectInstance() : EffectInstancePtr();
+        if ( _imp->_overlayButton && ( dynamic_cast<ReadNode*>( effect.get() ) || dynamic_cast<WriteNode*>( effect.get() ) ) ) {
+            _imp->_overlayButton->setVisible( internalNode->hasOverlay() );
+        }
+#endif
     }
 }
 
@@ -747,6 +771,14 @@ DockablePanel::onLineEditNameEditingFinished()
         return;
     }
 
+    // editingFinished is also emitted when the line edit loses focus, e.g. to the error dialogs below
+    // (QTBUG-40, #592): only handle text that the user edited since it was last handled. setText() also
+    // resets the modified flag, e.g. when the node is renamed elsewhere.
+    if ( !_imp->_nameLineEdit->isModified() ) {
+        return;
+    }
+    _imp->_nameLineEdit->setModified(false);
+
     NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(this);
     NodeGuiPtr node;
     QString newName = _imp->_nameLineEdit->text();
@@ -773,6 +805,12 @@ DockablePanel::onLineEditNameEditingFinished()
 
     if (node) {
         pushUndoCommand( new RenameNodeUndoRedoCommand(node, oldName, newName) );
+        // If the node could not be renamed (NodeGui::setName() showed an error), show its actual name
+        // again rather than a name it doesn't have.
+        QString label = QString::fromUtf8( node->getNode()->getLabel().c_str() );
+        if (label != newName) {
+            _imp->_nameLineEdit->setText(label);
+        }
     }
 }
 
@@ -1009,6 +1047,27 @@ DockablePanel::setClosed(bool c)
 
     setClosedInternal(c);
 } // setClosed
+
+void
+DockablePanel::closeBeforeDeletion()
+{
+    if (_imp->_floating && _imp->_gui) {
+        // Do not dock the panel back, as setClosedInternal() does with floatPanel(): that would insert it
+        // into the properties bin and the opened panels, which may close another docked panel when the
+        // maximum number of opened panels is reached. Take it out of its floating window and delete
+        // that window, so that setClosed() below handles it as a docked panel.
+        _imp->_floating = false;
+        FloatingWidget* floatingWidget = _imp->_floatingWidget;
+        _imp->_floatingWidget = 0;
+        if (floatingWidget) {
+            _imp->_gui->unregisterFloatingWindow(floatingWidget);
+            floatingWidget->removeEmbeddedWidget();
+            floatingWidget->deleteLater();
+        }
+    }
+    // Remove it from the opened panels, turn off its color pickers and hide its keyframes from the timeline
+    setClosed(true);
+}
 
 void
 DockablePanel::setClosedInternal(bool c)

@@ -620,11 +620,11 @@ PrecompNodePrivate::refreshOutputNode()
     }
 
     ///Notify outputs that the node has changed
-    std::map<NodePtr, int> outputs;
+    std::list<std::pair<NodePtr, int> > outputs;
     NodePtr thisNode = _publicInterface->getNode();
     thisNode->getOutputsConnectedToThisNode(&outputs);
 
-    for (std::map<NodePtr, int>::iterator it = outputs.begin(); it != outputs.end(); ++it) {
+    for (std::list<std::pair<NodePtr, int> >::iterator it = outputs.begin(); it != outputs.end(); ++it) {
         it->first->onInputChanged(it->second);
     }
 }

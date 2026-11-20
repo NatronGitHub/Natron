@@ -435,6 +435,9 @@ public:
     std::list<TrackMarkerPtr> selectedMarkers, markersToSlave, markersToUnslave;
     int beginSelectionCounter;
     int selectionRecursion;
+    // True while TrackerContext::load() replaces the tracks: the Python
+    // attributes are then removed and declared without printing them.
+    bool isLoading;
     TrackScheduler scheduler;
     struct TransformData
     {

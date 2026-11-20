@@ -366,6 +366,9 @@ static void
 incrementPluginWeight(const QString& pluginID,
                       int majVersion)
 {
+    if ( appPTR->isTestMode() ) {
+        return; // a test does not change the user's Tab completion ranking
+    }
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
     QString propName( pluginID + QString::number(majVersion) + QString::fromUtf8("_tab_weight") );
     int curValue = settings.value( propName, QVariant(0) ).toInt();
@@ -390,7 +393,6 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
     CompleterLineEdit::PluginsNamesMap pluginsMap;
     QString initialFilterName;
     std::string stdInitialFilter = initialFilter.toStdString();
-    int i = 0;
     for (PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
         if ( it->second.empty() ) {
             continue;
@@ -417,7 +419,6 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
             if (it->first == stdInitialFilter) {
                 initialFilterName = idNamePair.first;
             }
-            ++i;
         } else {
             QString bestMajorName;
             for (PluginVersionsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
@@ -437,8 +438,6 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
                 if (indexOfBracket != -1) {
                     idNamePair.first = idNamePair.second.left(indexOfBracket);
                 }
-
-                ++i;
 
                 int weight = getPluginWeight( (*it2)->getPluginID(), (*it2)->getMajorVersion() );
                 pluginsMap.insert( std::make_pair(weight, idNamePair) );

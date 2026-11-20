@@ -76,6 +76,12 @@ Gui::errorDialog(const std::string & title,
         }
     }
 
+    if ( appPTR->isDialogsDisabled() ) {
+        Dialogs::printDismissedDialog(title, text);
+
+        return;
+    }
+
 
     StandardButtons buttons(eStandardButtonYes | eStandardButtonNo);
 
@@ -112,6 +118,13 @@ Gui::errorDialog(const std::string & title,
         if (_imp->_aboutToClose) {
             return;
         }
+    }
+
+    if ( appPTR->isDialogsDisabled() ) {
+        Dialogs::printDismissedDialog(title, text);
+        *stopAsking = false;
+
+        return;
     }
 
     StandardButtons buttons(eStandardButtonOk);
@@ -152,6 +165,12 @@ Gui::warningDialog(const std::string & title,
         }
     }
 
+    if ( appPTR->isDialogsDisabled() ) {
+        Dialogs::printDismissedDialog(title, text);
+
+        return;
+    }
+
     StandardButtons buttons(eStandardButtonYes | eStandardButtonNo);
 
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
@@ -187,6 +206,13 @@ Gui::warningDialog(const std::string & title,
         if (_imp->_aboutToClose) {
             return;
         }
+    }
+
+    if ( appPTR->isDialogsDisabled() ) {
+        Dialogs::printDismissedDialog(title, text);
+        *stopAsking = false;
+
+        return;
     }
 
     StandardButtons buttons(eStandardButtonOk);
@@ -227,6 +253,12 @@ Gui::informationDialog(const std::string & title,
         }
     }
 
+    if ( appPTR->isDialogsDisabled() ) {
+        Dialogs::printDismissedDialog(title, text);
+
+        return;
+    }
+
     StandardButtons buttons(eStandardButtonYes | eStandardButtonNo);
 
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
@@ -263,6 +295,13 @@ Gui::informationDialog(const std::string & title,
         if (_imp->_aboutToClose) {
             return;
         }
+    }
+
+    if ( appPTR->isDialogsDisabled() ) {
+        Dialogs::printDismissedDialog(title, message);
+        *stopAsking = false;
+
+        return;
     }
 
     StandardButtons buttons(eStandardButtonOk);
@@ -329,6 +368,27 @@ Gui::onDoDialog(int type,
                 StandardButtons buttons,
                 int defaultB)
 {
+    // A dialog shown during a busy operation (e.g. a save error under the wait cursor) gets the normal cursor
+    class DialogCursor
+    {
+        bool _set;
+
+    public:
+        DialogCursor()
+            : _set(QApplication::overrideCursor() != 0)
+        {
+            if (_set) {
+                QApplication::setOverrideCursor(Qt::ArrowCursor);
+            }
+        }
+
+        ~DialogCursor()
+        {
+            if (_set) {
+                QApplication::restoreOverrideCursor();
+            }
+        }
+    } dialogCursor;
     QWidget* currentActiveWindow = qApp->activeWindow();
     QDialog* isActiveWindowADialog = 0;
 
@@ -382,7 +442,7 @@ Gui::onDoDialog(int type,
         --_imp->_uiUsingMainThread;
         _imp->_uiUsingMainThreadCond.wakeAll();
     }
-    if (currentActiveWindow && !isActiveWindowADialog) {
+    if (currentActiveWindow && !isActiveWindowADialog && !GuiApplicationManager::isGuiTestNoFocus()) {
         currentActiveWindow->activateWindow();
     }
 } // Gui::onDoDialog
@@ -400,6 +460,12 @@ Gui::questionDialog(const std::string & title,
         if (_imp->_aboutToClose) {
             return eStandardButtonNo;
         }
+    }
+
+    if ( appPTR->isDialogsDisabled() ) {
+        Dialogs::printDismissedDialog(title, message);
+
+        return Dialogs::getDismissedDialogAnswer(buttons, defaultButton);
     }
 
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
@@ -440,6 +506,13 @@ Gui::questionDialog(const std::string & title,
         if (_imp->_aboutToClose) {
             return eStandardButtonNo;
         }
+    }
+
+    if ( appPTR->isDialogsDisabled() ) {
+        Dialogs::printDismissedDialog(title, message);
+        *stopAsking = false;
+
+        return Dialogs::getDismissedDialogAnswer(buttons, defaultButton);
     }
 
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
@@ -641,8 +714,10 @@ Gui::showSettings()
         _imp->_settingsGui->createGui();
     }
     _imp->_settingsGui->show();
-    _imp->_settingsGui->raise();
-    _imp->_settingsGui->activateWindow();
+    if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+        _imp->_settingsGui->raise();
+        _imp->_settingsGui->activateWindow();
+    }
 }
 
 void
@@ -664,15 +739,16 @@ Gui::removeUndoStack(QUndoStack* stack)
     if ( it == _imp->_undoStacksActions.end() ) {
         return;
     }
-    if (_imp->_currentUndoAction == it->second.first) {
-        _imp->menuEdit->removeAction(_imp->_currentUndoAction);
+    // This is called before the stack is deleted (with its NodeGui or its group's NodeGraph). Its
+    // undo/redo actions are children of the stack and will be deleted with it: they must not stay
+    // the current actions of the Edit menu, which setUndoRedoActions() removes from the menu the
+    // next time another stack becomes active (#1441).
+    if ( (_imp->_currentUndoAction == it->second.first) || (_imp->_currentRedoAction == it->second.second) ) {
+        _imp->setUndoRedoActions(0, 0);
     }
-    if (_imp->_currentRedoAction == it->second.second) {
-        _imp->menuEdit->removeAction(_imp->_currentRedoAction);
-    }
-    if ( it != _imp->_undoStacksActions.end() ) {
-        _imp->_undoStacksActions.erase(it);
-    }
+    _imp->_undoStacksActions.erase(it);
+    // Do not leave the stack in the group, where it may still be the active stack.
+    _imp->_undoStacksGroup->removeStack(stack);
 }
 
 void

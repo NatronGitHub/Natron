@@ -7,13 +7,20 @@ BUILD_SCRIPT_DIR=$(realpath $(dirname "${BASH_SOURCE[0]}"))
 # needs (a pinned version, Natron patches, or a licence variant). Everything
 # else comes from MSYS2 itself (see the natron-build-deps-* meta-packages).
 # Built for the environment of the calling shell (UCRT64).
+# mingw-w64-freetype replaces MSYS2's freetype (NATRON_REPO_OVERRIDES in
+# natron_repo_common.sh), and is built first so that the packages that follow
+# are built and checked with it.
 PKGS="
+mingw-w64-freetype
 mingw-w64-natron-setup
 mingw-w64-libraw-gpl2
 mingw-w64-libraw-lgpl
 mingw-w64-openimageio
 mingw-w64-seexpr-git
 mingw-w64-ffmpeg-gpl2
+mingw-w64-ffmpeg-lgpl
+mingw-w64-libheif-lgpl
+mingw-w64-libtiff-lgpl
 mingw-w64-imagemagick
 mingw-w64-osmesa
 mingw-w64-natron-build-deps-common
@@ -51,8 +58,10 @@ for pkg_dir in ${PKGS}; do
 
   PACKAGE_NAME=`makepkg --printsrcinfo | awk '/pkgname/{print $3}'`
 
-  # Check to see if the package is already available
-  if [[ -z $(pacman -Ssq ${PACKAGE_NAME}) ]]; then
+  # Check to see if the package is already in the natron repository. Only look
+  # there: a package that replaces an MSYS2 package (mingw-w64-freetype) has
+  # the same name as one in the MSYS2 repositories.
+  if ! pacman -Sl natron 2>/dev/null | awk '{print $2}' | grep -qxF "${PACKAGE_NAME}"; then
     echo "Building ${PACKAGE_NAME} ..."
 
     # Print available disk space to facilitate GitHub action debugging.
@@ -82,6 +91,16 @@ for pkg_dir in ${PKGS}; do
   else
     echo "Skipping. ${PACKAGE_NAME} already in repository."
   fi
+
+  # Install a package that replaces MSYS2's (NATRON_REPO_OVERRIDES) as soon as
+  # it is in the repository, whether just built or restored from the cache,
+  # without --overwrite: this also checks that it installs cleanly over MSYS2's.
+  for name in ${NATRON_REPO_OVERRIDES}; do
+    if [[ ${PACKAGE_NAME} == "${MINGW_PACKAGE_PREFIX}-${name}" ]]; then
+      natron_repo_install_overrides
+      break
+    fi
+  done
 
   echo -e "Leaving package directory ${pkg_dir}."
   cd "${BUILD_SCRIPT_DIR}"

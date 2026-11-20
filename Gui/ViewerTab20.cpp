@@ -44,12 +44,14 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
+#include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/WriteNode.h"
 
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h" // isKeybind
@@ -518,7 +520,21 @@ ViewerTab::getOverlayCursorFor(const NodePtr& node,
     if ( name.contains( QLatin1Char('/') ) || name.contains( QLatin1Char('\\') ) ) {
         return false;
     }
-    QString resourcesPath = QString::fromUtf8( node->getPluginResourcesPath().c_str() );
+    NodePtr resourcesNode = node;
+#ifdef NATRON_ENABLE_IO_META_NODES
+    // The overlay of a Read/Write node is the one of its embedded reader/writer plug-in
+    // (see ReadNode::getOverlayCursor): the image is in the resources of that plug-in.
+    NodePtr embeddedNode;
+    if ( ReadNode* isRead = dynamic_cast<ReadNode*>( effect.get() ) ) {
+        embeddedNode = isRead->getEmbeddedReader();
+    } else if ( WriteNode* isWrite = dynamic_cast<WriteNode*>( effect.get() ) ) {
+        embeddedNode = isWrite->getEmbeddedWriter();
+    }
+    if (embeddedNode) {
+        resourcesNode = embeddedNode;
+    }
+#endif
+    QString resourcesPath = QString::fromUtf8( resourcesNode->getPluginResourcesPath().c_str() );
     if ( !resourcesPath.isEmpty() && !resourcesPath.endsWith( QLatin1Char('/') ) ) {
         resourcesPath += QLatin1Char('/');
     }
@@ -758,6 +774,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
                                           const RenderScale & renderScale,
                                           Key k,
                                           KeyboardModifiers km,
+                                          const QString& keyText,
                                           Qt::Key qKey,
                                           const Qt::KeyboardModifiers& mods)
 {
@@ -793,7 +810,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
         bool didSmthing = checkNodeViewerContextShortcuts(node, qKey, mods);
 
         if (!didSmthing) {
-            didSmthing = effect->onOverlayKeyDown_public(time, renderScale, view, k, km);
+            didSmthing = effect->onOverlayKeyDown_public(time, renderScale, view, k, km, keyText);
             _imp->recordOverlayEvent(node, didSmthing);
         }
         if (didSmthing) {
@@ -835,7 +852,7 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
     _imp->beginOverlayEvent();
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( notifyOverlaysKeyDown_internal(*it, renderScale, natronKey, natronMod, qKey, qMods) ) {
+        if ( notifyOverlaysKeyDown_internal(*it, renderScale, natronKey, natronMod, e->text(), qKey, qMods) ) {
             if (isModifier) {
                 continue;
             }
@@ -902,7 +919,8 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
         if (!isInActiveViewerUI) {
             effect->setCurrentViewportForOverlays_public(_imp->viewer);
             bool caught = effect->onOverlayKeyUp_public( time, renderScale, view,
-                                                         QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), QtEnumConvert::fromQtModifiers( e->modifiers() ) );
+                                                         QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), QtEnumConvert::fromQtModifiers( e->modifiers() ),
+                                                         e->text() );
             _imp->recordOverlayEvent(*it, caught);
             didSomething |= caught;
         }
@@ -934,6 +952,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
                                             const RenderScale & renderScale,
                                             Key k,
                                             KeyboardModifiers km,
+                                            const QString& keyText,
                                             Qt::Key qKey,
                                             const Qt::KeyboardModifiers& mods)
 {
@@ -969,7 +988,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
         bool didSmthing = checkNodeViewerContextShortcuts(node, qKey, mods);
 
         if (!didSmthing) {
-            didSmthing = effect->onOverlayKeyRepeat_public(time, renderScale, view, k, km);
+            didSmthing = effect->onOverlayKeyRepeat_public(time, renderScale, view, k, km, keyText);
             _imp->recordOverlayEvent(node, didSmthing);
         }
         if (didSmthing) {
@@ -1000,7 +1019,7 @@ ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
     NodesList nodes;
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( notifyOverlaysKeyRepeat_internal(*it, renderScale, natronKey, natronMod, qKey, qMods) ) {
+        if ( notifyOverlaysKeyRepeat_internal(*it, renderScale, natronKey, natronMod, e->text(), qKey, qMods) ) {
             return true;
         }
     }

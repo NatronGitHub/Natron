@@ -16,7 +16,7 @@ import sys, os
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_ext'))
 
 # -- General configuration -----------------------------------------------------
 
@@ -25,7 +25,39 @@ import sys, os
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = []
+# The installers build the documentation with only sphinx and sphinx-rtd-theme
+# (tools/jenkins/gen-natron-doc.sh): every extension below works without the
+# optional packages of requirements.txt, and says so in the log.
+extensions = [
+    # mermaid diagrams: sphinxcontrib.mermaid if installed, else the source
+    'natron_mermaid',
+    # the OpenFX documentation (see below)
+    'natron_openfx',
+]
+
+# -- Mermaid diagrams (see _ext/natron_mermaid.py and the Maintainers Guide,
+# "Contributing" > "Diagrams") ---------------------------------------------------
+# HTML: drawn in the browser by the mermaid.js of Documentation/node_modules
+# (npm ci), copied to _static/mermaid/. PDF and ePub: drawn by mermaid-cli if
+# it works. Otherwise each diagram is shown as source.
+mermaid_params = [
+    '--puppeteerConfigFile', os.path.join(os.path.dirname(os.path.abspath(__file__)), '_ext', 'puppeteer-config.json'),
+    '--backgroundColor', 'white',
+    '--pdfFit',
+    '--scale', '2',
+]
+
+# -- OpenFX documentation (Developers Guide > OpenFX plug-ins) ------------------
+# Copied from the libs/OpenFX submodule into devel/openfx/ (not tracked by git),
+# with its Doxygen XML for breathe. See _ext/natron_openfx.py.
+import natron_openfx
+_openfx = natron_openfx.prepare(os.path.dirname(os.path.abspath(__file__)))
+breathe_projects = _openfx['breathe_projects']
+if breathe_projects:  # only when the OpenFX pages are included
+    extensions.append('breathe')
+breathe_default_project = 'ofx_reference'
+breathe_default_members = ('members', 'protected-members', 'private-members', 'undoc-members')
+rst_epilog = _openfx['rst_epilog']
 
 # Add any paths that contain templates here, relative to this directory.
 #templates_path = ['_templates']
@@ -76,7 +108,7 @@ version = '.'.join(release.split('.')[0:2])
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = []
+exclude_patterns = [] + _openfx.get('exclude_patterns', [])
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -204,6 +236,19 @@ htmlhelp_basename = 'Natrondoc'
 mypreamble=r'''\providecommand{\code}[1]{}
 \renewcommand{\code}[1]{\texttt{\footnotesize{}#1}}
 \setcounter{tocdepth}{2}
+% pdflatex (inputenc utf8) stops on Unicode characters that no loaded font
+% encoding provides. Sphinx maps a few of them (e.g. U+2192, U+2713) in running
+% text, but not these, and none in code blocks. Declare the ones the sources
+% use: math symbols and arrows, the modifier-letter apostrophe, and the
+% Vietnamese horned letters (approximated, as T5 fonts are not loaded).
+\DeclareUnicodeCharacter{2264}{\ensuremath{\leq}}
+\DeclareUnicodeCharacter{2265}{\ensuremath{\geq}}
+\DeclareUnicodeCharacter{2260}{\ensuremath{\neq}}
+\DeclareUnicodeCharacter{2229}{\ensuremath{\cap}}
+\DeclareUnicodeCharacter{2194}{\ensuremath{\leftrightarrow}}
+\DeclareUnicodeCharacter{02BC}{\textquoteright}
+\DeclareUnicodeCharacter{01A1}{o\kern-.1em\textquoteright}
+\DeclareUnicodeCharacter{01B0}{u\kern-.1em\textquoteright}
 '''
 latex_elements = {
 # The paper size ('letterpaper' or 'a4paper').

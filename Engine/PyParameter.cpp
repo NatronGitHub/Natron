@@ -616,6 +616,32 @@ AnimatedParam::setExpression(const QString& expr,
     }
     try {
         thisKnob->setExpression(dimension, expr.toStdString(), hasRetVariable, true);
+    } catch (const std::exception& e) {
+        // Keep returning False (no exception, for the scripts that test the result), but say why,
+        // else the failure is easy to miss (#1250)
+        KnobHolder* holder = thisKnob->getHolder();
+        AppInstancePtr app = holder ? holder->getApp() : AppInstancePtr();
+        if (app) {
+            std::string name = thisKnob->getName();
+            EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+            if ( effect && effect->getNode() ) {
+                name = effect->getNode()->getFullyQualifiedName() + '.' + name;
+            }
+            // In GUI sessions, the error starts with the whole generated script (with two lines per
+            // node of the group): only keep the Python error
+            std::string error = e.what();
+            const std::string pythonError("Python error:\n");
+            std::size_t found = error.find(pythonError);
+            if (found != std::string::npos) {
+                error = error.substr( found + pythonError.size() );
+            }
+            app->appendToScriptEditor( QString::fromUtf8("setExpression(): invalid expression on %1 (dimension %2): %3")
+                                       .arg( QString::fromUtf8( name.c_str() ) )
+                                       .arg(dimension)
+                                       .arg( QString::fromUtf8( error.c_str() ) ).toStdString() );
+        }
+
+        return false;
     } catch (...) {
         return false;
     }
@@ -2366,6 +2392,68 @@ SeparatorParam::SeparatorParam(const KnobSeparatorPtr& knob)
 
 SeparatorParam::~SeparatorParam()
 {
+}
+
+///////////////////BytesParam
+
+BytesParam::BytesParam(const KnobBytesPtr& knob)
+    : Param(knob)
+    , _bytesKnob(knob)
+{
+}
+
+BytesParam::~BytesParam()
+{
+}
+
+std::string
+BytesParam::getValue() const
+{
+    KnobBytesPtr knob = _bytesKnob.lock();
+    if (!knob) {
+        return std::string();
+    }
+
+    return knob->getValue(0);
+}
+
+void
+BytesParam::setValue(const std::string& value)
+{
+    KnobBytesPtr knob = _bytesKnob.lock();
+    if ( !knob || ( value.size() > KnobBytes::maxLength() ) ) {
+        return;
+    }
+
+    knob->setValue(value, ViewSpec::current(), 0);
+}
+
+std::string
+BytesParam::getDefaultValue() const
+{
+    KnobBytesPtr knob = _bytesKnob.lock();
+    if (!knob) {
+        return std::string();
+    }
+
+    return knob->getDefaultValue(0);
+}
+
+void
+BytesParam::restoreDefaultValue()
+{
+    KnobBytesPtr knob = _bytesKnob.lock();
+    if (!knob) {
+        return;
+    }
+
+    knob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
+}
+
+std::size_t
+BytesParam::getMaxLength() const
+{
+    return KnobBytes::maxLength();
 }
 
 ///////////////////GroupParam

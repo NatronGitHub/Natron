@@ -161,11 +161,13 @@ struct ViewerGL::Implementation
     std::unique_ptr<QOpenGLShaderProgram> shaderRGB; /*!< The shader program used to render RGB data*/
     std::unique_ptr<QOpenGLShaderProgram> shaderBlack; /*!< The shader program used when the viewer is disconnected.*/
     bool shaderLoaded; /*!< Flag to check whether the shaders have already been loaded.*/
+    bool glResourcesReleased; /*!< The OpenGL context was destroyed: the next initializeGL() must render the images again.*/
     InfoViewerWidget* infoViewer[2]; /*!< Pointer to the info bar below the viewer holding pixel/mouse/format related info*/
     ViewerTab* const viewerTab; /*!< Pointer to the viewer tab GUI*/
     bool zoomOrPannedSinceLastFit; //< true if the user zoomed or panned the image since the last call to fitToRoD
     QPoint oldClick;
     ViewerColorSpaceEnum displayingImageLut;
+    float ditherAmplitude; //< one quantisation step of the framebuffer, see updateDitherAmplitude()
     MouseStateEnum ms; /*!< Holds the mouse state*/
     HoverStateEnum hs;
     const QColor textRenderingColor;
@@ -259,6 +261,8 @@ public:
      *@brief Starts using the RGB shader to display the frame
      **/
     void activateShaderRGB(int texIndex);
+
+    void updateDitherAmplitude();
 
     enum WipePolygonEnum
     {

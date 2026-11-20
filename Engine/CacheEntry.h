@@ -119,6 +119,8 @@ public:
         }
         data = (T*)malloc( size * sizeof(T) );
         if (!data) {
+            // no data: size() must be 0 (PluginMemory::getPtr() asserts it, freeMem() would unregister it)
+            count = 0;
             throw std::bad_alloc();
         }
     }
@@ -154,6 +156,7 @@ public:
     TileCacheFile()
         : file()
         , usedTiles()
+        , reservedTiles()
         , tileByteSize(0)
     {
     }
@@ -165,6 +168,8 @@ public:
 
     MemoryFilePtr file;
     std::vector<bool> usedTiles;
+    // Tiles whose disk space was allocated (see MemoryFile::reserve()), so that it is done only once per tile
+    std::vector<bool> reservedTiles;
     std::size_t tileByteSize;
 };
 
@@ -442,10 +447,22 @@ public:
         _path = path;
         try {
             _backingFile.reset( new MemoryFile(_path, MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate) );
-        } catch (const std::runtime_error & r) {
+            if ( !path.empty() && (count != 0) ) {
+                //if the backing file has already the good size and we just wanted to re-open the mapping
+                _backingFile->resize(count);
+                // Allocate the disk space now: if the disk is full, writing to the mapping would crash (#192)
+                _backingFile->reserve(0, count);
+            }
+        } catch (const std::exception & r) {
             qDebug() << r.what();
-            // if opening the file mapping failed, just call allocate again, but this time on RAM!
-            _backingFile.reset();
+            // if creating the file mapping failed (e.g. the disk is full), just call allocate again, but this time on RAM!
+            if (_backingFile) {
+                try {
+                    _backingFile->remove();
+                } catch (...) {
+                }
+                _backingFile.reset();
+            }
             _path.clear();
             allocateRAM(count);
 
@@ -453,11 +470,6 @@ public:
         }
 
         assert(_backingFile);
-
-        if ( !path.empty() && (count != 0) ) {
-            //if the backing file has already the good size and we just wanted to re-open the mapping
-            _backingFile->resize(count);
-        }
     }
 
     void allocateGLTexture(const RectI& rectangle,
@@ -796,6 +808,7 @@ public:
         , _cache()
         , _entryLock(QReadWriteLock::Recursive)
         , _removeBackingFileBeforeDestruction(false)
+        , _backingFileRemoved(false)
     {
     }
 
@@ -814,6 +827,7 @@ public:
         , _cache(cache)
         , _entryLock(QReadWriteLock::Recursive)
         , _removeBackingFileBeforeDestruction(false)
+        , _backingFileRemoved(false)
     {
     }
 
@@ -859,6 +873,7 @@ public:
         }
 
 
+        StorageModeEnum storage;
         {
             {
                 QReadLocker k(&_entryLock);
@@ -872,10 +887,12 @@ public:
             }
             allocate();
             onMemoryAllocated(false);
+            // May differ from storageInfo.mode: if the file could not be created, the data is in RAM
+            storage = _data.getStorageMode();
         }
 
         if (_cache) {
-            _cache->notifyEntryAllocated( getTime(), size(), storageInfo.mode );
+            _cache->notifyEntryAllocated( getTime(), sizeForCacheAccounting(storage), storage );
         }
     }
 
@@ -977,7 +994,7 @@ public:
             _data.reOpenFileMapping();
         }
         if (_cache) {
-            _cache->notifyEntryStorageChanged( eStorageModeDisk, eStorageModeRAM, getTime(), size() );
+            _cache->notifyEntryStorageChanged( eStorageModeDisk, eStorageModeRAM, getTime(), sizeForCacheAccounting(eStorageModeDisk) );
         }
     }
 
@@ -986,7 +1003,9 @@ public:
      **/
     void deallocate()
     {
-        std::size_t sz = size();
+        // The storage of the data, which may differ from the storage in the params (see allocateMemory())
+        const StorageModeEnum storage = _data.getStorageMode();
+        const std::size_t sz = sizeForCacheAccounting(storage);
         bool dataAllocated;
         double time = getTime();
         {
@@ -995,24 +1014,15 @@ public:
             _data.deallocate();
         }
 
-        if (_cache) {
-            const CacheEntryStorageInfo& info = _params->getStorageInfo();
-            if (info.mode == eStorageModeDisk) {
-                if (dataAllocated) {
-                    if (_cache->isTileCache()) {
-                         _cache->notifyEntryDestroyed(time, sz, eStorageModeDisk);
-                    } else {
-                        _cache->notifyEntryStorageChanged( eStorageModeRAM, eStorageModeDisk, time, sz );
-                    }
+        if (_cache && dataAllocated) {
+            if (storage == eStorageModeDisk) {
+                if (_cache->isTileCache()) {
+                    _cache->notifyEntryDestroyed(time, sz, eStorageModeDisk);
+                } else {
+                    _cache->notifyEntryStorageChanged( eStorageModeRAM, eStorageModeDisk, time, sz );
                 }
-            } else if (info.mode == eStorageModeRAM) {
-                if (dataAllocated) {
-                    _cache->notifyEntryDestroyed(time, sz, eStorageModeRAM);
-                }
-            } else if (info.mode == eStorageModeGLTex) {
-                if (dataAllocated) {
-                    _cache->notifyEntryDestroyed(time, sz, eStorageModeGLTex);
-                }
+            } else if ( (storage == eStorageModeRAM) || (storage == eStorageModeGLTex) ) {
+                _cache->notifyEntryDestroyed(time, sz, storage);
             }
         }
     }
@@ -1073,7 +1083,9 @@ public:
      **/
     void removeAnyBackingFile() const
     {
-        if ( !isStoredOnDisk() || _cache->isTileCache()) {
+        // Only for an entry stored in a file: its size was added to the cache sizes. Entries that fell back on RAM
+        // (the file could not be created) have no path.
+        if ( !isStoredOnDisk() || _cache->isTileCache() || getFilePath().empty() ) {
             return;
         }
 
@@ -1081,6 +1093,12 @@ public:
         bool hasRemovedFile;
         {
             QWriteLocker k(&_entryLock);
+            // The cache calls this when it evicts the entry, and the destructor calls it again if the entry was
+            // scheduled for destruction: only remove the file and subtract its size once (#1128).
+            if (_backingFileRemoved) {
+                return;
+            }
+            _backingFileRemoved = true;
             isAlloc = _data.isAllocated();
             hasRemovedFile = _data.removeAnyBackingFile();
         }
@@ -1088,12 +1106,8 @@ public:
         if (hasRemovedFile) {
             _cache->backingFileClosed();
         }
-        if (isAlloc) {
-            _cache->notifyEntryDestroyed(getTime(), getElementsCountFromParams(), eStorageModeRAM);
-        } else {
-            ///size() will return 0 at this point, we have to recompute it
-            _cache->notifyEntryDestroyed(getTime(), getElementsCountFromParams(), eStorageModeDisk);
-        }
+        ///size() will return 0 at this point if the file is not mapped, use the size of the file
+        _cache->notifyEntryDestroyed(getTime(), sizeForCacheAccounting(eStorageModeDisk), isAlloc ? eStorageModeRAM : eStorageModeDisk);
     }
 
     /**
@@ -1173,6 +1187,21 @@ protected:
     }
 
 private:
+
+    /**
+     * @brief The size of the entry as counted by the cache in its memory and disk sizes, for data stored in the given storage.
+     * For a file of a non-tiled cache, this is the size of the file, computed from the params because the file is
+     * not mapped (and size() is 0) while the entry is in the disk portion of the cache: the same amount is then
+     * added and subtracted whatever the state of the entry (#1128).
+     **/
+    std::size_t sizeForCacheAccounting(StorageModeEnum storage) const
+    {
+        if ( (storage == eStorageModeDisk) && _cache && !_cache->isTileCache() ) {
+            return getSizeInBytesFromParams();
+        }
+
+        return size();
+    }
 
     virtual TileCacheFilePtr allocTile(std::size_t *dataOffset) OVERRIDE FINAL
     {
@@ -1278,6 +1307,7 @@ protected:
     const CacheAPI* _cache;
     mutable QReadWriteLock _entryLock;
     bool _removeBackingFileBeforeDestruction;
+    mutable bool _backingFileRemoved; // protected by _entryLock
 };
 
 NATRON_NAMESPACE_EXIT

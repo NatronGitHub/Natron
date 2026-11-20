@@ -28,12 +28,20 @@
 #include <locale>
 #include <limits>
 #include <cassert>
+#include <map>
+#include <set>
+#include <atomic>
+#include <iostream>
 #include <stdexcept>
 
 #include <QDebug>
 #include <QByteArray>
+#include <QDateTime>
+#include <QMutex>
 #include <QReadWriteLock>
 #include <QPointF>
+#include <QThread>
+#include <QTimer>
 
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
 // clang-format off
@@ -63,6 +71,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/NodeSerialization.h"
 #include "Engine/NodeMetadata.h"
 #include "Engine/OfxClipInstance.h"
+#include "Engine/OfxHost.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/OfxParamInstance.h"
@@ -86,6 +95,13 @@ using std::cout; using std::endl; using std::string;
 
 
 namespace  {
+// kOfxImageEffectPluginPropSingleInstance: "only one instance can exist at any one time". The
+// instances of the single-instance plug-ins (Natron makes no render clones of them), see
+// OfxEffectInstance::createOfxImageEffectInstance().
+QMutex gSingleInstancesMutex;
+std::map<const OFX::Host::ImageEffect::ImageEffectPlugin*, std::set<OfxEffectInstance*> > gSingleInstances;
+int gAllowExtraSingleInstances = 0; // see OfxEffectInstance::AllowExtraSingleInstances (main thread)
+
 /**
  * @class This class is helpful to set thread-storage data on the clips of an effect
  * When destroyed, it is removed from the clips, ensuring they are removed.
@@ -224,13 +240,14 @@ struct OfxEffectInstancePrivate
     std::vector<ClipsInfo> clipsInfos;
     OfxClipInstance* outputClip;
     int nbSourceClips;
-    SequentialPreferenceEnum sequentialPref;
     mutable QMutex supportsConcurrentGLRendersMutex;
     bool supportsConcurrentGLRenders;
     bool isOutput; //if the OfxNode can output a file somehow
     bool penDown; // true when the overlay trapped a penDow action
-    bool created; // true after the call to createInstance
-    bool initialized; //true when the image effect instance has been created and populated
+    // atomic: a single-instance plug-in's instance is suspended and resumed on the main thread while
+    // other threads may read them (see OfxEffectInstance::suspendSingleInstance())
+    std::atomic<bool> created; // true after the call to createInstance
+    std::atomic<bool> initialized; //true when the image effect instance has been created and populated
 
     /*
        Some OpenFX do not handle render scale properly when it comes to overlay interacts.
@@ -242,6 +259,40 @@ struct OfxEffectInstancePrivate
     bool supportsMultipleClipDepths;
     bool doesTemporalAccess;
     bool multiplanar;
+    bool outputFormatFromPlugin; // true if the last getClipPreferences action set the output format (main thread only)
+    // the single-instance plug-in of which this is an instance, or NULL (see gSingleInstances)
+    const OFX::Host::ImageEffect::ImageEffectPlugin* singleInstancePlugin;
+    OfxEffectInstance* publicInterface; // for gSingleInstances
+    // While the node of an instance of a single-instance plug-in is deactivated (deleted, kept for
+    // undo), its plug-in instance is destroyed (see OfxEffectInstance::suspendSingleInstance()):
+    // the plug-in, or NULL if the instance is not suspended (main thread only).
+    const OFX::Host::ImageEffect::ImageEffectPlugin* suspendedSingleInstancePlugin;
+    bool singleInstanceSuspendPending; // a suspension is retried later, see suspendSingleInstance() (main thread only)
+    // true between kOfxActionBeginInstanceEdit and kOfxActionEndInstanceEdit (main thread only; always
+    // false on render clones, which get neither action)
+    bool instanceEditOpen;
+    // the kOfxPropIsInteractive of the main instance, written on the main thread and read by the render
+    // threads to update the render clones (see refreshRenderCloneState())
+    std::atomic<int> isInteractive;
+
+    // The kOfxActionBeginInstanceChanged/kOfxActionEndInstanceChanged brackets in progress on the main thread, innermost
+    // last (see InstanceChangedBracket_RAII).
+    struct InstanceChangedBracket
+    {
+        std::string reason;
+        // A group of value changes of the effect (beginKnobsValuesChanged()/endKnobsValuesChanged()): its
+        // kOfxActionInstanceChanged actions with this reason share one bracket. Otherwise, a
+        // kOfxActionInstanceChanged action in progress.
+        bool isGroup;
+        // Group: kOfxActionBeginInstanceChanged was sent. It is sent before the first kOfxActionInstanceChanged of
+        // the group, so a group without instance changes has no bracket.
+        bool begun;
+        // Group: the view and mipmap level of the clips thread storage of its kOfxActionBeginInstanceChanged, set again
+        // for its kOfxActionEndInstanceChanged
+        ViewIdx view;
+        unsigned mipmapLevel;
+    };
+    std::vector<InstanceChangedBracket> instanceChangedBrackets;
 
     OfxEffectInstancePrivate()
         : effect()
@@ -258,7 +309,6 @@ struct OfxEffectInstancePrivate
         , clipsInfos()
         , outputClip(0)
         , nbSourceClips(0)
-        , sequentialPref(eSequentialPreferenceNotSequential)
         , supportsConcurrentGLRendersMutex()
         , supportsConcurrentGLRenders(false)
         , isOutput(false)
@@ -270,7 +320,39 @@ struct OfxEffectInstancePrivate
         , supportsMultipleClipDepths(false)
         , doesTemporalAccess(false)
         , multiplanar(false)
+        , outputFormatFromPlugin(false)
+        , singleInstancePlugin(NULL)
+        , publicInterface(NULL)
+        , suspendedSingleInstancePlugin(NULL)
+        , singleInstanceSuspendPending(false)
+        , instanceEditOpen(false)
+        , isInteractive(0)
+        , instanceChangedBrackets()
     {
+    }
+
+    void registerSingleInstance(const OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                                OfxEffectInstance* instance)
+    {
+        QMutexLocker l(&gSingleInstancesMutex);
+        gSingleInstances[plugin].insert(instance);
+        singleInstancePlugin = plugin;
+        publicInterface = instance;
+    }
+
+    void releaseSingleInstance()
+    {
+        if (singleInstancePlugin) {
+            QMutexLocker l(&gSingleInstancesMutex);
+            std::map<const OFX::Host::ImageEffect::ImageEffectPlugin*, std::set<OfxEffectInstance*> >::iterator found = gSingleInstances.find(singleInstancePlugin);
+            if ( found != gSingleInstances.end() ) {
+                found->second.erase(publicInterface);
+                if ( found->second.empty() ) {
+                    gSingleInstances.erase(found);
+                }
+            }
+            singleInstancePlugin = NULL;
+        }
     }
 
     OfxEffectInstancePrivate(const OfxEffectInstancePrivate& other)
@@ -285,19 +367,88 @@ struct OfxEffectInstancePrivate
         , clipsInfos(other.clipsInfos)
         , outputClip(other.outputClip)
         , nbSourceClips(other.nbSourceClips)
-        , sequentialPref(other.sequentialPref)
         , supportsConcurrentGLRendersMutex()
         , supportsConcurrentGLRenders(other.supportsConcurrentGLRenders)
         , isOutput(other.isOutput)
         , penDown(other.penDown)
-        , created(other.created)
-        , initialized(other.initialized)
+        , created( other.created.load() )
+        , initialized( other.initialized.load() )
         , overlaysCanHandleRenderScale(other.overlaysCanHandleRenderScale)
         , supportsMultipleClipPARs(other.supportsMultipleClipPARs)
         , supportsMultipleClipDepths(other.supportsMultipleClipDepths)
         , doesTemporalAccess(other.doesTemporalAccess)
         , multiplanar(other.multiplanar)
+        , outputFormatFromPlugin(other.outputFormatFromPlugin)
+        , singleInstancePlugin(NULL) // render clones are not made for single-instance plug-ins
+        , publicInterface(NULL)
+        , suspendedSingleInstancePlugin(NULL)
+        , singleInstanceSuspendPending(false)
+        , instanceEditOpen(false)
+        , isInteractive(0)
+        , instanceChangedBrackets()
     {
+    }
+};
+
+/**
+ * @brief Brackets a kOfxActionInstanceChanged action of the effect with kOfxActionBeginInstanceChanged and
+ * kOfxActionEndInstanceChanged, with the same reason ("All change actions are bracketed by a pair of
+ * kOfxActionBeginInstanceChanged and kOfxActionEndInstanceChanged actions", ofxCore.h). Inside a group of value
+ * changes with the same reason (OfxEffectInstance::beginKnobsValuesChanged()), the actions of the group share the
+ * bracket of the group. The actions triggered by an action, e.g. the kOfxActionInstanceChanged of a parameter that the
+ * plug-in sets in kOfxActionInstanceChanged, get their own bracket, nested in the one of the action.
+ **/
+class InstanceChangedBracket_RAII
+{
+    OfxEffectInstance* _effect;
+    std::string _reason;
+    bool _onMainThread;
+    bool _sendEnd;
+
+public:
+    // view, mipmapLevel: of the clips thread storage of the action (ClipsThreadStorageSetter)
+    InstanceChangedBracket_RAII(OfxEffectInstance* effect,
+                                const std::string& reason,
+                                ViewIdx view,
+                                unsigned mipmapLevel)
+        : _effect(effect)
+        , _reason(reason)
+        , _onMainThread( QThread::currentThread() == qApp->thread() )
+        , _sendEnd(false)
+    {
+        // the brackets in progress are main-thread state: on another thread, each action has its own bracket
+        std::vector<OfxEffectInstancePrivate::InstanceChangedBracket>* brackets = _onMainThread ? &_effect->_imp->instanceChangedBrackets : NULL;
+        OfxEffectInstancePrivate::InstanceChangedBracket action = { reason, false, true, view, mipmapLevel };
+
+        if ( brackets && !brackets->empty() && brackets->back().isGroup && (brackets->back().reason == reason) ) {
+            if (!brackets->back().begun) {
+                brackets->back().begun = true;
+                brackets->back().view = view;
+                brackets->back().mipmapLevel = mipmapLevel;
+                ignore_result( _effect->effectInstance()->beginInstanceChangedAction(reason) );
+            }
+            action.begun = false;
+        } else {
+            ignore_result( _effect->effectInstance()->beginInstanceChangedAction(reason) );
+            _sendEnd = true;
+        }
+        if (brackets) {
+            brackets->push_back(action);
+        }
+    }
+
+    ~InstanceChangedBracket_RAII()
+    {
+        if (_onMainThread) {
+            std::vector<OfxEffectInstancePrivate::InstanceChangedBracket>& brackets = _effect->_imp->instanceChangedBrackets;
+            assert( !brackets.empty() && !brackets.back().isGroup );
+            if ( !brackets.empty() ) {
+                brackets.pop_back();
+            }
+        }
+        if (_sendEnd) {
+            ignore_result( _effect->effectInstance()->endInstanceChangedAction(_reason) );
+        }
     }
 };
 
@@ -305,14 +456,12 @@ OfxEffectInstance::OfxEffectInstance(NodePtr node)
     : AbstractOfxEffectInstance(node)
     , _imp( new OfxEffectInstancePrivate() )
 {
-    QObject::connect( this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()) );
 }
 
 OfxEffectInstance::OfxEffectInstance(const OfxEffectInstance& other)
     : AbstractOfxEffectInstance(other)
     , _imp( new OfxEffectInstancePrivate(*other._imp) )
 {
-    QObject::connect( this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()) );
 }
 
 OfxImageEffectInstance*
@@ -338,6 +487,58 @@ OfxEffectInstance::isInitialized() const
 {
     return _imp->initialized;
 }
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
+// The node of another live instance of the single-instance plug-in: an active node, or a deleted one
+// whose plug-in instance is not destroyed yet because it is still rendering (see
+// OfxEffectInstance::suspendSingleInstance()). The other deleted nodes hold no plug-in instance.
+NodePtr
+findOtherActiveSingleInstance(const OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                              const OfxEffectInstance* self)
+{
+    QMutexLocker l(&gSingleInstancesMutex);
+    std::map<const OFX::Host::ImageEffect::ImageEffectPlugin*, std::set<OfxEffectInstance*> >::const_iterator found = gSingleInstances.find(plugin);
+
+    if ( found == gSingleInstances.end() ) {
+        return NodePtr();
+    }
+    // an active node first: the refusal then says "is already one", not "try again in a moment"
+    NodePtr pending;
+    for (std::set<OfxEffectInstance*>::const_iterator it = found->second.begin(); it != found->second.end(); ++it) {
+        if (*it == self) {
+            continue;
+        }
+        NodePtr n = (*it)->getNode();
+        if (!n) {
+            continue;
+        }
+        if ( n->isActivated() ) {
+            return n;
+        }
+        if ( !pending && (*it)->isSingleInstanceSuspendPending() ) {
+            pending = n;
+        }
+    }
+
+    return pending;
+}
+
+void
+warnExtraSingleInstance(const OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                        const NodePtr& node,
+                        const NodePtr& otherNode)
+{
+    const QString label = QString::fromUtf8( plugin->getDescriptor().getLabel().c_str() );
+    const QString other = QString::fromUtf8( otherNode->getFullyQualifiedName().c_str() );
+
+    appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( node->getScriptName_mt_safe().c_str() ), QDateTime::currentDateTime(),
+                                     OfxEffectInstance::tr("Warning: %1 allows only one instance at a time, but %2 is already one. "
+                                                           "The plug-in may not work with several instances: keep only one.")
+                                     .arg(label).arg(other) );
+}
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 void
 OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
@@ -379,6 +580,32 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
     std::string images;
 
+    // A temporary node out of the project (e.g. to show the plug-in's documentation) is neither checked nor counted.
+    if ( plugin->getDescriptor().isSingleInstance() && !args.getProperty<bool>(kCreateNodeArgsPropOutOfProject) ) {
+        NodePtr activeNode = findOtherActiveSingleInstance(plugin, this);
+        if (activeNode) {
+            if (gAllowExtraSingleInstances > 0) {
+                // Moving nodes into or out of a group creates them before it deletes the originals:
+                // a second instance for a moment, which the user didn't make, so no warning.
+            } else if ( getApp()->getProject()->isLoadingProject() ) {
+                // An old project may already have several: keep them, and say so.
+                warnExtraSingleInstance(plugin, getNode(), activeNode);
+            } else {
+                // Refuse it: the node is not created, and the error is reported.
+                const QString label = QString::fromUtf8( plugin->getDescriptor().getLabel().c_str() );
+                const QString other = QString::fromUtf8( activeNode->getFullyQualifiedName().c_str() );
+                if ( !activeNode->isActivated() ) {
+                    // its suspension is pending (see suspendSingleInstance())
+                    throw std::runtime_error( tr("%1 allows only one instance at a time, and %2 is still being deleted: try again in a moment.")
+                                              .arg(label).arg(other).toStdString() );
+                }
+                throw std::runtime_error( tr("%1 allows only one instance at a time, and %2 is already one.")
+                                          .arg(label).arg(other).toStdString() );
+            }
+        }
+        _imp->registerSingleInstance(plugin, this);
+    }
+
     try {
         _imp->effect.reset( new OfxImageEffectInstance(plugin, *desc, mapContextToString(context), false) );
         assert(_imp->effect);
@@ -407,21 +634,6 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         _imp->supportsMultipleClipDepths = _imp->effect->supportsMultipleClipDepths();
         _imp->doesTemporalAccess = _imp->effect->temporalAccess();
         _imp->multiplanar = _imp->effect->isMultiPlanar();
-        int sequential = _imp->effect->getPlugin()->getDescriptor().getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender);
-        switch (sequential) {
-        case 0:
-            _imp->sequentialPref = eSequentialPreferenceNotSequential;
-            break;
-        case 1:
-            _imp->sequentialPref = eSequentialPreferenceOnlySequential;
-            break;
-        case 2:
-            _imp->sequentialPref = eSequentialPreferencePreferSequential;
-            break;
-        default:
-            _imp->sequentialPref =  eSequentialPreferenceNotSequential;
-            break;
-        }
 
         beginChanges();
         OfxStatus stat;
@@ -549,6 +761,11 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 stat = _imp->effect->createInstanceAction();
             }
             _imp->created = true;
+            // WriteOIIO sets the visibility of its Views parameter from the format in its constructor:
+            // hide it if the file name has a view pattern.
+            if ( isWriter() ) {
+                getNode()->refreshViewsSelectorVisibility();
+            }
         } // SET_CAN_SET_VALUE(true);
 
 
@@ -608,10 +825,12 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     } catch (const std::exception & e) {
         qDebug() << "Error: Caught exception while creating OfxImageEffectInstance" << ": " << e.what();
         _imp->effect.reset();
+        _imp->releaseSingleInstance();
         throw;
     } catch (...) {
         qDebug() << "Error: Caught exception while creating OfxImageEffectInstance";
         _imp->effect.reset();
+        _imp->releaseSingleInstance();
         throw;
     }
 
@@ -622,15 +841,205 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
 OfxEffectInstance::~OfxEffectInstance()
 {
-    _imp->overlayInteract.reset();
+    // "kOfxActionEndInstanceEdit ... \post no user interface is open on the instance": the last editor
+    // is closed before the instance is destroyed (e.g. when the project is closed with the panel open).
+    // Normally the node was deactivated before (Node::deactivate() sends End), so this is a safety net.
+    if (_imp->instanceEditOpen) {
+        if ( qApp && ( QThread::currentThread() == qApp->thread() ) ) {
+            endEditKnobs();
+        } else {
+            std::cerr << getScriptName_mt_safe() << ": kOfxActionEndInstanceEdit not sent: the instance is destroyed outside the main thread" << std::endl;
+        }
+    }
+
+    destroyInteracts();
     if (_imp->effect) {
+        // (nothing is sent if the instance is suspended, see suspendSingleInstance())
         _imp->effect->destroyInstanceAction();
     }
+    _imp->releaseSingleInstance();
+}
+
+void
+OfxEffectInstance::destroyInteracts()
+{
+    // The interacts must be destroyed before their effect (ofxInteracts.rst). The parameter
+    // interacts are held by their knob, which outlives this object (the knobs belong to the
+    // KnobHolder base, or to the Read/Write node of an embedded reader/writer), and maybe by the
+    // GUI: destroy them now. Every parameter of this instance, whatever the holder of its knob; but
+    // only the interacts of this instance: render clones share the knobs of the main instance, which
+    // owns their interacts.
+    if (_imp->effect) {
+        const std::list<OFX::Host::Param::Instance*> & params = _imp->effect->getParamList();
+        for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) {
+            OfxParamToKnob* paramToKnob = dynamic_cast<OfxParamToKnob*>(*it);
+            KnobIPtr knob = paramToKnob ? paramToKnob->getKnob() : KnobIPtr();
+            OfxParamOverlayInteractPtr interact = knob ? knob->getCustomInteract() : OfxParamOverlayInteractPtr();
+            if ( interact && ( interact->getEffectInstance() == _imp->effect.get() ) ) {
+                interact->destroyInstanceAction();
+                knob->setCustomInteract( OfxParamOverlayInteractPtr() );
+            }
+        }
+    }
+    _imp->overlayInteract.reset();
+    // tryInitializeOverlayInteracts() adds them again with a new overlay interact
+    clearOverlaySlaveParams();
+}
+
+bool
+OfxEffectInstance::isSingleInstanceSuspended() const
+{
+    return _imp->suspendedSingleInstancePlugin != NULL;
+}
+
+void
+OfxEffectInstance::suspendSingleInstance()
+{
+    // kOfxImageEffectPluginPropSingleInstance: "only one instance can exist at any one time". A
+    // deleted node is only deactivated, and kept for undo: destroy its plug-in instance, so that a
+    // new node of the plug-in can be created, and create it again if the node is activated again
+    // (resumeSingleInstance(), when the deletion is undone). The host side of the instance (its
+    // parameters with their values, clips and properties) is kept, so the knobs, links and undo
+    // history of the node stay valid; the plug-in sees a new instance, created with these values,
+    // as when a project is loaded.
+    assert( QThread::currentThread() == qApp->thread() );
+    _imp->singleInstanceSuspendPending = false;
+    if ( !_imp->singleInstancePlugin || !_imp->effect || !_imp->created ) {
+        // not a single-instance plug-in, out of the project, already suspended, or not created
+        return;
+    }
+    NodePtr node = getNode();
+    if ( !node || node->isActivated() ) {
+        // activated again before a pending suspension
+        return;
+    }
+    // Not while the node renders (Node::deactivate() aborted its renders, but doesn't wait for them),
+    // so that a render isn't cut between two of its actions, nor while the plug-in deletes its own node
+    // in one of its actions. Then, "suspending" keeps any new action of another thread out of the plug-in
+    // (OfxImageEffectInstance::mainEntry() counts these actions before it reads the state), and the
+    // actions still in it are counted: not all the threads that call the plug-in take the node's
+    // rendering counter (the preview's region of definition and the tracker don't). If one is still in
+    // the plug-in, the state goes back to "none" until the next attempt: a render that started in the
+    // meantime runs normally (one of its actions may fail if it starts during the attempt; harmless, the
+    // renders of a deleted node are aborted anyway).
+    bool busy = node->isNodeRendering() || _imp->effect->isInMainThreadAction();
+    if (!busy) {
+        _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateSuspending);
+        if ( _imp->effect->hasActionsInFlightOnOtherThreads() ) {
+            _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateNone);
+            busy = true;
+        }
+    }
+    if (busy) {
+        // Retry. Meanwhile, the instance still counts as live (findOtherActiveSingleInstance()), so no new
+        // node of the plug-in is created. The retry needs the event loop (a QTimer on the main thread).
+        _imp->singleInstanceSuspendPending = true;
+        std::weak_ptr<OfxEffectInstance> weakThis = std::dynamic_pointer_cast<OfxEffectInstance>( shared_from_this() );
+        QTimer::singleShot(50, qApp, [weakThis]() {
+            OfxEffectInstancePtr effect = weakThis.lock();
+            if ( effect && effect->_imp->singleInstanceSuspendPending ) {
+                effect->suspendSingleInstance();
+            }
+        });
+
+        return;
+    }
+
+    destroyInteracts();
+    // the host instance stays, but the plug-in gets no action until resumeSingleInstance()
+    ignore_result( _imp->effect->destroyInstanceAction() );
+    _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateSuspended);
+    _imp->created = false;
+    _imp->suspendedSingleInstancePlugin = _imp->singleInstancePlugin;
+    _imp->releaseSingleInstance();
+}
+
+bool
+OfxEffectInstance::isSingleInstanceSuspendPending() const
+{
+    return _imp->singleInstanceSuspendPending;
+}
+
+void
+OfxEffectInstance::resumeSingleInstance()
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    _imp->singleInstanceSuspendPending = false;
+    if (!_imp->suspendedSingleInstancePlugin) {
+        return;
+    }
+    const OFX::Host::ImageEffect::ImageEffectPlugin* plugin = _imp->suspendedSingleInstancePlugin;
+    _imp->suspendedSingleInstancePlugin = NULL;
+
+    // Undoing a deletion can't be refused: this happens if another node of the plug-in was created
+    // in a different node graph (each Group has its own undo history), or from Python, or if the node
+    // that the same undo/redo just deactivated is still rendering (its suspension is pending, e.g.
+    // undoing Group From Selection or Expand Group right after it, while the viewer renders the copy):
+    // then two instances live until that render ends.
+    NodePtr otherNode = findOtherActiveSingleInstance(plugin, this);
+    if (otherNode) {
+        warnExtraSingleInstance(plugin, getNode(), otherNode);
+    }
+    _imp->registerSingleInstance(plugin, this);
+    // only the main thread enters the plug-in until kOfxActionCreateInstance has succeeded
+    _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateSuspending);
+
+    // As in createOfxImageEffectInstance(): while kOfxActionCreateInstance runs, the values the
+    // plug-in sets in its constructor send no kOfxActionInstanceChanged (initialized is false, and
+    // the changes are bracketed), since the plug-in's objects are not built yet.
+    beginChanges();
+    _imp->initialized = false;
+    OfxStatus stat;
+    {
+        SET_CAN_SET_VALUE(true);
+        // Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(&_imp->preferencesLock);
+        stat = _imp->effect->createInstanceAction();
+    }
+    if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
+        // The node stays, without a plug-in instance, and says so. Not quite what the spec asks: after a
+        // failed kOfxActionCreateInstance "the host should destroy the instance handle and not attempt to
+        // proceed further" (only kOfxStatErrMemory allows a retry), but the next undo/redo of the node's
+        // deletion calls kOfxActionCreateInstance again on this handle. The node shows the error meanwhile.
+        _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateSuspended);
+        _imp->suspendedSingleInstancePlugin = plugin;
+        _imp->releaseSingleInstance();
+        _imp->initialized = true;
+        endChanges(true); // the plug-in gets nothing
+        getNode()->setPersistentMessage( eMessageTypeError, tr("Could not create the instance of the plug-in again.").toStdString() );
+
+        return;
+    }
+    _imp->created = true;
+    _imp->initialized = true;
+    _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateNone);
+    endChanges();
+    // the plug-in gets kOfxImageEffectActionGetClipPreferences before it renders, as after its creation
+    ignore_result( refreshMetadata_public(false) );
+    tryInitializeOverlayInteracts();
+}
+
+OfxEffectInstance::AllowExtraSingleInstances::AllowExtraSingleInstances()
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    ++gAllowExtraSingleInstances;
+}
+
+OfxEffectInstance::AllowExtraSingleInstances::~AllowExtraSingleInstances()
+{
+    --gAllowExtraSingleInstances;
 }
 
 EffectInstancePtr
 OfxEffectInstance::createRenderClone()
 {
+    if ( _imp->effect->getPlugin()->getDescriptor().isSingleInstance() ) {
+        // kOfxImageEffectPluginPropSingleInstance: a clone would be a second instance. The renders
+        // then use the main instance, one at a time for an InstanceSafe plug-in (see
+        // EffectInstance::getOrCreateRenderInstance()).
+        return EffectInstancePtr();
+    }
+
     OfxEffectInstancePtr clone( new OfxEffectInstance(*this) );
 
     clone->_imp->effect.reset( new OfxImageEffectInstance(*_imp->effect) );
@@ -764,7 +1173,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         interactDesc.setEntryPoint(interactEntryPoint);
 //#pragma message WARN("FIXME: bitdepth and hasalpha are probably wrong")
         interactDesc.describe(/*bitdepthPerComponent=*/ 8, /*hasAlpha=*/ false);
-        OfxParamOverlayInteractPtr overlayInteract( new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance()->getHandle()) );
+        OfxParamOverlayInteractPtr overlayInteract( new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance(), *it ) );
         knob->setCustomInteract(overlayInteract);
         overlayInteract->createInstanceAction();
     }
@@ -833,6 +1242,14 @@ OfxEffectInstance::isReader() const
     assert(_imp->context != eContextNone);
 
     return _imp->context == eContextReader;
+}
+
+bool
+OfxEffectInstance::isOutputFormatFromFile() const
+{
+    assert( QThread::currentThread() == qApp->thread() );
+
+    return isReader() && _imp->outputFormatFromPlugin;
 }
 
 bool
@@ -1227,9 +1644,8 @@ OfxEffectInstance::onInputChanged(int inputNo)
                                             0);
         assert(_imp->effect);
 
-        _imp->effect->beginInstanceChangedAction(kOfxChangeUserEdited);
+        InstanceChangedBracket_RAII bracket(this, kOfxChangeUserEdited, ViewIdx(0), 0);
         _imp->effect->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, scale);
-        _imp->effect->endInstanceChangedAction(kOfxChangeUserEdited);
     }
 }
 
@@ -1358,6 +1774,7 @@ OfxEffectInstance::onMetadataRefreshed(const NodeMetadata& metadata)
 StatusEnum
 OfxEffectInstance::getPreferredMetadata(NodeMetadata& metadata)
 {
+    _imp->outputFormatFromPlugin = false;
     if (!_imp->created || !_imp->effect) {
         return eStatusFailed;
     }
@@ -1383,7 +1800,7 @@ OfxEffectInstance::getPreferredMetadata(NodeMetadata& metadata)
 
         ///It has been overridden and no data is actually set on the clip, everything will be set into the
         ///metadata object
-        stat = _imp->effect->getClipPreferences_safe(metadata);
+        stat = _imp->effect->getClipPreferences_safe(metadata, &_imp->outputFormatFromPlugin);
     }
 
     return stat;
@@ -2105,6 +2522,13 @@ OfxEffectInstance::render(const RenderActionArgs& args)
                                            ofxPlanes );
     }
 
+    if ( args.useOpenGL && ( (stat == kOfxStatGPURenderFailed) || (stat == kOfxStatGPUOutOfMemory) ) ) {
+        // ofxGPURender.h: "If a plug-in returns kOfxStatGLRenderFailed, the host should retry the render with
+        // OpenGL rendering disabled. If a plug-in returns kOfxStatGLOutOfMemory, the host may choose to free
+        // resources on the GPU and retry the OpenGL render, rather than immediately falling back to CPU
+        // rendering." eStatusOutOfMemory makes renderRoI() render again on the CPU, if the plug-in can.
+        return eStatusOutOfMemory;
+    }
     if (stat != kOfxStatOK) {
         if ( !getNode()->hasPersistentMessage() ) {
             QString err;
@@ -2239,9 +2663,9 @@ OfxEffectInstance::onOverlayPenDown(double time,
         OfxPointD penPos;
         penPos.x = pos.x();
         penPos.y = pos.y();
-        OfxPointI penPosViewport;
-        penPosViewport.x = viewportPos.x();
-        penPosViewport.y = viewportPos.y();
+        // the viewer gives widget coordinates: kOfxInteractPropPenViewportPosition has its origin at the
+        // bottom left
+        OfxPointI penPosViewport = _imp->overlayInteract->toPenViewportPosition(viewportPos);
 
         SET_CAN_SET_VALUE(true);
 
@@ -2282,9 +2706,9 @@ OfxEffectInstance::onOverlayPenMotion(double time,
         OfxPointD penPos;
         penPos.x = pos.x();
         penPos.y = pos.y();
-        OfxPointI penPosViewport;
-        penPosViewport.x = viewportPos.x();
-        penPosViewport.y = viewportPos.y();
+        // the viewer gives widget coordinates: kOfxInteractPropPenViewportPosition has its origin at the
+        // bottom left
+        OfxPointI penPosViewport = _imp->overlayInteract->toPenViewportPosition(viewportPos);
         OfxStatus stat;
 
         SET_CAN_SET_VALUE(true);
@@ -2321,9 +2745,9 @@ OfxEffectInstance::onOverlayPenUp(double time,
         OfxPointD penPos;
         penPos.x = pos.x();
         penPos.y = pos.y();
-        OfxPointI penPosViewport;
-        penPosViewport.x = viewportPos.x();
-        penPosViewport.y = viewportPos.y();
+        // the viewer gives widget coordinates: kOfxInteractPropPenViewportPosition has its origin at the
+        // bottom left
+        OfxPointI penPosViewport = _imp->overlayInteract->toPenViewportPosition(viewportPos);
 
         SET_CAN_SET_VALUE(true);
         _imp->overlayInteract->setKeyModifiers(modifiers);
@@ -2388,13 +2812,14 @@ OfxEffectInstance::onOverlayKeyDown(double time,
                                     const RenderScale & renderScale,
                                     ViewIdx view,
                                     Key key,
-                                    KeyboardModifiers modifiers)
+                                    KeyboardModifiers modifiers,
+                                    const QString& keyText)
 {
     if (!_imp->initialized) {
         return false;;
     }
     if (_imp->overlayInteract) {
-        QByteArray keyStr;
+        QByteArray keyStr = OfxOverlayInteract::keyStringFromText(keyText);
         SET_CAN_SET_VALUE(true);
         _imp->overlayInteract->setKeyModifiers( keyModifiersAfterKeyEvent(key, modifiers, true) );
         OfxStatus stat = _imp->overlayInteract->keyDownAction( time, renderScale.toOfxPointD(), view,_imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
@@ -2417,13 +2842,14 @@ OfxEffectInstance::onOverlayKeyUp(double time,
                                   const RenderScale & renderScale,
                                   ViewIdx view,
                                   Key key,
-                                  KeyboardModifiers modifiers)
+                                  KeyboardModifiers modifiers,
+                                  const QString& keyText)
 {
     if (!_imp->initialized) {
         return false;
     }
     if (_imp->overlayInteract) {
-        QByteArray keyStr;
+        QByteArray keyStr = OfxOverlayInteract::keyStringFromText(keyText);
         SET_CAN_SET_VALUE(true);
         _imp->overlayInteract->setKeyModifiers( keyModifiersAfterKeyEvent(key, modifiers, false) );
         OfxStatus stat = _imp->overlayInteract->keyUpAction( time, renderScale.toOfxPointD(), view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
@@ -2448,13 +2874,14 @@ OfxEffectInstance::onOverlayKeyRepeat(double time,
                                       const RenderScale & renderScale,
                                       ViewIdx view,
                                       Key key,
-                                      KeyboardModifiers modifiers)
+                                      KeyboardModifiers modifiers,
+                                      const QString& keyText)
 {
     if (!_imp->initialized) {
         return false;
     }
     if (_imp->overlayInteract) {
-        QByteArray keyStr;
+        QByteArray keyStr = OfxOverlayInteract::keyStringFromText(keyText);
 
         SET_CAN_SET_VALUE(true);
         _imp->overlayInteract->setKeyModifiers( keyModifiersAfterKeyEvent(key, modifiers, true) );
@@ -2688,10 +3115,13 @@ OfxEffectInstance::knobChanged(KnobI* k,
     if (!effect) {
         throw std::logic_error(__func__);
     }
+    // assert(!view.isAll() && !view.isCurrent());
+    const ViewIdx v = ( view.isAll() || view.isCurrent() ) ? ViewIdx(0) : ViewIdx(view);
+    // paramInstanceChangedAction() fails without calling the plug-in if the parameter doesn't exist or the time is NaN: no
+    // bracket then (a bracket has at least one kOfxActionInstanceChanged)
+    const bool callsPlugin = effect->getParam( k->getOriginalName() ) && !OFX::IsNaN(time);
     if (recursionLevel == 1) {
         SET_CAN_SET_VALUE(true);
-        // assert(!view.isAll() && !view.isCurrent());
-        ViewIdx v = ( view.isAll() || view.isCurrent() ) ? ViewIdx(0) : ViewIdx(view);
         ClipsThreadStorageSetter clipSetter( effect,
                                              v,
                                              renderScale.toMipmapLevel() );
@@ -2700,12 +3130,20 @@ OfxEffectInstance::knobChanged(KnobI* k,
         ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
         ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
         ///the clip preferences to stay the same throughout the action.
+        std::unique_ptr<InstanceChangedBracket_RAII> bracket;
+        if (callsPlugin) {
+            bracket.reset( new InstanceChangedBracket_RAII( this, ofxReason, v, renderScale.toMipmapLevel() ) );
+        }
         stat = effect->paramInstanceChangedAction(k->getOriginalName(), ofxReason, (OfxTime)time, renderScale.toOfxPointD());
     } else {
         ///This action as all the overlay interacts actions can trigger recursive actions, such as
         ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
         ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
         ///the clip preferences to stay the same throughout the action.
+        std::unique_ptr<InstanceChangedBracket_RAII> bracket;
+        if (callsPlugin) {
+            bracket.reset( new InstanceChangedBracket_RAII( this, ofxReason, v, renderScale.toMipmapLevel() ) );
+        }
         stat = effect->paramInstanceChangedAction(k->getOriginalName(), ofxReason, (OfxTime)time, renderScale.toOfxPointD());
     }
 
@@ -2720,31 +3158,34 @@ OfxEffectInstance::knobChanged(KnobI* k,
 void
 OfxEffectInstance::beginKnobsValuesChanged(ValueChangedReasonEnum reason)
 {
-    if (!_imp->initialized) {
-        return;
-    }
-
-    SET_CAN_SET_VALUE(true);
-    ///This action as all the overlay interacts actions can trigger recursive actions, such as
-    ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
-    ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
-    ///the clip preferences to stay the same throughout the action.
-    ignore_result( effectInstance()->beginInstanceChangedAction( natronValueChangedReasonToOfxValueChangedReason(reason) ) );
+    // A group of value changes (see KnobHolder::endChanges()): kOfxActionBeginInstanceChanged is only sent before the
+    // first kOfxActionInstanceChanged of the group, if there is one (see InstanceChangedBracket_RAII).
+    assert( QThread::currentThread() == qApp->thread() );
+    OfxEffectInstancePrivate::InstanceChangedBracket group = { natronValueChangedReasonToOfxValueChangedReason(reason), true, false, ViewIdx(0), 0 };
+    _imp->instanceChangedBrackets.push_back(group);
 }
 
 void
-OfxEffectInstance::endKnobsValuesChanged(ValueChangedReasonEnum reason)
+OfxEffectInstance::endKnobsValuesChanged(ValueChangedReasonEnum /*reason*/)
 {
-    if (!_imp->initialized) {
+    assert( QThread::currentThread() == qApp->thread() );
+    std::vector<OfxEffectInstancePrivate::InstanceChangedBracket>& brackets = _imp->instanceChangedBrackets;
+    assert( !brackets.empty() && brackets.back().isGroup );
+    if ( brackets.empty() || !brackets.back().isGroup ) {
         return;
     }
-
-    SET_CAN_SET_VALUE(true);
-    ///This action as all the overlay interacts actions can trigger recursive actions, such as
-    ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
-    ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
-    ///the clip preferences to stay the same throughout the action.
-    ignore_result( effectInstance()->endInstanceChangedAction( natronValueChangedReasonToOfxValueChangedReason(reason) ) );
+    OfxEffectInstancePrivate::InstanceChangedBracket group = brackets.back();
+    brackets.pop_back();
+    if (group.begun) {
+        SET_CAN_SET_VALUE(true);
+        // the clips thread storage of the actions of the group
+        ClipsThreadStorageSetter clipSetter(effectInstance(), group.view, group.mipmapLevel);
+        ///This action as all the overlay interacts actions can trigger recursive actions, such as
+        ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
+        ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
+        ///the clip preferences to stay the same throughout the action.
+        ignore_result( effectInstance()->endInstanceChangedAction(group.reason) );
+    }
 }
 
 void
@@ -2822,12 +3263,13 @@ OfxEffectInstance::supportsTiles() const
 PluginOpenGLRenderSupport
 OfxEffectInstance::supportsOpenGLRender() const
 {
-    const std::string& str = effectInstance()->getProps().getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
+    const OFX::Host::Property::Set& props = effectInstance()->getProps();
+    const std::string& str = props.getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
 
     if (str == "false") {
         return ePluginOpenGLRenderSupportNone;
     } else if (str == "true") {
-        return ePluginOpenGLRenderSupportYes;
+        return OfxHost::applyCPURenderSupport(ePluginOpenGLRenderSupportYes, props);
     } else {
         assert(str == "needed");
 
@@ -2848,6 +3290,17 @@ OfxEffectInstance::supportsMultiResolution() const
 void
 OfxEffectInstance::beginEditKnobs()
 {
+    assert( QThread::currentThread() == qApp->thread() );
+    // kOfxActionBeginInstanceEdit "is called when an instance is first actively edited by a user": once
+    // per editing session, until kOfxActionEndInstanceEdit.
+    if ( _imp->instanceEditOpen || !effectInstance() ) {
+        return;
+    }
+    _imp->instanceEditOpen = true;
+    // kOfxPropIsInteractive: "Indicates if a host is actively editing the effect with some GUI."
+    _imp->isInteractive = 1;
+    effectInstance()->getProps().setIntProperty(kOfxPropIsInteractive, 1);
+
     ///Take the preferences lock so that it cannot be modified throughout the action.
     QReadLocker preferencesLocker(&_imp->preferencesLock);
 
@@ -2855,8 +3308,53 @@ OfxEffectInstance::beginEditKnobs()
 }
 
 void
-OfxEffectInstance::syncPrivateData_other_thread()
+OfxEffectInstance::endEditKnobs()
 {
+    // kOfxActionEndInstanceEdit "is called when the last user interface on an instance closed", with
+    // "\pre kOfxActionBeginInstanceEdit has been called on the instance handle".
+    if ( !_imp->instanceEditOpen || !effectInstance() ) {
+        return;
+    }
+    assert( QThread::currentThread() == qApp->thread() );
+    _imp->instanceEditOpen = false;
+
+    {
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(&_imp->preferencesLock);
+
+        effectInstance()->endInstanceEditAction();
+    }
+    _imp->isInteractive = 0;
+    effectInstance()->getProps().setIntProperty(kOfxPropIsInteractive, 0);
+}
+
+bool
+OfxEffectInstance::isEditingKnobs() const
+{
+    return _imp->instanceEditOpen;
+}
+
+void
+OfxEffectInstance::refreshRenderCloneState(const EffectInstancePtr& clone)
+{
+    OfxEffectInstance* ofxClone = dynamic_cast<OfxEffectInstance*>( clone.get() );
+
+    if ( !ofxClone || !ofxClone->effectInstance() || !effectInstance() ) {
+        return;
+    }
+    // kOfxPropIsInteractive of the render clones follows the main instance (read from the atomic copy:
+    // the property set of the main instance is written on the main thread)
+    ofxClone->effectInstance()->getProps().setIntProperty( kOfxPropIsInteractive, _imp->isInteractive.load() );
+}
+
+void
+OfxEffectInstance::syncPrivateDataForSerialization()
+{
+    if ( QThread::currentThread() != qApp->thread() ) {
+        // Requesting the sync from the main thread (as this did before) only made it happen after
+        // this serialization, while the parameters were being read.
+        return;
+    }
     if ( getApp()->isShowingDialog() ) {
         /*
            We may enter a situation where a plug-in called EffectInstance::message to show a dialog
@@ -2866,7 +3364,7 @@ OfxEffectInstance::syncPrivateData_other_thread()
          */
         return;
     }
-    Q_EMIT syncPrivateDataRequested();
+    onSyncPrivateDataRequested();
 }
 
 void
@@ -3040,7 +3538,24 @@ OfxEffectInstance::isViewInvariant() const
 SequentialPreferenceEnum
 OfxEffectInstance::getSequentialPreference() const
 {
-    return _imp->sequentialPref;
+    if (!_imp->effect) {
+        return eSequentialPreferenceNotSequential;
+    }
+    // kOfxImageEffectInstancePropSequentialRender is read/write on the instance: it starts from the descriptor's
+    // value, and the plug-in may change it (e.g. in kOfxActionInstanceChanged), so read it every time. The read isn't
+    // locked, as for the other properties that the host reads while the plug-in may set them: an int is read.
+    switch ( _imp->effect->getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender) ) {
+    case 1:
+
+        return eSequentialPreferenceOnlySequential;
+    case 2:
+
+        return eSequentialPreferencePreferSequential;
+    case 0:
+    default:
+
+        return eSequentialPreferenceNotSequential;
+    }
 }
 
 const std::string &
@@ -3269,7 +3784,7 @@ OfxEffectInstance::dettachOpenGLContext(const EffectInstance::OpenGLContextEffec
 }
 
 void
-OfxEffectInstance::onInteractViewportSelectionCleared(KeyboardModifiers modifiers)
+OfxEffectInstance::onInteractViewportSelectionCleared(KeyboardModifiers /*modifiers*/)
 {
     KnobIntPtr k = _imp->selectionRectangleStateKnob.lock();
     // Unlike updates (see onInteractViewportSelectionUpdated), a clear is sent to every node, as
@@ -3280,11 +3795,10 @@ OfxEffectInstance::onInteractViewportSelectionCleared(KeyboardModifiers modifier
     }
     double propV[4] = {0, 0, 0, 0};
     effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
-    // the modifiers of the pen down that starts the selection rectangle (NatronGitHub/Natron#1206)
-    // HostSupport declares this property on the instance only if the host sets
-    // kNatronOfxHostPropInteractKeyModifiers, which OfxHost always does: if that flag ever became
-    // conditional, setIntProperty would throw here (the property would not exist).
-    effectInstance()->getProps().setIntProperty( kNatronOfxInteractPropKeyModifiers, ofxKeyModifiersFromNatron(modifiers) );
+    // The instanceChanged action gives no keyboard modifiers (ofxNatron.h extensions 7 and 13):
+    // the plug-in uses those of the last action of its overlay. The pen down that starts the
+    // selection rectangle (ViewerGL::mousePressEvent) and the Escape key down
+    // (ViewerTab::keyPressEvent) reach the overlays before this clear.
 
     // The state is already 0 at creation and after every clear: force the notification
     // (hasChanged = true), so that the plug-in always hears that the selection was cleared.
@@ -3295,19 +3809,25 @@ OfxEffectInstance::onInteractViewportSelectionCleared(KeyboardModifiers modifier
 void
 OfxEffectInstance::onInteractViewportSelectionUpdated(const RectD& rectangle,
                                                       bool onRelease,
-                                                      KeyboardModifiers modifiers)
+                                                      KeyboardModifiers /*modifiers*/)
 {
     KnobIntPtr k = _imp->selectionRectangleStateKnob.lock();
     // Every node with a viewer context gets the viewer's selection signals: only the node whose
     // settings panel is open (so whose overlay is drawn) uses the rectangle, as in RotoPaint.
-    if ( !k || !getNode()->isSettingsPanelVisible() ) {
+    // The reader/writer embedded in a Read/Write node has no panel: use the one of that node.
+    NodePtr panelNode = getNode();
+#ifdef NATRON_ENABLE_IO_META_NODES
+    NodePtr ioContainer = panelNode->getIOContainer();
+    if (ioContainer) {
+        panelNode = ioContainer;
+    }
+#endif
+    if ( !k || !panelNode->isSettingsPanelVisible() ) {
         return;
     }
     double propV[4] = {rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2};
     effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
-    // As in onInteractViewportSelectionCleared: setIntProperty would throw if OfxHost's
-    // kNatronOfxHostPropInteractKeyModifiers ever became conditional.
-    effectInstance()->getProps().setIntProperty( kNatronOfxInteractPropKeyModifiers, ofxKeyModifiersFromNatron(modifiers) );
+    // no keyboard modifiers here either: the plug-in uses those of the last action of its overlay
     // During a drag the state stays 1 while the rectangle changes: force the notification
     // (hasChanged = true), so that the plug-in gets instanceChanged on every update.
     k->setValue(onRelease ? 2 : 1, ViewSpec::all(), 0, eValueChangedReasonNatronInternalEdited, NULL, true);

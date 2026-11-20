@@ -75,6 +75,7 @@
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Node.h"
+#include "Engine/OfxEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/ProjectPrivate.h"
 #include "Engine/ProjectSerialization.h"
@@ -207,16 +208,28 @@ Project::loadProject(const QString & path,
                      bool attemptToLoadAutosave)
 {
     reset(false, true);
+    _imp->autoSaveDisabled = false;
 
     try {
         QString realPath = path;
         StrUtils::ensureLastPathSeparator(realPath);
         QString realName = name;
         bool isAutoSave = isUntitledAutosave;
-        if (!getApp()->isBackground() && !isUntitledAutosave) {
+        // In test mode (--test), auto-saves are neither restored nor removed: they may be the user's.
+        if ( !getApp()->isBackground() && !isUntitledAutosave && !appPTR->isTestMode() ) {
             // In Gui mode, attempt to load an auto-save for this project if there's one.
             QString autosaveFileName;
             bool hasAutoSave = findAutoSaveForProject(realPath, name, &autosaveFileName);
+            if ( hasAutoSave && appPTR->isDialogsDisabled() ) {
+                // --no-dialogs: load the project itself, and keep its auto-save, which may be
+                // the user's crash recovery: using it would delete it when quitting
+                Dialogs::printDismissedDialog( tr("Auto-save").toStdString(),
+                                               tr("A recent auto-save of %1 was found. It is not used, and kept.").arg(name).toStdString() );
+                hasAutoSave = false;
+                // The auto-saves of this project would overwrite it (<dir>/<name>.autosave):
+                // do not auto-save it in this session (see refreshAutoSaveDisabled())
+                _imp->autoSaveDisabled = true;
+            }
             if (hasAutoSave) {
                 StandardButtonEnum ret = eStandardButtonNo;
                 if (attemptToLoadAutosave) {
@@ -235,6 +248,10 @@ Project::loadProject(const QString & path,
                     {
                         QMutexLocker k(&_imp->projectLock);
                         _imp->lastAutoSaveFilePath = realPath + realName;
+                        // the user chose to use it: this session owns it now
+                        if ( appPTR->isDialogsDisabled() ) {
+                            _imp->autoSavesWrittenBySession.insert( QDir::cleanPath(realPath + realName) );
+                        }
                     }
                 }
             }
@@ -413,62 +430,205 @@ Project::saveProject(const QString & path,
     return saveProject_imp(path, name, false, true, newFilePath);
 }
 
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+// Reports a save error or warning. A dialog shown from another thread waits for the main thread,
+// which may itself be waiting for this save (see Project::saveProject_imp()): only log it there.
+void
+reportSaveProblem(const QString& title,
+                  const QString& message,
+                  bool isError)
+{
+    if ( QThread::currentThread() == qApp->thread() ) {
+        if (isError) {
+            Dialogs::errorDialog( title.toStdString(), message.toStdString() );
+        } else {
+            Dialogs::warningDialog( title.toStdString(), message.toStdString() );
+        }
+    } else {
+        std::cerr << (isError ? "ERROR: " : "WARNING: ") << title.toStdString() << ": " << message.toStdString() << std::endl;
+        if (appPTR) {
+            appPTR->writeToErrorLog_mt_safe( title, QDateTime::currentDateTime(), message );
+        }
+    }
+}
+
+// Clears isSavingProject and wakes the saves waiting for it, also if the save throws.
+class SavingProjectFlagResetter
+{
+    ProjectPrivate* _imp;
+
+public:
+    explicit SavingProjectFlagResetter(ProjectPrivate* imp)
+        : _imp(imp)
+    {
+    }
+
+    ~SavingProjectFlagResetter()
+    {
+        QMutexLocker l(&_imp->isSavingProjectMutex);
+        _imp->isSavingProject = false;
+        _imp->savingProjectThread = 0;
+        _imp->isSavingProjectCond.wakeAll();
+    }
+};
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
+bool
+Project::isSaveInProgress() const
+{
+    QMutexLocker l(&_imp->isSavingProjectMutex);
+
+    return _imp->isSavingProject || _imp->waitingSaves > 0;
+}
+
 bool
 Project::saveProject_imp(const QString & path,
                          const QString & name,
                          bool autoS,
                          bool updateProjectProperties,
-                         QString* newFilePath)
+                         QString* newFilePath,
+                         QString* errorMessage)
 {
+    // A background auto-save (see autoSave()) may be dropped: the project will be saved again later.
+    // Any other save (user save, Save As, saveTemp, render save) must not be dropped silently (#825).
+    const bool isBackgroundAutoSave = autoS && updateProjectProperties;
+    const bool isMainThread = ( QThread::currentThread() == qApp->thread() );
+
+    if (errorMessage) {
+        errorMessage->clear();
+    }
+
     {
         QMutexLocker l(&_imp->isLoadingProjectMutex);
         if (_imp->isLoadingProject) {
+            l.unlock();
+            QString message = tr("The project cannot be saved while it is being loaded.");
+            if (!autoS) {
+                reportSaveProblem(tr("Save"), message, true);
+            }
+            if (errorMessage) {
+                *errorMessage = message;
+            }
+
             return false;
         }
     }
 
+    if (!autoS && isMainThread) {
+        //We are saving, do not autosave (QTimer can only be stopped from its thread)
+        _imp->autoSaveTimer->stop();
+    }
+
+    bool aborted = false;
     {
         QMutexLocker l(&_imp->isSavingProjectMutex);
-        if (_imp->isSavingProject) {
+        if ( _imp->isSavingProject && !isBackgroundAutoSave && (_imp->savingProjectThread != QThread::currentThread()) ) {
+            // Another save is running in another thread, usually the background auto-save
+            // started by onAutoSaveTimerTriggered(). Wait for it to finish, then save (#825).
+            // That save may run Python (the beforeProjectSave callback, expressions), so release
+            // the Python GIL if this thread holds it, e.g. if called from app.saveProject().
+            // The main thread processes events while waiting, which could reset or close the project:
+            // then this save must not save the new project to this path.
+            ++_imp->waitingSaves;
+            const unsigned int resetCount = _imp->resetCount;
+            l.unlock();
+            std::unique_ptr<PythonGILUnlocker> gilUnlocker;
+            if ( Py_IsInitialized() && PyGILState_Check() ) {
+                gilUnlocker.reset(new PythonGILUnlocker);
+            }
+            l.relock();
+            while (_imp->isSavingProject) {
+                if ( !_imp->isSavingProjectCond.wait(&_imp->isSavingProjectMutex, 50) && isMainThread ) {
+                    // The running save may need the main thread, e.g. if the beforeProjectSave callback
+                    // shows a dialog. Serve it, but not user input, which could edit the project or close it.
+                    // A save started from these events (a Python timer...) waits here too, then saves.
+                    l.unlock();
+                    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents, 50);
+                    l.relock();
+                }
+            }
+            _imp->isSavingProject = true;
+            _imp->savingProjectThread = QThread::currentThread();
+            --_imp->waitingSaves;
+            l.unlock();
+            gilUnlocker.reset(); // take the GIL back, after isSavingProjectMutex was released
+            if (_imp->resetCount != resetCount) {
+                SavingProjectFlagResetter savingFlagResetter( _imp.get() );
+                aborted = true;
+            }
+        } else if (_imp->isSavingProject) {
+            // A background auto-save while another save is running (that save is at least as
+            // recent), or a save from within a save on the same thread (e.g. from the beforeProjectSave callback).
+            l.unlock();
+            QString message = tr("The project cannot be saved while it is being saved.");
+            if (!autoS) {
+                reportSaveProblem(tr("Save"), message, true);
+            }
+            if (errorMessage) {
+                *errorMessage = message;
+            }
+
             return false;
         } else {
             _imp->isSavingProject = true;
+            _imp->savingProjectThread = QThread::currentThread();
         }
+    }
+
+    if (aborted) {
+        QString message = tr("The project was closed while this save was waiting for the auto-save to finish: it was not saved.");
+        if (!autoS) {
+            reportSaveProblem(tr("Save"), message, true);
+        }
+        if (errorMessage) {
+            *errorMessage = message;
+        }
+
+        return false;
     }
 
     QString ret;
-
-    try {
-        if (!autoS) {
-            //if  (!isSaveUpToDate() || !QFile::exists(path+name)) {
-            //We are saving, do not autosave.
-            _imp->autoSaveTimer->stop();
-
-            ret = saveProjectInternal(path, name, false, updateProjectProperties);
-
-            ///We just saved, remove the last auto-save which is now obsolete
-            removeLastAutosave();
-
-            //}
-        } else {
-            if (updateProjectProperties) {
-                ///Replace the last auto-save with a more recent one
-                removeLastAutosave();
-            }
-
-            ret = saveProjectInternal(path, name, true, updateProjectProperties);
-        }
-    } catch (const std::exception & e) {
-        if (!autoS) {
-            Dialogs::errorDialog( tr("Save").toStdString(), e.what() );
-        } else {
-            qDebug() << "Save failure: " << e.what();
-        }
-    }
+    QString error;
+    QStringList warnings;
+    bool ok = false;
 
     {
-        QMutexLocker l(&_imp->isSavingProjectMutex);
-        _imp->isSavingProject = false;
+        SavingProjectFlagResetter savingFlagResetter( _imp.get() );
+        try {
+            if (!autoS) {
+                ret = saveProjectInternal(path, name, false, updateProjectProperties, &warnings);
+
+                ///We just saved, remove the last auto-save which is now obsolete
+                removeLastAutosave();
+            } else {
+                if (updateProjectProperties) {
+                    ///Replace the last auto-save with a more recent one
+                    removeLastAutosave();
+                }
+
+                ret = saveProjectInternal(path, name, true, updateProjectProperties, &warnings);
+            }
+            ok = true;
+        } catch (const std::exception & e) {
+            error = QString::fromUtf8( e.what() );
+        } catch (...) {
+            error = tr("Unknown error while saving the project.");
+        }
+    } // savingFlagResetter
+
+    if ( !warnings.isEmpty() ) {
+        // shown after isSavingProject was cleared, like errors: the dialog runs an event loop
+        reportSaveProblem( tr("Save"), warnings.join( QLatin1Char('\n') ), false );
+    }
+    if (!ok) {
+        if (!autoS) {
+            reportSaveProblem(tr("Save"), error, true);
+        } else {
+            qDebug() << "Save failure: " << error;
+        }
+        if (errorMessage) {
+            *errorMessage = error;
+        }
     }
 
     ///Save caches ToC
@@ -478,7 +638,7 @@ Project::saveProject_imp(const QString & path,
         *newFilePath = ret;
     }
 
-    return true;
+    return ok;
 } // Project::saveProject_imp
 
 static bool
@@ -553,7 +713,8 @@ QString
 Project::saveProjectInternal(const QString & path,
                              const QString & name,
                              bool autoSave,
-                             bool updateProjectProperties)
+                             bool updateProjectProperties,
+                             QStringList* warnings)
 {
     bool isRenderSave = name.contains( QString::fromUtf8("RENDER_SAVE") );
     QDateTime time = QDateTime::currentDateTime();
@@ -589,9 +750,14 @@ Project::saveProjectInternal(const QString & path,
             }
         }
 
-        if (updateProjectProperties) {
+        {
             QMutexLocker l(&_imp->projectLock);
-            _imp->lastAutoSaveFilePath = filePath;
+            if (updateProjectProperties) {
+                _imp->lastAutoSaveFilePath = filePath;
+            }
+            if ( !isRenderSave && appPTR->keepsOtherSessionsAutoSaves() ) {
+                _imp->autoSavesWrittenBySession.insert( QDir::cleanPath(filePath) );
+            }
         }
     } else {
         filePath = path + name;
@@ -599,6 +765,11 @@ Project::saveProjectInternal(const QString & path,
 
     std::string newFilePath = _imp->runOnProjectSaveCallback(filePath.toStdString(), autoSave);
     filePath = QString::fromUtf8( newFilePath.c_str() );
+    if ( autoSave && !isRenderSave && appPTR->keepsOtherSessionsAutoSaves() ) {
+        // the onProjectSave callback may have changed the file name
+        QMutexLocker l(&_imp->projectLock);
+        _imp->autoSavesWrittenBySession.insert( QDir::cleanPath(filePath) );
+    }
 
     ///Use a temporary file to save, so if Natron crashes it doesn't corrupt the user save.
     QString tmpFilename = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
@@ -644,6 +815,7 @@ Project::saveProjectInternal(const QString & path,
         }
     } // ofile
 
+    QStringList backupErrors;
     if (!autoSave) {
         // rotate backups
         int saveVersions = appPTR->getCurrentSettings()->saveVersions();
@@ -651,14 +823,16 @@ Project::saveProjectInternal(const QString & path,
         QStringList backups = findBackups(filePath);
         // remove extra backups
         for (int i = backups.size() - 1; i >= saveVersions; --i) {
-            if ( QFile::exists(backups.last()) ) {
-                QFile::remove(backups.last());
+            if ( QFile::exists( backups.last() ) && !QFile::remove( backups.last() ) ) {
+                backupErrors.append( tr("Could not remove %1.").arg( backups.last() ) );
             }
             backups.removeLast();
         }
         // rename existing backups
         for (int i = backups.size() - 1; i >= 0; --i) {
-            QFile::rename(backups.at(i), nextBackup(backups.at(i)));
+            if ( !QFile::rename( backups.at(i), nextBackup( backups.at(i) ) ) ) {
+                backupErrors.append( tr("Could not rename %1 to %2.").arg( backups.at(i), nextBackup( backups.at(i) ) ) );
+            }
         }
     }
 
@@ -672,11 +846,18 @@ Project::saveProjectInternal(const QString & path,
             }
 
             if (nAttemps >= 10) {
+                QFile::remove(tmpFilename);
                 throw std::runtime_error( "Failed to save to " + filePath.toStdString() );
             }
         }
 
         QFile::remove(tmpFilename);
+    }
+
+    if ( !backupErrors.isEmpty() && warnings ) {
+        // The project was saved, but its previous versions may not have been kept
+        warnings->append( tr("The project was saved to %1, but its backups could not be updated:").arg(filePath) );
+        *warnings += backupErrors;
     }
 
     if (!autoSave && updateProjectProperties) {
@@ -696,8 +877,15 @@ Project::saveProjectInternal(const QString & path,
 
         //Create the lock file corresponding to the project
         createLockFile();
+
+        // --no-dialogs: the name changed (Save As), check for an auto-save of another session
+        refreshAutoSaveDisabled();
     } else if (updateProjectProperties) {
-        if (!isRenderSave) {
+        // A background auto-save runs in another thread: onAutoSaveFutureFinished() marks the
+        // project as modified, in the main thread. A signal emitted here would be queued, and could
+        // arrive after the one of a user save that waited for this auto-save, marking the saved
+        // project as modified (#825).
+        if ( !isRenderSave && ( QThread::currentThread() == qApp->thread() ) ) {
             QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
             QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
             Q_EMIT projectNameChanged(projectPath + projectFilename, true);
@@ -714,7 +902,7 @@ void
 Project::autoSave()
 {
     ///don't autosave in background mode...
-    if ( getApp()->isBackground() ) {
+    if ( getApp()->isBackground() || _imp->autoSaveDisabled ) {
         return;
     }
 
@@ -729,7 +917,8 @@ Project::triggerAutoSave()
     ///Should only be called in the main-thread, that is upon user interaction.
     assert( QThread::currentThread() == qApp->thread() );
 
-    if ( getApp()->isBackground() || !appPTR->isLoaded() || isProjectClosing() ) {
+    // no auto-saves in test mode (--test): a crash would leave one for the user's next session
+    if ( getApp()->isBackground() || !appPTR->isLoaded() || isProjectClosing() || _imp->autoSaveDisabled || appPTR->isTestMode() ) {
         return;
     }
 
@@ -761,6 +950,9 @@ Project::onAutoSaveTimerTriggered()
     bool canAutoSave = !hasNodeRendering() && !getApp()->isShowingDialog();
 
     if (canAutoSave) {
+        // "SyncPrivateData ... generally occurs when an effect is about to be saved or copied"
+        // (ofxCore.h): the autosave thread can't do it.
+        syncOpenFXPrivateData();
         std::shared_ptr<QFutureWatcher<void> > watcher = std::make_shared<QFutureWatcher<void> >();
         QObject::connect( watcher.get(), SIGNAL(finished()), this, SLOT(onAutoSaveFutureFinished()) );
         // Qt6 dropped the run(object, memberFunction) overload; a lambda is the
@@ -775,6 +967,23 @@ Project::onAutoSaveTimerTriggered()
 }
 
 void
+Project::syncOpenFXPrivateData()
+{
+    assert( QThread::currentThread() == qApp->thread() );
+
+    NodesList nodes;
+    getNodes_recursive(nodes, true /*onlyActive*/);
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ( (*it)->isOpenFXNode() ) {
+            OfxEffectInstance* effect = dynamic_cast<OfxEffectInstance*>( (*it)->getEffectInstance().get() );
+            if (effect) {
+                effect->syncPrivateDataForSerialization();
+            }
+        }
+    }
+}
+
+void
 Project::onAutoSaveFutureFinished()
 {
     QFutureWatcherBase* future = qobject_cast<QFutureWatcherBase*>( sender() );
@@ -785,6 +994,13 @@ Project::onAutoSaveFutureFinished()
             _imp->autoSaveFutures.erase(it);
             break;
         }
+    }
+
+    // Mark the project as modified, unless it was saved since (see saveProjectInternal())
+    if ( !isSaveUpToDate() ) {
+        QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
+        QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
+        Q_EMIT projectNameChanged(projectPath + projectFilename, true);
     }
 }
 
@@ -1693,6 +1909,20 @@ Project::onKnobValueChanged(KnobI* knob,
         }
     } else if ( knob == _imp->addFormatKnob.get() ) {
         Q_EMIT mustCreateFormat();
+    } else if ( knob == _imp->colorSpace8u.get() ||
+                knob == _imp->colorSpace16u.get() ||
+                knob == _imp->colorSpace32f.get() ) {
+        if ( !isLoadingProject() ) {
+            // These LUTs are used to convert images between bit depths, in the nodes and in the viewers, but they
+            // are neither in the node hash nor in the viewer cache key: change the hash of all the nodes, so that
+            // the images and textures computed with the previous LUTs are not used (#1116), and render again.
+            NodesList nodes;
+            getNodes_recursive(nodes, true);
+            for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+                (*it)->incrementKnobsAge();
+            }
+            getApp()->renderAllViewers(true);
+        }
     } else if ( knob == _imp->previewMode.get() ) {
         Q_EMIT autoPreviewChanged( _imp->previewMode->getValue() );
         shouldAutoSave = true;
@@ -1875,6 +2105,33 @@ Project::getLockFileInfos(const QString& projectPath,
 }
 
 void
+Project::stopAutoSave()
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    _imp->autoSaveTimer->stop();
+    // A copy: onAutoSaveFutureFinished() removes the finished ones from the list while the events are processed.
+    const std::list<std::shared_ptr<QFutureWatcher<void> > > futures = _imp->autoSaveFutures;
+    if ( futures.empty() ) {
+        return;
+    }
+    // As saveProject_imp() waits for an auto-save (#825): the auto-save may need the main thread (e.g. its
+    // beforeProjectSave or onProjectSave callback shows a dialog) and the Python lock. Serve the events,
+    // but not user input.
+    std::unique_ptr<PythonGILUnlocker> gilUnlocker;
+    if ( Py_IsInitialized() && PyGILState_Check() ) {
+        gilUnlocker.reset(new PythonGILUnlocker);
+    }
+    for (std::list<std::shared_ptr<QFutureWatcher<void> > >::const_iterator it = futures.begin(); it != futures.end(); ++it) {
+        while ( !(*it)->isFinished() ) {
+            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents, 50);
+            if ( !(*it)->isFinished() ) {
+                QThread::msleep(10); // processEvents() returns at once when there is no event
+            }
+        }
+    }
+}
+
+void
 Project::removeLastAutosave()
 {
     /*
@@ -1882,8 +2139,9 @@ Project::removeLastAutosave()
      */
     QString filepath = getLastAutoSaveFilePath();
 
-    if ( !filepath.isEmpty() ) {
+    if ( !filepath.isEmpty() && canRemoveAutoSave(filepath) ) {
         QFile::remove(filepath);
+        forgetAutoSave(filepath);
     }
 
     /*
@@ -1894,9 +2152,49 @@ Project::removeLastAutosave()
     QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
     StrUtils::ensureLastPathSeparator(projectPath);
     QString autoSaveFilePath = projectPath + projectFilename + QString::fromUtf8(".autosave");
-    if ( QFile::exists(autoSaveFilePath) ) {
+    if ( QFile::exists(autoSaveFilePath) && canRemoveAutoSave(autoSaveFilePath) ) {
         QFile::remove(autoSaveFilePath);
+        forgetAutoSave(autoSaveFilePath);
     }
+}
+
+void
+Project::forgetAutoSave(const QString& filePath)
+{
+    QMutexLocker l(&_imp->projectLock);
+
+    _imp->autoSavesWrittenBySession.erase( QDir::cleanPath(filePath) );
+}
+
+void
+Project::refreshAutoSaveDisabled()
+{
+    _imp->autoSaveDisabled = false;
+    if ( !appPTR->keepsOtherSessionsAutoSaves() || getApp()->isBackground() || !hasProjectBeenSavedByUser() ) {
+        return;
+    }
+    // --no-dialogs: an auto-save of this project written by another session (the user's crash
+    // recovery) would be overwritten by the auto-saves of this session (<dir>/<name>.autosave)
+    QString path = QString::fromUtf8( _imp->getProjectPath().c_str() );
+    StrUtils::ensureLastPathSeparator(path);
+    const QString name = QString::fromUtf8( _imp->getProjectFilename().c_str() );
+    QString autoSaveFileName;
+    if ( findAutoSaveForProject(path, name, &autoSaveFileName) && !wroteAutoSave(path + autoSaveFileName) ) {
+        Dialogs::printDismissedDialog( tr("Auto-save").toStdString(),
+                                       tr("An auto-save of %1 exists: it is kept, and %1 is not auto-saved in this session.").arg(name).toStdString() );
+        _imp->autoSaveDisabled = true;
+    }
+}
+
+bool
+Project::canRemoveAutoSave(const QString& filePath) const
+{
+    if ( !appPTR->keepsOtherSessionsAutoSaves() ) {
+        return true;
+    }
+    // --no-dialogs: only remove the auto-saves this session wrote (or chose to use), never
+    // an auto-save that may be the user's crash recovery
+    return wroteAutoSave(filePath);
 }
 
 void
@@ -1923,9 +2221,35 @@ Project::clearAutoSavesDir()
                 dirToRemove += QLatin1Char('/');
             }
             dirToRemove += entry;
+            if ( appPTR->keepsOtherSessionsAutoSaves() && !isAutoSaveOfThisSession(dirToRemove) ) {
+                // --no-dialogs: keep the auto-saves of other sessions (the user's crash recovery)
+                continue;
+            }
             QFile::remove(dirToRemove);
         }
     }
+}
+
+bool
+Project::isAutoSaveOfThisSession(const QString& filePath)
+{
+    const AppInstanceVec instances = appPTR->getAppInstances();
+    for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        ProjectPtr project = (*it)->getProject();
+        if ( project && project->wroteAutoSave(filePath) ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool
+Project::wroteAutoSave(const QString& filePath) const
+{
+    QMutexLocker l(&_imp->projectLock);
+
+    return _imp->autoSavesWrittenBySession.count( QDir::cleanPath(filePath) ) > 0;
 }
 
 QString
@@ -1972,9 +2296,27 @@ void
 Project::reset(bool aboutToQuit, bool blocking)
 {
     assert( QThread::currentThread() == qApp->thread() );
+    // An onProjectClose callback that resets the project (app.resetProject()) would recurse forever.
+    if (_imp->resetting) {
+        return;
+    }
+    struct ResettingGuard
+    {
+        bool& flag;
+        ResettingGuard(bool& f) : flag(f) { flag = true; }
+        ~ResettingGuard() { flag = false; }
+    } resettingGuard(_imp->resetting);
+    // a save waiting for the auto-save (see saveProject_imp()) must not save the new project
+    ++_imp->resetCount;
     {
         QMutexLocker k(&_imp->projectClosingMutex);
         _imp->projectClosing = true;
+    }
+    // a new project: it may auto-save, and it wrote no auto-save yet
+    _imp->autoSaveDisabled = false;
+    {
+        QMutexLocker l(&_imp->projectLock);
+        _imp->autoSavesWrittenBySession.clear();
     }
 
     if (!blocking) {
@@ -2045,12 +2387,30 @@ Project::doResetEnd(bool aboutToQuit)
         {
             QMutexLocker l(&_imp->projectLock);
             _imp->autoSetProjectFormat = appPTR->getCurrentSettings()->isAutoProjectFormatEnabled();
+            _imp->autoSetProjectFormatPendingReaders.clear();
             _imp->hasProjectBeenSavedByUser = false;
             _imp->projectCreationTime = QDateTime::currentDateTime();
             _imp->setProjectFilename(NATRON_PROJECT_UNTITLED);
             _imp->setProjectPath("");
             _imp->autoSaveTimer->stop();
             _imp->additionalFormats.clear();
+        }
+        {
+            // The format choices must match builtinFormats + additionalFormats: remove the formats that were added
+            // to the closed project, otherwise the indices of the formats added afterwards point to the wrong entries.
+            std::vector<ChoiceOption> entries;
+            {
+                QMutexLocker l(&_imp->formatMutex);
+                for (std::list<Format>::const_iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
+                    QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
+                    if ( !it->getName().empty() ) {
+                        entries.push_back( ChoiceOption(it->getName(), formatStr.toStdString(), "") );
+                    } else {
+                        entries.push_back( ChoiceOption( formatStr.toStdString() ) );
+                    }
+                }
+            }
+            _imp->formatKnob->populateChoices(entries);
         }
         getApp()->removeAllKeyframesIndicators();
 
@@ -2154,9 +2514,144 @@ Project::setAutoSetProjectFormatEnabled(bool enabled)
     _imp->autoSetProjectFormat = enabled;
 }
 
+// Returns true if a Reader can auto-set the project format, i.e. it has a decodable file.
+static bool
+canAutoSetProjectFormatFromReader(const NodePtr& reader)
+{
+    // a deleted Reader may still be referenced (e.g. by a pending list), but must be ignored
+    if ( !reader || !reader->isActivated() ) {
+        return false;
+    }
+    EffectInstancePtr effect = reader->getEffectInstance();
+
+    // A Reader without a decodable file (no file name, no decoder, unreadable file) reports the
+    // project rectangle as its default output format: it must not set the format nor disable the auto-set.
+    return effect && effect->isReader() && effect->isOutputFormatFromFile();
+}
+
+bool
+Project::isSequenceRenderRunning(const QObject* ignoredEngine)
+{
+    bool renderRunning = false;
+    NodesList nodes;
+
+    getNodes_recursive(nodes, true);
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        OutputEffectInstance* output = dynamic_cast<OutputEffectInstance*>( (*it)->getEffectInstance().get() );
+        if ( !output || !output->isDoingSequentialRender() ) {
+            continue;
+        }
+        RenderEnginePtr engine = output->getRenderEngine();
+        if ( engine && (engine.get() == ignoredEngine) ) {
+            // this engine emitted renderFinished, but it only becomes idle a bit later
+            continue;
+        }
+        renderRunning = true;
+        if (engine) {
+            QObject::connect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onSequenceRenderFinishedAutoSetProjectFormat()), Qt::UniqueConnection );
+        }
+    }
+
+    return renderRunning;
+}
+
+void
+Project::autoSetProjectFormatFromReader(const NodePtr& reader)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    if ( !isAutoSetProjectFormatEnabled() || !canAutoSetProjectFormatFromReader(reader) ) {
+        return;
+    }
+
+    // Never change the project format while a sequence render is running: wait for it to finish.
+    if ( isSequenceRenderRunning(NULL) ) {
+        for (std::list<NodeWPtr>::const_iterator it = _imp->autoSetProjectFormatPendingReaders.begin(); it != _imp->autoSetProjectFormatPendingReaders.end(); ++it) {
+            if (it->lock() == reader) {
+                return;
+            }
+        }
+        _imp->autoSetProjectFormatPendingReaders.push_back(reader);
+        // The render may already have emitted renderFinished before we connected to it (it is still
+        // seen as running until its engine becomes idle): also poll until no render is running.
+        scheduleAutoSetProjectFormatRetry();
+
+        return;
+    }
+    _imp->autoSetProjectFormatPendingReaders.clear();
+    setProjectFormatFromReader(reader);
+}
+
+void
+Project::setProjectFormatFromReader(const NodePtr& reader)
+{
+    EffectInstancePtr effect = reader->getEffectInstance();
+    Format frmt;
+
+    frmt.set( effect->getOutputFormat() );
+    frmt.setPixelAspectRatio( effect->getAspectRatio(-1) );
+    setOrAddProjectFormat(frmt);
+}
+
+void
+Project::applyPendingAutoSetProjectFormat(const QObject* ignoredEngine)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    if ( !isAutoSetProjectFormatEnabled() ) {
+        _imp->autoSetProjectFormatPendingReaders.clear();
+
+        return;
+    }
+    if ( _imp->autoSetProjectFormatPendingReaders.empty() ) {
+        return;
+    }
+    if ( isSequenceRenderRunning(ignoredEngine) ) {
+        // Another render is running, or the engine that finished is not idle yet: check again soon.
+        // (A running render also triggers this check when it finishes.)
+        scheduleAutoSetProjectFormatRetry();
+
+        return;
+    }
+    // The first pending Reader that still exists and can still decode its file sets the format.
+    std::list<NodeWPtr> pending;
+    pending.swap(_imp->autoSetProjectFormatPendingReaders);
+    for (std::list<NodeWPtr>::const_iterator it = pending.begin(); it != pending.end(); ++it) {
+        NodePtr reader = it->lock();
+        if ( canAutoSetProjectFormatFromReader(reader) ) {
+            // don't call autoSetProjectFormatFromReader(): it would see the engine that just finished as running
+            setProjectFormatFromReader(reader);
+
+            return;
+        }
+    }
+}
+
+void
+Project::scheduleAutoSetProjectFormatRetry()
+{
+    if (!_imp->autoSetProjectFormatRetryScheduled) {
+        _imp->autoSetProjectFormatRetryScheduled = true;
+        QTimer::singleShot( 100, this, SLOT(onAutoSetProjectFormatRetry()) );
+    }
+}
+
+void
+Project::onSequenceRenderFinishedAutoSetProjectFormat()
+{
+    // renderFinished is emitted by the scheduler thread before its engine becomes idle: ignore that engine.
+    applyPendingAutoSetProjectFormat( sender() );
+}
+
+void
+Project::onAutoSetProjectFormatRetry()
+{
+    _imp->autoSetProjectFormatRetryScheduled = false;
+    applyPendingAutoSetProjectFormat(NULL);
+}
+
 void
 Project::setOrAddProjectFormat(const Format & frmt,
-                               bool skipAdd)
+                               bool skipAdd,
+                               bool mayChangeFormat)
 {
     if ( frmt.isNull() ) {
         return;
@@ -2167,7 +2662,13 @@ Project::setOrAddProjectFormat(const Format & frmt,
     {
         QMutexLocker l(&_imp->formatMutex);
 
-        if (_imp->autoSetProjectFormat) {
+        bool autoSet = _imp->autoSetProjectFormat;
+        if (autoSet && !mayChangeFormat) {
+            Format current;
+            getProjectDefaultFormat(&current);
+            autoSet = (frmt == current);
+        }
+        if (autoSet) {
             _imp->autoSetProjectFormat = false;
             dispW = frmt;
 

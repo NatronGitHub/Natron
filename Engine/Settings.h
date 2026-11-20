@@ -30,6 +30,7 @@
 
 #include <string>
 #include <map>
+#include <set>
 #include <vector>
 
 #include "Global/GlobalDefines.h"
@@ -110,6 +111,9 @@ public:
     U64 getMaximumViewerDiskCacheSize() const;
 
     U64 getMaximumDiskCacheNodeSize() const;
+
+    // The "Disk cache path" preference (may be empty)
+    QString getDiskCachePath() const;
 
     double getUnreachableRamPercent() const;
 
@@ -256,6 +260,7 @@ public:
     int getMaxOpenedNodesViewerContext() const;
     bool viewerNumberKeys() const;
     bool viewerOverlaysPath() const;
+    bool drawSuiteShadows() const;
     ///////////////////////////////////////////////////////
 
     bool areRGBPixelComponentsSupported() const;
@@ -275,6 +280,12 @@ public:
      * @brief Returns true if the QSettings existed prior to loading the settings
      **/
     bool didSettingsExistOnStartup() const;
+
+    /// True if --no-settings was given: the default settings are used
+    bool isUsingDefaultSettings() const
+    {
+        return _usingDefaultSettings;
+    }
 
     bool notifyOnFileChange() const;
 
@@ -539,6 +550,7 @@ private:
     KnobIntPtr _maximumNodeViewerUIOpened;
     KnobBoolPtr _viewerNumberKeys;
     KnobBoolPtr _viewerOverlaysPath;
+    KnobBoolPtr _drawSuiteShadows;
 
     // Nodegraph
     KnobPagePtr _nodegraphTab;
@@ -647,6 +659,9 @@ private:
     bool _restoringSettings;
     bool _ocioRestored;
     bool _settingsExisted;
+    bool _usingDefaultSettings = false;
+    // set by an answer that --no-dialogs gave, for this session only: never saved
+    std::set<KnobI*> _sessionOnlyKnobs;
     bool _defaultAppearanceOutdated;
 };
 

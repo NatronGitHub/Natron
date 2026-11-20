@@ -1068,7 +1068,9 @@ TrackerNodeInteract::findLineIntersection(const Point& p,
     u.x = l2.x - l1.x;
     u.y = l2.y - l1.y;
 
-    a = (u.x * h.x + u.y * h.y) / (u.x * u.x + u.y * u.y);
+    double u2 = u.x * u.x + u.y * u.y;
+    // if l1 == l2, the line is a point: project on l1
+    a = u2 > 0. ? (u.x * h.x + u.y * h.y) / u2 : 0.;
     inter->x = l1.x + u.x * a;
     inter->y = l1.y + u.y * a;
 }

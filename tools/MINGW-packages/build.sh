@@ -2,11 +2,15 @@
 set -e -x
 CWD=`pwd`
 PKGS="
+mingw-w64-freetype
 mingw-w64-libraw-gpl2
 mingw-w64-libraw-lgpl
 mingw-w64-openimageio
 mingw-w64-seexpr-git
 mingw-w64-ffmpeg-gpl2
+mingw-w64-ffmpeg-lgpl
+mingw-w64-libheif-lgpl
+mingw-w64-libtiff-lgpl
 mingw-w64-imagemagick
 mingw-w64-osmesa
 "

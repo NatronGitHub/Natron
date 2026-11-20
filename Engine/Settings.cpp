@@ -697,6 +697,18 @@ Settings::initializeKnobsColorManagement()
 
     _ocioStartupCheck = AppManager::createKnob<KnobBool>( this, tr("Warn on startup if OpenColorIO config is not the default") );
     _ocioStartupCheck->setName("startupCheckOCIO");
+    _ocioStartupCheck->setHintToolTip( tr("When the %1 user interface starts, check the OpenColorIO config selected above, "
+                                          "and offer to switch to the default config (%2) if another config is selected.\n"
+                                          "If the selected config is invalid, or if \"%3\" is selected but the custom OpenColorIO "
+                                          "configuration file is not set or does not exist, the suggested answer is to switch to the "
+                                          "default config (the custom file path is kept). If another bundled config is selected, the "
+                                          "suggested answer is to keep it. A custom config whose file exists is kept without asking. "
+                                          "If the default config is not bundled, a warning is shown only when the selected config "
+                                          "cannot be used.\n"
+                                          "Checking \"Do Not Show This Again\" in the question unchecks this setting.")
+                                       .arg( QString::fromUtf8(NATRON_APPLICATION_NAME),
+                                             QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME),
+                                             QString::fromUtf8(NATRON_CUSTOM_OCIO_CONFIG_NAME) ) );
     _ocioTab->addKnob(_ocioStartupCheck);
 } // Settings::initializeKnobsColorManagement
 
@@ -1158,6 +1170,17 @@ Settings::initializeKnobsViewers()
                                             "displayed only for the render path for the current viewer "
                                             "inputs.") );
     _viewersTab->addKnob(_viewerOverlaysPath);
+
+    _drawSuiteShadows = AppManager::createKnob<KnobBool>( this, tr("Draw shadows on plug-in overlays drawn without OpenGL") );
+    _drawSuiteShadows->setName("drawSuiteShadows");
+    _drawSuiteShadows->setHintToolTip( tr("Some plug-ins draw their viewer overlays (handles, outlines, labels) with the "
+                                          "OpenFX DrawSuite instead of OpenGL. When this is checked, the lines and the text "
+                                          "of these overlays get a dark drop shadow, like Natron's own overlays and the "
+                                          "OpenGL overlays of most plug-ins, so that they stay visible on any image. "
+                                          "It also applies to the OpenGL overlays of plug-ins that draw them with the DrawSuite "
+                                          "emulation of the OpenFX Support library. Other OpenGL overlays draw their own "
+                                          "shadows.") );
+    _viewersTab->addKnob(_drawSuiteShadows);
 } // Settings::initializeKnobsViewers
 
 void
@@ -1213,7 +1236,8 @@ Settings::initializeKnobsNodeGraph()
     _useInputAForMergeAutoConnect->setName("mergeConnectToA");
     _useInputAForMergeAutoConnect->setHintToolTip( tr("If checked, upon creation of a new Merge node, or any other node with inputs named "
                                                       "A and B, input A is be preferred "
-                                                      "for auto-connection. When the node is disabled, B is always output, whether this is checked or not.") );
+                                                      "for auto-connection. Shuffle ignores this setting: it connects the input it outputs by default (B). "
+                                                      "When the node is disabled, B is always output, whether this is checked or not.") );
     _nodegraphTab->addKnob(_useInputAForMergeAutoConnect);
 } // Settings::initializeKnobsNodeGraph
 
@@ -1557,6 +1581,8 @@ Settings::setDefaultValues()
     _maximumNodeViewerUIOpened->setDefaultValue(2);
     _viewerNumberKeys->setDefaultValue(true);
     _viewerOverlaysPath->setDefaultValue(true);
+    // on by default, like the shadows of Natron's own OpenGL overlays
+    _drawSuiteShadows->setDefaultValue(true);
 
     // Nodegraph
     _autoScroll->setDefaultValue(false);
@@ -1824,6 +1850,11 @@ Settings::saveAllSettings()
 void
 Settings::restorePluginSettings()
 {
+    if ( isUsingDefaultSettings() ) {
+        // --no-settings (and --test, which implies it): the plug-ins keep their defaults, and the
+        // user's plug-in preferences are neither read nor written
+        return;
+    }
     const PluginsMap& plugins = appPTR->getPluginsList();
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
@@ -1939,6 +1970,9 @@ Settings::saveSettings(const std::vector<KnobI*>& knobs,
 
     settings.setValue(QString::fromUtf8(kQSettingsSoftwareMajorVersionSettingName), NATRON_VERSION_MAJOR);
     for (U32 i = 0; i < knobs.size(); ++i) {
+        if ( _sessionOnlyKnobs.count(knobs[i]) ) {
+            continue; // an answer given by --no-dialogs, not by the user
+        }
         KnobStringBase* isString = dynamic_cast<KnobStringBase*>(knobs[i]);
         KnobIntBase* isInt = dynamic_cast<KnobIntBase*>(knobs[i]);
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>(knobs[i]);
@@ -2078,6 +2112,7 @@ void
 Settings::restoreSettings(bool useDefault)
 {
     _restoringSettings = true;
+    _usingDefaultSettings = useDefault;
 
     // call restoreKnobsFromSettings only if --no-settings is not part of the command-line arguments
     if (!useDefault) {
@@ -2151,7 +2186,10 @@ Settings::restoreSettings(bool useDefault)
         if ( _settingsExisted && (appearanceVersion < NATRON_DEFAULT_APPEARANCE_VERSION) ) {
             _defaultAppearanceOutdated = true;
             _defaultAppearanceVersion->setValue(NATRON_DEFAULT_APPEARANCE_VERSION);
-            saveSetting( _defaultAppearanceVersion.get() );
+            // --no-dialogs: the question about the new appearance is not shown, ask it next time
+            if ( !appPTR->isDialogsDisabled() ) {
+                saveSetting( _defaultAppearanceVersion.get() );
+            }
         }
 
         appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
@@ -2276,6 +2314,10 @@ Settings::onKnobValueChanged(KnobI* k,
     Q_EMIT settingChanged(k);
     bool ret = true;
 
+    if (reason == eValueChangedReasonUserEdited) {
+        _sessionOnlyKnobs.erase(k); // the user chose this value: save it
+    }
+
     if ( k == _maxViewerDiskCacheGB.get() ) {
         if (!_restoringSettings) {
             appPTR->setApplicationsCachesMaximumViewerDiskSpace( getMaximumViewerDiskCacheSize() );
@@ -2290,11 +2332,16 @@ Settings::onKnobValueChanged(KnobI* k,
         }
         setCachingLabels();
     } else if ( k == _diskCachePath.get() ) {
-        QString path = QString::fromUtf8(_diskCachePath->getValue().c_str());
-        qputenv(NATRON_DISK_CACHE_PATH_ENV_VAR, path.toUtf8());
+        // The environment variable, if set, takes precedence over the preference (#1265): don't overwrite it
         appPTR->refreshDiskCacheLocation();
     } else if ( k == _wipeDiskCache.get() ) {
-        appPTR->wipeAndCreateDiskCacheStructure();
+        if ( !appPTR->wipeAndCreateDiskCacheStructure() ) {
+            Dialogs::warningDialog( tr("Wipe Disk Cache").toStdString(),
+                                    tr("The disk cache folder is used by another %1 process, so its files were not deleted: "
+                                       "only the cache entries of this process were removed. Quit the other %1 processes "
+                                       "(including the background renders), then wipe the disk cache again.")
+                                    .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
+        }
     } else if ( k == _numberOfThreads.get() ) {
         int nbThreads = getNumberOfThreads();
         appPTR->setNThreadsToRender(nbThreads);
@@ -2351,6 +2398,12 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->toggleAutoHideGraphInputs();
     } else if ( k == _autoProxyWhenScrubbingTimeline.get() ) {
         _autoProxyLevel->setSecret( !_autoProxyWhenScrubbingTimeline->getValue() );
+    } else if ( ( k == _drawSuiteShadows.get() ) && !_restoringSettings ) {
+        // the overlays drawn with the DrawSuite get or lose their shadows
+        const AppInstanceVec& apps = appPTR->getAppInstances();
+        for (AppInstanceVec::const_iterator it = apps.begin(); it != apps.end(); ++it) {
+            (*it)->redrawAllViewers();
+        }
     } else if ( !_restoringSettings &&
                 ( ( k == _sunkenColor.get() ) ||
                   ( k == _baseColor.get() ) ||
@@ -2514,6 +2567,12 @@ Settings::viewerOverlaysPath() const
     return _viewerOverlaysPath->getValue();
 }
 
+bool
+Settings::drawSuiteShadows() const
+{
+    return _drawSuiteShadows->getValue();
+}
+
 ///////////////////////////////////////////////////////
 // "Caching" pane
 
@@ -2539,6 +2598,12 @@ U64
 Settings::getMaximumDiskCacheNodeSize() const
 {
     return (U64)( _maxDiskCacheNodeGB->getValue() ) * 1024 * 1024 * 1024;
+}
+
+QString
+Settings::getDiskCachePath() const
+{
+    return _diskCachePath ? QString::fromUtf8( _diskCachePath->getValue().c_str() ) : QString();
 }
 
 ///////////////////////////////////////////////////
@@ -3311,7 +3376,9 @@ Settings::doOCIOStartupCheckIfNeeded()
                                                                 StandardButtons(eStandardButtonYes | eStandardButtonNo),
                                                                 defaultButton,
                                                                 &stopAsking);
-        if (stopAsking != !docheck) {
+        // --no-dialogs: the answer was not given by the user, apply it to this session only
+        const bool saveAnswer = !appPTR->isDialogsDisabled();
+        if ( saveAnswer && (stopAsking != !docheck) ) {
             _ocioStartupCheck->setValue(!stopAsking);
             saveSetting( _ocioStartupCheck.get() );
         }
@@ -3319,7 +3386,13 @@ Settings::doOCIOStartupCheckIfNeeded()
         if (reply == eStandardButtonYes) {
             if (defaultIndex != -1) {
                 _ocioConfigKnob->setValue(defaultIndex);
-                saveSetting( _ocioConfigKnob.get() );
+                if (saveAnswer) {
+                    saveSetting( _ocioConfigKnob.get() );
+                } else {
+                    // not saved either by a later saveSettings() (e.g. from Python), unless
+                    // the user changes it in the preferences
+                    _sessionOnlyKnobs.insert( _ocioConfigKnob.get() );
+                }
             } else {
                 Dialogs::warningDialog( "OCIO config", tr("The %2 OCIO config could not be found.\n"
                                                           "This is probably because you're not using the OpenColorIO-Configs folder that should "
@@ -3375,6 +3448,9 @@ void
 Settings::appendPythonGroupsPath(const std::string& path)
 {
     _templatesPluginPaths->appendPath(path);
+    if ( isUsingDefaultSettings() ) {
+        return; // --no-settings (and --test): the path is not saved in the user's preferences
+    }
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
     settings.setValue( QString::fromUtf8( _templatesPluginPaths->getName().c_str() ), QVariant( QString::fromUtf8( _templatesPluginPaths->getValue(0).c_str() ) ) );
 }

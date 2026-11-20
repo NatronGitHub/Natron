@@ -61,11 +61,37 @@ cd tools/jenkins
 include/scripts/build-Linux-sdk.sh
 ```
 
-It puts build logs and the list of files installed by each package in the directory `/opt/Natron-sdk/var/log/Natron-Linux-x86_64-SDK` or `/opt/Natron-sdk/var/log/Natron-Linux-i686-SDK`.
+It puts build logs and the list of files installed by each package in the directory `/opt/Natron-sdk/var/log/Natron-Linux-<arch>-SDK`, where `<arch>` is `x86_64`, `aarch64` or `i686`.
+
+The official Linux binaries are built with the Rocky Linux 9 SDK (`ROCKY=9`). It uses GCC 14 from `gcc-toolset-14`, Python 3.11, Qt 5.15.19, PySide2/Shiboken2 5.15.19 (built from source with EPEL's libclang 19), and librsvg 2.58 (built with Rust from `rust-toolset`). It doesn't build Qt 4 or the Qt installer framework (`WITH_QT4=false`): the Linux releases are portable archives. The Rocky Linux 8 SDK (`ROCKY=8`) is the same, except for libclang 18, librsvg 2.40 and Qt 4. Both build natively on x86_64 and aarch64: the Docker image is built by `[ROCKY=8] tools/docker/natron-sdk-rockylinux/build.sh [amd64|arm64]` (see `tools/docker/README.md`).
 
 Some packages, especially Qt 4.8.7, have Natron-specific patches. Take a look at the SDK script to see which patches are applied to each packages, and what configuration options are used.
 
 The SDK may be updated by pulling the last modifications to the script and re-executing it.
+
+The release scripts (`tools/jenkins/launchBuildMain.sh`) build Natron with CMake, from the SDK; extra CMake options go in `NATRON_EXTRA_CMAKE_FLAGS`. On RB-2.6, `NATRON_BUILD_SYSTEM=qmake` selects the deprecated qmake build instead (see `Documentation/source/maintainers/building.rst`, "Release builds").
+
+### Runtime requirements of the Linux binaries
+
+The official Linux binaries are built on Rocky Linux 9 with the Natron SDK. They bundle the SDK libraries: Qt, Python, Boost, OpenImageIO, OpenColorIO, OpenEXR, FFmpeg, LibRaw, and so on. They never bundle the following system libraries, which must be installed on the system that runs Natron:
+
+- glibc 2.34 or later: libc, libm, libdl, libpthread, librt and ld-linux.
+- libstdc++ and libgcc_s from GCC 11 or later. On Rocky Linux 9 these are the system ones. Natron is compiled with a newer GCC, from `gcc-toolset`, but the libstdc++ symbols that are newer than GCC 11 are linked statically, from `libstdc++_nonshared.a`, so the binaries only need the system libstdc++.
+- libgomp (OpenMP runtime), from GCC 11 or later. It is a separate package (`libgomp` on RHEL/Rocky, `libgomp1` on Debian/Ubuntu). Most systems have it, but minimal images such as `rockylinux:9-minimal` don't.
+- libGL from GLVND (libGL, libEGL, libGLX, libGLdispatch), and an OpenGL driver. Also libdrm.
+- The X11 client libraries, at least as recent as those of Rocky Linux 9.0 (libX11 1.7.0, libxcb 1.13.1, libxkbcommon 1.0.3): libX11, libX11-xcb, libXext, libXrender, libXau, libXdmcp and the other libX\* libraries, libxcb and its extensions, the xcb-util libraries (libxcb-icccm, libxcb-image, libxcb-keysyms, libxcb-render-util), libSM, libICE, libxkbcommon and libxkbcommon-x11. Qt's X11 platform plug-in (`libqxcb.so`) needs them.
+- ALSA (libasound), for Qt Multimedia.
+
+Everything else comes from the SDK and is bundled. In particular, Python's `crypt` module (deprecated since Python 3.11) is not included: it needs libcrypt.so.2, which Debian and Ubuntu don't have.
+
+`tools/jenkins/build-Linux-installer.sh` checks this (`checkBundle`, on the portable tree and on the installer packages). It fails if:
+- the directory doesn't exist or contains no ELF file;
+- one of the system libraries above is bundled;
+- an ELF file needs (DT_NEEDED) a library that is neither bundled nor one of the system libraries above;
+- a bundled binary needs a symbol version of a system library that is newer than Rocky Linux 9.0 provides, as found by `objdump -p` (Version References): GLIBC_2.34, GLIBCXX_3.4.29, CXXABI_1.3.13, GCC_7.0.0 on x86_64 or GCC_11.0 on aarch64, GOMP_5.0.1 and OMP_5.0.1. Later EL9 updates of glibc define a few GLIBC_2.35 symbols, backported from glibc 2.35: a binary that needs them would not run on older EL9 systems;
+- a bundled binary needs a version of these libraries without a number, such as GLIBC_PRIVATE or GLIBC_ABI_DT_RELR (glibc 2.36 and later), except libstdc++'s CXXABI_TM_1 and CXXABI_FLOAT128.
+
+It then runs openfx's `Support/include/linuxCheckBundle.sh` (from `libs/OpenFX`, if it has it) on the OFX plug-in bundles of the portable tree, which also checks their rpaths.
 
 ### Environment to use the Natron SDK
 
@@ -79,12 +105,10 @@ This must be done in every shell/terminal where you intend to compile and/or run
 
 ## Installing dependencies from Ubuntu
 
-The scripts `tools/travis/install_dependencies.sh` and
-`tools/travis/build.sh` respectively install the correct dependencies
-and build Natron and the standard set of plugins on Ubuntu
-18.04 (Bionic Beaver).
-These scripts are used to make the [Travis CI builds](https://travis-ci.org/github/NatronGitHub/Natron).
-You can use them as a reference, but the resulting binaries are not guaranteed to be fully functional.
+The Linux job of the [GitHub Actions CI](https://github.com/NatronGitHub/Natron/actions/workflows/ci.yml)
+(`.github/workflows/ci.yml`) installs the dependencies and builds Natron and the tests on Ubuntu 24.04:
+read it for the exact package list and build commands.
+You can use it as a reference, but the resulting binaries are not guaranteed to be fully functional.
 
 ## Installing dependencies manually
 
@@ -146,7 +170,7 @@ Natron uses the OpenFX API, before building you should make sure its submodule i
 For that, go under Natron and type
 
 ```
-git submodule update -i --recursive
+git submodule update --init --recursive
 ```
 
 ### Download OpenColorIO-Configs
@@ -230,7 +254,9 @@ Plugins/
 
 # Build
 
-Natron is built with CMake (3.16.7 or later). From the Natron source directory:
+Natron is built with CMake (3.21 or later). The distribution package is recent enough on Ubuntu 22.04 and later, Debian 12 and later, Fedora, and RHEL/Rocky/Alma 8.8 and later and 9 (`dnf install cmake`). On older systems, install a newer CMake with `pip install cmake` (in a virtual environment or with `--user`), or from https://cmake.org/download/ (or Kitware's APT repository on Ubuntu).
+
+From the Natron source directory:
 
 ```
 cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
@@ -259,7 +285,7 @@ To install, run `cmake --install build --prefix /usr/local` (or another prefix).
 
 ## Deprecated: building with qmake
 
-***note:*** *The qmake build is deprecated. It still works on RB-2.6, where the release scripts in `tools/jenkins` still use it, but it will be removed in a future release (first on RB-2.7, see [#1181](https://github.com/NatronGitHub/Natron/issues/1181)). It needs a [config.pri](#configpri) file.*
+***note:*** *The qmake build is deprecated. It still works on RB-2.6, where the release scripts in `tools/jenkins` use it with `NATRON_BUILD_SYSTEM=qmake` (they build with CMake by default), but it will be removed in a future release (first on RB-2.7, see [#1181](https://github.com/NatronGitHub/Natron/issues/1181)). It needs a [config.pri](#configpri) file.*
 
 To build, go into the Natron directory and type:
 
@@ -330,7 +356,7 @@ Update submodules:
 
 ```
 git submodule init
-git submodule update -i --recursive
+git submodule update --init --recursive
 ```
 
 Build it with CMake, as described in [Build](#build):
@@ -470,7 +496,7 @@ Get Natron:
 
 ```
 git clone https://github.com/NatronGitHub/Natron && cd Natron
-git submodule update -i --recursive
+git submodule update --init --recursive
 wget https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.5.tar.gz
 tar xzf Natron-v2.5.tar.gz
 mv OpenColorIO-Configs-Natron-v2.5 OpenColorIO-Configs

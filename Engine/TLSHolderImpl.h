@@ -50,7 +50,7 @@ EffectInstance::EffectTLSDataPtr
 TLSHolder<EffectInstance::EffectTLSData>::copyAndReturnNewTLS(const QThread* fromThread,
                                                               const QThread* toThread) const
 {
-    QWriteLocker k(&perThreadDataMutex);
+    std::unique_lock<std::shared_mutex> k(perThreadDataMutex);
     ThreadDataMap::iterator found = perThreadData.find(fromThread);
 
     if ( found == perThreadData.end() ) {
@@ -100,7 +100,7 @@ template <typename T>
 bool
 TLSHolder<T>::canCleanupPerThreadData(const QThread* curThread) const
 {
-    QReadLocker k(&perThreadDataMutex);
+    std::shared_lock<std::shared_mutex> k(perThreadDataMutex);
 
     if ( perThreadData.empty() ) {
         return true; // cleanup would return true
@@ -117,7 +117,7 @@ template <typename T>
 bool
 TLSHolder<T>::cleanupPerThreadData(const QThread* curThread) const
 {
-    QWriteLocker k(&perThreadDataMutex);
+    std::unique_lock<std::shared_mutex> k(perThreadDataMutex);
 
     typename ThreadDataMap::iterator found = perThreadData.find(curThread);
     if ( found != perThreadData.end() ) {
@@ -143,7 +143,7 @@ TLSHolder<T>::getTLSData() const
 
     //Attempt to find an object in the map. It will be there if we already called getOrCreateTLSData() for this thread
     {
-        QReadLocker k(&perThreadDataMutex);
+        std::shared_lock<std::shared_mutex> k(perThreadDataMutex);
         const ThreadDataMap& perThreadDataCRef = perThreadData; // take a const ref, since it's a read lock
         typename ThreadDataMap::const_iterator found = perThreadDataCRef.find(curThread);
         if ( found != perThreadDataCRef.end() ) {
@@ -170,7 +170,7 @@ TLSHolder<T>::getOrCreateTLSData() const
     //Attempt to find an object in the map. It will be there if we already called getOrCreateTLSData() for this thread
     //Note that if present, this call is extremely fast as we do not block other threads
     {
-        QReadLocker k(&perThreadDataMutex);
+        std::shared_lock<std::shared_mutex> k(perThreadDataMutex);
         const ThreadDataMap& perThreadDataCRef = perThreadData; // take a const ref, since it's a read lock
         typename ThreadDataMap::const_iterator found = perThreadDataCRef.find(curThread);
         if ( found != perThreadDataCRef.end() ) {
@@ -186,7 +186,7 @@ TLSHolder<T>::getOrCreateTLSData() const
     appPTR->getAppTLS()->registerTLSHolder(thisShared);
     data.value = std::make_shared<T>();
     {
-        QWriteLocker k(&perThreadDataMutex);
+        std::unique_lock<std::shared_mutex> k(perThreadDataMutex);
         perThreadData.insert( std::make_pair(curThread, data) );
     }
     assert(data.value);
@@ -208,7 +208,7 @@ AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
 
     // first pass with a read lock to exit early without taking the write lock
     {
-        QReadLocker k(&_spawnsMutex);
+        std::shared_lock<std::shared_mutex> k(_spawnsMutex);
         const ThreadSpawnMap& spawnsCRef = _spawns; // take a const ref, since it's a read lock
         ThreadSpawnMap::const_iterator foundSpawned = spawnsCRef.find(uintptr_t(curThread));
         if ( foundSpawned == spawnsCRef.end() ) {
@@ -219,7 +219,7 @@ AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
     const QThread* foundThread = 0;
     // Find first under a read lock to enable better concurrency
     {
-        QReadLocker k(&_spawnsMutex);
+        std::shared_lock<std::shared_mutex> k(_spawnsMutex);
         ThreadSpawnMap::iterator foundSpawned = _spawns.find(uintptr_t(curThread));
         if ( foundSpawned == _spawns.end() ) {
             //This is not a spawned thread and it did not have TLS already
@@ -229,7 +229,7 @@ AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
     }
 
     if (foundThread) {
-        QWriteLocker k(&_spawnsMutex);
+        std::unique_lock<std::shared_mutex> k(_spawnsMutex);
         ThreadSpawnMap::iterator foundSpawned = _spawns.find(uintptr_t(curThread));
         if ( foundSpawned == _spawns.end() ) {
             //This is not a spawned thread and it did not have TLS already
@@ -240,7 +240,7 @@ AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
         _spawns.erase(foundSpawned);
     }
     {
-        QWriteLocker k(&_objectMutex);
+        std::unique_lock<std::shared_mutex> k(_objectMutex);
         std::shared_ptr<T> retval = copyTLSFromSpawnerThreadInternal<T>(holder, curThread, foundThread);
 
 
@@ -255,7 +255,7 @@ AppTLS::copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
                                          const QThread* spawnerThread)
 {
     //Private - should be locked
-    assert( !_objectMutex.tryLockForWrite() );
+    // _objectMutex must be locked for writing by the caller
 
     std::shared_ptr<T> tls;
 

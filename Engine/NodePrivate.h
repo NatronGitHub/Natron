@@ -242,7 +242,7 @@ public:
         , currentThreadSafety(eRenderSafetyInstanceSafe)
         , currentSupportTiles(false)
         , currentSupportOpenGLRender(ePluginOpenGLRenderSupportNone)
-        , currentSupportSequentialRender(eSequentialPreferenceNotSequential)
+        , openGLContextAttachFailed(false)
         , currentCanTransform(false)
         , draftModeUsed(false)
         , mustComputeInputRelatedData(true)
@@ -461,7 +461,9 @@ public:
     RenderSafetyEnum pluginSafety, currentThreadSafety;
     bool currentSupportTiles;
     PluginOpenGLRenderSupport currentSupportOpenGLRender;
-    SequentialPreferenceEnum currentSupportSequentialRender;
+    // kOfxActionOpenGLContextAttached failed: "the host should not attempt to run the plug-in in OpenGL
+    // render mode" (until the instance changes its OpenGL render support)
+    bool openGLContextAttachFailed;
     bool currentCanTransform;
     bool draftModeUsed, mustComputeInputRelatedData;
     bool duringPaintStrokeCreation; // protected by lastStrokeMovementMutex
