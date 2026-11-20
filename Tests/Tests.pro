@@ -40,6 +40,10 @@ QMAKE_CLEAN += ofxTestLog.txt test_dot_generator0.jpg
 
 include(../global.pri)
 
+# Windows: stack reserve of the main thread (see NATRON_MAIN_THREAD_STACK_SIZE in global.pri)
+win32-g++: QMAKE_LFLAGS += -Wl,--stack,$$NATRON_MAIN_THREAD_STACK_SIZE
+win32-msvc*: QMAKE_LFLAGS += /STACK:$$NATRON_MAIN_THREAD_STACK_SIZE
+
 # bundled third-party code: see warnings.pri
 NATRON_THIRD_PARTY_SOURCES += \
     google-test/src/gtest-all.cc \
@@ -49,6 +53,7 @@ NATRON_THIRD_PARTY_SOURCES += \
 # per-file flags); here it runs the same tests without -ffast-math.
 SOURCES += \
     BaseTest.cpp \
+    CLArgs_Test.cpp \
     Curve_Test.cpp \
     DeepGraphRender_Test.cpp \
     DiskCache_Test.cpp \
@@ -60,6 +65,7 @@ SOURCES += \
     KnobFile_Test.cpp \
     KnobSlave_Test.cpp \
     KnobStringAnimation_Test.cpp \
+    LoadPythonScript_Test.cpp \
     Lut_Test.cpp \
     MultiInputLinks_Test.cpp \
     NaNGuards_FastMath.cpp \
@@ -100,6 +106,7 @@ SOURCES += \
     RenderThreads_Test.cpp \
     RotoPaint_Test.cpp \
     SequentialRender_Test.cpp \
+    StrUtilsFormat_Test.cpp \
     Tracker_Test.cpp \
     ViewerCache_Test.cpp \
     WriteNodeViews_Test.cpp \

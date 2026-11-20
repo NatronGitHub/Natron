@@ -45,6 +45,8 @@ CLANG_DIAG_ON(uninitialized)
 #define COLOR_SELECTOR_PALETTE_COLS 12
 #define COLOR_SELECTOR_PALETTE_ICON_SIZE 18
 
+class QSettings;
+
 NATRON_NAMESPACE_ENTER
 
 class ColorSelectorPaletteButton : public Button
@@ -62,6 +64,8 @@ public:
 
     bool isModified();
     void clearModified();
+    // false for an empty (cleared) slot; unlike isModified(), not reset when the palette wraps around
+    bool hasColor() const;
 
     void getColor(float *r, float *g, float *b, float *a);
 
@@ -69,6 +73,8 @@ Q_SIGNALS:
 
     void colorChanged(float r, float g, float b, float a);
     void colorPicked(float r, float g, float b, float a);
+    // the user cleared the color (right-click)
+    void colorCleared();
 
 public Q_SLOTS:
 
@@ -82,6 +88,7 @@ private:
     float _b;
     float _a;
     bool _modified;
+    bool _hasColor;
 
     void updateColor(bool signal = true);
 
@@ -160,6 +167,7 @@ private:
                             int cols = COLOR_SELECTOR_PALETTE_COLS);
     void updatePaletteButtons();
     void savePaletteButton(int id);
+    void savePaletteButton(QSettings& settings, int id);
     void savePaletteButtons();
 
 private Q_SLOTS:
@@ -196,6 +204,7 @@ private Q_SLOTS:
 
     void setPaletteButtonColor(bool clicked = true);
     void clearPaletteButtons(bool clicked = true);
+    void onPaletteButtonCleared();
 
     // workaround for QToolButton+QWidgetAction
     // triggered signal(s) are never emitted!?

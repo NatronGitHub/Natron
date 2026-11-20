@@ -42,7 +42,13 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/osmesa/lib/pkgconfig/gl.pc
     if [ "$LLVM_BUILD" = 1 ]; then
        cp "$SRC_PATH/$OSMESA_LLVM_TAR" .
     fi
-    env BUILD_OSDEMO=0 CFLAGS="-fPIC" OSMESA_DRIVER=3 OSMESA_PREFIX="${SDK_HOME}/osmesa" OSMESA_VERSION="$OSMESA_VERSION" LLVM_PREFIX="${SDK_HOME}/llvm" LLVM_VERSION="$OSMESA_LLVM_VERSION" MKJOBS="${MKJOBS}" LLVM_BUILD="$LLVM_BUILD" ../osmesa-install.sh
+    # LLVM 6 relies on <cstdint> being included indirectly by libstdc++ headers,
+    # which is not the case anymore since GCC 13
+    OSMESA_CXXFLAGS="-fPIC"
+    if version_gt "$GCC_VERSION" 12.99; then
+        OSMESA_CXXFLAGS="$OSMESA_CXXFLAGS -include cstdint"
+    fi
+    env BUILD_OSDEMO=0 CFLAGS="-fPIC ${GCC14_CFLAGS:-}" CXXFLAGS="$OSMESA_CXXFLAGS" OSMESA_DRIVER=3 OSMESA_PREFIX="${SDK_HOME}/osmesa" OSMESA_VERSION="$OSMESA_VERSION" LLVM_PREFIX="${SDK_HOME}/llvm" LLVM_VERSION="$OSMESA_LLVM_VERSION" MKJOBS="${MKJOBS}" LLVM_BUILD="$LLVM_BUILD" ../osmesa-install.sh
     popd
     popd
     rm -rf osmesa-install

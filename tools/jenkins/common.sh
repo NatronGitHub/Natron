@@ -84,6 +84,7 @@ if [ "$PKGOS" = "Linux" ]; then
     if [ -z "${ARCH:-}" ]; then
         case $(uname -m) in
             i?86) ARCH=i686 ;;
+            arm64) ARCH=aarch64 ;; # e.g. when generating a Dockerfile on macOS
             *) ARCH=$(uname -m) ;;
         esac
         export ARCH
@@ -91,9 +92,10 @@ if [ "$PKGOS" = "Linux" ]; then
     
     if [ "$ARCH" = "i686" ]; then
         BITS=32
-    elif [ "$ARCH" = "x86_64" ]; then
+    elif [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "aarch64" ]; then
         BITS=64
     else
+        (>&2 echo "Error: unsupported Linux architecture: $ARCH")
         exit 1
     fi
     SDK_HOME="/opt/Natron-$SDK_VERSION"
@@ -477,10 +479,12 @@ BOOST_ROOT="$SDK_HOME"
 
 PKG_CONFIG_PATH=
 if [ "$PKGOS" = "Linux" ]; then
-    PATH="$SDK_HOME/bin:$QTDIR/bin:$SDK_HOME/gcc/bin:$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$PATH"
-    LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib64:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
-    LD_LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib64:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
-    #LD_RUN_PATH="$SDK_HOME/lib:$QTDIR/lib:$SDK_HOME/gcc/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
+    # The compiler is gcc-toolset (Rocky Linux 9), and its C++ runtime is the system one:
+    # don't use the SDK's old self-built GCC ($SDK_HOME/gcc).
+    PATH="$SDK_HOME/bin:$QTDIR/bin:$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$PATH"
+    LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
+    LD_LIBRARY_PATH="$SDK_HOME/lib:$QTDIR/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
+    #LD_RUN_PATH="$SDK_HOME/lib:$QTDIR/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib"
     PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig:$SDK_HOME/libdata/pkgconfig:$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$PYTHON_HOME/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 elif [ "$PKGOS" = "Windows" ]; then
     PKG_CONFIG_PATH="$FFMPEG_PATH/lib/pkgconfig:$LIBRAW_PATH/lib/pkgconfig:$OSMESA_PATH/lib/pkgconfig:$(cygpath -u ${PYTHON_HOME})/lib/pkgconfig:$QTDIR/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
@@ -489,10 +493,11 @@ elif [ "$PKGOS" = "OSX" ]; then
 fi
 export LD_LIBRARY_PATH LD_RUN_PATH DYLD_LIBRARY_PATH LIBRARY_PATH CPATH PKG_CONFIG_PATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH BOOST_ROOT
 
+# Qt may not be installed yet, e.g. when building the SDK or generating its Dockerfile
 if [ "${QT_VERSION_MAJOR}" = 4 ]; then
-    QT_VERSION=$(pkg-config --modversion QtCore)
+    QT_VERSION=$(pkg-config --modversion QtCore 2>/dev/null || true)
 else
-    QT_VERSION=$(pkg-config --modversion Qt${QT_VERSION_MAJOR}Core)
+    QT_VERSION=$(pkg-config --modversion Qt${QT_VERSION_MAJOR}Core 2>/dev/null || true)
 fi
 QT_VERSION_MINOR=$(echo $QT_VERSION | cut -d. -f2)
 
