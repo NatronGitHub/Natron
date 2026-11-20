@@ -2,7 +2,7 @@
 
 # Install m4
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/m4.html
-M4_VERSION=1.4.19
+M4_VERSION=1.4.21
 M4_TAR="m4-${M4_VERSION}.tar.xz"
 M4_SITE="https://ftp.gnu.org/gnu/m4"
 if download_step; then

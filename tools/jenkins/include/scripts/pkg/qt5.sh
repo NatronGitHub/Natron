@@ -36,6 +36,7 @@ if build_step && { force_build || { [ ! -s "$QT5PREFIX/lib/pkgconfig/Qt5Core.pc"
         patch -Np1 -i "$SRC_PATH/$QT5_PATCH"
     fi
     mkdir -pv qtbase/.git
+    # -no-pch: the precompiled headers use several GB of disk space (the 40 GB podman VM was full)
     # Install Qt5 by running the following commands: 
     env CFLAGS="$BF" CXXFLAGS="$BF" OPENSSL_LIBS="-L$SDK_HOME/lib -lssl -lcrypto" ./configure -prefix "$QT5PREFIX" \
             -sysconfdir /etc/xdg                      \
@@ -46,6 +47,8 @@ if build_step && { force_build || { [ ! -s "$QT5PREFIX/lib/pkgconfig/Qt5Core.pc"
             -system-harfbuzz                          \
             -system-sqlite                            \
             -nomake examples                          \
+            -nomake tests                             \
+            -no-pch                                   \
             -no-rpath                                 \
             -syslog                                   \
             -xcb                                      \

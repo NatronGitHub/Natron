@@ -2,9 +2,9 @@
 
 # Install fontconfig
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/fontconfig.html
-FONTCONFIG_VERSION=2.14.2
+FONTCONFIG_VERSION=2.18.3
 FONTCONFIG_TAR="fontconfig-${FONTCONFIG_VERSION}.tar.xz"
-FONTCONFIG_SITE="https://www.freedesktop.org/software/fontconfig/release"
+FONTCONFIG_SITE="https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/${FONTCONFIG_VERSION}"
 if download_step; then
     download "$FONTCONFIG_SITE" "$FONTCONFIG_TAR"
 fi

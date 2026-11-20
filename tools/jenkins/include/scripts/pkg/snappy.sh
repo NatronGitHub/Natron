@@ -2,7 +2,7 @@
 
 # Install snappy (for ffmpeg)
 # see https://github.com/google/snappy/releases
-SNAPPY_VERSION=1.1.10
+SNAPPY_VERSION=1.3.1
 SNAPPY_TAR="snappy-${SNAPPY_VERSION}.tar.gz"
 SNAPPY_SITE="https://github.com/google/snappy/releases/download/${SNAPPY_VERSION}"
 if download_step; then

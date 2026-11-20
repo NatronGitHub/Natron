@@ -3,7 +3,7 @@
 # Install pango
 # see http://www.linuxfromscratch.org/blfs/view/svn/x/pango.html
 #PANGO_VERSION=1.42.4 # last version before meson
-PANGO_VERSION=1.50.14 # requires meson
+PANGO_VERSION=1.58.2 # requires meson
 PANGO_VERSION_SHORT=${PANGO_VERSION%.*}
 PANGO_TAR="pango-${PANGO_VERSION}.tar.xz"
 PANGO_SITE="http://ftp.gnome.org/pub/GNOME/sources/pango/${PANGO_VERSION_SHORT}"
@@ -22,7 +22,8 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/pango.pc" ] 
         mkdir build
         pushd build
 
-        env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME" --libdir="lib" ..
+        env CFLAGS="$BF" CXXFLAGS="$BF" meson setup --prefix="$SDK_HOME" --libdir="lib" --buildtype=release \
+            -Dintrospection=disabled -Dbuild-testsuite=false -Dbuild-examples=false -Dxft=disabled -Dlibthai=disabled ..
         env CFLAGS="$BF" CXXFLAGS="$BF" ninja
         env CFLAGS="$BF" CXXFLAGS="$BF" ninja install
         popd

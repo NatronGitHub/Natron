@@ -3,12 +3,12 @@
 # Install gmp (used by ruby)
 # version is set in gcc.sh
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/gmp.html
-GMP_VERSION=6.2.1 # 6.2.0 fails when buiding using GCC 4.4.7 (CentOS6): requires -std=gnu99 but adding it to CFLAGS during configure doesn't help
+GMP_VERSION=6.3.0 # 6.2.0 fails when buiding using GCC 4.4.7 (CentOS6): requires -std=gnu99 but adding it to CFLAGS during configure doesn't help
 if version_gt 5.1.0 "${GCC_VERSION}" && version_gt 4.8.5 "${BOOTSTRAP_GCC_VERSION:-4.4.7}"; then
     GMP_VERSION=6.1.2 # 6.2.0 requires c99
 fi
 GMP_TAR="gmp-${GMP_VERSION}.tar.bz2"
-GMP_SITE="https://gmplib.org/download/gmp"
+GMP_SITE="https://ftp.gnu.org/gnu/gmp" # gmplib.org is often unreachable
 if download_step; then
     download "$GMP_SITE" "$GMP_TAR"
 fi

@@ -252,6 +252,9 @@ EOF
             YUM_XVMC=
             # Rust (cargo, rustc), to build librsvg >= 2.41 (see pkg/librsvg.sh)
             DTSYUM+="dnf -y install rust-toolset && "
+            # doxygen (CRB): the Python bindings of libxml2 >= 2.14, needed by itstool, are
+            # generated from its doxygen XML (see pkg/libxml2.sh)
+            DTSYUM+="dnf -y install doxygen && "
         fi
         # The xcb platform plug-in of Qt 5.15 (pkg/qt5.sh) needs libxcb with its extensions
         # (randr, render, shape, shm, sync, xfixes, xinerama, xkb, xinput, glx), the xcb-util

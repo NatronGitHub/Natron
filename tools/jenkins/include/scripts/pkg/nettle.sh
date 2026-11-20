@@ -3,7 +3,7 @@
 # Install nettle (for gnutls)
 # see http://www.linuxfromscratch.org/blfs/view/svn/postlfs/nettle.html
 # disable doc, because install-info in CentOS 6.4 is buggy and always returns exit status 1.
-NETTLE_VERSION=3.8.1
+NETTLE_VERSION=3.10.2
 NETTLE_VERSION_SHORT=${NETTLE_VERSION%.*} # egg 3.7.3
 #NETTLE_VERSION_SHORT=${NETTLE_VERSION} # egg 3.8
 NETTLE_TAR="nettle-${NETTLE_VERSION}.tar.gz"

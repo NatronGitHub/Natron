@@ -2,7 +2,7 @@
 
 # Install gperf (used by fontconfig) as well as assemblers (yasm and nasm)
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/gperf.html
-GPERF_VERSION=3.1
+GPERF_VERSION=3.3
 GPERF_TAR="gperf-${GPERF_VERSION}.tar.gz"
 GPERF_SITE="http://ftp.gnu.org/pub/gnu/gperf"
 if download_step; then

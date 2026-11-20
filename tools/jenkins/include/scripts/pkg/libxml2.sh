@@ -2,7 +2,7 @@
 
 # Install libxml2
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libxml2.html
-LIBXML2_VERSION=2.10.4
+LIBXML2_VERSION=2.15.4
 LIBXML2_VERSION_SHORT=${LIBXML2_VERSION%.*}
 
 LIBXML2_TAR="libxml2-${LIBXML2_VERSION}.tar.xz"
@@ -35,8 +35,13 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libxml-2.0.p
     if [ "${ICU_VERSION:-}" = 68.1 ] || [ "${ICU_VERSION:-}" = 68.2 ]; then
         $GSED -i 's/ TRUE/ true/' encoding.c
     fi
+    # The Python bindings of libxml2 >= 2.14 are generated from the doxygen XML docs. EL9's
+    # doxygen 1.9.1 has no -q option.
+    if [ -f doc/Makefile.in ]; then
+        $GSED -i 's/$(DOXYGEN) -q /$(DOXYGEN) /' doc/Makefile.in
+    fi
     # note: python3 module is necessary for itstool
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-static --enable-shared --with-history $icu_flag PYTHON="$SDK_HOME/bin/python3" --with-lzma --with-threads
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-static --enable-shared --with-history $icu_flag --with-python PYTHON="$SDK_HOME/bin/python3" --with-lzma --with-threads
     make -j${MKJOBS}
     make install
     popd

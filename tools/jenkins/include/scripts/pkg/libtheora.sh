@@ -2,9 +2,9 @@
 
 # Install libtheora
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/libtheora.html
-LIBTHEORA_VERSION=1.1.1
-LIBTHEORA_TAR="libtheora-${LIBTHEORA_VERSION}.tar.bz2"
-LIBTHEORA_SITE="http://downloads.xiph.org/releases/theora"
+LIBTHEORA_VERSION=1.2.0
+LIBTHEORA_TAR="libtheora-${LIBTHEORA_VERSION}.tar.xz"
+LIBTHEORA_SITE="https://downloads.xiph.org/releases/theora"
 if download_step; then
     download "$LIBTHEORA_SITE" "$LIBTHEORA_TAR"
 fi

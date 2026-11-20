@@ -2,7 +2,7 @@
 
 # Install lcms2
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/lcms2.html
-LCMS_VERSION=2.14
+LCMS_VERSION=2.20
 #LCMS_VERSION_SHORT=${LCMS_VERSION%.*} # for 2.13.1
 LCMS_VERSION_SHORT=${LCMS_VERSION} # for 2.14
 LCMS_TAR="lcms2-${LCMS_VERSION}.tar.gz"

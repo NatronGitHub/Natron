@@ -5,10 +5,10 @@
 # and https://git.archlinux.org/svntogit/packages.git/tree/trunk/PKGBUILD?h=packages/x265
 #X265_VERSION=3.4
 #X265_TAR="x265_${X265_VERSION}.tar.gz"
-X265_VERSION=20230215
-X265_MODVERSION=3.5
-X265_TAR="x265-${X265_VERSION}.tar.xz"
-X265_SITE="http://anduin.linuxfromscratch.org/BLFS/x265"
+X265_VERSION=4.2
+X265_MODVERSION=4.2
+X265_TAR="x265_${X265_VERSION}.tar.gz"
+X265_SITE="https://bitbucket.org/multicoreware/x265_git/downloads"
 if download_step; then
     download "$X265_SITE" "$X265_TAR"
 fi
@@ -20,7 +20,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/x265.pc" ] |
     start_build
     untar "$SRC_PATH/$X265_TAR"
     #pushd "x265_$X265_VERSION"
-    pushd "x265-$X265_VERSION"
+    pushd "x265_$X265_VERSION"
     for d in 8 $([[ "$ARCH" == "x86_64" ]] && echo "10 12"); do
         if [[ -d build-$d ]]; then
             rm -rf build-$d
@@ -79,8 +79,8 @@ EOF
         popd
     else
         pushd build-8
-        # The aarch64 NEON assembly of this x265 snapshot doesn't link on Rocky Linux 9
-        # (undefined x265_interp_*_neon): build it without assembly there.
+        # The aarch64 NEON assembly of the 2023 x265 snapshot didn't link on Rocky Linux 9
+        # (undefined x265_interp_*_neon): build it without assembly there (not retried with 4.2).
         X265_ASM=()
         if [ "${ARCH:-}" = "aarch64" ] && [ "${ROCKY:-0}" -ge 9 ]; then
             X265_ASM=("-DENABLE_ASSEMBLY=OFF")

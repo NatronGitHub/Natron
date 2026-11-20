@@ -2,9 +2,9 @@
 
 # Install zlib
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/zlib.html
-ZLIB_VERSION=1.2.13
+ZLIB_VERSION=1.3.2
 ZLIB_TAR="zlib-${ZLIB_VERSION}.tar.gz"
-ZLIB_SITE="https://zlib.net"
+ZLIB_SITE="https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}"
 if download_step; then
     download "$ZLIB_SITE" "$ZLIB_TAR"
 fi

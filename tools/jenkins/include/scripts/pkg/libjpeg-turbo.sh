@@ -2,11 +2,11 @@
 
 # Install libjpeg-turbo
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libjpeg.html
-LIBJPEGTURBO_VERSION=2.1.5.1
-LIBJPEGTURBO_VERSION_MAJOR=2 # ${LIBJPEGTURBO_VERSION%.*.*} # works for 2.1.5, not for 2.1.5.1
+LIBJPEGTURBO_VERSION=3.2.1
+LIBJPEGTURBO_VERSION_MAJOR=3 # ${LIBJPEGTURBO_VERSION%.*.*} # works for 2.1.5, not for 2.1.5.1
 
 LIBJPEGTURBO_TAR="libjpeg-turbo-${LIBJPEGTURBO_VERSION}.tar.gz"
-LIBJPEGTURBO_SITE="https://downloads.sourceforge.net/libjpeg-turbo"
+LIBJPEGTURBO_SITE="https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/${LIBJPEGTURBO_VERSION}"
 if download_step; then
     download "$LIBJPEGTURBO_SITE" "$LIBJPEGTURBO_TAR"
 fi

@@ -2,7 +2,7 @@
 
 # Install fribidi (for libass and ffmpeg)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/fribidi.html
-FRIBIDI_VERSION=1.0.12
+FRIBIDI_VERSION=1.0.18
 FRIBIDI_TAR="fribidi-${FRIBIDI_VERSION}.tar.xz"
 FRIBIDI_SITE="https://github.com/fribidi/fribidi/releases/download/v${FRIBIDI_VERSION}"
 if download_step; then
@@ -22,9 +22,17 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/fribidi.pc" 
     if [ ! -f configure ]; then
         autoreconf -i -f
     fi
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-static --enable-shared --disable-docs
-    make #  -j${MKJOBS}
-    make install
+    if [ -f meson.build ]; then
+        # the autotools build of fribidi >= 1.0.13 needs help2man for its man page, even with --disable-docs
+        env CFLAGS="$BF" CXXFLAGS="$BF" meson setup build --prefix="$SDK_HOME" --libdir=lib --buildtype=release \
+            -Ddocs=false -Dtests=false -Dbin=false
+        ninja -C build -j${MKJOBS}
+        ninja -C build install
+    else
+        env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-static --enable-shared --disable-docs
+        make #  -j${MKJOBS}
+        make install
+    fi
     popd
     rm -rf "fribidi-${FRIBIDI_VERSION}"
     end_build

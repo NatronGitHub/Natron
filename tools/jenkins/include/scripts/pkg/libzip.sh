@@ -2,7 +2,7 @@
 
 # Install libzip (requires cmake)
 # see https://libzip.org/download/
-ZIP_VERSION=1.9.2
+ZIP_VERSION=1.12.1
 ZIP_TAR="libzip-${ZIP_VERSION}.tar.xz"
 ZIP_SITE="https://libzip.org/download"
 if download_step; then
@@ -19,7 +19,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libzip.pc" ]
     if [ -f "$SDK_HOME/include/zip.h" ]; then
         rm  "$SDK_HOME/include/zip.h"
     fi
-    cmake .. -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE"
+    cmake .. -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DCMAKE_INSTALL_LIBDIR=lib -DBUILD_DOC=OFF -DBUILD_EXAMPLES=OFF -DBUILD_REGRESS=OFF -DBUILD_OSSFUZZ=OFF
     make -j${MKJOBS}
     make install
     popd

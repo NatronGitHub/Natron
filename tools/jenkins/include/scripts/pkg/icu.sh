@@ -2,10 +2,10 @@
 
 # Install icu
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/icu.html
-ICU_VERSION=73.1
-ICU_TAR="icu4c-${ICU_VERSION//./_}-src.tgz"
+ICU_VERSION=78.3
+ICU_TAR="icu4c-${ICU_VERSION}-sources.tgz" # before 78: icu4c-${ICU_VERSION//./_}-src.tgz
 #ICU_SITE="http://download.icu-project.org/files/icu4c/${ICU_VERSION}"
-ICU_SITE="http://github.com/unicode-org/icu/releases/download/release-${ICU_VERSION//./-}"
+ICU_SITE="https://github.com/unicode-org/icu/releases/download/release-${ICU_VERSION}" # before 78: release-${ICU_VERSION//./-}
 if download_step; then
     download "$ICU_SITE" "$ICU_TAR"
 fi

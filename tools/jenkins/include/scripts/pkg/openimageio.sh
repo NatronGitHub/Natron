@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # Install oiio
-# see https://github.com/OpenImageIO/oiio/releases
-OIIO_VERSION=2.4.11.0 # compiled for C++14 (see -DCMAKE_CXX_STANDARD=14 below, and openexr build)
-OIIO_VERSION_SHORT=2.4 # ${OIIO_VERSION%.*}
-OIIO_TAR="oiio-${OIIO_VERSION}.tar.gz"
+# see https://github.com/AcademySoftwareFoundation/OpenImageIO/releases
+OIIO_VERSION=3.1.17.0 # OIIO 3 requires C++17 (see -DCMAKE_CXX_STANDARD=17 below)
+OIIO_VERSION_SHORT=3.1 # ${OIIO_VERSION%.*}
+OIIO_TAR="OpenImageIO-${OIIO_VERSION}.tar.gz"
 if download_step; then
-    download_github OpenImageIO oiio "$OIIO_VERSION" v "$OIIO_TAR"
+    download_github AcademySoftwareFoundation OpenImageIO "$OIIO_VERSION" v "$OIIO_TAR"
 fi
 if build_step && { force_build || { [ "${REBUILD_OIIO:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME/lib/libOpenImage"* "$SDK_HOME/include/OpenImage"* || true
@@ -14,7 +14,7 @@ fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ]; }; }; then
     start_build
     untar "$SRC_PATH/$OIIO_TAR"
-    pushd "oiio-${OIIO_VERSION}"
+    pushd "OpenImageIO-${OIIO_VERSION}"
 
     if [ -d "$INC_PATH/patches/OpenImageIO/$OIIO_VERSION_SHORT" ]; then
         patches=$(find  "$INC_PATH/patches/OpenImageIO/$OIIO_VERSION_SHORT" -type f)
@@ -55,7 +55,10 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ]; 
     OIIO_CMAKE_FLAGS+=( "-DUSE_LIBRAW:BOOL=TRUE" "-DLibRaw_ROOT=$SDK_HOME/libraw-gpl2")
     OIIO_CMAKE_FLAGS+=( "-DCMAKE_INSTALL_PREFIX=$SDK_HOME" )
     OIIO_CMAKE_FLAGS+=( "-DBUILD_FMT_FORCE:BOOL=TRUE" )
-    OIIO_CMAKE_FLAGS+=( "-DCMAKE_CXX_STANDARD=14" )
+    # OIIO 3: build the missing header-only dependencies (fmt, robin-map); use the SDK's OCIO 2
+    OIIO_CMAKE_FLAGS+=( "-DOpenImageIO_BUILD_MISSING_DEPS=all" "-DOpenColorIO_ROOT=$SDK_HOME" )
+    OIIO_CMAKE_FLAGS+=( "-DUSE_PTEX:BOOL=FALSE" "-DUSE_DCMTK:BOOL=FALSE" "-DUSE_OPENVDB:BOOL=FALSE" "-DUSE_JXL:BOOL=FALSE" "-DUSE_LIBUHDR:BOOL=FALSE" "-DUSE_TBB:BOOL=FALSE" "-DUSE_NUKE:BOOL=FALSE" )
+    OIIO_CMAKE_FLAGS+=( "-DCMAKE_INSTALL_LIBDIR=lib" "-DCMAKE_CXX_STANDARD=17" )
     mkdir build
     pushd build
 
@@ -64,6 +67,6 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libOpenImageIO.so" ]; 
     make install
     popd
     popd
-    rm -rf "oiio-${OIIO_VERSION}"
+    rm -rf "OpenImageIO-${OIIO_VERSION}"
     end_build
 fi

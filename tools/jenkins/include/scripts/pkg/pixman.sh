@@ -2,7 +2,7 @@
 
 # Install pixman
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/pixman.html
-PIXMAN_VERSION=0.42.2
+PIXMAN_VERSION=0.46.4
 PIXMAN_TAR="pixman-${PIXMAN_VERSION}.tar.gz"
 PIXMAN_SITE="https://www.cairographics.org/releases"
 if download_step; then
@@ -17,9 +17,17 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/pixman-1.pc"
     start_build
     untar "$SRC_PATH/$PIXMAN_TAR"
     pushd "pixman-${PIXMAN_VERSION}"
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --libdir="$SDK_HOME/lib" --enable-shared --enable-static
-    make -j${MKJOBS}
-    make install
+    if [ -x configure ]; then
+        env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --libdir="$SDK_HOME/lib" --enable-shared --enable-static
+        make -j${MKJOBS}
+        make install
+    else
+        # pixman >= 0.43 only builds with meson
+        env CFLAGS="$BF" CXXFLAGS="$BF" meson setup build --prefix="$SDK_HOME" --libdir=lib --buildtype=release \
+            --default-library=both -Dtests=disabled -Ddemos=disabled -Dgtk=disabled -Dlibpng=disabled
+        ninja -C build -j${MKJOBS}
+        ninja -C build install
+    fi
     popd
     rm -rf "pixman-${PIXMAN_VERSION}"
     end_build

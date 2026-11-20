@@ -2,9 +2,9 @@
 
 # Install opus
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/opus.html
-OPUS_VERSION=1.3.1
+OPUS_VERSION=1.6.1
 OPUS_TAR="opus-${OPUS_VERSION}.tar.gz"
-OPUS_SITE="https://archive.mozilla.org/pub/opus"
+OPUS_SITE="https://downloads.xiph.org/releases/opus"
 if download_step; then
     download "$OPUS_SITE" "$OPUS_TAR"
 fi

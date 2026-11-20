@@ -2,9 +2,9 @@
 
 # Install tiff
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libtiff.html
-TIFF_VERSION=4.5.0
+TIFF_VERSION=4.7.2
 TIFF_TAR="tiff-${TIFF_VERSION}.tar.gz"
-TIFF_SITE="http://download.osgeo.org/libtiff"
+TIFF_SITE="https://download.osgeo.org/libtiff"
 if download_step; then
     download "$TIFF_SITE" "$TIFF_TAR"
 fi

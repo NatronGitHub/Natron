@@ -2,11 +2,11 @@
 
 # Install shared-mime-info (required by gdk-pixbuf)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/shared-mime-info.html
-SHAREDMIMEINFO_VERSION=1.15 # last version before meson
+SHAREDMIMEINFO_VERSION=2.5.1
 #SHAREDMIMEINFO_VERSION=2.1 # requires docbook-xml. Warning: SHAREDMIMEINFO_SITE changes with every release
-SHAREDMIMEINFO_TAR="shared-mime-info-${SHAREDMIMEINFO_VERSION}.tar.xz"
+SHAREDMIMEINFO_TAR="shared-mime-info-${SHAREDMIMEINFO_VERSION}.tar.bz2"
 #SHAREDMIMEINFO_SITE="http://freedesktop.org/~hadess"
-SHAREDMIMEINFO_SITE="https://gitlab.freedesktop.org/xdg/shared-mime-info/uploads/b27eb88e4155d8fccb8bb3cd12025d5b" # 1.15
+SHAREDMIMEINFO_SITE="https://gitlab.freedesktop.org/xdg/shared-mime-info/-/archive/${SHAREDMIMEINFO_VERSION}"
 #SHAREDMIMEINFO_SITE="https://gitlab.freedesktop.org/xdg/shared-mime-info/-/archive/${SHAREDMIMEINFO_VERSION}" # 2.1
 if download_step; then
     download "$SHAREDMIMEINFO_SITE" "$SHAREDMIMEINFO_TAR"
@@ -24,7 +24,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/share/pkgconfig/shared-mim
     else
         mkdir build
         cd build
-        env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME" -Dupdate-mimedb=true ..
+        env CFLAGS="$BF" CXXFLAGS="$BF" meson setup --prefix="$SDK_HOME" -Dupdate-mimedb=true -Dbuild-spec=false -Dbuild-tests=false -Dbuild-translations=false ..
         env CFLAGS="$BF" CXXFLAGS="$BF" ninja
         env CFLAGS="$BF" CXXFLAGS="$BF" ninja install
     fi
