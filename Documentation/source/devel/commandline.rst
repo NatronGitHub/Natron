@@ -82,6 +82,51 @@ General options
 
    Ignore the preferences file and use the default settings. The settings are not saved either.
 
+.. option:: --no-dialogs
+
+   Do not show the message and question dialogs: errors, warnings, questions and the startup
+   prompts. Each dialog is printed to the standard error as ``[dialog dismissed] <title>: <message>``
+   and counts as dismissed. This option is meant for scripts only, not for an interactive session:
+   the answers never block and never delete or overwrite a file, but unsaved changes are discarded
+   when the project is closed, without warning:
+
+   - a question returns its default button, as if Enter was pressed, or the button Escape would
+     pick if there is no default button (Cancel, Close, Abort or No). The "Do not show this
+     again" answers are not saved;
+   - "Save changes to <project>?", when closing or quitting, is answered **Discard**, so the
+     unsaved changes are lost (the default, Save, would open the Save As file dialog for an
+     untitled project). Save the project from the script if needed, e.g. with
+     :meth:`app.saveProjectAs(filename)<NatronEngine.App.saveProjectAs>`;
+   - the file dialogs opened by Natron (Open, Save As, the file of a new Read or Write node) and
+     by :doc:`GuiApp<PythonReference/NatronGui/GuiApp>` (:meth:`getFilenameDialog<NatronGui.GuiApp.getFilenameDialog>`,
+     :meth:`getRGBColorDialog<NatronGui.GuiApp.getRGBColorDialog>`...) count as cancelled;
+   - the startup prompts: the OpenColorIO configuration check answers Yes (use the default
+     configuration) only if the selected one is unusable, No otherwise; the auto-saves are
+     never recovered nor deleted: the question to restore an auto-saved untitled project is not
+     asked, and a project given on the command line is loaded from its file even if a more recent
+     auto-save exists, and that project is then not auto-saved during the session, so that its
+     auto-save is not overwritten (the same applies after a Save As to a project that has an
+     auto-save). Only the auto-saves written during the session are removed: when quitting, when
+     answering Discard, and by *Clear All Caches* (or :option:`--clear-cache`); the new default
+     appearance and the new default shortcuts are not applied (No); the question about checking
+     for updates is not answered, so it is asked again at the next launch without
+     :option:`--no-dialogs`;
+   - custom modal dialogs (:doc:`PyModalDialog<PythonReference/NatronGui/PyModalDialog>`, group
+     parameters shown as a dialog) count as rejected, and the error log is printed to the
+     standard error instead of opening the log window.
+
+   None of these answers is saved in the preferences, and neither are the window geometry and the
+   last directories of the file dialogs (they are not saved with :option:`--no-settings` either):
+   e.g. when the OpenColorIO configuration check switches to the default configuration, it is only
+   for this session, and the questions about the new appearance or shortcuts are asked again at the
+   next launch.
+
+   As a project that has an auto-save is not auto-saved during the session (see above), a crash
+   loses the changes made in that session. The main window is shown without taking the focus.
+   This is meant to drive the graphical interface from scripts, see :ref:`guiTesting`. In background mode (NatronRenderer,
+   :option:`-b` or :option:`-t`), where dialogs are never shown, the questions are then also
+   answered with their default button, instead of *Yes*.
+
 .. option:: --opengl <enabled|disabled|foreground>
 
    Select whether OpenGL rendering is used: ``enabled`` (if available), ``disabled`` (even if a

@@ -109,6 +109,9 @@ public:
 
     virtual QSize sizeHint() const OVERRIDE FINAL;
 
+    /// With --no-dialogs, the dialog is not shown and counts as rejected
+    virtual int exec() OVERRIDE;
+
     DialogParamHolder* getKnobsHolder() const;
 
 private:
