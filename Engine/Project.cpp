@@ -203,6 +203,19 @@ public:
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+// A binary project of a more recent layout (NATRON_PROJECT_BINARY_VERSION): reported as is, not as a damaged file.
+class ProjectTooRecentError
+    : public std::runtime_error
+{
+public:
+    explicit ProjectTooRecentError(const std::string& what)
+        : std::runtime_error(what)
+    {
+    }
+};
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 // The number of bytes read by detectFileFormat(): enough for a byte order mark, some white space and "<?xml".
 #define kProjectFileFormatHeaderSize 64
 
@@ -246,6 +259,34 @@ Project::detectFileFormat(const QString& filePath)
     const QByteArray header = f.read(kProjectFileFormatHeaderSize);
 
     return detectFileFormat( header.constData(), (std::size_t)header.size() );
+}
+
+// The suffix of the auto-saves, after ".ntp". Binary auto-saves don't use the ".autosave" suffix of
+// Natron 2.5 and earlier: those would offer to restore them, fail to load them, and remove them if the
+// user doesn't want to restore them.
+#define kAutoSaveSuffixText ".autosave"
+#define kAutoSaveSuffixBinary ".binautosave"
+
+int
+Project::findAutoSaveSuffix(const QString& fileName,
+                            int* suffixSize)
+{
+    const QString ntpExt = QLatin1Char('.') + QString::fromUtf8(NATRON_PROJECT_FILE_EXT);
+    const char* suffixes[] = { kAutoSaveSuffixBinary, kAutoSaveSuffixText };
+
+    for (const char* suffix : suffixes) {
+        const QString suffixStr = QString::fromUtf8(suffix);
+        int pos = fileName.indexOf(ntpExt + suffixStr);
+        if (pos != -1) {
+            if (suffixSize) {
+                *suffixSize = suffixStr.size();
+            }
+
+            return pos;
+        }
+    }
+
+    return -1;
 }
 
 ProjectFileFormatEnum
@@ -446,7 +487,7 @@ Project::loadProjectInternal(const QString & path,
             unsigned int binaryVersion;
             iArchive >> boost::serialization::make_nvp("Binary_project_version", binaryVersion);
             if (binaryVersion > NATRON_PROJECT_BINARY_VERSION) {
-                throw std::runtime_error( tr("This binary project was saved with a more recent version of %1, and cannot be opened by this version.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
+                throw ProjectTooRecentError( tr("This binary project was saved with a more recent version of %1, and cannot be opened by this version.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
             }
             int originalFormat;
             iArchive >> boost::serialization::make_nvp("Project_file_format", originalFormat);
@@ -457,6 +498,9 @@ Project::loadProjectInternal(const QString & path,
                                   (originalFormat == eProjectFileFormatBinary) ? eProjectFileFormatBinary : eProjectFileFormatNone );
             }
         }
+    } catch (const ProjectTooRecentError &) {
+        // not a damaged file
+        throw;
     } catch (const std::exception &e) {
         const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
         if (pInfo.vMajor > NATRON_VERSION_MAJOR ||
@@ -499,9 +543,10 @@ Project::loadProjectInternal(const QString & path,
         _imp->autoSetProjectFormat = false;
         if (!isUntitledAutosave) {
             QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
-            int found = projectFilename.lastIndexOf( QString::fromUtf8(".autosave") );
+            int found = findAutoSaveSuffix(projectFilename);
             if (found != -1) {
-                _imp->setProjectFilename( projectFilename.left(found).toStdString() );
+                // keep the .ntp extension
+                _imp->setProjectFilename( projectFilename.left( found + 1 + (int)std::strlen(NATRON_PROJECT_FILE_EXT) ).toStdString() );
             }
             _imp->hasProjectBeenSavedByUser = true;
         } else {
@@ -855,7 +900,8 @@ Project::saveProjectInternal(const QString & path,
         filePath.append( QLatin1Char('/') );
         filePath.append(name);
         if (!isRenderSave) {
-            filePath.append( QString::fromUtf8(".autosave") );
+            // auto-saves are always binary
+            filePath.append( QString::fromUtf8(kAutoSaveSuffixBinary) );
         }
         if (!isRenderSave) {
             if (appendTimeHash) {
@@ -1144,17 +1190,11 @@ Project::findAutoSaveForProject(const QString& projectPath,
     QStringList entries = savesDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
 
     Q_FOREACH(const QString &entry, entries) {
-        QString ntpExt( QLatin1Char('.') );
-
-        ntpExt.append( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) );
-        QString searchStr(ntpExt);
-        QString autosaveSuffix( QString::fromUtf8(".autosave") );
-        searchStr.append(autosaveSuffix);
-        int suffixPos = entry.indexOf(searchStr);
+        int suffixPos = findAutoSaveSuffix(entry);
         if ( (suffixPos == -1) || entry.contains( QString::fromUtf8("RENDER_SAVE") ) ) {
             continue;
         }
-        QString filename = projectPath + entry.left( suffixPos + ntpExt.size() );
+        QString filename = projectPath + entry.left( suffixPos + 1 + (int)std::strlen(NATRON_PROJECT_FILE_EXT) );
         if ( (filename == projectAbsFilePath) && QFile::exists(filename) ) {
             *autoSaveFileName = entry;
 
@@ -2253,9 +2293,12 @@ Project::removeLastAutosave()
     QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
     QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
     StrUtils::ensureLastPathSeparator(projectPath);
-    QString autoSaveFilePath = projectPath + projectFilename + QString::fromUtf8(".autosave");
-    if ( QFile::exists(autoSaveFilePath) ) {
-        QFile::remove(autoSaveFilePath);
+    const char* suffixes[] = { kAutoSaveSuffixBinary, kAutoSaveSuffixText };
+    for (const char* suffix : suffixes) {
+        QString autoSaveFilePath = projectPath + projectFilename + QString::fromUtf8(suffix);
+        if ( QFile::exists(autoSaveFilePath) ) {
+            QFile::remove(autoSaveFilePath);
+        }
     }
 }
 

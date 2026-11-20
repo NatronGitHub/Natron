@@ -423,10 +423,8 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
     QStringList foundAutosaves;
     for (int i = 0; i < entries.size(); ++i) {
         const QString & entry = entries.at(i);
-        QString searchStr( QLatin1Char('.') );
-        searchStr.append( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) );
-        searchStr.append( QString::fromUtf8(".autosave") );
-        int suffixPos = entry.indexOf(searchStr);
+        // text auto-saves (by Natron 2.5 and earlier) and binary ones
+        int suffixPos = Project::findAutoSaveSuffix(entry);
         if ( (suffixPos == -1) || entry.contains( QString::fromUtf8("RENDER_SAVE") ) ) {
             continue;
         }

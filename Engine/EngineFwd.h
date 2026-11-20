@@ -229,7 +229,6 @@ class ParallelRenderArgsSetter;
 class Plugin;
 class PluginGroupNode;
 class PluginMemory;
-enum ProjectFileFormatEnum : int; // see Project.h
 class PortableBinaryIArchive;
 class PortableBinaryOArchive;
 class PrecompNode;

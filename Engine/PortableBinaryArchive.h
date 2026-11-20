@@ -90,6 +90,7 @@ public:
     {
         eExceptionCodeIntegerTooLarge,
         eExceptionCodeUnsupportedEncoding,
+        eExceptionCodeSizeTooLarge,
     };
 
     explicit PortableBinaryArchiveException(ExceptionCodeEnum c)
@@ -107,6 +108,9 @@ public:
         case eExceptionCodeUnsupportedEncoding:
 
             return "unsupported binary encoding";
+        case eExceptionCodeSizeTooLarge:
+
+            return "size larger than the rest of the file";
         }
 
         return "unknown portable binary archive error";
@@ -128,6 +132,8 @@ public:
 
     void loadInteger(boost::intmax_t & l, int maxsize);
     void loadIEEE754(boost::uint64_t* bits, int nbytes);
+    // Throws if the archive has less than size bytes left.
+    void checkSize(boost::uintmax_t size);
 
     // default for all integer types (and bool)
     template<class T>
@@ -163,10 +169,10 @@ public:
         t = boost::archive::class_id_type( static_cast<int>(l) );
     }
 
-    void load(std::string & t)
-    {
-        this->primitive_base_t::load(t);
-    }
+    // A size read from a damaged file must not allocate gigabytes: sizes are checked against the
+    // bytes left in the stream (see checkSize()).
+    void load(std::string & t);
+    void load(boost::serialization::collection_size_type & t);
 
     void load(float & t);
     void load(double & t);

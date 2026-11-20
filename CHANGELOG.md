@@ -13,6 +13,8 @@
 
 ### Changes
 
+- Projects can be saved in a portable binary format, faster to load and save and about ten times smaller, which Natron 2.5 and earlier can't read (they report "Unrecognized or damaged project file: unrecognized XML syntax"). Both formats use the `.ntp` extension, and the format is detected when a project is loaded. Each project keeps its format: a text project is saved as text, a binary project as binary. "Save As..." and the first save of a new project have a Format choice, and the "Save projects as binary by default" preference (on by default) gives the format of new projects, also in NatronRenderer and natron-python. Auto-saves are always binary, and are named `*.ntp.binautosave` so that Natron 2.5 doesn't offer to restore them; a project restored from its auto-save keeps its format. #1056
+- Python: `app.saveProject()`, `app.saveProjectAs()` and `app.saveTempProject()` have an optional `format` argument (`NatronEngine.Natron.ProjectFileFormatEnum`), and `app.getProjectFormat()`/`app.setProjectFormat()` give the format of the project. Scripts that write projects for Natron 2.5, or parse `.ntp` files, should pass `NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatText`. #1056
 - Documentation: the Reference Guide has a "Nodes" section, with one page per node group and per sub-group (e.g. "G'MIC / Colors"), and the sidebar only expands the current branch.
 
 

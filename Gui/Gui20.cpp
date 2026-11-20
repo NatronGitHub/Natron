@@ -1233,12 +1233,16 @@ Gui::saveProjectAs()
     Label* formatLabel = new Label(tr("Format:"), formatWidget);
     formatLayout->addWidget(formatLabel);
     ComboBox* formatCombo = new ComboBox(formatWidget);
-    const QString binaryHint = tr("Binary: faster to load and save, smaller, needs %1 2.6 or later").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
-    const QString textHint = tr("Text: compatible with %1 2.5 and earlier, readable and diffable").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
-    formatCombo->addItem( binaryHint, QIcon(), QKeySequence(), binaryHint );
-    formatCombo->addItem( textHint, QIcon(), QKeySequence(), textHint );
-    formatCombo->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("The format of the project file. The project keeps it: later saves use the same format. "
-                                                                       "Auto-saves are always binary."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    formatCombo->setObjectName( QString::fromUtf8("projectFileFormat") );
+    const QString appName = QString::fromUtf8(NATRON_APPLICATION_NAME);
+    const QString binaryHint = tr("Binary: faster to load and save, and smaller. Needs %1 2.6 or later.").arg(appName);
+    const QString textHint = tr("Text (XML): compatible with %1 2.5 and earlier, readable and diffable.").arg(appName);
+    formatCombo->addItem( tr("Binary"), QIcon(), QKeySequence(), binaryHint );
+    formatCombo->addItem( tr("Text (%1 2.5 compatible)").arg(appName), QIcon(), QKeySequence(), textHint );
+    formatCombo->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("The format of the project file.") + QLatin1Char('\n') +
+                                                                   binaryHint + QLatin1Char('\n') + textHint + QLatin1Char('\n') +
+                                                                   tr("The project keeps this format: later saves use it. Auto-saves are always binary."),
+                                                                   NATRON_NAMESPACE::WhiteSpaceNormal) );
     const int textIndex = 1;
     formatCombo->setCurrentIndex_no_emit( (getApp()->getProject()->getFileFormatForSave() == eProjectFileFormatText) ? textIndex : 0 );
     formatLayout->addWidget(formatCombo);

@@ -98,6 +98,52 @@ PortableBinaryIArchive::loadIEEE754(boost::uint64_t* bits,
     }
 }
 
+// Sizes up to this are not checked: allocating them is harmless, and checking every size would seek in the stream.
+#define kPortableBinaryUncheckedSize 65536
+
+void
+PortableBinaryIArchive::checkSize(boost::uintmax_t size)
+{
+    if (size <= kPortableBinaryUncheckedSize) {
+        return;
+    }
+    std::streambuf& sb = this->m_sb;
+    const std::streampos cur = sb.pubseekoff(0, std::ios_base::cur, std::ios_base::in);
+    const std::streampos end = sb.pubseekoff(0, std::ios_base::end, std::ios_base::in);
+    if ( (cur == std::streampos(-1)) || (end == std::streampos(-1)) ) {
+        // not seekable: can't check
+        return;
+    }
+    sb.pubseekpos(cur, std::ios_base::in);
+    if ( size > boost::uintmax_t(end - cur) ) {
+        boost::serialization::throw_exception( PortableBinaryArchiveException(PortableBinaryArchiveException::eExceptionCodeSizeTooLarge) );
+    }
+}
+
+void
+PortableBinaryIArchive::load(std::string & t)
+{
+    std::size_t l;
+
+    load(l);
+    checkSize(l);
+    t.resize(l);
+    if (l > 0) {
+        this->primitive_base_t::load_binary(&t[0], l);
+    }
+}
+
+void
+PortableBinaryIArchive::load(boost::serialization::collection_size_type & t)
+{
+    std::size_t l;
+
+    load(l);
+    // each element takes at least one byte
+    checkSize(l);
+    t = boost::serialization::collection_size_type(l);
+}
+
 void
 PortableBinaryIArchive::load(float & t)
 {

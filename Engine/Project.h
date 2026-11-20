@@ -53,17 +53,6 @@ NATRON_NAMESPACE_ENTER
 
 struct ProjectPrivate;
 
-/**
- * @brief The format of a project file. Both use the .ntp extension: the format is detected from the
- * first bytes of the file (see Project::detectFileFormat()).
- **/
-enum ProjectFileFormatEnum : int
-{
-    eProjectFileFormatNone = -1, // no format yet (a new project, never saved), or not a project file
-    eProjectFileFormatText = 0, // XML text: readable, diffable, and compatible with Natron 2.5 and earlier
-    eProjectFileFormatBinary = 1, // portable binary (see PortableBinaryArchive.h): faster and smaller, Natron 2.6 and later
-};
-
 class Project
     : public KnobHolder
     , public NodeCollection
@@ -188,6 +177,15 @@ public:
      **/
     static ProjectFileFormatEnum detectFileFormat(const char* data, std::size_t size) WARN_UNUSED_RETURN;
     static ProjectFileFormatEnum detectFileFormat(const QString& filePath) WARN_UNUSED_RETURN;
+
+    /**
+     * @brief If fileName is the name of an auto-save, ending with .ntp.autosave (text, by Natron 2.5 and earlier)
+     * or .ntp.binautosave (binary, by Natron 2.6 and later), possibly followed by a time hash for an untitled
+     * project, returns the position of ".ntp" and sets suffixSize to the size of the auto-save suffix after it.
+     * Returns -1 otherwise. Natron 2.5 only looks for ".ntp.autosave": it never offers to restore (and then delete)
+     * a binary auto-save it can't read.
+     **/
+    static int findAutoSaveSuffix(const QString& fileName, int* suffixSize = 0) WARN_UNUSED_RETURN;
 
     bool isSaveUpToDate() const WARN_UNUSED_RETURN;
 
