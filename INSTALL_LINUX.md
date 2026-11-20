@@ -424,10 +424,10 @@ sudo apt install build-essential cmake libboost-serialization-dev libboost-syste
 
 (`qt5-qmake` is only needed for the deprecated qmake build.)
 
-For a Qt 6 build (`-DNATRON_QT6=ON`), replace the Qt 5 and PySide2 packages with the Qt 6 and PySide6 ones. Ubuntu 24.04 has no PySide6/Shiboken6 packages: they start with Ubuntu 26.04. On Ubuntu 26.04:
+For a Qt 6 build (`-DNATRON_QT6=ON`), replace the Qt 5 and PySide2 packages with the Qt 6 and PySide6 ones. Ubuntu 24.04 has no PySide6/Shiboken6 packages: they start with Ubuntu 26.04. On Ubuntu 26.04 (no `libboost-system-dev` there: Boost.System is header-only since Boost 1.89):
 
 ```
-sudo apt install build-essential cmake libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev \
+sudo apt install build-essential cmake libboost-serialization-dev libexpat1-dev libcairo2-dev \
   qt6-base-dev \
   python3-dev libshiboken6-dev shiboken6 libpyside6-dev python3-pyside6.qtwidgets python3-qtpy \
   libwayland-dev libwayland-client0 libwayland-egl1 \
