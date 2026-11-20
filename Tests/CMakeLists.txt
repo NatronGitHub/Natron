@@ -195,13 +195,19 @@ endif()
 install(TARGETS Tests DESTINATION "${NATRON_INSTALL_TESTSDIR}"
     COMPONENT Tests EXCLUDE_FROM_ALL)
 
-# GUI tests (Tests/gui/test_*.py, see Documentation/source/devel/guiTests.rst): each script is run by
+# GUI tests (Tests/gui/test_*.py, see Documentation/source/devel/guitesting.rst): each script is run by
 # "Natron --test script.py", which exits with 0 (pass), 77 (skipped, e.g. without OpenGL or without a
 # plug-in that the test needs) or another status (fail). They need a display (Xvfb on Linux), and
 # have the "gui" label: "ctest -L gui" runs only them, "ctest -LE gui" all the other tests; the
 # interactive ones also have the "gui-interactive" label.
 # The Natron target is defined later (App/), which generator expressions allow.
-file(GLOB NatronGuiTests_SCRIPTS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/gui/test_*.py")
+# They are skipped (77) without a display on Linux; -DNATRON_GUI_TESTS=OFF does not register them.
+option(NATRON_GUI_TESTS "register the GUI tests (Tests/gui/test_*.py, Natron --test) in ctest" ON)
+if(NATRON_GUI_TESTS)
+    file(GLOB NatronGuiTests_SCRIPTS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/gui/test_*.py")
+else()
+    set(NatronGuiTests_SCRIPTS)
+endif()
 foreach(_natron_gui_test ${NatronGuiTests_SCRIPTS})
     get_filename_component(_natron_gui_test_name "${_natron_gui_test}" NAME_WE)
     string(REGEX REPLACE "^test_" "" _natron_gui_test_name "${_natron_gui_test_name}")
@@ -221,13 +227,20 @@ foreach(_natron_gui_test ${NatronGuiTests_SCRIPTS})
         TIMEOUT 180
         # one Natron GUI at a time
         RESOURCE_LOCK NatronGui
-        ENVIRONMENT "NATRON_TESTS_OFX_PLUGIN_BINARY=$<TARGET_FILE:NatronTestPlugin>")
+        # the caches (images, OFX plug-ins) in the build tree, not in the user's cache directory
+        ENVIRONMENT "NATRON_TESTS_OFX_PLUGIN_BINARY=$<TARGET_FILE:NatronTestPlugin>;NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/gui-tests-cache")
     # the test plug-ins first, then the user's OFX_PLUGIN_PATH (e.g. openfx-misc for the Transform test)
     if(NOT CMAKE_VERSION VERSION_LESS 3.22)
         set_property(TEST ${_natron_gui_test_target} PROPERTY ENVIRONMENT_MODIFICATION
             "OFX_PLUGIN_PATH=path_list_prepend:${NATRON_TESTS_OFX_PLUGIN_DIR}")
     else()
+        # the user's OFX_PLUGIN_PATH at configure time
+        if(WIN32)
+            set(_natron_gui_test_ofx_path "${NATRON_TESTS_OFX_PLUGIN_DIR}\\;$ENV{OFX_PLUGIN_PATH}")
+        else()
+            set(_natron_gui_test_ofx_path "${NATRON_TESTS_OFX_PLUGIN_DIR}:$ENV{OFX_PLUGIN_PATH}")
+        endif()
         set_property(TEST ${_natron_gui_test_target} APPEND PROPERTY ENVIRONMENT
-            "OFX_PLUGIN_PATH=${NATRON_TESTS_OFX_PLUGIN_DIR}")
+            "OFX_PLUGIN_PATH=${_natron_gui_test_ofx_path}")
     endif()
 endforeach()

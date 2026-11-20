@@ -140,9 +140,12 @@ runs it with :option:`--test`, then quits with a status that tells whether the t
 The in-tree tests are in ``Tests/gui/`` (``test_*.py``, with the helpers of ``natrontest.py``).
 CMake registers each one as a ``ctest`` test named ``gui.<name>`` with the ``gui`` label:
 ``ctest -L gui`` runs only the GUI tests, and ``ctest -LE gui`` all the other tests. They need a
-display (on Linux without one, run them under ``xvfb-run``) and OpenGL; without OpenGL, they are
-reported as skipped. The plug-ins of ``Tests/OfxTestPlugin`` are on their ``OFX_PLUGIN_PATH``,
-before the user's one; a test that needs another plug-in (e.g. openfx-misc's Transform) is skipped
+display and OpenGL: without them (e.g. on Linux without ``DISPLAY``: run them under ``xvfb-run``),
+they are reported as skipped. In CI (``CI`` set), they only run where the job sets
+``NATRON_GUI_TESTS=1``, and are skipped otherwise. Configure with ``-DNATRON_GUI_TESTS=OFF`` not to
+register them. Their caches go to the build tree (``NATRON_DISK_CACHE_PATH``). The plug-ins of ``Tests/OfxTestPlugin`` are on their ``OFX_PLUGIN_PATH``,
+before the user's one (with CMake older than 3.22, before the ``OFX_PLUGIN_PATH`` of the configure
+step); a test that needs another plug-in (e.g. openfx-misc's Transform) is skipped
 when that plug-in is not found.
 
 Test mode
@@ -150,11 +153,16 @@ Test mode
 
 ``Natron --test script.py`` runs the script once the user interface is shown and the project is
 created (or loaded, if a project file is also given on the command line), then quits. The exit
-status is 0 if the script returns normally, 77 if it is skipped (:func:`NatronGuiTest.skip`, or no
-OpenGL), and 1 if it raises an exception (e.g. a failed ``assert``) or Natron crashes. A
-``sys.exit(status)`` in the script sets the exit status.
+status is 0 if the script returns normally, 77 if it is skipped (:func:`NatronGuiTest.skip`, no
+display or no OpenGL), and 1 if it raises an exception (e.g. a failed ``assert``), if Natron fails to
+start, if a dialog or menu was unexpected, or if the test runs longer than ``NATRON_TEST_TIMEOUT``
+seconds (120 by default: the test is then killed). A crash ends Natron with the signal (ctest reports
+it as a failure). A
+``sys.exit(status)`` or :meth:`natron.quit(status)<NatronEngine.PyCoreApplication.quit>` in the
+script sets the exit status (the script still runs to its end after ``natron.quit()``).
 
-The test mode implies :option:`--no-settings` (and the default shortcuts). It does **not** imply
+The test mode implies :option:`--no-settings` (and the default shortcuts), and sets
+``NATRON_TEST_NO_FOCUS=1``, so that the test never takes the keyboard focus or activates a window. It does **not** imply
 :option:`--no-dialogs`, which hides parts of the user interface: the tests run in a clean environment
 (e.g. a valid OpenColorIO configuration, so that there is no startup dialog), and the dialogs are shown
 and work as usual. The test mode also isolates the test from the user's session:
@@ -162,10 +170,13 @@ and work as usual. The test mode also isolates the test from the user's session:
 - auto-saves are neither written nor restored, and the "An auto-saved project was found" question
   is never asked (the user's auto-saves are left untouched);
 - Natron does not check for updates, and does not ask about the default appearance or shortcuts;
-- a test that expects a modal dialog gives its answer beforehand with
-  :func:`NatronGuiTest.setDialogAnswers`: when the dialog is shown, its button is clicked, so that the
-  real dialog code runs. A modal dialog that gets no answer is **unexpected**: it is printed, rejected
-  (closed with *Cancel*) so that it does not block, and the test fails;
+- a test that expects a modal dialog or a menu gives its answer beforehand with
+  :func:`NatronGuiTest.setDialogAnswers`: when the dialog is shown, its button is clicked (or the menu
+  item triggered), so that the real code runs. A modal dialog or menu that gets no answer is
+  **unexpected**: it is printed, closed so that it does not block, and the test fails, even if it is
+  skipped afterwards;
+- the settings written by the recent files and the file dialogs go to a directory of the tests, not to
+  the user's preferences;
 - the dialogs are recorded (:func:`NatronGuiTest.getDialogLog`).
 
 A test script runs from the event loop, once the main window is shown: it needs no timer, and
@@ -225,9 +236,11 @@ synthetic Qt events to the widgets; the real mouse cursor and the keyboard are n
 .. function:: penEvent(target, type, x, y, button='left', modifiers='')
 
    Send a mouse event to *target*: a viewer (its node script name, e.g. ``"Viewer1"``), at the
-   canvas coordinates (*x*, *y*) (the coordinates of the image and of the overlays), or
-   ``"NodeGraph"`` (the node graph of the project), at the node graph coordinates (*x*, *y*) (as
-   returned by :func:`Effect.getPosition()<NatronEngine.Effect.getPosition>`). *type* is
+   canvas coordinates (*x*, *y*) (the coordinates of the image and of the overlays); the node graph
+   of the project (``"nodeGraph"``, its object name, or ``"NodeGraph"``), or another node graph by its
+   object name, at the node graph coordinates (*x*, *y*) (as returned by
+   :func:`Effect.getPosition()<NatronEngine.Effect.getPosition>`); or any other widget by its object
+   name, at its widget coordinates. *type* is
    ``"press"``, ``"move"`` or ``"release"``; *button* is ``"left"``, ``"middle"``, ``"right"`` or
    ``"none"``; *modifiers* is a ``+``-separated list of ``Shift``, ``Ctrl``, ``Alt`` and ``Meta``
    (``Ctrl`` is the Command key on macOS, as in Natron's shortcuts). A move has the buttons pressed by
@@ -241,7 +254,8 @@ synthetic Qt events to the widgets; the real mouse cursor and the keyboard are n
 
 .. function:: sendKey(target, keys)
 
-   Send *keys* to *target* (a viewer node script name, or ``"NodeGraph"``). *keys* uses the portable
+   Send *keys* to *target* (a viewer node script name, the node graph, or a widget by its object name,
+   as for :func:`penEvent`). *keys* uses the portable
    text of ``QKeySequence``, e.g. ``"F"``, ``"Ctrl+Z"``, ``"Backspace"``, ``"Return"``, or several keys
    separated by commas. As for a real key press, a key that the target does not handle itself
    triggers the matching shortcut of the window's menus, e.g. *Edit > Undo*.
@@ -253,16 +267,24 @@ synthetic Qt events to the widgets; the real mouse cursor and the keyboard are n
 
 .. function:: setDialogAnswers(answers)
 
-   Set the answers of the next modal dialogs: a list of button names (``"yes"``, ``"no"``,
-   ``"ok"``, ``"cancel"``, ``"save"``, ``"discard"``, ``"close"``, …), used in order: when a dialog is
-   shown, the next answer clicks that button. A dialog shown when the list is empty, or that has no
-   such button, is unexpected: it is rejected and the test fails.
+   Set the answers of the next modal dialogs and menus (popups), used in order. Each answer is:
+
+   - a button name (``"yes"``, ``"no"``, ``"ok"``, ``"cancel"``, ``"save"``, ``"discard"``,
+     ``"close"``, …): clicks that button of the dialog;
+   - for a menu, the text of the item to trigger (without ``&``);
+   - a callable, called with ``(title, text, className)`` while the window is shown: it returns one of
+     the above, or ``None`` if it handled the window itself (e.g. a file dialog, through PySide's
+     ``QApplication.activeModalWidget()``).
+
+   A dialog or menu shown when the list is empty, or without such a button or item, is unexpected: it
+   is closed and the test fails.
 
 .. function:: getDialogLog()
 
-   Return the modal dialogs shown so far, as a list of dictionaries with the keys ``type``
-   (``"dialog"`` for an answered dialog, ``"unexpected"`` for one that was rejected), ``title``,
-   ``text`` and ``answer`` (the name of the button that was clicked, or ``"reject"``).
+   Return the modal dialogs and menus shown so far, as a list of dictionaries with the keys ``type``
+   (``"dialog"`` or ``"menu"`` when answered, ``"unexpected"`` when closed), ``title``, ``text`` and
+   ``answer`` (the button name or menu item, ``"handler"`` when a callable handled it, or
+   ``"reject"``).
 
 .. function:: clearDialogLog()
 
@@ -273,8 +295,8 @@ synthetic Qt events to the widgets; the real mouse cursor and the keyboard are n
    Skip the test (exit status 77) unless the environment variable ``NATRON_TEST_INTERACTIVE`` is ``1``.
    A test that needs the real keyboard focus or mouse (which the synthetic events of this module do not
    use) calls it first, and has the line ``# NatronGuiTest: interactive``, which gives it the ctest label
-   ``gui-interactive`` (in addition to ``gui``). These tests run on CI under Xvfb, where the variable is
-   set, or in a virtual machine; on a desktop, they only run when the user opts in, because they take the
+   ``gui-interactive`` (in addition to ``gui``). These tests run on CI under Xvfb, where the job sets
+   the variable, or in a virtual machine; on a desktop, they only run when the user opts in, because they take the
    keyboard and mouse.
 
 .. function:: skip(reason)

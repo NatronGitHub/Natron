@@ -25,6 +25,8 @@
 
 #include "GuiTest.h"
 
+#include <cstdio>
+#include <cstdlib>
 #include <deque>
 #include <iostream>
 #include <stdexcept>
@@ -41,6 +43,7 @@
 #include <QApplication>
 #include <QDialog>
 #include <QDialogButtonBox>
+#include <QGraphicsView>
 #include <QImage>
 #include <QKeyEvent>
 #include <QLabel>
@@ -54,6 +57,7 @@
 #include <QTextEdit>
 
 #include "Global/Enums.h"
+#include "Global/GlobalDefines.h"
 
 #include "Engine/AppManager.h"
 #include "Engine/Node.h"
@@ -81,14 +85,14 @@ struct DialogRecord
 
 struct GuiTestState
 {
-    std::deque<StandardButtonEnum> answers;
+    PyObject* answers; // the list of setDialogAnswers() (owned)
     std::vector<DialogRecord> dialogs;
     int unexpectedDialogs; // dialogs that the test did not answer
     Qt::MouseButtons pressedButtons;
     QPointer<QWidget> hovered; // the widget of the last synthetic pen event (for Enter/Leave)
 
     GuiTestState()
-        : answers()
+        : answers(0)
         , dialogs()
         , unexpectedDialogs(0)
         , pressedButtons(Qt::NoButton)
@@ -203,48 +207,128 @@ dialogText(QWidget* dialog)
     return texts.join( QLatin1Char('\n') );
 }
 
-// A modal dialog is shown (Natron's error, warning, information and question dialogs, or any other).
-// The dialogs are shown as usual, so that the tests run the real dialog code: the next scripted
-// answer (setDialogAnswers()) clicks its button. A dialog that the test does not answer is
-// unexpected: it is rejected, and the test fails.
-void
-handleModalDialog(QWidget* dialog)
+// The next answer of setDialogAnswers(), as a new reference, or NULL if there is none. The GIL must be held.
+PyObject*
+popAnswer()
 {
-    if ( !dialog || !dialog->isVisible() ) {
-        return;
-    }
-    const QString title = dialog->windowTitle();
-    const QString text = dialogText(dialog);
-    std::deque<StandardButtonEnum>& answers = state().answers;
-    if ( !answers.empty() ) {
-        const StandardButtonEnum answer = answers.front();
-        answers.pop_front();
-        QDialogButtonBox* buttonBox = dialog->findChild<QDialogButtonBox*>();
-        QPushButton* button = buttonBox ? buttonBox->button( (QDialogButtonBox::StandardButton)QtEnumConvert::toQtStandardButton(answer) ) : 0;
-        if (button) {
-            recordDialog( "dialog", title, text, buttonName(answer) );
-            button->click();
+    PyObject* answers = state().answers;
 
-            return;
-        }
-        std::cout << "NatronGuiTest: FAIL: the dialog \"" << title.toStdString() << "\" has no button "
-                  << buttonName(answer) << std::endl;
-    } else {
-        std::cout << "NatronGuiTest: FAIL: unexpected dialog \"" << title.toStdString() << "\": "
-                  << text.toStdString().substr(0, 300) << std::endl;
+    if ( !answers || (PyList_Size(answers) == 0) ) {
+        return 0;
     }
-    // rejecting is the safe answer, and the test must not block until its timeout
+    PyObject* answer = PyList_GetItem(answers, 0); // borrowed
+    Py_INCREF(answer);
+    PySequence_DelItem(answers, 0);
+
+    return answer;
+}
+
+// A dialog or popup that the test did not answer: it is closed (rejecting is the safe answer, and the
+// test must not block until its timeout), and the test fails.
+void
+rejectUnexpected(QWidget* window,
+                 const QString& title,
+                 const QString& text,
+                 const std::string& reason)
+{
+    std::cout << "NatronGuiTest: FAIL: " << reason << " \"" << title.toStdString() << "\": "
+              << text.toStdString().substr(0, 300) << std::endl;
     ++state().unexpectedDialogs;
     recordDialog( "unexpected", title, text, "reject" );
-    QDialog* d = qobject_cast<QDialog*>(dialog);
+    QDialog* d = qobject_cast<QDialog*>(window);
     if (d) {
         d->reject();
     } else {
-        dialog->close();
+        window->close();
     }
 }
 
-// Calls handleModalDialog() when a modal window is shown, once its event loop runs.
+// A modal dialog, or a popup (a menu), is shown. They are shown as usual, so that the tests run the real
+// code, and the next answer of setDialogAnswers() answers them:
+// - a button name ("ok", "yes"...) clicks that standard button of a dialog;
+// - for a menu, the text of the item to trigger;
+// - a callable is called with (title, text, className): it may return one of the above, or None if it
+//   handled the window itself (e.g. through PySide's QApplication.activeModalWidget()).
+// A window that the test does not answer is unexpected: it is closed, and the test fails.
+void
+handleWindow(QWidget* window)
+{
+    if ( !window || !window->isVisible() ) {
+        return;
+    }
+    const bool isMenu = (window->windowType() == Qt::Popup);
+    const QString title = window->windowTitle();
+    const QString text = isMenu ? QString::fromUtf8( window->metaObject()->className() ) : dialogText(window);
+    std::string answer;
+    {
+        PythonGILLocker pgl;
+        PyObject* a = popAnswer();
+        if (!a) {
+            rejectUnexpected(window, title, text, isMenu ? "unexpected menu" : "unexpected dialog");
+
+            return;
+        }
+        if ( PyCallable_Check(a) ) {
+            PyObject* r = PyObject_CallFunction( a, "sss", title.toStdString().c_str(), text.toStdString().c_str(),
+                                                 window->metaObject()->className() );
+            Py_DECREF(a);
+            if (!r) {
+                PyErr_Print();
+                rejectUnexpected(window, title, text, "the dialog handler raised an exception for");
+
+                return;
+            }
+            if (r == Py_None) {
+                Py_DECREF(r);
+                recordDialog( isMenu ? "menu" : "dialog", title, text, "handler" );
+
+                return; // the handler answered it
+            }
+            if ( PyUnicode_Check(r) ) {
+                answer = PyUnicode_AsUTF8(r);
+            }
+            Py_DECREF(r);
+        } else if ( PyUnicode_Check(a) ) {
+            answer = PyUnicode_AsUTF8(a);
+            Py_DECREF(a);
+        } else {
+            Py_DECREF(a);
+        }
+    }
+    if ( !window->isVisible() ) {
+        return; // the handler closed it
+    }
+    if (isMenu) {
+        QMenu* menu = qobject_cast<QMenu*>(window);
+        QList<QAction*> actions = menu ? menu->actions() : QList<QAction*>();
+        for (QAction* action : actions) {
+            if ( action->text().remove( QLatin1Char('&') ) == QString::fromUtf8( answer.c_str() ) ) {
+                recordDialog("menu", title, text, answer);
+                menu->setActiveAction(action);
+                menu->close();
+                action->trigger();
+
+                return;
+            }
+        }
+        rejectUnexpected(window, title, text, "no item \"" + answer + "\" in the menu");
+
+        return;
+    }
+    StandardButtonEnum button;
+    QDialogButtonBox* buttonBox = window->findChild<QDialogButtonBox*>();
+    QPushButton* pushButton = ( buttonBox && buttonFromName(QString::fromUtf8( answer.c_str() ), &button) ) ?
+                              buttonBox->button( (QDialogButtonBox::StandardButton)QtEnumConvert::toQtStandardButton(button) ) : 0;
+    if (!pushButton) {
+        rejectUnexpected(window, title, text, "no button \"" + answer + "\" in the dialog");
+
+        return;
+    }
+    recordDialog("dialog", title, text, answer);
+    pushButton->click();
+}
+
+// Calls handleWindow() when a modal window or a popup is shown, once its event loop runs.
 class ModalDialogWatcher
     : public QObject
 {
@@ -259,10 +343,11 @@ public:
     {
         if ( event->type() == QEvent::Show ) {
             QWidget* w = qobject_cast<QWidget*>(watched);
-            if ( w && w->isWindow() && (w->windowModality() != Qt::NonModal) ) {
-                QPointer<QWidget> dialog(w);
-                QTimer::singleShot(0, this, [dialog]() {
-                    handleModalDialog(dialog.data());
+            if ( w && w->isWindow() &&
+                 ( (w->windowModality() != Qt::NonModal) || (w->windowType() == Qt::Popup) ) ) {
+                QPointer<QWidget> window(w);
+                QTimer::singleShot(0, this, [window]() {
+                    handleWindow( window.data() );
                 });
             }
         }
@@ -279,9 +364,9 @@ getGui()
     return app ? app->getGui() : 0;
 }
 
-// Sets a Python exception and returns 0 if there is no viewer with that node name.
+// The viewer whose node has that script name, or NULL
 ViewerGL*
-findViewer(const char* name)
+lookupViewer(const char* name)
 {
     Gui* gui = getGui();
 
@@ -294,16 +379,53 @@ findViewer(const char* name)
             }
         }
     }
-    PyErr_Format(PyExc_ValueError, "no viewer named %s", name);
 
     return 0;
 }
 
-// The target of a key event: a viewer (by node name) or the node graph of the project ("NodeGraph").
-QWidget*
-findKeyTarget(const char* name)
+// Sets a Python exception and returns 0 if there is no viewer with that node name.
+ViewerGL*
+findViewer(const char* name)
 {
-    if ( std::string(name) == "NodeGraph" ) {
+    ViewerGL* gl = lookupViewer(name);
+
+    if (!gl) {
+        PyErr_Format(PyExc_ValueError, "no viewer named %s", name);
+    }
+
+    return gl;
+}
+
+// The widget with that objectName (see devel/python-gui.rst, "Widget names"), the visible one first
+QWidget*
+lookupWidget(const char* name)
+{
+    const QString objectName = QString::fromUtf8(name);
+    QWidget* found = 0;
+    QList<QWidget*> widgets = QApplication::allWidgets();
+    for (QWidget* w : widgets) {
+        if (w->objectName() == objectName) {
+            if ( w->isVisible() ) {
+                return w;
+            }
+            if (!found) {
+                found = w;
+            }
+        }
+    }
+
+    return found;
+}
+
+// The target of an event: a viewer (by node name), the node graph of the project ("NodeGraph" or its
+// objectName "nodeGraph"), or any widget by its objectName (e.g. a node settings panel or a node
+// group's graph). Sets a Python exception and returns NULL if there is none.
+QWidget*
+findTarget(const char* name)
+{
+    const std::string n(name);
+
+    if ( (n == "NodeGraph") || (n == kNodeGraphObjectName) ) {
         Gui* gui = getGui();
         if ( gui && gui->getNodeGraph() ) {
             return gui->getNodeGraph();
@@ -312,8 +434,16 @@ findKeyTarget(const char* name)
 
         return 0;
     }
+    ViewerGL* gl = lookupViewer(name);
+    if (gl) {
+        return gl;
+    }
+    QWidget* w = lookupWidget(name);
+    if (!w) {
+        PyErr_Format(PyExc_ValueError, "no viewer or widget named %s", name);
+    }
 
-    return findViewer(name);
+    return w;
 }
 
 bool
@@ -430,32 +560,37 @@ py_isRendering(PyObject* /*self*/,
     return PyBool_FromLong( appPTR->hasRenderInProgress() );
 }
 
-// The widget that receives the mouse events of a pen event target, and the position in that widget of
-// the target coordinates: canvas coordinates for a viewer, scene coordinates for "NodeGraph".
+// The widget that receives the mouse events of a pen event target (see findTarget()), and the position in
+// that widget of the target coordinates: canvas coordinates for a viewer, scene coordinates for a node graph
+// (a QGraphicsView), widget coordinates for another widget.
 QWidget*
 penEventWidget(const char* targetName,
                double x,
                double y,
                QPointF* pos)
 {
-    if ( std::string(targetName) == "NodeGraph" ) {
-        NodeGraph* graph = static_cast<NodeGraph*>( findKeyTarget(targetName) );
-        if (!graph) {
-            return 0;
-        }
-        // a QGraphicsView receives the mouse events in its viewport, in whose coordinates mapFromScene() is
-        *pos = QPointF( graph->mapFromScene( QPointF(x, y) ) );
+    QWidget* w = findTarget(targetName);
 
-        return graph->viewport();
-    }
-    ViewerGL* gl = findViewer(targetName);
-    if (!gl) {
+    if (!w) {
         return 0;
     }
-    // canvas (OpenGL canonical) coordinates to widget coordinates
-    *pos = gl->toWidgetCoordinates( QPointF(x, y) );
+    ViewerGL* gl = qobject_cast<ViewerGL*>(w);
+    if (gl) {
+        // canvas (OpenGL canonical) coordinates to widget coordinates
+        *pos = gl->toWidgetCoordinates( QPointF(x, y) );
 
-    return gl;
+        return gl;
+    }
+    QGraphicsView* view = qobject_cast<QGraphicsView*>(w);
+    if (view) {
+        // a QGraphicsView receives the mouse events in its viewport, in whose coordinates mapFromScene() is
+        *pos = QPointF( view->mapFromScene( QPointF(x, y) ) );
+
+        return view->viewport();
+    }
+    *pos = QPointF(x, y);
+
+    return w;
 }
 
 // Enter and Leave events, as the real mouse would send when moving from a widget to another
@@ -603,7 +738,7 @@ py_sendKey(PyObject* /*self*/,
     if ( !PyArg_ParseTuple(args, "ss", &targetName, &keys) ) {
         return 0;
     }
-    QWidget* w = findKeyTarget(targetName);
+    QWidget* w = findTarget(targetName);
     if (!w) {
         return 0;
     }
@@ -664,25 +799,23 @@ py_setDialogAnswers(PyObject* /*self*/,
     if ( !PyArg_ParseTuple(args, "O", &list) ) {
         return 0;
     }
-    PyObject* seq = PySequence_Fast(list, "setDialogAnswers() takes a list of button names");
-    if (!seq) {
+    PyObject* answers = PySequence_List(list); // a copy
+    if (!answers) {
         return 0;
     }
-    std::deque<StandardButtonEnum> answers;
-    const Py_ssize_t n = PySequence_Fast_GET_SIZE(seq);
+    const Py_ssize_t n = PyList_Size(answers);
     for (Py_ssize_t i = 0; i < n; ++i) {
-        PyObject* item = PySequence_Fast_GET_ITEM(seq, i);
-        const char* name = PyUnicode_Check(item) ? PyUnicode_AsUTF8(item) : 0;
-        StandardButtonEnum b;
-        if ( !name || !buttonFromName(QString::fromUtf8(name), &b) ) {
-            Py_DECREF(seq);
-            PyErr_SetString(PyExc_ValueError, "setDialogAnswers(): unknown button name (e.g. \"yes\", \"no\", \"ok\", \"cancel\")");
+        PyObject* item = PyList_GetItem(answers, i);
+        if ( !PyUnicode_Check(item) && !PyCallable_Check(item) ) {
+            Py_DECREF(answers);
+            PyErr_SetString(PyExc_TypeError, "setDialogAnswers(): each answer is a button name, a menu item text or a callable");
 
             return 0;
         }
-        answers.push_back(b);
+        StandardButtonEnum b;
+        (void)b;
     }
-    Py_DECREF(seq);
+    Py_XDECREF(state().answers);
     state().answers = answers;
 
     Py_RETURN_NONE;
@@ -731,22 +864,26 @@ PyMethodDef guiTestMethods[] = {
       "isRendering() -> bool\nTrue if a render is running or queued." },
     { "penEvent", (PyCFunction)(void (*)(void))py_penEvent, METH_VARARGS | METH_KEYWORDS,
       "penEvent(target, type, x, y, button='left', modifiers='')\n"
-      "Send a mouse event to target: a viewer (its node script name), at the canvas coordinates (x, y), "
-      "or 'NodeGraph', at the node graph coordinates (x, y) (as Effect.getPosition()). "
+      "Send a mouse event to target: a viewer (its node script name), at the canvas coordinates (x, y); "
+      "the node graph ('nodeGraph' or 'NodeGraph') or another node graph by its object name, at the node "
+      "graph coordinates (x, y) (as Effect.getPosition()); or another widget by its object name, at its "
+      "widget coordinates. "
       "type is 'press', 'move' or 'release'; button is 'left', 'middle', 'right' or 'none' (the button "
       "of a press or release; a move has the pressed buttons); modifiers is e.g. 'Shift+Ctrl'. "
       "The real cursor is not moved." },
     { "sendKey", py_sendKey, METH_VARARGS,
       "sendKey(target, keys)\n"
-      "Send keys (e.g. 'F', 'Ctrl+Z', 'Backspace', in QKeySequence portable text) to target: a viewer "
-      "node name or 'NodeGraph'. A key that the target does not override triggers the matching shortcut." },
+      "Send keys (e.g. 'F', 'Ctrl+Z', 'Backspace', in QKeySequence portable text) to target (as for "
+      "penEvent()). A key that the target does not override triggers the matching shortcut." },
     { "getDisplayedPixel", py_getDisplayedPixel, METH_VARARGS,
       "getDisplayedPixel(viewer, x, y) -> (r, g, b, a)\n"
       "The 8-bit colour displayed by the viewer at the canvas coordinates (x, y), after the display LUT." },
     { "setDialogAnswers", py_setDialogAnswers, METH_VARARGS,
       "setDialogAnswers(answers)\n"
-      "The answers (button names, e.g. ['yes', 'no', 'ok']) of the next modal dialogs, in order: each one "
-      "clicks that button of the dialog. A dialog that gets no answer fails the test (it is rejected)." },
+      "The answers of the next modal dialogs and menus, in order: a button name (e.g. 'yes', 'ok') clicks that "
+      "button of a dialog, a text triggers that item of a menu, and a callable is called with (title, text, "
+      "className) and returns one of those, or None if it handled the window itself. A dialog or menu that "
+      "gets no answer is closed, and fails the test." },
     { "getDialogLog", py_getDialogLog, METH_NOARGS,
       "getDialogLog() -> list of dict\n"
       "The modal dialogs shown so far: dicts with the keys type ('dialog' for an answered one, "
@@ -765,7 +902,8 @@ const char* guiTestPythonSource =
     "def skip(reason):\n"
     "    \"\"\"Stop the test, which is reported as skipped (exit status 77).\"\"\"\n"
     "    raise Skip(reason)\n"
-    "\n"    "def requireInteractive(reason='needs the real focus or mouse'):\n"
+    "\n"
+    "def requireInteractive(reason='needs the real focus or mouse'):\n"
     "    \"\"\"Skip the test unless NATRON_TEST_INTERACTIVE=1 (Xvfb on CI, a VM, or an explicit opt-in).\"\"\"\n"
     "    import os\n"
     "    if os.environ.get('NATRON_TEST_INTERACTIVE') != '1':\n"
@@ -805,6 +943,8 @@ const char* guiTestPythonSource =
     "        status = 77\n"
     "    except SystemExit as e:\n"
     "        status = e.code if isinstance(e.code, int) else (0 if e.code is None else 1)\n"
+    "        if status < 0 or status > 255:\n"
+    "            status = 1  # an exit status is 0-255: 256 would be 0, a pass\n"
     "    except BaseException:\n"
     "        traceback.print_exc()\n"
     "        status = 1\n"
@@ -848,6 +988,28 @@ void
 runTestScript(const QString& path)
 {
     int status = 1;
+    // Watchdog: a test that blocks (e.g. on a window that is not modal) fails instead of running until
+    // the ctest timeout. NATRON_TEST_TIMEOUT is in seconds (default 120). The timer fires in the nested
+    // event loops (waitIdle(), dialogs, menus).
+    int timeoutSec = 120;
+    if ( qEnvironmentVariableIsSet("NATRON_TEST_TIMEOUT") ) {
+        bool ok = false;
+        const int t = qgetenv("NATRON_TEST_TIMEOUT").toInt(&ok);
+        if (ok && t > 0) {
+            timeoutSec = t;
+        }
+    }
+    QTimer* watchdog = new QTimer(qApp);
+    watchdog->setSingleShot(true);
+    QObject::connect( watchdog, &QTimer::timeout, [path, timeoutSec]() {
+        std::cout << "NatronGuiTest: " << path.toStdString() << ": FAIL: timeout after " << timeoutSec
+                  << " s (NATRON_TEST_TIMEOUT)" << std::endl;
+        std::cout.flush();
+        std::fflush(0);
+        // the test is blocked: nothing can be closed cleanly (no auto-save was written in test mode)
+        std::_Exit(1);
+    } );
+    watchdog->start(timeoutSec * 1000);
     {
         // the script processes events (waitIdle()...): natron.quit() and the close requests wait
         // until it returns
@@ -865,7 +1027,14 @@ runTestScript(const QString& path)
         }
         Py_XDECREF(module);
     }
-    if ( (status == 0) && (state().unexpectedDialogs > 0) ) {
+    if ( appPTR->isQuitRequested() ) {
+        // the script called natron.quit(n): n is the exit status
+        status = appPTR->getRequestedExitCode();
+    }
+    watchdog->stop();
+    watchdog->deleteLater();
+    // an unexpected dialog fails the test, even a skipped one (it would hide it)
+    if ( ( (status == 0) || (status == 77) ) && (state().unexpectedDialogs > 0) ) {
         std::cout << "NatronGuiTest: " << state().unexpectedDialogs << " unexpected dialog(s)" << std::endl;
         status = 1;
     }

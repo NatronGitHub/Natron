@@ -38,7 +38,7 @@ NATRON_NAMESPACE_ENTER
  *
  * The test-only Python module NatronGuiTest (synthetic events, idle wait, dialog answers) is
  * only available in test mode, so that the public Python API does not grow test hooks.
- * See Documentation/source/devel/guiTests.rst.
+ * See Documentation/source/devel/guitesting.rst.
  **/
 namespace GuiTest {
 /**
@@ -49,7 +49,7 @@ void install();
 
 /**
  * @brief Runs the test script once the event loop processes events, then quits the application.
- * The exit status of the test is stored with AppManager::setTestExitStatus().
+ * Natron then quits as natron.quit(status) does (AppManager::requestQuit()).
  **/
 void scheduleTestScript(const QString& path);
 

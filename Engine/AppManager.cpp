@@ -386,6 +386,32 @@ AppManager::loadFromArgs(const CLArgs& cl)
 
     // Before creating qApp and before initPython(): the GUI registers the test module only in test mode.
     _imp->testMode = !cl.getTestScript().isEmpty() && !cl.isBackgroundMode();
+#if defined(__NATRON_UNIX__) && !defined(__NATRON_OSX__)
+    if ( _imp->testMode && qgetenv("DISPLAY").isEmpty() && qgetenv("WAYLAND_DISPLAY").isEmpty() &&
+         qgetenv("QT_QPA_PLATFORM").isEmpty() ) {
+        // Qt would abort: a GUI test without a display is skipped, not failed
+        std::cout << "SKIP: no display (DISPLAY and WAYLAND_DISPLAY are not set): run the GUI tests under xvfb-run" << std::endl;
+        _imp->requestedExitCode = 77;
+        _imp->quitRequested = true;
+
+        return false;
+    }
+#endif
+    if (_imp->testMode) {
+        // The settings written with the default QSettings constructor (e.g. the recent files) go to a
+        // directory of the tests, not to the user's preferences (the explicit Natron settings are not
+        // saved with --no-settings, which --test implies).
+        QSettings::setDefaultFormat(QSettings::IniFormat);
+        QSettings::setPath( QSettings::IniFormat, QSettings::UserScope, QDir::tempPath() + QString::fromUtf8("/NatronGuiTest-settings") );
+        // A GUI test that fails to start (e.g. an error while loading) fails: only the test runner (or a
+        // skip) sets another exit status (see main()).
+        _imp->requestedExitCode = 1;
+    }
+    if ( _imp->testMode && !qEnvironmentVariableIsSet("NATRON_TEST_NO_FOCUS") ) {
+        // A GUI test never takes the user's keyboard focus or activates its windows (#1464). Set before
+        // the QApplication exists. (--no-dialogs does not imply it.)
+        qputenv("NATRON_TEST_NO_FOCUS", "1");
+    }
 
     // This needs to be done BEFORE creating qApp because
     // on Linux, X11 will create a context that would corrupt
@@ -3512,6 +3538,12 @@ bool
 AppManager::isTestMode() const
 {
     return _imp->testMode;
+}
+
+bool
+AppManager::keepsOtherSessionsAutoSaves() const
+{
+    return isDialogsDisabled() || isTestMode();
 }
 
 bool

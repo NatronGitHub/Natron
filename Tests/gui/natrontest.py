@@ -1,13 +1,17 @@
-# Helpers shared by the GUI tests (Natron --test test_*.py); see Documentation/source/devel/guiTests.rst.
+# Helpers shared by the GUI tests (Natron --test test_*.py); see Documentation/source/devel/guitesting.rst.
 # The test script directory is on sys.path, so a test does "from natrontest import *".
 import ctypes
 import os
 
-import NatronEngine
 import NatronGui
 import NatronGuiTest
 
 natron = NatronGui.natron
+
+# In CI, the GUI tests only run where the job enables them (NATRON_GUI_TESTS=1, e.g. under Xvfb):
+# a runner without a usable display or OpenGL would only report them as skipped anyway.
+if os.environ.get("CI") and os.environ.get("NATRON_GUI_TESTS") != "1":
+    NatronGuiTest.skip("GUI tests in CI need NATRON_GUI_TESTS=1")
 
 GENERATOR = "net.natron.test.Generator"  # fills its output with 0.5 (Tests/OfxTestPlugin)
 

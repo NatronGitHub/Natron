@@ -126,6 +126,7 @@ General options
    This is meant to drive the graphical interface from scripts, see :ref:`guiTesting`. In background mode (NatronRenderer,
    :option:`-b` or :option:`-t`), where dialogs are never shown, the questions are then also
    answered with their default button, instead of *Yes*.
+
 .. option:: --test <script.py>
 
    Run a GUI test script, then quit with its status (0: passed, 77: skipped, 1: failed). It

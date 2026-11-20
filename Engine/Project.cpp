@@ -755,7 +755,7 @@ Project::saveProjectInternal(const QString & path,
             if (updateProjectProperties) {
                 _imp->lastAutoSaveFilePath = filePath;
             }
-            if ( !isRenderSave && appPTR->isDialogsDisabled() ) {
+            if ( !isRenderSave && appPTR->keepsOtherSessionsAutoSaves() ) {
                 _imp->autoSavesWrittenBySession.insert( QDir::cleanPath(filePath) );
             }
         }
@@ -765,7 +765,7 @@ Project::saveProjectInternal(const QString & path,
 
     std::string newFilePath = _imp->runOnProjectSaveCallback(filePath.toStdString(), autoSave);
     filePath = QString::fromUtf8( newFilePath.c_str() );
-    if ( autoSave && !isRenderSave && appPTR->isDialogsDisabled() ) {
+    if ( autoSave && !isRenderSave && appPTR->keepsOtherSessionsAutoSaves() ) {
         // the onProjectSave callback may have changed the file name
         QMutexLocker l(&_imp->projectLock);
         _imp->autoSavesWrittenBySession.insert( QDir::cleanPath(filePath) );
@@ -2170,7 +2170,7 @@ void
 Project::refreshAutoSaveDisabled()
 {
     _imp->autoSaveDisabled = false;
-    if ( !appPTR->isDialogsDisabled() || getApp()->isBackground() || !hasProjectBeenSavedByUser() ) {
+    if ( !appPTR->keepsOtherSessionsAutoSaves() || getApp()->isBackground() || !hasProjectBeenSavedByUser() ) {
         return;
     }
     // --no-dialogs: an auto-save of this project written by another session (the user's crash
@@ -2189,7 +2189,7 @@ Project::refreshAutoSaveDisabled()
 bool
 Project::canRemoveAutoSave(const QString& filePath) const
 {
-    if ( !appPTR->isDialogsDisabled() ) {
+    if ( !appPTR->keepsOtherSessionsAutoSaves() ) {
         return true;
     }
     // --no-dialogs: only remove the auto-saves this session wrote (or chose to use), never
@@ -2221,7 +2221,7 @@ Project::clearAutoSavesDir()
                 dirToRemove += QLatin1Char('/');
             }
             dirToRemove += entry;
-            if ( appPTR->isDialogsDisabled() && !isAutoSaveOfThisSession(dirToRemove) ) {
+            if ( appPTR->keepsOtherSessionsAutoSaves() && !isAutoSaveOfThisSession(dirToRemove) ) {
                 // --no-dialogs: keep the auto-saves of other sessions (the user's crash recovery)
                 continue;
             }

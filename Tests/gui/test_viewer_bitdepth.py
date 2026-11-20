@@ -23,3 +23,4 @@ for m in (0, 1, 0, 1):
     print("texturesBitDepth %s (%s): displayed %r" % (m, mode.getOption(m), (r, g, b, a)))
     check_close(r, expected, 3, "displayed red with texturesBitDepth %d" % m)
     check_close(g, expected, 3, "displayed green with texturesBitDepth %d" % m)
+    check_close(b, expected, 3, "displayed blue with texturesBitDepth %d" % m)
