@@ -1964,6 +1964,9 @@ Settings::saveSettings(const std::vector<KnobI*>& knobs,
 
     settings.setValue(QString::fromUtf8(kQSettingsSoftwareMajorVersionSettingName), NATRON_VERSION_MAJOR);
     for (U32 i = 0; i < knobs.size(); ++i) {
+        if ( _sessionOnlyKnobs.count(knobs[i]) ) {
+            continue; // an answer given by --no-dialogs, not by the user
+        }
         KnobStringBase* isString = dynamic_cast<KnobStringBase*>(knobs[i]);
         KnobIntBase* isInt = dynamic_cast<KnobIntBase*>(knobs[i]);
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>(knobs[i]);
@@ -2103,6 +2106,7 @@ void
 Settings::restoreSettings(bool useDefault)
 {
     _restoringSettings = true;
+    _usingDefaultSettings = useDefault;
 
     // call restoreKnobsFromSettings only if --no-settings is not part of the command-line arguments
     if (!useDefault) {
@@ -2176,7 +2180,10 @@ Settings::restoreSettings(bool useDefault)
         if ( _settingsExisted && (appearanceVersion < NATRON_DEFAULT_APPEARANCE_VERSION) ) {
             _defaultAppearanceOutdated = true;
             _defaultAppearanceVersion->setValue(NATRON_DEFAULT_APPEARANCE_VERSION);
-            saveSetting( _defaultAppearanceVersion.get() );
+            // --no-dialogs: the question about the new appearance is not shown, ask it next time
+            if ( !appPTR->isDialogsDisabled() ) {
+                saveSetting( _defaultAppearanceVersion.get() );
+            }
         }
 
         appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
@@ -2300,6 +2307,10 @@ Settings::onKnobValueChanged(KnobI* k,
 {
     Q_EMIT settingChanged(k);
     bool ret = true;
+
+    if (reason == eValueChangedReasonUserEdited) {
+        _sessionOnlyKnobs.erase(k); // the user chose this value: save it
+    }
 
     if ( k == _maxViewerDiskCacheGB.get() ) {
         if (!_restoringSettings) {
@@ -3359,7 +3370,9 @@ Settings::doOCIOStartupCheckIfNeeded()
                                                                 StandardButtons(eStandardButtonYes | eStandardButtonNo),
                                                                 defaultButton,
                                                                 &stopAsking);
-        if (stopAsking != !docheck) {
+        // --no-dialogs: the answer was not given by the user, apply it to this session only
+        const bool saveAnswer = !appPTR->isDialogsDisabled();
+        if ( saveAnswer && (stopAsking != !docheck) ) {
             _ocioStartupCheck->setValue(!stopAsking);
             saveSetting( _ocioStartupCheck.get() );
         }
@@ -3367,7 +3380,13 @@ Settings::doOCIOStartupCheckIfNeeded()
         if (reply == eStandardButtonYes) {
             if (defaultIndex != -1) {
                 _ocioConfigKnob->setValue(defaultIndex);
-                saveSetting( _ocioConfigKnob.get() );
+                if (saveAnswer) {
+                    saveSetting( _ocioConfigKnob.get() );
+                } else {
+                    // not saved either by a later saveSettings() (e.g. from Python), unless
+                    // the user changes it in the preferences
+                    _sessionOnlyKnobs.insert( _ocioConfigKnob.get() );
+                }
             } else {
                 Dialogs::warningDialog( "OCIO config", tr("The %2 OCIO config could not be found.\n"
                                                           "This is probably because you're not using the OpenColorIO-Configs folder that should "

@@ -21,6 +21,7 @@
 #define NATRON_GLOBAL_STRUTILS_H
 
 #include <algorithm>
+#include <cstdarg>
 #include <string>
 #include <vector>
 
@@ -91,6 +92,13 @@ bool iequals(const std::string& lhs, const std::string& rhs);
 void replace_first(std::string& inout, const std::string& search, const std::string& fmt);
 
 std::string trim_copy(const std::string& input);
+
+/*
+ Formats args with the printf-style format fmt, as vsnprintf() does, into a std::string of any
+ length. args is not consumed (it is copied with va_copy). A NULL fmt or an encoding error gives an
+ empty string.
+ */
+std::string vformat(const char* fmt, va_list args);
 
 } // namespace StrUtils
 

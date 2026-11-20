@@ -1026,12 +1026,8 @@ AppInstancePtr
 Gui::createNewProject()
 {
     CLArgs cl;
+    // GuiAppInstance::load() already runs the onProjectCreated callback for the new project (#489)
     AppInstancePtr app = appPTR->newAppInstance(cl, false);
-
-    // newAppInstance() returns NULL, after showing an error dialog, if the new window could not be loaded
-    if (app) {
-        app->execOnProjectCreatedCallback();
-    }
 
     return app;
 }
@@ -1214,7 +1210,15 @@ Gui::saveProjectAs()
     std::vector<std::string> filter;
 
     filter.push_back(NATRON_PROJECT_FILE_EXT);
-    std::string outFile = popSaveFileDialog( false, filter, _imp->_lastSaveProjectOpenedDir.toStdString(), false );
+    // Start in the directory of the current project if it has one and it is writable (not e.g. a read-only
+    // template folder), else in the last directory used to save a project (#343)
+    QString initialDir = _imp->_lastSaveProjectOpenedDir;
+    ProjectPtr project = getApp()->getProject();
+    if ( project->hasProjectBeenSavedByUser() && !project->getProjectPath().isEmpty() &&
+         QFileInfo( project->getProjectPath() ).isWritable() ) {
+        initialDir = project->getProjectPath();
+    }
+    std::string outFile = popSaveFileDialog( false, filter, initialDir.toStdString(), false );
     if (outFile.size() > 0) {
         return saveProjectAs(outFile);
     }
@@ -1416,6 +1420,12 @@ Gui::popOpenFileDialog(bool sequenceDialog,
                        const std::string & initialDir,
                        bool allowRelativePaths)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        // --no-dialogs: the file dialog counts as cancelled
+        Dialogs::printDismissedDialog( tr("Open").toStdString(), tr("File dialog not shown, cancelled.").toStdString() );
+
+        return std::string();
+    }
     SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::eFileDialogModeOpen, initialDir, this, allowRelativePaths);
 
     if ( dialog.exec() ) {
@@ -1456,6 +1466,12 @@ Gui::popSaveFileDialog(bool sequenceDialog,
                        const std::string & initialDir,
                        bool allowRelativePaths)
 {
+    if ( appPTR->isDialogsDisabled() ) {
+        // --no-dialogs: the file dialog counts as cancelled (e.g. Save As for an untitled project)
+        Dialogs::printDismissedDialog( tr("Save").toStdString(), tr("File dialog not shown, cancelled.").toStdString() );
+
+        return std::string();
+    }
     SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::eFileDialogModeSave, initialDir, this, allowRelativePaths);
 
     if ( dialog.exec() ) {
@@ -1481,6 +1497,13 @@ int
 Gui::saveWarning()
 {
     if ( !getApp()->getProject()->isSaveUpToDate() ) {
+        if ( appPTR->isDialogsDisabled() ) {
+            // --no-dialogs: do not save. The default answer, Save, would open the Save As
+            // file dialog for an untitled project, which would block a script.
+            Dialogs::printDismissedDialog( NATRON_APPLICATION_NAME, tr("Save changes to %1? Answered Discard.").arg( getApp()->getProject()->getProjectFilename() ).toStdString() );
+
+            return 1;
+        }
         StandardButtonEnum ret =  Dialogs::questionDialog(NATRON_APPLICATION_NAME, tr("Save changes to %1?").arg( getApp()->getProject()->getProjectFilename() ).toStdString(),
                                                           false,
                                                           StandardButtons(eStandardButtonSave | eStandardButtonDiscard | eStandardButtonCancel), eStandardButtonSave);

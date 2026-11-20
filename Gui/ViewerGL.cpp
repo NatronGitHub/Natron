@@ -27,7 +27,9 @@
 #include "ViewerGLPrivate.h"
 
 #include <cassert>
-#include <algorithm> // min, max
+#include <algorithm> // min, max, stable_sort
+#include <list>
+#include <set>
 #include <cmath> // floor
 #include <limits>
 #include <cstring> // for std::memcpy, std::memset, std::strcmp, std::strchr
@@ -95,6 +97,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #define USER_ROI_CLICK_TOLERANCE 8.f
 
 #define PERSISTENT_MESSAGE_LEFT_OFFSET_PIXELS 20
+// at most that many node messages at the top of the viewer (#459)
+#define NATRON_VIEWER_MAX_PERSISTENT_MESSAGES 3
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -189,6 +193,7 @@ ViewerGL::resizeGL(int w,
     }
     glCheckError();
     glViewport (0, 0, w, h);
+    _imp->updateDitherAmplitude();
     double zoomWidth = w;
     double zoomHeight = h;
 
@@ -1253,6 +1258,7 @@ ViewerGL::initializeGL()
     // initializeGL() again. The OpenGL objects of the old context must be released with it.
     QObject::connect( context(), &QOpenGLContext::aboutToBeDestroyed, this, &ViewerGL::onContextAboutToBeDestroyed );
     _imp->initializeGL();
+    _imp->updateDitherAmplitude();
 
     if (_imp->glResourcesReleased) {
         // The textures of the previous context held the displayed images: render them again.
@@ -3438,14 +3444,47 @@ ViewerGL::updatePersistentMessageToWidth(int w)
     const std::list<DockablePanel*>& openedPanels = _imp->viewerTab->getGui()->getVisiblePanels();
 
     _imp->persistentMessages.clear();
-    QStringList allMessages;
-    int type = 0;
-    ///Draw overlays in reverse order of appearance
-    std::list<DockablePanel*>::const_iterator next = openedPanels.begin();
-    if ( next != openedPanels.end() ) {
-        ++next;
+
+    // The nodes that this viewer shows: its active A and B inputs, and the nodes upstream of them.
+    std::set<Node*> viewedNodes, upstreamNodes;
+    {
+        ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
+        std::list<NodePtr> toVisit;
+        if ( viewer && viewer->getNode() ) {
+            int activeInputs[2] = {-1, -1};
+            viewer->getActiveInputs(activeInputs[0], activeInputs[1]);
+            for (int i = 0; i < 2; ++i) {
+                NodePtr input = (activeInputs[i] >= 0) ? viewer->getNode()->getGuiInput(activeInputs[i]) : NodePtr();
+                if (input) {
+                    viewedNodes.insert( input.get() );
+                    toVisit.push_back(input);
+                }
+            }
+        }
+        while ( !toVisit.empty() ) {
+            NodePtr n = toVisit.front();
+            toVisit.pop_front();
+            if ( !upstreamNodes.insert( n.get() ).second ) {
+                continue;
+            }
+            const std::vector<NodeWPtr>& inputs = n->getGuiInputs();
+            for (std::size_t i = 0; i < inputs.size(); ++i) {
+                NodePtr input = inputs[i].lock();
+                if (input) {
+                    toVisit.push_back(input);
+                }
+            }
+        }
     }
-    int nbNonEmpty = 0;
+
+    // the messages of the nodes with an open panel, most recently opened first
+    struct NodeMessage
+    {
+        QString message;
+        int type; // 1: error, 2: warning
+        int rank; // 0: a viewed node, 1: upstream of it, 2: other
+    };
+    std::vector<NodeMessage> allMessages;
     for (std::list<DockablePanel*>::const_iterator it = openedPanels.begin(); it != openedPanels.end(); ++it) {
         const NodeSettingsPanel* isNodePanel = dynamic_cast<const NodeSettingsPanel*>(*it);
         if (!isNodePanel) {
@@ -3457,28 +3496,42 @@ ViewerGL::updatePersistentMessageToWidth(int w)
             continue;
         }
 
-        QString mess;
-        int nType;
-        node->getPersistentMessage(&mess, &nType);
-        if ( !mess.isEmpty() ) {
-            allMessages.append(mess);
-            ++nbNonEmpty;
+        NodeMessage m;
+        node->getPersistentMessage(&m.message, &m.type);
+        if ( m.message.isEmpty() ) {
+            continue;
         }
-        if ( next != openedPanels.end() ) {
-            ++next;
-        }
-
-        if ( !mess.isEmpty() ) {
-            type = (nbNonEmpty == 1 && nType == 2) ? 2 : 1;
-        }
+        m.rank = viewedNodes.count( node.get() ) ? 0 : ( upstreamNodes.count( node.get() ) ? 1 : 2 );
+        allMessages.push_back(m);
     }
-    _imp->persistentMessageType = type;
+
+    // Each node with an open panel may have a message, which would fill the viewer (#459): show the first
+    // ones only, those of the viewed nodes first, and say how many are not shown.
+    std::stable_sort( allMessages.begin(), allMessages.end(),
+                      [](const NodeMessage& a, const NodeMessage& b) { return a.rank < b.rank; } );
+    const int maxMessages = NATRON_VIEWER_MAX_PERSISTENT_MESSAGES;
+    const int nHidden = (int)allMessages.size() - maxMessages;
+    if (nHidden > 0) {
+        allMessages.resize(maxMessages);
+    }
+    // a warning only if it is the only message (as before)
+    _imp->persistentMessageType = allMessages.empty() ? 0 : ( (allMessages.size() == 1 && nHidden <= 0 && allMessages[0].type == 2) ? 2 : 1 );
+
+    QStringList shownMessages;
+    for (std::size_t i = 0; i < allMessages.size(); ++i) {
+        shownMessages.append(allMessages[i].message);
+    }
+    if (nHidden > 0) {
+        shownMessages.append( (nHidden == 1) ?
+                              tr("(1 more message is not shown: see the parameters panel of the node.)") :
+                              tr("(%1 more messages are not shown: see the parameters panels of the nodes.)").arg(nHidden) );
+    }
 
     assert(_imp->_textFont);
     QFontMetrics fm(*_imp->_textFont);
 
-    for (int i = 0; i < allMessages.size(); ++i) {
-        QStringList wordWrapped = wordWrap( fm, allMessages[i],
+    for (int i = 0; i < (int)shownMessages.size(); ++i) {
+        QStringList wordWrapped = wordWrap( fm, shownMessages[i],
                                            _imp->_screenPixelRatio * (w - PERSISTENT_MESSAGE_LEFT_OFFSET_PIXELS) );
         for (int j = 0; j < wordWrapped.size(); ++j) {
             _imp->persistentMessages.push_back(wordWrapped[j]);

@@ -700,6 +700,11 @@ GuiPrivate::restoreGuiGeometry()
 void
 GuiPrivate::saveGuiGeometry()
 {
+    // Scripts and tests (--no-dialogs), or a session with the default settings
+    // (--no-settings): do not overwrite the user's window geometry and directories
+    if ( appPTR->isDialogsDisabled() || appPTR->getCurrentSettings()->isUsingDefaultSettings() ) {
+        return;
+    }
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
     settings.beginGroup( QString::fromUtf8("MainWindow") );
