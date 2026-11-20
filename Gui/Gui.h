@@ -580,8 +580,10 @@ public Q_SLOTS:
     void closeEvent(QCloseEvent* e) OVERRIDE;
     void newProject();
     void openProject();
-    bool saveProject();
-    bool saveProjectAs();
+    // format: the format of the file, see Project::saveProject(); for saveProjectAs(), the default of the
+    // file format choice of the dialog.
+    bool saveProject(ProjectFileFormatEnum format = eProjectFileFormatNone);
+    bool saveProjectAs(ProjectFileFormatEnum format = eProjectFileFormatNone);
     void exportProjectAsGroup();
     void saveAndIncrVersion();
 

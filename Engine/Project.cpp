@@ -262,8 +262,7 @@ Project::detectFileFormat(const QString& filePath)
 }
 
 // The suffix of the auto-saves, after ".ntp". Binary auto-saves don't use the ".autosave" suffix of
-// Natron 2.5 and earlier: those would offer to restore them, fail to load them, and remove them if the
-// user doesn't want to restore them.
+// Natron 2.5 and earlier, which would offer to restore them and fail to load them (see findAutoSaveSuffix()).
 #define kAutoSaveSuffixText ".autosave"
 #define kAutoSaveSuffixBinary ".binautosave"
 
@@ -323,6 +322,23 @@ Project::loadProject(const QString & path,
                      bool isUntitledAutosave,
                      bool attemptToLoadAutosave)
 {
+    return loadProjectImpl(path, name, isUntitledAutosave, attemptToLoadAutosave, false);
+}
+
+bool
+Project::restoreAutoSave(const QString & path,
+                         const QString & autoSaveName)
+{
+    return loadProjectImpl(path, autoSaveName, false, false, true);
+}
+
+bool
+Project::loadProjectImpl(const QString & path,
+                         const QString & name,
+                         bool isUntitledAutosave,
+                         bool attemptToLoadAutosave,
+                         bool isNamedAutoSave)
+{
     reset(false, true);
     _imp->autoSaveDisabled = false;
 
@@ -330,11 +346,17 @@ Project::loadProject(const QString & path,
         QString realPath = path;
         StrUtils::ensureLastPathSeparator(realPath);
         QString realName = name;
-        bool isAutoSave = isUntitledAutosave;
-        if (!getApp()->isBackground() && !isUntitledAutosave) {
+        bool isAutoSave = isUntitledAutosave || isNamedAutoSave;
+        if (isNamedAutoSave) {
+            // as when the user chose to use the auto-save below
+            QMutexLocker k(&_imp->projectLock);
+            _imp->lastAutoSaveFilePath = realPath + realName;
+        } else if (!getApp()->isBackground() && !isUntitledAutosave) {
             // In Gui mode, attempt to load an auto-save for this project if there's one.
             QString autosaveFileName;
-            bool hasAutoSave = findAutoSaveForProject(realPath, name, &autosaveFileName);
+            QStringList otherAutoSaves;
+            // --no-dialogs: also an auto-save older than the project, which must not be overwritten either
+            bool hasAutoSave = findAutoSaveForProject(realPath, name, &autosaveFileName, appPTR->isDialogsDisabled(), &otherAutoSaves);
             if ( hasAutoSave && appPTR->isDialogsDisabled() ) {
                 // --no-dialogs: load the project itself, and keep its auto-save, which may be
                 // the user's crash recovery: using it would delete it when quitting
@@ -357,6 +379,10 @@ Project::loadProject(const QString & path,
                 }
                 if ( (ret == eStandardButtonNo) || (ret == eStandardButtonEscape) ) {
                     QFile::remove(realPath + autosaveFileName);
+                    // also an older auto-save in the other format (by 2.5, or by 2.6), more recent than the project
+                    Q_FOREACH(const QString& other, otherAutoSaves) {
+                        QFile::remove(realPath + other);
+                    }
                 } else {
                     realName = autosaveFileName;
                     isAutoSave = true;
@@ -605,9 +631,10 @@ Project::loadProjectInternal(const QString & path,
 bool
 Project::saveProject(const QString & path,
                      const QString & name,
-                     QString* newFilePath)
+                     QString* newFilePath,
+                     ProjectFileFormatEnum format)
 {
-    return saveProject_imp(path, name, false, true, newFilePath);
+    return saveProject_imp(path, name, false, true, newFilePath, 0, format);
 }
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -667,7 +694,8 @@ Project::saveProject_imp(const QString & path,
                          bool autoS,
                          bool updateProjectProperties,
                          QString* newFilePath,
-                         QString* errorMessage)
+                         QString* errorMessage,
+                         ProjectFileFormatEnum format)
 {
     // A background auto-save (see autoSave()) may be dropped: the project will be saved again later.
     // Any other save (user save, Save As, saveTemp, render save) must not be dropped silently (#825).
@@ -776,7 +804,7 @@ Project::saveProject_imp(const QString & path,
         SavingProjectFlagResetter savingFlagResetter( _imp.get() );
         try {
             if (!autoS) {
-                ret = saveProjectInternal(path, name, false, updateProjectProperties, &warnings);
+                ret = saveProjectInternal(path, name, false, updateProjectProperties, &warnings, format);
 
                 ///We just saved, remove the last auto-save which is now obsolete
                 removeLastAutosave();
@@ -786,7 +814,7 @@ Project::saveProject_imp(const QString & path,
                     removeLastAutosave();
                 }
 
-                ret = saveProjectInternal(path, name, true, updateProjectProperties, &warnings);
+                ret = saveProjectInternal(path, name, true, updateProjectProperties, &warnings, eProjectFileFormatBinary);
             }
             ok = true;
         } catch (const std::exception & e) {
@@ -894,7 +922,8 @@ Project::saveProjectInternal(const QString & path,
                              const QString & name,
                              bool autoSave,
                              bool updateProjectProperties,
-                             QStringList* warnings)
+                             QStringList* warnings,
+                             ProjectFileFormatEnum format)
 {
     bool isRenderSave = name.contains( QString::fromUtf8("RENDER_SAVE") );
     QDateTime time = QDateTime::currentDateTime();
@@ -958,7 +987,9 @@ Project::saveProjectInternal(const QString & path,
     tmpFilename.append( QString::number( time.toMSecsSinceEpoch() ) );
 
     // Auto-saves are always binary (faster, smaller); they record the format of the project.
-    const ProjectFileFormatEnum projectFormat = getFileFormatForSave();
+    // The format is an argument, not set on the project before the save: this save may wait for a running
+    // auto-save, which must record the format the project has until this save succeeds.
+    const ProjectFileFormatEnum projectFormat = (format != eProjectFileFormatNone && !autoSave) ? format : getFileFormatForSave();
     const ProjectFileFormatEnum fileFormat = autoSave ? eProjectFileFormatBinary : projectFormat;
 
     {
@@ -1008,8 +1039,18 @@ Project::saveProjectInternal(const QString & path,
                 int originalFormat = autoSave ? (int)getFileFormat() : (int)eProjectFileFormatBinary;
                 oArchive << boost::serialization::make_nvp("Project_file_format", originalFormat);
                 saveToArchive(oArchive);
+            } // the archive is closed (the XML end tags are written)
+            // The archives write to the stream buffer, and the last buffer is only written when the stream is
+            // flushed or closed: check it before the file replaces the project (a full disk, a network share).
+            if ( ofile.rdbuf()->pubsync() == -1 ) {
+                throw std::runtime_error( tr("Failed to write file %1").arg(tmpFilename).toStdString() );
+            }
+            ofile.close();
+            if ( ofile.fail() ) {
+                throw std::runtime_error( tr("Failed to write file %1").arg(tmpFilename).toStdString() );
             }
         } catch (...) {
+            QFile::remove(tmpFilename);
             if (!autoSave && updateProjectProperties) {
                 ///Reset the old project path in case of failure.
                 _imp->autoSetProjectDirectory(oldProjectPath);
@@ -1211,11 +1252,20 @@ Project::onAutoSaveFutureFinished()
 bool
 Project::findAutoSaveForProject(const QString& projectPath,
                                 const QString& projectName,
-                                QString* autoSaveFileName)
+                                QString* autoSaveFileName,
+                                bool includeOlderThanProject,
+                                QStringList* otherAutoSaves)
 {
     QString projectAbsFilePath = projectPath + projectName;
+    QFileInfo projectInfo(projectAbsFilePath);
+    if ( !projectInfo.exists() ) {
+        return false;
+    }
     QDir savesDir(projectPath);
     QStringList entries = savesDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
+    QString best;
+    QDateTime bestTime;
+    QStringList candidates;
 
     Q_FOREACH(const QString &entry, entries) {
         int suffixPos = findAutoSaveSuffix(entry);
@@ -1223,14 +1273,29 @@ Project::findAutoSaveForProject(const QString& projectPath,
             continue;
         }
         QString filename = projectPath + entry.left( suffixPos + 1 + (int)std::strlen(NATRON_PROJECT_FILE_EXT) );
-        if ( (filename == projectAbsFilePath) && QFile::exists(filename) ) {
-            *autoSaveFileName = entry;
-
-            return true;
+        if (filename != projectAbsFilePath) {
+            continue;
+        }
+        const QDateTime time = QFileInfo(projectPath + entry).lastModified();
+        if ( !includeOlderThanProject && (time < projectInfo.lastModified()) ) {
+            continue;
+        }
+        candidates.append(entry);
+        if ( best.isEmpty() || (time > bestTime) ) {
+            best = entry;
+            bestTime = time;
         }
     }
+    if ( best.isEmpty() ) {
+        return false;
+    }
+    *autoSaveFileName = best;
+    if (otherAutoSaves) {
+        candidates.removeAll(best);
+        *otherAutoSaves = candidates;
+    }
 
-    return false;
+    return true;
 }
 
 void
@@ -2380,7 +2445,18 @@ Project::refreshAutoSaveDisabled()
     StrUtils::ensureLastPathSeparator(path);
     const QString name = QString::fromUtf8( _imp->getProjectFilename().c_str() );
     QString autoSaveFileName;
-    if ( findAutoSaveForProject(path, name, &autoSaveFileName) && !wroteAutoSave(path + autoSaveFileName) ) {
+    QStringList others;
+    if ( !findAutoSaveForProject(path, name, &autoSaveFileName, true /*includeOlderThanProject*/, &others) ) {
+        return;
+    }
+    others.append(autoSaveFileName);
+    bool foreign = false;
+    Q_FOREACH(const QString& f, others) {
+        if ( !wroteAutoSave(path + f) ) {
+            foreign = true;
+        }
+    }
+    if (foreign) {
         Dialogs::printDismissedDialog( tr("Auto-save").toStdString(),
                                        tr("An auto-save of %1 exists: it is kept, and %1 is not auto-saved in this session.").arg(name).toStdString() );
         _imp->autoSaveDisabled = true;

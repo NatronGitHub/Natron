@@ -139,7 +139,8 @@ PortableBinaryIArchive::load(boost::serialization::collection_size_type & t)
     std::size_t l;
 
     load(l);
-    // each element takes at least one byte
+    // a large size must not exceed the rest of the file (true for the element types of a project, which all
+    // take at least one byte; checkSize() ignores sizes up to 65536)
     checkSize(l);
     t = boost::serialization::collection_size_type(l);
 }

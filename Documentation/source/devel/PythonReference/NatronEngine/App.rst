@@ -503,6 +503,8 @@ inform the user of various information, warnings or errors.
     *eProjectFileFormatNone* (the default), the project is saved in its format, or, if it was never saved,
     in the format of the "Save projects as binary by default" preference (binary by default, also in
     NatronRenderer and natron-python). Any other format becomes the format of the project.
+    In GUI mode, when *filename* is empty and the project was never saved, the save dialog is shown:
+    *format* is the default of its "File format" choice, and the user's choice is used.
 
     This function returns *True* if it saved successfully, *False* otherwise.
 

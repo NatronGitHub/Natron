@@ -1222,24 +1222,27 @@ GuiAppInstance::isRenderStatsActionChecked() const
 }
 
 bool
-GuiAppInstance::save(const std::string& filename)
+GuiAppInstance::save(const std::string& filename,
+                     ProjectFileFormatEnum format)
 {
     if ( filename.empty() ) {
         ProjectPtr project = getProject();
         if ( project->hasProjectBeenSavedByUser() ) {
-            return _imp->_gui->saveProject();
+            return _imp->_gui->saveProject(format);
         } else {
-            return _imp->_gui->saveProjectAs();
+            // the Save As dialog: format is its default, the user's choice wins
+            return _imp->_gui->saveProjectAs(format);
         }
     } else {
-        return _imp->_gui->saveProjectAs(filename);
+        return _imp->_gui->saveProjectAs(filename, format);
     }
 }
 
 bool
-GuiAppInstance::saveAs(const std::string& filename)
+GuiAppInstance::saveAs(const std::string& filename,
+                       ProjectFileFormatEnum format)
 {
-    return _imp->_gui->saveProjectAs(filename);
+    return _imp->_gui->saveProjectAs(filename, format);
 }
 
 AppInstancePtr

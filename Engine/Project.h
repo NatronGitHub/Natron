@@ -86,21 +86,33 @@ public:
      **/
     bool loadProject(const QString & path, const QString & name, bool isUntitledAutosave = false, bool attemptToLoadAutosave = true);
 
+    /**
+     * @brief Loads autoSaveName, the auto-save of a project in path, as loadProject() does when the user
+     * chooses to use the auto-save of the project (in GUI mode): the project gets the name and the format
+     * of the project that was auto-saved.
+     **/
+    bool restoreAutoSave(const QString & path, const QString & autoSaveName);
+
 
     /**
      * @brief Saves the project with the given path and name corresponding to a file on disk.
      * @param autoSave If true then it will save the project in a temporary file instead (see autoSave()).
+     * @param format The format of the file, which becomes the format of the project if the save succeeds.
+     * eProjectFileFormatNone: getFileFormatForSave().
      * @returns The actual filepath of the file saved
      **/
-    bool saveProject(const QString & path, const QString & name, QString* newFilePath);
+    bool saveProject(const QString & path, const QString & name, QString* newFilePath, ProjectFileFormatEnum format = eProjectFileFormatNone);
 
 
     /**
      * @brief Saves the project. A save other than the background auto-save waits for a running save to finish.
      * @param errorMessage If not null, set to the reason of the failure.
+     * @param format See saveProject(). Ignored for auto-saves, which are always binary. It becomes the format
+     * of the project only for a save that updates the project properties.
      * @returns false if the project could not be saved.
      **/
-    bool saveProject_imp(const QString & path, const QString & name, bool autoSave, bool updateProjectProperties, QString* newFilePath = 0, QString* errorMessage = 0);
+    bool saveProject_imp(const QString & path, const QString & name, bool autoSave, bool updateProjectProperties, QString* newFilePath = 0, QString* errorMessage = 0,
+                         ProjectFileFormatEnum format = eProjectFileFormatNone);
 
     /**
      * @brief True while the project is being saved (also by the background auto-save), or a save waits to start.
@@ -133,7 +145,15 @@ public:
     static QString autoSavesDir() WARN_UNUSED_RETURN;
 
 
-    bool findAutoSaveForProject(const QString& projectPath, const QString& projectName, QString* autoSaveFileName);
+    /**
+     * @brief Finds the auto-save of a project: <name>.binautosave (2.6) or <name>.autosave (2.5 and earlier).
+     * If both exist, returns the most recent one, and the other one in otherAutoSaves.
+     * Unless includeOlderThanProject is true, an auto-save older than the project file is ignored: it was
+     * left by a crash before the project was saved again, e.g. by Natron 2.5, which ignores the binary
+     * auto-saves. It is neither offered nor removed.
+     **/
+    bool findAutoSaveForProject(const QString& projectPath, const QString& projectName, QString* autoSaveFileName,
+                                bool includeOlderThanProject = false, QStringList* otherAutoSaves = 0);
 
     /**
      * @brief Returns true if the project is currently loading.
@@ -182,8 +202,9 @@ public:
      * @brief If fileName is the name of an auto-save, ending with .ntp.autosave (text, by Natron 2.5 and earlier)
      * or .ntp.binautosave (binary, by Natron 2.6 and later), possibly followed by a time hash for an untitled
      * project, returns the position of ".ntp" and sets suffixSize to the size of the auto-save suffix after it.
-     * Returns -1 otherwise. Natron 2.5 only looks for ".ntp.autosave": it never offers to restore (and then delete)
-     * a binary auto-save it can't read.
+     * Returns -1 otherwise. Natron 2.5 only looks for ".ntp.autosave", so it never offers to restore a binary
+     * auto-save, which it can't load. Its Project::clearAutoSavesDir() (when the user declines to restore one of its
+     * own untitled auto-saves, and Cache > Clear all caches) still removes the untitled ones in the Autosaves directory.
      **/
     static int findAutoSaveSuffix(const QString& fileName, int* suffixSize = 0) WARN_UNUSED_RETURN;
 
@@ -491,10 +512,12 @@ private:
 
     void setProjectDefaultFormat(const Format & f);
 
+    bool loadProjectImpl(const QString & path, const QString & name, bool isUntitledAutosave, bool attemptToLoadAutosave, bool isNamedAutoSave);
     bool loadProjectInternal(const QString & path, const QString & name, bool isAutoSave,
                              bool isUntitledAutosave, bool* mustSave);
 
-    QString saveProjectInternal(const QString & path, const QString & name, bool autosave, bool updateProjectProperties, QStringList* warnings);
+    QString saveProjectInternal(const QString & path, const QString & name, bool autosave, bool updateProjectProperties, QStringList* warnings,
+                                ProjectFileFormatEnum format);
 
 
 

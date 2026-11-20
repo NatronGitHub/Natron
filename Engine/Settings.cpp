@@ -210,7 +210,7 @@ Settings::initializeKnobsGeneral()
     _saveAsBinary = AppManager::createKnob<KnobBool>( this, tr("Save projects as binary by default") );
     _saveAsBinary->setName("saveAsBinary");
     _saveAsBinary->setHintToolTip( tr("The format of new projects, when they are saved for the first time. "
-                                      "Binary projects are faster to load and save, and smaller, but can only be opened by %1 2.6 and later. "
+                                      "Binary projects are faster to save and to parse, and smaller, but can only be opened by %1 2.6 and later. "
                                       "Text (XML) projects can also be opened by %1 2.5 and earlier, and are human-readable and diffable.\n"
                                       "A project keeps its format: a project opened from a text file is saved as text, and a binary project as binary. "
                                       "\"Save As...\" can change the format of a project.\n"

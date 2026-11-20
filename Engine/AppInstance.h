@@ -379,9 +379,10 @@ public:
 
     virtual bool isRenderStatsActionChecked() const { return false; }
 
-    bool saveTemp(const std::string& filename);
-    virtual bool save(const std::string& filename);
-    virtual bool saveAs(const std::string& filename);
+    // format: see Project::saveProject(). For saveTemp(), it doesn't change the format of the project.
+    bool saveTemp(const std::string& filename, ProjectFileFormatEnum format = eProjectFileFormatNone);
+    virtual bool save(const std::string& filename, ProjectFileFormatEnum format = eProjectFileFormatNone);
+    virtual bool saveAs(const std::string& filename, ProjectFileFormatEnum format = eProjectFileFormatNone);
     virtual AppInstancePtr loadProject(const std::string& filename);
 
     ///Close the current project but keep the window

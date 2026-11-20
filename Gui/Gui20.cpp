@@ -1142,7 +1142,7 @@ updateRecentFiles(const QString & filename)
 }
 
 bool
-Gui::saveProject()
+Gui::saveProject(ProjectFileFormatEnum format)
 {
     ProjectPtr project = getApp()->getProject();
 
@@ -1157,7 +1157,7 @@ Gui::saveProject()
         bool ret;
         {
             SaveWaitCursor waitCursor;
-            ret = project->saveProject(projectPath, projectFilename, 0);
+            ret = project->saveProject(projectPath, projectFilename, 0, format);
         }
 
         ///update the open recents
@@ -1171,14 +1171,14 @@ Gui::saveProject()
 
         return ret;
     } else {
-        return saveProjectAs();
+        return saveProjectAs(format);
     }
 }
 
 bool
 Gui::saveProjectAs(const std::string& filename)
 {
-    return saveProjectAs( filename, getApp()->getProject()->getFileFormatForSave() );
+    return saveProjectAs(filename, eProjectFileFormatNone);
 }
 
 bool
@@ -1198,27 +1198,23 @@ Gui::saveProjectAs(const std::string& filename,
     _imp->_lastSaveProjectOpenedDir = QString::fromUtf8( path.c_str() );
 
     ProjectPtr project = getApp()->getProject();
-    // the format becomes the format of the project, unless the save fails
-    const ProjectFileFormatEnum previousFormat = project->getFileFormat();
-    project->setFileFormat(format);
     bool ret;
     {
         SaveWaitCursor waitCursor;
-        ret = project->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( fileCopy.c_str() ), 0);
+        // the format becomes the format of the project if the save succeeds
+        ret = project->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( fileCopy.c_str() ), 0, format);
     }
 
     if (ret) {
         QString filePath = QString::fromUtf8( path.c_str() ) + QString::fromUtf8( fileCopy.c_str() );
         updateRecentFiles(filePath);
-    } else {
-        project->setFileFormat(previousFormat);
     }
 
     return ret;
 }
 
 bool
-Gui::saveProjectAs()
+Gui::saveProjectAs(ProjectFileFormatEnum defaultFormat)
 {
     std::vector<std::string> filter;
 
@@ -1250,7 +1246,10 @@ Gui::saveProjectAs()
                                                                    tr("The project keeps this format: later saves use it. Auto-saves are always binary."),
                                                                    NATRON_NAMESPACE::WhiteSpaceNormal) );
     const int textIndex = 1;
-    formatCombo->setCurrentIndex_no_emit( (project->getFileFormatForSave() == eProjectFileFormatText) ? textIndex : 0 );
+    if (defaultFormat == eProjectFileFormatNone) {
+        defaultFormat = project->getFileFormatForSave();
+    }
+    formatCombo->setCurrentIndex_no_emit( (defaultFormat == eProjectFileFormatText) ? textIndex : 0 );
     formatLayout->addWidget(formatCombo);
 
     // the dialog owns formatWidget: read the choice before it returns

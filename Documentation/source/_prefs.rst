@@ -30,7 +30,7 @@ Older files will be named with a higher number. E.g. with the default setting of
 
 **Save projects as binary by default**
 
-The format of new projects, when they are saved for the first time. Binary projects are faster to load and save, and smaller, but can only be opened by Natron 2.6 and later. Text (XML) projects can also be opened by Natron 2.5 and earlier, and are human-readable and diffable.
+The format of new projects, when they are saved for the first time. Binary projects are faster to save and to parse, and smaller, but can only be opened by Natron 2.6 and later. Text (XML) projects can also be opened by Natron 2.5 and earlier, and are human-readable and diffable.
 
 A project keeps its format: a project opened from a text file is saved as text, and a binary project as binary. “Save As...” can change the format of a project.
 

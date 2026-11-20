@@ -413,48 +413,11 @@ App::addFormat(const QString& formatSpec)
     }
 }
 
-NATRON_NAMESPACE_ANONYMOUS_ENTER
-// Saves with the given format: it becomes the format of the project if keep is true and the save succeeds.
-class ProjectFormatSetter
-{
-    ProjectPtr _project;
-    ProjectFileFormatEnum _previous;
-    bool _active;
-
-public:
-    ProjectFormatSetter(const ProjectPtr& project,
-                        ProjectFileFormatEnum format)
-        : _project(project)
-        , _previous( project->getFileFormat() )
-        , _active(format != eProjectFileFormatNone)
-    {
-        if (_active) {
-            _project->setFileFormat(format);
-        }
-    }
-
-    // keep the new format
-    void keep()
-    {
-        _active = false;
-    }
-
-    ~ProjectFormatSetter()
-    {
-        if (_active) {
-            _project->setFileFormat(_previous);
-        }
-    }
-};
-NATRON_NAMESPACE_ANONYMOUS_EXIT
-
 bool
 App::saveTempProject(const QString& filename,
                      ProjectFileFormatEnum format)
 {
-    ProjectFormatSetter formatSetter(getInternalApp()->getProject(), format); // restored after the save
-
-    return getInternalApp()->saveTemp( filename.toStdString() );
+    return getInternalApp()->saveTemp(filename.toStdString(), format);
 }
 
 bool
@@ -466,13 +429,7 @@ App::saveProject(const QString& filename,
     getInternalApp()->getProject()->getEnvironmentVariables(env);
     Project::expandVariable(env, outFile);
 
-    ProjectFormatSetter formatSetter(getInternalApp()->getProject(), format);
-    bool ok = getInternalApp()->save(outFile);
-    if (ok) {
-        formatSetter.keep();
-    }
-
-    return ok;
+    return getInternalApp()->save(outFile, format);
 }
 
 bool
@@ -484,13 +441,7 @@ App::saveProjectAs(const QString& filename,
     getInternalApp()->getProject()->getEnvironmentVariables(env);
     Project::expandVariable(env, outFile);
 
-    ProjectFormatSetter formatSetter(getInternalApp()->getProject(), format);
-    bool ok = getInternalApp()->saveAs(outFile);
-    if (ok) {
-        formatSetter.keep();
-    }
-
-    return ok;
+    return getInternalApp()->saveAs(outFile, format);
 }
 
 ProjectFileFormatEnum

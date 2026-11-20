@@ -38,6 +38,7 @@
 #include <string>
 
 #include <QByteArray>
+#include <QDateTime>
 #include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
@@ -113,15 +114,41 @@ saveCopy(const ProjectPtr& project,
          const QString& name,
          ProjectFileFormatEnum format)
 {
-    const ProjectFileFormatEnum previous = project->getFileFormat();
-
-    project->setFileFormat(format);
-    bool ok = project->saveProject_imp(dir, name, false /*autoSave*/, false /*updateProjectProperties*/);
-    project->setFileFormat(previous);
-
-    return ok;
+    return project->saveProject_imp(dir, name, false /*autoSave*/, false /*updateProjectProperties*/, 0, 0, format);
 }
 
+// The bundled google-test predates GTEST_SKIP(): say clearly that the test did not run.
+// TODO: Convert to GTEST_SKIP() when gtest updated.
+void
+reportSkipped(const char* reason)
+{
+    const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
+
+    std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name() << ": " << reason << std::endl;
+}
+
+// The directory of the committed project files (Tests/data), or an empty string if it isn't there
+// (e.g. Tests run from an installed bundle).
+QString
+dataDir()
+{
+#ifdef NATRON_TESTS_DATA_DIR
+    QString d = QString::fromUtf8(NATRON_TESTS_DATA_DIR) + QLatin1Char('/');
+    if ( QFile::exists( d + QString::fromUtf8("ProjectFileFormat-2.5.ntp") ) ) {
+        return d;
+    }
+#endif
+
+    return QString();
+}
+
+// Copies a committed project file to dir, so that the paths saved in the project (the [Project] variable) are those of dir.
+bool
+copyData(const QString& name,
+         const QString& dir)
+{
+    return QFile::copy( dataDir() + name, dir + name );
+}
 // A project with built-in nodes only (no OpenFX plug-in is needed), with knobs of most types,
 // animation, links, and strings that need escaping in XML.
 void
@@ -388,11 +415,19 @@ TEST(ProjectFileFormat, AutoSaveKeepsTheFormatOfTheProject)
         ASSERT_EQ( name + QString::fromUtf8(".binautosave"), QFileInfo(autoSavePath).fileName() );
         EXPECT_EQ( eProjectFileFormatBinary, Project::detectFileFormat(autoSavePath) );
 
-        // Restore it. In GUI mode, loadProject() asks whether to use the auto-save of a project;
-        // headless, load it as the auto-save of an untitled project: it is also loaded as an auto-save.
+        // Restore it, as loadProject() does in GUI mode when the user chooses to use it: it is the project
+        // that was auto-saved, with its name and its format, and "Save" writes that format.
         project->resetProject();
-        ASSERT_TRUE( project->loadProject( dir, name + QString::fromUtf8(".binautosave"), true /*isUntitledAutosave*/ ) );
+        ASSERT_TRUE( project->restoreAutoSave( dir, name + QString::fromUtf8(".binautosave") ) );
         EXPECT_EQ( format, project->getFileFormat() ) << "the format of the project was not restored from its auto-save";
+        EXPECT_EQ( name, project->getProjectFilename() );
+        EXPECT_TRUE( project->hasProjectBeenSavedByUser() );
+        ASSERT_TRUE( project->saveProject( project->getProjectPath(), project->getProjectFilename(), 0 ) );
+        EXPECT_EQ( format, Project::detectFileFormat(dir + name) );
+
+        // the save removed the auto-save: write it again
+        EXPECT_FALSE( QFile::exists(autoSavePath) );
+        ASSERT_TRUE( project->saveProject_imp(dir, name, true /*autoSave*/, true /*updateProjectProperties*/, &autoSavePath) );
 
         // loaded directly (File > Open), it is a binary project
         project->resetProject();
@@ -417,7 +452,8 @@ TEST(ProjectFileFormat, AutoSaveKeepsTheFormatOfTheProject)
 
 // Binary auto-saves end with .ntp.binautosave: Natron 2.5 and earlier look for ".ntp.autosave" (RB-2.5
 // Project::findAutoSaveForProject() and GuiAppInstance::findAndTryLoadUntitledAutoSave()), so they never
-// offer to restore a binary auto-save, which they couldn't load, and never delete it. 2.6 finds both.
+// offer to restore a binary auto-save, which they couldn't load. (2.5's Project::clearAutoSavesDir() still
+// removes the untitled ones of the Autosaves directory.) 2.6 finds both.
 TEST(ProjectFileFormat, AutoSaveNames)
 {
     const QString natron25Pattern = QString::fromUtf8(".ntp.autosave");
@@ -453,6 +489,55 @@ TEST(ProjectFileFormat, AutoSaveNames)
     EXPECT_EQ( QString::fromUtf8("a.ntp.binautosave"), found );
     EXPECT_TRUE( project->findAutoSaveForProject( dir, QString::fromUtf8("b.ntp"), &found ) );
     EXPECT_EQ( QString::fromUtf8("b.ntp.autosave"), found );
+
+    // Both: the most recent one is offered, the other one is returned too (No removes both).
+    const QDateTime now = QDateTime::currentDateTime();
+    auto setTime = [](const QString& path, const QDateTime& t) {
+        QFile f(path);
+        return f.open(QIODevice::ReadWrite) && f.setFileTime(t, QFileDevice::FileModificationTime);
+    };
+    writeFile( dir + QString::fromUtf8("c.ntp"), QByteArray("<?xml") );
+    writeFile( dir + QString::fromUtf8("c.ntp.autosave"), QByteArray("x") );
+    writeFile( dir + QString::fromUtf8("c.ntp.binautosave"), QByteArray("x") );
+    ASSERT_TRUE( setTime(dir + QString::fromUtf8("c.ntp"), now.addSecs(-100)) );
+    ASSERT_TRUE( setTime(dir + QString::fromUtf8("c.ntp.binautosave"), now.addSecs(-50)) );
+    ASSERT_TRUE( setTime(dir + QString::fromUtf8("c.ntp.autosave"), now.addSecs(-10)) ); // by 2.5, after 2.6 crashed
+    QStringList others;
+    EXPECT_TRUE( project->findAutoSaveForProject( dir, QString::fromUtf8("c.ntp"), &found, false, &others ) );
+    EXPECT_EQ( QString::fromUtf8("c.ntp.autosave"), found );
+    EXPECT_EQ( QStringList() << QString::fromUtf8("c.ntp.binautosave"), others );
+
+    // An auto-save older than the project (left by a crash of 2.6, then the project was saved by 2.5, which
+    // ignores the binary auto-saves) is not offered, and not removed. It still counts for --no-dialogs.
+    ASSERT_TRUE( setTime(dir + QString::fromUtf8("c.ntp.autosave"), now.addSecs(-200)) );
+    ASSERT_TRUE( setTime(dir + QString::fromUtf8("c.ntp.binautosave"), now.addSecs(-150)) );
+    EXPECT_FALSE( project->findAutoSaveForProject( dir, QString::fromUtf8("c.ntp"), &found ) );
+    EXPECT_TRUE( QFile::exists( dir + QString::fromUtf8("c.ntp.binautosave") ) );
+    EXPECT_TRUE( project->findAutoSaveForProject( dir, QString::fromUtf8("c.ntp"), &found, true /*includeOlderThanProject*/ ) );
+}
+
+// The text auto-save of a project, written by Natron 2.5, is restored as a text project.
+TEST(ProjectFileFormat, RestoreNatron25AutoSave)
+{
+    if ( dataDir().isEmpty() ) {
+        reportSkipped("Tests/data not found");
+
+        return;
+    }
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    ASSERT_TRUE( QFile::copy( dataDir() + QString::fromUtf8("ProjectFileFormat-2.5.ntp"), dir + QString::fromUtf8("p.ntp") ) );
+    ASSERT_TRUE( QFile::copy( dataDir() + QString::fromUtf8("ProjectFileFormat-2.5.ntp"), dir + QString::fromUtf8("p.ntp.autosave") ) );
+    ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
+    ASSERT_TRUE( project->restoreAutoSave( dir, QString::fromUtf8("p.ntp.autosave") ) );
+    EXPECT_EQ( eProjectFileFormatText, project->getFileFormat() );
+    EXPECT_EQ( QString::fromUtf8("p.ntp"), project->getProjectFilename() );
+    EXPECT_TRUE( bool( project->getNodeByName("Group1") ) );
+    ASSERT_TRUE( project->saveProject( dir, QString::fromUtf8("p.ntp"), 0 ) );
+    EXPECT_EQ( eProjectFileFormatText, Project::detectFileFormat( dir + QString::fromUtf8("p.ntp") ) );
+    EXPECT_FALSE( QFile::exists( dir + QString::fromUtf8("p.ntp.autosave") ) ) << "the save removes the restored auto-save";
+    project->resetProject();
 }
 
 // Damaged files: the error says which format the file has, and what is wrong with it.
@@ -544,38 +629,13 @@ TEST(PortableBinaryArchive, DamagedSizes)
     }
 }
 
-namespace {
-// The directory of the committed project files (Tests/data), or an empty string if it isn't there
-// (e.g. Tests run from an installed bundle).
-QString
-dataDir()
-{
-#ifdef NATRON_TESTS_DATA_DIR
-    QString d = QString::fromUtf8(NATRON_TESTS_DATA_DIR) + QLatin1Char('/');
-    if ( QFile::exists( d + QString::fromUtf8("ProjectFileFormat-2.5.ntp") ) ) {
-        return d;
-    }
-#endif
-
-    return QString();
-}
-
-// Copies a committed project file to dir, so that the paths saved in the project (the [Project] variable) are those of dir.
-bool
-copyData(const QString& name,
-         const QString& dir)
-{
-    return QFile::copy( dataDir() + name, dir + name );
-}
-} // anonymous namespace
-
 // A project saved by Natron 2.5.0 (Tests/data/ProjectFileFormat-2.5.ntp, made by ProjectFileFormat-2.5.py):
 // it loads, and text -> binary -> text gives the same text as text -> text. The 2.5 class versions
 // go through the binary archive.
 TEST(ProjectFileFormat, Natron25Project)
 {
     if ( dataDir().isEmpty() ) {
-        std::cout << "Tests/data not found: skipped" << std::endl;
+        reportSkipped("Tests/data not found");
 
         return;
     }
@@ -614,7 +674,7 @@ TEST(ProjectFileFormat, Natron25Project)
 TEST(ProjectFileFormat, CommittedBinaryProject)
 {
     if ( dataDir().isEmpty() ) {
-        std::cout << "Tests/data not found: skipped" << std::endl;
+        reportSkipped("Tests/data not found");
 
         return;
     }
@@ -685,7 +745,7 @@ TEST(ProjectFileFormat, LargeProject)
 {
     const char* largeProject = std::getenv("NATRON_TEST_LARGE_PROJECT");
     if (!largeProject) {
-        std::cout << "NATRON_TEST_LARGE_PROJECT is not set: skipped" << std::endl;
+        reportSkipped("NATRON_TEST_LARGE_PROJECT is not set");
 
         return;
     }
