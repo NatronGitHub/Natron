@@ -367,6 +367,9 @@ static void
 incrementPluginWeight(const QString& pluginID,
                       int majVersion)
 {
+    if ( appPTR->isTestMode() ) {
+        return; // a test does not change the user's Tab completion ranking
+    }
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
     QString propName( pluginID + QString::number(majVersion) + QString::fromUtf8("_tab_weight") );
     int curValue = settings.value( propName, QVariant(0) ).toInt();
