@@ -84,3 +84,26 @@ check(app.getNode(gen.getScriptName()) is None, "app.redo() deleted the node aga
 names = set(w.objectName() for w in QtWidgets.QApplication.allWidgets())
 for n in ("nodeGraph", "Viewer1", "TimeLine", "PropertiesBin"):
     check(n in names, "a widget is named %s" % n)
+
+# a choice parameter, through its combo box (named after the parameter): the popup menu is answered
+# with the item text, and the combo box gets the item that QMenu::exec() returns
+PARAMS = "net.natron.test.Params"
+if PARAMS in natron.getPluginIDs():
+    params = app.createNode(PARAMS)
+    check(params is not None, "createNode(%s) failed" % PARAMS)
+    wait_idle()
+    choice = params.getParam("choiceFrom")
+    check(choice is not None and choice.getValue() == 0, "choiceFrom is 0")
+    combos = [w for w in QtWidgets.QApplication.allWidgets()
+              if w.objectName() == "choiceFrom" and w.metaObject().className().endswith("ComboBox")]
+    check(len(combos) == 1, "one combo box is named choiceFrom: %r" % [w.metaObject().className() for w in combos])
+    NatronGuiTest.clearDialogLog()
+    NatronGuiTest.setDialogAnswers(["two"])
+    NatronGuiTest.penEvent("choiceFrom", "press", 5, 5)  # the popup runs in the press
+    NatronGuiTest.penEvent("choiceFrom", "release", 5, 5)
+    wait_idle()
+    log = NatronGuiTest.getDialogLog()
+    check(len(log) == 1 and log[0]["type"] == "menu" and log[0]["answer"] == "two", "dialog log: %r" % log)
+    check(choice.getValue() == 2, "the combo box set choiceFrom to %r, not 2 (two)" % choice.getValue())
+else:
+    print("%s not found: the combo box answer is not tested" % PARAMS)
