@@ -239,6 +239,12 @@ if [ "$NATRON_LICENSE" = "COMMERCIAL" ] && [ "$COMPILE_TYPE" = "debug" ]; then
     echo "Error: NATRON_LICENSE=COMMERCIAL cannot be combined with COMPILE_TYPE=debug: use relwithdebinfo or release"
     exit 1
 fi
+# Linux COMMERCIAL builds are not done yet: the SDK's libheif links x265 and its OpenImageIO links
+# the GPL LibRaw, and build-Linux-installer.sh doesn't run check-commercial-bundle.sh
+if [ "$NATRON_LICENSE" = "COMMERCIAL" ] && [ "$PKGOS" = "Linux" ]; then
+    echo "Error: NATRON_LICENSE=COMMERCIAL is not supported on Linux yet (the SDK has no libheif and OpenImageIO without GPL components): only Windows and macOS COMMERCIAL builds are possible"
+    exit 1
+fi
 
 
 # By default do not debug scripts!

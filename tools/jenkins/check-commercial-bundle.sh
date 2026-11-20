@@ -74,8 +74,22 @@ error() {
     nerrors=$((nerrors + 1))
 }
 
-# is_gpl_lib <file name>: GPL-only libraries (not LGPL, not GPL with a linking exception).
+# is_gpl_lib <file name>: GPL-only libraries (not LGPL, not GPL with a linking exception). The
+# names are matched case-insensitively (Windows file names, e.g. LIBX264-165.DLL or qt5charts.dll).
 is_gpl_lib() {
+    local status=1
+    if shopt -q nocasematch; then
+        is_gpl_lib_nocase "$1" && status=0
+    else
+        shopt -s nocasematch
+        is_gpl_lib_nocase "$1" && status=0
+        shopt -u nocasematch
+    fi
+    return $status
+}
+
+# (bash 3.2, /bin/bash on macOS, has no ${1,,}: use with nocasematch set)
+is_gpl_lib_nocase() {
     case "$1" in
         libx264[-_.]*|libx264|x264-*|libx265[-_.]*|libx265|xvidcore*|libxvidcore*) return 0;;
         libpostproc[-_.]*|postproc-*|libvidstab[-_.]*|librubberband[-_.]*) return 0;;
@@ -89,12 +103,18 @@ is_gpl_lib() {
     # Qt modules that are GPL-3 only, without a linking exception ("QT_BEGIN_LICENSE:GPL" or
     # "GPL-EXCEPT" in their headers), and their PySide modules: QtCharts (macOS framework, PySide),
     # Qt5Charts.dll, libQt5Charts.so.5, ...
-    local qtmod="${1#lib}"
+    # (parameter expansion ignores nocasematch: strip the prefixes by length)
+    local qtmod="$1"
     case "$qtmod" in
-        Qt[0-9]*) qtmod="${qtmod#Qt?}";;
-        Qt*) qtmod="${qtmod#Qt}";;
+        lib*) qtmod="${qtmod:3}";;
+    esac
+    case "$qtmod" in
+        Qt[0-9]*) qtmod="${qtmod:3}";;
+        Qt*) qtmod="${qtmod:2}";;
         *) return 1;;
     esac
+    # TODO(Qt6): Qt6 has more GPL-3-only modules, e.g. Graphs and HttpServer (check ShaderTools,
+    # QuickTimeline, Quick3DPhysics and the others) before the installers support Qt6
     case "$qtmod" in
         Charts*|DataVisualization*|NetworkAuth*|Designer*|VirtualKeyboard*|Quick3D*|Bodymovin*) return 0;;
     esac
@@ -112,24 +132,35 @@ file_type() {
     esac
 }
 
-# linked_libs <file> <type>: the names of the libraries the file links
+# linked_libs <file> <type>: the names of the libraries the file links. Fails if otool or objdump
+# can't read a Mach-O or PE file (e.g. an objdump without support for its architecture), since
+# its dependencies would go unchecked.
 linked_libs() {
+    local out
     case "$2" in
         macho)
             # first line: the file name (and, for a library, its own install name follows)
-            otool -L "$1" 2>/dev/null | sed -n -e '2,$s/^[[:space:]]*\([^ ]*\) (.*/\1/p' | sed -e 's@.*/@@'
+            out="$(otool -L "$1" 2>/dev/null)" || return 1
+            # otool exits with 0 on an unreadable file, and prints e.g. "<file>: is a truncated
+            # object file": every header line ("<file>:", "<file> (architecture arm64):") ends
+            # with ":", the libraries are indented
+            if [ -z "$out" ] || echo "$out" | grep -q -v -e '^[[:space:]]' -e ':$'; then
+                return 1
+            fi
+            echo "$out" | sed -n -e '2,$s/^[[:space:]]*\([^ ]*\) (.*/\1/p' | sed -e 's@.*/@@'
             ;;
         elf)
             "$OBJDUMP" -p "$1" 2>/dev/null | awk '$1 == "NEEDED" {print $2}'
             ;;
         pe)
-            "$OBJDUMP" -p "$1" 2>/dev/null | sed -n -e 's/^[[:space:]]*DLL Name: *//p' | tr -d '\r'
+            out="$("$OBJDUMP" -p "$1" 2>/dev/null)" || return 1
+            echo "$out" | sed -n -e 's/^[[:space:]]*DLL Name: *//p' | tr -d '\r'
             ;;
     esac
 }
 
 check_file() {
-    local f="$1" t base lib s
+    local f="$1" t base lib libs s
     t="$(file_type "$f")"
     [ -n "$t" ] || return 0
     nfiles=$((nfiles + 1))
@@ -137,13 +168,17 @@ check_file() {
     if is_gpl_lib "$base"; then
         error "$f is a GPL library"
     fi
+    if ! libs="$(linked_libs "$f" "$t")"; then
+        error "$f: cannot read the libraries it links (${t}): its dependencies are not checked"
+        libs=""
+    fi
     while read -r lib; do
         # (otool -L also lists a library's own install name)
         [ -n "$lib" ] && [ "$lib" != "$base" ] || continue
         if is_gpl_lib "$lib"; then
             error "$f links $lib"
         fi
-    done < <(linked_libs "$f" "$t" | sort -u)
+    done < <(echo "$libs" | sort -u)
     # FFmpeg: e.g. "libavcodec license: GPL version 2 or later" (LICENSE_PREFIX FFMPEG_LICENSE)
     while read -r s; do
         [ -n "$s" ] || continue

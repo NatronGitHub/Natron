@@ -398,7 +398,7 @@ for location in "${COPY_LOCATIONS[@]}"; do
         for qtlib in "${QT_GPL_LIBS[@]}"; do
             rm -f "$location/bin/Qt${QT_VERSION_MAJOR}${qtlib}"*.dll
         done
-        rm -rf "$location/bin/designer" "$location/bin/virtualkeyboard"
+        rm -rf "$location/bin/designer" "$location/bin/virtualkeyboard" "$location/bin/assetimporters"
         rm -f "$location/bin/platforminputcontexts"/*virtualkeyboard*.dll
     fi
 

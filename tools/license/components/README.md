@@ -60,7 +60,7 @@ Natron binaries include components from the following libraries:
 
 * OpenEXR & IlmBase (Modified BSD)  http://www.openexr.com/license.html (used by openfx-io via OpenImageIO) 
 * libtiff (Modified BSD) http://www.remotesensing.org/libtiff (used by openfx-io via OpenImageIO) 
-* JBIG-KIT (GPL 2.0) https://www.cl.cam.ac.uk/~mgk25/jbigkit/ (Windows GPL builds only, used by libtiff; COMMERCIAL builds use a libtiff without it)
+* JBIG-KIT (GPL 2.0 or later) https://www.cl.cam.ac.uk/~mgk25/jbigkit/ (Windows GPL builds only, used by libtiff; COMMERCIAL builds use a libtiff without it)
 * libpng (libpng/zlib License) http://www.libpng.org (used by openfx-io via OpenImageIO and openfx-arena via ImageMagick)
 * libjpeg (Modified BSD) http://ijg.org (used by openfx-io via OpenImageIO) 
 * openjpeg (2-clauses BSD) http://www.openjpeg.org (used by openfx-io via OpenImageIO) 

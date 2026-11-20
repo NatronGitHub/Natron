@@ -440,10 +440,12 @@ scripts) do not have them:
 - **AudioCurve**: this node uses SoX, which links GPL libraries, so non-GPL
   builds do not have it.
 
-A project that uses a node that a build does not have loads without that node.
+A project that uses a node that a build does not have loads without that node
+(with a warning).
 
-The build scripts check that a non-GPL build does not contain any of these GPL
-libraries.
+On Windows and macOS, the build scripts check that a non-GPL build does not
+contain any of these GPL libraries. Non-GPL builds for Linux are not possible
+yet.
 
 The menus of WriteFFmpeg only show the codecs and containers of the FFmpeg
 libraries that Natron uses, so a codec that is missing from the **Codec** menu

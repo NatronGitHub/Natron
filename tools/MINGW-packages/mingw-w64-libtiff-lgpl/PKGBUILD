@@ -16,6 +16,8 @@
 # Qt's qtiff plug-in and tiffinfo link. Keep pkgver equal to MSYS2's libtiff
 # version: genDllVersions.sh checks it. (The libtiff licence itself is MIT-like;
 # "-lgpl" only means "for COMMERCIAL builds", as for the other packages.)
+# TODO(#1494): a CLANGARM64 build needs MSYS2's prepare() (autoreconf -fiv, for
+# the clang support in libtool) and 'clangarm64' in mingw_arch.
 
 _realname=libtiff
 pkgbase="mingw-w64-natron_${_realname}-lgpl"
