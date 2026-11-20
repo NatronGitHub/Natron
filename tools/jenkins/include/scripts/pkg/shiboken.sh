@@ -11,7 +11,7 @@ if download_step; then
     #download "$SHIBOKEN_SITE" "$SHIBOKEN_TAR"
     download_github pyside Shiboken "${SHIBOKEN_VERSION}" "" "${SHIBOKEN_TAR}"
 fi
-if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/shiboken-py$PYV.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/lib/pkgconfig:$QT4PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion shiboken-py$PYV)" != "$SHIBOKEN_VERSION" ]; }; }; then
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/shiboken-py2.pc" ] || [ "$(env PKG_CONFIG_PATH=$SDK_HOME/lib/pkgconfig:$QT4PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --modversion shiboken-py2)" != "$SHIBOKEN_VERSION" ]; }; }; then
     start_build
     untar "$SRC_PATH/$SHIBOKEN_TAR"
     pushd "Shiboken-$SHIBOKEN_VERSION"
@@ -46,33 +46,8 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/shiboken-py$
     mv "$SDK_HOME/share/man/man1/shiboken.1" $"$SDK_HOME/share/man/man1/shiboken-${PY2VER}.1"
     popd
 
-    mkdir -p build-py3
-    pushd build-py3
-    # note: PYTHONBRANCH and PYTHONPREFIX are variables added by patch-cmakepkgconfig.diff
-    env  cmake ../ -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DCMAKE_INSTALL_PREFIX="$SDK_HOME"  \
-        -DCMAKE_PREFIX_PATH="$SDK_HOME;$QT4PREFIX" \
-        -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF -I${SDK_HOME}/include/libxml2" \
-        -DCMAKE_SHARED_LINKER_FLAGS="-L$QT4PREFIX/lib" \
-        -DCMAKE_EXE_LINKER_FLAGS="-L$QT4PREFIX/lib" \
-        -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" \
-        -DBUILD_TESTS=OFF            \
-        -DPYTHONBRANCH="${PY3VER}" \
-        -DPYTHONPREFIX="${SDK_HOME}" \
-        -DUSE_PYTHON3=yes \
-        -DPYTHON3_EXECUTABLE="$PY3_EXE" \
-        -DPYTHON3_LIBRARY="$PY3_LIB" \
-        -DPYTHON3_INCLUDE_DIR="$PY3_INC" \
-        -DQT_QMAKE_EXECUTABLE="$QT4PREFIX/bin/qmake"
-    make -j${MKJOBS}
-    make install
-    mkdir "$SDK_HOME/lib/cmake/Shiboken-$SHIBOKEN_VERSION/python${PY3VER}" || true
-    mv "$SDK_HOME/lib/cmake/Shiboken-$SHIBOKEN_VERSION/ShibokenConfig.cmake" "$SDK_HOME/lib/cmake/Shiboken-$SHIBOKEN_VERSION/python${PY3VER}/"
-    mv "$SDK_HOME/lib/cmake/Shiboken-$SHIBOKEN_VERSION/ShibokenConfigVersion.cmake" "$SDK_HOME/lib/cmake/Shiboken-$SHIBOKEN_VERSION/python${PY3VER}/"
-    mv "$SDK_HOME/lib/pkgconfig/shiboken.pc" "$SDK_HOME/lib/pkgconfig/shiboken-py3.pc"
-    mv "$SDK_HOME/include/shiboken" "$SDK_HOME/include/shiboken-${PY3VER}"
-    mv "$SDK_HOME/bin/shiboken" "$SDK_HOME/bin/shiboken-${PY3VER}"
-    mv "$SDK_HOME/share/man/man1/shiboken.1" $"$SDK_HOME/share/man/man1/shiboken-${PY3VER}.1"
-    popd
+    # No Python 3 build: Shiboken 1.2.4 doesn't build with Python >= 3.11, and the
+    # Python 3 bindings are PySide2 (Qt5). PySide 1.2.4 (Qt4) is for Python 2 only.
 
     # Copy back the version corresponding to the default Python version
     #cp "$SDK_HOME/lib/pkgconfig/shiboken-py${PYV}.pc" "$SDK_HOME/lib/pkgconfig/shiboken.pc"

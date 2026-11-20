@@ -238,7 +238,13 @@ public:
 
     void createReadNodeAndConnectGraph(const std::string& filename);
 
-    void createWriteNode(bool throwErrors, const std::string& filename, const NodeSerializationPtr& serialization);
+    /**
+     * @param userEdited True when called from knobChanged() because the file or the encoder was
+     * changed (not when the node is created or loaded): a new encoder then gets the instance changed
+     * action of its filename (see the implementation).
+     **/
+    void createWriteNode(bool throwErrors, const std::string& filename, const NodeSerializationPtr& serialization,
+                         bool userEdited = false);
 
     void destroyWriteNode();
 
@@ -709,7 +715,8 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
 void
 WriteNodePrivate::createWriteNode(bool throwErrors,
                                   const std::string& filename,
-                                  const NodeSerializationPtr& serialization)
+                                  const NodeSerializationPtr& serialization,
+                                  bool userEdited)
 {
     if (creatingWriteNode) {
         return;
@@ -823,7 +830,16 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         if (writeNode) {
             KnobOutputFilePtr fileKnob = std::dynamic_pointer_cast<KnobOutputFile>(writeNode->getKnobByName(kOfxImageEffectFileParamName));
             if (fileKnob) {
-                fileKnob->setValue(filename);
+                bool fileKnobUnchanged = ( fileKnob->setValue(filename) == KnobHelper::eValueChangedReturnCodeNothingChanged );
+                // As in ReadNodePrivate::createReadNode(): the new encoder shares the filename knob of this
+                // node, which already has the filename, so it did not get the instance changed action for
+                // its filename. Call it, as when the encoder is the same (see above). Never when the encoder
+                // is created from a serialization, as before (#1288).
+                // Note: the new encoder is not connected to the input yet (see below), unlike when the
+                // encoder is kept; the openfx-io writers don't read their input clip in this action.
+                if (fileKnobUnchanged && userEdited && !serialization) {
+                    writeNode->getEffectInstance()->onKnobValueChanged_public(fileKnob.get(), eValueChangedReasonNatronInternalEdited, _publicInterface->getCurrentTime(), ViewSpec(0), true);
+                }
             }
         }
 
@@ -1190,7 +1206,7 @@ WriteNode::knobChanged(KnobI* k,
         std::string filename = fileKnob->getValue();
 
         try {
-            _imp->createWriteNode( false, filename, NodeSerializationPtr() );
+            _imp->createWriteNode( false, filename, NodeSerializationPtr(), true /*userEdited*/ );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
@@ -1215,7 +1231,7 @@ WriteNode::knobChanged(KnobI* k,
         std::string filename = fileKnob->getValue();
 
         try {
-            _imp->createWriteNode( false, filename, NodeSerializationPtr() );
+            _imp->createWriteNode( false, filename, NodeSerializationPtr(), true /*userEdited*/ );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
@@ -1485,11 +1501,12 @@ WriteNode::onOverlayKeyDown(double time,
                             const RenderScale & renderScale,
                             ViewIdx view,
                             Key key,
-                            KeyboardModifiers modifiers)
+                            KeyboardModifiers modifiers,
+                            const QString& keyText)
 {
     EffectInstancePtr effect = getEmbeddedWriterEffect();
 
-    return effect ? effect->onOverlayKeyDown_public(time, renderScale, view, key, modifiers) : false;
+    return effect ? effect->onOverlayKeyDown_public(time, renderScale, view, key, modifiers, keyText) : false;
 }
 
 bool
@@ -1497,11 +1514,12 @@ WriteNode::onOverlayKeyUp(double time,
                           const RenderScale & renderScale,
                           ViewIdx view,
                           Key key,
-                          KeyboardModifiers modifiers)
+                          KeyboardModifiers modifiers,
+                          const QString& keyText)
 {
     EffectInstancePtr effect = getEmbeddedWriterEffect();
 
-    return effect ? effect->onOverlayKeyUp_public(time, renderScale, view, key, modifiers) : false;
+    return effect ? effect->onOverlayKeyUp_public(time, renderScale, view, key, modifiers, keyText) : false;
 }
 
 bool
@@ -1509,11 +1527,12 @@ WriteNode::onOverlayKeyRepeat(double time,
                               const RenderScale & renderScale,
                               ViewIdx view,
                               Key key,
-                              KeyboardModifiers modifiers)
+                              KeyboardModifiers modifiers,
+                              const QString& keyText)
 {
     EffectInstancePtr effect = getEmbeddedWriterEffect();
 
-    return effect ? effect->onOverlayKeyRepeat_public(time, renderScale, view, key, modifiers) : false;
+    return effect ? effect->onOverlayKeyRepeat_public(time, renderScale, view, key, modifiers, keyText) : false;
 }
 
 bool

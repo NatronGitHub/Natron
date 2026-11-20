@@ -64,7 +64,6 @@ fi
 
 
 MASTER_BRANCH=master
-CMAKE_PLUGINS=0
 
 if [ "$PKGOS" = "Linux" ]; then
     true

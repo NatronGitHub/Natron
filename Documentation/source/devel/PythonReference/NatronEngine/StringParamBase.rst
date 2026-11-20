@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _StringParamBase:
 
 StringParamBase
@@ -46,10 +46,10 @@ Member functions description
 
 
 
-.. method:: NatronEngine.StringParamBase.get()
+.. method:: StringParamBase.get()
 
 
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :rtype: :class:`str`
 
 
 Get the value of the parameter at the current timeline's time
@@ -57,11 +57,12 @@ Get the value of the parameter at the current timeline's time
 
 
 
-.. method:: NatronEngine.StringParamBase.get(frame)
+.. method:: StringParamBase.get(frame)
+    :noindex:
 
 
-    :param frame: :class:`float<PySide.QtCore.float>`
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :param frame: :class:`float`
+    :rtype: :class:`str`
 
 
 Get the value of the parameter at the given *frame*.
@@ -69,10 +70,10 @@ Get the value of the parameter at the given *frame*.
 
 
 
-.. method:: NatronEngine.StringParamBase.getDefaultValue()
+.. method:: StringParamBase.getDefaultValue()
 
 
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :rtype: :class:`str`
 
 Get the default value for this parameter.
 
@@ -80,10 +81,10 @@ Get the default value for this parameter.
 
 
 
-.. method:: NatronEngine.StringParamBase.getValue()
+.. method:: StringParamBase.getValue()
 
 
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :rtype: :class:`str`
 
 
 
@@ -91,17 +92,17 @@ Same as :func:`get()<NatronEngine.StringParamBase.get>`
 
 
 
-.. method:: NatronEngine.StringParamBase.getValueAtTime(time)
+.. method:: StringParamBase.getValueAtTime(time)
 
 
-    :param time: :class:`float<PySide.QtCore.float>`
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :param time: :class:`float`
+    :rtype: :class:`str`
 
 Same as :func:`get(frame)<NatronEngine.StringParamBase.get>`
 
 
 
-.. method:: NatronEngine.StringParamBase.restoreDefaultValue()
+.. method:: StringParamBase.restoreDefaultValue()
 
 
 
@@ -111,10 +112,10 @@ to be the default value.
 
 
 
-.. method:: NatronEngine.StringParamBase.set(x)
+.. method:: StringParamBase.set(x)
 
 
-    :param x: :class:`str<NatronEngine.std::string>`
+    :param x: :class:`str`
 
 Set the value of this parameter to be *x*. If this parameter is animated (see :func:`getIsAnimated(dimension)<NatronEngine.AnimatedParam.getIsAnimated>`
 then this function will automatically add a keyframe at the timeline's current time.
@@ -122,11 +123,12 @@ then this function will automatically add a keyframe at the timeline's current t
 
 
 
-.. method:: NatronEngine.StringParamBase.set(x, frame)
+.. method:: StringParamBase.set(x, frame)
+    :noindex:
 
 
-    :param x: :class:`str<NatronEngine.std::string>`
-    :param frame: :class:`float<PySide.QtCore.float>`
+    :param x: :class:`str`
+    :param frame: :class:`float`
 
 
 Set a new keyframe on the parameter with the value *x* at the given *frame*.
@@ -134,20 +136,20 @@ Set a new keyframe on the parameter with the value *x* at the given *frame*.
 
 
 
-.. method:: NatronEngine.StringParamBase.setDefaultValue(value)
+.. method:: StringParamBase.setDefaultValue(value)
 
 
-    :param value: :class:`str<NatronEngine.std::string>`
+    :param value: :class:`str`
 
 Set the default *value* for this parameter.
 
 
 
 
-.. method:: NatronEngine.StringParamBase.setValue(value)
+.. method:: StringParamBase.setValue(value)
 
 
-    :param value: :class:`str<NatronEngine.std::string>`
+    :param value: :class:`str`
 
 
 Same as :func:`set<NatronEngine.StringParamBase.setValue>`
@@ -155,11 +157,11 @@ Same as :func:`set<NatronEngine.StringParamBase.setValue>`
 
 
 
-.. method:: NatronEngine.StringParamBase.setValueAtTime(value, time)
+.. method:: StringParamBase.setValueAtTime(value, time)
 
 
-    :param value: :class:`str<NatronEngine.std::string>`
-    :param time: :class:`float<PySide.QtCore.float>`
+    :param value: :class:`str`
+    :param time: :class:`float`
 
 
 

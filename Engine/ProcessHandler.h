@@ -253,7 +253,6 @@ private:
     QLocalSocket* _backgroundInputPipe; //<if the process is bg but managed by a gui process then the pipe is used
                                         //to read input messages
     mutable QMutex _mustQuitMutex;
-    QWaitCondition _mustQuitCond;
     bool _mustQuit;
 };
 

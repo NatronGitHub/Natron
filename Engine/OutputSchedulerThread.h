@@ -287,6 +287,12 @@ public:
     int getNRenderThreads() const;
 
     /**
+     * @brief Set if the current render renders one frame at a time, in frame order, because a node of the
+     * tree can only be rendered sequentially (see createFrameOrderRender()).
+     **/
+    FrameOrderRenderPtr getFrameOrderRender() const;
+
+    /**
      * @brief Returns the current number of render threads doing work
      **/
     int getNActiveRenderThreads() const;
@@ -294,8 +300,17 @@ public:
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     /**
      * @brief Called by render-threads to pick some work to do or to get asleep if there's nothing to do
+     * @returns false, and no frame, if the thread must quit
      **/
-    int pickFrameToRender(RenderThreadTask* thread, bool* enableRenderStats, std::vector<ViewIdx>* viewsToRender);
+    bool pickFrameToRender(RenderThreadTask* thread, int* time, bool* enableRenderStats, std::vector<ViewIdx>* viewsToRender);
+
+    /**
+     * @brief For the tests only (Tests/RenderThreads_Test.cpp): if churnRenderThreads, adjustNumberOfThreads()
+     * stops and starts a render thread alternately; if delayUs > 0, the render threads wait delayUs microseconds
+     * after taking a frame and before adjusting the number of threads, and stopRender() between telling the
+     * threads to quit and waiting for them. This widens the windows of the races of #248.
+     **/
+    static void setTestHooks(bool churnRenderThreads, int delayUs);
 #endif
 
     /**
@@ -398,6 +413,12 @@ protected:
     virtual void aboutToStartRender() {}
 
     /**
+     * @brief Called by startRender(): set if the frames must be rendered one at a time, in frame order, on a
+     * single render thread.
+     **/
+    virtual FrameOrderRenderPtr createFrameOrderRender() const { return FrameOrderRenderPtr(); }
+
+    /**
      * @brief Callback when stopRender() is called
      **/
     virtual void onRenderStopped(bool /*aborted*/) {}
@@ -495,6 +516,7 @@ private:
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL;
     virtual void aboutToStartRender() OVERRIDE FINAL;
+    virtual FrameOrderRenderPtr createFrameOrderRender() const OVERRIDE FINAL;
     virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
     OutputEffectInstanceWPtr _effect;
     mutable QMutex _currentTimeMutex;

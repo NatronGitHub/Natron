@@ -58,6 +58,7 @@ struct CustomParamInteractPrivate
     QSize preferredSize;
     double par;
     GLuint savedTexture;
+    bool inPaintGL; // paintGL() is calling kOfxInteractActionDraw
 
     CustomParamInteractPrivate(const KnobGuiPtr& knob,
                                void* ofxParamHandle,
@@ -68,12 +69,13 @@ struct CustomParamInteractPrivate
         , preferredSize()
         , par(0)
         , savedTexture(0)
+        , inPaintGL(false)
     {
         assert(entryPoint && ofxParamHandle);
         ofxParam = reinterpret_cast<OFX::Host::Param::Instance*>(ofxParamHandle);
         assert( ofxParam->verifyMagic() );
 
-        par = entryPoint->getProperties().getIntProperty(kOfxParamPropInteractSizeAspect);
+        entryPoint->getPixelAspectRatio(par); // kOfxParamPropInteractSizeAspect, a double
         int pW, pH;
         entryPoint->getPreferredSize(pW, pH);
         preferredSize.setWidth(pW);
@@ -92,6 +94,11 @@ CustomParamInteract::CustomParamInteract(const KnobGuiPtr& knob,
 
     entryPoint->getMinimumSize(minW, minH);
     setMinimumSize(minW, minH);
+    // The interact gets the keyboard focus when it is clicked (or tabbed into): kOfxInteractActionGainFocus,
+    // then the key actions, and kOfxInteractActionLoseFocus when the focus goes ("An interact instance
+    // should be issued a gain focus action before any key or pen actions are issued", ofxInteracts.rst).
+    // QOpenGLWidget defaults to Qt::NoFocus, so these actions were never sent.
+    setFocusPolicy(Qt::StrongFocus);
 }
 
 CustomParamInteract::~CustomParamInteract()
@@ -130,6 +137,14 @@ CustomParamInteract::paintGL()
         OfxPointD scale;
         scale.x = scale.y = 1.;
         double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+        // inPaintGL is true during the Draw action, and false again when it returns or throws (see
+        // swapOpenGLBuffers())
+        struct InPaintGL_RAII
+        {
+            bool& flag;
+            explicit InPaintGL_RAII(bool& f) : flag(f) { flag = true; }
+            ~InPaintGL_RAII() { flag = false; }
+        } inPaintGL(_imp->inPaintGL);
         _imp->entryPoint->drawAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0);
         glCheckError();
     } // GLProtectAttrib a(GL_TRANSFORM_BIT);
@@ -171,7 +186,13 @@ CustomParamInteract::sizeHint() const
 void
 CustomParamInteract::swapOpenGLBuffers()
 {
-    update();
+    // "A parameter's interact draw function will have full responsibility for ... swapping buffers"
+    // (ofxInteracts.rst): the plug-in calls swapBuffers at the end of its Draw action. The QOpenGLWidget
+    // presents its frame buffer itself when paintGL() returns, so there is nothing to do then: update()
+    // would schedule another paintGL(), i.e. another Draw, and repaint forever.
+    if (!_imp->inPaintGL) {
+        update();
+    }
 }
 
 void
@@ -346,7 +367,9 @@ CustomParamInteract::mouseMoveEvent(QMouseEvent* e)
     pos.y = height() - 1 - e->y();
     viewportPos.x = pos.x;
     viewportPos.y = pos.y;
-    OfxStatus stat = _imp->entryPoint->penMotionAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0, pos, viewportPos, /*pressure=*/ 1.);
+    // without mouse tracking, the motion events come with a button down
+    const double pressure = (e->buttons() == Qt::NoButton) ? 0. : 1.;
+    OfxStatus stat = _imp->entryPoint->penMotionAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0, pos, viewportPos, pressure);
     if (stat == kOfxStatOK) {
         update();
     }
@@ -365,7 +388,9 @@ CustomParamInteract::mouseReleaseEvent(QMouseEvent* e)
     pos.y = height() - 1 - e->y();
     viewportPos.x = pos.x;
     viewportPos.y = pos.y;
-    OfxStatus stat = _imp->entryPoint->penUpAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0, pos, viewportPos, /*pressure=*/ 1.);
+    // the button is up: pressure 0 ("If a pen has only two states (eg: a mouse button), these should map
+    // to 0.0 and 1.0", ofxInteract.h)
+    OfxStatus stat = _imp->entryPoint->penUpAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0, pos, viewportPos, /*pressure=*/ 0.);
     if (stat == kOfxStatOK) {
         update();
     }
@@ -377,7 +402,16 @@ CustomParamInteract::focusInEvent(QFocusEvent* /*e*/)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    // the focus also changes when the window is deactivated or the panel is being destroyed: the knob or
+    // its holder may be gone
+    KnobGuiPtr knobGui = _imp->knob.lock();
+    KnobIPtr knob = knobGui ? knobGui->getKnob() : KnobIPtr();
+    KnobHolder* holder = knob ? knob->getHolder() : NULL;
+    AppInstancePtr app = holder ? holder->getApp() : AppInstancePtr();
+    if ( !app || !app->getTimeLine() ) {
+        return;
+    }
+    double time = app->getTimeLine()->currentFrame();
     OfxStatus stat = _imp->entryPoint->gainFocusAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0);
     if (stat == kOfxStatOK) {
         update();
@@ -390,7 +424,16 @@ CustomParamInteract::focusOutEvent(QFocusEvent* /*e*/)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    // the focus also changes when the window is deactivated or the panel is being destroyed: the knob or
+    // its holder may be gone
+    KnobGuiPtr knobGui = _imp->knob.lock();
+    KnobIPtr knob = knobGui ? knobGui->getKnob() : KnobIPtr();
+    KnobHolder* holder = knob ? knob->getHolder() : NULL;
+    AppInstancePtr app = holder ? holder->getApp() : AppInstancePtr();
+    if ( !app || !app->getTimeLine() ) {
+        return;
+    }
+    double time = app->getTimeLine()->currentFrame();
     OfxStatus stat = _imp->entryPoint->loseFocusAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0);
     if (stat == kOfxStatOK) {
         update();
@@ -404,7 +447,7 @@ CustomParamInteract::keyPressEvent(QKeyEvent* e)
 
     scale.x = scale.y = 1.;
     double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-    QByteArray keyStr;
+    QByteArray keyStr = OfxParamOverlayInteract::keyStringFromText( e->text() );
     OfxStatus stat;
     if ( e->isAutoRepeat() ) {
         stat = _imp->entryPoint->keyRepeatAction( time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
@@ -413,6 +456,9 @@ CustomParamInteract::keyPressEvent(QKeyEvent* e)
     }
     if (stat == kOfxStatOK) {
         update();
+    } else {
+        // the interact did not use the key: let the settings panel and the application handle it
+        e->ignore();
     }
 }
 
@@ -423,10 +469,12 @@ CustomParamInteract::keyReleaseEvent(QKeyEvent* e)
 
     scale.x = scale.y = 1.;
     double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-    QByteArray keyStr;
+    QByteArray keyStr = OfxParamOverlayInteract::keyStringFromText( e->text() );
     OfxStatus stat = _imp->entryPoint->keyUpAction( time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
     if (stat == kOfxStatOK) {
         update();
+    } else {
+        e->ignore();
     }
 }
 

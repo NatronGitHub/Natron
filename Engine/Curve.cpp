@@ -38,6 +38,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Smooth1D.h"
+#include "Global/MathUtils.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -299,7 +300,7 @@ Curve::~Curve()
 void
 Curve::setPeriodic(bool periodic)
 {
-    QMutexLocker k(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> k(_imp->_lock);
     _imp->isPeriodic = periodic;
     _imp->keyFrames.clear();
 }
@@ -319,7 +320,7 @@ Curve::operator=(const Curve & other)
 void
 Curve::clearKeyFrames()
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     _imp->keyFrames.clear();
 }
@@ -327,7 +328,7 @@ Curve::clearKeyFrames()
 bool
 Curve::areKeyFramesTimeClampedToIntegers() const
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     return !_imp->isParametric;
 }
@@ -335,19 +336,85 @@ Curve::areKeyFramesTimeClampedToIntegers() const
 void
 Curve::clone(const Curve & other)
 {
-    KeyFrameSet otherKeys = other.getKeyFrames_mt_safe();
-    QMutexLocker l(&_imp->_lock);
+    // Read other's keys and flag under other's lock only, before locking this:
+    // locking both (A.clone(B) and B.clone(A) at the same time) could deadlock.
+    KeyFrameSet otherKeys;
+    bool mustRefreshDerivatives;
+    {
+        std::lock_guard<std::recursive_mutex> lo(other._imp->_lock);
+        otherKeys = other._imp->keyFrames;
+        mustRefreshDerivatives = other._imp->mustRefreshDerivatives;
+    }
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     _imp->keyFrames.clear();
     std::transform( otherKeys.begin(), otherKeys.end(), std::inserter( _imp->keyFrames, _imp->keyFrames.begin() ), KeyFrameCloner() );
+    // The flag is not propagated to this curve: it is set explicitly only on the curves of
+    // the temporary knobs of KnobSerialization (see setMustRefreshDerivatives()), and the
+    // final curve, cloned from them, keeps no flag.
+    if (mustRefreshDerivatives) {
+        // other was loaded from a file with NaN values: its derivatives must be recomputed
+        // with this curve's properties (e.g. periodicity)
+        refreshAutomaticDerivatives();
+    }
     onCurveChanged();
+}
+
+void
+Curve::setMustRefreshDerivatives()
+{
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
+
+    _imp->mustRefreshDerivatives = true;
+}
+
+bool
+Curve::getMustRefreshDerivatives() const
+{
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
+
+    return _imp->mustRefreshDerivatives;
+}
+
+void
+Curve::refreshAutomaticDerivatives()
+{
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
+
+    for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
+        KeyframeTypeEnum interp = it->getInterpolation();
+        if ( (interp != eKeyframeTypeFree) && (interp != eKeyframeTypeBroken) && (interp != eKeyframeTypeNone) ) {
+            // refreshDerivatives() replaces the keyframe, and returns an iterator on the new one
+            it = refreshDerivatives(eCurveChangedReasonDerivativesChanged, it);
+        }
+    }
 }
 
 bool
 Curve::cloneAndCheckIfChanged(const Curve& other)
 {
-    KeyFrameSet otherKeys = other.getKeyFrames_mt_safe();
-    QMutexLocker l(&_imp->_lock);
+    // Read other's keys and flag under other's lock only, before locking this (see clone()).
+    KeyFrameSet otherKeys;
+    bool mustRefreshDerivatives;
+    {
+        std::lock_guard<std::recursive_mutex> lo(other._imp->_lock);
+        otherKeys = other._imp->keyFrames;
+        mustRefreshDerivatives = other._imp->mustRefreshDerivatives;
+    }
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
+
+    if (mustRefreshDerivatives) {
+        // other was loaded from a file with NaN values (#1267): copy the keys and recompute
+        // the derivatives with this curve's properties (e.g. periodicity), as clone() does.
+        // This is the last step of loading a project (Node::loadKnob() -> cloneAndUpdateGui()).
+        _imp->keyFrames.clear();
+        std::transform( otherKeys.begin(), otherKeys.end(), std::inserter( _imp->keyFrames, _imp->keyFrames.begin() ), KeyFrameCloner() );
+        refreshAutomaticDerivatives();
+        onCurveChanged();
+
+        return true;
+    }
+
     bool hasChanged = false;
 
     if ( otherKeys.size() != _imp->keyFrames.size() ) {
@@ -374,14 +441,14 @@ Curve::cloneAndCheckIfChanged(const Curve& other)
 
 void
 Curve::clone(const Curve & other,
-             SequenceTime offset,
+             double offset,
              const RangeD* range)
 {
     KeyFrameSet otherKeys = other.getKeyFrames_mt_safe();
-    // The range=[0,0] case is obviously a bug in the spec of paramCopy() from the parameter suite:
-    // it prevents copying the value of frame 0.
-    bool copyRange = range != NULL /*&& (range->min != 0 || range->max != 0)*/;
-    QMutexLocker l(&_imp->_lock);
+    // NULL means all the keyframes. In paramCopy() from the OFX parameter suite, [0, 0] also means all the
+    // keyframes: OfxKeyFrame::copyFrom() passes NULL then.
+    bool copyRange = range != NULL;
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     _imp->keyFrames.clear();
     for (KeyFrameSet::iterator it = otherKeys.begin(); it != otherKeys.end(); ++it) {
@@ -401,7 +468,7 @@ Curve::clone(const Curve & other,
 double
 Curve::getMinimumTimeCovered() const
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     assert( !_imp->keyFrames.empty() );
 
@@ -411,7 +478,7 @@ Curve::getMinimumTimeCovered() const
 double
 Curve::getMaximumTimeCovered() const
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     assert( !_imp->keyFrames.empty() );
 
@@ -421,7 +488,7 @@ Curve::getMaximumTimeCovered() const
 bool
 Curve::addKeyFrame(KeyFrame key)
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     // the default interpolation for bool, string, chaice, int is constant
     if ( (_imp->type == CurvePrivate::eCurveTypeBool) || (_imp->type == CurvePrivate::eCurveTypeString) ||
@@ -434,7 +501,6 @@ Curve::addKeyFrame(KeyFrame key)
     std::pair<KeyFrameSet::iterator, bool> it = addKeyFrameNoUpdate(key);
 
     it.first = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, it.first);
-    l.unlock();
 
     return it.second;
 }
@@ -547,7 +613,7 @@ Curve::removeKeyFrameWithIndex(int index)
     if (index == -1) {
         return;
     }
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     removeKeyFrame( atIndex(index) );
 }
@@ -555,7 +621,7 @@ Curve::removeKeyFrameWithIndex(int index)
 void
 Curve::removeKeyFrameWithTime(double time)
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
     KeyFrameSet::iterator it = find(time);
 
     if ( it == _imp->keyFrames.end() ) {
@@ -570,7 +636,7 @@ Curve::removeKeyFramesBeforeTime(double time,
                                  std::list<int>* keyframeRemoved)
 {
     KeyFrameSet newSet;
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
         if (it->getTime() < time) {
@@ -591,7 +657,7 @@ Curve::removeKeyFramesAfterTime(double time,
                                 std::list<int>* keyframeRemoved)
 {
     KeyFrameSet newSet;
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
         if (it->getTime() > time) {
@@ -614,7 +680,7 @@ Curve::getKeyFrameWithIndex(int index,
                             KeyFrame* k) const
 {
     assert(k);
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
     if ( (index < 0) || ( (int)_imp->keyFrames.size() <= index ) ) {
         return false;
     }
@@ -628,7 +694,7 @@ Curve::getNearestKeyFrameWithTime(double time,
                                   KeyFrame* k) const
 {
     assert(k);
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
     if ( _imp->keyFrames.empty() ) {
         return false;
     }
@@ -678,7 +744,7 @@ Curve::getPreviousKeyframeTime(double time,
                                KeyFrame* k) const
 {
     assert(k);
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
     if ( _imp->keyFrames.empty() ) {
         return false;
     }
@@ -720,7 +786,7 @@ Curve::getNextKeyframeTime(double time,
                            KeyFrame* k) const
 {
     assert(k);
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
     if ( _imp->keyFrames.empty() ) {
         return false;
     }
@@ -745,7 +811,7 @@ Curve::getNKeyFramesInRange(double first,
                             double last) const
 {
     int ret = 0;
-    QMutexLocker k(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> k(_imp->_lock);
     KeyFrameSet::const_iterator upper = _imp->keyFrames.end();
 
     for (KeyFrameSet::const_iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
@@ -769,7 +835,7 @@ Curve::getKeyFrameWithTime(double time,
                            KeyFrame* k) const
 {
     assert(k);
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
     KeyFrameSet::const_iterator it = find(time);
 
     if ( it == _imp->keyFrames.end() ) {
@@ -803,17 +869,31 @@ interParams(const KeyFrameSet &keyFrames,
     assert(keyFrames.size() >= 1);
     assert( itup == keyFrames.end() || *t < itup->getTime() );
     double period = xMax - xMin;
+    // the default range is unbounded, and its period (DBL_MAX - lowest()) is infinite:
+    // such a curve is not periodic
+    if ( !(period > 0.) || !MathUtils::isFinite(period) ) {
+        isPeriodic = false;
+    }
     if (isPeriodic) {
-        // if the curve is periodic, bring back t in the curve keyframes range
-        double minKeyFrameX = keyFrames.begin()->getTime() + xMin;
+        // If the curve is periodic, bring t back into the half-open period
+        // [minKeyFrameX, minKeyFrameX + period), which starts at the first keyframe.
+        // The period must be half-open: a keyframe at minKeyFrameX + period is the same
+        // point as the first keyframe, and t = minKeyFrameX + period must not use the
+        // zero-width segment between them (see #1267).
+        double minKeyFrameX = keyFrames.begin()->getTime();
         assert(xMin < xMax);
-        if (*t < minKeyFrameX || *t > minKeyFrameX + period) {
-            // This will bring t either in minTime <= t <= maxTime or t in the range minTime - (maxTime - minTime) < t < minTime
+        if (*t < minKeyFrameX || *t >= minKeyFrameX + period) {
+            // This brings t into minKeyFrameX - period < t < minKeyFrameX + period
             *t = std::fmod(*t - minKeyFrameX, period ) + minKeyFrameX;
             if (*t < minKeyFrameX) {
                 *t += period;
             }
-            assert(*t >= minKeyFrameX && *t <= minKeyFrameX + period);
+            if (*t >= minKeyFrameX + period) {
+                // rounding error in the line above
+                *t = minKeyFrameX;
+            }
+            // (with large times, minKeyFrameX + period may round to minKeyFrameX)
+            assert( *t >= minKeyFrameX && (*t < minKeyFrameX + period || minKeyFrameX + period == minKeyFrameX) );
         }
         itup = keyFrames.upper_bound(KeyFrame(*t, 0.));
     }
@@ -920,7 +1000,7 @@ double
 Curve::getValueAt(double t,
                   bool doClamp) const
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     if ( _imp->keyFrames.empty() ) {
         //throw std::runtime_error("Curve has no control points!");
@@ -1012,7 +1092,7 @@ Curve::getValueAt(double t,
 double
 Curve::getDerivativeAt(double t) const
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     if ( _imp->keyFrames.empty() ) {
         throw std::runtime_error("Curve has no control points!");
@@ -1075,7 +1155,7 @@ double
 Curve::getIntegrateFromTo(double t1,
                           double t2) const
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
     bool opposite = false;
 
     // the following assumes that t2 > t1. If it's not the case, swap them and return the opposite.
@@ -1187,10 +1267,10 @@ Curve::getIntegrateFromTo(double t1,
 Curve::YRange
 Curve::getCurveDisplayYRange() const
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     if ( !mustClamp() ) {
-        return YRange( -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() );
+        return YRange( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
     }
     if (!_imp->owner) {
         return YRange(_imp->yMin, _imp->yMax);
@@ -1201,11 +1281,11 @@ Curve::getCurveDisplayYRange() const
     if (isDouble) {
         double min = isDouble->getDisplayMinimum(_imp->dimensionInOwner);
         if (min <= std::numeric_limits<double>::lowest()) {
-            min = -std::numeric_limits<double>::infinity();
+            min = std::numeric_limits<double>::lowest();
         }
         double max = isDouble->getDisplayMaximum(_imp->dimensionInOwner);
         if (max >= std::numeric_limits<double>::max()) {
-            max = std::numeric_limits<double>::infinity();
+            max = std::numeric_limits<double>::max();
         }
 
         return YRange(min, max);
@@ -1215,16 +1295,16 @@ Curve::getCurveDisplayYRange() const
 
         return YRange(min, max);
     } else {
-        return YRange( -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() );
+        return YRange( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
     }
 }
 
 Curve::YRange Curve::getCurveYRange() const
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     if ( !mustClamp() ) {
-        return YRange( -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() );
+        return YRange( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
     }
     if (!_imp->owner) {
         return YRange(_imp->yMin, _imp->yMax);
@@ -1235,11 +1315,11 @@ Curve::YRange Curve::getCurveYRange() const
     if (isDouble) {
         double min = isDouble->getMinimum(_imp->dimensionInOwner);
         if (min <= std::numeric_limits<double>::lowest()) {
-            min = -std::numeric_limits<double>::infinity();
+            min = std::numeric_limits<double>::lowest();
         }
         double max = isDouble->getMaximum(_imp->dimensionInOwner);
         if (max >= std::numeric_limits<double>::max()) {
-            max = std::numeric_limits<double>::infinity();
+            max = std::numeric_limits<double>::max();
         }
 
         return YRange(min, max);
@@ -1249,7 +1329,7 @@ Curve::YRange Curve::getCurveYRange() const
 
         return YRange(min, max);
     } else {
-        return YRange( -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() );
+        return YRange( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() );
     }
 
 }
@@ -1273,7 +1353,7 @@ Curve::clampValueToCurveYRange(double v) const
 bool
 Curve::isAnimated() const
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     // even when there is only one keyframe, there may be tangents!
     return _imp->keyFrames.size() > 0;
@@ -1283,7 +1363,7 @@ void
 Curve::setXRange(double a,
                  double b)
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     _imp->xMin = a;
     _imp->xMax = b;
@@ -1291,7 +1371,7 @@ Curve::setXRange(double a,
 
 std::pair<double, double> Curve::getXRange() const
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     return std::make_pair(_imp->xMin, _imp->xMax);
 }
@@ -1299,7 +1379,7 @@ std::pair<double, double> Curve::getXRange() const
 int
 Curve::getKeyFramesCount() const
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     return (int)_imp->keyFrames.size();
 }
@@ -1307,7 +1387,7 @@ Curve::getKeyFramesCount() const
 KeyFrameSet
 Curve::getKeyFrames_mt_safe() const
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     return _imp->keyFrames;
 }
@@ -1315,7 +1395,7 @@ Curve::getKeyFrames_mt_safe() const
 KeyFrameSet
 Curve::getKeyFramesForDisplay_mt_safe() const
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     if (_imp->type != CurvePrivate::eCurveTypeString) {
         return _imp->keyFrames;
@@ -1337,7 +1417,7 @@ Curve::getKeyFramesAround(double time,
                           KeyFrame* next,
                           bool* hasNext) const
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     return keyFramesAround(_imp->keyFrames, time, prev, next, hasNext);
 }
@@ -1363,7 +1443,7 @@ Curve::setKeyFrameValueAndTimeInternal(double time, double value, int index, int
 {
     KeyFrame ret;
     {
-        QMutexLocker l(&_imp->_lock);
+        std::lock_guard<std::recursive_mutex> l(_imp->_lock);
         KeyFrameSet::iterator it = atIndex(index);
         if ( it == _imp->keyFrames.end() ) {
             QString err = QString( QString::fromUtf8("No such keyframe at index %1") ).arg(index);
@@ -1404,7 +1484,7 @@ Curve::moveKeyFrameValueAndTimeInternal(const double time, const double dt, cons
     bool isFirst = false;
     bool isLast = false;
     {
-        QMutexLocker l(&_imp->_lock);
+        std::lock_guard<std::recursive_mutex> l(_imp->_lock);
         KeyFrameSet::iterator it = find(time);
 
         if (_imp->isPeriodic) {
@@ -1462,7 +1542,7 @@ Curve::setKeyFrameLeftDerivativeInternal(double value, int index, int* newIndex)
 {
     KeyFrame ret;
     {
-        QMutexLocker l(&_imp->_lock);
+        std::lock_guard<std::recursive_mutex> l(_imp->_lock);
         KeyFrameSet::iterator it = atIndex(index);
         assert( it != _imp->keyFrames.end() );
 
@@ -1493,7 +1573,7 @@ Curve::setKeyFrameRightDerivativeInternal(double value, int index, int* newIndex
 {
     KeyFrame ret;
     {
-        QMutexLocker l(&_imp->_lock);
+        std::lock_guard<std::recursive_mutex> l(_imp->_lock);
         KeyFrameSet::iterator it = atIndex(index);
         assert( it != _imp->keyFrames.end() );
 
@@ -1525,7 +1605,7 @@ Curve::setKeyFrameDerivativesInternal(double left, double right, int index, int*
 {
     KeyFrame ret;
     {
-        QMutexLocker l(&_imp->_lock);
+        std::lock_guard<std::recursive_mutex> l(_imp->_lock);
         KeyFrameSet::iterator it = atIndex(index);
         assert( it != _imp->keyFrames.end() );
 
@@ -1559,7 +1639,7 @@ Curve::setKeyFrameInterpolationInternal(KeyframeTypeEnum interp, int index, int*
 {
     KeyFrame ret;
     {
-        QMutexLocker l(&_imp->_lock);
+        std::lock_guard<std::recursive_mutex> l(_imp->_lock);
         KeyFrameSet::iterator it = atIndex(index);
         assert( it != _imp->keyFrames.end() );
 
@@ -1595,7 +1675,7 @@ void
 Curve::setCurveInterpolation(KeyframeTypeEnum interp)
 {
     {
-        QMutexLocker l(&_imp->_lock);
+        std::lock_guard<std::recursive_mutex> l(_imp->_lock);
         ///if the curve is a string_curve or bool_curve the interpolation is bound to be constant.
         if ( ( (_imp->type == CurvePrivate::eCurveTypeString) || (_imp->type == CurvePrivate::eCurveTypeBool) ||
                ( _imp->type == CurvePrivate::eCurveTypeIntConstantInterp) ) && ( interp != eKeyframeTypeConstant) ) {
@@ -1636,10 +1716,21 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
     KeyframeTypeEnum prevType, nextType;
 
     double period = _imp->xMax - _imp->xMin;
+    // periodic, with a positive finite period (the default range is unbounded, and its period is infinite)
+    const bool effectivelyPeriodic = _imp->isPeriodic && (period > 0.) && MathUtils::isFinite(period);
     assert( key != _imp->keyFrames.end() );
     if ( key == _imp->keyFrames.begin() ) {
-        if (_imp->isPeriodic && _imp->keyFrames.size() > 1) {
+        if (effectivelyPeriodic && _imp->keyFrames.size() > 1) {
+            // The previous keyframe is the last one, shifted by one period.
+            // Skip the keyframes that would not be strictly before tcur once shifted, e.g.
+            // a keyframe at tcur + period, which is the same point as this one (see #1267).
+            // At most size() - 1 keys are skipped: the loop normally ends on key itself, since
+            // period > 0, but with large times tcur - period may round to tcur. The degenerate
+            // neighbour that remains is then ignored by Interpolation::autoComputeDerivatives().
             KeyFrameSet::const_reverse_iterator prev = _imp->keyFrames.rbegin();
+            for (std::size_t skipped = 1; skipped < _imp->keyFrames.size() && prev->getTime() - period >= tcur; ++skipped) {
+                ++prev;
+            }
             tprev = prev->getTime() - period;
             vprev = prev->getValue();
             vprevDerivRight = prev->getRightDerivative();
@@ -1661,7 +1752,7 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
         prevType = prev->getInterpolation();
 
         //if prev is the first keyframe, and not edited by the user then interpolate linearly
-        if ( !_imp->isPeriodic && ( prev == _imp->keyFrames.begin() ) && (prevType != eKeyframeTypeFree) &&
+        if ( !effectivelyPeriodic && ( prev == _imp->keyFrames.begin() ) && (prevType != eKeyframeTypeFree) &&
              ( prevType != eKeyframeTypeBroken) ) {
             prevType = eKeyframeTypeLinear;
         }
@@ -1672,8 +1763,15 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
         ++next;
     }
     if ( next == _imp->keyFrames.end() ) {
-        if (_imp->isPeriodic && _imp->keyFrames.size() > 1) {
+        if (effectivelyPeriodic && _imp->keyFrames.size() > 1) {
+            // The next keyframe is the first one, shifted by one period.
+            // Skip the keyframes that would not be strictly after tcur once shifted, e.g.
+            // a keyframe at tcur - period, which is the same point as this one (see #1267).
+            // At most size() - 1 keys are skipped (see the previous keyframe above).
             KeyFrameSet::const_iterator start = _imp->keyFrames.begin();
+            for (std::size_t skipped = 1; skipped < _imp->keyFrames.size() && start->getTime() + period <= tcur; ++skipped) {
+                ++start;
+            }
             tnext = start->getTime() + period;
             vnext = start->getValue();
             vnextDerivLeft = start->getLeftDerivative();
@@ -1695,7 +1793,7 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
             ++nextnext;
         }
         //if next is thelast keyframe, and not edited by the user then interpolate linearly
-        if ( !_imp->isPeriodic && ( nextnext == _imp->keyFrames.end() ) && (nextType != eKeyframeTypeFree) &&
+        if ( !effectivelyPeriodic && ( nextnext == _imp->keyFrames.end() ) && (nextType != eKeyframeTypeFree) &&
              ( nextType != eKeyframeTypeBroken) ) {
             nextType = eKeyframeTypeLinear;
         }
@@ -1826,7 +1924,7 @@ Curve::atIndex(int index) const
 int
 Curve::keyFrameIndex(double time) const
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
     int i = 0;
     double paramEps;
 
@@ -1860,7 +1958,7 @@ Curve::end() const
 bool
 Curve::isYComponentMovable() const
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     return _imp->type != CurvePrivate::eCurveTypeString;
 }
@@ -1875,7 +1973,7 @@ Curve::isStringCurve() const
 bool
 Curve::areKeyFramesValuesClampedToIntegers() const
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     return _imp->type == CurvePrivate::eCurveTypeInt;
 }
@@ -1883,7 +1981,7 @@ Curve::areKeyFramesValuesClampedToIntegers() const
 bool
 Curve::areKeyFramesValuesClampedToBooleans() const
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     return _imp->type == CurvePrivate::eCurveTypeBool;
 }
@@ -1892,7 +1990,7 @@ void
 Curve::setYRange(double yMin,
                  double yMax)
 {
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     _imp->yMin = yMin;
     _imp->yMax = yMax;
@@ -1902,7 +2000,8 @@ bool
 Curve::mustClamp() const
 {
     // PRIVATE - should not lock
-    return _imp->owner || _imp->yMin != -std::numeric_limits<double>::infinity() || _imp->yMax != std::numeric_limits<double>::infinity();
+    // unbounded is +/-DBL_MAX (an infinite bound would also be unbounded)
+    return _imp->owner || _imp->yMin > std::numeric_limits<double>::lowest() || _imp->yMax < std::numeric_limits<double>::max();
 }
 
 void
@@ -1940,7 +2039,7 @@ Curve::setKeyframesInternal(const KeyFrameSet& keys, bool refreshDerivatives)
 void
 Curve::setKeyframes(const KeyFrameSet& keys, bool refreshDerivatives)
 {
-    QMutexLocker k(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> k(_imp->_lock);
     setKeyframesInternal(keys, refreshDerivatives);
 }
 
@@ -1949,7 +2048,7 @@ Curve::smooth(const RangeD* range)
 {
     std::vector<float> smoothedCurve;
 
-    QMutexLocker l(&_imp->_lock);
+    std::lock_guard<std::recursive_mutex> l(_imp->_lock);
 
     KeyFrameSet::iterator start = _imp->keyFrames.end();
 

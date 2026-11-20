@@ -43,6 +43,7 @@
 #include "Engine/ViewIdx.h"
 
 #include "Gui/DockablePanel.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/Menu.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/ProjectGuiSerialization.h" // PaneLayout, GuiLayoutSerialization
@@ -307,7 +308,7 @@ Gui::putSettingsPanelFirst(DockablePanel* panel)
                     panel->setVisible(true);
                 }
                 buildTabFocusOrderPropertiesBin();
-            } else {
+            } else if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
                 (*it)->activateWindow();
             }
         } else {

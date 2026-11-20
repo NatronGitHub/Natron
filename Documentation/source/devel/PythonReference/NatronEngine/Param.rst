@@ -1,10 +1,10 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _Param:
 
 Param
 *****
 
-**Inherited by:** :doc:`ParametricParam`, :doc:`PageParam`, :doc:`GroupParam`, :doc:`ButtonParam`, :doc:`AnimatedParam`, :doc:`StringParamBase`, :doc:`PathParam`, :doc:`OutputFileParam`, :doc:`FileParam`, :doc:`StringParam`, :doc:`BooleanParam`, :doc:`ChoiceParam`, :doc:`ColorParam`, :doc:`DoubleParam`, :doc:`Double2DParam`, :doc:`Double3DParam`, :doc:`IntParam`, :doc:`Int2DParam`, :doc:`Int3DParam`
+**Inherited by:** :doc:`ParametricParam`, :doc:`PageParam`, :doc:`GroupParam`, :doc:`ButtonParam`, :doc:`SeparatorParam`, :doc:`AnimatedParam`, :doc:`StringParamBase`, :doc:`PathParam`, :doc:`OutputFileParam`, :doc:`FileParam`, :doc:`StringParam`, :doc:`BooleanParam`, :doc:`ChoiceParam`, :doc:`ColorParam`, :doc:`DoubleParam`, :doc:`Double2DParam`, :doc:`Double3DParam`, :doc:`IntParam`, :doc:`Int2DParam`, :doc:`Int3DParam`
 
 Synopsis
 --------
@@ -23,7 +23,7 @@ Functions
 - def :meth:`getHelp<NatronEngine.Param.getHelp>` ()
 - def :meth:`getIsAnimationEnabled<NatronEngine.Param.getIsAnimationEnabled>` ()
 - def :meth:`getIsEnabled<NatronEngine.Param.getIsEnabled>` ([dimension=0])
-- def :meth:`getIsPersistant<NatronEngine.Param.getIsPersistant>` ()
+- def :meth:`getIsPersistent<NatronEngine.Param.getIsPersistent>` ()
 - def :meth:`getIsVisible<NatronEngine.Param.getIsVisible>` ()
 - def :meth:`getLabel<NatronEngine.Param.getLabel>` ()
 - def :meth:`getNumDimensions<NatronEngine.Param.getNumDimensions>` ()
@@ -41,7 +41,7 @@ Functions
 - def :meth:`setEvaluateOnChange<NatronEngine.Param.setEvaluateOnChange>` (eval)
 - def :meth:`setIconFilePath<NatronEngine.Param.setIconFilePath>` (icon)
 - def :meth:`setHelp<NatronEngine.Param.setHelp>` (help)
-- def :meth:`setPersistant<NatronEngine.Param.setPersistant>` (persistant)
+- def :meth:`setPersistent<NatronEngine.Param.setPersistent>` (persistent)
 - def :meth:`setVisible<NatronEngine.Param.setVisible>` (visible)
 - def :meth:`setVisibleByDefault<NatronEngine.Param.setVisibleByDefault>` (visible)
 - def :meth:`setAsAlias<NatronEngine.Param.setAsAlias>` (otherParam)
@@ -80,7 +80,7 @@ A Param can have several functions to control some properties, namely:
 
     * visible: Should this parameter be visible in the user interface or not
 
-    * persistant: If true then the parameter value will be saved in the project
+    * persistent: If true then the parameter value will be saved in the project
 
     * dimension: How many dimensions this parameter has. For instance a :doc:`Double3DParam` has 3 dimensions. A :doc:`ParametricParam` has as many dimensions as there are curves.
 
@@ -91,14 +91,14 @@ The following table sums up the different properties for all parameters includin
 
 
 Note that  most of the properties are not dynamic:
-they need to be set before calling :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>` which will create the GUI for these parameters.
+they need to be set before calling :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>` which will create the GUI for these parameters.
 
 .. warning::
 
     A non-dynamic property can no longer be changed once refreshUserParamsGUI() has been called.
 
 For non *user-parameters* (i.e: parameters that were defined by the underlying OpenFX plug-in), only
-their **dynamic** properties can be changed since  :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+their **dynamic** properties can be changed since  :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>`
 will only refresh user parameters.
 
 If a Setter function contains a (*) that means it can only be called for user parameters,
@@ -115,7 +115,7 @@ it has no effect on already declared non-user parameters.
 +-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
 | addNewLine        | bool         |   no         |         setAddNewLine(*)       | getAddNewLine        | True                  |
 +-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
-| persistent        | bool         |   yes        |         setPersistant(*)       | getIsPersistant      | True                  |
+| persistent        | bool         |   yes        |         setPersistent(*)       | getIsPersistent      | True                  |
 +-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
 | evaluatesOnChange | bool         |   yes        |         setEvaluateOnChange(*) | getEvaluateOnChange  | True                  |
 +-------------------+--------------+--------------+--------------------------------+----------------------+-----------------------+
@@ -183,7 +183,7 @@ Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-.. method:: NatronEngine.Param.copy(other [, dimension=-1])
+.. method:: Param.copy(other [, dimension=-1])
 
     :param other: :class:`Param`
     :param dimension: :class:`int`
@@ -211,11 +211,11 @@ be copied.
 This function returns **True** upon success and **False** otherwise.
 
 
-.. method:: NatronEngine.Param.curve(time [, dimension=-1])
+.. method:: Param.curve(time [, dimension=-1])
 
-    :param time: :class:`float<PySide.QtCore.float>`
+    :param time: :class:`float`
     :param dimension: :class:`int`
-    :rtype: :class:`float<PySide.QtCore.float>`
+    :rtype: :class:`float`
 
     If this parameter has an animation curve on the given *dimension*, then the value of
     that curve at the given *time* is returned. If the parameter has an expression on top
@@ -232,20 +232,20 @@ This function returns **True** upon success and **False** otherwise.
         :func:`getValueAtTime()<NatronEngine.StringParamBase.getValueAtTime>`.
 
 
-.. method:: NatronEngine.Param.getAddNewLine()
+.. method:: Param.getAddNewLine()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Returns whether the parameter is on a new line or not.
 
 
 
 
-.. method:: NatronEngine.Param.getCanAnimate()
+.. method:: Param.getCanAnimate()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Returns whether this class can have any animation or not. This cannot be changed.
 calling :func:`setAnimationEnabled(True)<NatronEngine.Param.setAnimationEnabled>` will
@@ -254,10 +254,10 @@ not enable animation for parameters that cannot animate.
 
 
 
-.. method:: NatronEngine.Param.getEvaluateOnChange()
+.. method:: Param.getEvaluateOnChange()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Returns whether this parameter can evaluate on change. A parameter evaluating on change
 means that a new render will be triggered when its value changes due to a call of one of
@@ -266,20 +266,20 @@ the setValue functions.
 
 
 
-.. method:: NatronEngine.Param.getHelp()
+.. method:: Param.getHelp()
 
 
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :rtype: :class:`str`
 
 Returns the help tooltip visible when hovering the parameter with the mouse on the GUI;
 
 
 
 
-.. method:: NatronEngine.Param.getIsAnimationEnabled()
+.. method:: Param.getIsAnimationEnabled()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Returns whether animation is enabled for this parameter. This is dynamic and can be
 changed by :func:`setAnimationEnabled(bool)<NatronEngine.Param.setAnimationEnabled>` if the
@@ -288,42 +288,42 @@ parameter *can animate*.
 
 
 
-.. method:: NatronEngine.Param.getIsEnabled([dimension=0])
+.. method:: Param.getIsEnabled([dimension=0])
 
 
-    :param dimension: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :param dimension: :class:`int`
+    :rtype: :class:`bool`
 
 Returns whether the given *dimension* is enabled or not.
 
 
 
 
-.. method:: NatronEngine.Param.getIsPersistant()
+.. method:: Param.getIsPersistent()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
-Returns whether this parameter should be persistant in the project or not.
-Non-persistant parameter will not have their value saved when saving a project.
-
-
+Returns whether this parameter should be persistent in the project or not.
+Non-persistent parameter will not have their value saved when saving a project.
 
 
-.. method:: NatronEngine.Param.getIsVisible()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+.. method:: Param.getIsVisible()
+
+
+    :rtype: :class:`bool`
 
     Returns whether the parameter is visible on the user interface or not.
 
 
 
 
-.. method:: NatronEngine.Param.getLabel()
+.. method:: Param.getLabel()
 
 
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :rtype: :class:`str`
 
 Returns the *label* of the parameter. This is what is displayed in the settings panel
 of the node. See :ref:`this section<autoVar>` for an explanation of the difference between
@@ -332,10 +332,10 @@ the *label* and the *script name*
 
 
 
-.. method:: NatronEngine.Param.getNumDimensions()
+.. method:: Param.getNumDimensions()
 
 
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int`
 
 Returns the number of dimensions. For exampel a :doc:`Double3DParam` has 3 dimensions.
 A :doc:`ParametricParam` has as many dimensions as there are curves.
@@ -343,7 +343,7 @@ A :doc:`ParametricParam` has as many dimensions as there are curves.
 
 
 
-.. method:: NatronEngine.Param.getParent()
+.. method:: Param.getParent()
 
 
     :rtype: :class:`NatronEngine.Param`
@@ -355,10 +355,10 @@ appears in the settings panel.
 
 
 
-.. method:: NatronEngine.Param.getScriptName()
+.. method:: Param.getScriptName()
 
 
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :rtype: :class:`str`
 
 Returns the *script-name* of the param as used internally. The script-name is visible
 in the tooltip of the parameter when hovering the mouse over it on the GUI.
@@ -368,23 +368,30 @@ the *label* and the *script name*
 
 
 
-.. method:: NatronEngine.Param.getTypeName()
+.. method:: Param.getTypeName()
 
 
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :rtype: :class:`str`
 
 Returns the type-name of the parameter.
 
 
-.. method:: NatronEngine.Param.random([min=0., max=1.])
+.. method:: Param.random([min=0., max=1.])
 
-    :param min: :class:`float<PySide.QtCore.float>`
-    :param max: :class:`float<PySide.QtCore.float>`
-    :rtype: :class:`float<PySide.QtCore.float>`
+    :param min: :class:`float`
+    :param max: :class:`float`
+    :rtype: :class:`float`
 
-Returns a pseudo-random value in the interval \[*min*, *max*\[.
-The value is produced such that for a given parameter it will always be the same for a
-given time on the timeline, so that the value can be reproduced exactly.
+Returns a pseudo-random value in the interval \[*min*, *max*\[: the next value of a sequence
+that belongs to the parameter. Each evaluation of the expression of the parameter starts that
+sequence again from the frame, the dimension and the state of the node and its inputs, so in the
+expression of the parameter itself the value is the same each time a frame is computed.
+Elsewhere (in a script, or when called on another parameter in an expression), the value
+depends on the calls made before: use :func:`random(min,max,time,seed)<NatronEngine.Param.random>`.
+
+The state of the node and its inputs changes after any edit of a parameter of the node or of a
+node upstream, and an undo does not bring the previous values back. Two identical new nodes also
+give different values. The values only stay the same for a saved project that is not modified.
 
 
 .. note::
@@ -399,45 +406,51 @@ given time on the timeline, so that the value can be reproduced exactly.
 Note that you can ensure that random() returns a given value by calling the overloaded
 function :func:`random(min,max,time,seed)<NatronEngine.Param.random>` instead.
 
-.. method:: NatronEngine.Param.random(min, max, time, [seed=0])
+.. method:: Param.random(min, max, time, [seed=0])
+    :noindex:
 
-    :param min: :class:`float<PySide.QtCore.float>`
-    :param max: :class:`float<PySide.QtCore.float>`
-    :param time: :class:`float<PySide.QtCore.float>`
-    :param seed: :class:`unsigned int<PySide.QtCore.int>`
-    :rtype: :class:`float<PySide.QtCore.float>`
+    :param min: :class:`float`
+    :param max: :class:`float`
+    :param time: :class:`float`
+    :param seed: :class:`int`
+    :rtype: :class:`float`
 
 Same as :func:`random()<NatronEngine.Param.random>` but takes **time** and **seed** in parameters to control
-the value returned by the function. E.g::
+the value returned by the function. The value only depends on *time*, *seed* and the state of the
+node and its inputs, not on the parameter nor on the dimension: with the same *seed*, all the
+parameters and dimensions of a node get the same value. Pass a different *seed* for each of them,
+e.g. ``random(0,1,frame,dimension)`` in the expression of each dimension, plus a different offset
+for each parameter. E.g::
 
     ret = random(0,1,frame,2) - random(0,1,frame,2)
     # ret == 0 always
 
-.. method:: NatronEngine.Param.randomInt(min,max)
+.. method:: Param.randomInt(min,max)
 
-    :param min: :class:`int<PySide.QtCore.int>`
-    :param max: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :param min: :class:`int`
+    :param max: :class:`int`
+    :rtype: :class:`int`
 
 Same as  :func:`random(min,max)<NatronEngine.Param.random>` but returns an integer in the
 range [*min*,*max*[
 
-.. method:: NatronEngine.Param.randomInt(min, max, time, [seed=0])
+.. method:: Param.randomInt(min, max, time, [seed=0])
+    :noindex:
 
-    :param min: :class:`int<PySide.QtCore.int>`
-    :param max: :class:`int<PySide.QtCore.int>`
-    :param time: :class:`float<PySide.QtCore.float>`
-    :param seed: :class:`unsigned int<PySide.QtCore.int>`
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :param min: :class:`int`
+    :param max: :class:`int`
+    :param time: :class:`float`
+    :param seed: :class:`int`
+    :rtype: :class:`int`
 
 Same as :func:`random(min,max,time,seed)<NatronEngine.Param.random>` but returns an integer in the range
 [0, INT_MAX] instead.
 
 
-.. method:: NatronEngine.Param.setAddNewLine(a)
+.. method:: Param.setAddNewLine(a)
 
 
-    :param a: :class:`bool<PySide.QtCore.bool>`
+    :param a: :class:`bool`
 
 Set whether the parameter should be on a new line or not.
 See :func:`getAddNewLine()<NatronEngine.Param.getAddNewLine>`
@@ -445,10 +458,10 @@ See :func:`getAddNewLine()<NatronEngine.Param.getAddNewLine>`
 
 
 
-.. method:: NatronEngine.Param.setAnimationEnabled(e)
+.. method:: Param.setAnimationEnabled(e)
 
 
-    :param e: :class:`bool<PySide.QtCore.bool>`
+    :param e: :class:`bool`
 
 Set whether animation should be enabled (= can have keyframes).
 See :func:`getIsAnimationEnabled()<NatronEngine.Param.getIsAnimationEnabled>`
@@ -456,41 +469,41 @@ See :func:`getIsAnimationEnabled()<NatronEngine.Param.getIsAnimationEnabled>`
 
 
 
-.. method:: NatronEngine.Param.setEnabled(enabled[, dimension=0])
+.. method:: Param.setEnabled(enabled[, dimension=0])
 
 
-    :param enabled: :class:`bool<PySide.QtCore.bool>`
-    :param dimension: :class:`int<PySide.QtCore.int>`
+    :param enabled: :class:`bool`
+    :param dimension: :class:`int`
 
 Set whether the given *dimension* of the parameter should be enabled or not.
 When disabled, the parameter will be displayed in black and the user will not be able
 to edit it.
 See :func:`getIsEnabled(dimension)<NatronEngine.Param.getIsEnabled>`
 
-.. method:: NatronEngine.Param.setEnabledByDefault(enabled)
+.. method:: Param.setEnabledByDefault(enabled)
 
 
-    :param enabled: :class:`bool<PySide.QtCore.bool>`
+    :param enabled: :class:`bool`
 
 Set whether the parameter should be enabled or not by default.
 When disabled, the parameter will be displayed in black and the user will not be able
 to edit it.
 
 
-.. method:: NatronEngine.Param.setEvaluateOnChange(eval)
+.. method:: Param.setEvaluateOnChange(eval)
 
 
-    :param eval: :class:`bool<PySide.QtCore.bool>`
+    :param eval: :class:`bool`
 
 Set whether evaluation should be enabled for this parameter. When True, calling any
 function that change the value of the parameter will trigger a new render.
 See :func:`getEvaluateOnChange()<NatronEngine.Param.getEvaluateOnChange>`
 
 
-.. method:: NatronEngine.Param.setIconFilePath(icon)
+.. method:: Param.setIconFilePath(icon)
 
 
-    :param icon: :class:`str<NatronEngine.std::string>`
+    :param icon: :class:`str`
 
 Icon file path for the label. This should be either an absolute path or
 a file-path relative to a path in the NATRON_PLUGIN_PATH. The icon will replace the
@@ -500,47 +513,47 @@ label of the parameter.
 
 
 
-.. method:: NatronEngine.Param.setHelp(help)
+.. method:: Param.setHelp(help)
 
 
-    :param help: :class:`str<NatronEngine.std::string>`
+    :param help: :class:`str`
 
 Tooltip help string for the parameter.
 See :func:`getHelp()<NatronEngine.Param.getHelp>`
 
 
-.. method:: NatronEngine.Param.setPersistant(persistant)
+.. method:: Param.setPersistent(persistent)
 
 
-    :param persistant: :class:`bool<PySide.QtCore.bool>`
+    :param persistent: :class:`bool`
 
-Set whether this parameter should be persistant or not.
-Non persistant parameter will not be saved in the project.
-See :func:`getIsPersistant<NatronEngine.Param.getIsPersistant>`
-
-
+Set whether this parameter should be persistent or not.
+Non persistent parameter will not be saved in the project.
+See :func:`getIsPersistent<NatronEngine.Param.getIsPersistent>`
 
 
-.. method:: NatronEngine.Param.setVisible(visible)
 
 
-    :param visible: :class:`bool<PySide.QtCore.bool>`
+.. method:: Param.setVisible(visible)
+
+
+    :param visible: :class:`bool`
 
 Set whether this parameter should be visible or not to the user.
 See :func:`getIsVisible()<NatronEngine.Param.getIsVisible>`
 
-.. method:: NatronEngine.Param.setVisibleByDefault(visible)
+.. method:: Param.setVisibleByDefault(visible)
 
 
-    :param visible: :class:`bool<PySide.QtCore.bool>`
+    :param visible: :class:`bool`
 
 Set whether this parameter should be visible or not to the user in its default state.
 
 
-.. method:: NatronEngine.Param.setAsAlias(otherParam)
+.. method:: Param.setAsAlias(otherParam)
 
     :param otherParam: :class:`Param<NatronEngine.Param>`
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 
 Set this parameter as an alias of *otherParam*.
@@ -552,12 +565,12 @@ This is used generally to make user parameters on groups with the "Pick" option 
 "Manage User Parameters" dialog.
 
 
-.. method:: NatronEngine.Param.slaveTo(otherParam, thisDimension, otherDimension)
+.. method:: Param.slaveTo(otherParam, thisDimension, otherDimension)
 
     :param otherParam: :class:`Param<NatronEngine.Param>`
-    :param thisDimension: :class:`int<PySide.QtCore.int>`
-    :param otherDimension: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :param thisDimension: :class:`int`
+    :param otherDimension: :class:`int`
+    :rtype: :class:`bool`
 
 Set this parameter as a slave of *otherParam*.
 They need to be both of the same *type* but may vary in dimension, as long as
@@ -567,9 +580,9 @@ They need to be both of the same *type* but may vary in dimension, as long as
 This parameter *thisDimension* will be controlled entirely by the *otherDimension* of
 *otherParam* until a call to :func:`unslave(thisDimension)<NatronEngine.Param.unslave>` is made
 
-.. method:: NatronEngine.Param.unslave(dimension)
+.. method:: Param.unslave(dimension)
 
-    :param dimension: :class:`int<PySide.QtCore.int>`
+    :param dimension: :class:`int`
 
 
 If the given *dimension* of this parameter was previously slaved, then this function will

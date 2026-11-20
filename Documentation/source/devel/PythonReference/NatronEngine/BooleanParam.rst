@@ -1,4 +1,4 @@
-.. module:: NatronEngine
+.. currentmodule:: NatronEngine
 .. _BooleanParam:
 
 BooleanParam
@@ -40,21 +40,22 @@ Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-.. method:: NatronEngine.BooleanParam.get()
+.. method:: BooleanParam.get()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Returns the value of the parameter at the current timeline's time.
 
 
 
 
-.. method:: NatronEngine.BooleanParam.get(frame)
+.. method:: BooleanParam.get(frame)
+    :noindex:
 
 
-    :param frame: :class:`float<PySide.QtCore.float>`
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :param frame: :class:`float`
+    :rtype: :class:`bool`
 
 Returns the value of the parameter at the given *frame*. This value may be interpolated
 given the *interpolation* of the underlying animation curve.
@@ -62,38 +63,38 @@ given the *interpolation* of the underlying animation curve.
 
 
 
-.. method:: NatronEngine.BooleanParam.getDefaultValue()
+.. method:: BooleanParam.getDefaultValue()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 Returns the default value for this parameter.
 
 
 
 
-.. method:: NatronEngine.BooleanParam.getValue()
+.. method:: BooleanParam.getValue()
 
 
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :rtype: :class:`bool`
 
 
 Same as :func:`get()<NatronEngine.BooleanParam.get>`
 
 
 
-.. method:: NatronEngine.BooleanParam.getValueAtTime(time)
+.. method:: BooleanParam.getValueAtTime(time)
 
 
-    :param time: :class:`float<PySide.QtCore.float>`
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :param time: :class:`float`
+    :rtype: :class:`bool`
 
 Same as :func:`get(frame)<NatronEngine.BooleanParam.get>`
 
 
 
 
-.. method:: NatronEngine.BooleanParam.restoreDefaultValue()
+.. method:: BooleanParam.restoreDefaultValue()
 
 
 Removes all animation and expression set on this parameter and set the value
@@ -103,52 +104,53 @@ to be the default value.
 
 
 
-.. method:: NatronEngine.BooleanParam.set(x)
+.. method:: BooleanParam.set(x)
 
 
-    :param x: :class:`bool<PySide.QtCore.bool>`
+    :param x: :class:`bool`
 
 Set the value of this parameter to be *x*. If this parameter is animated (see :func:`getIsAnimated(dimension)<NatronEngine.AnimatedParam.getIsAnimated>`
 then this function will automatically add a keyframe at the timeline's current time.
 
 
 
-.. method:: NatronEngine.BooleanParam.set(x, frame)
+.. method:: BooleanParam.set(x, frame)
+    :noindex:
 
 
-    :param x: :class:`bool<PySide.QtCore.bool>`
-    :param frame: :class:`float<PySide.QtCore.float>`
+    :param x: :class:`bool`
+    :param frame: :class:`float`
 
 Set a new keyframe on the parameter with the value *x* at the given *frame*.
 
 
 
 
-.. method:: NatronEngine.BooleanParam.setDefaultValue(value)
+.. method:: BooleanParam.setDefaultValue(value)
 
 
-    :param value: :class:`bool<PySide.QtCore.bool>`
+    :param value: :class:`bool`
 
 Set the default *value* for this parameter.
 
 
 
 
-.. method:: NatronEngine.BooleanParam.setValue(value)
+.. method:: BooleanParam.setValue(value)
 
 
-    :param value: :class:`bool<PySide.QtCore.bool>`
+    :param value: :class:`bool`
 
 Same as :func:`set(value)<NatronEngine.BooleanParam.set>`
 
 
 
 
-.. method:: NatronEngine.BooleanParam.setValueAtTime(value, time)
+.. method:: BooleanParam.setValueAtTime(value, time)
 
 
-    :param value: :class:`bool<PySide.QtCore.bool>`
-    :param time: :class:`float<PySide.QtCore.float>`
+    :param value: :class:`bool`
+    :param time: :class:`float`
 
 Same as :func:`set(value,time)<NatronEngine.BooleanParam.set>`
 

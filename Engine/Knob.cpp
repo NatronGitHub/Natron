@@ -464,6 +464,7 @@ struct KnobHelperPrivate
     bool IsSecret, defaultIsSecret, inViewerContextSecret;
     std::vector<bool> enabled, defaultEnabled;
     bool CanUndo;
+    bool canUndoSet; // setCanUndo() was called
     QMutex evaluateOnChangeMutex;
     bool evaluateOnChange; //< if true, a value change will never trigger an evaluation
     bool IsPersistent; //will it be serialized?
@@ -512,7 +513,8 @@ struct KnobHelperPrivate
     ///not shared between instances whereas non instance specifics are shared.
     bool isInstanceSpecific;
     std::vector<std::string> dimensionNames;
-    mutable QMutex expressionMutex;
+    // std::mutex rather than QMutex: render threads lock it on every getValue() (see #1451)
+    mutable std::mutex expressionMutex;
     std::vector<Expr> expressions;
     mutable QMutex lastRandomHashMutex;
     mutable U32 lastRandomHash;
@@ -554,6 +556,7 @@ struct KnobHelperPrivate
         , enabled(dimension_)
         , defaultEnabled(dimension_)
         , CanUndo(true)
+        , canUndoSet(false)
         , evaluateOnChangeMutex()
         , evaluateOnChange(true)
         , IsPersistent(true)
@@ -2559,7 +2562,7 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     std::string expressionCopy;
 
     {
-        QMutexLocker k(&expressionMutex);
+        std::lock_guard<std::mutex> k(expressionMutex);
         expressionCopy = expressions[dimension].originalExpression;
     }
     std::string script;
@@ -2593,8 +2596,18 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     ss << script;
     script = ss.str();
     ///This will register the listeners
+    // Run the expression in a copy of the global variables of __main__, not in __main__ itself: the
+    // variables it assigns (frame, thisNode, random, the variables of the expression...) would
+    // overwrite those of the user scripts (#1252). A copy, not new local variables, so that the
+    // functions and comprehensions of the expression see its variables, as in __main__.
+    PyObject* globals = PyDict_Copy( PyModule_GetDict( NATRON_PYTHON_NAMESPACE::getMainModule() ) );
+    if (!globals) {
+        PyErr_Clear();
+        throw std::runtime_error("KnobHelperPrivate::parseListenersFromExpression(): cannot copy the global variables of __main__");
+    }
     std::string error;
-    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, NULL);
+    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, NULL, globals);
+    Py_DECREF(globals);
     if ( !error.empty() ) {
         qDebug() << error.c_str();
     }
@@ -2703,22 +2716,35 @@ KnobHelper::validateExpression(const std::string& expression,
    {
         EXPR_RECURSION_LEVEL();
 
-        if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, 0) ) {
+        // The scripts get the global variables of __main__, but store their variables (the function
+        // and "ret") in their own dictionary, not in __main__, where they would overwrite those of
+        // the user scripts (#1252). The function itself keeps the globals of __main__.
+        PyObject* locals = PyDict_New();
+        if (!locals) {
+            PyErr_Clear();
+            throw std::runtime_error("cannot create a Python dictionary");
+        }
+        if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, 0, NULL, locals) ) {
+            Py_DECREF(locals);
             throw std::runtime_error(error);
         }
 
         std::stringstream ss;
         ss << funcExecScript << '(' << getCurrentTime() << ", " <<  getCurrentView() << ")\n";
-        if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &error, 0) ) {
+        if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &error, 0, NULL, locals) ) {
+            Py_DECREF(locals);
             throw std::runtime_error(error);
         }
 
-        PyObject *ret = PyObject_GetAttrString(NATRON_PYTHON_NAMESPACE::getMainModule(), "ret"); //get our ret variable created above
+        PyObject *ret = PyDict_GetItemString(locals, "ret"); //get our ret variable created above (borrowed reference)
+        Py_XINCREF(ret);
+        Py_DECREF(locals);
 
         if ( !ret || PyErr_Occurred() ) {
 #ifdef DEBUG
             PyErr_Print();
 #endif
+            Py_XDECREF(ret);
             throw std::runtime_error("return value must be assigned to the \"ret\" variable");
         }
 
@@ -2758,6 +2784,7 @@ KnobHelper::validateExpression(const std::string& expression,
                 }
             }
         }
+        Py_DECREF(ret);
     }
 
 
@@ -2770,7 +2797,7 @@ KnobHelper::checkInvalidExpressions()
     int ndims = getDimension();
     std::vector<std::pair<std::string, bool> > exprToReapply(ndims);
     {
-        QMutexLocker k(&_imp->expressionMutex);
+        std::lock_guard<std::mutex> k(_imp->expressionMutex);
         for (int i = 0; i < ndims; ++i) {
             if ( !_imp->expressions[i].exprInvalid.empty() ) {
                 exprToReapply[i] = std::make_pair(_imp->expressions[i].originalExpression, _imp->expressions[i].hasRet);
@@ -2802,7 +2829,7 @@ KnobHelper::isExpressionValid(int dimension,
         return false;
     }
     {
-        QMutexLocker k(&_imp->expressionMutex);
+        std::lock_guard<std::mutex> k(_imp->expressionMutex);
         if (error) {
             *error = _imp->expressions[dimension].exprInvalid;
         }
@@ -2823,7 +2850,7 @@ KnobHelper::setExpressionInvalid(int dimension,
     }
     bool wasValid;
     {
-        QMutexLocker k(&_imp->expressionMutex);
+        std::lock_guard<std::mutex> k(_imp->expressionMutex);
         wasValid = _imp->expressions[dimension].exprInvalid.empty();
         _imp->expressions[dimension].exprInvalid = error;
     }
@@ -2836,10 +2863,10 @@ KnobHelper::setExpressionInvalid(int dimension,
         } else if (!wasValid && valid) {
             bool haveOtherExprInvalid = false;
             {
-                QMutexLocker k(&_imp->expressionMutex);
+                std::lock_guard<std::mutex> k(_imp->expressionMutex);
                 for (int i = 0; i < ndims; ++i) {
                     if (i != dimension) {
-                        if ( !_imp->expressions[dimension].exprInvalid.empty() ) {
+                        if ( !_imp->expressions[i].exprInvalid.empty() ) {
                             haveOtherExprInvalid = true;
                             break;
                         }
@@ -2887,14 +2914,14 @@ KnobHelper::setExpressionInternal(int dimension,
         exprInvalid = e.what();
         exprCpy = expression;
         if (failIfInvalid) {
-            throw e;
+            throw; // not "throw e", which would throw a std::exception without the message
         }
     }
 
     //Set internal fields
 
     {
-        QMutexLocker k(&_imp->expressionMutex);
+        std::lock_guard<std::mutex> k(_imp->expressionMutex);
         _imp->expressions[dimension].hasRet = hasRetVariable;
         _imp->expressions[dimension].expression = exprCpy;
         _imp->expressions[dimension].originalExpression = expression;
@@ -2959,7 +2986,7 @@ KnobHelper::replaceNodeNameInExpression(int dimension,
 bool
 KnobHelper::isExpressionUsingRetVariable(int dimension) const
 {
-    QMutexLocker k(&_imp->expressionMutex);
+    std::lock_guard<std::mutex> k(_imp->expressionMutex);
 
     return _imp->expressions[dimension].hasRet;
 }
@@ -2968,7 +2995,7 @@ bool
 KnobHelper::getExpressionDependencies(int dimension,
                                       std::list<std::pair<KnobIWPtr, int> >& dependencies) const
 {
-    QMutexLocker k(&_imp->expressionMutex);
+    std::lock_guard<std::mutex> k(_imp->expressionMutex);
 
     if ( !_imp->expressions[dimension].expression.empty() ) {
         dependencies = _imp->expressions[dimension].dependencies;
@@ -2986,7 +3013,7 @@ KnobHelper::clearExpression(int dimension,
     PythonGILLocker pgl;
     bool hadExpression;
     {
-        QMutexLocker k(&_imp->expressionMutex);
+        std::lock_guard<std::mutex> k(_imp->expressionMutex);
         hadExpression = !_imp->expressions[dimension].originalExpression.empty();
         _imp->expressions[dimension].expression.clear();
         _imp->expressions[dimension].originalExpression.clear();
@@ -3113,7 +3140,7 @@ KnobHelper::executeExpression(double time,
 {
     std::string expr;
     {
-        QMutexLocker k(&_imp->expressionMutex);
+        std::lock_guard<std::mutex> k(_imp->expressionMutex);
         expr = _imp->expressions[dimension].expression;
     }
     std::stringstream ss;
@@ -3143,21 +3170,30 @@ KnobHelper::executeExpression(const std::string& expr,
 
     PyErr_Clear();
 
-    PyObject* v = PyRun_String(expr.c_str(), Py_file_input, globalDict, 0);
-    Py_XDECREF(v);
-
     *ret = 0;
 
-    if ( !catchErrors(mainModule, error) ) {
+    // The expression gets the global variables of __main__, but stores "ret" (and any variable
+    // it assigns) in its own dictionary, not in __main__, where it would overwrite the variables
+    // of the user scripts (#1252)
+    PyObject* locals = PyDict_New();
+    if (!locals) {
+        catchErrors(mainModule, error);
+
         return false;
     }
-    *ret = PyObject_GetAttrString(mainModule, "ret"); //get our ret variable created above
+    PyObject* v = PyRun_String(expr.c_str(), Py_file_input, globalDict, locals);
+    Py_XDECREF(v);
+
+    if ( !catchErrors(mainModule, error) ) {
+        Py_DECREF(locals);
+
+        return false;
+    }
+    *ret = PyDict_GetItemString(locals, "ret"); //get our ret variable created above (borrowed reference)
+    Py_XINCREF(*ret);
+    Py_DECREF(locals);
     if (!*ret) {
-        // Do not forget to empty the error stream using catchError, even if we know the error,
-        // for subsequent expression evaluations.
-        if ( catchErrors(mainModule, error) ) {
-            *error = "Missing 'ret' attribute";
-        }
+        *error = "Missing 'ret' attribute";
 
         return false;
     }
@@ -3174,7 +3210,7 @@ KnobHelper::getExpression(int dimension) const
     if (dimension == -1) {
         dimension = 0;
     }
-    QMutexLocker k(&_imp->expressionMutex);
+    std::lock_guard<std::mutex> k(_imp->expressionMutex);
 
     return _imp->expressions[dimension].originalExpression;
 }
@@ -3404,11 +3440,19 @@ void
 KnobHelper::setCanUndo(bool val)
 {
     _imp->CanUndo = val;
+    _imp->canUndoSet = true;
 }
 
 bool
 KnobHelper::getCanUndo() const
 {
+    // The Natron knobs that don't evaluate on change (e.g. GUI-only settings) are not undoable, unless setCanUndo() says
+    // otherwise. For OpenFX parameters, setCanUndo() is kOfxParamPropCanUndo: kOfxParamPropEvaluateOnChange is about
+    // rendering, not undo.
+    if (!_imp->canUndoSet) {
+        return getEvaluateOnChange();
+    }
+
     return _imp->CanUndo;
 }
 
@@ -4165,17 +4209,19 @@ KnobHelper::cloneExpressionsAndCheckIfChanged(KnobI* other,
 
 void
 KnobHelper::cloneOneCurve(KnobI* other,
-                          int offset,
+                          double offset,
                           const RangeD* range,
                           int dimension,
                           int otherDimension)
 {
     assert( dimension >= 0 && dimension < getDimension() &&
             otherDimension >= 0 && otherDimension < other->getDimension() );
+    // the offset also applies without a range
+    const bool plainClone = !range && (offset == 0.);
     CurvePtr thisCurve = getCurve(ViewIdx(0), dimension, true);
     CurvePtr otherCurve = other->getCurve(ViewIdx(0), otherDimension, true);
     if (thisCurve && otherCurve) {
-        if (!range) {
+        if (plainClone) {
             thisCurve->clone(*otherCurve);
         } else {
             thisCurve->clone(*otherCurve, offset, range);
@@ -4185,14 +4231,14 @@ KnobHelper::cloneOneCurve(KnobI* other,
     CurvePtr otherGuiCurve = other->getGuiCurve(ViewIdx(0), otherDimension);
     if (guiCurve) {
         if (otherGuiCurve) {
-            if (!range) {
+            if (plainClone) {
                 guiCurve->clone(*otherGuiCurve);
             } else {
                 guiCurve->clone(*otherGuiCurve, offset, range);
             }
         } else {
             if (otherCurve) {
-                if (!range) {
+                if (plainClone) {
                     guiCurve->clone(*otherCurve);
                 } else {
                     guiCurve->clone(*otherCurve, offset, range);
@@ -4205,7 +4251,7 @@ KnobHelper::cloneOneCurve(KnobI* other,
 
 void
 KnobHelper::cloneCurves(KnobI* other,
-                        int offset,
+                        double offset,
                         const RangeD* range,
                         int dimension,
                         int otherDimension)
@@ -4353,7 +4399,7 @@ KnobHelper::addListener(const bool isExpression,
     }
 
     if (isExpression) {
-        QMutexLocker k(&listenerIsHelper->_imp->expressionMutex);
+        std::lock_guard<std::mutex> k(listenerIsHelper->_imp->expressionMutex);
         assert(listenerDimension >= 0 && listenerDimension < listenerIsHelper->_imp->dimension);
         listenerIsHelper->_imp->expressions[listenerDimension].dependencies.push_back( std::make_pair(thisShared, listenedToDimension) );
     }
@@ -4750,10 +4796,12 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
         } else {
             ss << "app." << otherIsEffect->getNode()->getFullyQualifiedName() << "." << newScriptName;
         }
+        // get(frame), not get(): get() returns the value at the current time, so a link
+        // to an animated parameter would not be animated (#1336)
         if (output->getDimension() > 1) {
-            ss << ".get()[dimension]";
+            ss << ".get(frame)[dimension]";
         } else {
-            ss << ".get()";
+            ss << ".get(frame)";
         }
 
         try {
@@ -4862,7 +4910,7 @@ KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr>& nodes) cons
 {
     std::set<KnobIPtr> deps;
     {
-        QMutexLocker k(&_imp->expressionMutex);
+        std::lock_guard<std::mutex> k(_imp->expressionMutex);
         for (int i = 0; i < _imp->dimension; ++i) {
             for (std::list<std::pair<KnobIWPtr, int> >::const_iterator it = _imp->expressions[i].dependencies.begin();
                  it != _imp->expressions[i].dependencies.end(); ++it) {
@@ -4922,6 +4970,7 @@ struct KnobHolder::KnobHolderPrivate
     mutable QMutex paramsEditLevelMutex;
     KnobHolder::MultipleParamsEditEnum paramsEditLevel;
     int paramsEditRecursionLevel;
+    std::string paramsEditLabel; // the label of the undo command of the outermost block, or empty
     mutable QMutex evaluationBlockedMutex;
     int evaluationBlocked;
 
@@ -4949,6 +4998,7 @@ struct KnobHolder::KnobHolderPrivate
         , isDequeingValuesSet(false)
         , paramsEditLevel(eMultipleParamsEditOff)
         , paramsEditRecursionLevel(0)
+        , paramsEditLabel()
         , evaluationBlockedMutex()
         , evaluationBlocked(0)
         , canCurrentlySetValue(true)
@@ -4977,6 +5027,7 @@ struct KnobHolder::KnobHolderPrivate
     , isDequeingValuesSet(other.isDequeingValuesSet)
     , paramsEditLevel(other.paramsEditLevel)
     , paramsEditRecursionLevel(other.paramsEditRecursionLevel)
+    , paramsEditLabel(other.paramsEditLabel)
     , evaluationBlockedMutex()
     , evaluationBlocked(0)
     , canCurrentlySetValue(other.canCurrentlySetValue)
@@ -5805,13 +5856,21 @@ KnobHolder::endChanges(bool discardRendering)
 
     bool guiFrozen = firstKnobChanged ? getApp() && firstKnobChanged->getKnobGuiPointer() && firstKnobChanged->getKnobGuiPointer()->isGuiFrozenForPlayback() : false;
 
-    // Call instanceChanged on each knob
+    // Call instanceChanged on each knob.
+    // On the main thread, the consecutive changes with the same reason are a group of value changes
+    // (beginKnobsValuesChanged()/endKnobsValuesChanged()), e.g. the changes queued by appendValueChange() while the
+    // evaluation of the holder is blocked: an OpenFX effect brackets their kOfxActionInstanceChanged actions with a
+    // single pair of kOfxActionBeginInstanceChanged and kOfxActionEndInstanceChanged.
     bool ret = false;
+    KnobsValuesChangedGroup_RAII group(this);
     for (KnobChanges::iterator it = knobChanged.begin(); it != knobChanged.end(); ++it) {
         if (it->knob && !it->valueChangeBlocked && !isLoadingProject) {
             if ( !it->originatedFromMainThread && !canHandleEvaluateOnChangeInOtherThread() ) {
                 Q_EMIT doValueChangeOnMainThread(it->knob.get(), it->originalReason, it->time, it->view, it->originatedFromMainThread);
             } else {
+                if (isMT) {
+                    group.setReason(it->originalReason);
+                }
                 ret |= onKnobValueChanged_public(it->knob.get(), it->originalReason, it->time, it->view, it->originatedFromMainThread);
             }
         }
@@ -5834,6 +5893,7 @@ KnobHolder::endChanges(bool discardRendering)
             it->knob->refreshListenersAfterValueChange(it->view, it->originalReason, dimension);
         }
     }
+    group.end();
 
     int evaluationBlocked;
     bool hasHadSignificantChange = false;
@@ -6004,32 +6064,71 @@ KnobHolder::getMultipleParamsEditLevel() const
 }
 
 void
-KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level)
+KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level,
+                                       const std::string& label)
+{
+    // beginChanges() and endChanges() are called without holding paramsEditLevelMutex: endChanges() calls the knob
+    // changed handlers (e.g. kOfxActionInstanceChanged), whose setValue() calls getMultipleParamsEditLevel().
+    if ( appPTR->isBackground() ) {
+        QMutexLocker l(&_imp->paramsEditLevelMutex);
+        _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
+
+        return;
+    }
+    if (level == KnobHolder::eMultipleParamsEditOff) {
+        bool endedBlock = false;
+        {
+            QMutexLocker l(&_imp->paramsEditLevelMutex);
+            // An end without a matching start (e.g. an unmatched paramEditEnd() of an OpenFX plug-in) changes nothing:
+            // in particular, it must not end a beginChanges() bracket of someone else.
+            if (_imp->paramsEditRecursionLevel > 0) {
+                --_imp->paramsEditRecursionLevel;
+                if (_imp->paramsEditRecursionLevel == 0) {
+                    _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
+                    _imp->paramsEditLabel.clear();
+                }
+                endedBlock = true;
+            }
+        }
+        if (endedBlock) {
+            // matches the beginChanges() of eMultipleParamsEditOnCreateNewCommand
+            endChanges();
+        }
+    } else if (level == KnobHolder::eMultipleParamsEditOn) {
+        QMutexLocker l(&_imp->paramsEditLevelMutex);
+        _imp->paramsEditLevel = level;
+    } else {
+        assert(level == KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+        beginChanges();
+        QMutexLocker l(&_imp->paramsEditLevelMutex);
+        if (_imp->paramsEditLevel == KnobHolder::eMultipleParamsEditOff) {
+            _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOnCreateNewCommand;
+            // the label of the outermost block
+            _imp->paramsEditLabel = label;
+        }
+        ++_imp->paramsEditRecursionLevel;
+    }
+}
+
+std::string
+KnobHolder::getMultipleParamsEditLabel() const
 {
     QMutexLocker l(&_imp->paramsEditLevelMutex);
 
-    if ( appPTR->isBackground() ) {
-        _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
-    } else {
-        if (level == KnobHolder::eMultipleParamsEditOff) {
-            if (_imp->paramsEditRecursionLevel > 0) {
-                --_imp->paramsEditRecursionLevel;
-            }
-            if (_imp->paramsEditRecursionLevel == 0) {
-                _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
-            }
-            endChanges();
-        } else if (level == KnobHolder::eMultipleParamsEditOn) {
-            _imp->paramsEditLevel = level;
-        } else {
-            assert(level == KnobHolder::eMultipleParamsEditOnCreateNewCommand);
-            beginChanges();
-            if (_imp->paramsEditLevel == KnobHolder::eMultipleParamsEditOff) {
-                _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOnCreateNewCommand;
-            }
-            ++_imp->paramsEditRecursionLevel;
-        }
+    return _imp->paramsEditLabel;
+}
+
+KnobHolder::MultipleParamsEditEnum
+KnobHolder::takeMultipleParamsEditCreateNewCommand()
+{
+    QMutexLocker l(&_imp->paramsEditLevelMutex);
+    KnobHolder::MultipleParamsEditEnum level = _imp->paramsEditLevel;
+
+    if (level == KnobHolder::eMultipleParamsEditOnCreateNewCommand) {
+        _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOn;
     }
+
+    return level;
 }
 
 AppInstancePtr
@@ -6276,6 +6375,58 @@ KnobHolder::checkIfOverlayRedrawNeeded()
 }
 
 void
+KnobHolder::resetKnobsToDefaultValues(const std::list<KnobIPtr>& knobs,
+                                      int dimension,
+                                      double time)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+
+    // First reset all the knobs, with their value changes blocked: the knob changed handlers (e.g. the
+    // kOfxActionInstanceChanged of an OpenFX effect) are called once per knob below, when all the knobs have their
+    // default value, rather than also for each knob whose value changes here.
+    for (std::list<KnobIPtr>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        const KnobIPtr& knob = *it;
+        if (!knob) {
+            continue;
+        }
+        KnobHolder* holder = knob->getHolder();
+        if (holder) {
+            holder->beginChanges();
+        }
+        knob->blockValueChanges();
+        for (int d = 0; d < knob->getDimension(); ++d) {
+            if ( (d == dimension) || (dimension == -1) ) {
+                knob->resetToDefaultValue(d);
+            }
+        }
+        knob->unblockValueChanges();
+        if (holder) {
+            holder->endChanges(true);
+        }
+    }
+
+    // Then call the knob changed handlers, in one group of value changes: an OpenFX effect gets a single
+    // kOfxActionBeginInstanceChanged/kOfxActionEndInstanceChanged pair around the kOfxActionInstanceChanged actions of
+    // its parameters.
+    KnobsValuesChangedGroup_RAII group(this);
+    group.setReason(eValueChangedReasonRestoreDefault);
+    for (std::list<KnobIPtr>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        const KnobIPtr& knob = *it;
+        if (!knob) {
+            continue;
+        }
+        KnobHolder* holder = knob->getHolder();
+        if (holder) {
+            holder->onKnobValueChanged_public(knob.get(), eValueChangedReasonRestoreDefault, time, ViewIdx(0), true);
+        }
+        // the value changes were blocked above, so the listeners (slaves, expressions) were not refreshed
+        if ( !knob->isListenersNotificationBlocked() ) {
+            knob->refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonRestoreDefault, dimension);
+        }
+    }
+}
+
+void
 KnobHolder::restoreDefaultValues()
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -6469,11 +6620,14 @@ AnimatingKnobStringHelper::getStringFromCurve(const Curve& curve,
             return false;
         }
         try {
-            _animation->customInterpolation(time, prev.getTime(), prevValue, next.getTime(), nextValue, ret);
+            if ( _animation->customInterpolation(time, prev.getTime(), prevValue, next.getTime(), nextValue, ret) ) {
+                return true;
+            }
         } catch (...) {
-            // the interpolation function is plug-in code: fall back to the value of the knob
-            return false;
         }
+        // the interpolation function is plug-in code, which failed: fall back to the value of the last keyframe
+        // before time, as without a custom interpolation
+        *ret = prevValue;
 
         return true;
     }
@@ -6484,9 +6638,9 @@ AnimatingKnobStringHelper::getStringFromCurve(const Curve& curve,
 
 void
 AnimatingKnobStringHelper::setCustomInterpolation(customParamInterpolationV1Entry_t func,
-                                                  void* ofxParamHandle)
+                                                  void* ofxParamSetHandle)
 {
-    _animation->setCustomInterpolation(func, ofxParamHandle);
+    _animation->setCustomInterpolation(func, ofxParamSetHandle);
 }
 
 void

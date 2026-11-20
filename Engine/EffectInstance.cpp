@@ -1626,7 +1626,8 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                                                     const EffectInstance::InputImagesMap & inputImages,
                                                     const RenderStatsPtr & stats,
                                                     const OSGLContextAttacherPtr& glContextAttacher,
-                                                    ImagePtr* image)
+                                                    ImagePtr* image,
+                                                    bool lookupPersistentCache)
 {
     ImageList cachedImages;
     bool isCached = false;
@@ -1647,7 +1648,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
         }
     }
 
-    if (!isCached) {
+    if (!isCached && lookupPersistentCache) {
         // For textures, we lookup for a RAM image, if found we convert it to a texture
         if ( (storage == eStorageModeRAM) || (storage == eStorageModeGLTex) ) {
             isCached = appPTR->getImage(key, &cachedImages);
@@ -3091,6 +3092,14 @@ EffectInstance::message(MessageTypeEnum type,
     return node ? node->message(type, content) : false;
 }
 
+StandardButtonEnum
+EffectInstance::question(const std::string & content) const
+{
+    NodePtr node = getNode();
+    assert(node);
+    return node ? node->question(content) : eStandardButtonNoButton;
+}
+
 void
 EffectInstance::setPersistentMessage(MessageTypeEnum type,
                                      const std::string & content)
@@ -3511,7 +3520,8 @@ EffectInstance::onOverlayKeyDown_public(double time,
                                         const RenderScale & renderScale,
                                         ViewIdx view,
                                         Key key,
-                                        KeyboardModifiers modifiers)
+                                        KeyboardModifiers modifiers,
+                                        const QString& keyText)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3531,7 +3541,7 @@ EffectInstance::onOverlayKeyDown_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayKeyDown(time, actualScale, view, key, modifiers);
+        ret = onOverlayKeyDown(time, actualScale, view, key, modifiers, keyText);
         if (!ret && shouldDrawHostOverlay()) {
             ret |= getNode()->onOverlayKeyDownDefault(time, actualScale, view, key, modifiers);
         }
@@ -3547,7 +3557,8 @@ EffectInstance::onOverlayKeyUp_public(double time,
                                       const RenderScale & renderScale,
                                       ViewIdx view,
                                       Key key,
-                                      KeyboardModifiers modifiers)
+                                      KeyboardModifiers modifiers,
+                                      const QString& keyText)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3567,7 +3578,7 @@ EffectInstance::onOverlayKeyUp_public(double time,
         NON_RECURSIVE_ACTION();
 
         _imp->setDuringInteractAction(true);
-        ret = onOverlayKeyUp(time, actualScale, view, key, modifiers);
+        ret = onOverlayKeyUp(time, actualScale, view, key, modifiers, keyText);
         if (!ret && shouldDrawHostOverlay()) {
             ret |= getNode()->onOverlayKeyUpDefault(time, actualScale, view, key, modifiers);
         }
@@ -3583,7 +3594,8 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
                                           const RenderScale & renderScale,
                                           ViewIdx view,
                                           Key key,
-                                          KeyboardModifiers modifiers)
+                                          KeyboardModifiers modifiers,
+                                          const QString& keyText)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3602,7 +3614,7 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayKeyRepeat(time, actualScale, view, key, modifiers);
+        ret = onOverlayKeyRepeat(time, actualScale, view, key, modifiers, keyText);
         if (!ret && shouldDrawHostOverlay()) {
             ret |= getNode()->onOverlayKeyRepeatDefault(time, actualScale, view, key, modifiers);
         }
@@ -4060,6 +4072,7 @@ EffectInstance::getOrCreateRenderInstance()
         EffectInstancePtr ret =  _imp->renderClonesPool.front();
         _imp->renderClonesPool.pop_front();
         ret->_imp->isDoingInstanceSafeRender = true;
+        refreshRenderCloneState(ret);
         return ret;
     }
 
@@ -4070,6 +4083,7 @@ EffectInstance::getOrCreateRenderInstance()
         return shared_from_this();
     }
     clone->_imp->isDoingInstanceSafeRender = true;
+    refreshRenderCloneState(clone);
     return clone;
 }
 
@@ -4128,7 +4142,8 @@ EffectInstance::attachOpenGLContext_public(const OSGLContextPtr& glContext,
             (*data)->setHasTakenLock(true);
         }
         _imp->attachedContexts.insert( std::make_pair(glContext, *data) );
-    } else {
+    } else if (!concurrentGLRender) {
+        // the lock taken above without a locker (concurrent renders: the locker releases it)
         _imp->attachedContextsMutex.unlock();
     }
 
@@ -4696,6 +4711,12 @@ void
 EffectInstance::addOverlaySlaveParam(const KnobIPtr& knob)
 {
     _imp->overlaySlaves.push_back(knob);
+}
+
+void
+EffectInstance::clearOverlaySlaveParams()
+{
+    _imp->overlaySlaves.clear();
 }
 
 bool
@@ -5455,6 +5476,10 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
         double par;
         if (!multipleClipsPAR) {
             par = inputParSet ? inputPar : projectPAR;
+        } else if ( (i >= 0) && effect ) {
+            // The plug-in maps each clip itself (kOfxImageEffectPropSupportsMultipleClipPARs): a connected input
+            // gets the PAR of its own input, "the pixel aspect ratio of a clip or image", not the first one's.
+            par = effect->getAspectRatio(-1);
         } else {
             if (inputParSet) {
                 par = inputPar;

@@ -15,4 +15,5 @@ Tutorials
    tutorials-svgworkflow
    tutorials-AlternativeMatteExtraction
    tutorials-keying
+   tutorials-tracking
    tutorials-evaluating-script-structure

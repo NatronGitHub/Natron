@@ -1,4 +1,4 @@
-.. module:: NatronGui
+.. currentmodule:: NatronGui
 .. _pyTabWidget:
 
 PyTabWidget
@@ -102,25 +102,25 @@ To float the pane into a new floating window with all its tabs, use the :func:`f
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. method:: NatronGui.PyTabWidget.appendTab(tab)
+.. method:: PyTabWidget.appendTab(tab)
 
-    :param tab: `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>`
+    :param tab: `QWidget <https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/QWidget.html>`_
 
 Appends a new tab to the tab widget and makes it current.
 
 
 
-.. method:: NatronGui.PyTabWidget.closeCurrentTab()
+.. method:: PyTabWidget.closeCurrentTab()
 
 Closes the current tab, effectively destroying it.
 
 
-.. method:: NatronGui.PyTabWidget.closeTab(index)
+.. method:: PyTabWidget.closeTab(index)
 
 Closes the tab at the given *index*, effectively destroying it.
 
 
-.. method:: NatronGui.PyTabWidget.closePane()
+.. method:: PyTabWidget.closePane()
 
 Closes this pane, effectively destroying it. Note that all tabs will not be destroyed but instead
 moved to another existing pane.
@@ -130,7 +130,7 @@ moved to another existing pane.
     If this pane is the last one on the GUI, this function does nothing.
 
 
-.. method:: NatronGui.PyTabWidget.count()
+.. method:: PyTabWidget.count()
 
     :rtype: :class:`int`
 
@@ -138,33 +138,33 @@ Returns the number of tabs in this pane.
 
 
 
-.. method:: NatronGui.PyTabWidget.currentWidget()
+.. method:: PyTabWidget.currentWidget()
 
-    :rtype: `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>`
+    :rtype: `QWidget <https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/QWidget.html>`_
 
 Returns the current active tab.
 
 
-.. method:: NatronGui.PyTabWidget.floatCurrentTab()
+.. method:: PyTabWidget.floatCurrentTab()
 
 Make a new floating window with a single pane and moves the current tab of this pane to
 the new pane of the floating window.
 
 
 
-.. method:: NatronGui.PyTabWidget.floatPane()
+.. method:: PyTabWidget.floatPane()
 
 Make a new floating window and moves this pane to the new window (including all tabs).
 
 
-.. method:: NatronGui.PyTabWidget.getCurrentIndex()
+.. method:: PyTabWidget.getCurrentIndex()
 
     :rtype: :class:`int`
 
 Returns the index of the current tab. This is 0-based (starting from the left).
 
 
-.. method:: NatronGui.PyTabWidget.getScriptName()
+.. method:: PyTabWidget.getScriptName()
 
     :rtype: :class:`str`
 
@@ -172,7 +172,7 @@ Returns the script-name of the pane, as used by the :func:`getTabWidget(scriptNa
 
 
 
-.. method:: NatronGui.PyTabWidget.getTabLabel(index)
+.. method:: PyTabWidget.getTabLabel(index)
 
     :param index: :class:`int`
     :rtype: :class:`str`
@@ -180,24 +180,25 @@ Returns the script-name of the pane, as used by the :func:`getTabWidget(scriptNa
 Returns the name of the tab at the given *index* if it exists or an empty string otherwise.
 
 
-.. method:: NatronGui.PyTabWidget.insertTab(index,tab)
+.. method:: PyTabWidget.insertTab(index,tab)
 
-    :param tab: `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>`
+    :param tab: `QWidget <https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/QWidget.html>`_
     :param index: :class:`int`
 
 Inserts the given *tab* at the given *index* in this tab-widget.
 
 
-.. method:: NatronGui.PyTabWidget.removeTab(tab)
+.. method:: PyTabWidget.removeTab(tab)
 
-    :param tab: `QWidget <https://pyside.github.io/docs/pyside/PySide/QtGui/QWidget.html>`
+    :param tab: `QWidget <https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/QWidget.html>`_
 
 Removes the given *tab* from this pane if it is found. Note that this function
 does not destroy the *tab*, unlike :func:`closeTab(index)<NatronGui.PyTabWidget.closeTab>`.
 
 This is used internally by :func:`moveTab(tab,pane)<NatronGui.GuiApp.moveTab>`.
 
-.. method:: NatronGui.PyTabWidget.removeTab(index)
+.. method:: PyTabWidget.removeTab(index)
+    :noindex:
 
     :param index: :class:`int`
 
@@ -205,28 +206,28 @@ Similar to :func:`removeTab(tab)<NatronGui.PyTabWidget.removeTab>` but the *inde
 is given instead. The tab may be destroyed if this object has the only reference to the tab.
 
 
-.. method:: NatronGui.PyTabWidget.setCurrentIndex(index)
+.. method:: PyTabWidget.setCurrentIndex(index)
 
     :param index: :class:`int`
 
 Makes the tab at the given *index* (0-based) the current one (if the index is valid).
 
 
-.. method:: NatronGui.PyTabWidget.setNextTabCurrent()
+.. method:: PyTabWidget.setNextTabCurrent()
 
 Set the tab at :func:`getCurrentIndex()<NatronGui.PyTabWidget.getCurrentIndex>` + 1 the current one.
 This functions cycles back to the first tab once the last tab is reached.
 
 
 
-.. method:: NatronGui.PyTabWidget.splitHorizontally()
+.. method:: PyTabWidget.splitHorizontally()
 
     :rtype: :class:`PyTabWidget<NatronGui.PyTabWidget>`
 
 Splits this pane into 2 horizontally-separated panes. The new pane will be returned.
 
 
-.. method:: NatronGui.PyTabWidget.splitVertically()
+.. method:: PyTabWidget.splitVertically()
 
     :rtype: :class:`PyTabWidget<NatronGui.PyTabWidget>`
 

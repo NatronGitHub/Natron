@@ -35,10 +35,12 @@
 #include <nuke/fnPublicOfxExtensions.h>
 #include <ofxParametricParam.h>
 #include <ofxNatron.h>
+#include <ofxhUtilities.h> // OFX::IsNaN
 
 #include <QDebug>
 
 #include "Global/GlobalDefines.h"
+#include "Global/MathUtils.h"
 #include "Engine/AppManager.h"
 #include "Engine/Knob.h"
 #include "Engine/KnobFactory.h"
@@ -169,50 +171,34 @@ getKeyIndex(const KnobIPtr& knob,
             int startDim = -1,
             int endDim = -1)
 {
-    OfxKeyFramesSet keyframes;
+    // "index: pointer to an integer which in which the index is returned set to -1 if no key was found"
+    // (ofxParam.h, paramGetKeyIndex)
+    index = -1;
 
+    OfxKeyFramesSet keyframes;
     getOfxKeyFrames(knob.get(), keyframes, startDim, endDim);
+    // A key within NATRON_CURVE_X_SPACING_EPSILON of time is the key "at the indicated time (some small
+    // delta)": it is neither before nor after time.
     int i = 0;
-    if (direction == 0) {
-        //search for key at indicated time
-        for (OfxKeyFramesSet::iterator it = keyframes.begin(); it != keyframes.end(); ++it, ++i) {
+    for (OfxKeyFramesSet::iterator it = keyframes.begin(); it != keyframes.end(); ++it, ++i) {
+        if (direction == 0) {
+            // search for key at indicated time
             if (std::abs(*it - time) < NATRON_CURVE_X_SPACING_EPSILON) {
                 index = i;
 
                 return kOfxStatOK;
             }
-        }
-    } else if (direction < 0) {
-        //search for key before indicated time
-        OfxKeyFramesSet::iterator next = keyframes.begin();
-        if ( !keyframes.empty() ) {
-            ++next;
-        }
-        for (OfxKeyFramesSet::iterator it = keyframes.begin(); it != keyframes.end(); ++it, ++i) {
-            if (*it < time) {
-                if ( next != keyframes.end() ) {
-                    if (*next > time) {
-                        index = i;
-
-                        return kOfxStatOK;
-                    }
-                } else {
-                    index = i;
-                    assert(i == (int)keyframes.size() - 1);
-
-                    return kOfxStatOK;
-                }
+        } else if (direction < 0) {
+            // search for the previous key before the indicated time: the last key before time. The keys
+            // are sorted, so stop at the first key that is not before time.
+            if (*it <= time - NATRON_CURVE_X_SPACING_EPSILON) {
+                index = i;
             } else {
-                return kOfxStatFailed;
+                break;
             }
-            if ( !keyframes.empty() ) {
-                ++next;
-            }
-        }
-    } else if (direction > 0) {
-        ///Find the first keyframe that is considered to be after the given time
-        for (OfxKeyFramesSet::iterator it = keyframes.begin(); it != keyframes.end(); ++it, ++i) {
-            if (*it > time) {
+        } else {
+            // search for the next key after the indicated time: the first key after time
+            if (*it >= time + NATRON_CURVE_X_SPACING_EPSILON) {
                 index = i;
 
                 return kOfxStatOK;
@@ -220,7 +206,7 @@ getKeyIndex(const KnobIPtr& knob,
         }
     }
 
-    return kOfxStatFailed;
+    return (index == -1) ? kOfxStatFailed : kOfxStatOK;
 } // getKeyIndex
 
 static
@@ -237,6 +223,11 @@ deleteKey(const KnobIPtr& knob,
         endDim = knob->getDimension();
     }
     assert(startDim < endDim && startDim >= 0);
+    // "kOfxStatErrBadIndex - no key at the given time" (ofxParam.h, paramDeleteKey)
+    int index;
+    if (getKeyIndex(knob, time, 0, index, startDim, endDim) != kOfxStatOK) {
+        return kOfxStatErrBadIndex;
+    }
     for (int i = startDim; i < endDim; ++i) {
         knob->deleteValueAtTime(eCurveChangeReasonInternal, time, ViewSpec::all(), i, false);
     }
@@ -264,29 +255,47 @@ deleteAllKeys(const KnobIPtr& knob,
     return kOfxStatOK;
 }
 
-// copy one parameter to another, with a range (NULL means to copy all animation)
+// paramCopy(): copy the value of fromParam to toParam, including its animation, offset by dstOffset, and
+// only the keyframes in frameRange if it is not NULL. The parameters are the dimensions
+// [fromStartDim, fromStartDim + nDims) of the knob from and [toStartDim, toStartDim + nDims) of the knob
+// to (see the rectangle parameters of OfxDouble2DInstance); nDims = -1 means all the dimensions.
 static
 OfxStatus
-copyFrom(const KnobIPtr & from,
-         const KnobIPtr &to,
-         OfxTime offset,
-         const OfxRangeD* range,
-         int startDim = -1,
-         int endDim = -1)
+copyFrom(const OFX::Host::Param::Instance & fromParam,
+         const OFX::Host::Param::Instance & toParam,
+         const KnobIPtr & from,
+         const KnobIPtr & to,
+         OfxTime dstOffset,
+         const OfxRangeD* frameRange,
+         int fromStartDim = 0,
+         int toStartDim = 0,
+         int nDims = -1)
 {
-    ///copy only if type is the same
-    if ( from->typeName() == to->typeName() ) {
-        to->beginChanges();
-        for (int i = startDim; i < endDim; ++i) {
-            to->clone(from, offset, range, i);
-        }
-        int dims = std::min( endDim, to->getDimension() );
-        double curTime = from->getCurrentTime();
-        for (int i = startDim; i < dims; ++i) {
-            to->evaluateValueChange(i, curTime, ViewIdx(0),  eValueChangedReasonPluginEdited);
-        }
-        to->endChanges();
+    // the parameters must have the same type
+    if ( !from || !to || ( fromParam.getType() != toParam.getType() ) || ( from->typeName() != to->typeName() ) ) {
+        return kOfxStatErrBadHandle;
     }
+    // "To choose all animation in paramFrom set frameRange to [0, 0]"
+    if ( frameRange && (frameRange->min == 0.) && (frameRange->max == 0.) ) {
+        frameRange = NULL;
+    }
+    const bool allDims = (nDims < 0);
+    if (allDims) {
+        nDims = std::min( from->getDimension(), to->getDimension() );
+    }
+    to->beginChanges();
+    if (allDims) {
+        to->clone(from, dstOffset, frameRange);
+    } else {
+        for (int i = 0; i < nDims; ++i) {
+            to->clone(from, dstOffset, frameRange, toStartDim + i, fromStartDim + i);
+        }
+    }
+    double curTime = to->getCurrentTime();
+    for (int i = 0; i < nDims; ++i) {
+        to->evaluateValueChange(toStartDim + i, curTime, ViewIdx(0),  eValueChangedReasonPluginEdited);
+    }
+    to->endChanges();
 
     return kOfxStatOK;
 }
@@ -356,20 +365,112 @@ OfxParamToKnob::connectDynamicProperties()
 }
 
 void
-OfxParamToKnob::onKnobAnimationLevelChanged(ViewSpec /*view*/,
-                                            int /*dimension*/)
+OfxParamToKnob::connectAnimationProperties()
 {
     OFX::Host::Param::Instance* param = getOfxParam();
 
     assert(param);
+    // only the parameters that hold a value have these properties: setGetHook() ignores the others
+    param->getProperties().setGetHook(kOfxParamPropIsAnimating, &_animationPropertiesHook);
+    param->getProperties().setGetHook(kOfxParamPropIsAutoKeying, &_animationPropertiesHook);
+}
 
-    AnimationLevelEnum l = getKnob()->getAnimationLevel(0);
+void
+OfxParamToKnob::getKnobDimensions(int* first,
+                                  int* count) const
+{
+    KnobIPtr knob = getKnob();
 
-    ///This assert might crash Natron when reading a project made with a version
-    ///of Natron prior to 0.96 when file params still had keyframes.
-    //assert(l == eAnimationLevelNone || getCanAnimate());
-    param->getProperties().setIntProperty(kOfxParamPropIsAnimating, l != eAnimationLevelNone);
-    param->getProperties().setIntProperty(kOfxParamPropIsAutoKeying, l == eAnimationLevelInterpolatedValue);
+    *first = 0;
+    *count = knob ? knob->getDimension() : 0;
+}
+
+// The knob that holds the value of a dimension: the master of a linked (slaved) dimension, recursively.
+static KnobIPtr
+getValueKnob(const KnobIPtr& knob,
+             int* dimension)
+{
+    KnobIPtr k = knob;
+
+    for (;;) {
+        std::pair<int, KnobIPtr> master = k->getMaster(*dimension);
+        if (!master.second) {
+            return k;
+        }
+        k = master.second;
+        *dimension = master.first;
+    }
+}
+
+bool
+OfxParamToKnob::isAnimatingForOfx() const
+{
+    KnobIPtr knob = getKnob();
+
+    if (!knob) {
+        return false;
+    }
+    int first, count;
+    getKnobDimensions(&first, &count);
+    for (int i = first; i < first + count; ++i) {
+        int dim = i;
+        KnobIPtr k = getValueKnob(knob, &dim);
+        if ( !k->getExpression(dim).empty() || k->isAnimated( dim, ViewSpec::current() ) ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool
+OfxParamToKnob::isAutoKeyingForOfx() const
+{
+    KnobIPtr knob = getKnob();
+
+    if ( !knob || !knob->isAnimationEnabled() ) {
+        return false;
+    }
+    int first, count;
+    getKnobDimensions(&first, &count);
+    // see Knob<T>::setValue(): a value change of a dimension animated by keyframes sets a keyframe
+    for (int i = first; i < first + count; ++i) {
+        if ( !knob->isSlave(i) && knob->getExpression(i).empty() && knob->isAnimated( i, ViewSpec::current() ) ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+int
+OfxParamToKnob::AnimationPropertiesHook::getIntProperty(const std::string &name,
+                                                        int /*index*/) const OFX_EXCEPTION_SPEC
+{
+    if (name == kOfxParamPropIsAnimating) {
+        return _param->isAnimatingForOfx() ? 1 : 0;
+    }
+    if (name == kOfxParamPropIsAutoKeying) {
+        return _param->isAutoKeyingForOfx() ? 1 : 0;
+    }
+
+    return 0;
+}
+
+void
+OfxParamToKnob::AnimationPropertiesHook::getIntPropertyN(const std::string &name,
+                                                         int *values,
+                                                         int count) const OFX_EXCEPTION_SPEC
+{
+    for (int i = 0; i < count; ++i) {
+        values[i] = getIntProperty(name, i);
+    }
+}
+
+int
+OfxParamToKnob::AnimationPropertiesHook::getDimension(const std::string & /*name*/) const OFX_EXCEPTION_SPEC
+{
+    return 1;
 }
 
 void
@@ -882,7 +983,7 @@ OfxIntegerInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 {
     const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
 
-    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
+    return OfxKeyFrame::copyFrom(instance, *this, other.getKnob(), getKnob(), offset, range);
 }
 
 void
@@ -1219,7 +1320,7 @@ OfxDoubleInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 {
     const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
 
-    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
+    return OfxKeyFrame::copyFrom(instance, *this, other.getKnob(), getKnob(), offset, range);
 }
 
 ////////////////////////// OfxBooleanInstance /////////////////////////////////////////////////
@@ -1419,7 +1520,7 @@ OfxBooleanInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 {
     const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
 
-    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
+    return OfxKeyFrame::copyFrom(instance, *this, other.getKnob(), getKnob(), offset, range);
 }
 
 ////////////////////////// OfxChoiceInstance /////////////////////////////////////////////////
@@ -1722,7 +1823,7 @@ OfxChoiceInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 {
     const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
 
-    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
+    return OfxKeyFrame::copyFrom(instance, *this, other.getKnob(), getKnob(), offset, range);
 }
 
 ////////////////////////// OfxRGBAInstance /////////////////////////////////////////////////
@@ -2039,7 +2140,7 @@ OfxRGBAInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 {
     const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
 
-    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
+    return OfxKeyFrame::copyFrom(instance, *this, other.getKnob(), getKnob(), offset, range);
 }
 
 ////////////////////////// OfxRGBInstance /////////////////////////////////////////////////
@@ -2345,7 +2446,7 @@ OfxRGBInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 {
     const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
 
-    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
+    return OfxKeyFrame::copyFrom(instance, *this, other.getKnob(), getKnob(), offset, range);
 }
 
 ////////////////////////// OfxDouble2DInstance /////////////////////////////////////////////////
@@ -2716,9 +2817,14 @@ OfxDouble2DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
                               OfxTime offset,
                               const OfxRangeD* range)
 {
-    const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
+    const OfxDouble2DInstance* other = dynamic_cast<const OfxDouble2DInstance*>(&instance);
 
-    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range, _startIndex, _startIndex + 2);
+    if (!other) {
+        return kOfxStatErrBadHandle;
+    }
+
+    // the knob of a rectangle parameter (kNatronOfxParamPropTypeRectangle) holds its position and its size
+    return OfxKeyFrame::copyFrom(instance, *this, other->getKnob(), getKnob(), offset, range, other->_startIndex, _startIndex, 2);
 }
 
 ////////////////////////// OfxInteger2DInstance /////////////////////////////////////////////////
@@ -2998,7 +3104,7 @@ OfxInteger2DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 {
     const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
 
-    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range, _startIndex, 2 + _startIndex);
+    return OfxKeyFrame::copyFrom(instance, *this, other.getKnob(), getKnob(), offset, range);
 }
 
 ////////////////////////// OfxDouble3DInstance /////////////////////////////////////////////////
@@ -3340,7 +3446,7 @@ OfxDouble3DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 {
     const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
 
-    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range, _startIndex, 3 + _startIndex);
+    return OfxKeyFrame::copyFrom(instance, *this, other.getKnob(), getKnob(), offset, range);
 }
 
 ////////////////////////// OfxInteger3DInstance /////////////////////////////////////////////////
@@ -3600,7 +3706,7 @@ OfxInteger3DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 {
     const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
 
-    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
+    return OfxKeyFrame::copyFrom(instance, *this, other.getKnob(), getKnob(), offset, range);
 }
 
 ////////////////////////// OfxGroupInstance /////////////////////////////////////////////////
@@ -4293,7 +4399,7 @@ OfxStringInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 {
     const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
 
-    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
+    return OfxKeyFrame::copyFrom(instance, *this, other.getKnob(), getKnob(), offset, range);
 }
 
 ////////////////////////// OfxCustomInstance /////////////////////////////////////////////////
@@ -4348,7 +4454,9 @@ OfxCustomInstance::OfxCustomInstance(const OfxEffectInstancePtr& node,
     GCC_DIAG_PEDANTIC_ON
 
     if (_imp->customParamInterpolationV1Entry) {
-        knob->setCustomInterpolation( _imp->customParamInterpolationV1Entry, (void*)getHandle() );
+        // The first argument of the callback is "the plugin instance that this parameter occurs in" (OfxParamSetHandle),
+        // as the plug-in gets it from getParamSet(), not the parameter.
+        knob->setCustomInterpolation( _imp->customParamInterpolationV1Entry, (void*)node->effectInstance()->getParamSetHandle() );
     }
 }
 
@@ -4533,7 +4641,192 @@ OfxCustomInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 {
     const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
 
-    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
+    return OfxKeyFrame::copyFrom(instance, *this, other.getKnob(), getKnob(), offset, range);
+}
+
+////////////////////////// OfxBytesInstance /////////////////////////////////////////////////
+
+/*
+   OFX 1.5 Bytes parameters (kOfxParamTypeBytes, ofxParam.h): "a Plug-in defined opaque data parameter".
+   Their value is an OfxBytes { data, length }: paramGetValue gives the plug-in a pointer to host-owned data,
+   valid until the next call on the param (in the same thread: render threads may read it at the same time),
+   and paramSetValue copies the plug-in's data (a NULL OfxBytes or a zero length gives an empty value).
+   The default (kOfxParamPropDefault) is a pointer to an OfxBytes, or NULL.
+
+   The data is held by a KnobBytes (raw bytes), which has its own serialization in the project.
+ */
+
+struct OfxBytesInstancePrivate
+{
+    KnobBytesWPtr knob;
+    std::shared_ptr<TLSHolder<OfxParamToKnob::OfxParamTLSData> > tlsData;
+
+    OfxBytesInstancePrivate()
+        : knob()
+        , tlsData( new TLSHolder<OfxParamToKnob::OfxParamTLSData>() )
+    {
+    }
+};
+
+OfxBytesInstance::OfxBytesInstance(const OfxEffectInstancePtr& node,
+                                   OFX::Host::Param::Descriptor & descriptor)
+    : OfxParamToKnob(node)
+    , OFX::Host::Param::BytesInstance( descriptor, node->effectInstance() )
+    , _imp( new OfxBytesInstancePrivate() )
+{
+    KnobBytesPtr knob = checkIfKnobExistsWithNameOrCreate<KnobBytes>(descriptor.getName(), this, 1);
+
+    _imp->knob = knob;
+
+    knob->blockValueChanges();
+    // BytesInstance copied the default when it was created
+    const std::vector<unsigned char>& def = getDefault();
+    std::string defValue;
+    if ( def.size() > KnobBytes::maxLength() ) {
+        std::cerr << getName() << ": Warning: the default value of this Bytes parameter (" << def.size()
+                  << " bytes) is larger than " << KnobBytes::maxLength() << " bytes, ignoring it" << std::endl;
+    } else {
+        defValue.assign( def.begin(), def.end() );
+    }
+    knob->setDefaultValue(defValue, 0);
+    knob->unblockValueChanges();
+}
+
+OfxBytesInstance::~OfxBytesInstance()
+{
+}
+
+OfxStatus
+OfxBytesInstance::get(std::vector<unsigned char> &data)
+{
+    const std::string value = _imp->knob.lock()->getValue();
+
+    data.assign( value.begin(), value.end() );
+
+    return kOfxStatOK;
+}
+
+OfxStatus
+OfxBytesInstance::get(OfxTime time,
+                      std::vector<unsigned char> &data)
+{
+    const std::string value = _imp->knob.lock()->getValueAtTime(time);
+
+    data.assign( value.begin(), value.end() );
+
+    return kOfxStatOK;
+}
+
+OfxStatus
+OfxBytesInstance::set(const unsigned char *data,
+                      size_t length)
+{
+    if ( length > KnobBytes::maxLength() ) {
+        return kOfxStatErrMemory;
+    }
+    KnobBytesPtr knob = _imp->knob.lock();
+
+    knob->setValueFromPlugin( (data && length > 0) ? std::string( (const char*)data, length ) : std::string(), ViewSpec::current(), 0 );
+
+    return kOfxStatOK;
+}
+
+OfxStatus
+OfxBytesInstance::set(OfxTime /*time*/,
+                      const unsigned char *data,
+                      size_t length)
+{
+    // Bytes params don't animate (see newParam()): paramSetValueAtTime sets the value
+    return set(data, length);
+}
+
+// The data returned to the plug-in is per thread: render threads may read the param at the same time
+// (BytesInstance::getV uses a member of the instance).
+OfxStatus
+OfxBytesInstance::getAtTime(bool atTime,
+                            OfxTime time,
+                            va_list arg)
+{
+    if ( atTime && OFX::IsNaN(time) ) {
+        return kOfxStatErrValue;
+    }
+    OfxBytes *value = va_arg(arg, OfxBytes *);
+    if (!value) {
+        return kOfxStatErrValue;
+    }
+    KnobBytesPtr knob = _imp->knob.lock();
+    std::string& data = _imp->tlsData->getOrCreateTLSData()->bytes;
+    data = atTime ? knob->getValueAtTime(time) : knob->getValue();
+    value->data = data.empty() ? NULL : (const unsigned char*)data.data();
+    value->length = data.size();
+
+    return kOfxStatOK;
+}
+
+OfxStatus
+OfxBytesInstance::getV(va_list arg)
+{
+    return getAtTime(false, 0., arg);
+}
+
+OfxStatus
+OfxBytesInstance::getV(OfxTime time,
+                       va_list arg)
+{
+    return getAtTime(true, time, arg);
+}
+
+KnobIPtr
+OfxBytesInstance::getKnob() const
+{
+    return _imp->knob.lock();
+}
+
+void
+OfxBytesInstance::setHint()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _imp->knob.lock()->setHintToolTip( getHint() );
+}
+
+void
+OfxBytesInstance::setDefault()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    // BytesInstance::notify() copied the new default (kOfxParamPropDefault points to the copy) before
+    // calling setDefault()
+    const std::vector<unsigned char>& def = getDefault();
+    if ( def.size() > KnobBytes::maxLength() ) {
+        std::cerr << getName() << ": Warning: the default value of this Bytes parameter (" << def.size()
+                  << " bytes) is larger than " << KnobBytes::maxLength() << " bytes, ignoring it" << std::endl;
+
+        return;
+    }
+    _imp->knob.lock()->setDefaultValueWithoutApplying(std::string( def.begin(), def.end() ), 0);
+}
+
+void
+OfxBytesInstance::setLabel()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _imp->knob.lock()->setLabel( getParamLabel(this) );
+}
+
+void
+OfxBytesInstance::setEvaluateOnChange()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _imp->knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
+}
+
+OfxStatus
+OfxBytesInstance::copyFrom(const OFX::Host::Param::Instance &instance,
+                           OfxTime offset,
+                           const OfxRangeD* range)
+{
+    const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
+
+    return OfxKeyFrame::copyFrom(instance, *this, other.getKnob(), getKnob(), offset, range);
 }
 
 ////////////////////////// OfxParametricInstance /////////////////////////////////////////////////
@@ -4726,6 +5019,27 @@ OfxParametricInstance::setRange()
 }
 
 
+// The parametric suite returns "kOfxStatErrBadIndex - the curve index was invalid" (and "the curve index
+// or the control point index was invalid" for the functions that take a control point index,
+// ofxParametricParam.h). nthCtl < 0 means no control point index.
+static bool
+isParametricIndexValid(const KnobParametricPtr& knob,
+                       int curveIndex,
+                       int nthCtl = -1)
+{
+    if ( (curveIndex < 0) || ( curveIndex >= knob->getDimension() ) ) {
+        return false;
+    }
+    if (nthCtl >= 0) {
+        int n = 0;
+        if ( (knob->getNControlPoints(curveIndex, &n) != eStatusOK) || (nthCtl >= n) ) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 OfxStatus
 OfxParametricInstance::getValue(int curveIndex,
                                 OfxTime /*time*/,
@@ -4735,6 +5049,9 @@ OfxParametricInstance::getValue(int curveIndex,
     KnobParametricPtr knob = _knob.lock();
     if (!knob) {
         return kOfxStatFailed;
+    }
+    if ( !isParametricIndexValid(knob, curveIndex) ) {
+        return kOfxStatErrBadIndex;
     }
     StatusEnum stat = knob->getValue(curveIndex, parametricPosition, returnValue);
 
@@ -4753,6 +5070,9 @@ OfxParametricInstance::getNControlPoints(int curveIndex,
     KnobParametricPtr knob = _knob.lock();
     if (!knob) {
         return kOfxStatFailed;
+    }
+    if ( !isParametricIndexValid(knob, curveIndex) ) {
+        return kOfxStatErrBadIndex;
     }
     StatusEnum stat = knob->getNControlPoints(curveIndex, returnValue);
 
@@ -4773,6 +5093,9 @@ OfxParametricInstance::getNthControlPoint(int curveIndex,
     KnobParametricPtr knob = _knob.lock();
     if (!knob) {
         return kOfxStatFailed;
+    }
+    if ( (nthCtl < 0) || !isParametricIndexValid(knob, curveIndex, nthCtl) ) {
+        return kOfxStatErrBadIndex;
     }
     StatusEnum stat = knob->getNthControlPoint(curveIndex, nthCtl, key, value);
 
@@ -4796,6 +5119,9 @@ OfxParametricInstance::setNthControlPoint(int curveIndex,
     if (!knob) {
         return kOfxStatFailed;
     }
+    if ( (nthCtl < 0) || !isParametricIndexValid(knob, curveIndex, nthCtl) ) {
+        return kOfxStatErrBadIndex;
+    }
     StatusEnum stat = knob->setNthControlPoint(eValueChangedReasonPluginEdited, curveIndex, nthCtl, key, value);
 
     if (stat == eStatusOK) {
@@ -4813,18 +5139,18 @@ OfxParametricInstance::addControlPoint(int curveIndex,
                                        double value,
                                        bool /* addAnimationKey*/)
 {
-    if ( std::isnan(time) || // check for NaN
-         std::isinf(time) ||
-         std::isnan(key) || // check for NaN
-         std::isinf(key) ||
-         std::isnan(value) || // check for NaN
-         std::isinf(value) ) {
+    if ( !MathUtils::isFinite(time) || // reject NaN and infinity (works with -ffast-math)
+         !MathUtils::isFinite(key) ||
+         !MathUtils::isFinite(value) ) {
         return kOfxStatFailed;
     }
 
     KnobParametricPtr knob = _knob.lock();
     if (!knob) {
         return kOfxStatFailed;
+    }
+    if ( !isParametricIndexValid(knob, curveIndex) ) {
+        return kOfxStatErrBadIndex;
     }
     StatusEnum stat;
     EffectInstance* effect = dynamic_cast<EffectInstance*>( knob->getHolder() );
@@ -4857,6 +5183,9 @@ OfxParametricInstance::deleteControlPoint(int curveIndex,
     if (!knob) {
         return kOfxStatFailed;
     }
+    if ( (nthCtl < 0) || !isParametricIndexValid(knob, curveIndex, nthCtl) ) {
+        return kOfxStatErrBadIndex;
+    }
     StatusEnum stat = knob->deleteControlPoint(eValueChangedReasonPluginEdited, curveIndex, nthCtl);
 
     if (stat == eStatusOK) {
@@ -4872,6 +5201,9 @@ OfxParametricInstance::deleteAllControlPoints(int curveIndex)
     KnobParametricPtr knob = _knob.lock();
     if (!knob) {
         return kOfxStatFailed;
+    }
+    if ( !isParametricIndexValid(knob, curveIndex) ) {
+        return kOfxStatErrBadIndex;
     }
     StatusEnum stat = knob->deleteAllControlPoints(eValueChangedReasonPluginEdited, curveIndex);
 
@@ -4889,7 +5221,7 @@ OfxParametricInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 {
     const OfxParamToKnob & other = dynamic_cast<const OfxParamToKnob &>(instance);
 
-    return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
+    return OfxKeyFrame::copyFrom(instance, *this, other.getKnob(), getKnob(), offset, range);
 }
 
 NATRON_NAMESPACE_EXIT

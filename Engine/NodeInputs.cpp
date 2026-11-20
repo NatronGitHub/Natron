@@ -25,6 +25,8 @@
 
 #include "NodePrivate.h"
 
+#include <set>
+
 #include <QDebug>
 #include <QThread>
 
@@ -1282,16 +1284,14 @@ Node::disconnectOutput(bool useGuiValues,
     {
         QMutexLocker l(&_imp->outputsMutex);
         if (!useGuiValues) {
-            int ret = 0;
-            for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it, ++ret) {
+            for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
                 if (it->lock().get() == output) {
                     _imp->outputs.erase(it);
                     break;
                 }
             }
         }
-        int ret = 0;
-        for (NodesWList::iterator it = _imp->guiOutputs.begin(); it != _imp->guiOutputs.end(); ++it, ++ret) {
+        for (NodesWList::iterator it = _imp->guiOutputs.begin(); it != _imp->guiOutputs.end(); ++it) {
             if (it->lock().get() == output) {
                 _imp->guiOutputs.erase(it);
                 break;
@@ -1345,22 +1345,26 @@ Node::getInputLabels() const
 
 
 void
-Node::getOutputsConnectedToThisNode(std::map<NodePtr, int>* outputs)
+Node::getOutputsConnectedToThisNode(std::list<std::pair<NodePtr, int> >* outputs)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
 
-    NodePtr thisSHared = shared_from_this();
+    NodePtr thisShared = shared_from_this();
+    // An output node appears once per link in _imp->outputs: visit each one once,
+    // and list every input through which it is connected to this node.
+    std::set<NodePtr> visited;
     for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
         NodePtr output = it->lock();
-        if (!output) {
+        if ( !output || !visited.insert(output).second ) {
             continue;
         }
 
-        int indexOfThis = output->inputIndex(thisSHared);
-        assert(indexOfThis != -1);
-        if (indexOfThis >= 0) {
-            outputs->insert( std::make_pair(output, indexOfThis) );
+        const int nInputs = output->getNInputs();
+        for (int i = 0; i < nInputs; ++i) {
+            if (output->getRealInput(i) == thisShared) {
+                outputs->push_back( std::make_pair(output, i) );
+            }
         }
     }
 }
@@ -1447,14 +1451,18 @@ Node::getPreferredInputInternal(bool connected) const
         }
     }
     bool useInputA = false;
-    if (!connected) {
+    if (getPluginID() == PLUGINID_OFX_SHUFFLE) {
+        // Shuffle outputs B by default since version 3, A before: connect that input, whatever the
+        // preference, which is meant for merging (#818)
+        useInputA = getMajorVersion() < 3;
+    } else if (!connected) {
         // For the merge node, use the preference (only when not connected)
         useInputA = appPTR->getCurrentSettings()->useInputAForMergeAutoConnect();
     }
 
     ///Find an input named A
     int inputToFind = -1, foundOther = -1;
-    if ( useInputA || (getPluginID() == PLUGINID_OFX_SHUFFLE && getMajorVersion() < 3) ) {
+    if (useInputA) {
         inputToFind = inputA;
         foundOther = inputB;
     } else {
@@ -1698,9 +1706,9 @@ Node::onInputChanged(int inputNb,
         std::vector<NodePtr> groupInputs;
         isGroup->getInputs(&groupInputs, false);
         if ( (inputNb >= 0) && ( inputNb < (int)groupInputs.size() ) && groupInputs[inputNb] ) {
-            std::map<NodePtr, int> inputOutputs;
+            std::list<std::pair<NodePtr, int> > inputOutputs;
             groupInputs[inputNb]->getOutputsConnectedToThisNode(&inputOutputs);
-            for (std::map<NodePtr, int> ::iterator it = inputOutputs.begin(); it != inputOutputs.end(); ++it) {
+            for (std::list<std::pair<NodePtr, int> >::iterator it = inputOutputs.begin(); it != inputOutputs.end(); ++it) {
                 it->first->onInputChanged(it->second);
             }
         }
@@ -1713,9 +1721,9 @@ Node::onInputChanged(int inputNb,
     if (isOutput) {
         NodeGroup* containerGroup = dynamic_cast<NodeGroup*>( isOutput->getNode()->getGroup().get() );
         if (containerGroup) {
-            std::map<NodePtr, int> groupOutputs;
+            std::list<std::pair<NodePtr, int> > groupOutputs;
             containerGroup->getNode()->getOutputsConnectedToThisNode(&groupOutputs);
-            for (std::map<NodePtr, int> ::iterator it = groupOutputs.begin(); it != groupOutputs.end(); ++it) {
+            for (std::list<std::pair<NodePtr, int> >::iterator it = groupOutputs.begin(); it != groupOutputs.end(); ++it) {
                 it->first->onInputChanged(it->second);
             }
         }
@@ -1726,9 +1734,9 @@ Node::onInputChanged(int inputNb,
      */
     PrecompNodePtr isInPrecomp = isPartOfPrecomp();
     if ( isInPrecomp && (isInPrecomp->getOutputNode().get() == this) ) {
-        std::map<NodePtr, int> inputOutputs;
+        std::list<std::pair<NodePtr, int> > inputOutputs;
         isInPrecomp->getNode()->getOutputsConnectedToThisNode(&inputOutputs);
-        for (std::map<NodePtr, int> ::iterator it = inputOutputs.begin(); it != inputOutputs.end(); ++it) {
+        for (std::list<std::pair<NodePtr, int> >::iterator it = inputOutputs.begin(); it != inputOutputs.end(); ++it) {
             it->first->onInputChanged(it->second);
         }
     }
@@ -1916,7 +1924,10 @@ int
 InspectorNode::getPreferredInputInternal(bool connected) const
 {
     bool useInputA = false;
-    if (!connected) {
+    if (getPluginID() == PLUGINID_OFX_SHUFFLE) {
+        // as in Node::getPreferredInputInternal()
+        useInputA = getMajorVersion() < 3;
+    } else if (!connected) {
         // For the merge node, use the preference (only when not connected)
         useInputA = appPTR->getCurrentSettings()->useInputAForMergeAutoConnect();
     }
@@ -1924,7 +1935,7 @@ InspectorNode::getPreferredInputInternal(bool connected) const
     ///Find an input named A
     std::string inputNameToFind, otherName;
 
-    if ( useInputA || (getPluginID() == PLUGINID_OFX_SHUFFLE && getMajorVersion() < 3) ) {
+    if (useInputA) {
         inputNameToFind = "A";
         otherName = "B";
     } else {

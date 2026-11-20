@@ -155,6 +155,16 @@ public:
     virtual int getWidgetFontHeight() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /**
+     * @brief Returns the font ascent, i.e: the distance from the baseline to the top of the font height
+     **/
+    virtual int getWidgetFontAscent() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Returns the font descent, i.e: the distance from the baseline to the bottom of the font height
+     **/
+    virtual int getWidgetFontDescent() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    /**
      * @brief Returns for a string the estimated pixel size it would take on the widget
      **/
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -224,6 +234,10 @@ public Q_SLOTS:
 private:
 
     virtual void initializeGL() OVERRIDE FINAL;
+    // Called before the OpenGL context is destroyed (e.g. when the widget moves to another window)
+    void onContextAboutToBeDestroyed();
+    // Deletes the OpenGL objects of the current context
+    void releaseGLResources();
     virtual void resizeGL(int width, int height) OVERRIDE FINAL;
     virtual void paintGL() OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
@@ -235,7 +249,12 @@ private:
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
-    virtual bool renderText(double x, double y, const std::string &string, double r, double g, double b, int flags = 0) OVERRIDE FINAL;
+    virtual bool canRenderText() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
+    virtual bool renderText(double x, double y, const std::string &string, double r, double g, double b, int flags = 0, double a = 1.) OVERRIDE FINAL;
 
     void renderText(double x, double y, const QString & text, const QColor & color, const QFont & font, int flags = 0) const;
 

@@ -230,6 +230,9 @@ public:
      **/
     void beginEditKnobs();
 
+    // the last editor of the node is gone (see EffectInstance::endEditKnobs())
+    void endEditKnobs();
+
     /**
      * @brief Forwarded to the live effect instance
      **/
@@ -456,12 +459,35 @@ public:
 
     void setRenderThreadSafety(RenderSafetyEnum safety);
     RenderSafetyEnum getCurrentRenderThreadSafety() const;
+
+    /**
+     * @brief The render thread safety to use for a plug-in whose own safety is pluginSafety, when
+     * multithreading is enabled or disabled for it in the preferences. Disabling multithreading can
+     * only make rendering safer: it turns FullySafe into InstanceSafe, but an Unsafe plug-in stays
+     * Unsafe, so that it keeps its per-plug-in render lock (kOfxImageEffectRenderUnsafe).
+     **/
+    static RenderSafetyEnum applyMultiThreadingPreference(RenderSafetyEnum pluginSafety, bool multiThreadingEnabled);
     void revertToPluginThreadSafety();
 
     void setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support);
     PluginOpenGLRenderSupport getCurrentOpenGLRenderSupport() const;
 
-    void setCurrentSequentialRenderSupport(SequentialPreferenceEnum support);
+    /**
+     * @brief Attaching an OpenGL context to the effect failed (kOfxActionOpenGLContextAttached returned
+     * kOfxStatFailed): the effect is not rendered with OpenGL any more (getCurrentOpenGLRenderSupport()
+     * returns ePluginOpenGLRenderSupportNone, or the render fails if it needs OpenGL), until it changes
+     * its OpenGL render support.
+     **/
+    // returns true if it was not set before
+    bool setOpenGLContextAttachFailed();
+    bool hasOpenGLContextAttachFailed() const;
+
+    /**
+     * @brief If the plug-in needs OpenGL rendering and this process can't render with OpenGL, the
+     * reason, for the user. Empty otherwise.
+     **/
+    QString getOpenGLRenderUnavailableMessage() const;
+
     SequentialPreferenceEnum getCurrentSequentialRenderSupport() const;
 
     void setCurrentCanTransform(bool support);
@@ -514,11 +540,11 @@ public:
 
 
     /**
-     * @brief Returns in 'outputs' a map of all nodes connected to this node
-     * where the value of the map is the input index from which these outputs
-     * are connected to this node.
+     * @brief Returns in 'outputs' one (output node, input number) pair per link
+     * from this node to an output node. An output node connected to this node
+     * through several of its inputs appears once per input (#1168).
      **/
-    void getOutputsConnectedToThisNode(std::map<NodePtr, int>* outputs);
+    void getOutputsConnectedToThisNode(std::list<std::pair<NodePtr, int> >* outputs);
 
     const NodesWList & getOutputs() const;
     const NodesWList & getGuiOutputs() const;
@@ -805,10 +831,19 @@ public:
      * eMessageTypeError : you want to inform the user an error occurred.
      * eMessageTypeQuestion : you want to ask the user about something.
      * The function will return true always except for a message of type eMessageTypeQuestion, in which
-     * case the function may return false if the user pressed the 'No' button.
+     * case it returns true only if the user pressed the 'Yes' button: false if the user answered 'No', or could not
+     * be asked (use question() to tell these apart).
      * @param content The message you want to pass.
      **/
     bool message(MessageTypeEnum type, const std::string & content) const;
+
+    /**
+     * @brief Ask the user a yes/no question, in a modal dialog. Returns eStandardButtonYes or eStandardButtonNo,
+     * the user's answer, or eStandardButtonNoButton if the user could not be asked: in background mode, from a
+     * thread other than the main thread, or while the node is aborted.
+     * message(eMessageTypeQuestion, content) is question(content) == eStandardButtonYes.
+     **/
+    StandardButtonEnum question(const std::string & content) const;
 
     /**
      * @brief Use this function to post a persistent message to the user. It will be displayed on the
@@ -1130,6 +1165,14 @@ public:
     std::string getBeforeNodeRemovalCallback() const;
 
     void onFileNameParameterChanged(KnobI* fileKnob);
+
+    /**
+     * @brief For writers: hide the Views parameter of WriteOIIO if the file name has a %v or %V view
+     * pattern (each view is written to its own file, see OutputEffectInstance::renderFullSequence()).
+     * Otherwise its visibility is left as the plug-in set it: WriteOIIO shows it only for the formats
+     * that can hold several views in a single file (EXR).
+     **/
+    void refreshViewsSelectorVisibility();
 
     static void getOriginalFrameRangeForReader(const std::string& pluginID, const std::string& canonicalFileName, int* firstFrame, int* lastFrame);
 

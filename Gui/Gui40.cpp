@@ -38,8 +38,6 @@
 #include <QFileInfo>
 #include <QSettings>
 
-#include <QScreen>
-
 #include <QAction>
 #include <QApplication> // qApp
 
@@ -112,8 +110,10 @@ void
 Gui::showAbout()
 {
     _imp->_aboutWindow->show();
-    _imp->_aboutWindow->raise();
-    _imp->_aboutWindow->activateWindow();
+    if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+        _imp->_aboutWindow->raise();
+        _imp->_aboutWindow->activateWindow();
+    }
     ignore_result( _imp->_aboutWindow->exec() );
 }
 
@@ -133,7 +133,9 @@ Gui::openRecentFile()
                 GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( instance.get() );
                 assert(guiApp);
                 if (guiApp) {
-                    guiApp->getGui()->activateWindow();
+                    if ( !GuiApplicationManager::isGuiTestNoFocus() ) {
+                        guiApp->getGui()->activateWindow();
+                    }
 
                     return;
                 }
@@ -244,7 +246,11 @@ Gui::updateRecentFileActions()
 QPixmap
 Gui::screenShot(QWidget* w)
 {
-    return QApplication::primaryScreen()->grabWindow( w->winId() );
+    // Render the widget (QWidget::grab() also renders its QOpenGLWidget children) instead of
+    // grabbing its window from the screen: w->winId() would turn w (a panel being dragged, which
+    // may hold a QOpenGLWidget) and its parents into native windows for the rest of the session.
+    // Dragging the Curve Editor tab crashes in GLX context creation on X11/Mesa (#536).
+    return w->grab();
 }
 
 void
@@ -835,12 +841,13 @@ Gui::renderSelectedNode()
     NodesGuiList selectedNodes = graph->getSelectedNodes();
 
     if ( selectedNodes.empty() ) {
-        Dialogs::warningDialog( tr("Render").toStdString(), tr("You must select a node to render first!").toStdString() );
+        Dialogs::warningDialog( tr("Render").toStdString(), tr("You must select a Write node to render first!").toStdString() );
 
         return;
     }
     std::list<AppInstance::RenderWork> workList;
     bool useStats = getApp()->isRenderStatsActionChecked();
+    bool hasWriter = false;
     for (NodesGuiList::const_iterator it = selectedNodes.begin();
          it != selectedNodes.end(); ++it) {
         NodePtr internalNode = (*it)->getNode();
@@ -852,6 +859,7 @@ Gui::renderSelectedNode()
             continue;
         }
         if ( effect->isWriter() ) {
+            hasWriter = true;
             if ( !effect->areKnobsFrozen() ) {
                 //if ((*it)->getNode()->is)
                 ///if the node is a writer, just use it to render!
@@ -864,31 +872,14 @@ Gui::renderSelectedNode()
                 w.useRenderStats = useStats;
                 workList.push_back(w);
             }
-        } else {
-            if (selectedNodes.size() == 1) {
-                ///create a node and connect it to the node and use it to render
-#ifndef NATRON_ENABLE_IO_META_NODES
-                NodePtr writer = createWriter();
-#else
-                NodeGraph* graph = selectedNodes.front()->getDagGui();
-                CreateNodeArgs args(PLUGINID_NATRON_WRITE, graph->getGroup());
-                args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-                args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-                args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-                NodePtr writer = getApp()->createWriter( std::string(), args );
-#endif
-                if (writer) {
-                    AppInstance::RenderWork w;
-                    w.writer = dynamic_cast<OutputEffectInstance*>( writer->getEffectInstance().get() );
-                    assert(w.writer);
-                    w.firstFrame = std::numeric_limits<int>::min();
-                    w.lastFrame = std::numeric_limits<int>::max();
-                    w.frameStep = std::numeric_limits<int>::min();
-                    w.useRenderStats = useStats;
-                    workList.push_back(w);
-                }
-            }
         }
+    }
+    if (!hasWriter) {
+        // Rendering a node that is not a Write node is not supported: this used to create an
+        // unconnected, unnamed Write node, whose render could only fail (#1259).
+        Dialogs::warningDialog( tr("Render").toStdString(), tr("You must select a Write node to render first!").toStdString() );
+
+        return;
     }
     getApp()->startWritersRendering(false, workList);
 } // Gui::renderSelectedNode

@@ -10,7 +10,7 @@ The official macOS binaries are built with [MacPorts](https://www.macports.org) 
 
 [Homebrew](https://brew.sh) can also be used for development builds (see [Homebrew](#homebrew)). It is not used for releases, because MacPorts is easier to customize.
 
-Natron is built with **CMake** (see [Building with CMake](#building-with-cmake)). The qmake build is deprecated: on RB-2.6 the release scripts (`launchBuildMain.sh`, and `tools/tart/provision.sh`, which drives it) still build Natron with qmake, until they move to CMake (#1181); it will be removed in a future release.
+Natron is built with **CMake** (see [Building with CMake](#building-with-cmake)). The release scripts (`launchBuildMain.sh`, and `tools/tart/provision.sh`, which drives it) build Natron with CMake too. The qmake build is deprecated: on RB-2.6 it stays available to them as a fallback (`NATRON_BUILD_SYSTEM=qmake`) until the CMake-built installers are shown to be equivalent (#1181); it will be removed in a future release.
 
 The workflow around the release build is documented in the Maintainer Guide (`Documentation/source/maintainers/build-macos.rst`). That covers keeping MacPorts up to date, the overlay maintenance, signing, and the test suite.
 
@@ -25,8 +25,10 @@ The MacPorts overlay is part of the source tree, so check out the sources first:
 ```Shell
 git clone https://github.com/NatronGitHub/Natron.git
 cd Natron
-git submodule update -i --recursive
+git submodule update --init --recursive
 ```
+
+`--recursive` matters: `libs/SequenceParsing` has its own submodule (`tinydir`), which the build needs.
 
 In the rest of this document, `$NATRON_SRC` is the absolute path to this checkout. Set it in every shell you build from:
 
@@ -99,7 +101,7 @@ Leave `macosx_sdk_version` unset: MacPorts then uses the SDK of the running macO
 
 #### 3. Natron's custom ports
 
-Natron needs modified ports. Examples: the `+natron` variants of ImageMagick, ImageMagick7 and openimageio and the `+natronmini` variant of ffmpeg; libraw 0.22.3 with the GPL demosaic packs restored by a patch; freetype 2.15.0 with an upstream fix for rotated text backported. MacPorts reads them from a copy of `tools/MacPorts` in `/opt/MacPorts-Natron`. A copy is used rather than the source tree itself, because MacPorts accesses the ports as an unprivileged user that usually can't read your home directory.
+Natron needs modified ports. Examples: the `+natron` variants of ImageMagick, ImageMagick7 and openimageio and the `+natronmini` variant of ffmpeg; libraw 0.22.3 with the GPL demosaic packs restored by a patch; the subports `ffmpeg-lgpl`, `libraw-lgpl` and `libheif-lgpl` for COMMERCIAL builds; freetype 2.15.0 with an upstream fix for rotated text backported; onetbb with a patch for a crash at exit (#1253). MacPorts reads them from a copy of `tools/MacPorts` in `/opt/MacPorts-Natron`. A copy is used rather than the source tree itself, because MacPorts accesses the ports as an unprivileged user that usually can't read your home directory.
 
 ```Shell
 sudo mkdir -p /opt/MacPorts-Natron
@@ -216,8 +218,8 @@ sudo sed -i '' -e 's/^find_dependency(zstd/#find_dependency(zstd/' /opt/local/li
 sudo port -v -N install opencolorio  -quartz -python27 -python38 -python39 -python310 -python311 -python312 -python313 -python314
 sudo port -v -N install opencolorio1 -quartz -python27 -python38 -python39 -python310 -python311 -python312 -python313 -python314
 
-# openfx-misc
-sudo port -v -N install seexpr seexpr211
+# openfx-io (SeExpr 2.11 only, for SEEXPR_HOME)
+sudo port -v -N install seexpr211
 
 # openfx-arena
 sudo port -v -N install librsvg -quartz
@@ -228,11 +230,13 @@ sudo port -v -N install ImageMagick +natron -x11
 # so it doesn't conflict with ImageMagick 6 above)
 sudo port -v -N install ImageMagick7 +natron -x11 -openexr
 
-# openfx-gmic
-sudo port -v -N install fftw-3 -gfortran fftw-3-single -gfortran
+# openfx-gmic needs no extra port: its build downloads pocketfft, its FFT library
 
 # openfx-io
 sudo port -v -N install ffmpeg +gpl2 +highbitdepth +natronmini
+# COMMERCIAL builds (NATRON_LICENSE=COMMERCIAL) only: LGPL FFmpeg, LibRaw and libheif (no x264/x265),
+# installed in /opt/local/libexec next to the GPL ones (see "COMMERCIAL builds" in section 10)
+sudo port -v -N install ffmpeg-lgpl libraw-lgpl libheif-lgpl
 sudo port -v -N install openimageio +freetype +natron +opencolorio +openjpeg +python311 -python310 -python312 -python313 -python314
 ```
 
@@ -242,7 +246,6 @@ Python 3.10 is end-of-life and is no longer used (Python version policy, 2026-11
 
 ```Shell
 sudo port -v -N install python311 py311-pip
-sudo port -v -N install openblas
 sudo port -v -N install py311-numpy -gfortran
 sudo port -v -N install py311-sphinx py311-sphinx_rtd_theme
 sudo port -v -N install qt5 qt5-qtwebengine
@@ -276,9 +279,11 @@ env NOUPDATE=1 WORKSPACE=$HOME/Development/workspace DISABLE_BREAKPAD=1 NATRON_L
     ./launchBuildMain.sh
 ```
 
-`launchBuildMain.sh` still builds Natron with the deprecated qmake build on RB-2.6; this will change when the release scripts move to CMake (#1181). It checks out Natron (`GIT_URL`, `GIT_BRANCH`) and the plug-ins from GitHub: local changes in `$NATRON_SRC` are not built, except for the `tools/` scripts and the overlay. To build local changes, see "Developing with the MacPorts SDK".
+`launchBuildMain.sh` builds Natron with CMake (`tools/jenkins/build-natron.sh` configures it with the release options, runs `cmake --install` with `NATRON_INSTALL_LAYOUT=PORTABLE`, and stages the result for the installer script). Extra CMake options go in `NATRON_EXTRA_CMAKE_FLAGS`, e.g. `NATRON_EXTRA_CMAKE_FLAGS=-DNATRON_FAST_MATH=ON`. `NATRON_BUILD_SYSTEM=qmake` selects the deprecated qmake build, the only one with the Breakpad crash reporter (the CMake build implies `DISABLE_BREAKPAD=1`). It checks out Natron (`GIT_URL`, `GIT_BRANCH`) and the plug-ins from GitHub: local changes in `$NATRON_SRC` are not built, except for the `tools/` scripts and the overlay. To build local changes, see "Developing with the MacPorts SDK".
 
 The `.dmg` ends up in `$HOME/Development/workspace/builds_archive/natron_github_RB2/1/`, named `Natron-<branch>-<date>-<commit>-macOS<version>-<arch>.dmg`, where `<version>` is the oldest macOS it runs on. `tools/jenkins/common.sh` builds Natron and the plug-ins for macOS 14.0 (`NATRON_MACOS_MIN`) on macOS 14 or later, and for the build Mac's own version on older systems; set `MACOSX_DEPLOYMENT_TARGET` to override it. Check the result with `tools/tart/check-minos.sh -t 14.0 Natron-*.dmg`, which lists every Mach-O file in the `.dmg` that needs a newer macOS (`tools/tart/natron-build.sh` runs it and fails if there is one). Use `UNIT_TESTS=true` to also run the render regression suite (Natron-Tests); this adds `-tests.txt` and `-unit_tests_failures.zip` next to the DMG. `BUILD_FROM=N` / `BUILD_TO=N` run only some of the six steps (checkout, plugins, Natron, installer, tests, archive).
+
+The plug-ins (openfx-misc, openfx-io, openfx-arena, openfx-gmic) are built with their CMake builds, with `-DOFX_DEPLOY_BUNDLES=ON` (`tools/jenkins/build-plugins.sh`); `PLUGINS_BUILD_SYSTEM=make` builds them with their Makefiles instead.
 
 For a release, build a tag instead of a branch:
 
@@ -288,6 +293,8 @@ env NATRON_DEV_STATUS=STABLE RELEASE_TAG=2.6.0 NATRON_BUILD_NUMBER=1 NOUPDATE=1 
     UNIT_TESTS=true BUILD_NAME=natron_github_RB2 BUILD_NUMBER=1 COMPILE_TYPE=release MKJOBS=8 \
     ./launchBuildMain.sh
 ```
+
+**COMMERCIAL builds.** `NATRON_LICENSE=COMMERCIAL` builds a DMG without any GPL component (#1302, #1177). It needs the overlay's subports `ffmpeg-lgpl`, `libraw-lgpl` and `libheif-lgpl` (install section 7), which install an LGPL FFmpeg (the same as `ffmpeg +highbitdepth +natronmini`, without `+gpl2` and libzvbi), a LibRaw without the demosaic packs and a libheif without the x264 and x265 encoders in `/opt/local/libexec/ffmpeg-lgpl`, `/opt/local/libexec/libraw-lgpl` and `/opt/local/libexec/libheif-lgpl`. openfx-io is built against the first two (`tools/jenkins/common.sh`), and `build-plugins.sh` replaces the libheif and LibRaw that openimageio links in the plug-in bundles with theirs (same version and ABI). Both `build-plugins.sh` and `build-OSX-installer.sh` then run `tools/jenkins/check-commercial-bundle.sh`, which fails the build if a bundled library is GPL, links a GPL library (x264, x265, Xvid, poppler, SoX, FFTW, ...), is an FFmpeg library whose licence (`avcodec_license()`, `ffmpeg -L`) is not LGPL 2.1 or later, is a LibRaw with a GPL demosaic pack, or is one of the Qt modules that are GPL-3 only (Qt Charts, Data Visualization, Network Authorization, Designer, ...) or their PySide2 module. `build-OSX-installer.sh` leaves these Qt frameworks and PySide2 modules out of COMMERCIAL DMGs: Natron doesn't use them. The check can also be run by hand on any app, bundle or directory: `tools/jenkins/check-commercial-bundle.sh Natron.app`. With tart: `tools/tart/natron-build.sh -l COMMERCIAL`.
 
 Signing, notarization and the test suite are described in `Documentation/source/maintainers/build-macos.rst`.
 
@@ -500,22 +507,42 @@ sudo port -n -s upgrade --force $(cat ~/rebuild.txt)   # one port at a time is a
 
 `launchBuildMain.sh` builds everything from fresh checkouts. To work on Natron or the plugins directly, build them from your own checkouts.
 
-The OpenFX plugins ([openfx-io](https://github.com/NatronGitHub/openfx-io), [openfx-misc](https://github.com/NatronGitHub/openfx-misc), [openfx-arena](https://github.com/NatronGitHub/openfx-arena), [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic)) build with `make` (`CONFIG=debug` or `release`, OpenMP with the MacPorts clang):
+The OpenFX plugins ([openfx-io](https://github.com/NatronGitHub/openfx-io), [openfx-misc](https://github.com/NatronGitHub/openfx-misc), [openfx-arena](https://github.com/NatronGitHub/openfx-arena), [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic)) build the way `tools/jenkins/build-plugins.sh` builds them: openfx-misc, openfx-io and openfx-arena with CMake (#1203, #1280), openfx-gmic with `make`. The bundles go to `~/OFX/Natron-release`, which is the directory that `OFX_PLUGIN_PATH` points to in the commands below.
 
 ```Shell
 mkdir -p ~/src && cd ~/src
 for p in openfx-io openfx-misc openfx-arena openfx-gmic; do git clone --recursive https://github.com/NatronGitHub/$p.git; done
-cd ~/src/openfx-misc
-env SEEXPR_HOME=/opt/local OSMESA=1 OPENMP=1 CXX="clang++-mp-$CLANG -stdlib=libc++" \
-    CXXFLAGS_EXTRA="-DGL_SILENCE_DEPRECATION -isysroot $(xcrun --sdk macosx --show-sdk-path) -std=c++14" \
+```
+
+openfx-misc, openfx-io and openfx-arena use openfx's CMake helpers. Build them with the MacPorts clang (for OpenMP), as C++17 with a Qt5 Natron (`-DOFX_CXX_STANDARD=20` with Qt6), and install the bundles straight into `~/OFX/Natron-release`. openfx-arena needs the ImageMagick 7 of install section 7 (`ImageMagick7 +natron`, in `/opt/local/lib/ImageMagick7`): its pkg-config files must come first, as `build-plugins.sh` does with `MAGICK7_PREFIX`, or pkg-config finds the ImageMagick 6 of `/opt/local` instead.
+
+```Shell
+for p in openfx-misc openfx-io openfx-arena; do
+  cd ~/src/$p
+  env PKG_CONFIG_PATH=/opt/local/lib/ImageMagick7/lib/pkgconfig \
+    cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_CXX_COMPILER=clang++-mp-$CLANG -DCMAKE_CXX_FLAGS="-stdlib=libc++" \
+      -DCMAKE_PREFIX_PATH=/opt/local -DSEEXPR_HOME=/opt/local -DOFX_CXX_STANDARD=17 \
+      -DPLUGIN_INSTALLDIR=$HOME/OFX/Natron-release
+  cmake --build build && cmake --install build
+done
+```
+
+CMake's `Release` uses `-O3`, and `build-plugins.sh` uses `-O3 -g` for its `RelWithDebInfo` builds, without fast math (`-Ofast` would break the plug-ins' NaN and infinity checks). `build-plugins.sh` also passes `-DOFX_DEPLOY_BUNDLES=ON`, which copies the MacPorts libraries into the bundles for the DMG; a development build doesn't need it. `SEEXPR_HOME` is only used by openfx-io, and `PKG_CONFIG_PATH` only by openfx-arena: the others ignore them (openfx-misc warns that `SEEXPR_HOME` is unused). For CPU rendering in Shadertoy, add `-DUSE_OSMESA=ON` for openfx-misc. It uses the OSMesa and LLVM of install section 4: `/opt/osmesa` and `/opt/llvm` by default, or set `-DOSMESA_PATH` and `-DLLVM_PATH`. openfx-arena builds with OpenMP, as Natron's ImageMagick 7 does. The CMake options are listed in each repository's `README.md` and `CMakeLists.txt`.
+
+openfx-gmic builds with `make` (`CONFIG=debug` or `release`, OpenMP with the MacPorts clang, no OpenGL), at `-O3` like the CMake builds:
+
+```Shell
+cd ~/src/openfx-gmic
+env OPENMP=1 CXX="clang++-mp-$CLANG -stdlib=libc++ -std=c++17" OPTFLAG=-O3 \
+    CXXFLAGS_EXTRA="-isysroot $(xcrun --sdk macosx --show-sdk-path)" \
     CONFIG=release make -j8
 ```
 
-Bundles are written to `<Plugin>/Darwin-64-<config>/*.ofx.bundle`. To use them, symlink them into a directory and point `OFX_PLUGIN_PATH` at it (or use `/Library/OFX/Plugins`):
+The bundle is written to `GMIC_OFX/Darwin-64-release/GMIC.ofx.bundle`. To use it, symlink it next to the others (or use `/Library/OFX/Plugins`):
 
 ```Shell
-mkdir -p ~/OFX/Natron-release && cd ~/OFX/Natron-release
-ln -sf ~/src/openfx-io/IO/Darwin-64-release/IO.ofx.bundle ~/src/openfx-misc/*/Darwin-64-release/*.ofx.bundle .
+ln -sf ~/src/openfx-gmic/GMIC_OFX/Darwin-64-release/GMIC.ofx.bundle ~/OFX/Natron-release/
 ```
 
 Natron itself builds with CMake, the system (Xcode) clang and the MacPorts libraries (see [Building with CMake](#building-with-cmake) below), from `$NATRON_SRC`, with Homebrew off the `PATH`:
@@ -529,7 +556,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DNATRON_BUILD_TESTS=ON \
 cmake --build build -j$(sysctl -n hw.ncpu)
 ```
 
-The application is then `build/App/Natron.app`. The release scripts still use the deprecated qmake build, with the command below (see [Deprecated: building with qmake](#deprecated-building-with-qmake) for `config.pri`). It is not quite the same build: OSMesa (`enable-osmesa`) and OpenMP (`openmp`) have no CMake option yet.
+The application is then `build/App/Natron.app`. The release scripts add the options of the official builds: `-DNATRON_BUILD_CONFIG=SNAPSHOT` (or `ALPHA`, `BETA`, `RC`, `STABLE`), `-DNATRON_USE_OPENMP=ON` with a MacPorts clang, `-DNATRON_NO_ASSERTIONS=ON` and `-DNATRON_INSTALL_LAYOUT=PORTABLE` (see `Documentation/source/maintainers/building.rst`). The deprecated qmake build, still available on RB-2.6, uses the command below (see [Deprecated: building with qmake](#deprecated-building-with-qmake) for `config.pri`).
 
 ```Shell
 cd $NATRON_SRC
@@ -700,12 +727,6 @@ brew uninstall imagemagick
 brew install imagemagick --with-hdri --with-librsvg --with-quantum-depth-32 --with-pango
 ```
 
-To install the [openfx-gmic](https://github.com/NatronGitHub/openfx-gmic) set of plugin, you also need the following:
-
-```Shell
-brew install fftw
-```
-
 also set the correct value for the pkg-config path (you can also put
 this in your .bash_profile):
 
@@ -812,11 +833,11 @@ cmake --build build -j$(sysctl -n hw.ncpu)
 
 These are the macOS CI job's commands (`.github/workflows/ci.yml`), except that CI has no OFX plug-ins: it leaves `OFX_PLUGIN_PATH` unset and skips the tests that need them with `GTEST_FILTER='-BaseTest.*'` in the `ctest` environment.
 
-The shiboken2 generator parses the headers with its own libclang (LLVM 18 for PySide2 5.15), which can't parse the libc++ headers of newer SDKs (`use of undeclared identifier '__builtin_clzg'`, seen with the macOS 27 SDK of Xcode 27). If that happens, point `SDKROOT` at an older SDK for both the configure and the build, e.g. `export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk`. The same applies to the qmake build.
+The shiboken2 generator parses the headers with its own libclang (LLVM 18 for PySide2 5.15), which can't parse the libc++ headers of newer SDKs (`use of undeclared identifier '__builtin_clzg'`, seen with the macOS 27 SDK of Xcode 27). If that happens, point `SDKROOT` at an older SDK, e.g. `export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk`. It must be exported in the environment of `cmake --build` too, not only at configure time: shiboken runs during the build, and without `SDKROOT` it picks the Xcode SDK headers again. The same applies to the qmake build and to `launchBuildMain.sh`.
 
 ## Deprecated: building with qmake
 
-*The qmake build (for Qt4 and Qt5) is deprecated. It still works on RB-2.6, where the release scripts in `tools/jenkins` still use it, but it will be removed in a future release (first on RB-2.7, see [#1181](https://github.com/NatronGitHub/Natron/issues/1181)).*
+*The qmake build (for Qt4 and Qt5) is deprecated. It still works on RB-2.6, where the release scripts in `tools/jenkins` use it with `NATRON_BUILD_SYSTEM=qmake`, but it will be removed in a future release (first on RB-2.7, see [#1181](https://github.com/NatronGitHub/Natron/issues/1181)).*
 
 ### Add the config.pri file
 
@@ -1108,7 +1129,7 @@ Shiboken has a few glitches which needs fixing with some sed commands, run tools
 
 ## OpenFX plugins
 
-Instructions to build the [openfx-io](https://github.com/NatronGitHub/openfx-io) and [openfx-misc](https://github.com/NatronGitHub/openfx-misc) sets of plugins can also be found in the [tools/packageOSX.sh](https://github.com/NatronGitHub/Natron/blob/master/tools/packageOSX.sh) script if you are using MacPorts, or in the .travis.yml file in their respective github repositories if you are using Homebrew ([openfx-misc/.travis.yml](https://github.com/NatronGitHub/openfx-misc/blob/master/.travis.yml), [openfx-io/.travis.yml](https://github.com/NatronGitHub/openfx-io/blob/master/.travis.yml).
+With MacPorts, build the plugins as in "Developing with the MacPorts SDK" above, or as `tools/jenkins/build-plugins.sh` does. Each plugin repository's `README.md` has its own build instructions, and its CI workflows in `.github/workflows` show a complete build.
 
 
 You can install [TuttleOFX](http://www.tuttleofx.org/) using Homebrew:

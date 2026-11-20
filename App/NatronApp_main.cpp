@@ -58,12 +58,20 @@ NATRON_NAMESPACE_USING
 // If it fails to compile it means either UNICODE or _UNICODE is not defined (it should be in global.pri) and
 // the project is not linking against -municode
 extern "C" {
+int wmain(int argc, wchar_t** argv); // declared, for -Wmissing-declarations
 int wmain(int argc, wchar_t** argv)
 #else
 int main(int argc, char *argv[])
 #endif
 {
 #ifdef DEBUG
+    // NATRON_NO_FP_TRAPS=1: no trapped floating point exception, in any thread. Mesa llvmpipe's threads
+    // inherit the trapping of the thread that starts them, and its JIT-compiled shaders raise
+    // exceptions (SIGFPE, #1537). The GUI tests use it (--test does the same).
+    if (qEnvironmentVariableIntValue("NATRON_NO_FP_TRAPS") == 1) {
+        boost_adaptbx::floating_point::trapping_disabled() = true;
+        qWarning("NATRON_NO_FP_TRAPS=1: floating point exceptions are not trapped (debug build)");
+    }
     boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
                                                            boost_adaptbx::floating_point::exception_trapping::invalid |
                                                            boost_adaptbx::floating_point::exception_trapping::overflow);
@@ -155,18 +163,25 @@ int main(int argc, char *argv[])
 #endif
             return 1;
         } else {
-            return 0;
+            // natron.quit(exitCode)
+            return manager.getRequestedExitCode();
         }
     } else {
         GuiApplicationManager manager;
 
         // coverity[tainted_data]
-#ifdef Q_OS_WIN
-        return manager.loadW(argc, argv, args);
-#else
-        return manager.load(argc, argv, args);
-#endif
         //exec() is called within the GuiApplicationManager
+#ifdef Q_OS_WIN
+        bool ret = manager.loadW(argc, argv, args);
+#else
+        bool ret = manager.load(argc, argv, args);
+#endif
+        if ( manager.isQuitRequested() || manager.isTestMode() ) {
+            // natron.quit(exitCode), or the status of a GUI test (Natron --test), which is 1 if it did not run
+            return manager.getRequestedExitCode();
+        }
+
+        return ret;
     }
 } // main
 #ifdef Q_OS_WIN

@@ -605,7 +605,8 @@ public:
                                              const EffectInstance::InputImagesMap & inputImages,
                                              const RenderStatsPtr & stats,
                                              const OSGLContextAttacherPtr& glContextAttacher,
-                                             ImagePtr* image);
+                                             ImagePtr* image,
+                                             bool lookupPersistentCache = true); //< if false, only look in inputImages
 
     /**
      * @brief Converts the given OpenGL texture to a RAM-stored image. The resulting image will be cached.
@@ -1253,10 +1254,17 @@ public:
      * eMessageTypeError : you want to inform the user an error occurred.
      * eMessageTypeQuestion : you want to ask the user about something.
      * The function will return true always except for a message of type eMessageTypeQuestion, in which
-     * case the function may return false if the user pressed the 'No' button.
+     * case it returns true only if the user pressed the 'Yes' button: false if the user answered 'No', or could not
+     * be asked (use question() to tell these apart).
      * @param content The message you want to pass.
      **/
     bool message(MessageTypeEnum type, const std::string & content) const;
+
+    /**
+     * @brief Ask the user a yes/no question (see Node::question()): eStandardButtonYes, eStandardButtonNo, or
+     * eStandardButtonNoButton if the user could not be asked.
+     **/
+    StandardButtonEnum question(const std::string & content) const;
 
     /**
      * @brief Use this function to post a persistent message to the user. It will be displayed on the
@@ -1369,11 +1377,28 @@ public:
     void clearPluginMemoryChunks();
 
     /**
-     * @brief Called right away when the user first opens the settings panel of the node.
-     * This is called after each params had its default value set.
+     * @brief Called when the user opens the settings panel of the node (the first time, right after
+     * each param had its default value set, and each time it is opened again).
+     * Calls to beginEditKnobs() and endEditKnobs() alternate: a second beginEditKnobs() does nothing.
      **/
     virtual void beginEditKnobs()
     {
+    }
+
+    /**
+     * @brief Called when the last editor of the node is gone: its settings panel was closed, or the node
+     * was deactivated or is being destroyed. Does nothing if beginEditKnobs() was not called.
+     **/
+    virtual void endEditKnobs()
+    {
+    }
+
+    /**
+     * @brief True between beginEditKnobs() and endEditKnobs().
+     **/
+    virtual bool isEditingKnobs() const
+    {
+        return false;
     }
 
     /**
@@ -1645,11 +1670,11 @@ public:
 
     bool onOverlayPenUp_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyDown_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyDown_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers, const QString& keyText) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyUp_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyUp_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers, const QString& keyText) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyRepeat_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyRepeat_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers, const QString& keyText) WARN_UNUSED_RETURN;
 
     bool onOverlayFocusGained_public(double time, const RenderScale & renderScale, ViewIdx view) WARN_UNUSED_RETURN;
 
@@ -1706,6 +1731,8 @@ public:
      * @brief Flag that the overlays should be redrawn when this knob changes.
      **/
     void addOverlaySlaveParam(const KnobIPtr& knob);
+
+    void clearOverlaySlaveParams();
 
     bool isOverlaySlaveParam(const KnobI* knob) const;
 
@@ -1794,6 +1821,12 @@ protected:
      * share pointers (since internally these classes are thread-safe) and ensure that any private data member is copied.
      **/
     virtual EffectInstancePtr createRenderClone() { return EffectInstancePtr(); }
+
+    /**
+     * @brief Called on the main instance before a render clone made by createRenderClone() is used to
+     * render, to bring the state that the clone doesn't share with the main instance up to date.
+     **/
+    virtual void refreshRenderCloneState(const EffectInstancePtr& /*clone*/) {}
 
 
     /**
@@ -2104,7 +2137,8 @@ protected:
                                   const RenderScale & /*renderScale*/,
                                   ViewIdx /*view*/,
                                   Key /*key*/,
-                                  KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
+                                  KeyboardModifiers /*modifiers*/,
+                                  const QString& /*keyText*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -2113,7 +2147,8 @@ protected:
                                 const RenderScale & /*renderScale*/,
                                 ViewIdx /*view*/,
                                 Key /*key*/,
-                                KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
+                                KeyboardModifiers /*modifiers*/,
+                                const QString& /*keyText*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -2122,7 +2157,8 @@ protected:
                                     const RenderScale & /*renderScale*/,
                                     ViewIdx /*view*/,
                                     Key /*key*/,
-                                    KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
+                                    KeyboardModifiers /*modifiers*/,
+                                    const QString& /*keyText*/) WARN_UNUSED_RETURN
     {
         return false;
     }

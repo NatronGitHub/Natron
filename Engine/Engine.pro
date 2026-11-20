@@ -143,6 +143,7 @@ SOURCES += \
     OSGLContext_win.cpp \
     OSGLContext_x11.cpp \
     OfxClipInstance.cpp \
+    OfxDrawSuiteGL.cpp \
     OfxEffectInstance.cpp \
     OfxHost.cpp \
     OfxImageEffectInstance.cpp \
@@ -208,8 +209,6 @@ SOURCES += \
     ../Global/ProcInfo.cpp \
     ../Global/PythonUtils.cpp \
     ../Global/StrUtils.cpp \
-    ../libs/SequenceParsing/SequenceParsing.cpp \
-    $${ENGINE_WRAPPER_DIR}/natronengine_module_wrapper.cpp \
 
 HEADERS += \
     AbortableRenderInfo.h \
@@ -309,6 +308,7 @@ HEADERS += \
     OSGLContext_win.h \
     OSGLContext_x11.h \
     OfxClipInstance.h \
+    OfxDrawSuiteGL.h \
     OfxEffectInstance.h \
     OfxHost.h \
     OfxImageEffectInstance.h \
@@ -438,6 +438,7 @@ ENGINE_GENERATED_SOURCES = \
     booleanparam_wrapper \
     boolnodecreationproperty_wrapper \
     buttonparam_wrapper \
+    bytesparam_wrapper \
     choiceparam_wrapper \
     colorparam_wrapper \
     colortuple_wrapper \
@@ -480,11 +481,16 @@ ENGINE_GENERATED_SOURCES = \
     tracker_wrapper \
     userparamholder_wrapper \
 
+# bundled third-party code and generated bindings: see warnings.pri
+NATRON_THIRD_PARTY_SOURCES += ../libs/SequenceParsing/SequenceParsing.cpp
+NATRON_BINDINGS_SOURCES += $${ENGINE_WRAPPER_DIR}/natronengine_module_wrapper.cpp
 for(name, ENGINE_GENERATED_SOURCES) {
-    SOURCES += $${ENGINE_WRAPPER_DIR}/$${name}.cpp
+    NATRON_BINDINGS_SOURCES += $${ENGINE_WRAPPER_DIR}/$${name}.cpp
     HEADERS += $${ENGINE_WRAPPER_DIR}/$${name}.h
 }
 
 
 OTHER_FILES += \
     typesystem_engine.xml
+
+include(../warnings.pri)

@@ -36,9 +36,10 @@ Top-level directories
     ``NatronRenderer`` executable.
 
 ``PythonBin/``
-    ``python_main.cpp`` — the ``natron-python`` interpreter, a Python binary
-    with the Natron modules available. It also doubles as Natron's Python
-    package manager (see :ref:`maint-python`).
+    ``python_main.cpp`` — the ``natron-python`` interpreter: a plain Python
+    interpreter set up with Natron's Python environment (it does not link the
+    Engine). It doubles as Natron's Python package manager (see
+    :ref:`maint-python`).
 
 ``Global/``
     Small shared headers used across all modules: ``Macros.h`` (namespace,
@@ -70,51 +71,40 @@ Top-level directories
 
 ``CrashReporter/``, ``CrashReporterCLI/``, ``BreakpadClient/``
     The out-of-process crash reporter (built on Google Breakpad) and its GUI/CLI
-    front-ends. Natron renders in a separate process from the reporter so that a
-    crash in one does not take down the other.
+    front-ends. The reporter starts Natron as a child process
+    (``CrashReporter/CallbacksManager.cpp``), so that it survives a crash of
+    Natron and can send the dump. Only the qmake build builds it (see
+    :ref:`maint-subsystems`).
 
 ``Documentation/``
     The Sphinx sources for this manual (see :ref:`maint-contributing` for how the
     manual is organized and built).
 
+``Shiboken/``
+    ``typesystem_widgets.xml``, an empty placeholder typesystem left over from
+    Shiboken 1.2 (PySide 1). The release script still adds this directory to
+    the Shiboken search path; the CMake build doesn't.
+
+``cmake/``
+    CMake helper modules (for example ``PySide2FromPython.cmake``).
+
+``.github/``
+    The GitHub Actions workflows (CI, installers, forward merges).
+
+``.git-hooks/``
+    The ``pre-commit`` hook that runs astyle (see :ref:`maint-contributing`).
+
 ``tools/``
-    Release and CI engineering: ``jenkins`` and ``buildmaster`` build farms,
-    ``MacPorts`` and ``MINGW-packages`` port files, ``docker`` images,
-    ``appimage`` packaging, and helper scripts such as ``genStaticDocs.sh``.
+    Release and CI engineering: ``jenkins`` (the release build scripts) and
+    ``buildmaster`` build farms, ``MacPorts`` and ``MINGW-packages`` port files,
+    ``docker`` images (the Linux SDK), ``tart`` (macOS build virtual machines),
+    ``utils`` (helper scripts, including the Python binding helpers
+    ``sourceList.py`` and ``sourceCleanup.py``), ``valgrind`` suppressions, and
+    ``genStaticDocs.sh``. ``appimage``, ``homebrew`` and ``travis`` are legacy
+    (last changed in 2021–2022, and only mentioned by old sections of the
+    ``INSTALL_*.md`` files).
 
-Naming conventions you will see everywhere
-------------------------------------------
-
-Once you recognize a handful of file-name suffixes, the ~600 files in
-``Engine`` and ``Gui`` become navigable:
-
-``FooFwd.h``
-    Forward declarations and smart-pointer typedefs for a whole module.
-    ``Engine/EngineFwd.h`` and ``Gui/GuiFwd.h`` are the master catalogs — start
-    there when you meet an unfamiliar type.
-
-``FooI.h``
-    An *abstract interface* (pure virtual class), e.g. ``NodeGuiI``,
-    ``KnobGuiI``, ``OpenGLViewerI``, ``NodeGraphI``, ``DockablePanelI``. These
-    are the seams between ``Engine`` and ``Gui`` (see :ref:`maint-design`).
-
-``FooPrivate.h`` / ``FooPrivate.cpp``
-    The private implementation of a class ``Foo`` (the "PIMPL" idiom). The
-    public ``Foo.h`` holds only a pointer to ``FooPrivate``.
-
-``FooSerialization.h``
-    The ``boost::serialization`` description of how ``Foo`` is written to and
-    read from a project file.
-
-``PyFoo.h`` / ``PyFoo.cpp``
-    The Python-facing wrapper class for ``Foo`` (exposed through Shiboken).
-
-``OfxFoo.h`` / ``OfxFoo.cpp``
-    The OpenFX host implementation for ``Foo`` (e.g. ``OfxEffectInstance``,
-    ``OfxClipInstance``, ``OfxParamInstance``).
-
-Numbered GUI files (``Gui20.cpp``, ``ViewerTab30.cpp``, ``NodeGraph45.cpp`` …)
-    Several large GUI classes are split across many ``.cpp`` files purely to
-    keep individual translation units to a manageable size; they all implement
-    the same class declared in the corresponding ``.h``. There is no semantic
-    meaning to the numbers beyond grouping related methods.
+The file-name suffixes used in ``Engine`` and ``Gui`` (``FooFwd.h``,
+``FooI.h``, ``FooPrivate.h``, ``FooSerialization.h``, ``PyFoo.h``,
+``OfxFoo.h``, numbered ``Gui20.cpp`` files) are explained in
+:ref:`maint-naming`.

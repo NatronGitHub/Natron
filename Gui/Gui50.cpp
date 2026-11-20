@@ -114,7 +114,14 @@ NATRON_NAMESPACE_ENTER
 void
 Gui::setUndoRedoStackLimit(int limit)
 {
+    // The preference applies to every node graph: the main one and the
+    // node graph of each Group node (each one has its own undo stack).
     _imp->_nodeGraphArea->setUndoRedoStackLimit(limit);
+    for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
+        if (*it != _imp->_nodeGraphArea) {
+            (*it)->setUndoRedoStackLimit(limit);
+        }
+    }
 }
 
 void

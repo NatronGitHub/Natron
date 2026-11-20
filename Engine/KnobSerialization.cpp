@@ -25,6 +25,8 @@
 
 #include "KnobSerialization.h"
 
+#include <iostream>
+
 #include <algorithm> // min, max
 #include <cassert>
 #include <stdexcept>
@@ -155,6 +157,8 @@ KnobSerialization::createKnob(const std::string & typeName,
         ret = std::make_shared<KnobChoice>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobString::typeNameStatic() ) {
         ret = std::make_shared<KnobString>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobBytes::typeNameStatic() ) {
+        ret = std::make_shared<KnobBytes>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobParametric::typeNameStatic() ) {
         ret = std::make_shared<KnobParametric>((KnobHolder*)NULL, std::string(), dimension, false);
     } else if ( typeName == KnobColor::typeNameStatic() ) {
@@ -184,6 +188,44 @@ KnobSerialization::createKnob(const std::string & typeName,
     return ret;
 }
 
+
+void
+KnobSerialization::restoreBytesKnob()
+{
+    KnobString* isString = dynamic_cast<KnobString*>( _knob.get() );
+
+    if ( !isString || (_typeName != KnobString::typeNameStatic()) || (_knob->getDimension() != 1) || _isUserKnob ||
+         _knob->isAnimated(0) ) {
+        return;
+    }
+    const std::string value = isString->getValue(0);
+    const std::string def = isString->getDefaultValue(0);
+    if ( !KnobBytes::isSerializedBytes(value) || !KnobBytes::isSerializedBytes(def) ) {
+        return;
+    }
+    KnobBytesPtr bytes = std::make_shared<KnobBytes>( (KnobHolder*)NULL, std::string(), 1, false );
+    bytes->populate();
+    bytes->setName( _knob->getName() );
+    bytes->setSecret( _knob->getIsSecret() );
+    bytes->setEnabled( 0, _knob->isEnabled(0) );
+    std::string defData, data;
+    if ( !KnobBytes::decodeFromSerialization(def, &defData) ) {
+        std::cerr << _knob->getName() << ": Warning: the default value in the project is not valid base64, ignoring it" << std::endl;
+        defData.clear();
+    }
+    bytes->setDefaultValueWithoutApplying(defData, 0);
+    if ( !KnobBytes::decodeFromSerialization(value, &data) ) {
+        // no garbage: the value is the default
+        std::cerr << _knob->getName() << ": Warning: the value in the project is not valid base64, using the default value" << std::endl;
+        data = defData;
+    }
+    bytes->setValue(data, ViewIdx(0), 0);
+    _knob = bytes;
+    _typeName = KnobBytes::typeNameStatic();
+    for (std::size_t i = 0; i < _values.size(); ++i) {
+        _values[i]._knob = bytes;
+    }
+}
 
 void
 KnobSerialization::storeKnobLinks(const KnobIPtr & knob)

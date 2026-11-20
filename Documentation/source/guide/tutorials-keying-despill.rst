@@ -147,6 +147,11 @@ spill map:
 
    The finished shot.
 
+See also
+--------
+
+- :doc:`compositing-keying`: the keyer nodes, and how spill is removed.
+
 Image credits
 -------------
 

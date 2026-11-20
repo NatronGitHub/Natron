@@ -28,8 +28,11 @@
 
 #include "Global/Macros.h"
 
+#include <atomic>
 #include <string>
 #include <cstdarg>
+#include <vector>
+#include <atomic>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -70,6 +73,49 @@ public:
     {
         _ofxEffectInstance = node;
     }
+
+    /**
+     * @brief The suspension of the plug-in instance (see OfxEffectInstance::suspendSingleInstance()):
+     * while it is being suspended, mainEntry() sends nothing from the other threads, and once it is
+     * suspended (its plug-in instance destroyed), nothing at all: it returns kOfxStatFailed.
+     **/
+    enum SuspendStateEnum
+    {
+        eSuspendStateNone = 0,
+        eSuspendStateSuspending,
+        eSuspendStateSuspended
+    };
+
+    void setSuspendState(SuspendStateEnum state)
+    {
+        _suspendState = (int)state;
+    }
+
+    /// true while an action of another thread than the main thread is in the plug-in (see mainEntry())
+    bool hasActionsInFlightOnOtherThreads() const
+    {
+        return _actionsInFlightOnOtherThreads > 0;
+    }
+
+    /// true while an action of this instance or of one of its interacts runs on the main thread (main thread only)
+    bool isInMainThreadAction() const
+    {
+        return _mainThreadActionDepth > 0;
+    }
+
+    /**
+     * @brief Brackets an action of the instance or of one of its interacts (overlay or parameter interact), which don't
+     * go through mainEntry(). On the main thread, it counts the nesting depth of these actions, and when the outermost one
+     * returns, it ends the edit blocks that the plug-in opened and left open (paramEditBegin() without paramEditEnd()).
+     **/
+    class MainThreadAction_RAII
+    {
+        OfxImageEffectInstance* _effect;
+
+    public:
+        explicit MainThreadAction_RAII(OfxImageEffectInstance* effect);
+        ~MainThreadAction_RAII();
+    };
 
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
@@ -270,6 +316,30 @@ private:
                                                               to an OfxParamInstance. Without this pointer we would be unable
                                                               to track the knobs that have been created for 1 Node since OfxParamInstance
                                                               is totally dissociated from Node.*/
+    // Nesting depth of the actions of this instance on the main thread (see mainEntry()): an action, e.g.
+    // kOfxActionInstanceChanged, may trigger another one (when a value it sets changes a parameter).
+    // Only read and written on the main thread.
+    int _mainThreadActionDepth;
+    // see setSuspendState(); written on the main thread
+    std::atomic<int> _suspendState;
+    // the actions of the other threads than the main thread in mainEntry(), counted before _suspendState
+    // is read (both sequentially consistent): see OfxEffectInstance::suspendSingleInstance()
+    std::atomic<int> _actionsInFlightOnOtherThreads;
+    // The edit blocks that the plug-in opened (paramEditBegin()) and did not end yet (paramEditEnd()), innermost last:
+    // true for a block opened on _pluginEditHolder, false for a block that was ignored (while a PyPlug is created), so
+    // that each paramEditEnd() ends the block of its paramEditBegin(). When the outermost action returns, these blocks,
+    // and only these, are ended: the blocks opened by Natron (e.g. an overlay drag of a host interact) stay open.
+    // Only used on the Qt main thread (see editBegin()).
+    std::vector<bool> _pluginEditBlocks;
+    // The holder of the knobs (getParamsEditHolder()) on which these blocks are open, e.g. the Read/Write node of an
+    // embedded reader/writer.
+    EffectInstanceWPtr _pluginEditHolder;
+    // true between progressStart() and progressEnd(): progressUpdate() without a started progress task returns
+    // kOfxStatErrBadHandle ("the progress handle was invalid", ofxProgress.h). Any thread may call these.
+    std::atomic<bool> _progressStarted;
+
+    // End the blocks of _pluginEditBlocks (main thread only).
+    void endPluginEditBlocks();
 };
 
 class OfxImageEffectDescriptor

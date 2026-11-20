@@ -774,6 +774,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
                                           const RenderScale & renderScale,
                                           Key k,
                                           KeyboardModifiers km,
+                                          const QString& keyText,
                                           Qt::Key qKey,
                                           const Qt::KeyboardModifiers& mods)
 {
@@ -809,7 +810,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
         bool didSmthing = checkNodeViewerContextShortcuts(node, qKey, mods);
 
         if (!didSmthing) {
-            didSmthing = effect->onOverlayKeyDown_public(time, renderScale, view, k, km);
+            didSmthing = effect->onOverlayKeyDown_public(time, renderScale, view, k, km, keyText);
             _imp->recordOverlayEvent(node, didSmthing);
         }
         if (didSmthing) {
@@ -851,7 +852,7 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
     _imp->beginOverlayEvent();
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( notifyOverlaysKeyDown_internal(*it, renderScale, natronKey, natronMod, qKey, qMods) ) {
+        if ( notifyOverlaysKeyDown_internal(*it, renderScale, natronKey, natronMod, e->text(), qKey, qMods) ) {
             if (isModifier) {
                 continue;
             }
@@ -918,7 +919,8 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
         if (!isInActiveViewerUI) {
             effect->setCurrentViewportForOverlays_public(_imp->viewer);
             bool caught = effect->onOverlayKeyUp_public( time, renderScale, view,
-                                                         QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), QtEnumConvert::fromQtModifiers( e->modifiers() ) );
+                                                         QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), QtEnumConvert::fromQtModifiers( e->modifiers() ),
+                                                         e->text() );
             _imp->recordOverlayEvent(*it, caught);
             didSomething |= caught;
         }
@@ -950,6 +952,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
                                             const RenderScale & renderScale,
                                             Key k,
                                             KeyboardModifiers km,
+                                            const QString& keyText,
                                             Qt::Key qKey,
                                             const Qt::KeyboardModifiers& mods)
 {
@@ -985,7 +988,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
         bool didSmthing = checkNodeViewerContextShortcuts(node, qKey, mods);
 
         if (!didSmthing) {
-            didSmthing = effect->onOverlayKeyRepeat_public(time, renderScale, view, k, km);
+            didSmthing = effect->onOverlayKeyRepeat_public(time, renderScale, view, k, km, keyText);
             _imp->recordOverlayEvent(node, didSmthing);
         }
         if (didSmthing) {
@@ -1016,7 +1019,7 @@ ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
     NodesList nodes;
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( notifyOverlaysKeyRepeat_internal(*it, renderScale, natronKey, natronMod, qKey, qMods) ) {
+        if ( notifyOverlaysKeyRepeat_internal(*it, renderScale, natronKey, natronMod, e->text(), qKey, qMods) ) {
             return true;
         }
     }

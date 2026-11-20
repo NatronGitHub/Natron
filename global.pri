@@ -332,6 +332,11 @@ win32 {
   LIBS += -lole32
 }
 
+# The stack reserve of the main thread of the Windows executables (App, Renderer, PythonBin, Tests
+# add it to QMAKE_LFLAGS). Keep it in sync with NATRON_MAIN_THREAD_STACK_SIZE in CMakeLists.txt, which
+# explains it (#1440).
+NATRON_MAIN_THREAD_STACK_SIZE = 8388608
+
 win32-g++ {
     # -municode is needed for linking because it uses wmain() instead of the traditional main()
     # https://sourceforge.net/p/mingw-w64/wiki2/Unicode%20apps/
@@ -471,8 +476,7 @@ unix {
      equals(QT_MAJOR_VERSION, 4) {
          # There may be different pyside.pc/shiboken.pc for different versions of python.
          # pkg-config will probably give a bad answer, unless python2 is the system default.
-         # See for example tools/travis/install_dependencies.sh for a solution that works on Linux,
-         # using a custom config.pri
+         # Use a custom config.pri if needed.
          shiboken: PKGCONFIG += shiboken
          pyside:   PKGCONFIG += pyside
          # The following hack also works with Homebrew if pyside is installed with option --with-python3

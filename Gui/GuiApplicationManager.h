@@ -117,6 +117,15 @@ public:
 
     bool isSplashcreenVisible() const;
 
+    /**
+     * @brief True if the NATRON_TEST_NO_FOCUS environment variable is set, to anything but "" or "0".
+     * This is for GUI tests that run on a desktop someone is using: Natron then never takes the
+     * keyboard focus or brings itself to the front. Windows are shown without being activated,
+     * raise()/activateWindow() calls are skipped, and on macOS the process stays in the background
+     * (no Dock icon, never the frontmost application).
+     **/
+    static bool isGuiTestNoFocus();
+
     virtual void hideSplashScreen() OVERRIDE FINAL;
     const QCursor & getColorPickerCursor() const;
     const QCursor & getLinkToCursor() const;
@@ -172,6 +181,14 @@ public:
     ///Closes the application, asking the user to save each opened project that has unsaved changes
     virtual void exitApp(bool warnUserForSave) OVERRIDE FINAL;
 
+    ///natron.quit(): closes all projects without asking to save them at the end of the current event-loop iteration
+    virtual void requestQuit(int exitCode) OVERRIDE FINAL;
+
+private:
+    void quitWhenIdle();
+
+public:
+
     bool isNodeClipBoardEmpty() const;
 
     NodeClipBoard& getNodeClipBoard();
@@ -197,6 +214,8 @@ public:
     virtual double getLogicalDPIXRATIO() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual double getLogicalDPIYRATIO() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void updateAboutWindowLibrariesVersion() OVERRIDE FINAL;
+
+    virtual void clearLastRenderedTextures() OVERRIDE FINAL;
 
 public Q_SLOTS:
 
@@ -225,7 +244,6 @@ private:
     void handleOpenFileRequest();
 
     virtual void onLoadCompleted() OVERRIDE FINAL;
-    virtual void clearLastRenderedTextures() OVERRIDE FINAL;
     /**
      * @brief Load shortcuts from QSettings
      **/

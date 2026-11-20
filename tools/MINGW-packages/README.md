@@ -36,125 +36,56 @@ pacman -U ${MINGW_PACKAGE_PREFIX}-*-any.pkg.tar.*
 
 # Setup a development environment (Qt Creator)
 
-Start Qt Creator and go to ``Tools`` => ``Options``.
+Qt Creator builds Natron with CMake, as in [INSTALL_WINDOWS.md](../../INSTALL_WINDOWS.md#build). Install the build dependencies listed there (or `${MINGW_PACKAGE_PREFIX}-natron-build-deps-qt5`), plus the debugger:
 
-## Debuggers
+```
+pacman -S --needed ${MINGW_PACKAGE_PREFIX}-gdb
+```
 
-Go to the ``Kits`` menu and select ``Debuggers``, then add a new.
+Start Qt Creator and go to ``Tools`` => ``Options`` => ``Kits``. *It's recommended to click ``Apply`` after adding each item.*
 
-* ``Name`` : ``MinGW GDB``
-* ``Path`` : ``C:\msys64\ucrt64\bin\gdb.exe``
-
-*It's recommended to click ``Apply`` after adding something to the Kit.*
-
-## Compilers
-
-Go to the ``Kits`` menu and select ``Compilers``, then add a new (``MINGW => C``).
-
-* ``Name`` : ``MinGW C``
-* ``Path`` : ``C:\msys64\ucrt64\bin\gcc.exe``
-
-Go to the ``Kits`` menu and select ``Compilers``, then add a new (``MINGW => C++``).
-
-* ``Name`` : ``MinGW C++``
-* ``Path`` : ``C:\msys64\ucrt64\bin\g++.exe``
-
-*It's recommended to click ``Apply`` after adding something to the Kit.*
-
-## Qt
-
-Go to the ``Kits`` menu and select ``Qt Versions``, then add a new.
-
-* ``Name`` : ``MinGW Qt 4.8.7``
-* ``Path`` : ``C:\msys64\ucrt64\bin\qmake.exe``
-
-*It's recommended to click ``Apply`` after adding something to the Kit.*
-
-## Kit
-
-Go to the ``Kits`` menu and select ``Kits``, then add a new.
-
-* ``Name`` : ``Natron SDK Qt4``
-* ``Compiler`` => ``C`` : ``MinGW C``
-* ``Compiler`` => ``C++`` : ``MinGW C++``
-* ``Debugger`` : ``MinGW GDB``
-* ``Qt version`` : ``MinGW Qt 4.8.7``
+* ``Debuggers``: add ``C:\msys64\ucrt64\bin\gdb.exe`` (``Name``: ``UCRT64 GDB``).
+* ``Compilers``: add ``MinGW`` => ``C`` with ``C:\msys64\ucrt64\bin\gcc.exe`` (``UCRT64 C``), and ``MinGW`` => ``C++`` with ``C:\msys64\ucrt64\bin\g++.exe`` (``UCRT64 C++``).
+* ``Qt Versions``: add ``C:\msys64\ucrt64\bin\qmake-qt5.exe`` (``UCRT64 Qt 5``). Qt Creator only uses it to locate Qt: MSYS2 renamed Qt 5's `qmake.exe` to `qmake-qt5.exe`, and the unsuffixed `qmake.exe` belongs to Qt 6.
+* ``CMake``: add ``C:\msys64\ucrt64\bin\cmake.exe`` (``UCRT64 CMake``).
+* ``Kits``: add a kit named ``Natron UCRT64`` with the C and C++ compilers, the debugger, the Qt version and the CMake tool above, and the ``Ninja`` CMake generator.
 
 ## Project
 
-Clone the Natron source (using Git Bash or MSYS2):
+Clone the Natron source in the MSYS2 UCRT64 shell, and download the OpenColorIO configs (the same version as the CI, `OCIO_CONFIG_VERSION` in `.github/workflows/ci.yml`):
 
 ```
 git clone https://github.com/NatronGitHub/Natron
 cd Natron
-git submodule update -i --recursive
+git submodule update --init --recursive
 wget https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.5.tar.gz
 tar xvf Natron-v2.5.tar.gz
 mv OpenColorIO-Configs-Natron-v2.5 OpenColorIO-Configs
-touch config.pri
 ```
 
-Then start Qt Creator and open ``Project.pro`` from the Natron source folder and select the custom kit (``Natron MSYS2``) added previous. When Qt Creator is finished loading the project go to the ``Projects`` tab => ``Natron MSYS2`` => ``Build`` => ``Build Environment`` and add a new environment variable ``PYTHONHOME`` with the value ``C:\msys64\ucrt64``.
+Then open ``CMakeLists.txt`` from the Natron source folder in Qt Creator and select the ``Natron UCRT64`` kit. Under ``Projects`` => ``Natron UCRT64`` => ``Run`` => ``Environment``, add ``PYTHONHOME`` with the value ``C:\msys64\ucrt64``, and ``PYTHONLEGACYWINDOWSDLLLOADING`` with the value ``1`` (MSYS2's Python otherwise ignores ``PATH`` when it loads its DLLs, see #1147). Natron also needs ``C:\msys64\ucrt64\bin`` in ``PATH`` to find its DLLs.
 
-You should now be able to build and run release and debug versions of Natron directly from Qt Creator.
+You should now be able to build and run release and debug versions of Natron directly from Qt Creator. CMake options such as `-DNATRON_BUILD_TESTS=OFF` go in ``Projects`` => ``Build`` => ``CMake``.
 
 # Setup a CI environment
 
-The installer scripts in `tools/jenkins` still use MINGW64; moving them to UCRT64 is the next step of #1133. Until then, with a working MSYS2 installation launch ``C:\msys64\mingw64.exe`` and clone the build tools:
+The per-PR Windows CI (`.github/workflows/ci.yml`) builds Natron with CMake in UCRT64 from stock MSYS2 packages, and runs the unit tests with openfx-io's UCRT64 test build. To reproduce it locally, follow [Build](../../INSTALL_WINDOWS.md#build) in INSTALL_WINDOWS.md. It doesn't need Natron's package repository.
+
+The release installer (`.github/workflows/build_installer.yml`, which runs `tools/jenkins/launchBuildMain.sh`) is built in UCRT64 too, with CMake (step 5 of #1133). The scripts in `tools/jenkins` take their paths, package names and architecture from the MSYS2 environment (`MINGW_PREFIX`, `MINGW_PACKAGE_PREFIX`, `MSYSTEM_CARCH`), never from `uname -m`, so that the same scripts can build for CLANGARM64 (#1494). Don't follow older instructions that set `MSYSTEM=MINGW64`.
+
+The bundled DLLs are not listed by hand: `tools/jenkins/genDllVersions.sh` reads the import tables of the shipped binaries, Qt plug-ins and Python modules with `ntldd`, and bundles their dependency closure (the toolchain runtime included: libstdc++, libgcc_s and libgomp on UCRT64; libc++, libunwind and libomp on clang). Its report, `<installer>-dlls.txt` in the build archive, lists each DLL and where it comes from. A COMMERCIAL build fails if a GPL library would be bundled. `build_installer.yml` compares the file list and the DLLs of the new portable zip with the 2.6.0-alpha1 installer (the `compare-<installer>` artifact and the job summary).
+
+A local installer build runs the same command as `build_installer.yml`, from `tools/jenkins` in a UCRT64 shell with `${MINGW_PACKAGE_PREFIX}-natron-build-deps-qt5` installed (see `install_natron_pacman_repo.sh` and "The package repository" below):
 
 ```
-git clone https://github.com/NatronGitHub/Natron NatronCI
+mkdir -p $HOME/natron-build
+WORKSPACE=$HOME/natron-build BUILD_NAME=natron BUILD_NUMBER=1 BITS=64 NATRON_LICENSE=GPL \
+  GIT_URL=https://github.com/NatronGitHub/Natron.git GIT_URL_IS_NATRON=1 SNAPSHOT_BRANCH=RB-2.6 \
+  QT_VERSION_MAJOR=5 DISABLE_BREAKPAD=1 NOUPDATE=1 MKJOBS=$(nproc) UNIT_TESTS=true \
+  ./launchBuildMain.sh
 ```
 
-Now create a build script:
-
-```
-#!/bin/bash
-# Build Natron Windows Snapshot
-#
-
-export WORKSPACE=$HOME/NatronCI-workspace
-export UNIT_TESTS=true
-export BUILD_NAME=snapshots
-export BUILD_NUMBER=RB-2.5
-export GIT_URL=https://github.com/NatronGitHub/Natron.git
-export SNAPSHOT_BRANCH=RB-2.5
-export GIT_BRANCH=RB-2.5
-export NATRON_LICENSE=GPL
-export NATRON_DEV_STATUS=SNAPSHOT
-export NATRON_BUILD_NUMBER=1
-export COMPILE_TYPE=relwithdebinfo
-export BITS=64
-export DISABLE_BREAKPAD=1
-export DISABLE_PORTABLE_ARCHIVE=0
-export REMOTE_URL=NO_URL
-export REMOTE_USER=NO_USER
-export REMOTE_PREFIX=NO_PREFIX
-export MKJOBS=4
-export LOCALAPPDATA="/c/Users/USERNAME/AppData/Local"
-export MSYSTEM=MINGW64
-export NOUPDATE=1
-export GIT_URL_IS_NATRON=1
-
-if [ ! -d "$WORKSPACE" ]; then
-    mkdir -p "$WORKSPACE"
-fi
-
-./launchBuildMain.sh
-```
-
-and save to ``$HOME/NatronCI/tools/jenkins/build-snapshot.sh``. Remember to change ``LOCALAPPDATA`` to match your username, and ``MKJOBS`` to match your CPU. You can disable unit tests with ``UNIT_TESTS=false``.
-
-Now run the script *(working internet connection needed)*:
-
-```
-cd $HOME/NatronCI/tools/jenkins
-bash build-snapshot.sh
-```
-
-The result will be in ``$HOME/NatronCI-workspace``.
-
-This was just an example, see ``launchBuildMain.sh`` for more information/options.
+The result goes to `$WORKSPACE/builds_archive`. See `launchBuildMain.sh` for the other options.
 
 
 ## The package repository
@@ -165,6 +96,8 @@ The zip is looked up in this order:
 
 1. the release of the repository the workflow runs from (`${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}`), so that a fork can publish its own rebuilt packages;
 2. the upstream release, `https://github.com/NatronGitHub/Natron/releases/download/windows-mingw-package-repo/` (tried only once when the workflow runs on NatronGitHub/Natron).
+
+A manual run of `build_installer.yml` can instead use the `natron_package_repo-<version>` artifact of a "Build pacman repo" run (input `pacman_repo_run_id`): the script then uses the repository that is already there. The repository of another MSYS2 environment than UCRT64 would be `natron_package_repo-<msystem>-<version>.zip` (e.g. `clangarm64`).
 
 A download that fails, or that isn't a valid zip, is removed before trying the next location. If no zip is found, the script builds the whole repository locally with `build_natron_package_repo.sh`, which takes hours, and needs Inno Setup 6 (`ISCC.exe`, used by `mingw-w64-natron-setup`). `build_pacman_repo.yml` installs it; `build_installer.yml` doesn't, so on the installer workflow the fallback only works if Inno Setup 6 is already on the runner. The version is not pinned yet: `build_pacman_repo.yml` runs `choco install innosetup` without `--version`, so it gets whatever Chocolatey's latest is, and an Inno Setup 7 would break the build because the PKGBUILD hard-codes `Inno Setup 6/ISCC.exe`. It should be pinned to an exact 6.x release (Chocolatey needs a full version number, e.g. `choco install innosetup --version 6.4.3`; check which ones Chocolatey has).
 
@@ -178,6 +111,9 @@ The repository is built in MSYS2 UCRT64 (`build_pacman_repo.yml`, `build_natron_
 |---|---|
 | `freetype` 2.15.0-1.1 | MSYS2's FreeType 2.15.0-1 with the upstream fix [05f343a](https://gitlab.freedesktop.org/freetype/freetype/-/commit/05f343a) ("Fix macros", not in a release yet). FreeType 2.15.0 defines `ULABS( a )` without parentheses, so `FT_Set_Transform` resets a y flip combined with a rotation within about 1.8° of 45°, 135°, 225° or 315° to the identity, and rotated text comes out unrotated in openfx-arena's Text (#1287). It replaces MSYS2's package, see "Packages that replace MSYS2's" below. macOS has the same backport in `tools/MacPorts/print/freetype` (#1286). |
 | `natron_ffmpeg-gpl2` 9.0.2 | FFmpeg for openfx-io, GPL-2.0-or-later (`--enable-gpl` without `--enable-version3`; MSYS2's FFmpeg is GPLv3), with the same version and configuration as Natron's macOS build (MacPorts `+gpl2 +natronmini`), in the private prefix `${MINGW_PREFIX}/ffmpeg-gpl2`. It uses MSYS2's `libx264` (ABI 165), so there is only one x264. |
+| `natron_ffmpeg-lgpl` 9.0.2 | FFmpeg for openfx-io in COMMERCIAL builds, LGPL-2.1-or-later (#1302): MSYS2 has no LGPL FFmpeg. The configuration of `natron_ffmpeg-gpl2` without `--enable-gpl`, x264, x265, Xvid, vid.stab and libzvbi (the same as the macOS subport `ffmpeg-lgpl`), in `${MINGW_PREFIX}/ffmpeg-lgpl`. Its `check()` fails if `ffmpeg -L` or the libraries' licence strings are not LGPL 2.1. |
+| `natron_libheif-lgpl` 1.23.7 | MSYS2's libheif links its encoders directly (`ENABLE_PLUGIN_LOADING=OFF`), including the GPL x264 and x265 (#1177). This is the same libheif without them, in `${MINGW_PREFIX}/libheif-lgpl`: HEIC is still decoded (libde265) and encoded (kvazaar), AVIF too; H.264 HEIF is only decoded. COMMERCIAL installers bundle its `libheif.dll` instead of MSYS2's (same name and ABI, so `natron_openimageio` loads it). Keep its version equal to MSYS2's libheif. |
+| `natron_libtiff-lgpl` 4.7.2 | MSYS2's libtiff links JBIG-KIT (`libjbig`, GPL-2.0-or-later). This is the same libtiff without JBIG (LERC, libdeflate, lzma, zstd, WebP and JPEG are kept: their licences allow it), in `${MINGW_PREFIX}/libtiff-lgpl`. COMMERCIAL installers bundle its `libtiff-6.dll` instead of MSYS2's, and not `libjbig`; JBIG-compressed TIFF files can't be read there. Keep its version equal to MSYS2's libtiff. |
 | `natron_libraw-gpl2`, `natron_libraw-lgpl` 0.22.3 | LibRaw with the GPL demosaic packs (GPL builds), and without them (COMMERCIAL builds). |
 | `natron_openimageio` 3.1.17.0 | OIIO, the same version as Natron's macOS build, built against `natron_libraw-gpl2` and MSYS2's OpenColorIO, OpenEXR and Imath, without FFmpeg, for openfx-io. |
 | `natron_seexpr-git` 2.11 | SeExpr 2.11 (the SeExpr 1 API), with Natron's build patches, for openfx-io. |
@@ -223,8 +159,8 @@ MSYS2 is a rolling distribution, so the Windows build breaks from time to time w
 
 - **`qmake` was renamed `qmake-qt5`.** MSYS2 made Qt6 the default Qt and renamed Qt5's `qmake.exe` to `qmake-qt5.exe` (msys2/MINGW-packages 389f888c). `tools/jenkins/common.sh` (`find_qmake`) now looks for `qmake-qt${QT_VERSION_MAJOR}`, `qmake${QT_VERSION_MAJOR}`, then `qmake`, and sets and exports `QTDIR` and `QMAKE`. `launchBuildMain.sh` runs `$QMAKE -query QT_VERSION` early, prints e.g. `qmake-qt5 works (Qt 5.15.19)`, and stops with an error if it doesn't work or reports another Qt major version than `QT_VERSION_MAJOR` (e.g. Qt6's unsuffixed `qmake`, found when `qt5-base` is missing) (only a warning for plug-in CI builds, which don't need Qt). Before this, a wrong `QTDIR` only showed up much later, as `'QtGlobal' file not found` in shiboken.
 - **Overriding qmake.** To use another qmake binary, set `NATRON_QMAKE` (e.g. `NATRON_QMAKE=/mingw64/bin/qmake-qt5.exe`). `QTDIR` is still the probed one. A `QMAKE` variable inherited from the environment is ignored, with a warning if it differs from the probe result, so that a value left over by a shell profile or another tool can't silently select the wrong Qt.
-- **Two x264 ABIs** (until FFmpeg 9 replaced FFmpeg 4.4 and `natron_x264` was removed). MSYS2 renamed `x264-git` to `libx264`, which ships `libx264-165.dll` and is needed by MSYS2's `libheif`, while `natron_ffmpeg-gpl2` links `libx264-164.dll` from `natron_x264`. Both DLLs are needed, and both are bundled in GPL builds (`genDllVersions.sh` bundles them only when `NATRON_LICENSE=GPL`; COMMERCIAL builds lack `libx264-165.dll`, see #1177): `genDllVersions.sh` uses `catAllDlls libx264-`, which emits every match, instead of `catDll`, which fails when more than one DLL matches. To avoid file conflicts with `libx264` (`x264.h`, `libx264.dll.a`, `x264.pc`), `natron_x264` installs into the private prefix `${MINGW_PREFIX}/natron_x264` and only puts `libx264-164.dll` in `${MINGW_PREFIX}/bin`. `natron_ffmpeg-gpl2` finds it through `PKG_CONFIG_PATH`. Note that `build_installer.yml` installs `natron-build-deps-qt5` with `pacman --overwrite "*"`, which hides this kind of conflict: only the "Build pacman repo" workflow, which installs packages without `--overwrite`, shows it.
-- **PySide major version.** `catDll libpyside` also matched `libpyside6` and `libpyside6qml` once Qt6 was installed next to Qt5 (`natron-build-deps-qt6`). PySide2 goes with Qt5 and PySide6 with Qt6, so the PySide major isn't `QT_VERSION_MAJOR`: `genDllVersions.sh` maps it explicitly (Qt5 → `libpyside2`/`libshiboken2`, Qt6 → `libpyside6`/`libshiboken6`), and matches `libpyside6.` and `libshiboken6.` (the main DLL names continue with a dot and the Python extension suffix) so that `libpyside6qml` isn't picked up.
+- **Two x264 ABIs** (until FFmpeg 9 replaced FFmpeg 4.4 and `natron_x264` was removed). MSYS2 renamed `x264-git` to `libx264`, which ships `libx264-165.dll` and is needed by MSYS2's `libheif`, while `natron_ffmpeg-gpl2` links `libx264-164.dll` from `natron_x264`. Both DLLs are needed, and both are bundled in GPL builds (`genDllVersions.sh` bundles them only when `NATRON_LICENSE=GPL`; COMMERCIAL builds bundle `natron_libheif-lgpl`, which doesn't link x264, see #1177): `genDllVersions.sh` uses `catAllDlls libx264-`, which emits every match, instead of `catDll`, which fails when more than one DLL matches. To avoid file conflicts with `libx264` (`x264.h`, `libx264.dll.a`, `x264.pc`), `natron_x264` installs into the private prefix `${MINGW_PREFIX}/natron_x264` and only puts `libx264-164.dll` in `${MINGW_PREFIX}/bin`. `natron_ffmpeg-gpl2` finds it through `PKG_CONFIG_PATH`. Note that `build_installer.yml` installs `natron-build-deps-qt5` with `pacman --overwrite "*"`, which hides this kind of conflict: only the "Build pacman repo" workflow, which installs packages without `--overwrite`, shows it. Since #1133 step 5, `genDllVersions.sh` takes the DLL names from the import tables (ntldd), so it needs no such special cases any more.
+- **PySide major version.** `catDll libpyside` also matched `libpyside6` and `libpyside6qml` once Qt6 was installed next to Qt5 (`natron-build-deps-qt6`). PySide2 goes with Qt5 and PySide6 with Qt6, so the PySide major isn't `QT_VERSION_MAJOR`: `genDllVersions.sh` maps it explicitly (Qt5 → `libpyside2`/`libshiboken2`, Qt6 → `libpyside6`/`libshiboken6`), and matches `libpyside6.` and `libshiboken6.` (the main DLL names continue with a dot and the Python extension suffix) so that `libpyside6qml` isn't picked up. Since #1133 step 5, `genDllVersions.sh` takes the DLL names from the import tables (ntldd), so it needs no such special cases any more.
 - **The bundled Python standard library.** `tools/jenkins/zip-python-mingw.sh` copies the packages listed in `PYDIRS`, plus the top-level `*.py` modules. Python 3.13 removed `lib2to3` (deprecated since 3.11) and `msilib` (one of the "dead batteries" of PEP 594): entries of `PYDIRS` that don't exist are now skipped, so names kept for older Pythons are harmless. Modules that become packages fall out of the `*.py` glob and silently disappear from the zip unless they are added to `PYDIRS`: `pathlib` and `sysconfig` (3.13), `string` (3.14), as well as the new `compression` package (3.14). The build doesn't fail, but the bundled interpreter can't `import string`. Check for this after every MSYS2 Python upgrade.
 - **dump_syms with GCC 16** (the package was later removed, with Breakpad). The `mingw-w64-dump_syms` PKGBUILD built only the target that it packages (`make src/tools/windows/dump_syms_dwarf/dump_syms.exe`). `microdump_stackwalk`, which a bare `make` also builds, doesn't link with GCC 16 (undefined vtable for `google_breakpad::FastSourceLineResolver::Module`), because its target in breakpad's `Makefile.am` doesn't list `fast_source_line_resolver.o`.
 - **PySide2 is gone from MINGW64.** On 2026-10-13 MSYS2 dropped `pyside2`, `shiboken2` and `pyside6` from the MINGW64 environment (msys2/MINGW-packages#32417). `natron-build-deps-qt5` depends on them, so it can no longer be installed on MINGW64, and the Windows installer and package-repository workflows (`build_installer.yml`, `build_pacman_repo.yml`) must move to UCRT64 (#1133).

@@ -228,14 +228,15 @@ step_libs() {
     sudo sed -i '' -e 's/^find_dependency(zstd/#find_dependency(zstd/' /opt/local/lib/cmake/minizip-ng/minizip-ng-config.cmake
     $PORT install opencolorio  -quartz $nopy
     $PORT install opencolorio1 -quartz $nopy
-    $PORT install seexpr seexpr211
+    $PORT install seexpr211
     $PORT install librsvg -quartz
     $PORT install poppler librevenge libcdr-0.1 sox libzip
     sudo sed -i '' -e 's/Zstd::Zstd/zstd/' /opt/local/lib/pkgconfig/libzip.pc
     $PORT install ImageMagick +natron -x11
     $PORT install ImageMagick7 +natron -x11 -openexr
-    $PORT install fftw-3 -gfortran fftw-3-single -gfortran
     $PORT install ffmpeg +gpl2 +highbitdepth +natronmini
+    # COMMERCIAL builds (NATRON_LICENSE=COMMERCIAL): LGPL FFmpeg, LibRaw and libheif in libexec
+    $PORT install ffmpeg-lgpl libraw-lgpl libheif-lgpl
     $PORT install openimageio +freetype +natron +opencolorio +openjpeg $(oiio_python_variants)
 }
 
@@ -258,7 +259,6 @@ print(u["url"], u["digests"]["sha256"])')
 
 step_python_qt() {
     $PORT install py$pyv-pip
-    $PORT install openblas
     $PORT install py$pyv-numpy -gfortran
     $PORT install py$pyv-sphinx py$pyv-sphinx_rtd_theme
     $PORT install qt5 qt5-qtwebengine
@@ -492,6 +492,13 @@ step_update() {
         # libvmaf is no longer needed by anything
         $PORT -N uninstall libvmaf 2>/dev/null || true
     fi
+    # COMMERCIAL builds: LGPL FFmpeg, LibRaw and libheif (images made before these subports)
+    for p in ffmpeg-lgpl libraw-lgpl libheif-lgpl; do
+        if ! port -q installed "$p" 2>/dev/null | grep -q '(active)'; then
+            echo "===== installing $p"
+            $PORT install "$p"
+        fi
+    done
     step_python_migrate
     # ImageMagick 7 for openfx-arena (Natron 2.6), for the images created before step_libs had it
     if ! port -q installed ImageMagick7 2>/dev/null | grep -q '+natron.*(active)'; then
@@ -515,12 +522,22 @@ step_cleanup() {
 
 step_build() {
     start_http_proxy
+    if [ "${NATRON_LICENSE:-GPL}" = "COMMERCIAL" ]; then
+        # step_libs and step_update install them: fail now rather than after building Natron
+        for p in ffmpeg-lgpl libraw-lgpl libheif-lgpl; do
+            if ! port -q installed "$p" 2>/dev/null | grep -q '(active)'; then
+                echo "Error: $p is not installed in this image, update it with: tools/tart/natron-sdk.sh update"
+                return 1
+            fi
+        done
+    fi
     mkdir -p "$WORKSPACE"
     cd "$NATRON/tools/jenkins"
-    env NOUPDATE=1 WORKSPACE="$WORKSPACE" DISABLE_BREAKPAD=1 NATRON_LICENSE=GPL \
+    env NOUPDATE=1 WORKSPACE="$WORKSPACE" DISABLE_BREAKPAD=1 NATRON_LICENSE="${NATRON_LICENSE:-GPL}" \
         GIT_URL=https://github.com/NatronGitHub/Natron.git GIT_BRANCH="${GIT_BRANCH:-RB-2.6}" \
         UNIT_TESTS="${UNIT_TESTS:-false}" BUILD_NAME=natron_github_RB2 BUILD_NUMBER=1 \
         COMPILE_TYPE=release MKJOBS="$JOBS" \
+        NATRON_BUILD_SYSTEM="${NATRON_BUILD_SYSTEM:-cmake}" NATRON_EXTRA_CMAKE_FLAGS="${NATRON_EXTRA_CMAKE_FLAGS:-}" \
         ./launchBuildMain.sh
     # launchBuildMain.sh can exit 0 after a failed sub-step: require the DMG
     ls -l "$WORKSPACE/builds_archive/natron_github_RB2/1/"

@@ -4,23 +4,26 @@
 Rectangle Node
 ==============
 
-the Rectangle node makes rectangle shapes. It can add rounded corners and soft edges to the shapes.
-It is very useful for masking off a color adjustment and its softness parameter can be edited without compromising its edge values too much. Frequently use it to mask out nebulous regions of an effect. 
+The Rectangle node draws a rectangle, with optional rounded corners
+(**Corner Radius**) and soft edges (**Softness**). It is useful as a mask for a
+color correction or another effect.
 
-It is faster to use and to process that a Roto or RotoPaint node. 
-    
-.. image:: _images/TheNodes-Draw/nodes_draw_radial01.jpg
-    
+It is faster to set up and to render than a Roto or RotoPaint node.
+
 Usage
 --------
 
-Use the rectangle gizmo visible when properties are opened to edit the shape 
-If an exact square is required then the "2" button should be disabled in the size parameters.
-If the rectangle should be centered in the image press the "center" button.
+While the node's properties are open, drag the rectangle handle in the Viewer
+to change the shape.
+For an exact square, give the same width and height to **Size**: the button
+next to it switches between one value for both dimensions and one value per
+dimension.
+To center the rectangle in the image, click **Center**.
 
-A hard-edged circle can be obtained by setting the softness paramet to 0.
+**Softness** is 0 by default, which gives hard edges.
 
-The End colors can be changed with "color 0" and "color 1" parameters.
+**Color 0** is the color outside the rectangle and **Color 1** the color
+inside.
 
 To fill the image with the effect set "Extent" to "Project".
 

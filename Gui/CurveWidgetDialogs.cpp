@@ -89,15 +89,15 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    bool integerIncrement = false;
     double xstart, xend;
     QString incr;
     if ( parent->hasTimeline() ) {
         gui->getApp()->getFrameRange(&xstart, &xend);
         incr = QString::fromUtf8("1");
     } else {
-        xstart = std::numeric_limits<double>::infinity();
-        xend = -std::numeric_limits<double>::infinity();
+        // unbounded is +/-DBL_MAX (not +/-infinity, which -ffast-math assumes never happens)
+        xstart = std::numeric_limits<double>::max();
+        xend = std::numeric_limits<double>::lowest();
         for (size_t i = 0; i < curves.size(); ++i) {
             std::pair<double, double> r = curves[i]->getInternalCurve()->getXRange();
             if (r.first < xstart) {
@@ -107,10 +107,11 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
                 xend = r.second;
             }
         }
-        if ( xstart == std::numeric_limits<double>::infinity() ) {
+        // no curve, or an unbounded range: xend - xstart below would overflow
+        if ( (xstart >= std::numeric_limits<double>::max()) || (xstart <= std::numeric_limits<double>::lowest()) ) {
             xstart = 0.;
         }
-        if ( xend == -std::numeric_limits<double>::infinity() ) {
+        if ( (xend <= std::numeric_limits<double>::lowest()) || (xend >= std::numeric_limits<double>::max()) ) {
             xend = 1.;
         }
         if (xstart == 0. && xend == 1.) {
@@ -118,9 +119,6 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
         } else {
             incr = QString::number(xend - xstart) + QString::fromUtf8("/100.");
         }
-    }
-    for (size_t i = 0; i < curves.size(); ++i) {
-        integerIncrement |= curves[i]->areKeyFramesTimeClampedToIntegers();
     }
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setContentsMargins(0, 3, 0, 0);
@@ -219,6 +217,9 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
 
 ImportExportCurveDialog::~ImportExportCurveDialog()
 {
+    if ( appPTR->isTestMode() ) {
+        return; // a test does not change the user's dialog state
+    }
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
     if (_isExportDialog) {

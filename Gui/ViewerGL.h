@@ -165,6 +165,7 @@ public:
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                             size_t bytesCount,
+                                            ImageBitDepthEnum depth,
                                             const RectI &roiRoundedToTileSize,
                                             const RectI& roi,
                                             const TextureRect & tileRect,
@@ -276,13 +277,19 @@ public:
 
 public:
 
+    virtual bool canRenderText() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
     virtual bool renderText(double x,
                             double y,
                             const std::string &string,
                             double r,
                             double g,
                             double b,
-                            int flags = 0) OVERRIDE FINAL; //!< see http://doc.qt.io/qt-4.8/qpainter.html#drawText-10
+                            int flags = 0, //!< see http://doc.qt.io/qt-4.8/qpainter.html#drawText-10
+                            double a = 1.) OVERRIDE FINAL;
 
 
     void renderText(double x,
@@ -370,6 +377,16 @@ public:
      * @brief Returns the font height, i.e: the height of the highest letter for this font
      **/
     virtual int getWidgetFontHeight() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Returns the font ascent, i.e: the distance from the baseline to the top of the font height
+     **/
+    virtual int getWidgetFontAscent() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Returns the font descent, i.e: the distance from the baseline to the bottom of the font height
+     **/
+    virtual int getWidgetFontDescent() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns for a string the estimated pixel size it would take on the widget
@@ -520,6 +537,12 @@ private:
      *@brief initializes OpenGL context related stuff. This is called once after widget creation.
      **/
     virtual void initializeGL() OVERRIDE FINAL;
+
+    // Called before the OpenGL context is destroyed (e.g. when the widget moves to another window)
+    void onContextAboutToBeDestroyed();
+
+    // Deletes the OpenGL objects of the current context
+    void releaseGLResources();
 
     /**
      *@brief Handles the resizing of the viewer

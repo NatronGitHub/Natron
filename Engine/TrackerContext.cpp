@@ -104,19 +104,48 @@ void
 TrackerContext::load(const TrackerContextSerialization& serialization)
 {
     TrackerContextPtr thisShared = shared_from_this();
-    QMutexLocker k(&_imp->trackerContextMutex);
 
-    for (std::list<TrackSerialization>::const_iterator it = serialization._tracks.begin(); it != serialization._tracks.end(); ++it) {
-        TrackMarkerPtr marker;
-        if ( it->usePatternMatching() ) {
-            marker = TrackMarkerPM::create(thisShared);
-        } else {
-            marker = TrackMarker::create(thisShared);
-        }
-        marker->initializeKnobsPublic();
-        marker->load(*it);
-        _imp->markers.push_back(marker);
+    // The serialization replaces the current tracks: when presets are loaded on
+    // an existing node (or that is undone), or when a PyPlug child made by its
+    // script is restored from the project, remove the current tracks first
+    // (they would otherwise be kept, and the loaded ones appended to them, #1247).
+    _imp->isLoading = true;
+    std::vector<TrackMarkerPtr> oldMarkers;
+    getAllMarkers(&oldMarkers);
+    for (std::size_t i = 0; i < oldMarkers.size(); ++i) {
+        removeMarker(oldMarkers[i]);
     }
+
+    std::vector<TrackMarkerPtr> newMarkers;
+    {
+        QMutexLocker k(&_imp->trackerContextMutex);
+
+        for (std::list<TrackSerialization>::const_iterator it = serialization._tracks.begin(); it != serialization._tracks.end(); ++it) {
+            TrackMarkerPtr marker;
+            if ( it->usePatternMatching() ) {
+                marker = TrackMarkerPM::create(thisShared);
+            } else {
+                marker = TrackMarker::create(thisShared);
+            }
+            marker->initializeKnobsPublic();
+            marker->load(*it);
+            _imp->markers.push_back(marker);
+            newMarkers.push_back(marker);
+        }
+    }
+
+    // Tell the GUI (tracks table) about the loaded tracks
+    for (std::size_t i = 0; i < newMarkers.size(); ++i) {
+        Q_EMIT trackInserted(newMarkers[i], (int)i);
+    }
+
+    // A node that is already created had its tracks declared to Python
+    // (Node::declareTrackerPythonField()): declare the loaded ones. When the
+    // node is being created, Node::load() declares them after loading.
+    if ( getNode()->isNodeCreated() ) {
+        declarePythonFields();
+    }
+    _imp->isLoading = false;
 }
 
 void
@@ -1066,7 +1095,7 @@ TrackerContext::removeItemAsPythonField(const TrackMarkerPtr& item)
     std::string err;
     std::string script = "del " + nodeFullName + ".tracker." + item->getScriptName_mt_safe() + "\n";
 
-    if ( !appPTR->isBackground() ) {
+    if ( !appPTR->isBackground() && !_imp->isLoading ) {
         getNode()->getApp()->printAutoDeclaredVariable(script);
     }
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0) ) {
@@ -1094,7 +1123,7 @@ TrackerContext::declareItemAsPythonField(const TrackMarkerPtr& item)
         ss << nodeFullName << ".tracker." << itemName << ".getParam(\"" << (*it)->getName() << "\")\n";
     }
     std::string script = ss.str();
-    if ( !appPTR->isBackground() ) {
+    if ( !appPTR->isBackground() && !_imp->isLoading ) {
         getNode()->getApp()->printAutoDeclaredVariable(script);
     }
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0) ) {
@@ -1384,6 +1413,7 @@ TrackerContext::onOverlayKeyDownInternalNodes(double time,
                                               ViewIdx view,
                                               Key key,
                                               KeyboardModifiers modifiers,
+                                              const QString& keyText,
                                               OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
@@ -1393,7 +1423,7 @@ TrackerContext::onOverlayKeyDownInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->getEffectInstance()->onOverlayKeyDown_public(time, renderScale, view, key, modifiers) ) {
+        if ( thisNode->getEffectInstance()->onOverlayKeyDown_public(time, renderScale, view, key, modifiers, keyText) ) {
             return true;
         }
     }
@@ -1407,6 +1437,7 @@ TrackerContext::onOverlayKeyUpInternalNodes(double time,
                                             ViewIdx view,
                                             Key key,
                                             KeyboardModifiers modifiers,
+                                            const QString& keyText,
                                             OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
@@ -1416,7 +1447,7 @@ TrackerContext::onOverlayKeyUpInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->getEffectInstance()->onOverlayKeyUp_public(time, renderScale, view, key, modifiers) ) {
+        if ( thisNode->getEffectInstance()->onOverlayKeyUp_public(time, renderScale, view, key, modifiers, keyText) ) {
             return true;
         }
     }
@@ -1430,6 +1461,7 @@ TrackerContext::onOverlayKeyRepeatInternalNodes(double time,
                                                 ViewIdx view,
                                                 Key key,
                                                 KeyboardModifiers modifiers,
+                                                const QString& keyText,
                                                 OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
@@ -1439,7 +1471,7 @@ TrackerContext::onOverlayKeyRepeatInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->getEffectInstance()->onOverlayKeyRepeat_public(time, renderScale, view, key, modifiers) ) {
+        if ( thisNode->getEffectInstance()->onOverlayKeyRepeat_public(time, renderScale, view, key, modifiers, keyText) ) {
             return true;
         }
     }
