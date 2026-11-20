@@ -39,6 +39,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/Node.h"
@@ -1679,9 +1680,32 @@ GroupFromSelectionCommand::redo()
                 // For each connected input of the original node, create a corresponding Input node with the appropriate name
                 NodePtr originalNodeInternal = foundOriginalNode->getNode();
                 const std::vector<NodeWPtr>& originalNodeInputs = originalNodeInternal->getInputs();
+                // Create an Input node only for the inputs that are connected or not optional: RotoPaint
+                // has 11 optional inputs, and Merge several A inputs and a mask (#223). If that leaves no
+                // input at all, keep the first non-mask input, so that the group can still be connected.
+                EffectInstancePtr originalEffect = originalNodeInternal->getEffectInstance();
+                std::vector<bool> mustCreateInput(originalNodeInputs.size(), false);
+                {
+                    bool hasInput = false;
+                    int firstNonMaskInput = -1;
+                    for (std::size_t i = 0; i < originalNodeInputs.size(); ++i) {
+                        if ( !originalNodeInternal->isInputVisible(i) ) {
+                            // do not create an Input node for an invisible input (example: Shadertoy node, which hides its inputs)
+                            continue;
+                        }
+                        if ( originalNodeInputs[i].lock() || !originalEffect->isInputOptional(i) ) {
+                            mustCreateInput[i] = true;
+                            hasInput = true;
+                        } else if ( (firstNonMaskInput == -1) && !originalEffect->isInputMask(i) ) {
+                            firstNonMaskInput = (int)i;
+                        }
+                    }
+                    if (!hasInput && firstNonMaskInput != -1) {
+                        mustCreateInput[firstNonMaskInput] = true;
+                    }
+                }
                 for (std::size_t i = 0; i < originalNodeInputs.size(); ++i) {
-                    if ( !originalNodeInternal->isInputVisible(i) ) {
-                        // do not create an Input node for an invisible input (example: Shadertoy node, which hides its inputs)
+                    if (!mustCreateInput[i]) {
                         continue;
                     }
                     NodePtr originalInput = originalNodeInputs[i].lock();
