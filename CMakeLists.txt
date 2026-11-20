@@ -453,6 +453,30 @@ endif()
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+# The stack reserve of the main thread of the Windows executables (Natron, NatronRenderer, natron-python,
+# Tests). Keep it in sync with NATRON_MAIN_THREAD_STACK_SIZE in global.pri (qmake).
+# The main thread of a Windows program gets the stack reserve of the executable header, set at link
+# time: by default 2 MB with GNU ld (MinGW-w64), 1 MB with lld and MSVC link.exe, much less than the main
+# thread of Linux and macOS programs (8 MB). Renders can run on the main thread
+# (QFuture::waitForFinished() runs a queued QtConcurrent task on the waiting thread), as well as
+# GUI-thread recursions such as getRegionOfDefinition() from the viewer, so with a deep node graph the
+# main thread can overflow long before the render threads (NATRON_RENDER_THREAD_STACK_SIZE in
+# Engine/ThreadPool.h: 4 MB on Windows) (#1440).
+# The reserve is only address space: the main thread commits its stack pages as it touches them (the
+# commit size of the header stays at its default, 4 KB), unlike threads created with a stack size, whose
+# stack is committed at creation. It is also the default reserve of the threads created without a stack
+# size, which commit their stack in the same way.
+set(NATRON_MAIN_THREAD_STACK_SIZE 8388608) # 8 MB
+function(natron_set_main_thread_stack_size target)
+    if(WIN32)
+        if(MSVC) # MSVC and clang-cl
+            target_link_options(${target} PRIVATE "/STACK:${NATRON_MAIN_THREAD_STACK_SIZE}")
+        else() # MinGW-w64 (GNU ld or lld)
+            target_link_options(${target} PRIVATE "-Wl,--stack,${NATRON_MAIN_THREAD_STACK_SIZE}")
+        endif()
+    endif()
+endfunction()
+
 enable_testing()
 
 add_subdirectory(libs)
