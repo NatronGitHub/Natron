@@ -119,8 +119,8 @@ interacts page does not count the rows describing pull request #1349.
      - NEXT
    * - :ref:`Core <ofx-host-conformance-core>`
      - 99
-     - 70
-     - 15
+     - 72
+     - 13
      - 8
      - 1
      - 5
@@ -151,8 +151,8 @@ interacts page does not count the rows describing pull request #1349.
      - 0
    * - **Total**
      - 387
-     - 250
-     - 68
+     - 252
+     - 66
      - 38
      - 7
      - 21

@@ -178,6 +178,21 @@ TEST(OfxSuiteStatus, HostNameBadIndex)
     EXPECT_EQ( kOfxStatErrBadIndex, props->propGetString(handle->host, kOfxPropName, 1, &name) );
 }
 
+// propGetDimension: "kOfxStatErrBadHandle - if the handle was invalid" (the magic number of the property set,
+// NatronGitHub/openfx#200)
+TEST(OfxSuiteStatus, PropGetDimensionBadHandle)
+{
+    const OfxPropertySuiteV1* props = NatronTestPlugin::propertySuite();
+
+    ASSERT_TRUE(props != 0);
+    std::vector<unsigned char> notASet(256, 0);
+    int count = -1;
+    EXPECT_EQ( kOfxStatErrBadHandle, props->propGetDimension( (OfxPropertySetHandle)&notASet[0], kOfxPropName, &count ) );
+    ::OfxHost* handle = OFX::Host::ImageEffect::gImageEffectHost->getHandle();
+    EXPECT_EQ( kOfxStatOK, props->propGetDimension(handle->host, kOfxPropName, &count) );
+    EXPECT_EQ(1, count);
+}
+
 // mutexDestroy, mutexLock, mutexUnLock, mutexTryLock: "kOfxStatErrBadHandle - if the handle was bad"
 TEST(OfxSuiteStatus, MutexBadHandle)
 {
@@ -277,14 +292,12 @@ TEST_F(OfxSuiteStatusTest, ProgressUpdateWithoutStart)
     ASSERT_TRUE(suite != 0);
     OfxStatus stat = suite->progressUpdate(_effect, 0.5);
     EXPECT_NE(kOfxStatReplyNo, stat);
-    // kOfxStatFailed with a HostSupport that maps every exception of progressUpdate() to it
-    EXPECT_TRUE( (stat == kOfxStatErrBadHandle) || (stat == kOfxStatFailed) ) << stat;
+    EXPECT_EQ(kOfxStatErrBadHandle, stat);
 
     EXPECT_EQ( kOfxStatOK, suite->progressStart(_effect, "OfxSuiteStatus") );
     EXPECT_EQ( kOfxStatOK, suite->progressUpdate(_effect, 0.5) );
     EXPECT_EQ( kOfxStatOK, suite->progressEnd(_effect) );
-    stat = suite->progressUpdate(_effect, 0.5);
-    EXPECT_TRUE( (stat == kOfxStatErrBadHandle) || (stat == kOfxStatFailed) ) << stat;
+    EXPECT_EQ( kOfxStatErrBadHandle, suite->progressUpdate(_effect, 0.5) );
 }
 
 // gotoTime "moves the timeline to time": Natron's timeline has integer frames, so it goes to the nearest one
@@ -308,10 +321,10 @@ TEST_F(OfxSuiteStatusTest, GotoTime)
     EXPECT_EQ( -3, timeline->currentFrame() );
     EXPECT_EQ( kOfxStatErrValue, suite->gotoTime( _effect, std::numeric_limits<double>::quiet_NaN() ) );
     EXPECT_EQ( -3, timeline->currentFrame() );
-    // an infinite time has no frame: an error (kOfxStatFailed, kOfxStatErrValue when HostSupport also checks
-    // it), and the timeline does not move
-    const OfxStatus infStat = suite->gotoTime( _effect, std::numeric_limits<double>::infinity() );
-    EXPECT_TRUE( (infStat == kOfxStatErrValue) || (infStat == kOfxStatFailed) ) << infStat;
+    // an infinite or huge time has no frame: "an illegal value", and the timeline does not move
+    EXPECT_EQ( kOfxStatErrValue, suite->gotoTime( _effect, std::numeric_limits<double>::infinity() ) );
+    EXPECT_EQ( -3, timeline->currentFrame() );
+    EXPECT_EQ( kOfxStatErrValue, suite->gotoTime(_effect, 1e300) );
     EXPECT_EQ( -3, timeline->currentFrame() );
 
     timeline->seekFrame(startFrame, false, 0, eTimelineChangeReasonOtherSeek);
