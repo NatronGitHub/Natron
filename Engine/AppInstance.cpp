@@ -2324,17 +2324,19 @@ AppInstance::onGroupCreationFinished(const NodePtr& node,
 }
 
 bool
-AppInstance::saveTemp(const std::string& filename)
+AppInstance::saveTemp(const std::string& filename,
+                      ProjectFileFormatEnum format)
 {
     std::string outFile = filename;
     std::string path = SequenceParsing::removePath(outFile);
     ProjectPtr project = getProject();
 
-    return project->saveProject_imp(QString::fromUtf8( path.c_str() ), QString::fromUtf8( outFile.c_str() ), false, false, 0);
+    return project->saveProject_imp(QString::fromUtf8( path.c_str() ), QString::fromUtf8( outFile.c_str() ), false, false, 0, 0, format);
 }
 
 bool
-AppInstance::save(const std::string& filename)
+AppInstance::save(const std::string& filename,
+                  ProjectFileFormatEnum format)
 {
     ProjectPtr project = getProject();
 
@@ -2342,19 +2344,20 @@ AppInstance::save(const std::string& filename)
         QString projectFilename = project->getProjectFilename();
         QString projectPath = project->getProjectPath();
 
-        return project->saveProject(projectPath, projectFilename, 0);
+        return project->saveProject(projectPath, projectFilename, 0, format);
     } else {
-        return saveAs(filename);
+        return saveAs(filename, format);
     }
 }
 
 bool
-AppInstance::saveAs(const std::string& filename)
+AppInstance::saveAs(const std::string& filename,
+                    ProjectFileFormatEnum format)
 {
     std::string outFile = filename;
     std::string path = SequenceParsing::removePath(outFile);
 
-    return getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( outFile.c_str() ), 0);
+    return getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( outFile.c_str() ), 0, format);
 }
 
 AppInstancePtr

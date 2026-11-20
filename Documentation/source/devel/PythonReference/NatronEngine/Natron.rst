@@ -138,6 +138,17 @@ that are more complicated than a simple boolean value.
    - ePlaybackModeBounce,
    - ePlaybackModeOnce
 
+.. attribute:: Natron.ProjectFileFormatEnum
+
+   The format of a project file (see :meth:`App.getProjectFormat<NatronEngine.App.getProjectFormat>`).
+   Can have the following values:
+
+   - eProjectFileFormatNone = -1, (a project that was never saved; when saving: the format of the project)
+   - eProjectFileFormatText = 0, (XML text, compatible with Natron 2.5 and earlier)
+   - eProjectFileFormatBinary = 1 (portable binary, Natron 2.6 and later)
+
+   .. versionadded:: 2.6
+
 .. attribute:: Natron.PixmapEnum
 
     See `here <https://github.com/NatronGitHub/Natron/blob/master/Global/Enums.h>`_ for

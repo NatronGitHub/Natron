@@ -33,6 +33,7 @@
 #include <cstdlib> // strtoul
 #include <cerrno> // errno
 #include <cassert>
+#include <cstring> // memcmp
 #include <stdexcept>
 
 #ifdef __NATRON_WIN32__
@@ -77,6 +78,7 @@
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/PortableBinaryArchive.h"
 #include "Engine/ProjectPrivate.h"
 #include "Engine/ProjectSerialization.h"
 #include "Engine/RectDSerialization.h"
@@ -201,11 +203,141 @@ public:
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+// A binary project of a more recent layout (NATRON_PROJECT_BINARY_VERSION): reported as is, not as a damaged file.
+class ProjectTooRecentError
+    : public std::runtime_error
+{
+public:
+    explicit ProjectTooRecentError(const std::string& what)
+        : std::runtime_error(what)
+    {
+    }
+};
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
+// The number of bytes read by detectFileFormat(): enough for a byte order mark, some white space and "<?xml".
+#define kProjectFileFormatHeaderSize 64
+
+// The layout of a binary project file. Version 1: the Boost archive header, this version, the format of the
+// project (different from binary for an auto-save, see ProjectFileFormatEnum), then the same contents as a
+// text project: Background_project, Project and, unless Background_project is true, ProjectGui.
+#define NATRON_PROJECT_BINARY_VERSION 1
+
+ProjectFileFormatEnum
+Project::detectFileFormat(const char* data,
+                          std::size_t size)
+{
+    // portable binary archive (see PortableBinaryOArchive::init())
+    if ( (size >= NATRON_PORTABLE_BINARY_ARCHIVE_MAGIC_SIZE) &&
+         (std::memcmp(data, NATRON_PORTABLE_BINARY_ARCHIVE_MAGIC, NATRON_PORTABLE_BINARY_ARCHIVE_MAGIC_SIZE) == 0) ) {
+        return eProjectFileFormatBinary;
+    }
+    // XML: optional UTF-8 byte order mark, optional white space, then "<?xml"
+    std::size_t i = 0;
+    if ( (size >= 3) && ( (unsigned char)data[0] == 0xEF ) && ( (unsigned char)data[1] == 0xBB ) && ( (unsigned char)data[2] == 0xBF ) ) {
+        i = 3;
+    }
+    while ( i < size && (data[i] == ' ' || data[i] == '\t' || data[i] == '\r' || data[i] == '\n') ) {
+        ++i;
+    }
+    if ( (size - i >= 5) && (std::memcmp(data + i, "<?xml", 5) == 0) ) {
+        return eProjectFileFormatText;
+    }
+
+    return eProjectFileFormatNone;
+}
+
+ProjectFileFormatEnum
+Project::detectFileFormat(const QString& filePath)
+{
+    QFile f(filePath);
+
+    if ( !f.open(QIODevice::ReadOnly) ) {
+        return eProjectFileFormatNone;
+    }
+    const QByteArray header = f.read(kProjectFileFormatHeaderSize);
+
+    return detectFileFormat( header.constData(), (std::size_t)header.size() );
+}
+
+// The suffix of the auto-saves, after ".ntp". Binary auto-saves don't use the ".autosave" suffix of
+// Natron 2.5 and earlier, which would offer to restore them and fail to load them (see findAutoSaveSuffix()).
+#define kAutoSaveSuffixText ".autosave"
+#define kAutoSaveSuffixBinary ".binautosave"
+
+int
+Project::findAutoSaveSuffix(const QString& fileName,
+                            int* suffixSize)
+{
+    const QString ntpExt = QLatin1Char('.') + QString::fromUtf8(NATRON_PROJECT_FILE_EXT);
+    const char* suffixes[] = { kAutoSaveSuffixBinary, kAutoSaveSuffixText };
+
+    for (const char* suffix : suffixes) {
+        const QString suffixStr = QString::fromUtf8(suffix);
+        int pos = fileName.indexOf(ntpExt + suffixStr);
+        if (pos != -1) {
+            if (suffixSize) {
+                *suffixSize = suffixStr.size();
+            }
+
+            return pos;
+        }
+    }
+
+    return -1;
+}
+
+ProjectFileFormatEnum
+Project::getFileFormat() const
+{
+    QMutexLocker l(&_imp->projectLock);
+
+    return _imp->fileFormat;
+}
+
+ProjectFileFormatEnum
+Project::getFileFormatForSave() const
+{
+    ProjectFileFormatEnum format = getFileFormat();
+
+    if (format == eProjectFileFormatNone) {
+        format = appPTR->getCurrentSettings()->saveAsBinary() ? eProjectFileFormatBinary : eProjectFileFormatText;
+    }
+
+    return format;
+}
+
+void
+Project::setFileFormat(ProjectFileFormatEnum format)
+{
+    QMutexLocker l(&_imp->projectLock);
+
+    _imp->fileFormat = format;
+}
+
 bool
 Project::loadProject(const QString & path,
                      const QString & name,
                      bool isUntitledAutosave,
                      bool attemptToLoadAutosave)
+{
+    return loadProjectImpl(path, name, isUntitledAutosave, attemptToLoadAutosave, false);
+}
+
+bool
+Project::restoreAutoSave(const QString & path,
+                         const QString & autoSaveName)
+{
+    return loadProjectImpl(path, autoSaveName, false, false, true);
+}
+
+bool
+Project::loadProjectImpl(const QString & path,
+                         const QString & name,
+                         bool isUntitledAutosave,
+                         bool attemptToLoadAutosave,
+                         bool isNamedAutoSave)
 {
     reset(false, true);
     _imp->autoSaveDisabled = false;
@@ -214,19 +346,25 @@ Project::loadProject(const QString & path,
         QString realPath = path;
         StrUtils::ensureLastPathSeparator(realPath);
         QString realName = name;
-        bool isAutoSave = isUntitledAutosave;
-        // In test mode (--test), auto-saves are neither restored nor removed: they may be the user's.
-        if ( !getApp()->isBackground() && !isUntitledAutosave && !appPTR->isTestMode() ) {
+        bool isAutoSave = isUntitledAutosave || isNamedAutoSave;
+        if (isNamedAutoSave) {
+            // as when the user chose to use the auto-save below
+            QMutexLocker k(&_imp->projectLock);
+            _imp->lastAutoSaveFilePath = realPath + realName;
+        } else if ( !getApp()->isBackground() && !isUntitledAutosave && !appPTR->isTestMode() ) {
+            // In test mode (--test), auto-saves are neither restored nor removed: they may be the user's.
             // In Gui mode, attempt to load an auto-save for this project if there's one.
             QString autosaveFileName;
-            bool hasAutoSave = findAutoSaveForProject(realPath, name, &autosaveFileName);
+            QStringList otherAutoSaves;
+            // --no-dialogs: also an auto-save older than the project, which must not be overwritten either
+            bool hasAutoSave = findAutoSaveForProject(realPath, name, &autosaveFileName, appPTR->isDialogsDisabled(), &otherAutoSaves);
             if ( hasAutoSave && appPTR->isDialogsDisabled() ) {
                 // --no-dialogs: load the project itself, and keep its auto-save, which may be
                 // the user's crash recovery: using it would delete it when quitting
                 Dialogs::printDismissedDialog( tr("Auto-save").toStdString(),
                                                tr("A recent auto-save of %1 was found. It is not used, and kept.").arg(name).toStdString() );
                 hasAutoSave = false;
-                // The auto-saves of this project would overwrite it (<dir>/<name>.autosave):
+                // The auto-saves of this project would overwrite it (<dir>/<name>.binautosave):
                 // do not auto-save it in this session (see refreshAutoSaveDisabled())
                 _imp->autoSaveDisabled = true;
             }
@@ -242,6 +380,10 @@ Project::loadProject(const QString & path,
                 }
                 if ( (ret == eStandardButtonNo) || (ret == eStandardButtonEscape) ) {
                     QFile::remove(realPath + autosaveFileName);
+                    // also an older auto-save in the other format (by 2.5, or by 2.6), more recent than the project
+                    Q_FOREACH(const QString& other, otherAutoSaves) {
+                        QFile::remove(realPath + other);
+                    }
                 } else {
                     realName = autosaveFileName;
                     isAutoSave = true;
@@ -306,11 +448,6 @@ Project::loadProjectInternal(const QString & path,
     }
 
     bool ret = false;
-    FStreamsSupport::ifstream ifile;
-    FStreamsSupport::open( &ifile, filePath.toStdString() );
-    if (!ifile) {
-        throw std::runtime_error( tr("Failed to open %1").arg(filePath).toStdString() );
-    }
 
     if ( (NATRON_VERSION_MAJOR == 1) && (NATRON_VERSION_MINOR == 0) && (NATRON_VERSION_REVISION == 0) ) {
         ///Try to determine if the project was made during Natron v1.0.0 - RC2 or RC3 to detect a bug we introduced at that time
@@ -335,9 +472,26 @@ Project::loadProjectInternal(const QString & path,
 
     LoadProjectSplashScreen_RAII __raii_splashscreen__(getApp(), name);
 
-    try {
+    // Detect the format from the content of the file, then use only the matching archive:
+    // a damaged text project must be reported as such, not as an unreadable binary project.
+    ProjectFileFormatEnum fileFormat;
+    {
+        QFile f(filePath);
+        if ( !f.open(QIODevice::ReadOnly) ) {
+            throw std::runtime_error( tr("Failed to open %1").arg(filePath).toStdString() );
+        }
+        const QByteArray header = f.read(kProjectFileFormatHeaderSize);
+        fileFormat = detectFileFormat( header.constData(), (std::size_t)header.size() );
+    }
+    if (fileFormat == eProjectFileFormatNone) {
+        throw std::runtime_error( tr("%1 is not a %2 project file: it is neither a text (XML) nor a binary project.").arg( filePath, QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
+    }
+    // The format of the project file this file is, or was an auto-save of.
+    ProjectFileFormatEnum projectFormat = fileFormat;
+
+    // Same contents for both formats, so that they go through the same serialize() functions and versions.
+    auto loadFromArchive = [&](auto & iArchive) {
         bool bgProject;
-        boost::archive::xml_iarchive iArchive(ifile);
         {
             FlagSetter __raii_loadingProjectInternal__(true, &_imp->isLoadingProjectInternal, &_imp->isLoadingProjectMutex);
 
@@ -350,6 +504,45 @@ Project::loadProjectInternal(const QString & path,
         if (!bgProject) {
             getApp()->loadProjectGui(isAutoSave, iArchive);
         }
+    };
+
+    try {
+        if (fileFormat == eProjectFileFormatText) {
+            FStreamsSupport::ifstream ifile;
+            FStreamsSupport::open( &ifile, filePath.toStdString() );
+            if (!ifile) {
+                throw std::runtime_error( tr("Failed to open %1").arg(filePath).toStdString() );
+            }
+            boost::archive::xml_iarchive iArchive(ifile);
+            loadFromArchive(iArchive);
+            if (isUntitledAutosave) {
+                // an auto-save of a new project, by Natron 2.5 or earlier: the format will be chosen when it is saved
+                projectFormat = eProjectFileFormatNone;
+            }
+        } else {
+            FStreamsSupport::ifstream ifile;
+            FStreamsSupport::open( &ifile, filePath.toStdString(), std::ios_base::in | std::ios_base::binary );
+            if (!ifile) {
+                throw std::runtime_error( tr("Failed to open %1").arg(filePath).toStdString() );
+            }
+            PortableBinaryIArchive iArchive(ifile);
+            unsigned int binaryVersion;
+            iArchive >> boost::serialization::make_nvp("Binary_project_version", binaryVersion);
+            if (binaryVersion > NATRON_PROJECT_BINARY_VERSION) {
+                throw ProjectTooRecentError( tr("This binary project was saved with a more recent version of %1, and cannot be opened by this version.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
+            }
+            int originalFormat;
+            iArchive >> boost::serialization::make_nvp("Project_file_format", originalFormat);
+            loadFromArchive(iArchive);
+            if (isAutoSave) {
+                // auto-saves are always binary, but "Save" must write the format of the original project
+                projectFormat = ( (originalFormat == eProjectFileFormatText) ? eProjectFileFormatText :
+                                  (originalFormat == eProjectFileFormatBinary) ? eProjectFileFormatBinary : eProjectFileFormatNone );
+            }
+        }
+    } catch (const ProjectTooRecentError &) {
+        // not a damaged file
+        throw;
     } catch (const std::exception &e) {
         const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
         if (pInfo.vMajor > NATRON_VERSION_MAJOR ||
@@ -358,7 +551,11 @@ Project::loadProjectInternal(const QString & path,
             QString message = tr("This project was saved with a more recent version (%1.%2.%3) of %4. Projects are not forward compatible and may only be opened in a version of %4 equal or more recent than the version that saved it.").arg(pInfo.vMajor).arg(pInfo.vMinor).arg(pInfo.vRev).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
             throw std::runtime_error(message.toStdString());
         }
-        throw std::runtime_error( tr("Unrecognized or damaged project file:").toStdString() + ' ' + e.what());
+        if (fileFormat == eProjectFileFormatText) {
+            throw std::runtime_error( tr("Unrecognized or damaged text (XML) project file:").toStdString() + ' ' + e.what() );
+        } else {
+            throw std::runtime_error( tr("Unrecognized or damaged binary project file:").toStdString() + ' ' + e.what() );
+        }
     } catch (...) {
         const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
         if (pInfo.vMajor > NATRON_VERSION_MAJOR ||
@@ -367,7 +564,16 @@ Project::loadProjectInternal(const QString & path,
             QString message = tr("This project was saved with a more recent version (%1.%2.%3) of %4. Projects are not forward compatible and may only be opened in a version of %4 equal or more recent than the version that saved it.").arg(pInfo.vMajor).arg(pInfo.vMinor).arg(pInfo.vRev).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
             throw std::runtime_error(message.toStdString());
         }
-        throw std::runtime_error( tr("Unrecognized or damaged project file").toStdString() );
+        if (fileFormat == eProjectFileFormatText) {
+            throw std::runtime_error( tr("Unrecognized or damaged text (XML) project file").toStdString() );
+        } else {
+            throw std::runtime_error( tr("Unrecognized or damaged binary project file").toStdString() );
+        }
+    }
+
+    {
+        QMutexLocker l(&_imp->projectLock);
+        _imp->fileFormat = projectFormat;
     }
 
     Format f;
@@ -379,9 +585,10 @@ Project::loadProjectInternal(const QString & path,
         _imp->autoSetProjectFormat = false;
         if (!isUntitledAutosave) {
             QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
-            int found = projectFilename.lastIndexOf( QString::fromUtf8(".autosave") );
+            int found = findAutoSaveSuffix(projectFilename);
             if (found != -1) {
-                _imp->setProjectFilename( projectFilename.left(found).toStdString() );
+                // keep the .ntp extension
+                _imp->setProjectFilename( projectFilename.left( found + 1 + (int)std::strlen(NATRON_PROJECT_FILE_EXT) ).toStdString() );
             }
             _imp->hasProjectBeenSavedByUser = true;
         } else {
@@ -426,9 +633,10 @@ Project::loadProjectInternal(const QString & path,
 bool
 Project::saveProject(const QString & path,
                      const QString & name,
-                     QString* newFilePath)
+                     QString* newFilePath,
+                     ProjectFileFormatEnum format)
 {
-    return saveProject_imp(path, name, false, true, newFilePath);
+    return saveProject_imp(path, name, false, true, newFilePath, 0, format);
 }
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -488,7 +696,8 @@ Project::saveProject_imp(const QString & path,
                          bool autoS,
                          bool updateProjectProperties,
                          QString* newFilePath,
-                         QString* errorMessage)
+                         QString* errorMessage,
+                         ProjectFileFormatEnum format)
 {
     // A background auto-save (see autoSave()) may be dropped: the project will be saved again later.
     // Any other save (user save, Save As, saveTemp, render save) must not be dropped silently (#825).
@@ -597,7 +806,7 @@ Project::saveProject_imp(const QString & path,
         SavingProjectFlagResetter savingFlagResetter( _imp.get() );
         try {
             if (!autoS) {
-                ret = saveProjectInternal(path, name, false, updateProjectProperties, &warnings);
+                ret = saveProjectInternal(path, name, false, updateProjectProperties, &warnings, format);
 
                 ///We just saved, remove the last auto-save which is now obsolete
                 removeLastAutosave();
@@ -607,7 +816,7 @@ Project::saveProject_imp(const QString & path,
                     removeLastAutosave();
                 }
 
-                ret = saveProjectInternal(path, name, true, updateProjectProperties, &warnings);
+                ret = saveProjectInternal(path, name, true, updateProjectProperties, &warnings, eProjectFileFormatBinary);
             }
             ok = true;
         } catch (const std::exception & e) {
@@ -715,7 +924,8 @@ Project::saveProjectInternal(const QString & path,
                              const QString & name,
                              bool autoSave,
                              bool updateProjectProperties,
-                             QStringList* warnings)
+                             QStringList* warnings,
+                             ProjectFileFormatEnum format)
 {
     bool isRenderSave = name.contains( QString::fromUtf8("RENDER_SAVE") );
     QDateTime time = QDateTime::currentDateTime();
@@ -736,7 +946,8 @@ Project::saveProjectInternal(const QString & path,
         filePath.append( QLatin1Char('/') );
         filePath.append(name);
         if (!isRenderSave) {
-            filePath.append( QString::fromUtf8(".autosave") );
+            // auto-saves are always binary
+            filePath.append( QString::fromUtf8(kAutoSaveSuffixBinary) );
         }
         if (!isRenderSave) {
             if (appendTimeHash) {
@@ -777,13 +988,13 @@ Project::saveProjectInternal(const QString & path,
     StrUtils::ensureLastPathSeparator(tmpFilename);
     tmpFilename.append( QString::number( time.toMSecsSinceEpoch() ) );
 
-    {
-        FStreamsSupport::ofstream ofile;
-        FStreamsSupport::open( &ofile, tmpFilename.toStdString() );
-        if (!ofile) {
-            throw std::runtime_error( tr("Failed to open file ").toStdString() + tmpFilename.toStdString() );
-        }
+    // Auto-saves are always binary (faster, smaller); they record the format of the project.
+    // The format is an argument, not set on the project before the save: this save may wait for a running
+    // auto-save, which must record the format the project has until this save succeeds.
+    const ProjectFileFormatEnum projectFormat = (format != eProjectFileFormatNone && !autoSave) ? format : getFileFormatForSave();
+    const ProjectFileFormatEnum fileFormat = autoSave ? eProjectFileFormatBinary : projectFormat;
 
+    {
         ///Fix file paths before saving.
         QString oldProjectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
 
@@ -794,8 +1005,8 @@ Project::saveProjectInternal(const QString & path,
             _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName() );
         }
 
-        try {
-            boost::archive::xml_oarchive oArchive(ofile);
+        // Same contents for both formats (see loadProjectInternal())
+        auto saveToArchive = [&](auto & oArchive) {
             bool bgProject = getApp()->isBackground();
             oArchive << boost::serialization::make_nvp("Background_project", bgProject);
             ProjectSerialization projectSerializationObj( getApp() );
@@ -807,7 +1018,41 @@ Project::saveProjectInternal(const QString & path,
                     app->saveProjectGui(oArchive);
                 }
             }
+        };
+
+        try {
+            FStreamsSupport::ofstream ofile;
+            if (fileFormat == eProjectFileFormatText) {
+                FStreamsSupport::open( &ofile, tmpFilename.toStdString() );
+            } else {
+                FStreamsSupport::open( &ofile, tmpFilename.toStdString(), std::ios_base::out | std::ios_base::trunc | std::ios_base::binary );
+            }
+            if (!ofile) {
+                throw std::runtime_error( tr("Failed to open file ").toStdString() + tmpFilename.toStdString() );
+            }
+            if (fileFormat == eProjectFileFormatText) {
+                boost::archive::xml_oarchive oArchive(ofile);
+                saveToArchive(oArchive);
+            } else {
+                PortableBinaryOArchive oArchive(ofile);
+                unsigned int binaryVersion = NATRON_PROJECT_BINARY_VERSION;
+                oArchive << boost::serialization::make_nvp("Binary_project_version", binaryVersion);
+                // the format of the project, which may differ from the format of this file if it is an auto-save
+                int originalFormat = autoSave ? (int)getFileFormat() : (int)eProjectFileFormatBinary;
+                oArchive << boost::serialization::make_nvp("Project_file_format", originalFormat);
+                saveToArchive(oArchive);
+            } // the archive is closed (the XML end tags are written)
+            // The archives write to the stream buffer, and the last buffer is only written when the stream is
+            // flushed or closed: check it before the file replaces the project (a full disk, a network share).
+            if ( ofile.rdbuf()->pubsync() == -1 ) {
+                throw std::runtime_error( tr("Failed to write file %1").arg(tmpFilename).toStdString() );
+            }
+            ofile.close();
+            if ( ofile.fail() ) {
+                throw std::runtime_error( tr("Failed to write file %1").arg(tmpFilename).toStdString() );
+            }
         } catch (...) {
+            QFile::remove(tmpFilename);
             if (!autoSave && updateProjectProperties) {
                 ///Reset the old project path in case of failure.
                 _imp->autoSetProjectDirectory(oldProjectPath);
@@ -873,6 +1118,8 @@ Project::saveProjectInternal(const QString & path,
             QMutexLocker l(&_imp->projectLock);
             _imp->hasProjectBeenSavedByUser = true;
             _imp->ageSinceLastSave = time;
+            // a project saved by the user keeps its format, also if it came from the preference
+            _imp->fileFormat = projectFormat;
         }
         Q_EMIT projectNameChanged(path + name, false); //< notify the gui so it can update the title
 
@@ -1008,32 +1255,54 @@ Project::onAutoSaveFutureFinished()
 bool
 Project::findAutoSaveForProject(const QString& projectPath,
                                 const QString& projectName,
-                                QString* autoSaveFileName)
+                                QString* autoSaveFileName,
+                                bool includeOlderThanProject,
+                                QStringList* otherAutoSaves)
 {
     QString projectAbsFilePath = projectPath + projectName;
+    QFileInfo projectInfo(projectAbsFilePath);
+    if ( !projectInfo.exists() ) {
+        return false;
+    }
     QDir savesDir(projectPath);
     QStringList entries = savesDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
+    QString best;
+    QDateTime bestTime;
+    QStringList candidates;
 
     Q_FOREACH(const QString &entry, entries) {
-        QString ntpExt( QLatin1Char('.') );
-
-        ntpExt.append( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) );
-        QString searchStr(ntpExt);
-        QString autosaveSuffix( QString::fromUtf8(".autosave") );
-        searchStr.append(autosaveSuffix);
-        int suffixPos = entry.indexOf(searchStr);
+        int suffixPos = findAutoSaveSuffix(entry);
         if ( (suffixPos == -1) || entry.contains( QString::fromUtf8("RENDER_SAVE") ) ) {
             continue;
         }
-        QString filename = projectPath + entry.left( suffixPos + ntpExt.size() );
-        if ( (filename == projectAbsFilePath) && QFile::exists(filename) ) {
-            *autoSaveFileName = entry;
-
-            return true;
+        QString filename = projectPath + entry.left( suffixPos + 1 + (int)std::strlen(NATRON_PROJECT_FILE_EXT) );
+        if (filename != projectAbsFilePath) {
+            continue;
+        }
+        const QDateTime time = QFileInfo(projectPath + entry).lastModified();
+        if ( !includeOlderThanProject && (time < projectInfo.lastModified()) ) {
+            // qDebug() is silenced by QT_NO_DEBUG_OUTPUT: the error log and stderr are always shown
+            const QString message = tr("The auto-save %1 is older than the project file: it is not offered.").arg(projectPath + entry);
+            std::cerr << message.toStdString() << std::endl;
+            appPTR->writeToErrorLog_mt_safe( tr("Auto-save"), QDateTime::currentDateTime(), message );
+            continue;
+        }
+        candidates.append(entry);
+        if ( best.isEmpty() || (time > bestTime) ) {
+            best = entry;
+            bestTime = time;
         }
     }
+    if ( best.isEmpty() ) {
+        return false;
+    }
+    *autoSaveFileName = best;
+    if (otherAutoSaves) {
+        candidates.removeAll(best);
+        *otherAutoSaves = candidates;
+    }
 
-    return false;
+    return true;
 }
 
 void
@@ -2152,10 +2421,13 @@ Project::removeLastAutosave()
     QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
     QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
     StrUtils::ensureLastPathSeparator(projectPath);
-    QString autoSaveFilePath = projectPath + projectFilename + QString::fromUtf8(".autosave");
-    if ( QFile::exists(autoSaveFilePath) && canRemoveAutoSave(autoSaveFilePath) ) {
-        QFile::remove(autoSaveFilePath);
-        forgetAutoSave(autoSaveFilePath);
+    const char* suffixes[] = { kAutoSaveSuffixBinary, kAutoSaveSuffixText };
+    for (const char* suffix : suffixes) {
+        QString autoSaveFilePath = projectPath + projectFilename + QString::fromUtf8(suffix);
+        if ( QFile::exists(autoSaveFilePath) && canRemoveAutoSave(autoSaveFilePath) ) {
+            QFile::remove(autoSaveFilePath);
+            forgetAutoSave(autoSaveFilePath);
+        }
     }
 }
 
@@ -2175,12 +2447,23 @@ Project::refreshAutoSaveDisabled()
         return;
     }
     // --no-dialogs: an auto-save of this project written by another session (the user's crash
-    // recovery) would be overwritten by the auto-saves of this session (<dir>/<name>.autosave)
+    // recovery) would be overwritten by the auto-saves of this session (<dir>/<name>.binautosave)
     QString path = QString::fromUtf8( _imp->getProjectPath().c_str() );
     StrUtils::ensureLastPathSeparator(path);
     const QString name = QString::fromUtf8( _imp->getProjectFilename().c_str() );
     QString autoSaveFileName;
-    if ( findAutoSaveForProject(path, name, &autoSaveFileName) && !wroteAutoSave(path + autoSaveFileName) ) {
+    QStringList others;
+    if ( !findAutoSaveForProject(path, name, &autoSaveFileName, true /*includeOlderThanProject*/, &others) ) {
+        return;
+    }
+    others.append(autoSaveFileName);
+    bool foreign = false;
+    Q_FOREACH(const QString& f, others) {
+        if ( !wroteAutoSave(path + f) ) {
+            foreign = true;
+        }
+    }
+    if (foreign) {
         Dialogs::printDismissedDialog( tr("Auto-save").toStdString(),
                                        tr("An auto-save of %1 exists: it is kept, and %1 is not auto-saved in this session.").arg(name).toStdString() );
         _imp->autoSaveDisabled = true;
@@ -2390,6 +2673,7 @@ Project::doResetEnd(bool aboutToQuit)
             _imp->autoSetProjectFormat = appPTR->getCurrentSettings()->isAutoProjectFormatEnabled();
             _imp->autoSetProjectFormatPendingReaders.clear();
             _imp->hasProjectBeenSavedByUser = false;
+            _imp->fileFormat = eProjectFileFormatNone;
             _imp->projectCreationTime = QDateTime::currentDateTime();
             _imp->setProjectFilename(NATRON_PROJECT_UNTITLED);
             _imp->setProjectPath("");
