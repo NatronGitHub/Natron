@@ -360,7 +360,11 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
             throw std::runtime_error( missingOpenGLError.toStdString() );
         }
 
-        appPTR->getCurrentSettings()->doOCIOStartupCheckIfNeeded();
+        // Not in a GUI test (--test): the question is about the user's preferences, and the tests use the
+        // default settings with the OpenColorIO configuration of the OCIO environment variable.
+        if ( !appPTR->isTestMode() ) {
+            appPTR->getCurrentSettings()->doOCIOStartupCheckIfNeeded();
+        }
 
         if ( !appPTR->isShorcutVersionUpToDate() ) {
             StandardButtonEnum reply = questionDialog(tr("Shortcuts").toStdString(),

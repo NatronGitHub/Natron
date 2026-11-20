@@ -169,7 +169,8 @@ and work as usual. The test mode also isolates the test from the user's session:
 
 - auto-saves are neither written nor restored, and the "An auto-saved project was found" question
   is never asked (the user's auto-saves are left untouched);
-- Natron does not check for updates, and does not ask about the default appearance or shortcuts;
+- Natron does not check for updates, and does not ask about the default appearance, the shortcuts or
+  the OpenColorIO configuration (set ``OCIO``);
 - a test that expects a modal dialog or a menu gives its answer beforehand with
   :func:`NatronGuiTest.setDialogAnswers`: when the dialog is shown, its button is clicked (or the menu
   item triggered), so that the real code runs. A modal dialog or menu that gets no answer is
