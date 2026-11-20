@@ -91,6 +91,13 @@ NATRON_REPO_OVERRIDES="
 freetype
 qt5-base
 "
+# Overrides whose fix must not be lost: if MSYS2's package is not older than
+# Natron's, natron_repo_install_overrides fails instead of keeping MSYS2's, until
+# someone has checked that MSYS2's has the fix (and deleted the Natron package).
+# qt5-base: without the QMutex fix of #1453, a render thread can hang on ARM64 (#1451).
+NATRON_REPO_OVERRIDES_REQUIRED="
+qt5-base
+"
 
 natron_repo_install_overrides() {
   local msys_repo="${MSYSTEM,,}"
@@ -103,8 +110,12 @@ natron_repo_install_overrides() {
     fi
     msys_ver=$(pacman -Sl "${msys_repo}" 2>/dev/null | awk -v p="${pkg}" '$2 == p {print $3}')
     if [[ -n ${msys_ver} && $(vercmp "${natron_ver}" "${msys_ver}") -le 0 ]]; then
-      echo "WARNING: ${msys_repo}/${pkg} ${msys_ver} is not older than natron/${pkg} ${natron_ver}: keeping MSYS2's."
-      echo "WARNING: if it has the fix, delete tools/MINGW-packages/mingw-w64-${name}."
+      # GitHub Actions annotations (plain lines elsewhere), so that this is not lost in the log
+      if [[ " ${NATRON_REPO_OVERRIDES_REQUIRED//$'\n'/ } " == *" ${name} "* ]]; then
+        echo "::error::${msys_repo}/${pkg} ${msys_ver} is not older than natron/${pkg} ${natron_ver}, which has a fix that must not be lost: check that MSYS2's has it, then delete tools/MINGW-packages/mingw-w64-${name} (README.md, \"Packages that replace MSYS2's\"), or rebase Natron's on MSYS2's new PKGBUILD"
+        return 1
+      fi
+      echo "::warning::${msys_repo}/${pkg} ${msys_ver} is not older than natron/${pkg} ${natron_ver}: keeping MSYS2's. If it has the fix, delete tools/MINGW-packages/mingw-w64-${name}."
       continue
     fi
     echo "Installing natron/${pkg} ${natron_ver} (${msys_repo} has ${msys_ver:-none}) ..."

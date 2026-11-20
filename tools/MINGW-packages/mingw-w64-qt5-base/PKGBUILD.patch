@@ -1,26 +1,27 @@
 --- PKGBUILD.orig	2026-11-21 00:02:55
-+++ PKGBUILD	2026-11-21 00:08:50
-@@ -1,5 +1,19 @@
++++ PKGBUILD	2026-11-21 00:40:29
+@@ -1,5 +1,20 @@
  # Contributor: Mehdi Chinoune <mehdi.chinoune@hotmail.com>
  
 +# Natron: MSYS2's mingw-w64-qt5-base (PKGBUILD.orig, msys2/MINGW-packages
-+# 7b1033939d, KDE kde/5.15 fbed962c31) with 0031-qmutex-fix-lost-wakeup-arm64.patch,
++# 7b1033939d, KDE kde/5.15 fbed962c31) with 1001-natron-qmutex-fix-lost-wakeup-arm64.patch,
 +# the QMutex lost wake-up fix of NatronGitHub/Natron#1453 (#1451): Qt 5's non-futex
 +# QMutex, which Windows always uses, can leave a thread asleep on an unlocked mutex
 +# on weakly ordered CPUs. Only built for CLANGARM64 (Windows on ARM64, #1494): on
 +# x86-64 every CAS is a full barrier, so UCRT64 is not affected in practice. No Qt 6
 +# counterpart: MSYS2's qt6-base (6.12) uses WaitOnAddress futexes on Windows (#1453).
 +# Same pkgname as MSYS2's, so it replaces the system package. pkgrel is 2.1: above
-+# MSYS2's 5.15.19+kde+r96-2, below any MSYS2 rebuild (-3) or update, which then
-+# wins (natron_repo_install_overrides prints a warning): check that it has the fix
-+# (a KDE kde/5.15 backport, see #1546), or rebase this package on it. Delete this
++# MSYS2's 5.15.19+kde+r96-2, below any MSYS2 rebuild (-3) or update. Then
++# natron_repo_install_overrides fails (NATRON_REPO_OVERRIDES_REQUIRED), rather than
++# bring back the hang: check that MSYS2's has the fix (a KDE kde/5.15 backport, see
++# #1546), or rebase this package on MSYS2's new PKGBUILD. Delete this
 +# directory as soon as MSYS2's qt5-base has the fix (see "Packages that replace
 +# MSYS2's" in ../README.md).
 +
  # Use the right mkspecs file
  if [[ ${MINGW_PACKAGE_PREFIX} == *-clang-* ]]; then
    _platform=win32-clang-g++
-@@ -13,10 +27,10 @@
+@@ -13,10 +28,10 @@
           "${MINGW_PACKAGE_PREFIX}-${_realname}-debug")
  _qtver=5.15.19
  pkgver=5.15.19+kde+r96
@@ -34,33 +35,33 @@
  url='https://www.qt.io/'
  msys2_repository_url='https://github.com/qt/qttools'
  msys2_references=(
-@@ -86,7 +100,8 @@
+@@ -86,7 +101,8 @@
          0029-fix-conflict-with-qt6.patch
          0030-fix-std-terminate-without-exceptions.patch
          0101-QSslCertificate-remove-manual-parsing-code-for-ASN.1.patch
 -        0102-Update-sources-to-support-OpenSSL-4.patch)
 +        0102-Update-sources-to-support-OpenSSL-4.patch
-+        0031-qmutex-fix-lost-wakeup-arm64.patch)
++        1001-natron-qmutex-fix-lost-wakeup-arm64.patch)
  sha256sums=('4b781e4bb7d5497606da0f7bee8357d3f92cb5e39e9f6e39db1f3b136c840061'
              'a74eec5be1aee1bd3a37af0955b7c5f3d36d54bc64c07e4c2edd5526cdc3cad5'
              'e0a535278057f42e43952405e567c23cc493ef6badeeb3bbce0154953cd545a5'
-@@ -119,7 +134,8 @@
+@@ -119,7 +135,8 @@
              'f276f74fc4585b1f2d01d4bc1391d3e86f69ac1efb4e297f9898fa4cc0d14fbb'
              '217457594144fd5bf9bc454080fd05332d1f96f3063c3bc03503234122fe771d'
              'f061ea5385769613f71adff67e5bb30e704577d4bdf503c197d46e7c5f131313'
 -            '6ec8a575da75d43dfef1436633254eeef0d8958abce6dd3ea6403e803187da92')
 +            '6ec8a575da75d43dfef1436633254eeef0d8958abce6dd3ea6403e803187da92'
-+            '73eee021d2b473f4765ab9faac12ec3bd5451245fb70d1f20ae7ea5972eee07d')
++            '24011e26055db28544ad7324a2fc7cb12c1f9982970b653e37f5f9bdc4664e4f')
  
  # Helper macros to help make tasks easier #
  apply_patch_with_msg() {
-@@ -191,6 +207,10 @@
+@@ -191,6 +208,10 @@
    apply_patch_with_msg \
      0028-work-around-pyside2-brokenness.patch
  
 +  # Natron: QMutex lost wake-up on weakly ordered CPUs (NatronGitHub/Natron#1451, #1453)
 +  apply_patch_with_msg \
-+    0031-qmutex-fix-lost-wakeup-arm64.patch
++    1001-natron-qmutex-fix-lost-wakeup-arm64.patch
 +
    local _ARCH_TUNE=
    if [[ ${CARCH} == x86_64 ]]; then

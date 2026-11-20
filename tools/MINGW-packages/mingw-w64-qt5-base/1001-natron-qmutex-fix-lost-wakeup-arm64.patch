@@ -1,4 +1,4 @@
-Fix a lost wake-up in the non-futex QMutex (macOS, arm64)
+Fix a lost wake-up in the non-futex QMutex (Windows and macOS, on arm64)
 
 QBasicMutex::unlockInternal() with no waiter does
   (2) waiters.fetchAndAddRelease(-BigNumber)
