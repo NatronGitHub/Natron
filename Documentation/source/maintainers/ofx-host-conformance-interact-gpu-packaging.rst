@@ -11,7 +11,7 @@ This page is part of the :ref:`OpenFX 1.5.1 host conformance audit <ofx-host-con
 ``ofxPropertiesByObject.rst``; and, for binary loading, the plug-in cache and plug-in versions,
 ``ofxPackaging.rst``, ``ofxPluginStruct.rst`` and ``ofxLoadingSequence.rst``.
 Section 3 describes pull request `#1349 <https://github.com/NatronGitHub/Natron/pull/1349>`__ (DrawSuite support, branch ``ofx15-draw-suite``), which
-was open and not yet on RB-2.6 at the time of the audit.
+was open and not yet on RB-2.6 at the time of the audit. It has since been merged into RB-2.6.
 
 **Spec reference abbreviations.** A bare ``:line`` in the spec column is in the header of that
 section (``ofxInteract.h``, ``ofxDrawSuite.h``, ``ofxGPURender.h`` or ``ofxColour.h``).
@@ -131,13 +131,13 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - I17
      - `ofxInteract.h:236-238 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxInteract.h#L236-L238>`__ / `ofxInteracts.rst:85 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxInteracts.rst?plain=1#L85>`__ "If this is called via ...OverlayInteractV2, drawing MUST use DrawSuite"; V1 SHOULD use OpenGL
      - MUST (host side: choose entry)
-     - HS ``Base::getOverlayInteractMainEntry`` uses V2 only if ``gImageEffectHost->supportsDrawSuite()`` (ofxhIE:278-301). RB-2.6 Natron does not override ``supportsDrawSuite`` (default false, ofxhIE:4792-4795), so V1 is used, a V2-only plug-in gets no overlay, and fetchSuite(kOfxDrawSuite) returns NULL (ofxhIE:4833-4836). Consistent: Natron does not claim DrawSuite. See section 3 for `#1349 <https://github.com/NatronGitHub/Natron/pull/1349>`__.
+     - HS ``Base::getOverlayInteractMainEntry`` uses V2 only if ``gImageEffectHost->supportsDrawSuite()`` (ofxhIE:278-301). RB-2.6 Natron does not override ``supportsDrawSuite`` (default false, ofxhIE:4792-4795), so V1 is used, a V2-only plug-in gets no overlay, and fetchSuite(kOfxDrawSuite) returns NULL (ofxhIE:4833-4836). Consistent: Natron does not claim DrawSuite. See section 3 for `#1349 <https://github.com/NatronGitHub/Natron/pull/1349>`__. Since #1349 was merged, ``supportsDrawSuite()`` returns true: a V2-only plug-in gets its V2 overlay, and a plug-in with both gets V1 (``preferOverlayInteractV1()``, Engine/OfxHost.h).
      - OK (DrawSuite not supported; `#1103 <https://github.com/NatronGitHub/Natron/issues/1103>`__/#1136)
    * - I18
      - `ofxInteract.h:240-242 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxInteract.h#L240-L242>`__, `ofxInteracts.rst:97-100 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxInteracts.rst?plain=1#L97-L100>`__ overlays must not swap buffers; `ofxInteracts.rst:142-144 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxInteracts.rst?plain=1#L142-L144>`__ "A parameter's interact draw function will have full responsibility for ... swapping buffers"
      - MUST (host provides swap for param interacts)
-     - interactSwapBuffers -> ``n_swapBuffers`` -> ``CustomParamInteract::swapOpenGLBuffers`` = ``update()`` (CustomParamInteract.cpp:172-175). QOpenGLWidget swaps itself after paintGL; calling ``update()`` from inside paintGL (where a conforming param interact calls swapBuffers) schedules another paint, i.e. a continuous repaint loop. No known plug-in calls interactSwapBuffers (grep of openfx Examples, openfx-misc, openfx-io, openfx-arena), so this is not observed.
-     - PARTIAL
+     - interactSwapBuffers -> ``n_swapBuffers`` -> ``CustomParamInteract::swapOpenGLBuffers`` = ``update()`` (CustomParamInteract.cpp:172-175). QOpenGLWidget swaps itself after paintGL; calling ``update()`` from inside paintGL (where a conforming param interact calls swapBuffers) schedules another paint, i.e. a continuous repaint loop. No known plug-in calls interactSwapBuffers (grep of openfx Examples, openfx-misc, openfx-io, openfx-arena), so this is not observed. Fixed: ``CustomParamInteract::swapOpenGLBuffers()`` does nothing during paintGL(), after which the widget presents its frame buffer.
+     - OK (fixed by `#1484 <https://github.com/NatronGitHub/Natron/pull/1484>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - I19
@@ -198,15 +198,15 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - I28
      - `ofxParam.h:207 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L207>`__ kOfxParamPropInteractSize "set by a host to indicate the current size of a custom interface ... plugin parameter instance (read only)", double x2
      - MUST
-     - Natron stores the size as an int property on the *interact descriptor* (``OfxParamOverlayInteract::setSize``, Engine/OfxOverlayInteract.cpp:381-387; spec added by ``getOfxParamOverlayInteractDescProps``, Engine/OfxImageEffectInstance.cpp:523-535). The param instance's kOfxParamPropInteractSize (HS ofxhParam.cpp:462) stays (0,0).
-     - WRONG
+     - Natron stores the size as an int property on the *interact descriptor* (``OfxParamOverlayInteract::setSize``, Engine/OfxOverlayInteract.cpp:381-387; spec added by ``getOfxParamOverlayInteractDescProps``, Engine/OfxImageEffectInstance.cpp:523-535). The param instance's kOfxParamPropInteractSize (HS ofxhParam.cpp:462) stays (0,0). Fixed: the size is also set on the parameter instance, as a double; it stays on the interact descriptor for the Support library (``OFX::ParamInteract::getInteractSize()`` reads the interact).
+     - OK (fixed by `#1484 <https://github.com/NatronGitHub/Natron/pull/1484>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - I29
      - `ofxParam.h:218-240 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxParam.h#L218-L240>`__ kOfxParamPropInteractSizeAspect ("the custom interface ... will be of a size with this aspect ratio"), MinimumSize ("Any custom interface will not be less than this size"), PreferedSize ("A host should attempt to set ... to be this size") — param descriptor properties
      - MUST / SHOULD
-     - The plug-in sets these on the *param* descriptor (HS ofxhParam.cpp:463-465). Natron reads them from the interact descriptor (OfxOverlayInteract.cpp:357-393; CustomParamInteract.cpp:76,93-94,166-169), where ``getOfxParamOverlayInteractDescProps`` declared them with defaults (1, 10x10, 10x10) and nothing copies the plug-in values (only writer of these names in Engine/Gui). So the plug-in's minimum/preferred size and aspect are ignored; the aspect is also read with getIntProperty on a double property (returns 0) and never applied.
-     - WRONG
+     - The plug-in sets these on the *param* descriptor (HS ofxhParam.cpp:463-465). Natron reads them from the interact descriptor (OfxOverlayInteract.cpp:357-393; CustomParamInteract.cpp:76,93-94,166-169), where ``getOfxParamOverlayInteractDescProps`` declared them with defaults (1, 10x10, 10x10) and nothing copies the plug-in values (only writer of these names in Engine/Gui). So the plug-in's minimum/preferred size and aspect are ignored; the aspect is also read with getIntProperty on a double property (returns 0) and never applied. Fixed: the minimum and preferred sizes and the aspect are read from the parameter instance, and from the interact descriptor when the parameter has the default value (the Support library sets them on the interact descriptor, ``OFX::ParamInteractDescriptor``), and the aspect as a double. Still open: the aspect is not applied to the widget (the default is 1, so applying it would make every custom interface square unless the plug-in set it).
+     - PARTIAL (sizes fixed by `#1484 <https://github.com/NatronGitHub/Natron/pull/1484>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
 
@@ -226,7 +226,7 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - D1
      - `ofxDrawSuite.h:21-22 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxDrawSuite.h#L21-L22>`__, ofxCore "If the host does not implement a requested suite ... it should return NULL"
      - MUST
-     - fetchSuite(kOfxDrawSuite) returns NULL unless ``supportsDrawSuite()`` (ofxhIE:4833-4836); RB-2.6 Natron doesn't override it.
+     - fetchSuite(kOfxDrawSuite) returns NULL unless ``supportsDrawSuite()`` (ofxhIE:4833-4836); RB-2.6 Natron doesn't override it. Since #1349 was merged, ``supportsDrawSuite()`` returns true and fetchSuite(kOfxDrawSuite, 1) succeeds.
      - OK (not supported)
    * - D2
      - `ofxDrawSuite.h:28-34 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxDrawSuite.h#L28-L34>`__ kOfxInteractPropDrawContext, pointer, RO in Draw inArgs
@@ -246,6 +246,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
 
 3. What PR `#1349 <https://github.com/NatronGitHub/Natron/pull/1349>`__ changes (open, head ``ofx15-draw-suite``)
 -------------------------------------------------------------------------------------------------------------------
+
+#1349 has since been merged into RB-2.6. As merged, a plug-in that has both a V1 and a V2 overlay gets the V1 (OpenGL) one (``OfxHost::preferOverlayInteractV1()``).
 
 - ``OfxHost::supportsDrawSuite()`` returns true (Engine/OfxHost.h), so fetchSuite(kOfxDrawSuite,1) succeeds and V2 overlays are used, V2 preferred when a plug-in has both (Tests/OfxDrawSuite_Test.cpp ``OverlayEntryPoint``). Closes I17/D1 (`#1103 <https://github.com/NatronGitHub/Natron/issues/1103>`__, `#1136 <https://github.com/NatronGitHub/Natron/issues/1136>`__).
 
@@ -317,8 +319,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - G7
      - `ofxGPURender.h:199-282 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxGPURender.h#L199-L282>`__ clipLoadTexture: format honoured, Output clip binds the render target (may be done before Render), region clipped to RoD / default RoI; returns Failed (black), ErrBadHandle, ErrMemory
      - MUST
-     - ofxhIE:4182-4223 -> ``OfxClipInstance::loadTexture`` (OfxClipInstance.cpp:703-719) via the clipGetImage path; output FBO bound before render (EffectInstance.cpp:2650). Every failure returns kOfxStatFailed (ofxhIE:4205-4209): kOfxStatErrMemory is never returned.
-     - PARTIAL
+     - ofxhIE:4182-4223 -> ``OfxClipInstance::loadTexture`` (OfxClipInstance.cpp:703-719) via the clipGetImage path; output FBO bound before render (EffectInstance.cpp:2650). Every failure returns kOfxStatFailed (ofxhIE:4205-4209): kOfxStatErrMemory is never returned. HostSupport now returns kOfxStatErrMemory for a ``std::bad_alloc`` in clipLoadTexture. Still open: Natron's OpenGL texture path reports an OpenGL out-of-memory as a NULL texture (kOfxStatFailed), not as a ``std::bad_alloc``.
+     - PARTIAL (HostSupport part fixed by `NatronGitHub/openfx#202 <https://github.com/NatronGitHub/openfx/pull/202>`__, in libs/OpenFX since `#1507 <https://github.com/NatronGitHub/Natron/pull/1507>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - G8
@@ -329,8 +331,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - G9
      - `ofxGPURender.h:308-324 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxGPURender.h#L308-L324>`__ flushResources: kOfxStatOK "the host has actually released some resources", kOfxStatReplyDefault "nothing the host could do"
      - MUST (return semantics)
-     - ``OfxHost::flushOpenGLResources`` returns kOfxStatOK and releases nothing (Engine/OfxHost.cpp:1766-1770); the only override.
-     - WRONG
+     - ``OfxHost::flushOpenGLResources`` returns kOfxStatOK and releases nothing (Engine/OfxHost.cpp:1766-1770); the only override. Fixed: ``flushOpenGLResources()`` returns kOfxStatReplyDefault.
+     - OK (fixed by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - G10
@@ -537,7 +539,7 @@ Wrong results / wrong behaviour
 
 3. **G10 PARTIAL: kOfxActionOpenGLContextAttached returning kOfxStatFailed fails the render** instead of "the host should not attempt to run the plug-in in OpenGL render mode": EffectInstanceRenderRoI.cpp:1632-1634 -> throw "Rendering Failed" (:1715-1719), and nothing disables GL for that instance, so every render repeats it. Second check: ``attachOpenGLContext`` maps Failed -> eStatusFailed (OfxEffectInstance.cpp:3256-3263); no other caller. Related to `#1359 <https://github.com/NatronGitHub/Natron/issues/1359>`__. **Issue:** `#1384 <https://github.com/NatronGitHub/Natron/issues/1384>`__.
 
-4. **I28 + I29 WRONG: custom param interact sizing ignores the plug-in.** Natron reads kOfxParamPropInteractSizeAspect / MinimumSize / PreferedSize from the interact descriptor, which only has Natron's defaults (OfxImageEffectInstance.cpp:523-535; OfxOverlayInteract.cpp:357-393; CustomParamInteract.cpp:76,93-94), and writes the current size as int on that descriptor instead of the param instance's double kOfxParamPropInteractSize (which stays 0,0). Second check: these property names are only used in those two Engine files and CustomParamInteract.cpp; nothing copies the param descriptor values (HS ofxhParam.cpp:462-465); the interact descriptor's property set is not chained to the param; the aspect is read with getIntProperty on a double (returns 0) and is unused. Since 32fb56d1b. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+4. **I28 + I29 WRONG: custom param interact sizing ignores the plug-in.** Natron reads kOfxParamPropInteractSizeAspect / MinimumSize / PreferedSize from the interact descriptor, which only has Natron's defaults (OfxImageEffectInstance.cpp:523-535; OfxOverlayInteract.cpp:357-393; CustomParamInteract.cpp:76,93-94), and writes the current size as int on that descriptor instead of the param instance's double kOfxParamPropInteractSize (which stays 0,0). Second check: these property names are only used in those two Engine files and CustomParamInteract.cpp; nothing copies the param descriptor values (HS ofxhParam.cpp:462-465); the interact descriptor's property set is not chained to the param; the aspect is read with getIntProperty on a double (returns 0) and is unused. Since 32fb56d1b. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. I28 is **fixed** by `#1484 <https://github.com/NatronGitHub/Natron/pull/1484>`__, and the I29 sizes too (the aspect is still not applied).
 
 5. **I6 WRONG: kOfxInteractPropPenViewportPosition in viewer overlays has a top-left origin** (Qt ``localPos()``, ViewerGL.cpp:1745/1868/2071/2503, passed unchanged by ViewerTab20.cpp:229, EffectInstance.cpp:3324-3354, OfxEffectInstance.cpp:2259-2262), in logical pixels; the spec requires GL viewport coordinates with 0,0 at the bottom left. Second check: no y flip anywhere on that path (param interacts do flip, CustomParamInteract.cpp:327). **Issue:** `#1378 <https://github.com/NatronGitHub/Natron/issues/1378>`__.
 
@@ -549,7 +551,7 @@ Wrong results / wrong behaviour
 
 9. **K7 WRONG (MUST): bundles whose name starts with '@' are not skipped.** ofxhPC:596 handles ``*.ofx.bundle`` before the '@' test, which only guards recursion into plain directories (ofxhPC:663). Second check: no other name filter in HostSupport (``scanDirectory``, ``scanPluginFiles``) or Natron (``OfxHost::loadOFXPlugins``). **Issue:** `#1380 <https://github.com/NatronGitHub/Natron/issues/1380>`__.
 
-10. **G9 WRONG: flushResources always returns kOfxStatOK without releasing anything** (OfxHost.cpp:1766-1770), telling the plug-in to retry its GPU allocation; should be kOfxStatReplyDefault, or actually purge the GL texture cache. Second check: the only override of ``flushOpenGLResources``. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+10. **G9 WRONG: flushResources always returns kOfxStatOK without releasing anything** (OfxHost.cpp:1766-1770), telling the plug-in to retry its GPU allocation; should be kOfxStatReplyDefault, or actually purge the GL texture cache. Second check: the only override of ``flushOpenGLResources``. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `#1483 <https://github.com/NatronGitHub/Natron/pull/1483>`__.
 
 11. **I16 MISSING: an interact whose Draw returns kOfxStatFailed is not ignored afterwards.** HS drawAction keeps ``_state`` (ofxhI:450-489); Natron ignores the status (OfxEffectInstance.cpp:2230, CustomParamInteract.cpp:133). Second check: ``_state = eFailed`` is only set by describe/createInstance. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
@@ -560,7 +562,7 @@ Spec-only
 
 13. **I20 PARTIAL (deliberate): PenUp and KeyUp are sent to every overlay** even after one returned kOfxStatOK (ViewerTab20.cpp:688-690, 920-923). **Deliberate, won't fix.** Listed in `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__ for completeness.
 
-14. **I18 PARTIAL: param interact swapBuffers calls** ``update()``, which from inside paintGL schedules a new paint: a conforming plug-in that swaps in Draw would repaint continuously. Not observed (no known plug-in calls interactSwapBuffers); ``swapOpenGLBuffers`` should be a no-op during paintGL. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+14. **I18 PARTIAL: param interact swapBuffers calls** ``update()``, which from inside paintGL schedules a new paint: a conforming plug-in that swaps in Draw would repaint continuously. Not observed (no known plug-in calls interactSwapBuffers); ``swapOpenGLBuffers`` should be a no-op during paintGL. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. **Fixed** by `#1484 <https://github.com/NatronGitHub/Natron/pull/1484>`__.
 
 15. **I1 PARTIAL: kOfxInteractPropSlaveToParam** is read once after createInstance for overlays and never for param interacts. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
@@ -597,11 +599,11 @@ Over the 72 table rows (sections 1, 2, 4, 5, 6; the `#1349 <https://github.com/N
    * - verdict
      - count
    * - OK
-     - 39
+     - 42
    * - PARTIAL
      - 13
    * - WRONG
-     - 8
+     - 5
    * - MISSING
      - 4
    * - N/A

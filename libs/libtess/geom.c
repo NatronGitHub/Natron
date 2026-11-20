@@ -34,6 +34,7 @@
 
 #include "gluos.h"
 #include <assert.h>
+#include <math.h>
 #include "mesh.h"
 #include "geom.h"
 
@@ -198,6 +199,94 @@ printf("*********************%d\n",RandomInterpolate);
 
 #endif
 
+
+/* Natron: __gl_edgeIntersect() computes the s and t coordinates of the
+ * intersection independently, each by interpolating between the two middle
+ * vertices in the VertLeq (resp. TransLeq) order. Each is in the range of
+ * the bounding boxes, but for (nearly) parallel and overlapping edges both
+ * interpolations are ill-conditioned, and the point (s,t) can be far from
+ * both edges, anywhere in the intersection of their bounding boxes (e.g. at
+ * (4, 3.24) for two edges on the diagonal s == t). Both edges are then split
+ * and moved to that point, which distorts the polygon and fills the wrong
+ * areas. RefineIntersection() also considers the points obtained by keeping
+ * s (resp. t) and evaluating each edge's line there, clamped to the
+ * intersection of the bounding boxes (the property the sweep relies on),
+ * and keeps the one which is the closest to both lines, if the computed
+ * point is not already close to both.
+ */
+
+#ifndef MIN
+#define MIN(a,b)	((a) < (b) ? (a) : (b))
+#endif
+#ifndef MAX
+#define MAX(a,b)	((a) > (b) ? (a) : (b))
+#endif
+#define Clamp(x,lo,hi)	((x) < (lo) ? (lo) : ((x) > (hi) ? (hi) : (x)))
+
+/* Relative distance from the lines above which the point is refined. Below it,
+ * the point is left alone, since moving it by a few ulps (e.g. onto an
+ * existing vertex) changes the combinatorics of the sweep.
+ */
+#define REFINE_TOLERANCE	1e-9
+
+/* Distance from (s,t) to the line through a and b (or to a if a == b). */
+static GLdouble LineDist( GLUvertex *a, GLUvertex *b, GLdouble s, GLdouble t )
+{
+  GLdouble ds = b->s - a->s, dt = b->t - a->t;
+  GLdouble len = sqrt( ds*ds + dt*dt );
+
+  if( len == 0 ) {
+    return sqrt( (s - a->s)*(s - a->s) + (t - a->t)*(t - a->t) );
+  }
+  return fabs( ds*(t - a->t) - dt*(s - a->s) ) / len;
+}
+
+/* t (or s if trans) of the line through a and b at s == x (or t == x). */
+static GLdouble LineAt( GLUvertex *a, GLUvertex *b, GLdouble x, int trans )
+{
+  GLdouble a0 = trans ? a->t : a->s, b0 = trans ? b->t : b->s;
+  GLdouble a1 = trans ? a->s : a->t, b1 = trans ? b->s : b->t;
+
+  if( a0 == b0 ) {
+    return (a1 + b1) / 2;
+  }
+  return a1 + (b1 - a1) * ((x - a0) / (b0 - a0));
+}
+
+static void RefineIntersection( GLUvertex *o1, GLUvertex *d1,
+				GLUvertex *o2, GLUvertex *d2, GLUvertex *v )
+{
+  GLdouble smin = MAX( MIN( o1->s, d1->s ), MIN( o2->s, d2->s ));
+  GLdouble smax = MIN( MAX( o1->s, d1->s ), MAX( o2->s, d2->s ));
+  GLdouble tmin = MAX( MIN( o1->t, d1->t ), MIN( o2->t, d2->t ));
+  GLdouble tmax = MIN( MAX( o1->t, d1->t ), MAX( o2->t, d2->t ));
+  GLdouble best, err, s, t, scale, cs[4], ct[4];
+  int k;
+
+  if( smin > smax || tmin > tmax ) {
+    return;	/* no intersection, keep the "best effort" point */
+  }
+  best = MAX( LineDist( o1, d1, v->s, v->t ), LineDist( o2, d2, v->s, v->t ));
+  scale = MAX( MAX( fabs( smin ), fabs( smax )), MAX( fabs( tmin ), fabs( tmax )));
+  if( best <= REFINE_TOLERANCE * scale ) {
+    return;	/* the usual case: only change ill-conditioned intersections */
+  }
+  cs[0] = v->s; ct[0] = LineAt( o1, d1, v->s, 0 );
+  cs[1] = v->s; ct[1] = LineAt( o2, d2, v->s, 0 );
+  ct[2] = v->t; cs[2] = LineAt( o1, d1, v->t, 1 );
+  ct[3] = v->t; cs[3] = LineAt( o2, d2, v->t, 1 );
+  for( k = 0; k < 4; ++k ) {
+    s = Clamp( cs[k], smin, smax );
+    t = Clamp( ct[k], tmin, tmax );
+    err = MAX( LineDist( o1, d1, s, t ), LineDist( o2, d2, s, t ));
+    if( err < best ) {
+      best = err;
+      v->s = s;
+      v->t = t;
+    }
+  }
+}
+
 #define Swap(a,b)	do { GLUvertex *t = a; a = b; b = t; } while (0)
 
 void __gl_edgeIntersect( GLUvertex *o1, GLUvertex *d1,
@@ -209,6 +298,7 @@ void __gl_edgeIntersect( GLUvertex *o1, GLUvertex *d1,
  */
 {
   GLdouble z1, z2;
+  GLUvertex *e1o = o1, *e1d = d1, *e2o = o2, *e2d = d2; /* Natron */
 
   /* This is certainly not the most efficient way to find the intersection
    * of two line segments, but it is very numerically stable.
@@ -261,4 +351,6 @@ void __gl_edgeIntersect( GLUvertex *o1, GLUvertex *d1,
     if( z1+z2 < 0 ) { z1 = -z1; z2 = -z2; }
     v->t = Interpolate( z1, o2->t, z2, d2->t );
   }
+
+  RefineIntersection( e1o, e1d, e2o, e2d, v ); /* Natron */
 }

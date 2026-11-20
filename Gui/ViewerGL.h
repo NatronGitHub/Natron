@@ -165,6 +165,7 @@ public:
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                             size_t bytesCount,
+                                            ImageBitDepthEnum depth,
                                             const RectI &roiRoundedToTileSize,
                                             const RectI& roi,
                                             const TextureRect & tileRect,

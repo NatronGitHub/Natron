@@ -26,7 +26,8 @@
 //   associated with an effect instance, so it gets created after the effect and destroyed before the
 //   effect", ofxInteracts.rst).
 // - net.natron.test.SingleInstance: sets kOfxImageEffectPluginPropSingleInstance, and counts its live
-//   instances.
+//   instances. Its kOfxImageEffectActionGetRegionOfDefinition blocks while the counter
+//   SingleInstance.blockRoD is set.
 // - net.natron.test.SyncPrivateData: keeps the number of changes of its "value" parameter in private
 //   data, and only writes it to its "changeCount" parameter in kOfxActionSyncPrivateData.
 // - net.natron.test.Params: parameters of every type, to test the parameter suite and the parameter
@@ -359,6 +360,28 @@ singleInstancePluginMain(const char* action,
     if (std::strcmp(action, kOfxImageEffectActionDescribeInContext) == 0) {
         return defineClips(effect);
     }
+    if (std::strcmp(action, kOfxImageEffectActionGetRegionOfDefinition) == 0) {
+        // While the counter SingleInstance.blockRoD is set, the action blocks (SingleInstance.inRoD
+        // counts the threads in it): a test holds another thread inside the plug-in.
+        bool block;
+        {
+            std::lock_guard<std::mutex> l(gMutex);
+            block = gCounters["SingleInstance.blockRoD"] != 0;
+            if (block) {
+                ++gCounters["SingleInstance.inRoD"];
+            }
+        }
+        while (block) {
+            std::this_thread::sleep_for( std::chrono::milliseconds(1) );
+            std::lock_guard<std::mutex> l(gMutex);
+            block = gCounters["SingleInstance.blockRoD"] != 0;
+            if (!block) {
+                --gCounters["SingleInstance.inRoD"];
+            }
+        }
+
+        return kOfxStatReplyDefault;
+    }
 
     return commonAction(action, effect, "SingleInstance");
 }
@@ -572,6 +595,10 @@ paramsDescribeInContext(OfxImageEffectHandle effect)
     if ( (paramsDefine(paramSet, kOfxParamTypeDouble, "presetA", &props) != kOfxStatOK) ||
          (paramsDefine(paramSet, kOfxParamTypeDouble, "presetB", &props) != kOfxStatOK) ||
          (paramsDefine(paramSet, kOfxParamTypeDouble, "presetC", &props) != kOfxStatOK) ) {
+        return kOfxStatFailed;
+    }
+    // a group (Tests/OfxSuiteStatus_Test.cpp: kOfxParamPropGroupOpen written on the instance)
+    if (paramsDefine(paramSet, kOfxParamTypeGroup, "group", &props) != kOfxStatOK) {
         return kOfxStatFailed;
     }
     if (paramsDefine(paramSet, kOfxParamTypeBoolean, "uiOnly", &props) != kOfxStatOK) {

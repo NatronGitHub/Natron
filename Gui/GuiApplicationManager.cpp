@@ -956,6 +956,12 @@ GuiApplicationManager::initGui(const CLArgs& args)
     _imp->documentation.reset(new DocumentationManager);
     _imp->documentation->startServer();
 
+#ifdef Q_OS_DARWIN
+    if ( isDialogsDisabled() ) {
+        QtMac::ignorePersistentUIState();
+    }
+#endif
+
     return exec();
 } // GuiApplicationManager::initGui
 
@@ -1074,6 +1080,14 @@ bool
 GuiApplicationManager::isSplashcreenVisible() const
 {
     return _imp->_splashScreen ? true : false;
+}
+
+bool
+GuiApplicationManager::isGuiTestNoFocus()
+{
+    static const bool noFocus = !qEnvironmentVariableIsEmpty("NATRON_TEST_NO_FOCUS") && (qgetenv("NATRON_TEST_NO_FOCUS") != "0");
+
+    return noFocus;
 }
 
 void

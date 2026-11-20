@@ -233,6 +233,23 @@ public:
     {
         appPTR->setOnProjectLoadedCallback( pythonFunctionName.toStdString() );
     }
+
+    /**
+     * @brief Quits Natron with the given exit code, without asking to save the projects.
+     * In GUI mode, this happens at the end of the current event-loop iteration, so it is
+     * safe to call it from a callback. In the interactive interpreter (-t), this raises
+     * SystemExit(exitCode), like sys.exit().
+     **/
+    void quit(int exitCode = 0)
+    {
+        appPTR->requestQuit(exitCode);
+        if ( appPTR->isPythonInterpreterRunning() ) {
+            // leave the interactive interpreter of the -t option, as sys.exit() does
+            PyObject* code = PyLong_FromLong(exitCode);
+            PyErr_SetObject(PyExc_SystemExit, code);
+            Py_XDECREF(code);
+        }
+    }
 };
 
 NATRON_PYTHON_NAMESPACE_EXIT;

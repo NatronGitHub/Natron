@@ -25,6 +25,7 @@
 
 #include "GuiAppInstance.h"
 
+#include <iostream>
 #include <stdexcept>
 #include <sstream> // stringstream
 
@@ -32,6 +33,7 @@
 #include <QSettings>
 #include <QMutex>
 #include <QCoreApplication>
+#include <QPointer>
 
 #include "Engine/CLArgs.h"
 #include "Engine/Project.h"
@@ -55,6 +57,7 @@
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
+#include "Gui/GuiTest.h"
 #include "Gui/BackdropGui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
@@ -115,7 +118,10 @@ struct KnobDnDData
 
 struct GuiAppInstancePrivate
 {
-    Gui* _gui; //< ptr to the Gui interface
+    // ptr to the Gui interface. A QPointer, because the Gui deletes itself when its window is
+    // closed (Qt::WA_DeleteOnClose), possibly before this instance quits, e.g. if the event loop
+    // exits before the renders are aborted: aboutToQuit() must not use a deleted Gui.
+    QPointer<Gui> _gui;
     bool _isClosing;
 
     //////////////
@@ -295,20 +301,31 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
     Q_EMIT pluginsPopulated();
 
     ///show the gui
+    if ( appPTR->isDialogsDisabled() ) {
+        // --no-dialogs (scripts and tests): do not steal the focus from the user's work
+        _imp->_gui->setAttribute(Qt::WA_ShowWithoutActivating);
+    }
     _imp->_gui->show();
 
 
     SettingsPtr nSettings = appPTR->getCurrentSettings();
     QObject::connect( getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(projectFormatChanged(Format)) );
 
-    {
+    // no update check in test mode (--test): no network access, no question
+    if ( !appPTR->isTestMode() ) {
         QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
         if ( !settings.contains( QString::fromUtf8("checkForUpdates") ) ) {
-            StandardButtonEnum reply = Dialogs::questionDialog(tr("Updates").toStdString(),
-                                                               tr("Do you want %1 to check for updates "
-                                                                  "on launch of the application?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false);
-            bool checkForUpdates = reply == eStandardButtonYes;
-            nSettings->setCheckUpdatesEnabled(checkForUpdates);
+            const std::string title = tr("Updates").toStdString();
+            const std::string question = tr("Do you want %1 to check for updates "
+                                            "on launch of the application?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString();
+            if ( appPTR->isDialogsDisabled() ) {
+                // --no-dialogs: do not save an answer the user did not give, ask again on the next launch
+                Dialogs::printDismissedDialog(title, question);
+            } else {
+                StandardButtonEnum reply = Dialogs::questionDialog(title, question, false);
+                bool checkForUpdates = reply == eStandardButtonYes;
+                nSettings->setCheckUpdatesEnabled(checkForUpdates);
+            }
         }
 
         if ( nSettings->isCheckForUpdatesEnabled() ) {
@@ -317,7 +334,8 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
         }
     }
 
-    if ( nSettings->isDefaultAppearanceOutdated() ) {
+    // a GUI test (--test) uses the default settings: no question about the user's appearance
+    if ( !appPTR->isTestMode() && nSettings->isDefaultAppearanceOutdated() ) {
         StandardButtonEnum reply = Dialogs::questionDialog(tr("Appearance").toStdString(),
                                                            tr("The default appearance of %1 changed since last version.\n"
                                                               "Would you like to use the new default appearance?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false);
@@ -334,10 +352,19 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
     if (getAppID() == 0) {
         QString missingOpenGLError;
         if ( !appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeViewer, &missingOpenGLError) ) {
+            if ( appPTR->isTestMode() ) {
+                // a GUI test cannot run without the OpenGL of the viewer: it is skipped, not failed
+                std::cout << "SKIP: " << missingOpenGLError.toStdString() << std::endl;
+                appPTR->requestQuit(77);
+            }
             throw std::runtime_error( missingOpenGLError.toStdString() );
         }
 
-        appPTR->getCurrentSettings()->doOCIOStartupCheckIfNeeded();
+        // Not in a GUI test (--test): the question is about the user's preferences, and the tests use the
+        // default settings with the OpenColorIO configuration of the OCIO environment variable.
+        if ( !appPTR->isTestMode() ) {
+            appPTR->getCurrentSettings()->doOCIOStartupCheckIfNeeded();
+        }
 
         if ( !appPTR->isShorcutVersionUpToDate() ) {
             StandardButtonEnum reply = questionDialog(tr("Shortcuts").toStdString(),
@@ -361,7 +388,8 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
     executeCommandLinePythonCommands(cl);
 
     /// If this is the first instance of the software, try to load an autosave
-    if ( (getAppID() == 0) && cl.getScriptFilename().isEmpty() ) {
+    /// (never in test mode: the auto-saves may be the user's, and they are neither restored nor removed)
+    if ( (getAppID() == 0) && cl.getScriptFilename().isEmpty() && !appPTR->isTestMode() ) {
         if ( findAndTryLoadUntitledAutoSave() ) {
             ///if we successfully loaded an autosave ignore the specified project in the launch args.
             return;
@@ -409,12 +437,22 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
             loadPythonScript(cbInfo);
         }
     }
+
+    if ( (getAppID() == 0) && appPTR->isTestMode() && !cl.getTestScript().isEmpty() ) {
+        GuiTest::scheduleTestScript( cl.getTestScript() );
+    }
 } // load
 
 bool
 GuiAppInstance::findAndTryLoadUntitledAutoSave()
 {
     if ( !appPTR->getCurrentSettings()->isAutoSaveEnabledForUnsavedProjects() ) {
+        return false;
+    }
+    if ( appPTR->isDialogsDisabled() ) {
+        // --no-dialogs: never touch the user's crash-recovery auto-saves. Restoring one (the
+        // default answer) would load it in this session, which then deletes it when quitting
+        // without saving; answering No would delete it right away.
         return false;
     }
 

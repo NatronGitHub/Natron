@@ -65,6 +65,8 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/DocumentationGroups.h"
 #include "Engine/ProjectSerialization.h"
 #include "Engine/Node.h"
+#include "Engine/OutputEffectInstance.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
@@ -305,6 +307,7 @@ AppInstance::checkForNewVersion() const
     QObject::connect( downloader, SIGNAL(error()), this, SLOT(newVersionCheckError()) );
 
     ///make the call blocking
+    AppManager::NestedEventLoopRAII nestedLoop; // natron.quit() waits for the end of this loop
     QEventLoop loop;
 
     connect( downloader->getReply(), SIGNAL(finished()), &loop, SLOT(quit()) );
@@ -649,7 +652,10 @@ AppInstance::loadInternal(const CLArgs& cl,
             }
         } else if ( info.suffix() == QString::fromUtf8("py") ) {
             ///Load the python script
-            loadPythonScript(info);
+            // A Python error stops the run, so that the exit status is not 0 (#1276)
+            if ( !loadPythonScript(info) ) {
+                throw std::invalid_argument( tr("%1: Python script failed.").arg(scriptFilename).toStdString() );
+            }
         } else {
             throw std::invalid_argument( tr("%1 only accepts python scripts or .ntp project files.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
         }
@@ -659,7 +665,9 @@ AppInstance::loadInternal(const CLArgs& cl,
         if ( !extraOnProjectCreatedScript.isEmpty() ) {
             QFileInfo cbInfo(extraOnProjectCreatedScript);
             if ( cbInfo.exists() ) {
-                loadPythonScript(cbInfo);
+                if ( !loadPythonScript(cbInfo) ) {
+                    throw std::invalid_argument( tr("%1: Python script failed.").arg(extraOnProjectCreatedScript).toStdString() );
+                }
             }
         }
 
@@ -696,7 +704,10 @@ AppInstance::loadInternal(const CLArgs& cl,
             }
         }
 
-        ///launch renders
+        ///launch renders, unless natron.quit() was called by one of the scripts above
+        if ( appPTR->isQuitRequested() ) {
+            return;
+        }
         if ( !writersWork.empty() ) {
             startWritersRendering(false, writersWork);
         } else {
@@ -727,7 +738,10 @@ AppInstance::loadInternal(const CLArgs& cl,
         }
 
 
-        appPTR->launchPythonInterpreter();
+        // natron.quit() called by one of the scripts above ends the session
+        if ( !appPTR->isQuitRequested() ) {
+            appPTR->launchPythonInterpreter();
+        }
     } else {
         execOnProjectCreatedCallback();
 
@@ -828,7 +842,8 @@ AppInstance::loadPythonScript(const QFileInfo& file)
     } else {
         PythonGILLocker pgl;
 
-        PyRun_SimpleString( content.toStdString().c_str() );
+        // -1 if the script raised an exception (Python printed it)
+        const bool scriptFailed = PyRun_SimpleString( content.toStdString().c_str() ) != 0;
 
         PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
         std::string error;
@@ -858,6 +873,9 @@ AppInstance::loadPythonScript(const QFileInfo& file)
             message.append( QString::fromUtf8(": ") );
             message.append( QString::fromUtf8( error.c_str() ) );
             appendToScriptEditor( message.toStdString() );
+        }
+        if (scriptFailed) {
+            return false;
         }
     }
 
@@ -2088,6 +2106,37 @@ AppInstance::aboutToQuit()
     ///Clear nodes now, not in the destructor of the project as
     ///deleting nodes might reference the project.
     _imp->_currentProject->reset(true /*aboutToQuit*/, /*blocking*/true);
+}
+
+bool
+AppInstance::hasRenderInProgress() const
+{
+    {
+        QMutexLocker k(&_imp->renderQueueMutex);
+        if ( !_imp->activeRenders.empty() || !_imp->renderQueue.empty() ) {
+            return true;
+        }
+    }
+    ProjectPtr project = getProject();
+    if (!project) {
+        return false;
+    }
+    NodesList nodes;
+    project->getNodes_recursive(nodes, true /*onlyActive*/);
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ( (*it)->isNodeRendering() || (*it)->isRenderingPreview() ) {
+            return true;
+        }
+        OutputEffectInstance* output = dynamic_cast<OutputEffectInstance*>( (*it)->getEffectInstance().get() );
+        if (output) {
+            RenderEnginePtr engine = output->getRenderEngine();
+            if ( engine && engine->hasThreadsWorking() ) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 void
