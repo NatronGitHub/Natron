@@ -1102,9 +1102,13 @@ Gui::openProjectInternal(const std::string & absoluteFileName,
     } else {
         CLArgs cl;
         AppInstancePtr newApp = appPTR->newAppInstance(cl, false);
-        bool ok  = newApp->getProject()->loadProject( path, fileUnPathed, false, attemptToLoadAutosave);
-        if (ok) {
-            ret = newApp;
+        // newAppInstance() returns NULL, after showing an error dialog, if the new window could not be
+        // loaded: this crashed, e.g. when app.loadProject() was called after a stale traceback (#1436).
+        if (newApp) {
+            bool ok  = newApp->getProject()->loadProject( path, fileUnPathed, false, attemptToLoadAutosave);
+            if (ok) {
+                ret = newApp;
+            }
         }
     }
 
