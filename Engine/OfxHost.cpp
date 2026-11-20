@@ -28,7 +28,6 @@
 #include <atomic>
 #include <cassert>
 #include <cstdarg>
-#include <cstdio> // vsnprintf
 #include <cstdint> // std::uint64_t
 #include <memory>
 #include <fstream>
@@ -93,6 +92,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhParametricParam.h> //our version of parametric param suite support
 
 #include "Global/GlobalDefines.h"
+#include "Global/StrUtils.h"
 #include "Global/FStreamsSupport.h"
 #include "Global/QtCompat.h"
 #include "Global/KeySymbols.h"
@@ -125,32 +125,6 @@ CLANG_DIAG_ON(unknown-pragmas)
 NATRON_NAMESPACE_ENTER
 // to disambiguate with the global-scope ::OfxHost
 
-// Format a message of the message suite: the suite passes the plug-in's arguments as a va_list
-// (vmessage(), setPersistentMessage()). They used to be passed to a variadic function as one argument,
-// which vsnprintf() then read as the first value of the format, so "%s" printed garbage.
-static
-std::string
-string_vformat(const char* fmt,
-               va_list args)
-{
-    if (!fmt) {
-        return std::string();
-    }
-    va_list ap;
-    va_copy(ap, args);
-    int n = vsnprintf(NULL, 0, fmt, ap);
-    va_end(ap);
-    if (n <= 0) {
-        return std::string();
-    }
-    std::string str( (std::size_t)n + 1, '\0' );
-    va_copy(ap, args);
-    vsnprintf(&str[0], str.size(), fmt, ap);
-    va_end(ap);
-    str.resize(n);
-
-    return str;
-}
 
 #ifdef OFX_SUPPORTS_MULTITHREAD
 // A mutex of the multithread suite: the OfxMutexHandle is its address. A suite function returns
@@ -629,7 +603,7 @@ OfxHost::vmessage(const char* msgtype,
 {
     assert(msgtype);
     assert(format);
-    std::string message = string_vformat(format, args);
+    std::string message = StrUtils::vformat(format, args);
     std::string type(msgtype);
 
     if (type == kOfxMessageLog) {
