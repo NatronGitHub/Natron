@@ -2232,9 +2232,9 @@ scaleToTexture8bits_generic(const RectI& roi,
                         g = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)g );
                         b = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)b );
                     } else {
-                        r = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned char)r );
-                        g = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned char)g );
-                        b = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned char)b );
+                        r = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned short)r );
+                        g = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned short)g );
+                        b = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned short)b );
                     }
                     break;
                 case sizeof(float):     //float
@@ -2625,9 +2625,9 @@ scaleToTexture32bitsGeneric(const RectI& roi,
                     g = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)g );
                     b = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)b );
                 } else {
-                    r = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned char)r );
-                    g = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned char)g );
-                    b = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned char)b );
+                    r = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned short)r );
+                    g = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned short)g );
+                    b = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned short)b );
                 }
                 break;
             case sizeof(float):
