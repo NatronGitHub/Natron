@@ -99,6 +99,7 @@ SOURCES += \
     OSGLContext_Test.cpp \
     PluginGrouping_Test.cpp \
     ProjectAutoSave_Test.cpp \
+    ProjectFileFormat_Test.cpp \
     ReadNodeOverlay_Test.cpp \
     RenderThreadSafety_Test.cpp \
     RenderThreads_Test.cpp \
