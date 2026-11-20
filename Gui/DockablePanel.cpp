@@ -398,7 +398,9 @@ DockablePanel::DockablePanel(Gui* gui,
                 QObject::connect( node.get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onNodeScriptChanged(QString)) );
             }
             _imp->_nameLineEdit->setText(initialName);
-            QObject::connect( _imp->_nameLineEdit, SIGNAL(returnPressed()), this, SLOT(onLineEditNameEditingFinished()) );
+            // editingFinished is emitted on Return and when the line edit loses focus: the user expects both
+            // to rename the node (#664). onLineEditNameEditingFinished() ignores it if the text wasn't edited.
+            QObject::connect( _imp->_nameLineEdit, SIGNAL(editingFinished()), this, SLOT(onLineEditNameEditingFinished()) );
             _imp->_headerLayout->addWidget(_imp->_nameLineEdit);
         } else {
             _imp->_nameLabel = new Label(initialName, _imp->_headerWidget);
@@ -769,6 +771,13 @@ DockablePanel::onLineEditNameEditingFinished()
         return;
     }
 
+    // editingFinished is also emitted when the line edit loses focus, e.g. to the error dialogs below
+    // (QTBUG-40, #592): only handle text that the user edited since it was last handled.
+    if ( !_imp->_nameLineEdit->isModified() ) {
+        return;
+    }
+    _imp->_nameLineEdit->setModified(false);
+
     NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(this);
     NodeGuiPtr node;
     QString newName = _imp->_nameLineEdit->text();
@@ -795,6 +804,12 @@ DockablePanel::onLineEditNameEditingFinished()
 
     if (node) {
         pushUndoCommand( new RenameNodeUndoRedoCommand(node, oldName, newName) );
+        // If the node could not be renamed (NodeGui::setName() showed an error), show its actual name
+        // again rather than a name it doesn't have.
+        QString label = QString::fromUtf8( node->getNode()->getLabel().c_str() );
+        if (label != newName) {
+            _imp->_nameLineEdit->setText(label);
+        }
     }
 }
 
