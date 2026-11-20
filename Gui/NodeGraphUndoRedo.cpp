@@ -1548,7 +1548,8 @@ GroupFromSelectionCommand::undo()
 
 
     // Deactivate the group (and the copies in it) before activating the originals: a single-instance
-    // OFX plug-in then never has two live instances (see OfxEffectInstance::suspendSingleInstance()).
+    // OFX plug-in then never has two live instances (see OfxEffectInstance::suspendSingleInstance()),
+    // unless a copy is still rendering, whose instance lives until that render ends.
     _group.lock()->getNode()->deactivate(NodesList(),
                                          true,
                                          false,
@@ -2053,7 +2054,8 @@ InlineGroupCommand::undo()
         NodeGuiPtr groupNode = it->group.lock();
         if (groupNode) {
             // Deactivate the inlined nodes before activating the group (and the nodes in it): a
-            // single-instance OFX plug-in then never has two live instances.
+            // single-instance OFX plug-in then never has two live instances, unless an inlined node
+            // is still rendering, whose instance lives until that render ends.
             for (std::list<NodeGuiWPtr>::iterator it2 = it->inlinedNodes.begin();
                  it2 != it->inlinedNodes.end(); ++it2) {
                 NodeGuiPtr node = (*it2).lock();

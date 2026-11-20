@@ -503,17 +503,25 @@ findOtherActiveSingleInstance(const OFX::Host::ImageEffect::ImageEffectPlugin* p
     if ( found == gSingleInstances.end() ) {
         return NodePtr();
     }
+    // an active node first: the refusal then says "is already one", not "try again in a moment"
+    NodePtr pending;
     for (std::set<OfxEffectInstance*>::const_iterator it = found->second.begin(); it != found->second.end(); ++it) {
         if (*it == self) {
             continue;
         }
         NodePtr n = (*it)->getNode();
-        if ( n && ( n->isActivated() || (*it)->isSingleInstanceSuspendPending() ) ) {
+        if (!n) {
+            continue;
+        }
+        if ( n->isActivated() ) {
             return n;
+        }
+        if ( !pending && (*it)->isSingleInstanceSuspendPending() ) {
+            pending = n;
         }
     }
 
-    return NodePtr();
+    return pending;
 }
 
 void
@@ -576,9 +584,11 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     if ( plugin->getDescriptor().isSingleInstance() && !args.getProperty<bool>(kCreateNodeArgsPropOutOfProject) ) {
         NodePtr activeNode = findOtherActiveSingleInstance(plugin, this);
         if (activeNode) {
-            if ( (gAllowExtraSingleInstances > 0) || getApp()->getProject()->isLoadingProject() ) {
-                // Moving nodes into a group creates them before it deletes the originals, and an
-                // old project may already have several: keep them, and say so.
+            if (gAllowExtraSingleInstances > 0) {
+                // Moving nodes into or out of a group creates them before it deletes the originals:
+                // a second instance for a moment, which the user didn't make, so no warning.
+            } else if ( getApp()->getProject()->isLoadingProject() ) {
+                // An old project may already have several: keep them, and say so.
                 warnExtraSingleInstance(plugin, getNode(), activeNode);
             } else {
                 // Refuse it: the node is not created, and the error is reported.
@@ -903,17 +913,26 @@ OfxEffectInstance::suspendSingleInstance()
         // activated again before a pending suspension
         return;
     }
-    // From now on, no new action of another thread enters the plug-in (OfxImageEffectInstance::mainEntry()
-    // counts these actions before it reads the state, so if the count is 0 here, none is in the plug-in,
-    // and any later one fails without calling it). Not all the threads that call the plug-in take the
-    // node's rendering counter (the tracker's do not), but a render that does is not cut between two of
-    // its actions.
-    _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateSuspending);
-    if ( _imp->effect->hasActionsInFlightOnOtherThreads() || node->isNodeRendering() || _imp->effect->isInMainThreadAction() ) {
-        // Node::deactivate() aborted the renders, but doesn't wait for them; or the plug-in deleted
-        // its own node in one of its actions: retry once it is done. Meanwhile, the instance still
-        // counts as live (findOtherActiveSingleInstance()), so no new node of the plug-in is created.
-        _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateNone);
+    // Not while the node renders (Node::deactivate() aborted its renders, but doesn't wait for them),
+    // so that a render isn't cut between two of its actions, nor while the plug-in deletes its own node
+    // in one of its actions. Then, "suspending" keeps any new action of another thread out of the plug-in
+    // (OfxImageEffectInstance::mainEntry() counts these actions before it reads the state), and the
+    // actions still in it are counted: not all the threads that call the plug-in take the node's
+    // rendering counter (the preview's region of definition and the tracker don't). If one is still in
+    // the plug-in, the state goes back to "none" until the next attempt: a render that started in the
+    // meantime runs normally (one of its actions may fail if it starts during the attempt; harmless, the
+    // renders of a deleted node are aborted anyway).
+    bool busy = node->isNodeRendering() || _imp->effect->isInMainThreadAction();
+    if (!busy) {
+        _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateSuspending);
+        if ( _imp->effect->hasActionsInFlightOnOtherThreads() ) {
+            _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateNone);
+            busy = true;
+        }
+    }
+    if (busy) {
+        // Retry. Meanwhile, the instance still counts as live (findOtherActiveSingleInstance()), so no new
+        // node of the plug-in is created. The retry needs the event loop (a QTimer on the main thread).
         _imp->singleInstanceSuspendPending = true;
         std::weak_ptr<OfxEffectInstance> weakThis = std::dynamic_pointer_cast<OfxEffectInstance>( shared_from_this() );
         QTimer::singleShot(50, qApp, [weakThis]() {
@@ -953,7 +972,10 @@ OfxEffectInstance::resumeSingleInstance()
     _imp->suspendedSingleInstancePlugin = NULL;
 
     // Undoing a deletion can't be refused: this happens if another node of the plug-in was created
-    // in a different node graph (each Group has its own undo history), or from Python.
+    // in a different node graph (each Group has its own undo history), or from Python, or if the node
+    // that the same undo/redo just deactivated is still rendering (its suspension is pending, e.g.
+    // undoing Group From Selection or Expand Group right after it, while the viewer renders the copy):
+    // then two instances live until that render ends.
     NodePtr otherNode = findOtherActiveSingleInstance(plugin, this);
     if (otherNode) {
         warnExtraSingleInstance(plugin, getNode(), otherNode);
@@ -975,7 +997,10 @@ OfxEffectInstance::resumeSingleInstance()
         stat = _imp->effect->createInstanceAction();
     }
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-        // The node stays, without a plug-in instance, and says so.
+        // The node stays, without a plug-in instance, and says so. Not quite what the spec asks: after a
+        // failed kOfxActionCreateInstance "the host should destroy the instance handle and not attempt to
+        // proceed further" (only kOfxStatErrMemory allows a retry), but the next undo/redo of the node's
+        // deletion calls kOfxActionCreateInstance again on this handle. The node shows the error meanwhile.
         _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateSuspended);
         _imp->suspendedSingleInstancePlugin = plugin;
         _imp->releaseSingleInstance();

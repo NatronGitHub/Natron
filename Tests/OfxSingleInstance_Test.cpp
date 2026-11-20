@@ -29,6 +29,9 @@
 
 #include <gtest/gtest.h>
 
+#include <chrono>
+#include <thread>
+
 #include <QtCore/QCoreApplication>
 #include <QtCore/QElapsedTimer>
 #include <QtCore/QTemporaryDir>
@@ -394,6 +397,66 @@ TEST(OfxSingleInstance, DeleteWhileRendering)
     NodePtr c = createSingleInstanceNode();
     EXPECT_TRUE( bool(c) );
     destroy(c);
+    destroy(a);
+    EXPECT_EQ( 0, NatronTestPlugin::counter("SingleInstance.live") );
+}
+
+// A thread that is inside an action of the plug-in without the node's rendering counter (as the
+// preview's region of definition, or the tracker): deleting the node keeps the plug-in instance until
+// the action returns.
+TEST(OfxSingleInstance, DeleteWhileAnotherThreadIsInAnAction)
+{
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginSingleInstance) ) {
+        NatronTestPlugin::reportSkipped(kNatronTestPluginSingleInstance);
+
+        return;
+    }
+    NodePtr a = createSingleInstanceNode();
+    ASSERT_TRUE( bool(a) );
+    OfxEffectInstance* aEffect = dynamic_cast<OfxEffectInstance*>( a->getEffectInstance().get() );
+    ASSERT_TRUE(aEffect != NULL);
+    EffectInstancePtr effect = a->getEffectInstance();
+    const U64 hash = a->getHashValue();
+
+    // the test plug-in's kOfxImageEffectActionGetRegionOfDefinition blocks while blockRoD is set
+    NatronTestPlugin::setCounter("SingleInstance.blockRoD", 1);
+    std::thread other([effect, hash]() {
+        RectD rod;
+        bool isProjectFormat = false;
+        ignore_result( effect->getRegionOfDefinition_public(hash, 1., RenderScale::identity, ViewIdx(0), &rod, &isProjectFormat) );
+    });
+    QElapsedTimer timer;
+    timer.start();
+    while ( (NatronTestPlugin::counter("SingleInstance.inRoD") == 0) && (timer.elapsed() < 5000) ) {
+        std::this_thread::sleep_for( std::chrono::milliseconds(1) );
+    }
+    EXPECT_EQ( 1, NatronTestPlugin::counter("SingleInstance.inRoD") );
+    EXPECT_FALSE( a->isNodeRendering() ); // no rendering counter: only the actions in flight tell
+
+    a->deactivate();
+    // the other thread is in the plug-in: its instance is not destroyed
+    EXPECT_TRUE( aEffect->isSingleInstanceSuspendPending() );
+    EXPECT_FALSE( aEffect->isSingleInstanceSuspended() );
+    EXPECT_EQ( 1, NatronTestPlugin::counter("SingleInstance.live") );
+    // and the retries keep waiting while it is there
+    timer.restart();
+    while (timer.elapsed() < 200) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+    }
+    EXPECT_TRUE( aEffect->isSingleInstanceSuspendPending() );
+    EXPECT_EQ( 1, NatronTestPlugin::counter("SingleInstance.live") );
+
+    // the action returns: the next retry destroys the instance
+    NatronTestPlugin::setCounter("SingleInstance.blockRoD", 0);
+    other.join();
+    EXPECT_EQ( 0, NatronTestPlugin::counter("SingleInstance.inRoD") );
+    timer.restart();
+    while ( aEffect->isSingleInstanceSuspendPending() && (timer.elapsed() < 5000) ) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+    }
+    EXPECT_TRUE( aEffect->isSingleInstanceSuspended() );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("SingleInstance.live") );
+    effect.reset();
     destroy(a);
     EXPECT_EQ( 0, NatronTestPlugin::counter("SingleInstance.live") );
 }
