@@ -71,12 +71,19 @@ PORT="port_retry"
 # such a fetch fails it silently builds the port from source (e.g. llvm-18, hours instead of
 # seconds, or qt5-qtwebengine, which can't be built without Xcode): so fetch the archives of the
 # ports to install and of their dependencies first, with retries.
-prefetch_archives() { # port names (variants and options are skipped)
-    local p i expr=
+# The ports keep their variants: archivefetch leaves a work directory whose variants must match
+# the install's.
+prefetch_archives() { # install [-f] port [+variant -variant]...
+    local p i expr= deps=
     for p in "$@"; do
-        case $p in [+-]*|install|upgrade) ;; *) expr="$expr $p rdepof:$p" ;; esac
+        case $p in
+            install|-f|-n|-s) ;;
+            [+-]*) expr="$expr $p" ;;
+            *) expr="$expr $p"; deps="$deps rdepof:$p" ;;
+        esac
     done
-    [ -n "$expr" ] || return 0
+    [ -n "$deps" ] || return 0
+    expr="$expr$deps"
     for i in 1 2 3; do
         # shellcheck disable=SC2086
         $SUDO port -N archivefetch $expr && return 0
