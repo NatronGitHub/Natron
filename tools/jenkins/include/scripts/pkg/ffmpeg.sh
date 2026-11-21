@@ -8,10 +8,10 @@ FFMPEG_VERSION_LIBAVCODEC=63.1.102
 FFMPEG_TAR="ffmpeg-${FFMPEG_VERSION}.tar.xz"
 FFMPEG_SHA256=8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
 FFMPEG_SITE="https://ffmpeg.org/releases"
-# 9.0.2 + the 10-bit simple IDCT saturation patch (openfx-io#266), as on macOS
-# (tools/MacPorts/multimedia/ffmpeg). Drop the patch, and the "+idct10sat" suffix, with the
-# first release that contains the fix.
-FFMPEG_SDK_VERSION="${FFMPEG_VERSION}+idct10sat"
+# 9.0.2 + the 10-bit simple IDCT saturation patch (openfx-io#266, "+idct10sat") and the dnxhd
+# encoder mb_qscale patch (openfx-io#267, "+dnxqscale"), as on macOS (tools/MacPorts/multimedia/ffmpeg).
+# Drop each patch, and its suffix, with the first release that contains the fix.
+FFMPEG_SDK_VERSION="${FFMPEG_VERSION}+idct10sat+dnxqscale"
 if download_step; then
     download "$FFMPEG_SITE" "$FFMPEG_TAR" "$FFMPEG_SHA256"
 fi
@@ -27,6 +27,9 @@ if build_step && { force_build || { [ ! -d "$SDK_HOME/ffmpeg-gpl2" ] || [ ! -d "
     # patch as tools/MacPorts/multimedia/ffmpeg. FFMPEG_SDK_VERSION, recorded below, makes existing
     # SDKs pick it up.
     patch -p0 -i "$INC_PATH/patches/FFmpeg/patch-libavcodec-simple_idct10-saturate.diff"
+    # Store the dnxhd encoder's per-macroblock qscale in 16 bits: it wrapped above 255, and DNxHR 444
+    # of high-entropy images aborted the host (openfx-io#267). The same patch as on macOS.
+    patch -p0 -i "$INC_PATH/patches/FFmpeg/patch-libavcodec-dnxhdenc-mb_qscale.diff"
     LGPL_SETTINGS=(
         "--enable-swscale" "--enable-avfilter"
         "--enable-libmp3lame" "--enable-libvorbis" "--enable-libopus" "--enable-librsvg"
