@@ -17,10 +17,6 @@ from the foreground.
 - :doc:`Refining a matte with ColorLookup <tutorials-keying-colorlookup>`:
   use curves instead of the keyer's own controls to adjust the matte contrast.
 
-See also the :doc:`alternative matte extraction tutorial
-<tutorials-AlternativeMatteExtraction>`, which shows how to turn the spill maps
-of Despill, lp_ChillSpill and ColorSuppress into mattes.
-
 .. toctree::
    :maxdepth: 2
    :hidden:
