@@ -27,7 +27,8 @@ are not changed) or **Image and Alpha** (the green is suppressed too). The
 alpha channel then holds the suppress mask: the amount of green removed from
 each pixel. ColorSuppress compares green with the larger of red and blue, not
 with their average, so its mask is never brighter than the spill map of
-Despill. Turn it into a matte with ColorLookup, as below.
+Despill. Turn it into a matte with ColorLookup, as below, but with a lower
+white point on the curve, since the mask is darker.
 
 The three despill nodes side by side
 ------------------------------------
