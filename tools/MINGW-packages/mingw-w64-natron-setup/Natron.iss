@@ -261,8 +261,11 @@ begin
     if (CompareText(Publisher, 'INRIA') <> 0) and
        (Pos('natronsetup.exe', Lowercase(UninstallString)) = 0) then
       Continue;
+    // InstallLocation, or else the folder of the maintenance tool
     if not RegQueryStringValue(RootKey, Key, 'InstallLocation', Location) then
-      Continue;
+      Location := '';
+    if Trim(Location) = '' then
+      Location := ExtractFileDir(RemoveQuotes(Trim(UninstallString)));
     if not RegQueryStringValue(RootKey, Key, 'DisplayVersion', Version) then
       Version := '';
     if Version <> '' then
@@ -309,6 +312,15 @@ begin
     'Setup never installs Natron into the folder of an older version. Choose another folder.';
 end;
 
+// Shown by PrepareToInstall, when the folder page was skipped
+function OldNatronDirPrepareMessage(const Dir: String): String;
+begin
+  Result := 'The folder ' + Dir + ' holds Natron 2.5 or older. Setup never installs Natron ' +
+    'into the folder of an older version.' + #13#10#13#10 +
+    'Run Setup again and choose another folder (or another /DIR= folder). If a pre-release ' +
+    'of this version was installed into that folder, uninstall it first, from Settings > Apps.';
+end;
+
 procedure InitializeWizard;
 var
   I: Integer;
@@ -333,11 +345,22 @@ begin
     'Natron 2.5 or older is installed on this computer.',
     'Setup found these older versions of Natron:' + #13#10#13#10 + List + #13#10 +
     'They stay installed. This version of Natron is installed next to them, in its own ' +
-    'folder. Setup never installs it into the folder of an older version.' + #13#10#13#10 +
+    'folder.' + #13#10#13#10 +
     'To remove an older version, open Settings > Apps > Installed apps (Apps & features on ' +
     'Windows 10), select the Natron published by INRIA, and select Uninstall.' + #13#10#13#10 +
     'Double-clicking a .ntp project file may still open the older version. To change this, ' +
-    'right-click a .ntp file, and select Open with.');
+    'right-click a .ntp file, select Open with > Choose another app, select Natron, then ' +
+    'select Always.');
+end;
+
+// The page is shown on the first installation only, not on updates of this Natron: the user has
+// seen it already, and the folder is the one of the previous installation
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  Result := False;
+  if OldNatronPage <> nil then
+    if PageID = OldNatronPage.ID then
+      Result := WizardForm.PrevAppDir <> '';
 end;
 
 // The folder page refuses the folder of an older Natron
@@ -355,6 +378,9 @@ end;
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
   Result := '';
-  if IsOldNatronDir(ExpandConstant('{app}')) then
-    Result := OldNatronDirMessage(ExpandConstant('{app}'));
+  if IsOldNatronDir(ExpandConstant('{app}')) then begin
+    // build_installer.yml greps the log for this line
+    Log('Refusing the folder of Natron 2.5 or older: ' + ExpandConstant('{app}'));
+    Result := OldNatronDirPrepareMessage(ExpandConstant('{app}'));
+  end;
 end;
