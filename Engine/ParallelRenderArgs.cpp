@@ -668,8 +668,10 @@ getAllUpstreamNodesRecursiveWithDependencies_internal(const NodePtr& node,
         const AppInstancePtr app = node->getApp();
         for (std::set<NodePtr>::iterator it = expressionsDeps.begin(); it != expressionsDeps.end(); ++it) {
             const NodePtr& dep = *it;
-            // Skip the nodes that are not in the graph (being created, deleted or destroyed), and those of other projects,
-            // which are not rendered with this project (as in NodeCollection::getParallelRenderArgs()).
+            // Skip the nodes that are not in the graph (being created, deleted or destroyed), and those of another
+            // project than the node whose expression reads them (e.g. app2.Blur1 read from app1): that project has its
+            // own timeline and renders. The nodes of a Precomp's project are kept when the expressions of that project
+            // read them, since they are compared with the app of the node whose expressions are read.
             if ( !dep || !dep->isNodeCreated() || !dep->isActivated() || !dep->getEffectInstance() || (dep->getApp() != app) ) {
                 continue;
             }

@@ -4960,11 +4960,11 @@ KnobHelper::getAllExpressionDependenciesRecursiveInternal(std::set<NodePtr>& nod
 
 
     for (std::list<KnobIPtr>::iterator it = knobsToInspectRecursive.begin(); it != knobsToInspectRecursive.end(); ++it) {
+        // every knob is a KnobHelper (getAllExpressionDependenciesRecursive() is final there)
         const KnobHelper* isHelper = dynamic_cast<const KnobHelper*>( it->get() );
+        assert(isHelper);
         if (isHelper) {
             isHelper->getAllExpressionDependenciesRecursiveInternal(nodes, visitedKnobs);
-        } else {
-            (*it)->getAllExpressionDependenciesRecursive(nodes);
         }
     }
 }

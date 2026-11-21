@@ -29,6 +29,8 @@
 
 #include "Global/Macros.h"
 
+#include <list>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -36,6 +38,7 @@
 
 #include "Engine/Curve.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/NodeGroup.h"
 
 #include "OfxTestPlugin.h"
 
@@ -50,10 +53,22 @@ class ExpressionDepsRenderArgsTest
 {
 protected:
     std::vector<NodePtr> _nodes;
+    SequenceTime _savedTimelineTime;
+
+    ExpressionDepsRenderArgsTest()
+        : _savedTimelineTime(0)
+    {
+    }
+
+    static void seek(SequenceTime time)
+    {
+        appPTR->getTopLevelInstance()->getTimeLine()->seekFrame(time, false, NULL, eTimelineChangeReasonOtherSeek);
+    }
 
     virtual void SetUp() OVERRIDE
     {
-        appPTR->getTopLevelInstance()->getTimeLine()->seekFrame(kTimelineTime, false, NULL, eTimelineChangeReasonOtherSeek);
+        _savedTimelineTime = appPTR->getTopLevelInstance()->getTimeLine()->currentFrame();
+        seek(kTimelineTime);
     }
 
     virtual void TearDown() OVERRIDE
@@ -73,6 +88,7 @@ protected:
             (*it)->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
         }
         _nodes.clear();
+        seek(_savedTimelineTime);
     }
 
     bool skipped(const char* pluginID = kNatronTestPluginParams)
@@ -86,9 +102,21 @@ protected:
         return false;
     }
 
-    NodePtr createNode(const char* pluginID = kNatronTestPluginParams)
+    NodePtr createNode(const char* pluginID = kNatronTestPluginParams,
+                       const NodeCollectionPtr& group = NodeCollectionPtr())
     {
-        NodePtr node = NatronTestPlugin::createNode(pluginID);
+        NodePtr node;
+
+        if (group) {
+            CreateNodeArgs args(pluginID, group);
+            args.setProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, true);
+            args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+            args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+            args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+            node = appPTR->getTopLevelInstance()->createNode(args);
+        } else {
+            node = NatronTestPlugin::createNode(pluginID);
+        }
 
         if (node) {
             _nodes.push_back(node);
@@ -103,20 +131,39 @@ protected:
         return std::dynamic_pointer_cast<KnobDouble>( node->getKnobByName(name) );
     }
 
-    // param of node = "other.otherParam.get()"
+    // param of node = "<other>.otherParam.get()", where <other> is the script name of other, or the given name
     static bool setExpressionReading(const NodePtr& node,
                                      const std::string& param,
                                      const NodePtr& other,
-                                     const std::string& otherParam)
+                                     const std::string& otherParam,
+                                     const std::string& otherName = std::string())
     {
         KnobDoublePtr k = knob(node, param);
 
         if (!k) {
             return false;
         }
-        k->setExpression(0, other->getScriptName_mt_safe() + "." + otherParam + ".get()", false /*hasRetVariable*/, false /*failIfInvalid*/);
+        k->setExpression(0, ( otherName.empty() ? other->getScriptName_mt_safe() : otherName ) + "." + otherParam + ".get()",
+                         false /*hasRetVariable*/, false /*failIfInvalid*/);
 
         return !k->getExpression(0).empty();
+    }
+
+    // 10 at the timeline's frame, 50 at the frame of the render
+    static void setKeys(const KnobDoublePtr& k)
+    {
+        k->setValueAtTime(kTimelineTime, 10., ViewSpec::all(), 0);
+        k->setValueAtTime(kRenderTime, 50., ViewSpec::all(), 0);
+    }
+
+    static bool dependsOn(const NodePtr& node,
+                          const NodePtr& dep)
+    {
+        std::set<NodePtr> deps;
+
+        node->getEffectInstance()->getAllExpressionDependenciesRecursive(deps);
+
+        return deps.find(dep) != deps.end();
     }
 
     // The render args of the render that ParallelRenderArgsSetter sets up for the tree of root, as renderFrame() does
@@ -160,9 +207,7 @@ TEST_F(ExpressionDepsRenderArgsTest, DependencyGetsRenderArgs)
     ASSERT_TRUE(a && b);
     KnobDoublePtr bFrom = knob(b, "doubleFrom");
     ASSERT_TRUE( bool(bFrom) );
-    KeyFrame key;
-    bFrom->setValueAtTime(kTimelineTime, 10., ViewSpec::all(), 0, eValueChangedReasonPluginEdited, &key);
-    bFrom->setValueAtTime(kRenderTime, 50., ViewSpec::all(), 0, eValueChangedReasonPluginEdited, &key);
+    setKeys(bFrom);
     ASSERT_TRUE( setExpressionReading(a, "doubleTo", b, "doubleFrom") );
     EXPECT_FALSE( bool( renderArgs(b) ) );
 
@@ -310,8 +355,8 @@ TEST_F(ExpressionDepsRenderArgsTest, ParameterCycle)
     NodePtr b = createNode();
     ASSERT_TRUE(a && b);
     ASSERT_TRUE( setExpressionReading(a, "doubleTo", b, "doubleTo") );
-    // may be refused because of the cycle
-    setExpressionReading(b, "doubleTo", a, "doubleTo");
+    ASSERT_TRUE( setExpressionReading(b, "doubleTo", a, "doubleTo") );
+    ASSERT_TRUE( dependsOn(a, b) && dependsOn(b, a) );
     {
         AbortableRenderInfoPtr abortInfo = makeAbortInfo();
         std::unique_ptr<ParallelRenderArgsSetter> setter( makeRenderArgs(a, abortInfo) );
@@ -322,25 +367,87 @@ TEST_F(ExpressionDepsRenderArgsTest, ParameterCycle)
     EXPECT_FALSE( bool( renderArgs(b) ) );
 }
 
-// A full render of a generator whose parameter reads a node that is not connected to it, and that reads the
-// generator back.
-TEST_F(ExpressionDepsRenderArgsTest, Render)
+// A node inside a Group reads a parameter of the Group (thisGroup.shift.get(), as in PyPlugs): the Group gets
+// render args, and the parameter is read at the frame of the render.
+TEST_F(ExpressionDepsRenderArgsTest, GroupParameter)
 {
-    if ( skipped() || skipped(kNatronTestPluginGenerator) ) {
+    if ( skipped() ) {
         return;
     }
-    NodePtr gen = createNode(kNatronTestPluginGenerator);
+    NodePtr groupNode = createNode(PLUGINID_NATRON_GROUP);
+    ASSERT_TRUE( bool(groupNode) );
+    NodeGroupPtr group = std::dynamic_pointer_cast<NodeGroup>( groupNode->getEffectInstance() );
+    ASSERT_TRUE( bool(group) );
+    KnobDoublePtr shift = AppManager::createKnob<KnobDouble>(group.get(), std::string("shift"), 1);
+    shift->setName("shift");
+    groupNode->declarePythonFields();
+    setKeys(shift);
+    NodePtr inside = createNode(kNatronTestPluginParams, group);
+    ASSERT_TRUE( bool(inside) );
+    ASSERT_TRUE( setExpressionReading(inside, "doubleTo", groupNode, "shift", "thisGroup") );
+    ASSERT_TRUE( dependsOn(inside, groupNode) );
+    {
+        AbortableRenderInfoPtr abortInfo = makeAbortInfo();
+        std::unique_ptr<ParallelRenderArgsSetter> setter( makeRenderArgs(inside, abortInfo) );
+        ParallelRenderArgsPtr groupArgs = renderArgs(groupNode);
+        ASSERT_TRUE( bool(groupArgs) ) << "the Group read by an expression of a node inside it has no render args";
+        EXPECT_EQ(kRenderTime, groupArgs->time);
+        EXPECT_EQ( 50., knob(inside, "doubleTo")->getValueAtTime(kRenderTime) );
+    }
+    EXPECT_FALSE( bool( renderArgs(groupNode) ) );
+}
+
+// A deactivated node (deleted, kept for undo) that an expression still reads gets no render args.
+TEST_F(ExpressionDepsRenderArgsTest, DeactivatedDependency)
+{
+    if ( skipped() ) {
+        return;
+    }
+    NodePtr a = createNode();
     NodePtr b = createNode();
-    ASSERT_TRUE(gen && b);
+    ASSERT_TRUE(a && b);
+    ASSERT_TRUE( setExpressionReading(a, "doubleTo", b, "doubleFrom") );
+    b->deactivate(std::list<NodePtr>(), true /*disconnectAll*/, false /*reconnect*/, true /*hideGui*/, false /*triggerRender*/, false /*unslaveKnobs*/);
+    ASSERT_FALSE( b->isActivated() );
+    ASSERT_TRUE( dependsOn(a, b) );
+    {
+        AbortableRenderInfoPtr abortInfo = makeAbortInfo();
+        std::unique_ptr<ParallelRenderArgsSetter> setter( makeRenderArgs(a, abortInfo) );
+        EXPECT_TRUE( bool( renderArgs(a) ) );
+        EXPECT_FALSE( bool( renderArgs(b) ) ) << "a deactivated node got render args";
+    }
+    b->activate(std::list<NodePtr>(), true /*restoreAll*/, false /*triggerRender*/);
+}
+
+// A render on disk (through a DiskCache, which renders like a Write node) of a generator whose region of definition
+// depends on a parameter that reads another node, not connected to it, which reads the generator back. The RoD and
+// the render read that node at the frame of the render, not at the timeline's frame: the RoD used to be computed
+// before the render args were set, and its result was then used by the render.
+TEST_F(ExpressionDepsRenderArgsTest, RenderOnDisk)
+{
+    if ( skipped() || skipped(kNatronTestPluginParamRoD) ) {
+        return;
+    }
+    NodePtr gen = createNode(kNatronTestPluginParamRoD);
+    NodePtr b = createNode();
+    NodePtr output = createNode(PLUGINID_NATRON_DISKCACHE);
+    ASSERT_TRUE(gen && b && output);
+    ASSERT_TRUE( gen->getApp()->getProject()->connectNodes(0, gen, output) );
     KnobDoublePtr bFrom = knob(b, "doubleFrom");
     ASSERT_TRUE( bool(bFrom) );
-    bFrom->setValue(1.);
-    ASSERT_TRUE( setExpressionReading(gen, "par", b, "doubleFrom") );
-    ASSERT_TRUE( setExpressionReading(b, "doubleTo", gen, "par") );
+    setKeys(bFrom);
+    ASSERT_TRUE( setExpressionReading(gen, "size", b, "doubleFrom") );
+    ASSERT_TRUE( setExpressionReading(b, "doubleTo", gen, "size") );
     appPTR->clearAllCaches();
-    const int rendersBefore = NatronTestPlugin::counter("Generator.render");
-    EXPECT_TRUE( bool( NatronTestPlugin::renderFrame(gen, kRenderTime) ) );
-    EXPECT_EQ( 1, NatronTestPlugin::counter("Generator.render") - rendersBefore );
+    const int rod50 = NatronTestPlugin::counter("ParamRoD.rod.50");
+    const int rod10 = NatronTestPlugin::counter("ParamRoD.rod.10");
+    const int render50 = NatronTestPlugin::counter("ParamRoD.render.50");
+    const int width50 = NatronTestPlugin::counter("ParamRoD.renderWidth.50");
+    NatronTestPlugin::renderSequence( output, (int)kRenderTime, (int)kRenderTime );
+    EXPECT_LE( 1, NatronTestPlugin::counter("ParamRoD.rod.50") - rod50 );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("ParamRoD.rod.10") - rod10 ) << "the RoD read the other node at the timeline's frame";
+    EXPECT_EQ( 1, NatronTestPlugin::counter("ParamRoD.render.50") - render50 );
+    EXPECT_EQ( 1, NatronTestPlugin::counter("ParamRoD.renderWidth.50") - width50 );
     EXPECT_FALSE( bool( renderArgs(gen) ) );
     EXPECT_FALSE( bool( renderArgs(b) ) );
 }

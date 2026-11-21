@@ -2408,6 +2408,28 @@ private:
             const bool isSequentialRender = true;
 
             for (std::size_t view = 0; view < viewsToRender.size(); ++view) {
+                // Set the render args before computing the RoD and the components: they may read parameters whose
+                // expressions read other nodes, which must be read at the frame of the render, not at the timeline's
+                // frame (#1564)
+                AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(true, 0);
+                if (isAbortableThread) {
+                    isAbortableThread->setAbortInfo(isRenderDueToRenderInteraction, abortInfo, activeInputToRender);
+                }
+
+                ParallelRenderArgsSetter frameRenderArgs(time,
+                                                         viewsToRender[view],
+                                                         isRenderDueToRenderInteraction,  // is this render due to user interaction ?
+                                                         isSequentialRender,
+                                                         abortInfo, //abortInfo
+                                                         activeInputNode, // viewer requester
+                                                         0, //texture index
+                                                         output->getApp()->getTimeLine().get(),
+                                                         NodePtr(),
+                                                         false,
+                                                         false,
+                                                         stats,
+                                                         _imp->scheduler->getFrameOrderRender() );
+
                 StatusEnum stat = activeInputToRender->getRegionOfDefinition_public(activeInputToRenderHash, time, scale, viewsToRender[view], &rod, &isProjectFormat);
                 if (stat == eStatusFailed) {
                     _imp->scheduler->notifyRenderFailure("Error caught while rendering");
@@ -2439,25 +2461,6 @@ private:
                     }
                 }
                 const RectI renderWindow = rod.toPixelEnclosing(scale, par);
-
-                AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(true, 0);
-                if (isAbortableThread) {
-                    isAbortableThread->setAbortInfo(isRenderDueToRenderInteraction, abortInfo, activeInputToRender);
-                }
-
-                ParallelRenderArgsSetter frameRenderArgs(time,
-                                                         viewsToRender[view],
-                                                         isRenderDueToRenderInteraction,  // is this render due to user interaction ?
-                                                         isSequentialRender,
-                                                         abortInfo, //abortInfo
-                                                         activeInputNode, // viewer requester
-                                                         0, //texture index
-                                                         output->getApp()->getTimeLine().get(),
-                                                         NodePtr(),
-                                                         false,
-                                                         false,
-                                                         stats,
-                                                         _imp->scheduler->getFrameOrderRender() );
 
                 {
                     FrameRequestMap request;
