@@ -22,7 +22,7 @@ Other requirements:
 - `tart` (`brew install cirruslabs/cli/tart`).
 - rsync 3 (`brew install rsync` or `sudo port install rsync`). macOS's own `/usr/bin/rsync` (openrsync) can't copy to IPv6 addresses.
 - `sshpass`, used once to install the SSH key (`brew install hudochenkov/sshpass/sshpass`).
-- About 30 GB to download the base image the first time (`tart pull ghcr.io/cirruslabs/macos-sonoma-base:latest`), plus up to `VM_DISK` (250 GB, sparse) per VM. The finished SDK image takes about 28 GB on disk (`du -sh ~/.tart/vms/natron-sdk-sonoma`); `natron-sdk.sh create` takes about 2 hours with 6 CPUs, since most ports come from binary archives.
+- About 30 GB to download the base image the first time (`tart pull ghcr.io/cirruslabs/macos-sonoma-base:latest`), plus up to `VM_DISK` (250 GB, sparse) per VM. The finished SDK image takes about 30 GB on disk (`du -sh ~/.tart/vms/natron-sdk-sonoma`). With 6 CPUs, `natron-sdk.sh create` took 70 minutes on 2026-11-21 (most ports come from binary archives; libs 26 and python_qt 13 minutes), `natron-build.sh` 26 minutes, and `natron-test.sh` about 10 minutes.
 - The Natron checkout containing these scripts. Optionally, `../osmesa-install` next to it (its working copy is used); otherwise it is cloned from GitHub inside the VM.
 
 ## Build or update the SDK image
