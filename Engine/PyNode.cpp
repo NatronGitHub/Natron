@@ -203,6 +203,7 @@ Effect::Effect(const NodePtr& node)
     : Group()
     , UserParamHolder(node ? node->getEffectInstance().get() : 0)
     , _node(node)
+    , _nodeAddress( node.get() )
 {
     if (node) {
         NodeGroupPtr grp;
@@ -221,6 +222,35 @@ NodePtr
 Effect::getInternalNode() const
 {
     return _node.lock();
+}
+
+bool
+Effect::operator==(const Effect& other) const
+{
+    NodePtr node = getInternalNode();
+    NodePtr otherNode = other.getInternalNode();
+
+    if (!node || !otherNode) {
+        // A destroyed node: the Effects of all the destroyed nodes would be equal otherwise
+        return this == &other;
+    }
+
+    return node == otherNode;
+}
+
+bool
+Effect::operator!=(const Effect& other) const
+{
+    return !(*this == other);
+}
+
+std::size_t
+hashEffect(const Effect* effect)
+{
+    // The address of the node when the Effect was created, so that the hash doesn't change when the node is
+    // destroyed. Equal Effects refer to the same node, so they have the same hash. Never -1, which Python
+    // reserves for errors.
+    return effect ? reinterpret_cast<std::size_t>( effect->_nodeAddress ) : 0;
 }
 
 bool
