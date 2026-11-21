@@ -1,5 +1,5 @@
-# Regression test for #1554: Natron exits cleanly after the pane of the Node Graph was closed, which
-# reparents the node graph to the main window, whose destructor deleted the graph's scene before it.
+# Regression test for #1554: Natron exits cleanly after the Node Graph tab was removed from its pane,
+# which reparents the node graph to the main window, whose destructor deleted the graph's scene before it.
 import NatronGuiTest
 from natrontest import *
 
@@ -19,14 +19,20 @@ viewer.connectInput(0, gen)
 wait_idle()
 
 graphPane = None
+graphIndex = -1
 for i in range(1, 12):
     p = app.getTabWidget("pane%d" % i)
-    if p is not None and "Node Graph" in [p.getTabLabel(j) for j in range(p.count())]:
-        graphPane = p
+    if p is not None:
+        labels = [p.getTabLabel(j) for j in range(p.count())]
+        if "Node Graph" in labels:
+            graphPane = p
+            graphIndex = labels.index("Node Graph")
 check(graphPane is not None, "no pane with the Node Graph")
-graphPane.closePane()
+graphPane.removeTab(graphIndex)
 wait_idle()
 graphs = [w for w in QtWidgets.QApplication.allWidgets() if w.objectName() == "nodeGraph"]
 check(len(graphs) == 1, "%d node graphs" % len(graphs))
 parent = graphs[0].parentWidget()
-print("node graph parent: %s" % (parent.metaObject().className() if parent is not None else None))
+parentClass = parent.metaObject().className() if parent is not None else None
+print("node graph parent: %s" % parentClass)
+check(parentClass == "Natron::Gui", "the node graph was not reparented to the main window")
