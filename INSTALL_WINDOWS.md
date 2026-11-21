@@ -103,12 +103,17 @@ Natron is built with CMake and Ninja, in an MSYS2 **UCRT64** shell. The Windows 
       mingw-w64-ucrt-x86_64-python-qtpy \
       mingw-w64-ucrt-x86_64-clang mingw-w64-ucrt-x86_64-llvm-tools
 
-(shiboken2 needs clang and llvm-tools. The release installer scripts don't work yet: see the SDK paragraph above and #1133.) Then, from the Natron source directory:
+(shiboken2 needs clang and llvm-tools. The release installer scripts don't work yet: see the SDK paragraph above and #1133.) For a Qt 6 build (`-DNATRON_QT6=ON`), install the Qt 6 and PySide6 packages instead of `qt5-base`, `pyside2` and `shiboken2`:
+
+    pacman -S --needed mingw-w64-ucrt-x86_64-qt6-base \
+      mingw-w64-ucrt-x86_64-pyside6 mingw-w64-ucrt-x86_64-shiboken6
+
+(shiboken6 needs clang and llvm-tools too.) Then, from the Natron source directory:
 
     cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
     cmake --build build
 
-Useful options (add them to the first `cmake` command): `-DCMAKE_BUILD_TYPE=Debug` or `Release`, `-DNATRON_QT6=ON` (Qt 6 and PySide6), `-DNATRON_BUILD_TESTS=OFF` (skip the unit tests), `-DNATRON_SYSTEM_LIBS=ON` (use system copies of the libraries in `libs/`).
+Useful options (add them to the first `cmake` command): `-DCMAKE_BUILD_TYPE=Debug` or `Release`, `-DNATRON_QT6=ON` (Qt 6 and PySide6, built as C++20; Qt 5 builds are C++17), `-DNATRON_BUILD_TESTS=OFF` (skip the unit tests), `-DNATRON_SYSTEM_LIBS=ON` (use system copies of the libraries in `libs/`).
 
 To run the unit tests, which need the OpenFX IO plug-ins and an OpenColorIO config:
 
