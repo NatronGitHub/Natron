@@ -50,6 +50,10 @@
 #include <QSaveFile>
 #include <QTemporaryDir>
 
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
@@ -65,6 +69,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CLArgs.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/PortableBinaryArchive.h"
 #include "Engine/Project.h"
 #include "Engine/ProjectSerialization.h"
@@ -783,8 +788,6 @@ TEST(ProjectFileFormat, PythonAPI)
     app->getProject()->resetProject();
 }
 
-// Sizes and times of a large project in both formats, and the same text -> binary -> text check
-// with a real project, which may be saved by an old version and use OpenFX plug-ins. Runs only if
 namespace {
 // Waits until n threads reach it (std::barrier is C++20).
 class Barrier
@@ -835,6 +838,64 @@ strayFiles(const QString& dir,
     }
 
     return ret;
+}
+
+// Sets the frame range of the project of the top-level instance, so that its file changes.
+void
+setFrameRange(int first,
+              int last)
+{
+    std::string error, output;
+    EXPECT_TRUE( ::Natron::Python::interpretPythonScript(appPTR->getTopLevelInstance()->getAppIDString()
+                                                          + ".getProjectParam('frameRange').set(" + std::to_string(first) + ", " + std::to_string(last) + ")\n",
+                                                          &error, &output) ) << error << output;
+}
+
+// Sets the "Save versions" preference (the number of backups) while it exists.
+class SaveVersions
+{
+    KnobIntPtr _knob;
+    int _old;
+
+public:
+    explicit SaveVersions(int n)
+        : _knob( std::dynamic_pointer_cast<KnobInt>( appPTR->getCurrentSettings()->getKnobByName("saveVersions") ) )
+        , _old(0)
+    {
+        EXPECT_TRUE( bool(_knob) );
+        if (_knob) {
+            _old = _knob->getValue();
+            _knob->setValue(n);
+        }
+        EXPECT_EQ( n, appPTR->getCurrentSettings()->saveVersions() );
+    }
+
+    ~SaveVersions()
+    {
+        if (_knob) {
+            _knob->setValue(_old);
+        }
+    }
+};
+
+// True if the current user can write to path, although it is read-only (root).
+bool
+canWriteReadOnly(const QString& path)
+{
+    if ( QFileInfo(path).isDir() ) {
+        QFile probe( path + QString::fromUtf8("/probe") );
+        if ( probe.open(QIODevice::WriteOnly) ) {
+            probe.close();
+            probe.remove();
+
+            return true;
+        }
+
+        return false;
+    }
+    QFile probe(path);
+
+    return probe.open(QIODevice::Append);
 }
 } // anonymous namespace
 
@@ -925,35 +986,38 @@ TEST(ProjectSave, FailedSaveKeepsThePreviousFile)
     ProjectPtr project = app->getProject();
     project->resetProject();
     createTestProject(app);
+    SaveVersions saveVersions(1);
     ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
     const QByteArray previous = readFile(path);
     ASSERT_FALSE( previous.isEmpty() );
     // change the project, so that a save changes the file
-    std::string error, output;
-    ASSERT_TRUE( ::Natron::Python::interpretPythonScript(app->getAppIDString() + ".getProjectParam('frameRange').set(7, 89)\n", &error, &output) ) << error << output;
+    setFrameRange(7, 89);
 
     auto failedSave = [&](const char* what) {
         QString errorMessage;
         EXPECT_FALSE( project->saveProject_imp(dir, name, false /*autoSave*/, false /*updateProjectProperties*/, 0, &errorMessage, eProjectFileFormatBinary) ) << what;
         EXPECT_TRUE( errorMessage.contains(path) ) << what << ": " << errorMessage.toStdString();
+        EXPECT_TRUE( errorMessage.contains( QString::fromUtf8("Save As") ) ) << what << ": " << errorMessage.toStdString();
         EXPECT_TRUE( readFile(path) == previous ) << what << ": the project file changed";
         EXPECT_EQ( QStringList(), strayFiles( dir, QStringList(name) ) ) << what;
+        EXPECT_FALSE( QFile::exists( path + QString::fromUtf8(".~1~") ) ) << what;
     };
 
     // a read-only file is not replaced
     const QFileDevice::Permissions permissions = QFile::permissions(path);
     ASSERT_TRUE( QFile::setPermissions(path, QFileDevice::ReadOwner | QFileDevice::ReadUser | QFileDevice::ReadGroup | QFileDevice::ReadOther) );
-    failedSave("read-only file");
+    if ( canWriteReadOnly(path) ) {
+        reportSkipped("the read-only file is writable (root?)");
+    } else {
+        failedSave("read-only file");
+    }
     ASSERT_TRUE( QFile::setPermissions(path, permissions) );
 
 #ifndef Q_OS_WIN
     // a read-only directory: the temporary file can't be created (Windows has no read-only directories)
     const QFileDevice::Permissions dirPermissions = QFile::permissions(tmpDir.path());
     ASSERT_TRUE( QFile::setPermissions(tmpDir.path(), QFileDevice::ReadOwner | QFileDevice::ExeOwner | QFileDevice::ReadUser | QFileDevice::ExeUser) );
-    QFile probe( dir + QString::fromUtf8("probe") );
-    if ( probe.open(QIODevice::WriteOnly) ) {
-        probe.close();
-        probe.remove();
+    if ( canWriteReadOnly( tmpDir.path() ) ) {
         reportSkipped("the read-only directory is writable (root?)");
     } else {
         failedSave("read-only directory");
@@ -964,8 +1028,170 @@ TEST(ProjectSave, FailedSaveKeepsThePreviousFile)
     // and then it saves
     ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
     EXPECT_FALSE( readFile(path) == previous );
+    EXPECT_TRUE( readFile( path + QString::fromUtf8(".~1~") ) == previous );
     project->resetProject();
 }
+
+// The new file is written, the backups are rotated, then the new file can't replace the project file (on Windows,
+// another process has it open; or closing the file fails): the save tries again, then puts the project file and
+// its backups back.
+TEST(ProjectSave, FailedCommitKeepsThePreviousFile)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("p.ntp");
+    const QString path = dir + name;
+    const QString backup1 = path + QString::fromUtf8(".~1~");
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    createTestProject(app);
+    SaveVersions saveVersions(1);
+    setFrameRange(1, 10);
+    ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
+    setFrameRange(1, 20);
+    ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
+    const QByteArray b = readFile(path);
+    ASSERT_FALSE( b == readFile(backup1) );
+
+    // one failure: the save tries again
+    setFrameRange(1, 30);
+    Project::failNextSaveCommitsForTesting(1);
+    EXPECT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
+    const QByteArray c = readFile(path);
+    EXPECT_FALSE( c == b );
+    EXPECT_TRUE( readFile(backup1) == b );
+    EXPECT_EQ( QStringList(), strayFiles( dir, QStringList(name) ) );
+    EXPECT_FALSE( QFile::exists( path + QString::fromUtf8(".~2~") ) );
+
+    // every attempt fails
+    setFrameRange(1, 40);
+    Project::failNextSaveCommitsForTesting(3);
+    QString errorMessage;
+    EXPECT_FALSE( project->saveProject_imp(dir, name, false /*autoSave*/, false /*updateProjectProperties*/, 0, &errorMessage, eProjectFileFormatBinary) );
+    Project::failNextSaveCommitsForTesting(0);
+    EXPECT_TRUE( errorMessage.contains(path) ) << errorMessage.toStdString();
+    EXPECT_TRUE( readFile(path) == c ) << "the project file was not put back";
+    EXPECT_TRUE( readFile(backup1) == b ) << "the backup was not put back";
+    EXPECT_FALSE( QFile::exists( path + QString::fromUtf8(".~2~") ) );
+    EXPECT_EQ( QStringList(), strayFiles( dir, QStringList(name) ) );
+    project->resetProject();
+}
+
+// The "Save versions" preference: the number of backups (.~1~ is the previous version), none with 0.
+TEST(ProjectSave, Backups)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("p.ntp");
+    const QString path = dir + name;
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    createTestProject(app);
+    {
+        // more than 9: .~10~ is older than .~9~ (they were sorted alphabetically)
+        SaveVersions saveVersions(11);
+        std::vector<QByteArray> versions;
+        for (int k = 0; k < 14; ++k) {
+            setFrameRange(1, 100 + k);
+            ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
+            versions.push_back( readFile(path) );
+        }
+        EXPECT_TRUE( readFile(path) == versions[13] );
+        for (int n = 1; n <= 11; ++n) {
+            EXPECT_TRUE( readFile( path + QString::fromUtf8(".~%1~").arg(n) ) == versions[13 - n] ) << "backup " << n;
+        }
+        EXPECT_FALSE( QFile::exists( path + QString::fromUtf8(".~12~") ) );
+    }
+    {
+        // 0: no backups, the old ones are removed
+        SaveVersions saveVersions(0);
+        setFrameRange(1, 200);
+        ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatText) );
+        EXPECT_EQ( eProjectFileFormatText, Project::detectFileFormat(path) );
+        EXPECT_EQ( QStringList(name), QDir(dir).entryList(QDir::Files | QDir::Hidden | QDir::NoDotAndDotDot) );
+    }
+    project->resetProject();
+}
+
+#ifndef Q_OS_WIN
+// A project saved through a symbolic link (latest.ntp -> v012.ntp): the link is kept, its target is saved,
+// with its backups next to it. (On Windows, QFile::link() makes a .lnk shortcut.)
+TEST(ProjectSave, SymbolicLink)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString target = dir + QString::fromUtf8("v012.ntp");
+    const QString link = dir + QString::fromUtf8("latest.ntp");
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    createTestProject(app);
+    SaveVersions saveVersions(1);
+    ASSERT_TRUE( saveCopy(project, dir, QString::fromUtf8("v012.ntp"), eProjectFileFormatBinary) );
+    const QByteArray previous = readFile(target);
+    // a relative link, and a link to it
+    ASSERT_TRUE( QFile::link( QString::fromUtf8("v012.ntp"), link ) );
+    ASSERT_TRUE( QFile::link( link, dir + QString::fromUtf8("current.ntp") ) );
+
+    for (const char* n : { "latest.ntp", "current.ntp" }) {
+        setFrameRange( 1, (int)std::strlen(n) * 10 );
+        const QByteArray before = readFile(target);
+        ASSERT_TRUE( saveCopy(project, dir, QString::fromUtf8(n), eProjectFileFormatBinary) ) << n;
+        EXPECT_TRUE( QFileInfo(link).isSymLink() ) << n;
+        EXPECT_EQ( QFileInfo(target).canonicalFilePath(), QFileInfo(link).canonicalFilePath() ) << n;
+        EXPECT_FALSE( readFile(target) == before ) << n;
+        EXPECT_TRUE( readFile(link) == readFile(target) ) << n;
+        EXPECT_TRUE( readFile( target + QString::fromUtf8(".~1~") ) == before ) << n;
+        EXPECT_FALSE( QFile::exists( link + QString::fromUtf8(".~1~") ) ) << n;
+        EXPECT_FALSE( QFile::exists( dir + QString::fromUtf8("current.ntp.~1~") ) ) << n;
+    }
+    EXPECT_TRUE( QFileInfo( dir + QString::fromUtf8("current.ntp") ).isSymLink() );
+    project->resetProject();
+}
+#endif
+
+#ifdef Q_OS_WIN
+// Another process has the project file open without FILE_SHARE_DELETE (a render, an antivirus): it can't
+// be replaced. The save fails with an error, and the file is as it was.
+TEST(ProjectSave, FileOpenByAnotherProcess)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("p.ntp");
+    const QString path = dir + name;
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    createTestProject(app);
+    SaveVersions saveVersions(1);
+    ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
+    const QByteArray previous = readFile(path);
+    setFrameRange(3, 33);
+
+    const std::wstring nativePath = QDir::toNativeSeparators(path).toStdWString();
+    HANDLE h = CreateFileW(nativePath.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    ASSERT_NE(INVALID_HANDLE_VALUE, h);
+    QString errorMessage;
+    const bool saved = project->saveProject_imp(dir, name, false /*autoSave*/, false /*updateProjectProperties*/, 0, &errorMessage, eProjectFileFormatBinary);
+    CloseHandle(h);
+    EXPECT_FALSE(saved);
+    EXPECT_TRUE( errorMessage.contains(path) ) << errorMessage.toStdString();
+    EXPECT_TRUE( readFile(path) == previous );
+    EXPECT_EQ( QStringList(), strayFiles( dir, QStringList(name) ) );
+
+    // then it saves
+    ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
+    EXPECT_FALSE( readFile(path) == previous );
+    EXPECT_TRUE( readFile( path + QString::fromUtf8(".~1~") ) == previous );
+    project->resetProject();
+}
+#endif
 
 #ifndef Q_OS_WIN
 // Saving keeps the permissions of the project file (it was replaced by a new file with the default permissions).
@@ -991,6 +1217,8 @@ TEST(ProjectSave, KeepsPermissions)
 }
 #endif
 
+// Sizes and times of a large project in both formats, and the same text -> binary -> text check
+// with a real project, which may be saved by an old version and use OpenFX plug-ins. Runs only if
 // NATRON_TEST_LARGE_PROJECT is the path of a text project, e.g. Natron-Tests/Spaceship/Spaceship_Natron_23.ntp.
 TEST(ProjectFileFormat, LargeProject)
 {

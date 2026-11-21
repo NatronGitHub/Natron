@@ -26,11 +26,13 @@
 #include "Project.h"
 
 #include <fstream>
-#include <algorithm> // min, max
+#include <algorithm> // min, max, sort
+#include <atomic>
 #include <ios>
 #include <limits>
 #include <ostream>
 #include <set>
+#include <utility>
 #include <streambuf>
 #include <vector>
 #include <cstdlib> // strtoul
@@ -917,13 +919,12 @@ private:
 };
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
+// The file itself if it exists, then its backups (filePath.~N~) by increasing N (not in alphabetical
+// order, where .~10~ comes before .~2~).
 static QStringList
 findBackups(const QString & filePath)
 {
-    QStringList ret;
-    if ( QFile::exists(filePath) ) {
-        ret.append(filePath);
-    }
+    std::vector<std::pair<qulonglong, QString> > found;
     // find files matching filePath.~[0-9]+~
     QRegularExpression rx( QString::fromUtf8("\\.~(\\d+)~\\z"), QRegularExpression::UseUnicodePropertiesOption );
     QFileInfo fileInfo(filePath);
@@ -945,10 +946,18 @@ findBackups(const QString & filePath)
         QRegularExpressionMatch backupMatch = rx.match(fn);
         if ( fn.startsWith(fileName) && backupMatch.hasMatch() &&
              ( backupMatch.capturedStart() == fileName.size() ) ) {
-            ret.append(file.filePath());
+            found.push_back( std::make_pair( backupMatch.captured(1).toULongLong(), file.filePath() ) );
         }
     }
-    ret.sort();
+    std::sort( found.begin(), found.end() );
+
+    QStringList ret;
+    if ( QFile::exists(filePath) ) {
+        ret.append(filePath);
+    }
+    for (std::size_t i = 0; i < found.size(); ++i) {
+        ret.append(found[i].second);
+    }
 
     return ret;
 }
@@ -966,6 +975,65 @@ nextBackup(const QString & filePath)
     } else {
         return filePath + QString::fromUtf8(".~1~");
     }
+}
+
+// Before the new file replaces filePath: renames filePath.~1~ to filePath.~2~... and filePath to filePath.~1~,
+// if backups are kept (saveVersions > 0). The renames are appended to renamed, so that they can be undone if the
+// new file can't replace filePath. The extra backups are removed by removeExtraBackups(), once it did.
+static void
+rotateBackups(const QString & filePath,
+              int saveVersions,
+              std::vector<std::pair<QString, QString> >* renamed,
+              QStringList* errors)
+{
+    if (saveVersions <= 0) {
+        return;
+    }
+    const QStringList backups = findBackups(filePath);
+    for (int i = backups.size() - 1; i >= 0; --i) {
+        const QString next = nextBackup( backups.at(i) );
+        if ( QFile::rename( backups.at(i), next ) ) {
+            renamed->push_back( std::make_pair(backups.at(i), next) );
+        } else {
+            errors->append( Project::tr("Could not rename %1 to %2.").arg(backups.at(i), next) );
+        }
+    }
+}
+
+// After the new file replaced filePath: keeps its first saveVersions backups, removes the others.
+static void
+removeExtraBackups(const QString & filePath,
+                   int saveVersions,
+                   QStringList* errors)
+{
+    QStringList backups = findBackups(filePath);
+    const int keep = std::max(saveVersions, 0) + ( ( !backups.isEmpty() && (backups.first() == filePath) ) ? 1 : 0 );
+
+    while (backups.size() > keep) {
+        if ( QFile::exists( backups.last() ) && !QFile::remove( backups.last() ) ) {
+            errors->append( Project::tr("Could not remove %1.").arg( backups.last() ) );
+        }
+        backups.removeLast();
+    }
+}
+
+// See Project::failNextSaveCommitsForTesting()
+static std::atomic<int> failNextSaveCommits(0);
+
+void
+Project::failNextSaveCommitsForTesting(int count)
+{
+    failNextSaveCommits = count;
+}
+
+static bool
+takeSaveCommitFailureForTesting()
+{
+    int n = failNextSaveCommits.load();
+    while ( (n > 0) && !failNextSaveCommits.compare_exchange_weak(n, n - 1) ) {
+    }
+
+    return n > 0;
 }
 
 QString
@@ -1032,45 +1100,73 @@ Project::saveProjectInternal(const QString & path,
         _imp->autoSavesWrittenBySession.insert( QDir::cleanPath(filePath) );
     }
 
-    // Write to a uniquely named temporary file in the directory of the project, which replaces the project
-    // file only once it was completely written (QSaveFile::commit()), so that a crash or a failed save never
-    // corrupts it. The temporary file was named after the time in ms, in the temporary directory, so two saves
-    // in the same millisecond (two projects, two processes) wrote to the same file (#1590), and it was copied
-    // if the project was on another partition. QSaveFile also keeps the permissions of an existing file.
-    QSaveFile saveFile(filePath);
-
     // Auto-saves are always binary (faster, smaller); they record the format of the project.
     // The format is an argument, not set on the project before the save: this save may wait for a running
     // auto-save, which must record the format the project has until this save succeeds.
     const ProjectFileFormatEnum projectFormat = (format != eProjectFileFormatNone && !autoSave) ? format : getFileFormatForSave();
     const ProjectFileFormatEnum fileFormat = autoSave ? eProjectFileFormatBinary : projectFormat;
+
+    // The file to write. If filePath is a symbolic link (latest.ntp -> v012.ntp), the link is kept: its target
+    // is written, and its backups are next to it, as QSaveFile does.
+    QString targetPath = filePath;
+    {
+        QFileInfo targetInfo(targetPath);
+        int links = 0;
+        while ( targetInfo.isSymLink() ) {
+            if (++links > 40) {
+                throw std::runtime_error( tr("Cannot save the project to %1: too many levels of symbolic links.").arg(filePath).toStdString() );
+            }
+            targetPath = targetInfo.symLinkTarget();
+            targetInfo.setFile(targetPath);
+        }
+        // clearer errors than QSaveFile's
+        if ( targetInfo.exists() && !targetInfo.isWritable() ) {
+            throw std::runtime_error( tr("Cannot save the project to %1: the file is read-only. Use Save As to save it under another name.").arg(filePath).toStdString() );
+        }
+#ifndef __NATRON_WIN32__
+        // (not on Windows, where the read-only attribute of a folder, set on Documents or Desktop, means nothing)
+        const QFileInfo dirInfo( targetInfo.absolutePath() );
+        if ( dirInfo.isDir() && !dirInfo.isWritable() ) {
+            throw std::runtime_error( tr("Cannot save the project to %1: the folder %2 is not writable. Use Save As to save it elsewhere.").arg( filePath, QDir::toNativeSeparators( dirInfo.absoluteFilePath() ) ).toStdString() );
+        }
+#endif
+    }
+
     ///Fix file paths before saving.
     const QString oldProjectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
+    if (!autoSave && updateProjectProperties) {
+        _imp->autoSetProjectDirectory(path);
+        _imp->saveDate->setValue( timeStr.toStdString() );
+        _imp->lastAuthorName->setValue( generateGUIUserName() );
+        _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName() );
+    }
 
-    {
-
-        if (!autoSave && updateProjectProperties) {
-            _imp->autoSetProjectDirectory(path);
-            _imp->saveDate->setValue( timeStr.toStdString() );
-            _imp->lastAuthorName->setValue( generateGUIUserName() );
-            _imp->natronVersion->setValue( generateUserFriendlyNatronVersionName() );
-        }
-
-        // Same contents for both formats (see loadProjectInternal())
-        auto saveToArchive = [&](auto & oArchive) {
-            bool bgProject = getApp()->isBackground();
-            oArchive << boost::serialization::make_nvp("Background_project", bgProject);
-            ProjectSerialization projectSerializationObj( getApp() );
-            save(&projectSerializationObj);
-            oArchive << boost::serialization::make_nvp("Project", projectSerializationObj);
-            if (!bgProject) {
-                AppInstancePtr app = getApp();
-                if (app) {
-                    app->saveProjectGui(oArchive);
-                }
+    // Same contents for both formats (see loadProjectInternal())
+    auto saveToArchive = [&](auto & oArchive) {
+        bool bgProject = getApp()->isBackground();
+        oArchive << boost::serialization::make_nvp("Background_project", bgProject);
+        ProjectSerialization projectSerializationObj( getApp() );
+        save(&projectSerializationObj);
+        oArchive << boost::serialization::make_nvp("Project", projectSerializationObj);
+        if (!bgProject) {
+            AppInstancePtr app = getApp();
+            if (app) {
+                app->saveProjectGui(oArchive);
             }
-        };
+        }
+    };
 
+    // Write to a uniquely named temporary file in the directory of the project (an unnamed one on Linux), which
+    // replaces the project file atomically, only once it was completely written (QSaveFile::commit()): a crash or
+    // a failed save never corrupts it. The temporary file was named after the time in ms, in the temporary
+    // directory, so two saves in the same millisecond (two projects, two processes) wrote to the same file (#1590).
+    // QSaveFile keeps the permissions of an existing file (but not its owner, ACLs, extended attributes or hard links).
+    // Replacing the file fails on Windows while another process has it open without FILE_SHARE_DELETE (a render,
+    // an antivirus): try again a few times.
+    QStringList backupErrors;
+    const int maxAttempts = 3;
+    for (int attempt = 1; ; ++attempt) {
+        QSaveFile saveFile(targetPath);
         try {
             // text mode: the text format has the end of lines of the platform (CRLF on Windows)
             QIODevice::OpenMode mode = QIODevice::WriteOnly;
@@ -1094,10 +1190,10 @@ Project::saveProjectInternal(const QString & path,
                 oArchive << boost::serialization::make_nvp("Project_file_format", originalFormat);
                 saveToArchive(oArchive);
             } // the archive is closed (the XML end tags are written)
-            // The archives write to the stream buffer, and the last buffer is only written when the stream is
-            // flushed: check it before the file replaces the project (a full disk, a network share).
-            // commit() below checks the rest (QSaveFile's own buffer, closing the file).
-            if ( (ofile.rdbuf()->pubsync() == -1) || !ofile ) {
+            // The archives write to the stream buffer, and QSaveFile has its own buffer: write both before the
+            // backups are rotated, so that a write error (a full disk, a network share) leaves the project file
+            // as it was. commit() checks the rest (closing the file).
+            if ( (ofile.rdbuf()->pubsync() == -1) || !ofile || !saveFile.flush() ) {
                 throw std::runtime_error( tr("Failed to save the project to %1: %2").arg( filePath, saveFile.errorString() ).toStdString() );
             }
         } catch (...) {
@@ -1108,37 +1204,44 @@ Project::saveProjectInternal(const QString & path,
             }
             throw;
         }
-    } // saveFile is written, not committed yet
 
-    QStringList backupErrors;
-    if (!autoSave) {
-        // rotate backups
-        int saveVersions = appPTR->getCurrentSettings()->saveVersions();
-        // find the list of ordered backups (including the file itself if it exists)
-        QStringList backups = findBackups(filePath);
-        // remove extra backups
-        for (int i = backups.size() - 1; i >= saveVersions; --i) {
-            if ( QFile::exists( backups.last() ) && !QFile::remove( backups.last() ) ) {
-                backupErrors.append( tr("Could not remove %1.").arg( backups.last() ) );
-            }
-            backups.removeLast();
+        backupErrors.clear();
+        std::vector<std::pair<QString, QString> > renamed;
+        const int saveVersions = appPTR->getCurrentSettings()->saveVersions();
+        if (!autoSave) {
+            rotateBackups(targetPath, saveVersions, &renamed, &backupErrors);
         }
-        // rename existing backups
-        for (int i = backups.size() - 1; i >= 0; --i) {
-            if ( !QFile::rename( backups.at(i), nextBackup( backups.at(i) ) ) ) {
-                backupErrors.append( tr("Could not rename %1 to %2.").arg( backups.at(i), nextBackup( backups.at(i) ) ) );
-            }
-        }
-    }
 
-    // Rename the temporary file to the project file, replacing it (also on Windows). Both are in the same
-    // directory: this never copies the file.
-    if ( !saveFile.commit() ) {
-        if (!autoSave && updateProjectProperties) {
-            ///Reset the old project path in case of failure.
-            _imp->autoSetProjectDirectory(oldProjectPath);
+        // Rename the temporary file to the project file, replacing it (also on Windows). Both are in the same
+        // directory: this never copies the file.
+        bool committed;
+        QString commitError;
+        if ( takeSaveCommitFailureForTesting() ) {
+            saveFile.cancelWriting();
+            committed = false;
+            commitError = QString::fromUtf8("simulated failure (Project::failNextSaveCommitsForTesting())");
+        } else {
+            committed = saveFile.commit();
+            commitError = saveFile.errorString();
         }
-        throw std::runtime_error( tr("Failed to save the project to %1: %2").arg( filePath, saveFile.errorString() ).toStdString() );
+        if (committed) {
+            if (!autoSave) {
+                removeExtraBackups(targetPath, saveVersions, &backupErrors);
+            }
+            break;
+        }
+        // the project file was not replaced: put it back with its backups
+        for (std::vector<std::pair<QString, QString> >::reverse_iterator it = renamed.rbegin(); it != renamed.rend(); ++it) {
+            QFile::rename(it->second, it->first);
+        }
+        if (attempt >= maxAttempts) {
+            if (!autoSave && updateProjectProperties) {
+                ///Reset the old project path in case of failure.
+                _imp->autoSetProjectDirectory(oldProjectPath);
+            }
+            throw std::runtime_error( tr("Failed to save the project to %1: %2").arg(filePath, commitError).toStdString() );
+        }
+        QThread::msleep(200 * attempt);
     }
 
     if ( !backupErrors.isEmpty() && warnings ) {

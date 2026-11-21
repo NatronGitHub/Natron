@@ -121,6 +121,12 @@ public:
     bool isSaveInProgress() const WARN_UNUSED_RETURN;
 
     /**
+     * @brief Tests only: the next count saves (of any project) fail to replace the project file, as if the
+     * rename of the temporary file failed. A save tries 3 times before it fails.
+     **/
+    static void failNextSaveCommitsForTesting(int count);
+
+    /**
      * @brief Same as saveProject except that it will save the project in a temporary file
      * so it doesn't overwrite the project.
      **/
@@ -203,8 +209,8 @@ public:
      * @brief If fileName is the name of an auto-save, ending with .ntp.autosave (text, by Natron 2.5 and earlier)
      * or .ntp.binautosave (binary, by Natron 2.6 and later), possibly followed by a time hash for an untitled
      * project (".<digits>"), returns the position of ".ntp" and sets suffixSize to the size of the auto-save suffix
-     * after it. Returns -1 otherwise, e.g. for the temporary file of a save (<auto-save name>.XXXXXX, see QSaveFile). Natron 2.5 only looks for ".ntp.autosave", so it never offers to restore a binary
-     * auto-save, which it can't load. Its Project::clearAutoSavesDir() (when the user declines to restore one of its
+     * after it. Returns -1 otherwise, e.g. for the temporary file of a save (<auto-save name>.XXXXXX, see QSaveFile).
+     * Natron 2.5 only looks for ".ntp.autosave", so it never offers to restore a binary auto-save, which it can't load. Its Project::clearAutoSavesDir() (when the user declines to restore one of its
      * own untitled auto-saves, and Cache > Clear all caches) still removes the untitled ones in the Autosaves directory.
      **/
     static int findAutoSaveSuffix(const QString& fileName, int* suffixSize = 0) WARN_UNUSED_RETURN;
