@@ -107,8 +107,13 @@ Minimum macOS version
 ---------------------
 
 Natron 2.6 for macOS runs on **macOS 14 (Sonoma) or later** (maintainer
-decision, 2026-11-18), although the SDK image is built on macOS 15. Every
-Mach-O file in the ``.dmg`` must have a minimum macOS (``minos`` in
+decision, 2026-11-18), and macOS 14 is the **distribution baseline**
+(2026-11-21): the release is built *on* macOS 14, in the tart SDK image
+``natron-sdk-sonoma`` (made from the stock
+``ghcr.io/cirruslabs/macos-sonoma-base`` image), with only the Command Line
+Tools for Xcode 15.3 (macOS 14.4 SDK, Apple clang 15.0.0) and no Xcode. GitHub
+CI keeps its ``macos-15`` runners, because GitHub has no macOS 14 runners.
+Every Mach-O file in the ``.dmg`` must have a minimum macOS (``minos`` in
 ``otool -l``'s ``LC_BUILD_VERSION``) of 14.0 or older:
 
 - ``tools/jenkins/common.sh`` exports ``MACOSX_DEPLOYMENT_TARGET=14.0``
@@ -120,10 +125,12 @@ Mach-O file in the ``.dmg`` must have a minimum macOS (``minos`` in
   bundled library that is too new), and openfx's ``Makefile.master`` reads it
   from the environment.
 - The bundled libraries, Qt, PySide2 and the Python framework come from
-  MacPorts, so ``macports.conf`` has ``macosx_deployment_target 14.0`` and
-  ``buildfromsource always``: MacPorts' binary archives are built for the macOS
-  they were made on. ``macosx_sdk_version`` keeps its default (the build OS's
-  SDK).
+  MacPorts. ``macports.conf`` has ``macosx_deployment_target 14.0``. On macOS
+  14 that is MacPorts' default, and its binary archives (built for the macOS
+  they were made on) are used. On a newer build macOS, ``buildfromsource
+  always`` is needed too (``step_macports_conf`` sets it there), and
+  ``qt5-qtwebengine`` then needs a full Xcode to build. ``macosx_sdk_version``
+  keeps its default (the build OS's SDK).
 - OSMesa and LLVM are built with ``MACOSX_DEPLOYMENT_TARGET=14.0``
   (osmesa-install honours it).
 - ``tools/tart/check-minos.sh`` lists the Mach-O files (in directories, files,
@@ -415,6 +422,13 @@ To run the full suite by hand against a built app::
         OCIO="$APP/Contents/Resources/OpenColorIO-Configs/blender/config.ocio" \
         FFMPEG="$APP/Contents/MacOS/ffmpeg" COMPARE="$APP/Contents/MacOS/idiff" \
         bash runTests.sh "$APP/Contents/MacOS/NatronRenderer"
+
+To check that a DMG is self-contained, run the suite on a bare macOS 14 with
+``tools/tart/natron-test.sh <dmg>``: it uses a throw-away clone of the stock
+``macos-sonoma-base`` tart image without the Command Line Tools, MacPorts or
+Homebrew, copies in only ``Natron.app`` and the Natron-Tests data, and writes
+``<dmg name>-tests.txt`` and ``<dmg name>-unit_tests_failures.zip`` next to the
+DMG, the files attached to previous releases (see ``tools/tart/README.md``).
 
 Gotchas:
 
