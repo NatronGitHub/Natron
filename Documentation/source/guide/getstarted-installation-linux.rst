@@ -91,8 +91,17 @@ The path of the Natron folder must not contain a ``%`` sign.
 Earlier versions of ``natron-mime.sh`` installed
 ``~/.local/share/mime/packages/x-natron.xml``, or, as root,
 ``/usr/share/mime/packages/x-natron.xml``. You can keep this file, or delete
-it and update the MIME database, for example with
-``sudo update-mime-database /usr/share/mime``.
+it and update the MIME database. For the file in your home folder, run:
+
+.. code-block:: bash
+
+   update-mime-database ~/.local/share/mime
+
+For the file in ``/usr/share``, run:
+
+.. code-block:: bash
+
+   sudo update-mime-database /usr/share/mime
 
 Your files
 ----------
@@ -127,7 +136,7 @@ Uninstall
 If you added Natron to the desktop, remove it from the desktop first. Run
 ``natron-mime.sh --uninstall`` as the same user as when you added it (your
 normal user, or root). It removes nothing if the menu entry starts another
-copy of Natron: it tells you which one.
+copy of Natron that still exists: it tells you which one.
 
 .. code-block:: bash
 

@@ -14,8 +14,9 @@
 # the Natron launcher and the icons relative to its own location. Run it
 # directly, not through a symbolic link.
 #
-# --uninstall removes the files that this script installed, if the menu entry
-# starts this copy of Natron, then updates the caches.
+# --uninstall removes the files that this script installed, unless the menu
+# entry starts another copy of Natron that still exists, then updates the
+# caches.
 
 set -u
 
@@ -93,16 +94,22 @@ TRYEXEC_PATH="$(printf '%s\n' "$LAUNCHER" | sed -e 's/\\/\\\\/g')"
 if [ "$UNINSTALL" = "1" ]; then
     # Remove the files only if the menu entry starts this copy: they may have
     # been installed by another copy of Natron, which still uses them.
+    # If that copy doesn't exist any more (its folder was moved or deleted),
+    # the entry is stale and is removed.
     if [ -f "$DESKTOP_FILE" ]; then
         OWNER="$(sed -n -e 's/^TryExec=//p' "$DESKTOP_FILE" | head -n 1)"
         if [ "$OWNER" != "$TRYEXEC_PATH" ]; then
-            echo "$DESKTOP_FILE starts another copy of Natron:"
-            echo "    $OWNER"
-            echo "Nothing was removed. Run natron-mime.sh --uninstall from the bin folder of that copy."
-            exit 1
+            OWNER_PATH="$(printf '%s\n' "$OWNER" | sed -e 's/\\\\/\\/g')"
+            if [ -n "$OWNER_PATH" ] && [ -e "$OWNER_PATH" ]; then
+                echo "$DESKTOP_FILE starts another copy of Natron:" >&2
+                echo "    $OWNER_PATH" >&2
+                echo "Nothing to do. To remove it, run natron-mime.sh --uninstall from the bin folder of that copy." >&2
+                exit 0
+            fi
+            echo "$DESKTOP_FILE starts $OWNER_PATH, which doesn't exist any more: removing it." >&2
         fi
     fi
-    # Without the menu entry, the other files belong to no copy of Natron.
+    # Without a menu entry, the other files belong to no copy of Natron.
     for f in "$DESKTOP_FILE" "$MIME_FILE" "$APP_ICON" "$PROJECT_ICON"; do
         if [ -e "$f" ]; then
             rm -f "$f" && echo "Removed $f"
@@ -126,9 +133,18 @@ for f in "$LAUNCHER" "$PIXMAPS_DIR/natronIcon256_linux.png" "$PIXMAPS_DIR/natron
 done
 
 # For all users, the menu entry runs this folder's programs: anyone who can
-# change them could run their own programs as the other users.
+# change them could run their own programs as the other users. Flag the files
+# not owned by root, writable by others, or writable by a group other than
+# root (symbolic links always have mode 0777: only their owner matters), and
+# the parent folders that a non-root user can change (a world-writable folder
+# with the sticky bit, such as /tmp, is fine).
 if [ "$IS_ROOT" = "1" ]; then
-    NOT_ROOT_OWNED="$(find "$NATRON_DIR" \( ! -user 0 -o -perm -0002 \) -print 2>/dev/null | head -n 1)"
+    NOT_ROOT_OWNED="$(find "$NATRON_DIR" \( ! -user 0 -o \( -perm -0002 ! -type l \) -o \( -perm -0020 ! -group 0 ! -type l \) \) -print 2>/dev/null | head -n 1)"
+    PARENT="$NATRON_DIR"
+    while [ -z "$NOT_ROOT_OWNED" ] && [ "$PARENT" != "/" ]; do
+        PARENT="$(dirname "$PARENT")"
+        NOT_ROOT_OWNED="$(find "$PARENT" -maxdepth 0 \( ! -user 0 -o \( -perm -0002 ! -perm -1000 \) -o \( -perm -0020 ! -group 0 \) \) -print 2>/dev/null)"
+    done
     if [ -n "$NOT_ROOT_OWNED" ]; then
         echo "Warning: $NATRON_DIR can be changed by other users than root"
         echo "(for example $NOT_ROOT_OWNED). To add Natron for all users, move"
