@@ -1287,16 +1287,17 @@ TabWidget::onCurrentTabDeleted()
             _imp->modifyingTabBar = true;
             _imp->tabBar->removeTab(i);
             _imp->modifyingTabBar = false;
-            if (_imp->tabs.size() > 0) {
+            if (!_imp->gui) {
+                // the Gui is closing (discardGuiPointer()) and deletes the tabs, e.g. ~Gui() its
+                // viewers: do not show another tab (#1554)
+            } else if (_imp->tabs.size() > 0) {
                 l.unlock();
                 makeCurrentTab(0);
                 l.relock();
             } else {
                 _imp->currentWidget = 0;
                 _imp->mainLayout->addStretch();
-                // gui is null once the Gui is closing (discardGuiPointer()): its viewers are
-                // deleted after that (#1554)
-                if ( _imp->gui && !_imp->gui->isDraggingPanel() ) {
+                if ( !_imp->gui->isDraggingPanel() ) {
                     if ( dynamic_cast<FloatingWidget*>( parentWidget() ) ) {
                         l.unlock();
                         tryCloseFloatingPane();
