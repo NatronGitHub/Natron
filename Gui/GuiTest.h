@@ -28,6 +28,7 @@
 
 #include "Global/Macros.h"
 
+#include <QtCore/QPoint>
 #include <QtCore/QString>
 
 
@@ -41,6 +42,13 @@ NATRON_NAMESPACE_ENTER
  * See Documentation/source/devel/guitesting.rst.
  **/
 namespace GuiTest {
+/**
+ * @brief The global position of the mouse cursor, for the code that places or zooms things at the cursor:
+ * QCursor::pos(), or in test mode (Natron --test) the position of the last synthetic pen event
+ * (NatronGuiTest.penEvent()), since the real cursor is the user's and the tests must not depend on it.
+ **/
+QPoint cursorPos();
+
 /**
  * @brief Registers the NatronGuiTest built-in module, and starts watching the modal dialogs (an unexpected
  * one fails the test). Must be called before Python is initialized, once qApp exists.

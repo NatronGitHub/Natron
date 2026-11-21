@@ -153,6 +153,7 @@ SOURCES += \
     ParallelRenderArgs.cpp \
     Plugin.cpp \
     PluginMemory.cpp \
+    PortableBinaryArchive.cpp \
     PrecompNode.cpp \
     ProcessHandler.cpp \
     Project.cpp \
@@ -321,6 +322,7 @@ HEADERS += \
     Plugin.h \
     PluginActionShortcut.h \
     PluginMemory.h \
+    PortableBinaryArchive.h \
     PrecompNode.h \
     ProcessHandler.h \
     Project.h \

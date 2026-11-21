@@ -1,0 +1,67 @@
+From: Frédéric Devernay <devernay@users.noreply.github.com>
+Subject: [PATCH] QMutex: fix a lost wake-up in the non-futex implementation
+
+When unlockInternal() finds no waiter, it does:
+  (2) d->waiters.fetchAndAddRelease(-BigNumber)
+  (3) d_ptr.testAndSetRelease(d, nullptr)
+  (4) d->derefWaiters(0): waiters.testAndSetRelaxed(-BigNumber, 0)
+while a concurrent lockInternal(), holding a reference on d, does:
+  (1) old_waiters = d->waiters.loadAcquire()
+  (5) d->waiters.testAndSetRelaxed(old_waiters, old_waiters + 1)
+  (6) if (d != d_ptr.loadAcquire()) retry; else d->wait()
+
+If the locking thread reads at (1) or (5) the 0 written by (4), it must
+see the d_ptr reset of (3) at (6). Otherwise it waits on a QMutexPrivate
+that has already been detached from the mutex, and that no unlock will
+ever signal: the mutex is unlocked (d_ptr == nullptr) but the thread
+sleeps forever, with d->waiters == 1.
+
+- (1) reads (4): QTBUG-88247 (d08e3b6de16118becaada17a58aed4042f400a5a)
+  made (1) an acquire, but (4) is relaxed, so it does not synchronize
+  with it: (4) is in the release sequence headed by (2), which comes
+  before (3).
+- (5) reads (4) (ABA): (1) read the 0 from before (2), then (2), (3) and
+  (4) ran, and the relaxed CAS (5) succeeds against the 0 written by
+  (4) without synchronizing with it.
+
+Make (4) a release and (5) an acquire, so that (3) happens before (6) in
+both cases. On x86 both CASes are already full barriers, so this changes
+no code there. On AArch64 the bad outcome is allowed by the
+architecture's memory model with the relaxed operations and forbidden
+with this change (herd7 litmus tests in the bug report; the compiled
+acquire loads are LDAPR, with the same results). It was seen as
+a hang in Natron on Apple Silicon with Qt 5.15.19.
+
+The non-futex path is used where QT_ALWAYS_USE_FUTEX is not defined:
+QNX, VxWorks, INTEGRITY, OpenBSD, NetBSD, Hurd, Solaris, LSB builds,
+wasm, and on Apple platforms up to 6.11 (6.0-6.6, and App Store
+compliant builds of 6.7-6.11).
+
+Fixes: QTBUG-NNNNNN
+Task-number: QTBUG-88247
+Pick-to: 6.12 6.11 6.8
+---
+--- a/src/corelib/thread/qmutex.cpp
++++ b/src/corelib/thread/qmutex.cpp
+@@ -759,7 +759,9 @@
+                     break;
+                 }
+             }
+-        } while (!d->waiters.testAndSetRelaxed(old_waiters, old_waiters + 1));
++            // Acquire: if this reads the 0 that derefWaiters() stored in unlockInternal(), the
++            // d_ptr check below must see that unlockInternal() reset d_ptr before that.
++        } while (!d->waiters.testAndSetAcquire(old_waiters, old_waiters + 1));
+ 
+         if (d != d_ptr.loadAcquire()) {
+             // The mutex was unlocked before we incremented waiters.
+@@ -942,7 +944,9 @@
+             new_waiters += QMutexPrivate::BigNumber;
+         }
+         new_waiters -= value;
+-    } while (!waiters.testAndSetRelaxed(old_waiters, new_waiters));
++        // Release: a thread in lockInternal() that reads this value must also see the d_ptr
++        // reset that unlockInternal() did before calling us.
++    } while (!waiters.testAndSetRelease(old_waiters, new_waiters));
+ }
+ #endif
+ 
