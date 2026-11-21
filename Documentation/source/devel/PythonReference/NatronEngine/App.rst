@@ -615,7 +615,10 @@ inform the user of various information, warnings or errors.
     In GUI mode, the window closes once the script returns to the event loop: in the meantime,
     the project is being closed, and :func:`createNode()<NatronEngine.App.createNode>` returns
     *None*, and :func:`natron.getNumInstances()<NatronEngine.PyCoreApplication.getNumInstances>`
-    still counts it. A script should not use this :class:`App<NatronEngine.App>` after this call.
+    still counts it. A script should not use this :class:`App<NatronEngine.App>` after this call:
+    in the meantime, :func:`closeProject()<NatronEngine.App.closeProject>` returns *True* and
+    :func:`resetProject()<NatronEngine.App.resetProject>` returns *False*, without asking again
+    to save the changes.
 
 .. method:: App.newProject()
 
