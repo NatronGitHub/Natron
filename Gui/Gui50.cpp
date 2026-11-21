@@ -84,6 +84,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"
+#include "Gui/GuiTest.h"
 #include "Gui/KnobWidgetDnD.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/LogWindow.h"
@@ -514,7 +515,7 @@ Gui::keyPressEvent(QKeyEvent* e)
         return;
     }
 
-    QWidget* w = qApp->widgetAt( QCursor::pos() );
+    QWidget* w = qApp->widgetAt( GuiTest::cursorPos() );
     Qt::Key key = (Qt::Key)Gui::handleNativeKeys( e->key(), e->nativeScanCode(), e->nativeVirtualKey() );
     Qt::KeyboardModifiers modifiers = e->modifiers();
 
@@ -537,7 +538,7 @@ Gui::keyPressEvent(QKeyEvent* e)
             if ( QFile::exists(str) ) {
                 QList<QUrl> urls;
                 urls.push_back( QUrl::fromLocalFile(str) );
-                handleOpenFilesFromUrls( urls, QCursor::pos() );
+                handleOpenFilesFromUrls( urls, GuiTest::cursorPos() );
             } else {
                 std::string error, output;
                 if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(str.toStdString(), &error, &output) ) {
@@ -549,7 +550,7 @@ Gui::keyPressEvent(QKeyEvent* e)
             }
         } else if ( mimedata->hasUrls() ) {
             QList<QUrl> urls = mimedata->urls();
-            handleOpenFilesFromUrls( urls, QCursor::pos() );
+            handleOpenFilesFromUrls( urls, GuiTest::cursorPos() );
         }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
         if ( getNodeGraph()->getLastSelectedViewer() ) {

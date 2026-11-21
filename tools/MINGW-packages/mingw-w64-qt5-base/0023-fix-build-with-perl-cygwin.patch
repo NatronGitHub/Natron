@@ -1,0 +1,11 @@
+--- a/bin/syncqt.pl
++++ b/bin/syncqt.pl
+@@ -54,7 +54,7 @@
+ use warnings;
+ use English qw(-no_match_vars );
+ 
+-my $normalizePath_fixDrive = ($^O eq "msys" ? 1 : 0);
++my $normalizePath_fixDrive = ($^O eq "cygwin" ? 1 : 0);
+ 
+ ######################################################################
+ # Syntax:  normalizePath(\$path)

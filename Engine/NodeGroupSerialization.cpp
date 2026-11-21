@@ -143,12 +143,15 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
                     args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
                     
                     NodePtr parent = appInst->createNode(args);
-                    try {
-                        parent->setScriptName( (*it)->getMultiInstanceParentName().c_str() );
-                    } catch (...) {
-                    }
+                    // If it failed, createNode() already reported why.
+                    if (parent) {
+                        try {
+                            parent->setScriptName( (*it)->getMultiInstanceParentName().c_str() );
+                        } catch (...) {
+                        }
 
-                    parentsToReconnect.insert( std::make_pair(parent, it) );
+                        parentsToReconnect.insert( std::make_pair(parent, it) );
+                    }
                 }
             }
         } // if ( !(*it)->getMultiInstanceParentName().empty() ) {

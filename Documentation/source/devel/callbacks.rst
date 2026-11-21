@@ -164,6 +164,13 @@ For the *parameter changed callback* of :ref:`PyPanel<pypanel>` and :ref:`PyModa
        Node->>Py: cb(thisParam, thisNode, thisGroup, app, userEdited)
        Py-->>Node: errors are printed in the Script Editor
 
+A param changed callback runs in the main thread, so it can wait for a render that it started and
+read its result: see :ref:`pyplugWriting-renderReadBack` for
+:meth:`app.waitForRenders()<NatronEngine.App.waitForRenders>` and the viewer functions. The
+*afterFrameRender* callback runs in a render thread: these functions raise :class:`RuntimeError` there.
+A callback that edits the graph (e.g. a button that creates nodes) can make its edits one undo step with
+``with app.undoGroup("text"):``, see :meth:`app.undoGroup()<NatronEngine.App.undoGroup>`.
+
 Registering the param changed callback
 ----------------------------------------
 

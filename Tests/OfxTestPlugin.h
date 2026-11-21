@@ -70,6 +70,7 @@
 #define kNatronTestPluginQuestion "net.natron.test.Question"
 #define kNatronTestPluginOverlayV1V2 "net.natron.test.OverlayV1V2"
 #define kNatronTestPluginOverlayV2 "net.natron.test.OverlayV2"
+#define kNatronTestPluginParamRoD "net.natron.test.ParamRoD"
 
 namespace NatronTestPlugin {
 // true if the host loaded the plug-in

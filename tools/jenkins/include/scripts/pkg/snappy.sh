@@ -2,12 +2,13 @@
 
 # Install snappy (for ffmpeg)
 # see https://github.com/google/snappy/releases
-SNAPPY_VERSION=1.1.10
+SNAPPY_VERSION=1.3.1
 SNAPPY_TAR="snappy-${SNAPPY_VERSION}.tar.gz"
+SNAPPY_SHA256=893f708a0bf4b5529d555ffcee390e940e932fcf90261f682604475a76cd0247
 SNAPPY_SITE="https://github.com/google/snappy/releases/download/${SNAPPY_VERSION}"
 if download_step; then
     #download "$SNAPPY_SITE" "$SNAPPY_TAR"
-    download_github google snappy "${SNAPPY_VERSION}" "" "${SNAPPY_TAR}"
+    download_github google snappy "${SNAPPY_VERSION}" "" "${SNAPPY_TAR}" "$SNAPPY_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libsnappy.so" ]; }; }; then
     REBUILD_FFMPEG=1

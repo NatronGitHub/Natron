@@ -1,7 +1,26 @@
 ; NATRON WINDOWS INSTALLER
 ; Bump the pkgrel of PKGBUILD with every change of this file.
 
-#define MyAppName "Natron"
+; The architecture of the Natron build that this Setup.exe installs: x64 (MSYS2 UCRT64), or arm64
+; (MSYS2 CLANGARM64, #1494). The PKGBUILD passes /DNatronArch=arm64 for CLANGARM64.
+#ifndef NatronArch
+  #define NatronArch "x64"
+#endif
+#if NatronArch != "x64" && NatronArch != "arm64"
+  #error NatronArch must be x64 or arm64
+#endif
+#if NatronArch == "arm64"
+; The ARM64 Natron is a separate application, installed side by side with an x64 one: its own AppId,
+; name, folder, Start menu group, desktop icon and file-type ProgID. The x64 Setup.exe installs in
+; 32-bit mode (its uninstall key is in the 32-bit registry view) while the ARM64 one installs in
+; 64-bit mode, so with a shared AppId neither would find the other's installation: both would go to
+; Program Files\Natron, with two uninstall entries for the same files. The x64 values are unchanged.
+  #define MyAppId "{{7681096C-D482-4BD1-ADD2-CA824D32EEE2}"
+  #define MyAppName "Natron (ARM64)"
+#else
+  #define MyAppId "{{B1D54C04-B15B-4015-831A-CA5DACA60BD0}"
+  #define MyAppName "Natron"
+#endif
 #define MyAppPublisher "The Natron developers"
 #define MyAppURL "https://natrongithub.github.io"
 #define MyAppURLSupport "https://github.com/NatronGitHub/Natron/issues"
@@ -9,10 +28,15 @@
 #define MyAppExeName "Natron.exe"
 #define MyAppAssocName MyAppName + " Project"
 #define MyAppAssocExt ".ntp"
-#define MyAppAssocKey StringChange(MyAppAssocName, " ", "") + MyAppAssocExt
+#if NatronArch == "arm64"
+; a ProgID has no spaces or parentheses
+  #define MyAppAssocKey "NatronProjectARM64" + MyAppAssocExt
+#else
+  #define MyAppAssocKey StringChange(MyAppAssocName, " ", "") + MyAppAssocExt
+#endif
 
 [Setup]
-AppId={{B1D54C04-B15B-4015-831A-CA5DACA60BD0}
+AppId={#MyAppId}
 AppName={#MyAppName}
 AppVerName={#MyAppName}
 AppPublisher={#MyAppPublisher}
@@ -33,6 +57,12 @@ WizardStyle=modern
 WizardImageFile=WizardImageFile.bmp
 WizardSmallImageFile=WizardSmallImageFile.bmp
 WizardImageStretch=yes
+#if NatronArch == "arm64"
+; Native ARM64 binaries: only on Windows on Arm, installed in 64-bit mode (Program Files, the
+; 64-bit registry view)
+ArchitecturesAllowed=arm64
+ArchitecturesInstallIn64BitMode=arm64
+#endif
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -51,7 +81,10 @@ Name: "cimg"; Description: "OpenFX CImg"; Types: full
 Name: "stoy"; Description: "OpenFX Shadertoy"; Types: full
 Name: "arena"; Description: "OpenFX Arena"; Types: full
 Name: "gmic"; Description: "OpenFX G'MIC"; Types: full
+#if NatronArch == "x64"
+; Mesa's opengl32.dll: build-Windows-installer.sh only bundles one for x64 so far (#1494)
 Name: "sgl"; Description: "OpenGL Software Renderer (FOR LEGACY HARDWARE ONLY)"
+#endif
 
 ; Installing over an older Natron: remove the files whose names change between versions, so
 ; that no stale DLL, Qt plug-in or Python extension module stays behind: the DLLs of bin\ (not its
@@ -128,7 +161,9 @@ Source: "{src}\Resources\pixmaps\*"; DestDir: "{app}\Resources\pixmaps\"; Compon
 Source: "{src}\Resources\poppler\*"; DestDir: "{app}\Resources\poppler\"; Components: arena; Flags: ignoreversion recursesubdirs createallsubdirs external skipifsourcedoesntexist
 Source: "{src}\Resources\stylesheets\*"; DestDir: "{app}\Resources\stylesheets\"; Components: natron; Flags: ignoreversion recursesubdirs createallsubdirs external
 
+#if NatronArch == "x64"
 Source: "{src}\bin\mesa\opengl32.dll"; DestDir: "{app}\bin\"; Components: sgl; Flags: ignoreversion external skipifsourcedoesntexist
+#endif
 
 [Registry]
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocExt}\OpenWithProgids"; ValueType: string; ValueName: "{#MyAppAssocKey}"; ValueData: ""; Flags: uninsdeletevalue

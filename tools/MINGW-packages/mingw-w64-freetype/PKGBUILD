@@ -18,7 +18,7 @@ pkgver=2.15.0
 pkgrel=1.1
 pkgdesc="TrueType font rendering library (mingw-w64, Natron: ULABS fix 05f343a)"
 arch=('any')
-mingw_arch=('ucrt64')
+mingw_arch=('ucrt64' 'clangarm64')
 msys2_references=(
   'archlinux: freetype2'
   "cpe: cpe:/a:freetype:freetype"

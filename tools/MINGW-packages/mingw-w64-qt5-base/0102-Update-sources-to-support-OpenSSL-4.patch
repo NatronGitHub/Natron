@@ -1,0 +1,473 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?M=C3=A5rten=20Nordheim?= <marten.nordheim@qt.io>
+Date: Thu, 26 Mar 2026 15:45:13 +0100
+Subject: [PATCH 2/2] Update sources to support OpenSSL 4
+
+OpenSSL 4 now uses const in logical cases across its X.509 API; this
+patch updates Qt's TLS backend to compile against both 3.x and 4.x.
+
+To do this QT_OPENSSL4_CONST macro (expands to `const` on OpenSSL >= 4,
+empty otherwise) is introduced for functions which changed in OpenSSL 4.
+
+There were pre-existing functions that were already const in OpenSSL 3
+but were declared without const in Qt's wrapper layer - they have now
+been fixed with plain const.
+
+ASN1_STRING was made opaque in OpenSSL 4, so replace direct access with
+use of accessor functions through the wrappers.
+
+tst_qsslcertificate: add expected output for OpenSSL 4's slightly
+different extension formatting.
+tst_qsslsocket::ecdhServer: lock to TLS 1.2 as OpenSSL 4 no longer
+exports DH/ECDH parameters for TLS 1.3 sessions.
+
+Fixes: QTBUG-145221
+Pick-to: 6.11 6.8
+Change-Id: Ic3f7d3cf00dbcb5b4cd1a299d3608a7c694a3454
+Reviewed-by: Mate Barany <mate.barany@qt.io>
+Reviewed-by: Jonas Kvinge <jonas@jkvinge.net>
+(cherry picked from commit e806630e694d89f567cffa9c982d1f471089ecd8)
+
+ Conflicts:
+	src/network/ssl/qsslsocket_openssl_symbols_p.h
+	src/plugins/tls/openssl/qopenssl_p.h
+	src/plugins/tls/openssl/qx509_openssl.cpp
+	src/plugins/tls/openssl/qx509_openssl_p.h
+	tests/auto/network/ssl/qsslcertificate/tst_qsslcertificate.cpp
+	tests/auto/network/ssl/qsslsocket/tst_qsslsocket.cpp
+	tests/auto/network/ssl/shared/qopenssl_symbols.h
+---
+ src/network/ssl/qsslcertificate_openssl.cpp   | 41 ++++++++++---------
+ src/network/ssl/qsslcertificate_p.h           |  6 +--
+ src/network/ssl/qsslsocket_openssl_p.h        |  6 +++
+ .../ssl/qsslsocket_openssl_symbols.cpp        | 36 ++++++++--------
+ .../ssl/qsslsocket_openssl_symbols_p.h        | 30 +++++++-------
+ .../cert-large-expiration-date.txt.4.0.0      | 39 ++++++++++++++++++
+ .../qsslcertificate/tst_qsslcertificate.cpp   |  9 +++-
+ .../network/ssl/qsslsocket/tst_qsslsocket.cpp |  5 +++
+ 8 files changed, 115 insertions(+), 57 deletions(-)
+ create mode 100644 tests/auto/network/ssl/qsslcertificate/more-certificates/cert-large-expiration-date.txt.4.0.0
+
+diff --git a/src/network/ssl/qsslcertificate_openssl.cpp b/src/network/ssl/qsslcertificate_openssl.cpp
+index d1794d4dbd7..d1d443ce8a3 100644
+--- a/src/network/ssl/qsslcertificate_openssl.cpp
++++ b/src/network/ssl/qsslcertificate_openssl.cpp
+@@ -60,7 +60,7 @@ namespace QMutexPool {
+ }
+ 
+ // forward declaration
+-static QMultiMap<QByteArray, QString> _q_mapFromX509Name(X509_NAME *name);
++static QMultiMap<QByteArray, QString> _q_mapFromX509Name(const X509_NAME *name);
+ 
+ bool QSslCertificate::operator==(const QSslCertificate &other) const
+ {
+@@ -125,9 +125,11 @@ QByteArray QSslCertificate::serialNumber() const
+     if (d->serialNumberString.isEmpty() && d->x509) {
+         ASN1_INTEGER *serialNumber = q_X509_get_serialNumber(d->x509);
+         QByteArray hexString;
+-        hexString.reserve(serialNumber->length * 3);
+-        for (int a = 0; a < serialNumber->length; ++a) {
+-            hexString += QByteArray::number(serialNumber->data[a], 16).rightJustified(2, '0');
++        const unsigned char *serialNumberData = q_ASN1_STRING_get0_data(serialNumber);
++        int serialNumberLength = q_ASN1_STRING_length(serialNumber);
++        hexString.reserve(qsizetype(serialNumberLength) * 3);
++        for (int a = 0; a < serialNumberLength; ++a) {
++            hexString += QByteArray::number(serialNumberData[a], 16).rightJustified(2, '0');
+             hexString += ':';
+         }
+         hexString.chop(1);
+@@ -251,10 +253,10 @@ QMultiMap<QSsl::AlternativeNameEntryType, QString> QSslCertificate::subjectAlter
+                 QHostAddress ipAddress;
+                 switch (len) {
+                 case 4: // IPv4
+-                    ipAddress = QHostAddress(qFromBigEndian(*reinterpret_cast<quint32 *>(genName->d.iPAddress->data)));
++                    ipAddress = QHostAddress(qFromBigEndian(*reinterpret_cast<const quint32 *>(q_ASN1_STRING_get0_data(genName->d.iPAddress))));
+                     break;
+                 case 16: // IPv6
+-                    ipAddress = QHostAddress(reinterpret_cast<quint8 *>(genName->d.iPAddress->data));
++                    ipAddress = QHostAddress(reinterpret_cast<const quint8 *>(q_ASN1_STRING_get0_data(genName->d.iPAddress)));
+                     break;
+                 default: // Unknown IP address format
+                     break;
+@@ -329,7 +331,7 @@ QSslKey QSslCertificate::publicKey() const
+ /*
+  * Convert unknown extensions to a QVariant.
+  */
+-static QVariant x509UnknownExtensionToValue(X509_EXTENSION *ext)
++static QVariant x509UnknownExtensionToValue(QT_OPENSSL4_CONST X509_EXTENSION *ext)
+ {
+     Q_ASSERT(ext);
+     // Get the extension specific method object if available,
+@@ -338,7 +340,7 @@ static QVariant x509UnknownExtensionToValue(X509_EXTENSION *ext)
+     // in the object.
+     X509V3_EXT_METHOD *meth = const_cast<X509V3_EXT_METHOD *>(q_X509V3_EXT_get(ext));
+     if (!meth) {
+-        ASN1_OCTET_STRING *value = q_X509_EXTENSION_get_data(ext);
++        QT_OPENSSL4_CONST ASN1_OCTET_STRING *value = q_X509_EXTENSION_get_data(ext);
+         Q_ASSERT(value);
+         QByteArray result( reinterpret_cast<const char *>(q_ASN1_STRING_get0_data(value)),
+                            q_ASN1_STRING_length(value));
+@@ -418,9 +420,9 @@ static QVariant x509UnknownExtensionToValue(X509_EXTENSION *ext)
+  * taken from RFC 5280, however we decided the capitalisation in the RFC
+  * was too silly for the real world.
+  */
+-static QVariant x509ExtensionToValue(X509_EXTENSION *ext)
++static QVariant x509ExtensionToValue(QT_OPENSSL4_CONST X509_EXTENSION *ext)
+ {
+-    ASN1_OBJECT *obj = q_X509_EXTENSION_get_object(ext);
++    QT_OPENSSL4_CONST ASN1_OBJECT *obj = q_X509_EXTENSION_get_object(ext);
+     int nid = q_OBJ_obj2nid(obj);
+ 
+     // We cast away the const-ness here because some versions of openssl
+@@ -511,8 +513,9 @@ static QVariant x509ExtensionToValue(X509_EXTENSION *ext)
+ 
+             // keyid
+             if (auth_key->keyid) {
+-                QByteArray keyid(reinterpret_cast<const char *>(auth_key->keyid->data),
+-                                 auth_key->keyid->length);
++                const unsigned char *data = q_ASN1_STRING_get0_data(auth_key->keyid);
++                int length = q_ASN1_STRING_length(auth_key->keyid);
++                QByteArray keyid(reinterpret_cast<const char *>(data), length);
+                 result[QLatin1String("keyid")] = keyid.toHex();
+             }
+ 
+@@ -532,13 +535,13 @@ static QVariant x509ExtensionToValue(X509_EXTENSION *ext)
+     return {};
+ }
+ 
+-QSslCertificateExtension QSslCertificatePrivate::convertExtension(X509_EXTENSION *ext)
++QSslCertificateExtension QSslCertificatePrivate::convertExtension(QT_OPENSSL4_CONST X509_EXTENSION *ext)
+ {
+     Q_ASSERT(ext);
+ 
+     QSslCertificateExtension result;
+ 
+-    ASN1_OBJECT *obj = q_X509_EXTENSION_get_object(ext);
++    QT_OPENSSL4_CONST ASN1_OBJECT *obj = q_X509_EXTENSION_get_object(ext);
+     if (!obj) {
+         qCWarning(lcSsl, "Invalid (nullptr) ASN1_OBJECT");
+         return result;
+@@ -586,7 +589,7 @@ QList<QSslCertificateExtension> QSslCertificate::extensions() const
+     result.reserve(count);
+ 
+     for (int i = 0; i < count; i++) {
+-        X509_EXTENSION *ext = q_X509_get_ext(d->x509, i);
++        QT_OPENSSL4_CONST X509_EXTENSION *ext = q_X509_get_ext(d->x509, i);
+         if (!ext) {
+             qCWarning(lcSsl) << "Invalid (nullptr) extension at index" << i;
+             continue;
+@@ -699,7 +702,7 @@ QString QSslCertificatePrivate::text_from_X509(X509 *x509)
+     return QString::fromLatin1(result);
+ }
+ 
+-QByteArray QSslCertificatePrivate::asn1ObjectId(ASN1_OBJECT *object)
++QByteArray QSslCertificatePrivate::asn1ObjectId(const ASN1_OBJECT *object)
+ {
+     char buf[80]; // The openssl docs a buffer length of 80 should be more than enough
+     q_OBJ_obj2txt(buf, sizeof(buf), object, 1); // the 1 says always use the oid not the long name
+@@ -708,7 +711,7 @@ QByteArray QSslCertificatePrivate::asn1ObjectId(ASN1_OBJECT *object)
+ }
+ 
+ 
+-QByteArray QSslCertificatePrivate::asn1ObjectName(ASN1_OBJECT *object)
++QByteArray QSslCertificatePrivate::asn1ObjectName(const ASN1_OBJECT *object)
+ {
+     int nid = q_OBJ_obj2nid(object);
+     if (nid != NID_undef)
+@@ -717,11 +720,11 @@ QByteArray QSslCertificatePrivate::asn1ObjectName(ASN1_OBJECT *object)
+     return asn1ObjectId(object);
+ }
+ 
+-static QMultiMap<QByteArray, QString> _q_mapFromX509Name(X509_NAME *name)
++static QMultiMap<QByteArray, QString> _q_mapFromX509Name(const X509_NAME *name)
+ {
+     QMultiMap<QByteArray, QString> info;
+     for (int i = 0; i < q_X509_NAME_entry_count(name); ++i) {
+-        X509_NAME_ENTRY *e = q_X509_NAME_get_entry(name, i);
++        const X509_NAME_ENTRY *e = q_X509_NAME_get_entry(name, i);
+ 
+         QByteArray name = QSslCertificatePrivate::asn1ObjectName(q_X509_NAME_ENTRY_get_object(e));
+         unsigned char *data = nullptr;
+diff --git a/src/network/ssl/qsslcertificate_p.h b/src/network/ssl/qsslcertificate_p.h
+index 234cd45ceb3..3d58d7f3ac3 100644
+--- a/src/network/ssl/qsslcertificate_p.h
++++ b/src/network/ssl/qsslcertificate_p.h
+@@ -131,15 +131,15 @@ public:
+ 
+     void init(const QByteArray &data, QSsl::EncodingFormat format);
+ 
+-    static QByteArray asn1ObjectId(ASN1_OBJECT *object);
+-    static QByteArray asn1ObjectName(ASN1_OBJECT *object);
++    static QByteArray asn1ObjectId(const ASN1_OBJECT *object);
++    static QByteArray asn1ObjectName(const ASN1_OBJECT *object);
+     static QByteArray QByteArray_from_X509(X509 *x509, QSsl::EncodingFormat format);
+     static QString text_from_X509(X509 *x509);
+     static QSslCertificate QSslCertificate_from_X509(X509 *x509);
+     static QList<QSslCertificate> certificatesFromPem(const QByteArray &pem, int count = -1);
+     static QList<QSslCertificate> certificatesFromDer(const QByteArray &der, int count = -1);
+     static bool isBlacklisted(const QSslCertificate &certificate);
+-    static QSslCertificateExtension convertExtension(X509_EXTENSION *ext);
++    static QSslCertificateExtension convertExtension(QT_OPENSSL4_CONST X509_EXTENSION *ext);
+     static QByteArray subjectInfoToString(QSslCertificate::SubjectInfo info);
+ 
+     friend class QSslSocketBackendPrivate;
+diff --git a/src/network/ssl/qsslsocket_openssl_p.h b/src/network/ssl/qsslsocket_openssl_p.h
+index 26afcad8cd9..e710f479e49 100644
+--- a/src/network/ssl/qsslsocket_openssl_p.h
++++ b/src/network/ssl/qsslsocket_openssl_p.h
+@@ -106,6 +106,12 @@
+ #include <openssl/dh.h>
+ #endif
+ 
++#if defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR >= 4
++#define QT_OPENSSL4_CONST const
++#else
++#define QT_OPENSSL4_CONST
++#endif
++
+ QT_BEGIN_NAMESPACE
+ 
+ struct QSslErrorEntry {
+diff --git a/src/network/ssl/qsslsocket_openssl_symbols.cpp b/src/network/ssl/qsslsocket_openssl_symbols.cpp
+index 167c98bd391..1ee5179fced 100644
+--- a/src/network/ssl/qsslsocket_openssl_symbols.cpp
++++ b/src/network/ssl/qsslsocket_openssl_symbols.cpp
+@@ -244,8 +244,8 @@ DEFINEFUNC2(void, BIO_set_shutdown, BIO *a, a, int shut, shut, return, DUMMYARG)
+ 
+ DEFINEFUNC(long, ASN1_INTEGER_get, ASN1_INTEGER *a, a, return 0, return)
+ DEFINEFUNC2(int, ASN1_INTEGER_cmp, const ASN1_INTEGER *a, a, const ASN1_INTEGER *b, b, return 1, return)
+-DEFINEFUNC(int, ASN1_STRING_length, ASN1_STRING *a, a, return 0, return)
+-DEFINEFUNC2(int, ASN1_STRING_to_UTF8, unsigned char **a, a, ASN1_STRING *b, b, return 0, return)
++DEFINEFUNC(int, ASN1_STRING_length, const ASN1_STRING *a, a, return 0, return)
++DEFINEFUNC2(int, ASN1_STRING_to_UTF8, unsigned char **a, a, const ASN1_STRING *b, b, return 0, return)
+ DEFINEFUNC2(int, ASN1_TIME_to_tm, const ASN1_TIME *s, s, struct tm *tm, tm, return 0, return)
+ DEFINEFUNC4(long, BIO_ctrl, BIO *a, a, int b, b, long c, c, void *d, d, return -1, return)
+ DEFINEFUNC(int, BIO_free, BIO *a, a, return 0, return)
+@@ -310,7 +310,7 @@ DEFINEFUNC(const char *, OBJ_nid2ln, int a, a, return nullptr, return)
+ DEFINEFUNC(int, OBJ_sn2nid, const char *s, s, return 0, return)
+ DEFINEFUNC(int, OBJ_ln2nid, const char *s, s, return 0, return)
+ DEFINEFUNC3(int, i2t_ASN1_OBJECT, char *a, a, int b, b, ASN1_OBJECT *c, c, return -1, return)
+-DEFINEFUNC4(int, OBJ_obj2txt, char *a, a, int b, b, ASN1_OBJECT *c, c, int d, d, return -1, return)
++DEFINEFUNC4(int, OBJ_obj2txt, char *a, a, int b, b, const ASN1_OBJECT *c, c, int d, d, return -1, return)
+ DEFINEFUNC(int, OBJ_obj2nid, const ASN1_OBJECT *a, a, return NID_undef, return)
+ DEFINEFUNC4(EVP_PKEY *, PEM_read_bio_PrivateKey, BIO *a, a, EVP_PKEY **b, b, pem_password_cb *c, c, void *d, d, return nullptr, return)
+ DEFINEFUNC4(DSA *, PEM_read_bio_DSAPrivateKey, BIO *a, a, DSA **b, b, pem_password_cb *c, c, void *d, d, return nullptr, return)
+@@ -409,31 +409,31 @@ DEFINEFUNC2(int, X509_cmp, X509 *a, a, X509 *b, b, return -1, return)
+ DEFINEFUNC4(int, X509_digest, const X509 *x509, x509, const EVP_MD *type, type, unsigned char *md, md, unsigned int *len, len, return -1, return)
+ DEFINEFUNC(X509 *, X509_dup, X509 *a, a, return nullptr, return)
+ DEFINEFUNC2(void, X509_print, BIO *a, a, X509 *b, b, return, DUMMYARG);
+-DEFINEFUNC(ASN1_OBJECT *, X509_EXTENSION_get_object, X509_EXTENSION *a, a, return nullptr, return)
++DEFINEFUNC(QT_OPENSSL4_CONST ASN1_OBJECT *, X509_EXTENSION_get_object, QT_OPENSSL4_CONST X509_EXTENSION *a, a, return nullptr, return)
+ DEFINEFUNC(void, X509_free, X509 *a, a, return, DUMMYARG)
+ //Q_AUTOTEST_EXPORT ASN1_TIME *q_X509_gmtime_adj(ASN1_TIME *s, long adj);
+ DEFINEFUNC2(ASN1_TIME *, X509_gmtime_adj, ASN1_TIME *s, s, long adj, adj, return nullptr, return)
+ DEFINEFUNC(void, ASN1_TIME_free, ASN1_TIME *t, t, return, DUMMYARG)
+-DEFINEFUNC2(X509_EXTENSION *, X509_get_ext, X509 *a, a, int b, b, return nullptr, return)
++DEFINEFUNC2(QT_OPENSSL4_CONST X509_EXTENSION *, X509_get_ext, X509 *a, a, int b, b, return nullptr, return)
+ DEFINEFUNC(int, X509_get_ext_count, X509 *a, a, return 0, return)
+ DEFINEFUNC4(void *, X509_get_ext_d2i, X509 *a, a, int b, b, int *c, c, int *d, d, return nullptr, return)
+-DEFINEFUNC(const X509V3_EXT_METHOD *, X509V3_EXT_get, X509_EXTENSION *a, a, return nullptr, return)
+-DEFINEFUNC(void *, X509V3_EXT_d2i, X509_EXTENSION *a, a, return nullptr, return)
+-DEFINEFUNC(int, X509_EXTENSION_get_critical, X509_EXTENSION *a, a, return 0, return)
+-DEFINEFUNC(ASN1_OCTET_STRING *, X509_EXTENSION_get_data, X509_EXTENSION *a, a, return nullptr, return)
++DEFINEFUNC(const X509V3_EXT_METHOD *, X509V3_EXT_get, QT_OPENSSL4_CONST X509_EXTENSION *a, a, return nullptr, return)
++DEFINEFUNC(void *, X509V3_EXT_d2i, QT_OPENSSL4_CONST X509_EXTENSION *a, a, return nullptr, return)
++DEFINEFUNC(int, X509_EXTENSION_get_critical, const X509_EXTENSION *a, a, return 0, return)
++DEFINEFUNC(QT_OPENSSL4_CONST ASN1_OCTET_STRING *, X509_EXTENSION_get_data, QT_OPENSSL4_CONST X509_EXTENSION *a, a, return nullptr, return)
+ DEFINEFUNC(void, BASIC_CONSTRAINTS_free, BASIC_CONSTRAINTS *a, a, return, DUMMYARG)
+ DEFINEFUNC(void, AUTHORITY_KEYID_free, AUTHORITY_KEYID *a, a, return, DUMMYARG)
+ DEFINEFUNC(void, GENERAL_NAME_free, GENERAL_NAME *a, a, return, DUMMYARG)
+ DEFINEFUNC2(int, ASN1_STRING_print, BIO *a, a, const ASN1_STRING *b, b, return 0, return)
+ DEFINEFUNC2(int, X509_check_issued, X509 *a, a, X509 *b, b, return -1, return)
+-DEFINEFUNC(X509_NAME *, X509_get_issuer_name, X509 *a, a, return nullptr, return)
+-DEFINEFUNC(X509_NAME *, X509_get_subject_name, X509 *a, a, return nullptr, return)
++DEFINEFUNC(QT_OPENSSL4_CONST X509_NAME *, X509_get_issuer_name, X509 *a, a, return nullptr, return)
++DEFINEFUNC(QT_OPENSSL4_CONST X509_NAME *, X509_get_subject_name, X509 *a, a, return nullptr, return)
+ DEFINEFUNC(ASN1_INTEGER *, X509_get_serialNumber, X509 *a, a, return nullptr, return)
+ DEFINEFUNC(int, X509_verify_cert, X509_STORE_CTX *a, a, return -1, return)
+-DEFINEFUNC(int, X509_NAME_entry_count, X509_NAME *a, a, return 0, return)
+-DEFINEFUNC2(X509_NAME_ENTRY *, X509_NAME_get_entry, X509_NAME *a, a, int b, b, return nullptr, return)
+-DEFINEFUNC(ASN1_STRING *, X509_NAME_ENTRY_get_data, X509_NAME_ENTRY *a, a, return nullptr, return)
+-DEFINEFUNC(ASN1_OBJECT *, X509_NAME_ENTRY_get_object, X509_NAME_ENTRY *a, a, return nullptr, return)
++DEFINEFUNC(int, X509_NAME_entry_count, const X509_NAME *a, a, return 0, return)
++DEFINEFUNC2(QT_OPENSSL4_CONST X509_NAME_ENTRY *, X509_NAME_get_entry, const X509_NAME *a, a, int b, b, return nullptr, return)
++DEFINEFUNC(QT_OPENSSL4_CONST ASN1_STRING *, X509_NAME_ENTRY_get_data, const X509_NAME_ENTRY *a, a, return nullptr, return)
++DEFINEFUNC(QT_OPENSSL4_CONST ASN1_OBJECT *, X509_NAME_ENTRY_get_object, const X509_NAME_ENTRY *a, a, return nullptr, return)
+ DEFINEFUNC(EVP_PKEY *, X509_PUBKEY_get, X509_PUBKEY *a, a, return nullptr, return)
+ DEFINEFUNC(void, X509_STORE_free, X509_STORE *a, a, return, DUMMYARG)
+ DEFINEFUNC(X509_STORE *, X509_STORE_new, DUMMYARG, DUMMYARG, return nullptr, return)
+@@ -655,9 +655,9 @@ static QStringList findAllLibCrypto()
+ 
+ #if (OPENSSL_VERSION_NUMBER >> 28) < 3
+ #define QT_OPENSSL_VERSION "1_1"
+-#elif OPENSSL_VERSION_MAJOR == 3 // Starting with 3.0 this define is available
+-#define QT_OPENSSL_VERSION "3"
+-#endif // > 3 intentionally left undefined
++#elif OPENSSL_VERSION_MAJOR >= 3
++#define QT_OPENSSL_VERSION QT_STRINGIFY(OPENSSL_VERSION_MAJOR)
++#endif
+ 
+ #ifdef Q_OS_WIN
+ 
+diff --git a/src/network/ssl/qsslsocket_openssl_symbols_p.h b/src/network/ssl/qsslsocket_openssl_symbols_p.h
+index 0a0efaa759d..0ba2064526e 100644
+--- a/src/network/ssl/qsslsocket_openssl_symbols_p.h
++++ b/src/network/ssl/qsslsocket_openssl_symbols_p.h
+@@ -373,8 +373,8 @@ void q_SSL_set_psk_use_session_callback(SSL *s, q_SSL_psk_use_session_cb_func_t)
+ bool q_resolveOpenSslSymbols();
+ long q_ASN1_INTEGER_get(ASN1_INTEGER *a);
+ int q_ASN1_INTEGER_cmp(const ASN1_INTEGER *x, const ASN1_INTEGER *y);
+-int q_ASN1_STRING_length(ASN1_STRING *a);
+-int q_ASN1_STRING_to_UTF8(unsigned char **a, ASN1_STRING *b);
++int q_ASN1_STRING_length(const ASN1_STRING *a);
++int q_ASN1_STRING_to_UTF8(unsigned char **a, const ASN1_STRING *b);
+ int q_ASN1_TIME_to_tm(const ASN1_TIME *s, struct tm *tm);
+ long q_BIO_ctrl(BIO *a, int b, long c, void *d);
+ Q_AUTOTEST_EXPORT int q_BIO_free(BIO *a);
+@@ -458,7 +458,7 @@ const char *q_OBJ_nid2ln(int a);
+ int q_OBJ_sn2nid(const char *s);
+ int q_OBJ_ln2nid(const char *s);
+ int q_i2t_ASN1_OBJECT(char *buf, int buf_len, ASN1_OBJECT *obj);
+-int q_OBJ_obj2txt(char *buf, int buf_len, ASN1_OBJECT *obj, int no_name);
++int q_OBJ_obj2txt(char *buf, int buf_len, const ASN1_OBJECT *obj, int no_name);
+ int q_OBJ_obj2nid(const ASN1_OBJECT *a);
+ #define q_EVP_get_digestbynid(a) q_EVP_get_digestbyname(q_OBJ_nid2sn(a))
+ Q_AUTOTEST_EXPORT EVP_PKEY *q_PEM_read_bio_PrivateKey(BIO *a, EVP_PKEY **b, pem_password_cb *c, void *d);
+@@ -557,29 +557,29 @@ int q_X509_cmp(X509 *a, X509 *b);
+ X509 *q_X509_dup(X509 *a);
+ void q_X509_print(BIO *a, X509*b);
+ int q_X509_digest(const X509 *x509, const EVP_MD *type, unsigned char *md, unsigned int *len);
+-ASN1_OBJECT *q_X509_EXTENSION_get_object(X509_EXTENSION *a);
++QT_OPENSSL4_CONST ASN1_OBJECT *q_X509_EXTENSION_get_object(QT_OPENSSL4_CONST X509_EXTENSION *a);
+ Q_AUTOTEST_EXPORT void q_X509_free(X509 *a);
+ Q_AUTOTEST_EXPORT ASN1_TIME *q_X509_gmtime_adj(ASN1_TIME *s, long adj);
+ Q_AUTOTEST_EXPORT void q_ASN1_TIME_free(ASN1_TIME *t);
+-X509_EXTENSION *q_X509_get_ext(X509 *a, int b);
++QT_OPENSSL4_CONST X509_EXTENSION *q_X509_get_ext(X509 *a, int b);
+ int q_X509_get_ext_count(X509 *a);
+ void *q_X509_get_ext_d2i(X509 *a, int b, int *c, int *d);
+-const X509V3_EXT_METHOD *q_X509V3_EXT_get(X509_EXTENSION *a);
+-void *q_X509V3_EXT_d2i(X509_EXTENSION *a);
+-int q_X509_EXTENSION_get_critical(X509_EXTENSION *a);
+-ASN1_OCTET_STRING *q_X509_EXTENSION_get_data(X509_EXTENSION *a);
++const X509V3_EXT_METHOD *q_X509V3_EXT_get(QT_OPENSSL4_CONST X509_EXTENSION *a);
++void *q_X509V3_EXT_d2i(QT_OPENSSL4_CONST X509_EXTENSION *a);
++int q_X509_EXTENSION_get_critical(const X509_EXTENSION *a);
++QT_OPENSSL4_CONST ASN1_OCTET_STRING *q_X509_EXTENSION_get_data(QT_OPENSSL4_CONST X509_EXTENSION *a);
+ void q_BASIC_CONSTRAINTS_free(BASIC_CONSTRAINTS *a);
+ void q_AUTHORITY_KEYID_free(AUTHORITY_KEYID *a);
+ int q_ASN1_STRING_print(BIO *a, const ASN1_STRING *b);
+ int q_X509_check_issued(X509 *a, X509 *b);
+-X509_NAME *q_X509_get_issuer_name(X509 *a);
+-X509_NAME *q_X509_get_subject_name(X509 *a);
++QT_OPENSSL4_CONST X509_NAME *q_X509_get_issuer_name(X509 *a);
++QT_OPENSSL4_CONST X509_NAME *q_X509_get_subject_name(X509 *a);
+ ASN1_INTEGER *q_X509_get_serialNumber(X509 *a);
+ int q_X509_verify_cert(X509_STORE_CTX *ctx);
+-int q_X509_NAME_entry_count(X509_NAME *a);
+-X509_NAME_ENTRY *q_X509_NAME_get_entry(X509_NAME *a,int b);
+-ASN1_STRING *q_X509_NAME_ENTRY_get_data(X509_NAME_ENTRY *a);
+-ASN1_OBJECT *q_X509_NAME_ENTRY_get_object(X509_NAME_ENTRY *a);
++int q_X509_NAME_entry_count(const X509_NAME *a);
++QT_OPENSSL4_CONST X509_NAME_ENTRY *q_X509_NAME_get_entry(const X509_NAME *a, int b);
++QT_OPENSSL4_CONST ASN1_STRING *q_X509_NAME_ENTRY_get_data(const X509_NAME_ENTRY *a);
++QT_OPENSSL4_CONST ASN1_OBJECT *q_X509_NAME_ENTRY_get_object(const X509_NAME_ENTRY *a);
+ EVP_PKEY *q_X509_PUBKEY_get(X509_PUBKEY *a);
+ void q_X509_STORE_free(X509_STORE *store);
+ X509_STORE *q_X509_STORE_new();
+diff --git a/tests/auto/network/ssl/qsslcertificate/more-certificates/cert-large-expiration-date.txt.4.0.0 b/tests/auto/network/ssl/qsslcertificate/more-certificates/cert-large-expiration-date.txt.4.0.0
+new file mode 100644
+index 00000000000..baa04baf117
+--- /dev/null
++++ b/tests/auto/network/ssl/qsslcertificate/more-certificates/cert-large-expiration-date.txt.4.0.0
+@@ -0,0 +1,39 @@
++Certificate:
++    Data:
++        Version: 3 (0x2)
++        Serial Number:
++            ce:db:31:28:45:c4:05:40
++        Signature Algorithm: sha1WithRSAEncryption
++        Issuer: C=AU, ST=Some-State, O=Internet Widgits Pty Ltd
++        Validity
++            Not Before: Aug  4 09:53:41 2010 GMT
++            Not After : Aug 29 09:53:41 2051 GMT
++        Subject: C=AU, ST=Some-State, O=Internet Widgits Pty Ltd
++        Subject Public Key Info:
++            Public Key Algorithm: rsaEncryption
++                Public-Key: (1024 bit)
++                Modulus:
++                    cd:aa:db:6f:d6:34:c9:a7:f1:c0:be:e4:41:18:19:e2:
++                    02:c9:22:e6:a7:d5:ba:03:2e:9e:28:7a:f4:5f:1a:77:
++                    5f:77:a9:11:3b:8f:7e:f0:2e:c6:9e:eb:3a:d9:12:d7:
++                    c1:0c:51:e8:24:52:3f:23:c3:42:0c:11:c6:f2:1c:a1:
++                    42:fe:b4:c2:69:83:ad:f7:70:b1:18:15:cc:20:28:62:
++                    30:f0:2c:15:e6:33:19:af:c3:eb:1c:c0:91:f7:11:68:
++                    94:50:f8:49:37:08:32:d7:3e:75:df:a3:bc:69:00:15:
++                    de:cd:87:0f:5c:02:6b:82:c8:01:7d:6a:f0:1d:dc:73
++                Exponent: 65537 (0x10001)
++        X509v3 extensions:
++            X509v3 Subject Key Identifier: 
++                8A:6E:19:E7:97:9B:8F:D9:7F:B3:BB:01:4F:E8:6A:2F:52:95:0D:D9
++            X509v3 Authority Key Identifier: 
++                8A:6E:19:E7:97:9B:8F:D9:7F:B3:BB:01:4F:E8:6A:2F:52:95:0D:D9
++            X509v3 Basic Constraints: 
++                CA:TRUE
++    Signature Algorithm: sha1WithRSAEncryption
++    Signature Value:
++        a1:74:8e:5d:36:96:2c:05:7e:ea:66:cc:2e:68:c7:3d:93:dc:8c:a3:11:ad:b5:7e:
++        6e:d0:04:c4:09:bd:0a:f9:39:3b:97:d7:f0:bb:0c:09:7b:83:fe:bf:87:b0:47:e8:
++        94:b7:aa:9c:79:ad:71:9e:b7:c4:99:98:6f:1d:38:32:f8:a3:75:38:c4:e5:e7:37:
++        37:21:ec:7b:50:8b:15:b0:97:1e:17:9c:50:17:3c:c1:df:94:55:fb:60:2e:50:40:
++        d1:ea:23:c6:3c:21:6f:97:8c:06:16:a5:82:72:c1:63:14:64:86:eb:d7:ff:72:f6:
++        09:f5:6d:e6:04:13:7a:6a
+diff --git a/tests/auto/network/ssl/qsslcertificate/tst_qsslcertificate.cpp b/tests/auto/network/ssl/qsslcertificate/tst_qsslcertificate.cpp
+index fb268228943..7d9c7d79c22 100644
+--- a/tests/auto/network/ssl/qsslcertificate/tst_qsslcertificate.cpp
++++ b/tests/auto/network/ssl/qsslcertificate/tst_qsslcertificate.cpp
+@@ -1067,13 +1067,18 @@ void tst_QSslCertificate::toText()
+     QVERIFY(f305.open(QIODevice::ReadOnly | QFile::Text));
+     QByteArray txt305 = f305.readAll();
+ 
++    QFile f400(testDataDir + "more-certificates/cert-large-expiration-date.txt.4.0.0");
++    QVERIFY(f400.open(QIODevice::ReadOnly | QFile::Text));
++    QByteArray txt400 = f400.readAll();
++
+     QString txtcert = cert.toText();
+ 
+ #ifdef QT_NO_OPENSSL
+     QEXPECT_FAIL("", "QTBUG-40884: QSslCertificate::toText is not implemented on WinRT", Continue);
+ #endif
+-    QVERIFY(QString::fromLatin1(txt111) == txtcert  ||
+-            QString::fromLatin1(txt305) == txtcert);
++    QVERIFY2(QString::fromLatin1(txt111) == txtcert  ||
++            QString::fromLatin1(txt305) == txtcert  ||
++            QString::fromLatin1(txt400) == txtcert, u"Unexpected output: %1"_s.arg(txtcert).toUtf8().data());
+ }
+ 
+ void tst_QSslCertificate::multipleCommonNames()
+diff --git a/tests/auto/network/ssl/qsslsocket/tst_qsslsocket.cpp b/tests/auto/network/ssl/qsslsocket/tst_qsslsocket.cpp
+index b1c8933e368..b1a793dfa26 100644
+--- a/tests/auto/network/ssl/qsslsocket/tst_qsslsocket.cpp
++++ b/tests/auto/network/ssl/qsslsocket/tst_qsslsocket.cpp
+@@ -3330,6 +3330,7 @@ void tst_QSslSocket::ecdhServer()
+ 
+     SslServer server;
+     server.ciphers = {QSslCipher("ECDHE-RSA-AES128-SHA")};
++    server.protocol = QSsl::TlsV1_2;
+     QVERIFY(server.listen());
+ 
+     QEventLoop loop;
+@@ -3341,6 +3342,10 @@ void tst_QSslSocket::ecdhServer()
+     connect(socket, SIGNAL(sslErrors(QList<QSslError>)), this, SLOT(ignoreErrorSlot()));
+     connect(socket, SIGNAL(encrypted()), &loop, SLOT(quit()));
+ 
++    QSslConfiguration config = client.sslConfiguration();
++    config.setProtocol(QSsl::TlsV1_2);
++    client.setSslConfiguration(config);
++
+     client.connectToHostEncrypted(QHostAddress(QHostAddress::LocalHost).toString(), server.serverPort());
+ 
+     loop.exec();
+-- 
+2.55.0
+

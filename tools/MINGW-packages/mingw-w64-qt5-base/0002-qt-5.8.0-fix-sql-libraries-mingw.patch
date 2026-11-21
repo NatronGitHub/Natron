@@ -1,0 +1,49 @@
+--- a/src/plugins/sqldrivers/configure.json	2019-06-12 23:59:14.000000000 +0300
++++ b/src/plugins/sqldrivers/configure.json	2019-06-15 14:54:27.297115400 +0300
+@@ -51,7 +51,7 @@
+             "test": {},
+             "headers": "ibase.h",
+             "sources": [
+-                { "libs": "-lgds32_ms", "condition": "config.win32" },
++                { "libs": "-lfbclient", "condition": "config.win32" },
+                 { "libs": "-lgds", "condition": "!config.win32" }
+             ]
+         },
+@@ -67,6 +67,8 @@
+             },
+             "headers": "mysql.h",
+             "sources": [
++                { "libs": "-lmariadbclient -lssl -lcrypto -lgdi32 -lws2_32 -lpthread -lz -lm", "condition": "config.win32 && !features.shared" },
++                { "libs": "-lmariadb", "condition": "config.win32 && features.shared" },
+                 { "type": "mysqlConfig", "query": "--libs_r", "cleanlibs": true },
+                 { "type": "mysqlConfig", "query": "--libs", "cleanlibs": true },
+                 { "type": "mysqlConfig", "query": "--libs_r", "cleanlibs": false },
+@@ -88,9 +90,9 @@
+             },
+             "headers": "libpq-fe.h",
+             "sources": [
+-                { "type": "pkgConfig", "args": "libpq" },
+                 { "type": "psqlConfig" },
+-                { "type": "psqlEnv", "libs": "-llibpq -lws2_32 -ladvapi32", "condition": "config.win32" },
++                { "type": "psqlEnv", "libs": "-lpq -lintl -lssl -lcrypto -lshell32 -lws2_32 -lsecur32 -liconv", "condition": "config.win32 && !features.shared" },
++                { "type": "psqlEnv", "libs": "-lpq", "condition": "config.win32 && features.shared" },
+                 { "type": "psqlEnv", "libs": "-lpq", "condition": "!config.win32" }
+             ]
+         },
+@@ -214,16 +216,6 @@
+         }
+     },
+ 
+-    "report": [
+-        {
+-            "type": "warning",
+-            "condition": "config.win32 && !config.msvc && features.sql-oci",
+-            "message": "Qt does not support compiling the Oracle database driver with
+-MinGW, due to lack of such support from Oracle. Consider disabling the
+-Oracle driver, as the current build will most likely fail."
+-        }
+-    ],
+-
+     "summary": [
+         {
+             "section": "Qt Sql Drivers",

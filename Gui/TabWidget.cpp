@@ -1281,6 +1281,12 @@ TabWidget::onCurrentTabDeleted()
         return;
     }
     _imp->currentWidget = 0;
+    if (!_imp->gui) {
+        // The Gui is closing (discardGuiPointer()), and ~Gui() deletes its viewers while they are
+        // still in their pane, without removeTab(): other entries of tabs may be deleted already, and
+        // the pane is deleted next. Do not look at them, nor show another tab (#1554).
+        return;
+    }
     for (U32 i = 0; i < _imp->tabs.size(); ++i) {
         if (_imp->tabs[i].first->getWidget() == s) {
             _imp->tabs.erase(_imp->tabs.begin() + i);
@@ -1983,7 +1989,11 @@ TabWidget::setObjectName_mt_safe(const QString & str)
 {
     std::string strs = str.toStdString();
     if ( NATRON_PYTHON_NAMESPACE::isKeyword(strs) ) {
-        throw std::runtime_error(strs + " is a Python keyword");
+        // Report the error instead of throwing: this is called from Qt slots (e.g. splitting a pane),
+        // through which an exception must not propagate (#1046, #1436).
+        _imp->gui->getApp()->appendToScriptEditor("TabWidget::setObjectName_mt_safe: " + strs + " is a Python keyword");
+
+        return;
     }
     std::string oldName = objectName_mt_safe().toStdString();
     {

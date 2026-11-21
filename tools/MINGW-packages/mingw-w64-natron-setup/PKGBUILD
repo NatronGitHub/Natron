@@ -12,10 +12,10 @@ pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
 pkgver=1.0
 # Bump pkgrel with every change of Natron.iss (and of the other sources): the package repository
 # and its CI cache only pick up a new Setup.exe through a new pkgrel.
-pkgrel=5
+pkgrel=6
 pkgdesc="Natron Inno Setup"
 arch=('any')
-mingw_arch=('ucrt64')
+mingw_arch=('ucrt64' 'clangarm64')
 url="https://github.com/jrsoftware/issrc"
 license=('custom:Modified BSD license')
 provides=("${MINGW_PACKAGE_PREFIX}-${_realname}")
@@ -36,9 +36,19 @@ sha256sums=('SKIP'
 
 build() {
   cd "${srcdir}"
-  /c/Program\ Files\ \(x86\)/Inno\ Setup\ 6/ISCC.exe Natron.iss
+  # the architecture of the Natron builds that this Setup.exe installs (NatronArch in Natron.iss):
+  # x64 on UCRT64, arm64 on CLANGARM64 (#1494). Inno Setup itself is an x86 program, which also
+  # runs (emulated) on Windows on Arm. MSYS2_ARG_CONV_EXCL: /D... is an option, not a path.
+  local _natron_arch=x64
+  if [[ ${CARCH} == aarch64 ]]; then
+    _natron_arch=arm64
+  fi
+  MSYS2_ARG_CONV_EXCL='/D' /c/Program\ Files\ \(x86\)/Inno\ Setup\ 6/ISCC.exe "/DNatronArch=${_natron_arch}" Natron.iss
 }
 
 package() {
-  cp "${srcdir}/output/Setup.exe" "${pkgdir}/"
+  # In the environment's prefix, not in /: the UCRT64 and CLANGARM64 packages can be installed
+  # side by side (both environments exist on Windows on Arm). build-Windows-installer.sh still
+  # accepts the /Setup.exe of older packages.
+  install -Dm755 "${srcdir}/output/Setup.exe" "${pkgdir}${MINGW_PREFIX}/share/natron-setup/Setup.exe"
 }

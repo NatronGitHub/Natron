@@ -2,11 +2,12 @@
 
 # Install zlib
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/zlib.html
-ZLIB_VERSION=1.2.13
+ZLIB_VERSION=1.3.2
 ZLIB_TAR="zlib-${ZLIB_VERSION}.tar.gz"
-ZLIB_SITE="https://zlib.net"
+ZLIB_SHA256=bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16
+ZLIB_SITE="https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}"
 if download_step; then
-    download "$ZLIB_SITE" "$ZLIB_TAR"
+    download "$ZLIB_SITE" "$ZLIB_TAR" "$ZLIB_SHA256"
 fi
 if build_step && { force_build || { [ "${REBUILD_ZLIB:-}" = "1" ]; }; }; then
     rm -rf $SDK_HOME/lib/libz.* || true

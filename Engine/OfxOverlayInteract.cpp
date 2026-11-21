@@ -282,6 +282,8 @@ OfxParamOverlayInteract::callEntry(const char *action,
                                    OFX::Host::Property::Set *inArgs)
 {
     // _effect is NULL once the interact is destroyed, when the effect may be gone too (see destroyInstanceAction())
+    // The plug-in sees its own host name during the action (#1497).
+    OfxImageEffectInstance::ThreadIsActionCaller_RAII actionCaller(_effect);
     OfxImageEffectInstance::MainThreadAction_RAII mainThreadAction(_effect);
 
     return OFX::Host::Interact::Instance::callEntry(action, inArgs);
@@ -291,6 +293,8 @@ OfxStatus
 OfxOverlayInteract::callEntry(const char *action,
                               OFX::Host::Property::Set *inArgs)
 {
+    // the plug-in sees its own host name during the action (#1497)
+    OfxImageEffectInstance::ThreadIsActionCaller_RAII actionCaller(_effect);
     OfxImageEffectInstance::MainThreadAction_RAII mainThreadAction(_effect);
 
     return OFX::Host::ImageEffect::OverlayInteract::callEntry(action, inArgs);

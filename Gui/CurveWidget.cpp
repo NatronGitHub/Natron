@@ -59,6 +59,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
 
+#include "Gui/GuiTest.h"
 #include "Gui/KnobGui.h"
 #include "Gui/PythonPanels.h" // PyModelDialog
 #include "Gui/TabWidget.h"
@@ -554,7 +555,7 @@ void
 CurveWidget::getCursorPosition(double& x,
                                double& y) const
 {
-    QPoint p = QCursor::pos();
+    QPoint p = GuiTest::cursorPos();
 
     p = mapFromGlobal(p);
     QPointF mappedPos = toZoomCoordinates( p.x(), p.y() );
@@ -1633,10 +1634,10 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorPaste, modifiers, key) ) {
         pasteKeyFramesFromClipBoardToSelectedCurve();
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomIn, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
-        QWheelEvent e(mapFromGlobal( QCursor::pos() ), QCursor::pos(), QPoint(), QPoint(0, 120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+        QWheelEvent e(mapFromGlobal( GuiTest::cursorPos() ), GuiTest::cursorPos(), QPoint(), QPoint(0, 120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
         wheelEvent(&e);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
-        QWheelEvent e(mapFromGlobal( QCursor::pos() ), QCursor::pos(), QPoint(), QPoint(0, -120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+        QWheelEvent e(mapFromGlobal( GuiTest::cursorPos() ), GuiTest::cursorPos(), QPoint(), QPoint(0, -120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
         wheelEvent(&e);
     } else {
         accept = false;
