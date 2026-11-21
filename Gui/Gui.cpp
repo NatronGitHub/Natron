@@ -41,6 +41,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QTimer>
 #include <QDesktopServices>
 #include <QUrl>
+#include <QPointer>
 
 #include "Engine/Node.h"
 #include "Engine/Project.h"
@@ -137,13 +138,20 @@ Gui::~Gui()
         delete *it;
     }
 
-    // Delete the node graphs of the groups now too: QWidget::~QWidget() would delete their scenes,
-    // children of this window created before them, which delete their items, before the graphs,
-    // which still hold some of these items (the NodeGuis of the nodes in the groups) (#1554).
-    std::list<NodeGraph*> groups;
-    groups.swap(_imp->_groups);
-    for (std::list<NodeGraph*>::iterator it = groups.begin(); it != groups.end(); ++it) {
-        delete *it;
+    // Delete the node graphs of the groups now too, including those that removeGroupGui() deleted
+    // later: QWidget::~QWidget() would delete their scenes, children of this window created before
+    // them, which delete their items, before the graphs, which still use them (#1554).
+    _imp->_groups.clear();
+    {
+        QList<QPointer<NodeGraph> > graphs;
+        Q_FOREACH(NodeGraph* graph, findChildren<NodeGraph*>()) {
+            if (graph != _imp->_nodeGraphArea) {
+                graphs.push_back( QPointer<NodeGraph>(graph) );
+            }
+        }
+        for (int i = 0; i < graphs.size(); ++i) {
+            delete graphs[i].data(); // null if deleted with a graph deleted before
+        }
     }
 
     delete _imp->_errorLog;

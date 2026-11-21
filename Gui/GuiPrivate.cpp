@@ -280,11 +280,6 @@ GuiPrivate::notifyGuiClosing()
             (*it)->tabAt(i)->notifyGuiClosingPublic();
         }
     }
-    // the node graphs of the groups too, which are not in a pane unless they are shown: QWidget's
-    // destructor deletes them after GuiPrivate (#1554)
-    for (std::list<NodeGraph*>::iterator it = _groups.begin(); it != _groups.end(); ++it) {
-        (*it)->notifyGuiClosingPublic();
-    }
 
     const NodesGuiList allNodes = _nodeGraphArea->getAllActiveNodes();
 
