@@ -51,6 +51,7 @@
 #include "Engine/KnobFile.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/UndoCommand.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Global/QtCompat.h"
@@ -1704,6 +1705,45 @@ void
 GuiAppInstance::reloadScriptEditorFonts()
 {
     _imp->_gui->getScriptEditor()->reloadFont();
+}
+
+namespace {
+// An undo group of the Python API (App.beginUndoGroup()) on the undo stack of the node graph. The command
+// is pushed after the edits were made: its first redo() does nothing (see PythonUndoGroupCommand::redo()).
+class UndoGroupQtCommand
+    : public QUndoCommand
+{
+    UndoCommandPtr _command;
+
+public:
+
+    UndoGroupQtCommand(const UndoCommandPtr& command)
+        : QUndoCommand()
+        , _command(command)
+    {
+        setText( QString::fromUtf8( command->getText().c_str() ) );
+    }
+
+    virtual void redo() OVERRIDE FINAL
+    {
+        _command->redo();
+    }
+
+    virtual void undo() OVERRIDE FINAL
+    {
+        _command->undo();
+    }
+};
+} // anonymous namespace
+
+void
+GuiAppInstance::pushUndoGroupCommand(const UndoCommandPtr& command)
+{
+    NodeGraph* graph = _imp->_gui ? _imp->_gui->getNodeGraph() : 0;
+
+    if (graph) {
+        graph->pushUndoCommand( new UndoGroupQtCommand(command) );
+    }
 }
 
 QUndoStack*

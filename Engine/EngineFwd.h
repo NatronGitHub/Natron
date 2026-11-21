@@ -325,6 +325,7 @@ class SeparatorParam;
 class StringParam;
 class Track;
 class Tracker;
+class UndoGroup;
 class UserParamHolder;
 
 NATRON_PYTHON_NAMESPACE_EXIT

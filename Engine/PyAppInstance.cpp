@@ -172,6 +172,8 @@ App::createNode(const QString& pluginID,
 
     NodePtr node = getInternalApp()->createNode(args);
     if (node) {
+        // undoable in an undo group (App.beginUndoGroup())
+        getInternalApp()->recordNodeCreatedForUndoGroup(node);
         return new Effect(node);
     } else {
         return NULL;
@@ -192,6 +194,8 @@ App::createReader(const QString& filename,
 
     NodePtr node = getInternalApp()->createReader(filename.toStdString(), args);
     if (node) {
+        // undoable in an undo group (App.beginUndoGroup())
+        getInternalApp()->recordNodeCreatedForUndoGroup(node);
         return new Effect(node);
     } else {
         return NULL;
@@ -210,6 +214,8 @@ App::createWriter(const QString& filename,
     makeCreateNodeArgs(getInternalApp(), QString::fromUtf8(PLUGINID_NATRON_WRITE), -1, collection, props, &args);
     NodePtr node = getInternalApp()->createWriter(filename.toStdString(), args);
     if (node) {
+        // undoable in an undo group (App.beginUndoGroup())
+        getInternalApp()->recordNodeCreatedForUndoGroup(node);
         return new Effect(node);
     } else {
         return NULL;
@@ -516,17 +522,31 @@ checkMainThread(const char* function)
 void
 App::undo()
 {
-    if ( checkMainThread("App.undo()") ) {
-        getInternalApp()->undo();
+    if ( !checkMainThread("App.undo()") ) {
+        return;
     }
+    if (getInternalApp()->getUndoGroupDepth() > 0) {
+        // the group would record the state of what the undo changes, and its step would undo it
+        PyErr_SetString(PyExc_RuntimeError, "App.undo() cannot be called in an open undo group");
+
+        return;
+    }
+    getInternalApp()->undo();
 }
 
 void
 App::redo()
 {
-    if ( checkMainThread("App.redo()") ) {
-        getInternalApp()->redo();
+    if ( !checkMainThread("App.redo()") ) {
+        return;
     }
+    if (getInternalApp()->getUndoGroupDepth() > 0) {
+        // the group would record the state of what the undo changes, and its step would undo it
+        PyErr_SetString(PyExc_RuntimeError, "App.redo() cannot be called in an open undo group");
+
+        return;
+    }
+    getInternalApp()->redo();
 }
 
 bool
@@ -561,6 +581,63 @@ int
 App::getUndoIndex() const
 {
     return checkMainThread("App.getUndoIndex()") ? getInternalApp()->getUndoIndex() : 0;
+}
+
+void
+App::beginUndoGroup(const QString& text)
+{
+    if ( checkMainThread("App.beginUndoGroup()") ) {
+        getInternalApp()->beginUndoGroup( text.toStdString() );
+    }
+}
+
+void
+App::endUndoGroup()
+{
+    if ( checkMainThread("App.endUndoGroup()") && !getInternalApp()->endUndoGroup() ) {
+        PyErr_SetString(PyExc_RuntimeError, "App.endUndoGroup(): no undo group is open");
+    }
+}
+
+UndoGroup*
+App::undoGroup(const QString& text)
+{
+    return new UndoGroup(getInternalApp(), text);
+}
+
+UndoGroup::UndoGroup(const AppInstancePtr& app,
+                     const QString& text)
+    : _app(app)
+    , _text(text)
+    , _open(false)
+{
+}
+
+UndoGroup::~UndoGroup()
+{
+    // a context manager entered and never exited (e.g. __enter__() called by hand) ends its group
+    end();
+}
+
+void
+UndoGroup::begin()
+{
+    AppInstancePtr app = _app.lock();
+
+    if ( app && !_open && checkMainThread("App.undoGroup()") ) {
+        _open = app->beginUndoGroup( _text.toStdString() );
+    }
+}
+
+void
+UndoGroup::end()
+{
+    AppInstancePtr app = _app.lock();
+
+    if (app && _open) {
+        _open = false;
+        app->endUndoGroup();
+    }
 }
 
 bool

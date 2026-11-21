@@ -27,6 +27,7 @@
 #include "AppInstance.h"
 
 #include <fstream>
+#include <iostream>
 #include <limits>
 #include <list>
 #include <set>
@@ -74,6 +75,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/ProcessHandler.h"
+#include "Engine/PythonUndoGroup.h"
 #include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
 #include "Engine/WriteNode.h"
@@ -174,6 +176,10 @@ public:
 
     ProjectBeingLoadedInfo projectBeingLoaded;
 
+    // the undo group open in Python (beginUndoGroup()), its nesting level, and its command (only in the GUI)
+    int undoGroupDepth;
+    std::shared_ptr<PythonUndoGroupCommand> undoGroup;
+
     AppInstancePrivate(int appID,
                        AppInstance* app)
 
@@ -192,6 +198,8 @@ public:
         , invalidExprKnobsMutex()
         , invalidExprKnobs()
         , projectBeingLoaded()
+        , undoGroupDepth(0)
+        , undoGroup()
     {
     }
 
@@ -2140,6 +2148,110 @@ AppInstance::hasRenderInProgress() const
     }
 
     return false;
+}
+
+static bool
+isMainThread()
+{
+    return QThread::currentThread() == qApp->thread();
+}
+
+bool
+AppInstance::beginUndoGroup(const std::string& text)
+{
+    // the undo group state is not locked: only the main thread uses it
+    if ( !isMainThread() ) {
+        return false;
+    }
+    if (_imp->undoGroupDepth++ > 0) {
+        return true; // only the outermost group makes an undo step
+    }
+    // In background mode, there is no undo stack: nothing is recorded.
+    if ( !isBackground() ) {
+        _imp->undoGroup = std::make_shared<PythonUndoGroupCommand>(text);
+    }
+
+    return true;
+}
+
+bool
+AppInstance::endUndoGroup()
+{
+    if ( !isMainThread() || (_imp->undoGroupDepth <= 0) ) {
+        return false;
+    }
+    if (--_imp->undoGroupDepth > 0) {
+        return true;
+    }
+    std::shared_ptr<PythonUndoGroupCommand> command = _imp->undoGroup;
+    _imp->undoGroup.reset();
+    if ( command && !command->isEmpty() ) {
+        command->finish();
+        pushUndoGroupCommand(command);
+    }
+
+    return true;
+}
+
+void
+AppInstance::closeUndoGroups(const std::string& reason,
+                             bool keepEdits)
+{
+    if ( !isMainThread() || (_imp->undoGroupDepth <= 0) ) {
+        return;
+    }
+    std::cerr << "Warning: " << reason << ": " << _imp->undoGroupDepth
+              << " undo group(s) of the Python API were not ended (App.endUndoGroup())" << std::endl;
+    if (keepEdits) {
+        _imp->undoGroupDepth = 1;
+        endUndoGroup();
+    } else {
+        // the project is closed: its edits are not undoable any more
+        _imp->undoGroupDepth = 0;
+        _imp->undoGroup.reset();
+    }
+}
+
+int
+AppInstance::getUndoGroupDepth() const
+{
+    return _imp->undoGroupDepth;
+}
+
+void
+AppInstance::recordKnobForUndoGroup(const KnobIPtr& knob)
+{
+    if ( _imp->undoGroup && isMainThread() ) {
+        _imp->undoGroup->recordKnob(knob);
+    }
+}
+
+void
+AppInstance::recordInputsForUndoGroup(const NodePtr& node)
+{
+    if ( _imp->undoGroup && isMainThread() ) {
+        _imp->undoGroup->recordInputs(node);
+    }
+}
+
+void
+AppInstance::recordNodeCreatedForUndoGroup(const NodePtr& node)
+{
+    if ( _imp->undoGroup && isMainThread() ) {
+        _imp->undoGroup->recordNodeCreated(node);
+    }
+}
+
+bool
+AppInstance::deleteNodeInUndoGroup(const NodePtr& node,
+                                   bool autoReconnect)
+{
+    if ( !_imp->undoGroup || !isMainThread() ) {
+        return false;
+    }
+    _imp->undoGroup->deleteNode(node, autoReconnect);
+
+    return true;
 }
 
 bool
