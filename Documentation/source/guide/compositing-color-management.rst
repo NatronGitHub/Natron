@@ -330,9 +330,8 @@ ACES
     project), select it as a custom configuration or with the ``OCIO``
     variable, and restart Natron. Each ACES configuration needs a minimum
     OpenColorIO version, given in its file name (``..._ocio-v2.1.ocio``) and
-    in its release notes. Natron 2.6 uses OpenColorIO 2.6 on macOS and
-    Windows, and OpenColorIO 2.2 on Linux: on Linux, use a configuration made
-    for OCIO 2.2 or earlier, such as the ``ocio-v2.1`` ones of release 1.0.0.
+    in its release notes. Natron 2.6 uses OpenColorIO 2.6 on Linux, macOS
+    and Windows: use a configuration made for OCIO 2.6 or earlier.
     Read each input with its ACES input
     colorspace (the camera's log colorspace, or the sRGB texture colorspace for
     sRGB images), keep the working space (ACEScg), view through an OCIODisplay

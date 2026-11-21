@@ -2,11 +2,12 @@
 
 # Install m4
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/m4.html
-M4_VERSION=1.4.19
+M4_VERSION=1.4.21
 M4_TAR="m4-${M4_VERSION}.tar.xz"
+M4_SHA256=f25c6ab51548a73a75558742fb031e0625d6485fe5f9155949d6486a2408ab66
 M4_SITE="https://ftp.gnu.org/gnu/m4"
 if download_step; then
-    download "$M4_SITE" "$M4_TAR"
+    download "$M4_SITE" "$M4_TAR" "$M4_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/m4" ]; }; }; then
     start_build
