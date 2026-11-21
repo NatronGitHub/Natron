@@ -86,12 +86,18 @@ C++20 for Qt6, from ``QT_VERSION_MAJOR``, in one of two ways:
 - **qmake and Makefile builds** (``NATRON_BUILD_SYSTEM=qmake``,
   ``PLUGINS_BUILD_SYSTEM=make``): they compile with ``$CXX``, whose
   ``-std=c++17``/``c++20`` comes from ``CXXSTD`` in
-  ``tools/jenkins/compiler-common.sh`` (``gnu++17``/``gnu++20`` on Windows), and
-  qmake also takes the standard from ``QT_MAJOR_VERSION`` in ``global.pri``.
+  ``tools/jenkins/compiler-common.sh`` (``gnu++17``/``gnu++20`` on Windows).
+  The plug-ins' Makefiles keep that standard. qmake takes the standard from
+  ``QT_MAJOR_VERSION`` in ``global.pri`` (``CONFIG += c++17`` or ``c++2a``),
+  and Qt's ``default_post.prf`` appends ``-std=gnu++1z`` or ``-std=gnu++2a``
+  after the other flags (``CONFIG += strict_c++`` is not set), so Natron's
+  qmake build uses GNU extensions, like its CMake build.
 
-openfx-arena compiles its poppler-based reader as C++20 in any case, because
-recent poppler headers require it: ``POPPLER_CXX_STANDARD`` in its CMake build,
-``POPPLER_CXXSTD`` in its Makefiles.
+openfx-arena compiles its poppler-based reader as C++20 with GNU extensions in
+any case, because recent poppler headers require it: ``POPPLER_CXX_STANDARD``
+in its CMake build (``CXX_EXTENSIONS ON``, i.e. ``-std=gnu++20``), and
+``POPPLER_CXXSTD`` (``-std=gnu++2a``, after ``$CXX``'s ``-std``) in its
+Makefiles.
 
 The MacPorts overlay
 --------------------

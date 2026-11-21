@@ -18,7 +18,9 @@
 # ***** END LICENSE BLOCK *****
 
 # C++ standard: C++17 with Qt5, C++20 with Qt6 (RB-2.6 policy; RB-2.7: C++20 everywhere).
-# Strict -std=c++17/c++20; the CMake build uses -std=gnu++17/gnu++20 (CMake's default extensions).
+# The -std=$$NATRON_CXXSTD in QMAKE_CXXFLAGS below is overridden: without CONFIG+=strict_c++, Qt's
+# default_post.prf appends -std=gnu++1z (c++17) or -std=gnu++2a (c++2a) after QMAKE_CXXFLAGS,
+# so qmake builds use GNU extensions, like the CMake build (-std=gnu++17/gnu++20).
 # Qt 5 qmake doesn't know CONFIG+=c++20, but both Qt 5 and Qt 6 accept c++2a.
 greaterThan(QT_MAJOR_VERSION, 5) {
   NATRON_CXXSTD = c++20
