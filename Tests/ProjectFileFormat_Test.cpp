@@ -29,19 +29,25 @@
 
 #include <gtest/gtest.h>
 
+#include <condition_variable>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <vector>
 #include <iostream>
+#include <mutex>
 #include <sstream>
 #include <string>
+#include <thread>
 
 #include <QByteArray>
 #include <QDateTime>
+#include <QDir>
 #include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
+#include <QRegularExpression>
+#include <QSaveFile>
 #include <QTemporaryDir>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -58,6 +64,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Global/FStreamsSupport.h"
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
+#include "Engine/CLArgs.h"
 #include "Engine/PortableBinaryArchive.h"
 #include "Engine/Project.h"
 #include "Engine/ProjectSerialization.h"
@@ -491,6 +498,11 @@ TEST(ProjectFileFormat, AutoSaveNames)
     }
     EXPECT_EQ( -1, Project::findAutoSaveSuffix( QString::fromUtf8("foo.ntp") ) );
     EXPECT_EQ( -1, Project::findAutoSaveSuffix( QString::fromUtf8("foo.ntp.~1~") ) );
+    // the temporary files of a save (QSaveFile: <name>.XXXXXX), e.g. left by a crash, are not auto-saves (#1590)
+    const char* notAutoSaves[] = { "foo.ntp.binautosave.Ab3xYz", "Untitled.ntp.binautosave.123456789.Ab3xYz", "foo.ntp.autosave.Ab3xYz", "foo.ntp.binautosave." };
+    for (const char* n : notAutoSaves) {
+        EXPECT_EQ( -1, Project::findAutoSaveSuffix( QString::fromUtf8(n) ) ) << n;
+    }
 
     // findAutoSaveForProject() finds the binary auto-save of a project, and also a text one by 2.5
     QTemporaryDir tmpDir;
@@ -532,6 +544,21 @@ TEST(ProjectFileFormat, AutoSaveNames)
     EXPECT_FALSE( project->findAutoSaveForProject( dir, QString::fromUtf8("c.ntp"), &found ) );
     EXPECT_TRUE( QFile::exists( dir + QString::fromUtf8("c.ntp.binautosave") ) );
     EXPECT_TRUE( project->findAutoSaveForProject( dir, QString::fromUtf8("c.ntp"), &found, true /*includeOlderThanProject*/ ) );
+
+    // the actual temporary file of an auto-save, while it is written (none on Linux, which has unnamed temporary files)
+    for (const char* n : { "d.ntp.binautosave", "Untitled.ntp.binautosave.123456789" }) {
+        const QString autoSave = QString::fromUtf8(n);
+        QDir d(dir + QString::fromUtf8("d"));
+        ASSERT_TRUE( d.mkpath( d.path() ) );
+        QSaveFile f( d.filePath(autoSave) );
+        ASSERT_TRUE( f.open(QIODevice::WriteOnly) );
+        ASSERT_EQ( (qint64)1, f.write("x", 1) );
+        ASSERT_TRUE( f.flush() );
+        Q_FOREACH(const QString &entry, d.entryList(QDir::Files | QDir::Hidden | QDir::NoDotAndDotDot)) {
+            EXPECT_EQ( -1, Project::findAutoSaveSuffix(entry) ) << entry.toStdString();
+        }
+        f.cancelWriting();
+    }
 }
 
 // The text auto-save of a project, written by Natron 2.5, is restored as a text project.
@@ -758,6 +785,212 @@ TEST(ProjectFileFormat, PythonAPI)
 
 // Sizes and times of a large project in both formats, and the same text -> binary -> text check
 // with a real project, which may be saved by an old version and use OpenFX plug-ins. Runs only if
+namespace {
+// Waits until n threads reach it (std::barrier is C++20).
+class Barrier
+{
+    std::mutex _mutex;
+    std::condition_variable _cond;
+    const int _n;
+    int _count;
+    int _generation;
+
+public:
+    explicit Barrier(int n)
+        : _n(n)
+        , _count(0)
+        , _generation(0)
+    {
+    }
+
+    void wait()
+    {
+        std::unique_lock<std::mutex> l(_mutex);
+        const int generation = _generation;
+        if (++_count == _n) {
+            _count = 0;
+            ++_generation;
+            _cond.notify_all();
+        } else {
+            _cond.wait(l, [&]() { return generation != _generation; });
+        }
+    }
+};
+
+// The files of dir that are neither one of the names nor one of their backups (<name>.~N~):
+// the temporary files left by the saves.
+QStringList
+strayFiles(const QString& dir,
+           const QStringList& names)
+{
+    QStringList ret;
+    const QRegularExpression backup( QString::fromUtf8("\\.~\\d+~\\z") );
+
+    Q_FOREACH(const QString &entry, QDir(dir).entryList(QDir::Files | QDir::Hidden | QDir::NoDotAndDotDot)) {
+        QString name = entry;
+        name.remove(backup);
+        if ( !names.contains(name) ) {
+            ret.append(entry);
+        }
+    }
+
+    return ret;
+}
+} // anonymous namespace
+
+// Two projects saved at the same time (two windows, or two processes, e.g. on a render farm) used the same
+// temporary file, $TMPDIR/<milliseconds since epoch>, then renamed it to the project file: a save failed, or
+// wrote a corrupt file (#1590). The saves start at the same time, one in text while the other is in binary.
+TEST(ProjectSave, ConcurrentSaves)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    app->getProject()->resetProject();
+    createTestProject(app);
+    // a second project: an internal instance, as the one of a Precomp node
+    AppInstancePtr app2 = appPTR->newBackgroundInstance(CLArgs(), true);
+    ASSERT_TRUE( bool(app2) );
+
+    struct Target
+    {
+        ProjectPtr project;
+        QString name;
+        QByteArray reference[2];
+        int failures;
+        int mismatches;
+    };
+    const ProjectFileFormatEnum formats[2] = { eProjectFileFormatText, eProjectFileFormatBinary };
+    Target targets[2];
+    targets[0].project = app->getProject();
+    targets[0].name = QString::fromUtf8("a.ntp");
+    targets[1].project = app2->getProject();
+    targets[1].name = QString::fromUtf8("b.ntp");
+    for (Target& t : targets) {
+        t.failures = t.mismatches = 0;
+        // the contents of the files, saved one at a time
+        for (int f = 0; f < 2; ++f) {
+            const QString name = QString::fromUtf8("reference-%1-").arg(f) + t.name;
+            ASSERT_TRUE( saveCopy(t.project, dir, name, formats[f]) );
+            t.reference[f] = readFile(dir + name);
+            ASSERT_FALSE( t.reference[f].isEmpty() );
+        }
+    }
+    ASSERT_TRUE( targets[0].reference[0] != targets[1].reference[0] );
+
+    const int n = 100;
+    Barrier barrier(2);
+    auto run = [&](int index) {
+        Target& t = targets[index];
+        for (int i = 0; i < n; ++i) {
+            const int f = (i + index) % 2;
+            barrier.wait();
+            if ( !saveCopy(t.project, dir, t.name, formats[f]) ) {
+                ++t.failures;
+            } else if ( readFile(dir + t.name) != t.reference[f] ) {
+                ++t.mismatches;
+            }
+        }
+    };
+    std::thread thread0(run, 0);
+    std::thread thread1(run, 1);
+    thread0.join();
+    thread1.join();
+
+    for (const Target& t : targets) {
+        EXPECT_EQ( 0, t.failures ) << "saves of " << t.name.toStdString() << " failed, out of " << n;
+        EXPECT_EQ( 0, t.mismatches ) << "saves of " << t.name.toStdString() << " wrote a wrong file, out of " << n;
+    }
+    QStringList names;
+    for (const Target& t : targets) {
+        names << t.name << QString::fromUtf8("reference-0-") + t.name << QString::fromUtf8("reference-1-") + t.name;
+    }
+    EXPECT_EQ( QStringList(), strayFiles(dir, names) );
+
+    app2->quitNow();
+    app->getProject()->resetProject();
+}
+
+// A save that fails leaves the previous project file as it was, and no temporary file, with an error
+// that names the file.
+TEST(ProjectSave, FailedSaveKeepsThePreviousFile)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("p.ntp");
+    const QString path = dir + name;
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    createTestProject(app);
+    ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
+    const QByteArray previous = readFile(path);
+    ASSERT_FALSE( previous.isEmpty() );
+    // change the project, so that a save changes the file
+    std::string error, output;
+    ASSERT_TRUE( ::Natron::Python::interpretPythonScript(app->getAppIDString() + ".getProjectParam('frameRange').set(7, 89)\n", &error, &output) ) << error << output;
+
+    auto failedSave = [&](const char* what) {
+        QString errorMessage;
+        EXPECT_FALSE( project->saveProject_imp(dir, name, false /*autoSave*/, false /*updateProjectProperties*/, 0, &errorMessage, eProjectFileFormatBinary) ) << what;
+        EXPECT_TRUE( errorMessage.contains(path) ) << what << ": " << errorMessage.toStdString();
+        EXPECT_TRUE( readFile(path) == previous ) << what << ": the project file changed";
+        EXPECT_EQ( QStringList(), strayFiles( dir, QStringList(name) ) ) << what;
+    };
+
+    // a read-only file is not replaced
+    const QFileDevice::Permissions permissions = QFile::permissions(path);
+    ASSERT_TRUE( QFile::setPermissions(path, QFileDevice::ReadOwner | QFileDevice::ReadUser | QFileDevice::ReadGroup | QFileDevice::ReadOther) );
+    failedSave("read-only file");
+    ASSERT_TRUE( QFile::setPermissions(path, permissions) );
+
+#ifndef Q_OS_WIN
+    // a read-only directory: the temporary file can't be created (Windows has no read-only directories)
+    const QFileDevice::Permissions dirPermissions = QFile::permissions(tmpDir.path());
+    ASSERT_TRUE( QFile::setPermissions(tmpDir.path(), QFileDevice::ReadOwner | QFileDevice::ExeOwner | QFileDevice::ReadUser | QFileDevice::ExeUser) );
+    QFile probe( dir + QString::fromUtf8("probe") );
+    if ( probe.open(QIODevice::WriteOnly) ) {
+        probe.close();
+        probe.remove();
+        reportSkipped("the read-only directory is writable (root?)");
+    } else {
+        failedSave("read-only directory");
+    }
+    ASSERT_TRUE( QFile::setPermissions(tmpDir.path(), dirPermissions) );
+#endif
+
+    // and then it saves
+    ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
+    EXPECT_FALSE( readFile(path) == previous );
+    project->resetProject();
+}
+
+#ifndef Q_OS_WIN
+// Saving keeps the permissions of the project file (it was replaced by a new file with the default permissions).
+TEST(ProjectSave, KeepsPermissions)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("p.ntp");
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    createTestProject(app);
+    ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatText) );
+    const QFileDevice::Permissions permissions = QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ReadUser | QFileDevice::WriteUser | QFileDevice::ReadGroup;
+    ASSERT_TRUE( QFile::setPermissions(dir + name, permissions) );
+    for (ProjectFileFormatEnum format : { eProjectFileFormatText, eProjectFileFormatBinary }) {
+        ASSERT_TRUE( saveCopy(project, dir, name, format) );
+        EXPECT_EQ( format, Project::detectFileFormat(dir + name) );
+        EXPECT_EQ( permissions, QFile::permissions(dir + name) ) << "format " << (int)format;
+    }
+    project->resetProject();
+}
+#endif
+
 // NATRON_TEST_LARGE_PROJECT is the path of a text project, e.g. Natron-Tests/Spaceship/Spaceship_Natron_23.ntp.
 TEST(ProjectFileFormat, LargeProject)
 {

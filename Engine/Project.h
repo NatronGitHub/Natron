@@ -202,8 +202,8 @@ public:
     /**
      * @brief If fileName is the name of an auto-save, ending with .ntp.autosave (text, by Natron 2.5 and earlier)
      * or .ntp.binautosave (binary, by Natron 2.6 and later), possibly followed by a time hash for an untitled
-     * project, returns the position of ".ntp" and sets suffixSize to the size of the auto-save suffix after it.
-     * Returns -1 otherwise. Natron 2.5 only looks for ".ntp.autosave", so it never offers to restore a binary
+     * project (".<digits>"), returns the position of ".ntp" and sets suffixSize to the size of the auto-save suffix
+     * after it. Returns -1 otherwise, e.g. for the temporary file of a save (<auto-save name>.XXXXXX, see QSaveFile). Natron 2.5 only looks for ".ntp.autosave", so it never offers to restore a binary
      * auto-save, which it can't load. Its Project::clearAutoSavesDir() (when the user declines to restore one of its
      * own untitled auto-saves, and Cache > Clear all caches) still removes the untitled ones in the Autosaves directory.
      **/

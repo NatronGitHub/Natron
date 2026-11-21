@@ -29,7 +29,10 @@
 #include <algorithm> // min, max
 #include <ios>
 #include <limits>
+#include <ostream>
 #include <set>
+#include <streambuf>
+#include <vector>
 #include <cstdlib> // strtoul
 #include <cerrno> // errno
 #include <cassert>
@@ -51,7 +54,7 @@
 #include <QThread>
 #include <QDir>
 #include <QDirIterator>
-#include <QTemporaryFile>
+#include <QSaveFile>
 #include <QFileInfo>
 #include <QDebug>
 #include <QTextStream>
@@ -277,6 +280,19 @@ Project::findAutoSaveSuffix(const QString& fileName,
         const QString suffixStr = QString::fromUtf8(suffix);
         int pos = fileName.indexOf(ntpExt + suffixStr);
         if (pos != -1) {
+            // The suffix ends the name, or is followed by the time hash of an untitled project (".<digits>").
+            // Not, for example, by the ".XXXXXX" of the temporary file QSaveFile writes next to the auto-save
+            // (see saveProjectInternal()): one left by a crash must not be offered for restoration.
+            const int end = pos + ntpExt.size() + suffixStr.size();
+            if ( end < fileName.size() ) {
+                bool isTimeHash = ( fileName.at(end) == QLatin1Char('.') ) && (end + 1 < fileName.size());
+                for (int i = end + 1; isTimeHash && i < fileName.size(); ++i) {
+                    isTimeHash = ( fileName.at(i) >= QLatin1Char('0') ) && ( fileName.at(i) <= QLatin1Char('9') );
+                }
+                if (!isTimeHash) {
+                    continue;
+                }
+            }
             if (suffixSize) {
                 *suffixSize = suffixStr.size();
             }
@@ -851,22 +867,55 @@ Project::saveProject_imp(const QString & path,
     return ok;
 } // Project::saveProject_imp
 
-static bool
-fileCopy(const QString & source,
-         const QString & dest)
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+// A std::streambuf that writes to a QIODevice: the Boost archives write to a std::ostream, and the
+// project is written to a QSaveFile (see saveProjectInternal()).
+class QIODeviceStreamBuf
+    : public std::streambuf
 {
-    QFile sourceFile(source);
-    QFile destFile(dest);
-    bool success = true;
+public:
+    explicit QIODeviceStreamBuf(QIODevice* device)
+        : _device(device)
+        , _buffer(1 << 16)
+    {
+        setp( _buffer.data(), _buffer.data() + _buffer.size() );
+    }
 
-    success &= sourceFile.open( QFile::ReadOnly );
-    success &= destFile.open( QFile::WriteOnly | QFile::Truncate );
-    success &= destFile.write( sourceFile.readAll() ) >= 0;
-    sourceFile.close();
-    destFile.close();
+protected:
+    virtual int_type overflow(int_type ch) OVERRIDE FINAL
+    {
+        if ( !writeBuffer() ) {
+            return traits_type::eof();
+        }
+        if ( !traits_type::eq_int_type( ch, traits_type::eof() ) ) {
+            *pptr() = traits_type::to_char_type(ch);
+            pbump(1);
+        }
 
-    return success;
-}
+        return traits_type::not_eof(ch);
+    }
+
+    virtual int sync() OVERRIDE FINAL
+    {
+        return writeBuffer() ? 0 : -1;
+    }
+
+private:
+    bool writeBuffer()
+    {
+        const qint64 n = pptr() - pbase();
+        if ( (n > 0) && (_device->write(pbase(), n) != n) ) {
+            return false;
+        }
+        setp( _buffer.data(), _buffer.data() + _buffer.size() );
+
+        return true;
+    }
+
+    QIODevice* _device;
+    std::vector<char> _buffer;
+};
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 static QStringList
 findBackups(const QString & filePath)
@@ -983,20 +1032,22 @@ Project::saveProjectInternal(const QString & path,
         _imp->autoSavesWrittenBySession.insert( QDir::cleanPath(filePath) );
     }
 
-    ///Use a temporary file to save, so if Natron crashes it doesn't corrupt the user save.
-    QString tmpFilename = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
-    StrUtils::ensureLastPathSeparator(tmpFilename);
-    tmpFilename.append( QString::number( time.toMSecsSinceEpoch() ) );
+    // Write to a uniquely named temporary file in the directory of the project, which replaces the project
+    // file only once it was completely written (QSaveFile::commit()), so that a crash or a failed save never
+    // corrupts it. The temporary file was named after the time in ms, in the temporary directory, so two saves
+    // in the same millisecond (two projects, two processes) wrote to the same file (#1590), and it was copied
+    // if the project was on another partition. QSaveFile also keeps the permissions of an existing file.
+    QSaveFile saveFile(filePath);
 
     // Auto-saves are always binary (faster, smaller); they record the format of the project.
     // The format is an argument, not set on the project before the save: this save may wait for a running
     // auto-save, which must record the format the project has until this save succeeds.
     const ProjectFileFormatEnum projectFormat = (format != eProjectFileFormatNone && !autoSave) ? format : getFileFormatForSave();
     const ProjectFileFormatEnum fileFormat = autoSave ? eProjectFileFormatBinary : projectFormat;
+    ///Fix file paths before saving.
+    const QString oldProjectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
 
     {
-        ///Fix file paths before saving.
-        QString oldProjectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
 
         if (!autoSave && updateProjectProperties) {
             _imp->autoSetProjectDirectory(path);
@@ -1021,15 +1072,16 @@ Project::saveProjectInternal(const QString & path,
         };
 
         try {
-            FStreamsSupport::ofstream ofile;
+            // text mode: the text format has the end of lines of the platform (CRLF on Windows)
+            QIODevice::OpenMode mode = QIODevice::WriteOnly;
             if (fileFormat == eProjectFileFormatText) {
-                FStreamsSupport::open( &ofile, tmpFilename.toStdString() );
-            } else {
-                FStreamsSupport::open( &ofile, tmpFilename.toStdString(), std::ios_base::out | std::ios_base::trunc | std::ios_base::binary );
+                mode |= QIODevice::Text;
             }
-            if (!ofile) {
-                throw std::runtime_error( tr("Failed to open file ").toStdString() + tmpFilename.toStdString() );
+            if ( !saveFile.open(mode) ) {
+                throw std::runtime_error( tr("Cannot save the project to %1: %2").arg( filePath, saveFile.errorString() ).toStdString() );
             }
+            QIODeviceStreamBuf streamBuf(&saveFile);
+            std::ostream ofile(&streamBuf);
             if (fileFormat == eProjectFileFormatText) {
                 boost::archive::xml_oarchive oArchive(ofile);
                 saveToArchive(oArchive);
@@ -1043,23 +1095,20 @@ Project::saveProjectInternal(const QString & path,
                 saveToArchive(oArchive);
             } // the archive is closed (the XML end tags are written)
             // The archives write to the stream buffer, and the last buffer is only written when the stream is
-            // flushed or closed: check it before the file replaces the project (a full disk, a network share).
-            if ( ofile.rdbuf()->pubsync() == -1 ) {
-                throw std::runtime_error( tr("Failed to write file %1").arg(tmpFilename).toStdString() );
-            }
-            ofile.close();
-            if ( ofile.fail() ) {
-                throw std::runtime_error( tr("Failed to write file %1").arg(tmpFilename).toStdString() );
+            // flushed: check it before the file replaces the project (a full disk, a network share).
+            // commit() below checks the rest (QSaveFile's own buffer, closing the file).
+            if ( (ofile.rdbuf()->pubsync() == -1) || !ofile ) {
+                throw std::runtime_error( tr("Failed to save the project to %1: %2").arg( filePath, saveFile.errorString() ).toStdString() );
             }
         } catch (...) {
-            QFile::remove(tmpFilename);
+            saveFile.cancelWriting(); // the temporary file is removed, the project file is untouched
             if (!autoSave && updateProjectProperties) {
                 ///Reset the old project path in case of failure.
                 _imp->autoSetProjectDirectory(oldProjectPath);
             }
             throw;
         }
-    } // ofile
+    } // saveFile is written, not committed yet
 
     QStringList backupErrors;
     if (!autoSave) {
@@ -1082,22 +1131,14 @@ Project::saveProjectInternal(const QString & path,
         }
     }
 
-    if (!QFile::rename(tmpFilename, filePath)) {
-        // QFile::rename() may fail, e.g. if tmpFilename and filePath are not on the same partition
-        if (!QFile::copy(tmpFilename, filePath)) {
-            int nAttemps = 0;
-
-            while ( nAttemps < 10 && !fileCopy(tmpFilename, filePath) ) {
-                ++nAttemps;
-            }
-
-            if (nAttemps >= 10) {
-                QFile::remove(tmpFilename);
-                throw std::runtime_error( "Failed to save to " + filePath.toStdString() );
-            }
+    // Rename the temporary file to the project file, replacing it (also on Windows). Both are in the same
+    // directory: this never copies the file.
+    if ( !saveFile.commit() ) {
+        if (!autoSave && updateProjectProperties) {
+            ///Reset the old project path in case of failure.
+            _imp->autoSetProjectDirectory(oldProjectPath);
         }
-
-        QFile::remove(tmpFilename);
+        throw std::runtime_error( tr("Failed to save the project to %1: %2").arg( filePath, saveFile.errorString() ).toStdString() );
     }
 
     if ( !backupErrors.isEmpty() && warnings ) {

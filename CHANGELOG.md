@@ -17,6 +17,7 @@
 
 ### Changes
 
+- Saving a project no longer fails, or writes a wrong file, when another project is saved at the same time (two windows, or two Natron processes, e.g. on a render farm): a project file and its auto-saves are written to a uniquely named temporary file next to them (`<name>.XXXXXX`), which then replaces the file. A save to a network share or another disk no longer copies the file, a save keeps the permissions of the existing file, and a read-only project file is not replaced (the save fails with an error). #1590
 - Python: Natron no longer crashes when it quits after a script has used PySide on its widgets (e.g. `QApplication.topLevelWidgets()` or `findChildren()`) while a settings panel was open, for example with `natron.quit()` or `Natron --test`: the main window was never deleted at exit, and Python deleted some of its widgets after the knobs were gone. #1554
 - Python: in the GUI, `app.closeProject()` and `natron.quit()` now always return before the project is closed, also for an empty project: the instance quits once the event loop runs, so `natron.getNumInstances()` right after the call still counts it, and `app.createNode()` returns `None` in the meantime. #1554
 - NatronRenderer (and every background run): a project with a Precomp node whose project has a Write node no longer crashes, and the nodes inside the groups of a Precomp's project are no longer lost. The Python variables of the nodes of a Precomp's project were declared on the main project's `app`. #1501
