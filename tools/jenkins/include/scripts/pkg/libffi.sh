@@ -2,13 +2,14 @@
 
 # Install libffi
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/libffi.html
-FFI_VERSION=3.4.4
+FFI_VERSION=3.6.0
 FFI_TAR="libffi-${FFI_VERSION}.tar.gz"
+FFI_SHA256=31ff1fe32deaebfbb388727f32677bb254bf2a41382c51464c0b1837c9ee9828
 #FFI_SITE="ftp://sourceware.org/pub/libffi"
 FFI_SITE="https://github.com/libffi/libffi/releases/download/v${FFI_VERSION}"
 
 if download_step; then
-    download "$FFI_SITE" "$FFI_TAR"
+    download "$FFI_SITE" "$FFI_TAR" "$FFI_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libffi.pc" ] || [ "$(pkg-config --modversion libffi)" != "$FFI_VERSION" ]; }; }; then
     start_build

@@ -532,7 +532,7 @@ fi
 mkdir -p "${TMP_PORTABLE_DIR}/lib/python${PYVER}"
 
 for pydir in "${SDK_HOME}/lib/python${PYVER}"; do
-    (cd "$pydir"; tar cf - . --exclude site-packages)|(cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}"; tar xf -)
+    (cd "$pydir"; tar cf - --exclude site-packages .)|(cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}"; tar xf -)
     for p in "${python_site_packages[@]}"; do
         if [ -e "$pydir/site-packages/$p" ]; then
             (cd "$pydir"; tar cf - "site-packages/$p") | (cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}"; tar xf -)
@@ -554,6 +554,19 @@ rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"/{test,config,config-"${PYVER}${P
 # The crypt module (deprecated since Python 3.11, removed in 3.13) needs libcrypt.so.2 (libxcrypt),
 # which is not a system library everywhere: Debian and Ubuntu only have libcrypt.so.1.
 rm -f "${TMP_PORTABLE_DIR}/lib/python${PYVER}/lib-dynload"/_crypt.*so
+
+# Copy the SDK libraries needed by the Python extension modules (e.g. libreadline and
+# libncursesw for readline and _curses), to the portable tree and the installer package
+PYDYNLOAD_DEPENDS=$(sdkDepends $(find "${TMP_PORTABLE_DIR}/lib/python${PYVER}/lib-dynload" -maxdepth 1 -type f -name '*.so'))
+for y in $PYDYNLOAD_DEPENDS; do
+    dep=$(basename "$y")
+    for location in "${TMP_PORTABLE_DIR}" "$LIBS_PACKAGE_PATH/data"; do
+        mkdir -p "${location}/lib"
+        if [ ! -f "${location}/lib/$dep" ]; then
+            cp -f "$y" "${location}/lib/"
+        fi
+    done
+done
 
 # Copy PySide dependencies
 PYSIDE_DEPENDS=$(sdkDepends $(for p in "${pyside_packages[@]}"; do find "${SDK_HOME}/lib/python${PYVER}/site-packages/$p" -maxdepth 1 -type f -name '*.so*'; done))
@@ -814,7 +827,14 @@ fi
 
 # At this point we can run Natron unit tests to check that the deployment is ok.
 rm -rf "$HOME/.cache/INRIA/Natron"* &> /dev/null || true
-$TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" "${TMP_PORTABLE_DIR}/bin/Tests"
+# The tests need no display: use Qt's offscreen platform with or without valgrind.
+if command -v valgrind > /dev/null 2>&1; then
+    env QT_QPA_PLATFORM=offscreen $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" "${TMP_PORTABLE_DIR}/bin/Tests"
+else
+    # If valgrind is not installed in the build environment, run the tests without it.
+    echo "Warning: valgrind not found, running the bundled unit tests without it"
+    env QT_QPA_PLATFORM=offscreen $TIMEOUT -s KILL 1800 "${TMP_PORTABLE_DIR}/bin/Tests"
+fi
 rm "${TMP_PORTABLE_DIR}/bin/Tests"
 
 # Clean and perms

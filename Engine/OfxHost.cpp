@@ -191,6 +191,7 @@ struct OfxHostPrivate
     // (keepPluginsLoadedAfterScan()).
     QMutex describeMutex;
     std::atomic<QThread*> describeThread; // the thread that holds describeMutex, or NULL
+    std::atomic<bool> pluginsUnloaded; // unloadPlugins() was called
 
     void clearLoadingState()
     {
@@ -217,6 +218,7 @@ struct OfxHostPrivate
         , setHostBundleID()
         , describeMutex()
         , describeThread(nullptr)
+        , pluginsUnloaded(false)
     {
     }
 };
@@ -235,7 +237,7 @@ OfxHost::OfxHost()
 OfxHost::~OfxHost()
 {
     //Clean up, to be polite.
-    OFX::Host::PluginCache::clearPluginCache();
+    unloadPlugins();
 
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
     delete _imp->pluginsMutexesLock;
@@ -344,6 +346,12 @@ OfxHost::setProperties()
 
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipDepths, 1);
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipPARs, 1);
+    // The output frame rate a plug-in sets in getClipPreferences is honoured (metadata FPS: viewer
+    // playback, writers, downstream nodes). Natron does not remap the frame range or the input clip times
+    // for it (OFX clipprefs "nFrames' = nFrames * FPS' / FPS"): a plug-in that changes the number of
+    // frames does it itself, with getTimeDomain and getFramesNeeded (openfx-misc Deinterlace "Double
+    // Framerate"). This stays 1: the openfx-io readers set their file's frame rate whatever this says,
+    // and Deinterlace and NoOp only offer their frame-rate options when it is 1 (#1107).
     _properties.setIntProperty(kOfxImageEffectPropSetableFrameRate, 1);
     _properties.setIntProperty(kOfxImageEffectPropSetableFielding, 0);
     _properties.setIntProperty(kOfxParamHostPropSupportsCustomInteract, 1 );
@@ -1265,6 +1273,30 @@ OfxHost::clearPluginsLoadedCache()
 
     QDir OFXCacheDir( getOFXCacheDirPath() );
     OFXCacheDir.removeRecursively();
+}
+
+void
+OfxHost::unloadPlugins()
+{
+    // clearPluginCache() deletes the plug-in cache and forgets it: a second call deletes nothing, so the plug-ins
+    // get kOfxActionUnload once, whether this was called at Python exit (AppManager::cleanUpAtPythonExit()) or not.
+    _imp->pluginsUnloaded = true;
+    OFX::Host::PluginCache::clearPluginCache();
+}
+
+bool
+OfxHost::arePluginsUnloaded() const
+{
+    return _imp->pluginsUnloaded;
+}
+
+bool
+OfxHost::isActionRunningInThisThread() const
+{
+    // mainEntry() pushes -1 on the thread indexes of the thread that calls an action (setThreadAsActionCaller())
+    OfxHostDataTLSPtr tls = _imp->tlsData->getTLSData();
+
+    return tls && !tls->threadIndexes.empty();
 }
 
 void

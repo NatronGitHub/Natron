@@ -163,6 +163,7 @@ public:
     int _creatingGroup;
     // True when a pyplug is being created internally without being shown to the user
     bool _creatingInternalNode;
+    bool quitPending; // see AppInstance::setQuitPending()
 
     //When a node is created, it gets appended to this list (since for a PyPlug more than 1 node can be created)
     std::list<NodePtr> _creatingNodeQueue;
@@ -190,6 +191,7 @@ public:
         , creatingGroupMutex()
         , _creatingGroup(0)
         , _creatingInternalNode(false)
+        , quitPending(false)
         , _creatingNodeQueue()
         , _creatingTree(0)
         , renderQueueMutex()
@@ -1190,6 +1192,14 @@ NodePtr
 AppInstance::createNodeInternal(CreateNodeArgs& args)
 {
     NodePtr node;
+
+    if (_imp->quitPending) {
+        // e.g. a script that goes on after app.closeProject() or natron.quit(): the instance quits
+        // from the event loop, and deletes its nodes (#1554)
+        std::cerr << tr("Cannot create a node: this project is being closed.").toStdString() << std::endl;
+
+        return node;
+    }
     Plugin* plugin = 0;
     QString findId;
 
@@ -1283,6 +1293,14 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     }
 
     std::string foundPluginID = plugin->getPluginID().toStdString();
+    // At Python exit, the OFX plug-ins may already be unloaded (AppManager::cleanUpAtPythonExit(), #1557): the OFX
+    // plug-in and descriptor of the Plugin dangle until ~AppManager
+    if ( plugin->getOfxPlugin() && appPTR->areOFXPluginsUnloaded() ) {
+        std::cerr << tr("Failed to create an instance of %1:").arg(argsPluginID).toStdString() << '\n'
+                  << "the OpenFX plug-ins were unloaded (Natron is exiting)." << std::endl;
+
+        return NodePtr();
+    }
     ContextEnum ctx;
     OFX::Host::ImageEffect::Descriptor* ofxDesc = plugin->getOfxDesc(&ctx);
 
@@ -1892,6 +1910,14 @@ AppInstance::startWritersRendering(bool doBlockingRender,
     }
 
     if (appPTR->isBackground() || doBlockingRender) {
+        // The renders run Python on other threads (the beforeRender and afterFrameRender callbacks,
+        // expressions...): release the Python GIL while waiting for them if this thread holds it,
+        // e.g. if a script or a callback triggered a render button (#1568). Nothing below touches
+        // Python state: the callbacks take the GIL with PythonGILLocker.
+        std::unique_ptr<PythonGILUnlocker> gilUnlocker;
+        if ( Py_IsInitialized() && PyGILState_Check() ) {
+            gilUnlocker.reset(new PythonGILUnlocker);
+        }
         //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
         QtConcurrent::blockingMap( itemsToQueue, [&](RenderQueueItem item) {
             _imp->startRenderingFullSequence(true, item);
@@ -2289,6 +2315,18 @@ AppInstance::waitForRenders(int timeoutMs,
             QThread::msleep(5);
         }
     }
+}
+
+void
+AppInstance::setQuitPending()
+{
+    _imp->quitPending = true;
+}
+
+bool
+AppInstance::isQuitPending() const
+{
+    return _imp->quitPending;
 }
 
 void

@@ -515,7 +515,7 @@ struct KnobHelperPrivate
     std::vector<std::string> dimensionNames;
     // std::mutex rather than QMutex: render threads lock it on every getValue() (see #1451)
     mutable std::mutex expressionMutex;
-    std::vector<Expr> expressions;
+    std::vector<Expr> expressions; //< protected by expressionMutex, including Expr::dependencies
     mutable QMutex lastRandomHashMutex;
     mutable U32 lastRandomHash;
 
@@ -3012,7 +3012,11 @@ KnobHelper::clearExpression(int dimension,
 {
     PythonGILLocker pgl;
     bool hadExpression;
+    std::list<std::pair<KnobIWPtr, int> > dependencies;
     {
+        // The dependencies are protected by expressionMutex, like the rest of the expression: addListener(),
+        // getExpressionDependencies() and getAllExpressionDependenciesRecursive() (e.g. from a render thread)
+        // read or modify them under it (#1544).
         std::lock_guard<std::mutex> k(_imp->expressionMutex);
         hadExpression = !_imp->expressions[dimension].originalExpression.empty();
         _imp->expressions[dimension].expression.clear();
@@ -3020,15 +3024,10 @@ KnobHelper::clearExpression(int dimension,
         _imp->expressions[dimension].exprInvalid.clear();
         //Py_XDECREF(_imp->expressions[dimension].code); //< new ref
         //_imp->expressions[dimension].code = 0;
+        dependencies.swap(_imp->expressions[dimension].dependencies);
     }
     KnobIPtr thisShared = shared_from_this();
     {
-        std::list<std::pair<KnobIWPtr, int> > dependencies;
-        {
-            QWriteLocker kk(&_imp->mastersMutex);
-            dependencies = _imp->expressions[dimension].dependencies;
-            _imp->expressions[dimension].dependencies.clear();
-        }
         for (std::list<std::pair<KnobIWPtr, int> >::iterator it = dependencies.begin();
              it != dependencies.end(); ++it) {
             KnobIPtr otherKnob = it->first.lock();

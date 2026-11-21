@@ -228,6 +228,19 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME RendererQuitTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_quit_test.py $<TARGET_FILE:NatronRenderer>)
     set_tests_properties(RendererQuitTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
+    # sys.exit() in a NatronRenderer script, or at the -t prompt, unloads the OFX plug-ins once (#1557)
+    add_test(NAME RendererExitUnloadTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_exit_unload_test.py
+                $<TARGET_FILE:NatronRenderer> "${NATRON_TESTS_OFX_PLUGIN_DIR}")
+    set_tests_properties(RendererExitUnloadTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
+    # a -t script presses a Write render button, or calls app.render(), with Python render callbacks (#1568)
+    add_test(NAME RendererCallbacksTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_callbacks_test.py $<TARGET_FILE:NatronRenderer>)
+    set_tests_properties(RendererCallbacksTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
+    # --setting options for the caches and threads, which run before the caches exist (#1571)
+    add_test(NAME RendererSettingsTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_settings_test.py $<TARGET_FILE:NatronRenderer>)
+    set_tests_properties(RendererSettingsTest PROPERTIES TIMEOUT 360)
 endif()
 
 # Not part of a normal install. The installer scripts install it separately
