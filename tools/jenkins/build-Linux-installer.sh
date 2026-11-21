@@ -53,7 +53,8 @@ export LD_LIBRARY_PATH
 
 # Libraries that always come from the system and are never bundled. A bundled file may need
 # (DT_NEEDED) only these libraries and the bundled ones (see checkBundle):
-# - glibc (libc, libm, libdl, libpthread, librt, ld-linux*, ...);
+# - glibc (libc, libm, libdl, libpthread, librt, ld-linux*, libnsl, libnss_*, libBrokenLocale,
+#   libc_malloc_debug, ...);
 # - the GCC runtime (libstdc++, libgcc_s, libgomp, libatomic). Natron is built on Rocky Linux 9
 #   with gcc-toolset: its libstdc++.so is a linker script that takes the symbols missing
 #   from the system libstdc++ (GCC 11) from libstdc++_nonshared.a, so the binaries only need
@@ -75,8 +76,10 @@ export LD_LIBRARY_PATH
 #   libxkbcommon and libxkbcommon-x11, and ALSA (libasound).
 # INSTALL_LINUX.md lists them ("Runtime requirements of the Linux binaries"). The OpenGL, DRM, udev,
 # SELinux and GPU driver libraries are the same as in openfx's Support/include/linuxCheckBundle.sh.
+# Unlike there, libcrypt is not a system library: Debian and Ubuntu don't have libcrypt.so.2, so a
+# bundled file must not need it (Python's crypt module is left out, see INSTALL_LINUX.md).
 # A library in this list that would be bundled is an error.
-SYSTEM_LIBS_RE='^(ld-linux.*|lib(c|m|mvec|dl|pthread|rt|resolv|util|anl|thread_db|stdc\+\+|gcc_s|gomp|atomic|GL|EGL|GLX|GLdispatch|OpenGL|GLESv1_CM|GLESv2|drm|drm_.*|gbm|glapi|udev|selinux|cuda|nvidia-.*|nvcuvid|amdocl.*|igdrcl|intelocl|MesaOpenCL|RusticlOpenCL|pocl|X[A-Za-z0-9]*|X11-xcb|xcb|xcb-.*|SM|ICE|xkbcommon|xkbcommon-x11|asound)\.so(\..*)?)$'
+SYSTEM_LIBS_RE='^(ld-linux.*|lib(c|m|mvec|dl|pthread|rt|resolv|util|anl|thread_db|nsl|nss_.*|BrokenLocale|c_malloc_debug|stdc\+\+|gcc_s|gomp|atomic|GL|EGL|GLX|GLdispatch|OpenGL|GLESv1_CM|GLESv2|drm|drm_.*|gbm|glapi|udev|selinux|cuda|nvidia-.*|nvcuvid|amdocl.*|igdrcl|intelocl|MesaOpenCL|RusticlOpenCL|pocl|X[A-Za-z0-9]*|X11-xcb|xcb|xcb-.*|SM|ICE|xkbcommon|xkbcommon-x11|asound)\.so(\..*)?)$'
 
 # Highest symbol versions defined by the system libraries of Rocky Linux 9.0 (glibc 2.34;
 # libstdc++, libgcc_s and libgomp from GCC 11), on x86_64 and aarch64. A bundled binary
