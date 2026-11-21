@@ -3720,6 +3720,22 @@ AppManager::launchPythonInterpreter()
     assert(PyGILState_Check()); // Not available prior to Python 3.4
 #endif
 
+#ifdef __NATRON_WIN32__
+    // On Windows, isatty() is true for every character device, the NUL device included: with stdin
+    // redirected from NUL (a render farm job, "< /dev/null" in a script), Python (3.13 and later)
+    // takes stdin for a terminal and starts its new prompt (pyrepl), which needs a console. Each
+    // read then fails with an OSError that the prompt prints before it retries, forever: the
+    // process never exits and its output grows without bound. Without a console on stdin, ask for
+    // the basic prompt, which reads the commands from stdin and exits at the end of the file.
+    {
+        HANDLE stdinHandle = GetStdHandle(STD_INPUT_HANDLE);
+        DWORD consoleMode = 0;
+        if ( !stdinHandle || (stdinHandle == INVALID_HANDLE_VALUE) || !GetConsoleMode(stdinHandle, &consoleMode) ) {
+            qputenv("PYTHON_BASIC_REPL", "1");
+        }
+    }
+#endif
+
     _imp->pythonInterpreterRunning = true;
     Py_Main(1, &_imp->commandLineArgsWide[0]);
     _imp->pythonInterpreterRunning = false;
