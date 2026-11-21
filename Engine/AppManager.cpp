@@ -3400,8 +3400,8 @@ AppManager::onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance,
                                             void* instanceData)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    // never NULL: OfxHost::requestDialog() finds the effect of an OfxDialogSuiteV1 request (which has no
-    // instance handle) on the requesting thread (#1497)
+    // never NULL: for a request with no instance handle, OfxHost::requestDialog() finds the effect on the
+    // requesting thread, or fails (#1497)
     assert(instance);
 #ifdef OFX_SUPPORTS_DIALOG
     if (instance) {

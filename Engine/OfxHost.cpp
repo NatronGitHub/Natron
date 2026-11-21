@@ -1996,13 +1996,15 @@ OfxHost::requestDialog(OfxImageEffectHandle instance,
         OFX::Host::ImageEffect::Base *effectBase = reinterpret_cast<OFX::Host::ImageEffect::Base*>(instance);
         effectInstance = dynamic_cast<OfxImageEffectInstance*>(effectBase);
     } else {
-        // OfxDialogSuiteV1.requestDialog() has no instance handle (HostSupport passes NULL): the effect is the
+        // A NULL instance handle (OfxDialogSuiteV2 with a NULL handle; HostSupport also passes NULL for
+        // OfxDialogSuiteV1, which is not compiled in: OFX_SUPPORTS_DIALOG_V1 is not defined): the effect is the
         // one whose action runs on the requesting thread. It must be found here, on that thread: the request is
         // queued to the main thread, where another effect's action, or none, may be running (#1497).
         effectInstance = _imp->tlsData->getOrCreateTLSData()->effectCallingMainEntry();
     }
     if (!effectInstance) {
-        return kOfxStatErrBadHandle;
+        // ofxDialog.h: "kOfxStatFailed - The host has no provision for this or can not deal with it currently."
+        return kOfxStatFailed;
     }
     appPTR->requestOFXDIalogOnMainThread(effectInstance, instanceData);
 

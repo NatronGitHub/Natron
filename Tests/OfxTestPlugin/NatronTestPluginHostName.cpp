@@ -20,15 +20,22 @@
 // interact that reads the host name (kOfxPropName of the host) in its interact actions and in the thread
 // functions of the multithread suite. Its ID starts with "com.digitalfilmtools.", a prefix to which Natron
 // gives another host name (getHostNameProxy() in Engine/OfxHost.cpp), so that the tests can tell whether the
-// host knows which plug-in reads the name. Counters ("HostName.*"):
+// host knows which plug-in reads the name. The ID borrows that prefix only to trigger the proxy: this is not
+// a Digital Film Tools product. Counters ("HostName.*"):
+// - createInstance.name.<host name>: the host name in kOfxActionCreateInstance, an effect action (if this
+//   isn't the proxied name, the proxy table changed);
 // - penDown.name.<host name>: the host name in kOfxInteractActionPenDown;
 // - threaded.name.<host name> and sequential.name.<host name>: the host name in each thread function of the
 //   multiThread() calls that kOfxInteractActionPenDown makes, with 2 threads and with 1 thread (which runs in
 //   the calling thread);
+// - threaded.spawned: the thread functions of the 2-thread call for which multiThreadIsSpawnedThread() is
+//   true (also in the calling thread), threaded.otherThread: those that ran in another thread than the
+//   calling one, and multiThread.numCPUs: multiThreadNumCPUs() at that call;
 // - multiThread.failed: a multiThread() call that failed.
 
 #include <cstring>
 #include <string>
+#include <thread>
 
 #include <ofxCore.h>
 #include <ofxImageEffect.h>
@@ -45,6 +52,7 @@ const OfxImageEffectSuiteV1* gEffectSuite = 0;
 const OfxMultiThreadSuiteV1* gThreadSuite = 0;
 
 const std::string kPrefix("HostName.");
+std::thread::id gCallingThread; // the thread that calls multiThread()
 
 void
 recordHostName(const std::string& name)
@@ -65,6 +73,12 @@ threadedFunction(unsigned int /*threadIndex*/,
                  void* /*customArg*/)
 {
     recordHostName("threaded");
+    if ( gThreadSuite->multiThreadIsSpawnedThread() ) {
+        natronTestIncrementCounter(kPrefix + "threaded.spawned");
+    }
+    if (std::this_thread::get_id() != gCallingThread) {
+        natronTestIncrementCounter(kPrefix + "threaded.otherThread");
+    }
 }
 
 void
@@ -87,6 +101,11 @@ overlayMain(const char* action,
     }
     if (std::strcmp(action, kOfxInteractActionPenDown) == 0) {
         recordHostName("penDown");
+        gCallingThread = std::this_thread::get_id();
+        unsigned int nCPUs = 0;
+        if (gThreadSuite->multiThreadNumCPUs(&nCPUs) == kOfxStatOK) {
+            natronTestIncrementCounter(kPrefix + "multiThread.numCPUs", (int)nCPUs);
+        }
         if ( (gThreadSuite->multiThread(threadedFunction, 2, 0) != kOfxStatOK) ||
              (gThreadSuite->multiThread(sequentialFunction, 1, 0) != kOfxStatOK) ) {
             natronTestIncrementCounter(kPrefix + "multiThread.failed");
@@ -113,6 +132,11 @@ hostNamePluginMain(const char* action,
         gThreadSuite = (const OfxMultiThreadSuiteV1*)gHost->fetchSuite(gHost->host, kOfxMultiThreadSuite, 1);
 
         return (gPropSuite && gEffectSuite && gThreadSuite) ? kOfxStatOK : kOfxStatErrMissingHostFeature;
+    }
+    if (std::strcmp(action, kOfxActionCreateInstance) == 0) {
+        recordHostName("createInstance");
+
+        return kOfxStatOK;
     }
     if (std::strcmp(action, kOfxActionDescribe) == 0) {
         OfxPropertySetHandle props;

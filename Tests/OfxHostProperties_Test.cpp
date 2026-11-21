@@ -28,6 +28,7 @@
 
 #include "Global/Macros.h"
 
+#include <iostream>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -439,10 +440,14 @@ TEST(OfxHostProperties, HostNameInInteractAndThreads)
     ASSERT_NE(nuke, natron);
     AppInstancePtr app = appPTR->getTopLevelInstance();
     ASSERT_TRUE( bool(app) );
+    const std::string createInstance = "HostName.createInstance.name.";
+    const int createInstanceNuke = NatronTestPlugin::counter(createInstance + nuke);
     CreateNodeArgs args( kNatronTestPluginHostName, app->getProject() );
     args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
     NodePtr node = app->createNode(args);
     ASSERT_TRUE( bool(node) );
+    // in an effect action: if this fails, the plug-in ID no longer gets the Nuke host name (getHostNameProxy())
+    ASSERT_EQ( createInstanceNuke + 1, NatronTestPlugin::counter(createInstance + nuke) );
     EffectInstancePtr effect = node->getEffectInstance();
     ASSERT_TRUE( effect->hasOverlay() );
     HostNameViewport viewport;
@@ -451,22 +456,43 @@ TEST(OfxHostProperties, HostNameInInteractAndThreads)
     const std::string penDown = "HostName.penDown.name.";
     const std::string threaded = "HostName.threaded.name.";
     const std::string sequential = "HostName.sequential.name.";
-    const int penDownNuke = NatronTestPlugin::counter(penDown + nuke);
-    const int penDownNatron = NatronTestPlugin::counter(penDown + natron);
-    const int threadedNuke = NatronTestPlugin::counter(threaded + nuke);
-    const int threadedNatron = NatronTestPlugin::counter(threaded + natron);
-    const int sequentialNuke = NatronTestPlugin::counter(sequential + nuke);
-    const int sequentialNatron = NatronTestPlugin::counter(sequential + natron);
-    const int failed = NatronTestPlugin::counter("HostName.multiThread.failed");
-    ignore_result( effect->onOverlayPenDown_public( 1., RenderScale(), ViewIdx(0), QPointF(10., 20.), QPointF(0., 0.), 1., 0., ePenTypeLMB, KeyboardModifiers() ) );
-    EXPECT_EQ( failed, NatronTestPlugin::counter("HostName.multiThread.failed") );
-    EXPECT_EQ( penDownNuke + 1, NatronTestPlugin::counter(penDown + nuke) );
-    EXPECT_EQ( penDownNatron, NatronTestPlugin::counter(penDown + natron) );
-    // 2 thread functions (one after the other in the calling thread if only one CPU is used)
-    EXPECT_EQ( threadedNuke + 2, NatronTestPlugin::counter(threaded + nuke) );
-    EXPECT_EQ( threadedNatron, NatronTestPlugin::counter(threaded + natron) );
-    EXPECT_EQ( sequentialNuke + 1, NatronTestPlugin::counter(sequential + nuke) );
-    EXPECT_EQ( sequentialNatron, NatronTestPlugin::counter(sequential + natron) );
+    // both multiThread() paths: the thread pool (where QtConcurrent may run a thread function in the calling
+    // thread, when waitForFinished() steals it) and one new thread per thread function (OfxThread)
+    const bool oldUseThreadPool = appPTR->getUseThreadPool();
+    for (int useThreadPool = 1; useThreadPool >= 0; --useThreadPool) {
+        SCOPED_TRACE(useThreadPool ? "thread pool" : "new threads");
+        appPTR->setUseThreadPool( (bool)useThreadPool );
+        const int penDownNuke = NatronTestPlugin::counter(penDown + nuke);
+        const int penDownNatron = NatronTestPlugin::counter(penDown + natron);
+        const int threadedNuke = NatronTestPlugin::counter(threaded + nuke);
+        const int threadedNatron = NatronTestPlugin::counter(threaded + natron);
+        const int sequentialNuke = NatronTestPlugin::counter(sequential + nuke);
+        const int sequentialNatron = NatronTestPlugin::counter(sequential + natron);
+        const int failed = NatronTestPlugin::counter("HostName.multiThread.failed");
+        const int spawned = NatronTestPlugin::counter("HostName.threaded.spawned");
+        const int otherThread = NatronTestPlugin::counter("HostName.threaded.otherThread");
+        const int numCPUs = NatronTestPlugin::counter("HostName.multiThread.numCPUs");
+        ignore_result( effect->onOverlayPenDown_public( 1., RenderScale(), ViewIdx(0), QPointF(10., 20.), QPointF(0., 0.), 1., 0., ePenTypeLMB, KeyboardModifiers() ) );
+        EXPECT_EQ( failed, NatronTestPlugin::counter("HostName.multiThread.failed") );
+        EXPECT_EQ( penDownNuke + 1, NatronTestPlugin::counter(penDown + nuke) );
+        EXPECT_EQ( penDownNatron, NatronTestPlugin::counter(penDown + natron) );
+        // 2 thread functions (one after the other in the calling thread if only one CPU is used)
+        EXPECT_EQ( threadedNuke + 2, NatronTestPlugin::counter(threaded + nuke) );
+        EXPECT_EQ( threadedNatron, NatronTestPlugin::counter(threaded + natron) );
+        EXPECT_EQ( sequentialNuke + 1, NatronTestPlugin::counter(sequential + nuke) );
+        EXPECT_EQ( sequentialNatron, NatronTestPlugin::counter(sequential + natron) );
+        // the thread functions are spawned threads for the suite (also when they run in the calling thread)
+        EXPECT_EQ( spawned + 2, NatronTestPlugin::counter("HostName.threaded.spawned") );
+        // with more than one CPU for the multithread suite and new threads, they ran in other threads than the
+        // calling one: their host name came from the calling thread
+        const int callNumCPUs = NatronTestPlugin::counter("HostName.multiThread.numCPUs") - numCPUs;
+        if ( !useThreadPool && (callNumCPUs > 1) ) {
+            EXPECT_EQ( otherThread + 2, NatronTestPlugin::counter("HostName.threaded.otherThread") );
+        } else if ( !useThreadPool ) {
+            std::cerr << "OfxHostProperties.HostNameInInteractAndThreads: one CPU for the multithread suite, spawned threads not tested." << std::endl;
+        }
+    }
+    appPTR->setUseThreadPool(oldUseThreadPool);
 
     effect->setCurrentViewportForOverlays_public(NULL);
     effect.reset();
