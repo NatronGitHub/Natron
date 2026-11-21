@@ -28,7 +28,7 @@ bindings, qmake has an untested Qt 6 path without bindings, and
 shims. What remains: validate the PySide6 bindings and the GUI at run time
 (including the enum/flag issue
 `#854 <https://github.com/NatronGitHub/Natron/issues/854>`_), build Qt 6 in CI
-(nightly or on demand), and use C++20 with Qt 6 (#1148). Qt 6 work that keeps
+(nightly or on demand). Qt 6 builds use C++20 (#1469, #1148). Qt 6 work that keeps
 Qt 5 unchanged goes to RB-2.6; RB-2.7 is the Qt 6 branch. Tracks
 `#1011 <https://github.com/NatronGitHub/Natron/issues/1011>`_ and
 `#827 <https://github.com/NatronGitHub/Natron/issues/827>`_.
@@ -54,7 +54,7 @@ nightly, weekly or by hand, so that regressions in the dual-toolkit build are
 still caught.
 
 **Adopt a modern C++ baseline consistently (P3).**
-The CMake build already compiles as C++17, and the code has largely moved from
+The code compiles as C++17 with Qt 5 and C++20 with Qt 6, and has largely moved from
 C++98 to ``std::shared_ptr`` etc. Finish the job opportunistically: prefer
 ``override``, range-based ``for`` (retiring ``foreach``/``Q_FOREACH``, ~46
 uses), ``nullptr``, and ``enum class`` where it does not break the Python
