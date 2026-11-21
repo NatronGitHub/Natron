@@ -29,9 +29,13 @@ that file. sys.exit() in the script, or at the prompt of the -t option, leaves t
 loaded must be unloaded exactly once (not twice, by the normal teardown too), with no live instance
 left, and the exit status must be the one of the script:
 - NatronRenderer script.py, the script ends with sys.exit(3): status 3;
-- NatronRenderer -t script.py, sys.exit(5) at the prompt: status 5;
+- NatronRenderer -t script.py, sys.exit(5) at the prompt: status 5 (from Python 3.13 on, Py_Main() returns
+  that status instead of calling exit(): Natron exited with status 0);
 - NatronRenderer -t script.py, the prompt ends (end of stdin): status 0;
+- NatronRenderer -t script.py, a command of the prompt raises an exception: status 1, as with python;
 - NatronRenderer script.py, the script raises an exception: status 1.
+The commands of the prompt print "prompt ran", which the test checks, so that a prompt that reads nothing
+from its redirected stdin is not taken for a success.
 
 Exit status: 0 on success, 77 if skipped (the test plug-in was not built), 1 on failure.
 --debugger runs NatronRenderer under natron-lldb.sh (see run_gui_smoke_test.py), or set
@@ -49,7 +53,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 SKIP = 77
 PLUGIN_ID = "net.natron.test.Sequential"
-CASE_TIMEOUT = 120  # seconds per NatronRenderer run: the 4 runs must fit in the ctest TIMEOUT (660 s)
+CASE_TIMEOUT = 120  # seconds per NatronRenderer run: the 5 runs must fit in the ctest TIMEOUT (660 s)
 
 SCRIPT = """
 import sys
@@ -58,11 +62,15 @@ node = app.createNode("%s")
 sys.stdout.write("node created: %%s\\n" %% (node is not None)); sys.stdout.flush()
 """ % PLUGIN_ID
 
+# the first command typed at the -t prompt
+PROMPT_RAN = "import sys; sys.stdout.write('prompt ran\\n'); sys.stdout.flush()\n"
+
 CASES = [
     # (name, script ending, -t, stdin of the -t prompt, expected exit status)
     ("sys.exit() in the script", "sys.exit(3)\n", False, None, 3),
-    ("sys.exit() at the -t prompt", "", True, "import sys\nsys.exit(5)\n", 5),
-    ("end of the -t prompt", "", True, "", 0),
+    ("sys.exit() at the -t prompt", "", True, PROMPT_RAN + "import sys\nsys.exit(5)\n", 5),
+    ("end of the -t prompt", "", True, PROMPT_RAN, 0),
+    ("exception at the -t prompt", "", True, PROMPT_RAN + "raise RuntimeError('exception raised at the prompt')\n", 1),
     ("exception in the script", "raise RuntimeError('exception raised by the test script')\n", False, None, 1),
 ]
 
@@ -137,6 +145,9 @@ def runCase(renderer, wrapper, pluginDir, outDir, index, case):
     ok = True
     if "node created: True" not in out:
         print("FAILED (%s): the script did not create the %s node" % (name, PLUGIN_ID))
+        ok = False
+    if interpreter and "prompt ran" not in out:
+        print("FAILED (%s): the commands of the -t prompt did not run" % name)
         ok = False
     if proc.returncode != expectedStatus:
         print("FAILED (%s): the exit status should be %d" % (name, expectedStatus))

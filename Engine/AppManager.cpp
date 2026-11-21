@@ -3780,8 +3780,15 @@ AppManager::launchPythonInterpreter()
 #endif
 
     _imp->pythonInterpreterRunning = true;
-    Py_Main(1, &_imp->commandLineArgsWide[0]);
+    const int status = Py_Main(1, &_imp->commandLineArgsWide[0]);
     _imp->pythonInterpreterRunning = false;
+    // The exit status of the prompt, as for python: 1 if the commands read from a file or a pipe raised an
+    // exception, and, from Python 3.13 on, the status of sys.exit() at the prompt: Py_Main() returns it instead of
+    // calling exit() (_pymain_run_repl()), so Natron exited with status 0 (#1557). natron.quit(exitCode) gave its
+    // own status.
+    if ( (status != 0) && !_imp->quitRequested ) {
+        _imp->requestedExitCode = status;
+    }
 }
 
 int
