@@ -134,6 +134,11 @@ ScriptEditor::ScriptEditor(Gui* gui)
     appPTR->getIcon(NATRON_PIXMAP_SCRIPT_LOAD_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &loadScriptPix);
     appPTR->getIcon(NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &saveScriptPix);
 
+    // appendToScriptEditor() from another thread (a render callback, a Python script run by a render
+    // thread...) emits appendToScriptEditorOnMainThread(): it was never connected, so these messages,
+    // including Python tracebacks, were lost (#1436).
+    QObject::connect( this, SIGNAL(appendToScriptEditorOnMainThread(QString)), this, SLOT(doAppendToScriptEditorOnMainThread(QString)), Qt::QueuedConnection );
+
     _imp->undoB = new Button(QIcon(undoPix), QString(), _imp->buttonsContainer);
     QKeySequence undoSeq(Qt::CTRL | Qt::Key_BracketLeft);
     _imp->undoB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);

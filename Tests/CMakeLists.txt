@@ -81,6 +81,7 @@ set(Tests_SOURCES
     ParamRandom_Test.cpp
     PluginGrouping_Test.cpp
     ProjectAutoSave_Test.cpp
+    PythonScript_Test.cpp
     ProjectFileFormat_Test.cpp
     PythonExpressionScope_Test.cpp
     ReadNodeOverlay_Test.cpp

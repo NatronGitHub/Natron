@@ -537,10 +537,10 @@ ProjectGui::load(bool isAutosave,  Archive & archive)
         std::string err;
         std::string script = "app = " + appID + '\n';
         bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
-        assert(ok);
         if (!ok) {
-            // we have to give the tr() context explicitly due to a bug in lupdate
-            throw std::runtime_error( QObject::tr("ProjectGui::load(): interpretPythonScript(%1) failed!", "ProjectGui").arg( QString::fromUtf8(script.c_str()) ).toStdString() );
+            // Report and go on restoring the panels: throwing here made Project::loadProjectInternal()
+            // reject a valid project as "Unrecognized or damaged project file" (#1436).
+            _gui->getApp()->appendToScriptEditor("ProjectGui::load(): " + err);
         }
     }
     for (std::list<PythonPanelSerializationPtr>::const_iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
