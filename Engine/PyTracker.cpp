@@ -150,7 +150,8 @@ Tracker::startTracking(const std::list<Track*>& marks,
     for (std::list<Track*>::const_iterator it = marks.begin(); it != marks.end(); ++it) {
         markers.push_back( (*it)->getInternalMarker() );
     }
-    ctx->trackMarkers(markers, start, end, forward, 0);
+    // The frame step is 1 forward, -1 backward (#1255): passing the bool gave a step of 0 for backward tracking
+    ctx->trackMarkers(markers, start, end, forward ? 1 : -1, 0);
 }
 
 void

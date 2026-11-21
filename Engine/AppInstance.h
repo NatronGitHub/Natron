@@ -258,9 +258,34 @@ public:
      * @brief True if a render of this project is running or queued: a viewer or Write render,
      * a node preview, or a Write render waiting in the render queue.
      * Renders that are posting their results to the main thread are not finished: the caller must
-     * also process the events (see NatronGuiTest.waitIdle()).
+     * also process the events (see waitForRenders()).
      **/
     bool hasRenderInProgress() const;
+
+    /**
+     * @brief Processes the events, except the user input, until no render (of any project) has been
+     * running for settleMs milliseconds (see hasRenderInProgress()), so that the results that the renders
+     * posted to the main thread (e.g. viewer textures) are processed too: it takes at least settleMs. Returns false if this did not happen within
+     * timeoutMs milliseconds (no limit if timeoutMs < 0). Must be called on the main thread.
+     **/
+    bool waitForRenders(int timeoutMs, int settleMs);
+
+    /**
+     * @brief Undo / redo on the undo stack of the node graph of the project (node creation, deletion,
+     * connections, moves, and the undo groups of the Python API), whatever widget has the focus. In
+     * background mode, there is no undo stack: these do nothing.
+     **/
+    virtual void undo() {}
+    virtual void redo() {}
+    virtual bool canUndo() const { return false; }
+    virtual bool canRedo() const { return false; }
+
+    /**
+     * @brief The texts of the commands of the node graph's undo stack, oldest first, and the number of them
+     * that are done (the next redo is at that index).
+     **/
+    virtual std::list<std::string> getUndoHistory() const { return std::list<std::string>(); }
+    virtual int getUndoIndex() const { return 0; }
 
     virtual bool isGuiFrozen() const { return false; }
 
