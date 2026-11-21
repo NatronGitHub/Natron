@@ -5,6 +5,7 @@
 #
 #   check-minos.sh [-t TARGET] [-v] PATH...   PATH: a directory, a file, or a .dmg (mounted read-only)
 #   check-minos.sh [-t TARGET] [-v] -l        read the paths to check from stdin, one per line
+#                                             (paths that can't be found are skipped)
 #
 #   -t TARGET   oldest macOS that must be supported (default: $MACOSX_DEPLOYMENT_TARGET, else 14.0)
 #   -v          list every Mach-O file with its minos, not only the ones that are too new
@@ -54,6 +55,9 @@ add_path() {
         printf '%s\0' "$p" >> "$tmp/files"
     elif [ -e "$p" ] || [ -L "$p" ]; then
         :   # symlinks (their targets are listed too) and special files
+    elif [ "$STDIN" = 1 ]; then
+        :   # lists from "port contents" also have files in directories we can't read
+            # (e.g. openldap's /opt/local/var/run/openldap-data), or that were deleted since
     else
         echo "check-minos.sh: $p: no such file or directory" >&2
         exit 2
