@@ -61,47 +61,55 @@ right-click each one, select *Properties*, and turn on *Allow executing file
 as program* (the name of this option depends on the desktop). In a terminal,
 run ``chmod +x Natron NatronRenderer`` instead.
 
-Natron and its plug-ins are licensed under the GNU GPL version 2. Help → About
-lists the licenses of all the components included in Natron.
+Natron and its plug-ins are licensed under the GNU GPL version 2 or later.
+Help → About lists the licenses of all the components included in Natron.
 
-Add Natron to the desktop
--------------------------
+Register the project file type
+------------------------------
 
-The archive doesn't change anything outside its folder. To add Natron to the
-applications menu, with its icons, and to open Natron project files
-(``.ntp``) with Natron, run ``natron-mime.sh`` from the ``bin`` folder:
+The archive doesn't change anything outside its folder. To make your desktop
+recognize Natron project files (``.ntp``), run ``natron-mime.sh`` from the
+``bin`` folder, as your normal user:
 
 .. code-block:: bash
 
    Natron-<version>-Linux-x86_64-no-installer/bin/natron-mime.sh
 
-Run it as your normal user, not with ``sudo``. It registers Natron for you
-only, in ``~/.local/share``.
+It adds the Natron project file type for you only, in
+``~/.local/share/mime/packages/x-natron.xml``. It doesn't add Natron to the
+applications menu, and it doesn't make Natron open ``.ntp`` files when you
+double-click them: open them from Natron, or with ``./Natron project.ntp``.
 
-The menu entry starts the copy of Natron that registered it. If you move or
-update Natron, run ``natron-mime.sh`` from the new folder again.
+Your files
+----------
+
+Natron keeps your files outside its folder, and all the copies of Natron that
+you run share them:
+
+* the settings, in ``~/.config/INRIA/Natron.conf``;
+* the disk cache, in ``~/.cache/INRIA/Natron``, unless you chose another
+  folder in Edit → Preferences → Caching;
+* the auto-saved projects, in ``~/.local/share/INRIA/Natron/Autosaves``;
+* your Python scripts and PyPlugs, in ``~/.Natron`` (see :ref:`natronPath`).
 
 Update
 ------
 
 To update Natron, download and extract the new version. You can keep the old
-version next to it, for example to open old projects. If you added Natron to
-the desktop, run ``natron-mime.sh`` from the new version.
+version next to it, for example to open old projects. The new version uses the
+settings of the old one.
 
 Uninstall
 ---------
 
-To uninstall Natron, delete its folder. Your settings and your projects are
-not in that folder, so they stay.
+To uninstall Natron, delete its folder. This doesn't remove your files (see
+`Your files`_): delete them too if you don't need them any more.
 
-If you ran ``natron-mime.sh``, also remove the Natron menu entry, icons and
-file type: delete the Natron files in the ``applications``, ``icons`` and
-``mime/packages`` folders of ``~/.local/share``. Then update the desktop
-databases:
+If you ran ``natron-mime.sh``, also delete
+``~/.local/share/mime/packages/x-natron.xml``, then update the MIME database:
 
 .. code-block:: bash
 
-   update-desktop-database ~/.local/share/applications
    update-mime-database ~/.local/share/mime
 
 Software OpenGL
