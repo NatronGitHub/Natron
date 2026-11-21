@@ -252,6 +252,9 @@ EOF
             YUM_XVMC=
             # Rust (cargo, rustc), to build librsvg >= 2.41 (see pkg/librsvg.sh)
             DTSYUM+="dnf -y install rust-toolset && "
+            # doxygen (CRB): the Python bindings of libxml2 >= 2.14, needed by itstool, are
+            # generated from its doxygen XML (see pkg/libxml2.sh)
+            DTSYUM+="dnf -y install doxygen && "
         fi
         # The xcb platform plug-in of Qt 5.15 (pkg/qt5.sh) needs libxcb with its extensions
         # (randr, render, shape, shm, sync, xfixes, xinerama, xkb, xinput, glx), the xcb-util
@@ -473,10 +476,55 @@ fi # dobuild
 # see https://stackoverflow.com/a/24067243
 function version_gt() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"; }
 
+# $1: file, $2: expected sha256 (if empty, the file is not checked)
+function sha256_ok() {
+    local file=$1
+    local expected=${2:-}
+    if [ -z "$expected" ]; then
+        return 0
+    fi
+    local actual
+    actual=$(sha256sum "$file" | cut -d' ' -f1)
+    if [ "$actual" != "$expected" ]; then
+        (>&2 echo "*** $file: sha256 is $actual, expected $expected")
+        return 1
+    fi
+    return 0
+}
+
+# $1: URL, $2: destination file, $3: expected sha256 (may be empty)
+# Downloads with certificate checking, and removes the file if the download or the checksum fails.
+function fetch_checked() {
+    local url=$1
+    local dest=$2
+    local sha256=${3:-}
+    local setcertdir=""
+    if [ -d /etc/ssl/certs ]; then
+        # or wget fails on Ubuntu for sourceforge and all letsencrypt-certified sites
+        setcertdir="env SSL_CERT_DIR=/etc/ssl/certs"
+    fi
+    echo "*** downloading $url"
+    # wget is the system one: don't let it load the SDK's libraries (on Rocky Linux 9, the
+    # system gnutls fails with the SDK's older nettle)
+    if $setcertdir env -u LD_LIBRARY_PATH wget -q "$url" -O "$dest" && [ -s "$dest" ] && sha256_ok "$dest" "$sha256"; then
+        return 0
+    fi
+    echo "*** downloading $url failed!"
+    rm -f "$dest" > /dev/null 2>&1 || true
+    return 1
+}
+
+# $1: master site, $2: package (file name), $3: expected sha256 of the file (optional, but every
+# package should have one). The file is first fetched from the Natron mirror ($THIRD_PARTY_SRC_URL).
 function download() {
     if dobuild || [ "${DOWNLOAD:-}" = "1" ]; then
         local master_site=$1
         local package=$2
+        local sha256=${3:-}
+        if [ -s "$SRC_PATH/$package" ] && ! sha256_ok "$SRC_PATH/$package" "$sha256"; then
+            echo "*** removing $SRC_PATH/$package (wrong checksum)"
+            rm -f "$SRC_PATH/$package"
+        fi
         if [ ! -s "$SRC_PATH/$package" ]; then
             if [ "${DOWNLOAD:-}" = "1" ]; then
                 # print list of new dists, in case subsequent download hangs
@@ -487,35 +535,8 @@ function download() {
                     echo "*** newdistsurls = ${newdistsurls[*]}"
                 fi
             fi
-            echo "*** downloading $package from $THIRD_PARTY_SRC_URL"
-            fail=false
-            SET_SSL_CERT_DIR=""
-            if [ -d /etc/ssl/certs ]; then
-                # or wget fails on Ubuntu for sourceforge and all letsencrypt-certified sites
-                SET_SSL_CERT_DIR="env SSL_CERT_DIR=/etc/ssl/certs"
-            fi
-            # wget is the system one: don't let it load the SDK's libraries (on Rocky Linux 9, the
-            # system gnutls fails with the SDK's older nettle)
-            SYSWGET="env -u LD_LIBRARY_PATH wget"
-            $SET_SSL_CERT_DIR $SYSWGET -q "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || fail=true
-            if $fail; then
-                echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
-                echo "*** downloading $package from $master_site"
-                fail=false
-                $SET_SSL_CERT_DIR $SYSWGET -q "$master_site/$package" -O "$SRC_PATH/$package" || fail=true
-                if $fail; then
-                    echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
-                    echo "*** downloading $package from $master_site without checking certificate"
-                    fail=false
-                    $SYSWGET -q --no-check-certificate "$master_site/$package" -O "$SRC_PATH/$package" || fail=true
-                    if $fail; then
-                        echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
-                        rm "$SRC_PATH/$package" > /dev/null 2>&1 || true
-                    else
-                        newdists+=("$package")
-                        newdistsurls+=("$master_site/$package")
-                    fi
-                else
+            if ! fetch_checked "$THIRD_PARTY_SRC_URL/$package" "$SRC_PATH/$package" "$sha256"; then
+                if fetch_checked "$master_site/$package" "$SRC_PATH/$package" "$sha256"; then
                     newdists+=("$package")
                     newdistsurls+=("$master_site/$package")
                 fi
@@ -528,30 +549,29 @@ function download() {
     fi
 }
 
+# $1: GitHub user, $2: repository, $3: version, $4: tag prefix, $5: package (file name),
+# $6: expected sha256 of the file (optional, but every package should have one)
 function download_github() {
     if dobuild || [ "${DOWNLOAD:-}" = "1" ]; then
         # e.g.:
-        #download_github uclouvain openjpeg 2.3.0 v openjpeg-2.3.0.tar.gz
-        #download_github OpenImageIO oiio 1.6.18 tags/Release- oiio-1.6.18.tar.gz
+        #download_github uclouvain openjpeg 2.3.0 v openjpeg-2.3.0.tar.gz <sha256>
+        #download_github OpenImageIO oiio 1.6.18 tags/Release- oiio-1.6.18.tar.gz <sha256>
         local user=$1
         local repo=$2
         local version=$3
         local tagprefix=$4
         local package=$5
+        local sha256=${6:-}
+        local url="https://github.com/${user}/${repo}/archive/${tagprefix}${version}.tar.gz"
+        if [ -s "$SRC_PATH/$package" ] && ! sha256_ok "$SRC_PATH/$package" "$sha256"; then
+            echo "*** removing $SRC_PATH/$package (wrong checksum)"
+            rm -f "$SRC_PATH/$package"
+        fi
         if [ ! -s "$SRC_PATH/$package" ]; then
-            echo "*** downloading $package from $THIRD_PARTY_SRC_URL"
-            fail=false
-            wget -q "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || fail=true
-            if $fail; then
-                echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
-                echo "*** downloading $package from https://github.com/${user}/${repo}/archive/${tagprefix}${version}.tar.gz"
-                fail=false
-                wget -q --no-check-certificate --content-disposition "https://github.com/${user}/${repo}/archive/${tagprefix}${version}.tar.gz" -O "$SRC_PATH/$package" || fail=true
-                if $fail; then
-                    rm "$SRC_PATH/$package" > /dev/null 2>&1 || true
-                else
+            if ! fetch_checked "$THIRD_PARTY_SRC_URL/$package" "$SRC_PATH/$package" "$sha256"; then
+                if fetch_checked "$url" "$SRC_PATH/$package" "$sha256"; then
                     newdists+=("$package")
-                    newdistsurls+=("https://github.com/${user}/${repo}/archive/${tagprefix}${version}.tar.gz")
+                    newdistsurls+=("$url")
                 fi
             fi
         fi

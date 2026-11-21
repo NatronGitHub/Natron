@@ -153,6 +153,28 @@ runs Natron under lldb with ``Tests/gui/natron-lldb.sh``: a crash prints the bac
 of all threads and exits with status 139, without the macOS crash dialog. The same
 script can run ``NatronRenderer``, ``natron-python`` or ``Tests``.
 
+Caches of the test runs
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The tests never use the user's disk caches, because the OpenFX plug-in cache
+(``<disk cache>/OFXLoadCache/OFXCache_<version>.xml``) has the same name for every build of a
+version: two test runs at the same time would rewrite each other's (#1569).
+
+- ``Tests`` keeps ``NATRON_DISK_CACHE_PATH`` if it is set. Otherwise, it uses
+  ``NATRON_TESTS_CACHE_DIR``, which ``ctest`` sets to ``<build>/Tests/tests-cache`` for
+  both *Tests* and *TestsOfxCache*. Without either variable (``Tests`` run by hand), it uses
+  a temporary directory, removed at exit.
+- *TestsOfxCache* runs ``Tests`` with ``NATRON_TESTS_KEEP_OFX_CACHE=1``: it reads the OFX
+  plug-in cache that the previous *Tests* run wrote, instead of scanning the plug-ins. By
+  hand, set ``NATRON_DISK_CACHE_PATH`` or ``NATRON_TESTS_CACHE_DIR`` to the same directory
+  for both runs, since a temporary directory would be empty.
+- ``Tests`` also enables Qt's test mode (``QStandardPaths::setTestModeEnabled()``): the
+  auto-saves that the tests write go to ``~/.qttest/...``, not to the user's ``Autosaves``
+  directory (on Linux, the native ``QSettings`` also go to ``~/.qttest/config``).
+- The GUI tests (``gui.*``) and *UndoGroupHeadless* use a cache directory of the build tree,
+  and the driver scripts of ``Tests/gui`` (``run_*.py``) a temporary one, removed at the end,
+  unless ``NATRON_DISK_CACHE_PATH`` is set.
+
 Debugging and profiling
 -----------------------
 
@@ -211,6 +233,15 @@ openfx-misc, openfx-io, openfx-arena, openfx-gmic, …) follows the same rules.
 - **macOS**: macOS 15 arm64, the system (Xcode) clang and MacPorts libraries
   (never Homebrew), with ``/opt/local`` restored from a cache. It starts only
   after the Linux and Windows jobs have passed.
+
+The ``Tests`` suite includes the GUI tests (``Tests/gui``, ctest label ``gui``, see
+:ref:`guiTests`), which take a few seconds each. On Linux they run under Xvfb with Mesa
+(the job checks the GLX context first, see #536, and sets ``NATRON_GUI_TESTS=1``),
+interactive ones included (``NATRON_TEST_INTERACTIVE=1``), in the Fast (per pull request) and
+Release builds, not in the nightly Debug one (``ctest -LE gui``). The environment variable ``NATRON_GUI_TESTS=1`` enables them at run
+time; the CMake option ``NATRON_BUILD_GUI_TESTS`` registers them (on by default). In the other jobs, which don't set
+``NATRON_GUI_TESTS``, they are skipped (exit status 77), not failed; they can be enabled there
+once their runners are known to have an OpenGL context for the viewer.
 
 Linux and Windows must pass before a pull request is merged. The macOS job is
 informative: it is never a required check, so a pull request doesn't wait for

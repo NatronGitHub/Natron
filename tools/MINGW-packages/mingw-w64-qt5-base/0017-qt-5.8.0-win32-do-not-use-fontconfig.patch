@@ -1,0 +1,11 @@
+--- a/src/plugins/platforms/minimal/qminimalintegration.cpp	2019-06-12 23:59:14.000000000 +0300
++++ b/src/plugins/platforms/minimal/qminimalintegration.cpp	2019-06-15 16:01:25.262773000 +0300
+@@ -162,7 +162,7 @@
+ #endif
+ 
+         if (!m_fontDatabase) {
+-#if QT_CONFIG(fontconfig)
++#if QT_CONFIG(fontconfig) && !defined(Q_OS_WIN)
+             m_fontDatabase = new QGenericUnixFontDatabase;
+ #else
+             m_fontDatabase = QPlatformIntegration::fontDatabase();

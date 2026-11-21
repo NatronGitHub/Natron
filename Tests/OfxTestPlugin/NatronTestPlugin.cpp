@@ -44,7 +44,8 @@
 //   - "uiOnly" has kOfxParamPropEvaluateOnChange=0, "noUndo" has kOfxParamPropCanUndo=0.
 // - net.natron.test.Generator: a generator that fills its output with 0.5, with the pixel aspect ratio of
 //   its "par" parameter (it supports multiple clip PARs, so that it may set its output PAR, and "par" is a
-//   clip preferences slave parameter).
+//   clip preferences slave parameter). If its "fps" parameter (also a slave parameter) is positive, it sets
+//   the output frame rate to it in getClipPreferences (kOfxImageEffectPropSetableFrameRate).
 // - net.natron.test.MultiPAR: two inputs, Source and B, and kOfxImageEffectPropSupportsMultipleClipPARs.
 //   It records the pixel aspect ratio of each input clip and image, times 1000, in render.
 // - net.natron.test.ClipGetImage: asks for a small region of Source in getRegionsOfInterest; in render,
@@ -68,10 +69,16 @@
 // of the host it gets ("Binary.setHostAPIVersion0", "Binary.setHostAPIVersion1"). ParamInteract
 // calls clipGetHandle() in kOfxImageEffectActionDescribeInContext, where it is not valid, and records
 // the status and whether the clip was set to NULL ("ParamInteract.describeClipGetHandle*").
+//
+// The plug-ins above count kOfxActionLoad and kOfxActionUnload ("<id>.load", "<id>.unload"). If the
+// environment variable NATRON_TEST_PLUGIN_ACTION_LOG is set, they also append the lines "load <id>" and
+// "unload <id> live=<live instances>" to the file it names, for the tests that check what a Natron
+// process did before it exited (Tests/gui/run_renderer_exit_unload_test.py, #1557).
 
 #include <chrono>
 #include <climits>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <map>
 #include <mutex>
@@ -229,6 +236,28 @@ onDestroyInstance(OfxImageEffectHandle effect,
     ++gCounters[id + ".destroyed"];
 }
 
+// kOfxActionLoad and kOfxActionUnload of the plug-in id: see the comment at the top
+void
+logLoadAction(const char* action,
+              const std::string& id)
+{
+    std::lock_guard<std::mutex> l(gMutex);
+    const bool load = std::strcmp(action, kOfxActionLoad) == 0;
+    ++gCounters[id + (load ? ".load" : ".unload")];
+    const char* logPath = std::getenv("NATRON_TEST_PLUGIN_ACTION_LOG");
+    if ( !logPath || !*logPath ) {
+        return;
+    }
+    if ( std::FILE* f = std::fopen(logPath, "a") ) {
+        if (load) {
+            std::fprintf(f, "load %s\n", id.c_str());
+        } else {
+            std::fprintf(f, "unload %s live=%d\n", id.c_str(), gCounters[id + ".live"]);
+        }
+        std::fclose(f);
+    }
+}
+
 // Main entry of the actions common to all the plug-ins, kOfxStatReplyDefault for the others.
 OfxStatus
 commonAction(const char* action,
@@ -236,7 +265,17 @@ commonAction(const char* action,
              const std::string& id)
 {
     if (std::strcmp(action, kOfxActionLoad) == 0) {
-        return onLoad();
+        const OfxStatus stat = onLoad();
+        if (stat == kOfxStatOK) {
+            logLoadAction(action, id);
+        }
+
+        return stat;
+    }
+    if (std::strcmp(action, kOfxActionUnload) == 0) {
+        logLoadAction(action, id);
+
+        return kOfxStatReplyDefault;
     }
     if (std::strcmp(action, kOfxActionCreateInstance) == 0) {
         onCreateInstance(effect, id);
@@ -909,8 +948,9 @@ generatorPluginMain(const char* action,
         gEffectSuite->getPropertySet(effect, &props);
         // so that it may set its output PAR in getClipPreferences
         gPropSuite->propSetInt(props, kOfxImageEffectPropSupportsMultipleClipPARs, 0, 1);
-        // and getClipPreferences is called again when "par" changes
+        // and getClipPreferences is called again when "par" or "fps" changes
         gPropSuite->propSetString(props, kOfxImageEffectPropClipPreferencesSlaveParam, 0, "par");
+        gPropSuite->propSetString(props, kOfxImageEffectPropClipPreferencesSlaveParam, 1, "fps");
 
         return kOfxStatOK;
     }
@@ -926,6 +966,10 @@ generatorPluginMain(const char* action,
             return kOfxStatFailed;
         }
         gPropSuite->propSetDouble(props, kOfxParamPropDefault, 0, 1.);
+        if (gParamSuite->paramDefine(paramSet, kOfxParamTypeDouble, "fps", &props) != kOfxStatOK) {
+            return kOfxStatFailed;
+        }
+        gPropSuite->propSetDouble(props, kOfxParamPropDefault, 0, 0.);
 
         return kOfxStatOK;
     }
@@ -936,6 +980,14 @@ generatorPluginMain(const char* action,
             gParamSuite->paramGetValue(param, &par);
         }
         gPropSuite->propSetDouble(outArgs, "OfxImageClipPropPAR_" kOfxImageEffectOutputClipName, 0, par);
+        double fps = 0.;
+        param = getParam(effect, "fps");
+        if (param) {
+            gParamSuite->paramGetValue(param, &fps);
+        }
+        if (fps > 0.) {
+            gPropSuite->propSetDouble(outArgs, kOfxImageEffectPropFrameRate, 0, fps);
+        }
 
         return kOfxStatOK;
     }

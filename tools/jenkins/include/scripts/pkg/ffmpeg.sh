@@ -2,13 +2,14 @@
 
 # Install FFmpeg
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/ffmpeg.html
-FFMPEG_VERSION=6.0
+FFMPEG_VERSION=9.0.2
 # see https://ffmpeg.org/download.html
-FFMPEG_VERSION_LIBAVCODEC=60.3.100
+FFMPEG_VERSION_LIBAVCODEC=63.1.102
 FFMPEG_TAR="ffmpeg-${FFMPEG_VERSION}.tar.xz"
-FFMPEG_SITE="http://www.ffmpeg.org/releases"
+FFMPEG_SHA256=8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
+FFMPEG_SITE="https://ffmpeg.org/releases"
 if download_step; then
-    download "$FFMPEG_SITE" "$FFMPEG_TAR"
+    download "$FFMPEG_SITE" "$FFMPEG_TAR" "$FFMPEG_SHA256"
 fi
 if build_step && { force_build || { [ "${REBUILD_FFMPEG:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/ffmpeg-* || true
@@ -24,8 +25,9 @@ if build_step && { force_build || { [ ! -d "$SDK_HOME/ffmpeg-gpl2" ] || [ ! -d "
         "--enable-libsnappy" "--enable-libmodplug" "--enable-libvpx" "--enable-libsoxr"
         "--enable-libspeex" "--enable-libass" "--enable-libbluray" "--enable-lzma"
         "--enable-libaom" "--enable-libdav1d"
+        "--enable-lcms2" "--enable-libharfbuzz" "--enable-libwebp"
         "--enable-gnutls" "--enable-fontconfig" "--enable-libfreetype" "--enable-libfribidi"
-        "--disable-libxcb" "--disable-libxcb-shm" "--disable-libxcb-xfixes"
+        "--disable-libxcb" "--disable-libxcb-shm" "--disable-libxcb-xfixes" "--disable-libxcb-shape"
         "--disable-indev=jack" "--disable-outdev=xv" "--disable-xlib" "--disable-debug" )
     if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then
         LGPL_SETTINGS+=( "--enable-x86asm" )

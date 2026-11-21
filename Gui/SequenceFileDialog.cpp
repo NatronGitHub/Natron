@@ -503,11 +503,15 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     } else {
         setWindowTitle( tr("Select Directory") );
     }
-    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
-    bool hasRestoredDir;
-    restoreState( settings.value( QLatin1String("FileDialog") ).toByteArray(), directoryArgs.empty(), &hasRestoredDir );
+    bool hasRestoredDir = false;
+    // With --no-settings, the dialog starts with its default state, as with fresh settings
+    if ( !appPTR->getCurrentSettings()->isUsingDefaultSettings() ) {
+        QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
+        restoreState( settings.value( QLatin1String("FileDialog") ).toByteArray(), directoryArgs.empty(), &hasRestoredDir );
+    }
 
-    if (!hasRestoredDir) {
+    // An empty directory would be the "Computer" level, where a typed file name has no directory to go to (#825)
+    if ( !hasRestoredDir && !directoryArgs.empty() ) {
         hasRestoredDir = setDirectory( QString::fromUtf8( directoryArgs.c_str() ) );
     }
 
@@ -527,7 +531,11 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     }
 
     if (!hasRestoredDir) {
-        // All calls to setDirectory failed, default to something that can always succeed: the root
+        // No directory given or restored (e.g. fresh settings), or all calls to setDirectory failed:
+        // default to the home directory, else to something that can always succeed: the root (#825)
+        hasRestoredDir = setDirectory( QDir::homePath() );
+    }
+    if (!hasRestoredDir) {
         setDirectory( QDir::rootPath() );
     }
 
@@ -543,12 +551,14 @@ SequenceFileDialog::~SequenceFileDialog()
 {
     _model->resetCompletly(false);
 
-    // not in a GUI test (Natron --test): the user's preferences are left untouched
-    if ( !appPTR->isTestMode() ) {
-        QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
-
-        settings.setValue( QLatin1String("FileDialog"), saveState() );
+    // Scripts and tests (--no-dialogs), a GUI test (Natron --test), or a session with the default
+    // settings (--no-settings): do not overwrite the user's dialog state (as GuiPrivate::saveGuiGeometry())
+    if ( appPTR->isDialogsDisabled() || appPTR->isTestMode() || appPTR->getCurrentSettings()->isUsingDefaultSettings() ) {
+        return;
     }
+    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
+
+    settings.setValue( QLatin1String("FileDialog"), saveState() );
 }
 
 void
@@ -1376,26 +1386,30 @@ SequenceFileDialog::openSelectedFiles()
                     QDialog::accept();
                 }
             } else {
-                ///check if str contains already the selected file extension, otherwise append it
+                // Append the selected extension unless the name already has it or another one of the
+                // filters, e.g. "comp.v003" -> "comp.v003.ntp", so that the check below sees the file
+                // that the caller writes (Save Project and Export layout append it otherwise) (#825)
                 {
-                    QString ext = _fileExtensionCombo->getCurrentIndexText();
-                    if ( ext != QString::fromUtf8("*") ) {
-                        int lastSepPos = str.lastIndexOf( QLatin1Char('/') );
-                        if (lastSepPos == -1) {
-                            lastSepPos = str.lastIndexOf( QString::fromUtf8("//") );
-                        }
-                        int lastDotPos = str.lastIndexOf( QLatin1Char('.') );
-                        if (lastDotPos < lastSepPos) {
-                            str.append( QLatin1Char('.') +  ext);
-                            _selectionLineEdit->blockSignals(true);
-                            _selectionLineEdit->setText(str);
-                            _selectionLineEdit->blockSignals(false);
-                        }
+                    const QString name = removeFrameRange(str);
+                    const QString withExt = FileSystemModel::addFileExtension(name, _fileExtensionCombo->getCurrentIndexText(), _filters);
+                    if (withExt != name) {
+                        str = withExt;
+                        _selectionLineEdit->blockSignals(true);
+                        _selectionLineEdit->setText(str);
+                        _selectionLineEdit->blockSignals(false);
                     }
                 }
 
+                // Check the file that filesToSave() returns, i.e. what the caller writes, with the
+                // project variables (e.g. [Project]) expanded (#825)
+                std::string toSave = filesToSave();
+                {
+                    std::map<std::string, std::string> envVars;
+                    _gui->getApp()->getProject()->getEnvironmentVariables(envVars);
+                    Project::expandVariable(envVars, toSave);
+                }
                 SequenceParsing::SequenceFromPattern sequence;
-                FileSystemModel::filesListFromPattern(str.toStdString(), &sequence);
+                FileSystemModel::filesListFromPattern(toSave, &sequence);
                 if (sequence.size() > 0) {
                     QString text;
                     if (sequence.size() == 1) {
@@ -1404,7 +1418,7 @@ SequenceFileDialog::openSelectedFiles()
 
                         text = tr("The file %1 already exists.\nWould you like to replace it?").arg( QString::fromUtf8( views.begin()->second.c_str() ) );
                     } else {
-                        text = tr("The sequence %1 already exists.\nWould you like to replace it?").arg(str);
+                        text = tr("The sequence %1 already exists.\nWould you like to replace it?").arg( QString::fromUtf8( toSave.c_str() ) );
                     }
 
                     QMessageBox ques(QMessageBox::Question, tr("Existing file"), text, QMessageBox::Yes | QMessageBox::No,
@@ -1693,23 +1707,20 @@ SequenceFileDialog::selectedFiles()
     return selection;
 }
 
+void
+SequenceFileDialog::addSelectionLineWidget(QWidget* widget)
+{
+    widget->setParent(_selectionWidget);
+    _selectionLayout->addWidget(widget);
+}
+
 std::string
 SequenceFileDialog::filesToSave()
 {
     assert(_dialogMode == eFileDialogModeSave);
-    QString text = _selectionLineEdit->text();
-    ///Find last dot position and remove everything after the extension which we might added on the line edit
-    int lastDotPos = text.lastIndexOf( QLatin1Char('.') );
-    QString ret;
-    if (lastDotPos != -1) {
-        int i = lastDotPos + 1;
-        while ( i < text.size() && text.at(i) != QLatin1Char(' ') ) {
-            ++i;
-        }
-        ret =  text.mid(0, i);
-    } else {
-        ret = text;
-    }
+    // Remove everything after the extension which we might have added on the line edit, then save a bare
+    // file name in the directory shown by the dialog, not in the working directory of the process (#825)
+    QString ret = absoluteFilePathInCurrentDirectory( removeFrameRange( _selectionLineEdit->text() ) );
 
 #ifdef __NATRON_WIN32__
     if (appPTR->getCurrentSettings()->isDriveLetterToUNCPathConversionEnabled()) {
@@ -1718,6 +1729,60 @@ SequenceFileDialog::filesToSave()
 #endif
 
     return ret.toStdString();
+}
+
+QString
+SequenceFileDialog::removeFrameRange(const QString& text) const
+{
+    // Only a sequence can show a frame range: elsewhere "notes.v2 1-3" is a name
+    if ( !sequenceModeEnabled() || ( _fileExtensionCombo->getCurrentIndexText() == QString::fromUtf8("*") ) ) {
+        return text;
+    }
+
+    return FileSystemModel::removeTextAfterExtension(text);
+}
+
+QString
+SequenceFileDialog::absoluteFilePathInCurrentDirectory(const QString& filePath) const
+{
+    std::map<std::string, std::string> envVars;
+    _gui->getApp()->getProject()->getEnvironmentVariables(envVars);
+    QStringList varNames;
+    for (std::map<std::string, std::string>::const_iterator it = envVars.begin(); it != envVars.end(); ++it) {
+        varNames.push_back( QString::fromUtf8( it->first.c_str() ) );
+    }
+    // At the "Computer" level (Windows drive list), there is no directory: use the home directory
+    const QString directory = _requestedDir.isEmpty() ? QDir::homePath() : _requestedDir;
+    QString ret = FileSystemModel::absoluteFilePath(directory, filePath, varNames);
+
+    if ( (ret == filePath) || !_relativePathsAllowed ) {
+        return ret;
+    }
+    // The name was resolved against the directory: honour the "relative to" choice, as setDirectory() does
+    std::string stdRet = ret.toStdString();
+    std::string varName, varPath;
+    if ( getRelativeChoiceProjectPath(varName, varPath) ) {
+        Project::makeRelativeToVariable(varName, varPath, stdRet);
+    } else {
+        // "Absolute": a bare name in a file parameter (e.g. of a Write node) of a saved project used to
+        // go to the project directory, through Project::canonicalizePath(). Keep it portable: store a
+        // path inside the project directory as [Project]/...
+        std::map<std::string, std::string>::const_iterator project = envVars.find(NATRON_PROJECT_ENV_VAR_NAME);
+        if ( ( project != envVars.end() ) && !project->second.empty() ) {
+            QString projectDir = FileSystemModel::cleanPath( QString::fromUtf8( project->second.c_str() ) );
+            StrUtils::ensureLastPathSeparator(projectDir);
+#ifdef __NATRON_WIN32__
+            const Qt::CaseSensitivity cs = Qt::CaseInsensitive;
+#else
+            const Qt::CaseSensitivity cs = Qt::CaseSensitive;
+#endif
+            if ( ret.startsWith(projectDir, cs) ) {
+                stdRet = std::string("[" NATRON_PROJECT_ENV_VAR_NAME "]/") + ret.mid( projectDir.size() ).toStdString();
+            }
+        }
+    }
+
+    return QString::fromUtf8( stdRet.c_str() );
 }
 
 QDir

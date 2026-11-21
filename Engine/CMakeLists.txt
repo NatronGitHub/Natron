@@ -31,7 +31,7 @@ list(TRANSFORM PYENGINE_INCLUDE_DIRS PREPEND "-I" OUTPUT_VARIABLE PYENGINE_INCS)
 set(PYENGINE_HEADER PySide${PYSIDE_VERSION_MAJOR}_Engine_Python.h)
 
 set(shiboken_args
-    "-std=c++17" "--enable-parent-ctor-heuristic" "--use-isnull-as-nb_nonzero"
+    "${NATRON_SHIBOKEN_STD}" "--enable-parent-ctor-heuristic" "--use-isnull-as-nb_nonzero"
     "--avoid-protected-hack" "--enable-pyside-extensions"
     "-I." "-I.." "-I../Global" "-I../libs/OpenFX/include" ${PYENGINE_INCS} ${SHIBOKEN_QT_FRAMEWORK_ARGS}
     "-T${PYSIDE_TYPESYSTEMS}" "--output-directory=${PYENGINE_OUT}"
@@ -74,7 +74,7 @@ add_library(NatronEngine STATIC ${NatronEngine_HEADERS} ${NatronEngine_SOURCES})
 target_link_libraries(NatronEngine
     PRIVATE
         ceres
-        hoedown
+        md4c
         mv
         openMVG
         tess

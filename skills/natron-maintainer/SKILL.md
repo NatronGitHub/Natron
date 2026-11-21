@@ -117,9 +117,10 @@ Do NOT hand-edit ``index.rst`` (except to add a whole new guide to the toctree),
   generates no bindings; ``QtCompat::MutexLock`` (QMutex or QRecursiveMutex,
   null locks nothing) and ``QtCompat::QEnterEvent`` (for ``enterEvent``
   overrides) in ``Global/QtCompat.h``.
+- **Done (#1469, #1148):** C++20 with Qt6 (C++17 with Qt5).
 - **To do:** validate PySide6 bindings and the Qt6 GUI at run time (enum/flag
   issue #854; ``QT_API`` is ``pyside6`` with Qt6, #1262); Qt6 CI build (nightly/on demand, not
-  per PR); C++20 with Qt6 (#1148). No more Qt6 work on the deprecated qmake
+  per PR). No more Qt6 work on the deprecated qmake
   build (CMake is the Qt6 build). Qt5-preserving Qt6 work goes to RB-2.6;
   RB-2.7 is the Qt6 branch.
 - Keep Qt 5.15 working: prefer APIs present in both; else shim in

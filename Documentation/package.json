@@ -3,8 +3,8 @@
   "private": true,
   "description": "Node.js packages used to build the Natron documentation (npm ci): mermaid.js draws the mermaid diagrams in the HTML, mermaid-cli renders them to pictures for the PDF (LaTeX) and ePub builds.",
   "dependencies": {
-    "@mermaid-js/mermaid-cli": "11.17.1",
-    "mermaid": "11.17.2",
+    "@mermaid-js/mermaid-cli": "12.2.0",
+    "mermaid": "12.3.0",
     "puppeteer": "25.18.1"
   }
 }

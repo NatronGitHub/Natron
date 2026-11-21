@@ -389,7 +389,8 @@ stopped. This is meant for scripts and tests, see :ref:`guiTesting`.
 - In the GUI (*Natron*), the projects are closed at the end of the current event-loop
   iteration, so it is safe to call it from a callback or from a timer. The function returns
   immediately and the rest of the calling script is executed: make it the last call of the
-  callback. If Natron is still loading (e.g. :func:`quit` is called by the script given on the
+  callback (once a project is being closed, :func:`App.createNode()<NatronEngine.App.createNode>`
+  returns *None*). If Natron is still loading (e.g. :func:`quit` is called by the script given on the
   command line), a nested event loop of Natron is running (e.g. a modal dialog), or a project is
   being saved, the projects are closed once it is done. A loop that the script runs itself
   (PySide's ``QCoreApplication.processEvents()``) is not protected: the projects may be closed

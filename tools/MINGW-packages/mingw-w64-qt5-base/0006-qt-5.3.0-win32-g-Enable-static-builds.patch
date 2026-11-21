@@ -1,0 +1,22 @@
+--- a/mkspecs/common/g++-win32.conf	2019-06-15 14:54:16.704696800 +0300
++++ b/mkspecs/common/g++-win32.conf	2019-06-15 15:06:52.137023700 +0300
+@@ -49,6 +49,7 @@
+ QMAKE_LFLAGS_CONSOLE    = -Wl,-subsystem,console
+ QMAKE_LFLAGS_WINDOWS    = -Wl,-subsystem,windows
+ QMAKE_LFLAGS_DLL        = -shared
++QMAKE_LFLAGS_STATIC_LIB = -static
+ QMAKE_LFLAGS_GCSECTIONS = -Wl,--gc-sections
+ equals(QMAKE_HOST.os, Windows) {
+     QMAKE_LINK_OBJECT_MAX = 10
+--- a/mkspecs/features/default_post.prf	2019-06-12 23:59:14.000000000 +0300
++++ b/mkspecs/features/default_post.prf	2019-06-15 15:06:52.137023700 +0300
+@@ -87,8 +87,8 @@
+     enable_gdb_index: QMAKE_LFLAGS += $$QMAKE_LFLAGS_GDB_INDEX
+ }
+ 
++static: QMAKE_LFLAGS += $$QMAKE_LFLAGS_STATIC_LIB
+ dll:win32: QMAKE_LFLAGS += $$QMAKE_LFLAGS_DLL
+-static:mac: QMAKE_LFLAGS += $$QMAKE_LFLAGS_STATIC_LIB
+ staticlib:unix {
+     QMAKE_CFLAGS += $$QMAKE_CFLAGS_STATIC_LIB
+     QMAKE_CXXFLAGS += $$QMAKE_CXXFLAGS_STATIC_LIB

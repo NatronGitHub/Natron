@@ -140,8 +140,8 @@ fi
 
 # The installer is Inno Setup's Setup.exe (${MINGW_PACKAGE_PREFIX}-natron-setup, from
 # natron-build-deps-common), embedded in the portable zip.
-if [ ! -f "/Setup.exe" ]; then
-    echo "Error: /Setup.exe not found: install ${MINGW_PACKAGE_PREFIX}-natron-setup (tools/MINGW-packages)"
+if [ ! -f "${NATRON_SETUP_EXE:-}" ]; then
+    echo "Error: ${MINGW_PREFIX}/share/natron-setup/Setup.exe not found: install ${MINGW_PACKAGE_PREFIX}-natron-setup (tools/MINGW-packages)"
     exit 1
 fi
 
@@ -280,8 +280,14 @@ mkdir -p "${TMP_PORTABLE_DIR}/Plugins"
 cp -a "$SDK_HOME/lib/python${PYVER}" "${TMP_PORTABLE_DIR}/lib/"
 
 
-PYSIDE_PLUGIN_PATH="${TMP_PORTABLE_DIR}/Plugins/PySide2"
-mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide2" "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/shiboken2" "${TMP_PORTABLE_DIR}/Plugins"
+# PySide2/shiboken2 go with Qt5 and PySide6/shiboken6 with Qt6, as in genDllVersions.sh.
+if [ "$QT_VERSION_MAJOR" = 5 ]; then
+    PYSIDE_MAJOR=2
+else
+    PYSIDE_MAJOR="$QT_VERSION_MAJOR"
+fi
+PYSIDE_PLUGIN_PATH="${TMP_PORTABLE_DIR}/Plugins/PySide${PYSIDE_MAJOR}"
+mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide${PYSIDE_MAJOR}" "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/shiboken${PYSIDE_MAJOR}" "${TMP_PORTABLE_DIR}/Plugins"
 if [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
     # the PySide modules of the GPL-3 Qt modules (QtCharts.pyd, QtCharts.pyi, ...)
     for qtlib in "${QT_GPL_LIBS[@]}"; do
@@ -413,7 +419,7 @@ ZIP_INSTALL_DIR="."
 # Portable zip, with Setup.exe
 if [ "$DISABLE_PORTABLE_ARCHIVE" != "1" ]; then
     mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR"
-    cp -a /Setup.exe "${TMP_BINARIES_PATH}/${PORTABLE_DIRNAME}/"
+    cp -a "${NATRON_SETUP_EXE}" "${TMP_BINARIES_PATH}/${PORTABLE_DIRNAME}/Setup.exe"
     (cd "${TMP_BINARIES_PATH}" && zip -9 -q -r "${PORTABLE_DIRNAME}.zip" "${PORTABLE_DIRNAME}"; mv "${PORTABLE_DIRNAME}.zip" "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR/${PORTABLE_DIRNAME}.zip")
 fi
 

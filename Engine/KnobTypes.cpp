@@ -2692,6 +2692,48 @@ KnobLayers::typeNameStatic()
     return _typeNameStr;
 }
 
+KnobIPtr
+createKnobCopy(const KnobIPtr & originalKnob)
+{
+    const std::string & typeName = originalKnob->typeName();
+    KnobIPtr copy;
+    int dimension = originalKnob->getDimension();
+
+    if ( typeName == KnobInt::typeNameStatic() ) {
+        copy = std::make_shared<KnobInt>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobBool::typeNameStatic() ) {
+        copy = std::make_shared<KnobBool>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobDouble::typeNameStatic() ) {
+        copy = std::make_shared<KnobDouble>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobChoice::typeNameStatic() ) {
+        copy = std::make_shared<KnobChoice>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobString::typeNameStatic() ) {
+        copy = std::make_shared<KnobString>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobBytes::typeNameStatic() ) {
+        copy = std::make_shared<KnobBytes>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobParametric::typeNameStatic() ) {
+        copy = std::make_shared<KnobParametric>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobColor::typeNameStatic() ) {
+        copy = std::make_shared<KnobColor>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobPath::typeNameStatic() ) {
+        copy = std::make_shared<KnobPath>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobFile::typeNameStatic() ) {
+        copy = std::make_shared<KnobFile>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobOutputFile::typeNameStatic() ) {
+        copy = std::make_shared<KnobOutputFile>((KnobHolder*)NULL, std::string(), dimension, false);
+    }
+
+    if (!copy) {
+        return KnobIPtr();
+    }
+    copy->populate();
+
+    ///make a clone of the original knob at that time and stash it
+    copy->clone(originalKnob);
+
+    return copy;
+}
+
 NATRON_NAMESPACE_EXIT
 
 NATRON_NAMESPACE_USING

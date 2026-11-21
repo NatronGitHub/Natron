@@ -31,6 +31,7 @@
 #ifndef CERES_INTERNAL_COMPRESSED_COL_SPARSE_MATRIX_UTILS_H_
 #define CERES_INTERNAL_COMPRESSED_COL_SPARSE_MATRIX_UTILS_H_
 
+#include <algorithm> // std::fill: libc++'s <vector> no longer includes it in C++23 mode
 #include <vector>
 #include "ceres/internal/port.h"
 

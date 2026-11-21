@@ -92,7 +92,7 @@ sudo port selfupdate
 
 #### 3. Natron's custom ports
 
-Natron needs modified ports. Examples: the `+natron` variants of ImageMagick, ImageMagick7 and openimageio and the `+natronmini` variant of ffmpeg; libraw 0.22.3 with the GPL demosaic packs restored by a patch; the subports `ffmpeg-lgpl`, `libraw-lgpl` and `libheif-lgpl` for COMMERCIAL builds; freetype 2.15.0 with an upstream fix for rotated text backported; onetbb with a patch for a crash at exit (#1253). MacPorts reads them from a copy of `tools/MacPorts` in `/opt/MacPorts-Natron`. A copy is used rather than the source tree itself, because MacPorts accesses the ports as an unprivileged user that usually can't read your home directory.
+Natron needs modified ports. Examples: the `+natron` variants of ImageMagick, ImageMagick7 and openimageio and the `+natronmini` variant of ffmpeg; libraw 0.22.3 with the GPL demosaic packs restored by a patch; the subports `ffmpeg-lgpl`, `libraw-lgpl` and `libheif-lgpl` for COMMERCIAL builds; freetype 2.15.0 with an upstream fix for rotated text backported; onetbb with a patch for a crash at exit (#1253); qt5-qtbase with a patch for a QMutex lost wake-up that hangs render threads on Apple Silicon (#1451). If you already have a MacPorts SDK with qt5, run `sudo port -v upgrade qt5-qtbase` after `./sync.sh` below: the patched revision (5.15.19_1) has no binary archive, so it builds from source. MacPorts reads them from a copy of `tools/MacPorts` in `/opt/MacPorts-Natron`. A copy is used rather than the source tree itself, because MacPorts accesses the ports as an unprivileged user that usually can't read your home directory.
 
 ```Shell
 sudo mkdir -p /opt/MacPorts-Natron
@@ -515,6 +515,8 @@ env OPENMP=1 CXX="clang++-mp-$CLANG -stdlib=libc++ -std=c++17" OPTFLAG=-O3 \
     CXXFLAGS_EXTRA="-isysroot $(xcrun --sdk macosx --show-sdk-path)" \
     CONFIG=release make -j8
 ```
+
+Use `-std=c++17` with a Qt5 Natron and `-std=c++20` with a Qt6 Natron (RB-2.6 policy; the packaging scripts do this automatically).
 
 The bundle is written to `GMIC_OFX/Darwin-64-release/GMIC.ofx.bundle`. To use it, symlink it next to the others (or use `/Library/OFX/Plugins`):
 
