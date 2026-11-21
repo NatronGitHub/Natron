@@ -76,13 +76,23 @@ double-click, run ``natron-mime.sh`` from the ``bin`` folder:
    Natron-<version>-Linux-x86_64-no-installer/bin/natron-mime.sh
 
 Run it as your normal user to add Natron for you only, in
-``~/.local/share``. Run it as root, for example with ``sudo``, to add it for
-all users, in ``/usr/local/share``.
+``~/.local/share``. To add it for all users, in ``/usr/local/share``, first
+move the Natron folder to a place that only root can change, such as
+``/opt``, then run the script as root, for example with ``sudo``. The script
+warns you if other users can change the Natron folder.
 
-It adds a menu entry that starts this copy of Natron, the Natron icons, and
-the Natron project file type. Run it again after you move or update Natron:
-the menu entry then starts the copy that you ran it from. You may have to log
-out and log in again before the menu shows Natron.
+It adds a *Natron (portable)* menu entry that starts this copy of Natron, the
+Natron icons, and the Natron project file type. You may have to log out and
+log in again before the menu shows Natron.
+
+Run the script from the ``bin`` folder itself, not through a symbolic link.
+The path of the Natron folder must not contain a ``%`` sign.
+
+Earlier versions of ``natron-mime.sh`` installed
+``~/.local/share/mime/packages/x-natron.xml``, or, as root,
+``/usr/share/mime/packages/x-natron.xml``. You can keep this file, or delete
+it and update the MIME database, for example with
+``sudo update-mime-database /usr/share/mime``.
 
 Your files
 ----------
@@ -103,6 +113,10 @@ To update Natron, download and extract the new version. You can keep the old
 version next to it, for example to open old projects. The new version uses the
 settings of the old one.
 
+If you added Natron to the desktop, run ``natron-mime.sh`` of the new version:
+the menu entry then starts the new version. If you delete the old version, you
+don't need to run its ``natron-mime.sh --uninstall``: just delete its folder.
+
 Keep the OpenFX plug-ins that you add yourself outside the Natron folder, so
 that they stay when you update: put them in ``/usr/OFX/Plugins``, or add their
 folder in *Edit* → *Preferences* → *Plug-ins* → *OpenFX plug-ins search path*.
@@ -112,7 +126,8 @@ Uninstall
 
 If you added Natron to the desktop, remove it from the desktop first. Run
 ``natron-mime.sh --uninstall`` as the same user as when you added it (your
-normal user, or root):
+normal user, or root). It removes nothing if the menu entry starts another
+copy of Natron: it tells you which one.
 
 .. code-block:: bash
 
