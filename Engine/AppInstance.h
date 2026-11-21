@@ -462,6 +462,13 @@ public:
     const ProjectBeingLoadedInfo& getProjectBeingLoadedInfo() const;
     void setProjectBeingLoadedInfo(const ProjectBeingLoadedInfo& info);
 
+    /**
+     * @brief Called when this instance starts quitting (AppManager::quit()), which in GUI mode is
+     * done later, from the event loop: no node may be created in it any more (#1554).
+     **/
+    void setQuitPending();
+    bool isQuitPending() const;
+
 public Q_SLOTS:
 
     void quit();

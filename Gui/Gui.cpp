@@ -153,6 +153,10 @@ Gui::~Gui()
             delete graphs[i].data(); // null if deleted with a graph deleted before
         }
     }
+    // and the main node graph, for the same reason: its scene is a child of this window too, and the
+    // graph is one as well when its pane was closed (TabWidget::removeTab() reparents it here)
+    delete _imp->_nodeGraphArea;
+    _imp->_nodeGraphArea = 0;
 
     delete _imp->_errorLog;
     delete _imp->_projectGui;

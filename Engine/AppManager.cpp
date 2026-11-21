@@ -636,6 +636,20 @@ typedef std::shared_ptr<QuitInstanceArgs> QuitInstanceArgsPtr;
 void
 AppManager::afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args)
 {
+    // Called by the watcher of Project::quitAnyProcessingForAllNodes() once the nodes stopped
+    // processing. In GUI mode, this may be in a nested event loop (e.g. a script that called
+    // app.closeProject() and processes events), with code under it that uses the windows that
+    // quitting deletes: quit from the event loop (#1554).
+    if ( isBackground() ) {
+        quitInstanceNow(args);
+    } else {
+        queueAfterQuitProcessingCallback(args);
+    }
+}
+
+void
+AppManager::quitInstanceNow(const GenericWatcherCallerArgsPtr& args)
+{
     QuitInstanceArgs* inArgs = dynamic_cast<QuitInstanceArgs*>( args.get() );
 
     if (!inArgs) {
@@ -677,7 +691,7 @@ AppManager::quitNow(const AppInstancePtr& instance)
     }
     QuitInstanceArgsPtr args = std::make_shared<QuitInstanceArgs>();
     args->instance = instance;
-    afterQuitProcessingCallback(args);
+    quitInstanceNow(args);
 }
 
 void
@@ -686,12 +700,14 @@ AppManager::quit(const AppInstancePtr& instance)
     QuitInstanceArgsPtr args = std::make_shared<QuitInstanceArgs>();
 
     args->instance = instance;
+    instance->setQuitPending();
     if ( instance->getProject()->quitAnyProcessingForAllNodes(this, args) ) {
-        // afterQuitProcessingCallback() is called once the processing is over
+        // afterQuitProcessingCallback() is called once the processing is over, and quits from the
+        // event loop in GUI mode
         return;
     }
     if ( isBackground() ) {
-        afterQuitProcessingCallback(args);
+        quitInstanceNow(args);
     } else {
         // GUI: quit() is called from event handlers of the widgets that aboutToQuit() deletes (the
         // window's close button, File > Close Project and Quit, a script run from the Script Editor,
@@ -714,7 +730,7 @@ AppManager::queueAfterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& 
 
             return;
         }
-        afterQuitProcessingCallback(args);
+        quitInstanceNow(args);
     }, Qt::QueuedConnection );
 }
 
