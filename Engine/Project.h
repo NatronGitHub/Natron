@@ -28,6 +28,8 @@
 
 #include "Global/Macros.h"
 
+#include <functional>
+
 #include <map>
 #include <vector>
 
@@ -121,6 +123,13 @@ public:
     bool isSaveInProgress() const WARN_UNUSED_RETURN;
 
     /**
+     * @brief Tests only: while set, every save (of any project) calls hook after rotating the backups, before the
+     * new file replaces the project file. If it returns false, the file is not replaced, as if that failed: the
+     * save puts the backups back, and tries 3 times before it fails. An empty hook removes it.
+     **/
+    static void setSaveCommitHookForTesting(const std::function<bool()>& hook);
+
+    /**
      * @brief Same as saveProject except that it will save the project in a temporary file
      * so it doesn't overwrite the project.
      **/
@@ -202,9 +211,9 @@ public:
     /**
      * @brief If fileName is the name of an auto-save, ending with .ntp.autosave (text, by Natron 2.5 and earlier)
      * or .ntp.binautosave (binary, by Natron 2.6 and later), possibly followed by a time hash for an untitled
-     * project, returns the position of ".ntp" and sets suffixSize to the size of the auto-save suffix after it.
-     * Returns -1 otherwise. Natron 2.5 only looks for ".ntp.autosave", so it never offers to restore a binary
-     * auto-save, which it can't load. Its Project::clearAutoSavesDir() (when the user declines to restore one of its
+     * project (".<digits>"), returns the position of ".ntp" and sets suffixSize to the size of the auto-save suffix
+     * after it. Returns -1 otherwise, e.g. for the temporary file of a save (<auto-save name>.XXXXXX, see QSaveFile).
+     * Natron 2.5 only looks for ".ntp.autosave", so it never offers to restore a binary auto-save, which it can't load. Its Project::clearAutoSavesDir() (when the user declines to restore one of its
      * own untitled auto-saves, and Cache > Clear all caches) still removes the untitled ones in the Autosaves directory.
      **/
     static int findAutoSaveSuffix(const QString& fileName, int* suffixSize = 0) WARN_UNUSED_RETURN;
