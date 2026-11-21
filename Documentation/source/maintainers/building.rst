@@ -27,7 +27,7 @@ file too;
 ``tools/utils/checkQmakeSources.py`` (run by the Linux CI job) reports any
 mismatch. No per-PR CI job builds with qmake any more: only these source lists
 are checked, so a broken ``.pri`` or ``DEFINES`` setting would only show up
-when the release scripts build an installer (a nightly qmake job would catch
+when the release scripts build an installer (a weekly qmake job would catch
 it earlier).
 
 .. note::

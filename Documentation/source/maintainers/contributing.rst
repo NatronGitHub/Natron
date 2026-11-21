@@ -238,7 +238,7 @@ The ``Tests`` suite includes the GUI tests (``Tests/gui``, ctest label ``gui``, 
 :ref:`guiTests`), which take a few seconds each. On Linux they run under Xvfb with Mesa
 (the job checks the GLX context first, see #536, and sets ``NATRON_GUI_TESTS=1``),
 interactive ones included (``NATRON_TEST_INTERACTIVE=1``), in the Fast (per pull request) and
-Release builds, not in the nightly Debug one (``ctest -LE gui``). The environment variable ``NATRON_GUI_TESTS=1`` enables them at run
+Release builds, not in the weekly Debug one (``ctest -LE gui``). The environment variable ``NATRON_GUI_TESTS=1`` enables them at run
 time; the CMake option ``NATRON_BUILD_GUI_TESTS`` registers them (on by default). In the other jobs, which don't set
 ``NATRON_GUI_TESTS``, they are skipped (exit status 77), not failed; they can be enabled there
 once their runners are known to have an OpenGL context for the viewer.
@@ -259,11 +259,12 @@ The workflow also:
   (``concurrency``), but never a run for a push to a branch or a tag;
 - runs with read-only ``permissions`` (``contents: read``).
 
-**Nightly** (03:17 UTC), the macOS job runs alone on the default branch, and is
-skipped if the branch didn't change in the last 25 hours. Any branch can also
-be run by hand (``workflow_dispatch``). Other configurations (Qt 6, extra C++
+**Weekly** (Sunday 03:17 UTC, after the plug-in repositories' Saturday runs),
+the macOS job runs alone on the default branch, in Debug and Release, and is
+skipped if the branch's head is the commit that the last completed scheduled
+run built. Any branch can also be run by hand (``workflow_dispatch``). Other configurations (Qt 6, extra C++
 standards such as C++23, other compilers or OS versions) are meant to run
-nightly, weekly or by hand, never per pull request; none is set up yet.
+weekly or by hand, never per pull request; none is set up yet.
 
 **Installers and packages are release artifacts.** They are built only by hand
 or for pre-release tags, never for pull requests: ``build_installer.yml``
