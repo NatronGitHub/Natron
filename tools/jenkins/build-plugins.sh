@@ -100,7 +100,9 @@ elif [ "$PKGOS" = "Windows" ]; then
     BUILDID="-Wl,--build-id"
 elif [ "$PKGOS" = "OSX" ]; then
     # see https://github.com/Homebrew/homebrew-core/issues/32765
-    CXXFLAGS_EXTRA="-isysroot `xcodebuild -version -sdk macosx Path 2>/dev/null`"
+    # xcrun works with the Command Line Tools alone (xcodebuild needs Xcode, and an empty
+    # path would make -isysroot swallow the next option)
+    CXXFLAGS_EXTRA="-isysroot $(xcrun --sdk macosx --show-sdk-path)"
 fi
 
 if [ "${DEBUG_SCRIPTS:-}" != "1" ] && [ -d "$TMP_BINARIES_PATH/OFX/Plugins" ]; then

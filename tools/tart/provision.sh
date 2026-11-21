@@ -8,7 +8,7 @@
 #   ~/Documents/third_party/osmesa-install   osmesa-install checkout
 #
 # Usage: provision.sh [STEP...]   (default: all SDK steps; finished steps are skipped)
-#   SDK steps: disk xcode macports macports_conf overlay sync pins osmesa compiler tools libs python_qt
+#   SDK steps: disk nobrew clt macports macports_conf overlay sync pins osmesa compiler tools libs python_qt
 #              dmgtools rebuild_target fixups
 #   env:       REDO="step..." re-runs steps already marked done; PROXY=socks5h://... for internet access
 #   others:    sync (re-publish the overlay), update (refresh an existing SDK), cleanup (shrink the image), build (build Natron)
@@ -22,10 +22,12 @@ WORKSPACE=$HOME/Development/workspace
 LOGDIR=$HOME/provision-logs
 MACPORTS_VERSION=2.12.7
 JOBS=${MKJOBS:-$(sysctl -n hw.ncpu)}
-# Oldest macOS supported by Natron's macOS release (maintainer decision, 2026-11-18). Every port
-# (their dylibs are bundled), OSMesa/LLVM and Natron itself are built for it. MacPorts' binary
-# archives are built for the OS they were made on (minos 15.0 on Sequoia), so ports are built
-# from source. Keep in sync with NATRON_MACOS_MIN in tools/jenkins/common.sh.
+# Oldest macOS supported by Natron's macOS release (maintainer decisions, 2026-11-18 and
+# 2026-11-21): the SDK image runs macOS 14 itself, with the Command Line Tools and the macOS 14
+# SDK, so MacPorts' binary archives (built for the macOS they were made on) can be used. On a
+# newer macOS, every port is built from source for it (step_macports_conf). Every port (their
+# dylibs are bundled), OSMesa/LLVM and Natron itself are built for it. Keep in sync with
+# NATRON_MACOS_MIN in tools/jenkins/common.sh.
 macos_target=14.0
 CHECK_MINOS=$NATRON/tools/tart/check-minos.sh
 export PATH=/opt/local/bin:/opt/local/sbin:$PATH
@@ -92,12 +94,139 @@ step_disk() {
     df -h /
 }
 
-step_xcode() {
-    local xcode=/Applications/Xcode.app
-    [ -d "$xcode" ] || xcode=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
-    sudo xcode-select -s "$xcode/Contents/Developer"
-    sudo xcodebuild -license accept
-    xcodebuild -version
+# The cirruslabs base images come with Homebrew (/opt/homebrew, /etc/paths.d/homebrew, and
+# "brew shellenv" in ~/.zprofile): MacPorts only, so remove it, keeping the tart guest agent
+# (installed by Homebrew, needed by "tart exec"), which only links system libraries.
+step_nobrew() {
+    local agent=/usr/local/libexec/tart-guest-agent f
+    if [ -e /opt/homebrew/bin/tart-guest-agent ]; then
+        sudo mkdir -p /usr/local/libexec
+        sudo cp "$(readlink -f /opt/homebrew/bin/tart-guest-agent)" "$agent"
+        sudo chmod 755 "$agent"
+    fi
+    for f in /Library/LaunchAgents/org.cirruslabs.tart-guest-agent.plist /Library/LaunchDaemons/org.cirruslabs.tart-guest-daemon.plist; do
+        [ -f "$f" ] || continue
+        sudo perl -pi -e "s|/opt/homebrew/bin/tart-guest-agent|$agent|; s|:/opt/homebrew/bin||" "$f"
+    done
+    if grep -q /opt/homebrew /Library/LaunchAgents/org.cirruslabs.tart-guest-agent.plist /Library/LaunchDaemons/org.cirruslabs.tart-guest-daemon.plist 2>/dev/null; then
+        echo "the tart guest agent still uses /opt/homebrew"; return 1
+    fi
+    # the running agent keeps its (deleted) binary until the next boot
+    sudo rm -rf /opt/homebrew /etc/paths.d/homebrew "$HOME/.homebrew"
+    # ~/.profile is a link to ~/.zprofile: keep its LANG, drop Homebrew, rbenv, node and pnpm
+    if [ -f "$HOME/.zprofile" ]; then
+        grep -v -E 'brew|HOMEBREW|rbenv|node@|PNPM' "$HOME/.zprofile" > "$HOME/.zprofile.new" || true
+        mv "$HOME/.zprofile.new" "$HOME/.zprofile"
+    fi
+    # git-lfs came from Homebrew
+    git config --global --remove-section filter.lfs 2>/dev/null || true
+    cat "$HOME/.zprofile"
+    if zsh -lc 'command -v brew'; then echo "brew is still on the login PATH"; return 1; fi
+    [ ! -e /opt/homebrew ]
+}
+
+# The Command Line Tools with the macOS 14 SDK, and nothing else (no Xcode): CLT $CLT_VERSION has
+# the macOS 14.4 SDK (default) and 13.3, Apple clang 15.0.0. The base image has CLT 16.2 (macOS 15.2 and 14.5 SDKs), which is
+# replaced. softwareupdate installs CLT without an Apple ID when this file exists; it uses the
+# system proxy settings, set to the SOCKS proxy for the duration of the install.
+CLT_VERSION=15.3
+CLT_FLAG=/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
+system_proxy() { # on|off : the system SOCKS proxy (softwareupdate ignores ALL_PROXY)
+    local s
+    [ -n "$PROXY" ] || return 0
+    networksetup -listallnetworkservices | tail -n +2 | grep -v '^\*' | while read -r s; do
+        if [ "$1" = on ]; then
+            local hp=${PROXY#*://}
+            sudo networksetup -setsocksfirewallproxy "$s" "${hp%:*}" "${hp##*:}" 2>/dev/null || true
+        else
+            sudo networksetup -setsocksfirewallproxystate "$s" off 2>/dev/null || true
+        fi
+    done
+}
+clt_install() {
+    local label
+    softwareupdate --list > "$LOGDIR/softwareupdate-list.txt" 2>&1 || true
+    cat "$LOGDIR/softwareupdate-list.txt"
+    label=$(sed -n "s/^\* Label: \(Command Line Tools for Xcode-$CLT_VERSION\)\$/\1/p" "$LOGDIR/softwareupdate-list.txt" | head -1)
+    [ -n "$label" ] || { echo "softwareupdate does not offer Command Line Tools $CLT_VERSION"; return 1; }
+    sudo softwareupdate --install "$label" --verbose || return 1
+}
+step_clt() {
+    local have p sdks
+    have=$(pkgutil --pkg-info=com.apple.pkg.CLTools_Executables 2>/dev/null | awk '/^version:/ {print $2}')
+    case "$have" in
+        "$CLT_VERSION".*) echo "Command Line Tools $have already installed" ;;
+        *)
+            if [ -n "$have" ] || [ -d /Library/Developer/CommandLineTools ]; then
+                echo "removing Command Line Tools $have"
+                sudo rm -rf /Library/Developer/CommandLineTools
+                for p in $(pkgutil --pkgs | grep '^com\.apple\.pkg\.CLTools_'); do sudo pkgutil --forget "$p"; done
+            fi
+            system_proxy on
+            sudo touch "$CLT_FLAG"
+            local rc=0
+            clt_install || rc=$?
+            system_proxy off
+            sudo rm -f "$CLT_FLAG"
+            [ "$rc" = 0 ] || return "$rc"
+            ;;
+    esac
+    sudo xcode-select -s /Library/Developer/CommandLineTools
+    xcode-select -p
+    pkgutil --pkg-info=com.apple.pkg.CLTools_Executables
+    # the default SDK is macOS 14's, and there is none for a newer macOS (CLT 15.3 also has 13.3)
+    sdks=$(ls /Library/Developer/CommandLineTools/SDKs)
+    echo "SDKs: $sdks"
+    echo "$sdks" | grep -E '^MacOSX(1[5-9]|[2-9][0-9])' && { echo "SDK for a macOS newer than 14 found"; return 1; }
+    xcrun --show-sdk-version | grep -q '^14\.' || { echo "default SDK is not macOS 14"; return 1; }
+    xcrun --show-sdk-path
+    clang --version
+    # Apple clang and its libc++ for C++17 (Qt5 builds) and C++20 (Qt6 builds), for macOS 14
+    cat > /tmp/clt-cxx17.cpp <<'EOF'
+#include <optional>
+#include <string_view>
+#include <variant>
+#include <filesystem>
+#include <shared_mutex>
+int main() {
+    std::optional<int> o = 1; std::variant<int, double> v = 2.0;
+    if constexpr (sizeof(int) == 4) { auto [a, b] = std::pair<int, int>(1, 2); (void)a; (void)b; }
+    std::shared_mutex m; std::string_view sv = "x";
+    return (*o + (int)std::get<double>(v) + (int)sv.size() + (int)std::filesystem::path("/tmp").empty()) == 4 ? 0 : 1;
+}
+EOF
+    cat > /tmp/clt-cxx20.cpp <<'EOF'
+#include <algorithm>
+#include <compare>
+#include <concepts>
+#include <numbers>
+#include <ranges>
+#include <span>
+#include <vector>
+#include <bit>
+template <std::integral T> constexpr T twice(T x) { return 2 * x; }
+struct P { int x, y; auto operator<=>(const P&) const = default; };
+consteval int c() { return 3; }
+int main() {
+    std::vector<int> v{3, 1, 2};
+    std::ranges::sort(v);
+    std::span<int> s(v);
+    auto even = s | std::views::filter([](int i) { return i % 2 == 0; });
+    P a{.x = 1, .y = 2}, b{1, 3};
+    return (twice(s[0]) == 2 && *even.begin() == 2 && a < b && c() == 3 && std::popcount(7u) == 3 &&
+            std::numbers::pi > 3) ? 0 : 1;
+}
+EOF
+    clang++ -std=c++17 -mmacosx-version-min=14.0 -O2 /tmp/clt-cxx17.cpp -o /tmp/clt-cxx17 && /tmp/clt-cxx17
+    clang++ -std=c++20 -mmacosx-version-min=14.0 -O2 /tmp/clt-cxx20.cpp -o /tmp/clt-cxx20 && /tmp/clt-cxx20
+    # informational: std::format (libc++ marks it available from macOS 13.3)
+    printf '#include <format>\n#include <string>\nint main(){ return std::format("{}", 42) == "42" ? 0 : 1; }\n' > /tmp/clt-format.cpp
+    if clang++ -std=c++20 -mmacosx-version-min=14.0 /tmp/clt-format.cpp -o /tmp/clt-format && /tmp/clt-format; then
+        echo "std::format: OK"
+    else
+        echo "std::format: not usable"
+    fi
+    vtool -show-build /tmp/clt-cxx20 | grep -E 'minos|sdk'
 }
 
 # Install MacPorts $MACPORTS_VERSION from the official .pkg (also upgrades an older base).
@@ -122,14 +251,22 @@ step_macports() {
     pkgutil --check-signature "$dl/$pkg" > "$dl/sig.txt" || true
     grep -q "signed by a developer certificate issued by Apple for distribution" "$dl/sig.txt" &&
         grep -q "Developer ID Installer: Joshua Root (QTA3A3B7F3)" "$dl/sig.txt" || { cat "$dl/sig.txt"; echo "bad signature"; exit 1; }
+    # the .pkg's postinstall runs "port selfupdate", whose rsync can't use the SOCKS proxy and hangs
+    # for minutes on a guest without direct internet access: stop it (ports_https_source syncs later)
+    ( while sleep 15; do
+          pgrep -qx installer || break
+          sudo pkill -f 'rsync://rsync\.macports\.org' 2> /dev/null || true
+      done ) &
     sudo installer -pkg "$dl/$pkg" -target /
+    wait
     port version
 }
 
-# Build every port for $macos_target, and from source (see macos_target above), in macports.conf.
-# This applies to the ports built afterwards; step_rebuild_target rebuilds the installed ones.
-# macosx_sdk_version keeps MacPorts' default (this OS's SDK): an older deployment target with a
-# newer SDK is the normal setup, and Xcode only ships the newest SDK.
+# Build every port for $macos_target in macports.conf. On macOS $macos_target itself that is
+# MacPorts' default, and its binary archives are built for it; on a newer macOS, ports are built
+# from source, since the archives would need that macOS. This applies to the ports installed
+# afterwards; step_rebuild_target rebuilds the installed ones that are too new.
+# macosx_sdk_version keeps MacPorts' default (this OS's SDK, the CLT's macOS 14 SDK in the tart image).
 # Never marked done: a MacPorts upgrade (step_macports) must not lose the settings.
 set_macports_conf() { # key value
     local conf=/opt/local/etc/macports/macports.conf
@@ -141,7 +278,11 @@ set_macports_conf() { # key value
 }
 step_macports_conf() {
     set_macports_conf macosx_deployment_target "$macos_target"
-    set_macports_conf buildfromsource always
+    if [ "$(sw_vers -productVersion | cut -d. -f1)" = "${macos_target%%.*}" ]; then
+        set_macports_conf buildfromsource ifneeded
+    else
+        set_macports_conf buildfromsource always
+    fi
     grep -E '^(macosx_deployment_target|macosx_sdk_version|buildfromsource)[[:space:]]' /opt/local/etc/macports/macports.conf
     grep -q "^macosx_deployment_target[[:space:]]*$macos_target\$" /opt/local/etc/macports/macports.conf
 }
@@ -544,7 +685,7 @@ step_build() {
     ls "$WORKSPACE"/builds_archive/natron_github_RB2/1/*.dmg
 }
 
-SDK_STEPS="disk xcode macports macports_conf overlay sync pins osmesa compiler tools libs python_qt dmgtools rebuild_target fixups"
+SDK_STEPS="disk nobrew clt macports macports_conf overlay sync pins osmesa compiler tools libs python_qt dmgtools rebuild_target fixups"
 # steps that are never marked done (they are meant to be re-run)
 NO_MARKER_STEPS="disk macports_conf sync pins rebuild_target update fixups cleanup build"
 mkdir -p "$LOGDIR"

@@ -17,8 +17,8 @@ THIRD_PARTY=$(cd "$NATRON_SRC/.." && pwd)
 OSMESA_INSTALL_SRC=${OSMESA_INSTALL_SRC:-$THIRD_PARTY/osmesa-install}
 
 # base image and local SDK image names
-BASE_IMAGE=${BASE_IMAGE:-ghcr.io/cirruslabs/macos-sequoia-xcode:latest}
-SDK_IMAGE=${SDK_IMAGE:-natron-sdk-sequoia}
+BASE_IMAGE=${BASE_IMAGE:-ghcr.io/cirruslabs/macos-sonoma-base:latest}
+SDK_IMAGE=${SDK_IMAGE:-natron-sdk-sonoma}
 VM_CPU=${VM_CPU:-8}
 VM_MEMORY=${VM_MEMORY:-16384}   # MB
 VM_DISK=${VM_DISK:-250}         # GB (sparse)
@@ -136,7 +136,7 @@ vm_rsync_back() { # vm guest-src dst [rsync options...]
 vm_start() { # vm : boot (if needed), install the SSH key, open the SSH master carrying the guest's proxy
     local vm=$1 addr others ok=0 sock token
     # clones of an image share their IPv6 link-local address: never run two of our VMs at once
-    others=$(vm_list_running | grep -E '^natron-(sdk|build)-' | grep -vx "$vm" || true)
+    others=$(vm_list_running | grep -E '^natron-(sdk|build|test)-' | grep -vx "$vm" || true)
     [ -z "$others" ] || die "other Natron VMs are running ($others): stop them first (tart stop <name>)"
     [ -f "$TART_KEY" ] || ssh-keygen -q -t ed25519 -N "" -C "natron-tart" -f "$TART_KEY"
     if ! vm_running "$vm"; then
@@ -179,7 +179,7 @@ vm_stop() { # vm
     if vm_running "$1"; then
         log "stopping $1"
         # by name (tart exec), not by address: never shut down another VM with the same address
-        tart exec "$1" sudo -n shutdown -h now > /dev/null 2>&1 || true
+        tart exec "$1" sudo -n /sbin/shutdown -h now > /dev/null 2>&1 || true
         for _ in $(seq 60); do vm_running "$1" || break; sleep 5; done
         vm_running "$1" && tart stop "$1"
     fi
