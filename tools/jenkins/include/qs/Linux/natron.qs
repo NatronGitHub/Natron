@@ -60,8 +60,11 @@ Component.prototype.createOperations = function()
     try {
         // call the base create operations function
         component.createOperations();
-	component.addOperation("CreateDesktopEntry","Natron2.desktop","Version=1.0\nType=Application\nTerminal=false\nName=Natron2\nMimeType=application/x-natron\nExec=@TargetDir@/Natron %U\nGenericName=Compositing software\nComment=Node-graph based compositing software\nIcon=natronIcon256_linux\nCategories=Graphics;2DGraphics;RasterGraphics;\n");
-        component.addOperation("Execute","@TargetDir@/bin/natron-mime.sh");
+        // natron-mime.sh adds the menu entry, the icons and the .ntp file type
+        // (no CreateDesktopEntry: it would add a second menu entry). The
+        // uninstaller runs natron-mime.sh --uninstall.
+        component.addOperation("Execute", "@TargetDir@/bin/natron-mime.sh",
+                               "UNDOEXECUTE", "@TargetDir@/bin/natron-mime.sh", "--uninstall");
     } catch (e) {
         print(e);
     }
