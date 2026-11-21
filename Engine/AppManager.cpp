@@ -700,6 +700,12 @@ AppManager::quitNow(const AppInstancePtr& instance)
 void
 AppManager::quit(const AppInstancePtr& instance)
 {
+    if ( instance->isQuitPending() ) {
+        // already quitting (e.g. app.closeProject(), then natron.quit() or the end of a GUI test): a second
+        // quit would run aboutToQuit() again, possibly from the events that the first one processes, and
+        // delete the settings panels twice (#1567)
+        return;
+    }
     QuitInstanceArgsPtr args = std::make_shared<QuitInstanceArgs>();
 
     args->instance = instance;

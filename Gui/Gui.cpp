@@ -337,7 +337,8 @@ Gui::closeEvent(QCloseEvent* e)
 {
     assert(e);
     GuiAppInstancePtr app = getApp();
-    if ( app && app->isClosing() ) {
+    if ( app && ( app->isClosing() || app->isQuitPending() ) ) {
+        // already quitting (#1567): it closes this window
         e->ignore();
     } else if ( appPTR->isQuitRequested() ) {
         // natron.quit() will close everything, without asking to save

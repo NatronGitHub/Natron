@@ -50,6 +50,7 @@
 - Fixed a data race, which could crash Natron, when a parameter's expression was removed while a render read the parameters it depends on. #1544
 - Fixed a possible hang (deadlock) when a parameter's animation curve changed while queued values were applied to it (e.g. during a render), or when two parameters were copied onto each other at the same time from two threads. #1543
 - NatronRenderer and `Natron -t`: a script (or a Python callback) that presses the Render button of a Write node, the Pre-cache button of a DiskCache node or the Render button of a Precomp node no longer hangs when the render runs Python: a render callback of the Write node (`beforeRender`, `afterFrameRender`...) or a Python expression upstream. The main thread kept the Python lock while it waited for the render, and the render waited for the lock to run the Python code. #1568
+- Natron no longer crashes when it quits after `app.closeProject()` was called on a project with unsaved changes and an open settings panel, e.g. at the end of a `Natron --test` script, or with `natron.quit()` after `app.closeProject()`: the project was closed a second time while it was being closed. #1567
 
 
 ## Version 2.5.0
