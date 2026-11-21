@@ -229,6 +229,11 @@ public:
 
     void clearPluginsLoadedCache();
 
+    /// Unloads the OFX plug-ins, as the destructor does: deletes the plug-in cache, so that each loaded plug-in
+    /// gets kOfxActionUnload and its binary is unloaded. No OFX instance may be left. The plug-ins are unloaded
+    /// only once: the next calls, and the destructor, find no plug-in cache to delete (#1557).
+    void unloadPlugins();
+
     void setThreadAsActionCaller(OfxImageEffectInstance* instance, bool actionCaller);
 
     /// Load the plug-in if needed (OfxSetHost of its binary, kOfxActionLoad, kOfxActionDescribe) and

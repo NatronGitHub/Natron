@@ -541,6 +541,14 @@ public:
 
     void registerCloseProjectsAtPythonExit();
 
+    /**
+     * @brief Called on the main thread at Python exit in the background modes that run scripts, once the projects
+     * are closed (see registerCloseProjectsAtPythonExit()): sys.exit() leaves through exit(), so ~AppManager never
+     * runs. Waits for the tasks of the global thread pool, saves the disk caches and unloads the OFX plug-ins
+     * (kOfxActionUnload), as ~AppManager does (#1557). Does nothing in ~AppManager.
+     **/
+    void cleanUpAtPythonExit();
+
     void launchPythonInterpreter();
 
     int isProjectAlreadyOpened(const std::string& projectFilePath) const;

@@ -235,7 +235,7 @@ OfxHost::OfxHost()
 OfxHost::~OfxHost()
 {
     //Clean up, to be polite.
-    OFX::Host::PluginCache::clearPluginCache();
+    unloadPlugins();
 
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
     delete _imp->pluginsMutexesLock;
@@ -1263,6 +1263,14 @@ OfxHost::clearPluginsLoadedCache()
 
     QDir OFXCacheDir( getOFXCacheDirPath() );
     OFXCacheDir.removeRecursively();
+}
+
+void
+OfxHost::unloadPlugins()
+{
+    // clearPluginCache() deletes the plug-in cache and forgets it: a second call deletes nothing, so the plug-ins
+    // get kOfxActionUnload once, whether this was called at Python exit (AppManager::cleanUpAtPythonExit()) or not.
+    OFX::Host::PluginCache::clearPluginCache();
 }
 
 void

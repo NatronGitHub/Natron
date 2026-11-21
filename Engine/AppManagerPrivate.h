@@ -173,6 +173,9 @@ public:
     //To by-pass a bug introduced in RC2 / RC3 with the serialization of bezier curves
     bool lastProjectLoadedCreatedDuringRC2Or3;
 
+    // ~AppManager runs: it does what AppManager::cleanUpAtPythonExit() would do itself, in its own order (#1557)
+    bool destroying;
+
     // GUI test mode (--test)
     bool testMode;
     std::unique_ptr<QTemporaryDir> testSettingsDir; // test mode: the settings of this run (removed at exit)

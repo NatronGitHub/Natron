@@ -225,6 +225,11 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME RendererQuitTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_quit_test.py $<TARGET_FILE:NatronRenderer>)
     set_tests_properties(RendererQuitTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
+    # sys.exit() in a NatronRenderer script, or at the -t prompt, unloads the OFX plug-ins once (#1557)
+    add_test(NAME RendererExitUnloadTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_exit_unload_test.py
+                $<TARGET_FILE:NatronRenderer> "${NATRON_TESTS_OFX_PLUGIN_DIR}")
+    set_tests_properties(RendererExitUnloadTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
 endif()
 
 # Not part of a normal install. The installer scripts install it separately

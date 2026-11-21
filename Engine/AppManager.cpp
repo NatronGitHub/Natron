@@ -546,6 +546,8 @@ AppManager::loadW(int argc,
 
 AppManager::~AppManager()
 {
+    // The atexit hook of Python, run by Py_Finalize() in tearDownPython() below, must not clean up: this does it
+    _imp->destroying = true;
 #ifdef __NATRON_UNIX__
     disarmShutDownSignalPipe();
 #endif
@@ -3640,7 +3642,8 @@ AppManager::toggleAutoHideGraphInputs()
 
 // Registered with atexit by registerCloseProjectsAtPythonExit() in the background modes that run
 // scripts: Py_Main() (-t), or sys.exit() in a script, finalizes Python, so close the projects while Python
-// still runs, for the onProjectClose callbacks and the removal of the node variables (#1253).
+// still runs, for the onProjectClose callbacks and the removal of the node variables (#1253), then unload the
+// OFX plug-ins (cleanUpAtPythonExit(), #1557): sys.exit() then calls exit(), and ~AppManager never runs.
 // After Py_Main(), loadInternalAfterInitGui() then quits the instances.
 static PyObject*
 closeProjectsAtPythonExit(PyObject* /*self*/,
@@ -3663,9 +3666,40 @@ closeProjectsAtPythonExit(PyObject* /*self*/,
                 std::cerr << e.what() << std::endl;
             }
         }
+        // sys.exit() leaves through exit(): ~AppManager won't unload the OFX plug-ins (#1557)
+        appPTR->cleanUpAtPythonExit();
         Py_END_ALLOW_THREADS
     }
     Py_RETURN_NONE;
+}
+
+void
+AppManager::cleanUpAtPythonExit()
+{
+    // Python is finalized by sys.exit() or natron.quit() in a script or at the prompt of the -t option, which then
+    // call exit() (Py_Exit()), or at the end of the prompt (Py_Main()), after which ~AppManager runs. In the first
+    // case, the OFX plug-ins would never get kOfxActionUnload, and the threads that some start (e.g. the thread
+    // pool of OpenImageIO) would only be stopped by their static destructors, in exit(), which may deadlock on
+    // Windows (#1557). os._exit() runs nothing, not even this.
+    // The callers run on the main thread, with the projects closed: their renders were aborted and waited for, and
+    // their nodes deleted. Only the tasks of the global thread pool may still run (the threads of the
+    // multi-thread suite of the OFX plug-ins, the deletion of images): wait for them, as ~AppManager does.
+    assert( QThread::currentThread() == qApp->thread() );
+    if (_imp->destroying) {
+        return;
+    }
+    QThreadPool::globalInstance()->waitForDone();
+    // Keep the images of the DiskCache nodes for the next process, as ~AppManager does
+    try {
+        _imp->saveCaches();
+    } catch (std::runtime_error&) {
+        // ignore errors
+    }
+    // Each loaded plug-in gets kOfxActionUnload, and its binary is unloaded, on the main thread, before exit().
+    // The plug-ins are unloaded once: ~OfxHost won't unload them again.
+    if (_imp->ofxHost) {
+        _imp->ofxHost->unloadPlugins();
+    }
 }
 
 static PyMethodDef closeProjectsAtPythonExitDef = {
