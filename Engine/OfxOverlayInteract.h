@@ -53,18 +53,11 @@ NATRON_NAMESPACE_ENTER
  * The bits follow the OFX key symbols that Natron sends (see QtEnumConvert::fromQtKey()):
  * Qt::ShiftModifier/Key_Shift is Shift, Qt::ControlModifier/Key_Control is Control (Cmd on macOS),
  * Qt::AltModifier/Key_Alt is Alt (Option on macOS) and Qt::MetaModifier/Key_Meta is Meta
- * (the Control key on macOS, the Windows key on Windows).
- * On X11 and Wayland, Qt::MetaModifier is the Super (Mod4/Logo) modifier, but Natron reports
- * the Super keys as Key_Super_L/R: there, the Meta bit is set only while a key that Natron
- * reported as Key_Meta_L/R is down (see ofxKeyModifiersNoteKeyEvent()).
+ * (the Control key on macOS, the Windows key on Windows, usually Super on X11 and Wayland: on
+ * Wayland, fromQtKey() maps Qt::Key_Super_L/R to Key_Meta_L/R, as Qt does on X11, see
+ * NatronGitHub/Natron#1278).
  **/
 int ofxKeyModifiersFromNatron(const KeyboardModifiers& modifiers);
-
-/**
- * @brief Tell ofxKeyModifiersFromNatron() about a key event sent to an overlay interact, before
- * converting the modifiers of that event. Only Key_Meta_L/R matter, and only on X11/Wayland.
- **/
-void ofxKeyModifiersNoteKeyEvent(Key key, bool down);
 
 class NatronOverlayInteractSupport
 {
@@ -473,6 +466,8 @@ public:
     // supportsKeyModifiers() and getKeyModifiers(), and set the state from CustomParamInteract and
     // CurveWidget before each action (NatronGitHub/Natron#1283). Until then, HostSupport doesn't
     // pass kNatronOfxInteractPropKeyModifiers here, and the plug-ins track the modifier keys.
+    // Take the key symbols from QtEnumConvert::fromQtKey(), which maps Super to Meta on Wayland
+    // (NatronGitHub/Natron#1278), so that the Meta bit agrees with them.
 
     virtual bool isColorPickerRequired() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
