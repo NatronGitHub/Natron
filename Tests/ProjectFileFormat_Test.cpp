@@ -880,6 +880,21 @@ public:
     }
 };
 
+// Sets the save commit hook (see Project::setSaveCommitHookForTesting()) while it exists.
+class SaveCommitHook
+{
+public:
+    explicit SaveCommitHook(const std::function<bool()>& hook)
+    {
+        Project::setSaveCommitHookForTesting(hook);
+    }
+
+    ~SaveCommitHook()
+    {
+        Project::setSaveCommitHookForTesting( std::function<bool()>() );
+    }
+};
+
 // True if the current user can write to path, although it is read-only (root).
 bool
 canWriteReadOnly(const QString& path)
@@ -1058,11 +1073,12 @@ TEST(ProjectSave, FailedCommitKeepsThePreviousFile)
     ASSERT_FALSE( b == readFile(backup1) );
 
     // Fails the next count commits.
-    auto failCommits = [](int count) {
-        std::shared_ptr<int> n = std::make_shared<int>(count);
-        Project::setSaveCommitHookForTesting([n]() {
-            return (*n)-- <= 0;
-        });
+    std::shared_ptr<int> failures = std::make_shared<int>(0);
+    SaveCommitHook hook([failures]() {
+        return (*failures)-- <= 0;
+    });
+    auto failCommits = [failures](int count) {
+        *failures = count;
     };
 
     // one failure: the save tries again
@@ -1080,7 +1096,7 @@ TEST(ProjectSave, FailedCommitKeepsThePreviousFile)
     failCommits(3);
     QString errorMessage;
     EXPECT_FALSE( project->saveProject_imp(dir, name, false /*autoSave*/, false /*updateProjectProperties*/, 0, &errorMessage, eProjectFileFormatBinary) );
-    Project::setSaveCommitHookForTesting( std::function<bool()>() );
+    failCommits(0);
     EXPECT_TRUE( errorMessage.contains(path) ) << errorMessage.toStdString();
     EXPECT_TRUE( readFile(path) == c ) << "the project file was not put back";
     EXPECT_TRUE( readFile(backup1) == b ) << "the backup was not put back";
@@ -1109,27 +1125,40 @@ TEST(ProjectSave, FailedRollbackSaysWhereThePreviousVersionIs)
     const QByteArray previous = readFile(path);
     setFrameRange(5, 55);
 
+    const QFileDevice::Permissions readOnly = QFileDevice::ReadOwner | QFileDevice::ExeOwner | QFileDevice::ReadUser | QFileDevice::ExeUser;
+    {
+        // root can write to a read-only folder: check it in another folder, before the save
+        QTemporaryDir scratch;
+        ASSERT_TRUE( scratch.isValid() );
+        const QFileDevice::Permissions scratchPermissions = QFile::permissions( scratch.path() );
+        ASSERT_TRUE( QFile::setPermissions(scratch.path(), readOnly) );
+        const bool rootCanWrite = canWriteReadOnly( scratch.path() );
+        ASSERT_TRUE( QFile::setPermissions(scratch.path(), scratchPermissions) );
+        if (rootCanWrite) {
+            reportSkipped("a read-only directory is writable (root?)");
+            project->resetProject();
+
+            return;
+        }
+    }
+
     // the folder becomes read-only after the rotation: the commit and the rollback fail
     const QFileDevice::Permissions dirPermissions = QFile::permissions( tmpDir.path() );
     const QString dirPath = tmpDir.path();
     int calls = 0;
-    Project::setSaveCommitHookForTesting([&]() {
-        ++calls;
-        QFile::setPermissions(dirPath, QFileDevice::ReadOwner | QFileDevice::ExeOwner | QFileDevice::ReadUser | QFileDevice::ExeUser);
-
-        return false;
-    });
     QString errorMessage;
-    const bool saved = project->saveProject_imp(dir, name, false /*autoSave*/, false /*updateProjectProperties*/, 0, &errorMessage, eProjectFileFormatBinary);
-    Project::setSaveCommitHookForTesting( std::function<bool()>() );
-    const bool rootCanWrite = canWriteReadOnly(dirPath);
-    ASSERT_TRUE( QFile::setPermissions(dirPath, dirPermissions) );
-    if (rootCanWrite) {
-        reportSkipped("the read-only directory is writable (root?)");
-        project->resetProject();
+    bool saved;
+    {
+        SaveCommitHook hook([&]() {
+            ++calls;
+            QFile::setPermissions(dirPath, readOnly);
 
-        return;
+            return false;
+        });
+        saved = project->saveProject_imp(dir, name, false /*autoSave*/, false /*updateProjectProperties*/, 0, &errorMessage, eProjectFileFormatBinary);
     }
+    ASSERT_TRUE( QFile::setPermissions(dirPath, dirPermissions) );
+    EXPECT_GE(calls, 1) << "the save failed before the rotation: " << errorMessage.toStdString();
     EXPECT_FALSE(saved);
     EXPECT_EQ(1, calls) << "a save whose rollback failed must not try again";
     EXPECT_TRUE( errorMessage.contains(path) ) << errorMessage.toStdString();
@@ -1300,6 +1329,8 @@ TEST(ProjectSave, FileOpenByAnotherProcess)
     EXPECT_FALSE(saved);
     EXPECT_TRUE( errorMessage.contains(path) ) << errorMessage.toStdString();
     EXPECT_TRUE( readFile(path) == previous );
+    // the copy of the project file to .~1~ (it can't be renamed while open) was removed by the rollback
+    EXPECT_FALSE( QFile::exists( path + QString::fromUtf8(".~1~") ) );
     EXPECT_EQ( QStringList(), strayFiles( dir, QStringList(name) ) );
 
     // then it saves
