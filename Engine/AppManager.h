@@ -785,6 +785,12 @@ private:
 
     virtual void afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args) OVERRIDE FINAL;
 
+    /// Quits the instance of args (QuitInstanceArgs), once its processing is over
+    void quitInstanceNow(const GenericWatcherCallerArgsPtr& args);
+
+    /// GUI mode: calls quitInstanceNow() from the event loop, not from a nested one
+    void queueAfterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args);
+
     bool loadInternal(const CLArgs& cl);
 
     void setUpShutDownSignalNotifier();

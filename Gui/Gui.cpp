@@ -41,6 +41,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QTimer>
 #include <QDesktopServices>
 #include <QUrl>
+#include <QPointer>
 
 #include "Engine/Node.h"
 #include "Engine/Project.h"
@@ -136,6 +137,26 @@ Gui::~Gui()
     for (std::list<ViewerTab*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         delete *it;
     }
+
+    // Delete the node graphs of the groups now too, including those that removeGroupGui() deleted
+    // later: QWidget::~QWidget() would delete their scenes, children of this window created before
+    // them, which delete their items, before the graphs, which still use them (#1554).
+    _imp->_groups.clear();
+    {
+        QList<QPointer<NodeGraph> > graphs;
+        Q_FOREACH(NodeGraph* graph, findChildren<NodeGraph*>()) {
+            if (graph != _imp->_nodeGraphArea) {
+                graphs.push_back( QPointer<NodeGraph>(graph) );
+            }
+        }
+        for (int i = 0; i < graphs.size(); ++i) {
+            delete graphs[i].data(); // null if deleted with a graph deleted before
+        }
+    }
+    // and the main node graph, for the same reason: its scene is a child of this window too, and the
+    // graph is one as well when its pane was closed (TabWidget::removeTab() reparents it here)
+    delete _imp->_nodeGraphArea;
+    _imp->_nodeGraphArea = 0;
 
     delete _imp->_errorLog;
     delete _imp->_projectGui;
@@ -258,8 +279,12 @@ Gui::abortProject(bool quitApp,
     _imp->saveGuiGeometry();
 
     _imp->setUndoRedoActions(0, 0);
+    ///Reset current undo/reso actions
+    _imp->_currentUndoAction = 0;
+    _imp->_currentRedoAction = 0;
     if (quitApp) {
         if (app) {
+            // quits once the event loop is back: this window is still alive after this call
             app->quit();
         }
     } else {
@@ -281,11 +306,9 @@ Gui::abortProject(bool quitApp,
         centerAllNodeGraphsWithTimer();
         restoreDefaultLayout();
         setGuiAboutToClose(false);
+        _imp->_currentUndoAction = 0;
+        _imp->_currentRedoAction = 0;
     }
-
-    ///Reset current undo/reso actions
-    _imp->_currentUndoAction = 0;
-    _imp->_currentRedoAction = 0;
 
     return true;
 }
@@ -450,7 +473,10 @@ Gui::eventFilter(QObject *target,
                  QEvent* e)
 {
     if (_imp->_aboutToClose) {
-        return true;
+        // Except the deferred delete of GuiAppInstance::aboutToQuit(), which sets this flag before
+        // calling deleteLater(): eating it left this window, its panels and the PySide wrappers of
+        // their widgets alive until Python was finalized, after the knobs were destroyed (#1554).
+        return e->type() != QEvent::DeferredDelete;
     }
     if ( dynamic_cast<QInputEvent*>(e) ) {
         /*Make top level instance this instance since it receives all

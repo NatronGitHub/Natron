@@ -104,6 +104,7 @@
 #include <QFile>
 #include <QSysInfo>
 #include <QThread>
+#include <QTimer>
 #include <QUuid>
 #include <QRegularExpression>
 #include <QSettings>
@@ -638,6 +639,20 @@ typedef std::shared_ptr<QuitInstanceArgs> QuitInstanceArgsPtr;
 void
 AppManager::afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args)
 {
+    // Called by the watcher of Project::quitAnyProcessingForAllNodes() once the nodes stopped
+    // processing. In GUI mode, this may be in a nested event loop (e.g. a script that called
+    // app.closeProject() and processes events), with code under it that uses the windows that
+    // quitting deletes: quit from the event loop (#1554).
+    if ( isBackground() ) {
+        quitInstanceNow(args);
+    } else {
+        queueAfterQuitProcessingCallback(args);
+    }
+}
+
+void
+AppManager::quitInstanceNow(const GenericWatcherCallerArgsPtr& args)
+{
     QuitInstanceArgs* inArgs = dynamic_cast<QuitInstanceArgs*>( args.get() );
 
     if (!inArgs) {
@@ -645,6 +660,10 @@ AppManager::afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args)
     }
 
     AppInstancePtr instance = inArgs->instance.lock();
+    if ( !instance || (getAppInstance( instance->getAppID() ) != instance) ) {
+        // already quit: quit() may be called twice before the queued call below runs
+        return;
+    }
 
     instance->aboutToQuit();
 
@@ -675,7 +694,7 @@ AppManager::quitNow(const AppInstancePtr& instance)
     }
     QuitInstanceArgsPtr args = std::make_shared<QuitInstanceArgs>();
     args->instance = instance;
-    afterQuitProcessingCallback(args);
+    quitInstanceNow(args);
 }
 
 void
@@ -684,9 +703,38 @@ AppManager::quit(const AppInstancePtr& instance)
     QuitInstanceArgsPtr args = std::make_shared<QuitInstanceArgs>();
 
     args->instance = instance;
-    if ( !instance->getProject()->quitAnyProcessingForAllNodes(this, args) ) {
-        afterQuitProcessingCallback(args);
+    instance->setQuitPending();
+    if ( instance->getProject()->quitAnyProcessingForAllNodes(this, args) ) {
+        // afterQuitProcessingCallback() is called once the processing is over, and quits from the
+        // event loop in GUI mode
+        return;
     }
+    if ( isBackground() ) {
+        quitInstanceNow(args);
+    } else {
+        // GUI: quit() is called from event handlers of the widgets that aboutToQuit() deletes (the
+        // window's close button, File > Close Project and Quit, a script run from the Script Editor,
+        // Gui::abortProject() itself), which use them after quit() returns: quit from the event
+        // loop, as when nodes are still processing (#1554).
+        queueAfterQuitProcessingCallback(args);
+    }
+}
+
+void
+AppManager::queueAfterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args)
+{
+    QMetaObject::invokeMethod( this, [this, args]() {
+        if (getNestedEventLoopsCount() > 0) {
+            // a nested event loop runs (e.g. a GUI test's waitIdle()): the code under it may use
+            // the windows of the instance, try again once it is over
+            QTimer::singleShot( 50, this, [this, args]() {
+                queueAfterQuitProcessingCallback(args);
+            } );
+
+            return;
+        }
+        quitInstanceNow(args);
+    }, Qt::QueuedConnection );
 }
 
 void
