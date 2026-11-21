@@ -52,6 +52,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OverlaySupport.h"
@@ -110,6 +111,48 @@ TEST(OfxHostProperties, NotYetSupported15Features)
     EXPECT_EQ( std::string("false"), props.getStringProperty(kOfxImageEffectPropOpenCLRenderSupported) );
     EXPECT_EQ( std::string(kOfxImageEffectColourManagementNone), props.getStringProperty(kOfxImageEffectPropColourManagementStyle) );
     EXPECT_EQ( 0, props.getIntProperty(kOfxParamHostPropSupportsStrChoice) );
+}
+
+// kOfxImageEffectPropSetableFrameRate is 1, and the output frame rate that a plug-in sets in
+// getClipPreferences is the node's frame rate, which downstream nodes get by default. Natron doesn't
+// remap the frame range for it: a plug-in that changes the number of frames does it with getTimeDomain
+// (#1107). The openfx-io readers set their file's frame rate, and openfx-misc Deinterlace and NoOp
+// only offer their frame-rate options when this is 1.
+TEST(OfxHostProperties, SetableFrameRate)
+{
+    ASSERT_TRUE(OFX::Host::ImageEffect::gImageEffectHost != NULL);
+    OFX::Host::Property::Set& props = hostProps();
+    EXPECT_EQ( 1, props.getIntProperty(kOfxImageEffectPropSetableFrameRate) );
+    EXPECT_EQ( 0, props.getIntProperty(kOfxImageEffectPropSetableFielding) );
+
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginGenerator) ) {
+        NatronTestPlugin::reportSkipped(kNatronTestPluginGenerator);
+
+        return;
+    }
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginMultiPAR) ) {
+        NatronTestPlugin::reportSkipped(kNatronTestPluginMultiPAR);
+
+        return;
+    }
+    NodePtr generator = NatronTestPlugin::createNode(kNatronTestPluginGenerator);
+    NodePtr filter = NatronTestPlugin::createNode(kNatronTestPluginMultiPAR);
+    ASSERT_TRUE( generator && filter );
+    const double projectFPS = generator->getApp()->getProjectFrameRate();
+    // the plug-in doesn't set it: the project frame rate
+    EXPECT_EQ( projectFPS, generator->getEffectInstance()->getFrameRate() );
+    ASSERT_TRUE( filter->getApp()->getProject()->connectNodes(0, generator, filter) );
+
+    const double fps = projectFPS * 2.;
+    KnobDouble* fpsKnob = dynamic_cast<KnobDouble*>( generator->getKnobByName("fps").get() );
+    ASSERT_TRUE(fpsKnob != NULL);
+    fpsKnob->setValue(fps);
+    EXPECT_EQ( fps, generator->getEffectInstance()->getFrameRate() );
+    // a node downstream gets it as its default output frame rate
+    EXPECT_EQ( fps, filter->getEffectInstance()->getFrameRate() );
+
+    filter->destroyNode(true, false);
+    generator->destroyNode(true, false);
 }
 
 namespace {
