@@ -71,6 +71,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/BackdropGui.h"
 #include "Gui/Button.h"
 #include "Gui/CurveEditor.h"
+#include "Gui/GuiTest.h"
 #include "Gui/HostOverlay.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/DopeSheetEditor.h"
@@ -1659,7 +1660,7 @@ NodeGui::boundingRect() const
 void
 NodeGui::refreshEdgesVisility()
 {
-    QPointF mousePos = mapFromScene( _graph->mapToScene( _graph->mapFromGlobal( QCursor::pos() ) ) );
+    QPointF mousePos = mapFromScene( _graph->mapToScene( _graph->mapFromGlobal( GuiTest::cursorPos() ) ) );
     bool hovered = contains(mousePos);
 
     refreshEdgesVisibilityInternal(hovered);
@@ -4187,7 +4188,7 @@ NodeGui::showGroupKnobAsDialog(KnobGroup* group)
     bool showDialog = group->getValue();
     if (showDialog) {
         _activeNodeCustomModalDialog = new GroupKnobDialog(getDagGui()->getGui(), group);
-        _activeNodeCustomModalDialog->move( QCursor::pos() );
+        _activeNodeCustomModalDialog->move( GuiTest::cursorPos() );
         int accepted = _activeNodeCustomModalDialog->exec();
         Q_UNUSED(accepted);
         // Notify dialog closed
@@ -4256,7 +4257,7 @@ NodeGui::onRightClickMenuKnobPopulated()
         m.addAction(action);
     }
 
-    m.exec( QCursor::pos() );
+    m.exec( GuiTest::cursorPos() );
 } // NodeGui::onRightClickMenuKnobPopulated
 
 void

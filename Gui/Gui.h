@@ -285,8 +285,10 @@ public:
     std::string popOpenFileDialog(bool sequenceDialog,
                                   const std::vector<std::string> & initialfilters, const std::string & initialDir,
                                   bool allowRelativePaths);
+    // extraWidget, if not null, is added at the end of the file name line (e.g. a file format choice);
+    // it is owned by the dialog, and only valid until this function returns.
     std::string popSaveFileDialog(bool sequenceDialog, const std::vector<std::string> & initialfilters, const std::string & initialDir,
-                                  bool allowRelativePaths);
+                                  bool allowRelativePaths, QWidget* extraWidget = 0);
     std::string openImageSequenceDialog();
     std::string saveImageSequenceDialog();
 
@@ -311,8 +313,10 @@ public:
     static QPixmap screenShot(QWidget* w);
 
     void loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & obj) const;
+    void loadProjectGui(bool isAutosave, PortableBinaryIArchive & obj) const;
 
     void saveProjectGui(boost::archive::xml_oarchive & archive);
+    void saveProjectGui(PortableBinaryOArchive & archive);
 
     void setColorPickersColor(double r, double g, double b, double a);
 
@@ -523,6 +527,11 @@ public:
 
     bool saveProjectAs(const std::string& filename);
 
+    /**
+     * @brief Saves the project to filename in the given format, which becomes the format of the project.
+     **/
+    bool saveProjectAs(const std::string& filename, ProjectFileFormatEnum format);
+
     static void fileSequencesFromUrls(const QList<QUrl>& urls, std::vector<SequenceParsing::SequenceFromFilesPtr>* sequences);
 
     void handleOpenFilesFromUrls(const QList<QUrl>& urls, const QPoint& globalPos);
@@ -577,8 +586,10 @@ public Q_SLOTS:
     void closeEvent(QCloseEvent* e) OVERRIDE;
     void newProject();
     void openProject();
-    bool saveProject();
-    bool saveProjectAs();
+    // format: the format of the file, see Project::saveProject(); for saveProjectAs(), the default of the
+    // file format choice of the dialog.
+    bool saveProject(ProjectFileFormatEnum format = eProjectFileFormatNone);
+    bool saveProjectAs(ProjectFileFormatEnum format = eProjectFileFormatNone);
     void exportProjectAsGroup();
     void saveAndIncrVersion();
 

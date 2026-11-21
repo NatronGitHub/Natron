@@ -132,7 +132,9 @@ public:
                                               Natron::StandardButtonEnum defaultButton,
                                               bool* stopAsking) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void loadProjectGui(bool isAutosave,  boost::archive::xml_iarchive & archive) const OVERRIDE FINAL;
+    virtual void loadProjectGui(bool isAutosave,  PortableBinaryIArchive & archive) const OVERRIDE FINAL;
     virtual void saveProjectGui(boost::archive::xml_oarchive & archive) OVERRIDE FINAL;
+    virtual void saveProjectGui(PortableBinaryOArchive & archive) OVERRIDE FINAL;
     virtual void notifyRenderStarted(const QString & sequenceName,
                                      int firstFrame, int lastFrame,
                                      int frameStep, bool canPause,
@@ -215,8 +217,8 @@ public Q_SLOTS:
     virtual bool isDraftRenderEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setDraftRenderEnabled(bool b) OVERRIDE FINAL;
     virtual bool isRenderStatsActionChecked() const OVERRIDE FINAL;
-    virtual bool save(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool saveAs(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool save(const std::string& filename, ProjectFileFormatEnum format = eProjectFileFormatNone) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool saveAs(const std::string& filename, ProjectFileFormatEnum format = eProjectFileFormatNone) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual AppInstancePtr loadProject(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     ///Close the current project but keep the window

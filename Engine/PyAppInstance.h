@@ -329,9 +329,19 @@ public:
 
     void writeToScriptEditor(const QString& message);
 
-    bool saveProject(const QString& filename);
-    bool saveProjectAs(const QString& filename);
-    bool saveTempProject(const QString& filename);
+    // format: the format of the file (see ProjectFileFormatEnum). eProjectFileFormatNone uses the format of the
+    // project, or the "Save projects as binary by default" preference for a project that was never saved.
+    // For saveProject() and saveProjectAs(), a format other than eProjectFileFormatNone becomes the format of the project.
+    bool saveProject(const QString& filename, Natron::ProjectFileFormatEnum format = Natron::ProjectFileFormatEnum::eProjectFileFormatNone);
+    bool saveProjectAs(const QString& filename, Natron::ProjectFileFormatEnum format = Natron::ProjectFileFormatEnum::eProjectFileFormatNone);
+    bool saveTempProject(const QString& filename, Natron::ProjectFileFormatEnum format = Natron::ProjectFileFormatEnum::eProjectFileFormatNone);
+
+    // The format of the project file: the format of the file it was loaded from or last saved to,
+    // eProjectFileFormatNone for a project that was never saved.
+    Natron::ProjectFileFormatEnum getProjectFormat() const;
+
+    // Sets the format of the next saves of the project ("Save", auto-saves record it).
+    void setProjectFormat(Natron::ProjectFileFormatEnum format);
     App* loadProject(const QString& filename);
 
     ///Close the current project but keep the window

@@ -34,9 +34,11 @@ Functions
 - def :meth:`redo<NatronEngine.App.redo>` ()
 - def :meth:`render<NatronEngine.App.render>` (effect,firstFrame,lastFrame[,frameStep])
 - def :meth:`render<NatronEngine.App.render>` (tasks)
-- def :meth:`saveTempProject<NatronEngine.App.saveTempProject>` (filename)
-- def :meth:`saveProject<NatronEngine.App.saveProject>` (filename)
-- def :meth:`saveProjectAs<NatronEngine.App.saveProjectAs>` (filename)
+- def :meth:`saveTempProject<NatronEngine.App.saveTempProject>` (filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
+- def :meth:`saveProject<NatronEngine.App.saveProject>` (filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
+- def :meth:`saveProjectAs<NatronEngine.App.saveProjectAs>` (filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
+- def :meth:`getProjectFormat<NatronEngine.App.getProjectFormat>` ()
+- def :meth:`setProjectFormat<NatronEngine.App.setProjectFormat>` (format)
 - def :meth:`loadProject<NatronEngine.App.loadProject>` (filename)
 - def :meth:`resetProject<NatronEngine.App.resetProject>` ()
 - def :meth:`closeProject<NatronEngine.App.closeProject>` ()
@@ -496,9 +498,10 @@ Writes the given *message* to the Script Editor panel of Natron. This can be use
 inform the user of various information, warnings or errors.
 
 
-.. method:: App.saveProject(filename)
+.. method:: App.saveProject(filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
 
     :param filename: :class:`str`
+    :param format: :class:`ProjectFileFormatEnum<NatronEngine.Natron.ProjectFileFormatEnum>`
     :rtype: :class:`bool`
 
     Saves the current project under the current project name. If the project has
@@ -506,29 +509,78 @@ inform the user of various information, warnings or errors.
     parameter. In GUI mode, if *filename* is empty, it asks the user where to save the project in GUI
     mode.
 
+    *format* is the format of the file, see :meth:`getProjectFormat<NatronEngine.App.getProjectFormat>`. With
+    *eProjectFileFormatNone* (the default), the project is saved in its format, or, if it was never saved,
+    in the format of the "Save projects as binary by default" preference (binary by default, also in
+    NatronRenderer and natron-python). Any other format becomes the format of the project.
+    In GUI mode, when *filename* is empty and the project was never saved, the save dialog is shown:
+    *format* is the default of its "File format" choice, and the user's choice is used.
+
     This function returns *True* if it saved successfully, *False* otherwise.
 
-.. method:: App.saveProjectAs(filename)
+    .. versionchanged:: 2.6
+       The *format* parameter. Projects are saved in the binary format by default.
+
+.. method:: App.saveProjectAs(filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
 
     :param filename: :class:`str`
+    :param format: :class:`ProjectFileFormatEnum<NatronEngine.Natron.ProjectFileFormatEnum>`
     :rtype: :class:`bool`
 
     Save the project under the given *filename*.
     In GUI mode, if *filename* is empty, it prompts the user where to save the project.
 
+    *format* is the format of the file, as in :meth:`saveProject<NatronEngine.App.saveProject>`: it becomes
+    the format of the project, unless it is *eProjectFileFormatNone*.
+    To write a file that Natron 2.5 and earlier can read, use
+    *NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatText*.
 
     This function returns *True* if it saved successfully, *False* otherwise.
 
+    .. versionchanged:: 2.6
+       The *format* parameter. Projects are saved in the binary format by default.
 
 
-.. method:: App.saveTempProject(filename)
+.. method:: App.saveTempProject(filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
 
     :param filename: :class:`str`
+    :param format: :class:`ProjectFileFormatEnum<NatronEngine.Natron.ProjectFileFormatEnum>`
     :rtype: :class:`bool`
 
     Saves a copy of the project to the given *filename* without updating project properties
     such as the project path, last save time etc...
+    *format* is the format of the copy (*eProjectFileFormatNone*: the format of the project, or the
+    preference for a project that was never saved); it doesn't change the format of the project.
     This function returns *True* if it saved successfully, *False* otherwise.
+
+    .. versionchanged:: 2.6
+       The *format* parameter.
+
+.. method:: App.getProjectFormat()
+
+    :rtype: :class:`ProjectFileFormatEnum<NatronEngine.Natron.ProjectFileFormatEnum>`
+
+    Returns the format of the project file: the format of the file it was loaded from, or of the
+    file it was last saved to. *eProjectFileFormatNone* for a project that was never saved.
+    A project restored from an auto-save (auto-saves are always binary) has the format of the
+    project that was auto-saved.
+
+    Project files have the *.ntp* extension in both formats, and the format is detected when a
+    project is loaded:
+
+    - *eProjectFileFormatText*: XML text, readable and diffable, which Natron 2.5 and earlier can read.
+    - *eProjectFileFormatBinary*: a portable binary format (the same file loads on every operating
+      system and processor), faster to load and save, and smaller. Needs Natron 2.6 or later.
+
+    .. versionadded:: 2.6
+
+.. method:: App.setProjectFormat(format)
+
+    :param format: :class:`ProjectFileFormatEnum<NatronEngine.Natron.ProjectFileFormatEnum>`
+
+    Sets the format of the next saves of the project (see :meth:`getProjectFormat<NatronEngine.App.getProjectFormat>`).
+
+    .. versionadded:: 2.6
 
 
 .. method:: App.loadProject(filename)

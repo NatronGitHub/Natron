@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/AppManager.h"
 #include "Global/QtCompat.h"
 #include "Engine/Plugin.h"
+#include "Gui/GuiTest.h"
 #include "Gui/LineEdit.h"
 #include "Gui/GuiApplicationManager.h"
 
@@ -455,7 +456,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
         _imp->textEdit->setText(initialFilterName);
     }
 
-    QPoint global = QCursor::pos();
+    QPoint global = GuiTest::cursorPos();
     QSize sizeH = sizeHint();
     global.rx() -= sizeH.width() / 2;
     global.ry() -= sizeH.height() / 2;

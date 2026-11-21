@@ -54,6 +54,7 @@
 #include "Gui/FloatingWidget.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiPrivate.h"
+#include "Gui/GuiTest.h"
 #include "Gui/Histogram.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/ProgressPanel.h"
@@ -109,7 +110,7 @@ Gui::setupUi()
     _imp->_toolBox->setMaximumWidth( TO_DPIX(NATRON_TOOL_BUTTON_SIZE) );
 
     if (_imp->leftToolBarDisplayedOnHoverOnly) {
-        _imp->refreshLeftToolBarVisibility( mapFromGlobal( QCursor::pos() ) );
+        _imp->refreshLeftToolBarVisibility( mapFromGlobal( GuiTest::cursorPos() ) );
     }
 
     _imp->_leftRightSplitter->addWidget(_imp->_toolBox);

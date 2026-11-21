@@ -68,6 +68,7 @@ public:
     std::set<QString> autoSavesWrittenBySession; //< the auto-save files this session wrote (protected by projectLock)
     bool autoSaveDisabled = false; //< --no-dialogs kept an existing auto-save of this project: do not overwrite it
     bool hasProjectBeenSavedByUser; //< has this project ever been saved by the user?
+    ProjectFileFormatEnum fileFormat; //< see Project::getFileFormat(), protected by projectLock
     QDateTime ageSinceLastSave; //< the last time the user saved
     QDateTime lastAutoSave; //< the last time since autosave
     QDateTime projectCreationTime; //< the project creation time

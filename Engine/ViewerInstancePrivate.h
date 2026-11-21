@@ -37,6 +37,7 @@
 #include <cmath>
 #include <cassert>
 #include <algorithm> // min, max
+#include <limits>
 
 #include <QMutex>
 #include <QWaitCondition>
@@ -51,6 +52,7 @@
 #include "Engine/Settings.h"
 #include "Engine/Image.h"
 #include "Engine/TextureRect.h"
+#include "Engine/UpdateViewerParams.h"
 #include "Engine/EngineFwd.h"
 
 #define GAMMA_LUT_NB_VALUES 1023
@@ -173,6 +175,51 @@ struct RenderViewerArgs
     bool renderOnlyRoI;
     std::size_t tileRowElements;
 };
+
+struct MinMaxVal
+{
+    MinMaxVal(double min_,
+              double max_)
+        : min(min_)
+        , max(max_)
+    {
+    }
+
+    MinMaxVal()
+        : min( std::numeric_limits<double>::max() )
+        , max( std::numeric_limits<double>::lowest() )
+    {
+    }
+
+    double min;
+    double max;
+};
+
+// The conversion of an image tile to a viewer texture, and the autocontrast range, declared here
+// (and not static in ViewerInstance.cpp) so that the unit tests can call them (Tests/ViewerTexture_Test.cpp).
+
+/// Converts the tile of args.inputImage to an 8-bit RGBA texture (BGRA U32 pixels). viewer is unused.
+void scaleToTexture8bits(const RectI& roi,
+                         const RenderViewerArgs & args,
+                         ViewerInstance* viewer,
+                         const UpdateViewerParams::CachedTile& tile,
+                         U32* output);
+
+/// Converts the tile of args.inputImage to a 32-bit float RGBA texture.
+void scaleToTexture32bits(const RectI& roi,
+                          const RenderViewerArgs & args,
+                          const UpdateViewerParams::CachedTile& tile,
+                          float *output);
+
+/// The range of the values shown by the viewer in the given display channels, before the gain and offset are
+/// applied, as the texture paths compute them: 8/16-bit values in [0,1], the colour channels converted to linear
+/// with srcColorSpace, and alpha (A display: channel alphaChannelIndex) never converted with a LUT.
+/// If rect is empty, min > max on return.
+MinMaxVal findAutoContrastVminVmax(const ImagePtr inputImage,
+                                   const Color::Lut* srcColorSpace,
+                                   DisplayChannelsEnum channels,
+                                   int alphaChannelIndex,
+                                   const RectI & rect);
 
 struct ViewerInstance::ViewerInstancePrivate
     : public QObject, public LockManagerI<FrameEntry>

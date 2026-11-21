@@ -229,6 +229,8 @@ class ParallelRenderArgsSetter;
 class Plugin;
 class PluginGroupNode;
 class PluginMemory;
+class PortableBinaryIArchive;
+class PortableBinaryOArchive;
 class PrecompNode;
 class ProcessHandler;
 class ProcessInputChannel;

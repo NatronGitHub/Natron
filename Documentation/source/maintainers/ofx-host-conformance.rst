@@ -135,9 +135,9 @@ interacts page does not count the rows describing pull request #1349.
      - 2
    * - :ref:`Image effects <ofx-host-conformance-imageeffect>`
      - 111
-     - 71
+     - 74
      - 20
-     - 13
+     - 10
      - 2
      - 4
      - 0
@@ -151,9 +151,9 @@ interacts page does not count the rows describing pull request #1349.
      - 0
    * - **Total**
      - 387
-     - 262
+     - 265
      - 60
-     - 34
+     - 31
      - 7
      - 21
      - 2
