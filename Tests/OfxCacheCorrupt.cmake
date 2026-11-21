@@ -1,9 +1,9 @@
 # TestsOfxCacheCorrupt (Tests/CMakeLists.txt): Natron discards an OFX plug-in cache that it cannot read,
 # scans all the plug-ins again and rewrites the cache.
-# The cache that the Tests run wrote (in SRC_CACHE_DIR/OFXLoadCache) is copied to WORK_DIR, with an
-# element that a plug-in cache never has, which makes HostSupport's readCache() throw (openfx #218;
-# OfxHost::loadOFXPlugins() catches it). The Tests binary (TESTS) then runs on that copy, keeping the
-# OFX cache (NATRON_TESTS_KEEP_OFX_CACHE). It must pass, and the cache must be the one of a full scan
+# The cache that the Tests run wrote (in SRC_CACHE_DIR/OFXLoadCache, or in NATRON_DISK_CACHE_PATH if set)
+# is copied to WORK_DIR, with an element that a plug-in cache never has, which makes HostSupport's
+# readCache() throw (openfx #218; OfxHost::loadOFXPlugins() catches it). The Tests binary (TESTS) then
+# runs on that copy, keeping the OFX cache (NATRON_TESTS_KEEP_OFX_CACHE). It must pass, and the cache must be the one of a full scan
 # again: without the bad element, with as many plug-ins as before.
 foreach(v TESTS SRC_CACHE_DIR WORK_DIR)
     if(NOT DEFINED ${v})
@@ -11,6 +11,11 @@ foreach(v TESTS SRC_CACHE_DIR WORK_DIR)
     endif()
 endforeach()
 
+# NATRON_DISK_CACHE_PATH, if set, takes precedence over NATRON_TESTS_CACHE_DIR (Tests/wmain.cpp): Tests
+# then wrote its cache there
+if(NOT "$ENV{NATRON_DISK_CACHE_PATH}" STREQUAL "")
+    set(SRC_CACHE_DIR "$ENV{NATRON_DISK_CACHE_PATH}")
+endif()
 file(GLOB caches "${SRC_CACHE_DIR}/OFXLoadCache/OFXCache_*.xml")
 list(LENGTH caches ncaches)
 if(NOT ncaches EQUAL 1)

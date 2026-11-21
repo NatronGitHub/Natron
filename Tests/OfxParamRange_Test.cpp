@@ -139,8 +139,9 @@ TEST_F(OfxParamRangeTest, DoubleUnbounded)
     EXPECT_EQ(lowest, r.min);
     EXPECT_EQ(highest, r.max);
 
-    // a value beyond any slider range is kept (not clamped), and the integral of the curve takes the
-    // unbounded path (Interpolation::integrate_clamp() returns integrate() for +/-DBL_MAX)
+    // regression guard (it passed with the old 1.79769e+308 bounds too): a value beyond any slider range
+    // is kept, not clamped, and the integral over an unbounded range stays finite. With exact +/-DBL_MAX,
+    // Interpolation::integrate_clamp() returns integrate() without solving for the bounds.
     EXPECT_TRUE( curve->addKeyFrame( KeyFrame(0., -1e300) ) );
     EXPECT_TRUE( curve->addKeyFrame( KeyFrame(10., 1e300) ) );
     EXPECT_EQ( -1e300, curve->getValueAt(0.) );
@@ -181,6 +182,25 @@ TEST_F(OfxParamRangeTest, MultiDimensional)
             EXPECT_EQ( cases[c].colour ? 0. : lowest, k->getDisplayMinimum(i) ) << cases[c].name << "[" << i << "]";
             EXPECT_EQ( cases[c].colour ? 1. : highest, k->getDisplayMaximum(i) ) << cases[c].name << "[" << i << "]";
         }
+    }
+}
+
+// A 2D parameter with a range (0 to 1) but no display range: the display range stays exactly -DBL_MAX to
+// DBL_MAX, which the GUI (KnobGuiValue::createWidget()) recognizes as unset, so the slider covers the range
+// and the dimensions can be folded. With -1.79769e+308 to 1.79769e+308 it showed neither.
+TEST_F(OfxParamRangeTest, RangeWithoutDisplayRange)
+{
+    if ( skipped() ) {
+        return;
+    }
+    std::shared_ptr<KnobDoubleBase> k = std::dynamic_pointer_cast<KnobDoubleBase>( _node->getKnobByName("double2DRanged") );
+    ASSERT_TRUE(k != NULL);
+    ASSERT_EQ( 2, k->getDimension() );
+    for (int i = 0; i < 2; ++i) {
+        EXPECT_EQ( 0., k->getMinimum(i) ) << i;
+        EXPECT_EQ( 1., k->getMaximum(i) ) << i;
+        EXPECT_EQ( std::numeric_limits<double>::lowest(), k->getDisplayMinimum(i) ) << i;
+        EXPECT_EQ( std::numeric_limits<double>::max(), k->getDisplayMaximum(i) ) << i;
     }
 }
 
