@@ -450,6 +450,9 @@ private:
 
     virtual void afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args) OVERRIDE FINAL;
 
+    /// Stops the processing of all the nodes and waits for it, without the Python GIL (#1575).
+    void quitAnyProcessingForAllNodes_blocking();
+
 public:
 
     struct TreeOutput
