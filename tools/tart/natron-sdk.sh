@@ -6,7 +6,7 @@
 #                           REDO="step..." re-runs steps already done in $SDK_IMAGE-wip)
 #   natron-sdk.sh update [STEP...]  refresh an existing $SDK_IMAGE (port sync, overlay, pinned ports,
 #                           upgrade outdated); STEPs already done in the image are re-run (e.g. python_qt)
-#   natron-sdk.sh push REF  push $SDK_IMAGE to an OCI registry (e.g. ghcr.io/<org>/natron-sdk-sequoia:2026-11)
+#   natron-sdk.sh push REF  push $SDK_IMAGE to an OCI registry (e.g. ghcr.io/<org>/natron-sdk-sonoma:2026-11)
 #
 # Work happens on a copy ($SDK_IMAGE-wip); $SDK_IMAGE is only replaced when everything succeeded,
 # and the previous image is kept as $SDK_IMAGE-prev.

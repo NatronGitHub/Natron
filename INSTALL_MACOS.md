@@ -36,7 +36,7 @@ In the rest of this document, `$NATRON_SRC` is the absolute path to this checkou
 
 ```Shell
 export NATRON_SRC=$PWD   # in the Natron directory
-export CLANG=22          # the MacPorts clang of step 5 (see the table there)
+export CLANG=17          # the MacPorts clang of step 5: 17 on macOS 14, the baseline (see the table there)
 ```
 
 ## Install Dependencies
@@ -224,7 +224,7 @@ Ports and Natron are compiled with a MacPorts clang (rather than Apple's) for fu
 | 10.6 | `clang-11` |
 
 ```Shell
-CLANG=22   # from the table above: 18 on macOS 15, 17 on 10.7 to 14 (also export it next to NATRON_SRC)
+CLANG=17   # from the table above: 17 on macOS 14 (the baseline) and 10.7 to 13, 18 on 15, 22 on 26 and later (also export it next to NATRON_SRC)
 sudo port -v -N install clang-$CLANG
 sudo port setrequested clang-$CLANG
 ```
