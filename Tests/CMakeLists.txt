@@ -26,6 +26,7 @@ set(Tests_SOURCES
     Curve_Test.cpp
     DeepGraphRender_Test.cpp
     DiskCache_Test.cpp
+    ExpressionDepsRenderArgs_Test.cpp
     ExpressionSetError_Test.cpp
     FileSystemModel_Test.cpp
     Hash64_Test.cpp
@@ -137,8 +138,13 @@ add_test(NAME Tests COMMAND Tests)
 # Tests sets up the fixture (it scans with --clear-openfx-cache and writes the cache), so
 # `ctest -R TestsOfxCache` runs Tests first too.
 add_test(NAME TestsOfxCache COMMAND Tests "--gtest_filter=OfxHostProperties.*:OfxTestPlugin*:OfxPluginObsolete.*")
-set_tests_properties(Tests PROPERTIES FIXTURES_SETUP OfxPluginCache)
-set_tests_properties(TestsOfxCache PROPERTIES FIXTURES_REQUIRED OfxPluginCache ENVIRONMENT "NATRON_TESTS_KEEP_OFX_CACHE=1")
+# The caches of both (the same OFX plug-in cache) in the build tree, not in the user's cache directory, which
+# every build of this version shares (#1569). NATRON_DISK_CACHE_PATH, if set, takes precedence (see wmain.cpp).
+set(NATRON_TESTS_CACHE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests-cache")
+set_tests_properties(Tests PROPERTIES FIXTURES_SETUP OfxPluginCache
+    ENVIRONMENT "NATRON_TESTS_CACHE_DIR=${NATRON_TESTS_CACHE_DIR}")
+set_tests_properties(TestsOfxCache PROPERTIES FIXTURES_REQUIRED OfxPluginCache
+    ENVIRONMENT "NATRON_TESTS_KEEP_OFX_CACHE=1;NATRON_TESTS_CACHE_DIR=${NATRON_TESTS_CACHE_DIR}")
 
 # A minimal OFX plug-in bundle for the tests (OfxTestPlugin/NatronTestPlugin.cpp, read through
 # OfxTestPlugin.h). It is assembled in the build tree, found by the Tests binary through
@@ -303,4 +309,6 @@ endforeach()
 # which exits with natron.quit(status).
 add_test(NAME UndoGroupHeadless
     COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_undo_group.py")
-set_tests_properties(UndoGroupHeadless PROPERTIES TIMEOUT 120)
+# the caches (OFX plug-ins) in the build tree, not in the user's cache directory (#1569)
+set_tests_properties(UndoGroupHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/undo-group-headless-cache")
