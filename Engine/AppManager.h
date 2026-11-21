@@ -549,6 +549,9 @@ public:
      **/
     void cleanUpAtPythonExit();
 
+    /// Whether the OFX plug-ins were unloaded by cleanUpAtPythonExit(): no OFX effect may be created any more
+    bool areOFXPluginsUnloaded() const;
+
     void launchPythonInterpreter();
 
     int isProjectAlreadyOpened(const std::string& projectFilePath) const;

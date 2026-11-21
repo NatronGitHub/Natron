@@ -232,7 +232,16 @@ public:
     /// Unloads the OFX plug-ins, as the destructor does: deletes the plug-in cache, so that each loaded plug-in
     /// gets kOfxActionUnload and its binary is unloaded. No OFX instance may be left. The plug-ins are unloaded
     /// only once: the next calls, and the destructor, find no plug-in cache to delete (#1557).
+    /// The Plugin objects of AppManager keep their OFX plug-in pointers until ~AppManager: they dangle, so no OFX
+    /// effect may be created after this (see arePluginsUnloaded(), checked by AppInstance::createNodeInternal()).
     void unloadPlugins();
+
+    /// Whether unloadPlugins() was called
+    bool arePluginsUnloaded() const;
+
+    /// Whether an action of an OFX instance is running in this thread (e.g. an expression or a Python callback
+    /// evaluated by Natron during the action)
+    bool isActionRunningInThisThread() const;
 
     void setThreadAsActionCaller(OfxImageEffectInstance* instance, bool actionCaller);
 

@@ -49,6 +49,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 SKIP = 77
 PLUGIN_ID = "net.natron.test.Sequential"
+CASE_TIMEOUT = 120  # seconds per NatronRenderer run: the 4 runs must fit in the ctest TIMEOUT (660 s)
 
 SCRIPT = """
 import sys
@@ -115,14 +116,22 @@ def runCase(renderer, wrapper, pluginDir, outDir, index, case):
         env["NATRON_LLDB_STDIN"] = stdinPath  # natron-lldb.sh reads stdin from there
     print("=== %s: %s < %s" % (name, " ".join(cmd), stdinPath))
     sys.stdout.flush()
-    try:
-        with open(stdinPath, "rb") as stdin:
-            proc = subprocess.run(cmd, env=env, stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                  timeout=300)
-    except subprocess.TimeoutExpired:
-        print("FAILED (%s): timeout" % name)
-        return False
-    out = proc.stdout.decode(errors="replace")
+    with open(stdinPath, "rb") as stdin:
+        proc = subprocess.Popen(cmd, env=env, stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        try:
+            outBytes, _ = proc.communicate(timeout=CASE_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            # terminate() first, so that a wrapper such as natron-lldb.sh kills its inferior, then kill()
+            proc.terminate()
+            try:
+                outBytes, _ = proc.communicate(timeout=10)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                outBytes, _ = proc.communicate()
+            sys.stdout.write(outBytes.decode(errors="replace"))
+            print("FAILED (%s): timeout after %d s" % (name, CASE_TIMEOUT))
+            return False
+    out = outBytes.decode(errors="replace")
     sys.stdout.write(out)
     print("NatronRenderer exited with status %d" % proc.returncode)
     ok = True

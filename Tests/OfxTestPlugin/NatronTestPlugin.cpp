@@ -249,7 +249,7 @@ logLoadAction(const char* action,
     }
     if ( std::FILE* f = std::fopen(logPath, "a") ) {
         if (load) {
-            std::fprintf( f, "load %s\n", id.c_str() );
+            std::fprintf(f, "load %s\n", id.c_str());
         } else {
             std::fprintf(f, "unload %s live=%d\n", id.c_str(), gCounters[id + ".live"]);
         }
