@@ -30,6 +30,7 @@
 
 #include "Global/Macros.h"
 
+#include <algorithm>
 #include <chrono>
 #include <future>
 #include <iostream>
@@ -312,7 +313,14 @@ TEST(DeepGraphRender, StackBounds)
     EXPECT_GT(mainStackLeft, 4 * MB) << "the stack bounds of the main thread are unknown or wrong";
 
     // most of the stack of a fresh thread is left
+#ifdef __NATRON_WIN32__
+    // Qt passes the stack size to CreateThread() as the initial commit: the thread reserves the
+    // executable's default stack reserve if it is larger, NATRON_MAIN_THREAD_STACK_SIZE (8 MB, see
+    // CMakeLists.txt) since #1446.
+    const std::size_t renderStackSize = std::max<std::size_t>(getRenderThreadStackSize(), 8 * MB);
+#else
     const std::size_t renderStackSize = getRenderThreadStackSize();
+#endif
     StackLeftThread thread;
     thread.start();
     thread.wait();
@@ -471,6 +479,9 @@ TEST(DeepGraphRender, VeryDeepChain)
     // start from an empty project: other tests may have left nodes in it
     project->reset(false, true);
     ASSERT_EQ( 0, (int)project->getNodes().size() );
+    // Where the stack allows it (Linux CI), the chain renders: with the default HD format, each render
+    // of 5000 filters took minutes. The generator's RoD is the project format.
+    project->setOrAddProjectFormat( Format(0, 0, 16, 16, "DeepGraphRender", 1.) );
     std::string outputName, lastFilterName;
 
     printStep("start");

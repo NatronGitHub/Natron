@@ -48,7 +48,11 @@ NATRON_NAMESPACE_ENTER
  *
  * On Windows, Qt passes the stack size to CreateThread()/_beginthreadex() without
  * STACK_SIZE_PARAM_IS_A_RESERVATION, so the whole stack is committed (charged to the commit limit)
- * when the thread starts, rather than only reserved: use 4 MB there (about 1700 nodes).
+ * when the thread starts, rather than only reserved: use 4 MB there. That size is the initial
+ * commit: when it is smaller than the executable's default stack reserve, which is
+ * NATRON_MAIN_THREAD_STACK_SIZE (8 MB) since #1446, the thread still reserves 8 MB (see "Thread Stack
+ * Size" in the Win32 documentation), so the threads that render have 8 MB stacks there too, 4 MB of
+ * which are committed when they start (measured by DeepGraphRender.StackBounds).
  *
  * A render can also run on the main thread (QFuture::waitForFinished() runs a queued task on the
  * waiting thread). On Windows, its stack reserve is set at link time to NATRON_MAIN_THREAD_STACK_SIZE
