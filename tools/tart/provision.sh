@@ -66,9 +66,28 @@ start_http_proxy() {
     export HTTP_PROXY=$http_proxy HTTPS_PROXY=$https_proxy
 }
 PORT="port_retry"
-# large downloads through the SOCKS tunnel are sometimes cancelled: retry port commands
+# large downloads through the SOCKS tunnel are sometimes cancelled: retry port commands.
+# MacPorts fetches binary archives in the background while it installs other ports, and when
+# such a fetch fails it silently builds the port from source (e.g. llvm-18, hours instead of
+# seconds, or qt5-qtwebengine, which can't be built without Xcode): so fetch the archives of the
+# ports to install and of their dependencies first, with retries.
+prefetch_archives() { # port names (variants and options are skipped)
+    local p i expr=
+    for p in "$@"; do
+        case $p in [+-]*|install|upgrade) ;; *) expr="$expr $p rdepof:$p" ;; esac
+    done
+    [ -n "$expr" ] || return 0
+    for i in 1 2 3; do
+        # shellcheck disable=SC2086
+        $SUDO port -N archivefetch $expr && return 0
+        echo "port archivefetch failed (attempt $i)"
+        sleep 10
+    done
+    return 0   # the install below retries, and builds what has no archive
+}
 port_retry() {
     local i
+    [ "$1" != install ] || prefetch_archives "$@"
     for i in 1 2 3; do
         $SUDO port -v -N "$@" && return 0
         echo "port $* failed (attempt $i)"
