@@ -292,7 +292,14 @@ Effect::isOutputNode()
 void
 Effect::destroy(bool autoReconnect)
 {
-    getInternalNode()->destroyNode(false, autoReconnect);
+    NodePtr node = getInternalNode();
+    AppInstancePtr app = node->getApp();
+
+    // in an undo group (App.beginUndoGroup()), the node is only deactivated, so that undo can restore it
+    if ( app && app->deleteNodeInUndoGroup(node, autoReconnect) ) {
+        return;
+    }
+    node->destroyNode(false, autoReconnect);
 }
 
 int
@@ -324,6 +331,8 @@ Effect::connectInput(int inputNumber,
                      const Effect* input)
 {
     if ( canConnectInput(inputNumber, input) ) {
+        recordInputsForUndoGroup();
+
         return getInternalNode()->connectInput(input->getInternalNode(), inputNumber);
     } else {
         return false;
@@ -333,7 +342,19 @@ Effect::connectInput(int inputNumber,
 void
 Effect::disconnectInput(int inputNumber)
 {
+    recordInputsForUndoGroup();
     getInternalNode()->disconnectInput(inputNumber);
+}
+
+void
+Effect::recordInputsForUndoGroup()
+{
+    NodePtr node = getInternalNode();
+    AppInstancePtr app = node ? node->getApp() : AppInstancePtr();
+
+    if (app) {
+        app->recordInputsForUndoGroup(node);
+    }
 }
 
 Effect*

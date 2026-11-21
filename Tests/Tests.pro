@@ -113,6 +113,7 @@ SOURCES += \
     PluginGrouping_Test.cpp \
     ProjectAutoSave_Test.cpp \
     PyEffectEquality_Test.cpp \
+    PythonScript_Test.cpp \
     ProjectFileFormat_Test.cpp \
     PythonExpressionScope_Test.cpp \
     ReadNodeOverlay_Test.cpp \

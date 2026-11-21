@@ -166,6 +166,7 @@ SOURCES += \
     PyParameter.cpp \
     PyRoto.cpp \
     PyTracker.cpp \
+    PythonUndoGroup.cpp \
     ReadNode.cpp \
     RectD.cpp \
     RectI.cpp \
@@ -336,6 +337,7 @@ HEADERS += \
     PyParameter.h \
     PyRoto.h \
     PyTracker.h \
+    PythonUndoGroup.h \
     ReadNode.h \
     RectD.h \
     RectDSerialization.h \
@@ -478,6 +480,7 @@ ENGINE_GENERATED_SOURCES = \
     stringparambase_wrapper \
     track_wrapper \
     tracker_wrapper \
+    undogroup_wrapper \
     userparamholder_wrapper \
 
 # bundled third-party code and generated bindings: see warnings.pri

@@ -50,6 +50,7 @@
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
+#include "Gui/GuiAppInstance.h"
 #include "Gui/Button.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
@@ -132,6 +133,11 @@ ScriptEditor::ScriptEditor(Gui* gui)
     appPTR->getIcon(NATRON_PIXMAP_SCRIPT_LOAD_EXEC_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &sourceScriptPix);
     appPTR->getIcon(NATRON_PIXMAP_SCRIPT_LOAD_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &loadScriptPix);
     appPTR->getIcon(NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &saveScriptPix);
+
+    // appendToScriptEditor() from another thread (a render callback, a Python script run by a render
+    // thread...) emits appendToScriptEditorOnMainThread(): it was never connected, so these messages,
+    // including Python tracebacks, were lost (#1436).
+    QObject::connect( this, SIGNAL(appendToScriptEditorOnMainThread(QString)), this, SLOT(doAppendToScriptEditorOnMainThread(QString)), Qt::QueuedConnection );
 
     _imp->undoB = new Button(QIcon(undoPix), QString(), _imp->buttonsContainer);
     QKeySequence undoSeq(Qt::CTRL | Qt::Key_BracketLeft);
@@ -341,7 +347,7 @@ ScriptEditor::sourceScript(const QString& filename)
 {
     QFile file(filename);
 
-    if ( file.open(QIODevice::ReadOnly) ) {
+    if ( file.open(QIODevice::ReadOnly | QIODevice::Text) ) {
         QTextStream ts(&file);
         QString content = ts.readAll();
         _imp->inputEdit->setPlainText(content);
@@ -383,7 +389,7 @@ ScriptEditor::onLoadScriptClicked()
         getGui()->updateLastOpenedProjectPath( currentDir.absolutePath() );
         QString fileName( QString::fromUtf8( dialog.selectedFiles().c_str() ) );
         QFile file(fileName);
-        if ( file.open(QIODevice::ReadOnly) ) {
+        if ( file.open(QIODevice::ReadOnly | QIODevice::Text) ) {
             QTextStream ts(&file);
             QString content = ts.readAll();
             _imp->inputEdit->setPlainText(content);
@@ -406,9 +412,10 @@ ScriptEditor::onSaveScriptClicked()
         QDir currentDir = dialog.currentDirectory();
         getGui()->updateLastSavedProjectPath( currentDir.absolutePath() );
 
-        QString fileName( QString::fromUtf8( dialog.selectedFiles().c_str() ) );
+        QString fileName( QString::fromUtf8( dialog.filesToSave().c_str() ) );
         QFile file(fileName);
-        if ( file.open(QIODevice::ReadWrite) ) {
+        // Truncate: a shorter script saved over a longer file must not keep the old tail
+        if ( file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text) ) {
             QTextStream ts(&file);
             ts << _imp->inputEdit->toPlainText();
         } else {
@@ -486,7 +493,12 @@ ScriptEditor::onExecScriptClicked()
     }
     std::string error, output;
 
-    if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script.toStdString(), &error, &output) ) {
+    const bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script.toStdString(), &error, &output);
+    // an undo group (App.beginUndoGroup()) ends with the script that started it
+    if ( getGui() && getGui()->getApp() ) {
+        getGui()->getApp()->closeUndoGroups("end of the Script Editor script", true);
+    }
+    if (!ok) {
         _imp->outputEdit->append( NATRON_NAMESPACE::convertFromPlainText(QString::fromUtf8( error.c_str() ), NATRON_NAMESPACE::WhiteSpaceNormal) );
     } else {
         QString toAppend(script);

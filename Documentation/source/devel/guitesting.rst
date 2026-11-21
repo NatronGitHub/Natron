@@ -234,6 +234,13 @@ renders and events it triggers, then checks:
 Never use fixed delays: :func:`NatronGuiTest.waitIdle` returns as soon as the renders are done and
 their results are displayed.
 
+To find a widget (e.g. with PySide's ``QWidget.findChild()``), use its stable name (see
+:ref:`widgetNames`): ``nodeGraph`` for the node graph, the fully qualified node name for a settings
+panel, the param script name for the first widget of a parameter (and the ``paramName`` Qt
+property for all its widgets), the tab script name (e.g. ``Viewer1``) for a viewer, ``TimeLine``,
+``PropertiesBin``, and ``nodeCreationDialog`` (with its ``NodeCreationDialogLineEdit``) for the node
+creation dialog.
+
 The NatronGuiTest module
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -330,8 +337,8 @@ synthetic Qt events to the widgets; the real mouse cursor and the keyboard are n
    use) calls it first, and has the line ``# NatronGuiTest: interactive``, which gives it the ctest label
    ``gui-interactive`` (in addition to ``gui``). They are meant for a display that no user works on, e.g. a
    CI job under Xvfb that sets the variable, or a virtual machine; on a desktop, they only run when the
-   user opts in, because they take the keyboard and mouse. No CI job sets ``NATRON_TEST_INTERACTIVE``
-   yet.
+   user opts in, because they take the keyboard and mouse. The Linux job of ``.github/workflows/ci.yml``
+   sets ``NATRON_TEST_INTERACTIVE=1``.
 
 .. function:: skip(reason)
 

@@ -151,6 +151,21 @@ public:
     bool isClosing() const;
 
     virtual bool isGuiFrozen() const OVERRIDE FINAL;
+    virtual void undo() OVERRIDE FINAL;
+    virtual void redo() OVERRIDE FINAL;
+    virtual bool canUndo() const OVERRIDE FINAL;
+    virtual bool canRedo() const OVERRIDE FINAL;
+    virtual std::list<std::string> getUndoHistory() const OVERRIDE FINAL;
+    virtual int getUndoIndex() const OVERRIDE FINAL;
+
+protected:
+    virtual void pushUndoGroupCommand(const UndoCommandPtr& command) OVERRIDE FINAL;
+
+private:
+    // the undo stack of the node graph of the project, where the undo groups go
+    QUndoStack* getActiveUndoStack() const;
+
+public:
     virtual bool isShowingDialog() const OVERRIDE FINAL;
     virtual void progressStart(const NodePtr& node, const std::string &message, const std::string &messageid, bool canCancel = true) OVERRIDE FINAL;
     virtual void progressEnd(const NodePtr& node) OVERRIDE FINAL;
@@ -164,6 +179,7 @@ public:
     virtual std::string saveImageFileDialog() OVERRIDE FINAL;
     virtual void clearViewersLastRenderedTexture() OVERRIDE FINAL;
     virtual void appendToScriptEditor(const std::string& str) OVERRIDE FINAL;
+    virtual void appendPlainTextToScriptEditor(const std::string& str) OVERRIDE FINAL;
     virtual void printAutoDeclaredVariable(const std::string& str) OVERRIDE FINAL;
     virtual void toggleAutoHideGraphInputs() OVERRIDE FINAL;
     virtual void setLastViewerUsingTimeline(const NodePtr& node) OVERRIDE FINAL;

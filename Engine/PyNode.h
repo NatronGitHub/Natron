@@ -401,6 +401,11 @@ public:
     Natron::ImagePremultiplicationEnum getPremult() const;
 
     void setPagesOrder(const QStringList& pages);
+
+private:
+
+    // before the inputs change: records them for an undo group (App.beginUndoGroup())
+    void recordInputsForUndoGroup();
 };
 
 /**

@@ -255,6 +255,28 @@ public:
 };
 
 
+/**
+ * @brief The context manager returned by App.undoGroup(text): "with app.undoGroup(text):" calls
+ * App.beginUndoGroup(text) on entry and App.endUndoGroup() on exit, also when an exception is raised.
+ * The Python __enter__ and __exit__ functions are added in the typesystem.
+ **/
+class UndoGroup
+{
+    AppInstanceWPtr _app;
+    QString _text;
+    bool _open;
+
+public:
+
+    UndoGroup(const AppInstancePtr& app, const QString& text);
+
+    ~UndoGroup();
+
+    void begin();
+
+    void end();
+};
+
 class App
     : public Group
 {
@@ -333,6 +355,41 @@ public:
     std::list<QString> getViewNames() const;
 
     void addProjectLayer(const ImageLayer& layer);
+
+    /**
+     * @brief Undo / redo on the node graph's undo stack (node creation, deletion, connections, moves,
+     * and the undo groups), whatever widget has the focus. They do nothing in background mode, where
+     * there is no undo stack.
+     **/
+    void undo();
+    void redo();
+    bool canUndo() const;
+    bool canRedo() const;
+
+    /// The texts of the commands of the node graph's undo stack, oldest first ([] in background mode)
+    std::list<QString> getUndoHistory() const;
+
+    /// The number of commands of getUndoHistory() that are done (the next redo is at this index)
+    int getUndoIndex() const;
+
+    /**
+     * @brief Returns when no render of this project runs or is queued (viewer, Write, previews), and,
+     * in the GUI, the events they posted (viewer texture uploads) are processed. Returns false if
+     * timeout seconds elapsed first (no limit if timeout < 0). Must be called from the main thread.
+     **/
+    bool waitForRenders(double timeout = -1.);
+
+    /**
+     * @brief Undo groups: the edits made from Python between beginUndoGroup() and endUndoGroup() (parameter
+     * changes, node creations, deletions and connections) are one undo step named text, on the undo stack of
+     * the node graph. Groups nest: only the outermost one makes an undo step. In background mode, they do
+     * nothing. endUndoGroup() raises RuntimeError if no group is open.
+     **/
+    void beginUndoGroup(const QString& text);
+    void endUndoGroup();
+
+    /// "with app.undoGroup(text):": a context manager that calls beginUndoGroup() and endUndoGroup()
+    UndoGroup* undoGroup(const QString& text);
 
 protected:
 
