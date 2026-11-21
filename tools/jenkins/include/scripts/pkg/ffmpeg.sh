@@ -18,6 +18,10 @@ if build_step && { force_build || { [ ! -d "$SDK_HOME/ffmpeg-gpl2" ] || [ ! -d "
     start_build
     untar "$SRC_PATH/$FFMPEG_TAR"
     pushd "ffmpeg-${FFMPEG_VERSION}"
+    # Saturate the C 10-bit int16 simple IDCT row outputs, as the x86 SIMD does: aarch64 decoded
+    # 10-bit DNxHD/DNxHR with full white with black 1-pixel columns (openfx-io#266). The same
+    # patch as tools/MacPorts/multimedia/ffmpeg. Existing SDKs need REBUILD_FFMPEG=1 to pick it up.
+    patch -p0 -i "$INC_PATH/patches/FFmpeg/patch-libavcodec-simple_idct10-saturate.diff"
     LGPL_SETTINGS=(
         "--enable-swscale" "--enable-avfilter"
         "--enable-libmp3lame" "--enable-libvorbis" "--enable-libopus" "--enable-librsvg"
