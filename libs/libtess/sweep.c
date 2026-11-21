@@ -655,16 +655,23 @@ static int CheckForLeftSplice( GLUtesselator *tess, ActiveRegion *regUp )
 
 static void CountSplits( GLUtesselator *tess, int n )
 /*
- * Natron: CheckForIntersect() is about to split n edges. On some degenerate
- * contours (two edges whose right endpoints are 1 ulp apart, found by
- * fuzzing), it computes an intersection 1 ulp to the left of both right
- * endpoints, splits the edges there, and WalkDirtyRegions() finds the same
- * configuration again 1 ulp further left: the sweep went on for billions of
- * splits, allocating memory very fast (#1580). Give up on the polygon when
- * there are far more splits than any real arrangement of the input edges has
- * (see InitSplitLimits()).
+ * Natron: CheckForIntersect() is about to split n edges where they cross (at
+ * a new intersection vertex, or at the sweep event when the intersection is
+ * rounded onto it). On some degenerate contours (two edges whose right
+ * endpoints are 1 ulp apart, found by fuzzing), it computes an intersection
+ * 1 ulp to the left of both right endpoints, splits the edges there, and
+ * WalkDirtyRegions() finds the same configuration again 1 ulp further left:
+ * the sweep went on for billions of splits, allocating memory very fast
+ * (#1580). Give up on the polygon when there are far more splits than any
+ * real arrangement of the edges has (see InitSplitLimits()).
+ * CheckForRightSplice(), CheckForLeftSplice() and ConnectLeftDegenerate(),
+ * which split an edge at an existing vertex, are not counted.
+ * The counters saturate at LONG_MAX (that many splits is degenerate anyway).
  */
 {
+  if( tess->eventSplits > LONG_MAX - n || tess->totalSplits > LONG_MAX - n ) {
+    longjmp(tess->env,TESS_JMP_DEGENERATE);
+  }
   tess->eventSplits += n;
   tess->totalSplits += n;
   if( tess->eventSplits > tess->maxEventSplits
@@ -1409,9 +1416,11 @@ static void CheckInsideFaces( GLUtesselator *tess )
 
 static void InitSplitLimits( GLUtesselator *tess )
 /*
- * Natron: limits on the edge splits made by CheckForIntersect() (see
- * CountSplits()), from the number n of vertices (and edges) of the input.
- * Each intersection of two edges splits both. At one sweep event, the regions
+ * Natron: limits on the edge splits made by CheckForIntersect() where edges
+ * cross (see CountSplits()), from the number n of vertices of the mesh when
+ * the sweep starts: the input vertices, after RemoveDegenerateEdges() merged
+ * repeated consecutive ones, plus the 4 vertices of the 2 sentinel edges.
+ * There are at most n edges crossing the sweep line. Each intersection of two edges splits both. At one sweep event, the regions
  * whose edges intersect are next to the edges of the event or to edges
  * which were just split, so there are at most about as many splits as edges
  * crossing the sweep line, i.e. n. Over the whole sweep, n edges have at most
@@ -1420,7 +1429,8 @@ static void InitSplitLimits( GLUtesselator *tess )
  * contours, 3 million, heavily self-intersecting or not) never got more
  * than 0.85*n (and 212) splits at one event, or 0.98*n*n in total. The
  * limits are 16*n+4096 splits at one event, and 2*n*n+16*n+4096 in total.
- * On the contours of #1580, the sweep stops after a few thousand splits.
+ * On the contour of #1580 (n = 118), the sweep stops after 5986 splits at one
+ * event (limit 5984), 6702 in total.
  */
 {
   GLUvertex *v, *vHead = &tess->mesh->vHead;

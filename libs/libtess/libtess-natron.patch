@@ -263,7 +263,7 @@ index bca836f..cfcd052 100644
    /* Make sure we do the right thing for each winding rule */
    switch( tess->windingRule ) {
 diff --git a/src/libtess/sweep.c b/src/libtess/sweep.c
-index eca828f..70f92ff 100644
+index eca828f..e230cb6 100644
 --- a/src/libtess/sweep.c
 +++ b/src/libtess/sweep.c
 @@ -163,12 +163,54 @@ static void DeleteRegion( GLUtesselator *tess, ActiveRegion *reg )
@@ -380,22 +380,29 @@ index eca828f..70f92ff 100644
      }
      firstTime = FALSE;
      regPrev = reg;
-@@ -603,6 +653,26 @@ static int CheckForLeftSplice( GLUtesselator *tess, ActiveRegion *regUp )
+@@ -603,6 +653,33 @@ static int CheckForLeftSplice( GLUtesselator *tess, ActiveRegion *regUp )
  }
  
  
 +static void CountSplits( GLUtesselator *tess, int n )
 +/*
-+ * Natron: CheckForIntersect() is about to split n edges. On some degenerate
-+ * contours (two edges whose right endpoints are 1 ulp apart, found by
-+ * fuzzing), it computes an intersection 1 ulp to the left of both right
-+ * endpoints, splits the edges there, and WalkDirtyRegions() finds the same
-+ * configuration again 1 ulp further left: the sweep went on for billions of
-+ * splits, allocating memory very fast (#1580). Give up on the polygon when
-+ * there are far more splits than any real arrangement of the input edges has
-+ * (see InitSplitLimits()).
++ * Natron: CheckForIntersect() is about to split n edges where they cross (at
++ * a new intersection vertex, or at the sweep event when the intersection is
++ * rounded onto it). On some degenerate contours (two edges whose right
++ * endpoints are 1 ulp apart, found by fuzzing), it computes an intersection
++ * 1 ulp to the left of both right endpoints, splits the edges there, and
++ * WalkDirtyRegions() finds the same configuration again 1 ulp further left:
++ * the sweep went on for billions of splits, allocating memory very fast
++ * (#1580). Give up on the polygon when there are far more splits than any
++ * real arrangement of the edges has (see InitSplitLimits()).
++ * CheckForRightSplice(), CheckForLeftSplice() and ConnectLeftDegenerate(),
++ * which split an edge at an existing vertex, are not counted.
++ * The counters saturate at LONG_MAX (that many splits is degenerate anyway).
 + */
 +{
++  if( tess->eventSplits > LONG_MAX - n || tess->totalSplits > LONG_MAX - n ) {
++    longjmp(tess->env,TESS_JMP_DEGENERATE);
++  }
 +  tess->eventSplits += n;
 +  tess->totalSplits += n;
 +  if( tess->eventSplits > tess->maxEventSplits
@@ -407,7 +414,7 @@ index eca828f..70f92ff 100644
  static int CheckForIntersect( GLUtesselator *tess, ActiveRegion *regUp )
  /*
   * Check the upper and lower edges of the given region to see if
-@@ -692,9 +762,10 @@ static int CheckForIntersect( GLUtesselator *tess, ActiveRegion *regUp )
+@@ -692,9 +769,10 @@ static int CheckForIntersect( GLUtesselator *tess, ActiveRegion *regUp )
       */
      if( dstLo == tess->event ) {
        /* Splice dstLo into eUp, and process the new region(s) */
@@ -419,7 +426,7 @@ index eca828f..70f92ff 100644
        if (regUp == NULL) longjmp(tess->env,1);
        eUp = RegionBelow(regUp)->eUp;
        FinishLeftRegions( tess, RegionBelow(regUp), regLo );
-@@ -703,6 +774,7 @@ static int CheckForIntersect( GLUtesselator *tess, ActiveRegion *regUp )
+@@ -703,6 +781,7 @@ static int CheckForIntersect( GLUtesselator *tess, ActiveRegion *regUp )
      }
      if( dstUp == tess->event ) {
        /* Splice dstUp into eLo, and process the new region(s) */
@@ -427,7 +434,7 @@ index eca828f..70f92ff 100644
        if (__gl_meshSplitEdge( eLo->Sym ) == NULL) longjmp(tess->env,1);
        if ( !__gl_meshSplice( eUp->Lnext, eLo->Oprev ) ) longjmp(tess->env,1);
        regLo = regUp;
-@@ -718,12 +790,14 @@ static int CheckForIntersect( GLUtesselator *tess, ActiveRegion *regUp )
+@@ -718,12 +797,14 @@ static int CheckForIntersect( GLUtesselator *tess, ActiveRegion *regUp )
       * (and wait for ConnectRightVertex to splice it appropriately).
       */
      if( EdgeSign( dstUp, tess->event, &isect ) >= 0 ) {
@@ -442,7 +449,7 @@ index eca828f..70f92ff 100644
        regUp->dirty = regLo->dirty = TRUE;
        if (__gl_meshSplitEdge( eLo->Sym ) == NULL) longjmp(tess->env,1);
        eLo->Org->s = tess->event->s;
-@@ -741,6 +815,7 @@ static int CheckForIntersect( GLUtesselator *tess, ActiveRegion *regUp )
+@@ -741,6 +822,7 @@ static int CheckForIntersect( GLUtesselator *tess, ActiveRegion *regUp )
     * the mesh (ie. eUp->Lface) to be smaller than the faces in the
     * unprocessed original contours (which will be eLo->Oprev->Lface).
     */
@@ -450,7 +457,7 @@ index eca828f..70f92ff 100644
    if (__gl_meshSplitEdge( eUp->Sym ) == NULL) longjmp(tess->env,1);
    if (__gl_meshSplitEdge( eLo->Sym ) == NULL) longjmp(tess->env,1);
    if ( !__gl_meshSplice( eLo->Oprev, eUp ) ) longjmp(tess->env,1);
-@@ -797,13 +872,11 @@ static void WalkDirtyRegions( GLUtesselator *tess, ActiveRegion *regUp )
+@@ -797,13 +879,11 @@ static void WalkDirtyRegions( GLUtesselator *tess, ActiveRegion *regUp )
  	 * vertices which otherwise have no right-going edges).
  	 */
  	if( regLo->fixUpperEdge ) {
@@ -466,7 +473,7 @@ index eca828f..70f92ff 100644
  	  regUp = RegionAbove( regLo );
  	  eUp = regUp->eUp;
  	}
-@@ -836,8 +909,7 @@ static void WalkDirtyRegions( GLUtesselator *tess, ActiveRegion *regUp )
+@@ -836,8 +916,7 @@ static void WalkDirtyRegions( GLUtesselator *tess, ActiveRegion *regUp )
      if( eUp->Org == eLo->Org && eUp->Dst == eLo->Dst ) {
        /* A degenerate loop consisting of only two edges -- delete it. */
        AddWinding( eLo, eUp );
@@ -476,7 +483,7 @@ index eca828f..70f92ff 100644
        regUp = RegionAbove( regLo );
      }
    }
-@@ -894,7 +966,7 @@ static void ConnectRightVertex( GLUtesselator *tess, ActiveRegion *regUp,
+@@ -894,7 +973,7 @@ static void ConnectRightVertex( GLUtesselator *tess, ActiveRegion *regUp,
     */
    if( VertEq( eUp->Org, tess->event )) {
      if ( !__gl_meshSplice( eTopLeft->Oprev, eUp ) ) longjmp(tess->env,1);
@@ -485,7 +492,7 @@ index eca828f..70f92ff 100644
      if (regUp == NULL) longjmp(tess->env,1);
      eTopLeft = RegionBelow( regUp )->eUp;
      FinishLeftRegions( tess, RegionBelow(regUp), regLo );
-@@ -1051,7 +1123,7 @@ static void ConnectLeftVertex( GLUtesselator *tess, GLUvertex *vEvent )
+@@ -1051,7 +1130,7 @@ static void ConnectLeftVertex( GLUtesselator *tess, GLUvertex *vEvent )
        eNew = tempHalfEdge->Sym;
      }
      if( reg->fixUpperEdge ) {
@@ -494,7 +501,7 @@ index eca828f..70f92ff 100644
      } else {
        ComputeWinding( tess, AddRegionBelow( tess, regUp, eNew ));
      }
-@@ -1098,7 +1170,7 @@ static void SweepEvent( GLUtesselator *tess, GLUvertex *vEvent )
+@@ -1098,7 +1177,7 @@ static void SweepEvent( GLUtesselator *tess, GLUvertex *vEvent )
     * to their winding number, and delete the edges from the dictionary.
     * This takes care of all the left-going edges from vEvent.
     */
@@ -503,7 +510,7 @@ index eca828f..70f92ff 100644
    if (regUp == NULL) longjmp(tess->env,1);
    reg = RegionBelow( regUp );
    eTopLeft = reg->eUp;
-@@ -1136,7 +1208,10 @@ static void AddSentinel( GLUtesselator *tess, GLdouble t )
+@@ -1136,7 +1215,10 @@ static void AddSentinel( GLUtesselator *tess, GLdouble t )
    if (reg == NULL) longjmp(tess->env,1);
  
    e = __gl_meshMakeEdge( tess->mesh );
@@ -515,7 +522,7 @@ index eca828f..70f92ff 100644
  
    e->Org->s = SENTINEL_COORD;
    e->Org->t = t;
-@@ -1151,7 +1226,10 @@ static void AddSentinel( GLUtesselator *tess, GLdouble t )
+@@ -1151,7 +1233,10 @@ static void AddSentinel( GLUtesselator *tess, GLdouble t )
    reg->sentinel = TRUE;
    reg->dirty = FALSE;
    reg->nodeUp = dictInsert( tess->dict, reg ); /* __gl_dictListInsertBefore */
@@ -527,7 +534,7 @@ index eca828f..70f92ff 100644
  }
  
  
-@@ -1193,6 +1271,7 @@ static void DoneEdgeDict( GLUtesselator *tess )
+@@ -1193,6 +1278,7 @@ static void DoneEdgeDict( GLUtesselator *tess )
  /*    __gl_meshDelete( reg->eUp );*/
    }
    dictDeleteDict( tess->dict ); /* __gl_dictListDeleteDict */
@@ -535,7 +542,7 @@ index eca828f..70f92ff 100644
  }
  
  
-@@ -1261,6 +1340,7 @@ static int InitPriorityQ( GLUtesselator *tess )
+@@ -1261,6 +1347,7 @@ static int InitPriorityQ( GLUtesselator *tess )
  static void DonePriorityQ( GLUtesselator *tess )
  {
    pqDeletePriorityQ( tess->pq ); /* __gl_pqSortDeletePriorityQ */
@@ -543,7 +550,7 @@ index eca828f..70f92ff 100644
  }
  
  
-@@ -1298,6 +1378,65 @@ static int RemoveDegenerateFaces( GLUmesh *mesh )
+@@ -1298,6 +1385,68 @@ static int RemoveDegenerateFaces( GLUmesh *mesh )
    return 1;
  }
  
@@ -578,9 +585,11 @@ index eca828f..70f92ff 100644
 +
 +static void InitSplitLimits( GLUtesselator *tess )
 +/*
-+ * Natron: limits on the edge splits made by CheckForIntersect() (see
-+ * CountSplits()), from the number n of vertices (and edges) of the input.
-+ * Each intersection of two edges splits both. At one sweep event, the regions
++ * Natron: limits on the edge splits made by CheckForIntersect() where edges
++ * cross (see CountSplits()), from the number n of vertices of the mesh when
++ * the sweep starts: the input vertices, after RemoveDegenerateEdges() merged
++ * repeated consecutive ones, plus the 4 vertices of the 2 sentinel edges.
++ * There are at most n edges crossing the sweep line. Each intersection of two edges splits both. At one sweep event, the regions
 + * whose edges intersect are next to the edges of the event or to edges
 + * which were just split, so there are at most about as many splits as edges
 + * crossing the sweep line, i.e. n. Over the whole sweep, n edges have at most
@@ -589,7 +598,8 @@ index eca828f..70f92ff 100644
 + * contours, 3 million, heavily self-intersecting or not) never got more
 + * than 0.85*n (and 212) splits at one event, or 0.98*n*n in total. The
 + * limits are 16*n+4096 splits at one event, and 2*n*n+16*n+4096 in total.
-+ * On the contours of #1580, the sweep stops after a few thousand splits.
++ * On the contour of #1580 (n = 118), the sweep stops after 5986 splits at one
++ * event (limit 5984), 6702 in total.
 + */
 +{
 +  GLUvertex *v, *vHead = &tess->mesh->vHead;
@@ -609,7 +619,7 @@ index eca828f..70f92ff 100644
  int __gl_computeInterior( GLUtesselator *tess )
  /*
   * __gl_computeInterior( tess ) computes the planar arrangement specified
-@@ -1320,6 +1459,7 @@ int __gl_computeInterior( GLUtesselator *tess )
+@@ -1320,6 +1469,7 @@ int __gl_computeInterior( GLUtesselator *tess )
    RemoveDegenerateEdges( tess );
    if ( !InitPriorityQ( tess ) ) return 0; /* if error */
    InitEdgeDict( tess );
@@ -617,7 +627,7 @@ index eca828f..70f92ff 100644
  
    /* __gl_pqSortExtractMin */
    while( (v = (GLUvertex *)pqExtractMin( tess->pq )) != NULL ) {
-@@ -1344,6 +1484,7 @@ int __gl_computeInterior( GLUtesselator *tess )
+@@ -1344,6 +1494,7 @@ int __gl_computeInterior( GLUtesselator *tess )
        vNext = (GLUvertex *)pqExtractMin( tess->pq ); /* __gl_pqSortExtractMin*/
        SpliceMergeVertices( tess, v->anEdge, vNext->anEdge );
      }
@@ -625,7 +635,7 @@ index eca828f..70f92ff 100644
      SweepEvent( tess, v );
    }
  
-@@ -1356,6 +1497,30 @@ int __gl_computeInterior( GLUtesselator *tess )
+@@ -1356,6 +1507,30 @@ int __gl_computeInterior( GLUtesselator *tess )
  
    if ( !RemoveDegenerateFaces( tess->mesh ) ) return 0;
    __gl_meshCheckMesh( tess->mesh );
