@@ -228,10 +228,14 @@ done
 # (natron_archive_subports in its Portfile): a Natron patch on one of them would be lost. Every
 # patchfile that Portfile.patch adds must be for qtbase (patch-qtbase-*, always built here) or
 # listed in natron_archive_build_only_patches (a patch that only changes the build, not the result).
+# Other kinds of changes to those subports (configure flags, revision) are not detected: see the
+# comment above natron_archive_subports in the Portfile.
 qt5=aqua/qt5
 if [ -f "$qt5/Portfile.patch" ]; then
     build_only=$(sed -n 's/^set natron_archive_build_only_patches {\(.*\)}$/\1/p' "$qt5/Portfile")
-    for q in $(sed -n 's/^+.*patchfiles-append[[:space:]]*//p' "$qt5/Portfile.patch"); do
+    # every patch file named on a line that Portfile.patch adds: a patchfiles-append line, its
+    # continuation lines, or a line added to an upstream patchfiles list
+    for q in $(grep '^+[^+]' "$qt5/Portfile.patch" | grep -oE '[A-Za-z0-9_.+-]+\.(diff|patch)' | grep -v '^Portfile\.patch$' | sort -u); do
         case "$q" in patch-qtbase-*) continue ;; esac
         case " $build_only " in *" $q "*) continue ;; esac
         need_action "$qt5: Natron patch $q may apply to a subport installed from MacPorts' archives (natron_archive_subports): bump that subport's revision, remove it from natron_archive_subports, or add $q to natron_archive_build_only_patches if it only affects the build"
