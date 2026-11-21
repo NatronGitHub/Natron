@@ -530,7 +530,9 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         GuiAppInstancePtr app = std::dynamic_pointer_cast<GuiAppInstance>(*it);
-        if (app) {
+        // not the instances that already quit, or are quitting (e.g. after app.closeProject()): they are
+        // removed once their nodes stopped processing, and the application exits after the last one (#1567)
+        if ( app && !app->isQuitPending() && !app->isClosing() ) {
             guiApps.push_back(app);
         }
     }
@@ -551,7 +553,7 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
         guiApps.clear();
         for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
             GuiAppInstancePtr ga = std::dynamic_pointer_cast<GuiAppInstance>(*it);
-            if ( ga && ( triedInstances.find(ga) == triedInstances.end() ) ) {
+            if ( ga && !ga->isQuitPending() && !ga->isClosing() && ( triedInstances.find(ga) == triedInstances.end() ) ) {
                 guiApps.push_back(ga);
             }
         }
