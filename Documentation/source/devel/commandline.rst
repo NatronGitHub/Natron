@@ -457,3 +457,42 @@ with the following changes to the script::
     writer.getParam("fps").set(fpsValue)
 
 :option:`-w` is not needed here: without it, all the Write nodes of the graph are rendered.
+
+.. _natron-convert-project:
+
+Example: converting a project between the binary and text formats
+------------------------------------------------------------------
+
+Projects are saved in a binary format, or in a text (XML) format that Natron 2.5 and earlier
+can read (see :meth:`App.getProjectFormat<NatronEngine.App.getProjectFormat>`). The
+``tools/natron-convert-project.py`` script of the Natron sources converts a project from one
+format to the other, without rendering anything. NatronRenderer doesn't give command-line
+arguments to scripts, so the arguments are environment variables::
+
+    NATRON_CONVERT_TO=text NATRON_CONVERT_INPUT=/path/to/in.ntp NATRON_CONVERT_OUTPUT=/path/to/out.ntp NatronRenderer -t natron-convert-project.py
+
+``NATRON_CONVERT_TO``
+    ``text`` or ``binary``.
+``NATRON_CONVERT_INPUT``
+    The project to convert.
+``NATRON_CONVERT_OUTPUT``
+    The converted project. Without it, the input project is replaced.
+
+On Windows, set the variables with ``set NATRON_CONVERT_TO=text`` (and so on) before running
+``NatronRenderer -t natron-convert-project.py``.
+
+The project is loaded and saved as with *Save Project As..*: it is the project that this
+version of Natron would save (a project from an older version is upgraded, and the parameters
+that a plug-in no longer has are removed). All its plug-ins and PyPlugs must be installed: a
+project that loads with errors (see
+:meth:`App.projectLoadedWithErrors<NatronEngine.App.projectLoadedWithErrors>`), for example
+with a node whose plug-in is missing, is not converted. The exit status is 1 if the project is
+not converted.
+
+NatronRenderer doesn't read the GUI data of projects (node positions and colours, viewer
+settings, window layout), and saves projects without them (see
+:meth:`App.projectFileHasGuiData<NatronEngine.App.projectFileHasGuiData>`). The script
+converts only the projects that have no GUI data, the ones saved by NatronRenderer or
+natron-python. Convert the projects saved by Natron with *Save Project As..* and its
+*File format* choice, or set ``NATRON_CONVERT_DISCARD_GUI=1`` to convert them without their
+GUI data.

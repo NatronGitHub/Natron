@@ -317,6 +317,22 @@ Project::setFileFormat(ProjectFileFormatEnum format)
 }
 
 bool
+Project::fileHasGuiData() const
+{
+    QMutexLocker l(&_imp->projectLock);
+
+    return _imp->fileHasGuiData;
+}
+
+bool
+Project::fileLoadedWithErrors() const
+{
+    QMutexLocker l(&_imp->projectLock);
+
+    return _imp->fileLoadedWithErrors;
+}
+
+bool
 Project::loadProject(const QString & path,
                      const QString & name,
                      bool isUntitledAutosave,
@@ -400,7 +416,12 @@ Project::loadProjectImpl(const QString & path,
         }
 
         bool mustSave = false;
-        if ( !loadProjectInternal(realPath, realName, isAutoSave, isUntitledAutosave, &mustSave) ) {
+        const bool loadedWithoutErrors = loadProjectInternal(realPath, realName, isAutoSave, isUntitledAutosave, &mustSave);
+        {
+            QMutexLocker l(&_imp->projectLock);
+            _imp->fileLoadedWithErrors = !loadedWithoutErrors;
+        }
+        if (!loadedWithoutErrors) {
             appPTR->showErrorLog();
         } else if (mustSave) {
             saveProject(realPath, realName, 0);
@@ -489,6 +510,9 @@ Project::loadProjectInternal(const QString & path,
     // The format of the project file this file is, or was an auto-save of.
     ProjectFileFormatEnum projectFormat = fileFormat;
 
+    // Whether the file has a ProjectGui part (see fileHasGuiData())
+    bool hasGuiData = false;
+
     // Same contents for both formats, so that they go through the same serialize() functions and versions.
     auto loadFromArchive = [&](auto & iArchive) {
         bool bgProject;
@@ -501,6 +525,7 @@ Project::loadProjectInternal(const QString & path,
             ret = load(projectSerializationObj, name, path, mustSave);
         } // __raii_loadingProjectInternal__
 
+        hasGuiData = !bgProject;
         if (!bgProject) {
             getApp()->loadProjectGui(isAutoSave, iArchive);
         }
@@ -574,6 +599,7 @@ Project::loadProjectInternal(const QString & path,
     {
         QMutexLocker l(&_imp->projectLock);
         _imp->fileFormat = projectFormat;
+        _imp->fileHasGuiData = hasGuiData;
     }
 
     Format f;
@@ -2678,6 +2704,8 @@ Project::doResetEnd(bool aboutToQuit)
             _imp->autoSetProjectFormatPendingReaders.clear();
             _imp->hasProjectBeenSavedByUser = false;
             _imp->fileFormat = eProjectFileFormatNone;
+            _imp->fileHasGuiData = false;
+            _imp->fileLoadedWithErrors = false;
             _imp->projectCreationTime = QDateTime::currentDateTime();
             _imp->setProjectFilename(NATRON_PROJECT_UNTITLED);
             _imp->setProjectPath("");

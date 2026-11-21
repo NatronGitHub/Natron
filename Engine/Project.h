@@ -192,6 +192,21 @@ public:
     void setFileFormat(ProjectFileFormatEnum format);
 
     /**
+     * @brief Whether the project file this project was loaded from contains GUI data (node positions,
+     * viewer settings, window layout...): false for a new project and for a file saved in background mode.
+     * A background application (NatronRenderer, natron-python) does not read this data, and saves the
+     * project without it.
+     **/
+    bool fileHasGuiData() const WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Whether there were errors when this project was loaded from its file, which the error log lists:
+     * nodes that could not be created (missing plug-in) or that were created with another major version of
+     * their plug-in, PyPlugs that could not be loaded... The project was loaded without them. False for a new project.
+     **/
+    bool fileLoadedWithErrors() const WARN_UNUSED_RETURN;
+
+    /**
      * @brief Detects the format of a project file from its first bytes: an XML file starts with "<?xml"
      * (after an optional UTF-8 byte order mark and white space), a binary project with the signature of
      * PortableBinaryOArchive. Returns eProjectFileFormatNone if it is neither.
