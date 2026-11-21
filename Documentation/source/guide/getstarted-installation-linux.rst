@@ -99,6 +99,10 @@ To update Natron, download and extract the new version. You can keep the old
 version next to it, for example to open old projects. The new version uses the
 settings of the old one.
 
+Keep the OpenFX plug-ins that you add yourself outside the Natron folder, so
+that they stay when you update: put them in ``/usr/OFX/Plugins``, or add their
+folder in *Edit* → *Preferences* → *Plug-ins* → *OpenFX plug-ins search path*.
+
 Uninstall
 ---------
 
