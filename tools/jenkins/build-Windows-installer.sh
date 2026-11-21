@@ -140,8 +140,8 @@ fi
 
 # The installer is Inno Setup's Setup.exe (${MINGW_PACKAGE_PREFIX}-natron-setup, from
 # natron-build-deps-common), embedded in the portable zip.
-if [ ! -f "/Setup.exe" ]; then
-    echo "Error: /Setup.exe not found: install ${MINGW_PACKAGE_PREFIX}-natron-setup (tools/MINGW-packages)"
+if [ ! -f "${NATRON_SETUP_EXE:-}" ]; then
+    echo "Error: ${MINGW_PREFIX}/share/natron-setup/Setup.exe not found: install ${MINGW_PACKAGE_PREFIX}-natron-setup (tools/MINGW-packages)"
     exit 1
 fi
 
@@ -413,7 +413,7 @@ ZIP_INSTALL_DIR="."
 # Portable zip, with Setup.exe
 if [ "$DISABLE_PORTABLE_ARCHIVE" != "1" ]; then
     mkdir -p "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR"
-    cp -a /Setup.exe "${TMP_BINARIES_PATH}/${PORTABLE_DIRNAME}/"
+    cp -a "${NATRON_SETUP_EXE}" "${TMP_BINARIES_PATH}/${PORTABLE_DIRNAME}/Setup.exe"
     (cd "${TMP_BINARIES_PATH}" && zip -9 -q -r "${PORTABLE_DIRNAME}.zip" "${PORTABLE_DIRNAME}"; mv "${PORTABLE_DIRNAME}.zip" "${BUILD_ARCHIVE_DIRECTORY}/$ZIP_INSTALL_DIR/${PORTABLE_DIRNAME}.zip")
 fi
 

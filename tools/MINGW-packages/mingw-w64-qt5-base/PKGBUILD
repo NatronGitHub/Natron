@@ -1,0 +1,383 @@
+# Contributor: Mehdi Chinoune <mehdi.chinoune@hotmail.com>
+
+# Natron: MSYS2's mingw-w64-qt5-base (PKGBUILD.orig, msys2/MINGW-packages
+# 7b1033939d, KDE kde/5.15 fbed962c31) with 1001-natron-qmutex-fix-lost-wakeup-arm64.patch,
+# the QMutex lost wake-up fix of NatronGitHub/Natron#1453 (#1451): Qt 5's non-futex
+# QMutex, which Windows always uses, can leave a thread asleep on an unlocked mutex
+# on weakly ordered CPUs. Only built for CLANGARM64 (Windows on ARM64, #1494): on
+# x86-64 every CAS is a full barrier, so UCRT64 is not affected in practice. No Qt 6
+# counterpart: MSYS2's qt6-base (6.12) uses WaitOnAddress futexes on Windows (#1453).
+# Same pkgname as MSYS2's, so it replaces the system package. pkgrel is 2.1: above
+# MSYS2's 5.15.19+kde+r96-2, below any MSYS2 rebuild (-3) or update. Then
+# natron_repo_install_overrides fails (NATRON_REPO_OVERRIDES_REQUIRED), rather than
+# bring back the hang: check that MSYS2's has the fix (a KDE kde/5.15 backport, see
+# #1546), or rebase this package on MSYS2's new PKGBUILD. Delete this
+# directory as soon as MSYS2's qt5-base has the fix (see "Packages that replace
+# MSYS2's" in ../README.md).
+
+# Use the right mkspecs file
+if [[ ${MINGW_PACKAGE_PREFIX} == *-clang-* ]]; then
+  _platform=win32-clang-g++
+else
+  _platform=win32-g++
+fi
+
+_realname=qt5-base
+pkgbase="mingw-w64-${_realname}"
+pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}"
+         "${MINGW_PACKAGE_PREFIX}-${_realname}-debug")
+_qtver=5.15.19
+pkgver=5.15.19+kde+r96
+pkgrel=2.1
+pkgdesc="A cross-platform application and UI framework (mingw-w64, Natron: QMutex lost wake-up fix)"
+arch=('any')
+mingw_arch=('clangarm64')
+url='https://www.qt.io/'
+msys2_repository_url='https://github.com/qt/qttools'
+msys2_references=(
+  'archlinux: qt5-base'
+  "cpe: cpe:/a:qt:qt"
+)
+msys2_ignore_vulnerabilities=(
+  "CVE-2025-30348" # fixed via kde backports: https://invent.kde.org/qt/qt/qtbase/-/commit/5d7b94e520ac2ac803d1354120adda3779ced2fc
+)
+license=('spdx:LGPL-3.0-only WITH Qt-GPL-exception-1.0 AND GPL-3.0-or-later AND GPL-2.0-or-later AND GFDL-1.3-no-invariants-only')
+makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
+             "${MINGW_PACKAGE_PREFIX}-pkgconf"
+             "${MINGW_PACKAGE_PREFIX}-dbus"
+             "${MINGW_PACKAGE_PREFIX}-double-conversion"
+             "${MINGW_PACKAGE_PREFIX}-egl-headers"
+             "${MINGW_PACKAGE_PREFIX}-fontconfig"
+             "${MINGW_PACKAGE_PREFIX}-freetype"
+             "${MINGW_PACKAGE_PREFIX}-gles-headers"
+             "${MINGW_PACKAGE_PREFIX}-harfbuzz"
+             "${MINGW_PACKAGE_PREFIX}-icu"
+             "${MINGW_PACKAGE_PREFIX}-libjpeg-turbo"
+             "${MINGW_PACKAGE_PREFIX}-libpng"
+             "${MINGW_PACKAGE_PREFIX}-md4c"
+             "${MINGW_PACKAGE_PREFIX}-openssl"
+             "${MINGW_PACKAGE_PREFIX}-pcre2"
+             "${MINGW_PACKAGE_PREFIX}-sqlite"
+             "${MINGW_PACKAGE_PREFIX}-vulkan"
+             "${MINGW_PACKAGE_PREFIX}-vulkan-headers"
+             "${MINGW_PACKAGE_PREFIX}-zlib"
+             "${MINGW_PACKAGE_PREFIX}-zstd"
+             "${MINGW_PACKAGE_PREFIX}-firebird"
+             "${MINGW_PACKAGE_PREFIX}-libmariadbclient"
+             "${MINGW_PACKAGE_PREFIX}-postgresql"
+             "git"
+             "rsync")
+_pkgfn="${_realname/5-/}"
+_commit=fbed962c3195ab3952fa54d40e012ad1a4fdc42b
+source=(git+https://invent.kde.org/qt/qt/$_pkgfn#commit=$_commit
+        0001-adjust-qmake-conf-mingw.patch
+        0002-qt-5.8.0-fix-sql-libraries-mingw.patch
+        0003-qt-5.8.0-configure-gcc-before-clang.patch
+        0004-fix-linking-again-different-static-libs.patch
+        0005-qt-5.3.0-win_flex-replace.patch
+        0006-qt-5.3.0-win32-g-Enable-static-builds.patch
+        0007-qt-5.3.0-win32-g-Add-QMAKE_EXTENSION_IMPORTLIB-defaulting-to-.patch
+        0008-qt-5.8.0-mingw-dbus-and-pkg-config.patch
+        0009-qt-5.8.0-win32-g++-use-qpa-genericunixfontdatabase.patch
+        0010-qt-5.8.0-force-using-make-on-msys.patch
+        0011-qt-5.8.0-Revert-untangle-use-of-system-vs.-shell-path-list-se.patch
+        0012-qt-5.8.0-Revert-fix-quoting-and-path-separators-in-qtPrepareT.patch
+        0013-qt-5.3.1-workaround-ansidecl-h-PTR-define-conflict.patch
+        0014-qt-5.3.2-dont-add-resource-files-to-qmake-libs.patch
+        0015-qt-5.3.2-win32-qt5-static-cmake-link-ws2_32-and--static.patch
+        0016-qt-5.4.2-win32-Avoid-platformNativeInterface-segfaults-with-minimal-platform.patch
+        0017-qt-5.8.0-win32-do-not-use-fontconfig.patch
+        0018-win32-dont-need-flatpack-theme.patch
+        0019-qt-5.11-static_icu.patch
+        0020-fix-and-enable-iconv-codec.patch
+        0021-enable-mingw-schannel-alpn.patch
+        0022-qt-5.8.0-cast-errors.patch
+        0023-fix-build-with-perl-cygwin.patch
+        0024-fix-synqt-with-git-build.patch
+        0025-enable-avx-support.patch
+        0026-fix-mingw-win32-winnt-detection.patch
+        0027-qt-5.7.0-qdbus-manager-quit.patch
+        0028-work-around-pyside2-brokenness.patch
+        0029-fix-conflict-with-qt6.patch
+        0030-fix-std-terminate-without-exceptions.patch
+        0101-QSslCertificate-remove-manual-parsing-code-for-ASN.1.patch
+        0102-Update-sources-to-support-OpenSSL-4.patch
+        1001-natron-qmutex-fix-lost-wakeup-arm64.patch)
+sha256sums=('4b781e4bb7d5497606da0f7bee8357d3f92cb5e39e9f6e39db1f3b136c840061'
+            'a74eec5be1aee1bd3a37af0955b7c5f3d36d54bc64c07e4c2edd5526cdc3cad5'
+            'e0a535278057f42e43952405e567c23cc493ef6badeeb3bbce0154953cd545a5'
+            'e7252bdc92fa75f067e4beafbf3c844fca3a4bd16d14ac5344256f022a9214d5'
+            '02a3b24c02a6797b706582198ab1177648c2653e8870dcdddc5856d6cd629d49'
+            '013401295022dbad73df0355124758d337da71b99253461bb84bc7c9320e27e6'
+            '61cb036d39a12abc5f98fc2afdc41694471413171e79debd3cd5f464d74dad32'
+            'ae7daec747b954c5bd93bf3f37971d173f8fbd277ad11a63b7c88494dad37986'
+            '0fb18899437e86bdbea1750a892b18bef76bdf9b85e504afcb65e7f49f421ff0'
+            '3a8de25edb2a4643583ad5fa2743475b60fffad931be25314b4067be2413bca4'
+            '49eee16b318f1ac8d5ddf45f294b9f88e05c2f7f7ad2808f281961200d61c6cf'
+            '9fafed377f435493dd72b1b8f49ca25580f5b3d4100528a5c4ca18d10627dfd7'
+            '69f7b27d7c23731e73500e058ec69e7504740d102244f15959977355814de9c5'
+            '41acd8702a33a1d2f5e93c7e940c41aaa335aa728bc5562e799ef6077aa00433'
+            '274d24f9cd84a7fae5e2c5836c8a3a6108ef2c04c1b8c8e97a11b70975b98ddf'
+            'ce0c7e6dcc5af61c7d7db2bbe8921ab3861fd9380be9af62933f8d29cb577d53'
+            '58556b73b3fcbddd5658832f012760e3a86637bdd9e6324596b6ecd69981a985'
+            '4b2f54549743864e831e57d45269a7d84182d68cbc5f5277daa29167c046ae52'
+            '606e6e4888e2efc8e971258ec3cdf43b32c6dac9bdba22ed89ca9571adeb365d'
+            'c88c558f3388ab2fa7df57e403324e92abdfbdf72a87c849af337720f52baa8b'
+            'c9bdd0ce5f30c6eb940675e45e14179bbab41b743e88cec4679c20dc2d8c9cbf'
+            'fec3f368973c004c3fccea4e9d816eb42c02dcb2355714d5c833c8b74b428f11'
+            '5397862593005d9af4b218396c4a3975b0e0f039992562ffef4672c0738c4df0'
+            '8276745ca159550a152354e36c36032a2fdbbf58caf9eedd0d95df255cd643d2'
+            '18b3dccd9141773026b2a13a79df42ec9196bc6ad77f5feedcbd304b02fa0e6f'
+            'e5d22486bf809d9422103471766f4a11d3090acaf9104cfaf333bad1aa1dcc6c'
+            '6ceed12f98254c37fb3b1ab68a84214c922bd2c402fea89fa65638d56e567bbb'
+            '03dc899326676cc6e9e6b4e77634ccea3693449bf8627653dc7fdb74378ad264'
+            '8dd074ab427ccd439e34f50ed8b03228d71c09a5375050ad5d47064ff6b00d8f'
+            'f276f74fc4585b1f2d01d4bc1391d3e86f69ac1efb4e297f9898fa4cc0d14fbb'
+            '217457594144fd5bf9bc454080fd05332d1f96f3063c3bc03503234122fe771d'
+            'f061ea5385769613f71adff67e5bb30e704577d4bdf503c197d46e7c5f131313'
+            '6ec8a575da75d43dfef1436633254eeef0d8958abce6dd3ea6403e803187da92'
+            '24011e26055db28544ad7324a2fc7cb12c1f9982970b653e37f5f9bdc4664e4f')
+
+# Helper macros to help make tasks easier #
+apply_patch_with_msg() {
+  for _patch in "$@"
+  do
+    msg2 "Applying ${_patch}"
+    patch -Nbp1 -i "${srcdir}/${_patch}"
+  done
+}
+
+pkgver() {
+  cd $_pkgfn
+  echo "${_qtver}+kde+r"`git rev-list --count v${_qtver}-lts-lgpl..$_commit`
+}
+
+prepare() {
+  cd $_pkgfn
+
+  apply_patch_with_msg \
+    0001-adjust-qmake-conf-mingw.patch \
+    0002-qt-5.8.0-fix-sql-libraries-mingw.patch \
+    0003-qt-5.8.0-configure-gcc-before-clang.patch \
+    0004-fix-linking-again-different-static-libs.patch \
+    0005-qt-5.3.0-win_flex-replace.patch \
+    0006-qt-5.3.0-win32-g-Enable-static-builds.patch \
+    0007-qt-5.3.0-win32-g-Add-QMAKE_EXTENSION_IMPORTLIB-defaulting-to-.patch \
+    0008-qt-5.8.0-mingw-dbus-and-pkg-config.patch \
+    0009-qt-5.8.0-win32-g++-use-qpa-genericunixfontdatabase.patch \
+    0010-qt-5.8.0-force-using-make-on-msys.patch \
+    0011-qt-5.8.0-Revert-untangle-use-of-system-vs.-shell-path-list-se.patch \
+    0012-qt-5.8.0-Revert-fix-quoting-and-path-separators-in-qtPrepareT.patch \
+    0013-qt-5.3.1-workaround-ansidecl-h-PTR-define-conflict.patch \
+    0014-qt-5.3.2-dont-add-resource-files-to-qmake-libs.patch \
+    0015-qt-5.3.2-win32-qt5-static-cmake-link-ws2_32-and--static.patch \
+    0016-qt-5.4.2-win32-Avoid-platformNativeInterface-segfaults-with-minimal-platform.patch \
+    0017-qt-5.8.0-win32-do-not-use-fontconfig.patch \
+    0018-win32-dont-need-flatpack-theme.patch \
+    0019-qt-5.11-static_icu.patch \
+    0020-fix-and-enable-iconv-codec.patch \
+    0021-enable-mingw-schannel-alpn.patch \
+    0022-qt-5.8.0-cast-errors.patch \
+    0023-fix-build-with-perl-cygwin.patch \
+    0024-fix-synqt-with-git-build.patch \
+    0025-enable-avx-support.patch \
+    0026-fix-mingw-win32-winnt-detection.patch \
+    0029-fix-conflict-with-qt6.patch
+
+  # Header-only backport:
+  # https://github.com/qt/qtbase/commit/8f7873272ac9e5c5f1a83a5204afb512843cf8d8
+  apply_patch_with_msg \
+    0030-fix-std-terminate-without-exceptions.patch
+
+  # From: https://gitlab.archlinux.org/archlinux/packaging/packages/qt5-base
+  # https://github.com/qt/qtbase/commit/0e240204b59c33987cb0c8c1ed64ac60e21c18b4
+  apply_patch_with_msg \
+    0101-QSslCertificate-remove-manual-parsing-code-for-ASN.1.patch
+
+  # From: https://gitlab.archlinux.org/archlinux/packaging/packages/qt5-base
+  # https://github.com/qt/qtbase/commit/e806630e694d89f567cffa9c982d1f471089ecd8
+  apply_patch_with_msg \
+    0102-Update-sources-to-support-OpenSSL-4.patch
+
+  # For: https://github.com/msys2/MINGW-packages/issues/10158
+  # From: https://invent.kde.org/packaging/craft-blueprints-kde/-/blob/master/libs/qt5/qtbase/.qt-kde-5.15/qdbus-manager-quit-5.7.patch
+  apply_patch_with_msg \
+    0027-qt-5.7.0-qdbus-manager-quit.patch
+
+  # https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/IJQ3KMKJFIKEVY4WX5WMQFYUGAVB2G2M/#TPQFP6W22XACTGIBLDL3TG6HA322HWPR
+  apply_patch_with_msg \
+    0028-work-around-pyside2-brokenness.patch
+
+  # Natron: QMutex lost wake-up on weakly ordered CPUs (NatronGitHub/Natron#1451, #1453)
+  apply_patch_with_msg \
+    1001-natron-qmutex-fix-lost-wakeup-arm64.patch
+
+  local _ARCH_TUNE=
+  if [[ ${CARCH} == x86_64 ]]; then
+    _ARCH_TUNE="-march=nocona -msahf -mtune=generic"
+  fi
+
+  BIGOBJ_FLAGS="-Wa,-mbig-obj"
+
+  # Append these ones ..
+  sed -i "s|^QMAKE_CFLAGS .*= \(.*\)$|QMAKE_CFLAGS            = \1 ${_ARCH_TUNE} ${BIGOBJ_FLAGS}|g" mkspecs/${_platform}/qmake.conf
+  sed -i "s|^QMAKE_CXXFLAGS .*= \(.*\)$|QMAKE_CXXFLAGS            = \1 ${_ARCH_TUNE} ${BIGOBJ_FLAGS}|g" mkspecs/${_platform}/qmake.conf
+
+  if [[ ${MINGW_PACKAGE_PREFIX} == *-clang-* ]]; then
+    sed -i "s| -mthreads||g" mkspecs/common/g++-win32.conf
+  fi
+
+  find . -name "*.orig" -exec rm -f {} \;
+}
+
+build() {
+  mkdir -p build-${MSYSTEM} && cd build-${MSYSTEM}
+
+  # Qt manages the compiler flags for release / debug configs separately, so having our own values (-O2) is harmful here ..
+  unset CFLAGS
+  unset CXXFLAGS
+  unset LDFLAGS
+  unset QMAKESPEC
+  unset XQMAKESPEC
+  unset QMAKEPATH
+  unset QMAKEFEATURES
+
+  export PATH="${srcdir}/build-${MSYSTEM}/bin:${srcdir}/build-${MSYSTEM}/lib:${PATH}"
+  export VULKAN_SDK=${MINGW_PREFIX}
+
+  declare -a _extra_config
+  if check_option "debug" "n"; then
+    _extra_config+=("-release" "-force-debug-info" "-separate-debug-info")
+  else
+    _extra_config+=("-debug")
+  fi
+
+  ../${_pkgfn}/configure.bat \
+    -prefix ${MINGW_PREFIX} \
+    -datadir ${MINGW_PREFIX}/share/qt5 \
+    -archdatadir ${MINGW_PREFIX}/share/qt5 \
+    -nomake examples \
+    -nomake tests \
+    -opensource \
+    -confirm-license \
+    -platform ${_platform} \
+    -opengl dynamic \
+    -shared \
+    -make-tool make \
+    -I${MINGW_PREFIX}/include/mariadb \
+    -dbus \
+    -fontconfig \
+    -icu \
+    -openssl \
+    -system-doubleconversion \
+    -system-freetype \
+    -system-harfbuzz \
+    -system-libjpeg \
+    -system-libpng \
+    -system-pcre \
+    -system-sqlite \
+    -system-zlib \
+    -no-iconv \
+    -plugin-sql-odbc \
+    -plugin-sql-ibase \
+    -plugin-sql-psql \
+    -plugin-sql-mysql \
+    "${_extra_config[@]}"
+
+  make
+}
+
+check() {
+  cd build-${MSYSTEM}
+  make check -j1 -k
+}
+
+package_qt5-base() {
+  depends=("${MINGW_PACKAGE_PREFIX}-dbus"
+           "${MINGW_PACKAGE_PREFIX}-double-conversion"
+           "${MINGW_PACKAGE_PREFIX}-fontconfig"
+           "${MINGW_PACKAGE_PREFIX}-freetype"
+           "${MINGW_PACKAGE_PREFIX}-harfbuzz"
+           "${MINGW_PACKAGE_PREFIX}-icu"
+           "${MINGW_PACKAGE_PREFIX}-libjpeg-turbo"
+           "${MINGW_PACKAGE_PREFIX}-libpng"
+           "${MINGW_PACKAGE_PREFIX}-md4c"
+           "${MINGW_PACKAGE_PREFIX}-openssl"
+           "${MINGW_PACKAGE_PREFIX}-pcre2"
+           "${MINGW_PACKAGE_PREFIX}-sqlite"
+           "${MINGW_PACKAGE_PREFIX}-vulkan"
+           "${MINGW_PACKAGE_PREFIX}-zlib"
+           "${MINGW_PACKAGE_PREFIX}-zstd")
+  optdepends=("${MINGW_PACKAGE_PREFIX}-firebird: Firebird/iBase driver"
+              "${MINGW_PACKAGE_PREFIX}-libmariadbclient: MySQL/MariaDB driver"
+              "${MINGW_PACKAGE_PREFIX}-postgresql: PostgreSQL driver"
+              "${MINGW_PACKAGE_PREFIX}-angleproject: ANGLE OpenGL ES API translation layer")
+  groups=("${MINGW_PACKAGE_PREFIX}-qt5")
+
+  cd build-${MSYSTEM}
+
+  # Fix Makefiles
+  local PREFIX_WIN=$(cygpath -am ${MINGW_PREFIX})
+  find "${srcdir}/build-${MSYSTEM}" -type f \( -name 'Makefile*' \) \
+      -exec sed -i -e "s|${PREFIX_WIN:0:2}\$(INSTALL_ROOT|\$(INSTALL_ROOT|g" {} \;
+  find "${srcdir}/build-${MSYSTEM}" -type f \( -name 'Makefile*' \) \
+      -exec sed -i -e "s|)${PREFIX_WIN:2}|)${MINGW_PREFIX}|g" {} \;
+
+  make INSTALL_ROOT="${pkgdir}" install
+
+  install -d "$pkgdir${MINGW_PREFIX}"/share/licenses/${_realname}
+  install -Dm644 $srcdir/${_pkgfn}/LICENSE* -t "$pkgdir${MINGW_PREFIX}"/share/licenses/${_realname}
+
+  # Seperate debug-info files
+  mv -f "${pkgdir}${MINGW_PREFIX}/lib"/*.debug "${pkgdir}${MINGW_PREFIX}/bin"/ || true
+  rsync -armR --remove-source-files --include="*/" --include="*.debug" --exclude="*" --prune-empty-dirs "${pkgdir}"/.${MINGW_PREFIX} "${srcdir}"/${MSYSTEM}-debug/
+
+  # Fix paths in *.pri, *prl and *.pc files:
+  #   $(cygpath -m ${MINGW_PREFIX}) -> $(cygpath -m "${pkgdir}"${MINGW_PREFIX})
+  local PKGDIR_PREFIX_WIN=$(cygpath -m "${pkgdir}"${MINGW_PREFIX})
+  local FAKE_PREFIX_FOR_REPLACE="@@QT_REAL_PREFIX/dir@@"
+
+  find "${pkgdir}${MINGW_PREFIX}/lib" -type f \( -name '*.pri' -o -name '*.prl' \) \
+      -exec sed -i -e "s|${PREFIX_WIN}|${FAKE_PREFIX_FOR_REPLACE}|g" {} \;
+
+  find "${pkgdir}${MINGW_PREFIX}/lib/pkgconfig" -type f -name '*.pc' \
+      -exec sed -i -e "s|${PREFIX_WIN}|${MINGW_PREFIX}|g" {} \;
+
+  find "${pkgdir}${MINGW_PREFIX}/share/qt5" -type f -name '*.pri' \
+      -exec sed -i -e "s|${PREFIX_WIN}|${MINGW_PREFIX}|g" {} \;
+
+  find "${pkgdir}${MINGW_PREFIX}/lib/pkgconfig" -type f -name '*.pc' \
+      -exec sed -i -e "s|${PKGDIR_PREFIX_WIN}|${MINGW_PREFIX}|g" {} \;
+
+  # Avoid conflict with qt6-base
+  for _tool in qmake qdbuscpp2xml qdbusxml2cpp; do
+    mv "${pkgdir}"${MINGW_PREFIX}/bin/${_tool}{,-qt5}.exe
+  done
+  sed -i "s|qmake.exe|qmake-qt5.exe|g" "${pkgdir}"${MINGW_PREFIX}/lib/cmake/Qt5Core/Qt5CoreConfigExtras.cmake
+  sed -i "s|qdbuscpp2xml.exe|qdbuscpp2xml-qt5.exe|g" "${pkgdir}"${MINGW_PREFIX}/lib/cmake/Qt5DBus/Qt5DBusConfigExtras.cmake
+  sed -i "s|qdbusxml2cpp.exe|qdbusxml2cpp-qt5.exe|g" "${pkgdir}"${MINGW_PREFIX}/lib/cmake/Qt5DBus/Qt5DBusConfigExtras.cmake
+}
+
+package_qt5-base-debug() {
+  depends=("${MINGW_PACKAGE_PREFIX}-qt5-base")
+  groups=("${MINGW_PACKAGE_PREFIX}-qt5-debug")
+  options=('!strip')
+
+  cp -rf "${srcdir}"/${MSYSTEM}-debug${MINGW_PREFIX} "${pkgdir}"/
+
+  # Avoid conflict with qt6-base-debug
+  for _tool in qdbuscpp2xml qdbusxml2cpp; do
+    mv "${pkgdir}"${MINGW_PREFIX}/bin/${_tool}{,-qt5}.exe.debug
+  done
+}
+
+# template start; name=mingw-w64-splitpkg-wrappers; version=1.0;
+# vim: set ft=bash :
+
+# generate wrappers
+for _name in "${pkgname[@]}"; do
+  _short="package_${_name#${MINGW_PACKAGE_PREFIX}-}"
+  _func="$(declare -f "${_short}")"
+  eval "${_func/#${_short}/package_${_name}}"
+done
+# template end;
