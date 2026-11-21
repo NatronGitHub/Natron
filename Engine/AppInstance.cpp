@@ -34,7 +34,9 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
+#include <QAbstractEventDispatcher>
 #include <QCoreApplication>
+#include <QElapsedTimer>
 #include <QDir>
 #include <QTextStream>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
@@ -42,6 +44,7 @@
 #include <QFileInfo>
 #include <QEventLoop>
 #include <QSettings>
+#include <QThread>
 #include <QNetworkReply>
 
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
@@ -2139,6 +2142,44 @@ AppInstance::hasRenderInProgress() const
     return false;
 }
 
+bool
+AppInstance::waitForRenders(int timeoutMs,
+                            int settleMs)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    // natron.quit() and the close requests wait until this loop is done
+    AppManager::NestedEventLoopRAII nestedLoop;
+    QElapsedTimer total;
+    total.start();
+    QElapsedTimer idle;
+    bool idleStarted = false;
+    QAbstractEventDispatcher* dispatcher = QAbstractEventDispatcher::instance( qApp->thread() );
+    for (;;) {
+        // the results of the renders (e.g. viewer texture uploads) are posted to the main thread
+        QCoreApplication::sendPostedEvents();
+        // not the user input: a click could close the project under the script that waits
+        const bool processed = dispatcher ? dispatcher->processEvents(QEventLoop::ExcludeUserInputEvents) : false;
+        // all the projects: a render of a project can wait for another one (e.g. a Precomp)
+        if ( appPTR->hasRenderInProgress() ) {
+            idleStarted = false;
+        } else if (!idleStarted) {
+            if (settleMs <= 0) {
+                return true;
+            }
+            idle.start();
+            idleStarted = true;
+        } else if (idle.elapsed() >= settleMs) {
+            return true;
+        }
+        if ( (timeoutMs >= 0) && (total.elapsed() >= timeoutMs) ) {
+            return false;
+        }
+        if (!processed) {
+            QThread::msleep(5);
+        }
+    }
+}
+
 void
 AppInstance::quit()
 {
@@ -2330,17 +2371,19 @@ AppInstance::onGroupCreationFinished(const NodePtr& node,
 }
 
 bool
-AppInstance::saveTemp(const std::string& filename)
+AppInstance::saveTemp(const std::string& filename,
+                      ProjectFileFormatEnum format)
 {
     std::string outFile = filename;
     std::string path = SequenceParsing::removePath(outFile);
     ProjectPtr project = getProject();
 
-    return project->saveProject_imp(QString::fromUtf8( path.c_str() ), QString::fromUtf8( outFile.c_str() ), false, false, 0);
+    return project->saveProject_imp(QString::fromUtf8( path.c_str() ), QString::fromUtf8( outFile.c_str() ), false, false, 0, 0, format);
 }
 
 bool
-AppInstance::save(const std::string& filename)
+AppInstance::save(const std::string& filename,
+                  ProjectFileFormatEnum format)
 {
     ProjectPtr project = getProject();
 
@@ -2348,19 +2391,20 @@ AppInstance::save(const std::string& filename)
         QString projectFilename = project->getProjectFilename();
         QString projectPath = project->getProjectPath();
 
-        return project->saveProject(projectPath, projectFilename, 0);
+        return project->saveProject(projectPath, projectFilename, 0, format);
     } else {
-        return saveAs(filename);
+        return saveAs(filename, format);
     }
 }
 
 bool
-AppInstance::saveAs(const std::string& filename)
+AppInstance::saveAs(const std::string& filename,
+                    ProjectFileFormatEnum format)
 {
     std::string outFile = filename;
     std::string path = SequenceParsing::removePath(outFile);
 
-    return getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( outFile.c_str() ), 0);
+    return getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( outFile.c_str() ), 0, format);
 }
 
 AppInstancePtr

@@ -1649,6 +1649,73 @@ OfxEffectInstance::onInputChanged(int inputNo)
     }
 }
 
+// The kOfxPropChangeReason of the kOfxActionInstanceChanged actions after a project load
+// (onInputsRestoredAfterProjectLoad()). Plug-ins set parameters from an input clip when the user connects it
+// (kOfxChangeUserEdited), so kOfxChangePluginEdited keeps the values loaded from the project (see the plug-in audit
+// in #1447).
+// Non-conformant with the current upstream spec (openfx main, after 1.5.1, from #184/#191), which requires
+// kOfxChangeUserEdited; OFX 1.5.1 itself has no such rule. See https://github.com/AcademySoftwareFoundation/openfx/issues/294.
+static const char* const kProjectLoadChangeReason = kOfxChangePluginEdited;
+
+bool
+OfxEffectInstance::wantsInputsRestoredAfterProjectLoad() const
+{
+    // an input clip has an input node (see onInputsRestoredAfterProjectLoad())
+    NodePtr node = getNode();
+    for (int i = 0; i < (int)_imp->clipsInfos.size(); ++i) {
+        if ( node->getInput(i) ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void
+OfxEffectInstance::onInputsRestoredAfterProjectLoad()
+{
+    // openfx main, after 1.5.1 (#184/#191, ofxCore.h, kOfxActionInstanceChanged): "when a host loads a plugin instance
+    // from a saved project, if the input clips are not connected at that time, the host must call `instanceChanged`
+    // after kOfxActionCreateInstance and after the host has hooked up all clips, with property kOfxPropType =
+    // kOfxTypeClip and kOfxPropChangeReason = ..., and ensure that OfxImageEffectSuiteV1::clipGetRegionOfDefinition
+    // works in this action" (the reason: see kProjectLoadChangeReason).
+    // Natron creates the instances of a project before it connects their inputs (ProjectPrivate::restoreFromSerialization()),
+    // and does not call onInputChanged() while it connects them: one kOfxActionInstanceChanged per input clip with an
+    // input node (which may be a Dot or a GroupInput with nothing upstream), in one bracket (#1107).
+    assert(_imp->context != eContextNone);
+    NodePtr node = getNode();
+    std::vector<std::string> clips;
+    for (int i = 0; i < (int)_imp->clipsInfos.size(); ++i) {
+        if ( node->getInput(i) ) {
+            OfxClipInstance* clip = getClipCorrespondingToInput(i);
+            assert(clip);
+            if (clip) {
+                clips.push_back( clip->getName() );
+            }
+        }
+    }
+    if ( clips.empty() ) {
+        return;
+    }
+    double time = getApp()->getTimeLine()->currentFrame();
+    const OfxPointD scale = {1., 1.};
+
+    {
+        RECURSIVE_ACTION();
+        REPORT_CURRENT_THREAD_ACTION( kOfxActionInstanceChanged, node );
+        SET_CAN_SET_VALUE(true);
+        ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                            ViewIdx(0),
+                                            0);
+        assert(_imp->effect);
+
+        InstanceChangedBracket_RAII bracket(this, kProjectLoadChangeReason, ViewIdx(0), 0);
+        for (std::vector<std::string>::const_iterator it = clips.begin(); it != clips.end(); ++it) {
+            ignore_result( _imp->effect->clipInstanceChangedAction(*it, kProjectLoadChangeReason, time, scale) );
+        }
+    }
+}
+
 /** @brief map a std::string to a context */
 ContextEnum
 OfxEffectInstance::mapToContextEnum(const std::string &s)

@@ -51,6 +51,8 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Global/QtCompat.h" // Qt::CTRL | Qt::Key_X with Qt5
+
 #include "Engine/Bezier.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Image.h"

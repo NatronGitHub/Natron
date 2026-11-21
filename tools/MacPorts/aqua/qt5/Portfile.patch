@@ -1,5 +1,5 @@
---- Portfile.orig	2026-11-15 17:34:26
-+++ Portfile	2026-11-15 17:34:26
+--- Portfile.orig	2026-11-20 09:04:34
++++ Portfile	2026-11-20 22:06:33
 @@ -88,6 +88,10 @@
  
      # Backport fix for bundled libpng
@@ -11,3 +11,26 @@
  
      # fixes for newer LLVM/Clang; Sequoia or newer
      if {${os.platform} eq "darwin" && ${os.major} >= 24} {
+@@ -249,7 +253,7 @@
+         {"Qt Core" "Qt GUI" "Qt Network" "Qt SQL" "Qt Test" "Qt Widgets" "Qt Concurrent" "Qt D-Bus" "Qt OpenGL" "Qt Platform Headers" "Qt Print Support" "Qt XML"}
+         ""
+         "variant overrides: "
+-        "revision 0"
++        "revision 1"
+         "License: "
+     }
+     qtcharts {
+@@ -1088,6 +1092,13 @@
+             # https://trac.macports.org/ticket/72729
+             patchfiles-append patch-qtbase-tahoe-no-agl-framework.diff
+ 
++            # Natron: fix a lost wake-up in the non-futex QMutex on arm64 (NatronGitHub/Natron#1451):
++            # derefWaiters() must be a release, the waiters CAS in lockInternal() an acquire
++            # (repro, litmus tests and the Qt dev patch: tools/qt-mutex-repro). No Qt6 counterpart needed:
++            # Natron's Qt6 builds (MacPorts qt6-qtbase 6.12, Windows) always use futexes; the Qt dev
++            # patch in tools/qt-mutex-repro is for upstream.
++            patchfiles-append patch-qtbase-qmutex-arm64-lost-wakeup.diff
++
+             # find the Rez program
+             patchfiles-append patch-find_rez.diff
+             post-patch {
