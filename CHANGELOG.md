@@ -40,6 +40,7 @@
 - The expression created by "Create link on group" and by "Pick" in Manage User Params reads the linked parameter at the frame being computed (`get(frame)`), so a link to an animated parameter is animated. Links created before keep `get()`: edit their expression to add `frame`. #1336
 - Build scripts: COMMERCIAL (non-GPL) builds on Windows and macOS use an LGPL FFmpeg, a LibRaw without the GPL demosaic packs, a libheif without the GPL x264 and x265 encoders and, on Windows, a libtiff without JBIG-KIT. `tools/jenkins/check-commercial-bundle.sh` fails a COMMERCIAL build that contains or links a GPL library. These builds have no libx264, libx265 or libxvid encoding in WriteFFmpeg, no ReadPDF and no AudioCurve (#1302, #1177). See "Formats and codecs that depend on the build" in the Readers/Writers guide.
 - WriteOIIO: in COMMERCIAL builds, HEIC files are encoded with kvazaar instead of x265 (#1177).
+- Expressions that read a parameter of another node without giving the frame (e.g. `Transform1.translate.get()`) read it at the frame being rendered, also when that node is not connected to the rendered node. They read it at the current frame of the timeline, so a render on disk, a background render or a playback could use the values of another frame. At render setup, the nodes read by expressions now get the render state (frame, view, abort status). Rendering a node whose parameters read each other in a cycle through their expressions (`a.x` reads `b.y`, which reads `a.x`) no longer crashes. #1564
 
 
 ## Version 2.5.0

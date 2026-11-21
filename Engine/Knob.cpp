@@ -4908,6 +4908,21 @@ KnobHelper::getAliasMaster()  const
 void
 KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr>& nodes) const
 {
+    std::set<const KnobHelper*> visitedKnobs;
+
+    getAllExpressionDependenciesRecursiveInternal(nodes, visitedKnobs);
+}
+
+void
+KnobHelper::getAllExpressionDependenciesRecursiveInternal(std::set<NodePtr>& nodes,
+                                                          std::set<const KnobHelper*>& visitedKnobs) const
+{
+    // Parameters may read each other through their expressions (a.x = b.y, b.y = a.x): follow each one once,
+    // otherwise this recursed until the stack overflowed (#1564)
+    if ( !visitedKnobs.insert(this).second ) {
+        return;
+    }
+
     std::set<KnobIPtr> deps;
     {
         std::lock_guard<std::mutex> k(_imp->expressionMutex);
@@ -4946,7 +4961,12 @@ KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr>& nodes) cons
 
 
     for (std::list<KnobIPtr>::iterator it = knobsToInspectRecursive.begin(); it != knobsToInspectRecursive.end(); ++it) {
-        (*it)->getAllExpressionDependenciesRecursive(nodes);
+        const KnobHelper* isHelper = dynamic_cast<const KnobHelper*>( it->get() );
+        if (isHelper) {
+            isHelper->getAllExpressionDependenciesRecursiveInternal(nodes, visitedKnobs);
+        } else {
+            (*it)->getAllExpressionDependenciesRecursive(nodes);
+        }
     }
 }
 
