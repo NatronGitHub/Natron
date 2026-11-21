@@ -341,7 +341,7 @@ ScriptEditor::sourceScript(const QString& filename)
 {
     QFile file(filename);
 
-    if ( file.open(QIODevice::ReadOnly) ) {
+    if ( file.open(QIODevice::ReadOnly | QIODevice::Text) ) {
         QTextStream ts(&file);
         QString content = ts.readAll();
         _imp->inputEdit->setPlainText(content);
@@ -383,7 +383,7 @@ ScriptEditor::onLoadScriptClicked()
         getGui()->updateLastOpenedProjectPath( currentDir.absolutePath() );
         QString fileName( QString::fromUtf8( dialog.selectedFiles().c_str() ) );
         QFile file(fileName);
-        if ( file.open(QIODevice::ReadOnly) ) {
+        if ( file.open(QIODevice::ReadOnly | QIODevice::Text) ) {
             QTextStream ts(&file);
             QString content = ts.readAll();
             _imp->inputEdit->setPlainText(content);
@@ -406,9 +406,10 @@ ScriptEditor::onSaveScriptClicked()
         QDir currentDir = dialog.currentDirectory();
         getGui()->updateLastSavedProjectPath( currentDir.absolutePath() );
 
-        QString fileName( QString::fromUtf8( dialog.selectedFiles().c_str() ) );
+        QString fileName( QString::fromUtf8( dialog.filesToSave().c_str() ) );
         QFile file(fileName);
-        if ( file.open(QIODevice::ReadWrite) ) {
+        // Truncate: a shorter script saved over a longer file must not keep the old tail
+        if ( file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text) ) {
             QTextStream ts(&file);
             ts << _imp->inputEdit->toPlainText();
         } else {

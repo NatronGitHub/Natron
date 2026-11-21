@@ -1187,7 +1187,8 @@ Gui::saveProjectAs(const std::string& filename,
 {
     std::string fileCopy = filename;
 
-    if (fileCopy.find("." NATRON_PROJECT_FILE_EXT) == std::string::npos) {
+    // As the save dialog (FileSystemModel::addFileExtension()): "comp.v003" -> "comp.v003.ntp", "comp.NTP" is kept
+    if ( QFileInfo( QString::fromUtf8( fileCopy.c_str() ) ).suffix().compare(QString::fromUtf8(NATRON_PROJECT_FILE_EXT), Qt::CaseInsensitive) != 0 ) {
         fileCopy.append("." NATRON_PROJECT_FILE_EXT);
     }
     std::string path = SequenceParsing::removePath(fileCopy);
