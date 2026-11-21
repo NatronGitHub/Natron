@@ -68,10 +68,16 @@
 // of the host it gets ("Binary.setHostAPIVersion0", "Binary.setHostAPIVersion1"). ParamInteract
 // calls clipGetHandle() in kOfxImageEffectActionDescribeInContext, where it is not valid, and records
 // the status and whether the clip was set to NULL ("ParamInteract.describeClipGetHandle*").
+//
+// The plug-ins above count kOfxActionLoad and kOfxActionUnload ("<id>.load", "<id>.unload"). If the
+// environment variable NATRON_TEST_PLUGIN_ACTION_LOG is set, they also append the lines "load <id>" and
+// "unload <id> live=<live instances>" to the file it names, for the tests that check what a Natron
+// process did before it exited (Tests/gui/run_renderer_exit_unload_test.py, #1557).
 
 #include <chrono>
 #include <climits>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <map>
 #include <mutex>
@@ -229,6 +235,28 @@ onDestroyInstance(OfxImageEffectHandle effect,
     ++gCounters[id + ".destroyed"];
 }
 
+// kOfxActionLoad and kOfxActionUnload of the plug-in id: see the comment at the top
+void
+logLoadAction(const char* action,
+              const std::string& id)
+{
+    std::lock_guard<std::mutex> l(gMutex);
+    const bool load = std::strcmp(action, kOfxActionLoad) == 0;
+    ++gCounters[id + (load ? ".load" : ".unload")];
+    const char* logPath = std::getenv("NATRON_TEST_PLUGIN_ACTION_LOG");
+    if ( !logPath || !*logPath ) {
+        return;
+    }
+    if ( std::FILE* f = std::fopen(logPath, "a") ) {
+        if (load) {
+            std::fprintf(f, "load %s\n", id.c_str());
+        } else {
+            std::fprintf(f, "unload %s live=%d\n", id.c_str(), gCounters[id + ".live"]);
+        }
+        std::fclose(f);
+    }
+}
+
 // Main entry of the actions common to all the plug-ins, kOfxStatReplyDefault for the others.
 OfxStatus
 commonAction(const char* action,
@@ -236,7 +264,17 @@ commonAction(const char* action,
              const std::string& id)
 {
     if (std::strcmp(action, kOfxActionLoad) == 0) {
-        return onLoad();
+        const OfxStatus stat = onLoad();
+        if (stat == kOfxStatOK) {
+            logLoadAction(action, id);
+        }
+
+        return stat;
+    }
+    if (std::strcmp(action, kOfxActionUnload) == 0) {
+        logLoadAction(action, id);
+
+        return kOfxStatReplyDefault;
     }
     if (std::strcmp(action, kOfxActionCreateInstance) == 0) {
         onCreateInstance(effect, id);

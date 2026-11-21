@@ -191,6 +191,7 @@ struct OfxHostPrivate
     // (keepPluginsLoadedAfterScan()).
     QMutex describeMutex;
     std::atomic<QThread*> describeThread; // the thread that holds describeMutex, or NULL
+    std::atomic<bool> pluginsUnloaded; // unloadPlugins() was called
 
     void clearLoadingState()
     {
@@ -217,6 +218,7 @@ struct OfxHostPrivate
         , setHostBundleID()
         , describeMutex()
         , describeThread(nullptr)
+        , pluginsUnloaded(false)
     {
     }
 };
@@ -235,7 +237,7 @@ OfxHost::OfxHost()
 OfxHost::~OfxHost()
 {
     //Clean up, to be polite.
-    OFX::Host::PluginCache::clearPluginCache();
+    unloadPlugins();
 
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
     delete _imp->pluginsMutexesLock;
@@ -1265,6 +1267,30 @@ OfxHost::clearPluginsLoadedCache()
 
     QDir OFXCacheDir( getOFXCacheDirPath() );
     OFXCacheDir.removeRecursively();
+}
+
+void
+OfxHost::unloadPlugins()
+{
+    // clearPluginCache() deletes the plug-in cache and forgets it: a second call deletes nothing, so the plug-ins
+    // get kOfxActionUnload once, whether this was called at Python exit (AppManager::cleanUpAtPythonExit()) or not.
+    _imp->pluginsUnloaded = true;
+    OFX::Host::PluginCache::clearPluginCache();
+}
+
+bool
+OfxHost::arePluginsUnloaded() const
+{
+    return _imp->pluginsUnloaded;
+}
+
+bool
+OfxHost::isActionRunningInThisThread() const
+{
+    // mainEntry() pushes -1 on the thread indexes of the thread that calls an action (setThreadAsActionCaller())
+    OfxHostDataTLSPtr tls = _imp->tlsData->getTLSData();
+
+    return tls && !tls->threadIndexes.empty();
 }
 
 void

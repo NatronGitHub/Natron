@@ -1293,6 +1293,14 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     }
 
     std::string foundPluginID = plugin->getPluginID().toStdString();
+    // At Python exit, the OFX plug-ins may already be unloaded (AppManager::cleanUpAtPythonExit(), #1557): the OFX
+    // plug-in and descriptor of the Plugin dangle until ~AppManager
+    if ( plugin->getOfxPlugin() && appPTR->areOFXPluginsUnloaded() ) {
+        std::cerr << tr("Failed to create an instance of %1:").arg(argsPluginID).toStdString() << '\n'
+                  << "the OpenFX plug-ins were unloaded (Natron is exiting)." << std::endl;
+
+        return NodePtr();
+    }
     ContextEnum ctx;
     OFX::Host::ImageEffect::Descriptor* ofxDesc = plugin->getOfxDesc(&ctx);
 

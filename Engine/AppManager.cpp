@@ -547,6 +547,8 @@ AppManager::loadW(int argc,
 
 AppManager::~AppManager()
 {
+    // The atexit hook of Python, run by Py_Finalize() in tearDownPython() below, must not clean up: this does it
+    _imp->destroying = true;
 #ifdef __NATRON_UNIX__
     disarmShutDownSignalPipe();
 #endif
@@ -3709,7 +3711,8 @@ AppManager::toggleAutoHideGraphInputs()
 
 // Registered with atexit by registerCloseProjectsAtPythonExit() in the background modes that run
 // scripts: Py_Main() (-t), or sys.exit() in a script, finalizes Python, so close the projects while Python
-// still runs, for the onProjectClose callbacks and the removal of the node variables (#1253).
+// still runs, for the onProjectClose callbacks and the removal of the node variables (#1253), then unload the
+// OFX plug-ins (cleanUpAtPythonExit(), #1557): sys.exit() then calls exit(), and ~AppManager never runs.
 // After Py_Main(), loadInternalAfterInitGui() then quits the instances.
 static PyObject*
 closeProjectsAtPythonExit(PyObject* /*self*/,
@@ -3725,16 +3728,80 @@ closeProjectsAtPythonExit(PyObject* /*self*/,
         // Release the GIL while the nodes are deleted: they may wait for threads that need it.
         // The callbacks take it again with PythonGILLocker.
         Py_BEGIN_ALLOW_THREADS
+        bool projectsClosed = true;
         for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
             try {
                 (*it)->getProject()->reset(true /*aboutToQuit*/, true /*blocking*/);
             } catch (const std::exception& e) {
                 std::cerr << e.what() << std::endl;
+                projectsClosed = false;
             }
+        }
+        // sys.exit() leaves through exit(): ~AppManager won't unload the OFX plug-ins (#1557).
+        // Not if a project could not be closed: its OFX instances are still alive, and would be destroyed
+        // (kOfxActionDestroyInstance) after their plug-ins were unloaded.
+        if (projectsClosed) {
+            appPTR->cleanUpAtPythonExit();
         }
         Py_END_ALLOW_THREADS
     }
     Py_RETURN_NONE;
+}
+
+void
+AppManager::cleanUpAtPythonExit()
+{
+    // Python is finalized by sys.exit() or natron.quit() in a script or at the prompt of the -t option, which then
+    // call exit() (Py_Exit()), or at the end of the prompt (Py_Main()), after which ~AppManager runs. In the first
+    // case, the OFX plug-ins would never get kOfxActionUnload, and the threads that some start (e.g. the thread
+    // pool of OpenImageIO) would only be stopped by their static destructors, in exit(), which may deadlock on
+    // Windows (#1557). os._exit() runs nothing, not even this. Neither does a SystemExit raised on another thread
+    // (see closeProjectsAtPythonExit()), nor sys.exit() in a script of the GUI or of natron-python, which don't
+    // register the hook. The atexit callbacks registered before this one (e.g. by init.py) run after it, with the
+    // plug-ins unloaded and the projects closed.
+    // The callers run on the main thread, with the projects closed: their renders were aborted and waited for, and
+    // their nodes deleted. Only the tasks of the global thread pool may still run (the threads of the
+    // multi-thread suite of the OFX plug-ins, the deletion of images): wait for them, as ~AppManager does.
+    assert( QThread::currentThread() == qApp->thread() );
+    if (_imp->destroying) {
+        return;
+    }
+    // sys.exit() in an expression or a Python callback that Natron evaluates during an OFX action on the main thread:
+    // the plug-in is still in that action, its binary can't be unloaded under it
+    if ( _imp->ofxHost && _imp->ofxHost->isActionRunningInThisThread() ) {
+        std::cerr << "Warning: Python exits during an OpenFX action: the OpenFX plug-ins are not unloaded." << std::endl;
+
+        return;
+    }
+    QThreadPool::globalInstance()->waitForDone();
+    // Keep the images of the DiskCache nodes for the next process, as ~AppManager does
+    try {
+        _imp->saveCaches();
+    } catch (std::runtime_error&) {
+        // ignore errors
+    }
+    // Wait for the images that the caches gave to their cleaner and deleter threads, as ~AppManager does. The caches
+    // stay until ~AppManager (after the -t prompt) or exit().
+    if (_imp->_nodeCache) {
+        _imp->_nodeCache->waitForDeleterThread();
+    }
+    if (_imp->_diskCache) {
+        _imp->_diskCache->waitForDeleterThread();
+    }
+    if (_imp->_viewerCache) {
+        _imp->_viewerCache->waitForDeleterThread();
+    }
+    // Each loaded plug-in gets kOfxActionUnload, and its binary is unloaded, on the main thread, before exit().
+    // The plug-ins are unloaded once: ~OfxHost won't unload them again.
+    if (_imp->ofxHost) {
+        _imp->ofxHost->unloadPlugins();
+    }
+}
+
+bool
+AppManager::areOFXPluginsUnloaded() const
+{
+    return _imp->ofxHost && _imp->ofxHost->arePluginsUnloaded();
 }
 
 static PyMethodDef closeProjectsAtPythonExitDef = {
@@ -3782,8 +3849,15 @@ AppManager::launchPythonInterpreter()
 #endif
 
     _imp->pythonInterpreterRunning = true;
-    Py_Main(1, &_imp->commandLineArgsWide[0]);
+    const int status = Py_Main(1, &_imp->commandLineArgsWide[0]);
     _imp->pythonInterpreterRunning = false;
+    // The exit status of the prompt, as for python: 1 if the commands read from a file or a pipe raised an
+    // exception, and, from Python 3.13 on, the status of sys.exit() at the prompt: Py_Main() returns it instead of
+    // calling exit() (_pymain_run_repl()), so Natron exited with status 0 (#1557). natron.quit(exitCode) gave its
+    // own status.
+    if ( (status != 0) && !_imp->quitRequested ) {
+        _imp->requestedExitCode = status;
+    }
 }
 
 int
