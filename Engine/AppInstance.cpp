@@ -1902,6 +1902,14 @@ AppInstance::startWritersRendering(bool doBlockingRender,
     }
 
     if (appPTR->isBackground() || doBlockingRender) {
+        // The renders run Python on other threads (the beforeRender and afterFrameRender callbacks,
+        // expressions...): release the Python GIL while waiting for them if this thread holds it,
+        // e.g. if a script or a callback triggered a render button (#1568). Nothing below touches
+        // Python state: the callbacks take the GIL with PythonGILLocker.
+        std::unique_ptr<PythonGILUnlocker> gilUnlocker;
+        if ( Py_IsInitialized() && PyGILState_Check() ) {
+            gilUnlocker.reset(new PythonGILUnlocker);
+        }
         //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
         QtConcurrent::blockingMap( itemsToQueue, [&](RenderQueueItem item) {
             _imp->startRenderingFullSequence(true, item);
