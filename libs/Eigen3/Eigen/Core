@@ -83,8 +83,8 @@
 #include <cmath>
 #include <cassert>
 #include <functional>
-#include <sstream>
 #ifndef EIGEN_NO_IO
+  #include <sstream>
   #include <iosfwd>
 #endif
 #include <cstring>
@@ -109,7 +109,8 @@
 #endif
 
 // required for __cpuid, needs to be included after cmath
-#if EIGEN_COMP_MSVC && EIGEN_ARCH_i386_OR_x86_64 && !EIGEN_OS_WINCE
+// also required for _BitScanReverse on Windows on ARM
+#if EIGEN_COMP_MSVC && (EIGEN_ARCH_i386_OR_x86_64 || EIGEN_ARCH_ARM64) && !EIGEN_OS_WINCE
   #include <intrin.h>
 #endif
 
@@ -346,7 +347,7 @@ using std::ptrdiff_t;
 #include "src/Core/CoreIterators.h"
 #include "src/Core/ConditionEstimator.h"
 
-#if defined(EIGEN_VECTORIZE_ALTIVEC) || defined(EIGEN_VECTORIZE_VSX)
+#if defined(EIGEN_VECTORIZE_VSX)
   #include "src/Core/arch/AltiVec/MatrixProduct.h"
 #elif defined EIGEN_VECTORIZE_NEON
   #include "src/Core/arch/NEON/GeneralBlockPanelKernel.h"

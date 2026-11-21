@@ -100,12 +100,10 @@ template<typename Derived> class TriangularBase : public EigenBase<Derived>
       return coeffRef(row,col);
     }
 
-    #ifndef EIGEN_PARSED_BY_DOXYGEN
     EIGEN_DEVICE_FUNC
     inline const Derived& derived() const { return *static_cast<const Derived*>(this); }
     EIGEN_DEVICE_FUNC
     inline Derived& derived() { return *static_cast<Derived*>(this); }
-    #endif // not EIGEN_PARSED_BY_DOXYGEN
 
     template<typename DenseDerived>
     EIGEN_DEVICE_FUNC
@@ -442,7 +440,6 @@ template<typename _MatrixType, unsigned int _Mode> class TriangularViewImpl<_Mat
     EIGEN_DEVICE_FUNC
     TriangularViewType& operator=(const MatrixBase<OtherDerived>& other);
 
-#ifndef EIGEN_PARSED_BY_DOXYGEN
     EIGEN_DEVICE_FUNC
     TriangularViewType& operator=(const TriangularViewImpl& other)
     { return *this = other.derived().nestedExpression(); }
@@ -456,7 +453,6 @@ template<typename _MatrixType, unsigned int _Mode> class TriangularViewImpl<_Mat
     /** \deprecated */
     EIGEN_DEPRECATED EIGEN_DEVICE_FUNC
     void lazyAssign(const MatrixBase<OtherDerived>& other);
-#endif
 
     /** Efficient triangular matrix times vector/matrix product */
     template<typename OtherDerived>
@@ -524,11 +520,7 @@ template<typename _MatrixType, unsigned int _Mode> class TriangularViewImpl<_Mat
     /** Swaps the coefficients of the common triangular parts of two matrices */
     template<typename OtherDerived>
     EIGEN_DEVICE_FUNC
-#ifdef EIGEN_PARSED_BY_DOXYGEN
-    void swap(TriangularBase<OtherDerived> &other)
-#else
     void swap(TriangularBase<OtherDerived> const & other)
-#endif
     {
       EIGEN_STATIC_ASSERT_LVALUE(OtherDerived);
       call_assignment(derived(), other.const_cast_derived(), internal::swap_assign_op<Scalar>());
@@ -552,9 +544,10 @@ template<typename _MatrixType, unsigned int _Mode> class TriangularViewImpl<_Mat
       this->solveInPlace(dst);
     }
 
-    template<typename ProductType>
-    EIGEN_DEVICE_FUNC
-    EIGEN_STRONG_INLINE TriangularViewType& _assignProduct(const ProductType& prod, const Scalar& alpha, bool beta);
+    template <typename ProductType>
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TriangularViewType& _assignProduct(const ProductType& prod, const Scalar& alpha,
+                                                                           bool beta);
+
   protected:
     EIGEN_DEFAULT_COPY_CONSTRUCTOR(TriangularViewImpl)
     EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(TriangularViewImpl)

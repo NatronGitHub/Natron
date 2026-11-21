@@ -35,6 +35,13 @@
 #ifndef EIGEN_INVERSE_SIZE_4_H
 #define EIGEN_INVERSE_SIZE_4_H
 
+#if EIGEN_COMP_GNUC_STRICT
+// These routines requires bit manipulation of the sign, which is not compatible
+// with fastmath.
+#pragma GCC push_options
+#pragma GCC optimize ("no-fast-math")
+#endif
+
 namespace Eigen
 {
 namespace internal
@@ -143,8 +150,8 @@ struct compute_inverse_size4<Architecture::Target, float, MatrixType, ResultType
     iC = psub(iC, pmul(vec4f_swizzle2(A, A, 1, 0, 3, 2), vec4f_swizzle2(DC, DC, 2, 1, 2, 1)));
     iC = psub(pmul(B, vec4f_duplane(dC, 0)), iC);
 
-    const float sign_mask[4] = {0.0f, numext::bit_cast<float>(0x80000000u), numext::bit_cast<float>(0x80000000u), 0.0f};
-    const Packet4f p4f_sign_PNNP = ploadu<Packet4f>(sign_mask);
+    EIGEN_ALIGN_MAX const float sign_mask[4] = {0.0f, -0.0f, -0.0f, 0.0f};
+    const Packet4f p4f_sign_PNNP = pload<Packet4f>(sign_mask);
     rd = pxor(rd, p4f_sign_PNNP);
     iA = pmul(iA, rd);
     iB = pmul(iB, rd);
@@ -326,10 +333,10 @@ struct compute_inverse_size4<Architecture::Target, double, MatrixType, ResultTyp
     iC1 = psub(pmul(B1, dC), iC1);
     iC2 = psub(pmul(B2, dC), iC2);
 
-    const double sign_mask1[2] = {0.0, numext::bit_cast<double>(0x8000000000000000ull)};
-    const double sign_mask2[2] = {numext::bit_cast<double>(0x8000000000000000ull), 0.0};
-    const Packet2d sign_PN = ploadu<Packet2d>(sign_mask1);
-    const Packet2d sign_NP = ploadu<Packet2d>(sign_mask2);
+    EIGEN_ALIGN_MAX const double sign_mask1[2] = {0.0, -0.0};
+    EIGEN_ALIGN_MAX const double sign_mask2[2] = {-0.0, 0.0};
+    const Packet2d sign_PN = pload<Packet2d>(sign_mask1);
+    const Packet2d sign_NP = pload<Packet2d>(sign_mask2);
     d1 = pxor(rd, sign_PN);
     d2 = pxor(rd, sign_NP);
 
@@ -348,4 +355,9 @@ struct compute_inverse_size4<Architecture::Target, double, MatrixType, ResultTyp
 #endif
 } // namespace internal
 } // namespace Eigen
+
+#if EIGEN_COMP_GNUC_STRICT
+#pragma GCC pop_options
+#endif
+
 #endif

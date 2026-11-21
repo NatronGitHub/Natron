@@ -178,7 +178,7 @@ template<typename MatrixType> class TransposeImpl<MatrixType,Dense>
   * \sa transposeInPlace(), adjoint() */
 template<typename Derived>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-Transpose<Derived>
+typename DenseBase<Derived>::TransposeReturnType
 DenseBase<Derived>::transpose()
 {
   return TransposeReturnType(derived());
@@ -191,7 +191,7 @@ DenseBase<Derived>::transpose()
   * \sa transposeInPlace(), adjoint() */
 template<typename Derived>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-typename DenseBase<Derived>::ConstTransposeReturnType
+const typename DenseBase<Derived>::ConstTransposeReturnType
 DenseBase<Derived>::transpose() const
 {
   return ConstTransposeReturnType(derived());

@@ -90,8 +90,8 @@ operator()(const RowIndices& rowIndices, const ColIndices& colIndices) EIGEN_IND
   return BlockType(derived(),
                    internal::first(actualRowIndices),
                    internal::first(actualColIndices),
-                   internal::size(actualRowIndices),
-                   internal::size(actualColIndices));
+                   internal::index_list_size(actualRowIndices),
+                   internal::index_list_size(actualColIndices));
 }
 
 // The following overload returns a Scalar
@@ -168,7 +168,7 @@ operator()(const Indices& indices) EIGEN_INDEXED_VIEW_METHOD_CONST
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
   typename IvcType<Indices>::type actualIndices = ivcSize(indices);
   return VectorBlock<EIGEN_INDEXED_VIEW_METHOD_CONST Derived,internal::array_size<Indices>::value>
-            (derived(), internal::first(actualIndices), internal::size(actualIndices));
+            (derived(), internal::first(actualIndices), internal::index_list_size(actualIndices));
 }
 
 template<typename IndexType>

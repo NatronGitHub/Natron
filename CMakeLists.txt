@@ -499,12 +499,14 @@ set(CMAKE_AUTORCC ON)
 # thread of Linux and macOS programs (8 MB). Renders can run on the main thread
 # (QFuture::waitForFinished() runs a queued QtConcurrent task on the waiting thread), as well as
 # GUI-thread recursions such as getRegionOfDefinition() from the viewer, so with a deep node graph the
-# main thread can overflow long before the render threads (NATRON_RENDER_THREAD_STACK_SIZE in
-# Engine/ThreadPool.h: 4 MB on Windows) (#1440).
+# main thread can overflow long before the render threads (#1440).
 # The reserve is only address space: the main thread commits its stack pages as it touches them (the
-# commit size of the header stays at its default, 4 KB), unlike threads created with a stack size, whose
-# stack is committed at creation. It is also the default reserve of the threads created without a stack
-# size, which commit their stack in the same way.
+# commit size of the header stays at its default, 4 KB). It is also the reserve of the other threads:
+# Qt passes the stack size of a thread (NATRON_RENDER_THREAD_STACK_SIZE in Engine/ThreadPool.h, 4 MB on
+# Windows, for the threads that render) to CreateThread() as the size committed at creation, and a
+# thread whose commit is smaller than the executable's reserve reserves that, so the threads that
+# render reserve 8 MB and commit 4 MB when they start. Tests gets it as a compile definition
+# (DeepGraphRender.StackBounds).
 set(NATRON_MAIN_THREAD_STACK_SIZE 8388608) # 8 MB
 function(natron_set_main_thread_stack_size target)
     if(WIN32)

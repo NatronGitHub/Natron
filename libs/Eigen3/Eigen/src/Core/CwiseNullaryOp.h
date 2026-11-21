@@ -292,7 +292,7 @@ DenseBase<Derived>::LinSpaced(Index size, const Scalar& low, const Scalar& high)
 }
 
 /**
-  * \copydoc DenseBase::LinSpaced(Index, const Scalar&, const Scalar&)
+  * \copydoc DenseBase::LinSpaced(Index, const DenseBase::Scalar&, const DenseBase::Scalar&)
   * Special version for fixed size types which does not require the size parameter.
   */
 template<typename Derived>
