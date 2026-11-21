@@ -70,6 +70,10 @@ jobs:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_BASEDIR: ${{ github.workspace }}
       CCACHE_MAXSIZE: 1500M
+      # The GUI tests (Tests/gui, ctest label gui) run under Xvfb (in CI they are skipped unless
+      # NATRON_GUI_TESTS=1): the interactive ones too, as they cannot take a user's keyboard and mouse there.
+      NATRON_GUI_TESTS: '1'
+      NATRON_TEST_INTERACTIVE: '1'
 
     strategy:
       fail-fast: false
@@ -103,7 +107,15 @@ jobs:
             qt5-qmake qtbase5-dev qtdeclarative5-dev \
             python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy \
             libwayland-dev libwayland-client0 libwayland-egl1 \
-            extra-cmake-modules clang ccache
+            extra-cmake-modules clang ccache \
+            libgl1-mesa-dri mesa-utils x11-utils
+
+      # The GUI tests need an OpenGL context (Mesa llvmpipe under Xvfb, see #536); without one,
+      # they are skipped (exit status 77), not failed. This step only explains that in the log.
+      - name: Check GLX under Xvfb
+        run: |
+          xdpyinfo | grep -E "dimensions|depths" || true
+          glxinfo -B || echo "::warning::no GLX context under Xvfb: the GUI tests will be skipped"
 
       - name: Download OpenColorIO-Configs
         run: |
@@ -161,7 +173,9 @@ jobs:
         continue-on-error: true
         run: |
           cd build
-          OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
+          # the GUI tests (label gui) run in the Fast and Release builds, not twice in the nightly Debug one
+          gui=(); [ "$CI_CONFIG" = Debug ] && gui=(-LE gui)
+          OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V "${gui[@]}"
 
       - name: Upload ${{ matrix.os }} ${{ matrix.config }} Test Log artifacts
         if: always()

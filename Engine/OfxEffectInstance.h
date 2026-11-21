@@ -240,6 +240,8 @@ public:
     virtual bool supportsMultipleClipDepths() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
+    virtual void onInputsRestoredAfterProjectLoad() OVERRIDE FINAL;
+    virtual bool wantsInputsRestoredAfterProjectLoad() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum beginSequenceRender(double first,
                                            double last,
                                            double step,
@@ -311,6 +313,25 @@ public:
         ~AllowExtraSingleInstances();
     };
 
+    /**
+     * @brief For a plug-in that sets kOfxImageEffectPluginPropSingleInstance, called by
+     * Node::deactivate(): destroys the plug-in instance of a deactivated (deleted) node, so that
+     * only the nodes in use hold one. The host side of the instance (parameters, clips) is kept.
+     * Deferred while the node renders. Does nothing for the other plug-ins (main thread only).
+     **/
+    void suspendSingleInstance();
+
+    /**
+     * @brief Called by Node::activate(): creates the plug-in instance again after
+     * suspendSingleInstance(), with the current parameter values (main thread only).
+     **/
+    void resumeSingleInstance();
+
+    bool isSingleInstanceSuspended() const;
+
+    /// true while a suspension waits for the node to stop rendering (the plug-in instance still exists)
+    bool isSingleInstanceSuspendPending() const;
+
     static ContextEnum mapToContextEnum(const std::string &s);
     static std::string mapContextToString(ContextEnum ctx);
     static std::string natronValueChangedReasonToOfxValueChangedReason(ValueChangedReasonEnum reason);
@@ -328,6 +349,8 @@ private:
 
 
     void tryInitializeOverlayInteracts();
+
+    void destroyInteracts();
 
 private:
 

@@ -67,6 +67,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Global/ProcInfo.h"
 #include "Global/StrUtils.h"
 #include "Global/FStreamsSupport.h"
+#include "Global/FloatingPointExceptions.h"
 
 #include "Engine/CacheSerialization.h"
 #include "Engine/CLArgs.h"
@@ -259,6 +260,8 @@ AppManagerPrivate::AppManagerPrivate()
     , nThreadsMutex()
     , runningThreadsCount()
     , lastProjectLoadedCreatedDuringRC2Or3(false)
+    , destroying(false)
+    , testMode(false)
     , commandLineArgsWideOriginal()
     , commandLineArgsWide()
     , commandLineArgsUtf8Original()
@@ -1341,6 +1344,11 @@ AppManagerPrivate::initGl(bool checkRenderingReq)
 void
 AppManagerPrivate::tearDownGL()
 {
+#ifdef DEBUG
+    // no trapped floating point exception in the OpenGL driver (e.g. Mesa's llvmpipe): this runs after the
+    // event loop, where main() traps them in debug builds
+    boost_adaptbx::floating_point::no_exception_trapping noTrap;
+#endif
     // Kill all rendering context
     renderingContextPool.reset();
 

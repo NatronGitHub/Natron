@@ -207,6 +207,16 @@ Settings::initializeKnobsGeneral()
                                       "last saved), *.~2~ (third last saved).") );
     _generalTab->addKnob(_saveVersions);
 
+    _saveAsBinary = AppManager::createKnob<KnobBool>( this, tr("Save projects as binary by default") );
+    _saveAsBinary->setName("saveAsBinary");
+    _saveAsBinary->setHintToolTip( tr("The format of new projects, when they are saved for the first time. "
+                                      "Binary projects are faster to save and to parse, and smaller, but can only be opened by %1 2.6 and later. "
+                                      "Text (XML) projects can also be opened by %1 2.5 and earlier, and are human-readable and diffable.\n"
+                                      "A project keeps its format: a project opened from a text file is saved as text, and a binary project as binary. "
+                                      "\"Save As...\" can change the format of a project.\n"
+                                      "Auto-saves are always binary, but a project restored from an auto-save is saved in its original format.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+    _generalTab->addKnob(_saveAsBinary);
+
     _hostName = AppManager::createKnob<KnobChoice>( this, tr("Appear to plug-ins as") );
     _hostName->setName("pluginHostName");
     _hostName->setHintToolTip( tr("%1 will appear with the name of the selected application to the OpenFX plug-ins. "
@@ -1236,7 +1246,8 @@ Settings::initializeKnobsNodeGraph()
     _useInputAForMergeAutoConnect->setName("mergeConnectToA");
     _useInputAForMergeAutoConnect->setHintToolTip( tr("If checked, upon creation of a new Merge node, or any other node with inputs named "
                                                       "A and B, input A is be preferred "
-                                                      "for auto-connection. When the node is disabled, B is always output, whether this is checked or not.") );
+                                                      "for auto-connection. Shuffle ignores this setting: it connects the input it outputs by default (B). "
+                                                      "When the node is disabled, B is always output, whether this is checked or not.") );
     _nodegraphTab->addKnob(_useInputAForMergeAutoConnect);
 } // Settings::initializeKnobsNodeGraph
 
@@ -1492,6 +1503,7 @@ Settings::setDefaultValues()
     _autoSaveUnSavedProjects->setDefaultValue(true);
     _autoSaveDelay->setDefaultValue(5, 0);
     _saveVersions->setDefaultValue(1);
+    _saveAsBinary->setDefaultValue(true);
     _hostName->setDefaultValue(0);
     _customHostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
 
@@ -1849,6 +1861,11 @@ Settings::saveAllSettings()
 void
 Settings::restorePluginSettings()
 {
+    if ( isUsingDefaultSettings() ) {
+        // --no-settings (and --test, which implies it): the plug-ins keep their defaults, and the
+        // user's plug-in preferences are neither read nor written
+        return;
+    }
     const PluginsMap& plugins = appPTR->getPluginsList();
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
@@ -2959,6 +2976,12 @@ Settings::saveVersions() const
     return _saveVersions->getValue();
 }
 
+bool
+Settings::saveAsBinary() const
+{
+    return _saveAsBinary->getValue();
+}
+
 
 bool
 Settings::isSnapToNodeEnabled() const
@@ -3442,6 +3465,9 @@ void
 Settings::appendPythonGroupsPath(const std::string& path)
 {
     _templatesPluginPaths->appendPath(path);
+    if ( isUsingDefaultSettings() ) {
+        return; // --no-settings (and --test): the path is not saved in the user's preferences
+    }
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
     settings.setValue( QString::fromUtf8( _templatesPluginPaths->getName().c_str() ), QVariant( QString::fromUtf8( _templatesPluginPaths->getValue(0).c_str() ) ) );
 }

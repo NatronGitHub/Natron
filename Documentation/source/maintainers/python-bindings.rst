@@ -92,7 +92,8 @@ In the CMake build (``Engine/CMakeLists.txt`` and ``Gui/CMakeLists.txt``):
    ``Qt6``; ``<build>/Gui/Qt5/NatronGui/`` for the Gui). This is why
    re-running CMake is needed after adding a type to a typesystem file.
 2. At build time, a custom command runs ``shiboken2`` or ``shiboken6`` on the
-   global header and the typesystem file, with ``-std=c++17``,
+   global header and the typesystem file, with ``-std=c++17`` (Qt 5) or
+   ``-std=c++20`` (Qt 6; ``NATRON_SHIBOKEN_STD`` in ``CMakeLists.txt``),
    ``--enable-parent-ctor-heuristic``, ``--use-isnull-as-nb_nonzero``,
    ``--avoid-protected-hack``, ``--enable-pyside-extensions``, the include
    paths, and the PySide typesystem directory (``-T``; the Gui adds

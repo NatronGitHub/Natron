@@ -5,7 +5,8 @@ Building Natron from Source
 
 Natron is built with **CMake**. The entry point is ``CMakeLists.txt`` at the
 repository root, with one ``CMakeLists.txt`` per module. It requires CMake ≥
-3.16.7. The CI builds and tests Natron with CMake on Linux, macOS and Windows.
+3.21, which libs/OpenFX requires too (its policies are those of CMake 3.31).
+The CI builds and tests Natron with CMake on Linux, macOS and Windows.
 
 The **qmake** build is **deprecated** (`#1181
 <https://github.com/NatronGitHub/Natron/issues/1181>`_). Its entry point is
@@ -31,10 +32,14 @@ it earlier).
 
 .. note::
 
-   **C++17 is required for every build**, not just the CMake one:
-   ``Global/Macros.h`` fails compilation with ``#error "Natron 2.6+ requires
-   C++17"`` if the standard is older. Configure your toolchain accordingly
-   regardless of which build system you use.
+   **C++ standard:** RB-2.6 builds with **C++17 for Qt5 and C++20 for Qt6**,
+   and so do the plug-ins built with it, so the code must compile with both.
+   CMake (``NATRON_QT6``), qmake (``QT_MAJOR_VERSION``, in ``global.pri``) and
+   the packaging scripts in ``tools/jenkins`` (``QT_VERSION_MAJOR``) pick the
+   standard from the Qt version. ``Global/Macros.h`` fails compilation with
+   ``#error "Natron 2.6+ requires C++17"`` if the standard is older.
+   RB-2.7 (the Qt6 branch, which keeps as much Qt5 support as possible while
+   RB-2.6 is maintained) uses C++20 everywhere.
 
 .. note::
 
@@ -59,14 +64,14 @@ Reading it is the fastest way to understand how the pieces fit together::
     ceres.depends    = glog gflags
     libmv.depends    = gflags ceres
     openMVG.depends  = ceres
-    Engine.depends   = libmv openMVG HostSupport libtess ceres
+    Engine.depends   = libmv openMVG HostSupport libtess ceres md4c
     Renderer.depends = Engine
     Gui.depends      = Engine qhttpserver
     Tests.depends    = Gui Engine
     App.depends      = Gui Engine
 
 So the build order is: the bundled libraries first (``gflags``, ``glog``,
-``ceres``, ``libmv``, ``openMVG``, ``qhttpserver``, ``hoedown``, ``libtess``),
+``ceres``, ``libmv``, ``openMVG``, ``qhttpserver``, ``md4c``, ``libtess``),
 then ``HostSupport``, then ``Engine``, then the front-ends (``Renderer``,
 ``Gui``), then ``App``, ``Tests`` and ``PythonBin``.
 
@@ -75,7 +80,7 @@ Third-party dependencies
 
 Some dependencies are **bundled** in ``libs/`` and built from source as part of
 the project: ``ceres``, ``openMVG`` and ``libmv`` (the tracker), ``Eigen3``
-(headers), ``gflags`` and ``glog``, ``hoedown`` (Markdown → HTML for node docs),
+(headers), ``gflags`` and ``glog``, ``md4c`` (CommonMark Markdown → HTML for node docs and tooltips),
 ``libtess`` (polygon tessellation for roto), ``qhttpserver`` (the internal
 documentation web server), ``SequenceParsing`` (image sequence detection) and
 ``google-breakpad`` (crash reporting). With CMake, ``-DNATRON_SYSTEM_LIBS=ON``

@@ -27,6 +27,7 @@
 #include "AppInstance.h"
 
 #include <fstream>
+#include <iostream>
 #include <limits>
 #include <list>
 #include <set>
@@ -34,7 +35,9 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
+#include <QAbstractEventDispatcher>
 #include <QCoreApplication>
+#include <QElapsedTimer>
 #include <QDir>
 #include <QTextStream>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
@@ -42,6 +45,7 @@
 #include <QFileInfo>
 #include <QEventLoop>
 #include <QSettings>
+#include <QThread>
 #include <QNetworkReply>
 
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
@@ -65,10 +69,13 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/DocumentationGroups.h"
 #include "Engine/ProjectSerialization.h"
 #include "Engine/Node.h"
+#include "Engine/OutputEffectInstance.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/ProcessHandler.h"
+#include "Engine/PythonUndoGroup.h"
 #include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
 #include "Engine/WriteNode.h"
@@ -156,6 +163,7 @@ public:
     int _creatingGroup;
     // True when a pyplug is being created internally without being shown to the user
     bool _creatingInternalNode;
+    bool quitPending; // see AppInstance::setQuitPending()
 
     //When a node is created, it gets appended to this list (since for a PyPlug more than 1 node can be created)
     std::list<NodePtr> _creatingNodeQueue;
@@ -169,6 +177,10 @@ public:
 
     ProjectBeingLoadedInfo projectBeingLoaded;
 
+    // the undo group open in Python (beginUndoGroup()), its nesting level, and its command (only in the GUI)
+    int undoGroupDepth;
+    std::shared_ptr<PythonUndoGroupCommand> undoGroup;
+
     AppInstancePrivate(int appID,
                        AppInstance* app)
 
@@ -179,6 +191,7 @@ public:
         , creatingGroupMutex()
         , _creatingGroup(0)
         , _creatingInternalNode(false)
+        , quitPending(false)
         , _creatingNodeQueue()
         , _creatingTree(0)
         , renderQueueMutex()
@@ -187,6 +200,8 @@ public:
         , invalidExprKnobsMutex()
         , invalidExprKnobs()
         , projectBeingLoaded()
+        , undoGroupDepth(0)
+        , undoGroup()
     {
     }
 
@@ -1177,6 +1192,14 @@ NodePtr
 AppInstance::createNodeInternal(CreateNodeArgs& args)
 {
     NodePtr node;
+
+    if (_imp->quitPending) {
+        // e.g. a script that goes on after app.closeProject() or natron.quit(): the instance quits
+        // from the event loop, and deletes its nodes (#1554)
+        std::cerr << tr("Cannot create a node: this project is being closed.").toStdString() << std::endl;
+
+        return node;
+    }
     Plugin* plugin = 0;
     QString findId;
 
@@ -1270,6 +1293,14 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     }
 
     std::string foundPluginID = plugin->getPluginID().toStdString();
+    // At Python exit, the OFX plug-ins may already be unloaded (AppManager::cleanUpAtPythonExit(), #1557): the OFX
+    // plug-in and descriptor of the Plugin dangle until ~AppManager
+    if ( plugin->getOfxPlugin() && appPTR->areOFXPluginsUnloaded() ) {
+        std::cerr << tr("Failed to create an instance of %1:").arg(argsPluginID).toStdString() << '\n'
+                  << "the OpenFX plug-ins were unloaded (Natron is exiting)." << std::endl;
+
+        return NodePtr();
+    }
     ContextEnum ctx;
     OFX::Host::ImageEffect::Descriptor* ofxDesc = plugin->getOfxDesc(&ctx);
 
@@ -1429,12 +1460,12 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 args.setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
                 args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
                 output = createNode(args);
-                try {
-                    output->setLabel("Output");
-                } catch (...) {
+                if (output) {
+                    try {
+                        output->setLabel("Output");
+                    } catch (...) {
+                    }
                 }
-
-                assert(output);
             }
             {
                 CreateNodeArgs args(PLUGINID_NATRON_INPUT, isGrp);
@@ -1442,7 +1473,6 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 args.setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
                 args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
                 input = createNode(args);
-                assert(input);
             }
             if ( input && output && !output->getInput(0) ) {
                 output->connectInput(input, 0);
@@ -1880,6 +1910,14 @@ AppInstance::startWritersRendering(bool doBlockingRender,
     }
 
     if (appPTR->isBackground() || doBlockingRender) {
+        // The renders run Python on other threads (the beforeRender and afterFrameRender callbacks,
+        // expressions...): release the Python GIL while waiting for them if this thread holds it,
+        // e.g. if a script or a callback triggered a render button (#1568). Nothing below touches
+        // Python state: the callbacks take the GIL with PythonGILLocker.
+        std::unique_ptr<PythonGILUnlocker> gilUnlocker;
+        if ( Py_IsInitialized() && PyGILState_Check() ) {
+            gilUnlocker.reset(new PythonGILUnlocker);
+        }
         //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
         QtConcurrent::blockingMap( itemsToQueue, [&](RenderQueueItem item) {
             _imp->startRenderingFullSequence(true, item);
@@ -2106,6 +2144,191 @@ AppInstance::aboutToQuit()
     _imp->_currentProject->reset(true /*aboutToQuit*/, /*blocking*/true);
 }
 
+bool
+AppInstance::hasRenderInProgress() const
+{
+    {
+        QMutexLocker k(&_imp->renderQueueMutex);
+        if ( !_imp->activeRenders.empty() || !_imp->renderQueue.empty() ) {
+            return true;
+        }
+    }
+    ProjectPtr project = getProject();
+    if (!project) {
+        return false;
+    }
+    NodesList nodes;
+    project->getNodes_recursive(nodes, true /*onlyActive*/);
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ( (*it)->isNodeRendering() || (*it)->isRenderingPreview() ) {
+            return true;
+        }
+        OutputEffectInstance* output = dynamic_cast<OutputEffectInstance*>( (*it)->getEffectInstance().get() );
+        if (output) {
+            RenderEnginePtr engine = output->getRenderEngine();
+            if ( engine && engine->hasThreadsWorking() ) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+static bool
+isMainThread()
+{
+    return QThread::currentThread() == qApp->thread();
+}
+
+bool
+AppInstance::beginUndoGroup(const std::string& text)
+{
+    // the undo group state is not locked: only the main thread uses it
+    if ( !isMainThread() ) {
+        return false;
+    }
+    if (_imp->undoGroupDepth++ > 0) {
+        return true; // only the outermost group makes an undo step
+    }
+    // In background mode, there is no undo stack: nothing is recorded.
+    if ( !isBackground() ) {
+        _imp->undoGroup = std::make_shared<PythonUndoGroupCommand>(text);
+    }
+
+    return true;
+}
+
+bool
+AppInstance::endUndoGroup()
+{
+    if ( !isMainThread() || (_imp->undoGroupDepth <= 0) ) {
+        return false;
+    }
+    if (--_imp->undoGroupDepth > 0) {
+        return true;
+    }
+    std::shared_ptr<PythonUndoGroupCommand> command = _imp->undoGroup;
+    _imp->undoGroup.reset();
+    if ( command && !command->isEmpty() ) {
+        command->finish();
+        pushUndoGroupCommand(command);
+    }
+
+    return true;
+}
+
+void
+AppInstance::closeUndoGroups(const std::string& reason,
+                             bool keepEdits)
+{
+    if ( !isMainThread() || (_imp->undoGroupDepth <= 0) ) {
+        return;
+    }
+    std::cerr << "Warning: " << reason << ": " << _imp->undoGroupDepth
+              << " undo group(s) of the Python API were not ended (App.endUndoGroup())" << std::endl;
+    if (keepEdits) {
+        _imp->undoGroupDepth = 1;
+        endUndoGroup();
+    } else {
+        // the project is closed: its edits are not undoable any more
+        _imp->undoGroupDepth = 0;
+        _imp->undoGroup.reset();
+    }
+}
+
+int
+AppInstance::getUndoGroupDepth() const
+{
+    return _imp->undoGroupDepth;
+}
+
+void
+AppInstance::recordKnobForUndoGroup(const KnobIPtr& knob)
+{
+    if ( _imp->undoGroup && isMainThread() ) {
+        _imp->undoGroup->recordKnob(knob);
+    }
+}
+
+void
+AppInstance::recordInputsForUndoGroup(const NodePtr& node)
+{
+    if ( _imp->undoGroup && isMainThread() ) {
+        _imp->undoGroup->recordInputs(node);
+    }
+}
+
+void
+AppInstance::recordNodeCreatedForUndoGroup(const NodePtr& node)
+{
+    if ( _imp->undoGroup && isMainThread() ) {
+        _imp->undoGroup->recordNodeCreated(node);
+    }
+}
+
+bool
+AppInstance::deleteNodeInUndoGroup(const NodePtr& node,
+                                   bool autoReconnect)
+{
+    if ( !_imp->undoGroup || !isMainThread() ) {
+        return false;
+    }
+    _imp->undoGroup->deleteNode(node, autoReconnect);
+
+    return true;
+}
+
+bool
+AppInstance::waitForRenders(int timeoutMs,
+                            int settleMs)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    // natron.quit() and the close requests wait until this loop is done
+    AppManager::NestedEventLoopRAII nestedLoop;
+    QElapsedTimer total;
+    total.start();
+    QElapsedTimer idle;
+    bool idleStarted = false;
+    QAbstractEventDispatcher* dispatcher = QAbstractEventDispatcher::instance( qApp->thread() );
+    for (;;) {
+        // the results of the renders (e.g. viewer texture uploads) are posted to the main thread
+        QCoreApplication::sendPostedEvents();
+        // not the user input: a click could close the project under the script that waits
+        const bool processed = dispatcher ? dispatcher->processEvents(QEventLoop::ExcludeUserInputEvents) : false;
+        // all the projects: a render of a project can wait for another one (e.g. a Precomp)
+        if ( appPTR->hasRenderInProgress() ) {
+            idleStarted = false;
+        } else if (!idleStarted) {
+            if (settleMs <= 0) {
+                return true;
+            }
+            idle.start();
+            idleStarted = true;
+        } else if (idle.elapsed() >= settleMs) {
+            return true;
+        }
+        if ( (timeoutMs >= 0) && (total.elapsed() >= timeoutMs) ) {
+            return false;
+        }
+        if (!processed) {
+            QThread::msleep(5);
+        }
+    }
+}
+
+void
+AppInstance::setQuitPending()
+{
+    _imp->quitPending = true;
+}
+
+bool
+AppInstance::isQuitPending() const
+{
+    return _imp->quitPending;
+}
+
 void
 AppInstance::quit()
 {
@@ -2194,6 +2417,12 @@ AppInstance::appendToScriptEditor(const std::string& str)
 }
 
 void
+AppInstance::appendPlainTextToScriptEditor(const std::string& str)
+{
+    std::cout << str <<  std::endl;
+}
+
+void
 AppInstance::printAutoDeclaredVariable(const std::string& /*str*/)
 {
 }
@@ -2240,7 +2469,8 @@ AppInstance::execOnProjectCreatedCallback()
     }
     std::string appID = getAppIDString();
     std::string script;
-    if (appID != "app") {
+    // In background mode, "app" stays app1, also for a Precomp's instance (see getAppIDString()).
+    if ( (appID != "app") && !appPTR->isBackground() ) {
         script = script + "app = " + appID;
     }
     script = script + "\n" + cb + "(" + appID + ")\n";
@@ -2258,7 +2488,12 @@ AppInstance::execOnProjectCreatedCallback()
 std::string
 AppInstance::getAppIDString() const
 {
-    if ( appPTR->isBackground() ) {
+    // In background mode, "app" is an alias of "app1" (see declareCurrentAppVariable_Python()).
+    // Only the first instance may use it: other instances, such as the one a Precomp node loads
+    // its project in, have their own variable. With "app", the Python variables of their nodes
+    // were declared on app1, which doesn't have those nodes, so creating a node inside a group
+    // of that project failed (e.g. the Output node of a Write node, #1501).
+    if ( appPTR->isBackground() && (getAppID() == 0) ) {
         return "app";
     } else {
         QString appID =  QString( QString::fromUtf8("app%1") ).arg(getAppID() + 1);
@@ -2291,17 +2526,19 @@ AppInstance::onGroupCreationFinished(const NodePtr& node,
 }
 
 bool
-AppInstance::saveTemp(const std::string& filename)
+AppInstance::saveTemp(const std::string& filename,
+                      ProjectFileFormatEnum format)
 {
     std::string outFile = filename;
     std::string path = SequenceParsing::removePath(outFile);
     ProjectPtr project = getProject();
 
-    return project->saveProject_imp(QString::fromUtf8( path.c_str() ), QString::fromUtf8( outFile.c_str() ), false, false, 0);
+    return project->saveProject_imp(QString::fromUtf8( path.c_str() ), QString::fromUtf8( outFile.c_str() ), false, false, 0, 0, format);
 }
 
 bool
-AppInstance::save(const std::string& filename)
+AppInstance::save(const std::string& filename,
+                  ProjectFileFormatEnum format)
 {
     ProjectPtr project = getProject();
 
@@ -2309,19 +2546,20 @@ AppInstance::save(const std::string& filename)
         QString projectFilename = project->getProjectFilename();
         QString projectPath = project->getProjectPath();
 
-        return project->saveProject(projectPath, projectFilename, 0);
+        return project->saveProject(projectPath, projectFilename, 0, format);
     } else {
-        return saveAs(filename);
+        return saveAs(filename, format);
     }
 }
 
 bool
-AppInstance::saveAs(const std::string& filename)
+AppInstance::saveAs(const std::string& filename,
+                    ProjectFileFormatEnum format)
 {
     std::string outFile = filename;
     std::string path = SequenceParsing::removePath(outFile);
 
-    return getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( outFile.c_str() ), 0);
+    return getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( outFile.c_str() ), 0, format);
 }
 
 AppInstancePtr
@@ -2384,11 +2622,25 @@ AppInstance::addInvalidExpressionKnob(const KnobIPtr& knob)
     QMutexLocker k(&_imp->invalidExprKnobsMutex);
 
     for (std::list<KnobIWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
-        if ( it->lock().get() ) {
+        if (it->lock() == knob) {
             return;
         }
     }
     _imp->invalidExprKnobs.push_back(knob);
+}
+
+bool
+AppInstance::isInvalidExpressionKnob(const KnobI* knob) const
+{
+    QMutexLocker k(&_imp->invalidExprKnobsMutex);
+
+    for (std::list<KnobIWPtr>::const_iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end(); ++it) {
+        if (it->lock().get() == knob) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void

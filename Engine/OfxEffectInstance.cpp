@@ -40,6 +40,8 @@
 #include <QMutex>
 #include <QReadWriteLock>
 #include <QPointF>
+#include <QThread>
+#include <QTimer>
 
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
 // clang-format off
@@ -242,8 +244,10 @@ struct OfxEffectInstancePrivate
     bool supportsConcurrentGLRenders;
     bool isOutput; //if the OfxNode can output a file somehow
     bool penDown; // true when the overlay trapped a penDow action
-    bool created; // true after the call to createInstance
-    bool initialized; //true when the image effect instance has been created and populated
+    // atomic: a single-instance plug-in's instance is suspended and resumed on the main thread while
+    // other threads may read them (see OfxEffectInstance::suspendSingleInstance())
+    std::atomic<bool> created; // true after the call to createInstance
+    std::atomic<bool> initialized; //true when the image effect instance has been created and populated
 
     /*
        Some OpenFX do not handle render scale properly when it comes to overlay interacts.
@@ -259,6 +263,11 @@ struct OfxEffectInstancePrivate
     // the single-instance plug-in of which this is an instance, or NULL (see gSingleInstances)
     const OFX::Host::ImageEffect::ImageEffectPlugin* singleInstancePlugin;
     OfxEffectInstance* publicInterface; // for gSingleInstances
+    // While the node of an instance of a single-instance plug-in is deactivated (deleted, kept for
+    // undo), its plug-in instance is destroyed (see OfxEffectInstance::suspendSingleInstance()):
+    // the plug-in, or NULL if the instance is not suspended (main thread only).
+    const OFX::Host::ImageEffect::ImageEffectPlugin* suspendedSingleInstancePlugin;
+    bool singleInstanceSuspendPending; // a suspension is retried later, see suspendSingleInstance() (main thread only)
     // true between kOfxActionBeginInstanceEdit and kOfxActionEndInstanceEdit (main thread only; always
     // false on render clones, which get neither action)
     bool instanceEditOpen;
@@ -314,10 +323,21 @@ struct OfxEffectInstancePrivate
         , outputFormatFromPlugin(false)
         , singleInstancePlugin(NULL)
         , publicInterface(NULL)
+        , suspendedSingleInstancePlugin(NULL)
+        , singleInstanceSuspendPending(false)
         , instanceEditOpen(false)
         , isInteractive(0)
         , instanceChangedBrackets()
     {
+    }
+
+    void registerSingleInstance(const OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                                OfxEffectInstance* instance)
+    {
+        QMutexLocker l(&gSingleInstancesMutex);
+        gSingleInstances[plugin].insert(instance);
+        singleInstancePlugin = plugin;
+        publicInterface = instance;
     }
 
     void releaseSingleInstance()
@@ -351,8 +371,8 @@ struct OfxEffectInstancePrivate
         , supportsConcurrentGLRenders(other.supportsConcurrentGLRenders)
         , isOutput(other.isOutput)
         , penDown(other.penDown)
-        , created(other.created)
-        , initialized(other.initialized)
+        , created( other.created.load() )
+        , initialized( other.initialized.load() )
         , overlaysCanHandleRenderScale(other.overlaysCanHandleRenderScale)
         , supportsMultipleClipPARs(other.supportsMultipleClipPARs)
         , supportsMultipleClipDepths(other.supportsMultipleClipDepths)
@@ -361,6 +381,8 @@ struct OfxEffectInstancePrivate
         , outputFormatFromPlugin(other.outputFormatFromPlugin)
         , singleInstancePlugin(NULL) // render clones are not made for single-instance plug-ins
         , publicInterface(NULL)
+        , suspendedSingleInstancePlugin(NULL)
+        , singleInstanceSuspendPending(false)
         , instanceEditOpen(false)
         , isInteractive(0)
         , instanceChangedBrackets()
@@ -466,6 +488,58 @@ OfxEffectInstance::isInitialized() const
     return _imp->initialized;
 }
 
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
+// The node of another live instance of the single-instance plug-in: an active node, or a deleted one
+// whose plug-in instance is not destroyed yet because it is still rendering (see
+// OfxEffectInstance::suspendSingleInstance()). The other deleted nodes hold no plug-in instance.
+NodePtr
+findOtherActiveSingleInstance(const OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                              const OfxEffectInstance* self)
+{
+    QMutexLocker l(&gSingleInstancesMutex);
+    std::map<const OFX::Host::ImageEffect::ImageEffectPlugin*, std::set<OfxEffectInstance*> >::const_iterator found = gSingleInstances.find(plugin);
+
+    if ( found == gSingleInstances.end() ) {
+        return NodePtr();
+    }
+    // an active node first: the refusal then says "is already one", not "try again in a moment"
+    NodePtr pending;
+    for (std::set<OfxEffectInstance*>::const_iterator it = found->second.begin(); it != found->second.end(); ++it) {
+        if (*it == self) {
+            continue;
+        }
+        NodePtr n = (*it)->getNode();
+        if (!n) {
+            continue;
+        }
+        if ( n->isActivated() ) {
+            return n;
+        }
+        if ( !pending && (*it)->isSingleInstanceSuspendPending() ) {
+            pending = n;
+        }
+    }
+
+    return pending;
+}
+
+void
+warnExtraSingleInstance(const OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                        const NodePtr& node,
+                        const NodePtr& otherNode)
+{
+    const QString label = QString::fromUtf8( plugin->getDescriptor().getLabel().c_str() );
+    const QString other = QString::fromUtf8( otherNode->getFullyQualifiedName().c_str() );
+
+    appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( node->getScriptName_mt_safe().c_str() ), QDateTime::currentDateTime(),
+                                     OfxEffectInstance::tr("Warning: %1 allows only one instance at a time, but %2 is already one. "
+                                                           "The plug-in may not work with several instances: keep only one.")
+                                     .arg(label).arg(other) );
+}
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 void
 OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                 OFX::Host::ImageEffect::Descriptor* desc,
@@ -508,36 +582,28 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
     // A temporary node out of the project (e.g. to show the plug-in's documentation) is neither checked nor counted.
     if ( plugin->getDescriptor().isSingleInstance() && !args.getProperty<bool>(kCreateNodeArgsPropOutOfProject) ) {
-        QMutexLocker l(&gSingleInstancesMutex);
-        std::set<OfxEffectInstance*>& instances = gSingleInstances[plugin];
-        // Only the active nodes count: a deleted node stays alive, deactivated, in the undo history.
-        NodePtr activeNode;
-        for (std::set<OfxEffectInstance*>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-            NodePtr n = (*it)->getNode();
-            if ( n && n->isActivated() ) {
-                activeNode = n;
-                break;
-            }
-        }
+        NodePtr activeNode = findOtherActiveSingleInstance(plugin, this);
         if (activeNode) {
-            const QString label = QString::fromUtf8( plugin->getDescriptor().getLabel().c_str() );
-            const QString other = QString::fromUtf8( activeNode->getFullyQualifiedName().c_str() );
-            if ( (gAllowExtraSingleInstances > 0) || getApp()->getProject()->isLoadingProject() ) {
-                // Moving nodes into a group creates them before it deletes the originals, and an
-                // old project may already have several: keep them, and say so.
-                appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( getNode()->getScriptName_mt_safe().c_str() ), QDateTime::currentDateTime(),
-                                                 tr("Warning: %1 allows only one instance at a time, but %2 is already one. "
-                                                    "The plug-in may not work with several instances: keep only one.")
-                                                 .arg(label).arg(other) );
+            if (gAllowExtraSingleInstances > 0) {
+                // Moving nodes into or out of a group creates them before it deletes the originals:
+                // a second instance for a moment, which the user didn't make, so no warning.
+            } else if ( getApp()->getProject()->isLoadingProject() ) {
+                // An old project may already have several: keep them, and say so.
+                warnExtraSingleInstance(plugin, getNode(), activeNode);
             } else {
                 // Refuse it: the node is not created, and the error is reported.
+                const QString label = QString::fromUtf8( plugin->getDescriptor().getLabel().c_str() );
+                const QString other = QString::fromUtf8( activeNode->getFullyQualifiedName().c_str() );
+                if ( !activeNode->isActivated() ) {
+                    // its suspension is pending (see suspendSingleInstance())
+                    throw std::runtime_error( tr("%1 allows only one instance at a time, and %2 is still being deleted: try again in a moment.")
+                                              .arg(label).arg(other).toStdString() );
+                }
                 throw std::runtime_error( tr("%1 allows only one instance at a time, and %2 is already one.")
                                           .arg(label).arg(other).toStdString() );
             }
         }
-        instances.insert(this);
-        _imp->singleInstancePlugin = plugin;
-        _imp->publicInterface = this;
+        _imp->registerSingleInstance(plugin, this);
     }
 
     try {
@@ -786,6 +852,17 @@ OfxEffectInstance::~OfxEffectInstance()
         }
     }
 
+    destroyInteracts();
+    if (_imp->effect) {
+        // (nothing is sent if the instance is suspended, see suspendSingleInstance())
+        _imp->effect->destroyInstanceAction();
+    }
+    _imp->releaseSingleInstance();
+}
+
+void
+OfxEffectInstance::destroyInteracts()
+{
     // The interacts must be destroyed before their effect (ofxInteracts.rst). The parameter
     // interacts are held by their knob, which outlives this object (the knobs belong to the
     // KnobHolder base, or to the Read/Write node of an embedded reader/writer), and maybe by the
@@ -805,10 +882,141 @@ OfxEffectInstance::~OfxEffectInstance()
         }
     }
     _imp->overlayInteract.reset();
-    if (_imp->effect) {
-        _imp->effect->destroyInstanceAction();
+    // tryInitializeOverlayInteracts() adds them again with a new overlay interact
+    clearOverlaySlaveParams();
+}
+
+bool
+OfxEffectInstance::isSingleInstanceSuspended() const
+{
+    return _imp->suspendedSingleInstancePlugin != NULL;
+}
+
+void
+OfxEffectInstance::suspendSingleInstance()
+{
+    // kOfxImageEffectPluginPropSingleInstance: "only one instance can exist at any one time". A
+    // deleted node is only deactivated, and kept for undo: destroy its plug-in instance, so that a
+    // new node of the plug-in can be created, and create it again if the node is activated again
+    // (resumeSingleInstance(), when the deletion is undone). The host side of the instance (its
+    // parameters with their values, clips and properties) is kept, so the knobs, links and undo
+    // history of the node stay valid; the plug-in sees a new instance, created with these values,
+    // as when a project is loaded.
+    assert( QThread::currentThread() == qApp->thread() );
+    _imp->singleInstanceSuspendPending = false;
+    if ( !_imp->singleInstancePlugin || !_imp->effect || !_imp->created ) {
+        // not a single-instance plug-in, out of the project, already suspended, or not created
+        return;
     }
+    NodePtr node = getNode();
+    if ( !node || node->isActivated() ) {
+        // activated again before a pending suspension
+        return;
+    }
+    // Not while the node renders (Node::deactivate() aborted its renders, but doesn't wait for them),
+    // so that a render isn't cut between two of its actions, nor while the plug-in deletes its own node
+    // in one of its actions. Then, "suspending" keeps any new action of another thread out of the plug-in
+    // (OfxImageEffectInstance::mainEntry() counts these actions before it reads the state), and the
+    // actions still in it are counted: not all the threads that call the plug-in take the node's
+    // rendering counter (the preview's region of definition and the tracker don't). If one is still in
+    // the plug-in, the state goes back to "none" until the next attempt: a render that started in the
+    // meantime runs normally (one of its actions may fail if it starts during the attempt; harmless, the
+    // renders of a deleted node are aborted anyway).
+    bool busy = node->isNodeRendering() || _imp->effect->isInMainThreadAction();
+    if (!busy) {
+        _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateSuspending);
+        if ( _imp->effect->hasActionsInFlightOnOtherThreads() ) {
+            _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateNone);
+            busy = true;
+        }
+    }
+    if (busy) {
+        // Retry. Meanwhile, the instance still counts as live (findOtherActiveSingleInstance()), so no new
+        // node of the plug-in is created. The retry needs the event loop (a QTimer on the main thread).
+        _imp->singleInstanceSuspendPending = true;
+        std::weak_ptr<OfxEffectInstance> weakThis = std::dynamic_pointer_cast<OfxEffectInstance>( shared_from_this() );
+        QTimer::singleShot(50, qApp, [weakThis]() {
+            OfxEffectInstancePtr effect = weakThis.lock();
+            if ( effect && effect->_imp->singleInstanceSuspendPending ) {
+                effect->suspendSingleInstance();
+            }
+        });
+
+        return;
+    }
+
+    destroyInteracts();
+    // the host instance stays, but the plug-in gets no action until resumeSingleInstance()
+    ignore_result( _imp->effect->destroyInstanceAction() );
+    _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateSuspended);
+    _imp->created = false;
+    _imp->suspendedSingleInstancePlugin = _imp->singleInstancePlugin;
     _imp->releaseSingleInstance();
+}
+
+bool
+OfxEffectInstance::isSingleInstanceSuspendPending() const
+{
+    return _imp->singleInstanceSuspendPending;
+}
+
+void
+OfxEffectInstance::resumeSingleInstance()
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    _imp->singleInstanceSuspendPending = false;
+    if (!_imp->suspendedSingleInstancePlugin) {
+        return;
+    }
+    const OFX::Host::ImageEffect::ImageEffectPlugin* plugin = _imp->suspendedSingleInstancePlugin;
+    _imp->suspendedSingleInstancePlugin = NULL;
+
+    // Undoing a deletion can't be refused: this happens if another node of the plug-in was created
+    // in a different node graph (each Group has its own undo history), or from Python, or if the node
+    // that the same undo/redo just deactivated is still rendering (its suspension is pending, e.g.
+    // undoing Group From Selection or Expand Group right after it, while the viewer renders the copy):
+    // then two instances live until that render ends.
+    NodePtr otherNode = findOtherActiveSingleInstance(plugin, this);
+    if (otherNode) {
+        warnExtraSingleInstance(plugin, getNode(), otherNode);
+    }
+    _imp->registerSingleInstance(plugin, this);
+    // only the main thread enters the plug-in until kOfxActionCreateInstance has succeeded
+    _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateSuspending);
+
+    // As in createOfxImageEffectInstance(): while kOfxActionCreateInstance runs, the values the
+    // plug-in sets in its constructor send no kOfxActionInstanceChanged (initialized is false, and
+    // the changes are bracketed), since the plug-in's objects are not built yet.
+    beginChanges();
+    _imp->initialized = false;
+    OfxStatus stat;
+    {
+        SET_CAN_SET_VALUE(true);
+        // Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(&_imp->preferencesLock);
+        stat = _imp->effect->createInstanceAction();
+    }
+    if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
+        // The node stays, without a plug-in instance, and says so. Not quite what the spec asks: after a
+        // failed kOfxActionCreateInstance "the host should destroy the instance handle and not attempt to
+        // proceed further" (only kOfxStatErrMemory allows a retry), but the next undo/redo of the node's
+        // deletion calls kOfxActionCreateInstance again on this handle. The node shows the error meanwhile.
+        _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateSuspended);
+        _imp->suspendedSingleInstancePlugin = plugin;
+        _imp->releaseSingleInstance();
+        _imp->initialized = true;
+        endChanges(true); // the plug-in gets nothing
+        getNode()->setPersistentMessage( eMessageTypeError, tr("Could not create the instance of the plug-in again.").toStdString() );
+
+        return;
+    }
+    _imp->created = true;
+    _imp->initialized = true;
+    _imp->effect->setSuspendState(OfxImageEffectInstance::eSuspendStateNone);
+    endChanges();
+    // the plug-in gets kOfxImageEffectActionGetClipPreferences before it renders, as after its creation
+    ignore_result( refreshMetadata_public(false) );
+    tryInitializeOverlayInteracts();
 }
 
 OfxEffectInstance::AllowExtraSingleInstances::AllowExtraSingleInstances()
@@ -965,7 +1173,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         interactDesc.setEntryPoint(interactEntryPoint);
 //#pragma message WARN("FIXME: bitdepth and hasalpha are probably wrong")
         interactDesc.describe(/*bitdepthPerComponent=*/ 8, /*hasAlpha=*/ false);
-        OfxParamOverlayInteractPtr overlayInteract( new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance() ) );
+        OfxParamOverlayInteractPtr overlayInteract( new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance(), *it ) );
         knob->setCustomInteract(overlayInteract);
         overlayInteract->createInstanceAction();
     }
@@ -1438,6 +1646,73 @@ OfxEffectInstance::onInputChanged(int inputNo)
 
         InstanceChangedBracket_RAII bracket(this, kOfxChangeUserEdited, ViewIdx(0), 0);
         _imp->effect->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, scale);
+    }
+}
+
+// The kOfxPropChangeReason of the kOfxActionInstanceChanged actions after a project load
+// (onInputsRestoredAfterProjectLoad()). Plug-ins set parameters from an input clip when the user connects it
+// (kOfxChangeUserEdited), so kOfxChangePluginEdited keeps the values loaded from the project (see the plug-in audit
+// in #1447).
+// Non-conformant with the current upstream spec (openfx main, after 1.5.1, from #184/#191), which requires
+// kOfxChangeUserEdited; OFX 1.5.1 itself has no such rule. See https://github.com/AcademySoftwareFoundation/openfx/issues/294.
+static const char* const kProjectLoadChangeReason = kOfxChangePluginEdited;
+
+bool
+OfxEffectInstance::wantsInputsRestoredAfterProjectLoad() const
+{
+    // an input clip has an input node (see onInputsRestoredAfterProjectLoad())
+    NodePtr node = getNode();
+    for (int i = 0; i < (int)_imp->clipsInfos.size(); ++i) {
+        if ( node->getInput(i) ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void
+OfxEffectInstance::onInputsRestoredAfterProjectLoad()
+{
+    // openfx main, after 1.5.1 (#184/#191, ofxCore.h, kOfxActionInstanceChanged): "when a host loads a plugin instance
+    // from a saved project, if the input clips are not connected at that time, the host must call `instanceChanged`
+    // after kOfxActionCreateInstance and after the host has hooked up all clips, with property kOfxPropType =
+    // kOfxTypeClip and kOfxPropChangeReason = ..., and ensure that OfxImageEffectSuiteV1::clipGetRegionOfDefinition
+    // works in this action" (the reason: see kProjectLoadChangeReason).
+    // Natron creates the instances of a project before it connects their inputs (ProjectPrivate::restoreFromSerialization()),
+    // and does not call onInputChanged() while it connects them: one kOfxActionInstanceChanged per input clip with an
+    // input node (which may be a Dot or a GroupInput with nothing upstream), in one bracket (#1107).
+    assert(_imp->context != eContextNone);
+    NodePtr node = getNode();
+    std::vector<std::string> clips;
+    for (int i = 0; i < (int)_imp->clipsInfos.size(); ++i) {
+        if ( node->getInput(i) ) {
+            OfxClipInstance* clip = getClipCorrespondingToInput(i);
+            assert(clip);
+            if (clip) {
+                clips.push_back( clip->getName() );
+            }
+        }
+    }
+    if ( clips.empty() ) {
+        return;
+    }
+    double time = getApp()->getTimeLine()->currentFrame();
+    const OfxPointD scale = {1., 1.};
+
+    {
+        RECURSIVE_ACTION();
+        REPORT_CURRENT_THREAD_ACTION( kOfxActionInstanceChanged, node );
+        SET_CAN_SET_VALUE(true);
+        ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                            ViewIdx(0),
+                                            0);
+        assert(_imp->effect);
+
+        InstanceChangedBracket_RAII bracket(this, kProjectLoadChangeReason, ViewIdx(0), 0);
+        for (std::vector<std::string>::const_iterator it = clips.begin(); it != clips.end(); ++it) {
+            ignore_result( _imp->effect->clipInstanceChangedAction(*it, kProjectLoadChangeReason, time, scale) );
+        }
     }
 }
 

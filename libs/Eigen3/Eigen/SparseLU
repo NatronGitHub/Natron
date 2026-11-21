@@ -25,8 +25,6 @@
 
 #include "src/Core/util/DisableStupidWarnings.h"
 
-#include "src/SparseLU/SparseLU_gemm_kernel.h"
-
 #include "src/SparseLU/SparseLU_Structs.h"
 #include "src/SparseLU/SparseLU_SupernodalMatrix.h"
 #include "src/SparseLU/SparseLUImpl.h"

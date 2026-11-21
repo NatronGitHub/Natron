@@ -25,6 +25,7 @@
 
 #include "GuiAppInstance.h"
 
+#include <iostream>
 #include <stdexcept>
 #include <sstream> // stringstream
 
@@ -33,6 +34,7 @@
 #include <QMutex>
 #include <QCoreApplication>
 #include <QPointer>
+#include <QUndoStack>
 
 #include "Engine/CLArgs.h"
 #include "Engine/Project.h"
@@ -48,7 +50,9 @@
 #include "Engine/DiskCacheNode.h"
 #include "Engine/KnobFile.h"
 #include "Engine/RotoStrokeItem.h"
+#include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
+#include "Engine/UndoCommand.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Global/QtCompat.h"
@@ -56,6 +60,7 @@
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
+#include "Gui/GuiTest.h"
 #include "Gui/BackdropGui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
@@ -309,7 +314,8 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
     SettingsPtr nSettings = appPTR->getCurrentSettings();
     QObject::connect( getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(projectFormatChanged(Format)) );
 
-    {
+    // no update check in test mode (--test): no network access, no question
+    if ( !appPTR->isTestMode() ) {
         QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
         if ( !settings.contains( QString::fromUtf8("checkForUpdates") ) ) {
             const std::string title = tr("Updates").toStdString();
@@ -331,7 +337,8 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
         }
     }
 
-    if ( nSettings->isDefaultAppearanceOutdated() ) {
+    // a GUI test (--test) uses the default settings: no question about the user's appearance
+    if ( !appPTR->isTestMode() && nSettings->isDefaultAppearanceOutdated() ) {
         StandardButtonEnum reply = Dialogs::questionDialog(tr("Appearance").toStdString(),
                                                            tr("The default appearance of %1 changed since last version.\n"
                                                               "Would you like to use the new default appearance?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false);
@@ -348,10 +355,19 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
     if (getAppID() == 0) {
         QString missingOpenGLError;
         if ( !appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeViewer, &missingOpenGLError) ) {
+            if ( appPTR->isTestMode() ) {
+                // a GUI test cannot run without the OpenGL of the viewer: it is skipped, not failed
+                std::cout << "SKIP: " << missingOpenGLError.toStdString() << std::endl;
+                appPTR->requestQuit(77);
+            }
             throw std::runtime_error( missingOpenGLError.toStdString() );
         }
 
-        appPTR->getCurrentSettings()->doOCIOStartupCheckIfNeeded();
+        // Not in a GUI test (--test): the question is about the user's preferences, and the tests use the
+        // default settings with the OpenColorIO configuration of the OCIO environment variable.
+        if ( !appPTR->isTestMode() ) {
+            appPTR->getCurrentSettings()->doOCIOStartupCheckIfNeeded();
+        }
 
         if ( !appPTR->isShorcutVersionUpToDate() ) {
             StandardButtonEnum reply = questionDialog(tr("Shortcuts").toStdString(),
@@ -375,7 +391,8 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
     executeCommandLinePythonCommands(cl);
 
     /// If this is the first instance of the software, try to load an autosave
-    if ( (getAppID() == 0) && cl.getScriptFilename().isEmpty() ) {
+    /// (never in test mode: the auto-saves may be the user's, and they are neither restored nor removed)
+    if ( (getAppID() == 0) && cl.getScriptFilename().isEmpty() && !appPTR->isTestMode() ) {
         if ( findAndTryLoadUntitledAutoSave() ) {
             ///if we successfully loaded an autosave ignore the specified project in the launch args.
             return;
@@ -423,6 +440,10 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
             loadPythonScript(cbInfo);
         }
     }
+
+    if ( (getAppID() == 0) && appPTR->isTestMode() && !cl.getTestScript().isEmpty() ) {
+        GuiTest::scheduleTestScript( cl.getTestScript() );
+    }
 } // load
 
 bool
@@ -443,10 +464,8 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
     QStringList foundAutosaves;
     for (int i = 0; i < entries.size(); ++i) {
         const QString & entry = entries.at(i);
-        QString searchStr( QLatin1Char('.') );
-        searchStr.append( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) );
-        searchStr.append( QString::fromUtf8(".autosave") );
-        int suffixPos = entry.indexOf(searchStr);
+        // text auto-saves (by Natron 2.5 and earlier) and binary ones
+        int suffixPos = Project::findAutoSaveSuffix(entry);
         if ( (suffixPos == -1) || entry.contains( QString::fromUtf8("RENDER_SAVE") ) ) {
             continue;
         }
@@ -480,7 +499,8 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
         } else {
             CLArgs cl;
             AppInstancePtr newApp = appPTR->newAppInstance(cl, false);
-            if ( !newApp->getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true) ) {
+            // newAppInstance() returns NULL, after showing an error dialog, if the new window could not be loaded
+            if ( !newApp || !newApp->getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true) ) {
                 return false;
             }
         }
@@ -809,7 +829,21 @@ GuiAppInstance::loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & a
 }
 
 void
+GuiAppInstance::loadProjectGui(bool isAutosave, PortableBinaryIArchive & archive) const
+{
+    _imp->_gui->loadProjectGui(isAutosave, archive);
+}
+
+void
 GuiAppInstance::saveProjectGui(boost::archive::xml_oarchive & archive)
+{
+    if (_imp->_gui) {
+        _imp->_gui->saveProjectGui(archive);
+    }
+}
+
+void
+GuiAppInstance::saveProjectGui(PortableBinaryOArchive & archive)
 {
     if (_imp->_gui) {
         _imp->_gui->saveProjectGui(archive);
@@ -950,7 +984,24 @@ GuiAppInstance::toggleAutoHideGraphInputs()
 void
 GuiAppInstance::appendToScriptEditor(const std::string& str)
 {
-    _imp->_gui->appendToScriptEditor(str);
+    // There is no Gui (and no Script Editor) yet while loadInternal() declares the app variable,
+    // and no longer after aboutToQuit(): print to stdout like AppInstance does.
+    if (_imp->_gui) {
+        _imp->_gui->appendToScriptEditor(str);
+    } else {
+        AppInstance::appendToScriptEditor(str);
+    }
+}
+
+void
+GuiAppInstance::appendPlainTextToScriptEditor(const std::string& str)
+{
+    if (_imp->_gui) {
+        // The Script Editor output auto-detects rich text
+        _imp->_gui->appendToScriptEditor( NATRON_NAMESPACE::convertFromPlainText(QString::fromUtf8( str.c_str() ), NATRON_NAMESPACE::WhiteSpacePre).toStdString() );
+    } else {
+        AppInstance::appendPlainTextToScriptEditor(str);
+    }
 }
 
 void
@@ -1012,7 +1063,9 @@ GuiAppInstance::declareCurrentAppVariable_Python()
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         const std::string& name = (*it)->getName();
         if ( NATRON_PYTHON_NAMESPACE::isKeyword(name) ) {
-            throw std::runtime_error(name + " is a Python keyword");
+            // Report instead of throwing: this is reached from Qt slots (e.g. File > New Project) (#1436).
+            appendToScriptEditor("GuiAppInstance::declareCurrentAppVariable_Python(): " + name + " is a Python keyword");
+            continue;
         }
         ss << appIDStr << "." << name << " = "  << appIDStr  << ".getProjectParam('" << name << "')\n";
     }
@@ -1022,7 +1075,9 @@ GuiAppInstance::declareCurrentAppVariable_Python()
     _imp->declareAppAndParamsString = script;
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
     if (!ok) {
-        throw std::runtime_error("GuiAppInstance::declareCurrentAppVariable_Python() failed!");
+        // Report instead of throwing: this is reached from Qt slots (e.g. File > New Project), and the
+        // exception would abort the creation of the project window (#1436).
+        appendToScriptEditor("GuiAppInstance::declareCurrentAppVariable_Python(): " + err);
     }
 }
 
@@ -1210,24 +1265,27 @@ GuiAppInstance::isRenderStatsActionChecked() const
 }
 
 bool
-GuiAppInstance::save(const std::string& filename)
+GuiAppInstance::save(const std::string& filename,
+                     ProjectFileFormatEnum format)
 {
     if ( filename.empty() ) {
         ProjectPtr project = getProject();
         if ( project->hasProjectBeenSavedByUser() ) {
-            return _imp->_gui->saveProject();
+            return _imp->_gui->saveProject(format);
         } else {
-            return _imp->_gui->saveProjectAs();
+            // the Save As dialog: format is its default, the user's choice wins
+            return _imp->_gui->saveProjectAs(format);
         }
     } else {
-        return _imp->_gui->saveProjectAs(filename);
+        return _imp->_gui->saveProjectAs(filename, format);
     }
 }
 
 bool
-GuiAppInstance::saveAs(const std::string& filename)
+GuiAppInstance::saveAs(const std::string& filename,
+                       ProjectFileFormatEnum format)
 {
-    return _imp->_gui->saveProjectAs(filename);
+    return _imp->_gui->saveProjectAs(filename, format);
 }
 
 AppInstancePtr
@@ -1670,6 +1728,115 @@ void
 GuiAppInstance::reloadScriptEditorFonts()
 {
     _imp->_gui->getScriptEditor()->reloadFont();
+}
+
+namespace {
+// An undo group of the Python API (App.beginUndoGroup()) on the undo stack of the node graph. The command
+// is pushed after the edits were made: its first redo() does nothing (see PythonUndoGroupCommand::redo()).
+class UndoGroupQtCommand
+    : public QUndoCommand
+{
+    UndoCommandPtr _command;
+
+public:
+
+    UndoGroupQtCommand(const UndoCommandPtr& command)
+        : QUndoCommand()
+        , _command(command)
+    {
+        setText( QString::fromUtf8( command->getText().c_str() ) );
+    }
+
+    virtual void redo() OVERRIDE FINAL
+    {
+        _command->redo();
+    }
+
+    virtual void undo() OVERRIDE FINAL
+    {
+        _command->undo();
+    }
+};
+} // anonymous namespace
+
+void
+GuiAppInstance::pushUndoGroupCommand(const UndoCommandPtr& command)
+{
+    NodeGraph* graph = _imp->_gui ? _imp->_gui->getNodeGraph() : 0;
+
+    if (graph) {
+        graph->pushUndoCommand( new UndoGroupQtCommand(command) );
+    }
+}
+
+QUndoStack*
+GuiAppInstance::getActiveUndoStack() const
+{
+    // The node graph's stack (node creation, deletion, connections, and the undo groups of the Python
+    // API), not the active one (the last focused panel), which depends on the focus: a PyPlug button in a
+    // panel would make App.undo() undo the panel's last change.
+    NodeGraph* graph = _imp->_gui ? _imp->_gui->getNodeGraph() : 0;
+
+    return graph ? graph->getUndoStack() : 0;
+}
+
+void
+GuiAppInstance::undo()
+{
+    QUndoStack* stack = getActiveUndoStack();
+
+    if (stack) {
+        stack->undo();
+    }
+}
+
+void
+GuiAppInstance::redo()
+{
+    QUndoStack* stack = getActiveUndoStack();
+
+    if (stack) {
+        stack->redo();
+    }
+}
+
+bool
+GuiAppInstance::canUndo() const
+{
+    QUndoStack* stack = getActiveUndoStack();
+
+    return stack && stack->canUndo();
+}
+
+bool
+GuiAppInstance::canRedo() const
+{
+    QUndoStack* stack = getActiveUndoStack();
+
+    return stack && stack->canRedo();
+}
+
+std::list<std::string>
+GuiAppInstance::getUndoHistory() const
+{
+    std::list<std::string> ret;
+    QUndoStack* stack = getActiveUndoStack();
+
+    if (stack) {
+        for (int i = 0; i < stack->count(); ++i) {
+            ret.push_back( stack->text(i).toStdString() );
+        }
+    }
+
+    return ret;
+}
+
+int
+GuiAppInstance::getUndoIndex() const
+{
+    QUndoStack* stack = getActiveUndoStack();
+
+    return stack ? stack->index() : 0;
 }
 
 NATRON_NAMESPACE_EXIT

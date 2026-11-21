@@ -1,12 +1,13 @@
 #!/bin/bash
 # install libsndfile (for sox)
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/libsndfile.html
-LIBSNDFILE_VERSION=1.2.0
+LIBSNDFILE_VERSION=1.2.2
 LIBSNDFILE_TAR="libsndfile-${LIBSNDFILE_VERSION}.tar.xz"
+LIBSNDFILE_SHA256=3799ca9924d3125038880367bf1468e53a1b7e3686a934f098b7e1d286cdb80e
 #LIBSNDFILE_SITE="http://www.mega-nerd.com/libsndfile/files"
 LIBSNDFILE_SITE="https://github.com/libsndfile/libsndfile/releases/download/${LIBSNDFILE_VERSION}"
 if download_step; then
-    download "$LIBSNDFILE_SITE" "$LIBSNDFILE_TAR"
+    download "$LIBSNDFILE_SITE" "$LIBSNDFILE_TAR" "$LIBSNDFILE_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/sndfile.pc" ] || [ "$(pkg-config --modversion sndfile)" != "$LIBSNDFILE_VERSION" ]; }; }; then
     start_build

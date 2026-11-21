@@ -45,6 +45,11 @@
  */
 int __gl_computeInterior( GLUtesselator *tess );
 
+/* Natron: __gl_sweepCleanup( tess ) frees what __gl_computeInterior() had
+ * allocated when it was interrupted by an out-of-memory longjmp().
+ */
+void __gl_sweepCleanup( GLUtesselator *tess );
+
 
 /* The following is here *only* for access by debugging routines */
 

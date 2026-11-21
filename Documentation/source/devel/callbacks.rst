@@ -117,6 +117,14 @@ The signature of the callback used on the :ref:`Effect<Effect>` is::
   the value by theirself) or due to another parameter changing the value of the parameter
   via a derivative of the :func:`setValue(value)<>` function.
 
+The callback is called for every parameter of the node, including the buttons, and also for the
+changes made by scripts and by the callback itself: test
+``thisParam.getScriptName()`` first, and ``userEdited`` if only the user's changes matter. A
+callback that sets the value of the parameter that triggered it is called again. It is not called
+when only the current frame changes, even if the parameter is animated. For a group or a PyPlug,
+the callback set on the group is called for the parameters of the group, not for those of the
+nodes inside it (see :ref:`pyplugWriting-ext` for an example).
+
 For the *parameter changed callback* of :ref:`PyPanel<pypanel>` and :ref:`PyModalDialog<pyModalDialog>`, the signature of the callback function is:
 
     callback(paramName, app, userEdited)
@@ -155,6 +163,13 @@ For the *parameter changed callback* of :ref:`PyPanel<pypanel>` and :ref:`PyModa
        Node->>Node: check the argument names<br/>of the onParamChanged function
        Node->>Py: cb(thisParam, thisNode, thisGroup, app, userEdited)
        Py-->>Node: errors are printed in the Script Editor
+
+A param changed callback runs in the main thread, so it can wait for a render that it started and
+read its result: see :ref:`pyplugWriting-renderReadBack` for
+:meth:`app.waitForRenders()<NatronEngine.App.waitForRenders>` and the viewer functions. The
+*afterFrameRender* callback runs in a render thread: these functions raise :class:`RuntimeError` there.
+A callback that edits the graph (e.g. a button that creates nodes) can make its edits one undo step with
+``with app.undoGroup("text"):``, see :meth:`app.undoGroup()<NatronEngine.App.undoGroup>`.
 
 Registering the param changed callback
 ----------------------------------------

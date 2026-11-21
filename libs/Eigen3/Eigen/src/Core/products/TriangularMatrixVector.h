@@ -26,30 +26,30 @@ struct triangular_matrix_vector_product<Index,Mode,LhsScalar,ConjLhs,RhsScalar,C
     HasUnitDiag = (Mode & UnitDiag)==UnitDiag,
     HasZeroDiag = (Mode & ZeroDiag)==ZeroDiag
   };
-  static EIGEN_DONT_INLINE  void run(Index _rows, Index _cols, const LhsScalar* _lhs, Index lhsStride,
-                                     const RhsScalar* _rhs, Index rhsIncr, ResScalar* _res, Index resIncr, const RhsScalar& alpha);
+  static EIGEN_DONT_INLINE  void run(Index rows_, Index cols_, const LhsScalar* lhs_, Index lhsStride,
+                                     const RhsScalar* rhs_, Index rhsIncr, ResScalar* res_, Index resIncr, const RhsScalar& alpha);
 };
 
 template<typename Index, int Mode, typename LhsScalar, bool ConjLhs, typename RhsScalar, bool ConjRhs, int Version>
 EIGEN_DONT_INLINE void triangular_matrix_vector_product<Index,Mode,LhsScalar,ConjLhs,RhsScalar,ConjRhs,ColMajor,Version>
-  ::run(Index _rows, Index _cols, const LhsScalar* _lhs, Index lhsStride,
-        const RhsScalar* _rhs, Index rhsIncr, ResScalar* _res, Index resIncr, const RhsScalar& alpha)
+  ::run(Index rows_, Index cols_, const LhsScalar* lhs_, Index lhsStride,
+        const RhsScalar* rhs_, Index rhsIncr, ResScalar* res_, Index resIncr, const RhsScalar& alpha)
   {
     static const Index PanelWidth = EIGEN_TUNE_TRIANGULAR_PANEL_WIDTH;
-    Index size = (std::min)(_rows,_cols);
-    Index rows = IsLower ? _rows : (std::min)(_rows,_cols);
-    Index cols = IsLower ? (std::min)(_rows,_cols) : _cols;
+    Index size = (std::min)(rows_,cols_);
+    Index rows = IsLower ? rows_ : (std::min)(rows_,cols_);
+    Index cols = IsLower ? (std::min)(rows_,cols_) : cols_;
 
     typedef Map<const Matrix<LhsScalar,Dynamic,Dynamic,ColMajor>, 0, OuterStride<> > LhsMap;
-    const LhsMap lhs(_lhs,rows,cols,OuterStride<>(lhsStride));
+    const LhsMap lhs(lhs_,rows,cols,OuterStride<>(lhsStride));
     typename conj_expr_if<ConjLhs,LhsMap>::type cjLhs(lhs);
 
     typedef Map<const Matrix<RhsScalar,Dynamic,1>, 0, InnerStride<> > RhsMap;
-    const RhsMap rhs(_rhs,cols,InnerStride<>(rhsIncr));
+    const RhsMap rhs(rhs_,cols,InnerStride<>(rhsIncr));
     typename conj_expr_if<ConjRhs,RhsMap>::type cjRhs(rhs);
 
     typedef Map<Matrix<ResScalar,Dynamic,1> > ResMap;
-    ResMap res(_res,rows);
+    ResMap res(res_,rows);
 
     typedef const_blas_data_mapper<LhsScalar,Index,ColMajor> LhsMapper;
     typedef const_blas_data_mapper<RhsScalar,Index,RowMajor> RhsMapper;
@@ -84,7 +84,7 @@ EIGEN_DONT_INLINE void triangular_matrix_vector_product<Index,Mode,LhsScalar,Con
           rows, cols-size,
           LhsMapper(&lhs.coeffRef(0,size), lhsStride),
           RhsMapper(&rhs.coeffRef(size), rhsIncr),
-          _res, resIncr, alpha);
+          res_, resIncr, alpha);
     }
   }
 
@@ -97,30 +97,30 @@ struct triangular_matrix_vector_product<Index,Mode,LhsScalar,ConjLhs,RhsScalar,C
     HasUnitDiag = (Mode & UnitDiag)==UnitDiag,
     HasZeroDiag = (Mode & ZeroDiag)==ZeroDiag
   };
-  static EIGEN_DONT_INLINE void run(Index _rows, Index _cols, const LhsScalar* _lhs, Index lhsStride,
-                                    const RhsScalar* _rhs, Index rhsIncr, ResScalar* _res, Index resIncr, const ResScalar& alpha);
+  static EIGEN_DONT_INLINE void run(Index rows_, Index cols_, const LhsScalar* lhs_, Index lhsStride,
+                                    const RhsScalar* rhs_, Index rhsIncr, ResScalar* res_, Index resIncr, const ResScalar& alpha);
 };
 
 template<typename Index, int Mode, typename LhsScalar, bool ConjLhs, typename RhsScalar, bool ConjRhs,int Version>
 EIGEN_DONT_INLINE void triangular_matrix_vector_product<Index,Mode,LhsScalar,ConjLhs,RhsScalar,ConjRhs,RowMajor,Version>
-  ::run(Index _rows, Index _cols, const LhsScalar* _lhs, Index lhsStride,
-        const RhsScalar* _rhs, Index rhsIncr, ResScalar* _res, Index resIncr, const ResScalar& alpha)
+  ::run(Index rows_, Index cols_, const LhsScalar* lhs_, Index lhsStride,
+        const RhsScalar* rhs_, Index rhsIncr, ResScalar* res_, Index resIncr, const ResScalar& alpha)
   {
     static const Index PanelWidth = EIGEN_TUNE_TRIANGULAR_PANEL_WIDTH;
-    Index diagSize = (std::min)(_rows,_cols);
-    Index rows = IsLower ? _rows : diagSize;
-    Index cols = IsLower ? diagSize : _cols;
+    Index diagSize = (std::min)(rows_,cols_);
+    Index rows = IsLower ? rows_ : diagSize;
+    Index cols = IsLower ? diagSize : cols_;
 
     typedef Map<const Matrix<LhsScalar,Dynamic,Dynamic,RowMajor>, 0, OuterStride<> > LhsMap;
-    const LhsMap lhs(_lhs,rows,cols,OuterStride<>(lhsStride));
+    const LhsMap lhs(lhs_,rows,cols,OuterStride<>(lhsStride));
     typename conj_expr_if<ConjLhs,LhsMap>::type cjLhs(lhs);
 
     typedef Map<const Matrix<RhsScalar,Dynamic,1> > RhsMap;
-    const RhsMap rhs(_rhs,cols);
+    const RhsMap rhs(rhs_,cols);
     typename conj_expr_if<ConjRhs,RhsMap>::type cjRhs(rhs);
 
     typedef Map<Matrix<ResScalar,Dynamic,1>, 0, InnerStride<> > ResMap;
-    ResMap res(_res,rows,InnerStride<>(resIncr));
+    ResMap res(res_,rows,InnerStride<>(resIncr));
 
     typedef const_blas_data_mapper<LhsScalar,Index,RowMajor> LhsMapper;
     typedef const_blas_data_mapper<RhsScalar,Index,RowMajor> RhsMapper;

@@ -116,7 +116,8 @@ waited = [0]
 
 def autosaveFiles():
     try:
-        return [f for f in os.listdir(autosaves) if ".autosave" in f]
+        # .ntp.autosave (text, Natron 2.5) or .ntp.binautosave (binary, 2.6, #1056)
+        return [f for f in os.listdir(autosaves) if ".autosave" in f or ".binautosave" in f]
     except OSError:
         return []
 
@@ -254,7 +255,14 @@ def main(argv):
         print("GUI smoke test skipped: no display")
         return SKIP
 
+    # Debug builds: no trapped floating point exception (Mesa llvmpipe's threads inherit the trapping and
+    # its shaders raise exceptions, #1537), as with Natron --test
+    os.environ["NATRON_NO_FP_TRAPS"] = "1"
     outDir = tempfile.mkdtemp(prefix="natron-gui-test-")
+    # a private disk cache (and OFX plug-in cache), removed with outDir, unless NATRON_DISK_CACHE_PATH is set:
+    # the user's one is shared by every Natron of this version, e.g. a concurrent test run (#1569)
+    if not os.environ.get("NATRON_DISK_CACHE_PATH"):
+        os.environ["NATRON_DISK_CACHE_PATH"] = os.path.join(outDir, "cache")
     try:
         # 1. natron.quit(exitCode) sets the exit status, and
         # 2. closing the main window doesn't block on "Save changes?"

@@ -61,6 +61,7 @@
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/GPUContextPool.h"
+#include "Engine/GraphDepthGuard.h"
 #include "Engine/PluginMemory.h"
 #include "Engine/Project.h"
 #include "Engine/RenderStats.h"
@@ -354,6 +355,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         return _imp->mainInstance->renderRoI(args, outputPlanes);
     }
 
+    // renderRoI recurses upstream, once per node: stop before the stack overflows (#1440)
+    GraphDepthGuard depthGuard(eGraphTraversalRender, this);
+    if ( depthGuard.isTooDeep() ) {
+        return eRenderRoIRetCodeFailed;
+    }
+
     //Create the TLS data for this node if it did not exist yet
     EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
@@ -386,6 +393,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
         assert(!frameArgs->request || frameArgs->nodeHash == frameArgs->request->nodeHash);
     }
+    // if this render works, the "too deep" message of the tree root is cleared too
+    depthGuard.setTreeRoot(frameArgs->treeRoot);
 
     ///For writer we never want to cache otherwise the next time we want to render it will skip writing the image on disk!
     bool byPassCache = args.byPassCache;
@@ -437,6 +446,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
                 ///The rod might be NULL for a roto that has no beziers and no input
                 if (stat == eStatusFailed) {
+                    if ( GraphDepthGuard::hasFailed() ) {
+                        // the graph upstream is too deep: this is an error, not an empty RoD (#1440)
+                        return eRenderRoIRetCodeFailed;
+                    }
                     ///if getRoD fails, this might be because the RoD is null after all (e.g: an empty Roto node), we don't want the render to fail
                     return eRenderRoIRetCodeOk;
                 } else if ( rodNc.isNull() ) {
@@ -1783,6 +1796,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     } // if (!hasSomethingToRender) {
 
+    if ( GraphDepthGuard::hasFailed() && (renderRetCode != eRenderRoIStatusRenderFailed) ) {
+        // Something upstream could not be computed because the graph is too deep (#1440): the result
+        // is wrong. Don't let it be marked as rendered in the cache.
+        renderRetCode = eRenderRoIStatusRenderFailed;
+    }
+
     if ( !renderAborted && ( (renderRetCode == eRenderRoIStatusImageRendered) || (renderRetCode == eRenderRoIStatusImageAlreadyRendered) ) ) {
         // rendered in frame order by this render, into the cache entry of this key, by this thread or by another one
         // of the frame (already rendered): it may be used from the cache in the next frames of the render. Releasing
@@ -1831,6 +1850,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
         return eRenderRoIRetCodeAborted;
     } else if (renderRetCode == eRenderRoIStatusRenderFailed) {
+        if ( GraphDepthGuard::hasFailed() ) {
+            // the outermost GraphDepthGuard reports the error
+            return eRenderRoIRetCodeFailed;
+        }
         ///Throwing this exception will ensure the render stops.
         ///This is slightly clumsy since we already have a render rect code indicating it, we should
         ///use the ret code instead.
@@ -2105,9 +2128,18 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
     }
 
 
+    // kOfxPropIsInteractive of Begin/EndSequenceRender: "is this a single frame render due to user interaction
+    // in a GUI, or a proper full sequence render" (ofxImageEffect.h). A render in the GUI is interactive,
+    // except a render on disk, whose tree root is a writer or a DiskCache. (Other output effects are GUI
+    // renders: the viewer, and the Output node of a group, the tree root of the group's preview render.)
+    // Begin and End get the same value, and a frame step of 1 (a single frame is rendered).
+    EffectInstancePtr rootEffect = frameArgs->treeRoot ? frameArgs->treeRoot->getEffectInstance() : EffectInstancePtr();
+    const bool isDiskRender = rootEffect && ( rootEffect->isWriter() || dynamic_cast<DiskCacheNode*>( rootEffect.get() ) );
+    const bool isInteractiveRender = !appPTR->isBackground() && !isDiskRender;
+
     if (callBegin) {
         assert( self->isSupportedRenderScale(self->supportsRenderScaleMaybe(), renderMappedScale) );
-        if (self->beginSequenceRender_public(time, time, 1, !appPTR->isBackground(), renderMappedScale, isSequentialRender,
+        if (self->beginSequenceRender_public(time, time, 1, isInteractiveRender, renderMappedScale, isSequentialRender,
                                        isRenderMadeInResponseToUserInteraction, frameArgs->draftMode, view, planesToRender->useOpenGL, planesToRender->glContextData) == eStatusFailed) {
             renderStatus = eRenderingFunctorRetFailed;
         }
@@ -2195,7 +2227,7 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
     ///never call endsequence render here if the render is sequential
     if (callBegin) {
         assert( self->isSupportedRenderScale(self->supportsRenderScaleMaybe(), renderMappedScale) );
-        if (self->endSequenceRender_public(time, time, time, false, renderMappedScale,
+        if (self->endSequenceRender_public(time, time, 1, isInteractiveRender, renderMappedScale,
                                      isSequentialRender,
                                      isRenderMadeInResponseToUserInteraction,
                                      frameArgs->draftMode,

@@ -53,7 +53,9 @@ NATRON_NAMESPACE_ENTER
  * The bits follow the OFX key symbols that Natron sends (see QtEnumConvert::fromQtKey()):
  * Qt::ShiftModifier/Key_Shift is Shift, Qt::ControlModifier/Key_Control is Control (Cmd on macOS),
  * Qt::AltModifier/Key_Alt is Alt (Option on macOS) and Qt::MetaModifier/Key_Meta is Meta
- * (the Control key on macOS).
+ * (the Control key on macOS, the Windows key on Windows, usually Super on X11 and Wayland: on
+ * Wayland, fromQtKey() maps Qt::Key_Super_L/R to Key_Meta_L/R, as Qt does on X11, see
+ * NatronGitHub/Natron#1278).
  **/
 int ofxKeyModifiersFromNatron(const KeyboardModifiers& modifiers);
 
@@ -426,14 +428,16 @@ class OfxParamOverlayInteract
     : public OFX::Host::Interact::Instance, public NatronOverlayInteractSupport
 {
     OfxImageEffectInstance* _effect; // NULL after destroyInstanceAction()
-
-
+    // The parameter instance of the interact, which belongs to _effect, for the size properties (see
+    // getMinimumSize()), NULL after destroyInstanceAction().
+    OFX::Host::Param::Instance* _param;
 
 public:
 
     OfxParamOverlayInteract(KnobI* knob,
                             OFX::Host::Interact::Descriptor &desc,
-                            OfxImageEffectInstance* effect);
+                            OfxImageEffectInstance* effect,
+                            OFX::Host::Param::Instance* param);
 
 
     virtual ~OfxParamOverlayInteract()
@@ -462,6 +466,8 @@ public:
     // supportsKeyModifiers() and getKeyModifiers(), and set the state from CustomParamInteract and
     // CurveWidget before each action (NatronGitHub/Natron#1283). Until then, HostSupport doesn't
     // pass kNatronOfxInteractPropKeyModifiers here, and the plug-ins track the modifier keys.
+    // Take the key symbols from QtEnumConvert::fromQtKey(), which maps Super to Meta on Wayland
+    // (NatronGitHub/Natron#1278), so that the Meta bit agrees with them.
 
     virtual bool isColorPickerRequired() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 

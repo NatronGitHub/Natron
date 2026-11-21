@@ -27,6 +27,8 @@
 #include "EffectInstancePrivate.h"
 
 #include <map>
+#include <set>
+#include <vector>
 #include <sstream> // stringstream
 #include <algorithm> // min, max
 #include <fstream>
@@ -59,6 +61,7 @@
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/GPUContextPool.h"
+#include "Engine/GraphDepthGuard.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/PluginMemory.h"
@@ -2675,7 +2678,24 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
             }
         }
 
-        StatusEnum st = _publicInterface->render_public(actionArgs);
+        StatusEnum st;
+        {
+            // The plug-in may fetch images that were not pre-rendered, which renders them now (on this
+            // thread, possibly a thread of the pool that renders the tiles). The guard keeps a "too
+            // deep" failure of these renders (#1440) until it is checked below: otherwise the outermost
+            // guard of a pool thread would reset it first.
+            GraphDepthGuard depthGuard(eGraphTraversalRender, _publicInterface);
+            if ( depthGuard.isTooDeep() ) {
+                st = eStatusFailed;
+            } else {
+                st = _publicInterface->render_public(actionArgs);
+                if ( (st == eStatusOK) && GraphDepthGuard::hasFailed() ) {
+                    // An image the plug-in fetched could not be rendered because the graph is too
+                    // deep: the result is wrong, don't mark it as rendered in the cache.
+                    st = eStatusFailed;
+                }
+            }
+        }
 
         if (planes.useOpenGL) {
             glDisable(GL_SCISSOR_TEST);
@@ -3862,6 +3882,13 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         return eStatusFailed;
     }
 
+    // The RoD of an effect usually depends on the RoD of its inputs: this recurses upstream, once per
+    // node. Stop before the stack overflows (#1440).
+    GraphDepthGuard depthGuard(eGraphTraversalRegionOfDefinition, this);
+    if ( depthGuard.isTooDeep() ) {
+        return eStatusFailed;
+    }
+
     unsigned int mipmapLevel = scale.toMipmapLevel();
     bool foundInCache = _imp->actionsCache->getRoDResult(hash, time, view, mipmapLevel, rod);
     if (foundInCache) {
@@ -3905,6 +3932,11 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
 
             ret = getRegionOfDefinition(hash, time, supportsRenderScaleMaybe() == eSupportsNo ? RenderScale::identity : scale, view, rod);
 
+            if ( GraphDepthGuard::hasFailed() ) {
+                // The RoD of an input could not be computed because the graph is too deep, so this RoD
+                // is wrong: don't cache it, the graph may be made shorter.
+                return eStatusFailed;
+            }
             if ( (ret != eStatusOK) && (ret != eStatusReplyDefault) ) {
                 // rod is not valid
                 //if (!isDuringStrokeCreation) {
@@ -4713,6 +4745,12 @@ EffectInstance::addOverlaySlaveParam(const KnobIPtr& knob)
     _imp->overlaySlaves.push_back(knob);
 }
 
+void
+EffectInstance::clearOverlaySlaveParams()
+{
+    _imp->overlaySlaves.clear();
+}
+
 bool
 EffectInstance::isOverlaySlaveParam(const KnobI* knob) const
 {
@@ -5250,35 +5288,36 @@ EffectInstance::checkCanSetValueAndWarn() const
 
 #endif
 
-static
-void
-isFrameVaryingOrAnimated_impl(const EffectInstance* node,
-                              bool *ret)
-{
-    if ( node->isFrameVarying() || node->getHasAnimation() || node->getNode()->getRotoContext() ) {
-        *ret = true;
-    } else {
-        int maxInputs = node->getNInputs();
-        for (int i = 0; i < maxInputs; ++i) {
-            EffectInstancePtr input = node->getInput(i);
-            if (input) {
-                isFrameVaryingOrAnimated_impl(input.get(), ret);
-                if (*ret) {
-                    return;
-                }
-            }
-        }
-    }
-}
-
 bool
 EffectInstance::isFrameVaryingOrAnimated_Recursive() const
 {
-    bool ret = false;
+    // Iterative, with a set of visited nodes: the recursion overflowed the stack on very deep graphs
+    // (#1440), and it visited a node once per path to it, which is exponential on chains of diamonds.
+    std::set<const EffectInstance*> visited;
+    std::vector<EffectInstancePtr> toVisit; // the inputs to visit, kept alive until they are visited
+    EffectInstancePtr current; // keeps the visited input alive
+    const EffectInstance* node = this;
 
-    isFrameVaryingOrAnimated_impl(this, &ret);
-
-    return ret;
+    for (;;) {
+        if ( visited.insert(node).second ) {
+            if ( node->isFrameVarying() || node->getHasAnimation() || node->getNode()->getRotoContext() ) {
+                return true;
+            }
+            const int maxInputs = node->getNInputs();
+            for (int i = maxInputs - 1; i >= 0; --i) { // input 0 is visited first, as before
+                EffectInstancePtr input = node->getInput(i);
+                if (input) {
+                    toVisit.push_back(input);
+                }
+            }
+        }
+        if ( toVisit.empty() ) {
+            return false;
+        }
+        current = toVisit.back();
+        toVisit.pop_back();
+        node = current.get();
+    }
 }
 
 bool

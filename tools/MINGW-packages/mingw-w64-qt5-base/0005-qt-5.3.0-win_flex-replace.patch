@@ -1,0 +1,39 @@
+--- a/src/angle/src/compiler/preprocessor/preprocessor.pro	2019-06-12 23:59:14.000000000 +0300
++++ b/src/angle/src/compiler/preprocessor/preprocessor.pro	2019-06-15 15:04:23.281562300 +0300
+@@ -44,14 +44,14 @@
+     $$ANGLE_DIR/src/compiler/preprocessor/Token.cpp
+ 
+ # NOTE: 'flex' and 'bison' can be found in qt5/gnuwin32/bin
+-flex.commands = $$addGnuPath(flex) --noline --nounistd --outfile=${QMAKE_FILE_OUT} ${QMAKE_FILE_NAME}
++flex.commands = flex --noline --nounistd --outfile=${QMAKE_FILE_OUT} ${QMAKE_FILE_NAME}
+ flex.output = $${BUILDSUBDIR}${QMAKE_FILE_BASE}.cpp
+ flex.input = FLEX_SOURCES
+ flex.dependency_type = TYPE_C
+ flex.variable_out = GENERATED_SOURCES
+ QMAKE_EXTRA_COMPILERS += flex
+ 
+-bison.commands = $$addGnuPath(bison) --no-lines --skeleton=yacc.c --output=${QMAKE_FILE_OUT} ${QMAKE_FILE_NAME}
++bison.commands = bison --no-lines --skeleton=yacc.c --output=${QMAKE_FILE_OUT} ${QMAKE_FILE_NAME}
+ bison.output = $${BUILDSUBDIR}${QMAKE_FILE_BASE}.cpp
+ bison.input = BISON_SOURCES
+ bison.dependency_type = TYPE_C
+--- a/src/angle/src/compiler/translator.pro	2019-06-12 23:59:14.000000000 +0300
++++ b/src/angle/src/compiler/translator.pro	2019-06-15 15:04:23.297162300 +0300
+@@ -194,7 +194,7 @@
+ 
+ 
+ # NOTE: 'flex' and 'bison' can be found in qt5/gnuwin32/bin
+-flex.commands = $$addGnuPath(flex) --noline --nounistd --outfile=${QMAKE_FILE_OUT} ${QMAKE_FILE_NAME}
++flex.commands = flex --noline --nounistd --outfile=${QMAKE_FILE_OUT}_lex.cpp ${QMAKE_FILE_NAME}
+ flex.output = $${BUILDSUBDIR}${QMAKE_FILE_BASE}_lex.cpp
+ flex.input = FLEX_SOURCES
+ flex.dependency_type = TYPE_C
+@@ -202,7 +202,7 @@
+ QMAKE_EXTRA_COMPILERS += flex
+ 
+ defineReplace(myDirName) { return($$dirname(1)) }
+-bison.commands = $$addGnuPath(bison) --no-lines --skeleton=yacc.c --defines=${QMAKE_FILE_OUT} \
++bison.commands = bison --no-lines --skeleton=yacc.c --defines=${QMAKE_FILE_OUT} \
+                 --output=${QMAKE_FUNC_FILE_OUT_myDirName}$$QMAKE_DIR_SEP${QMAKE_FILE_OUT_BASE}.cpp \
+                 ${QMAKE_FILE_NAME}$$escape_expand(\\n\\t) \
+                 @echo // EOF>>${QMAKE_FUNC_FILE_OUT_myDirName}$$QMAKE_DIR_SEP${QMAKE_FILE_OUT_BASE}.cpp

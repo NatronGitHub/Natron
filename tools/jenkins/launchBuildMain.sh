@@ -34,7 +34,7 @@ set -u # Treat unset variables as an error when substituting.
 # BUILD_NAME: Give a name to the build so that it can be found in the archive
 # DISABLE_RPM_DEB_PKGS: If set to 1, deb and rpm packages will not be built. Otherwise they are only built for a release
 # DISABLE_PORTABLE_ARCHIVE: If set to 1, a portable archive will not be built
-# BITS: Windows only: Must indicate if this is a 64 or 32 bits build
+# BITS: Windows only: 64 (the default; the architecture, x86_64 or arm64, comes from the MSYS2 environment, MSYSTEM_CARCH)
 # DEBUG_SCRIPTS: If set to 1, binaries from previous build with same options are not cleaned so that the scripts can continue the same compilation
 # EXTRA_PYTHON_MODULES_SCRIPT: Path to a python script that should install extra modules with pip or easy_install.
 # MKJOBS: number of parallel build jobs
@@ -231,6 +231,19 @@ DO_UTEST=0
 if [ -z "${COMPILE_TYPE:-}" ]; then
     echo "COMPILE_TYPE not specified, default to relwithdebinfo"
     COMPILE_TYPE="relwithdebinfo"
+fi
+
+# COMMERCIAL builds are checked for GPL components (check-commercial-bundle.sh) on bundles whose
+# libraries were deployed, which debug builds skip (#1302, #1177)
+if [ "$NATRON_LICENSE" = "COMMERCIAL" ] && [ "$COMPILE_TYPE" = "debug" ]; then
+    echo "Error: NATRON_LICENSE=COMMERCIAL cannot be combined with COMPILE_TYPE=debug: use relwithdebinfo or release"
+    exit 1
+fi
+# Linux COMMERCIAL builds are not done yet: the SDK's libheif links x265 and its OpenImageIO links
+# the GPL LibRaw, and build-Linux-installer.sh doesn't run check-commercial-bundle.sh
+if [ "$NATRON_LICENSE" = "COMMERCIAL" ] && [ "$PKGOS" = "Linux" ]; then
+    echo "Error: NATRON_LICENSE=COMMERCIAL is not supported on Linux yet (the SDK has no libheif and OpenImageIO without GPL components): only Windows and macOS COMMERCIAL builds are possible"
+    exit 1
 fi
 
 
@@ -656,10 +669,8 @@ if [ "${INSTALLER_OS}" = "Linux" ] || [ "${INSTALLER_OS}" = "FreeBSD" ]; then
 fi
 
 if [ "${INSTALLER_OS}" = "Windows" ]; then
-    case "${BITS}" in
-        32) INSTALLER_ARCH="i386";; 
-        64) INSTALLER_ARCH="x86_64";;
-    esac
+    # x86_64 or arm64, from MSYSTEM_CARCH (common.sh)
+    INSTALLER_ARCH="${WIN_ARCH}"
 fi
 
 INSTALLER_BASENAME="${INSTALLER_BASENAME}-${NATRON_VERSION_STRING}-${INSTALLER_OS}-${INSTALLER_ARCH}"
@@ -673,7 +684,7 @@ if [ "$COMPILE_TYPE" = "debug" ]; then
 fi
 PORTABLE_DIRNAME="${INSTALLER_BASENAME}-no-installer"
 
-if [ "$PKGOS" = "Windows" ] && [ -f "/Setup.exe" ]; then
+if [ "$PKGOS" = "Windows" ] && [ -f "${NATRON_SETUP_EXE:-}" ]; then
     # Windows portable has installer, don't append "no-installer"
     PORTABLE_DIRNAME="$INSTALLER_BASENAME"
 fi

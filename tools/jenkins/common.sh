@@ -55,7 +55,8 @@ case "$system" in
 Linux)
     PKGOS=${PKGOS:-Linux}
     ;;
-Msys|MINGW64_NT-*|MINGW32_NT-*)
+Msys|MSYS_NT-*|MINGW64_NT-*|MINGW32_NT-*|UCRT64_NT-*|CLANG64_NT-*|CLANGARM64_NT-*)
+    # MSYS2: uname -s is "<MSYSTEM>_NT-<Windows version>"
     PKGOS=${PKGOS:-Windows}
     ;;
 Darwin)
@@ -156,24 +157,52 @@ elif [ "$PKGOS" = "OSX" ]; then
     # brew install coreutils
     TIMEOUT="${SDK_HOME}/bin/gtimeout"
 elif [ "$PKGOS" = "Windows" ]; then
-    if [ -z "${BITS:-}" ]; then
-        (>&2 echo "Error: You must select a value for BITS (32 or 64)")
+    # MSYS2 MinGW environment (UCRT64, CLANG64, CLANGARM64): everything comes from the environment
+    # (MINGW_PREFIX, MINGW_PACKAGE_PREFIX, MSYSTEM_CARCH), never from uname -m, which reports
+    # the x86_64 MSYS runtime when it runs emulated on ARM64 (#1494).
+    if [ -z "${MINGW_PREFIX:-}" ] || [ -z "${MSYSTEM_CARCH:-}" ]; then
+        (>&2 echo "Error: run this in an MSYS2 UCRT64, CLANG64 or CLANGARM64 shell (MINGW_PREFIX and MSYSTEM_CARCH are not set; MSYSTEM=${MSYSTEM:-})")
         exit 1
     fi
-    if [ "${BITS}" = "32" ]; then
-        SDK_HOME="/mingw32"
-        ARCH=i386
-    elif [ "$BITS" = "64" ]; then
-        SDK_HOME="/mingw64"
-        ARCH=x86_64
-    else
-        (>&2 echo "Error: Unsupported BITS=$BITS")
+    SDK_HOME="$MINGW_PREFIX"
+    ARCH="$MSYSTEM_CARCH"
+    case "$ARCH" in
+        x86_64)
+            WIN_ARCH=x86_64           # installer names (Natron-<version>-Windows-x86_64)
+            WIN_MANIFEST_ARCH=amd64   # processorArchitecture of the plug-in manifests
+            OFX_ARCHDIR=Win64         # OFX plug-in binary directory (ofxhArchDirs.h)
+            ;;
+        aarch64)
+            WIN_ARCH=arm64
+            WIN_MANIFEST_ARCH=arm64
+            OFX_ARCHDIR=Win-arm64
+            ;;
+        *)
+            (>&2 echo "Error: unsupported Windows architecture MSYSTEM_CARCH=$ARCH")
+            exit 1
+            ;;
+    esac
+    # BITS: only 64-bit Windows is supported (MSYS2 has no 32-bit UCRT or clang environment)
+    if [ -n "${BITS:-}" ] && [ "$BITS" != "64" ]; then
+        (>&2 echo "Error: Unsupported BITS=$BITS (only 64-bit Windows builds are supported)")
         exit 1
     fi
-    # define TMP, which is used by QDir::tempPath http://doc.qt.io/qt-4.8/qdir.html#tempPath
-    # so that the repogen binary uses different temp directories
-    # https://github.com/olear/qtifw/blob/d3f31b3359af8415f9347347bb62e4d4ef94cf0d/src/libs/installer/fileutils.cpp#L503
-    TMP="$TMPDIR/mingw${BITS}"
+    BITS=64
+    # the compiler of the environment: gcc on UCRT64, clang on CLANG64 and CLANGARM64
+    case "${MINGW_PACKAGE_PREFIX:-}" in
+        *-clang-*) MINGW_TOOLCHAIN=clang ;;
+        *) MINGW_TOOLCHAIN=gcc ;;
+    esac
+    # Inno Setup's Setup.exe for this environment (${MINGW_PACKAGE_PREFIX}-natron-setup, built for
+    # x64 or arm64): in the environment's prefix since pkgrel 6. Older packages, which were only
+    # built for UCRT64 (x64), installed it as /Setup.exe.
+    NATRON_SETUP_EXE="${MINGW_PREFIX}/share/natron-setup/Setup.exe"
+    if [ ! -f "$NATRON_SETUP_EXE" ] && [ "$ARCH" = "x86_64" ] && [ -f /Setup.exe ]; then
+        NATRON_SETUP_EXE=/Setup.exe
+    fi
+    # define TMP, which is used by QDir::tempPath http://doc.qt.io/qt-4.8/qdir.html#tempPath,
+    # so that the Qt programs of each MSYS2 environment use their own temporary directory
+    TMP="$TMPDIR/${MSYSTEM:-mingw64}"
     export TMP
     if [ ! -d "$TMP" ]; then
         mkdir -p "$TMP"
@@ -315,6 +344,9 @@ fi
 
 FFMPEG_PATH="$CUSTOM_BUILDS_PATH"
 LIBRAW_PATH="$CUSTOM_BUILDS_PATH"
+# macOS COMMERCIAL builds only: the prefix of the libheif without x264/x265 that replaces the
+# bundled libheif (build-plugins.sh)
+LIBHEIF_PATH=""
 if [ "$PKGOS" = "Windows" ]; then
     if [ "${NATRON_LICENSE:-}" = "GPL" ]; then
         if [ -d "$CUSTOM_BUILDS_PATH/ffmpeg-gpl" ]; then
@@ -360,11 +392,45 @@ elif [ "$PKGOS" = "OSX" ]; then
             LIBRAW_PATH="$CUSTOM_BUILDS_PATH/libraw-gpl2"
         fi
     elif [ -z "${NATRON_LICENSE+x}" ] || [ "${NATRON_LICENSE:-}" = "COMMERCIAL" ]; then
-        if [ -d "$CUSTOM_BUILDS_PATH/ffmpeg-lgpl" ]; then
-            FFMPEG_PATH="$CUSTOM_BUILDS_PATH/ffmpeg-lgpl"
+        # the MacPorts overlay's subports ffmpeg-lgpl, libraw-lgpl and libheif-lgpl
+        # (tools/MacPorts), installed in $SDK_HOME/libexec next to the GPL ffmpeg and libraw
+        # and to libheif (which links the GPL x264 and x265), or a custom build (#1302, #1177)
+        for _lgpl_prefix in "$SDK_HOME/libexec/ffmpeg-lgpl" "$CUSTOM_BUILDS_PATH/ffmpeg-lgpl"; do
+            if [ -d "$_lgpl_prefix" ]; then
+                FFMPEG_PATH="$_lgpl_prefix"
+                break
+            fi
+        done
+        for _lgpl_prefix in "$SDK_HOME/libexec/libraw-lgpl" "$CUSTOM_BUILDS_PATH/libraw-lgpl"; do
+            if [ -d "$_lgpl_prefix" ]; then
+                LIBRAW_PATH="$_lgpl_prefix"
+                break
+            fi
+        done
+        for _lgpl_prefix in "$SDK_HOME/libexec/libheif-lgpl" "$CUSTOM_BUILDS_PATH/libheif-lgpl"; do
+            if [ -d "$_lgpl_prefix" ]; then
+                LIBHEIF_PATH="$_lgpl_prefix"
+                break
+            fi
+        done
+        unset _lgpl_prefix
+    fi
+fi
+
+# Windows COMMERCIAL builds: the libheif without x264/x265 and the libtiff without JBIG-KIT
+# (natron_libheif-lgpl and natron_libtiff-lgpl, #1449, #1177), whose bin/ come first in the DLL
+# search directories of genDllVersions.sh. Empty if they are not installed (genDllVersions.sh skips
+# empty entries, and fails on a COMMERCIAL build without them).
+# shellcheck disable=SC2034 # (LIBTIFF_PATH is used by build-Windows-installer.sh)
+if [ "$PKGOS" = "Windows" ]; then
+    LIBHEIF_PATH=""
+    LIBTIFF_PATH=""
+    if [ "${NATRON_LICENSE:-}" = "COMMERCIAL" ]; then
+        if [ -d "$SDK_HOME/libheif-lgpl" ]; then
+            LIBHEIF_PATH="$SDK_HOME/libheif-lgpl"
         fi
-        if [ -d "$CUSTOM_BUILDS_PATH/libraw-lgpl" ]; then
-            LIBRAW_PATH="$CUSTOM_BUILDS_PATH/libraw-lgpl"
+        if [ -d "$SDK_HOME/libtiff-lgpl" ]; then
+            LIBTIFF_PATH="$SDK_HOME/libtiff-lgpl"
         fi
     fi
 fi
@@ -406,6 +472,9 @@ fi
 
 if [ -n "${LLVM_PREFIX:-}" ]; then
     LLVM_PATH="${LLVM_PREFIX}"
+elif [ "$PKGOS" = "Windows" ] && [ -x "$SDK_HOME/bin/llvm-config.exe" ]; then
+    # MSYS2's llvm, which the osmesa package was built with
+    LLVM_PATH="$SDK_HOME"
 elif [ -d "$SDK_HOME/llvm" ]; then
     LLVM_PATH="$SDK_HOME/llvm"
 elif [ -d "/opt/llvm" ]; then

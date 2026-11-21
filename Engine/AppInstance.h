@@ -218,7 +218,15 @@ public:
     {
     }
 
+    virtual void loadProjectGui(bool /*isAutosave*/, PortableBinaryIArchive & /*archive*/) const
+    {
+    }
+
     virtual void saveProjectGui(boost::archive::xml_oarchive & /*archive*/)
+    {
+    }
+
+    virtual void saveProjectGui(PortableBinaryOArchive & /*archive*/)
     {
     }
 
@@ -245,6 +253,73 @@ public:
     {
         return false;
     }
+
+    /**
+     * @brief True if a render of this project is running or queued: a viewer or Write render,
+     * a node preview, or a Write render waiting in the render queue.
+     * Renders that are posting their results to the main thread are not finished: the caller must
+     * also process the events (see waitForRenders()).
+     **/
+    bool hasRenderInProgress() const;
+
+    /**
+     * @brief Processes the events, except the user input, until no render (of any project) has been
+     * running for settleMs milliseconds (see hasRenderInProgress()), so that the results that the renders
+     * posted to the main thread (e.g. viewer textures) are processed too: it takes at least settleMs. Returns false if this did not happen within
+     * timeoutMs milliseconds (no limit if timeoutMs < 0). Must be called on the main thread.
+     **/
+    bool waitForRenders(int timeoutMs, int settleMs);
+
+    /**
+     * @brief Undo groups (App.beginUndoGroup(), "with app.undoGroup(text):"): the edits made from Python
+     * between beginUndoGroup() and endUndoGroup() are recorded, and become one undo step on the undo stack of
+     * the node graph when the outermost group ends (see PythonUndoGroupCommand). Groups nest. In background
+     * mode, nothing is recorded. endUndoGroup() returns false if no group is open. Only on the main thread:
+     * elsewhere they return false and the record functions do nothing.
+     **/
+    bool beginUndoGroup(const std::string& text); // false if not called from the main thread
+    bool endUndoGroup();
+    int getUndoGroupDepth() const;
+
+    /**
+     * @brief Ends the undo groups that a script left open, with a warning: when a script run by Natron ends
+     * (keepEdits: the edits become one undo step), or when the project is closed (they are dropped).
+     **/
+    void closeUndoGroups(const std::string& reason, bool keepEdits);
+
+    /**
+     * @brief Called by the Python API before it changes a knob, the inputs of a node, or after it creates a
+     * node, while an undo group is open (they do nothing otherwise). deleteNodeInUndoGroup() deactivates
+     * the node and returns true when a group records it; the caller destroys the node otherwise.
+     **/
+    void recordKnobForUndoGroup(const KnobIPtr& knob);
+    void recordInputsForUndoGroup(const NodePtr& node);
+    void recordNodeCreatedForUndoGroup(const NodePtr& node);
+    bool deleteNodeInUndoGroup(const NodePtr& node, bool autoReconnect);
+
+protected:
+
+    /// The GUI pushes the command of an undo group on the undo stack of the node graph.
+    virtual void pushUndoGroupCommand(const UndoCommandPtr& /*command*/) {}
+
+public:
+
+    /**
+     * @brief Undo / redo on the undo stack of the node graph of the project (node creation, deletion,
+     * connections, moves, and the undo groups of the Python API), whatever widget has the focus. In
+     * background mode, there is no undo stack: these do nothing.
+     **/
+    virtual void undo() {}
+    virtual void redo() {}
+    virtual bool canUndo() const { return false; }
+    virtual bool canRedo() const { return false; }
+
+    /**
+     * @brief The texts of the commands of the node graph's undo stack, oldest first, and the number of them
+     * that are done (the next redo is at that index).
+     **/
+    virtual std::list<std::string> getUndoHistory() const { return std::list<std::string>(); }
+    virtual int getUndoIndex() const { return 0; }
 
     virtual bool isGuiFrozen() const { return false; }
 
@@ -307,6 +382,8 @@ public:
 
     void addInvalidExpressionKnob(const KnobIPtr& knob);
     void removeInvalidExpressionKnob(const KnobI* knob);
+    // whether knob has an invalid expression in at least one dimension
+    bool isInvalidExpressionKnob(const KnobI* knob) const;
     void recheckInvalidExpressions();
 
     virtual void clearViewersLastRenderedTexture() {}
@@ -328,6 +405,8 @@ public:
     void setIsCreatingNodeTree(bool b);
 
     virtual void appendToScriptEditor(const std::string& str);
+    // Same as appendToScriptEditor(), for plain text (e.g. Python output), which must not be taken for HTML
+    virtual void appendPlainTextToScriptEditor(const std::string& str);
     virtual void printAutoDeclaredVariable(const std::string& str);
 
     void getFrameRange(double* first, double* last) const;
@@ -371,9 +450,10 @@ public:
 
     virtual bool isRenderStatsActionChecked() const { return false; }
 
-    bool saveTemp(const std::string& filename);
-    virtual bool save(const std::string& filename);
-    virtual bool saveAs(const std::string& filename);
+    // format: see Project::saveProject(). For saveTemp(), it doesn't change the format of the project.
+    bool saveTemp(const std::string& filename, ProjectFileFormatEnum format = eProjectFileFormatNone);
+    virtual bool save(const std::string& filename, ProjectFileFormatEnum format = eProjectFileFormatNone);
+    virtual bool saveAs(const std::string& filename, ProjectFileFormatEnum format = eProjectFileFormatNone);
     virtual AppInstancePtr loadProject(const std::string& filename);
 
     ///Close the current project but keep the window
@@ -417,6 +497,13 @@ public:
 
     const ProjectBeingLoadedInfo& getProjectBeingLoadedInfo() const;
     void setProjectBeingLoadedInfo(const ProjectBeingLoadedInfo& info);
+
+    /**
+     * @brief Called when this instance starts quitting (AppManager::quit()), which in GUI mode is
+     * done later, from the event loop: no node may be created in it any more (#1554).
+     **/
+    void setQuitPending();
+    bool isQuitPending() const;
 
 public Q_SLOTS:
 

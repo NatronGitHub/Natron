@@ -1,0 +1,24 @@
+--- a/src/corelib/text/qregularexpression.cpp	2019-06-12 23:59:14.000000000 +0300
++++ b/src/corelib/text/qregularexpression.cpp	2019-06-15 14:59:25.087038500 +0300
+@@ -53,6 +53,10 @@
+ #include <QtCore/qdatastream.h>
+ 
+ #define PCRE2_CODE_UNIT_WIDTH 16
++#ifdef QT_STATIC
++#define PCRE_STATIC
++#define PCRE2_STATIC
++#endif
+ 
+ #include <pcre2.h>
+ 
+--- a/src/network/configure.json	2019-06-12 23:59:14.000000000 +0300
++++ b/src/network/configure.json	2019-06-15 14:59:25.102638600 +0300
+@@ -98,7 +98,7 @@
+                     "condition": "config.msvc"
+                 },
+                 {
+-                    "libs": "-lssl -lcrypto",
++                    "libs": "-lssl -lcrypto -lws2_32 -lcrypt32 -lgdi32",
+                     "condition": "!config.msvc"
+                 }
+             ]

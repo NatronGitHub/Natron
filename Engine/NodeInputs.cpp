@@ -1240,10 +1240,10 @@ Node::disconnectInputInternal(Node* input, bool useGuiValues)
             mustCallEnd = true;
             onInputChanged(found);
         }
-        bool creatingNodeTree = getApp()->isCreatingNodeTree();
-        if (!creatingNodeTree) {
+        AppInstancePtr app = getApp();
+        if ( app && !app->isCreatingNodeTree() ) {
             ///Recompute the hash
-            if ( !getApp()->getProject()->isProjectClosing() ) {
+            if ( !app->getProject()->isProjectClosing() ) {
                 computeHash();
             }
         }
@@ -1451,14 +1451,18 @@ Node::getPreferredInputInternal(bool connected) const
         }
     }
     bool useInputA = false;
-    if (!connected) {
+    if (getPluginID() == PLUGINID_OFX_SHUFFLE) {
+        // Shuffle outputs B by default since version 3, A before: connect that input, whatever the
+        // preference, which is meant for merging (#818)
+        useInputA = getMajorVersion() < 3;
+    } else if (!connected) {
         // For the merge node, use the preference (only when not connected)
         useInputA = appPTR->getCurrentSettings()->useInputAForMergeAutoConnect();
     }
 
     ///Find an input named A
     int inputToFind = -1, foundOther = -1;
-    if ( useInputA || (getPluginID() == PLUGINID_OFX_SHUFFLE && getMajorVersion() < 3) ) {
+    if (useInputA) {
         inputToFind = inputA;
         foundOther = inputB;
     } else {
@@ -1628,7 +1632,9 @@ void
 Node::onInputChanged(int inputNb,
                      bool isInputA)
 {
-    if ( getApp()->getProject()->isProjectClosing() ) {
+    // The app is gone if the node outlived it (see doDestroyNodeInternalEnd()): nothing to refresh.
+    AppInstancePtr app = getApp();
+    if ( !app || app->getProject()->isProjectClosing() ) {
         return;
     }
     assert( QThread::currentThread() == qApp->thread() );
@@ -1741,6 +1747,61 @@ Node::onInputChanged(int inputNb,
         endInputEdition(true);
     }
 } // Node::onInputChanged
+
+ParallelRenderArgsSetterPtr
+Node::createRenderArgsForInstanceChanged()
+{
+    // As in onInputChanged(): the plug-in may call clipGetRegionOfDefinition, set a valid thread storage on the tree.
+    double time = getApp()->getTimeLine()->currentFrame();
+    AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
+    const bool isRenderUserInteraction = true;
+    const bool isSequentialRender = false;
+    AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
+    if (isAbortable) {
+        isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, getEffectInstance() );
+    }
+
+    return std::make_shared<ParallelRenderArgsSetter>( time,
+                                                       ViewIdx(0),
+                                                       isRenderUserInteraction,
+                                                       isSequentialRender,
+                                                       abortInfo,
+                                                       shared_from_this(),
+                                                       0, //texture index
+                                                       getApp()->getTimeLine().get(),
+                                                       NodePtr(),
+                                                       false,
+                                                       false,
+                                                       RenderStatsPtr() );
+}
+
+void
+Node::onInputsRestoredAfterProjectLoad()
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    // most effects (Dot, Viewer, Group, GroupInput/Output, effects without an input node) have nothing to do
+    if ( !_imp->effect->wantsInputsRestoredAfterProjectLoad() ) {
+        return;
+    }
+
+    {
+        // The caller usually set the render thread storage on a tree that contains this node (see
+        // ProjectPrivate::restoreFromSerialization()): setting it up for each node would cost O(n^2) on a chain.
+        ParallelRenderArgsSetterPtr frameRenderArgs;
+        if ( !_imp->effect->getParallelRenderArgsTLS() ) {
+            frameRenderArgs = createRenderArgsForInstanceChanged();
+        }
+        _imp->effect->onInputsRestoredAfterProjectLoad();
+    }
+
+    // As in onInputChanged(): the plug-in might have changed its internal state, kill the render clones, and redraw
+    // the overlay if a knob changed
+    _imp->effect->clearRenderInstances();
+    if ( !_imp->effect->isDequeueingValuesSet() &&
+         ( _imp->effect->getRecursionLevel() == 0) && _imp->effect->checkIfOverlayRedrawNeeded() ) {
+        _imp->effect->redrawOverlayInteract();
+    }
+}
 
 
 bool
@@ -1920,7 +1981,10 @@ int
 InspectorNode::getPreferredInputInternal(bool connected) const
 {
     bool useInputA = false;
-    if (!connected) {
+    if (getPluginID() == PLUGINID_OFX_SHUFFLE) {
+        // as in Node::getPreferredInputInternal()
+        useInputA = getMajorVersion() < 3;
+    } else if (!connected) {
         // For the merge node, use the preference (only when not connected)
         useInputA = appPTR->getCurrentSettings()->useInputAForMergeAutoConnect();
     }
@@ -1928,7 +1992,7 @@ InspectorNode::getPreferredInputInternal(bool connected) const
     ///Find an input named A
     std::string inputNameToFind, otherName;
 
-    if ( useInputA || (getPluginID() == PLUGINID_OFX_SHUFFLE && getMajorVersion() < 3) ) {
+    if (useInputA) {
         inputNameToFind = "A";
         otherName = "B";
     } else {

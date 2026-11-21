@@ -163,12 +163,54 @@ static void DeleteRegion( GLUtesselator *tess, ActiveRegion *reg )
 }
 
 
-static int FixUpperEdge( ActiveRegion *reg, GLUhalfEdge *newEdge )
+#define UsesEdge(r,e)	((r) != NULL && ((r)->eUp == (e) || (r)->eUp == (e)->Sym))
+
+static void DeleteRegionAndEdge( GLUtesselator *tess, ActiveRegion *reg,
+				 GLUhalfEdge *e )
+/*
+ * Natron: DeleteRegion( tess, reg ), then delete the edge e (both halves),
+ * which must not be the upper edge of any other active region. On degenerate
+ * input (e.g. a self-loop made by CheckForRightSplice() merging the endpoints
+ * of a zero-length edge, so that eLo == eUp->Sym in WalkDirtyRegions(), or
+ * collinear edges along a diagonal with rounding noise) the edge was freed
+ * while a region still used it, and the sweep then used it
+ * (heap-use-after-free). Neither the activeRegion back-pointers (two regions
+ * can have the same upper edge, and deleting one clears it) nor the regions
+ * next to reg are enough to tell, so all the active regions are checked: the
+ * callers (two-edge loops, fixable edges, edges with the same slope) are only
+ * reached on degenerate input. If the edge is still used, the sweep can't
+ * recover: give up on the polygon (see gluTessEndPolygon()).
+ */
+{
+  DictNode *node;
+  ActiveRegion *r;
+
+  DeleteRegion( tess, reg );
+  for( node = dictMin( tess->dict ); (r = (ActiveRegion *)dictKey( node )) != NULL;
+       node = dictSucc( node )) {
+    if( UsesEdge( r, e ) ) {
+      longjmp(tess->env,TESS_JMP_DEGENERATE);
+    }
+  }
+  if ( !__gl_meshDelete( e ) ) longjmp(tess->env,1);
+}
+
+static int FixUpperEdge( GLUtesselator *tess, ActiveRegion *reg,
+			 GLUhalfEdge *newEdge )
 /*
  * Replace an upper edge which needs fixing (see ConnectRightVertex).
  */
 {
   assert( reg->fixUpperEdge );
+  /* Natron: reg->eUp must not be used by another active region (see
+   * DeleteRegionAndEdge()). This is reached on every polygon, so only the
+   * back-pointer and the neighbouring regions are checked, which caught every
+   * case found by fuzzing. */
+  if( reg->eUp->Sym->activeRegion != NULL
+      || UsesEdge( RegionAbove( reg ), reg->eUp )
+      || UsesEdge( RegionBelow( reg ), reg->eUp ) ) {
+    longjmp(tess->env,TESS_JMP_DEGENERATE);
+  }
   if ( !__gl_meshDelete( reg->eUp ) ) return 0;
   reg->fixUpperEdge = FALSE;
   reg->eUp = newEdge;
@@ -177,7 +219,7 @@ static int FixUpperEdge( ActiveRegion *reg, GLUhalfEdge *newEdge )
   return 1;
 }
 
-static ActiveRegion *TopLeftRegion( ActiveRegion *reg )
+static ActiveRegion *TopLeftRegion( GLUtesselator *tess, ActiveRegion *reg )
 {
   GLUvertex *org = reg->eUp->Org;
   GLUhalfEdge *e;
@@ -193,7 +235,7 @@ static ActiveRegion *TopLeftRegion( ActiveRegion *reg )
   if( reg->fixUpperEdge ) {
     e = __gl_meshConnect( RegionBelow(reg)->eUp->Sym, reg->eUp->Lnext );
     if (e == NULL) return NULL;
-    if ( !FixUpperEdge( reg, e ) ) return NULL;
+    if ( !FixUpperEdge( tess, reg, e ) ) return NULL;
     reg = RegionAbove( reg );
   }
   return reg;
@@ -226,10 +268,19 @@ static ActiveRegion *AddRegionBelow( GLUtesselator *tess,
   regNew->eUp = eNewUp;
   /* __gl_dictListInsertBefore */
   regNew->nodeUp = dictInsertBefore( tess->dict, regAbove->nodeUp, regNew );
-  if (regNew->nodeUp == NULL) longjmp(tess->env,1);
+  if (regNew->nodeUp == NULL) {
+    memFree( regNew ); /* Natron: not in the dictionary, see __gl_sweepCleanup() */
+    longjmp(tess->env,1);
+  }
   regNew->fixUpperEdge = FALSE;
   regNew->sentinel = FALSE;
   regNew->dirty = FALSE;
+  /* Natron: AddRightEdges() sets these, but on degenerate input its walk can
+   * stop before it reaches every new region, which then kept uninitialized
+   * values (the tessellation depended on the heap contents).
+   */
+  regNew->windingNumber = 0;
+  regNew->inside = FALSE;
 
   eNewUp->activeRegion = regNew;
   return regNew;
@@ -321,7 +372,7 @@ static GLUhalfEdge *FinishLeftRegions( GLUtesselator *tess,
        */
       e = __gl_meshConnect( ePrev->Lprev, e->Sym );
       if (e == NULL) longjmp(tess->env,1);
-      if ( !FixUpperEdge( reg, e ) ) longjmp(tess->env,1);
+      if ( !FixUpperEdge( tess, reg, e ) ) longjmp(tess->env,1);
     }
 
     /* Relink edges so that ePrev->Onext == e */
@@ -392,8 +443,7 @@ static void AddRightEdges( GLUtesselator *tess, ActiveRegion *regUp,
     regPrev->dirty = TRUE;
     if( ! firstTime && CheckForRightSplice( tess, regPrev )) {
       AddWinding( e, ePrev );
-      DeleteRegion( tess, regPrev );
-      if ( !__gl_meshDelete( ePrev ) ) longjmp(tess->env,1);
+      DeleteRegionAndEdge( tess, regPrev, ePrev );
     }
     firstTime = FALSE;
     regPrev = reg;
@@ -603,6 +653,33 @@ static int CheckForLeftSplice( GLUtesselator *tess, ActiveRegion *regUp )
 }
 
 
+static void CountSplits( GLUtesselator *tess, int n )
+/*
+ * Natron: CheckForIntersect() is about to split n edges where they cross (at
+ * a new intersection vertex, or at the sweep event when the intersection is
+ * rounded onto it). On some degenerate contours (two edges whose right
+ * endpoints are 1 ulp apart, found by fuzzing), it computes an intersection
+ * 1 ulp to the left of both right endpoints, splits the edges there, and
+ * WalkDirtyRegions() finds the same configuration again 1 ulp further left:
+ * the sweep went on for billions of splits, allocating memory very fast
+ * (#1580). Give up on the polygon when there are far more splits than any
+ * real arrangement of the edges has (see InitSplitLimits()).
+ * CheckForRightSplice(), CheckForLeftSplice() and ConnectLeftDegenerate(),
+ * which split an edge at an existing vertex, are not counted.
+ * The counters saturate at LONG_MAX (that many splits is degenerate anyway).
+ */
+{
+  if( tess->eventSplits > LONG_MAX - n || tess->totalSplits > LONG_MAX - n ) {
+    longjmp(tess->env,TESS_JMP_DEGENERATE);
+  }
+  tess->eventSplits += n;
+  tess->totalSplits += n;
+  if( tess->eventSplits > tess->maxEventSplits
+      || tess->totalSplits > tess->maxTotalSplits ) {
+    longjmp(tess->env,TESS_JMP_DEGENERATE);
+  }
+}
+
 static int CheckForIntersect( GLUtesselator *tess, ActiveRegion *regUp )
 /*
  * Check the upper and lower edges of the given region to see if
@@ -692,9 +769,10 @@ static int CheckForIntersect( GLUtesselator *tess, ActiveRegion *regUp )
      */
     if( dstLo == tess->event ) {
       /* Splice dstLo into eUp, and process the new region(s) */
+      CountSplits( tess, 1 );
       if (__gl_meshSplitEdge( eUp->Sym ) == NULL) longjmp(tess->env,1);
       if ( !__gl_meshSplice( eLo->Sym, eUp ) ) longjmp(tess->env,1);
-      regUp = TopLeftRegion( regUp );
+      regUp = TopLeftRegion( tess, regUp );
       if (regUp == NULL) longjmp(tess->env,1);
       eUp = RegionBelow(regUp)->eUp;
       FinishLeftRegions( tess, RegionBelow(regUp), regLo );
@@ -703,6 +781,7 @@ static int CheckForIntersect( GLUtesselator *tess, ActiveRegion *regUp )
     }
     if( dstUp == tess->event ) {
       /* Splice dstUp into eLo, and process the new region(s) */
+      CountSplits( tess, 1 );
       if (__gl_meshSplitEdge( eLo->Sym ) == NULL) longjmp(tess->env,1);
       if ( !__gl_meshSplice( eUp->Lnext, eLo->Oprev ) ) longjmp(tess->env,1);
       regLo = regUp;
@@ -718,12 +797,14 @@ static int CheckForIntersect( GLUtesselator *tess, ActiveRegion *regUp )
      * (and wait for ConnectRightVertex to splice it appropriately).
      */
     if( EdgeSign( dstUp, tess->event, &isect ) >= 0 ) {
+      CountSplits( tess, 1 );
       RegionAbove(regUp)->dirty = regUp->dirty = TRUE;
       if (__gl_meshSplitEdge( eUp->Sym ) == NULL) longjmp(tess->env,1);
       eUp->Org->s = tess->event->s;
       eUp->Org->t = tess->event->t;
     }
     if( EdgeSign( dstLo, tess->event, &isect ) <= 0 ) {
+      CountSplits( tess, 1 );
       regUp->dirty = regLo->dirty = TRUE;
       if (__gl_meshSplitEdge( eLo->Sym ) == NULL) longjmp(tess->env,1);
       eLo->Org->s = tess->event->s;
@@ -741,6 +822,7 @@ static int CheckForIntersect( GLUtesselator *tess, ActiveRegion *regUp )
    * the mesh (ie. eUp->Lface) to be smaller than the faces in the
    * unprocessed original contours (which will be eLo->Oprev->Lface).
    */
+  CountSplits( tess, 2 );
   if (__gl_meshSplitEdge( eUp->Sym ) == NULL) longjmp(tess->env,1);
   if (__gl_meshSplitEdge( eLo->Sym ) == NULL) longjmp(tess->env,1);
   if ( !__gl_meshSplice( eLo->Oprev, eUp ) ) longjmp(tess->env,1);
@@ -797,13 +879,11 @@ static void WalkDirtyRegions( GLUtesselator *tess, ActiveRegion *regUp )
 	 * vertices which otherwise have no right-going edges).
 	 */
 	if( regLo->fixUpperEdge ) {
-	  DeleteRegion( tess, regLo );
-	  if ( !__gl_meshDelete( eLo ) ) longjmp(tess->env,1);
+	  DeleteRegionAndEdge( tess, regLo, eLo );
 	  regLo = RegionBelow( regUp );
 	  eLo = regLo->eUp;
 	} else if( regUp->fixUpperEdge ) {
-	  DeleteRegion( tess, regUp );
-	  if ( !__gl_meshDelete( eUp ) ) longjmp(tess->env,1);
+	  DeleteRegionAndEdge( tess, regUp, eUp );
 	  regUp = RegionAbove( regLo );
 	  eUp = regUp->eUp;
 	}
@@ -836,8 +916,7 @@ static void WalkDirtyRegions( GLUtesselator *tess, ActiveRegion *regUp )
     if( eUp->Org == eLo->Org && eUp->Dst == eLo->Dst ) {
       /* A degenerate loop consisting of only two edges -- delete it. */
       AddWinding( eLo, eUp );
-      DeleteRegion( tess, regUp );
-      if ( !__gl_meshDelete( eUp ) ) longjmp(tess->env,1);
+      DeleteRegionAndEdge( tess, regUp, eUp );
       regUp = RegionAbove( regLo );
     }
   }
@@ -894,7 +973,7 @@ static void ConnectRightVertex( GLUtesselator *tess, ActiveRegion *regUp,
    */
   if( VertEq( eUp->Org, tess->event )) {
     if ( !__gl_meshSplice( eTopLeft->Oprev, eUp ) ) longjmp(tess->env,1);
-    regUp = TopLeftRegion( regUp );
+    regUp = TopLeftRegion( tess, regUp );
     if (regUp == NULL) longjmp(tess->env,1);
     eTopLeft = RegionBelow( regUp )->eUp;
     FinishLeftRegions( tess, RegionBelow(regUp), regLo );
@@ -1051,7 +1130,7 @@ static void ConnectLeftVertex( GLUtesselator *tess, GLUvertex *vEvent )
       eNew = tempHalfEdge->Sym;
     }
     if( reg->fixUpperEdge ) {
-      if ( !FixUpperEdge( reg, eNew ) ) longjmp(tess->env,1);
+      if ( !FixUpperEdge( tess, reg, eNew ) ) longjmp(tess->env,1);
     } else {
       ComputeWinding( tess, AddRegionBelow( tess, regUp, eNew ));
     }
@@ -1098,7 +1177,7 @@ static void SweepEvent( GLUtesselator *tess, GLUvertex *vEvent )
    * to their winding number, and delete the edges from the dictionary.
    * This takes care of all the left-going edges from vEvent.
    */
-  regUp = TopLeftRegion( e->activeRegion );
+  regUp = TopLeftRegion( tess, e->activeRegion );
   if (regUp == NULL) longjmp(tess->env,1);
   reg = RegionBelow( regUp );
   eTopLeft = reg->eUp;
@@ -1136,7 +1215,10 @@ static void AddSentinel( GLUtesselator *tess, GLdouble t )
   if (reg == NULL) longjmp(tess->env,1);
 
   e = __gl_meshMakeEdge( tess->mesh );
-  if (e == NULL) longjmp(tess->env,1);
+  if (e == NULL) {
+    memFree( reg ); /* Natron: not in the dictionary, see __gl_sweepCleanup() */
+    longjmp(tess->env,1);
+  }
 
   e->Org->s = SENTINEL_COORD;
   e->Org->t = t;
@@ -1151,7 +1233,10 @@ static void AddSentinel( GLUtesselator *tess, GLdouble t )
   reg->sentinel = TRUE;
   reg->dirty = FALSE;
   reg->nodeUp = dictInsert( tess->dict, reg ); /* __gl_dictListInsertBefore */
-  if (reg->nodeUp == NULL) longjmp(tess->env,1);
+  if (reg->nodeUp == NULL) {
+    memFree( reg ); /* Natron: not in the dictionary, see __gl_sweepCleanup() */
+    longjmp(tess->env,1);
+  }
 }
 
 
@@ -1193,6 +1278,7 @@ static void DoneEdgeDict( GLUtesselator *tess )
 /*    __gl_meshDelete( reg->eUp );*/
   }
   dictDeleteDict( tess->dict ); /* __gl_dictListDeleteDict */
+  tess->dict = NULL; /* Natron: see __gl_sweepCleanup() */
 }
 
 
@@ -1261,6 +1347,7 @@ static int InitPriorityQ( GLUtesselator *tess )
 static void DonePriorityQ( GLUtesselator *tess )
 {
   pqDeletePriorityQ( tess->pq ); /* __gl_pqSortDeletePriorityQ */
+  tess->pq = NULL; /* Natron: see __gl_sweepCleanup() */
 }
 
 
@@ -1298,6 +1385,68 @@ static int RemoveDegenerateFaces( GLUmesh *mesh )
   return 1;
 }
 
+static void CheckInsideFaces( GLUtesselator *tess )
+/*
+ * Natron: on degenerate input (e.g. many collinear edges along a diagonal
+ * with rounding noise), the winding numbers can become inconsistent, and a
+ * face which touches a sentinel vertex (at +/-SENTINEL_COORD, with NULL client
+ * data) was marked inside: it was rendered with NULL vertex data (the client
+ * crashed) and huge triangles. Give up on the polygon instead.
+ */
+{
+  GLUface *f;
+  GLUhalfEdge *e;
+
+  for( f = tess->mesh->fHead.next; f != &tess->mesh->fHead; f = f->next ) {
+    if( ! f->inside ) continue;
+    e = f->anEdge;
+    do {
+      if( e->Org->s == SENTINEL_COORD || e->Org->s == -SENTINEL_COORD
+	  || e->Org->t == SENTINEL_COORD || e->Org->t == -SENTINEL_COORD ) {
+	longjmp(tess->env,TESS_JMP_DEGENERATE);
+      }
+      e = e->Lnext;
+    } while( e != f->anEdge );
+  }
+}
+
+/* Natron: see InitSplitLimits() */
+#define SPLIT_EVENT_FACTOR	16.
+#define SPLIT_EVENT_MIN		4096.
+
+static void InitSplitLimits( GLUtesselator *tess )
+/*
+ * Natron: limits on the edge splits made by CheckForIntersect() where edges
+ * cross (see CountSplits()), from the number n of vertices of the mesh when
+ * the sweep starts: the input vertices, after RemoveDegenerateEdges() merged
+ * repeated consecutive ones, plus the 4 vertices of the 2 sentinel edges.
+ * There are at most n edges crossing the sweep line. Each intersection of two edges splits both. At one sweep event, the regions
+ * whose edges intersect are next to the edges of the event or to edges
+ * which were just split, so there are at most about as many splits as edges
+ * crossing the sweep line, i.e. n. Over the whole sweep, n edges have at most
+ * n*(n-1)/2 intersections, i.e. n*(n-1) splits (star polygons get close).
+ * Fuzzing (random, integer grid, star, Bezier, collinear and folded
+ * contours, 3 million, heavily self-intersecting or not) never got more
+ * than 0.85*n (and 212) splits at one event, or 0.98*n*n in total. The
+ * limits are 16*n+4096 splits at one event, and 2*n*n+16*n+4096 in total.
+ * On the contour of #1580 (n = 118), the sweep stops after 5986 splits at one
+ * event (limit 5984), 6702 in total.
+ */
+{
+  GLUvertex *v, *vHead = &tess->mesh->vHead;
+  double n = 0., maxEvent, maxTotal;
+
+  for( v = vHead->next; v != vHead; v = v->next ) {
+    n += 1.;
+  }
+  maxEvent = SPLIT_EVENT_FACTOR * n + SPLIT_EVENT_MIN;
+  maxTotal = 2. * n * n + maxEvent;
+  tess->maxEventSplits = maxEvent < (double)LONG_MAX ? (long)maxEvent : LONG_MAX;
+  tess->maxTotalSplits = maxTotal < (double)LONG_MAX ? (long)maxTotal : LONG_MAX;
+  tess->eventSplits = 0;
+  tess->totalSplits = 0;
+}
+
 int __gl_computeInterior( GLUtesselator *tess )
 /*
  * __gl_computeInterior( tess ) computes the planar arrangement specified
@@ -1320,6 +1469,7 @@ int __gl_computeInterior( GLUtesselator *tess )
   RemoveDegenerateEdges( tess );
   if ( !InitPriorityQ( tess ) ) return 0; /* if error */
   InitEdgeDict( tess );
+  InitSplitLimits( tess );
 
   /* __gl_pqSortExtractMin */
   while( (v = (GLUvertex *)pqExtractMin( tess->pq )) != NULL ) {
@@ -1344,6 +1494,7 @@ int __gl_computeInterior( GLUtesselator *tess )
       vNext = (GLUvertex *)pqExtractMin( tess->pq ); /* __gl_pqSortExtractMin*/
       SpliceMergeVertices( tess, v->anEdge, vNext->anEdge );
     }
+    tess->eventSplits = 0;
     SweepEvent( tess, v );
   }
 
@@ -1356,6 +1507,30 @@ int __gl_computeInterior( GLUtesselator *tess )
 
   if ( !RemoveDegenerateFaces( tess->mesh ) ) return 0;
   __gl_meshCheckMesh( tess->mesh );
+  CheckInsideFaces( tess );
 
   return 1;
+}
+
+
+/* Natron: free the sweep data structures (edge dictionary, active regions and
+ * priority queue) after an out-of-memory longjmp() out of
+ * __gl_computeInterior(), which leaked them. The mesh is freed by the caller.
+ */
+void __gl_sweepCleanup( GLUtesselator *tess )
+{
+  ActiveRegion *reg;
+
+  if( tess->dict != NULL ) {
+    while( (reg = (ActiveRegion *)dictKey( dictMin( tess->dict ))) != NULL ) {
+      dictDelete( tess->dict, reg->nodeUp );
+      memFree( reg );
+    }
+    dictDeleteDict( tess->dict );
+    tess->dict = NULL;
+  }
+  if( tess->pq != NULL ) {
+    pqDeletePriorityQ( tess->pq );
+    tess->pq = NULL;
+  }
 }

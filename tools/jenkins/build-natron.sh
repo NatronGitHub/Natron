@@ -158,7 +158,7 @@ if [ "$NATRON_BUILD_SYSTEM" = "qmake" ] && [ "$QT_VERSION_MAJOR" = 5 ]; then
     Linux)
 
         ;;
-    Msys|MINGW64_NT-*|MINGW32_NT-*)
+    Msys|MSYS_NT-*|MINGW64_NT-*|MINGW32_NT-*|UCRT64_NT-*|CLANG64_NT-*|CLANGARM64_NT-*)
         UNIX_PYTHON_HOME="$(cygpath -u "${PYTHON_HOME}")"
         UNIX_SDK_HOME="$(cygpath -u "${SDK_HOME}")"
         ;;
@@ -210,9 +210,12 @@ if [ "$NATRON_BUILD_SYSTEM" = "cmake" ]; then
         *) CMAKE_BUILD_TYPE=Release;;
     esac
 
-    # $CC, $CXX and $OBJECTIVE_CXX may carry flags (e.g. "clang++-mp-22 -stdlib=libc++ -std=c++20"):
+    # $CC, $CXX and $OBJECTIVE_CXX may carry flags (e.g. "clang++-mp-22 -stdlib=libc++ -std=c++17",
+    # -std=c++20 with Qt6; see compiler-common.sh):
     # CMake needs the compiler alone, and the flags in CMAKE_<LANG>_FLAGS. A -std=... flag is
-    # dropped: CMakeLists.txt sets the C++ standard. The compiler path must not contain spaces.
+    # dropped: CMakeLists.txt sets the C++ standard (C++17 with Qt5, C++20 with Qt6, from NATRON_QT6,
+    # with GNU extensions: -std=gnu++17/gnu++20).
+    # The compiler path must not contain spaces.
     split_compiler() { # split_compiler VAR "compiler flags...": sets VAR_EXE and VAR_FLAGS
         local words i w flags=""
         read -r -a words <<< "$2"
@@ -676,7 +679,10 @@ elif [ "$PKGOS" = "Windows" ]; then
     #rm -rf /c/Users/NatronWin/AppData/Local/INRIA/Natron &> /dev/null || true
     rm -rf "$LOCALAPPDATA\\INRIA\\Natron"* &> /dev/null || true
     testfail=0
-    env PYTHONHOME="$SDK_HOME" PATH="$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$QTDIR/bin:$SDK_HOME/osmesa/lib:$SDK_HOME/bin:${PATH:-}" $TIMEOUT -s KILL 1800 "${TEST_BINARY_TO_RUN}" || testfail=1
+    # MSYS2's Python loads extension modules with LOAD_LIBRARY_SEARCH_DEFAULT_DIRS, which ignores
+    # PATH, and Tests.exe is not next to the DLLs: PYTHONLEGACYWINDOWSDLLLOADING=1 (an MSYS2
+    # Python extension) restores the PATH search, as in ci.yml (#1147)
+    env PYTHONHOME="$SDK_HOME" PYTHONLEGACYWINDOWSDLLLOADING=1 PATH="$FFMPEG_PATH/bin:$LIBRAW_PATH/bin:$QTDIR/bin:$SDK_HOME/osmesa/lib:$SDK_HOME/bin:${PATH:-}" $TIMEOUT -s KILL 1800 "${TEST_BINARY_TO_RUN}" || testfail=1
     if [ $testfail != 0 ]; then
         echo "*** WARNING: Natron tests FAILED"
     fi

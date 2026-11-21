@@ -34,6 +34,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 
 #include <condition_variable>
 #include <mutex>
@@ -45,6 +46,7 @@
 #include <QAtomicInt>
 #include <QCoreApplication>
 #include <QFile>
+#include <QTemporaryDir>
 
 
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
@@ -80,6 +82,7 @@ GCC_DIAG_ON(deprecated)
 #endif
 
 #include "Engine/EngineFwd.h"
+#include "Global/FloatingPointExceptions.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -93,12 +96,21 @@ public:
     typedef Cache<FrameEntry> FrameEntryCache;
     typedef std::shared_ptr<FrameEntryCache> FrameEntryCachePtr;
 
+#ifdef DEBUG
+    // Test mode, debug builds: no trapped floating point exception, in the main thread (which main()
+    // enables) or in the threads that trap them (trapping_disabled()). Mesa llvmpipe's threads inherit
+    // the floating point environment of the thread that starts them (a context creation, the first draw
+    // or shader compilation), and their JIT-compiled shaders raise exceptions (SIGFPE). The first
+    // member, so that it is destroyed last.
+    std::unique_ptr<boost_adaptbx::floating_point::no_exception_trapping> testModeNoTrap;
+#endif
     AppTLS globalTLS;
     AppManager::AppTypeEnum _appType; //< the type of app
     mutable QMutex _appInstancesMutex;
     std::vector<AppInstancePtr> _appInstances; //< the instances mapped against their ID
     int _availableID; //< the ID for the next instance
     int _topLevelInstanceID; //< the top level app ID
+    std::set<int> _internalInstanceIDs; //< internal instances (a Precomp node's, see newBackgroundInstance()), never top-level
     SettingsPtr _settings; //< app settings
     std::vector<Format> _formats; //<a list of the "base" formats available in the application
     PluginsMap _plugins; //< list of the plugins
@@ -162,6 +174,13 @@ public:
 
     //To by-pass a bug introduced in RC2 / RC3 with the serialization of bezier curves
     bool lastProjectLoadedCreatedDuringRC2Or3;
+
+    // ~AppManager runs: it does what AppManager::cleanUpAtPythonExit() would do itself, in its own order (#1557)
+    bool destroying;
+
+    // GUI test mode (--test)
+    bool testMode;
+    std::unique_ptr<QTemporaryDir> testSettingsDir; // test mode: the settings of this run (removed at exit)
 
     ///Python needs wide strings as from Python 3.x onwards everything is unicode based
 #if PY_MAJOR_VERSION >= 3

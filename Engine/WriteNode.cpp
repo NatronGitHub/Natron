@@ -238,7 +238,13 @@ public:
 
     void createReadNodeAndConnectGraph(const std::string& filename);
 
-    void createWriteNode(bool throwErrors, const std::string& filename, const NodeSerializationPtr& serialization);
+    /**
+     * @param userEdited True when called from knobChanged() because the file or the encoder was
+     * changed (not when the node is created or loaded): a new encoder then gets the instance changed
+     * action of its filename (see the implementation).
+     **/
+    void createWriteNode(bool throwErrors, const std::string& filename, const NodeSerializationPtr& serialization,
+                         bool userEdited = false);
 
     void destroyWriteNode();
 
@@ -709,7 +715,8 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
 void
 WriteNodePrivate::createWriteNode(bool throwErrors,
                                   const std::string& filename,
-                                  const NodeSerializationPtr& serialization)
+                                  const NodeSerializationPtr& serialization,
+                                  bool userEdited)
 {
     if (creatingWriteNode) {
         return;
@@ -725,12 +732,15 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         args.setProperty(kCreateNodeArgsPropOutOfProject, true);
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
         output = _publicInterface->getApp()->createNode(args);
+        if (!output) {
+            // createNode() already reported why.
+            throw std::runtime_error( tr("Cannot create the internal Output node of %1.").arg( QString::fromUtf8( _publicInterface->getScriptName_mt_safe().c_str() ) ).toStdString() );
+        }
         try {
             output->setScriptName("Output");
         } catch (...) {
         }
 
-        assert(output);
         outputNode = output;
     }
     if (!input) {
@@ -740,7 +750,12 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Source");
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
         input = _publicInterface->getApp()->createNode(args);
-        assert(input);
+        if (!input) {
+            // Don't keep the Output node alone: the next call creates both again.
+            output->destroyNode(true, false);
+            outputNode.reset();
+            throw std::runtime_error( tr("Cannot create the internal Source node of %1.").arg( QString::fromUtf8( _publicInterface->getScriptName_mt_safe().c_str() ) ).toStdString() );
+        }
         inputNode = input;
     }
 
@@ -823,7 +838,16 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         if (writeNode) {
             KnobOutputFilePtr fileKnob = std::dynamic_pointer_cast<KnobOutputFile>(writeNode->getKnobByName(kOfxImageEffectFileParamName));
             if (fileKnob) {
-                fileKnob->setValue(filename);
+                bool fileKnobUnchanged = ( fileKnob->setValue(filename) == KnobHelper::eValueChangedReturnCodeNothingChanged );
+                // As in ReadNodePrivate::createReadNode(): the new encoder shares the filename knob of this
+                // node, which already has the filename, so it did not get the instance changed action for
+                // its filename. Call it, as when the encoder is the same (see above). Never when the encoder
+                // is created from a serialization, as before (#1288).
+                // Note: the new encoder is not connected to the input yet (see below), unlike when the
+                // encoder is kept; the openfx-io writers don't read their input clip in this action.
+                if (fileKnobUnchanged && userEdited && !serialization) {
+                    writeNode->getEffectInstance()->onKnobValueChanged_public(fileKnob.get(), eValueChangedReasonNatronInternalEdited, _publicInterface->getCurrentTime(), ViewSpec(0), true);
+                }
             }
         }
 
@@ -1190,7 +1214,7 @@ WriteNode::knobChanged(KnobI* k,
         std::string filename = fileKnob->getValue();
 
         try {
-            _imp->createWriteNode( false, filename, NodeSerializationPtr() );
+            _imp->createWriteNode( false, filename, NodeSerializationPtr(), true /*userEdited*/ );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
@@ -1215,7 +1239,7 @@ WriteNode::knobChanged(KnobI* k,
         std::string filename = fileKnob->getValue();
 
         try {
-            _imp->createWriteNode( false, filename, NodeSerializationPtr() );
+            _imp->createWriteNode( false, filename, NodeSerializationPtr(), true /*userEdited*/ );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
