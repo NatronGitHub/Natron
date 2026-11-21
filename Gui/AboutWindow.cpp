@@ -575,7 +575,7 @@ AboutWindow::updateLibrariesVersions()
                                          "<p>Qt %2</p>"
                                          "<p>Boost %3</p>"
                                          "<p>Cairo %4</p>"
-                                         "<p>Hoedown %5</p>"
+                                         "<p>md4c %5</p>"
                                          "<p>Ceres %6</p>"
                                          "<p>OpenMVG %7</p>"
                                          )
@@ -583,7 +583,7 @@ AboutWindow::updateLibrariesVersions()
                        .arg( appPTR->getQtVersion() )
                        .arg( appPTR->getBoostVersion() )
                        .arg( appPTR->getCairoVersion() )
-                       .arg( appPTR->getHoedownVersion() )
+                       .arg( appPTR->getMd4cVersion() )
                        .arg( appPTR->getCeresVersion() )
                        .arg( appPTR->getOpenMVGVersion() );
     std::list<OpenGLRendererInfo> openGLRenderers;

@@ -43,6 +43,8 @@
 #include <QScrollBar>
 #include <QKeyEvent>
 
+#include "Global/QtCompat.h" // Qt::CTRL | Qt::Key_X with Qt5
+
 #include "Engine/Settings.h"
 #include "Engine/Utils.h" // convertFromPlainText
 

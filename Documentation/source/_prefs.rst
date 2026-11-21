@@ -28,6 +28,14 @@ This option keeps saved versions of your file in the same directory, adding .\ :
 
 Older files will be named with a higher number. E.g. with the default setting of 2, you will have three versions of your file: \*.ntp (last saved), \*.ntp.\ :sub:`1` (second last saved), \*.\ :sub:`2` (third last saved).
 
+**Save projects as binary by default**
+
+The format of new projects, when they are saved for the first time. Binary projects are faster to save and to parse, and smaller, but can only be opened by Natron 2.6 and later. Text (XML) projects can also be opened by Natron 2.5 and earlier, and are human-readable and diffable.
+
+A project keeps its format: a project opened from a text file is saved as text, and a binary project as binary. “Save As...” can change the format of a project.
+
+Auto-saves are always binary, but a project restored from an auto-save is saved in its original format.
+
 **Appear to plug-ins as**
 
 Natron will appear with the name of the selected application to the OpenFX plug-ins. Changing it to the name of another application can help loading plugins which restrict their usage to specific OpenFX host(s). If a Host is not listed here, use the “Custom” entry to enter a custom host name. Changing this requires a restart of the application and requires clearing the OpenFX plugins cache from the Cache menu.

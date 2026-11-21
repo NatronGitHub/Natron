@@ -303,6 +303,7 @@ GuiPrivate::createPropertiesBinGui()
 {
     _propertiesBin = new PropertiesBinWrapper(_gui);
     _propertiesBin->setScriptName(kPropertiesBinName);
+    _propertiesBin->setObjectName( QString::fromUtf8("PropertiesBin") );
     _propertiesBin->setLabel( tr("Properties").toStdString() );
 
     QVBoxLayout* mainPropertiesLayout = new QVBoxLayout(_propertiesBin);
@@ -393,6 +394,7 @@ GuiPrivate::createNodeGraphGui()
     scene->setItemIndexMethod(QGraphicsScene::NoIndex);
     _nodeGraphArea = new NodeGraph(_gui, _appInstance.lock()->getProject(), scene, _gui);
     _nodeGraphArea->setScriptName(kNodeGraphObjectName);
+    _nodeGraphArea->setObjectName( QString::fromUtf8(kNodeGraphObjectName) );
     _nodeGraphArea->setLabel( tr("Node Graph").toStdString() );
     _nodeGraphArea->setVisible(false);
     _gui->registerTab(_nodeGraphArea, _nodeGraphArea);

@@ -34,6 +34,7 @@
 #include <QMutex>
 #include <QCoreApplication>
 #include <QPointer>
+#include <QUndoStack>
 
 #include "Engine/CLArgs.h"
 #include "Engine/Project.h"
@@ -461,10 +462,8 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
     QStringList foundAutosaves;
     for (int i = 0; i < entries.size(); ++i) {
         const QString & entry = entries.at(i);
-        QString searchStr( QLatin1Char('.') );
-        searchStr.append( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) );
-        searchStr.append( QString::fromUtf8(".autosave") );
-        int suffixPos = entry.indexOf(searchStr);
+        // text auto-saves (by Natron 2.5 and earlier) and binary ones
+        int suffixPos = Project::findAutoSaveSuffix(entry);
         if ( (suffixPos == -1) || entry.contains( QString::fromUtf8("RENDER_SAVE") ) ) {
             continue;
         }
@@ -827,7 +826,21 @@ GuiAppInstance::loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & a
 }
 
 void
+GuiAppInstance::loadProjectGui(bool isAutosave, PortableBinaryIArchive & archive) const
+{
+    _imp->_gui->loadProjectGui(isAutosave, archive);
+}
+
+void
 GuiAppInstance::saveProjectGui(boost::archive::xml_oarchive & archive)
+{
+    if (_imp->_gui) {
+        _imp->_gui->saveProjectGui(archive);
+    }
+}
+
+void
+GuiAppInstance::saveProjectGui(PortableBinaryOArchive & archive)
 {
     if (_imp->_gui) {
         _imp->_gui->saveProjectGui(archive);
@@ -1228,24 +1241,27 @@ GuiAppInstance::isRenderStatsActionChecked() const
 }
 
 bool
-GuiAppInstance::save(const std::string& filename)
+GuiAppInstance::save(const std::string& filename,
+                     ProjectFileFormatEnum format)
 {
     if ( filename.empty() ) {
         ProjectPtr project = getProject();
         if ( project->hasProjectBeenSavedByUser() ) {
-            return _imp->_gui->saveProject();
+            return _imp->_gui->saveProject(format);
         } else {
-            return _imp->_gui->saveProjectAs();
+            // the Save As dialog: format is its default, the user's choice wins
+            return _imp->_gui->saveProjectAs(format);
         }
     } else {
-        return _imp->_gui->saveProjectAs(filename);
+        return _imp->_gui->saveProjectAs(filename, format);
     }
 }
 
 bool
-GuiAppInstance::saveAs(const std::string& filename)
+GuiAppInstance::saveAs(const std::string& filename,
+                       ProjectFileFormatEnum format)
 {
-    return _imp->_gui->saveProjectAs(filename);
+    return _imp->_gui->saveProjectAs(filename, format);
 }
 
 AppInstancePtr
@@ -1688,6 +1704,76 @@ void
 GuiAppInstance::reloadScriptEditorFonts()
 {
     _imp->_gui->getScriptEditor()->reloadFont();
+}
+
+QUndoStack*
+GuiAppInstance::getActiveUndoStack() const
+{
+    // The node graph's stack (node creation, deletion, connections, and the undo groups of the Python
+    // API), not the active one (the last focused panel), which depends on the focus: a PyPlug button in a
+    // panel would make App.undo() undo the panel's last change.
+    NodeGraph* graph = _imp->_gui ? _imp->_gui->getNodeGraph() : 0;
+
+    return graph ? graph->getUndoStack() : 0;
+}
+
+void
+GuiAppInstance::undo()
+{
+    QUndoStack* stack = getActiveUndoStack();
+
+    if (stack) {
+        stack->undo();
+    }
+}
+
+void
+GuiAppInstance::redo()
+{
+    QUndoStack* stack = getActiveUndoStack();
+
+    if (stack) {
+        stack->redo();
+    }
+}
+
+bool
+GuiAppInstance::canUndo() const
+{
+    QUndoStack* stack = getActiveUndoStack();
+
+    return stack && stack->canUndo();
+}
+
+bool
+GuiAppInstance::canRedo() const
+{
+    QUndoStack* stack = getActiveUndoStack();
+
+    return stack && stack->canRedo();
+}
+
+std::list<std::string>
+GuiAppInstance::getUndoHistory() const
+{
+    std::list<std::string> ret;
+    QUndoStack* stack = getActiveUndoStack();
+
+    if (stack) {
+        for (int i = 0; i < stack->count(); ++i) {
+            ret.push_back( stack->text(i).toStdString() );
+        }
+    }
+
+    return ret;
+}
+
+int
+GuiAppInstance::getUndoIndex() const
+{
+    QUndoStack* stack = getActiveUndoStack();
+
+    return stack ? stack->index() : 0;
 }
 
 NATRON_NAMESPACE_EXIT

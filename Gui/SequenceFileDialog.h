@@ -328,6 +328,9 @@ public:
     ///Works only in eFileDialogModeSave mode.
     std::string filesToSave();
 
+    ///Adds a widget at the end of the line of the file name, e.g. a choice of the file format.
+    void addSelectionLineWidget(QWidget* widget);
+
     ///Returns the path of the directory returned by currentDirectory() but whose path has been made
     ///relative to the selected user project path.
     std::string selectedDirectory() const;
