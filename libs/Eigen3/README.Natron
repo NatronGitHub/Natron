@@ -1,16 +1,27 @@
 Project: Eigen, template library for linear algebra: matrices, vectors, numerical solvers, and related algorithms
 URL: https://libeigen.gitlab.io/
 Repository: https://gitlab.com/libeigen/eigen
-License: MPL2
+License: MPL-2.0. A few files carry permissive third-party notices: BSD-3-Clause
+for the Intel MKL/BLAS/LAPACKE/PARDISO bindings (used only with EIGEN_USE_MKL,
+EIGEN_USE_BLAS or EIGEN_USE_LAPACKE, which Natron doesn't define, or with
+PardisoSupport, which nothing includes) and for AlignedBox::transform, a
+permissive BSD-style notice for the half-float conversion routines in Half.h,
+and Apache-2.0 for BFloat16.h. There is no LGPL code: Amd.h and
+SimplicialCholesky_impl.h were relicensed to MPL2 upstream (1dc1677d5, before
+3.4.0), IncompleteLUT.h was relicensed to MPL2 by its author, nothing includes
+Core/util/NonMPL2.h, and every module Natron uses compiles with
+-DEIGEN_MPL2_ONLY.
 Upstream version: 3.4.1 (tag 3.4.1, commit d71c30c47858effcbd39967097a2d99ee48db464)
 Local modifications: none
 
-The tree under Eigen/ is upstream 3.4.1, unmodified: the Eigen/ directory of
-the release archive eigen-3.4.1.tar.bz2 (sha256
-8bb7280b7551bf06418d11a9671fdf998cb927830cf21589b394382d26779821), which is
-identical to the 3.4.1 git tag. Run eigen-update.sh to refresh it. (The script
-also deletes any CMakeLists.txt under Eigen/; 3.3.x shipped some, 3.4.x has
-none, so that step is only defensive.)
+The tree under Eigen/ is upstream 3.4.1, unmodified. eigen-update.sh refreshes
+it from the 3.4.1 git tag and checks that the tag is still commit
+d71c30c47858effcbd39967097a2d99ee48db464. That Eigen/ directory is identical to
+the one in the release archive eigen-3.4.1.tar.bz2 (sha256
+8bb7280b7551bf06418d11a9671fdf998cb927830cf21589b394382d26779821, the checksum
+recorded by MacPorts; Eigen publishes none). The script also deletes any
+CMakeLists.txt under Eigen/; 3.3.x shipped some, 3.4.x has none, so that step
+is only defensive.
 
 Earlier revisions were taken from Blender's extern/ folder and carried a
 patches/blender.diff plus a note about an OpenMP fix for MSVC2015. Neither was
