@@ -8,7 +8,12 @@
 
 #include "gtest/gtest.h"
 
+#include <memory>
+
 #include <QtCore/QByteArray>
+#include <QtCore/QDir>
+#include <QtCore/QStandardPaths>
+#include <QtCore/QTemporaryDir>
 #include <QtCore/QtGlobal>
 
 #include "Engine/AppManager.h"
@@ -43,6 +48,32 @@ GTEST_API_ int main(int argc, char **argv)
         qputenv("OFX_PLUGIN_PATH", path);
     }
 #endif
+    // The tests never use the user's caches (#1569): the OFX plug-in cache file
+    // (OFXLoadCache/OFXCache_<version>.xml) is the same for every build of a version, so two test runs at the
+    // same time would rewrite each other's. NATRON_DISK_CACHE_PATH, if set, is kept. Otherwise ctest gives
+    // Tests and TestsOfxCache the same directory of the build tree (NATRON_TESTS_CACHE_DIR), since
+    // TestsOfxCache reads the OFX plug-in cache that Tests wrote; a run by hand uses a temporary
+    // directory, removed at exit (destroyed after the AppManager): with NATRON_TESTS_KEEP_OFX_CACHE, set
+    // one of the two variables to the directory of the previous run.
+    std::unique_ptr<QTemporaryDir> tmpCacheDir;
+    if ( qgetenv(NATRON_DISK_CACHE_PATH_ENV_VAR).isEmpty() ) {
+        QByteArray cacheDir = qgetenv("NATRON_TESTS_CACHE_DIR");
+        if ( cacheDir.isEmpty() ) {
+            tmpCacheDir.reset( new QTemporaryDir( QDir::tempPath() + QString::fromUtf8("/NatronTests-cache-XXXXXX") ) );
+            if ( !tmpCacheDir->isValid() ) {
+                printf( "Cannot create a temporary cache directory in %s\n", QDir::tempPath().toUtf8().constData() );
+
+                return 1;
+            }
+            cacheDir = tmpCacheDir->path().toUtf8();
+        }
+        qputenv(NATRON_DISK_CACHE_PATH_ENV_VAR, cacheDir);
+    }
+    printf( "Disk caches in %s\n", qgetenv(NATRON_DISK_CACHE_PATH_ENV_VAR).constData() );
+    // The auto-saves that the tests write (in Project::autoSavesDir()) do not go to the user's
+    // auto-saves, which a Natron started meanwhile would offer to restore.
+    QStandardPaths::setTestModeEnabled(true);
+
     AppManager manager;
 
     {

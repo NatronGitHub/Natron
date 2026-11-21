@@ -25,6 +25,7 @@
 
 #include "PyGuiApp.h"
 
+#include <algorithm> // max
 #include <stdexcept>
 
 CLANG_DIAG_OFF(deprecated)
@@ -38,6 +39,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/PyNodeGroup.h"
@@ -246,7 +248,8 @@ GuiApp::saveFilenameDialog(const QStringList& filters,
     std::vector<std::string> f;
 
     for (QStringList::const_iterator it = filters.begin(); it != filters.end(); ++it) {
-        f.push_back( it->toStdString() );
+        // The dialog wants extensions ("txt"); "*.txt" would give "name.*.txt" (#825)
+        f.push_back( ( it->startsWith( QString::fromUtf8("*.") ) ? it->mid(2) : *it ).toStdString() );
     }
     SequenceFileDialog dialog(gui,
                               f,
@@ -278,7 +281,8 @@ GuiApp::saveSequenceDialog(const QStringList& filters,
     std::vector<std::string> f;
 
     for (QStringList::const_iterator it = filters.begin(); it != filters.end(); ++it) {
-        f.push_back( it->toStdString() );
+        // The dialog wants extensions ("txt"); "*.txt" would give "name.*.txt" (#825)
+        f.push_back( ( it->startsWith( QString::fromUtf8("*.") ) ? it->mid(2) : *it ).toStdString() );
     }
     SequenceFileDialog dialog(gui,
                               f,
@@ -726,6 +730,175 @@ PyViewer::redraw()
         return;
     }
     _viewer->redrawGLWidgets();
+}
+
+// defined below, with saveScreenshot()
+static bool isMainThread();
+
+ViewerGL*
+PyViewer::getViewerGL() const
+{
+    NodePtr node = getInternalNode();
+
+    if ( !node || !node->isActivated() || !_viewer ) {
+        return 0;
+    }
+
+    return _viewer->getViewer();
+}
+
+void
+PyViewer::fit()
+{
+    if ( getViewerGL() ) {
+        _viewer->centerViewer();
+    }
+}
+
+double
+PyViewer::getZoom() const
+{
+    ViewerGL* gl = getViewerGL();
+
+    return gl ? gl->getZoomFactor() : 1.;
+}
+
+void
+PyViewer::setZoom(double zoom)
+{
+    ViewerGL* gl = getViewerGL();
+
+    if (!gl) {
+        return;
+    }
+    if ( !(zoom > 0.) ) {
+        PyErr_SetString(PyExc_ValueError, "the zoom factor must be positive");
+
+        return;
+    }
+    gl->setZoomFactorAroundCenter(zoom);
+    Q_EMIT gl->zoomChanged( std::max(1, (int)(100. * gl->getZoomFactor() + 0.5)) ); // the zoom menu
+    gl->update();
+}
+
+Double2DTuple
+PyViewer::getCenter() const
+{
+    Double2DTuple ret = {0., 0.};
+    ViewerGL* gl = getViewerGL();
+
+    if (gl) {
+        const RectD r = gl->getViewportRect();
+        ret.x = (r.x1 + r.x2) / 2.;
+        ret.y = (r.y1 + r.y2) / 2.;
+    }
+
+    return ret;
+}
+
+void
+PyViewer::setCenter(double x,
+                    double y)
+{
+    ViewerGL* gl = getViewerGL();
+
+    if (gl) {
+        gl->setCenter(x, y);
+    }
+}
+
+Double2DTuple
+PyViewer::canvasToWidget(double x,
+                         double y) const
+{
+    Double2DTuple ret = {x, y};
+    ViewerGL* gl = getViewerGL();
+
+    if (gl) {
+        const QPointF p = gl->toWidgetCoordinates( QPointF(x, y) );
+        ret.x = p.x();
+        ret.y = p.y();
+    }
+
+    return ret;
+}
+
+Double2DTuple
+PyViewer::widgetToCanvas(double x,
+                         double y) const
+{
+    Double2DTuple ret = {x, y};
+    ViewerGL* gl = getViewerGL();
+
+    if (gl) {
+        const QPointF p = gl->toZoomCoordinates( QPointF(x, y) );
+        ret.x = p.x();
+        ret.y = p.y();
+    }
+
+    return ret;
+}
+
+ColorTuple
+PyViewer::getPixel(double x,
+                   double y,
+                   int input) const
+{
+    ColorTuple ret = {0., 0., 0., 0.};
+    ViewerGL* gl = getViewerGL();
+
+    if ( (input != 0) && (input != 1) ) {
+        PyErr_SetString(PyExc_ValueError, "input must be 0 (A) or 1 (B)");
+
+        return ret;
+    }
+    if ( !isMainThread() ) {
+        PyErr_SetString(PyExc_RuntimeError, "PyViewer.getPixel() must be called from the main thread");
+
+        return ret;
+    }
+    float r, g, b, a;
+    unsigned int mipmapLevel;
+    if ( !gl || !gl->getColorAt(x, y, true /*forceLinear*/, input, &r, &g, &b, &a, &mipmapLevel) ) {
+        PyErr_Format(PyExc_ValueError, "the viewer shows no image at (%g, %g)", x, y);
+
+        return ret;
+    }
+    ret.r = r;
+    ret.g = g;
+    ret.b = b;
+    ret.a = a;
+
+    return ret;
+}
+
+bool
+PyViewer::getImage(RectD* bounds,
+                   std::vector<float>* pixels,
+                   int input,
+                   const RectD* region) const
+{
+    ViewerGL* gl = getViewerGL();
+
+    bounds->clear();
+    pixels->clear();
+    if ( (input != 0) && (input != 1) ) {
+        PyErr_SetString(PyExc_ValueError, "input must be 0 (A) or 1 (B)");
+
+        return false;
+    }
+    if ( !isMainThread() ) {
+        PyErr_SetString(PyExc_RuntimeError, "PyViewer.getImage() must be called from the main thread");
+
+        return false;
+    }
+    if ( !gl || !gl->getLinearImage(input, region ? *region : RectD(), bounds, pixels) ) {
+        PyErr_SetString(PyExc_ValueError, "the viewer shows no image (in that region)");
+
+        return false;
+    }
+
+    return true;
 }
 
 void

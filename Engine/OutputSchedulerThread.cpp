@@ -1159,11 +1159,14 @@ OutputSchedulerThread::startRender()
     }
     SequentialPreferenceEnum pref = effect->getSequentialPreference();
     if ( (pref == eSequentialPreferenceOnlySequential) || (pref == eSequentialPreferencePreferSequential) ) {
+        // A render on disk: kOfxPropIsInteractive is 0 ("a proper full sequence render") and so is
+        // kOfxImageEffectPropInteractiveRenderStatus (not "rendered because a user is modifying parameters",
+        // ofxImageEffect.h). endSequenceRender_public() below gets the same arguments.
         if (effect->beginSequenceRender_public( firstFrame, lastFrame,
                                                 frameStep,
-                                                false,
+                                                false, // interactive
                                                 RenderScale::identity, true,
-                                                true,
+                                                false, // isRenderResponseToUserInteraction
                                                 false,
                                                 ViewIdx(0),
                                                 false /*useOpenGL*/,
@@ -1248,16 +1251,18 @@ OutputSchedulerThread::stopRender()
     }
     SequentialPreferenceEnum pref = effect->getSequentialPreference();
     if ( (pref == eSequentialPreferenceOnlySequential) || (pref == eSequentialPreferencePreferSequential) ) {
-        int firstFrame, lastFrame;
+        int firstFrame, lastFrame, frameStep;
         OutputSchedulerThreadStartArgsPtr args = _imp->runArgs.lock();
         firstFrame = args->firstFrame;
         lastFrame = args->lastFrame;
+        frameStep = args->frameStep;
 
+        // the arguments of beginSequenceRender_public() in startRender()
         ignore_result( effect->endSequenceRender_public( firstFrame, lastFrame,
-                                                         1,
-                                                         !appPTR->isBackground(),
+                                                         frameStep,
+                                                         false, // interactive
                                                          RenderScale::identity, true,
-                                                         !appPTR->isBackground(),
+                                                         false, // isRenderResponseToUserInteraction
                                                          false,
                                                          ViewIdx(0),
                                                          false /*use OpenGL render*/,
@@ -2403,6 +2408,28 @@ private:
             const bool isSequentialRender = true;
 
             for (std::size_t view = 0; view < viewsToRender.size(); ++view) {
+                // Set the render args before computing the RoD and the components: they may read parameters whose
+                // expressions read other nodes, which must be read at the frame of the render, not at the timeline's
+                // frame (#1564)
+                AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(true, 0);
+                if (isAbortableThread) {
+                    isAbortableThread->setAbortInfo(isRenderDueToRenderInteraction, abortInfo, activeInputToRender);
+                }
+
+                ParallelRenderArgsSetter frameRenderArgs(time,
+                                                         viewsToRender[view],
+                                                         isRenderDueToRenderInteraction,  // is this render due to user interaction ?
+                                                         isSequentialRender,
+                                                         abortInfo, //abortInfo
+                                                         activeInputNode, // viewer requester
+                                                         0, //texture index
+                                                         output->getApp()->getTimeLine().get(),
+                                                         NodePtr(),
+                                                         false,
+                                                         false,
+                                                         stats,
+                                                         _imp->scheduler->getFrameOrderRender() );
+
                 StatusEnum stat = activeInputToRender->getRegionOfDefinition_public(activeInputToRenderHash, time, scale, viewsToRender[view], &rod, &isProjectFormat);
                 if (stat == eStatusFailed) {
                     _imp->scheduler->notifyRenderFailure("Error caught while rendering");
@@ -2434,25 +2461,6 @@ private:
                     }
                 }
                 const RectI renderWindow = rod.toPixelEnclosing(scale, par);
-
-                AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(true, 0);
-                if (isAbortableThread) {
-                    isAbortableThread->setAbortInfo(isRenderDueToRenderInteraction, abortInfo, activeInputToRender);
-                }
-
-                ParallelRenderArgsSetter frameRenderArgs(time,
-                                                         viewsToRender[view],
-                                                         isRenderDueToRenderInteraction,  // is this render due to user interaction ?
-                                                         isSequentialRender,
-                                                         abortInfo, //abortInfo
-                                                         activeInputNode, // viewer requester
-                                                         0, //texture index
-                                                         output->getApp()->getTimeLine().get(),
-                                                         NodePtr(),
-                                                         false,
-                                                         false,
-                                                         stats,
-                                                         _imp->scheduler->getFrameOrderRender() );
 
                 {
                     FrameRequestMap request;
@@ -3061,7 +3069,7 @@ private:
         if (clearTexture[0]) {
             viewer->disconnectTexture(0, status[0] == ViewerInstance::eViewerRenderRetCodeFail);
         }
-        if (clearTexture[0]) {
+        if (clearTexture[1]) {
             viewer->disconnectTexture(1, status[1] == ViewerInstance::eViewerRenderRetCodeFail);
         }
 
@@ -4106,7 +4114,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         if (clearTexture[0]) {
             _imp->viewer->disconnectTexture(0, status[0] == ViewerInstance::eViewerRenderRetCodeFail);
         }
-        if (clearTexture[0]) {
+        if (clearTexture[1]) {
             _imp->viewer->disconnectTexture(1, status[1] == ViewerInstance::eViewerRenderRetCodeFail);
         }
 

@@ -2,6 +2,8 @@ libtess was taken from the GLU repository, https://gitlab.freedesktop.org/mesa/g
 
 `libtess-natron.patch` is the full set of Natron changes to the upstream files (src/libtess/* and src/include/gluos.h). The other files (`libtess.h`, `libtess_internal.h`, `CMakeLists.txt`, `libtess.pro` and this file) are Natron's.
 
+Use in Natron: libtess's only caller is `RotoContextPrivate::computeTriangles()` (Engine/RotoContext.cpp), which is only called when `ROTO_RENDER_TRIANGLES_ONLY` is defined. That define has been commented out since 6d3c91b5a (2016), and Roto shapes are filled with cairo. So in default builds libtess is only run by the unit tests (`Tests/LibTess_Test.cpp`), and the fixes below matter only for builds with `ROTO_RENDER_TRIANGLES_ONLY` and for the tests.
+
 Natron changes:
 
 - `mesh.h`, `tess.h`: include `libtess_internal.h` instead of `<GL/glu.h>`, so that the API is prefixed with `libtess_` (see `libtess.h`) and does not clash with a system GLU.
@@ -13,6 +15,8 @@ Natron changes:
 - `geom.c`: the intersection of two nearly parallel edges is kept close to both edges (`RefineIntersection()`): it could be far from both, which distorted the polygon and filled wrong areas.
 - `sweep.c`, `tess.c`, `tess.h`: on degenerate contours (e.g. collinear points along a diagonal with rounding noise, or a self-loop edge made by merging the endpoints of a zero-length edge), the sweep deleted an edge whose other half was still the upper edge of an active region, and then used it (heap-use-after-free); or it marked inside a face which reaches the sentinel edges, whose vertices have NULL client data. The edges are now only deleted when no active region uses them: `DeleteRegionAndEdge()` checks all the active regions (it is only reached on degenerate input), and `FixUpperEdge()`, which runs on every polygon, checks the `activeRegion` back-pointer and the neighbouring regions, the inside faces are checked (`CheckInsideFaces()`), and otherwise the polygon is dropped and `GLU_INVALID_OPERATION` is reported (`TESS_JMP_DEGENERATE`).
 - `sweep.c`: the winding number and inside flag of a new active region are initialized (`AddRegionBelow()`): on degenerate input some regions kept uninitialized values.
+
+Build: `CMakeLists.txt` and `libtess.pro` compile libtess with `-fno-fast-math -ffp-contract=off` (not for MSVC, which Natron isn't built with). `-ffast-math` reassociates, which breaks `EdgeSign()` as well. With floating-point contraction (fused multiply-add, clang's default on arm64, and GCC's `-ffp-contract=fast` wherever FMA is available), `EdgeSign()` computes `a*b - b*a` for points exactly on a line such as x == y as the rounding error of `a*b` instead of 0, so collinear points were seen on random sides of each other: the same input was tessellated differently on macOS arm64 and on x86-64, and the degenerate cases above were much more frequent there.
 
 These bugs are also in Mesa's GLU. The `geom.c` intersection bug, the use-after-free on degenerate contours and the uninitialized winding numbers are also in libtess2 (https://github.com/memononen/libtess2), which has no fan fast path. `Tests/LibTess_Test.cpp` has their regression tests (except for the out-of-memory errors).
 

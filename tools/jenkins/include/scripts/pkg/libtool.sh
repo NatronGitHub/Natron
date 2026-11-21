@@ -2,11 +2,12 @@
 
 # install libtool
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/libtool.html
-LIBTOOL_VERSION=2.4.7
+LIBTOOL_VERSION=2.6.2
 LIBTOOL_TAR="libtool-${LIBTOOL_VERSION}.tar.xz"
-LIBTOOL_SITE="http://ftp.gnu.org/pub/gnu/libtool"
+LIBTOOL_SHA256=2ef1067c16c97db930fd740cc9bc3d3ba9a583804ae5ac42cc3e8719e49e191e
+LIBTOOL_SITE="https://ftp.gnu.org/pub/gnu/libtool"
 if download_step; then
-    download "$LIBTOOL_SITE" "$LIBTOOL_TAR"
+    download "$LIBTOOL_SITE" "$LIBTOOL_TAR" "$LIBTOOL_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/libtool" ]; }; }; then
     start_build

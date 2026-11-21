@@ -20,6 +20,7 @@ Functions
 - def :meth:`createRectangle<NatronEngine.Roto.createRectangle>` (x, y, size, time)
 - def :meth:`getBaseLayer<NatronEngine.Roto.getBaseLayer>` ()
 - def :meth:`getItemByName<NatronEngine.Roto.getItemByName>` (name)
+- def :meth:`getSelectedItems<NatronEngine.Roto.getSelectedItems>` ()
 
 .. _roto.details:
 
@@ -128,6 +129,22 @@ Returns an item by its *script-name*. See :ref:`this section<autoVar>` for the d
 *script-name* of an item. E.g::
 
     app1.Roto1.roto.Layer1.Bezier1 = app1.Roto1.roto.getItemByName("Bezier1")
+
+
+
+
+.. method:: Roto.getSelectedItems()
+
+
+    :rtype: :class:`sequence`
+
+Returns the items (:doc:`layers<Layer>`, :doc:`Beziers<BezierCurve>` and strokes) that are
+selected in the Roto panel or in the viewer. E.g::
+
+    for item in app1.Roto1.getRotoContext().getSelectedItems():
+        print(item.getScriptName())
+
+This function was added in Natron 2.6.
 
 
 

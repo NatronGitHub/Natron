@@ -323,9 +323,13 @@ public:
     ///Works only in eFileDialogModeOpen mode.
     std::string selectedFiles();
 
-   ///Returns  the content of the selection line edit.
+    ///Returns the content of the selection line edit, without a sequence's frame range, made absolute
+    ///against currentDirectory() if it is relative, then remapped as absoluteFilePathInCurrentDirectory() does (#825).
     ///Works only in eFileDialogModeSave mode.
     std::string filesToSave();
+
+    ///Adds a widget at the end of the line of the file name, e.g. a choice of the file format.
+    void addSelectionLineWidget(QWidget* widget);
 
     ///Returns the path of the directory returned by currentDirectory() but whose path has been made
     ///relative to the selected user project path.
@@ -449,6 +453,16 @@ private:
     bool sequenceModeEnabled() const;
 
     bool isDirectory(const QString & name) const;
+
+    ///Returns text without the frame range that the dialog may show after the extension of a sequence
+    ///(FileSystemModel::removeTextAfterExtension()), only in sequence mode with an extension filter (#825)
+    QString removeFrameRange(const QString& text) const;
+
+    ///Returns filePath made absolute against the current directory (the home directory at the "Computer"
+    ///level) if it is relative. If it was resolved and relative paths are allowed, it is then made relative to
+    ///the variable chosen in the "relative to" combo box, or, with "Absolute", stored as [Project]/... if it
+    ///is inside the directory of a saved project (as Project::canonicalizePath() did for bare names) (#825)
+    QString absoluteFilePathInCurrentDirectory(const QString& filePath) const;
 
     ///the filter that shows the files with any of the extensions given to the dialog, e.g. "*.exr *.png"
     QString combinedFilter() const;

@@ -541,6 +541,17 @@ public:
 
     void registerCloseProjectsAtPythonExit();
 
+    /**
+     * @brief Called on the main thread at Python exit in the background modes that run scripts, once the projects
+     * are closed (see registerCloseProjectsAtPythonExit()): sys.exit() leaves through exit(), so ~AppManager never
+     * runs. Waits for the tasks of the global thread pool, saves the disk caches and unloads the OFX plug-ins
+     * (kOfxActionUnload), as ~AppManager does (#1557). Does nothing in ~AppManager.
+     **/
+    void cleanUpAtPythonExit();
+
+    /// Whether the OFX plug-ins were unloaded by cleanUpAtPythonExit(): no OFX effect may be created any more
+    bool areOFXPluginsUnloaded() const;
+
     void launchPythonInterpreter();
 
     int isProjectAlreadyOpened(const std::string& projectFilePath) const;
@@ -619,7 +630,7 @@ public:
 
     QString getCairoVersion() const;
 
-    QString getHoedownVersion() const;
+    QString getMd4cVersion() const;
 
     QString getCeresVersion() const;
 
@@ -773,6 +784,12 @@ private:
 
 
     virtual void afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args) OVERRIDE FINAL;
+
+    /// Quits the instance of args (QuitInstanceArgs), once its processing is over
+    void quitInstanceNow(const GenericWatcherCallerArgsPtr& args);
+
+    /// GUI mode: calls quitInstanceNow() from the event loop, not from a nested one
+    void queueAfterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args);
 
     bool loadInternal(const CLArgs& cl);
 

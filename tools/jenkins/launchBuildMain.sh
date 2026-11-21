@@ -685,7 +685,7 @@ if [ "$COMPILE_TYPE" = "debug" ]; then
 fi
 PORTABLE_DIRNAME="${INSTALLER_BASENAME}-no-installer"
 
-if [ "$PKGOS" = "Windows" ] && [ -f "/Setup.exe" ]; then
+if [ "$PKGOS" = "Windows" ] && [ -f "${NATRON_SETUP_EXE:-}" ]; then
     # Windows portable has installer, don't append "no-installer"
     PORTABLE_DIRNAME="$INSTALLER_BASENAME"
 fi

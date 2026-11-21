@@ -3,11 +3,12 @@
 # Install orc
 # see https://gstreamer.freedesktop.org/src/orc/
 #ORC_VERSION=0.4.29 # last version before meson
-ORC_VERSION=0.4.33 # 0.4.30 and later use meson to build
+ORC_VERSION=0.4.44 # 0.4.30 and later use meson to build
 ORC_TAR="orc-${ORC_VERSION}.tar.xz"
-ORC_SITE="http://gstreamer.freedesktop.org/src/orc"
+ORC_SHA256=4aeb97aea2b58224029dc2b23d7d064cfa990cb4fb8c4da440bcbe9c95bc5d2d
+ORC_SITE="https://gstreamer.freedesktop.org/src/orc"
 if download_step; then
-    download "$ORC_SITE" "$ORC_TAR"
+    download "$ORC_SITE" "$ORC_TAR" "$ORC_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/orc-0.4.pc" ] || [ "$(pkg-config --modversion orc-0.4)" != "$ORC_VERSION" ]; }; }; then
     start_build
@@ -16,7 +17,7 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/orc-0.4.pc" 
     if version_gt "$ORC_VERSION" 0.4.29; then
         mkdir build
         pushd build
-        env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME" --libdir="lib"
+        env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME" --libdir="lib" --buildtype=release -Dtests=disabled -Dexamples=disabled -Dbenchmarks=disabled -Dhotdoc=disabled ..
         env CFLAGS="$BF" CXXFLAGS="$BF" ninja
         env CFLAGS="$BF" CXXFLAGS="$BF" ninja install
         popd

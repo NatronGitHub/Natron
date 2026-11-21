@@ -238,6 +238,33 @@ public:
     static bool startsWithDriveName(const QString& name);
     static QStringList getSplitPath(const QString& path);
     static QString cleanPath(const QString& path);
+
+    /**
+     * @brief Returns filePath, a file name or path typed in a file dialog, made absolute against
+     * directory (the directory shown by the dialog) if it is relative (#825).
+     * Returned unchanged: empty strings, absolute paths (not passed through cleanPath()), and paths
+     * starting with "[Name]" where Name is one of variableNames (a project variable, e.g.
+     * "[Project]/out.exr"); a bare "[v2] shot.ntp" is a relative name. On Unix, a leading "~" is
+     * expanded to the home directory. If directory is empty, a relative filePath is returned unchanged.
+     **/
+    static QString absoluteFilePath(const QString& directory, const QString& filePath, const QStringList& variableNames);
+
+    /**
+     * @brief Removes the frame range that a file dialog may show after the extension of a sequence,
+     * e.g. "/data/out.####.exr 1-10" -> "/data/out.####.exr". Anything else is kept, including dots
+     * and spaces: "/data/a.b c/out", "/proj/Mr. Smith project", "v1.0 final", "/proj/take 1-2".
+     **/
+    static QString removeTextAfterExtension(const QString& text);
+
+    /**
+     * @brief Returns filePath with "." + extension appended, unless the suffix of its last path
+     * component (after the last dot, compared case-insensitively) is extension or one of
+     * acceptedExtensions: "comp.v003" -> "comp.v003.ntp", "comp." -> "comp.ntp", "comp.NTP" is unchanged. Separators are
+     * '/' and, on Windows, '\\'. Unchanged if extension is empty or "*", or if filePath is empty or
+     * ends with a separator.
+     **/
+    static QString addFileExtension(const QString& filePath, const QString& extension, const QStringList& acceptedExtensions);
+
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual Qt::ItemFlags flags(const QModelIndex &index) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int columnCount(const QModelIndex & parent) const OVERRIDE FINAL WARN_UNUSED_RETURN;

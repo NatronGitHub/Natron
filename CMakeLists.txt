@@ -45,11 +45,30 @@ project(Natron
     LANGUAGES CXX C
 )
 
-set(CMAKE_CXX_STANDARD 17)
-
 include(GNUInstallDirs)
 
 option(NATRON_QT6 "use Qt6" OFF)
+
+# C++ standard: C++17 with Qt5, C++20 with Qt6 (#1148, Documentation/source/maintainers/qt6-migration.rst).
+# -DCMAKE_CXX_STANDARD=... overrides it (e.g. the C++23 builds).
+# The shiboken parser gets the same standard (NATRON_SHIBOKEN_STD, Engine/ and Gui/CMakeLists.txt),
+# at most C++20; Qt5's shiboken2 keeps C++17.
+if(NOT DEFINED CMAKE_CXX_STANDARD)
+    if(NATRON_QT6)
+        set(CMAKE_CXX_STANDARD 20)
+    else()
+        set(CMAKE_CXX_STANDARD 17)
+    endif()
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if(NOT NATRON_QT6)
+    set(NATRON_SHIBOKEN_STD "-std=c++17")
+elseif(CMAKE_CXX_STANDARD GREATER 20)
+    set(NATRON_SHIBOKEN_STD "-std=c++20")
+else()
+    set(NATRON_SHIBOKEN_STD "-std=c++${CMAKE_CXX_STANDARD}")
+endif()
+
 option(NATRON_SYSTEM_LIBS "use system versions of dependencies instead of bundled ones" OFF)
 option(NATRON_BUILD_TESTS "build the Natron test suite" ON)
 
@@ -164,8 +183,13 @@ set(NATRON_CUSTOM_BUILD_USER_NAME "${BUILD_USER_NAME}" CACHE STRING
     "for a CUSTOM build, the name shown instead of the version (\"Natron for <name>\")")
 
 # Build options (qmake: CONFIG+=openmp, noassertions, fast, addresssanitizer, threadsanitizer, coverage).
+# libs.pri enables OpenMP by default with the qmake specs that match *g++*, except on macOS: GCC
+# (linux-g++, win32-g++) and MSYS2's clang (win32-clang-g++), but not linux-clang or freebsd-clang.
 if(NOT APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    # libs.pri enables OpenMP by default only with GCC on systems other than macOS.
+    set(_natron_openmp_default ON)
+elseif(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # win32-clang-g++: MSYS2's clang environments (CLANGARM64, #1494) have LLVM's libomp
+    # (llvm-openmp), as the GCC environments have libgomp.
     set(_natron_openmp_default ON)
 else()
     set(_natron_openmp_default OFF)
@@ -258,7 +282,13 @@ set(QT_COMPONENTS Core Gui Network Widgets Concurrent)
 if(NATRON_QT6)
     list(APPEND QT_COMPONENTS OpenGLWidgets)
     find_package(Qt6 6.3 CONFIG REQUIRED COMPONENTS ${QT_COMPONENTS})
-    # No CMP0148 counterpart of the Qt5 block below: Shiboken6Config.cmake uses FindPython3.
+    # Shiboken6Config.cmake looks for Python with find_package(Python), not Python3, so it
+    # ignores Python3_EXECUTABLE and may pick another Python (on macOS, Xcode's Python 3.9,
+    # which shiboken6 rejects). Use the Python found above unless Python_EXECUTABLE is set.
+    if(NOT DEFINED Python_EXECUTABLE AND Python3_EXECUTABLE)
+        set(Python_EXECUTABLE "${Python3_EXECUTABLE}")
+    endif()
+    # No CMP0148 counterpart of the Qt5 block below: Shiboken6Config.cmake uses FindPython, not FindPythonInterp.
     find_package(Shiboken6 6.3 CONFIG REQUIRED COMPONENTS libshiboken6)
     find_package(Shiboken6Tools 6.3 CONFIG REQUIRED COMPONENTS shiboken6)
     find_package(PySide6 6.3 CONFIG REQUIRED COMPONENTS pyside6)
@@ -309,17 +339,15 @@ endif()
 
 # With Qt frameworks (macOS), the Qt include directories are <prefix>/lib/QtCore.framework[/Headers],
 # so the shiboken parser needs -F<prefix>/lib to resolve <QtCore/qnamespace.h> and the like.
-# Qt5 only for now: the Qt6 build is not tested with Qt frameworks.
+# Both Qt5 and Qt6 (e.g. MacPorts' qt5 and qt6 ports, the official macOS Qt builds) use frameworks.
 set(SHIBOKEN_QT_FRAMEWORK_ARGS)
-if(NOT NATRON_QT6)
-    foreach(dir IN LISTS QTCORE_INCLUDE_DIRS QTGUI_INCLUDE_DIRS QTWIDGETS_INCLUDE_DIRS)
-        if(dir MATCHES "^(.*)/[^/]+\\.framework(/Headers)?$")
-            list(APPEND SHIBOKEN_QT_FRAMEWORK_ARGS "-F${CMAKE_MATCH_1}")
-        endif()
-    endforeach()
-    if(SHIBOKEN_QT_FRAMEWORK_ARGS)
-        list(REMOVE_DUPLICATES SHIBOKEN_QT_FRAMEWORK_ARGS)
+foreach(dir IN LISTS QTCORE_INCLUDE_DIRS QTGUI_INCLUDE_DIRS QTWIDGETS_INCLUDE_DIRS)
+    if(dir MATCHES "^(.*)/[^/]+\\.framework(/Headers)?$")
+        list(APPEND SHIBOKEN_QT_FRAMEWORK_ARGS "-F${CMAKE_MATCH_1}")
     endif()
+endforeach()
+if(SHIBOKEN_QT_FRAMEWORK_ARGS)
+    list(REMOVE_DUPLICATES SHIBOKEN_QT_FRAMEWORK_ARGS)
 endif()
 
 if(IS_DEBUG_BUILD AND WIN32)
