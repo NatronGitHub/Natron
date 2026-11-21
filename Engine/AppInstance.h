@@ -493,6 +493,15 @@ public:
     virtual RectD getPaintStrokeWholeBbox() const { return RectD(); }
 
     void removeRenderFromQueue(OutputEffectInstance* writer);
+
+    /**
+     * @brief Forgets the renders of the project's writers once its nodes stopped processing because the project
+     * is closed (Project::reset(), closeProject_blocking()), before it deletes them: the queued renders, and the
+     * active renders run in this process. A render in a separate process keeps running, and its item is removed
+     * when the process finishes.
+     **/
+    void removeRendersOfClosedProject();
+
     virtual void reloadScriptEditorFonts() {}
 
     const ProjectBeingLoadedInfo& getProjectBeingLoadedInfo() const;
@@ -542,7 +551,8 @@ protected:
 
 private:
 
-    void startNextQueuedRender(OutputEffectInstance* finishedWriter);
+    /// finishedProcess: the process of a render run in a separate process, else NULL
+    void startNextQueuedRender(OutputEffectInstance* finishedWriter, const ProcessHandler* finishedProcess = NULL);
 
 
     void getWritersWorkForCL(const CLArgs& cl, std::list<AppInstance::RenderWork>& requests);
