@@ -611,7 +611,8 @@ inform the user of various information, warnings or errors.
     Also, if this is the last :class:`App<NatronEngine.App>` alive, Natron will close.
     In GUI mode, the window closes once the script returns to the event loop: in the meantime,
     the project is being closed, and :func:`createNode()<NatronEngine.App.createNode>` returns
-    *None*. A script should not use this :class:`App<NatronEngine.App>` after this call.
+    *None*, and :func:`natron.getNumInstances()<NatronEngine.PyCoreApplication.getNumInstances>`
+    still counts it. A script should not use this :class:`App<NatronEngine.App>` after this call.
 
 .. method:: App.newProject()
 
