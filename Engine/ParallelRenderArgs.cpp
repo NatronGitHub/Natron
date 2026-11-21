@@ -36,6 +36,7 @@
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/GPUContextPool.h"
+#include "Engine/GraphDepthGuard.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoDrawableItem.h"
@@ -322,6 +323,13 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
     EffectInstancePtr effect = node->getEffectInstance();
 
     assert(effect);
+
+    // This recurses upstream (through treeRecurseFunctor), once per node: stop before the stack
+    // overflows (#1440)
+    GraphDepthGuard depthGuard( eGraphTraversalRequest, effect.get() );
+    if ( depthGuard.isTooDeep() ) {
+        return eStatusFailed;
+    }
 
     if (effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
         /*

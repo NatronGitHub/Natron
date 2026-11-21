@@ -61,6 +61,7 @@
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/GPUContextPool.h"
+#include "Engine/GraphDepthGuard.h"
 #include "Engine/PluginMemory.h"
 #include "Engine/Project.h"
 #include "Engine/RenderStats.h"
@@ -354,6 +355,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         return _imp->mainInstance->renderRoI(args, outputPlanes);
     }
 
+    // renderRoI recurses upstream, once per node: stop before the stack overflows (#1440)
+    GraphDepthGuard depthGuard(eGraphTraversalRender, this);
+    if ( depthGuard.isTooDeep() ) {
+        return eRenderRoIRetCodeFailed;
+    }
+
     //Create the TLS data for this node if it did not exist yet
     EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
@@ -437,6 +444,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
                 ///The rod might be NULL for a roto that has no beziers and no input
                 if (stat == eStatusFailed) {
+                    if ( GraphDepthGuard::hasFailed() ) {
+                        // the graph upstream is too deep: this is an error, not an empty RoD (#1440)
+                        return eRenderRoIRetCodeFailed;
+                    }
                     ///if getRoD fails, this might be because the RoD is null after all (e.g: an empty Roto node), we don't want the render to fail
                     return eRenderRoIRetCodeOk;
                 } else if ( rodNc.isNull() ) {

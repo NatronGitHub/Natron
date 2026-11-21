@@ -59,6 +59,7 @@
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/GPUContextPool.h"
+#include "Engine/GraphDepthGuard.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/PluginMemory.h"
@@ -3862,6 +3863,13 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         return eStatusFailed;
     }
 
+    // The RoD of an effect usually depends on the RoD of its inputs: this recurses upstream, once per
+    // node. Stop before the stack overflows (#1440).
+    GraphDepthGuard depthGuard(eGraphTraversalRegionOfDefinition, this);
+    if ( depthGuard.isTooDeep() ) {
+        return eStatusFailed;
+    }
+
     unsigned int mipmapLevel = scale.toMipmapLevel();
     bool foundInCache = _imp->actionsCache->getRoDResult(hash, time, view, mipmapLevel, rod);
     if (foundInCache) {
@@ -3905,6 +3913,11 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
 
             ret = getRegionOfDefinition(hash, time, supportsRenderScaleMaybe() == eSupportsNo ? RenderScale::identity : scale, view, rod);
 
+            if ( GraphDepthGuard::hasFailed() ) {
+                // The RoD of an input could not be computed because the graph is too deep, so this RoD
+                // is wrong: don't cache it, the graph may be made shorter.
+                return eStatusFailed;
+            }
             if ( (ret != eStatusOK) && (ret != eStatusReplyDefault) ) {
                 // rod is not valid
                 //if (!isDuringStrokeCreation) {
@@ -5261,6 +5274,14 @@ void
 isFrameVaryingOrAnimated_impl(const EffectInstance* node,
                               bool *ret)
 {
+    // This recurses upstream, once per node: stop before the stack overflows (#1440), and assume
+    // the result varies, which is always safe.
+    GraphDepthGuard depthGuard(eGraphTraversalFrameVarying, node);
+    if ( depthGuard.isTooDeep() ) {
+        *ret = true;
+
+        return;
+    }
     if ( node->isFrameVarying() || node->getHasAnimation() || node->getNode()->getRotoContext() ) {
         *ret = true;
     } else {
