@@ -35,10 +35,11 @@ it earlier).
    **C++ standard:** RB-2.6 builds with **C++17 for Qt5 and C++20 for Qt6**,
    and so do the plug-ins built with it, so the code must compile with both.
    CMake (``NATRON_QT6``), qmake (``QT_MAJOR_VERSION``, in ``global.pri``) and
-   ``tools/jenkins/compiler-common.sh`` (``QT_VERSION_MAJOR``) pick the
+   the packaging scripts in ``tools/jenkins`` (``QT_VERSION_MAJOR``) pick the
    standard from the Qt version. ``Global/Macros.h`` fails compilation with
    ``#error "Natron 2.6+ requires C++17"`` if the standard is older.
-   RB-2.7 is Qt6-only and uses C++20 everywhere.
+   RB-2.7 (the Qt6 branch, which keeps as much Qt5 support as possible while
+   RB-2.6 is maintained) uses C++20 everywhere.
 
 .. note::
 

@@ -17,7 +17,8 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-# C++ standard: C++17 with Qt5, C++20 with Qt6 (RB-2.6 policy; RB-2.7 is Qt6-only and C++20).
+# C++ standard: C++17 with Qt5, C++20 with Qt6 (RB-2.6 policy; RB-2.7: C++20 everywhere).
+# Strict -std=c++17/c++20; the CMake build uses -std=gnu++17/gnu++20 (CMake's default extensions).
 # Qt 5 qmake doesn't know CONFIG+=c++20, but both Qt 5 and Qt 6 accept c++2a.
 greaterThan(QT_MAJOR_VERSION, 5) {
   NATRON_CXXSTD = c++20

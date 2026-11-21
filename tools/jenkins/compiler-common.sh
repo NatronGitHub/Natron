@@ -4,8 +4,12 @@ set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
 #set -x # Print commands and their arguments as they are executed.
 
-# C++ standard: C++17 with Qt5, C++20 with Qt6 (RB-2.6 policy; RB-2.7 is Qt6-only and C++20).
-# The plug-ins are built with the same CXX, so they follow the same rule.
+# C++ standard: C++17 with Qt5, C++20 with Qt6 (RB-2.6 policy; RB-2.7: C++20 everywhere).
+# CXXSTD only reaches the qmake build of Natron (NATRON_BUILD_SYSTEM=qmake) and the Makefile
+# builds of the plug-ins (PLUGINS_BUILD_SYSTEM=make), which compile with this CXX. The CMake
+# builds (the default) drop the -std flag from CXX and set the standard themselves: Natron's
+# CMakeLists.txt from NATRON_QT6 (CMAKE_CXX_STANDARD, with GNU extensions: -std=gnu++17/20),
+# the plug-ins from OFX_CXX_STANDARD (build-plugins.sh, without GNU extensions).
 if [ "${QT_VERSION_MAJOR:-5}" -ge 6 ]; then
     CXXSTD="c++20"
 else

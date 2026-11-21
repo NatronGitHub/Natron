@@ -143,10 +143,14 @@ To do: validate the PySide6 bindings at run time
     `#1262 <https://github.com/NatronGitHub/Natron/issues/1262>`_): the QtPy
     bundled with a Qt 6 build must support PySide6.
 
-To do: C++20 with Qt 6
-    The RB-2.6 policy is C++17 with Qt 5 and C++20 with Qt 6, but
-    ``CMakeLists.txt`` and ``global.pri`` still select C++17 for both
-    (PR `#1148 <https://github.com/NatronGitHub/Natron/pull/1148>`_).
+Done: C++20 with Qt 6 (PRs #1469 and #1148)
+    The RB-2.6 policy is C++17 with Qt 5 and C++20 with Qt 6. ``CMakeLists.txt``
+    picks ``CMAKE_CXX_STANDARD`` from ``NATRON_QT6`` and passes the same
+    standard to shiboken (``NATRON_SHIBOKEN_STD``; PR
+    `#1469 <https://github.com/NatronGitHub/Natron/pull/1469>`_). ``global.pri``
+    picks it from ``QT_MAJOR_VERSION``, and the packaging scripts from
+    ``QT_VERSION_MAJOR`` (PR
+    `#1148 <https://github.com/NatronGitHub/Natron/pull/1148>`_).
 
 Done: module/include changes
     ``QOpenGLWidget`` lives in the ``OpenGLWidgets`` module in Qt 6: CMake
@@ -262,7 +266,7 @@ Suggested sequence
    per platform, so the Qt 6 build will run nightly or on demand, not on every
    PR. The Windows job also needs a ``natron-build-deps-qt6`` package in
    Natron's pacman repository.
-7. **Switch Qt 6 builds to C++20** (#1148). To do.
+7. **Switch Qt 6 builds to C++20.** Done in PRs #1469 and #1148.
 
 Qt 6 work that keeps Qt 5 unchanged goes to RB-2.6, and reaches RB-2.7 by the
 forward merge. Work that would change or break Qt 5 goes to RB-2.7 only.

@@ -74,10 +74,24 @@ Sanity-check a new OS/compiler combination::
     clang++-mp-<v> -stdlib=libc++ -fopenmp t.cpp -o t && otool -L t | grep -E 'libc\+\+|libomp'
     # expect /usr/lib/libc++.1.dylib and /opt/local/lib/libomp/libomp.dylib
 
-The packaging build compiles Natron and the plug-ins with ``-std=c++17`` for Qt5
-and ``-std=c++20`` for Qt6 (``CXXSTD`` in ``tools/jenkins/compiler-common.sh``,
-from ``QT_VERSION_MAJOR``). openfx-arena compiles its poppler-based reader with
-C++20 in any case (``POPPLER_CXXSTD``), because recent poppler headers require it.
+The packaging build compiles Natron and the plug-ins as C++17 for Qt5 and
+C++20 for Qt6, from ``QT_VERSION_MAJOR``, in one of two ways:
+
+- **CMake builds** (the default: ``NATRON_BUILD_SYSTEM=cmake``,
+  ``PLUGINS_BUILD_SYSTEM=cmake``): ``build-natron.sh`` and ``build-plugins.sh``
+  drop the ``-std=`` flag from ``$CXX``. Natron's ``CMakeLists.txt`` sets
+  ``CMAKE_CXX_STANDARD`` from ``NATRON_QT6`` (with GNU extensions, i.e.
+  ``-std=gnu++17``/``gnu++20``), and the plug-ins get ``-DOFX_CXX_STANDARD=17``
+  or ``20`` (without GNU extensions).
+- **qmake and Makefile builds** (``NATRON_BUILD_SYSTEM=qmake``,
+  ``PLUGINS_BUILD_SYSTEM=make``): they compile with ``$CXX``, whose
+  ``-std=c++17``/``c++20`` comes from ``CXXSTD`` in
+  ``tools/jenkins/compiler-common.sh`` (``gnu++17``/``gnu++20`` on Windows), and
+  qmake also takes the standard from ``QT_MAJOR_VERSION`` in ``global.pri``.
+
+openfx-arena compiles its poppler-based reader as C++20 in any case, because
+recent poppler headers require it: ``POPPLER_CXX_STANDARD`` in its CMake build,
+``POPPLER_CXXSTD`` in its Makefiles.
 
 The MacPorts overlay
 --------------------
