@@ -653,6 +653,26 @@ static int CheckForLeftSplice( GLUtesselator *tess, ActiveRegion *regUp )
 }
 
 
+static void CountSplits( GLUtesselator *tess, int n )
+/*
+ * Natron: CheckForIntersect() is about to split n edges. On some degenerate
+ * contours (two edges whose right endpoints are 1 ulp apart, found by
+ * fuzzing), it computes an intersection 1 ulp to the left of both right
+ * endpoints, splits the edges there, and WalkDirtyRegions() finds the same
+ * configuration again 1 ulp further left: the sweep went on for billions of
+ * splits, allocating memory very fast (#1580). Give up on the polygon when
+ * there are far more splits than any real arrangement of the input edges has
+ * (see InitSplitLimits()).
+ */
+{
+  tess->eventSplits += n;
+  tess->totalSplits += n;
+  if( tess->eventSplits > tess->maxEventSplits
+      || tess->totalSplits > tess->maxTotalSplits ) {
+    longjmp(tess->env,TESS_JMP_DEGENERATE);
+  }
+}
+
 static int CheckForIntersect( GLUtesselator *tess, ActiveRegion *regUp )
 /*
  * Check the upper and lower edges of the given region to see if
@@ -742,6 +762,7 @@ static int CheckForIntersect( GLUtesselator *tess, ActiveRegion *regUp )
      */
     if( dstLo == tess->event ) {
       /* Splice dstLo into eUp, and process the new region(s) */
+      CountSplits( tess, 1 );
       if (__gl_meshSplitEdge( eUp->Sym ) == NULL) longjmp(tess->env,1);
       if ( !__gl_meshSplice( eLo->Sym, eUp ) ) longjmp(tess->env,1);
       regUp = TopLeftRegion( tess, regUp );
@@ -753,6 +774,7 @@ static int CheckForIntersect( GLUtesselator *tess, ActiveRegion *regUp )
     }
     if( dstUp == tess->event ) {
       /* Splice dstUp into eLo, and process the new region(s) */
+      CountSplits( tess, 1 );
       if (__gl_meshSplitEdge( eLo->Sym ) == NULL) longjmp(tess->env,1);
       if ( !__gl_meshSplice( eUp->Lnext, eLo->Oprev ) ) longjmp(tess->env,1);
       regLo = regUp;
@@ -768,12 +790,14 @@ static int CheckForIntersect( GLUtesselator *tess, ActiveRegion *regUp )
      * (and wait for ConnectRightVertex to splice it appropriately).
      */
     if( EdgeSign( dstUp, tess->event, &isect ) >= 0 ) {
+      CountSplits( tess, 1 );
       RegionAbove(regUp)->dirty = regUp->dirty = TRUE;
       if (__gl_meshSplitEdge( eUp->Sym ) == NULL) longjmp(tess->env,1);
       eUp->Org->s = tess->event->s;
       eUp->Org->t = tess->event->t;
     }
     if( EdgeSign( dstLo, tess->event, &isect ) <= 0 ) {
+      CountSplits( tess, 1 );
       regUp->dirty = regLo->dirty = TRUE;
       if (__gl_meshSplitEdge( eLo->Sym ) == NULL) longjmp(tess->env,1);
       eLo->Org->s = tess->event->s;
@@ -791,6 +815,7 @@ static int CheckForIntersect( GLUtesselator *tess, ActiveRegion *regUp )
    * the mesh (ie. eUp->Lface) to be smaller than the faces in the
    * unprocessed original contours (which will be eLo->Oprev->Lface).
    */
+  CountSplits( tess, 2 );
   if (__gl_meshSplitEdge( eUp->Sym ) == NULL) longjmp(tess->env,1);
   if (__gl_meshSplitEdge( eLo->Sym ) == NULL) longjmp(tess->env,1);
   if ( !__gl_meshSplice( eLo->Oprev, eUp ) ) longjmp(tess->env,1);
@@ -1378,6 +1403,40 @@ static void CheckInsideFaces( GLUtesselator *tess )
   }
 }
 
+/* Natron: see InitSplitLimits() */
+#define SPLIT_EVENT_FACTOR	16.
+#define SPLIT_EVENT_MIN		4096.
+
+static void InitSplitLimits( GLUtesselator *tess )
+/*
+ * Natron: limits on the edge splits made by CheckForIntersect() (see
+ * CountSplits()), from the number n of vertices (and edges) of the input.
+ * Each intersection of two edges splits both. At one sweep event, the regions
+ * whose edges intersect are next to the edges of the event or to edges
+ * which were just split, so there are at most about as many splits as edges
+ * crossing the sweep line, i.e. n. Over the whole sweep, n edges have at most
+ * n*(n-1)/2 intersections, i.e. n*(n-1) splits (star polygons get close).
+ * Fuzzing (random, integer grid, star, Bezier, collinear and folded
+ * contours, 3 million, heavily self-intersecting or not) never got more
+ * than 0.85*n (and 212) splits at one event, or 0.98*n*n in total. The
+ * limits are 16*n+4096 splits at one event, and 2*n*n+16*n+4096 in total.
+ * On the contours of #1580, the sweep stops after a few thousand splits.
+ */
+{
+  GLUvertex *v, *vHead = &tess->mesh->vHead;
+  double n = 0., maxEvent, maxTotal;
+
+  for( v = vHead->next; v != vHead; v = v->next ) {
+    n += 1.;
+  }
+  maxEvent = SPLIT_EVENT_FACTOR * n + SPLIT_EVENT_MIN;
+  maxTotal = 2. * n * n + maxEvent;
+  tess->maxEventSplits = maxEvent < (double)LONG_MAX ? (long)maxEvent : LONG_MAX;
+  tess->maxTotalSplits = maxTotal < (double)LONG_MAX ? (long)maxTotal : LONG_MAX;
+  tess->eventSplits = 0;
+  tess->totalSplits = 0;
+}
+
 int __gl_computeInterior( GLUtesselator *tess )
 /*
  * __gl_computeInterior( tess ) computes the planar arrangement specified
@@ -1400,6 +1459,7 @@ int __gl_computeInterior( GLUtesselator *tess )
   RemoveDegenerateEdges( tess );
   if ( !InitPriorityQ( tess ) ) return 0; /* if error */
   InitEdgeDict( tess );
+  InitSplitLimits( tess );
 
   /* __gl_pqSortExtractMin */
   while( (v = (GLUvertex *)pqExtractMin( tess->pq )) != NULL ) {
@@ -1424,6 +1484,7 @@ int __gl_computeInterior( GLUtesselator *tess )
       vNext = (GLUvertex *)pqExtractMin( tess->pq ); /* __gl_pqSortExtractMin*/
       SpliceMergeVertices( tess, v->anEdge, vNext->anEdge );
     }
+    tess->eventSplits = 0;
     SweepEvent( tess, v );
   }
 

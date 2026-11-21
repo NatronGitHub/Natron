@@ -687,3 +687,44 @@ TEST(LibTess,
     EXPECT_EQ(0, countCoverageErrors(square, r2) );
 }
 #endif // NDEBUG
+
+// A self-intersecting contour (117 points on a 10x10 integer grid, found by
+// fuzzing, 1 contour in 8 million) on which the sweep never ended: two edges
+// whose right endpoints are 1 ulp apart "intersect" 1 ulp to the left of both,
+// CheckForIntersect() split them there, and WalkDirtyRegions() found the same
+// configuration again 1 ulp further left, allocating memory very fast
+// (gigabytes per second) for billions of splits. The splits are now limited
+// (CountSplits()), and the polygon is dropped with GLU_INVALID_OPERATION,
+// like the other degenerate cases (#1580). Without the limit, this test runs
+// out of memory. With floating-point contraction (FMA), which libtess is
+// compiled without (#1510), this contour happens to be tessellated. The test
+// runs in every configuration: no sweep assertion fails on it.
+TEST(LibTess,
+     EndlessIntersectionsAreDropped)
+{
+    const TessPoint endless[] = {
+        { 4, 1 }, { 8, 6 }, { 0, 3 }, { 3, 2 }, { 6, 4 }, { 6, 5 }, { 4, 1 }, { 1, 3 }, { 2, 1 }, { 1, 6 },
+        { 1, 3 }, { 1, 2 }, { 1, 2 }, { 7, 6 }, { 1, 4 }, { 0, 2 }, { 1, 4 }, { 9, 8 }, { 7, 9 }, { 7, 4 },
+        { 7, 4 }, { 2, 0 }, { 9, 1 }, { 5, 3 }, { 0, 1 }, { 1, 7 }, { 3, 0 }, { 2, 5 }, { 7, 7 }, { 7, 3 },
+        { 2, 1 }, { 9, 7 }, { 3, 4 }, { 3, 6 }, { 6, 5 }, { 4, 4 }, { 6, 2 }, { 2, 9 }, { 5, 1 }, { 4, 4 },
+        { 9, 5 }, { 2, 7 }, { 3, 6 }, { 9, 6 }, { 1, 6 }, { 1, 7 }, { 5, 8 }, { 4, 2 }, { 7, 2 }, { 6, 2 },
+        { 5, 2 }, { 1, 5 }, { 0, 4 }, { 9, 5 }, { 1, 4 }, { 5, 6 }, { 2, 2 }, { 9, 6 }, { 9, 0 }, { 3, 0 },
+        { 5, 1 }, { 9, 9 }, { 4, 0 }, { 8, 2 }, { 8, 2 }, { 6, 5 }, { 2, 7 }, { 9, 8 }, { 3, 9 }, { 6, 9 },
+        { 0, 6 }, { 2, 0 }, { 2, 7 }, { 7, 2 }, { 2, 4 }, { 7, 8 }, { 2, 1 }, { 0, 6 }, { 4, 2 }, { 1, 7 },
+        { 1, 2 }, { 8, 1 }, { 5, 2 }, { 2, 4 }, { 2, 2 }, { 3, 6 }, { 1, 1 }, { 6, 7 }, { 9, 8 }, { 2, 9 },
+        { 1, 6 }, { 1, 7 }, { 6, 0 }, { 1, 8 }, { 6, 9 }, { 7, 6 }, { 1, 8 }, { 6, 4 }, { 3, 6 }, { 5, 0 },
+        { 6, 8 }, { 9, 1 }, { 8, 0 }, { 4, 0 }, { 2, 1 }, { 3, 6 }, { 1, 3 }, { 4, 9 }, { 2, 4 }, { 9, 0 },
+        { 8, 7 }, { 4, 9 }, { 5, 8 }, { 9, 1 }, { 7, 4 }, { 2, 8 }, { 8, 6 }
+    };
+    std::vector<TessPoint> c( endless, endless + sizeof(endless) / sizeof(endless[0]) );
+    TessResult r = tessellate(c);
+    EXPECT_TRUE( hasError(r, LIBTESS_GLU_INVALID_OPERATION) );
+    EXPECT_TRUE( r.triangles.empty() );
+    EXPECT_EQ(0, r.protocolErrors);
+
+    // the tessellator is still usable
+    std::vector<TessPoint> square = circle(4, 1.);
+    TessResult r2 = tessellate(square);
+    EXPECT_TRUE( r2.errors.empty() );
+    EXPECT_EQ(0, countCoverageErrors(square, r2) );
+}
