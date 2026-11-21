@@ -212,6 +212,15 @@ openfx-misc, openfx-io, openfx-arena, openfx-gmic, …) follows the same rules.
   (never Homebrew), with ``/opt/local`` restored from a cache. It starts only
   after the Linux and Windows jobs have passed.
 
+The ``Tests`` suite includes the GUI tests (``Tests/gui``, ctest label ``gui``, see
+:ref:`guiTests`), which take a few seconds each. On Linux they run under Xvfb with Mesa
+(the job checks the GLX context first, see #536, and sets ``NATRON_GUI_TESTS=1``),
+interactive ones included (``NATRON_TEST_INTERACTIVE=1``), in the Fast (per pull request) and
+Release builds, not in the nightly Debug one (``ctest -LE gui``). The environment variable ``NATRON_GUI_TESTS=1`` enables them at run
+time; the CMake option ``NATRON_BUILD_GUI_TESTS`` registers them (on by default). In the other jobs, which don't set
+``NATRON_GUI_TESTS``, they are skipped (exit status 77), not failed; they can be enabled there
+once their runners are known to have an OpenGL context for the viewer.
+
 Linux and Windows must pass before a pull request is merged. The macOS job is
 informative: it is never a required check, so a pull request doesn't wait for
 it.

@@ -2105,9 +2105,18 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
     }
 
 
+    // kOfxPropIsInteractive of Begin/EndSequenceRender: "is this a single frame render due to user interaction
+    // in a GUI, or a proper full sequence render" (ofxImageEffect.h). A render in the GUI is interactive,
+    // except a render on disk, whose tree root is a writer or a DiskCache. (Other output effects are GUI
+    // renders: the viewer, and the Output node of a group, the tree root of the group's preview render.)
+    // Begin and End get the same value, and a frame step of 1 (a single frame is rendered).
+    EffectInstancePtr rootEffect = frameArgs->treeRoot ? frameArgs->treeRoot->getEffectInstance() : EffectInstancePtr();
+    const bool isDiskRender = rootEffect && ( rootEffect->isWriter() || dynamic_cast<DiskCacheNode*>( rootEffect.get() ) );
+    const bool isInteractiveRender = !appPTR->isBackground() && !isDiskRender;
+
     if (callBegin) {
         assert( self->isSupportedRenderScale(self->supportsRenderScaleMaybe(), renderMappedScale) );
-        if (self->beginSequenceRender_public(time, time, 1, !appPTR->isBackground(), renderMappedScale, isSequentialRender,
+        if (self->beginSequenceRender_public(time, time, 1, isInteractiveRender, renderMappedScale, isSequentialRender,
                                        isRenderMadeInResponseToUserInteraction, frameArgs->draftMode, view, planesToRender->useOpenGL, planesToRender->glContextData) == eStatusFailed) {
             renderStatus = eRenderingFunctorRetFailed;
         }
@@ -2195,7 +2204,7 @@ EffectInstance::renderRoIInternal(EffectInstance* self,
     ///never call endsequence render here if the render is sequential
     if (callBegin) {
         assert( self->isSupportedRenderScale(self->supportsRenderScaleMaybe(), renderMappedScale) );
-        if (self->endSequenceRender_public(time, time, time, false, renderMappedScale,
+        if (self->endSequenceRender_public(time, time, 1, isInteractiveRender, renderMappedScale,
                                      isSequentialRender,
                                      isRenderMadeInResponseToUserInteraction,
                                      frameArgs->draftMode,

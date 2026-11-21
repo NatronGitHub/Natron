@@ -70,6 +70,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
+#include "Gui/GuiTest.h"
 #include "Gui/Label.h"
 #include "Gui/Menu.h"
 #include "Gui/NodeGraph.h"
@@ -2412,7 +2413,7 @@ TrackerPanelV1::showMenuForInstance(Node* instance)
     QAction* copyTrackAnimation = new QAction(tr("Copy track animation"), &menu);
     menu.addAction(copyTrackAnimation);
 
-    QAction* ret = menu.exec( QCursor::pos() );
+    QAction* ret = menu.exec( GuiTest::cursorPos() );
     if (ret == copyTrackAnimation) {
         KnobDoublePtr centerKnob = getCenterKnobForTracker(instance);
         assert(centerKnob);

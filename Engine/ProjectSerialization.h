@@ -53,6 +53,10 @@ GCC_DIAG_ON(unused-parameter)
 #include "Global/GlobalDefines.h"
 
 #include "Engine/AppInstance.h"
+// The additional formats are serialized here: every translation unit that instantiates the (de)serializer of
+// Format must see its BOOST_CLASS_VERSION, or it gets version 0. The linker then keeps one of the
+// instantiations: with MinGW, a test's version-0 iserializer refused the version-3 Formats ("class version").
+#include "Engine/FormatSerialization.h"
 #include "Engine/KnobSerialization.h"
 #include "Engine/MemoryInfo.h" // isApplication32Bits
 #include "Engine/Node.h"

@@ -71,6 +71,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/BackdropGui.h"
 #include "Gui/Button.h"
 #include "Gui/CurveEditor.h"
+#include "Gui/GuiTest.h"
 #include "Gui/HostOverlay.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/DopeSheetEditor.h"
@@ -224,6 +225,10 @@ NodeGui::initialize(NodeGraph* dag,
     internalNode->setNodeGuiPointer(thisAsShared);
 
     QObject::connect( internalNode.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInternalNameChanged(QString)) );
+    // the objectName of the settings panel is the fully qualified name of the node (refreshObjectNames())
+    QObject::connect( internalNode.get(), &Node::scriptNameChanged, this, [this](const QString&) {
+        refreshObjectNames();
+    } );
     QObject::connect( internalNode.get(), SIGNAL(refreshEdgesGUI()), this, SLOT(refreshEdges()) );
     QObject::connect( internalNode.get(), SIGNAL(knobsInitialized()), this, SLOT(initializeKnobs()) );
     QObject::connect( internalNode.get(), SIGNAL(inputsInitialized()), this, SLOT(initializeInputs()) );
@@ -563,6 +568,8 @@ NodeGui::createPanel(QVBoxLayout* container,
             _mainInstancePanel->initializeKnobs();
         }
         panel = new NodeSettingsPanel( multiPanel, _graph->getGui(), thisAsShared, container, container->parentWidget() );
+        // stable name (PySide, stylesheets, GUI tests): the fully qualified name of the node
+        panel->setObjectName( QString::fromUtf8( node->getFullyQualifiedName().c_str() ) );
 
         if (panel) {
             bool isCreatingPythonGroup = getDagGui()->getGui()->getApp()->isCreatingPythonGroup();
@@ -1653,7 +1660,7 @@ NodeGui::boundingRect() const
 void
 NodeGui::refreshEdgesVisility()
 {
-    QPointF mousePos = mapFromScene( _graph->mapToScene( _graph->mapFromGlobal( QCursor::pos() ) ) );
+    QPointF mousePos = mapFromScene( _graph->mapToScene( _graph->mapFromGlobal( GuiTest::cursorPos() ) ) );
     bool hovered = contains(mousePos);
 
     refreshEdgesVisibilityInternal(hovered);
@@ -3504,6 +3511,35 @@ NodeGui::onInternalNameChanged(const QString & s)
 }
 
 void
+NodeGui::refreshObjectNames()
+{
+    NodePtr node = getNode();
+
+    if (!node) {
+        return;
+    }
+    const QString name = QString::fromUtf8( node->getFullyQualifiedName().c_str() );
+    if (_settingsPanel) {
+        _settingsPanel->setObjectName(name);
+    }
+    // a group: the names of its graph and of the panels of its nodes contain its name
+    NodeGroup* group = node->isEffectGroup();
+    if (group) {
+        NodeGraph* graph = dynamic_cast<NodeGraph*>( group->getNodeGraph() );
+        if (graph) {
+            graph->setObjectName(name);
+        }
+        NodesList nodes = group->getNodes();
+        for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            NodeGuiPtr gui = std::dynamic_pointer_cast<NodeGui>( (*it)->getNodeGui() );
+            if (gui) {
+                gui->refreshObjectNames();
+            }
+        }
+    }
+}
+
+void
 NodeGui::setName(const QString & newName)
 {
     std::string stdName = newName.toStdString();
@@ -4152,7 +4188,7 @@ NodeGui::showGroupKnobAsDialog(KnobGroup* group)
     bool showDialog = group->getValue();
     if (showDialog) {
         _activeNodeCustomModalDialog = new GroupKnobDialog(getDagGui()->getGui(), group);
-        _activeNodeCustomModalDialog->move( QCursor::pos() );
+        _activeNodeCustomModalDialog->move( GuiTest::cursorPos() );
         int accepted = _activeNodeCustomModalDialog->exec();
         Q_UNUSED(accepted);
         // Notify dialog closed
@@ -4221,7 +4257,7 @@ NodeGui::onRightClickMenuKnobPopulated()
         m.addAction(action);
     }
 
-    m.exec( QCursor::pos() );
+    m.exec( GuiTest::cursorPos() );
 } // NodeGui::onRightClickMenuKnobPopulated
 
 void

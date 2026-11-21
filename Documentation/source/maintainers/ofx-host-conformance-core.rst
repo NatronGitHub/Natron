@@ -209,7 +209,7 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - A9
      - `ofxCore.h:409-419 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxCore.h#L409-L419>`__ / `ofxCore.h:753-762 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxCore.h#L753-L762>`__ kOfxPropChangeReason values: UserEdited "includes undo/redos, resets and loading values from files or presets"; PluginEdited; Time
      - MUST
-     - Mapped in ``natronValueChangedReasonToOfxValueChangedReason`` (Engine/OfxEffectInstance.cpp:2593-2614). Values loaded with a project are set before CreateInstance, so no InstanceChanged is sent. Sending it after project load is a NEXT item, out of scope.
+     - Mapped in ``natronValueChangedReasonToOfxValueChangedReason`` (Engine/OfxEffectInstance.cpp:2593-2614). Values loaded with a project are set before CreateInstance, so no InstanceChanged is sent for them. After a project load, when all the inputs are connected and the clip preferences computed, each effect gets one InstanceChanged per input clip with an input node, with kOfxChangePluginEdited (`#1107 <https://github.com/NatronGitHub/Natron/issues/1107>`__; ``OfxEffectInstance::onInputsRestoredAfterProjectLoad()``). OFX 1.5.1 has no such rule. openfx main (after 1.5.1, from #184/#191) asks for it with kOfxChangeUserEdited: Natron keeps kOfxChangePluginEdited, which plug-ins don't take as a user connecting a clip (`openfx#294 <https://github.com/AcademySoftwareFoundation/openfx/issues/294>`__, ``kProjectLoadChangeReason``). Values that a plug-in sets in this action get no per-parameter instanceChanged, because knob-changed handlers don't run while a project is loading. If a plug-in changes a value that affects the render or the metadata in this action, the node gets a new knobs age and its metadata are refreshed. If the value is saved, the project is marked as modified, and one line in the Script Editor (stdout in background mode) lists the changed nodes: "Project load: plug-ins changed parameter values in: ... (the project is marked modified)"; the automatic save after a PyPlug update is then skipped. Display-only values (neither saved nor evaluated, e.g. WriteFFmpeg's info parameters) change nothing. Writes to animated parameters set no keyframe while a project is loading: they are lost, and logged.
      - OK
    * - A10
      - `ofxCore.h:428-429 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxCore.h#L428-L429>`__ InstanceChanged \\pre CreateInstance has been called
@@ -556,8 +556,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - G7
      - `ofxMessage.h:134 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxMessage.h#L134>`__ "Persistent messages are associated with an effect handle until explicitly cleared by an effect"
      - MUST
-     - Natron also clears them itself: on node deactivate (Engine/Node.cpp:2815) and at the start of ``Node::makePreviewImage`` (Engine/Node.cpp:3352).
-     - PARTIAL
+     - Natron also clears them itself: on node deactivate (Engine/Node.cpp:2815) and at the start of ``Node::makePreviewImage`` (Engine/Node.cpp:3352). Also when the viewer is refreshed (Gui/ViewerTab10.cpp:418, recursively upstream) and when a file is reloaded (Engine/KnobFile.cpp). Kept on purpose: most bundled plug-ins (about 70 in openfx-misc, several openfx-io and openfx-arena readers) set a persistent error and never clear it, and rely on Natron clearing it when the node renders again; a change that kept the plug-in's messages (in a first version of `#1485 <https://github.com/NatronGitHub/Natron/pull/1485>`__) left fixed errors on the nodes, and hid Natron's own errors. To be revisited when the plug-ins, or the Support library, clear their own messages.
+     - PARTIAL (deliberate, until the plug-ins clear their own messages)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - G8
@@ -804,10 +804,10 @@ Spec-only
 
 22. **P7:** effect descriptor Short/Long labels default to "", and resetting or setting kOfxPropLabel does not reset them. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
-23. **G5/G7:** host-level Error and Warning messages go only to the log (deliberate, because of Sapphire). Natron also clears persistent messages itself (Engine/Node.cpp:2815, 3352). Host-level messages going to the log is deliberate, won't fix. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+23. **G5/G7:** host-level Error and Warning messages go only to the log (deliberate, because of Sapphire). Natron also clears persistent messages itself (Engine/Node.cpp:2815, 3352). Host-level messages going to the log is deliberate, won't fix. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__. Clearing the plug-in's persistent messages is kept, deliberately, until the plug-ins clear their own (see G7).
 
 24. **A14:** asserts on legal PurgeCaches and SyncPrivateData return codes (Engine/OfxEffectInstance.cpp:2781, 2808). This affects debug builds only. **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
 25. **D1:** the standard OfxDialogSuiteV1 is not provided; a fork-only V2 is served under the standard name. This is allowed (optional suite). Allowed by the spec: no issue.
 
-NEXT items met: InstanceChanged after project load (`#1107 <https://github.com/NatronGitHub/Natron/issues/1107>`__ mentions it). It is out of scope.
+NEXT items met: InstanceChanged after project load, with kOfxTypeClip, for each input clip with an input node, with kOfxChangePluginEdited instead of the kOfxChangeUserEdited of openfx main (`#1107 <https://github.com/NatronGitHub/Natron/issues/1107>`__, `openfx#294 <https://github.com/AcademySoftwareFoundation/openfx/issues/294>`__, see A9).
