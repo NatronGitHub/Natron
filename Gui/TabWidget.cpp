@@ -1281,16 +1281,19 @@ TabWidget::onCurrentTabDeleted()
         return;
     }
     _imp->currentWidget = 0;
+    if (!_imp->gui) {
+        // The Gui is closing (discardGuiPointer()), and ~Gui() deletes its viewers while they are
+        // still in their pane, without removeTab(): other entries of tabs may be deleted already, and
+        // the pane is deleted next. Do not look at them, nor show another tab (#1554).
+        return;
+    }
     for (U32 i = 0; i < _imp->tabs.size(); ++i) {
         if (_imp->tabs[i].first->getWidget() == s) {
             _imp->tabs.erase(_imp->tabs.begin() + i);
             _imp->modifyingTabBar = true;
             _imp->tabBar->removeTab(i);
             _imp->modifyingTabBar = false;
-            if (!_imp->gui) {
-                // the Gui is closing (discardGuiPointer()) and deletes the tabs, e.g. ~Gui() its
-                // viewers: do not show another tab (#1554)
-            } else if (_imp->tabs.size() > 0) {
+            if (_imp->tabs.size() > 0) {
                 l.unlock();
                 makeCurrentTab(0);
                 l.relock();
