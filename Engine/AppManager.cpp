@@ -1611,6 +1611,11 @@ AppManager::writeToOutputPipe(const QString & longMessage,
 void
 AppManager::setApplicationsCachesMaximumMemoryPercent(double p)
 {
+    // The --setting commands are run by loadInternal() before loadInternalAfterInitGui() creates the
+    // caches (#1571), which then read their sizes from the settings: there is nothing to do yet.
+    if (!_imp->_nodeCache) {
+        return;
+    }
     size_t maxCacheRAM = p * getSystemTotalRAM_conditionnally();
 
     _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM);
@@ -1620,12 +1625,20 @@ AppManager::setApplicationsCachesMaximumMemoryPercent(double p)
 void
 AppManager::setApplicationsCachesMaximumViewerDiskSpace(unsigned long long size)
 {
+    // Not created yet when called by a --setting command: see setApplicationsCachesMaximumMemoryPercent()
+    if (!_imp->_viewerCache) {
+        return;
+    }
     _imp->_viewerCache->setMaximumCacheSize(size);
 }
 
 void
 AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size)
 {
+    // Not created yet when called by a --setting command: see setApplicationsCachesMaximumMemoryPercent()
+    if (!_imp->_diskCache) {
+        return;
+    }
     _imp->_diskCache->setMaximumCacheSize(size);
 }
 
