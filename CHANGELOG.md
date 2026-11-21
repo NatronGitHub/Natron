@@ -40,6 +40,7 @@
 - The expression created by "Create link on group" and by "Pick" in Manage User Params reads the linked parameter at the frame being computed (`get(frame)`), so a link to an animated parameter is animated. Links created before keep `get()`: edit their expression to add `frame`. #1336
 - Build scripts: COMMERCIAL (non-GPL) builds on Windows and macOS use an LGPL FFmpeg, a LibRaw without the GPL demosaic packs, a libheif without the GPL x264 and x265 encoders and, on Windows, a libtiff without JBIG-KIT. `tools/jenkins/check-commercial-bundle.sh` fails a COMMERCIAL build that contains or links a GPL library. These builds have no libx264, libx265 or libxvid encoding in WriteFFmpeg, no ReadPDF and no AudioCurve (#1302, #1177). See "Formats and codecs that depend on the build" in the Readers/Writers guide.
 - WriteOIIO: in COMMERCIAL builds, HEIC files are encoded with kvazaar instead of x265 (#1177).
+- NatronRenderer and Natron no longer crash at startup when a cache size is given with `--setting` (`maxRAMPercent`, `maxViewerDiskCache` or `maxDiskCacheNode`): the caches are created with these sizes. #1571
 
 
 ## Version 2.5.0
