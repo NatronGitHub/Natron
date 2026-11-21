@@ -78,8 +78,9 @@ Run `port_switch` in the terminal you build from (before `launchBuildMain.sh` or
 The release SDK is installed in a [tart](https://tart.run) VM made from the stock cirruslabs Sonoma image; `tools/tart/natron-sdk.sh create` does all of this section and the next ones (see `tools/tart/README.md`). To do it by hand, on an **Apple Silicon** host (tart only runs there, and only arm64 guests):
 
 ```Shell
-IMAGE=ghcr.io/cirruslabs/macos-sonoma-base:latest   # or, reproducibly, the image used on 2026-11-21:
-# IMAGE=ghcr.io/cirruslabs/macos-sonoma-base@sha256:e2ebdfc4d354b336fe00d729c11a8136a019b8046f41cc183a2fe51b85d18f49
+# the image used for the release SDK (NATRON_MACOS_BASE_IMAGE in tools/jenkins/macos-release.sh),
+# pinned by digest; ghcr.io/cirruslabs/macos-sonoma-base:latest is the newest one
+IMAGE=ghcr.io/cirruslabs/macos-sonoma-base@sha256:e2ebdfc4d354b336fe00d729c11a8136a019b8046f41cc183a2fe51b85d18f49
 tart pull $IMAGE                                               # about 30 GB to download
 tart clone $IMAGE natron-sdk-sonoma
 tart set natron-sdk-sonoma --cpu 6 --memory 16384 --disk-size 250   # GB; the disk is sparse
@@ -87,7 +88,7 @@ tart run --no-graphics natron-sdk-sonoma &
 ssh admin@$(tart ip natron-sdk-sonoma)                          # password: admin
 ```
 
-The image (macOS 14.8.7 in 2026-11) has a single account, `admin` with password `admin` and passwordless `sudo`, which logs in automatically. On its first boot macOS grows the APFS container to the new disk size (`sudo diskutil apfs resizeContainer disk0s2 0` does it otherwise). (`NATRON_MACOS_BASE_IMAGE` in `tools/jenkins/macos-release.sh` is the image the scripts use; set `BASE_IMAGE` to the digest to pin it.)
+The image (macOS 14.8.7 in 2026-11) has a single account, `admin` with password `admin` and passwordless `sudo`, which logs in automatically. On its first boot macOS grows the APFS container to the new disk size (`sudo diskutil apfs resizeContainer disk0s2 0` does it otherwise). (The scripts use `NATRON_MACOS_BASE_IMAGE` from `tools/jenkins/macos-release.sh`, pinned by digest for reproducible release images; `BASE_IMAGE=ghcr.io/cirruslabs/macos-sonoma-base:latest` overrides it, to try a newer image before moving the pin.)
 
 If the guest gets no IPv4 address, or no internet access (seen behind corporate network filters, see "Networking" in `tools/tart/README.md`), reach it at its IPv6 link-local address, and give it internet access through a SOCKS proxy carried by the SSH connection, as the scripts do:
 
@@ -151,7 +152,7 @@ The `clt` step of `tools/tart/provision.sh` does this inside the VM, and checks 
 
 If Apple stops offering the Command Line Tools 15.3 through `softwareupdate`, download "Command Line Tools for Xcode 15.3" from <https://developer.apple.com/download/all/> (this needs an Apple ID), copy the `.dmg` into the VM, and install it: `hdiutil attach Command_Line_Tools_for_Xcode_15.3.dmg`, then `sudo installer -pkg "/Volumes/Command Line Developer Tools/Command Line Tools.pkg" -target /`. The version is set by `NATRON_MACOS_CLT_VERSION` in `tools/jenkins/macos-release.sh`.
 
-Natron itself and the plug-ins are built with a MacPorts clang (section 5), not with Apple's: Apple clang has no OpenMP support (no `-fopenmp`, no `libomp`), and Natron, the CImg plug-ins, G'MIC and ImageMagick 7 use OpenMP. Apple's clang compiles the Objective-C++ files of Natron on macOS 12 to 14, and the ports whose Portfile selects it.
+The release scripts build Natron and the plug-ins with a MacPorts clang (section 5, `tools/jenkins/compiler-common.sh`), and Apple's clang compiles the Objective-C++ files of Natron on macOS 12 to 14, and the ports whose Portfile selects it. Apple clang supports C++17 and C++20, and the CMake builds can use it with OpenMP: Natron's `CMakeLists.txt` and the plug-ins (`OFX_LIBOMP_ROOT`, passed by `build-plugins.sh`) find MacPorts' `libomp`, as in "Developing with the MacPorts SDK". But its driver has no `-fopenmp` (only `-Xpreprocessor -fopenmp`) and Xcode ships no OpenMP runtime, so the builds that pass `-fopenmp` to the compiler, the deprecated qmake build (`CONFIG+=openmp`) and the plug-ins' Makefiles (`PLUGINS_BUILD_SYSTEM=make`, `OPENMP=1`), need a clang with OpenMP; the release scripts use the MacPorts clang for every build, so that the default and fallback builds use the same compiler. Switching the CMake release builds to Apple clang is possible, and not done here.
 
 On a Mac (not needed in the VM), under *System Settings › Privacy & Security › Developer Tools* (*System Preferences › Security & Privacy › Privacy › Developer Tools* before macOS 13), enable your terminal application. This avoids Gatekeeper scans on every freshly built binary.
 
@@ -176,7 +177,15 @@ sudo env ALL_PROXY=socks5h://127.0.0.1:1080 port -v sync
 macosx_deployment_target	14.0
 ```
 
-MacPorts falls back to building a port from source, silently, when the download of its binary archive fails, which can turn seconds into hours (`llvm-18`), or fail (`qt5-qtwebengine` needs Xcode to build). On a slow or flaky connection, fetch the archives first: `sudo port archivefetch <port> <variants> rdepof:<port>`, then `sudo port install <port> <variants>` (the `install` commands of `tools/tart/provision.sh` do this, with retries). In a VM without direct internet access, the `.pkg`'s own `port selfupdate` (rsync) hangs until it times out, and the ports tree must be fetched over HTTPS through the proxy (see "Networking" in `tools/tart/README.md`).
+MacPorts falls back to building a port from source, silently, when the download of its binary archive fails, which can turn seconds into hours (`llvm-18`), or fail (`qt5-qtwebengine` needs Xcode to build). On a slow or flaky connection, fetch the archives first, then remove the work directories that `archivefetch` leaves (they have the dependencies' default variants, and `install` propagates the requested variants to the dependencies: without the `clean`, `install glib2 -x11` refuses to go on with a `glib2-bootstrap +x11` work directory), then install:
+
+```Shell
+sudo port archivefetch <port> <variants> rdepof:<port>
+sudo port clean --work <port> <variants> rdepof:<port>   # the fetched archives are kept
+sudo port install <port> <variants>
+```
+
+`tools/tart/provision.sh` does this, with retries, before every `install` and `upgrade` (except the source builds, `-s`). In a VM without direct internet access, the `.pkg`'s own `port selfupdate` (rsync) hangs until it times out, and the ports tree must be fetched over HTTPS through the proxy (see "Networking" in `tools/tart/README.md`).
 
 On a **newer** macOS, a release SDK also needs `buildfromsource	always`: MacPorts' binary archives would need that macOS (e.g. minos 15.0 on Sequoia), so every port must be built from source, which takes many hours. `qt5-qtwebengine` (a dependency of `py311-pyside2`) then needs a full Xcode to build: install Xcode from the App Store or <https://developer.apple.com/download/all/>, then `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` and `sudo xcodebuild -license accept`. This path is not tested with the current scripts (the tart image runs macOS 14), and `softwareupdate` probably doesn't offer the Command Line Tools 15.3 there. Leave `macosx_sdk_version` unset: MacPorts then uses the SDK of the running macOS (the Command Line Tools' macOS 14.4 SDK on macOS 14). For a development build that you only run on your own Mac, you can skip this. If ports were installed before these lines were added, rebuild the ones built for a newer macOS (see "Building for an older macOS" below).
 

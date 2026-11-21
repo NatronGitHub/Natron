@@ -93,11 +93,17 @@ C++20 for Qt6, from ``QT_VERSION_MAJOR``, in one of two ways:
   after the other flags (``CONFIG += strict_c++`` is not set), so Natron's
   qmake build uses GNU extensions, like its CMake build.
 
-Natron and the plug-ins are built with the MacPorts clang rather than Apple's,
-even on macOS 14 where Apple clang 15 supports C++17 and C++20: Apple clang has
-no OpenMP (no ``-fopenmp`` driver support, no ``libomp``), which Natron, the
-CImg plug-ins, G'MIC and ImageMagick 7 use. Apple clang compiles the
-Objective-C++ files on macOS 12 to 14 (``compiler-common.sh``).
+The release scripts build Natron and the plug-ins with the MacPorts clang
+rather than Apple's, even on macOS 14 where Apple clang 15 supports C++17 and
+C++20. The CMake builds could use Apple clang with OpenMP (Natron's
+``CMakeLists.txt`` and the plug-ins' ``OFX_LIBOMP_ROOT``, which
+``build-plugins.sh`` passes, find MacPorts' ``libomp``), but Apple's driver has
+no ``-fopenmp`` (only ``-Xpreprocessor -fopenmp``) and Xcode ships no OpenMP
+runtime, so the builds that pass ``-fopenmp`` themselves, the deprecated qmake
+build and the plug-ins' Makefiles, need a clang with OpenMP; the scripts use
+the MacPorts clang for all of them, so that the default and fallback builds use
+the same compiler. Apple clang compiles the Objective-C++ files on macOS 12 to
+14 (``compiler-common.sh``).
 
 openfx-arena compiles its poppler-based reader as C++20 with GNU extensions in
 any case, because recent poppler headers require it: ``POPPLER_CXX_STANDARD``
@@ -144,9 +150,12 @@ CI keeps its ``macos-15`` runners, because GitHub has no macOS 14 runners.
 Every Mach-O file in the ``.dmg`` must have a minimum macOS (``minos`` in
 ``otool -l``'s ``LC_BUILD_VERSION``) of 14.0 or older:
 
-- ``tools/jenkins/common.sh`` exports ``MACOSX_DEPLOYMENT_TARGET=14.0``
-  (``NATRON_MACOS_MIN``) on macOS 14 and later, and the build Mac's own version
-  on older systems. An explicit ``MACOSX_DEPLOYMENT_TARGET`` wins.
+- ``tools/jenkins/common.sh`` exports ``MACOSX_DEPLOYMENT_TARGET=14.0`` only
+  for release builds, i.e. when ``NATRON_MACOS_MIN`` is set (to
+  ``NATRON_MACOS_RELEASE_MIN``; ``provision.sh``'s build step and the release
+  commands of ``INSTALL_MACOS.md`` set it). Otherwise it exports the build
+  Mac's major version (e.g. ``15.0``; major.minor on 10.x), see below. An
+  explicit ``MACOSX_DEPLOYMENT_TARGET`` wins.
   ``compiler-common.sh`` keeps it. qmake gets it as
   ``QMAKE_MACOSX_DEPLOYMENT_TARGET``, the plug-ins' CMake builds as
   ``CMAKE_OSX_DEPLOYMENT_TARGET`` (``OFX_DEPLOY_STRICT_MINOS`` then rejects a
@@ -163,8 +172,8 @@ Every Mach-O file in the ``.dmg`` must have a minimum macOS (``minos`` in
   (osmesa-install honours it).
 - ``tools/tart/check-minos.sh`` lists the Mach-O files (in directories, files,
   or a ``.dmg``) that need a newer macOS than ``-t TARGET``.
-  ``tools/tart/natron-build.sh`` runs it on the ``.dmg`` and fails the build if
-  any file needs one. ``tools/tart/provision.sh`` uses it to find the installed
+  ``launchBuildMain.sh`` (release builds) and ``tools/tart/natron-build.sh`` run
+  it on the ``.dmg`` and fail the build if any file needs one. ``tools/tart/provision.sh`` uses it to find the installed
   ports, and the OSMesa/LLVM builds, that must be rebuilt (``step_rebuild_target``).
   For a MacPorts install outside tart, see "Building for an older macOS" in
   ``INSTALL_MACOS.md``.
@@ -174,7 +183,7 @@ single source for the release target (``NATRON_MACOS_RELEASE_MIN``, read by
 ``common.sh`` through ``NATRON_MACOS_MIN``, ``provision.sh``,
 ``natron-build.sh`` and the default of ``check-minos.sh``), the Command Line
 Tools of the SDK image (``NATRON_MACOS_CLT_VERSION``) and its base image
-(``NATRON_MACOS_BASE_IMAGE``; ``BASE_IMAGE`` pins a digest). Then rebuild the
+(``NATRON_MACOS_BASE_IMAGE``, pinned by digest; ``BASE_IMAGE`` overrides it). Then rebuild the
 SDK image (``tools/tart/natron-sdk.sh create``) and update the system
 requirements in the User Guide.
 
