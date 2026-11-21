@@ -152,23 +152,20 @@ OfxImageEffectInstance::endPluginEditBlocks()
     }
 }
 
-class ThreadIsActionCaller_RAII
+OfxImageEffectInstance::ThreadIsActionCaller_RAII::ThreadIsActionCaller_RAII(OfxImageEffectInstance* effect)
+    : _effect(effect)
 {
-    OfxImageEffectInstance* _self;
-
-public:
-
-    ThreadIsActionCaller_RAII(OfxImageEffectInstance* self)
-        : _self(self)
-    {
-        appPTR->setThreadAsActionCaller(_self, true);
+    if (_effect) {
+        appPTR->setThreadAsActionCaller(_effect, true);
     }
+}
 
-    ~ThreadIsActionCaller_RAII()
-    {
-        appPTR->setThreadAsActionCaller(_self, false);
+OfxImageEffectInstance::ThreadIsActionCaller_RAII::~ThreadIsActionCaller_RAII()
+{
+    if (_effect) {
+        appPTR->setThreadAsActionCaller(_effect, false);
     }
-};
+}
 
 OfxImageEffectInstance::MainThreadAction_RAII::MainThreadAction_RAII(OfxImageEffectInstance* effect)
     : _effect( ( effect && ( QThread::currentThread() == qApp->thread() ) ) ? effect : NULL )

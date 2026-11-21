@@ -527,9 +527,8 @@ OfxHost::getStringProperty(const std::string &name,
         }
 
         ///Proxy known plug-ins that filter hostnames
-        if ( pluginID.empty() ) {
-            qDebug() << "OfxHost::getStringProperty(" kOfxPropName "): Error: no plugin ID! (ignoring)";
-        } else {
+        // (no plugin ID outside actions, e.g. in a thread of the plug-in: Natron's host name)
+        if ( !pluginID.empty() ) {
             Settings::KnownHostNameEnum e = getHostNameProxy(pluginID, pluginVersionMajor, pluginVersionMinor);
             if (e != Settings::eKnownHostNameNone) {
                 const std::string& ret = appPTR->getCurrentSettings()->getKnownHostName(e);
@@ -1399,20 +1398,61 @@ OfxHost::setThreadAsActionCaller(OfxImageEffectInstance* instance,
     OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
 
     if (actionCaller) {
+        // both or none (push_back may throw std::bad_alloc)
         tls->effectsCallingMainEntry.push_back(instance);
-        tls->threadIndexes.push_back(-1);
+        try {
+            tls->threadIndexes.push_back(-1);
+        } catch (...) {
+            tls->effectsCallingMainEntry.pop_back();
+            throw;
+        }
     } else {
         // back to the action that called this one on this thread, if any: keeping the effect whose action
         // returned would give a later action of the caller its host name, and the effect may be destroyed
         // after its action returned (#1497)
         assert( !tls->effectsCallingMainEntry.empty() && (tls->effectsCallingMainEntry.back() == instance) );
-        tls->effectsCallingMainEntry.pop_back();
+        if ( !tls->effectsCallingMainEntry.empty() ) {
+            tls->effectsCallingMainEntry.pop_back();
+        }
         assert( !tls->threadIndexes.empty() );
-        tls->threadIndexes.pop_back();
+        if ( !tls->threadIndexes.empty() ) {
+            tls->threadIndexes.pop_back();
+        }
     }
 }
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
+
+// In a thread function of the multithread suite, the effect whose action called multiThread() is the one whose
+// action runs on the thread, as in the sequential path, which runs the functions in the calling thread: the
+// plug-in gets the same host name (#1497). The calling thread waits for the thread functions, so the effect
+// lives longer than they do. Nothing if effect is NULL (multiThread() called outside actions).
+class SpawnedThreadEffect_RAII
+{
+    OfxHost::OfxHostDataTLSPtr _tls;
+    OfxImageEffectInstance* _effect;
+
+public:
+    SpawnedThreadEffect_RAII(const OfxHost::OfxHostDataTLSPtr& tls,
+                             OfxImageEffectInstance* effect)
+        : _tls(tls)
+        , _effect(effect)
+    {
+        if (_effect) {
+            _tls->effectsCallingMainEntry.push_back(_effect);
+        }
+    }
+
+    ~SpawnedThreadEffect_RAII()
+    {
+        if (_effect) {
+            assert( !_tls->effectsCallingMainEntry.empty() && (_tls->effectsCallingMainEntry.back() == _effect) );
+            if ( !_tls->effectsCallingMainEntry.empty() ) {
+                _tls->effectsCallingMainEntry.pop_back();
+            }
+        }
+    }
+};
 
 ///Using QtConcurrent doesn't work with The Foundry Furnace plug-ins because they expect fresh threads
 ///to be created. As QtConcurrent's thread-pool recycles thread, it seems to make Furnace crash.
@@ -1424,6 +1464,7 @@ threadFunctionWrapper(OfxThreadFunctionV1 func,
                       unsigned int threadIndex,
                       unsigned int threadMax,
                       QThread* spawnerThread,
+                      OfxImageEffectInstance* effect,
                       void *customArg)
 {
 #ifdef DEBUG
@@ -1446,6 +1487,7 @@ threadFunctionWrapper(OfxThreadFunctionV1 func,
         // Uncomment if using plugins that generate FP exceptions
         boost_adaptbx::floating_point::exception_trapping trap(0);
 #endif
+        SpawnedThreadEffect_RAII spawnedEffect(tls, effect);
         func(threadIndex, threadMax, customArg);
     } catch (const std::bad_alloc & ba) {
         ret =  kOfxStatErrMemory;
@@ -1472,6 +1514,7 @@ public:
               unsigned int threadIndex,
               unsigned int threadMax,
               QThread* spawnerThread,
+              OfxImageEffectInstance* effect,
               void *customArg,
               OfxStatus *stat)
         : QThread()
@@ -1480,6 +1523,7 @@ public:
         , _threadIndex(threadIndex)
         , _threadMax(threadMax)
         , _spawnerThread(spawnerThread)
+        , _effect(effect)
         , _customArg(customArg)
         , _stat(stat)
     {
@@ -1501,6 +1545,7 @@ public:
 
         assert(*_stat == kOfxStatFailed);
         try {
+            SpawnedThreadEffect_RAII spawnedEffect(tls, _effect);
             _func(_threadIndex, _threadMax, _customArg);
             *_stat = kOfxStatOK;
         } catch (const std::bad_alloc & ba) {
@@ -1519,6 +1564,7 @@ private:
     unsigned int _threadIndex;
     unsigned int _threadMax;
     QThread* _spawnerThread;
+    OfxImageEffectInstance* _effect;
     void *_customArg;
     OfxStatus *_stat;
 };
@@ -1588,6 +1634,8 @@ OfxHost::multiThread(OfxThreadFunctionV1 func,
     }
 
     QThread* spawnerThread = QThread::currentThread();
+    // the effect whose action called multiThread(), for the thread functions (see SpawnedThreadEffect_RAII)
+    OfxImageEffectInstance* const effect = _imp->tlsData->getOrCreateTLSData()->effectCallingMainEntry();
     bool useThreadPool = appPTR->getUseThreadPool();
 
     if (useThreadPool) {
@@ -1599,7 +1647,7 @@ OfxHost::multiThread(OfxThreadFunctionV1 func,
         /// DON'T set the maximum thread count, this is a global application setting, and see the documentation excerpt above
         //QThreadPool::globalInstance()->setMaxThreadCount(nThreads);
         std::function<OfxStatus (const uint32_t&)> process = [&](const uint32_t tid) {
-            return threadFunctionWrapper(func, tid, nThreads, spawnerThread, customArg);
+            return threadFunctionWrapper(func, tid, nThreads, spawnerThread, effect, customArg);
         };
         QFuture<OfxStatus> future = QtConcurrent::mapped( threadIndexes, process );
         future.waitForFinished();
@@ -1619,7 +1667,7 @@ OfxHost::multiThread(OfxThreadFunctionV1 func,
             // at most maxConcurrentThread should be running at the same time
             QVector<OfxThread*> threads(nThreads);
             for (unsigned int i = 0; i < nThreads; ++i) {
-                threads[i] = new OfxThread(func, i, nThreads, spawnerThread, customArg, &status[i]);
+                threads[i] = new OfxThread(func, i, nThreads, spawnerThread, effect, customArg, &status[i]);
             }
             unsigned int i = 0; // index of next thread to launch
             unsigned int running = 0; // number of running threads
@@ -1943,8 +1991,19 @@ OfxHost::requestDialog(OfxImageEffectHandle instance,
                        void* instanceData)
 {
     Q_UNUSED(inArgs);
-    OFX::Host::ImageEffect::Base *effectBase = reinterpret_cast<OFX::Host::ImageEffect::Base*>(instance);
-    OfxImageEffectInstance *effectInstance = dynamic_cast<OfxImageEffectInstance*>(effectBase);
+    OfxImageEffectInstance *effectInstance = NULL;
+    if (instance) {
+        OFX::Host::ImageEffect::Base *effectBase = reinterpret_cast<OFX::Host::ImageEffect::Base*>(instance);
+        effectInstance = dynamic_cast<OfxImageEffectInstance*>(effectBase);
+    } else {
+        // OfxDialogSuiteV1.requestDialog() has no instance handle (HostSupport passes NULL): the effect is the
+        // one whose action runs on the requesting thread. It must be found here, on that thread: the request is
+        // queued to the main thread, where another effect's action, or none, may be running (#1497).
+        effectInstance = _imp->tlsData->getOrCreateTLSData()->effectCallingMainEntry();
+    }
+    if (!effectInstance) {
+        return kOfxStatErrBadHandle;
+    }
     appPTR->requestOFXDIalogOnMainThread(effectInstance, instanceData);
 
     return kOfxStatOK;

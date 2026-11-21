@@ -34,6 +34,7 @@
 
 #include <QtCore/QDir>
 #include <QtCore/QFile>
+#include <QtCore/QPointF>
 #include <QtCore/QTemporaryDir>
 #include <QtCore/QThread>
 
@@ -52,8 +53,11 @@
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
 #include "Engine/OfxHost.h"
+#include "Engine/OverlaySupport.h"
 #include "Engine/Project.h"
+#include "Engine/RenderScale.h"
 #include "Engine/Settings.h"
+#include "Engine/ViewIdx.h"
 
 #include "OfxTestPlugin.h"
 
@@ -344,4 +348,130 @@ TEST(OfxHostProperties, HostNameAfterEffectDestroyed)
     ASSERT_TRUE(tls != NULL);
     EXPECT_TRUE(tls->effectCallingMainEntry() == NULL);
     EXPECT_EQ( appPTR->getCurrentSettings()->getHostName(), hostProps().getStringProperty(kOfxPropName) );
+}
+
+namespace {
+// Tests/OfxTestPlugin/NatronTestPluginHostName.cpp: its ID gets the Nuke host name (getHostNameProxy())
+#define kNatronTestPluginHostName "com.digitalfilmtools.NatronTestHostName"
+
+// A viewport that does not draw anything: only what an OFX overlay interact queries.
+class HostNameViewport
+    : public OverlaySupport
+{
+public:
+    virtual void swapOpenGLBuffers() OVERRIDE FINAL {}
+
+    virtual void redraw() OVERRIDE FINAL {}
+
+    virtual void getViewportSize(double &width,
+                                 double &height) const OVERRIDE FINAL
+    {
+        width = 800.;
+        height = 600.;
+    }
+
+    virtual void getPixelScale(double & xScale,
+                               double & yScale) const OVERRIDE FINAL
+    {
+        xScale = yScale = 1.;
+    }
+
+#ifdef OFX_EXTENSIONS_NATRON
+    virtual double getScreenPixelRatio() const OVERRIDE FINAL
+    {
+        return 1.;
+    }
+
+#endif
+
+    virtual void getBackgroundColour(double &r,
+                                     double &g,
+                                     double &b) const OVERRIDE FINAL
+    {
+        r = g = b = 0.;
+    }
+
+    virtual void saveOpenGLContext() OVERRIDE FINAL {}
+
+    virtual void restoreOpenGLContext() OVERRIDE FINAL {}
+
+    virtual RectD getViewportRect() const OVERRIDE FINAL
+    {
+        return RectD(0., 0., 800., 600.);
+    }
+
+    virtual void getCursorPosition(double& x,
+                                   double& y) const OVERRIDE FINAL
+    {
+        x = y = 0.;
+    }
+
+    virtual void toWidgetCoordinates(double * /*x*/,
+                                     double * /*y*/) const OVERRIDE FINAL {}
+
+    virtual void toCanonicalCoordinates(double * /*x*/,
+                                        double * /*y*/) const OVERRIDE FINAL {}
+
+    virtual int getWidgetFontHeight() const OVERRIDE FINAL
+    {
+        return 10;
+    }
+
+    virtual int getStringWidthForCurrentFont(const std::string& /*string*/) const OVERRIDE FINAL
+    {
+        return 10;
+    }
+};
+} // anonymous namespace
+
+// A plug-in gets its own host name (here, Nuke's) in the actions of its overlay interact, which don't go
+// through the effect's mainEntry(), and in the thread functions of the multithread suite, in spawned threads
+// as in the calling thread (#1497). Outside actions, it is Natron's.
+TEST(OfxHostProperties, HostNameInInteractAndThreads)
+{
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginHostName) ) {
+        NatronTestPlugin::reportSkipped(kNatronTestPluginHostName);
+
+        return;
+    }
+    const std::string nuke = appPTR->getCurrentSettings()->getKnownHostName(Settings::eKnownHostNameNuke);
+    const std::string natron = appPTR->getCurrentSettings()->getHostName();
+    ASSERT_NE(nuke, natron);
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ASSERT_TRUE( bool(app) );
+    CreateNodeArgs args( kNatronTestPluginHostName, app->getProject() );
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    NodePtr node = app->createNode(args);
+    ASSERT_TRUE( bool(node) );
+    EffectInstancePtr effect = node->getEffectInstance();
+    ASSERT_TRUE( effect->hasOverlay() );
+    HostNameViewport viewport;
+    effect->setCurrentViewportForOverlays_public(&viewport);
+
+    const std::string penDown = "HostName.penDown.name.";
+    const std::string threaded = "HostName.threaded.name.";
+    const std::string sequential = "HostName.sequential.name.";
+    const int penDownNuke = NatronTestPlugin::counter(penDown + nuke);
+    const int penDownNatron = NatronTestPlugin::counter(penDown + natron);
+    const int threadedNuke = NatronTestPlugin::counter(threaded + nuke);
+    const int threadedNatron = NatronTestPlugin::counter(threaded + natron);
+    const int sequentialNuke = NatronTestPlugin::counter(sequential + nuke);
+    const int sequentialNatron = NatronTestPlugin::counter(sequential + natron);
+    const int failed = NatronTestPlugin::counter("HostName.multiThread.failed");
+    ignore_result( effect->onOverlayPenDown_public( 1., RenderScale(), ViewIdx(0), QPointF(10., 20.), QPointF(0., 0.), 1., 0., ePenTypeLMB, KeyboardModifiers() ) );
+    EXPECT_EQ( failed, NatronTestPlugin::counter("HostName.multiThread.failed") );
+    EXPECT_EQ( penDownNuke + 1, NatronTestPlugin::counter(penDown + nuke) );
+    EXPECT_EQ( penDownNatron, NatronTestPlugin::counter(penDown + natron) );
+    // 2 thread functions (one after the other in the calling thread if only one CPU is used)
+    EXPECT_EQ( threadedNuke + 2, NatronTestPlugin::counter(threaded + nuke) );
+    EXPECT_EQ( threadedNatron, NatronTestPlugin::counter(threaded + natron) );
+    EXPECT_EQ( sequentialNuke + 1, NatronTestPlugin::counter(sequential + nuke) );
+    EXPECT_EQ( sequentialNatron, NatronTestPlugin::counter(sequential + natron) );
+
+    effect->setCurrentViewportForOverlays_public(NULL);
+    effect.reset();
+    node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
+    NATRON_NAMESPACE::OfxHost::OfxHostDataTLSPtr tls = appPTR->getOFXHost()->getTLSData();
+    EXPECT_TRUE(tls->effectCallingMainEntry() == NULL);
+    EXPECT_EQ( natron, hostProps().getStringProperty(kOfxPropName) );
 }

@@ -3400,14 +3400,9 @@ AppManager::onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance,
                                             void* instanceData)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if (instance == NULL) {
-        // instance may be NULL if using OfxDialogSuiteV1: use the effect whose action is running on the main
-        // thread, if any. (The request may come from another thread, e.g. a render thread, so there is no
-        // such effect in general: the main thread's last action may be that of another effect, or of an
-        // effect destroyed since, #1497.)
-        OfxHost::OfxHostDataTLSPtr tls = _imp->ofxHost->getTLSData();
-        instance = tls->effectCallingMainEntry();
-    }
+    // never NULL: OfxHost::requestDialog() finds the effect of an OfxDialogSuiteV1 request (which has no
+    // instance handle) on the requesting thread (#1497)
+    assert(instance);
 #ifdef OFX_SUPPORTS_DIALOG
     if (instance) {
         instance->dialog(instanceData);
