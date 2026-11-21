@@ -80,6 +80,7 @@ set(Tests_SOURCES
     OSGLContext_Test.cpp
     ParamRandom_Test.cpp
     PluginGrouping_Test.cpp
+    PrecompLoad_Test.cpp
     ProjectAutoSave_Test.cpp
     PyEffectEquality_Test.cpp
     PythonScript_Test.cpp
