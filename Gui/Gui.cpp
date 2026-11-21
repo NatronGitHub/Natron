@@ -39,7 +39,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QApplication> // qApp
 #include <QMenuBar>
 #include <QUndoGroup>
-#include <QTimer>
 #include <QDesktopServices>
 #include <QUrl>
 #include <QPointer>
