@@ -1294,7 +1294,9 @@ TabWidget::onCurrentTabDeleted()
             } else {
                 _imp->currentWidget = 0;
                 _imp->mainLayout->addStretch();
-                if ( !_imp->gui->isDraggingPanel() ) {
+                // gui is null once the Gui is closing (discardGuiPointer()): its viewers are
+                // deleted after that (#1554)
+                if ( _imp->gui && !_imp->gui->isDraggingPanel() ) {
                     if ( dynamic_cast<FloatingWidget*>( parentWidget() ) ) {
                         l.unlock();
                         tryCloseFloatingPane();

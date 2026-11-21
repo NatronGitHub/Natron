@@ -450,7 +450,10 @@ Gui::eventFilter(QObject *target,
                  QEvent* e)
 {
     if (_imp->_aboutToClose) {
-        return true;
+        // Except the deferred delete of GuiAppInstance::aboutToQuit(), which sets this flag before
+        // calling deleteLater(): eating it left this window, its panels and the PySide wrappers of
+        // their widgets alive until Python was finalized, after the knobs were destroyed (#1554).
+        return e->type() != QEvent::DeferredDelete;
     }
     if ( dynamic_cast<QInputEvent*>(e) ) {
         /*Make top level instance this instance since it receives all
