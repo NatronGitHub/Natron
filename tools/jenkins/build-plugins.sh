@@ -277,8 +277,8 @@ function ofx_cmake_build() {
     if [ "$PKGOS" = "OSX" ]; then
         # Apple clang has no OpenMP runtime: MacPorts' libomp (only used with Apple clang)
         args+=(-DOFX_LIBOMP_ROOT="${MACPORTS:-/opt/local}")
-        # the deployment target of common.sh (14.0 for all the macOS bundles, #1347), as the
-        # Makefiles, which read MACOSX_DEPLOYMENT_TARGET too
+        # the deployment target of common.sh (NATRON_MACOS_MIN, 14.0, for release builds; the
+        # build Mac's macOS otherwise; #1347), as the Makefiles, which read MACOSX_DEPLOYMENT_TARGET too
         if [ -n "${MACOSX_DEPLOYMENT_TARGET:-}" ]; then
             args+=(-DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET")
         fi

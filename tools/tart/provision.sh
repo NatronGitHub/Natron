@@ -167,7 +167,7 @@ step_nobrew() {
     [ ! -e /opt/homebrew ]
 }
 
-# The Command Line Tools with the macOS 14 SDK, and nothing else (no Xcode): CLT $CLT_VERSION has
+# The Command Line Tools with the SDK of the target macOS (14), and nothing else (no Xcode): CLT $CLT_VERSION has
 # the macOS 14.4 SDK (default) and 13.3, Apple clang 15.0.0. The base image has CLT 16.2 (macOS 15.2 and 14.5 SDKs), which is
 # replaced. softwareupdate installs CLT without an Apple ID when this file exists; it uses the
 # system proxy settings, set to the SOCKS proxy for the duration of the install.
@@ -220,14 +220,18 @@ step_clt() {
     sudo xcode-select -s /Library/Developer/CommandLineTools
     xcode-select -p
     pkgutil --pkg-info=com.apple.pkg.CLTools_Executables
-    # the default SDK is macOS 14's, and there is none for a newer macOS (CLT 15.3 also has 13.3)
+    # the default SDK is the target macOS's, and there is none for a newer macOS (CLT 15.3 also
+    # has 13.3)
+    local major=${macos_target%%.*} v
     sdks=$(ls /Library/Developer/CommandLineTools/SDKs)
     echo "SDKs: $sdks"
-    echo "$sdks" | grep -E '^MacOSX(1[5-9]|[2-9][0-9])' && { echo "SDK for a macOS newer than 14 found"; return 1; }
-    xcrun --show-sdk-version | grep -q '^14\.' || { echo "default SDK is not macOS 14"; return 1; }
+    for v in $(echo "$sdks" | sed -n 's/^MacOSX\([0-9][0-9]*\).*\.sdk$/\1/p'); do
+        [ "$v" -le "$major" ] || { echo "SDK for macOS $v, newer than $major, found"; return 1; }
+    done
+    [ "$(xcrun --show-sdk-version | cut -d. -f1)" = "$major" ] || { echo "the default SDK is not macOS $major's"; return 1; }
     xcrun --show-sdk-path
     clang --version
-    # Apple clang and its libc++ for C++17 (Qt5 builds) and C++20 (Qt6 builds), for macOS 14
+    # Apple clang and its libc++ for C++17 (Qt5 builds) and C++20 (Qt6 builds), for $macos_target
     cat > /tmp/clt-cxx17.cpp <<'EOF'
 #include <optional>
 #include <string_view>
@@ -263,11 +267,11 @@ int main() {
             std::numbers::pi > 3) ? 0 : 1;
 }
 EOF
-    clang++ -std=c++17 -mmacosx-version-min=14.0 -O2 /tmp/clt-cxx17.cpp -o /tmp/clt-cxx17 && /tmp/clt-cxx17
-    clang++ -std=c++20 -mmacosx-version-min=14.0 -O2 /tmp/clt-cxx20.cpp -o /tmp/clt-cxx20 && /tmp/clt-cxx20
+    clang++ -std=c++17 -mmacosx-version-min="$macos_target" -O2 /tmp/clt-cxx17.cpp -o /tmp/clt-cxx17 && /tmp/clt-cxx17
+    clang++ -std=c++20 -mmacosx-version-min="$macos_target" -O2 /tmp/clt-cxx20.cpp -o /tmp/clt-cxx20 && /tmp/clt-cxx20
     # informational: std::format (libc++ marks it available from macOS 13.3)
     printf '#include <format>\n#include <string>\nint main(){ return std::format("{}", 42) == "42" ? 0 : 1; }\n' > /tmp/clt-format.cpp
-    if clang++ -std=c++20 -mmacosx-version-min=14.0 /tmp/clt-format.cpp -o /tmp/clt-format && /tmp/clt-format; then
+    if clang++ -std=c++20 -mmacosx-version-min="$macos_target" /tmp/clt-format.cpp -o /tmp/clt-format && /tmp/clt-format; then
         echo "std::format: OK"
     else
         echo "std::format: not usable"

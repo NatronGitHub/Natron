@@ -97,7 +97,8 @@ vm_ssh "$VM" 'set -e
 
 log "copying $(basename "$DMG") and Natron-Tests into $VM"
 vm_rsync "$VM" "$DMG" natron.dmg
-vm_rsync "$VM" "$NATRON_TESTS_SRC/" Natron-Tests/ --exclude .git --delete
+# not the results of a run in the host checkout: they would pass for this run's
+vm_rsync "$VM" "$NATRON_TESTS_SRC/" Natron-Tests/ --exclude .git --exclude /result.txt --exclude /failed --delete
 # gtimeout (GNU coreutils) is what runTests.sh uses on macOS: a minimal one in Perl (part of macOS)
 vm_ssh "$VM" 'set -e
     mkdir -p natron-test-bin
@@ -163,6 +164,8 @@ vm_ssh "$VM" 'setopt nonomatch 2> /dev/null; cd Natron-Tests && [ -f result.txt 
     done; true' || true
 
 log "copying the results to $OUT"
+# never leave the results of an earlier run next to the DMG
+rm -f "$OUT/$NAME-tests.log" "$OUT/$NAME-tests.txt"
 vm_rsync_back "$VM" runTests.log "$OUT/$NAME-tests.log" || true
 vm_rsync_back "$VM" Natron-Tests/result.txt "$OUT/$NAME-tests.txt" || true
 rm -rf "${TART_RUN:?}/$NAME-unit_tests_failures" "$OUT/$NAME-unit_tests_failures.zip"

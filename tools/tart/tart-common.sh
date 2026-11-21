@@ -16,8 +16,8 @@ NATRON_SRC=$(cd "$TART_DIR/../.." && pwd)
 THIRD_PARTY=$(cd "$NATRON_SRC/.." && pwd)
 OSMESA_INSTALL_SRC=${OSMESA_INSTALL_SRC:-$THIRD_PARTY/osmesa-install}
 
-# base image (NATRON_MACOS_BASE_IMAGE in tools/jenkins/macos-release.sh; set BASE_IMAGE to a
-# @sha256: digest for a reproducible image) and local SDK image names
+# base image (NATRON_MACOS_BASE_IMAGE in tools/jenkins/macos-release.sh, pinned by digest;
+# BASE_IMAGE=...:latest overrides it) and local SDK image names
 # shellcheck source=../jenkins/macos-release.sh
 . "$NATRON_SRC/tools/jenkins/macos-release.sh"
 BASE_IMAGE=${BASE_IMAGE:-$NATRON_MACOS_BASE_IMAGE}

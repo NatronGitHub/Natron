@@ -15,7 +15,8 @@ NATRON_MACOS_RELEASE_MIN=14.0
 # Command Line Tools installed in the SDK image (tools/tart/provision.sh, step_clt): 15.3 has the
 # macOS 14.4 SDK (and 13.3) and Apple clang 15.0.0.
 NATRON_MACOS_CLT_VERSION=15.3
-# tart base image of the SDK image and of the clean test VMs (tools/tart). Pin a digest for a
-# reproducible image, e.g. ghcr.io/cirruslabs/macos-sonoma-base@sha256:e2ebdfc4d354b336fe00d729c11a8136a019b8046f41cc183a2fe51b85d18f49
-# (the image used on 2026-11-21: macOS 14.8.7).
-NATRON_MACOS_BASE_IMAGE=ghcr.io/cirruslabs/macos-sonoma-base:latest
+# tart base image of the SDK image and of the clean test VMs (tools/tart), pinned by digest so that
+# a release SDK image is reproducible: the image used on 2026-11-21 (macOS 14.8.7). To try the
+# newest one, override it: BASE_IMAGE=ghcr.io/cirruslabs/macos-sonoma-base:latest; to move the
+# pin, put the new digest here (tart pull prints it; tart list shows it).
+NATRON_MACOS_BASE_IMAGE=ghcr.io/cirruslabs/macos-sonoma-base@sha256:e2ebdfc4d354b336fe00d729c11a8136a019b8046f41cc183a2fe51b85d18f49

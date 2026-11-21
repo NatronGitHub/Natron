@@ -202,8 +202,9 @@ if [ "$PKGOS" = "OSX" ]; then
     case "$osxver" in
         10.*) MACOSX_SDK_ROOT=/Developer/SDKs;;
     esac
-    # MACOSX_DEPLOYMENT_TARGET is normally set by common.sh (14.0 for releases built on
-    # macOS 14 or later); the table below is only a fallback for scripts that don't set it.
+    # MACOSX_DEPLOYMENT_TARGET is normally set by common.sh (NATRON_MACOS_MIN, 14.0, for release
+    # builds, the build Mac's macOS otherwise); the table below is only a fallback for scripts
+    # that don't set it.
     case "${MACOSX_DEPLOYMENT_TARGET:+set}:$osxver" in
         set:*)
             ;;
