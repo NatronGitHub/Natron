@@ -137,6 +137,15 @@ Gui::~Gui()
         delete *it;
     }
 
+    // Delete the node graphs of the groups now too: QWidget::~QWidget() would delete their scenes,
+    // children of this window created before them, which delete their items, before the graphs,
+    // which still hold some of these items (the NodeGuis of the nodes in the groups) (#1554).
+    std::list<NodeGraph*> groups;
+    groups.swap(_imp->_groups);
+    for (std::list<NodeGraph*>::iterator it = groups.begin(); it != groups.end(); ++it) {
+        delete *it;
+    }
+
     delete _imp->_errorLog;
     delete _imp->_projectGui;
     delete _imp->_undoStacksGroup;

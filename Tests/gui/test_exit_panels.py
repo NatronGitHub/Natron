@@ -29,8 +29,9 @@ check(viewerTabs[0].parentWidget() is not None and viewerTabs[1].parentWidget() 
 panel = NatronGui.PyPanel("fr.natron.test.exitPanel", "Exit test panel", True, app)
 panel.createStringParam("text", "Text")
 app.registerPythonPanel(panel, "test_exit_panels_panel")
-pane = app.getActiveTabWidget()
-check(pane is not None, "no active pane")
+panes = [p for p in (app.getTabWidget("pane%d" % i) for i in range(1, 12)) if p is not None]
+check(panes, "no pane")
+pane = panes[-1]
 check(pane.appendTab(panel), "appendTab() failed")
 pane.floatPane()
 wait_idle()
