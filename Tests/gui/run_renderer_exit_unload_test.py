@@ -53,7 +53,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 SKIP = 77
 PLUGIN_ID = "net.natron.test.Sequential"
-CASE_TIMEOUT = 120  # seconds per NatronRenderer run: the 5 runs must fit in the ctest TIMEOUT (660 s)
+CASE_TIMEOUT = 100  # seconds per NatronRenderer run: the 5 runs (plus 10 s grace each) must fit in the ctest TIMEOUT (660 s)
 
 SCRIPT = """
 import sys
