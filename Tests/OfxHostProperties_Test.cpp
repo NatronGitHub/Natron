@@ -125,8 +125,13 @@ TEST(OfxHostProperties, SetableFrameRate)
     EXPECT_EQ( 1, props.getIntProperty(kOfxImageEffectPropSetableFrameRate) );
     EXPECT_EQ( 0, props.getIntProperty(kOfxImageEffectPropSetableFielding) );
 
-    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginGenerator) || !NatronTestPlugin::isAvailable(kNatronTestPluginMultiPAR) ) {
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginGenerator) ) {
         NatronTestPlugin::reportSkipped(kNatronTestPluginGenerator);
+
+        return;
+    }
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginMultiPAR) ) {
+        NatronTestPlugin::reportSkipped(kNatronTestPluginMultiPAR);
 
         return;
     }
