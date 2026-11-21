@@ -2371,3 +2371,15 @@ if { ${os.platform} eq "darwin" && ${os.major} < 17} {
         }
     }
 }
+
+# Natron: MacPorts only installs a port from a binary archive if the port's own ports tree lists
+# archive sites, which this overlay doesn't: every qt5 subport would be built from source, and
+# qt5-qtwebengine needs a full Xcode to build (use_xcode yes), which Natron's macOS 14 SDK doesn't
+# have (Command Line Tools only). The subports other than qtbase are unchanged here (the qtwebengine
+# patch above only fixes the build with the macOS 27 SDK), so install them from MacPorts' archives,
+# when there is one for this macOS and these variants. No Qt6 counterpart needed: Natron's Qt6
+# builds use the upstream qt6 ports, not this overlay.
+if {![string match ${name}-qtbase* ${subport}]} {
+    source [getportresourcepath ${porturl} port1.0/fetch/archive_sites.tcl yes]
+    archive_sites macports_archives::tbz2
+}
