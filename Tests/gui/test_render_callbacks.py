@@ -11,6 +11,9 @@ from natrontest import *
 
 from run_gui_smoke_test import writePNG
 
+if not os.environ.get("OCIO"):
+    # the Write node fails without an OCIO config ("Invalid OCIO config")
+    NatronGuiTest.skip("OCIO is not set to an OpenColorIO config")
 ids = natron.getPluginIDs()
 for pluginID in ("fr.inria.openfx.ReadPNG", "fr.inria.openfx.WritePNG"):
     if not any(i.startswith(pluginID) for i in ids):
@@ -58,7 +61,7 @@ try:
             write.getParam("startRender").trigger()
         else:
             app.render(write, 1, 3)
-        check(app.waitForRenders(120), "%s: the render did not finish in 120 s" % mode)
+        check(app.waitForRenders(60), "%s: the render did not finish in 60 s" % mode)
         wait_idle()
         written = sorted(f for f in os.listdir(outDir) if f.startswith(mode + "_"))
         expected = ["%s_%03d.png" % (mode, f) for f in (1, 2, 3)]
