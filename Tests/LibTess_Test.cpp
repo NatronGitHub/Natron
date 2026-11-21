@@ -472,34 +472,27 @@ TEST(LibTess,
     }
 }
 
-// Degenerate contours which libtess can't tessellate: each made the sweep use an
-// edge after it was freed (heap-use-after-free, found with AddressSanitizer) or
-// output a face which reaches the sweep sentinels, with NULL vertex data (the
-// Roto callbacks then crashed). The polygon is now dropped with
-// GLU_INVALID_OPERATION, and the tessellator stays usable.
+// Contours collapsed onto a line (zero area), found by fuzzing on macOS arm64,
+// where they made the sweep use an edge after it was freed
+// (heap-use-after-free, found with AddressSanitizer) or output a face which
+// reaches the sweep sentinels, with NULL vertex data (the Roto callbacks then
+// crashed). The sweep's predicates (EdgeSign(), EdgeEval()) were then
+// compiled with floating-point contraction (fused multiply-add, clang's
+// default on arm64): for points exactly on x == y, EdgeSign() computes
+// a*b - b*a, which is exactly 0 without FMA but the rounding error of a*b
+// with it, so collinear points were seen on random sides of each other, and
+// the sweep reached these inconsistent states. libtess is now compiled with
+// -ffp-contract=off, so these contours are tessellated (to nothing) the same
+// way on every platform; with FMA they were dropped (#1510).
 // - selfLoop: overlapping edges and repeated points on a small integer grid.
-//   CheckForRightSplice() merged the two endpoints of a zero-length edge into a
-//   self-loop, which WalkDirtyRegions() deleted as a "two-edge loop" while
-//   another active region still used it.
 // - diagonal, diagonal2: collinear points on the diagonal x == y with rounding
-//   noise (a Roto shape collapsed onto a 45 degree line). Freed edges were
-//   then used in WalkDirtyRegions() and FinishLeftRegions().
-// - collapsed: a Roto shape collapsed onto the diagonal x == y, with repeated
-//   points. Two active regions had the same upper edge, so deleting one of
-//   them cleared the edge's activeRegion, and AddRightEdges() then freed the
-//   edge that the other one still used.
-// - collapsed2, sliver: a shape collapsed onto x == y with repeated points, and
-//   a 45 degree sliver (width 1e-7 of its length). WalkDirtyRegions() deleted a
-//   "two-edge loop" whose edge was the upper edge of a region that was not next
-//   to the deleted one.
-// - sentinel: a contour folding back along the diagonal: a face reaching the
-//   sentinels was marked inside.
-// Only with NDEBUG: with assertions, an assertion of the sweep fails before
-// (e.g. in AddRightEdges()), as it did before these fixes. So the Debug builds
-// of the per-PR CI don't run this test; the release builds do.
-#ifdef NDEBUG
+//   noise (a Roto shape collapsed onto a 45 degree line).
+// - collapsed, collapsed2: a Roto shape collapsed onto the diagonal x == y,
+//   with repeated points.
+// - sliver: a 45 degree sliver (width 1e-7 of its length).
+// - sentinel: a contour folding back along the diagonal.
 TEST(LibTess,
-     DegenerateContoursAreDropped)
+     CollapsedContoursDontDependOnFma)
 {
     const TessPoint selfLoop[] = {
         { 4, 4 }, { 1, 1 }, { 1, 5 }, { 2, 2 }, { 3, 3 }, { 4, 5 }, { 0, 0 }, { 2, 3 }, { 0, 4 }, { 3, 0 },
@@ -618,6 +611,68 @@ TEST(LibTess,
         { "sentinel", sentinel, sizeof(sentinel) / sizeof(sentinel[0]) },
     };
 
+    for (std::size_t k = 0; k < sizeof(cases) / sizeof(cases[0]); ++k) {
+        std::vector<TessPoint> c(cases[k].p, cases[k].p + cases[k].n);
+        TessResult r = tessellate(c);
+        EXPECT_TRUE( r.errors.empty() ) << cases[k].name;
+        EXPECT_EQ(0, r.protocolErrors) << cases[k].name; // includes NULL vertex data
+        EXPECT_EQ(0, countCoverageErrors(c, r) ) << cases[k].name;
+    }
+}
+
+// Degenerate contours which libtess can't tessellate, even without
+// floating-point contraction: contours going back and forth along a line of
+// slope about -0.51 or -1.85 (zero area), with repeated points, found by
+// fuzzing. The polygon is now dropped with GLU_INVALID_OPERATION, and the
+// tessellator stays usable. Before (with or without FMA):
+// - lineEdgeInUse: WalkDirtyRegions() deleted an edge whose other half was
+//   still the upper edge of an active region, and then used it
+//   (heap-use-after-free). Now caught by DeleteRegionAndEdge().
+// - lineSentinel: a face reaching the sentinels was marked inside, and was
+//   output with NULL vertex data. Now caught by CheckInsideFaces().
+// Only with NDEBUG: with assertions, an assertion of the sweep fails before
+// (e.g. in AddRightEdges()), as it did before these fixes. So the Debug builds
+// of the per-PR CI don't run this test; the release builds do.
+#ifdef NDEBUG
+TEST(LibTess,
+     DegenerateContoursAreDropped)
+{
+    const TessPoint lineEdgeInUse[] = {
+        { 18.836683691209664, -5.9765320931001797 }, { 23.180586171366546, -8.1856996038669827 },
+        { 4.976016100439832, 1.07255260871873 }, { -3.5463539801287016, 5.4067528313819038 },
+        { 0.8183567314968041, 3.1870029309028571 }, { 0.8183567314968041, 3.1870029309028571 },
+        { -3.3778888042174273, 5.3210769224454397 }
+    };
+    const TessPoint lineSentinel[] = {
+        { 46.35967163838238, -71.883248623010033 }, { 46.35967163838238, -71.883248623010033 },
+        { 30.543305439446645, -42.718434516198542 }, { 22.057052120693598, -27.070086634534121 },
+        { 8.8207140909198607, -2.662752279867588 }, { 8.8207140909198607, -2.662752279867588 },
+        { -1.3793802172692189, 16.145857145873826 }, { -1.6842379506345568, 16.708003912760283 },
+        { 14.109446117103076, -12.414985154619371 }, { 14.109446117103076, -12.414985154619371 },
+        { -2.7244957733982815, 18.626202166547678 }, { -6.6184228103812419, 25.806464481587973 },
+        { -26.400904180447618, 62.284653243319475 }, { -17.79616292042174, 46.417817831861164 },
+        { -13.858951694821876, 39.157741019679229 }, { -13.858951694821876, 39.157741019679229 },
+        { -8.5212664141548622, 29.315240092899195 }, { -11.116833950672413, 34.101373883181743 },
+        { -13.23372368053775, 38.004842902525468 }, { -9.4061626454759448, 30.946957123580617 },
+        { 4.0465616610603554, 6.1406142066648242 }, { 4.0465616610603554, 6.1406142066648242 },
+        { -4.2828976296451682, 21.499839503308934 }, { -4.2828976296451682, 21.499839503308934 },
+        { 3.8443677745609808, 6.5134525084034882 }, { 3.8443677745609808, 6.5134525084034882 },
+        { -13.898420623970489, 39.230520314691489 }, { -21.126221547402427, 52.558326947489178 },
+        { -21.126221547402427, 52.558326947489178 }, { -3.1179352380162548, 19.351690480585244 },
+        { -11.773728042555021, 35.312663115907533 }, { -18.118590408885506, 47.012362599331496 },
+        { -18.118590408885506, 47.012362599331496 }, { -30.79352530548562, 70.384489636966379 },
+        { -23.651993991924201, 57.215761082109886 }, { -7.0656567219895479, 26.631147833646175 },
+        { -7.0656567219895479, 26.631147833646175 }
+    };
+    const struct
+    {
+        const char* name;
+        const TessPoint* p;
+        std::size_t n;
+    } cases[] = {
+        { "lineEdgeInUse", lineEdgeInUse, sizeof(lineEdgeInUse) / sizeof(lineEdgeInUse[0]) },
+        { "lineSentinel", lineSentinel, sizeof(lineSentinel) / sizeof(lineSentinel[0]) },
+    };
     for (std::size_t k = 0; k < sizeof(cases) / sizeof(cases[0]); ++k) {
         std::vector<TessPoint> c(cases[k].p, cases[k].p + cases[k].n);
         TessResult r = tessellate(c);

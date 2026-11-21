@@ -51,3 +51,14 @@ add_library(tess STATIC ${tess_HEADERS} ${tess_SOURCES})
 target_include_directories(tess SYSTEM PUBLIC .)
 target_compile_options(tess PRIVATE ${NATRON_THIRD_PARTY_NO_WARNINGS})
 set_target_properties(tess PROPERTIES POSITION_INDEPENDENT_CODE ON)
+# No floating-point contraction (fused multiply-add): the sweep's geometric
+# predicates (EdgeSign(), EdgeEval(), __gl_edgeIntersect()) must be evaluated
+# the same way everywhere. clang contracts a*b+c by default on arm64 (and GCC
+# with -ffp-contract=fast wherever FMA is available), x86-64 without -mfma
+# can't, so the same shape was tessellated differently (or dropped) on macOS
+# arm64 and on Linux/Windows x86-64 (#1510). This comes after any -ffast-math
+# (NATRON_FAST_MATH), which enables contraction. MSVC doesn't contract by
+# default (/fp:precise, no /fp:contract).
+if(NOT MSVC)
+    target_compile_options(tess PRIVATE -ffp-contract=off)
+endif()
