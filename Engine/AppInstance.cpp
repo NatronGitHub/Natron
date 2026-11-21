@@ -27,6 +27,7 @@
 #include "AppInstance.h"
 
 #include <fstream>
+#include <iostream>
 #include <limits>
 #include <list>
 #include <set>
@@ -74,6 +75,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/ProcessHandler.h"
+#include "Engine/PythonUndoGroup.h"
 #include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
 #include "Engine/WriteNode.h"
@@ -175,6 +177,10 @@ public:
 
     ProjectBeingLoadedInfo projectBeingLoaded;
 
+    // the undo group open in Python (beginUndoGroup()), its nesting level, and its command (only in the GUI)
+    int undoGroupDepth;
+    std::shared_ptr<PythonUndoGroupCommand> undoGroup;
+
     AppInstancePrivate(int appID,
                        AppInstance* app)
 
@@ -194,6 +200,8 @@ public:
         , invalidExprKnobsMutex()
         , invalidExprKnobs()
         , projectBeingLoaded()
+        , undoGroupDepth(0)
+        , undoGroup()
     {
     }
 
@@ -1444,12 +1452,12 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 args.setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
                 args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
                 output = createNode(args);
-                try {
-                    output->setLabel("Output");
-                } catch (...) {
+                if (output) {
+                    try {
+                        output->setLabel("Output");
+                    } catch (...) {
+                    }
                 }
-
-                assert(output);
             }
             {
                 CreateNodeArgs args(PLUGINID_NATRON_INPUT, isGrp);
@@ -1457,7 +1465,6 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 args.setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
                 args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
                 input = createNode(args);
-                assert(input);
             }
             if ( input && output && !output->getInput(0) ) {
                 output->connectInput(input, 0);
@@ -2152,6 +2159,110 @@ AppInstance::hasRenderInProgress() const
     return false;
 }
 
+static bool
+isMainThread()
+{
+    return QThread::currentThread() == qApp->thread();
+}
+
+bool
+AppInstance::beginUndoGroup(const std::string& text)
+{
+    // the undo group state is not locked: only the main thread uses it
+    if ( !isMainThread() ) {
+        return false;
+    }
+    if (_imp->undoGroupDepth++ > 0) {
+        return true; // only the outermost group makes an undo step
+    }
+    // In background mode, there is no undo stack: nothing is recorded.
+    if ( !isBackground() ) {
+        _imp->undoGroup = std::make_shared<PythonUndoGroupCommand>(text);
+    }
+
+    return true;
+}
+
+bool
+AppInstance::endUndoGroup()
+{
+    if ( !isMainThread() || (_imp->undoGroupDepth <= 0) ) {
+        return false;
+    }
+    if (--_imp->undoGroupDepth > 0) {
+        return true;
+    }
+    std::shared_ptr<PythonUndoGroupCommand> command = _imp->undoGroup;
+    _imp->undoGroup.reset();
+    if ( command && !command->isEmpty() ) {
+        command->finish();
+        pushUndoGroupCommand(command);
+    }
+
+    return true;
+}
+
+void
+AppInstance::closeUndoGroups(const std::string& reason,
+                             bool keepEdits)
+{
+    if ( !isMainThread() || (_imp->undoGroupDepth <= 0) ) {
+        return;
+    }
+    std::cerr << "Warning: " << reason << ": " << _imp->undoGroupDepth
+              << " undo group(s) of the Python API were not ended (App.endUndoGroup())" << std::endl;
+    if (keepEdits) {
+        _imp->undoGroupDepth = 1;
+        endUndoGroup();
+    } else {
+        // the project is closed: its edits are not undoable any more
+        _imp->undoGroupDepth = 0;
+        _imp->undoGroup.reset();
+    }
+}
+
+int
+AppInstance::getUndoGroupDepth() const
+{
+    return _imp->undoGroupDepth;
+}
+
+void
+AppInstance::recordKnobForUndoGroup(const KnobIPtr& knob)
+{
+    if ( _imp->undoGroup && isMainThread() ) {
+        _imp->undoGroup->recordKnob(knob);
+    }
+}
+
+void
+AppInstance::recordInputsForUndoGroup(const NodePtr& node)
+{
+    if ( _imp->undoGroup && isMainThread() ) {
+        _imp->undoGroup->recordInputs(node);
+    }
+}
+
+void
+AppInstance::recordNodeCreatedForUndoGroup(const NodePtr& node)
+{
+    if ( _imp->undoGroup && isMainThread() ) {
+        _imp->undoGroup->recordNodeCreated(node);
+    }
+}
+
+bool
+AppInstance::deleteNodeInUndoGroup(const NodePtr& node,
+                                   bool autoReconnect)
+{
+    if ( !_imp->undoGroup || !isMainThread() ) {
+        return false;
+    }
+    _imp->undoGroup->deleteNode(node, autoReconnect);
+
+    return true;
+}
+
 bool
 AppInstance::waitForRenders(int timeoutMs,
                             int settleMs)
@@ -2290,6 +2401,12 @@ AppInstance::appendToScriptEditor(const std::string& str)
 }
 
 void
+AppInstance::appendPlainTextToScriptEditor(const std::string& str)
+{
+    std::cout << str <<  std::endl;
+}
+
+void
 AppInstance::printAutoDeclaredVariable(const std::string& /*str*/)
 {
 }
@@ -2336,7 +2453,8 @@ AppInstance::execOnProjectCreatedCallback()
     }
     std::string appID = getAppIDString();
     std::string script;
-    if (appID != "app") {
+    // In background mode, "app" stays app1, also for a Precomp's instance (see getAppIDString()).
+    if ( (appID != "app") && !appPTR->isBackground() ) {
         script = script + "app = " + appID;
     }
     script = script + "\n" + cb + "(" + appID + ")\n";
@@ -2354,7 +2472,12 @@ AppInstance::execOnProjectCreatedCallback()
 std::string
 AppInstance::getAppIDString() const
 {
-    if ( appPTR->isBackground() ) {
+    // In background mode, "app" is an alias of "app1" (see declareCurrentAppVariable_Python()).
+    // Only the first instance may use it: other instances, such as the one a Precomp node loads
+    // its project in, have their own variable. With "app", the Python variables of their nodes
+    // were declared on app1, which doesn't have those nodes, so creating a node inside a group
+    // of that project failed (e.g. the Output node of a Write node, #1501).
+    if ( appPTR->isBackground() && (getAppID() == 0) ) {
         return "app";
     } else {
         QString appID =  QString( QString::fromUtf8("app%1") ).arg(getAppID() + 1);

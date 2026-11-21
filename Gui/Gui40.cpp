@@ -148,7 +148,10 @@ Gui::openRecentFile()
         } else {
             CLArgs cl;
             AppInstancePtr newApp = appPTR->newAppInstance(cl, false);
-            newApp->getProject()->loadProject( path, f.fileName() );
+            // newAppInstance() returns NULL, after showing an error dialog, if the new window could not be loaded
+            if (newApp) {
+                newApp->getProject()->loadProject( path, f.fileName() );
+            }
         }
     }
 }

@@ -10,6 +10,11 @@ on:
         description: 'Optional: ID of a "Build pacman repo" run whose natron_package_repo-<version> artifact is used instead of the windows-mingw-package-repo release'
         required: false
         default: ''
+      msystem:
+        description: 'MSYS2 environment(s): UCRT64 (x86-64), CLANGARM64 (Windows on ARM64, #1494), or both'
+        type: choice
+        options: [UCRT64, CLANGARM64, both]
+        default: UCRT64
   push:
     tags:
     - 'v*'
@@ -34,21 +39,18 @@ jobs:
   win-installer:
     # Natron is built with CMake in an MSYS2 environment (UCRT64: gcc), never with MSVC. The
     # scripts take their paths and architecture from the environment (MINGW_PREFIX,
-    # MINGW_PACKAGE_PREFIX, MSYSTEM_CARCH), so Windows ARM64 (#1494) only needs the matrix entry
-    # { msystem: CLANGARM64, runner: windows-11-arm }, once the package repository has a
-    # clangarm64 build.
+    # MINGW_PACKAGE_PREFIX, MSYSTEM_CARCH), so Windows ARM64 (#1494, MSYS2 CLANGARM64: clang)
+    # runs the same steps on windows-11-arm, with the clangarm64 package repository.
     name: Windows Installer (${{ matrix.msystem }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 300
     strategy:
       fail-fast: false
       matrix:
-        # a real axis, so that other axes combine with every environment;
-        # include only adds the runner of each environment
-        msystem: [UCRT64]
-        include:
-        - msystem: UCRT64
-          runner: windows-2022
+        # UCRT64 on tags (CLANGARM64 isn't released yet), else the environment(s) chosen. Only
+        # include, so that no environment is added by accident. repo_suffix: the name of the
+        # package repository artifact of build_pacman_repo.yml (UCRT64 keeps the original name).
+        include: ${{ fromJSON((inputs.msystem == 'both' && '[{"msystem":"UCRT64","runner":"windows-2022","repo_suffix":""},{"msystem":"CLANGARM64","runner":"windows-11-arm","repo_suffix":"-clangarm64"}]') || (inputs.msystem == 'CLANGARM64' && '[{"msystem":"CLANGARM64","runner":"windows-11-arm","repo_suffix":"-clangarm64"}]') || '[{"msystem":"UCRT64","runner":"windows-2022","repo_suffix":""}]') }}
     defaults:
       run:
         shell: msys2 {0}
@@ -76,7 +78,7 @@ jobs:
         if: inputs.pacman_repo_run_id != ''
         uses: actions/download-artifact@v4
         with:
-          name: natron_package_repo-${{ steps.repo.outputs.version }}
+          name: natron_package_repo${{ matrix.repo_suffix }}-${{ steps.repo.outputs.version }}
           run-id: ${{ inputs.pacman_repo_run_id }}
           github-token: ${{ github.token }}
           path: natron_pacman_repo
@@ -283,8 +285,9 @@ jobs:
               echo "::error::bin/${d} has no [InstallDelete] entry in Natron.iss"; errors=1
             fi
           done
-          # all the components of the [Components] section
-          COMPONENTS=$(sed -n -e '/^\[Components\]/,/^\[/s/^Name: "\([a-z]*\)";.*/\1/p' "$ISS" | paste -s -d, -)
+          # all the components of the [Components] section, but sgl (Mesa) only in the x64 Setup.exe
+          # (#if NatronArch == "x64" in Natron.iss)
+          COMPONENTS=$(sed -n -e '/^\[Components\]/,/^\[/s/^Name: "\([a-z]*\)";.*/\1/p' "$ISS" | { if [ "${MSYSTEM_CARCH}" = x86_64 ]; then cat; else grep -v -x sgl; fi; } | paste -s -d, -)
           echo "Components: ${COMPONENTS}"
           setup() { # setup <log name>
             # (no MSYS2 path conversion of the /OPTIONS)

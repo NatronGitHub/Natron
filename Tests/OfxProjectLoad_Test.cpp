@@ -598,7 +598,9 @@ TEST(OfxProjectLoad, PyPlugUpdateIsNotSavedWhenValuesChanged)
         }
         pyPlug.reset();
         QString savedPath;
-        ASSERT_TRUE( project->saveProject( dir, name, &savedPath ) );
+        // saved as text (binary is the default since #1056), to edit the PyPlug version below; the project keeps
+        // that format, so the save after the PyPlug update at load is text too
+        ASSERT_TRUE( project->saveProject( dir, name, &savedPath, eProjectFileFormatText ) );
         QByteArray contents = readFile(dir + name);
         const QByteArray version2("<PythonModuleVersion>2</PythonModuleVersion>");
         const QByteArray version1("<PythonModuleVersion>1</PythonModuleVersion>");

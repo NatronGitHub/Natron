@@ -103,12 +103,17 @@ Natron is built with CMake and Ninja, in an MSYS2 **UCRT64** shell. The Windows 
       mingw-w64-ucrt-x86_64-python-qtpy \
       mingw-w64-ucrt-x86_64-clang mingw-w64-ucrt-x86_64-llvm-tools
 
-(shiboken2 needs clang and llvm-tools. The release installer scripts don't work yet: see the SDK paragraph above and #1133.) Then, from the Natron source directory:
+(shiboken2 needs clang and llvm-tools. The release installer scripts don't work yet: see the SDK paragraph above and #1133.) For a Qt 6 build (`-DNATRON_QT6=ON`), install the Qt 6 and PySide6 packages instead of `qt5-base`, `pyside2` and `shiboken2`:
+
+    pacman -S --needed mingw-w64-ucrt-x86_64-qt6-base \
+      mingw-w64-ucrt-x86_64-pyside6 mingw-w64-ucrt-x86_64-shiboken6
+
+(shiboken6 needs clang and llvm-tools too.) Then, from the Natron source directory:
 
     cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
     cmake --build build
 
-Useful options (add them to the first `cmake` command): `-DCMAKE_BUILD_TYPE=Debug` or `Release`, `-DNATRON_QT6=ON` (Qt 6 and PySide6), `-DNATRON_BUILD_TESTS=OFF` (skip the unit tests), `-DNATRON_SYSTEM_LIBS=ON` (use system copies of the libraries in `libs/`).
+Useful options (add them to the first `cmake` command): `-DCMAKE_BUILD_TYPE=Debug` or `Release`, `-DNATRON_QT6=ON` (Qt 6 and PySide6, built as C++20; Qt 5 builds are C++17), `-DNATRON_BUILD_TESTS=OFF` (skip the unit tests), `-DNATRON_SYSTEM_LIBS=ON` (use system copies of the libraries in `libs/`).
 
 To run the unit tests, which need the OpenFX IO plug-ins and an OpenColorIO config:
 
@@ -117,6 +122,12 @@ To run the unit tests, which need the OpenFX IO plug-ins and an OpenColorIO conf
 `PYTHONLEGACYWINDOWSDLLLOADING=1` makes MSYS2's Python find its DLLs through `PATH` again, which the tests need (#1147).
 
 `cmake --install build --prefix <dir>` installs Natron; `-DNATRON_INSTALL_LAYOUT=PORTABLE` gives the self-contained layout that the release scripts will use once they move to CMake. See the Maintainer Guide (`Documentation/source/maintainers/building.rst`).
+
+### Windows on ARM64 (CLANGARM64)
+
+Native ARM64 Natron (#1494) is built the same way in an MSYS2 **CLANGARM64** shell (`C:\msys64\clangarm64.exe`, on a Windows on Arm machine; see [MSYS2 on ARM64](https://www.msys2.org/docs/arm64/)), with clang, libc++ and LLVM's OpenMP runtime instead of gcc, libstdc++ and libgomp. Every package above exists there: use `${MINGW_PACKAGE_PREFIX}-` (here `mingw-w64-clang-aarch64-`) instead of `mingw-w64-ucrt-x86_64-`, and add `${MINGW_PACKAGE_PREFIX}-llvm-openmp`, which clang doesn't pull in. OpenMP is then on by default (`NATRON_USE_OPENMP`). The OFX plug-ins must be ARM64 builds in `Contents/Win-arm64` (x64 plug-ins can't be loaded by an ARM64 process): build openfx-io in the same shell for the tests.
+
+MSYS2's `qt5-base` 5.15.19 has the QMutex lost wake-up of #1451, which can hang a render thread on ARM64: install the `qt5-base` of Natron's package repository instead, which has the fix of #1453 (`tools/MINGW-packages/mingw-w64-qt5-base`, built for CLANGARM64 only), or build it with `makepkg-mingw -sCLf --nocheck` in that directory and `pacman -U` it. The `windows_arm64.yml` workflow (run by hand, on GitHub's `windows-11-arm` runner) does all this and runs the unit tests.
 
 ### Deprecated: building with qmake
 

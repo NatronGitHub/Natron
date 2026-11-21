@@ -191,7 +191,5 @@ See also
 --------
 
 - :doc:`tutorials-keying`: step-by-step keying and despill tutorials.
-- :doc:`tutorials-AlternativeMatteExtraction`: turning the spill maps of the
-  despill nodes into mattes.
 - :doc:`tutorials-hsvtool`: using HSVTool as a keyer, from a range of hues,
   saturations and brightnesses.

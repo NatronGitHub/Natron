@@ -271,6 +271,40 @@ public:
     bool waitForRenders(int timeoutMs, int settleMs);
 
     /**
+     * @brief Undo groups (App.beginUndoGroup(), "with app.undoGroup(text):"): the edits made from Python
+     * between beginUndoGroup() and endUndoGroup() are recorded, and become one undo step on the undo stack of
+     * the node graph when the outermost group ends (see PythonUndoGroupCommand). Groups nest. In background
+     * mode, nothing is recorded. endUndoGroup() returns false if no group is open. Only on the main thread:
+     * elsewhere they return false and the record functions do nothing.
+     **/
+    bool beginUndoGroup(const std::string& text); // false if not called from the main thread
+    bool endUndoGroup();
+    int getUndoGroupDepth() const;
+
+    /**
+     * @brief Ends the undo groups that a script left open, with a warning: when a script run by Natron ends
+     * (keepEdits: the edits become one undo step), or when the project is closed (they are dropped).
+     **/
+    void closeUndoGroups(const std::string& reason, bool keepEdits);
+
+    /**
+     * @brief Called by the Python API before it changes a knob, the inputs of a node, or after it creates a
+     * node, while an undo group is open (they do nothing otherwise). deleteNodeInUndoGroup() deactivates
+     * the node and returns true when a group records it; the caller destroys the node otherwise.
+     **/
+    void recordKnobForUndoGroup(const KnobIPtr& knob);
+    void recordInputsForUndoGroup(const NodePtr& node);
+    void recordNodeCreatedForUndoGroup(const NodePtr& node);
+    bool deleteNodeInUndoGroup(const NodePtr& node, bool autoReconnect);
+
+protected:
+
+    /// The GUI pushes the command of an undo group on the undo stack of the node graph.
+    virtual void pushUndoGroupCommand(const UndoCommandPtr& /*command*/) {}
+
+public:
+
+    /**
      * @brief Undo / redo on the undo stack of the node graph of the project (node creation, deletion,
      * connections, moves, and the undo groups of the Python API), whatever widget has the focus. In
      * background mode, there is no undo stack: these do nothing.
@@ -371,6 +405,8 @@ public:
     void setIsCreatingNodeTree(bool b);
 
     virtual void appendToScriptEditor(const std::string& str);
+    // Same as appendToScriptEditor(), for plain text (e.g. Python output), which must not be taken for HTML
+    virtual void appendPlainTextToScriptEditor(const std::string& str);
     virtual void printAutoDeclaredVariable(const std::string& str);
 
     void getFrameRange(double* first, double* last) const;

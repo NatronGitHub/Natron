@@ -255,6 +255,28 @@ public:
 };
 
 
+/**
+ * @brief The context manager returned by App.undoGroup(text): "with app.undoGroup(text):" calls
+ * App.beginUndoGroup(text) on entry and App.endUndoGroup() on exit, also when an exception is raised.
+ * The Python __enter__ and __exit__ functions are added in the typesystem.
+ **/
+class UndoGroup
+{
+    AppInstanceWPtr _app;
+    QString _text;
+    bool _open;
+
+public:
+
+    UndoGroup(const AppInstancePtr& app, const QString& text);
+
+    ~UndoGroup();
+
+    void begin();
+
+    void end();
+};
+
 class App
     : public Group
 {
@@ -356,6 +378,18 @@ public:
      * timeout seconds elapsed first (no limit if timeout < 0). Must be called from the main thread.
      **/
     bool waitForRenders(double timeout = -1.);
+
+    /**
+     * @brief Undo groups: the edits made from Python between beginUndoGroup() and endUndoGroup() (parameter
+     * changes, node creations, deletions and connections) are one undo step named text, on the undo stack of
+     * the node graph. Groups nest: only the outermost one makes an undo step. In background mode, they do
+     * nothing. endUndoGroup() raises RuntimeError if no group is open.
+     **/
+    void beginUndoGroup(const QString& text);
+    void endUndoGroup();
+
+    /// "with app.undoGroup(text):": a context manager that calls beginUndoGroup() and endUndoGroup()
+    UndoGroup* undoGroup(const QString& text);
 
 protected:
 

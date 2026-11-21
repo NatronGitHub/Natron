@@ -34,6 +34,7 @@ set(Tests_SOURCES
     KnobDuplicate_Test.cpp
     KnobExpressionCache_Test.cpp
     KnobInvalidExpression_Test.cpp
+    KnobLockOrder_Test.cpp
     KnobFile_Test.cpp
     KnobSlave_Test.cpp
     KnobStringAnimation_Test.cpp
@@ -80,7 +81,10 @@ set(Tests_SOURCES
     OSGLContext_Test.cpp
     ParamRandom_Test.cpp
     PluginGrouping_Test.cpp
+    PrecompLoad_Test.cpp
     ProjectAutoSave_Test.cpp
+    PyEffectEquality_Test.cpp
+    PythonScript_Test.cpp
     ProjectFileFormat_Test.cpp
     PythonExpressionScope_Test.cpp
     ReadNodeOverlay_Test.cpp
@@ -146,7 +150,25 @@ set(_natron_test_bundle "${NATRON_TESTS_OFX_PLUGIN_DIR}/NatronTestPlugin.ofx.bun
 if(APPLE)
     set(_natron_test_archdir "MacOS")
 elseif(WIN32)
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    # native Windows on ARM64 (MSYS2 CLANGARM64, #1494): HostSupport looks in Win-arm64, then
+    # Win-arm64x (ofxhArchDirs.h), never in Win64.
+    # Use the compiler's target, as libs/OpenFX/cmake/OpenFX.cmake does, not CMAKE_SYSTEM_PROCESSOR:
+    # that is the build machine's processor (AMD64 under an x64-emulated shell on an ARM64 host, ARM64
+    # for a UCRT64 build on an ARM64 host). CMAKE_CXX_COMPILER_ARCHITECTURE_ID is only set for MinGW
+    # from CMake 4.1 on ("aarch64"); before that, ask the compiler (`-dumpmachine`).
+    set(_natron_test_target "${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}")
+    if(NOT _natron_test_target)
+        set(_natron_test_target "${CMAKE_CXX_COMPILER_TARGET}")
+    endif()
+    if(NOT _natron_test_target)
+        separate_arguments(_natron_test_cxx_args UNIX_COMMAND "${CMAKE_CXX_COMPILER_ARG1}")
+        execute_process(COMMAND ${CMAKE_CXX_COMPILER} ${_natron_test_cxx_args} -dumpmachine
+                        OUTPUT_VARIABLE _natron_test_target OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+    endif()
+    string(TOLOWER "${_natron_test_target}" _natron_test_target)
+    if(_natron_test_target MATCHES "^(aarch64|arm64)" AND NOT _natron_test_target MATCHES "^arm64ec")
+        set(_natron_test_archdir "Win-arm64")
+    elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
         set(_natron_test_archdir "Win64")
     else()
         set(_natron_test_archdir "Win32")
@@ -263,3 +285,9 @@ foreach(_natron_gui_test ${NatronGuiTests_SCRIPTS})
             "OFX_PLUGIN_PATH=${_natron_gui_test_ofx_path}")
     endif()
 endforeach()
+
+# Undo groups do nothing in background mode (App.undoGroup(), #1455): NatronRenderer runs the script,
+# which exits with natron.quit(status).
+add_test(NAME UndoGroupHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_undo_group.py")
+set_tests_properties(UndoGroupHeadless PROPERTIES TIMEOUT 120)

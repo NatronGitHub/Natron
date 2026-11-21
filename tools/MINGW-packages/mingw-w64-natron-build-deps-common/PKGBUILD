@@ -2,16 +2,19 @@
 
 pkgname="${MINGW_PACKAGE_PREFIX}-natron-build-deps-common"
 pkgver=2026.11
-pkgrel=4
+pkgrel=5
 pkgdesc="Minimal package set for building Natron installer for any version of Qt"
 url="https://natrongithub.github.io/"
 arch=("any")
-mingw_arch=('ucrt64')
+mingw_arch=('ucrt64' 'clangarm64')
 license=("GPL")
 depends=(
   "git"
   "base-devel"
   "${MINGW_PACKAGE_PREFIX}-cc"
+  # OpenMP (Natron's tracker, LibRaw, ImageMagick, the plug-ins): libgomp on UCRT64, llvm-openmp
+  # (libomp) on CLANGARM64, which clang doesn't pull in by itself
+  "${MINGW_PACKAGE_PREFIX}-omp"
   "${MINGW_PACKAGE_PREFIX}-cmake"
   "${MINGW_PACKAGE_PREFIX}-ninja"
   "${MINGW_PACKAGE_PREFIX}-wget"

@@ -409,7 +409,8 @@ of the PyPlug. Keep GUI code
 PyPlug only imports inside ``if not NatronEngine.natron.isBackground():``.
 
 In background mode, :meth:`app.waitForRenders()<NatronEngine.App.waitForRenders>` waits for the render
-threads, and :meth:`app.undo()<NatronEngine.App.undo>`, :meth:`redo()<NatronEngine.App.redo>`,
+threads, :meth:`app.undoGroup()<NatronEngine.App.undoGroup>` records nothing (the edits are made, as
+usual), and :meth:`app.undo()<NatronEngine.App.undo>`, :meth:`redo()<NatronEngine.App.redo>`,
 :meth:`canUndo()<NatronEngine.App.canUndo>` and :meth:`getUndoHistory()<NatronEngine.App.getUndoHistory>`
 do nothing (there is no undo stack). The viewer functions (``app.getViewer()``) only exist in the user
 interface.
@@ -444,9 +445,22 @@ of the colour picker, before the display LUT)::
 :meth:`getCenter()<NatronGui.PyViewer.getCenter>` and :meth:`setCenter()<NatronGui.PyViewer.setCenter>`
 set up the view, e.g. for a review tool.
 
+Edits made from Python are not undoable, unless they are made in an undo group: then they are one
+undo step, which *Edit > Undo* in the node graph (or :meth:`app.undo()<NatronEngine.App.undo>`)
+undoes at once. A button callback that builds a few nodes makes them one step::
+
+    def onBuildButton(thisNode, app):
+        with app.undoGroup("Build blur"):
+            blur = app.createNode("net.sf.cimg.CImgBlur")
+            blur.connectInput(0, thisNode)
+            blur.getParam("size").set(10, 10)
+
+The group records the parameter changes, and the nodes created, deleted and connected: see
+:meth:`app.undoGroup()<NatronEngine.App.undoGroup>` for what it does not record.
+
 :meth:`app.undo()<NatronEngine.App.undo>`, :meth:`app.redo()<NatronEngine.App.redo>` and
 :meth:`app.getUndoHistory()<NatronEngine.App.getUndoHistory>` work on the undo stack of the node graph
-(node creation, deletion, connections). These functions must be called from the main thread: from a
+(node creation, deletion, connections, undo groups). These functions must be called from the main thread: from a
 button or param changed callback, not from a render callback such as *afterFrameRender*.
 
 .. _pyplugWriting-distribute:

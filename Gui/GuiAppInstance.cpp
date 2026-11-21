@@ -50,7 +50,9 @@
 #include "Engine/DiskCacheNode.h"
 #include "Engine/KnobFile.h"
 #include "Engine/RotoStrokeItem.h"
+#include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
+#include "Engine/UndoCommand.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Global/QtCompat.h"
@@ -497,7 +499,8 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
         } else {
             CLArgs cl;
             AppInstancePtr newApp = appPTR->newAppInstance(cl, false);
-            if ( !newApp->getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true) ) {
+            // newAppInstance() returns NULL, after showing an error dialog, if the new window could not be loaded
+            if ( !newApp || !newApp->getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true) ) {
                 return false;
             }
         }
@@ -981,7 +984,24 @@ GuiAppInstance::toggleAutoHideGraphInputs()
 void
 GuiAppInstance::appendToScriptEditor(const std::string& str)
 {
-    _imp->_gui->appendToScriptEditor(str);
+    // There is no Gui (and no Script Editor) yet while loadInternal() declares the app variable,
+    // and no longer after aboutToQuit(): print to stdout like AppInstance does.
+    if (_imp->_gui) {
+        _imp->_gui->appendToScriptEditor(str);
+    } else {
+        AppInstance::appendToScriptEditor(str);
+    }
+}
+
+void
+GuiAppInstance::appendPlainTextToScriptEditor(const std::string& str)
+{
+    if (_imp->_gui) {
+        // The Script Editor output auto-detects rich text
+        _imp->_gui->appendToScriptEditor( NATRON_NAMESPACE::convertFromPlainText(QString::fromUtf8( str.c_str() ), NATRON_NAMESPACE::WhiteSpacePre).toStdString() );
+    } else {
+        AppInstance::appendPlainTextToScriptEditor(str);
+    }
 }
 
 void
@@ -1043,7 +1063,9 @@ GuiAppInstance::declareCurrentAppVariable_Python()
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         const std::string& name = (*it)->getName();
         if ( NATRON_PYTHON_NAMESPACE::isKeyword(name) ) {
-            throw std::runtime_error(name + " is a Python keyword");
+            // Report instead of throwing: this is reached from Qt slots (e.g. File > New Project) (#1436).
+            appendToScriptEditor("GuiAppInstance::declareCurrentAppVariable_Python(): " + name + " is a Python keyword");
+            continue;
         }
         ss << appIDStr << "." << name << " = "  << appIDStr  << ".getProjectParam('" << name << "')\n";
     }
@@ -1053,7 +1075,9 @@ GuiAppInstance::declareCurrentAppVariable_Python()
     _imp->declareAppAndParamsString = script;
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
     if (!ok) {
-        throw std::runtime_error("GuiAppInstance::declareCurrentAppVariable_Python() failed!");
+        // Report instead of throwing: this is reached from Qt slots (e.g. File > New Project), and the
+        // exception would abort the creation of the project window (#1436).
+        appendToScriptEditor("GuiAppInstance::declareCurrentAppVariable_Python(): " + err);
     }
 }
 
@@ -1704,6 +1728,45 @@ void
 GuiAppInstance::reloadScriptEditorFonts()
 {
     _imp->_gui->getScriptEditor()->reloadFont();
+}
+
+namespace {
+// An undo group of the Python API (App.beginUndoGroup()) on the undo stack of the node graph. The command
+// is pushed after the edits were made: its first redo() does nothing (see PythonUndoGroupCommand::redo()).
+class UndoGroupQtCommand
+    : public QUndoCommand
+{
+    UndoCommandPtr _command;
+
+public:
+
+    UndoGroupQtCommand(const UndoCommandPtr& command)
+        : QUndoCommand()
+        , _command(command)
+    {
+        setText( QString::fromUtf8( command->getText().c_str() ) );
+    }
+
+    virtual void redo() OVERRIDE FINAL
+    {
+        _command->redo();
+    }
+
+    virtual void undo() OVERRIDE FINAL
+    {
+        _command->undo();
+    }
+};
+} // anonymous namespace
+
+void
+GuiAppInstance::pushUndoGroupCommand(const UndoCommandPtr& command)
+{
+    NodeGraph* graph = _imp->_gui ? _imp->_gui->getNodeGraph() : 0;
+
+    if (graph) {
+        graph->pushUndoCommand( new UndoGroupQtCommand(command) );
+    }
 }
 
 QUndoStack*

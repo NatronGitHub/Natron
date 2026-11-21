@@ -158,6 +158,9 @@ public:
     virtual std::list<std::string> getUndoHistory() const OVERRIDE FINAL;
     virtual int getUndoIndex() const OVERRIDE FINAL;
 
+protected:
+    virtual void pushUndoGroupCommand(const UndoCommandPtr& command) OVERRIDE FINAL;
+
 private:
     // the undo stack of the node graph of the project, where the undo groups go
     QUndoStack* getActiveUndoStack() const;
@@ -176,6 +179,7 @@ public:
     virtual std::string saveImageFileDialog() OVERRIDE FINAL;
     virtual void clearViewersLastRenderedTexture() OVERRIDE FINAL;
     virtual void appendToScriptEditor(const std::string& str) OVERRIDE FINAL;
+    virtual void appendPlainTextToScriptEditor(const std::string& str) OVERRIDE FINAL;
     virtual void printAutoDeclaredVariable(const std::string& str) OVERRIDE FINAL;
     virtual void toggleAutoHideGraphInputs() OVERRIDE FINAL;
     virtual void setLastViewerUsingTimeline(const NodePtr& node) OVERRIDE FINAL;

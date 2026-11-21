@@ -1,8 +1,14 @@
 #!/bin/sh
 set -e -x
 CWD=`pwd`
+# mingw-w64-qt5-base is only built for CLANGARM64 (its mingw_arch)
+QT5_BASE=
+if [ "${MSYSTEM:-}" = CLANGARM64 ]; then
+    QT5_BASE=mingw-w64-qt5-base
+fi
 PKGS="
 mingw-w64-freetype
+${QT5_BASE}
 mingw-w64-libraw-gpl2
 mingw-w64-libraw-lgpl
 mingw-w64-openimageio
