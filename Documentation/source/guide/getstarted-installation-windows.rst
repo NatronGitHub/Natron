@@ -99,8 +99,16 @@ uses the settings of the old one.
 
 Natron 2.5 and older used another installer, which put each version in its own
 folder (for example ``C:\Program Files\INRIA\Natron-2.5.0``). These versions
-stay installed next to Natron 2.6. Uninstall them from *Settings → Apps* when
-you no longer need them. Don't install Natron 2.6 into one of their folders.
+stay installed next to Natron 2.6. When ``Setup.exe`` finds one, it lists it
+on an *Older versions of Natron* page. It never installs Natron 2.6 into the
+folder of an older version: if you choose one of these folders, it asks you to
+choose another one.
+
+To remove an older version, open *Settings → Apps → Installed apps* (*Apps &
+features* on Windows 10), select the Natron published by INRIA, and select
+*Uninstall*. Until you remove it, double-clicking a ``.ntp`` file may still
+open the older version. To open it with Natron 2.6, right-click the file and
+select *Open with*.
 
 Uninstall
 ---------

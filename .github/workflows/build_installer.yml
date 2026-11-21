@@ -304,6 +304,27 @@ jobs:
               if [ "${missing}" != 0 ]; then echo "::error::${missing} files of ${src} were not installed"; errors=1; fi
             done < <(required_sources)
           }
+          # Setup.exe must refuse the folder of a Natron 2.5 or older (Qt Installer Framework:
+          # bin\Natron.exe next to the NatronSetup.exe maintenance tool), and leave it untouched.
+          # natron-setup 1.0-7 and later only: older package repositories have an older Setup.exe.
+          SETUP_VERSION=$(pacman -Q "${MINGW_PACKAGE_PREFIX}-natron-setup" | cut -d' ' -f2)
+          if [ "$(vercmp "${SETUP_VERSION}" 1.0-7)" -lt 0 ]; then
+            echo "::warning::natron-setup ${SETUP_VERSION} is older than 1.0-7: the check that Setup.exe refuses the folder of a Natron 2.5 or older is skipped"
+          else
+            OLD_W='D:\ni25'
+            OLD=$(cygpath -u "${OLD_W}")
+            if [ -e "${OLD}" ]; then echo "::error::${OLD} already exists"; exit 1; fi
+            mkdir -p "${OLD}/bin"
+            echo old > "${OLD}/bin/Natron.exe"
+            touch "${OLD}/NatronSetup.exe" "${OLD}/bin/old.dll"
+            if MSYS2_ARG_CONV_EXCL='*' "${INSTALLER_DIR}/Setup.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CURRENTUSER "/DIR=${OLD_W}" "/COMPONENTS=${COMPONENTS}" "/LOG=$(cygpath -w "${GITHUB_WORKSPACE}/setup-old.log")"; then
+              cat setup-old.log; echo "::error::Setup.exe installed into the folder of a Natron 2.5 or older"; errors=1
+            fi
+            if [ ! -e "${OLD}/bin/old.dll" ] || [ "$(cat "${OLD}/bin/Natron.exe")" != old ] || [ -e "${OLD}/unins000.exe" ]; then
+              echo "::error::Setup.exe changed the folder of a Natron 2.5 or older"; errors=1
+            fi
+            rm -rf "${OLD}"
+          fi
           # the first install goes into an existing folder that is not a Natron installation (no
           # bin\Natron.exe): [InstallDelete] must not touch its bin\keep.dll
           mkdir -p "${APP}/bin"
