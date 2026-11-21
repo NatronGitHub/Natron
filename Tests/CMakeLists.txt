@@ -221,7 +221,8 @@ add_dependencies(Tests NatronTestPlugin)
 target_compile_definitions(Tests PRIVATE
     NATRON_TESTS_OFX_PLUGIN_DIR="${NATRON_TESTS_OFX_PLUGIN_DIR}"
     NATRON_TESTS_OFX_PLUGIN_BINARY="$<TARGET_FILE:NatronTestPlugin>"
-    NATRON_TESTS_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data")
+    NATRON_TESTS_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data"
+    NATRON_MAIN_THREAD_STACK_SIZE=${NATRON_MAIN_THREAD_STACK_SIZE})
 
 # GUI smoke test (see gui/run_gui_smoke_test.py): runs the Natron GUI with --no-dialogs.
 # It is skipped (exit status 77) without a display, in CI unless NATRON_GUI_TESTS=1, or
