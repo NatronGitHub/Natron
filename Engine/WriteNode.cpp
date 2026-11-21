@@ -751,6 +751,9 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
         input = _publicInterface->getApp()->createNode(args);
         if (!input) {
+            // Don't keep the Output node alone: the next call creates both again.
+            output->destroyNode(true, false);
+            outputNode.reset();
             throw std::runtime_error( tr("Cannot create the internal Source node of %1.").arg( QString::fromUtf8( _publicInterface->getScriptName_mt_safe().c_str() ) ).toStdString() );
         }
         inputNode = input;

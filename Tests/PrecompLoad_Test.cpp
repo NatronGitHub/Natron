@@ -79,6 +79,33 @@ reportSkipped(const std::string& why)
 
     std::cerr << "[  SKIPPED ] " << info->test_case_name() << '.' << info->name() << ": " << why << std::endl;
 }
+
+// What Python says of the attribute: "node" (a Natron node), "None", or "undefined".
+std::string
+pythonAttribute(const std::string& appVar,
+                const std::string& attr)
+{
+    std::string script = "natronTestResult = ('node' if getattr(" + appVar + ", '" + attr + "', None) is not None else "
+                         "('None' if hasattr(" + appVar + ", '" + attr + "') else 'undefined'))\n";
+    std::string err;
+
+    EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0) ) << err;
+
+    std::string result;
+    {
+        PythonGILLocker pgl;
+        PyObject* ret = PyObject_GetAttrString(NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::getMainModule(), "natronTestResult"); // new ref
+        const char* str = ret ? PyUnicode_AsUTF8(ret) : 0;
+        if (str) {
+            result = str;
+        }
+        Py_XDECREF(ret);
+        PyErr_Clear();
+    }
+    NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("natronTestResult = None\n", &err, 0);
+
+    return result;
+}
 } // anonymous namespace
 
 class PrecompLoadTest
@@ -234,6 +261,12 @@ TEST_F(PrecompLoadTest, WriteNode)
         }
         NodePtr write = precompProjectNode(precomp, "Write1");
         ASSERT_TRUE( bool(write) );
+        // Its Python variable is on the Precomp's app (app2, app3...), not on app1, the app the user
+        // works in, which has no Write1.
+        const std::string precompAppVar = precomp->getPrecompApp()->getAppIDString();
+        ASSERT_NE( precompAppVar, std::string("app") );
+        EXPECT_EQ( pythonAttribute(precompAppVar, "Write1"), std::string("node") );
+        EXPECT_EQ( pythonAttribute("app1", "Write1"), std::string("undefined") );
         WriteNode* isWrite = dynamic_cast<WriteNode*>( write->getEffectInstance().get() );
         ASSERT_TRUE(isWrite != NULL);
         NodePtr writer = isWrite->getEmbeddedWriter();

@@ -1322,11 +1322,14 @@ AppManager::newAppInstanceInternal(const CLArgs& cl,
     {
         QMutexLocker k(&_imp->_appInstancesMutex);
         _imp->_appInstances.push_back(instance);
+        if (alwaysBackground) {
+            _imp->_internalInstanceIDs.insert( instance->getAppID() );
+        }
     }
 
     // A background instance (the one a Precomp node loads its project in, see newBackgroundInstance())
-    // is internal: it must not replace the instance the user works in as the top-level one (#1501).
-    if ( !alwaysBackground || !getTopLevelInstance() ) {
+    // is internal: it never replaces the instance the user works in as the top-level one (#1501).
+    if (!alwaysBackground) {
         setAsTopLevelInstance( instance->getAppID() );
     }
 
@@ -1414,9 +1417,17 @@ AppManager::removeInstance(int appID)
                 break;
             }
         }
+        _imp->_internalInstanceIDs.erase(appID);
 
-        if ( !_imp->_appInstances.empty() ) {
-            newApp = _imp->_appInstances.front()->getAppID();
+        // Only replace the top-level instance if it was removed, and never by an internal instance
+        // (a Precomp node's, #1501).
+        if (appID == _imp->_topLevelInstanceID) {
+            for (AppInstanceVec::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+                if ( _imp->_internalInstanceIDs.find( (*it)->getAppID() ) == _imp->_internalInstanceIDs.end() ) {
+                    newApp = (*it)->getAppID();
+                    break;
+                }
+            }
         }
     }
 

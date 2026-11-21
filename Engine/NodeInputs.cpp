@@ -1240,10 +1240,10 @@ Node::disconnectInputInternal(Node* input, bool useGuiValues)
             mustCallEnd = true;
             onInputChanged(found);
         }
-        bool creatingNodeTree = getApp()->isCreatingNodeTree();
-        if (!creatingNodeTree) {
+        AppInstancePtr app = getApp();
+        if ( app && !app->isCreatingNodeTree() ) {
             ///Recompute the hash
-            if ( !getApp()->getProject()->isProjectClosing() ) {
+            if ( !app->getProject()->isProjectClosing() ) {
                 computeHash();
             }
         }
@@ -1632,7 +1632,9 @@ void
 Node::onInputChanged(int inputNb,
                      bool isInputA)
 {
-    if ( getApp()->getProject()->isProjectClosing() ) {
+    // The app is gone if the node outlived it (see doDestroyNodeInternalEnd()): nothing to refresh.
+    AppInstancePtr app = getApp();
+    if ( !app || app->getProject()->isProjectClosing() ) {
         return;
     }
     assert( QThread::currentThread() == qApp->thread() );
