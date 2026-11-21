@@ -272,9 +272,15 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
         }
         _imp->refreshButtons();
     }
+    // The node is gone if its project was closed (e.g. app.resetProject()) while the render went on in a
+    // separate process: the process finishes later, and its render is no longer queued (#1575).
     NodePtr node = getNode();
-    OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() );
-    node->getApp()->removeRenderFromQueue(effect);
+    EffectInstancePtr effectPtr = node ? node->getEffectInstance() : EffectInstancePtr();
+    OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>( effectPtr.get() );
+    AppInstancePtr app = node ? node->getApp() : AppInstancePtr();
+    if (effect && app) {
+        app->removeRenderFromQueue(effect);
+    }
     if ( ( _imp->panel->isRemoveTasksAfterFinishChecked() && (retCode == 0) ) || (!_imp->canBePaused && !calledFromRenderEngine) ) {
         _imp->panel->removeTaskFromTable( shared_from_this() );
         updateTaskBarState(TaskBar::NoProgress);
@@ -543,7 +549,8 @@ ProgressTaskInfoPrivate::createItems()
         TableItem* item = new TableItem;
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
-        if ( getNode()->getEffectInstance()->isOutput() ) {
+        EffectInstancePtr effect = node->getEffectInstance();
+        if ( effect && effect->isOutput() ) {
             QString frames;
             frames.append( QString::number(firstFrame) );
             frames.append( QChar::fromLatin1('-') );

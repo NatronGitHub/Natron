@@ -2624,21 +2624,22 @@ Project::quitAnyProcessingForAllNodes_blocking()
 {
     NodesList nodesToWatch;
     getNodes_recursive(nodesToWatch, false);
-    if ( nodesToWatch.empty() ) {
-        return;
+    if ( !nodesToWatch.empty() ) {
+        // The renders, previews and trackers run Python on their threads (render callbacks, expressions):
+        // release the Python GIL while waiting for them if this thread holds it, e.g. app.resetProject() or
+        // app.closeProject() called from a script (#1575), as in saveProject_imp(). Nothing below touches Python
+        // state: the threads take the GIL with PythonGILLocker. The callers run the onProjectClose callback
+        // afterwards, with the GIL held again.
+        std::unique_ptr<PythonGILUnlocker> gilUnlocker;
+        if ( Py_IsInitialized() && PyGILState_Check() ) {
+            gilUnlocker.reset(new PythonGILUnlocker);
+        }
+        for (NodesList::const_iterator it = nodesToWatch.begin(); it != nodesToWatch.end(); ++it) {
+            (*it)->quitAnyProcessing_blocking(false);
+        }
     }
-    // The renders, previews and trackers run Python on their threads (render callbacks, expressions):
-    // release the Python GIL while waiting for them if this thread holds it, e.g. app.resetProject() or
-    // app.closeProject() called from a script (#1575), as in saveProject_imp(). Nothing below touches Python
-    // state: the threads take the GIL with PythonGILLocker. The callers run the onProjectClose callback
-    // afterwards, with the GIL held again.
-    std::unique_ptr<PythonGILUnlocker> gilUnlocker;
-    if ( Py_IsInitialized() && PyGILState_Check() ) {
-        gilUnlocker.reset(new PythonGILUnlocker);
-    }
-    for (NodesList::const_iterator it = nodesToWatch.begin(); it != nodesToWatch.end(); ++it) {
-        (*it)->quitAnyProcessing_blocking(false);
-    }
+    // also without nodes: a render may still be queued for a writer deleted from the graph, which the undo stack
+    // keeps alive until the project is reset
     AppInstancePtr app = getApp();
     if (app) {
         app->removeRendersOfClosedProject();
