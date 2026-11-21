@@ -166,9 +166,10 @@ if [ "$PKGOS" = "OSX" ]; then
         fi
         case "$osxver" in
         2[123].*)
-            # clang-mp can't compile QtMac.mm on Monterey
-            OBJECTIVE_CC=clang
-            OBJECTIVE_CXX=clang++
+            # clang-mp can't compile QtMac.mm on Monterey (macOS 12 to 14): use Apple's clang.
+            # Full paths: CMake can't find a bare "clang++" for CMAKE_OBJCXX_COMPILER
+            OBJECTIVE_CC=/usr/bin/clang
+            OBJECTIVE_CXX=/usr/bin/clang++
             ;;
         *)
             OBJECTIVE_CC=$CC
