@@ -28,7 +28,7 @@ bindings, qmake has an untested Qt 6 path without bindings, and
 shims. What remains: validate the PySide6 bindings and the GUI at run time
 (including the enum/flag issue
 `#854 <https://github.com/NatronGitHub/Natron/issues/854>`_), build Qt 6 in CI
-(nightly or on demand). Qt 6 builds use C++20 (#1469, #1148). Qt 6 work that keeps
+(weekly or on demand). Qt 6 builds use C++20 (#1469, #1148). Qt 6 work that keeps
 Qt 5 unchanged goes to RB-2.6; RB-2.7 is the Qt 6 branch. Tracks
 `#1011 <https://github.com/NatronGitHub/Natron/issues/1011>`_ and
 `#827 <https://github.com/NatronGitHub/Natron/issues/827>`_.
@@ -50,7 +50,7 @@ each pull request builds Qt 5 and runs the ``Tests`` suite on Linux, Windows
 and macOS (see :ref:`maint-ci`). What is missing are the builds that the CI
 policy keeps out of pull requests: Qt 6 with tests on all three platforms,
 extra C++ standards (C++23), and other compilers or OS versions, to run
-nightly, weekly or by hand, so that regressions in the dual-toolkit build are
+weekly or by hand, so that regressions in the dual-toolkit build are
 still caught.
 
 **Adopt a modern C++ baseline consistently (P3).**

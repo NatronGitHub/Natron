@@ -8,19 +8,22 @@ name: Tests
 #   (and by workflow_dispatch runs), so that pull requests restore the base
 #   branch's cache but never evict it with their own.
 # - Debug (-O0 -g; -O1 -g on Windows, see CMakeLists.txt) and Release
-#   (-O3 -DNDEBUG): nightly, on tags, and on workflow_dispatch unless
+#   (-O3 -DNDEBUG): weekly, on tags, and on workflow_dispatch unless
 #   "fast" is chosen. No compiler cache.
 on:
   workflow_dispatch:
     inputs:
       build:
-        description: 'full: Debug and Release builds (as nightly); fast: the pull-request build'
+        description: 'full: Debug and Release builds (as weekly); fast: the pull-request build'
         type: choice
         options: [full, fast]
         default: full
-  # nightly Debug and Release builds of the default branch, skipped if it didn't change in the last 25 hours
+  # weekly (Sunday 03:17 UTC, after the plug-in repos' Saturday runs) Debug and Release builds of the
+  # default branch. Never skipped, even if the branch didn't change: every job uses rolling toolchains
+  # (MSYS2 and pacman -Syu, apt on the ubuntu-24.04 image, the runner's Xcode, MacPorts upgrades on a
+  # cache miss) and downloads openfx-io's natron_testing bundles, none of them pinned.
   schedule:
-  - cron: '17 3 * * *'
+  - cron: '17 3 * * 0'
   # one run per change: push only on the main and release branches and on tags,
   # feature branches run through their pull request
   push:
@@ -48,11 +51,7 @@ concurrency:
 
 jobs:
   unix_test:
-    needs: changes
-    if: >-
-      !cancelled() && (
-      (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
-      (github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     timeout-minutes: 180
     name: Test ${{ matrix.os }} Python ${{ matrix.python-version }} ${{ matrix.config }}
     runs-on: ${{ matrix.os }}
@@ -83,7 +82,7 @@ jobs:
         # python3-pyside2.*). Noble has PySide2 5.15.13 and Python 3.12.
         os: [ubuntu-24.04]
         python-version: ['3.12']
-        # Fast on pull requests and branch pushes; Debug and Release nightly, on tags and by hand
+        # Fast on pull requests and branch pushes; Debug and Release weekly, on tags and by hand
         config: ${{ fromJSON((github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.build != 'fast')) && '["Debug","Release"]' || '["Fast"]') }}
         include:
         - os: ubuntu-24.04
@@ -173,7 +172,7 @@ jobs:
         continue-on-error: true
         run: |
           cd build
-          # the GUI tests (label gui) run in the Fast and Release builds, not twice in the nightly Debug one
+          # the GUI tests (label gui) run in the Fast and Release builds, not twice in the weekly Debug one
           gui=(); [ "$CI_CONFIG" = Debug ] && gui=(-LE gui)
           OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V "${gui[@]}"
 
@@ -189,11 +188,7 @@ jobs:
         run: exit 1
 
   win-test:
-    needs: changes
-    if: >-
-      !cancelled() && (
-      (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
-      (github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     timeout-minutes: 240
     name: Test ${{ matrix.os }} UCRT64 Python ${{ matrix.python-version }} ${{ matrix.config }}
     runs-on: ${{ matrix.os }}
@@ -217,7 +212,7 @@ jobs:
       matrix:
         os: [windows-latest]
         python-version: ['3.14']
-        # Fast on pull requests and branch pushes; Debug and Release nightly, on tags and by hand
+        # Fast on pull requests and branch pushes; Debug and Release weekly, on tags and by hand
         config: ${{ fromJSON((github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.build != 'fast')) && '["Debug","Release"]' || '["Fast"]') }}
     steps:
       - name: Checkout branch
@@ -343,23 +338,6 @@ jobs:
         if: steps.run-windows-tests.outcome == 'failure'
         run: exit 1
 
-  changes:
-    # nightly runs only: did the default branch change in the last 25 hours?
-    if: github.event_name == 'schedule'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    outputs:
-      changed: ${{ steps.check.outputs.changed }}
-    steps:
-      - name: Check for recent commits
-        id: check
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          since=$(date -u -d '25 hours ago' +%Y-%m-%dT%H:%M:%SZ)
-          n=$(gh api "repos/${{ github.repository }}/commits?sha=${{ github.ref_name }}&since=$since&per_page=1" --jq length)
-          echo "changed=$([ "$n" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-
   macos-test:
     # Built with MacPorts (as the official macOS binaries), never Homebrew.
     # The Natron-only dependencies come from MacPorts binary archives; the
@@ -367,12 +345,12 @@ jobs:
     # overlay (tools/MacPorts) and MACPORTS_CACHE_VERSION (bump it when the
     # port list below changes).
     # macOS arm64 runners are scarce: run only once Linux and Windows have passed. Merging only
-    # requires Linux and Windows; this job is informative. Nightly, it runs if the branch changed,
-    # whatever the Linux and Windows results.
-    needs: [changes, unix_test, win-test]
+    # requires Linux and Windows; this job is informative. Weekly, it always runs, whatever the
+    # Linux and Windows results.
+    needs: [unix_test, win-test]
     if: >-
       !cancelled() && (
-      (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
+      github.event_name == 'schedule' ||
       (github.event_name != 'schedule' && needs.unix_test.result == 'success' && needs.win-test.result == 'success' &&
        (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
     name: Test macos-15 arm64 MacPorts Python 3.11 ${{ matrix.config }}
@@ -380,7 +358,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Fast on pull requests and branch pushes; Debug and Release nightly, on tags and by hand
+        # Fast on pull requests and branch pushes; Debug and Release weekly, on tags and by hand
         config: ${{ fromJSON((github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.build != 'fast')) && '["Debug","Release"]' || '["Fast"]') }}
     timeout-minutes: 360
     defaults:
