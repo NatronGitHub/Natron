@@ -2064,26 +2064,34 @@ AppInstance::removeRenderFromQueue(OutputEffectInstance* writer)
 }
 
 void
-AppInstance::removeInProcessRenders()
+AppInstance::removeRendersOfClosedProject()
 {
-    // The renderFinished() signal of a stopped render is queued to the main thread: when the project is closed
-    // without processing the events, its writer (and its RenderEngine) is deleted before onQueuedRenderFinished()
-    // runs, and the render would stay active forever (hasRenderInProgress(), app.waitForRenders(), the next renders
-    // queued behind it, #1575). The renders in a separate process don't use the writer of this project.
+    // Called once the project's nodes stopped processing, before they are deleted (Project::reset(),
+    // Project::closeProject_blocking()). All the items refer to writers of this project, or of a Precomp node of
+    // this project (a Precomp's pre-render is queued here, its writer belongs to the Precomp's own instance, which
+    // the Precomp node quits when it is deleted with the project):
+    // - an active render in this process was stopped: its renderFinished() signal is queued to the main thread,
+    //   and the writer (with its RenderEngine) may be deleted before onQueuedRenderFinished() runs, so the render
+    //   would stay active forever (hasRenderInProgress(), app.waitForRenders(), the next renders queued behind
+    //   it, #1575): remove it;
+    // - a queued render was never started, and its writer is deleted: remove it, whether it would run in this
+    //   process or in a separate one (ProcessHandler uses the writer when the process fails to start);
+    // - an active render in a separate process keeps running (it renders a saved copy of the project): keep its
+    //   item, which onBackgroundRenderProcessFinished() removes when the process finishes.
     QMutexLocker k(&_imp->renderQueueMutex);
-    for (std::list<RenderQueueItem>* l : { &_imp->activeRenders, &_imp->renderQueue }) {
-        for (std::list<RenderQueueItem>::iterator it = l->begin(); it != l->end(); ) {
-            if (it->process) {
-                ++it;
-            } else {
-                it = l->erase(it);
-            }
+    _imp->renderQueue.clear();
+    for (std::list<RenderQueueItem>::iterator it = _imp->activeRenders.begin(); it != _imp->activeRenders.end(); ) {
+        if (it->process) {
+            ++it;
+        } else {
+            it = _imp->activeRenders.erase(it);
         }
     }
 }
 
 void
-AppInstance::startNextQueuedRender(OutputEffectInstance* finishedWriter)
+AppInstance::startNextQueuedRender(OutputEffectInstance* finishedWriter,
+                                   const ProcessHandler* finishedProcess)
 {
     RenderQueueItem nextWork;
 
@@ -2091,12 +2099,21 @@ AppInstance::startNextQueuedRender(OutputEffectInstance* finishedWriter)
     ProcessHandlerPtr processDying;
     {
         QMutexLocker k(&_imp->renderQueueMutex);
+        bool found = false;
         for (std::list<RenderQueueItem>::iterator it = _imp->activeRenders.begin(); it != _imp->activeRenders.end(); ++it) {
-            if (it->work.writer == finishedWriter) {
+            // a render in a separate process is identified by its process: its writer may have been deleted with
+            // its project, and the address reused by a writer of the next project (see removeRendersOfClosedProject())
+            if ( finishedProcess ? ( it->process.get() == finishedProcess ) : ( !it->process && (it->work.writer == finishedWriter) ) ) {
                 processDying = it->process;
                 _imp->activeRenders.erase(it);
+                found = true;
                 break;
             }
+        }
+        if (!found) {
+            // not an active render of the queue: a blocking render, or a render removed by
+            // removeRendersOfClosedProject() that finished afterwards. The queued renders wait for the active ones.
+            return;
         }
         if ( !_imp->renderQueue.empty() ) {
             nextWork = _imp->renderQueue.front();
@@ -2114,13 +2131,10 @@ void
 AppInstance::onBackgroundRenderProcessFinished()
 {
     ProcessHandler* proc = qobject_cast<ProcessHandler*>( sender() );
-    OutputEffectInstance* effect = 0;
 
     if (proc) {
-        effect = proc->getWriter();
-    }
-    if (effect) {
-        startNextQueuedRender(effect);
+        // the writer pointer is only compared, never dereferenced: it may belong to a project closed since
+        startNextQueuedRender(proc->getWriter(), proc);
     }
 }
 

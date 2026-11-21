@@ -2641,7 +2641,7 @@ Project::quitAnyProcessingForAllNodes_blocking()
     }
     AppInstancePtr app = getApp();
     if (app) {
-        app->removeInProcessRenders();
+        app->removeRendersOfClosedProject();
     }
 }
 
