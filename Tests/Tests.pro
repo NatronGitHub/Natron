@@ -65,6 +65,7 @@ SOURCES += \
     KnobDuplicate_Test.cpp \
     KnobExpressionCache_Test.cpp \
     KnobInvalidExpression_Test.cpp \
+    KnobLockOrder_Test.cpp \
     KnobFile_Test.cpp \
     KnobSlave_Test.cpp \
     KnobStringAnimation_Test.cpp \
@@ -111,6 +112,7 @@ SOURCES += \
     OSGLContext_Test.cpp \
     ParamRandom_Test.cpp \
     PluginGrouping_Test.cpp \
+    PrecompLoad_Test.cpp \
     ProjectAutoSave_Test.cpp \
     PyEffectEquality_Test.cpp \
     PythonScript_Test.cpp \

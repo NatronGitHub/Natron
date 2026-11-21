@@ -21,6 +21,15 @@ collection (lp_ChillSpill shows up as **lp_ChillSpill_smp** in the node
 graph). The three options do the same thing: they output the spill map (the
 amount of spill removed from each pixel) in the alpha channel.
 
+:ref:`ColorSuppress <net.sf.openfx.ColorSuppress>` (**Color** menu) can also
+output a mask. Set **Green** to 1, and set **Output** to **Alpha** (the colors
+are not changed) or **Image and Alpha** (the green is suppressed too). The
+alpha channel then holds the suppress mask: the amount of green removed from
+each pixel. ColorSuppress compares green with the larger of red and blue, not
+with their average, so its mask is never brighter than the spill map of
+Despill. Turn it into a matte with ColorLookup, as below, but with a lower
+white point on the curve, since the mask is darker.
+
 The three despill nodes side by side
 ------------------------------------
 
