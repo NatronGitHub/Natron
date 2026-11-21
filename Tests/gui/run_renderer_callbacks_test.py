@@ -217,6 +217,10 @@ def main(argv):
     elif os.environ.get("NATRON_TEST_WRAPPER"):
         wrapper = shlex.split(os.environ["NATRON_TEST_WRAPPER"])
     outDir = tempfile.mkdtemp(prefix="natron-callbacks-test-")
+    # a private disk cache (and OFX plug-in cache), removed with outDir, unless NATRON_DISK_CACHE_PATH is set:
+    # the user's one is shared by every Natron of this version, e.g. a concurrent test run (#1569)
+    if not os.environ.get("NATRON_DISK_CACHE_PATH"):
+        os.environ["NATRON_DISK_CACHE_PATH"] = os.path.join(outDir, "cache")
     try:
         writePNG(os.path.join(outDir, "input.png"), 64, 48)
         script = os.path.join(outDir, "callbacks_test.py")
