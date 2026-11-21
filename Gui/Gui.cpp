@@ -26,6 +26,7 @@
 #include "Gui.h"
 
 #include <cassert>
+#include <iostream>
 #include <stdexcept>
 
 #include <QtGlobal> // for Q_OS_*
@@ -257,6 +258,17 @@ Gui::abortProject(bool quitApp,
                   bool blocking)
 {
     GuiAppInstancePtr app = getApp();
+
+    if ( app && ( app->isQuitPending() || app->isClosing() ) ) {
+        // already quitting, e.g. a second app.closeProject() or File > Close Project, or app.resetProject(), after
+        // app.closeProject(): its project is closed without asking again whether to save it, as in closeEvent()
+        // (#1567). A close succeeds; a reset, which would keep the window, cannot.
+        if (!quitApp) {
+            std::cerr << tr("Cannot reset the project: it is being closed.").toStdString() << std::endl;
+        }
+
+        return quitApp;
+    }
 
     // stop viewers before anything else
     std::list<ViewerTab*> viewers = getViewersList();
