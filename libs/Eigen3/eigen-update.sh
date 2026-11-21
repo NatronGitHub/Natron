@@ -8,7 +8,7 @@
 
 set -e
 
-EIGEN_VERSION=3.4.0
+EIGEN_VERSION=3.4.1
 EIGEN_REPO=https://gitlab.com/libeigen/eigen.git
 
 echo "*** Eigen update utility"

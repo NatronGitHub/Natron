@@ -237,6 +237,7 @@ class Map<SparseMatrixType>
     /** Constructs a read-write Map to a sparse matrix of size \a rows x \a cols, containing \a nnz non-zero coefficients,
       * stored as a sparse format as defined by the pointers \a outerIndexPtr, \a innerIndexPtr, and \a valuePtr.
       * If the optional parameter \a innerNonZerosPtr is the null pointer, then a standard compressed format is assumed.
+      * The inner indices must be sorted appropriately.
       *
       * This constructor is available only if \c SparseMatrixType is non-const.
       *

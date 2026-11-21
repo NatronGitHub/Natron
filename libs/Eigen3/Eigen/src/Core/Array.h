@@ -163,7 +163,15 @@ class Array
 #endif
 
     #if EIGEN_HAS_CXX11
-    /** \copydoc PlainObjectBase(const Scalar& a0, const Scalar& a1, const Scalar& a2, const Scalar& a3, const ArgTypes&... args)
+    /** \brief Construct a row of column vector with fixed size from an arbitrary number of coefficients. \cpp11
+     *
+     * \only_for_vectors
+     *
+     * This constructor is for 1D array or vectors with more than 4 coefficients.
+     * There exists C++98 analogue constructors for fixed-size array/vector having 1, 2, 3, or 4 coefficients.
+     *
+     * \warning To construct a column (resp. row) vector of fixed length, the number of values passed to this
+     * constructor must match the the fixed number of rows (resp. columns) of \c *this.
      *
      * Example: \include Array_variadic_ctor_cxx11.cpp
      * Output: \verbinclude Array_variadic_ctor_cxx11.out

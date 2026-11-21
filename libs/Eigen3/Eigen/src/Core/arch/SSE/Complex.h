@@ -106,14 +106,9 @@ template<> EIGEN_STRONG_INLINE Packet2cf ploadu<Packet2cf>(const std::complex<fl
 
 template<> EIGEN_STRONG_INLINE Packet2cf pset1<Packet2cf>(const std::complex<float>&  from)
 {
-  Packet2cf res;
-#ifdef EIGEN_VECTORIZE_SSE3
-  res.v = _mm_castpd_ps(_mm_loaddup_pd(reinterpret_cast<double const*>(&from)));
-#else
-  res.v = _mm_castpd_ps(_mm_load_sd(reinterpret_cast<double const*>(&from)));
-  res.v = _mm_movelh_ps(res.v, res.v);
-#endif
-  return res;
+  const float re = std::real(from);
+  const float im = std::imag(from);
+  return Packet2cf(_mm_set_ps(im, re, im, re));
 }
 
 template<> EIGEN_STRONG_INLINE Packet2cf ploaddup<Packet2cf>(const std::complex<float>* from) { return pset1<Packet2cf>(*from); }
@@ -174,13 +169,8 @@ EIGEN_MAKE_CONJ_HELPER_CPLX_REAL(Packet2cf,Packet4f)
 
 template<> EIGEN_STRONG_INLINE Packet2cf pdiv<Packet2cf>(const Packet2cf& a, const Packet2cf& b)
 {
-  // TODO optimize it for SSE3 and 4
-  Packet2cf res = pmul(a, pconj(b));
-  __m128 s = _mm_mul_ps(b.v,b.v);
-  return Packet2cf(_mm_div_ps(res.v,_mm_add_ps(s,vec4f_swizzle1(s, 1, 0, 3, 2))));
+  return pdiv_complex(a, b);
 }
-
-
 
 //---------- double ----------
 struct Packet1cd
@@ -299,10 +289,7 @@ EIGEN_MAKE_CONJ_HELPER_CPLX_REAL(Packet1cd,Packet2d)
 
 template<> EIGEN_STRONG_INLINE Packet1cd pdiv<Packet1cd>(const Packet1cd& a, const Packet1cd& b)
 {
-  // TODO optimize it for SSE3 and 4
-  Packet1cd res = pmul(a,pconj(b));
-  __m128d s = _mm_mul_pd(b.v,b.v);
-  return Packet1cd(_mm_div_pd(res.v, _mm_add_pd(s,_mm_shuffle_pd(s, s, 0x1))));
+  return pdiv_complex(a, b);
 }
 
 EIGEN_STRONG_INLINE Packet1cd pcplxflip/* <Packet1cd> */(const Packet1cd& x)
