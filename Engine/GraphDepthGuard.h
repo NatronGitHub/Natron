@@ -64,8 +64,9 @@ enum GraphTraversalEnum
  * meanwhile is cached (see the ActionsCache setters and renderRoI). The outermost guard then sets the
  * persistent error message "Node graph too deep: <node> has a chain of N nodes upstream..." on its
  * node, which is shown in the GUI and printed by NatronRenderer, and resets the state of the thread.
- * The message is cleared by the next successful render of that node (outermost renderRoI), or as
- * any persistent message (e.g. when the viewer is refreshed).
+ * The message is cleared by the next successful render of that node or of a tree it is the root of
+ * (outermost renderRoI, see setTreeRoot()), or as any persistent message (e.g. when the viewer is
+ * refreshed).
  **/
 class GraphDepthGuard
 {
@@ -78,6 +79,14 @@ public:
 
     // true if this call, or a call of the current traversal of this thread, was too deep
     bool isTooDeep() const;
+
+    /**
+     * @brief The root of the render tree this call is part of (for renderRoI). If this is the outermost
+     * guard of the thread and the render works, the "too deep" message is cleared on the tree root
+     * too: the error may have been reported there (e.g. on the Viewer, by the request pass), while
+     * the later renders are outermost on one of its inputs.
+     **/
+    void setTreeRoot(const NodePtr& treeRoot);
 
     /**
      * @brief true if a guarded call was too deep on this thread, since the outermost guard of the
@@ -111,6 +120,7 @@ private:
     bool _tooDeep;
     GraphTraversalEnum _traversal;
     const EffectInstance* _effect;
+    NodePtr _treeRoot;
 };
 
 // The maximum depth used when the stack bounds of a thread are unknown

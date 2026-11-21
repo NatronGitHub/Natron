@@ -40,6 +40,7 @@
 #include <pthread_np.h>
 #endif
 #if defined(__NATRON_LINUX__)
+#include <sys/resource.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 #endif
@@ -156,13 +157,18 @@ getCurrentThreadStack(const char** low,
     *size = stackSize;
 #if defined(__NATRON_LINUX__)
     if ( syscall(SYS_gettid) == getpid() ) {
-        // The main thread's stack grows on demand, and the kernel keeps a gap (stack_guard_gap, 256
-        // pages by default) between it and the mapping below it. With `ulimit -s unlimited`,
-        // glibc reports the stack as reaching that mapping: don't count the gap.
-        const std::size_t gap = 256 * (std::size_t)sysconf(_SC_PAGESIZE);
-        if (*size > 2 * gap) {
-            *low += gap;
-            *size -= gap;
+        // The main thread's stack grows on demand, up to RLIMIT_STACK. If the limit is larger than the
+        // room below the stack (e.g. `ulimit -s unlimited`), glibc reports the stack as reaching the
+        // mapping below it, but the kernel keeps a gap (stack_guard_gap, 256 pages by default) above
+        // that mapping: don't count the gap then.
+        struct rlimit limit;
+        if ( (getrlimit(RLIMIT_STACK, &limit) == 0) &&
+             ( (limit.rlim_cur == RLIM_INFINITY) || ( limit.rlim_cur > (rlim_t)*size ) ) ) {
+            const std::size_t gap = 256 * (std::size_t)sysconf(_SC_PAGESIZE);
+            if (*size > 2 * gap) {
+                *low += gap;
+                *size -= gap;
+            }
         }
     }
 #endif
@@ -245,11 +251,17 @@ GraphDepthGuard::~GraphDepthGuard()
         }
         if (!failed) {
             // This render worked: clear the error of a previous render, if the graph was shortened
-            QString message;
-            int type;
-            node->getPersistentMessage(&message, &type, false);
-            if ( message.startsWith( messagePrefix() ) ) {
-                node->clearPersistentMessage(false);
+            const NodePtr nodes[2] = { node, _treeRoot };
+            for (int i = 0; i < 2; ++i) {
+                if ( !nodes[i] || ( (i == 1) && (nodes[1] == node) ) ) {
+                    continue;
+                }
+                QString message;
+                int type;
+                nodes[i]->getPersistentMessage(&message, &type, false);
+                if ( message.startsWith( messagePrefix() ) ) {
+                    nodes[i]->clearPersistentMessage(false);
+                }
             }
 
             return;
@@ -305,6 +317,12 @@ GraphDepthGuard::getLongestChainLength(const EffectInstance* effect)
     }
 
     return lengths[root.get()];
+}
+
+void
+GraphDepthGuard::setTreeRoot(const NodePtr& treeRoot)
+{
+    _treeRoot = treeRoot;
 }
 
 bool

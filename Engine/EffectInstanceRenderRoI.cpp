@@ -393,6 +393,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
         assert(!frameArgs->request || frameArgs->nodeHash == frameArgs->request->nodeHash);
     }
+    // if this render works, the "too deep" message of the tree root is cleared too
+    depthGuard.setTreeRoot(frameArgs->treeRoot);
 
     ///For writer we never want to cache otherwise the next time we want to render it will skip writing the image on disk!
     bool byPassCache = args.byPassCache;

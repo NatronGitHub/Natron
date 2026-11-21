@@ -2678,11 +2678,23 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
             }
         }
 
-        StatusEnum st = _publicInterface->render_public(actionArgs);
-        if ( (st == eStatusOK) && GraphDepthGuard::hasFailed() ) {
-            // An image the plug-in fetched during the render could not be rendered because the graph is
-            // too deep (#1440): the result is wrong, don't mark it as rendered in the cache.
-            st = eStatusFailed;
+        StatusEnum st;
+        {
+            // The plug-in may fetch images that were not pre-rendered, which renders them now (on this
+            // thread, possibly a thread of the pool that renders the tiles). The guard keeps a "too
+            // deep" failure of these renders (#1440) until it is checked below: otherwise the outermost
+            // guard of a pool thread would reset it first.
+            GraphDepthGuard depthGuard(eGraphTraversalRender, _publicInterface);
+            if ( depthGuard.isTooDeep() ) {
+                st = eStatusFailed;
+            } else {
+                st = _publicInterface->render_public(actionArgs);
+                if ( (st == eStatusOK) && GraphDepthGuard::hasFailed() ) {
+                    // An image the plug-in fetched could not be rendered because the graph is too
+                    // deep: the result is wrong, don't mark it as rendered in the cache.
+                    st = eStatusFailed;
+                }
+            }
         }
 
         if (planes.useOpenGL) {
