@@ -2397,7 +2397,7 @@ TrackerContextPrivate::computeCornerParamsFromTracks()
     lastSolveRequest.cpWatcher.reset( new QFutureWatcher<CornerPinData>() );
     QObject::connect( lastSolveRequest.cpWatcher.get(), SIGNAL(finished()), this, SLOT(onCornerPinSolverWatcherFinished()) );
     QObject::connect( lastSolveRequest.cpWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onCornerPinSolverWatcherProgress(int)) );
-    std::function<CornerPinData (const double&)> compute = [=](const double &keyframe) {
+    std::function<CornerPinData (const double&)> compute = [this](const double &keyframe) {
         return computeCornerPinParamsFromTracksAtTime(lastSolveRequest.refTime,
                                                       keyframe,
                                                       lastSolveRequest.jitterPeriod,
@@ -2607,7 +2607,7 @@ TrackerContextPrivate::computeTransformParamsFromTracks()
     lastSolveRequest.tWatcher.reset( new QFutureWatcher<TransformData>() );
     QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL(finished()), this, SLOT(onTransformSolverWatcherFinished()) );
     QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onTransformSolverWatcherProgress(int)) );
-    std::function<TransformData (const double&)> compute = [=](const double &keyframe) {
+    std::function<TransformData (const double&)> compute = [this](const double &keyframe) {
         return computeTransformParamsFromTracksAtTime(lastSolveRequest.refTime,
                                                       keyframe,
                                                       lastSolveRequest.jitterPeriod,

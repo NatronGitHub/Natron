@@ -1983,7 +1983,11 @@ TabWidget::setObjectName_mt_safe(const QString & str)
 {
     std::string strs = str.toStdString();
     if ( NATRON_PYTHON_NAMESPACE::isKeyword(strs) ) {
-        throw std::runtime_error(strs + " is a Python keyword");
+        // Report the error instead of throwing: this is called from Qt slots (e.g. splitting a pane),
+        // through which an exception must not propagate (#1046, #1436).
+        _imp->gui->getApp()->appendToScriptEditor("TabWidget::setObjectName_mt_safe: " + strs + " is a Python keyword");
+
+        return;
     }
     std::string oldName = objectName_mt_safe().toStdString();
     {

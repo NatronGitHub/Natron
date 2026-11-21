@@ -71,6 +71,7 @@ SOURCES += \
     LibTess_Test.cpp \
     LoadPythonScript_Test.cpp \
     Lut_Test.cpp \
+    Markdown_Test.cpp \
     MultiInputLinks_Test.cpp \
     NaNGuards_FastMath.cpp \
     NaNGuards_Test.cpp \
@@ -99,7 +100,9 @@ SOURCES += \
     OfxParamUndo_Test.cpp \
     OfxPluginObsolete_Test.cpp \
     OfxPluginScan_Test.cpp \
+    OfxProjectLoad_Test.cpp \
     OfxQuestion_Test.cpp \
+    OfxSequenceRenderArgs_Test.cpp \
     OfxSingleInstance_Test.cpp \
     OfxSuiteStatus_Test.cpp \
     OfxSyncPrivateData_Test.cpp \
@@ -110,6 +113,9 @@ SOURCES += \
     PluginGrouping_Test.cpp \
     PrecompLoad_Test.cpp \
     ProjectAutoSave_Test.cpp \
+    PyEffectEquality_Test.cpp \
+    PythonScript_Test.cpp \
+    ProjectFileFormat_Test.cpp \
     PythonExpressionScope_Test.cpp \
     ReadNodeOverlay_Test.cpp \
     RenderThreadSafety_Test.cpp \
@@ -120,6 +126,7 @@ SOURCES += \
     StrUtilsFormat_Test.cpp \
     Tracker_Test.cpp \
     ViewerCache_Test.cpp \
+    ViewerTexture_Test.cpp \
     WriteNodeViews_Test.cpp \
     wmain.cpp
 
@@ -132,5 +139,7 @@ HEADERS += \
 include(OfxTestPlugin/OfxTestPlugin.pri)
 DEFINES += NATRON_TESTS_OFX_PLUGIN_DIR=\\\"$${NATRON_TEST_OFX_PLUGIN_DIR}\\\"
 DEFINES += NATRON_TESTS_OFX_PLUGIN_BINARY=\\\"$${NATRON_TEST_OFX_BINARY_DIR}/NatronTestPlugin.ofx\\\"
+# the project files read by ProjectFileFormat_Test.cpp
+DEFINES += NATRON_TESTS_DATA_DIR=\\\"$$PWD/data\\\"
 
 include(../warnings.pri)

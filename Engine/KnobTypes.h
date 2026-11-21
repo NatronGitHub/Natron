@@ -1289,6 +1289,13 @@ private:
     static const std::string _typeNameStr;
 };
 
+/**
+ * @brief A copy of the values, animation and expressions of a knob that holds values (int, bool, double,
+ * choice, string, bytes, parametric, color, path, file), with no holder, made with KnobI::clone(): the
+ * undo commands restore it with KnobI::cloneAndUpdateGui(). Returns NULL for another type of knob.
+ **/
+KnobIPtr createKnobCopy(const KnobIPtr & originalKnob);
+
 NATRON_NAMESPACE_EXIT
 
 #endif // NATRON_ENGINE_KNOBTYPES_H

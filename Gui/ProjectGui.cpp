@@ -262,15 +262,19 @@ AddFormatDialog::getFormat() const
 }
 
 // Version is handled in ProjectGuiSerialization
-template<>
+template<class Archive>
 void
-ProjectGui::save<boost::archive::xml_oarchive>(boost::archive::xml_oarchive & archive) const
+ProjectGui::save(Archive & archive) const
 {
     ProjectGuiSerialization projectGuiSerializationObj;
 
     projectGuiSerializationObj.initialize(this);
     archive << boost::serialization::make_nvp("ProjectGui", projectGuiSerializationObj);
 }
+
+// explicit template instantiations
+template void ProjectGui::save<boost::archive::xml_oarchive>(boost::archive::xml_oarchive & archive) const;
+template void ProjectGui::save<PortableBinaryOArchive>(PortableBinaryOArchive & archive) const;
 
 static
 void
@@ -430,9 +434,9 @@ loadNodeGuiSerialization(Gui* gui,
     }
 } // loadNodeGuiSerialization
 
-template<>
+template<class Archive>
 void
-ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive::xml_iarchive & archive)
+ProjectGui::load(bool isAutosave,  Archive & archive)
 {
     ProjectGuiSerialization obj;
 
@@ -533,10 +537,10 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
         std::string err;
         std::string script = "app = " + appID + '\n';
         bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
-        assert(ok);
         if (!ok) {
-            // we have to give the tr() context explicitly due to a bug in lupdate
-            throw std::runtime_error( QObject::tr("ProjectGui::load(): interpretPythonScript(%1) failed!", "ProjectGui").arg( QString::fromUtf8(script.c_str()) ).toStdString() );
+            // Report and go on restoring the panels: throwing here made Project::loadProjectInternal()
+            // reject a valid project as "Unrecognized or damaged project file" (#1436).
+            _gui->getApp()->appendToScriptEditor("ProjectGui::load(): " + err);
         }
     }
     for (std::list<PythonPanelSerializationPtr>::const_iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
@@ -592,6 +596,10 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
     _gui->getScriptEditor()->setInputScript( QString::fromUtf8( obj.getInputScript().c_str() ) );
     _gui->centerAllNodeGraphsWithTimer();
 } // load
+
+// explicit template instantiations
+template void ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave, boost::archive::xml_iarchive & archive);
+template void ProjectGui::load<PortableBinaryIArchive>(bool isAutosave, PortableBinaryIArchive & archive);
 
 NodesGuiList
 ProjectGui::getVisibleNodes() const

@@ -33,15 +33,13 @@
 #include <string>
 #include <vector>
 
-#include <QtCore/QAbstractEventDispatcher>
 #include <QtCore/QCoreApplication>
-#include <QtCore/QElapsedTimer>
 #include <QtCore/QPointer>
 #include <QtCore/QStringList>
-#include <QtCore/QThread>
 #include <QtCore/QTimer>
 #include <QAction>
 #include <QApplication>
+#include <QCursor>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QGraphicsView>
@@ -90,6 +88,8 @@ struct GuiTestState
     std::vector<DialogRecord> dialogs;
     int unexpectedDialogs; // dialogs that the test did not answer
     Qt::MouseButtons pressedButtons;
+    QPoint cursorPos; // global position of the last synthetic pen event (cursorPos())
+    bool cursorPosSet; // false before the first pen event
     QPointer<QWidget> hovered; // the widget of the last synthetic pen event (for Enter/Leave)
     QPointer<QWidget> focused; // the target of the last synthetic key event or press (for FocusIn/FocusOut)
     std::vector<QPointer<QWidget> > openedSubmenus; // submenus opened by a menu answer (not answered again)
@@ -99,6 +99,8 @@ struct GuiTestState
         , dialogs()
         , unexpectedDialogs(0)
         , pressedButtons(Qt::NoButton)
+        , cursorPos()
+        , cursorPosSet(false)
         , hovered()
         , focused()
         , openedSubmenus()
@@ -601,39 +603,6 @@ parseButton(const char* str,
     return true;
 }
 
-// Processes the events until no render runs for settleMs, or timeoutMs elapsed. Returns true when idle.
-bool
-waitIdleInternal(int timeoutMs,
-                 int settleMs)
-{
-    QElapsedTimer total;
-
-    total.start();
-    QElapsedTimer idle;
-    bool idleStarted = false;
-    QAbstractEventDispatcher* dispatcher = QAbstractEventDispatcher::instance( qApp->thread() );
-    for (;;) {
-        QCoreApplication::sendPostedEvents();
-        bool processed = dispatcher ? dispatcher->processEvents(QEventLoop::AllEvents) : false;
-        // A render may be posting its results (e.g. a viewer texture upload): the posted events are
-        // processed in the next iterations, while no render is running.
-        if ( appPTR->hasRenderInProgress() ) {
-            idleStarted = false;
-        } else if (!idleStarted) {
-            idle.start();
-            idleStarted = true;
-        } else if (idle.elapsed() >= settleMs) {
-            return true;
-        }
-        if (total.elapsed() >= timeoutMs) {
-            return false;
-        }
-        if (!processed) {
-            QThread::msleep(5);
-        }
-    }
-}
-
 // ----------------------------------------------------------------- Python functions
 
 PyObject*
@@ -648,10 +617,16 @@ py_waitIdle(PyObject* /*self*/,
     if ( !PyArg_ParseTupleAndKeywords(args, kwds, "|dd", const_cast<char**>(kwlist), &timeout, &settle) ) {
         return 0;
     }
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    if (!app) {
+        PyErr_SetString(PyExc_RuntimeError, "no project");
+
+        return 0;
+    }
     bool ok;
     // The renders may need the GIL (expressions, Python callbacks): release it while waiting.
     Py_BEGIN_ALLOW_THREADS
-    ok = waitIdleInternal( (int)(timeout * 1000.), (int)(settle * 1000.) );
+    ok = app->waitForRenders( (int)(timeout * 1000.), (int)(settle * 1000.) );
     Py_END_ALLOW_THREADS
 
     return PyBool_FromLong(ok);
@@ -785,6 +760,9 @@ py_penEvent(PyObject* /*self*/,
         return 0;
     }
     const QPoint global = w->mapToGlobal( pos.toPoint() );
+    // the substitute of QCursor::pos() in test mode
+    state().cursorPos = global;
+    state().cursorPosSet = true;
     updateHovered(w, pos);
     if (evType == QEvent::MouseButtonPress) {
         // the target, not a graph's viewport
@@ -1169,6 +1147,11 @@ runTestScript(const QString& path)
         }
         Py_XDECREF(module);
     }
+    // the undo groups that the test left open end with it
+    AppInstancePtr topLevel = appPTR->getTopLevelInstance();
+    if (topLevel) {
+        topLevel->closeUndoGroups("end of the GUI test", true);
+    }
     if ( (status == 0) && appPTR->isQuitRequested() ) {
         // the script called natron.quit(n): n is the exit status, unless the script failed afterwards
         status = appPTR->getRequestedExitCode();
@@ -1188,6 +1171,25 @@ runTestScript(const QString& path)
 } // anonymous namespace
 
 namespace GuiTest {
+QPoint
+cursorPos()
+{
+    if ( appPTR && appPTR->isTestMode() ) {
+        if ( !state().cursorPosSet ) {
+            // before the first pen event: the centre of the main window, so that a node created at the
+            // cursor lands in the node graph and a dialog opened at the cursor is on the screen
+            Gui* gui = getGui();
+            if (gui) {
+                return gui->mapToGlobal( gui->rect().center() );
+            }
+        }
+
+        return state().cursorPos;
+    }
+
+    return QCursor::pos();
+}
+
 void
 install()
 {
