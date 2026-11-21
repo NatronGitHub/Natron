@@ -293,6 +293,16 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
 void
 ProgressTaskInfo::restartTask()
 {
+    // the node is gone if its project was closed (#1575): nothing to restart
+    NodePtr node = _imp->getNode();
+    if (!node) {
+        return;
+    }
+    EffectInstancePtr effect = node->getEffectInstance();
+    if (!effect) {
+        return;
+    }
+
     {
         QMutexLocker k(&_imp->canceledMutex);
         _imp->canceled = false;
@@ -304,15 +314,6 @@ ProgressTaskInfo::restartTask()
     _imp->pauseTasksButton->setEnabled(true);
     _imp->restartTasksButton->setEnabled(false);
 
-
-    NodePtr node = _imp->getNode();
-    if (!node) {
-        return;
-    }
-    EffectInstancePtr effect = node->getEffectInstance();
-    if (!effect) {
-        return;
-    }
     if ( effect->isOutput() ) {
         int firstFrame;
         if ( (_imp->lastRenderedFrame == _imp->lastFrame) || (_imp->lastRenderedFrame == -1) ) {
@@ -765,9 +766,8 @@ ProgressTaskInfoPrivate::refreshButtons()
         if (node) {
             effect = node->getEffectInstance();
         }
-        if (effect) {
-            restartTasksButton->setEnabled( effect->isOutput() );
-        }
+        // not if the node is gone with its project (#1575)
+        restartTasksButton->setEnabled( effect && effect->isOutput() );
         break;
     }
     case ProgressTaskInfo::eProgressTaskStatusCanceled:
@@ -776,7 +776,8 @@ ProgressTaskInfoPrivate::refreshButtons()
         break;
     case ProgressTaskInfo::eProgressTaskStatusPaused:
         pauseTasksButton->setEnabled(false);
-        restartTasksButton->setEnabled(canBePaused);
+        // not if the node is gone with its project (#1575)
+        restartTasksButton->setEnabled( canBePaused && getNode() );
         break;
     default:
         break;

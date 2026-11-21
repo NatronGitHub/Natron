@@ -2075,7 +2075,8 @@ AppInstance::removeRendersOfClosedProject()
     //   would stay active forever (hasRenderInProgress(), app.waitForRenders(), the next renders queued behind
     //   it, #1575): remove it;
     // - a queued render was never started, and its writer is deleted: remove it, whether it would run in this
-    //   process or in a separate one (ProcessHandler uses the writer when the process fails to start);
+    //   process (startRenderingFullSequence() would call renderFullSequence() on the deleted writer) or in a
+    //   separate one (it would render a project that was closed, and its Progress panel task lost its node);
     // - an active render in a separate process keeps running (it renders a saved copy of the project): keep its
     //   item, which onBackgroundRenderProcessFinished() removes when the process finishes.
     QMutexLocker k(&_imp->renderQueueMutex);

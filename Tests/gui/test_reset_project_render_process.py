@@ -2,6 +2,7 @@
 # renders to queue" on. The process renders a saved copy of the project and goes on after the reset; when it
 # finished, its Progress panel task used the deleted Write node (crash in ProgressTaskInfo::cancelTask()). A
 # render of the next project waits for the process, then runs, and app.waitForRenders() returns.
+# The waits add up to less than the 180 s timeout of the GUI tests in ctest (about 15 s when it passes).
 import os
 import shutil
 import tempfile
@@ -74,7 +75,7 @@ def make_writer(prefix, nframes, callback):
     write.getParam("filename").set(os.path.join(outDir, prefix + "_###.png"))
     if callback:
         write.getParam("afterFrameRender").set("resetProjectProcessAfterFrame")
-    wait_idle()
+    wait_idle(10)
     return write
 
 
@@ -85,7 +86,7 @@ try:
 
     write = make_writer("process", NFRAMES, True)
     app.render(write, 1, NFRAMES)  # returns at once: the process renders a saved copy of the project
-    check(process_events(120, lambda: frames_written("process") >= 2), "the render process did not write 2 frames in 120 s")
+    check(process_events(45, lambda: frames_written("process") >= 2), "the render process did not write 2 frames in 45 s")
     print("frames written by the process before the reset: %d" % frames_written("process"))
 
     r = app.resetProject()
@@ -97,7 +98,7 @@ try:
     write2 = make_writer("next", 3, False)
     app.render(write2, 1, 3)
     t0 = time.time()
-    ok = app.waitForRenders(120)
+    ok = app.waitForRenders(60)
     print("waitForRenders() -> %r in %.1f s, frames written: process %d, next %d"
           % (ok, time.time() - t0, frames_written("process"), frames_written("next")))
     process_events(1)  # the signals of the processes that just finished
@@ -105,4 +106,9 @@ try:
     check(frames_written("process") == NFRAMES, "the render process did not go on after the reset")
     check(frames_written("next") == 3, "the render of the next project did not run")
 finally:
-    shutil.rmtree(tmpDir, ignore_errors=True)
+    # a render process (Natron -b) may still write to outDir if the test failed: let it finish, else keep the
+    # directory rather than delete it under the process (it is killed when Natron exits)
+    if process_events(20, lambda: not NatronGuiTest.isRendering()):
+        shutil.rmtree(tmpDir, ignore_errors=True)
+    else:
+        print("a render is still running: %s is not removed" % tmpDir)
