@@ -27,6 +27,8 @@
 #include "EffectInstancePrivate.h"
 
 #include <map>
+#include <set>
+#include <vector>
 #include <sstream> // stringstream
 #include <algorithm> // min, max
 #include <fstream>
@@ -2677,6 +2679,11 @@ EffectInstance::Implementation::renderHandler(const EffectTLSDataPtr& tls,
         }
 
         StatusEnum st = _publicInterface->render_public(actionArgs);
+        if ( (st == eStatusOK) && GraphDepthGuard::hasFailed() ) {
+            // An image the plug-in fetched during the render could not be rendered because the graph is
+            // too deep (#1440): the result is wrong, don't mark it as rendered in the cache.
+            st = eStatusFailed;
+        }
 
         if (planes.useOpenGL) {
             glDisable(GL_SCISSOR_TEST);
@@ -5269,43 +5276,36 @@ EffectInstance::checkCanSetValueAndWarn() const
 
 #endif
 
-static
-void
-isFrameVaryingOrAnimated_impl(const EffectInstance* node,
-                              bool *ret)
-{
-    // This recurses upstream, once per node: stop before the stack overflows (#1440), and assume
-    // the result varies, which is always safe.
-    GraphDepthGuard depthGuard(eGraphTraversalFrameVarying, node);
-    if ( depthGuard.isTooDeep() ) {
-        *ret = true;
-
-        return;
-    }
-    if ( node->isFrameVarying() || node->getHasAnimation() || node->getNode()->getRotoContext() ) {
-        *ret = true;
-    } else {
-        int maxInputs = node->getNInputs();
-        for (int i = 0; i < maxInputs; ++i) {
-            EffectInstancePtr input = node->getInput(i);
-            if (input) {
-                isFrameVaryingOrAnimated_impl(input.get(), ret);
-                if (*ret) {
-                    return;
-                }
-            }
-        }
-    }
-}
-
 bool
 EffectInstance::isFrameVaryingOrAnimated_Recursive() const
 {
-    bool ret = false;
+    // Iterative, with a set of visited nodes: the recursion overflowed the stack on very deep graphs
+    // (#1440), and it visited a node once per path to it, which is exponential on chains of diamonds.
+    std::set<const EffectInstance*> visited;
+    std::vector<EffectInstancePtr> toVisit; // the inputs to visit, kept alive until they are visited
+    EffectInstancePtr current; // keeps the visited input alive
+    const EffectInstance* node = this;
 
-    isFrameVaryingOrAnimated_impl(this, &ret);
-
-    return ret;
+    for (;;) {
+        if ( visited.insert(node).second ) {
+            if ( node->isFrameVarying() || node->getHasAnimation() || node->getNode()->getRotoContext() ) {
+                return true;
+            }
+            const int maxInputs = node->getNInputs();
+            for (int i = maxInputs - 1; i >= 0; --i) { // input 0 is visited first, as before
+                EffectInstancePtr input = node->getInput(i);
+                if (input) {
+                    toVisit.push_back(input);
+                }
+            }
+        }
+        if ( toVisit.empty() ) {
+            return false;
+        }
+        current = toVisit.back();
+        toVisit.pop_back();
+        node = current.get();
+    }
 }
 
 bool

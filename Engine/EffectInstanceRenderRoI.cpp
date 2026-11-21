@@ -1794,6 +1794,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     } // if (!hasSomethingToRender) {
 
+    if ( GraphDepthGuard::hasFailed() && (renderRetCode != eRenderRoIStatusRenderFailed) ) {
+        // Something upstream could not be computed because the graph is too deep (#1440): the result
+        // is wrong. Don't let it be marked as rendered in the cache.
+        renderRetCode = eRenderRoIStatusRenderFailed;
+    }
+
     if ( !renderAborted && ( (renderRetCode == eRenderRoIStatusImageRendered) || (renderRetCode == eRenderRoIStatusImageAlreadyRendered) ) ) {
         // rendered in frame order by this render, into the cache entry of this key, by this thread or by another one
         // of the frame (already rendered): it may be used from the cache in the next frames of the render. Releasing
@@ -1842,6 +1848,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
         return eRenderRoIRetCodeAborted;
     } else if (renderRetCode == eRenderRoIStatusRenderFailed) {
+        if ( GraphDepthGuard::hasFailed() ) {
+            // the outermost GraphDepthGuard reports the error
+            return eRenderRoIRetCodeFailed;
+        }
         ///Throwing this exception will ensure the render stops.
         ///This is slightly clumsy since we already have a render rect code indicating it, we should
         ///use the ret code instead.

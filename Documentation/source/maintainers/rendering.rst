@@ -172,19 +172,21 @@ makes the whole UI feel stuck.
 Deep graphs and the stack
 -------------------------
 
-``renderRoI``, ``getRegionOfDefinition_public``, the request pass
-(``getInputsRoIsFunctor``) and ``isFrameVaryingOrAnimated_Recursive`` recurse
-upstream, once per node, using a few KB of stack per node. The threads that
-render have stacks of ``getRenderThreadStackSize()`` bytes (``ThreadPool.h``),
-enough for chains of a few thousand nodes. A ``GraphDepthGuard``
-(``GraphDepthGuard.h``) at the start of each of these recursive calls stops the
-traversal when less than a safety margin is left on the stack of the thread: the
-call returns a failure, every guarded call of the thread then fails until the
-outermost one returns, and the outermost guard sets the "Node graph too deep"
-persistent message on its node, instead of crashing (#1440). A new recursive
-traversal that walks upstream must create a guard too, and code that would treat
-a failure as an empty result (an empty RoD, for example) must check
-``GraphDepthGuard::hasFailed()``.
+``renderRoI``, ``getRegionOfDefinition_public`` and the request pass
+(``getInputsRoIsFunctor``) recurse upstream, once per node, using a few KB of
+stack per node. The threads that render have stacks of
+``getRenderThreadStackSize()`` bytes (``ThreadPool.h``), enough for chains of a
+few thousand nodes. A ``GraphDepthGuard`` (``GraphDepthGuard.h``) at the start
+of each of these recursive calls stops the traversal when less than a safety
+margin is left on the stack of the thread: the call returns a failure, every
+guarded call of the thread then fails until the outermost one returns, and the
+outermost guard sets the "Node graph too deep" persistent message on its node,
+instead of crashing (#1440). Nothing computed while a guard has tripped is
+cached: the ``ActionsCache`` setters and ``renderRoI`` check
+``GraphDepthGuard::hasFailed()``. A new recursive traversal that walks upstream
+must either be iterative (like ``isFrameVaryingOrAnimated_Recursive``) or create
+a guard, and code that would treat a failure as an empty result (an empty RoD,
+for example) must check ``GraphDepthGuard::hasFailed()``.
 
 The cache
 ---------

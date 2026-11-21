@@ -57,9 +57,10 @@ namespace {
 // of the render thread at a depth of about 440 nodes (in the getRegionOfDefinition recursion).
 const int kChainLength = 600;
 
-// Number of filters of a chain that is too deep for any stack (#1440): with 8 MB stacks, a render of
-// about 3450 nodes overflowed it. Such a chain must either render, or fail with the error
-// "Node graph too deep", but never crash.
+// Number of filters of a chain that is too deep for the stacks of Natron's threads (#1440): with
+// 8 MB stacks, a render of about 3500 MultiPAR nodes overflowed it, and with GraphDepthGuard the
+// limit is between 3000 and 3200 (macOS arm64). Such a chain must either render, or fail with the
+// error "Node graph too deep", but never crash.
 const int kVeryDeepChainLength = 5000;
 
 // Create a node with a unique script name: finding a free default name ("MultiPAR1", "MultiPAR2"...)
@@ -304,14 +305,19 @@ private:
 // of the global thread pool, on every platform: otherwise it falls back to a fixed maximum depth.
 TEST(DeepGraphRender, StackBounds)
 {
+    const std::size_t MB = 1024 * 1024;
+    // 8 MB on macOS, on Windows (set at link time) and usually on Linux (ulimit -s), minus the
+    // safety margin and what is already used
     const std::size_t mainStackLeft = GraphDepthGuard::getStackLeft();
-    EXPECT_GT(mainStackLeft, (std::size_t)0) << "the stack bounds of the main thread are unknown";
+    EXPECT_GT(mainStackLeft, 4 * MB) << "the stack bounds of the main thread are unknown or wrong";
 
+    // most of the stack of a fresh thread is left
+    const std::size_t renderStackSize = getRenderThreadStackSize();
     StackLeftThread thread;
     thread.start();
     thread.wait();
-    EXPECT_GT(thread.stackLeft, (std::size_t)0) << "the stack bounds of a render thread are unknown";
-    EXPECT_LT( thread.stackLeft, (std::size_t)getRenderThreadStackSize() );
+    EXPECT_GT(thread.stackLeft, renderStackSize / 2) << "the stack bounds of a render thread are unknown or wrong";
+    EXPECT_LT(thread.stackLeft, renderStackSize);
 
     std::promise<std::size_t> promise;
     std::future<std::size_t> poolStackLeft = promise.get_future();
@@ -319,8 +325,8 @@ TEST(DeepGraphRender, StackBounds)
         promise.set_value( GraphDepthGuard::getStackLeft() );
     } );
     const std::size_t poolLeft = poolStackLeft.get();
-    EXPECT_GT(poolLeft, (std::size_t)0) << "the stack bounds of a thread of the global pool are unknown";
-    EXPECT_LT( poolLeft, (std::size_t)getRenderThreadStackSize() );
+    EXPECT_GT(poolLeft, renderStackSize / 2) << "the stack bounds of a thread of the global pool are unknown or wrong";
+    EXPECT_LT(poolLeft, renderStackSize);
 }
 
 // With a maximum depth smaller than the chain, the renders fail with the "Node graph too deep" error
@@ -343,6 +349,8 @@ TEST(DeepGraphRender, TooDeepIsReported)
         std::string output = testing::internal::GetCapturedStdout();
         EXPECT_FALSE( bool(image) );
         EXPECT_TRUE( isGraphTooDeepError(output) ) << output;
+        // the generator and the filters, upstream of the last filter
+        EXPECT_NE( std::string::npos, output.find("has a chain of " + std::to_string(kChainLength + 1) + " nodes") ) << output;
         EXPECT_FALSE( GraphDepthGuard::hasFailed() ) << "the outermost guard must reset the state of the thread";
 
         // the region of definition
@@ -369,8 +377,20 @@ TEST(DeepGraphRender, TooDeepIsReported)
         EXPECT_TRUE( isGraphTooDeepError(output) ) << output;
     }
 
-    const int rendersBefore = NatronTestPlugin::counter("MultiPAR.render");
+    // without the limit, the chain renders on every kind of thread
+    int rendersBefore = NatronTestPlugin::counter("MultiPAR.render");
     EXPECT_TRUE( bool( NatronTestPlugin::renderFrame(chain.lastFilter(), 1.) ) );
+    EXPECT_EQ( kChainLength, NatronTestPlugin::counter("MultiPAR.render") - rendersBefore );
+
+    appPTR->clearAllCaches();
+    rendersBefore = NatronTestPlugin::counter("MultiPAR.render");
+    std::pair<bool, bool> result = renderFrameOnGlobalThreadPool( chain.lastFilter() );
+    EXPECT_TRUE(result.first);
+    EXPECT_EQ( kChainLength, NatronTestPlugin::counter("MultiPAR.render") - rendersBefore );
+
+    appPTR->clearAllCaches();
+    rendersBefore = NatronTestPlugin::counter("MultiPAR.render");
+    NatronTestPlugin::renderSequence(chain.output(), 1, 1);
     EXPECT_EQ( kChainLength, NatronTestPlugin::counter("MultiPAR.render") - rendersBefore );
 }
 
@@ -379,8 +399,7 @@ namespace {
 void
 checkVeryDeepChain(const NodePtr& output,
                    const NodePtr& lastFilter,
-                   int length,
-                   bool filtersRender)
+                   int length)
 {
     // the region of definition, on the main thread
     {
@@ -418,65 +437,22 @@ checkVeryDeepChain(const NodePtr& output,
         NatronTestPlugin::renderSequence(output, 1, 1);
         std::string out = testing::internal::GetCapturedStdout();
         const int renders = NatronTestPlugin::counter("MultiPAR.render") - rendersBefore;
-        if (filtersRender) {
-            EXPECT_TRUE( (renders == length) || isGraphTooDeepError(out) ) << out;
-        }
+        EXPECT_TRUE( (renders == length) || isGraphTooDeepError(out) ) << out;
         printStep(isGraphTooDeepError(out) ? "render on a render thread: too deep" : "render on a render thread: OK");
     }
 }
 } // anon namespace
 
 // A chain of kVeryDeepChainLength nodes, deeper than the stack allows: building it (each connection
-// refreshes the hash and the metadata downstream), its region of definition and its renders work or
-// report the "Node graph too deep" error, but never crash (#1440).
+// refreshes the hash and the metadata downstream), a change at its top, its region of definition, its
+// renders, and saving and loading it work or report the "Node graph too deep" error, but never crash
+// (#1440).
 TEST(DeepGraphRender, VeryDeepChain)
 {
     if ( !canRunTest() ) {
         return;
     }
     appPTR->clearAllCaches();
-    printStep("start");
-    DeepChain chain(kVeryDeepChainLength);
-    ASSERT_TRUE( chain.isValid() );
-    printStep("chain built");
-
-    // changing the generator changes the hash of every node downstream
-    const U64 hashBefore = chain.output()->getHashValue();
-    chain.nodes.front()->incrementKnobsAge();
-    EXPECT_NE( hashBefore, chain.output()->getHashValue() );
-    printStep("hash changed");
-
-    // reconnecting the generator refreshes the hash, the metadata and the other data of every node
-    // downstream, recursively
-    ASSERT_TRUE( Project::disconnectNodes(chain.nodes[0], chain.nodes[1]) );
-    ASSERT_TRUE( Project::connectNodes(0, chain.nodes[0], chain.nodes[1]) );
-    EXPECT_EQ( chain.nodes[0], chain.nodes[1]->getInput(0) );
-    printStep("generator reconnected");
-
-    checkVeryDeepChain(chain.output(), chain.lastFilter(), kVeryDeepChainLength, true);
-}
-
-// The same with Dot nodes, which are identities: renderRoI goes straight to the input.
-TEST(DeepGraphRender, VeryDeepDotChain)
-{
-    if ( !canRunTest() ) {
-        return;
-    }
-    appPTR->clearAllCaches();
-    printStep("start");
-    DeepChain chain(kVeryDeepChainLength, PLUGINID_NATRON_DOT);
-    ASSERT_TRUE( chain.isValid() );
-    printStep("chain built");
-
-    checkVeryDeepChain(chain.output(), chain.lastFilter(), kVeryDeepChainLength, false);
-}
-
-// Saving and loading a project with a very deep chain works.
-TEST(DeepGraphRender, VeryDeepChainSaveLoad)
-{
-    if ( !canRunTest() ) {
-        return;
-    }
     QTemporaryDir dir;
     ASSERT_TRUE( dir.isValid() );
     const QString path = dir.path() + QLatin1Char('/');
@@ -492,14 +468,34 @@ TEST(DeepGraphRender, VeryDeepChainSaveLoad)
             project->reset(false, true);
         }
     } restore = { project };
+    // start from an empty project: other tests may have left nodes in it
+    project->reset(false, true);
+    ASSERT_EQ( 0, (int)project->getNodes().size() );
     std::string outputName, lastFilterName;
+
     printStep("start");
     {
         DeepChain chain(kVeryDeepChainLength);
         ASSERT_TRUE( chain.isValid() );
+        printStep("chain built");
+
+        // changing the generator changes the hash of every node downstream
+        const U64 hashBefore = chain.output()->getHashValue();
+        chain.nodes.front()->incrementKnobsAge();
+        EXPECT_NE( hashBefore, chain.output()->getHashValue() );
+        printStep("hash changed");
+
+        // reconnecting the generator refreshes the hash, the metadata and the other data of every node
+        // downstream, recursively
+        ASSERT_TRUE( Project::disconnectNodes(chain.nodes[0], chain.nodes[1]) );
+        ASSERT_TRUE( Project::connectNodes(0, chain.nodes[0], chain.nodes[1]) );
+        EXPECT_EQ( chain.nodes[0], chain.nodes[1]->getInput(0) );
+        printStep("generator reconnected");
+
+        checkVeryDeepChain(chain.output(), chain.lastFilter(), kVeryDeepChainLength);
+
         outputName = chain.output()->getScriptName();
         lastFilterName = chain.lastFilter()->getScriptName();
-        printStep("chain built");
         ASSERT_TRUE( project->saveProject(path, name, 0) );
         printStep("project saved");
     }
@@ -512,5 +508,48 @@ TEST(DeepGraphRender, VeryDeepChainSaveLoad)
     ASSERT_TRUE( bool(lastFilter) );
     EXPECT_EQ( kVeryDeepChainLength + 2, (int)project->getNodes().size() );
 
-    checkVeryDeepChain(output, lastFilter, kVeryDeepChainLength, true);
+    checkVeryDeepChain(output, lastFilter, kVeryDeepChainLength);
+}
+
+// A chain of Dot nodes, which are identities: renderRoI goes straight to the input. Rendering very
+// deep Dot chains is slow (a 4000-node chain takes about 40 s), so this uses a shorter chain and a
+// lower maximum depth.
+TEST(DeepGraphRender, DotChain)
+{
+    if ( !canRunTest() ) {
+        return;
+    }
+    const int length = 1500;
+    appPTR->clearAllCaches();
+    DeepChain chain(length, PLUGINID_NATRON_DOT);
+    ASSERT_TRUE( chain.isValid() );
+
+    {
+        MaxGraphDepthSetter limit(length / 3);
+
+        testing::internal::CaptureStdout();
+        std::pair<bool, bool> result = renderFrameOnGlobalThreadPool( chain.lastFilter() );
+        std::string output = testing::internal::GetCapturedStdout();
+        EXPECT_FALSE(result.first);
+        EXPECT_TRUE( isGraphTooDeepError(output) ) << output;
+
+        testing::internal::CaptureStdout();
+        NatronTestPlugin::renderSequence(chain.output(), 1, 1);
+        output = testing::internal::GetCapturedStdout();
+        EXPECT_TRUE( isGraphTooDeepError(output) ) << output;
+    }
+
+    // without the limit, the chain renders
+    int rendersBefore = NatronTestPlugin::counter("Generator.render");
+    std::pair<bool, bool> result = renderFrameOnGlobalThreadPool( chain.lastFilter() );
+    EXPECT_TRUE(result.first);
+    EXPECT_LT( 0, NatronTestPlugin::counter("Generator.render") - rendersBefore );
+
+    appPTR->clearAllCaches();
+    rendersBefore = NatronTestPlugin::counter("Generator.render");
+    testing::internal::CaptureStdout();
+    NatronTestPlugin::renderSequence(chain.output(), 1, 1);
+    std::string output = testing::internal::GetCapturedStdout();
+    EXPECT_FALSE( isGraphTooDeepError(output) ) << output;
+    EXPECT_LT( 0, NatronTestPlugin::counter("Generator.render") - rendersBefore );
 }

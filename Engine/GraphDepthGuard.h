@@ -43,16 +43,15 @@ enum GraphTraversalEnum
     eGraphTraversalRender = 0, // EffectInstance::renderRoI
     eGraphTraversalRegionOfDefinition, // EffectInstance::getRegionOfDefinition_public
     eGraphTraversalRequest, // EffectInstance::getInputsRoIsFunctor (computeRequestPass)
-    eGraphTraversalFrameVarying, // EffectInstance::isFrameVaryingOrAnimated_Recursive
     eGraphTraversalCount
 };
 
 /**
  * @brief Stops a recursive traversal of the node graph before it overflows the stack (#1440).
  *
- * The render, the region of definition and the other traversals that walk upstream recurse once
- * per node, using a few KB of stack per node, so a chain of a few thousand nodes overflowed the
- * stack of the thread and crashed, even with the 8 MB render-thread stacks of #1434.
+ * The render, the region of definition and the request pass walk upstream recursively, once per
+ * node, using a few KB of stack per node, so a chain of a few thousand nodes overflowed the stack of
+ * the thread and crashed, even with the 8 MB render-thread stacks of #1439.
  *
  * Create a GraphDepthGuard on the stack at the start of each recursive call. If isTooDeep() is true,
  * the call must not recurse further, and must return a failure (or a conservative result). A call is
@@ -61,9 +60,12 @@ enum GraphTraversalEnum
  *
  * Once a call is too deep, every guarded call of the thread is too deep until the outermost guard
  * of the thread is destroyed, so that the whole traversal (and any other traversal it is part of,
- * such as the render that asked for the region of definition) fails quickly. The outermost guard
- * then sets the persistent error message "Node graph too deep..." on its node, which is shown in the
- * GUI and printed by NatronRenderer, and resets the state of the thread.
+ * such as the render that asked for the region of definition) fails quickly. Nothing computed
+ * meanwhile is cached (see the ActionsCache setters and renderRoI). The outermost guard then sets the
+ * persistent error message "Node graph too deep: <node> has a chain of N nodes upstream..." on its
+ * node, which is shown in the GUI and printed by NatronRenderer, and resets the state of the thread.
+ * The message is cleared by the next successful render of that node (outermost renderRoI), or as
+ * any persistent message (e.g. when the viewer is refreshed).
  **/
 class GraphDepthGuard
 {
@@ -91,6 +93,12 @@ public:
      **/
     static int getMaxDepth();
     static void setMaxDepth(int maxDepth);
+
+    /**
+     * @brief The number of nodes of the longest chain upstream of effect, effect included (computed
+     * iteratively, for the error message).
+     **/
+    static int getLongestChainLength(const EffectInstance* effect);
 
     /**
      * @brief The number of bytes left on the stack of the current thread before the safety margin, or
