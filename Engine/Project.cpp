@@ -2614,16 +2614,36 @@ Project::reset(bool aboutToQuit, bool blocking)
             doResetEnd(aboutToQuit);
         }
     } else {
-        {
-            NodesList nodesToWatch;
-            getNodes_recursive(nodesToWatch, false);
-            for (NodesList::const_iterator it = nodesToWatch.begin(); it != nodesToWatch.end(); ++it) {
-                (*it)->quitAnyProcessing_blocking(false);
-            }
-        }
+        quitAnyProcessingForAllNodes_blocking();
         doResetEnd(aboutToQuit);
     }
 } // Project::reset
+
+void
+Project::quitAnyProcessingForAllNodes_blocking()
+{
+    NodesList nodesToWatch;
+    getNodes_recursive(nodesToWatch, false);
+    if ( nodesToWatch.empty() ) {
+        return;
+    }
+    // The renders, previews and trackers run Python on their threads (render callbacks, expressions):
+    // release the Python GIL while waiting for them if this thread holds it, e.g. app.resetProject() or
+    // app.closeProject() called from a script (#1575), as in saveProject_imp(). Nothing below touches Python
+    // state: the threads take the GIL with PythonGILLocker. The callers run the onProjectClose callback
+    // afterwards, with the GIL held again.
+    std::unique_ptr<PythonGILUnlocker> gilUnlocker;
+    if ( Py_IsInitialized() && PyGILState_Check() ) {
+        gilUnlocker.reset(new PythonGILUnlocker);
+    }
+    for (NodesList::const_iterator it = nodesToWatch.begin(); it != nodesToWatch.end(); ++it) {
+        (*it)->quitAnyProcessing_blocking(false);
+    }
+    AppInstancePtr app = getApp();
+    if (app) {
+        app->removeInProcessRenders();
+    }
+}
 
 void
 Project::closeProject_blocking(bool aboutToQuit)
@@ -2633,11 +2653,7 @@ Project::closeProject_blocking(bool aboutToQuit)
         QMutexLocker k(&_imp->projectClosingMutex);
         _imp->projectClosing = true;
     }
-    NodesList nodesToWatch;
-    getNodes_recursive(nodesToWatch, false);
-    for (NodesList::iterator it = nodesToWatch.begin(); it != nodesToWatch.end(); ++it) {
-        (*it)->quitAnyProcessing_blocking(false);
-    }
+    quitAnyProcessingForAllNodes_blocking();
 
     doResetEnd(aboutToQuit);
 }

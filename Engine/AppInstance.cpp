@@ -2064,6 +2064,25 @@ AppInstance::removeRenderFromQueue(OutputEffectInstance* writer)
 }
 
 void
+AppInstance::removeInProcessRenders()
+{
+    // The renderFinished() signal of a stopped render is queued to the main thread: when the project is closed
+    // without processing the events, its writer (and its RenderEngine) is deleted before onQueuedRenderFinished()
+    // runs, and the render would stay active forever (hasRenderInProgress(), app.waitForRenders(), the next renders
+    // queued behind it, #1575). The renders in a separate process don't use the writer of this project.
+    QMutexLocker k(&_imp->renderQueueMutex);
+    for (std::list<RenderQueueItem>* l : { &_imp->activeRenders, &_imp->renderQueue }) {
+        for (std::list<RenderQueueItem>::iterator it = l->begin(); it != l->end(); ) {
+            if (it->process) {
+                ++it;
+            } else {
+                it = l->erase(it);
+            }
+        }
+    }
+}
+
+void
 AppInstance::startNextQueuedRender(OutputEffectInstance* finishedWriter)
 {
     RenderQueueItem nextWork;

@@ -493,6 +493,13 @@ public:
     virtual RectD getPaintStrokeWholeBbox() const { return RectD(); }
 
     void removeRenderFromQueue(OutputEffectInstance* writer);
+
+    /**
+     * @brief Forgets the renders of the project's writers, run in this process, once they were stopped
+     * because the project is closed (Project::reset(), closeProject_blocking()): the project then deletes them.
+     **/
+    void removeInProcessRenders();
+
     virtual void reloadScriptEditorFonts() {}
 
     const ProjectBeingLoadedInfo& getProjectBeingLoadedInfo() const;
