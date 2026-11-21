@@ -226,13 +226,16 @@ openfx-misc, openfx-io, openfx-arena, openfx-gmic, …) follows the same rules.
 ``Tests`` suite:
 
 - **Linux**: Ubuntu 24.04 with its Qt 5, PySide2 and Python 3.12. It also
-  checks that qmake and CMake build the same sources, and builds and tests
-  twice, in Debug and in RelWithDebInfo.
+  checks that qmake and CMake build the same sources.
 - **Windows**: MSYS2 UCRT64, with the stock MSYS2 packages (Qt 5, PySide2
   and MSYS2's Python).
 - **macOS**: macOS 15 arm64, the system (Xcode) clang and MacPorts libraries
   (never Homebrew), with ``/opt/local`` restored from a cache. It starts only
   after the Linux and Windows jobs have passed.
+
+Each job builds the Fast configuration (CMake Debug with ``-O1`` and no
+``-g``) per pull request and per push; the weekly, tag and manual runs build
+Debug and Release instead.
 
 The ``Tests`` suite includes the GUI tests (``Tests/gui``, ctest label ``gui``, see
 :ref:`guiTests`), which take a few seconds each. On Linux they run under Xvfb with Mesa
@@ -259,10 +262,9 @@ The workflow also:
   (``concurrency``), but never a run for a push to a branch or a tag;
 - runs with read-only ``permissions`` (``contents: read``).
 
-**Weekly** (Sunday 03:17 UTC, after the plug-in repositories' Saturday runs),
-the macOS job runs alone on the default branch, in Debug and Release, and is
-skipped if the branch's head is the commit that the last completed scheduled
-run built. Any branch can also be run by hand (``workflow_dispatch``). Other configurations (Qt 6, extra C++
+**Weekly** (Sunday 03:17 UTC), all three jobs build the default branch in
+Debug and Release; macOS runs without waiting for Linux and Windows. The weekly
+run is never skipped: every job uses rolling toolchains. Any branch can also be run by hand (``workflow_dispatch``). Other configurations (Qt 6, extra C++
 standards such as C++23, other compilers or OS versions) are meant to run
 weekly or by hand, never per pull request; none is set up yet.
 
