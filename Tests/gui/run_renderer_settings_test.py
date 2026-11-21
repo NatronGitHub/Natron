@@ -99,8 +99,12 @@ def main(argv):
         with open(script, "w") as f:
             f.write(SCRIPT % {"expected": [(name, expected) for name, _, expected in SETTINGS]})
         env = dict(os.environ)
-        # the environment variable takes precedence over the diskCachePath setting (#1265)
+        # the environment variable takes precedence over the diskCachePath setting (#1265): unset, so that the
+        # test checks the setting. Before the setting applies, the first refreshDiskCacheLocation() uses the
+        # default location: on Linux, a private one (XDG_CACHE_HOME), not the user's (#1569). macOS and Windows
+        # have no environment override for it, but nothing is written there except a short-lived instance lock.
         env.pop("NATRON_DISK_CACHE_PATH", None)
+        env["XDG_CACHE_HOME"] = os.path.join(outDir, "xdg-cache")
         env["NATRON_SETTINGS_TEST_CACHE"] = cacheDir
         # Debug builds: no trapped floating point exception (#1537), as with Natron --test
         env["NATRON_NO_FP_TRAPS"] = "1"
