@@ -4,22 +4,23 @@
 # see https://github.com/openexr/openexr/releases/
 if [ -z ${EXR_VERSION+x} ]; then
 #EXR_VERSION=2.5.7
-EXR_VERSION=3.1.7
+EXR_VERSION=3.5.4
 EXR_CXX11_CONFIGURE_FLAGS=
 if version_gt "2.4.0" "${EXR_VERSION}"; then
     EXR_CXX11_CONFIGURE_FLAGS=--enable-cxxstd=11
 else
-    EXR_CXX11_CONFIGURE_FLAGS=-DOPENEXR_CXX_STANDARD=11
+    EXR_CXX11_CONFIGURE_FLAGS=-DCMAKE_CXX_STANDARD=17 # OpenEXR >= 3.3 requires C++17
 fi
 fi
 
 EXR_TAR="openexr-${EXR_VERSION}.tar.gz"
+EXR_SHA256=cedafe3171176d20baea4e887ceacc74cbe3a5a06fbb30d9f0a394a4416e5f7b
 
 if download_step; then
     if version_gt "2.4.0" "${EXR_VERSION}"; then
         download "$EXR_SITE" "$EXR_TAR"
     else
-        download_github AcademySoftwareFoundation openexr "${EXR_VERSION}" v "${EXR_TAR}"
+        download_github AcademySoftwareFoundation openexr "${EXR_VERSION}" v "${EXR_TAR}" "$EXR_SHA256"
     fi
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/OpenEXR.pc" ] || [ "$(pkg-config --modversion OpenEXR)" != "$EXR_VERSION" ]; }; }; then    
@@ -37,7 +38,10 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/OpenEXR.pc" 
     else
         mkdir build
         pushd build
-        cmake .. -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DCMAKE_INSTALL_PREFIX="$SDK_HOME" ${EXR_CXX11_CONFIGURE_FLAGS}
+        cmake .. -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_INSTALL_LIBDIR=lib ${EXR_CXX11_CONFIGURE_FLAGS} -DBUILD_TESTING=OFF -DOPENEXR_BUILD_EXAMPLES=OFF -DOPENEXR_INSTALL_EXAMPLES=OFF -DOPENEXR_BUILD_DOCS=OFF \
+              -DOPENEXR_FORCE_INTERNAL_DEFLATE=ON -DOPENEXR_FORCE_INTERNAL_OPENJPH=ON -DOPENEXR_FORCE_INTERNAL_IMATH=OFF -DFETCHCONTENT_FULLY_DISCONNECTED=ON
+        # (libdeflate and OpenJPH: the copies vendored in the OpenEXR tarball, never a download or a
+        # system library; Imath: the SDK's, see ilmbase.sh)
         # compiling openexr 2.5 requires lots of memory, let's limit to 2 jobs
         j=${MKJOBS}
         if [ $j -gt 2 ]; then

@@ -7,15 +7,16 @@
 # https://github.com/GNOME/glib/commit/0beb62f564072f3585762c9c55fe894485993b62#diff-6b790fb09bbee6ca6c8ee1a76c0f49be
 #GLIB_VERSION=2.54.3 # last version before 2.56
 #GLIB_VERSION=2.58.3 # last version before meson
-GLIB_VERSION=2.76.2 # requires meson, but also a recent version of binutils
+GLIB_VERSION=2.88.3 # requires meson, but also a recent version of binutils
 #if grep -F F_SETPIPE_SZ /usr/include/linux/fcntl.h &>/dev/null; then
 #    GLIB_VERSION=2.56.1
 #fi
 GLIB_VERSION_SHORT=${GLIB_VERSION%.*}
 GLIB_TAR="glib-${GLIB_VERSION}.tar.xz"
+GLIB_SHA256=ab24d24e698dfa1e408b7bcdb508f4aafc906185a8b8ce72fdf79bbbdc9b383b
 GLIB_SITE="https://download.gnome.org/sources/glib/${GLIB_VERSION_SHORT}"
 if download_step; then
-    download "$GLIB_SITE" "$GLIB_TAR"
+    download "$GLIB_SITE" "$GLIB_TAR" "$GLIB_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/glib-2.0.pc" ] || [ "$(pkg-config --modversion glib-2.0)" != "$GLIB_VERSION" ]; }; }; then
     start_build
@@ -29,8 +30,10 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/glib-2.0.pc"
 		mkdir build
 		pushd build
 		env CFLAGS="$BF" CXXFLAGS="$BF" meson --prefix="$SDK_HOME" --libdir="lib" \
+			--buildtype=release \
 			-Dman=false -Dgtk_doc=false \
-			-Dselinux=disabled \
+			-Dselinux=disabled -Dtests=false -Dintrospection=disabled \
+			-Dsysprof=disabled -Dlibelf=disabled -Ddtrace=disabled -Dsystemtap=disabled \
 			..
 		env CFLAGS="$BF" CXXFLAGS="$BF" ninja
         env CFLAGS="$BF" CXXFLAGS="$BF" ninja install
