@@ -35,10 +35,11 @@
 
 #include "libs/libtess/libtess.h"
 
-// Tests of the bundled GLU tessellator (libs/libtess), used by Roto/RotoPaint
-// (RotoContextPrivate::computeTriangles()) to fill the shapes. They call it the
-// way Natron does: one contour, normal (0,0,1), odd winding rule, and a combine
-// callback. The result is checked against the odd winding rule at sample points.
+// Tests of the bundled GLU tessellator (libs/libtess), which
+// RotoContextPrivate::computeTriangles() uses to fill Roto shapes, only in
+// builds with ROTO_RENDER_TRIANGLES_ONLY defined (by default, the shapes are
+// filled with cairo). They call it the way Natron does: one contour, normal
+// (0,0,1), odd winding rule, and a combine callback. The result is checked against the odd winding rule at sample points.
 
 namespace {
 
@@ -482,15 +483,26 @@ TEST(LibTess,
 // a*b - b*a, which is exactly 0 without FMA but the rounding error of a*b
 // with it, so collinear points were seen on random sides of each other, and
 // the sweep reached these inconsistent states. libtess is now compiled with
-// -ffp-contract=off, so these contours are tessellated (to nothing) the same
-// way on every platform; with FMA they were dropped (#1510).
+// -fno-fast-math -ffp-contract=off, so these contours are tessellated (to nothing) the same
+// way on every platform; with FMA they were dropped (#1510). What the sweep
+// did on them with FMA, before #1535:
 // - selfLoop: overlapping edges and repeated points on a small integer grid.
+//   CheckForRightSplice() merged the two endpoints of a zero-length edge into a
+//   self-loop, which WalkDirtyRegions() deleted as a "two-edge loop" while
+//   another active region still used it (use-after-free).
 // - diagonal, diagonal2: collinear points on the diagonal x == y with rounding
-//   noise (a Roto shape collapsed onto a 45 degree line).
-// - collapsed, collapsed2: a Roto shape collapsed onto the diagonal x == y,
-//   with repeated points.
-// - sliver: a 45 degree sliver (width 1e-7 of its length).
-// - sentinel: a contour folding back along the diagonal.
+//   noise (a Roto shape collapsed onto a 45 degree line). Freed edges were
+//   then used in WalkDirtyRegions() and FinishLeftRegions().
+// - collapsed: a Roto shape collapsed onto the diagonal x == y, with repeated
+//   points. Two active regions had the same upper edge, so deleting one of
+//   them cleared the edge's activeRegion, and AddRightEdges() then freed the
+//   edge that the other one still used.
+// - collapsed2, sliver: a shape collapsed onto x == y with repeated points, and
+//   a 45 degree sliver (width 1e-7 of its length). WalkDirtyRegions() deleted a
+//   "two-edge loop" whose edge was the upper edge of a region that was not next
+//   to the deleted one (use-after-free).
+// - sentinel: a contour folding back along the diagonal. A face reaching the
+//   sentinels was marked inside, and output with NULL vertex data.
 TEST(LibTess,
      CollapsedContoursDontDependOnFma)
 {

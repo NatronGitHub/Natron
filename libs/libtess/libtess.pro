@@ -16,10 +16,10 @@ CONFIG -= warn_on
 CONFIG += warn_off
 
 !win32-msvc* {
-    # no floating-point contraction (fused multiply-add), see CMakeLists.txt;
-    # after global.pri's -Ofast (CONFIG+=fast)
-    QMAKE_CFLAGS_RELEASE += -ffp-contract=off
-    QMAKE_CFLAGS_DEBUG += -ffp-contract=off
+    # no fast-math and no floating-point contraction (fused multiply-add), see
+    # CMakeLists.txt; after global.pri's -Ofast (CONFIG+=fast)
+    QMAKE_CFLAGS_RELEASE += -fno-fast-math -ffp-contract=off
+    QMAKE_CFLAGS_DEBUG += -fno-fast-math -ffp-contract=off
 }
 
 # Input

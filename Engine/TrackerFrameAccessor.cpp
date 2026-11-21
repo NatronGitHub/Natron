@@ -338,17 +338,6 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     const RenderScale scale = RenderScale::fromMipmapLevel(mipmapLevel);
 
 
-    RectD precomputedRoD;
-    if (!region) {
-        bool isProjectFormat;
-        StatusEnum stat = effect->getRegionOfDefinition_public(_imp->trackerInput->getHashValue(), frame, scale, ViewIdx(0), &precomputedRoD, &isProjectFormat);
-        if (stat == eStatusFailed) {
-            return (mv::FrameAccessor::Key)0;
-        }
-        double par = effect->getAspectRatio(-1);
-        roi = precomputedRoD.toPixelEnclosing(mipmapLevel, par);
-    }
-
     std::list<ImagePlaneDesc> components;
     components.push_back( ImagePlaneDesc::getRGBComponents() );
 
@@ -372,6 +361,20 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
                                               true, //isAnalysis
                                               false, //draftMode
                                               RenderStatsPtr() ); // Stats
+
+    // The RoD is computed after the render args are set, so that the parameters it reads through expressions are read
+    // at the tracked frame, not at the timeline's frame (#1564)
+    RectD precomputedRoD;
+    if (!region) {
+        bool isProjectFormat;
+        StatusEnum stat = effect->getRegionOfDefinition_public(_imp->trackerInput->getHashValue(), frame, scale, ViewIdx(0), &precomputedRoD, &isProjectFormat);
+        if (stat == eStatusFailed) {
+            return (mv::FrameAccessor::Key)0;
+        }
+        double par = effect->getAspectRatio(-1);
+        roi = precomputedRoD.toPixelEnclosing(mipmapLevel, par);
+    }
+
     EffectInstance::RenderRoIArgs args( frame,
                                         scale,
                                         mipmapLevel,
