@@ -18,14 +18,9 @@ namespace internal {
 // with mismatched types, the compiler emits errors about failing to instantiate cwiseProduct BEFORE
 // looking at the static assertions. Thus this is a trick to get better compile errors.
 template<typename T, typename U,
-// the NeedToTranspose condition here is taken straight from Assign.h
-         bool NeedToTranspose = T::IsVectorAtCompileTime
-                && U::IsVectorAtCompileTime
-                && ((int(T::RowsAtCompileTime) == 1 && int(U::ColsAtCompileTime) == 1)
-                      |  // FIXME | instead of || to please GCC 4.4.0 stupid warning "suggest parentheses around &&".
-                         // revert to || as soon as not needed anymore.
-                    (int(T::ColsAtCompileTime) == 1 && int(U::RowsAtCompileTime) == 1))
->
+         bool NeedToTranspose = T::IsVectorAtCompileTime && U::IsVectorAtCompileTime &&
+                ((int(T::RowsAtCompileTime) == 1 && int(U::ColsAtCompileTime) == 1) ||
+                 (int(T::ColsAtCompileTime) == 1 && int(U::RowsAtCompileTime) == 1))>
 struct dot_nocheck
 {
   typedef scalar_conj_product_op<typename traits<T>::Scalar,typename traits<U>::Scalar> conj_prod;

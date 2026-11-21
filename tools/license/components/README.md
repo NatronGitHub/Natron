@@ -15,7 +15,7 @@ Natron binaries include components from the following libraries:
 * openfx-misc (GPLv2) https://github.com/NatronGitHub/openfx-misc
 * openfx-arena (GPLv2) https://github.com/NatronGitHub/openfx-arena
 * openfx-gmic (CeCILL-C, LGPL-like) https://github.com/NatronGitHub/openfx-gmic
-* Eigen 3 (MPL 2.0) http://eigen.tuxfamily.org/
+* Eigen 3 (MPL 2.0) https://libeigen.gitlab.io/
 * Ceres Solver (New BSD) http://ceres-solver.org/
 * gflags (New BSD) http://gflags.github.io/gflags/
 * glog (New BSD) https://github.com/google/glog

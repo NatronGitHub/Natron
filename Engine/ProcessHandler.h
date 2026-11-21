@@ -28,6 +28,8 @@
 
 #include "Global/Macros.h"
 
+#include <string>
+
 CLANG_DIAG_OFF(deprecated)
 #include <QProcess>
 #include <QThread>
@@ -86,7 +88,8 @@ class ProcessHandler
     Q_OBJECT
 
     QProcess* _process; //< the process executing the render
-    OutputEffectInstance* _writer; //< pointer to the writer that will render in the bg process
+    OutputEffectInstance* _writer; //< pointer to the writer that will render in the bg process: it may be deleted with its project while the process runs, never dereference it after the constructor
+    std::string _writerScriptName; //< the script name of _writer
     QLocalServer* _ipcServer; //< the server for IPC with the background process
     QLocalSocket* _bgProcessOutputSocket; //< the socket where data is output by the process
 

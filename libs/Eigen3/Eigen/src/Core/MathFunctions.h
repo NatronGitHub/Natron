@@ -588,12 +588,8 @@ struct arg_default_impl<Scalar, true> {
   EIGEN_DEVICE_FUNC
   static inline RealScalar run(const Scalar& x)
   {
-    #if defined(EIGEN_HIP_DEVICE_COMPILE)
-    // HIP does not seem to have a native device side implementation for the math routine "arg"
+    // There is no official ::arg on device in CUDA/HIP, so we always need to use std::arg.
     using std::arg;
-    #else
-    EIGEN_USING_STD(arg);
-    #endif
     return static_cast<RealScalar>(arg(x));
   }
 };
@@ -881,13 +877,159 @@ struct meta_floor_log2<n, lower, upper, meta_floor_log2_bogus>
   // no value, error at compile time
 };
 
-template<typename Scalar>
-struct random_default_impl<Scalar, false, true>
-{
-  static inline Scalar run(const Scalar& x, const Scalar& y)
-  {
-    if (y <= x)
-      return x;
+template <typename BitsType, typename EnableIf = void>
+struct count_bits_impl {
+  static EIGEN_DEVICE_FUNC inline int clz(BitsType bits) {
+    EIGEN_STATIC_ASSERT(
+        is_integral<BitsType>::value && !NumTraits<BitsType>::IsSigned,
+        THIS_TYPE_IS_NOT_SUPPORTED);
+    int n = CHAR_BIT * sizeof(BitsType);
+    int shift = n / 2;
+    while (bits > 0 && shift > 0) {
+      BitsType y = bits >> shift;
+      if (y > 0) {
+        n -= shift;
+        bits = y;
+      }
+      shift /= 2;
+    }
+    if (shift == 0) {
+      --n;
+    }
+    return n;
+  }
+
+  static EIGEN_DEVICE_FUNC inline int ctz(BitsType bits) {
+    EIGEN_STATIC_ASSERT(
+        is_integral<BitsType>::value && !NumTraits<BitsType>::IsSigned,
+        THIS_TYPE_IS_NOT_SUPPORTED);
+    int n = CHAR_BIT * sizeof(BitsType);
+    int shift = n / 2;
+    while (bits > 0 && shift > 0) {
+      BitsType y = bits << shift;
+      if (y > 0) {
+        n -= shift;
+        bits = y;
+      }
+      shift /= 2;
+    }
+    if (shift == 0) {
+      --n;
+    }
+    return n;
+  }
+};
+
+// Count leading zeros.
+template <typename BitsType>
+EIGEN_DEVICE_FUNC inline int clz(BitsType bits) {
+  return count_bits_impl<BitsType>::clz(bits);
+}
+
+// Count trailing zeros.
+template <typename BitsType>
+EIGEN_DEVICE_FUNC inline int ctz(BitsType bits) {
+  return count_bits_impl<BitsType>::ctz(bits);
+}
+
+#if EIGEN_COMP_GNUC || EIGEN_COMP_CLANG
+
+template <typename BitsType>
+struct count_bits_impl<BitsType, typename enable_if<sizeof(BitsType) <= sizeof(unsigned int)>::type> {
+  static const int kNumBits = static_cast<int>(sizeof(BitsType) * CHAR_BIT);
+  static EIGEN_DEVICE_FUNC inline int clz(BitsType bits) {
+    EIGEN_STATIC_ASSERT(is_integral<BitsType>::value, THIS_TYPE_IS_NOT_SUPPORTED);
+    static const int kLeadingBitsOffset = (sizeof(unsigned int) - sizeof(BitsType)) * CHAR_BIT;
+    return bits == 0 ? kNumBits : __builtin_clz(static_cast<unsigned int>(bits)) - kLeadingBitsOffset;
+  }
+
+  static EIGEN_DEVICE_FUNC inline int ctz(BitsType bits) {
+    EIGEN_STATIC_ASSERT(is_integral<BitsType>::value, THIS_TYPE_IS_NOT_SUPPORTED);
+    return bits == 0 ? kNumBits : __builtin_ctz(static_cast<unsigned int>(bits));
+  }
+};
+
+template <typename BitsType>
+struct count_bits_impl<
+    BitsType, typename enable_if<sizeof(unsigned int) < sizeof(BitsType) && sizeof(BitsType) <= sizeof(unsigned long)>::type> {
+  static const int kNumBits = static_cast<int>(sizeof(BitsType) * CHAR_BIT);
+  static EIGEN_DEVICE_FUNC inline int clz(BitsType bits) {
+    EIGEN_STATIC_ASSERT(is_integral<BitsType>::value, THIS_TYPE_IS_NOT_SUPPORTED);
+    static const int kLeadingBitsOffset = (sizeof(unsigned long) - sizeof(BitsType)) * CHAR_BIT;
+    return bits == 0 ? kNumBits : __builtin_clzl(static_cast<unsigned long>(bits)) - kLeadingBitsOffset;
+  }
+
+  static EIGEN_DEVICE_FUNC inline int ctz(BitsType bits) {
+    EIGEN_STATIC_ASSERT(is_integral<BitsType>::value, THIS_TYPE_IS_NOT_SUPPORTED);
+    return bits == 0 ? kNumBits : __builtin_ctzl(static_cast<unsigned long>(bits));
+  }
+};
+
+template <typename BitsType>
+struct count_bits_impl<BitsType, typename enable_if<sizeof(unsigned long) < sizeof(BitsType) &&
+                                                  sizeof(BitsType) <= sizeof(unsigned long long)>::type> {
+  static const int kNumBits = static_cast<int>(sizeof(BitsType) * CHAR_BIT);
+  static EIGEN_DEVICE_FUNC inline int clz(BitsType bits) {
+    EIGEN_STATIC_ASSERT(is_integral<BitsType>::value, THIS_TYPE_IS_NOT_SUPPORTED);
+    static const int kLeadingBitsOffset = (sizeof(unsigned long long) - sizeof(BitsType)) * CHAR_BIT;
+    return bits == 0 ? kNumBits : __builtin_clzll(static_cast<unsigned long long>(bits)) - kLeadingBitsOffset;
+  }
+
+  static EIGEN_DEVICE_FUNC inline int ctz(BitsType bits) {
+    EIGEN_STATIC_ASSERT(is_integral<BitsType>::value, THIS_TYPE_IS_NOT_SUPPORTED);
+    return bits == 0 ? kNumBits : __builtin_ctzll(static_cast<unsigned long long>(bits));
+  }
+};
+
+#elif EIGEN_COMP_MSVC
+
+template <typename BitsType>
+struct count_bits_impl<BitsType, typename enable_if<sizeof(BitsType) <= sizeof(unsigned long)>::type> {
+  static const int kNumBits = static_cast<int>(sizeof(BitsType) * CHAR_BIT);
+  static EIGEN_DEVICE_FUNC inline int clz(BitsType bits) {
+    EIGEN_STATIC_ASSERT(is_integral<BitsType>::value, THIS_TYPE_IS_NOT_SUPPORTED);
+    unsigned long out;
+    _BitScanReverse(&out, static_cast<unsigned long>(bits));
+    return bits == 0 ? kNumBits : (kNumBits - 1) - static_cast<int>(out);
+  }
+
+  static EIGEN_DEVICE_FUNC inline int ctz(BitsType bits) {
+    EIGEN_STATIC_ASSERT(is_integral<BitsType>::value, THIS_TYPE_IS_NOT_SUPPORTED);
+    unsigned long out;
+    _BitScanForward(&out, static_cast<unsigned long>(bits));
+    return bits == 0 ? kNumBits : static_cast<int>(out);
+  }
+};
+
+#ifdef _WIN64
+
+template <typename BitsType>
+struct count_bits_impl<
+    BitsType, typename enable_if<sizeof(unsigned long) < sizeof(BitsType) && sizeof(BitsType) <= sizeof(__int64)>::type> {
+  static const int kNumBits = static_cast<int>(sizeof(BitsType) * CHAR_BIT);
+  static EIGEN_DEVICE_FUNC inline int clz(BitsType bits) {
+    EIGEN_STATIC_ASSERT(is_integral<BitsType>::value, THIS_TYPE_IS_NOT_SUPPORTED);
+    unsigned long out;
+    _BitScanReverse64(&out, static_cast<unsigned __int64>(bits));
+    return bits == 0 ? kNumBits : (kNumBits - 1) - static_cast<int>(out);
+  }
+
+  static EIGEN_DEVICE_FUNC inline int ctz(BitsType bits) {
+    EIGEN_STATIC_ASSERT(is_integral<BitsType>::value, THIS_TYPE_IS_NOT_SUPPORTED);
+    unsigned long out;
+    _BitScanForward64(&out, static_cast<unsigned __int64>(bits));
+    return bits == 0 ? kNumBits : static_cast<int>(out);
+  }
+};
+
+#endif  // _WIN64
+
+#endif  // EIGEN_COMP_GNUC || EIGEN_COMP_CLANG
+
+template <typename Scalar>
+struct random_default_impl<Scalar, false, true> {
+  static inline Scalar run(const Scalar& x, const Scalar& y) {
+    if (y <= x) return x;
     // ScalarU is the unsigned counterpart of Scalar, possibly Scalar itself.
     typedef typename make_unsigned<Scalar>::type ScalarU;
     // ScalarX is the widest of ScalarU and unsigned int.
@@ -1032,11 +1174,15 @@ template<typename T> EIGEN_DEVICE_FUNC bool isinf_msvc_helper(T x)
 }
 
 //MSVC defines a _isnan builtin function, but for double only
+#ifndef EIGEN_GPU_COMPILE_PHASE
 EIGEN_DEVICE_FUNC inline bool isnan_impl(const long double& x) { return _isnan(x)!=0; }
+#endif
 EIGEN_DEVICE_FUNC inline bool isnan_impl(const double& x)      { return _isnan(x)!=0; }
 EIGEN_DEVICE_FUNC inline bool isnan_impl(const float& x)       { return _isnan(x)!=0; }
 
+#ifndef EIGEN_GPU_COMPILE_PHASE
 EIGEN_DEVICE_FUNC inline bool isinf_impl(const long double& x) { return isinf_msvc_helper(x); }
+#endif
 EIGEN_DEVICE_FUNC inline bool isinf_impl(const double& x)      { return isinf_msvc_helper(x); }
 EIGEN_DEVICE_FUNC inline bool isinf_impl(const float& x)       { return isinf_msvc_helper(x); }
 
@@ -1050,12 +1196,16 @@ EIGEN_DEVICE_FUNC inline bool isinf_impl(const float& x)       { return isinf_ms
   #define EIGEN_TMP_NOOPT_ATTRIB EIGEN_DEVICE_FUNC inline __attribute__((noinline,optimize("no-finite-math-only")))
 #endif
 
+#ifndef EIGEN_GPU_COMPILE_PHASE
 template<> EIGEN_TMP_NOOPT_ATTRIB bool isnan_impl(const long double& x) { return __builtin_isnan(x); }
+#endif
 template<> EIGEN_TMP_NOOPT_ATTRIB bool isnan_impl(const double& x)      { return __builtin_isnan(x); }
 template<> EIGEN_TMP_NOOPT_ATTRIB bool isnan_impl(const float& x)       { return __builtin_isnan(x); }
 template<> EIGEN_TMP_NOOPT_ATTRIB bool isinf_impl(const double& x)      { return __builtin_isinf(x); }
 template<> EIGEN_TMP_NOOPT_ATTRIB bool isinf_impl(const float& x)       { return __builtin_isinf(x); }
+#ifndef EIGEN_GPU_COMPILE_PHASE
 template<> EIGEN_TMP_NOOPT_ATTRIB bool isinf_impl(const long double& x) { return __builtin_isinf(x); }
+#endif
 
 #undef EIGEN_TMP_NOOPT_ATTRIB
 
@@ -1112,6 +1262,8 @@ EIGEN_ALWAYS_INLINE double mini(const double& x, const double& y)
 {
   return fmin(x, y);
 }
+
+#ifndef EIGEN_GPU_COMPILE_PHASE
 template<>
 EIGEN_DEVICE_FUNC
 EIGEN_ALWAYS_INLINE long double mini(const long double& x, const long double& y)
@@ -1123,6 +1275,7 @@ EIGEN_ALWAYS_INLINE long double mini(const long double& x, const long double& y)
   return fminl(x, y);
 #endif
 }
+#endif
 
 template<typename T>
 EIGEN_DEVICE_FUNC
@@ -1142,6 +1295,7 @@ EIGEN_ALWAYS_INLINE double maxi(const double& x, const double& y)
 {
   return fmax(x, y);
 }
+#ifndef EIGEN_GPU_COMPILE_PHASE
 template<>
 EIGEN_DEVICE_FUNC
 EIGEN_ALWAYS_INLINE long double maxi(const long double& x, const long double& y)
@@ -1153,6 +1307,7 @@ EIGEN_ALWAYS_INLINE long double maxi(const long double& x, const long double& y)
   return fmaxl(x, y);
 #endif
 }
+#endif
 #endif
 
 #if defined(SYCL_DEVICE_ONLY)
@@ -1310,8 +1465,8 @@ EIGEN_ALWAYS_INLINE double absdiff(const double& x, const double& y)
   return fabs(x - y);
 }
 
-#if !defined(EIGEN_GPUCC)
 // HIP and CUDA do not support long double.
+#ifndef EIGEN_GPU_COMPILE_PHASE
 template<>
 EIGEN_DEVICE_FUNC
 EIGEN_ALWAYS_INLINE long double absdiff(const long double& x, const long double& y) {

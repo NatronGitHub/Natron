@@ -27,15 +27,19 @@ file too;
 ``tools/utils/checkQmakeSources.py`` (run by the Linux CI job) reports any
 mismatch. No per-PR CI job builds with qmake any more: only these source lists
 are checked, so a broken ``.pri`` or ``DEFINES`` setting would only show up
-when the release scripts build an installer (a nightly qmake job would catch
+when the release scripts build an installer (a weekly qmake job would catch
 it earlier).
 
 .. note::
 
-   **C++17 is required for every build**, not just the CMake one:
-   ``Global/Macros.h`` fails compilation with ``#error "Natron 2.6+ requires
-   C++17"`` if the standard is older. Configure your toolchain accordingly
-   regardless of which build system you use.
+   **C++ standard:** RB-2.6 builds with **C++17 for Qt5 and C++20 for Qt6**,
+   and so do the plug-ins built with it, so the code must compile with both.
+   CMake (``NATRON_QT6``), qmake (``QT_MAJOR_VERSION``, in ``global.pri``) and
+   the packaging scripts in ``tools/jenkins`` (``QT_VERSION_MAJOR``) pick the
+   standard from the Qt version. ``Global/Macros.h`` fails compilation with
+   ``#error "Natron 2.6+ requires C++17"`` if the standard is older.
+   RB-2.7 (the Qt6 branch, which keeps as much Qt5 support as possible while
+   RB-2.6 is maintained) uses C++20 everywhere.
 
 .. note::
 

@@ -591,6 +591,8 @@ env OPENMP=1 CXX="clang++-mp-$CLANG -stdlib=libc++ -std=c++17" OPTFLAG=-O3 \
     CONFIG=release make -j8
 ```
 
+Use `-std=c++17` with a Qt5 Natron and `-std=c++20` with a Qt6 Natron (RB-2.6 policy; the packaging scripts do this automatically).
+
 The bundle is written to `GMIC_OFX/Darwin-64-release/GMIC.ofx.bundle`. To use it, symlink it next to the others (or use `/Library/OFX/Plugins`):
 
 ```Shell

@@ -1,7 +1,7 @@
 name: Build Installer
 
 # Installers are release artifacts: built on demand or for (pre-)release tags only.
-# GPL only: COMMERCIAL (non-GPL) builds are never made in CI, nightlies or releases, only by hand
+# GPL only: COMMERCIAL (non-GPL) builds are never made in CI, weekly builds or releases, only by hand
 # (NATRON_LICENSE=COMMERCIAL, see tools/jenkins/README.md).
 on:
   workflow_dispatch:
@@ -105,7 +105,7 @@ jobs:
           cd tools/jenkins
 
           # CMake build (NATRON_BUILD_SYSTEM defaults to cmake), no crash reporter until #1183. GPL
-          # only: there are no COMMERCIAL builds in CI, nightlies or releases.
+          # only: there are no COMMERCIAL builds in CI, weekly builds or releases.
           WORKSPACE=${NATRON_BUILD_WORKSPACE_UNIX} BUILD_NAME=natron BUILD_NUMBER=1 BITS=64 NATRON_LICENSE=GPL GIT_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git GIT_URL_IS_NATRON=1 SNAPSHOT_BRANCH=${GITHUB_REF_NAME} QT_VERSION_MAJOR=5 DISABLE_BREAKPAD=1 NOUPDATE=1 MKJOBS=$(nproc) MINIMIZE_DISK_USAGE=1 UNIT_TESTS=true ./launchBuildMain.sh
 
           # the architecture in the installer name, as common.sh sets WIN_ARCH
@@ -304,6 +304,30 @@ jobs:
               if [ "${missing}" != 0 ]; then echo "::error::${missing} files of ${src} were not installed"; errors=1; fi
             done < <(required_sources)
           }
+          # Setup.exe must refuse the folder of a Natron 2.5 or older (Qt Installer Framework:
+          # bin\Natron.exe next to the NatronSetup.exe maintenance tool), and leave it untouched.
+          # natron-setup 1.0-7 and later only: older package repositories have an older Setup.exe.
+          SETUP_VERSION=$(pacman -Q "${MINGW_PACKAGE_PREFIX}-natron-setup" | cut -d' ' -f2)
+          if [ "$(vercmp "${SETUP_VERSION}" 1.0-7)" -lt 0 ]; then
+            echo "::warning::natron-setup ${SETUP_VERSION} is older than 1.0-7: the check that Setup.exe refuses the folder of a Natron 2.5 or older is skipped"
+          else
+            OLD_W='D:\ni25'
+            OLD=$(cygpath -u "${OLD_W}")
+            if [ -e "${OLD}" ]; then echo "::error::${OLD} already exists"; exit 1; fi
+            mkdir -p "${OLD}/bin"
+            echo old > "${OLD}/bin/Natron.exe"
+            touch "${OLD}/NatronSetup.exe" "${OLD}/bin/old.dll"
+            # exit code 7: PrepareToInstall refused to install
+            rc=0
+            MSYS2_ARG_CONV_EXCL='*' "${INSTALLER_DIR}/Setup.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CURRENTUSER "/DIR=${OLD_W}" "/COMPONENTS=${COMPONENTS}" "/LOG=$(cygpath -w "${GITHUB_WORKSPACE}/setup-old.log")" || rc=$?
+            if [ "${rc}" != 7 ] || ! grep -q -F 'Refusing the folder of Natron 2.5 or older' setup-old.log; then
+              cat setup-old.log; echo "::error::Setup.exe did not refuse the folder of a Natron 2.5 or older (exit code ${rc})"; errors=1
+            fi
+            if [ ! -e "${OLD}/bin/old.dll" ] || [ "$(cat "${OLD}/bin/Natron.exe")" != old ] || [ -e "${OLD}/unins000.exe" ]; then
+              echo "::error::Setup.exe changed the folder of a Natron 2.5 or older"; errors=1
+            fi
+            rm -rf "${OLD}"
+          fi
           # the first install goes into an existing folder that is not a Natron installation (no
           # bin\Natron.exe): [InstallDelete] must not touch its bin\keep.dll
           mkdir -p "${APP}/bin"

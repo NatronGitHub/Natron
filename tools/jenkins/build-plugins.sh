@@ -195,11 +195,12 @@ function plugins_use_cmake() {
 # found, or if OpenMP was requested but not found.
 # Paths given as arguments must already be in the form cmake expects (on Windows: cygpath -m).
 function ofx_cmake_build() {
-    # $CXX may carry flags (e.g. "clang++-mp-22 -stdlib=libc++ -std=c++20"): CMake needs the
-    # compiler alone, and the other flags go to CMAKE_CXX_FLAGS. Its -std=... is dropped: the C++
-    # standard of the plug-ins follows the policy (C++17 with Qt5, C++20 with Qt6), through
-    # OFX_CXX_STANDARD. Limitation: $CXX is split on spaces, so the compiler path must not
-    # contain spaces, and a launcher (e.g. "ccache clang++") is not supported.
+    # $CXX may carry flags (e.g. "clang++-mp-22 -stdlib=libc++ -std=c++17", -std=c++20 with Qt6;
+    # see compiler-common.sh): CMake needs the compiler alone, and the other flags go to
+    # CMAKE_CXX_FLAGS. Its -std=... is dropped: the C++ standard of the plug-ins follows the
+    # policy (C++17 with Qt5, C++20 with Qt6), through OFX_CXX_STANDARD (without GNU extensions).
+    # Limitation: $CXX is split on spaces, so the compiler path must not contain spaces, and a
+    # launcher (e.g. "ccache clang++") is not supported.
     # shellcheck disable=SC2206 # (split on purpose, see above)
     local cxx_words=($CXX)
     local cxx="${cxx_words[0]}"

@@ -344,10 +344,13 @@ ProgressPanel::removeTasksFromTable(const std::list<ProgressTaskInfoPtr>& tasks)
     {
         QMutexLocker k(&_imp->tasksMutex);
         for (std::list<ProgressTaskInfoPtr>::const_iterator it = tasks.begin(); it != tasks.end(); ++it) {
-            TasksMap::iterator foundInMap = _imp->tasks.find( (*it)->getNode() );
-            if ( foundInMap != _imp->tasks.end() ) {
-                (*it)->clearItems();
-                _imp->tasks.erase(foundInMap);
+            // search by task: the node of the task is gone if its project was closed (#1575)
+            for (TasksMap::iterator foundInMap = _imp->tasks.begin(); foundInMap != _imp->tasks.end(); ++foundInMap) {
+                if (foundInMap->second == *it) {
+                    (*it)->clearItems();
+                    _imp->tasks.erase(foundInMap);
+                    break;
+                }
             }
         }
         int rc = _imp->view->rowCount();
