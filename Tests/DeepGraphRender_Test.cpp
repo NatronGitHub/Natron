@@ -20,7 +20,9 @@
 // renderInputImagesForRoI, getRegionOfDefinition...), on a render thread or a thread of the global
 // thread pool. With the default stack size of secondary threads (512 KB on macOS), a linear chain of
 // about 300 nodes overflowed the stack and crashed (#1434). The render threads and the global thread
-// pool now have a stack of getRenderThreadStackSize() bytes (at least NATRON_RENDER_THREAD_STACK_SIZE).
+// pool now get a stack of getRenderThreadStackSize() bytes (at least NATRON_RENDER_THREAD_STACK_SIZE).
+// On Windows that is the size committed when the thread starts, and the thread reserves the
+// executable's stack reserve (NATRON_MAIN_THREAD_STACK_SIZE, 8 MB) if it is larger.
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -317,7 +319,7 @@ TEST(DeepGraphRender, StackBounds)
     // Qt passes the stack size to CreateThread() as the initial commit: the thread reserves the
     // executable's default stack reserve if it is larger, NATRON_MAIN_THREAD_STACK_SIZE (8 MB, see
     // CMakeLists.txt) since #1446.
-    const std::size_t renderStackSize = std::max<std::size_t>(getRenderThreadStackSize(), 8 * MB);
+    const std::size_t renderStackSize = std::max<std::size_t>(getRenderThreadStackSize(), NATRON_MAIN_THREAD_STACK_SIZE);
 #else
     const std::size_t renderStackSize = getRenderThreadStackSize();
 #endif
@@ -419,21 +421,31 @@ checkVeryDeepChain(const NodePtr& output,
         printStep(stat == eStatusOK ? "region of definition: OK" : "region of definition: too deep");
     }
 
+    // Each render starts from empty caches, so that it renders the whole chain on that thread, and
+    // renders all the filters if it works.
+
     // render on the main thread
     {
+        appPTR->clearAllCaches();
+        const int rendersBefore = NatronTestPlugin::counter("MultiPAR.render");
         testing::internal::CaptureStdout();
         ImagePtr image = NatronTestPlugin::renderFrame(lastFilter, 1.);
         std::string out = testing::internal::GetCapturedStdout();
-        EXPECT_TRUE( image || isGraphTooDeepError(out) ) << out;
+        const int renders = NatronTestPlugin::counter("MultiPAR.render") - rendersBefore;
+        EXPECT_TRUE( (image && (renders == length)) || (!image && isGraphTooDeepError(out)) ) << out;
         printStep(image ? "render on the main thread: OK" : "render on the main thread: too deep");
     }
 
     // render on a thread of the global thread pool
     {
+        appPTR->clearAllCaches();
+        const int rendersBefore = NatronTestPlugin::counter("MultiPAR.render");
         testing::internal::CaptureStdout();
         std::pair<bool, bool> result = renderFrameOnGlobalThreadPool(lastFilter);
         std::string out = testing::internal::GetCapturedStdout();
-        EXPECT_TRUE( result.first || isGraphTooDeepError(out) ) << out;
+        const int renders = NatronTestPlugin::counter("MultiPAR.render") - rendersBefore;
+        EXPECT_TRUE(result.second) << "the render must run on a thread of the global thread pool";
+        EXPECT_TRUE( (result.first && (renders == length)) || (!result.first && isGraphTooDeepError(out)) ) << out;
         printStep(result.first ? "render on the global thread pool: OK" : "render on the global thread pool: too deep");
     }
 
@@ -481,7 +493,15 @@ TEST(DeepGraphRender, VeryDeepChain)
     ASSERT_EQ( 0, (int)project->getNodes().size() );
     // Where the stack allows it (Linux CI), the chain renders: with the default HD format, each render
     // of 5000 filters took minutes. The generator's RoD is the project format.
+    // (setOrAddProjectFormat() only changes the format if it may be auto-set, a user setting)
+    project->setAutoSetProjectFormatEnabled(true);
     project->setOrAddProjectFormat( Format(0, 0, 16, 16, "DeepGraphRender", 1.) );
+    {
+        Format format;
+        project->getProjectDefaultFormat(&format);
+        EXPECT_EQ( 16, format.width() );
+        EXPECT_EQ( 16, format.height() );
+    }
     std::string outputName, lastFilterName;
 
     printStep("start");

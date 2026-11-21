@@ -65,8 +65,11 @@ NATRON_NAMESPACE_ENTER
 #endif
 
 /**
- * @brief The stack size of the threads that render: NATRON_RENDER_THREAD_STACK_SIZE, or the default
- * stack size of new threads if it is larger (on Linux, it follows `ulimit -s`).
+ * @brief The stack size given to the threads that render (QThread::setStackSize()):
+ * NATRON_RENDER_THREAD_STACK_SIZE, or the default stack size of new threads if it is larger (on
+ * Linux, it follows `ulimit -s`). It is their stack size on macOS and Linux. On Windows it is only
+ * the size committed when the thread starts: the thread reserves the executable's stack reserve if
+ * it is larger (NATRON_MAIN_THREAD_STACK_SIZE, 8 MB, see above).
  **/
 unsigned int getRenderThreadStackSize();
 
