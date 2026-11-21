@@ -157,7 +157,8 @@ TEST(NoDialogs, RemoveOnlyOwnAutoSaves)
 
     const QString path = dir.path() + QLatin1Char('/');
     const QString name = QString::fromUtf8("foo.ntp");
-    const QString autoSave = path + name + QString::fromUtf8(".autosave");
+    const QString autoSave = path + name + QString::fromUtf8(".binautosave"); // written by 2.6 (#1056)
+    const QString textAutoSave = path + name + QString::fromUtf8(".autosave"); // written by 2.5 and earlier
 
     // the project is saved by the user (in background mode this doesn't touch the auto-saves)
     ASSERT_TRUE( project->saveProject(path, name, 0) );
@@ -166,9 +167,13 @@ TEST(NoDialogs, RemoveOnlyOwnAutoSaves)
     // a previous session left an auto-save next to the project
     appPTR->setDialogsDisabled(true);
     touch(autoSave);
+    touch(textAutoSave);
     EXPECT_FALSE( project->canRemoveAutoSave(autoSave) );
+    EXPECT_FALSE( project->canRemoveAutoSave(textAutoSave) );
     project->removeLastAutosave();
     EXPECT_TRUE( QFile::exists(autoSave) ) << "--no-dialogs must keep an auto-save it did not write";
+    EXPECT_TRUE( QFile::exists(textAutoSave) ) << "--no-dialogs must keep an auto-save it did not write";
+    QFile::remove(textAutoSave);
 
     // an auto-save written by this session is removed, and forgotten
     ASSERT_TRUE( project->saveProject_imp(path, name, true /*autoSave*/, true) );

@@ -619,7 +619,7 @@ public:
 
     QString getCairoVersion() const;
 
-    QString getHoedownVersion() const;
+    QString getMd4cVersion() const;
 
     QString getCeresVersion() const;
 

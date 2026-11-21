@@ -1,5 +1,5 @@
---- PKGBUILD.orig
-+++ PKGBUILD
+--- PKGBUILD.orig	2026-11-20 23:50:02
++++ PKGBUILD	2026-11-21 00:00:40
 @@ -1,16 +1,24 @@
  # Maintainer: Alexey Pavlov <alexpux@gmail.com>
  # Contributor: Renato Silva <br.renatosilva@gmail.com>
@@ -24,7 +24,7 @@
 +pkgdesc="TrueType font rendering library (mingw-w64, Natron: ULABS fix 05f343a)"
  arch=('any')
 -mingw_arch=('mingw64' 'ucrt64' 'clang64' 'clangarm64')
-+mingw_arch=('ucrt64')
++mingw_arch=('ucrt64' 'clangarm64')
  msys2_references=(
    'archlinux: freetype2'
    "cpe: cpe:/a:freetype:freetype"

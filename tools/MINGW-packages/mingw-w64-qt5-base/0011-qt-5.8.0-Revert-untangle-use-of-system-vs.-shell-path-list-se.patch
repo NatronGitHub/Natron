@@ -1,0 +1,72 @@
+--- a/mkspecs/features/default_post.prf	2019-06-15 15:09:10.556066900 +0300
++++ b/mkspecs/features/default_post.prf	2019-06-15 15:21:47.611796700 +0300
+@@ -113,8 +113,8 @@
+ 
+ breakpad {
+     load(resolve_target)
+-    DEBUGFILENAME = $$shell_quote($$system_path($$QMAKE_RESOLVED_TARGET))
+-    PROJECTPATH = $$shell_quote($$system_path($$OUT_PWD))
++    DEBUGFILENAME = $$shell_quote($$shell_path($$QMAKE_RESOLVED_TARGET))
++    PROJECTPATH = $$shell_quote($$shell_path($$OUT_PWD))
+ 
+     !isEmpty(QMAKE_POST_LINK):QMAKE_POST_LINK = $$QMAKE_POST_LINK$$escape_expand(\\n\\t)
+     QMAKE_POST_LINK = $$QMAKE_POST_LINK$$quote($${QT_BREAKPAD_ROOT_PATH}$${QMAKE_DIR_SEP}qtbreakpadsymbols $$DEBUGFILENAME $$PROJECTPATH)
+--- a/mkspecs/features/incredibuild_xge.prf	2019-06-12 23:59:14.000000000 +0300
++++ b/mkspecs/features/incredibuild_xge.prf	2019-06-15 15:21:47.611796700 +0300
+@@ -3,6 +3,6 @@
+     EOC = $$escape_expand(\\r\\h)
+ 
+     for(xge, INCREDIBUILD_XGE) {
+-        $${xge}.commands = Rem IncrediBuild_AllowRemote $$EOC Rem IncrediBuild_OutputFile $$system_path($${xge}.output) $$EOC $$eval($${xge}.commands)
++        $${xge}.commands = Rem IncrediBuild_AllowRemote $$EOC Rem IncrediBuild_OutputFile $$shell_path($${xge}.output) $$EOC $$eval($${xge}.commands)
+     }
+ }
+--- a/mkspecs/features/java.prf	2019-06-12 23:59:14.000000000 +0300
++++ b/mkspecs/features/java.prf	2019-06-15 15:21:47.611796700 +0300
+@@ -28,7 +28,7 @@
+ javac_source_version = $$ANDROID_JAVAC_SOURCE_VERSION
+ isEmpty(javac_source_version): javac_source_version = 7
+ 
+-javac.commands = javac -source $$javac_source_version -target $$javac_target_version -Xlint:unchecked -bootclasspath $$ANDROID_JAR_FILE -cp $$shell_quote($$system_path($$join(JAVACLASSPATH, $$DIRLIST_SEPARATOR))) -d $$shell_quote($$CLASS_DIR) ${QMAKE_FILE_IN}
++javac.commands = javac -source $$javac_source_version -target $$javac_target_version -Xlint:unchecked -bootclasspath $$ANDROID_JAR_FILE -cp $$shell_quote($$shell_path($$join(JAVACLASSPATH, $$DIRLIST_SEPARATOR))) -d $$shell_quote($$CLASS_DIR) ${QMAKE_FILE_IN}
+ 
+ # Force rebuild every time, because we don't know the paths of the destination files
+ # as they depend on the code.
+--- a/mkspecs/features/testcase.prf	2019-06-12 23:59:14.000000000 +0300
++++ b/mkspecs/features/testcase.prf	2019-06-15 15:21:47.611796700 +0300
+@@ -85,8 +85,7 @@
+ # Allow for custom arguments to tests
+ $${type}.commands += $(TESTARGS)
+ 
+-!isEmpty(TESTRUN_CWD):!contains(TESTRUN_CWD, ^\\./?): \
+-    $${type}.commands = $$QMAKE_CD $$shell_path($$TESTRUN_CWD) && $$eval($${type}.commands)
++    $${type}.commands = $$QMAKE_CD $$system_path($$TESTRUN_CWD) && $$eval($${type}.commands)
+ 
+ # If the test is marked as insignificant, discard the exit code
+ insignificant_test: $${type}.commands = -$$eval($${type}.commands)
+--- a/mkspecs/features/win32/windeployqt.prf	2019-06-12 23:59:14.000000000 +0300
++++ b/mkspecs/features/win32/windeployqt.prf	2019-06-15 15:21:47.627396700 +0300
+@@ -3,9 +3,9 @@
+ build_pass {
+     load(resolve_target)
+ 
+-    isEmpty(WINDEPLOYQT_OPTIONS): WINDEPLOYQT_OPTIONS = -qmldir $$shell_quote($$system_path($$_PRO_FILE_PWD_))
+-    WINDEPLOYQT_TARGET = $$shell_quote($$system_path($$QMAKE_RESOLVED_TARGET))
+-    WINDEPLOYQT_OUTPUT = $$shell_quote($$system_path($$dirname(QMAKE_RESOLVED_TARGET)/$$basename(TARGET).windeployqt))
++    isEmpty(WINDEPLOYQT_OPTIONS): WINDEPLOYQT_OPTIONS = -qmldir $$shell_quote($$shell_path($$_PRO_FILE_PWD_))
++    WINDEPLOYQT_TARGET = $$shell_quote($$shell_path($$QMAKE_RESOLVED_TARGET))
++    WINDEPLOYQT_OUTPUT = $$shell_quote($$shell_path($$dirname(QMAKE_RESOLVED_TARGET)/$$basename(TARGET).windeployqt))
+     windeployqt.target = windeployqt
+     windeployqt.commands = $$QMAKE_WINDEPLOYQT $$WINDEPLOYQT_OPTIONS -list target $$WINDEPLOYQT_TARGET > $$WINDEPLOYQT_OUTPUT
+ 
+--- a/qtbase.pro	2019-06-12 23:59:14.000000000 +0300
++++ b/qtbase.pro	2019-06-15 15:21:47.627396700 +0300
+@@ -57,7 +57,7 @@
+ # qtPrepareTool() to find the non-installed syncqt.
+ prefix_build|!equals(PWD, $$OUT_PWD) {
+ 
+-    cmd = perl -w $$system_path($$PWD/bin/syncqt.pl)
++    cmd = perl -w $$shell_path($$PWD/bin/syncqt.pl)
+ 
+     TOOL_PRI = $$OUT_PWD/mkspecs/modules/qt_tool_syncqt.pri
+ 

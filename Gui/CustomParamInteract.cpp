@@ -35,6 +35,7 @@
 
 #include <QWindow>
 
+#include "Gui/GuiTest.h"
 #include "Gui/KnobGui.h"
 #include "Gui/Gui.h"
 #include "Gui/QtEnumConvert.h"
@@ -328,7 +329,7 @@ void
 CustomParamInteract::getCursorPosition(double& x,
                                        double& y) const
 {
-    QPoint p = QCursor::pos();
+    QPoint p = GuiTest::cursorPos();
 
     p = mapFromGlobal(p);
     x = p.x();

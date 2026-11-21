@@ -1,0 +1,49 @@
+--- a/configure.json	2019-06-12 23:59:14.000000000 +0300
++++ b/configure.json	2019-06-15 15:11:51.548349600 +0300
+@@ -190,18 +190,20 @@
+         "dbus": {
+             "label": "D-Bus >= 1.2",
+             "test": {
+-                "main": "(void) dbus_bus_get_private(DBUS_BUS_SYSTEM, (DBusError *)NULL);"
++                "main": "(void) dbus_bus_get_private(DBUS_BUS_SYSTEM, (DBusError *)NULL);",
++                "qmake": "static: DEFINES += DBUS_STATIC_BUILD"
+             },
+             "headers": "dbus/dbus.h",
+             "sources": [
+-                { "type": "pkgConfig", "args": "dbus-1 >= 1.2" },
++                { "type": "pkgConfig", "args": "dbus-1 >= 1.2", "condition": "features.shared" },
++                { "type": "pkgConfig", "args": "--static dbus-1 >= 1.2", "condition": "!features.shared" },
+                 {
+                     "libs": "",
+                     "builds": {
+-                        "debug": "-ldbus-1d",
++                        "debug": "-ldbus-1",
+                         "release": "-ldbus-1"
+                     },
+-                    "condition": "config.win32"
++                    "condition": "config.win32 && features.shared"
+                 },
+                 { "libs": "-ldbus-1", "condition": "!config.win32" }
+             ]
+@@ -766,7 +768,7 @@
+         },
+         "pkg-config": {
+             "label": "Using pkg-config",
+-            "autoDetect": "!config.darwin && !config.win32",
++            "autoDetect": "!config.darwin && !config.msvc",
+             "condition": "tests.pkg-config",
+             "output": [
+                 "publicFeature",
+--- a/src/dbus/qdbus_symbols_p.h	2019-06-12 23:59:14.000000000 +0300
++++ b/src/dbus/qdbus_symbols_p.h	2019-06-15 15:11:51.563949700 +0300
+@@ -57,6 +57,10 @@
+ 
+ #ifndef QT_NO_DBUS
+ 
++#ifdef QT_STATIC
++#  define DBUS_STATIC_BUILD
++#endif
++
+ #ifdef QT_LINKED_LIBDBUS
+ #  include <dbus/dbus.h>
+ #else

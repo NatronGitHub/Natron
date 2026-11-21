@@ -33,6 +33,7 @@
  * Engine module.
  **/
 
+#include <cstddef>
 #include <list>
 
 #include "Engine/ImagePlaneDesc.h"
@@ -219,6 +220,11 @@ class Effect
     : public Group, public UserParamHolder
 {
     NodeWPtr _node;
+    // The address of the node when the Effect was created, for hashEffect(): the hash of an Effect must not change
+    // when its node is destroyed (#777). Only used as a number, never dereferenced.
+    const Node* _nodeAddress;
+
+    friend std::size_t hashEffect(const Effect* effect);
 
 public:
 
@@ -227,6 +233,14 @@ public:
     ~Effect();
 
     NodePtr getInternalNode() const;
+
+    /**
+     * @brief Two Effects are equal if they refer to the same node: each call that returns a node from Python
+     * (e.g. App.getNode(), Group.getChildren()) creates a new Effect (#777).
+     * An Effect whose node was destroyed is only equal to itself.
+     **/
+    bool operator==(const Effect& other) const;
+    bool operator!=(const Effect& other) const;
 
     bool isReaderNode();
 
@@ -387,7 +401,23 @@ public:
     Natron::ImagePremultiplicationEnum getPremult() const;
 
     void setPagesOrder(const QStringList& pages);
+
+private:
+
+    // before the inputs change: records them for an undo group (App.beginUndoGroup())
+    void recordInputsForUndoGroup();
 };
+
+/**
+ * @brief The hash of an Effect in Python (hash-function in typesystem_engine.xml): Effects that are equal
+ * (they refer to the same node) have the same hash, so that they can be used in sets and as dict keys (#777).
+ **/
+std::size_t hashEffect(const Effect* effect);
+inline std::size_t
+hashEffect(const Effect& effect)
+{
+    return hashEffect(&effect);
+}
 
 NATRON_PYTHON_NAMESPACE_EXIT
 NATRON_NAMESPACE_EXIT

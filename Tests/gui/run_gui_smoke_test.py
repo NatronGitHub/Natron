@@ -116,7 +116,8 @@ waited = [0]
 
 def autosaveFiles():
     try:
-        return [f for f in os.listdir(autosaves) if ".autosave" in f]
+        # .ntp.autosave (text, Natron 2.5) or .ntp.binautosave (binary, 2.6, #1056)
+        return [f for f in os.listdir(autosaves) if ".autosave" in f or ".binautosave" in f]
     except OSError:
         return []
 

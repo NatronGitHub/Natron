@@ -36,7 +36,7 @@ SUBDIRS += \
     libmv \
     openMVG \
     qhttpserver \
-    hoedown \
+    md4c \
     libtess \
     Engine \
     Renderer \
@@ -53,7 +53,7 @@ ceres.subdir       = libs/ceres
 libmv.subdir       = libs/libmv
 openMVG.subdir     = libs/openMVG
 qhttpserver.subdir = libs/qhttpserver
-hoedown.subdir     = libs/hoedown
+md4c.subdir        = libs/md4c
 libtess.subdir     = libs/libtess
 NatronTestPlugin.subdir = Tests/OfxTestPlugin
 
@@ -62,7 +62,7 @@ glog.depends = gflags
 ceres.depends = glog gflags
 libmv.depends = gflags ceres
 openMVG.depends = ceres
-Engine.depends = libmv openMVG HostSupport libtess ceres
+Engine.depends = libmv openMVG HostSupport libtess ceres md4c
 Renderer.depends = Engine
 Gui.depends = Engine qhttpserver
 Tests.depends = Gui Engine NatronTestPlugin
