@@ -14,7 +14,7 @@
 # NATRON_EXTRA_CMAKE_FLAGS in the environment is passed on to the CMake build.
 # The local tools/jenkins scripts and tools/MacPorts overlay are used (copied into the VM);
 # the Natron and plugin sources are checked out from GitHub by launchBuildMain.sh.
-# The build fails if a Mach-O file in the DMG needs a macOS newer than $MACOS_MIN (14.0),
+# The build fails if a Mach-O file in the DMG needs a macOS newer than $MACOS_MIN (NATRON_MACOS_RELEASE_MIN in tools/jenkins/macos-release.sh),
 # see check-minos.sh; the list is in <dmg name>-minos.txt next to the DMG.
 set -euo pipefail
 . "$(dirname "$0")/tart-common.sh"
@@ -73,9 +73,9 @@ if [ "$status" = 0 ] && ! ls "$OUT"/*/*/*.dmg > /dev/null 2>&1; then
     log "Error: the build succeeded but no DMG was copied to $OUT: keeping $VM"
     status=1; KEEP=1
 fi
-# Every Mach-O file in the DMG must run on the oldest supported macOS ($MACOS_MIN, default 14.0,
-# as NATRON_MACOS_MIN in tools/jenkins/common.sh): a release fails otherwise.
-MACOS_MIN=${MACOS_MIN:-14.0}
+# Every Mach-O file in the DMG must run on the oldest supported macOS ($MACOS_MIN, default NATRON_MACOS_RELEASE_MIN,
+# tools/jenkins/macos-release.sh): a release fails otherwise.
+MACOS_MIN=${MACOS_MIN:-$NATRON_MACOS_RELEASE_MIN}
 for dmg in "$OUT"/*/*/*.dmg; do
     [ -f "$dmg" ] || continue
     log "checking that every Mach-O file in $(basename "$dmg") runs on macOS $MACOS_MIN"

@@ -15,6 +15,15 @@
 # Logs:  ~/provision-logs/<step>.log ; done markers in ~/provision-logs/<step>.done
 set -euo pipefail
 
+# This script changes the machine it runs on: it removes Homebrew and the Command Line Tools,
+# sets the system proxy, rewrites ~/.zprofile and the git configuration. Refuse to run anywhere
+# but in a tart VM driven by natron-sdk.sh/natron-build.sh (vm_start writes /tmp/natron-tart-id).
+if [ "$(sysctl -n kern.hv_vmm_present 2> /dev/null)" != 1 ] ||
+       { [ "$(id -un)" != admin ] && [ ! -f /tmp/natron-tart-id ]; }; then
+    echo "provision.sh: not in a Natron tart VM (kern.hv_vmm_present != 1, or neither user admin nor /tmp/natron-tart-id): refusing to run" >&2
+    exit 1
+fi
+
 SRC=$HOME/Documents/third_party
 NATRON=$SRC/Natron
 OSMESA_SRC=$SRC/osmesa-install
@@ -22,13 +31,14 @@ WORKSPACE=$HOME/Development/workspace
 LOGDIR=$HOME/provision-logs
 MACPORTS_VERSION=2.12.7
 JOBS=${MKJOBS:-$(sysctl -n hw.ncpu)}
-# Oldest macOS supported by Natron's macOS release (maintainer decisions, 2026-11-18 and
-# 2026-11-21): the SDK image runs macOS 14 itself, with the Command Line Tools and the macOS 14
-# SDK, so MacPorts' binary archives (built for the macOS they were made on) can be used. On a
-# newer macOS, every port is built from source for it (step_macports_conf). Every port (their
-# dylibs are bundled), OSMesa/LLVM and Natron itself are built for it. Keep in sync with
-# NATRON_MACOS_MIN in tools/jenkins/common.sh.
-macos_target=14.0
+# Oldest macOS supported by Natron's macOS release, and the Command Line Tools of the SDK image:
+# tools/jenkins/macos-release.sh. The SDK image runs that macOS itself, with the Command Line
+# Tools and their macOS 14 SDK, so MacPorts' binary archives (built for the macOS they were made
+# on) can be used. Every port (their dylibs are bundled), OSMesa/LLVM and Natron itself are built
+# for it (step_build sets NATRON_MACOS_MIN, see tools/jenkins/common.sh).
+# shellcheck source=../jenkins/macos-release.sh
+. "$NATRON/tools/jenkins/macos-release.sh"
+macos_target=$NATRON_MACOS_RELEASE_MIN
 CHECK_MINOS=$NATRON/tools/tart/check-minos.sh
 export PATH=/opt/local/bin:/opt/local/sbin:$PATH
 
@@ -73,11 +83,12 @@ PORT="port_retry"
 # ports to install and of their dependencies first, with retries.
 # The ports keep their variants: archivefetch leaves a work directory whose variants must match
 # the install's.
-prefetch_archives() { # install [-f] port [+variant -variant]...
-    local p i expr= deps=
+prefetch_archives() { # [-n] install|upgrade [-f] port [+variant -variant]...
+    local p i expr="" deps=""
     for p in "$@"; do
         case $p in
-            install|-f|-n|-s) ;;
+            -s) return 0 ;;   # built from source
+            install|upgrade|-f|-n|--force|--enforce-variants) ;;
             [+-]*) expr="$expr $p" ;;
             *) expr="$expr $p"; deps="$deps rdepof:$p" ;;
         esac
@@ -94,7 +105,7 @@ prefetch_archives() { # install [-f] port [+variant -variant]...
 }
 port_retry() {
     local i
-    [ "$1" != install ] || prefetch_archives "$@"
+    case " $* " in *" install "*|*" upgrade "*) prefetch_archives "$@" ;; esac
     for i in 1 2 3; do
         $SUDO port -v -N "$@" && return 0
         echo "port $* failed (attempt $i)"
@@ -155,11 +166,11 @@ step_nobrew() {
 # the macOS 14.4 SDK (default) and 13.3, Apple clang 15.0.0. The base image has CLT 16.2 (macOS 15.2 and 14.5 SDKs), which is
 # replaced. softwareupdate installs CLT without an Apple ID when this file exists; it uses the
 # system proxy settings, set to the SOCKS proxy for the duration of the install.
-CLT_VERSION=15.3
+CLT_VERSION=$NATRON_MACOS_CLT_VERSION
 CLT_FLAG=/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
-system_proxy() { # on|off : the system SOCKS proxy (softwareupdate ignores ALL_PROXY)
+system_proxy() { # on|off : the system SOCKS proxy (softwareupdate ignores ALL_PROXY); "off" always runs
     local s
-    [ -n "$PROXY" ] || return 0
+    [ -n "$PROXY" ] || [ "$1" = off ] || return 0
     networksetup -listallnetworkservices | tail -n +2 | grep -v '^\*' | while read -r s; do
         if [ "$1" = on ]; then
             local hp=${PROXY#*://}
@@ -174,7 +185,10 @@ clt_install() {
     softwareupdate --list > "$LOGDIR/softwareupdate-list.txt" 2>&1 || true
     cat "$LOGDIR/softwareupdate-list.txt"
     label=$(sed -n "s/^\* Label: \(Command Line Tools for Xcode-$CLT_VERSION\)\$/\1/p" "$LOGDIR/softwareupdate-list.txt" | head -1)
-    [ -n "$label" ] || { echo "softwareupdate does not offer Command Line Tools $CLT_VERSION"; return 1; }
+    # Apple offers the CLT for the macOS it runs on and a few older ones: 15.3 on macOS 14, probably
+    # not on macOS 15 or later (untested). Without it, see INSTALL_MACOS.md section 1 (the .dmg
+    # from developer.apple.com).
+    [ -n "$label" ] || { echo "softwareupdate does not offer Command Line Tools $CLT_VERSION on macOS $(sw_vers -productVersion)"; return 1; }
     sudo softwareupdate --install "$label" --verbose || return 1
 }
 step_clt() {
@@ -197,6 +211,7 @@ step_clt() {
             [ "$rc" = 0 ] || return "$rc"
             ;;
     esac
+    system_proxy off   # also after an interrupted install
     sudo xcode-select -s /Library/Developer/CommandLineTools
     xcode-select -p
     pkgutil --pkg-info=com.apple.pkg.CLTools_Executables
@@ -279,10 +294,12 @@ step_macports() {
         grep -q "Developer ID Installer: Joshua Root (QTA3A3B7F3)" "$dl/sig.txt" || { cat "$dl/sig.txt"; echo "bad signature"; exit 1; }
     # the .pkg's postinstall runs "port selfupdate", whose rsync can't use the SOCKS proxy and hangs
     # for minutes on a guest without direct internet access: stop it (ports_https_source syncs later)
-    ( while sleep 15; do
-          pgrep -qx installer || break
-          sudo pkill -f 'rsync://rsync\.macports\.org' 2> /dev/null || true
-      done ) &
+    if [ -n "$PROXY" ]; then
+        ( while sleep 15; do
+              pgrep -qx installer || break
+              sudo pkill -f 'rsync://rsync\.macports\.org' 2> /dev/null || true
+          done ) &
+    fi
     sudo installer -pkg "$dl/$pkg" -target /
     wait
     port version
@@ -307,6 +324,8 @@ step_macports_conf() {
     if [ "$(sw_vers -productVersion | cut -d. -f1)" = "${macos_target%%.*}" ]; then
         set_macports_conf buildfromsource ifneeded
     else
+        # UNTESTED: an SDK image on a macOS newer than $macos_target (BASE_IMAGE). Every port is
+        # then built from source, and qt5-qtwebengine needs a full Xcode (see INSTALL_MACOS.md).
         set_macports_conf buildfromsource always
     fi
     grep -E '^(macosx_deployment_target|macosx_sdk_version|buildfromsource)[[:space:]]' /opt/local/etc/macports/macports.conf
@@ -347,7 +366,7 @@ step_overlay() {
 # (osmesa-install.sh honours MACOSX_DEPLOYMENT_TARGET). Rebuilt if built for a newer macOS.
 osmesa_ok() {
     [ -f /opt/osmesa/lib/libMangledOSMesa32.a ] && [ -x /opt/llvm/bin/llvm-config ] &&
-        "$CHECK_MINOS" -t "$macos_target" /opt/osmesa/lib /opt/llvm/lib/libLLVMSupport.a > /dev/null
+        "$CHECK_MINOS" -N -t "$macos_target" /opt/osmesa/lib /opt/llvm/lib/libLLVMSupport.a > /dev/null
 }
 step_osmesa() {
     if osmesa_ok; then return; fi
@@ -445,6 +464,7 @@ step_python_qt() {
 # Idempotent fixes of installed files that a port upgrade may undo, and the port selections
 # (step_osmesa temporarily selects python27). Never marked done: re-run on every create/update.
 step_fixups() {
+    system_proxy off   # only step_clt turns it on, for softwareupdate
     [ -e /opt/local/include/minizip-ng ] || sudo ln -s . /opt/local/include/minizip-ng
     sudo sed -i '' -e 's/^find_dependency(zstd/#find_dependency(zstd/' /opt/local/lib/cmake/minizip-ng/minizip-ng-config.cmake
     sudo sed -i '' -e 's/Zstd::Zstd/zstd/' /opt/local/lib/pkgconfig/libzip.pc
@@ -555,11 +575,13 @@ ports_newer_than_target() {
     local p rc
     for p in $(port -q installed active | awk '{print $1}'); do
         rc=0
-        port -q contents "$p" | "$CHECK_MINOS" -t "$macos_target" -l > /dev/null 2>&1 || rc=$?
+        # -N: ports may install files without a minimum version (e.g. archives of non-Mach-O
+        # objects); the DMG check (natron-build.sh, launchBuildMain.sh) is strict
+        port -q contents "$p" | "$CHECK_MINOS" -N -t "$macos_target" -l > /dev/null 2>&1 || rc=$?
         case $rc in
             0) ;;
             1) echo "$p" ;;
-            *) echo "check-minos.sh failed (status $rc) on the files of $p" >&2; return 1 ;;
+            *) echo "WARNING: check-minos.sh failed (status $rc, otool could not read a file) on the files of $p" >&2 ;;
         esac
     done
 }
@@ -610,7 +632,7 @@ step_rebuild_target() {
             failed+=("$p")
             continue
         fi
-        if port -q contents "$p" | "$CHECK_MINOS" -t "$macos_target" -l; then :; else
+        if port -q contents "$p" | "$CHECK_MINOS" -N -t "$macos_target" -l; then :; else
             v=$(port -q installed "$p" | awk '/\(active\)/ {print $2}')
             echo "WARNING: $p $v is still built for a macOS newer than $macos_target"
             echo "$p $v" >> "$skip"
@@ -700,7 +722,7 @@ step_build() {
     fi
     mkdir -p "$WORKSPACE"
     cd "$NATRON/tools/jenkins"
-    env NOUPDATE=1 WORKSPACE="$WORKSPACE" DISABLE_BREAKPAD=1 NATRON_LICENSE="${NATRON_LICENSE:-GPL}" \
+    env NOUPDATE=1 WORKSPACE="$WORKSPACE" DISABLE_BREAKPAD=1 NATRON_MACOS_MIN="$macos_target" NATRON_LICENSE="${NATRON_LICENSE:-GPL}" \
         GIT_URL=https://github.com/NatronGitHub/Natron.git GIT_BRANCH="${GIT_BRANCH:-RB-2.6}" \
         UNIT_TESTS="${UNIT_TESTS:-false}" BUILD_NAME=natron_github_RB2 BUILD_NUMBER=1 \
         COMPILE_TYPE=release MKJOBS="$JOBS" \
