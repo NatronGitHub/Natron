@@ -57,13 +57,17 @@ At the end, `check-minos.sh` checks that every Mach-O file in the DMG (the execu
 
 Natron is built with CMake (`NATRON_BUILD_SYSTEM=cmake`, see `tools/jenkins/build-natron.sh`); `NATRON_EXTRA_CMAKE_FLAGS` in the environment is passed on to it.
 
-Each build runs in a fresh clone of the SDK image. Clones are copy-on-write, so they are fast and small. The clone is deleted afterwards (`-k` keeps it). The results (`.dmg`, test results, logs) are copied to `./natron-builds/<vm-name>/`.
+Each build runs in a fresh clone of the SDK image. Clones are copy-on-write, so they are fast and small. The clone is deleted afterwards (`-k` keeps it, shut down).
+
+The exit status is 1 if a test fails that isn't listed in the known-failures file (`-x FILE` or `NATRON_TESTS_KNOWN_FAILURES`: one name per line as in `-tests.txt`, e.g. `TestCMD/1`, `#` comments; no file means that any failure fails), or if the suite didn't run. Review the failures in the zip first: a failure accepted for a release goes in that file, with the reason. The results (`.dmg`, test results, logs) are copied to `./natron-builds/<vm-name>/`.
 
 The files tracked by git under `tools/` are copied into the VM with their local changes, so uncommitted changes to `tools/jenkins` are tested. Changes to the `tools/MacPorts` overlay are published (`portindex`) but installed ports are not rebuilt: run `natron-sdk.sh update` for that. The Natron and plugin sources are checked out from GitHub by `launchBuildMain.sh`.
 
 Only one Natron VM can run at a time: clones of an image share their IPv6 link-local address, so the scripts refuse to start a VM while another `natron-sdk-*`, `natron-build-*` or `natron-test-*` VM is running.
 
 ## Test a DMG on a bare macOS 14
+
+**Required before every macOS release**, and the two result files are attached to the GitHub release next to the DMG, as for v2.5.0.
 
 ```sh
 tools/tart/natron-test.sh natron-builds/<vm>/natron_github_RB2/1/Natron-*.dmg   # the full Natron-Tests suite
@@ -76,14 +80,15 @@ The results are written next to the DMG (`-o DIR` elsewhere), named as the relea
 
 ## Settings
 
-Environment variables (see `tart-common.sh`): `BASE_IMAGE`, `SDK_IMAGE`, `VM_CPU` (8), `VM_MEMORY` (16384 MB), `VM_DISK` (250 GB), `TART_KEY` (`~/.ssh/natron-tart_ed25519`), `OSMESA_INSTALL_SRC`, `NATRON_TESTS_SRC`, `TEST_TIMEOUT` (14400 s, natron-test.sh), `GUEST_PROXY_ALLOW` (`*:80 *:443`), and `RSYNC`. `MACPORTS_VERSION`, `CLT_VERSION` (15.3) and the Python version (`pyver`, 3.11) are at the top of `provision.sh`. On an SDK image made with an older Python, `natron-sdk.sh update` installs the new Python ports and switches `openimageio`'s python variant (`step_python_migrate`). Runtime files (address cache, VM logs) go to `$TMPDIR/natron-tart` (`TART_RUN`); SSH control sockets go to `/tmp/natron-tart-$UID` (`TART_SOCK`), because macOS's `$TMPDIR` path is too long for a Unix socket. Only one `natron-sdk.sh`, `natron-build.sh` or `natron-test.sh` runs at a time (lock in that directory).
+Environment variables (see `tart-common.sh`): `BASE_IMAGE` (default `NATRON_MACOS_BASE_IMAGE` in `tools/jenkins/macos-release.sh`; a `@sha256:` digest, e.g. the one recorded there, pins it), `SDK_IMAGE`, `VM_CPU` (8), `VM_MEMORY` (16384 MB), `VM_DISK` (250 GB), `TART_KEY` (`~/.ssh/natron-tart_ed25519`), `OSMESA_INSTALL_SRC`, `NATRON_TESTS_SRC`, `TEST_TIMEOUT` (14400 s, natron-test.sh), `GUEST_PROXY_ALLOW` (`*:80 *:443`), and `RSYNC`. `MACPORTS_VERSION` and the Python version (`pyver`, 3.11) are at the top of `provision.sh`; the macOS target (14.0), the Command Line Tools version (15.3) and the base image are in `tools/jenkins/macos-release.sh`. On an SDK image made with an older Python, `natron-sdk.sh update` installs the new Python ports and switches `openimageio`'s python variant (`step_python_migrate`). Runtime files (address cache, VM logs) go to `$TMPDIR/natron-tart` (`TART_RUN`); SSH control sockets go to `/tmp/natron-tart-$UID` (`TART_SOCK`), because macOS's `$TMPDIR` path is too long for a Unix socket. Only one `natron-sdk.sh`, `natron-build.sh` or `natron-test.sh` runs at a time (lock in that directory).
 
 ## Networking
 
 The scripts don't rely on the VM getting an IPv4 address. On hosts with corporate network filters (seen on a macOS 27 host with Cisco Secure Client, CrowdStrike and endpoint filters), the guest gets no DHCP lease and the NAT forwards nothing, even though the vmnet bridge and IPv6 work. So:
 
+- `softwareupdate` ignores `ALL_PROXY`: `provision.sh`'s `clt` step sets the system SOCKS proxy (`networksetup`, on every network service) for the install of the Command Line Tools, and turns it off afterwards (and in the `fixups` step).
 - the guest is reached at its IPv4 address when it gets one within a minute, otherwise at its IPv6 link-local address on the vmnet bridge, which is found with `tart exec` (the cirruslabs guest agent). The scripts check that ssh really reaches the expected VM.
-- internet access goes through a reverse SOCKS proxy carried by the SSH connection (`ssh -R 127.0.0.1:1080`), listening on the guest's loopback only. `provision.sh` passes it as `ALL_PROXY=socks5h://127.0.0.1:1080` to curl, git, MacPorts (`sudo env ALL_PROXY=…`) and osmesa-install. pip can't use SOCKS proxies, so the build step runs `privoxy` on the guest's loopback (HTTP → SOCKS) for it, and QtPy is fetched with curl and installed offline.
+- internet access goes through a reverse SOCKS proxy carried by the SSH connection (`ssh -R 127.0.0.1:1080 -o PermitRemoteOpen='*:80 *:443' admin@<address>`; by hand, see section 0 of `INSTALL_MACOS.md`), listening on the guest's loopback only. `provision.sh` passes it as `ALL_PROXY=socks5h://127.0.0.1:1080` to curl, git, MacPorts (`sudo env ALL_PROXY=…`) and osmesa-install. pip can't use SOCKS proxies, so the build step runs `privoxy` on the guest's loopback (HTTP → SOCKS) for it, and QtPy is fetched with curl and installed offline.
 - MacPorts syncs its ports tree from `https://distfiles.macports.org/ports.tar.gz` (`port sync`) instead of rsync, which can't use a SOCKS proxy. MacPorts itself is installed and upgraded from the official `.pkg` (`MACPORTS_VERSION` in `provision.sh`).
 
 ## Security notes

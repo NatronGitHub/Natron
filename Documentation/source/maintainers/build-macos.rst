@@ -93,6 +93,12 @@ C++20 for Qt6, from ``QT_VERSION_MAJOR``, in one of two ways:
   after the other flags (``CONFIG += strict_c++`` is not set), so Natron's
   qmake build uses GNU extensions, like its CMake build.
 
+Natron and the plug-ins are built with the MacPorts clang rather than Apple's,
+even on macOS 14 where Apple clang 15 supports C++17 and C++20: Apple clang has
+no OpenMP (no ``-fopenmp`` driver support, no ``libomp``), which Natron, the
+CImg plug-ins, G'MIC and ImageMagick 7 use. Apple clang compiles the
+Objective-C++ files on macOS 12 to 14 (``compiler-common.sh``).
+
 openfx-arena compiles its poppler-based reader as C++20 with GNU extensions in
 any case, because recent poppler headers require it: ``POPPLER_CXX_STANDARD``
 in its CMake build (``CXX_EXTENSIONS ON``, i.e. ``-std=gnu++20``), and
@@ -163,11 +169,20 @@ Every Mach-O file in the ``.dmg`` must have a minimum macOS (``minos`` in
   For a MacPorts install outside tart, see "Building for an older macOS" in
   ``INSTALL_MACOS.md``.
 
-To change the minimum version, change ``NATRON_MACOS_MIN`` in
-``tools/jenkins/common.sh``, ``macos_target`` in ``tools/tart/provision.sh``,
-and ``MACOS_MIN`` in ``tools/tart/natron-build.sh``, run
-``tools/tart/natron-sdk.sh update`` (which rebuilds the ports built for a
-newer target), and update the system requirements in the User Guide.
+To change the minimum version, change ``tools/jenkins/macos-release.sh``, the
+single source for the release target (``NATRON_MACOS_RELEASE_MIN``, read by
+``common.sh`` through ``NATRON_MACOS_MIN``, ``provision.sh``,
+``natron-build.sh`` and the default of ``check-minos.sh``), the Command Line
+Tools of the SDK image (``NATRON_MACOS_CLT_VERSION``) and its base image
+(``NATRON_MACOS_BASE_IMAGE``; ``BASE_IMAGE`` pins a digest). Then rebuild the
+SDK image (``tools/tart/natron-sdk.sh create``) and update the system
+requirements in the User Guide.
+
+Only release builds target that version: ``common.sh`` uses it when
+``NATRON_MACOS_MIN`` is set (``provision.sh``'s build step sets it), and
+``launchBuildMain.sh`` then checks the DMG with ``check-minos.sh``. Without it,
+development builds target the build Mac's own macOS, so that the plug-ins can
+bundle MacPorts' ordinary archives (``OFX_DEPLOY_STRICT_MINOS``).
 
 .. _maint-macos-update-macports:
 
@@ -445,12 +460,17 @@ To run the full suite by hand against a built app::
         FFMPEG="$APP/Contents/MacOS/ffmpeg" COMPARE="$APP/Contents/MacOS/idiff" \
         bash runTests.sh "$APP/Contents/MacOS/NatronRenderer"
 
-To check that a DMG is self-contained, run the suite on a bare macOS 14 with
+**Required before every macOS release:** check that the DMG is
+self-contained by running the suite on a bare macOS 14 with
 ``tools/tart/natron-test.sh <dmg>``: it uses a throw-away clone of the stock
 ``macos-sonoma-base`` tart image without the Command Line Tools, MacPorts or
 Homebrew, copies in only ``Natron.app`` and the Natron-Tests data, and writes
 ``<dmg name>-tests.txt`` and ``<dmg name>-unit_tests_failures.zip`` next to the
-DMG, the files attached to previous releases (see ``tools/tart/README.md``).
+DMG. Attach both to the GitHub release, as for v2.5.0
+(``Natron-2.5.0-macOS12-x86_64-tests.txt`` and
+``Natron-2.5.0-macOS12-x86_64-unit_tests_failures.zip``). It exits with status
+1 when a test fails that is not listed in the known-failures file (``-x``), so
+it can gate the release (see ``tools/tart/README.md``).
 
 Gotchas:
 
