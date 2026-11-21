@@ -1771,6 +1771,9 @@ private:
 
     void expressionChanged(int dimension);
 
+    // getAllExpressionDependenciesRecursive(), following each parameter once: expressions may read each other in a cycle
+    void getAllExpressionDependenciesRecursiveInternal(std::set<NodePtr>& nodes, std::set<const KnobHelper*>& visitedKnobs) const;
+
     std::unique_ptr<KnobHelperPrivate> _imp;
 };
 

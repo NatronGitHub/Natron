@@ -26,6 +26,7 @@ set(Tests_SOURCES
     Curve_Test.cpp
     DeepGraphRender_Test.cpp
     DiskCache_Test.cpp
+    ExpressionDepsRenderArgs_Test.cpp
     ExpressionSetError_Test.cpp
     FileSystemModel_Test.cpp
     Hash64_Test.cpp
