@@ -84,6 +84,11 @@ struct GLUtesselator {
   GLdouble	relTolerance;	/* tolerance for merging features */
   GLenum	windingRule;	/* rule for determining polygon interior */
   GLboolean	fatalError;	/* fatal error: needed combine callback */
+  long		eventSplits;	/* Natron: edges split by CheckForIntersect()
+                                   at the current sweep event */
+  long		totalSplits;	/* Natron: and since the sweep started */
+  long		maxEventSplits;	/* Natron: limits, see __gl_computeInterior() */
+  long		maxTotalSplits;
 
   Dict		*dict;		/* edge dictionary for sweep line */
   PriorityQ	*pq;		/* priority queue of vertex events */

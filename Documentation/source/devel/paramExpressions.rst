@@ -162,12 +162,15 @@ For convenience the following variables have been declared to Python when execut
     * **dimension**: The dimension (0-based index) of the parameter on which the expression has effect.
       It is defined in all expressions, and it is 0 for 1-dimensional parameters.
 
-    * **frame**: It references the current time on the timeline
+    * **frame**: It references the frame at which the parameter is evaluated: during a render, the frame being
+      rendered (which differs from the frame of the render when time is remapped upstream, e.g. by a TimeOffset,
+      a FrameHold, a Retime or motion blur), otherwise the current frame of the timeline
 
     * The **app** variable will be set so it points to the correct :ref:`application instance<App>`.
 
 To reference the value of another parameter use the :func:`get()<>` function which retrieves the value
-of the parameter at the current timeline's time. If the parameter is multi-dimensional, you need to use
+of the parameter at the frame of the render during a render, and at the current frame of the timeline
+otherwise. If the parameter is multi-dimensional, you need to use
 the subscript operator to retrieve the value of a particular dimension.
 
 The :func:`getValue(dimension)<>` does the same thing but takes a *dimension* parameter to retrieve
@@ -193,8 +196,10 @@ the 2 lines above::
     ColorCorrect1.MasterSaturation.getValueAtTime(frame,dimension)
 
 We ask for the value of the *MasterSaturation* parameter of the *ColorCorrect1* node its value
-at the current *frame* and at the current *dimension*, which is the same as calling the :func:`get()<>` function
-without a *frame* in parameter.
+at the current *frame* and at the current *dimension*. This is usually the same as calling the :func:`get()<>`
+function without a *frame* in parameter, but not when time is remapped (by a TimeOffset, a FrameHold, a Retime or
+motion blur): then *frame* is the frame at which this parameter is evaluated, while :func:`get()<>` reads the other
+parameter at the frame of the render. Use :func:`get(frame)<>` when the exact frame matters.
 
 Copying another parameter through expressions:
 ----------------------------------------------

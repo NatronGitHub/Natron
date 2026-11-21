@@ -4,11 +4,21 @@ set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
 #set -x # Print commands and their arguments as they are executed.
 
-STD17="c++17"
+# C++ standard: C++17 with Qt5, C++20 with Qt6 (RB-2.6 policy; RB-2.7: C++20 everywhere).
+# CXXSTD only reaches the qmake build of Natron (NATRON_BUILD_SYSTEM=qmake) and the Makefile
+# builds of the plug-ins (PLUGINS_BUILD_SYSTEM=make), which compile with this CXX. The CMake
+# builds (the default) drop the -std flag from CXX and set the standard themselves: Natron's
+# CMakeLists.txt from NATRON_QT6 (CMAKE_CXX_STANDARD, with GNU extensions: -std=gnu++17/20),
+# the plug-ins from OFX_CXX_STANDARD (build-plugins.sh, without GNU extensions).
+if [ "${QT_VERSION_MAJOR:-5}" -ge 6 ]; then
+    CXXSTD="c++20"
+else
+    CXXSTD="c++17"
+fi
 
 # https://stackoverflow.com/a/42232124
 if [ "$PKGOS" = "Windows" ]; then
-    STD17="gnu++17"
+    CXXSTD="gnu${CXXSTD#c}"
 fi
 
 if [ "$PKGOS" = "OSX" ]; then
@@ -69,7 +79,7 @@ if [ "$PKGOS" = "OSX" ]; then
 
                 # older version, using clang-5.0
                 CC=clang-mp-5.0
-                CXX="clang++-mp-5.0 -std=c++1z"
+                CXX="clang++-mp-5.0 -std=${CXXSTD}"
                 GXX=g++-mp-4.9
                 OBJECTIVE_CC=$CC
                 OBJECTIVE_CXX=$CXX
@@ -77,7 +87,7 @@ if [ "$PKGOS" = "OSX" ]; then
             *)
                 # newer OS X / macOS version link with libc++ and can use the system clang
                 CC=clang
-                CXX="clang++ -std=c++1z"
+                CXX="clang++ -std=${CXXSTD}"
                 OBJECTIVE_CC=$CC
                 OBJECTIVE_CXX=$CXX
                 ;;
@@ -88,13 +98,13 @@ if [ "$PKGOS" = "OSX" ]; then
         # if a recent clang-mp is available
         if command -v clang-mp-6.0 >/dev/null 2>&1; then
             CC=clang-mp-6.0
-            CXX="clang++-mp-6.0 -stdlib=libc++ -std=c++20"
+            CXX="clang++-mp-6.0 -stdlib=libc++ -std=${CXXSTD}"
         elif command -v clang-mp-5.0 >/dev/null 2>&1; then
             CC=clang-mp-5.0
-            CXX="clang++-mp-5.0 -stdlib=libc++ -std=c++20"
+            CXX="clang++-mp-5.0 -stdlib=libc++ -std=${CXXSTD}"
         elif command -v /usr/local/opt/llvm@11/bin/clang >/dev/null 2>&1; then
             CC=/usr/local/opt/llvm@11/bin/clang
-            CXX="/usr/local/opt/llvm@11/bin/clang++ -std=c++20"
+            CXX="/usr/local/opt/llvm@11/bin/clang++ -std=${CXXSTD}"
         fi
         # clang > 7.0 sometimes chokes on building Universal CImg.ofx, probably because of #pragma omp atomic
         #Undefined symbols for architecture i386:
@@ -117,46 +127,46 @@ if [ "$PKGOS" = "OSX" ]; then
             *)
                 if [ "$clang_max" -ge 22 ] && command -v clang-mp-22 >/dev/null 2>&1; then
                     CC=clang-mp-22
-                    CXX="clang++-mp-22 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-22 -stdlib=libc++ -std=${CXXSTD}"
                 elif [ "$clang_max" -ge 21 ] && command -v clang-mp-21 >/dev/null 2>&1; then
                     CC=clang-mp-21
-                    CXX="clang++-mp-21 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-21 -stdlib=libc++ -std=${CXXSTD}"
                 elif [ "$clang_max" -ge 20 ] && command -v clang-mp-20 >/dev/null 2>&1; then
                     CC=clang-mp-20
-                    CXX="clang++-mp-20 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-20 -stdlib=libc++ -std=${CXXSTD}"
                 elif [ "$clang_max" -ge 19 ] && command -v clang-mp-19 >/dev/null 2>&1; then
                     CC=clang-mp-19
-                    CXX="clang++-mp-19 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-19 -stdlib=libc++ -std=${CXXSTD}"
                 elif [ "$clang_max" -ge 18 ] && command -v clang-mp-18 >/dev/null 2>&1; then
                     CC=clang-mp-18
-                    CXX="clang++-mp-18 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-18 -stdlib=libc++ -std=${CXXSTD}"
                 elif command -v clang-mp-17 >/dev/null 2>&1; then
                     CC=clang-mp-17
-                    CXX="clang++-mp-17 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-17 -stdlib=libc++ -std=${CXXSTD}"
                 elif command -v clang-mp-16 >/dev/null 2>&1; then
                     CC=clang-mp-16
-                    CXX="clang++-mp-16 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-16 -stdlib=libc++ -std=${CXXSTD}"
                 elif command -v clang-mp-15 >/dev/null 2>&1; then
                     CC=clang-mp-15
-                    CXX="clang++-mp-15 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-15 -stdlib=libc++ -std=${CXXSTD}"
                 elif command -v clang-mp-14 >/dev/null 2>&1; then
                     CC=clang-mp-14
-                    CXX="clang++-mp-14 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-14 -stdlib=libc++ -std=${CXXSTD}"
                 elif command -v clang-mp-13 >/dev/null 2>&1; then
                     CC=clang-mp-13
-                    CXX="clang++-mp-13 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-13 -stdlib=libc++ -std=${CXXSTD}"
                 elif command -v clang-mp-12 >/dev/null 2>&1; then
                     CC=clang-mp-12
-                    CXX="clang++-mp-12 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-12 -stdlib=libc++ -std=${CXXSTD}"
                 elif command -v clang-mp-11 >/dev/null 2>&1; then
                     CC=clang-mp-11
-                    CXX="clang++-mp-11 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-11 -stdlib=libc++ -std=${CXXSTD}"
                 elif command -v clang-mp-10 >/dev/null 2>&1; then
                     CC=clang-mp-10
-                    CXX="clang++-mp-10 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-10 -stdlib=libc++ -std=${CXXSTD}"
                 elif command -v clang-mp-9.0 >/dev/null 2>&1; then
                     CC=clang-mp-9.0
-                    CXX="clang++-mp-9.0 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-9.0 -stdlib=libc++ -std=${CXXSTD}"
                 fi
                 ;;
         esac
@@ -181,7 +191,7 @@ if [ "$PKGOS" = "OSX" ]; then
         #GCC_VERSION=5
         #GCC_VERSION=6
         CC=gcc-mp-${GCC_VERSION} 
-        CXX="g++-mp-${GCC_VERSION} -std=c++20"
+        CXX="g++-mp-${GCC_VERSION} -std=${CXXSTD}"
         OBJECTIVE_CC=gcc-4.2
         OBJECTIVE_CXX=g++-4.2
     fi
@@ -249,12 +259,12 @@ if [ "$PKGOS" = "Windows" ] && [ "${MINGW_TOOLCHAIN:-gcc}" = "clang" ]; then
     # COMPILER=clang-omp enables for Natron and the plug-ins (common.sh sets MINGW_TOOLCHAIN)
     COMPILER=${COMPILER:-clang-omp}
     CC=${CC:-clang}
-    CXX=${CXX:-clang++ -std=${STD17}}
+    CXX=${CXX:-clang++ -std=${CXXSTD}}
 fi
 
 COMPILER=${COMPILER:-gcc}
 CC=${CC:-gcc}
-CXX=${CXX:-g++ -std=${STD17}}
+CXX=${CXX:-g++ -std=${CXXSTD}}
 OBJECTIVE_CC=${OBJECTIVE_CC:-${CC}}
 OBJECTIVE_CXX=${OBJECTIVE_CXX:-${CXX}}
 
