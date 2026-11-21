@@ -1322,9 +1322,16 @@ AppManager::newAppInstanceInternal(const CLArgs& cl,
     {
         QMutexLocker k(&_imp->_appInstancesMutex);
         _imp->_appInstances.push_back(instance);
+        if (alwaysBackground) {
+            _imp->_internalInstanceIDs.insert( instance->getAppID() );
+        }
     }
 
-    setAsTopLevelInstance( instance->getAppID() );
+    // A background instance (the one a Precomp node loads its project in, see newBackgroundInstance())
+    // is internal: it never replaces the instance the user works in as the top-level one (#1501).
+    if (!alwaysBackground) {
+        setAsTopLevelInstance( instance->getAppID() );
+    }
 
     ++_imp->_availableID;
 
@@ -1410,9 +1417,17 @@ AppManager::removeInstance(int appID)
                 break;
             }
         }
+        _imp->_internalInstanceIDs.erase(appID);
 
-        if ( !_imp->_appInstances.empty() ) {
-            newApp = _imp->_appInstances.front()->getAppID();
+        // Only replace the top-level instance if it was removed, and never by an internal instance
+        // (a Precomp node's, #1501).
+        if (appID == _imp->_topLevelInstanceID) {
+            for (AppInstanceVec::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+                if ( _imp->_internalInstanceIDs.find( (*it)->getAppID() ) == _imp->_internalInstanceIDs.end() ) {
+                    newApp = (*it)->getAppID();
+                    break;
+                }
+            }
         }
     }
 
@@ -1594,6 +1609,11 @@ AppManager::writeToOutputPipe(const QString & longMessage,
 void
 AppManager::setApplicationsCachesMaximumMemoryPercent(double p)
 {
+    // The --setting commands are run by loadInternal() before loadInternalAfterInitGui() creates the
+    // caches (#1571), which then read their sizes from the settings: there is nothing to do yet.
+    if (!_imp->_nodeCache) {
+        return;
+    }
     size_t maxCacheRAM = p * getSystemTotalRAM_conditionnally();
 
     _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM);
@@ -1603,12 +1623,20 @@ AppManager::setApplicationsCachesMaximumMemoryPercent(double p)
 void
 AppManager::setApplicationsCachesMaximumViewerDiskSpace(unsigned long long size)
 {
+    // Not created yet when called by a --setting command: see setApplicationsCachesMaximumMemoryPercent()
+    if (!_imp->_viewerCache) {
+        return;
+    }
     _imp->_viewerCache->setMaximumCacheSize(size);
 }
 
 void
 AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size)
 {
+    // Not created yet when called by a --setting command: see setApplicationsCachesMaximumMemoryPercent()
+    if (!_imp->_diskCache) {
+        return;
+    }
     _imp->_diskCache->setMaximumCacheSize(size);
 }
 
@@ -3400,16 +3428,9 @@ AppManager::onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance,
                                             void* instanceData)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if (instance == NULL) {
-        // instance may be NULL if using OfxDialogSuiteV1
-        OfxHost::OfxHostDataTLSPtr tls = _imp->ofxHost->getTLSData();
-        instance = tls->lastEffectCallingMainEntry;
-    } else {
-#ifdef DEBUG
-        OfxHost::OfxHostDataTLSPtr tls = _imp->ofxHost->getTLSData();
-        assert(instance == tls->lastEffectCallingMainEntry);
-#endif
-    }
+    // never NULL: for a request with no instance handle, OfxHost::requestDialog() finds the effect on the
+    // requesting thread, or fails (#1497)
+    assert(instance);
 #ifdef OFX_SUPPORTS_DIALOG
     if (instance) {
         instance->dialog(instanceData);

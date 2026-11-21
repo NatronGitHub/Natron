@@ -2096,7 +2096,7 @@ public:
     void getExpressionResults(int dim,
                               FrameValueMap& map)
     {
-        std::lock_guard<std::recursive_mutex> k(_valueMutex);
+        std::lock_guard<std::mutex> k(_exprResMutex);
 
         map = _exprRes[dim];
     }
@@ -2148,7 +2148,7 @@ private:
 
     virtual void clearExpressionsResults(int dimension) OVERRIDE FINAL
     {
-        std::lock_guard<std::recursive_mutex> k(_valueMutex);
+        std::lock_guard<std::mutex> k(_exprResMutex);
 
         _exprRes[dimension].clear();
         ++_exprResGeneration;
@@ -2254,8 +2254,13 @@ private:
         bool defaultValueSet;
     };
     std::vector<DefaultValue> _defaultValues;
+    // _exprRes and _exprResGeneration are protected by _exprResMutex, not _valueMutex: Curve calls
+    // clearExpressionsResults() with its own lock held, and the knob calls into its curves with
+    // _valueMutex held (e.g. dequeueValuesSet()), so taking _valueMutex there could deadlock (#1543).
+    // _exprResMutex is a leaf lock: nothing else is locked or called while it is held.
+    mutable std::mutex _exprResMutex;
     mutable ExprResults _exprRes;
-    // Incremented whenever _exprRes is cleared or replaced (protected by _valueMutex): a result computed
+    // Incremented whenever _exprRes is cleared or replaced: a result computed
     // from the values before that must not be stored (see getValueFromExpression())
     mutable unsigned int _exprResGeneration;
 

@@ -28,12 +28,14 @@
 
 #include "Global/Macros.h"
 
+#include <iostream>
 #include <string>
 
 #include <gtest/gtest.h>
 
 #include <QtCore/QDir>
 #include <QtCore/QFile>
+#include <QtCore/QPointF>
 #include <QtCore/QTemporaryDir>
 #include <QtCore/QThread>
 
@@ -52,8 +54,11 @@
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
 #include "Engine/OfxHost.h"
+#include "Engine/OverlaySupport.h"
 #include "Engine/Project.h"
+#include "Engine/RenderScale.h"
 #include "Engine/Settings.h"
+#include "Engine/ViewIdx.h"
 
 #include "OfxTestPlugin.h"
 
@@ -298,4 +303,201 @@ TEST(OfxHostProperties, HostPropertiesReadOnly)
     EXPECT_EQ( kOfxStatErrValue, props->propSetString(handle->host, kOfxPropLabel, 0, "x") );
     OFX::Host::Property::setPluginReadOnlyPolicy(policy);
     EXPECT_EQ( label, set.getStringProperty(kOfxPropLabel) );
+}
+
+// The host name that a plug-in sees depends on the effect whose action is running on the thread
+// (getHostNameProxy() in OfxHost.cpp). When an action returns, the host must go back to the action
+// that called it on the same thread, if any, and to no effect at all after the outermost action:
+// it used to keep the effect whose action returned last, and read its plug-in at the next host-name
+// query, even after the effect was destroyed (#1497).
+TEST(OfxHostProperties, ActionCallerStack)
+{
+    const NATRON_NAMESPACE::OfxHost* ofxHost = appPTR->getOFXHost();
+    ASSERT_TRUE(ofxHost != NULL);
+    NATRON_NAMESPACE::OfxHost::OfxHostDataTLSPtr tls = ofxHost->getTLSData();
+    ASSERT_TRUE(tls != NULL);
+    ASSERT_TRUE(tls->effectCallingMainEntry() == NULL);
+
+    // only compared, never dereferenced
+    char outerStorage, innerStorage;
+    OfxImageEffectInstance* outer = reinterpret_cast<OfxImageEffectInstance*>(&outerStorage);
+    OfxImageEffectInstance* inner = reinterpret_cast<OfxImageEffectInstance*>(&innerStorage);
+
+    appPTR->setThreadAsActionCaller(outer, true);
+    EXPECT_TRUE(tls->effectCallingMainEntry() == outer);
+    // e.g. the render of an upstream effect, from clipGetImage in the action of outer
+    appPTR->setThreadAsActionCaller(inner, true);
+    EXPECT_TRUE(tls->effectCallingMainEntry() == inner);
+    appPTR->setThreadAsActionCaller(inner, false);
+    EXPECT_TRUE(tls->effectCallingMainEntry() == outer);
+    appPTR->setThreadAsActionCaller(outer, false);
+    EXPECT_TRUE(tls->effectCallingMainEntry() == NULL);
+    EXPECT_EQ( 0, ofxHost->multiThreadIsSpawnedThread() );
+}
+
+// Create and destroy a node: no action is running any more, so the host-name query, outside actions,
+// must not read the destroyed effect (#1497: it was a use after free).
+TEST(OfxHostProperties, HostNameAfterEffectDestroyed)
+{
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginParamInteract) ) {
+        NatronTestPlugin::reportSkipped(kNatronTestPluginParamInteract);
+
+        return;
+    }
+    ASSERT_TRUE( createTestNode(kNatronTestPluginParamInteract) );
+    NATRON_NAMESPACE::OfxHost::OfxHostDataTLSPtr tls = appPTR->getOFXHost()->getTLSData();
+    ASSERT_TRUE(tls != NULL);
+    EXPECT_TRUE(tls->effectCallingMainEntry() == NULL);
+    EXPECT_EQ( appPTR->getCurrentSettings()->getHostName(), hostProps().getStringProperty(kOfxPropName) );
+}
+
+namespace {
+// Tests/OfxTestPlugin/NatronTestPluginHostName.cpp: its ID gets the Nuke host name (getHostNameProxy())
+#define kNatronTestPluginHostName "com.digitalfilmtools.NatronTestHostName"
+
+// A viewport that does not draw anything: only what an OFX overlay interact queries.
+class HostNameViewport
+    : public OverlaySupport
+{
+public:
+    virtual void swapOpenGLBuffers() OVERRIDE FINAL {}
+
+    virtual void redraw() OVERRIDE FINAL {}
+
+    virtual void getViewportSize(double &width,
+                                 double &height) const OVERRIDE FINAL
+    {
+        width = 800.;
+        height = 600.;
+    }
+
+    virtual void getPixelScale(double & xScale,
+                               double & yScale) const OVERRIDE FINAL
+    {
+        xScale = yScale = 1.;
+    }
+
+#ifdef OFX_EXTENSIONS_NATRON
+    virtual double getScreenPixelRatio() const OVERRIDE FINAL
+    {
+        return 1.;
+    }
+
+#endif
+
+    virtual void getBackgroundColour(double &r,
+                                     double &g,
+                                     double &b) const OVERRIDE FINAL
+    {
+        r = g = b = 0.;
+    }
+
+    virtual void saveOpenGLContext() OVERRIDE FINAL {}
+
+    virtual void restoreOpenGLContext() OVERRIDE FINAL {}
+
+    virtual RectD getViewportRect() const OVERRIDE FINAL
+    {
+        return RectD(0., 0., 800., 600.);
+    }
+
+    virtual void getCursorPosition(double& x,
+                                   double& y) const OVERRIDE FINAL
+    {
+        x = y = 0.;
+    }
+
+    virtual void toWidgetCoordinates(double * /*x*/,
+                                     double * /*y*/) const OVERRIDE FINAL {}
+
+    virtual void toCanonicalCoordinates(double * /*x*/,
+                                        double * /*y*/) const OVERRIDE FINAL {}
+
+    virtual int getWidgetFontHeight() const OVERRIDE FINAL
+    {
+        return 10;
+    }
+
+    virtual int getStringWidthForCurrentFont(const std::string& /*string*/) const OVERRIDE FINAL
+    {
+        return 10;
+    }
+};
+} // anonymous namespace
+
+// A plug-in gets its own host name (here, Nuke's) in the actions of its overlay interact, which don't go
+// through the effect's mainEntry(), and in the thread functions of the multithread suite, in spawned threads
+// as in the calling thread (#1497). Outside actions, it is Natron's.
+TEST(OfxHostProperties, HostNameInInteractAndThreads)
+{
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginHostName) ) {
+        NatronTestPlugin::reportSkipped(kNatronTestPluginHostName);
+
+        return;
+    }
+    const std::string nuke = appPTR->getCurrentSettings()->getKnownHostName(Settings::eKnownHostNameNuke);
+    const std::string natron = appPTR->getCurrentSettings()->getHostName();
+    ASSERT_NE(nuke, natron);
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ASSERT_TRUE( bool(app) );
+    const std::string createInstance = "HostName.createInstance.name.";
+    const int createInstanceNuke = NatronTestPlugin::counter(createInstance + nuke);
+    CreateNodeArgs args( kNatronTestPluginHostName, app->getProject() );
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    NodePtr node = app->createNode(args);
+    ASSERT_TRUE( bool(node) );
+    // in an effect action: if this fails, the plug-in ID no longer gets the Nuke host name (getHostNameProxy())
+    ASSERT_EQ( createInstanceNuke + 1, NatronTestPlugin::counter(createInstance + nuke) );
+    EffectInstancePtr effect = node->getEffectInstance();
+    ASSERT_TRUE( effect->hasOverlay() );
+    HostNameViewport viewport;
+    effect->setCurrentViewportForOverlays_public(&viewport);
+
+    const std::string penDown = "HostName.penDown.name.";
+    const std::string threaded = "HostName.threaded.name.";
+    const std::string sequential = "HostName.sequential.name.";
+    // both multiThread() paths: the thread pool (where QtConcurrent may run a thread function in the calling
+    // thread, when waitForFinished() steals it) and one new thread per thread function (OfxThread)
+    const bool oldUseThreadPool = appPTR->getUseThreadPool();
+    for (int useThreadPool = 1; useThreadPool >= 0; --useThreadPool) {
+        SCOPED_TRACE(useThreadPool ? "thread pool" : "new threads");
+        appPTR->setUseThreadPool( (bool)useThreadPool );
+        const int penDownNuke = NatronTestPlugin::counter(penDown + nuke);
+        const int penDownNatron = NatronTestPlugin::counter(penDown + natron);
+        const int threadedNuke = NatronTestPlugin::counter(threaded + nuke);
+        const int threadedNatron = NatronTestPlugin::counter(threaded + natron);
+        const int sequentialNuke = NatronTestPlugin::counter(sequential + nuke);
+        const int sequentialNatron = NatronTestPlugin::counter(sequential + natron);
+        const int failed = NatronTestPlugin::counter("HostName.multiThread.failed");
+        const int spawned = NatronTestPlugin::counter("HostName.threaded.spawned");
+        const int otherThread = NatronTestPlugin::counter("HostName.threaded.otherThread");
+        const int numCPUs = NatronTestPlugin::counter("HostName.multiThread.numCPUs");
+        ignore_result( effect->onOverlayPenDown_public( 1., RenderScale(), ViewIdx(0), QPointF(10., 20.), QPointF(0., 0.), 1., 0., ePenTypeLMB, KeyboardModifiers() ) );
+        EXPECT_EQ( failed, NatronTestPlugin::counter("HostName.multiThread.failed") );
+        EXPECT_EQ( penDownNuke + 1, NatronTestPlugin::counter(penDown + nuke) );
+        EXPECT_EQ( penDownNatron, NatronTestPlugin::counter(penDown + natron) );
+        // 2 thread functions (one after the other in the calling thread if only one CPU is used)
+        EXPECT_EQ( threadedNuke + 2, NatronTestPlugin::counter(threaded + nuke) );
+        EXPECT_EQ( threadedNatron, NatronTestPlugin::counter(threaded + natron) );
+        EXPECT_EQ( sequentialNuke + 1, NatronTestPlugin::counter(sequential + nuke) );
+        EXPECT_EQ( sequentialNatron, NatronTestPlugin::counter(sequential + natron) );
+        // the thread functions are spawned threads for the suite (also when they run in the calling thread)
+        EXPECT_EQ( spawned + 2, NatronTestPlugin::counter("HostName.threaded.spawned") );
+        // with more than one CPU for the multithread suite and new threads, they ran in other threads than the
+        // calling one: their host name came from the calling thread
+        const int callNumCPUs = NatronTestPlugin::counter("HostName.multiThread.numCPUs") - numCPUs;
+        if ( !useThreadPool && (callNumCPUs > 1) ) {
+            EXPECT_EQ( otherThread + 2, NatronTestPlugin::counter("HostName.threaded.otherThread") );
+        } else if ( !useThreadPool ) {
+            std::cerr << "OfxHostProperties.HostNameInInteractAndThreads: one CPU for the multithread suite, spawned threads not tested." << std::endl;
+        }
+    }
+    appPTR->setUseThreadPool(oldUseThreadPool);
+
+    effect->setCurrentViewportForOverlays_public(NULL);
+    effect.reset();
+    node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
+    NATRON_NAMESPACE::OfxHost::OfxHostDataTLSPtr tls = appPTR->getOFXHost()->getTLSData();
+    EXPECT_TRUE(tls->effectCallingMainEntry() == NULL);
+    EXPECT_EQ( natron, hostProps().getStringProperty(kOfxPropName) );
 }
