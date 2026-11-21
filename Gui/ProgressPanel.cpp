@@ -61,6 +61,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
+#include "Gui/GuiTest.h"
 #include "Gui/Label.h"
 #include "Gui/ProgressTaskInfo.h"
 #include "Gui/GuiAppInstance.h"
@@ -649,7 +650,7 @@ ProgressPanel::onItemRightClicked(TableItem* item)
 
     QAction* triggered = 0;
     if ( !m.isEmpty() ) {
-        triggered = m.exec( QCursor::pos() );
+        triggered = m.exec( GuiTest::cursorPos() );
     }
     if ( (triggered == showLogAction) && showLogAction ) {
         const QString& log = hasProcess->getProcessLog();

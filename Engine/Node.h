@@ -947,6 +947,23 @@ public:
 
     void onInputChanged(int inputNb, bool isInputA = true);
 
+    /**
+     * @brief Called once on each node of a project that was just loaded, when all its nodes, links and input
+     * connections are restored and the clip preferences are computed, before the first render: calls
+     * EffectInstance::onInputsRestoredAfterProjectLoad() if EffectInstance::wantsInputsRestoredAfterProjectLoad(), with
+     * the render thread storage of the caller if it covers this node (see createRenderArgsForInstanceChanged()).
+     * The knob changed handlers aren't called while a project is loading: the caller records the holders whose knob
+     * values change meanwhile (the effect, and those that follow its knobs through links and expressions) with a
+     * KnobHolder::ValueChangesRecorder, and gives their nodes a new age and refreshes their input related data.
+     **/
+    void onInputsRestoredAfterProjectLoad();
+
+    /**
+     * @brief A render thread storage on the tree of this node, at the current frame, as for an instance changed action
+     * (see onInputChanged()): set while the returned object exists.
+     **/
+    ParallelRenderArgsSetterPtr createRenderArgsForInstanceChanged();
+
     bool onEffectKnobValueChanged(KnobI* what, ValueChangedReasonEnum reason);
 
     bool isNodeDisabled() const;
