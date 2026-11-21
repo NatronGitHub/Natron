@@ -1990,6 +1990,11 @@ OutputSchedulerThread::notifyRenderFailure(const std::string& errorMessage)
     ///Handle failure: for viewers we make it black and don't display the error message which is irrelevant
     handleRenderFailure(errorMessage);
 
+    // In background mode the exit status of the process tells whether the renders succeeded
+    if ( appPTR->isBackground() ) {
+        appPTR->setBackgroundRenderFailed();
+    }
+
     _imp->engine->abortRenderingNoRestart();
 
     if (args->isBlocking) {

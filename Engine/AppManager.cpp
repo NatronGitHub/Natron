@@ -3176,7 +3176,20 @@ AppManager::isQuitRequested() const
 int
 AppManager::getRequestedExitCode() const
 {
+    if (!_imp->quitRequested && _imp->backgroundRenderFailed) {
+        // A farm manager reads the exit status: a render that failed must not report a success.
+        return 1;
+    }
+
     return _imp->requestedExitCode;
+}
+
+void
+AppManager::setBackgroundRenderFailed()
+{
+    if (!_imp->quitRequested) {
+        _imp->backgroundRenderFailed = true;
+    }
 }
 
 bool
