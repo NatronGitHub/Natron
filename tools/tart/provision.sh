@@ -82,7 +82,7 @@ PORT="port_retry"
 # seconds, or qt5-qtwebengine, which can't be built without Xcode): so fetch the archives of the
 # ports to install and of their dependencies first, with retries.
 # The ports keep their variants: archivefetch leaves a work directory whose variants must match
-# the install's.
+# the install's (and those of the dependencies are removed afterwards).
 prefetch_archives() { # [-n] install|upgrade [-f] port [+variant -variant]...
     local p i expr="" deps=""
     for p in "$@"; do
@@ -97,10 +97,15 @@ prefetch_archives() { # [-n] install|upgrade [-f] port [+variant -variant]...
     expr="$expr$deps"
     for i in 1 2 3; do
         # shellcheck disable=SC2086
-        $SUDO port -N archivefetch $expr && return 0
+        if $SUDO port -N archivefetch $expr; then break; fi
         echo "port archivefetch failed (attempt $i)"
         sleep 10
     done
+    # archivefetch leaves work directories with the default variants of the dependencies, and
+    # "install" propagates the requested variants to them (e.g. glib2 -x11 to glib2-bootstrap):
+    # remove them (the fetched archives stay in MacPorts' incoming directory)
+    # shellcheck disable=SC2086
+    $SUDO port -q clean --work $expr > /dev/null 2>&1 || true
     return 0   # the install below retries, and builds what has no archive
 }
 port_retry() {
