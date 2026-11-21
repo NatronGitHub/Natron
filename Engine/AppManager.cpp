@@ -103,6 +103,7 @@
 #include <QFile>
 #include <QSysInfo>
 #include <QThread>
+#include <QTimer>
 #include <QUuid>
 #include <QRegularExpression>
 #include <QSettings>
@@ -642,6 +643,10 @@ AppManager::afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args)
     }
 
     AppInstancePtr instance = inArgs->instance.lock();
+    if ( !instance || (getAppInstance( instance->getAppID() ) != instance) ) {
+        // already quit: quit() may be called twice before the queued call below runs
+        return;
+    }
 
     instance->aboutToQuit();
 
@@ -681,9 +686,36 @@ AppManager::quit(const AppInstancePtr& instance)
     QuitInstanceArgsPtr args = std::make_shared<QuitInstanceArgs>();
 
     args->instance = instance;
-    if ( !instance->getProject()->quitAnyProcessingForAllNodes(this, args) ) {
-        afterQuitProcessingCallback(args);
+    if ( instance->getProject()->quitAnyProcessingForAllNodes(this, args) ) {
+        // afterQuitProcessingCallback() is called once the processing is over
+        return;
     }
+    if ( isBackground() ) {
+        afterQuitProcessingCallback(args);
+    } else {
+        // GUI: quit() is called from event handlers of the widgets that aboutToQuit() deletes (the
+        // window's close button, File > Close Project and Quit, a script run from the Script Editor,
+        // Gui::abortProject() itself), which use them after quit() returns: quit from the event
+        // loop, as when nodes are still processing (#1554).
+        queueAfterQuitProcessingCallback(args);
+    }
+}
+
+void
+AppManager::queueAfterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args)
+{
+    QMetaObject::invokeMethod( this, [this, args]() {
+        if (getNestedEventLoopsCount() > 0) {
+            // a nested event loop runs (e.g. a GUI test's waitIdle()): the code under it may use
+            // the windows of the instance, try again once it is over
+            QTimer::singleShot( 50, this, [this, args]() {
+                queueAfterQuitProcessingCallback(args);
+            } );
+
+            return;
+        }
+        afterQuitProcessingCallback(args);
+    }, Qt::QueuedConnection );
 }
 
 void

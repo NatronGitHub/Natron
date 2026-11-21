@@ -258,8 +258,12 @@ Gui::abortProject(bool quitApp,
     _imp->saveGuiGeometry();
 
     _imp->setUndoRedoActions(0, 0);
+    ///Reset current undo/reso actions
+    _imp->_currentUndoAction = 0;
+    _imp->_currentRedoAction = 0;
     if (quitApp) {
         if (app) {
+            // quits once the event loop is back: this window is still alive after this call
             app->quit();
         }
     } else {
@@ -281,11 +285,9 @@ Gui::abortProject(bool quitApp,
         centerAllNodeGraphsWithTimer();
         restoreDefaultLayout();
         setGuiAboutToClose(false);
+        _imp->_currentUndoAction = 0;
+        _imp->_currentRedoAction = 0;
     }
-
-    ///Reset current undo/reso actions
-    _imp->_currentUndoAction = 0;
-    _imp->_currentRedoAction = 0;
 
     return true;
 }

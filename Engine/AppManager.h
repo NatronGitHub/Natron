@@ -774,6 +774,9 @@ private:
 
     virtual void afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args) OVERRIDE FINAL;
 
+    /// GUI mode: calls afterQuitProcessingCallback() from the event loop, not from a nested one
+    void queueAfterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args);
+
     bool loadInternal(const CLArgs& cl);
 
     void setUpShutDownSignalNotifier();
