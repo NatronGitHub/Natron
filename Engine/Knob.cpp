@@ -5946,6 +5946,9 @@ KnobHolder::onDoValueChangeOnMainThread(KnobI* knob,
     onKnobValueChanged_public(knob, (ValueChangedReasonEnum)reason, time, view, originatedFromMT);
 }
 
+// see KnobHolder::ValueChangesRecorder
+static thread_local KnobHolder::ValueChanges* gValueChangesRecorded = 0;
+
 void
 KnobHolder::appendValueChange(const KnobIPtr& knob,
                               int dimension,
@@ -5974,6 +5977,14 @@ KnobHolder::appendValueChange(const KnobIPtr& knob,
         }
         assert(foundChange);
 
+        if (gValueChangesRecorded) {
+            if ( knob->getEvaluateOnChange() || knob->getIsMetadataSlave() ) {
+                gValueChangesRecorded->significant.insert(this);
+            }
+            if ( knob->getIsPersistent() ) {
+                gValueChangesRecorded->persistent.insert(this);
+            }
+        }
         foundChange->reason = reason;
         foundChange->originalReason = originalReason;
         foundChange->originatedFromMainThread = QThread::currentThread() == qApp->thread();
@@ -6007,6 +6018,23 @@ KnobHolder::appendValueChange(const KnobIPtr& knob,
            }*/
     }
 } // KnobHolder::appendValueChange
+
+KnobHolder::ValueChangesRecorder::ValueChangesRecorder(ValueChanges* changes)
+    : _previous(gValueChangesRecorded)
+{
+    gValueChangesRecorded = changes;
+}
+
+KnobHolder::ValueChangesRecorder::~ValueChangesRecorder()
+{
+    gValueChangesRecorded = _previous;
+}
+
+KnobHolder::ValueChanges*
+KnobHolder::ValueChangesRecorder::current()
+{
+    return gValueChangesRecorded;
+}
 
 void
 KnobHolder::beginChanges()

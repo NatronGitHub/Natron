@@ -40,6 +40,7 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QHBoxLayout>
 
 #include "Engine/CLArgs.h"
 #include "Engine/CreateNodeArgs.h"
@@ -49,13 +50,16 @@
 #include "Engine/NodeGroup.h" // NodeGroup, NodeCollection, NodesList
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
+#include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewerInstance.h"
 
+#include "Gui/ComboBox.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"
 #include "Gui/Histogram.h"
+#include "Gui/Label.h"
 #include "Gui/Menu.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
@@ -1138,7 +1142,7 @@ updateRecentFiles(const QString & filename)
 }
 
 bool
-Gui::saveProject()
+Gui::saveProject(ProjectFileFormatEnum format)
 {
     ProjectPtr project = getApp()->getProject();
 
@@ -1153,7 +1157,7 @@ Gui::saveProject()
         bool ret;
         {
             SaveWaitCursor waitCursor;
-            ret = project->saveProject(projectPath, projectFilename, 0);
+            ret = project->saveProject(projectPath, projectFilename, 0, format);
         }
 
         ///update the open recents
@@ -1167,12 +1171,19 @@ Gui::saveProject()
 
         return ret;
     } else {
-        return saveProjectAs();
+        return saveProjectAs(format);
     }
 }
 
 bool
 Gui::saveProjectAs(const std::string& filename)
+{
+    return saveProjectAs(filename, eProjectFileFormatNone);
+}
+
+bool
+Gui::saveProjectAs(const std::string& filename,
+                   ProjectFileFormatEnum format)
 {
     std::string fileCopy = filename;
 
@@ -1186,10 +1197,12 @@ Gui::saveProjectAs(const std::string& filename)
     }
     _imp->_lastSaveProjectOpenedDir = QString::fromUtf8( path.c_str() );
 
+    ProjectPtr project = getApp()->getProject();
     bool ret;
     {
         SaveWaitCursor waitCursor;
-        ret = getApp()->getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( fileCopy.c_str() ), 0);
+        // the format becomes the format of the project if the save succeeds
+        ret = project->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( fileCopy.c_str() ), 0, format);
     }
 
     if (ret) {
@@ -1201,7 +1214,7 @@ Gui::saveProjectAs(const std::string& filename)
 }
 
 bool
-Gui::saveProjectAs()
+Gui::saveProjectAs(ProjectFileFormatEnum defaultFormat)
 {
     std::vector<std::string> filter;
 
@@ -1214,12 +1227,43 @@ Gui::saveProjectAs()
          QFileInfo( project->getProjectPath() ).isWritable() ) {
         initialDir = project->getProjectPath();
     }
-    std::string outFile = popSaveFileDialog( false, filter, initialDir.toStdString(), false );
-    if (outFile.size() > 0) {
-        return saveProjectAs(outFile);
+
+    // The file format choice. It defaults to the format of the project, or to the preference for a new project.
+    QWidget* formatWidget = new QWidget;
+    QHBoxLayout* formatLayout = new QHBoxLayout(formatWidget);
+    formatLayout->setContentsMargins(0, 0, 0, 0);
+    Label* formatLabel = new Label(tr("File format:"), formatWidget);
+    formatLayout->addWidget(formatLabel);
+    ComboBox* formatCombo = new ComboBox(formatWidget);
+    formatCombo->setObjectName( QString::fromUtf8("projectFileFormat") );
+    const QString appName = QString::fromUtf8(NATRON_APPLICATION_NAME);
+    const QString binaryHint = tr("Binary: faster to save and to parse, and smaller. Needs %1 2.6 or later.").arg(appName);
+    const QString textHint = tr("Text (XML): compatible with %1 2.5 and earlier, readable and diffable.").arg(appName);
+    formatCombo->addItem( tr("Binary"), QIcon(), QKeySequence(), binaryHint );
+    formatCombo->addItem( tr("Text (%1 2.5 compatible)").arg(appName), QIcon(), QKeySequence(), textHint );
+    formatCombo->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("The format of the project file.") + QLatin1Char('\n') +
+                                                                   binaryHint + QLatin1Char('\n') + textHint + QLatin1Char('\n') +
+                                                                   tr("The project keeps this format: later saves use it. Auto-saves are always binary."),
+                                                                   NATRON_NAMESPACE::WhiteSpaceNormal) );
+    const int textIndex = 1;
+    if (defaultFormat == eProjectFileFormatNone) {
+        defaultFormat = project->getFileFormatForSave();
+    }
+    formatCombo->setCurrentIndex_no_emit( (defaultFormat == eProjectFileFormatText) ? textIndex : 0 );
+    formatLayout->addWidget(formatCombo);
+
+    // the dialog owns formatWidget: read the choice before it returns
+    ProjectFileFormatEnum format = eProjectFileFormatNone;
+    QObject::connect( formatCombo, static_cast<void (ComboBox::*)(int)>(&ComboBox::currentIndexChanged), formatWidget, [&format, textIndex](int i) {
+        format = (i == textIndex) ? eProjectFileFormatText : eProjectFileFormatBinary;
+    } );
+    format = (formatCombo->activeIndex() == textIndex) ? eProjectFileFormatText : eProjectFileFormatBinary;
+    std::string outFile = popSaveFileDialog( false, filter, initialDir.toStdString(), false, formatWidget );
+    if ( outFile.empty() ) {
+        return false;
     }
 
-    return false;
+    return saveProjectAs(outFile, format);
 }
 
 void
@@ -1460,15 +1504,20 @@ std::string
 Gui::popSaveFileDialog(bool sequenceDialog,
                        const std::vector<std::string> & initialfilters,
                        const std::string & initialDir,
-                       bool allowRelativePaths)
+                       bool allowRelativePaths,
+                       QWidget* extraWidget)
 {
     if ( appPTR->isDialogsDisabled() ) {
         // --no-dialogs: the file dialog counts as cancelled (e.g. Save As for an untitled project)
         Dialogs::printDismissedDialog( tr("Save").toStdString(), tr("File dialog not shown, cancelled.").toStdString() );
+        delete extraWidget;
 
         return std::string();
     }
     SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::eFileDialogModeSave, initialDir, this, allowRelativePaths);
+    if (extraWidget) {
+        dialog.addSelectionLineWidget(extraWidget);
+    }
 
     if ( dialog.exec() ) {
         if (sequenceDialog) {
@@ -1523,7 +1572,21 @@ Gui::loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & obj) const
 }
 
 void
+Gui::loadProjectGui(bool isAutosave, PortableBinaryIArchive & obj) const
+{
+    assert(_imp->_projectGui);
+    _imp->_projectGui->load(isAutosave, obj);
+}
+
+void
 Gui::saveProjectGui(boost::archive::xml_oarchive & archive)
+{
+    assert(_imp->_projectGui);
+    _imp->_projectGui->save(archive);
+}
+
+void
+Gui::saveProjectGui(PortableBinaryOArchive & archive)
 {
     assert(_imp->_projectGui);
     _imp->_projectGui->save(archive);

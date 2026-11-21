@@ -307,9 +307,19 @@ public:
 
     void writeToScriptEditor(const QString& message);
 
-    bool saveProject(const QString& filename);
-    bool saveProjectAs(const QString& filename);
-    bool saveTempProject(const QString& filename);
+    // format: the format of the file (see ProjectFileFormatEnum). eProjectFileFormatNone uses the format of the
+    // project, or the "Save projects as binary by default" preference for a project that was never saved.
+    // For saveProject() and saveProjectAs(), a format other than eProjectFileFormatNone becomes the format of the project.
+    bool saveProject(const QString& filename, Natron::ProjectFileFormatEnum format = Natron::ProjectFileFormatEnum::eProjectFileFormatNone);
+    bool saveProjectAs(const QString& filename, Natron::ProjectFileFormatEnum format = Natron::ProjectFileFormatEnum::eProjectFileFormatNone);
+    bool saveTempProject(const QString& filename, Natron::ProjectFileFormatEnum format = Natron::ProjectFileFormatEnum::eProjectFileFormatNone);
+
+    // The format of the project file: the format of the file it was loaded from or last saved to,
+    // eProjectFileFormatNone for a project that was never saved.
+    Natron::ProjectFileFormatEnum getProjectFormat() const;
+
+    // Sets the format of the next saves of the project ("Save", auto-saves record it).
+    void setProjectFormat(Natron::ProjectFileFormatEnum format);
     App* loadProject(const QString& filename);
 
     ///Close the current project but keep the window
@@ -323,6 +333,29 @@ public:
     std::list<QString> getViewNames() const;
 
     void addProjectLayer(const ImageLayer& layer);
+
+    /**
+     * @brief Undo / redo on the node graph's undo stack (node creation, deletion, connections, moves,
+     * and the undo groups), whatever widget has the focus. They do nothing in background mode, where
+     * there is no undo stack.
+     **/
+    void undo();
+    void redo();
+    bool canUndo() const;
+    bool canRedo() const;
+
+    /// The texts of the commands of the node graph's undo stack, oldest first ([] in background mode)
+    std::list<QString> getUndoHistory() const;
+
+    /// The number of commands of getUndoHistory() that are done (the next redo is at this index)
+    int getUndoIndex() const;
+
+    /**
+     * @brief Returns when no render of this project runs or is queued (viewer, Write, previews), and,
+     * in the GUI, the events they posted (viewer texture uploads) are processed. Returns false if
+     * timeout seconds elapsed first (no limit if timeout < 0). Must be called from the main thread.
+     **/
+    bool waitForRenders(double timeout = -1.);
 
 protected:
 

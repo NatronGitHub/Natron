@@ -93,7 +93,6 @@
 
 #include <cairo/cairo.h>
 #include <boost/version.hpp>
-#include <libs/hoedown/src/version.h>
 #include <ceres/version.h>
 #include <openMVG/version.hpp>
 
@@ -3944,11 +3943,11 @@ AppManager::getCairoVersion() const
 
 
 QString
-AppManager::getHoedownVersion() const
+AppManager::getMd4cVersion() const
 {
-    int major, minor, revision;
-    hoedown_version(&major, &minor, &revision);
-    return QString::fromUtf8(HOEDOWN_VERSION) + QString::fromUtf8(" / ") + QString::fromUtf8("%1.%2.%3").arg(major).arg(minor).arg(revision);
+    // md4c has no version macro or function: NATRON_MD4C_VERSION is defined
+    // by the build system (libs/md4c/CMakeLists.txt, libs.pri)
+    return QString::fromUtf8(NATRON_MD4C_VERSION);
 }
 
 
