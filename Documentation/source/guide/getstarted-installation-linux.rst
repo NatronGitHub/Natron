@@ -64,21 +64,25 @@ run ``chmod +x Natron NatronRenderer`` instead.
 Natron and its plug-ins are licensed under the GNU GPL version 2 or later.
 Help → About lists the licenses of all the components included in Natron.
 
-Register the project file type
-------------------------------
+Add Natron to the desktop
+-------------------------
 
-The archive doesn't change anything outside its folder. To make your desktop
-recognize Natron project files (``.ntp``), run ``natron-mime.sh`` from the
-``bin`` folder, as your normal user:
+The archive doesn't change anything outside its folder. To add Natron to the
+applications menu, and to open Natron project files (``.ntp``) with a
+double-click, run ``natron-mime.sh`` from the ``bin`` folder:
 
 .. code-block:: bash
 
    Natron-<version>-Linux-x86_64-no-installer/bin/natron-mime.sh
 
-It adds the Natron project file type for you only, in
-``~/.local/share/mime/packages/x-natron.xml``. It doesn't add Natron to the
-applications menu, and it doesn't make Natron open ``.ntp`` files when you
-double-click them: open them from Natron, or with ``./Natron project.ntp``.
+Run it as your normal user to add Natron for you only, in
+``~/.local/share``. Run it as root, for example with ``sudo``, to add it for
+all users, in ``/usr/local/share``.
+
+It adds a menu entry that starts this copy of Natron, the Natron icons, and
+the Natron project file type. Run it again after you move or update Natron:
+the menu entry then starts the copy that you ran it from. You may have to log
+out and log in again before the menu shows Natron.
 
 Your files
 ----------
@@ -106,15 +110,16 @@ folder in *Edit* → *Preferences* → *Plug-ins* → *OpenFX plug-ins search pa
 Uninstall
 ---------
 
-To uninstall Natron, delete its folder. This doesn't remove your files (see
-`Your files`_): delete them too if you don't need them any more.
-
-If you ran ``natron-mime.sh``, also delete
-``~/.local/share/mime/packages/x-natron.xml``, then update the MIME database:
+If you added Natron to the desktop, remove it from the desktop first. Run
+``natron-mime.sh --uninstall`` as the same user as when you added it (your
+normal user, or root):
 
 .. code-block:: bash
 
-   update-mime-database ~/.local/share/mime
+   Natron-<version>-Linux-x86_64-no-installer/bin/natron-mime.sh --uninstall
+
+Then delete the Natron folder. This doesn't remove your files (see
+`Your files`_): delete them too if you don't need them any more.
 
 Software OpenGL
 ---------------
