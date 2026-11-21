@@ -285,11 +285,13 @@ template<> EIGEN_STRONG_INLINE Packet8i psub<Packet8i>(const Packet8i& a, const 
 
 template<> EIGEN_STRONG_INLINE Packet8f pnegate(const Packet8f& a)
 {
-  return _mm256_sub_ps(_mm256_set1_ps(0.0),a);
+  const Packet8f mask = _mm256_castsi256_ps(_mm256_set1_epi32(0x80000000));
+  return _mm256_xor_ps(a, mask);
 }
 template<> EIGEN_STRONG_INLINE Packet4d pnegate(const Packet4d& a)
 {
-  return _mm256_sub_pd(_mm256_set1_pd(0.0),a);
+  const Packet4d mask = _mm256_castsi256_pd(_mm256_set1_epi64x(0x8000000000000000ULL));
+  return _mm256_xor_pd(a, mask);
 }
 
 template<> EIGEN_STRONG_INLINE Packet8f pconj(const Packet8f& a) { return a; }
@@ -628,11 +630,23 @@ template<> EIGEN_STRONG_INLINE void pstoreu<double>(double* to, const Packet4d& 
 template<> EIGEN_STRONG_INLINE void pstoreu<int>(int*       to, const Packet8i& from) { EIGEN_DEBUG_UNALIGNED_STORE _mm256_storeu_si256(reinterpret_cast<__m256i*>(to), from); }
 
 template<> EIGEN_STRONG_INLINE void pstoreu<float>(float*   to, const Packet8f& from, uint8_t umask) {
+#ifdef EIGEN_VECTORIZE_AVX512
+  __mmask16 mask = static_cast<__mmask16>(umask & 0x00FF);
+  EIGEN_DEBUG_UNALIGNED_STORE _mm512_mask_storeu_ps(to, mask, _mm512_castps256_ps512(from));
+#else
   Packet8i mask = _mm256_set1_epi8(static_cast<char>(umask));
-  const Packet8i bit_mask = _mm256_set_epi32(0xffffff7f, 0xffffffbf, 0xffffffdf, 0xffffffef, 0xfffffff7, 0xfffffffb, 0xfffffffd, 0xfffffffe);
+  const Packet8i bit_mask = _mm256_set_epi32(0x7f7f7f7f, 0xbfbfbfbf, 0xdfdfdfdf, 0xefefefef, 0xf7f7f7f7, 0xfbfbfbfb, 0xfdfdfdfd, 0xfefefefe);
   mask = por<Packet8i>(mask, bit_mask);
   mask = pcmp_eq<Packet8i>(mask, _mm256_set1_epi32(0xffffffff));
-  EIGEN_DEBUG_UNALIGNED_STORE return _mm256_maskstore_ps(to, mask, from);
+#if EIGEN_COMP_MSVC
+  // MSVC sometimes seems to use a bogus mask with maskstore.
+  const __m256i ifrom = _mm256_castps_si256(from);
+  EIGEN_DEBUG_UNALIGNED_STORE _mm_maskmoveu_si128(_mm256_extractf128_si256(ifrom, 0), _mm256_extractf128_si256(mask, 0), reinterpret_cast<char*>(to));
+  EIGEN_DEBUG_UNALIGNED_STORE _mm_maskmoveu_si128(_mm256_extractf128_si256(ifrom, 1), _mm256_extractf128_si256(mask, 1), reinterpret_cast<char*>(to + 4));
+#else
+  EIGEN_DEBUG_UNALIGNED_STORE _mm256_maskstore_ps(to, mask, from);
+#endif
+#endif
 }
 
 // NOTE: leverage _mm256_i32gather_ps and _mm256_i32gather_pd if AVX2 instructions are available
@@ -1006,7 +1020,7 @@ EIGEN_STRONG_INLINE Packet8f half2float(const Packet8h& a) {
 
 EIGEN_STRONG_INLINE Packet8h float2half(const Packet8f& a) {
 #ifdef EIGEN_HAS_FP16_C
-  return _mm256_cvtps_ph(a, _MM_FROUND_TO_NEAREST_INT|_MM_FROUND_NO_EXC);
+  return _mm256_cvtps_ph(a, _MM_FROUND_TO_NEAREST_INT);
 #else
   EIGEN_ALIGN32 float aux[8];
   pstore(aux, a);

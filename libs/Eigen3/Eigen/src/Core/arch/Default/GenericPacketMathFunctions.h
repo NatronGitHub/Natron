@@ -642,10 +642,10 @@ Packet psincos_float(const Packet& _x)
   PacketI y_int = preinterpret<PacketI>(y_round); // last 23 digits represent integer (if abs(x)<2^24)
   y = psub(y_round, cst_rounding_magic); // nearest integer to x*4/pi
 
-  // Reduce x by y octants to get: -Pi/4 <= x <= +Pi/4
+  // Subtract y * Pi/2 to reduce x to the interval -Pi/4 <= x <= +Pi/4
   // using "Extended precision modular arithmetic"
-  #if defined(EIGEN_HAS_SINGLE_INSTRUCTION_MADD)
-  // This version requires true FMA for high accuracy
+  #if defined(EIGEN_VECTORIZE_FMA)
+  // This version requires true FMA for high accuracy.
   // It provides a max error of 1ULP up to (with absolute_error < 5.9605e-08):
   const float huge_th = ComputeSine ? 117435.992f : 71476.0625f;
   x = pmadd(y, pset1<Packet>(-1.57079601287841796875f), x);
@@ -757,6 +757,26 @@ Packet pcos_float(const Packet& x)
   return psincos_float<false>(x);
 }
 
+template<typename Packet>
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+EIGEN_UNUSED Packet pdiv_complex(const Packet& x, const Packet& y) {
+  typedef typename unpacket_traits<Packet>::as_real RealPacket;
+  // In the following we annotate the code for the case where the inputs
+  // are a pair length-2 SIMD vectors representing a single pair of complex
+  // numbers x = a + i*b, y = c + i*d.
+  const RealPacket y_abs = pabs(y.v);  // |c|, |d|
+  const RealPacket y_abs_flip = pcplxflip(Packet(y_abs)).v; // |d|, |c|
+  const RealPacket y_max = pmax(y_abs, y_abs_flip); // max(|c|, |d|), max(|c|, |d|)
+  const RealPacket y_scaled = pdiv(y.v, y_max);  // c / max(|c|, |d|), d / max(|c|, |d|)
+  // Compute scaled denominator.
+  const RealPacket y_scaled_sq = pmul(y_scaled, y_scaled); // c'**2, d'**2
+  const RealPacket denom = padd(y_scaled_sq, pcplxflip(Packet(y_scaled_sq)).v);
+  Packet result_scaled = pmul(x, pconj(Packet(y_scaled)));  // a * c' + b * d', -a * d + b * c
+  // Divide elementwise by denom.
+  result_scaled = Packet(pdiv(result_scaled.v, denom));
+  // Rescale result
+  return Packet(pdiv(result_scaled.v, y_max));
+}
 
 template<typename Packet>
 EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
@@ -895,7 +915,7 @@ void fast_twosum(const Packet& x, const Packet& y, Packet& s_hi, Packet& s_lo) {
   s_lo = psub(y, t);
 }
 
-#ifdef EIGEN_HAS_SINGLE_INSTRUCTION_MADD
+#ifdef EIGEN_VECTORIZE_FMA
 // This function implements the extended precision product of
 // a pair of floating point numbers. Given {x, y}, it computes the pair
 // {p_hi, p_lo} such that x * y = p_hi + p_lo holds exactly and
@@ -946,7 +966,7 @@ void twoprod(const Packet& x, const Packet& y,
   p_lo = pmadd(x_lo, y_lo, p_lo);
 }
 
-#endif  // EIGEN_HAS_SINGLE_INSTRUCTION_MADD
+#endif  // EIGEN_VECTORIZE_FMA
 
 
 // This function implements Dekker's algorithm for the addition
@@ -1443,39 +1463,40 @@ EIGEN_STRONG_INLINE Packet generic_pow_impl(const Packet& x, const Packet& y) {
 }
 
 // Generic implementation of pow(x,y).
-template<typename Packet>
-EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
-EIGEN_UNUSED
-Packet generic_pow(const Packet& x, const Packet& y) {
+template <typename Packet>
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS Packet generic_pow(const Packet& x, const Packet& y) {
   typedef typename unpacket_traits<Packet>::type Scalar;
 
   const Packet cst_pos_inf = pset1<Packet>(NumTraits<Scalar>::infinity());
+  const Packet cst_neg_inf = pset1<Packet>(-NumTraits<Scalar>::infinity());
   const Packet cst_zero = pset1<Packet>(Scalar(0));
   const Packet cst_one = pset1<Packet>(Scalar(1));
   const Packet cst_nan = pset1<Packet>(NumTraits<Scalar>::quiet_NaN());
 
   const Packet abs_x = pabs(x);
   // Predicates for sign and magnitude of x.
-  const Packet x_is_zero = pcmp_eq(x, cst_zero);
-  const Packet x_is_neg = pcmp_lt(x, cst_zero);
+  const Packet abs_x_is_zero = pcmp_eq(abs_x, cst_zero);
+  const Packet x_has_signbit = pcmp_eq(por(pand(x, cst_neg_inf), cst_pos_inf), cst_neg_inf);
+  const Packet x_is_neg = pandnot(x_has_signbit, abs_x_is_zero);
+  const Packet x_is_neg_zero = pand(x_has_signbit, abs_x_is_zero);
   const Packet abs_x_is_inf = pcmp_eq(abs_x, cst_pos_inf);
-  const Packet abs_x_is_one =  pcmp_eq(abs_x, cst_one);
+  const Packet abs_x_is_one = pcmp_eq(abs_x, cst_one);
   const Packet abs_x_is_gt_one = pcmp_lt(cst_one, abs_x);
   const Packet abs_x_is_lt_one = pcmp_lt(abs_x, cst_one);
-  const Packet x_is_one =  pandnot(abs_x_is_one, x_is_neg);
-  const Packet x_is_neg_one =  pand(abs_x_is_one, x_is_neg);
+  const Packet x_is_one = pandnot(abs_x_is_one, x_is_neg);
+  const Packet x_is_neg_one = pand(abs_x_is_one, x_is_neg);
   const Packet x_is_nan = pandnot(ptrue(x), pcmp_eq(x, x));
 
   // Predicates for sign and magnitude of y.
+  const Packet abs_y = pabs(y);
   const Packet y_is_one = pcmp_eq(y, cst_one);
-  const Packet y_is_zero = pcmp_eq(y, cst_zero);
+  const Packet abs_y_is_zero = pcmp_eq(abs_y, cst_zero);
   const Packet y_is_neg = pcmp_lt(y, cst_zero);
-  const Packet y_is_pos = pandnot(ptrue(y), por(y_is_zero, y_is_neg));
+  const Packet y_is_pos = pandnot(ptrue(y), por(abs_y_is_zero, y_is_neg));
   const Packet y_is_nan = pandnot(ptrue(y), pcmp_eq(y, y));
-  const Packet abs_y_is_inf = pcmp_eq(pabs(y), cst_pos_inf);
+  const Packet abs_y_is_inf = pcmp_eq(abs_y, cst_pos_inf);
   EIGEN_CONSTEXPR Scalar huge_exponent =
-      (NumTraits<Scalar>::max_exponent() * Scalar(EIGEN_LN2)) /
-       NumTraits<Scalar>::epsilon();
+      (NumTraits<Scalar>::max_exponent() * Scalar(EIGEN_LN2)) / NumTraits<Scalar>::epsilon();
   const Packet abs_y_is_huge = pcmp_le(pset1<Packet>(huge_exponent), pabs(y));
 
   // Predicates for whether y is integer and/or even.
@@ -1484,38 +1505,30 @@ Packet generic_pow(const Packet& x, const Packet& y) {
   const Packet y_is_even = pcmp_eq(pround(y_div_2), y_div_2);
 
   // Predicates encoding special cases for the value of pow(x,y)
-  const Packet invalid_negative_x = pandnot(pandnot(pandnot(x_is_neg, abs_x_is_inf),
-                                                    y_is_int),
-                                            abs_y_is_inf);
-  const Packet pow_is_one = por(por(x_is_one, y_is_zero),
-                                pand(x_is_neg_one,
-                                     por(abs_y_is_inf, pandnot(y_is_even, invalid_negative_x))));
+  const Packet invalid_negative_x = pandnot(pandnot(pandnot(x_is_neg, abs_x_is_inf), y_is_int), abs_y_is_inf);
   const Packet pow_is_nan = por(invalid_negative_x, por(x_is_nan, y_is_nan));
-  const Packet pow_is_zero = por(por(por(pand(x_is_zero, y_is_pos),
-                                         pand(abs_x_is_inf, y_is_neg)),
-                                     pand(pand(abs_x_is_lt_one, abs_y_is_huge),
-                                          y_is_pos)),
-                                 pand(pand(abs_x_is_gt_one, abs_y_is_huge),
-                                      y_is_neg));
-  const Packet pow_is_inf = por(por(por(pand(x_is_zero, y_is_neg),
-                                        pand(abs_x_is_inf, y_is_pos)),
-                                    pand(pand(abs_x_is_lt_one, abs_y_is_huge),
-                                         y_is_neg)),
-                                pand(pand(abs_x_is_gt_one, abs_y_is_huge),
-                                     y_is_pos));
+  const Packet pow_is_one =
+      por(por(x_is_one, abs_y_is_zero), pand(x_is_neg_one, por(abs_y_is_inf, pandnot(y_is_even, invalid_negative_x))));
+  const Packet pow_is_zero = por(por(por(pand(abs_x_is_zero, y_is_pos), pand(abs_x_is_inf, y_is_neg)),
+                                     pand(pand(abs_x_is_lt_one, abs_y_is_huge), y_is_pos)),
+                                 pand(pand(abs_x_is_gt_one, abs_y_is_huge), y_is_neg));
+  const Packet pow_is_inf = por(por(por(pand(abs_x_is_zero, y_is_neg), pand(abs_x_is_inf, y_is_pos)),
+                                    pand(pand(abs_x_is_lt_one, abs_y_is_huge), y_is_neg)),
+                                pand(pand(abs_x_is_gt_one, abs_y_is_huge), y_is_pos));
+  const Packet inf_val =
+      pselect(pandnot(pand(por(pand(abs_x_is_inf, x_is_neg), pand(x_is_neg_zero, y_is_neg)), y_is_int), y_is_even),
+              cst_neg_inf, cst_pos_inf);
 
   // General computation of pow(x,y) for positive x or negative x and integer y.
   const Packet negate_pow_abs = pandnot(x_is_neg, y_is_even);
   const Packet pow_abs = generic_pow_impl(abs_x, y);
-  return pselect(y_is_one, x,
-                 pselect(pow_is_one, cst_one,
-                         pselect(pow_is_nan, cst_nan,
-                                 pselect(pow_is_inf, cst_pos_inf,
-                                         pselect(pow_is_zero, cst_zero,
-                                                 pselect(negate_pow_abs, pnegate(pow_abs), pow_abs))))));
+  return pselect(
+      y_is_one, x,
+      pselect(pow_is_one, cst_one,
+              pselect(pow_is_nan, cst_nan,
+                      pselect(pow_is_inf, inf_val,
+                              pselect(pow_is_zero, cst_zero, pselect(negate_pow_abs, pnegate(pow_abs), pow_abs))))));
 }
-
-
 
 /* polevl (modified for Eigen)
  *

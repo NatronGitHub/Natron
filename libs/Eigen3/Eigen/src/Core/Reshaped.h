@@ -250,7 +250,7 @@ class ReshapedImpl_dense<XprType, Rows, Cols, Order, true>
     EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
     inline Index outerStride() const
     {
-      return ((Flags&RowMajorBit)==RowMajorBit) ? this->cols() : this->rows();
+      return (((Flags&RowMajorBit)==RowMajorBit) ? this->cols() : this->rows()) * m_xpr.innerStride();
     }
 
   protected:

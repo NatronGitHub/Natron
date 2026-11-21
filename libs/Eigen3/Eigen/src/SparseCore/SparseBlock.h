@@ -429,12 +429,7 @@ struct unary_evaluator<Block<ArgType,BlockRows,BlockCols,InnerPanel>, IteratorBa
 
     enum {
       IsRowMajor = XprType::IsRowMajor,
-
-      OuterVector =  (BlockCols==1 && ArgType::IsRowMajor)
-                    | // FIXME | instead of || to please GCC 4.4.0 stupid warning "suggest parentheses around &&".
-                      // revert to || as soon as not needed anymore.
-                     (BlockRows==1 && !ArgType::IsRowMajor),
-
+      OuterVector = (BlockCols == 1 && ArgType::IsRowMajor) || (BlockRows == 1 && !ArgType::IsRowMajor),
       CoeffReadCost = evaluator<ArgType>::CoeffReadCost,
       Flags = XprType::Flags
     };
