@@ -27,7 +27,8 @@
 
 #include <fstream>
 #include <algorithm> // min, max, sort
-#include <atomic>
+#include <functional>
+#include <mutex>
 #include <ios>
 #include <limits>
 #include <ostream>
@@ -980,10 +981,13 @@ nextBackup(const QString & filePath)
 // Before the new file replaces filePath: renames filePath.~1~ to filePath.~2~... and filePath to filePath.~1~,
 // if backups are kept (saveVersions > 0). The renames are appended to renamed, so that they can be undone if the
 // new file can't replace filePath. The extra backups are removed by removeExtraBackups(), once it did.
+// If filePath can't be renamed (on Windows, another process has it open), it is copied to filePath.~1~
+// (*copiedBackup), so that the previous version is kept.
 static void
 rotateBackups(const QString & filePath,
               int saveVersions,
               std::vector<std::pair<QString, QString> >* renamed,
+              QString* copiedBackup,
               QStringList* errors)
 {
     if (saveVersions <= 0) {
@@ -994,6 +998,8 @@ rotateBackups(const QString & filePath,
         const QString next = nextBackup( backups.at(i) );
         if ( QFile::rename( backups.at(i), next ) ) {
             renamed->push_back( std::make_pair(backups.at(i), next) );
+        } else if ( (backups.at(i) == filePath) && QFile::copy(filePath, next) ) {
+            *copiedBackup = next;
         } else {
             errors->append( Project::tr("Could not rename %1 to %2.").arg(backups.at(i), next) );
         }
@@ -1017,23 +1023,28 @@ removeExtraBackups(const QString & filePath,
     }
 }
 
-// See Project::failNextSaveCommitsForTesting()
-static std::atomic<int> failNextSaveCommits(0);
+// See Project::setSaveCommitHookForTesting()
+static std::mutex saveCommitHookMutex;
+static std::function<bool()> saveCommitHook;
 
 void
-Project::failNextSaveCommitsForTesting(int count)
+Project::setSaveCommitHookForTesting(const std::function<bool()>& hook)
 {
-    failNextSaveCommits = count;
+    std::lock_guard<std::mutex> lock(saveCommitHookMutex);
+    saveCommitHook = hook;
 }
 
+// false if the test hook simulates a failure of the commit
 static bool
-takeSaveCommitFailureForTesting()
+callSaveCommitHookForTesting()
 {
-    int n = failNextSaveCommits.load();
-    while ( (n > 0) && !failNextSaveCommits.compare_exchange_weak(n, n - 1) ) {
+    std::function<bool()> hook;
+    {
+        std::lock_guard<std::mutex> lock(saveCommitHookMutex);
+        hook = saveCommitHook;
     }
 
-    return n > 0;
+    return !hook || hook();
 }
 
 QString
@@ -1207,19 +1218,20 @@ Project::saveProjectInternal(const QString & path,
 
         backupErrors.clear();
         std::vector<std::pair<QString, QString> > renamed;
+        QString copiedBackup;
         const int saveVersions = appPTR->getCurrentSettings()->saveVersions();
         if (!autoSave) {
-            rotateBackups(targetPath, saveVersions, &renamed, &backupErrors);
+            rotateBackups(targetPath, saveVersions, &renamed, &copiedBackup, &backupErrors);
         }
 
         // Rename the temporary file to the project file, replacing it (also on Windows). Both are in the same
         // directory: this never copies the file.
         bool committed;
         QString commitError;
-        if ( takeSaveCommitFailureForTesting() ) {
+        if ( !callSaveCommitHookForTesting() ) {
             saveFile.cancelWriting();
             committed = false;
-            commitError = QString::fromUtf8("simulated failure (Project::failNextSaveCommitsForTesting())");
+            commitError = QString::fromUtf8("simulated failure (Project::setSaveCommitHookForTesting())");
         } else {
             committed = saveFile.commit();
             commitError = saveFile.errorString();
@@ -1231,15 +1243,30 @@ Project::saveProjectInternal(const QString & path,
             break;
         }
         // the project file was not replaced: put it back with its backups
-        for (std::vector<std::pair<QString, QString> >::reverse_iterator it = renamed.rbegin(); it != renamed.rend(); ++it) {
-            QFile::rename(it->second, it->first);
+        QStringList rollbackErrors;
+        if ( !copiedBackup.isEmpty() && !QFile::remove(copiedBackup) ) {
+            rollbackErrors.append( tr("Could not remove %1.").arg(copiedBackup) );
         }
-        if (attempt >= maxAttempts) {
+        for (std::vector<std::pair<QString, QString> >::reverse_iterator it = renamed.rbegin(); it != renamed.rend(); ++it) {
+            if ( !QFile::rename(it->second, it->first) ) {
+                if (it->first == targetPath) {
+                    rollbackErrors.append( tr("The previous version of the project is in %1.").arg(it->second) );
+                } else {
+                    rollbackErrors.append( tr("Could not rename %1 back to %2.").arg(it->second, it->first) );
+                }
+            }
+        }
+        // after a failed rollback, another attempt would rotate the backups again: stop
+        if ( (attempt >= maxAttempts) || !rollbackErrors.isEmpty() ) {
             if (!autoSave && updateProjectProperties) {
                 ///Reset the old project path in case of failure.
                 _imp->autoSetProjectDirectory(oldProjectPath);
             }
-            throw std::runtime_error( tr("Failed to save the project to %1: %2").arg(filePath, commitError).toStdString() );
+            QStringList messages;
+            messages << tr("Failed to save the project to %1: %2").arg(filePath, commitError);
+            messages += backupErrors;
+            messages += rollbackErrors;
+            throw std::runtime_error( messages.join( QLatin1Char('\n') ).toStdString() );
         }
         QThread::msleep(200 * attempt);
     }

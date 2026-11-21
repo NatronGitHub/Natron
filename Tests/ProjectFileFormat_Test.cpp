@@ -33,8 +33,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <functional>
 #include <vector>
 #include <iostream>
+#include <memory>
 #include <mutex>
 #include <sstream>
 #include <string>
@@ -1055,9 +1057,17 @@ TEST(ProjectSave, FailedCommitKeepsThePreviousFile)
     const QByteArray b = readFile(path);
     ASSERT_FALSE( b == readFile(backup1) );
 
+    // Fails the next count commits.
+    auto failCommits = [](int count) {
+        std::shared_ptr<int> n = std::make_shared<int>(count);
+        Project::setSaveCommitHookForTesting([n]() {
+            return (*n)-- <= 0;
+        });
+    };
+
     // one failure: the save tries again
     setFrameRange(1, 30);
-    Project::failNextSaveCommitsForTesting(1);
+    failCommits(1);
     EXPECT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
     const QByteArray c = readFile(path);
     EXPECT_FALSE( c == b );
@@ -1067,10 +1077,10 @@ TEST(ProjectSave, FailedCommitKeepsThePreviousFile)
 
     // every attempt fails
     setFrameRange(1, 40);
-    Project::failNextSaveCommitsForTesting(3);
+    failCommits(3);
     QString errorMessage;
     EXPECT_FALSE( project->saveProject_imp(dir, name, false /*autoSave*/, false /*updateProjectProperties*/, 0, &errorMessage, eProjectFileFormatBinary) );
-    Project::failNextSaveCommitsForTesting(0);
+    Project::setSaveCommitHookForTesting( std::function<bool()>() );
     EXPECT_TRUE( errorMessage.contains(path) ) << errorMessage.toStdString();
     EXPECT_TRUE( readFile(path) == c ) << "the project file was not put back";
     EXPECT_TRUE( readFile(backup1) == b ) << "the backup was not put back";
@@ -1078,6 +1088,57 @@ TEST(ProjectSave, FailedCommitKeepsThePreviousFile)
     EXPECT_EQ( QStringList(), strayFiles( dir, QStringList(name) ) );
     project->resetProject();
 }
+
+#ifndef Q_OS_WIN
+// The new file can't replace the project file, and the project file can't be put back either (e.g. a network
+// share went away): the error says where the previous version is.
+TEST(ProjectSave, FailedRollbackSaysWhereThePreviousVersionIs)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("p.ntp");
+    const QString path = dir + name;
+    const QString backup1 = path + QString::fromUtf8(".~1~");
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    createTestProject(app);
+    SaveVersions saveVersions(1);
+    ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
+    const QByteArray previous = readFile(path);
+    setFrameRange(5, 55);
+
+    // the folder becomes read-only after the rotation: the commit and the rollback fail
+    const QFileDevice::Permissions dirPermissions = QFile::permissions( tmpDir.path() );
+    const QString dirPath = tmpDir.path();
+    int calls = 0;
+    Project::setSaveCommitHookForTesting([&]() {
+        ++calls;
+        QFile::setPermissions(dirPath, QFileDevice::ReadOwner | QFileDevice::ExeOwner | QFileDevice::ReadUser | QFileDevice::ExeUser);
+
+        return false;
+    });
+    QString errorMessage;
+    const bool saved = project->saveProject_imp(dir, name, false /*autoSave*/, false /*updateProjectProperties*/, 0, &errorMessage, eProjectFileFormatBinary);
+    Project::setSaveCommitHookForTesting( std::function<bool()>() );
+    const bool rootCanWrite = canWriteReadOnly(dirPath);
+    ASSERT_TRUE( QFile::setPermissions(dirPath, dirPermissions) );
+    if (rootCanWrite) {
+        reportSkipped("the read-only directory is writable (root?)");
+        project->resetProject();
+
+        return;
+    }
+    EXPECT_FALSE(saved);
+    EXPECT_EQ(1, calls) << "a save whose rollback failed must not try again";
+    EXPECT_TRUE( errorMessage.contains(path) ) << errorMessage.toStdString();
+    EXPECT_TRUE( errorMessage.contains( QString::fromUtf8("The previous version of the project is in %1").arg(backup1) ) ) << errorMessage.toStdString();
+    EXPECT_FALSE( QFile::exists(path) );
+    EXPECT_TRUE( readFile(backup1) == previous );
+    project->resetProject();
+}
+#endif
 
 // The "Save versions" preference: the number of backups (.~1~ is the previous version), none with 0.
 TEST(ProjectSave, Backups)
@@ -1151,6 +1212,62 @@ TEST(ProjectSave, SymbolicLink)
         EXPECT_FALSE( QFile::exists( dir + QString::fromUtf8("current.ntp.~1~") ) ) << n;
     }
     EXPECT_TRUE( QFileInfo( dir + QString::fromUtf8("current.ntp") ).isSymLink() );
+    project->resetProject();
+}
+
+// A loop of symbolic links: a clean error, nothing changes on disk.
+TEST(ProjectSave, SymbolicLinkLoop)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    createTestProject(app);
+    SaveVersions saveVersions(1);
+    ASSERT_TRUE( QFile::link( QString::fromUtf8("b.ntp"), dir + QString::fromUtf8("a.ntp") ) );
+    ASSERT_TRUE( QFile::link( QString::fromUtf8("a.ntp"), dir + QString::fromUtf8("b.ntp") ) );
+    const QStringList before = QDir(dir).entryList(QDir::AllEntries | QDir::System | QDir::Hidden | QDir::NoDotAndDotDot);
+    QString errorMessage;
+    EXPECT_FALSE( project->saveProject_imp(dir, QString::fromUtf8("a.ntp"), false /*autoSave*/, false /*updateProjectProperties*/, 0, &errorMessage, eProjectFileFormatBinary) );
+    EXPECT_TRUE( errorMessage.contains( QString::fromUtf8("too many levels of symbolic links") ) ) << errorMessage.toStdString();
+    EXPECT_TRUE( errorMessage.contains( dir + QString::fromUtf8("a.ntp") ) ) << errorMessage.toStdString();
+    EXPECT_EQ( before, QDir(dir).entryList(QDir::AllEntries | QDir::System | QDir::Hidden | QDir::NoDotAndDotDot) );
+    EXPECT_TRUE( QFileInfo( dir + QString::fromUtf8("a.ntp") ).isSymLink() );
+    EXPECT_TRUE( QFileInfo( dir + QString::fromUtf8("b.ntp") ).isSymLink() );
+    project->resetProject();
+}
+
+// A dangling symbolic link: its target is created. If the folder of the target doesn't exist: a clean error.
+TEST(ProjectSave, DanglingSymbolicLink)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString link = dir + QString::fromUtf8("latest.ntp");
+    const QString target = dir + QString::fromUtf8("v013.ntp");
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    createTestProject(app);
+    SaveVersions saveVersions(1);
+    ASSERT_TRUE( QFile::link( QString::fromUtf8("v013.ntp"), link ) );
+    ASSERT_FALSE( QFile::exists(target) );
+    ASSERT_TRUE( saveCopy(project, dir, QString::fromUtf8("latest.ntp"), eProjectFileFormatBinary) );
+    EXPECT_TRUE( QFileInfo(link).isSymLink() );
+    EXPECT_EQ( eProjectFileFormatBinary, Project::detectFileFormat(target) );
+    EXPECT_FALSE( QFile::exists( target + QString::fromUtf8(".~1~") ) );
+    EXPECT_FALSE( QFile::exists( link + QString::fromUtf8(".~1~") ) );
+
+    const QString link2 = dir + QString::fromUtf8("missing.ntp");
+    ASSERT_TRUE( QFile::link( QString::fromUtf8("no-such-folder/v.ntp"), link2 ) );
+    const QStringList before = QDir(dir).entryList(QDir::AllEntries | QDir::System | QDir::Hidden | QDir::NoDotAndDotDot);
+    QString errorMessage;
+    EXPECT_FALSE( project->saveProject_imp(dir, QString::fromUtf8("missing.ntp"), false /*autoSave*/, false /*updateProjectProperties*/, 0, &errorMessage, eProjectFileFormatBinary) );
+    EXPECT_TRUE( errorMessage.contains(link2) ) << errorMessage.toStdString();
+    EXPECT_EQ( before, QDir(dir).entryList(QDir::AllEntries | QDir::System | QDir::Hidden | QDir::NoDotAndDotDot) );
+    EXPECT_TRUE( QFileInfo(link2).isSymLink() );
     project->resetProject();
 }
 #endif

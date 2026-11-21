@@ -28,6 +28,8 @@
 
 #include "Global/Macros.h"
 
+#include <functional>
+
 #include <map>
 #include <vector>
 
@@ -121,10 +123,11 @@ public:
     bool isSaveInProgress() const WARN_UNUSED_RETURN;
 
     /**
-     * @brief Tests only: the next count saves (of any project) fail to replace the project file, as if the
-     * rename of the temporary file failed. A save tries 3 times before it fails.
+     * @brief Tests only: while set, every save (of any project) calls hook after rotating the backups, before the
+     * new file replaces the project file. If it returns false, the file is not replaced, as if that failed: the
+     * save puts the backups back, and tries 3 times before it fails. An empty hook removes it.
      **/
-    static void failNextSaveCommitsForTesting(int count);
+    static void setSaveCommitHookForTesting(const std::function<bool()>& hook);
 
     /**
      * @brief Same as saveProject except that it will save the project in a temporary file
