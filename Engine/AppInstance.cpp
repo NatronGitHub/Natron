@@ -1450,12 +1450,12 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 args.setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
                 args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
                 output = createNode(args);
-                try {
-                    output->setLabel("Output");
-                } catch (...) {
+                if (output) {
+                    try {
+                        output->setLabel("Output");
+                    } catch (...) {
+                    }
                 }
-
-                assert(output);
             }
             {
                 CreateNodeArgs args(PLUGINID_NATRON_INPUT, isGrp);
@@ -1463,7 +1463,6 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 args.setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
                 args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
                 input = createNode(args);
-                assert(input);
             }
             if ( input && output && !output->getInput(0) ) {
                 output->connectInput(input, 0);
@@ -2440,7 +2439,8 @@ AppInstance::execOnProjectCreatedCallback()
     }
     std::string appID = getAppIDString();
     std::string script;
-    if (appID != "app") {
+    // In background mode, "app" stays app1, also for a Precomp's instance (see getAppIDString()).
+    if ( (appID != "app") && !appPTR->isBackground() ) {
         script = script + "app = " + appID;
     }
     script = script + "\n" + cb + "(" + appID + ")\n";
@@ -2458,7 +2458,12 @@ AppInstance::execOnProjectCreatedCallback()
 std::string
 AppInstance::getAppIDString() const
 {
-    if ( appPTR->isBackground() ) {
+    // In background mode, "app" is an alias of "app1" (see declareCurrentAppVariable_Python()).
+    // Only the first instance may use it: other instances, such as the one a Precomp node loads
+    // its project in, have their own variable. With "app", the Python variables of their nodes
+    // were declared on app1, which doesn't have those nodes, so creating a node inside a group
+    // of that project failed (e.g. the Output node of a Write node, #1501).
+    if ( appPTR->isBackground() && (getAppID() == 0) ) {
         return "app";
     } else {
         QString appID =  QString( QString::fromUtf8("app%1") ).arg(getAppID() + 1);

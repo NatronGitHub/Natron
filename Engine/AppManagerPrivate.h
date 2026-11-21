@@ -34,6 +34,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 
 #include <condition_variable>
 #include <mutex>
@@ -109,6 +110,7 @@ public:
     std::vector<AppInstancePtr> _appInstances; //< the instances mapped against their ID
     int _availableID; //< the ID for the next instance
     int _topLevelInstanceID; //< the top level app ID
+    std::set<int> _internalInstanceIDs; //< internal instances (a Precomp node's, see newBackgroundInstance()), never top-level
     SettingsPtr _settings; //< app settings
     std::vector<Format> _formats; //<a list of the "base" formats available in the application
     PluginsMap _plugins; //< list of the plugins
