@@ -1,5 +1,5 @@
 --- Portfile.orig	2026-11-21 11:18:04
-+++ Portfile	2026-11-21 18:43:18
++++ Portfile	2026-11-21 18:52:03
 @@ -89,6 +89,10 @@
      # Backport fix for bundled libpng
      patchfiles-append   patch-qtwebengine-libpng.diff
@@ -20,21 +20,21 @@
          "License: "
      }
      qtcharts {
-@@ -1087,6 +1091,13 @@
-             # macOS Tahoe removed AGL.framework
+@@ -1088,6 +1092,13 @@
              # https://trac.macports.org/ticket/72729
              patchfiles-append patch-qtbase-tahoe-no-agl-framework.diff
-+
+ 
 +            # Natron: fix a lost wake-up in the non-futex QMutex on arm64 (NatronGitHub/Natron#1451):
 +            # derefWaiters() must be a release, the waiters CAS in lockInternal() an acquire
 +            # (repro, litmus tests and the Qt dev patch: tools/qt-mutex-repro). No Qt6 counterpart needed:
 +            # Natron's Qt6 builds (MacPorts qt6-qtbase 6.12, Windows) always use futexes; the Qt dev
 +            # patch in tools/qt-mutex-repro is for upstream.
 +            patchfiles-append patch-qtbase-qmutex-arm64-lost-wakeup.diff
- 
++
              # find the Rez program
              patchfiles-append patch-find_rez.diff
-@@ -2360,3 +2371,35 @@
+             post-patch {
+@@ -2360,3 +2371,37 @@
          }
      }
  }
@@ -50,7 +50,9 @@
 +# (MacPorts then finds no archive for it), or remove it from the list. tools/MacPorts/check.sh
 +# reports a patch file named on any line that Portfile.patch adds (patchfiles-append lines and
 +# their continuations) unless it is for qtbase (patch-qtbase-*) or in
-+# natron_archive_build_only_patches; other changes (configure flags, variants) are not detected.
++# natron_archive_build_only_patches. Not detected (the same list as in check.sh): configure
++# arguments, variants, revisions, build settings, and patch files whose names are built from
++# variables.
 +# Only with MacPorts' standard prefix and directories, for which the archives are built.
 +# No Qt6 counterpart needed: Natron's Qt6 builds use the upstream qt6 ports, not this overlay.
 +set natron_archive_build_only_patches {patch-qtwebengine-sandbox-kSBXProfile-macos27.diff}

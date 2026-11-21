@@ -35,7 +35,7 @@ finish() { # replace $SDK_IMAGE with $WIP, keep the old one as -prev
 case "${1:-}" in
 create)
     if ! vm_exists "$WIP"; then
-        log "cloning $BASE_IMAGE into $WIP (the first pull downloads ~70 GB)"
+        log "cloning $BASE_IMAGE into $WIP (the first pull downloads about 30 GB)"
         tart clone "$BASE_IMAGE" "$WIP"
     else
         log "resuming with existing $WIP"

@@ -57,8 +57,7 @@ At the end, `check-minos.sh` checks that every Mach-O file in the DMG (the execu
 
 Natron is built with CMake (`NATRON_BUILD_SYSTEM=cmake`, see `tools/jenkins/build-natron.sh`); `NATRON_EXTRA_CMAKE_FLAGS` in the environment is passed on to it.
 
-Each build runs in a fresh clone of the SDK image. Clones are copy-on-write, so they are fast and small. The clone is deleted afterwards (`-k` keeps it, shut down).
-
+Each build runs in a fresh clone of the SDK image. Clones are copy-on-write, so they are fast and small. The clone is deleted afterwards (`-k` keeps it, shut down). The results (`.dmg`, test results, logs) are copied to `./natron-builds/<vm-name>/`.
 
 The files tracked by git under `tools/` are copied into the VM with their local changes, so uncommitted changes to `tools/jenkins` are tested. Changes to the `tools/MacPorts` overlay are published (`portindex`) but installed ports are not rebuilt: run `natron-sdk.sh update` for that. The Natron and plugin sources are checked out from GitHub by `launchBuildMain.sh`.
 
@@ -70,14 +69,14 @@ Only one Natron VM can run at a time: clones of an image share their IPv6 link-l
 
 ```sh
 tools/tart/natron-test.sh natron-builds/<vm>/natron_github_RB2/1/Natron-*.dmg   # the full Natron-Tests suite
-TEST=TestBlur tools/tart/natron-test.sh Natron-….dmg                            # a single test
+TEST=TestBlur tools/tart/natron-test.sh Natron-….dmg                            # a single test (results named <dmg>-partial-TestBlur-*)
 ```
 
 This runs the [Natron-Tests](https://github.com/NatronGitHub/Natron-Tests) regression suite (`runTests.sh`, as `tools/jenkins/runUnitTests.sh` does) against the DMG's `NatronRenderer`, in a throw-away clone of the stock base image (`BASE_IMAGE`), not of the SDK image. In that clone the Command Line Tools are removed and Homebrew is moved away: no Xcode, no Command Line Tools, no MacPorts, no Homebrew, no Natron sources. Only `Natron.app`, copied from the DMG, and the Natron-Tests data are copied in, so a missing or too-new bundled library, or a missing resource (OCIO configs, fonts, Python modules) shows up. The tests use the `ffmpeg` and `idiff` bundled in `Natron.app`, macOS's `/bin/bash`, `curl` and `unzip`, and a small Perl `gtimeout`. The Spaceship and BayMax example projects that `runTests.sh` needs are downloaded from SourceForge once, on the host, into the Natron-Tests checkout. The Natron-Tests checkout is `$NATRON_TESTS_SRC` (default: `Natron-Tests` next to the Natron checkout, cloned if missing; `-n DIR`).
 
 The results are written next to the DMG (`-o DIR` elsewhere), named as the release assets of previous versions: `<dmg name>-tests.txt` (one `Test : PASS` or `FAIL` line per test), `<dmg name>-unit_tests_failures.zip` (the failed tests' outputs and references, in a `<dmg name>-unit_tests_failures/` directory), and `<dmg name>-tests.log` (the output of `runTests.sh`). The clone is deleted afterwards (`-k` keeps it).
 
-The exit status is 1 if a test fails that isn't listed in the known-failures file (`-x FILE` or `NATRON_TESTS_KNOWN_FAILURES`: one name per line as in `-tests.txt`, e.g. `TestCMD/1`, `#` comments; no file means that any failure fails), or if the suite didn't run. Review the failures in the zip first: a failure accepted for a release goes in that file, with the reason. The results (`.dmg`, test results, logs) are copied to `./natron-builds/<vm-name>/`.
+The exit status is 1 if a test fails that isn't listed in the known-failures file (`-x FILE` or `NATRON_TESTS_KNOWN_FAILURES`: one name per line as in `-tests.txt`, e.g. `TestCMD/1`, `#` comments; no file means that any failure fails), or if the suite didn't run. Review the failures in the zip first: a failure accepted for a release goes in that file, with the reason.
 
 ## Settings
 

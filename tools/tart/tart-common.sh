@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Helpers shared by natron-sdk.sh and natron-build.sh (sourced, not executed).
 #
 # The VMs use tart's default "shared" (NAT) network: they are reachable from this host

@@ -2383,7 +2383,9 @@ if { ${os.platform} eq "darwin" && ${os.major} < 17} {
 # (MacPorts then finds no archive for it), or remove it from the list. tools/MacPorts/check.sh
 # reports a patch file named on any line that Portfile.patch adds (patchfiles-append lines and
 # their continuations) unless it is for qtbase (patch-qtbase-*) or in
-# natron_archive_build_only_patches; other changes (configure flags, variants) are not detected.
+# natron_archive_build_only_patches. Not detected (the same list as in check.sh): configure
+# arguments, variants, revisions, build settings, and patch files whose names are built from
+# variables.
 # Only with MacPorts' standard prefix and directories, for which the archives are built.
 # No Qt6 counterpart needed: Natron's Qt6 builds use the upstream qt6 ports, not this overlay.
 set natron_archive_build_only_patches {patch-qtwebengine-sandbox-kSBXProfile-macos27.diff}

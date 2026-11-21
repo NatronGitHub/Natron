@@ -173,8 +173,9 @@ Every Mach-O file in the ``.dmg`` must have a minimum macOS (``minos`` in
 - ``tools/tart/check-minos.sh`` lists the Mach-O files (in directories, files,
   or a ``.dmg``) that need a newer macOS than ``-t TARGET``.
   ``launchBuildMain.sh`` (release builds) and ``tools/tart/natron-build.sh`` run
-  it on the ``.dmg`` and fail the build if any file needs one. ``tools/tart/provision.sh`` uses it to find the installed
-  ports, and the OSMesa/LLVM builds, that must be rebuilt (``step_rebuild_target``).
+  it on the ``.dmg`` and fail the build if any file needs one.
+  ``tools/tart/provision.sh`` uses it to find the installed ports, and the
+  OSMesa/LLVM builds, that must be rebuilt (``step_rebuild_target``).
   For a MacPorts install outside tart, see "Building for an older macOS" in
   ``INSTALL_MACOS.md``.
 
@@ -183,8 +184,10 @@ single source for the release target (``NATRON_MACOS_RELEASE_MIN``, read by
 ``common.sh`` through ``NATRON_MACOS_MIN``, ``provision.sh``,
 ``natron-build.sh`` and the default of ``check-minos.sh``), the Command Line
 Tools of the SDK image (``NATRON_MACOS_CLT_VERSION``) and its base image
-(``NATRON_MACOS_BASE_IMAGE``, pinned by digest; ``BASE_IMAGE`` overrides it). Then rebuild the
-SDK image (``tools/tart/natron-sdk.sh create``) and update the system
+(``NATRON_MACOS_BASE_IMAGE``, pinned by digest; ``BASE_IMAGE`` overrides it).
+Then rebuild the SDK image (``tools/tart/natron-sdk.sh create``), update the
+``NATRON_MACOS_MIN=14.0`` of the release commands in section 10 of
+``INSTALL_MACOS.md`` (hand-typed copies of that value), and update the system
 requirements in the User Guide.
 
 Only release builds target that version: ``common.sh`` uses it when

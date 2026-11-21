@@ -12,7 +12,8 @@
 #                 "#" starts a comment (default: $NATRON_TESTS_KNOWN_FAILURES; none if unset)
 #     -i IMAGE    base image to clone (default: $BASE_IMAGE, see tart-common.sh)
 #
-# TEST=TestFoo or TESTCUSTOM=TestBar in the environment run a single test (see runTests.sh).
+# TEST=TestFoo or TESTCUSTOM=TestBar in the environment run a single test (see runTests.sh); the
+# results are then named <dmg name>-partial-<test>-*, not as release assets.
 # Exit status: 0 if every test passed or is a known failure, 1 otherwise (or if the suite did
 # not run): a release gate.
 # Results, as in the Natron release assets (tools/jenkins/runUnitTests.sh):
@@ -36,15 +37,21 @@ while getopts "o:n:ki:x:h" opt; do
         k) KEEP=1 ;;
         i) BASE_IMAGE=$OPTARG ;;
         x) KNOWN=$OPTARG ;;
-        *) sed -n 2,25p "$0"; exit 1 ;;
+        *) sed -n 2,23p "$0"; exit 1 ;;
     esac
 done
 shift $((OPTIND - 1))
-[ $# = 1 ] && [ -f "$1" ] || { sed -n 2,25p "$0"; exit 1; }
+[ $# = 1 ] && [ -f "$1" ] || { sed -n 2,23p "$0"; exit 1; }
 DMG=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
 NAME=$(basename "$DMG" .dmg)
 OUT=${OUT:-$(dirname "$DMG")}
 mkdir -p "$OUT"
+# a partial run (TEST or TESTCUSTOM) must not produce files with the release asset names
+if [ -n "${TEST:-}${TESTCUSTOM:-}" ]; then
+    NAME="$NAME-partial-$(echo "${TEST:-}${TESTCUSTOM:-}" | tr -c 'A-Za-z0-9._\n-' _)"
+fi
+# never leave the results of an earlier run next to the DMG, even if this one is aborted
+rm -f "$OUT/$NAME-tests.log" "$OUT/$NAME-tests.txt" "$OUT/$NAME-unit_tests_failures.zip"
 [ -z "$KNOWN" ] || [ -f "$KNOWN" ] || { echo "known failures file $KNOWN not found"; exit 1; }
 
 # the test data, on the host (the guest has no git without the Command Line Tools)
@@ -164,11 +171,9 @@ vm_ssh "$VM" 'setopt nonomatch 2> /dev/null; cd Natron-Tests && [ -f result.txt 
     done; true' || true
 
 log "copying the results to $OUT"
-# never leave the results of an earlier run next to the DMG
-rm -f "$OUT/$NAME-tests.log" "$OUT/$NAME-tests.txt"
 vm_rsync_back "$VM" runTests.log "$OUT/$NAME-tests.log" || true
 vm_rsync_back "$VM" Natron-Tests/result.txt "$OUT/$NAME-tests.txt" || true
-rm -rf "${TART_RUN:?}/$NAME-unit_tests_failures" "$OUT/$NAME-unit_tests_failures.zip"
+rm -rf "${TART_RUN:?}/$NAME-unit_tests_failures"
 mkdir -p "$TART_RUN/$NAME-unit_tests_failures"
 vm_rsync_back "$VM" Natron-Tests/failed/ "$TART_RUN/$NAME-unit_tests_failures/" || true
 if [ -n "$(ls -A "$TART_RUN/$NAME-unit_tests_failures")" ]; then

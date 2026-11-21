@@ -167,10 +167,11 @@ step_nobrew() {
     [ ! -e /opt/homebrew ]
 }
 
-# The Command Line Tools with the SDK of the target macOS (14), and nothing else (no Xcode): CLT $CLT_VERSION has
-# the macOS 14.4 SDK (default) and 13.3, Apple clang 15.0.0. The base image has CLT 16.2 (macOS 15.2 and 14.5 SDKs), which is
-# replaced. softwareupdate installs CLT without an Apple ID when this file exists; it uses the
-# system proxy settings, set to the SOCKS proxy for the duration of the install.
+# The Command Line Tools with the SDK of the target macOS (14), and nothing else (no Xcode):
+# CLT $CLT_VERSION has the macOS 14.4 SDK (default) and 13.3, and Apple clang 15.0.0. The base
+# image has CLT 16.2 (macOS 15.2 and 14.5 SDKs), which is replaced. softwareupdate installs the
+# CLT without an Apple ID when $CLT_FLAG exists; it uses the system proxy settings, set to the
+# SOCKS proxy for the duration of the install.
 CLT_VERSION=$NATRON_MACOS_CLT_VERSION
 CLT_FLAG=/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
 system_proxy() { # on|off : the system SOCKS proxy (softwareupdate ignores ALL_PROXY); "off" always runs

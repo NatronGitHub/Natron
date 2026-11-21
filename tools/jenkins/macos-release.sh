@@ -1,3 +1,4 @@
+# shellcheck shell=bash disable=SC2034 # sourced; the variables are used by the sourcing scripts
 # macOS release settings (sourced by tools/jenkins/common.sh and the tools/tart scripts): the
 # single place to change when the oldest supported macOS changes.
 #

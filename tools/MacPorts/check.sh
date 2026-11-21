@@ -228,8 +228,8 @@ done
 # (natron_archive_subports in its Portfile): a Natron patch on one of them would be lost. Every
 # patchfile that Portfile.patch adds must be for qtbase (patch-qtbase-*, always built here) or
 # listed in natron_archive_build_only_patches (a patch that only changes the build, not the result).
-# Other kinds of changes to those subports (configure flags, revision) are not detected: see the
-# comment above natron_archive_subports in the Portfile.
+# Not detected (the same list as in the Portfile comment): configure arguments, variants,
+# revisions, build settings, and patch files whose names are built from variables.
 qt5=aqua/qt5
 if [ -f "$qt5/Portfile.patch" ]; then
     build_only=$(sed -n 's/^set natron_archive_build_only_patches {\(.*\)}$/\1/p' "$qt5/Portfile")

@@ -364,6 +364,7 @@ See [macOS packaging tools](#macos-packaging-tools) below.
 ```Shell
 mkdir -p $HOME/Development/workspace
 cd $NATRON_SRC/tools/jenkins
+# NATRON_MACOS_MIN: the release target, NATRON_MACOS_RELEASE_MIN in tools/jenkins/macos-release.sh
 env NATRON_MACOS_MIN=14.0 NOUPDATE=1 WORKSPACE=$HOME/Development/workspace DISABLE_BREAKPAD=1 NATRON_LICENSE=GPL \
     GIT_URL=https://github.com/NatronGitHub/Natron.git GIT_BRANCH=RB-2.6 \
     UNIT_TESTS=false BUILD_NAME=natron_github_RB2 BUILD_NUMBER=1 \
@@ -382,6 +383,7 @@ The plug-ins (openfx-misc, openfx-io, openfx-arena, openfx-gmic) are built with 
 For a release, build a tag instead of a branch:
 
 ```Shell
+# NATRON_MACOS_MIN: NATRON_MACOS_RELEASE_MIN in tools/jenkins/macos-release.sh
 env NATRON_MACOS_MIN=14.0 NATRON_DEV_STATUS=STABLE RELEASE_TAG=2.6.0 NATRON_BUILD_NUMBER=1 NOUPDATE=1 WORKSPACE=$HOME/Development/workspace \
     DISABLE_BREAKPAD=1 NATRON_LICENSE=GPL GIT_URL=https://github.com/NatronGitHub/Natron.git \
     UNIT_TESTS=true BUILD_NAME=natron_github_RB2 BUILD_NUMBER=1 COMPILE_TYPE=release MKJOBS=8 \
