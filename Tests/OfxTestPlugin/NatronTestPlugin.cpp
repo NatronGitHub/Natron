@@ -41,7 +41,9 @@
 //   - "preset" (kOfxParamPropCanUndo=0) is the "preset" example of the parameter suite documentation:
 //     choosing a preset sets "presetA", "presetB" and "presetC" in a paramEditBegin/paramEditEnd block,
 //     and sets "preset" back to 0;
-//   - "uiOnly" has kOfxParamPropEvaluateOnChange=0, "noUndo" has kOfxParamPropCanUndo=0.
+//   - "uiOnly" has kOfxParamPropEvaluateOnChange=0, "noUndo" has kOfxParamPropCanUndo=0;
+//   - "double2DRanged" has a range (kOfxParamPropMin/Max 0 to 1) but no display range
+//     (Tests/OfxParamRange_Test.cpp).
 // - net.natron.test.Generator: a generator that fills its output with 0.5, with the pixel aspect ratio of
 //   its "par" parameter (it supports multiple clip PARs, so that it may set its output PAR, and "par" is a
 //   clip preferences slave parameter). If its "fps" parameter (also a slave parameter) is positive, it sets
@@ -648,6 +650,14 @@ paramsDescribeInContext(OfxImageEffectHandle effect)
         return kOfxStatFailed;
     }
     gPropSuite->propSetInt(props, kOfxParamPropCanUndo, 0, 0);
+    // a range without a display range: the display range keeps its default, -DBL_MAX to DBL_MAX
+    if (paramsDefine(paramSet, kOfxParamTypeDouble2D, "double2DRanged", &props) != kOfxStatOK) {
+        return kOfxStatFailed;
+    }
+    for (int i = 0; i < 2; ++i) {
+        gPropSuite->propSetDouble(props, kOfxParamPropMin, i, 0.);
+        gPropSuite->propSetDouble(props, kOfxParamPropMax, i, 1.);
+    }
 
     return kOfxStatOK;
 }

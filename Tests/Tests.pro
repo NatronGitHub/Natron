@@ -97,6 +97,7 @@ SOURCES += \
     OfxMultiplePAR_Test.cpp \
     OfxParamKeys_Test.cpp \
     OfxParamAnimating_Test.cpp \
+    OfxParamRange_Test.cpp \
     OfxParamCopy_Test.cpp \
     OfxOpenGLSupport_Test.cpp \
     OfxOverlayInput_Test.cpp \

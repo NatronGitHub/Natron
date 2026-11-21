@@ -162,6 +162,10 @@ Loading the plug-ins happens once, at startup, in ``OfxHost::loadOFXPlugins``
    changed, is loaded and described (``kOfxActionLoad`` and
    ``kOfxActionDescribe``) during the scan; the others are not even loaded. If
    anything changed, the cache file is written again (``writeOFXCache``).
+   A cache file that ``readCache`` cannot read (an XML error, an unknown
+   element, a bad property index) throws: ``loadOFXPlugins`` logs the error,
+   nothing from that file is kept, and the scan loads and describes every
+   plug-in, then rewrites the cache.
 4. For each plug-in (``getPluginsByIDMajor``), it reads the label, grouping,
    icon, version and supported file formats, and registers it with
    ``AppManager::registerPlugin``. That is what makes it appear in the

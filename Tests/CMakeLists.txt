@@ -64,6 +64,7 @@ set(Tests_SOURCES
     OfxMultiplePAR_Test.cpp
     OfxParamKeys_Test.cpp
     OfxParamAnimating_Test.cpp
+    OfxParamRange_Test.cpp
     OfxParamCopy_Test.cpp
     OfxOpenGLSupport_Test.cpp
     OfxOverlayInput_Test.cpp
@@ -145,6 +146,14 @@ set_tests_properties(Tests PROPERTIES FIXTURES_SETUP OfxPluginCache
     ENVIRONMENT "NATRON_TESTS_CACHE_DIR=${NATRON_TESTS_CACHE_DIR}")
 set_tests_properties(TestsOfxCache PROPERTIES FIXTURES_REQUIRED OfxPluginCache
     ENVIRONMENT "NATRON_TESTS_KEEP_OFX_CACHE=1;NATRON_TESTS_CACHE_DIR=${NATRON_TESTS_CACHE_DIR}")
+# A copy of that cache, made unreadable: Natron discards it, scans all the plug-ins again and rewrites it
+# (see OfxCacheCorrupt.cmake).
+add_test(NAME TestsOfxCacheCorrupt COMMAND ${CMAKE_COMMAND}
+    "-DTESTS=$<TARGET_FILE:Tests>"
+    "-DSRC_CACHE_DIR=${NATRON_TESTS_CACHE_DIR}"
+    "-DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tests-cache-corrupt"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/OfxCacheCorrupt.cmake")
+set_tests_properties(TestsOfxCacheCorrupt PROPERTIES FIXTURES_REQUIRED OfxPluginCache)
 
 # A minimal OFX plug-in bundle for the tests (OfxTestPlugin/NatronTestPlugin.cpp, read through
 # OfxTestPlugin.h). It is assembled in the build tree, found by the Tests binary through

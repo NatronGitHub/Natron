@@ -122,9 +122,11 @@ Scanning every OpenFX bundle on every launch would be slow, so the OpenFX host
 persists a **plug-in cache** describing the discovered plug-ins and their
 descriptors; on startup it is validated against the bundles on disk and only
 changed plug-ins are re-read. The cache lives in the host support layer
-(``OFX::Host::ImageEffect::PluginCache``) driven by ``OfxHost``. If a plug-in
-appears stale or missing after an update, a corrupt or out-of-date plug-in cache
-is a likely cause — clearing it forces a full rescan.
+(``OFX::Host::ImageEffect::PluginCache``) driven by ``OfxHost``. A cache file
+that cannot be read (corrupt or truncated) is discarded, and all the plug-ins
+are scanned again, automatically. If a plug-in still appears stale or missing
+after an update, clearing the cache (``--clear-openfx-cache``) forces a full
+rescan.
 
 GPU rendering path
 ------------------
