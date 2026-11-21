@@ -163,6 +163,7 @@ public:
     int _creatingGroup;
     // True when a pyplug is being created internally without being shown to the user
     bool _creatingInternalNode;
+    bool quitPending; // see AppInstance::setQuitPending()
 
     //When a node is created, it gets appended to this list (since for a PyPlug more than 1 node can be created)
     std::list<NodePtr> _creatingNodeQueue;
@@ -190,6 +191,7 @@ public:
         , creatingGroupMutex()
         , _creatingGroup(0)
         , _creatingInternalNode(false)
+        , quitPending(false)
         , _creatingNodeQueue()
         , _creatingTree(0)
         , renderQueueMutex()
@@ -1190,6 +1192,14 @@ NodePtr
 AppInstance::createNodeInternal(CreateNodeArgs& args)
 {
     NodePtr node;
+
+    if (_imp->quitPending) {
+        // e.g. a script that goes on after app.closeProject() or natron.quit(): the instance quits
+        // from the event loop, and deletes its nodes (#1554)
+        std::cerr << tr("Cannot create a node: this project is being closed.").toStdString() << std::endl;
+
+        return node;
+    }
     Plugin* plugin = 0;
     QString findId;
 
@@ -2289,6 +2299,18 @@ AppInstance::waitForRenders(int timeoutMs,
             QThread::msleep(5);
         }
     }
+}
+
+void
+AppInstance::setQuitPending()
+{
+    _imp->quitPending = true;
+}
+
+bool
+AppInstance::isQuitPending() const
+{
+    return _imp->quitPending;
 }
 
 void
