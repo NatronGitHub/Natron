@@ -187,6 +187,13 @@ NodeGraph::NodeGraph(Gui* gui,
 
 NodeGraph::~NodeGraph()
 {
+    // The node collection (the project or a group) must not keep a pointer to a deleted graph: it is
+    // only discarded by notifyGuiClosing() when the graph is in a pane, and ~Gui() deletes the graphs
+    // that are not, e.g. the main one once its tab was removed from its pane (#1554).
+    NodeCollectionPtr group = getGroup();
+    if ( group && ( group->getNodeGraph() == static_cast<NodeGraphI*>(this) ) ) {
+        group->discardNodeGraphPointer();
+    }
     for (NodesGuiList::iterator it = _imp->_nodes.begin();
          it != _imp->_nodes.end();
          ++it) {
