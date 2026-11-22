@@ -266,12 +266,6 @@ private:
     unsigned int _pythonModuleVersion;
     std::list<ImagePlaneDesc> _userComponents;
 
-    // Adds the node to the message, so that the user can find the parameter (#1612).
-    [[noreturn]] void throwWithNodeName(const KnobSerializationError& e) const
-    {
-        throw KnobSerializationError("node \"" + _nodeScriptName + "\": " + e.what());
-    }
-
     friend class ::boost::serialization::access;
     template<class Archive>
     void save(Archive & ar,
@@ -343,6 +337,19 @@ private:
         } else {
             _nodeScriptName = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(_nodeLabel);
         }
+        try {
+            loadAfterScriptName(ar, version);
+        } catch (const KnobSerializationError& e) {
+            // Add the node, so that the user can find the parameter; a node in a group adds its own
+            // name first: node "Group1": node "Blur1": parameter ... (#1612).
+            throw KnobSerializationError("node \"" + _nodeScriptName + "\": " + e.what());
+        }
+    } // load
+
+    template<class Archive>
+    void loadAfterScriptName(Archive & ar,
+                             const unsigned int version)
+    {
         ar & ::boost::serialization::make_nvp("Plugin_id", _pluginID);
 
         if (version >= NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE) {
@@ -359,14 +366,10 @@ private:
         ar & ::boost::serialization::make_nvp("Plugin_major_version", _pluginMajorVersion);
         ar & ::boost::serialization::make_nvp("Plugin_minor_version", _pluginMinorVersion);
         ar & ::boost::serialization::make_nvp("KnobsCount", _nbKnobs);
-        try {
-            for (int i = 0; i < _nbKnobs; ++i) {
-                KnobSerializationPtr ks = std::make_shared<KnobSerialization>();
-                ar & ::boost::serialization::make_nvp("item", *ks);
-                _knobsValues.push_back(ks);
-            }
-        } catch (const KnobSerializationError& e) {
-            throwWithNodeName(e);
+        for (int i = 0; i < _nbKnobs; ++i) {
+            KnobSerializationPtr ks = std::make_shared<KnobSerialization>();
+            ar & ::boost::serialization::make_nvp("item", *ks);
+            _knobsValues.push_back(ks);
         }
 
         if (version < NODE_SERIALIZATION_CHANGE_INPUTS_SERIALIZATION) {
@@ -410,14 +413,10 @@ private:
         if (version >= NODE_SERIALIZATION_INTRODUCES_USER_KNOBS) {
             int userPagesCount;
             ar & ::boost::serialization::make_nvp("UserPagesCount", userPagesCount);
-            try {
-                for (int i = 0; i < userPagesCount; ++i) {
-                    GroupKnobSerializationPtr s = std::make_shared<GroupKnobSerialization>();
-                    ar & ::boost::serialization::make_nvp("item", *s);
-                    _userPages.push_back(s);
-                }
-            } catch (const KnobSerializationError& e) {
-                throwWithNodeName(e);
+            for (int i = 0; i < userPagesCount; ++i) {
+                GroupKnobSerializationPtr s = std::make_shared<GroupKnobSerialization>();
+                ar & ::boost::serialization::make_nvp("item", *s);
+                _userPages.push_back(s);
             }
             if (version >= NODE_SERIALIZATION_SERIALIZE_PAGE_INDEX) {
                 int count;
@@ -446,7 +445,7 @@ private:
         if (version >= NODE_SERIALIZATION_INTRODUCES_CACHE_ID) {
             ar & ::boost::serialization::make_nvp("CacheID", _cacheID);
         }
-    } // load
+    } // loadAfterScriptName
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
