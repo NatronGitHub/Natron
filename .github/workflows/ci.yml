@@ -47,6 +47,9 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # RB-2.7 is the Qt6 branch: its Linux job builds with Qt6 + PySide6 (-DNATRON_QT6=ON, C++20).
+  # This is the RB-2.7 Qt6 build log to watch after each forward merge of RB-2.6 (#1469,
+  # Documentation/source/maintainers/qt6-migration.rst); the fixes go to RB-2.6.
   unix_test:
     needs: changes
     if: >-
@@ -54,7 +57,7 @@ jobs:
       (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
       (github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
     timeout-minutes: 180
-    name: Test ${{ matrix.os }} Python ${{ matrix.python-version }} ${{ matrix.config }}
+    name: Test ${{ matrix.os }} Qt6 Python ${{ matrix.python-version }} ${{ matrix.config }}
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -74,17 +77,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Pinned to 24.04: ubuntu-latest became Ubuntu 26.04, which no longer
-        # ships PySide2/Shiboken2 (libshiboken2-dev, libpyside2-dev,
-        # python3-pyside2.*). Noble has PySide2 5.15.13 and Python 3.12.
-        os: [ubuntu-24.04]
-        python-version: ['3.12']
+        # Ubuntu 26.04 (resolute) is the first Ubuntu LTS with PySide6: shiboken6,
+        # libshiboken6-dev and libpyside6-dev 6.10.2 with their CMake config files
+        # (Shiboken6, Shiboken6Tools, PySide6), Qt 6.10 and Python 3.14 (its only
+        # Python; a CI-only exception, release builds use 3.13). Ubuntu 24.04 has no PySide6.
+        os: [ubuntu-26.04]
+        python-version: ['3.14']
         # Fast on pull requests and branch pushes; Debug and Release nightly, on tags and by hand
         config: ${{ fromJSON((github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.build != 'fast')) && '["Debug","Release"]' || '["Fast"]') }}
         include:
-        - os: ubuntu-24.04
+        - os: ubuntu-26.04
           special-invocation: 'xvfb-run --auto-servernum '
-          python-version: '3.12'
+          python-version: '3.14'
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4.1.1
@@ -99,11 +103,28 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev \
-            qt5-qmake qtbase5-dev qtdeclarative5-dev \
-            python3-dev libshiboken2-dev libpyside2-dev python3-pyside2.qtwidgets python3-qtpy \
+          # No libboost-system-dev: Boost.System is header-only since Boost 1.89, and resolute
+          # (Boost 1.90) has no such package. Natron only needs Boost's headers and serialization.
+          # libegl-dev and libx11-dev: on 24.04 the Qt5 packages pulled them in, qt6-base-dev doesn't.
+          sudo apt-get install -y build-essential libboost-serialization-dev libexpat1-dev libcairo2-dev \
+            qt6-base-dev qt6-base-dev-tools libgl-dev libegl-dev libx11-dev \
+            python3-dev shiboken6 libshiboken6-dev libpyside6-dev \
+            python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtwidgets python3-qtpy \
             libwayland-dev libwayland-client0 libwayland-egl1 \
-            extra-cmake-modules clang ccache
+            extra-cmake-modules clang llvm ccache xvfb wget unzip
+          # Fail here rather than in CMake if a package lacks what the Qt6 build needs.
+          command -v shiboken6
+          ls /usr/lib/x86_64-linux-gnu/cmake/Shiboken6/Shiboken6Config.cmake \
+             /usr/lib/x86_64-linux-gnu/cmake/Shiboken6Tools/Shiboken6ToolsConfig.cmake \
+             /usr/lib/x86_64-linux-gnu/cmake/PySide6/PySide6Config.cmake
+          ls -d /usr/share/PySide6/typesystems
+          # shiboken6 finds Clang's built-in headers (stddef.h...) through llvm-config (package llvm);
+          # without them it warns "Unable to locate Clang's built-in include directory" and may
+          # misparse. Its libclang (libclang1-21) and llvm-config must be the same major version.
+          llvm-config --version
+          ls "$(llvm-config --libdir)"/clang/*/include/stddef.h
+          ldd /usr/bin/shiboken6 | grep -i clang || true
+          python3 -c 'import shiboken6, PySide6, PySide6.QtCore; print("PySide6", PySide6.__version__, "Qt", PySide6.QtCore.qVersion())'
 
       - name: Download OpenColorIO-Configs
         run: |
@@ -112,6 +133,8 @@ jobs:
           mv OpenColorIO-Configs-Natron-v${OCIO_CONFIG_VERSION} OpenColorIO-Configs
 
       - name: Download Plugins
+        # The ubuntu_24 testing bundle carries Ubuntu 24.04's libraries but not the
+        # system ones (glibc 2.39 or later): it also runs on Ubuntu 26.04.
         run: |
           mkdir Plugins && cd Plugins
           wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-ubuntu_24-testing.zip
@@ -140,8 +163,15 @@ jobs:
           esac
           ccache -z
           mkdir build && cd build
-          cmake "${cfg[@]}" ../
+          cmake "${cfg[@]}" -DNATRON_QT6=ON ../
           make -j$(nproc)
+
+      - name: Check that Natron links Qt6, not Qt5
+        run: |
+          ldd build/Tests/Tests > ldd.txt
+          grep -E 'libQt[56]|pyside|shiboken|libpython' ldd.txt || true
+          grep -q 'libQt6Core' ldd.txt || { echo "::error::Tests does not link libQt6Core"; exit 1; }
+          if grep -q 'libQt5' ldd.txt; then echo "::error::Tests links Qt5"; exit 1; fi
 
       - name: ccache statistics
         if: ${{ !cancelled() && steps.build.outcome != 'skipped' }}
@@ -176,8 +206,10 @@ jobs:
 
   win-test:
     needs: changes
+    # Disabled on RB-2.7 until the Linux Qt6 build passes (maintainer, 2026-11-20); re-enable with Qt6
+    # by removing the leading "false &&".
     if: >-
-      !cancelled() && (
+      false && !cancelled() && (
       (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
       (github.event_name != 'schedule' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
     timeout-minutes: 240
@@ -331,7 +363,8 @@ jobs:
 
   changes:
     # nightly runs only: did the default branch change in the last 25 hours?
-    if: github.event_name == 'schedule'
+    # Disabled on RB-2.7 with the macOS job (maintainer, 2026-11-20); re-enable it by removing the leading "false &&".
+    if: false && github.event_name == 'schedule'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
@@ -356,8 +389,11 @@ jobs:
     # requires Linux and Windows; this job is informative. Nightly, it runs if the branch changed,
     # whatever the Linux and Windows results.
     needs: [changes, unix_test, win-test]
+    # Disabled on RB-2.7 until the Linux Qt6 build passes (maintainer, 2026-11-20); re-enable with Qt6
+    # by removing the leading "false &&". (Only that line changes, so that RB-2.6's edits of this
+    # job keep forward-merging without conflicts.)
     if: >-
-      !cancelled() && (
+      false && !cancelled() && (
       (github.event_name == 'schedule' && needs.changes.outputs.changed == 'true') ||
       (github.event_name != 'schedule' && needs.unix_test.result == 'success' && needs.win-test.result == 'success' &&
        (github.event_name != 'pull_request' || !github.event.pull_request.draft)))
