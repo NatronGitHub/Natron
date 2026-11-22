@@ -666,10 +666,10 @@ QT_MAC_SDK_NO_VERSION_CHECK=1 make -j8
 
 `CLANG_MP_VERSION` selects the MacPorts clang used with `CONFIG+=openmp` (see `config-macports.pri`).
 
-The OCIO configuration comes from the OpenColorIO-Configs download (see [Download OpenColorIO-Configs](#download-opencolorio-configs) below). To run a development build, or the [Natron-Tests](https://github.com/NatronGitHub/Natron-Tests) suite (`runTests.sh <path to NatronRenderer>`), set the environment that the packaged application normally provides:
+The OCIO configuration comes from the OpenColorIO-Configs download (see [Download OpenColorIO-Configs](#download-opencolorio-configs) below). To run a development build, or the [Natron-Tests](https://github.com/NatronGitHub/Natron-Tests) suite (`runTests.sh <path to NatronRenderer>`), set the environment that the packaged application normally provides (the CMake build generates `fonts.conf` in the build directory, from `Gui/Resources/etc/fonts/fonts.conf.in`), and `NATRON_DISK_CACHE_PATH` to a private directory for test runs (the default disk cache is shared by every build of the version):
 
 ```Shell
-env FONTCONFIG_FILE=$NATRON_SRC/Gui/Resources/etc/fonts/fonts.conf \
+env FONTCONFIG_FILE=$NATRON_SRC/build/App/Resources/etc/fonts/fonts.conf \
     OCIO=$NATRON_SRC/OpenColorIO-Configs/blender/config.ocio \
     OFX_PLUGIN_PATH=~/OFX/Natron-release NATRON_PLUGIN_PATH=$NATRON_SRC/Gui/Resources/PyPlugs \
     build/App/Natron.app/Contents/MacOS/Natron
