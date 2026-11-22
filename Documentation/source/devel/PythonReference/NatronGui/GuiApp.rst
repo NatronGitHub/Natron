@@ -143,9 +143,9 @@ the dialog will accept sequence of files.
 
 .. method:: GuiApp.saveScreenshot(filePath[, scriptName=""])
 
-    :param filePath: :class:`str<PySide.QtCore.QString>`
-    :param scriptName: :class:`str<PySide.QtCore.QString>`
-    :rtype: :class:`bool<PySide.QtCore.bool>`
+    :param filePath: :class:`str`
+    :param scriptName: :class:`str`
+    :rtype: :class:`bool`
 
 Saves an image of the main window, or, if *scriptName* is given, of the tab or pane with that
 script name: a viewer (e.g. *"Viewer1"*), *"nodeGraph"*, *"properties"*, *"curveEditor"*,

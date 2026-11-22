@@ -32,7 +32,6 @@ set -u # Treat unset variables as an error when substituting.
 # NATRON_EXTRA_CMAKE_FLAGS: Optional cmake flags to pass when building Natron with CMake, e.g. "-DNATRON_FAST_MATH=ON"
 # NATRON_EXTRA_QMAKE_FLAGS: Optional qmake flags to pass when building Natron with qmake
 # BUILD_NAME: Give a name to the build so that it can be found in the archive
-# DISABLE_RPM_DEB_PKGS: If set to 1, deb and rpm packages will not be built. Otherwise they are only built for a release
 # DISABLE_PORTABLE_ARCHIVE: If set to 1, a portable archive will not be built
 # BITS: Windows only: 64 (the default; the architecture, x86_64 or arm64, comes from the MSYS2 environment, MSYSTEM_CARCH)
 # DEBUG_SCRIPTS: If set to 1, binaries from previous build with same options are not cleaned so that the scripts can continue the same compilation
@@ -116,7 +115,6 @@ echo "COMPILE_TYPE                      : \"${COMPILE_TYPE:-}\""
 echo "NATRON_BUILD_SYSTEM               : \"${NATRON_BUILD_SYSTEM:-}\""
 echo "NATRON_EXTRA_CMAKE_FLAGS          : \"${NATRON_EXTRA_CMAKE_FLAGS:-}\""
 echo "NATRON_EXTRA_QMAKE_FLAGS          : \"${NATRON_EXTRA_QMAKE_FLAGS:-}\""
-echo "DISABLE_RPM_DEB_PKGS              : \"${DISABLE_RPM_DEB_PKGS:-}\""
 echo "DISABLE_PORTABLE_ARCHIVE          : \"${DISABLE_PORTABLE_ARCHIVE:-}\""
 echo "EXTRA_PYTHON_MODULES_SCRIPT       : \"${EXTRA_PYTHON_MODULES_SCRIPT:-}\""
 echo "REMOTE_URL                        : \"${REMOTE_URL:-}\""
@@ -442,14 +440,6 @@ setBuildOption "DISABLE_PORTABLE_ARCHIVE" "$DISABLE_PORTABLE_ARCHIVE"
 if [ "$TYPE" = "RELEASE" ]; then
     # Use the tag as a branch, its commit is already the latest commit on the tag
 
-
-    if [ -z "${DISABLE_RPM_DEB_PKGS:-}" ]; then
-        if [ "$PKGOS" = "Linux" ]; then
-            echo "DISABLE_RPM_DEB_PKGS not specified, .rpm and .deb packages will be built"
-        fi
-        DISABLE_RPM_DEB_PKGS=0
-    fi
-    setBuildOption "DISABLE_RPM_DEB_PKGS" "$DISABLE_RPM_DEB_PKGS"
     GIT_COMMIT=""
     GIT_BRANCH="tags/v${RELEASE_TAG:-}"
     setBuildOption "NATRON_GIT_BRANCH" "$GIT_BRANCH"
@@ -514,16 +504,6 @@ fi
 setBuildOption "GIT_TRIGGER_URL" "$GIT_URL"
 setBuildOption "GIT_TRIGGER_BRANCH" "$GIT_BRANCH"
 setBuildOption "GIT_TRIGGER_COMMIT" "$GIT_COMMIT"
-
-
-# Only use online installer for snapshots or releases
-if [ "$TYPE" != "SNAPSHOT" ] && [ "$TYPE" != "RELEASE" ]; then
-    WITH_ONLINE_INSTALLER=0
-else
-    WITH_ONLINE_INSTALLER="${WITH_ONLINE_INSTALLER:-0}"
-fi
-
-setBuildOption "WITH_ONLINE_INSTALLER" "${WITH_ONLINE_INSTALLER}"
 
 
 # If 1, source files will be compressed and uploaded with the binary

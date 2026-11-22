@@ -39,8 +39,8 @@
 #include <QReadWriteLock>
 #include <QCoreApplication>
 #include <QDateTime>
-#include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
-#include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
+#include <QtConcurrentMap> // QtConcurrent
+#include <QtConcurrentRun> // QtConcurrent
 
 #include "Global/QtCompat.h"
 

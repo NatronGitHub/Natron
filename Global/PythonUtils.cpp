@@ -166,10 +166,8 @@ std::wstring setupPythonEnv(const std::string& binPath)
     // note: to check the python path of a python install, execute:
     // python -c 'import sys,pprint; pprint.pprint( sys.path )'
     //
-    // to build the python27.zip, cd to lib/python2.7, and generate the pyo and the zip file using:
-    //
-    //  python -O -m compileall .
-    //  zip -r ../python27.zip *.py* bsddb compiler ctypes curses distutils email encodings hotshot idlelib importlib json logging multiprocessing pydoc_data sqlite3 unittest wsgiref xml
+    // The bundled Python lives in <pythonHome>/lib/pythonX.Y, optionally with the standard
+    // library zipped in <pythonHome>/lib/pythonXY.zip (see the installer scripts in tools/jenkins).
     //
     std::string pythonPath = ProcInfo::getenv_wrapper("PYTHONPATH");
     //Add the Python distribution of Natron to the Python path
@@ -284,15 +282,13 @@ PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide,
     //See https://developer.blender.org/T31507
     //Python will not load anything in site-packages if this is set
     //We are sure that nothing in system wide site-packages is loaded, for instance on OS X with Python installed
-    //through macports on the system, the following printf show the following:
+    //through macports on the system.
 
-    /*Py_GetProgramName is /Applications/Natron.app/Contents/MacOS/Natron
-     Py_GetPrefix is /Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7
-     Py_GetExecPrefix is /Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7
-     Py_GetProgramFullPath is /Applications/Natron.app/Contents/MacOS/Natron
-     Py_GetPath is /Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7:/Applications/Natron.app/Contents/MacOS/../Plugins:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python27.zip:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/plat-darwin:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/plat-mac:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/plat-mac/lib-scriptpackages:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/lib-tk:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/lib-old:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/lib-dynload
-     Py_GetPythonHome is ../Frameworks/Python.framework/Versions/2.7/lib
-     Python library is in /Applications/Natron.app/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages*/
+    /* For example, with Python 3.11 in the macOS application bundle, setupPythonEnv() gives:
+     PYTHONHOME is /Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/3.11
+     PYTHONPATH starts with .../Versions/3.11/lib/python311.zip (if present), .../lib/python3.11,
+     .../lib/python3.11/lib-dynload, .../lib/python3.11/site-packages and
+     /Applications/Natron.app/Contents/MacOS/../Plugins */
 
     //Py_NoSiteFlag = 1;
 
@@ -396,11 +392,7 @@ PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide,
     // Not recessary since we also have the Natron GIL to control the execution of our own scripts.
     //_PyEval_SetSwitchInterval(std::numeric_limits<long>::max());
 
-    //See answer for http://stackoverflow.com/questions/15470367/pyeval-initthreads-in-python-3-how-when-to-call-it-the-saga-continues-ad-naus
-    // Note: on Python >= 3.7 this is already done by Py_Initialize(),
-#if PY_VERSION_HEX < 0x03070000
-    PyEval_InitThreads();
-#endif
+    // No PyEval_InitThreads(): since Python 3.7, Py_Initialize() creates the GIL itself.
 
     // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
     ///All calls to the Python API should call PythonGILLocker beforehand.

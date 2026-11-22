@@ -33,7 +33,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QLayout>
 #include <QAction>
-#include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
+#include <QtConcurrentRun> // QtConcurrent
 #include <QFontMetrics>
 #include <QTextBlockFormat>
 #include <QTextCursor>

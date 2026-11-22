@@ -68,8 +68,10 @@ if [ "$PKGOS" = "OSX" ]; then
     #COMPILER=clang-omp
     COMPILER=${COMPILER:-clang}
 
-    if [ "$COMPILER" != "gcc" -a "$COMPILER" != "clang" -a "$COMPILER" != "clang-omp" ]; then
-        echo "Error: COMPILER must be gcc or clang or clang-omp"
+    # No GCC on macOS: Qt and the MacPorts libraries use libc++, and the macOS installer
+    # doesn't bundle the GCC runtime (build-OSX-installer.sh)
+    if [ "$COMPILER" != "clang" -a "$COMPILER" != "clang-omp" ]; then
+        echo "Error: COMPILER must be clang or clang-omp on macOS"
         exit 1
     fi
     if [ "$COMPILER" = "clang" ]; then
@@ -186,15 +188,6 @@ if [ "$PKGOS" = "OSX" ]; then
             OBJECTIVE_CXX=$CXX
             ;;
         esac
-    else
-        #GCC_VERSION=4.8
-        GCC_VERSION=4.9
-        #GCC_VERSION=5
-        #GCC_VERSION=6
-        CC=gcc-mp-${GCC_VERSION} 
-        CXX="g++-mp-${GCC_VERSION} -std=${CXXSTD}"
-        OBJECTIVE_CC=gcc-4.2
-        OBJECTIVE_CXX=g++-4.2
     fi
 
     # SDK root was moved with Xcode 4.3

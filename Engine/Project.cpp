@@ -63,7 +63,7 @@
 #include <QTextStream>
 #include <QHostInfo>
 #include <QRegularExpression>
-#include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
+#include <QtConcurrentRun> // QtConcurrent
 
 #include <ofxhXml.h> // OFX::XML::escape
 

@@ -9,10 +9,6 @@
 MAGICK7_VERSION=7.1.2-36
 # sha256 of the GitHub release tarball (the same file as tools/MINGW-packages/mingw-w64-imagemagick)
 MAGICK7_SHA256=410cab5ed416329290e77cbd7833a76502671ea25a42d1cfe010f9067b27c2d6
-if [ "${CENTOS:-0}" = 6 ] && [ -z "${DTS+x}" ]; then
-    MAGICK7_VERSION=7.0.9-8 # 7.0.9-9 (probably) and later fail to compile on CentOS6 with "undefined reference to `aligned_alloc'"
-    MAGICK7_SHA256= # (not checked)
-fi
 MAGICK7_TAR="ImageMagick-${MAGICK7_VERSION}.tar.xz"
 #MAGICK7_SITE="https://gitlab.com/ImageMagick/ImageMagick/-/archive/${MAGICK7_VERSION}"
 # (imagemagick.org/archive/releases only keeps the latest releases)

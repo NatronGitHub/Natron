@@ -40,7 +40,7 @@
 #include <QElapsedTimer>
 #include <QDir>
 #include <QTextStream>
-#include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
+#include <QtConcurrentMap> // QtConcurrent
 #include <QUrl>
 #include <QFileInfo>
 #include <QEventLoop>

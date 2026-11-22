@@ -4,10 +4,6 @@
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/imagemagick6.html
 MAGICK_VERSION=6.9.13-59
 MAGICK_SHA256=867f2194939459047475475f7c15413e46c529acb57f779080298901508cc4e3
-if [ "${CENTOS:-0}" = 6 ] && [ -z "${DTS+x}" ]; then
-    MAGICK_VERSION=6.9.10-78 # 6.9.10-79 and later fail to compile on CentOS6 with "undefined reference to `aligned_alloc'"
-    MAGICK_SHA256= # (not checked)
-fi
 MAGICK_VERSION_SHORT=${MAGICK_VERSION%-*}
 #MAGICK_TAR="ImageMagick6-${MAGICK_VERSION}.tar.gz"
 #MAGICK_SITE="https://gitlab.com/ImageMagick/ImageMagick6/-/archive/${MAGICK_VERSION}"
