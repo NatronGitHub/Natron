@@ -41,6 +41,7 @@
 #include <sstream>
 #include <string>
 #include <thread>
+#include <type_traits>
 
 #include <QByteArray>
 #include <QDateTime>
@@ -71,6 +72,10 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CLArgs.h"
+#include "Engine/Curve.h"
+#include "Engine/CurveSerialization.h"
+#include "Engine/EffectInstance.h"
+#include "Engine/KnobSerialization.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/PortableBinaryArchive.h"
@@ -652,7 +657,7 @@ TEST(ProjectFileFormat, DamagedFiles)
 }
 
 namespace {
-// Replaces every occurrence of a pattern (there may be several: a user knob is also saved in its page).
+// Replaces every occurrence of a pattern, which must be there.
 QByteArray
 replaceAll(const QByteArray& data,
            const QByteArray& before,
@@ -664,31 +669,117 @@ replaceAll(const QByteArray& data,
     return ret.replace(before, after);
 }
 
-// The encoding of an int in the binary format: a signed byte count, then the little-endian magnitude.
+// Replaces the first occurrence of a pattern after the anchor, which must both be there.
 QByteArray
-binaryInt(const char* bytes,
-          int size)
+replaceAfter(const QByteArray& data,
+             const QByteArray& anchor,
+             const QByteArray& before,
+             const QByteArray& after)
 {
-    return QByteArray(bytes, size);
+    const int a = data.indexOf(anchor);
+    EXPECT_NE(-1, a) << "not found: " << anchor.toStdString();
+    const int b = (a < 0) ? -1 : data.indexOf(before, a + anchor.size());
+    EXPECT_NE(-1, b) << "not found: " << toHex( before.toStdString() );
+    if (b < 0) {
+        return data;
+    }
+    QByteArray ret = data;
+
+    return ret.replace(b, before.size(), after);
 }
 
-// The encoding of a short string in the binary format: its size, then its characters.
+// The encoding of a short string in the binary format: its size (as an integer: one byte for the
+// byte count, then the size), then its characters.
 QByteArray
 binaryString(const char* s)
 {
     const int n = (int)std::strlen(s);
     QByteArray ret;
+
     ret += (char)1;
     ret += (char)n;
     ret += QByteArray(s, n);
 
     return ret;
 }
+
+int
+countOccurrences(const std::string& s,
+                 const std::string& what)
+{
+    int n = 0;
+
+    for (std::size_t p = s.find(what); p != std::string::npos; p = s.find(what, p + 1)) {
+        ++n;
+    }
+
+    return n;
+}
+
+// A Curve with a keyframe, as saved in an archive after the first Curve, which also wrote the
+// class information of Curve and of its members.
+template<class OArchive>
+QByteArray
+curveAfterTheFirst()
+{
+    Curve c;
+    c.addKeyFrame( KeyFrame(1., 2.) );
+    std::ostringstream first, both;
+    {
+        OArchive oa(first, boost::archive::no_header);
+        oa << boost::serialization::make_nvp("Curve", c);
+    }
+    {
+        OArchive oa(both, boost::archive::no_header);
+        oa << boost::serialization::make_nvp("Curve", c);
+        oa << boost::serialization::make_nvp("Curve", c);
+    }
+    if ( std::is_same<OArchive, boost::archive::xml_oarchive>::value ) {
+        // the second <Curve> element (the first one has the class information as attributes)
+        const std::string s = both.str();
+        const std::size_t start = s.find("<Curve>");
+        const std::size_t end = s.rfind("</Curve>");
+        EXPECT_NE(std::string::npos, start) << s;
+        EXPECT_NE(std::string::npos, end) << s;
+        if ( (start == std::string::npos) || (end == std::string::npos) || (end < start) ) {
+            return QByteArray();
+        }
+
+        return QByteArray::fromStdString( s.substr(start, end + std::strlen("</Curve>") - start) );
+    }
+    EXPECT_EQ( 0, both.str().compare(0, first.str().size(), first.str()) );
+
+    return QByteArray::fromStdString( both.str().substr( first.str().size() ) );
+}
+
+// Loads a project file that must load, and returns what it printed.
+std::string
+loadValid(const ProjectPtr& project,
+          const QString& dir,
+          const QString& name)
+{
+    std::string output;
+
+    EXPECT_TRUE( loadAndCaptureOutput(project, dir, name, &output) ) << output;
+
+    return output;
+}
+
+KnobIPtr
+getKnob(const ProjectPtr& project,
+        const std::string& node,
+        const std::string& knob)
+{
+    NodePtr n = project->getNodeByName(node);
+
+    return n ? n->getKnobByName(knob) : KnobIPtr();
+}
 } // anonymous namespace
 
 // Knob data from the file is checked, in Release builds too (#1612): a damaged or hand-edited
-// project gives the "damaged project" error, or a warning, instead of crashing or allocating
-// gigabytes. The Name, Type and Dimension of a knob are consecutive in both formats.
+// project gives an error, or a warning, instead of crashing or allocating gigabytes. In both
+// formats, the Name, Type and Dimension of a knob are consecutive, and so are the Enabled and
+// HasAnimation of each of its dimensions.
 TEST(ProjectFileFormat, InvalidKnobData)
 {
     QTemporaryDir tmpDir;
@@ -699,12 +790,32 @@ TEST(ProjectFileFormat, InvalidKnobData)
     project->resetProject();
     createTestProject(app);
     {
-        // A choice with a negative index: Python can set it, and a file can contain it.
+        const std::string a = app->getAppIDString();
         const std::string script =
-            "ch = " + app->getAppIDString() + ".Group1.createChoiceParam('myChoice', 'My choice')\n"
+            "g = " + a + ".Group1\n"
+            // negative choice indices: Python can set them, and a file can contain them
+            "ch = g.createChoiceParam('myChoice', 'My choice')\n"
             "ch.addOption('a', '')\n"
             "ch.addOption('b', '')\n"
-            "ch.setValue(-1)\n";
+            "ch.addOption('c', '')\n"
+            "ch.setDefaultValue(1)\n"
+            "ch.setValue(-1)\n"
+            "ch2 = g.createChoiceParam('myChoice2', 'My choice 2')\n"
+            "ch2.addOption('a', '')\n"
+            "ch2.addOption('b', '')\n"
+            "ch2.setDefaultValue(-1)\n"
+            "ch2.setValue(-1)\n"
+            // a knob that can't animate, after the animated myDouble
+            "g.createButtonParam('myButton', 'My button')\n"
+            // a link, restored by KnobI::restoreLinks()
+            "i2 = g.createIntParam('myInt2', 'My int 2')\n"
+            "i2.slaveTo(g.myInt, 0, 0)\n"
+            "g.refreshUserParamsGUI()\n"
+            // a choice of a node (not a user knob), restored by Node::loadKnob()
+            "dc = " + a + ".createNode('" + std::string(PLUGINID_NATRON_DISKCACHE) + "')\n"
+            "fr = dc.getParam('frameRange')\n"
+            "fr.setDefaultValue(2)\n"
+            "fr.setValue(-1)\n";
         std::string error, output;
         ASSERT_TRUE( ::Natron::Python::interpretPythonScript(script, &error, &output) ) << error << output;
     }
@@ -714,30 +825,55 @@ TEST(ProjectFileFormat, InvalidKnobData)
     const QByteArray binary = readFile( dir + QString::fromUtf8("binary.ntp") );
     std::string output;
 
-    // The choice index -1 is replaced by 0, with a warning.
+    // A negative choice index is replaced by the default value, or 0 if the default is negative
+    // too, with a warning (once). The links are restored.
     for (const char* name : { "text.ntp", "binary.ntp" }) {
         SCOPED_TRACE(name);
-        EXPECT_TRUE( loadAndCaptureOutput(project, dir, QString::fromUtf8(name), &output) ) << output;
-        EXPECT_NE( std::string::npos, output.find("myChoice: Warning: invalid choice index -1 in the project, using 0") ) << output;
-        NodePtr group = project->getNodeByName("Group1");
-        ASSERT_TRUE( bool(group) );
-        KnobChoicePtr choice = std::dynamic_pointer_cast<KnobChoice>( group->getKnobByName("myChoice") );
+        output = loadValid( project, dir, QString::fromUtf8(name) );
+        EXPECT_EQ( 1, countOccurrences(output, "myChoice: Warning: invalid choice index -1, using 1") ) << output;
+        EXPECT_EQ( 1, countOccurrences(output, "myChoice2: Warning: invalid default choice index -1, using 0") ) << output;
+        EXPECT_EQ( 1, countOccurrences(output, "myChoice2: Warning: invalid choice index -1, using 0") ) << output;
+        EXPECT_EQ( 1, countOccurrences(output, "frameRange: Warning: invalid choice index -1, using 2") ) << output;
+        KnobChoicePtr choice = std::dynamic_pointer_cast<KnobChoice>( getKnob(project, "Group1", "myChoice") );
         ASSERT_TRUE( bool(choice) );
-        EXPECT_EQ( 0, choice->getValue() );
-        EXPECT_EQ( std::string("a"), choice->getActiveEntry().id );
+        EXPECT_EQ( 1, choice->getValue() );
+        EXPECT_EQ( std::string("b"), choice->getActiveEntry().id );
+        KnobChoicePtr choice2 = std::dynamic_pointer_cast<KnobChoice>( getKnob(project, "Group1", "myChoice2") );
+        ASSERT_TRUE( bool(choice2) );
+        EXPECT_EQ( 0, choice2->getValue() );
+        EXPECT_EQ( 0, choice2->getDefaultValue(0) );
+        KnobChoicePtr frameRange = std::dynamic_pointer_cast<KnobChoice>( getKnob(project, "DiskCache1", "frameRange") );
+        ASSERT_TRUE( bool(frameRange) );
+        EXPECT_EQ( 2, frameRange->getValue() );
+        EXPECT_EQ( std::string("Manual"), frameRange->getActiveEntry().id );
+        KnobIPtr myInt2 = getKnob(project, "Group1", "myInt2");
+        ASSERT_TRUE( bool(myInt2) );
+        EXPECT_EQ( getKnob(project, "Group1", "myInt"), myInt2->getMaster(0).second );
     }
 
-    // the knob "myInt" of the text file, with another type and dimension
-    auto damageText = [&](const char* type,
-                          const char* dimension) {
-        const QRegularExpression knob( QString::fromUtf8("(<Name>myInt</Name>\\s*<Type>)Int(</Type>\\s*<Dimension>)1(</Dimension>)") );
-        QString s = QString::fromUtf8(text);
-        EXPECT_TRUE( s.contains(knob) );
-        s.replace( knob, QString::fromUtf8("\\1%1\\2%2\\3").arg( QString::fromUtf8(type), QString::fromUtf8(dimension) ) );
+    // A curve on a knob that can't animate is read, and ignored with a warning.
+    {
+        const QByteArray anchor("<Name>myButton</Name>");
+        const QByteArray damaged = replaceAfter( text, anchor, QByteArray("<HasAnimation>0</HasAnimation>"),
+                                                 QByteArray("<HasAnimation>1</HasAnimation>\n") + curveAfterTheFirst<boost::archive::xml_oarchive>() );
+        writeFile(dir + QString::fromUtf8("button-curve-text.ntp"), damaged);
+        // Natron's own binary archive, with the integer and string encoding of PortableBinaryArchive.
+        const QByteArray buttonStart = binaryString("myButton") + binaryString("Button") + QByteArray("\x01\x01", 2) /*Dimension*/ +
+                                       QByteArray("\x00\x00", 2) /*Secret, MasterIsAlias*/ + QByteArray("\x01\x01", 2) /*Enabled*/;
+        writeFile( dir + QString::fromUtf8("button-curve-binary.ntp"),
+                   replaceAll( binary, buttonStart + QByteArray("\x00", 1) /*HasAnimation*/,
+                               buttonStart + QByteArray("\x01\x01", 2) + curveAfterTheFirst<PortableBinaryOArchive>() ) );
+    }
+    for (const char* name : { "button-curve-text.ntp", "button-curve-binary.ntp" }) {
+        SCOPED_TRACE(name);
+        output = loadValid( project, dir, QString::fromUtf8(name) );
+        EXPECT_EQ( 1, countOccurrences(output, "myButton: Warning: animation saved for a parameter that can't be animated, ignoring it") ) << output;
+        KnobIPtr button = getKnob(project, "Group1", "myButton");
+        ASSERT_TRUE( bool(button) );
+        EXPECT_FALSE( button->isAnimated(0) );
+    }
 
-        return s.toUtf8();
-    };
-    const QByteArray binaryKnob = binaryString("myInt") + binaryString("Int") + binaryInt("\x01\x01", 2);
+    // A damaged dimension or type is an error, with the node and the parameter.
     struct Damage
     {
         const char* file;
@@ -747,19 +883,25 @@ TEST(ProjectFileFormat, InvalidKnobData)
         const char* error;
     };
     const Damage damages[] = {
-        { "dimension-negative", "Int", "-1", binaryString("Int") + binaryInt("\xff\x01", 2),
-          "parameter \"myInt\": invalid number of dimensions -1" },
-        { "dimension-zero", "Int", "0", binaryString("Int") + binaryInt("\x00", 1),
-          "parameter \"myInt\": invalid number of dimensions 0" },
-        { "dimension-huge", "Int", "100000000", binaryString("Int") + binaryInt("\x04\x00\xe1\xf5\x05", 5),
-          "parameter \"myInt\": invalid number of dimensions 100000000" },
-        { "unknown-type", "NoSuchType", "1", binaryString("NoSuchType") + binaryInt("\x01\x01", 2),
-          "parameter \"myInt\": unknown parameter type \"NoSuchType\"" },
+        { "dimension-negative", "Int", "-1", binaryString("Int") + QByteArray("\xff\x01", 2),
+          "node \"Group1\": parameter \"myInt\": invalid number of dimensions -1" },
+        { "dimension-zero", "Int", "0", binaryString("Int") + QByteArray("\x00", 1),
+          "node \"Group1\": parameter \"myInt\": invalid number of dimensions 0" },
+        { "dimension-4097", "Int", "4097", binaryString("Int") + QByteArray("\x02\x01\x10", 3),
+          "node \"Group1\": parameter \"myInt\": invalid number of dimensions 4097" },
+        { "dimension-huge", "Int", "100000000", binaryString("Int") + QByteArray("\x04\x00\xe1\xf5\x05", 5),
+          "node \"Group1\": parameter \"myInt\": invalid number of dimensions 100000000" },
+        { "unknown-type", "NoSuchType", "1", binaryString("NoSuchType") + QByteArray("\x01\x01", 2),
+          "node \"Group1\": parameter \"myInt\": unknown parameter type \"NoSuchType\"" },
     };
+    const QByteArray textAnchor("<Name>myInt</Name>");
+    const QByteArray binaryKnob = binaryString("myInt") + binaryString("Int") + QByteArray("\x01\x01", 2);
     for (const Damage& d : damages) {
         SCOPED_TRACE(d.file);
         const QString textName = QString::fromUtf8(d.file) + QString::fromUtf8("-text.ntp");
-        writeFile( dir + textName, damageText(d.type, d.dimension) );
+        QByteArray damaged = replaceAfter( text, textAnchor, QByteArray("<Type>Int</Type>"), QByteArray("<Type>") + d.type + "</Type>" );
+        damaged = replaceAfter( damaged, textAnchor, QByteArray("<Dimension>1</Dimension>"), QByteArray("<Dimension>") + d.dimension + "</Dimension>" );
+        writeFile(dir + textName, damaged);
         EXPECT_FALSE( loadAndCaptureOutput(project, dir, textName, &output) );
         EXPECT_NE( std::string::npos, output.find( std::string("Unrecognized or damaged text (XML) project file: ") + d.error ) ) << output;
 
@@ -769,9 +911,105 @@ TEST(ProjectFileFormat, InvalidKnobData)
         EXPECT_NE( std::string::npos, output.find( std::string("Unrecognized or damaged binary project file: ") + d.error ) ) << output;
     }
 
+    // A damaged master dimension of a link: the link isn't restored, and the error says why.
+    struct LinkDamage
+    {
+        const char* file;
+        const char* dimension;
+        QByteArray binaryDimension;
+    };
+    const LinkDamage linkDamages[] = {
+        { "link-7", "7", QByteArray("\x01\x07", 2) },
+        { "link-minus-2", "-2", QByteArray("\xff\x02", 2) },
+    };
+    // MasterDimension, then MasterNodeName, MasterNodeNameFull and MasterKnobName
+    const QByteArray binaryMaster = binaryString("Group1") + binaryString("Group1") + binaryString("myInt");
+    for (const LinkDamage& d : linkDamages) {
+        SCOPED_TRACE(d.file);
+        const std::string error = std::string("KnobI::restoreLinks(): Could not restore the link of dimension 0 of myInt2 (1 dimension(s)) to dimension ") +
+                                  d.dimension + " of node/knob/track Group1/myInt/ (1 dimension(s))";
+        const QString textName = QString::fromUtf8(d.file) + QString::fromUtf8("-text.ntp");
+        writeFile( dir + textName, replaceAfter( text, QByteArray("<Name>myInt2</Name>"), QByteArray("<MasterDimension>0</MasterDimension>"),
+                                                 QByteArray("<MasterDimension>") + d.dimension + "</MasterDimension>" ) );
+        EXPECT_FALSE( loadAndCaptureOutput(project, dir, textName, &output) );
+        EXPECT_NE( std::string::npos, output.find(error) ) << output;
+        KnobIPtr myInt2 = getKnob(project, "Group1", "myInt2");
+        ASSERT_TRUE( bool(myInt2) );
+        EXPECT_FALSE( bool( myInt2->getMaster(0).second ) );
+
+        const QString binaryName = QString::fromUtf8(d.file) + QString::fromUtf8("-binary.ntp");
+        writeFile( dir + binaryName, replaceAll( binary, QByteArray("\x00", 1) + binaryMaster, d.binaryDimension + binaryMaster ) );
+        EXPECT_FALSE( loadAndCaptureOutput(project, dir, binaryName, &output) );
+        EXPECT_NE( std::string::npos, output.find(error) ) << output;
+        myInt2 = getKnob(project, "Group1", "myInt2");
+        ASSERT_TRUE( bool(myInt2) );
+        EXPECT_FALSE( bool( myInt2->getMaster(0).second ) );
+    }
+
+    // A link from or to a dimension that the knob no longer has (e.g. a plug-in reduced the
+    // number of dimensions of a parameter): not restored, an error if throwOnFailure is set.
+    {
+        output = loadValid( project, dir, QString::fromUtf8("text.ntp") );
+        NodesList allNodes;
+        project->getNodes_recursive(allNodes, false);
+        const std::map<std::string, std::string> noRenames;
+        KnobIPtr myInt2 = getKnob(project, "Group1", "myInt2");
+        ASSERT_TRUE( bool(myInt2) );
+        myInt2->unSlave(0, false);
+        ASSERT_FALSE( bool( myInt2->getMaster(0).second ) );
+        myInt2->storeLink(1 /*slave dimension*/, "Group1", "Group1", "", "myInt", 0);
+        EXPECT_NO_THROW( myInt2->restoreLinks(allNodes, noRenames, false) );
+        EXPECT_FALSE( bool( myInt2->getMaster(0).second ) );
+        myInt2->storeLink(0, "Group1", "Group1", "", "myInt", 1 /*master dimension*/);
+        EXPECT_THROW( myInt2->restoreLinks(allNodes, noRenames, true), std::runtime_error );
+        EXPECT_FALSE( bool( myInt2->getMaster(0).second ) );
+    }
+
     // the undamaged files still load
     EXPECT_TRUE( project->loadProject( dir, QString::fromUtf8("text.ntp") ) );
     EXPECT_TRUE( project->loadProject( dir, QString::fromUtf8("binary.ntp") ) );
+    project->resetProject();
+}
+
+// The largest number of dimensions a knob may have in a file (kKnobSerializationMaxDimension): a
+// parametric knob with that many curves loads, one with more is saved but can't be loaded (#1612).
+TEST(ProjectFileFormat, KnobDimensionLimit)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    for (int nbCurves : { kKnobSerializationMaxDimension, kKnobSerializationMaxDimension + 1 }) {
+        SCOPED_TRACE(nbCurves);
+        project->resetProject();
+        const std::string a = app->getAppIDString();
+        const std::string script =
+            "g = " + a + ".createNode('fr.inria.built-in.Group')\n"
+            "c = g.createParametricParam('myCurves', 'My curves', " + std::to_string(nbCurves) + ")\n"
+            "g.refreshUserParamsGUI()\n";
+        std::string error, output;
+        ASSERT_TRUE( ::Natron::Python::interpretPythonScript(script, &error, &output) ) << error << output;
+        for (ProjectFileFormatEnum format : { eProjectFileFormatText, eProjectFileFormatBinary }) {
+            const QString name = QString::fromUtf8(format == eProjectFileFormatText ? "text.ntp" : "binary.ntp");
+            ASSERT_TRUE( saveCopy(project, dir, name, format) );
+            const bool ok = loadAndCaptureOutput(project, dir, name, &output);
+            if (nbCurves <= kKnobSerializationMaxDimension) {
+                EXPECT_TRUE(ok) << output;
+                KnobIPtr curves = getKnob(project, "Group1", "myCurves");
+                ASSERT_TRUE( bool(curves) );
+                EXPECT_EQ( nbCurves, curves->getDimension() );
+            } else {
+                EXPECT_FALSE(ok);
+                EXPECT_NE( std::string::npos, output.find("node \"Group1\": parameter \"myCurves\": invalid number of dimensions 4097") ) << output;
+            }
+            if (!ok) {
+                // reload the project to save it in the other format
+                project->resetProject();
+                ASSERT_TRUE( ::Natron::Python::interpretPythonScript(script, &error, &output) ) << error << output;
+            }
+        }
+    }
     project->resetProject();
 }
 

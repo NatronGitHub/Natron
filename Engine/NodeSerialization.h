@@ -266,6 +266,12 @@ private:
     unsigned int _pythonModuleVersion;
     std::list<ImagePlaneDesc> _userComponents;
 
+    // Adds the node to the message, so that the user can find the parameter (#1612).
+    [[noreturn]] void throwWithNodeName(const KnobSerializationError& e) const
+    {
+        throw KnobSerializationError("node \"" + _nodeScriptName + "\": " + e.what());
+    }
+
     friend class ::boost::serialization::access;
     template<class Archive>
     void save(Archive & ar,
@@ -353,10 +359,14 @@ private:
         ar & ::boost::serialization::make_nvp("Plugin_major_version", _pluginMajorVersion);
         ar & ::boost::serialization::make_nvp("Plugin_minor_version", _pluginMinorVersion);
         ar & ::boost::serialization::make_nvp("KnobsCount", _nbKnobs);
-        for (int i = 0; i < _nbKnobs; ++i) {
-            KnobSerializationPtr ks = std::make_shared<KnobSerialization>();
-            ar & ::boost::serialization::make_nvp("item", *ks);
-            _knobsValues.push_back(ks);
+        try {
+            for (int i = 0; i < _nbKnobs; ++i) {
+                KnobSerializationPtr ks = std::make_shared<KnobSerialization>();
+                ar & ::boost::serialization::make_nvp("item", *ks);
+                _knobsValues.push_back(ks);
+            }
+        } catch (const KnobSerializationError& e) {
+            throwWithNodeName(e);
         }
 
         if (version < NODE_SERIALIZATION_CHANGE_INPUTS_SERIALIZATION) {
@@ -400,10 +410,14 @@ private:
         if (version >= NODE_SERIALIZATION_INTRODUCES_USER_KNOBS) {
             int userPagesCount;
             ar & ::boost::serialization::make_nvp("UserPagesCount", userPagesCount);
-            for (int i = 0; i < userPagesCount; ++i) {
-                GroupKnobSerializationPtr s = std::make_shared<GroupKnobSerialization>();
-                ar & ::boost::serialization::make_nvp("item", *s);
-                _userPages.push_back(s);
+            try {
+                for (int i = 0; i < userPagesCount; ++i) {
+                    GroupKnobSerializationPtr s = std::make_shared<GroupKnobSerialization>();
+                    ar & ::boost::serialization::make_nvp("item", *s);
+                    _userPages.push_back(s);
+                }
+            } catch (const KnobSerializationError& e) {
+                throwWithNodeName(e);
             }
             if (version >= NODE_SERIALIZATION_SERIALIZE_PAGE_INDEX) {
                 int count;

@@ -341,8 +341,19 @@ KnobI::restoreLinks(const NodesList & allNodes,
             }
        } else if (l->dimension == -1) {
             setKnobAsAliasOfThis(linkedKnob, true);
+        } else if ( (l->slaveDimension < 0) || (l->slaveDimension >= getDimension()) ||
+                    (l->dimension < 0) || ( l->dimension >= linkedKnob->getDimension() ) ) {
+            // The dimensions come from the file: it may be damaged, or a plug-in may have reduced
+            // the number of dimensions of one of the two parameters since it was saved (#1612).
+            const std::string err = "KnobI::restoreLinks(): Could not restore the link of dimension " + std::to_string(l->slaveDimension) +
+                                    " of " + getName() + " (" + std::to_string( getDimension() ) + " dimension(s)) to dimension " +
+                                    std::to_string(l->dimension) + " of node/knob/track " + l->nodeName + '/' + l->knobName + '/' + l->trackName +
+                                    " (" + std::to_string( linkedKnob->getDimension() ) + " dimension(s))";
+            if (throwOnFailure) {
+                throw std::runtime_error(err);
+            }
+            qDebug() << err.c_str();
         } else {
-            assert(l->slaveDimension >= 0);
             slaveTo(l->slaveDimension, linkedKnob, l->dimension);
         }
     }
