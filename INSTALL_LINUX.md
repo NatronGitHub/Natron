@@ -78,11 +78,19 @@ The official Linux binaries are built on Rocky Linux 9 with the Natron SDK. They
 - glibc 2.34 or later: libc, libm, libdl, libpthread, librt and ld-linux.
 - libstdc++ and libgcc_s from GCC 11 or later. On Rocky Linux 9 these are the system ones. Natron is compiled with a newer GCC, from `gcc-toolset`, but the libstdc++ symbols that are newer than GCC 11 are linked statically, from `libstdc++_nonshared.a`, so the binaries only need the system libstdc++.
 - libgomp (OpenMP runtime), from GCC 11 or later. It is a separate package (`libgomp` on RHEL/Rocky, `libgomp1` on Debian/Ubuntu). Most systems have it, but minimal images such as `rockylinux:9-minimal` don't.
-- libGL from GLVND (libGL, libEGL, libGLX, libGLdispatch), and an OpenGL driver. Also libdrm.
+- libGL from GLVND (libGL, libEGL, libGLX, libGLdispatch, libOpenGL), and an OpenGL driver.
 - The X11 client libraries, at least as recent as those of Rocky Linux 9.0 (libX11 1.7.0, libxcb 1.13.1, libxkbcommon 1.0.3): libX11, libX11-xcb, libXext, libXrender, libXau, libXdmcp and the other libX\* libraries, libxcb and its extensions, the xcb-util libraries (libxcb-icccm, libxcb-image, libxcb-keysyms, libxcb-render-util), libSM, libICE, libxkbcommon and libxkbcommon-x11. Qt's X11 platform plug-in (`libqxcb.so`) needs them.
 - ALSA (libasound), for Qt Multimedia.
 
-Everything else comes from the SDK and is bundled. In particular, Python's `crypt` module (deprecated since Python 3.11) is not included: it needs libcrypt.so.2, which Debian and Ubuntu don't have.
+Other libraries are not required, but they are never bundled either: when the system has them, they are used from the system, because they must match its drivers or services. A headless render node doesn't need them:
+
+- the rest of GLVND (libGLESv1_CM, libGLESv2), libdrm and libdrm\_\*, and Mesa's libgbm and libglapi: the system's OpenGL drivers use them, and an older bundled copy would break those drivers;
+- systemd's libudev (it reads the running udev's database, whose format follows the system's udev) and libselinux;
+- the GPU drivers' libraries: libcuda, NVIDIA's libnvidia-\* and libnvcuvid, and the OpenCL vendor drivers (ICDs: libamdocl\*, libigdrcl, libintelocl, libMesaOpenCL, libRusticlOpenCL, libpocl). The OpenCL ICD loader only opens the ICDs listed in `/etc/OpenCL/vendors/*.icd`, so a bundled copy would never be used. The ICD loader itself, libOpenCL.so.1 (ocl-icd or the Khronos OpenCL-ICD-Loader), is not in this list, since a default EL9 or Ubuntu install doesn't have it: it is bundled when a bundled file needs it (none does today).
+
+These are the system libraries of openfx's `Support/include/linuxCheckBundle.sh`, which checks the OFX plug-in bundles, plus the X11 and ALSA libraries.
+
+Everything else comes from the SDK and is bundled. In particular, Python's `crypt` module (deprecated since Python 3.11) is not included: it needs libcrypt.so.2, which Debian and Ubuntu don't have. libva (VA-API) is neither bundled nor needed: the SDK image has no libva-devel, so the SDK's FFmpeg is built without VA-API (and `checkBundle` would fail if a bundled file needed the system's libva). A bundled libva would only find the VA-API drivers at the paths of the distribution it was built on.
 
 `tools/jenkins/build-Linux-installer.sh` checks this (`checkBundle`, on the portable tree and on the installer packages). It fails if:
 - the directory doesn't exist or contains no ELF file;

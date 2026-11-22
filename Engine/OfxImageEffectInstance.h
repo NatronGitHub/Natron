@@ -32,7 +32,6 @@
 #include <string>
 #include <cstdarg>
 #include <vector>
-#include <atomic>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)

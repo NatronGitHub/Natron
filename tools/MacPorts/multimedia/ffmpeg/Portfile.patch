@@ -1,5 +1,14 @@
---- Portfile.orig	2026-11-20 08:07:24
-+++ Portfile	2026-11-20 08:55:37
+--- Portfile.orig	2026-11-21 19:53:11
++++ Portfile	2026-11-21 19:56:57
+@@ -18,7 +18,7 @@
+ 
+ # Please increase the revision of mpv whenever ffmpeg's version is updated.
+ version             9.0.2
+-revision            3
++revision            5
+ epoch               1
+ 
+ license             LGPL-2.1+
 @@ -97,6 +97,8 @@
                      port:libvorbis \
                      path:lib/pkgconfig/vpx.pc:libvpx \
@@ -9,7 +18,26 @@
                      port:soxr \
                      path:lib/libspeex.dylib:speex \
                      port:webp \
-@@ -141,6 +143,28 @@
+@@ -128,6 +130,18 @@
+ # error: call to undeclared function 'VTRegisterProfessionalVideoWorkflowVideoEncoders' on 10.9
+ patchfiles-append   patch-libavcodec-videotoolboxenc.c.diff
+ 
++# Natron: saturate the row outputs of the C 10-bit int16 simple IDCT, as the
++# x86 SIMD does: arm64 decoded 10-bit DNxHD/DNxHR with full white with black
++# 1-pixel columns (https://github.com/NatronGitHub/openfx-io/issues/266).
++# Not yet submitted upstream.
++patchfiles-append   patch-libavcodec-simple_idct10-saturate.diff
++
++# Natron: store the dnxhd encoder's per-macroblock qscale in 16 bits: it wrapped
++# above 255 (qmax is 1024), and DNxHR 444 of high-entropy images, or -mbd rd with
++# 10-bit profiles, aborted (https://github.com/NatronGitHub/openfx-io/issues/267).
++# Not yet submitted upstream.
++patchfiles-append   patch-libavcodec-dnxhdenc-mb_qscale.diff
++
+ # enable auto configure of asm optimizations
+ # requires Xcode 3.1 or better on Leopard
+ minimum_xcodeversions {9 3.1}
+@@ -141,6 +155,28 @@
  # warning: unknown warning option '-Wno-bool-operation'; did you mean '-Wno-bool-conversion'? [-Wunknown-warning-option]
  compiler.blacklist-append {clang < 900}
  
@@ -38,10 +66,11 @@
  # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
  # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
  default_variants-append +gpl2
-@@ -162,7 +186,35 @@
+@@ -161,8 +197,36 @@
+ 
  set port_sharedir   ${prefix}/share
  set port_docdir     ${port_sharedir}/doc/${my_name}
- 
++
 +if {${subport} eq "ffmpeg-lgpl"} {
 +    set port_prefix     ${prefix}/libexec/${subport}
 +    set port_sharedir   ${port_prefix}/share
@@ -50,7 +79,7 @@
 +                    --prefix=${prefix}
 +    configure.pre_args-append \
 +                    --prefix=${port_prefix}
-+
+ 
 +    pre-configure {
 +        if {[variant_isset gpl2] || [variant_isset gpl3] || [variant_isset nonfree]} {
 +            return -code error "${subport} is the LGPL FFmpeg of Natron's COMMERCIAL builds: install it without +gpl2, +gpl3 or +nonfree"
@@ -74,7 +103,7 @@
                      --cc="${configure.cc}"
  
  configure.args-append \
-@@ -193,6 +245,8 @@
+@@ -193,6 +257,8 @@
                      --enable-libmodplug \
                      --enable-libmp3lame \
                      --enable-libopenjpeg \
@@ -83,7 +112,7 @@
                      --enable-libopus \
                      --enable-librsvg \
                      --enable-libsoxr \
-@@ -209,6 +263,16 @@
+@@ -209,6 +275,16 @@
                      --enable-swscale \
                      --enable-zlib
  
@@ -100,7 +129,7 @@
  post-extract {
      # fix file perms; tarball contents deny group and world read
      system "find ${worksrcpath} -type d -print0 | xargs -0 chmod a+rx"
-@@ -342,6 +406,15 @@
+@@ -342,6 +418,15 @@
                      --disable-dependency-tracking
  
  if {${universal_possible} && [variant_isset universal]} {
@@ -116,7 +145,7 @@
      foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) \
-@@ -377,6 +450,24 @@
+@@ -377,6 +462,24 @@
  
  destroot.env-append V=1
  
@@ -141,7 +170,7 @@
  post-destroot {
      # Copy docs
      file mkdir ${destroot}${port_docdir}
-@@ -386,6 +477,46 @@
+@@ -386,6 +489,46 @@
      }
  }
  
@@ -188,7 +217,7 @@
  variant x11 {
      # enable x11grab_xcb input device
      depends_lib-append \
-@@ -448,6 +579,14 @@
+@@ -448,6 +591,14 @@
                      path:lib/pkgconfig/gnutls.pc:gnutls
  }
  
@@ -203,7 +232,7 @@
  variant gpl2 description {Enable GPL code, license will be GPL-2+} {
      license         GPL-2+
  
-@@ -509,8 +648,11 @@
+@@ -509,8 +660,11 @@
                      port:libvmaf
  }
  
