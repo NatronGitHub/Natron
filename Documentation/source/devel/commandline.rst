@@ -466,7 +466,8 @@ Example: converting a project between the binary and text formats
 Projects are saved in a binary format, or in a text (XML) format that Natron 2.5 and earlier
 can read (see :meth:`App.getProjectFormat<NatronEngine.App.getProjectFormat>`). The
 ``natron_convert_project`` Python module, installed with the bundled PyPlugs (which are on the
-Python path), converts a project from one format to the other without rendering anything::
+Python path unless the *Use bundled plug-ins* preference is off), converts a project from one
+format to the other without rendering anything::
 
     NatronRenderer -t -c "import natron_convert_project as c; c.convert_and_quit('/path/to/in.ntp', '/path/to/out.ntp', 'text')"
 
