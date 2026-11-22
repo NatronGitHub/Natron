@@ -240,7 +240,7 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME GuiSmokeTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_gui_smoke_test.py $<TARGET_FILE:Natron>)
     set_tests_properties(GuiSmokeTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 960 LABELS gui)
-    # NatronRenderer does not exit with status 0 when a render failed
+    # NatronRenderer exits with status 1 when the render of a Write node failed
     add_test(NAME RenderFailureStatusTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_render_failure_status_test.py $<TARGET_FILE:NatronRenderer>)
     set_tests_properties(RenderFailureStatusTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)

@@ -350,14 +350,17 @@ public:
     /// True once requestQuit() was called
     bool isQuitRequested() const;
 
-    /// The exit code given to requestQuit(). Without a call to requestQuit(), 1 if a render failed
-    /// in background mode (see setBackgroundRenderFailed()), or 0
+    /// The exit code given to requestQuit(), or 0
     int getRequestedExitCode() const;
 
-    /// Called when a render fails in background mode, so that the process does not exit with the
-    /// status 0 of a successful render. Does nothing once requestQuit() was called: its exit code
-    /// prevails, and the renders it aborts did not fail.
+    /// Records that the render of a writer failed in background mode: see exitStatus().
+    /// The record is kept until the process exits. May be called from any thread.
     void setBackgroundRenderFailed();
+
+    /// The exit status of a background process whose load() succeeded: getRequestedExitCode() if
+    /// requestQuit() was called or if it is not 0, else 1 if setBackgroundRenderFailed() was called,
+    /// else 0.
+    int exitStatus() const;
 
     /// True while the interactive Python interpreter of the -t option is running
     bool isPythonInterpreterRunning() const;

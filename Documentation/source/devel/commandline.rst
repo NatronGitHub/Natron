@@ -343,7 +343,26 @@ were still rendered (`issue #1276 <https://github.com/NatronGitHub/Natron/issues
 In interpreter mode (:option:`-t`), a Python error in the script is printed, and the
 interpreter still starts, so that the error can be inspected.
 
-Check the output for errors that happen while frames are rendered.
+NatronRenderer also exits with status 1 when the render of a Write node fails, for example
+when the output file can't be written, or when a movie writer can't open its file or rejects
+the codec. Natron prints a line that starts with ``Error while rendering``. This applies to
+the Write nodes given with :option:`-w`, or to all the Write nodes of the graph, and to the
+renders that a script starts with :func:`app.render()<NatronEngine.App.render>`:
+
+- One failed Write node is enough. The other Write nodes are still rendered.
+- A failure is remembered until the process exits: a script that renders the same Write node
+  again, successfully, still exits with status 1.
+- ``natron.quit(status)`` and ``sys.exit(status)`` take precedence: the script chooses the
+  status, also 0, and the renders that they stop are not failures.
+- A render that is stopped while a frame is being rendered may count as failed, for example
+  when a render callback calls :func:`app.closeProject()<NatronEngine.App.closeProject>` or
+  :func:`app.resetProject()<NatronEngine.App.resetProject>`, or when a render run in a
+  separate process is cancelled from the GUI.
+- A render that gives black frames because an input is missing (for example a Read node whose
+  file doesn't exist) is not detected yet: check the output for ``Cannot load frame``
+  (`issue #1602 <https://github.com/NatronGitHub/Natron/issues/1602>`_).
+
+Up to Natron 2.5, a failed render exited with status 0.
 
 GUI tests in the background
 ---------------------------

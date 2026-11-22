@@ -3176,20 +3176,27 @@ AppManager::isQuitRequested() const
 int
 AppManager::getRequestedExitCode() const
 {
-    if (!_imp->quitRequested && _imp->backgroundRenderFailed) {
-        // A farm manager reads the exit status: a render that failed must not report a success.
-        return 1;
-    }
-
     return _imp->requestedExitCode;
 }
 
 void
 AppManager::setBackgroundRenderFailed()
 {
-    if (!_imp->quitRequested) {
-        _imp->backgroundRenderFailed = true;
+    _imp->backgroundRenderFailed = true;
+}
+
+int
+AppManager::exitStatus() const
+{
+    const int code = _imp->requestedExitCode;
+    if ( _imp->quitRequested || (code != 0) ) {
+        // natron.quit(code): its code prevails, also 0, and the renders it aborted did not fail.
+        // Without a quit, a non-zero code is the status of a failed script or interpreter.
+        return code;
     }
+
+    // A farm manager reads the exit status: a render that failed must not report a success.
+    return _imp->backgroundRenderFailed ? 1 : 0;
 }
 
 bool
