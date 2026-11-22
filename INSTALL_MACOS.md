@@ -933,6 +933,10 @@ These are the macOS CI job's commands (`.github/workflows/ci.yml`), except that 
 
 The shiboken2 generator parses the headers with its own libclang (LLVM 18 for PySide2 5.15), which can't parse the libc++ headers of newer SDKs (`use of undeclared identifier '__builtin_clzg'`, seen with the macOS 27 SDK of Xcode 27). If that happens, point `SDKROOT` at an older SDK, e.g. `export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk`. It must be exported in the environment of `cmake --build` too, not only at configure time: shiboken runs during the build, and without `SDKROOT` it picks the Xcode SDK headers again. The same applies to the qmake build and to `launchBuildMain.sh`.
 
+### Xcode
+
+Natron ships no Xcode project: generate one with CMake, with the same options as above, e.g. `cmake -S . -B build-xcode -G Xcode -DCMAKE_PREFIX_PATH="/opt/local/libexec/qt5;/opt/local" -DPython3_EXECUTABLE=/opt/local/bin/python3.11`, then `open build-xcode/Natron.xcodeproj`. The Xcode generator needs a full Xcode and uses its SDK: with `SDKROOT` or `CMAKE_OSX_SYSROOT` set to a Command Line Tools SDK, CMake finds no compiler. So the shiboken2 limitation above (newer SDKs) applies to the Xcode build, with no `SDKROOT` workaround: if the bindings fail to generate, use the Makefile or Ninja build.
+
 ## Deprecated: building with qmake
 
 *The qmake build (for Qt4 and Qt5) is deprecated. It still works on RB-2.6, where the release scripts in `tools/jenkins` use it with `NATRON_BUILD_SYSTEM=qmake`, but it will be removed in a future release (first on RB-2.7, see [#1181](https://github.com/NatronGitHub/Natron/issues/1181)).*
@@ -1068,31 +1072,11 @@ add -spec macx-xcode to the qmake call command:
 qmake -r -spec macx-xcode
 ```
 
-Then open the already provided Project-xcode.xcodeproj and compile the target "all"
+Then open the generated `Project.xcodeproj` and build the target "all".
 
 #### Compiling plugins with Xcode
 
-The source distributions of the plugin sets `openfx-io` and
-`openfx-misc` contain Xcode projects, but these require setting a few
-global variables in Xcode. These variables can be used to switch
-between the system-installed version of a package and a custom install
-(e.g. if you need to debug something that happens in OpenImageIO).
-
-In Xcode Preferences, select "Locations", then "Source Trees", and add the following
-variable names/values (Xcode may need to be restarted after setting these):
-- `LOCAL`: `/usr/local` on Homebrew, `/opt/local` on MacPorts
-- `BOOST_PATH`: `$(LOCAL)/include`
-- `EXR_PATH`: `$(LOCAL)`
-- `FFMPEG_PATH`: `$(LOCAL)`
-- `OCIO_PATH`: `$(LOCAL)`
-- `OIIO_PATH`: `$(LOCAL)`
-- `OPENCV_PATH`: `$(LOCAL)`
-- `SEEXPR_PATH`: `$(LOCAL)`
-
-It is also recommended in Xcode Preferences, select "Locations", then
-"Locations", to set the Derived Data location to be Relative, and in
-the advanced settings to set the build location to Legacy (if not,
-build files are somewhere under `~/Library/Developer/Xcode`.
+To build the plug-ins in Xcode, generate a project with their CMake build (`cmake -S . -B build-xcode -G Xcode`), as for Natron (see [Building with CMake](#building-with-cmake)).
 
 #### Build on Xcode with openmp clang
 
