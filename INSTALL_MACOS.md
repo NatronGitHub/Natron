@@ -935,7 +935,20 @@ The shiboken2 generator parses the headers with its own libclang (LLVM 18 for Py
 
 ### Xcode
 
-Natron ships no Xcode project: generate one with CMake, with the same options as above, e.g. `cmake -S . -B build-xcode -G Xcode -DCMAKE_PREFIX_PATH="/opt/local/libexec/qt5;/opt/local" -DPython3_EXECUTABLE=/opt/local/bin/python3.11`, then `open build-xcode/Natron.xcodeproj`. The Xcode generator needs a full Xcode and uses its SDK: with `SDKROOT` or `CMAKE_OSX_SYSROOT` set to a Command Line Tools SDK, CMake finds no compiler. So the shiboken2 limitation above (newer SDKs) applies to the Xcode build, with no `SDKROOT` workaround: if the bindings fail to generate, use the Makefile or Ninja build.
+Natron ships no Xcode project: generate one with CMake, then open it:
+
+```Shell
+cmake -S . -B build-xcode -G Xcode \
+    -DCMAKE_PREFIX_PATH="/opt/local/libexec/qt5;/opt/local" \
+    -DPython3_EXECUTABLE=/opt/local/bin/python3.11
+open build-xcode/Natron.xcodeproj
+```
+
+The compiler options and `CMAKE_BUILD_TYPE` are not needed: the project uses Xcode's clang and has its own Debug and Release configurations.
+
+The Xcode generator needs a full Xcode and uses its SDK. With `SDKROOT` or `CMAKE_OSX_SYSROOT` set to a Command Line Tools SDK, CMake finds no compiler. So the `SDKROOT` workaround above for shiboken2 doesn't work here: if the Python bindings fail to generate, use the Makefile or Ninja build.
+
+To build the plug-ins in Xcode, generate a project with their CMake build in the same way (`cmake -S . -B build-xcode -G Xcode`). Older plug-in sources ship hand-made Xcode projects, which need "Source Trees" variables set in Xcode's preferences: use CMake instead.
 
 ## Deprecated: building with qmake
 
@@ -1072,11 +1085,7 @@ add -spec macx-xcode to the qmake call command:
 qmake -r -spec macx-xcode
 ```
 
-Then open the generated `Project.xcodeproj` and build the target "all".
-
-#### Compiling plugins with Xcode
-
-To build the plug-ins in Xcode, generate a project with their CMake build (`cmake -S . -B build-xcode -G Xcode`), as for Natron (see [Building with CMake](#building-with-cmake)).
+Then open the generated `Project.xcodeproj` and build it.
 
 #### Build on Xcode with openmp clang
 

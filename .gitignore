@@ -14,6 +14,7 @@ moc*.cpp
 # Build directories
 
 build
+/build-*/
 build32
 build64
 *build_*

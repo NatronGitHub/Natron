@@ -155,6 +155,8 @@ If shiboken2 fails to parse the libc++ headers of a recent Xcode SDK
 (``use of undeclared identifier '__builtin_clzg'``), use an older SDK with
 ``export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk``, exported
 for both the configure and ``cmake --build``: shiboken runs during the build.
+The Xcode generator (``-G Xcode``) can't use that workaround: with a Command
+Line Tools SDK it finds no compiler.
 
 Two compile definitions set in the CMake build are worth knowing about because
 they affect how you must write code:
