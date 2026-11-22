@@ -270,7 +270,9 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
                           .arg(majorVersion).arg(minorVersion) );
             if (isNodeGroup) {
                 text += QLatin1Char(' ');
-                text += tr("It was in the group %1.").arg(groupName);
+                text += tr("It was in the group %1 (%2).")
+                        .arg( QString::fromUtf8( isNodeGroup->getNode()->getFullyQualifiedName().c_str() ) )
+                        .arg(groupName);
             }
             appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
             status.showErrorLog = true;
@@ -392,7 +394,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
                     appPTR->writeToErrorLog_mt_safe( tr("Project"), QDateTime::currentDateTime(),
                                                      tr("Could not find input named %1")
                                                      .arg( QString::fromUtf8( it2->first.c_str() ) ) );
-                    // the connection is lost (this does not open the error log)
+                    // the connection is lost
+                    status.showErrorLog = true;
                     status.dataLost = true;
                     continue;
                 }
@@ -449,7 +452,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
                 if (index == -1) {
                     appPTR->writeToErrorLog_mt_safe( tr("Project"), QDateTime::currentDateTime(),
                                                      tr("Could not find input named %1").arg( QString::fromUtf8( it2->first.c_str() ) ) );
-                    // the connection is lost (this does not open the error log)
+                    // the connection is lost
+                    status.showErrorLog = true;
                     status.dataLost = true;
                     continue;
                 }

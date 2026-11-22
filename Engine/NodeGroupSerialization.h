@@ -71,7 +71,7 @@ struct NodesRestoreStatus
     // (e.g. a node created with another major version of its plug-in).
     bool showErrorLog = false;
     // Something in the file was not restored (a node that could not be created, an input connection,
-    // a link to a master node): the project would be saved without it.
+    // a link to a master node): the project would be saved without it. It always comes with showErrorLog.
     bool dataLost = false;
 
     NodesRestoreStatus& operator|=(const NodesRestoreStatus& other)
