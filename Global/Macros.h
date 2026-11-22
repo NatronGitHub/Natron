@@ -90,6 +90,7 @@ namespace Python { }
 // *.nps: application/vnd.natron.nodepresets
 // *.nl: application/vnd.natron.layout
 // these MIME types are also used in:
+// - Gui/Resources/Mime/x-natron.xml (Linux, installed by App/CMakeLists.txt)
 // - App/NatronInfo.plist.in (macOS)
 // - Gui/GuiApplicationManager10.cpp (comment in the QFileOpenEvent handler)
 #define NATRON_PROJECT_FILE_EXT "ntp"

@@ -104,7 +104,7 @@ CONFIG(debug, debug|release){
 addresssanitizer {
   *g++* | *clang* {
     message("Compiling with AddressSanitizer (for gcc >= 4.8 and clang). Set the ASAN_SYMBOLIZER_PATH environment variable to point to the llvm-symbolizer binary, or make sure llvm-symbolizer in in your PATH.")
-    message("For example, on macOS with MacPorts (the Xcode clang and MacPorts' Qt5):")
+    message("For example, on macOS with MacPorts' Qt5, with the Xcode clang; clang-19 is installed only for its llvm-symbolizer:")
     message("  sudo port install clang-19")
     message("  export ASAN_SYMBOLIZER_PATH=/opt/local/bin/llvm-symbolizer-mp-19")
     message("  qmake CONFIG+=addresssanitizer ...")

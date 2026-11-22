@@ -34,7 +34,7 @@ This directory contains various tools to help building and maintaining Natron.
 
 - **docker**
 
-  Contains the tools to build the Rocky Linux 9 Docker image with the Natron Linux SDK (`natron-sdk-rockylinux`), and to launch a build in it (`natron-build`). See [docker/README.md](docker/README.md).
+  Contains the tools to build the Rocky Linux Docker image with the Natron Linux SDK (`natron-sdk-rockylinux`). A build is launched with `docker run` on that image. See [docker/README.md](docker/README.md).
 
 - **tart**
 
