@@ -32,13 +32,13 @@
 #include <condition_variable>
 #include <cstdlib>
 #include <cstring>
+#include <algorithm>
 #include <fstream>
 #include <functional>
 #include <vector>
 #include <iostream>
 #include <memory>
 #include <mutex>
-#include <algorithm>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -783,7 +783,9 @@ TEST(ProjectFileFormat, InvalidKnobData)
     KnobChoicePtr choice = std::dynamic_pointer_cast<KnobChoice>( getKnob(project, "Group1", "myChoice") );
     KnobChoicePtr choice2 = std::dynamic_pointer_cast<KnobChoice>( getKnob(project, "Group1", "myChoice2") );
     KnobChoicePtr frameRange = std::dynamic_pointer_cast<KnobChoice>( getKnob(project, "DiskCache1", "frameRange") );
-    ASSERT_TRUE(choice && choice2 && frameRange);
+    ASSERT_TRUE( bool(choice) );
+    ASSERT_TRUE( bool(choice2) );
+    ASSERT_TRUE( bool(frameRange) );
     EXPECT_EQ( std::string("b"), choice->getActiveEntry().id );
     EXPECT_EQ( 0, choice2->getValue() );
     EXPECT_EQ( 0, choice2->getDefaultValue(0) );
@@ -847,11 +849,21 @@ TEST(ProjectFileFormat, InvalidKnobData)
         myInt2 = getKnob(project, "Group1", "myInt2");
         ASSERT_TRUE( bool(myInt2) );
         myInt2->unSlave(0, false);
+        // without throwing (paste, presets), the error is in the error log
+        appPTR->clearErrorLog_mt_safe();
         myInt2->storeLink(1 /*slave dimension*/, "Group1", "Group1", "", "myInt", 0);
         EXPECT_NO_THROW( myInt2->restoreLinks(allNodes, noRenames, false) );
         EXPECT_FALSE( bool( myInt2->getMaster(0).second ) );
+        std::list<LogEntry> log;
+        appPTR->getErrorLog_mt_safe(&log);
+        EXPECT_EQ( 1, std::count_if( log.begin(), log.end(), [](const LogEntry& e) {
+            return e.context == QString::fromUtf8("myInt2") && e.message.contains( QString::fromUtf8("Could not restore the link of dimension 1") );
+        } ) );
+        // with throwOnFailure, the valid links after a bad one are still restored, then it throws
         myInt2->storeLink(0, "Group1", "Group1", "", "myInt", 1 /*master dimension*/);
+        myInt2->storeLink(0, "Group1", "Group1", "", "myInt", 0);
         EXPECT_THROW( myInt2->restoreLinks(allNodes, noRenames, true), std::runtime_error );
+        EXPECT_EQ( getKnob(project, "Group1", "myInt"), myInt2->getMaster(0).second );
     }
 
     project->resetProject();
