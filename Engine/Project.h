@@ -203,8 +203,9 @@ public:
     /**
      * @brief Whether something in the project file was not loaded, so that saving the project would lose it:
      * a node that could not be created (e.g. its plug-in is missing), also inside a Group, an input connection
-     * to an input that the node does not have, a link to a master node that does not exist, or an error that
-     * stopped the load. Warnings where nothing is lost (e.g. a node created with another major version of its
+     * to an input that the node does not have, a link to a master node that does not exist, a PyPlug whose
+     * Python file cannot be found (the node is loaded as a Group, and would be saved without its PyPlug), or an
+     * error that stopped the load. Warnings where nothing is lost (e.g. a node created with another major version of its
      * plug-in) do not set it, even if they open the error log. False for a new project.
      * It describes the file that was loaded: saving the project does not change it. It is set before the
      * afterProjectLoad callback runs.

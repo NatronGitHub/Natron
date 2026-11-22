@@ -297,6 +297,17 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
                 status.showErrorLog = true;
             }
         }
+        if ( !usingPythonModule && !pythonModuleAbsolutePath.empty() && n->getPluginPythonModule().empty() ) {
+            // The PyPlug could not be imported (AppInstance::setGroupLabelIDAndVersion()): the node is a Group with
+            // the nodes saved in the project, and it would be saved without its PyPlug.
+            QString text( tr("ERROR: The PyPlug %1 of the node %2 was not found: it was loaded as a Group with "
+                             "the nodes saved in the project, and saving the project would drop the PyPlug.")
+                          .arg( QString::fromUtf8( pythonModuleAbsolutePath.c_str() ) )
+                          .arg( QString::fromUtf8( n->getFullyQualifiedName().c_str() ) ) );
+            appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
+            status.showErrorLog = true;
+            status.dataLost = true;
+        }
         if (!createNodes && n) {
             // If we created the node using a PyPlug, deserialize the project too to override any modification made by the user.
             n->loadKnobs(**it);
