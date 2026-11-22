@@ -8,19 +8,18 @@
 #     -o DIR      where to write the results (default: the DMG's directory)
 #     -n DIR      Natron-Tests checkout on the host (default: $NATRON_TESTS_SRC, cloned if missing)
 #     -k          keep the test VM afterwards (default: delete it)
-#     -x FILE     extra known failures, added to Natron-Tests' known_failures/common.txt and
-#                 macos.txt: one test name per line as in result.txt (e.g. TestCMD/1), "#" starts
-#                 a comment (default: $NATRON_TESTS_KNOWN_FAILURES; none if unset)
 #     -i IMAGE    base image to clone (default: $BASE_IMAGE, see tart-common.sh)
 #
 # TEST=TestFoo or TESTCUSTOM=TestBar in the environment run a single test (see runTests.sh); the
 # results are then named <dmg name>-partial-<test>-*, not as release assets.
-# runTests.sh reports the known failures (Natron-Tests' known_failures/) as "KNOWN FAIL" and the
-# known failures that passed as "UNEXPECTED PASS" (the lists must then be updated).
+# runTests.sh reports the known failures (Natron-Tests' known_failures/common.txt and macos.txt) as
+# "KNOWN FAIL" and the known failures that passed as "UNEXPECTED PASS" (the lists must then be
+# updated, through a Natron-Tests pull request); natron-test.sh needs a Natron-Tests with these lists.
 # Exit status: 0 if every test passed or is a known failure, 1 otherwise (or if the suite did
 # not run): a release gate. Unexpected passes are reported, and don't fail the run.
 # Results, as in the Natron release assets (tools/jenkins/runUnitTests.sh):
-#   <dmg name>-tests.txt                  runTests.sh's result.txt (one "Test : PASS|FAIL" per line)
+#   <dmg name>-tests.txt                  runTests.sh's result.txt (one "Test : PASS", "FAIL",
+#                                         "KNOWN FAIL" or "UNEXPECTED PASS" line per test)
 #   <dmg name>-unit_tests_failures.zip    the failed tests' outputs and references, in a
 #                                         <dmg name>-unit_tests_failures/ directory
 #   <dmg name>-tests.log                  runTests.sh's output
@@ -33,19 +32,17 @@ KEEP=0
 NATRON_TESTS_SRC=${NATRON_TESTS_SRC:-$THIRD_PARTY/Natron-Tests}
 NATRON_TESTS_URL=${NATRON_TESTS_URL:-https://github.com/NatronGitHub/Natron-Tests.git}
 TEST_TIMEOUT=${TEST_TIMEOUT:-14400}   # seconds, for the whole suite
-KNOWN=${NATRON_TESTS_KNOWN_FAILURES:-}
-while getopts "o:n:ki:x:h" opt; do
+while getopts "o:n:ki:h" opt; do
     case $opt in
         o) OUT=$OPTARG ;;
         n) NATRON_TESTS_SRC=$OPTARG ;;
         k) KEEP=1 ;;
         i) BASE_IMAGE=$OPTARG ;;
-        x) KNOWN=$OPTARG ;;
-        *) sed -n 2,27p "$0"; exit 1 ;;
+        *) sed -n 2,26p "$0"; exit 1 ;;
     esac
 done
 shift $((OPTIND - 1))
-[ $# = 1 ] && [ -f "$1" ] || { sed -n 2,27p "$0"; exit 1; }
+[ $# = 1 ] && [ -f "$1" ] || { sed -n 2,26p "$0"; exit 1; }
 DMG=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
 NAME=$(basename "$DMG" .dmg)
 OUT=${OUT:-$(dirname "$DMG")}
@@ -56,7 +53,6 @@ if [ -n "${TEST:-}${TESTCUSTOM:-}" ]; then
 fi
 # never leave the results of an earlier run next to the DMG, even if this one is aborted
 rm -f "$OUT/$NAME-tests.log" "$OUT/$NAME-tests.txt" "$OUT/$NAME-tests-summary.txt" "$OUT/$NAME-unit_tests_failures.zip"
-[ -z "$KNOWN" ] || [ -f "$KNOWN" ] || { echo "known failures file $KNOWN not found"; exit 1; }
 
 # the test data, on the host (the guest has no git without the Command Line Tools)
 if [ ! -d "$NATRON_TESTS_SRC/.git" ]; then
@@ -64,6 +60,8 @@ if [ ! -d "$NATRON_TESTS_SRC/.git" ]; then
     git clone --depth 1 "$NATRON_TESTS_URL" "$NATRON_TESTS_SRC"
 fi
 log "Natron-Tests: $(git -C "$NATRON_TESTS_SRC" log -1 --format='%h %cs %s')"
+[ -f "$NATRON_TESTS_SRC/known_failures/common.txt" ] ||
+    die "$NATRON_TESTS_SRC has no known_failures/common.txt: use a Natron-Tests with the known-failures lists (NatronGitHub/Natron-Tests#3)"
 # runTests.sh downloads two example projects from SourceForge, which is sometimes flaky:
 # fetch them on the host, once (runTests.sh uses them when they are valid zips)
 for z in Natron_2.3.12_Spaceship.zip Natron_2.3.12_BayMax.zip; do
@@ -110,13 +108,7 @@ log "copying $(basename "$DMG") and Natron-Tests into $VM"
 vm_rsync "$VM" "$DMG" natron.dmg
 # not the results of a run in the host checkout: they would pass for this run's
 vm_rsync "$VM" "$NATRON_TESTS_SRC/" Natron-Tests/ --exclude .git --exclude /result.txt --exclude /summary.txt --exclude /failed --delete
-KNOWN_FAILURES_ENV=
-if [ -n "$KNOWN" ]; then
-    vm_rsync "$VM" "$KNOWN" Natron-Tests/known_failures-extra.txt
-    KNOWN_FAILURES_ENV="KNOWN_FAILURES='known_failures/common.txt known_failures/macos.txt known_failures-extra.txt'"
-fi
-# gtimeout and gseq (GNU coreutils) are what runTests.sh uses on macOS: a minimal gtimeout in
-# Perl (part of macOS), and macOS's own seq
+# gtimeout (GNU coreutils) is what runTests.sh uses on macOS: a minimal one in Perl (part of macOS)
 vm_ssh "$VM" 'set -e
     mkdir -p natron-test-bin
     cat > natron-test-bin/gtimeout <<"EOF"
@@ -138,8 +130,6 @@ exit 124 if $timedout;
 exit($st & 127 ? 128 + ($st & 127) : $st >> 8);
 EOF
     chmod +x natron-test-bin/gtimeout
-    # runTests.sh before known_failures/ calls gseq, and without it compares no frame at all
-    ln -sf /usr/bin/seq natron-test-bin/gseq
     rm -rf Natron.app
     mnt=$(mktemp -d /tmp/natron-dmg.XXXX)
     hdiutil attach -nobrowse -readonly -mountpoint "$mnt" natron.dmg > /dev/null
@@ -156,8 +146,8 @@ vm_ssh "$VM" "cd Natron-Tests &&
     env -i HOME=\$HOME USER=\$USER LOGNAME=\$USER SHELL=/bin/bash TMPDIR=\$TMPDIR LANG=en_US.UTF-8 \
         PATH=\$HOME/natron-test-bin:/usr/bin:/bin:/usr/sbin:/sbin \
         ALL_PROXY=$GUEST_PROXY NO_PROXY=localhost,127.0.0.1 \
-        ${TEST:+TEST=$TEST} ${TESTCUSTOM:+TESTCUSTOM=$TESTCUSTOM} $KNOWN_FAILURES_ENV \
-        NATRON_CACHE_PATH=\$HOME/NatronTmpCacheDir \
+        ${TEST:+TEST=$TEST} ${TESTCUSTOM:+TESTCUSTOM=$TESTCUSTOM} \
+        NATRON_DISK_CACHE_PATH=\$HOME/NatronTmpCacheDir \
         OCIO=\$HOME/Natron.app/Contents/Resources/OpenColorIO-Configs/blender/config.ocio \
         FFMPEG=\$HOME/Natron.app/Contents/MacOS/ffmpeg COMPARE=\$HOME/Natron.app/Contents/MacOS/idiff \
         \$HOME/natron-test-bin/gtimeout -s KILL $TEST_TIMEOUT /bin/bash runTests.sh \$HOME/Natron.app/Contents/MacOS/NatronRenderer \
@@ -166,7 +156,7 @@ log "runTests.sh exited with status $status"
 # runTests.sh only copies the images of the failed render tests to failed/: also copy those
 # of the failed custom tests (TestCMD, TestWriteFFmpeg/<format>, ...), as <test>-<name>
 vm_ssh "$VM" 'setopt nonomatch 2> /dev/null; cd Natron-Tests && [ -f result.txt ] && mkdir -p failed &&
-    grep ": FAIL" result.txt | sed "s/ : FAIL\$//" | while IFS= read -r t; do
+    grep -E " : (KNOWN )?FAIL\$" result.txt | sed -E "s/ : (KNOWN )?FAIL\$//" | while IFS= read -r t; do
         case $t in */*)
             d=${t%%/*}/formats/${t#*/}
             if [ -d "$d" ]; then   # TestWriteFFmpeg/<format>: all the frames of that format
@@ -194,21 +184,14 @@ if [ -n "$(ls -A "$TART_RUN/$NAME-unit_tests_failures")" ]; then
 fi
 rm -rf "${TART_RUN:?}/$NAME-unit_tests_failures"
 
-if [ -f "$OUT/$NAME-tests.txt" ]; then
-    # runTests.sh without known-failures support only writes PASS and FAIL
-    pass=$(grep -c ' : PASS$' "$OUT/$NAME-tests.txt" || true)
-    fail=$(grep -c ' : FAIL$' "$OUT/$NAME-tests.txt" || true)
-    known=$(grep -c ' : KNOWN FAIL$' "$OUT/$NAME-tests.txt" || true)
-    upass=$(grep -c ' : UNEXPECTED PASS$' "$OUT/$NAME-tests.txt" || true)
-    log "Natron-Tests: $pass passed, $fail failed, $known known failures, $upass unexpected passes ($OUT/$NAME-tests.txt)"
-    grep -E ' : (FAIL|UNEXPECTED PASS)$' "$OUT/$NAME-tests.txt" || true
-    if [ "$upass" -gt 0 ]; then
-        log "Warning: $upass known failures passed: remove them from Natron-Tests' known_failures/"
+if [ -f "$OUT/$NAME-tests.txt" ] && [ -f "$OUT/$NAME-tests-summary.txt" ]; then
+    # runTests.sh exits 1 when a test fails that isn't a known failure; summary.txt has the counts
+    log "Natron-Tests ($OUT/$NAME-tests.txt):"
+    cat "$OUT/$NAME-tests-summary.txt"
+    if grep -q '^UNEXPECTED PASS: [1-9]' "$OUT/$NAME-tests-summary.txt"; then
+        log "Warning: known failures passed: remove them from Natron-Tests' known_failures/"
     fi
-    if [ "$fail" -gt 0 ]; then
-        log "Error: $fail failed tests that are not known failures"
-        status=1
-    fi
+    [ "$status" = 0 ] || log "Error: runTests.sh exited with status $status (a test failed that isn't a known failure, or the run failed)"
 else
     log "Error: no result.txt (see $OUT/$NAME-tests.log)"
     status=1

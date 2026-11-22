@@ -110,7 +110,7 @@ vm_find_addr() { # vm : IPv4 if the guest gets a lease, else its IPv6 link-local
         fi
         sleep 10
     done
-    echo "no address for $1 after 15 minutes" >&2
+    echo "no address for $1 where ssh answers, after 90 attempts (up to about 25 minutes)" >&2
     return 1
 }
 
