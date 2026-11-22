@@ -76,7 +76,7 @@ This runs the [Natron-Tests](https://github.com/NatronGitHub/Natron-Tests) regre
 
 The results are written next to the DMG (`-o DIR` elsewhere), named as the release assets of previous versions: `<dmg name>-tests.txt` (one `Test : PASS` or `FAIL` line per test), `<dmg name>-unit_tests_failures.zip` (the failed tests' outputs and references, in a `<dmg name>-unit_tests_failures/` directory), and `<dmg name>-tests.log` (the output of `runTests.sh`). The clone is deleted afterwards (`-k` keeps it).
 
-The exit status is 1 if a test fails that isn't listed in the known-failures file (`-x FILE` or `NATRON_TESTS_KNOWN_FAILURES`: one name per line as in `-tests.txt`, e.g. `TestCMD/1`, `#` comments; no file means that any failure fails), or if the suite didn't run. Review the failures in the zip first: a failure accepted for a release goes in that file, with the reason.
+Known failures are listed in Natron-Tests itself, in `known_failures/common.txt` (all platforms) and `known_failures/macos.txt` (see its `known_failures/README.md`): `runTests.sh` reports them as `KNOWN FAIL`, and a listed test that passes as `UNEXPECTED PASS` (the list must then be updated, and the warning says so). The exit status is 1 if a test fails that isn't a known failure, or if the suite didn't run; unexpected passes don't fail the run. `-x FILE` (or `NATRON_TESTS_KNOWN_FAILURES`) adds a list of extra known failures, in the same format, for this run only. The counts are also in `<dmg name>-tests-summary.txt`. A failure accepted for a release goes into Natron-Tests' lists, with its issue, through a Natron-Tests pull request.
 
 ## Settings
 

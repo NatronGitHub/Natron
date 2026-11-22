@@ -481,8 +481,12 @@ Homebrew, copies in only ``Natron.app`` and the Natron-Tests data, and writes
 DMG. Attach both to the GitHub release, as for v2.5.0
 (``Natron-2.5.0-macOS12-x86_64-tests.txt`` and
 ``Natron-2.5.0-macOS12-x86_64-unit_tests_failures.zip``). It exits with status
-1 when a test fails that is not listed in the known-failures file (``-x``), so
-it can gate the release (see ``tools/tart/README.md``).
+1 when a test fails that is not a known failure, so it can gate the release.
+The known failures are listed in Natron-Tests, shared by the three platforms:
+``known_failures/common.txt`` and ``macos.txt``, ``linux.txt``, ``windows.txt``
+(one test per line, with its issue). ``runTests.sh`` reports them as
+``KNOWN FAIL``, and a listed test that passes as ``UNEXPECTED PASS``: update
+the lists then. See ``tools/tart/README.md``.
 
 Gotchas:
 
