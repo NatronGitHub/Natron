@@ -294,6 +294,7 @@ class ConvertProjectTest:
         if not self.check(status == 0 and os.path.isfile(out),
                           "could not load %s" % path):
             return None
+        self.check_no_lock("dump of %s" % path)
         with open(out) as f:
             return json.load(f)
 
@@ -343,6 +344,7 @@ class ConvertProjectTest:
                    file_format(in_place) == "text",
                    "convert() without quitting: exit status %d, the prompt "
                    "should start and %s should be text" % (status, in_place))
+        self.check_no_lock("convert() without quitting")
 
     def test_gui_data(self):
         """A project with GUI data is converted only with discard_gui."""

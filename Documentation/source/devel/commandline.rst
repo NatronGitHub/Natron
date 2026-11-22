@@ -498,9 +498,10 @@ converts only the projects that have no GUI data, the ones saved by NatronRender
 *File format* choice, or pass ``discard_gui=True`` to convert them without their GUI data.
 
 When the project is not converted, ``convert_and_quit()`` raises an exception: ``ValueError``
-for a bad ``to``, ``FileNotFoundError`` when ``src`` doesn't exist, ``IsADirectoryError`` when ``dst`` is a
-directory, and ``RuntimeError`` otherwise, with a message that says why. NatronRenderer prints it and exits with status 1. It
-exits with status 0 when the project was converted.
+for a bad ``to``, ``FileNotFoundError`` when ``src`` doesn't exist, ``IsADirectoryError`` when
+``dst`` is a directory, and ``RuntimeError`` otherwise, with a message that says why.
+NatronRenderer prints it and exits with status 1. It exits with status 0 when the project was
+converted.
 
 In a script, ``convert()`` takes the same arguments and raises the same exceptions, but doesn't
 quit, so that a script can convert several projects in one run. Each conversion replaces the
