@@ -633,8 +633,6 @@ fi
 rm -rf "$TMP_BINARIES_PATH/PyPlugs" || true
 mkdir -p "$TMP_BINARIES_PATH/PyPlugs"
 cp "$srcdir"/Gui/Resources/PyPlugs/* "$TMP_BINARIES_PATH/PyPlugs/"
-# a Python module installed with the PyPlugs, as in the CMake build (App/CMakeLists.txt)
-cp "$srcdir"/tools/natron_convert_project.py "$TMP_BINARIES_PATH/PyPlugs/"
 if [ "$PKGOS" = "Linux" ] || [ "$PKGOS" = "Windows" ]; then
     mkdir -p "$RES_DIR/etc/fonts/conf.d"
     cp "$srcdir"/Gui/Resources/etc/fonts/fonts.conf "$RES_DIR/etc/fonts/"

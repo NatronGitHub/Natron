@@ -218,10 +218,10 @@ DMG: the installer script rebuilds the bundle from the executables,
   (executables), ``Resources/etc/fonts`` (``fonts.conf`` and ``conf.d``),
   ``Resources/OpenColorIO-Configs``, ``Resources/pixmaps`` (Linux PNG or
   Windows ICO icons), ``Resources/stylesheets/mainstyle.qss``,
-  ``Plugins/PyPlugs`` (with the ``natron_convert_project`` Python module) and
-  ``docs/natron/LICENSE.txt``. On macOS, the same inside ``Natron.app/Contents``:
-  the executables in ``MacOS/``, everything else in ``Resources/`` and
-  ``Plugins/PyPlugs``. Installed binaries only get
+  ``Plugins/PyPlugs``, the ``natron_convert_project`` Python module in
+  ``Plugins/`` (always on the Python path) and ``docs/natron/LICENSE.txt``. On
+  macOS, the same inside ``Natron.app/Contents``: the executables in ``MacOS/``,
+  everything else in ``Resources/`` and ``Plugins/``. Installed binaries only get
   relative RPATHs: ``$ORIGIN/../lib`` on Linux; ``@loader_path/../Frameworks``
   and the PySide/Shiboken directories in the bundled Python framework on
   macOS. The installer scripts still add the third-party libraries, Qt,

@@ -231,10 +231,14 @@ if(NATRON_INSTALL_PYPLUGSDIR)
         DESTINATION "${NATRON_INSTALL_PYPLUGSDIR}"
         PATTERN __pycache__ EXCLUDE
         PATTERN "*.pyc" EXCLUDE)
-    # a Python module, not a PyPlug: Natron puts the PyPlugs directories on the Python path (the bundled
-    # one only with the "Use bundled plug-ins" preference; Engine/AppManager.cpp)
-    install(FILES ../tools/natron_convert_project.py
-        DESTINATION "${NATRON_INSTALL_PYPLUGSDIR}")
+    # natron_convert_project.py, a Python module: PORTABLE in Plugins/, the parent of PyPlugs/, which is
+    # always on the Python path (../Plugins, Global/PythonUtils.cpp); FHS (Linux) in share/Natron/Plugins,
+    # the system-wide PyPlugs directory, which is always searched (Engine/AppManager.cpp)
+    set(_natron_pymodulesdir "${NATRON_INSTALL_PYPLUGSDIR}")
+    if(NATRON_INSTALL_LAYOUT STREQUAL "PORTABLE")
+        get_filename_component(_natron_pymodulesdir "${NATRON_INSTALL_PYPLUGSDIR}" DIRECTORY)
+    endif()
+    install(FILES ../tools/natron_convert_project.py DESTINATION "${_natron_pymodulesdir}")
 endif()
 if(NATRON_INSTALL_DOCDIR)
     install(FILES ../LICENSE.txt DESTINATION "${NATRON_INSTALL_DOCDIR}")

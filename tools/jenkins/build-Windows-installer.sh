@@ -222,6 +222,8 @@ mkdir -p "$location/docs" "$location/bin" "$location/lib" "$location/Resources" 
 
 cp -a "${TMP_BINARIES_PATH}/docs/natron"/* "$location/docs/"
 cp -a "${TMP_BINARIES_PATH}/PyPlugs"/* "$location/Plugins/PyPlugs/"
+# a Python module: Plugins/ is on the Python path
+cp "$CWD/../natron_convert_project.py" "$location/Plugins/"
 
 # the test program, run below and removed before the zip is made
 cp "${TMP_BINARIES_PATH}/bin/Tests.exe" "$location/bin/"
