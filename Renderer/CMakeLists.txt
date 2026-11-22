@@ -40,8 +40,7 @@ target_include_directories(NatronRenderer
 
 install(TARGETS NatronRenderer DESTINATION "${NATRON_INSTALL_BINDIR}")
 
-# The Python modules that Natron installs in its Plugins directory (see NATRON_INSTALL_PYTHONDIR in
-# App/CMakeLists.txt), also in the build tree: ../Plugins is on the Python path of the build-tree
-# NatronRenderer and natron-python (Global/PythonUtils.cpp), as in an installed Natron.
+# natron_convert_project.py, installed with the PyPlugs (App/CMakeLists.txt), also in the build tree:
+# ../Plugins is on the Python path of NatronRenderer and natron-python (Global/PythonUtils.cpp).
 configure_file(../tools/natron_convert_project.py
     "${CMAKE_CURRENT_BINARY_DIR}/../Plugins/natron_convert_project.py" COPYONLY)

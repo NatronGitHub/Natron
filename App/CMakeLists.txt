@@ -231,10 +231,9 @@ if(NATRON_INSTALL_PYPLUGSDIR)
         DESTINATION "${NATRON_INSTALL_PYPLUGSDIR}"
         PATTERN __pycache__ EXCLUDE
         PATTERN "*.pyc" EXCLUDE)
-endif()
-if(NATRON_INSTALL_PYTHONDIR)
+    # a Python module, not a PyPlug: the PyPlugs directories are on the Python path (Engine/AppManager.cpp)
     install(FILES ../tools/natron_convert_project.py
-        DESTINATION "${NATRON_INSTALL_PYTHONDIR}")
+        DESTINATION "${NATRON_INSTALL_PYPLUGSDIR}")
 endif()
 if(NATRON_INSTALL_DOCDIR)
     install(FILES ../LICENSE.txt DESTINATION "${NATRON_INSTALL_DOCDIR}")
