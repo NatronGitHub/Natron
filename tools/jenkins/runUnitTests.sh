@@ -86,7 +86,7 @@ if [ "$FAIL" = "0" ]; then
                 printStatusMessage "*** Error: NatronRenderer binary $bin is missing"
             fi
         fi
-        env SRCDIR="$SRC_PATH" NATRON_CACHE_PATH="$CACHEDIR" OCIO="$ocio" FFMPEG="$TMP_PORTABLE_DIR/bin/ffmpeg" COMPARE="$TMP_PORTABLE_DIR/bin/idiff"  $TIMEOUT -s KILL 7200 bash runTests.sh "$bin" || FAIL=$?
+        env SRCDIR="$SRC_PATH" OCIO="$ocio" FFMPEG="$TMP_PORTABLE_DIR/bin/ffmpeg" COMPARE="$TMP_PORTABLE_DIR/bin/idiff"  $TIMEOUT -s KILL 7200 bash runTests.sh "$bin" || FAIL=$?
         #FAIL=0
     elif [ "$PKGOS" = "Windows" ] && [ "${BITS}" = "64" ]; then
         # (the tests run the portable tree, TMP_PORTABLE_DIR, from which the zip is made)
@@ -103,7 +103,7 @@ if [ "$FAIL" = "0" ]; then
                 echo "*** Error: NatronRenderer binary $bin is missing" >> "$ULOG"
             fi
         fi
-        env SRCDIR="$SRC_PATH" NATRON_CACHE_PATH="$CACHEDIR" OCIO="$ocio" FFMPEG="$TMP_PORTABLE_DIR/bin/ffmpeg.exe" COMPARE="$TMP_PORTABLE_DIR/bin/idiff.exe" $TIMEOUT -s KILL 7200 bash runTests.sh "$bin" || FAIL=$?
+        env SRCDIR="$SRC_PATH" OCIO="$ocio" FFMPEG="$TMP_PORTABLE_DIR/bin/ffmpeg.exe" COMPARE="$TMP_PORTABLE_DIR/bin/idiff.exe" $TIMEOUT -s KILL 7200 bash runTests.sh "$bin" || FAIL=$?
         # sometimes NatronRenderer just hangs. Try taskkill first, then tskill if it fails because of a message like:
         # $ taskkill -f -im NatronRenderer-bin.exe -t
         # ERROR: The process with PID 3260 (child process of PID 3816) could not be terminated.
@@ -132,7 +132,7 @@ if [ "$FAIL" = "0" ]; then
                 echo "*** Error: NatronRenderer binary $bin is missing"
             fi
         fi
-        env SRCDIR="$SRC_PATH" NATRON_CACHE_PATH="$CACHEDIR" OCIO="$ocio" FFMPEG="${TMP_PORTABLE_DIR}.app/Contents/MacOS/ffmpeg" COMPARE="${TMP_PORTABLE_DIR}.app/Contents/MacOS/idiff" $TIMEOUT -s KILL 7200 bash runTests.sh "$bin" || FAIL=$?
+        env SRCDIR="$SRC_PATH" OCIO="$ocio" FFMPEG="${TMP_PORTABLE_DIR}.app/Contents/MacOS/ffmpeg" COMPARE="${TMP_PORTABLE_DIR}.app/Contents/MacOS/idiff" $TIMEOUT -s KILL 7200 bash runTests.sh "$bin" || FAIL=$?
         #FAIL=0
     fi
     popd

@@ -627,7 +627,8 @@ fi
 INSTALLER_OS="${PKGOS}"
 INSTALLER_ARCH="${BITS}"
 if [ "${INSTALLER_OS}" = "OSX" ]; then
-    case "$(sw_vers -productVersion)" in
+    # named after the oldest macOS it runs on (MACOSX_DEPLOYMENT_TARGET, see common.sh)
+    case "${MACOSX_DEPLOYMENT_TARGET:-$(sw_vers -productVersion)}" in
         10.5.*) INSTALLER_OS="MacOSX105";; 
         10.6.*) INSTALLER_OS="MacOSX106";; 
         10.7.*) INSTALLER_OS="MacOSX107";; 
@@ -653,7 +654,7 @@ if [ "${INSTALLER_OS}" = "OSX" ]; then
         29.*) INSTALLER_OS="macOS29";;
         30.*) INSTALLER_OS="macOS30";;
         # Fallback for any unlisted/future release: use macOS<major>.
-        *) INSTALLER_OS="macOS$(sw_vers -productVersion | cut -d. -f1)";;
+        *) INSTALLER_OS="macOS$(echo "${MACOSX_DEPLOYMENT_TARGET:-$(sw_vers -productVersion)}" | cut -d. -f1)";;
     esac
 
     case "${BITS}" in
@@ -748,6 +749,17 @@ fi
 if [ "$FAIL" -ne "0" ]; then
     echo "build-${PKGOS}-installer.sh failed with status $FAIL"
     exit $FAIL
+fi
+# macOS release builds (NATRON_MACOS_MIN set, see common.sh): every Mach-O file in the DMG must
+# run on that macOS; the files that need a newer one are listed in <dmg name>-minos.txt
+if $BUILD_4 && [ "$PKGOS" = "OSX" ] && [ -n "${NATRON_MACOS_MIN:-}" ] && [ "${GIT_URL_IS_NATRON:-}" = "1" ]; then
+    dmg="${BUILD_ARCHIVE_DIRECTORY}/${INSTALLER_BASENAME}.dmg"
+    printStatusMessage "Checking that every Mach-O file in $(basename "$dmg") runs on macOS ${NATRON_MACOS_MIN}..."
+    if ! "${CWD}/../tart/check-minos.sh" -t "${NATRON_MACOS_MIN}" "$dmg" > "${dmg%.dmg}-minos.txt"; then
+        echo "Error: files in $(basename "$dmg") need a macOS newer than ${NATRON_MACOS_MIN}:"
+        head -20 "${dmg%.dmg}-minos.txt"
+        exit 1
+    fi
 fi
 
 

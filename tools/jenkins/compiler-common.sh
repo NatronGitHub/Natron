@@ -176,9 +176,10 @@ if [ "$PKGOS" = "OSX" ]; then
         fi
         case "$osxver" in
         2[123].*)
-            # clang-mp can't compile QtMac.mm on Monterey
-            OBJECTIVE_CC=clang
-            OBJECTIVE_CXX=clang++
+            # clang-mp can't compile QtMac.mm on Monterey (macOS 12 to 14): use Apple's clang.
+            # Full paths: CMake can't find a bare "clang++" for CMAKE_OBJCXX_COMPILER
+            OBJECTIVE_CC=/usr/bin/clang
+            OBJECTIVE_CXX=/usr/bin/clang++
             ;;
         *)
             OBJECTIVE_CC=$CC
@@ -199,38 +200,45 @@ if [ "$PKGOS" = "OSX" ]; then
     # SDK root was moved with Xcode 4.3
     MACOSX_SDK_ROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs
     case "$osxver" in
-        10.*)
-            MACOSX_DEPLOYMENT_TARGET=10.6
-            MACOSX_SDK_ROOT=/Developer/SDKs
+        10.*) MACOSX_SDK_ROOT=/Developer/SDKs;;
+    esac
+    # MACOSX_DEPLOYMENT_TARGET is normally set by common.sh (NATRON_MACOS_MIN, 14.0, for release
+    # builds, the build Mac's macOS otherwise); the table below is only a fallback for scripts
+    # that don't set it.
+    case "${MACOSX_DEPLOYMENT_TARGET:+set}:$osxver" in
+        set:*)
             ;;
-        13.*)
+        *:10.*)
+            MACOSX_DEPLOYMENT_TARGET=10.6
+            ;;
+        *:13.*)
             MACOSX_DEPLOYMENT_TARGET=10.9
             ;;
-        16.*)
+        *:16.*)
             MACOSX_DEPLOYMENT_TARGET=10.12
             ;;
-        17.*)
+        *:17.*)
             MACOSX_DEPLOYMENT_TARGET=10.13
             ;;
-        18.*)
+        *:18.*)
             MACOSX_DEPLOYMENT_TARGET=10.14
             ;;
-        19.*)
+        *:19.*)
             MACOSX_DEPLOYMENT_TARGET=10.15
             ;;
-        20.*)
+        *:20.*)
             MACOSX_DEPLOYMENT_TARGET=11
             ;;
-        21.*)
+        *:21.*)
             MACOSX_DEPLOYMENT_TARGET=12
             ;;
-        22.*)
+        *:22.*)
             MACOSX_DEPLOYMENT_TARGET=13
             ;;
-        23.*)
+        *:23.*)
             MACOSX_DEPLOYMENT_TARGET=14
             ;;
-        24.*)
+        *:24.*)
             MACOSX_DEPLOYMENT_TARGET=15
             ;;
    esac

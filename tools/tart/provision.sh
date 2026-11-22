@@ -8,11 +8,21 @@
 #   ~/Documents/third_party/osmesa-install   osmesa-install checkout
 #
 # Usage: provision.sh [STEP...]   (default: all SDK steps; finished steps are skipped)
-#   SDK steps: disk xcode macports overlay sync pins osmesa compiler tools libs python_qt dmgtools
+#   SDK steps: disk nobrew clt macports macports_conf overlay sync pins osmesa compiler tools libs python_qt
+#              dmgtools rebuild_target fixups
 #   env:       REDO="step..." re-runs steps already marked done; PROXY=socks5h://... for internet access
 #   others:    sync (re-publish the overlay), update (refresh an existing SDK), cleanup (shrink the image), build (build Natron)
 # Logs:  ~/provision-logs/<step>.log ; done markers in ~/provision-logs/<step>.done
 set -euo pipefail
+
+# This script changes the machine it runs on: it removes Homebrew and the Command Line Tools,
+# sets the system proxy, rewrites ~/.zprofile and the git configuration. Refuse to run anywhere
+# but in a tart VM driven by natron-sdk.sh/natron-build.sh (vm_start writes /tmp/natron-tart-id).
+if [ "$(sysctl -n kern.hv_vmm_present 2> /dev/null)" != 1 ] ||
+       { [ "$(id -un)" != admin ] && [ ! -f /tmp/natron-tart-id ]; }; then
+    echo "provision.sh: not in a Natron tart VM (kern.hv_vmm_present != 1, or neither user admin nor /tmp/natron-tart-id): refusing to run" >&2
+    exit 1
+fi
 
 SRC=$HOME/Documents/third_party
 NATRON=$SRC/Natron
@@ -21,6 +31,15 @@ WORKSPACE=$HOME/Development/workspace
 LOGDIR=$HOME/provision-logs
 MACPORTS_VERSION=2.12.7
 JOBS=${MKJOBS:-$(sysctl -n hw.ncpu)}
+# Oldest macOS supported by Natron's macOS release, and the Command Line Tools of the SDK image:
+# tools/jenkins/macos-release.sh. The SDK image runs that macOS itself, with the Command Line
+# Tools and their macOS 14 SDK, so MacPorts' binary archives (built for the macOS they were made
+# on) can be used. Every port (their dylibs are bundled), OSMesa/LLVM and Natron itself are built
+# for it (step_build sets NATRON_MACOS_MIN, see tools/jenkins/common.sh).
+# shellcheck source=../jenkins/macos-release.sh
+. "$NATRON/tools/jenkins/macos-release.sh"
+macos_target=$NATRON_MACOS_RELEASE_MIN
+CHECK_MINOS=$NATRON/tools/tart/check-minos.sh
 export PATH=/opt/local/bin:/opt/local/sbin:$PATH
 
 os_major=$(uname -r | cut -d. -f1)
@@ -57,9 +76,41 @@ start_http_proxy() {
     export HTTP_PROXY=$http_proxy HTTPS_PROXY=$https_proxy
 }
 PORT="port_retry"
-# large downloads through the SOCKS tunnel are sometimes cancelled: retry port commands
+# large downloads through the SOCKS tunnel are sometimes cancelled: retry port commands.
+# MacPorts fetches binary archives in the background while it installs other ports, and when
+# such a fetch fails it silently builds the port from source (e.g. llvm-18, hours instead of
+# seconds, or qt5-qtwebengine, which can't be built without Xcode): so fetch the archives of the
+# ports to install and of their dependencies first, with retries.
+# The ports keep their variants: archivefetch leaves a work directory whose variants must match
+# the install's (and those of the dependencies are removed afterwards).
+prefetch_archives() { # [-n] install|upgrade [-f] port [+variant -variant]...
+    local p i expr="" deps=""
+    for p in "$@"; do
+        case $p in
+            -s) return 0 ;;   # built from source
+            install|upgrade|-f|-n|--force|--enforce-variants) ;;
+            [+-]*) expr="$expr $p" ;;
+            *) expr="$expr $p"; deps="$deps rdepof:$p" ;;
+        esac
+    done
+    [ -n "$deps" ] || return 0
+    expr="$expr$deps"
+    for i in 1 2 3; do
+        # shellcheck disable=SC2086
+        if $SUDO port -N archivefetch $expr; then break; fi
+        echo "port archivefetch failed (attempt $i)"
+        sleep 10
+    done
+    # archivefetch leaves work directories with the default variants of the dependencies, and
+    # "install" propagates the requested variants to them (e.g. glib2 -x11 to glib2-bootstrap):
+    # remove them (the fetched archives stay in MacPorts' incoming directory)
+    # shellcheck disable=SC2086
+    $SUDO port -q clean --work $expr > /dev/null 2>&1 || true
+    return 0   # the install below retries, and builds what has no archive
+}
 port_retry() {
     local i
+    case " $* " in *" install "*|*" upgrade "*) prefetch_archives "$@" ;; esac
     for i in 1 2 3; do
         $SUDO port -v -N "$@" && return 0
         echo "port $* failed (attempt $i)"
@@ -85,12 +136,148 @@ step_disk() {
     df -h /
 }
 
-step_xcode() {
-    local xcode=/Applications/Xcode.app
-    [ -d "$xcode" ] || xcode=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
-    sudo xcode-select -s "$xcode/Contents/Developer"
-    sudo xcodebuild -license accept
-    xcodebuild -version
+# The cirruslabs base images come with Homebrew (/opt/homebrew, /etc/paths.d/homebrew, and
+# "brew shellenv" in ~/.zprofile): MacPorts only, so remove it, keeping the tart guest agent
+# (installed by Homebrew, needed by "tart exec"), which only links system libraries.
+step_nobrew() {
+    local agent=/usr/local/libexec/tart-guest-agent f
+    if [ -e /opt/homebrew/bin/tart-guest-agent ]; then
+        sudo mkdir -p /usr/local/libexec
+        sudo cp "$(readlink -f /opt/homebrew/bin/tart-guest-agent)" "$agent"
+        sudo chmod 755 "$agent"
+    fi
+    for f in /Library/LaunchAgents/org.cirruslabs.tart-guest-agent.plist /Library/LaunchDaemons/org.cirruslabs.tart-guest-daemon.plist; do
+        [ -f "$f" ] || continue
+        sudo perl -pi -e "s|/opt/homebrew/bin/tart-guest-agent|$agent|; s|:/opt/homebrew/bin||" "$f"
+    done
+    if grep -q /opt/homebrew /Library/LaunchAgents/org.cirruslabs.tart-guest-agent.plist /Library/LaunchDaemons/org.cirruslabs.tart-guest-daemon.plist 2>/dev/null; then
+        echo "the tart guest agent still uses /opt/homebrew"; return 1
+    fi
+    # the running agent keeps its (deleted) binary until the next boot
+    sudo rm -rf /opt/homebrew /etc/paths.d/homebrew "$HOME/.homebrew"
+    # ~/.profile is a link to ~/.zprofile: keep its LANG, drop Homebrew, rbenv, node and pnpm
+    if [ -f "$HOME/.zprofile" ]; then
+        grep -v -E 'brew|HOMEBREW|rbenv|node@|PNPM' "$HOME/.zprofile" > "$HOME/.zprofile.new" || true
+        mv "$HOME/.zprofile.new" "$HOME/.zprofile"
+    fi
+    # git-lfs came from Homebrew
+    git config --global --remove-section filter.lfs 2>/dev/null || true
+    cat "$HOME/.zprofile"
+    if zsh -lc 'command -v brew'; then echo "brew is still on the login PATH"; return 1; fi
+    [ ! -e /opt/homebrew ]
+}
+
+# The Command Line Tools with the SDK of the target macOS (14), and nothing else (no Xcode):
+# CLT $CLT_VERSION has the macOS 14.4 SDK (default) and 13.3, and Apple clang 15.0.0. The base
+# image has CLT 16.2 (macOS 15.2 and 14.5 SDKs), which is replaced. softwareupdate installs the
+# CLT without an Apple ID when $CLT_FLAG exists; it uses the system proxy settings, set to the
+# SOCKS proxy for the duration of the install.
+CLT_VERSION=$NATRON_MACOS_CLT_VERSION
+CLT_FLAG=/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
+system_proxy() { # on|off : the system SOCKS proxy (softwareupdate ignores ALL_PROXY); "off" always runs
+    local s
+    [ -n "$PROXY" ] || [ "$1" = off ] || return 0
+    networksetup -listallnetworkservices | tail -n +2 | grep -v '^\*' | while read -r s; do
+        if [ "$1" = on ]; then
+            local hp=${PROXY#*://}
+            sudo networksetup -setsocksfirewallproxy "$s" "${hp%:*}" "${hp##*:}" 2>/dev/null || true
+        else
+            sudo networksetup -setsocksfirewallproxystate "$s" off 2>/dev/null || true
+        fi
+    done
+}
+clt_install() {
+    local label
+    softwareupdate --list > "$LOGDIR/softwareupdate-list.txt" 2>&1 || true
+    cat "$LOGDIR/softwareupdate-list.txt"
+    label=$(sed -n "s/^\* Label: \(Command Line Tools for Xcode-$CLT_VERSION\)\$/\1/p" "$LOGDIR/softwareupdate-list.txt" | head -1)
+    # Apple offers the CLT for the macOS it runs on and a few older ones: 15.3 on macOS 14, probably
+    # not on macOS 15 or later (untested). Without it, see INSTALL_MACOS.md section 1 (the .dmg
+    # from developer.apple.com).
+    [ -n "$label" ] || { echo "softwareupdate does not offer Command Line Tools $CLT_VERSION on macOS $(sw_vers -productVersion)"; return 1; }
+    sudo softwareupdate --install "$label" --verbose || return 1
+}
+step_clt() {
+    local have p sdks
+    have=$(pkgutil --pkg-info=com.apple.pkg.CLTools_Executables 2>/dev/null | awk '/^version:/ {print $2}')
+    case "$have" in
+        "$CLT_VERSION".*) echo "Command Line Tools $have already installed" ;;
+        *)
+            if [ -n "$have" ] || [ -d /Library/Developer/CommandLineTools ]; then
+                echo "removing Command Line Tools $have"
+                sudo rm -rf /Library/Developer/CommandLineTools
+                for p in $(pkgutil --pkgs | grep '^com\.apple\.pkg\.CLTools_'); do sudo pkgutil --forget "$p"; done
+            fi
+            system_proxy on
+            sudo touch "$CLT_FLAG"
+            local rc=0
+            clt_install || rc=$?
+            system_proxy off
+            sudo rm -f "$CLT_FLAG"
+            [ "$rc" = 0 ] || return "$rc"
+            ;;
+    esac
+    system_proxy off   # also after an interrupted install
+    sudo xcode-select -s /Library/Developer/CommandLineTools
+    xcode-select -p
+    pkgutil --pkg-info=com.apple.pkg.CLTools_Executables
+    # the default SDK is the target macOS's, and there is none for a newer macOS (CLT 15.3 also
+    # has 13.3)
+    local major=${macos_target%%.*} v
+    sdks=$(ls /Library/Developer/CommandLineTools/SDKs)
+    echo "SDKs: $sdks"
+    for v in $(echo "$sdks" | sed -n 's/^MacOSX\([0-9][0-9]*\).*\.sdk$/\1/p'); do
+        [ "$v" -le "$major" ] || { echo "SDK for macOS $v, newer than $major, found"; return 1; }
+    done
+    [ "$(xcrun --show-sdk-version | cut -d. -f1)" = "$major" ] || { echo "the default SDK is not macOS $major's"; return 1; }
+    xcrun --show-sdk-path
+    clang --version
+    # Apple clang and its libc++ for C++17 (Qt5 builds) and C++20 (Qt6 builds), for $macos_target
+    cat > /tmp/clt-cxx17.cpp <<'EOF'
+#include <optional>
+#include <string_view>
+#include <variant>
+#include <filesystem>
+#include <shared_mutex>
+int main() {
+    std::optional<int> o = 1; std::variant<int, double> v = 2.0;
+    if constexpr (sizeof(int) == 4) { auto [a, b] = std::pair<int, int>(1, 2); (void)a; (void)b; }
+    std::shared_mutex m; std::string_view sv = "x";
+    return (*o + (int)std::get<double>(v) + (int)sv.size() + (int)std::filesystem::path("/tmp").empty()) == 4 ? 0 : 1;
+}
+EOF
+    cat > /tmp/clt-cxx20.cpp <<'EOF'
+#include <algorithm>
+#include <compare>
+#include <concepts>
+#include <numbers>
+#include <ranges>
+#include <span>
+#include <vector>
+#include <bit>
+template <std::integral T> constexpr T twice(T x) { return 2 * x; }
+struct P { int x, y; auto operator<=>(const P&) const = default; };
+consteval int c() { return 3; }
+int main() {
+    std::vector<int> v{3, 1, 2};
+    std::ranges::sort(v);
+    std::span<int> s(v);
+    auto even = s | std::views::filter([](int i) { return i % 2 == 0; });
+    P a{.x = 1, .y = 2}, b{1, 3};
+    return (twice(s[0]) == 2 && *even.begin() == 2 && a < b && c() == 3 && std::popcount(7u) == 3 &&
+            std::numbers::pi > 3) ? 0 : 1;
+}
+EOF
+    clang++ -std=c++17 -mmacosx-version-min="$macos_target" -O2 /tmp/clt-cxx17.cpp -o /tmp/clt-cxx17 && /tmp/clt-cxx17
+    clang++ -std=c++20 -mmacosx-version-min="$macos_target" -O2 /tmp/clt-cxx20.cpp -o /tmp/clt-cxx20 && /tmp/clt-cxx20
+    # informational: std::format (libc++ marks it available from macOS 13.3)
+    printf '#include <format>\n#include <string>\nint main(){ return std::format("{}", 42) == "42" ? 0 : 1; }\n' > /tmp/clt-format.cpp
+    if clang++ -std=c++20 -mmacosx-version-min="$macos_target" /tmp/clt-format.cpp -o /tmp/clt-format && /tmp/clt-format; then
+        echo "std::format: OK"
+    else
+        echo "std::format: not usable"
+    fi
+    vtool -show-build /tmp/clt-cxx20 | grep -E 'minos|sdk'
 }
 
 # Install MacPorts $MACPORTS_VERSION from the official .pkg (also upgrades an older base).
@@ -115,8 +302,44 @@ step_macports() {
     pkgutil --check-signature "$dl/$pkg" > "$dl/sig.txt" || true
     grep -q "signed by a developer certificate issued by Apple for distribution" "$dl/sig.txt" &&
         grep -q "Developer ID Installer: Joshua Root (QTA3A3B7F3)" "$dl/sig.txt" || { cat "$dl/sig.txt"; echo "bad signature"; exit 1; }
+    # the .pkg's postinstall runs "port selfupdate", whose rsync can't use the SOCKS proxy and hangs
+    # for minutes on a guest without direct internet access: stop it (ports_https_source syncs later)
+    if [ -n "$PROXY" ]; then
+        ( while sleep 15; do
+              pgrep -qx installer || break
+              sudo pkill -f 'rsync://rsync\.macports\.org' 2> /dev/null || true
+          done ) &
+    fi
     sudo installer -pkg "$dl/$pkg" -target /
+    wait
     port version
+}
+
+# Build every port for $macos_target in macports.conf. On macOS $macos_target itself that is
+# MacPorts' default, and its binary archives are built for it; on a newer macOS, ports are built
+# from source, since the archives would need that macOS. This applies to the ports installed
+# afterwards; step_rebuild_target rebuilds the installed ones that are too new.
+# macosx_sdk_version keeps MacPorts' default (this OS's SDK, the CLT's macOS 14 SDK in the tart image).
+# Never marked done: a MacPorts upgrade (step_macports) must not lose the settings.
+set_macports_conf() { # key value
+    local conf=/opt/local/etc/macports/macports.conf
+    if grep -q "^$1[[:space:]]" $conf; then
+        sudo perl -pi -e "s|^$1\\s.*|$1\\t$2|" $conf
+    else
+        printf '# Natron (tools/tart/provision.sh)\n%s\t%s\n' "$1" "$2" | sudo tee -a $conf > /dev/null
+    fi
+}
+step_macports_conf() {
+    set_macports_conf macosx_deployment_target "$macos_target"
+    if [ "$(sw_vers -productVersion | cut -d. -f1)" = "${macos_target%%.*}" ]; then
+        set_macports_conf buildfromsource ifneeded
+    else
+        # UNTESTED: an SDK image on a macOS newer than $macos_target (BASE_IMAGE). Every port is
+        # then built from source, and qt5-qtwebengine needs a full Xcode (see INSTALL_MACOS.md).
+        set_macports_conf buildfromsource always
+    fi
+    grep -E '^(macosx_deployment_target|macosx_sdk_version|buildfromsource)[[:space:]]' /opt/local/etc/macports/macports.conf
+    grep -q "^macosx_deployment_target[[:space:]]*$macos_target\$" /opt/local/etc/macports/macports.conf
 }
 
 # Fetch the ports tree over HTTPS (works through the SOCKS proxy; rsync would not).
@@ -149,16 +372,26 @@ step_overlay() {
     port file openimageio | grep -q '^/opt/MacPorts-Natron/' || { echo "overlay not used"; exit 1; }
 }
 
+# OSMesa and LLVM are static libraries linked into Natron: build them for $macos_target too
+# (osmesa-install.sh honours MACOSX_DEPLOYMENT_TARGET). Rebuilt if built for a newer macOS.
+osmesa_ok() {
+    [ -f /opt/osmesa/lib/libMangledOSMesa32.a ] && [ -x /opt/llvm/bin/llvm-config ] &&
+        "$CHECK_MINOS" -N -t "$macos_target" /opt/osmesa/lib /opt/llvm/lib/libLLVMSupport.a > /dev/null
+}
 step_osmesa() {
-    if [ -f /opt/osmesa/lib/libMangledOSMesa32.a ] && [ -x /opt/llvm/bin/llvm-config ]; then return; fi
+    if osmesa_ok; then return; fi
+    if [ -d /opt/osmesa/lib ] || [ -d /opt/llvm/lib ]; then
+        echo "OSMesa/LLVM missing or built for a macOS newer than $macos_target: rebuilding them"
+        sudo rm -rf /opt/osmesa /opt/llvm
+    fi
     sudo mkdir -p /opt/osmesa /opt/llvm
     sudo chown "$(id -un):staff" /opt/osmesa /opt/llvm
     $PORT install python27 cmake autoconf automake libtool pkgconfig gsed
     sudo port select --set python python27
     mkdir -p "$OSMESA_SRC/build"
-    (cd "$OSMESA_SRC/build" && env LLVM_BUILD=1 MKJOBS="$JOBS" ../osmesa-install.sh)
+    (cd "$OSMESA_SRC/build" && env LLVM_BUILD=1 MKJOBS="$JOBS" MACOSX_DEPLOYMENT_TARGET="$macos_target" ../osmesa-install.sh)
     sudo port select --set python none
-    [ -f /opt/osmesa/lib/libMangledOSMesa32.a ] && [ -x /opt/llvm/bin/llvm-config ]
+    osmesa_ok
 }
 
 step_compiler() {
@@ -241,6 +474,7 @@ step_python_qt() {
 # Idempotent fixes of installed files that a port upgrade may undo, and the port selections
 # (step_osmesa temporarily selects python27). Never marked done: re-run on every create/update.
 step_fixups() {
+    system_proxy off   # only step_clt turns it on, for softwareupdate
     [ -e /opt/local/include/minizip-ng ] || sudo ln -s . /opt/local/include/minizip-ng
     sudo sed -i '' -e 's/^find_dependency(zstd/#find_dependency(zstd/' /opt/local/lib/cmake/minizip-ng/minizip-ng-config.cmake
     sudo sed -i '' -e 's/Zstd::Zstd/zstd/' /opt/local/lib/pkgconfig/libzip.pc
@@ -345,12 +579,88 @@ step_python_migrate() {
     fi
 }
 
+# The active ports that have a Mach-O file built for a macOS newer than $macos_target: installed
+# from MacPorts' binary archives, or built before step_macports_conf set the deployment target.
+ports_newer_than_target() {
+    local p rc
+    for p in $(port -q installed active | awk '{print $1}'); do
+        rc=0
+        # -N: ports may install files without a minimum version (e.g. archives of non-Mach-O
+        # objects); the DMG check (natron-build.sh, launchBuildMain.sh) is strict
+        port -q contents "$p" | "$CHECK_MINOS" -N -t "$macos_target" -l > /dev/null 2>&1 || rc=$?
+        case $rc in
+            0) ;;
+            1) echo "$p" ;;
+            *) echo "WARNING: check-minos.sh failed (status $rc, otool could not read a file) on the files of $p" >&2 ;;
+        esac
+    done
+}
+
+# Print the given ports in dependency order (dependencies first; tsort(1) breaks cycles).
+deps_order() {
+    local set=" $* " p rest d
+    {
+        for p in "$@"; do echo "$p $p"; done
+        port -q info --line --name --depends_fetch --depends_extract --depends_patch \
+            --depends_build --depends_lib --depends_run "$@" |
+            while IFS=$'\t' read -r p rest; do
+                for d in $(echo "$rest" | tr ',' ' '); do
+                    case "$set" in *" $d "*) [ "$d" = "$p" ] || echo "$d $p" ;; esac
+                done
+            done
+    } | tsort 2>/dev/null
+}
+
+# Rebuild from source, for $macos_target, every installed port built for a newer macOS, in
+# dependency order (so that static libraries and headers come from rebuilt dependencies).
+# Resumable: a port is selected by its files, so the ports already rebuilt are skipped.
+# A port still too new after its rebuild (prebuilt binaries, or a build system ignoring
+# MACOSX_DEPLOYMENT_TARGET) is listed in rebuild_target.skip with its version, and only rebuilt
+# again when its version changes; the minos check of the DMG (check-minos.sh, natron-build.sh)
+# tells whether that matters. Never marked done: run after every update.
+step_rebuild_target() {
+    local skip=$LOGDIR/rebuild_target.skip p v todo=() failed=() n=0
+    touch "$skip"
+    local newer
+    newer=$(ports_newer_than_target)   # not in the for: a failure must stop the step
+    for p in $newer; do
+        v=$(port -q installed "$p" | awk '/\(active\)/ {print $2}')
+        if grep -qxF "$p $v" "$skip"; then
+            echo "$p $v: still built for a macOS newer than $macos_target after a rebuild, skipped"
+            continue
+        fi
+        todo+=("$p")
+    done
+    [ ${#todo[@]} -gt 0 ] || { echo "all installed ports are built for macOS $macos_target or older"; return 0; }
+    echo "===== ${#todo[@]} ports built for a macOS newer than $macos_target: ${todo[*]}"
+    for p in $(deps_order "${todo[@]}"); do
+        n=$((n + 1))
+        echo "===== [$n/${#todo[@]}] rebuilding $p for macOS $macos_target $(date '+%F %T')"
+        if ! $PORT -n -s upgrade --force "$p"; then
+            # the previous build stays installed: go on with the other ports, fail at the end
+            echo "ERROR: could not rebuild $p"
+            failed+=("$p")
+            continue
+        fi
+        if port -q contents "$p" | "$CHECK_MINOS" -N -t "$macos_target" -l; then :; else
+            v=$(port -q installed "$p" | awk '/\(active\)/ {print $2}')
+            echo "WARNING: $p $v is still built for a macOS newer than $macos_target"
+            echo "$p $v" >> "$skip"
+        fi
+    done
+    echo "===== ports still built for a macOS newer than $macos_target (see $skip):"
+    cat "$skip"
+    if [ ${#failed[@]} -gt 0 ]; then echo "===== ports that could not be rebuilt: ${failed[*]}"; return 1; fi
+}
+
 # Update an existing SDK image: refresh MacPorts and the overlay, upgrade outdated ports.
 step_update() {
     # resumable: "natron-sdk.sh create" re-runs the update while this marker exists
     date '+%F %T' > "$LOGDIR/update.pending"
     # MacPorts base: install the .pkg of MACPORTS_VERSION if it differs from the installed one
     step_macports
+    # build for $macos_target, from source (also after a MacPorts upgrade)
+    step_macports_conf
     ports_https_source
     (cd "$NATRON/tools/MacPorts" && { ./check.sh --all || true; }) | tee "$LOGDIR/check.txt"
     if grep -q "is obsolete\|is missing\|differs from upstream\|is unused\|has no Portfile" "$LOGDIR/check.txt"; then
@@ -394,7 +704,7 @@ step_update() {
         echo "===== installing ImageMagick7 +natron"
         $PORT install ImageMagick7 +natron -x11 -openexr
     fi
-    # rebuild OSMesa/LLVM only if missing (delete /opt/osmesa/lib to force a rebuild)
+    # rebuild OSMesa/LLVM if missing or built for a newer macOS (delete /opt/osmesa/lib to force a rebuild)
     step_osmesa
     rm -f "$LOGDIR/update.pending"
 }
@@ -422,7 +732,7 @@ step_build() {
     fi
     mkdir -p "$WORKSPACE"
     cd "$NATRON/tools/jenkins"
-    env NOUPDATE=1 WORKSPACE="$WORKSPACE" DISABLE_BREAKPAD=1 NATRON_LICENSE="${NATRON_LICENSE:-GPL}" \
+    env NOUPDATE=1 WORKSPACE="$WORKSPACE" DISABLE_BREAKPAD=1 NATRON_MACOS_MIN="$macos_target" NATRON_LICENSE="${NATRON_LICENSE:-GPL}" \
         GIT_URL=https://github.com/NatronGitHub/Natron.git GIT_BRANCH="${GIT_BRANCH:-RB-2.6}" \
         UNIT_TESTS="${UNIT_TESTS:-false}" BUILD_NAME=natron_github_RB2 BUILD_NUMBER=1 \
         COMPILE_TYPE=release MKJOBS="$JOBS" \
@@ -433,9 +743,9 @@ step_build() {
     ls "$WORKSPACE"/builds_archive/natron_github_RB2/1/*.dmg
 }
 
-SDK_STEPS="disk xcode macports overlay sync pins osmesa compiler tools libs python_qt dmgtools fixups"
+SDK_STEPS="disk nobrew clt macports macports_conf overlay sync pins osmesa compiler tools libs python_qt dmgtools rebuild_target fixups"
 # steps that are never marked done (they are meant to be re-run)
-NO_MARKER_STEPS="disk sync pins update fixups cleanup build"
+NO_MARKER_STEPS="disk macports_conf sync pins rebuild_target update fixups cleanup build"
 mkdir -p "$LOGDIR"
 # REDO="step ...": forget that these steps were done (e.g. after fixing a step)
 for s in ${REDO:-}; do rm -f "$LOGDIR/$s.done"; done

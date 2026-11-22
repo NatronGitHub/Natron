@@ -122,8 +122,26 @@ elif [ "$PKGOS" = "OSX" ]; then
             ARCH=$(uname -m)
             ;;
     esac;
-    # always deploy for the same version as the build system, since we use macports (for now)
-    MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion | cut -d. -f-2)
+    # Deployment target. Release builds set NATRON_MACOS_MIN to the oldest macOS supported by the
+    # release (NATRON_MACOS_RELEASE_MIN in macos-release.sh, 14.0; tools/tart/provision.sh sets it):
+    # the MacPorts libraries that are bundled must be built for it too (macosx_deployment_target
+    # in macports.conf, see INSTALL_MACOS.md), and launchBuildMain.sh checks the DMG with
+    # check-minos.sh. Otherwise (development builds), build for this Mac's macOS, so that the
+    # plug-ins, which refuse to bundle a library newer than the target (OFX_DEPLOY_STRICT_MINOS),
+    # can bundle MacPorts' ordinary binary archives. An explicit MACOSX_DEPLOYMENT_TARGET wins.
+    # shellcheck source=macos-release.sh
+    . "$(dirname "${BASH_SOURCE[0]}")/macos-release.sh"
+    if [ -z "${MACOSX_DEPLOYMENT_TARGET:-}" ]; then
+        if [ -n "${NATRON_MACOS_MIN:-}" ]; then
+            MACOSX_DEPLOYMENT_TARGET=$NATRON_MACOS_MIN
+        else
+            MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion)
+            case "$MACOSX_DEPLOYMENT_TARGET" in
+                10.*) MACOSX_DEPLOYMENT_TARGET=$(echo "$MACOSX_DEPLOYMENT_TARGET" | cut -d. -f-2) ;;
+                *) MACOSX_DEPLOYMENT_TARGET=$(echo "$MACOSX_DEPLOYMENT_TARGET" | cut -d. -f1).0 ;;
+            esac
+        fi
+    fi
     export MACOSX_DEPLOYMENT_TARGET
     MACPORTS="/opt/local"
     LOCAL="/usr/local"

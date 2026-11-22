@@ -6,7 +6,7 @@
 #                           REDO="step..." re-runs steps already done in $SDK_IMAGE-wip)
 #   natron-sdk.sh update [STEP...]  refresh an existing $SDK_IMAGE (port sync, overlay, pinned ports,
 #                           upgrade outdated); STEPs already done in the image are re-run (e.g. python_qt)
-#   natron-sdk.sh push REF  push $SDK_IMAGE to an OCI registry (e.g. ghcr.io/<org>/natron-sdk-sequoia:2026-11)
+#   natron-sdk.sh push REF  push $SDK_IMAGE to an OCI registry (e.g. ghcr.io/<org>/natron-sdk-sonoma:2026-11)
 #
 # Work happens on a copy ($SDK_IMAGE-wip); $SDK_IMAGE is only replaced when everything succeeded,
 # and the previous image is kept as $SDK_IMAGE-prev.
@@ -35,7 +35,7 @@ finish() { # replace $SDK_IMAGE with $WIP, keep the old one as -prev
 case "${1:-}" in
 create)
     if ! vm_exists "$WIP"; then
-        log "cloning $BASE_IMAGE into $WIP (the first pull downloads ~70 GB)"
+        log "cloning $BASE_IMAGE into $WIP (the first pull downloads about 30 GB)"
         tart clone "$BASE_IMAGE" "$WIP"
     else
         log "resuming with existing $WIP"

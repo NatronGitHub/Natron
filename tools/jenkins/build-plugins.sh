@@ -100,7 +100,9 @@ elif [ "$PKGOS" = "Windows" ]; then
     BUILDID="-Wl,--build-id"
 elif [ "$PKGOS" = "OSX" ]; then
     # see https://github.com/Homebrew/homebrew-core/issues/32765
-    CXXFLAGS_EXTRA="-isysroot `xcodebuild -version -sdk macosx Path 2>/dev/null`"
+    # xcrun works with the Command Line Tools alone (xcodebuild needs Xcode, and an empty
+    # path would make -isysroot swallow the next option)
+    CXXFLAGS_EXTRA="-isysroot $(xcrun --sdk macosx --show-sdk-path)"
 fi
 
 if [ "${DEBUG_SCRIPTS:-}" != "1" ] && [ -d "$TMP_BINARIES_PATH/OFX/Plugins" ]; then
@@ -275,8 +277,8 @@ function ofx_cmake_build() {
     if [ "$PKGOS" = "OSX" ]; then
         # Apple clang has no OpenMP runtime: MacPorts' libomp (only used with Apple clang)
         args+=(-DOFX_LIBOMP_ROOT="${MACPORTS:-/opt/local}")
-        # the deployment target of common.sh (14.0 for all the macOS bundles, #1347), as the
-        # Makefiles, which read MACOSX_DEPLOYMENT_TARGET too
+        # the deployment target of common.sh (NATRON_MACOS_MIN, 14.0, for release builds; the
+        # build Mac's macOS otherwise; #1347), as the Makefiles, which read MACOSX_DEPLOYMENT_TARGET too
         if [ -n "${MACOSX_DEPLOYMENT_TARGET:-}" ]; then
             args+=(-DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET")
         fi

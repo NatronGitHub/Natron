@@ -19,6 +19,8 @@
 #   file referenced only through a variable (patch-${version}.diff, a foreach
 #   over a list) is reported too, so read the Portfile before removing it.
 # A port counts as installed if its name or one of its subports is installed.
+# For aqua/qt5, whose subports other than qtbase come from MacPorts' binary archives, report a
+# Natron patchfile that is neither for qtbase nor listed as build-only (see the Portfile).
 # For the whole overlay, also report port directories without a Portfile
 # (MacPorts ignores them; a directory with a README.md is assumed to be kept
 # on purpose), and whether /opt/MacPorts-Natron (or $MACPORTS_NATRON), the
@@ -221,6 +223,24 @@ for d in $(find . -mindepth 2 -maxdepth 2 -type d -not -path './skills*' | sed '
         need_action "$d has no Portfile: MacPorts ignores it; remove it or restore its Portfile"
     fi
 done
+
+# aqua/qt5 installs its subports other than qtbase from MacPorts' binary archives
+# (natron_archive_subports in its Portfile): a Natron patch on one of them would be lost. Every
+# patchfile that Portfile.patch adds must be for qtbase (patch-qtbase-*, always built here) or
+# listed in natron_archive_build_only_patches (a patch that only changes the build, not the result).
+# Not detected (the same list as in the Portfile comment): configure arguments, variants,
+# revisions, build settings, and patch files whose names are built from variables.
+qt5=aqua/qt5
+if [ -f "$qt5/Portfile.patch" ]; then
+    build_only=$(sed -n 's/^set natron_archive_build_only_patches {\(.*\)}$/\1/p' "$qt5/Portfile")
+    # every patch file named on a line that Portfile.patch adds: a patchfiles-append line, its
+    # continuation lines, or a line added to an upstream patchfiles list
+    for q in $(grep '^+[^+]' "$qt5/Portfile.patch" | grep -oE '[A-Za-z0-9_.+-]+\.(diff|patch)' | grep -v '^Portfile\.patch$' | sort -u); do
+        case "$q" in patch-qtbase-*) continue ;; esac
+        case " $build_only " in *" $q "*) continue ;; esac
+        need_action "$qt5: Natron patch $q may apply to a subport installed from MacPorts' archives (natron_archive_subports): bump that subport's revision, remove it from natron_archive_subports, or add $q to natron_archive_build_only_patches if it only affects the build"
+    done
+fi
 
 # the copy that MacPorts reads
 mp=${MACPORTS_NATRON:-/opt/MacPorts-Natron}
