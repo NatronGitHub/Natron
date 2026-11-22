@@ -37,9 +37,10 @@ test:
 - "callback": in a Group, a node whose plug-in does not exist, flagged as saved
   by the GUI, with an afterProjectLoad callback that reads both getters.
 
-It reads both getters for a new project, after each load (also a clean load
-right after a failed one), in the afterProjectLoad callback and after
-app.resetProject(). Only the text (XML) format is tested: both formats are
+It reads both getters for a new project, after each load (also a clean load,
+"aftererrors", right after one that lost data), in the afterProjectLoad
+callback and after app.resetProject(), and checks that each load prints its
+own error log messages (none for the clean loads). Only the text (XML) format is tested: both formats are
 read by the same code once the archive is open.
 
 Exit status: 0 on success, 1 on failure, 2 on a usage error.
@@ -96,8 +97,11 @@ CALLBACK_KNOB = (b"""\t<item>
 \t</item>
 """ % CALLBACK.encode())
 
+# Printed by the script before each load
+LOAD_MARKER = "NATRON_TEST_LOAD"
+
 # The projects that the script loads, in this order (NATRON_TEST_<LABEL>).
-LOADS = ("background", "gui", "missingplugin", "afterfailure",
+LOADS = ("background", "gui", "missingplugin", "aftererrors",
          "missingingroup", "missinginput", "majorversion", "callback")
 
 # Run by NatronRenderer -t: writes [label, hasGuiData, loadedWithErrors] for
@@ -110,6 +114,7 @@ import traceback
 from NatronEngine import natron
 
 LOADS = %r
+LOAD_MARKER = %r
 callback_states = []
 
 
@@ -126,6 +131,8 @@ try:
     a = natron.getInstance(0)
     steps = [state("new", a)]
     for label in LOADS:
+        # the output of each load starts with this line (see _split_output())
+        print("%%s %%s" %% (LOAD_MARKER, label), flush=True)
         loaded = a.loadProject(os.environ["NATRON_TEST_" + label.upper()])
         if loaded is None:
             steps.append([label, "load failed"])
@@ -141,14 +148,14 @@ try:
 except BaseException:
     traceback.print_exc()
 natron.quit(status)
-""" % (LOADS, CALLBACK)
+""" % (LOADS, LOAD_MARKER, CALLBACK)
 
 EXPECTED = [
     ["new", False, False],
     ["background", False, False],
     ["gui", True, False],
     ["missingplugin", False, True],
-    ["afterfailure", False, False],
+    ["aftererrors", False, False],
     ["missingingroup", False, True],
     ["missinginput", False, True],
     ["majorversion", False, False],
@@ -157,13 +164,24 @@ EXPECTED = [
     ["reset", False, False],
 ]
 
-# Messages the error log must have (NatronRenderer prints it after a load
-# that opens it), which show that the cases were really exercised.
-EXPECTED_MESSAGES = [
-    "does not exist in the loaded plug-ins. It was in the group ",
-    "Could not find input named NoSuchInput",
-    "was found in the script but was loaded with version",
-]
+# The messages that the output of each load must have, which show that its
+# case was really exercised. NatronRenderer prints the error log after a load
+# that opens it. The log is never cleared, so a later load prints these again:
+# each message must occur more often than in the last error log printed
+# before. The loads that are not listed must print no error log line.
+EXPECTED_MESSAGES = {
+    "missingplugin": ["fr.inria.built-in.NoSuchPlugin version 1.0 was found "
+                      "in the script but does not exist in the loaded "
+                      "plug-ins.\n"],
+    "missingingroup": ["does not exist in the loaded plug-ins. It was in the "
+                       "group Group1 (Group <&> \u00e9)."],
+    "missinginput": ["Could not find input named NoSuchInput"],
+    "majorversion": ["was found in the script but was loaded with version"],
+    "callback": ["does not exist in the loaded plug-ins. It was in the "
+                 "group Group1 (Group <&> \u00e9)."],
+}
+# A line of the error log printed by NatronRenderer
+ERROR_LOG_LINE = "] Project: "
 
 
 def _replace(data, old, new, after=None):
@@ -208,7 +226,7 @@ def _variants(data):
         "background": data,
         "gui": _replace(data, BACKGROUND_TAG, GUI_TAG),
         "missingplugin": _replace(data, DOT_PLUGIN_TAG, MISSING_PLUGIN_TAG),
-        "afterfailure": data,
+        "aftererrors": data,
         "missingingroup": missing_in_group,
         "missinginput": _replace(data, SOURCE_INPUT_TAG, MISSING_INPUT_TAG),
         "majorversion": _replace(data, MAJOR_VERSION_TAG,
@@ -261,13 +279,62 @@ def _run_renderer(cmd, env):
     except subprocess.TimeoutExpired:
         print("FAILED: timeout")
         return None
-    output = proc.stdout.decode(errors="replace")
+    # natron-lldb.sh runs it in a terminal, which ends the lines with \r\n
+    output = proc.stdout.decode(errors="replace").replace("\r\n", "\n")
     sys.stdout.write(output)
     print("exit status %d" % proc.returncode)
     if proc.returncode != 0:
         print("FAILED: the exit status should be 0")
         return None
     return output
+
+
+def _split_output(output):
+    """Splits the output of NatronRenderer by load.
+
+    Returns:
+      The labels of LOADS in order, and a dict of the output of each load
+      (from its LOAD_MARKER line to the next one).
+    """
+    labels = []
+    outputs = {}
+    label = None
+    for line in output.splitlines(True):
+        if line.startswith(LOAD_MARKER + " "):
+            label = line[len(LOAD_MARKER) + 1:].strip()
+            labels.append(label)
+            outputs[label] = ""
+        elif label is not None:
+            outputs[label] += line
+    return labels, outputs
+
+
+def _check_messages(output):
+    """Checks that each load logged its own messages, and the clean ones none.
+
+    Returns:
+      True if they match EXPECTED_MESSAGES.
+    """
+    labels, outputs = _split_output(output)
+    if labels != list(LOADS):
+        print("FAILED: the loads in the output are %r, expected %r"
+              % (labels, list(LOADS)))
+        return False
+    ok = True
+    last_log = ""  # the output of the last load that printed the error log
+    for label in labels:
+        messages = EXPECTED_MESSAGES.get(label)
+        if messages is None:
+            if ERROR_LOG_LINE in outputs[label]:
+                print("FAILED: %s: the load printed the error log" % label)
+                ok = False
+            continue
+        for message in messages:
+            if outputs[label].count(message) <= last_log.count(message):
+                print("FAILED: %s: the load did not log %r" % (label, message))
+                ok = False
+        last_log = outputs[label]
+    return ok
 
 
 def _check(steps, output):
@@ -286,11 +353,7 @@ def _check(steps, output):
     if len(steps) != len(EXPECTED):
         print("FAILED: %d steps, expected %d" % (len(steps), len(EXPECTED)))
         ok = False
-    for message in EXPECTED_MESSAGES:
-        if message not in output:
-            print("FAILED: the error log has no %r" % message)
-            ok = False
-    return ok
+    return _check_messages(output) and ok
 
 
 def main(argv):
