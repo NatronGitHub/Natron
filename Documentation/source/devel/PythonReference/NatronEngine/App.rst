@@ -39,6 +39,8 @@ Functions
 - def :meth:`saveProjectAs<NatronEngine.App.saveProjectAs>` (filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
 - def :meth:`getProjectFormat<NatronEngine.App.getProjectFormat>` ()
 - def :meth:`setProjectFormat<NatronEngine.App.setProjectFormat>` (format)
+- def :meth:`projectFileHasGuiData<NatronEngine.App.projectFileHasGuiData>` ()
+- def :meth:`projectLoadedWithErrors<NatronEngine.App.projectLoadedWithErrors>` ()
 - def :meth:`loadProject<NatronEngine.App.loadProject>` (filename)
 - def :meth:`resetProject<NatronEngine.App.resetProject>` ()
 - def :meth:`closeProject<NatronEngine.App.closeProject>` ()
@@ -579,6 +581,32 @@ inform the user of various information, warnings or errors.
     :param format: :class:`ProjectFileFormatEnum<NatronEngine.Natron.ProjectFileFormatEnum>`
 
     Sets the format of the next saves of the project (see :meth:`getProjectFormat<NatronEngine.App.getProjectFormat>`).
+
+    .. versionadded:: 2.6
+
+.. method:: App.projectFileHasGuiData()
+
+    :rtype: :class:`bool`
+
+    Returns whether the project file this project was loaded from has GUI data: node positions,
+    colours and sizes, viewer settings, the window layout... A project saved by the Natron GUI has
+    them, a project saved by NatronRenderer or ``Natron -b`` doesn't. *False* for a new project.
+
+    NatronRenderer and ``Natron -b`` don't read the GUI data, and save projects without them: a
+    script run by them that saves a project with GUI data loses them. Such a script can use this
+    function to refuse to save the project, or to warn.
+
+    .. versionadded:: 2.6
+
+.. method:: App.projectLoadedWithErrors()
+
+    :rtype: :class:`bool`
+
+    Returns whether there were errors when the project was loaded from its file: nodes whose
+    plug-in is missing, or that were created with another major version of their plug-in... The
+    error log lists them. The project was loaded without what failed, and would be saved without
+    it. *False* for a new project.
+    :meth:`loadProject<NatronEngine.App.loadProject>` returns the project in that case too.
 
     .. versionadded:: 2.6
 
