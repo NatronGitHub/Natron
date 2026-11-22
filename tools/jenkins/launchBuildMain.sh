@@ -28,7 +28,7 @@ set -u # Treat unset variables as an error when substituting.
 # NATRON_DEV_STATUS: ALPHA, BETA, RC, STABLE, CUSTOM: this is useful when doing a release (i.e: if specifying RELEASE_TAG.)
 # NATRON_CUSTOM_BUILD_USER_NAME: For a release, Tag the build with a specific user/client name
 # NATRON_BUILD_NUMBER: When doing a release this is the number of the release (if doing a rebuild)
-# NATRON_BUILD_SYSTEM: cmake (the default) or qmake (deprecated, kept on RB-2.6 as a fallback, see #1181). The CMake build has no crash reporter: it implies DISABLE_BREAKPAD=1.
+# NATRON_BUILD_SYSTEM: cmake (the default) or qmake (deprecated, kept on RB-2.6 as a fallback, see #1181). The CMake build has no crash reporter: it implies DISABLE_BREAKPAD=1. Linux builds always use DISABLE_BREAKPAD=1 (the Linux SDK has no Breakpad).
 # NATRON_EXTRA_CMAKE_FLAGS: Optional cmake flags to pass when building Natron with CMake, e.g. "-DNATRON_FAST_MATH=ON"
 # NATRON_EXTRA_QMAKE_FLAGS: Optional qmake flags to pass when building Natron with qmake
 # BUILD_NAME: Give a name to the build so that it can be found in the archive
@@ -264,7 +264,12 @@ esac
 if [ "$NATRON_BUILD_SYSTEM" = "cmake" ] && [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
     # Breakpad is being replaced by sentry-native (#1183), which the CMake build will support
     echo "The CMake build has no Breakpad crash reporter (#1183): building without it (DISABLE_BREAKPAD=1)."
-    echo "Set NATRON_BUILD_SYSTEM=qmake for a build with Breakpad."
+    echo "Set NATRON_BUILD_SYSTEM=qmake for a build with Breakpad (macOS and Windows only)."
+    DISABLE_BREAKPAD=1
+fi
+if [ "$PKGOS" = "Linux" ] && [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
+    # The Linux SDK no longer builds Breakpad (dump_syms); it is being replaced by sentry-native (#1183)
+    echo "The Linux SDK has no Breakpad (dump_syms): building without the crash reporter (DISABLE_BREAKPAD=1)."
     DISABLE_BREAKPAD=1
 fi
 

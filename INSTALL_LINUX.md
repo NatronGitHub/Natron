@@ -58,7 +58,7 @@ cd tools/jenkins
 include/scripts/build-Linux-sdk.sh
 ```
 
-It puts build logs and the list of files installed by each package in the directory `/opt/Natron-sdk/var/log/Natron-Linux-<arch>-SDK`, where `<arch>` is `x86_64`, `aarch64` or `i686`.
+It puts build logs and the list of files installed by each package in the directory `/opt/Natron-sdk/var/log/Natron-Linux-<arch>-SDK`, where `<arch>` is `x86_64` or `aarch64`.
 
 The official Linux binaries are built with the Rocky Linux 9 SDK (`ROCKY=9`). It uses GCC 14 from `gcc-toolset-14`, Python 3.11, Qt 5.15.19, PySide2/Shiboken2 5.15.19 (built from source with EPEL's libclang 19), and librsvg 2.58 (built with Rust from `rust-toolset`). It doesn't build the Qt installer framework: the Linux releases are portable archives. The Rocky Linux 8 SDK (`ROCKY=8`) is the same, except for libclang 18 and librsvg 2.40. Both build natively on x86_64 and aarch64: the Docker image is built by `[ROCKY=8] tools/docker/natron-sdk-rockylinux/build.sh [amd64|arm64]` (see `tools/docker/README.md`).
 

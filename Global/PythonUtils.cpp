@@ -457,8 +457,8 @@ PyObject* initializePython3(const std::vector<wchar_t*>& commandLineArgsWide,
     }
 #endif
 
-    // Release the GIL, because PyEval_InitThreads acquires the GIL
-    // see https://docs.python.org/3.7/c-api/init.html#c.PyEval_InitThreads
+    // Release the GIL: the thread that called Py_Initialize() holds it
+    // see https://docs.python.org/3/c-api/init.html#c.PyEval_SaveThread
     PyThreadState *_save = PyEval_SaveThread();
     // The lock should be released just before PyFinalize() using:
     // PyEval_RestoreThread(_save);

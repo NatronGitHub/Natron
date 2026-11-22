@@ -34,7 +34,7 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QCoreApplication>
-#include <QUndoCommand> // QtWidgets
+#include <QUndoCommand> // QtWidgets (Qt5), QtGui (Qt6)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 

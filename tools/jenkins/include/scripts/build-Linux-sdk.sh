@@ -859,7 +859,6 @@ ${DOCKER_ENV_TOOLSET:-}
 COPY \\
     common.sh \\
     compiler-common.sh \\
-    linuxStartupJenkins.sh \\
     launchBuildMain.sh \\
     manageBuildOptions.sh \\
     manageLog.sh \\

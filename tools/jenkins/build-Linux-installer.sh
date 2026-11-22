@@ -20,7 +20,7 @@
 # Build the portable archive for Linux
 #
 # Options:
-# DISABLE_BREAKPAD=1: Disable automatic crash report
+# DISABLE_BREAKPAD=1: Disable automatic crash report (always set: the Linux SDK has no Breakpad)
 
 
 set -e # Exit immediately if a command exits with a non-zero status
@@ -33,6 +33,12 @@ source common.sh
 source manageBuildOptions.sh
 source manageLog.sh
 updateBuildOptions
+
+# The Linux SDK no longer builds Breakpad (dump_syms, crash reporter), see #1183
+if [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
+    echo "Warning: the Linux SDK has no Breakpad (dump_syms): packaging without the crash reporter (DISABLE_BREAKPAD=1)."
+    DISABLE_BREAKPAD=1
+fi
 
 pushd () {
     command pushd "$@" > /dev/null
@@ -277,7 +283,6 @@ BINARIES_TO_INSTALL="$BINARIES_TO_INSTALL ${FFMPEG_PATH}/bin/ffmpeg ${FFMPEG_PAT
 
 mkdir -p "${TMP_PORTABLE_DIR}/docs" "${TMP_PORTABLE_DIR}/bin" "${TMP_PORTABLE_DIR}/Resources" "${TMP_PORTABLE_DIR}/Plugins/PyPlugs" "${TMP_PORTABLE_DIR}/Resources/stylesheets"
 cp -pPR "${TMP_BINARIES_PATH}/docs/natron"/* "${TMP_PORTABLE_DIR}/docs/"
-[ -f "${TMP_PORTABLE_DIR}/docs/TuttleOFX-README.txt" ] && rm "${TMP_PORTABLE_DIR}/docs/TuttleOFX-README.txt"
 cp -R "${TMP_BINARIES_PATH}/Resources/etc"  "${TMP_PORTABLE_DIR}/Resources/"
 cp "${TMP_BINARIES_PATH}/Resources/stylesheets"/mainstyle.qss "${TMP_PORTABLE_DIR}/Resources/stylesheets/"
 cp "$INC_PATH/natron/natron-mime.sh" "${TMP_PORTABLE_DIR}/bin/"

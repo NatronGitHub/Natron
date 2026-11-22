@@ -681,18 +681,9 @@ Clear the OFX plugin cache (`~/Library/Caches/INRIA/Natron`) after rebuilding pl
 
 #### Notes for older systems
 
-On OS X 10.6 Snow Leopard, the `+universal` variant may be added to `/opt/local/etc/macports/variants.conf`. Older releases were built in an OS X 10.9 VM with Xcode 6.2 to target old systems. Due to the OS X Software License Agreement, OS X may only be virtualized on Mac hardware; see [OS X on OS X](https://web.archive.org/web/20190520141144/https://ntk.me/2012/09/07/os-x-on-os-x/).
+Natron 2.6 runs on macOS 14 or later, on arm64 and x86_64. The x86_64 (Intel) builds are made with the MacPorts steps above on an Intel Mac, or in a macOS VM on one: due to the macOS Software License Agreement, macOS may only be virtualized on Mac hardware. To keep such a VM small, keep only macOS and the Command Line Tools in it and put `/opt` on a sparsebundle disk image stored on the host. Create it on the host with Disk Utility, using a name without spaces (MacPorts doesn't support paths with spaces), e.g. `opt`, with a maximum size of about 100 GB. In the guest, mount the host share (`open smb://<host-ip>/<user>`), attach the image with `sudo hdiutil attach -owners on /Volumes/<user>/path/to/opt.sparsebundle`, and link it: `sudo rmdir /opt; sudo ln -s /Volumes/opt /`.
 
-To keep such a VM small, keep only macOS and Xcode in it and put `/opt` on a sparsebundle disk image stored on the host. Create it on the host with Disk Utility, using a name without spaces (MacPorts doesn't support paths with spaces), e.g. `opt`, with a maximum size of about 100 GB. In the guest, mount the host share (`open smb://<host-ip>/<user>`), attach the image with `sudo hdiutil attach -owners on /Volumes/<user>/path/to/opt.sparsebundle`, and link it: `sudo rmdir /opt; sudo ln -s /Volumes/opt /`.
-
-Known workarounds on 10.6 (universal builds):
-
-- `cmake` may have to be upgraded with the MacPorts clang: `sudo port -v upgrade cmake configure.compiler=macports-clang-11`.
-- ImageMagick: `magick/resize.c` must be compiled without OpenMP for i386 ([LLVM bug 24038](https://bugs.llvm.org/show_bug.cgi?id=24038)). Rebuild that object by hand without `-fopenmp` in the port's work directory, then `sudo port -v upgrade ImageMagick`.
-- For libc++ on older systems, follow <https://trac.macports.org/wiki/LibcxxOnOlderSystems>, and copy `/usr/lib/libc++*` into `/Developer/SDKs/MacOSX10.6.sdk/usr/lib`.
-- Universal FFmpeg builds may keep install names that point into the i386 destroot. Fix them with `install_name_tool -change <destroot path>/lib/libavXXX.dylib /opt/local/lib/libavXXX.dylib` on `bin/ffmpeg`, `bin/ffprobe` and the `libav*` libraries.
-
-The libtool that comes with OS X 10.6 does not work well with clang-generated binaries. On that system you may have to substitute it with the libtool provided by MacPorts' `cctools` package: `sudo mv /usr/bin/libtool /usr/bin/libtool.orig; sudo mv /Developer/usr/bin/libtool /Developer/usr/bin/libtool.orig; sudo ln -s /opt/local/bin/libtool /usr/bin/libtool; sudo ln -s /opt/local/bin/libtool /Developer/usr/bin/libtool`
+The notes for building on much older systems (OS X 10.6 universal builds, libc++ on older systems, OS X 10.9 VMs with Xcode 6.2) are in the RB-2.5 branch of `INSTALL_MACOS.md`.
 
 ## macOS packaging tools
 
@@ -845,31 +836,27 @@ The render regression tests are in [Natron-Tests](https://github.com/NatronGitHu
 
 ## Generating Python bindings
 
-This is not required: the bindings are generated during the build.
+The CMake build generates the Python bindings during the build: nothing to do.
 
-Building Natron with Qt5 should generate the Python bindings automatically, but in case it does not,
-here are the commands to recreate the Python bindings:
-
-On MacPorts with qt5, py311-pyside2:
+The qmake build doesn't: the generated sources (`Engine/Qt5/NatronEngine` and `Gui/Qt5/NatronGui`) must be regenerated with `shiboken2` whenever the `Py*` facades or the typesystem XML files change, followed by `tools/utils/sourceCleanup.py`, as `tools/jenkins/build-natron.sh` does. From `$NATRON_SRC`, on MacPorts with qt5 and py311-pyside2:
 ```Shell
 PYVER=3.11 # Set to the python version
 PYTHON_HOME=$(python${PYVER}-config --prefix)
 QT_VERSION_MAJOR=5
+QTDIR=/opt/local/libexec/qt${QT_VERSION_MAJOR}
 # Fix a missing link in the MacPorts package
 [ ! -f ${PYTHON_HOME}/lib/python${PYVER}/site-packages/shiboken2_generator/shiboken2-${PYVER} ] && sudo ln -s shiboken2 ${PYTHON_HOME}/lib/python${PYVER}/site-packages/shiboken2_generator/shiboken2-${PYVER}
 
 rm Engine/Qt${QT_VERSION_MAJOR}/NatronEngine/* Gui/Qt${QT_VERSION_MAJOR}/NatronGui/*
-# ${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/include
-shiboken2-${PYVER} --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Global:libs/OpenFX/include:/opt/local/include:/opt/local/libexec/qt${QT_VERSION_MAJOR}/include:${PYTHON_HOME}/include/python${PYVER}:${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/include --typesystem-paths=${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/typesystems --output-directory=Engine/Qt${QT_VERSION_MAJOR} Engine/PySide2_Engine_Python.h  Engine/typesystem_engine.xml
+SHIBOKEN_INCLUDE_PATHS="-I. -I./Engine -I./Global -Ilibs/OpenFX/include -I/opt/local/include -I${QTDIR}/include -I${QTDIR}/include/QtCore -I${PYTHON_HOME}/include/python${PYVER} -I${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/include -I${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/include/QtCore -I${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/include/QtGui"
+SHIBOKEN_TYPESYSTEM_PATHS="-T${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/typesystems"
+shiboken2-${PYVER} -std=c++17 --avoid-protected-hack --enable-pyside-extensions ${SHIBOKEN_INCLUDE_PATHS} ${SHIBOKEN_TYPESYSTEM_PATHS} --output-directory=Engine/Qt${QT_VERSION_MAJOR} Engine/PySide2_Engine_Python.h Engine/typesystem_engine.xml
+shiboken2-${PYVER} -std=c++17 --avoid-protected-hack --enable-pyside-extensions ${SHIBOKEN_INCLUDE_PATHS} -I${QTDIR}/include/QtWidgets -I${QTDIR}/include/QtGui ${SHIBOKEN_TYPESYSTEM_PATHS} -T./Engine -T./Shiboken --output-directory=Gui/Qt${QT_VERSION_MAJOR} Gui/PySide2_Gui_Python.h Gui/typesystem_natronGui.xml
 
-shiboken2-${PYVER} --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Global:libs/OpenFX/include:/opt/local/include:/opt/local/libexec/qt${QT_VERSION_MAJOR}/include:/opt/local/libexec/qt${QT_VERSION_MAJOR}/include/QtWidgets:${PYTHON_HOME}/include/python${PYVER}:${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/include --typesystem-paths=${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/typesystems:Engine:Shiboken --output-directory=Gui/Qt${QT_VERSION_MAJOR} Gui/PySide2_Gui_Python.h  Gui/typesystem_natronGui.xml
-
-tools/utils/runPostShiboken2.sh Engine/Qt${QT_VERSION_MAJOR}/NatronEngine natronengine
-tools/utils/runPostShiboken2.sh Gui/Qt${QT_VERSION_MAJOR}/NatronGui natrongui
+# Fix the glitches of the generated sources
+python3 tools/utils/sourceCleanup.py Engine/typesystem_engine.xml Engine/Qt${QT_VERSION_MAJOR}
+python3 tools/utils/sourceCleanup.py Gui/typesystem_natronGui.xml Gui/Qt${QT_VERSION_MAJOR}
 ```
-
-**Note**
-Shiboken has a few glitches which needs fixing with some sed commands, run tools/utils/runPostShiboken.sh once shiboken is called
 
 ## OpenFX plugins
 

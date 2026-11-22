@@ -255,7 +255,6 @@ NatronCrashReporter.xcodeproj/
 NatronRenderer-bin.xcodeproj/
 NatronRenderer.xcodeproj/
 NatronRendererCrashReporter.xcodeproj/
-Project-xcode-breakpad.xcodeproj/
 Project.xcodeproj/
 PythonBin/natron-python
 Renderer/NatronRenderer

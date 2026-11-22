@@ -91,6 +91,7 @@ namespace Python { }
 // *.nl: application/vnd.natron.layout
 // these MIME types are also used in:
 // - App/NatronInfo.plist.in (macOS)
+// - Gui/GuiApplicationManager10.cpp (comment in the QFileOpenEvent handler)
 #define NATRON_PROJECT_FILE_EXT "ntp"
 #define NATRON_PROJECT_FILE_MIME_TYPE "application/vnd.natron.project"
 #define NATRON_PROJECT_UNTITLED "Untitled." NATRON_PROJECT_FILE_EXT
