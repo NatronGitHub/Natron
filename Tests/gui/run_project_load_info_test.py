@@ -214,7 +214,8 @@ EXPECTED_MESSAGES = {
     "majorversion": ["was found in the script but was loaded with version"],
     "missingpyplug": ["ERROR: The PyPlug "
                       "/nonexistent/NatronTestNoSuchPyPlug.py of the node "
-                      "Group1 was not found"],
+                      "Group1 could not be found or imported (see the "
+                      "messages above)"],
     "callback": ["does not exist in the loaded plug-ins. It was in the "
                  "group Group1 (Group <&> \u00e9)."],
 }

@@ -350,7 +350,7 @@ public:
 
     // Whether something in the project file was not loaded, so that saving the project would lose it: e.g. a node
     // whose plug-in is missing (also inside a Group), a connection to an input that can't be found, or a PyPlug
-    // whose .py can't be found (loaded as a Group, saved without the PyPlug). Warnings
+    // that can't be found or imported (loaded as a Group, saved without the PyPlug). Warnings
     // where nothing is lost (a node loaded with another major version of its plug-in) don't set it. It describes
     // the loaded file: saving doesn't change it.
     bool projectLoadedWithErrors() const;

@@ -606,7 +606,7 @@ inform the user of various information, warnings or errors.
     Returns whether something in the project file was not loaded, so that saving the project would
     lose it: a node that can't be created, e.g. because its plug-in is missing (also inside a
     Group), a connection to an input that the node doesn't have, a link to a master node that
-    doesn't exist, a PyPlug whose Python file can't be found (its node is loaded as a Group with
+    doesn't exist, a PyPlug that can't be found or imported (its node is loaded as a Group with
     the nodes saved in the project, and would be saved as a plain Group), or an error that stopped
     the load. The error log lists them.
     :meth:`loadProject<NatronEngine.App.loadProject>` returns the project in that case too, except
