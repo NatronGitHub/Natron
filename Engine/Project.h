@@ -195,14 +195,19 @@ public:
      * @brief Whether the project file this project was loaded from contains GUI data (node positions,
      * viewer settings, window layout...): false for a new project and for a file saved in background mode.
      * A background application (NatronRenderer, Natron -b) does not read this data, and saves the
-     * project without it.
+     * project without it (and without its Viewer nodes, which it does not create).
+     * It describes the file that was loaded: saving the project does not change it.
      **/
     bool fileHasGuiData() const WARN_UNUSED_RETURN;
 
     /**
-     * @brief Whether there were errors when this project was loaded from its file, which the error log lists:
-     * nodes that could not be created (missing plug-in) or that were created with another major version of
-     * their plug-in, PyPlugs that could not be loaded... The project was loaded without them. False for a new project.
+     * @brief Whether something in the project file was not loaded, so that saving the project would lose it:
+     * a node that could not be created (e.g. its plug-in is missing), also inside a Group, an input connection
+     * to an input that the node does not have, a link to a master node that does not exist, or an error that
+     * stopped the load. Warnings where nothing is lost (e.g. a node created with another major version of its
+     * plug-in) do not set it, even if they open the error log. False for a new project.
+     * It describes the file that was loaded: saving the project does not change it. It is set before the
+     * afterProjectLoad callback runs.
      **/
     bool fileLoadedWithErrors() const WARN_UNUSED_RETURN;
 
@@ -529,13 +534,16 @@ private:
     void setProjectDefaultFormat(const Format & f);
 
     bool loadProjectImpl(const QString & path, const QString & name, bool isUntitledAutosave, bool attemptToLoadAutosave, bool isNamedAutoSave);
-    bool loadProjectInternal(const QString & path, const QString & name, bool isAutoSave,
-                             bool isUntitledAutosave, bool* mustSave);
+    NodesRestoreStatus loadProjectInternal(const QString & path, const QString & name, bool isAutoSave,
+                                           bool isUntitledAutosave, bool* mustSave) WARN_UNUSED_RETURN;
 
     QString saveProjectInternal(const QString & path, const QString & name, bool autosave, bool updateProjectProperties, QStringList* warnings,
                                 ProjectFileFormatEnum format);
 
 
+
+    // An error stopped the load (see fileLoadedWithErrors())
+    void setFileLoadedWithErrors();
 
     void doResetEnd(bool aboutToQuit);
 
@@ -572,7 +580,7 @@ private:
 
     void save(ProjectSerialization* serializationObject) const;
 
-    bool load(const ProjectSerialization & obj, const QString& name, const QString& path, bool* mustSave);
+    NodesRestoreStatus load(const ProjectSerialization & obj, const QString& name, const QString& path, bool* mustSave) WARN_UNUSED_RETURN;
 
 
     std::unique_ptr<ProjectPrivate> _imp;

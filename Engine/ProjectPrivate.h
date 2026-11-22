@@ -135,7 +135,7 @@ public:
 
     ProjectPrivate(Project* project);
 
-    bool restoreFromSerialization(const ProjectSerialization & obj, const QString& name, const QString& path, bool* mustSave);
+    NodesRestoreStatus restoreFromSerialization(const ProjectSerialization & obj, const QString& name, const QString& path, bool* mustSave) WARN_UNUSED_RETURN;
 
     bool findFormat(int index, Format* format) const;
     bool findFormat(const std::string& formatSpec, Format* format) const;
