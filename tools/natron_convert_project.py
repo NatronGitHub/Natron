@@ -19,7 +19,7 @@
 """Converts Natron projects (.ntp) between the binary and text formats.
 
 Natron installs this module in its Plugins directory, which is on the Python
-path of Natron, NatronRenderer and natron-python. Run it with NatronRenderer:
+path of Natron and NatronRenderer. Run it with NatronRenderer:
 
     NatronRenderer -t -c "import natron_convert_project as c; \\
         c.convert_and_quit('in.ntp', 'out.ntp', 'text')"
@@ -60,7 +60,7 @@ def convert(src: str, dst: str | None = None, to: str = "text",
     """Converts the project src to the format to, and saves it as dst.
 
     Replaces the project of the current (background) application: run it in
-    NatronRenderer or natron-python, not in a project that is being edited.
+    NatronRenderer (or Natron -b), not in a project that is being edited.
 
     Args:
         src: Path of the project to convert. "~" is expanded.
@@ -76,24 +76,42 @@ def convert(src: str, dst: str | None = None, to: str = "text",
     Raises:
         ValueError: to is not "text" or "binary".
         FileNotFoundError: src is not a file.
+        IsADirectoryError: dst is a directory.
         RuntimeError: Natron is not in background mode; the project could
             not be loaded, or loaded with errors; it has GUI data and
             discard_gui is False; or it could not be saved.
     """
+    if not natron.isBackground():
+        raise RuntimeError('run the conversion in NatronRenderer; in Natron, '
+                           'use "File > Save As..."')
     if to not in _FORMATS:
         raise ValueError('to must be "text" or "binary", not %r' % (to,))
     src = os.path.abspath(os.path.expanduser(src))
     if not os.path.isfile(src):
         raise FileNotFoundError("%s: no such file" % src)
     dst = src if dst is None else os.path.abspath(os.path.expanduser(dst))
-    if not natron.isBackground():
-        raise RuntimeError('run the conversion in NatronRenderer; in Natron, '
-                           'use "File > Save As..."')
+    if os.path.isdir(dst):
+        # Natron would rename the directory as a backup, and save in its place
+        raise IsADirectoryError("%s is a directory" % dst)
 
     app = natron.getInstance(0).loadProject(src)
     if app is None:
         raise RuntimeError("%s could not be loaded (see the messages above; "
                            "are its plug-ins installed?)" % src)
+    try:
+        _check_and_save(app, src, dst, _FORMATS[to], discard_gui)
+    except BaseException:
+        # Close the project, which removes its lock file (src.lock)
+        app.resetProject()
+        raise
+
+
+def _check_and_save(app, src, dst, file_format, discard_gui):
+    """Saves the project loaded from src as dst, unless it would lose data.
+
+    Raises:
+        RuntimeError: See convert().
+    """
     if app.projectLoadedWithErrors():
         # e.g. nodes whose plug-in is missing: they would not be saved
         raise RuntimeError("there were errors while loading %s (see the "
@@ -109,7 +127,7 @@ def convert(src: str, dst: str | None = None, to: str = "text",
         sys.stderr.write("natron_convert_project: warning: the GUI data of "
                          "%s are not converted\n" % src)
         sys.stderr.flush()
-    if not app.saveProjectAs(dst, _FORMATS[to]):
+    if not app.saveProjectAs(dst, file_format):
         raise RuntimeError("%s could not be saved" % dst)
 
 
@@ -129,7 +147,8 @@ def convert_and_quit(src: str, dst: str | None = None, to: str = "text",
         discard_gui: See convert().
 
     Raises:
-        ValueError, FileNotFoundError, RuntimeError: See convert().
+        ValueError, FileNotFoundError, IsADirectoryError, RuntimeError: See
+            convert().
     """
     convert(src, dst, to, discard_gui)
     natron.quit(0)

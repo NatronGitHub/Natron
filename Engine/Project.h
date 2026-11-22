@@ -194,7 +194,7 @@ public:
     /**
      * @brief Whether the project file this project was loaded from contains GUI data (node positions,
      * viewer settings, window layout...): false for a new project and for a file saved in background mode.
-     * A background application (NatronRenderer, natron-python) does not read this data, and saves the
+     * A background application (NatronRenderer, Natron -b) does not read this data, and saves the
      * project without it.
      **/
     bool fileHasGuiData() const WARN_UNUSED_RETURN;

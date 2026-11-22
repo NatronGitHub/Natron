@@ -467,8 +467,10 @@ Projects are saved in a binary format, or in a text (XML) format that Natron 2.5
 can read (see :meth:`App.getProjectFormat<NatronEngine.App.getProjectFormat>`). The
 ``natron_convert_project`` Python module converts a project from one format to the other,
 without rendering anything. Natron installs it in its ``Plugins`` directory, which is on the
-Python path of Natron and NatronRenderer: ``Plugins/`` next to ``bin/`` on Linux and Windows,
-``Natron.app/Contents/Plugins`` on macOS. Its source is ``tools/natron_convert_project.py``.
+Python path of Natron and NatronRenderer: ``Plugins/`` next to ``bin/`` in the Linux and Windows
+packages, ``Natron.app/Contents/Plugins`` on macOS. A Linux distribution that builds Natron
+installs it with the PyPlugs, in ``/usr/share/Natron/Plugins``. Its source is
+``tools/natron_convert_project.py``.
 Run it with :option:`-t` and :option:`-c`::
 
     NatronRenderer -t -c "import natron_convert_project as c; c.convert_and_quit('/path/to/in.ntp', '/path/to/out.ntp', 'text')"
@@ -492,22 +494,31 @@ NatronRenderer doesn't read the GUI data of projects (node positions and colours
 settings, window layout), and saves projects without them (see
 :meth:`App.projectFileHasGuiData<NatronEngine.App.projectFileHasGuiData>`). The module
 converts only the projects that have no GUI data, the ones saved by NatronRenderer or
-natron-python. Convert the projects saved by Natron with *Save Project As..* and its
+``Natron -b``. Convert the projects saved by Natron with *Save Project As..* and its
 *File format* choice, or pass ``discard_gui=True`` to convert them without their GUI data.
 
 When the project is not converted, ``convert_and_quit()`` raises an exception: ``ValueError``
-for a bad ``to``, ``FileNotFoundError`` when ``src`` doesn't exist, and ``RuntimeError``
-otherwise, with a message that says why. NatronRenderer prints it and exits with status 1. It
+for a bad ``to``, ``FileNotFoundError`` when ``src`` doesn't exist, ``IsADirectoryError`` when ``dst`` is a
+directory, and ``RuntimeError`` otherwise, with a message that says why. NatronRenderer prints it and exits with status 1. It
 exits with status 0 when the project was converted.
 
 In a script, ``convert()`` takes the same arguments and raises the same exceptions, but doesn't
 quit, so that a script can convert several projects in one run. Each conversion replaces the
 project of the background application. Run the script with :option:`-t`, so that the Write
-nodes of the last project are not rendered, and end it with ``natron.quit()``::
+nodes of the last project are not rendered, and end it with ``natron.quit()``, also when a
+conversion failed: otherwise :option:`-t` then reads commands from the standard input, and the
+exit status would be 0::
+
+    import sys
 
     import natron_convert_project
     from NatronEngine import natron
 
+    status = 0
     for name in ("/path/to/shot1.ntp", "/path/to/shot2.ntp"):
-        natron_convert_project.convert(name, to="text")
-    natron.quit()
+        try:
+            natron_convert_project.convert(name, to="text")
+        except (OSError, ValueError, RuntimeError) as e:
+            sys.stderr.write("%s: %s\n" % (name, e))
+            status = 1
+    natron.quit(status)

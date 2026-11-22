@@ -51,6 +51,13 @@ damaged file.
    ``name_v01.ntp``, are not handled correctly: increment them yourself with
    *Save Project As..*.
 
+Export Project As Group
+  Save the whole project as a PyPlug, a Python script that recreates the graph
+  as a single Group node that you can reuse in other projects. Add Input
+  nodes, and one Output node, so that Natron knows how to connect the group.
+Quit
+  Quit Natron (in the :menuselection:`Natron` menu on macOS).
+
 Project files are saved in one of two formats, both with the ``.ntp``
 extension:
 
@@ -62,19 +69,13 @@ extension:
 A project keeps its format when it is saved: choose another one with *Save
 Project As..*. The *Save projects as binary by default* preference (General
 tab) gives the format of new projects.
+
 To convert projects without opening them, for example many of them in a
 script, use the ``natron_convert_project`` Python module, which is installed
 with Natron, in NatronRenderer (see :ref:`natron-convert-project`). It does
 not keep the GUI data of a project (node positions, viewer settings, window
 layout), so it only converts projects saved by NatronRenderer or
-natron-python; convert the others with *Save Project As..*.
-
-Export Project As Group
-  Save the whole project as a PyPlug, a Python script that recreates the graph
-  as a single Group node that you can reuse in other projects. Add Input
-  nodes, and one Output node, so that Natron knows how to connect the group.
-Quit
-  Quit Natron (in the :menuselection:`Natron` menu on macOS).
+``Natron -b``; convert the others with *Save Project As..*.
 
 Edit menu
 ---------

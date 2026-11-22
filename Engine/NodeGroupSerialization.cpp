@@ -303,7 +303,10 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
             if (isGrp) {
                 EffectInstancePtr sharedEffect = isGrp->shared_from_this();
                 NodeGroupPtr sharedGrp = std::dynamic_pointer_cast<NodeGroup>(sharedEffect);
-                NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp, !usingPythonModule, moduleUpdatesProcessed);
+                // the errors in the group (e.g. a child whose plug-in is missing) are errors of the project
+                if ( !NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp, !usingPythonModule, moduleUpdatesProcessed) ) {
+                    mustShowErrorsLog = true;
+                }
             } else {
                 ///For multi-instances, wait for the group to be entirely created then load the sub-tracks in a separate loop.
                 assert( n->isMultiInstance() );
@@ -313,7 +316,9 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
     } // for (std::list<NodeSerializationPtr>::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
 
     for (std::list<NodeSerializationPtr>::const_iterator it = multiInstancesToRecurse.begin(); it != multiInstancesToRecurse.end(); ++it) {
-        NodeCollectionSerialization::restoreFromSerialization( (*it)->getNodesCollection(), group, true, moduleUpdatesProcessed );
+        if ( !NodeCollectionSerialization::restoreFromSerialization( (*it)->getNodesCollection(), group, true, moduleUpdatesProcessed ) ) {
+            mustShowErrorsLog = true;
+        }
     }
 
 

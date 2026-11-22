@@ -204,8 +204,8 @@ DMG: the installer script rebuilds the bundle from the executables,
   on macOS), ``bin/NatronRenderer``, ``bin/natron-python``, and the
   ``.desktop``, AppStream, MIME and icon files in ``share/``, as before this
   option existed. In addition: on Linux, the bundled PyPlugs in
-  ``share/Natron/Plugins`` (Natron finds them only when installed with
-  ``--prefix /usr``), with the ``natron_convert_project`` Python module, and, when ``NATRON_OCIO_CONFIGS_DIR`` is set, the
+  ``share/Natron/Plugins``, with the ``natron_convert_project`` Python module
+  (Natron finds both only when installed with ``--prefix /usr``), and, when ``NATRON_OCIO_CONFIGS_DIR`` is set, the
   OpenColorIO configs in ``share/OpenColorIO-Configs``; on Windows,
   ``fonts.conf`` and the OpenColorIO configs in ``Resources/``, the only place
   where Natron looks for them on Windows; on macOS, the configs and fonts are

@@ -344,7 +344,7 @@ public:
     void setProjectFormat(Natron::ProjectFileFormatEnum format);
 
     // Whether the project file that was loaded contains GUI data (node positions, viewer settings, window
-    // layout...). NatronRenderer and natron-python don't read it, and save the project without it.
+    // layout...). NatronRenderer and Natron -b don't read it, and save the project without it.
     bool projectFileHasGuiData() const;
 
     // Whether there were errors (listed in the error log) when the project was loaded, e.g. nodes whose plug-in

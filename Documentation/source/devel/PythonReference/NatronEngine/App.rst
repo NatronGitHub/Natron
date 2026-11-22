@@ -590,9 +590,9 @@ inform the user of various information, warnings or errors.
 
     Returns whether the project file this project was loaded from has GUI data: node positions,
     colours and sizes, viewer settings, the window layout... A project saved by the Natron GUI has
-    them, a project saved by NatronRenderer or natron-python doesn't. *False* for a new project.
+    them, a project saved by NatronRenderer or ``Natron -b`` doesn't. *False* for a new project.
 
-    NatronRenderer and natron-python don't read the GUI data, and save projects without them: a
+    NatronRenderer and ``Natron -b`` don't read the GUI data, and save projects without them: a
     script run by them that saves a project with GUI data loses them. Such a script can use this
     function to refuse to save the project, or to warn.
 
