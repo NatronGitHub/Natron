@@ -944,7 +944,7 @@ cmake -S . -B build-xcode -G Xcode \
 open build-xcode/Natron.xcodeproj
 ```
 
-The compiler options and `CMAKE_BUILD_TYPE` are not needed: the project uses Xcode's clang and has its own Debug and Release configurations.
+The compiler options are not needed: the project uses Xcode's clang. Natron's debug definitions (`DEBUG`, `qDebug()` output) follow `CMAKE_BUILD_TYPE`, not Xcode's Debug or Release configuration: add `-DCMAKE_BUILD_TYPE=Debug` to debug Natron in Xcode.
 
 The Xcode generator needs a full Xcode and uses its SDK. With `SDKROOT` or `CMAKE_OSX_SYSROOT` set to a Command Line Tools SDK, CMake finds no compiler. So the `SDKROOT` workaround above for shiboken2 doesn't work here: if the Python bindings fail to generate, use the Makefile or Ninja build.
 
