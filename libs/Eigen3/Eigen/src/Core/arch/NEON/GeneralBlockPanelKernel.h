@@ -24,7 +24,7 @@ struct gebp_traits <float,float,false,false,Architecture::NEON,GEBPPacketFull>
 
   template <typename LaneIdType>
   EIGEN_STRONG_INLINE void madd(const Packet4f& a, const Packet4f& b,
-                                Packet4f& c, Packet4f& tmp,
+                                Packet4f& c, Packet4f&,
                                 const LaneIdType&) const {
     acc(a, b, c);
   }

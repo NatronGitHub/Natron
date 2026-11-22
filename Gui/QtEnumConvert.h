@@ -48,7 +48,10 @@ class QtEnumConvert
 {
 public:
 
+    // On Wayland, Qt::Key_Super_L/R become Key_Meta_L/R (see superKeysAreMeta()).
     static Key fromQtKey(Qt::Key k);
+    // Whether the Super keys are reported as Key_Meta_L/R: true on Wayland (NatronGitHub/Natron#1278).
+    static bool superKeysAreMeta();
     static KeyboardModifierEnum fromQtModifier(Qt::KeyboardModifier m);
     static KeyboardModifiers fromQtModifiers(Qt::KeyboardModifiers m);
     static Qt::Key toQtKey(Key k);

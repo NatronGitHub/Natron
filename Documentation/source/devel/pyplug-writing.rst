@@ -408,6 +408,61 @@ of the PyPlug. Keep GUI code
 (dialogs, panels) out of the PyPlug: put it in ``initGui.py``, or in a separate module that the
 PyPlug only imports inside ``if not NatronEngine.natron.isBackground():``.
 
+In background mode, :meth:`app.waitForRenders()<NatronEngine.App.waitForRenders>` waits for the render
+threads, :meth:`app.undoGroup()<NatronEngine.App.undoGroup>` records nothing (the edits are made, as
+usual), and :meth:`app.undo()<NatronEngine.App.undo>`, :meth:`redo()<NatronEngine.App.redo>`,
+:meth:`canUndo()<NatronEngine.App.canUndo>` and :meth:`getUndoHistory()<NatronEngine.App.getUndoHistory>`
+do nothing (there is no undo stack). The viewer functions (``app.getViewer()``) only exist in the user
+interface.
+
+.. _pyplugWriting-renderReadBack:
+
+Rendering, reading back the result, undo
+----------------------------------------
+
+A PyPlug button that renders and reads the result back (e.g. to "bake" a value into a parameter) can
+ask the viewer for the image, once the render is displayed. :meth:`app.waitForRenders()<NatronEngine.App.waitForRenders>`
+returns when no render runs any more and its result is shown, and
+:meth:`PyViewer.getPixel()<NatronGui.PyViewer.getPixel>` returns the linear colour of the image (the value
+of the colour picker, before the display LUT)::
+
+    def onBakeButton(thisNode, app):
+        # the viewer functions only exist in the user interface
+        if NatronEngine.natron.isBackground():
+            return
+        viewer = app.getViewer("Viewer1")
+        viewer.fit()  # as the F key
+        viewer.renderCurrentFrame()
+        if not app.waitForRenders(30):
+            return  # timeout
+        rod = thisNode.getRegionOfDefinition(app.timelineGetTime(), 0)
+        c = viewer.getPixel((rod.left() + rod.right()) / 2, (rod.bottom() + rod.top()) / 2)
+        thisNode.getParam("measured").set(c.r, c.g, c.b, c.a)
+
+:meth:`PyViewer.getImage()<NatronGui.PyViewer.getImage>` returns the whole image (or a region) as
+32-bit floats, e.g. for a custom scope: ``bounds, data = viewer.getImage(); pixels = array.array('f', data)``.
+:meth:`PyViewer.getZoom()<NatronGui.PyViewer.getZoom>`, :meth:`setZoom()<NatronGui.PyViewer.setZoom>`,
+:meth:`getCenter()<NatronGui.PyViewer.getCenter>` and :meth:`setCenter()<NatronGui.PyViewer.setCenter>`
+set up the view, e.g. for a review tool.
+
+Edits made from Python are not undoable, unless they are made in an undo group: then they are one
+undo step, which *Edit > Undo* in the node graph (or :meth:`app.undo()<NatronEngine.App.undo>`)
+undoes at once. A button callback that builds a few nodes makes them one step::
+
+    def onBuildButton(thisNode, app):
+        with app.undoGroup("Build blur"):
+            blur = app.createNode("net.sf.cimg.CImgBlur")
+            blur.connectInput(0, thisNode)
+            blur.getParam("size").set(10, 10)
+
+The group records the parameter changes, and the nodes created, deleted and connected: see
+:meth:`app.undoGroup()<NatronEngine.App.undoGroup>` for what it does not record.
+
+:meth:`app.undo()<NatronEngine.App.undo>`, :meth:`app.redo()<NatronEngine.App.redo>` and
+:meth:`app.getUndoHistory()<NatronEngine.App.getUndoHistory>` work on the undo stack of the node graph
+(node creation, deletion, connections, undo groups). These functions must be called from the main thread: from a
+button or param changed callback, not from a render callback such as *afterFrameRender*.
+
 .. _pyplugWriting-distribute:
 
 Distributing PyPlugs

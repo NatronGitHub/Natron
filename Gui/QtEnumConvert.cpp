@@ -26,9 +26,38 @@
 #include "QtEnumConvert.h"
 
 #include <QDebug>
+#include <QGuiApplication> // platformName
 #include <stdexcept>
 
 NATRON_NAMESPACE_ENTER
+
+// Natron reports keys to interacts (OFX overlays and parameter interacts, kOfxPropKeySym) with the
+// symbols of fromQtKey(), and sets the Meta bit of kNatronOfxInteractPropKeyModifiers from
+// Qt::MetaModifier (ofxKeyModifiersFromNatron()). ofxNatron.h extension 13 says: "a host must set the
+// bits consistently with the key symbols it reports", and the Meta bit is "set while a key that the
+// host would report in kOfxPropKeySym with one of the key symbols of that modifier is down [...]
+// Meta (kOfxKey_Meta_L/R)". "No other key sets a bit: [...] nor the keys reported as
+// kOfxKey_Super_L/R or kOfxKey_Hyper_L/R".
+// - xcb (X11): when Qt::MetaModifier is the Super modifier (the usual case, Mod4), Qt itself reports
+//   the Super keys as Qt::Key_Meta (QXcbKeyboard::resolveMaskConflicts() sets m_superAsMeta, which
+//   QXkbCommon::keysymToQtKey() uses). If a layout has a separate Meta modifier, Qt::MetaModifier is
+//   that one, the Super keys don't set it, and they arrive as Qt::Key_Super_L/R: Key_Super_L/R
+//   without the Meta bit is consistent too, so nothing is mapped on X11.
+// - Wayland: Qt::MetaModifier is the Logo (Mod4) modifier, which the Super keys set, but qtwayland
+//   calls QXkbCommon::keysymToQtKey() without superAsMeta, so the Super keys arrive as
+//   Qt::Key_Super_L/R. Map them to Key_Meta_L/R, as xcb does, so that the key symbol and the Meta
+//   bit agree (NatronGitHub/Natron#1278).
+// - macOS and Windows: Qt::Key_Meta and Qt::MetaModifier are the same key (Control, resp. the
+//   Windows key): no change.
+// TODO(#1283): the parameter interacts (CustomParamInteract, CurveWidget) will set the bits from
+// Qt::MetaModifier too: they must take their key symbols from fromQtKey() (CustomParamInteract
+// already does), and compute the state after a key event from these symbols, as
+// keyModifiersAfterKeyEvent() in Engine/OfxEffectInstance.cpp does.
+bool
+QtEnumConvert::superKeysAreMeta()
+{
+    return QGuiApplication::platformName().startsWith( QLatin1String("wayland") );
+}
 
 ///what a painful mapping!
 Key
@@ -287,10 +316,10 @@ QtEnumConvert::fromQtKey(Qt::Key k)
         return Key_Alt_L;
     case Qt::Key_Super_L:
 
-        return Key_Super_L;
+        return superKeysAreMeta() ? keySuperAsMeta(Key_Super_L) : Key_Super_L;
     case Qt::Key_Super_R:
 
-        return Key_Super_R;
+        return superKeysAreMeta() ? keySuperAsMeta(Key_Super_R) : Key_Super_R;
     case Qt::Key_Hyper_L:
 
         return Key_Hyper_L;

@@ -53,20 +53,33 @@ export LD_LIBRARY_PATH
 
 # Libraries that always come from the system and are never bundled. A bundled file may need
 # (DT_NEEDED) only these libraries and the bundled ones (see checkBundle):
-# - glibc (libc, libm, libdl, libpthread, librt, ld-linux*, ...);
+# - glibc (libc, libm, libdl, libpthread, librt, ld-linux*, libnsl, libnss_*, libBrokenLocale,
+#   libc_malloc_debug, ...);
 # - the GCC runtime (libstdc++, libgcc_s, libgomp, libatomic). Natron is built on Rocky Linux 9
 #   with gcc-toolset: its libstdc++.so is a linker script that takes the symbols missing
 #   from the system libstdc++ (GCC 11) from libstdc++_nonshared.a, so the binaries only need
 #   the system libstdc++;
-# - OpenGL (GLVND) and DRM, which must match the system's graphics driver;
+# - OpenGL (GLVND: libGL, libEGL, libGLX, libGLdispatch, libOpenGL, libGLESv1_CM, libGLESv2),
+#   libdrm and libdrm_*, and Mesa's libgbm and libglapi, which must match the system's
+#   graphics driver (a bundled older copy breaks the system's Mesa drivers);
+# - systemd's libudev (it reads the running udev's private database, whose format follows the
+#   system's udev) and libselinux;
+# - the GPU drivers' libraries: libcuda, NVIDIA's libnvidia-* and libnvcuvid, and the OpenCL
+#   vendor ICDs (libamdocl*, libigdrcl, libintelocl, libMesaOpenCL, libRusticlOpenCL, libpocl):
+#   the OpenCL ICD loader only opens the ICDs named in /etc/OpenCL/vendors/*.icd. The ICD loader
+#   itself, libOpenCL.so.1, is not a system library (a default EL9 or Ubuntu install doesn't
+#   have it): it is bundled if a bundled file needs it;
 # - the desktop libraries, which every Linux desktop has and which must match the system's
 #   display server and sound system: the X11 client libraries (libX11, libX11-xcb, libXext,
 #   libXrender, libXau, libXdmcp, libXi, libXfixes, ... i.e. libX*), libxcb and its extensions,
 #   the xcb-util libraries (libxcb-icccm, -image, -keysyms, -render-util...), libSM, libICE,
 #   libxkbcommon and libxkbcommon-x11, and ALSA (libasound).
-# INSTALL_LINUX.md lists them ("Runtime requirements of the Linux binaries").
+# INSTALL_LINUX.md lists them ("Runtime requirements of the Linux binaries"). The OpenGL, DRM, udev,
+# SELinux and GPU driver libraries are the same as in openfx's Support/include/linuxCheckBundle.sh.
+# Unlike there, libcrypt is not a system library: Debian and Ubuntu don't have libcrypt.so.2, so a
+# bundled file must not need it (Python's crypt module is left out, see INSTALL_LINUX.md).
 # A library in this list that would be bundled is an error.
-SYSTEM_LIBS_RE='^(ld-linux.*|lib(c|m|mvec|dl|pthread|rt|resolv|util|anl|stdc\+\+|gcc_s|gomp|atomic|GL|EGL|GLX|GLdispatch|OpenGL|drm|X[A-Za-z0-9]*|X11-xcb|xcb|xcb-.*|SM|ICE|xkbcommon|xkbcommon-x11|asound)\.so(\..*)?)$'
+SYSTEM_LIBS_RE='^(ld-linux.*|lib(c|m|mvec|dl|pthread|rt|resolv|util|anl|thread_db|nsl|nss_.*|BrokenLocale|c_malloc_debug|stdc\+\+|gcc_s|gomp|atomic|GL|EGL|GLX|GLdispatch|OpenGL|GLESv1_CM|GLESv2|drm|drm_.*|gbm|glapi|udev|selinux|cuda|nvidia-.*|nvcuvid|amdocl.*|igdrcl|intelocl|MesaOpenCL|RusticlOpenCL|pocl|X[A-Za-z0-9]*|X11-xcb|xcb|xcb-.*|SM|ICE|xkbcommon|xkbcommon-x11|asound)\.so(\..*)?)$'
 
 # Highest symbol versions defined by the system libraries of Rocky Linux 9.0 (glibc 2.34;
 # libstdc++, libgcc_s and libgomp from GCC 11), on x86_64 and aarch64. A bundled binary
@@ -518,12 +531,21 @@ fi
 # The whitelist of python site-packages:
 #python_site_packages=(easy_install.py easy_install.pyc pip pkg_resources PySide README setuptools wheel shiboken.so)
 # Note that pip and dependencies were already installed by get-pip.py
-python_site_packages=(PySide shiboken.so)
+# PySide (Qt4) and PySide2 (Qt5) are both in the SDK: pick the one Natron was built with.
+# The PySide packages go to Plugins/ (which Natron adds to sys.path, see
+# Global/PythonUtils.cpp), with a symbolic link in site-packages.
+if [ "${QT_VERSION_MAJOR}" = 4 ]; then
+    python_site_packages=(PySide shiboken.so)
+    pyside_packages=(PySide)
+else
+    python_site_packages=(PySide2 shiboken2)
+    pyside_packages=(PySide2 shiboken2)
+fi
 
 mkdir -p "${TMP_PORTABLE_DIR}/lib/python${PYVER}"
 
 for pydir in "${SDK_HOME}/lib/python${PYVER}"; do
-    (cd "$pydir"; tar cf - . --exclude site-packages)|(cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}"; tar xf -)
+    (cd "$pydir"; tar cf - --exclude site-packages .)|(cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}"; tar xf -)
     for p in "${python_site_packages[@]}"; do
         if [ -e "$pydir/site-packages/$p" ]; then
             (cd "$pydir"; tar cf - "site-packages/$p") | (cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}"; tar xf -)
@@ -532,8 +554,13 @@ for pydir in "${SDK_HOME}/lib/python${PYVER}"; do
 done
 
 # Move PySide to plug-ins directory and keep a symbolic link in site-packages
-mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/PySide" "${TMP_PORTABLE_DIR}/Plugins/"
-(cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages"; ln -sf "../../../Plugins/PySide" . )
+for p in "${pyside_packages[@]}"; do
+    mv "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages/$p" "${TMP_PORTABLE_DIR}/Plugins/"
+    (cd "${TMP_PORTABLE_DIR}/lib/python${PYVER}/site-packages"; ln -sf "../../../Plugins/$p" . )
+done
+# The PySide2 wheel's own Qt (PySide2/Qt) is not used: the SDK replaced its
+# libraries with links to the SDK's Qt, which is bundled in lib/.
+rm -rf "${TMP_PORTABLE_DIR}/Plugins/PySide2/Qt"
 
 # Remove unused stuff
 rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"/{test,config,config-"${PYVER}${PYTHON_ABIFLAGS}"}
@@ -541,13 +568,30 @@ rm -rf "${TMP_PORTABLE_DIR}/lib/python${PYVER}"/{test,config,config-"${PYVER}${P
 # which is not a system library everywhere: Debian and Ubuntu only have libcrypt.so.1.
 rm -f "${TMP_PORTABLE_DIR}/lib/python${PYVER}/lib-dynload"/_crypt.*so
 
+# Copy the SDK libraries needed by the Python extension modules (e.g. libreadline and
+# libncursesw for readline and _curses), to the portable tree and the installer package
+PYDYNLOAD_DEPENDS=$(sdkDepends $(find "${TMP_PORTABLE_DIR}/lib/python${PYVER}/lib-dynload" -maxdepth 1 -type f -name '*.so'))
+for y in $PYDYNLOAD_DEPENDS; do
+    dep=$(basename "$y")
+    for location in "${TMP_PORTABLE_DIR}" "$LIBS_PACKAGE_PATH/data"; do
+        mkdir -p "${location}/lib"
+        if [ ! -f "${location}/lib/$dep" ]; then
+            cp -f "$y" "${location}/lib/"
+        fi
+    done
+done
+
 # Copy PySide dependencies
-PYSIDE_DEPENDS=$(sdkDepends $(find "${SDK_HOME}/lib/python${PYVER}/site-packages/PySide" -maxdepth 1 -type f))
+PYSIDE_DEPENDS=$(sdkDepends $(for p in "${pyside_packages[@]}"; do find "${SDK_HOME}/lib/python${PYVER}/site-packages/$p" -maxdepth 1 -type f -name '*.so*'; done))
+# (to the portable tree and the installer package)
 for y in $PYSIDE_DEPENDS; do
     dep=$(basename "$y")
-    if [ ! -f "${TMP_PORTABLE_DIR}/lib/$dep" ]; then
-        cp -f "$y" "${TMP_PORTABLE_DIR}/lib/"
-    fi
+    for location in "${TMP_PORTABLE_DIR}" "$LIBS_PACKAGE_PATH/data"; do
+        mkdir -p "${location}/lib"
+        if [ ! -f "${location}/lib/$dep" ]; then
+            cp -f "$y" "${location}/lib/"
+        fi
+    done
 done
 
 # Remove any pycache
@@ -555,7 +599,10 @@ done
 
 # Strip pyside and python depends
 if [ "${COMPILE_TYPE}" != "debug" ]; then
-    strip -s "${TMP_PORTABLE_DIR}/Plugins/PySide"/* "${TMP_PORTABLE_DIR}/lib"/python*/* "${TMP_PORTABLE_DIR}/lib"/python*/*/* &>/dev/null || true
+    for p in "${pyside_packages[@]}"; do
+        strip -s "${TMP_PORTABLE_DIR}/Plugins/$p"/* &>/dev/null || true
+    done
+    strip -s "${TMP_PORTABLE_DIR}/lib"/python*/* "${TMP_PORTABLE_DIR}/lib"/python*/*/* &>/dev/null || true
 fi
 
 # Remove pyo files and prune unneeded files using python-exclude file
@@ -564,11 +611,13 @@ find "${PYDIR}" -type f -name '*.pyo' -exec rm {} \;
 (cd "${PYDIR}"; xargs rm -rf || true) < "$INC_PATH/python-exclude.txt"
 
 # python zip
-if [ "${USE_QT5:-}" != 1 ]; then
+if [ "${QT_VERSION_MAJOR}" = 4 ]; then
     rm -rf "$PYDIR"/site-packages/shiboken2* "$PYDIR"/site-packages/PySide2 || true
 fi
 
-fixrpath "${TMP_PORTABLE_DIR}/Plugins/PySide" "/../../lib"
+for p in "${pyside_packages[@]}"; do
+    fixrpath "${TMP_PORTABLE_DIR}/Plugins/$p" "/../../lib"
+done
 fixrpath "${TMP_PORTABLE_DIR}/lib/python${PYVER:-}/lib-dynload ${TMP_PORTABLE_DIR}/lib/python${PYVER:-}/site-packages" "/../.."
 
 export PY_BIN="${SDK_HOME}/bin/python${PYVER:-}"
@@ -587,7 +636,7 @@ if [ -x "${NATRON_PYTHON}" ]; then
     "${NATRON_PYTHON}" get-pip.py
     rm get-pip.py
     # Install qtpy
-    if [ "${USE_QT5:-}" != 1 ]; then
+    if [ "${QT_VERSION_MAJOR}" = 4 ]; then
         # Qt4 support was dropped after QtPy 1.11.2
         "${NATRON_PYTHON}" -m pip install qtpy==1.11.2
         # qtpy bug fix for Qt4
@@ -610,7 +659,9 @@ fi
 cp -pPR "$PYDIR" "$LIBS_PACKAGE_PATH/data/lib/"
 cp "${TMP_PORTABLE_DIR}"/lib/python*.zip "${LIBS_PACKAGE_PATH}/data/lib/"
 mkdir -p "$LIBS_PACKAGE_PATH/data/Plugins/"
-cp -pPR "${TMP_PORTABLE_DIR}/Plugins/PySide" "$LIBS_PACKAGE_PATH/data/Plugins/"
+for p in "${pyside_packages[@]}"; do
+    cp -pPR "${TMP_PORTABLE_DIR}/Plugins/$p" "$LIBS_PACKAGE_PATH/data/Plugins/"
+done
 
 # Fix RPATH (we don't want to link against system libraries when deployed)
 for location in "$LIBS_PACKAGE_PATH/data" "${TMP_PORTABLE_DIR}"; do
@@ -789,7 +840,14 @@ fi
 
 # At this point we can run Natron unit tests to check that the deployment is ok.
 rm -rf "$HOME/.cache/INRIA/Natron"* &> /dev/null || true
-$TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" "${TMP_PORTABLE_DIR}/bin/Tests"
+# The tests need no display: use Qt's offscreen platform with or without valgrind.
+if command -v valgrind > /dev/null 2>&1; then
+    env QT_QPA_PLATFORM=offscreen $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" "${TMP_PORTABLE_DIR}/bin/Tests"
+else
+    # If valgrind is not installed in the build environment, run the tests without it.
+    echo "Warning: valgrind not found, running the bundled unit tests without it"
+    env QT_QPA_PLATFORM=offscreen $TIMEOUT -s KILL 1800 "${TMP_PORTABLE_DIR}/bin/Tests"
+fi
 rm "${TMP_PORTABLE_DIR}/bin/Tests"
 
 # Clean and perms

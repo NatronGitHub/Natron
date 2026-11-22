@@ -1,0 +1,28 @@
+diff --git a/src/corelib/global/qt_windows.h b/src/corelib/global/qt_windows.h
+index 67ba27f072..953c2a50a3 100644
+--- a/src/corelib/global/qt_windows.h
++++ b/src/corelib/global/qt_windows.h
+@@ -45,6 +45,11 @@
+ #pragma qt_sync_stop_processing
+ #endif
+ 
++#ifndef NOMINMAX
++#  define NOMINMAX
++#endif
++#include <windows.h>
++
+ #if defined(Q_CC_MINGW)
+ // mingw's windows.h does not set _WIN32_WINNT, resulting breaking compilation
+ #  ifndef WINVER
+@@ -58,11 +63,6 @@
+ #  endif
+ #endif
+ 
+-#ifndef NOMINMAX
+-#  define NOMINMAX
+-#endif
+-#include <windows.h>
+-
+ #if defined(_WIN32_IE) && _WIN32_IE < 0x0501
+ #  undef _WIN32_IE
+ #endif

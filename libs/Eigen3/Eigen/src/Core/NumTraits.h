@@ -98,6 +98,7 @@ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC Tgt bit_cast(const Src& src) {
 }
 }  // namespace numext
 
+// clang-format off
 /** \class NumTraits
   * \ingroup Core_Module
   *
@@ -109,45 +110,47 @@ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC Tgt bit_cast(const Src& src) {
   *
   * The provided data consists of:
   * \li A typedef \c Real, giving the "real part" type of \a T. If \a T is already real,
-  *     then \c Real is just a typedef to \a T. If \a T is \c std::complex<U> then \c Real
+  *     then \c Real is just a typedef to \a T. If \a T is `std::complex<U>` then \c Real
   *     is a typedef to \a U.
   * \li A typedef \c NonInteger, giving the type that should be used for operations producing non-integral values,
   *     such as quotients, square roots, etc. If \a T is a floating-point type, then this typedef just gives
-  *     \a T again. Note however that many Eigen functions such as internal::sqrt simply refuse to
+  *     \a T again. Note however that many Eigen functions such as `internal::sqrt` simply refuse to
   *     take integers. Outside of a few cases, Eigen doesn't do automatic type promotion. Thus, this typedef is
   *     only intended as a helper for code that needs to explicitly promote types.
-  * \li A typedef \c Literal giving the type to use for numeric literals such as "2" or "0.5". For instance, for \c std::complex<U>, Literal is defined as \c U.
+  * \li A typedef \c Literal giving the type to use for numeric literals such as "2" or "0.5". For instance, for `std::complex<U>`,
+  *     Literal is defined as \c U.
   *     Of course, this type must be fully compatible with \a T. In doubt, just use \a T here.
-  * \li A typedef \a Nested giving the type to use to nest a value inside of the expression tree. If you don't know what
+  * \li A typedef \c Nested giving the type to use to nest a value inside of the expression tree. If you don't know what
   *     this means, just use \a T here.
-  * \li An enum value \a IsComplex. It is equal to 1 if \a T is a \c std::complex
+  * \li An enum value \c IsComplex. It is equal to 1 if \a T is a \c std::complex
   *     type, and to 0 otherwise.
-  * \li An enum value \a IsInteger. It is equal to \c 1 if \a T is an integer type such as \c int,
+  * \li An enum value \c IsInteger. It is equal to \c 1 if \a T is an integer type such as \c int,
   *     and to \c 0 otherwise.
-  * \li Enum values ReadCost, AddCost and MulCost representing a rough estimate of the number of CPU cycles needed
+  * \li Enum values \c ReadCost, \c AddCost and \c MulCost representing a rough estimate of the number of CPU cycles needed
   *     to by move / add / mul instructions respectively, assuming the data is already stored in CPU registers.
   *     Stay vague here. No need to do architecture-specific stuff. If you don't know what this means, just use \c Eigen::HugeCost.
-  * \li An enum value \a IsSigned. It is equal to \c 1 if \a T is a signed type and to 0 if \a T is unsigned.
-  * \li An enum value \a RequireInitialization. It is equal to \c 1 if the constructor of the numeric type \a T must
+  * \li An enum value \c IsSigned. It is equal to \c 1 if \a T is a signed type and to 0 if \a T is unsigned.
+  * \li An enum value \c RequireInitialization. It is equal to \c 1 if the constructor of the numeric type \a T must
   *     be called, and to 0 if it is safe not to call it. Default is 0 if \a T is an arithmetic type, and 1 otherwise.
-  * \li An epsilon() function which, unlike <a href="http://en.cppreference.com/w/cpp/types/numeric_limits/epsilon">std::numeric_limits::epsilon()</a>,
-  *     it returns a \a Real instead of a \a T.
-  * \li A dummy_precision() function returning a weak epsilon value. It is mainly used as a default
+  * \li An `epsilon()` function which, unlike <a href="http://en.cppreference.com/w/cpp/types/numeric_limits/epsilon">`std::numeric_limits::epsilon()`</a>,
+  *     it returns a \c Real instead of a \a T.
+  * \li A `dummy_precision()` function returning a weak epsilon value. It is mainly used as a default
   *     value by the fuzzy comparison operators.
-  * \li highest() and lowest() functions returning the highest and lowest possible values respectively.
-  * \li digits() function returning the number of radix digits (non-sign digits for integers, mantissa for floating-point). This is
+  * \li `highest()` and `lowest()` functions returning the highest and lowest possible values respectively.
+  * \li `digits()` function returning the number of radix digits (non-sign digits for integers, mantissa for floating-point). This is
   *     the analogue of <a href="http://en.cppreference.com/w/cpp/types/numeric_limits/digits">std::numeric_limits<T>::digits</a>
   *     which is used as the default implementation if specialized.
-  * \li digits10() function returning the number of decimal digits that can be represented without change. This is
+  * \li `digits10()` function returning the number of decimal digits that can be represented without change. This is
   *     the analogue of <a href="http://en.cppreference.com/w/cpp/types/numeric_limits/digits10">std::numeric_limits<T>::digits10</a>
   *     which is used as the default implementation if specialized.
-  * \li min_exponent() and max_exponent() functions returning the highest and lowest possible values, respectively,
+  * \li `min_exponent()` and `max_exponent()` functions returning the highest and lowest possible values, respectively,
   *     such that the radix raised to the power exponent-1 is a normalized floating-point number.  These are equivalent to
-  *     <a href="http://en.cppreference.com/w/cpp/types/numeric_limits/min_exponent">std::numeric_limits<T>::min_exponent</a>/
-  *     <a href="http://en.cppreference.com/w/cpp/types/numeric_limits/max_exponent">std::numeric_limits<T>::max_exponent</a>.
-  * \li infinity() function returning a representation of positive infinity, if available.
-  * \li quiet_NaN function returning a non-signaling "not-a-number", if available.
+  *     <a href="http://en.cppreference.com/w/cpp/types/numeric_limits/min_exponent">`std::numeric_limits<T>::min_exponent`</a>/
+  *     <a href="http://en.cppreference.com/w/cpp/types/numeric_limits/max_exponent">`std::numeric_limits<T>::max_exponent`</a>.
+  * \li `infinity()` function returning a representation of positive infinity, if available.
+  * \li `quiet_NaN` function returning a non-signaling "not-a-number", if available.
   */
+  // clang-format on
 
 template<typename T> struct GenericNumTraits
 {
@@ -245,12 +248,25 @@ template<> struct NumTraits<double> : GenericNumTraits<double>
   static inline double dummy_precision() { return 1e-12; }
 };
 
+// GPU devices treat `long double` as `double`.
+#ifndef EIGEN_GPU_COMPILE_PHASE
 template<> struct NumTraits<long double>
   : GenericNumTraits<long double>
 {
-  EIGEN_CONSTEXPR
-  static inline long double dummy_precision() { return 1e-15l; }
+  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+  static inline long double dummy_precision() { return static_cast<long double>(1e-15l); }
+
+#if defined(EIGEN_ARCH_PPC) && (__LDBL_MANT_DIG__ == 106)
+  // PowerPC double double causes issues with some values
+  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+  static inline long double epsilon()
+  {
+    // 2^(-(__LDBL_MANT_DIG__)+1)
+    return static_cast<long double>(2.4651903288156618919116517665087e-32l);
+  }
+#endif
 };
+#endif
 
 template<typename _Real> struct NumTraits<std::complex<_Real> >
   : GenericNumTraits<std::complex<_Real> >

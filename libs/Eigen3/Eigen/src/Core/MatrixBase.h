@@ -206,28 +206,22 @@ template<typename Derived> class MatrixBase
     EIGEN_DEVICE_FUNC
     DiagonalReturnType diagonal();
 
-    typedef typename internal::add_const<Diagonal<const Derived> >::type ConstDiagonalReturnType;
+    typedef Diagonal<const Derived> ConstDiagonalReturnType;
     EIGEN_DEVICE_FUNC
-    ConstDiagonalReturnType diagonal() const;
-
-    template<int Index> struct DiagonalIndexReturnType { typedef Diagonal<Derived,Index> Type; };
-    template<int Index> struct ConstDiagonalIndexReturnType { typedef const Diagonal<const Derived,Index> Type; };
+    const ConstDiagonalReturnType diagonal() const;
 
     template<int Index>
     EIGEN_DEVICE_FUNC
-    typename DiagonalIndexReturnType<Index>::Type diagonal();
+    Diagonal<Derived, Index> diagonal();
 
     template<int Index>
     EIGEN_DEVICE_FUNC
-    typename ConstDiagonalIndexReturnType<Index>::Type diagonal() const;
-
-    typedef Diagonal<Derived,DynamicIndex> DiagonalDynamicIndexReturnType;
-    typedef typename internal::add_const<Diagonal<const Derived,DynamicIndex> >::type ConstDiagonalDynamicIndexReturnType;
+    const Diagonal<const Derived, Index> diagonal() const;
 
     EIGEN_DEVICE_FUNC
-    DiagonalDynamicIndexReturnType diagonal(Index index);
+    Diagonal<Derived, DynamicIndex> diagonal(Index index);
     EIGEN_DEVICE_FUNC
-    ConstDiagonalDynamicIndexReturnType diagonal(Index index) const;
+    const Diagonal<const Derived, DynamicIndex> diagonal(Index index) const;
 
     template<unsigned int Mode> struct TriangularViewReturnType { typedef TriangularView<Derived, Mode> Type; };
     template<unsigned int Mode> struct ConstTriangularViewReturnType { typedef const TriangularView<const Derived, Mode> Type; };

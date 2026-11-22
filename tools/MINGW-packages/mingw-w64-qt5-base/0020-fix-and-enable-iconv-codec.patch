@@ -1,0 +1,61 @@
+--- a/src/corelib/codecs/qiconvcodec.cpp	2019-06-12 23:59:14.000000000 +0300
++++ b/src/corelib/codecs/qiconvcodec.cpp	2019-06-15 16:13:47.730477100 +0300
+@@ -47,7 +47,6 @@
+ #include <errno.h>
+ #include <locale.h>
+ #include <stdio.h>
+-#include <dlfcn.h>
+ 
+ // unistd.h is needed for the _XOPEN_UNIX macro
+ #include <unistd.h>
+@@ -180,7 +179,7 @@
+     IconvState *state = *pstate;
+     size_t inBytesLeft = len;
+     // best case assumption, each byte is converted into one UTF-16 character, plus 2 bytes for the BOM
+-#if !QT_CONFIG(posix_libiconv)
++#if !QT_CONFIG(posix_libiconv) && !defined(Q_OS_WIN)
+     // GNU doesn't disagree with POSIX :/
+     const char *inBytes = chars;
+ #else
+@@ -279,7 +278,7 @@
+     size_t outBytesLeft = sizeof buf;
+     size_t inBytesLeft = sizeof bom;
+ 
+-#if !QT_CONFIG(posix_libiconv)
++#if !QT_CONFIG(posix_libiconv) && !defined(Q_OS_WIN)
+     const char **inBytesPtr = const_cast<const char **>(&inBytes);
+ #else
+     char **inBytesPtr = &inBytes;
+@@ -301,7 +300,7 @@
+     char *outBytes;
+     size_t inBytesLeft;
+ 
+-#if !QT_CONFIG(posix_libiconv)
++#if !QT_CONFIG(posix_libiconv) && !defined(Q_OS_WIN)
+     const char **inBytesPtr = const_cast<const char **>(&inBytes);
+ #else
+     char **inBytesPtr = &inBytes;
+diff -Naur a/src/corelib/configure.json b/src/corelib/configure.json
+--- a/src/corelib/configure.json	2019-06-15 16:13:37.106858400 +0300
++++ b/src/corelib/configure.json	2019-06-15 16:13:47.730477100 +0300
+@@ -72,7 +72,7 @@
+             "test": {
+                 "main": [
+                     "iconv_t x = iconv_open(\"\", \"\");",
+-                    "const char *inp;",
++                    "char *inp;",
+                     "char *outp;",
+                     "size_t inbytes, outbytes;",
+                     "iconv(x, &inp, &inbytes, &outp, &outbytes);",
+@@ -673,9 +673,9 @@
+         },
+         "gnu-libiconv": {
+             "label": "GNU iconv",
+-            "enable": "input.iconv == 'gnu'",
++            "enable": "'enabling via -gnu-iconv fails' == 'enabling via -gnu-iconv fails'",
+             "disable": "input.iconv == 'posix' || input.iconv == 'sun' || input.iconv == 'no'",
+-            "condition": "!config.win32 && !config.qnx && !config.android && !config.darwin && !features.posix-libiconv && !features.sun-libiconv && libs.gnu_iconv",
++            "condition": "!config.qnx && !config.android && !config.darwin && !features.posix-libiconv && !features.sun-libiconv && libs.gnu_iconv",
+             "output": [ "privateFeature" ]
+         },
+         "icu": {

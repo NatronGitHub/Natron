@@ -74,8 +74,30 @@ Sanity-check a new OS/compiler combination::
     clang++-mp-<v> -stdlib=libc++ -fopenmp t.cpp -o t && otool -L t | grep -E 'libc\+\+|libomp'
     # expect /usr/lib/libc++.1.dylib and /opt/local/lib/libomp/libomp.dylib
 
-The Natron packaging build compiles with ``-std=c++20`` (poppler requires it);
-C++17 remains the language *minimum* enforced by ``Global/Macros.h``.
+The packaging build compiles Natron and the plug-ins as C++17 for Qt5 and
+C++20 for Qt6, from ``QT_VERSION_MAJOR``, in one of two ways:
+
+- **CMake builds** (the default: ``NATRON_BUILD_SYSTEM=cmake``,
+  ``PLUGINS_BUILD_SYSTEM=cmake``): ``build-natron.sh`` and ``build-plugins.sh``
+  drop the ``-std=`` flag from ``$CXX``. Natron's ``CMakeLists.txt`` sets
+  ``CMAKE_CXX_STANDARD`` from ``NATRON_QT6`` (with GNU extensions, i.e.
+  ``-std=gnu++17``/``gnu++20``), and the plug-ins get ``-DOFX_CXX_STANDARD=17``
+  or ``20`` (without GNU extensions).
+- **qmake and Makefile builds** (``NATRON_BUILD_SYSTEM=qmake``,
+  ``PLUGINS_BUILD_SYSTEM=make``): they compile with ``$CXX``, whose
+  ``-std=c++17``/``c++20`` comes from ``CXXSTD`` in
+  ``tools/jenkins/compiler-common.sh`` (``gnu++17``/``gnu++20`` on Windows).
+  The plug-ins' Makefiles keep that standard. qmake takes the standard from
+  ``QT_MAJOR_VERSION`` in ``global.pri`` (``CONFIG += c++17`` or ``c++2a``),
+  and Qt's ``default_post.prf`` appends ``-std=gnu++1z`` or ``-std=gnu++2a``
+  after the other flags (``CONFIG += strict_c++`` is not set), so Natron's
+  qmake build uses GNU extensions, like its CMake build.
+
+openfx-arena compiles its poppler-based reader as C++20 with GNU extensions in
+any case, because recent poppler headers require it: ``POPPLER_CXX_STANDARD``
+in its CMake build (``CXX_EXTENSIONS ON``, i.e. ``-std=gnu++20``), and
+``POPPLER_CXXSTD`` (``-std=gnu++2a``, after ``$CXX``'s ``-std``) in its
+Makefiles.
 
 The MacPorts overlay
 --------------------

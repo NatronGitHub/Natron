@@ -193,6 +193,13 @@ elif [ "$PKGOS" = "Windows" ]; then
         *-clang-*) MINGW_TOOLCHAIN=clang ;;
         *) MINGW_TOOLCHAIN=gcc ;;
     esac
+    # Inno Setup's Setup.exe for this environment (${MINGW_PACKAGE_PREFIX}-natron-setup, built for
+    # x64 or arm64): in the environment's prefix since pkgrel 6. Older packages, which were only
+    # built for UCRT64 (x64), installed it as /Setup.exe.
+    NATRON_SETUP_EXE="${MINGW_PREFIX}/share/natron-setup/Setup.exe"
+    if [ ! -f "$NATRON_SETUP_EXE" ] && [ "$ARCH" = "x86_64" ] && [ -f /Setup.exe ]; then
+        NATRON_SETUP_EXE=/Setup.exe
+    fi
     # define TMP, which is used by QDir::tempPath http://doc.qt.io/qt-4.8/qdir.html#tempPath,
     # so that the Qt programs of each MSYS2 environment use their own temporary directory
     TMP="$TMPDIR/${MSYSTEM:-mingw64}"

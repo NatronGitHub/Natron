@@ -29,7 +29,11 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
+#include <climits>
+
+#include <QCoreApplication>
 #include <QDebug>
+#include <QThread>
 
 #include "Engine/AppInstance.h"
 #include "Engine/CreateNodeArgs.h"
@@ -168,6 +172,8 @@ App::createNode(const QString& pluginID,
 
     NodePtr node = getInternalApp()->createNode(args);
     if (node) {
+        // undoable in an undo group (App.beginUndoGroup())
+        getInternalApp()->recordNodeCreatedForUndoGroup(node);
         return new Effect(node);
     } else {
         return NULL;
@@ -188,6 +194,8 @@ App::createReader(const QString& filename,
 
     NodePtr node = getInternalApp()->createReader(filename.toStdString(), args);
     if (node) {
+        // undoable in an undo group (App.beginUndoGroup())
+        getInternalApp()->recordNodeCreatedForUndoGroup(node);
         return new Effect(node);
     } else {
         return NULL;
@@ -206,6 +214,8 @@ App::createWriter(const QString& filename,
     makeCreateNodeArgs(getInternalApp(), QString::fromUtf8(PLUGINID_NATRON_WRITE), -1, collection, props, &args);
     NodePtr node = getInternalApp()->createWriter(filename.toStdString(), args);
     if (node) {
+        // undoable in an undo group (App.beginUndoGroup())
+        getInternalApp()->recordNodeCreatedForUndoGroup(node);
         return new Effect(node);
     } else {
         return NULL;
@@ -414,31 +424,46 @@ App::addFormat(const QString& formatSpec)
 }
 
 bool
-App::saveTempProject(const QString& filename)
+App::saveTempProject(const QString& filename,
+                     ProjectFileFormatEnum format)
 {
-    return getInternalApp()->saveTemp( filename.toStdString() );
+    return getInternalApp()->saveTemp(filename.toStdString(), format);
 }
 
 bool
-App::saveProject(const QString& filename)
+App::saveProject(const QString& filename,
+                 ProjectFileFormatEnum format)
 {
     std::string outFile = filename.toStdString();
     std::map<std::string, std::string> env;
     getInternalApp()->getProject()->getEnvironmentVariables(env);
     Project::expandVariable(env, outFile);
 
-    return getInternalApp()->save(outFile);
+    return getInternalApp()->save(outFile, format);
 }
 
 bool
-App::saveProjectAs(const QString& filename)
+App::saveProjectAs(const QString& filename,
+                   ProjectFileFormatEnum format)
 {
     std::string outFile = filename.toStdString();
     std::map<std::string, std::string> env;
     getInternalApp()->getProject()->getEnvironmentVariables(env);
     Project::expandVariable(env, outFile);
 
-    return getInternalApp()->saveAs(outFile);
+    return getInternalApp()->saveAs(outFile, format);
+}
+
+ProjectFileFormatEnum
+App::getProjectFormat() const
+{
+    return getInternalApp()->getProject()->getFileFormat();
+}
+
+void
+App::setProjectFormat(ProjectFileFormatEnum format)
+{
+    getInternalApp()->getProject()->setFileFormat(format);
 }
 
 App*
@@ -478,6 +503,163 @@ App::newProject()
     }
 
     return new App(app);
+}
+
+// The undo/redo and wait functions work with the GUI, on the main thread: raises RuntimeError otherwise
+// (e.g. from a render callback).
+static bool
+checkMainThread(const char* function)
+{
+    if ( QThread::currentThread() != qApp->thread() ) {
+        PyErr_Format(PyExc_RuntimeError, "%s must be called from the main thread", function);
+
+        return false;
+    }
+
+    return true;
+}
+
+void
+App::undo()
+{
+    if ( !checkMainThread("App.undo()") ) {
+        return;
+    }
+    if (getInternalApp()->getUndoGroupDepth() > 0) {
+        // the group would record the state of what the undo changes, and its step would undo it
+        PyErr_SetString(PyExc_RuntimeError, "App.undo() cannot be called in an open undo group");
+
+        return;
+    }
+    getInternalApp()->undo();
+}
+
+void
+App::redo()
+{
+    if ( !checkMainThread("App.redo()") ) {
+        return;
+    }
+    if (getInternalApp()->getUndoGroupDepth() > 0) {
+        // the group would record the state of what the undo changes, and its step would undo it
+        PyErr_SetString(PyExc_RuntimeError, "App.redo() cannot be called in an open undo group");
+
+        return;
+    }
+    getInternalApp()->redo();
+}
+
+bool
+App::canUndo() const
+{
+    return checkMainThread("App.canUndo()") && getInternalApp()->canUndo();
+}
+
+bool
+App::canRedo() const
+{
+    return checkMainThread("App.canRedo()") && getInternalApp()->canRedo();
+}
+
+std::list<QString>
+App::getUndoHistory() const
+{
+    std::list<QString> ret;
+    if ( !checkMainThread("App.getUndoHistory()") ) {
+        return ret;
+    }
+    const std::list<std::string> history = getInternalApp()->getUndoHistory();
+
+    for (std::list<std::string>::const_iterator it = history.begin(); it != history.end(); ++it) {
+        ret.push_back( QString::fromUtf8( it->c_str() ) );
+    }
+
+    return ret;
+}
+
+int
+App::getUndoIndex() const
+{
+    return checkMainThread("App.getUndoIndex()") ? getInternalApp()->getUndoIndex() : 0;
+}
+
+void
+App::beginUndoGroup(const QString& text)
+{
+    if ( checkMainThread("App.beginUndoGroup()") ) {
+        getInternalApp()->beginUndoGroup( text.toStdString() );
+    }
+}
+
+void
+App::endUndoGroup()
+{
+    if ( checkMainThread("App.endUndoGroup()") && !getInternalApp()->endUndoGroup() ) {
+        PyErr_SetString(PyExc_RuntimeError, "App.endUndoGroup(): no undo group is open");
+    }
+}
+
+UndoGroup*
+App::undoGroup(const QString& text)
+{
+    return new UndoGroup(getInternalApp(), text);
+}
+
+UndoGroup::UndoGroup(const AppInstancePtr& app,
+                     const QString& text)
+    : _app(app)
+    , _text(text)
+    , _open(false)
+{
+}
+
+UndoGroup::~UndoGroup()
+{
+    // a context manager entered and never exited (e.g. __enter__() called by hand) ends its group
+    end();
+}
+
+void
+UndoGroup::begin()
+{
+    AppInstancePtr app = _app.lock();
+
+    if ( app && !_open && checkMainThread("App.undoGroup()") ) {
+        _open = app->beginUndoGroup( _text.toStdString() );
+    }
+}
+
+void
+UndoGroup::end()
+{
+    AppInstancePtr app = _app.lock();
+
+    if (app && _open) {
+        _open = false;
+        app->endUndoGroup();
+    }
+}
+
+bool
+App::waitForRenders(double timeout)
+{
+    AppInstancePtr app = getInternalApp();
+
+    if ( !checkMainThread("App.waitForRenders()") ) {
+        return false;
+    }
+    // In the GUI, wait until the events posted by the renders (e.g. viewer textures) are processed:
+    // no render for a little while. In background mode, nothing is displayed.
+    const int settleMs = app->isBackground() ? 0 : 200;
+    // no overflow: a timeout of more than about 24 days is no timeout
+    const int timeoutMs = ( (timeout < 0.) || (timeout * 1000. >= (double)INT_MAX) ) ? -1 : (int)(timeout * 1000.);
+    bool ok;
+    // the renders may need the Python lock (expressions, callbacks)
+    Py_BEGIN_ALLOW_THREADS
+    ok = app->waitForRenders(timeoutMs, settleMs);
+    Py_END_ALLOW_THREADS
+
+    return ok;
 }
 
 std::list<QString>

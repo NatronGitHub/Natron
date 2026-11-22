@@ -515,7 +515,7 @@ struct KnobHelperPrivate
     std::vector<std::string> dimensionNames;
     // std::mutex rather than QMutex: render threads lock it on every getValue() (see #1451)
     mutable std::mutex expressionMutex;
-    std::vector<Expr> expressions;
+    std::vector<Expr> expressions; //< protected by expressionMutex, including Expr::dependencies
     mutable QMutex lastRandomHashMutex;
     mutable U32 lastRandomHash;
 
@@ -3012,7 +3012,11 @@ KnobHelper::clearExpression(int dimension,
 {
     PythonGILLocker pgl;
     bool hadExpression;
+    std::list<std::pair<KnobIWPtr, int> > dependencies;
     {
+        // The dependencies are protected by expressionMutex, like the rest of the expression: addListener(),
+        // getExpressionDependencies() and getAllExpressionDependenciesRecursive() (e.g. from a render thread)
+        // read or modify them under it (#1544).
         std::lock_guard<std::mutex> k(_imp->expressionMutex);
         hadExpression = !_imp->expressions[dimension].originalExpression.empty();
         _imp->expressions[dimension].expression.clear();
@@ -3020,15 +3024,10 @@ KnobHelper::clearExpression(int dimension,
         _imp->expressions[dimension].exprInvalid.clear();
         //Py_XDECREF(_imp->expressions[dimension].code); //< new ref
         //_imp->expressions[dimension].code = 0;
+        dependencies.swap(_imp->expressions[dimension].dependencies);
     }
     KnobIPtr thisShared = shared_from_this();
     {
-        std::list<std::pair<KnobIWPtr, int> > dependencies;
-        {
-            QWriteLocker kk(&_imp->mastersMutex);
-            dependencies = _imp->expressions[dimension].dependencies;
-            _imp->expressions[dimension].dependencies.clear();
-        }
         for (std::list<std::pair<KnobIWPtr, int> >::iterator it = dependencies.begin();
              it != dependencies.end(); ++it) {
             KnobIPtr otherKnob = it->first.lock();
@@ -4908,6 +4907,21 @@ KnobHelper::getAliasMaster()  const
 void
 KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr>& nodes) const
 {
+    std::set<const KnobHelper*> visitedKnobs;
+
+    getAllExpressionDependenciesRecursiveInternal(nodes, visitedKnobs);
+}
+
+void
+KnobHelper::getAllExpressionDependenciesRecursiveInternal(std::set<NodePtr>& nodes,
+                                                          std::set<const KnobHelper*>& visitedKnobs) const
+{
+    // Parameters may read each other through their expressions (a.x = b.y, b.y = a.x): follow each one once,
+    // otherwise this recursed until the stack overflowed (#1564)
+    if ( !visitedKnobs.insert(this).second ) {
+        return;
+    }
+
     std::set<KnobIPtr> deps;
     {
         std::lock_guard<std::mutex> k(_imp->expressionMutex);
@@ -4946,7 +4960,12 @@ KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr>& nodes) cons
 
 
     for (std::list<KnobIPtr>::iterator it = knobsToInspectRecursive.begin(); it != knobsToInspectRecursive.end(); ++it) {
-        (*it)->getAllExpressionDependenciesRecursive(nodes);
+        // every knob is a KnobHelper (getAllExpressionDependenciesRecursive() is final there)
+        const KnobHelper* isHelper = dynamic_cast<const KnobHelper*>( it->get() );
+        assert(isHelper);
+        if (isHelper) {
+            isHelper->getAllExpressionDependenciesRecursiveInternal(nodes, visitedKnobs);
+        }
     }
 }
 
@@ -5946,6 +5965,9 @@ KnobHolder::onDoValueChangeOnMainThread(KnobI* knob,
     onKnobValueChanged_public(knob, (ValueChangedReasonEnum)reason, time, view, originatedFromMT);
 }
 
+// see KnobHolder::ValueChangesRecorder
+static thread_local KnobHolder::ValueChanges* gValueChangesRecorded = 0;
+
 void
 KnobHolder::appendValueChange(const KnobIPtr& knob,
                               int dimension,
@@ -5974,6 +5996,14 @@ KnobHolder::appendValueChange(const KnobIPtr& knob,
         }
         assert(foundChange);
 
+        if (gValueChangesRecorded) {
+            if ( knob->getEvaluateOnChange() || knob->getIsMetadataSlave() ) {
+                gValueChangesRecorded->significant.insert(this);
+            }
+            if ( knob->getIsPersistent() ) {
+                gValueChangesRecorded->persistent.insert(this);
+            }
+        }
         foundChange->reason = reason;
         foundChange->originalReason = originalReason;
         foundChange->originatedFromMainThread = QThread::currentThread() == qApp->thread();
@@ -6007,6 +6037,23 @@ KnobHolder::appendValueChange(const KnobIPtr& knob,
            }*/
     }
 } // KnobHolder::appendValueChange
+
+KnobHolder::ValueChangesRecorder::ValueChangesRecorder(ValueChanges* changes)
+    : _previous(gValueChangesRecorded)
+{
+    gValueChangesRecorded = changes;
+}
+
+KnobHolder::ValueChangesRecorder::~ValueChangesRecorder()
+{
+    gValueChangesRecorded = _previous;
+}
+
+KnobHolder::ValueChanges*
+KnobHolder::ValueChangesRecorder::current()
+{
+    return gValueChangesRecorded;
+}
 
 void
 KnobHolder::beginChanges()

@@ -78,11 +78,19 @@ The official Linux binaries are built on Rocky Linux 9 with the Natron SDK. They
 - glibc 2.34 or later: libc, libm, libdl, libpthread, librt and ld-linux.
 - libstdc++ and libgcc_s from GCC 11 or later. On Rocky Linux 9 these are the system ones. Natron is compiled with a newer GCC, from `gcc-toolset`, but the libstdc++ symbols that are newer than GCC 11 are linked statically, from `libstdc++_nonshared.a`, so the binaries only need the system libstdc++.
 - libgomp (OpenMP runtime), from GCC 11 or later. It is a separate package (`libgomp` on RHEL/Rocky, `libgomp1` on Debian/Ubuntu). Most systems have it, but minimal images such as `rockylinux:9-minimal` don't.
-- libGL from GLVND (libGL, libEGL, libGLX, libGLdispatch), and an OpenGL driver. Also libdrm.
+- libGL from GLVND (libGL, libEGL, libGLX, libGLdispatch, libOpenGL), and an OpenGL driver.
 - The X11 client libraries, at least as recent as those of Rocky Linux 9.0 (libX11 1.7.0, libxcb 1.13.1, libxkbcommon 1.0.3): libX11, libX11-xcb, libXext, libXrender, libXau, libXdmcp and the other libX\* libraries, libxcb and its extensions, the xcb-util libraries (libxcb-icccm, libxcb-image, libxcb-keysyms, libxcb-render-util), libSM, libICE, libxkbcommon and libxkbcommon-x11. Qt's X11 platform plug-in (`libqxcb.so`) needs them.
 - ALSA (libasound), for Qt Multimedia.
 
-Everything else comes from the SDK and is bundled. In particular, Python's `crypt` module (deprecated since Python 3.11) is not included: it needs libcrypt.so.2, which Debian and Ubuntu don't have.
+Other libraries are not required, but they are never bundled either: when the system has them, they are used from the system, because they must match its drivers or services. A headless render node doesn't need them:
+
+- the rest of GLVND (libGLESv1_CM, libGLESv2), libdrm and libdrm\_\*, and Mesa's libgbm and libglapi: the system's OpenGL drivers use them, and an older bundled copy would break those drivers;
+- systemd's libudev (it reads the running udev's database, whose format follows the system's udev) and libselinux;
+- the GPU drivers' libraries: libcuda, NVIDIA's libnvidia-\* and libnvcuvid, and the OpenCL vendor drivers (ICDs: libamdocl\*, libigdrcl, libintelocl, libMesaOpenCL, libRusticlOpenCL, libpocl). The OpenCL ICD loader only opens the ICDs listed in `/etc/OpenCL/vendors/*.icd`, so a bundled copy would never be used. The ICD loader itself, libOpenCL.so.1 (ocl-icd or the Khronos OpenCL-ICD-Loader), is not in this list, since a default EL9 or Ubuntu install doesn't have it: it is bundled when a bundled file needs it (none does today).
+
+These are the system libraries of openfx's `Support/include/linuxCheckBundle.sh`, which checks the OFX plug-in bundles, plus the X11 and ALSA libraries.
+
+Everything else comes from the SDK and is bundled. In particular, Python's `crypt` module (deprecated since Python 3.11) is not included: it needs libcrypt.so.2, which Debian and Ubuntu don't have. libva (VA-API) is neither bundled nor needed: the SDK image has no libva-devel, so the SDK's FFmpeg is built without VA-API (and `checkBundle` would fail if a bundled file needed the system's libva). A bundled libva would only find the VA-API drivers at the paths of the distribution it was built on.
 
 `tools/jenkins/build-Linux-installer.sh` checks this (`checkBundle`, on the portable tree and on the installer packages). It fails if:
 - the directory doesn't exist or contains no ELF file;
@@ -268,7 +276,7 @@ This is what the Linux CI job does on Ubuntu 24.04 (see `.github/workflows/ci.ym
 Useful options (add them to the first `cmake` command):
 
 - `-DCMAKE_BUILD_TYPE=Debug`, `Release` or `RelWithDebInfo` (the default).
-- `-DNATRON_QT6=ON` builds with Qt 6 and PySide6 instead of Qt 5 and PySide2.
+- `-DNATRON_QT6=ON` builds with Qt 6 and PySide6 instead of Qt 5 and PySide2, as C++20 (Qt 5 builds are C++17). See [Debian-based](#debian-based) and [Arch Linux](#arch-linux) for the Qt 6 packages.
 - `-DNATRON_BUILD_TESTS=OFF` skips the unit tests.
 - `-DNATRON_SYSTEM_LIBS=ON` uses the system copies of the libraries that Natron otherwise builds from `libs/`.
 - `-DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang` builds with Clang.
@@ -345,6 +353,8 @@ You will also need additional Boost libraries, cairo, and Qt5 (provided by PySid
 ```
 sudo pacman -S cmake boost cairo pyside2 python-pyqt
 ```
+
+For a Qt 6 build (`-DNATRON_QT6=ON`), install `qt6-base pyside6 shiboken6 python-qtpy` instead of `pyside2 python-pyqt`.
 
 Then, clone Natron's repo:
 
@@ -447,6 +457,16 @@ sudo apt install build-essential cmake libboost-serialization-dev libboost-syste
 ```
 
 (`qt5-qmake` is only needed for the deprecated qmake build.)
+
+For a Qt 6 build (`-DNATRON_QT6=ON`), replace the Qt 5 and PySide2 packages with the Qt 6 and PySide6 ones. Ubuntu 24.04 has no PySide6/Shiboken6 packages: they start with Ubuntu 26.04. On Ubuntu 26.04 (no `libboost-system-dev` there: Boost.System is header-only since Boost 1.89):
+
+```
+sudo apt install build-essential cmake libboost-serialization-dev libexpat1-dev libcairo2-dev \
+  qt6-base-dev \
+  python3-dev libshiboken6-dev shiboken6 libpyside6-dev python3-pyside6.qtwidgets python3-qtpy \
+  libwayland-dev libwayland-client0 libwayland-egl1 \
+  extra-cmake-modules clang
+```
 
 For Ubuntu 22.04 using Python 3.10 and Qt 5.15, install the required dependencies:
 

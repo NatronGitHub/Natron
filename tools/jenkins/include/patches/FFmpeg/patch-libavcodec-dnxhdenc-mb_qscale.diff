@@ -1,0 +1,37 @@
+dnxhdenc: store the per-macroblock qscale in 16 bits.
+
+mb_qscale was uint8_t, but qmax defaults to 1024 and the bitstream codes
+qscale in 11 bits. When rate control picks a qscale above 255 (DNxHR 444
+on high-entropy images such as binary noise, or -mbd rd with any 10-bit
+profile), the stored value wraps: the macroblocks are quantised at the
+wrapped qscale while the slice buffers are sized for the real one, the
+slices overflow and an av_assert0 in put_bits.h aborts the process.
+Make mb_qscale uint16_t, and cap the retry increment at avctx->qmax
+instead of 255 (mb_rc has qmax + 1 entries per macroblock). Encodes that
+never need qscale > 255 are bit-identical.
+Regression from 950930b461 (qmax 1024) and 044c09c0a0 (retry cap 255).
+Natron: https://github.com/NatronGitHub/openfx-io/issues/267
+Not yet submitted upstream.
+
+--- libavcodec/dnxhdenc.c.orig
++++ libavcodec/dnxhdenc.c
+@@ -1218,7 +1218,7 @@ retry:
+             int rc = (ctx->qscale * ctx->m.c.mb_num ) + mb;
+             max_bits -= ctx->mb_rc[rc].bits -
+                         ctx->mb_rc[rc + ctx->m.c.mb_num].bits;
+-            if (ctx->mb_qscale[mb] < 255)
++            if (ctx->mb_qscale[mb] < avctx->qmax)
+                 ctx->mb_qscale[mb]++;
+             ctx->mb_bits[mb]   = ctx->mb_rc[rc + ctx->m.c.mb_num].bits;
+         }
+--- libavcodec/dnxhdenc.h.orig
++++ libavcodec/dnxhdenc.h
+@@ -98,7 +98,7 @@ typedef struct DNXHDEncContext {
+     unsigned lambda;
+ 
+     uint32_t *mb_bits;
+-    uint8_t  *mb_qscale;
++    uint16_t *mb_qscale;
+ 
+     RCCMPEntry *mb_cmp;
+     RCCMPEntry *mb_cmp_tmp;

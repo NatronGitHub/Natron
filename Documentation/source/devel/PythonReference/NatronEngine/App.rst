@@ -19,17 +19,26 @@ Functions
 
 - def :meth:`addProjectLayer<NatronEngine.App.addProjectLayer>` (layer)
 - def :meth:`addFormat<NatronEngine.App.addFormat>` (formatSpec)
+- def :meth:`beginUndoGroup<NatronEngine.App.beginUndoGroup>` (text)
+- def :meth:`canRedo<NatronEngine.App.canRedo>` ()
+- def :meth:`canUndo<NatronEngine.App.canUndo>` ()
 - def :meth:`createNode<NatronEngine.App.createNode>` (pluginID[, majorVersion=-1[, group=None] [, properties=None]])
 - def :meth:`createReader<NatronEngine.App.createReader>` (filename[, group=None] [, properties=None])
 - def :meth:`createWriter<NatronEngine.App.createWriter>` (filename[, group=None] [, properties=None])
+- def :meth:`endUndoGroup<NatronEngine.App.endUndoGroup>` ()
 - def :meth:`getAppID<NatronEngine.App.getAppID>` ()
 - def :meth:`getProjectParam<NatronEngine.App.getProjectParam>` (name)
+- def :meth:`getUndoHistory<NatronEngine.App.getUndoHistory>` ()
+- def :meth:`getUndoIndex<NatronEngine.App.getUndoIndex>` ()
 - def :meth:`getViewNames<NatronEngine.App.getViewNames>` ()
+- def :meth:`redo<NatronEngine.App.redo>` ()
 - def :meth:`render<NatronEngine.App.render>` (effect,firstFrame,lastFrame[,frameStep])
 - def :meth:`render<NatronEngine.App.render>` (tasks)
-- def :meth:`saveTempProject<NatronEngine.App.saveTempProject>` (filename)
-- def :meth:`saveProject<NatronEngine.App.saveProject>` (filename)
-- def :meth:`saveProjectAs<NatronEngine.App.saveProjectAs>` (filename)
+- def :meth:`saveTempProject<NatronEngine.App.saveTempProject>` (filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
+- def :meth:`saveProject<NatronEngine.App.saveProject>` (filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
+- def :meth:`saveProjectAs<NatronEngine.App.saveProjectAs>` (filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
+- def :meth:`getProjectFormat<NatronEngine.App.getProjectFormat>` ()
+- def :meth:`setProjectFormat<NatronEngine.App.setProjectFormat>` (format)
 - def :meth:`loadProject<NatronEngine.App.loadProject>` (filename)
 - def :meth:`resetProject<NatronEngine.App.resetProject>` ()
 - def :meth:`closeProject<NatronEngine.App.closeProject>` ()
@@ -37,6 +46,9 @@ Functions
 - def :meth:`timelineGetLeftBound<NatronEngine.App.timelineGetLeftBound>` ()
 - def :meth:`timelineGetRightBound<NatronEngine.App.timelineGetRightBound>` ()
 - def :meth:`timelineGetTime<NatronEngine.App.timelineGetTime>` ()
+- def :meth:`undo<NatronEngine.App.undo>` ()
+- def :meth:`undoGroup<NatronEngine.App.undoGroup>` (text)
+- def :meth:`waitForRenders<NatronEngine.App.waitForRenders>` ([timeout=-1.0])
 - def :meth:`writeToScriptEditor<NatronEngine.App.writeToScriptEditor>` (message)
 
 .. _app.details:
@@ -486,9 +498,10 @@ Writes the given *message* to the Script Editor panel of Natron. This can be use
 inform the user of various information, warnings or errors.
 
 
-.. method:: App.saveProject(filename)
+.. method:: App.saveProject(filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
 
     :param filename: :class:`str`
+    :param format: :class:`ProjectFileFormatEnum<NatronEngine.Natron.ProjectFileFormatEnum>`
     :rtype: :class:`bool`
 
     Saves the current project under the current project name. If the project has
@@ -496,29 +509,78 @@ inform the user of various information, warnings or errors.
     parameter. In GUI mode, if *filename* is empty, it asks the user where to save the project in GUI
     mode.
 
+    *format* is the format of the file, see :meth:`getProjectFormat<NatronEngine.App.getProjectFormat>`. With
+    *eProjectFileFormatNone* (the default), the project is saved in its format, or, if it was never saved,
+    in the format of the "Save projects as binary by default" preference (binary by default, also in
+    NatronRenderer and natron-python). Any other format becomes the format of the project.
+    In GUI mode, when *filename* is empty and the project was never saved, the save dialog is shown:
+    *format* is the default of its "File format" choice, and the user's choice is used.
+
     This function returns *True* if it saved successfully, *False* otherwise.
 
-.. method:: App.saveProjectAs(filename)
+    .. versionchanged:: 2.6
+       The *format* parameter. Projects are saved in the binary format by default.
+
+.. method:: App.saveProjectAs(filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
 
     :param filename: :class:`str`
+    :param format: :class:`ProjectFileFormatEnum<NatronEngine.Natron.ProjectFileFormatEnum>`
     :rtype: :class:`bool`
 
     Save the project under the given *filename*.
     In GUI mode, if *filename* is empty, it prompts the user where to save the project.
 
+    *format* is the format of the file, as in :meth:`saveProject<NatronEngine.App.saveProject>`: it becomes
+    the format of the project, unless it is *eProjectFileFormatNone*.
+    To write a file that Natron 2.5 and earlier can read, use
+    *NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatText*.
 
     This function returns *True* if it saved successfully, *False* otherwise.
 
+    .. versionchanged:: 2.6
+       The *format* parameter. Projects are saved in the binary format by default.
 
 
-.. method:: App.saveTempProject(filename)
+.. method:: App.saveTempProject(filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
 
     :param filename: :class:`str`
+    :param format: :class:`ProjectFileFormatEnum<NatronEngine.Natron.ProjectFileFormatEnum>`
     :rtype: :class:`bool`
 
     Saves a copy of the project to the given *filename* without updating project properties
     such as the project path, last save time etc...
+    *format* is the format of the copy (*eProjectFileFormatNone*: the format of the project, or the
+    preference for a project that was never saved); it doesn't change the format of the project.
     This function returns *True* if it saved successfully, *False* otherwise.
+
+    .. versionchanged:: 2.6
+       The *format* parameter.
+
+.. method:: App.getProjectFormat()
+
+    :rtype: :class:`ProjectFileFormatEnum<NatronEngine.Natron.ProjectFileFormatEnum>`
+
+    Returns the format of the project file: the format of the file it was loaded from, or of the
+    file it was last saved to. *eProjectFileFormatNone* for a project that was never saved.
+    A project restored from an auto-save (auto-saves are always binary) has the format of the
+    project that was auto-saved.
+
+    Project files have the *.ntp* extension in both formats, and the format is detected when a
+    project is loaded:
+
+    - *eProjectFileFormatText*: XML text, readable and diffable, which Natron 2.5 and earlier can read.
+    - *eProjectFileFormatBinary*: a portable binary format (the same file loads on every operating
+      system and processor), faster to load and save, and smaller. Needs Natron 2.6 or later.
+
+    .. versionadded:: 2.6
+
+.. method:: App.setProjectFormat(format)
+
+    :param format: :class:`ProjectFileFormatEnum<NatronEngine.Natron.ProjectFileFormatEnum>`
+
+    Sets the format of the next saves of the project (see :meth:`getProjectFormat<NatronEngine.App.getProjectFormat>`).
+
+    .. versionadded:: 2.6
 
 
 .. method:: App.loadProject(filename)
@@ -550,6 +612,13 @@ inform the user of various information, warnings or errors.
     Same as :func:`resetProject()<NatronEngine.App.resetProject>` except that the
     window will close in GUI mode.
     Also, if this is the last :class:`App<NatronEngine.App>` alive, Natron will close.
+    In GUI mode, the window closes once the script returns to the event loop: in the meantime,
+    the project is being closed, and :func:`createNode()<NatronEngine.App.createNode>` returns
+    *None*, and :func:`natron.getNumInstances()<NatronEngine.PyCoreApplication.getNumInstances>`
+    still counts it. A script should not use this :class:`App<NatronEngine.App>` after this call:
+    in the meantime, :func:`closeProject()<NatronEngine.App.closeProject>` returns *True* and
+    :func:`resetProject()<NatronEngine.App.resetProject>` returns *False*, without asking again
+    to save the changes.
 
 .. method:: App.newProject()
 
@@ -559,3 +628,132 @@ inform the user of various information, warnings or errors.
     Upon success, the :class:`App<NatronEngine.App>` object is returned, otherwise *None*
     is returned.
 
+.. method:: App.undo()
+
+    Undoes the last command of the undo stack of the node graph: node creations, deletions,
+    connections and moves, and the undo groups (see below), whatever widget has the focus. *Edit >
+    Undo* undoes the last command of the panel or graph used last instead, which may be a parameter
+    change in a settings panel. Does nothing if there is nothing to undo, and in background mode,
+    where there is no undo stack. Raises :class:`RuntimeError` when not called from the main thread
+    (e.g. from a render callback); so do the other undo functions.
+
+    Edits made from Python (e.g. :meth:`Param.setValue()<NatronEngine.IntParam.setValue>` or
+    :meth:`createNode()<NatronEngine.App.createNode>`) are only undoable inside an undo group (see
+    :meth:`undoGroup()<NatronEngine.App.undoGroup>`).
+
+.. method:: App.redo()
+
+    Redoes the last undone command of the node graph's undo stack (see
+    :meth:`undo()<NatronEngine.App.undo>`). Does nothing if there is nothing to redo, and in background
+    mode.
+
+.. method:: App.canUndo()
+
+    :rtype: :class:`bool`
+
+    Returns whether :meth:`undo()<NatronEngine.App.undo>` would undo something. Always *False* in
+    background mode.
+
+.. method:: App.canRedo()
+
+    :rtype: :class:`bool`
+
+    Returns whether :meth:`redo()<NatronEngine.App.redo>` would redo something. Always *False* in
+    background mode.
+
+.. method:: App.getUndoHistory()
+
+    :rtype: :class:`sequence`
+
+    Returns the texts of the commands of the node graph's undo stack, oldest first, as in the undo history
+    (e.g. ``['Delete node', 'Paste node']``). Commands at an index greater than or equal to
+    :meth:`getUndoIndex()<NatronEngine.App.getUndoIndex>` were undone and can be redone. Returns an empty
+    list in background mode.
+
+.. method:: App.getUndoIndex()
+
+    :rtype: :class:`int`
+
+    Returns the number of commands of :meth:`getUndoHistory()<NatronEngine.App.getUndoHistory>` that are
+    done: :meth:`undo()<NatronEngine.App.undo>` undoes the command just before this index, and
+    :meth:`redo()<NatronEngine.App.redo>` redoes the one at this index. Returns 0 in background mode.
+
+.. method:: App.waitForRenders([timeout=-1.0])
+
+    :param timeout: :class:`float`
+    :rtype: :class:`bool`
+
+    Waits until no render runs or is queued, in any project: the viewers, the Write nodes and the node
+    previews. In the user interface, the events (except the user input) are processed while waiting,
+    until the results of the renders are displayed: there it waits until no render has run for 200
+    ms, so a call takes at least 200 ms. Returns *True*, or *False* if *timeout* seconds elapsed first
+    (no limit if *timeout* is negative). Must be called from the main thread (e.g. a script, a callback or a
+    PyPanel), not from a render callback.
+
+    For example, a button callback that changes a parameter, then reads the result of the render::
+
+        transform.getParam("translate").set(100, 50)
+        app.getViewer("Viewer1").renderCurrentFrame()
+        if app.waitForRenders(30):
+            print(app.getViewer("Viewer1").getPixel(960, 540))
+
+.. method:: App.undoGroup(text)
+
+    :param text: :class:`str`
+    :rtype: a context manager
+
+    Makes the edits of a block of Python code one undo step named *text*, used as::
+
+        with app.undoGroup("Bake"):
+            blur = app.createNode("net.sf.cimg.CImgBlur")
+            blur.connectInput(0, app.Read1)
+            blur.getParam("size").setValue(10, 0)
+            app.Viewer1.connectInput(0, blur)
+
+    *Edit > Undo* (or :meth:`undo()<NatronEngine.App.undo>`) then removes the Blur node and restores the
+    connection of the viewer in one step. Outside an undo group, the edits made from Python are not
+    undoable, as before. This is how a PyPlug button callback or a tool makes its edits one undo step.
+
+    The group records the parameter changes (values, keyframes, expressions, links and aliases, defaults
+    restored),
+    the nodes created (:meth:`createNode()<NatronEngine.App.createNode>`,
+    :meth:`createReader()<NatronEngine.App.createReader>`, :meth:`createWriter()<NatronEngine.App.createWriter>`),
+    deleted (:meth:`Effect.destroy()<NatronEngine.Effect.destroy>`) and connected or disconnected
+    (:meth:`Effect.connectInput()<NatronEngine.Effect.connectInput>`,
+    :meth:`Effect.disconnectInput()<NatronEngine.Effect.disconnectInput>`). A node deleted in a group is
+    kept until the undo step is discarded, so that undo can restore it.
+
+    Groups nest: only the outermost one makes an undo step. The group ends when the block ends, also when
+    it raises an exception (the edits made until then are the undo step). The undo step is on the undo
+    stack of the node graph. In background mode (NatronRenderer), where there is no undo stack, it does
+    nothing.
+
+    Undoing restores, for each parameter, its values, keyframes, expressions and links as they were
+    before the group, unless the parameter was changed after the group (e.g. in its settings panel, whose
+    undo stack is another one): it then keeps its value. Redo does the same the other way round.
+
+    Not recorded: the changes that a plug-in makes by itself in reaction to an edit (e.g. a Read node's
+    format after its file name changes), which happen again or not when the edit is undone or redone;
+    the label, position and colour of the nodes (:meth:`Effect.setLabel()<NatronEngine.Effect.setLabel>`,
+    ``setPosition()``, ``setColor()``). A node deleted in a group keeps its script name taken, so a node
+    created afterwards with the same name gets another one, as after a deletion in the node graph.
+
+    A group that a script leaves open (a :meth:`beginUndoGroup()<NatronEngine.App.beginUndoGroup>`
+    without :meth:`endUndoGroup()<NatronEngine.App.endUndoGroup>`) is ended, with a warning, when the
+    Script Editor script or the GUI test that started it ends, and dropped when the project is closed.
+    :meth:`undo()<NatronEngine.App.undo>` and :meth:`redo()<NatronEngine.App.redo>` raise
+    :class:`RuntimeError` while a group is open, and the undo group functions raise it when not called
+    from the main thread.
+
+.. method:: App.beginUndoGroup(text)
+
+    :param text: :class:`str`
+
+    Starts an undo group, as entering ``with app.undoGroup(text):`` does: prefer the ``with`` statement,
+    which also ends the group on an exception. Every call must be followed by a call to
+    :meth:`endUndoGroup()<NatronEngine.App.endUndoGroup>`.
+
+.. method:: App.endUndoGroup()
+
+    Ends the undo group started by the last :meth:`beginUndoGroup()<NatronEngine.App.beginUndoGroup>`.
+    Raises :class:`RuntimeError` if no group is open.

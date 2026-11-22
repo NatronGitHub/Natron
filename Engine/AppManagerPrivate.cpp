@@ -26,6 +26,7 @@
 #include "AppManagerPrivate.h"
 
 #include <chrono>
+#include <mutex>
 
 #include <QDateTime>
 
@@ -260,6 +261,7 @@ AppManagerPrivate::AppManagerPrivate()
     , nThreadsMutex()
     , runningThreadsCount()
     , lastProjectLoadedCreatedDuringRC2Or3(false)
+    , destroying(false)
     , testMode(false)
     , commandLineArgsWideOriginal()
     , commandLineArgsWide()
@@ -534,6 +536,11 @@ saveCache(Cache<T>* cache)
 void
 AppManagerPrivate::saveCaches()
 {
+    // Every project save calls this, and two projects may be saved at the same time (#1590): they would write
+    // the same files. Two processes that share a cache directory still can.
+    static std::mutex saveCachesMutex;
+    std::lock_guard<std::mutex> lock(saveCachesMutex);
+
     if (!appPTR->isBackground()) {
         saveCache<FrameEntry>( _viewerCache.get() );
     }

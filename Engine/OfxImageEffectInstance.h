@@ -32,7 +32,6 @@
 #include <string>
 #include <cstdarg>
 #include <vector>
-#include <atomic>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -115,6 +114,20 @@ public:
     public:
         explicit MainThreadAction_RAII(OfxImageEffectInstance* effect);
         ~MainThreadAction_RAII();
+    };
+
+    /**
+     * @brief Brackets an action of the instance or of one of its interacts on any thread: while it runs, the effect is
+     * the one whose action runs on the thread (OfxHost::OfxHostTLSData::effectCallingMainEntry(), used for the host
+     * name) and the thread is not a multithread suite thread (multiThreadIsSpawnedThread()). Nothing if effect is NULL.
+     **/
+    class ThreadIsActionCaller_RAII
+    {
+        OfxImageEffectInstance* _effect;
+
+    public:
+        explicit ThreadIsActionCaller_RAII(OfxImageEffectInstance* effect);
+        ~ThreadIsActionCaller_RAII();
     };
 
     ////////////////////////////////////////////////////////////////////////////////

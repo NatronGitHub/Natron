@@ -339,7 +339,7 @@
     extern "C" {
       // In theory we should only include immintrin.h and not the other *mmintrin.h header files directly.
       // Doing so triggers some issues with ICC. However old gcc versions seems to not have this file, thus:
-      #if EIGEN_COMP_ICC >= 1110
+      #if EIGEN_COMP_ICC >= 1110 || EIGEN_COMP_EMSCRIPTEN
         #include <immintrin.h>
       #else
         #include <mmintrin.h>
@@ -363,10 +363,11 @@
       #endif
     } // end extern "C"
 
-  #elif defined __VSX__
+  #elif defined(__VSX__) && !defined(__APPLE__)
 
     #define EIGEN_VECTORIZE
-    #define EIGEN_VECTORIZE_VSX
+    #define EIGEN_VECTORIZE_VSX 1
+    #define EIGEN_VECTORIZE_FMA
     #include <altivec.h>
     // We need to #undef all these ugly tokens defined in <altivec.h>
     // => use __vector instead of vector
@@ -378,6 +379,7 @@
 
     #define EIGEN_VECTORIZE
     #define EIGEN_VECTORIZE_ALTIVEC
+    #define EIGEN_VECTORIZE_FMA
     #include <altivec.h>
     // We need to #undef all these ugly tokens defined in <altivec.h>
     // => use __vector instead of vector
@@ -438,13 +440,20 @@
   #include <arm_fp16.h>
 #endif
 
-#if defined(__F16C__) && (!defined(EIGEN_GPUCC) && (!defined(EIGEN_COMP_CLANG) || EIGEN_COMP_CLANG>=380))
+// Enable FMA for ARM.
+#if defined(__ARM_FEATURE_FMA)
+#define EIGEN_VECTORIZE_FMA
+#endif
+
+#if defined(__F16C__) && !defined(EIGEN_GPUCC) && (!EIGEN_COMP_CLANG_STRICT || EIGEN_COMP_CLANG>=380)
   // We can use the optimized fp16 to float and float to fp16 conversion routines
   #define EIGEN_HAS_FP16_C
 
-  #if defined(EIGEN_COMP_CLANG)
-    // Workaround for clang: The FP16C intrinsics for clang are included by
-    // immintrin.h, as opposed to emmintrin.h as suggested by Intel:
+  #if EIGEN_COMP_GNUC
+    // Make sure immintrin.h is included, even if e.g. vectorization is
+    // explicitly disabled (see also issue #2395).
+    // Note that FP16C intrinsics for gcc and clang are included by immintrin.h,
+    // as opposed to emmintrin.h as suggested by Intel:
     // https://software.intel.com/sites/landingpage/IntrinsicsGuide/#othertechs=FP16C&expand=1711
     #include <immintrin.h>
   #endif
