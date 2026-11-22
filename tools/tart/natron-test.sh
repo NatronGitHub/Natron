@@ -192,6 +192,9 @@ if [ -f "$OUT/$NAME-tests.txt" ] && [ -f "$OUT/$NAME-tests-summary.txt" ]; then
         log "Warning: known failures passed: remove them from Natron-Tests' known_failures/"
     fi
     [ "$status" = 0 ] || log "Error: runTests.sh exited with status $status (a test failed that isn't a known failure, or the run failed)"
+elif [ -f "$OUT/$NAME-tests.txt" ]; then
+    log "Error: no summary.txt: runTests.sh did not finish (see $OUT/$NAME-tests.log)"
+    status=1
 else
     log "Error: no result.txt (see $OUT/$NAME-tests.log)"
     status=1
