@@ -208,6 +208,8 @@ cp -a "${TMP_BINARIES_PATH}/OFX/Plugins/"*.ofx.bundle "${package}/Contents/Plugi
 
 
 cp -a "${TMP_BINARIES_PATH}/PyPlugs" "${package}/Contents/Plugins/"
+# Python modules (natron_convert_project.py): Contents/Plugins is on the Python path
+cp -a "${TMP_BINARIES_PATH}/PythonModules/." "${package}/Contents/Plugins/"
 cp -a "${TMP_BINARIES_PATH}/Resources" "${package}/Contents/"
 
 NATRON_BIN_VERSION="${NATRON_VERSION_SHORT}"

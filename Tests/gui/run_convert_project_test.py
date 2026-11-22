@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <https://natrongithub.github.io/>,
 # (C) 2018-2026 The Natron developers
@@ -18,21 +17,30 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-"""Headless test of tools/natron-convert-project.py, run by NatronRenderer.
+"""Headless test of the natron_convert_project module (tools/).
 
 Usage: run_convert_project_test.py /path/to/NatronRenderer [--debugger]
 
-Tests/data/ProjectFileFormat-2.5.ntp (a text project saved by Natron 2.5.0, with a group, user
-parameters, animation and an expression) is converted text -> binary -> text -> binary -> text.
-Each file must have the requested format, the two text files written by the converter must be
-identical except for the save date, and every project must load with the same nodes, links and
-parameter values (keyframes, expressions) as the original. A copy with GUI data is not converted
-unless NATRON_CONVERT_DISCARD_GUI=1, a copy with a node whose plug-in is missing is not converted,
-and a bad NATRON_CONVERT_TO or a missing input fails.
+The module must be importable by NatronRenderer: the build copies it to the
+Plugins directory of the build tree, which is on the Python path of the
+build-tree NatronRenderer, as in an installed Natron.
 
-Exit status: 0 on success, 1 on failure.
---debugger runs NatronRenderer under natron-lldb.sh (see run_gui_smoke_test.py), or set
-NATRON_TEST_WRAPPER.
+Each conversion runs NatronRenderer -t -c "import natron_convert_project as c;
+c.convert_and_quit(...)", with commands on the standard input that must not
+run: convert_and_quit() must end the session, without starting the prompt.
+Tests/data/ProjectFileFormat-2.5.ntp (a text project saved by Natron 2.5.0,
+with a group, user parameters, animation and an expression) is converted
+text -> binary -> text -> binary -> text. Each file must have the requested
+format, the two text files must be identical except for the save date, and
+every project must load with the same nodes, links and parameter values
+(keyframes, expressions) as the original. A copy with GUI data is converted
+only with discard_gui=True, a copy with a node whose plug-in is missing is
+not converted, and bad arguments raise the documented exceptions, with the
+exit status 1 and no output file. Importing the module does nothing else.
+
+Exit status: 0 on success, 1 on failure, 2 on a usage error.
+--debugger runs NatronRenderer under natron-lldb.sh (see
+run_gui_smoke_test.py), or set NATRON_TEST_WRAPPER.
 """
 
 import json
@@ -44,18 +52,23 @@ import sys
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SRCDIR = os.path.dirname(os.path.dirname(HERE))
-CONVERTER = os.path.join(SRCDIR, "tools", "natron-convert-project.py")
-PROJECT = os.path.join(SRCDIR, "Tests", "data", "ProjectFileFormat-2.5.ntp")
+PROJECT = os.path.join(os.path.dirname(HERE), "data",
+                       "ProjectFileFormat-2.5.ntp")
 BINARY_MAGIC = b"\x01\x16serialization::archive"
+# Given to the -t prompt, which must not start after convert_and_quit()
+PROMPT_STDIN = 'import sys; sys.stdout.write("PROMPT STARTED\\n")\n'
+PROMPT_MARKER = "PROMPT STARTED"
+BACKGROUND_TAG = b"<Background_project>1</Background_project>"
+DOT_PLUGIN_TAG = b"<Plugin_id>fr.inria.built-in.Dot</Plugin_id>"
 
-# Loads NATRON_DUMP_INPUT and writes a description of its nodes and parameters to NATRON_DUMP_OUTPUT (JSON).
+# Loads NATRON_DUMP_INPUT and writes a description of its nodes and
+# parameters to NATRON_DUMP_OUTPUT (JSON).
 DUMP_SCRIPT = r"""
-import json, os, sys
-import NatronEngine
+import json
+import os
 from NatronEngine import natron
 
-def dumpParam(p):
+def dump_param(p):
     d = {"type": type(p).__name__, "dims": []}
     for dim in range(p.getNumDimensions()):
         e = {}
@@ -67,7 +80,7 @@ def dumpParam(p):
         if hasattr(p, "getNumKeys"):
             keys = []
             for i in range(p.getNumKeys(dim)):
-                ok, t = p.getKeyTime(i, dim)
+                _, t = p.getKeyTime(i, dim)
                 keys.append([t, p.getValueAtTime(t, dim)])
             e["keys"] = keys
         if hasattr(p, "getExpression"):
@@ -75,32 +88,36 @@ def dumpParam(p):
         d["dims"].append(e)
     return d
 
-def dumpNodes(group, out, prefix=""):
+def dump_nodes(group, out, prefix=""):
     for n in group.getChildren():
         name = prefix + n.getScriptName()
+        inputs = [n.getInput(i) for i in range(n.getMaxInputCount())]
         out[name] = {
             "plugin": n.getPluginID(),
             "label": n.getLabel(),
-            "inputs": [(n.getInput(i).getScriptName() if n.getInput(i) else None) for i in range(n.getMaxInputCount())],
-            "params": dict((p.getScriptName(), dumpParam(p)) for p in n.getParams()),
+            "inputs": [i.getScriptName() if i else None for i in inputs],
+            "params": {p.getScriptName(): dump_param(p)
+                       for p in n.getParams()},
         }
         if n.getPluginID() == "fr.inria.built-in.Group":
-            dumpNodes(n, out, name + ".")
+            dump_nodes(n, out, name + ".")
 
 status = 1
 try:
     app = natron.getInstance(0)
     loaded = app.loadProject(os.environ["NATRON_DUMP_INPUT"])
-    assert loaded is not None, "load failed"
+    if loaded is None:
+        raise RuntimeError("load failed")
     nodes = {}
-    dumpNodes(loaded, nodes)
+    dump_nodes(loaded, nodes)
     project = {}
     for name in ("frameRange", "outputFormat", "frameRate", "colorSpace8u"):
         p = loaded.getProjectParam(name)
         if p is not None:
-            project[name] = dumpParam(p)
+            project[name] = dump_param(p)
     with open(os.environ["NATRON_DUMP_OUTPUT"], "w") as f:
-        json.dump({"nodes": nodes, "project": project}, f, indent=1, sort_keys=True, default=str)
+        json.dump({"nodes": nodes, "project": project}, f, indent=1,
+                  sort_keys=True, default=str)
     status = 0
 except BaseException:
     import traceback
@@ -109,43 +126,61 @@ natron.quit(status)
 """
 
 
-class Runner(object):
-    def __init__(self, renderer, wrapper, tmpDir):
+class Runner:
+    """Runs NatronRenderer with a private cache and environment."""
+
+    def __init__(self, renderer, wrapper, tmp_dir):
         self.renderer = renderer
         self.wrapper = wrapper
         self.env = dict(os.environ)
         # no image cache in the user's directory
-        self.env["NATRON_DISK_CACHE_PATH"] = os.path.join(tmpDir, "cache")
-        # Debug builds: no trapped floating point exception (#1537), as with Natron --test
+        self.env["NATRON_DISK_CACHE_PATH"] = os.path.join(tmp_dir, "cache")
+        # Debug builds: no trapped floating point exception (#1537)
         self.env["NATRON_NO_FP_TRAPS"] = "1"
-        for k in ("NATRON_CONVERT_TO", "NATRON_CONVERT_INPUT", "NATRON_CONVERT_OUTPUT", "NATRON_CONVERT_DISCARD_GUI"):
-            self.env.pop(k, None)
+        self.stdin = os.path.join(tmp_dir, "prompt_stdin.py")
+        with open(self.stdin, "w") as f:
+            f.write(PROMPT_STDIN)
+        # natron-lldb.sh reads the standard input of the program from there
+        self.env["NATRON_LLDB_STDIN"] = self.stdin
 
-    def run(self, script, extraEnv):
+    def run(self, args, extra_env=None):
+        """Runs NatronRenderer --no-settings args; returns (status, output).
+
+        The standard input is PROMPT_STDIN.
+        """
+        extra_env = extra_env or {}
         env = dict(self.env)
-        env.update(extraEnv)
-        cmd = self.wrapper + [self.renderer, "--no-settings", "-t", script]
-        print("Running: %s %s" % (" ".join("%s=%s" % kv for kv in sorted(extraEnv.items())), " ".join(cmd)))
+        env.update(extra_env)
+        cmd = self.wrapper + [self.renderer, "--no-settings"] + args
+        print("Running: %s %s" % (
+            " ".join("%s=%s" % kv for kv in sorted(extra_env.items())),
+            " ".join(shlex.quote(a) for a in cmd)))
         sys.stdout.flush()
         try:
-            proc = subprocess.run(cmd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT, timeout=300)
+            with open(self.stdin, "rb") as stdin:
+                proc = subprocess.run(cmd, env=env, stdin=stdin,
+                                      stdout=subprocess.PIPE,
+                                      stderr=subprocess.STDOUT, timeout=300)
         except subprocess.TimeoutExpired:
             print("FAILED: timeout")
             return -1, ""
         out = proc.stdout.decode(errors="replace")
         # the plug-in loading messages are not interesting
-        sys.stdout.write("".join(l for l in out.splitlines(True) if not l.startswith("OpenFX: loading")))
+        sys.stdout.write("".join(line for line in out.splitlines(True)
+                                 if not line.startswith("OpenFX: loading")))
         print("exit status %d" % proc.returncode)
         return proc.returncode, out
 
-    def convert(self, to, src, dst, extraEnv=None):
-        env = {"NATRON_CONVERT_TO": to, "NATRON_CONVERT_INPUT": src, "NATRON_CONVERT_OUTPUT": dst}
-        env.update(extraEnv or {})
-        return self.run(CONVERTER, env)
+    def convert(self, *args, **kwargs):
+        """Runs natron_convert_project.convert_and_quit(*args, **kwargs)."""
+        call = ", ".join([repr(a) for a in args] +
+                         ["%s=%r" % kv for kv in sorted(kwargs.items())])
+        return self.run(["-t", "-c", "import natron_convert_project as c; "
+                         "c.convert_and_quit(%s)" % call])
 
 
-def fileFormat(path):
+def file_format(path):
+    """Returns "binary", "text" or None, from the first bytes of path."""
     with open(path, "rb") as f:
         head = f.read(64)
     if head.startswith(BINARY_MAGIC):
@@ -155,19 +190,171 @@ def fileFormat(path):
     return None
 
 
-def textWithoutSaveDate(path):
-    # The lastSaveDate parameter of the project changes at each save: drop its value
-    lines = open(path, "rb").read().decode("utf-8").splitlines()
+def text_without_save_date(path):
+    """Returns the lines of a text project, without its save date."""
+    with open(path, "rb") as f:
+        lines = f.read().decode("utf-8").splitlines()
     out = []
-    skipValue = False
+    skip_value = False
     for line in lines:
         if "<Name>lastSaveDate</Name>" in line:
-            skipValue = True
-        elif skipValue and "<Value>" in line:
+            skip_value = True
+        elif skip_value and "<Value>" in line:
             line = "<Value>(save date)</Value>"
-            skipValue = False
+            skip_value = False
         out.append(line)
     return out
+
+
+def write_variant(data, old, new, path):
+    """Writes data, with its first old replaced by new, to path."""
+    if old not in data:
+        raise ValueError("%r is not in the test project" % (old,))
+    with open(path, "wb") as f:
+        f.write(data.replace(old, new, 1))
+
+
+class ConvertProjectTest:
+    """The checks; the failures are collected in self.failures."""
+
+    def __init__(self, runner, tmp_dir):
+        self.runner = runner
+        self.tmp_dir = tmp_dir
+        self.failures = []
+        self.dump_script = self.path("dump.py")
+        with open(self.dump_script, "w") as f:
+            f.write(DUMP_SCRIPT)
+        self.src = self.path("original.ntp")
+        shutil.copyfile(PROJECT, self.src)
+        with open(self.src, "rb") as f:
+            self.data = f.read()
+
+    def path(self, name):
+        return os.path.join(self.tmp_dir, name)
+
+    def check(self, cond, msg):
+        if not cond:
+            print("FAILED: " + msg)
+            self.failures.append(msg)
+        return cond
+
+    def check_no_prompt(self, result, what):
+        return self.check(PROMPT_MARKER not in result[1],
+                          "%s: the -t prompt started" % what)
+
+    def check_converted(self, result, dst, to, what):
+        """The conversion must succeed and write dst in the format to."""
+        status, _ = result
+        return (self.check(status == 0, "%s: exit status %d, expected 0"
+                           % (what, status)) and
+                self.check_no_prompt(result, what) and
+                self.check(file_format(dst) == to,
+                           "%s: %s is not a %s project" % (what, dst, to)))
+
+    def check_refused(self, result, dst, error, what):
+        """The conversion must fail with the exception line error."""
+        status, out = result
+        self.check(status == 1, "%s: exit status %d, expected 1"
+                   % (what, status))
+        self.check_no_prompt(result, what)
+        self.check(error in out, "%s: %r is not in the output" % (what, error))
+        self.check(not os.path.exists(dst), "%s: %s was written" % (what, dst))
+
+    def dump(self, path):
+        out = path + ".json"
+        status, _ = self.runner.run(
+            ["-t", self.dump_script],
+            {"NATRON_DUMP_INPUT": path, "NATRON_DUMP_OUTPUT": out})
+        if not self.check(status == 0 and os.path.isfile(out),
+                          "could not load %s" % path):
+            return None
+        with open(out) as f:
+            return json.load(f)
+
+    def test_import(self):
+        """Importing the module neither converts nor quits."""
+        status, out = self.runner.run(
+            ["-t", "-c", "import natron_convert_project; "
+             "from NatronEngine import natron; natron.quit(5)"])
+        self.check(status == 5, "import: exit status %d, expected 5" % status)
+        self.check_no_prompt((status, out), "import")
+
+    def test_chain(self):
+        """text -> binary -> text -> binary -> text, same nodes and values."""
+        reference = self.dump(self.src)
+        if not self.check(reference and "Group1" in reference["nodes"] and
+                          "Dot1" in reference["nodes"],
+                          "the reference project has no Group1 or Dot1"):
+            return
+        prev = self.src
+        for to, name in (("binary", "1.bin.ntp"), ("text", "2.text.ntp"),
+                         ("binary", "3.bin.ntp"), ("text", "4.text.ntp")):
+            dst = self.path(name)
+            if not self.check_converted(self.runner.convert(prev, dst, to),
+                                        dst, to, "%s -> %s" % (prev, to)):
+                return
+            self.check(self.dump(dst) == reference,
+                       "%s does not have the nodes and values of the original"
+                       % dst)
+            prev = dst
+        self.check(text_without_save_date(self.path("2.text.ntp")) ==
+                   text_without_save_date(self.path("4.text.ntp")),
+                   "2.text.ntp and 4.text.ntp differ (other than the save "
+                   "date)")
+
+    def test_in_place(self):
+        in_place = self.path("inplace.ntp")
+        shutil.copyfile(self.src, in_place)
+        self.check_converted(self.runner.convert(in_place, to="binary"),
+                             in_place, "binary", "in-place conversion")
+        # convert() does not quit: the -t prompt then runs the commands of
+        # its standard input (which also checks that the test sees them)
+        status, out = self.runner.run(
+            ["-t", "-c", "import natron_convert_project as c; "
+             "c.convert(%r)" % in_place])
+        self.check(status == 0 and PROMPT_MARKER in out and
+                   file_format(in_place) == "text",
+                   "convert() without quitting: exit status %d, the prompt "
+                   "should start and %s should be text" % (status, in_place))
+
+    def test_gui_data(self):
+        # Only the flag: NatronRenderer does not read the GUI part
+        with_gui = self.path("withgui.ntp")
+        write_variant(self.data, BACKGROUND_TAG,
+                      b"<Background_project>0</Background_project>", with_gui)
+        dst = self.path("withgui.bin.ntp")
+        self.check_refused(self.runner.convert(with_gui, dst, "binary"), dst,
+                           "RuntimeError: %s has GUI data" % with_gui,
+                           "a project with GUI data")
+        result = self.runner.convert(with_gui, dst, "binary", discard_gui=True)
+        if self.check_converted(result, dst, "binary", "discard_gui=True"):
+            self.check("the GUI data of %s are not converted" % with_gui
+                       in result[1], "discard_gui=True: no warning")
+
+    def test_load_errors(self):
+        # The project loads without the node whose plug-in is missing
+        missing = self.path("missingplugin.ntp")
+        write_variant(self.data, DOT_PLUGIN_TAG,
+                      b"<Plugin_id>fr.inria.built-in.NoSuchPlugin</Plugin_id>",
+                      missing)
+        dst = self.path("missingplugin.bin.ntp")
+        self.check_refused(self.runner.convert(missing, dst, "binary"), dst,
+                           "RuntimeError: there were errors while loading %s"
+                           % missing, "a project that loads with errors")
+
+    def test_bad_arguments(self):
+        dst = self.path("bad.ntp")
+        self.check_refused(self.runner.convert(self.src, dst, "xml"), dst,
+                           "ValueError: to must be \"text\" or \"binary\", "
+                           "not 'xml'", "to='xml'")
+        missing = self.path("missing.ntp")
+        self.check_refused(self.runner.convert(missing, dst), dst,
+                           "FileNotFoundError: %s: no such file" % missing,
+                           "a missing input")
+        no_dir = self.path(os.path.join("nosuchdir", "out.ntp"))
+        self.check_refused(self.runner.convert(self.src, no_dir), no_dir,
+                           "RuntimeError: %s could not be saved" % no_dir,
+                           "an output in a missing directory")
 
 
 def main(argv):
@@ -179,93 +366,22 @@ def main(argv):
         wrapper = [os.path.join(HERE, "natron-lldb.sh")]
     elif os.environ.get("NATRON_TEST_WRAPPER"):
         wrapper = shlex.split(os.environ["NATRON_TEST_WRAPPER"])
-    tmpDir = tempfile.mkdtemp(prefix="natron-convert-project-test-")
-    failures = []
-
-    def check(cond, msg):
-        if not cond:
-            print("FAILED: " + msg)
-            failures.append(msg)
-        return cond
-
+    tmp_dir = tempfile.mkdtemp(prefix="natron-convert-project-test-")
     try:
-        r = Runner(argv[1], wrapper, tmpDir)
-        dumpScript = os.path.join(tmpDir, "dump.py")
-        with open(dumpScript, "w") as f:
-            f.write(DUMP_SCRIPT)
-
-        def dump(path):
-            out = path + ".json"
-            status, _ = r.run(dumpScript, {"NATRON_DUMP_INPUT": path, "NATRON_DUMP_OUTPUT": out})
-            if not check(status == 0 and os.path.isfile(out), "could not load %s" % path):
-                return None
-            with open(out) as f:
-                return json.load(f)
-
-        src = os.path.join(tmpDir, "original.ntp")
-        shutil.copyfile(PROJECT, src)
-        reference = dump(src)
-        check(reference and "Group1" in reference["nodes"] and "Dot1" in reference["nodes"],
-              "the reference project has no Group1 or Dot1")
-
-        # text -> binary -> text -> binary -> text
-        chain = [("binary", "1.bin.ntp"), ("text", "2.text.ntp"), ("binary", "3.bin.ntp"), ("text", "4.text.ntp")]
-        prev = src
-        for to, name in chain:
-            dst = os.path.join(tmpDir, name)
-            status, out = r.convert(to, prev, dst)
-            if not check(status == 0 and os.path.isfile(dst), "converting %s to %s failed" % (prev, to)):
-                return 1
-            check(fileFormat(dst) == to, "%s is not a %s project" % (dst, to))
-            check(dump(dst) == reference, "%s does not have the nodes and values of the original" % dst)
-            prev = dst
-        check(textWithoutSaveDate(os.path.join(tmpDir, "2.text.ntp")) == textWithoutSaveDate(os.path.join(tmpDir, "4.text.ntp")),
-              "2.text.ntp and 4.text.ntp differ (other than the save date)")
-
-        # in place
-        inPlace = os.path.join(tmpDir, "inplace.ntp")
-        shutil.copyfile(src, inPlace)
-        status, _ = r.run(CONVERTER, {"NATRON_CONVERT_TO": "binary", "NATRON_CONVERT_INPUT": inPlace})
-        check(status == 0 and fileFormat(inPlace) == "binary", "in-place conversion failed")
-
-        # A project with GUI data (only the flag: NatronRenderer does not read the GUI part) is refused
-        withGui = os.path.join(tmpDir, "withgui.ntp")
-        data = open(src, "rb").read()
-        check(b"<Background_project>1</Background_project>" in data, "unexpected test project")
-        with open(withGui, "wb") as f:
-            f.write(data.replace(b"<Background_project>1</Background_project>", b"<Background_project>0</Background_project>", 1))
-        dst = os.path.join(tmpDir, "withgui.bin.ntp")
-        status, out = r.convert("binary", withGui, dst)
-        check(status == 1 and not os.path.exists(dst) and "has GUI data" in out,
-              "a project with GUI data should not be converted")
-        status, out = r.convert("binary", withGui, dst, {"NATRON_CONVERT_DISCARD_GUI": "1"})
-        check(status == 0 and fileFormat(dst) == "binary", "NATRON_CONVERT_DISCARD_GUI=1 should convert it")
-
-        # A project with a node whose plug-in is missing loads, without that node: it is not converted
-        missingPlugin = os.path.join(tmpDir, "missingplugin.ntp")
-        check(b"<Plugin_id>fr.inria.built-in.Dot</Plugin_id>" in data, "unexpected test project")
-        with open(missingPlugin, "wb") as f:
-            f.write(data.replace(b"<Plugin_id>fr.inria.built-in.Dot</Plugin_id>",
-                                 b"<Plugin_id>fr.inria.built-in.NoSuchPluginForTheTest</Plugin_id>", 1))
-        dst = os.path.join(tmpDir, "missingplugin.bin.ntp")
-        status, out = r.convert("binary", missingPlugin, dst)
-        check(status == 1 and not os.path.exists(dst) and "errors while loading" in out,
-              "a project that loads with errors should not be converted")
-
-        # bad arguments
-        dst = os.path.join(tmpDir, "bad.ntp")
-        status, out = r.convert("xml", src, dst)
-        check(status == 1 and not os.path.exists(dst), "NATRON_CONVERT_TO=xml should fail")
-        status, out = r.convert("text", os.path.join(tmpDir, "missing.ntp"), dst)
-        check(status == 1 and not os.path.exists(dst), "a missing input should fail")
-
-        if failures:
-            print("%d failure(s)" % len(failures))
+        test = ConvertProjectTest(Runner(argv[1], wrapper, tmp_dir), tmp_dir)
+        test.test_import()
+        test.test_chain()
+        test.test_in_place()
+        test.test_gui_data()
+        test.test_load_errors()
+        test.test_bad_arguments()
+        if test.failures:
+            print("%d failure(s)" % len(test.failures))
             return 1
         print("convert project test passed")
         return 0
     finally:
-        shutil.rmtree(tmpDir, ignore_errors=True)
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":

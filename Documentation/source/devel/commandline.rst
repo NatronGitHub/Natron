@@ -465,34 +465,49 @@ Example: converting a project between the binary and text formats
 
 Projects are saved in a binary format, or in a text (XML) format that Natron 2.5 and earlier
 can read (see :meth:`App.getProjectFormat<NatronEngine.App.getProjectFormat>`). The
-``tools/natron-convert-project.py`` script of the Natron sources converts a project from one
-format to the other, without rendering anything. NatronRenderer doesn't give command-line
-arguments to scripts, so the arguments are environment variables::
+``natron_convert_project`` Python module converts a project from one format to the other,
+without rendering anything. Natron installs it in its ``Plugins`` directory, which is on the
+Python path of Natron and NatronRenderer: ``Plugins/`` next to ``bin/`` on Linux and Windows,
+``Natron.app/Contents/Plugins`` on macOS. Its source is ``tools/natron_convert_project.py``.
+Run it with :option:`-t` and :option:`-c`::
 
-    NATRON_CONVERT_TO=text NATRON_CONVERT_INPUT=/path/to/in.ntp NATRON_CONVERT_OUTPUT=/path/to/out.ntp NatronRenderer -t natron-convert-project.py
+    NatronRenderer -t -c "import natron_convert_project as c; c.convert_and_quit('/path/to/in.ntp', '/path/to/out.ntp', 'text')"
 
-``NATRON_CONVERT_TO``
-    ``text`` or ``binary``.
-``NATRON_CONVERT_INPUT``
-    The project to convert.
-``NATRON_CONVERT_OUTPUT``
-    The converted project. Without it, the input project is replaced.
-
-On Windows, set the variables with ``set NATRON_CONVERT_TO=text`` (and so on) before running
-``NatronRenderer -t natron-convert-project.py``.
+``convert_and_quit(src, dst=None, to="text", discard_gui=False)`` converts the project ``src``
+to the format ``to``, ``"text"`` or ``"binary"``, saves it as ``dst``, and quits. Without
+``dst``, ``src`` is replaced (the save writes a temporary file first, as usual).
+:option:`-t` runs the command without rendering anything, and ``convert_and_quit()`` quits so
+that the interpreter doesn't then wait for commands. On Windows, the same command works in
+``cmd.exe`` and PowerShell, with the paths written ``'C:/path/to/in.ntp'`` or
+``r'C:\path\to\in.ntp'``.
 
 The project is loaded and saved as with *Save Project As..*: it is the project that this
 version of Natron would save (a project from an older version is upgraded, and the parameters
 that a plug-in no longer has are removed). All its plug-ins and PyPlugs must be installed: a
 project that loads with errors (see
 :meth:`App.projectLoadedWithErrors<NatronEngine.App.projectLoadedWithErrors>`), for example
-with a node whose plug-in is missing, is not converted. The exit status is 1 if the project is
-not converted.
+with a node whose plug-in is missing, is not converted.
 
 NatronRenderer doesn't read the GUI data of projects (node positions and colours, viewer
 settings, window layout), and saves projects without them (see
-:meth:`App.projectFileHasGuiData<NatronEngine.App.projectFileHasGuiData>`). The script
+:meth:`App.projectFileHasGuiData<NatronEngine.App.projectFileHasGuiData>`). The module
 converts only the projects that have no GUI data, the ones saved by NatronRenderer or
 natron-python. Convert the projects saved by Natron with *Save Project As..* and its
-*File format* choice, or set ``NATRON_CONVERT_DISCARD_GUI=1`` to convert them without their
-GUI data.
+*File format* choice, or pass ``discard_gui=True`` to convert them without their GUI data.
+
+When the project is not converted, ``convert_and_quit()`` raises an exception: ``ValueError``
+for a bad ``to``, ``FileNotFoundError`` when ``src`` doesn't exist, and ``RuntimeError``
+otherwise, with a message that says why. NatronRenderer prints it and exits with status 1. It
+exits with status 0 when the project was converted.
+
+In a script, ``convert()`` takes the same arguments and raises the same exceptions, but doesn't
+quit, so that a script can convert several projects in one run. Each conversion replaces the
+project of the background application. Run the script with :option:`-t`, so that the Write
+nodes of the last project are not rendered, and end it with ``natron.quit()``::
+
+    import natron_convert_project
+    from NatronEngine import natron
+
+    for name in ("/path/to/shot1.ntp", "/path/to/shot2.ntp"):
+        natron_convert_project.convert(name, to="text")
+    natron.quit()

@@ -593,8 +593,8 @@ inform the user of various information, warnings or errors.
     them, a project saved by NatronRenderer or natron-python doesn't. *False* for a new project.
 
     NatronRenderer and natron-python don't read the GUI data, and save projects without them: a
-    script run by them that saves a project with GUI data loses them. ``tools/natron-convert-project.py``
-    uses this function to refuse to convert such projects (see :ref:`natron-convert-project`).
+    script run by them that saves a project with GUI data loses them. Such a script can use this
+    function to refuse to save the project, or to warn.
 
     .. versionadded:: 2.6
 
@@ -604,8 +604,8 @@ inform the user of various information, warnings or errors.
 
     Returns whether there were errors when the project was loaded from its file: nodes whose
     plug-in is missing, or that were created with another major version of their plug-in... The
-    error log lists them. The project was loaded without what
-    failed, and would be saved without it. *False* for a new project.
+    error log lists them. The project was loaded without what failed, and would be saved without
+    it. *False* for a new project.
     :meth:`loadProject<NatronEngine.App.loadProject>` returns the project in that case too.
 
     .. versionadded:: 2.6

@@ -63,11 +63,11 @@ A project keeps its format when it is saved: choose another one with *Save
 Project As..*. The *Save projects as binary by default* preference (General
 tab) gives the format of new projects.
 To convert projects without opening them, for example many of them in a
-script, use ``natron-convert-project.py`` with NatronRenderer (see
-:ref:`natron-convert-project`). It does not keep the GUI data of a project
-(node positions, viewer settings, window layout), so it only converts
-projects saved by NatronRenderer or natron-python; convert the others with
-*Save Project As..*.
+script, use the ``natron_convert_project`` Python module, which is installed
+with Natron, in NatronRenderer (see :ref:`natron-convert-project`). It does
+not keep the GUI data of a project (node positions, viewer settings, window
+layout), so it only converts projects saved by NatronRenderer or
+natron-python; convert the others with *Save Project As..*.
 
 Export Project As Group
   Save the whole project as a PyPlug, a Python script that recreates the graph

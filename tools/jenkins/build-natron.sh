@@ -195,7 +195,8 @@ if [ "$NATRON_BUILD_SYSTEM" = "cmake" ]; then
     # CMake build: configure, build, "cmake --install" with the PORTABLE layout into a
     # staging directory, then copy the result to the flat layout that the installer scripts
     # read from $TMP_BINARIES_PATH: bin/ (with Info.plist and PkgInfo on macOS), Resources/,
-    # PyPlugs/, docs/natron/, and on macOS the DMG background. CMake generates the Python
+    # PyPlugs/, PythonModules/ (the Python modules of Plugins/), docs/natron/, and on macOS the
+    # DMG background. CMake generates the Python
     # bindings during the build.
     CMAKE_BUILD_DIR="$TMP_PATH/Natron-cmake-build"
     CMAKE_INSTALL_DIR="$TMP_PATH/Natron-cmake-install"
@@ -339,9 +340,9 @@ if [ "$NATRON_BUILD_SYSTEM" = "cmake" ]; then
     fi
 
     # stage the installed files into the layout the installer scripts expect
-    rm -rf "$TMP_BINARIES_PATH"/Natron* "$TMP_BINARIES_PATH/PyPlugs" "$RES_DIR/OpenColorIO-Configs" || true
+    rm -rf "$TMP_BINARIES_PATH"/Natron* "$TMP_BINARIES_PATH/PyPlugs" "$TMP_BINARIES_PATH/PythonModules" "$RES_DIR/OpenColorIO-Configs" || true
     rm -f "$TMP_BINARIES_PATH"/bin/Natron* "$TMP_BINARIES_PATH"/bin/natron-python* "$TMP_BINARIES_PATH"/bin/Tests* || true
-    mkdir -p "$TMP_BINARIES_PATH/bin" "$RES_DIR" "$TMP_BINARIES_PATH/docs/natron"
+    mkdir -p "$TMP_BINARIES_PATH/bin" "$RES_DIR" "$TMP_BINARIES_PATH/docs/natron" "$TMP_BINARIES_PATH/PythonModules"
     if [ "$PKGOS" = "OSX" ]; then
         CMAKE_APP_CONTENTS="$CMAKE_INSTALL_DIR/Natron.app/Contents"
         cp -a "$CMAKE_APP_CONTENTS/MacOS/." "$TMP_BINARIES_PATH/bin/"
@@ -349,12 +350,14 @@ if [ "$NATRON_BUILD_SYSTEM" = "cmake" ]; then
         cp "$CMAKE_APP_CONTENTS/Info.plist" "$CMAKE_APP_CONTENTS/PkgInfo" "$TMP_BINARIES_PATH/bin/"
         cp -a "$CMAKE_APP_CONTENTS/Resources/." "$RES_DIR/"
         cp -a "$CMAKE_APP_CONTENTS/Plugins/PyPlugs" "$TMP_BINARIES_PATH/PyPlugs"
+        cp -a "$CMAKE_APP_CONTENTS/Plugins/"*.py "$TMP_BINARIES_PATH/PythonModules/"
         cp LICENSE.txt "$TMP_BINARIES_PATH/docs/natron/"
         cp Gui/Resources/Images/splashscreen.* "$TMP_BINARIES_PATH/"
     else
         cp -a "$CMAKE_INSTALL_DIR/bin/." "$TMP_BINARIES_PATH/bin/"
         cp -a "$CMAKE_INSTALL_DIR/Resources/." "$RES_DIR/"
         cp -a "$CMAKE_INSTALL_DIR/Plugins/PyPlugs" "$TMP_BINARIES_PATH/PyPlugs"
+        cp -a "$CMAKE_INSTALL_DIR/Plugins/"*.py "$TMP_BINARIES_PATH/PythonModules/"
         cp -a "$CMAKE_INSTALL_DIR/docs/natron/." "$TMP_BINARIES_PATH/docs/natron/"
     fi
     echo "*** $RES_DIR/OpenColorIO-Configs now contains:"
@@ -633,6 +636,10 @@ fi
 rm -rf "$TMP_BINARIES_PATH/PyPlugs" || true
 mkdir -p "$TMP_BINARIES_PATH/PyPlugs"
 cp "$srcdir"/Gui/Resources/PyPlugs/* "$TMP_BINARIES_PATH/PyPlugs/"
+# the Python modules of Plugins/ (NATRON_INSTALL_PYTHONDIR in CMakeLists.txt)
+rm -rf "$TMP_BINARIES_PATH/PythonModules" || true
+mkdir -p "$TMP_BINARIES_PATH/PythonModules"
+cp "$srcdir"/tools/natron_convert_project.py "$TMP_BINARIES_PATH/PythonModules/"
 if [ "$PKGOS" = "Linux" ] || [ "$PKGOS" = "Windows" ]; then
     mkdir -p "$RES_DIR/etc/fonts/conf.d"
     cp "$srcdir"/Gui/Resources/etc/fonts/fonts.conf "$RES_DIR/etc/fonts/"

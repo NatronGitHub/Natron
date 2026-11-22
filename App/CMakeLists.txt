@@ -232,6 +232,10 @@ if(NATRON_INSTALL_PYPLUGSDIR)
         PATTERN __pycache__ EXCLUDE
         PATTERN "*.pyc" EXCLUDE)
 endif()
+if(NATRON_INSTALL_PYTHONDIR)
+    install(FILES ../tools/natron_convert_project.py
+        DESTINATION "${NATRON_INSTALL_PYTHONDIR}")
+endif()
 if(NATRON_INSTALL_DOCDIR)
     install(FILES ../LICENSE.txt DESTINATION "${NATRON_INSTALL_DOCDIR}")
 endif()
