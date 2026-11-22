@@ -343,16 +343,10 @@ public:
     // Sets the format of the next saves of the project ("Save", auto-saves record it).
     void setProjectFormat(Natron::ProjectFileFormatEnum format);
 
-    // Whether the project file that was loaded contains GUI data (node positions, viewer settings, window
-    // layout...). NatronRenderer and Natron -b don't read it, and save the project without it (and without
-    // its Viewer nodes). It describes the loaded file: saving doesn't change it.
+    // See Project::fileHasGuiData() and App.rst.
     bool projectFileHasGuiData() const;
 
-    // Whether something in the project file was not loaded, so that saving the project would lose it: e.g. a node
-    // whose plug-in is missing (also inside a Group), a connection to an input that can't be found, or a PyPlug
-    // that can't be found or imported (loaded as a Group, saved without the PyPlug). Warnings
-    // where nothing is lost (a node loaded with another major version of its plug-in) don't set it. It describes
-    // the loaded file: saving doesn't change it.
+    // See Project::fileLoadedWithErrors() and App.rst.
     bool projectLoadedWithErrors() const;
 
     App* loadProject(const QString& filename);

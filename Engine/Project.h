@@ -191,25 +191,12 @@ public:
      **/
     void setFileFormat(ProjectFileFormatEnum format);
 
-    /**
-     * @brief Whether the project file this project was loaded from contains GUI data (node positions,
-     * viewer settings, window layout...): false for a new project and for a file saved in background mode.
-     * A background application (NatronRenderer, Natron -b) does not read this data, and saves the
-     * project without it (and without its Viewer nodes, which it does not create).
-     * It describes the file that was loaded: saving the project does not change it.
-     **/
+    /// Whether the loaded project file has GUI data (false for a new project or a background save).
+    /// It describes the loaded file, saving doesn't change it. See App.projectFileHasGuiData() in App.rst.
     bool fileHasGuiData() const WARN_UNUSED_RETURN;
 
-    /**
-     * @brief Whether something in the project file was not loaded, so that saving the project would lose it:
-     * a node that could not be created (e.g. its plug-in is missing), also inside a Group, an input connection
-     * to an input that the node does not have, a link to a master node that does not exist, a PyPlug that
-     * could not be found or imported (the node is loaded as a Group, and would be saved without its PyPlug), or an
-     * error that stopped the load. Warnings where nothing is lost (e.g. a node created with another major version of its
-     * plug-in) do not set it, even if they open the error log. False for a new project.
-     * It describes the file that was loaded: saving the project does not change it. It is set before the
-     * afterProjectLoad callback runs.
-     **/
+    /// Whether something in the project file was not loaded, so that saving would lose it (set before
+    /// afterProjectLoad; warnings don't set it). See App.projectLoadedWithErrors() in App.rst.
     bool fileLoadedWithErrors() const WARN_UNUSED_RETURN;
 
     /**
