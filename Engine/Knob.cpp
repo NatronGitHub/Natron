@@ -347,7 +347,10 @@ KnobI::restoreLinks(const NodesList & allNodes,
                                     " of " + nodeName + getName() + " (" + std::to_string( getDimension() ) + " dimension(s)) to dimension " +
                                     std::to_string(l->dimension) + " of node/knob/track " + l->nodeName + '/' + l->knobName + '/' + l->trackName +
                                     " (" + std::to_string( linkedKnob->getDimension() ) + " dimension(s))";
-            qDebug() << err.c_str();
+            if (!throwOnFailure) {
+                // the callers that don't throw (paste, presets) would not report it otherwise
+                appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( getName().c_str() ), QDateTime::currentDateTime(), QString::fromUtf8( err.c_str() ) );
+            }
             errors.push_back(err);
         } else {
             slaveTo(l->slaveDimension, linkedKnob, l->dimension);
