@@ -629,20 +629,28 @@ Node::isNodeUpstream(const Node* input,
 
     ///No need to lock guiInputs is only written to by the main-thread
 
-    for (U32 i = 0; i  < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i].lock().get() == input) {
-            *ok = true;
-
-            return;
-        }
-    }
+    // Visit each upstream node once. A recursion that does not remember the nodes it has seen visits a
+    // node once per path that leads to it: with branches that merge again (a node feeding both inputs of
+    // a Merge, many times in a row) the number of paths doubles each time, and connecting an input in a
+    // large graph took minutes.
     *ok = false;
-    for (U32 i = 0; i  < _imp->inputs.size(); ++i) {
-        NodePtr in = _imp->inputs[i].lock();
-        if (in) {
-            in->isNodeUpstream(input, ok);
-            if (*ok) {
+    std::set<const Node*> visited;
+    std::vector<const Node*> toVisit(1, this);
+    while ( !toVisit.empty() ) {
+        const Node* node = toVisit.back();
+        toVisit.pop_back();
+        for (U32 i = 0; i < node->_imp->inputs.size(); ++i) {
+            NodePtr in = node->_imp->inputs[i].lock();
+            if (!in) {
+                continue;
+            }
+            if (in.get() == input) {
+                *ok = true;
+
                 return;
+            }
+            if ( visited.insert( in.get() ).second ) {
+                toVisit.push_back( in.get() );
             }
         }
     }
