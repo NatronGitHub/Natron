@@ -485,12 +485,11 @@ that the interpreter doesn't then wait for commands. On Windows, the same comman
 
 The project is loaded and saved as with *Save Project As..*: it is the project that this
 version of Natron would save (a project from an older version is upgraded, and the parameters
-that a plug-in no longer has are removed). All its plug-ins must be installed: a project that
-loads with errors (see
+that a plug-in no longer has are removed). All its plug-ins and PyPlugs must be installed: a
+project that loads with errors (see
 :meth:`App.projectLoadedWithErrors<NatronEngine.App.projectLoadedWithErrors>`), for example
-with a node whose plug-in is missing, is not converted. A PyPlug that can't be found is not
-detected: its node is loaded, and converted, as a plain Group with the nodes saved in the
-project, so install the PyPlugs of the project too.
+with a node whose plug-in is missing, or a PyPlug that can't be found (its node would be saved
+as a plain Group), is not converted.
 
 NatronRenderer doesn't read the GUI data of projects (node positions and colours, viewer
 settings, window layout), and saves projects without them (see

@@ -31,11 +31,10 @@ raises the same exceptions and does not quit.
 The project is loaded and saved, as with "File > Save As..." in Natron:
 nothing is rendered, and the file is the project that this version of Natron
 saves (a project saved by an older version is upgraded, and the parameters
-that a plug-in no longer has are dropped). Its plug-ins must be installed: a
-project that loads with errors (e.g. a node that cannot be created) is not
-converted. A PyPlug that cannot be found is not detected: its node is
-converted as a plain Group with the nodes saved in the project, so install
-the PyPlugs too.
+that a plug-in no longer has are dropped). Its plug-ins and PyPlugs must be
+installed: a project that loads with errors (e.g. a node that cannot be
+created, or a PyPlug that cannot be found, whose node would be saved as a
+plain Group) is not converted.
 
 NatronRenderer does not read the GUI data of a project (node positions and
 colours, viewer settings, window layout...), and saves projects without them.

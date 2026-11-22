@@ -34,8 +34,9 @@ text -> binary -> text -> binary -> text. Each file must have the requested
 format, the two text files must be identical except for the save date, and
 every project must load with the same nodes, links and parameter values
 (keyframes, expressions) as the original. A copy with GUI data is converted
-only with discard_gui=True, a copy with a node whose plug-in is missing is
-not converted (also when that node is in a group), and bad arguments raise
+only with discard_gui=True, a copy with a node whose plug-in is missing (also
+when that node is in a group) or with a PyPlug that can't be found is not
+converted, and bad arguments raise
 the documented exceptions, with the exit status 1 and no output file.
 Importing the module does nothing else.
 
@@ -66,6 +67,10 @@ DOT_PLUGIN_TAG = b"<Plugin_id>fr.inria.built-in.Dot</Plugin_id>"
 # the only Input node of the project is in Group1
 INPUT_PLUGIN_TAG = b"<Plugin_id>fr.inria.built-in.Input</Plugin_id>"
 MISSING_PLUGIN_TAG = b"<Plugin_id>fr.inria.built-in.NoSuchPlugin</Plugin_id>"
+# Group1, the first node of the project, saved as a PyPlug that doesn't exist
+GROUP_PYTHON_MODULE_TAG = b"<PythonModule></PythonModule>"
+MISSING_PYTHON_MODULE_TAG = (b"<PythonModule>/nonexistent/"
+                             b"NatronTestNoSuchPyPlug.py</PythonModule>")
 
 # Loads NATRON_DUMP_INPUT and writes a description of its nodes and
 # parameters to NATRON_DUMP_OUTPUT (JSON).
@@ -364,11 +369,14 @@ class ConvertProjectTest:
     def test_load_errors(self):
         """A project that loads with errors is not converted."""
         # The project loads without the node whose plug-in is missing, at the
-        # top level or in a group
-        for tag, name in ((DOT_PLUGIN_TAG, "missingplugin"),
-                          (INPUT_PLUGIN_TAG, "missingplugingroup")):
+        # top level or in a group, or with a Group instead of a PyPlug
+        for tag, new, name in (
+                (DOT_PLUGIN_TAG, MISSING_PLUGIN_TAG, "missingplugin"),
+                (INPUT_PLUGIN_TAG, MISSING_PLUGIN_TAG, "missingplugingroup"),
+                (GROUP_PYTHON_MODULE_TAG, MISSING_PYTHON_MODULE_TAG,
+                 "missingpyplug")):
             missing = self.path(name + ".ntp")
-            write_variant(self.data, tag, MISSING_PLUGIN_TAG, missing)
+            write_variant(self.data, tag, new, missing)
             dst = self.path(name + ".bin.ntp")
             self.check_refused(self.runner.convert(missing, dst, "binary"),
                                dst,
