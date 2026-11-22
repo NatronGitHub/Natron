@@ -80,13 +80,13 @@ static QString lookForFileRecursively(const QString& dirPath, const QString& fil
 
 }
 
-bool
+NodesRestoreStatus
 NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerializationPtr> & serializedNodes,
                                                       const NodeCollectionPtr& group,
                                                       bool createNodes,
                                                       std::map<std::string, bool>* moduleUpdatesProcessed)
 {
-    bool mustShowErrorsLog = false;
+    NodesRestoreStatus status;
     NodeGroup* isNodeGroup = dynamic_cast<NodeGroup*>( group.get() );
     QString groupName;
 
@@ -97,7 +97,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
     }
     AppInstancePtr appInst = group->getApplication();
     if (!appInst) {
-        return !mustShowErrorsLog;
+        return status;
     }
     appInst->updateProjectLoadStatus( tr("Creating nodes in group: %1").arg(groupName) );
 
@@ -268,8 +268,13 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
                              " exist in the loaded plug-ins.")
                           .arg( QString::fromUtf8( pluginID.c_str() ) )
                           .arg(majorVersion).arg(minorVersion) );
+            if (isNodeGroup) {
+                text += QLatin1Char(' ');
+                text += tr("It was in the group %1.").arg(groupName);
+            }
             appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
-            mustShowErrorsLog = true;
+            status.showErrorLog = true;
+            status.dataLost = true;
             continue;
         } else {
             if ( !usingPythonModule && n->getPlugin() &&
@@ -286,7 +291,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
                               .arg( n->getPlugin()->getMajorVersion() )
                               .arg( n->getPlugin()->getMinorVersion() ) );
                 appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
-                mustShowErrorsLog = true;
+                // a warning: the node is loaded, and saved, with the version it has now
+                status.showErrorLog = true;
             }
         }
         if (!createNodes && n) {
@@ -304,9 +310,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
                 EffectInstancePtr sharedEffect = isGrp->shared_from_this();
                 NodeGroupPtr sharedGrp = std::dynamic_pointer_cast<NodeGroup>(sharedEffect);
                 // the errors in the group (e.g. a child whose plug-in is missing) are errors of the project
-                if ( !NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp, !usingPythonModule, moduleUpdatesProcessed) ) {
-                    mustShowErrorsLog = true;
-                }
+                status |= NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp, !usingPythonModule, moduleUpdatesProcessed);
             } else {
                 ///For multi-instances, wait for the group to be entirely created then load the sub-tracks in a separate loop.
                 assert( n->isMultiInstance() );
@@ -316,9 +320,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
     } // for (std::list<NodeSerializationPtr>::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
 
     for (std::list<NodeSerializationPtr>::const_iterator it = multiInstancesToRecurse.begin(); it != multiInstancesToRecurse.end(); ++it) {
-        if ( !NodeCollectionSerialization::restoreFromSerialization( (*it)->getNodesCollection(), group, true, moduleUpdatesProcessed ) ) {
-            mustShowErrorsLog = true;
-        }
+        status |= NodeCollectionSerialization::restoreFromSerialization( (*it)->getNodesCollection(), group, true, moduleUpdatesProcessed );
     }
 
 
@@ -351,7 +353,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
                                                  tr("Cannot restore the link between %1 and %2.")
                                                  .arg( QString::fromUtf8( it->second->getNodeScriptName().c_str() ) )
                                                  .arg( QString::fromUtf8( masterNodeName.c_str() ) ) );
-                mustShowErrorsLog = true;
+                status.showErrorLog = true;
+                status.dataLost = true;
             } else {
                 it->first->getEffectInstance()->slaveAllKnobs( masterNode->getEffectInstance().get(), true );
             }
@@ -389,6 +392,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
                     appPTR->writeToErrorLog_mt_safe( tr("Project"), QDateTime::currentDateTime(),
                                                      tr("Could not find input named %1")
                                                      .arg( QString::fromUtf8( it2->first.c_str() ) ) );
+                    // the connection is lost (this does not open the error log)
+                    status.dataLost = true;
                     continue;
                 }
                 if ( !it2->second.empty() && !group->connectNodes(index, it2->second, it->first) ) {
@@ -444,6 +449,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
                 if (index == -1) {
                     appPTR->writeToErrorLog_mt_safe( tr("Project"), QDateTime::currentDateTime(),
                                                      tr("Could not find input named %1").arg( QString::fromUtf8( it2->first.c_str() ) ) );
+                    // the connection is lost (this does not open the error log)
+                    status.dataLost = true;
                     continue;
                 }
                 if ( !it2->second.empty() && !group->connectNodes(index, it2->second, it->first) ) {
@@ -457,7 +464,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
         }
     }
 
-    return !mustShowErrorsLog;
+    return status;
 } // NodeCollectionSerialization::restoreFromSerialization
 
 NATRON_NAMESPACE_EXIT

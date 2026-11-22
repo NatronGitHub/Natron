@@ -344,12 +344,16 @@ public:
     void setProjectFormat(Natron::ProjectFileFormatEnum format);
 
     // Whether the project file that was loaded contains GUI data (node positions, viewer settings, window
-    // layout...). NatronRenderer and Natron -b don't read it, and save the project without it.
+    // layout...). NatronRenderer and Natron -b don't read it, and save the project without it (and without
+    // its Viewer nodes). It describes the loaded file: saving doesn't change it.
     bool projectFileHasGuiData() const;
 
-    // Whether there were errors (listed in the error log) when the project was loaded, e.g. nodes whose plug-in
-    // is missing: the project was loaded, and would be saved, without them.
+    // Whether something in the project file was not loaded, so that saving the project would lose it: e.g. a node
+    // whose plug-in is missing (also inside a Group), or a connection to an input that can't be found. Warnings
+    // where nothing is lost (a node loaded with another major version of its plug-in) don't set it. It describes
+    // the loaded file: saving doesn't change it.
     bool projectLoadedWithErrors() const;
+
     App* loadProject(const QString& filename);
 
     ///Close the current project but keep the window

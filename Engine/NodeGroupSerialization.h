@@ -62,6 +62,27 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER
 
+/**
+ * @brief What restoring the nodes of a project file reported (see NodeCollectionSerialization::restoreFromSerialization()).
+ **/
+struct NodesRestoreStatus
+{
+    // The error log has messages for the user: errors, or warnings where nothing is lost
+    // (e.g. a node created with another major version of its plug-in).
+    bool showErrorLog = false;
+    // Something in the file was not restored (a node that could not be created, an input connection,
+    // a link to a master node): the project would be saved without it.
+    bool dataLost = false;
+
+    NodesRestoreStatus& operator|=(const NodesRestoreStatus& other)
+    {
+        showErrorLog = showErrorLog || other.showErrorLog;
+        dataLost = dataLost || other.dataLost;
+
+        return *this;
+    }
+};
+
 class NodeCollectionSerialization
 {
     Q_DECLARE_TR_FUNCTIONS(NodeCollection)
@@ -92,10 +113,10 @@ public:
         _serializedNodes.push_back(s);
     }
 
-    static bool restoreFromSerialization(const std::list<NodeSerializationPtr> & serializedNodes,
-                                         const NodeCollectionPtr& group,
-                                         bool createNodes,
-                                         std::map<std::string, bool>* moduleUpdatesProcessed);
+    static NodesRestoreStatus restoreFromSerialization(const std::list<NodeSerializationPtr> & serializedNodes,
+                                                       const NodeCollectionPtr& group,
+                                                       bool createNodes,
+                                                       std::map<std::string, bool>* moduleUpdatesProcessed) WARN_UNUSED_RETURN;
 
 private:
 

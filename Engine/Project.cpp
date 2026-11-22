@@ -332,6 +332,14 @@ Project::fileLoadedWithErrors() const
     return _imp->fileLoadedWithErrors;
 }
 
+void
+Project::setFileLoadedWithErrors()
+{
+    QMutexLocker l(&_imp->projectLock);
+
+    _imp->fileLoadedWithErrors = true;
+}
+
 bool
 Project::loadProject(const QString & path,
                      const QString & name,
@@ -416,17 +424,15 @@ Project::loadProjectImpl(const QString & path,
         }
 
         bool mustSave = false;
-        const bool loadedWithoutErrors = loadProjectInternal(realPath, realName, isAutoSave, isUntitledAutosave, &mustSave);
-        {
-            QMutexLocker l(&_imp->projectLock);
-            _imp->fileLoadedWithErrors = !loadedWithoutErrors;
-        }
-        if (!loadedWithoutErrors) {
+        const NodesRestoreStatus status = loadProjectInternal(realPath, realName, isAutoSave, isUntitledAutosave, &mustSave);
+        if (status.showErrorLog) {
             appPTR->showErrorLog();
-        } else if (mustSave) {
+        } else if (mustSave && !status.dataLost) {
+            // the PyPlugs were updated: save them, unless that would also drop what could not be loaded
             saveProject(realPath, realName, 0);
         }
     } catch (const std::exception & e) {
+        setFileLoadedWithErrors();
         Dialogs::errorDialog( tr("Project loader").toStdString(), tr("Error while loading project: %1").arg( QString::fromUtf8( e.what() ) ).toStdString() );
         if ( !getApp()->isBackground() ) {
             CreateNodeArgs args(PLUGINID_NATRON_VIEWER, shared_from_this() );
@@ -437,6 +443,7 @@ Project::loadProjectImpl(const QString & path,
 
         return false;
     } catch (...) {
+        setFileLoadedWithErrors();
         Dialogs::errorDialog( tr("Project loader").toStdString(), tr("Unknown error while loading project.").toStdString() );
         if ( !getApp()->isBackground() ) {
             CreateNodeArgs args(PLUGINID_NATRON_VIEWER, shared_from_this() );
@@ -453,7 +460,7 @@ Project::loadProjectImpl(const QString & path,
     return true;
 } // loadProject
 
-bool
+NodesRestoreStatus
 Project::loadProjectInternal(const QString & path,
                              const QString & name,
                              bool isAutoSave,
@@ -468,7 +475,7 @@ Project::loadProjectInternal(const QString & path,
         throw std::invalid_argument( QString( filePath + QString::fromUtf8(" : no such file.") ).toStdString() );
     }
 
-    bool ret = false;
+    NodesRestoreStatus ret;
 
     if ( (NATRON_VERSION_MAJOR == 1) && (NATRON_VERSION_MINOR == 0) && (NATRON_VERSION_REVISION == 0) ) {
         ///Try to determine if the project was made during Natron v1.0.0 - RC2 or RC3 to detect a bug we introduced at that time
@@ -596,10 +603,12 @@ Project::loadProjectInternal(const QString & path,
         }
     }
 
+    // before the afterProjectLoad callback (runOnProjectLoadCallback() below), which may read them
     {
         QMutexLocker l(&_imp->projectLock);
         _imp->fileFormat = projectFormat;
         _imp->fileHasGuiData = hasGuiData;
+        _imp->fileLoadedWithErrors = ret.dataLost;
     }
 
     Format f;
@@ -2123,7 +2132,7 @@ Project::save(ProjectSerialization* serializationObject) const
     serializationObject->initialize(this);
 }
 
-bool
+NodesRestoreStatus
 Project::load(const ProjectSerialization & obj,
               const QString& name,
               const QString& path,
