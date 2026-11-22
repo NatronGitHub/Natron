@@ -466,8 +466,9 @@ Example: converting a project between the binary and text formats
 Projects are saved in a binary format, or in a text (XML) format that Natron 2.5 and earlier
 can read (see :meth:`App.getProjectFormat<NatronEngine.App.getProjectFormat>`). The
 ``natron_convert_project`` Python module, installed with the bundled PyPlugs (which are on the
-Python path unless the *Use bundled plug-ins* preference is off), converts a project from one
-format to the other without rendering anything::
+Python path while the *Use bundled plug-ins* preference is on; a Linux distribution installs it
+in ``/usr/share/Natron/Plugins``), converts a project from one format to the other without
+rendering anything::
 
     NatronRenderer -t -c "import natron_convert_project as c; c.convert_and_quit('/path/to/in.ntp', '/path/to/out.ntp', 'text')"
 
@@ -475,8 +476,9 @@ format to the other without rendering anything::
 ``to`` (``"text"`` or ``"binary"``) as ``dst`` (``src`` itself without ``dst``), then quits: the
 exit status is 0 if the project was converted, 1 otherwise, with the reason printed. In a
 script, ``convert()`` takes the same arguments, raises an exception instead, and doesn't quit;
-end the script with ``natron.quit()``. The project is not converted if it loads with errors
-(see :meth:`App.projectLoadedWithErrors<NatronEngine.App.projectLoadedWithErrors>`), or if it
+end the script with ``natron.quit(status)``, with a non-zero status if a conversion failed
+(otherwise the prompt starts, and exits with status 0). The project is not converted if it
+loads with errors (see :meth:`App.projectLoadedWithErrors<NatronEngine.App.projectLoadedWithErrors>`), or if it
 has GUI data (see :meth:`App.projectFileHasGuiData<NatronEngine.App.projectFileHasGuiData>`),
 which NatronRenderer would drop, unless ``discard_gui=True``: convert those projects with
 *Save Project As..* in Natron. See the docstring of ``tools/natron_convert_project.py`` for

@@ -19,7 +19,8 @@
 """Converts Natron projects (.ntp) between the binary and text formats.
 
 Natron installs this module with its bundled PyPlugs, which are on the
-Python path of Natron and NatronRenderer. Run it with NatronRenderer:
+Python path of Natron and NatronRenderer while the "Use bundled plug-ins"
+preference is on. Run it with NatronRenderer:
 
     NatronRenderer -t -c "import natron_convert_project as c; \\
         c.convert_and_quit('in.ntp', 'out.ntp', 'text')"
