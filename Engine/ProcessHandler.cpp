@@ -126,6 +126,10 @@ ProcessHandler::~ProcessHandler()
         delete _bgProcessInputSocket;
     }
     if (_process) {
+        // close() kills a process that is still running and emits finished() from here: onProcessEnd() would
+        // then emit processFinished() from this destructor, and AppInstance::startNextQueuedRender() would
+        // destroy this object a second time (crash when quitting during a render in a separate process).
+        QObject::disconnect(_process, 0, this, 0);
         _process->close();
         delete _process;
     }
