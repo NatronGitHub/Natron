@@ -100,11 +100,13 @@ vm_addr_cache() { echo "$TART_RUN/$1.addr"; }
 vm_find_addr() { # vm : IPv4 if the guest gets a lease, else its IPv6 link-local address
     local i a
     for i in $(seq 90); do   # the first boot after a disk resize can take several minutes
-        if a=$(tart ip "$1" 2>/dev/null); then echo "$a"; return 0; fi
+        # an IPv4 address only counts if ssh answers there: on hosts with network filters the
+        # guest may get a lease that the host can't reach (seen 2026-11-22)
+        if a=$(tart ip "$1" 2>/dev/null) && nc -z -G 3 "$a" 22 2>/dev/null; then echo "$a"; return 0; fi
         # give DHCP a minute before falling back to IPv6
         if [ "$i" -gt 6 ]; then
             a=$(tart exec "$1" /sbin/ifconfig en0 2>/dev/null | awk '/inet6 fe80/{sub(/%.*/,"",$2); print $2; exit}') || a=
-            if [ -n "$a" ]; then echo "$a%$(vm_bridge)"; return 0; fi
+            if [ -n "$a" ] && nc -z -G 3 "$a%$(vm_bridge)" 22 2>/dev/null; then echo "$a%$(vm_bridge)"; return 0; fi
         fi
         sleep 10
     done
