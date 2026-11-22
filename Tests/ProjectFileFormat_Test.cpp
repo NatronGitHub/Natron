@@ -72,6 +72,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppManager.h"
 #include "Engine/CLArgs.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/Node.h"
 #include "Engine/PortableBinaryArchive.h"
 #include "Engine/Project.h"
 #include "Engine/ProjectSerialization.h"
@@ -647,6 +648,130 @@ TEST(ProjectFileFormat, DamagedFiles)
     EXPECT_FALSE( loadAndCaptureOutput(project, dir, QString::fromUtf8("future.ntp"), &output) );
     EXPECT_NE( std::string::npos, output.find("This binary project was saved with a more recent version") ) << output;
     EXPECT_EQ( std::string::npos, output.find("damaged") ) << output;
+    project->resetProject();
+}
+
+namespace {
+// Replaces every occurrence of a pattern (there may be several: a user knob is also saved in its page).
+QByteArray
+replaceAll(const QByteArray& data,
+           const QByteArray& before,
+           const QByteArray& after)
+{
+    EXPECT_TRUE( data.contains(before) ) << "not found: " << toHex( before.toStdString() );
+    QByteArray ret = data;
+
+    return ret.replace(before, after);
+}
+
+// The encoding of an int in the binary format: a signed byte count, then the little-endian magnitude.
+QByteArray
+binaryInt(const char* bytes,
+          int size)
+{
+    return QByteArray(bytes, size);
+}
+
+// The encoding of a short string in the binary format: its size, then its characters.
+QByteArray
+binaryString(const char* s)
+{
+    const int n = (int)std::strlen(s);
+    QByteArray ret;
+    ret += (char)1;
+    ret += (char)n;
+    ret += QByteArray(s, n);
+
+    return ret;
+}
+} // anonymous namespace
+
+// Knob data from the file is checked, in Release builds too (#1612): a damaged or hand-edited
+// project gives the "damaged project" error, or a warning, instead of crashing or allocating
+// gigabytes. The Name, Type and Dimension of a knob are consecutive in both formats.
+TEST(ProjectFileFormat, InvalidKnobData)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    createTestProject(app);
+    {
+        // A choice with a negative index: Python can set it, and a file can contain it.
+        const std::string script =
+            "ch = " + app->getAppIDString() + ".Group1.createChoiceParam('myChoice', 'My choice')\n"
+            "ch.addOption('a', '')\n"
+            "ch.addOption('b', '')\n"
+            "ch.setValue(-1)\n";
+        std::string error, output;
+        ASSERT_TRUE( ::Natron::Python::interpretPythonScript(script, &error, &output) ) << error << output;
+    }
+    ASSERT_TRUE( saveCopy(project, dir, QString::fromUtf8("text.ntp"), eProjectFileFormatText) );
+    ASSERT_TRUE( saveCopy(project, dir, QString::fromUtf8("binary.ntp"), eProjectFileFormatBinary) );
+    const QByteArray text = readFile( dir + QString::fromUtf8("text.ntp") );
+    const QByteArray binary = readFile( dir + QString::fromUtf8("binary.ntp") );
+    std::string output;
+
+    // The choice index -1 is replaced by 0, with a warning.
+    for (const char* name : { "text.ntp", "binary.ntp" }) {
+        SCOPED_TRACE(name);
+        EXPECT_TRUE( loadAndCaptureOutput(project, dir, QString::fromUtf8(name), &output) ) << output;
+        EXPECT_NE( std::string::npos, output.find("myChoice: Warning: invalid choice index -1 in the project, using 0") ) << output;
+        NodePtr group = project->getNodeByName("Group1");
+        ASSERT_TRUE( bool(group) );
+        KnobChoicePtr choice = std::dynamic_pointer_cast<KnobChoice>( group->getKnobByName("myChoice") );
+        ASSERT_TRUE( bool(choice) );
+        EXPECT_EQ( 0, choice->getValue() );
+        EXPECT_EQ( std::string("a"), choice->getActiveEntry().id );
+    }
+
+    // the knob "myInt" of the text file, with another type and dimension
+    auto damageText = [&](const char* type,
+                          const char* dimension) {
+        const QRegularExpression knob( QString::fromUtf8("(<Name>myInt</Name>\\s*<Type>)Int(</Type>\\s*<Dimension>)1(</Dimension>)") );
+        QString s = QString::fromUtf8(text);
+        EXPECT_TRUE( s.contains(knob) );
+        s.replace( knob, QString::fromUtf8("\\1%1\\2%2\\3").arg( QString::fromUtf8(type), QString::fromUtf8(dimension) ) );
+
+        return s.toUtf8();
+    };
+    const QByteArray binaryKnob = binaryString("myInt") + binaryString("Int") + binaryInt("\x01\x01", 2);
+    struct Damage
+    {
+        const char* file;
+        const char* type;
+        const char* dimension;
+        QByteArray binaryTypeAndDimension;
+        const char* error;
+    };
+    const Damage damages[] = {
+        { "dimension-negative", "Int", "-1", binaryString("Int") + binaryInt("\xff\x01", 2),
+          "parameter \"myInt\": invalid number of dimensions -1" },
+        { "dimension-zero", "Int", "0", binaryString("Int") + binaryInt("\x00", 1),
+          "parameter \"myInt\": invalid number of dimensions 0" },
+        { "dimension-huge", "Int", "100000000", binaryString("Int") + binaryInt("\x04\x00\xe1\xf5\x05", 5),
+          "parameter \"myInt\": invalid number of dimensions 100000000" },
+        { "unknown-type", "NoSuchType", "1", binaryString("NoSuchType") + binaryInt("\x01\x01", 2),
+          "parameter \"myInt\": unknown parameter type \"NoSuchType\"" },
+    };
+    for (const Damage& d : damages) {
+        SCOPED_TRACE(d.file);
+        const QString textName = QString::fromUtf8(d.file) + QString::fromUtf8("-text.ntp");
+        writeFile( dir + textName, damageText(d.type, d.dimension) );
+        EXPECT_FALSE( loadAndCaptureOutput(project, dir, textName, &output) );
+        EXPECT_NE( std::string::npos, output.find( std::string("Unrecognized or damaged text (XML) project file: ") + d.error ) ) << output;
+
+        const QString binaryName = QString::fromUtf8(d.file) + QString::fromUtf8("-binary.ntp");
+        writeFile( dir + binaryName, replaceAll( binary, binaryKnob, binaryString("myInt") + d.binaryTypeAndDimension ) );
+        EXPECT_FALSE( loadAndCaptureOutput(project, dir, binaryName, &output) );
+        EXPECT_NE( std::string::npos, output.find( std::string("Unrecognized or damaged binary project file: ") + d.error ) ) << output;
+    }
+
+    // the undamaged files still load
+    EXPECT_TRUE( project->loadProject( dir, QString::fromUtf8("text.ntp") ) );
+    EXPECT_TRUE( project->loadProject( dir, QString::fromUtf8("binary.ntp") ) );
     project->resetProject();
 }
 

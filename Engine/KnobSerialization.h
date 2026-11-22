@@ -30,6 +30,7 @@
 
 #include <iostream>
 #include <map>
+#include <stdexcept>
 #include <vector>
 #include <string>
 
@@ -93,6 +94,24 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define MASTER_SERIALIZATION_VERSION MASTER_SERIALIZATION_INTRODUCE_MASTER_NODE_NAME_FULL
 
 NATRON_NAMESPACE_ENTER
+
+// The largest number of dimensions a knob read from a file may have: more than any knob has
+// (parametric knobs included, whose number of curves is set by the plug-in), and small enough
+// that a damaged value doesn't allocate gigabytes before the load fails (#1612).
+constexpr int kKnobSerializationMaxDimension = 4096;
+
+// Thrown when the knob data read from a project file (or a preset, or the clipboard) is not
+// valid, e.g. an unknown knob type or an impossible number of dimensions: the file is damaged
+// or was edited by hand. Project::loadProjectInternal() reports it as a damaged project file.
+class KnobSerializationError
+    : public std::runtime_error
+{
+public:
+    explicit KnobSerializationError(const std::string& what)
+        : std::runtime_error(what)
+    {
+    }
+};
 
 struct MasterSerialization
 {
@@ -384,7 +403,8 @@ struct ValueSerialization
         ar & ::boost::serialization::make_nvp("HasAnimation", hasAnimation);
         bool convertOldFileKeyframesToPattern = false;
         if (hasAnimation) {
-            assert( _knob->canAnimate() );
+            // A knob that can't animate has no curve: the curve from the file is read, so that
+            // the archive stays in step, and dropped below (#1612).
             Curve c;
             const int nonFiniteBefore = CurveSerializationDetail::nonFiniteValuesRead;
             ar & ::boost::serialization::make_nvp("Curve", c);
@@ -396,9 +416,8 @@ struct ValueSerialization
             convertOldFileKeyframesToPattern = isFile && isFile->getName() == kOfxImageEffectFileParamName;
             if (!convertOldFileKeyframesToPattern) {
                 CurvePtr curve = _knob->getCurve(ViewIdx(0), _dimension);
-                assert(curve);
                 if (curve) {
-                    _knob->getCurve(ViewIdx(0), _dimension)->clone(c);
+                    curve->clone(c);
                     if (mustRefreshDerivatives) {
                         curve->setMustRefreshDerivatives();
                     }
@@ -436,7 +455,12 @@ struct ValueSerialization
         } else if (isChoice) {
             int v;
             ar & ::boost::serialization::make_nvp("Value", v);
-            assert(v >= 0);
+            if (v < 0) {
+                // A negative index from the file (damaged, edited by hand, or set by a Python
+                // script): use the first entry instead of reading out of bounds later (#1612).
+                std::cerr << _knob->getName() << ": Warning: invalid choice index " << v << " in the project, using 0" << std::endl;
+                v = 0;
+            }
             if (version >= VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL) {
                 if (version < VALUE_SERIALIZATION_REMOVES_EXTRA_DATA) {
                     std::string label;
@@ -448,6 +472,10 @@ struct ValueSerialization
             if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
                 int defV;
                 ar & ::boost::serialization::make_nvp("Default", defV);
+                if (defV < 0) {
+                    std::cerr << _knob->getName() << ": Warning: invalid default choice index " << defV << " in the project, using 0" << std::endl;
+                    defV = 0;
+                }
                 isChoice->setDefaultValueWithoutApplying(defV, _dimension);
             }
         } else if (isString && !isFile) {
@@ -652,13 +680,17 @@ private:
         ar & ::boost::serialization::make_nvp("Name", name);
         ar & ::boost::serialization::make_nvp("Type", _typeName);
         ar & ::boost::serialization::make_nvp("Dimension", _dimension);
-        _values.resize(_dimension);
+        // The type and the dimension come from the file: check them before using them (#1612).
+        if ( (_dimension < 1) || (_dimension > kKnobSerializationMaxDimension) ) {
+            throw KnobSerializationError("parameter \"" + name + "\": invalid number of dimensions " + std::to_string(_dimension));
+        }
         KnobIPtr created = createKnob(_typeName, _dimension);
         if (!created) {
-            return;
-        } else {
-            _knob = created;
+            // The layout of the rest of the element depends on the type: it can't be skipped.
+            throw KnobSerializationError("parameter \"" + name + "\": unknown parameter type \"" + _typeName + "\"");
         }
+        _values.resize(_dimension);
+        _knob = created;
         _knob->setName(name);
 
         bool secret;
