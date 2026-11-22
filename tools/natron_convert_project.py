@@ -33,8 +33,10 @@ nothing is rendered, and the file is the project that this version of Natron
 saves (a project saved by an older version is upgraded, and the parameters
 that a plug-in no longer has are dropped). Its plug-ins and PyPlugs must be
 installed: a project that loads with errors (e.g. a node that cannot be
-created, or a PyPlug that cannot be found, whose node would be saved as a
-plain Group) is not converted.
+created, or a PyPlug that cannot be found or imported, whose node would be
+saved as a plain Group) is not converted. This includes the PyPlugs that
+cannot be imported in NatronRenderer, e.g. those that import NatronGui or
+PySide: convert those projects with "File > Save As..." in Natron.
 
 NatronRenderer does not read the GUI data of a project (node positions and
 colours, viewer settings, window layout...), and saves projects without them.

@@ -488,8 +488,10 @@ version of Natron would save (a project from an older version is upgraded, and t
 that a plug-in no longer has are removed). All its plug-ins and PyPlugs must be installed: a
 project that loads with errors (see
 :meth:`App.projectLoadedWithErrors<NatronEngine.App.projectLoadedWithErrors>`), for example
-with a node whose plug-in is missing, or a PyPlug that can't be found (its node would be saved
-as a plain Group), is not converted.
+with a node whose plug-in is missing, or a PyPlug that can't be found or imported (its node
+would be saved as a plain Group), is not converted. This includes the PyPlugs that can't be
+imported in NatronRenderer, e.g. those that import NatronGui or PySide: convert those projects
+with *Save Project As...* in Natron.
 
 NatronRenderer doesn't read the GUI data of projects (node positions and colours, viewer
 settings, window layout), and saves projects without them (see
