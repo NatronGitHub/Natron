@@ -1,38 +1,16 @@
 #!/bin/bash
 
 # Install openssl
-# see openssl-installer.sh
-# These are the default options from Fedora https://src.fedoraproject.org/rpms/openssl:
-# zlib enable-camellia enable-seed enable-rfc3779 enable-sctp enable-cms enable-md2 enable-rc5 enable-ssl3 enable-ssl3-method enable-weak-ssl-ciphers no-mdc2 no-ec2m no-sm2 no-sm4"
-#
-# We need enable-ssl3-method, or legacy code (including Qt4) may fail to compile. See:
-# - https://code.qt.io/cgit/qt/qtbase.git/commit?id=6839aead0430a9b07b60fa3a1a7d685fe5d2d1ef
-# - https://trac.macports.org/ticket/58205#comment:9
-#
-# Working config for the SDK openssl:
-#OPENSSL_CONFIG="enable-cms enable-camellia enable-idea enable-mdc2 enable-tlsext enable-rfc3779 enable-ssl3-method"
-# OpenSSL 1.1.1 is end-of-life: use OpenSSL 3 (as MacPorts). Only the Qt 4 path (WITH_QT4) keeps
-# 1.1.1: openssl-installer.sh is built first and sets OPENSSL_VERSION (keep the two in sync).
-OPENSSL_VERSION="${OPENSSL_VERSION:-3.6.5}"
+# OpenSSL 1.1.1 is end-of-life: use OpenSSL 3 (as MacPorts).
+OPENSSL_VERSION=3.6.5
 OPENSSL_TAR="openssl-${OPENSSL_VERSION}.tar.gz"
-if version_gt 3.0.0 "$OPENSSL_VERSION"; then
-    OPENSSL_SITE="https://www.openssl.org/source"
-    # Qt 4 needs the SSLv3 method, and legacy code the weak ciphers and algorithms
-    OPENSSL_CONFIG="enable-camellia enable-seed enable-rfc3779 enable-cms enable-md2 enable-rc5 enable-ssl3 enable-ssl3-method enable-weak-ssl-ciphers no-mdc2 no-ec2m no-sm2 no-sm4"
-    OPENSSL_INSTALL_TARGETS="install"
-    case "$OPENSSL_VERSION" in
-        1.1.1t) OPENSSL_SHA256=8dee9b24bdb1dcbf0c3d1e9b02fb8f6bf22165e807f45adeb7c9677536859d3b ;;
-        *) OPENSSL_SHA256= ;;
-    esac
-else
-    OPENSSL_SITE="https://github.com/openssl/openssl/releases/download/openssl-${OPENSSL_VERSION}"
-    # Fedora's options without the weak protocols, ciphers and algorithms; installed into lib
-    # (not lib64), without the tests or the docs (install_sw: libraries, headers, programs;
-    # install_ssldirs: the configuration directory)
-    OPENSSL_CONFIG="--libdir=lib no-tests no-docs enable-camellia enable-seed enable-rfc3779 enable-cms no-mdc2 no-ec2m no-sm2 no-sm4"
-    OPENSSL_INSTALL_TARGETS="install_sw install_ssldirs"
-    OPENSSL_SHA256=a2157c2830efdec3788939b00c9b0638306d3f0bbb76dc4832ee503bb397df98
-fi
+OPENSSL_SITE="https://github.com/openssl/openssl/releases/download/openssl-${OPENSSL_VERSION}"
+# Fedora's options (https://src.fedoraproject.org/rpms/openssl) without the weak protocols,
+# ciphers and algorithms; installed into lib (not lib64), without the tests or the docs
+# (install_sw: libraries, headers, programs; install_ssldirs: the configuration directory)
+OPENSSL_CONFIG="--libdir=lib no-tests no-docs enable-camellia enable-seed enable-rfc3779 enable-cms no-mdc2 no-ec2m no-sm2 no-sm4"
+OPENSSL_INSTALL_TARGETS="install_sw install_ssldirs"
+OPENSSL_SHA256=a2157c2830efdec3788939b00c9b0638306d3f0bbb76dc4832ee503bb397df98
 if download_step; then
     download "$OPENSSL_SITE" "$OPENSSL_TAR" "$OPENSSL_SHA256"
 fi

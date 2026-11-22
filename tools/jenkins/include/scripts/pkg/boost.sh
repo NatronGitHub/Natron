@@ -19,8 +19,8 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/libboost_atomic.so" ] 
     pushd "boost_${BOOST_VERSION//./_}"
     # fix a bug with the header files path, when Python3 is used:
     sed -e '/using python/ s@;@: /usr/include/python${PYTHON_VERSION/3*/${PYTHON_VERSION}m} ;@' -i bootstrap.sh
-    env CPATH="$SDK_HOME/include:$SDK_HOME/include/python${PY2_VERSION_SHORT}" ./bootstrap.sh --prefix="$SDK_HOME"
-    env CPATH="$SDK_HOME/include:$SDK_HOME/include/python${PY2_VERSION_SHORT}" CFLAGS="$BF" CXXFLAGS="$BF" ./b2 -s --prefix="$SDK_HOME" cflags="-fPIC" -j${MKJOBS} install threading=multi link=shared # link=static
+    env CPATH="$SDK_HOME/include" ./bootstrap.sh --prefix="$SDK_HOME"
+    env CPATH="$SDK_HOME/include" CFLAGS="$BF" CXXFLAGS="$BF" ./b2 -s --prefix="$SDK_HOME" cflags="-fPIC" -j${MKJOBS} install threading=multi link=shared # link=static
     popd
     rm -rf "boost_${BOOST_VERSION//./_}"
     end_build

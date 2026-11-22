@@ -34,7 +34,7 @@ esac
 cp  ../../jenkins/*.sh .
 (cd ../../jenkins/; tar cf - include) | tar xf -
 export ROCKY="${ROCKY:-9}"
-LABEL="natrongithub/natron-sdk${UBUNTU+-ubuntu}${UBUNTU:-}${CENTOS+-centos}${CENTOS:-}${ROCKY+-rockylinux}${ROCKY:-}${DTS+-dts}${DTS:-}"
+LABEL="natrongithub/natron-sdk-rockylinux${ROCKY}"
 # The Dockerfile is the same for all architectures: the base image is multi-arch,
 # and the build scripts take the architecture from uname -m.
 env GEN_DOCKERFILE=1 ../../jenkins/include/scripts/build-Linux-sdk.sh > Dockerfile

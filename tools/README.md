@@ -8,7 +8,7 @@ This directory contains various tools to help building and maintaining Natron.
 
 - **genStaticDocs.sh**
 
-  This is the script used to generate the HTML documentation which is shippend with Natron binaries. This script is executed by the buildmaster and jenkins scripts, but it can also be used to preview the result while writing documentation.
+  This is the script used to generate the HTML documentation which is shippend with Natron binaries. This script is executed by the jenkins scripts, but it can also be used to preview the result while writing documentation.
   
   The script requires [pandoc](https://pandoc.org/) and [Sphinx](http://sphinx-doc.org/).
   
@@ -26,56 +26,20 @@ This directory contains various tools to help building and maintaining Natron.
 
 - **jenkins**
 
-  These scripts are used to:
-  
-  - build the Natron SDK on Linux 32bit and Linux64bit (any distribution):
-	
-    `./include/scripts/build-Linux-sdk.sh` builds and install all Natron dependencies to `/opt/Natron-sdk`, which must be a user-writable directory. This includes a patched Qt4, a [mangled OSMesa](https://github.com/devernay/osmesa-install) (with LLVM 4.0.1), OpenImageIO, and all other dependencies.
+  The release build scripts: `launchBuildMain.sh` checks out, builds and packages Natron and the plug-ins (the macOS DMG, the Linux portable archive, the Windows portable zip with Inno Setup's `Setup.exe`), and runs the unit tests. See [jenkins/README.md](jenkins/README.md).
 
-  - build the Natron SDK on Windows 7 with [MSYS2](https://www.msys2.org/) installed:
-	
-	  - `MSYSTEM=MINGW64 BITS=64 ./include/scripts/build-Windows-sdk.sh` builds and installs the 64bit versions of the required packages.
-	  - `MSYSTEM=MINGW32 BITS=32 ./include/scripts/build-Windows-sdk.sh` builds and installs the 32bit versions of the required packages.
-	  
-	  Note that the system should also be regularly updated. Updates usually go this way:
-	  
-      - pull updates from your local clone of the official [MINGW-packages](https://github.com/Alexpux/MINGW-packages) repository.
-	  - go to the `tools/MINGW-packages` directory in the Natron sources (detailed below), and execute `./check.sh` to see if any package needs updating. Update `PKGCONFIG` for these packages accordingly.
-	  - execute `pacman -Syu` to update MSYS2
+  `./include/scripts/build-Linux-sdk.sh` builds and installs all the Natron dependencies of the Linux SDK to `/opt/Natron-sdk`, which must be a user-writable directory. It is normally run inside the Rocky Linux 9 Docker image (see **docker** below).
 
-	    Answer "n" to those two questions, if `pacman -Syu` asks:
-
-	    ```
-		:: Replace mingw-w64-i686-x264 with mingw32/mingw-w64-i686-x264-git? [Y/n] n
-	    :: Replace mingw-w64-x86_64-x264 with mingw64/mingw-w64-x86_64-x264-git? [Y/n] n
-		``
-
-	    After execution, `pacman -Syu` may ask you to close and relaunch the terminal.
-	  
-	  - execute `MSYSTEM=MINGW64 BITS=64 ./include/scripts/build-Windows-sdk.sh` to rebuild and install the Natron-specific packages.
-	  
-  - build the Natron binaries and execute the unit tests on OS X 10.9 (`macStartupJenkins.sh`), Linux CentOS 6.4 32bit and 64bit (`linuxStartupJenkins.sh`) and Windows 10 32bit and 64bit (`winStartupJenkins.bat`). These build scripts are basically updated versions of the scripts from the `buildmaster`directory, but were never tested to produce actual releases. Also note that the OS X script does not produce universal 32/64 bits binaries when run on OS X 10.9.
-
-- **buildmaster**
-
-  The directory, given for reference, contains the old scripts that were used to build Natron binaries on the Natron build farm. These scripts require a complicated infrastructure (build farm with one machine of each arch, database to store the build results, web server to store the binaries and build symbols, etc.).
-  
-  These scripts are here mainly for reference, and the jenkins scripts are probably more up-to-date, although they were never used to produce releases.
-  
-  The main script is `buildmaster.sh`, and we launch it that way:
-  - on OS X 10.6, Linux CentOS 6.4 32bit, Linux CentOS 64bit: `env NATRON_LICENSE=GPL ./buildmaster.sh`
-  - on Window 7 64bit, we run in parallel the scripts to build the 32bit and the 64bit versions:
-    - `env NATRON_LICENSE=GPL MSYSTEM=MINGW32 BITS=32 MKJOBS=2  ./buildmaster.sh`
-    - `env NATRON_LICENSE=GPL MSYSTEM=MINGW64 BITS=64 MKJOBS=2  ./buildmaster.sh`
-  The script that builds the Windows packages is in `buildmaster/include/scripts/build-Windows-installer.sh`, and must be updated every type a dependency DLL filename changes (this was made automatic in the corresponding jenkins script).
-  
+  On Windows, the SDK is MSYS2's UCRT64 environment with the packages of **MINGW-packages** (see below).
 
 - **docker**
 
-  Contains tools to build a docker image that contains the Natron SDK installed on top of CentOS6.
+  Contains the tools to build the Rocky Linux Docker image with the Natron Linux SDK (`natron-sdk-rockylinux`). A build is launched with `docker run` on that image. See [docker/README.md](docker/README.md).
 
-  The `natron-sdk` docker image is also available from dockerhub, see https://hub.docker.com/r/natrongithub/natron-sdk
-  
+- **tart**
+
+  Builds Natron for macOS in a clean macOS 14 virtual machine on an Apple Silicon Mac. See [tart/README.md](tart/README.md).
+
 - **MINGW-packages**
 
   Natron's own MSYS2 packages, built in the UCRT64 environment, for the plug-ins and the Windows installer: only what MSYS2 doesn't provide in the form Natron needs (FFmpeg built GPLv2, LibRaw with and without the GPL demosaic packs, OpenImageIO built against that LibRaw, SeExpr, a static ImageMagick 7, OSMesa, the Inno Setup installer and the build-deps meta-packages). See [MINGW-packages/README.md](MINGW-packages/README.md) for the list, and for how to rebuild and publish the package repository.
@@ -119,11 +83,10 @@ This directory contains various tools to help building and maintaining Natron.
   
   - `generate_glad.sh` generates the glad source files for properly handling the OpenGL extensions.
   
-  - `runPostShiboken.sh` is used to fix source files after running [shiboken](https://github.com/pyside/Shiboken) to generate the Python bindings. See the section *Generating Python bindings* in `INSTALL_MACOS.md` and `INSTALL_LINUX.md`.
-valgrind
+  - `sourceCleanup.py` fixes the source files generated by Shiboken for the Python bindings, and `sourceList.py` lists them. The CMake build runs both; for the qmake build, see the section *Generating Python bindings* in `INSTALL_MACOS.md` and `INSTALL_LINUX.md`.
 
 - **valgrind**
 
   [valgrind](http://valgrind.org/) suppression files.
   
-  There is also a suppression file for Python in `jenkins/include/natron/valgrind-python.supp`and `buildmaster/include/natron/valgrind-python.supp`
+  There is also a suppression file for Python in `jenkins/include/natron/valgrind-python3.supp`.

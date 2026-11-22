@@ -360,7 +360,7 @@ Release artifacts follow a common ``INSTALLER_BASENAME`` (assembled in
   it is unset) in ``launchBuildMain.sh``. That table must list current OS versions; unlisted
   versions fall through to the literal ``OSX``. It now covers 10.5–10.15, 11–16
   and the year-based 26–30, with a ``macOS<major>`` catch-all for the future.
-  (The ``tools/docker/natron-sdk`` SDK build uses a *gitignored copy* of this
+  (The ``tools/docker/natron-sdk-rockylinux`` SDK build uses a *gitignored copy* of this
   script derived from ``tools/jenkins``; ``tools/jenkins/launchBuildMain.sh`` is
   the source of truth.)
 

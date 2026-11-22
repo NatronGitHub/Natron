@@ -244,14 +244,12 @@ Writes to read-only properties
     <name>`` on stderr. A plug-in that triggers this warning should be fixed.
 
 Cursors
-    Natron 2.6 no longer honours the Natron extension's secret
-    ``kNatronOfxParamCursorName`` string parameter, and no longer sets the
-    ``kNatronOfxImageEffectPropDefaultCursors`` host property (`#1108 <https://github.com/NatronGitHub/Natron/pull/1108>`_). Plug-ins
-    should use the interact cursors instead: check
+    Plug-ins set the overlay cursor with the interact cursors: check
     ``kOfxInteractHostPropSupportedCursors`` on the host and set
     ``kOfxInteractPropCursor`` on the overlay interact (see "Interact cursors
-    (proposed extension)" in ``ofxInteract.h``). None of the bundled plug-ins
-    used the old mechanism.
+    (proposed extension)" in ``ofxInteract.h``). Natron 2.6 removed its own,
+    Natron-specific cursor extension (`#1108 <https://github.com/NatronGitHub/Natron/pull/1108>`_);
+    none of the bundled plug-ins used it.
 
 Obsolete plug-ins
     A plug-in that sets ``kOfxImageEffectPluginPropObsolete`` to 1 (OFX, after

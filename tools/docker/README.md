@@ -2,7 +2,7 @@
 
 This directory contains tools to build Natron using docker images (requires [Docker]).
 
-The Natron 2.6 Linux SDK image is based on Rocky Linux 9 (EL9, glibc 2.34, as in the VFX Reference Platform CY2027), so that the binaries built with it run on all the Linux distributions that are at least as recent. The older images (`natron-sdk-centos*`, `natron-sdk-ubuntu*`) are kept for the older Natron releases. The base image is chosen by `DOCKER_BASE` in `tools/jenkins/include/scripts/build-Linux-sdk.sh`.
+The Natron 2.6 Linux SDK image is based on Rocky Linux 9 (EL9, glibc 2.34, as in the VFX Reference Platform CY2027), so that the binaries built with it run on all the Linux distributions that are at least as recent. The scripts of the older images (CentOS 6, 7 and 8, Ubuntu 18.04 and 20.04, i386) were removed: they are in the RB-2.5 branch. The base image is chosen by `DOCKER_BASE` in `tools/jenkins/include/scripts/build-Linux-sdk.sh`.
 
 ## Debugging a docker build that fails
 
@@ -22,16 +22,7 @@ The source tarballs are extracted with `tar --no-same-owner`, since some of them
 
 ## Downloading the pre-built Natron SDK images
 
-The `natrongithub/natron-sdk` docker image is available from [Docker Hub], and it is an alias to `natrongithub/natron-sdk-centos7` and ``natrongithub/natron-sdk-centos7-dts8`.
-
-To download these images, for the [64-bit SDK] execute:
-```
-docker pull natrongithub/natron-sdk
-```
-and for the [32-bit SDK]:
-```
-docker pull natrongithub/natron-sdk-i386
-```
+The `natrongithub/natron-sdk` image on [Docker Hub] is the CentOS 7 SDK of Natron 2.5 and older (an alias to `natrongithub/natron-sdk-centos7` and `natrongithub/natron-sdk-centos7-dts8`). Natron 2.6 is built with the Rocky Linux 9 image, `natrongithub/natron-sdk-rockylinux9`, once it is published (see above); the examples below use `natrongithub/natron-sdk:latest`: replace it with the image you built or pulled.
 
 ## Launching a build
 
@@ -42,7 +33,6 @@ To launch a build:
 mkdir builds
 docker run -it --rm --mount src="$(pwd)/builds",target=/home/builds_archive,type=bind natrongithub/natron-sdk:latest
 ```
-(for the 32-bit version, use `natrongithub/natron-sdk-i386:latest` instead of `natrongithub/natron-sdk:latest`)
 
 By default, this launches a snapshot build, but you may want to customize build variables, which appear when the build starts and are described at the top of `tools/jenkins/launchBuildMain.sh`. This can be done by adding the following options to the `docker run`command: `--env VAR1=value1 --env VAR2=value2 ...`.
 
@@ -95,14 +85,9 @@ Then you can execute manually `launchBuildMain.sh` from the shell.
 
 ## Building the SDK images
 
-If you change anything in the Natron SDK, including package versions (as found in `tools/jenkins/insclude/scripts/pkg`) or the build script itself (`tools/jenkins/include/scripts/build-Linux-SDK.sh`), you may want to re-build the SDK images.
-
-- `tools/docker/natron-sdk/build.sh` builds the 64-bit Natron SDK docker image, and gives instructions to tag it and push it to the docker hub.
-- `tools/docker/natron-sdk-i386/build.sh` builds the 32-bit Natron SDK docker image.
+If you change anything in the Natron SDK, including package versions (as found in `tools/jenkins/include/scripts/pkg`) or the build script itself (`tools/jenkins/include/scripts/build-Linux-sdk.sh`), you may want to re-build the SDK image with `tools/docker/natron-sdk-rockylinux/build.sh` (see "Building the Rocky Linux SDK image" above).
 
 
 
 [Docker]: https://docs.docker.com/
 [Docker Hub]: https://hub.docker.com
-[64-bit SDK]: https://hub.docker.com/r/natrongithub/natron-sdk
-[32-bit SDK]: https://hub.docker.com/r/natrongithub/natron-sdk-i386

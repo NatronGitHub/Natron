@@ -2,7 +2,7 @@
 
 exit 1 # unfinished
 
-# Install Berkeley DB (optional for python2 and python3)
+# Install Berkeley DB (optional for python3)
 # see http://www.linuxfromscratch.org/blfs/view/svn/server/db.html
 #BERKELEYDB_VERSION=6.2.32
 BERKELEYDB_VERSION=5.3.28

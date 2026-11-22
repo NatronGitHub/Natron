@@ -16,14 +16,11 @@ This file is supposed to guide you step by step to have working (compiling) vers
     - [Environment to use the Natron SDK](#environment-to-use-the-natron-sdk)
   - [Manually install dependencies](#manually-install-dependencies)
     - [Qt5](#qt-515)
-    - [Qt4](#qt-48)
     - [Boost](#boost)
     - [Expat](#expat)
     - [Cairo](#cairo)
     - [Pyside2](#pyside2)
     - [Shiboken](#shiboken2)
-    - [Pyside](#pyside)
-    - [Shiboken](#shiboken)
     - [QtPy](#qtpy)
 2. [Configuration](#configuration)
     - [OpenFX](#openfx)
@@ -61,11 +58,11 @@ cd tools/jenkins
 include/scripts/build-Linux-sdk.sh
 ```
 
-It puts build logs and the list of files installed by each package in the directory `/opt/Natron-sdk/var/log/Natron-Linux-<arch>-SDK`, where `<arch>` is `x86_64`, `aarch64` or `i686`.
+It puts build logs and the list of files installed by each package in the directory `/opt/Natron-sdk/var/log/Natron-Linux-<arch>-SDK`, where `<arch>` is `x86_64` or `aarch64`.
 
-The official Linux binaries are built with the Rocky Linux 9 SDK (`ROCKY=9`). It uses GCC 14 from `gcc-toolset-14`, Python 3.11, Qt 5.15.19, PySide2/Shiboken2 5.15.19 (built from source with EPEL's libclang 19), and librsvg 2.58 (built with Rust from `rust-toolset`). It doesn't build Qt 4 or the Qt installer framework (`WITH_QT4=false`): the Linux releases are portable archives. The Rocky Linux 8 SDK (`ROCKY=8`) is the same, except for libclang 18, librsvg 2.40 and Qt 4. Both build natively on x86_64 and aarch64: the Docker image is built by `[ROCKY=8] tools/docker/natron-sdk-rockylinux/build.sh [amd64|arm64]` (see `tools/docker/README.md`).
+The official Linux binaries are built with the Rocky Linux 9 SDK (`ROCKY=9`). It uses GCC 14 from `gcc-toolset-14`, Python 3.11, Qt 5.15.19, PySide2/Shiboken2 5.15.19 (built from source with EPEL's libclang 19), and librsvg 2.58 (built with Rust from `rust-toolset`). It doesn't build the Qt installer framework: the Linux releases are portable archives. The Rocky Linux 8 SDK (`ROCKY=8`) is the same, except for libclang 18 and librsvg 2.40. Both build natively on x86_64 and aarch64: the Docker image is built by `[ROCKY=8] tools/docker/natron-sdk-rockylinux/build.sh [amd64|arm64]` (see `tools/docker/README.md`).
 
-Some packages, especially Qt 4.8.7, have Natron-specific patches. Take a look at the SDK script to see which patches are applied to each packages, and what configuration options are used.
+Some packages have Natron-specific patches (in `tools/jenkins/include/patches`). Take a look at the SDK script to see which patches are applied to each packages, and what configuration options are used.
 
 The SDK may be updated by pulling the last modifications to the script and re-executing it.
 
@@ -126,10 +123,6 @@ For Qt5 You'll need to install the qtbase libraries, usually you can get them fr
 
 Alternatively you can build it from source using the tarballs from [Qt download](https://download.qt.io/archive/qt/5.15/5.15.4/submodules) or the [KDE fork](https://invent.kde.org/qt/qt/qtbase/-/tree/kde/5.15).
 
-### Qt 4.8
-
-In case you prefer to use Qt4 you'll have to build it from source as many distributions have already deprecated Qt 4, [Qt download](https://download.qt.io/archive/qt/4.8/4.8.7/) has a source archive.
-
 ### Boost
 
 Natron requires `boost serialization` to compile.
@@ -153,17 +146,9 @@ Natron uses pyside2 for Python 3 with Qt5.
 
 Natron uses shiboken2 for Python 3 with Qt5, the generator binary (`shiboken2`) and headers are required too.
 
-### PySide
-
-Natron uses pyside for Python 2 with Qt4, notice that it's deprecated in many distros.
-
-### Shiboken
-
-Natron uses shiboken for Python 2 with Qt4, notice that it's deprecated in many distros.
-
 ### QtPy
 
-Abstraction layer for PyQt5/PyQt4/PySide2/PySide. Preferably you can use your distribution package manager or install it via pip
+Abstraction layer for PyQt5/PyQt6/PySide2/PySide6. Preferably you can use your distribution package manager or install it via pip
 
 ```
 pip install qtpy
@@ -223,7 +208,7 @@ You can find more examples specific to distributions below.
 
 `PKGCONFIG` is the pkg-config.
 
-An example configuration for a Qt4 build might be
+An example configuration for a Qt 5 build might be (`global.pri` finds PySide2 and Shiboken2 with pkg-config):
 
 ```
 ----- copy and paste the following in a terminal -----
@@ -232,10 +217,6 @@ boost-serialization-lib: LIBS += -lboost_serialization
 boost: LIBS += -lboost_thread -lboost_system
 expat: LIBS += -lexpat
 expat: PKGCONFIG -= expat
-pyside: PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
-pyside: PKGCONFIG += pyside
-pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
-pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
 EOF
 ----- end -----
 ```
@@ -396,32 +377,6 @@ CONFIG += openmp
 DEFINES += QT_NO_DEBUG_OUTPUT
 ```
 
-In case of a Qt4 you should paste in these lines to the empty file. **A template `config.pri` is available [here](./build-configs/arch-linux/config.pri)**. Here are some recommended instructions to do so:
-
-```
-# These are the lines you should paste into your empty `config.pri`
-boost: LIBS += -lboost_serialization
-expat: LIBS += -lexpat
-expat: PKGCONFIG -= expat
-cairo {
-        PKGCONFIG += cairo
-        LIBS -=  $$system(pkg-config --variable=libdir cairo)/libcairo.a
-}
-pyside {
-        PKGCONFIG -= pyside
-        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)
-        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtCore
-        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtGui
-        INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)
-        LIBS += -lpyside-python2.7
-}
-shiboken {
-        PKGCONFIG -= shiboken
-        INCLUDEPATH += $$system(pkg-config --variable=includedir shiboken-py2)
-        LIBS += -lshiboken-python2.7
-}
-```
-
 You're now all set to compile. Use `qmake` to generate a Makefile for final compiling, like this:
 
 ```
@@ -486,32 +441,6 @@ For most Debian/Ubuntu-based systems, install the required packages:
 sudo apt install build-essential cmake qtbase5-dev libboost-serialization-dev libboost-system-dev libexpat1-dev libcairo2-dev python3-dev python3-pyside2 libpyside2-dev libshiboken2-dev
 ```
 
-For the Qt4 config.pri (deprecated qmake build) use:
-
-```
-boost-serialization-lib: LIBS += -lboost_serialization
-boost: LIBS += -lboost_thread -lboost_system
-expat: LIBS += -lexpat
-expat: PKGCONFIG -= expat
-cairo: PKGCONFIG -= cairo
-
-pyside: PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
-pyside: PKGCONFIG += pyside
-pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
-pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
-```
-
-for Linux Mint you will need to add:
-
-```
-pyside {
-        PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
-        PKGCONFIG += pyside
-        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
-        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
-}
-```
-
 Get Natron:
 
 ```
@@ -549,49 +478,8 @@ or
 dnf install cmake fontconfig-devel gcc-c++ expat-devel python-pyside2-devel shiboken2-devel qt5-qtbase-devel boost-devel pixman-devel cairo-devel
 ```
 
-Then build with CMake, as described in [Build](#build). For the deprecated qmake build, here is a Qt4 config.pri:
-```pri
-boost-serialization-lib: LIBS += -lboost_serialization
-boost: LIBS += -lboost_thread -lboost_system
-PKGCONFIG += expat
-PKGCONFIG += fontconfig
-cairo {
-        PKGCONFIG += cairo
-        LIBS -=  $$system(pkg-config --variable=libdir cairo)/libcairo.a
-}
-pyside {
-        PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
-        PKGCONFIG += pyside
-        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
-        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
-}
-shiboken {
-        PKGCONFIG -= shiboken
-        INCLUDEPATH += $$system(pkg-config --variable=includedir shiboken)
-        LIBS += -lshiboken-python2.7
-}
-```
+Then build with CMake, as described in [Build](#build).
 
 # Generating Python bindings
 
-This is not required as file generation occurs during build with Qt5 and generated files are already in the repository for Qt4. You would need to run it if you were both under Qt4 and either extend or modify the Python bindings via the
-typesystem.xml file. See the documentation of shiboken for an explanation of the command line arguments.
-
-If using PySide for Qt4, the command-line would be:
-
-```sh
-SDK_PREFIX=/usr # /opt/Natron-sdk if using the Natron SDK
-PYSIDE_PREFIX=/usr # /opt/Natron-sdk/qt4 if using the Natron SDK
-QT=4
-rm Engine/NatronEngine/* Gui/NatronGui/*
-
-shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide --typesystem-paths=$PYSIDE_PREFIX/share/PySide/typesystems --output-directory=Engine/Qt${QT} Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
-
-shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:$SDK_PREFIX/include:$PYSIDE_PREFIX/include/PySide --typesystem-paths=$PYSIDE_PREFIX/share/PySide/typesystems:Engine:Shiboken --output-directory=Gui/Qt${QT} Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
-
-tools/utils/runPostShiboken.sh Engine/Qt${QT}/NatronEngine natronengine
-tools/utils/runPostShiboken.sh Gui/Qt${QT}/NatronGui natrongui
-```
-
-**Note**
-Shiboken has a few glitches which needs fixing with some sed commands, run `tools/utils/runPostShiboken.sh` for Qt4 once shiboken is called.
+There is nothing to do by hand: the CMake build runs Shiboken (`shiboken2` with Qt 5, `shiboken6` with Qt 6) on `Engine/typesystem_engine.xml` and `Gui/typesystem_natronGui.xml` during the build. The deprecated qmake build cannot run it: `tools/jenkins/build-natron.sh` runs the same steps before qmake (see the Maintainer Guide, `Documentation/source/maintainers/python-bindings.rst`).
