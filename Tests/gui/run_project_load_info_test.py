@@ -22,9 +22,9 @@ App.projectLoadedWithErrors().
 
 Usage: run_project_load_info_test.py /path/to/NatronRenderer [--debugger]
 
-NatronRenderer -t loads, one after the other, Tests/data/ProjectFileFormat-2.5.ntp
-(saved in background mode, no error) and variants of it, written by this
-test:
+NatronRenderer -t loads, one after the other,
+Tests/data/ProjectFileFormat-2.5.ntp (saved in background mode, no error)
+and variants of it, written by this test:
 
 - "gui": flagged as saved by the GUI (Background_project=0). It is
   synthetic: the flag is flipped, but the file has no ProjectGui part. The
@@ -34,14 +34,19 @@ test:
 - "missinginput": a connection to an input that the node doesn't have.
 - "majorversion": a node saved with another major version of its plug-in,
   a warning where nothing is lost.
+- "missingpyplug": a Group saved as a PyPlug whose .py does not exist: it is
+  loaded as a Group, and saving would drop the PyPlug.
+- "pyplug": a Group saved as a PyPlug that is found in the PyPlug search path
+  (NATRON_PLUGIN_PATH), not at its saved path: nothing is lost.
 - "callback": in a Group, a node whose plug-in does not exist, flagged as saved
   by the GUI, with an afterProjectLoad callback that reads both getters.
 
 It reads both getters for a new project, after each load (also a clean load,
 "aftererrors", right after one that lost data), in the afterProjectLoad
 callback and after app.resetProject(), and checks that each load prints its
-own error log messages (none for the clean loads). Only the text (XML) format is tested: both formats are
-read by the same code once the archive is open.
+own error log messages (none for the clean loads). Only the text (XML)
+format is tested: both formats are read by the same code once the archive
+is open.
 
 Exit status: 0 on success, 1 on failure, 2 on a usage error.
 --debugger runs NatronRenderer under natron-lldb.sh, or set
@@ -71,6 +76,33 @@ SOURCE_INPUT_TAG = b"<first>Source</first>"
 MISSING_INPUT_TAG = b"<first>NoSuchInput</first>"
 MAJOR_VERSION_TAG = b"<Plugin_major_version>1</Plugin_major_version>"
 OTHER_MAJOR_VERSION_TAG = b"<Plugin_major_version>7</Plugin_major_version>"
+# Group1, the first node of the project
+GROUP_PYTHON_MODULE_TAG = b"<PythonModule></PythonModule>"
+MISSING_PYTHON_MODULE_TAG = (b"<PythonModule>/nonexistent/"
+                             b"NatronTestNoSuchPyPlug.py</PythonModule>")
+PYPLUG_MODULE = "NatronTestLoadInfoPyPlug"
+PYTHON_MODULE_TAG = (b"<PythonModule>/nonexistent/%s.py</PythonModule>"
+                     % PYPLUG_MODULE.encode())
+# A minimal PyPlug, which the PyPlug scan at startup recognizes
+PYPLUG = """def getPluginID():
+    return "fr.natron.test.LoadInfoPyPlug"
+
+
+def getLabel():
+    return "LoadInfoPyPlug"
+
+
+def getVersion():
+    return 1
+
+
+def getGrouping():
+    return "Other"
+
+
+def createInstance(app, group):
+    pass
+"""
 KNOBS_COUNT_TAG = b"<ProjectKnobsCount>4</ProjectKnobsCount>"
 FORMATS_TAG = b"\t<AdditionalFormats"
 CALLBACK = "loadInfoCallback"
@@ -102,7 +134,8 @@ LOAD_MARKER = "NATRON_TEST_LOAD"
 
 # The projects that the script loads, in this order (NATRON_TEST_<LABEL>).
 LOADS = ("background", "gui", "missingplugin", "aftererrors",
-         "missingingroup", "missinginput", "majorversion", "callback")
+         "missingingroup", "missinginput", "majorversion", "missingpyplug",
+         "pyplug", "callback")
 
 # Run by NatronRenderer -t: writes [label, hasGuiData, loadedWithErrors] for
 # each step to NATRON_TEST_OUTPUT (JSON).
@@ -159,6 +192,8 @@ EXPECTED = [
     ["missingingroup", False, True],
     ["missinginput", False, True],
     ["majorversion", False, False],
+    ["missingpyplug", False, True],
+    ["pyplug", False, False],
     ["callback", True, True],
     ["in callback", True, True],
     ["reset", False, False],
@@ -177,6 +212,9 @@ EXPECTED_MESSAGES = {
                        "group Group1 (Group <&> \u00e9)."],
     "missinginput": ["Could not find input named NoSuchInput"],
     "majorversion": ["was found in the script but was loaded with version"],
+    "missingpyplug": ["ERROR: The PyPlug "
+                      "/nonexistent/NatronTestNoSuchPyPlug.py of the node "
+                      "Group1 was not found"],
     "callback": ["does not exist in the loaded plug-ins. It was in the "
                  "group Group1 (Group <&> \u00e9)."],
 }
@@ -232,6 +270,9 @@ def _variants(data):
         "majorversion": _replace(data, MAJOR_VERSION_TAG,
                                  OTHER_MAJOR_VERSION_TAG,
                                  after=DOT_PLUGIN_TAG),
+        "missingpyplug": _replace(data, GROUP_PYTHON_MODULE_TAG,
+                                  MISSING_PYTHON_MODULE_TAG),
+        "pyplug": _replace(data, GROUP_PYTHON_MODULE_TAG, PYTHON_MODULE_TAG),
         "callback": callback,
     }
 
@@ -258,6 +299,11 @@ def _write_test_files(tmp_dir, env):
             f.write(contents)
         env["NATRON_TEST_" + label.upper()] = path
     env["NATRON_TEST_OUTPUT"] = os.path.join(tmp_dir, "out.json")
+    pyplugs_dir = os.path.join(tmp_dir, "pyplugs")
+    os.mkdir(pyplugs_dir)
+    with open(os.path.join(pyplugs_dir, PYPLUG_MODULE + ".py"), "w") as f:
+        f.write(PYPLUG)
+    env["NATRON_PLUGIN_PATH"] = pyplugs_dir
     script = os.path.join(tmp_dir, "load_info.py")
     with open(script, "w") as f:
         f.write(SCRIPT)
