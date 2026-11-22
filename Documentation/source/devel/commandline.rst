@@ -476,9 +476,9 @@ rendering anything::
 ``to`` (``"text"`` or ``"binary"``) as ``dst`` (``src`` itself without ``dst``), then quits: the
 exit status is 0 if the project was converted, 1 otherwise, with the reason printed. In a
 script, ``convert()`` takes the same arguments, raises an exception instead, and doesn't quit;
-end the script with ``natron.quit(status)``, with a non-zero status if a conversion failed
-(otherwise the prompt starts, and exits with status 0). The project is not converted if it
-loads with errors (see :meth:`App.projectLoadedWithErrors<NatronEngine.App.projectLoadedWithErrors>`), or if it
+end the script with ``natron.quit(status)``, with a non-zero status if a conversion failed:
+without ``natron.quit()``, the prompt starts and exits with status 0. The project is not
+converted if it loads with errors (see :meth:`App.projectLoadedWithErrors<NatronEngine.App.projectLoadedWithErrors>`), or if it
 has GUI data (see :meth:`App.projectFileHasGuiData<NatronEngine.App.projectFileHasGuiData>`),
 which NatronRenderer would drop, unless ``discard_gui=True``: convert those projects with
 *Save Project As..* in Natron. See the docstring of ``tools/natron_convert_project.py`` for
