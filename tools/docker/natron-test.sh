@@ -103,7 +103,7 @@ su natron -c "cd Natron-Tests && env -i HOME=/home/natron USER=natron LOGNAME=na
     FFMPEG=$P/bin/ffmpeg COMPARE=$P/bin/idiff \
     timeout -s KILL $TEST_TIMEOUT /bin/bash runTests.sh $P/NatronRenderer" > /out/runTests.log 2>&1 || status=$?
 [ -z "$missing" ] || { echo "Error: missing system libraries:"; echo "$missing"; } >> /out/runTests.log
-echo "runTests.sh exited with status $status"
+echo "runTests.sh exited, status $status (also 1 if a system library is missing)"
 cd Natron-Tests
 # runTests.sh only copies the images of the failed render tests to failed/: also copy those of
 # the failed custom tests (TestCMD, TestWriteFFmpeg/<format>, ...), as in tools/tart/natron-test.sh
@@ -154,7 +154,7 @@ if [ -f "$OUT/$NAME-tests.txt" ] && [ -f "$OUT/$NAME-tests-summary.txt" ]; then
     if grep -q '^UNEXPECTED PASS: [1-9]' "$OUT/$NAME-tests-summary.txt"; then
         echo "Warning: known failures passed: remove them from Natron-Tests' known_failures/"
     fi
-    [ "$status" = 0 ] || echo "Error: runTests.sh exited with status $status (a test failed that isn't a known failure, or the run failed)"
+    [ "$status" = 0 ] || echo "Error: status $status (a test failed that isn't a known failure, a system library is missing, or the run failed)"
 elif [ -f "$OUT/$NAME-tests.txt" ]; then
     echo "Error: no summary.txt: runTests.sh did not finish (see $OUT/$NAME-tests.log)"
     status=1

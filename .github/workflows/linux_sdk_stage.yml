@@ -25,6 +25,8 @@ on:
         type: boolean
         default: false
       export_cache:
+        # (an SDK built first on another branch is reused by the default branch as is, so its
+        # layers only reach the cache at the next SDK change: that only costs build time)
         description: 'Update the layer cache (default branch only, so that other branches never replace it)'
         type: boolean
         default: false
