@@ -83,7 +83,7 @@ jobs:
         echo "SDK image $image:$hash, build: $build, default branch: $default_branch"
         { echo "image=$image"; echo "hash=$hash"; echo "build=$build"; echo "default_branch=$default_branch"; } >> "$GITHUB_OUTPUT"
 
-  # one job per stage (STAGE_ENDS in linux_sdk_stage.yml)
+  # one job per stage (STAGE_ENDS in tools/docker/natron-sdk-rockylinux/split-stages.sh)
   sdk_stage1:
     needs: sdk_check
     if: needs.sdk_check.outputs.build == 'true'
@@ -309,7 +309,8 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GH_REPO: ${{ github.repository }}
       run: |
-        ls -l dist
+        # no archive at all (both arches failed): no release
+        ls -l dist/*.tar.xz
         gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 ||
             gh release create "$GITHUB_REF_NAME" --verify-tag --prerelease --title "$GITHUB_REF_NAME" --notes "Natron $GITHUB_REF_NAME (pre-release)"
         shopt -s nullglob
