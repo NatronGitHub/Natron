@@ -947,17 +947,28 @@ public:
     PythonGILLocker();
 
     ~PythonGILLocker();
+
+    PythonGILLocker(const PythonGILLocker&) = delete;
+    PythonGILLocker& operator=(const PythonGILLocker&) = delete;
 };
 
 /**
  * @brief Small helper class to use as RAII to temporarily release the GIL (Global Interpreter Lock)
+ * while this thread waits for other threads that may run Python (renders, previews, trackers...).
+ * If this thread holds the GIL, it is released with PyEval_SaveThread() and taken again with
+ * PyEval_RestoreThread(). Otherwise (no Python, or a thread without the GIL), this does nothing.
+ * No Python API may be called while it exists, except through a PythonGILLocker.
  **/
 class PythonGILUnlocker
 {
+    PyThreadState* _state = nullptr; // nullptr if the GIL was not released
 public:
     PythonGILUnlocker();
 
     ~PythonGILUnlocker();
+
+    PythonGILUnlocker(const PythonGILUnlocker&) = delete;
+    PythonGILUnlocker& operator=(const PythonGILUnlocker&) = delete;
 };
 
 NATRON_NAMESPACE_EXIT

@@ -342,6 +342,13 @@ public:
 
     // Sets the format of the next saves of the project ("Save", auto-saves record it).
     void setProjectFormat(Natron::ProjectFileFormatEnum format);
+
+    // See Project::fileHasGuiData() and App.rst.
+    bool projectFileHasGuiData() const;
+
+    // See Project::fileLoadedWithErrors() and App.rst.
+    bool projectLoadedWithErrors() const;
+
     App* loadProject(const QString& filename);
 
     ///Close the current project but keep the window

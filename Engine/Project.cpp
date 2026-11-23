@@ -29,6 +29,7 @@
 #include <algorithm> // min, max, sort
 #include <functional>
 #include <mutex>
+#include <optional>
 #include <ios>
 #include <limits>
 #include <ostream>
@@ -336,6 +337,30 @@ Project::setFileFormat(ProjectFileFormatEnum format)
 }
 
 bool
+Project::fileHasGuiData() const
+{
+    QMutexLocker l(&_imp->projectLock);
+
+    return _imp->fileHasGuiData;
+}
+
+bool
+Project::fileLoadedWithErrors() const
+{
+    QMutexLocker l(&_imp->projectLock);
+
+    return _imp->fileLoadedWithErrors;
+}
+
+void
+Project::setFileLoadedWithErrors()
+{
+    QMutexLocker l(&_imp->projectLock);
+
+    _imp->fileLoadedWithErrors = true;
+}
+
+bool
 Project::loadProject(const QString & path,
                      const QString & name,
                      bool isUntitledAutosave,
@@ -419,12 +444,15 @@ Project::loadProjectImpl(const QString & path,
         }
 
         bool mustSave = false;
-        if ( !loadProjectInternal(realPath, realName, isAutoSave, isUntitledAutosave, &mustSave) ) {
+        const NodesRestoreStatus status = loadProjectInternal(realPath, realName, isAutoSave, isUntitledAutosave, &mustSave);
+        if (status.showErrorLog) {
             appPTR->showErrorLog();
-        } else if (mustSave) {
+        } else if (mustSave && !status.dataLost) {
+            // the PyPlugs were updated: save them, unless that would also drop what could not be loaded
             saveProject(realPath, realName, 0);
         }
     } catch (const std::exception & e) {
+        setFileLoadedWithErrors();
         Dialogs::errorDialog( tr("Project loader").toStdString(), tr("Error while loading project: %1").arg( QString::fromUtf8( e.what() ) ).toStdString() );
         if ( !getApp()->isBackground() ) {
             CreateNodeArgs args(PLUGINID_NATRON_VIEWER, shared_from_this() );
@@ -435,6 +463,7 @@ Project::loadProjectImpl(const QString & path,
 
         return false;
     } catch (...) {
+        setFileLoadedWithErrors();
         Dialogs::errorDialog( tr("Project loader").toStdString(), tr("Unknown error while loading project.").toStdString() );
         if ( !getApp()->isBackground() ) {
             CreateNodeArgs args(PLUGINID_NATRON_VIEWER, shared_from_this() );
@@ -451,7 +480,7 @@ Project::loadProjectImpl(const QString & path,
     return true;
 } // loadProject
 
-bool
+NodesRestoreStatus
 Project::loadProjectInternal(const QString & path,
                              const QString & name,
                              bool isAutoSave,
@@ -466,7 +495,7 @@ Project::loadProjectInternal(const QString & path,
         throw std::invalid_argument( QString( filePath + QString::fromUtf8(" : no such file.") ).toStdString() );
     }
 
-    bool ret = false;
+    NodesRestoreStatus ret;
 
     if ( (NATRON_VERSION_MAJOR == 1) && (NATRON_VERSION_MINOR == 0) && (NATRON_VERSION_REVISION == 0) ) {
         ///Try to determine if the project was made during Natron v1.0.0 - RC2 or RC3 to detect a bug we introduced at that time
@@ -508,6 +537,9 @@ Project::loadProjectInternal(const QString & path,
     // The format of the project file this file is, or was an auto-save of.
     ProjectFileFormatEnum projectFormat = fileFormat;
 
+    // Whether the file has a ProjectGui part (see fileHasGuiData())
+    bool hasGuiData = false;
+
     // Same contents for both formats, so that they go through the same serialize() functions and versions.
     auto loadFromArchive = [&](auto & iArchive) {
         bool bgProject;
@@ -520,6 +552,7 @@ Project::loadProjectInternal(const QString & path,
             ret = load(projectSerializationObj, name, path, mustSave);
         } // __raii_loadingProjectInternal__
 
+        hasGuiData = !bgProject;
         if (!bgProject) {
             getApp()->loadProjectGui(isAutoSave, iArchive);
         }
@@ -590,9 +623,12 @@ Project::loadProjectInternal(const QString & path,
         }
     }
 
+    // before the afterProjectLoad callback (runOnProjectLoadCallback() below), which may read them
     {
         QMutexLocker l(&_imp->projectLock);
         _imp->fileFormat = projectFormat;
+        _imp->fileHasGuiData = hasGuiData;
+        _imp->fileLoadedWithErrors = ret.dataLost;
     }
 
     Format f;
@@ -761,10 +797,8 @@ Project::saveProject_imp(const QString & path,
             ++_imp->waitingSaves;
             const unsigned int resetCount = _imp->resetCount;
             l.unlock();
-            std::unique_ptr<PythonGILUnlocker> gilUnlocker;
-            if ( Py_IsInitialized() && PyGILState_Check() ) {
-                gilUnlocker.reset(new PythonGILUnlocker);
-            }
+            std::optional<PythonGILUnlocker> gilUnlocker;
+            gilUnlocker.emplace(); // if this thread holds the GIL; reset() below
             l.relock();
             while (_imp->isSavingProject) {
                 if ( !_imp->isSavingProjectCond.wait(&_imp->isSavingProjectMutex, 50) && isMainThread ) {
@@ -2268,7 +2302,7 @@ Project::save(ProjectSerialization* serializationObject) const
     serializationObject->initialize(this);
 }
 
-bool
+NodesRestoreStatus
 Project::load(const ProjectSerialization & obj,
               const QString& name,
               const QString& path,
@@ -2558,10 +2592,7 @@ Project::stopAutoSave()
     // As saveProject_imp() waits for an auto-save (#825): the auto-save may need the main thread (e.g. its
     // beforeProjectSave or onProjectSave callback shows a dialog) and the Python lock. Serve the events,
     // but not user input.
-    std::unique_ptr<PythonGILUnlocker> gilUnlocker;
-    if ( Py_IsInitialized() && PyGILState_Check() ) {
-        gilUnlocker.reset(new PythonGILUnlocker);
-    }
+    PythonGILUnlocker gilUnlocker; // if this thread holds the GIL
     for (std::list<std::shared_ptr<QFutureWatcher<void> > >::const_iterator it = futures.begin(); it != futures.end(); ++it) {
         while ( !(*it)->isFinished() ) {
             QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents, 50);
@@ -2801,10 +2832,7 @@ Project::quitAnyProcessingForAllNodes_blocking()
         // app.closeProject() called from a script (#1575), as in saveProject_imp(). Nothing below touches Python
         // state: the threads take the GIL with PythonGILLocker. The callers run the onProjectClose callback
         // afterwards, with the GIL held again.
-        std::unique_ptr<PythonGILUnlocker> gilUnlocker;
-        if ( Py_IsInitialized() && PyGILState_Check() ) {
-            gilUnlocker.reset(new PythonGILUnlocker);
-        }
+        PythonGILUnlocker gilUnlocker; // if this thread holds the GIL
         for (NodesList::const_iterator it = nodesToWatch.begin(); it != nodesToWatch.end(); ++it) {
             (*it)->quitAnyProcessing_blocking(false);
         }
@@ -2866,6 +2894,8 @@ Project::doResetEnd(bool aboutToQuit)
             _imp->autoSetProjectFormatPendingReaders.clear();
             _imp->hasProjectBeenSavedByUser = false;
             _imp->fileFormat = eProjectFileFormatNone;
+            _imp->fileHasGuiData = false;
+            _imp->fileLoadedWithErrors = false;
             _imp->projectCreationTime = QDateTime::currentDateTime();
             _imp->setProjectFilename(NATRON_PROJECT_UNTITLED);
             _imp->setProjectPath("");
