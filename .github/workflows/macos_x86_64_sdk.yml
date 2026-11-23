@@ -169,6 +169,9 @@ jobs:
       - name: Result
         id: result
         if: always()
+        env:
+          STAGE: ${{ inputs.stage }}
+          LAST_STAGE: ${{ inputs.last_stage }}
         run: |
           if [ "${{ steps.find.outputs.what }}" = reuse ]; then
             echo "sdk=${{ steps.find.outputs.name }}" >> "$GITHUB_OUTPUT"
@@ -177,7 +180,7 @@ jobs:
             echo "sdk=natron-sdk-macos-x86_64-$SDK_KEY_SHORT" >> "$GITHUB_OUTPUT"
             echo "sdk_run_id=$GITHUB_RUN_ID" >> "$GITHUB_OUTPUT"
           elif [ "${{ steps.provision.outputs.finished }}" = false ]; then
-            if [ "${{ inputs.stage }}" -ge "${{ inputs.last_stage }}" ]; then
+            if [ "$STAGE" -ge "$LAST_STAGE" ]; then
               echo "::error::the SDK is not finished after the last stage (${{ inputs.last_stage }}): add stages to macos_x86_64.yml"
               exit 1
             fi
