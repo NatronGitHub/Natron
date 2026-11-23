@@ -334,6 +334,11 @@ foreach(_natron_gui_test ${NatronGuiTests_SCRIPTS})
             "OFX_PLUGIN_PATH=${_natron_gui_test_ofx_path}")
     endif()
 endforeach()
+# the PyPlug that test_pyplug_export_version.py exports (#1527)
+if(TEST gui.pyplug_export_version)
+    set_property(TEST gui.pyplug_export_version APPEND PROPERTY ENVIRONMENT
+        "NATRON_PLUGIN_PATH=${CMAKE_CURRENT_SOURCE_DIR}/data/pyplugs;PYTHONDONTWRITEBYTECODE=1")
+endif()
 
 # Undo groups do nothing in background mode (App.undoGroup(), #1455): NatronRenderer runs the script,
 # which exits with natron.quit(status).
