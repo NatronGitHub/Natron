@@ -24,8 +24,9 @@ natron.quit(status): 0 on success, 1 on failure.
 
 The script builds a ladder: each node has its two inputs connected to the previous node, so
 2^n paths lead from the n-th node to the first one. The cycle check of a connection
-(Node::isNodeUpstream()) visited a node once per path: with LEVELS = 40 the last connections
-would take days, and the test ends on its timeout. It now visits each node once.
+(Node::isNodeUpstream()) visited a node once per path, so each level about doubled the time of
+a connection: with LEVELS = 30 the ladder takes more than MAX_SECONDS and the test fails. It now
+visits each node once.
 
 The nodes are Groups with two Input nodes, so that no OpenFX plug-in is needed.
 """
@@ -35,16 +36,23 @@ import time
 import NatronEngine
 from NatronEngine import natron
 
-LEVELS = 40
-MAX_SECONDS = 30  # the whole ladder takes well under a second
+LEVELS = 30
+MAX_SECONDS = 10  # the whole ladder takes well under a second
+
+
+def check(condition, message=""):
+    """Like assert, but not removed by python -O."""
+    if not condition:
+        raise AssertionError(message)
 
 
 def two_input_group(app):
     """Returns a new Group node with two inputs."""
     group = app.createNode("fr.inria.built-in.Group")
-    assert group is not None
-    assert app.createNode("fr.inria.built-in.Input", -1, group) is not None
-    assert group.getMaxInputCount() == 2, group.getMaxInputCount()
+    check(group is not None, "no Group node")
+    second = app.createNode("fr.inria.built-in.Input", -1, group)
+    check(second is not None, "no Input node")
+    check(group.getMaxInputCount() == 2, group.getMaxInputCount())
     return group
 
 
@@ -52,26 +60,31 @@ status = 1
 try:
     app = natron.getInstance(0)
     first = app.createNode("fr.inria.built-in.Dot")
-    assert first is not None
+    check(first is not None, "no Dot node")
     start = time.time()
     previous = first
     for level in range(LEVELS):
         node = two_input_group(app)
-        assert node.connectInput(0, previous), level
-        assert node.connectInput(1, previous), level
+        connected = node.connectInput(0, previous)
+        check(connected, level)
+        connected = node.connectInput(1, previous)
+        check(connected, level)
         previous = node
-    elapsed = time.time() - start
-    assert elapsed < MAX_SECONDS, "connecting %d levels took %.1f s" % (LEVELS, elapsed)
+        # stop as soon as the time is over: the next levels would each take twice as long
+        elapsed = time.time() - start
+        check(elapsed < MAX_SECONDS, "connecting %d levels took %.1f s" % (level + 1, elapsed))
 
     # the check still refuses a cycle, through any of the paths
-    assert not first.canConnectInput(0, previous)
-    assert not first.connectInput(0, previous)
-    assert first.getInput(0) is None
+    check(not first.canConnectInput(0, previous), "a cycle can be connected")
+    connected = first.connectInput(0, previous)
+    check(not connected, "a cycle was connected")
+    check(first.getInput(0) is None, "a cycle was connected")
     # and still accepts a node that is not downstream
     other = app.createNode("fr.inria.built-in.Dot")
-    assert other.canConnectInput(0, previous)
-    assert other.connectInput(0, previous)
-    assert not first.canConnectInput(0, other)
+    check(other.canConnectInput(0, previous), "a valid connection is refused")
+    connected = other.connectInput(0, previous)
+    check(connected, "a valid connection failed")
+    check(not first.canConnectInput(0, other), "a cycle can be connected")
     status = 0
 except BaseException:
     import traceback
