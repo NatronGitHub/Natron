@@ -308,7 +308,9 @@ public:
      * @brief For the tests only (Tests/RenderThreads_Test.cpp): if churnRenderThreads, adjustNumberOfThreads()
      * stops and starts a render thread alternately; if delayUs > 0, the render threads wait delayUs microseconds
      * after taking a frame and before adjusting the number of threads, and stopRender() between telling the
-     * threads to quit and waiting for them. This widens the windows of the races of #248.
+     * threads to quit and waiting for them. This widens the windows of the races of #248. Also, before waiting
+     * for frames, the scheduler waits until the render is finished or aborted (at most 5 s; only an FFA render
+     * finishes this way, so this is meant for FFA renders), to open the window of #1607.
      **/
     static void setTestHooks(bool churnRenderThreads, int delayUs);
 #endif

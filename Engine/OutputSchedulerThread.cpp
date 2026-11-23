@@ -1519,6 +1519,13 @@ OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
         }
 
         if (!renderFinished) {
+            // The end of an FFA render (renderFinished, then its fake frame, which stays in buf) may have come since
+            // renderFinished was read above, and the reads of buf have cleared bufChanged since (#1607)
+            QMutexLocker l(&_imp->renderFinishedMutex);
+            renderFinished = _imp->renderFinished;
+        }
+
+        if (!renderFinished) {
             assert(state == eThreadStateActive);
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
             if (gTestDelayUs > 0) {
