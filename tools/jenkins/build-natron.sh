@@ -195,8 +195,8 @@ if [ "$NATRON_BUILD_SYSTEM" = "cmake" ]; then
     # CMake build: configure, build, "cmake --install" with the PORTABLE layout into a
     # staging directory, then copy the result to the flat layout that the installer scripts
     # read from $TMP_BINARIES_PATH: bin/ (with Info.plist and PkgInfo on macOS), Resources/,
-    # PyPlugs/, natron_convert_project.py, docs/natron/, and on macOS the DMG background. CMake generates the Python
-    # bindings during the build.
+    # PyPlugs/, natron_convert_project.py, docs/natron/, and on macOS the DMG background.
+    # CMake generates the Python bindings during the build.
     CMAKE_BUILD_DIR="$TMP_PATH/Natron-cmake-build"
     CMAKE_INSTALL_DIR="$TMP_PATH/Natron-cmake-install"
     # cmake is a native program on Windows: give it Windows paths
