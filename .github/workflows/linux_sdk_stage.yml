@@ -70,13 +70,14 @@ jobs:
         IMAGE: ${{ inputs.image }}
         HASH: ${{ inputs.hash }}
         REBUILD: ${{ inputs.rebuild }}
-        ARCH: ${{ matrix.arch }}
+        # not ARCH: common.sh uses it (x86_64, aarch64)
+        DOCKER_ARCH: ${{ matrix.arch }}
       run: |
         cd tools/docker/natron-sdk-rockylinux
-        PREPARE_ONLY=1 ./build.sh "$ARCH"
+        PREPARE_ONLY=1 ./build.sh "$DOCKER_ARCH"
         # shellcheck disable=SC2086
         n=$(./split-stages.sh Dockerfile $STAGE_ENDS)
-        tag="$IMAGE:$HASH-$ARCH"
+        tag="$IMAGE:$HASH-$DOCKER_ARCH"
         if [ "$STAGE" = final ]; then
             file=Dockerfile.final
             arg="INTERMEDIATE=$tag-stage$n"
@@ -91,7 +92,7 @@ jobs:
             echo "$out exists (a re-run): not rebuilt"
             exit 0
         fi
-        cache="type=registry,ref=$IMAGE:buildcache-$ARCH-$STAGE"
+        cache="type=registry,ref=$IMAGE:buildcache-$DOCKER_ARCH-$STAGE"
         opts=(--cache-to "$cache,mode=max,ignore-error=true")
         if [ "$REBUILD" = true ]; then
             # the newest base image and system packages
@@ -104,8 +105,8 @@ jobs:
             # the next stage, which starts FROM it, can reuse its cache too
             opts+=(--build-arg SOURCE_DATE_EPOCH=0)
         fi
-        time docker buildx build --platform "linux/$ARCH" -f "$file" --build-arg "$arg" \
+        time docker buildx build --platform "linux/$DOCKER_ARCH" -f "$file" --build-arg "$arg" \
             --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
-            --label "org.opencontainers.image.description=Natron SDK (Rocky Linux $ROCKY, $ARCH), tools/docker/natron-sdk-rockylinux, $HASH" \
+            --label "org.opencontainers.image.description=Natron SDK (Rocky Linux $ROCKY, $DOCKER_ARCH), tools/docker/natron-sdk-rockylinux, $HASH" \
             "${opts[@]}" --progress plain -t "$out" --push .
         df -h /
