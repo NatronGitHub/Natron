@@ -236,7 +236,7 @@ Settings::initializeKnobsGeneral()
     assert(visibleHostEntries.size() == (int)eKnownHostNameCatalyst);
     visibleHostEntries.push_back(ChoiceOption("com.sony.Catalyst.Edit", "Sony Catalyst Edit", ""));
     assert(visibleHostEntries.size() == (int)eKnownHostNameVegas);
-    visibleHostEntries.push_back(ChoiceOption("com.sonycreativesoftware.vegas", "Sony Vegas", ""));
+    visibleHostEntries.push_back(ChoiceOption("com.vegascreativesoftware.vegas", "VEGAS Pro", ""));
     assert(visibleHostEntries.size() == (int)eKnownHostNameToxik);
     visibleHostEntries.push_back(ChoiceOption("Autodesk Toxik", "Toxik", ""));
     assert(visibleHostEntries.size() == (int)eKnownHostNameScratch);
