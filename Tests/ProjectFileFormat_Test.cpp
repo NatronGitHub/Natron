@@ -29,20 +29,33 @@
 
 #include <gtest/gtest.h>
 
+#include <condition_variable>
 #include <cstdlib>
 #include <cstring>
+#include <algorithm>
 #include <fstream>
+#include <functional>
 #include <vector>
 #include <iostream>
+#include <memory>
+#include <mutex>
 #include <sstream>
 #include <string>
+#include <thread>
 
 #include <QByteArray>
 #include <QDateTime>
+#include <QDir>
 #include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
+#include <QRegularExpression>
+#include <QSaveFile>
 #include <QTemporaryDir>
+
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
@@ -58,6 +71,12 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Global/FStreamsSupport.h"
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
+#include "Engine/CLArgs.h"
+#include "Engine/Curve.h"
+#include "Engine/CurveSerialization.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/LogEntry.h"
+#include "Engine/Node.h"
 #include "Engine/PortableBinaryArchive.h"
 #include "Engine/Project.h"
 #include "Engine/ProjectSerialization.h"
@@ -491,6 +510,11 @@ TEST(ProjectFileFormat, AutoSaveNames)
     }
     EXPECT_EQ( -1, Project::findAutoSaveSuffix( QString::fromUtf8("foo.ntp") ) );
     EXPECT_EQ( -1, Project::findAutoSaveSuffix( QString::fromUtf8("foo.ntp.~1~") ) );
+    // the temporary files of a save (QSaveFile: <name>.XXXXXX), e.g. left by a crash, are not auto-saves (#1590)
+    const char* notAutoSaves[] = { "foo.ntp.binautosave.Ab3xYz", "Untitled.ntp.binautosave.123456789.Ab3xYz", "foo.ntp.autosave.Ab3xYz", "foo.ntp.binautosave." };
+    for (const char* n : notAutoSaves) {
+        EXPECT_EQ( -1, Project::findAutoSaveSuffix( QString::fromUtf8(n) ) ) << n;
+    }
 
     // findAutoSaveForProject() finds the binary auto-save of a project, and also a text one by 2.5
     QTemporaryDir tmpDir;
@@ -532,6 +556,21 @@ TEST(ProjectFileFormat, AutoSaveNames)
     EXPECT_FALSE( project->findAutoSaveForProject( dir, QString::fromUtf8("c.ntp"), &found ) );
     EXPECT_TRUE( QFile::exists( dir + QString::fromUtf8("c.ntp.binautosave") ) );
     EXPECT_TRUE( project->findAutoSaveForProject( dir, QString::fromUtf8("c.ntp"), &found, true /*includeOlderThanProject*/ ) );
+
+    // the actual temporary file of an auto-save, while it is written (none on Linux, which has unnamed temporary files)
+    for (const char* n : { "d.ntp.binautosave", "Untitled.ntp.binautosave.123456789" }) {
+        const QString autoSave = QString::fromUtf8(n);
+        QDir d(dir + QString::fromUtf8("d"));
+        ASSERT_TRUE( d.mkpath( d.path() ) );
+        QSaveFile f( d.filePath(autoSave) );
+        ASSERT_TRUE( f.open(QIODevice::WriteOnly) );
+        ASSERT_EQ( (qint64)1, f.write("x", 1) );
+        ASSERT_TRUE( f.flush() );
+        Q_FOREACH(const QString &entry, d.entryList(QDir::Files | QDir::Hidden | QDir::NoDotAndDotDot)) {
+            EXPECT_EQ( -1, Project::findAutoSaveSuffix(entry) ) << entry.toStdString();
+        }
+        f.cancelWriting();
+    }
 }
 
 // The text auto-save of a project, written by Natron 2.5, is restored as a text project.
@@ -613,6 +652,220 @@ TEST(ProjectFileFormat, DamagedFiles)
     EXPECT_FALSE( loadAndCaptureOutput(project, dir, QString::fromUtf8("future.ntp"), &output) );
     EXPECT_NE( std::string::npos, output.find("This binary project was saved with a more recent version") ) << output;
     EXPECT_EQ( std::string::npos, output.find("damaged") ) << output;
+    project->resetProject();
+}
+
+namespace {
+// Replaces the first occurrence of a pattern after the anchors (each one after the previous one),
+// which must all be there.
+QByteArray
+replaceAfter(QByteArray data,
+             const std::vector<QByteArray>& anchors,
+             const QByteArray& before,
+             const QByteArray& after)
+{
+    int a = 0;
+    for (const QByteArray& anchor : anchors) {
+        a = data.indexOf(anchor, a);
+        EXPECT_NE(-1, a) << "not found: " << anchor.toStdString();
+        if (a < 0) {
+            return data;
+        }
+        a += anchor.size();
+    }
+    const int b = data.indexOf(before, a);
+    EXPECT_NE(-1, b) << "not found: " << before.toStdString();
+
+    return (b < 0) ? data : data.replace(b, before.size(), after);
+}
+
+int
+countOccurrences(const std::string& s,
+                 const std::string& what)
+{
+    int n = 0;
+
+    for (std::size_t p = s.find(what); p != std::string::npos; p = s.find(what, p + 1)) {
+        ++n;
+    }
+
+    return n;
+}
+
+// A <Curve> element with a keyframe, as saved after the first Curve of an XML archive (which also
+// has the class information as attributes).
+QByteArray
+xmlCurveAfterTheFirst()
+{
+    Curve c;
+    c.addKeyFrame( KeyFrame(1., 2.) );
+    std::ostringstream os;
+    {
+        boost::archive::xml_oarchive oa(os, boost::archive::no_header);
+        oa << boost::serialization::make_nvp("Curve", c);
+        oa << boost::serialization::make_nvp("Curve", c);
+    }
+    const std::string s = os.str();
+    const std::size_t start = s.find("<Curve>"), end = s.rfind("</Curve>");
+    const bool found = (end != std::string::npos) && (start < end);
+    EXPECT_TRUE(found) << s;
+
+    return found ? QByteArray::fromStdString( s.substr(start, end + std::strlen("</Curve>") - start) ) : QByteArray();
+}
+
+KnobIPtr
+getKnob(const ProjectPtr& project,
+        const std::string& node,
+        const std::string& knob)
+{
+    NodePtr n = project->getNodeByName(node);
+
+    return n ? n->getKnobByName(knob) : KnobIPtr();
+}
+} // anonymous namespace
+
+// Knob data from the file is checked, in Release builds too (#1612): a damaged or hand-edited
+// project gives an error, or a warning, instead of crashing or allocating gigabytes. The reading
+// code is the same template for both formats, so only the text format is damaged.
+TEST(ProjectFileFormat, InvalidKnobData)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    createTestProject(app);
+    {
+        const std::string a = app->getAppIDString();
+        const std::string script =
+            "g = " + a + ".Group1\n"
+            // negative choice indices: Python can set them
+            "ch = g.createChoiceParam('myChoice', 'My choice')\n"
+            "for o in 'abc': ch.addOption(o, '')\n"
+            "ch.setDefaultValue(1)\n"
+            "ch.setValue(-1)\n"
+            "ch2 = g.createChoiceParam('myChoice2', 'My choice 2')\n"
+            "for o in 'ab': ch2.addOption(o, '')\n"
+            "ch2.setDefaultValue(-1)\n"
+            "ch2.setValue(-1)\n"
+            "g.createButtonParam('myButton', 'My button')\n"
+            "i2 = g.createIntParam('myInt2', 'My int 2')\n"
+            "i2.slaveTo(g.myInt, 0, 0)\n"
+            "g.refreshUserParamsGUI()\n"
+            // a choice of a node (not a user knob), restored by Node::loadKnob()
+            "dc = " + a + ".createNode('" + std::string(PLUGINID_NATRON_DISKCACHE) + "')\n"
+            "fr = dc.getParam('frameRange')\n"
+            "fr.setDefaultValue(2)\n"
+            "fr.setValue(-1)\n";
+        std::string error, output;
+        ASSERT_TRUE( ::Natron::Python::interpretPythonScript(script, &error, &output) ) << error << output;
+    }
+    ASSERT_TRUE( saveCopy(project, dir, QString::fromUtf8("text.ntp"), eProjectFileFormatText) );
+    const QByteArray text = readFile( dir + QString::fromUtf8("text.ntp") );
+    std::string output;
+
+    // A negative choice index is replaced by the default value, or 0 if the default is negative
+    // too, with a warning (once, also in the error log). The link is restored.
+    appPTR->clearErrorLog_mt_safe();
+    EXPECT_TRUE( loadAndCaptureOutput(project, dir, QString::fromUtf8("text.ntp"), &output) ) << output;
+    EXPECT_EQ( 1, countOccurrences(output, "myChoice: Warning: invalid choice index -1, using 1") ) << output;
+    EXPECT_EQ( 1, countOccurrences(output, "myChoice2: Warning: invalid default choice index -1, using 0") ) << output;
+    EXPECT_EQ( 1, countOccurrences(output, "myChoice2: Warning: invalid choice index -1, using 0") ) << output;
+    EXPECT_EQ( 1, countOccurrences(output, "frameRange: Warning: invalid choice index -1, using 2") ) << output;
+    {
+        std::list<LogEntry> log;
+        appPTR->getErrorLog_mt_safe(&log);
+        EXPECT_EQ( 1, std::count_if( log.begin(), log.end(), [](const LogEntry& e) {
+            return e.context == QString::fromUtf8("myChoice") && e.message == QString::fromUtf8("Warning: invalid choice index -1, using 1");
+        } ) );
+    }
+    KnobChoicePtr choice = std::dynamic_pointer_cast<KnobChoice>( getKnob(project, "Group1", "myChoice") );
+    KnobChoicePtr choice2 = std::dynamic_pointer_cast<KnobChoice>( getKnob(project, "Group1", "myChoice2") );
+    KnobChoicePtr frameRange = std::dynamic_pointer_cast<KnobChoice>( getKnob(project, "DiskCache1", "frameRange") );
+    ASSERT_TRUE( bool(choice) );
+    ASSERT_TRUE( bool(choice2) );
+    ASSERT_TRUE( bool(frameRange) );
+    EXPECT_EQ( std::string("b"), choice->getActiveEntry().id );
+    EXPECT_EQ( 0, choice2->getValue() );
+    EXPECT_EQ( 0, choice2->getDefaultValue(0) );
+    EXPECT_EQ( std::string("Manual"), frameRange->getActiveEntry().id );
+    KnobIPtr myInt2 = getKnob(project, "Group1", "myInt2");
+    ASSERT_TRUE( bool(myInt2) );
+    EXPECT_EQ( getKnob(project, "Group1", "myInt"), myInt2->getMaster(0).second );
+
+    // A curve on a knob that can't animate is read, and ignored with a warning.
+    writeFile( dir + QString::fromUtf8("button-curve.ntp"),
+               replaceAfter( text, { QByteArray("<Name>myButton</Name>") }, QByteArray("<HasAnimation>0</HasAnimation>"),
+                             QByteArray("<HasAnimation>1</HasAnimation>\n") + xmlCurveAfterTheFirst() ) );
+    EXPECT_TRUE( loadAndCaptureOutput(project, dir, QString::fromUtf8("button-curve.ntp"), &output) ) << output;
+    EXPECT_EQ( 1, countOccurrences(output, "myButton: Warning: animation saved for a parameter that can't be animated, ignoring it") ) << output;
+    KnobIPtr button = getKnob(project, "Group1", "myButton");
+    ASSERT_TRUE( bool(button) );
+    EXPECT_FALSE( button->isAnimated(0) );
+
+    // A damaged dimension (too small, too large) or type is an error, with the node and the
+    // parameter, for a user knob and for a knob of the node itself.
+    struct Damage
+    {
+        const char* node;
+        const char* knob;
+        const char* before;
+        const char* after;
+        const char* error;
+    };
+    const Damage damages[] = {
+        { "Group1", "myInt", "<Dimension>1</Dimension>", "<Dimension>0</Dimension>", "invalid number of dimensions 0" },
+        { "Group1", "myInt", "<Dimension>1</Dimension>", "<Dimension>4097</Dimension>", "invalid number of dimensions 4097" },
+        { "DiskCache1", "frameRange", "<Type>Choice</Type>", "<Type>NoSuchType</Type>", "unknown parameter type \"NoSuchType\"" },
+    };
+    for (const Damage& d : damages) {
+        SCOPED_TRACE(d.after);
+        writeFile( dir + QString::fromUtf8("damaged.ntp"),
+                   replaceAfter( text, { QByteArray("<Plugin_script_name>") + d.node + "</Plugin_script_name>", QByteArray("<Name>") + d.knob + "</Name>" },
+                                 d.before, d.after ) );
+        EXPECT_FALSE( loadAndCaptureOutput(project, dir, QString::fromUtf8("damaged.ntp"), &output) );
+        EXPECT_NE( std::string::npos, output.find(std::string("Unrecognized or damaged text (XML) project file: node \"") + d.node + "\": parameter \"" +
+                                                  d.knob + "\": " + d.error) ) << output;
+    }
+
+    // A master dimension that the master knob doesn't have: the link isn't restored, and the error says why.
+    writeFile( dir + QString::fromUtf8("link-7.ntp"), replaceAfter( text, { QByteArray("<Name>myInt2</Name>") }, QByteArray("<MasterDimension>0</MasterDimension>"),
+                                                                    QByteArray("<MasterDimension>7</MasterDimension>") ) );
+    EXPECT_FALSE( loadAndCaptureOutput(project, dir, QString::fromUtf8("link-7.ntp"), &output) );
+    EXPECT_NE( std::string::npos, output.find("KnobI::restoreLinks(): Could not restore the link of dimension 0 of Group1/myInt2 (1 dimension(s)) to dimension "
+                                              "7 of node/knob/track Group1/myInt/ (1 dimension(s))") ) << output;
+    myInt2 = getKnob(project, "Group1", "myInt2");
+    ASSERT_TRUE( bool(myInt2) );
+    EXPECT_FALSE( bool( myInt2->getMaster(0).second ) );
+
+    // A dimension that a knob no longer has (e.g. a plug-in reduced the number of dimensions of a
+    // parameter): the link isn't restored, and it is an error only if throwOnFailure is set.
+    {
+        EXPECT_TRUE( loadAndCaptureOutput(project, dir, QString::fromUtf8("text.ntp"), &output) ) << output;
+        NodesList allNodes;
+        project->getNodes_recursive(allNodes, false);
+        const std::map<std::string, std::string> noRenames;
+        myInt2 = getKnob(project, "Group1", "myInt2");
+        ASSERT_TRUE( bool(myInt2) );
+        myInt2->unSlave(0, false);
+        // without throwing (paste, presets), the error is in the error log
+        appPTR->clearErrorLog_mt_safe();
+        myInt2->storeLink(1 /*slave dimension*/, "Group1", "Group1", "", "myInt", 0);
+        EXPECT_NO_THROW( myInt2->restoreLinks(allNodes, noRenames, false) );
+        EXPECT_FALSE( bool( myInt2->getMaster(0).second ) );
+        std::list<LogEntry> log;
+        appPTR->getErrorLog_mt_safe(&log);
+        EXPECT_EQ( 1, std::count_if( log.begin(), log.end(), [](const LogEntry& e) {
+            return e.context == QString::fromUtf8("myInt2") && e.message.contains( QString::fromUtf8("Could not restore the link of dimension 1") );
+        } ) );
+        // with throwOnFailure, the valid links after a bad one are still restored, then it throws
+        myInt2->storeLink(0, "Group1", "Group1", "", "myInt", 1 /*master dimension*/);
+        myInt2->storeLink(0, "Group1", "Group1", "", "myInt", 0);
+        EXPECT_THROW( myInt2->restoreLinks(allNodes, noRenames, true), std::runtime_error );
+        EXPECT_EQ( getKnob(project, "Group1", "myInt"), myInt2->getMaster(0).second );
+    }
+
     project->resetProject();
 }
 
@@ -755,6 +1008,581 @@ TEST(ProjectFileFormat, PythonAPI)
     EXPECT_TRUE( ::Natron::Python::interpretPythonScript(script, &error, &output) ) << error << output;
     app->getProject()->resetProject();
 }
+
+namespace {
+// Waits until n threads reach it (std::barrier is C++20).
+class Barrier
+{
+    std::mutex _mutex;
+    std::condition_variable _cond;
+    const int _n;
+    int _count;
+    int _generation;
+
+public:
+    explicit Barrier(int n)
+        : _n(n)
+        , _count(0)
+        , _generation(0)
+    {
+    }
+
+    void wait()
+    {
+        std::unique_lock<std::mutex> l(_mutex);
+        const int generation = _generation;
+        if (++_count == _n) {
+            _count = 0;
+            ++_generation;
+            _cond.notify_all();
+        } else {
+            _cond.wait(l, [&]() { return generation != _generation; });
+        }
+    }
+};
+
+// The files of dir that are neither one of the names nor one of their backups (<name>.~N~):
+// the temporary files left by the saves.
+QStringList
+strayFiles(const QString& dir,
+           const QStringList& names)
+{
+    QStringList ret;
+    const QRegularExpression backup( QString::fromUtf8("\\.~\\d+~\\z") );
+
+    Q_FOREACH(const QString &entry, QDir(dir).entryList(QDir::Files | QDir::Hidden | QDir::NoDotAndDotDot)) {
+        QString name = entry;
+        name.remove(backup);
+        if ( !names.contains(name) ) {
+            ret.append(entry);
+        }
+    }
+
+    return ret;
+}
+
+// Sets the frame range of the project of the top-level instance, so that its file changes.
+void
+setFrameRange(int first,
+              int last)
+{
+    std::string error, output;
+    EXPECT_TRUE( ::Natron::Python::interpretPythonScript(appPTR->getTopLevelInstance()->getAppIDString()
+                                                          + ".getProjectParam('frameRange').set(" + std::to_string(first) + ", " + std::to_string(last) + ")\n",
+                                                          &error, &output) ) << error << output;
+}
+
+// Sets the "Save versions" preference (the number of backups) while it exists.
+class SaveVersions
+{
+    KnobIntPtr _knob;
+    int _old;
+
+public:
+    explicit SaveVersions(int n)
+        : _knob( std::dynamic_pointer_cast<KnobInt>( appPTR->getCurrentSettings()->getKnobByName("saveVersions") ) )
+        , _old(0)
+    {
+        EXPECT_TRUE( bool(_knob) );
+        if (_knob) {
+            _old = _knob->getValue();
+            _knob->setValue(n);
+        }
+        EXPECT_EQ( n, appPTR->getCurrentSettings()->saveVersions() );
+    }
+
+    ~SaveVersions()
+    {
+        if (_knob) {
+            _knob->setValue(_old);
+        }
+    }
+};
+
+// Sets the save commit hook (see Project::setSaveCommitHookForTesting()) while it exists.
+class SaveCommitHook
+{
+public:
+    explicit SaveCommitHook(const std::function<bool()>& hook)
+    {
+        Project::setSaveCommitHookForTesting(hook);
+    }
+
+    ~SaveCommitHook()
+    {
+        Project::setSaveCommitHookForTesting( std::function<bool()>() );
+    }
+};
+
+// True if the current user can write to path, although it is read-only (root).
+bool
+canWriteReadOnly(const QString& path)
+{
+    if ( QFileInfo(path).isDir() ) {
+        QFile probe( path + QString::fromUtf8("/probe") );
+        if ( probe.open(QIODevice::WriteOnly) ) {
+            probe.close();
+            probe.remove();
+
+            return true;
+        }
+
+        return false;
+    }
+    QFile probe(path);
+
+    return probe.open(QIODevice::Append);
+}
+} // anonymous namespace
+
+// Two projects saved at the same time (two windows, or two processes, e.g. on a render farm) used the same
+// temporary file, $TMPDIR/<milliseconds since epoch>, then renamed it to the project file: a save failed, or
+// wrote a corrupt file (#1590). The saves start at the same time, one in text while the other is in binary.
+TEST(ProjectSave, ConcurrentSaves)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    app->getProject()->resetProject();
+    createTestProject(app);
+    // a second project: an internal instance, as the one of a Precomp node
+    AppInstancePtr app2 = appPTR->newBackgroundInstance(CLArgs(), true);
+    ASSERT_TRUE( bool(app2) );
+
+    struct Target
+    {
+        ProjectPtr project;
+        QString name;
+        QByteArray reference[2];
+        int failures;
+        int mismatches;
+    };
+    const ProjectFileFormatEnum formats[2] = { eProjectFileFormatText, eProjectFileFormatBinary };
+    Target targets[2];
+    targets[0].project = app->getProject();
+    targets[0].name = QString::fromUtf8("a.ntp");
+    targets[1].project = app2->getProject();
+    targets[1].name = QString::fromUtf8("b.ntp");
+    for (Target& t : targets) {
+        t.failures = t.mismatches = 0;
+        // the contents of the files, saved one at a time
+        for (int f = 0; f < 2; ++f) {
+            const QString name = QString::fromUtf8("reference-%1-").arg(f) + t.name;
+            ASSERT_TRUE( saveCopy(t.project, dir, name, formats[f]) );
+            t.reference[f] = readFile(dir + name);
+            ASSERT_FALSE( t.reference[f].isEmpty() );
+        }
+    }
+    ASSERT_TRUE( targets[0].reference[0] != targets[1].reference[0] );
+
+    const int n = 100;
+    Barrier barrier(2);
+    auto run = [&](int index) {
+        Target& t = targets[index];
+        for (int i = 0; i < n; ++i) {
+            const int f = (i + index) % 2;
+            barrier.wait();
+            if ( !saveCopy(t.project, dir, t.name, formats[f]) ) {
+                ++t.failures;
+            } else if ( readFile(dir + t.name) != t.reference[f] ) {
+                ++t.mismatches;
+            }
+        }
+    };
+    std::thread thread0(run, 0);
+    std::thread thread1(run, 1);
+    thread0.join();
+    thread1.join();
+
+    for (const Target& t : targets) {
+        EXPECT_EQ( 0, t.failures ) << "saves of " << t.name.toStdString() << " failed, out of " << n;
+        EXPECT_EQ( 0, t.mismatches ) << "saves of " << t.name.toStdString() << " wrote a wrong file, out of " << n;
+    }
+    QStringList names;
+    for (const Target& t : targets) {
+        names << t.name << QString::fromUtf8("reference-0-") + t.name << QString::fromUtf8("reference-1-") + t.name;
+    }
+    EXPECT_EQ( QStringList(), strayFiles(dir, names) );
+
+    app2->quitNow();
+    app->getProject()->resetProject();
+}
+
+// A save that fails leaves the previous project file as it was, and no temporary file, with an error
+// that names the file.
+TEST(ProjectSave, FailedSaveKeepsThePreviousFile)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("p.ntp");
+    const QString path = dir + name;
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    createTestProject(app);
+    SaveVersions saveVersions(1);
+    ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
+    const QByteArray previous = readFile(path);
+    ASSERT_FALSE( previous.isEmpty() );
+    // change the project, so that a save changes the file
+    setFrameRange(7, 89);
+
+    auto failedSave = [&](const char* what) {
+        QString errorMessage;
+        EXPECT_FALSE( project->saveProject_imp(dir, name, false /*autoSave*/, false /*updateProjectProperties*/, 0, &errorMessage, eProjectFileFormatBinary) ) << what;
+        EXPECT_TRUE( errorMessage.contains(path) ) << what << ": " << errorMessage.toStdString();
+        EXPECT_TRUE( errorMessage.contains( QString::fromUtf8("Save As") ) ) << what << ": " << errorMessage.toStdString();
+        EXPECT_TRUE( readFile(path) == previous ) << what << ": the project file changed";
+        EXPECT_EQ( QStringList(), strayFiles( dir, QStringList(name) ) ) << what;
+        EXPECT_FALSE( QFile::exists( path + QString::fromUtf8(".~1~") ) ) << what;
+    };
+
+    // a read-only file is not replaced
+    const QFileDevice::Permissions permissions = QFile::permissions(path);
+    ASSERT_TRUE( QFile::setPermissions(path, QFileDevice::ReadOwner | QFileDevice::ReadUser | QFileDevice::ReadGroup | QFileDevice::ReadOther) );
+    if ( canWriteReadOnly(path) ) {
+        reportSkipped("the read-only file is writable (root?)");
+    } else {
+        failedSave("read-only file");
+    }
+    ASSERT_TRUE( QFile::setPermissions(path, permissions) );
+
+#ifndef Q_OS_WIN
+    // a read-only directory: the temporary file can't be created (Windows has no read-only directories)
+    const QFileDevice::Permissions dirPermissions = QFile::permissions(tmpDir.path());
+    ASSERT_TRUE( QFile::setPermissions(tmpDir.path(), QFileDevice::ReadOwner | QFileDevice::ExeOwner | QFileDevice::ReadUser | QFileDevice::ExeUser) );
+    if ( canWriteReadOnly( tmpDir.path() ) ) {
+        reportSkipped("the read-only directory is writable (root?)");
+    } else {
+        failedSave("read-only directory");
+    }
+    ASSERT_TRUE( QFile::setPermissions(tmpDir.path(), dirPermissions) );
+#endif
+
+    // and then it saves
+    ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
+    EXPECT_FALSE( readFile(path) == previous );
+    EXPECT_TRUE( readFile( path + QString::fromUtf8(".~1~") ) == previous );
+    project->resetProject();
+}
+
+// The new file is written, the backups are rotated, then the new file can't replace the project file (on Windows,
+// another process has it open; or closing the file fails): the save tries again, then puts the project file and
+// its backups back.
+TEST(ProjectSave, FailedCommitKeepsThePreviousFile)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("p.ntp");
+    const QString path = dir + name;
+    const QString backup1 = path + QString::fromUtf8(".~1~");
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    createTestProject(app);
+    SaveVersions saveVersions(1);
+    setFrameRange(1, 10);
+    ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
+    setFrameRange(1, 20);
+    ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
+    const QByteArray b = readFile(path);
+    ASSERT_FALSE( b == readFile(backup1) );
+
+    // Fails the next count commits.
+    std::shared_ptr<int> failures = std::make_shared<int>(0);
+    SaveCommitHook hook([failures]() {
+        return (*failures)-- <= 0;
+    });
+    auto failCommits = [failures](int count) {
+        *failures = count;
+    };
+
+    // one failure: the save tries again
+    setFrameRange(1, 30);
+    failCommits(1);
+    EXPECT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
+    const QByteArray c = readFile(path);
+    EXPECT_FALSE( c == b );
+    EXPECT_TRUE( readFile(backup1) == b );
+    EXPECT_EQ( QStringList(), strayFiles( dir, QStringList(name) ) );
+    EXPECT_FALSE( QFile::exists( path + QString::fromUtf8(".~2~") ) );
+
+    // every attempt fails
+    setFrameRange(1, 40);
+    failCommits(3);
+    QString errorMessage;
+    EXPECT_FALSE( project->saveProject_imp(dir, name, false /*autoSave*/, false /*updateProjectProperties*/, 0, &errorMessage, eProjectFileFormatBinary) );
+    failCommits(0);
+    EXPECT_TRUE( errorMessage.contains(path) ) << errorMessage.toStdString();
+    EXPECT_TRUE( readFile(path) == c ) << "the project file was not put back";
+    EXPECT_TRUE( readFile(backup1) == b ) << "the backup was not put back";
+    EXPECT_FALSE( QFile::exists( path + QString::fromUtf8(".~2~") ) );
+    EXPECT_EQ( QStringList(), strayFiles( dir, QStringList(name) ) );
+    project->resetProject();
+}
+
+#ifndef Q_OS_WIN
+// The new file can't replace the project file, and the project file can't be put back either (e.g. a network
+// share went away): the error says where the previous version is.
+TEST(ProjectSave, FailedRollbackSaysWhereThePreviousVersionIs)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("p.ntp");
+    const QString path = dir + name;
+    const QString backup1 = path + QString::fromUtf8(".~1~");
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    createTestProject(app);
+    SaveVersions saveVersions(1);
+    ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
+    const QByteArray previous = readFile(path);
+    setFrameRange(5, 55);
+
+    const QFileDevice::Permissions readOnly = QFileDevice::ReadOwner | QFileDevice::ExeOwner | QFileDevice::ReadUser | QFileDevice::ExeUser;
+    {
+        // root can write to a read-only folder: check it in another folder, before the save
+        QTemporaryDir scratch;
+        ASSERT_TRUE( scratch.isValid() );
+        const QFileDevice::Permissions scratchPermissions = QFile::permissions( scratch.path() );
+        ASSERT_TRUE( QFile::setPermissions(scratch.path(), readOnly) );
+        const bool rootCanWrite = canWriteReadOnly( scratch.path() );
+        ASSERT_TRUE( QFile::setPermissions(scratch.path(), scratchPermissions) );
+        if (rootCanWrite) {
+            reportSkipped("a read-only directory is writable (root?)");
+            project->resetProject();
+
+            return;
+        }
+    }
+
+    // the folder becomes read-only after the rotation: the commit and the rollback fail
+    const QFileDevice::Permissions dirPermissions = QFile::permissions( tmpDir.path() );
+    const QString dirPath = tmpDir.path();
+    int calls = 0;
+    QString errorMessage;
+    bool saved;
+    {
+        SaveCommitHook hook([&]() {
+            ++calls;
+            QFile::setPermissions(dirPath, readOnly);
+
+            return false;
+        });
+        saved = project->saveProject_imp(dir, name, false /*autoSave*/, false /*updateProjectProperties*/, 0, &errorMessage, eProjectFileFormatBinary);
+    }
+    ASSERT_TRUE( QFile::setPermissions(dirPath, dirPermissions) );
+    EXPECT_GE(calls, 1) << "the save failed before the rotation: " << errorMessage.toStdString();
+    EXPECT_FALSE(saved);
+    EXPECT_EQ(1, calls) << "a save whose rollback failed must not try again";
+    EXPECT_TRUE( errorMessage.contains(path) ) << errorMessage.toStdString();
+    EXPECT_TRUE( errorMessage.contains( QString::fromUtf8("The previous version of the project is in %1").arg(backup1) ) ) << errorMessage.toStdString();
+    EXPECT_FALSE( QFile::exists(path) );
+    EXPECT_TRUE( readFile(backup1) == previous );
+    project->resetProject();
+}
+#endif
+
+// The "Save versions" preference: the number of backups (.~1~ is the previous version), none with 0.
+TEST(ProjectSave, Backups)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("p.ntp");
+    const QString path = dir + name;
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    createTestProject(app);
+    {
+        // more than 9: .~10~ is older than .~9~ (they were sorted alphabetically)
+        SaveVersions saveVersions(11);
+        std::vector<QByteArray> versions;
+        for (int k = 0; k < 14; ++k) {
+            setFrameRange(1, 100 + k);
+            ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
+            versions.push_back( readFile(path) );
+        }
+        EXPECT_TRUE( readFile(path) == versions[13] );
+        for (int n = 1; n <= 11; ++n) {
+            EXPECT_TRUE( readFile( path + QString::fromUtf8(".~%1~").arg(n) ) == versions[13 - n] ) << "backup " << n;
+        }
+        EXPECT_FALSE( QFile::exists( path + QString::fromUtf8(".~12~") ) );
+    }
+    {
+        // 0: no backups, the old ones are removed
+        SaveVersions saveVersions(0);
+        setFrameRange(1, 200);
+        ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatText) );
+        EXPECT_EQ( eProjectFileFormatText, Project::detectFileFormat(path) );
+        EXPECT_EQ( QStringList(name), QDir(dir).entryList(QDir::Files | QDir::Hidden | QDir::NoDotAndDotDot) );
+    }
+    project->resetProject();
+}
+
+#ifndef Q_OS_WIN
+// A project saved through a symbolic link (latest.ntp -> v012.ntp): the link is kept, its target is saved,
+// with its backups next to it. (On Windows, QFile::link() makes a .lnk shortcut.)
+TEST(ProjectSave, SymbolicLink)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString target = dir + QString::fromUtf8("v012.ntp");
+    const QString link = dir + QString::fromUtf8("latest.ntp");
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    createTestProject(app);
+    SaveVersions saveVersions(1);
+    ASSERT_TRUE( saveCopy(project, dir, QString::fromUtf8("v012.ntp"), eProjectFileFormatBinary) );
+    const QByteArray previous = readFile(target);
+    // a relative link, and a link to it
+    ASSERT_TRUE( QFile::link( QString::fromUtf8("v012.ntp"), link ) );
+    ASSERT_TRUE( QFile::link( link, dir + QString::fromUtf8("current.ntp") ) );
+
+    for (const char* n : { "latest.ntp", "current.ntp" }) {
+        setFrameRange( 1, (int)std::strlen(n) * 10 );
+        const QByteArray before = readFile(target);
+        ASSERT_TRUE( saveCopy(project, dir, QString::fromUtf8(n), eProjectFileFormatBinary) ) << n;
+        EXPECT_TRUE( QFileInfo(link).isSymLink() ) << n;
+        EXPECT_EQ( QFileInfo(target).canonicalFilePath(), QFileInfo(link).canonicalFilePath() ) << n;
+        EXPECT_FALSE( readFile(target) == before ) << n;
+        EXPECT_TRUE( readFile(link) == readFile(target) ) << n;
+        EXPECT_TRUE( readFile( target + QString::fromUtf8(".~1~") ) == before ) << n;
+        EXPECT_FALSE( QFile::exists( link + QString::fromUtf8(".~1~") ) ) << n;
+        EXPECT_FALSE( QFile::exists( dir + QString::fromUtf8("current.ntp.~1~") ) ) << n;
+    }
+    EXPECT_TRUE( QFileInfo( dir + QString::fromUtf8("current.ntp") ).isSymLink() );
+    project->resetProject();
+}
+
+// A loop of symbolic links: a clean error, nothing changes on disk.
+TEST(ProjectSave, SymbolicLinkLoop)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    createTestProject(app);
+    SaveVersions saveVersions(1);
+    ASSERT_TRUE( QFile::link( QString::fromUtf8("b.ntp"), dir + QString::fromUtf8("a.ntp") ) );
+    ASSERT_TRUE( QFile::link( QString::fromUtf8("a.ntp"), dir + QString::fromUtf8("b.ntp") ) );
+    const QStringList before = QDir(dir).entryList(QDir::AllEntries | QDir::System | QDir::Hidden | QDir::NoDotAndDotDot);
+    QString errorMessage;
+    EXPECT_FALSE( project->saveProject_imp(dir, QString::fromUtf8("a.ntp"), false /*autoSave*/, false /*updateProjectProperties*/, 0, &errorMessage, eProjectFileFormatBinary) );
+    EXPECT_TRUE( errorMessage.contains( QString::fromUtf8("too many levels of symbolic links") ) ) << errorMessage.toStdString();
+    EXPECT_TRUE( errorMessage.contains( dir + QString::fromUtf8("a.ntp") ) ) << errorMessage.toStdString();
+    EXPECT_EQ( before, QDir(dir).entryList(QDir::AllEntries | QDir::System | QDir::Hidden | QDir::NoDotAndDotDot) );
+    EXPECT_TRUE( QFileInfo( dir + QString::fromUtf8("a.ntp") ).isSymLink() );
+    EXPECT_TRUE( QFileInfo( dir + QString::fromUtf8("b.ntp") ).isSymLink() );
+    project->resetProject();
+}
+
+// A dangling symbolic link: its target is created. If the folder of the target doesn't exist: a clean error.
+TEST(ProjectSave, DanglingSymbolicLink)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString link = dir + QString::fromUtf8("latest.ntp");
+    const QString target = dir + QString::fromUtf8("v013.ntp");
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    createTestProject(app);
+    SaveVersions saveVersions(1);
+    ASSERT_TRUE( QFile::link( QString::fromUtf8("v013.ntp"), link ) );
+    ASSERT_FALSE( QFile::exists(target) );
+    ASSERT_TRUE( saveCopy(project, dir, QString::fromUtf8("latest.ntp"), eProjectFileFormatBinary) );
+    EXPECT_TRUE( QFileInfo(link).isSymLink() );
+    EXPECT_EQ( eProjectFileFormatBinary, Project::detectFileFormat(target) );
+    EXPECT_FALSE( QFile::exists( target + QString::fromUtf8(".~1~") ) );
+    EXPECT_FALSE( QFile::exists( link + QString::fromUtf8(".~1~") ) );
+
+    const QString link2 = dir + QString::fromUtf8("missing.ntp");
+    ASSERT_TRUE( QFile::link( QString::fromUtf8("no-such-folder/v.ntp"), link2 ) );
+    const QStringList before = QDir(dir).entryList(QDir::AllEntries | QDir::System | QDir::Hidden | QDir::NoDotAndDotDot);
+    QString errorMessage;
+    EXPECT_FALSE( project->saveProject_imp(dir, QString::fromUtf8("missing.ntp"), false /*autoSave*/, false /*updateProjectProperties*/, 0, &errorMessage, eProjectFileFormatBinary) );
+    EXPECT_TRUE( errorMessage.contains(link2) ) << errorMessage.toStdString();
+    EXPECT_EQ( before, QDir(dir).entryList(QDir::AllEntries | QDir::System | QDir::Hidden | QDir::NoDotAndDotDot) );
+    EXPECT_TRUE( QFileInfo(link2).isSymLink() );
+    project->resetProject();
+}
+#endif
+
+#ifdef Q_OS_WIN
+// Another process has the project file open without FILE_SHARE_DELETE (a render, an antivirus): it can't
+// be replaced. The save fails with an error, and the file is as it was.
+TEST(ProjectSave, FileOpenByAnotherProcess)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("p.ntp");
+    const QString path = dir + name;
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    createTestProject(app);
+    SaveVersions saveVersions(1);
+    ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
+    const QByteArray previous = readFile(path);
+    setFrameRange(3, 33);
+
+    const std::wstring nativePath = QDir::toNativeSeparators(path).toStdWString();
+    HANDLE h = CreateFileW(nativePath.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    ASSERT_NE(INVALID_HANDLE_VALUE, h);
+    QString errorMessage;
+    const bool saved = project->saveProject_imp(dir, name, false /*autoSave*/, false /*updateProjectProperties*/, 0, &errorMessage, eProjectFileFormatBinary);
+    CloseHandle(h);
+    EXPECT_FALSE(saved);
+    EXPECT_TRUE( errorMessage.contains(path) ) << errorMessage.toStdString();
+    EXPECT_TRUE( readFile(path) == previous );
+    // the copy of the project file to .~1~ (it can't be renamed while open) was removed by the rollback
+    EXPECT_FALSE( QFile::exists( path + QString::fromUtf8(".~1~") ) );
+    EXPECT_EQ( QStringList(), strayFiles( dir, QStringList(name) ) );
+
+    // then it saves
+    ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatBinary) );
+    EXPECT_FALSE( readFile(path) == previous );
+    EXPECT_TRUE( readFile( path + QString::fromUtf8(".~1~") ) == previous );
+    project->resetProject();
+}
+#endif
+
+#ifndef Q_OS_WIN
+// Saving keeps the permissions of the project file (it was replaced by a new file with the default permissions).
+TEST(ProjectSave, KeepsPermissions)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("p.ntp");
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    project->resetProject();
+    createTestProject(app);
+    ASSERT_TRUE( saveCopy(project, dir, name, eProjectFileFormatText) );
+    const QFileDevice::Permissions permissions = QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ReadUser | QFileDevice::WriteUser | QFileDevice::ReadGroup;
+    ASSERT_TRUE( QFile::setPermissions(dir + name, permissions) );
+    for (ProjectFileFormatEnum format : { eProjectFileFormatText, eProjectFileFormatBinary }) {
+        ASSERT_TRUE( saveCopy(project, dir, name, format) );
+        EXPECT_EQ( format, Project::detectFileFormat(dir + name) );
+        EXPECT_EQ( permissions, QFile::permissions(dir + name) ) << "format " << (int)format;
+    }
+    project->resetProject();
+}
+#endif
 
 // Sizes and times of a large project in both formats, and the same text -> binary -> text check
 // with a real project, which may be saved by an old version and use OpenFX plug-ins. Runs only if

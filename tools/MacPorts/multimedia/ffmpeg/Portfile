@@ -18,7 +18,7 @@ conflicts           ffmpeg-devel
 
 # Please increase the revision of mpv whenever ffmpeg's version is updated.
 version             9.0.2
-revision            3
+revision            5
 epoch               1
 
 license             LGPL-2.1+
@@ -129,6 +129,18 @@ if {${os.platform} eq "darwin" && ${os.major} < 17} {
 
 # error: call to undeclared function 'VTRegisterProfessionalVideoWorkflowVideoEncoders' on 10.9
 patchfiles-append   patch-libavcodec-videotoolboxenc.c.diff
+
+# Natron: saturate the row outputs of the C 10-bit int16 simple IDCT, as the
+# x86 SIMD does: arm64 decoded 10-bit DNxHD/DNxHR with full white with black
+# 1-pixel columns (https://github.com/NatronGitHub/openfx-io/issues/266).
+# Not yet submitted upstream.
+patchfiles-append   patch-libavcodec-simple_idct10-saturate.diff
+
+# Natron: store the dnxhd encoder's per-macroblock qscale in 16 bits: it wrapped
+# above 255 (qmax is 1024), and DNxHR 444 of high-entropy images, or -mbd rd with
+# 10-bit profiles, aborted (https://github.com/NatronGitHub/openfx-io/issues/267).
+# Not yet submitted upstream.
+patchfiles-append   patch-libavcodec-dnxhdenc-mb_qscale.diff
 
 # enable auto configure of asm optimizations
 # requires Xcode 3.1 or better on Leopard

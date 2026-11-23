@@ -36,6 +36,7 @@
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/GPUContextPool.h"
+#include "Engine/GraphDepthGuard.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoDrawableItem.h"
@@ -322,6 +323,13 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
     EffectInstancePtr effect = node->getEffectInstance();
 
     assert(effect);
+
+    // This recurses upstream (through treeRecurseFunctor), once per node: stop before the stack
+    // overflows (#1440)
+    GraphDepthGuard depthGuard( eGraphTraversalRequest, effect.get() );
+    if ( depthGuard.isTooDeep() ) {
+        return eStatusFailed;
+    }
 
     if (effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
         /*
@@ -628,54 +636,58 @@ typedef std::map<NodePtr,FindDependenciesNode> FindDependenciesMap;
 /**
  * @brief Builds a list with all nodes upstream of the given node (including this node) and all its dependencies through expressions as well (which
  * also may be recursive)
+ *
+ * The nodes that only the expressions depend on get render args, so that during the render their parameters are read at
+ * the time and view of the render, but they are not marked as recursed: their inputs are not visited (an expression reads
+ * parameters, not images), unless they are also upstream of the tree root, in which case they are recursed when reached
+ * through the inputs.
  **/
 static void
 getAllUpstreamNodesRecursiveWithDependencies_internal(const NodePtr& node,
                                                       FindDependenciesMap& finalNodes)
 {
-    //There may be cases where nodes gets added to the finalNodes in getAllExpressionDependenciesRecursive(), but we still
-    //want to recurse upstream for them too
-    bool foundButDidntRecursivelyCallUpstream = false;
-
     if ( !node || !node->isNodeCreated() ) {
         return;
     }
 
     {
         FindDependenciesMap::iterator found = finalNodes.find(node);
-        if (found != finalNodes.end()) {
-            if (found->second.recursed) {
-                ++found->second.visitCounter;
-                //We already called getAllUpstreamNodesRecursiveWithDependencies on its inputs
-                return;
-            } else {
-                //Now we set the recurse flag below
-                finalNodes.erase(found);
-                foundButDidntRecursivelyCallUpstream = true;
-            }
-
+        if ( (found != finalNodes.end()) && found->second.recursed ) {
+            ++found->second.visitCounter;
+            //We already called getAllUpstreamNodesRecursiveWithDependencies on its inputs
+            return;
         }
     }
-    
+
     {
-        //Add this node to the set
-        FindDependenciesNode n;
+        //Add this node to the set, or mark it as recursed if it was only added as an expression dependency
+        FindDependenciesNode& n = finalNodes[node];
         n.recursed = true;
         n.visitCounter = 1;
-        finalNodes.insert(std::make_pair(node,n));
     }
 
-    //If we already called it, don't do it again
-    if (!foundButDidntRecursivelyCallUpstream) {
+    // Also add all expression dependencies but mark them as we did not recursed on them yet.
+    // This is done even if the node was already added as an expression dependency: getAllExpressionDependenciesRecursive()
+    // only followed the parameters that the expressions read, not all the parameters of the node.
+    {
         std::set<NodePtr> expressionsDeps;
         node->getEffectInstance()->getAllExpressionDependenciesRecursive(expressionsDeps);
 
-        //Also add all expression dependencies but mark them as we did not recursed on them yet
+        const AppInstancePtr app = node->getApp();
         for (std::set<NodePtr>::iterator it = expressionsDeps.begin(); it != expressionsDeps.end(); ++it) {
+            const NodePtr& dep = *it;
+            // Skip the nodes that are not in the graph (being created, deleted or destroyed), and those of another
+            // project than the node whose expression reads them (e.g. app2.Blur1 read from app1): that project has its
+            // own timeline and renders. The nodes of a Precomp's project are kept when the expressions of that project
+            // read them, since they are compared with the app of the node whose expressions are read.
+            if ( !dep || !dep->isNodeCreated() || !dep->isActivated() || !dep->getEffectInstance() || (dep->getApp() != app) ) {
+                continue;
+            }
             FindDependenciesNode n;
             n.recursed = false;
             n.visitCounter = 0;
-            finalNodes.insert(std::make_pair(node, n));
+            // Does nothing if the node is already in the map (e.g. this node itself, or a node upstream of it).
+            finalNodes.insert( std::make_pair(dep, n) );
         }
     }
 

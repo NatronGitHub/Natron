@@ -2269,8 +2269,8 @@ EIGEN_DONT_INLINE void gemm_pack_lhs<Scalar, Index, DataMapper, Pack1, Pack2, Pa
   bool gone_half = false, gone_quarter = false, gone_last = false;
 
   Index i = 0;
-  int pack = Pack1;
-  int psize = PacketSize;
+  Index pack = Pack1;
+  Index psize = PacketSize;
   while(pack>0)
   {
     Index remaining_rows = rows-i;
@@ -2290,21 +2290,21 @@ EIGEN_DONT_INLINE void gemm_pack_lhs<Scalar, Index, DataMapper, Pack1, Pack2, Pa
           {
             if (psize == PacketSize) {
               PacketBlock<Packet> kernel;
-              for (int p = 0; p < psize; ++p) kernel.packet[p] = lhs.template loadPacket<Packet>(i+p+m, k);
+              for (Index p = 0; p < psize; ++p) kernel.packet[p] = lhs.template loadPacket<Packet>(i+p+m, k);
               ptranspose(kernel);
-              for (int p = 0; p < psize; ++p) pstore(blockA+count+m+(pack)*p, cj.pconj(kernel.packet[p]));
+              for (Index p = 0; p < psize; ++p) pstore(blockA+count+m+(pack)*p, cj.pconj(kernel.packet[p]));
             } else if (HasHalf && psize == HalfPacketSize) {
               gone_half = true;
               PacketBlock<HalfPacket> kernel_half;
-              for (int p = 0; p < psize; ++p) kernel_half.packet[p] = lhs.template loadPacket<HalfPacket>(i+p+m, k);
+              for (Index p = 0; p < psize; ++p) kernel_half.packet[p] = lhs.template loadPacket<HalfPacket>(i+p+m, k);
               ptranspose(kernel_half);
-              for (int p = 0; p < psize; ++p) pstore(blockA+count+m+(pack)*p, cj.pconj(kernel_half.packet[p]));
+              for (Index p = 0; p < psize; ++p) pstore(blockA+count+m+(pack)*p, cj.pconj(kernel_half.packet[p]));
             } else if (HasQuarter && psize == QuarterPacketSize) {
               gone_quarter = true;
               PacketBlock<QuarterPacket> kernel_quarter;
-              for (int p = 0; p < psize; ++p) kernel_quarter.packet[p] = lhs.template loadPacket<QuarterPacket>(i+p+m, k);
+              for (Index p = 0; p < psize; ++p) kernel_quarter.packet[p] = lhs.template loadPacket<QuarterPacket>(i+p+m, k);
               ptranspose(kernel_quarter);
-              for (int p = 0; p < psize; ++p) pstore(blockA+count+m+(pack)*p, cj.pconj(kernel_quarter.packet[p]));
+              for (Index p = 0; p < psize; ++p) pstore(blockA+count+m+(pack)*p, cj.pconj(kernel_quarter.packet[p]));
 	    }
           }
           count += psize*pack;

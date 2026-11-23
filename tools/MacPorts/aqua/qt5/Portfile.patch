@@ -1,16 +1,16 @@
---- Portfile.orig	2026-11-20 09:04:34
-+++ Portfile	2026-11-20 22:06:33
-@@ -88,6 +88,10 @@
- 
+--- Portfile.orig	2026-11-21 11:18:04
++++ Portfile	2026-11-21 18:52:03
+@@ -89,6 +89,10 @@
      # Backport fix for bundled libpng
      patchfiles-append   patch-qtwebengine-libpng.diff
-+
+ 
 +    # Natron: the macOS 27 SDK no longer declares the kSBXProfile* constants
 +    # in <sandbox.h> (libsystem_sandbox still exports them)
 +    patchfiles-append   patch-qtwebengine-sandbox-kSBXProfile-macos27.diff
- 
++
      # fixes for newer LLVM/Clang; Sequoia or newer
      if {${os.platform} eq "darwin" && ${os.major} >= 24} {
+         patchfiles-append \
 @@ -249,7 +253,7 @@
          {"Qt Core" "Qt GUI" "Qt Network" "Qt SQL" "Qt Test" "Qt Widgets" "Qt Concurrent" "Qt D-Bus" "Qt OpenGL" "Qt Platform Headers" "Qt Print Support" "Qt XML"}
          ""
@@ -34,3 +34,41 @@
              # find the Rez program
              patchfiles-append patch-find_rez.diff
              post-patch {
+@@ -2360,3 +2371,37 @@
+         }
+     }
+ }
++
++# Natron: MacPorts only installs a port from a binary archive if the port's own ports tree lists
++# archive sites, which this overlay doesn't: every qt5 subport would be built from source, and
++# qt5-qtwebengine needs a full Xcode to build (use_xcode yes), which Natron's macOS 14 SDK image
++# doesn't have (Command Line Tools only). The subports listed here are unchanged in the overlay,
++# so they may come from MacPorts' archives (when there is one for this macOS and these variants);
++# qt5-qtbase, which has Natron patches, is always built here. The only Natron patch outside
++# qtbase, ${natron_archive_build_only_patches}, only fixes the qtwebengine build with the macOS 27
++# SDK, not what it installs. A Natron change to one of these subports must bump its revision
++# (MacPorts then finds no archive for it), or remove it from the list. tools/MacPorts/check.sh
++# reports a patch file named on any line that Portfile.patch adds (patchfiles-append lines and
++# their continuations) unless it is for qtbase (patch-qtbase-*) or in
++# natron_archive_build_only_patches. Not detected (the same list as in check.sh): configure
++# arguments, variants, revisions, build settings, and patch files whose names are built from
++# variables.
++# Only with MacPorts' standard prefix and directories, for which the archives are built.
++# No Qt6 counterpart needed: Natron's Qt6 builds use the upstream qt6 ports, not this overlay.
++set natron_archive_build_only_patches {patch-qtwebengine-sandbox-kSBXProfile-macos27.diff}
++set natron_archive_subports {
++    qt5 qt5-qt3d qt5-qtcharts qt5-qtconnectivity qt5-qtdatavis3d qt5-qtdeclarative qt5-qtgamepad
++    qt5-qtgraphicaleffects qt5-qtimageformats qt5-qtlocation qt5-qtlottie qt5-qtmacextras
++    qt5-qtmultimedia qt5-qtnetworkauth qt5-qtquick3d qt5-qtquickcontrols qt5-qtquickcontrols2
++    qt5-qtquicktimeline qt5-qtremoteobjects qt5-qtscript qt5-qtscxml qt5-qtsensors qt5-qtserialbus
++    qt5-qtserialport qt5-qtspeech qt5-qtsvg qt5-qttools qt5-qttranslations qt5-qtvirtualkeyboard
++    qt5-qtwebchannel qt5-qtwebengine qt5-qtwebsockets qt5-qtwebview qt5-qtxmlpatterns
++    qt5-sqlite-plugin
++}
++if {${subport} in ${natron_archive_subports}
++    && ${prefix} eq "/opt/local"
++    && ${frameworks_dir} eq "/opt/local/Library/Frameworks"
++    && ${applications_dir} eq "/Applications/MacPorts"} {
++    source [getportresourcepath ${porturl} port1.0/fetch/archive_sites.tcl yes]
++    archive_sites macports_archives::tbz2
++}

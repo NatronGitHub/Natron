@@ -100,7 +100,9 @@ elif [ "$PKGOS" = "Windows" ]; then
     BUILDID="-Wl,--build-id"
 elif [ "$PKGOS" = "OSX" ]; then
     # see https://github.com/Homebrew/homebrew-core/issues/32765
-    CXXFLAGS_EXTRA="-isysroot `xcodebuild -version -sdk macosx Path 2>/dev/null`"
+    # xcrun works with the Command Line Tools alone (xcodebuild needs Xcode, and an empty
+    # path would make -isysroot swallow the next option)
+    CXXFLAGS_EXTRA="-isysroot $(xcrun --sdk macosx --show-sdk-path)"
 fi
 
 if [ "${DEBUG_SCRIPTS:-}" != "1" ] && [ -d "$TMP_BINARIES_PATH/OFX/Plugins" ]; then
@@ -193,11 +195,12 @@ function plugins_use_cmake() {
 # found, or if OpenMP was requested but not found.
 # Paths given as arguments must already be in the form cmake expects (on Windows: cygpath -m).
 function ofx_cmake_build() {
-    # $CXX may carry flags (e.g. "clang++-mp-22 -stdlib=libc++ -std=c++20"): CMake needs the
-    # compiler alone, and the other flags go to CMAKE_CXX_FLAGS. Its -std=... is dropped: the C++
-    # standard of the plug-ins follows the policy (C++17 with Qt5, C++20 with Qt6), through
-    # OFX_CXX_STANDARD. Limitation: $CXX is split on spaces, so the compiler path must not
-    # contain spaces, and a launcher (e.g. "ccache clang++") is not supported.
+    # $CXX may carry flags (e.g. "clang++-mp-22 -stdlib=libc++ -std=c++17", -std=c++20 with Qt6;
+    # see compiler-common.sh): CMake needs the compiler alone, and the other flags go to
+    # CMAKE_CXX_FLAGS. Its -std=... is dropped: the C++ standard of the plug-ins follows the
+    # policy (C++17 with Qt5, C++20 with Qt6), through OFX_CXX_STANDARD (without GNU extensions).
+    # Limitation: $CXX is split on spaces, so the compiler path must not contain spaces, and a
+    # launcher (e.g. "ccache clang++") is not supported.
     # shellcheck disable=SC2206 # (split on purpose, see above)
     local cxx_words=($CXX)
     local cxx="${cxx_words[0]}"
@@ -215,8 +218,9 @@ function ofx_cmake_build() {
             *) cxx_flags="$cxx_flags $w";;
         esac
     done
-    # OpenMP (ofx_target_openmp): with gcc and MacPorts clang (COMPILER=gcc or clang-omp), and
-    # with Apple clang from MacPorts' libomp (OFX_LIBOMP_ROOT). A repository may override it.
+    # OpenMP (ofx_target_openmp): with COMPILER=gcc or clang-omp (gcc, a MacPorts clang, or Apple
+    # clang with MacPorts' libomp, see compiler-common.sh), and with any Apple clang if MacPorts'
+    # libomp is installed (OFX_LIBOMP_ROOT). A repository may override it.
     local openmp=OFF
     if [ "$COMPILER" = "gcc" ] || [ "$COMPILER" = "clang-omp" ]; then
         openmp=ON
@@ -274,8 +278,8 @@ function ofx_cmake_build() {
     if [ "$PKGOS" = "OSX" ]; then
         # Apple clang has no OpenMP runtime: MacPorts' libomp (only used with Apple clang)
         args+=(-DOFX_LIBOMP_ROOT="${MACPORTS:-/opt/local}")
-        # the deployment target of common.sh (14.0 for all the macOS bundles, #1347), as the
-        # Makefiles, which read MACOSX_DEPLOYMENT_TARGET too
+        # the deployment target of common.sh (NATRON_MACOS_MIN, 14.0, for release builds; the
+        # build Mac's macOS otherwise; #1347), as the Makefiles, which read MACOSX_DEPLOYMENT_TARGET too
         if [ -n "${MACOSX_DEPLOYMENT_TARGET:-}" ]; then
             args+=(-DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET")
         fi

@@ -935,12 +935,6 @@ public:
     void unlock(const ImagePtr& entry);
 
 
-    /**
-     * @brief DO NOT EVER USE THIS FUNCTION. This is provided for compatibility with plug-ins that
-     * do not respect the OpenFX specification.
-     **/
-    ImagePtr getImageBeingRendered(double time, unsigned int mipmapLevel, ViewIdx view);
-
     void beginInputEdition();
 
     void endInputEdition(bool triggerRender);

@@ -26,7 +26,6 @@
 # Options available by setting the following environment variables:
 #
 # GEN_DOCKERFILE=1 : Output a Dockerfile rather than building the SDK.
-# GEN_DOCKERFILE32=1 : Output a 32-bit Dockerfile rather than building the SDK.
 # LIST_STEPS=1 : Output an ordered list of steps to build the SDK
 # LAST_STEP=step_name : Only build until this step (be careful, as dependent packages are not rebuilt).
 # FORCE_BUILD=1 : Force build, even if up-to-date. If LAST_STEP is specified, only force-build this step.
@@ -36,6 +35,9 @@
 #
 # TAR_SDK=1 : Make an archive of the SDK when building is done and store it in $SRC_PATH
 # UPLOAD_SDK=1 : Upload the SDK tar archive to $REPO_DEST if TAR_SDK=1
+#
+# ROCKY=9|8 : the Rocky Linux major version (default: 9, the Natron 2.6 baseline). The SDK is
+# built on Rocky Linux only (the CentOS and Ubuntu SDKs are in the RB-2.5 branch).
 
 set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
@@ -43,18 +45,17 @@ set -u # Treat unset variables as an error when substituting.
 
 PKGOS=Linux
 
+ROCKY="${ROCKY:-9}"
+case "$ROCKY" in
+    8|9) ;;
+    *) (>&2 echo "Error: unsupported ROCKY=$ROCKY (the SDK is built on Rocky Linux 8 or 9)"); exit 1 ;;
+esac
+
 #############################
 # Package-specific switches #
 #############################
 # WITH_MARIADB=true|false build MariaDB/MySQL as well as the corresponding Qt and Python components
-if [ -z "${WITH_MARIADB+x}" ]; then
-    # doesn't build on CentOS 8 or Ubuntu 18.04 yet, but default to true for all other cases
-    if [ -n "${UBUNTU+x}" ] || [ "${CENTOS:-7}"  -ge 8 ]; then
-        WITH_MARIADB=false # may want to test later if it works
-    else
-        WITH_MARIADB=true
-    fi
-fi
+WITH_MARIADB="${WITH_MARIADB:-true}"
 
 # GCC_TOOLSET=N gcc-toolset version used on Rocky Linux 8 and 9 (default: 14, i.e. GCC 14.2,
 # as in the VFX Reference Platform CY2026/CY2027)
@@ -62,7 +63,7 @@ GCC_TOOLSET="${GCC_TOOLSET:-14}"
 # libclang used by the shiboken2 generator on Rocky Linux (see the Dockerfile generation below).
 # Shiboken2 5.15.19, even with the libclang >= 16 patches, misparses some default arguments with
 # libclang 22 (e.g. QEvent::Type values resolved in the wrong class): use an older libclang.
-if [ "${ROCKY:-0}" -ge 9 ]; then
+if [ "${ROCKY}" -ge 9 ]; then
     # SHIBOKEN2_CLANG_VERSION=N: major version of EPEL's clangN-devel compat package
     SHIBOKEN2_CLANG_VERSION="${SHIBOKEN2_CLANG_VERSION:-19}"
     SHIBOKEN2_CLANG_PKGS="clang${SHIBOKEN2_CLANG_VERSION}-devel llvm${SHIBOKEN2_CLANG_VERSION}-devel"
@@ -73,17 +74,6 @@ else
     SHIBOKEN2_CLANG_PKGS="clang-devel-${SHIBOKEN2_CLANG_VERSION} llvm-devel-${SHIBOKEN2_CLANG_VERSION}"
     SHIBOKEN2_LLVM_DIR="/usr"
 fi
-# WITH_QT4=true|false build Qt 4 (with QtWebKit, PySide and Shiboken) and the Qt installer
-# framework (with its static Qt 4). Not needed on Rocky Linux 9 and later: Natron 2.6 is
-# built with Qt 5, and the Linux releases are portable archives, without the IFW installer.
-if [ -z "${WITH_QT4+x}" ]; then
-    if [ "${ROCKY:-0}" -ge 9 ]; then
-        WITH_QT4=false
-    else
-        WITH_QT4=true
-    fi
-fi
-
 if [ "${DOWNLOAD:-}" = "1" ] && [ -z "${GEN_DOCKERFILE+x}" ]; then
     echo "*** downloading all source distributions"
     if [ -z "${WORKSPACE+x}" ]; then
@@ -100,39 +90,24 @@ source common.sh
 newdists=()
 newdistsurls=()
 
-if false; then
-    # to update all linux SDKs, run the following
-    alias ssh-natron-linux32='ssh -A -p 3232 natron@natron.inrialpes.fr' # centos32
-    alias ssh-natron-linux64='ssh -A -p 6464 natron@natron.inrialpes.fr' # centos64
-    alias ssh-natron-linux64-ci='ssh -A ci@natron-centos64-64.ci' # ci
-    alias ssh-natron-linux32-ci='ssh -A ci@natron-centos64-32.ci' # ci
-    ssh-natron-linux32 "cd natron-support-jenkins/buildmaster;git pull;include/scripts/build-Linux-sdk.sh"
-    ssh-natron-linux64 "cd natron-support-jenkins/buildmaster;git pull;include/scripts/build-Linux-sdk.sh"
-    ssh-natron-linux32-ci "cd data/natron-support/buildmaster;git pull;include/scripts/build-Linux-sdk.sh"
-    ssh-natron-linux64-ci "cd data/natron-support/buildmaster;git pull;include/scripts/build-Linux-sdk.sh"
-fi
-
 scriptdir="$(dirname "$0")"
 
-if [ "${GEN_DOCKERFILE32:-}" = "1" ] && [ -z "${GEN_DOCKERFILE+x}" ]; then
-    GEN_DOCKERFILE=1
-fi
 if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ]; then
     cat <<EOF
 # Natron-SDK dockerfile.
 #
 # The natron-sdk docker image should be created using the following commands:
-# cd tools/docker/natron-sdk/
+# cd tools/docker/natron-sdk-rockylinux/
 # ./build.sh
 # SDK is installed in $SDK_HOME
 EOF
     DOCKER_ENV="ENV QTDIR=\"\$QTDIR\" \\
-    LIBRARY_PATH=\"\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib:\$OSMESA/lib\" \\
-    LD_LIBRARY_PATH=\"\$SDK/lib:\$QTDIR/lib:\$GCC/lib64:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib\" \\
-    LD_RUN_PATH=\"\$SDK/lib:\$QTDIR/lib:\$GCC/lib:\$FFMPEG/lib:\$LIBRAW/lib\" \\
-    CPATH=\"\$SDK/include:\$QTDIR/include:\$GCC/include:\$FFMPEG/include:\$LIBRAW/include:\$OSMESA/include\" \\
-    PKG_CONFIG_PATH=\"\$SDK/lib/pkgconfig:\$OSMESA/lib/pkgconfig:\$QTDIR/lib/pkgconfig:\$GCC/lib/pkgconfig:\$FFMPEG/lib/pkgconfig:\$LIBRAW/lib/pkgconfig\" \\
-    PATH=\"\$SDK/bin:\$QTDIR/bin:\$GCC/bin:\$FFMPEG/bin:\$LIBRAW_PATH:\$PATH\" \\
+    LIBRARY_PATH=\"\$SDK/lib:\$QTDIR/lib:\$FFMPEG/lib:\$LIBRAW/lib:\$OSMESA/lib\" \\
+    LD_LIBRARY_PATH=\"\$SDK/lib:\$QTDIR/lib:\$FFMPEG/lib:\$LIBRAW/lib\" \\
+    LD_RUN_PATH=\"\$SDK/lib:\$QTDIR/lib:\$FFMPEG/lib:\$LIBRAW/lib\" \\
+    CPATH=\"\$SDK/include:\$QTDIR/include:\$FFMPEG/include:\$LIBRAW/include:\$OSMESA/include\" \\
+    PKG_CONFIG_PATH=\"\$SDK/lib/pkgconfig:\$OSMESA/lib/pkgconfig:\$QTDIR/lib/pkgconfig:\$FFMPEG/lib/pkgconfig:\$LIBRAW/lib/pkgconfig\" \\
+    PATH=\"\$SDK/bin:\$QTDIR/bin:\$FFMPEG/bin:\$LIBRAW_PATH:\$PATH\" \\
     WORKSPACE=/home \\
     GIT_URL=https://github.com/NatronGitHub/Natron.git \\
     GIT_BRANCH=RB-2.6 \\
@@ -150,157 +125,74 @@ EOF
     NATRON_EXTRA_CMAKE_FLAGS= \\
     NATRON_EXTRA_QMAKE_FLAGS= \\
     BUILD_NAME=natron_github_RB2 \\
-    DISABLE_RPM_DEB_PKGS=1 \\
     DISABLE_PORTABLE_ARCHIVE= \\
     BITS= \\
     DEBUG_SCRIPTS= \\
     EXTRA_PYTHON_MODULES_SCRIPT= \\
     BUILD_NUMBER=0"
 
-    BUILD_LINUX_SDK="./build-Linux-sdk.sh"
-    if [ -n "${DTS:-}" ]; then
-        BUILD_LINUX_SDK="DTS=${DTS} $BUILD_LINUX_SDK"
-    fi
-    if [ -n "${CENTOS:-}" ]; then
-        BUILD_LINUX_SDK="CENTOS=${CENTOS} $BUILD_LINUX_SDK"
-    fi
-    if [ -n "${ROCKY:-}" ]; then
-        BUILD_LINUX_SDK="ROCKY=${ROCKY} $BUILD_LINUX_SDK"
-    fi
-    if [ -n "${UBUNTU:-}" ]; then
-        BUILD_LINUX_SDK="UBUNTU=${UBUNTU} $BUILD_LINUX_SDK"
-    fi
-    LINUX32=
+    BUILD_LINUX_SDK="ROCKY=${ROCKY} ./build-Linux-sdk.sh"
 
-    # yum for CentOS and RockyLinux (see below apt for Ubuntu)
-    if [ -n "${CENTOS+x}" ] || [ -n "${ROCKY+x}" ]; then
-        if [ -n "${CENTOS+x}" ] && [ "${GEN_DOCKERFILE32:-}" = "1" ]; then
-            # - base on i386/centos:${CENTOS}
-            # - set the yum archs
-            # - install util-linux to get the "setarch" executable
-            DOCKER_BASE="i386/centos:${CENTOS}"
-            LINUX32="setarch i686"
-            PREYUM='echo "i686" > /etc/yum/vars/arch && echo "i386" > /etc/yum/vars/basearch && '
-            ARCH=i686
-        elif [ -n "${ROCKY+x}" ]; then
-            # rockylinux/rockylinux images are multi-arch (amd64, arm64): the
-            # architecture is the one of the image (docker build --platform),
-            # and common.sh takes it from uname -m inside the container.
-            DOCKER_BASE="rockylinux/rockylinux:${ROCKY}"
-            PREYUM=
-            ARCH=
-        else
-            DOCKER_BASE="centos:${CENTOS}"
-            PREYUM=
-            ARCH=
-        fi
-        # Also install a recent Developer Toolset to get C++11 support while building GCC
-        # yum -y install centos-release-scl && \\
-        # yum -y install devtoolset-8-gcc devtoolset-8-binutils devtoolset-8-gcc-c++ devtoolset-8-make && \\
-        # We still need those to build Qt for the installer: gcc gcc-c++ make
-        DTSYUM=
-        DTSSDK=
-        CENTOS_DEPRECATED=6 # as of 12/2020, all CentOS versions up to 6 are deprecated
-        if [ "${CENTOS:-7}" -le "${CENTOS_DEPRECATED}" ]; then
-            # It's not OK to use deprecated CentOS releases for running stuff, it's OK to use it to build stuff
-            PREYUM="sed -i -e 's/^mirrorlist/#mirrorlist/' -e 's@^#[ ]*baseurl=http://mirror.centos.org@baseurl=http://vault.centos.org@' /etc/yum.repos.d/CentOS*.repo && $PREYUM"
-        fi
-        if [ "${CENTOS:-7}"  -ge 8 ] || [ -n "${ROCKY+x}" ]; then
-            # Enable powertools on CentOS >= 8 / Rocky Linux 8, CRB on Rocky Linux >= 9
-            # https://www.how2shout.com/linux/how-to-enable-powertools-repository-on-rocky-linux-8/
-            # https://computingforgeeks.com/enable-powertools-repository-on-centos-rhel-linux/
-            EL_DEVEL_REPO=powertools
-            if [ "${ROCKY:-0}" -ge 9 ]; then
-                EL_DEVEL_REPO=crb
-            fi
-            DTSYUM+="dnf -y install dnf-plugins-core && dnf -y install epel-release && dnf config-manager --set-enabled ${EL_DEVEL_REPO} && dnf -y update && dnf -y groupinstall 'Development Tools' && "
-            YUM_DEVEL_EXTRA=""
-        else
-            YUM_DEVEL_EXTRA="libXevie-devel libdmx-devel" # only available on CentOS <= 7
-        fi
-        if [ -n "${DTS:-}" ]; then
-            DTSYUM+="yum -y install centos-release-scl && "
-            if [ "${CENTOS:-7}" -ge 7 ]; then
-                DTSYUM+="yum-config-manager --enable rhel-server-rhscl-${CENTOS}-rpms && "
-            fi
-            if [ "${CENTOS:-7}" -le "${CENTOS_DEPRECATED}" ]; then
-                # It's not OK to use deprecated CentOS releases for running stuff, 
-                DTSYUM+="sed -i -e 's/^mirrorlist/#mirrorlist/' -e 's@^#[ ]*baseurl=http://mirror.centos.org@baseurl=http://vault.centos.org@' /etc/yum.repos.d/CentOS*.repo &&"
-            fi
-            DTSYUM+="yum -y install devtoolset-${DTS} && "
-        fi
-        if [ "${ROCKY:-0}" -ge 8 ]; then
-            # The system GCC of Rocky Linux 8 (8.5) has incomplete C++17 and no C++20 support,
-            # and the one of Rocky Linux 9 (11.5) has incomplete C++20 support: use the
-            # gcc-toolset (GCC 14.2, as in the VFX Reference Platform CY2026/CY2027),
-            # available for x86_64 and aarch64. The system GCC is still used to build
-            # the installer's static Qt 4 and qtifw, if WITH_QT4 (see DTSSDK below).
-            # libclang, for the shiboken2 generator (see pkg/pyside2.sh), which also needs
-            # LLVM_INSTALL_DIR to find clang's builtin headers (see SHIBOKEN2_CLANG_VERSION).
-            DTSYUM+="dnf -y install gcc-toolset-${GCC_TOOLSET} ${SHIBOKEN2_CLANG_PKGS} && "
-            if [ "${SHIBOKEN2_LLVM_DIR}" != /usr ]; then
-                # shiboken2 looks for the builtin headers in $LLVM_INSTALL_DIR/lib/clang/<version>/include,
-                # but EPEL's clangN-resource-filesystem puts them in /usr/lib/clang/N/include
-                DTSYUM+="ln -sfn /usr/lib/clang ${SHIBOKEN2_LLVM_DIR}/lib/clang && "
-            fi
-            DOCKER_ENV_TOOLSET="ENV PATH=\"/opt/rh/gcc-toolset-${GCC_TOOLSET}/root/usr/bin:\$PATH\" \\
+    # rockylinux/rockylinux images are multi-arch (amd64, arm64): the
+    # architecture is the one of the image (docker build --platform),
+    # and common.sh takes it from uname -m inside the container.
+    DOCKER_BASE="rockylinux/rockylinux:${ROCKY}"
+    PREYUM=
+    ARCH=
+    DTSYUM=
+    DTSSDK=
+    # Enable powertools on Rocky Linux 8, CRB on Rocky Linux >= 9
+    # https://www.how2shout.com/linux/how-to-enable-powertools-repository-on-rocky-linux-8/
+    EL_DEVEL_REPO=powertools
+    if [ "${ROCKY}" -ge 9 ]; then
+        EL_DEVEL_REPO=crb
+    fi
+    DTSYUM+="dnf -y install dnf-plugins-core && dnf -y install epel-release && dnf config-manager --set-enabled ${EL_DEVEL_REPO} && dnf -y update && dnf -y groupinstall 'Development Tools' && "
+    # The system GCC of Rocky Linux 8 (8.5) has incomplete C++17 and no C++20 support,
+    # and the one of Rocky Linux 9 (11.5) has incomplete C++20 support: use the
+    # gcc-toolset (GCC 14.2, as in the VFX Reference Platform CY2026/CY2027),
+    # available for x86_64 and aarch64.
+    # libclang, for the shiboken2 generator (see pkg/pyside2.sh), which also needs
+    # LLVM_INSTALL_DIR to find clang's builtin headers (see SHIBOKEN2_CLANG_VERSION).
+    DTSYUM+="dnf -y install gcc-toolset-${GCC_TOOLSET} ${SHIBOKEN2_CLANG_PKGS} && "
+    if [ "${SHIBOKEN2_LLVM_DIR}" != /usr ]; then
+        # shiboken2 looks for the builtin headers in $LLVM_INSTALL_DIR/lib/clang/<version>/include,
+        # but EPEL's clangN-resource-filesystem puts them in /usr/lib/clang/N/include
+        DTSYUM+="ln -sfn /usr/lib/clang ${SHIBOKEN2_LLVM_DIR}/lib/clang && "
+    fi
+    DOCKER_ENV_TOOLSET="ENV PATH=\"/opt/rh/gcc-toolset-${GCC_TOOLSET}/root/usr/bin:\$PATH\" \\
     LLVM_INSTALL_DIR=${SHIBOKEN2_LLVM_DIR}"
-        fi
-        # libXvMC was removed in EL9
-        YUM_XVMC=libXvMC-devel
-        if [ "${ROCKY:-0}" -ge 9 ]; then
-            YUM_XVMC=
-            # Rust (cargo, rustc), to build librsvg >= 2.41 (see pkg/librsvg.sh)
-            DTSYUM+="dnf -y install rust-toolset && "
-        fi
-        # The xcb platform plug-in of Qt 5.15 (pkg/qt5.sh) needs libxcb with its extensions
-        # (randr, render, shape, shm, sync, xfixes, xinerama, xkb, xinput, glx), the xcb-util
-        # libraries (icccm/wm, image, keysyms, renderutil), libX11-xcb and libxkbcommon-x11.
-        YUM_XCB="libxcb-devel xcb-util-devel xcb-util-wm-devel xcb-util-image-devel xcb-util-keysyms-devel xcb-util-renderutil-devel libxkbcommon-x11-devel"
-        # Note: perl-version added for qt4webkit, see https://github.com/NatronGitHub/Natron/issues/351#issuecomment-524068232
-        # perl-Encode and perl-Data-Dumper needed to build texinfo before perl
-        YUM_PKGS="ca-certificates make util-linux git tar bzip2 wget glibc-devel diffutils patch zip unzip alsa-lib-devel libX11-devel mesa-libGL-devel mesa-libEGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel ${YUM_XVMC} libXxf86vm-devel libxkbcommon-devel ${YUM_XCB} libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXres-devel libXtst-devel xorg-x11-proto-devel libXxf86dga-devel libXpm-devel perl-Digest-MD5 perl-version perl-Encode perl-Data-Dumper"
-        SDKPREP="RUN ${PREYUM}${DTSYUM}yum -y install ${YUM_PKGS} ${YUM_DEVEL_EXTRA} && yum -y clean all"
-        cat <<EOF
+    # libXvMC was removed in EL9
+    YUM_XVMC=libXvMC-devel
+    if [ "${ROCKY}" -ge 9 ]; then
+        YUM_XVMC=
+        # Rust (cargo, rustc), to build librsvg >= 2.41 (see pkg/librsvg.sh)
+        DTSYUM+="dnf -y install rust-toolset && "
+        # doxygen (CRB): the Python bindings of libxml2 >= 2.14, needed by itstool, are
+        # generated from its doxygen XML (see pkg/libxml2.sh)
+        DTSYUM+="dnf -y install doxygen && "
+    fi
+    # The xcb platform plug-in of Qt 5.15 (pkg/qt5.sh) needs libxcb with its extensions
+    # (randr, render, shape, shm, sync, xfixes, xinerama, xkb, xinput, glx), the xcb-util
+    # libraries (icccm/wm, image, keysyms, renderutil), libX11-xcb and libxkbcommon-x11.
+    YUM_XCB="libxcb-devel xcb-util-devel xcb-util-wm-devel xcb-util-image-devel xcb-util-keysyms-devel xcb-util-renderutil-devel libxkbcommon-x11-devel"
+    # Note: perl-version was added for qt4webkit, see https://github.com/NatronGitHub/Natron/issues/351#issuecomment-524068232
+    # perl-Encode and perl-Data-Dumper needed to build texinfo before perl
+    YUM_PKGS="ca-certificates make util-linux git tar bzip2 wget glibc-devel diffutils patch zip unzip alsa-lib-devel libX11-devel mesa-libGL-devel mesa-libEGL-devel mesa-libGLU-devel libXrender-devel libSM-devel libICE-devel libXcursor-devel libXrender-devel libXrandr-devel libXinerama-devel libXi-devel libXv-devel libXfixes-devel ${YUM_XVMC} libXxf86vm-devel libxkbcommon-devel ${YUM_XCB} libxkbfile-devel libXdamage-devel libXp-devel libXScrnSaver-devel libXcomposite-devel libXp-devel libXres-devel libXtst-devel xorg-x11-proto-devel libXxf86dga-devel libXpm-devel perl-Digest-MD5 perl-version perl-Encode perl-Data-Dumper"
+    SDKPREP="RUN ${PREYUM}${DTSYUM}yum -y install ${YUM_PKGS} && yum -y clean all"
+    cat <<EOF
 FROM $DOCKER_BASE as intermediate
 MAINTAINER https://github.com/NatronGitHub/Natron
 WORKDIR /home
 ARG SDK=$SDK_HOME
 ${ARCH:+ARG ARCH=$ARCH
-}ARG SETARCH="$LINUX32"
-RUN ${PREYUM}${DTSYUM}\\
-    yum -y install gcc gcc-c++ ${YUM_PKGS} ${YUM_DEVEL_EXTRA} && \\
+}RUN ${PREYUM}${DTSYUM}\\
+    yum -y install gcc gcc-c++ ${YUM_PKGS} && \\
     yum clean all
 COPY include/patches/ include/patches/
 COPY include/scripts/build-Linux-sdk.sh common.sh compiler-common.sh ./
 ENV WORKSPACE=/home
 EOF
-    fi # end of CentOS / Rocky Linux section
-    
-    # apt for Ubuntu (see above yum for CentOS)
-    if [ -n "${UBUNTU+x}" ]; then
-        if [ "${GEN_DOCKERFILE32:-}" = "1" ]; then
-            echo "Error: 32-bit SDK not supported on Ubuntu"
-        else
-            DOCKER_BASE="ubuntu:${UBUNTU}"
-            LINUX32=
-            ARCH=
-        fi
-        SDKPREP="ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y build-essential xorg-dev libgl-dev libegl1-mesa-dev libglu-dev wget git valgrind zip && rm -rf /var/lib/apt/lists/*"
-        cat <<EOF
-FROM $DOCKER_BASE as intermediate
-MAINTAINER https://github.com/NatronGitHub/Natron
-WORKDIR /home
-ARG SDK=$SDK_HOME
-${ARCH:+ARG ARCH=$ARCH
-}ARG SETARCH="$LINUX32"
-$SDKPREP
-COPY include/patches/ include/patches/
-COPY include/scripts/build-Linux-sdk.sh common.sh compiler-common.sh ./
-ENV WORKSPACE=/home
-EOF
-    fi
 
 fi
 
@@ -340,7 +232,7 @@ function checkpoint()
             checkpointstep="$s"
         done
         echo "$copyline pkg/"
-        echo "RUN ${DTSSDK:-}\$SETARCH env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd \$SDK/var/log/Natron-Linux-*-SDK/ && cat "'`ls -t |grep -e '"'\.log$'"'|head -1`'" && false)"
+        echo "RUN ${DTSSDK:-}env LAST_STEP=$checkpointstep $BUILD_LINUX_SDK || (cd \$SDK/var/log/Natron-Linux-*-SDK/ && cat "'`ls -t |grep -e '"'\.log$'"'|head -1`'" && false)"
         pkgs=()
     fi
     return 0
@@ -433,7 +325,7 @@ if dobuild; then
     done
 
     if [ ! -f /usr/include/X11/Xlib.h ] && [ ! -f /usr/X11R6/include/X11/Xlib.h ]; then
-        (>&2 echo "Error: X11/Xlib.h not available (on CentOS, do 'yum install alsa-lib-devel libICE-devel libSM-devel libX11-devel libXScrnSaver-devel libXcomposite-devel libXcursor-devel libXdamage-devel libXfixes-devel libXi-devel libXinerama-devel libXp-devel libXp-devel libXpm-devel libXrandr-devel libXrender-devel libXres-devel libXtst-devel libXv-devel libXvMC-devel libXxf86dga-devel libXxf86vm-devel libxkbfile-devel mesa-libGL-devel mesa-libEGL-devel mesa-libGLU-devel ${YUM_DEVEL_EXTRA}')")
+        (>&2 echo "Error: X11/Xlib.h not available (on Rocky Linux, do 'dnf install alsa-lib-devel libICE-devel libSM-devel libX11-devel libXScrnSaver-devel libXcomposite-devel libXcursor-devel libXdamage-devel libXfixes-devel libXi-devel libXinerama-devel libXp-devel libXp-devel libXpm-devel libXrandr-devel libXrender-devel libXres-devel libXtst-devel libXv-devel libXvMC-devel libXxf86dga-devel libXxf86vm-devel libxkbfile-devel mesa-libGL-devel mesa-libEGL-devel mesa-libGLU-devel')")
         error=true
     fi
 
@@ -442,18 +334,18 @@ if dobuild; then
         exit 1
     fi
 
-    # Check distro and version. CentOS/RHEL 6.10 only!
+    # Check distro and version
 
     if [ "$PKGOS" = "Linux" ]; then
         if [ ! -s /etc/redhat-release ]; then
-            (>&2 echo "Warning: Build system has been designed for CentOS/RHEL, use at OWN risk!")
+            (>&2 echo "Warning: Build system has been designed for Rocky Linux (RHEL), use at OWN risk!")
             sleep 5
         else
             RHEL_MAJOR=$(tr -dc '0-9.'< /etc/redhat-release|cut -d \. -f1)
             RHEL_MINOR=$(tr -dc '0-9.'< /etc/redhat-release|cut -d \. -f2)
             RHEL_VERSION="${RHEL_MAJOR}.${RHEL_MINOR}"
-            if [ "${RHEL_VERSION}" != "6.10" ] && [ "${RHEL_VERSION}" != "7.9" ]; then
-                (>&2 echo "Warning: Wrong CentOS/RHEL version (${RHEL_MAJOR}.${RHEL_MINOR}): only CentOS 6.10 and 7.9 are officially supported.")
+            if [ "${RHEL_MAJOR}" != "8" ] && [ "${RHEL_MAJOR}" != "9" ]; then
+                (>&2 echo "Warning: Wrong RHEL version (${RHEL_VERSION}): only Rocky Linux 8 and 9 are supported (the Natron 2.6 releases are built on Rocky Linux 9).")
             fi
         fi
     fi
@@ -473,10 +365,55 @@ fi # dobuild
 # see https://stackoverflow.com/a/24067243
 function version_gt() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"; }
 
+# $1: file, $2: expected sha256 (if empty, the file is not checked)
+function sha256_ok() {
+    local file=$1
+    local expected=${2:-}
+    if [ -z "$expected" ]; then
+        return 0
+    fi
+    local actual
+    actual=$(sha256sum "$file" | cut -d' ' -f1)
+    if [ "$actual" != "$expected" ]; then
+        (>&2 echo "*** $file: sha256 is $actual, expected $expected")
+        return 1
+    fi
+    return 0
+}
+
+# $1: URL, $2: destination file, $3: expected sha256 (may be empty)
+# Downloads with certificate checking, and removes the file if the download or the checksum fails.
+function fetch_checked() {
+    local url=$1
+    local dest=$2
+    local sha256=${3:-}
+    local setcertdir=""
+    if [ -d /etc/ssl/certs ]; then
+        # or wget fails on Ubuntu for sourceforge and all letsencrypt-certified sites
+        setcertdir="env SSL_CERT_DIR=/etc/ssl/certs"
+    fi
+    echo "*** downloading $url"
+    # wget is the system one: don't let it load the SDK's libraries (on Rocky Linux 9, the
+    # system gnutls fails with the SDK's older nettle)
+    if $setcertdir env -u LD_LIBRARY_PATH wget -q "$url" -O "$dest" && [ -s "$dest" ] && sha256_ok "$dest" "$sha256"; then
+        return 0
+    fi
+    echo "*** downloading $url failed!"
+    rm -f "$dest" > /dev/null 2>&1 || true
+    return 1
+}
+
+# $1: master site, $2: package (file name), $3: expected sha256 of the file (optional, but every
+# package should have one). The file is first fetched from the Natron mirror ($THIRD_PARTY_SRC_URL).
 function download() {
     if dobuild || [ "${DOWNLOAD:-}" = "1" ]; then
         local master_site=$1
         local package=$2
+        local sha256=${3:-}
+        if [ -s "$SRC_PATH/$package" ] && ! sha256_ok "$SRC_PATH/$package" "$sha256"; then
+            echo "*** removing $SRC_PATH/$package (wrong checksum)"
+            rm -f "$SRC_PATH/$package"
+        fi
         if [ ! -s "$SRC_PATH/$package" ]; then
             if [ "${DOWNLOAD:-}" = "1" ]; then
                 # print list of new dists, in case subsequent download hangs
@@ -487,35 +424,8 @@ function download() {
                     echo "*** newdistsurls = ${newdistsurls[*]}"
                 fi
             fi
-            echo "*** downloading $package from $THIRD_PARTY_SRC_URL"
-            fail=false
-            SET_SSL_CERT_DIR=""
-            if [ -d /etc/ssl/certs ]; then
-                # or wget fails on Ubuntu for sourceforge and all letsencrypt-certified sites
-                SET_SSL_CERT_DIR="env SSL_CERT_DIR=/etc/ssl/certs"
-            fi
-            # wget is the system one: don't let it load the SDK's libraries (on Rocky Linux 9, the
-            # system gnutls fails with the SDK's older nettle)
-            SYSWGET="env -u LD_LIBRARY_PATH wget"
-            $SET_SSL_CERT_DIR $SYSWGET -q "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || fail=true
-            if $fail; then
-                echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
-                echo "*** downloading $package from $master_site"
-                fail=false
-                $SET_SSL_CERT_DIR $SYSWGET -q "$master_site/$package" -O "$SRC_PATH/$package" || fail=true
-                if $fail; then
-                    echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
-                    echo "*** downloading $package from $master_site without checking certificate"
-                    fail=false
-                    $SYSWGET -q --no-check-certificate "$master_site/$package" -O "$SRC_PATH/$package" || fail=true
-                    if $fail; then
-                        echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
-                        rm "$SRC_PATH/$package" > /dev/null 2>&1 || true
-                    else
-                        newdists+=("$package")
-                        newdistsurls+=("$master_site/$package")
-                    fi
-                else
+            if ! fetch_checked "$THIRD_PARTY_SRC_URL/$package" "$SRC_PATH/$package" "$sha256"; then
+                if fetch_checked "$master_site/$package" "$SRC_PATH/$package" "$sha256"; then
                     newdists+=("$package")
                     newdistsurls+=("$master_site/$package")
                 fi
@@ -528,30 +438,29 @@ function download() {
     fi
 }
 
+# $1: GitHub user, $2: repository, $3: version, $4: tag prefix, $5: package (file name),
+# $6: expected sha256 of the file (optional, but every package should have one)
 function download_github() {
     if dobuild || [ "${DOWNLOAD:-}" = "1" ]; then
         # e.g.:
-        #download_github uclouvain openjpeg 2.3.0 v openjpeg-2.3.0.tar.gz
-        #download_github OpenImageIO oiio 1.6.18 tags/Release- oiio-1.6.18.tar.gz
+        #download_github uclouvain openjpeg 2.3.0 v openjpeg-2.3.0.tar.gz <sha256>
+        #download_github OpenImageIO oiio 1.6.18 tags/Release- oiio-1.6.18.tar.gz <sha256>
         local user=$1
         local repo=$2
         local version=$3
         local tagprefix=$4
         local package=$5
+        local sha256=${6:-}
+        local url="https://github.com/${user}/${repo}/archive/${tagprefix}${version}.tar.gz"
+        if [ -s "$SRC_PATH/$package" ] && ! sha256_ok "$SRC_PATH/$package" "$sha256"; then
+            echo "*** removing $SRC_PATH/$package (wrong checksum)"
+            rm -f "$SRC_PATH/$package"
+        fi
         if [ ! -s "$SRC_PATH/$package" ]; then
-            echo "*** downloading $package from $THIRD_PARTY_SRC_URL"
-            fail=false
-            wget -q "$THIRD_PARTY_SRC_URL/$package" -O "$SRC_PATH/$package" || fail=true
-            if $fail; then
-                echo "*** downloading $package from $THIRD_PARTY_SRC_URL failed!"
-                echo "*** downloading $package from https://github.com/${user}/${repo}/archive/${tagprefix}${version}.tar.gz"
-                fail=false
-                wget -q --no-check-certificate --content-disposition "https://github.com/${user}/${repo}/archive/${tagprefix}${version}.tar.gz" -O "$SRC_PATH/$package" || fail=true
-                if $fail; then
-                    rm "$SRC_PATH/$package" > /dev/null 2>&1 || true
-                else
+            if ! fetch_checked "$THIRD_PARTY_SRC_URL/$package" "$SRC_PATH/$package" "$sha256"; then
+                if fetch_checked "$url" "$SRC_PATH/$package" "$sha256"; then
                     newdists+=("$package")
-                    newdistsurls+=("https://github.com/${user}/${repo}/archive/${tagprefix}${version}.tar.gz")
+                    newdistsurls+=("$url")
                 fi
             fi
         fi
@@ -642,27 +551,18 @@ if dobuild; then
     echo "*** Info: Build logs are in $LOGDIR"
 fi
 
-step="" # the last package built (none yet, e.g. if WITH_QT4 is false)
+step="" # the last package built (none yet)
 checkpointstep=""
 prevstep=""
 reachedstep=0 # becomes 1 when LAST_STEP is reached
 pkgs=()
-
-if $WITH_QT4; then
-    build openssl-installer
-
-    checkpoint
-
-    build qt-installer
-    build qtifw
-fi
 
 checkpoint
 
 # Setup env
 
 if dobuild; then
-    # now that the installer is built, let's set failsafe values for variables that are either
+    # set failsafe values for variables that are either
     # understood by configure/cmake scripts or by GCC itself
     export CMAKE_PREFIX_PATH="$SDK_HOME"
     #export CPPFLAGS="-I$SDK_HOME/include" # configure/cmake
@@ -670,19 +570,10 @@ if dobuild; then
     export CPATH="$SDK_HOME/include" # gcc/g++'s include path
     export LIBRARY_PATH="$SDK_HOME/lib" # gcc/g++'s library path
 
-    export QT4PREFIX="$SDK_HOME/qt4"
     export QT5PREFIX="$SDK_HOME/qt5"
 
     export PATH="$SDK_HOME/bin:$PATH"
-    export LD_LIBRARY_PATH="$SDK_HOME/lib:$QT4PREFIX/lib:$QT5PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-    if [ -n "${CENTOS:-}" ] && [ -z "${DTS:-}" ] && [ "${CENTOS:-7}" -le 7 ]; then
-        export PATH="$SDK_HOME/gcc/bin:$PATH"
-        if [ "$ARCH" = "x86_64" ]; then
-            LD_LIBRARY_PATH="$SDK_HOME/gcc/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-        else
-            LD_LIBRARY_PATH="$SDK_HOME/gcc/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-        fi
-    fi
+    export LD_LIBRARY_PATH="$SDK_HOME/lib:$QT5PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     #export LD_RUN_PATH="$LD_LIBRARY_PATH"
     #PKG_CONFIG_PATH="$SDK_HOME/lib/pkgconfig:$SDK_HOME/share/pkgconfig"
     BOOST_ROOT="$SDK_HOME"
@@ -691,91 +582,46 @@ if dobuild; then
     export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH BOOST_ROOT OPENJPEG_HOME THIRD_PARTY_TOOLS_HOME PYTHON_HOME
 fi
 
-if [ "${UBUNTU:-0}" = 20.04 ]; then
-    GCC_VERSION=9.3.0
-    BOOTSTRAP_GCC_VERSION=$GCC_VERSION
-elif [ "${UBUNTU:-0}" = 18.04 ]; then
-    GCC_VERSION=7.5.0
-    BOOTSTRAP_GCC_VERSION=$GCC_VERSION
-elif [ "${CENTOS:-7}" = 8 ]; then
-    GCC_VERSION=8.3.1
-    BOOTSTRAP_GCC_VERSION=$GCC_VERSION
-elif [ "${ROCKY:-0}" -ge 8 ]; then
-    # gcc-toolset-${GCC_TOOLSET} (installed with dnf, see the Dockerfile generation above)
-    if dobuild; then
-        export LLVM_INSTALL_DIR="${LLVM_INSTALL_DIR:-$SHIBOKEN2_LLVM_DIR}"
-    fi
-    DTSSDK="source scl_source enable gcc-toolset-${GCC_TOOLSET} && "
-    if dobuild; then
-        case " ${X_SCLS:-} " in
-            *" gcc-toolset-${GCC_TOOLSET} "*)
-                ;;
-            *)
-                # not enabled yet (e.g. this script is run outside of the Dockerfile)
-                if [ -f "/opt/rh/gcc-toolset-${GCC_TOOLSET}/enable" ]; then
-                    set +u
-                    source "/opt/rh/gcc-toolset-${GCC_TOOLSET}/enable"
-                    set -u
-                fi
-                ;;
-        esac
-    fi
-    if dobuild; then
-        GCC_VERSION=$(gcc -dumpfullversion)
-        if version_gt "$GCC_VERSION" 13.99; then
-            # GCC 14 turned obsolete C constructs into errors (implicit function
-            # declarations, implicit int, int-conversion, incompatible pointer types),
-            # and many of the older packages of the SDK still have some, e.g. libffi 3.4.4
-            # on aarch64. Make them warnings again. These options are C-only: g++ just
-            # prints a warning when they appear in CXXFLAGS.
-            GCC14_CFLAGS="-Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-error=int-conversion -Wno-error=incompatible-pointer-types"
-            BF="$BF $GCC14_CFLAGS"
-        fi
-    else
-        GCC_VERSION="${GCC_TOOLSET}"
-    fi
-    BOOTSTRAP_GCC_VERSION=$GCC_VERSION
-elif [ -n "${CENTOS:-}" ] && [ -n "${DTS:-}" ]; then
-    DTSSDK="source scl_source enable devtoolset-${DTS} && "
-    case "${DTS}" in
-    8)
-        GCC_VERSION=8.3.1
-        ;;
-    4)
-        GCC_VERSION=5.3.1
-        ;;
-    6)
-        GCC_VERSION=6.3.1
-        ;;
-    7)
-        GCC_VERSION=7.3.1
-        ;;
-    9|*)
-        GCC_VERSION=9.1.1
-        ;;
-    esac
-    BOOTSTRAP_GCC_VERSION=$GCC_VERSION
-else
-    # CentoS <=7 without DTS or any other OS.
-    BOOTSTRAP_GCC_VERSION=4.8.5
-    if [ "${CENTOS:-7}" = 6 ]; then
-        BOOTSTRAP_GCC_VERSION=4.4.7
-    fi
-    build gcc # sets GCC_VERSION
-
-    checkpoint
-
-    if dobuild; then
-        export CC="${SDK_HOME}/gcc/bin/gcc"
-        export CXX="${SDK_HOME}/gcc/bin/g++"
-    fi
+# gcc-toolset-${GCC_TOOLSET} (installed with dnf, see the Dockerfile generation above)
+if dobuild; then
+    export LLVM_INSTALL_DIR="${LLVM_INSTALL_DIR:-$SHIBOKEN2_LLVM_DIR}"
 fi
+DTSSDK="source scl_source enable gcc-toolset-${GCC_TOOLSET} && "
+if dobuild; then
+    case " ${X_SCLS:-} " in
+        *" gcc-toolset-${GCC_TOOLSET} "*)
+            ;;
+        *)
+            # not enabled yet (e.g. this script is run outside of the Dockerfile)
+            if [ -f "/opt/rh/gcc-toolset-${GCC_TOOLSET}/enable" ]; then
+                set +u
+                source "/opt/rh/gcc-toolset-${GCC_TOOLSET}/enable"
+                set -u
+            fi
+            ;;
+    esac
+fi
+if dobuild; then
+    GCC_VERSION=$(gcc -dumpfullversion)
+    if version_gt "$GCC_VERSION" 13.99; then
+        # GCC 14 turned obsolete C constructs into errors (implicit function
+        # declarations, implicit int, int-conversion, incompatible pointer types),
+        # and many of the older packages of the SDK still have some, e.g. libffi 3.4.4
+        # on aarch64. Make them warnings again. These options are C-only: g++ just
+        # prints a warning when they appear in CXXFLAGS.
+        GCC14_CFLAGS="-Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-error=int-conversion -Wno-error=incompatible-pointer-types"
+        BF="$BF $GCC14_CFLAGS"
+    fi
+else
+    GCC_VERSION="${GCC_TOOLSET}"
+fi
+BOOTSTRAP_GCC_VERSION=$GCC_VERSION
 
 build bzip2
 build xz # (required to uncompress source tarballs)
 build m4
-build ncurses # (required for gdb and readline)
-build texinfo # (required for bison and gdb)
+build ncurses # (required for readline)
+build texinfo # (required for bison)
 build bison # (for SeExpr)
 build flex # (for SeExpr)
 build pkg-config
@@ -787,7 +633,7 @@ build autoconf
 build automake
 build yasm
 build nasm # (for x264, lame, and others)
-build gmp # (used by ruby)
+build gmp # (for nettle's hogweed, used by gnutls)
 build openssl
 build patchelf
 build gettext
@@ -809,8 +655,8 @@ build libarchive # (for cmake)
 #build libuv # (for cmake but we use the one bundled with cmake)
 build cmake
 build libzip # (requires cmake)
-#build berkeleydb # (optional for python2 and python3)
-build sqlite # (required for webkit and QtSql SQLite module, optional for python2)
+#build berkeleydb # (optional for python3)
+build sqlite # (required for the QtSql SQLite module, optional for python3)
 build pcre # (required by glib)
 build pcre2 # (required by mariadb)
 
@@ -821,14 +667,9 @@ build git # (requires curl and pcre)
 checkpoint
 
 if $WITH_MARIADB; then
-    # mariadb doesn't build yet on CentOS8
     build mariadb # (for the Qt mariadb plugin and the python mariadb adapter)
 fi
 build postgresql # (for the Qt postgresql plugin and the python postgresql adapter)
-
-checkpoint
-
-build python2
 
 checkpoint
 
@@ -842,10 +683,9 @@ build meson # (requires python3, required for building glib > 2.59.0)
 checkpoint
 
 if $WITH_MARIADB; then
-    # mariadb doesn't build yet on CentOS8
-    build mysqlclient # (MySQL/MariaDB connector for python 2/3)
+    build mysqlclient # (MySQL/MariaDB connector for python 3)
 fi
-build psycopg2 # (PostgreSQL connector for python 2/3)
+build psycopg2 # (PostgreSQL connector for python 3)
 build sphinx # (Python documentation generator)
 build sphinx-rtd-theme # (Read the Docs theme for Sphinx)
 
@@ -946,7 +786,6 @@ build opus
 build opusfile # (for sox)
 build sox
 build orc
-#build dirac # (obsolete since ffmpeg-3.4)
 build x264
 build xvid
 build soxr
@@ -956,45 +795,6 @@ build openh264 # (for ffmpeg)
 build snappy # (for ffmpeg)
 checkpoint
 build ffmpeg
-build libyaml # (for ruby)
-build ruby # (necessary for qtwebkit)
-build breakpad
-if [ -n "${CENTOS:-}" ] && [ -z "${DTS:-}" ] && [ "${CENTOS:-7}" -le 7 ]; then
-    build valgrind
-    build gdb # (requires xz, zlib ncurses, python2, texinfo)
-fi
-
-checkpoint
-
-checkpoint
-
-if $WITH_QT4; then
-build qt4
-
-checkpoint
-
-build qt4webkit
-
-checkpoint
-
-if dobuild; then
-    # add qt4 to lib path to build shiboken and pyside
-    if [ -n "${LD_LIBRARY_PATH:-}" ]; then
-        LD_LIBRARY_PATH_SAVE="$LD_LIBRARY_PATH"
-    fi
-    LD_LIBRARY_PATH="$QT4PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-    #LD_RUN_PATH="$LD_LIBRARY_PATH"
-fi
-
-build shiboken
-build pyside
-
-if dobuild; then
-    if [ -n "${LD_LIBRARY_PATH_SAVE:-}" ]; then
-        LD_LIBRARY_PATH="$LD_LIBRARY_PATH_SAVE"
-    fi
-fi
-fi # WITH_QT4
 
 checkpoint
 
@@ -1006,7 +806,7 @@ build pyside2
 
 if dobuild; then
     # make sure all libs are user-writable and executable
-    for subdir in . ffmpeg-gpl2 ffmpeg-lgpl libraw-gpl2 libraw-lgpl qt4; do
+    for subdir in . ffmpeg-gpl2 ffmpeg-lgpl libraw-gpl2 libraw-lgpl; do
         if compgen -G "$SDK_HOME/$subdir/lib*/lib*.so*" > /dev/null; then
             chmod 755 "$SDK_HOME"/$subdir/lib*/lib*.so*
         fi
@@ -1026,7 +826,7 @@ if dobuild; then
 
     echo
     echo "Check for broken libraries and binaries... (everything is OK if nothing is printed)"
-    for subdir in . ffmpeg-gpl2 ffmpeg-lgpl libraw-gpl2 libraw-lgpl qt4 qt5; do
+    for subdir in . ffmpeg-gpl2 ffmpeg-lgpl libraw-gpl2 libraw-lgpl qt5; do
         [ -d "$SDK_HOME/$subdir/lib" ] && LD_LIBRARY_PATH="$SDK_HOME/$subdir/lib:${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" find "$SDK_HOME/$subdir/lib" -name '*.so' -exec bash -c 'ldd {} 2>&1 | fgrep "not found" &>/dev/null' \; -print
         [ -d "$SDK_HOME/$subdir/bin" ] && LD_LIBRARY_PATH="$SDK_HOME/$subdir/lib:${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" find "$SDK_HOME/$subdir/bin" -maxdepth 1 -exec bash -c 'ldd {} 2>&1 | fgrep "not found" &>/dev/null' \; -print
     done
@@ -1040,10 +840,7 @@ fi
 checkpoint
 
 if [ "${GEN_DOCKERFILE:-}" = "1" ] || [ "${GEN_DOCKERFILE:-}" = "2" ]; then
-    SDK_DEFAULT_QT=qt4
-    if ! $WITH_QT4; then
-        SDK_DEFAULT_QT=qt5
-    fi
+    SDK_DEFAULT_QT=qt5
     cat <<EOF
 RUN xz $SDK_HOME/var/log/Natron-Linux-*-SDK/*
 FROM $DOCKER_BASE
@@ -1052,7 +849,6 @@ WORKDIR /home
 COPY --from=intermediate $SDK_HOME $SDK_HOME
 ARG SDK=$SDK_HOME
 ARG QTDIR=\$SDK/${SDK_DEFAULT_QT}
-ARG GCC=\$SDK/gcc
 ARG FFMPEG=\$SDK/ffmpeg-gpl2
 ARG LIBRAW=\$SDK/libraw-gpl2
 ARG OSMESA=\$SDK/osmesa
@@ -1063,7 +859,6 @@ ${DOCKER_ENV_TOOLSET:-}
 COPY \\
     common.sh \\
     compiler-common.sh \\
-    linuxStartupJenkins.sh \\
     launchBuildMain.sh \\
     manageBuildOptions.sh \\
     manageLog.sh \\
@@ -1083,20 +878,9 @@ COPY include/ include/
 ## retrieve sources using:
 ## docker run natrongithub/natron-sdk:latest tar -C /opt/Natron-sdk -cf - src | tar xvf -
 EOF
-    if [ "${GEN_DOCKERFILE32:-}" = "1" ]; then
-        cat <<EOF
-COPY --from=intermediate /usr/bin/setarch /usr/bin/setarch
-ENTRYPOINT ["setarch", "i686"]
-EOF
-    fi
-    DTSENABLE=
-    if [ -n "${DTS:-}" ]; then
-        DTSENABLE="scl enable devtoolset-${DTS} "
-    elif [ "${ROCKY:-0}" -ge 8 ]; then
-        # gcc-toolset-${GCC_TOOLSET} is also first in PATH (see ENV above), so that
-        # "docker run <image> bash -c ..." uses it too.
-        DTSENABLE="scl enable gcc-toolset-${GCC_TOOLSET} "
-    fi
+    # gcc-toolset-${GCC_TOOLSET} is also first in PATH (see ENV above), so that
+    # "docker run <image> bash -c ..." uses it too.
+    DTSENABLE="scl enable gcc-toolset-${GCC_TOOLSET} "
     cat <<EOF
 CMD ${DTSENABLE}launchBuildMain.sh
 EOF

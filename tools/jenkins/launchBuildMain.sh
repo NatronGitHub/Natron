@@ -28,11 +28,10 @@ set -u # Treat unset variables as an error when substituting.
 # NATRON_DEV_STATUS: ALPHA, BETA, RC, STABLE, CUSTOM: this is useful when doing a release (i.e: if specifying RELEASE_TAG.)
 # NATRON_CUSTOM_BUILD_USER_NAME: For a release, Tag the build with a specific user/client name
 # NATRON_BUILD_NUMBER: When doing a release this is the number of the release (if doing a rebuild)
-# NATRON_BUILD_SYSTEM: cmake (the default) or qmake (deprecated, kept on RB-2.6 as a fallback, see #1181). The CMake build has no crash reporter: it implies DISABLE_BREAKPAD=1.
+# NATRON_BUILD_SYSTEM: cmake (the default) or qmake (deprecated, kept on RB-2.6 as a fallback, see #1181). The CMake build has no crash reporter: it implies DISABLE_BREAKPAD=1. Linux builds always use DISABLE_BREAKPAD=1 (the Linux SDK has no Breakpad).
 # NATRON_EXTRA_CMAKE_FLAGS: Optional cmake flags to pass when building Natron with CMake, e.g. "-DNATRON_FAST_MATH=ON"
 # NATRON_EXTRA_QMAKE_FLAGS: Optional qmake flags to pass when building Natron with qmake
 # BUILD_NAME: Give a name to the build so that it can be found in the archive
-# DISABLE_RPM_DEB_PKGS: If set to 1, deb and rpm packages will not be built. Otherwise they are only built for a release
 # DISABLE_PORTABLE_ARCHIVE: If set to 1, a portable archive will not be built
 # BITS: Windows only: 64 (the default; the architecture, x86_64 or arm64, comes from the MSYS2 environment, MSYSTEM_CARCH)
 # DEBUG_SCRIPTS: If set to 1, binaries from previous build with same options are not cleaned so that the scripts can continue the same compilation
@@ -116,7 +115,6 @@ echo "COMPILE_TYPE                      : \"${COMPILE_TYPE:-}\""
 echo "NATRON_BUILD_SYSTEM               : \"${NATRON_BUILD_SYSTEM:-}\""
 echo "NATRON_EXTRA_CMAKE_FLAGS          : \"${NATRON_EXTRA_CMAKE_FLAGS:-}\""
 echo "NATRON_EXTRA_QMAKE_FLAGS          : \"${NATRON_EXTRA_QMAKE_FLAGS:-}\""
-echo "DISABLE_RPM_DEB_PKGS              : \"${DISABLE_RPM_DEB_PKGS:-}\""
 echo "DISABLE_PORTABLE_ARCHIVE          : \"${DISABLE_PORTABLE_ARCHIVE:-}\""
 echo "EXTRA_PYTHON_MODULES_SCRIPT       : \"${EXTRA_PYTHON_MODULES_SCRIPT:-}\""
 echo "REMOTE_URL                        : \"${REMOTE_URL:-}\""
@@ -266,7 +264,12 @@ esac
 if [ "$NATRON_BUILD_SYSTEM" = "cmake" ] && [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
     # Breakpad is being replaced by sentry-native (#1183), which the CMake build will support
     echo "The CMake build has no Breakpad crash reporter (#1183): building without it (DISABLE_BREAKPAD=1)."
-    echo "Set NATRON_BUILD_SYSTEM=qmake for a build with Breakpad."
+    echo "Set NATRON_BUILD_SYSTEM=qmake for a build with Breakpad (macOS and Windows only)."
+    DISABLE_BREAKPAD=1
+fi
+if [ "$PKGOS" = "Linux" ] && [ "${DISABLE_BREAKPAD:-}" != "1" ]; then
+    # The Linux SDK no longer builds Breakpad (dump_syms); it is being replaced by sentry-native (#1183)
+    echo "The Linux SDK has no Breakpad (dump_syms): building without the crash reporter (DISABLE_BREAKPAD=1)."
     DISABLE_BREAKPAD=1
 fi
 
@@ -442,14 +445,6 @@ setBuildOption "DISABLE_PORTABLE_ARCHIVE" "$DISABLE_PORTABLE_ARCHIVE"
 if [ "$TYPE" = "RELEASE" ]; then
     # Use the tag as a branch, its commit is already the latest commit on the tag
 
-
-    if [ -z "${DISABLE_RPM_DEB_PKGS:-}" ]; then
-        if [ "$PKGOS" = "Linux" ]; then
-            echo "DISABLE_RPM_DEB_PKGS not specified, .rpm and .deb packages will be built"
-        fi
-        DISABLE_RPM_DEB_PKGS=0
-    fi
-    setBuildOption "DISABLE_RPM_DEB_PKGS" "$DISABLE_RPM_DEB_PKGS"
     GIT_COMMIT=""
     GIT_BRANCH="tags/v${RELEASE_TAG:-}"
     setBuildOption "NATRON_GIT_BRANCH" "$GIT_BRANCH"
@@ -514,16 +509,6 @@ fi
 setBuildOption "GIT_TRIGGER_URL" "$GIT_URL"
 setBuildOption "GIT_TRIGGER_BRANCH" "$GIT_BRANCH"
 setBuildOption "GIT_TRIGGER_COMMIT" "$GIT_COMMIT"
-
-
-# Only use online installer for snapshots or releases
-if [ "$TYPE" != "SNAPSHOT" ] && [ "$TYPE" != "RELEASE" ]; then
-    WITH_ONLINE_INSTALLER=0
-else
-    WITH_ONLINE_INSTALLER="${WITH_ONLINE_INSTALLER:-0}"
-fi
-
-setBuildOption "WITH_ONLINE_INSTALLER" "${WITH_ONLINE_INSTALLER}"
 
 
 # If 1, source files will be compressed and uploaded with the binary
@@ -627,7 +612,8 @@ fi
 INSTALLER_OS="${PKGOS}"
 INSTALLER_ARCH="${BITS}"
 if [ "${INSTALLER_OS}" = "OSX" ]; then
-    case "$(sw_vers -productVersion)" in
+    # named after the oldest macOS it runs on (MACOSX_DEPLOYMENT_TARGET, see common.sh)
+    case "${MACOSX_DEPLOYMENT_TARGET:-$(sw_vers -productVersion)}" in
         10.5.*) INSTALLER_OS="MacOSX105";; 
         10.6.*) INSTALLER_OS="MacOSX106";; 
         10.7.*) INSTALLER_OS="MacOSX107";; 
@@ -653,7 +639,7 @@ if [ "${INSTALLER_OS}" = "OSX" ]; then
         29.*) INSTALLER_OS="macOS29";;
         30.*) INSTALLER_OS="macOS30";;
         # Fallback for any unlisted/future release: use macOS<major>.
-        *) INSTALLER_OS="macOS$(sw_vers -productVersion | cut -d. -f1)";;
+        *) INSTALLER_OS="macOS$(echo "${MACOSX_DEPLOYMENT_TARGET:-$(sw_vers -productVersion)}" | cut -d. -f1)";;
     esac
 
     case "${BITS}" in
@@ -748,6 +734,17 @@ fi
 if [ "$FAIL" -ne "0" ]; then
     echo "build-${PKGOS}-installer.sh failed with status $FAIL"
     exit $FAIL
+fi
+# macOS release builds (NATRON_MACOS_MIN set, see common.sh): every Mach-O file in the DMG must
+# run on that macOS; the files that need a newer one are listed in <dmg name>-minos.txt
+if $BUILD_4 && [ "$PKGOS" = "OSX" ] && [ -n "${NATRON_MACOS_MIN:-}" ] && [ "${GIT_URL_IS_NATRON:-}" = "1" ]; then
+    dmg="${BUILD_ARCHIVE_DIRECTORY}/${INSTALLER_BASENAME}.dmg"
+    printStatusMessage "Checking that every Mach-O file in $(basename "$dmg") runs on macOS ${NATRON_MACOS_MIN}..."
+    if ! "${CWD}/../tart/check-minos.sh" -t "${NATRON_MACOS_MIN}" "$dmg" > "${dmg%.dmg}-minos.txt"; then
+        echo "Error: files in $(basename "$dmg") need a macOS newer than ${NATRON_MACOS_MIN}:"
+        head -20 "${dmg%.dmg}-minos.txt"
+        exit 1
+    fi
 fi
 
 

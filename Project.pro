@@ -20,9 +20,10 @@
 TEMPLATE = subdirs
 
 # The qmake build is deprecated: CMake (CMakeLists.txt) is the supported build.
-# qmake still works on RB-2.6, where the release scripts (tools/jenkins) still
-# use it, and will be removed in a future release (first on RB-2.7, see #1181).
-warning("The qmake build of Natron is deprecated and will be removed in a future release. The release scripts in tools/jenkins still use it on RB-2.6, so this warning is expected in their logs. For your own builds, use CMake: see INSTALL_LINUX.md, INSTALL_MACOS.md, INSTALL_WINDOWS.md or INSTALL_FREEBSD.md, and the Maintainer Guide (Documentation/source/maintainers/building.rst).")
+# qmake still works on RB-2.6, where the release scripts (tools/jenkins) build
+# with CMake by default and with qmake only if NATRON_BUILD_SYSTEM=qmake. It
+# will be removed in a future release (first on RB-2.7, see #1181).
+warning("The qmake build of Natron is deprecated and will be removed in a future release. On RB-2.6, the release scripts in tools/jenkins use it only with NATRON_BUILD_SYSTEM=qmake (they build with CMake by default). For your own builds, use CMake: see INSTALL_LINUX.md, INSTALL_MACOS.md, INSTALL_WINDOWS.md or INSTALL_FREEBSD.md, and the Maintainer Guide (Documentation/source/maintainers/building.rst).")
 
 CONFIG(enable-breakpad) {
     include(breakpadpro.pri)
@@ -103,15 +104,10 @@ CONFIG(debug, debug|release){
 addresssanitizer {
   *g++* | *clang* {
     message("Compiling with AddressSanitizer (for gcc >= 4.8 and clang). Set the ASAN_SYMBOLIZER_PATH environment variable to point to the llvm-symbolizer binary, or make sure llvm-symbolizer in in your PATH.")
-    message("For example, with Qt4 on macOS:")
-    message("- with MacPorts:")
-    message("  sudo port install clang-5.0")
-    message("  export ASAN_SYMBOLIZER_PATH=/opt/local/bin/llvm-symbolizer-mp-5.0")
-    message("  qmake QMAKE_CC=clang-mp-5.0 QMAKE_CXX='clang++-mp-5.0 -stdlib=libc++' QMAKE_LINK='clang++-mp-5.0 -stdlib=libc++' QMAKE_OBJECTIVE_CC='clang-mp-5.0 -stdlib=libc++' QMAKE_OBJECTIVE_CXX='clang++-mp-5.0 -stdlib=libc++' CONFIG+=addresssanitizer ...")
-    message("- with homebrew:")
-    message("  brew install llvm")
-    message("  export ASAN_SYMBOLIZER_PATH=/usr/local/opt/llvm@11/bin/llvm-symbolizer")
-    message("  qmake QMAKE_CC=/usr/local/opt/llvm@11/bin/clang QMAKE_CXX='/usr/local/opt/llvm@11/bin/clang++ -stdlib=libc++' QMAKE_LINK='/usr/local/opt/llvm@11/bin/clang++ -stdlib=libc++' QMAKE_OBJECTIVE_CC='/usr/local/opt/llvm@11/bin/clang -stdlib=libc++' QMAKE_OBJECTIVE_CXX='/usr/local/opt/llvm@11/bin/clang++ -stdlib=libc++' CONFIG+=addresssanitizer ...")
+    message("For example, on macOS with MacPorts' Qt5, with the Xcode clang; clang-19 is installed only for its llvm-symbolizer:")
+    message("  sudo port install clang-19")
+    message("  export ASAN_SYMBOLIZER_PATH=/opt/local/bin/llvm-symbolizer-mp-19")
+    message("  qmake CONFIG+=addresssanitizer ...")
     message("see http://clang.llvm.org/docs/AddressSanitizer.html")
   }
 }

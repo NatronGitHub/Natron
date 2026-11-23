@@ -2,11 +2,12 @@
 
 # Install automake
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/automake.html
-AUTOMAKE_VERSION=1.16.5
+AUTOMAKE_VERSION=1.20
 AUTOMAKE_TAR="automake-${AUTOMAKE_VERSION}.tar.xz"
+AUTOMAKE_SHA256=f6f34dad4cbe395715762b0710f7c511e39bd5cf777e6b95818ccbecf7714248
 AUTOMAKE_SITE="https://ftp.gnu.org/gnu/automake"
 if download_step; then
-    download "$AUTOMAKE_SITE" "$AUTOMAKE_TAR"
+    download "$AUTOMAKE_SITE" "$AUTOMAKE_TAR" "$AUTOMAKE_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/automake" ] || [ "$("$SDK_HOME/bin/automake" --version | head -1 | awk '{print $4}')" != "$AUTOMAKE_VERSION" ]; }; }; then
     start_build

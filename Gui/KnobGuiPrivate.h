@@ -41,7 +41,7 @@
 #include <QFormLayout>
 #include <QFileDialog>
 #include <QTextEdit>
-#include <QStyle> // in QtGui on Qt4, in QtWidgets on Qt5
+#include <QStyle> // QtWidgets
 #include <QTimer>
 
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF

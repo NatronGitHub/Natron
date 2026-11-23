@@ -4,11 +4,21 @@ set -e # Exit immediately if a command exits with a non-zero status
 set -u # Treat unset variables as an error when substituting.
 #set -x # Print commands and their arguments as they are executed.
 
-STD17="c++17"
+# C++ standard: C++17 with Qt5, C++20 with Qt6 (RB-2.6 policy; RB-2.7: C++20 everywhere).
+# CXXSTD only reaches the qmake build of Natron (NATRON_BUILD_SYSTEM=qmake) and the Makefile
+# builds of the plug-ins (PLUGINS_BUILD_SYSTEM=make), which compile with this CXX. The CMake
+# builds (the default) drop the -std flag from CXX and set the standard themselves: Natron's
+# CMakeLists.txt from NATRON_QT6 (CMAKE_CXX_STANDARD, with GNU extensions: -std=gnu++17/20),
+# the plug-ins from OFX_CXX_STANDARD (build-plugins.sh, without GNU extensions).
+if [ "${QT_VERSION_MAJOR:-5}" -ge 6 ]; then
+    CXXSTD="c++20"
+else
+    CXXSTD="c++17"
+fi
 
 # https://stackoverflow.com/a/42232124
 if [ "$PKGOS" = "Windows" ]; then
-    STD17="gnu++17"
+    CXXSTD="gnu${CXXSTD#c}"
 fi
 
 if [ "$PKGOS" = "OSX" ]; then
@@ -31,6 +41,42 @@ if [ "$PKGOS" = "OSX" ]; then
         clang_max=17
     fi
 
+    # The system (Xcode or Command Line Tools) clang builds Natron and the plug-ins when it
+    # supports $CXXSTD and links with MacPorts' libomp (#1134, decided 2026-11-23): the CMake
+    # builds pass it -Xpreprocessor -fopenmp and -lomp (Natron's CMakeLists.txt, OFX_LIBOMP_ROOT
+    # in build-plugins.sh). The qmake build and the plug-ins' Makefiles pass -fopenmp, which Apple
+    # clang's driver rejects: they keep a MacPorts clang-mp-N, as does NATRON_MACOS_CLANG=macports.
+    # No Apple clang bug is known to require a MacPorts clang; add an explicit version check
+    # here, with the reason, if one is found.
+    use_system_clang=0
+    case "${NATRON_MACOS_CLANG:-system}" in
+        system)
+            if [ "${NATRON_BUILD_SYSTEM:-cmake}" = cmake ] && [ "${PLUGINS_BUILD_SYSTEM:-cmake}" = cmake ]; then
+                system_clang_test=$(mktemp -d)
+                case "$CXXSTD" in
+                    c++20) cplusplus=202002L;;
+                    *) cplusplus=201703L;;
+                esac
+                # (a dynamic schedule: Apple clang's code needs a recent libomp, e.g. __kmpc_dispatch_deinit)
+                printf '#include <omp.h>\n#if __cplusplus < %s\n#error\n#endif\nint main() {\n  int n = 0;\n#pragma omp parallel for schedule(dynamic) reduction(+:n)\n  for (int i = 0; i < 4; ++i) n += i;\n  return n == 6 && omp_get_max_threads() > 0 ? 0 : 1;\n}\n' \
+                       "$cplusplus" > "$system_clang_test/t.cpp"
+                if /usr/bin/clang++ -std="$CXXSTD" -Xpreprocessor -fopenmp -I/opt/local/include/libomp \
+                       "$system_clang_test/t.cpp" -o "$system_clang_test/t" -L/opt/local/lib/libomp -lomp >/dev/null 2>&1; then
+                    use_system_clang=1
+                else
+                    echo "Warning: /usr/bin/clang++ can't build $CXXSTD with OpenMP (MacPorts libomp):" \
+                         "using a MacPorts clang-mp-N if there is one" >&2
+                fi
+                rm -rf "$system_clang_test"
+            fi
+            ;;
+        macports) ;;
+        *)
+            echo "Error: NATRON_MACOS_CLANG must be system or macports, not \"$NATRON_MACOS_CLANG\"" >&2
+            exit 1
+            ;;
+    esac
+
     # use a MacPorts clang (with OpenMP) if one not newer than clang_max is available
     clang_mp_found=0
     for v in 22 21 20 19 18 17 16 15 14 13 12 11 10 9.0 8.0 7.0 6.0 5.0 4.0; do
@@ -39,7 +85,11 @@ if [ "$PKGOS" = "OSX" ]; then
             break
         fi
     done
-    if [ "$clang_mp_found" = 0 ] && compgen -c clang-mp- >/dev/null 2>&1; then
+    if [ "${NATRON_MACOS_CLANG:-system}" = macports ] && [ "$clang_mp_found" = 0 ]; then
+        echo "Error: NATRON_MACOS_CLANG=macports, but no MacPorts clang-mp-N (N <= $clang_max) is installed" >&2
+        exit 1
+    fi
+    if [ "$use_system_clang" = 0 ] && [ "$clang_mp_found" = 0 ] && compgen -c clang-mp- >/dev/null 2>&1; then
         echo "Warning: only MacPorts clang-mp-N newer than clang-mp-$clang_max found:" \
              "building with Apple clang, without OpenMP. Install clang-$clang_max (see INSTALL_MACOS.md)." >&2
     fi
@@ -58,18 +108,28 @@ if [ "$PKGOS" = "OSX" ]; then
     #COMPILER=clang-omp
     COMPILER=${COMPILER:-clang}
 
-    if [ "$COMPILER" != "gcc" -a "$COMPILER" != "clang" -a "$COMPILER" != "clang-omp" ]; then
-        echo "Error: COMPILER must be gcc or clang or clang-omp"
+    # No GCC on macOS: Qt and the MacPorts libraries use libc++, and the macOS installer
+    # doesn't bundle the GCC runtime (build-OSX-installer.sh)
+    if [ "$COMPILER" != "clang" -a "$COMPILER" != "clang-omp" ]; then
+        echo "Error: COMPILER must be clang or clang-omp on macOS"
         exit 1
     fi
-    if [ "$COMPILER" = "clang" ]; then
+    if [ "$use_system_clang" = 1 ]; then
+        # COMPILER=clang-omp: built with OpenMP, and build-OSX-installer.sh bundles libomp.
+        # Full paths: CMake can't find a bare "clang++" for CMAKE_OBJCXX_COMPILER
+        COMPILER=clang-omp
+        CC=/usr/bin/clang
+        CXX="/usr/bin/clang++ -std=${CXXSTD}"
+        OBJECTIVE_CC=$CC
+        OBJECTIVE_CXX=$CXX
+    elif [ "$COMPILER" = "clang" ]; then
         case "$macosx" in
             9|10|11|12)
                 # GXX should be an openmp-capable compiler (to compile CImg.ofx)
 
                 # older version, using clang-5.0
                 CC=clang-mp-5.0
-                CXX="clang++-mp-5.0 -std=c++1z"
+                CXX="clang++-mp-5.0 -std=${CXXSTD}"
                 GXX=g++-mp-4.9
                 OBJECTIVE_CC=$CC
                 OBJECTIVE_CXX=$CXX
@@ -77,7 +137,7 @@ if [ "$PKGOS" = "OSX" ]; then
             *)
                 # newer OS X / macOS version link with libc++ and can use the system clang
                 CC=clang
-                CXX="clang++ -std=c++1z"
+                CXX="clang++ -std=${CXXSTD}"
                 OBJECTIVE_CC=$CC
                 OBJECTIVE_CXX=$CXX
                 ;;
@@ -88,13 +148,13 @@ if [ "$PKGOS" = "OSX" ]; then
         # if a recent clang-mp is available
         if command -v clang-mp-6.0 >/dev/null 2>&1; then
             CC=clang-mp-6.0
-            CXX="clang++-mp-6.0 -stdlib=libc++ -std=c++20"
+            CXX="clang++-mp-6.0 -stdlib=libc++ -std=${CXXSTD}"
         elif command -v clang-mp-5.0 >/dev/null 2>&1; then
             CC=clang-mp-5.0
-            CXX="clang++-mp-5.0 -stdlib=libc++ -std=c++20"
+            CXX="clang++-mp-5.0 -stdlib=libc++ -std=${CXXSTD}"
         elif command -v /usr/local/opt/llvm@11/bin/clang >/dev/null 2>&1; then
             CC=/usr/local/opt/llvm@11/bin/clang
-            CXX="/usr/local/opt/llvm@11/bin/clang++ -std=c++20"
+            CXX="/usr/local/opt/llvm@11/bin/clang++ -std=${CXXSTD}"
         fi
         # clang > 7.0 sometimes chokes on building Universal CImg.ofx, probably because of #pragma omp atomic
         #Undefined symbols for architecture i386:
@@ -117,46 +177,46 @@ if [ "$PKGOS" = "OSX" ]; then
             *)
                 if [ "$clang_max" -ge 22 ] && command -v clang-mp-22 >/dev/null 2>&1; then
                     CC=clang-mp-22
-                    CXX="clang++-mp-22 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-22 -stdlib=libc++ -std=${CXXSTD}"
                 elif [ "$clang_max" -ge 21 ] && command -v clang-mp-21 >/dev/null 2>&1; then
                     CC=clang-mp-21
-                    CXX="clang++-mp-21 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-21 -stdlib=libc++ -std=${CXXSTD}"
                 elif [ "$clang_max" -ge 20 ] && command -v clang-mp-20 >/dev/null 2>&1; then
                     CC=clang-mp-20
-                    CXX="clang++-mp-20 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-20 -stdlib=libc++ -std=${CXXSTD}"
                 elif [ "$clang_max" -ge 19 ] && command -v clang-mp-19 >/dev/null 2>&1; then
                     CC=clang-mp-19
-                    CXX="clang++-mp-19 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-19 -stdlib=libc++ -std=${CXXSTD}"
                 elif [ "$clang_max" -ge 18 ] && command -v clang-mp-18 >/dev/null 2>&1; then
                     CC=clang-mp-18
-                    CXX="clang++-mp-18 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-18 -stdlib=libc++ -std=${CXXSTD}"
                 elif command -v clang-mp-17 >/dev/null 2>&1; then
                     CC=clang-mp-17
-                    CXX="clang++-mp-17 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-17 -stdlib=libc++ -std=${CXXSTD}"
                 elif command -v clang-mp-16 >/dev/null 2>&1; then
                     CC=clang-mp-16
-                    CXX="clang++-mp-16 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-16 -stdlib=libc++ -std=${CXXSTD}"
                 elif command -v clang-mp-15 >/dev/null 2>&1; then
                     CC=clang-mp-15
-                    CXX="clang++-mp-15 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-15 -stdlib=libc++ -std=${CXXSTD}"
                 elif command -v clang-mp-14 >/dev/null 2>&1; then
                     CC=clang-mp-14
-                    CXX="clang++-mp-14 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-14 -stdlib=libc++ -std=${CXXSTD}"
                 elif command -v clang-mp-13 >/dev/null 2>&1; then
                     CC=clang-mp-13
-                    CXX="clang++-mp-13 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-13 -stdlib=libc++ -std=${CXXSTD}"
                 elif command -v clang-mp-12 >/dev/null 2>&1; then
                     CC=clang-mp-12
-                    CXX="clang++-mp-12 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-12 -stdlib=libc++ -std=${CXXSTD}"
                 elif command -v clang-mp-11 >/dev/null 2>&1; then
                     CC=clang-mp-11
-                    CXX="clang++-mp-11 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-11 -stdlib=libc++ -std=${CXXSTD}"
                 elif command -v clang-mp-10 >/dev/null 2>&1; then
                     CC=clang-mp-10
-                    CXX="clang++-mp-10 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-10 -stdlib=libc++ -std=${CXXSTD}"
                 elif command -v clang-mp-9.0 >/dev/null 2>&1; then
                     CC=clang-mp-9.0
-                    CXX="clang++-mp-9.0 -stdlib=libc++ -std=c++20"
+                    CXX="clang++-mp-9.0 -stdlib=libc++ -std=${CXXSTD}"
                 fi
                 ;;
         esac
@@ -166,61 +226,60 @@ if [ "$PKGOS" = "OSX" ]; then
         fi
         case "$osxver" in
         2[123].*)
-            # clang-mp can't compile QtMac.mm on Monterey
-            OBJECTIVE_CC=clang
-            OBJECTIVE_CXX=clang++
+            # clang-mp can't compile QtMac.mm on Monterey (macOS 12 to 14): use Apple's clang.
+            # Full paths: CMake can't find a bare "clang++" for CMAKE_OBJCXX_COMPILER
+            OBJECTIVE_CC=/usr/bin/clang
+            OBJECTIVE_CXX=/usr/bin/clang++
             ;;
         *)
             OBJECTIVE_CC=$CC
             OBJECTIVE_CXX=$CXX
             ;;
         esac
-    else
-        #GCC_VERSION=4.8
-        GCC_VERSION=4.9
-        #GCC_VERSION=5
-        #GCC_VERSION=6
-        CC=gcc-mp-${GCC_VERSION} 
-        CXX="g++-mp-${GCC_VERSION} -std=c++20"
-        OBJECTIVE_CC=gcc-4.2
-        OBJECTIVE_CXX=g++-4.2
     fi
 
     # SDK root was moved with Xcode 4.3
     MACOSX_SDK_ROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs
     case "$osxver" in
-        10.*)
-            MACOSX_DEPLOYMENT_TARGET=10.6
-            MACOSX_SDK_ROOT=/Developer/SDKs
+        10.*) MACOSX_SDK_ROOT=/Developer/SDKs;;
+    esac
+    # MACOSX_DEPLOYMENT_TARGET is normally set by common.sh (NATRON_MACOS_MIN, 14.0, for release
+    # builds, the build Mac's macOS otherwise); the table below is only a fallback for scripts
+    # that don't set it.
+    case "${MACOSX_DEPLOYMENT_TARGET:+set}:$osxver" in
+        set:*)
             ;;
-        13.*)
+        *:10.*)
+            MACOSX_DEPLOYMENT_TARGET=10.6
+            ;;
+        *:13.*)
             MACOSX_DEPLOYMENT_TARGET=10.9
             ;;
-        16.*)
+        *:16.*)
             MACOSX_DEPLOYMENT_TARGET=10.12
             ;;
-        17.*)
+        *:17.*)
             MACOSX_DEPLOYMENT_TARGET=10.13
             ;;
-        18.*)
+        *:18.*)
             MACOSX_DEPLOYMENT_TARGET=10.14
             ;;
-        19.*)
+        *:19.*)
             MACOSX_DEPLOYMENT_TARGET=10.15
             ;;
-        20.*)
+        *:20.*)
             MACOSX_DEPLOYMENT_TARGET=11
             ;;
-        21.*)
+        *:21.*)
             MACOSX_DEPLOYMENT_TARGET=12
             ;;
-        22.*)
+        *:22.*)
             MACOSX_DEPLOYMENT_TARGET=13
             ;;
-        23.*)
+        *:23.*)
             MACOSX_DEPLOYMENT_TARGET=14
             ;;
-        24.*)
+        *:24.*)
             MACOSX_DEPLOYMENT_TARGET=15
             ;;
    esac
@@ -249,12 +308,12 @@ if [ "$PKGOS" = "Windows" ] && [ "${MINGW_TOOLCHAIN:-gcc}" = "clang" ]; then
     # COMPILER=clang-omp enables for Natron and the plug-ins (common.sh sets MINGW_TOOLCHAIN)
     COMPILER=${COMPILER:-clang-omp}
     CC=${CC:-clang}
-    CXX=${CXX:-clang++ -std=${STD17}}
+    CXX=${CXX:-clang++ -std=${CXXSTD}}
 fi
 
 COMPILER=${COMPILER:-gcc}
 CC=${CC:-gcc}
-CXX=${CXX:-g++ -std=${STD17}}
+CXX=${CXX:-g++ -std=${CXXSTD}}
 OBJECTIVE_CC=${OBJECTIVE_CC:-${CC}}
 OBJECTIVE_CXX=${OBJECTIVE_CXX:-${CXX}}
 

@@ -26,6 +26,7 @@ set(Tests_SOURCES
     Curve_Test.cpp
     DeepGraphRender_Test.cpp
     DiskCache_Test.cpp
+    ExpressionDepsRenderArgs_Test.cpp
     ExpressionSetError_Test.cpp
     FileSystemModel_Test.cpp
     Hash64_Test.cpp
@@ -63,6 +64,7 @@ set(Tests_SOURCES
     OfxMultiplePAR_Test.cpp
     OfxParamKeys_Test.cpp
     OfxParamAnimating_Test.cpp
+    OfxParamRange_Test.cpp
     OfxParamCopy_Test.cpp
     OfxOpenGLSupport_Test.cpp
     OfxOverlayInput_Test.cpp
@@ -84,6 +86,7 @@ set(Tests_SOURCES
     PrecompLoad_Test.cpp
     ProjectAutoSave_Test.cpp
     PyEffectEquality_Test.cpp
+    PythonGILUnlocker_Test.cpp
     PythonScript_Test.cpp
     ProjectFileFormat_Test.cpp
     PythonExpressionScope_Test.cpp
@@ -137,8 +140,21 @@ add_test(NAME Tests COMMAND Tests)
 # Tests sets up the fixture (it scans with --clear-openfx-cache and writes the cache), so
 # `ctest -R TestsOfxCache` runs Tests first too.
 add_test(NAME TestsOfxCache COMMAND Tests "--gtest_filter=OfxHostProperties.*:OfxTestPlugin*:OfxPluginObsolete.*")
-set_tests_properties(Tests PROPERTIES FIXTURES_SETUP OfxPluginCache)
-set_tests_properties(TestsOfxCache PROPERTIES FIXTURES_REQUIRED OfxPluginCache ENVIRONMENT "NATRON_TESTS_KEEP_OFX_CACHE=1")
+# The caches of both (the same OFX plug-in cache) in the build tree, not in the user's cache directory, which
+# every build of this version shares (#1569). NATRON_DISK_CACHE_PATH, if set, takes precedence (see wmain.cpp).
+set(NATRON_TESTS_CACHE_DIR "${CMAKE_CURRENT_BINARY_DIR}/tests-cache")
+set_tests_properties(Tests PROPERTIES FIXTURES_SETUP OfxPluginCache
+    ENVIRONMENT "NATRON_TESTS_CACHE_DIR=${NATRON_TESTS_CACHE_DIR}")
+set_tests_properties(TestsOfxCache PROPERTIES FIXTURES_REQUIRED OfxPluginCache
+    ENVIRONMENT "NATRON_TESTS_KEEP_OFX_CACHE=1;NATRON_TESTS_CACHE_DIR=${NATRON_TESTS_CACHE_DIR}")
+# A copy of that cache, made unreadable: Natron discards it, scans all the plug-ins again and rewrites it
+# (see OfxCacheCorrupt.cmake).
+add_test(NAME TestsOfxCacheCorrupt COMMAND ${CMAKE_COMMAND}
+    "-DTESTS=$<TARGET_FILE:Tests>"
+    "-DSRC_CACHE_DIR=${NATRON_TESTS_CACHE_DIR}"
+    "-DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tests-cache-corrupt"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/OfxCacheCorrupt.cmake")
+set_tests_properties(TestsOfxCacheCorrupt PROPERTIES FIXTURES_REQUIRED OfxPluginCache)
 
 # A minimal OFX plug-in bundle for the tests (OfxTestPlugin/NatronTestPlugin.cpp, read through
 # OfxTestPlugin.h). It is assembled in the build tree, found by the Tests binary through
@@ -215,7 +231,8 @@ add_dependencies(Tests NatronTestPlugin)
 target_compile_definitions(Tests PRIVATE
     NATRON_TESTS_OFX_PLUGIN_DIR="${NATRON_TESTS_OFX_PLUGIN_DIR}"
     NATRON_TESTS_OFX_PLUGIN_BINARY="$<TARGET_FILE:NatronTestPlugin>"
-    NATRON_TESTS_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data")
+    NATRON_TESTS_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data"
+    NATRON_MAIN_THREAD_STACK_SIZE=${NATRON_MAIN_THREAD_STACK_SIZE})
 
 # GUI smoke test (see gui/run_gui_smoke_test.py): runs the Natron GUI with --no-dialogs.
 # It is skipped (exit status 77) without a display, in CI unless NATRON_GUI_TESTS=1, or
@@ -249,6 +266,12 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME ConvertProjectTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_convert_project_test.py $<TARGET_FILE:NatronRenderer>)
     set_tests_properties(ConvertProjectTest PROPERTIES TIMEOUT 300)
+endif()
+if(Python3_Interpreter_FOUND)
+    # NatronRenderer -t exits at the end of a stdin that is not a console (the null device, a pipe)
+    add_test(NAME InterpreterStdinEofTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_interpreter_stdin_eof_test.py $<TARGET_FILE:NatronRenderer>)
+    set_tests_properties(InterpreterStdinEofTest PROPERTIES TIMEOUT 300)
 endif()
 
 # Not part of a normal install. The installer scripts install it separately
@@ -311,4 +334,6 @@ endforeach()
 # which exits with natron.quit(status).
 add_test(NAME UndoGroupHeadless
     COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_undo_group.py")
-set_tests_properties(UndoGroupHeadless PROPERTIES TIMEOUT 120)
+# the caches (OFX plug-ins) in the build tree, not in the user's cache directory (#1569)
+set_tests_properties(UndoGroupHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/undo-group-headless-cache")

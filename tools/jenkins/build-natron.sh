@@ -210,9 +210,11 @@ if [ "$NATRON_BUILD_SYSTEM" = "cmake" ]; then
         *) CMAKE_BUILD_TYPE=Release;;
     esac
 
-    # $CC, $CXX and $OBJECTIVE_CXX may carry flags (e.g. "clang++-mp-22 -stdlib=libc++ -std=c++20"):
+    # $CC, $CXX and $OBJECTIVE_CXX may carry flags (e.g. "clang++-mp-22 -stdlib=libc++ -std=c++17",
+    # -std=c++20 with Qt6; see compiler-common.sh):
     # CMake needs the compiler alone, and the flags in CMAKE_<LANG>_FLAGS. A -std=... flag is
-    # dropped: CMakeLists.txt sets the C++ standard (C++17 with Qt5, C++20 with Qt6, from NATRON_QT6).
+    # dropped: CMakeLists.txt sets the C++ standard (C++17 with Qt5, C++20 with Qt6, from NATRON_QT6,
+    # with GNU extensions: -std=gnu++17/gnu++20).
     # The compiler path must not contain spaces.
     split_compiler() { # split_compiler VAR "compiler flags...": sets VAR_EXE and VAR_FLAGS
         local words i w flags=""

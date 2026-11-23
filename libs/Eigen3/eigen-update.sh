@@ -8,7 +8,9 @@
 
 set -e
 
-EIGEN_VERSION=3.4.0
+EIGEN_VERSION=3.4.1
+# the commit that the tag must point to (a moved tag fails the update)
+EIGEN_COMMIT=d71c30c47858effcbd39967097a2d99ee48db464
 EIGEN_REPO=https://gitlab.com/libeigen/eigen.git
 
 echo "*** Eigen update utility"
@@ -25,10 +27,16 @@ cd "$(dirname "$0")"
 
 rm -rf eigen-checkout
 git clone --depth 1 --branch "${EIGEN_VERSION}" "${EIGEN_REPO}" eigen-checkout
+actual=$(git -C eigen-checkout rev-parse HEAD)
+if [ "$actual" != "$EIGEN_COMMIT" ]; then
+    echo "*** Error: tag ${EIGEN_VERSION} is commit $actual, expected ${EIGEN_COMMIT}" >&2
+    rm -rf eigen-checkout
+    exit 1
+fi
 
 rm -rf Eigen
 cp -r eigen-checkout/Eigen Eigen
 find Eigen -type f -name CMakeLists.txt -delete
 rm -rf eigen-checkout
 
-echo "*** Updated to ${EIGEN_VERSION}. Update the version in README.Natron too."
+echo "*** Updated to ${EIGEN_VERSION}. Update the version and commit in README.Natron too."

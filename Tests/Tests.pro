@@ -43,6 +43,8 @@ include(../global.pri)
 # Windows: stack reserve of the main thread (see NATRON_MAIN_THREAD_STACK_SIZE in global.pri)
 win32-g++: QMAKE_LFLAGS += -Wl,--stack,$$NATRON_MAIN_THREAD_STACK_SIZE
 win32-msvc*: QMAKE_LFLAGS += /STACK:$$NATRON_MAIN_THREAD_STACK_SIZE
+# and the test that checks the stack sizes (DeepGraphRender_Test.cpp) needs it
+DEFINES += NATRON_MAIN_THREAD_STACK_SIZE=$$NATRON_MAIN_THREAD_STACK_SIZE
 
 # bundled third-party code: see warnings.pri
 NATRON_THIRD_PARTY_SOURCES += \
@@ -57,6 +59,7 @@ SOURCES += \
     Curve_Test.cpp \
     DeepGraphRender_Test.cpp \
     DiskCache_Test.cpp \
+    ExpressionDepsRenderArgs_Test.cpp \
     ExpressionSetError_Test.cpp \
     FileSystemModel_Test.cpp \
     Hash64_Test.cpp \
@@ -94,6 +97,7 @@ SOURCES += \
     OfxMultiplePAR_Test.cpp \
     OfxParamKeys_Test.cpp \
     OfxParamAnimating_Test.cpp \
+    OfxParamRange_Test.cpp \
     OfxParamCopy_Test.cpp \
     OfxOpenGLSupport_Test.cpp \
     OfxOverlayInput_Test.cpp \
@@ -115,6 +119,7 @@ SOURCES += \
     PrecompLoad_Test.cpp \
     ProjectAutoSave_Test.cpp \
     PyEffectEquality_Test.cpp \
+    PythonGILUnlocker_Test.cpp \
     PythonScript_Test.cpp \
     ProjectFileFormat_Test.cpp \
     PythonExpressionScope_Test.cpp \

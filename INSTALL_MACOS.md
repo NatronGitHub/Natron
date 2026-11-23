@@ -3,12 +3,12 @@ Instructions for installing Natron from sources on macOS
 
 These are step-by-step instructions to compile Natron on macOS. This file is the reference for macOS installs. There are two ways to build:
 
-- **In a VM, fully automated:** `tools/tart/README.md` builds the same MacPorts SDK in a clean macOS 15 (Sequoia, the distribution baseline) [tart](https://tart.run) VM, then builds the `.dmg` in a throw-away clone. Its provisioning script (`tools/tart/provision.sh`) runs the MacPorts steps below. tart only runs on **Apple Silicon Macs** and only produces arm64 builds; for Intel or universal builds, or for macOS 11 and older, use the MacPorts steps below on an Intel Mac (see "Notes for older systems"). On any Mac, the MacPorts steps below can also be run natively.
-- **On your Mac:** follow the [MacPorts section](#macports-from-scratch) below, or use Homebrew for development builds.
+- **In a VM, fully automated:** `tools/tart/README.md` builds the same MacPorts SDK in a clean macOS 14 (Sonoma) [tart](https://tart.run) VM, starting from the stock `ghcr.io/cirruslabs/macos-sonoma-base` image (see [0. A clean macOS 14 VM](#0-a-clean-macos-14-vm-tart)), builds the `.dmg` in a throw-away clone, and runs the regression tests on the `.dmg` in a bare clone of the base image. Its provisioning script (`tools/tart/provision.sh`) runs the MacPorts steps below. tart only runs on **Apple Silicon Macs** and only produces arm64 builds; for Intel or universal builds, or for macOS 11 and older, use the MacPorts steps below on an Intel Mac (see "Notes for older systems"). On any Mac, the MacPorts steps below can also be run natively.
+- **On your Mac:** follow the [MacPorts section](#macports-from-scratch) below.
 
 The official macOS binaries are built with [MacPorts](https://www.macports.org) plus the custom ports in `tools/MacPorts`, using the `tools/jenkins/launchBuildMain.sh` script. That script does everything: checks out the sources, compiles the plugins and Natron, builds the `.dmg`, runs the tests and archives the result. The [MacPorts section](#macports-from-scratch) below describes how to prepare a Mac for it from scratch. On Apple Silicon it produces native arm64 binaries.
 
-[Homebrew](https://brew.sh) can also be used for development builds (see [Homebrew](#homebrew)). It is not used for releases, because MacPorts is easier to customize.
+Homebrew is not supported: build with MacPorts only, and keep Homebrew out of the `PATH` (see `port_switch` below). A Homebrew tool or library found by a build silently replaces a missing MacPorts one.
 
 Natron is built with **CMake** (see [Building with CMake](#building-with-cmake)). The release scripts (`launchBuildMain.sh`, and `tools/tart/provision.sh`, which drives it) build Natron with CMake too. The qmake build is deprecated: on RB-2.6 it stays available to them as a fallback (`NATRON_BUILD_SYSTEM=qmake`) until the CMake-built installers are shown to be equivalent (#1181); it will be removed in a future release.
 
@@ -16,7 +16,9 @@ The workflow around the release build is documented in the Maintainer Guide (`Do
 
 ## Before you start
 
-A from-scratch MacPorts install builds LLVM, Mesa (OSMesa), Qt 5 and Qt WebEngine from source where no binary archive exists: plan for several hours and about 60 GB of free disk space (Xcode itself is a large download). Run the long steps inside `caffeinate -i` or `tmux`. On a fresh Mac, the first `git` command prompts you to install the Command Line Tools.
+**macOS 14 (Sonoma) is the distribution baseline** of Natron 2.6 (maintainer decision, 2026-11-21): the release is built on macOS 14, for macOS 14.0 and later, with only the Xcode Command Line Tools and their macOS 14 SDK (no Xcode). GitHub's CI uses `macos-15` runners, only because GitHub has no macOS 14 runners. The steps below also work on a newer macOS, with the extra settings of section 2.
+
+A from-scratch MacPorts install builds LLVM, Mesa (OSMesa), Qt 5's patched `qtbase` and a few ports with Natron variants from source, and installs the other ports from MacPorts' binary archives: plan for several hours and about 60 GB of free disk space. Run the long steps inside `caffeinate -i` or `tmux`.
 
 ## Checkout sources
 
@@ -34,12 +36,12 @@ In the rest of this document, `$NATRON_SRC` is the absolute path to this checkou
 
 ```Shell
 export NATRON_SRC=$PWD   # in the Natron directory
-export CLANG=22          # the MacPorts clang of step 5 (see the table there)
+export CLANG=17          # the MacPorts clang of step 5: 17 on macOS 14, the baseline (see the table there)
 ```
 
 ## Install Dependencies
 
-There are two exclusive options: MacPorts (used for official builds) or Homebrew.
+Natron is built with MacPorts (as the official builds). Homebrew is not supported.
 
 ### MacPorts from scratch
 
@@ -71,16 +73,88 @@ brew_switch() {  # use Homebrew, hide MacPorts
 
 Run `port_switch` in the terminal you build from (before `launchBuildMain.sh` or `make`).
 
-#### 1. Xcode
+#### 0. A clean macOS 14 VM (tart)
 
-Install Xcode from the App Store. The Command Line Tools alone are not enough. Then select it and accept the license:
+The release SDK is installed in a [tart](https://tart.run) VM made from the stock cirruslabs Sonoma image; `tools/tart/natron-sdk.sh create` does all of this section and the next ones (see `tools/tart/README.md`). To do it by hand, on an **Apple Silicon** host (tart only runs there, and only arm64 guests):
 
 ```Shell
-sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
-sudo xcodebuild -license accept
+# the image used for the release SDK (NATRON_MACOS_BASE_IMAGE in tools/jenkins/macos-release.sh),
+# pinned by digest; ghcr.io/cirruslabs/macos-sonoma-base:latest is the newest one
+IMAGE=ghcr.io/cirruslabs/macos-sonoma-base@sha256:e2ebdfc4d354b336fe00d729c11a8136a019b8046f41cc183a2fe51b85d18f49
+tart pull $IMAGE                                               # about 30 GB to download
+tart clone $IMAGE natron-sdk-sonoma
+tart set natron-sdk-sonoma --cpu 6 --memory 16384 --disk-size 250   # GB; the disk is sparse
+tart run --no-graphics natron-sdk-sonoma &
+ssh admin@$(tart ip natron-sdk-sonoma)                          # password: admin
 ```
 
-Under *System Settings › Privacy & Security › Developer Tools* (*System Preferences › Security & Privacy › Privacy › Developer Tools* before macOS 13), enable your terminal application. This avoids Gatekeeper scans on every freshly built binary. On older macOS versions, the App Store only offers Xcode versions that need the latest macOS: download an older Xcode from <https://developer.apple.com/download/all/> (e.g. Xcode 12.4 for macOS 10.15).
+The image (macOS 14.8.7 in 2026-11) has a single account, `admin` with password `admin` and passwordless `sudo`, which logs in automatically. On its first boot macOS grows the APFS container to the new disk size (`sudo diskutil apfs resizeContainer disk0s2 0` does it otherwise). (The scripts use `NATRON_MACOS_BASE_IMAGE` from `tools/jenkins/macos-release.sh`, pinned by digest for reproducible release images; `BASE_IMAGE=ghcr.io/cirruslabs/macos-sonoma-base:latest` overrides it, to try a newer image before moving the pin.)
+
+If the guest gets no IPv4 address, or no internet access (seen behind corporate network filters, see "Networking" in `tools/tart/README.md`), reach it at its IPv6 link-local address, and give it internet access through a SOCKS proxy carried by the SSH connection, as the scripts do:
+
+```Shell
+# on the host: the guest's link-local address, on the vmnet bridge (bridge100, the one with 192.168.64.1)
+A=$(tart exec natron-sdk-sonoma /sbin/ifconfig en0 | awk '/inet6 fe80/{sub(/%.*/,"",$2); print $2; exit}')
+# a SOCKS proxy on the guest's 127.0.0.1:1080 only, to ports 80 and 443 only (OpenSSH 8.7 or later)
+ssh -R 127.0.0.1:1080 -o PermitRemoteOpen='*:80 *:443' admin@$A%bridge100
+# in the guest (curl, git and MacPorts honour it; with sudo, pass it: sudo env ALL_PROXY=... port ...)
+export ALL_PROXY=socks5h://127.0.0.1:1080
+```
+
+**Order of the steps in the VM.** This section and the next one replace the Command Line Tools, so `git` doesn't work in between: in the VM, check out the sources (see "Checkout sources") after section 1, or copy them from the host (`natron-sdk.sh` copies the files that git tracks under `tools/` with rsync).
+
+The commands of this section and of section 1 remove Homebrew and the Command Line Tools and change system settings: **run them only inside the VM**, never on your own Mac. `tools/tart/provision.sh`, which runs them for `natron-sdk.sh`, refuses to run outside a tart VM.
+
+The image comes with things a Natron SDK must not use:
+
+- **Homebrew** in `/opt/homebrew` (cmake, pkgconf, python@3.14, gcc, node, …), added to the `PATH` by `/etc/paths.d/homebrew` and by `eval "$(/opt/homebrew/bin/brew shellenv)"` in `~/.zprofile` (`~/.profile` is a link to it). Remove it. The tart guest agent (needed by `tart exec`) was installed with Homebrew, so move it out first:
+
+  ```Shell
+  sudo mkdir -p /usr/local/libexec
+  sudo cp "$(readlink -f /opt/homebrew/bin/tart-guest-agent)" /usr/local/libexec/tart-guest-agent
+  sudo perl -pi -e 's|/opt/homebrew/bin/tart-guest-agent|/usr/local/libexec/tart-guest-agent|; s|:/opt/homebrew/bin||' \
+      /Library/LaunchAgents/org.cirruslabs.tart-guest-agent.plist /Library/LaunchDaemons/org.cirruslabs.tart-guest-daemon.plist
+  sudo rm -rf /opt/homebrew /etc/paths.d/homebrew ~/.homebrew
+  grep -v -E 'brew|HOMEBREW|rbenv|node@|PNPM' ~/.zprofile > ~/.zprofile.new && mv ~/.zprofile.new ~/.zprofile
+  git config --global --remove-section filter.lfs   # git-lfs came from Homebrew
+  ```
+
+- **Command Line Tools 16.2**, with the macOS 15.2 SDK as the default SDK and Apple clang 16. They are replaced by the Command Line Tools 15.3 in the next section.
+
+#### 1. Command Line Tools with the macOS 14 SDK
+
+Natron needs only the **Command Line Tools for Xcode 15.3**: their default SDK is macOS 14.4's (`MacOSX.sdk` → `MacOSX14.4.sdk`; there is also a `MacOSX13.3.sdk`), and their compiler is Apple clang 15.0.0 (`clang-1500.3.9.4`), which builds Natron's C++17 (Qt 5) and C++20 (Qt 6) code for macOS 14.0. Xcode is not needed. (The one port that requires Xcode to build, `qt5-qtwebengine`, which `py311-pyside2` depends on, is installed from MacPorts' binary archive.) Newer Command Line Tools (16.x) default to a macOS 15 SDK: don't use them for the release.
+
+`softwareupdate` installs the Command Line Tools without an Apple ID when a marker file exists. First remove the installed ones if they are another version (`pkgutil --pkg-info=com.apple.pkg.CLTools_Executables` shows it):
+
+```Shell
+sudo rm -rf /Library/Developer/CommandLineTools
+for p in $(pkgutil --pkgs | grep '^com\.apple\.pkg\.CLTools_'); do sudo pkgutil --forget $p; done
+sudo touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
+softwareupdate --list                     # lists "Command Line Tools for Xcode-15.3" (and 16.2) on macOS 14
+sudo softwareupdate --install "Command Line Tools for Xcode-15.3" --verbose   # about 700 MB
+sudo rm /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
+sudo xcode-select -s /Library/Developer/CommandLineTools
+xcrun --show-sdk-version                  # 14.4
+clang --version                           # Apple clang version 15.0.0 (clang-1500.3.9.4)
+```
+
+`softwareupdate` doesn't use `ALL_PROXY`: in a VM whose internet access goes through the SSH SOCKS proxy, set the system proxy before `softwareupdate --list`, on every network service, and turn it off afterwards:
+
+```Shell
+services() { networksetup -listallnetworkservices | tail -n +2 | grep -v '^\*'; }
+services | while read -r s; do sudo networksetup -setsocksfirewallproxy "$s" 127.0.0.1 1080; done
+# ... softwareupdate --list and --install, as above ...
+services | while read -r s; do sudo networksetup -setsocksfirewallproxystate "$s" off; done
+```
+
+The `clt` step of `tools/tart/provision.sh` does this inside the VM, and checks that the default SDK is macOS 14's and that small C++17 and C++20 programs (concepts, ranges, `std::span`, `<=>`, `std::format`) build for macOS 14.0. (On a Mac of your own running macOS 14, `xcode-select --install` installs the newest Command Line Tools offered, 16.x, which is fine for development builds.)
+
+If Apple stops offering the Command Line Tools 15.3 through `softwareupdate`, download "Command Line Tools for Xcode 15.3" from <https://developer.apple.com/download/all/> (this needs an Apple ID), copy the `.dmg` into the VM, and install it: `hdiutil attach Command_Line_Tools_for_Xcode_15.3.dmg`, then `sudo installer -pkg "/Volumes/Command Line Developer Tools/Command Line Tools.pkg" -target /`. The version is set by `NATRON_MACOS_CLT_VERSION` in `tools/jenkins/macos-release.sh`.
+
+The release scripts build Natron and the plug-ins with this Apple clang (`tools/jenkins/compiler-common.sh`, #1134), as long as it supports the C++ standard of the build (C++17 with Qt5, C++20 with Qt6) and links with MacPorts' `libomp` (section 5): Natron's `CMakeLists.txt` and the plug-ins (`OFX_LIBOMP_ROOT`, passed by `build-plugins.sh`) find it, as in "Developing with the MacPorts SDK". Apple clang's driver has no `-fopenmp` (only `-Xpreprocessor -fopenmp`) and Xcode ships no OpenMP runtime, so the builds that pass `-fopenmp` to the compiler, the deprecated qmake build (`NATRON_BUILD_SYSTEM=qmake`, `CONFIG+=openmp`) and the plug-ins' Makefiles (`PLUGINS_BUILD_SYSTEM=make`, `OPENMP=1`), use a MacPorts clang instead (section 5), as does `NATRON_MACOS_CLANG=macports`. Apple clang also builds the ports whose Portfile selects it.
+
+On a Mac (not needed in the VM), under *System Settings › Privacy & Security › Developer Tools* (*System Preferences › Security & Privacy › Privacy › Developer Tools* before macOS 13), enable your terminal application. This avoids Gatekeeper scans on every freshly built binary.
 
 #### 2. MacPorts
 
@@ -90,9 +164,34 @@ Download and install the `.pkg` for your macOS version from <https://www.macport
 sudo port selfupdate
 ```
 
+**In a VM without direct internet access:** the `.pkg`'s postinstall runs `port selfupdate`, whose rsync can't use the SOCKS proxy and hangs until it times out (several minutes); stop it from another ssh session with `sudo pkill -f rsync://rsync.macports.org`, or wait. Then fetch the ports tree over HTTPS, through the proxy, instead of `selfupdate`:
+
+```Shell
+sudo perl -pi -e 's|^rsync://\S+(\s+\[default\])|https://distfiles.macports.org/ports.tar.gz$1|' /opt/local/etc/macports/sources.conf
+sudo env ALL_PROXY=socks5h://127.0.0.1:1080 port -v sync
+```
+
+**Natron 2.6 for macOS runs on macOS 14 (Sonoma) or later**, so the release build, and the MacPorts libraries bundled in the `.dmg`, are built for macOS 14 (minimum version `minos` 14.0). On macOS 14 itself, that is MacPorts' default, and its binary archives (built for the macOS they were made on) can be used. Make it explicit in `/opt/local/etc/macports/macports.conf` **before installing any port**:
+
+```
+macosx_deployment_target	14.0
+```
+
+MacPorts falls back to building a port from source, silently, when the download of its binary archive fails, which can turn seconds into hours (`llvm-18`), or fail (`qt5-qtwebengine` needs Xcode to build). On a slow or flaky connection, fetch the archives first, then remove the work directories that `archivefetch` leaves (they have the dependencies' default variants, and `install` propagates the requested variants to the dependencies: without the `clean`, `install glib2 -x11` refuses to go on with a `glib2-bootstrap +x11` work directory), then install:
+
+```Shell
+sudo port archivefetch <port> <variants> rdepof:<port>
+sudo port clean --work <port> <variants> rdepof:<port>   # the fetched archives are kept
+sudo port install <port> <variants>
+```
+
+`tools/tart/provision.sh` does this, with retries, before every `install` and `upgrade` (except the source builds, `-s`). In a VM without direct internet access, the `.pkg`'s own `port selfupdate` (rsync) hangs until it times out, and the ports tree must be fetched over HTTPS through the proxy (see "Networking" in `tools/tart/README.md`).
+
+On a **newer** macOS, a release SDK also needs `buildfromsource	always`: MacPorts' binary archives would need that macOS (e.g. minos 15.0 on Sequoia), so every port must be built from source, which takes many hours. `qt5-qtwebengine` (a dependency of `py311-pyside2`) then needs a full Xcode to build: install Xcode from the App Store or <https://developer.apple.com/download/all/>, then `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` and `sudo xcodebuild -license accept`. This path is not tested with the current scripts (the tart image runs macOS 14), and `softwareupdate` probably doesn't offer the Command Line Tools 15.3 there. Leave `macosx_sdk_version` unset: MacPorts then uses the SDK of the running macOS (the Command Line Tools' macOS 14.4 SDK on macOS 14). For a development build that you only run on your own Mac, you can skip this. If ports were installed before these lines were added, rebuild the ones built for a newer macOS (see "Building for an older macOS" below).
+
 #### 3. Natron's custom ports
 
-Natron needs modified ports. Examples: the `+natron` variants of ImageMagick, ImageMagick7 and openimageio and the `+natronmini` variant of ffmpeg; libraw 0.22.3 with the GPL demosaic packs restored by a patch; the subports `ffmpeg-lgpl`, `libraw-lgpl` and `libheif-lgpl` for COMMERCIAL builds; freetype 2.15.0 with an upstream fix for rotated text backported; onetbb with a patch for a crash at exit (#1253); qt5-qtbase with a patch for a QMutex lost wake-up that hangs render threads on Apple Silicon (#1451). If you already have a MacPorts SDK with qt5, run `sudo port -v upgrade qt5-qtbase` after `./sync.sh` below: the patched revision (5.15.19_1) has no binary archive, so it builds from source. MacPorts reads them from a copy of `tools/MacPorts` in `/opt/MacPorts-Natron`. A copy is used rather than the source tree itself, because MacPorts accesses the ports as an unprivileged user that usually can't read your home directory.
+Natron needs modified ports. Examples: the `+natron` variants of ImageMagick, ImageMagick7 and openimageio and the `+natronmini` variant of ffmpeg; libraw 0.22.3 with the GPL demosaic packs restored by a patch; x265 with the 10- and 12-bit libraries (#1658); the subports `ffmpeg-lgpl`, `libraw-lgpl` and `libheif-lgpl` for COMMERCIAL builds; freetype 2.15.0 with an upstream fix for rotated text backported; onetbb with a patch for a crash at exit (#1253); qt5-qtbase with a patch for a QMutex lost wake-up that hangs render threads on Apple Silicon (#1451); ffmpeg and ffmpeg-lgpl with patches for black 1-pixel columns in 10-bit DNxHD/DNxHR decoded on Apple Silicon ([openfx-io#266](https://github.com/NatronGitHub/openfx-io/issues/266)) and for a DNxHR encoder abort on high-entropy images ([openfx-io#267](https://github.com/NatronGitHub/openfx-io/issues/267)). If you already have a MacPorts SDK with qt5, run `sudo port -v upgrade qt5-qtbase` after `./sync.sh` below: the patched revision (5.15.19_1) has no binary archive, so it builds from source. Likewise, run `sudo port -v upgrade ffmpeg` (and `ffmpeg-lgpl`, if installed) to get the patched FFmpeg (9.0.2_5). Run `sudo port -v upgrade x265` to get the 10- and 12-bit HEVC encoder (4.2_101; `x265 --version` shows `8bit+10bit+12bit`); FFmpeg needs no rebuild. MacPorts reads them from a copy of `tools/MacPorts` in `/opt/MacPorts-Natron`. A copy is used rather than the source tree itself, because MacPorts accesses the ports as an unprivileged user that usually can't read your home directory.
 
 ```Shell
 sudo mkdir -p /opt/MacPorts-Natron
@@ -115,7 +214,9 @@ grep -q '^file:///opt/MacPorts-Natron' /opt/local/etc/macports/sources.conf ||
 grep -q '^file:///opt/MacPorts-Natron' /opt/local/etc/macports/sources.conf || echo 'Error: add the line to sources.conf by hand'
 ```
 
-Check it with `port file openimageio`, which should print a path under `/opt/MacPorts-Natron`. Re-run `./sync.sh` whenever the files in `tools/MacPorts` change, including after a `git pull` or a branch switch, and before installing or upgrading ports: an out-of-date `PortIndex` makes MacPorts resolve the overlay ports with stale versions.
+Check it with `port file openimageio`, which should print a path under `/opt/MacPorts-Natron`.
+
+MacPorts only installs a port from a binary archive if the port's own ports tree lists archive sites, and the overlay doesn't: the overlay ports are built from source. The exception is the `qt5` Portfile, whose subports other than `qt5-qtbase` are unchanged and come from MacPorts' archives where they exist (on macOS 14 they do). This matters for `qt5-qtwebengine`, a dependency of `py311-pyside2`: it needs a full Xcode to build, and the release SDK has only the Command Line Tools. Re-run `./sync.sh` whenever the files in `tools/MacPorts` change, including after a `git pull` or a branch switch, and before installing or upgrading ports: an out-of-date `PortIndex` makes MacPorts resolve the overlay ports with stale versions.
 
 `./check.sh` (in the same directory; `--all` to check every overlay port, not only the installed ones) often reports obsolete Portfiles right after a `port selfupdate`: you can still use the committed overlay. It also warns when `/opt/MacPorts-Natron` differs from your checkout, meaning `./sync.sh` must be re-run. Reintegrating it with upstream is a maintainer task, see "Reintegrating upstream Portfiles into the overlay" in `Documentation/source/maintainers/build-macos.rst`.
 
@@ -132,7 +233,7 @@ sudo port select --set python python27
 cd $NATRON_SRC/..   # anywhere outside the Natron checkout (not in tools/MacPorts)
 git clone https://github.com/devernay/osmesa-install.git
 mkdir osmesa-install/build && cd osmesa-install/build
-env LLVM_BUILD=1 MKJOBS=8 ../osmesa-install.sh     # LLVM 6.0.1 into /opt/llvm, Mesa 18.3.6 into /opt/osmesa; no sudo
+env LLVM_BUILD=1 MKJOBS=8 MACOSX_DEPLOYMENT_TARGET=14.0 ../osmesa-install.sh     # LLVM 6.0.1 into /opt/llvm, Mesa 18.3.6 into /opt/osmesa; no sudo
 
 sudo port select --set python none
 ```
@@ -147,7 +248,7 @@ sudo mkdir -p /opt/osmesa-25.0.7 /opt/llvm-19.1.7
 sudo chown $(id -un):staff /opt/osmesa-25.0.7 /opt/llvm-19.1.7
 cd $NATRON_SRC/../osmesa-install/build   # the osmesa-install checkout of the step above
 env OSMESA_VERSION=25.0.7 OSMESA_PREFIX=/opt/osmesa-25.0.7 LLVM_PREFIX=/opt/llvm-19.1.7 \
-    PYTHON=/opt/local/bin/python3.11 MKJOBS=8 ../osmesa-install.sh   # builds LLVM 19.1.7 first; no sudo
+    PYTHON=/opt/local/bin/python3.11 MKJOBS=8 MACOSX_DEPLOYMENT_TARGET=14.0 ../osmesa-install.sh   # builds LLVM 19.1.7 first; no sudo
 # then build Natron (step 10) with: env OSMESA_PREFIX=/opt/osmesa-25.0.7 LLVM_PREFIX=/opt/llvm-19.1.7 ...
 ```
 
@@ -155,7 +256,14 @@ Don't use a MacPorts or Homebrew LLVM (`LLVM_SYSTEM=1`) for release builds: the 
 
 #### 5. Compiler
 
-Ports and Natron are compiled with a MacPorts clang (rather than Apple's) for full OpenMP support. Install the version MacPorts uses by default on your OS:
+Natron and the plug-ins are compiled with Apple clang and MacPorts' OpenMP runtime, `libomp`:
+
+```Shell
+sudo port -v -N install libomp
+sudo port setrequested libomp
+```
+
+The deprecated qmake build, the plug-ins' Makefiles and `NATRON_MACOS_CLANG=macports` need a MacPorts clang (with `-fopenmp`), and so do the release scripts if Apple clang can't build the C++ standard with `libomp` (`compiler-common.sh` warns then). The `tools/tart` SDK image has one, for these fallbacks. Install the version MacPorts uses by default on your OS:
 
 | macOS | clang port |
 |---|---|
@@ -165,17 +273,18 @@ Ports and Natron are compiled with a MacPorts clang (rather than Apple's) for fu
 | 10.6 | `clang-11` |
 
 ```Shell
-CLANG=22   # from the table above: 18 on macOS 15, 17 on 10.7 to 14 (also export it next to NATRON_SRC)
+CLANG=17   # from the table above: 17 on macOS 14 (the baseline) and 10.7 to 13, 18 on 15, 22 on 26 and later (also export it next to NATRON_SRC)
 sudo port -v -N install clang-$CLANG
 sudo port setrequested clang-$CLANG
 ```
 
-`tools/jenkins/compiler-common.sh` builds Natron itself with the newest installed `clang-mp-*` that is not newer than the default in the table above, so older systems such as macOS 10.15 keep using clang-17.
+In those cases, `tools/jenkins/compiler-common.sh` uses the newest installed `clang-mp-*` that is not newer than the default in the table above, so older systems such as macOS 10.15 keep using clang-17.
 
-On a new macOS or clang version, check that OpenMP programs link against the system libc++ and MacPorts' libomp:
+On a new macOS or clang version, check that OpenMP programs, built with Apple clang and with the MacPorts clang, link against the system libc++ and MacPorts' libomp (`tools/tart/provision.sh` does the same):
 
 ```Shell
-printf 'int main(){}\n' > /tmp/t.cpp
+printf '#include <omp.h>\nint main(){ int n = 0;\n#pragma omp parallel for schedule(dynamic) reduction(+:n)\nfor (int i = 0; i < 4; ++i) n += i;\nreturn n == 6 && omp_get_max_threads() > 0 ? 0 : 1; }\n' > /tmp/t.cpp
+/usr/bin/clang++ -Xpreprocessor -fopenmp -I/opt/local/include/libomp /tmp/t.cpp -o /tmp/t -L/opt/local/lib/libomp -lomp && otool -L /tmp/t
 clang++-mp-$CLANG -stdlib=libc++ -fopenmp /tmp/t.cpp -o /tmp/t && otool -L /tmp/t
 # expect /usr/lib/libc++.1.dylib and /opt/local/lib/libomp/libomp.dylib
 ```
@@ -263,7 +372,8 @@ See [macOS packaging tools](#macos-packaging-tools) below.
 ```Shell
 mkdir -p $HOME/Development/workspace
 cd $NATRON_SRC/tools/jenkins
-env NOUPDATE=1 WORKSPACE=$HOME/Development/workspace DISABLE_BREAKPAD=1 NATRON_LICENSE=GPL \
+# NATRON_MACOS_MIN: the release target, NATRON_MACOS_RELEASE_MIN in tools/jenkins/macos-release.sh
+env NATRON_MACOS_MIN=14.0 NOUPDATE=1 WORKSPACE=$HOME/Development/workspace DISABLE_BREAKPAD=1 NATRON_LICENSE=GPL \
     GIT_URL=https://github.com/NatronGitHub/Natron.git GIT_BRANCH=RB-2.6 \
     UNIT_TESTS=false BUILD_NAME=natron_github_RB2 BUILD_NUMBER=1 \
     COMPILE_TYPE=release MKJOBS=8 \
@@ -272,14 +382,17 @@ env NOUPDATE=1 WORKSPACE=$HOME/Development/workspace DISABLE_BREAKPAD=1 NATRON_L
 
 `launchBuildMain.sh` builds Natron with CMake (`tools/jenkins/build-natron.sh` configures it with the release options, runs `cmake --install` with `NATRON_INSTALL_LAYOUT=PORTABLE`, and stages the result for the installer script). Extra CMake options go in `NATRON_EXTRA_CMAKE_FLAGS`, e.g. `NATRON_EXTRA_CMAKE_FLAGS=-DNATRON_FAST_MATH=ON`. `NATRON_BUILD_SYSTEM=qmake` selects the deprecated qmake build, the only one with the Breakpad crash reporter (the CMake build implies `DISABLE_BREAKPAD=1`). It checks out Natron (`GIT_URL`, `GIT_BRANCH`) and the plug-ins from GitHub: local changes in `$NATRON_SRC` are not built, except for the `tools/` scripts and the overlay. To build local changes, see "Developing with the MacPorts SDK".
 
-The `.dmg` ends up in `$HOME/Development/workspace/builds_archive/natron_github_RB2/1/`, named `Natron-<branch>-<date>-<commit>-macOS<version>-<arch>.dmg`. Use `UNIT_TESTS=true` to also run the render regression suite (Natron-Tests); this adds `-tests.txt` and `-unit_tests_failures.zip` next to the DMG. `BUILD_FROM=N` / `BUILD_TO=N` run only some of the six steps (checkout, plugins, Natron, installer, tests, archive).
+The `.dmg` ends up in `$HOME/Development/workspace/builds_archive/natron_github_RB2/1/`, named `Natron-<branch>-<date>-<commit>-macOS<version>-<arch>.dmg`, where `<version>` is the oldest macOS it runs on. **Release or development target.** With `NATRON_MACOS_MIN=14.0`, as above (release builds; `tools/tart/provision.sh` sets it from `NATRON_MACOS_RELEASE_MIN` in `tools/jenkins/macos-release.sh`), `tools/jenkins/common.sh` builds Natron and the plug-ins for macOS 14.0, and `launchBuildMain.sh` then runs `tools/tart/check-minos.sh` on the `.dmg`, which fails the build if a Mach-O file in it needs a newer macOS (the list is in `<dmg name>-minos.txt`; `tools/tart/natron-build.sh` checks it again on the host). This only works with ports built for 14.0 (install section 2). Without `NATRON_MACOS_MIN` (development builds), Natron and the plug-ins are built for the build Mac's own macOS, so that the plug-ins can bundle MacPorts' ordinary binary archives (their deploy step, `OFX_DEPLOY_STRICT_MINOS`, rejects a library built for a newer macOS than the target), and the DMG is named after it. An explicit `MACOSX_DEPLOYMENT_TARGET` wins over both. Use `UNIT_TESTS=true` to also run the render regression suite (Natron-Tests); this adds `-tests.txt` and `-unit_tests_failures.zip` next to the DMG. `BUILD_FROM=N` / `BUILD_TO=N` run only some of the six steps (checkout, plugins, Natron, installer, tests, archive).
+
+**Check the DMG on a bare macOS 14: required before every macOS release.** A DMG that runs in the SDK VM may still depend on something that only the SDK has (a MacPorts library that wasn't bundled, the Command Line Tools, Python modules). With tart, `tools/tart/natron-test.sh Natron-….dmg` runs the full [Natron-Tests](https://github.com/NatronGitHub/Natron-Tests) suite against the DMG's `NatronRenderer` in a throw-away clone of the stock `macos-sonoma-base` image, from which it removes the Command Line Tools and Homebrew, and writes `<dmg name>-tests.txt` and `<dmg name>-unit_tests_failures.zip` next to the DMG. **Attach both files to the GitHub release, next to the DMG**, as for v2.5.0 (e.g. `Natron-2.5.0-macOS12-x86_64-tests.txt`). Its exit status is 1 if a test fails that isn't a known failure: the known failures are listed in Natron-Tests (`known_failures/common.txt` and `macos.txt`, reported as `KNOWN FAIL`; a listed test that passes is reported as `UNEXPECTED PASS`, and the list must then be updated). Review the failures, and add the accepted ones to those lists, with their issue, through a Natron-Tests pull request (see `tools/tart/README.md`). Without tart, copy `Natron.app` and Natron-Tests to a Mac running macOS 14 without MacPorts, and run `runTests.sh` as shown in "Testing" in `Documentation/source/maintainers/build-macos.rst` (it needs a `gtimeout`; it sets a private, empty `NATRON_DISK_CACHE_PATH` itself unless one is given).
 
 The plug-ins (openfx-misc, openfx-io, openfx-arena, openfx-gmic) are built with their CMake builds, with `-DOFX_DEPLOY_BUNDLES=ON` (`tools/jenkins/build-plugins.sh`); `PLUGINS_BUILD_SYSTEM=make` builds them with their Makefiles instead.
 
 For a release, build a tag instead of a branch:
 
 ```Shell
-env NATRON_DEV_STATUS=STABLE RELEASE_TAG=2.6.0 NATRON_BUILD_NUMBER=1 NOUPDATE=1 WORKSPACE=$HOME/Development/workspace \
+# NATRON_MACOS_MIN: NATRON_MACOS_RELEASE_MIN in tools/jenkins/macos-release.sh
+env NATRON_MACOS_MIN=14.0 NATRON_DEV_STATUS=STABLE RELEASE_TAG=2.6.0 NATRON_BUILD_NUMBER=1 NOUPDATE=1 WORKSPACE=$HOME/Development/workspace \
     DISABLE_BREAKPAD=1 NATRON_LICENSE=GPL GIT_URL=https://github.com/NatronGitHub/Natron.git \
     UNIT_TESTS=true BUILD_NAME=natron_github_RB2 BUILD_NUMBER=1 COMPILE_TYPE=release MKJOBS=8 \
     ./launchBuildMain.sh
@@ -373,9 +486,9 @@ Do this every few weeks, and before a release build. Each step is safe to stop a
 
    `port clean --work --dist installed` removes the build directories and the downloaded source archives of the installed ports, and keeps their logs. Don't delete `/opt/local/var/macports/software`: MacPorts needs those archives to deactivate and reactivate ports.
 
-9. **Rebuild and test,** if the upgrade touched anything Natron or the plug-ins link to: `qt5`, `py311-pyside2`, `python311`, `boost`, `ffmpeg`, `openimageio`, `opencolorio`, `libraw`, `openexr`, `ImageMagick`, `ImageMagick7`, `poppler`, `cairo`, `freetype`, … Rebuild from a fresh build directory (install section 10, or "Developing with the MacPorts SDK" below), clear Natron's cache (`rm -rf ~/Library/Caches/INRIA/Natron`), and run the unit tests (see [Testing](#testing)). Before a release, also run the Natron-Tests regression suite on the new DMG (`UNIT_TESTS=true` with `launchBuildMain.sh`, see install section 10, or `runTests.sh`, see "Testing" in `Documentation/source/maintainers/build-macos.rst`).
+9. **Rebuild and test,** if the upgrade touched anything Natron or the plug-ins link to: `qt5`, `py311-pyside2`, `python311`, `boost`, `ffmpeg`, `openimageio`, `opencolorio`, `libraw`, `openexr`, `ImageMagick`, `ImageMagick7`, `poppler`, `cairo`, `freetype`, … Rebuild from a fresh build directory (install section 10, or "Developing with the MacPorts SDK" below), clear Natron's cache (`rm -rf ~/Library/Caches/INRIA/Natron`), and run the unit tests (see [Testing](#testing)). Before a release, also run the Natron-Tests regression suite on the new DMG on a bare macOS 14 (required, `tools/tart/natron-test.sh`, see install section 10), and attach its `-tests.txt` and `-unit_tests_failures.zip` to the release.
 
-With the tart VMs (`tools/tart`), `tools/tart/natron-sdk.sh update` does steps 3 to 7 inside a copy of the SDK image: it installs the MacPorts version set by `MACPORTS_VERSION` in `tools/tart/provision.sh` and syncs the ports tree (instead of `selfupdate`), copies the host checkout's `tools/` into the VM (so update the host checkout first, step 1), runs `check.sh` (and only warns if the overlay is behind upstream: reintegrate on the host first), `./sync.sh`, reinstalls the pinned ports whose installed version differs from the overlay, upgrades the outdated ports one by one, installs `ImageMagick7 +natron` if the image doesn't have it yet, and re-applies the fixups. The previous image is kept as `natron-sdk-sequoia-prev`. See `tools/tart/README.md`.
+With the tart VMs (`tools/tart`), `tools/tart/natron-sdk.sh update` does steps 3 to 7 inside a copy of the SDK image: it installs the MacPorts version set by `MACPORTS_VERSION` in `tools/tart/provision.sh` and syncs the ports tree (instead of `selfupdate`), copies the host checkout's `tools/` into the VM (so update the host checkout first, step 1), runs `check.sh` (and only warns if the overlay is behind upstream: reintegrate on the host first), `./sync.sh`, reinstalls the pinned ports whose installed version differs from the overlay, upgrades the outdated ports one by one, installs `ImageMagick7 +natron` if the image doesn't have it yet, rebuilds from source the ports (and OSMesa/LLVM) built for a macOS newer than 14.0, if any (see "Building for an older macOS"; on the macOS 14 image there should be none), and re-applies the fixups. The previous image is kept as `natron-sdk-sonoma-prev`. See `tools/tart/README.md`.
 
 #### Switching from Python 3.10 to 3.11
 
@@ -424,7 +537,7 @@ With tart, `tools/tart/natron-sdk.sh update` does all of this except the removal
 
 A new major version of macOS (e.g. 15 to 26) needs a new MacPorts and a reinstall of every port: ports built for the previous macOS may not work any more, and `port selfupdate` doesn't fix that. This follows the [MacPorts migration procedure](https://trac.macports.org/wiki/Migration).
 
-1. **Update Xcode** from the App Store for the new macOS, then redo install section 1 (`xcode-select -s` and `xcodebuild -license accept`).
+1. **Update the Command Line Tools** for the new macOS (install section 1; `softwareupdate --list` shows the versions offered), and `sudo xcode-select -s /Library/Developer/CommandLineTools`. A release build stays on macOS 14 with the Command Line Tools 15.3; on a newer macOS, set `buildfromsource always` in `macports.conf` (install section 2).
 
 2. **Install the MacPorts `.pkg` for the new macOS** from <https://www.macports.org/install.php>. It keeps your `/opt/local/etc/macports/sources.conf`. Check that the overlay is still registered (otherwise redo install section 3):
 
@@ -480,6 +593,20 @@ A new major version of macOS (e.g. 15 to 26) needs a new MacPorts and a reinstal
 
 10. **Check the compiler** (install section 5), then rebuild from a fresh build directory and test (step 9 of "Keeping MacPorts up to date"). A clean rebuild is mandatory after a macOS upgrade.
 
+#### Building for an older macOS
+
+The release supports macOS 14 and later (see install section 2). On macOS 14 itself, MacPorts' binary archives are built for 14.0 and nothing needs rebuilding. On a newer macOS, ports installed from MacPorts' binary archives, or before `macosx_deployment_target 14.0` and `buildfromsource always` were set in `macports.conf`, are built for the macOS they were installed on, and their dylibs make the `.dmg` require that macOS. `tools/tart/check-minos.sh` (`-t TARGET`, default 14.0) lists the Mach-O files that need a newer macOS than the target. To rebuild every port that has one, from source and in dependency order:
+
+```Shell
+CHECK=$NATRON_SRC/tools/tart/check-minos.sh
+for p in $(port -q installed active | awk '{print $1}'); do
+    port -q contents $p | $CHECK -t 14.0 -l > /dev/null 2>&1; [ $? = 1 ] && echo $p
+done > ~/rebuild.txt
+sudo port -n -s upgrade --force $(cat ~/rebuild.txt)   # one port at a time is also fine
+```
+
+`-n` rebuilds only the given ports, `-s` builds from source, and `--force` rebuilds ports that are up to date. The ports are rebuilt in the order given: putting the dependencies first is safer (a port may link a static library or inline a header of a dependency), and the tart step below does that. Rebuild OSMesa and LLVM too (install section 4, with `MACOSX_DEPLOYMENT_TARGET=14.0`): `$CHECK /opt/osmesa/lib /opt/llvm/lib/libLLVMSupport.a` tells whether they need it. A few ports may stay too new after a rebuild (prebuilt binaries, or a build system that ignores `MACOSX_DEPLOYMENT_TARGET`): that only matters if their files end up in the `.dmg`, which `check-minos.sh` on the `.dmg` tells. `tools/tart/natron-sdk.sh update` does all of this in the tart SDK image (`step_macports_conf` and `step_rebuild_target` in `tools/tart/provision.sh`).
+
 #### Developing with the MacPorts SDK
 
 `launchBuildMain.sh` builds everything from fresh checkouts. To work on Natron or the plugins directly, build them from your own checkouts.
@@ -491,14 +618,14 @@ mkdir -p ~/src && cd ~/src
 for p in openfx-io openfx-misc openfx-arena openfx-gmic; do git clone --recursive https://github.com/NatronGitHub/$p.git; done
 ```
 
-openfx-misc, openfx-io and openfx-arena use openfx's CMake helpers. Build them with the MacPorts clang (for OpenMP), as C++17 with a Qt5 Natron (`-DOFX_CXX_STANDARD=20` with Qt6), and install the bundles straight into `~/OFX/Natron-release`. openfx-arena needs the ImageMagick 7 of install section 7 (`ImageMagick7 +natron`, in `/opt/local/lib/ImageMagick7`): its pkg-config files must come first, as `build-plugins.sh` does with `MAGICK7_PREFIX`, or pkg-config finds the ImageMagick 6 of `/opt/local` instead.
+openfx-misc, openfx-io and openfx-arena use openfx's CMake helpers. Build them with Apple clang and MacPorts' `libomp` (`OFX_LIBOMP_ROOT`, as `build-plugins.sh` does; `-DCMAKE_CXX_COMPILER=clang++-mp-$CLANG -DCMAKE_CXX_FLAGS=-stdlib=libc++` works too), as C++17 with a Qt5 Natron (`-DOFX_CXX_STANDARD=20` with Qt6), and install the bundles straight into `~/OFX/Natron-release`. openfx-arena needs the ImageMagick 7 of install section 7 (`ImageMagick7 +natron`, in `/opt/local/lib/ImageMagick7`): its pkg-config files must come first, as `build-plugins.sh` does with `MAGICK7_PREFIX`, or pkg-config finds the ImageMagick 6 of `/opt/local` instead.
 
 ```Shell
 for p in openfx-misc openfx-io openfx-arena; do
   cd ~/src/$p
   env PKG_CONFIG_PATH=/opt/local/lib/ImageMagick7/lib/pkgconfig \
     cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_CXX_COMPILER=clang++-mp-$CLANG -DCMAKE_CXX_FLAGS="-stdlib=libc++" \
+      -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DOFX_LIBOMP_ROOT=/opt/local \
       -DCMAKE_PREFIX_PATH=/opt/local -DSEEXPR_HOME=/opt/local -DOFX_CXX_STANDARD=17 \
       -DPLUGIN_INSTALLDIR=$HOME/OFX/Natron-release
   cmake --build build && cmake --install build
@@ -516,13 +643,15 @@ env OPENMP=1 CXX="clang++-mp-$CLANG -stdlib=libc++ -std=c++17" OPTFLAG=-O3 \
     CONFIG=release make -j8
 ```
 
+Use `-std=c++17` with a Qt5 Natron and `-std=c++20` with a Qt6 Natron (RB-2.6 policy; the packaging scripts do this automatically).
+
 The bundle is written to `GMIC_OFX/Darwin-64-release/GMIC.ofx.bundle`. To use it, symlink it next to the others (or use `/Library/OFX/Plugins`):
 
 ```Shell
 ln -sf ~/src/openfx-gmic/GMIC_OFX/Darwin-64-release/GMIC.ofx.bundle ~/OFX/Natron-release/
 ```
 
-Natron itself builds with CMake, the system (Xcode) clang and the MacPorts libraries (see [Building with CMake](#building-with-cmake) below), from `$NATRON_SRC`, with Homebrew off the `PATH`:
+Natron itself builds with CMake, the system (Apple) clang and the MacPorts libraries (see [Building with CMake](#building-with-cmake) below), from `$NATRON_SRC`, with Homebrew off the `PATH`:
 
 ```Shell
 cd $NATRON_SRC
@@ -533,7 +662,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DNATRON_BUILD_TESTS=ON \
 cmake --build build -j$(sysctl -n hw.ncpu)
 ```
 
-The application is then `build/App/Natron.app`. The release scripts add the options of the official builds: `-DNATRON_BUILD_CONFIG=SNAPSHOT` (or `ALPHA`, `BETA`, `RC`, `STABLE`), `-DNATRON_USE_OPENMP=ON` with a MacPorts clang, `-DNATRON_NO_ASSERTIONS=ON` and `-DNATRON_INSTALL_LAYOUT=PORTABLE` (see `Documentation/source/maintainers/building.rst`). The deprecated qmake build, still available on RB-2.6, uses the command below (see [Deprecated: building with qmake](#deprecated-building-with-qmake) for `config.pri`).
+The application is then `build/App/Natron.app`. The release scripts add the options of the official builds: `-DNATRON_BUILD_CONFIG=SNAPSHOT` (or `ALPHA`, `BETA`, `RC`, `STABLE`), `-DNATRON_USE_OPENMP=ON` (with MacPorts' `libomp`), `-DNATRON_NO_ASSERTIONS=ON` and `-DNATRON_INSTALL_LAYOUT=PORTABLE` (see `Documentation/source/maintainers/building.rst`). The deprecated qmake build, still available on RB-2.6, uses the command below (see [Deprecated: building with qmake](#deprecated-building-with-qmake) for `config.pri`).
 
 ```Shell
 cd $NATRON_SRC
@@ -545,10 +674,10 @@ QT_MAC_SDK_NO_VERSION_CHECK=1 make -j8
 
 `CLANG_MP_VERSION` selects the MacPorts clang used with `CONFIG+=openmp` (see `config-macports.pri`).
 
-The OCIO configuration comes from the OpenColorIO-Configs download (see [Download OpenColorIO-Configs](#download-opencolorio-configs) below). To run a development build, or the [Natron-Tests](https://github.com/NatronGitHub/Natron-Tests) suite (`runTests.sh <path to NatronRenderer>`), set the environment that the packaged application normally provides:
+The OCIO configuration comes from the OpenColorIO-Configs download (see [Download OpenColorIO-Configs](#download-opencolorio-configs) below). To run a development build, or the [Natron-Tests](https://github.com/NatronGitHub/Natron-Tests) suite (`runTests.sh <path to NatronRenderer>`), set the environment that the packaged application normally provides (the CMake build generates `fonts.conf` in the build directory, from `Gui/Resources/etc/fonts/fonts.conf.in`), and `NATRON_DISK_CACHE_PATH` to a private directory for test runs (the default disk cache is shared by every build of the version):
 
 ```Shell
-env FONTCONFIG_FILE=$NATRON_SRC/Gui/Resources/etc/fonts/fonts.conf \
+env FONTCONFIG_FILE=$NATRON_SRC/build/App/Resources/etc/fonts/fonts.conf \
     OCIO=$NATRON_SRC/OpenColorIO-Configs/blender/config.ocio \
     OFX_PLUGIN_PATH=~/OFX/Natron-release NATRON_PLUGIN_PATH=$NATRON_SRC/Gui/Resources/PyPlugs \
     build/App/Natron.app/Contents/MacOS/Natron
@@ -560,196 +689,9 @@ Clear the OFX plugin cache (`~/Library/Caches/INRIA/Natron`) after rebuilding pl
 
 #### Notes for older systems
 
-On OS X 10.6 Snow Leopard, the `+universal` variant may be added to `/opt/local/etc/macports/variants.conf`. Older releases were built in an OS X 10.9 VM with Xcode 6.2 to target old systems. Due to the OS X Software License Agreement, OS X may only be virtualized on Mac hardware; see [OS X on OS X](https://web.archive.org/web/20190520141144/https://ntk.me/2012/09/07/os-x-on-os-x/).
+Natron 2.6 runs on macOS 14 or later, on arm64 and x86_64. The x86_64 (Intel) builds are made with the MacPorts steps above on an Intel Mac, or in a macOS VM on one: due to the macOS Software License Agreement, macOS may only be virtualized on Mac hardware. To keep such a VM small, keep only macOS and the Command Line Tools in it and put `/opt` on a sparsebundle disk image stored on the host. Create it on the host with Disk Utility, using a name without spaces (MacPorts doesn't support paths with spaces), e.g. `opt`, with a maximum size of about 100 GB. In the guest, mount the host share (`open smb://<host-ip>/<user>`), attach the image with `sudo hdiutil attach -owners on /Volumes/<user>/path/to/opt.sparsebundle`, and link it: `sudo rmdir /opt; sudo ln -s /Volumes/opt /`.
 
-To keep such a VM small, keep only macOS and Xcode in it and put `/opt` on a sparsebundle disk image stored on the host. Create it on the host with Disk Utility, using a name without spaces (MacPorts doesn't support paths with spaces), e.g. `opt`, with a maximum size of about 100 GB. In the guest, mount the host share (`open smb://<host-ip>/<user>`), attach the image with `sudo hdiutil attach -owners on /Volumes/<user>/path/to/opt.sparsebundle`, and link it: `sudo rmdir /opt; sudo ln -s /Volumes/opt /`.
-
-Known workarounds on 10.6 (universal builds):
-
-- `cmake` may have to be upgraded with the MacPorts clang: `sudo port -v upgrade cmake configure.compiler=macports-clang-11`.
-- ImageMagick: `magick/resize.c` must be compiled without OpenMP for i386 ([LLVM bug 24038](https://bugs.llvm.org/show_bug.cgi?id=24038)). Rebuild that object by hand without `-fopenmp` in the port's work directory, then `sudo port -v upgrade ImageMagick`.
-- `py27-shiboken`: remove `universal_variant no` from the upstream `devel/sparsehash` Portfile, then `sudo port -v install sparsehash +universal configure.compiler=macports-clang-11`.
-- For libc++ on older systems, follow <https://trac.macports.org/wiki/LibcxxOnOlderSystems>, and copy `/usr/lib/libc++*` into `/Developer/SDKs/MacOSX10.6.sdk/usr/lib`.
-- Universal FFmpeg builds may keep install names that point into the i386 destroot. Fix them with `install_name_tool -change <destroot path>/lib/libavXXX.dylib /opt/local/lib/libavXXX.dylib` on `bin/ffmpeg`, `bin/ffprobe` and the `libav*` libraries.
-
-The libtool that comes with OS X 10.6 does not work well with clang-generated binaries. On that system you may have to substitute it with the libtool provided by MacPorts' `cctools` package: `sudo mv /usr/bin/libtool /usr/bin/libtool.orig; sudo mv /Developer/usr/bin/libtool /Developer/usr/bin/libtool.orig; sudo ln -s /opt/local/bin/libtool /usr/bin/libtool; sudo ln -s /opt/local/bin/libtool /Developer/usr/bin/libtool`
-
-Qt 4 builds used `qt4-mac` with `py27-pyside`/`py27-shiboken`; the Python 2 PySide ports are no longer available in current MacPorts.
-
-### Homebrew
-
-*Community-maintained, not tested for Natron 2.6. The paths below assume an Intel Mac (`/usr/local`); on Apple Silicon, use `$(brew --prefix)` (`/opt/homebrew`) instead. Some formulae and options mentioned here no longer exist in current Homebrew.*
-
-Install Homebrew from <http://brew.sh/>
-
-#### Qt5
-
-Install Qt5
-
-```Shell
-brew install qt@5 pyside@2
-# compilation doesn't work with Qt6 linked
-brew unlink qt
-# Fix the pkg-config files
-brew install gnu-sed
-gsed -e s@libdir=lib@libdir=\${prefix}/lib@ -i /usr/local/opt/pyside\@2/lib/pkgconfig/pyside2.pc
-gsed -e s@libdir=lib@libdir=\${prefix}/lib@ -i /usr/local/opt/pyside\@2/lib/pkgconfig/shiboken2.pc
-```
-
-#### Building with CMake (untested)
-
-Pointing `CMAKE_PREFIX_PATH` at the formulae should work if `pyside@2` has CMake config files; otherwise also pass `-DPython3_EXECUTABLE` for the Python that `pyside@2` was built for, so that CMake finds PySide2 through it (`cmake/PySide2FromPython.cmake`). This is not tested; the supported way is [MacPorts](#on-macports).
-
-```Shell
-cmake -S . -B build -DCMAKE_PREFIX_PATH="$(brew --prefix expat);$(brew --prefix qt@5);$(brew --prefix pyside@2)"
-cmake --build build -j$(sysctl -n hw.ncpu)
-```
-
-#### Python2 (optional)
-
-Install Python 2.7 (yes, we know it's deprecated).
-```Shell
-brew uninstall python@2 || true
-cp tools/homebrew/python@2.rb $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core/Formula/python@2.rb
-brew install -s python@2
-```
-
-Do the following if the `homebrew.pth` file does not exist:
-
-```Shell
-mkdir -p ~/Library/Python/2.7/lib/python/site-packages
-echo 'import site; site.addsitedir("/usr/local/lib/python2.7/site-packages")' >> ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth
-sudo ln -s ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth /Library/Python/2.7/lib/python/site-packages/homebrew.pth
-```
-
-#### Qt4 (optional)
-
-Qt 4 is not supported in Homebrew. Please enable the community-maintained recipe using:
-
-```Shell
-brew tap cartr/qt4
-```
-
-Optional: Patch the qt4 recipe to fix the stack overflow issue (see [QTBUG-49607](https://bugreports.qt.io/browse/QTBUG-49607), [Homebrew issue #46307](https://github.com/Homebrew/homebrew/issues/46307), [MacPorts ticket 49793](http://trac.macports.org/ticket/49793)).
-
-Patching a Homebrew recipe is explained in the [Homebrew FAQ](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/FAQ.md).
-
-```Shell
-brew edit cartr/qt4/qt@4
-brew install cartr/qt4/qt@4 cartr/qt4/shiboken@1.2 cartr/qt4/pyside@1.2 cartr/qt4/pyside-tools@1.2
-```
-
-and before the line that starts with `head`, add the following code:
-
-```
-  patch :p0 do
-    # bugreports.qt.io may go away, use our local copy.
-    # url "https://bugreports.qt.io/secure/attachment/52520/patch-qthread-stacksize.diff"
-    # sha256 "477630235eb5ee34ed04e33f156625d1724da290e7a66b745611fb49d17f1347"
-    url "https://raw.githubusercontent.com/NatronGitHub/Natron/ff4b3afd3a784f1517002bd82e2da441265385ad/tools/MacPorts/aqua/qt4-mac/files/patch-qthread-stacksize.diff"
-    sha256 "a3363ff6460fb4cb4a2a311dbc0724fc5de39d22eb6fa1ec1680d6bd28d01ee4"
-  end
-
-  patch :p0 do
-    url "https://raw.githubusercontent.com/NatronGitHub/Natron/ff4b3afd3a784f1517002bd82e2da441265385ad/tools/MacPorts/aqua/qt4-mac/files/patch-qt-custom-threadpool.diff"
-    sha256 "470c8bf6fbcf01bd15210aad961a476abc73470e201ccb4d62a7c579452de371"
-  end
-```
-
-Reinstall Qt4 from source (takes a while):
-```Shell
-brew reinstall -s cartr/qt4/qt@4
-```
-
-#### Other dependencies
-
-Install libraries:
-
-```Shell
-brew install cairo expat
-brew install gnu-sed gawk coreutils findutils
-brew install cmake keychain sphinx-doc
-/usr/local/opt/sphinx-doc/libexec/bin/pip3 install sphinx_rtd_theme
-brew install pyside@1.2 pyside-tools@1.2
-```
-
-If compiling with Qt5:
-
-```Shell
-brew install pyside@2
-```
-
-
- To install the [openfx-io](https://github.com/NatronGitHub/openfx-io) and [openfx-misc](https://github.com/NatronGitHub/openfx-misc) sets of plugin, you also need the following:
-
-```Shell
-brew install ilmbase openexr freetype fontconfig ffmpeg
-brew unlink openimageio || true;
-brew unlink opencolorio || true;
-brew unlink seexpr || true;
-cp tools/homebrew/opencolorio@1.rb $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core/Formula
-cp tools/homebrew/seexpr@2.rb $( brew --prefix )/Homebrew/Library/Taps/homebrew/homebrew-core/Formula
-brew install -s opencolorio@1
-brew unlink qt@4
-brew install -s seexpr@2
-brew link qt@4
-brew install opencolorio openimageio seexpr
-```
-
-To install the [openfx-arena](https://github.com/NatronGitHub/openfx-arena) set of plugin, you also need the following:
-
-```Shell
-brew install librsvg poppler librevenge libcdr libzip sox
-brew uninstall imagemagick
-brew install imagemagick --with-hdri --with-librsvg --with-quantum-depth-32 --with-pango
-```
-
-also set the correct value for the pkg-config path (you can also put
-this in your .bash_profile):
-
-```Shell
-export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig:/usr/local/opt/curl/lib/pkgconfig
-```
-
-### Installing manually (outside of MacPorts or Homebrew) a patched Qt to avoid stack overflows
-
-The following is not necessary if a patched Qt was already installed by the standard MacPorts or Homebrew procedures above.
-
-See [QTBUG-49607](https://bugreports.qt.io/browse/QTBUG-49607), [Homebrew issue #46307](https://github.com/Homebrew/homebrew/issues/46307), [MacPorts ticket 49793](http://trac.macports.org/ticket/49793).
-
-```Shell
-wget https://download.qt.io/official_releases/qt/4.8/4.8.7/qt-everywhere-opensource-src-4.8.7.tar.gz
-tar zxvf qt-everywhere-opensource-src-4.8.7.tar.gz
-cd qt-everywhere-opensource-src-4.8.7
-wget https://raw.githubusercontent.com/Homebrew/patches/480b7142c4e2ae07de6028f672695eb927a34875/qt/el-capitan.patch
-patch -p1 < el-capitan.patch
-wget https://bugreports.qt.io/secure/attachment/52520/patch-qthread-stacksize.diff
-patch -p0 < patch-qthread-stacksize.diff
-```
-
-Then, configure using:
-
-```Shell
-./configure -prefix /opt/qt4 -pch -system-zlib -qt-libtiff -qt-libpng -qt-libjpeg -confirm-license -opensource -nomake demos -nomake examples -nomake docs -cocoa -fast -release
-```
-
-* On OS X >= 10.9 add `-platform unsupported/macx-clang-libc++`
-* On OS X < 10.9, to compile with clang add `-platform unsupported/macx-clang`
-* If compiling with gcc/g++, make sure that `g++ --version`refers to Apple's gcc >= 4.2 or clang >= 318.0.61
-* To use another openssl than the system (mainly for security reasons), add `-openssl-linked -I /usr/local/Cellar/openssl/1.0.2d_1/include -L /usr/local/Cellar/openssl/1.0.2d_1/lib` (where the path is changed to your openssl installation).
-
-Then, compile using:
-
-```Shell
-make
-```
-
-And install (after making sure `/opt/qt4` is user-writable) using:
-
-```Shell
-make install
-```
-
+The notes for building on much older systems (OS X 10.6 universal builds, libc++ on older systems, OS X 10.9 VMs with Xcode 6.2) are in the RB-2.5 branch of `INSTALL_MACOS.md`.
 
 ## macOS packaging tools
 
@@ -797,7 +739,7 @@ CMake is the supported build. It builds with Qt 5 and PySide2 by default; `-DNAT
 
 ### On MacPorts
 
-MacPorts' `py311-pyside2` has no CMake config files: CMake then finds Shiboken2 and PySide2 through `Python3_EXECUTABLE` (see `cmake/PySide2FromPython.cmake`). Build with the system (Xcode) clang and the MacPorts libraries, from `$NATRON_SRC`, with Homebrew off the `PATH`:
+MacPorts' `py311-pyside2` has no CMake config files: CMake then finds Shiboken2 and PySide2 through `Python3_EXECUTABLE` (see `cmake/PySide2FromPython.cmake`). Build with the system (Apple) clang and the MacPorts libraries, from `$NATRON_SRC`, with Homebrew off the `PATH`:
 
 ```Shell
 cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -812,9 +754,26 @@ These are the macOS CI job's commands (`.github/workflows/ci.yml`), except that 
 
 The shiboken2 generator parses the headers with its own libclang (LLVM 18 for PySide2 5.15), which can't parse the libc++ headers of newer SDKs (`use of undeclared identifier '__builtin_clzg'`, seen with the macOS 27 SDK of Xcode 27). If that happens, point `SDKROOT` at an older SDK, e.g. `export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk`. It must be exported in the environment of `cmake --build` too, not only at configure time: shiboken runs during the build, and without `SDKROOT` it picks the Xcode SDK headers again. The same applies to the qmake build and to `launchBuildMain.sh`.
 
+### Xcode
+
+Natron ships no Xcode project: generate one with CMake, then open it:
+
+```Shell
+cmake -S . -B build-xcode -G Xcode \
+    -DCMAKE_PREFIX_PATH="/opt/local/libexec/qt5;/opt/local" \
+    -DPython3_EXECUTABLE=/opt/local/bin/python3.11
+open build-xcode/Natron.xcodeproj
+```
+
+The compiler options are not needed: the project uses Xcode's clang. Natron's debug definitions (`DEBUG`, `qDebug()` output) follow `CMAKE_BUILD_TYPE`, not Xcode's Debug or Release configuration: add `-DCMAKE_BUILD_TYPE=Debug` to debug Natron in Xcode.
+
+The Xcode generator needs a full Xcode and uses its SDK. With `SDKROOT` or `CMAKE_OSX_SYSROOT` set to a Command Line Tools SDK, CMake finds no compiler. So the `SDKROOT` workaround above for shiboken2 doesn't work here: if the Python bindings fail to generate, use the Makefile or Ninja build.
+
+To build the plug-ins in Xcode, generate a project with their CMake build in the same way (`cmake -S . -B build-xcode -G Xcode`). Older plug-in sources ship hand-made Xcode projects, which need "Source Trees" variables set in Xcode's preferences: use CMake instead.
+
 ## Deprecated: building with qmake
 
-*The qmake build (for Qt4 and Qt5) is deprecated. It still works on RB-2.6, where the release scripts in `tools/jenkins` use it with `NATRON_BUILD_SYSTEM=qmake`, but it will be removed in a future release (first on RB-2.7, see [#1181](https://github.com/NatronGitHub/Natron/issues/1181)).*
+*The qmake build (Qt 5 only) is deprecated. It still works on RB-2.6, where the release scripts in `tools/jenkins` use it with `NATRON_BUILD_SYSTEM=qmake`, but it will be removed in a future release (first on RB-2.7, see [#1181](https://github.com/NatronGitHub/Natron/issues/1181)).*
 
 ### Add the config.pri file
 
@@ -839,16 +798,6 @@ config.pri:
 # copy and paste the following in a terminal
 cp config-macports.pri config.pri
 ```
-
-If you installed libraries using Homebrew, use the following
-config.pri:
-
-```Shell
-# copy and paste the following in a terminal
-cp config-homebrew.pri config.pri
-```
-
-Then check at the top of the `config.pri` file that the `HOMEBREW` variable is set to the homebrew installation prefix (usually `/opt/homebrew`).
 
 ### Build with Makefile
 
@@ -877,159 +826,6 @@ qmake -r CONFIG+=debug
 
 * You can also enable clang sanitizer by adding CONFIG+=sanitizer
 
-#### Building with OpenMP support using clang
-
-*Legacy (clang 9, Qt 4). For current macOS with MacPorts, see step 5 and "Developing with the MacPorts SDK" above.*
-
-It is possible to build Natron using clang (version 3.8 is required,
-version 9.0 is recommended) with OpenMP support on
-MacPorts (or Homebrew for OS X 10.9 or later).  OpenMP brings speed improvements in the
-tracker and in CImg-based plugins.
-
-First, install clang 9.0. On OS X 10.9 and later with MacPorts, simply execute:
-
-```Shell
-sudo port -v install clang-9.0
-```
-
-Or with Homebrew:
-
-```Shell
-brew install llvm
-```
-
-On older systems, follow the procedure described in [Using libc++ on older systems](https://trac.macports.org/wiki/LibcxxOnOlderSystems), and install and set clang-9.0 as the default compiler in the end. Note that we noticed clang 3.9.1 generates wrong code with `-Os` when compiling openexr (later clang versions were not checked), so it is safer to also change `default configure.optflags      {-Os}` to `default configure.optflags      {-O2}` in `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` (type `sudo nano /opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` to edit it).
-
-On OS X 10.6, see also the libtool note in "Notes for older systems" above.
-
-Then, configure using the following qmake command on MacPorts:
-
-```Shell
-/opt/local/libexec/qt4/bin/qmake QMAKE_CXX='clang++-mp-9.0 -stdlib=libc++' QMAKE_CC=clang-mp-9.0 QMAKE_OBJECTIVE_CXX='clang++-mp-9.0 -stdlib=libc++' QMAKE_OBJECTIVE_CC='clang-mp-9.0 -stdlib=libc++' QMAKE_LD='clang++-mp-9.0 -stdlib=libc++' -r CONFIG+=openmp CONFIG+=enable-osmesa CONFIG+=enable-cairo
-```
-
-Or on Homebrew with Qt4/PySide from cartr/qt4:
-
-```Shell
-QT_INSTALL_PREFIX=/usr/local
-qmake=$QT_INSTALL_PREFIX/bin/qmake
-env PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig:/usr/local/opt/expat/lib/pkgconfig $qmake -spec macx-xcode CONFIG+=debug CONFIG+=enable-cairo CONFIG+=enable-osmesa CONFIG+=python3 CONFIG+=sdk_no_version_check CONFIG+=openmp -r
-```
-
-Or on Homebrew with Qt5/PySide2:
-
-```Shell
-QT_INSTALL_PREFIX=/usr/local/opt/qt@5
-qmake=$QT_INSTALL_PREFIX/bin/qmake
-env PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig:/usr/local/opt/libxml2/lib/pkgconfig:/usr/local/opt/expat/lib/pkgconfig:/usr/local/opt/qt@5/lib/pkgconfig:/usr/local/opt/pyside@2/lib/pkgconfig $qmake -spec macx-xcode CONFIG+=debug CONFIG+=enable-cairo CONFIG+=enable-osmesa CONFIG+=python3 CONFIG+=sdk_no_version_check CONFIG+=openmp -r
-```
-
-To build the plugins, use the following command-line:
-
-```Shell
-make CXX='clang++-mp-9.0 -stdlib=libc++' OPENMP=1
-```
-
-Or, if you have MangledOSMesa32 installed in `OSMESA_PATH` and LLVM installed in `LLVM_PATH` (MangledOSMesa32 and LLVM build script is available from [osmesa-install](https://github.com/devernay/osmesa-install)):
-
-```Shell
-OSMESA_PATH=/opt/osmesa
-LLVM_PATH=/opt/llvm
-make CXX='clang++-mp-9.0 -stdlib=libc++' OPENMP=1 CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
-```
-
-### Build on Xcode
-
-Follow the instruction of build but
-add -spec macx-xcode to the qmake call command:
-
-```Shell
-qmake -r -spec macx-xcode
-```
-
-Then open the already provided Project-xcode.xcodeproj and compile the target "all"
-
-#### Compiling plugins with Xcode
-
-The source distributions of the plugin sets `openfx-io` and
-`openfx-misc` contain Xcode projects, but these require setting a few
-global variables in Xcode. These variables can be used to switch
-between the system-installed version of a package and a custom install
-(e.g. if you need to debug something that happens in OpenImageIO).
-
-In Xcode Preferences, select "Locations", then "Source Trees", and add the following
-variable names/values (Xcode may need to be restarted after setting these):
-- `LOCAL`: `/usr/local` on Homebrew, `/opt/local` on MacPorts
-- `BOOST_PATH`: `$(LOCAL)/include`
-- `EXR_PATH`: `$(LOCAL)`
-- `FFMPEG_PATH`: `$(LOCAL)`
-- `OCIO_PATH`: `$(LOCAL)`
-- `OIIO_PATH`: `$(LOCAL)`
-- `OPENCV_PATH`: `$(LOCAL)`
-- `SEEXPR_PATH`: `$(LOCAL)`
-
-It is also recommended in Xcode Preferences, select "Locations", then
-"Locations", to set the Derived Data location to be Relative, and in
-the advanced settings to set the build location to Legacy (if not,
-build files are somewhere under `~/Library/Developer/Xcode`.
-
-#### Build on Xcode with openmp clang
-
-*Legacy (clang 9).*
-
-See instructions under "Using clang-omp with Xcode" at the following page https://clang-omp.github.io
-
-On Macports clang now ships with openmp by default. To install it:
-```
-sudo port install clang-9.0
-```
-
-In your config.pri file, add the following lines and change the paths according to your installation of clang
-
-```
-openmp {
-INCLUDEPATH += /opt/local/include/libomp
-LIBS += -L/opt/local/lib/libomp -liomp5 # may also be -lomp
-
-cc_setting.name = CC
-cc_setting.value = /opt/local/bin/clang-mp-9.0
-cxx_setting.name = CXX
-cxx_setting.value = /opt/local/bin/clang++-mp-9.0 -stdlib=libc++
-ld_setting.name = LD
-ld_setting.value = /opt/local/bin/clang-mp-9.0
-ldplusplus_setting.name = LDPLUSPLUS
-ldplusplus_setting.value = /opt/local/bin/clang++-mp-9.0 -stdlib=libc++
-QMAKE_MAC_XCODE_SETTINGS += cc_setting cxx_setting ld_setting ldplusplus_setting
-QMAKE_LFLAGS += "-B /usr/bin"
-}
-```
-
-The qmake call should add CONFIG+=openmp
-
-```
-qmake -r -spec macx-xcode CONFIG+=debug CONFIG+=enable-osmesa LLVM_PATH=/opt/llvm OSMESA_PATH=/opt/osmesa CONFIG+=openmp QMAKE_CXX='clang++-mp-9.0 -stdlib=libc++' QMAKE_CC=clang-mp-9.0 QMAKE_OBJECTIVE_CXX='clang++-mp-9.0 -stdlib=libc++' QMAKE_OBJECTIVE_CC='clang-mp-9.0 -stdlib=libc++' QMAKE_LD='clang++-mp-9.0 -stdlib=libc++' -r CONFIG+=openmp CONFIG+=enable-osmesa CONFIG+=enable-cairo
-```
-
-
-Then you can just build and run using Xcode
-
-#### Xcode caveats
-
-Whenever the .pro files change, Xcode will try to launch qmake and
-probably fail because it doesn't find the necessary binaries (qmake,
-moc, pkg-config, python3-config, etc.). In this case, just open a
-Terminal and relaunch the above command. This will rebuild the Xcode projects.
-
-Alternatively, you can globally add the necessary directories
-(`/usr/local/bin`on Homebrew, `/opt/local/bin` on MacPorts) to you
-PATH (see <http://www.emacswiki.org/emacs/EmacsApp> for instructions).
-
-On MacPorts, this would look like:
-
-```Shell
-launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
-```
-
 ## Testing
 
 With CMake, the unit tests are built with Natron (`NATRON_BUILD_TESTS`, on by default) and run with `ctest` (see [Building with CMake](#building-with-cmake)).
@@ -1048,73 +844,28 @@ The render regression tests are in [Natron-Tests](https://github.com/NatronGitHu
 
 ## Generating Python bindings
 
-This is not required: with Qt 5, the bindings are generated during the build, and the generated files for Qt 4 are in the repository. You only need this with Qt 4, if you extend or modify the Python bindings via the
-typesystem.xml file. See the documentation of shiboken-2.7 for an explanation of the command line arguments.
+The CMake build generates the Python bindings during the build: nothing to do.
 
-Historical, for Qt 4 only (Natron 2.5 and older), with the Python 3.10 it was written for: Shiboken 1.2.4 is not part of the Python 3.11 SDK, and `tools/jenkins/include/scripts/pkg/python3.sh` notes that Python 3.11 breaks it. On MacPorts with qt4-mac, py310-pyside, py310-shiboken:
-```Shell
-PYVER=3.10 # Set to the python version
-QT_VERSION_MAJOR=4
-rm Engine/Qt${QT_VERSION_MAJOR}/NatronEngine/* Gui/Qt${QT_VERSION_MAJOR}/NatronGui/*
-
-shiboken-${PYVER} --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:/opt/local/include:/opt/local/include/PySide-${PYVER}  --typesystem-paths=/opt/local/share/PySide-${PYVER}/typesystems --output-directory=Engine/Qt${QT_VERSION_MAJOR} Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
-
-shiboken-${PYVER} --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:/opt/local/include:/opt/local/include/PySide-${PYVER}  --typesystem-paths=/opt/local/share/PySide-${PYVER}/typesystems:Engine:Shiboken --output-directory=Gui/Qt${QT_VERSION_MAJOR} Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
-
-tools/utils/runPostShiboken.sh Engine/Qt${QT_VERSION_MAJOR}/NatronEngine natronengine
-tools/utils/runPostShiboken.sh Gui/Qt${QT_VERSION_MAJOR}/NatronGui natrongui
-```
-
-Building Natron with Qt5 should generate the Python bindings automatically, but in case it does not,
-here are the commands to recreate the Python bindings:
-
-On MacPorts with qt5, py311-pyside2:
+The qmake build doesn't: the generated sources (`Engine/Qt5/NatronEngine` and `Gui/Qt5/NatronGui`) must be regenerated with `shiboken2` whenever the `Py*` facades or the typesystem XML files change, followed by `tools/utils/sourceCleanup.py`, as `tools/jenkins/build-natron.sh` does. From `$NATRON_SRC`, on MacPorts with qt5 and py311-pyside2:
 ```Shell
 PYVER=3.11 # Set to the python version
 PYTHON_HOME=$(python${PYVER}-config --prefix)
 QT_VERSION_MAJOR=5
+QTDIR=/opt/local/libexec/qt${QT_VERSION_MAJOR}
 # Fix a missing link in the MacPorts package
 [ ! -f ${PYTHON_HOME}/lib/python${PYVER}/site-packages/shiboken2_generator/shiboken2-${PYVER} ] && sudo ln -s shiboken2 ${PYTHON_HOME}/lib/python${PYVER}/site-packages/shiboken2_generator/shiboken2-${PYVER}
 
 rm Engine/Qt${QT_VERSION_MAJOR}/NatronEngine/* Gui/Qt${QT_VERSION_MAJOR}/NatronGui/*
-# ${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/include
-shiboken2-${PYVER} --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Global:libs/OpenFX/include:/opt/local/include:/opt/local/libexec/qt${QT_VERSION_MAJOR}/include:${PYTHON_HOME}/include/python${PYVER}:${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/include --typesystem-paths=${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/typesystems --output-directory=Engine/Qt${QT_VERSION_MAJOR} Engine/PySide2_Engine_Python.h  Engine/typesystem_engine.xml
+SHIBOKEN_INCLUDE_PATHS="-I. -I./Engine -I./Global -Ilibs/OpenFX/include -I/opt/local/include -I${QTDIR}/include -I${QTDIR}/include/QtCore -I${PYTHON_HOME}/include/python${PYVER} -I${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/include -I${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/include/QtCore -I${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/include/QtGui"
+SHIBOKEN_TYPESYSTEM_PATHS="-T${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/typesystems"
+shiboken2-${PYVER} -std=c++17 --avoid-protected-hack --enable-pyside-extensions ${SHIBOKEN_INCLUDE_PATHS} ${SHIBOKEN_TYPESYSTEM_PATHS} --output-directory=Engine/Qt${QT_VERSION_MAJOR} Engine/PySide2_Engine_Python.h Engine/typesystem_engine.xml
+shiboken2-${PYVER} -std=c++17 --avoid-protected-hack --enable-pyside-extensions ${SHIBOKEN_INCLUDE_PATHS} -I${QTDIR}/include/QtWidgets -I${QTDIR}/include/QtGui ${SHIBOKEN_TYPESYSTEM_PATHS} -T./Engine -T./Shiboken --output-directory=Gui/Qt${QT_VERSION_MAJOR} Gui/PySide2_Gui_Python.h Gui/typesystem_natronGui.xml
 
-shiboken2-${PYVER} --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Engine:Global:libs/OpenFX/include:/opt/local/include:/opt/local/libexec/qt${QT_VERSION_MAJOR}/include:/opt/local/libexec/qt${QT_VERSION_MAJOR}/include/QtWidgets:${PYTHON_HOME}/include/python${PYVER}:${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/include --typesystem-paths=${PYTHON_HOME}/lib/python${PYVER}/site-packages/PySide2/typesystems:Engine:Shiboken --output-directory=Gui/Qt${QT_VERSION_MAJOR} Gui/PySide2_Gui_Python.h  Gui/typesystem_natronGui.xml
-
-tools/utils/runPostShiboken2.sh Engine/Qt${QT_VERSION_MAJOR}/NatronEngine natronengine
-tools/utils/runPostShiboken2.sh Gui/Qt${QT_VERSION_MAJOR}/NatronGui natrongui
+# Fix the glitches of the generated sources
+python3 tools/utils/sourceCleanup.py Engine/typesystem_engine.xml Engine/Qt${QT_VERSION_MAJOR}
+python3 tools/utils/sourceCleanup.py Gui/typesystem_natronGui.xml Gui/Qt${QT_VERSION_MAJOR}
 ```
-
-on HomeBrew with Qt5/PySide2/Shiboken2:
-```Shell
-PYVER=3.10 # Set to the python version
-export PATH="/usr/local/opt/pyside@2/bin:$PATH"
-QT_VERSION_MAJOR=5
-rm Engine/Qt${QT_VERSION_MAJOR}/NatronEngine/* Gui/Qt${QT_VERSION_MAJOR}/NatronGui/*
-
-shiboken2 --enable-parent-ctor-heuristic --use-isnull-as-nb_nonzero --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Global:Engine:libs/OpenFX/include:/usr/local/Frameworks/Python.framework/Versions/${PYVER}/include/python${PYVER}:/usr/local/include:/usr/local/opt/pyside@2/include/PySide2:/usr/local/opt/qt@${QT_VERSION_MAJOR}/include  --typesystem-paths=/usr/local/opt/pyside@2/share/PySide2/typesystems --output-directory=Engine/Qt${QT_VERSION_MAJOR} Engine/PySide2_Engine_Python.h  Engine/typesystem_engine.xml
-
-shiboken2 --enable-parent-ctor-heuristic --use-isnull-as-nb_nonzero --avoid-protected-hack --enable-pyside-extensions --include-paths=.:Global:Engine:Gui:libs/OpenFX/include:/usr/local/Frameworks/Python.framework/Versions/${PYVER}/include/python${PYVER}:/usr/local/include:/usr/local/opt/pyside@2/include/PySide2:/usr/local/opt/qt@${QT_VERSION_MAJOR}/include:/usr/local/opt/qt@5/include/QtWidgets  --typesystem-paths=/usr/local/opt/pyside@2/share/PySide2/typesystems:Engine --output-directory=Gui/Qt${QT_VERSION_MAJOR} Gui/PySide2_Gui_Python.h  Gui/typesystem_natronGui.xml
-
-tools/utils/runPostShiboken2.sh Engine/Qt${QT_VERSION_MAJOR}/NatronEngine natronengine
-tools/utils/runPostShiboken2.sh Gui/Qt${QT_VERSION_MAJOR}/NatronGui natrongui
-```
-
-**Note**
-Shiboken has a few glitches which needs fixing with some sed commands, run tools/utils/runPostShiboken.sh once shiboken is called
 
 ## OpenFX plugins
 
 With MacPorts, build the plugins as in "Developing with the MacPorts SDK" above, or as `tools/jenkins/build-plugins.sh` does. Each plugin repository's `README.md` has its own build instructions, and its CI workflows in `.github/workflows` show a complete build.
-
-
-You can install [TuttleOFX](http://www.tuttleofx.org/) using Homebrew:
-
-```Shell
-brew tap homebrew/science homebrew/x11 homebrew/python cbenhagen/video
-brew install tuttleofx
-```
-
-
-Or have a look at the [instructions for building on MacPorts as well as precompiled universal binaries](http://devernay.free.fr/hacks/openfx/#OSXTuttleOFX).

@@ -27,8 +27,8 @@
 
 #include <stdexcept>
 
-#include <QFormLayout> // in QtGui on Qt4, in QtWidgets on Qt5
-#include <QHBoxLayout> // in QtGui on Qt4, in QtWidgets on Qt5
+#include <QFormLayout> // QtWidgets
+#include <QHBoxLayout> // QtWidgets
 #include <QDebug>
 #include <QItemSelectionModel>
 #include <QHeaderView>

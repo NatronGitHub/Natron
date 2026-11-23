@@ -34,8 +34,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QCoreApplication>
 #include <QApplication>
-#include <QHBoxLayout> // in QtGui on Qt4, in QtWidgets on Qt5
-#include <QVBoxLayout> // in QtGui on Qt4, in QtWidgets on Qt5
+#include <QHBoxLayout> // QtWidgets
+#include <QVBoxLayout> // QtWidgets
 #include <QThread>
 #include <QSettings>
 #include <QDebug>

@@ -58,7 +58,7 @@ CLANG_DIAG_ON(deprecated-register)
 #ifdef OFX_SUPPORTS_MULTITHREAD
 #include <QThread>
 #include <QThreadStorage>
-#include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
+#include <QtConcurrentMap> // QtConcurrent
 #endif
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -346,6 +346,12 @@ OfxHost::setProperties()
 
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipDepths, 1);
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipPARs, 1);
+    // The output frame rate a plug-in sets in getClipPreferences is honoured (metadata FPS: viewer
+    // playback, writers, downstream nodes). Natron does not remap the frame range or the input clip times
+    // for it (OFX clipprefs "nFrames' = nFrames * FPS' / FPS"): a plug-in that changes the number of
+    // frames does it itself, with getTimeDomain and getFramesNeeded (openfx-misc Deinterlace "Double
+    // Framerate"). This stays 1: the openfx-io readers set their file's frame rate whatever this says,
+    // and Deinterlace and NoOp only offer their frame-rate options when it is 1 (#1107).
     _properties.setIntProperty(kOfxImageEffectPropSetableFrameRate, 1);
     _properties.setIntProperty(kOfxImageEffectPropSetableFielding, 0);
     _properties.setIntProperty(kOfxParamHostPropSupportsCustomInteract, 1 );

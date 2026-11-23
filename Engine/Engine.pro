@@ -95,6 +95,7 @@ SOURCES += \
     GPUContextPool.cpp \
     GenericSchedulerThread.cpp \
     GenericSchedulerThreadWatcher.cpp \
+    GraphDepthGuard.cpp \
     GroupInput.cpp \
     GroupOutput.cpp \
     Hash64.cpp \
@@ -258,6 +259,7 @@ HEADERS += \
     GPUContextPool.h \
     GenericSchedulerThread.h \
     GenericSchedulerThreadWatcher.h \
+    GraphDepthGuard.h \
     GroupInput.h \
     GroupOutput.h \
     Hash64.h \

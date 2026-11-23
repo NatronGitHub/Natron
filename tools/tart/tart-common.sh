@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Helpers shared by natron-sdk.sh and natron-build.sh (sourced, not executed).
 #
 # The VMs use tart's default "shared" (NAT) network: they are reachable from this host
@@ -16,9 +17,12 @@ NATRON_SRC=$(cd "$TART_DIR/../.." && pwd)
 THIRD_PARTY=$(cd "$NATRON_SRC/.." && pwd)
 OSMESA_INSTALL_SRC=${OSMESA_INSTALL_SRC:-$THIRD_PARTY/osmesa-install}
 
-# base image and local SDK image names
-BASE_IMAGE=${BASE_IMAGE:-ghcr.io/cirruslabs/macos-sequoia-xcode:latest}
-SDK_IMAGE=${SDK_IMAGE:-natron-sdk-sequoia}
+# base image (NATRON_MACOS_BASE_IMAGE in tools/jenkins/macos-release.sh, pinned by digest;
+# BASE_IMAGE=...:latest overrides it) and local SDK image names
+# shellcheck source=../jenkins/macos-release.sh
+. "$NATRON_SRC/tools/jenkins/macos-release.sh"
+BASE_IMAGE=${BASE_IMAGE:-$NATRON_MACOS_BASE_IMAGE}
+SDK_IMAGE=${SDK_IMAGE:-natron-sdk-sonoma}
 VM_CPU=${VM_CPU:-8}
 VM_MEMORY=${VM_MEMORY:-16384}   # MB
 VM_DISK=${VM_DISK:-250}         # GB (sparse)
@@ -96,15 +100,17 @@ vm_addr_cache() { echo "$TART_RUN/$1.addr"; }
 vm_find_addr() { # vm : IPv4 if the guest gets a lease, else its IPv6 link-local address
     local i a
     for i in $(seq 90); do   # the first boot after a disk resize can take several minutes
-        if a=$(tart ip "$1" 2>/dev/null); then echo "$a"; return 0; fi
+        # an IPv4 address only counts if ssh answers there: on hosts with network filters the
+        # guest may get a lease that the host can't reach (seen 2026-11-22)
+        if a=$(tart ip "$1" 2>/dev/null) && nc -z -G 3 "$a" 22 2>/dev/null; then echo "$a"; return 0; fi
         # give DHCP a minute before falling back to IPv6
         if [ "$i" -gt 6 ]; then
             a=$(tart exec "$1" /sbin/ifconfig en0 2>/dev/null | awk '/inet6 fe80/{sub(/%.*/,"",$2); print $2; exit}') || a=
-            if [ -n "$a" ]; then echo "$a%$(vm_bridge)"; return 0; fi
+            if [ -n "$a" ] && nc -z -G 3 "$a%$(vm_bridge)" 22 2>/dev/null; then echo "$a%$(vm_bridge)"; return 0; fi
         fi
         sleep 10
     done
-    echo "no address for $1 after 15 minutes" >&2
+    echo "no address for $1 where ssh answers, after 90 attempts (up to about 25 minutes)" >&2
     return 1
 }
 
@@ -136,7 +142,7 @@ vm_rsync_back() { # vm guest-src dst [rsync options...]
 vm_start() { # vm : boot (if needed), install the SSH key, open the SSH master carrying the guest's proxy
     local vm=$1 addr others ok=0 sock token
     # clones of an image share their IPv6 link-local address: never run two of our VMs at once
-    others=$(vm_list_running | grep -E '^natron-(sdk|build)-' | grep -vx "$vm" || true)
+    others=$(vm_list_running | grep -E '^natron-(sdk|build|test)-' | grep -vx "$vm" || true)
     [ -z "$others" ] || die "other Natron VMs are running ($others): stop them first (tart stop <name>)"
     [ -f "$TART_KEY" ] || ssh-keygen -q -t ed25519 -N "" -C "natron-tart" -f "$TART_KEY"
     if ! vm_running "$vm"; then
@@ -179,7 +185,7 @@ vm_stop() { # vm
     if vm_running "$1"; then
         log "stopping $1"
         # by name (tart exec), not by address: never shut down another VM with the same address
-        tart exec "$1" sudo -n shutdown -h now > /dev/null 2>&1 || true
+        tart exec "$1" sudo -n /sbin/shutdown -h now > /dev/null 2>&1 || true
         for _ in $(seq 60); do vm_running "$1" || break; sleep 5; done
         vm_running "$1" && tart stop "$1"
     fi

@@ -15,7 +15,7 @@ Natron binaries include components from the following libraries:
 * openfx-misc (GPLv2) https://github.com/NatronGitHub/openfx-misc
 * openfx-arena (GPLv2) https://github.com/NatronGitHub/openfx-arena
 * openfx-gmic (CeCILL-C, LGPL-like) https://github.com/NatronGitHub/openfx-gmic
-* Eigen 3 (MPL 2.0) http://eigen.tuxfamily.org/
+* Eigen 3 (MPL 2.0) https://libeigen.gitlab.io/
 * Ceres Solver (New BSD) http://ceres-solver.org/
 * gflags (New BSD) http://gflags.github.io/gflags/
 * glog (New BSD) https://github.com/google/glog
@@ -102,7 +102,7 @@ Natron binaries include components from the following libraries:
 * Expat (MITX) http://expat.sourceforge.net/ (used by openfx) 
 * Pixman (MIT) http://www.pixman.org/ (used by Natron and openfx-arena via Cairo)
 * libmng (libpng/zlib License) http://www.libpng.org/pub/mng/ (used by Qt)
-* OpenSSL (Apache 1.0 or 4-clause BSD) http://www.openssl.org (used by Qt and Python)
+* OpenSSL 3 (Apache 2.0) https://www.openssl.org (used by Qt and Python). The Apache 2.0 license is compatible with the GPL 3.0 but not with the GPL 2.0 only: since Natron and the openfx-io, openfx-misc and openfx-arena plug-ins are GPL 2.0 or later, the binaries that include OpenSSL 3 are distributed under the GPL 3.0.
 * gdk_pixbuf (LGPL 2.1) https://developer.gnome.org/gdk-pixbuf/stable/ (used by openfx-arena via librsvg)
 * Little CMS (MIT) http://www.littlecms.com/ (used by Qt and openfx-io via libmng and LibRaw)
 * libcroco (LGPL 2.1) https://github.com/GNOME/libcroco (used by openfx-arena via librsvg)
@@ -119,5 +119,6 @@ Natron binaries include components from the following libraries:
 * zlib (libpng/zlib License) http://www.zlib.net/
 * libiconv (LGPL 2.1) https://www.gnu.org/software/libiconv/
 * libintl (LGPL 2.1) https://www.gnu.org/software/gettext/
-* ncurses (LGPL 2.1) https://www.gnu.org/software/ncurses/
+* ncurses (MIT-style X11 license) https://invisible-island.net/ncurses/ (used by Python via the readline and curses modules)
+* GNU Readline (GPL 3.0 or later) https://tiswww.case.edu/php/chet/readline/rltop.html (used by Python via the readline module, Linux binaries)
 

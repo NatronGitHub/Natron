@@ -119,8 +119,8 @@ Verdicts: **OK**; **MISSING** (not implemented); **WRONG** (implemented, but con
    * - 14
      - `ofxImageEffect.h:691-715 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L691-L715>`__ host SetableFrameRate / SetableFielding
      - DEFAULT
-     - N OfxHost.cpp:297-298 = 1 / 0.
-     - OK (see 3.9 and 3.10)
+     - N OfxHost.cpp:355-356 = 1 / 0. SetableFrameRate stays 1 for 2.6, see 3.11 (test ``OfxHostProperties.SetableFrameRate``).
+     - OK (see 3.10 and 3.11)
    * - 15
      - `ofxImageEffect.h:829-857 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L829-L857>`__ host SupportsMultiResolution, SupportsTiles; `ofxImageEffect.h:860-873 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L860-L873>`__ TemporalClipAccess
      - DEFAULT
@@ -281,10 +281,8 @@ Natron does not use HS ``Instance::getClipPreferences()``. It has its own path: 
    * - 9
      - `ofxClipPreferences.rst:197-199 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxClipPreferences.rst?plain=1#L197-L199>`__ with both at 1, each clip keeps its own PAR (defaults)
      - DEFAULT
-     - EffectInstance.cpp:5456-5462: when ``multipleClipsPAR`` is true and any input is connected, every input gets ``inputPar`` (the first connected input's PAR), not its own. HS does this right (``par = clip->getAspectRatio()``, ofxhImageEffect.cpp setupClipPreferencesArgs). The wrong PAR is then pushed to the clip (OfxEffectInstance.cpp:1366), reported as kOfxImagePropPixelAspectRatio on that input's images (OfxClipInstance.cpp:1026 and :1498), and used for its pixel RoI (EffectInstance.cpp:982, :996).
-     - WRONG
-
-       Issue: `#1376 <https://github.com/NatronGitHub/Natron/issues/1376>`__
+     - EffectInstance.cpp:5456-5462: when ``multipleClipsPAR`` is true and any input is connected, every input gets ``inputPar`` (the first connected input's PAR), not its own. HS does this right (``par = clip->getAspectRatio()``, ofxhImageEffect.cpp setupClipPreferencesArgs). The wrong PAR is then pushed to the clip (OfxEffectInstance.cpp:1366), reported as kOfxImagePropPixelAspectRatio on that input's images (OfxClipInstance.cpp:1026 and :1498), and used for its pixel RoI (EffectInstance.cpp:982, :996). Fixed: a connected input gets the PAR of its own input (test ``OfxMultiplePAR.EachInputGetsItsOwnPAR``).
+     - OK (fixed by `#1410 <https://github.com/NatronGitHub/Natron/pull/1410>`__, `#1376 <https://github.com/NatronGitHub/Natron/issues/1376>`__)
    * - 10
      - `ofxClipPreferences.rst:204-223 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxClipPreferences.rst?plain=1#L204-L223>`__, `ofxImageEffect.h:705-715 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L705-L715>`__ fielding: plug-in may set kOfxImageClipPropFieldOrder only if host SetableFielding=1
      - MAY (host may refuse)
@@ -294,9 +292,11 @@ Natron does not use HS ``Instance::getClipPreferences()``. It has its own path: 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - 11
      - `ofxClipPreferences.rst:228-263 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxClipPreferences.rst?plain=1#L228-L263>`__ frame rate: SetableFrameRate=1 lets the plug-in change the output FPS, which "is effectively changing the number of frames in the output clip", nFrames' = nFrames\*FPS'/FPS
-     - MUST (consequence)
-     - The FPS is accepted (OfxImageEffectInstance.cpp:1390), but the output frame range is never remapped (OfxEffectInstance.cpp:1759-1828 has no FPS term). Input clip frame ranges are not converted to output time either (`ofxCoordSystem.rst:287-321 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxCoordSystem.rst?plain=1#L287-L321>`__; OfxClipInstance.cpp:432-447). Differing input FPS are refused at connection (NodeInputs.cpp:766-768) and warned about (EffectInstance.cpp:5851-5860). Either implement the mapping or advertise SetableFrameRate=0.
-     - PARTIAL
+     - descriptive (consequence)
+     - The FPS is accepted (OfxImageEffectInstance.cpp:1523), but the output frame range is never remapped (OfxEffectInstance.cpp:1759-1828 has no FPS term). Input clip frame ranges are not converted to output time either (`ofxCoordSystem.rst:287-321 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/Documentation/sources/Reference/ofxCoordSystem.rst?plain=1#L287-L321>`__; OfxClipInstance.cpp:432-447). Differing input FPS are refused at connection (NodeInputs.cpp:766-768) and warned about (EffectInstance.cpp:5851-5860). Either implement the mapping or advertise SetableFrameRate=0.
+
+       Kept at 1 for 2.6 (`#1107 <https://github.com/NatronGitHub/Natron/issues/1107>`__): the plug-in's output FPS is honoured, and a plug-in that changes the number of frames maps time itself, with getTimeDomain and getFramesNeeded (openfx-misc Deinterlace "Double Framerate" does; a host-side mapping would apply its mapping a second time). The shipped plug-ins rely on the value 1: the openfx-io readers (GenericReader::getClipPreferences) set the file's FPS whatever the host says, and it is the only way Natron learns it (viewer playback, the writers' frame rate); openfx-misc Deinterlace only doubles the FPS, and NoOp only defines its "Set Frame Rate" parameter, when the host says 1. Advertising 0 would lose the doubled FPS and NoOp's parameter, and ignoring the readers' FPS would play and write every file at the project FPS. Nuke, Resolve, Fusion, Catalyst Edit and Vegas advertise 0 (`openfx-misc README-hosts.txt <https://github.com/NatronGitHub/openfx-misc/blob/master/README-hosts.txt>`__). Implementing the host-side mapping, as the spec models it (the output frame range scaled, input clips in output time), would change what NoOp and the readers expect.
+     - PARTIAL (kept for 2.6)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - 12
@@ -337,7 +337,7 @@ Which preferences can a host refuse, and what Natron does:
 
 - Fielding: refusable when SetableFielding=0. Natron advertises 0 but accepts the value (3.10).
 
-- Frame rate: refusable when SetableFrameRate=0. Natron advertises 1 and accepts it, without time mapping (3.11).
+- Frame rate: refusable when SetableFrameRate=0. Natron advertises 1 and accepts it, without time mapping; the plug-in maps time itself (3.11).
 
 - Components of mandated clips and the output in non-General contexts: refusable. Natron accepts them (3.6).
 
@@ -383,10 +383,8 @@ N: Engine/OfxClipInstance.cpp. HS: ofxhClip.cpp.
    * - 5
      - `ofxImageEffect.h:1050-1056 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L1050-L1056>`__ clip/image PixelAspectRatio
      - MUST
-     - Clip: metadata PAR (:361-369). Image: the clip PAR (:1026, :1498). Wrong for inputs when MultipleClipPARs=1 (3.9).
-     - PARTIAL (see 3.9)
-
-       Issue: `#1376 <https://github.com/NatronGitHub/Natron/issues/1376>`__
+     - Clip: metadata PAR (:361-369). Image: the clip PAR (:1026, :1498). Wrong for inputs when MultipleClipPARs=1 (3.9), fixed.
+     - OK (fixed by `#1410 <https://github.com/NatronGitHub/Natron/pull/1410>`__, see 3.9)
    * - 6
      - `ofxImageEffect.h:1058-1080 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L1058-L1080>`__ FrameRate (input = clip FPS, output = mapped, instance = project) and UnmappedFrameRate
      - MUST
@@ -395,8 +393,8 @@ N: Engine/OfxClipInstance.cpp. HS: ofxhClip.cpp.
    * - 7
      - `ofxImageEffect.h:1092-1116 <https://github.com/AcademySoftwareFoundation/openfx/blob/OFX_Release_1.5.1/include/ofxImageEffect.h#L1092-L1116>`__ FrameRange, UnmappedFrameRange
      - MUST
-     - Input node frame range or project range (:432-447, :528-540). No FPS mapping (3.11).
-     - PARTIAL (only matters with FPS changes)
+     - Input node frame range or project range (:432-447, :528-540). No FPS mapping: the plug-in that changes the FPS maps time itself (3.11).
+     - PARTIAL (only matters with FPS changes; kept for 2.6, see 3.11)
 
        Issue: `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__
    * - 8
@@ -839,11 +837,11 @@ Wrong results
 
 5. **SequentialRenderStatus=1 while frames render in parallel and out of order** (5.15, WRONG), and **SequentialRender=1 not honoured for non-writer plug-ins** (5.16, MISSING). Interactive out-of-order frames are reused from the cache in the final render. Second check: ``isSequentialRender = true`` at OutputSchedulerThread.cpp:2269 and :2423. The scheduling policy is always FFA (:2528-2536). The sequential checks only look at writers (NodeInputs.cpp:1750, Node.cpp:5647, EffectInstanceRenderRoI.cpp:964). The instance-level SequentialRender value is ignored (2.6, PARTIAL). Related: `#1047 <https://github.com/NatronGitHub/Natron/issues/1047>`__ (ReadFFmpeg) only touches this indirectly. **Issue:** `#1375 <https://github.com/NatronGitHub/Natron/issues/1375>`__.
 
-6. **Default input PAR is wrong when the plug-in supports multiple clip PARs** (3.9, WRONG). Every input gets the first connected input's PAR, which is then reported on its images and used for its pixel RoI. Second check: EffectInstance.cpp:5456-5462. HS ``setupClipPreferencesArgs`` does it right, but Natron bypasses it. Nothing later (checkMetadata :5833-5838) restores the real PAR when ``supportsMultipleClipPARs`` is true. **Issue:** `#1376 <https://github.com/NatronGitHub/Natron/issues/1376>`__.
+6. **Default input PAR is wrong when the plug-in supports multiple clip PARs** (3.9, WRONG). Every input gets the first connected input's PAR, which is then reported on its images and used for its pixel RoI. Second check: EffectInstance.cpp:5456-5462. HS ``setupClipPreferencesArgs`` does it right, but Natron bypasses it. Nothing later (checkMetadata :5833-5838) restores the real PAR when ``supportsMultipleClipPARs`` is true. **Issue:** `#1376 <https://github.com/NatronGitHub/Natron/issues/1376>`__. **Fixed** by `#1410 <https://github.com/NatronGitHub/Natron/pull/1410>`__.
 
 7. **clipGetImage reuse ignores the requested region** (7.4, WRONG) and returns the same handle for identical calls (7.5, WRONG spec-only). Second check: the match key at OfxClipInstance.cpp:955-958 is components, mipmap, time and view only, and ``optionalBounds`` is not compared. **Issue:** `#1377 <https://github.com/NatronGitHub/Natron/issues/1377>`__.
 
-8. **PAR mismatch is not resampled** (3.8, PARTIAL). Natron refuses the connection or relabels and warns. **Frame-rate change is not mapped to the output frame range** (3.11 and 4.7, PARTIAL) although SetableFrameRate=1. Second check: checkMetadata (EffectInstance.cpp:5826-5871), Node::canConnectInput (NodeInputs.cpp:750-768), and OfxEffectInstance::getFrameRange (no FPS term). No existing issue (`#775 <https://github.com/NatronGitHub/Natron/issues/775>`__ is unrelated). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
+8. **PAR mismatch is not resampled** (3.8, PARTIAL). Natron refuses the connection or relabels and warns. **Frame-rate change is not mapped to the output frame range** (3.11 and 4.7, PARTIAL) although SetableFrameRate=1. SetableFrameRate stays 1 for 2.6, because the shipped readers, Deinterlace and NoOp rely on it (3.11, `#1107 <https://github.com/NatronGitHub/Natron/issues/1107>`__). Second check: checkMetadata (EffectInstance.cpp:5826-5871), Node::canConnectInput (NodeInputs.cpp:750-768), and OfxEffectInstance::getFrameRange (no FPS term). No existing issue (`#775 <https://github.com/NatronGitHub/Natron/issues/775>`__ is unrelated). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 
 9. **Clip-preference context restrictions not enforced, depth write accepted although read-only** (3.5 and 3.6, PARTIAL). Natron accepts component changes on mandated clips and the output in Filter/Transition/Paint/Retimer, and output-depth writes from plug-ins without multiple-depth support (ePluginReadOnlyWarn, OfxHost.cpp:181-186). **Issue:** `#1385 <https://github.com/NatronGitHub/Natron/issues/1385>`__.
 

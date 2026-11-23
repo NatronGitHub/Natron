@@ -13,11 +13,11 @@ The **qmake** build is **deprecated** (`#1181
 ``Project.pro``, a ``TEMPLATE = subdirs`` project pulling in every module and
 bundled library; shared configuration lives in ``global.pri`` and
 ``libs.pri``, and the platform dependency locations in ``config.pri`` (examples:
-``config-macports.pri``, ``config-homebrew.pri``,
-``tools/jenkins/include/natron/*.pri``). On RB-2.6 it still works, and the
-release scripts in ``tools/jenkins`` still use it, until they move to CMake. It
-will be removed in a future release, first on RB-2.7, once installers built
-with CMake have been shown to be equivalent. Running qmake prints a warning to
+``config-macports.pri``, ``tools/jenkins/include/natron/*.pri``). On RB-2.6 it
+still works, and the release scripts in ``tools/jenkins`` use it with
+``NATRON_BUILD_SYSTEM=qmake`` (they build with CMake by default). It will be
+removed in a future release, first on RB-2.7, once installers built with CMake
+have been shown to be equivalent. Running qmake prints a warning to
 that effect.
 
 CMake picks up every ``.cpp`` and ``.h`` in ``Engine/`` and ``Gui/``, while
@@ -27,22 +27,26 @@ file too;
 ``tools/utils/checkQmakeSources.py`` (run by the Linux CI job) reports any
 mismatch. No per-PR CI job builds with qmake any more: only these source lists
 are checked, so a broken ``.pri`` or ``DEFINES`` setting would only show up
-when the release scripts build an installer (a nightly qmake job would catch
-it earlier).
+when the release scripts build an installer with
+``NATRON_BUILD_SYSTEM=qmake`` (a weekly qmake job would catch it earlier).
 
 .. note::
 
-   **C++17 is required for every build**, not just the CMake one:
-   ``Global/Macros.h`` fails compilation with ``#error "Natron 2.6+ requires
-   C++17"`` if the standard is older. Configure your toolchain accordingly
-   regardless of which build system you use.
+   **C++ standard:** RB-2.6 builds with **C++17 for Qt5 and C++20 for Qt6**,
+   and so do the plug-ins built with it, so the code must compile with both.
+   CMake (``NATRON_QT6``), qmake (``QT_MAJOR_VERSION``, in ``global.pri``) and
+   the packaging scripts in ``tools/jenkins`` (``QT_VERSION_MAJOR``) pick the
+   standard from the Qt version. ``Global/Macros.h`` fails compilation with
+   ``#error "Natron 2.6+ requires C++17"`` if the standard is older.
+   RB-2.7 (the Qt6 branch, which keeps as much Qt5 support as possible while
+   RB-2.6 is maintained) uses C++20 everywhere.
 
 .. note::
 
    If you touch the source layout — add a file, add a module, rename something —
    update the relevant ``CMakeLists.txt`` and, while the deprecated qmake build
-   exists, the relevant ``*.pro``/``*.pri`` as well: the release scripts still
-   build with qmake on RB-2.6.
+   exists, the relevant ``*.pro``/``*.pri`` as well: on RB-2.6, the release
+   scripts can still build with qmake (``NATRON_BUILD_SYSTEM=qmake``).
 
 Platform-specific, step-by-step instructions (including how to obtain the
 third-party dependencies) live at the repository root in ``INSTALL_LINUX.md``,
@@ -151,6 +155,8 @@ If shiboken2 fails to parse the libc++ headers of a recent Xcode SDK
 (``use of undeclared identifier '__builtin_clzg'``), use an older SDK with
 ``export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk``, exported
 for both the configure and ``cmake --build``: shiboken runs during the build.
+The Xcode generator (``-G Xcode``) can't use that workaround: with a Command
+Line Tools SDK it finds no compiler.
 
 Two compile definitions set in the CMake build are worth knowing about because
 they affect how you must write code:
@@ -397,7 +403,7 @@ The installers are built by ``tools/jenkins/launchBuildMain.sh``, which calls
 - it configures with ``-DNATRON_INSTALL_LAYOUT=PORTABLE``, the release flavour
   (``NATRON_BUILD_CONFIG``, ``NATRON_BUILD_NUMBER``,
   ``NATRON_CUSTOM_BUILD_USER_NAME``), ``NATRON_USE_OPENMP`` (``OFF`` only
-  with Apple clang), ``NATRON_NO_ASSERTIONS`` (except for ``COMPILE_TYPE=debug``),
+  with ``COMPILER=clang``, e.g. Apple clang without MacPorts' ``libomp``), ``NATRON_NO_ASSERTIONS`` (except for ``COMPILE_TYPE=debug``),
   the OpenColorIO configs it downloaded, and the compilers, Qt and Python
   chosen by ``common.sh`` and ``compiler-common.sh``. ``COMPILE_TYPE``
   ``release``, ``relwithdebinfo`` and ``debug`` become the ``Release``,

@@ -41,10 +41,13 @@
 //   - "preset" (kOfxParamPropCanUndo=0) is the "preset" example of the parameter suite documentation:
 //     choosing a preset sets "presetA", "presetB" and "presetC" in a paramEditBegin/paramEditEnd block,
 //     and sets "preset" back to 0;
-//   - "uiOnly" has kOfxParamPropEvaluateOnChange=0, "noUndo" has kOfxParamPropCanUndo=0.
+//   - "uiOnly" has kOfxParamPropEvaluateOnChange=0, "noUndo" has kOfxParamPropCanUndo=0;
+//   - "double2DRanged" has a range (kOfxParamPropMin/Max 0 to 1) but no display range
+//     (Tests/OfxParamRange_Test.cpp).
 // - net.natron.test.Generator: a generator that fills its output with 0.5, with the pixel aspect ratio of
 //   its "par" parameter (it supports multiple clip PARs, so that it may set its output PAR, and "par" is a
-//   clip preferences slave parameter).
+//   clip preferences slave parameter). If its "fps" parameter (also a slave parameter) is positive, it sets
+//   the output frame rate to it in getClipPreferences (kOfxImageEffectPropSetableFrameRate).
 // - net.natron.test.MultiPAR: two inputs, Source and B, and kOfxImageEffectPropSupportsMultipleClipPARs.
 //   It records the pixel aspect ratio of each input clip and image, times 1000, in render.
 // - net.natron.test.ClipGetImage: asks for a small region of Source in getRegionsOfInterest; in render,
@@ -647,6 +650,14 @@ paramsDescribeInContext(OfxImageEffectHandle effect)
         return kOfxStatFailed;
     }
     gPropSuite->propSetInt(props, kOfxParamPropCanUndo, 0, 0);
+    // a range without a display range: the display range keeps its default, -DBL_MAX to DBL_MAX
+    if (paramsDefine(paramSet, kOfxParamTypeDouble2D, "double2DRanged", &props) != kOfxStatOK) {
+        return kOfxStatFailed;
+    }
+    for (int i = 0; i < 2; ++i) {
+        gPropSuite->propSetDouble(props, kOfxParamPropMin, i, 0.);
+        gPropSuite->propSetDouble(props, kOfxParamPropMax, i, 1.);
+    }
 
     return kOfxStatOK;
 }
@@ -947,8 +958,9 @@ generatorPluginMain(const char* action,
         gEffectSuite->getPropertySet(effect, &props);
         // so that it may set its output PAR in getClipPreferences
         gPropSuite->propSetInt(props, kOfxImageEffectPropSupportsMultipleClipPARs, 0, 1);
-        // and getClipPreferences is called again when "par" changes
+        // and getClipPreferences is called again when "par" or "fps" changes
         gPropSuite->propSetString(props, kOfxImageEffectPropClipPreferencesSlaveParam, 0, "par");
+        gPropSuite->propSetString(props, kOfxImageEffectPropClipPreferencesSlaveParam, 1, "fps");
 
         return kOfxStatOK;
     }
@@ -964,6 +976,10 @@ generatorPluginMain(const char* action,
             return kOfxStatFailed;
         }
         gPropSuite->propSetDouble(props, kOfxParamPropDefault, 0, 1.);
+        if (gParamSuite->paramDefine(paramSet, kOfxParamTypeDouble, "fps", &props) != kOfxStatOK) {
+            return kOfxStatFailed;
+        }
+        gPropSuite->propSetDouble(props, kOfxParamPropDefault, 0, 0.);
 
         return kOfxStatOK;
     }
@@ -974,6 +990,14 @@ generatorPluginMain(const char* action,
             gParamSuite->paramGetValue(param, &par);
         }
         gPropSuite->propSetDouble(outArgs, "OfxImageClipPropPAR_" kOfxImageEffectOutputClipName, 0, par);
+        double fps = 0.;
+        param = getParam(effect, "fps");
+        if (param) {
+            gParamSuite->paramGetValue(param, &fps);
+        }
+        if (fps > 0.) {
+            gPropSuite->propSetDouble(outArgs, kOfxImageEffectPropFrameRate, 0, fps);
+        }
 
         return kOfxStatOK;
     }

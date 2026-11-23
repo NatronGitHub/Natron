@@ -51,3 +51,18 @@ add_library(tess STATIC ${tess_HEADERS} ${tess_SOURCES})
 target_include_directories(tess SYSTEM PUBLIC .)
 target_compile_options(tess PRIVATE ${NATRON_THIRD_PARTY_NO_WARNINGS})
 set_target_properties(tess PROPERTIES POSITION_INDEPENDENT_CODE ON)
+# No floating-point contraction (fused multiply-add) and no fast-math: the
+# sweep's geometric predicates (EdgeSign(), EdgeEval(), __gl_edgeIntersect())
+# must be evaluated the same way everywhere. clang contracts a*b+c by default
+# on arm64 (and GCC with -ffp-contract=fast wherever FMA is available), x86-64
+# without -mfma can't, so the same input was tessellated differently (or
+# dropped) on macOS arm64 and on Linux/Windows x86-64 (#1510). -ffast-math
+# (NATRON_FAST_MATH) also reassociates, which breaks the same predicates, so
+# it is turned off too; these options come after it on the command line.
+# MSVC is not handled: Natron is not built with it (Windows builds use MSYS2).
+# For the record, cl's /fp:precise only stopped contracting by default in
+# VS 2022 17.0, NATRON_FAST_MATH adds /fp:fast there, and clang-cl (which
+# also sets MSVC) contracts like clang.
+if(NOT MSVC)
+    target_compile_options(tess PRIVATE -fno-fast-math -ffp-contract=off)
+endif()

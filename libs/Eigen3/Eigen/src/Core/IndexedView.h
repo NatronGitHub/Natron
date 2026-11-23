@@ -122,10 +122,10 @@ public:
   {}
 
   /** \returns number of rows */
-  Index rows() const { return internal::size(m_rowIndices); }
+  Index rows() const { return internal::index_list_size(m_rowIndices); }
 
   /** \returns number of columns */
-  Index cols() const { return internal::size(m_colIndices); }
+  Index cols() const { return internal::index_list_size(m_colIndices); }
 
   /** \returns the nested expression */
   const typename internal::remove_all<XprType>::type&
@@ -189,12 +189,16 @@ struct unary_evaluator<IndexedView<ArgType, RowIndices, ColIndices>, IndexBased>
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
   CoeffReturnType coeff(Index row, Index col) const
   {
+    eigen_assert(m_xpr.rowIndices()[row] >= 0 && m_xpr.rowIndices()[row] < m_xpr.nestedExpression().rows()
+                 && m_xpr.colIndices()[col] >= 0 && m_xpr.colIndices()[col] < m_xpr.nestedExpression().cols());
     return m_argImpl.coeff(m_xpr.rowIndices()[row], m_xpr.colIndices()[col]);
   }
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
   Scalar& coeffRef(Index row, Index col)
   {
+    eigen_assert(m_xpr.rowIndices()[row] >= 0 && m_xpr.rowIndices()[row] < m_xpr.nestedExpression().rows()
+                 && m_xpr.colIndices()[col] >= 0 && m_xpr.colIndices()[col] < m_xpr.nestedExpression().cols());
     return m_argImpl.coeffRef(m_xpr.rowIndices()[row], m_xpr.colIndices()[col]);
   }
 
@@ -204,6 +208,8 @@ struct unary_evaluator<IndexedView<ArgType, RowIndices, ColIndices>, IndexBased>
     EIGEN_STATIC_ASSERT_LVALUE(XprType)
     Index row = XprType::RowsAtCompileTime == 1 ? 0 : index;
     Index col = XprType::RowsAtCompileTime == 1 ? index : 0;
+    eigen_assert(m_xpr.rowIndices()[row] >= 0 && m_xpr.rowIndices()[row] < m_xpr.nestedExpression().rows()
+                 && m_xpr.colIndices()[col] >= 0 && m_xpr.colIndices()[col] < m_xpr.nestedExpression().cols());
     return m_argImpl.coeffRef( m_xpr.rowIndices()[row], m_xpr.colIndices()[col]);
   }
 
@@ -212,6 +218,8 @@ struct unary_evaluator<IndexedView<ArgType, RowIndices, ColIndices>, IndexBased>
   {
     Index row = XprType::RowsAtCompileTime == 1 ? 0 : index;
     Index col = XprType::RowsAtCompileTime == 1 ? index : 0;
+    eigen_assert(m_xpr.rowIndices()[row] >= 0 && m_xpr.rowIndices()[row] < m_xpr.nestedExpression().rows()
+                 && m_xpr.colIndices()[col] >= 0 && m_xpr.colIndices()[col] < m_xpr.nestedExpression().cols());
     return m_argImpl.coeffRef( m_xpr.rowIndices()[row], m_xpr.colIndices()[col]);
   }
 
@@ -220,6 +228,8 @@ struct unary_evaluator<IndexedView<ArgType, RowIndices, ColIndices>, IndexBased>
   {
     Index row = XprType::RowsAtCompileTime == 1 ? 0 : index;
     Index col = XprType::RowsAtCompileTime == 1 ? index : 0;
+    eigen_assert(m_xpr.rowIndices()[row] >= 0 && m_xpr.rowIndices()[row] < m_xpr.nestedExpression().rows()
+                 && m_xpr.colIndices()[col] >= 0 && m_xpr.colIndices()[col] < m_xpr.nestedExpression().cols());
     return m_argImpl.coeff( m_xpr.rowIndices()[row], m_xpr.colIndices()[col]);
   }
 

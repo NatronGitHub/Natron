@@ -53,6 +53,7 @@ ProcessHandler::ProcessHandler(const QString & projectPath,
                                OutputEffectInstance* writer)
     : _process(new QProcess)
     , _writer(writer)
+    , _writerScriptName( writer->getScriptName_mt_safe() )
     , _ipcServer(0)
     , _bgProcessOutputSocket(0)
     , _bgProcessInputSocket(0)
@@ -95,7 +96,7 @@ ProcessHandler::ProcessHandler(const QString & projectPath,
     _ipcServer->listen(tmpFileName);
 
 
-    _processArgs << QString::fromUtf8("-b") << QString::fromUtf8("-w") << QString::fromUtf8( writer->getScriptName_mt_safe().c_str() );
+    _processArgs << QString::fromUtf8("-b") << QString::fromUtf8("-w") << QString::fromUtf8( _writerScriptName.c_str() );
     _processArgs << QString::fromUtf8("--IPCpipe") <<  tmpFileName;
     _processArgs << projectPath;
 
@@ -125,6 +126,10 @@ ProcessHandler::~ProcessHandler()
         delete _bgProcessInputSocket;
     }
     if (_process) {
+        // close() kills a process that is still running and emits finished() from here: onProcessEnd() would
+        // then emit processFinished() from this destructor, and AppInstance::startNextQueuedRender() would
+        // destroy this object a second time (crash when quitting during a render in a separate process).
+        QObject::disconnect(_process, 0, this, 0);
         _process->close();
         delete _process;
     }
@@ -253,7 +258,7 @@ void
 ProcessHandler::onProcessError(QProcess::ProcessError err)
 {
     if (err == QProcess::FailedToStart) {
-        Dialogs::errorDialog( _writer->getScriptName(), tr("The render process failed to start.").toStdString() );
+        Dialogs::errorDialog( _writerScriptName, tr("The render process failed to start.").toStdString() );
     } else if (err == QProcess::Crashed) {
         //@TODO: find out a way to get the backtrace
     }
