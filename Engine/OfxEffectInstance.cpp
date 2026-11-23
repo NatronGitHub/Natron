@@ -1903,6 +1903,8 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
     OfxStatus stat;
 
     {
+        // an input whose RoD failed makes this RoD fail (#1602)
+        OfxClipInstance::InputRoDFailureScope inputRoDFailure;
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             view,
                                             mipmapLevel);
@@ -1979,7 +1981,7 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
                 }
             }
         }
-        if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
+        if ( ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) || inputRoDFailure.failed() ) {
             return eStatusFailed;
         }
 

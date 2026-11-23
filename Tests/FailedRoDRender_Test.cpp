@@ -175,6 +175,28 @@ TEST(FailedRoDRender, FailedInputFailsTheRenderOnDisk)
     EXPECT_EQ( renders, NatronTestPlugin::counter("MultiPAR.render") ) << "frames rendered with a black input";
 }
 
+// The RoD of an OFX effect fails when it asks for the RoD of an input whose RoD fails, as for a built-in effect (a
+// Dot above): a plug-in that gets an empty RoD for that input may otherwise ignore it (e.g. Merge is then the identity
+// of B, a plug-in without tiles support asks for an empty region of its input), and render without it
+TEST(FailedRoDRender, FailedInputFailsTheRoDOfAnOfxEffect)
+{
+    if ( !canRunTest() ) {
+        return;
+    }
+    Nodes nodes;
+    NodePtr timeBlur = nodes.create(kNatronTestPluginTimeBlur);
+    NodePtr generator = nodes.generator(true);
+    ASSERT_TRUE( connect(generator, 0, timeBlur) );
+    RectD rod;
+    EXPECT_EQ( eStatusFailed, timeBlur->getEffectInstance()->getRegionOfDefinition_public(timeBlur->getHashValue(), kTime, RenderScale::identity, ViewIdx(0), &rod, 0) );
+    // the RoD of TimeBlur works again when the generator does
+    KnobBoolPtr fail = std::dynamic_pointer_cast<KnobBool>( generator->getKnobByName("fail") );
+    ASSERT_TRUE( bool(fail) );
+    fail->setValue(false);
+    EXPECT_EQ( eStatusOK, timeBlur->getEffectInstance()->getRegionOfDefinition_public(timeBlur->getHashValue(), kTime, RenderScale::identity, ViewIdx(0), &rod, 0) );
+    EXPECT_FALSE( rod.isNull() );
+}
+
 // What still gives a black input: the node is rendered
 
 TEST(FailedRoDRender, WorkingInputRenders)

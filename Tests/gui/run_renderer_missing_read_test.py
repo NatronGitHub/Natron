@@ -27,7 +27,10 @@ NatronRenderer -b runs a script that creates Read (on a file that does not exist
 - "error": the Read is on its default "On missing frame: Error". The render must fail
   ("Error caught while rendering") and write no frame: it wrote three black frames and
   reported a successful render;
-- "black": "On missing frame: Black". The render must write the three (black) frames.
+- "black": "On missing frame: Black". The render must write the three (black) frames;
+- "merge": the Read (Error) is the A input of a Merge whose B input is a Read that works. The
+  render must fail and write no frame: Merge, which gets an empty region of definition for A, was
+  the identity of B and wrote B (skipped without openfx-misc's Merge).
 
 Exit status: 0 on success, 77 if skipped (in CI unless NATRON_GUI_TESTS=1, without OCIO, or if the
 Read/Write PNG plug-ins of openfx-io are not available: set OFX_PLUGIN_PATH), 1 on failure.
@@ -44,7 +47,7 @@ import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from run_gui_smoke_test import killTree  # noqa: E402
+from run_gui_smoke_test import killTree, writePNG  # noqa: E402
 
 SKIP = 77
 TIMEOUT = 300  # seconds per run
@@ -59,13 +62,21 @@ ids = natron.getPluginIDs()
 if not any(i.startswith("fr.inria.openfx.ReadPNG") for i in ids) or not any(i.startswith("fr.inria.openfx.WritePNG") for i in ids):
     sys.stdout.write("SKIP: no PNG reader or writer\\n"); sys.stdout.flush()
     natron.quit(77)
+elif MODE == "merge" and "net.sf.openfx.MergePlugin" not in ids:
+    sys.stdout.write("SKIP MODE: no Merge plug-in\\n"); sys.stdout.flush()
+    natron.quit(0)
 else:
     read = app.createReader(os.path.join(OUT, "missing", "plate.####.png"))
     onMissingFrame = read.getParam("onMissingFrame")
-    onMissingFrame.setValue(onMissingFrame.getOptions().index(MODE))
+    onMissingFrame.setValue(onMissingFrame.getOptions().index("black" if MODE == "black" else "error"))
+    output = read
+    if MODE == "merge":
+        output = app.createNode("net.sf.openfx.MergePlugin")
+        output.connectInput(0, app.createReader(os.path.join(OUT, "input.png")))  # B
+        output.connectInput(1, read)  # A
     write = app.createWriter(os.path.join(OUT, MODE + "_####.png"))
     write.setScriptName("Write1")
-    write.connectInput(0, read)
+    write.connectInput(0, output)
     write.getParam("frameRange").setValue(2)  # manual
     write.getParam("firstFrame").setValue(@FIRST@)
     write.getParam("lastFrame").setValue(@LAST@)
@@ -97,12 +108,15 @@ def runMode(renderer, wrapper, outDir, script, mode):
     sys.stdout.write(out)
     if "SKIP:" in out:
         return SKIP
+    if "SKIP MODE: no Merge plug-in" in [line.strip() for line in out.splitlines()]:
+        print("skipped (%s)" % mode)
+        return True
     # the exit status is not checked: a failed render gives the status 0 (#1599)
     print("NatronRenderer -b (%s) exited with status %d" % (mode, proc.returncode))
     written = sorted(f for f in os.listdir(outDir) if f.startswith(mode + "_") and f.endswith(".png"))
     failed = "Error caught while rendering" in out
     ok = True
-    if mode == "error":
+    if mode in ("error", "merge"):
         if written:
             print("FAILED (%s): the render wrote %s, with an input that failed" % (mode, " ".join(written)))
             ok = False
@@ -141,11 +155,12 @@ def main(argv):
     if not os.environ.get("NATRON_DISK_CACHE_PATH"):
         os.environ["NATRON_DISK_CACHE_PATH"] = os.path.join(outDir, "cache")
     try:
+        writePNG(os.path.join(outDir, "input.png"), 64, 48)
         script = os.path.join(outDir, "missing_read_test.py")
         with open(script, "w") as f:
             f.write(SCRIPT)
         ok = True
-        for mode in ("error", "black"):
+        for mode in ("error", "black", "merge"):
             ret = runMode(argv[1], wrapper, outDir, script, mode)
             if ret == SKIP:
                 print("skipped: the PNG Read/Write plug-ins are not available (set OFX_PLUGIN_PATH to openfx-io)")

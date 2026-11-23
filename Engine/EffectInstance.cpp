@@ -3942,8 +3942,6 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
             }
             if ( (ret != eStatusOK) && (ret != eStatusReplyDefault) ) {
                 // rod is not valid. Don't cache the failure: it would be taken for an empty RoD (#1602)
-                _imp->actionsCache->invalidateAll(hash);
-
                 return ret;
             }
 
