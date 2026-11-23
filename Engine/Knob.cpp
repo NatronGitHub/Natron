@@ -5078,12 +5078,12 @@ struct KnobHolder::KnobHolderPrivate
     , knobsFrozen(false)
     , hasAnimationMutex()
     , hasAnimation(other.hasAnimation)
-    , settingsPanel(other.settingsPanel)
+    , settingsPanel() // a render clone, maybe created in a render thread, has no panel
     {
 
     }
 
-    // null once the panel is deleted
+    // null once the panel is being deleted (from its QWidget destructor on)
     DockablePanelI* getPanel() const
     {
         return dynamic_cast<DockablePanelI*>( settingsPanel.data() );
