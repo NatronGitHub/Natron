@@ -280,10 +280,11 @@ sudo port setrequested clang-$CLANG
 
 In those cases, `tools/jenkins/compiler-common.sh` uses the newest installed `clang-mp-*` that is not newer than the default in the table above, so older systems such as macOS 10.15 keep using clang-17.
 
-On a new macOS or clang version, check that OpenMP programs link against the system libc++ and MacPorts' libomp:
+On a new macOS or clang version, check that OpenMP programs, built with Apple clang and with the MacPorts clang, link against the system libc++ and MacPorts' libomp (`tools/tart/provision.sh` does the same):
 
 ```Shell
-printf 'int main(){}\n' > /tmp/t.cpp
+printf '#include <omp.h>\nint main(){ int n = 0;\n#pragma omp parallel for schedule(dynamic) reduction(+:n)\nfor (int i = 0; i < 4; ++i) n += i;\nreturn n == 6 && omp_get_max_threads() > 0 ? 0 : 1; }\n' > /tmp/t.cpp
+/usr/bin/clang++ -Xpreprocessor -fopenmp -I/opt/local/include/libomp /tmp/t.cpp -o /tmp/t -L/opt/local/lib/libomp -lomp && otool -L /tmp/t
 clang++-mp-$CLANG -stdlib=libc++ -fopenmp /tmp/t.cpp -o /tmp/t && otool -L /tmp/t
 # expect /usr/lib/libc++.1.dylib and /opt/local/lib/libomp/libomp.dylib
 ```
@@ -617,14 +618,14 @@ mkdir -p ~/src && cd ~/src
 for p in openfx-io openfx-misc openfx-arena openfx-gmic; do git clone --recursive https://github.com/NatronGitHub/$p.git; done
 ```
 
-openfx-misc, openfx-io and openfx-arena use openfx's CMake helpers. Build them with the MacPorts clang (for OpenMP), as C++17 with a Qt5 Natron (`-DOFX_CXX_STANDARD=20` with Qt6), and install the bundles straight into `~/OFX/Natron-release`. openfx-arena needs the ImageMagick 7 of install section 7 (`ImageMagick7 +natron`, in `/opt/local/lib/ImageMagick7`): its pkg-config files must come first, as `build-plugins.sh` does with `MAGICK7_PREFIX`, or pkg-config finds the ImageMagick 6 of `/opt/local` instead.
+openfx-misc, openfx-io and openfx-arena use openfx's CMake helpers. Build them with Apple clang and MacPorts' `libomp` (`OFX_LIBOMP_ROOT`, as `build-plugins.sh` does; `-DCMAKE_CXX_COMPILER=clang++-mp-$CLANG -DCMAKE_CXX_FLAGS=-stdlib=libc++` works too), as C++17 with a Qt5 Natron (`-DOFX_CXX_STANDARD=20` with Qt6), and install the bundles straight into `~/OFX/Natron-release`. openfx-arena needs the ImageMagick 7 of install section 7 (`ImageMagick7 +natron`, in `/opt/local/lib/ImageMagick7`): its pkg-config files must come first, as `build-plugins.sh` does with `MAGICK7_PREFIX`, or pkg-config finds the ImageMagick 6 of `/opt/local` instead.
 
 ```Shell
 for p in openfx-misc openfx-io openfx-arena; do
   cd ~/src/$p
   env PKG_CONFIG_PATH=/opt/local/lib/ImageMagick7/lib/pkgconfig \
     cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_CXX_COMPILER=clang++-mp-$CLANG -DCMAKE_CXX_FLAGS="-stdlib=libc++" \
+      -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DOFX_LIBOMP_ROOT=/opt/local \
       -DCMAKE_PREFIX_PATH=/opt/local -DSEEXPR_HOME=/opt/local -DOFX_CXX_STANDARD=17 \
       -DPLUGIN_INSTALLDIR=$HOME/OFX/Natron-release
   cmake --build build && cmake --install build

@@ -72,9 +72,8 @@ A MacPorts clang (``clang-mp-*``) is used by the builds that pass ``-fopenmp``
 themselves (Apple's driver has no ``-fopenmp``, only ``-Xpreprocessor
 -fopenmp``, and Xcode ships no OpenMP runtime): the deprecated qmake build
 (``NATRON_BUILD_SYSTEM=qmake``) and the plug-ins' Makefiles
-(``PLUGINS_BUILD_SYSTEM=make``). ``NATRON_MACOS_CLANG=macports`` forces it for
-every build. No Apple clang bug is known to require it; if one is found, add an
-explicit version check, with the reason, to ``compiler-common.sh``.
+(``PLUGINS_BUILD_SYSTEM=make``); either one switches Natron and all the
+plug-ins to it. ``NATRON_MACOS_CLANG=macports`` forces it too.
 
 The MacPorts clang is chosen to match the OS's default (see
 ``clang_compilers.tcl``): Darwin ≥ 25 (macOS 26+) → clang-22, Darwin 24

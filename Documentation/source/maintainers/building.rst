@@ -401,7 +401,7 @@ The installers are built by ``tools/jenkins/launchBuildMain.sh``, which calls
 - it configures with ``-DNATRON_INSTALL_LAYOUT=PORTABLE``, the release flavour
   (``NATRON_BUILD_CONFIG``, ``NATRON_BUILD_NUMBER``,
   ``NATRON_CUSTOM_BUILD_USER_NAME``), ``NATRON_USE_OPENMP`` (``OFF`` only
-  with Apple clang), ``NATRON_NO_ASSERTIONS`` (except for ``COMPILE_TYPE=debug``),
+  with ``COMPILER=clang``, e.g. Apple clang without MacPorts' ``libomp``), ``NATRON_NO_ASSERTIONS`` (except for ``COMPILE_TYPE=debug``),
   the OpenColorIO configs it downloaded, and the compilers, Qt and Python
   chosen by ``common.sh`` and ``compiler-common.sh``. ``COMPILE_TYPE``
   ``release``, ``relwithdebinfo`` and ``debug`` become the ``Release``,

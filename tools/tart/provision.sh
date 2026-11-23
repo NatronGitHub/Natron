@@ -399,7 +399,7 @@ step_osmesa() {
 step_compiler() {
     $PORT install libomp
     sudo port setrequested libomp
-    printf '#include <omp.h>\nint main(){ return omp_get_max_threads() > 0 ? 0 : 1; }\n' > /tmp/t.cpp
+    printf '#include <omp.h>\nint main(){ int n = 0;\n#pragma omp parallel for schedule(dynamic) reduction(+:n)\nfor (int i = 0; i < 4; ++i) n += i;\nreturn n == 6 && omp_get_max_threads() > 0 ? 0 : 1; }\n' > /tmp/t.cpp
     /usr/bin/clang++ -Xpreprocessor -fopenmp -I/opt/local/include/libomp /tmp/t.cpp -o /tmp/t -L/opt/local/lib/libomp -lomp
     otool -L /tmp/t
     sudo port select clang none || true

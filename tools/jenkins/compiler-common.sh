@@ -57,14 +57,15 @@ if [ "$PKGOS" = "OSX" ]; then
                     c++20) cplusplus=202002L;;
                     *) cplusplus=201703L;;
                 esac
-                printf '#include <omp.h>\n#if __cplusplus < %s\n#error\n#endif\nint main() { return omp_get_max_threads() > 0 ? 0 : 1; }\n' \
+                # (a dynamic schedule: Apple clang's code needs a recent libomp, e.g. __kmpc_dispatch_deinit)
+                printf '#include <omp.h>\n#if __cplusplus < %s\n#error\n#endif\nint main() {\n  int n = 0;\n#pragma omp parallel for schedule(dynamic) reduction(+:n)\n  for (int i = 0; i < 4; ++i) n += i;\n  return n == 6 && omp_get_max_threads() > 0 ? 0 : 1;\n}\n' \
                        "$cplusplus" > "$system_clang_test/t.cpp"
                 if /usr/bin/clang++ -std="$CXXSTD" -Xpreprocessor -fopenmp -I/opt/local/include/libomp \
                        "$system_clang_test/t.cpp" -o "$system_clang_test/t" -L/opt/local/lib/libomp -lomp >/dev/null 2>&1; then
                     use_system_clang=1
                 else
                     echo "Warning: /usr/bin/clang++ can't build $CXXSTD with OpenMP (MacPorts libomp):" \
-                         "using a MacPorts clang-mp-N" >&2
+                         "using a MacPorts clang-mp-N if there is one" >&2
                 fi
                 rm -rf "$system_clang_test"
             fi
@@ -84,6 +85,10 @@ if [ "$PKGOS" = "OSX" ]; then
             break
         fi
     done
+    if [ "${NATRON_MACOS_CLANG:-system}" = macports ] && [ "$clang_mp_found" = 0 ]; then
+        echo "Error: NATRON_MACOS_CLANG=macports, but no MacPorts clang-mp-N (N <= $clang_max) is installed" >&2
+        exit 1
+    fi
     if [ "$use_system_clang" = 0 ] && [ "$clang_mp_found" = 0 ] && compgen -c clang-mp- >/dev/null 2>&1; then
         echo "Warning: only MacPorts clang-mp-N newer than clang-mp-$clang_max found:" \
              "building with Apple clang, without OpenMP. Install clang-$clang_max (see INSTALL_MACOS.md)." >&2
