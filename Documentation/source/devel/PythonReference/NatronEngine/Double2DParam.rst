@@ -16,8 +16,8 @@ See :doc:`DoubleParam` for more information on this class.
 Functions
 ^^^^^^^^^
 
-- def :meth:`setUsePointInteract<NatronEngine.Double2DParam.setUsePointInteract` (enabled)
-- def :meth:`setCanAutoFoldDimensions<NatronEngine.Double2DParam.setCanAutoFoldDimensions` (enabled)
+- def :meth:`setUsePointInteract<NatronEngine.Double2DParam.setUsePointInteract>` (enabled)
+- def :meth:`setCanAutoFoldDimensions<NatronEngine.Double2DParam.setCanAutoFoldDimensions>` (enabled)
 - def :meth:`get<NatronEngine.Double2DParam.get>` ()
 - def :meth:`get<NatronEngine.Double2DParam.get>` (frame)
 - def :meth:`set<NatronEngine.Double2DParam.set>` (x, y)

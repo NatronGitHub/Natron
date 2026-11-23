@@ -254,7 +254,7 @@ TEST(NodeGroup, ExportedPyPlugLinksToVersionDocumentation)
     groupNode->destroyNode(true, false);
 }
 
-// The PyPlug export saves "Use Point Interact" of a 2D user parameter (#1526): the exported PyPlug lost the point
+// The PyPlug export saves "Use Point Interact" of a 2D user parameter (#1526): before the fix, the exported PyPlug had no point
 // overlay.
 TEST(NodeGroup, ExportedPyPlugKeepsUsePointInteract)
 {
