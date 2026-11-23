@@ -49,11 +49,8 @@ and look at the "Supported pixel formats" line: ``yuv420p10le`` means 10-bit
 4:2:0 is available, ``yuv420p12le`` means 12-bit 4:2:0 is available. In
 WriteFFmpeg, the **Show Avail.** button gives the same information.
 
-The macOS arm64 builds of Natron include an 8-bit-only x265, so WriteFFmpeg
-can only write 8-bit HEVC there. The macOS x86_64 builds include an
-8/10/12-bit (multilib) x265. To get 10-bit HEVC on an arm64 Mac, render an
-image sequence and encode it with ``hevc_videotoolbox`` (see
-`Hardware encoders`_).
+The Natron 2.6 builds with x265 include an 8/10/12-bit (multilib) x265 on
+every platform. Older macOS builds may have an 8-bit-only x265: check as above.
 
 
 Writing HEVC from Natron
@@ -145,7 +142,7 @@ The options are:
   ``yuv420p`` for 8-bit ("Main" profile) if the file must play on old
   devices. ``yuv422p10le``, ``yuv444p10le`` and the 12-bit formats are also
   available, but few players support them. If your x265 is 8-bit only (as in
-  the macOS arm64 builds), ffmpeg does not fail: it prints "auto-selecting
+  some ffmpeg builds), ffmpeg does not fail: it prints "auto-selecting
   format 'yuv420p'" and writes an 8-bit file. Check that ffprobe reports
   ``profile=Main 10`` (see `Color metadata`_ below).
 - ``-vf "setparams=..."``: the color metadata, see below.

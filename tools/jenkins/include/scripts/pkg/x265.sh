@@ -10,6 +10,8 @@ X265_MODVERSION=4.2
 X265_TAR="x265_${X265_VERSION}.tar.gz"
 X265_SHA256=40b1ea0453e0309f0eba934e0ddf533f8f6295966679e8894e8f1c1c8d5e1210
 X265_SITE="https://bitbucket.org/multicoreware/x265_git/downloads"
+# +multilib: 10/12-bit also on aarch64 (#1658); recorded below, so that existing SDKs rebuild x265
+X265_SDK_VERSION="${X265_VERSION}+multilib"
 if download_step; then
     download "$X265_SITE" "$X265_TAR" "$X265_SHA256"
 fi
@@ -17,7 +19,7 @@ if build_step && { force_build || { [ "${REBUILD_X265:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/lib/libx265* || true
     rm -rf "$SDK_HOME"/lib/pkgconfig/x265* || true
 fi
-if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/x265.pc" ] || [ "$(pkg-config --modversion x265)" != "$X265_MODVERSION" ]; }; }; then
+if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/x265.pc" ] || [ "$(pkg-config --modversion x265)" != "$X265_MODVERSION" ] || [ "$(cat "$SDK_HOME/share/natron-sdk/x265.version" 2>/dev/null)" != "$X265_SDK_VERSION" ]; }; }; then
     start_build
     untar "$SRC_PATH/$X265_TAR"
     #pushd "x265_$X265_VERSION"
@@ -94,6 +96,8 @@ EOF
     pushd build-8
     make install
     popd
+    mkdir -p "$SDK_HOME/share/natron-sdk"
+    echo "$X265_SDK_VERSION" > "$SDK_HOME/share/natron-sdk/x265.version"
     popd
     rm -rf "x265_$X265_VERSION"
     end_build
