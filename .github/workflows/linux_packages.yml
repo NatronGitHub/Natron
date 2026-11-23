@@ -223,7 +223,8 @@ jobs:
         archive=$(find "$work/builds" -name '*-no-installer.tar.xz' | head -1)
         [ -n "$archive" ] || { echo "Error: no portable archive in $work/builds"; exit 1; }
         mkdir -p dist
-        mv "$archive" dist/
+        # cp: the build directories belong to root (the container)
+        cp "$archive" dist/
         ls -l dist
     - uses: actions/upload-artifact@v4
       with:
