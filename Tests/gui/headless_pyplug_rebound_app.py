@@ -14,6 +14,8 @@ try:
     node = app.createNode(PYPLUG)
     assert node is not None, "createNode(%s) failed" % PYPLUG
     name = node.getScriptName()
+    # the variable that #1525 is about: the group node is declared on the rebound app
+    assert getattr(app, name, None) is not None, "%s is not declared on app" % name
     assert app.getNode(name + ".Inner") is not None, "the PyPlug did not create its Inner node"
     status = 0
 except BaseException:
