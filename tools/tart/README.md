@@ -87,6 +87,7 @@ Known failures are listed in Natron-Tests itself, in `known_failures/common.txt`
 - **Reuse.** A run reuses the SDK of the same key if it is less than 30 days old; otherwise it updates the newest SDK of the branch or of the default branch (`provision.sh update`, then the SDK steps), and only builds from scratch if there is none. The `sdk` input of `workflow_dispatch` forces `update` or `scratch`. The DMG itself is built in every run: MacPorts and the runner image are rolling.
 - **DMG.** `provision.sh sync fixups build`, as `natron-build.sh`, with this commit: `launchBuildMain.sh` builds Natron and the plug-ins with CMake for macOS 14.0 and checks the DMG with `check-minos.sh`.
 - **Tests.** On a fresh runner, with Homebrew moved away and no `/opt/local`: `run-natron-tests.sh`, the script that `natron-test.sh` runs in its VM, with the same result files.
+- **Limits, compared with the arm64 tart builds.** The SDK and the DMG are built with Xcode 16.4's macOS 15.5 SDK (deployment target 14.0), not the Command Line Tools 15.3; the Xcode version and the `osmesa-install` commit (its moving HEAD) are not part of the SDK key. The tests run on macOS 15, not 14, and the runner keeps Xcode, so problems that only show on macOS 14 or without the Command Line Tools are not caught there. A tag run builds the tagged commit as a snapshot (`launchBuildMain.sh` without `RELEASE_TAG`: the plug-ins come from the branches that Natron selects, not from `Natron-x.y.z` tags, which don't exist for 2.6 pre-releases yet), as the Windows installer workflow does.
 
 ## Settings
 

@@ -21,6 +21,10 @@ on:
       state:
         type: string
         default: ''
+      # the number of stages of the caller: the last one fails if the SDK isn't finished
+      last_stage:
+        type: number
+        default: 10
     outputs:
       sdk:
         description: 'name of the finished SDK artifact (empty if not finished)'
@@ -47,8 +51,6 @@ jobs:
     env:
       BUDGET_MINUTES: 290
       SDK_TOOL: ${{ github.workspace }}/.github/workflows/macos_x86_64_sdk.sh
-      GH_TOKEN: ${{ github.token }}
-      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
     outputs:
       sdk: ${{ steps.result.outputs.sdk }}
       sdk_run_id: ${{ steps.result.outputs.sdk_run_id }}
@@ -70,6 +72,10 @@ jobs:
       - name: Find an SDK to start from
         id: find
         if: inputs.stage == 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # schedule events have no repository payload: they run on the default branch
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch || github.ref_name }}
         run: |
           found=$("$SDK_TOOL" find "$SDK_KEY_SHORT" "${{ inputs.mode }}")
           read -r name run what <<< "$found"
@@ -142,6 +148,7 @@ jobs:
           "$SDK_TOOL" save "$RUNNER_TEMP/out/natron-sdk.tar.zst" ${{ steps.provision.outputs.finished == 'true' && 'final' || '' }}
 
       - name: Upload the SDK
+        id: upload_sdk
         if: steps.provision.outputs.finished == 'true'
         uses: actions/upload-artifact@v4
         with:
@@ -166,10 +173,14 @@ jobs:
           if [ "${{ steps.find.outputs.what }}" = reuse ]; then
             echo "sdk=${{ steps.find.outputs.name }}" >> "$GITHUB_OUTPUT"
             echo "sdk_run_id=${{ steps.find.outputs.run }}" >> "$GITHUB_OUTPUT"
-          elif [ "${{ steps.provision.outputs.finished }}" = true ]; then
+          elif [ "${{ steps.upload_sdk.outcome }}" = success ]; then
             echo "sdk=natron-sdk-macos-x86_64-$SDK_KEY_SHORT" >> "$GITHUB_OUTPUT"
             echo "sdk_run_id=$GITHUB_RUN_ID" >> "$GITHUB_OUTPUT"
           elif [ "${{ steps.provision.outputs.finished }}" = false ]; then
+            if [ "${{ inputs.stage }}" -ge "${{ inputs.last_stage }}" ]; then
+              echo "::error::the SDK is not finished after the last stage (${{ inputs.last_stage }}): add stages to macos_x86_64.yml"
+              exit 1
+            fi
             echo "state=sdk-state-${{ inputs.stage }}" >> "$GITHUB_OUTPUT"
           fi
           echo "stage ${{ inputs.stage }} ended after $(( ($(date +%s) - JOB_START) / 60 )) minutes"

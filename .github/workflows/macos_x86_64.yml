@@ -200,11 +200,18 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Natron-macOS-x86_64-dmg
-          path: |
-            ${{ env.DMG_DIR }}/*.dmg
-            ${{ env.DMG_DIR }}/*-minos.txt
+          path: ${{ env.DMG_DIR }}/*.dmg
           retention-days: 14
           compression-level: 0
+
+      - name: Upload the minos list
+        # also when the minos check fails: it lists the files (and so the ports) built for a newer macOS
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Natron-macOS-x86_64-minos
+          path: ~/Development/workspace/builds_archive/natron_github_RB2/1/*-minos.txt
+          retention-days: 14
 
       - name: Upload the build log
         if: always()

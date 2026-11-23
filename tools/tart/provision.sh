@@ -686,11 +686,13 @@ step_rebuild_target() {
     for p in $(deps_order "${todo[@]}"); do
         n=$((n + 1))
         echo "===== [$n/${#todo[@]}] rebuilding $p for macOS $macos_target $(date '+%F %T')"
-        # its build dependencies first, without -s: from the binary archives where they exist
+        # BUNDLE_ONLY_REBUILD: its build dependencies first, without -s, from the binary archives
         # (with -s, the missing ones would be built from source, e.g. nodejs for qt5-qtwebengine)
-        bdeps=$(port -q info --line --depends_fetch --depends_extract --depends_patch --depends_build "$p" | tr '\t,' '  ')
-        # shellcheck disable=SC2086
-        [ -z "${bdeps// /}" ] || $PORT install $bdeps || true   # a failure shows up in the rebuild below
+        if [ "$BUNDLE_ONLY_REBUILD" = 1 ]; then
+            bdeps=$(port -q info --line --depends_fetch --depends_extract --depends_patch --depends_build "$p" | tr '\t,' '  ')
+            # shellcheck disable=SC2086
+            [ -z "${bdeps// /}" ] || $PORT install $bdeps || true   # a failure shows up in the rebuild below
+        fi
         if ! $PORT -n -s upgrade --force "$p"; then
             # the previous build stays installed: go on with the other ports, fail at the end
             echo "ERROR: could not rebuild $p"

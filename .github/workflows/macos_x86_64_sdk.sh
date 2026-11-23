@@ -96,6 +96,10 @@ run)
             sudo kill -KILL -- "-$pid" 2> /dev/null || true
             sudo pkill -KILL -f '/opt/local/bin/port' 2> /dev/null || true
             sudo pkill -KILL -f '/opt/local/var/macports/build/' 2> /dev/null || true
+            # the compilers that MacPorts' builds started (nothing else builds on this runner)
+            sudo pkill -KILL -x 'g?make|ninja|clang(\+\+)?|ld' 2> /dev/null || true
+            sleep 5
+            pgrep -fl 'make|ninja|clang' || true
             break
         fi
         sleep 20
