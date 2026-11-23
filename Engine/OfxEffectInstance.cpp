@@ -1981,6 +1981,10 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
                 }
             }
         }
+        if (stat == kOfxStatReplyDefault) {
+            // the RoD is the default RoD: its inputs count (see OfxImageEffectInstance::calcDefaultRegionOfDefinition())
+            ignore_result( _imp->effect->OFX::Host::ImageEffect::Instance::calcDefaultRegionOfDefinition( time, scale.toOfxPointD(), view ) );
+        }
         if ( ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) || inputRoDFailure.failed() ) {
             return eStatusFailed;
         }

@@ -460,6 +460,16 @@ OfxImageEffectInstance::getProjectOffset(double & xOffset,
 // for more information on the project extent. The extent is in canonical coordinates and only
 // returns the top right position, as the extent is always rooted at 0,0. For example a PAL SD
 // project would have an extent of 768, 576.
+OfxRectD
+OfxImageEffectInstance::calcDefaultRegionOfDefinition(OfxTime time,
+                                                      OfxPointD renderScale,
+                                                      int view) const
+{
+    OfxClipInstance::InputRoDFailureScope ignoreInputRoDFailures;
+
+    return OFX::Host::ImageEffect::Instance::calcDefaultRegionOfDefinition(time, renderScale, view);
+}
+
 void
 OfxImageEffectInstance::getProjectExtent(double & xSize,
                                          double & ySize) const
