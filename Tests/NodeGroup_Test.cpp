@@ -55,6 +55,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/Project.h"
@@ -249,6 +250,38 @@ TEST(NodeGroup, ExportedPyPlugLinksToVersionDocumentation)
     EXPECT_TRUE( output.contains(docUrl) ) << output.left(600).toStdString();
     EXPECT_FALSE( output.contains( QString::fromUtf8("/en/master/") ) );
     EXPECT_TRUE( output.contains( QString::fromUtf8("named ExportTestExt.py") ) );
+
+    groupNode->destroyNode(true, false);
+}
+
+// The PyPlug export saves "Use Point Interact" of a 2D user parameter (#1526): the exported PyPlug lost the point
+// overlay.
+TEST(NodeGroup, ExportedPyPlugKeepsUsePointInteract)
+{
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ASSERT_TRUE( bool(app) );
+
+    NodePtr groupNode = createNodeIn(app, PLUGINID_NATRON_GROUP, app->getProject(), false);
+    ASSERT_TRUE( bool(groupNode) );
+    NodeGroupPtr group = std::dynamic_pointer_cast<NodeGroup>( groupNode->getEffectInstance() );
+    ASSERT_TRUE( bool(group) );
+
+    KnobPagePtr page = group->getOrCreateUserPageKnob();
+    KnobDoublePtr withInteract = group->createDoubleKnob("withInteract", "With Interact", 2);
+    KnobDoublePtr withoutInteract = group->createDoubleKnob("withoutInteract", "Without Interact", 2);
+    ASSERT_TRUE(page && withInteract && withoutInteract);
+    page->addKnob(withInteract);
+    page->addKnob(withoutInteract);
+    withInteract->setHasHostOverlayHandle(true);
+    ASSERT_TRUE( withInteract->getHasHostOverlayHandle() );
+
+    QString output;
+    group->exportGroupToPython( QString::fromUtf8("fr.inria.test.PointInteract"), QString::fromUtf8("PointInteract"), QString(),
+                                QString(), QString::fromUtf8("Other"), 1, output );
+    const QString create = QString::fromUtf8("param = lastNode.createDouble2DParam(\"withInteract\", \"With Interact\")\n"
+                                             "    param.setUsePointInteract(True)\n");
+    EXPECT_TRUE( output.contains(create) ) << output.toStdString();
+    EXPECT_EQ( 1, output.count( QString::fromUtf8("setUsePointInteract") ) ) << output.toStdString();
 
     groupNode->destroyNode(true, false);
 }

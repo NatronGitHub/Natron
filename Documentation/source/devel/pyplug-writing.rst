@@ -576,11 +576,6 @@ These mistakes are the most frequent ones, and most of them fail without any mes
     alias on the group (*Pick*, see :ref:`pyplugWriting-params`), so that the user chooses the
     layer once the input is connected.
 
-**Some settings are not exported.**
-    The *Use Point Interact* option of a 2D parameter is not written to the exported file
-    (`#1526 <https://github.com/NatronGitHub/Natron/issues/1526>`_), so the exported PyPlug has no
-    point to drag in the viewer for that parameter.
-
 **A Group needs an Output node to be exported.**
     *Export as PyPlug* refuses a Group without an Output node, even if its last node is a Write
     node. Connect an Output node to the node before the Write node.
