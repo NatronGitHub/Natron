@@ -38,6 +38,7 @@
 #include <QCoreApplication>
 #include <QThread>
 #include <QDebug>
+#include <QPointer>
 
 #include "Global/GlobalDefines.h"
 
@@ -5020,7 +5021,9 @@ struct KnobHolder::KnobHolderPrivate
     bool knobsFrozen;
     mutable QMutex hasAnimationMutex;
     bool hasAnimation;
-    DockablePanelI* settingsPanel;
+    // The DockablePanel (a QObject in Gui) of this holder: a QPointer, because the Gui may delete
+    // the panel while this holder lives, e.g. NodeGui::destroyGui(), and does not tell it (#1618).
+    QPointer<QObject> settingsPanel;
 
     KnobHolderPrivate(const AppInstancePtr& appInstance_)
         : app(appInstance_)
@@ -5046,7 +5049,7 @@ struct KnobHolder::KnobHolderPrivate
         , knobsFrozen(false)
         , hasAnimationMutex()
         , hasAnimation(false)
-        , settingsPanel(0)
+        , settingsPanel()
 
     {
     }
@@ -5078,6 +5081,12 @@ struct KnobHolder::KnobHolderPrivate
     , settingsPanel(other.settingsPanel)
     {
 
+    }
+
+    // null once the panel is deleted
+    DockablePanelI* getPanel() const
+    {
+        return dynamic_cast<DockablePanelI*>( settingsPanel.data() );
     }
 };
 
@@ -5217,22 +5226,24 @@ void
 KnobHolder::setPanelPointer(DockablePanelI* gui)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    _imp->settingsPanel = gui;
+    _imp->settingsPanel = dynamic_cast<QObject*>(gui);
+    assert(!gui || _imp->settingsPanel);
 }
 
 void
 KnobHolder::discardPanelPointer()
 {
     assert( QThread::currentThread() == qApp->thread() );
-    _imp->settingsPanel = 0;
+    _imp->settingsPanel.clear();
 }
 
 void
 KnobHolder::recreateUserKnobs(bool keepCurPageIndex)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if (_imp->settingsPanel) {
-        _imp->settingsPanel->recreateUserKnobs(keepCurPageIndex);
+    DockablePanelI* panel = _imp->getPanel();
+    if (panel) {
+        panel->recreateUserKnobs(keepCurPageIndex);
         EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
         if (isEffect) {
             isEffect->getNode()->declarePythonFields();
@@ -5244,8 +5255,9 @@ void
 KnobHolder::recreateKnobs(bool keepCurPageIndex)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if (_imp->settingsPanel) {
-        _imp->settingsPanel->refreshGuiForKnobsChanges(keepCurPageIndex);
+    DockablePanelI* panel = _imp->getPanel();
+    if (panel) {
+        panel->refreshGuiForKnobsChanges(keepCurPageIndex);
         EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
         if (isEffect) {
             isEffect->getNode()->declarePythonFields();
@@ -5283,8 +5295,9 @@ KnobHolder::deleteKnob(KnobI* knob,
         }
     }
 
-    if (alsoDeleteGui && _imp->settingsPanel) {
-        _imp->settingsPanel->deleteKnobGui(sharedKnob);
+    DockablePanelI* panel = alsoDeleteGui ? _imp->getPanel() : 0;
+    if (panel) {
+        panel->deleteKnobGui(sharedKnob);
     }
 }
 
