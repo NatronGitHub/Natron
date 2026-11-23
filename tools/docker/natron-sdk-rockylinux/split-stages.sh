@@ -3,8 +3,11 @@
 # after the other, in separate jobs (a GitHub-hosted job runs at most 6 hours, and the whole SDK
 # takes longer on a 4-CPU runner).
 #
-# Usage: split-stages.sh DOCKERFILE LAST_STEP...
+# Usage: split-stages.sh DOCKERFILE [LAST_STEP...]
 #
+# The default LAST_STEPs are STAGE_ENDS below, which .github/workflows/linux_packages.yml uses: it
+# has one sdk_stage<N> job per stage (a stage takes 1 to 3 hours on a 4-CPU runner). Changing
+# them changes the SDK hash (this file is part of it), so that stages of two splits are never mixed.
 # Each LAST_STEP is the name of a build step (tools/jenkins/include/scripts/pkg/<step>.sh) that
 # ends a "RUN ... LAST_STEP=<step> ..." line of DOCKERFILE: the stage ends after that line. The
 # steps after the last LAST_STEP make the last stage. It writes, next to DOCKERFILE:
@@ -14,9 +17,12 @@
 # Every stage is a valid build of the same Dockerfile lines, in the same order, so the result is
 # the image that "docker build" of DOCKERFILE makes.
 set -eu
-[ $# -ge 2 ] || { sed -n 2,15p "$0"; exit 1; }
+STAGE_ENDS="postgresql libheif ffmpeg"
+[ $# -ge 1 ] || { sed -n 2,19p "$0"; exit 1; }
 in="$1"
 shift
+# shellcheck disable=SC2086 # a list of step names
+[ $# -ge 1 ] || set -- $STAGE_ENDS
 dir="$(dirname "$in")"
 awk -v dir="$dir" -v ends="$*" '
 BEGIN {

@@ -63,7 +63,8 @@ echo "*** Natron-Tests: $(git -C "$NATRON_TESTS_SRC" log -1 --format='%h %cs %s'
 for z in Natron_2.3.12_Spaceship.zip Natron_2.3.12_BayMax.zip; do
     if ! unzip -tqq "$NATRON_TESTS_SRC/$z" > /dev/null 2>&1; then
         echo "*** downloading $z"
-        curl -fsSL --retry 3 --max-time 1800 -o "$NATRON_TESTS_SRC/$z" "https://downloads.sourceforge.net/project/natron/Examples/$z" ||
+        { curl -fsSL --retry 3 --max-time 1800 -o "$NATRON_TESTS_SRC/$z" "https://downloads.sourceforge.net/project/natron/Examples/$z" &&
+            unzip -tqq "$NATRON_TESTS_SRC/$z" > /dev/null 2>&1; } ||
             { rm -f "$NATRON_TESTS_SRC/$z"; echo "Warning: could not download $z (runTests.sh will try again)"; }
     fi
 done
@@ -92,8 +93,8 @@ P=/home/natron/natron
 missing=$(find "$P" -type f \( -name "*.so*" -o -name "*.ofx" -o -perm -u+x \) | while IFS= read -r f; do
     ldd "$f" 2> /dev/null | grep "not found" | sed "s#^#$f: #" || true
 done)
-[ -z "$missing" ] || { echo "Error: missing system libraries:"; echo "$missing"; }
 status=0
+[ -z "$missing" ] || { echo "Error: missing system libraries:"; echo "$missing"; status=1; }
 su natron -c "cd Natron-Tests && env -i HOME=/home/natron USER=natron LOGNAME=natron SHELL=/bin/bash \
     LANG=C.UTF-8 PATH=/usr/bin:/bin:/usr/sbin:/sbin \
     ${TEST:+TEST=\"$TEST\"} ${TESTCUSTOM:+TESTCUSTOM=\"$TESTCUSTOM\"} \
@@ -101,6 +102,7 @@ su natron -c "cd Natron-Tests && env -i HOME=/home/natron USER=natron LOGNAME=na
     OCIO=$P/Resources/OpenColorIO-Configs/blender/config.ocio \
     FFMPEG=$P/bin/ffmpeg COMPARE=$P/bin/idiff \
     timeout -s KILL $TEST_TIMEOUT /bin/bash runTests.sh $P/NatronRenderer" > /out/runTests.log 2>&1 || status=$?
+[ -z "$missing" ] || { echo "Error: missing system libraries:"; echo "$missing"; } >> /out/runTests.log
 echo "runTests.sh exited with status $status"
 cd Natron-Tests
 # runTests.sh only copies the images of the failed render tests to failed/: also copy those of

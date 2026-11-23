@@ -10,7 +10,7 @@ name: Linux packages
 #    symbol versions build-Linux-installer.sh checks against Rocky Linux 9.0, checkBundle);
 # 3. Natron-Tests (master) on the archive, in a clean rockylinux/rockylinux:9 container
 #    (tools/docker/natron-test.sh): <name>-tests.txt, <name>-unit_tests_failures.zip.
-# Weekly (Sunday), on demand, and on pre-release tags (v2.6.0-rc1, ...), whose release gets the
+# Weekly (Sunday), on demand, and on pre-release tags (v2.6.0-rc1, -beta1, -alpha.1, ...), whose release gets the
 # archives and the test results; never on pull requests. The archives and the test results are
 # kept 14 days as workflow artifacts. Never skipped: the plug-ins are built from their moving
 # branches (Global/plugin-branches.sh). GPL only (no COMMERCIAL build, see tools/jenkins/README.md).
@@ -25,7 +25,10 @@ on:
   - cron: '47 4 * * 0'
   push:
     tags:
-    - 'v*-*'
+    - 'v*-alpha*'
+    - 'v*-beta*'
+    - 'v*-rc*'
+    - 'v*-RC*'
     # TEMPORARY, to test the workflow before it is on the default branch: remove before merging
     branches:
     - linux-pkg-gha
@@ -47,8 +50,11 @@ jobs:
       image: ${{ steps.sdk.outputs.image }}
       hash: ${{ steps.sdk.outputs.hash }}
       build: ${{ steps.sdk.outputs.build }}
+      default_branch: ${{ steps.sdk.outputs.default_branch }}
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     - uses: docker/login-action@v3
       with:
         registry: ghcr.io
@@ -58,19 +64,24 @@ jobs:
       env:
         OWNER: ${{ github.repository_owner }}
         REBUILD: ${{ inputs.rebuild_sdk }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         image="ghcr.io/${OWNER,,}/natron-sdk-rockylinux9"
-        # the SDK definition: the files that the SDK build uses (the other tools/jenkins scripts are
-        # taken from the Natron checkout by launchBuildMain.sh when it runs)
-        hash=$(git ls-tree -r HEAD -- tools/jenkins/include/scripts tools/jenkins/include/patches \
+        # the SDK definition: the files that the SDK build uses (the package job runs the
+        # tools/jenkins scripts of its own checkout, not the copies in the image)
+        hash=$(git ls-tree -r HEAD -- tools/jenkins/include/scripts/build-Linux-sdk.sh \
+            tools/jenkins/include/scripts/pkg tools/jenkins/include/patches \
             tools/jenkins/common.sh tools/jenkins/compiler-common.sh tools/docker/natron-sdk-rockylinux |
             sha256sum | cut -c1-16)
+        # (the schedule event has no repository object: ask the API)
+        default_branch=false
+        [ "$GITHUB_REF" != "refs/heads/$(gh api "repos/$GITHUB_REPOSITORY" --jq .default_branch)" ] || default_branch=true
         build=true
         if [ "$REBUILD" != true ] && docker buildx imagetools inspect "$image:$hash" > /dev/null 2>&1; then
             build=false
         fi
-        echo "SDK image $image:$hash, build: $build"
-        { echo "image=$image"; echo "hash=$hash"; echo "build=$build"; } >> "$GITHUB_OUTPUT"
+        echo "SDK image $image:$hash, build: $build, default branch: $default_branch"
+        { echo "image=$image"; echo "hash=$hash"; echo "build=$build"; echo "default_branch=$default_branch"; } >> "$GITHUB_OUTPUT"
 
   # one job per stage (STAGE_ENDS in linux_sdk_stage.yml)
   sdk_stage1:
@@ -85,6 +96,7 @@ jobs:
       image: ${{ needs.sdk_check.outputs.image }}
       hash: ${{ needs.sdk_check.outputs.hash }}
       rebuild: ${{ inputs.rebuild_sdk == true }}
+      export_cache: ${{ needs.sdk_check.outputs.default_branch == 'true' }}
   sdk_stage2:
     needs: [sdk_check, sdk_stage1]
     permissions:
@@ -96,6 +108,7 @@ jobs:
       image: ${{ needs.sdk_check.outputs.image }}
       hash: ${{ needs.sdk_check.outputs.hash }}
       rebuild: ${{ inputs.rebuild_sdk == true }}
+      export_cache: ${{ needs.sdk_check.outputs.default_branch == 'true' }}
   sdk_stage3:
     needs: [sdk_check, sdk_stage2]
     permissions:
@@ -107,6 +120,7 @@ jobs:
       image: ${{ needs.sdk_check.outputs.image }}
       hash: ${{ needs.sdk_check.outputs.hash }}
       rebuild: ${{ inputs.rebuild_sdk == true }}
+      export_cache: ${{ needs.sdk_check.outputs.default_branch == 'true' }}
   sdk_stage4:
     needs: [sdk_check, sdk_stage3]
     permissions:
@@ -118,6 +132,7 @@ jobs:
       image: ${{ needs.sdk_check.outputs.image }}
       hash: ${{ needs.sdk_check.outputs.hash }}
       rebuild: ${{ inputs.rebuild_sdk == true }}
+      export_cache: ${{ needs.sdk_check.outputs.default_branch == 'true' }}
   sdk_final:
     needs: [sdk_check, sdk_stage4]
     permissions:
@@ -129,11 +144,12 @@ jobs:
       image: ${{ needs.sdk_check.outputs.image }}
       hash: ${{ needs.sdk_check.outputs.hash }}
       rebuild: ${{ inputs.rebuild_sdk == true }}
+      export_cache: ${{ needs.sdk_check.outputs.default_branch == 'true' }}
 
   sdk_manifest:
     needs: [sdk_check, sdk_final]
     # also when the SDK image exists, to move :latest to it on the default branch
-    if: always() && needs.sdk_check.result == 'success' && (needs.sdk_final.result == 'success' || needs.sdk_check.outputs.build == 'false')
+    if: ${{ !cancelled() && needs.sdk_check.result == 'success' && (needs.sdk_final.result == 'success' || needs.sdk_check.outputs.build == 'false') }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -149,7 +165,7 @@ jobs:
       env:
         IMAGE: ${{ needs.sdk_check.outputs.image }}
         HASH: ${{ needs.sdk_check.outputs.hash }}
-        DEFAULT_BRANCH: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+        DEFAULT_BRANCH: ${{ needs.sdk_check.outputs.default_branch }}
       run: |
         tags=(-t "$IMAGE:$HASH")
         # :latest is the SDK of the default branch only
@@ -160,7 +176,7 @@ jobs:
   package:
     needs: [sdk_check, sdk_manifest]
     # the SDK image exists, or was just built
-    if: always() && needs.sdk_check.result == 'success' && (needs.sdk_check.outputs.build == 'false' || needs.sdk_manifest.result == 'success')
+    if: ${{ !cancelled() && needs.sdk_check.result == 'success' && (needs.sdk_check.outputs.build == 'false' || needs.sdk_manifest.result == 'success') }}
     name: package ${{ matrix.arch }}
     timeout-minutes: 345
     strategy:
@@ -178,12 +194,9 @@ jobs:
       contents: read
       packages: read
     steps:
-    - name: Free disk space
-      run: |
-        # the SDK image and the build need about 30 GB; the runner image has about 14 GB free
-        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache /usr/local/share/boost /usr/share/swift /usr/local/share/powershell
-        docker system prune -af > /dev/null
-        df -h /
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     - uses: docker/login-action@v3
       with:
         registry: ghcr.io
@@ -202,23 +215,27 @@ jobs:
             version="${GITHUB_REF_NAME#v}"
             suffix="${version#*-}"
             number="${suffix##*[!0-9]}"
-            case "${suffix%"$number"}" in
+            kind="${suffix%"$number"}"
+            case "${kind%.}" in
                 alpha) status=ALPHA ;;
                 beta) status=BETA ;;
                 rc|RC) status=RC ;;
-                *) echo "Error: $GITHUB_REF_NAME is not a pre-release tag (vX.Y.Z-alphaN, -betaN or -rcN)"; exit 1 ;;
+                *) echo "Error: $GITHUB_REF_NAME is not a pre-release tag (vX.Y.Z-alphaN, -betaN or -rcN, or alpha.N...)"; exit 1 ;;
             esac
             opts+=(-e RELEASE_TAG="$version" -e NATRON_DEV_STATUS="$status" -e NATRON_BUILD_NUMBER="${number:-1}")
         else
             opts+=(-e GIT_BRANCH="$GITHUB_REF_NAME" -e GIT_COMMIT="$GITHUB_SHA")
         fi
+        df -h /
         docker pull -q "$SDK_IMAGE"
-        # the image's command is launchBuildMain.sh; it checks out Natron and the plug-ins
+        # launchBuildMain.sh checks out Natron and the plug-ins. It runs with the tools/jenkins
+        # scripts of this commit, not with the copies in the SDK image (as the image's command does)
         time docker run --rm \
             -v "$work/builds:/home/builds_archive" -v "$work/tmp:/home/tmp" \
+            -v "$PWD/tools/jenkins:/home/natron-jenkins:ro" \
             -e GIT_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" -e GIT_URL_IS_NATRON=1 \
             -e NATRON_LICENSE=GPL -e UNIT_TESTS=false -e MKJOBS="$(nproc)" "${opts[@]}" \
-            "$SDK_IMAGE"
+            "$SDK_IMAGE" bash -c 'cp -R /home/natron-jenkins/. /home/ && exec scl enable gcc-toolset-14 ./launchBuildMain.sh'
         df -h /
         archive=$(find "$work/builds" -name '*-no-installer.tar.xz' | head -1)
         [ -n "$archive" ] || { echo "Error: no portable archive in $work/builds"; exit 1; }
@@ -236,6 +253,8 @@ jobs:
 
   test:
     needs: package
+    # each arch whose archive was built, even if the other one failed
+    if: ${{ !cancelled() && needs.package.result != 'skipped' }}
     name: Natron-Tests ${{ matrix.arch }}
     timeout-minutes: 345
     strategy:
@@ -249,29 +268,20 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     - uses: actions/checkout@v4
       with:
         repository: NatronGitHub/Natron-Tests
         ref: master
         path: Natron-Tests
-    # the two example projects that runTests.sh downloads from SourceForge (about 350 MB, never change)
-    - uses: actions/cache/restore@v4
-      id: examples
-      with:
-        path: Natron-Tests/Natron_2.3.12_*.zip
-        key: natron-tests-examples-2.3.12
+        persist-credentials: false
     - uses: actions/download-artifact@v4
       with:
         name: Natron-Linux-${{ matrix.arch }}
         path: dist
     - name: Run Natron-Tests in a clean Rocky Linux 9 container
       run: tools/docker/natron-test.sh -n Natron-Tests -o results dist/*.tar.xz
-    # saved even if a test failed (actions/cache only saves after a successful job)
-    - uses: actions/cache/save@v4
-      if: always() && steps.examples.outputs.cache-hit != 'true' && hashFiles('Natron-Tests/Natron_2.3.12_*.zip') != ''
-      with:
-        path: Natron-Tests/Natron_2.3.12_*.zip
-        key: natron-tests-examples-2.3.12
     - uses: actions/upload-artifact@v4
       if: always()
       with:
@@ -283,7 +293,8 @@ jobs:
   # pre-release tags only: attach the archives and the test results to the GitHub pre-release
   release:
     needs: [package, test]
-    if: always() && startsWith(github.ref, 'refs/tags/') && needs.package.result == 'success'
+    # what was built, even if one arch failed
+    if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/') && needs.package.result != 'skipped' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: write
