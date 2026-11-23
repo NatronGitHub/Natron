@@ -206,6 +206,7 @@ class NodeGuiI;
 class NodeMetadata;
 class NodeRenderWatcher;
 class NodeSerialization;
+struct NodesRestoreStatus;
 class NodeSettingsPanel;
 class OSGLContext;
 class OSGLContextAttacher;

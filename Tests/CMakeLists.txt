@@ -258,6 +258,10 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME RendererSettingsTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_settings_test.py $<TARGET_FILE:NatronRenderer>)
     set_tests_properties(RendererSettingsTest PROPERTIES TIMEOUT 360)
+    # App.projectFileHasGuiData() and App.projectLoadedWithErrors() in NatronRenderer
+    add_test(NAME ProjectLoadInfoTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_project_load_info_test.py $<TARGET_FILE:NatronRenderer>)
+    set_tests_properties(ProjectLoadInfoTest PROPERTIES TIMEOUT 360)
 endif()
 if(Python3_Interpreter_FOUND)
     # NatronRenderer -t exits at the end of a stdin that is not a console (the null device, a pipe)

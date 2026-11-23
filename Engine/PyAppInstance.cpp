@@ -466,6 +466,18 @@ App::setProjectFormat(ProjectFileFormatEnum format)
     getInternalApp()->getProject()->setFileFormat(format);
 }
 
+bool
+App::projectFileHasGuiData() const
+{
+    return getInternalApp()->getProject()->fileHasGuiData();
+}
+
+bool
+App::projectLoadedWithErrors() const
+{
+    return getInternalApp()->getProject()->fileLoadedWithErrors();
+}
+
 App*
 App::loadProject(const QString& filename)
 {
