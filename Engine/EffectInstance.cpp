@@ -4483,8 +4483,17 @@ EffectInstance::getComponentsNeededAndProduced_public(U64 hash,
     // Remove from this list all layers produced from this node to get the pass-through planes list
     std::list<ImagePlaneDesc>& outputLayers = (*comps)[-1];
 
-    // Ensure the plug-in made the metadata plane available.
-    {
+    // Ensure the plug-in made the metadata plane (the color plane) available, except when it declared its
+    // output planes and passes the planes that it does not render through from an input. Such a plug-in (a
+    // Shuffle that writes to another layer than the color plane) does not render the color plane: adding it
+    // here removed it from the pass-through planes below, the plug-in was asked to render it, did not, and
+    // the color came out black after the node.
+    // A writer keeps the metadata plane: asked for one layer that is not the color plane, it is given that
+    // layer and the color plane, which is what makes it write the layer under its own channel names.
+    const PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
+    const bool colorFromPassThroughInput = !outputLayers.empty() && (*passThroughInputNb != -1) && !isWriter() &&
+                                           (passThrough == ePassThroughPassThroughNonRenderedPlanes);
+    if (!colorFromPassThroughInput) {
         std::list<ImagePlaneDesc> metadataPlanes;
         ImagePlaneDesc metadataPlane, metadataPairedPlane;
         getMetadataComponents(-1, &metadataPlane, &metadataPairedPlane);
@@ -4499,7 +4508,6 @@ EffectInstance::getComponentsNeededAndProduced_public(U64 hash,
 
 
     // If the plug-in does not block upstream planes, recurse up-stream on the pass-through input to get available components.
-    PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
     if (*passThroughInputNb != -1 && ( (passThrough == ePassThroughPassThroughNonRenderedPlanes) ||
         ( passThrough == ePassThroughRenderAllRequestedPlanes)) ) {
 
