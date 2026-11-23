@@ -342,3 +342,9 @@ add_test(NAME UndoGroupHeadless
 # the caches (OFX plug-ins) in the build tree, not in the user's cache directory (#1569)
 set_tests_properties(UndoGroupHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/undo-group-headless-cache")
+
+# A PyPlug is created after the script rebinds the global "app" (#1525)
+add_test(NAME PyPlugReboundAppHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_pyplug_rebound_app.py")
+set_tests_properties(PyPlugReboundAppHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_PLUGIN_PATH=${CMAKE_CURRENT_SOURCE_DIR}/data/pyplugs;PYTHONDONTWRITEBYTECODE=1;NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/pyplug-rebound-app-cache")

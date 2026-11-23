@@ -561,10 +561,8 @@ These mistakes are the most frequent ones, and most of them fail without any mes
 **Use the app that Natron gives you.**
     In a PyPlug or a callback, use the ``app`` argument: ``app1`` is only the first project, and
     the user may have opened several. In a script run by Natron or NatronRenderer, never assign to
-    the global variables ``app`` or ``app1``, e.g. ``app = natron.getInstance(0)``: Natron uses them
-    to find the nodes that a script creates, and in NatronRenderer the PyPlug nodes can then no
-    longer be created (`#1525 <https://github.com/NatronGitHub/Natron/issues/1525>`_). Use another
-    name.
+    the global variables ``app`` or ``app1``, e.g. ``app = natron.getInstance(0)``: Natron declares
+    the nodes that a script creates on them. Use another name.
 
 **Expressions inside a PyPlug start with thisGroup.**
     See the note in :ref:`pyplugWriting-createInstance`.
