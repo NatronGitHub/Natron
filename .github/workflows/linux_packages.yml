@@ -132,6 +132,8 @@ jobs:
 
   sdk_manifest:
     needs: [sdk_check, sdk_final]
+    # also when the SDK image exists, to move :latest to it on the default branch
+    if: always() && needs.sdk_check.result == 'success' && (needs.sdk_final.result == 'success' || needs.sdk_check.outputs.build == 'false')
     runs-on: ubuntu-24.04
     permissions:
       contents: read
