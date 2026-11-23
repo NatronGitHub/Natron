@@ -1,0 +1,42 @@
+name: macOS x86_64 probe (temporary)
+on:
+  push:
+    branches: [ci-macos-x86_64]
+    paths: ['.github/workflows/macos_x86_64_probe.yml']
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: macos-15-intel
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4.1.1
+      - name: Runner facts
+        run: |
+          set -x
+          uname -a; uname -m; sw_vers; sysctl -n machdep.cpu.brand_string hw.ncpu hw.memsize kern.hv_vmm_present
+          df -h / /System/Volumes/Data; id; echo $HOME
+          ls /Applications | grep -i xcode; xcode-select -p; xcrun --show-sdk-version; clang --version
+          ls /Library/Developer/CommandLineTools/SDKs 2>/dev/null || true
+          ls "$(xcode-select -p)/Platforms/MacOSX.platform/Developer/SDKs"
+          tar --version; command -v zstd gtar brew; ls /usr/local; du -sh /usr/local 2>/dev/null || true
+          ls /usr/local/include | head; ls /usr/local/lib | wc -l
+          echo test > /tmp/x; tar --zstd -cf /tmp/x.tzst /tmp/x && echo "bsdtar zstd OK" || echo "bsdtar zstd NO"
+          softwareupdate --list 2>&1 | grep -i 'command line' || true
+      - name: MacPorts and port lists
+        run: |
+          export PATH=/opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
+          curl -fsSL --retry 5 -o MacPorts.pkg https://github.com/macports/macports-base/releases/download/v2.12.7/MacPorts-2.12.7-15-Sequoia.pkg
+          sudo installer -pkg MacPorts.pkg -target / > /dev/null
+          sudo perl -pi -e 's|^rsync://\S+(\s+\[default\])|https://distfiles.macports.org/ports.tar.gz$1|' /opt/local/etc/macports/sources.conf
+          time sudo port -q sync
+          sudo mkdir -p /opt/MacPorts-Natron; sudo chown "$(id -un):staff" /opt/MacPorts-Natron
+          (cd tools/MacPorts && ./sync.sh) | tail -3
+          sudo perl -0pi -e 's|^(\S+\s+\[default\])|file:///opt/MacPorts-Natron\n$1|m' /opt/local/etc/macports/sources.conf
+          ROOTS="dbus glib2 libjpeg-turbo libpng tiff expat libmng boost cairo x264 x265 libvpx libraw openexr minizip-ng pystring opencolorio opencolorio1 seexpr211 librsvg poppler librevenge libcdr-0.1 sox libzip ImageMagick ImageMagick7 ffmpeg openimageio py311-pip py311-numpy py311-sphinx py311-sphinx_rtd_theme qt5 qt5-qtwebengine py311-pyside2 py311-dmgbuild python27 cmake autoconf automake libtool pkgconfig gsed gawk coreutils findutils bash wget bison flex doxygen texinfo meson ninja help2man unzip"
+          for p in $ROOTS; do port -q rdeps --index --no-build $p 2>/dev/null; echo $p; done | awk '{print $1}' | sort -u > runtime.txt
+          for p in $ROOTS; do port -q rdeps --index $p 2>/dev/null; echo $p; done | awk '{print $1}' | sort -u > all.txt
+          wc -l runtime.txt all.txt
+          echo "== build-only:"; comm -13 runtime.txt all.txt | tr '\n' ' '; echo
+          echo "== runtime:"; tr '\n' ' ' < runtime.txt; echo
+          grep -n -E '^(llvm|clang|rust|gcc|qt5-qtwebengine|nodejs)' all.txt || true
