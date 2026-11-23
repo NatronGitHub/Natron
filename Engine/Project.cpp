@@ -29,6 +29,7 @@
 #include <algorithm> // min, max, sort
 #include <functional>
 #include <mutex>
+#include <optional>
 #include <ios>
 #include <limits>
 #include <ostream>
@@ -761,7 +762,8 @@ Project::saveProject_imp(const QString & path,
             ++_imp->waitingSaves;
             const unsigned int resetCount = _imp->resetCount;
             l.unlock();
-            std::unique_ptr<PythonGILUnlocker> gilUnlocker(new PythonGILUnlocker); // if this thread holds the GIL; reset() below
+            std::optional<PythonGILUnlocker> gilUnlocker;
+            gilUnlocker.emplace(); // if this thread holds the GIL; reset() below
             l.relock();
             while (_imp->isSavingProject) {
                 if ( !_imp->isSavingProjectCond.wait(&_imp->isSavingProjectMutex, 50) && isMainThread ) {

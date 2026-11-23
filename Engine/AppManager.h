@@ -961,7 +961,7 @@ public:
  **/
 class PythonGILUnlocker
 {
-    PyThreadState* _state; // NULL if the GIL was not released
+    PyThreadState* _state = nullptr; // nullptr if the GIL was not released
 public:
     PythonGILUnlocker();
 

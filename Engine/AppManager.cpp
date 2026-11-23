@@ -4947,9 +4947,9 @@ PythonGILLocker::~PythonGILLocker()
 }
 
 PythonGILUnlocker::PythonGILUnlocker()
-    : _state(NULL)
 {
     // Not PyGILState_Release(): it must be paired with the PyGILState_Ensure() that returned its argument (#1610).
+    // (PyGILState_Check() always returns 1 once a subinterpreter exists; Natron creates none.)
     if ( !Py_IsInitialized() || !PyGILState_Check() ) {
         return;
     }

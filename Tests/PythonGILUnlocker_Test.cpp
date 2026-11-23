@@ -43,18 +43,30 @@ TEST(PythonGILUnlocker, KeepsThreadState)
 {
     ASSERT_TRUE( Py_IsInitialized() );
     bool releasedInside = false;
+    bool lockedNested = false;
+    bool releasedNested = false;
     bool sameState = false;
     bool keptDict = false;
     std::thread t([&] {
         PythonGILLocker pgl;
         PyThreadState* before = PyThreadState_Get();
         PyObject* dict = PyThreadState_GetDict(); // borrowed
+        if (!dict) {
+            return;
+        }
         PyObject* one = PyLong_FromLong(1);
         PyDict_SetItemString(dict, "natronTest1610", one);
         Py_DECREF(one);
         {
             PythonGILUnlocker unlocker;
             releasedInside = !PyGILState_Check();
+            // Python run while waiting (processEvents()), which waits again
+            PythonGILLocker inner;
+            lockedNested = PyGILState_Check();
+            {
+                PythonGILUnlocker nested;
+                releasedNested = !PyGILState_Check();
+            }
         }
         sameState = (PyThreadState_Get() == before);
         PyObject* d = PyThreadState_GetDict();
@@ -65,6 +77,8 @@ TEST(PythonGILUnlocker, KeepsThreadState)
     });
     t.join(); // the main thread does not hold the GIL after initPython()
     EXPECT_TRUE(releasedInside);
+    EXPECT_TRUE(lockedNested);
+    EXPECT_TRUE(releasedNested);
     EXPECT_TRUE(sameState);
     EXPECT_TRUE(keptDict);
 }
