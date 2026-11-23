@@ -661,9 +661,15 @@ if [ "$PKGOS" = "Linux" ]; then
     # Note: Several suppression files can be passed to valgrind.
     # There is an automatic tool to generate libc/libstdc++/Qt
     # suppressions at https://github.com/AlekSi/valgrind-suppressions
-    # DeepGraphRender.VeryDeepChain (a 5000-node graph) takes 7 minutes without valgrind and more
-    # than the whole 30-minute limit with it: it runs in CI (ci.yml), without valgrind
-    env GTEST_FILTER=-DeepGraphRender.VeryDeepChain LD_LIBRARY_PATH="$SDK_HOME/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib:$QTDIR/lib" $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" ${TEST_BINARY_TO_RUN}
+    if [ "${ARCH:-$(uname -m)}" = aarch64 ]; then
+        # valgrind is about 10 times slower on aarch64 than on x86_64: the suite doesn't fit in
+        # the time limit (the x86_64 build runs it under valgrind)
+        env LD_LIBRARY_PATH="$SDK_HOME/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib:$QTDIR/lib" $TIMEOUT -s KILL 1800 ${TEST_BINARY_TO_RUN}
+    else
+        # DeepGraphRender.VeryDeepChain (a 5000-node graph) takes 7 minutes without valgrind and
+        # more than the whole 30-minute limit with it: it runs in CI (ci.yml), without valgrind
+        env GTEST_FILTER=-DeepGraphRender.VeryDeepChain LD_LIBRARY_PATH="$SDK_HOME/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib:$QTDIR/lib" $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" ${TEST_BINARY_TO_RUN}
+    fi
     rm -f lib || true
     # ITS NOT POSSIBLE TO RUN THE WIN TESTS HERE, DO IT IN THE INSTALLER SCRIPT
 elif [ "$PKGOS" = "Windows" ]; then
