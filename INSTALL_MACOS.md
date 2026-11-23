@@ -152,7 +152,7 @@ The `clt` step of `tools/tart/provision.sh` does this inside the VM, and checks 
 
 If Apple stops offering the Command Line Tools 15.3 through `softwareupdate`, download "Command Line Tools for Xcode 15.3" from <https://developer.apple.com/download/all/> (this needs an Apple ID), copy the `.dmg` into the VM, and install it: `hdiutil attach Command_Line_Tools_for_Xcode_15.3.dmg`, then `sudo installer -pkg "/Volumes/Command Line Developer Tools/Command Line Tools.pkg" -target /`. The version is set by `NATRON_MACOS_CLT_VERSION` in `tools/jenkins/macos-release.sh`.
 
-The release scripts build Natron and the plug-ins with a MacPorts clang (section 5, `tools/jenkins/compiler-common.sh`), and Apple's clang compiles the Objective-C++ files of Natron on macOS 12 to 14, and the ports whose Portfile selects it. Apple clang supports C++17 and C++20, and the CMake builds can use it with OpenMP: Natron's `CMakeLists.txt` and the plug-ins (`OFX_LIBOMP_ROOT`, passed by `build-plugins.sh`) find MacPorts' `libomp`, as in "Developing with the MacPorts SDK". But its driver has no `-fopenmp` (only `-Xpreprocessor -fopenmp`) and Xcode ships no OpenMP runtime, so the builds that pass `-fopenmp` to the compiler, the deprecated qmake build (`CONFIG+=openmp`) and the plug-ins' Makefiles (`PLUGINS_BUILD_SYSTEM=make`, `OPENMP=1`), need a clang with OpenMP; the release scripts use the MacPorts clang for every build, so that the default and fallback builds use the same compiler. Switching the CMake release builds to Apple clang is possible, and not done here.
+The release scripts build Natron and the plug-ins with this Apple clang (`tools/jenkins/compiler-common.sh`, #1134), as long as it supports the C++ standard of the build (C++17 with Qt5, C++20 with Qt6) and links with MacPorts' `libomp` (section 5): Natron's `CMakeLists.txt` and the plug-ins (`OFX_LIBOMP_ROOT`, passed by `build-plugins.sh`) find it, as in "Developing with the MacPorts SDK". Apple clang's driver has no `-fopenmp` (only `-Xpreprocessor -fopenmp`) and Xcode ships no OpenMP runtime, so the builds that pass `-fopenmp` to the compiler, the deprecated qmake build (`NATRON_BUILD_SYSTEM=qmake`, `CONFIG+=openmp`) and the plug-ins' Makefiles (`PLUGINS_BUILD_SYSTEM=make`, `OPENMP=1`), use a MacPorts clang instead (section 5), as does `NATRON_MACOS_CLANG=macports`. Apple clang also builds the ports whose Portfile selects it.
 
 On a Mac (not needed in the VM), under *System Settings › Privacy & Security › Developer Tools* (*System Preferences › Security & Privacy › Privacy › Developer Tools* before macOS 13), enable your terminal application. This avoids Gatekeeper scans on every freshly built binary.
 
@@ -256,7 +256,14 @@ Don't use a MacPorts or Homebrew LLVM (`LLVM_SYSTEM=1`) for release builds: the 
 
 #### 5. Compiler
 
-Ports and Natron are compiled with a MacPorts clang (rather than Apple's) for full OpenMP support. Install the version MacPorts uses by default on your OS:
+Natron and the plug-ins are compiled with Apple clang and MacPorts' OpenMP runtime, `libomp`:
+
+```Shell
+sudo port -v -N install libomp
+sudo port setrequested libomp
+```
+
+The deprecated qmake build, the plug-ins' Makefiles and `NATRON_MACOS_CLANG=macports` need a MacPorts clang (with `-fopenmp`), and so do the release scripts if Apple clang can't build the C++ standard with `libomp` (`compiler-common.sh` warns then). The `tools/tart` SDK image has one, for these fallbacks. Install the version MacPorts uses by default on your OS:
 
 | macOS | clang port |
 |---|---|
@@ -271,7 +278,7 @@ sudo port -v -N install clang-$CLANG
 sudo port setrequested clang-$CLANG
 ```
 
-`tools/jenkins/compiler-common.sh` builds Natron itself with the newest installed `clang-mp-*` that is not newer than the default in the table above, so older systems such as macOS 10.15 keep using clang-17.
+In those cases, `tools/jenkins/compiler-common.sh` uses the newest installed `clang-mp-*` that is not newer than the default in the table above, so older systems such as macOS 10.15 keep using clang-17.
 
 On a new macOS or clang version, check that OpenMP programs link against the system libc++ and MacPorts' libomp:
 
@@ -654,7 +661,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DNATRON_BUILD_TESTS=ON \
 cmake --build build -j$(sysctl -n hw.ncpu)
 ```
 
-The application is then `build/App/Natron.app`. The release scripts add the options of the official builds: `-DNATRON_BUILD_CONFIG=SNAPSHOT` (or `ALPHA`, `BETA`, `RC`, `STABLE`), `-DNATRON_USE_OPENMP=ON` with a MacPorts clang, `-DNATRON_NO_ASSERTIONS=ON` and `-DNATRON_INSTALL_LAYOUT=PORTABLE` (see `Documentation/source/maintainers/building.rst`). The deprecated qmake build, still available on RB-2.6, uses the command below (see [Deprecated: building with qmake](#deprecated-building-with-qmake) for `config.pri`).
+The application is then `build/App/Natron.app`. The release scripts add the options of the official builds: `-DNATRON_BUILD_CONFIG=SNAPSHOT` (or `ALPHA`, `BETA`, `RC`, `STABLE`), `-DNATRON_USE_OPENMP=ON` (with MacPorts' `libomp`), `-DNATRON_NO_ASSERTIONS=ON` and `-DNATRON_INSTALL_LAYOUT=PORTABLE` (see `Documentation/source/maintainers/building.rst`). The deprecated qmake build, still available on RB-2.6, uses the command below (see [Deprecated: building with qmake](#deprecated-building-with-qmake) for `config.pri`).
 
 ```Shell
 cd $NATRON_SRC
