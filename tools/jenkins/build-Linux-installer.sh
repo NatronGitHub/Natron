@@ -287,6 +287,8 @@ cp -R "${TMP_BINARIES_PATH}/Resources/etc"  "${TMP_PORTABLE_DIR}/Resources/"
 cp "${TMP_BINARIES_PATH}/Resources/stylesheets"/mainstyle.qss "${TMP_PORTABLE_DIR}/Resources/stylesheets/"
 cp "$INC_PATH/natron/natron-mime.sh" "${TMP_PORTABLE_DIR}/bin/"
 cp -a "${TMP_BINARIES_PATH}/PyPlugs"/* "${TMP_PORTABLE_DIR}/Plugins/PyPlugs/"
+# a Python module: Plugins/ is on the Python path
+cp "${TMP_BINARIES_PATH}/natron_convert_project.py" "${TMP_PORTABLE_DIR}/Plugins/"
 
 # Launch scripts
 cp "$INC_PATH/scripts/Natron-Linux.sh" "${TMP_PORTABLE_DIR}/Natron"

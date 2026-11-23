@@ -39,3 +39,9 @@ target_include_directories(NatronRenderer
 )
 
 install(TARGETS NatronRenderer DESTINATION "${NATRON_INSTALL_BINDIR}")
+
+# natron_convert_project.py, installed in Plugins/ (App/CMakeLists.txt), also in the build tree:
+# ../Plugins is on the Python path of NatronRenderer and natron-python (Global/PythonUtils.cpp). So the
+# tests import it from there, not from the installed location.
+configure_file(../tools/natron_convert_project.py
+    "${CMAKE_CURRENT_BINARY_DIR}/../Plugins/natron_convert_project.py" COPYONLY)
