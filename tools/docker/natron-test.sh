@@ -96,7 +96,7 @@ done)
 status=0
 su natron -c "cd Natron-Tests && env -i HOME=/home/natron USER=natron LOGNAME=natron SHELL=/bin/bash \
     LANG=C.UTF-8 PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-    ${TEST:+TEST=$TEST} ${TESTCUSTOM:+TESTCUSTOM=$TESTCUSTOM} \
+    ${TEST:+TEST=\"$TEST\"} ${TESTCUSTOM:+TESTCUSTOM=\"$TESTCUSTOM\"} \
     NATRON_DISK_CACHE_PATH=/home/natron/NatronTmpCacheDir \
     OCIO=$P/Resources/OpenColorIO-Configs/blender/config.ocio \
     FFMPEG=$P/bin/ffmpeg COMPARE=$P/bin/idiff \
@@ -107,24 +107,24 @@ cd Natron-Tests
 # the failed custom tests (TestCMD, TestWriteFFmpeg/<format>, ...), as in tools/tart/natron-test.sh
 if [ -f result.txt ]; then
     mkdir -p failed
-    grep -E " : (KNOWN )?FAIL\$" result.txt | sed -E "s/ : (KNOWN )?FAIL\$//" | while IFS= read -r t; do
+    { grep -E " : (KNOWN )?FAIL\$" result.txt || true; } | sed -E "s/ : (KNOWN )?FAIL\$//" | while IFS= read -r t; do
         case $t in */*)
             d=${t%%/*}/formats/${t#*/}
             if [ -d "$d" ]; then
                 for f in "$d"/reference*.jpg "$d"/output*.jpg "$d"/comp*.jpg; do
-                    [ -f "$f" ] && cp "$f" "failed/$(echo "$t" | tr / -)-$(basename "$f")"
+                    [ ! -f "$f" ] || cp "$f" "failed/$(echo "$t" | tr / -)-$(basename "$f")"
                 done
             else
                 d=${t%/*}; n=${t##*/}
                 for f in "$d/reference$n.jpg" "$d/output$n.jpg" "$d/comp$n.jpg"; do
-                    [ -f "$f" ] && cp "$f" "failed/$(echo "$d" | tr / -)-$(basename "$f")"
+                    [ ! -f "$f" ] || cp "$f" "failed/$(echo "$d" | tr / -)-$(basename "$f")"
                 done
             fi ;;
         esac
     done
     cp result.txt /out/result.txt
 fi
-[ -f summary.txt ] && cp summary.txt /out/summary.txt
+[ ! -f summary.txt ] || cp summary.txt /out/summary.txt
 if [ -n "$(ls -A failed 2> /dev/null)" ]; then
     mv failed "/out/$NAME-unit_tests_failures"
     (cd /out && zip -r -q "$NAME-unit_tests_failures.zip" "$NAME-unit_tests_failures" && rm -rf "$NAME-unit_tests_failures")
