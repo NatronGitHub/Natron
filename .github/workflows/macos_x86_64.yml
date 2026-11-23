@@ -48,6 +48,9 @@ concurrency:
 jobs:
   sdk-1:
     uses: ./.github/workflows/macos_x86_64_sdk.yml
+    permissions:
+      contents: read
+      actions: read
     with:
       stage: 1
       mode: ${{ inputs.sdk || 'reuse' }}
@@ -55,6 +58,9 @@ jobs:
     needs: sdk-1
     if: needs.sdk-1.outputs.state != ''
     uses: ./.github/workflows/macos_x86_64_sdk.yml
+    permissions:
+      contents: read
+      actions: read
     with:
       stage: 2
       state: ${{ needs.sdk-1.outputs.state }}
@@ -62,6 +68,9 @@ jobs:
     needs: sdk-2
     if: needs.sdk-2.outputs.state != ''
     uses: ./.github/workflows/macos_x86_64_sdk.yml
+    permissions:
+      contents: read
+      actions: read
     with:
       stage: 3
       state: ${{ needs.sdk-2.outputs.state }}
@@ -69,6 +78,9 @@ jobs:
     needs: sdk-3
     if: needs.sdk-3.outputs.state != ''
     uses: ./.github/workflows/macos_x86_64_sdk.yml
+    permissions:
+      contents: read
+      actions: read
     with:
       stage: 4
       state: ${{ needs.sdk-3.outputs.state }}
@@ -76,6 +88,9 @@ jobs:
     needs: sdk-4
     if: needs.sdk-4.outputs.state != ''
     uses: ./.github/workflows/macos_x86_64_sdk.yml
+    permissions:
+      contents: read
+      actions: read
     with:
       stage: 5
       state: ${{ needs.sdk-4.outputs.state }}
@@ -83,6 +98,9 @@ jobs:
     needs: sdk-5
     if: needs.sdk-5.outputs.state != ''
     uses: ./.github/workflows/macos_x86_64_sdk.yml
+    permissions:
+      contents: read
+      actions: read
     with:
       stage: 6
       state: ${{ needs.sdk-5.outputs.state }}
@@ -90,6 +108,9 @@ jobs:
     needs: sdk-6
     if: needs.sdk-6.outputs.state != ''
     uses: ./.github/workflows/macos_x86_64_sdk.yml
+    permissions:
+      contents: read
+      actions: read
     with:
       stage: 7
       state: ${{ needs.sdk-6.outputs.state }}
@@ -97,6 +118,9 @@ jobs:
     needs: sdk-7
     if: needs.sdk-7.outputs.state != ''
     uses: ./.github/workflows/macos_x86_64_sdk.yml
+    permissions:
+      contents: read
+      actions: read
     with:
       stage: 8
       state: ${{ needs.sdk-7.outputs.state }}
@@ -104,6 +128,9 @@ jobs:
     needs: sdk-8
     if: needs.sdk-8.outputs.state != ''
     uses: ./.github/workflows/macos_x86_64_sdk.yml
+    permissions:
+      contents: read
+      actions: read
     with:
       stage: 9
       state: ${{ needs.sdk-8.outputs.state }}
@@ -111,6 +138,9 @@ jobs:
     needs: sdk-9
     if: needs.sdk-9.outputs.state != ''
     uses: ./.github/workflows/macos_x86_64_sdk.yml
+    permissions:
+      contents: read
+      actions: read
     with:
       stage: 10
       state: ${{ needs.sdk-9.outputs.state }}
