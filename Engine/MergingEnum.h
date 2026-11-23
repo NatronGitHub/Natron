@@ -198,7 +198,7 @@ getOperatorHelpString(Natron::MergingFunctionEnum operation)
         return "abs(A-B)";
     case eMergeDisjointOver:
 
-        return "A+B(1-a)/b, A+B if a+b < 1";
+        return "A if a >= 1, A+B if a+b < 1, A+B(1-a)/b otherwise";
     case eMergeDivide:
 
         return "A/B, 0 if B <= 0";
@@ -276,7 +276,7 @@ getOperatorHelpString(Natron::MergingFunctionEnum operation)
         return "SetLum(SetSat(B, Sat(A)), Lum(B))";
     case eMergeScreen:
 
-        return "A+B-AB";
+        return "A+B-AB, max(A, B) if A > 1 and B > 1";
     case eMergeSoftLight:
 
         return "burn-in if A < 0.5, lighten if A > 0.5";
