@@ -63,7 +63,7 @@
 
 ### Plugins
 
-- WriteFFmpeg: libaom-av1 now encodes with Output Quality (CRF 23) by default instead of a bit rate; set Output Quality to None to use Bitrate (openfx-io#343).
+- WriteFFmpeg: libaom-av1 now encodes with Output Quality (CRF 23) by default instead of a bit rate, also in existing projects; set Output Quality to None to use Bitrate (openfx-io#343).
 
 
 ## Version 2.5.0
