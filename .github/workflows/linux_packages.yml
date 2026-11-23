@@ -29,9 +29,6 @@ on:
     - 'v*-beta*'
     - 'v*-rc*'
     - 'v*-RC*'
-    # TEMPORARY, to test the workflow before it is on the default branch: remove before merging
-    branches:
-    - linux-pkg-gha
 
 permissions:
   contents: read
