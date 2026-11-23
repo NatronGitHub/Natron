@@ -63,6 +63,7 @@ SOURCES += \
     ExpressionSetError_Test.cpp \
     FailedRoDRender_Test.cpp \
     FileSystemModel_Test.cpp \
+    GenericSchedulerThread_Test.cpp \
     Hash64_Test.cpp \
     ImageCache_Test.cpp \
     Image_Test.cpp \

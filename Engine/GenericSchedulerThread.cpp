@@ -391,9 +391,12 @@ GenericSchedulerThreadPrivate::waitForAbortToComplete_internal(bool allowBlockin
         QMutexLocker k(&threadStateMutex);
         state = threadState;
     }
-    if ( (state == GenericSchedulerThread::eThreadStateAborted) || GenericSchedulerThread::eThreadStateIdle ) {
+    if ( (state == GenericSchedulerThread::eThreadStateAborted) || (state == GenericSchedulerThread::eThreadStateIdle) ) {
         return false;
     }
+
+    // The thread resets abortRequested only after threadLoopOnce() returns: waiting on itself would never return.
+    assert(QThread::currentThread() != _p);
 
     // This function may NOT be called on the main-thread, because we may deadlock if executeOnMainThread is called OR block the UI.
     if ( !allowBlockingForMainThread && ( QThread::currentThread() == qApp->thread() ) ) {
@@ -532,6 +535,16 @@ GenericSchedulerThread::run()
 #ifdef TRACE_GENERIC_SCHEDULER_THREAD
             qDebug() << getThreadName().c_str() << ": Quitting thread";
 #endif
+
+            {
+                // An abort requested before the quit (e.g. by quitThread()) is complete: wake the threads
+                // waiting in waitForAbortToComplete_*(), which would otherwise wait forever
+                QMutexLocker k(&_imp->abortRequestedMutex);
+                if (_imp->abortRequested > 0) {
+                    _imp->abortRequested = 0;
+                    _imp->abortRequestedCond.wakeAll();
+                }
+            }
 
             QMutexLocker k(&_imp->mustQuitMutex);
             _imp->mustQuit = false;
