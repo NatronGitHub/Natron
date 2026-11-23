@@ -455,11 +455,6 @@ OfxImageEffectInstance::getProjectOffset(double & xOffset,
     yOffset = canonicalF.bottom();
 }
 
-// The extent of the current project in canonical coordinates.
-// The extent is the size of the 'output' for the current project. See ProjectCoordinateSystems
-// for more information on the project extent. The extent is in canonical coordinates and only
-// returns the top right position, as the extent is always rooted at 0,0. For example a PAL SD
-// project would have an extent of 768, 576.
 OfxRectD
 OfxImageEffectInstance::calcDefaultRegionOfDefinition(OfxTime time,
                                                       OfxPointD renderScale,
@@ -470,6 +465,11 @@ OfxImageEffectInstance::calcDefaultRegionOfDefinition(OfxTime time,
     return OFX::Host::ImageEffect::Instance::calcDefaultRegionOfDefinition(time, renderScale, view);
 }
 
+// The extent of the current project in canonical coordinates.
+// The extent is the size of the 'output' for the current project. See ProjectCoordinateSystems
+// for more information on the project extent. The extent is in canonical coordinates and only
+// returns the top right position, as the extent is always rooted at 0,0. For example a PAL SD
+// project would have an extent of 768, 576.
 void
 OfxImageEffectInstance::getProjectExtent(double & xSize,
                                          double & ySize) const
