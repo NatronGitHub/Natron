@@ -139,7 +139,10 @@ jobs:
         with:
           overwrite: true
           name: sdk-logs-stage-${{ inputs.stage }}
-          path: ~/provision-logs
+          # with MacPorts' logs of the ports that failed (they are deleted after a successful install)
+          path: |
+            ~/provision-logs
+            /opt/local/var/macports/logs/*/*/main.log
           retention-days: 14
 
       - name: Save
