@@ -254,6 +254,11 @@ jobs:
         repository: NatronGitHub/Natron-Tests
         ref: master
         path: Natron-Tests
+    # the two example projects that runTests.sh downloads from SourceForge (about 350 MB, never change)
+    - uses: actions/cache@v4
+      with:
+        path: Natron-Tests/Natron_2.3.12_*.zip
+        key: natron-tests-examples-2.3.12
     - uses: actions/download-artifact@v4
       with:
         name: Natron-Linux-${{ matrix.arch }}

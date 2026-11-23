@@ -63,7 +63,7 @@ echo "*** Natron-Tests: $(git -C "$NATRON_TESTS_SRC" log -1 --format='%h %cs %s'
 for z in Natron_2.3.12_Spaceship.zip Natron_2.3.12_BayMax.zip; do
     if ! unzip -tqq "$NATRON_TESTS_SRC/$z" > /dev/null 2>&1; then
         echo "*** downloading $z"
-        curl -fsSL --retry 3 -o "$NATRON_TESTS_SRC/$z" "https://downloads.sourceforge.net/project/natron/Examples/$z" ||
+        curl -fsSL --retry 3 --max-time 1800 -o "$NATRON_TESTS_SRC/$z" "https://downloads.sourceforge.net/project/natron/Examples/$z" ||
             { rm -f "$NATRON_TESTS_SRC/$z"; echo "Warning: could not download $z (runTests.sh will try again)"; }
     fi
 done
