@@ -37,6 +37,8 @@ work=$(mktemp -d "${TMPDIR:-/tmp}/natron-tests.XXXXXX")
 mnt=
 cleanup() {
     [ -z "$mnt" ] || hdiutil detach -quiet "$mnt" || hdiutil detach -quiet -force "$mnt" || true
+    # the app copied from the DMG has read-only directories
+    chmod -R u+w "$work" 2> /dev/null || true
     rm -rf "$work"
 }
 trap cleanup EXIT
