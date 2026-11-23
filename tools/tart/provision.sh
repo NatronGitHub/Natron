@@ -357,11 +357,14 @@ ports_https_source() {
     if grep -q '^rsync://.*\[default\]' $conf; then
         sudo perl -pi -e 's|^rsync://\S+(\s+\[default\])|https://distfiles.macports.org/ports.tar.gz$1|' $conf
     fi
-    # transient download/signature failures happen (e.g. HTTP/2 stream errors): retry
-    local i
+    # transient download/signature failures happen (e.g. HTTP/2 stream errors): retry. After a
+    # failed download, the next sync may say "No updates" and leave no ports tree (then portindex
+    # can't find the PortGroups): check the tree, and download it again from scratch if needed.
+    local i src=/opt/local/var/macports/sources/distfiles.macports.org
     for i in 1 2 3; do
-        $SUDO port -v sync && return 0
-        echo "port sync failed (attempt $i)"
+        if $SUDO port -v sync && [ -f "$src/ports/_resources/port1.0/group/github-1.0.tcl" ]; then return 0; fi
+        echo "port sync failed, or left no ports tree in $src/ports (attempt $i)"
+        sudo rm -rf "$src"
         sleep 20
     done
     return 1
