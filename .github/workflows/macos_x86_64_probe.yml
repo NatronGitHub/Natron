@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4.1.1
       - name: Runner facts
         run: |
-          set -x
+          set -x; exit 0
           uname -a; uname -m; sw_vers; sysctl -n machdep.cpu.brand_string hw.ncpu hw.memsize kern.hv_vmm_present
           df -h / /System/Volumes/Data; id; echo $HOME
           ls /Applications | grep -i xcode; xcode-select -p; xcrun --show-sdk-version; clang --version
@@ -29,7 +29,7 @@ jobs:
           curl -fsSL --retry 5 -o MacPorts.pkg https://github.com/macports/macports-base/releases/download/v2.12.7/MacPorts-2.12.7-15-Sequoia.pkg
           sudo installer -pkg MacPorts.pkg -target / > /dev/null
           sudo perl -pi -e 's|^rsync://\S+(\s+\[default\])|https://distfiles.macports.org/ports.tar.gz$1|' /opt/local/etc/macports/sources.conf
-          time sudo port -q sync
+          time sudo port -v sync > sync.log 2>&1 || { tail -20 sync.log; exit 1; }
           sudo mkdir -p /opt/MacPorts-Natron; sudo chown "$(id -un):staff" /opt/MacPorts-Natron
           (cd tools/MacPorts && ./sync.sh) | tail -3
           sudo perl -0pi -e 's|^(\S+\s+\[default\])|file:///opt/MacPorts-Natron\n$1|m' /opt/local/etc/macports/sources.conf
