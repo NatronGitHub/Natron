@@ -137,6 +137,7 @@ jobs:
         if: always() && steps.find.outputs.what != 'reuse'
         uses: actions/upload-artifact@v4
         with:
+          overwrite: true
           name: sdk-logs-stage-${{ inputs.stage }}
           path: ~/provision-logs
           retention-days: 14
@@ -152,6 +153,7 @@ jobs:
         if: steps.provision.outputs.finished == 'true'
         uses: actions/upload-artifact@v4
         with:
+          overwrite: true
           name: natron-sdk-macos-x86_64-${{ env.SDK_KEY_SHORT }}
           path: ${{ runner.temp }}/out/natron-sdk.tar.zst
           retention-days: 90
@@ -161,6 +163,7 @@ jobs:
         if: steps.provision.outputs.finished == 'false'
         uses: actions/upload-artifact@v4
         with:
+          overwrite: true
           name: sdk-state-${{ inputs.stage }}
           path: ${{ runner.temp }}/out/natron-sdk.tar.zst
           retention-days: 3

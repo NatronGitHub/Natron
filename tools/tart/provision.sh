@@ -605,10 +605,15 @@ bundled_ports() {
     local p roots seen todo deps others
     roots=$(for p in $(bundle_roots); do port -q installed "$p" 2> /dev/null | grep -q '(active)' && echo "$p"; done | sort -u)
     # shellcheck disable=SC2086
-    seen=$(port -q contents $roots | sed 's/^[[:space:]]*//' | while IFS= read -r f; do [ -f "$f" ] && [ ! -L "$f" ] && printf '%s\0' "$f"; done | macho_files | sort -u)
+    # symlinks are resolved: e.g. boost's libboost_*.dylib point into boost176's libexec/boost/1.76
+    seen=$(port -q contents $roots | sed 's/^[[:space:]]*//' | while IFS= read -r f; do
+               [ ! -L "$f" ] || f=$(realpath "$f" 2> /dev/null) || continue
+               [ -f "$f" ] && printf '%s\0' "$f"
+           done | macho_files | sort -u)
     todo=$seen
     while [ -n "$todo" ]; do
-        deps=$(echo "$todo" | while IFS= read -r f; do otool -L "$f" 2> /dev/null | awk 'NR > 1 && $1 ~ "^/opt/local/" {print $1}'; done | sort -u)
+        deps=$(echo "$todo" | while IFS= read -r f; do otool -L "$f" 2> /dev/null | awk 'NR > 1 && $1 ~ "^/opt/local/" {print $1}'; done |
+                   while IFS= read -r f; do realpath "$f" 2> /dev/null || true; done | sort -u)
         todo=$(comm -13 <(echo "$seen") <(echo "$deps"))
         seen=$(printf '%s\n%s\n' "$seen" "$todo" | sed '/^$/d' | sort -u)
     done

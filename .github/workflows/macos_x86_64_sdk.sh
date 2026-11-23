@@ -32,10 +32,11 @@ find)
     key=$1 mode=$2
     [ "$mode" != scratch ] || { echo "- - scratch"; exit 0; }
     : "${GITHUB_REPOSITORY:?}" "${GITHUB_REF_NAME:?}" "${DEFAULT_BRANCH:?}" "${GITHUB_RUN_ID:?}"
-    list=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/macos_x86_64.yml/runs?per_page=40" --jq '.workflow_runs[].id' |
+    gh_retry() { local _; for _ in 1 2 3; do gh "$@" && return 0; sleep 20; done; return 1; }
+    list=$(gh_retry api "repos/$GITHUB_REPOSITORY/actions/workflows/macos_x86_64.yml/runs?per_page=40" --jq '.workflow_runs[].id' |
         while read -r id; do
             [ "$id" != "$GITHUB_RUN_ID" ] || continue
-            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id/artifacts?per_page=100" --jq \
+            gh_retry api "repos/$GITHUB_REPOSITORY/actions/runs/$id/artifacts?per_page=100" --jq \
                 ".artifacts[] | select((.name | startswith(\"$ARTIFACT_PREFIX\")) and (.expired | not)) |
                  \"\(.created_at) \(.name) \(.workflow_run.id) \(.workflow_run.head_branch)\""
         done | sort -r)
@@ -56,7 +57,7 @@ hide-homebrew)
     if [ -d "$hidden" ]; then echo "already hidden"; exit 0; fi
     sudo mkdir "$hidden"
     sudo find /usr/local -mindepth 1 -maxdepth 1 -exec mv {} "$hidden/" \;
-    ls -A /usr/local
+    [ -z "$(ls -A /usr/local)" ] || { echo "could not empty /usr/local:"; ls -A /usr/local; exit 1; }
     ;;
 unhide-homebrew)
     hidden=$HOME/usr-local.homebrew
@@ -71,6 +72,21 @@ restore)
     # -p: keep the owners (macports) and modes
     zstd -dc "$file" | sudo tar -xpf - -C /
     rm -f "$file"
+    # the macports user (MacPorts builds as it) exists only where the MacPorts .pkg was installed:
+    # recreate it, with the uid that owns its files, as the .pkg's postinstall does
+    if ! id macports > /dev/null 2>&1; then
+        uid=$(stat -f %u /opt/local/var/macports/home)
+        gid=$(stat -f %g /opt/local/var/macports/home)
+        sudo dscl . -create /Groups/macports PrimaryGroupID "$gid"
+        sudo dscl . -create /Groups/macports Password '*'
+        sudo dscl . -create /Users/macports UniqueID "$uid"
+        sudo dscl . -create /Users/macports PrimaryGroupID "$gid"
+        sudo dscl . -create /Users/macports NFSHomeDirectory /opt/local/var/macports/home
+        sudo dscl . -create /Users/macports UserShell /usr/bin/false
+        sudo dscl . -create /Users/macports RealName MacPorts
+        sudo dscl . -create /Users/macports Password '*'
+        id macports
+    fi
     sudo chown -R "$(id -un)" "$HOME/provision-logs"
     cat /opt/local/etc/natron-sdk.txt 2> /dev/null || true
     df -h /
@@ -99,7 +115,7 @@ run)
             # the compilers that MacPorts' builds started (nothing else builds on this runner)
             sudo pkill -KILL -x 'g?make|ninja|clang(\+\+)?|ld' 2> /dev/null || true
             sleep 5
-            pgrep -fl 'make|ninja|clang' || true
+            ps -axo pid,pgid,user,command | tail -40   # what is left running
             break
         fi
         sleep 20
