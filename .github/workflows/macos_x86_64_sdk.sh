@@ -50,15 +50,19 @@ find)
     ;;
 hide-homebrew)
     # On Intel Macs Homebrew lives in /usr/local, whose include and lib directories the compilers
-    # and the linker search by default: it must be gone, not only off the PATH
-    if [ -d /usr/local.homebrew ]; then echo "already hidden"; exit 0; fi
-    sudo mv /usr/local /usr/local.homebrew
-    sudo mkdir -p /usr/local
+    # and the linker search by default: it must be gone, not only off the PATH. /usr is read-only
+    # (signed system volume), so its contents are moved.
+    hidden=$HOME/usr-local.homebrew
+    if [ -d "$hidden" ]; then echo "already hidden"; exit 0; fi
+    sudo mkdir "$hidden"
+    sudo find /usr/local -mindepth 1 -maxdepth 1 -exec mv {} "$hidden/" \;
+    ls -A /usr/local
     ;;
 unhide-homebrew)
-    [ -d /usr/local.homebrew ] || exit 0
-    sudo rm -rf /usr/local
-    sudo mv /usr/local.homebrew /usr/local
+    hidden=$HOME/usr-local.homebrew
+    [ -d "$hidden" ] || exit 0
+    sudo find "$hidden" -mindepth 1 -maxdepth 1 -exec mv {} /usr/local/ \;
+    sudo rmdir "$hidden"
     ;;
 restore)
     file=$1
