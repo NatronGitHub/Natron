@@ -255,7 +255,8 @@ jobs:
         ref: master
         path: Natron-Tests
     # the two example projects that runTests.sh downloads from SourceForge (about 350 MB, never change)
-    - uses: actions/cache@v4
+    - uses: actions/cache/restore@v4
+      id: examples
       with:
         path: Natron-Tests/Natron_2.3.12_*.zip
         key: natron-tests-examples-2.3.12
@@ -265,6 +266,12 @@ jobs:
         path: dist
     - name: Run Natron-Tests in a clean Rocky Linux 9 container
       run: tools/docker/natron-test.sh -n Natron-Tests -o results dist/*.tar.xz
+    # saved even if a test failed (actions/cache only saves after a successful job)
+    - uses: actions/cache/save@v4
+      if: always() && steps.examples.outputs.cache-hit != 'true' && hashFiles('Natron-Tests/Natron_2.3.12_*.zip') != ''
+      with:
+        path: Natron-Tests/Natron_2.3.12_*.zip
+        key: natron-tests-examples-2.3.12
     - uses: actions/upload-artifact@v4
       if: always()
       with:
