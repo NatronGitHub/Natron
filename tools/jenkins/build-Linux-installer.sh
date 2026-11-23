@@ -327,7 +327,7 @@ for location in "${COPY_LOCATIONS[@]}"; do
     cp "$INC_PATH/natron/natron-mime.sh" "$location/bin/"
     cp -a "${TMP_BINARIES_PATH}/PyPlugs"/* "$location/Plugins/PyPlugs/"
     # a Python module: Plugins/ is on the Python path
-    cp "$CWD/../natron_convert_project.py" "$location/Plugins/"
+    cp "${TMP_BINARIES_PATH}/natron_convert_project.py" "$location/Plugins/"
 
     # OCIO -> has its own package, see below
     #cp -LR "${TMP_BINARIES_PATH}/Natron/OpenColorIO-Configs" "$location/Resources/"
