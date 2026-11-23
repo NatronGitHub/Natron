@@ -345,15 +345,15 @@ interpreter still starts, so that the error can be inspected.
 
 NatronRenderer also exits with status 1 when the render of a Write node fails, for example
 when the output file can't be written, or when a movie writer can't open its file or rejects
-the codec. Natron prints a line that starts with ``Error while rendering``. This applies to
+the codec. Natron prints an error, for example ``Error while rendering``. This applies to
 the Write nodes given with :option:`-w`, or to all the Write nodes of the graph, and to the
 renders that a script starts with :func:`app.render()<NatronEngine.App.render>`:
 
 - One failed Write node is enough. The other Write nodes are still rendered.
 - A failure is remembered until the process exits: a script that renders the same Write node
   again, successfully, still exits with status 1.
-- ``natron.quit(status)`` and ``sys.exit(status)`` take precedence: the script chooses the
-  status, also 0, and the renders that they stop are not failures.
+- In a script, ``natron.quit(status)`` and ``sys.exit(status)`` take precedence: the script
+  chooses the status, also 0, and the renders that they stop are not failures.
 - A render that is stopped while a frame is being rendered may count as failed, for example
   when a render callback calls :func:`app.closeProject()<NatronEngine.App.closeProject>` or
   :func:`app.resetProject()<NatronEngine.App.resetProject>`, or when a render run in a

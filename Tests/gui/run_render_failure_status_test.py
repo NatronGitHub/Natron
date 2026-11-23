@@ -50,8 +50,10 @@ from run_gui_smoke_test import writePNG  # noqa: E402
 
 SKIP = 77
 SKIP_CASE = 78
-TIMEOUT = 300
+TIMEOUT = 100  # seconds for one run; six runs stay below the ctest timeout (660)
 ERROR_TEXT = "Error while rendering"
+# printed when the sequence render of a writer cannot begin (a movie writer that cannot open its file)
+BEGIN_ERROR_TEXT = "could not start the render of the sequence"
 
 SCRIPT = """
 import os, sys
@@ -125,7 +127,7 @@ def run(renderer, tmp, case, writers, renderer_args=(), quit_after=False):
     return proc.returncode, proc.stdout.decode(errors="replace"), frames
 
 
-def check(what, result, status, frames, error_text):
+def check(what, result, status, frames, error_text, also_text=None):
     """Compares the result of run() with what is expected.
 
     Args:
@@ -134,6 +136,7 @@ def check(what, result, status, frames, error_text):
         status: Expected exit status.
         frames: Expected number of frames written by WriteGood.
         error_text: Whether ERROR_TEXT must be in the output (True) or must not (False).
+        also_text: Another text that must be in the output, or None.
 
     Returns:
         True if the result is as expected. If not, the reason is printed.
@@ -146,6 +149,8 @@ def check(what, result, status, frames, error_text):
         problems.append("%d frames written by WriteGood instead of %d" % (got_frames, frames))
     if (ERROR_TEXT in output) != error_text:
         problems.append('"%s" %s the output' % (ERROR_TEXT, "is not in" if error_text else "is in"))
+    if also_text is not None and also_text not in output:
+        problems.append('"%s" is not in the output' % also_text)
     if problems:
         print("FAILED: %s: %s\n%s" % (what, ", ".join(problems), output[-3000:]))
     return not problems
@@ -175,7 +180,7 @@ def main():
         if result[0] == SKIP_CASE:
             print("no movie writer: the failure at the beginning of a sequence render was not tested")
         else:
-            ok &= check("a movie writer that cannot open its file", result, 1, 0, True)
+            ok &= check("a movie writer that cannot open its file", result, 1, 0, True, BEGIN_ERROR_TEXT)
     if ok:
         print("OK")
     return 0 if ok else 1
