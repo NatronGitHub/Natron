@@ -4488,8 +4488,10 @@ EffectInstance::getComponentsNeededAndProduced_public(U64 hash,
     // Shuffle that writes to another layer than the color plane) does not render the color plane: adding it
     // here removed it from the pass-through planes below, the plug-in was asked to render it, did not, and
     // the color came out black after the node.
-    // A writer keeps the metadata plane: asked for one layer that is not the color plane, it is given that
-    // layer and the color plane, which is what makes it write the layer under its own channel names.
+    // A writer keeps the metadata plane: the writers of openfx-io (GenericWriter) switch to their single-plane
+    // path when they are given one plane, and then write a layer as R, G, B, A. Asked for one layer that is
+    // not the color plane, a writer must get that layer and the color plane to write the layer under its own
+    // channel names.
     const PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
     const bool colorFromPassThroughInput = !outputLayers.empty() && (*passThroughInputNb != -1) && !isWriter() &&
                                            (passThrough == ePassThroughPassThroughNonRenderedPlanes);
