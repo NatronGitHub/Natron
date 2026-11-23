@@ -22,13 +22,18 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/x265.pc" ] |
     untar "$SRC_PATH/$X265_TAR"
     #pushd "x265_$X265_VERSION"
     pushd "x265_$X265_VERSION"
-    for d in 8 $([[ "$ARCH" == "x86_64" ]] && echo "10 12"); do
+    # 10- and 12-bit libraries linked into the 8-bit one (multilib) on x86_64 and aarch64
+    X265_MULTILIB=0
+    if [[ "$ARCH" == "x86_64" || "$ARCH" == "aarch64" ]]; then
+        X265_MULTILIB=1
+    fi
+    for d in 8 $([[ "$X265_MULTILIB" == 1 ]] && echo "10 12"); do
         if [[ -d build-$d ]]; then
             rm -rf build-$d
         fi
         mkdir build-$d
     done
-    if [[ "$ARCH" == "x86_64" ]]; then
+    if [[ "$X265_MULTILIB" == 1 ]]; then
         pushd build-12
         cmake ../source \
               -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF"  -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" \
@@ -80,15 +85,9 @@ EOF
         popd
     else
         pushd build-8
-        # The aarch64 NEON assembly of the 2023 x265 snapshot didn't link on Rocky Linux 9
-        # (undefined x265_interp_*_neon): build it without assembly there (not retried with 4.2).
-        X265_ASM=()
-        if [ "${ARCH:-}" = "aarch64" ] && [ "${ROCKY:-0}" -ge 9 ]; then
-            X265_ASM=("-DENABLE_ASSEMBLY=OFF")
-        fi
         cmake ../source \
               -DCMAKE_C_FLAGS="$BF" -DCMAKE_CXX_FLAGS="$BF"  -DCMAKE_INSTALL_PREFIX="$SDK_HOME" -DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" \
-              -DENABLE_SHARED='TRUE' "${X265_ASM[@]}"
+              -DENABLE_SHARED='TRUE'
         make -j${MKJOBS}
         popd
     fi

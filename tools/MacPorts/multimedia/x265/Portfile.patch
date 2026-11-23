@@ -1,10 +1,10 @@
---- Portfile.orig	2026-07-11 18:29:05
-+++ Portfile	2026-07-11 18:32:12
+--- Portfile.orig	2026-11-23 10:03:48
++++ Portfile	2026-11-23 10:04:26
 @@ -17,6 +17,7 @@
  checksums           rmd160  b20a6fa7247ef4567769dab054610a9c044c6362 \
                      sha256  40b1ea0453e0309f0eba934e0ddf533f8f6295966679e8894e8f1c1c8d5e1210 \
                      size    1833442
-+revision            100
++revision            101
  
  categories          multimedia
  license             GPL-2+
