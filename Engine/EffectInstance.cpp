@@ -3895,11 +3895,8 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         if (isProjectFormat) {
             *isProjectFormat = false;
         }
-//#pragma message WARN("[FD] why is an empty RoD a failure case? this is ignored in renderRoI, search for 'if getRoD fails, this might be because the RoD is null after all (e.g: an empty Roto node), we don't want the render to fail'")
-        if ( rod->isNull() ) {
-            return eStatusFailed;
-        }
 
+        // only successes are cached: an empty RoD is a valid RoD (the output is black), not a failure (#1602)
         return eStatusOK;
     } else {
         ///If this is running on a render thread, attempt to find the RoD in the thread-local storage.
@@ -3919,7 +3916,13 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         if ( getNode()->isNodeDisabled() ) {
             NodePtr preferredInput = getNode()->getPreferredInputNode();
             if (!preferredInput) {
-                return eStatusFailed;
+                // the output is black (see isIdentity_public()): an empty RoD, not a failure (#1602)
+                rod->clear();
+                if (isProjectFormat) {
+                    *isProjectFormat = false;
+                }
+
+                return eStatusOK;
             }
 
             return preferredInput->getEffectInstance()->getRegionOfDefinition_public(preferredInput->getEffectInstance()->getRenderHash(), time, scale, view, rod, isProjectFormat);
@@ -3938,12 +3941,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
                 return eStatusFailed;
             }
             if ( (ret != eStatusOK) && (ret != eStatusReplyDefault) ) {
-                // rod is not valid
-                //if (!isDuringStrokeCreation) {
-                _imp->actionsCache->invalidateAll(hash);
-                _imp->actionsCache->setRoDResult( hash, time, view, mipmapLevel, RectD() );
-
-                // }
+                // rod is not valid. Don't cache the failure: it would be taken for an empty RoD (#1602)
                 return ret;
             }
 

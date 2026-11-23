@@ -233,6 +233,28 @@ public:
     static const std::string& natronsPremultToOfxPremult(ImagePremultiplicationEnum premult);
     static ImageFieldingOrderEnum ofxFieldingToNatronFielding(const std::string& fielding);
     static const std::string& natronsFieldingToOfxFielding(ImageFieldingOrderEnum fielding);
+
+    /**
+     * @brief While an InputRoDFailureScope exists, failed() tells whether the plug-in asked, on this thread, for the
+     * RoD of an input clip whose RoD failed (e.g. a Read node whose file is missing). The plug-in gets an empty RoD for
+     * that clip, and may then ignore the input: the action that asked for it should fail too, as
+     * EffectInstance::getRegionOfDefinition() does for the inputs of the built-in effects (#1602). Scopes may be nested
+     * (the RoD of an input may run the RoD action of the input).
+     **/
+    class InputRoDFailureScope
+    {
+public:
+        InputRoDFailureScope();
+        ~InputRoDFailureScope();
+        InputRoDFailureScope(const InputRoDFailureScope&) = delete;
+        InputRoDFailureScope& operator=(const InputRoDFailureScope&) = delete;
+
+        bool failed() const;
+
+private:
+        bool _outerFailed;
+    };
+
     struct RenderActionData
     {
         //We keep track of the images being rendered (on the output clip) so that we return the same pointer

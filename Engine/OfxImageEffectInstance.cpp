@@ -455,6 +455,16 @@ OfxImageEffectInstance::getProjectOffset(double & xOffset,
     yOffset = canonicalF.bottom();
 }
 
+OfxRectD
+OfxImageEffectInstance::calcDefaultRegionOfDefinition(OfxTime time,
+                                                      OfxPointD renderScale,
+                                                      int view) const
+{
+    OfxClipInstance::InputRoDFailureScope ignoreInputRoDFailures;
+
+    return OFX::Host::ImageEffect::Instance::calcDefaultRegionOfDefinition(time, renderScale, view);
+}
+
 // The extent of the current project in canonical coordinates.
 // The extent is the size of the 'output' for the current project. See ProjectCoordinateSystems
 // for more information on the project extent. The extent is in canonical coordinates and only
