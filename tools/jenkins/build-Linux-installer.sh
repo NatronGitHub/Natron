@@ -646,7 +646,8 @@ fi
 rm -rf "$HOME/.cache/INRIA/Natron"* &> /dev/null || true
 # The tests need no display: use Qt's offscreen platform with or without valgrind.
 if command -v valgrind > /dev/null 2>&1; then
-    env QT_QPA_PLATFORM=offscreen $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" "${TMP_PORTABLE_DIR}/bin/Tests"
+    # without DeepGraphRender.VeryDeepChain, too slow under valgrind (see build-natron.sh)
+    env GTEST_FILTER=-DeepGraphRender.VeryDeepChain QT_QPA_PLATFORM=offscreen $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" "${TMP_PORTABLE_DIR}/bin/Tests"
 else
     # If valgrind is not installed in the build environment, run the tests without it.
     echo "Warning: valgrind not found, running the bundled unit tests without it"
