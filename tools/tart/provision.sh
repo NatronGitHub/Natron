@@ -11,14 +11,20 @@
 #   SDK steps: disk nobrew clt macports macports_conf overlay sync pins osmesa compiler tools libs python_qt
 #              dmgtools rebuild_target fixups
 #   env:       REDO="step..." re-runs steps already marked done; PROXY=socks5h://... for internet access
+#              BUNDLE_ONLY_REBUILD=1: on a macOS newer than the target (GitHub's macos-15-intel runner),
+#              install from MacPorts' binary archives, and rebuild from source only the ports whose
+#              files go into the DMG (bundled_ports), not the build tools
 #   others:    sync (re-publish the overlay), update (refresh an existing SDK), cleanup (shrink the image), build (build Natron)
 # Logs:  ~/provision-logs/<step>.log ; done markers in ~/provision-logs/<step>.done
 set -euo pipefail
 
 # This script changes the machine it runs on: it removes Homebrew and the Command Line Tools,
 # sets the system proxy, rewrites ~/.zprofile and the git configuration. Refuse to run anywhere
-# but in a tart VM driven by natron-sdk.sh/natron-build.sh (vm_start writes /tmp/natron-tart-id).
-if [ "$(sysctl -n kern.hv_vmm_present 2> /dev/null)" != 1 ] ||
+# but in a tart VM driven by natron-sdk.sh/natron-build.sh (vm_start writes /tmp/natron-tart-id),
+# or on a throw-away GitHub-hosted runner (.github/workflows/macos_x86_64_sdk.yml).
+if [ "${GITHUB_ACTIONS:-}" = true ] && [ "${RUNNER_ENVIRONMENT:-}" = github-hosted ]; then
+    :
+elif [ "$(sysctl -n kern.hv_vmm_present 2> /dev/null)" != 1 ] ||
        { [ "$(id -un)" != admin ] && [ ! -f /tmp/natron-tart-id ]; }; then
     echo "provision.sh: not in a Natron tart VM (kern.hv_vmm_present != 1, or neither user admin nor /tmp/natron-tart-id): refusing to run" >&2
     exit 1
@@ -31,6 +37,7 @@ WORKSPACE=$HOME/Development/workspace
 LOGDIR=$HOME/provision-logs
 MACPORTS_VERSION=2.12.7
 JOBS=${MKJOBS:-$(sysctl -n hw.ncpu)}
+BUNDLE_ONLY_REBUILD=${BUNDLE_ONLY_REBUILD:-0}
 # Oldest macOS supported by Natron's macOS release, and the Command Line Tools of the SDK image:
 # tools/jenkins/macos-release.sh. The SDK image runs that macOS itself, with the Command Line
 # Tools and their macOS 14 SDK, so MacPorts' binary archives (built for the macOS they were made
@@ -331,7 +338,9 @@ set_macports_conf() { # key value
 }
 step_macports_conf() {
     set_macports_conf macosx_deployment_target "$macos_target"
-    if [ "$(sw_vers -productVersion | cut -d. -f1)" = "${macos_target%%.*}" ]; then
+    if [ "$(sw_vers -productVersion | cut -d. -f1)" = "${macos_target%%.*}" ] || [ "$BUNDLE_ONLY_REBUILD" = 1 ]; then
+        # BUNDLE_ONLY_REBUILD=1 (newer macOS): the archives are used, and step_rebuild_target
+        # rebuilds the ports whose files go into the DMG
         set_macports_conf buildfromsource ifneeded
     else
         # UNTESTED: an SDK image on a macOS newer than $macos_target (BASE_IMAGE). Every port is
@@ -579,11 +588,52 @@ step_python_migrate() {
     fi
 }
 
+# The ports whose files go into the DMG (tools/jenkins/build-OSX-installer.sh): the ports that
+# step_libs and step_python_qt install, libomp, every qt5 subport, and the ports owning the
+# libraries that their Mach-O files link (otool -L), recursively. When this list misses a port,
+# the minos check of the DMG fails and lists its files: add the port to bundle_roots.
+bundle_roots() {
+    echo dbus glib2 libjpeg-turbo libpng tiff expat libmng boost cairo x264 x265 libvpx libraw \
+        openexr minizip-ng pystring opencolorio opencolorio1 seexpr211 librsvg poppler librevenge \
+        libcdr-0.1 sox libzip ImageMagick ImageMagick7 ffmpeg openimageio python$pyv py$pyv-pyside2 libomp
+    port -q installed active | awk '$1 ~ /^qt5-/ {print $1}'
+}
+macho_files() { # NUL-separated paths on stdin: print the Mach-O files
+    LC_ALL=C xargs -0 file -N -F $'\t' | LC_ALL=C awk -F '\t' '$2 ~ /Mach-O/ && $1 !~ / \(for architecture [^)]*\):?$/ {print $1}'
+}
+bundled_ports() {
+    local p roots seen todo deps others
+    roots=$(for p in $(bundle_roots); do port -q installed "$p" 2> /dev/null | grep -q '(active)' && echo "$p"; done | sort -u)
+    # shellcheck disable=SC2086
+    seen=$(port -q contents $roots | sed 's/^[[:space:]]*//' | while IFS= read -r f; do [ -f "$f" ] && [ ! -L "$f" ] && printf '%s\0' "$f"; done | macho_files | sort -u)
+    todo=$seen
+    while [ -n "$todo" ]; do
+        deps=$(echo "$todo" | while IFS= read -r f; do otool -L "$f" 2> /dev/null | awk 'NR > 1 && $1 ~ "^/opt/local/" {print $1}'; done | sort -u)
+        todo=$(comm -13 <(echo "$seen") <(echo "$deps"))
+        seen=$(printf '%s\n%s\n' "$seen" "$todo" | sed '/^$/d' | sort -u)
+    done
+    # the files outside the root ports: their owners
+    # shellcheck disable=SC2086
+    others=$(comm -13 <(port -q contents $roots | sed 's/^[[:space:]]*//' | sort -u) <(echo "$seen"))
+    {
+        echo "$roots"
+        # shellcheck disable=SC2086
+        [ -z "$others" ] || port provides $others | sed -n 's/.* is provided by: //p'
+    } | sed '/^$/d' | sort -u
+}
+
 # The active ports that have a Mach-O file built for a macOS newer than $macos_target: installed
 # from MacPorts' binary archives, or built before step_macports_conf set the deployment target.
+# With BUNDLE_ONLY_REBUILD=1, only the ports whose files go into the DMG (bundled_ports).
 ports_newer_than_target() {
-    local p rc
-    for p in $(port -q installed active | awk '{print $1}'); do
+    local p rc candidates
+    if [ "$BUNDLE_ONLY_REBUILD" = 1 ]; then
+        candidates=$(bundled_ports)
+        echo "$(echo "$candidates" | wc -l | tr -d ' ') ports go into the DMG: $(echo "$candidates" | tr '\n' ' ')" >&2
+    else
+        candidates=$(port -q installed active | awk '{print $1}')
+    fi
+    for p in $candidates; do
         rc=0
         # -N: ports may install files without a minimum version (e.g. archives of non-Mach-O
         # objects); the DMG check (natron-build.sh, launchBuildMain.sh) is strict
@@ -619,7 +669,7 @@ deps_order() {
 # again when its version changes; the minos check of the DMG (check-minos.sh, natron-build.sh)
 # tells whether that matters. Never marked done: run after every update.
 step_rebuild_target() {
-    local skip=$LOGDIR/rebuild_target.skip p v todo=() failed=() n=0
+    local skip=$LOGDIR/rebuild_target.skip p v bdeps todo=() failed=() n=0
     touch "$skip"
     local newer
     newer=$(ports_newer_than_target)   # not in the for: a failure must stop the step
@@ -636,6 +686,11 @@ step_rebuild_target() {
     for p in $(deps_order "${todo[@]}"); do
         n=$((n + 1))
         echo "===== [$n/${#todo[@]}] rebuilding $p for macOS $macos_target $(date '+%F %T')"
+        # its build dependencies first, without -s: from the binary archives where they exist
+        # (with -s, the missing ones would be built from source, e.g. nodejs for qt5-qtwebengine)
+        bdeps=$(port -q info --line --depends_fetch --depends_extract --depends_patch --depends_build "$p" | tr '\t,' '  ')
+        # shellcheck disable=SC2086
+        [ -z "${bdeps// /}" ] || $PORT install $bdeps || true   # a failure shows up in the rebuild below
         if ! $PORT -n -s upgrade --force "$p"; then
             # the previous build stays installed: go on with the other ports, fail at the end
             echo "ERROR: could not rebuild $p"

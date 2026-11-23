@@ -1,0 +1,254 @@
+name: macOS x86_64 DMG
+
+# The macOS x86_64 (Intel) DMG of Natron, built on GitHub's Intel runner (macos-15-intel), and
+# tested there with Natron-Tests. The arm64 DMG is built in a tart VM (tools/tart). Runs weekly
+# (Sunday), on demand, and on pre-release tags (v*-*, e.g. v2.6.0-beta1), never on pull requests.
+#
+# 1. SDK (macos_x86_64_sdk.yml, up to 10 chained stages of less than 6 hours): the MacPorts SDK of
+#    tools/tart/provision.sh, for macOS 14.0 (every Mach-O file has minos <= 14.0). On macOS 15 the
+#    MacPorts binary archives are built for macOS 15, so provision.sh runs with BUNDLE_ONLY_REBUILD=1:
+#    the archives are used for the build tools, and the ports whose files go into the DMG are rebuilt
+#    from source, as are the overlay ports (which have no archives). From scratch this takes about
+#    a day; the result is kept as an artifact (90 days) keyed by a hash of what defines the SDK
+#    (tools/MacPorts, provision.sh, ...). A run reuses the SDK of the same key if it is less than 30
+#    days old, else it updates the newest one (port sync, upgrade outdated, rebuild, a few hours at
+#    most), and only builds from scratch if there is none ("sdk" input of workflow_dispatch).
+# 2. dmg: Natron and the plug-ins built from source with tools/jenkins/launchBuildMain.sh (CMake,
+#    the compiler of compiler-common.sh), the DMG, and its minos check (tools/tart/check-minos.sh).
+#    Never skipped: MacPorts and the runner image are rolling.
+# 3. test: Natron-Tests on a fresh runner, against the DMG's Natron.app, with Homebrew moved away
+#    and no SDK (tools/tart/run-natron-tests.sh, as tools/tart/natron-test.sh).
+# 4. release (pre-release tags only): the DMG and the test results attached to the GitHub release.
+# Weekly and on-demand runs keep the DMG and test results as artifacts for 14 days.
+on:
+  workflow_dispatch:
+    inputs:
+      sdk:
+        description: 'SDK: reuse (same definition, < 30 days old; else update the newest), update (the newest), or scratch (rebuild it, about a day)'
+        type: choice
+        options: [reuse, update, scratch]
+        default: reuse
+  schedule:
+  # Sunday 05:17 UTC (ci.yml runs at 03:17)
+  - cron: '17 5 * * 0'
+  push:
+    tags:
+    - 'v*-*'
+    # TEMPORARY, for testing this workflow on its branch: remove before marking the PR ready
+    branches:
+    - ci-macos-x86_64
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sdk-1:
+    uses: ./.github/workflows/macos_x86_64_sdk.yml
+    with:
+      stage: 1
+      mode: ${{ inputs.sdk || 'reuse' }}
+  sdk-2:
+    needs: sdk-1
+    if: needs.sdk-1.outputs.state != ''
+    uses: ./.github/workflows/macos_x86_64_sdk.yml
+    with:
+      stage: 2
+      state: ${{ needs.sdk-1.outputs.state }}
+  sdk-3:
+    needs: sdk-2
+    if: needs.sdk-2.outputs.state != ''
+    uses: ./.github/workflows/macos_x86_64_sdk.yml
+    with:
+      stage: 3
+      state: ${{ needs.sdk-2.outputs.state }}
+  sdk-4:
+    needs: sdk-3
+    if: needs.sdk-3.outputs.state != ''
+    uses: ./.github/workflows/macos_x86_64_sdk.yml
+    with:
+      stage: 4
+      state: ${{ needs.sdk-3.outputs.state }}
+  sdk-5:
+    needs: sdk-4
+    if: needs.sdk-4.outputs.state != ''
+    uses: ./.github/workflows/macos_x86_64_sdk.yml
+    with:
+      stage: 5
+      state: ${{ needs.sdk-4.outputs.state }}
+  sdk-6:
+    needs: sdk-5
+    if: needs.sdk-5.outputs.state != ''
+    uses: ./.github/workflows/macos_x86_64_sdk.yml
+    with:
+      stage: 6
+      state: ${{ needs.sdk-5.outputs.state }}
+  sdk-7:
+    needs: sdk-6
+    if: needs.sdk-6.outputs.state != ''
+    uses: ./.github/workflows/macos_x86_64_sdk.yml
+    with:
+      stage: 7
+      state: ${{ needs.sdk-6.outputs.state }}
+  sdk-8:
+    needs: sdk-7
+    if: needs.sdk-7.outputs.state != ''
+    uses: ./.github/workflows/macos_x86_64_sdk.yml
+    with:
+      stage: 8
+      state: ${{ needs.sdk-7.outputs.state }}
+  sdk-9:
+    needs: sdk-8
+    if: needs.sdk-8.outputs.state != ''
+    uses: ./.github/workflows/macos_x86_64_sdk.yml
+    with:
+      stage: 9
+      state: ${{ needs.sdk-8.outputs.state }}
+  sdk-10:
+    needs: sdk-9
+    if: needs.sdk-9.outputs.state != ''
+    uses: ./.github/workflows/macos_x86_64_sdk.yml
+    with:
+      stage: 10
+      state: ${{ needs.sdk-9.outputs.state }}
+
+  dmg:
+    name: Build the DMG
+    needs: [sdk-1, sdk-2, sdk-3, sdk-4, sdk-5, sdk-6, sdk-7, sdk-8, sdk-9, sdk-10]
+    if: ${{ !cancelled() && (needs.sdk-1.outputs.sdk || needs.sdk-2.outputs.sdk || needs.sdk-3.outputs.sdk || needs.sdk-4.outputs.sdk || needs.sdk-5.outputs.sdk || needs.sdk-6.outputs.sdk || needs.sdk-7.outputs.sdk || needs.sdk-8.outputs.sdk || needs.sdk-9.outputs.sdk || needs.sdk-10.outputs.sdk) != '' }}
+    runs-on: macos-15-intel
+    timeout-minutes: 300
+    permissions:
+      contents: read
+      actions: read
+    env:
+      SDK: ${{ needs.sdk-1.outputs.sdk || needs.sdk-2.outputs.sdk || needs.sdk-3.outputs.sdk || needs.sdk-4.outputs.sdk || needs.sdk-5.outputs.sdk || needs.sdk-6.outputs.sdk || needs.sdk-7.outputs.sdk || needs.sdk-8.outputs.sdk || needs.sdk-9.outputs.sdk || needs.sdk-10.outputs.sdk }}
+      SDK_RUN_ID: ${{ needs.sdk-1.outputs.sdk_run_id || needs.sdk-2.outputs.sdk_run_id || needs.sdk-3.outputs.sdk_run_id || needs.sdk-4.outputs.sdk_run_id || needs.sdk-5.outputs.sdk_run_id || needs.sdk-6.outputs.sdk_run_id || needs.sdk-7.outputs.sdk_run_id || needs.sdk-8.outputs.sdk_run_id || needs.sdk-9.outputs.sdk_run_id || needs.sdk-10.outputs.sdk_run_id }}
+      SDK_TOOL: ${{ github.workspace }}/.github/workflows/macos_x86_64_sdk.sh
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download the SDK
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.SDK }}
+          run-id: ${{ env.SDK_RUN_ID }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/sdk
+
+      - name: Restore the SDK
+        run: |
+          echo "SDK $SDK from run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$SDK_RUN_ID"
+          "$SDK_TOOL" restore "$RUNNER_TEMP/sdk/natron-sdk.tar.zst"
+          "$SDK_TOOL" hide-homebrew
+          mkdir -p ~/Documents/third_party
+          ln -sfn "$GITHUB_WORKSPACE" ~/Documents/third_party/Natron
+
+      - name: Build Natron, the plug-ins and the DMG
+        run: |
+          export PATH=/opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
+          for v in $(env | sed -n 's/^\(HOMEBREW_[A-Za-z_]*\)=.*/\1/p'); do unset "$v"; done
+          # provision.sh's build step, as tools/tart/natron-build.sh: launchBuildMain.sh checks out
+          # this commit and the plug-ins, builds them with CMake for macOS 14.0 (NATRON_MACOS_MIN),
+          # makes the DMG and checks its minos (check-minos.sh). sync: the overlay of this commit.
+          GIT_BRANCH=$GITHUB_REF_NAME GIT_COMMIT=$GITHUB_SHA UNIT_TESTS=false NATRON_LICENSE=GPL \
+            tools/tart/provision.sh sync fixups build
+          cd ~/Development/workspace/builds_archive/natron_github_RB2/1
+          ls -l
+          dmg=$(ls Natron-*.dmg)
+          case $dmg in *-x86_64.dmg) ;; *) echo "::error::$dmg: not an x86_64 DMG"; exit 1 ;; esac
+          mnt=$(mktemp -d); hdiutil attach -quiet -readonly -nobrowse -mountpoint "$mnt" "$dmg"
+          archs=$(lipo -archs "$mnt"/*.app/Contents/MacOS/Natron); hdiutil detach -quiet "$mnt"
+          [ "$archs" = x86_64 ] || { echo "::error::Natron is built for $archs, not x86_64"; exit 1; }
+          echo "DMG_DIR=$PWD" >> "$GITHUB_ENV"
+          echo "DMG_NAME=${dmg%.dmg}" >> "$GITHUB_ENV"
+
+      - name: Upload the DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: Natron-macOS-x86_64-dmg
+          path: |
+            ${{ env.DMG_DIR }}/*.dmg
+            ${{ env.DMG_DIR }}/*-minos.txt
+          retention-days: 14
+          compression-level: 0
+
+      - name: Upload the build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Natron-macOS-x86_64-build-logs
+          path: ~/provision-logs
+          retention-days: 14
+
+  test:
+    name: Natron-Tests on the DMG
+    needs: dmg
+    runs-on: macos-15-intel
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: NatronGitHub/Natron-Tests
+          path: Natron-Tests
+
+      - name: Download the DMG
+        uses: actions/download-artifact@v4
+        with:
+          name: Natron-macOS-x86_64-dmg
+          path: ${{ runner.temp }}/dmg
+
+      - name: Run Natron-Tests
+        run: |
+          # runTests.sh downloads these from SourceForge, which is sometimes flaky: fetch them first
+          for z in Natron_2.3.12_Spaceship.zip Natron_2.3.12_BayMax.zip; do
+            curl -fsSL --retry 5 -o "Natron-Tests/$z" "https://downloads.sourceforge.net/project/natron/Examples/$z" || rm -f "Natron-Tests/$z"
+          done
+          # a bare macOS, as far as possible: no Homebrew (/usr/local), no SDK, no MacPorts
+          "$GITHUB_WORKSPACE/.github/workflows/macos_x86_64_sdk.sh" hide-homebrew
+          [ ! -e /opt/local ] || { echo "::error::/opt/local exists"; exit 1; }
+          dmg=$(ls "$RUNNER_TEMP"/dmg/Natron-*.dmg)
+          echo "DMG_NAME=$(basename "${dmg%.dmg}")" >> "$GITHUB_ENV"
+          tools/tart/run-natron-tests.sh "$dmg" Natron-Tests "$RUNNER_TEMP/results" "$(basename "${dmg%.dmg}")"
+
+      - name: Upload the test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Natron-macOS-x86_64-tests
+          path: ${{ runner.temp }}/results
+          retention-days: 14
+
+  release:
+    name: Attach to the release
+    needs: [dmg, test]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: Natron-macOS-x86_64-{dmg,tests}
+          merge-multiple: true
+          path: assets
+
+      - name: Upload the assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          ls -l assets
+          # the release may also be created by the other OSes' workflows
+          gh release view "$TAG" > /dev/null 2>&1 ||
+            gh release create "$TAG" --prerelease --verify-tag --title "Natron ${TAG#v}" --notes "Natron ${TAG#v} (pre-release)" ||
+            gh release view "$TAG" > /dev/null
+          # as for the earlier releases: the DMG, <dmg>-tests.txt and <dmg>-unit_tests_failures.zip
+          shopt -s nullglob
+          gh release upload "$TAG" --clobber assets/*.dmg assets/*-tests.txt assets/*-unit_tests_failures.zip

@@ -19,6 +19,8 @@
 # missing, or if otool fails on a file.
 # Used by natron-build.sh (on the DMG) and provision.sh (to find ports built for a newer macOS).
 set -euo pipefail
+# file(1) prints the descriptions of fonts etc. in their own encoding: awk must not decode them
+export LC_ALL=C
 
 # shellcheck source=../jenkins/macos-release.sh
 . "$(cd "$(dirname "$0")" && pwd)/../jenkins/macos-release.sh"

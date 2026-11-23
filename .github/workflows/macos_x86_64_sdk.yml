@@ -1,0 +1,175 @@
+name: macOS x86_64 SDK stage
+
+# One stage of the macOS x86_64 MacPorts SDK, called by macos_x86_64.yml (see there). MacPorts
+# builds the overlay ports and the ports that go into the DMG from source, which takes longer than
+# GitHub's 6-hour job limit: each stage runs tools/tart/provision.sh until it is done or until its
+# time budget is used, then saves the whole state (/opt/local with the MacPorts build directories,
+# OSMesa/LLVM, provision.sh's done markers) as an artifact, which the next stage restores and
+# resumes. The stage that finishes saves the SDK as natron-sdk-macos-x86_64-<key>, which later
+# runs reuse (same key) or update (macos_x86_64_sdk.sh find).
+on:
+  workflow_call:
+    inputs:
+      stage:
+        type: number
+        required: true
+      # stage 1: reuse, update or scratch (macos_x86_64_sdk.sh find)
+      mode:
+        type: string
+        default: reuse
+      # stages > 1: the state artifact of the previous stage, in this run
+      state:
+        type: string
+        default: ''
+    outputs:
+      sdk:
+        description: 'name of the finished SDK artifact (empty if not finished)'
+        value: ${{ jobs.sdk.outputs.sdk }}
+      sdk_run_id:
+        description: 'run that has the SDK artifact'
+        value: ${{ jobs.sdk.outputs.sdk_run_id }}
+      state:
+        description: 'name of the state artifact for the next stage (empty if finished)'
+        value: ${{ jobs.sdk.outputs.state }}
+
+permissions:
+  contents: read
+  # the SDK artifacts of earlier runs
+  actions: read
+
+jobs:
+  sdk:
+    name: SDK stage ${{ inputs.stage }}
+    runs-on: macos-15-intel
+    # GitHub's limit is 360 minutes: provision.sh stops at BUDGET_MINUTES after the job start, which
+    # leaves time to save and upload the state
+    timeout-minutes: 358
+    env:
+      BUDGET_MINUTES: 12  # TEMPORARY smoke test; 290
+      SDK_TOOL: ${{ github.workspace }}/.github/workflows/macos_x86_64_sdk.sh
+      GH_TOKEN: ${{ github.token }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+    outputs:
+      sdk: ${{ steps.result.outputs.sdk }}
+      sdk_run_id: ${{ steps.result.outputs.sdk_run_id }}
+      state: ${{ steps.result.outputs.state }}
+    steps:
+      - name: Start
+        run: |
+          echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+          uname -m; sw_vers -productVersion; sysctl -n machdep.cpu.brand_string hw.ncpu; df -h /
+
+      - uses: actions/checkout@v4
+
+      - name: SDK key
+        env:
+          # everything that defines the SDK: a change makes the next run update the SDK
+          SDK_KEY: ${{ hashFiles('tools/MacPorts/*/*/**', 'tools/MacPorts/sync.sh', 'tools/tart/provision.sh', 'tools/tart/check-minos.sh', 'tools/jenkins/macos-release.sh', '.github/workflows/macos_x86_64_sdk.*') }}
+        run: echo "SDK_KEY_SHORT=${SDK_KEY:0:16}" >> "$GITHUB_ENV"
+
+      - name: Find an SDK to start from
+        id: find
+        if: inputs.stage == 1
+        run: |
+          found=$("$SDK_TOOL" find "$SDK_KEY_SHORT" "${{ inputs.mode }}")
+          read -r name run what <<< "$found"
+          echo "SDK key $SDK_KEY_SHORT: $what ${name} (run ${run})"
+          { echo "name=$name"; echo "run=$run"; echo "what=$what"; } >> "$GITHUB_OUTPUT"
+
+      - name: Download the SDK to update
+        if: steps.find.outputs.what == 'update'
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.find.outputs.name }}
+          run-id: ${{ steps.find.outputs.run }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/sdk
+
+      - name: Download the state of the previous stage
+        if: inputs.stage > 1
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.state }}
+          path: ${{ runner.temp }}/sdk
+
+      - name: Restore
+        if: steps.find.outputs.what == 'update' || inputs.stage > 1
+        run: |
+          "$SDK_TOOL" restore "$RUNNER_TEMP/sdk/natron-sdk.tar.zst"
+          echo "restored after $(( ($(date +%s) - JOB_START) / 60 )) minutes"
+
+      - name: Prepare the runner
+        if: steps.find.outputs.what != 'reuse'
+        run: |
+          "$SDK_TOOL" hide-homebrew
+          # provision.sh's layout (tools/tart/tart-common.sh)
+          mkdir -p ~/Documents/third_party
+          ln -sfn "$GITHUB_WORKSPACE" ~/Documents/third_party/Natron
+          [ -d ~/Documents/third_party/osmesa-install ] ||
+            /usr/bin/git clone -q --depth 1 https://github.com/devernay/osmesa-install.git ~/Documents/third_party/osmesa-install
+          /usr/bin/git -C ~/Documents/third_party/osmesa-install log -1 --format='osmesa-install %h %cs %s'
+
+      - name: Provision (stage ${{ inputs.stage }})
+        id: provision
+        if: steps.find.outputs.what != 'reuse'
+        run: |
+          export PATH=/opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
+          for v in $(env | sed -n 's/^\(HOMEBREW_[A-Za-z_]*\)=.*/\1/p'); do unset "$v"; done
+          steps=$("$SDK_TOOL" steps)
+          # an SDK of an earlier run: update it, then run the steps that are not done (new ones)
+          [ "${{ steps.find.outputs.what }}" != update ] || steps="update $steps"
+          rc=0
+          # shellcheck disable=SC2086 # one word per step
+          "$SDK_TOOL" run $(( JOB_START + BUDGET_MINUTES * 60 )) $steps || rc=$?
+          case $rc in
+            0) echo "finished=true" >> "$GITHUB_OUTPUT" ;;
+            3) echo "finished=false" >> "$GITHUB_OUTPUT" ;;
+            *) echo "::error::provision.sh failed (see the log above; ~/provision-logs is uploaded)"; exit "$rc" ;;
+          esac
+
+      - name: Upload the provision logs
+        if: always() && steps.find.outputs.what != 'reuse'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdk-logs-stage-${{ inputs.stage }}
+          path: ~/provision-logs
+          retention-days: 14
+
+      - name: Save
+        if: steps.provision.outcome == 'success'
+        run: |
+          "$SDK_TOOL" unhide-homebrew
+          "$SDK_TOOL" save "$RUNNER_TEMP/out/natron-sdk.tar.zst" ${{ steps.provision.outputs.finished == 'true' && 'final' || '' }}
+
+      - name: Upload the SDK
+        if: steps.provision.outputs.finished == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: natron-sdk-macos-x86_64-${{ env.SDK_KEY_SHORT }}
+          path: ${{ runner.temp }}/out/natron-sdk.tar.zst
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload the state for the next stage
+        if: steps.provision.outputs.finished == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdk-state-${{ inputs.stage }}
+          path: ${{ runner.temp }}/out/natron-sdk.tar.zst
+          retention-days: 3
+          compression-level: 0
+
+      - name: Result
+        id: result
+        if: always()
+        run: |
+          if [ "${{ steps.find.outputs.what }}" = reuse ]; then
+            echo "sdk=${{ steps.find.outputs.name }}" >> "$GITHUB_OUTPUT"
+            echo "sdk_run_id=${{ steps.find.outputs.run }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ steps.provision.outputs.finished }}" = true ]; then
+            echo "sdk=natron-sdk-macos-x86_64-$SDK_KEY_SHORT" >> "$GITHUB_OUTPUT"
+            echo "sdk_run_id=$GITHUB_RUN_ID" >> "$GITHUB_OUTPUT"
+          elif [ "${{ steps.provision.outputs.finished }}" = false ]; then
+            echo "state=sdk-state-${{ inputs.stage }}" >> "$GITHUB_OUTPUT"
+          fi
+          echo "stage ${{ inputs.stage }} ended after $(( ($(date +%s) - JOB_START) / 60 )) minutes"
