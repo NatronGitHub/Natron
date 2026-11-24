@@ -18,12 +18,12 @@
 
 
 // Plug-ins that set kOfxImageEffectPluginPropObsolete (OFX, after 1.5.1) load in old projects, but
-// Natron doesn't offer them to users for new nodes by default: they are disabled by default, so hidden
-// from the menus and the node-creation dialog, unless the user enables them in Preferences > Plug-ins
-// (#171); they are never in the documentation, and they are not registered as readers or writers. They can still be
-// created by ID with kCreateNodeArgsPropAllowNonUserCreatablePlugins, which is what project loading and
-// the Python API (app.createNode()) do. The Natron extension kNatronOfxImageEffectPropDeprecated, which
-// had the same meaning, is not read any more (#1491).
+// Natron doesn't offer them to users for new nodes: they are disabled by default, so hidden from the
+// menus and the node-creation dialog, unless the user enables them in Preferences > Plug-ins (#171);
+// they are never in the documentation, and they are not registered as readers or writers. They can
+// still be created by ID with kCreateNodeArgsPropAllowNonUserCreatablePlugins, which is what project
+// loading and the Python API (app.createNode()) do. The Natron extension
+// kNatronOfxImageEffectPropDeprecated, which had the same meaning, is not read any more (#1491).
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
