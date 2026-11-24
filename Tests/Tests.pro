@@ -36,7 +36,8 @@ INCLUDEPATH += google-mock/include
 INCLUDEPATH += google-mock
 
 
-QMAKE_CLEAN += ofxTestLog.txt test_dot_generator0.jpg
+# ofxPluginLog.txt: the debug log of the OpenFX Support library; ofxTestLog.txt: its name before openfx 47634333
+QMAKE_CLEAN += ofxPluginLog.txt ofxTestLog.txt test_dot_generator0.jpg
 
 include(../global.pri)
 
@@ -73,6 +74,7 @@ SOURCES += \
     KnobInvalidExpression_Test.cpp \
     KnobLockOrder_Test.cpp \
     KnobFile_Test.cpp \
+    KnobHolderCreateKnob_Test.cpp \
     KnobHolderPanel_Test.cpp \
     KnobSlave_Test.cpp \
     KnobStringAnimation_Test.cpp \
@@ -80,6 +82,7 @@ SOURCES += \
     LoadPythonScript_Test.cpp \
     Lut_Test.cpp \
     Markdown_Test.cpp \
+    MaskChannel_Test.cpp \
     MultiInputLinks_Test.cpp \
     NaNGuards_FastMath.cpp \
     NaNGuards_Test.cpp \
@@ -90,6 +93,7 @@ SOURCES += \
     OfxBytesParam_Test.cpp \
     OfxContexts_Test.cpp \
     OfxCPURenderSupport_Test.cpp \
+    OfxClipComponentsView_Test.cpp \
     OfxClipGetImage_Test.cpp \
     OfxCustomParamInterp_Test.cpp \
     OfxDrawSuite_Test.cpp \
@@ -124,12 +128,15 @@ SOURCES += \
     ProcessHandler_Test.cpp \
     ProjectAutoSave_Test.cpp \
     PyEffectEquality_Test.cpp \
+    PyPlugToolset_Test.cpp \
     PyExprUtilsNoise_Test.cpp \
+    PyParamDefault_Test.cpp \
     PythonGILUnlocker_Test.cpp \
     PythonScript_Test.cpp \
     ProjectFileFormat_Test.cpp \
     PythonExpressionScope_Test.cpp \
     ReadNodeOverlay_Test.cpp \
+    ReadWriteVersion_Test.cpp \
     RenderThreadSafety_Test.cpp \
     RenderThreads_Test.cpp \
     RotoPaint_Test.cpp \

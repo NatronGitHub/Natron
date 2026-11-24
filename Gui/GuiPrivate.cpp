@@ -688,7 +688,7 @@ GuiPrivate::restoreGuiGeometry()
             _lastSaveSequenceOpenedDir.clear();
         }
     }
-    if ( settings.contains( QString::fromUtf8("LastPluginDir") ) ) {
+    if ( restoreLastDirs && settings.contains( QString::fromUtf8("LastPluginDir") ) ) {
         _lastPluginDir = settings.value( QString::fromUtf8("LastPluginDir") ).toString();
     }
 
