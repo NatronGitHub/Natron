@@ -101,7 +101,8 @@ Open **Edit > Preferences** and go to the **Color Management** page:
     The ``config.ocio`` file to use when **Custom config** is selected.
 
 **Warn on OpenColorIO config change**
-    Show a reminder that Natron must be restarted after a change.
+    Show a reminder, when the preferences are saved, that Natron must be
+    restarted after a change.
 
 **Warn on startup if OpenColorIO config is not the default**
     At startup, offer to go back to the default *blender* configuration when
@@ -110,7 +111,9 @@ Open **Edit > Preferences** and go to the **Color Management** page:
 
 .. important::
 
-   **Restart Natron after changing the configuration.** The colorspace
+   **Click Save in the Preferences, then restart Natron after changing the
+   configuration.** Closing the Preferences without Save discards the
+   change. The colorspace
    menus of the Read, Write and OCIO nodes are built when Natron starts, and
    nodes that already exist keep the configuration they were created with.
 
