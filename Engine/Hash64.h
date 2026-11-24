@@ -28,6 +28,8 @@
 
 #include "Global/Macros.h"
 
+#include <cstring> // memcpy
+#include <type_traits>
 #include <vector>
 
 #include "Global/GlobalDefines.h"
@@ -68,15 +70,18 @@ public:
         return hash != 0;
     }
 
+    // The bytes of value, copied to the start of a zeroed U64. With memcpy, not a union, which would
+    // be undefined behaviour (C.183); the result, and so every hash, is the same.
     template<typename T>
     static U64 toU64(T value)
     {
-        static_assert(sizeof(T) <= 8, "Type too large");
-        alias_cast_t<T> ac;
+        static_assert(sizeof(T) <= sizeof(U64), "Type too large");
+        static_assert(std::is_trivially_copyable<T>::value, "Type not trivially copyable");
+        U64 raw = 0;
 
-        ac.data = value;
+        std::memcpy(&raw, &value, sizeof(T));
 
-        return ac.raw;
+        return raw;
     }
 
     template<typename T>
@@ -96,21 +101,6 @@ public:
     }
 
 private:
-    template<typename T>
-    struct alias_cast_t
-    {
-        alias_cast_t()
-            : raw(0)
-        {
-        };                          // initialize to 0 in case sizeof(T) < 8
-
-        union
-        {
-            U64 raw;
-            T data;
-        };
-    };
-
     U64 hash;
     std::vector<U64> node_values;
 };
