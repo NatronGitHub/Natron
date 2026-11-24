@@ -5454,28 +5454,56 @@ KnobHolder::getOrCreateUserPageKnob()
     return ret;
 }
 
+namespace {
+// The create*Knob() functions below: the knob of the holder with that name if there is one, else a new knob.
+// A knob with that name but of another type or dimension (e.g. a script calls createIntParam() with the name
+// of a DoubleParam) is not returned: that is reported in the error log, and NULL is returned (#1621).
+template <class K>
+std::shared_ptr<K>
+createUserKnob(KnobHolder* holder,
+               const std::string& name,
+               const std::string& label,
+               int dimension,
+               bool userKnob)
+{
+    KnobIPtr existingKnob = holder->getKnobByName(name);
+
+    if (existingKnob) {
+        std::shared_ptr<K> ret = std::dynamic_pointer_cast<K>(existingKnob);
+        if ( !ret || (ret->getDimension() != dimension) ) {
+            appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( name.c_str() ), QDateTime::currentDateTime(),
+                                             KnobHolder::tr("Cannot create a parameter of type %1 with %2 dimension(s) named \"%3\": "
+                                                            "a parameter of type %4 with %5 dimension(s) already has that name.")
+                                             .arg( QString::fromUtf8( K::typeNameStatic().c_str() ) )
+                                             .arg(dimension)
+                                             .arg( QString::fromUtf8( name.c_str() ) )
+                                             .arg( QString::fromUtf8( existingKnob->typeName().c_str() ) )
+                                             .arg( existingKnob->getDimension() ) );
+
+            return std::shared_ptr<K>();
+        }
+
+        return ret;
+    }
+    std::shared_ptr<K> ret = AppManager::createKnob<K>(holder, label, dimension, false);
+    ret->setName(name);
+    ret->setAsUserKnob(userKnob);
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
+    if (isEffect && userKnob) {
+        isEffect->getNode()->declarePythonFields();
+    }
+
+    return ret;
+}
+} // anonymous namespace
+
 KnobIntPtr
 KnobHolder::createIntKnob(const std::string& name,
                           const std::string& label,
                           int dimension,
                           bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobInt>(existingKnob);
-    }
-    KnobIntPtr ret = AppManager::createKnob<KnobInt>(this, label, dimension, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobInt>(this, name, label, dimension, userKnob);
 }
 
 KnobDoublePtr
@@ -5484,22 +5512,7 @@ KnobHolder::createDoubleKnob(const std::string& name,
                              int dimension,
                              bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobDouble>(existingKnob);
-    }
-    KnobDoublePtr ret = AppManager::createKnob<KnobDouble>(this, label, dimension, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobDouble>(this, name, label, dimension, userKnob);
 }
 
 KnobColorPtr
@@ -5508,22 +5521,7 @@ KnobHolder::createColorKnob(const std::string& name,
                             int dimension,
                             bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobColor>(existingKnob);
-    }
-    KnobColorPtr ret = AppManager::createKnob<KnobColor>(this, label, dimension, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobColor>(this, name, label, dimension, userKnob);
 }
 
 KnobBoolPtr
@@ -5531,22 +5529,7 @@ KnobHolder::createBoolKnob(const std::string& name,
                            const std::string& label,
                            bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobBool>(existingKnob);
-    }
-    KnobBoolPtr ret = AppManager::createKnob<KnobBool>(this, label, 1, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobBool>(this, name, label, 1, userKnob);
 }
 
 KnobChoicePtr
@@ -5554,22 +5537,7 @@ KnobHolder::createChoiceKnob(const std::string& name,
                              const std::string& label,
                              bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobChoice>(existingKnob);
-    }
-    KnobChoicePtr ret = AppManager::createKnob<KnobChoice>(this, label, 1, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobChoice>(this, name, label, 1, userKnob);
 }
 
 KnobButtonPtr
@@ -5577,22 +5545,7 @@ KnobHolder::createButtonKnob(const std::string& name,
                              const std::string& label,
                              bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobButton>(existingKnob);
-    }
-    KnobButtonPtr ret = AppManager::createKnob<KnobButton>(this, label, 1, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobButton>(this, name, label, 1, userKnob);
 }
 
 KnobSeparatorPtr
@@ -5600,46 +5553,15 @@ KnobHolder::createSeparatorKnob(const std::string& name,
                                 const std::string& label,
                                 bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobSeparator>(existingKnob);
-    }
-    KnobSeparatorPtr ret = AppManager::createKnob<KnobSeparator>(this, label, 1, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobSeparator>(this, name, label, 1, userKnob);
 }
 
-//Type corresponds to the Type enum defined in StringParamBase in Parameter.h
 KnobStringPtr
 KnobHolder::createStringKnob(const std::string& name,
                              const std::string& label,
                              bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobString>(existingKnob);
-    }
-    KnobStringPtr ret = AppManager::createKnob<KnobString>(this, label, 1, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobString>(this, name, label, 1, userKnob);
 }
 
 KnobFilePtr
@@ -5647,22 +5569,7 @@ KnobHolder::createFileKnob(const std::string& name,
                            const std::string& label,
                            bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobFile>(existingKnob);
-    }
-    KnobFilePtr ret = AppManager::createKnob<KnobFile>(this, label, 1, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobFile>(this, name, label, 1, userKnob);
 }
 
 KnobOutputFilePtr
@@ -5670,22 +5577,7 @@ KnobHolder::createOuptutFileKnob(const std::string& name,
                                  const std::string& label,
                                  bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobOutputFile>(existingKnob);
-    }
-    KnobOutputFilePtr ret = AppManager::createKnob<KnobOutputFile>(this, label, 1, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobOutputFile>(this, name, label, 1, userKnob);
 }
 
 KnobPathPtr
@@ -5693,22 +5585,7 @@ KnobHolder::createPathKnob(const std::string& name,
                            const std::string& label,
                            bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobPath>(existingKnob);
-    }
-    KnobPathPtr ret = AppManager::createKnob<KnobPath>(this, label, 1, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobPath>(this, name, label, 1, userKnob);
 }
 
 KnobGroupPtr
@@ -5716,22 +5593,7 @@ KnobHolder::createGroupKnob(const std::string& name,
                             const std::string& label,
                             bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobGroup>(existingKnob);
-    }
-    KnobGroupPtr ret = AppManager::createKnob<KnobGroup>(this, label, 1, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobGroup>(this, name, label, 1, userKnob);
 }
 
 KnobPagePtr
@@ -5739,22 +5601,7 @@ KnobHolder::createPageKnob(const std::string& name,
                            const std::string& label,
                            bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobPage>(existingKnob);
-    }
-    KnobPagePtr ret = AppManager::createKnob<KnobPage>(this, label, 1, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobPage>(this, name, label, 1, userKnob);
 }
 
 KnobParametricPtr
@@ -5763,22 +5610,7 @@ KnobHolder::createParametricKnob(const std::string& name,
                                  int nbCurves,
                                  bool userKnob)
 {
-    KnobIPtr existingKnob = getKnobByName(name);
-
-    if (existingKnob) {
-        return std::dynamic_pointer_cast<KnobParametric>(existingKnob);
-    }
-    KnobParametricPtr ret = AppManager::createKnob<KnobParametric>(this, label, nbCurves, false);
-    ret->setName(name);
-    ret->setAsUserKnob(userKnob);
-    /*KnobPagePtr pageknob = getOrCreateUserPageKnob();
-       Q_UNUSED(pageknob);*/
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
-    if (isEffect && userKnob) {
-        isEffect->getNode()->declarePythonFields();
-    }
-
-    return ret;
+    return createUserKnob<KnobParametric>(this, name, label, nbCurves, userKnob);
 }
 
 void
