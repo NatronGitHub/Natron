@@ -649,7 +649,7 @@ build libtasn1 # (for gnutls)
 build libunistring # (for gnutls)
 build libffi
 build p11-kit # (for gnutls)
-build gnutls # (for ffmpeg)
+build gnutls # (no longer used by ffmpeg, #1531)
 build curl
 build libarchive # (for cmake)
 #build libuv # (for cmake but we use the one bundled with cmake)
@@ -733,7 +733,7 @@ build openexr
 build pixman
 build cairo
 build harfbuzz
-build fribidi # (for libass and ffmpeg)
+build fribidi # (for pango)
 build pango
 build libcroco # (requires glib and libxml2)
 build xmlto # (required by shared-mime-info)
@@ -789,8 +789,8 @@ build orc
 build x264
 build xvid
 build soxr
-build libass # (for ffmpeg)
-build libbluray # (for ffmpeg)
+build libass # (no longer used by ffmpeg, #1531)
+build libbluray # (no longer used by ffmpeg, #1531)
 build openh264 # (for ffmpeg)
 build snappy # (for ffmpeg)
 checkpoint
