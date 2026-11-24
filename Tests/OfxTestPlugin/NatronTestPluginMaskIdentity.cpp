@@ -21,6 +21,8 @@
 // Merge): kOfxImageEffectActionIsIdentity returns Source when the mask is connected and its region of definition
 // doesn't intersect the render window. Its region of definition is the one of Source. It counts its renders
 // ("MaskIdentity.render"); its render action does not write the output image.
+// net.natron.test.MaskIdentityNoTiles is the same without tiles support (kOfxImageEffectPropSupportsTiles 0): the
+// default region of interest of its inputs is then their region of definition (e.g. the CImg filters of openfx-misc).
 
 #include <cstring>
 
@@ -108,10 +110,11 @@ isIdentity(OfxImageEffectHandle effect,
 }
 
 OfxStatus
-maskIdentityMain(const char* action,
-                 const void* handle,
-                 OfxPropertySetHandle inArgs,
-                 OfxPropertySetHandle outArgs)
+maskIdentityAction(bool supportsTiles,
+                   const char* action,
+                   const void* handle,
+                   OfxPropertySetHandle inArgs,
+                   OfxPropertySetHandle outArgs)
 {
     OfxImageEffectHandle effect = (OfxImageEffectHandle)handle;
 
@@ -135,6 +138,7 @@ maskIdentityMain(const char* action,
         gPropSuite->propSetString(props, kOfxImageEffectPropSupportedContexts, 0, kOfxImageEffectContextGeneral);
         gPropSuite->propSetString(props, kOfxImageEffectPropSupportedPixelDepths, 0, kOfxBitDepthFloat);
         gPropSuite->propSetString(props, kOfxImageEffectPluginRenderThreadSafety, 0, kOfxImageEffectRenderFullySafe);
+        gPropSuite->propSetInt(props, kOfxImageEffectPropSupportsTiles, 0, supportsTiles ? 1 : 0);
 
         return kOfxStatOK;
     }
@@ -179,6 +183,26 @@ setHost(OfxHost* host)
     gHost = host;
 }
 
+OfxStatus
+maskIdentityMain(const char* action,
+                 const void* handle,
+                 OfxPropertySetHandle inArgs,
+                 OfxPropertySetHandle outArgs)
+{
+    return maskIdentityAction(true, action, handle, inArgs, outArgs);
+}
+
+OfxStatus
+maskIdentityNoTilesMain(const char* action,
+                        const void* handle,
+                        OfxPropertySetHandle inArgs,
+                        OfxPropertySetHandle outArgs)
+{
+    return maskIdentityAction(false, action, handle, inArgs, outArgs);
+}
+
 OfxPlugin gPlugin = { kOfxImageEffectPluginApi, 1, "net.natron.test.MaskIdentity", 1, 0, setHost, maskIdentityMain };
 NatronTestPluginRegistrar gRegistrar(&gPlugin);
+OfxPlugin gPluginNoTiles = { kOfxImageEffectPluginApi, 1, "net.natron.test.MaskIdentityNoTiles", 1, 0, setHost, maskIdentityNoTilesMain };
+NatronTestPluginRegistrar gRegistrarNoTiles(&gPluginNoTiles);
 } // anonymous namespace

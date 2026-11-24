@@ -54,7 +54,7 @@ canRunTest()
 {
     const char* ids[] = {
         kNatronTestPluginGenerator, kNatronTestPluginMultiPAR, kNatronTestPluginParamRoD, kNatronTestPluginTimeBlur,
-        kNatronTestPluginMaskIdentity
+        kNatronTestPluginMaskIdentity, kNatronTestPluginMaskIdentityNoTiles
     };
 
     for (const char* id : ids) {
@@ -210,9 +210,10 @@ void
 renderMaskIdentity(Nodes& nodes,
                    const NodePtr& mask,
                    bool expectSuccess,
-                   int expectedRenders)
+                   int expectedRenders,
+                   const char* pluginID = kNatronTestPluginMaskIdentity)
 {
-    NodePtr maskIdentity = nodes.create(kNatronTestPluginMaskIdentity);
+    NodePtr maskIdentity = nodes.create(pluginID);
     ASSERT_TRUE( connect(nodes.generator(false), 0, maskIdentity) );
     ASSERT_TRUE( connect(mask, 1, maskIdentity) );
     for (int i = 0; i < 2; ++i) {
@@ -224,8 +225,9 @@ renderMaskIdentity(Nodes& nodes,
 }
 } // anon namespace
 
-// A failing mask, which the plug-in only looks at in its identity action (#1656): it got an empty RoD for the mask,
-// so it was the identity of Source, and the render worked as if the mask were black
+// A failing mask, which the plug-in only looks at in its identity action, fails the render. Before #1656, the
+// plug-in got an empty RoD for the mask, so it was the identity of Source, and the render worked as if the mask
+// were black
 TEST(FailedRoDRender, FailedMaskFailsTheRender)
 {
     if ( !canRunTest() ) {
@@ -235,9 +237,18 @@ TEST(FailedRoDRender, FailedMaskFailsTheRender)
     renderMaskIdentity(nodes, nodes.generator(true), false, 0);
 }
 
-// What still gives a black input: the node is rendered
+// The same without tiles support: the default region of interest of the mask is its (empty) RoD
+TEST(FailedRoDRender, FailedMaskWithoutTilesFailsTheRender)
+{
+    if ( !canRunTest() ) {
+        return;
+    }
+    Nodes nodes;
+    renderMaskIdentity(nodes, nodes.generator(true), false, 0, kNatronTestPluginMaskIdentityNoTiles);
+}
 
-// A working mask: MaskIdentity is rendered; an empty mask: it is the identity of Source
+// What still works: a working mask (MaskIdentity is rendered), and an empty mask (MaskIdentity is the identity of
+// Source, and the render works)
 TEST(FailedRoDRender, WorkingMaskRenders)
 {
     if ( !canRunTest() ) {
@@ -245,6 +256,7 @@ TEST(FailedRoDRender, WorkingMaskRenders)
     }
     Nodes nodes;
     renderMaskIdentity(nodes, nodes.generator(false), true, 1);
+    renderMaskIdentity(nodes, nodes.generator(false), true, 1, kNatronTestPluginMaskIdentityNoTiles);
 }
 
 TEST(FailedRoDRender, EmptyRoDMaskIsIdentity)

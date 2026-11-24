@@ -72,6 +72,7 @@
 #define kNatronTestPluginOverlayV2 "net.natron.test.OverlayV2"
 #define kNatronTestPluginParamRoD "net.natron.test.ParamRoD"
 #define kNatronTestPluginMaskIdentity "net.natron.test.MaskIdentity"
+#define kNatronTestPluginMaskIdentityNoTiles "net.natron.test.MaskIdentityNoTiles"
 
 namespace NatronTestPlugin {
 // true if the host loaded the plug-in
