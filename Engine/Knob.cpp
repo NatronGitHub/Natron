@@ -3903,7 +3903,7 @@ KnobHelper::getAnimationLevel(int dimension) const
     }
 
     QMutexLocker l(&_imp->animationLevelMutex);
-    if ( dimension > (int)_imp->animationLevel.size() ) {
+    if ( dimension >= (int)_imp->animationLevel.size() ) {
         throw std::invalid_argument("Knob::getAnimationLevel(): Dimension out of range");
     }
 
