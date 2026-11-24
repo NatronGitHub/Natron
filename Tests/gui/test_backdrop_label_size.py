@@ -29,3 +29,8 @@ wait_idle()
 size = bd.getSize()
 check_close(size[0], 150, 0.5, "width after setSize() smaller than the label")
 check_close(size[1], 100, 0.5, "height after setSize() smaller than the label")
+
+# but not to a negative width
+bd.setSize(-10, 100)
+wait_idle()
+check(bd.getSize()[0] > 0, "width after setSize(-10, 100): %r" % (bd.getSize(),))

@@ -48,6 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #define NATRON_BACKDROP_DEFAULT_WIDTH 80
 #define NATRON_BACKDROP_DEFAULT_HEIGHT 80
+#define NATRON_BACKDROP_MIN_WIDTH 20
 
 NATRON_NAMESPACE_ENTER
 
@@ -63,6 +64,9 @@ struct BackdropGuiPrivate
     }
 
     void refreshLabelText(int nameHeight, const QString & text);
+
+    // Put the label under the name, wrapped to width, the unscaled width of the backdrop (#626)
+    void layoutLabel(int nameHeight, double width);
 
     std::string getLabelValue() const;
 };
@@ -130,8 +134,10 @@ BackdropGui::adjustSizeToContent(int *w,
                                  bool /*adjustToTextSize*/)
 {
     // The backdrop keeps the size the user gives it, whatever its label: the label wraps to its width,
-    // and may overflow at the bottom (#626)
+    // and may overflow at the bottom (#626). A width can still not be negative (e.g. the resize handle
+    // dragged to the left of the backdrop)
     NodeGui::adjustSizeToContent(w, h, false);
+    *w = std::max( *w, TO_DPIX(NATRON_BACKDROP_MIN_WIDTH) );
 }
 
 void
@@ -139,13 +145,17 @@ BackdropGui::resizeExtraContent(int w,
                                 int /*h*/,
                                 bool /*forceResize*/)
 {
-    QPointF p = pos();
-    QPointF thisItemPos = mapFromParent(p);
-    int nameHeight = getFrameNameHeight();
+    _imp->layoutLabel(getFrameNameHeight(), w);
+}
 
-    _imp->label->setPos( thisItemPos.x(), thisItemPos.y() + nameHeight + TO_DPIY(10) );
-    // wrap the label to the width of the backdrop (#626)
-    _imp->label->setTextWidth(w);
+void
+BackdropGuiPrivate::layoutLabel(int nameHeight,
+                                double width)
+{
+    const QPointF thisItemPos = _publicInterface->mapFromParent( _publicInterface->pos() );
+
+    label->setPos( thisItemPos.x(), thisItemPos.y() + nameHeight + TO_DPIY(10) );
+    label->setTextWidth(width);
 }
 
 void
@@ -179,9 +189,10 @@ BackdropGuiPrivate::refreshLabelText(int nameHeight,
     label->setHtml(textLabel);
 
     // The backdrop is not resized to fit the label: the label wraps to the backdrop's width (#626).
-    // getSize(), not boundingRect(), which includes the outline pen width (#1071)
-    label->setTextWidth( _publicInterface->getSize().width() );
-    label->setPos( _publicInterface->mapFromParent( _publicInterface->pos() ) + QPointF(0, nameHeight + TO_DPIY(10)) );
+    // getSize() is scaled, the label (a child item) is not; not boundingRect(), which includes the
+    // outline pen width (#1071)
+    const double scale = _publicInterface->scale();
+    layoutLabel( nameHeight, _publicInterface->getSize().width() / (scale > 0. ? scale : 1.) );
     _publicInterface->update();
 }
 
