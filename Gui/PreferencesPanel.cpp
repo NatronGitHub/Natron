@@ -1174,6 +1174,9 @@ PreferencesPanel::restoreDefaults()
         // would (setChecked() doesn't emit clicked()), and show their new state (#1744)
         for (PluginTreeNodeList::const_iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
             Plugin* plugin = it->plugin;
+            if (!plugin) {
+                continue; // a group row (see buildPluginGroupHierarchy())
+            }
             plugin->setActivated(true);
             plugin->setRenderScaleEnabled(true);
             plugin->setMultiThreadingEnabled(true);
