@@ -464,6 +464,11 @@ private:
     ///is inside the directory of a saved project (as Project::canonicalizePath() did for bare names) (#825)
     QString absoluteFilePathInCurrentDirectory(const QString& filePath) const;
 
+    ///Returns filePath made absolute against the current directory (the home directory at the "Computer"
+    ///level) if it is relative, without the remapping of absoluteFilePathInCurrentDirectory(): the path that
+    ///isDirectory() and setDirectory() check for a typed folder name (#1534)
+    QString pathInCurrentDirectory(const QString& filePath) const;
+
     ///the filter that shows the files with any of the extensions given to the dialog, e.g. "*.exr *.png"
     QString combinedFilter() const;
 

@@ -388,6 +388,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
 
 
     _selectionLineEdit = new FileDialogLineEdit(_selectionWidget);
+    _selectionLineEdit->setObjectName( QString::fromUtf8("fileNameLineEdit") ); // for the GUI tests
     _selectionLayout->addWidget(_selectionLineEdit);
 
     if (_dialogMode == eFileDialogModeSave) {
@@ -1364,10 +1365,10 @@ SequenceFileDialog::addFavorite(const QString & name,
 void
 SequenceFileDialog::selectDirectory()
 {
-    QString str = _selectionLineEdit->text();
+    const QString dir = pathInCurrentDirectory( _selectionLineEdit->text() );
 
-    if ( isDirectory(str) ) {
-        setDirectory(str);
+    if ( isDirectory(dir) ) {
+        setDirectory(dir);
         QDialog::accept();
     }
 }
@@ -1376,9 +1377,11 @@ void
 SequenceFileDialog::openSelectedFiles()
 {
     QString str = _selectionLineEdit->text();
+    // A typed folder name is a folder of the directory shown, not of the working directory (#1534, #1539)
+    const QString typedPath = pathInCurrentDirectory(str);
 
     if (_dialogMode != eFileDialogModeDir) {
-        if ( !isDirectory(str) ) {
+        if ( !isDirectory(typedPath) ) {
             if (_dialogMode == eFileDialogModeOpen) {
                 std::string pattern = selectedFiles();
                 if ( !pattern.empty() ) {
@@ -1439,12 +1442,12 @@ SequenceFileDialog::openSelectedFiles()
                 QDialog::accept();
             }
         } else {
-            setDirectory(str);
+            setDirectory(typedPath);
         }
     } else {
-        if ( isDirectory(str) ) {
+        if ( isDirectory(typedPath) ) {
             _selectionLineEdit->setText(str);
-            setDirectory(str);
+            setDirectory(typedPath);
         }
     }
 } // openSelectedFiles
@@ -1460,15 +1463,15 @@ void
 SequenceFileDialog::keyPressEvent(QKeyEvent* e)
 {
     if ( (e->key() == Qt::Key_Return) || (e->key() == Qt::Key_Enter) ) {
-        QString str = _selectionLineEdit->text();
-        if ( !isDirectory(str) ) {
+        const QString typedPath = pathInCurrentDirectory( _selectionLineEdit->text() );
+        if ( !isDirectory(typedPath) ) {
             if (_dialogMode != eFileDialogModeDir) {
                 openSelectedFiles();
             } else {
                 QDialog::accept();
             }
         } else {
-            setDirectory(str);
+            setDirectory(typedPath);
         }
 
         return;
@@ -1685,8 +1688,9 @@ SequenceFileDialog::selectedFiles()
         }
         remapSelection = true;
     } else {
-        //if nothing is selected, pick whatever the line edit tells us
-        selection =  _selectionLineEdit->text().toStdString();
+        // If nothing is selected, pick whatever the line edit tells us, in the directory shown, not in the
+        // working directory of the process (#1534)
+        selection = absoluteFilePathInCurrentDirectory( _selectionLineEdit->text() ).toStdString();
     }
 
 
@@ -1743,7 +1747,7 @@ SequenceFileDialog::removeFrameRange(const QString& text) const
 }
 
 QString
-SequenceFileDialog::absoluteFilePathInCurrentDirectory(const QString& filePath) const
+SequenceFileDialog::pathInCurrentDirectory(const QString& filePath) const
 {
     std::map<std::string, std::string> envVars;
     _gui->getApp()->getProject()->getEnvironmentVariables(envVars);
@@ -1753,7 +1757,14 @@ SequenceFileDialog::absoluteFilePathInCurrentDirectory(const QString& filePath) 
     }
     // At the "Computer" level (Windows drive list), there is no directory: use the home directory
     const QString directory = _requestedDir.isEmpty() ? QDir::homePath() : _requestedDir;
-    QString ret = FileSystemModel::absoluteFilePath(directory, filePath, varNames);
+
+    return FileSystemModel::absoluteFilePath(directory, filePath, varNames);
+}
+
+QString
+SequenceFileDialog::absoluteFilePathInCurrentDirectory(const QString& filePath) const
+{
+    QString ret = pathInCurrentDirectory(filePath);
 
     if ( (ret == filePath) || !_relativePathsAllowed ) {
         return ret;
@@ -1767,6 +1778,8 @@ SequenceFileDialog::absoluteFilePathInCurrentDirectory(const QString& filePath) 
         // "Absolute": a bare name in a file parameter (e.g. of a Write node) of a saved project used to
         // go to the project directory, through Project::canonicalizePath(). Keep it portable: store a
         // path inside the project directory as [Project]/...
+        std::map<std::string, std::string> envVars;
+        _gui->getApp()->getProject()->getEnvironmentVariables(envVars);
         std::map<std::string, std::string>::const_iterator project = envVars.find(NATRON_PROJECT_ENV_VAR_NAME);
         if ( ( project != envVars.end() ) && !project->second.empty() ) {
             QString projectDir = FileSystemModel::cleanPath( QString::fromUtf8( project->second.c_str() ) );
