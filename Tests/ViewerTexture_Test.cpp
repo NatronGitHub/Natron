@@ -23,7 +23,8 @@
 // - #1118: 16-bit samples are not truncated to their low byte (Linear 16-bit LUT);
 // - the alpha of 8/16-bit images is normalised to [0,1], and the A display (and its autocontrast) shows
 //   alpha without the LUT of the input bit depth;
-// - #1117: the project LUT choice "BT1886" gives eViewerColorSpaceBT1886.
+// - #1117: the project LUT choice "BT1886" gives eViewerColorSpaceBT1886;
+// - #1337: the 8-bit texture applies the viewer gamma after the display curve, as the GL shader does.
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -34,6 +35,7 @@
 #include "Global/Macros.h"
 
 #include <algorithm> // min, max
+#include <cmath> // pow
 #include <cstring> // memset
 #include <memory>
 #include <vector>
@@ -360,6 +362,36 @@ TEST(ViewerTexture, AlphaDisplayHasNoLut)
     range = findAutoContrastVminVmax(alpha, srgb, eDisplayChannelsA, 0, RectI(0, 0, kW, kH));
     EXPECT_NEAR(range.min, 64 / 255., 1e-6);
     EXPECT_NEAR(range.max, (64 + kW - 1) / 255., 1e-6);
+}
+
+// #1337: the GL shader (Gui/Shaders.cpp) applies the gamma after the display curve; the 8-bit texture applied it
+// before, to the linear values. sRGB is almost a power function, which commutes with the gamma, so the test uses
+// dark values, where its linear toe makes the two orders differ by up to 20 levels.
+TEST(ViewerTexture, GammaAfterDisplayCurve)
+{
+    ImagePtr img = makeImage(eImageBitDepthFloat);
+    {
+        Image::WriteAccess acc = img->getWriteRights();
+        for (int y = 0; y < kH; ++y) {
+            float* p = (float*)acc.pixelAt(0, y);
+            for (int x = 0; x < kW; ++x) {
+                p[x * 4] = p[x * 4 + 1] = p[x * 4 + 2] = x / 4000.f;
+                p[x * 4 + 3] = 1.f;
+            }
+        }
+    }
+    const double gamma = 2.2;
+    const Color::Lut* srgb = ViewerInstance::lutFromColorspace(eViewerColorSpaceSRGB);
+    RenderViewerArgs args(img, ImagePtr(), eDisplayChannelsRGB, eImagePremultiplicationPremultiplied, eImageBitDepthByte,
+                          1. /*gain*/, gamma, std::make_shared<GammaLut>(gamma), 0. /*offset*/,
+                          NULL /*float input: linear*/, srgb, -1 /*alphaChannelIndex*/,
+                          false /*renderOnlyRoI*/, kW);
+    std::vector<U32> tex8 = texture8(args);
+    for (int x = 0; x < kW; ++x) {
+        const double expected = 255. * std::pow(srgb->toColorSpaceFloatFromLinearFloat(x / 4000.f), 1. / gamma);
+        // error diffusion and the LUTs: at most 2 levels
+        EXPECT_NEAR(redOf(tex8[x]), expected, 2.) << "x " << x;
+    }
 }
 
 // #1117: the project LUT choices are Linear, sRGB, Rec.709 and BT1886 (Project Settings > LUT); "BT1886" used to
