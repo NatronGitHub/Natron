@@ -103,7 +103,8 @@ ProcessHandler::ProcessHandler(const QString & projectPath,
     ///connect the useful slots of the process
     QObject::connect( _process, SIGNAL(readyReadStandardOutput()), this, SLOT(onStandardOutputBytesWritten()) );
     QObject::connect( _process, SIGNAL(readyReadStandardError()), this, SLOT(onStandardErrorBytesWritten()) );
-    QObject::connect( _process, SIGNAL(error(QProcess::ProcessError)), this, SLOT(onProcessError(QProcess::ProcessError)) );
+    // errorOccurred(): QProcess::error(QProcess::ProcessError) is obsolete in Qt 5 and removed in Qt 6
+    QObject::connect( _process, SIGNAL(errorOccurred(QProcess::ProcessError)), this, SLOT(onProcessError(QProcess::ProcessError)) );
     QObject::connect( _process, SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(onProcessEnd(int,QProcess::ExitStatus)) );
 
 
@@ -259,6 +260,9 @@ ProcessHandler::onProcessError(QProcess::ProcessError err)
 {
     if (err == QProcess::FailedToStart) {
         Dialogs::errorDialog( _writerScriptName, tr("The render process failed to start.").toStdString() );
+        // QProcess emits finished() only for a process that started: end the render here, else it would stay
+        // active forever (app.waitForRenders(), the renders queued behind it, the Progress panel task, #1596)
+        Q_EMIT processFinished(1);
     } else if (err == QProcess::Crashed) {
         //@TODO: find out a way to get the backtrace
     }
