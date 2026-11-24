@@ -19,6 +19,7 @@
 // A project loads the major version of the decoder of a Read node, and of the encoder of a Write node,
 // that it was saved with, not the newest one (#1681). The test plug-ins of
 // Tests/OfxTestPlugin/NatronTestPluginVersions.cpp are a reader and a writer in versions 90.0 and 91.0.
+// A project saved without the versions (by Natron 2.5 or older) loads the lowest major.
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -183,4 +184,49 @@ TEST(ReadWriteVersion, ProjectLoadsSavedVersion)
     EXPECT_EQ( kNewestMajor, embeddedMajor( project->getNodeByName(newestReadName) ) );
     EXPECT_EQ( kOldMajor, embeddedMajor( project->getNodeByName(oldWriteName) ) );
     EXPECT_EQ( kNewestMajor, embeddedMajor( project->getNodeByName(newestWriteName) ) );
+}
+
+// A project saved by Natron 2.5 or older has no version parameter: it loads the lowest major of the
+// decoder and encoder, which is the one those versions created (e.g. ReadSVG 3, openfx-arena#224),
+// while a new node still gets the newest.
+TEST(ReadWriteVersion, ProjectWithoutVersionLoadsLowestMajor)
+{
+    if ( !versionsAvailable() ) {
+        return;
+    }
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const ResetProjectOnExit resetProject; // destroyed before tmpDir
+    ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const std::string filename = dir.toStdString() + "image.natrontestversion";
+
+    NodePtr read = createIONode(PLUGINID_OFX_READCDR, -1, filename);
+    NodePtr write = createIONode(PLUGINID_OFX_WRITEPFM, -1, filename);
+    ASSERT_TRUE(read && write);
+    EXPECT_EQ( kNewestMajor, embeddedMajor(read) );
+    EXPECT_EQ( kNewestMajor, embeddedMajor(write) );
+    const std::string readName = read->getScriptName();
+    const std::string writeName = write->getScriptName();
+
+    // save the project as an older Natron did: without the version parameters
+    KnobIPtr readVersion = read->getKnobByName(kNatronReadNodeParamDecodingPluginVersion);
+    KnobIPtr writeVersion = write->getKnobByName(kNatronWriteNodeParamEncodingPluginVersion);
+    ASSERT_TRUE(readVersion && writeVersion);
+    readVersion->setIsPersistent(false);
+    writeVersion->setIsPersistent(false);
+    readVersion.reset();
+    writeVersion.reset();
+    QString savedPath;
+    ASSERT_TRUE( project->saveProject( dir, QString::fromUtf8("ReadWriteNoVersion.ntp"), &savedPath ) );
+    read.reset();
+    write.reset();
+
+    ASSERT_TRUE( project->loadProject( dir, QString::fromUtf8("ReadWriteNoVersion.ntp") ) );
+    EXPECT_EQ( kOldMajor, embeddedMajor( project->getNodeByName(readName) ) );
+    EXPECT_EQ( kOldMajor, embeddedMajor( project->getNodeByName(writeName) ) );
+
+    // a new node in the loaded project gets the newest major
+    EXPECT_EQ( kNewestMajor, embeddedMajor( createIONode(PLUGINID_OFX_READCDR, -1, filename) ) );
+    EXPECT_EQ( kNewestMajor, embeddedMajor( createIONode(PLUGINID_OFX_WRITEPFM, -1, filename) ) );
 }

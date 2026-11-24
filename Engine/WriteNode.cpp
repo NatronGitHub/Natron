@@ -25,6 +25,7 @@
 
 #include "WriteNode.h"
 
+#include <algorithm> // std::any_of
 #include <sstream> // stringstream
 
 #include "Global/QtCompat.h"
@@ -717,6 +718,18 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
 
 } // WriteNodePrivate::createReadNodeAndConnectGraph
 
+// as in ReadNode.cpp
+static bool
+serializationHasKnob(const NodeSerialization& serialization,
+                     const std::string& knobName)
+{
+    const NodeSerialization::KnobValues& knobs = serialization.getKnobsValues();
+
+    return std::any_of( knobs.begin(), knobs.end(), [&knobName](const KnobSerializationPtr& knob) {
+        return knob->getName() == knobName;
+    } );
+}
+
 void
 WriteNodePrivate::syncVersionKnob()
 {
@@ -846,11 +859,17 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         args.setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
-        // As in ReadNodePrivate::createReadNode(): the version of the encoder saved in the project (#1681)
+        // As in ReadNodePrivate::createReadNode(): the version of the encoder saved in the project,
+        // else, in a project saved without the version (by Natron 2.5 or older), the lowest major (#1681)
         KnobIntPtr versionKnob = pluginVersionKnob.lock();
-        if ( !userEdited && versionKnob && (versionKnob->getValue(0) >= 0) ) {
-            args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(0), 0);
-            args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(1), 1);
+        if (!userEdited && versionKnob) {
+            if (versionKnob->getValue(0) >= 0) {
+                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(0), 0);
+                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(1), 1);
+            } else if ( serialization && !serializationHasKnob(*serialization, kNatronWriteNodeParamEncodingPluginVersion) ) {
+                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, 0, 0);
+                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, 0, 1);
+            }
         }
 
         if (serialization) {

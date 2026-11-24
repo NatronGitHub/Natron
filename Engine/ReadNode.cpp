@@ -25,6 +25,7 @@
 
 #include "ReadNode.h"
 
+#include <algorithm> // std::any_of
 #include <sstream> // stringstream
 
 #include "Global/QtCompat.h"
@@ -654,6 +655,18 @@ getFileNameFromSerialization(const std::list<KnobSerializationPtr>& serializatio
     return filePattern;
 }
 
+// Whether the node was saved with that knob: projects saved before the knob existed don't have it
+static bool
+serializationHasKnob(const NodeSerialization& serialization,
+                     const std::string& knobName)
+{
+    const NodeSerialization::KnobValues& knobs = serialization.getKnobsValues();
+
+    return std::any_of( knobs.begin(), knobs.end(), [&knobName](const KnobSerializationPtr& knob) {
+        return knob->getName() == knobName;
+    } );
+}
+
 void
 ReadNodePrivate::syncVersionKnob()
 {
@@ -774,10 +787,18 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         // Unless the user chose another file or decoder, create the version of the decoder that was
         // saved in the project (or given to createNode()), not the newest one: getPluginBinary() falls
         // back to the closest major above, else the newest, if that major is not installed (#1681).
+        // A project saved without the version (by Natron 2.5 or older) gets the lowest major, the
+        // closest above 0: these Natron versions created the decoders they had, e.g. ReadSVG 3, not
+        // ReadSVG 4 (openfx-arena#224). A new node gets the newest major.
         KnobIntPtr versionKnob = pluginVersionKnob.lock();
-        if ( !userEdited && versionKnob && (versionKnob->getValue(0) >= 0) ) {
-            args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(0), 0);
-            args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(1), 1);
+        if (!userEdited && versionKnob) {
+            if (versionKnob->getValue(0) >= 0) {
+                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(0), 0);
+                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(1), 1);
+            } else if ( serialization && !serializationHasKnob(*serialization, kNatronReadNodeParamDecodingPluginVersion) ) {
+                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, 0, 0);
+                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, 0, 1);
+            }
         }
 
         if (serialization || wasCreatedAsHiddenNode) {
