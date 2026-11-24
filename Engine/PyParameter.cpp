@@ -657,17 +657,17 @@ AnimatedParam::setExpression(const QString& expr,
     if (!thisKnob) {
         return false;
     }
-    // The value of the parameter changes with its expression: tell its holder (e.g. kOfxActionInstanceChanged for an
-    // OpenFX plug-in) and re-render, as the GUI does (SetExpressionCommand), with the reason of setValue() (#1336).
-    // A failed setExpression() also removes the previous expression.
-    const bool hadExpression = !thisKnob->getExpression(dimension).empty();
+    if ( (dimension < 0) || ( dimension >= thisKnob->getDimension() ) ) {
+        return false;
+    }
+    const std::string oldExpression = thisKnob->getExpression(dimension);
+    const bool oldHasRetVariable = thisKnob->isExpressionUsingRetVariable(dimension);
+    bool ok = false;
     try {
         recordForUndoGroup(thisKnob);
         thisKnob->setExpression(dimension, expr.toStdString(), hasRetVariable, true);
+        ok = true;
     } catch (const std::exception& e) {
-        if (hadExpression) {
-            thisKnob->evaluateValueChange(dimension, thisKnob->getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronInternalEdited);
-        }
         // Keep returning False (no exception, for the scripts that test the result), but say why,
         // else the failure is easy to miss (#1250)
         KnobHolder* holder = thisKnob->getHolder();
@@ -691,14 +691,20 @@ AnimatedParam::setExpression(const QString& expr,
                                        .arg(dimension)
                                        .arg( QString::fromUtf8( error.c_str() ) ).toStdString() );
         }
-
-        return false;
     } catch (...) {
-        return false;
     }
-    thisKnob->evaluateValueChange(dimension, thisKnob->getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronInternalEdited);
 
-    return true;
+    // The value of the parameter changes with its expression: tell its holder (e.g. kOfxActionInstanceChanged for an
+    // OpenFX plug-in, and the onParamChanged callback) and re-render, as the GUI does (SetExpressionCommand), with the
+    // reason of setValue() (#1336). As setValue(), only if something changed. A failed setExpression() also removes
+    // the previous expression.
+    const std::string newExpression = thisKnob->getExpression(dimension);
+    if ( (newExpression != oldExpression) ||
+         ( !newExpression.empty() && (thisKnob->isExpressionUsingRetVariable(dimension) != oldHasRetVariable) ) ) {
+        thisKnob->evaluateValueChange(dimension, thisKnob->getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronInternalEdited);
+    }
+
+    return ok;
 }
 
 QString

@@ -280,30 +280,54 @@ TEST_F(OfxInstanceChangedTest, RestoreDefaults)
 }
 
 // Setting or removing an expression from Python (Param.setExpression()) changes the value of the parameter: the
-// plug-in gets one kOfxActionInstanceChanged in one bracket, as when the expression is set in the GUI, for every
-// type of parameter, a choice parameter included (#1336).
+// plug-in gets one kOfxActionInstanceChanged in one bracket, with the reason of a user edit, as when the expression
+// is set in the GUI, for an int, double, bool and choice parameter (#1336). As with setValue(), nothing is sent if
+// nothing changed.
 TEST_F(OfxInstanceChangedTest, PythonSetExpression)
 {
     if ( skipped() ) {
         return;
     }
+    // each step: the expression to set, whether setExpression() succeeds, the expression after it, and the number of
+    // kOfxActionInstanceChanged
+    struct Step
+    {
+        const char* expr;
+        bool ok;
+        const char* exprAfter;
+        int instanceChanged;
+    };
+    const Step steps[] = {
+        { "1", true, "1", 1 },           // set
+        { "1", true, "1", 0 },           // the same again: no change
+        { "1 +", false, "", 1 },         // invalid: removes the previous expression
+        { "1 +", false, "", 0 },         // invalid, with no previous expression: no change
+        { "1", true, "1", 1 },
+        { "", true, "", 1 },             // remove
+        { "", true, "", 0 },             // remove again: no change
+    };
     const char* const names[] = { "intTo", "doubleTo", "boolTo", "choiceTo" };
     const std::string node = _node->getApp()->getAppIDString() + '.' + _node->getFullyQualifiedName();
     for (std::size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i) {
         const std::string name = names[i];
-        ASSERT_TRUE( bool( _node->getKnobByName(name) ) ) << name;
-        // set an expression, then remove it
-        const char* const exprs[] = { "1", "" };
-        for (std::size_t e = 0; e < sizeof(exprs) / sizeof(exprs[0]); ++e) {
+        KnobIPtr knob = _node->getKnobByName(name);
+        ASSERT_TRUE( bool(knob) ) << name;
+        for (std::size_t s = 0; s < sizeof(steps) / sizeof(steps[0]); ++s) {
+            const Step& step = steps[s];
             resetCounters();
             const int ic = NatronTestPlugin::counter("Params.instanceChanged." + name);
             std::string error;
-            EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(
-                             "assert " + node + '.' + name + ".setExpression('" + exprs[e] + "', False)\n", &error, 0) ) << name << ": " << error;
-            EXPECT_EQ( exprs[e], _node->getKnobByName(name)->getExpression(0) ) << name;
-            EXPECT_EQ( ic + 1, NatronTestPlugin::counter("Params.instanceChanged." + name) ) << name << " expression '" << exprs[e] << "'";
-            EXPECT_EQ( 1, delta("Params.instanceChanged") ) << name << " expression '" << exprs[e] << "'";
-            EXPECT_EQ( 1, delta("Params.begin") ) << name << " expression '" << exprs[e] << "'";
+            testing::internal::CaptureStdout(); // the error message of an invalid expression
+            const bool ran = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(
+                std::string("assert ") + (step.ok ? "" : "not ") + node + '.' + name + ".setExpression('" + step.expr + "', False)\n",
+                &error, 0);
+            testing::internal::GetCapturedStdout();
+            EXPECT_TRUE(ran) << name << " step " << s << ": " << error;
+            EXPECT_EQ( step.exprAfter, knob->getExpression(0) ) << name << " step " << s;
+            EXPECT_EQ( ic + step.instanceChanged, NatronTestPlugin::counter("Params.instanceChanged." + name) ) << name << " step " << s;
+            EXPECT_EQ( step.instanceChanged, delta("Params.instanceChanged") ) << name << " step " << s;
+            EXPECT_EQ( step.instanceChanged, delta("Params.begin") ) << name << " step " << s;
+            EXPECT_EQ( step.instanceChanged, delta("Params.begin." kOfxChangeUserEdited) ) << name << " step " << s;
             expectNoError();
         }
     }
