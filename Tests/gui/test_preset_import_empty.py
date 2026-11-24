@@ -48,6 +48,7 @@ try:
         check(isinstance(edit, QtWidgets.QLineEdit), "%s: the focus widget is %r, not the file name" % (className, edit))
         edit.setText(presets)
         check(QtCore.QMetaObject.invokeMethod(dialog, "openSelectedFiles"), "openSelectedFiles() failed")
+        check(not dialog.isVisible(), "the file dialog did not accept %s" % presets)
         return None
 
     NatronGuiTest.clearDialogLog()

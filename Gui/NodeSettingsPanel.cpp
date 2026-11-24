@@ -241,7 +241,7 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
     if ( nodeSerialization.empty() ) {
         // e.g. a hand-edited or truncated file with NodesCount 0 (#1636)
         Dialogs::errorDialog( tr("Presets").toStdString(),
-                              tr("%1 is not a valid presets file: it contains no node.").arg( QString::fromUtf8( filename.c_str() ) ).toStdString() );
+                              tr("%1 is not a valid presets file: it contains no nodes.").arg( QString::fromUtf8( filename.c_str() ) ).toStdString() );
 
         return;
     }
