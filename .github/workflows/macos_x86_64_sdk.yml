@@ -28,10 +28,10 @@ on:
     outputs:
       sdk:
         description: 'name of the finished SDK artifact (empty if not finished)'
-        value: ${{ jobs.sdk.outputs.sdk }}
+        value: ${{ jobs.find.outputs.sdk || jobs.sdk.outputs.sdk }}
       sdk_run_id:
         description: 'run that has the SDK artifact'
-        value: ${{ jobs.sdk.outputs.sdk_run_id }}
+        value: ${{ jobs.find.outputs.sdk_run_id || jobs.sdk.outputs.sdk_run_id }}
       state:
         description: 'name of the state artifact for the next stage (empty if finished)'
         value: ${{ jobs.sdk.outputs.state }}
@@ -42,8 +42,44 @@ permissions:
   actions: read
 
 jobs:
+  # stage 1: which SDK to start from, on a Linux runner (a reused SDK then needs no macOS runner)
+  find:
+    name: Find the SDK
+    if: inputs.stage == 1
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.find.outputs.name }}
+      run: ${{ steps.find.outputs.run }}
+      what: ${{ steps.find.outputs.what }}
+      # a reused SDK: the outputs of this workflow
+      sdk: ${{ steps.find.outputs.what == 'reuse' && steps.find.outputs.name || '' }}
+      sdk_run_id: ${{ steps.find.outputs.what == 'reuse' && steps.find.outputs.run || '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: SDK key
+        env:
+          # everything that defines the SDK: a change makes the next run update the SDK
+          SDK_KEY: ${{ hashFiles('tools/MacPorts/*/*/**', 'tools/MacPorts/sync.sh', 'tools/tart/provision.sh', 'tools/tart/check-minos.sh', 'tools/jenkins/macos-release.sh', '.github/workflows/macos_x86_64_sdk.sh') }}
+        run: echo "SDK_KEY_SHORT=${SDK_KEY:0:16}" >> "$GITHUB_ENV"
+
+      - name: Find an SDK to start from
+        id: find
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # schedule events have no repository payload: they run on the default branch
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch || github.ref_name }}
+        run: |
+          found=$(.github/workflows/macos_x86_64_sdk.sh find "$SDK_KEY_SHORT" "${{ inputs.mode }}")
+          read -r name run what <<< "$found"
+          echo "SDK key $SDK_KEY_SHORT: $what ${name} (run ${run})"
+          { echo "name=$name"; echo "run=$run"; echo "what=$what"; } >> "$GITHUB_OUTPUT"
+
   sdk:
     name: SDK stage ${{ inputs.stage }}
+    needs: find
+    # find is skipped in the stages after the first one
+    if: ${{ !cancelled() && (inputs.stage > 1 || (needs.find.result == 'success' && needs.find.outputs.what != 'reuse')) }}
     runs-on: macos-15-intel
     # GitHub's limit is 360 minutes: provision.sh stops at BUDGET_MINUTES after the job start, which
     # leaves time to save and upload the state
@@ -66,28 +102,15 @@ jobs:
       - name: SDK key
         env:
           # everything that defines the SDK: a change makes the next run update the SDK
-          SDK_KEY: ${{ hashFiles('tools/MacPorts/*/*/**', 'tools/MacPorts/sync.sh', 'tools/tart/provision.sh', 'tools/tart/check-minos.sh', 'tools/jenkins/macos-release.sh', '.github/workflows/macos_x86_64_sdk.*') }}
+          SDK_KEY: ${{ hashFiles('tools/MacPorts/*/*/**', 'tools/MacPorts/sync.sh', 'tools/tart/provision.sh', 'tools/tart/check-minos.sh', 'tools/jenkins/macos-release.sh', '.github/workflows/macos_x86_64_sdk.sh') }}
         run: echo "SDK_KEY_SHORT=${SDK_KEY:0:16}" >> "$GITHUB_ENV"
 
-      - name: Find an SDK to start from
-        id: find
-        if: inputs.stage == 1
-        env:
-          GH_TOKEN: ${{ github.token }}
-          # schedule events have no repository payload: they run on the default branch
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch || github.ref_name }}
-        run: |
-          found=$("$SDK_TOOL" find "$SDK_KEY_SHORT" "${{ inputs.mode }}")
-          read -r name run what <<< "$found"
-          echo "SDK key $SDK_KEY_SHORT: $what ${name} (run ${run})"
-          { echo "name=$name"; echo "run=$run"; echo "what=$what"; } >> "$GITHUB_OUTPUT"
-
       - name: Download the SDK to update
-        if: steps.find.outputs.what == 'update'
+        if: needs.find.outputs.what == 'update'
         uses: actions/download-artifact@v4
         with:
-          name: ${{ steps.find.outputs.name }}
-          run-id: ${{ steps.find.outputs.run }}
+          name: ${{ needs.find.outputs.name }}
+          run-id: ${{ needs.find.outputs.run }}
           github-token: ${{ github.token }}
           path: ${{ runner.temp }}/sdk
 
@@ -99,13 +122,12 @@ jobs:
           path: ${{ runner.temp }}/sdk
 
       - name: Restore
-        if: steps.find.outputs.what == 'update' || inputs.stage > 1
+        if: needs.find.outputs.what == 'update' || inputs.stage > 1
         run: |
           "$SDK_TOOL" restore "$RUNNER_TEMP/sdk/natron-sdk.tar.zst"
           echo "restored after $(( ($(date +%s) - JOB_START) / 60 )) minutes"
 
       - name: Prepare the runner
-        if: steps.find.outputs.what != 'reuse'
         run: |
           "$SDK_TOOL" hide-homebrew
           # provision.sh's layout (tools/tart/tart-common.sh)
@@ -117,13 +139,12 @@ jobs:
 
       - name: Provision (stage ${{ inputs.stage }})
         id: provision
-        if: steps.find.outputs.what != 'reuse'
         run: |
           export PATH=/opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
           for v in $(env | sed -n 's/^\(HOMEBREW_[A-Za-z_]*\)=.*/\1/p'); do unset "$v"; done
           steps=$("$SDK_TOOL" steps)
           # an SDK of an earlier run: update it, then run the steps that are not done (new ones)
-          [ "${{ steps.find.outputs.what }}" != update ] || steps="update $steps"
+          [ "${{ needs.find.outputs.what }}" != update ] || steps="update $steps"
           rc=0
           # shellcheck disable=SC2086 # one word per step
           "$SDK_TOOL" run $(( JOB_START + BUDGET_MINUTES * 60 )) $steps || rc=$?
@@ -134,7 +155,7 @@ jobs:
           esac
 
       - name: Upload the provision logs
-        if: always() && steps.find.outputs.what != 'reuse'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           overwrite: true
@@ -180,10 +201,7 @@ jobs:
           STAGE: ${{ inputs.stage }}
           LAST_STAGE: ${{ inputs.last_stage }}
         run: |
-          if [ "${{ steps.find.outputs.what }}" = reuse ]; then
-            echo "sdk=${{ steps.find.outputs.name }}" >> "$GITHUB_OUTPUT"
-            echo "sdk_run_id=${{ steps.find.outputs.run }}" >> "$GITHUB_OUTPUT"
-          elif [ "${{ steps.upload_sdk.outcome }}" = success ]; then
+          if [ "${{ steps.upload_sdk.outcome }}" = success ]; then
             echo "sdk=natron-sdk-macos-x86_64-$SDK_KEY_SHORT" >> "$GITHUB_OUTPUT"
             echo "sdk_run_id=$GITHUB_RUN_ID" >> "$GITHUB_OUTPUT"
           elif [ "${{ steps.provision.outputs.finished }}" = false ]; then

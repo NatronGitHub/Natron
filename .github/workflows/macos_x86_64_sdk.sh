@@ -41,7 +41,8 @@ find)
                  \"\(.created_at) \(.name) \(.workflow_run.id) \(.workflow_run.head_branch)\""
         done | sort -r)
     echo "SDK artifacts found:" >&2; echo "${list:-(none)}" >&2
-    cutoff=$(date -u -v-${REUSE_MAX_DAYS}d +%Y-%m-%dT%H:%M:%SZ)
+    # (runs on Linux: GNU date)
+    cutoff=$(date -u -d "$REUSE_MAX_DAYS days ago" +%Y-%m-%dT%H:%M:%SZ)
     if [ "$mode" = reuse ]; then
         hit=$(echo "$list" | awk -v n="$ARTIFACT_PREFIX$key" -v c="$cutoff" '$2 == n && $1 >= c {print $2, $3; exit}')
         [ -z "$hit" ] || { echo "$hit reuse"; exit 0; }
