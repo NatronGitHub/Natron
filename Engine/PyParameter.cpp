@@ -615,7 +615,7 @@ AnimatedParam::setDerivativesAtTime(double time,
 {
     KnobIPtr knob = getInternalKnob();
 
-    // (KnobHelper::moveDerivativesAtTime() doesn't check the dimension; int, bool and choice curves are constant)
+    // False, not an exception, for a dimension that does not exist; int, bool and choice curves are constant
     if ( !knob || !dynamic_cast<KnobDoubleBase*>( knob.get() ) || (dimension < 0) || ( dimension >= knob->getDimension() ) ) {
         return false;
     }
