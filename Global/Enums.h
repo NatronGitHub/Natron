@@ -70,7 +70,7 @@ enum StatusEnum
 enum StandardButtonEnum
 {
     eStandardButtonNoButton           = 0x00000000,
-    eStandardButtonEscape             = 0x00000200,            // obsolete
+    eStandardButtonEscape             = 0x00000200,            // obsolete as a button; also the reply of a question closed without a button
     eStandardButtonOk                 = 0x00000400,
     eStandardButtonSave               = 0x00000800,
     eStandardButtonSaveAll            = 0x00001000,

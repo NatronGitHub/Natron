@@ -765,7 +765,12 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
     }
 
     if (!pluginHandle) {
-        throw std::runtime_error( tr("Error: Description (kOfxActionLoad and kOfxActionDescribe) failed while loading %1.")
+        // NULL also if the binary can't be loaded, refuses this host (OfxSetHost), or no longer has this
+        // plug-in: a stale plug-in cache (the binary's plug-ins changed, but not its mtime and size)
+        throw std::runtime_error( tr("Error: %1 could not be loaded. Its binary could not be loaded, refused this host, "
+                                     "or no longer has this plug-in (then the OpenFX plug-in cache is stale: use "
+                                     "Cache > Clear Plug-ins Load Cache and restart, or launch with --clear-openfx-cache), "
+                                     "or its description (kOfxActionLoad and kOfxActionDescribe) failed.")
                                   .arg( QString::fromUtf8( plugin->getIdentifier().c_str() ) ).toStdString() );
     }
     assert(pluginHandle->getOfxPlugin() && pluginHandle->getOfxPlugin()->mainEntry);

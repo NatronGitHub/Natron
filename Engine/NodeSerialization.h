@@ -113,6 +113,10 @@ public:
         return _knobsValues;
     }
 
+    // Whether a value of the knob was saved. A knob that has no modifications is not saved, nor
+    // knobs that did not exist in the Natron version that saved the project.
+    bool hasKnob(const std::string& knobName) const;
+
     const std::string & getNodeLabel() const
     {
         return _nodeLabel;

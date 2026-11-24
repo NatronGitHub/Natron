@@ -48,6 +48,10 @@ function. To remove a user parameter created, use the :func:`removeParam(param)<
 function. Note that this function can only be used to remove **user parameters** and cannot
 be used to remove parameters that were defined by the OpenFX plug-in.
 
+If a parameter with that name already exists, a **createXParam** function returns it if it has
+the same type and at least the requested dimensions; otherwise it returns None, and says why in
+the Script Editor.
+
 Once you have made modifications to the user parameters, you must call the
 :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>` function to notify
 the GUI, otherwise no change will appear on the GUI.

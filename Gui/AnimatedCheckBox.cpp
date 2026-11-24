@@ -98,6 +98,13 @@ void
 AnimatedCheckBox::keyPressEvent(QKeyEvent* e)
 {
     if (e->key() == Qt::Key_Space) {
+        if (readOnly) {
+            // Space doesn't toggle it, as a click doesn't (#1744); accepted, so that it doesn't reach
+            // the parents (the pane would go full screen)
+            e->accept();
+
+            return;
+        }
         checked = !checked;
         Q_EMIT toggled(checked);
         Q_EMIT clicked(checked);
