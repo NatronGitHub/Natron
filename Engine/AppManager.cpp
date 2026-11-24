@@ -743,32 +743,6 @@ AppManager::queueAfterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& 
 }
 
 void
-AppManager::quitApplication()
-{
-    bool appsEmpty;
-    {
-        QMutexLocker k(&_imp->_appInstancesMutex);
-        appsEmpty = _imp->_appInstances.empty();
-    }
-
-    while (!appsEmpty) {
-        AppInstancePtr app;
-        {
-            QMutexLocker k(&_imp->_appInstancesMutex);
-            app = _imp->_appInstances.front();
-        }
-        if (app) {
-            quitNow(app);
-        }
-
-        {
-            QMutexLocker k(&_imp->_appInstancesMutex);
-            appsEmpty = _imp->_appInstances.empty();
-        }
-    }
-}
-
-void
 AppManager::setUpShutDownSignalNotifier()
 {
 #ifdef __NATRON_UNIX__
@@ -802,8 +776,51 @@ AppManager::onShutDownSignalReceived()
     char c;
     while (::read(shutDownSignalPipe[0], &c, 1) > 0) {
     }
-    quitApplication();
+    quitOnShutDownSignal();
 #endif
+}
+
+bool
+AppManager::mustDeferQuit() const
+{
+    // The main event loop is the only one: not before or after qApp->exec() (e.g. a question shown while the
+    // project loads), not in a QDialog::exec() or QMenu::exec(). Natron's own nested loops (NestedEventLoopRAII)
+    // also count those that only process the events. Project::saveProject_imp() processes the events while it
+    // waits for the auto-save (#825).
+    if ( !isLoaded() || (QThread::currentThread()->loopLevel() != 1) || (getNestedEventLoopsCount() > 0) ) {
+        return true;
+    }
+    const AppInstanceVec instances = getAppInstances();
+    for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        ProjectPtr project = (*it)->getProject();
+        if ( project && project->isSaveInProgress() ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void
+AppManager::quitOnShutDownSignal()
+{
+    // The signal may come in a nested event loop: a modal dialog's or a menu's exec(), or a GUI test's
+    // waitIdle(). Quitting there deleted the windows under the code that runs it, e.g. the dialog of
+    // Gui::onDoDialog(), which is on the stack (#1730). Close the modal windows first, and quit from the
+    // main event loop once they are closed. If this never happens, a second signal terminates.
+    const bool closedOne = closeModalWindows();
+    if ( closedOne || mustDeferQuit() ) {
+        QTimer::singleShot( 50, this, [this]() {
+            quitOnShutDownSignal();
+        } );
+
+        return;
+    }
+    // quit() does nothing for an instance that is already quitting (e.g. natron.quit() was called, #1567)
+    const AppInstanceVec instances = getAppInstances();
+    for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        quit(*it);
+    }
 }
 
 void

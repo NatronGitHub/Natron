@@ -316,7 +316,8 @@ without loading a project, or when clicking "Create a new project" or "Close pro
 .. note::
 
     Note that this function is never called when a project is loaded either via an auto-save
-    or from user interaction.
+    or from user interaction. If a project opened in a new window fails to load, it is called on
+    the empty project left in that window.
 
 The signature is::
 

@@ -203,6 +203,7 @@ public:
     KnobBoolWPtr readBackKnob;
     KnobChoiceWPtr pluginSelectorKnob;
     KnobStringWPtr pluginIDStringKnob;
+    KnobIntWPtr pluginVersionKnob;
     KnobSeparatorWPtr separatorKnob;
     KnobButtonWPtr renderButtonKnob;
     std::list<KnobIWPtr> writeNodeKnobs;
@@ -226,6 +227,7 @@ public:
     , frameIncrKnob()
     , pluginSelectorKnob()
     , pluginIDStringKnob()
+    , pluginVersionKnob()
     , separatorKnob()
     , renderButtonKnob()
     , writeNodeKnobs()
@@ -246,7 +248,18 @@ public:
     void createWriteNode(bool throwErrors, const std::string& filename, const NodeSerializationPtr& serialization,
                          bool userEdited = false);
 
+    // As ReadNodePrivate::syncVersionKnob() and resetVersionKnob(), for the encoder (#1681)
+    void syncVersionKnob();
+    void resetVersionKnob();
+    void setVersionKnob(int major, int minor);
+
     void destroyWriteNode();
+
+    /**
+     * @brief A copy of the serializations of the generic knobs that destroyWriteNode() keeps, and that differ from
+     * their default, for cloneGenericKnobs().
+     **/
+    std::list<KnobSerializationPtr> modifiedGenericKnobs() const;
 
     void cloneGenericKnobs();
 
@@ -411,19 +424,11 @@ WriteNodePrivate::cloneGenericKnobs()
     }
 }
 
-void
-WriteNodePrivate::destroyWriteNode()
+// A copy of the serializations, which keeps the values of the knobs at the time of the call, unlike the serializations
+// themselves, which read them when they are written
+static std::list<KnobSerializationPtr>
+copyKnobSerializations(const std::list<KnobSerializationPtr>& serialized)
 {
-    assert( QThread::currentThread() == qApp->thread() );
-    NodePtr embeddedNode = embeddedPlugin.lock();
-    if (!embeddedNode) {
-        return;
-    }
-
-    KnobsVec knobs = _publicInterface->getKnobs();
-
-    genericKnobsSerialization.clear();
-
     std::string serializationString;
     try {
         std::ostringstream ss;
@@ -435,57 +440,6 @@ WriteNodePrivate::destroyWriteNode()
             // see also https://svn.boost.org/trac10/ticket/13354
 
             boost::archive::xml_oarchive oArchive(ss);
-            std::list<KnobSerializationPtr> serialized;
-            for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-
-                // The internal node still holds a shared ptr to the knob.
-                // Since we want to keep some knobs around, ensure they do not get deleted in the destructor of the embedded node
-                embeddedNode->getEffectInstance()->removeKnobFromList(it->get());
-
-                if ( !(*it)->isDeclaredByPlugin() ) {
-                    continue;
-                }
-
-                //If it is a knob of this WriteNode, do not destroy it
-                bool isWriteNodeKnob = false;
-                for (std::list<KnobIWPtr>::iterator it2 = writeNodeKnobs.begin(); it2 != writeNodeKnobs.end(); ++it2) {
-                    if (it2->lock() == *it) {
-                        isWriteNodeKnob = true;
-                        break;
-                    }
-                }
-                if (isWriteNodeKnob) {
-                    continue;
-                }
-
-                //Keep pages around they will be re-used
-                KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
-                if (isPage) {
-                    continue;
-                }
-
-                //This is a knob of the Writer plug-in
-
-                //Serialize generic knobs and keep them around until we create a new Writer plug-in
-                bool mustSerializeKnob;
-                bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
-                if (!isGeneric || mustSerializeKnob) {
-
-                    /*if (!isGeneric && !(*it)->getDefaultIsSecret()) {
-                     // Don't save the secret state otherwise some knobs could be invisible when cloning the serialization even if we change format
-                     (*it)->setSecret(false);
-                     }*/
-                    KnobSerializationPtr s = std::make_shared<KnobSerialization>(*it);
-                    serialized.push_back(s);
-                }
-                if (!isGeneric) {
-                    try {
-                        _publicInterface->deleteKnob(it->get(), false);
-                    } catch (...) {
-                    }
-                }
-            }
-
             int n = (int)serialized.size();
             oArchive << boost::serialization::make_nvp("numItems", n);
             for (std::list<KnobSerializationPtr>::const_iterator it = serialized.begin(); it!= serialized.end(); ++it) {
@@ -497,6 +451,7 @@ WriteNodePrivate::destroyWriteNode()
         assert(false);
     }
 
+    std::list<KnobSerializationPtr> copy;
     try {
         std::stringstream ss(serializationString);
         {
@@ -506,7 +461,7 @@ WriteNodePrivate::destroyWriteNode()
             for (int i = 0; i < n; ++i) {
                 KnobSerializationPtr s = std::make_shared<KnobSerialization>();
                 iArchive >> boost::serialization::make_nvp("item", *s);
-                genericKnobsSerialization.push_back(s);
+                copy.push_back(s);
             }
         }
     } catch (const std::exception& e) {
@@ -515,7 +470,94 @@ WriteNodePrivate::destroyWriteNode()
     } catch (...) {
         assert(false);
     }
-    
+
+    return copy;
+}
+
+std::list<KnobSerializationPtr>
+WriteNodePrivate::modifiedGenericKnobs() const
+{
+    std::list<KnobSerializationPtr> serialized;
+    const KnobsVec& knobs = _publicInterface->getKnobs();
+
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        bool mustSerializeKnob = false;
+        if ( (*it)->isDeclaredByPlugin() && isGenericKnob( (*it)->getName(), &mustSerializeKnob ) && mustSerializeKnob &&
+             (*it)->hasModifications() ) {
+            serialized.push_back( std::make_shared<KnobSerialization>(*it) );
+        }
+    }
+
+    return copyKnobSerializations(serialized);
+}
+
+void
+WriteNodePrivate::destroyWriteNode()
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    NodePtr embeddedNode = embeddedPlugin.lock();
+    if (!embeddedNode) {
+        return;
+    }
+
+    KnobsVec knobs = _publicInterface->getKnobs();
+
+    std::list<KnobSerializationPtr> serialized;
+    try {
+        for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+
+            // The internal node still holds a shared ptr to the knob.
+            // Since we want to keep some knobs around, ensure they do not get deleted in the destructor of the embedded node
+            embeddedNode->getEffectInstance()->removeKnobFromList(it->get());
+
+            if ( !(*it)->isDeclaredByPlugin() ) {
+                continue;
+            }
+
+            //If it is a knob of this WriteNode, do not destroy it
+            bool isWriteNodeKnob = false;
+            for (std::list<KnobIWPtr>::iterator it2 = writeNodeKnobs.begin(); it2 != writeNodeKnobs.end(); ++it2) {
+                if (it2->lock() == *it) {
+                    isWriteNodeKnob = true;
+                    break;
+                }
+            }
+            if (isWriteNodeKnob) {
+                continue;
+            }
+
+            //Keep pages around they will be re-used
+            KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
+            if (isPage) {
+                continue;
+            }
+
+            //This is a knob of the Writer plug-in
+
+            //Serialize generic knobs and keep them around until we create a new Writer plug-in
+            bool mustSerializeKnob;
+            bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
+            if (!isGeneric || mustSerializeKnob) {
+
+                /*if (!isGeneric && !(*it)->getDefaultIsSecret()) {
+                 // Don't save the secret state otherwise some knobs could be invisible when cloning the serialization even if we change format
+                 (*it)->setSecret(false);
+                 }*/
+                KnobSerializationPtr s = std::make_shared<KnobSerialization>(*it);
+                serialized.push_back(s);
+            }
+            if (!isGeneric) {
+                try {
+                    _publicInterface->deleteKnob(it->get(), false);
+                } catch (...) {
+                }
+            }
+        }
+    } catch (...) {
+        assert(false);
+    }
+    genericKnobsSerialization = copyKnobSerializations(serialized);
+
 
     //This will remove the GUI of non generic parameters
     _publicInterface->recreateKnobs(true);
@@ -713,6 +755,43 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
 } // WriteNodePrivate::createReadNodeAndConnectGraph
 
 void
+WriteNodePrivate::syncVersionKnob()
+{
+    KnobStringPtr pluginIDKnob = pluginIDStringKnob.lock();
+
+    if (!pluginIDKnob) {
+        return;
+    }
+    NodePtr encoder = embeddedPlugin.lock();
+    const Plugin* plugin = encoder ? encoder->getPlugin() : 0;
+    if ( !plugin || ( encoder->getPluginID() != pluginIDKnob->getValue() ) ) {
+        return;
+    }
+    setVersionKnob( plugin->getMajorVersion(), plugin->getMinorVersion() );
+}
+
+void
+WriteNodePrivate::resetVersionKnob()
+{
+    setVersionKnob(-1, -1);
+}
+
+void
+WriteNodePrivate::setVersionKnob(int major,
+                                 int minor)
+{
+    KnobIntPtr versionKnob = pluginVersionKnob.lock();
+
+    if (!versionKnob) {
+        return;
+    }
+    versionKnob->blockValueChanges();
+    versionKnob->setValue(major, ViewSpec(0), 0);
+    versionKnob->setValue(minor, ViewSpec(0), 1);
+    versionKnob->unblockValueChanges();
+}
+
+void
 WriteNodePrivate::createWriteNode(bool throwErrors,
                                   const std::string& filename,
                                   const NodeSerializationPtr& serialization,
@@ -794,11 +873,24 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         }
     }
 
+    // Without an encoder (the node has no file name yet), the generic knobs are those that the placeholder encoder
+    // left (see createDefaultWriteNode()), and their values may have been set since, e.g. a Manual frame range set
+    // from Python before the file name (#1574): the new encoder resets them to its defaults, keep those values.
+    const bool keepPlaceholderKnobs = !embeddedPlugin.lock() && !serialization;
+    std::list<KnobSerializationPtr> placeholderKnobs;
+    if (keepPlaceholderKnobs) {
+        placeholderKnobs = modifiedGenericKnobs();
+    }
+
     //Destroy any previous reader
     //This will store the serialization of the generic knobs
     destroyWriteNode();
 
     bool defaultFallback = false;
+
+    if (userEdited) {
+        resetVersionKnob(); // as in ReadNodePrivate::createReadNode() (#1681)
+    }
 
     //Find the appropriate reader
     if (writerPluginID.empty() && !serialization) {
@@ -823,6 +915,19 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         args.setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
+        // As in ReadNodePrivate::createReadNode(): the version of the encoder saved in the project,
+        // else, in a node saved without the version (by a Natron older than 2.6), the lowest major (#1681)
+        KnobIntPtr versionKnob = pluginVersionKnob.lock();
+        if (!userEdited && versionKnob) {
+            if (versionKnob->getValue(0) >= 0) {
+                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(0), 0);
+                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(1), 1);
+            } else if ( serialization && !serialization->hasKnob(kNatronWriteNodeParamEncodingPluginVersion) ) {
+                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, 0, 0);
+                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, 0, 1);
+            }
+        }
+
         if (serialization) {
             args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
             args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true); // also load deprecated plugins
@@ -833,6 +938,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         if (pluginIDKnob) {
             pluginIDKnob->setValue(writerPluginID);
         }
+        syncVersionKnob();
 
         // Set the filename value
         if (writeNode) {
@@ -886,8 +992,22 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
 
     _publicInterface->getNode()->findPluginFormatKnobs();
 
-    // Clone the old values of the generic knobs if we created the same encoder than before
-    if (lastPluginIDCreated == writerPluginID) {
+    if (keepPlaceholderKnobs) {
+        // also after the default fallback (createDefaultWriteNode() reset the knobs), for the next file name
+        genericKnobsSerialization = placeholderKnobs;
+        cloneGenericKnobs();
+        if (writeNode) {
+            // the encoder did not see these values (e.g. it shows First/Last Frame for a Manual frame range)
+            for (std::list<KnobSerializationPtr>::const_iterator it = placeholderKnobs.begin(); it != placeholderKnobs.end(); ++it) {
+                KnobIPtr knob = _publicInterface->getKnobByName( (*it)->getName() );
+                if (knob) {
+                    writeNode->getEffectInstance()->onKnobValueChanged_public(knob.get(), eValueChangedReasonNatronInternalEdited, _publicInterface->getCurrentTime(), ViewSpec(0), true);
+                }
+            }
+        }
+    } else if (lastPluginIDCreated == writerPluginID) {
+        // Clone the old values of the generic knobs if we created the same encoder as before. With another encoder,
+        // they get its defaults (a4f90a61a).
         cloneGenericKnobs();
     }
     lastPluginIDCreated = writerPluginID;
@@ -955,6 +1075,7 @@ WriteNodePrivate::refreshPluginSelectorKnob()
     pluginIDKnob->blockValueChanges();
     pluginIDKnob->setValue(pluginID);
     pluginIDKnob->unblockValueChanges();
+    syncVersionKnob();
 }
 
 bool
@@ -1102,6 +1223,16 @@ WriteNode::initializeKnobs()
     controlpage->addKnob(pluginID);
     _imp->pluginIDStringKnob = pluginID;
     _imp->writeNodeKnobs.push_back(pluginID);
+
+    KnobIntPtr pluginVersion = AppManager::createKnob<KnobInt>( this, tr("Plugin Version"), 2 );
+    pluginVersion->setAnimationEnabled(false);
+    pluginVersion->setName(kNatronWriteNodeParamEncodingPluginVersion);
+    pluginVersion->setDefaultValue(-1, 0);
+    pluginVersion->setDefaultValue(-1, 1);
+    pluginVersion->setSecretByDefault(true);
+    controlpage->addKnob(pluginVersion);
+    _imp->pluginVersionKnob = pluginVersion;
+    _imp->writeNodeKnobs.push_back(pluginVersion);
 } // WriteNode::initializeKnobs
 
 void
@@ -1128,6 +1259,7 @@ WriteNode::onEffectCreated(bool mayCreateFileDialog,
         if (pluginIDKnob) {
             pluginIDKnob->setValue(_imp->embeddedPlugin.lock()->getPluginID());
         }
+        _imp->syncVersionKnob();
         return;
     }
     bool throwErrors = false;
@@ -1169,11 +1301,21 @@ WriteNode::onKnobsAboutToBeLoaded(const NodeSerializationPtr& serialization)
 
     //Load the pluginID to create first.
     node->loadKnob( _imp->pluginIDStringKnob.lock(), *serialization);
+    node->loadKnob( _imp->pluginVersionKnob.lock(), *serialization);
 
     std::string filename = getFileNameFromSerialization( serialization->getKnobsValues() );
     //Create the Reader with the serialization
     _imp->createWriteNode(false, filename, serialization);
     _imp->refreshPluginSelectorKnob();
+}
+
+// as ReadNode::onKnobsLoaded() (#1681)
+void
+WriteNode::onKnobsLoaded()
+{
+    if ( _imp->embeddedPlugin.lock() ) {
+        _imp->syncVersionKnob();
+    }
 }
 
 bool
@@ -1242,6 +1384,11 @@ WriteNode::knobChanged(KnobI* k,
             _imp->createWriteNode( false, filename, NodeSerializationPtr(), true /*userEdited*/ );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
+        }
+    } else if ( k == _imp->pluginVersionKnob.lock().get() ) {
+        // as in ReadNode::knobChanged(): the version is always the one of the encoder (#1681)
+        if ( !_imp->creatingWriteNode && writer ) {
+            _imp->syncVersionKnob();
         }
     } else if ( k == _imp->readBackKnob.lock().get() ) {
         clearPersistentMessage(false);
