@@ -2383,15 +2383,8 @@ Settings::onKnobValueChanged(KnobI* k,
     } else if ( k == _customOcioConfigFile.get() ) {
         if ( _customOcioConfigFile->isEnabled(0) ) {
             tryLoadOpenColorIOConfig();
-            bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
-            if ( warnOcioChanged && appPTR->getTopLevelInstance() ) {
-                bool stopAsking = false;
-                Dialogs::warningDialog(tr("OCIO config changed").toStdString(),
-                                       tr("The OpenColorIO config change requires a restart of %1 to be effective.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), &stopAsking);
-                if (stopAsking) {
-                    _warnOcioConfigKnobChanged->setValue(false);
-                }
-            }
+            // No "requires a restart" warning here: the file is not saved yet, and restarting now
+            // would lose it (#841). warnChangedKnobs() gives it when the preferences are saved.
         }
     } else if ( k == _maxUndoRedoNodeGraph.get() ) {
         appPTR->setUndoRedoStackLimit( _maxUndoRedoNodeGraph->getValue() );
