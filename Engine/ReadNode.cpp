@@ -1297,6 +1297,16 @@ ReadNode::onKnobsAboutToBeLoaded(const NodeSerializationPtr& serialization)
     _imp->refreshPluginSelectorKnob();
 }
 
+// Node::loadKnobs() does not call knobChanged(): e.g. the project values loaded on a Read that a
+// PyPlug script created must not change the version, which is the one of the decoder (#1681)
+void
+ReadNode::onKnobsLoaded()
+{
+    if ( getEmbeddedReader() ) {
+        _imp->syncVersionKnob();
+    }
+}
+
 bool
 ReadNode::knobChanged(KnobI* k,
                       ValueChangedReasonEnum reason,
@@ -1366,8 +1376,9 @@ ReadNode::knobChanged(KnobI* k,
 
         _imp->refreshFileInfoVisibility(entry);
     } else if ( k == _imp->pluginVersionKnob.lock().get() ) {
-        // e.g. loaded from a project or set by a PyPlug script after the decoder was created: the
-        // version is always the one of the decoder (#1681)
+        // e.g. set by a PyPlug script after the decoder was created: the version is always the one
+        // of the decoder (#1681). Without a decoder (it could not be created), the value is kept,
+        // and the next load asks for that version.
         if ( !_imp->creatingReadNode && getEmbeddedReader() ) {
             _imp->syncVersionKnob();
         }

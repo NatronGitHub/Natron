@@ -1220,6 +1220,15 @@ WriteNode::onKnobsAboutToBeLoaded(const NodeSerializationPtr& serialization)
     _imp->refreshPluginSelectorKnob();
 }
 
+// as ReadNode::onKnobsLoaded() (#1681)
+void
+WriteNode::onKnobsLoaded()
+{
+    if ( _imp->embeddedPlugin.lock() ) {
+        _imp->syncVersionKnob();
+    }
+}
+
 bool
 WriteNode::knobChanged(KnobI* k,
                        ValueChangedReasonEnum reason,
