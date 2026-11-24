@@ -21,6 +21,7 @@
 
 ### Changes
 
+- Read and Write nodes now save the major version of their decoder or encoder, and a project loads that version instead of the newest one, so it renders as when it was saved: e.g. openfx-arena keeps ReadSVG 3 next to ReadSVG 4. If that version is not installed, the closest higher one, else the newest, is used. `app.createNode()` with a major version of a reader or writer, and the older versions in the Tab menu, now create that version too. Projects saved by earlier versions of Natron (e.g. 2.5) have no version and get the lowest one, which is the one those versions created: e.g. ReadSVG 3, not ReadSVG 4, in a Natron 2.5 project (openfx-arena#224). New nodes, choosing another decoder or encoder, or a file that needs another one, still get the newest version. #1681
 - File dialogs: a file name typed without a folder in an Open dialog (Open Project, Read node files, Python `getFilenameDialog()`/`getSequenceDialog()`, Script Editor) is now in the folder shown by the dialog, not in Natron's working directory. As in Save dialogs since #825, with "Relative to: Absolute" such a name inside the folder of a saved project is stored as `[Project]/...`. #1534
 - File dialogs: typing the name of a subfolder of the folder shown, then Return, enters it in every dialog; in a Save dialog, Return no longer does nothing when the typed name is a folder of Natron's working directory. #1534 #1539
 - With `--no-settings`, the folder dialog of "Export as PyPlug" no longer starts in the last folder of the user's settings. #1539

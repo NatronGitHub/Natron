@@ -1208,9 +1208,19 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     if (!argsIOContainer) {
         if ( ReadNode::isBundledReader( argsPluginID.toStdString(), wasProjectCreatedWithLowerCaseIDs() ) ) {
             args.addParamDefaultValue(kNatronReadNodeParamDecodingPluginID, argsPluginID.toStdString());
+            if (versionMajor != -1) {
+                // the version is that of the decoder, not of the Read node (#1681)
+                args.addParamDefaultValueN<int>( kNatronReadNodeParamDecodingPluginVersion, std::vector<int>{versionMajor, versionMinor} );
+                versionMajor = versionMinor = -1;
+            }
             findId = QString::fromUtf8(PLUGINID_NATRON_READ);
         } else if ( WriteNode::isBundledWriter( argsPluginID.toStdString(), wasProjectCreatedWithLowerCaseIDs() ) ) {
             args.addParamDefaultValue(kNatronWriteNodeParamEncodingPluginID, argsPluginID.toStdString());
+            if (versionMajor != -1) {
+                // the version is that of the encoder, not of the Write node (#1681)
+                args.addParamDefaultValueN<int>( kNatronWriteNodeParamEncodingPluginVersion, std::vector<int>{versionMajor, versionMinor} );
+                versionMajor = versionMinor = -1;
+            }
             findId = QString::fromUtf8(PLUGINID_NATRON_WRITE);
         }
     }
