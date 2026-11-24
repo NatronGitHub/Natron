@@ -30,8 +30,6 @@ find)
     # (same tools/MacPorts, provision.sh, ...) if it is recent enough, else the newest one of this
     # branch or of the default branch, which is updated (MODE reuse or update); none for MODE scratch.
     key=$1 mode=$2
-    # TEMPORARY (testing on the branch): continue from the state artifact of an earlier run
-    if [ -n "${RESUME_FROM:-}" ]; then echo "$RESUME_FROM resume"; exit 0; fi
     [ "$mode" != scratch ] || { echo "- - scratch"; exit 0; }
     : "${GITHUB_REPOSITORY:?}" "${GITHUB_REF_NAME:?}" "${DEFAULT_BRANCH:?}" "${GITHUB_RUN_ID:?}"
     gh_retry() { local _; for _ in 1 2 3; do gh "$@" && return 0; sleep 20; done; return 1; }
