@@ -2,7 +2,7 @@ name: macOS x86_64 DMG
 
 # The macOS x86_64 (Intel) DMG of Natron, built on GitHub's Intel runner (macos-15-intel), and
 # tested there with Natron-Tests. The arm64 DMG is built in a tart VM (tools/tart). Runs weekly
-# (Sunday), on demand, and on pre-release tags (v*-*, e.g. v2.6.0-beta1), never on pull requests.
+# (Sunday), on demand, and on pre-release tags (v*-alpha*, -beta*, -rc*, -RC*), never on pull requests.
 #
 # 1. SDK (macos_x86_64_sdk.yml, up to 10 chained stages of less than 6 hours): the MacPorts SDK of
 #    tools/tart/provision.sh, for macOS 14.0 (every Mach-O file has minos <= 14.0). On macOS 15 the
@@ -32,8 +32,12 @@ on:
   # Sunday 05:17 UTC (ci.yml runs at 03:17)
   - cron: '17 5 * * 0'
   push:
+    # pre-release tags, as linux_packages.yml
     tags:
-    - 'v*-*'
+    - 'v*-alpha*'
+    - 'v*-beta*'
+    - 'v*-rc*'
+    - 'v*-RC*'
     # TEMPORARY, for testing this workflow on its branch: remove before marking the PR ready
     branches:
     - ci-macos-x86_64
@@ -289,8 +293,8 @@ jobs:
           ls -l assets
           # the release may also be created by the other OSes' workflows
           gh release view "$TAG" > /dev/null 2>&1 ||
-            gh release create "$TAG" --prerelease --verify-tag --title "Natron ${TAG#v}" --notes "Natron ${TAG#v} (pre-release)" ||
+            gh release create "$TAG" --verify-tag --prerelease --title "$TAG" --notes "Natron $TAG (pre-release)" ||
             gh release view "$TAG" > /dev/null
-          # as for the earlier releases: the DMG, <dmg>-tests.txt and <dmg>-unit_tests_failures.zip
+          # as linux_packages.yml: the DMG, <dmg>-tests.txt, -tests-summary.txt and -unit_tests_failures.zip
           shopt -s nullglob
-          gh release upload "$TAG" --clobber assets/*.dmg assets/*-tests.txt assets/*-unit_tests_failures.zip
+          gh release upload "$TAG" --clobber assets/*.dmg assets/*-tests.txt assets/*-tests-summary.txt assets/*-unit_tests_failures.zip
