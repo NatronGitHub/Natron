@@ -203,6 +203,7 @@ public:
     KnobBoolWPtr readBackKnob;
     KnobChoiceWPtr pluginSelectorKnob;
     KnobStringWPtr pluginIDStringKnob;
+    KnobIntWPtr pluginVersionKnob;
     KnobSeparatorWPtr separatorKnob;
     KnobButtonWPtr renderButtonKnob;
     std::list<KnobIWPtr> writeNodeKnobs;
@@ -226,6 +227,7 @@ public:
     , frameIncrKnob()
     , pluginSelectorKnob()
     , pluginIDStringKnob()
+    , pluginVersionKnob()
     , separatorKnob()
     , renderButtonKnob()
     , writeNodeKnobs()
@@ -245,6 +247,9 @@ public:
      **/
     void createWriteNode(bool throwErrors, const std::string& filename, const NodeSerializationPtr& serialization,
                          bool userEdited = false);
+
+    // Sets the version knob to the version of the encoder, to save it in the project (#1681)
+    void setVersionKnob(const NodePtr& encoder);
 
     void destroyWriteNode();
 
@@ -713,6 +718,18 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
 } // WriteNodePrivate::createReadNodeAndConnectGraph
 
 void
+WriteNodePrivate::setVersionKnob(const NodePtr& encoder)
+{
+    KnobIntPtr versionKnob = pluginVersionKnob.lock();
+    const Plugin* plugin = encoder->getPlugin();
+
+    if (versionKnob && plugin) {
+        versionKnob->setValue(plugin->getMajorVersion(), ViewSpec(0), 0);
+        versionKnob->setValue(plugin->getMinorVersion(), ViewSpec(0), 1);
+    }
+}
+
+void
 WriteNodePrivate::createWriteNode(bool throwErrors,
                                   const std::string& filename,
                                   const NodeSerializationPtr& serialization,
@@ -823,6 +840,13 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         args.setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
+        // As in ReadNodePrivate::createReadNode(): the version of the encoder saved in the project (#1681)
+        KnobIntPtr versionKnob = pluginVersionKnob.lock();
+        if ( !userEdited && versionKnob && (versionKnob->getValue(0) >= 0) ) {
+            args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(0), 0);
+            args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(1), 1);
+        }
+
         if (serialization) {
             args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
             args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true); // also load deprecated plugins
@@ -832,6 +856,9 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         embeddedPlugin = writeNode;
         if (pluginIDKnob) {
             pluginIDKnob->setValue(writerPluginID);
+        }
+        if (writeNode) {
+            setVersionKnob(writeNode);
         }
 
         // Set the filename value
@@ -1102,6 +1129,16 @@ WriteNode::initializeKnobs()
     controlpage->addKnob(pluginID);
     _imp->pluginIDStringKnob = pluginID;
     _imp->writeNodeKnobs.push_back(pluginID);
+
+    KnobIntPtr pluginVersion = AppManager::createKnob<KnobInt>( this, tr("Plugin Version"), 2 );
+    pluginVersion->setAnimationEnabled(false);
+    pluginVersion->setName(kNatronWriteNodeParamEncodingPluginVersion);
+    pluginVersion->setDefaultValue(-1, 0);
+    pluginVersion->setDefaultValue(-1, 1);
+    pluginVersion->setSecretByDefault(true);
+    controlpage->addKnob(pluginVersion);
+    _imp->pluginVersionKnob = pluginVersion;
+    _imp->writeNodeKnobs.push_back(pluginVersion);
 } // WriteNode::initializeKnobs
 
 void
@@ -1128,6 +1165,7 @@ WriteNode::onEffectCreated(bool mayCreateFileDialog,
         if (pluginIDKnob) {
             pluginIDKnob->setValue(_imp->embeddedPlugin.lock()->getPluginID());
         }
+        _imp->setVersionKnob( _imp->embeddedPlugin.lock() );
         return;
     }
     bool throwErrors = false;
@@ -1169,6 +1207,7 @@ WriteNode::onKnobsAboutToBeLoaded(const NodeSerializationPtr& serialization)
 
     //Load the pluginID to create first.
     node->loadKnob( _imp->pluginIDStringKnob.lock(), *serialization);
+    node->loadKnob( _imp->pluginVersionKnob.lock(), *serialization);
 
     std::string filename = getFileNameFromSerialization( serialization->getKnobsValues() );
     //Create the Reader with the serialization

@@ -33,6 +33,8 @@
 
 #define kNatronWriteNodeParamEncodingPluginChoice "encodingPluginChoice"
 #define kNatronWriteNodeParamEncodingPluginID "encodingPluginID"
+// the major and minor version of the encoder, -1 if unknown (#1681)
+#define kNatronWriteNodeParamEncodingPluginVersion "encodingPluginVersion"
 
 #define kNatronWriteParamFrameStep "frameIncr"
 #define kNatronWriteParamFrameStepLabel "Frame Increment"

@@ -230,6 +230,7 @@ public:
     //Thiese are knobs owned by the ReadNode and not the Reader
     KnobChoiceWPtr pluginSelectorKnob;
     KnobStringWPtr pluginIDStringKnob;
+    KnobIntWPtr pluginVersionKnob;
     KnobSeparatorWPtr separatorKnob;
     KnobButtonWPtr fileInfosKnob;
     std::list<KnobIWPtr> readNodeKnobs;
@@ -253,6 +254,7 @@ public:
     , inputFileKnob()
     , pluginSelectorKnob()
     , pluginIDStringKnob()
+    , pluginVersionKnob()
     , separatorKnob()
     , fileInfosKnob()
     , readNodeKnobs()
@@ -275,6 +277,9 @@ public:
                         bool userEdited = false);
 
     void destroyReadNode();
+
+    // Sets the version knob to the version of the decoder, to save it in the project (#1681)
+    void setVersionKnob(const NodePtr& decoder);
 
     void cloneGenericKnobs();
 
@@ -649,6 +654,18 @@ getFileNameFromSerialization(const std::list<KnobSerializationPtr>& serializatio
 }
 
 void
+ReadNodePrivate::setVersionKnob(const NodePtr& decoder)
+{
+    KnobIntPtr versionKnob = pluginVersionKnob.lock();
+    const Plugin* plugin = decoder->getPlugin();
+
+    if (versionKnob && plugin) {
+        versionKnob->setValue(plugin->getMajorVersion(), ViewSpec(0), 0);
+        versionKnob->setValue(plugin->getMinorVersion(), ViewSpec(0), 1);
+    }
+}
+
+void
 ReadNodePrivate::createReadNode(bool throwErrors,
                                 const std::string& filename,
                                 const NodeSerializationPtr& serialization,
@@ -743,6 +760,14 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         args.setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
         args.setProperty<NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization, serialization);
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+        // Unless the user chose another file or decoder, create the version of the decoder that was
+        // saved in the project (or given to createNode()), not the newest one: getPluginBinary() falls
+        // back to the closest major above, else the newest, if that major is not installed (#1681).
+        KnobIntPtr versionKnob = pluginVersionKnob.lock();
+        if ( !userEdited && versionKnob && (versionKnob->getValue(0) >= 0) ) {
+            args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(0), 0);
+            args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(1), 1);
+        }
 
         if (serialization || wasCreatedAsHiddenNode) {
             args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
@@ -778,6 +803,9 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
         if (pluginIDKnob) {
             pluginIDKnob->setValue(readerPluginID);
+        }
+        if (node) {
+            setVersionKnob(node);
         }
         placeReadNodeKnobsInPage();
 
@@ -1174,6 +1202,16 @@ ReadNode::initializeKnobs()
     controlpage->addKnob(pluginID);
     _imp->pluginIDStringKnob = pluginID;
     _imp->readNodeKnobs.push_back(pluginID);
+
+    KnobIntPtr pluginVersion = AppManager::createKnob<KnobInt>( this, tr("Plugin Version"), 2 );
+    pluginVersion->setAnimationEnabled(false);
+    pluginVersion->setName(kNatronReadNodeParamDecodingPluginVersion);
+    pluginVersion->setDefaultValue(-1, 0);
+    pluginVersion->setDefaultValue(-1, 1);
+    pluginVersion->setSecretByDefault(true);
+    controlpage->addKnob(pluginVersion);
+    _imp->pluginVersionKnob = pluginVersion;
+    _imp->readNodeKnobs.push_back(pluginVersion);
 }
 
 void
@@ -1190,6 +1228,7 @@ ReadNode::onEffectCreated(bool mayCreateFileDialog,
         if (pluginIDKnob) {
             pluginIDKnob->setValue(p->getPluginID());
         }
+        _imp->setVersionKnob(p);
         return;
     }
 
@@ -1238,8 +1277,9 @@ ReadNode::onKnobsAboutToBeLoaded(const NodeSerializationPtr& serialization)
     assert(serialization);
     NodePtr node = getNode();
 
-    //Load the pluginID to create first.
+    //Load the pluginID and its version to create first.
     node->loadKnob( _imp->pluginIDStringKnob.lock(), *serialization );
+    node->loadKnob( _imp->pluginVersionKnob.lock(), *serialization );
 
     std::string filename = getFileNameFromSerialization( serialization->getKnobsValues() );
     //Create the Reader with the serialization

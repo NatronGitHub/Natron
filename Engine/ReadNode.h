@@ -34,6 +34,8 @@
 
 #define kNatronReadNodeParamDecodingPluginChoice "decodingPluginChoice"
 #define kNatronReadNodeParamDecodingPluginID "decodingPluginID"
+// the major and minor version of the decoder, -1 if unknown (#1681)
+#define kNatronReadNodeParamDecodingPluginVersion "decodingPluginVersion"
 
 #define kNatronReadNodeOCIOParamInputSpace "ocioInputSpace"
 
