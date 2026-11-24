@@ -2,7 +2,8 @@
 # same source write their files too, overwriting files that were not asked for. Three Write nodes
 # share a Read; each is rendered in turn, with its Render button (pressed from the script) and with
 # app.render(), and only its own files must be written. Two of them are created by copying the
-# first one, as in the report ("copy-pasted and duplicated" Write nodes).
+# first one, as in the report ("copy-pasted and duplicated" Write nodes). The project frame range is the
+# range rendered. Render > Render Selected (F7), which renders every selected Write node, is not tested.
 import os
 import shutil
 import tempfile
@@ -35,24 +36,19 @@ try:
     writes = [first]
     for i in (1, 2):
         # a copy of the first Write node, with its own file name
+        # a pasted Write node (a group) is not selected: find it among the new nodes
+        before = set(n.getScriptName() for n in app.getChildren())
         app.selectNode(first, True)
-        app.copySelectedNodes()
+        app.copySelectedNodes()  # through the clipboard
         app.pasteNodes()
         wait_idle()
-        names = [w.getScriptName() for w in writes]
-        selected = app.getSelectedNodes()
-        copies = [n for n in selected if n.getScriptName() not in names]
-        check(len(copies) == 1, "copy %d of %s: selected nodes after the paste: %r" % (i, first.getScriptName(), [n.getScriptName() for n in selected]))
+        copies = [n for n in app.getChildren() if n.getScriptName() not in before]
+        check(len(copies) == 1, "copy %d of %s: nodes added by the paste (none: clipboard?): %r" %
+              (i, first.getScriptName(), [n.getScriptName() for n in copies]))
         copy = copies[0]
         copy.connectInput(0, read)
         copy.getParam("filename").set(os.path.join(outDir, "w%d_###.png" % i))
         writes.append(copy)
-    wait_idle()
-    for w in writes:
-        w.getParam("frameRange").set(2)  # manual
-        wait_idle()
-        w.getParam("firstFrame").set(FRAMES[0])
-        w.getParam("lastFrame").set(FRAMES[-1])
     wait_idle()
 
     for mode in ("button", "apprender"):
