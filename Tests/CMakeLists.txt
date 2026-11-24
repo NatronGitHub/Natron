@@ -378,6 +378,11 @@ add_test(NAME UndoGroupHeadless
 # the caches (OFX plug-ins) in the build tree, not in the user's cache directory (#1569)
 set_tests_properties(UndoGroupHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/undo-group-headless-cache")
+# AnimatedParam.setDerivativesAtTime() (#1745), headless
+add_test(NAME KeyframeDerivativesHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_keyframe_derivatives.py")
+set_tests_properties(KeyframeDerivativesHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/keyframe-derivatives-headless-cache")
 
 # A PyPlug is created after the script rebinds the global "app" (#1525)
 add_test(NAME PyPlugReboundAppHeadless

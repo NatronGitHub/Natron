@@ -7,6 +7,10 @@
 
 ## Version 2.6.0
 
+### New features
+
+- Python: `AnimatedParam.setDerivativesAtTime()` sets the tangents of a keyframe. #1745
+
 ### Known issues
 
 - openfx-gmic now groups its nodes under "G'MIC" instead of "GMIC". A PyPlug whose grouping starts with "GMIC/" gets its own "GMIC" toolbar button, next to the "G'MIC" one: change its grouping to "G'MIC/...". The documentation lists both under "G'MIC nodes".
