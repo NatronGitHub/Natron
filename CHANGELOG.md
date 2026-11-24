@@ -21,6 +21,9 @@
 
 ### Changes
 
+- File dialogs: a file name typed without a folder in an Open dialog (Open Project, Read node files, Python `getFilenameDialog()`/`getSequenceDialog()`, Script Editor) is now in the folder shown by the dialog, not in Natron's working directory. As in Save dialogs since #825, with "Relative to: Absolute" such a name inside the folder of a saved project is stored as `[Project]/...`. #1534
+- File dialogs: typing the name of a subfolder of the folder shown, then Return, enters it in every dialog; in a Save dialog, Return no longer does nothing when the typed name is a folder of Natron's working directory. #1534 #1539
+- With `--no-settings`, the folder dialog of "Export as PyPlug" no longer starts in the last folder of the user's settings. #1539
 - Python: when a project is opened in a new window (File > Open or Open Recent, or `app.loadProject()`, while the current project is not empty, and when several auto-saves are restored at startup), the `onProjectCreated` callback no longer runs on the new window before the project is loaded, where it saw an empty project. `onProjectLoaded` runs once the project is loaded, as when the project is opened in the current window. `onProjectCreated` still runs if the project fails to load. #1463
 - Python: saving a copy of the project (`app.saveTempProject()`) no longer deletes the project's last auto-save, nor cancels its next one: the unsaved changes stay recoverable after a crash. #1751
 - Node graph: "Duplicate Nodes" and "Paste Nodes" in the right-click menu no longer make clones of the selected nodes: Duplicate makes independent copies, and Paste pastes the copied nodes, as their keyboard shortcuts do. #1512
