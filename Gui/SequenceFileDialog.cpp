@@ -115,6 +115,16 @@ static void removeTrailingSlash(QString& str) {
     }
 }
 
+// path with the project variables (e.g. [Project]) expanded, as the caller of the dialog expands them
+static QString expandProjectVariables(Gui* gui, const QString& path) {
+    std::map<std::string, std::string> envVars;
+    gui->getApp()->getProject()->getEnvironmentVariables(envVars);
+    std::string expanded = path.toStdString();
+    Project::expandVariable(envVars, expanded);
+
+    return QString::fromUtf8( expanded.c_str() );
+}
+
 static QString urlToPathString(const QUrl& url) {
     return url.toLocalFile();
 }
@@ -917,7 +927,8 @@ SequenceFileDialog::enterDirectory(const QModelIndex & index)
 bool
 SequenceFileDialog::setDirectory(const QString &directory)
 {
-    QString newDirectory = directory;
+    // the file system model needs the real path, not [Project]/folder (#1744)
+    QString newDirectory = expandProjectVariables(_gui, directory);
 
 #ifdef __NATRON_WIN32__
     newDirectory = appPTR->mapUNCPathToPathWithDriveLetter(newDirectory);
@@ -1202,7 +1213,8 @@ SequenceItemDelegate::paint(QPainter * painter,
 bool
 SequenceFileDialog::isDirectory(const QString & name) const
 {
-    return QDir(name).exists();
+    // a typed [Project]/folder is a folder too (#1744)
+    return QDir( expandProjectVariables(_gui, name) ).exists();
 }
 
 QString
