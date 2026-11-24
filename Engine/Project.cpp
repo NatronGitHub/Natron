@@ -779,8 +779,9 @@ Project::saveProject_imp(const QString & path,
         }
     }
 
-    if (!autoS && isMainThread) {
-        //We are saving, do not autosave (QTimer can only be stopped from its thread)
+    if (!autoS && updateProjectProperties && isMainThread) {
+        // We are saving the project, do not auto-save (QTimer can only be stopped from its thread).
+        // A copy (saveTemp()) doesn't save the project's changes: their auto-save stays scheduled.
         _imp->autoSaveTimer->stop();
     }
 
@@ -861,8 +862,11 @@ Project::saveProject_imp(const QString & path,
             if (!autoS) {
                 ret = saveProjectInternal(path, name, false, updateProjectProperties, &warnings, format);
 
-                ///We just saved, remove the last auto-save which is now obsolete
-                removeLastAutosave();
+                if (updateProjectProperties) {
+                    // We just saved the project, the last auto-save is now obsolete. A copy (saveTemp())
+                    // doesn't save the project: its auto-save keeps the unsaved changes (#1751).
+                    removeLastAutosave();
+                }
             } else {
                 if (updateProjectProperties) {
                     ///Replace the last auto-save with a more recent one

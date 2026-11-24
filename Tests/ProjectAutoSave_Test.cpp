@@ -387,3 +387,31 @@ TEST(ProjectAutoSave, SaveAfterFailedAutoSave)
     EXPECT_TRUE( runWithTimeout([&]() { return project->saveProject(dir, name, 0); }, 30) );
     project->resetProject();
 }
+
+// Saving a copy of the project (app.saveTempProject(), AppInstance::saveTemp()) deleted the project's
+// last auto-save, although the project's unsaved changes are only in that auto-save (#1751).
+TEST(ProjectAutoSave, SaveCopyKeepsAutoSave)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString name = QString::fromUtf8("SaveCopyKeepsAutoSave.ntp");
+    const QString copyPath = dir + QString::fromUtf8("SaveCopyKeepsAutoSave-copy.ntp");
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+
+    // an auto-save, as onAutoSaveTimerTriggered() runs it
+    ASSERT_TRUE( project->saveProject_imp(dir, name, true /*autoSave*/, true /*updateProjectProperties*/) );
+    const QString autoSavePath = project->getLastAutoSaveFilePath();
+    ASSERT_FALSE( autoSavePath.isEmpty() );
+    ASSERT_TRUE( QFile::exists(autoSavePath) );
+
+    EXPECT_TRUE( app->saveTemp( copyPath.toStdString() ) );
+    EXPECT_TRUE( QFile::exists(copyPath) );
+    EXPECT_TRUE( QFile::exists(autoSavePath) ) << "saving a copy removed the project's auto-save";
+    EXPECT_EQ( project->getLastAutoSaveFilePath(), autoSavePath );
+
+    project->removeLastAutosave();
+    EXPECT_FALSE( QFile::exists(autoSavePath) );
+    project->resetProject();
+}
