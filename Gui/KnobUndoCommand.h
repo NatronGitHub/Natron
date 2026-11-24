@@ -345,8 +345,17 @@ private:
     bool createNew;
     bool firstRedoCalled;
     ValueChangedReasonEnum _reason;
+    unsigned int _overlayGesture; // the overlay drag that made this edit, 0 if none (see beginOverlayGesture())
 
 public:
+
+    /**
+     * @brief An overlay drag (pen down to pen up) of the effect holder starts: until endOverlayGesture(), the
+     * edits that the effect makes in its overlay actions are merged into one undo command, even when an edit
+     * changes parameters that the previous ones did not change (#839). Main thread only.
+     **/
+    static void beginOverlayGesture(const KnobHolder* holder);
+    static void endOverlayGesture();
 
     /**
      * @brief Make a new command
