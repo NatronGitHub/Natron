@@ -11,9 +11,17 @@ except ImportError:
 PARAMS = "net.natron.test.Params"  # has RGB and RGBA parameters (Tests/OfxTestPlugin)
 require_plugin(PARAMS)
 
-node = app.createNode(PARAMS)
-check(node is not None, "createNode(%s) failed" % PARAMS)
+# created as the user does (Other > Test > ParamsTest in the node graph menu), so that its settings panel,
+# with the parameter widgets, is open (app.createNode() doesn't open it)
+viewer = viewer_node(app)
+vx, vy = viewer.getPosition()
+NatronGuiTest.setDialogAnswers(["ParamsTest"])
+NatronGuiTest.penEvent("NodeGraph", "press", vx - 300, vy - 300, button="right")
+NatronGuiTest.penEvent("NodeGraph", "release", vx - 300, vy - 300, button="right")
 wait_idle()
+created = [n for n in app.getChildren() if n.getPluginID() == PARAMS]
+check(len(created) == 1, "the node graph menu created %d %s nodes" % (len(created), PARAMS))
+node = created[0]
 
 
 def child(widget, name):
@@ -23,7 +31,7 @@ def child(widget, name):
 
 
 hexes = [w for w in QtWidgets.QApplication.allWidgets() if w.objectName() == "ColorSelectorHex"]
-check(len(hexes) > 0, "no color selector: the settings panel of %s is not open" % node.getScriptName())
+check(len(hexes) > 0, "no color selector for %s" % node.getScriptName())
 for hex_field in hexes:
     selector = hex_field.parentWidget()
     while selector is not None and selector.findChild(QtWidgets.QLineEdit, "ColorSelectorHue") is None:

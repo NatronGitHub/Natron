@@ -1012,7 +1012,9 @@ ColorSelectorWidget::handleTriangleColorChanged(const QColor &color,
     float h, s, v;
     Color::rgb_to_hsv(r, g, b, &h, &s, &v);
     if (s == 0.f) {
-        h = _spinH->value(); // a grey has no hue: keep the one shown, e.g. while turning the hue ring
+        // a grey has no hue: follow the hue ring (the triangle sends its hue with a grey), else keep the H shown
+        const qreal ringHue = color.hsvHueF();
+        h = (ringHue >= 0.) ? ringHue : _spinH->value();
     }
 
     setRedChannel(r);
