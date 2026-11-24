@@ -355,6 +355,11 @@ add_test(NAME UndoGroupHeadless
 # the caches (OFX plug-ins) in the build tree, not in the user's cache directory (#1569)
 set_tests_properties(UndoGroupHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/undo-group-headless-cache")
+# AnimatedParam.setDerivativesAtTime() (#1745), headless
+add_test(NAME KeyframeDerivativesHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_keyframe_derivatives.py")
+set_tests_properties(KeyframeDerivativesHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/keyframe-derivatives-headless-cache")
 
 # The color plane goes through a Shuffle that writes to another layer (it was black): NatronRenderer runs the
 # script, which exits with natron.quit(status), 77 when openfx-misc or openfx-io are not in OFX_PLUGIN_PATH.

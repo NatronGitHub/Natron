@@ -607,6 +607,22 @@ AnimatedParam::setInterpolationAtTime(double time,
     return knob->setInterpolationAtTime(eCurveChangeReasonInternal, ViewSpec::current(), dimension, time, interpolation, &newKey);
 }
 
+bool
+AnimatedParam::setDerivativesAtTime(double time,
+                                    double left,
+                                    double right,
+                                    int dimension)
+{
+    KnobIPtr knob = getInternalKnob();
+
+    if (!knob) {
+        return false;
+    }
+    recordForUndoGroup(knob);
+
+    return knob->moveDerivativesAtTime(eCurveChangeReasonInternal, ViewSpec::current(), dimension, time, left, right);
+}
+
 void
 Param::_addAsDependencyOf(int fromExprDimension,
                           Param* param,
