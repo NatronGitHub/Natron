@@ -348,6 +348,13 @@ add_test(NAME ConnectLadderHeadless
 set_tests_properties(ConnectLadderHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/connect-ladder-headless-cache")
 
+# Default node names are the smallest free number, and naming thousands of nodes is fast (#1565):
+# NatronRenderer runs the script, which exits with natron.quit(status).
+add_test(NAME NodeNamingHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_node_naming.py")
+set_tests_properties(NodeNamingHeadless PROPERTIES TIMEOUT 300
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/node-naming-headless-cache")
+
 # Undo groups do nothing in background mode (App.undoGroup(), #1455): NatronRenderer runs the script,
 # which exits with natron.quit(status).
 add_test(NAME UndoGroupHeadless
