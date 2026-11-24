@@ -4692,9 +4692,12 @@ interpretPythonScriptImpl(const std::string& script,
         status = 0;
     } else if ( (kind == ePythonScriptKindFile) && PyErr_ExceptionMatches(PyExc_SystemExit) ) {
         // sys.exit() in a script file exits the process with its status, as PyRun_SimpleString() did
-        // (e.g. a NatronRenderer script, #1489): PyErr_Print() does it. Show what was written before.
+        // (e.g. a NatronRenderer script, #1489): PyErr_Print() does it. What the script wrote goes to the
+        // terminal, since the Script Editor is about to close (the earlier output was already forwarded, unless
+        // it belongs to a calling script).
         if (captured) {
-            forwardToScriptEditor(previousOut + previousErr + takeCaughtStream(mainModule, "catchOut") + takeCaughtStream(mainModule, "catchErr"));
+            std::cerr << ( depth.isNested() ? previousOut + previousErr : std::string() )
+                      << takeCaughtStream(mainModule, "catchOut") << takeCaughtStream(mainModule, "catchErr") << std::flush;
         }
         PyErr_Print();
     }

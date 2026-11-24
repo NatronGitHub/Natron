@@ -862,7 +862,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
             message.append( QString::fromUtf8(": ") );
             message.append( QString::fromUtf8( error.c_str() ) );
             if ( appPTR->isBackground() ) {
-                // as the traceback was printed before
+                // sys.stderr is not captured: on stderr, where PyErr_Print() printed the traceback before #1489
                 std::cerr << message.toStdString() << std::endl;
             } else {
                 appendToScriptEditor( message.toStdString() );

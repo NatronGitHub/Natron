@@ -335,3 +335,37 @@ TEST_F(PythonScriptTest, LoadPythonScriptStderrIsNotAnError)
         "    sys.path.remove('" + dir.path().toStdString() + "')\n";
     EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(cleanup, &err, 0) ) << err;
 }
+
+// AppInstance::loadPythonScript() with a script without createInstance() that raises: it fails, and the
+// message has the exception, not the script (the Tests are a background session: on stderr).
+TEST_F(PythonScriptTest, LoadPythonScriptExceptionIsAnError)
+{
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ASSERT_TRUE( bool(app) );
+    QTemporaryDir dir;
+    ASSERT_TRUE( dir.isValid() );
+    QString path = QDir( dir.path() ).filePath( QString::fromUtf8("natronTest1489Raise.py") );
+    {
+        QFile f(path);
+        ASSERT_TRUE( f.open(QIODevice::WriteOnly | QIODevice::Truncate) );
+        f.write("natronTest1489Text = 'script-text-1489'\nraise ValueError('boom-1489')\n");
+    }
+
+    testing::internal::CaptureStderr();
+    bool ok = app->loadPythonScript( QFileInfo(path) );
+    std::string printed = testing::internal::GetCapturedStderr();
+
+    EXPECT_FALSE(ok);
+    EXPECT_NE( std::string::npos, printed.find("Failed to load") ) << printed;
+    EXPECT_NE( std::string::npos, printed.find("boom-1489") ) << printed;
+    EXPECT_EQ( std::string::npos, printed.find("script-text-1489") ) << printed;
+    EXPECT_TRUE( caughtStderr().empty() );
+
+    std::string err;
+    const std::string cleanup =
+        "import sys, __main__\n"
+        "__main__.__dict__.pop('natronTest1489Text', None)\n"
+        "while " + std::string("r'") + dir.path().toStdString() + "' in sys.path:\n"
+        "    sys.path.remove(r'" + dir.path().toStdString() + "')\n";
+    EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(cleanup, &err, 0) ) << err;
+}
