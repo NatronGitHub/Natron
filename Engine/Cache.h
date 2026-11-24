@@ -1732,7 +1732,8 @@ public:
     void save(CacheTOC* tableOfContents);
 
     /* Writes the table of contents to getRestoreFilePath(), atomically (#1594, see CacheSerialization.h).
-       Returns false, leaving the previous file untouched, if it could not be written. */
+       Returns false, leaving the previous file untouched, if it could not be written. Natron calls it from
+       AppManagerPrivate::saveCaches(), which serializes the calls. */
     bool writeRestoreFile();
 
 

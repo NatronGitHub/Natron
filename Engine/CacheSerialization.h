@@ -138,11 +138,12 @@ Cache<EntryType>::writeRestoreFile()
     }
     const std::string bytes = data.str();
 
-    QSaveFile file( QString::fromUtf8( getRestoreFilePath().c_str() ) );
+    const std::string path = getRestoreFilePath();
+    QSaveFile file( QString::fromUtf8( path.c_str() ) );
     if ( !file.open(QIODevice::WriteOnly) ||
          ( file.write( bytes.data(), static_cast<qint64>( bytes.size() ) ) != static_cast<qint64>( bytes.size() ) ) ||
          !file.commit() ) {
-        std::cerr << "Failed to write " << getRestoreFilePath() << ": " << file.errorString().toStdString() << std::endl;
+        std::cerr << "Failed to write " << path << ": " << file.errorString().toStdString() << std::endl;
 
         return false;
     }

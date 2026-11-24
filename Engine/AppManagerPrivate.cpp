@@ -516,10 +516,10 @@ saveCache(Cache<T>* cache)
 void
 AppManagerPrivate::saveCaches()
 {
-    // Every project save calls this, and two projects may be saved at the same time (#1590). saveCachesMutex guards
-    // the restore files of this process's caches: it serializes their writers in this process. Another process that
-    // shares the cache directory needs no lock: each restore file is replaced atomically (#1594, see
-    // Cache::writeRestoreFile()).
+    // Every project save calls this, and two projects may be saved at the same time (#1590). Each restore file is
+    // replaced atomically (#1594, see Cache::writeRestoreFile()), so concurrent writers, in this process or in another
+    // one sharing the cache directory, never corrupt it: saveCachesMutex only keeps this process's saves from
+    // running (and clearing the in-memory portions of the caches) at the same time.
     static std::mutex saveCachesMutex;
     std::lock_guard<std::mutex> lock(saveCachesMutex);
 

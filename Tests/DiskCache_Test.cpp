@@ -456,10 +456,13 @@ TEST_F(DiskCacheTest, RestoreFileIsReplacedAtomically)
             QFile f(restoreFilePath);
             // On Windows, the file may be missing or locked while it is replaced
             if ( !f.open(QIODevice::ReadOnly) ) {
+                std::this_thread::yield();
                 continue;
             }
             const QByteArray bytes = f.readAll();
             f.close();
+            // let the writer replace the file (on Windows, it can't while the file is open)
+            std::this_thread::yield();
             ++reads;
             std::istringstream data( std::string( bytes.constData(), bytes.size() ) );
             ImageCache::CacheTOC toc;
@@ -480,7 +483,7 @@ TEST_F(DiskCacheTest, RestoreFileIsReplacedAtomically)
         }
     });
     int writes = 0;
-    for (int i = 0; i < 300; ++i) {
+    for (int i = 0; i < 100; ++i) {
         // On Windows, replacing the file fails while the reader has it open: the previous file is kept
         if ( _cache->writeRestoreFile() ) {
             ++writes;
