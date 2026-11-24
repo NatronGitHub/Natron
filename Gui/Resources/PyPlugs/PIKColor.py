@@ -408,7 +408,7 @@ def createInstance(app,group):
 
     param = lastNode.getParam("userTextArea")
     if param is not None:
-        param.setValue("<font size=\"6\" color=\"#000000\" face=\"Droid Sans\">(A.a->B.a)</font>")
+        param.setValue("<font size=\"6\" color=\"#000000\" face=\"Droid Sans\">(B.a->A.a)</font>")
         del param
 
     del lastNode
@@ -516,7 +516,7 @@ def createInstance(app,group):
 
     param = lastNode.getParam("userTextArea")
     if param is not None:
-        param.setValue("<font size=\"6\" color=\"#000000\" face=\"Droid Sans\">(A.a->B.a)</font>")
+        param.setValue("<font size=\"6\" color=\"#000000\" face=\"Droid Sans\">(B.a->A.a)</font>")
         del param
 
     del lastNode
@@ -560,7 +560,7 @@ def createInstance(app,group):
 
     param = lastNode.getParam("userTextArea")
     if param is not None:
-        param.setValue("<font size=\"6\" color=\"#000000\" face=\"Droid Sans\">(A.a->B.a)</font>")
+        param.setValue("<font size=\"6\" color=\"#000000\" face=\"Droid Sans\">(B.a->A.a)</font>")
         del param
 
     del lastNode
@@ -1136,6 +1136,7 @@ def createInstance(app,group):
     groupBlurBox1.connectInput(0, groupDilateFast1)
     groupBlurBox2.connectInput(0, groupDilateFast2)
     groupUnpremult2.connectInput(0, groupMerge1)
+    groupShuffle1.connectInput(0, groupUnpremult4)
     groupShuffle1.connectInput(1, groupUnpremult4)
     groupDilateFast1.connectInput(0, groupInvert2)
     groupDilateFast2.connectInput(0, groupInvert2)
