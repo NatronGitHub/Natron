@@ -255,6 +255,12 @@ public:
 
     void destroyWriteNode();
 
+    /**
+     * @brief A copy of the serializations of the generic knobs that destroyWriteNode() keeps, and that differ from
+     * their default, for cloneGenericKnobs().
+     **/
+    std::list<KnobSerializationPtr> modifiedGenericKnobs() const;
+
     void cloneGenericKnobs();
 
     void refreshPluginSelectorKnob();
@@ -418,19 +424,11 @@ WriteNodePrivate::cloneGenericKnobs()
     }
 }
 
-void
-WriteNodePrivate::destroyWriteNode()
+// A copy of the serializations, which keeps the values of the knobs at the time of the call, unlike the serializations
+// themselves, which read them when they are written
+static std::list<KnobSerializationPtr>
+copyKnobSerializations(const std::list<KnobSerializationPtr>& serialized)
 {
-    assert( QThread::currentThread() == qApp->thread() );
-    NodePtr embeddedNode = embeddedPlugin.lock();
-    if (!embeddedNode) {
-        return;
-    }
-
-    KnobsVec knobs = _publicInterface->getKnobs();
-
-    genericKnobsSerialization.clear();
-
     std::string serializationString;
     try {
         std::ostringstream ss;
@@ -442,57 +440,6 @@ WriteNodePrivate::destroyWriteNode()
             // see also https://svn.boost.org/trac10/ticket/13354
 
             boost::archive::xml_oarchive oArchive(ss);
-            std::list<KnobSerializationPtr> serialized;
-            for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-
-                // The internal node still holds a shared ptr to the knob.
-                // Since we want to keep some knobs around, ensure they do not get deleted in the destructor of the embedded node
-                embeddedNode->getEffectInstance()->removeKnobFromList(it->get());
-
-                if ( !(*it)->isDeclaredByPlugin() ) {
-                    continue;
-                }
-
-                //If it is a knob of this WriteNode, do not destroy it
-                bool isWriteNodeKnob = false;
-                for (std::list<KnobIWPtr>::iterator it2 = writeNodeKnobs.begin(); it2 != writeNodeKnobs.end(); ++it2) {
-                    if (it2->lock() == *it) {
-                        isWriteNodeKnob = true;
-                        break;
-                    }
-                }
-                if (isWriteNodeKnob) {
-                    continue;
-                }
-
-                //Keep pages around they will be re-used
-                KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
-                if (isPage) {
-                    continue;
-                }
-
-                //This is a knob of the Writer plug-in
-
-                //Serialize generic knobs and keep them around until we create a new Writer plug-in
-                bool mustSerializeKnob;
-                bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
-                if (!isGeneric || mustSerializeKnob) {
-
-                    /*if (!isGeneric && !(*it)->getDefaultIsSecret()) {
-                     // Don't save the secret state otherwise some knobs could be invisible when cloning the serialization even if we change format
-                     (*it)->setSecret(false);
-                     }*/
-                    KnobSerializationPtr s = std::make_shared<KnobSerialization>(*it);
-                    serialized.push_back(s);
-                }
-                if (!isGeneric) {
-                    try {
-                        _publicInterface->deleteKnob(it->get(), false);
-                    } catch (...) {
-                    }
-                }
-            }
-
             int n = (int)serialized.size();
             oArchive << boost::serialization::make_nvp("numItems", n);
             for (std::list<KnobSerializationPtr>::const_iterator it = serialized.begin(); it!= serialized.end(); ++it) {
@@ -504,6 +451,7 @@ WriteNodePrivate::destroyWriteNode()
         assert(false);
     }
 
+    std::list<KnobSerializationPtr> copy;
     try {
         std::stringstream ss(serializationString);
         {
@@ -513,7 +461,7 @@ WriteNodePrivate::destroyWriteNode()
             for (int i = 0; i < n; ++i) {
                 KnobSerializationPtr s = std::make_shared<KnobSerialization>();
                 iArchive >> boost::serialization::make_nvp("item", *s);
-                genericKnobsSerialization.push_back(s);
+                copy.push_back(s);
             }
         }
     } catch (const std::exception& e) {
@@ -522,7 +470,94 @@ WriteNodePrivate::destroyWriteNode()
     } catch (...) {
         assert(false);
     }
-    
+
+    return copy;
+}
+
+std::list<KnobSerializationPtr>
+WriteNodePrivate::modifiedGenericKnobs() const
+{
+    std::list<KnobSerializationPtr> serialized;
+    const KnobsVec& knobs = _publicInterface->getKnobs();
+
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        bool mustSerializeKnob = false;
+        if ( (*it)->isDeclaredByPlugin() && isGenericKnob( (*it)->getName(), &mustSerializeKnob ) && mustSerializeKnob &&
+             (*it)->hasModifications() ) {
+            serialized.push_back( std::make_shared<KnobSerialization>(*it) );
+        }
+    }
+
+    return copyKnobSerializations(serialized);
+}
+
+void
+WriteNodePrivate::destroyWriteNode()
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    NodePtr embeddedNode = embeddedPlugin.lock();
+    if (!embeddedNode) {
+        return;
+    }
+
+    KnobsVec knobs = _publicInterface->getKnobs();
+
+    std::list<KnobSerializationPtr> serialized;
+    try {
+        for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+
+            // The internal node still holds a shared ptr to the knob.
+            // Since we want to keep some knobs around, ensure they do not get deleted in the destructor of the embedded node
+            embeddedNode->getEffectInstance()->removeKnobFromList(it->get());
+
+            if ( !(*it)->isDeclaredByPlugin() ) {
+                continue;
+            }
+
+            //If it is a knob of this WriteNode, do not destroy it
+            bool isWriteNodeKnob = false;
+            for (std::list<KnobIWPtr>::iterator it2 = writeNodeKnobs.begin(); it2 != writeNodeKnobs.end(); ++it2) {
+                if (it2->lock() == *it) {
+                    isWriteNodeKnob = true;
+                    break;
+                }
+            }
+            if (isWriteNodeKnob) {
+                continue;
+            }
+
+            //Keep pages around they will be re-used
+            KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
+            if (isPage) {
+                continue;
+            }
+
+            //This is a knob of the Writer plug-in
+
+            //Serialize generic knobs and keep them around until we create a new Writer plug-in
+            bool mustSerializeKnob;
+            bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
+            if (!isGeneric || mustSerializeKnob) {
+
+                /*if (!isGeneric && !(*it)->getDefaultIsSecret()) {
+                 // Don't save the secret state otherwise some knobs could be invisible when cloning the serialization even if we change format
+                 (*it)->setSecret(false);
+                 }*/
+                KnobSerializationPtr s = std::make_shared<KnobSerialization>(*it);
+                serialized.push_back(s);
+            }
+            if (!isGeneric) {
+                try {
+                    _publicInterface->deleteKnob(it->get(), false);
+                } catch (...) {
+                }
+            }
+        }
+    } catch (...) {
+        assert(false);
+    }
+    genericKnobsSerialization = copyKnobSerializations(serialized);
+
 
     //This will remove the GUI of non generic parameters
     _publicInterface->recreateKnobs(true);
@@ -838,6 +873,15 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         }
     }
 
+    // Without an encoder (the node has no file name yet), the generic knobs are those that the placeholder encoder
+    // left (see createDefaultWriteNode()), and their values may have been set since, e.g. a Manual frame range set
+    // from Python before the file name (#1574): the new encoder resets them to its defaults, keep those values.
+    const bool keepPlaceholderKnobs = !embeddedPlugin.lock() && !serialization;
+    std::list<KnobSerializationPtr> placeholderKnobs;
+    if (keepPlaceholderKnobs) {
+        placeholderKnobs = modifiedGenericKnobs();
+    }
+
     //Destroy any previous reader
     //This will store the serialization of the generic knobs
     destroyWriteNode();
@@ -948,8 +992,22 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
 
     _publicInterface->getNode()->findPluginFormatKnobs();
 
-    // Clone the old values of the generic knobs if we created the same encoder than before
-    if (lastPluginIDCreated == writerPluginID) {
+    if (keepPlaceholderKnobs) {
+        // also after the default fallback (createDefaultWriteNode() reset the knobs), for the next file name
+        genericKnobsSerialization = placeholderKnobs;
+        cloneGenericKnobs();
+        if (writeNode) {
+            // the encoder did not see these values (e.g. it shows First/Last Frame for a Manual frame range)
+            for (std::list<KnobSerializationPtr>::const_iterator it = placeholderKnobs.begin(); it != placeholderKnobs.end(); ++it) {
+                KnobIPtr knob = _publicInterface->getKnobByName( (*it)->getName() );
+                if (knob) {
+                    writeNode->getEffectInstance()->onKnobValueChanged_public(knob.get(), eValueChangedReasonNatronInternalEdited, _publicInterface->getCurrentTime(), ViewSpec(0), true);
+                }
+            }
+        }
+    } else if (lastPluginIDCreated == writerPluginID) {
+        // Clone the old values of the generic knobs if we created the same encoder as before. With another encoder,
+        // they get its defaults (a4f90a61a).
         cloneGenericKnobs();
     }
     lastPluginIDCreated = writerPluginID;

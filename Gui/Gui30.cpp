@@ -431,9 +431,10 @@ Gui::onDoDialog(int type,
         setQMessageBoxAppropriateFont(&ques);
         ques.setDefaultButton( QtEnumConvert::toQtStandardButton( (StandardButtonEnum)defaultB ) );
         ques.setWindowFlags(ques.windowFlags() | Qt::WindowStaysOnTopHint);
-        if ( ques.exec() ) {
-            _imp->_lastQuestionDialogAnswer = QtEnumConvert::fromQtStandardButton( ques.standardButton( ques.clickedButton() ) );
-        }
+        ignore_result( ques.exec() );
+        // Escape when it was closed without a button, e.g. by a termination signal (#1730): not the previous answer
+        QAbstractButton* clicked = ques.clickedButton();
+        _imp->_lastQuestionDialogAnswer = clicked ? QtEnumConvert::fromQtStandardButton( ques.standardButton(clicked) ) : eStandardButtonEscape;
     }
 
     {
@@ -557,8 +558,10 @@ Gui::onDoDialogWithStopAskingCheckbox(int type,
 
     dialog.setCheckBox(stopAskingCheckbox);
     dialog.setWindowFlags(dialog.windowFlags() | Qt::WindowStaysOnTopHint);
-    if ( dialog.exec() ) {
-        _imp->_lastQuestionDialogAnswer = dialog.getReply();
+    const bool accepted = (dialog.exec() == QDialog::Accepted);
+    // Escape when it was closed without a button, e.g. by a termination signal (#1730): not the previous answer
+    _imp->_lastQuestionDialogAnswer = dialog.getReply();
+    if (accepted) {
         _imp->_lastStopAskingAnswer = stopAskingCheckbox->isChecked();
     }
 
