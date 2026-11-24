@@ -2021,20 +2021,15 @@ OutputSchedulerThread::renderFromCurrentFrame(bool enableRenderStats,
 void
 OutputSchedulerThread::notifyRenderFailure(const std::string& errorMessage)
 {
-    ///Abort all ongoing rendering
-    OutputSchedulerThreadStartArgsPtr args = _imp->runArgs.lock();
-
-    assert(args);
-
-
     ///Handle failure: for viewers we make it black and don't display the error message which is irrelevant
     handleRenderFailure(errorMessage);
 
+    ///Abort all ongoing rendering.
+    // Don't wait for the abort to complete: this runs on this scheduler thread, on one of its render threads
+    // (which stopRender() waits for) or on the main thread while this thread waits in requestExecutionOnMainThread(),
+    // so the wait would never return (#1617).
+    // Blocking renders (BlockingBackgroundRender) wait for the end of the render anyway.
     _imp->engine->abortRenderingNoRestart();
-
-    if (args->isBlocking) {
-        waitForAbortToComplete_enforce_blocking();
-    }
 }
 
 OutputSchedulerThreadStartArgsPtr
@@ -3910,7 +3905,7 @@ ViewerCurrentFrameRequestScheduler::~ViewerCurrentFrameRequestScheduler()
 {
     // Should've been stopped before anyway
     if (_imp->backupThread.quitThread(false)) {
-        _imp->backupThread.waitForAbortToComplete_enforce_blocking();
+        _imp->backupThread.waitForThreadToQuit_enforce_blocking();
     }
 }
 

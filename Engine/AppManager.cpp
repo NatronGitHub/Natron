@@ -343,8 +343,6 @@ AppManager::AppManager()
     assert(!_instance);
     _instance = this;
 
-    QObject::connect( this, SIGNAL(s_requestOFXDialogOnMainThread(OfxImageEffectInstance*,void*)), this, SLOT(onOFXDialogOnMainThreadReceived(OfxImageEffectInstance*,void*)) );
-
 #ifdef __NATRON_WIN32__
     FileSystemModel::initDriveLettersToNetworkShareNamesMapping();
 #endif
@@ -1876,52 +1874,9 @@ AppManager::findAndRunScriptFile(const QString& path,
             if ( file.open(QIODevice::ReadOnly) ) {
                 QTextStream ts(&file);
                 QString content = ts.readAll();
-                PythonGILLocker pgl;
-
-                PyRun_SimpleString( content.toStdString().c_str() );
-
-
-                PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
+                // Its failure is given by its result, not by what it or other code wrote to sys.stderr (#1489)
                 std::string error, output;
-
-                ///Gui session, do stdout, stderr redirection
-                PyObject *errCatcher = 0;
-                PyObject *outCatcher = 0;
-
-                if ( PyObject_HasAttrString(mainModule, "catchErr") ) {
-                    errCatcher = PyObject_GetAttrString(mainModule, "catchErr"); //get our catchOutErr created above, new ref
-                }
-
-                if ( PyObject_HasAttrString(mainModule, "catchOut") ) {
-                    outCatcher = PyObject_GetAttrString(mainModule, "catchOut"); //get our catchOutErr created above, new ref
-                }
-
-                PyErr_Print(); //make python print any errors
-
-                PyObject *errorObj = 0;
-                if (errCatcher) {
-                    errorObj = PyObject_GetAttrString(errCatcher, "value"); //get the  stderr from our catchErr object, new ref
-                    assert(errorObj);
-
-                    error = NATRON_PYTHON_NAMESPACE::PyStringToStdString(errorObj);
-                    PyObject* unicode = PyUnicode_FromString("");
-                    PyObject_SetAttrString(errCatcher, "value", unicode);
-                    Py_DECREF(errorObj);
-                    Py_DECREF(errCatcher);
-                }
-                PyObject *outObj = 0;
-                if (outCatcher) {
-                    outObj = PyObject_GetAttrString(outCatcher, "value"); //get the stdout from our catchOut object, new ref
-                    assert(outObj);
-                    output = NATRON_PYTHON_NAMESPACE::PyStringToStdString(outObj);
-                    PyObject* unicode = PyUnicode_FromString("");
-                    PyObject_SetAttrString(outCatcher, "value", unicode);
-                    Py_DECREF(outObj);
-                    Py_DECREF(outCatcher);
-                }
-
-
-                if ( !error.empty() ) {
+                if ( !NATRON_PYTHON_NAMESPACE::runPythonScriptFile(content.toStdString(), &error, &output) ) {
                     QString message(tr("Failed to load %1: %2").arg(absolutePath).arg(QString::fromUtf8( error.c_str() )) );
                     appPTR->writeToErrorLog_mt_safe(tr("Python Script"), QDateTime::currentDateTime(), message, false);
                     std::cerr << message.toStdString() << std::endl;
@@ -3488,30 +3443,47 @@ AppManager::setThreadAsActionCaller(OfxImageEffectInstance* instance,
     _imp->ofxHost->setThreadAsActionCaller(instance, actionCaller);
 }
 
-void
-AppManager::requestOFXDIalogOnMainThread(OfxImageEffectInstance* instance,
-                                         void* instanceData)
-{
-    if ( QThread::currentThread() == qApp->thread() ) {
-        onOFXDialogOnMainThreadReceived(instance, instanceData);
-    } else {
-        Q_EMIT s_requestOFXDialogOnMainThread(instance, instanceData);
-    }
-}
-
-void
-AppManager::onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance,
-                                            void* instanceData)
+#ifdef OFX_SUPPORTS_DIALOG
+// Runs kOfxActionDialog on the main thread. Nothing may throw out of here: on the queued path the caller
+// is the Qt event loop, on the direct path the plug-in's C code (OfxHost::requestDialog() also catches).
+static void
+runOFXDialog(const OfxEffectInstancePtr& effect,
+             void* instanceData)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    // never NULL: for a request with no instance handle, OfxHost::requestDialog() finds the effect on the
-    // requesting thread, or fails (#1497)
-    assert(instance);
-#ifdef OFX_SUPPORTS_DIALOG
-    if (instance) {
+    OfxImageEffectInstance* instance = effect ? effect->effectInstance() : NULL;
+    if (!instance) {
+        // the effect was destroyed, or its OFX instance not created (or already deleted)
+        return;
+    }
+    try {
         instance->dialog(instanceData);
+    } catch (const std::exception& e) {
+        qDebug() << "kOfxActionDialog:" << e.what();
+    } catch (...) {
+        qDebug() << "kOfxActionDialog: unknown error.";
+    }
+}
+#endif
+
+void
+AppManager::requestOFXDIalogOnMainThread(const OfxEffectInstancePtr& effect,
+                                         void* instanceData)
+{
+#ifdef OFX_SUPPORTS_DIALOG
+    assert(effect);
+    if ( QThread::currentThread() == qApp->thread() ) {
+        runOFXDialog(effect, instanceData);
+    } else {
+        // Queue a weak reference, never a raw pointer: the node may be deleted, or the project closed,
+        // before the main thread processes the request (#1608).
+        const OfxEffectInstanceWPtr weakEffect = effect;
+        QMetaObject::invokeMethod(this, [weakEffect, instanceData]() {
+            runOFXDialog(weakEffect.lock(), instanceData);
+        }, Qt::QueuedConnection);
     }
 #else
+    Q_UNUSED(effect);
     Q_UNUSED(instanceData);
 #endif
 }
@@ -4675,12 +4647,20 @@ raiseSystemExitAtPrompt(void*)
     return -1;
 }
 
+namespace {
+enum PythonScriptKindEnum
+{
+    ePythonScriptKindCode, // interpretPythonScript()
+    ePythonScriptKindFile, // runPythonScriptFile()
+};
+
 bool
-NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
-                                               std::string* error,
-                                               std::string* output,
-                                               PyObject* globals,
-                                               PyObject* locals)
+interpretPythonScriptImpl(const std::string& script,
+                          std::string* error,
+                          std::string* output,
+                          PyObject* globals,
+                          PyObject* locals,
+                          PythonScriptKindEnum kind)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
 
@@ -4725,6 +4705,16 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     if (v) {
         Py_DECREF(v);
         status = 0;
+    } else if ( (kind == ePythonScriptKindFile) && PyErr_ExceptionMatches(PyExc_SystemExit) ) {
+        // sys.exit() in a script file exits the process with its status, as PyRun_SimpleString() did
+        // (e.g. a NatronRenderer script, #1489): PyErr_Print() does it. What the script wrote goes to the
+        // terminal, since the Script Editor is about to close (the earlier output was already forwarded, unless
+        // it belongs to a calling script).
+        if (captured) {
+            std::cerr << ( depth.isNested() ? previousOut + previousErr : std::string() )
+                      << takeCaughtStream(mainModule, "catchOut") << takeCaughtStream(mainModule, "catchErr") << std::flush;
+        }
+        PyErr_Print();
     }
 
     // The success of the script is given by the result of PyRun_String(), not by what it wrote to
@@ -4763,7 +4753,7 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
         if (status != 0) {
             *error = exceptionText + scriptErr;
             scriptErr.clear();
-            if (captured) {
+            if ( captured && (kind == ePythonScriptKindCode) ) {
                 *error = "While executing script:\n" + script + "Python error:\n" + *error;
             }
         }
@@ -4787,7 +4777,26 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     }
 
     return status == 0;
-} // NATRON_PYTHON_NAMESPACE::interpretPythonScript
+} // interpretPythonScriptImpl
+} // anon namespace
+
+bool
+NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
+                                               std::string* error,
+                                               std::string* output,
+                                               PyObject* globals,
+                                               PyObject* locals)
+{
+    return interpretPythonScriptImpl(script, error, output, globals, locals, ePythonScriptKindCode);
+}
+
+bool
+NATRON_PYTHON_NAMESPACE::runPythonScriptFile(const std::string& script,
+                                             std::string* error,
+                                             std::string* output)
+{
+    return interpretPythonScriptImpl(script, error, output, NULL, NULL, ePythonScriptKindFile);
+}
 
 #if 0 // dead code
 void
