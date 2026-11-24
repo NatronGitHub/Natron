@@ -627,7 +627,7 @@ Node::isNodeUpstream(const Node* input,
         return;
     }
 
-    ///No need to lock guiInputs is only written to by the main-thread
+    // No lock: the inputs are only written by the main thread, which this runs on.
 
     // Each upstream node is visited once (a recursion without the set visits a node once per path to it,
     // which is exponential on chains of diamonds).
