@@ -1216,13 +1216,18 @@ PreferencesPanel::saveChangesAndClose()
 }
 
 void
-PreferencesPanel::showEvent(QShowEvent* /*e*/)
+PreferencesPanel::showEvent(QShowEvent* e)
 {
     QScreen* desktop = QGuiApplication::primaryScreen();
     const QRect rect = desktop->availableGeometry();
 
     move( QPoint(rect.width() / 2 - width() / 2, rect.height() / 2 - height() / 2) );
 
+    if ( e->spontaneous() ) {
+        return; // e.g. restored after being minimized: the changes made so far can still be cancelled
+    }
+    // closing the window without OK cancels, also after an OK in an earlier showing (#1538)
+    _imp->closeIsOK = false;
     _imp->changedKnobs.clear();
     _imp->pluginSettingsChanged = false;
     for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
