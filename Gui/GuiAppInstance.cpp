@@ -498,9 +498,15 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
             }
         } else {
             CLArgs cl;
-            AppInstancePtr newApp = appPTR->newAppInstance(cl, false);
+            // An empty instance: onProjectCreated runs only if the load fails, see Gui::openProjectInternal() (#1463)
+            AppInstancePtr newApp = appPTR->newAppInstance(cl, true);
             // newAppInstance() returns NULL, after showing an error dialog, if the new window could not be loaded
-            if ( !newApp || !newApp->getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true) ) {
+            if (!newApp) {
+                return false;
+            }
+            if ( !newApp->getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true) ) {
+                newApp->execOnProjectCreatedCallback();
+
                 return false;
             }
         }
