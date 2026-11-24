@@ -497,6 +497,27 @@ NodeCollection::checkNodeName(const Node* node,
             }
         }
     }
+    int no = 1;
+    {
+        std::stringstream ss;
+        ss << cpy;
+        if (appendDigit) {
+            ss << no;
+        }
+        *nodeName = ss.str();
+    }
+    if (errorIfExists || !appendDigit) {
+        // only this name is checked
+        QMutexLocker l(&_imp->nodesMutex);
+        for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+            if ( (it->get() != node) && (*it)->isActivated() && ( (*it)->getScriptName_mt_safe() == *nodeName ) ) {
+                throw std::runtime_error( tr("A node with the script-name %1 already exists.").arg( QString::fromUtf8( nodeName->c_str() ) ).toStdString() );
+            }
+        }
+
+        return;
+    }
+
     // The script-names of the other active nodes, read once: looking each candidate name up in the list of
     // nodes made the default naming quadratic per node, cubic for a script creating thousands of nodes (#1565)
     std::set<std::string> usedNames;
@@ -508,26 +529,11 @@ NodeCollection::checkNodeName(const Node* node,
             }
         }
     }
-
-    int no = 1;
-    {
-        std::stringstream ss;
-        ss << cpy;
-        if (appendDigit) {
-            ss << no;
-        }
-        *nodeName = ss.str();
-    }
     while ( usedNames.count(*nodeName) ) {
-        if (errorIfExists || !appendDigit) {
-            throw std::runtime_error( tr("A node with the script-name %1 already exists.").arg( QString::fromUtf8( nodeName->c_str() ) ).toStdString() );
-        }
         ++no;
-        {
-            std::stringstream ss;
-            ss << cpy << no;
-            *nodeName = ss.str();
-        }
+        std::stringstream ss;
+        ss << cpy << no;
+        *nodeName = ss.str();
     }
 } // NodeCollection::checkNodeName
 
