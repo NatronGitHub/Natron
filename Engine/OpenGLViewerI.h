@@ -86,6 +86,13 @@ public:
     virtual ImageBitDepthEnum getBitDepth() const = 0;
 
     /**
+     * @brief Returns true if a displayed texture is 8-bit: its colours were converted by the CPU with the
+     * viewer's gain, gamma and display LUT, so changing them needs a new render, not only a redraw. This is
+     * the type of the textures, which may differ from getBitDepth() until a frame rendered with it is shown.
+     **/
+    virtual bool isDisplayingByteTexture() const = 0;
+
+    /**
      * @brief Returns true if the user has enabled the region of interest
      **/
     virtual bool isUserRegionOfInterestEnabled() const = 0;

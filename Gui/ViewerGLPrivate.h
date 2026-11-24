@@ -258,9 +258,9 @@ public:
     void unbindTextureAndReleaseShader(bool useShader);
 
     /**
-     *@brief Starts using the RGB shader to display the frame
+     *@brief Starts using the RGB shader to display the texture, with its gain, gamma and offset
      **/
-    void activateShaderRGB(int texIndex);
+    void activateShaderRGB(const TextureInfo& info);
 
     void updateDitherAmplitude();
 

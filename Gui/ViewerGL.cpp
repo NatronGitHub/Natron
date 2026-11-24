@@ -507,15 +507,24 @@ ViewerGL::paintGL()
                 RectI texRect(r.x1, r.y1, r.x2, r.y2);
                 const double par = r.par;
                 const RectD canonicalTexRect = texRect.toCanonical_noClipping(_imp->partialUpdateTextures[i].mipmapLevel, par);
+                // as in drawRenderingVAO(): a float texture is linear, and the shader applies the viewer's
+                // gain, gamma and display LUT; a byte texture was converted by the CPU (#1452)
+                const bool useShader = _imp->partialUpdateTextures[i].texture->type() != Texture::eDataTypeByte;
 
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture( GL_TEXTURE_2D, _imp->partialUpdateTextures[i].texture->getTexID() );
+                if (useShader) {
+                    _imp->activateShaderRGB(_imp->partialUpdateTextures[i]);
+                }
                 glBegin(GL_POLYGON);
                 glTexCoord2d(0, 0); glVertex2d(canonicalTexRect.x1, canonicalTexRect.y1);
                 glTexCoord2d(0, 1); glVertex2d(canonicalTexRect.x1, canonicalTexRect.y2);
                 glTexCoord2d(1, 1); glVertex2d(canonicalTexRect.x2, canonicalTexRect.y2);
                 glTexCoord2d(1, 0); glVertex2d(canonicalTexRect.x2, canonicalTexRect.y1);
                 glEnd();
+                if (useShader) {
+                    _imp->shaderRGB->release();
+                }
                 glBindTexture(GL_TEXTURE_2D, 0);
 
                 glCheckError();
@@ -1824,6 +1833,9 @@ ViewerGL::setGain(double d)
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _imp->displayTextures[0].gain = d;
     _imp->displayTextures[1].gain = d;
+    for (std::size_t i = 0; i < _imp->partialUpdateTextures.size(); ++i) {
+        _imp->partialUpdateTextures[i].gain = d;
+    }
 }
 
 void
@@ -1833,6 +1845,9 @@ ViewerGL::setGamma(double g)
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _imp->displayTextures[0].gamma = g;
     _imp->displayTextures[1].gamma = g;
+    for (std::size_t i = 0; i < _imp->partialUpdateTextures.size(); ++i) {
+        _imp->partialUpdateTextures[i].gamma = g;
+    }
 }
 
 void
@@ -3316,6 +3331,26 @@ ImageBitDepthEnum
 ViewerGL::getBitDepth() const
 {
     return appPTR->getCurrentSettings()->getViewersBitDepth();
+}
+
+bool
+ViewerGL::isDisplayingByteTexture() const
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    for (int i = 0; i < 2; ++i) {
+        const TextureInfo& info = _imp->displayTextures[i];
+        if ( info.isVisible && info.texture && (info.texture->type() == Texture::eDataTypeByte) ) {
+            return true;
+        }
+    }
+    for (std::size_t i = 0; i < _imp->partialUpdateTextures.size(); ++i) {
+        if (_imp->partialUpdateTextures[i].texture->type() == Texture::eDataTypeByte) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void
