@@ -41,7 +41,6 @@
 #include <gtest/gtest.h>
 
 #include <ofxCore.h>
-#include <ofxDialog.h>
 #include <ofxGPURender.h>
 #include <ofxMessage.h>
 #include <ofxMultiThread.h>
@@ -50,6 +49,7 @@
 #include <ofxProperty.h>
 #include <ofxTimeLine.h>
 #include <ofxhImageEffect.h>
+#include <ofxDialog.h> // after ofxImageEffect.h, which declares OfxImageEffectHandle
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
