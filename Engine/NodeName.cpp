@@ -276,6 +276,42 @@ insertDependenciesRecursive(Node* node,
     }
 }
 
+// Recompiles the expressions of the knobs of node and of the nodes inside it, except those of
+// the listeners that the caller recompiled.
+static void
+recompileExpressionsRecursive(Node* node,
+                              const KnobI::ListenerDimsMap& recompiled)
+{
+    const KnobsVec & knobs = node->getKnobs();
+
+    for (std::size_t i = 0; i < knobs.size(); ++i) {
+        KnobI::ListenerDimsMap::const_iterator found = recompiled.find(knobs[i]);
+        for (int d = 0; d < knobs[i]->getDimension(); ++d) {
+            if ( ( found != recompiled.end() ) && ( d < (int)found->second.size() ) &&
+                 found->second[d].isListening && found->second[d].isExpr ) {
+                continue;
+            }
+            std::string expr = knobs[i]->getExpression(d);
+            if ( expr.empty() ) {
+                continue;
+            }
+            try {
+                knobs[i]->setExpression(d, expr, knobs[i]->isExpressionUsingRetVariable(d), false);
+            } catch (const std::exception& e) {
+                qDebug() << e.what();
+            }
+        }
+    }
+
+    NodeGroup* isGroup = node->isEffectGroup();
+    if (isGroup) {
+        NodesList nodes = isGroup->getNodes();
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            recompileExpressionsRecursive(it->get(), recompiled);
+        }
+    }
+}
+
 void
 Node::setNameInternal(const std::string& name,
                       bool throwErrors)
@@ -415,6 +451,10 @@ Node::setNameInternal(const std::string& name,
                     }
                 }
             }
+            // The expressions of this node and of the nodes inside it are compiled with their
+            // fully-qualified names (thisNode, thisGroup): recompile those not done above, which read
+            // no parameter of these nodes, e.g. "thisGroup.getInput(1) is None" (#1686).
+            recompileExpressionsRecursive(this, dependencies);
         }
     }
 
