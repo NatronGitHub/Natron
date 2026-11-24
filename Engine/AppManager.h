@@ -620,7 +620,9 @@ public:
     void setOnProjectLoadedCallback(const std::string& pythonFunc);
     void setOnProjectCreatedCallback(const std::string& pythonFunc);
 
-    void requestOFXDIalogOnMainThread(OfxImageEffectInstance* instance, void* instanceData);
+    /// Calls the effect's kOfxActionDialog on the main thread: at once on the main thread, else queued.
+    /// The queued call holds only a weak reference: it does nothing if the effect was destroyed meanwhile.
+    void requestOFXDIalogOnMainThread(const OfxEffectInstancePtr& effect, void* instanceData);
 
 
     ///Closes the application not saving any projects.
@@ -738,16 +740,12 @@ public Q_SLOTS:
 
     void onCrashReporterNoLongerResponding();
 
-    void onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance, void* instanceData);
-
     void onShutDownSignalReceived();
 
 Q_SIGNALS:
 
 
     void checkerboardSettingsChanged();
-
-    void s_requestOFXDialogOnMainThread(OfxImageEffectInstance* instance, void* instanceData);
 
 protected:
 
