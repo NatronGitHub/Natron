@@ -388,6 +388,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
 
 
     _selectionLineEdit = new FileDialogLineEdit(_selectionWidget);
+    _selectionLineEdit->setObjectName( QString::fromUtf8("fileNameLineEdit") ); // for the GUI tests
     _selectionLayout->addWidget(_selectionLineEdit);
 
     if (_dialogMode == eFileDialogModeSave) {
