@@ -65,7 +65,7 @@ TEST(Settings, RestoreDefaultKeepsSettingsFileWithNoSettings)
 {
     ASSERT_TRUE( appPTR );
     SettingsPtr settings = appPTR->getCurrentSettings();
-    ASSERT_TRUE( settings );
+    ASSERT_TRUE( bool(settings) );
     ASSERT_TRUE( settings->isUsingDefaultSettings() );
     ASSERT_FALSE( settings->getSaveSettings() );
 
