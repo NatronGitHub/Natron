@@ -212,9 +212,9 @@ ExprUtils::cnoise(const Double3DTuple& p)
 {
     Double3DTuple ret = {0., 0., 0.};
     Noise<3, 3>((const double*)&p.x, (double*)&ret.x);
-    ret.x = p.x * 0.5 + 0.5;
-    ret.y = p.y * 0.5 + 0.5;
-    ret.z = p.z * 0.5 + 0.5;
+    ret.x = ret.x * 0.5 + 0.5;
+    ret.y = ret.y * 0.5 + 0.5;
+    ret.z = ret.z * 0.5 + 0.5;
     return ret;
 }
 
@@ -356,7 +356,7 @@ Double3DTuple
 ExprUtils::ccellnoise(const Double3DTuple& p)
 {
     Double3DTuple result = {0., 0., 0.};
-    CellNoise<3, 1>((const double*)&p.x, (double*)&result.x);
+    CellNoise<3, 3>((const double*)&p.x, (double*)&result.x);
     return result;
 }
 
