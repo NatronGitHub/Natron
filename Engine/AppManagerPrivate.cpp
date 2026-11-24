@@ -507,30 +507,9 @@ template <typename T>
 void
 saveCache(Cache<T>* cache)
 {
-    if (!cache) {
-        return;
-    }
-
-    std::string cacheRestoreFilePath = cache->getRestoreFilePath();
-    FStreamsSupport::ofstream ofile;
-    FStreamsSupport::open(&ofile, cacheRestoreFilePath);
-
-    if (!ofile) {
-        std::cerr << "Failed to save cache to " << cacheRestoreFilePath.c_str() << std::endl;
-
-        return;
-    }
-
-
-    typename Cache<T>::CacheTOC toc;
-    cache->save(&toc);
-    unsigned int version = cache->cacheVersion();
-    try {
-        boost::archive::binary_oarchive oArchive(ofile);
-        oArchive << version;
-        oArchive << toc;
-    } catch (const std::exception & e) {
-        qDebug() << "Failed to serialize the cache table of contents:" << e.what();
+    if (cache) {
+        // Prints the error, if any
+        cache->writeRestoreFile();
     }
 }
 

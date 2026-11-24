@@ -28,10 +28,13 @@
 
 #include "Global/Macros.h"
 
+#include <iostream>
 #include <list>
 #include <set>
+#include <sstream>
 #include <cstddef>
 #include <stdexcept>
+#include <string>
 
 #include <QDir>
 #include <QFileInfo>
@@ -53,6 +56,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 // clang-format on
 #endif
+
+#include "Global/FStreamsSupport.h"
 
 #include "Engine/Cache.h"
 #include "Engine/ImageSerialization.h"
@@ -108,6 +113,34 @@ Cache<EntryType>::save(CacheTOC* tableOfContents)
             }
         }
     }
+}
+
+/* Writes the table of contents to the restore file, in place. */
+template<typename EntryType>
+bool
+Cache<EntryType>::writeRestoreFile()
+{
+    FStreamsSupport::ofstream ofile;
+    FStreamsSupport::open( &ofile, getRestoreFilePath() );
+    if (!ofile) {
+        std::cerr << "Failed to save cache to " << getRestoreFilePath() << std::endl;
+
+        return false;
+    }
+    CacheTOC tableOfContents;
+    save(&tableOfContents);
+    const unsigned int version = cacheVersion();
+    try {
+        boost::archive::binary_oarchive oArchive(ofile);
+        oArchive << version;
+        oArchive << tableOfContents;
+    } catch (const std::exception & e) {
+        std::cerr << "Failed to serialize the cache table of contents: " << e.what() << std::endl;
+
+        return false;
+    }
+
+    return true;
 }
 
 /*Restores the cache from disk.*/

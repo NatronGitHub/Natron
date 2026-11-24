@@ -23,6 +23,7 @@
 // - #1265: NATRON_DISK_CACHE_PATH takes precedence over the "Disk cache path" preference;
 // - #192: the disk space of the cache files is allocated before they are written;
 // - the unreferenced files are not deleted while another Natron process uses the cache.
+// - #1594: the table of contents is replaced atomically, so a reader never sees a partial one.
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -32,11 +33,13 @@
 
 #include "Global/Macros.h"
 
+#include <atomic>
 #include <chrono>
 #include <cstring>
 #include <iostream>
 #include <list>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -429,6 +432,69 @@ TEST(MemoryFileTest, ReserveFailsWhenTheDiskIsFull)
     // reserve() must not have filled the disk: on a full APFS volume, a file can't even be deleted
     f.remove();
     EXPECT_FALSE( QFile::exists( QString::fromUtf8( path.c_str() ) ) );
+}
+
+// #1594: the restore file (the table of contents) used to be truncated and rewritten in place on every project save,
+// so another Natron process restoring it (or a crash during the write) could see an empty or partial file.
+// Here a thread reads it while the cache rewrites it: every read must be a complete table of contents.
+TEST_F(DiskCacheTest, RestoreFileIsReplacedAtomically)
+{
+    const int nEntries = 50;
+    for (int i = 0; i < nEntries; ++i) {
+        createImageOnDisk( _cache, makeKey(0x1000000000000000ULL + i), 0 );
+    }
+    ASSERT_EQ( (std::size_t)nEntries, allEntries(_cache).size() );
+    ASSERT_TRUE( _cache->writeRestoreFile() );
+    const QString restoreFilePath = QString::fromUtf8( _cache->getRestoreFilePath().c_str() );
+
+    std::atomic<bool> writing(true);
+    int reads = 0;
+    int badReads = 0;
+    std::string firstError;
+    std::thread reader([&]() {
+        while ( writing.load() ) {
+            QFile f(restoreFilePath);
+            // On Windows, the file may be missing or locked while it is replaced
+            if ( !f.open(QIODevice::ReadOnly) ) {
+                continue;
+            }
+            const QByteArray bytes = f.readAll();
+            f.close();
+            ++reads;
+            std::istringstream data( std::string( bytes.constData(), bytes.size() ) );
+            ImageCache::CacheTOC toc;
+            try {
+                boost::archive::binary_iarchive iArchive(data);
+                unsigned int version = 0;
+                iArchive >> version;
+                iArchive >> toc;
+                if (toc.size() != (std::size_t)nEntries) {
+                    throw std::runtime_error("wrong number of entries");
+                }
+            } catch (const std::exception& e) {
+                if (badReads == 0) {
+                    firstError = std::string(e.what()) + " (" + std::to_string( bytes.size() ) + " bytes)";
+                }
+                ++badReads;
+            }
+        }
+    });
+    int writes = 0;
+    for (int i = 0; i < 300; ++i) {
+        // On Windows, replacing the file fails while the reader has it open: the previous file is kept
+        if ( _cache->writeRestoreFile() ) {
+            ++writes;
+        }
+    }
+    writing = false;
+    reader.join();
+
+    EXPECT_GT(writes, 0);
+    EXPECT_GT(reads, 0);
+    EXPECT_EQ(0, badReads) << "out of " << reads << " reads; first error: " << firstError;
+    // No temporary file is left next to it
+    const QStringList files = QDir( _cache->getCachePath() ).entryList(QDir::Files | QDir::Hidden);
+    EXPECT_EQ( QStringList() << QFileInfo(restoreFilePath).fileName(), files );
 }
 
 // #1112: the restore cleanup of a tiled cache (the viewer cache) removes the files of its folder that are not
