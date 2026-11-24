@@ -74,6 +74,11 @@ depth; this skill is the quick map.
 - ``std::shared_ptr``/``weak_ptr`` everywhere; parent→child is ``shared_ptr``,
   child→parent is ``weak_ptr`` (avoid cycles). Add new types to the ``Fwd``
   catalog.
+- An Engine object that keeps a pointer to a Gui object it observes (a ``*I``
+  interface) must not rely on the Gui to clear it: if the Gui object is a
+  QObject, keep a ``QPointer<QObject>`` (as ``KnobHolder`` does for its panel)
+  or clear it in the Gui object's destructor (as ``~NodeGraph`` does), and
+  check it before each use (#1618).
 - ``QT_NO_CAST_FROM_ASCII`` is set: wrap literals in ``QString::fromUtf8("…")``
   or ``tr()``.
 - Serialization and the ``Py*`` API are **backward-compatibility-critical** —

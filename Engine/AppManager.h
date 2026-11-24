@@ -353,6 +353,15 @@ public:
     /// The exit code given to requestQuit(), or 0
     int getRequestedExitCode() const;
 
+    /// Records that the render of a writer failed in background mode: see exitStatus().
+    /// The record is kept until the process exits. May be called from any thread.
+    void setBackgroundRenderFailed();
+
+    /// The exit status of a background process whose load() succeeded: getRequestedExitCode() if
+    /// requestQuit() was called or if it is not 0, else 1 if setBackgroundRenderFailed() was called,
+    /// else 0.
+    int exitStatus() const;
+
     /// True while the interactive Python interpreter of the -t option is running
     bool isPythonInterpreterRunning() const;
 

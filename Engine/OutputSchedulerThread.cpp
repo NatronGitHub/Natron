@@ -1169,6 +1169,13 @@ OutputSchedulerThread::startRender()
                                                 EffectInstance::OpenGLContextEffectDataPtr() ) == eStatusFailed) {
             l.unlock();
 
+            // e.g. a movie writer that can't open its output file. Not notifyRenderFailure(): this is
+            // the scheduler thread, and for a blocking render it waits for the abort to complete.
+            if ( appPTR->isBackground() ) {
+                std::cerr << "Error while rendering: " << _imp->outputEffect.lock()->getNode()->getScriptName_mt_safe()
+                          << " could not start the render of the sequence" << std::endl;
+                appPTR->setBackgroundRenderFailed();
+            }
 
             _imp->engine->abortRenderingNoRestart();
 
@@ -1254,15 +1261,22 @@ OutputSchedulerThread::stopRender()
         frameStep = args->frameStep;
 
         // the arguments of beginSequenceRender_public() in startRender()
-        ignore_result( effect->endSequenceRender_public( firstFrame, lastFrame,
-                                                         frameStep,
-                                                         false, // interactive
-                                                         RenderScale::identity, true,
-                                                         false, // isRenderResponseToUserInteraction
-                                                         false,
-                                                         ViewIdx(0),
-                                                         false /*use OpenGL render*/,
-                                                         EffectInstance::OpenGLContextEffectDataPtr() ) );
+        if (effect->endSequenceRender_public( firstFrame, lastFrame,
+                                              frameStep,
+                                              false, // interactive
+                                              RenderScale::identity, true,
+                                              false, // isRenderResponseToUserInteraction
+                                              false,
+                                              ViewIdx(0),
+                                              false /*use OpenGL render*/,
+                                              EffectInstance::OpenGLContextEffectDataPtr() ) == eStatusFailed) {
+            // e.g. a movie writer that can't finish its file
+            if ( appPTR->isBackground() ) {
+                std::cerr << "Error while rendering: " << _imp->outputEffect.lock()->getNode()->getScriptName_mt_safe()
+                          << " could not end the render of the sequence" << std::endl;
+                appPTR->setBackgroundRenderFailed();
+            }
+        }
     }
 
 
@@ -2690,6 +2704,8 @@ DefaultScheduler::handleRenderFailure(const std::string& errorMessage)
 {
     if ( appPTR->isBackground() ) {
         std::cerr << errorMessage << std::endl;
+        // the exit status of the process tells whether the writers succeeded
+        appPTR->setBackgroundRenderFailed();
     }
 }
 
