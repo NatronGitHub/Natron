@@ -40,6 +40,7 @@ set(Tests_SOURCES
     KnobInvalidExpression_Test.cpp
     KnobLockOrder_Test.cpp
     KnobFile_Test.cpp
+    KnobHolderCreateKnob_Test.cpp
     KnobHolderPanel_Test.cpp
     KnobSlave_Test.cpp
     KnobStringAnimation_Test.cpp
@@ -271,6 +272,10 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME RendererMissingReadTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_missing_read_test.py $<TARGET_FILE:NatronRenderer>)
     set_tests_properties(RendererMissingReadTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
+    # NatronRenderer project.ntp -i Read <sequence> -w Write <file> <range>, on a project whose Read and Write have no file, renders the right frames (#864)
+    add_test(NAME RendererCLReadWriteTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_cl_read_write_test.py $<TARGET_FILE:NatronRenderer>)
+    set_tests_properties(RendererCLReadWriteTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
     # --setting options for the caches and threads, which run before the caches exist (#1571)
     add_test(NAME RendererSettingsTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_settings_test.py $<TARGET_FILE:NatronRenderer>)
