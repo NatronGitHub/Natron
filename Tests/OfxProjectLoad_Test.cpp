@@ -574,11 +574,11 @@ TEST(OfxProjectLoad, PyPlugUpdateIsNotSavedWhenValuesChanged)
     ASSERT_TRUE(plugin);
     plugin->setPythonModule(dir + moduleName);
     // NodeCollectionSerialization::restoreFromSerialization() offers the PyPlug update only when the preference
-    // "loadFromPyFile" is off (the reverse of its tooltip, since 2015)
+    // "loadFromPyFile" is on, as its tooltip says (it was the reverse from 2.2 to 2.6, #1646)
     KnobBoolPtr loadFromPyFile = std::dynamic_pointer_cast<KnobBool>( appPTR->getCurrentSettings()->getKnobByName("loadFromPyFile") );
     ASSERT_TRUE( bool(loadFromPyFile) );
     const bool oldLoadFromPyFile = loadFromPyFile->getValue();
-    loadFromPyFile->setValue(false);
+    loadFromPyFile->setValue(true);
 
     AppInstancePtr app = appPTR->getTopLevelInstance();
     ProjectPtr project = app->getProject();
