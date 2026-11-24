@@ -102,7 +102,8 @@ TEST(OfxRenderClone, DestroyedBeforeMainInstance)
     // the main instance and its clone, which the effect keeps for the next renders
     EXPECT_EQ( 2, NatronTestPlugin::counter("RenderClone.live") );
 
-    // as on quit (Project::reset(), Node::doDestroyNodeInternalEnd())
+    // as on quit (Project::reset(), Node::doDestroyNodeInternalEnd()), where the crash was seen; this also
+    // destroys any node that an earlier test left in the project, as DeepGraphRender_Test.cpp does
     node.reset();
     appPTR->getTopLevelInstance()->getProject()->reset(false /*aboutToQuit*/, true /*blocking*/);
     EXPECT_EQ( 0, NatronTestPlugin::counter("RenderClone.live") );
