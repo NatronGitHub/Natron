@@ -17,7 +17,7 @@
 
 ### Changes
 
-- Preferences: Restore defaults also resets the plug-ins of the Plug-ins page (enabled, except the deprecated ones; render scale, multi-threading and OpenGL on), instead of only checking their boxes. Closing the Preferences without Save undoes it. #1744
+- Preferences: Restore defaults also resets the plug-ins of the Plug-ins page (enabled, except the deprecated ones; render scale, multi-threading and OpenGL on), instead of only checking their boxes. Closing the Preferences without Save keeps the plug-ins as they were for the rest of the session. #1744
 - Python: saving a copy of the project (`app.saveTempProject()`) no longer deletes the project's last auto-save, nor cancels its next one: the unsaved changes stay recoverable after a crash. #1751
 - Node graph: "Duplicate Nodes" and "Paste Nodes" in the right-click menu no longer make clones of the selected nodes: Duplicate makes independent copies, and Paste pastes the copied nodes, as their keyboard shortcuts do. #1512
 - Group from selection (Ctrl+G) no longer disconnects a selected node from another selected node that feeds several selected nodes (e.g. A feeding both B and C): the link is kept inside the Group, instead of going through a new Input of the Group connected to the deleted original. #1462
