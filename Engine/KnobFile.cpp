@@ -99,8 +99,9 @@ KnobFile::typeName() const
 
 // The file name of a file parameter at a time and view. The name of an image sequence is a pattern, whose
 // frame number ('#', "%04d") and view ("%v", "%V") variables are replaced. A video file name is not a sequence
-// pattern: only its view variables are replaced, and a '#' in it is part of the name (#693). For a Read or
-// Write node, the holder is the ReadNode or WriteNode, which knows its embedded plug-in.
+// pattern: only its view variables are replaced, and a '#' in it is part of the name (#693). The callers say
+// whether the holder is a video reader or writer (for a Read or Write node, the ReadNode or WriteNode knows its
+// embedded plug-in); the holder gives the project views.
 static std::string
 fileNameFromPattern(const std::string& pattern,
                     const KnobHolder* holder,
