@@ -663,7 +663,7 @@ ViewerGL::Implementation::bindTextureAndActivateShader(int i,
     //GLfloat d;
     //glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
     if (useShader) {
-        activateShaderRGB(i);
+        activateShaderRGB(displayTextures[i]);
     }
     glCheckError();
 }
@@ -817,7 +817,7 @@ ViewerGL::Implementation::initializeCheckerboardTexture(bool mustCreateTexture)
 }
 
 void
-ViewerGL::Implementation::activateShaderRGB(int texIndex)
+ViewerGL::Implementation::activateShaderRGB(const TextureInfo& info)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -831,10 +831,10 @@ ViewerGL::Implementation::activateShaderRGB(int texIndex)
     }
 
     shaderRGB->setUniformValue("Tex", 0);
-    shaderRGB->setUniformValue("gain", (float)displayTextures[texIndex].gain);
-    shaderRGB->setUniformValue("offset", (float)displayTextures[texIndex].offset);
+    shaderRGB->setUniformValue("gain", (float)info.gain);
+    shaderRGB->setUniformValue("offset", (float)info.offset);
     shaderRGB->setUniformValue("lut", (GLint)displayingImageLut);
-    float gamma = displayTextures[texIndex].gamma;
+    float gamma = info.gamma;
     shaderRGB->setUniformValue("gamma", gamma);
     // Float textures are dithered in the shader with +/- half a quantisation step of noise
     // (8-bit textures get row error diffusion on the CPU instead, see Color::Lut and
