@@ -657,10 +657,17 @@ AnimatedParam::setExpression(const QString& expr,
     if (!thisKnob) {
         return false;
     }
+    // The value of the parameter changes with its expression: tell its holder (e.g. kOfxActionInstanceChanged for an
+    // OpenFX plug-in) and re-render, as the GUI does (SetExpressionCommand), with the reason of setValue() (#1336).
+    // A failed setExpression() also removes the previous expression.
+    const bool hadExpression = !thisKnob->getExpression(dimension).empty();
     try {
         recordForUndoGroup(thisKnob);
         thisKnob->setExpression(dimension, expr.toStdString(), hasRetVariable, true);
     } catch (const std::exception& e) {
+        if (hadExpression) {
+            thisKnob->evaluateValueChange(dimension, thisKnob->getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronInternalEdited);
+        }
         // Keep returning False (no exception, for the scripts that test the result), but say why,
         // else the failure is easy to miss (#1250)
         KnobHolder* holder = thisKnob->getHolder();
@@ -689,6 +696,7 @@ AnimatedParam::setExpression(const QString& expr,
     } catch (...) {
         return false;
     }
+    thisKnob->evaluateValueChange(dimension, thisKnob->getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronInternalEdited);
 
     return true;
 }
