@@ -196,6 +196,16 @@ jobs:
           echo "DMG_DIR=$PWD" >> "$GITHUB_ENV"
           echo "DMG_NAME=${dmg%.dmg}" >> "$GITHUB_ENV"
 
+      - name: TEMPORARY trace of build-plugins.sh
+        if: failure()
+        run: |
+          export PATH=/opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
+          cd tools/jenkins
+          env NOUPDATE=1 WORKSPACE="$HOME/Development/workspace" DISABLE_BREAKPAD=1 NATRON_MACOS_MIN=14.0 NATRON_LICENSE=GPL \
+            BUILD_NAME=natron_github_RB2 BUILD_NUMBER=1 COMPILE_TYPE=release MKJOBS=4 NATRON_BUILD_SYSTEM=cmake \
+            bash -x build-plugins.sh > "$RUNNER_TEMP/trace.log" 2>&1 || true
+          grep -v '^+* *#' "$RUNNER_TEMP/trace.log" | tail -120
+
       - name: Upload the DMG
         uses: actions/upload-artifact@v4
         with:
