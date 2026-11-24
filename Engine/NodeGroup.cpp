@@ -2105,6 +2105,10 @@ exportUserKnob(int indentLevel,
         }
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param = ") + fullyQualifiedNodeName + createToken + ESC( isDouble->getName() ) +
                                                  QString::fromUtf8(", ") + ESC( isDouble->getLabel() ) + QString::fromUtf8(")") );
+        // "Use Point Interact" of a 2D parameter (#1526)
+        if ( (isDouble->getDimension() == 2) && isDouble->getHasHostOverlayHandle() ) {
+            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("param.setUsePointInteract(True)");
+        }
 
         std::vector<double> defaultValues = isDouble->getDefaultValues_mt_safe();
         assert( (int)defaultValues.size() == isDouble->getDimension() );
