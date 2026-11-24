@@ -62,7 +62,7 @@ if not hasReader or not any(i.startswith("fr.inria.openfx.WritePNG") for i in id
     natron.quit(77)
 else:
     # Read has no file, so -i replaces its default decoder (ReadOIIO) by ReadPNG. The report's EXR files keep
-    # ReadOIIO; that path needs a file format that only ReadOIIO reads, which this test can't write.
+    # ReadOIIO: that path is not tested (it would need an extra TIFF render step).
     read = app.createNode("fr.inria.built-in.Read")
     read.setScriptName("Read")
     write = app.createNode("fr.inria.built-in.Write")
