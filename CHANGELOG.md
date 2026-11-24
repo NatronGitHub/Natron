@@ -21,6 +21,7 @@
 
 ### Changes
 
+- A read-only checkbox (e.g. a disabled Boolean parameter, or one driven by an expression) can no longer be toggled with the Space key. #1744
 - Preferences: Restore defaults also resets the plug-ins of the Plug-ins page (enabled, except the deprecated ones; render scale, multi-threading and OpenGL on), instead of only checking their boxes. Closing the Preferences without Save keeps the plug-ins as they were for the rest of the session. #1744
 - Creating many nodes with default names (e.g. from a Python script) is much faster: finding a free name (`Blur1`, `Blur2`...) compared every candidate name with every node of the group, which made building a chain of thousands of nodes take minutes. #1565
 - Node graph: a backdrop keeps its size when its label changes, and can be made smaller than its label; the label wraps to the backdrop's width. A node or backdrop label set from Python with only part of a `<font>` tag (e.g. only a size) no longer gets a wrong font family. #626
