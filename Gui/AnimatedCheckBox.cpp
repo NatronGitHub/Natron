@@ -97,7 +97,8 @@ AnimatedCheckBox::setChecked(bool c)
 void
 AnimatedCheckBox::keyPressEvent(QKeyEvent* e)
 {
-    if (e->key() == Qt::Key_Space) {
+    // read-only: Space doesn't toggle it, as a click doesn't (#1744)
+    if ( (e->key() == Qt::Key_Space) && !readOnly ) {
         checked = !checked;
         Q_EMIT toggled(checked);
         Q_EMIT clicked(checked);
