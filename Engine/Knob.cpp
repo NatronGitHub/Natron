@@ -3054,8 +3054,7 @@ KnobHelper::clearExpression(int dimension,
             if (!other) {
                 continue;
             }
-            // In place, under the other knob's lock: the list used to be copied, modified and written back, which
-            // lost an addListener() or a removeListener() made on the other knob in between (#1572)
+            // in place, under the other knob's mastersMutex (#1572)
             other->removeListener(this, dimension);
 
             if ( getHolder() ) {
@@ -4403,6 +4402,7 @@ KnobHelper::removeListener(KnobI* listener,
     QWriteLocker l(&_imp->mastersMutex);
     for (ListenerDimsMap::iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
         if (it->first.lock().get() == listener) {
+            assert( listenerDimension >= 0 && listenerDimension < (int)it->second.size() );
             it->second[listenerDimension].isListening = false;
 
             bool hasDimensionListening = false;
