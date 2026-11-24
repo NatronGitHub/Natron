@@ -22,11 +22,12 @@
 
 Usage: run_renderer_cl_read_write_test.py /path/to/NatronRenderer [--debugger]
 
-A NatronRenderer -t script saves a project with Read -> Write, both without a file name. Then
-"NatronRenderer project.ntp -i Read plate.####.png -w Write out.####.png 12-14" must write the
-frames 12 to 14 of the sequence plate.0010.png to plate.0020.png: it read frame 0 ("Cannot load
-frame"), or wrote the same frame for every frame. The frames of the sequence are all different
-(frame N is N pixels wide), so the frames written must be too.
+A NatronRenderer -t script saves a project with Read -> Write and Read2 -> Write2, all without a
+file name (Read2 had one before). Then "NatronRenderer project.ntp -i Read plate.####.png -w Write
+out.####.png 12-14" (and the same for Read2 and Write2) must write the frames 12 to 14 of the
+sequence plate.0010.png to plate.0020.png (#864: it read frame 0, "Cannot load frame", or wrote
+the same frame for every frame). The frames of the sequence are all different (frame N is N
+pixels wide), so the frames written must be too.
 
 Exit status: 0 on success, 77 if skipped (in CI unless NATRON_GUI_TESTS=1, without OCIO, or if the
 Read/Write PNG plug-ins of openfx-io are not available: set OFX_PLUGIN_PATH), 1 on failure.
@@ -51,26 +52,38 @@ SEQUENCE = range(10, 21)  # the frames of plate.####.png
 FRAMES = [12, 13, 14]  # the frames rendered
 
 SAVE_SCRIPT = """
-import os, sys
+import os
+import sys
 from NatronEngine import natron
 OUT = os.environ["NATRON_CL_READ_WRITE_TEST_DIR"]
 ids = natron.getPluginIDs()
-if not any(i.startswith("fr.inria.openfx.ReadPNG") for i in ids) or not any(i.startswith("fr.inria.openfx.WritePNG") for i in ids):
+hasReader = any(i.startswith("fr.inria.openfx.ReadPNG") for i in ids)
+if not hasReader or not any(i.startswith("fr.inria.openfx.WritePNG") for i in ids):
     sys.stdout.write("SKIP: no PNG reader or writer\\n"); sys.stdout.flush()
     natron.quit(77)
 else:
-    read = app.createNode("fr.inria.built-in.Read")
-    read.setScriptName("Read")
-    write = app.createNode("fr.inria.built-in.Write")
-    write.setScriptName("Write")
-    write.connectInput(0, read)
+    # Read: no file, so -i replaces its default decoder (ReadOIIO) by ReadPNG. Read2: its file was a PNG file, so
+    # -i keeps its decoder (ReadPNG), as with the EXR files of the report (ReadOIIO).
+    for suffix in ("", "2"):
+        read = app.createNode("fr.inria.built-in.Read")
+        read.setScriptName("Read" + suffix)
+        if suffix:
+            read.getParam("filename").set(os.path.join(OUT, "plate", "plate.0010.png"))
+            read.getParam("filename").set("")
+        write = app.createNode("fr.inria.built-in.Write")
+        write.setScriptName("Write" + suffix)
+        write.connectInput(0, read)
     app.saveProjectAs(os.path.join(OUT, "project.ntp"))
     sys.stdout.write("SAVED\\n"); sys.stdout.flush()
 """
 
 
 def run(cmd, env):
-    """Runs cmd, prints its output, and returns (exit status, output), or None on a timeout."""
+    """Runs cmd and prints its output.
+
+    Returns:
+        (exit status, output), or None on a timeout.
+    """
     print("Running: %s" % " ".join(cmd))
     sys.stdout.flush()
     # in its own process group, for killTree()
@@ -137,10 +150,12 @@ def main(argv):
             print("FAILED: the project was not saved")
             return 1
 
+        frameRange = "%d-%d" % (FRAMES[0], FRAMES[-1])
+        plate = os.path.join(outDir, "plate", "plate.####.png")
         ret = run(wrapper + [argv[1], "--no-settings", project,
-                             "-i", "Read", os.path.join(outDir, "plate", "plate.####.png"),
+                             "-i", "Read", plate, "-i", "Read2", plate,
                              "-w", "Write", os.path.join(outDir, "out.####.png"),
-                             "%d-%d" % (FRAMES[0], FRAMES[-1])], env)
+                             "-w", "Write2", os.path.join(outDir, "out2.####.png"), frameRange], env)
         if ret is None:
             return 1
         status, out = ret
@@ -151,14 +166,18 @@ def main(argv):
         if "Cannot load frame" in out or "Error caught while rendering" in out:
             print("FAILED: the render reported an error")
             ok = False
-        written = sorted(f for f in os.listdir(outDir) if f.startswith("out.") and f.endswith(".png"))
-        expected = ["out.%04d.png" % frame for frame in FRAMES]
-        if written != expected:
-            print("FAILED: the render wrote [%s] instead of [%s]" % (" ".join(written), " ".join(expected)))
-            ok = False
-        elif len(set(readFile(os.path.join(outDir, f)) for f in written)) != len(written):
-            print("FAILED: the frames written are not all different: the same frame of the sequence was read for each")
-            ok = False
+        for prefix in ("out.", "out2."):
+            written = sorted(f for f in os.listdir(outDir) if f.startswith(prefix) and f.endswith(".png"))
+            expected = ["%s%04d.png" % (prefix, frame) for frame in FRAMES]
+            if written != expected:
+                print("FAILED: the render wrote [%s] instead of [%s]" % (" ".join(written), " ".join(expected)))
+                ok = False
+            elif len(set(readFile(os.path.join(outDir, f)) for f in written)) != len(written):
+                # (WritePNG dithers with a seed that depends on the frame, but the frames of the sequence differ in
+                # most rows anyway)
+                print("FAILED: the %s frames written are not all different: the same frame of the sequence was read "
+                      "for each" % prefix)
+                ok = False
         if ok:
             print("renderer -i/-w test passed")
         return 0 if ok else 1
