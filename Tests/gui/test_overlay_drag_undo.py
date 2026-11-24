@@ -2,8 +2,9 @@
 # The overlay of net.natron.test.OverlayDrag (Tests/OfxTestPlugin/NatronTestPluginOverlayDrag.cpp) sets its
 # parameters y then x in one edit block at each pen motion, as the Transform overlay sets all its parameters,
 # but y changes only at every other motion. The first changed parameter of a block makes a new undo command,
-# which was merged into the previous one only if it changed no other parameter: the second motion of a drag,
-# where y changes first, started a new undo step, and the first motion of the next drag was merged into it.
+# which was merged into the previous one only by a check that depends on heap layout (#1445): the second
+# motion of a drag, where y changes first, could start a new undo step, and the next drag could be merged
+# into the previous one.
 import NatronGuiTest
 from natrontest import *
 
