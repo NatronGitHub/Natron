@@ -1170,17 +1170,30 @@ PreferencesPanel::restoreDefaults()
     if (reply == eStandardButtonYes) {
         appPTR->getCurrentSettings()->restoreDefault();
 
+        // The plug-in settings are not knobs: reset the plug-ins themselves, as clicking each checkbox
+        // would (setChecked() doesn't emit clicked()), and show their new state (#1744)
         for (PluginTreeNodeList::const_iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
+            Plugin* plugin = it->plugin;
+            plugin->setActivated(true);
+            plugin->setRenderScaleEnabled(true);
+            plugin->setMultiThreadingEnabled(true);
+            plugin->setOpenGLEnabled(true);
             if (it->enabledCheckbox) {
-                it->enabledCheckbox->setChecked(true);
+                it->enabledCheckbox->setChecked( plugin->isActivated() );
             }
             if (it->rsCheckbox) {
-                it->rsCheckbox->setChecked(true);
+                it->rsCheckbox->setChecked( plugin->isRenderScaleEnabled() );
             }
             if (it->mtCheckbox) {
-                it->mtCheckbox->setChecked(true);
+                it->mtCheckbox->setChecked( plugin->isMultiThreadingEnabled() );
+            }
+            if (it->glCheckbox) {
+                // as in createPluginsView(): unchecked if the plug-in can't render with OpenGL
+                it->glCheckbox->setChecked( plugin->isOpenGLEnabled() &&
+                                            plugin->getPluginOpenGLRenderSupport() != ePluginOpenGLRenderSupportNone );
             }
         }
+        _imp->pluginSettingsChanged = true;
     }
 }
 
