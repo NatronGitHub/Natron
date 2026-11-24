@@ -17,6 +17,7 @@
 
 ### Changes
 
+- Color selector: the H, S and V values are always those of the linear RGB values shown in R, G and B. Picking a color in the triangle showed the HSV of its sRGB color instead, and editing H, S or V moved the triangle to a different color than the R, G, B values. #1248
 - Python: `NatronEngine.ExprUtils.cellnoise()`, `ccellnoise()` and `hash()`, which parameter expressions can use, now give the same results on arm64 (Apple Silicon, Linux aarch64, Windows on ARM64) as on x86_64 and in Natron 2.5 on Intel. On arm64 a negative cell coordinate was treated as 0, so `cellnoise()` repeated the cells at 0 for all negative coordinates, and `hash()` gave the same value for many different negative arguments, because a negative number was converted to an unsigned integer, which is undefined in C++. Projects made on arm64 that use these functions with negative arguments may animate differently. #1678
 - Robustness (preventive, no known crash): a node or the project no longer keeps a dangling pointer to its settings panel after the Gui deletes the panel, e.g. when the node is destroyed from Python. #1618
 - The color is no longer black after a Shuffle whose Output Layer is not Color, and Premult/Unpremult on a layer other than Color no longer fail to render: the color now comes through from the input, like the other layers. #1660
