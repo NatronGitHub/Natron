@@ -27,9 +27,9 @@
 
 #include <gtest/gtest.h>
 
-#include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QSettings>
+#include <QtCore/QStandardPaths>
 #include <QtCore/QString>
 #include <QtCore/QTemporaryDir>
 
@@ -37,6 +37,27 @@
 #include "Engine/Settings.h"
 
 NATRON_NAMESPACE_USING
+
+#if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN)
+namespace {
+// Puts the native settings back at Qt's default location when destroyed, also after a failed ASSERT
+class NativeSettingsPathRestorer
+{
+public:
+    NativeSettingsPathRestorer() = default;
+    NativeSettingsPathRestorer(const NativeSettingsPathRestorer&) = delete;
+    NativeSettingsPathRestorer& operator=(const NativeSettingsPathRestorer&) = delete;
+
+    ~NativeSettingsPathRestorer()
+    {
+        // Qt's default on XDG platforms (~/.qttest/config in the Tests binary, which enables the
+        // QStandardPaths test mode, see wmain.cpp)
+        QSettings::setPath( QSettings::NativeFormat, QSettings::UserScope,
+                            QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) );
+    }
+};
+} // anonymous namespace
+#endif
 
 // #1728: with --no-settings (which the Tests binary uses, see wmain.cpp), Restore defaults resets the
 // settings in memory and leaves the settings file alone.
@@ -54,6 +75,7 @@ TEST(Settings, RestoreDefaultKeepsSettingsFileWithNoSettings)
     QTemporaryDir configDir;
     ASSERT_TRUE( configDir.isValid() );
     QSettings::setPath( QSettings::NativeFormat, QSettings::UserScope, configDir.path() );
+    NativeSettingsPathRestorer pathRestorer;
     QString fileName;
     {
         QSettings qsettings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
@@ -69,14 +91,9 @@ TEST(Settings, RestoreDefaultKeepsSettingsFileWithNoSettings)
 
     // saving stays off: a later change of a preference doesn't write the settings file either
     EXPECT_FALSE( settings->getSaveSettings() );
+    settings->setSaveSettings(false); // if the check failed: the next tests must not write the user's settings
 
 #if defined(Q_OS_UNIX) && !defined(Q_OS_DARWIN)
     EXPECT_TRUE( QFile::exists(fileName) );
-    // back to the default location ($XDG_CONFIG_HOME, or ~/.config)
-    QString defaultConfigDir = QString::fromLocal8Bit( qgetenv("XDG_CONFIG_HOME") );
-    if ( defaultConfigDir.isEmpty() ) {
-        defaultConfigDir = QDir::homePath() + QString::fromUtf8("/.config");
-    }
-    QSettings::setPath( QSettings::NativeFormat, QSettings::UserScope, defaultConfigDir );
 #endif
 }
