@@ -858,11 +858,14 @@ periodOfRange(double xMin,
     if ( !(xMax > xMin) ) {
         return 0.;
     }
-    if ( (xMin < 0.) && ( xMax > std::numeric_limits<double>::max() + xMin ) ) {
+    // the half-difference never overflows
+    if ( (xMax * 0.5 - xMin * 0.5) > (std::numeric_limits<double>::max() * 0.5) ) {
         return std::numeric_limits<double>::infinity();
     }
+    // volatile: the optimizer must not compute the difference before the test above (clang -O2 did)
+    const volatile double max = xMax;
 
-    return xMax - xMin;
+    return max - xMin;
 }
 
 static void
