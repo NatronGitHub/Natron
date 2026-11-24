@@ -17,6 +17,7 @@
 
 ### Changes
 
+- Python: `ColorParam.get(frame)` returns the alpha of an RGBA color parameter at that frame; it returned the blue value as the alpha. `get()` without a frame was correct. #1712
 - RotoPaint: the Reveal and Remove Feather tool buttons show their names ("Reveal Tool", "Remove Feather Tool") instead of internal names, and the Pencil and Remove Points tools have real tooltips. #1260
 - Tracker: the node description says to choose the operation (stabilize, match-move...) with the Motion Type parameter, not the Transform Type; the Max. Error tooltip says that it is the maximum error allowed; several tooltip typos are fixed. #1260
 - `NatronRenderer --help`: the `-i` and `-s` paragraphs no longer run into the next line, and the `--opengl` paragraph has no stray quote. #1260
