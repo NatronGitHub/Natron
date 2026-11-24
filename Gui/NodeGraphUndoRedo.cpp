@@ -643,10 +643,12 @@ ResizeBackdropCommand::ResizeBackdropCommand(const NodeGuiPtr& bd,
     , _oldW(0)
     , _oldH(0)
 {
-    QRectF bbox = bd->boundingRect();
+    // The node rectangle, not boundingRect(), which includes the outline pen width: undo would
+    // restore a slightly larger backdrop (#1744, as #1071 for the nodes)
+    const QSize size = bd->getSize();
 
-    _oldW = bbox.width();
-    _oldH = bbox.height();
+    _oldW = size.width();
+    _oldH = size.height();
     setText( tr("Resize %1").arg( QString::fromUtf8( _bd->getNode()->getLabel().c_str() ) ) );
 }
 
