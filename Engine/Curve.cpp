@@ -849,6 +849,22 @@ Curve::getKeyFrameWithTime(double time,
 
 /// compute interpolation parameters from keyframes and an iterator
 /// to the next keyframe (the first with time > t)
+// xMax - xMin, the period of a periodic curve. The default range is unbounded ([lowest(), max()]): its period
+// is +infinity, without the overflow, which debug builds trap (SIGFPE when a keyframe is set).
+static double
+periodOfRange(double xMin,
+              double xMax)
+{
+    if ( !(xMax > xMin) ) {
+        return 0.;
+    }
+    if ( (xMin < 0.) && ( xMax > std::numeric_limits<double>::max() + xMin ) ) {
+        return std::numeric_limits<double>::infinity();
+    }
+
+    return xMax - xMin;
+}
+
 static void
 interParams(const KeyFrameSet &keyFrames,
             bool isPeriodic,
@@ -868,7 +884,7 @@ interParams(const KeyFrameSet &keyFrames,
 
     assert(keyFrames.size() >= 1);
     assert( itup == keyFrames.end() || *t < itup->getTime() );
-    double period = xMax - xMin;
+    double period = periodOfRange(xMin, xMax);
     // the default range is unbounded, and its period (DBL_MAX - lowest()) is infinite:
     // such a curve is not periodic
     if ( !(period > 0.) || !MathUtils::isFinite(period) ) {
@@ -1715,7 +1731,7 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
     double tprev, vprev, tnext, vnext, vprevDerivRight, vnextDerivLeft;
     KeyframeTypeEnum prevType, nextType;
 
-    double period = _imp->xMax - _imp->xMin;
+    double period = periodOfRange(_imp->xMin, _imp->xMax);
     // periodic, with a positive finite period (the default range is unbounded, and its period is infinite)
     const bool effectivelyPeriodic = _imp->isPeriodic && (period > 0.) && MathUtils::isFinite(period);
     assert( key != _imp->keyFrames.end() );
