@@ -252,3 +252,81 @@ TEST(NodeGroup, ExportedPyPlugLinksToVersionDocumentation)
 
     groupNode->destroyNode(true, false);
 }
+
+// Activating a group again (undoing its deletion) activates only the nodes that were active when the group was
+// deactivated: a node deleted inside the group before the group stays deleted, also in a nested group (#1456).
+TEST(NodeGroup, ActivateGroupKeepsNodesDeletedBeforeTheGroupDeactivated)
+{
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ASSERT_TRUE( bool(app) );
+
+    // group: [ kept, deleted, deletedInput, inner group: [ innerKept, innerDeleted ] ]
+    NodePtr groupNode = createNodeIn(app, PLUGINID_NATRON_GROUP, app->getProject(), false);
+    ASSERT_TRUE( bool(groupNode) );
+    NodeGroupPtr group = std::dynamic_pointer_cast<NodeGroup>( groupNode->getEffectInstance() );
+    ASSERT_TRUE( bool(group) );
+    NodePtr kept = createNodeIn(app, PLUGINID_NATRON_DOT, group, false);
+    NodePtr deleted = createNodeIn(app, PLUGINID_NATRON_DOT, group, false);
+    NodePtr deletedInput = createNodeIn(app, PLUGINID_NATRON_INPUT, group, false);
+    ASSERT_TRUE( bool(deletedInput) );
+    ASSERT_EQ(1, groupNode->getNInputs());
+    NodePtr innerGroupNode = createNodeIn(app, PLUGINID_NATRON_GROUP, group, false);
+    ASSERT_TRUE( kept && deleted && innerGroupNode );
+    NodeGroupPtr innerGroup = std::dynamic_pointer_cast<NodeGroup>( innerGroupNode->getEffectInstance() );
+    ASSERT_TRUE( bool(innerGroup) );
+    NodePtr innerKept = createNodeIn(app, PLUGINID_NATRON_DOT, innerGroup, false);
+    NodePtr innerDeleted = createNodeIn(app, PLUGINID_NATRON_DOT, innerGroup, false);
+    ASSERT_TRUE( innerKept && innerDeleted );
+    ASSERT_TRUE( deleted->connectInput(kept, 0) );
+
+    // What deleting a node does (like PythonUndoGroupCommand::deleteNode(), without a render), and undoing it.
+    const auto deleteNode = [](const NodePtr& node) {
+        node->deactivate(std::list<NodePtr>(), true /*disconnectAll*/, false /*reconnect*/, true /*hideGui*/,
+                         false /*triggerRender*/, true /*unslaveKnobs*/);
+    };
+    const auto undeleteNode = [](const NodePtr& node) {
+        node->activate(std::list<NodePtr>(), true /*restoreAll*/, false /*triggerRender*/);
+    };
+
+    deleteNode(deleted);
+    deleteNode(deletedInput);
+    deleteNode(innerDeleted);
+    ASSERT_EQ(0, groupNode->getNInputs());
+    for (int i = 0; i < 2; ++i) { // delete the group, undo; then redo, undo
+        deleteNode(groupNode);
+        EXPECT_FALSE( kept->isActivated() );
+        EXPECT_FALSE( innerGroupNode->isActivated() );
+        EXPECT_FALSE( innerKept->isActivated() );
+        undeleteNode(groupNode);
+        EXPECT_TRUE( groupNode->isActivated() );
+        EXPECT_TRUE( kept->isActivated() );
+        EXPECT_TRUE( innerGroupNode->isActivated() );
+        EXPECT_TRUE( innerKept->isActivated() );
+        EXPECT_FALSE( deleted->isActivated() ) << "a node deleted inside the group was activated with the group";
+        EXPECT_FALSE( innerDeleted->isActivated() ) << "a node deleted inside a nested group was activated with the group";
+        EXPECT_FALSE( deletedInput->isActivated() );
+        EXPECT_EQ(0, groupNode->getNInputs());
+    }
+
+    // Undoing the deletion of the nodes in the group still works.
+    undeleteNode(innerDeleted);
+    undeleteNode(deletedInput);
+    undeleteNode(deleted);
+    EXPECT_EQ(1, groupNode->getNInputs()) << "the Input deleted inside the group is not an input of the group again";
+    EXPECT_TRUE( innerDeleted->isActivated() );
+    EXPECT_TRUE( deleted->isActivated() );
+    EXPECT_EQ( kept, deleted->getInput(0) );
+
+    // A nested group deleted before its parent group stays deleted, with its nodes.
+    deleteNode(innerGroupNode);
+    deleteNode(groupNode);
+    undeleteNode(groupNode);
+    EXPECT_TRUE( kept->isActivated() );
+    EXPECT_FALSE( innerGroupNode->isActivated() );
+    EXPECT_FALSE( innerKept->isActivated() );
+    undeleteNode(innerGroupNode);
+    EXPECT_TRUE( innerKept->isActivated() );
+    EXPECT_TRUE( innerDeleted->isActivated() );
+
+    groupNode->destroyNode(true, false);
+}
