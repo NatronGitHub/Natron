@@ -196,14 +196,14 @@ ProjectPrivate::ProjectPrivate(Project* project)
     autoSaveTimer->setSingleShot(true);
 }
 
-bool
+NodesRestoreStatus
 ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                                          const QString& name,
                                          const QString& path,
                                          bool* mustSave)
 {
     /*1st OFF RESTORE THE PROJECT KNOBS*/
-    bool ok;
+    NodesRestoreStatus status;
     std::vector<std::string> linksErrors;
     {
         CreatingNodeTreeFlag_RAII creatingNodeTreeFlag( _publicInterface->getApp() );
@@ -299,8 +299,8 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         /// 3) Restore the nodes
 
         std::map<std::string, bool> processedModules;
-        ok = NodeCollectionSerialization::restoreFromSerialization(obj.getNodesSerialization().getNodesSerialization(),
-                                                                   _publicInterface->shared_from_this(), true, &processedModules);
+        status = NodeCollectionSerialization::restoreFromSerialization(obj.getNodesSerialization().getNodesSerialization(),
+                                                                       _publicInterface->shared_from_this(), true, &processedModules);
         for (std::map<std::string, bool>::iterator it = processedModules.begin(); it != processedModules.end(); ++it) {
             if (it->second) {
                 *mustSave = true;
@@ -440,7 +440,8 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                   std::ostream_iterator<std::string>(imploded, delim));
         throw std::runtime_error( imploded.str() );
     }
-    return ok;
+
+    return status;
 } // restoreFromSerialization
 
 bool

@@ -337,7 +337,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
         std::list<NodeSerializationPtr>::iterator itS = serializations.begin();
         for (std::list<NodeGuiPtr> ::iterator it = newNodesList.begin(); it != newNodesList.end(); ++it, ++itS) {
             (*it)->getNode()->storeKnobsLinks(**itS, oldNewScriptNamesMapping);
-            (*it)->getNode()->restoreKnobsLinks(allNodes, oldNewScriptNamesMapping, true); // clone should never fail
+            (*it)->getNode()->restoreKnobsLinks(allNodes, oldNewScriptNamesMapping, false); // should never fail, but must not throw out of the undo stack (#1612)
         }
     } // CreatingNodeTreeFlag_RAII createNodeTree
 

@@ -1571,8 +1571,8 @@ private:
 
 
     /**
-     * @brief If the node is an input of this node, set ok to true, otherwise
-     * calls this function recursively on all inputs.
+     * @brief Set ok to true if input is upstream of this node: every upstream
+     * node is visited once.
      **/
     void isNodeUpstream(const Node* input, bool* ok) const;
 

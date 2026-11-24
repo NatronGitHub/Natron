@@ -200,6 +200,14 @@ public:
      **/
     void setFileFormat(ProjectFileFormatEnum format);
 
+    /// Whether the loaded project file has GUI data (false for a new project or a background save).
+    /// It describes the loaded file, saving doesn't change it. See App.projectFileHasGuiData() in App.rst.
+    bool fileHasGuiData() const WARN_UNUSED_RETURN;
+
+    /// Whether something in the project file was not loaded, so that saving would lose it (set before
+    /// afterProjectLoad; warnings don't set it). See App.projectLoadedWithErrors() in App.rst.
+    bool fileLoadedWithErrors() const WARN_UNUSED_RETURN;
+
     /**
      * @brief Detects the format of a project file from its first bytes: an XML file starts with "<?xml"
      * (after an optional UTF-8 byte order mark and white space), a binary project with the signature of
@@ -526,13 +534,16 @@ private:
     void setProjectDefaultFormat(const Format & f);
 
     bool loadProjectImpl(const QString & path, const QString & name, bool isUntitledAutosave, bool attemptToLoadAutosave, bool isNamedAutoSave);
-    bool loadProjectInternal(const QString & path, const QString & name, bool isAutoSave,
-                             bool isUntitledAutosave, bool* mustSave);
+    NodesRestoreStatus loadProjectInternal(const QString & path, const QString & name, bool isAutoSave,
+                                           bool isUntitledAutosave, bool* mustSave) WARN_UNUSED_RETURN;
 
     QString saveProjectInternal(const QString & path, const QString & name, bool autosave, bool updateProjectProperties, QStringList* warnings,
                                 ProjectFileFormatEnum format);
 
 
+
+    // An error stopped the load (see fileLoadedWithErrors())
+    void setFileLoadedWithErrors();
 
     void doResetEnd(bool aboutToQuit);
 
@@ -569,7 +580,7 @@ private:
 
     void save(ProjectSerialization* serializationObject) const;
 
-    bool load(const ProjectSerialization & obj, const QString& name, const QString& path, bool* mustSave);
+    NodesRestoreStatus load(const ProjectSerialization & obj, const QString& name, const QString& path, bool* mustSave) WARN_UNUSED_RETURN;
 
 
     std::unique_ptr<ProjectPrivate> _imp;

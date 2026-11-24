@@ -178,6 +178,13 @@ the call. When you need the Engine to affect the GUI, add a method to the
 relevant ``…I`` interface and implement it in the ``Gui`` class — never
 ``#include`` a ``Gui`` header from ``Engine``.
 
+The GUI may delete the object while the Engine object that points to it still
+exists, so such a pointer must be safe after the deletion: if the GUI object is
+a ``QObject``, store a ``QPointer<QObject>`` and cast it back to the interface
+at each use (as ``KnobHolder`` does for its settings panel), or have the GUI
+object's destructor clear it (as ``~NodeGraph()`` does for its
+``NodeCollection``). Check it before each use.
+
 Signals and slots, and ``KnobSignalSlotHandler``
 ------------------------------------------------
 

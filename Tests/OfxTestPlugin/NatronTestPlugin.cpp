@@ -47,7 +47,9 @@
 // - net.natron.test.Generator: a generator that fills its output with 0.5, with the pixel aspect ratio of
 //   its "par" parameter (it supports multiple clip PARs, so that it may set its output PAR, and "par" is a
 //   clip preferences slave parameter). If its "fps" parameter (also a slave parameter) is positive, it sets
-//   the output frame rate to it in getClipPreferences (kOfxImageEffectPropSetableFrameRate).
+//   the output frame rate to it in getClipPreferences (kOfxImageEffectPropSetableFrameRate). If its "fail"
+//   parameter is true, kOfxImageEffectActionGetRegionOfDefinition and kOfxImageEffectActionRender return
+//   kOfxStatFailed, as a Read node whose file is missing does with "On missing frame: Error" (#1602).
 // - net.natron.test.MultiPAR: two inputs, Source and B, and kOfxImageEffectPropSupportsMultipleClipPARs.
 //   It records the pixel aspect ratio of each input clip and image, times 1000, in render.
 // - net.natron.test.ClipGetImage: asks for a small region of Source in getRegionsOfInterest; in render,
@@ -980,8 +982,22 @@ generatorPluginMain(const char* action,
             return kOfxStatFailed;
         }
         gPropSuite->propSetDouble(props, kOfxParamPropDefault, 0, 0.);
+        if (gParamSuite->paramDefine(paramSet, kOfxParamTypeBoolean, "fail", &props) != kOfxStatOK) {
+            return kOfxStatFailed;
+        }
 
         return kOfxStatOK;
+    }
+    if ( (std::strcmp(action, kOfxImageEffectActionGetRegionOfDefinition) == 0) ||
+         (std::strcmp(action, kOfxImageEffectActionRender) == 0) ) {
+        int fail = 0;
+        OfxParamHandle param = getParam(effect, "fail");
+        if (param) {
+            gParamSuite->paramGetValue(param, &fail);
+        }
+        if (fail) {
+            return kOfxStatFailed;
+        }
     }
     if (std::strcmp(action, kOfxImageEffectActionGetClipPreferences) == 0) {
         double par = 1.;

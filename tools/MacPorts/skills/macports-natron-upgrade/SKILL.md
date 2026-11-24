@@ -53,7 +53,7 @@ MacPorts never downgrades: if a pinned port was installed in a newer version, `s
 
 ## Compiler pin (clang)
 
-Natron's app build (`tools/jenkins/compiler-common.sh`) auto-selects a MacPorts `clang-mp-*`. The right version depends on the macOS version — **verify, don't assume older notes**:
+Natron's release builds use Apple clang with MacPorts' `libomp` (`tools/jenkins/compiler-common.sh`, #1134); for the qmake and Makefile fallbacks (or `NATRON_MACOS_CLANG=macports`) it auto-selects a MacPorts `clang-mp-*`. The right version depends on the macOS version — **verify, don't assume older notes**:
 
 - **Legacy:** older macOS pinned `clang_version=16` (`11` on 10.6) for two reasons — clang-17/18 once mis-linked `-fopenmp` against `@rpath/libc++.1.dylib`, and clang-19+ emits `__kmpc_dispatch_deinit`, which was absent from the then-pinned libomp 11.1.0.
 - **Current (macOS 26 / Darwin 25 — verified):** both reasons are resolved. `clang++-mp-17 -stdlib=libc++ -fopenmp` links against `/usr/lib/libc++.1.dylib` correctly (no `@rpath`), and libomp is no longer pinned (upstream libomp has `__kmpc_dispatch_deinit`). `compiler-common.sh` therefore picks the **newest installed** `clang-mp-*` capped at the MacPorts default for the OS (≤22 on Darwin ≥25, ≤18 on Darwin 24, ≤17 otherwise, so macOS 10.15 behaves as before); clang-16 need not be forced.
@@ -183,7 +183,7 @@ nohup env NOUPDATE=1 WORKSPACE=$HOME/Development/workspace \
 `set -e` means it stops at the first error; the log tail shows the failing step. Monitor with `tail -f /tmp/natron-build.log`.
 
 - **arch:** on Apple Silicon it targets arm64 natively (no flag needed; `BITS=Universal` is for older/Intel setups).
-- **compiler:** auto-selected by `compiler-common.sh` (newest installed `clang-mp-*`, clang-22 on macOS 26+ — see Compiler pin).
+- **compiler:** auto-selected by `compiler-common.sh` (Apple clang + `libomp`; for the fallbacks, the newest installed `clang-mp-*`, clang-22 on macOS 26+ — see Compiler pin).
 - **output DMG:** under `$WORKSPACE/builds_archive/$BUILD_NAME/$BUILD_NUMBER/` (`build-OSX-installer.sh` writes `<INSTALLER_BASENAME>.dmg`).
 - **partial runs:** `BUILD_FROM`/`BUILD_TO` restrict which of the 6 steps run; `DEBUG_SCRIPTS=1` keeps prior binaries to resume.
 - **release build:** set `RELEASE_TAG=x.y.z NATRON_DEV_STATUS=STABLE NATRON_BUILD_NUMBER=1` instead of a branch CI build.

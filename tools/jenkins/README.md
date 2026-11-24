@@ -8,7 +8,7 @@ Build environments
 
 The Natron 2.6 releases are built in clean environments, not on long-lived build machines:
 
- * **Linux:** the Rocky Linux 9 Docker image with the Natron SDK, built by `include/scripts/build-Linux-sdk.sh`. See [tools/docker/README.md](../docker/README.md) to build the image and to launch a build in it.
+ * **Linux:** the Rocky Linux 9 Docker image with the Natron SDK, built by `include/scripts/build-Linux-sdk.sh`. See [tools/docker/README.md](../docker/README.md) to build the image and to launch a build in it. On GitHub Actions, `.github/workflows/linux_packages.yml` builds the image and the x86_64 and aarch64 portable archives, and tests them with Natron-Tests.
  * **Windows:** an MSYS2 UCRT64 (or CLANGARM64) environment with the packages of [tools/MINGW-packages](../MINGW-packages/README.md) (`build_installer.yml` sets it up on GitHub Actions).
  * **macOS:** MacPorts with the ports of `tools/MacPorts`, as described in `INSTALL_MACOS.md`, or a clean macOS 14 virtual machine made by [tools/tart](../tart/README.md).
 
@@ -77,6 +77,8 @@ This should be consistent with the `REMOTE_PREFIX_USER` value passed to the uplo
 `DEBUG_SCRIPTS`: If set to 1, binaries from previous build with same options are not cleaned so that the scripts can continue the same compilation.
 
 `PLUGINS_BUILD_SYSTEM`: `cmake` (default) or `make`. With `cmake`, openfx-misc, openfx-io, openfx-arena and openfx-gmic are built with their CMake builds (`build-plugins.sh`, function `ofx_cmake_build`), and a checkout without one is an error. `make` builds them with their Makefiles, the fallback while RB-2.6 is maintained. The CMake builds ignore `OPTFLAG`: they use `-O3` (with `-g` for `relwithdebinfo`); `COMPILE_TYPE=debug` gives `CMAKE_BUILD_TYPE=RelWithDebInfo` with `-O1 -g`, as the Makefiles' `CONFIG=relwithdebinfo OPTFLAG=-O`, so that the macOS bundles are still made self-contained. On macOS, `-DCMAKE_OSX_DEPLOYMENT_TARGET` is `MACOSX_DEPLOYMENT_TARGET` from `common.sh` (14.0 with #1347), as for the Makefiles. On macOS, a release build without OpenMP (Apple clang without MacPorts' `libomp`) is an error. They download the G'MIC sources into `$WORKSPACE/src`, which is kept across builds.
+
+`NATRON_MACOS_CLANG`: the compiler of the macOS builds, `system` (default) or `macports`. With `system`, Natron and the plug-ins are built with the system (Xcode or Command Line Tools) clang, `/usr/bin/clang++`, when it supports the C++ standard (C++17 with Qt5, C++20 with Qt6) and links with MacPorts' `libomp` (`compiler-common.sh` checks both). The qmake build (`NATRON_BUILD_SYSTEM=qmake`), the plug-ins' Makefiles (`PLUGINS_BUILD_SYSTEM=make`) and `macports` use a MacPorts `clang-mp-N` instead, for Natron and all the plug-ins (see `INSTALL_MACOS.md`).
 
 `MAGICK7_PREFIX`: Prefix of the ImageMagick 7 that openfx-arena is built with (its `lib/pkgconfig` is put first in `PKG_CONFIG_PATH` for that build). Defaults to `$SDK_HOME/magick7` on Linux (`include/scripts/pkg/imagemagick7.sh`), `$SDK_HOME/lib/ImageMagick7` on macOS (MacPorts' `ImageMagick7 +natron`, from `tools/MacPorts`), and the MSYS2 prefix on Windows (`natron_imagemagick`, from `tools/MINGW-packages`).
 

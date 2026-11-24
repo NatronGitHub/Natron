@@ -41,6 +41,42 @@ if [ "$PKGOS" = "OSX" ]; then
         clang_max=17
     fi
 
+    # The system (Xcode or Command Line Tools) clang builds Natron and the plug-ins when it
+    # supports $CXXSTD and links with MacPorts' libomp (#1134, decided 2026-11-23): the CMake
+    # builds pass it -Xpreprocessor -fopenmp and -lomp (Natron's CMakeLists.txt, OFX_LIBOMP_ROOT
+    # in build-plugins.sh). The qmake build and the plug-ins' Makefiles pass -fopenmp, which Apple
+    # clang's driver rejects: they keep a MacPorts clang-mp-N, as does NATRON_MACOS_CLANG=macports.
+    # No Apple clang bug is known to require a MacPorts clang; add an explicit version check
+    # here, with the reason, if one is found.
+    use_system_clang=0
+    case "${NATRON_MACOS_CLANG:-system}" in
+        system)
+            if [ "${NATRON_BUILD_SYSTEM:-cmake}" = cmake ] && [ "${PLUGINS_BUILD_SYSTEM:-cmake}" = cmake ]; then
+                system_clang_test=$(mktemp -d)
+                case "$CXXSTD" in
+                    c++20) cplusplus=202002L;;
+                    *) cplusplus=201703L;;
+                esac
+                # (a dynamic schedule: Apple clang's code needs a recent libomp, e.g. __kmpc_dispatch_deinit)
+                printf '#include <omp.h>\n#if __cplusplus < %s\n#error\n#endif\nint main() {\n  int n = 0;\n#pragma omp parallel for schedule(dynamic) reduction(+:n)\n  for (int i = 0; i < 4; ++i) n += i;\n  return n == 6 && omp_get_max_threads() > 0 ? 0 : 1;\n}\n' \
+                       "$cplusplus" > "$system_clang_test/t.cpp"
+                if /usr/bin/clang++ -std="$CXXSTD" -Xpreprocessor -fopenmp -I/opt/local/include/libomp \
+                       "$system_clang_test/t.cpp" -o "$system_clang_test/t" -L/opt/local/lib/libomp -lomp >/dev/null 2>&1; then
+                    use_system_clang=1
+                else
+                    echo "Warning: /usr/bin/clang++ can't build $CXXSTD with OpenMP (MacPorts libomp):" \
+                         "using a MacPorts clang-mp-N if there is one" >&2
+                fi
+                rm -rf "$system_clang_test"
+            fi
+            ;;
+        macports) ;;
+        *)
+            echo "Error: NATRON_MACOS_CLANG must be system or macports, not \"$NATRON_MACOS_CLANG\"" >&2
+            exit 1
+            ;;
+    esac
+
     # use a MacPorts clang (with OpenMP) if one not newer than clang_max is available
     clang_mp_found=0
     for v in 22 21 20 19 18 17 16 15 14 13 12 11 10 9.0 8.0 7.0 6.0 5.0 4.0; do
@@ -49,7 +85,11 @@ if [ "$PKGOS" = "OSX" ]; then
             break
         fi
     done
-    if [ "$clang_mp_found" = 0 ] && compgen -c clang-mp- >/dev/null 2>&1; then
+    if [ "${NATRON_MACOS_CLANG:-system}" = macports ] && [ "$clang_mp_found" = 0 ]; then
+        echo "Error: NATRON_MACOS_CLANG=macports, but no MacPorts clang-mp-N (N <= $clang_max) is installed" >&2
+        exit 1
+    fi
+    if [ "$use_system_clang" = 0 ] && [ "$clang_mp_found" = 0 ] && compgen -c clang-mp- >/dev/null 2>&1; then
         echo "Warning: only MacPorts clang-mp-N newer than clang-mp-$clang_max found:" \
              "building with Apple clang, without OpenMP. Install clang-$clang_max (see INSTALL_MACOS.md)." >&2
     fi
@@ -74,7 +114,15 @@ if [ "$PKGOS" = "OSX" ]; then
         echo "Error: COMPILER must be clang or clang-omp on macOS"
         exit 1
     fi
-    if [ "$COMPILER" = "clang" ]; then
+    if [ "$use_system_clang" = 1 ]; then
+        # COMPILER=clang-omp: built with OpenMP, and build-OSX-installer.sh bundles libomp.
+        # Full paths: CMake can't find a bare "clang++" for CMAKE_OBJCXX_COMPILER
+        COMPILER=clang-omp
+        CC=/usr/bin/clang
+        CXX="/usr/bin/clang++ -std=${CXXSTD}"
+        OBJECTIVE_CC=$CC
+        OBJECTIVE_CXX=$CXX
+    elif [ "$COMPILER" = "clang" ]; then
         case "$macosx" in
             9|10|11|12)
                 # GXX should be an openmp-capable compiler (to compile CImg.ofx)

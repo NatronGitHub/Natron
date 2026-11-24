@@ -218,8 +218,9 @@ function ofx_cmake_build() {
             *) cxx_flags="$cxx_flags $w";;
         esac
     done
-    # OpenMP (ofx_target_openmp): with gcc and MacPorts clang (COMPILER=gcc or clang-omp), and
-    # with Apple clang from MacPorts' libomp (OFX_LIBOMP_ROOT). A repository may override it.
+    # OpenMP (ofx_target_openmp): with COMPILER=gcc or clang-omp (gcc, a MacPorts clang, or Apple
+    # clang with MacPorts' libomp, see compiler-common.sh), and with any Apple clang if MacPorts'
+    # libomp is installed (OFX_LIBOMP_ROOT). A repository may override it.
     local openmp=OFF
     if [ "$COMPILER" = "gcc" ] || [ "$COMPILER" = "clang-omp" ]; then
         openmp=ON

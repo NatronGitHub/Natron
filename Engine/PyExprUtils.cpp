@@ -28,6 +28,7 @@
 
 #include <limits>
 #include <cmath>
+#include <cstdint>
 
 #include "Global/GlobalDefines.h"
 #include "Engine/Noise.h"
@@ -110,7 +111,9 @@ ExprUtils::hash(const std::vector<double>& args)
         // make irrational to generate fraction and combine xor into 32 bits
         int exp = 0;
         double frac = frexp(args[i] * double(M_E * M_PI), &exp);
-        uint32_t s = uint32_t(frac * std::numeric_limits<uint32_t>::max()) ^ uint32_t(exp);
+        // convert through int64_t: frac is negative for negative args, and converting
+        // a negative double to uint32_t is undefined (x86_64 wraps it, arm64 clamps it)
+        uint32_t s = uint32_t(int64_t(frac * std::numeric_limits<uint32_t>::max())) ^ uint32_t(exp);
 
         // blend with seed (constants from Numerical Recipes, attrib. from Knuth)
         static const uint32_t M = 1664525, C = 1013904223;
