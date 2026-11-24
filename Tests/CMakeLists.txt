@@ -335,6 +335,13 @@ foreach(_natron_gui_test ${NatronGuiTests_SCRIPTS})
     endif()
 endforeach()
 
+# Connecting an input is fast when many paths lead to the same node (the cycle check visited a node
+# once per path): NatronRenderer runs the script, which exits with natron.quit(status).
+add_test(NAME ConnectLadderHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_connect_ladder.py")
+set_tests_properties(ConnectLadderHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/connect-ladder-headless-cache")
+
 # Undo groups do nothing in background mode (App.undoGroup(), #1455): NatronRenderer runs the script,
 # which exits with natron.quit(status).
 add_test(NAME UndoGroupHeadless
