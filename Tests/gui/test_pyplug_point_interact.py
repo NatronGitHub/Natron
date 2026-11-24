@@ -7,6 +7,7 @@ import os
 import sys
 import tempfile
 
+import NatronEngine
 import NatronGuiTest
 from natrontest import *
 
@@ -51,13 +52,14 @@ check(os.path.exists(path), "the PyPlug was not exported to %s" % path)
 with open(path) as f:
     print("".join(line for line in f if "point" in line.lower()))
 
-# instantiate the exported PyPlug in an empty Group, as Natron does
+# instantiate the exported PyPlug, as Natron does
 sys.path.insert(0, out_dir)
 sys.dont_write_bytecode = True
 module = importlib.import_module(MODULE)
-target = app.createNode(GROUP)
-for child in target.getChildren():
-    child.destroy()
+# without the initial Input and Output nodes, as Natron creates the Group of a PyPlug
+target = app.createNode(GROUP, -1, None,
+                        {"CreateNodeArgsPropNodeGroupDisableCreateInitialNodes": NatronEngine.BoolNodeCreationProperty(True)})
+check(target is not None and not target.getChildren(), "the empty Group was not created")
 module.createInstance(app, target)
 wait_idle()
 target_point = target.getParam("point")
@@ -68,7 +70,6 @@ viewer = viewer_node(app)
 gen = app.createNode(GENERATOR)
 target.connectInput(0, gen)
 viewer.connectInput(0, target)
-source.destroy()  # its overlay is at the same place
 # the overlay of a node is shown while its settings panel is open: select it and press Return
 app.clearSelection()
 app.selectNode(target, True)
