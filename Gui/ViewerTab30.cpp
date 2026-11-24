@@ -269,7 +269,9 @@ ViewerTab::getChannelsString(DisplayChannelsEnum c)
     case eDisplayChannelsY:
 
         return "Luminance";
-        break;
+    case eDisplayChannelsMatte:
+
+        return "Matte";
     default:
 
         return "";
@@ -287,11 +289,18 @@ ViewerTab::getChannelsString() const
 void
 ViewerTab::setChannels(const std::string & channelsStr)
 {
-    int index = _imp->viewerChannels->itemIndex( QString::fromUtf8( channelsStr.c_str() ) );
+    // The names of getChannelsString(), which the projects save, in the order of the channels combo box items
+    // (see setDisplayChannels()). The items are labels ("Red", "Alpha", a translated "Luminance"...): looking
+    // the name up among them failed for all but RGB (#1550).
+    static const char* const channelsNames[] = { "Luminance", "RGB", "R", "G", "B", "A", "Matte" };
 
-    if (index != -1) {
-        _imp->viewerChannels->setCurrentIndex_no_emit(index);
-        setDisplayChannels(index, true);
+    for (int index = 0; index < (int)( sizeof(channelsNames) / sizeof(channelsNames[0]) ); ++index) {
+        if (channelsStr == channelsNames[index]) {
+            _imp->viewerChannels->setCurrentIndex_no_emit(index);
+            setDisplayChannels(index, true);
+
+            return;
+        }
     }
 }
 
