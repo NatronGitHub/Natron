@@ -108,6 +108,7 @@ set(Tests_SOURCES
     RenderThreads_Test.cpp
     RotoPaint_Test.cpp
     SequentialRender_Test.cpp
+    Settings_Test.cpp
     ShuffleAutoConnect_Test.cpp
     StrUtilsFormat_Test.cpp
     Tracker_Test.cpp
@@ -399,6 +400,13 @@ add_test(NAME PyPlugReboundAppHeadless
     COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_pyplug_rebound_app.py")
 set_tests_properties(PyPlugReboundAppHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_PLUGIN_PATH=${CMAKE_CURRENT_SOURCE_DIR}/data/pyplugs;PYTHONDONTWRITEBYTECODE=1;NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/pyplug-rebound-app-cache")
+
+# Renaming a group recompiles the expressions of its knobs and of the nodes inside it (#1686): NatronRenderer
+# runs the script, which exits with natron.quit(status).
+add_test(NAME RenameGroupExpressionsHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_rename_group_expressions.py")
+set_tests_properties(RenameGroupExpressionsHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/rename-group-expressions-headless-cache")
 
 # The color plane goes through a Shuffle that writes to another layer (it was black): NatronRenderer runs the
 # script, which exits with natron.quit(status), 77 when openfx-misc or openfx-io are not in OFX_PLUGIN_PATH.
