@@ -465,6 +465,49 @@ Knob<T>::evaluateExpression_pod(double time,
 }
 
 template <typename T>
+std::optional<T>
+Knob<T>::getCachedExpressionResult(int dimension,
+                                   const ExpressionResultKey& key,
+                                   unsigned int* generation) const
+{
+    // _exprResMutex is a leaf lock: the key was computed before locking it
+    std::lock_guard<std::mutex> k(_exprResMutex);
+    typename FrameValueMap::const_iterator found = _exprRes[dimension].find(key);
+
+    if ( found != _exprRes[dimension].end() ) {
+        return found->second;
+    }
+    *generation = _exprResGeneration;
+
+    return std::nullopt;
+}
+
+template <typename T>
+void
+Knob<T>::cacheExpressionResult(int dimension,
+                               double time,
+                               ViewIdx view,
+                               const ExpressionResultKey& key,
+                               unsigned int generation,
+                               const T& value) const
+{
+    // The context may have changed during the evaluation (e.g. the timeline moved during a playback, while the
+    // GUI evaluated the expression at the timeline's frame): the result may have been read in the new context.
+    const std::optional<ExpressionResultKey> keyAfter = getExpressionResultKey(time, view);
+
+    if ( !keyAfter || !(*keyAfter == key) ) {
+        return;
+    }
+    std::lock_guard<std::mutex> k(_exprResMutex);
+    // If the results were cleared during the evaluation (e.g. a parameter used by the expression changed
+    // in another thread), this result may be computed from the old values: return it, but don't store it,
+    // else later renders would keep using it.
+    if (_exprResGeneration == generation) {
+        _exprRes[dimension].insert( std::make_pair(key, value) );
+    }
+}
+
+template <typename T>
 bool
 Knob<T>::getValueFromExpression(double time,
                                 ViewIdx view,
@@ -478,19 +521,16 @@ Knob<T>::getValueFromExpression(double time,
     }
 
 
-    ///Check first if a value was already computed in the same context (#1578). The key is computed before
-    ///locking _exprResMutex, which is a leaf lock.
+    ///Check first if a value was already computed in the same context (#1578)
     const std::optional<ExpressionResultKey> key = getExpressionResultKey(time, view);
     unsigned int generation = 0;
     if (key) {
-        std::lock_guard<std::mutex> k(_exprResMutex);
-        typename FrameValueMap::iterator found = _exprRes[dimension].find(*key);
-        if ( found != _exprRes[dimension].end() ) {
-            *ret = found->second;
+        const std::optional<T> cached = getCachedExpressionResult(dimension, *key, &generation);
+        if (cached) {
+            *ret = *cached;
 
             return true;
         }
-        generation = _exprResGeneration;
     }
 
     bool exprWasValid = isExpressionValid(dimension, 0);
@@ -515,15 +555,8 @@ Knob<T>::getValueFromExpression(double time,
         *ret =  clampToMinMax(*ret, dimension);
     }
 
-    if (!key) {
-        return true;
-    }
-    std::lock_guard<std::mutex> k(_exprResMutex);
-    // If the results were cleared during the evaluation (e.g. a parameter used by the expression changed
-    // in another thread), this result may be computed from the old values: return it, but don't store it,
-    // else later renders would keep using it.
-    if (_exprResGeneration == generation) {
-        _exprRes[dimension].insert( std::make_pair(*key, *ret) );
+    if (key) {
+        cacheExpressionResult(dimension, time, view, *key, generation, *ret);
     }
 
     return true;
@@ -579,19 +612,16 @@ Knob<T>::getValueFromExpression_pod(double time,
     }
 
 
-    ///Check first if a value was already computed in the same context (#1578). The key is computed before
-    ///locking _exprResMutex, which is a leaf lock.
+    ///Check first if a value was already computed in the same context (#1578)
     const std::optional<ExpressionResultKey> key = getExpressionResultKey(time, view);
     unsigned int generation = 0;
     if (key) {
-        std::lock_guard<std::mutex> k(_exprResMutex);
-        typename FrameValueMap::iterator found = _exprRes[dimension].find(*key);
-        if ( found != _exprRes[dimension].end() ) {
-            *ret = found->second;
+        const std::optional<T> cached = getCachedExpressionResult(dimension, *key, &generation);
+        if (cached) {
+            *ret = *cached;
 
             return true;
         }
-        generation = _exprResGeneration;
     }
 
 
@@ -617,13 +647,8 @@ Knob<T>::getValueFromExpression_pod(double time,
         *ret =  clampToMinMax(*ret, dimension);
     }
 
-    if (!key) {
-        return true;
-    }
-    std::lock_guard<std::mutex> k(_exprResMutex);
-    // as in getValueFromExpression()
-    if (_exprResGeneration == generation) {
-        _exprRes[dimension].insert( std::make_pair(*key, *ret) );
+    if (key) {
+        cacheExpressionResult(dimension, time, view, *key, generation, *ret);
     }
 
     return true;

@@ -34,6 +34,7 @@
 #include <map>
 #include <mutex>
 #include <optional>
+#include <tuple> // tie
 
 #include <QReadWriteLock>
 #include <QMutex>
@@ -1769,18 +1770,35 @@ protected:
      * @brief The key of a cached expression result (#1578): the frame and view the expression is evaluated at, and
      * the frames and views at which get() without a frame reads the parameters: the holder's current time and view,
      * for the parameters of this node (during its render actions, the time and view of that action), and the time
-     * and view of the render, for those of the other nodes (outside a render, both are the timeline's frame and view 0).
+     * and view of the render (the ParallelRenderArgs of this thread), for those of the other nodes, outside a render
+     * the timeline's frame and view 0.
+     * This covers the nodes that the render setup gives these render args, i.e. those the expressions are known to
+     * depend on, while they are not in a render action of their own on this thread (another node of the tree read
+     * while it renders at another time, e.g. FrameBlend upstream of a TimeOffset, is read at that time instead), and
+     * not the nodes that an expression finds by itself (e.g. with app.getNode()), which are read at the timeline's frame.
      **/
     struct ExpressionResultKey
     {
-        double time;
+        double time = 0.;
         ViewIdx view;
-        double holderTime;
+        double holderTime = 0.;
         ViewIdx holderView;
-        double renderTime;
+        double renderTime = 0.;
         ViewIdx renderView;
 
-        bool operator<(const ExpressionResultKey& other) const;
+        friend bool operator<(const ExpressionResultKey& a,
+                              const ExpressionResultKey& b)
+        {
+            return std::tie(a.time, a.view, a.holderTime, a.holderView, a.renderTime, a.renderView) <
+                   std::tie(b.time, b.view, b.holderTime, b.holderView, b.renderTime, b.renderView);
+        }
+
+        friend bool operator==(const ExpressionResultKey& a,
+                               const ExpressionResultKey& b)
+        {
+            return std::tie(a.time, a.view, a.holderTime, a.holderView, a.renderTime, a.renderView) ==
+                   std::tie(b.time, b.view, b.holderTime, b.holderView, b.renderTime, b.renderView);
+        }
     };
 
     /**
@@ -2200,6 +2218,15 @@ private:
     bool getValueFromExpression(double time, ViewIdx view, int dimension, bool clamp, T* ret);
 
     bool getValueFromExpression_pod(double time, ViewIdx view, int dimension, bool clamp, double* ret);
+
+    /// The result cached under key for dimension, if any; if not, *generation is set to the generation of the cache,
+    /// to pass to cacheExpressionResult() after the evaluation.
+    std::optional<T> getCachedExpressionResult(int dimension, const ExpressionResultKey& key, unsigned int* generation) const;
+
+    /// Stores the result of the expression of dimension, evaluated at time and view under key, unless the cache was
+    /// cleared since getCachedExpressionResult() returned generation (a parameter it reads changed meanwhile), or the
+    /// key changed during the evaluation (e.g. the timeline moved during a playback).
+    void cacheExpressionResult(int dimension, double time, ViewIdx view, const ExpressionResultKey& key, unsigned int generation, const T& value) const;
 
     //////////////////////////////////////////////////////////////////////
     /////////////////////////////////// End implementation of KnobI

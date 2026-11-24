@@ -93,6 +93,9 @@ protected:
         }
         _nodes.clear();
         seek(_savedTimelineTime);
+        // the evaluation counter of ExpressionResultIsCachedPerContext, also if it failed
+        std::string error;
+        (void)NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("globals().pop('natronTest1578Count', None)\n", &error, 0);
     }
 
     bool skipped(const char* pluginID = kNatronTestPluginParams)
@@ -582,5 +585,4 @@ TEST_F(ExpressionDepsRenderArgsTest, ExpressionResultIsCachedPerContext)
     EXPECT_EQ( 10., aTo->getValue() );
     EXPECT_EQ( 3, evaluations() ) << "the result at the timeline's frame was not cached";
     aTo->clearExpression(0, true);
-    EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("del natronTest1578Count\n", &err, 0) ) << err;
 }

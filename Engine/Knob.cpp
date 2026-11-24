@@ -32,7 +32,6 @@
 #include <sstream> // stringstream
 #include <cctype> // isspace
 #include <cstring> // memcpy
-#include <tuple> // tie
 
 #include <QDataStream>
 #include <QDateTime>
@@ -4448,13 +4447,6 @@ KnobHelper::getCurrentView() const
     return ( holder && holder->getApp() ) ? holder->getCurrentView() : ViewIdx(0);
 }
 
-bool
-KnobHelper::ExpressionResultKey::operator<(const ExpressionResultKey& other) const
-{
-    return std::tie(time, view, holderTime, holderView, renderTime, renderView) <
-           std::tie(other.time, other.view, other.holderTime, other.holderView, other.renderTime, other.renderView);
-}
-
 std::optional<KnobHelper::ExpressionResultKey>
 KnobHelper::getExpressionResultKey(double time,
                                    ViewIdx view) const
@@ -4472,7 +4464,8 @@ KnobHelper::getExpressionResultKey(double time,
     key.holderTime = effect->getCurrentTime();
     key.holderView = effect->getCurrentView();
     // The other nodes of the render have the same render args (ParallelRenderArgsSetter), and get() reads them at
-    // that time and view (EffectInstance::getCurrentTime()); outside a render, at the timeline's frame and view 0.
+    // that time and view (EffectInstance::getCurrentTime()); outside a render, at the timeline's frame and view 0
+    // (see ExpressionResultKey for the exceptions).
     ParallelRenderArgsPtr renderArgs = effect->getParallelRenderArgsTLS();
     if (renderArgs) {
         key.renderTime = renderArgs->time;
