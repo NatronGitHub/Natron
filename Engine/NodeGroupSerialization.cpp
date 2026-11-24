@@ -170,7 +170,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
             // First try with the saved path
             // Then search through all PyPlug search paths recursively for a match
             if (!QFile::exists(qPyModulePath)) {
-                // the file name: the saved absolute path, which doesn't exist, can't be found there (#1645)
+                // search by file name: the saved absolute path doesn't exist here (#1645)
                 const QString pythonModuleFileName = QFileInfo(qPyModulePath).fileName();
 
                 qPyModulePath.clear();
