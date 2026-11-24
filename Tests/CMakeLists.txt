@@ -28,6 +28,7 @@ set(Tests_SOURCES
     DiskCache_Test.cpp
     ExpressionDepsRenderArgs_Test.cpp
     ExpressionSetError_Test.cpp
+    ExprUtils_Test.cpp
     FailedRoDRender_Test.cpp
     FileSystemModel_Test.cpp
     Hash64_Test.cpp
