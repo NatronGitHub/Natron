@@ -259,6 +259,7 @@ insertDependenciesRecursive(Node* node,
                 for (std::size_t j = 0; j < found->second.size(); ++j) {
                     if (it->second[j].isExpr) {
                         found->second[j].isListening |= it->second[j].isListening;
+                        found->second[j].isExpr = true;
                     }
                 }
             } else {
