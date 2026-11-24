@@ -255,3 +255,32 @@ TEST_F(WriteNodeViewsTest, SingleView)
     saveAndLoad(true);
     EXPECT_FALSE( viewsSecret() );
 }
+
+// #693: a video file name is not a sequence pattern, so its '#' is not replaced by the frame number, while
+// it still is in the name of an image sequence.
+TEST_F(WriteNodeViewsTest, VideoFileNameKeepsHash)
+{
+    if ( !isPluginAvailable(PLUGINID_OFX_WRITEFFMPEG) || !isPluginAvailable(PLUGINID_OFX_WRITEOIIO) ) {
+        reportSkipped("plug-in not found (needs " PLUGINID_OFX_WRITEFFMPEG " and " PLUGINID_OFX_WRITEOIIO " from openfx-io in OFX_PLUGIN_PATH)");
+
+        return;
+    }
+    const std::string video = _dir + "/take#1.mov";
+    CreateNodeArgs args( PLUGINID_NATRON_WRITE, _app->getProject() );
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, video);
+    _node = _app->createNode(args);
+    ASSERT_TRUE( bool(_node) );
+    WriteNode* write = dynamic_cast<WriteNode*>( _node->getEffectInstance().get() );
+    ASSERT_TRUE(write != NULL);
+    ASSERT_TRUE( bool( write->getEmbeddedWriter() ) );
+    ASSERT_EQ( write->getEmbeddedWriter()->getPluginID(), std::string(PLUGINID_OFX_WRITEFFMPEG) );
+    KnobOutputFilePtr file = std::dynamic_pointer_cast<KnobOutputFile>( _node->getKnobByName(kOfxImageEffectFileParamName) );
+    ASSERT_TRUE( bool(file) );
+    EXPECT_EQ( video, file->generateFileNameAtTime( 5, ViewIdx(0) ).toStdString() );
+
+    setFile(_dir + "/shot.#.exr");
+    file = std::dynamic_pointer_cast<KnobOutputFile>( _node->getKnobByName(kOfxImageEffectFileParamName) );
+    ASSERT_TRUE( bool(file) );
+    EXPECT_EQ( _dir + "/shot.5.exr", file->generateFileNameAtTime( 5, ViewIdx(0) ).toStdString() );
+}
