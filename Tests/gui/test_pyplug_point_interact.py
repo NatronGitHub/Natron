@@ -1,9 +1,11 @@
 # Regression test for #1526: Export as PyPlug saves "Use Point Interact" of a 2D parameter, so the point of the
 # exported PyPlug can be dragged in the viewer. A Group with such a parameter is exported through the Export as
 # PyPlug dialog to a temporary directory, the exported createInstance() fills a second Group (as Natron does
-# for a PyPlug), and dragging the point in the viewer must change the parameter of that Group.
+# for a PyPlug), and dragging the point in the viewer must change the parameter of that Group. Last, the panel
+# of an unconnected instance is opened: the viewer must not crash while drawing its overlay.
 import importlib
 import os
+import shutil
 import sys
 import tempfile
 
@@ -32,7 +34,10 @@ out_dir = tempfile.mkdtemp(prefix="natron-pyplug-point-interact-")
 
 
 def fill_dialog(_title, _text, _class_name):
-    """Fill the ID, label and directory of the Export as PyPlug dialog (its QGridLayout), and accept it."""
+    """Fill the ID, label and directory of the Export as PyPlug dialog, and accept it.
+
+    The cells are those of the QGridLayout of Gui/ExportGroupTemplateDialog.cpp.
+    """
     dialog = QtWidgets.QApplication.activeModalWidget()  # a variable: a temporary wrapper would delete the layout wrapper
     layout = dialog.layout()
     layout.itemAtPosition(0, 1).widget().setText("fr.natron.test.PointInteract")  # ID
@@ -82,3 +87,15 @@ x, y = target_point.getValue(0), target_point.getValue(1)
 print("point after the drag: %r" % ((x, y),))
 check_close(x, 700.0, 10.0, "point x after the drag")
 check_close(y, 400.0, 10.0, "point y after the drag")
+
+# an unconnected instance with its panel open: nothing leads from its Output node to an image, which made the
+# viewer dereference a null node while drawing the overlays
+lonely = app.createNode(GROUP, -1, None,
+                        {"CreateNodeArgsPropNodeGroupDisableCreateInitialNodes": NatronEngine.BoolNodeCreationProperty(True)})
+module.createInstance(app, lonely)
+app.clearSelection()
+app.selectNode(lonely, True)
+NatronGuiTest.sendKey("NodeGraph", "Return")
+fit_viewer()
+wait_idle()
+shutil.rmtree(out_dir, ignore_errors=True)
