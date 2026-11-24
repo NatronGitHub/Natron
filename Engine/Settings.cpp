@@ -87,6 +87,8 @@ Settings::Settings()
 {
 }
 
+// The folders where the OpenColorIO configs are searched, in order of preference: the bundled
+// ones (next to the binary) come first, so that a system-wide folder doesn't override them.
 static QStringList
 getDefaultOcioConfigPaths()
 {
@@ -95,9 +97,9 @@ getDefaultOcioConfigPaths()
 
 #ifdef __NATRON_LINUX__
     QStringList ret;
-    ret.push_back( QString::fromUtf8("/usr/share/OpenColorIO-Configs") );
-    ret.push_back( QString( binaryPath + QString::fromUtf8("../share/OpenColorIO-Configs") ) );
     ret.push_back( QString( binaryPath + QString::fromUtf8("../Resources/OpenColorIO-Configs") ) );
+    ret.push_back( QString( binaryPath + QString::fromUtf8("../share/OpenColorIO-Configs") ) );
+    ret.push_back( QString::fromUtf8("/usr/share/OpenColorIO-Configs") );
 
     return ret;
 #elif defined(__NATRON_WIN32__)
@@ -107,6 +109,21 @@ getDefaultOcioConfigPaths()
 
     return QStringList( QString( binaryPath + QString::fromUtf8("../Resources/OpenColorIO-Configs") ) );
 #endif
+}
+
+// The OpenColorIO configs folder: the first existing one of getDefaultOcioConfigPaths(), or an
+// empty string if there is none. The preference menu lists its configs, and the selected one is
+// loaded from it (#1266).
+static QString
+getDefaultOcioConfigsDir()
+{
+    Q_FOREACH(const QString &dir, getDefaultOcioConfigPaths()) {
+        if ( QDir(dir).exists() ) {
+            return dir;
+        }
+    }
+
+    return QString();
 }
 
 void
@@ -659,20 +676,14 @@ Settings::initializeKnobsColorManagement()
 
     std::vector<ChoiceOption> configs;
     int defaultIndex = 0;
-    QStringList defaultOcioConfigsPaths = getDefaultOcioConfigPaths();
-    Q_FOREACH(const QString &defaultOcioConfigsDir, defaultOcioConfigsPaths) {
-        QDir ocioConfigsDir(defaultOcioConfigsDir);
-
-        if ( ocioConfigsDir.exists() ) {
-            QStringList entries = ocioConfigsDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
-            for (int j = 0; j < entries.size(); ++j) {
-                if ( entries[j] == QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ) {
-                    defaultIndex = j;
-                }
-                configs.push_back(ChoiceOption( entries[j].toStdString() ));
+    const QString defaultOcioConfigsDir = getDefaultOcioConfigsDir();
+    if ( !defaultOcioConfigsDir.isEmpty() ) {
+        QStringList entries = QDir(defaultOcioConfigsDir).entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
+        for (int j = 0; j < entries.size(); ++j) {
+            if ( entries[j] == QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ) {
+                defaultIndex = j;
             }
-
-            break; //if we found 1 OpenColorIO-Configs directory, skip the next
+            configs.push_back(ChoiceOption( entries[j].toStdString() ));
         }
     }
     configs.push_back(ChoiceOption(NATRON_CUSTOM_OCIO_CONFIG_NAME));
@@ -2246,15 +2257,13 @@ Settings::tryLoadOpenColorIOConfig()
             ///try to load from the combobox
             QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntry().id.c_str() );
             QString configFileName = QString( activeEntryText + QString::fromUtf8(".ocio") );
-            QStringList defaultConfigsPaths = getDefaultOcioConfigPaths();
-            Q_FOREACH(const QString &defaultConfigsDirStr, defaultConfigsPaths) {
+            // the folder whose configs the menu lists
+            const QString defaultConfigsDirStr = getDefaultOcioConfigsDir();
+            if ( defaultConfigsDirStr.isEmpty() ) {
+                qDebug() << "Attempt to read an OpenColorIO configuration but none of the configuration directories"
+                         << getDefaultOcioConfigPaths() << "exists.";
+            } else {
                 QDir defaultConfigsDir(defaultConfigsDirStr);
-
-                if ( !defaultConfigsDir.exists() ) {
-                    qDebug() << "Attempt to read an OpenColorIO configuration but the configuration directory"
-                             << defaultConfigsDirStr << "does not exist.";
-                    continue;
-                }
                 ///try to open the .ocio config file first in the defaultConfigsDir
                 ///if we can't find it, try to look in a subdirectory with the name of the config for the file config.ocio
                 if ( !defaultConfigsDir.exists(configFileName) ) {

@@ -343,8 +343,6 @@ AppManager::AppManager()
     assert(!_instance);
     _instance = this;
 
-    QObject::connect( this, SIGNAL(s_requestOFXDialogOnMainThread(OfxImageEffectInstance*,void*)), this, SLOT(onOFXDialogOnMainThreadReceived(OfxImageEffectInstance*,void*)) );
-
 #ifdef __NATRON_WIN32__
     FileSystemModel::initDriveLettersToNetworkShareNamesMapping();
 #endif
@@ -3488,30 +3486,47 @@ AppManager::setThreadAsActionCaller(OfxImageEffectInstance* instance,
     _imp->ofxHost->setThreadAsActionCaller(instance, actionCaller);
 }
 
-void
-AppManager::requestOFXDIalogOnMainThread(OfxImageEffectInstance* instance,
-                                         void* instanceData)
-{
-    if ( QThread::currentThread() == qApp->thread() ) {
-        onOFXDialogOnMainThreadReceived(instance, instanceData);
-    } else {
-        Q_EMIT s_requestOFXDialogOnMainThread(instance, instanceData);
-    }
-}
-
-void
-AppManager::onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance,
-                                            void* instanceData)
+#ifdef OFX_SUPPORTS_DIALOG
+// Runs kOfxActionDialog on the main thread. Nothing may throw out of here: on the queued path the caller
+// is the Qt event loop, on the direct path the plug-in's C code (OfxHost::requestDialog() also catches).
+static void
+runOFXDialog(const OfxEffectInstancePtr& effect,
+             void* instanceData)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    // never NULL: for a request with no instance handle, OfxHost::requestDialog() finds the effect on the
-    // requesting thread, or fails (#1497)
-    assert(instance);
-#ifdef OFX_SUPPORTS_DIALOG
-    if (instance) {
+    OfxImageEffectInstance* instance = effect ? effect->effectInstance() : NULL;
+    if (!instance) {
+        // the effect was destroyed, or its OFX instance not created (or already deleted)
+        return;
+    }
+    try {
         instance->dialog(instanceData);
+    } catch (const std::exception& e) {
+        qDebug() << "kOfxActionDialog:" << e.what();
+    } catch (...) {
+        qDebug() << "kOfxActionDialog: unknown error.";
+    }
+}
+#endif
+
+void
+AppManager::requestOFXDIalogOnMainThread(const OfxEffectInstancePtr& effect,
+                                         void* instanceData)
+{
+#ifdef OFX_SUPPORTS_DIALOG
+    assert(effect);
+    if ( QThread::currentThread() == qApp->thread() ) {
+        runOFXDialog(effect, instanceData);
+    } else {
+        // Queue a weak reference, never a raw pointer: the node may be deleted, or the project closed,
+        // before the main thread processes the request (#1608).
+        const OfxEffectInstanceWPtr weakEffect = effect;
+        QMetaObject::invokeMethod(this, [weakEffect, instanceData]() {
+            runOFXDialog(weakEffect.lock(), instanceData);
+        }, Qt::QueuedConnection);
     }
 #else
+    Q_UNUSED(effect);
     Q_UNUSED(instanceData);
 #endif
 }
