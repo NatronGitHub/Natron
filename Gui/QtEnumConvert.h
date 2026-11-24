@@ -52,6 +52,9 @@ public:
     static Key fromQtKey(Qt::Key k);
     // Whether the Super keys are reported as Key_Meta_L/R: true on Wayland (NatronGitHub/Natron#1278).
     static bool superKeysAreMeta();
+    // Whether k is a modifier key (Control, Shift, Alt, Meta, and on Wayland the Super keys, which are Meta),
+    // whose key down and up events are given to all the viewer overlays, so that they track the modifiers.
+    static bool isModifierKey(Qt::Key k);
     static KeyboardModifierEnum fromQtModifier(Qt::KeyboardModifier m);
     static KeyboardModifiers fromQtModifiers(Qt::KeyboardModifiers m);
     static Qt::Key toQtKey(Key k);

@@ -92,6 +92,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/ProgressPanel.h"
+#include "Gui/QtEnumConvert.h"
 #include "Gui/RightClickableWidget.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/SpinBox.h"
@@ -641,7 +642,7 @@ Gui::keyPressEvent(QKeyEvent* e)
          * Modifiers are always uncaught by child implementations so that we can forward them to 1 ViewerTab so that
          * plug-ins overlay interacts always get the keyDown/keyUp events to track modifiers state.
          */
-        bool isModifier = key == Qt::Key_Control || key == Qt::Key_Shift || key == Qt::Key_Alt || key == Qt::Key_Meta;
+        bool isModifier = QtEnumConvert::isModifierKey(key);
         if (isModifier) {
             const std::list<ViewerTab*>& viewers = getViewersList();
             bool viewerTabHasFocus = false;
@@ -691,7 +692,7 @@ Gui::keyReleaseEvent(QKeyEvent* e)
      * Modifiers are always uncaught by child implementations so that we can forward them to 1 ViewerTab so that
      * plug-ins overlay interacts always get the keyDown/keyUp events to track modifiers state.
      */
-    bool isModifier = key == Qt::Key_Control || key == Qt::Key_Shift || key == Qt::Key_Alt || key == Qt::Key_Meta;
+    bool isModifier = QtEnumConvert::isModifierKey(key);
     if (isModifier) {
         const std::list<ViewerTab*>& viewers = getViewersList();
         bool viewerTabHasFocus = false;

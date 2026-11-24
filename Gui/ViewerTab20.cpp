@@ -841,8 +841,7 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
        Modifiers key down/up should be passed to all active interacts always so that they can properly figure out
        whether they are up or down
      */
-    bool isModifier = e->key() == Qt::Key_Control || e->key() == Qt::Key_Shift || e->key() == Qt::Key_Alt ||
-                      e->key() == Qt::Key_Meta;
+    bool isModifier = QtEnumConvert::isModifierKey( (Qt::Key)e->key() );
     Qt::Key qKey = (Qt::Key)e->key();
     Qt::KeyboardModifiers qMods = e->modifiers();
     Key natronKey = QtEnumConvert::fromQtKey(qKey );
@@ -929,8 +928,7 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
     /*
        Do not catch the event if this is a modifier, let it propagate to the Gui
      */
-    bool isModifier = e->key() == Qt::Key_Control || e->key() == Qt::Key_Shift || e->key() == Qt::Key_Alt ||
-                      e->key() == Qt::Key_Meta;
+    bool isModifier = QtEnumConvert::isModifierKey( (Qt::Key)e->key() );
 
     if (isModifier) {
         //Modifiers may not necessarily return true for plug-ins but may require a redraw
@@ -1017,6 +1015,9 @@ ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
     Key natronKey = QtEnumConvert::fromQtKey( qKey);
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( qMods );
     NodesList nodes;
+    // the list was never filled: the key repeats reached no overlay (#1595)
+    getGui()->getNodesEntitledForOverlays(nodes);
+    _imp->beginOverlayEvent();
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( notifyOverlaysKeyRepeat_internal(*it, renderScale, natronKey, natronMod, e->text(), qKey, qMods) ) {
