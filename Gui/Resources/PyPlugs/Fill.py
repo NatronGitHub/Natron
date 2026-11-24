@@ -23,7 +23,7 @@ def getLabel():
     return "Fill"
 
 def getVersion():
-    return 1
+    return 2
 
 def getIconPath():
     return "Fill.png"
@@ -172,7 +172,7 @@ def createInstance(app,group):
     # End of node "Unpremult1"
 
     # Start of node "Merge1"
-    lastNode = app.createNode("net.sf.openfx.MergePlugin", 1, group)
+    lastNode = app.createNode("net.sf.openfx.MergePlugin", 3, group)
     lastNode.setScriptName("Merge1")
     lastNode.setLabel("Merge1")
     lastNode.setPosition(1036, 302)
@@ -206,7 +206,7 @@ def createInstance(app,group):
     # End of node "Solid1"
 
     # Start of node "Shuffle1"
-    lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 2, group)
+    lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 4, group)
     lastNode.setScriptName("Shuffle1")
     lastNode.setLabel("Shuffle1")
     lastNode.setPosition(764, 314)
@@ -216,7 +216,7 @@ def createInstance(app,group):
 
     param = lastNode.getParam("outputA")
     if param is not None:
-        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.A")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.A")
         del param
 
     del lastNode
@@ -291,8 +291,8 @@ def createInstance(app,group):
     groupMerge1.connectInput(1, groupSolid1)
     groupMerge1.connectInput(2, groupInput2)
     groupSolid1.connectInput(0, groupInput1)
-    groupShuffle1.connectInput(0, groupDot1)
-    groupShuffle1.connectInput(1, groupMerge1)
+    groupShuffle1.connectInput(0, groupMerge1)
+    groupShuffle1.connectInput(1, groupDot1)
     groupPremult1.connectInput(0, groupShuffle1)
     groupOutput1.connectInput(0, groupPremult1)
 

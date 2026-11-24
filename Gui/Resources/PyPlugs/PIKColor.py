@@ -22,7 +22,7 @@ def getLabel():
     return "PIKColor"
 
 def getVersion():
-    return 1
+    return 2
 
 def getIconPath():
     return "PIKColor.png"
@@ -226,7 +226,7 @@ def createInstance(app,group):
     del lastNode
 
     # Start of node "Grade11"
-    lastNode = app.createNode("net.sf.openfx.GradePlugin", 2, group)
+    lastNode = app.createNode("net.sf.openfx.GradePlugin", 3, group)
     lastNode.setScriptName("Grade11")
     lastNode.setLabel("Grade11")
     lastNode.setPosition(14, -192)
@@ -383,7 +383,7 @@ def createInstance(app,group):
     # End of node "Dot2"
 
     # Start of node "ShuffleCopy3"
-    lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 2, group)
+    lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 4, group)
     lastNode.setScriptName("ShuffleCopy3")
     lastNode.setLabel("ShuffleCopy3")
     lastNode.setPosition(272, 35)
@@ -393,17 +393,17 @@ def createInstance(app,group):
 
     param = lastNode.getParam("outputR")
     if param is not None:
-        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.R")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.R")
         del param
 
     param = lastNode.getParam("outputG")
     if param is not None:
-        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.G")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.G")
         del param
 
     param = lastNode.getParam("outputB")
     if param is not None:
-        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.B")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.B")
         del param
 
     param = lastNode.getParam("userTextArea")
@@ -491,7 +491,7 @@ def createInstance(app,group):
     # End of node "Clamp1"
 
     # Start of node "ChannelCopy1"
-    lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 2, group)
+    lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 4, group)
     lastNode.setScriptName("ChannelCopy1")
     lastNode.setLabel("ChannelCopy1")
     lastNode.setPosition(411, 292)
@@ -501,17 +501,17 @@ def createInstance(app,group):
 
     param = lastNode.getParam("outputR")
     if param is not None:
-        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.R")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.R")
         del param
 
     param = lastNode.getParam("outputG")
     if param is not None:
-        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.G")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.G")
         del param
 
     param = lastNode.getParam("outputB")
     if param is not None:
-        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.B")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.B")
         del param
 
     param = lastNode.getParam("userTextArea")
@@ -535,7 +535,7 @@ def createInstance(app,group):
     # End of node "Dot4"
 
     # Start of node "ShuffleCopy2"
-    lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 2, group)
+    lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 4, group)
     lastNode.setScriptName("ShuffleCopy2")
     lastNode.setLabel("ShuffleCopy2")
     lastNode.setPosition(413, 602)
@@ -545,17 +545,17 @@ def createInstance(app,group):
 
     param = lastNode.getParam("outputR")
     if param is not None:
-        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.R")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.R")
         del param
 
     param = lastNode.getParam("outputG")
     if param is not None:
-        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.G")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.G")
         del param
 
     param = lastNode.getParam("outputB")
     if param is not None:
-        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.B")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.B")
         del param
 
     param = lastNode.getParam("userTextArea")
@@ -645,7 +645,7 @@ def createInstance(app,group):
     # End of node "Premult1"
 
     # Start of node "Merge1"
-    lastNode = app.createNode("net.sf.openfx.MergePlugin", 1, group)
+    lastNode = app.createNode("net.sf.openfx.MergePlugin", 3, group)
     lastNode.setScriptName("Merge1")
     lastNode.setLabel("Merge1")
     lastNode.setPosition(272, 717)
@@ -662,7 +662,7 @@ def createInstance(app,group):
     # End of node "Merge1"
 
     # Start of node "ChannelCopy2"
-    lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 2, group)
+    lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 4, group)
     lastNode.setScriptName("ChannelCopy2")
     lastNode.setLabel("ChannelCopy2")
     lastNode.setPosition(272, 886)
@@ -672,17 +672,17 @@ def createInstance(app,group):
 
     param = lastNode.getParam("outputR")
     if param is not None:
-        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.R")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.R")
         del param
 
     param = lastNode.getParam("outputG")
     if param is not None:
-        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.G")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.G")
         del param
 
     param = lastNode.getParam("outputB")
     if param is not None:
-        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.B")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.B")
         del param
 
     del lastNode
@@ -701,7 +701,7 @@ def createInstance(app,group):
     # End of node "Dot6"
 
     # Start of node "Grade1"
-    lastNode = app.createNode("net.sf.openfx.GradePlugin", 2, group)
+    lastNode = app.createNode("net.sf.openfx.GradePlugin", 3, group)
     lastNode.setScriptName("Grade1")
     lastNode.setLabel("Grade1")
     lastNode.setPosition(272, 946)
@@ -749,7 +749,7 @@ def createInstance(app,group):
     # End of node "Output1"
 
     # Start of node "PIK2"
-    lastNode = app.createNode("net.sf.openfx.PIK", 1, group)
+    lastNode = app.createNode("net.sf.openfx.PIK", 2, group)
     lastNode.setScriptName("PIK2")
     lastNode.setLabel("PIK2")
     lastNode.setPosition(26, -35)
@@ -994,7 +994,7 @@ def createInstance(app,group):
     # End of node "Unpremult2"
 
     # Start of node "Shuffle1"
-    lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 2, group)
+    lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 4, group)
     lastNode.setScriptName("Shuffle1")
     lastNode.setLabel("Shuffle1")
     lastNode.setPosition(418, 225)
@@ -1103,17 +1103,17 @@ def createInstance(app,group):
     groupErode1.connectInput(0, groupInvert1)
     groupDot1.connectInput(0, groupSource)
     groupDot2.connectInput(0, groupDot1)
-    groupShuffleCopy3.connectInput(0, groupDot3)
-    groupShuffleCopy3.connectInput(1, groupErode1)
+    groupShuffleCopy3.connectInput(0, groupErode1)
+    groupShuffleCopy3.connectInput(1, groupDot3)
     groupDot3.connectInput(0, groupDot1)
     groupPremult3.connectInput(0, groupShuffleCopy3)
     groupUnpremult4.connectInput(0, groupBlur4)
     groupClamp1.connectInput(0, groupShuffle1)
-    groupChannelCopy1.connectInput(0, groupDot4)
-    groupChannelCopy1.connectInput(1, groupClamp1)
+    groupChannelCopy1.connectInput(0, groupClamp1)
+    groupChannelCopy1.connectInput(1, groupDot4)
     groupDot4.connectInput(0, groupUnpremult4)
-    groupShuffleCopy2.connectInput(0, groupUnpremult1)
-    groupShuffleCopy2.connectInput(1, groupSwitch1)
+    groupShuffleCopy2.connectInput(0, groupSwitch1)
+    groupShuffleCopy2.connectInput(1, groupUnpremult1)
     groupUnpremult1.connectInput(0, groupBlur2)
     groupInvert2.connectInput(0, groupClamp1)
     groupSwitch1.connectInput(0, groupBlurBox1)
@@ -1121,8 +1121,8 @@ def createInstance(app,group):
     groupPremult1.connectInput(0, groupShuffleCopy2)
     groupMerge1.connectInput(0, groupDot7)
     groupMerge1.connectInput(1, groupPremult1)
-    groupChannelCopy2.connectInput(0, groupUnpremult2)
-    groupChannelCopy2.connectInput(1, groupDot6)
+    groupChannelCopy2.connectInput(0, groupDot6)
+    groupChannelCopy2.connectInput(1, groupUnpremult2)
     groupDot6.connectInput(0, groupErode1)
     groupGrade1.connectInput(0, groupChannelCopy2)
     groupOutput1.connectInput(0, groupGrade1)

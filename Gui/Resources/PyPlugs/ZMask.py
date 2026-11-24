@@ -22,7 +22,7 @@ def getLabel():
     return "ZMask"
 
 def getVersion():
-    return 1
+    return 2
 
 def getGrouping():
     return "Filter"
@@ -259,7 +259,7 @@ def createInstance(app,group):
     del lastNode
 
     # Start of node "Merge1"
-    lastNode = app.createNode("net.sf.openfx.MergePlugin", 1, group)
+    lastNode = app.createNode("net.sf.openfx.MergePlugin", 3, group)
     lastNode.setScriptName("Merge1")
     lastNode.setLabel("Merge1")
     lastNode.setPosition(764, 248)

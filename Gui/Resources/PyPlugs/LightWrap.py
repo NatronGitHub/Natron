@@ -22,7 +22,7 @@ def getLabel():
     return "LightWrap"
 
 def getVersion():
-    return 1
+    return 2
 
 def getIconPath():
     return "LightWrap.png"
@@ -1101,7 +1101,7 @@ def createInstance(app,group):
     # End of node "Premult1"
 
     # Start of node "BGBlur"
-    lastNode = app.createNode("net.sf.cimg.CImgBlur", 3, group)
+    lastNode = app.createNode("net.sf.cimg.CImgBlur", 4, group)
     lastNode.setScriptName("BGBlur")
     lastNode.setLabel("BGBlur")
     lastNode.setPosition(752, 316)
@@ -1159,7 +1159,7 @@ def createInstance(app,group):
     # End of node "Constant1"
 
     # Start of node "Shufflecopy1"
-    lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 2, group)
+    lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 4, group)
     lastNode.setScriptName("Shufflecopy1")
     lastNode.setLabel("Shufflecopy1")
     lastNode.setPosition(968, 316)
@@ -1169,17 +1169,17 @@ def createInstance(app,group):
 
     param = lastNode.getParam("outputR")
     if param is not None:
-        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.R")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.R")
         del param
 
     param = lastNode.getParam("outputG")
     if param is not None:
-        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.G")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.G")
         del param
 
     param = lastNode.getParam("outputB")
     if param is not None:
-        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.B")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.B")
         del param
 
     del lastNode
@@ -1273,7 +1273,7 @@ def createInstance(app,group):
     # End of node "Dot2"
 
     # Start of node "FGBlur"
-    lastNode = app.createNode("net.sf.cimg.CImgBlur", 3, group)
+    lastNode = app.createNode("net.sf.cimg.CImgBlur", 4, group)
     lastNode.setScriptName("FGBlur")
     lastNode.setLabel("FGBlur")
     lastNode.setPosition(434, 433)
@@ -1316,7 +1316,7 @@ def createInstance(app,group):
     # End of node "FGBlur"
 
     # Start of node "EdgeMerge"
-    lastNode = app.createNode("net.sf.openfx.MergePlugin", 1, group)
+    lastNode = app.createNode("net.sf.openfx.MergePlugin", 3, group)
     lastNode.setScriptName("EdgeMerge")
     lastNode.setLabel("EdgeMerge")
     lastNode.setPosition(434, 545)
@@ -1373,7 +1373,7 @@ def createInstance(app,group):
     # End of node "EdgeMerge"
 
     # Start of node "MaskMerge"
-    lastNode = app.createNode("net.sf.openfx.MergePlugin", 1, group)
+    lastNode = app.createNode("net.sf.openfx.MergePlugin", 3, group)
     lastNode.setScriptName("MaskMerge")
     lastNode.setLabel("MaskMerge")
     lastNode.setPosition(758, 545)
@@ -1405,7 +1405,7 @@ def createInstance(app,group):
     # End of node "MaskMerge"
 
     # Start of node "Diffuse"
-    lastNode = app.createNode("net.sf.cimg.CImgBlur", 3, group)
+    lastNode = app.createNode("net.sf.cimg.CImgBlur", 4, group)
     lastNode.setScriptName("Diffuse")
     lastNode.setLabel("Diffuse")
     lastNode.setPosition(758, 633)
@@ -1458,7 +1458,7 @@ def createInstance(app,group):
     # End of node "Intensity"
 
     # Start of node "Saturation1"
-    lastNode = app.createNode("net.sf.openfx.SaturationPlugin", 2, group)
+    lastNode = app.createNode("net.sf.openfx.SaturationPlugin", 3, group)
     lastNode.setScriptName("Saturation1")
     lastNode.setLabel("Saturation1")
     lastNode.setPosition(758, 761)
@@ -1509,7 +1509,7 @@ def createInstance(app,group):
     # End of node "ColorCorrect1"
 
     # Start of node "MaskMerge2"
-    lastNode = app.createNode("net.sf.openfx.MergePlugin", 1, group)
+    lastNode = app.createNode("net.sf.openfx.MergePlugin", 3, group)
     lastNode.setScriptName("MaskMerge2")
     lastNode.setLabel("MaskMerge2")
     lastNode.setPosition(761, 909)
@@ -1536,7 +1536,7 @@ def createInstance(app,group):
     # End of node "MaskMerge2"
 
     # Start of node "Shuffle1"
-    lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 2, group)
+    lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 4, group)
     lastNode.setScriptName("Shuffle1")
     lastNode.setLabel("Shuffle1")
     lastNode.setPosition(761, 1026)
@@ -1553,7 +1553,7 @@ def createInstance(app,group):
     # End of node "Shuffle1"
 
     # Start of node "HighlightMerge"
-    lastNode = app.createNode("net.sf.openfx.MergePlugin", 1, group)
+    lastNode = app.createNode("net.sf.openfx.MergePlugin", 3, group)
     lastNode.setScriptName("HighlightMerge")
     lastNode.setLabel("HighlightMerge")
     lastNode.setPosition(761, 1108)
@@ -1608,8 +1608,8 @@ def createInstance(app,group):
     groupKeyer1.connectInput(0, groupDot1)
     groupPremult1.connectInput(0, groupKeyer1)
     groupBGBlur.connectInput(0, groupPremult1)
-    groupShufflecopy1.connectInput(0, groupConstant1)
-    groupShufflecopy1.connectInput(1, groupBGBlur)
+    groupShufflecopy1.connectInput(0, groupBGBlur)
+    groupShufflecopy1.connectInput(1, groupConstant1)
     groupPremult2.connectInput(0, groupShufflecopy1)
     groupDisableLuma.connectInput(0, groupPremult2)
     groupDisableLuma.connectInput(1, groupConstant1)
@@ -1630,7 +1630,7 @@ def createInstance(app,group):
     groupColorCorrect1.connectInput(0, groupSaturation1)
     groupMaskMerge2.connectInput(0, groupColorCorrect1)
     groupMaskMerge2.connectInput(1, groupDot2)
-    groupShuffle1.connectInput(1, groupMaskMerge2)
+    groupShuffle1.connectInput(0, groupMaskMerge2)
     groupHighlightMerge.connectInput(0, groupShuffle1)
     groupHighlightMerge.connectInput(1, groupDot2)
     groupDot4.connectInput(0, groupHighlightMerge)

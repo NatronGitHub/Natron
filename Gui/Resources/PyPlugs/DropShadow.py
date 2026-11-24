@@ -22,7 +22,7 @@ def getLabel():
     return "DropShadow"
 
 def getVersion():
-    return 1
+    return 2
 
 def getIconPath():
     return "DropShadow.png"
@@ -188,7 +188,7 @@ def createInstance(app,group):
     del lastNode
 
     # Start of node "Shuffle1"
-    lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 2, group)
+    lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 4, group)
     lastNode.setScriptName("Shuffle1")
     lastNode.setLabel("Shuffle1")
     lastNode.setPosition(759, 87)
@@ -198,17 +198,17 @@ def createInstance(app,group):
 
     param = lastNode.getParam("outputR")
     if param is not None:
-        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.R")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.R")
         del param
 
     param = lastNode.getParam("outputG")
     if param is not None:
-        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.G")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.G")
         del param
 
     param = lastNode.getParam("outputB")
     if param is not None:
-        param.set("B.uk.co.thefoundry.OfxImagePlaneColour.B")
+        param.set("A.uk.co.thefoundry.OfxImagePlaneColour.B")
         del param
 
     del lastNode
@@ -352,7 +352,7 @@ def createInstance(app,group):
     # End of node "Output1"
 
     # Start of node "Blur1"
-    lastNode = app.createNode("net.sf.cimg.CImgBlur", 3, group)
+    lastNode = app.createNode("net.sf.cimg.CImgBlur", 4, group)
     lastNode.setScriptName("Blur1")
     lastNode.setLabel("Blur1")
     lastNode.setPosition(759, 260)
@@ -369,7 +369,7 @@ def createInstance(app,group):
     # End of node "Blur1"
 
     # Start of node "Merge1"
-    lastNode = app.createNode("net.sf.openfx.MergePlugin", 1, group)
+    lastNode = app.createNode("net.sf.openfx.MergePlugin", 3, group)
     lastNode.setScriptName("Merge1")
     lastNode.setLabel("Merge1")
     lastNode.setPosition(1000, 329)
@@ -391,8 +391,8 @@ def createInstance(app,group):
     # End of node "Merge1"
 
     # Now that all nodes are created we can connect them together, restore expressions
-    groupShuffle1.connectInput(0, groupSolid1)
-    groupShuffle1.connectInput(1, groupMultiply1)
+    groupShuffle1.connectInput(0, groupMultiply1)
+    groupShuffle1.connectInput(1, groupSolid1)
     groupTransform2.connectInput(0, groupShuffle1)
     groupPremult1.connectInput(0, groupBlur1)
     groupMultiply1.connectInput(0, groupInputSource)

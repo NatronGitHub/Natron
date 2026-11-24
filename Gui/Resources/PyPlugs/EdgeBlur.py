@@ -22,7 +22,7 @@ def getLabel():
     return "EdgeBlur"
 
 def getVersion():
-    return 1
+    return 2
 
 def getGrouping():
     return "Filter"
@@ -205,7 +205,7 @@ def createInstance(app,group):
     del lastNode
 
     # Start of node "EdgeDetect1"
-    lastNode = app.createNode("eu.cimg.EdgeDetect", 4, group)
+    lastNode = app.createNode("eu.cimg.EdgeDetect", 5, group)
     lastNode.setScriptName("EdgeDetect1")
     lastNode.setLabel("EdgeDetect1")
     lastNode.setPosition(908, 181)
@@ -310,7 +310,7 @@ def createInstance(app,group):
     # End of node "Blur1"
 
     # Start of node "Shuffle1"
-    lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 2, group)
+    lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 4, group)
     lastNode.setScriptName("Shuffle1")
     lastNode.setLabel("Shuffle1")
     lastNode.setPosition(768, 104)
@@ -384,7 +384,7 @@ def createInstance(app,group):
     # End of node "Mask"
 
     # Start of node "Merge1"
-    lastNode = app.createNode("net.sf.openfx.MergePlugin", 1, group)
+    lastNode = app.createNode("net.sf.openfx.MergePlugin", 3, group)
     lastNode.setScriptName("Merge1")
     lastNode.setLabel("Merge1")
     lastNode.setPosition(895, 341)
@@ -459,7 +459,7 @@ def createInstance(app,group):
     groupGamma1.connectInput(0, groupEdgeDetect1)
     groupBlur1.connectInput(0, groupDot1)
     groupBlur1.connectInput(1, groupMerge1)
-    groupShuffle1.connectInput(1, groupDot1)
+    groupShuffle1.connectInput(0, groupDot1)
     groupDot1.connectInput(0, groupSource)
     groupOutput1.connectInput(0, groupBlur1)
     groupMerge1.connectInput(1, groupGamma1)

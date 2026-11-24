@@ -22,7 +22,7 @@ def getLabel():
     return "ZRemap"
 
 def getVersion():
-    return 1
+    return 2
 
 def getIconPath():
     return "ZRemap.png"
@@ -200,7 +200,7 @@ def createInstance(app,group):
     del lastNode
 
     # Start of node "Grade1"
-    lastNode = app.createNode("net.sf.openfx.GradePlugin", 2, group)
+    lastNode = app.createNode("net.sf.openfx.GradePlugin", 3, group)
     lastNode.setScriptName("Grade1")
     lastNode.setLabel("Grade1")
     lastNode.setPosition(726, 92)
