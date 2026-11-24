@@ -30,6 +30,17 @@ point.set(500.0, 300.0)
 source.refreshUserParamsGUI()
 wait_idle()
 
+
+def show_user_pages():
+    """Show the User page of the open settings panels: only the parameters of the current page have overlays."""
+    for tabs in QtWidgets.QApplication.allWidgets():
+        if isinstance(tabs, QtWidgets.QTabWidget) and tabs.isVisible():
+            for i in range(tabs.count()):
+                if tabs.tabText(i) == "User":
+                    tabs.setCurrentIndex(i)
+    wait_idle()
+
+
 out_dir = tempfile.mkdtemp(prefix="natron-pyplug-point-interact-")
 
 
@@ -79,6 +90,7 @@ viewer.connectInput(0, target)
 app.clearSelection()
 app.selectNode(target, True)
 NatronGuiTest.sendKey("NodeGraph", "Return")
+show_user_pages()
 fit_viewer()
 
 NatronGuiTest.drag("Viewer1", 500.0, 300.0, 700.0, 400.0, steps=20)
@@ -97,6 +109,7 @@ module.createInstance(app, lonely)
 app.clearSelection()
 app.selectNode(lonely, True)
 NatronGuiTest.sendKey("NodeGraph", "Return")
+show_user_pages()
 fit_viewer()
 NatronGuiTest.drag("Viewer1", 100.0, 100.0, 120.0, 120.0, steps=2)
 wait_idle()
