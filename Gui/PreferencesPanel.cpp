@@ -1216,6 +1216,8 @@ PreferencesPanel::showEvent(QShowEvent* /*e*/)
 
     _imp->changedKnobs.clear();
     _imp->pluginSettingsChanged = false;
+    // set again by Save: closing the window otherwise discards the changes, also after an earlier Save (#841)
+    _imp->closeIsOK = false;
 }
 
 void
