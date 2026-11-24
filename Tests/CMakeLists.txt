@@ -243,6 +243,10 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME GuiSmokeTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_gui_smoke_test.py $<TARGET_FILE:Natron>)
     set_tests_properties(GuiSmokeTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 960 LABELS gui)
+    # NatronRenderer exits with status 1 when the render of a Write node failed
+    add_test(NAME RenderFailureStatusTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_render_failure_status_test.py $<TARGET_FILE:NatronRenderer>)
+    set_tests_properties(RenderFailureStatusTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
     # natron.quit() from a render callback stops a NatronRenderer render (headless)
     add_test(NAME RendererQuitTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_quit_test.py $<TARGET_FILE:NatronRenderer>)
@@ -336,6 +340,13 @@ foreach(_natron_gui_test ${NatronGuiTests_SCRIPTS})
     endif()
 endforeach()
 
+# Connecting an input is fast when many paths lead to the same node (the cycle check visited a node
+# once per path): NatronRenderer runs the script, which exits with natron.quit(status).
+add_test(NAME ConnectLadderHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_connect_ladder.py")
+set_tests_properties(ConnectLadderHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/connect-ladder-headless-cache")
+
 # Undo groups do nothing in background mode (App.undoGroup(), #1455): NatronRenderer runs the script,
 # which exits with natron.quit(status).
 add_test(NAME UndoGroupHeadless
@@ -343,3 +354,10 @@ add_test(NAME UndoGroupHeadless
 # the caches (OFX plug-ins) in the build tree, not in the user's cache directory (#1569)
 set_tests_properties(UndoGroupHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/undo-group-headless-cache")
+
+# The color plane goes through a Shuffle that writes to another layer (it was black): NatronRenderer runs the
+# script, which exits with natron.quit(status), 77 when openfx-misc or openfx-io are not in OFX_PLUGIN_PATH.
+add_test(NAME LayerPassThroughHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_layer_passthrough.py")
+set_tests_properties(LayerPassThroughHeadless PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 300
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/layer-passthrough-headless-cache")

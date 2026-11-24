@@ -143,6 +143,7 @@ public:
     bool dialogsDisabled; //< --no-dialogs was given
     std::atomic<bool> quitRequested; //< natron.quit() was called
     std::atomic<int> requestedExitCode; //< the exit code given to natron.quit()
+    std::atomic<bool> backgroundRenderFailed; //< a render failed in background mode
     std::atomic<int> nestedEventLoops; //< see AppManager::NestedEventLoopRAII
     bool pythonInterpreterRunning; //< Py_Main() of the -t option is running
     QString _binaryPath; //< the path to the application's binary

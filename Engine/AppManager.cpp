@@ -3179,6 +3179,26 @@ AppManager::getRequestedExitCode() const
     return _imp->requestedExitCode;
 }
 
+void
+AppManager::setBackgroundRenderFailed()
+{
+    _imp->backgroundRenderFailed = true;
+}
+
+int
+AppManager::exitStatus() const
+{
+    const int code = _imp->requestedExitCode;
+    if ( _imp->quitRequested || (code != 0) ) {
+        // natron.quit(code): its code prevails, also 0, and the renders it aborted did not fail.
+        // Without a quit, a non-zero code is the status of a failed script or interpreter.
+        return code;
+    }
+
+    // A farm manager reads the exit status: a render that failed must not report a success.
+    return _imp->backgroundRenderFailed ? 1 : 0;
+}
+
 bool
 AppManager::isPythonInterpreterRunning() const
 {

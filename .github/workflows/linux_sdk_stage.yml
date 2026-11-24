@@ -1,0 +1,109 @@
+name: Linux SDK stage
+
+# One stage of the Rocky Linux SDK image (tools/docker/natron-sdk-rockylinux), for x86_64 and
+# aarch64, called by linux_packages.yml. The SDK takes longer than the 6 hours a GitHub-hosted job
+# may run on a 4-CPU runner, so its Dockerfile is split into stages (split-stages.sh), each built by
+# one job and pushed to ghcr.io as <image>:<hash>-<arch>-stage<N>; the last job ("final") makes the
+# SDK image, <image>:<hash>-<arch>. The stages reuse the layers of the earlier builds of the
+# default branch (registry cache <image>:buildcache-<arch>-<stage>), unless the base image
+# (rockylinux/rockylinux:9) changed.
+on:
+  workflow_call:
+    inputs:
+      stage:
+        description: 'Stage number (1, 2, ...), or final'
+        type: string
+        required: true
+      image:
+        type: string
+        required: true
+      hash:
+        type: string
+        required: true
+      rebuild:
+        description: 'Rebuild without the layer cache, even if the stage image exists'
+        type: boolean
+        default: false
+      export_cache:
+        # (an SDK built first on another branch is reused by the default branch as is, so its
+        # layers only reach the cache at the next SDK change: that only costs build time)
+        description: 'Update the layer cache (default branch only, so that other branches never replace it)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  ROCKY: 9
+
+jobs:
+  build:
+    name: ${{ inputs.stage }} ${{ matrix.arch }}
+    timeout-minutes: 345
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - arch: amd64
+          runner: ubuntu-24.04
+        - arch: arm64
+          runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - uses: docker/setup-buildx-action@v3
+    - uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build and push
+      env:
+        STAGE: ${{ inputs.stage }}
+        IMAGE: ${{ inputs.image }}
+        HASH: ${{ inputs.hash }}
+        REBUILD: ${{ inputs.rebuild }}
+        EXPORT_CACHE: ${{ inputs.export_cache }}
+        # not ARCH: common.sh uses it (x86_64, aarch64)
+        DOCKER_ARCH: ${{ matrix.arch }}
+      run: |
+        cd tools/docker/natron-sdk-rockylinux
+        PREPARE_ONLY=1 ./build.sh "$DOCKER_ARCH"
+        df -h /
+        # the stages (STAGE_ENDS in split-stages.sh): linux_packages.yml has one sdk_stage<N> job per stage
+        n=$(./split-stages.sh Dockerfile)
+        tag="$IMAGE:$HASH-$DOCKER_ARCH"
+        if [ "$STAGE" = final ]; then
+            file=Dockerfile.final
+            arg="INTERMEDIATE=$tag-stage$n"
+            out="$tag"
+        else
+            [ "$STAGE" -le "$n" ] || { echo "Error: there are only $n stages (STAGE_ENDS in split-stages.sh)"; exit 1; }
+            file="Dockerfile.stage$STAGE"
+            arg="BASE=$tag-stage$((STAGE - 1))"
+            out="$tag-stage$STAGE"
+        fi
+        if [ "$REBUILD" != true ] && docker buildx imagetools inspect "$out" > /dev/null 2>&1; then
+            echo "$out exists (a re-run): not rebuilt"
+            exit 0
+        fi
+        cache="type=registry,ref=$IMAGE:buildcache-$DOCKER_ARCH-$STAGE"
+        opts=()
+        [ "$EXPORT_CACHE" != true ] || opts+=(--cache-to "$cache,mode=max,ignore-error=true")
+        if [ "$REBUILD" = true ]; then
+            # the newest base image and system packages
+            opts+=(--no-cache --pull)
+        else
+            opts+=(--cache-from "$cache")
+        fi
+        time docker buildx build --platform "linux/$DOCKER_ARCH" -f "$file" --build-arg "$arg" \
+            --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+            --label "org.opencontainers.image.description=Natron SDK (Rocky Linux $ROCKY, $DOCKER_ARCH), tools/docker/natron-sdk-rockylinux" \
+            "${opts[@]}" --progress plain -t "$out" --push .
+        df -h /
