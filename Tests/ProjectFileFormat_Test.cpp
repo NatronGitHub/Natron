@@ -968,7 +968,7 @@ TEST(ProjectFileFormat, CommittedBinaryProject)
     project->resetProject();
 }
 
-// The Python API: app.saveProject(), saveProjectAs() and saveTempProject() take an optional format,
+// The Python API: app.saveProject(), saveProjectAs() and saveProjectCopy() take an optional format,
 // and app.getProjectFormat()/setProjectFormat() give the format of the project.
 TEST(ProjectFileFormat, PythonAPI)
 {
@@ -997,13 +997,41 @@ TEST(ProjectFileFormat, PythonAPI)
         "assert a.getProjectFormat() == F.eProjectFileFormatText\n"
         "assert a.saveProject('')\n"
         "assert fmt('" + dir + "text.ntp') == 'text'\n"
-        // a temporary copy in another format doesn't change the format of the project
-        "assert a.saveTempProject('" + dir + "temp.ntp', F.eProjectFileFormatBinary)\n"
-        "assert fmt('" + dir + "temp.ntp') == 'binary'\n"
+        // a copy in another format doesn't change the format of the project
+        "assert a.saveProjectCopy('" + dir + "copy.ntp', F.eProjectFileFormatBinary)\n"
+        "assert fmt('" + dir + "copy.ntp') == 'binary'\n"
         "assert a.getProjectFormat() == F.eProjectFileFormatText\n"
         "a.setProjectFormat(F.eProjectFileFormatBinary)\n"
         "assert a.saveProject('')\n"
         "assert fmt('" + dir + "text.ntp') == 'binary'\n";
+    std::string error, output;
+    EXPECT_TRUE( ::Natron::Python::interpretPythonScript(script, &error, &output) ) << error << output;
+    app->getProject()->resetProject();
+}
+
+// app.saveProjectCopy() and its old name, app.saveTempProject() (Natron 2.5 Python API), write a copy of the
+// project and leave the project's file name and path unchanged (#1747).
+TEST(ProjectFileFormat, PythonSaveProjectCopy)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const std::string dir = ( tmpDir.path() + QLatin1Char('/') ).toStdString();
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    app->getProject()->resetProject();
+    const std::string a = app->getAppIDString();
+    std::string script =
+        "import os\n"
+        "a = " + a + "\n"
+        "a.createNode('fr.inria.built-in.Dot')\n"
+        "assert a.saveProjectAs('" + dir + "main.ntp')\n"
+        "def names():\n"
+        "    return (a.getProjectParam('projectName').getValue(), a.getProjectParam('projectPath').getValue())\n"
+        "before = names()\n"
+        "assert before[0] == 'main.ntp', before\n"
+        "for save, f in ((a.saveProjectCopy, 'copy.ntp'), (a.saveTempProject, 'temp.ntp')):\n"
+        "    assert save('" + dir + "' + f), f\n"
+        "    assert os.path.getsize('" + dir + "' + f) > 0, f\n"
+        "    assert names() == before, (f, names(), before)\n";
     std::string error, output;
     EXPECT_TRUE( ::Natron::Python::interpretPythonScript(script, &error, &output) ) << error << output;
     app->getProject()->resetProject();
