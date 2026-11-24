@@ -36,6 +36,7 @@
 #include <map>
 #include <string>
 
+#include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QTemporaryDir>
 
@@ -635,4 +636,96 @@ TEST(OfxProjectLoad, PyPlugUpdateIsNotSavedWhenValuesChanged)
     project->resetProject();
     loadFromPyFile->setValue(oldLoadFromPyFile);
     ASSERT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nsys.path.remove('" + tmpDir.path().toStdString() + "')\n", &err, &output) ) << err;
+}
+
+// A project's PyPlug whose file moved since the project was saved is found by its file name in the PyPlug search
+// paths (NATRON_PLUGIN_PATH, recursively), so its version is compared and the update offered (#1645): the search
+// was given the saved absolute path, which can't be found, and it looked in sub-directories relative to the current
+// directory.
+TEST(OfxProjectLoad, MovedPyPlugIsFoundInSearchPaths)
+{
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString savedDir = dir + QString::fromUtf8("saved/");
+    const QString searchDir = dir + QString::fromUtf8("search");
+    const QString movedDir = searchDir + QString::fromUtf8("/sub/");
+    ASSERT_TRUE( QDir().mkpath(savedDir) );
+    ASSERT_TRUE( QDir().mkpath(movedDir) );
+    const char* const pyPlugID = "net.natron.test.MovedPyPlug";
+    const QString moduleName = QString::fromUtf8("NatronTestMovedPyPlug");
+    const std::string script = std::string("from NatronEngine import *\n"
+                                           "def getPluginID():\n"
+                                           "    return '") + pyPlugID + "'\n"
+                               "def getLabel():\n"
+                               "    return 'MovedPyPlug'\n"
+                               "def getVersion():\n"
+                               "    return 2\n"
+                               "def createInstance(app, group):\n"
+                               "    inp = app.createNode('" + PLUGINID_NATRON_INPUT + "', -1, group)\n"
+                               "    out = app.createNode('" + PLUGINID_NATRON_OUTPUT + "', -1, group)\n"
+                               "    out.connectInput(0, inp)\n";
+    ASSERT_TRUE( writeFile( savedDir + moduleName + QString::fromUtf8(".py"), QByteArray( script.c_str() ) ) );
+    std::string err, output;
+    ASSERT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nsys.path.insert(0, r'" + savedDir.toStdString() + "')\n", &err, &output) ) << err;
+    Plugin* plugin = appPTR->registerPlugin( savedDir, QStringList() << QString::fromUtf8("Other") << QString::fromUtf8("Test"),
+                                             QString::fromUtf8(pyPlugID), QString::fromUtf8("MovedPyPlug"), QString(), QStringList(),
+                                             false, false, 0, false, 2, 0, false );
+    ASSERT_TRUE(plugin);
+    plugin->setPythonModule(savedDir + moduleName);
+    // The value of the preference "loadFromPyFile" that makes NodeCollectionSerialization::restoreFromSerialization()
+    // load the PyPlugs from their file on RB-2.6 (it works backwards, #1646: flip it with the fix of #1646)
+    KnobBoolPtr loadFromPyFile = std::dynamic_pointer_cast<KnobBool>( appPTR->getCurrentSettings()->getKnobByName("loadFromPyFile") );
+    ASSERT_TRUE( bool(loadFromPyFile) );
+    const bool oldLoadFromPyFile = loadFromPyFile->getValue();
+    loadFromPyFile->setValue(false);
+
+    // a project with the PyPlug, version 1
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ProjectPtr project = app->getProject();
+    const QString name = QString::fromUtf8("MovedPyPlug.ntp");
+    project->resetProject();
+    {
+        CreateNodeArgs args( pyPlugID, project );
+        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+        ASSERT_TRUE( bool( app->createNode(args) ) );
+    }
+    QString savedPath;
+    ASSERT_TRUE( project->saveProject( dir, name, &savedPath, eProjectFileFormatText ) );
+    QByteArray contents = readFile(dir + name);
+    const QByteArray version2("<PythonModuleVersion>2</PythonModuleVersion>");
+    const QByteArray version1("<PythonModuleVersion>1</PythonModuleVersion>");
+    ASSERT_EQ( 1, contents.count(version2) );
+    contents.replace(version2, version1);
+    ASSERT_TRUE( writeFile(dir + name, contents) );
+    project->resetProject();
+
+    // the PyPlug moves to a sub-directory of a PyPlug search path, which is on the Python path as at startup
+    ASSERT_TRUE( QFile::rename( savedDir + moduleName + QString::fromUtf8(".py"), movedDir + moduleName + QString::fromUtf8(".py") ) );
+    ASSERT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys, importlib\n"
+                                                                                "sys.path.remove(r'" + savedDir.toStdString() + "')\n"
+                                                                                "sys.path.insert(0, r'" + movedDir.toStdString() + "')\n"
+                                                                                "sys.modules.pop('" + moduleName.toStdString() + "', None)\n"
+                                                                                "importlib.invalidate_caches()\n", &err, &output) ) << err;
+    const QByteArray oldPluginPath = qgetenv(NATRON_PLUGIN_PATH_ENV_VAR);
+    const bool hadPluginPath = qEnvironmentVariableIsSet(NATRON_PLUGIN_PATH_ENV_VAR);
+    qputenv( NATRON_PLUGIN_PATH_ENV_VAR, searchDir.toUtf8() );
+
+    testing::internal::CaptureStdout();
+    const bool loaded = project->loadProject(dir, name);
+    output = testing::internal::GetCapturedStdout();
+    EXPECT_TRUE(loaded) << output;
+    // the update was offered and accepted (the background app answers yes), and saved right after the load
+    EXPECT_EQ( 1, readFile(dir + name).count(version2) ) << output;
+
+    project->resetProject();
+    if (hadPluginPath) {
+        qputenv(NATRON_PLUGIN_PATH_ENV_VAR, oldPluginPath);
+    } else {
+        qunsetenv(NATRON_PLUGIN_PATH_ENV_VAR);
+    }
+    loadFromPyFile->setValue(oldLoadFromPyFile);
+    ASSERT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nsys.path.remove(r'" + movedDir.toStdString() + "')\n"
+                                                                                "sys.modules.pop('" + moduleName.toStdString() + "', None)\n", &err, &output) ) << err;
 }

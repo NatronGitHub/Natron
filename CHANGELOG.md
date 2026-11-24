@@ -17,6 +17,7 @@
 
 ### Changes
 
+- Projects: a PyPlug that moved since the project was saved is found again in the PyPlug search paths (e.g. `NATRON_PLUGIN_PATH`, including their sub-directories), so its version is checked and its update offered as when it didn't move. The search never found it: the node kept its PyPlug only if its module could be imported from the Python path, and no update was offered. #1645
 - Python: `IntParam`, `DoubleParam` and `ColorParam` `getDefaultValue(dimension)` return 0 for a dimension out of range, as `getValue(dimension)` does, instead of reading out of bounds. #1743
 - Preferences > Python > "Load PyPlugs in projects from .py if possible" works as its name and tooltip say: when it is checked (the default), a project's PyPlugs are loaded from their installed `.py` file, and Natron asks whether to update a PyPlug whose version changed. Since Natron 2.2.3 it worked backwards: checked, the PyPlugs were loaded as plain Groups from the project file, and Natron never offered the update. Projects whose PyPlug changed since they were saved are now rebuilt from the installed PyPlug (after the question, if its version changed; NatronRenderer answers it Yes (No with `--no-dialogs`), so renders use the installed PyPlug version); uncheck the preference to get the previous behaviour. #1646
 - A deprecated plug-in is disabled by default, but can now be enabled in Preferences > Plug-ins (then restart Natron) to create new nodes with it. A plug-in that becomes deprecated is disabled even if it was enabled before. #171
