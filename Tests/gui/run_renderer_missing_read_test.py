@@ -18,11 +18,11 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-"""Headless test of a render whose Read node has a missing file (#1602) or an empty filename (#1131).
+"""Headless test of a render whose Read has a missing file (#1602) or no filename (#1131).
 
 Usage: run_renderer_missing_read_test.py /path/to/NatronRenderer [--debugger]
 
-NatronRenderer -b runs a script that creates Read (on a file that does not exist) -> Write1
+NatronRenderer -b runs a script that creates Read (on a missing file, or with no filename) -> Write1
 (PNG, frames 1-3), and renders Write1:
 - "error": the Read is on its default "On missing frame: Error". The render must fail
   ("Error caught while rendering"), write no frame and exit with status 1: it wrote three black
@@ -57,7 +57,7 @@ from run_gui_smoke_test import killTree, writePNG  # noqa: E402
 
 SKIP = 77
 MODE_SKIPPED = "mode skipped"
-TIMEOUT = 300  # seconds per run
+TIMEOUT = 120  # seconds per run; five runs stay below the ctest TIMEOUT (660)
 FRAMES = [1, 2, 3]
 
 SCRIPT = """
