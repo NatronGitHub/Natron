@@ -39,13 +39,15 @@ def close(c, rgb, tol):
 viewer = viewer_node(app)
 gen = app.createNode(GENERATOR)
 viewer.connectInput(0, gen)
+# the checkerboard is off by default (--no-settings): the image is then drawn without blending
 fit_viewer()
 app.getViewer("Viewer1").renderCurrentFrame(True)
 wait_idle()
 x, y = rod_center(gen)
 displayed = NatronGuiTest.getDisplayedPixel("Viewer1", x, y)
 print("displayed at the centre of the image: %r" % (displayed,))
-check_close(displayed[0], srgb8(0.5), 3, "displayed red")
+for k, name in enumerate(("red", "green", "blue")):
+    check_close(displayed[k], srgb8(0.5), 3, "displayed " + name)
 
 gl, tab = viewer_gl_and_tab()
 fd, path = tempfile.mkstemp(suffix=".png", prefix="natron-screenshot-")
