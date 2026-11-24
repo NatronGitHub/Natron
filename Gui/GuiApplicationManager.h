@@ -184,6 +184,8 @@ public:
     ///natron.quit(): closes all projects without asking to save them at the end of the current event-loop iteration
     virtual void requestQuit(int exitCode) OVERRIDE FINAL;
 
+    virtual bool closeModalWindows() OVERRIDE FINAL;
+
 private:
     void quitWhenIdle();
 

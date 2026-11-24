@@ -628,6 +628,9 @@ public:
     ///Closes the application not saving any projects.
     virtual void exitApp(bool warnUserForSave);
 
+    /// GUI: closes the active modal dialog or popup (menu), as Escape does; returns false if there was none
+    virtual bool closeModalWindows() { return false; }
+
     bool isSpawnedFromCrashReporter() const;
 
     virtual void reloadScriptEditorFonts() {}
@@ -797,6 +800,9 @@ private:
 
     /// GUI mode: calls quitInstanceNow() from the event loop, not from a nested one
     void queueAfterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args);
+
+    /// Termination signal: quits the application from the main event loop, once the modal windows are closed
+    void quitOnShutDownSignal();
 
     bool loadInternal(const CLArgs& cl);
 

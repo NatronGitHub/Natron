@@ -801,8 +801,25 @@ AppManager::onShutDownSignalReceived()
     char c;
     while (::read(shutDownSignalPipe[0], &c, 1) > 0) {
     }
-    quitApplication();
+    quitOnShutDownSignal();
 #endif
+}
+
+void
+AppManager::quitOnShutDownSignal()
+{
+    // The signal may come in a nested event loop: a modal dialog's or a menu's exec(), or a GUI test's
+    // waitIdle(). Quitting there deleted the windows under the code that runs it, e.g. the dialog of
+    // Gui::onDoDialog(), which is on the stack (#1730). Close the modal windows first, and quit from the
+    // main event loop once they are closed. If this never happens, a second signal terminates.
+    if ( closeModalWindows() || (QThread::currentThread()->loopLevel() > 1) || (getNestedEventLoopsCount() > 0) ) {
+        QTimer::singleShot( 50, this, [this]() {
+            quitOnShutDownSignal();
+        } );
+
+        return;
+    }
+    quitApplication();
 }
 
 void

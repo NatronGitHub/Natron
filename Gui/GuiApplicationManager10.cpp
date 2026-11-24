@@ -41,6 +41,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QSettings>
 #include <QFileInfo>
 #include <QApplication>
+#include <QDialog>
 #include <QGuiApplication>
 #include <QScreen>
 #include <QFileOpenEvent>
@@ -578,6 +579,30 @@ GuiApplicationManager::requestQuit(int exitCode)
     QMetaObject::invokeMethod( this, [this]() {
         quitWhenIdle();
     }, Qt::QueuedConnection );
+}
+
+bool
+GuiApplicationManager::closeModalWindows()
+{
+    // a menu (QMenu::exec()) first: it may have been opened from a modal dialog
+    QWidget* popup = QApplication::activePopupWidget();
+    if (popup) {
+        popup->close();
+
+        return true;
+    }
+    QWidget* modal = QApplication::activeModalWidget();
+    if (!modal) {
+        return false;
+    }
+    QDialog* dialog = qobject_cast<QDialog*>(modal);
+    if (dialog) {
+        dialog->reject(); // ends its exec(), even for a QMessageBox without an Escape button
+    } else {
+        modal->close();
+    }
+
+    return true;
 }
 
 void
