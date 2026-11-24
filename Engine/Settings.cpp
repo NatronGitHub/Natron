@@ -2931,15 +2931,22 @@ Settings::getUseStdOFXPluginsLocation() const
 void
 Settings::restoreDefault()
 {
-    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    // When saving is off (--no-settings, --test which implies it, or --setting), the settings file
+    // is not the session's: leave it alone and reset the settings in memory only (#1728).
+    if ( _saveSettings->getValue() ) {
+        QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
-    if ( !QFile::remove( settings.fileName() ) ) {
-        qDebug() << "Failed to remove settings ( " << settings.fileName() << " ).";
+        if ( !QFile::remove( settings.fileName() ) ) {
+            qDebug() << "Failed to remove settings ( " << settings.fileName() << " ).";
+        }
     }
 
     beginChanges();
     const KnobsVec & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
+        if (knobs[i] == _saveSettings) {
+            continue; // not a preference: resetting it would turn saving back on
+        }
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
             knobs[i]->resetToDefaultValue(j);
         }
