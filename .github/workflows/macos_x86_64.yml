@@ -231,6 +231,9 @@ jobs:
   test:
     name: Natron-Tests on the DMG
     needs: dmg
+    # the SDK stages after the one that finished are skipped: without a status function, a job
+    # whose (indirect) dependencies were skipped is skipped too
+    if: ${{ !cancelled() && needs.dmg.result == 'success' }}
     runs-on: macos-15-intel
     timeout-minutes: 300
     steps:
@@ -273,7 +276,7 @@ jobs:
     name: Attach to the release
     needs: [dmg, test]
     # pre-release tags only (the push trigger), not a workflow_dispatch run on a tag
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    if: ${{ !cancelled() && needs.test.result == 'success' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
