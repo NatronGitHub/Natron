@@ -88,8 +88,12 @@ set(Tests_SOURCES
     ParamRandom_Test.cpp
     PluginGrouping_Test.cpp
     PrecompLoad_Test.cpp
+    ProcessHandler_Test.cpp
     ProjectAutoSave_Test.cpp
     PyEffectEquality_Test.cpp
+    PyPlugToolset_Test.cpp
+    PyExprUtilsNoise_Test.cpp
+    PyParamDefault_Test.cpp
     PythonGILUnlocker_Test.cpp
     PythonScript_Test.cpp
     ProjectFileFormat_Test.cpp
@@ -262,7 +266,7 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME RendererCallbacksTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_callbacks_test.py $<TARGET_FILE:NatronRenderer>)
     set_tests_properties(RendererCallbacksTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
-    # a Read whose file is missing fails the render with "On missing frame: Error", instead of writing black (#1602)
+    # a Read whose file is missing ("On missing frame: Error") or whose filename is empty fails the render (exit status 1), instead of writing black (#1602, #1131)
     add_test(NAME RendererMissingReadTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_missing_read_test.py $<TARGET_FILE:NatronRenderer>)
     set_tests_properties(RendererMissingReadTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
@@ -360,6 +364,13 @@ add_test(NAME NodeNamingHeadless
     COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_node_naming.py")
 set_tests_properties(NodeNamingHeadless PROPERTIES TIMEOUT 300
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/node-naming-headless-cache")
+
+# ColorParam.get(frame) returns the alpha of an RGBA color, not its blue (#1712): NatronRenderer runs the
+# script, which exits with natron.quit(status).
+add_test(NAME ColorGetFrameHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_color_get_frame.py")
+set_tests_properties(ColorGetFrameHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/color-get-frame-headless-cache")
 
 # Undo groups do nothing in background mode (App.undoGroup(), #1455): NatronRenderer runs the script,
 # which exits with natron.quit(status).

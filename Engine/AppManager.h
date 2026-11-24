@@ -620,7 +620,9 @@ public:
     void setOnProjectLoadedCallback(const std::string& pythonFunc);
     void setOnProjectCreatedCallback(const std::string& pythonFunc);
 
-    void requestOFXDIalogOnMainThread(OfxImageEffectInstance* instance, void* instanceData);
+    /// Calls the effect's kOfxActionDialog on the main thread: at once on the main thread, else queued.
+    /// The queued call holds only a weak reference: it does nothing if the effect was destroyed meanwhile.
+    void requestOFXDIalogOnMainThread(const OfxEffectInstancePtr& effect, void* instanceData);
 
 
     ///Closes the application not saving any projects.
@@ -738,16 +740,12 @@ public Q_SLOTS:
 
     void onCrashReporterNoLongerResponding();
 
-    void onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance, void* instanceData);
-
     void onShutDownSignalReceived();
 
 Q_SIGNALS:
 
 
     void checkerboardSettingsChanged();
-
-    void s_requestOFXDialogOnMainThread(OfxImageEffectInstance* instance, void* instanceData);
 
 protected:
 
@@ -906,6 +904,14 @@ PyObject* getMainModule();
  **/
 bool interpretPythonScript(const std::string& script, std::string* error, std::string* output,
                            PyObject* globals = NULL, PyObject* locals = NULL);
+
+/**
+ * @brief Runs the content of a Python script file (e.g. init.py, or a script given on the command line) in the
+ * __main__ module, as interpretPythonScript() does: the success depends on the result of the script, not on what
+ * it or other code wrote to sys.stderr. Unlike interpretPythonScript(), sys.exit() in the script exits the
+ * process with its status (as PyRun_SimpleString() does), and error does not contain the script.
+ **/
+bool runPythonScriptFile(const std::string& script, std::string* error, std::string* output);
 
 
 //void compilePyScript(const std::string& script,PyObject** code);

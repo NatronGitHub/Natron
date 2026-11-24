@@ -334,6 +334,9 @@ public:
     // For saveProject() and saveProjectAs(), a format other than eProjectFileFormatNone becomes the format of the project.
     bool saveProject(const QString& filename, Natron::ProjectFileFormatEnum format = Natron::ProjectFileFormatEnum::eProjectFileFormatNone);
     bool saveProjectAs(const QString& filename, Natron::ProjectFileFormatEnum format = Natron::ProjectFileFormatEnum::eProjectFileFormatNone);
+    // Saves a copy of the project to filename, without changing the project's file name, path or format.
+    bool saveProjectCopy(const QString& filename, Natron::ProjectFileFormatEnum format = Natron::ProjectFileFormatEnum::eProjectFileFormatNone);
+    // Same as saveProjectCopy(), kept for compatibility (Natron 2.5 Python API).
     bool saveTempProject(const QString& filename, Natron::ProjectFileFormatEnum format = Natron::ProjectFileFormatEnum::eProjectFileFormatNone);
 
     // The format of the project file: the format of the file it was loaded from or last saved to,
