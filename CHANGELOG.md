@@ -88,7 +88,7 @@
 - Natron no longer crashes when it quits after `app.closeProject()` was called on a project with unsaved changes and an open settings panel, e.g. at the end of a `Natron --test` script, or with `natron.quit()` after `app.closeProject()`: the project was closed a second time while it was being closed. A second `app.closeProject()` (or File > Close Project, or `app.resetProject()`) before the window closes no longer asks again whether to save the changes. #1567
 - The bundled Eigen (libs/Eigen3), used by the tracker (libmv, openMVG, Ceres), is updated from 3.4.0 to 3.4.1, a bug-fix release: fixes in the SVD and eigenvalue solvers, undefined-behaviour fixes, ARM (NEON) fixes and fewer compiler warnings. #1593
 - A render or a playback no longer stalls when its last frame, or an abort, comes just before the render scheduler starts waiting for it. #1607
-- Linux, macOS: Natron no longer aborts with `free(): invalid pointer` when it gets SIGTERM or SIGINT (logout, `kill`, Ctrl-C) while a dialog or a menu is open: the dialog or menu is closed, as with Escape, and Natron then quits. #1730
+- Unix (Linux, macOS, FreeBSD): Natron no longer aborts with `free(): invalid pointer` when it gets SIGTERM or SIGINT (logout, `kill`, Ctrl-C) while a dialog or a menu is open, e.g. the first-launch question about updates: the dialog or menu is closed without an answer, as Cancel does, and Natron then quits. #1730
 
 ### Plugins
 

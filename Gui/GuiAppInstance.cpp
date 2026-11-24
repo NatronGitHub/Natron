@@ -326,8 +326,10 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
                 Dialogs::printDismissedDialog(title, question);
             } else {
                 StandardButtonEnum reply = Dialogs::questionDialog(title, question, false);
-                bool checkForUpdates = reply == eStandardButtonYes;
-                nSettings->setCheckUpdatesEnabled(checkForUpdates);
+                // not answered (closed by a termination signal, #1730): ask again on the next launch
+                if ( (reply == eStandardButtonYes) || (reply == eStandardButtonNo) ) {
+                    nSettings->setCheckUpdatesEnabled(reply == eStandardButtonYes);
+                }
             }
         }
 

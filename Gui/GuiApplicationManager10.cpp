@@ -597,7 +597,7 @@ GuiApplicationManager::closeModalWindows()
     }
     QDialog* dialog = qobject_cast<QDialog*>(modal);
     if (dialog) {
-        dialog->reject(); // ends its exec(), even for a QMessageBox without an Escape button
+        dialog->reject(); // ends its exec(), even for a QMessageBox without an Escape button: no button is clicked
     } else {
         modal->close();
     }
@@ -610,21 +610,9 @@ GuiApplicationManager::quitWhenIdle()
 {
     // Not while the application is loading (the script given on the command line runs during
     // GuiAppInstance::load()), nor from a nested event loop (QEventLoop in checkForNewVersion(),
-    // a modal dialog), nor while a project is being saved (Project::saveProject_imp() processes the
-    // events while it waits for the auto-save, #825, as Gui::closeEvent() checks): the code that runs
-    // it would use the deleted projects afterwards. Try again later.
-    bool saving = false;
-    {
-        const AppInstanceVec instances = getAppInstances();
-        for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-            ProjectPtr project = (*it)->getProject();
-            if ( project && project->isSaveInProgress() ) {
-                saving = true;
-                break;
-            }
-        }
-    }
-    if ( !isLoaded() || (getNestedEventLoopsCount() > 0) || QApplication::activeModalWidget() || saving ) {
+    // a modal dialog), nor while a project is being saved (as Gui::closeEvent() checks): the code
+    // that runs it would use the deleted projects afterwards. Try again later.
+    if ( mustDeferQuit() || QApplication::activeModalWidget() ) {
         QTimer::singleShot( 50, this, [this]() {
             quitWhenIdle();
         } );

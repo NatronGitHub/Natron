@@ -628,9 +628,6 @@ public:
     ///Closes the application not saving any projects.
     virtual void exitApp(bool warnUserForSave);
 
-    /// GUI: closes the active modal dialog or popup (menu), as Escape does; returns false if there was none
-    virtual bool closeModalWindows() { return false; }
-
     bool isSpawnedFromCrashReporter() const;
 
     virtual void reloadScriptEditorFonts() {}
@@ -752,6 +749,13 @@ Q_SIGNALS:
 
 protected:
 
+    /// GUI: closes the active popup (menu) or modal dialog, one per call, as Cancel does; returns false if there is none
+    virtual bool closeModalWindows() { return false; }
+
+    /// Whether quitting now would delete the projects under code that uses them: Natron is loading, a nested event
+    /// loop runs (a modal dialog, a menu, a GUI test's waitIdle()), or a project is being saved
+    bool mustDeferQuit() const;
+
     virtual bool initGui(const CLArgs& cl);
     virtual void loadBuiltinNodePlugins(IOPluginsMap* readersMap,
                                         IOPluginsMap* writersMap);
@@ -803,6 +807,7 @@ private:
 
     /// Termination signal: quits the application from the main event loop, once the modal windows are closed
     void quitOnShutDownSignal();
+
 
     bool loadInternal(const CLArgs& cl);
 
