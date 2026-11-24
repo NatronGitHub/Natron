@@ -93,6 +93,7 @@ set(Tests_SOURCES
     PyEffectEquality_Test.cpp
     PyPlugToolset_Test.cpp
     PyExprUtilsNoise_Test.cpp
+    PyParamDefault_Test.cpp
     PythonGILUnlocker_Test.cpp
     PythonScript_Test.cpp
     ProjectFileFormat_Test.cpp

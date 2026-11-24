@@ -937,7 +937,12 @@ IntParam::getDefaultValue(int dimension) const
     if (!knob) {
         return 0;
     }
-    return knob->getDefaultValues_mt_safe()[dimension];
+    const std::vector<int> defaultValues = knob->getDefaultValues_mt_safe();
+    if ( (dimension < 0) || ( dimension >= (int)defaultValues.size() ) ) {
+        return 0; // as getValue(dimension)
+    }
+
+    return defaultValues[dimension];
 }
 
 void
@@ -1308,7 +1313,12 @@ DoubleParam::getDefaultValue(int dimension) const
     if (!knob) {
         return 0.;
     }
-    return knob->getDefaultValues_mt_safe()[dimension];
+    const std::vector<double> defaultValues = knob->getDefaultValues_mt_safe();
+    if ( (dimension < 0) || ( dimension >= (int)defaultValues.size() ) ) {
+        return 0.; // as getValue(dimension)
+    }
+
+    return defaultValues[dimension];
 }
 
 void
@@ -1578,7 +1588,12 @@ ColorParam::getDefaultValue(int dimension) const
     if (!knob) {
         return 0.;
     }
-    return knob->getDefaultValues_mt_safe()[dimension];
+    const std::vector<double> defaultValues = knob->getDefaultValues_mt_safe();
+    if ( (dimension < 0) || ( dimension >= (int)defaultValues.size() ) ) {
+        return 0.; // as getValue(dimension)
+    }
+
+    return defaultValues[dimension];
 }
 
 void
