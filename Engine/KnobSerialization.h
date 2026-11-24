@@ -30,6 +30,7 @@
 
 #include <iostream>
 #include <map>
+#include <stdexcept>
 #include <vector>
 #include <string>
 
@@ -93,6 +94,31 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define MASTER_SERIALIZATION_VERSION MASTER_SERIALIZATION_INTRODUCE_MASTER_NODE_NAME_FULL
 
 NATRON_NAMESPACE_ENTER
+
+// The largest number of dimensions a knob read from a file may have: more than any knob has, and
+// small enough that a damaged value doesn't allocate gigabytes before the load fails (#1612).
+// The number of curves of a parametric knob is set by the plug-in (kOfxParamPropParametricDimension)
+// or by Python (createParametricParam()), and isn't limited: a parametric knob with more curves
+// than this is saved, but its project can't be loaded again. Natron-Tests' knobs have at most 9.
+inline constexpr int kKnobSerializationMaxDimension = 4096;
+
+// Reports a problem in the knob data being read, which was worked around (e.g. an invalid choice
+// index): on stderr, and in the error log, which the GUI shows. The data may come from a project,
+// a preset, the clipboard, or a node's own saved state.
+void reportKnobSerializationWarning(const std::string& knobName, const std::string& message);
+
+// Thrown when the knob data read from a project file (or a preset, or the clipboard) is not
+// valid, e.g. an unknown knob type or an impossible number of dimensions: the file is damaged
+// or was edited by hand. Project::loadProjectInternal() reports it as a damaged project file.
+class KnobSerializationError
+    : public std::runtime_error
+{
+public:
+    explicit KnobSerializationError(const std::string& what)
+        : std::runtime_error(what)
+    {
+    }
+};
 
 struct MasterSerialization
 {
@@ -384,7 +410,11 @@ struct ValueSerialization
         ar & ::boost::serialization::make_nvp("HasAnimation", hasAnimation);
         bool convertOldFileKeyframesToPattern = false;
         if (hasAnimation) {
-            assert( _knob->canAnimate() );
+            // A knob that can't animate has no curve: the curve from the file is read, so that
+            // the archive stays in step, and dropped below (#1612).
+            if ( !_knob->canAnimate() ) {
+                reportKnobSerializationWarning( _knob->getName(), "animation saved for a parameter that can't be animated, ignoring it" );
+            }
             Curve c;
             const int nonFiniteBefore = CurveSerializationDetail::nonFiniteValuesRead;
             ar & ::boost::serialization::make_nvp("Curve", c);
@@ -396,9 +426,8 @@ struct ValueSerialization
             convertOldFileKeyframesToPattern = isFile && isFile->getName() == kOfxImageEffectFileParamName;
             if (!convertOldFileKeyframesToPattern) {
                 CurvePtr curve = _knob->getCurve(ViewIdx(0), _dimension);
-                assert(curve);
                 if (curve) {
-                    _knob->getCurve(ViewIdx(0), _dimension)->clone(c);
+                    curve->clone(c);
                     if (mustRefreshDerivatives) {
                         curve->setMustRefreshDerivatives();
                     }
@@ -436,7 +465,6 @@ struct ValueSerialization
         } else if (isChoice) {
             int v;
             ar & ::boost::serialization::make_nvp("Value", v);
-            assert(v >= 0);
             if (version >= VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL) {
                 if (version < VALUE_SERIALIZATION_REMOVES_EXTRA_DATA) {
                     std::string label;
@@ -444,12 +472,23 @@ struct ValueSerialization
                     setChoiceExtraLabel(label);
                 }
             }
-            isChoice->setValue(v, ViewIdx(0), _dimension);
+            // A negative index (from a damaged or hand-edited file, or set by a Python script) would
+            // be read out of bounds later, or passed to an OpenFX plug-in: use the default value
+            // instead, or the first entry (#1612). The default comes after the value in the file.
+            int defV = 0;
             if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
-                int defV;
                 ar & ::boost::serialization::make_nvp("Default", defV);
+                if (defV < 0) {
+                    reportKnobSerializationWarning( _knob->getName(), "invalid default choice index " + std::to_string(defV) + ", using 0" );
+                    defV = 0;
+                }
                 isChoice->setDefaultValueWithoutApplying(defV, _dimension);
             }
+            if (v < 0) {
+                reportKnobSerializationWarning( _knob->getName(), "invalid choice index " + std::to_string(v) + ", using " + std::to_string(defV) );
+                v = defV;
+            }
+            isChoice->setValue(v, ViewIdx(0), _dimension);
         } else if (isString && !isFile) {
             std::string v;
             ar & ::boost::serialization::make_nvp("Value", v);
@@ -652,13 +691,17 @@ private:
         ar & ::boost::serialization::make_nvp("Name", name);
         ar & ::boost::serialization::make_nvp("Type", _typeName);
         ar & ::boost::serialization::make_nvp("Dimension", _dimension);
-        _values.resize(_dimension);
+        // The type and the dimension come from the file: check them before using them (#1612).
+        if ( (_dimension < 1) || (_dimension > kKnobSerializationMaxDimension) ) {
+            throw KnobSerializationError("parameter \"" + name + "\": invalid number of dimensions " + std::to_string(_dimension));
+        }
         KnobIPtr created = createKnob(_typeName, _dimension);
         if (!created) {
-            return;
-        } else {
-            _knob = created;
+            // The layout of the rest of the element depends on the type: it can't be skipped.
+            throw KnobSerializationError("parameter \"" + name + "\": unknown parameter type \"" + _typeName + "\"");
         }
+        _values.resize(_dimension);
+        _knob = created;
         _knob->setName(name);
 
         bool secret;

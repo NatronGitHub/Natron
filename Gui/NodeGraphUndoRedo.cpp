@@ -1228,7 +1228,10 @@ LoadNodePresetsCommand::redo()
 
     std::map<std::string, std::string> oldNewScriptNames;
     internalNode->storeKnobsLinks(*_newSerializations.front(), oldNewScriptNames);
-    internalNode->restoreKnobsLinks(allNodes, oldNewScriptNames, true); // may not fail
+    // A preset is file data: a link that can't be restored (its master node isn't in the
+    // project, or a damaged dimension) is skipped, as for a paste, instead of throwing out
+    // of the undo stack (#1612).
+    internalNode->restoreKnobsLinks(allNodes, oldNewScriptNames, false);
     internalNode->getEffectInstance()->incrHashAndEvaluate(true, true);
     internalNode->getApp()->triggerAutoSave();
     _firstRedoCalled = true;

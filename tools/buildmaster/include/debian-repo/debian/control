@@ -1,8 +1,0 @@
-Package: natron-repo
-Version: __VERSION__
-Architecture: __ARCH__
-Maintainer: INRIA <build@natron.fr>
-Installed-Size: __SIZE__
-Section: custom
-Priority: extra
-Description: Natron Repository

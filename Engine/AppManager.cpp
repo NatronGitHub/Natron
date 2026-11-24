@@ -4968,82 +4968,43 @@ PythonGILLocker::~PythonGILLocker()
 
 PythonGILUnlocker::PythonGILUnlocker()
 {
-#ifdef DEBUG_PYTHON_GIL
-    if (!Py_IsInitialized()) {
-        throw std::runtime_error("Trying to execute python code, but Py_IsInitialized() returns false");
+    // Not PyGILState_Release(): it must be paired with the PyGILState_Ensure() that returned its argument (#1610).
+    // (PyGILState_Check() always returns 1 once a subinterpreter exists; Natron creates none.)
+    if ( !Py_IsInitialized() || !PyGILState_Check() ) {
+        return;
     }
-#endif
-    assert(Py_IsInitialized());
-
-    // Also take the Python GIL, since not doing so seems to crash Natron during recursive Natron->Python->Natron->Python calls, see https://github.com/NatronGitHub/Natron/issues/379
-    // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
-    // Take the GIL for this thread
 #ifdef DEBUG_PYTHON_GIL
     QThread* curThread = QThread::currentThread();
     QString threadname = (qApp && qApp->thread() == curThread) ? QString::fromUtf8("Main") : curThread->objectName();
     qDebug() << QString::fromUtf8("Thread '%1' is releasing the Python GIL").arg(threadname);
 #endif
-    assert(PyThreadState_Get());
-#if PY_VERSION_HEX >= 0x030400F0
-    assert(PyGILState_Check()); // Not available prior to Python 3.4
-#endif
-    PyGILState_Release(PyGILState_UNLOCKED);
-#ifdef DEBUG_PYTHON_GIL
-    qDebug() << QString::fromUtf8("Thread '%1' released the Python GIL").arg(threadname);
-#endif
-
 #ifdef USE_NATRON_GIL
-    // Take the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
-    // We do this after we got the Python GIL, to avoid deadlocks:
-    // If we do it the other way, this thread may be waiting for the Python GIL while keeping the Natron GIL
-    // locked, thus preventing other threads from getting the Python GIL.
+    // Release the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
     if (appPTR) {
-#ifdef DEBUG_PYTHON_GIL
-        qDebug() << QString::fromUtf8("Thread '%1' is releasing the Natron GIL").arg(threadname);
-#endif
         appPTR->releaseNatronGIL();
-#ifdef DEBUG_PYTHON_GIL
-        qDebug() << QString::fromUtf8("Thread '%1' released the Natron GIL").arg(threadname);
-#endif
     }
 #endif
+    _state = PyEval_SaveThread();
 }
 
 PythonGILUnlocker::~PythonGILUnlocker()
 {
-    // Take the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
-#ifdef DEBUG_PYTHON_GIL
-    QThread* curThread = QThread::currentThread();
-    QString threadname = (qApp && qApp->thread() == curThread) ? QString::fromUtf8("Main") : curThread->objectName();
-#endif
+    if (!_state) {
+        return;
+    }
+    // Take the Python GIL before the Natron GIL, as PythonGILLocker does, to avoid deadlocks.
+    PyEval_RestoreThread(_state);
 #ifdef USE_NATRON_GIL
     if (appPTR) {
-#ifdef DEBUG_PYTHON_GIL
-        qDebug() << QString::fromUtf8("Thread '%1' is asking the Natron GIL").arg(threadname);
-#endif
         appPTR->takeNatronGIL();
     }
 #endif
-
-    // We released the Python GIL too, so take it here.
-    // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
-#if PY_VERSION_HEX >= 0x030400F0
-    assert(!PyGILState_Check());  // Not available prior to Python 3.4
-#endif
-    // Release the GIL, no thread will own it afterwards.
 #ifdef DEBUG_PYTHON_GIL
-    qDebug() << QString::fromUtf8("Thread '%1' is asking the Python GIL").arg(threadname);
-#endif
-    /* PyGILState_STATE state = */
-    PyGILState_Ensure();
-#ifdef DEBUG_PYTHON_GIL
+    QThread* curThread = QThread::currentThread();
+    QString threadname = (qApp && qApp->thread() == curThread) ? QString::fromUtf8("Main") : curThread->objectName();
     qDebug() << QString::fromUtf8("Thread '%1' got the Python GIL").arg(threadname);
 #endif
-
-    assert(PyThreadState_Get());
-#if PY_VERSION_HEX >= 0x030400F0
-    assert(PyGILState_Check()); // Not available prior to Python 3.4
-#endif
+    assert( PyGILState_Check() );
 }
 
 static bool

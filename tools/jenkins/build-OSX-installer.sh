@@ -164,9 +164,6 @@ if [ "${COMPILER}" = "clang" ] || [ "${COMPILER}" = "clang-omp" ]; then
     echo "* Using ${DSYMUTIL}"
 fi
 
-# the list of libs in /opt/local/lib/libgcc
-#gcclibs="atomic.1 gcc_ext.10.4 gcc_ext.10.5 gcc_s.1 gfortran.3 gomp.1 itm.1 objc-gnu.4 quadmath.0 ssp.0 stdc++.6"
-gcclibs="atomic.1 gcc_s.1 gfortran.3 gomp.1 itm.1 objc-gnu.4 quadmath.0 ssp.0 stdc++.6"
 #  clang's OpenMP lib
 omplibs="omp"
 
@@ -208,6 +205,8 @@ cp -a "${TMP_BINARIES_PATH}/OFX/Plugins/"*.ofx.bundle "${package}/Contents/Plugi
 
 
 cp -a "${TMP_BINARIES_PATH}/PyPlugs" "${package}/Contents/Plugins/"
+# a Python module: Contents/Plugins is on the Python path
+cp "${TMP_BINARIES_PATH}/natron_convert_project.py" "${package}/Contents/Plugins/"
 cp -a "${TMP_BINARIES_PATH}/Resources" "${package}/Contents/"
 
 NATRON_BIN_VERSION="${NATRON_VERSION_SHORT}"
@@ -306,17 +305,6 @@ for plugin in "${PLUGINDIR}/OFX/Natron"/*.ofx.bundle; do
             ln -sf "$frameworks/${lib}" "${lib}"
         fi
     done
-    if [ "${COMPILER}" = "gcc" ]; then # use gcc's libraries everywhere
-        for l in ${gcclibs}; do
-            lib="lib${l}.dylib"
-            for deplib in "${plugin}"/Contents/MacOS/*.ofx "${plugin}"/Contents/Libraries/lib*dylib ; do
-                if [ -f "${deplib}" ]; then
-                    install_name_tool -change "/usr/lib/${lib}" "@executable_path/../Frameworks/${lib}" "${deplib}"
-                    install_name_tool -change "${SDK_HOME}/lib/libgcc/${lib}" "@executable_path/../Frameworks/${lib}" "${deplib}"
-                fi
-            done
-        done
-    fi
     if [ "${COMPILER}" = "clang-omp" ]; then # use clang's OpenMP libraries everywhere
         for l in ${omplibs}; do
             lib="lib${l}.dylib"
@@ -428,20 +416,13 @@ if [ ! -x "${natron_binary}" ]; then
     exit 1
 fi
 
-# macdeployqt does not deal correctly with libs in ${SDK_HOME}/lib/libgcc : handle them manually
-LIBGCC=0
+# Natron is built with clang on macOS (compiler-common.sh), as Qt and the MacPorts libraries:
+# the GCC runtime (${SDK_HOME}/lib/libgcc) is not bundled.
 if otool -L "${natron_binary}" | grep -F -q "${SDK_HOME}/lib/libgcc"; then
-    LIBGCC=1
-    echo "* Binaries use libgcc"
+    echo "Error: ${natron_binary} uses ${SDK_HOME}/lib/libgcc: build Natron with clang on macOS"
+    exit 1
 fi
 COPY_LIBCXX=0
-if otool -L "${natron_binary}" | grep -F -q "/usr/lib/libc++"; then
-    # libc++ appeared in on Lion 10.7 (osmajor=11)
-    if [ "${macosx}" -lt 11 ]; then
-        COPY_LIBCXX=1
-        COPY_LIBCXX_FROM="/usr/lib"
-    fi
-fi
 if otool -L "${natron_binary}" | grep -F -q "@rpath/libc++"; then
     rpath=( $(otool -l "${natron_binary}" | grep -A 3 LC_RPATH | grep path|awk '{ print $2 }') )
     if [ ${#rpath[@]} -gt 0 ]; then
@@ -588,32 +569,6 @@ for qtlib in "${qt_libs[@]}"; do
     fi
 done
 
-if [ "${LIBGCC}" = "1" ]; then
-    echo "*** Copying and fixing GCC libs"
-    for l in ${gcclibs}; do
-        lib="lib${l}.dylib"
-        cp "${SDK_HOME}/lib/libgcc/${lib}" "${pkglib}/${lib}"
-        install_name_tool -id "@executable_path/../Frameworks/${lib}" "${pkglib}/${lib}"
-    done
-    for l in ${gcclibs}; do
-        lib="lib${l}.dylib"
-        #install_name_tool -change "${SDK_HOME}/lib/libgcc/${lib}" "@executable_path/../Frameworks/${lib}" "${natron_binary}"
-        for deplib in "${pkglib}/"*.dylib "${pkglib}/"*".framework/Versions/${QT_VERSION_MAJOR}/"*; do
-            if [ -f "${deplib}" ]; then
-                install_name_tool -change "${SDK_HOME}/lib/libgcc/${lib}" "@executable_path/../Frameworks/${lib}" "${deplib}"
-            fi
-        done
-    done
-    # use gcc's libraries everywhere
-    for l in ${gcclibs}; do
-        lib="lib${l}.dylib"
-        for deplib in "${pkglib}/"*.framework/Versions/*/* "${pkglib}/"lib*.dylib; do
-            if [ -f "${deplib}" ]; then
-                install_name_tool -change "/usr/lib/${lib}" "@executable_path/../Frameworks/${lib}" "${deplib}"
-            fi
-        done
-    done
-fi
 if [ "${COMPILER}" = "clang-omp" ]; then
     echo "*** Copying and fixing OpenMP support lib"
     for l in ${omplibs}; do
@@ -664,11 +619,7 @@ echo "*** Installing ${PYSIDE_PKG}..."
 # the python "system"
 pysys="darwin"
 # The python-specific part in the pyside and shiboken library names
-if [ "${PYV}" = 3 ]; then
-    pypart=".cpython-${PYVERNODOT}-${pysys}"
-else
-    pypart="-python${PYVER}"
-fi
+pypart=".cpython-${PYVERNODOT}-${pysys}"
 
 PYLIB="Python.framework/Versions/${PYVER}/lib/python${PYVER}"
 PYSIDE="${PYLIB}/site-packages/${PYSIDE_PKG}"
@@ -710,11 +661,7 @@ echo "*** Cleaning Python..."
 # prune large python files
 (cd "${package}/Contents/Frameworks/${PYLIB}"; xargs rm -rf || true) < "${INC_PATH}/python-exclude.txt"
 
-if [ "${PYV}" = 3 ]; then
-    pycfg="${package}/Contents/Frameworks/${PYLIB}/config-${PYVER}-${pysys}"
-else
-    pycfg="${package}/Contents/Frameworks/${PYLIB}/config"
-fi
+pycfg="${package}/Contents/Frameworks/${PYLIB}/config-${PYVER}-${pysys}"
 pushd "${pycfg}"
 chmod -x Makefile Setup Setup.config Setup.local config.c config.c.in python.o || true
 rm -f "libpython${PYVER}.a" "libpython${PYVER}.dylib"
@@ -741,13 +688,7 @@ for qtlib in "${qt_libs[@]}" ;do
             dylib="lib${l}.dylib"
             install_name_tool -change "${SDK_HOME}/lib/${dylib}" "@executable_path/../Frameworks/${dylib}" "${binary}"
         done
-        if [ "${LIBGCC}" = "1" ]; then
-            for l in ${gcclibs}; do
-                lib="lib${l}.dylib"
-                install_name_tool -change "/usr/lib/${lib}" "@executable_path/../Frameworks/${lib}" "${binary}"
-            done
-        fi
-        
+
         if otool -L "${binary}" | grep -F "${SDK_HOME}"; then
             echo "Error: MacPorts libraries remaining in ${binary}, please check"
             exit 1
@@ -804,12 +745,6 @@ while [ ${#bins[@]} -gt 0 ]; do
         # Fix rpath
         if [ ! -x "${binary}" ]; then
             continue
-        fi
-        if [ "${LIBGCC}" = "1" ]; then
-            for l in ${gcclibs}; do
-                lib="lib${l}.dylib"
-                install_name_tool -change "${SDK_HOME}/lib/libgcc/${lib}" "@executable_path/../Frameworks/${lib}" "${binary}" || true
-            done
         fi
         if [ "${COMPILER}" = "clang-omp" ]; then
             for l in ${omplibs}; do
@@ -922,39 +857,6 @@ for bin in "${natronbins[@]}" "${otherbins[@]}"; do
 
         ### FIX DYLIBS
         
-        if [ "${LIBGCC}" = "1" ]; then
-            for l in ${gcclibs}; do
-                lib="lib${l}.dylib"
-                install_name_tool -change "${SDK_HOME}/lib/libgcc/${lib}" "@executable_path/../Frameworks/${lib}" "${binary}"
-            done
-        fi
-
-        if [ "${LIBGCC}" = "1" ]; then
-            for l in ${gcclibs}; do
-                lib="lib${l}.dylib"
-                cp "${SDK_HOME}/lib/libgcc/${lib}" "${pkglib}/${lib}"
-                install_name_tool -id "@executable_path/../Frameworks/${lib}" "${pkglib}/${lib}"
-            done
-            for l in ${gcclibs}; do
-                lib="lib${l}.dylib"
-                install_name_tool -change "${SDK_HOME}/lib/libgcc/${lib}" "@executable_path/../Frameworks/${lib}" "${binary}"
-                install_name_tool -change "/usr/lib/${lib}" "@executable_path/../Frameworks/${lib}" "${binary}"
-                for deplib in "${pkglib}/"*".dylib" "${pkglib}/"*".framework/Versions/${QT_VERSION_MAJOR}/"*; do
-                    if [ -f "${deplib}" ]; then
-                        install_name_tool -change "${SDK_HOME}/lib/libgcc/${lib}" "@executable_path/../Frameworks/${lib}" "${deplib}"
-                    fi
-                done
-            done
-            # use gcc's libraries everywhere
-            for l in ${gcclibs}; do
-                lib="lib${l}.dylib"
-                for deplib in "${pkglib}/"*.framework/Versions/*/* "${pkglib}/"lib*.dylib; do
-                    if [ -f "${deplib}" ]; then
-                        install_name_tool -change "/usr/lib/${lib}" "@executable_path/../Frameworks/${lib}" "${deplib}"
-                    fi
-                done
-            done
-        fi
         if [ "${COMPILER}" = "clang-omp" ]; then
             for l in ${omplibs}; do
                 lib="lib${l}.dylib"
@@ -1203,48 +1105,12 @@ if [ "${STRIP}" = 1 ]; then
     done
 fi
 
-# put links to the GCC libs in a separate directory, and compile the launcher which sets DYLD_LIBRARY_PATH to that directory
-if [ "${LIBGCC}" = 1 ]; then
-    echo "*** Linking GCC libraries to ${package}/Contents/Frameworks/libgcc"
-    mkdir -p "${package}/Contents/Frameworks/libgcc"
-    for l in ${gcclibs}; do
-        lib="lib${l}.dylib"
-        if [ -f "${package}/Contents/Frameworks/${lib}" ]; then
-            ln -sf "../${lib}" "${package}/Contents/Frameworks/libgcc/${lib}"
-        fi
-    done
-    mv "${package}/Contents/MacOS/Natron" "${package}/Contents/MacOS/Natron-driver"
-    mv "${package}/Contents/MacOS/NatronRenderer" "${package}/Contents/MacOS/NatronRenderer-driver"
-    # MACOSX_DEPLOYMENT_TARGET set in common.sh
-    echo "*** Compiling and installing NatronDyLd.c -DLIBGCC"
-    if [ "${BITS}" = "Universal" ]; then
-        ${CC} -DLIBGCC -arch i386 -arch x86_64 -mmacosx-version-min=10.6 -isysroot /Developer/SDKs/MacOSX10.6.sdk "${INC_PATH}/natron/NatronDyLd.c" -s -o "${package}/Contents/MacOS/Natron"
-    else
-        ${CC} -DLIBGCC "${INC_PATH}/natron/NatronDyLd.c" -s -o "${package}/Contents/MacOS/Natron"
-    fi
-    cp "${package}/Contents/MacOS/Natron" "${package}/Contents/MacOS/NatronRenderer"
-fi
-
-# copy libc++ if necessary (on OSX 10.6 Snow Leopard with libc++ only)
-# DYLD_LIBRARY_PATH should be set by NatronDyLd.c
+# copy LLVM's libc++ if the binaries use it (built with a MacPorts clang: see the rpaths above)
 if [ "$COPY_LIBCXX" = 1 ]; then
     echo "*** Copying libc++ and libc++abi from ${COPY_LIBCXX_FROM} to ${package}/Contents/Frameworks/libcxx"
     mkdir -p "${package}/Contents/Frameworks/libcxx"
     cp "${COPY_LIBCXX_FROM}/libc++.1.dylib" "${package}/Contents/Frameworks/libcxx"
     cp "${COPY_LIBCXX_FROM}/libc++abi.1.dylib" "${package}/Contents/Frameworks/libcxx"
-    if [ "${COPY_LIBCXX_FROM}" = "/usr/lib" ]; then 
-        mv "${package}/Contents/MacOS/Natron" "${package}/Contents/MacOS/Natron-driver"
-        mv "${package}/Contents/MacOS/NatronRenderer" "${package}/Contents/MacOS/NatronRenderer-driver"
-        # MACOSX_DEPLOYMENT_TARGET set in common.sh
-        echo "*** Compiling and installing NatronDyLd.c -DLIBCXX"
-        if [ "${BITS}" = "Universal" ]; then
-            ${CC} -DLIBCXX -arch i386 -arch x86_64 -mmacosx-version-min=10.6 -isysroot /Developer/SDKs/MacOSX10.6.sdk "${INC_PATH}/natron/NatronDyLd.c" -o "${package}/Contents/MacOS/Natron"
-        else
-            ${CC} -DLIBCXX "${INC_PATH}/natron/NatronDyLd.c" -o "${package}/Contents/MacOS/Natron"
-        fi
-        strip "${package}/Contents/MacOS/Natron"
-        cp "${package}/Contents/MacOS/Natron" "${package}/Contents/MacOS/NatronRenderer"
-    fi
 fi
 
 
@@ -1259,11 +1125,7 @@ if [ -x "${NATRON_PYTHON}" ]; then
     #"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" "${package}/Contents/Frameworks/Python.framework" "${DYNLOAD}/"*.so
     echo "*** Installing pip"
     pushd "${PYDIR}/../.."
-    if [ "${PYV}" = "2" ]; then
-        ${CURL} --remote-name --insecure "https://bootstrap.pypa.io/pip/${PYVER}/get-pip.py"
-    else
-        ${CURL} --remote-name --insecure "https://bootstrap.pypa.io/get-pip.py"
-    fi
+    ${CURL} --remote-name --insecure "https://bootstrap.pypa.io/get-pip.py"
     PYTHON_PATH="$SDK_HOME/lib/python${PYVER}"
     #"${CODESIGN}" "${CODE_SIGN_OPTS[@]}" get-pip.py
     "${PY_EXE}" get-pip.py --target "${PYDIR}/site-packages"

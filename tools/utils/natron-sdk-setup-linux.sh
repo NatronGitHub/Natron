@@ -4,21 +4,26 @@
 SCRIPTPATH="$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )"
 NATRON="$( dirname "$( dirname "$SCRIPTPATH" )" )"
 TOP_SOURCES="$( dirname "${NATRON}" )"
-# Where the Natron SDK is. It should 
+# Where the Natron SDK is (the Rocky Linux 9 SDK, see INSTALL_LINUX.md).
+# Its Python is 3.11, and PySide2/Shiboken2 are in its site-packages.
 SDK=/opt/Natron-sdk
-GCC="$SDK/gcc"
-QTDIR="$SDK/qt4"
+QTDIR="$SDK/qt5"
 FFMPEG="$SDK/ffmpeg-gpl2"
 LIBRAW="$SDK/libraw-gpl2"
 OSMESA="$SDK/osmesa"
-PATH="$SDK/bin:$QTDIR/bin:$GCC/bin:$FFMPEG/bin:$LIBRAW_PATH:$PATH"
-LIBRARY_PATH="$SDK/lib:$QTDIR/lib:$GCC/lib64:$GCC/lib:$FFMPEG/lib:$LIBRAW/lib:$OSMESA/lib"
-LD_LIBRARY_PATH="$SDK/lib:$QTDIR/lib:$GCC/lib64:$GCC/lib:$FFMPEG/lib:$LIBRAW/lib"
-LD_RUN_PATH="$SDK/lib:$QTDIR/lib:$GCC/lib:$FFMPEG/lib:$LIBRAW/lib"
-CPATH="$SDK/include:$QTDIR/include:$GCC/include:$FFMPEG/include:$LIBRAW/include:$OSMESA/include"
-PKG_CONFIG_PATH="$SDK/lib/pkgconfig:$OSMESA/lib/pkgconfig:$QTDIR/lib/pkgconfig:$GCC/lib/pkgconfig:$FFMPEG/lib/pkgconfig:$LIBRAW/lib/pkgconfig"
-PYTHONPATH="$QTDIR/lib/python2.7/site-packages/"
-export QTDIR LD_LIBRARY_PATH LD_RUN_PATH CPATH PKG_CONFIG_PATH PYTHONPATH
+# The SDK is built with gcc-toolset-14 (GCC_TOOLSET in tools/jenkins/include/scripts/build-Linux-sdk.sh)
+GCC_TOOLSET="${GCC_TOOLSET:-14}"
+if [ -f "/opt/rh/gcc-toolset-${GCC_TOOLSET}/enable" ]; then
+    # shellcheck source=/dev/null
+    . "/opt/rh/gcc-toolset-${GCC_TOOLSET}/enable"
+fi
+PATH="$SDK/bin:$QTDIR/bin:$FFMPEG/bin:$LIBRAW/bin:$PATH"
+LIBRARY_PATH="$SDK/lib:$QTDIR/lib:$FFMPEG/lib:$LIBRAW/lib:$OSMESA/lib"
+LD_LIBRARY_PATH="$SDK/lib:$QTDIR/lib:$FFMPEG/lib:$LIBRAW/lib"
+LD_RUN_PATH="$SDK/lib:$QTDIR/lib:$FFMPEG/lib:$LIBRAW/lib"
+CPATH="$SDK/include:$QTDIR/include:$FFMPEG/include:$LIBRAW/include:$OSMESA/include"
+PKG_CONFIG_PATH="$SDK/lib/pkgconfig:$OSMESA/lib/pkgconfig:$QTDIR/lib/pkgconfig:$FFMPEG/lib/pkgconfig:$LIBRAW/lib/pkgconfig"
+export PATH QTDIR LIBRARY_PATH LD_LIBRARY_PATH LD_RUN_PATH CPATH PKG_CONFIG_PATH
 NATRON_PLUGIN_PATH="$NATRON/Gui/Resources/PyPlugs"
 OFX_PLUGIN_PATH="$HOME/Development/OFX/Plugins"
 OCIO="$HOME/Development/Natron-gforge/OpenColorIO-Configs/blender/config.ocio"
@@ -38,14 +43,14 @@ echo "cd \"$TOP_SOURCES\""
 echo 'ln -s $PWD/openfx-*/*-release/*.ofx.bundle "$HOME/OFX/Plugins"'
 echo "# Compile Natron with:"
 echo "cd \"$NATRON\""
-echo 'qmake CONFIG+=debug CONFIG+=enable-cairo CONFIG+=enable-osmesa CONFIG+=openmp LLVM_PATH=$SDK/llvm OSMESA_PATH=$SDK/osmesa -r && make'
+echo 'cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$SDK/qt5;$SDK" -DPython3_EXECUTABLE="$SDK/bin/python3" && cmake --build build -j4'
 echo "# Run Natron with:"
 echo "cd \"$NATRON\""
 echo 'env FONTCONFIG_FILE="$NATRON/Gui/Resources/etc/fonts/fonts.conf" \'
 echo ' OCIO="$NATRON/OpenColorIO-Configs/blender/config.ocio" \'
 echo ' OFX_PLUGIN_PATH="$HOME/OFX/Plugins" \'
 echo ' NATRON_PLUGIN_PATH="$NATRON/Gui/Resources/PyPlugs" \'
-echo ' App/Natron'
+echo ' build/App/Natron'
 echo "# Run unit tests from https://github.com/NatronGitHub/Natron-Tests with:"
 echo "cd \"$TOP_SOURCES/Natron-Tests\""
 echo 'env FONTCONFIG_FILE="$NATRON/Gui/Resources/etc/fonts/fonts.conf" \'
@@ -53,4 +58,4 @@ echo ' OCIO="$NATRON/OpenColorIO-Configs/blender/config.ocio" \'
 echo ' OFX_PLUGIN_PATH="$HOME/OFX/Plugins" \'
 echo ' NATRON_PLUGIN_PATH="$NATRON/Gui/Resources/PyPlugs" \'
 echo ' FFMPEG="$SDK/ffmpeg" \'
-echo ' ./runTestsOne.sh "$NATRON/Renderer/NatronRenderer"'
+echo ' ./runTestsOne.sh "$NATRON/build/Renderer/NatronRenderer"'

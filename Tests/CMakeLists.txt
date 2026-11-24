@@ -28,6 +28,7 @@ set(Tests_SOURCES
     DiskCache_Test.cpp
     ExpressionDepsRenderArgs_Test.cpp
     ExpressionSetError_Test.cpp
+    FailedRoDRender_Test.cpp
     FileSystemModel_Test.cpp
     Hash64_Test.cpp
     ImageCache_Test.cpp
@@ -86,6 +87,7 @@ set(Tests_SOURCES
     PrecompLoad_Test.cpp
     ProjectAutoSave_Test.cpp
     PyEffectEquality_Test.cpp
+    PythonGILUnlocker_Test.cpp
     PythonScript_Test.cpp
     ProjectFileFormat_Test.cpp
     PythonExpressionScope_Test.cpp
@@ -257,10 +259,22 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME RendererCallbacksTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_callbacks_test.py $<TARGET_FILE:NatronRenderer>)
     set_tests_properties(RendererCallbacksTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
+    # a Read whose file is missing fails the render with "On missing frame: Error", instead of writing black (#1602)
+    add_test(NAME RendererMissingReadTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_missing_read_test.py $<TARGET_FILE:NatronRenderer>)
+    set_tests_properties(RendererMissingReadTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
     # --setting options for the caches and threads, which run before the caches exist (#1571)
     add_test(NAME RendererSettingsTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_settings_test.py $<TARGET_FILE:NatronRenderer>)
     set_tests_properties(RendererSettingsTest PROPERTIES TIMEOUT 360)
+    # App.projectFileHasGuiData() and App.projectLoadedWithErrors() in NatronRenderer
+    add_test(NAME ProjectLoadInfoTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_project_load_info_test.py $<TARGET_FILE:NatronRenderer>)
+    set_tests_properties(ProjectLoadInfoTest PROPERTIES TIMEOUT 360)
+    # the natron_convert_project module (tools/): text -> binary -> text with NatronRenderer -c, same nodes and values
+    add_test(NAME ConvertProjectTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_convert_project_test.py $<TARGET_FILE:NatronRenderer>)
+    set_tests_properties(ConvertProjectTest PROPERTIES TIMEOUT 300)
 endif()
 if(Python3_Interpreter_FOUND)
     # NatronRenderer -t exits at the end of a stdin that is not a console (the null device, a pipe)
@@ -325,6 +339,13 @@ foreach(_natron_gui_test ${NatronGuiTests_SCRIPTS})
     endif()
 endforeach()
 
+# Connecting an input is fast when many paths lead to the same node (the cycle check visited a node
+# once per path): NatronRenderer runs the script, which exits with natron.quit(status).
+add_test(NAME ConnectLadderHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_connect_ladder.py")
+set_tests_properties(ConnectLadderHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/connect-ladder-headless-cache")
+
 # Undo groups do nothing in background mode (App.undoGroup(), #1455): NatronRenderer runs the script,
 # which exits with natron.quit(status).
 add_test(NAME UndoGroupHeadless
@@ -332,3 +353,10 @@ add_test(NAME UndoGroupHeadless
 # the caches (OFX plug-ins) in the build tree, not in the user's cache directory (#1569)
 set_tests_properties(UndoGroupHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/undo-group-headless-cache")
+
+# The color plane goes through a Shuffle that writes to another layer (it was black): NatronRenderer runs the
+# script, which exits with natron.quit(status), 77 when openfx-misc or openfx-io are not in OFX_PLUGIN_PATH.
+add_test(NAME LayerPassThroughHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_layer_passthrough.py")
+set_tests_properties(LayerPassThroughHeadless PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 300
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/layer-passthrough-headless-cache")

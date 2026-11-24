@@ -62,11 +62,24 @@ Prerequisites
 Compiler selection
 ------------------
 
+The release scripts build Natron and the plug-ins with the system (Xcode or
+Command Line Tools) clang, ``/usr/bin/clang++``, with OpenMP from MacPorts'
+``libomp`` (#1134). ``tools/jenkins/compiler-common.sh`` checks that it
+compiles the C++ standard of the build (C++17 with Qt5, C++20 with Qt6) and
+links with ``libomp``; otherwise it warns and falls back to a MacPorts clang.
+
+A MacPorts clang (``clang-mp-*``) is used by the builds that pass ``-fopenmp``
+themselves (Apple's driver has no ``-fopenmp``, only ``-Xpreprocessor
+-fopenmp``, and Xcode ships no OpenMP runtime): the deprecated qmake build
+(``NATRON_BUILD_SYSTEM=qmake``) and the plug-ins' Makefiles
+(``PLUGINS_BUILD_SYSTEM=make``); either one switches Natron and all the
+plug-ins to it. ``NATRON_MACOS_CLANG=macports`` forces it too.
+
 The MacPorts clang is chosen to match the OS's default (see
 ``clang_compilers.tcl``): Darwin ≥ 25 (macOS 26+) → clang-22, Darwin 24
 (macOS 15) → clang-18, Darwin 11–23 → clang-17, Darwin ≤ 10 → clang-11.
-``tools/jenkins/compiler-common.sh`` auto-selects a ``clang-mp-*`` for the
-Natron build independently — keep its ladder in sync with the installed clang.
+``tools/jenkins/compiler-common.sh`` auto-selects a ``clang-mp-*``
+independently — keep its ladder in sync with the installed clang.
 
 Sanity-check a new OS/compiler combination::
 
@@ -93,17 +106,10 @@ C++20 for Qt6, from ``QT_VERSION_MAJOR``, in one of two ways:
   after the other flags (``CONFIG += strict_c++`` is not set), so Natron's
   qmake build uses GNU extensions, like its CMake build.
 
-The release scripts build Natron and the plug-ins with the MacPorts clang
-rather than Apple's, even on macOS 14 where Apple clang 15 supports C++17 and
-C++20. The CMake builds could use Apple clang with OpenMP (Natron's
-``CMakeLists.txt`` and the plug-ins' ``OFX_LIBOMP_ROOT``, which
-``build-plugins.sh`` passes, find MacPorts' ``libomp``), but Apple's driver has
-no ``-fopenmp`` (only ``-Xpreprocessor -fopenmp``) and Xcode ships no OpenMP
-runtime, so the builds that pass ``-fopenmp`` themselves, the deprecated qmake
-build and the plug-ins' Makefiles, need a clang with OpenMP; the scripts use
-the MacPorts clang for all of them, so that the default and fallback builds use
-the same compiler. Apple clang compiles the Objective-C++ files on macOS 12 to
-14 (``compiler-common.sh``).
+With Apple clang, the CMake builds get OpenMP from MacPorts' ``libomp``:
+Natron's ``CMakeLists.txt`` finds it, and ``build-plugins.sh`` passes
+``OFX_LIBOMP_ROOT`` to the plug-ins. With a MacPorts clang, Apple clang still
+compiles the Objective-C++ files on macOS 12 to 14 (``compiler-common.sh``).
 
 openfx-arena compiles its poppler-based reader as C++20 with GNU extensions in
 any case, because recent poppler headers require it: ``POPPLER_CXX_STANDARD``
@@ -360,7 +366,7 @@ Release artifacts follow a common ``INSTALLER_BASENAME`` (assembled in
   it is unset) in ``launchBuildMain.sh``. That table must list current OS versions; unlisted
   versions fall through to the literal ``OSX``. It now covers 10.5–10.15, 11–16
   and the year-based 26–30, with a ``macOS<major>`` catch-all for the future.
-  (The ``tools/docker/natron-sdk`` SDK build uses a *gitignored copy* of this
+  (The ``tools/docker/natron-sdk-rockylinux`` SDK build uses a *gitignored copy* of this
   script derived from ``tools/jenkins``; ``tools/jenkins/launchBuildMain.sh`` is
   the source of truth.)
 

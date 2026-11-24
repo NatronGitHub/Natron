@@ -195,8 +195,8 @@ if [ "$NATRON_BUILD_SYSTEM" = "cmake" ]; then
     # CMake build: configure, build, "cmake --install" with the PORTABLE layout into a
     # staging directory, then copy the result to the flat layout that the installer scripts
     # read from $TMP_BINARIES_PATH: bin/ (with Info.plist and PkgInfo on macOS), Resources/,
-    # PyPlugs/, docs/natron/, and on macOS the DMG background. CMake generates the Python
-    # bindings during the build.
+    # PyPlugs/, natron_convert_project.py, docs/natron/, and on macOS the DMG background.
+    # CMake generates the Python bindings during the build.
     CMAKE_BUILD_DIR="$TMP_PATH/Natron-cmake-build"
     CMAKE_INSTALL_DIR="$TMP_PATH/Natron-cmake-install"
     # cmake is a native program on Windows: give it Windows paths
@@ -351,12 +351,14 @@ if [ "$NATRON_BUILD_SYSTEM" = "cmake" ]; then
         cp "$CMAKE_APP_CONTENTS/Info.plist" "$CMAKE_APP_CONTENTS/PkgInfo" "$TMP_BINARIES_PATH/bin/"
         cp -a "$CMAKE_APP_CONTENTS/Resources/." "$RES_DIR/"
         cp -a "$CMAKE_APP_CONTENTS/Plugins/PyPlugs" "$TMP_BINARIES_PATH/PyPlugs"
+        cp "$CMAKE_APP_CONTENTS/Plugins/natron_convert_project.py" "$TMP_BINARIES_PATH/"
         cp LICENSE.txt "$TMP_BINARIES_PATH/docs/natron/"
         cp Gui/Resources/Images/splashscreen.* "$TMP_BINARIES_PATH/"
     else
         cp -a "$CMAKE_INSTALL_DIR/bin/." "$TMP_BINARIES_PATH/bin/"
         cp -a "$CMAKE_INSTALL_DIR/Resources/." "$RES_DIR/"
         cp -a "$CMAKE_INSTALL_DIR/Plugins/PyPlugs" "$TMP_BINARIES_PATH/PyPlugs"
+        cp "$CMAKE_INSTALL_DIR/Plugins/natron_convert_project.py" "$TMP_BINARIES_PATH/"
         cp -a "$CMAKE_INSTALL_DIR/docs/natron/." "$TMP_BINARIES_PATH/docs/natron/"
     fi
     echo "*** $RES_DIR/OpenColorIO-Configs now contains:"
@@ -635,6 +637,7 @@ fi
 rm -rf "$TMP_BINARIES_PATH/PyPlugs" || true
 mkdir -p "$TMP_BINARIES_PATH/PyPlugs"
 cp "$srcdir"/Gui/Resources/PyPlugs/* "$TMP_BINARIES_PATH/PyPlugs/"
+cp "$srcdir"/tools/natron_convert_project.py "$TMP_BINARIES_PATH/"
 if [ "$PKGOS" = "Linux" ] || [ "$PKGOS" = "Windows" ]; then
     mkdir -p "$RES_DIR/etc/fonts/conf.d"
     cp "$srcdir"/Gui/Resources/etc/fonts/fonts.conf "$RES_DIR/etc/fonts/"
@@ -661,7 +664,15 @@ if [ "$PKGOS" = "Linux" ]; then
     # Note: Several suppression files can be passed to valgrind.
     # There is an automatic tool to generate libc/libstdc++/Qt
     # suppressions at https://github.com/AlekSi/valgrind-suppressions
-    env LD_LIBRARY_PATH="$SDK_HOME/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib:$QTDIR/lib" $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" ${TEST_BINARY_TO_RUN}
+    if [ "${ARCH:-$(uname -m)}" = aarch64 ]; then
+        # valgrind is about 10 times slower on aarch64 than on x86_64: the suite doesn't fit in
+        # the time limit (the x86_64 build runs it under valgrind)
+        env LD_LIBRARY_PATH="$SDK_HOME/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib:$QTDIR/lib" $TIMEOUT -s KILL 1800 ${TEST_BINARY_TO_RUN}
+    else
+        # DeepGraphRender.VeryDeepChain (a 5000-node graph) takes 7 minutes without valgrind and
+        # more than the whole 30-minute limit with it: it runs in CI (ci.yml), without valgrind
+        env GTEST_FILTER=-DeepGraphRender.VeryDeepChain LD_LIBRARY_PATH="$SDK_HOME/lib:$FFMPEG_PATH/lib:$LIBRAW_PATH/lib:$QTDIR/lib" $TIMEOUT -s KILL 1800 valgrind --tool=memcheck --suppressions="$INC_PATH/natron/valgrind-python${PYV}.supp" ${TEST_BINARY_TO_RUN}
+    fi
     rm -f lib || true
     # ITS NOT POSSIBLE TO RUN THE WIN TESTS HERE, DO IT IN THE INSTALLER SCRIPT
 elif [ "$PKGOS" = "Windows" ]; then

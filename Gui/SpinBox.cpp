@@ -36,7 +36,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QDoubleValidator>
 #include <QIntValidator>
-#include <QStyle> // in QtGui on Qt4, in QtWidgets on Qt5
+#include <QStyle> // QtWidgets
 #include <QApplication>
 #include <QDebug>
 #include <QMenu>

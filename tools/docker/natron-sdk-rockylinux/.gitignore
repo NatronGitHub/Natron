@@ -14,11 +14,8 @@ gen-natron-doc.sh
 genDllVersions.sh
 gitRepositories.sh
 launchBuildMain.sh
-linuxStartupJenkins.sh
-macStartupJenkins.sh
 manageBuildOptions.sh
 manageLog.sh
-msysStartupJenkins.sh
 push.sh
 runUnitTests.sh
 uploadArtifactsMain.sh
@@ -29,3 +26,7 @@ builds
 artifacts
 fixMacPortsDeps.sh
 zip-python-mingw.sh
+Dockerfile.stage*
+Dockerfile.final
+check-commercial-bundle.sh
+macos-release.sh
