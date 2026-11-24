@@ -21,6 +21,7 @@
 
 ### Changes
 
+- Auto-save restore: when several auto-saves are restored at startup and one of the later windows fails to load, the first window keeps its restored project, without an extra Viewer or a second `onProjectCreated` callback. #1743
 - Python: `getDerivativeAtTime()` and `getIntegrateFromTimeToTime()` return 0 for a dimension out of range, as `getValue()` does, instead of crashing Natron. #1743
 - Preferences: Restore defaults no longer deletes the user's settings file when Natron runs with `--no-settings`, `--test` or `--setting`, and no longer turns saving the settings back on for the rest of the session. #1728
 - Python: renaming a node, e.g. a PyPlug instance with `setScriptName()`, no longer breaks the expressions of its parameters and of the nodes inside it that don't read one of its parameters (e.g. `thisGroup.getInput(1) is None` in the Glow PyPlug, or `thisNode.getScriptName()`): they kept the old name and failed with `AttributeError: 'NatronEngine.App' object has no attribute 'Glow1'`. #1686

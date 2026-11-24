@@ -504,12 +504,14 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
             AppInstancePtr newApp = appPTR->newAppInstance(cl, true);
             // newAppInstance() returns NULL, after showing an error dialog, if the new window could not be loaded
             if (!newApp) {
-                return false;
+                // this window already restored the first auto-save: it must not also create a new project
+                return true;
             }
             if ( !newApp->getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true) ) {
                 newApp->execOnProjectCreatedCallback();
 
-                return false;
+                // this window already restored the first auto-save: it must not also create a new project
+                return true;
             }
         }
     }
