@@ -227,8 +227,9 @@ by other nodes, nor the renders.
    outside the 0–1 range, such as depth or motion vectors.
 
 **Gamma**
-   Applied after the gain. The button on its left switches between 1.0 and
-   your setting.
+   Applied after the gain and after the viewer color process, to the values
+   sent to the monitor. The button on its left switches between 1.0 and your
+   setting.
 
 **Viewer color process**
    Natron works with linear values. This menu sets the transform from linear

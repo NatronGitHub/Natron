@@ -2308,7 +2308,7 @@ scaleToTexture8bits_generic(const RectI& roi,
                 // gamma <= 0 can be applied before the display curve, which maps 1 to 1
                 if  (args.gamma <= 0) {
                     // the limit of pow(x, 1/gamma) when gamma -> 0 is 0 for x < 1, 1 for x = 1, and infinity for x > 1,
-                    // but values above 1 are displayed as 1 (and lookupGammaLut() also clamps to 1)
+                    // but values above 1 are displayed as 1 (and GammaLut::lookup() also clamps to 1)
                     r = (r < 1.) ? 0. : 1.;
                     g = (g < 1.) ? 0. : 1.;
                     b = (b < 1.) ? 0. : 1.;
