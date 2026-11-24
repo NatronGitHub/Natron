@@ -699,7 +699,8 @@ KnobHelper::getExpressionRecursionLevel() const
 void
 KnobHelper::deleteKnob()
 {
-    KnobI::ListenerDimsMap listenersCpy = _imp->listeners;
+    KnobI::ListenerDimsMap listenersCpy;
+    getListeners(listenersCpy); // under mastersMutex: another thread may add or remove a listener
 
     for (ListenerDimsMap::iterator it = listenersCpy.begin(); it != listenersCpy.end(); ++it) {
         KnobIPtr knob = it->first.lock();
