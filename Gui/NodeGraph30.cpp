@@ -253,7 +253,7 @@ NodeGraph::removeNode(const NodeGuiPtr & node)
         }
         if (!foundLinkedErrorMessage.empty()) {
             StandardButtonEnum reply = Dialogs::questionDialog( tr("Delete").toStdString(), foundLinkedErrorMessage, false );
-            if (reply == eStandardButtonNo) {
+            if (reply != eStandardButtonYes) { // also when closed without an answer (#1730)
                 return;
             }
             break;
@@ -334,7 +334,7 @@ NodeGraph::deleteSelection()
                 if (!foundLinkedErrorMessage.empty()) {
                     StandardButtonEnum reply = Dialogs::questionDialog( tr("Delete").toStdString(),
                                                                        foundLinkedErrorMessage, false);
-                    if (reply == eStandardButtonNo) {
+                    if (reply != eStandardButtonYes) { // also when closed without an answer (#1730)
                         return;
                     }
                     mustBreak = true;
