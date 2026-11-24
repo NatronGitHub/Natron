@@ -88,9 +88,12 @@ set(Tests_SOURCES
     ParamRandom_Test.cpp
     PluginGrouping_Test.cpp
     PrecompLoad_Test.cpp
+    ProcessHandler_Test.cpp
     ProjectAutoSave_Test.cpp
     PyEffectEquality_Test.cpp
+    PyPlugToolset_Test.cpp
     PyExprUtilsNoise_Test.cpp
+    PyParamDefault_Test.cpp
     PythonGILUnlocker_Test.cpp
     PythonScript_Test.cpp
     ProjectFileFormat_Test.cpp
@@ -354,6 +357,13 @@ add_test(NAME ConnectLadderHeadless
     COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_connect_ladder.py")
 set_tests_properties(ConnectLadderHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/connect-ladder-headless-cache")
+
+# ColorParam.get(frame) returns the alpha of an RGBA color, not its blue (#1712): NatronRenderer runs the
+# script, which exits with natron.quit(status).
+add_test(NAME ColorGetFrameHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_color_get_frame.py")
+set_tests_properties(ColorGetFrameHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/color-get-frame-headless-cache")
 
 # Undo groups do nothing in background mode (App.undoGroup(), #1455): NatronRenderer runs the script,
 # which exits with natron.quit(status).
