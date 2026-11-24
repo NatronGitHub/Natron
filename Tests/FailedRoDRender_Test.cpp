@@ -23,6 +23,8 @@
 // a mandatory input that is not connected, or a disabled node without input still give a black input.
 // net.natron.test.Generator with "fail" plays the Read node, and net.natron.test.MultiPAR (which counts its
 // renders) the Write node: a working generator on its input Source gives it a RoD, the input tested is B.
+// net.natron.test.MaskIdentity plays a masked plug-in such as Merge, which only looks at its mask input in its
+// identity action: it is the identity of Source where the RoD of the mask doesn't intersect the render window (#1656).
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -50,7 +52,10 @@ const double kTime = 1.;
 bool
 canRunTest()
 {
-    const char* ids[] = { kNatronTestPluginGenerator, kNatronTestPluginMultiPAR, kNatronTestPluginParamRoD, kNatronTestPluginTimeBlur };
+    const char* ids[] = {
+        kNatronTestPluginGenerator, kNatronTestPluginMultiPAR, kNatronTestPluginParamRoD, kNatronTestPluginTimeBlur,
+        kNatronTestPluginMaskIdentity
+    };
 
     for (const char* id : ids) {
         if ( !NatronTestPlugin::isAvailable(id) ) {
@@ -197,7 +202,64 @@ TEST(FailedRoDRender, FailedInputFailsTheRoDOfAnOfxEffect)
     EXPECT_FALSE( rod.isNull() );
 }
 
+// The number of renders of MaskIdentity (net.natron.test.MaskIdentity) when rendering it at kTime, and whether the
+// render worked: a generator that works on its input Source, mask on its input Mask. Each render is done twice, as
+// in renderMultiPAR().
+namespace {
+void
+renderMaskIdentity(Nodes& nodes,
+                   const NodePtr& mask,
+                   bool expectSuccess,
+                   int expectedRenders)
+{
+    NodePtr maskIdentity = nodes.create(kNatronTestPluginMaskIdentity);
+    ASSERT_TRUE( connect(nodes.generator(false), 0, maskIdentity) );
+    ASSERT_TRUE( connect(mask, 1, maskIdentity) );
+    for (int i = 0; i < 2; ++i) {
+        const int renders = NatronTestPlugin::counter("MaskIdentity.render");
+        const bool rendered = bool( NatronTestPlugin::renderFrame(maskIdentity, kTime) );
+        EXPECT_EQ(expectSuccess, rendered) << "render " << i;
+        EXPECT_EQ(expectedRenders, NatronTestPlugin::counter("MaskIdentity.render") - renders) << "render " << i;
+    }
+}
+} // anon namespace
+
+// A failing mask, which the plug-in only looks at in its identity action (#1656): it got an empty RoD for the mask,
+// so it was the identity of Source, and the render worked as if the mask were black
+TEST(FailedRoDRender, FailedMaskFailsTheRender)
+{
+    if ( !canRunTest() ) {
+        return;
+    }
+    Nodes nodes;
+    renderMaskIdentity(nodes, nodes.generator(true), false, 0);
+}
+
 // What still gives a black input: the node is rendered
+
+// A working mask: MaskIdentity is rendered; an empty mask: it is the identity of Source
+TEST(FailedRoDRender, WorkingMaskRenders)
+{
+    if ( !canRunTest() ) {
+        return;
+    }
+    Nodes nodes;
+    renderMaskIdentity(nodes, nodes.generator(false), true, 1);
+}
+
+TEST(FailedRoDRender, EmptyRoDMaskIsIdentity)
+{
+    if ( !canRunTest() ) {
+        return;
+    }
+    Nodes nodes;
+    NodePtr empty = nodes.create(kNatronTestPluginParamRoD);
+    ASSERT_TRUE( bool(empty) );
+    KnobDoublePtr size = std::dynamic_pointer_cast<KnobDouble>( empty->getKnobByName("size") );
+    ASSERT_TRUE( bool(size) );
+    size->setValue(0.);
+    renderMaskIdentity(nodes, empty, true, 0);
+}
 
 TEST(FailedRoDRender, WorkingInputRenders)
 {
