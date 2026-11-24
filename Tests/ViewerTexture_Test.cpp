@@ -23,8 +23,7 @@
 // - #1118: 16-bit samples are not truncated to their low byte (Linear 16-bit LUT);
 // - the alpha of 8/16-bit images is normalised to [0,1], and the A display (and its autocontrast) shows
 //   alpha without the LUT of the input bit depth;
-// - #1117: the project LUT choice "BT1886" gives eViewerColorSpaceBT1886;
-// - #1551: autocontrast in the Matte display uses the RGB channels, as its textures do.
+// - #1117: the project LUT choice "BT1886" gives eViewerColorSpaceBT1886.
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
