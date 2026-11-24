@@ -8,6 +8,7 @@ set -u # Treat unset variables as an error when substituting.
 # PY_BIN: Python binary path
 # PYDIR: Path to python lib path
 
+# Python 3: the standard library comes from the embedded Python zip
 if [ "$PYV" = 3 ]; then
     echo "* Downloading Embedded Python zip..."
     pushd "$PYDIR"
@@ -37,52 +38,6 @@ if [ "$PYV" = 3 ]; then
     mkdir python${PYVER}
     mv site-packages lib-dynload config-${PYVER}-* _sysconfigdata*.py* python${PYVER}
     popd
-fi
-
-if [ "$PYV" = 2 ]; then
-echo "* Zipping Python..."
-
-pushd "$PYDIR"
-# remove pyc files
-find . -name '*.pyc' -exec rm {} \;
-find . -name '*.py' -exec chmod 644 {} \;
-# generate pyo files
-"$PY_BIN" -O -m compileall -q . || true
-PY_ZIP_FILES=(*.py* bsddb compiler ctypes curses distutils email encodings hotshot idlelib importlib json logging multiprocessing pydoc_data sqlite3 unittest wsgiref xml)
-
-echo "** env:"
-env
-echo "** zip: $(type zip)"
-# python zip
-echo "** zipping" "${PY_ZIP_FILES[@]}"
-if [ "$PKGOS" = "Windows" ]; then
-    zip -qr "../python${PYVERNODOT}.zip" "${PY_ZIP_FILES[@]}"
-else
-    env -i zip -qr "../python${PYVERNODOT}.zip" "${PY_ZIP_FILES[@]}"
-fi
-#echo "** testing zipped file"
-#unzip -tq ../python${PYVERNODOT}.zip
-#unzip -lv ../python${PYVERNODOT}.zip
-rm -rf "${PY_ZIP_FILES[@]}" || true
-
-# echo "** second generation zip"
-# # build a second-generation zip
-# cd ..
-# mkdir tmp
-# cd tmp
-# unzip ../python${PYVERNODOT}.zip
-# xattr -dr com.apple.quarantine .
-# mv ../python${PYVERNODOT}.zip ../python${PYVERNODOT}.zip.0
-# echo "** zipping $PY_ZIP_FILES"
-# env -i zip -v -r ../python${PYVERNODOT}.zip $PY_ZIP_FILES
-# echo "** testing zipped file"
-# ls -la ../python${PYVERNODOT}.zip
-# unzip -tq ../python${PYVERNODOT}.zip
-# unzip -lv ../python${PYVERNODOT}.zip
-# cd ..
-# rm -rf tmp
-
-popd # pushd "$PYDIR"
 fi
 
 # Local variables:

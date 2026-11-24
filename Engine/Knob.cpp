@@ -38,6 +38,7 @@
 #include <QCoreApplication>
 #include <QThread>
 #include <QDebug>
+#include <QPointer>
 
 #include "Global/GlobalDefines.h"
 
@@ -51,6 +52,7 @@
 #include "Engine/KnobSerialization.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/LibraryBinary.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/StringAnimationManager.h"
@@ -318,14 +320,13 @@ KnobI::restoreLinks(const NodesList & allNodes,
                     bool throwOnFailure)
 {
     KnobIPtr thisKnob = shared_from_this();
+    // All the links are restored, even if one of them fails, then the failures are reported at once (#1612).
+    std::vector<std::string> errors;
     for (std::vector<Link>::const_iterator l = _links.begin(); l != _links.end(); ++l) {
         KnobIPtr linkedKnob = findMaster(thisKnob, allNodes, l->nodeNameFull, l->nodeName, l->trackName, l->knobName, oldNewScriptNamesMapping);
         if (!linkedKnob) {
-            if (throwOnFailure) {
-                throw std::runtime_error(std::string("KnobI::restoreLinks(): Could not restore link to node/knob/track ") + l->nodeName + '/' + l->knobName + '/' + l->trackName);
-            } else {
-                continue;
-            }
+            errors.push_back(std::string("KnobI::restoreLinks(): Could not restore link to node/knob/track ") + l->nodeName + '/' + l->knobName + '/' + l->trackName);
+            continue;
         }
         if (linkedKnob == thisKnob) {
             qDebug() << "Link for" << getName().c_str()
@@ -334,19 +335,36 @@ KnobI::restoreLinks(const NodesList & allNodes,
             << "knob=" << l->knobName.c_str()
             << "track=" << l->trackName.c_str()
             << "because it returned the same Knob. Probably a pre-2.3.16 project with Group clones";
-            if (throwOnFailure) {
-                throw std::runtime_error(std::string("KnobI::restoreLinks(): Could not restore link to node/knob/track ") + l->nodeName + '/' + l->knobName + '/' + l->trackName + " because it returned the same Knob. Probably a pre-2.3.16 project with Group clones.");
-            } else {
-                continue;
-            }
-       } else if (l->dimension == -1) {
+            errors.push_back(std::string("KnobI::restoreLinks(): Could not restore link to node/knob/track ") + l->nodeName + '/' + l->knobName + '/' + l->trackName + " because it returned the same Knob. Probably a pre-2.3.16 project with Group clones.");
+        } else if (l->dimension == -1) {
             setKnobAsAliasOfThis(linkedKnob, true);
+        } else if ( (l->slaveDimension < 0) || (l->slaveDimension >= getDimension()) ||
+                    (l->dimension < 0) || ( l->dimension >= linkedKnob->getDimension() ) ) {
+            // The dimensions come from the file: it may be damaged, or a plug-in may have reduced
+            // the number of dimensions of one of the two parameters since it was saved (#1612).
+            EffectInstance* effect = dynamic_cast<EffectInstance*>( getHolder() );
+            const std::string nodeName = ( effect && effect->getNode() ) ? effect->getNode()->getScriptName_mt_safe() + '/' : std::string();
+            const std::string err = "KnobI::restoreLinks(): Could not restore the link of dimension " + std::to_string(l->slaveDimension) +
+                                    " of " + nodeName + getName() + " (" + std::to_string( getDimension() ) + " dimension(s)) to dimension " +
+                                    std::to_string(l->dimension) + " of node/knob/track " + l->nodeName + '/' + l->knobName + '/' + l->trackName +
+                                    " (" + std::to_string( linkedKnob->getDimension() ) + " dimension(s))";
+            if (!throwOnFailure) {
+                // the callers that don't throw (paste, presets) would not report it otherwise
+                appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( getName().c_str() ), QDateTime::currentDateTime(), QString::fromUtf8( err.c_str() ) );
+            }
+            errors.push_back(err);
         } else {
-            assert(l->slaveDimension >= 0);
             slaveTo(l->slaveDimension, linkedKnob, l->dimension);
         }
     }
     _links.clear();
+    if ( throwOnFailure && !errors.empty() ) {
+        std::string what = errors.front();
+        for (std::size_t i = 1; i < errors.size(); ++i) {
+            what += '\n' + errors[i];
+        }
+        throw std::runtime_error(what);
+    }
 }
 
 void
@@ -5003,7 +5021,9 @@ struct KnobHolder::KnobHolderPrivate
     bool knobsFrozen;
     mutable QMutex hasAnimationMutex;
     bool hasAnimation;
-    DockablePanelI* settingsPanel;
+    // The DockablePanel (a QObject in Gui) of this holder: a QPointer, because the Gui may delete
+    // the panel while this holder lives, e.g. NodeGui::destroyGui(), and does not tell it (#1618).
+    QPointer<QObject> settingsPanel;
 
     KnobHolderPrivate(const AppInstancePtr& appInstance_)
         : app(appInstance_)
@@ -5029,7 +5049,7 @@ struct KnobHolder::KnobHolderPrivate
         , knobsFrozen(false)
         , hasAnimationMutex()
         , hasAnimation(false)
-        , settingsPanel(0)
+        , settingsPanel()
 
     {
     }
@@ -5058,9 +5078,15 @@ struct KnobHolder::KnobHolderPrivate
     , knobsFrozen(false)
     , hasAnimationMutex()
     , hasAnimation(other.hasAnimation)
-    , settingsPanel(other.settingsPanel)
+    , settingsPanel() // a render clone, maybe created in a render thread, has no panel
     {
 
+    }
+
+    // null once the panel is being deleted (from its QWidget destructor on)
+    DockablePanelI* getPanel() const
+    {
+        return dynamic_cast<DockablePanelI*>( settingsPanel.data() );
     }
 };
 
@@ -5200,22 +5226,24 @@ void
 KnobHolder::setPanelPointer(DockablePanelI* gui)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    _imp->settingsPanel = gui;
+    _imp->settingsPanel = dynamic_cast<QObject*>(gui);
+    assert(!gui || _imp->settingsPanel);
 }
 
 void
 KnobHolder::discardPanelPointer()
 {
     assert( QThread::currentThread() == qApp->thread() );
-    _imp->settingsPanel = 0;
+    _imp->settingsPanel.clear();
 }
 
 void
 KnobHolder::recreateUserKnobs(bool keepCurPageIndex)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if (_imp->settingsPanel) {
-        _imp->settingsPanel->recreateUserKnobs(keepCurPageIndex);
+    DockablePanelI* panel = _imp->getPanel();
+    if (panel) {
+        panel->recreateUserKnobs(keepCurPageIndex);
         EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
         if (isEffect) {
             isEffect->getNode()->declarePythonFields();
@@ -5227,8 +5255,9 @@ void
 KnobHolder::recreateKnobs(bool keepCurPageIndex)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if (_imp->settingsPanel) {
-        _imp->settingsPanel->refreshGuiForKnobsChanges(keepCurPageIndex);
+    DockablePanelI* panel = _imp->getPanel();
+    if (panel) {
+        panel->refreshGuiForKnobsChanges(keepCurPageIndex);
         EffectInstance* isEffect = dynamic_cast<EffectInstance*>(this);
         if (isEffect) {
             isEffect->getNode()->declarePythonFields();
@@ -5266,8 +5295,9 @@ KnobHolder::deleteKnob(KnobI* knob,
         }
     }
 
-    if (alsoDeleteGui && _imp->settingsPanel) {
-        _imp->settingsPanel->deleteKnobGui(sharedKnob);
+    DockablePanelI* panel = alsoDeleteGui ? _imp->getPanel() : 0;
+    if (panel) {
+        panel->deleteKnobGui(sharedKnob);
     }
 }
 

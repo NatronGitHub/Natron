@@ -353,6 +353,15 @@ public:
     /// The exit code given to requestQuit(), or 0
     int getRequestedExitCode() const;
 
+    /// Records that the render of a writer failed in background mode: see exitStatus().
+    /// The record is kept until the process exits. May be called from any thread.
+    void setBackgroundRenderFailed();
+
+    /// The exit status of a background process whose load() succeeded: getRequestedExitCode() if
+    /// requestQuit() was called or if it is not 0, else 1 if setBackgroundRenderFailed() was called,
+    /// else 0.
+    int exitStatus() const;
+
     /// True while the interactive Python interpreter of the -t option is running
     bool isPythonInterpreterRunning() const;
 
@@ -947,17 +956,28 @@ public:
     PythonGILLocker();
 
     ~PythonGILLocker();
+
+    PythonGILLocker(const PythonGILLocker&) = delete;
+    PythonGILLocker& operator=(const PythonGILLocker&) = delete;
 };
 
 /**
  * @brief Small helper class to use as RAII to temporarily release the GIL (Global Interpreter Lock)
+ * while this thread waits for other threads that may run Python (renders, previews, trackers...).
+ * If this thread holds the GIL, it is released with PyEval_SaveThread() and taken again with
+ * PyEval_RestoreThread(). Otherwise (no Python, or a thread without the GIL), this does nothing.
+ * No Python API may be called while it exists, except through a PythonGILLocker.
  **/
 class PythonGILUnlocker
 {
+    PyThreadState* _state = nullptr; // nullptr if the GIL was not released
 public:
     PythonGILUnlocker();
 
     ~PythonGILUnlocker();
+
+    PythonGILUnlocker(const PythonGILUnlocker&) = delete;
+    PythonGILUnlocker& operator=(const PythonGILUnlocker&) = delete;
 };
 
 NATRON_NAMESPACE_EXIT

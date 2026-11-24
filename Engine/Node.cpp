@@ -4610,24 +4610,6 @@ Node::unlock(const ImagePtr & image)
     _imp->imagesBeingRenderedCond.wakeAll();
 }
 
-ImagePtr
-Node::getImageBeingRendered(double time,
-                            unsigned int mipmapLevel,
-                            ViewIdx view)
-{
-    QMutexLocker l(&_imp->imagesBeingRenderedMutex);
-
-    for (std::list<ImagePtr>::iterator it = _imp->imagesBeingRendered.begin();
-         it != _imp->imagesBeingRendered.end(); ++it) {
-        const ImageKey &key = (*it)->getKey();
-        if ( (key._view == view) && ( (*it)->getMipmapLevel() == mipmapLevel ) && (key._time == time) ) {
-            return *it;
-        }
-    }
-
-    return ImagePtr();
-}
-
 
 void
 Node::onParentMultiInstanceInputChanged(int input)

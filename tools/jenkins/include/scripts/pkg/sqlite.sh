@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Install sqlite (required for webkit and QtSql SQLite module, optional for python2)
+# Install sqlite (required for the QtSql SQLite module, optional for python3)
 # see http://www.linuxfromscratch.org/blfs/view/svn/server/sqlite.html
 SQLITE_VERSION=3.54.1 # also set SQLITE_VERSION_INT and SQLITE_YEAR below
 SQLITE_VERSION_INT=3540100

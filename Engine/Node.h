@@ -935,12 +935,6 @@ public:
     void unlock(const ImagePtr& entry);
 
 
-    /**
-     * @brief DO NOT EVER USE THIS FUNCTION. This is provided for compatibility with plug-ins that
-     * do not respect the OpenFX specification.
-     **/
-    ImagePtr getImageBeingRendered(double time, unsigned int mipmapLevel, ViewIdx view);
-
     void beginInputEdition();
 
     void endInputEdition(bool triggerRender);
@@ -1577,8 +1571,8 @@ private:
 
 
     /**
-     * @brief If the node is an input of this node, set ok to true, otherwise
-     * calls this function recursively on all inputs.
+     * @brief Set ok to true if input is upstream of this node: every upstream
+     * node is visited once.
      **/
     void isNodeUpstream(const Node* input, bool* ok) const;
 

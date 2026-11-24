@@ -3,8 +3,7 @@
 # Install Python3
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/python3.html
 
-# Python 3.11 for Qt5 builds (with PySide2 5.15.19). Shiboken 1.2.4 (Qt4) doesn't
-# build with Python >= 3.11, so it is only built for Python 2 (see shiboken.sh).
+# Python 3.11 for Qt5 builds (with PySide2 5.15.19).
 PY3_VERSION=3.11.18
 PY3_VERSION_SHORT=${PY3_VERSION%.*}
 PY3_TAR="Python-${PY3_VERSION}.tar.xz"

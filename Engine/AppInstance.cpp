@@ -40,7 +40,7 @@
 #include <QElapsedTimer>
 #include <QDir>
 #include <QTextStream>
-#include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
+#include <QtConcurrentMap> // QtConcurrent
 #include <QUrl>
 #include <QFileInfo>
 #include <QEventLoop>
@@ -1914,10 +1914,7 @@ AppInstance::startWritersRendering(bool doBlockingRender,
         // expressions...): release the Python GIL while waiting for them if this thread holds it,
         // e.g. if a script or a callback triggered a render button (#1568). Nothing below touches
         // Python state: the callbacks take the GIL with PythonGILLocker.
-        std::unique_ptr<PythonGILUnlocker> gilUnlocker;
-        if ( Py_IsInitialized() && PyGILState_Check() ) {
-            gilUnlocker.reset(new PythonGILUnlocker);
-        }
+        PythonGILUnlocker gilUnlocker; // if this thread holds the GIL
         //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
         QtConcurrent::blockingMap( itemsToQueue, [&](RenderQueueItem item) {
             _imp->startRenderingFullSequence(true, item);

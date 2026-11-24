@@ -34,7 +34,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QDebug>
 #include <QThread>
 #include <QWaitCondition>
-#include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
+#include <QtConcurrentMap> // QtConcurrent
 
 #include <QVBoxLayout>
 #include <QHeaderView>

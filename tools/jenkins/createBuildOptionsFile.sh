@@ -22,14 +22,8 @@ BUILD_NAME=""
 # Where the final build artifacts (binaries) are stored
 BUILD_ARCHIVE_DIRECTORY=""
 
-# Set to 1 to also build a online installer for SNAPSHOT and RELEASE builds (only available for Windows and Linux).
-WITH_ONLINE_INSTALLER=""
-
 # The date at which the build started
 CURRENT_DATE=""
-
-# If set to 1, deb and rpm packages will never be built. Default is to build when NATRON_BUILD_CONFIG=STABLE.
-DISABLE_RPM_DEB_PKGS=""
 
 # If set to 1, a portable archive will not be built
 DISABLE_PORTABLE_ARCHIVE=""
@@ -134,8 +128,7 @@ PORTABLE_DIRNAME=""
 # in a safe environment
 TMP_PORTABLE_DIR=""
 
-# The name of the host where to upload the online installer. This will be used
-# to configure the online installer to select the location where to check for updates.
+# The name of the host where the build artifacts are uploaded
 REMOTE_URL=""
 
 # The user that should connect to the REMOTE_URL when uploading with rsync

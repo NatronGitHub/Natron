@@ -83,11 +83,13 @@ Internationalization (i18n)
 ---------------------------
 
 User-facing strings are wrapped in Qt's ``tr()`` (over a hundred Gui files use
-it) so they can be translated. Translation uses the standard Qt toolchain —
-``lupdate`` to extract strings into ``.ts`` files, translators edit them, and
-``lrelease`` compiles ``.qm`` files loaded at run time via ``QTranslator``.
-See ``Documentation/I18N-HOWTO.txt`` for the project's specific process. Rules of
-thumb:
+it) so they can be translated with the standard Qt toolchain: ``lupdate``
+extracts the strings into ``.ts`` files, translators edit them, and
+``lrelease`` compiles them into ``.qm`` files. No translation is shipped yet:
+the repository has no ``.ts`` files, the build doesn't run ``lupdate`` or
+``lrelease``, and Natron installs no ``QTranslator``. See
+``Documentation/I18N-HOWTO.txt`` for the ``lupdate`` commands and for the
+translation context that ``tr()`` sometimes needs. Rules of thumb:
 
 - wrap human-readable strings in ``tr()``;
 - never wrap script names, plug-in IDs or serialized keys (which must be stable

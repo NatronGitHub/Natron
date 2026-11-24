@@ -36,8 +36,8 @@
 #include <QCoreApplication>
 #include <QThread>
 #include <QRegularExpression>
-#include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
-#include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
+#include <QtConcurrentMap> // QtConcurrent
+#include <QtConcurrentRun> // QtConcurrent
 
 
 #include <SequenceParsing.h> // for removePath

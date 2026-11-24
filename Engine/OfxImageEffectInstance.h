@@ -188,6 +188,12 @@ public:
     // project would have an extent of 768, 576.
     virtual void getProjectExtent(double & xSize, double & ySize) const OVERRIDE FINAL;
 
+    // The default RoD, which HostSupport also computes before each RoD action, to initialize its result. An input
+    // whose RoD fails here does not make the RoD action fail (see OfxClipInstance::InputRoDFailureScope): the plug-in
+    // may not use that input at this time (e.g. FrameHold, TimeOffset). OfxEffectInstance::getRegionOfDefinition()
+    // checks the inputs again if the plug-in returns kOfxStatReplyDefault, i.e. uses the default RoD.
+    virtual OfxRectD calcDefaultRegionOfDefinition(OfxTime time, OfxPointD renderScale, int view) const OVERRIDE FINAL;
+
     // The pixel aspect ratio of the current project
     virtual double getProjectPixelAspectRatio() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 

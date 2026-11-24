@@ -131,7 +131,7 @@ MSYS2's `qt5-base` 5.15.19 has the QMutex lost wake-up of #1451, which can hang 
 
 ### Deprecated: building with qmake
 
-*The qmake build is deprecated. It still works on RB-2.6, where the release scripts in `tools/jenkins` still use it, but it will be removed in a future release (first on RB-2.7, see [#1181](https://github.com/NatronGitHub/Natron/issues/1181)). It needs a [config.pri](#configpri) file.*
+*The qmake build is deprecated. It still works on RB-2.6, where the release scripts in `tools/jenkins` use it with `NATRON_BUILD_SYSTEM=qmake` (they build with CMake by default), but it will be removed in a future release (first on RB-2.7, see [#1181](https://github.com/NatronGitHub/Natron/issues/1181)). It needs a [config.pri](#configpri) file.*
 
 To build, go into the Natron directory and type:
 

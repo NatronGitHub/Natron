@@ -206,6 +206,10 @@ struct OutputSchedulerThreadPrivate
     FrameBuffer buf; //the frames rendered by the worker threads that needs to be rendered in order by the output device
     QWaitCondition bufEmptyCondition;
     mutable QMutex bufMutex;
+    // The predicate of bufEmptyCondition: set by whoever wakes it (a frame was appended, the render finished or was
+    // aborted), cleared by the scheduler thread each time it reads buf, so that a wake-up sent while the scheduler
+    // was not waiting yet is not lost (#1607). Protected by bufMutex.
+    bool bufChanged;
 
     //doesn't need any protection since it never changes and is set in the constructor
     OutputSchedulerThread::ProcessFrameModeEnum mode; //is the frame to be processed on the main-thread (i.e OpenGL rendering) or on the scheduler thread
@@ -238,7 +242,6 @@ struct OutputSchedulerThreadPrivate
     QThreadPool* threadPool;
 #else
 
-    QWaitCondition allRenderThreadsQuitCond; //to make sure all render threads have quit
     std::list<int> framesToRender;
 
     ///Render threads wait in this condition and the scheduler wake them when it needs to render some frames
@@ -278,6 +281,7 @@ struct OutputSchedulerThreadPrivate
         : buf()
         , bufEmptyCondition()
         , bufMutex()
+        , bufChanged(false)
         , mode(mode)
         , timer()
         , renderTimer()
@@ -295,7 +299,6 @@ struct OutputSchedulerThreadPrivate
 #ifdef NATRON_PLAYBACK_USES_THREAD_POOL
         , threadPool( QThreadPool::globalInstance() )
 #else
-        , allRenderThreadsQuitCond()
         , framesToRender()
         , framesToRenderNotEmptyCond()
 #endif
@@ -557,9 +560,6 @@ struct OutputSchedulerThreadPrivate
         assert( !renderThreadsMutex.tryLock() );
 
         removeQuitRenderThreadsInternal();
-
-        ///Wake-up the main-thread if it was waiting for all threads to quit
-        allRenderThreadsQuitCond.wakeOne();
     }
 
 #endif
@@ -1084,10 +1084,6 @@ OutputSchedulerThread::notifyThreadAboutToQuit(RenderThreadTask* thread)
         _imp->renderThreads.erase(found);
 #endif
         _imp->allRenderThreadsInactiveCond.wakeOne();
-
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-        _imp->allRenderThreadsQuitCond.wakeOne();
-#endif
     }
 }
 
@@ -1173,6 +1169,13 @@ OutputSchedulerThread::startRender()
                                                 EffectInstance::OpenGLContextEffectDataPtr() ) == eStatusFailed) {
             l.unlock();
 
+            // e.g. a movie writer that can't open its output file. Not notifyRenderFailure(): this is
+            // the scheduler thread, and for a blocking render it waits for the abort to complete.
+            if ( appPTR->isBackground() ) {
+                std::cerr << "Error while rendering: " << _imp->outputEffect.lock()->getNode()->getScriptName_mt_safe()
+                          << " could not start the render of the sequence" << std::endl;
+                appPTR->setBackgroundRenderFailed();
+            }
 
             _imp->engine->abortRenderingNoRestart();
 
@@ -1258,15 +1261,22 @@ OutputSchedulerThread::stopRender()
         frameStep = args->frameStep;
 
         // the arguments of beginSequenceRender_public() in startRender()
-        ignore_result( effect->endSequenceRender_public( firstFrame, lastFrame,
-                                                         frameStep,
-                                                         false, // interactive
-                                                         RenderScale::identity, true,
-                                                         false, // isRenderResponseToUserInteraction
-                                                         false,
-                                                         ViewIdx(0),
-                                                         false /*use OpenGL render*/,
-                                                         EffectInstance::OpenGLContextEffectDataPtr() ) );
+        if (effect->endSequenceRender_public( firstFrame, lastFrame,
+                                              frameStep,
+                                              false, // interactive
+                                              RenderScale::identity, true,
+                                              false, // isRenderResponseToUserInteraction
+                                              false,
+                                              ViewIdx(0),
+                                              false /*use OpenGL render*/,
+                                              EffectInstance::OpenGLContextEffectDataPtr() ) == eStatusFailed) {
+            // e.g. a movie writer that can't finish its file
+            if ( appPTR->isBackground() ) {
+                std::cerr << "Error while rendering: " << _imp->outputEffect.lock()->getNode()->getScriptName_mt_safe()
+                          << " could not end the render of the sequence" << std::endl;
+                appPTR->setBackgroundRenderFailed();
+            }
+        }
     }
 
 
@@ -1325,6 +1335,7 @@ OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
         {
             QMutexLocker l(&_imp->bufMutex);
             bufferEmpty = _imp->buf.empty();
+            _imp->bufChanged = false;
         }
         int expectedTimeToRender;
 
@@ -1365,6 +1376,7 @@ OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
             {
                 QMutexLocker l(&_imp->bufMutex);
                 _imp->getFromBufferAndErase(expectedTimeToRender, framesToRender->frames);
+                _imp->bufChanged = false;
             }
 
             ///The expected frame is not yet ready, go to sleep again
@@ -1508,6 +1520,7 @@ OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
             {
                 QMutexLocker l(&_imp->bufMutex);
                 bufferEmpty = _imp->buf.empty();
+                _imp->bufChanged = false;
             }
         } // while(!bufferEmpty)
 
@@ -1520,10 +1533,34 @@ OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
         }
 
         if (!renderFinished) {
+            // The end of an FFA render (renderFinished, then its fake frame, which stays in buf) may have come since
+            // renderFinished was read above, and the reads of buf have cleared bufChanged since (#1607)
+            QMutexLocker l(&_imp->renderFinishedMutex);
+            renderFinished = _imp->renderFinished;
+        }
+
+        if (!renderFinished) {
             assert(state == eThreadStateActive);
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
+            if (gTestDelayUs > 0) {
+                // Tests: let the render finish or be aborted before the scheduler waits (#1607), for at most 5 s
+                for (int i = 0; i < 5000 && !isBeingAborted(); ++i) {
+                    {
+                        QMutexLocker l(&_imp->renderFinishedMutex);
+                        if (_imp->renderFinished) {
+                            break;
+                        }
+                    }
+                    QThread::msleep(1);
+                }
+            }
+#endif
             QMutexLocker bufLocker (&_imp->bufMutex);
-            // Wait here for more frames to be rendered, we will be woken up once appendToBuffer(...) is called
-            _imp->bufEmptyCondition.wait(bufLocker.mutex());
+            // Wait here for more frames to be rendered, we will be woken up once appendToBuffer(...) is called,
+            // unless that happened since buf was last read
+            while (!_imp->bufChanged) {
+                _imp->bufEmptyCondition.wait( bufLocker.mutex() );
+            }
         } else {
             if ( !_imp->engine->isPlaybackAutoRestartEnabled() ) {
                 //Move the timeline to the last rendered frame to keep it in sync with what is displayed
@@ -1567,6 +1604,7 @@ OutputSchedulerThread::onAbortRequested(bool /*keepOldestRender*/)
     ///that will not be processed anyway because the first thing it does is checking for abort
     {
         QMutexLocker l2(&_imp->bufMutex);
+        _imp->bufChanged = true;
         _imp->bufEmptyCondition.wakeOne();
     }
 }
@@ -1707,6 +1745,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             {
                 QMutexLocker bufLocker (&_imp->bufMutex);
                 _imp->appendBufferedFrame( 0, viewIndex, RenderStatsPtr(), BufferableObjectPtr() );
+                _imp->bufChanged = true;
                 _imp->bufEmptyCondition.wakeOne();
             }
         } else {
@@ -1867,6 +1906,7 @@ OutputSchedulerThread::appendToBuffer_internal(double time,
         _imp->appendBufferedFrame(time, view, stats, frame);
         if (wakeThread) {
             ///Wake up the scheduler thread that an image is available if it is asleep so it can process it.
+            _imp->bufChanged = true;
             _imp->bufEmptyCondition.wakeOne();
         }
     }
@@ -1981,20 +2021,15 @@ OutputSchedulerThread::renderFromCurrentFrame(bool enableRenderStats,
 void
 OutputSchedulerThread::notifyRenderFailure(const std::string& errorMessage)
 {
-    ///Abort all ongoing rendering
-    OutputSchedulerThreadStartArgsPtr args = _imp->runArgs.lock();
-
-    assert(args);
-
-
     ///Handle failure: for viewers we make it black and don't display the error message which is irrelevant
     handleRenderFailure(errorMessage);
 
+    ///Abort all ongoing rendering.
+    // Don't wait for the abort to complete: this runs on this scheduler thread, on one of its render threads
+    // (which stopRender() waits for) or on the main thread while this thread waits in requestExecutionOnMainThread(),
+    // so the wait would never return (#1617).
+    // Blocking renders (BlockingBackgroundRender) wait for the end of the render anyway.
     _imp->engine->abortRenderingNoRestart();
-
-    if (args->isBlocking) {
-        waitForAbortToComplete_enforce_blocking();
-    }
 }
 
 OutputSchedulerThreadStartArgsPtr
@@ -2664,6 +2699,8 @@ DefaultScheduler::handleRenderFailure(const std::string& errorMessage)
 {
     if ( appPTR->isBackground() ) {
         std::cerr << errorMessage << std::endl;
+        // the exit status of the process tells whether the writers succeeded
+        appPTR->setBackgroundRenderFailed();
     }
 }
 
@@ -3868,7 +3905,7 @@ ViewerCurrentFrameRequestScheduler::~ViewerCurrentFrameRequestScheduler()
 {
     // Should've been stopped before anyway
     if (_imp->backupThread.quitThread(false)) {
-        _imp->backupThread.waitForAbortToComplete_enforce_blocking();
+        _imp->backupThread.waitForThreadToQuit_enforce_blocking();
     }
 }
 

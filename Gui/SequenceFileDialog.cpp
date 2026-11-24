@@ -69,7 +69,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QDebug>
 #include <QEvent>
 #include <QMimeData>
-#include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
+#include <QtConcurrentRun> // QtConcurrent
 #include <QSettings>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)

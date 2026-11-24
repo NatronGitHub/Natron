@@ -228,6 +228,17 @@ KnobSerialization::restoreBytesKnob()
 }
 
 void
+reportKnobSerializationWarning(const std::string& knobName,
+                               const std::string& message)
+{
+    std::cerr << knobName << ": Warning: " << message << std::endl;
+    if (appPTR) {
+        appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( knobName.c_str() ), QDateTime::currentDateTime(),
+                                         QString::fromUtf8( ( "Warning: " + message ).c_str() ) );
+    }
+}
+
+void
 KnobSerialization::storeKnobLinks(const KnobIPtr & knob)
 {
     if (_masterIsAlias) {

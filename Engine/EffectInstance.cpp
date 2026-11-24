@@ -40,8 +40,8 @@
 
 #include <QReadWriteLock>
 #include <QCoreApplication>
-#include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
-#include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
+#include <QtConcurrentMap> // QtConcurrent
+#include <QtConcurrentRun> // QtConcurrent
 
 #include "Global/QtCompat.h"
 
@@ -3895,11 +3895,8 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         if (isProjectFormat) {
             *isProjectFormat = false;
         }
-//#pragma message WARN("[FD] why is an empty RoD a failure case? this is ignored in renderRoI, search for 'if getRoD fails, this might be because the RoD is null after all (e.g: an empty Roto node), we don't want the render to fail'")
-        if ( rod->isNull() ) {
-            return eStatusFailed;
-        }
 
+        // only successes are cached: an empty RoD is a valid RoD (the output is black), not a failure (#1602)
         return eStatusOK;
     } else {
         ///If this is running on a render thread, attempt to find the RoD in the thread-local storage.
@@ -3919,7 +3916,13 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         if ( getNode()->isNodeDisabled() ) {
             NodePtr preferredInput = getNode()->getPreferredInputNode();
             if (!preferredInput) {
-                return eStatusFailed;
+                // the output is black (see isIdentity_public()): an empty RoD, not a failure (#1602)
+                rod->clear();
+                if (isProjectFormat) {
+                    *isProjectFormat = false;
+                }
+
+                return eStatusOK;
             }
 
             return preferredInput->getEffectInstance()->getRegionOfDefinition_public(preferredInput->getEffectInstance()->getRenderHash(), time, scale, view, rod, isProjectFormat);
@@ -3938,12 +3941,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
                 return eStatusFailed;
             }
             if ( (ret != eStatusOK) && (ret != eStatusReplyDefault) ) {
-                // rod is not valid
-                //if (!isDuringStrokeCreation) {
-                _imp->actionsCache->invalidateAll(hash);
-                _imp->actionsCache->setRoDResult( hash, time, view, mipmapLevel, RectD() );
-
-                // }
+                // rod is not valid. Don't cache the failure: it would be taken for an empty RoD (#1602)
                 return ret;
             }
 
@@ -4483,8 +4481,19 @@ EffectInstance::getComponentsNeededAndProduced_public(U64 hash,
     // Remove from this list all layers produced from this node to get the pass-through planes list
     std::list<ImagePlaneDesc>& outputLayers = (*comps)[-1];
 
-    // Ensure the plug-in made the metadata plane available.
-    {
+    // Ensure the plug-in made the metadata plane (the color plane) available, except when it declared its
+    // output planes and passes the planes that it does not render through from an input. Such a plug-in (a
+    // Shuffle that writes to another layer than the color plane) does not render the color plane: adding it
+    // here removed it from the pass-through planes below, the plug-in was asked to render it, did not, and
+    // the color came out black after the node.
+    // A writer keeps the metadata plane: the writers of openfx-io (GenericWriter) switch to their single-plane
+    // path when they are given one plane, and then write a layer as R, G, B, A. Asked for one layer that is
+    // not the color plane, a writer must get that layer and the color plane to write the layer under its own
+    // channel names.
+    const PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
+    const bool colorFromPassThroughInput = !outputLayers.empty() && (*passThroughInputNb != -1) && !isWriter() &&
+                                           (passThrough == ePassThroughPassThroughNonRenderedPlanes);
+    if (!colorFromPassThroughInput) {
         std::list<ImagePlaneDesc> metadataPlanes;
         ImagePlaneDesc metadataPlane, metadataPairedPlane;
         getMetadataComponents(-1, &metadataPlane, &metadataPairedPlane);
@@ -4499,7 +4508,6 @@ EffectInstance::getComponentsNeededAndProduced_public(U64 hash,
 
 
     // If the plug-in does not block upstream planes, recurse up-stream on the pass-through input to get available components.
-    PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
     if (*passThroughInputNb != -1 && ( (passThrough == ePassThroughPassThroughNonRenderedPlanes) ||
         ( passThrough == ePassThroughRenderAllRequestedPlanes)) ) {
 

@@ -86,14 +86,6 @@ ssh "${REMOTE_USER}@${REMOTE_URL}" "mkdir -p $REMOTE_BUILD_DIR && chmod 775 -R $
 ssh "${REMOTE_USER}@${REMOTE_URL}" "sh limitdirsize.sh $REMOTE_BUILD_DIR 1024" || true
 
 
-# Upload online installer packages. All build with the same BUILD_NAME will share updates
-if [ -d "$BUILD_DIR/online_installer" ]; then
-    rsync_remote "$BUILD_DIR/online_installer/packages" "$REMOTE_PATH/" --delete
-    for f in "$BUILD_DIR/online_installer/"*-online*; do
-	rsync_remote "$f" "$REMOTE_PATH/" --delete
-    done
-fi
-
 # Upload build options
 rsync_remote "$BUILD_DIR/$BUILD_OPTIONS_BASENAME" "$REMOTE_BUILD_DIR/"
 
@@ -102,29 +94,6 @@ if [ -d "$BUILD_DIR/compressed_no_installer" ]; then
     for f in "$BUILD_DIR/compressed_no_installer/"*; do
 	rsync_remote "$f" "$REMOTE_BUILD_DIR/"
     done
-fi
-
-# Only windows and linux have an installer for now
-if [ "$PKGOS" = "Linux" ] || [ "$PKGOS" = "Windows" ]; then
-    if [ -d "$BUILD_DIR/offline_installer" ]; then
-        for f in "$BUILD_DIR/offline_installer/"*; do
-	    rsync_remote "$f" "$REMOTE_BUILD_DIR/"
-	done
-    fi
-fi
-
-# Linux may have deb or rpm
-if [ "$PKGOS" = "Linux" ]; then
-    if [ -d "$BUILD_DIR/rpm_package" ]; then
-        for f in "$BUILD_DIR/rpm_package/"*.rpm; do
-	    rsync_remote "$f" "$REMOTE_BUILD_DIR/"
-	done
-    fi
-    if [ -d "$BUILD_DIR/deb_package" ]; then
-        for f in "$BUILD_DIR/deb_package/"*.deb; do
-	    rsync_remote "$f" "$REMOTE_BUILD_DIR/"
-	done
-    fi
 fi
 
 # Upload symbols to the main symbols store

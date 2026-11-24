@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# Install gmp (used by ruby)
-# version is set in gcc.sh
+# Install gmp (for nettle's hogweed, used by gnutls)
 # see http://www.linuxfromscratch.org/lfs/view/development/chapter08/gmp.html
 GMP_VERSION=6.3.0 # 6.2.0 fails when buiding using GCC 4.4.7 (CentOS6): requires -std=gnu99 but adding it to CFLAGS during configure doesn't help
 GMP_SHA256=ac28211a7cfb609bae2e2c8d6058d66c8fe96434f740cf6fe2e47b000d1c20cb
@@ -15,7 +14,6 @@ if download_step; then
     download "$GMP_SITE" "$GMP_TAR" "$GMP_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/include/gmp.h" ]; }; }; then
-    REBUILD_RUBY=1
     start_build
     untar "$SRC_PATH/$GMP_TAR"
     pushd "gmp-${GMP_VERSION}"

@@ -819,7 +819,7 @@ KnobChoice::getActiveEntry()
         return _currentEntry;
     }
     int activeIndex = getValue();
-    if ( activeIndex < (int)_entries.size() ) {
+    if ( (activeIndex >= 0) && ( activeIndex < (int)_entries.size() ) ) {
         _currentEntry = _entries[activeIndex];
         return _entries[activeIndex];
     }
@@ -1110,7 +1110,7 @@ KnobChoice::choiceRestorationId(KnobChoice* knob,
     assert(knob);
 
     int serializedIndex = knob->getValue();
-    if ( ( serializedIndex < (int)_entries.size() ) && (_entries[serializedIndex].id == optionID) ) {
+    if ( (serializedIndex >= 0) && ( serializedIndex < (int)_entries.size() ) && (_entries[serializedIndex].id == optionID) ) {
         // we're lucky, entry hasn't changed
         return serializedIndex;
 

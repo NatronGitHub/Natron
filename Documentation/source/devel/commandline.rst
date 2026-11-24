@@ -343,7 +343,26 @@ were still rendered (`issue #1276 <https://github.com/NatronGitHub/Natron/issues
 In interpreter mode (:option:`-t`), a Python error in the script is printed, and the
 interpreter still starts, so that the error can be inspected.
 
-Check the output for errors that happen while frames are rendered.
+NatronRenderer also exits with status 1 when the render of a Write node fails, for example
+when the output file can't be written, or when a movie writer can't open its file or rejects
+the codec. Natron prints an error, for example ``Error while rendering``. This applies to
+the Write nodes given with :option:`-w`, or to all the Write nodes of the graph, and to the
+renders that a script starts with :func:`app.render()<NatronEngine.App.render>`:
+
+- One failed Write node is enough. The other Write nodes are still rendered.
+- A failure is remembered until the process exits: a script that renders the same Write node
+  again, successfully, still exits with status 1.
+- In a script, ``natron.quit(status)`` and ``sys.exit(status)`` take precedence: the script
+  chooses the status, also 0, and the renders that they stop are not failures.
+- A render that is stopped while a frame is being rendered may count as failed, for example
+  when a render callback calls :func:`app.closeProject()<NatronEngine.App.closeProject>` or
+  :func:`app.resetProject()<NatronEngine.App.resetProject>`, or when a render run in a
+  separate process is cancelled from the GUI.
+- A render also fails when a node upstream reports an error, for example a Read node whose
+  file doesn't exist, with "On missing frame: Error" (the default). With "On missing frame:
+  Black", the missing frames are rendered black and the render succeeds.
+
+Up to Natron 2.5, a failed render exited with status 0.
 
 GUI tests in the background
 ---------------------------
@@ -457,3 +476,29 @@ with the following changes to the script::
     writer.getParam("fps").set(fpsValue)
 
 :option:`-w` is not needed here: without it, all the Write nodes of the graph are rendered.
+
+.. _natron-convert-project:
+
+Example: converting a project between the binary and text formats
+------------------------------------------------------------------
+
+Projects are saved in a binary format, or in a text (XML) format that Natron 2.5 and earlier
+can read (see :meth:`App.getProjectFormat<NatronEngine.App.getProjectFormat>`). The
+``natron_convert_project`` Python module, installed in the ``Plugins`` directory of Natron
+(``Natron.app/Contents/Plugins`` on macOS, ``/usr/share/Natron/Plugins`` in a Linux
+distribution), which is on its Python path, converts a project from one format to the other
+without rendering anything::
+
+    NatronRenderer -t -c "import natron_convert_project as c; c.convert_and_quit('/path/to/in.ntp', '/path/to/out.ntp', 'text')"
+
+``convert_and_quit(src, dst=None, to="text", discard_gui=False)`` saves ``src`` in the format
+``to`` (``"text"`` or ``"binary"``) as ``dst`` (``src`` itself without ``dst``), then quits: the
+exit status is 0 if the project was converted, 1 otherwise, with the reason printed. In a
+script, ``convert()`` takes the same arguments, raises an exception instead, and doesn't quit;
+end the script with ``natron.quit(status)``, with a non-zero status if a conversion failed:
+without ``natron.quit()``, the prompt starts and exits with status 0. The project is not
+converted if it loads with errors (see :meth:`App.projectLoadedWithErrors<NatronEngine.App.projectLoadedWithErrors>`), or if it
+has GUI data (see :meth:`App.projectFileHasGuiData<NatronEngine.App.projectFileHasGuiData>`),
+which NatronRenderer would drop, unless ``discard_gui=True``: convert those projects with
+*Save Project As..* in Natron. See the docstring of ``tools/natron_convert_project.py`` for
+the details.

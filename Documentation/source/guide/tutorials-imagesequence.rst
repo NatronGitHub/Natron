@@ -82,7 +82,7 @@ for 16 bit
 .. note:: "-pix_fmt rgb24 or rgba" is a must to include convert the color space. YUV/YCRB is not ideal for many en/decoders for TIFF.
 
 
-Although if YUV colorspace is necesary to intact it is possible to do the closest RGB conversion using ``-sws_flags``. It will intact the chroma in full.
+Although if YUV colorspace is necessary to intact it is possible to do the closest RGB conversion using ``-sws_flags``. It will intact the chroma in full.
 
 Example:
 

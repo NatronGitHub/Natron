@@ -39,6 +39,8 @@ Functions
 - def :meth:`saveProjectAs<NatronEngine.App.saveProjectAs>` (filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
 - def :meth:`getProjectFormat<NatronEngine.App.getProjectFormat>` ()
 - def :meth:`setProjectFormat<NatronEngine.App.setProjectFormat>` (format)
+- def :meth:`projectFileHasGuiData<NatronEngine.App.projectFileHasGuiData>` ()
+- def :meth:`projectLoadedWithErrors<NatronEngine.App.projectLoadedWithErrors>` ()
 - def :meth:`loadProject<NatronEngine.App.loadProject>` (filename)
 - def :meth:`resetProject<NatronEngine.App.resetProject>` ()
 - def :meth:`closeProject<NatronEngine.App.closeProject>` ()
@@ -579,6 +581,40 @@ inform the user of various information, warnings or errors.
     :param format: :class:`ProjectFileFormatEnum<NatronEngine.Natron.ProjectFileFormatEnum>`
 
     Sets the format of the next saves of the project (see :meth:`getProjectFormat<NatronEngine.App.getProjectFormat>`).
+
+    .. versionadded:: 2.6
+
+.. method:: App.projectFileHasGuiData()
+
+    :rtype: :class:`bool`
+
+    Returns whether the project file this project was loaded from has GUI data: node positions,
+    colours and sizes, viewer settings, the window layout... A project saved by the Natron GUI has
+    them, a project saved by NatronRenderer or ``Natron -b`` doesn't. *False* for a new project.
+    It describes the file that was loaded: saving the project doesn't change it.
+
+    NatronRenderer and ``Natron -b`` don't read the GUI data and don't create the Viewer nodes, and
+    save projects without them: a script run by them that saves a project with GUI data loses them.
+    Such a script can use this function to refuse to save the project, or to warn.
+
+    .. versionadded:: 2.6
+
+.. method:: App.projectLoadedWithErrors()
+
+    :rtype: :class:`bool`
+
+    Returns whether something in the project file was not loaded, so that saving the project would
+    lose it: a node that can't be created, e.g. because its plug-in is missing (also inside a
+    Group), a connection to an input that the node doesn't have, a link to a master node that
+    doesn't exist, a PyPlug that can't be found or imported (its node is loaded as a Group with
+    the nodes saved in the project, and would be saved as a plain Group), or an error that stopped
+    the load. The error log lists them.
+    :meth:`loadProject<NatronEngine.App.loadProject>` returns the project in that case too, except
+    after an error that stopped the load.
+    Warnings where nothing is lost, such as a node created with another major version of its
+    plug-in, don't make it *True*, even when they open the error log.
+    *False* for a new project. It describes the file that was loaded: saving the project doesn't
+    change it. It is already set when the ``afterProjectLoad`` callback runs.
 
     .. versionadded:: 2.6
 

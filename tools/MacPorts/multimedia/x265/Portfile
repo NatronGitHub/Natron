@@ -17,7 +17,7 @@ bitbucket.setup     multicoreware x265_git 4.2
 checksums           rmd160  b20a6fa7247ef4567769dab054610a9c044c6362 \
                     sha256  40b1ea0453e0309f0eba934e0ddf533f8f6295966679e8894e8f1c1c8d5e1210 \
                     size    1833442
-revision            100
+revision            101
 
 categories          multimedia
 license             GPL-2+
@@ -99,8 +99,8 @@ if {${universal_possible} && [variant_isset universal] && ![variant_isset highde
         # error: illegal text-relocation to '_x265_pw_1'
         configure.ldflags-append -Wl,-read_only_relocs,suppress
     }
-    configure.env-append CONFIGURE=${configure.cmd} BUILD=${build.cmd} ARCH='${build_arch}'
-    build.env-append BUILD=${build.cmd} ARCH='${build_arch}'
+    configure.env-append CONFIGURE=${configure.cmd} BUILD=${build.cmd} ARCH=${build_arch}
+    build.env-append BUILD=${build.cmd} ARCH=${build_arch}
 }
 
 destroot.env-append  BUILD=${build.cmd} ARCH=none

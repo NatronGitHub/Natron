@@ -95,14 +95,12 @@ Top-level directories
     The ``pre-commit`` hook that runs astyle (see :ref:`maint-contributing`).
 
 ``tools/``
-    Release and CI engineering: ``jenkins`` (the release build scripts) and
-    ``buildmaster`` build farms, ``MacPorts`` and ``MINGW-packages`` port files,
+    Release and CI engineering: ``jenkins`` (the release build scripts),
+    ``MacPorts`` and ``MINGW-packages`` port files,
     ``docker`` images (the Linux SDK), ``tart`` (macOS build virtual machines),
     ``utils`` (helper scripts, including the Python binding helpers
     ``sourceList.py`` and ``sourceCleanup.py``), ``valgrind`` suppressions, and
-    ``genStaticDocs.sh``. ``appimage``, ``homebrew`` and ``travis`` are legacy
-    (last changed in 2021–2022, and only mentioned by old sections of the
-    ``INSTALL_*.md`` files).
+    ``genStaticDocs.sh``.
 
 The file-name suffixes used in ``Engine`` and ``Gui`` (``FooFwd.h``,
 ``FooI.h``, ``FooPrivate.h``, ``FooSerialization.h``, ``PyFoo.h``,

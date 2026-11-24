@@ -61,10 +61,6 @@ Msys|MSYS_NT-*|MINGW64_NT-*|MINGW32_NT-*|UCRT64_NT-*|CLANG64_NT-*|CLANGARM64_NT-
     ;;
 Darwin)
     PKGOS=${PKGOS:-OSX}
-    if [ "$(uname -m)" = "arm64" ]; then
-        # No Qt4 on apple Silicon
-        QT_VERSION_MAJOR=${QT_VERSION_MAJOR:-5}
-    fi
     ;;
 *)
     (>&2 echo "$system not supported!")
@@ -122,8 +118,26 @@ elif [ "$PKGOS" = "OSX" ]; then
             ARCH=$(uname -m)
             ;;
     esac;
-    # always deploy for the same version as the build system, since we use macports (for now)
-    MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion | cut -d. -f-2)
+    # Deployment target. Release builds set NATRON_MACOS_MIN to the oldest macOS supported by the
+    # release (NATRON_MACOS_RELEASE_MIN in macos-release.sh, 14.0; tools/tart/provision.sh sets it):
+    # the MacPorts libraries that are bundled must be built for it too (macosx_deployment_target
+    # in macports.conf, see INSTALL_MACOS.md), and launchBuildMain.sh checks the DMG with
+    # check-minos.sh. Otherwise (development builds), build for this Mac's macOS, so that the
+    # plug-ins, which refuse to bundle a library newer than the target (OFX_DEPLOY_STRICT_MINOS),
+    # can bundle MacPorts' ordinary binary archives. An explicit MACOSX_DEPLOYMENT_TARGET wins.
+    # shellcheck source=macos-release.sh
+    . "$(dirname "${BASH_SOURCE[0]}")/macos-release.sh"
+    if [ -z "${MACOSX_DEPLOYMENT_TARGET:-}" ]; then
+        if [ -n "${NATRON_MACOS_MIN:-}" ]; then
+            MACOSX_DEPLOYMENT_TARGET=$NATRON_MACOS_MIN
+        else
+            MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion)
+            case "$MACOSX_DEPLOYMENT_TARGET" in
+                10.*) MACOSX_DEPLOYMENT_TARGET=$(echo "$MACOSX_DEPLOYMENT_TARGET" | cut -d. -f-2) ;;
+                *) MACOSX_DEPLOYMENT_TARGET=$(echo "$MACOSX_DEPLOYMENT_TARGET" | cut -d. -f1).0 ;;
+            esac
+        fi
+    fi
     export MACOSX_DEPLOYMENT_TARGET
     MACPORTS="/opt/local"
     LOCAL="/usr/local"
@@ -226,34 +240,12 @@ elif [ -x "$SDK_HOME/bin/git" ]; then
     GIT="env LD_LIBRARY_PATH=$SDK_HOME/lib $SDK_HOME/bin/git"
 fi
 
-# The version of Python used by the SDK and to build Natron
-# Python 2 or 3, NOTE! v3 is probably broken, been untested for a long while
-# To default to Python 2, move the Python 3 section below the Python 2 section
+# The version of Python used by the SDK and to build Natron (Python 3)
+PYV=3
 PYTHON_ABIFLAGS=
 if [[ $(type -P python3) ]]; then
     PY3VER="$(python3 -c "import platform; print('.'.join(platform.python_version_tuple()[:2]))")"
     PY3VERNODOT=$(echo ${PY3VER:-}| sed 's/\.//')
-    if [ -z "${PYV:-}" ]; then
-        PYV=3
-    fi
-fi
-if [[ $(type -P python2) ]]; then
-    PY2VER="$(python2 -c "import platform; print('.'.join(platform.python_version_tuple()[:2]))")"
-    PY2VERNODOT=$(echo ${PY2VER:-}| sed 's/\.//')
-    if [ -z "${PYV:-}" ]; then
-        # default to Python 2 if present
-        PYV=2
-    fi
-    case "${RELEASE_TAG:-}" in
-    1.*|2.[01234].*)
-        PYV=2
-    esac
-    case "${GIT_BRANCH:-}" in
-    RB-1|RB-1.*|RB-2.[01234])
-        PYV=2
-    esac
-fi
-if [ "${PYV:-}" = 3 ]; then
     PYVER="${PY3VER}"
     PYVERNODOT="${PY3VERNODOT}"
     case "${PYVER}" in
@@ -261,12 +253,6 @@ if [ "${PYV:-}" = 3 ]; then
         PYTHON_ABIFLAGS="m"
         ;;
     esac
-    PYTHON_HOME="$(python${PYV} -c "import sys; print(sys.prefix)")"
-fi
-if [ "${PYV:-}" = 2 ]; then
-    PYVER="${PY2VER}"
-    PYVERNODOT="${PY2VERNODOT}"
-    PYTHON_ABIFLAGS=""
     PYTHON_HOME="$(python${PYV} -c "import sys; print(sys.prefix)")"
 fi
 PY_EXE="$SDK_HOME/bin/python${PYV}"
