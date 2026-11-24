@@ -465,21 +465,22 @@ Knob<T>::evaluateExpression_pod(double time,
 }
 
 template <typename T>
-std::optional<T>
+typename Knob<T>::CachedExpressionResult
 Knob<T>::getCachedExpressionResult(int dimension,
-                                   const ExpressionResultKey& key,
-                                   unsigned int* generation) const
+                                   const ExpressionResultKey& key) const
 {
+    CachedExpressionResult result;
     // _exprResMutex is a leaf lock: the key was computed before locking it
     std::lock_guard<std::mutex> k(_exprResMutex);
     typename FrameValueMap::const_iterator found = _exprRes[dimension].find(key);
 
     if ( found != _exprRes[dimension].end() ) {
-        return found->second;
+        result.value = found->second;
+    } else {
+        result.generation = _exprResGeneration;
     }
-    *generation = _exprResGeneration;
 
-    return std::nullopt;
+    return result;
 }
 
 template <typename T>
@@ -525,12 +526,13 @@ Knob<T>::getValueFromExpression(double time,
     const std::optional<ExpressionResultKey> key = getExpressionResultKey(time, view);
     unsigned int generation = 0;
     if (key) {
-        const std::optional<T> cached = getCachedExpressionResult(dimension, *key, &generation);
-        if (cached) {
-            *ret = *cached;
+        const CachedExpressionResult cached = getCachedExpressionResult(dimension, *key);
+        if (cached.value) {
+            *ret = *cached.value;
 
             return true;
         }
+        generation = cached.generation;
     }
 
     bool exprWasValid = isExpressionValid(dimension, 0);
@@ -616,12 +618,13 @@ Knob<T>::getValueFromExpression_pod(double time,
     const std::optional<ExpressionResultKey> key = getExpressionResultKey(time, view);
     unsigned int generation = 0;
     if (key) {
-        const std::optional<T> cached = getCachedExpressionResult(dimension, *key, &generation);
-        if (cached) {
-            *ret = *cached;
+        const CachedExpressionResult cached = getCachedExpressionResult(dimension, *key);
+        if (cached.value) {
+            *ret = *cached.value;
 
             return true;
         }
+        generation = cached.generation;
     }
 
 

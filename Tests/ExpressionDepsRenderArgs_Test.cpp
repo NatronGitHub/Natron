@@ -31,7 +31,7 @@
 
 #include "Global/Macros.h"
 
-#include <cstdlib> // atoi
+#include <stdexcept>
 #include <list>
 #include <set>
 #include <string>
@@ -560,14 +560,20 @@ TEST_F(ExpressionDepsRenderArgsTest, ExpressionResultIsCachedPerContext)
     aTo->setExpression(0, "global natronTest1578Count\nnatronTest1578Count += 1\nret = " + b->getScriptName_mt_safe() + ".doubleFrom.get()",
                        true /*hasRetVariable*/, false /*failIfInvalid*/);
     ASSERT_FALSE( aTo->getExpression(0).empty() );
-    // setExpression() evaluated it once to check it
+    // setExpression() evaluated it once to check it (directly, without the cache)
     ASSERT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("natronTest1578Count = 0\n", &err, 0) ) << err;
     const auto evaluations = []() {
         std::string error;
         std::string output;
         EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("print(natronTest1578Count)\n", &error, &output) ) << error;
 
-        return std::atoi( output.c_str() );
+        try {
+            return std::stoi(output);
+        } catch (const std::exception&) {
+            ADD_FAILURE() << "not a number of evaluations: " << output;
+
+            return -1;
+        }
     };
 
     EXPECT_EQ( 10., aTo->getValue() );

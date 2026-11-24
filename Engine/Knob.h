@@ -1775,7 +1775,8 @@ protected:
      * This covers the nodes that the render setup gives these render args, i.e. those the expressions are known to
      * depend on, while they are not in a render action of their own on this thread (another node of the tree read
      * while it renders at another time, e.g. FrameBlend upstream of a TimeOffset, is read at that time instead), and
-     * not the nodes that an expression finds by itself (e.g. with app.getNode()), which are read at the timeline's frame.
+     * not the nodes that an expression finds by itself (e.g. with app.getNode()), nor the deactivated nodes and those
+     * of another project (Precomp), which get no render args and are read at the timeline's frame.
      **/
     struct ExpressionResultKey
     {
@@ -2219,9 +2220,13 @@ private:
 
     bool getValueFromExpression_pod(double time, ViewIdx view, int dimension, bool clamp, double* ret);
 
-    /// The result cached under key for dimension, if any; if not, *generation is set to the generation of the cache,
-    /// to pass to cacheExpressionResult() after the evaluation.
-    std::optional<T> getCachedExpressionResult(int dimension, const ExpressionResultKey& key, unsigned int* generation) const;
+    struct CachedExpressionResult
+    {
+        std::optional<T> value; // the result cached under the key, if any
+        unsigned int generation = 0; // if not, the generation of the cache, to pass to cacheExpressionResult()
+    };
+
+    CachedExpressionResult getCachedExpressionResult(int dimension, const ExpressionResultKey& key) const;
 
     /// Stores the result of the expression of dimension, evaluated at time and view under key, unless the cache was
     /// cleared since getCachedExpressionResult() returned generation (a parameter it reads changed meanwhile), or the
