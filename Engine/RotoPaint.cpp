@@ -747,7 +747,7 @@ RotoPaint::initializeKnobs()
     {
         KnobButtonPtr tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRemovePointsToolButtonActionLabel) );
         tool->setName(kRotoUIParamRemovePointsToolButtonAction);
-        tool->setHintToolTip( tr(kRotoUIParamRemovePointsToolButtonAction) );
+        tool->setHintToolTip( tr(kRotoUIParamRemovePointsToolButtonActionHint) );
         tool->setCheckable(true);
         tool->setDefaultValue(false);
         tool->setSecretByDefault(true);

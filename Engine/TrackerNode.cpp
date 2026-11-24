@@ -78,7 +78,7 @@ TrackerNode::getPluginDescription() const
            "--------\n\n"
            "* Connect a Tracker node to the image containing the item you need to track\n"
            "* Place tracking markers with CTRL+ALT+Click on the Viewer or by clicking the **+** button below the track table in the settings panel\n"
-           "* Setup the motion model to match the motion type of the item you need to track. By default the tracker will only assume the item is undergoing a translation. Other motion models can be used for complex tracks but may be slower.\n"
+           "* Set up the motion model to match the motion type of the item you need to track. By default the tracker will only assume the item is undergoing a translation. Other motion models can be used for complex tracks but may be slower.\n"
            "* Select in the settings panel or on the Viewer the markers you want to track and then start tracking with the player buttons on the top of the Viewer.\n"
            "* If a track is getting lost or fails at some point, you may refine it by moving the marker at its correct position, this will force a new keyframe on the pattern which will be visible in the Viewer and on the timeline.\n\n"
            "Using the tracks data\n"

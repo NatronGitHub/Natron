@@ -182,12 +182,12 @@ GCC_DIAG_ON(maybe-uninitialized)
 #define kTrackerParamTransformTypeHint "The type of transform used to produce the results."
 
 #define kTrackerParamTransformTypeTransform "Transform"
-#define kTrackerParamTransformTypeTransformHelp "The tracks motion will be used to compute the translation, scale and rotation parameter " \
+#define kTrackerParamTransformTypeTransformHelp "The tracks' motion will be used to compute the translation, scale and rotation parameters " \
     "of a Transform node. At least 1 track is required to compute the translation and 2 for scale and rotation. The more tracks you use, " \
     "the more stable and precise the resulting transform will be."
 
 #define kTrackerParamTransformTypeCornerPin "CornerPin"
-#define kTrackerParamTransformTypeCornerPinHelp "The tracks motion will be used to compute a CornerPin. " \
+#define kTrackerParamTransformTypeCornerPinHelp "The tracks' motion will be used to compute a CornerPin. " \
     "A CornerPin is useful if you are tracking an image portion that has a perspective distortion. " \
     "At least 1 track is required to compute the homography transforming the \"From\" points to the \"To\" points, and 4 required to " \
     "track a perspective transformation. " \
