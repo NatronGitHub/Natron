@@ -58,9 +58,10 @@ try:
         del calls[:]
         write.getParam("filename").set(os.path.join(outDir, mode + "_###.png"))
         # the first file name creates the encoder (WritePNG), which used to reset the frame range (#1574)
-        check((write.getParam("frameRange").get(), write.getParam("firstFrame").get(), write.getParam("lastFrame").get()) == (2, 1, 3),
-              "%s: the frame range of the Write node after setting its file name is %r" %
-              (mode, (write.getParam("frameRange").get(), write.getParam("firstFrame").get(), write.getParam("lastFrame").get())))
+        frameRange = tuple(write.getParam(p).get() for p in ("frameRange", "firstFrame", "lastFrame"))
+        check(frameRange == (2, 1, 3), "%s: the frame range of the Write node after setting its file name is %r" % (mode, frameRange))
+        check(write.getParam("firstFrame").getIsVisible() and write.getParam("lastFrame").getIsVisible(),
+              "%s: First/Last Frame are hidden with a Manual frame range" % mode)
         if mode == "button":
             write.getParam("startRender").trigger()
         else:
