@@ -764,7 +764,7 @@ KnobGuiString::parseFont(const QString & label,
                          QColor *color)
 {
     // The label may not have the font tag that the GUI writes (makeFontTag()), or only part of it, e.g. when
-    // it was set from Python: the size and the family that it doesn't give are left as they are in *f
+    // it was set from Python (see the declaration)
     QString toFind = QString::fromUtf8(kFontSizeTag);
     int startFontTag = label.indexOf(toFind);
     if (startFontTag != -1) {
