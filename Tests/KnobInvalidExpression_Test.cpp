@@ -133,3 +133,32 @@ TEST_F(KnobInvalidExpressionTest, EveryInvalidKnobIsListed)
     EXPECT_FALSE( isListed(a) );
     EXPECT_FALSE( isListed(b) );
 }
+
+// A knob whose expression becomes invalid while recheckInvalidExpressions() runs stays listed (#1542):
+// re-checking doubleTo evaluates the expression of doubleFrom, which fails.
+TEST_F(KnobInvalidExpressionTest, KnobInvalidatedDuringRecheckStaysListed)
+{
+    if ( skipped() ) {
+        return;
+    }
+    KnobIPtr from = knob("doubleFrom");
+    KnobIPtr to = knob("doubleTo");
+    ASSERT_TRUE(from && to);
+
+    std::string error;
+    ASSERT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("natronTestBroken = False\nnatronTestFrame = 1\n", &error, 0) ) << error;
+    from->setExpression(0, "natronTestMissing if natronTestBroken else 1.", false, false);
+    EXPECT_TRUE( from->isExpressionValid(0, 0) );
+    // always invalid (NameError), after reading doubleFrom at a frame that is not in its cache yet
+    to->setExpression(0, "thisNode.doubleFrom.getValueAtTime(natronTestFrame) + natronTestMissing", false, false);
+    EXPECT_TRUE( isListed(to) );
+    EXPECT_FALSE( isListed(from) );
+
+    ASSERT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("natronTestBroken = True\nnatronTestFrame = 2\n", &error, 0) ) << error;
+    _node->getApp()->recheckInvalidExpressions();
+    EXPECT_FALSE( from->isExpressionValid(0, 0) ) << "the re-check did not evaluate doubleFrom";
+    EXPECT_TRUE( isListed(to) );
+    EXPECT_TRUE( isListed(from) ) << "the knob listed during the re-check was dropped";
+
+    NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("del natronTestBroken, natronTestFrame\n", &error, 0);
+}
