@@ -28,6 +28,8 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 #include <QDebug>
+#include <QThread>
+#include <QCoreApplication>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // clang-format off
@@ -229,6 +231,31 @@ PasteUndoCommand::copyFrom(const KnobIPtr& serializedKnob,
     } // switch
 } // redo
 
+namespace {
+// The overlay drag in progress (see MultipleKnobEditsUndoCommand::beginOverlayGesture()): its effect, or NULL, and
+// its number. The holder is only compared, never used: it may be deleted during the drag.
+const KnobHolder* gOverlayGestureHolder = 0;
+unsigned int gOverlayGestureSerial = 0;
+}
+
+void
+MultipleKnobEditsUndoCommand::beginOverlayGesture(const KnobHolder* holder)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    gOverlayGestureHolder = holder;
+    ++gOverlayGestureSerial;
+    if (gOverlayGestureSerial == 0) { // 0 means no drag
+        gOverlayGestureSerial = 1;
+    }
+}
+
+void
+MultipleKnobEditsUndoCommand::endOverlayGesture()
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    gOverlayGestureHolder = 0;
+}
+
 MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobGuiPtr& knob,
                                                            ValueChangedReasonEnum reason,
                                                            bool createNew,
@@ -241,6 +268,7 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobGuiPtr& kno
     , createNew(createNew)
     , firstRedoCalled(false)
     , _reason(reason)
+    , _overlayGesture(0)
 {
     if (createNew) {
         //qDebug() << "new MultipleKnobEditsUndoCommand";
@@ -257,6 +285,10 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobGuiPtr& kno
     vlist.push_back(v);
 
     KnobHolder* holder = knob->getKnob()->getHolder();
+    // an edit made by an overlay action of the effect that the user drags
+    if ( holder && (holder == gOverlayGestureHolder) && holder->isDoingInteractAction() ) {
+        _overlayGesture = gOverlayGestureSerial;
+    }
     EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
     QString holderName;
     if (effect) {
@@ -509,8 +541,17 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
         return false;
     }
 
+    // The edits of one overlay drag make one undo command, whatever parameters each edit changes: e.g. the
+    // Transform overlay sets all its parameters at each pen motion, and only those that changed make an edit, so
+    // that a parameter changing later in the drag started a new undo command (#839).
+    // Two drags are two undo commands, even if they change the same parameters.
+    const bool sameOverlayGesture = (_overlayGesture != 0) && (knobCommand->_overlayGesture == _overlayGesture);
+    if ( !sameOverlayGesture && (knobCommand->_overlayGesture != 0) ) {
+        return false;
+    }
+
     // if all knobs from the new command are included in the old command, ignore the createNew flag and merge them anyway
-    if (knobCommand->createNew) {
+    if (knobCommand->createNew && !sameOverlayGesture) {
         bool ignoreCreateNew = false;
         //qDebug() << "mergeWith" << knobs.size() << "with" << knobCommand->knobs.size();
         if ( knobs.size() >= knobCommand->knobs.size() ) {

@@ -89,6 +89,7 @@
 - Natron no longer crashes when it quits after `app.closeProject()` was called on a project with unsaved changes and an open settings panel, e.g. at the end of a `Natron --test` script, or with `natron.quit()` after `app.closeProject()`: the project was closed a second time while it was being closed. A second `app.closeProject()` (or File > Close Project, or `app.resetProject()`) before the window closes no longer asks again whether to save the changes. #1567
 - The bundled Eigen (libs/Eigen3), used by the tracker (libmv, openMVG, Ceres), is updated from 3.4.0 to 3.4.1, a bug-fix release: fixes in the SVD and eigenvalue solvers, undefined-behaviour fixes, ARM (NEON) fixes and fewer compiler warnings. #1593
 - A render or a playback no longer stalls when its last frame, or an abort, comes just before the render scheduler starts waiting for it. #1607
+- Undo after dragging an overlay in the viewer (e.g. the Transform handles) goes back to where the drag started in one step: a drag could make several undo steps, when a parameter started changing in the middle of the drag. Two separate drags of the same handle are now two undo steps instead of one. #839
 
 ### Plugins
 

@@ -56,6 +56,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h" // isKeybind
 #include "Gui/GuiAppInstance.h"
+#include "Gui/KnobUndoCommand.h" // MultipleKnobEditsUndoCommand::beginOverlayGesture()
 #include "Gui/NodeGui.h"
 #include "Gui/QtEnumConvert.h"
 #include "Gui/SpinBox.h"
@@ -226,7 +227,12 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
         EffectInstancePtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
+        // the edits of the drag, until the pen up, make one undo command (#839)
+        MultipleKnobEditsUndoCommand::beginOverlayGesture( effect.get() );
         bool didSmthing = effect->onOverlayPenDown_public(time, renderScale, view, viewportPos, transformPos, pressure, timestamp, pen, modifiers);
+        if (!didSmthing) {
+            MultipleKnobEditsUndoCommand::endOverlayGesture();
+        }
         _imp->recordOverlayEvent(node, didSmthing);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
@@ -459,6 +465,11 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
                                    KeyboardModifiers modifiers)
 {
     bool didSomething = false;
+    // the overlay drag ends with this function, once the pen up actions (which may edit too) are done
+    struct EndOverlayGesture
+    {
+        ~EndOverlayGesture() { MultipleKnobEditsUndoCommand::endOverlayGesture(); }
+    } endOverlayGesture;
 
     if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
