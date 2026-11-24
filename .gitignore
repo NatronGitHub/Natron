@@ -208,6 +208,7 @@ Makefile
 *.gcno
 *.gcov
 Tests/Tests
+ofxPluginLog.txt
 ofxTestLog.txt
 test_dot_generator0.jpg
 Tests/Plugins
