@@ -700,7 +700,7 @@ void
 KnobHelper::deleteKnob()
 {
     KnobI::ListenerDimsMap listenersCpy;
-    getListeners(listenersCpy); // under mastersMutex: another thread may add or remove a listener
+    getListeners(listenersCpy); // under mastersMutex, which guards the listeners
 
     for (ListenerDimsMap::iterator it = listenersCpy.begin(); it != listenersCpy.end(); ++it) {
         KnobIPtr knob = it->first.lock();
