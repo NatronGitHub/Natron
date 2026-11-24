@@ -282,6 +282,16 @@ TEST(ReadWriteVersion, MissingPluginKeepsVersion)
     if ( !versionsAvailable() ) {
         return;
     }
+    // Without the decoder or encoder, a Read or Write node needs the default reader and writer of
+    // IO.ofx.bundle (openfx-io), else the node is not loaded (e.g. macOS CI has no openfx-io)
+    const char* const defaultIDs[] = { PLUGINID_OFX_READOIIO, PLUGINID_OFX_WRITEOIIO };
+    for (const char* id : defaultIDs) {
+        if (lowestMajor(id) < 0) {
+            NatronTestPlugin::reportSkipped(id);
+
+            return;
+        }
+    }
     QTemporaryDir tmpDir;
     ASSERT_TRUE( tmpDir.isValid() );
     const ResetProjectOnExit resetProject; // destroyed before tmpDir

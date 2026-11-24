@@ -251,6 +251,7 @@ public:
     // As ReadNodePrivate::syncVersionKnob() and resetVersionKnob(), for the encoder (#1681)
     void syncVersionKnob();
     void resetVersionKnob();
+    void setVersionKnob(int major, int minor);
 
     void destroyWriteNode();
 
@@ -721,10 +722,9 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
 void
 WriteNodePrivate::syncVersionKnob()
 {
-    KnobIntPtr versionKnob = pluginVersionKnob.lock();
     KnobStringPtr pluginIDKnob = pluginIDStringKnob.lock();
 
-    if (!versionKnob || !pluginIDKnob) {
+    if (!pluginIDKnob) {
         return;
     }
     NodePtr encoder = embeddedPlugin.lock();
@@ -732,14 +732,18 @@ WriteNodePrivate::syncVersionKnob()
     if ( !plugin || ( encoder->getPluginID() != pluginIDKnob->getValue() ) ) {
         return;
     }
-    versionKnob->blockValueChanges();
-    versionKnob->setValue(plugin->getMajorVersion(), ViewSpec(0), 0);
-    versionKnob->setValue(plugin->getMinorVersion(), ViewSpec(0), 1);
-    versionKnob->unblockValueChanges();
+    setVersionKnob( plugin->getMajorVersion(), plugin->getMinorVersion() );
 }
 
 void
 WriteNodePrivate::resetVersionKnob()
+{
+    setVersionKnob(-1, -1);
+}
+
+void
+WriteNodePrivate::setVersionKnob(int major,
+                                 int minor)
 {
     KnobIntPtr versionKnob = pluginVersionKnob.lock();
 
@@ -747,8 +751,8 @@ WriteNodePrivate::resetVersionKnob()
         return;
     }
     versionKnob->blockValueChanges();
-    versionKnob->setValue(-1, ViewSpec(0), 0);
-    versionKnob->setValue(-1, ViewSpec(0), 1);
+    versionKnob->setValue(major, ViewSpec(0), 0);
+    versionKnob->setValue(minor, ViewSpec(0), 1);
     versionKnob->unblockValueChanges();
 }
 
@@ -840,6 +844,10 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
 
     bool defaultFallback = false;
 
+    if (userEdited) {
+        resetVersionKnob(); // as in ReadNodePrivate::createReadNode() (#1681)
+    }
+
     //Find the appropriate reader
     if (writerPluginID.empty() && !serialization) {
         //Couldn't find any reader
@@ -866,9 +874,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         // As in ReadNodePrivate::createReadNode(): the version of the encoder saved in the project,
         // else, in a node saved without the version (by a Natron older than 2.6), the lowest major (#1681)
         KnobIntPtr versionKnob = pluginVersionKnob.lock();
-        if (userEdited) {
-            resetVersionKnob(); // the newest, and -1 if it cannot be created
-        } else if (versionKnob) {
+        if (!userEdited && versionKnob) {
             if (versionKnob->getValue(0) >= 0) {
                 args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(0), 0);
                 args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(1), 1);

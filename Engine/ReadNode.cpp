@@ -287,6 +287,9 @@ public:
     // another decoder (#1681)
     void resetVersionKnob();
 
+    // Sets both dimensions of the version knob without calling knobChanged()
+    void setVersionKnob(int major, int minor);
+
     void cloneGenericKnobs();
 
     void refreshPluginSelectorKnob();
@@ -662,10 +665,9 @@ getFileNameFromSerialization(const std::list<KnobSerializationPtr>& serializatio
 void
 ReadNodePrivate::syncVersionKnob()
 {
-    KnobIntPtr versionKnob = pluginVersionKnob.lock();
     KnobStringPtr pluginIDKnob = pluginIDStringKnob.lock();
 
-    if (!versionKnob || !pluginIDKnob) {
+    if (!pluginIDKnob) {
         return;
     }
     NodePtr decoder;
@@ -677,14 +679,18 @@ ReadNodePrivate::syncVersionKnob()
     if ( !plugin || ( decoder->getPluginID() != pluginIDKnob->getValue() ) ) {
         return;
     }
-    versionKnob->blockValueChanges();
-    versionKnob->setValue(plugin->getMajorVersion(), ViewSpec(0), 0);
-    versionKnob->setValue(plugin->getMinorVersion(), ViewSpec(0), 1);
-    versionKnob->unblockValueChanges();
+    setVersionKnob( plugin->getMajorVersion(), plugin->getMinorVersion() );
 }
 
 void
 ReadNodePrivate::resetVersionKnob()
+{
+    setVersionKnob(-1, -1);
+}
+
+void
+ReadNodePrivate::setVersionKnob(int major,
+                                int minor)
 {
     KnobIntPtr versionKnob = pluginVersionKnob.lock();
 
@@ -692,8 +698,8 @@ ReadNodePrivate::resetVersionKnob()
         return;
     }
     versionKnob->blockValueChanges();
-    versionKnob->setValue(-1, ViewSpec(0), 0);
-    versionKnob->setValue(-1, ViewSpec(0), 1);
+    versionKnob->setValue(major, ViewSpec(0), 0);
+    versionKnob->setValue(minor, ViewSpec(0), 1);
     versionKnob->unblockValueChanges();
 }
 
@@ -768,6 +774,10 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
 
     NodePtr node;
+    if (userEdited) {
+        resetVersionKnob(); // the new decoder is the newest, and the version is -1 if there is none (#1681)
+    }
+
     //Find the appropriate reader
     if (readerPluginID.empty() && !serialization) {
         //Couldn't find any reader
@@ -800,9 +810,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         // above 0: e.g. ReadSVG 3, not ReadSVG 4 (openfx-arena#224). This assumes that a decoder
         // never adds a major below the one that Natron 2.5 had. A new node gets the newest major.
         KnobIntPtr versionKnob = pluginVersionKnob.lock();
-        if (userEdited) {
-            resetVersionKnob(); // the newest, and -1 if it cannot be created
-        } else if (versionKnob) {
+        if (!userEdited && versionKnob) {
             if (versionKnob->getValue(0) >= 0) {
                 args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(0), 0);
                 args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(1), 1);
