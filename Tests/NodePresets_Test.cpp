@@ -46,6 +46,7 @@
 #include "Engine/AppManager.h" // NATRON_PYTHON_NAMESPACE::interpretPythonScript
 #include "Engine/Bezier.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/Plugin.h"
@@ -246,6 +247,43 @@ TEST(NodePresets, TrackerLoadReplacesTracks)
     // Redo
     node->loadKnobs(*stateA);
     EXPECT_EQ( namesA, trackNames(context) );
+
+    node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
+}
+
+// A pattern-matching track (the Tracker's "usePatternMatching") creates an internal TrackerPM node, which is
+// obsolete (kOfxImageEffectPluginPropObsolete) and so not user-creatable: its creation was refused, and creating
+// or loading such a track threw (#1513).
+TEST(NodePresets, TrackerLoadPatternMatchingTracks)
+{
+    if ( skipIfMissing(PLUGINID_OFX_TRANSFORM) || skipIfMissing(PLUGINID_OFX_CORNERPIN) ||
+         skipIfMissing(PLUGINID_OFX_TRACKERPM) ) {
+        return;
+    }
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    CreateNodeArgs args( PLUGINID_NATRON_TRACKER, app->getProject() );
+    NodePtr node = app->createNode(args);
+    ASSERT_TRUE( bool(node) );
+    TrackerContextPtr context = node->getTrackerContext();
+    ASSERT_TRUE( bool(context) );
+    KnobBoolPtr usePM = std::dynamic_pointer_cast<KnobBool>( node->getKnobByName("usePatternMatching") );
+    ASSERT_TRUE( bool(usePM) );
+    usePM->setValue(true);
+    ASSERT_TRUE( context->isTrackerPMEnabled() );
+
+    TrackMarkerPtr track = context->createMarker();
+    ASSERT_TRUE( bool(track) );
+    EXPECT_TRUE( dynamic_cast<TrackMarkerPM*>( track.get() ) != NULL );
+    const std::list<std::string> names( 1, track->getScriptName_mt_safe() );
+    NodeSerializationPtr saved = std::make_shared<NodeSerialization>(node);
+
+    // load it, as a project with that track does
+    node->loadKnobs(*saved);
+    EXPECT_EQ( names, trackNames(context) );
+    std::vector<TrackMarkerPtr> markers;
+    context->getAllMarkers(&markers);
+    ASSERT_EQ( 1u, markers.size() );
+    EXPECT_TRUE( dynamic_cast<TrackMarkerPM*>( markers[0].get() ) != NULL );
 
     node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
 }
