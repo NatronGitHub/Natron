@@ -290,11 +290,13 @@ void
 ViewerTab::setChannels(const std::string & channelsStr)
 {
     // The names of getChannelsString(), which the projects save, in the order of the channels combo box items
-    // (see setDisplayChannels()). The items are labels ("Red", "Alpha", a translated "Luminance"...): looking
-    // the name up among them failed for all but RGB (#1550).
+    // (see setDisplayChannels()). The items are tr() labels ("Red", "Alpha"...): looking the name up among them
+    // failed for all but RGB and Luminance (#1550).
     static const char* const channelsNames[] = { "Luminance", "RGB", "R", "G", "B", "A", "Matte" };
 
-    for (int index = 0; index < (int)( sizeof(channelsNames) / sizeof(channelsNames[0]) ); ++index) {
+    const int nChannels = sizeof(channelsNames) / sizeof(channelsNames[0]);
+
+    for (int index = 0; index < nChannels; ++index) {
         if (channelsStr == channelsNames[index]) {
             _imp->viewerChannels->setCurrentIndex_no_emit(index);
             setDisplayChannels(index, true);
