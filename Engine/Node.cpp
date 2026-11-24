@@ -2124,6 +2124,10 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
         KnobChoicePtr channel = AppManager::createKnob<KnobChoice>(_imp->effect.get(), std::string(), 1, false);
         // By default if connected it should be filled with None, Color.R, Color.G, Color.B, Color.A (@see refreshChannelSelectors)
         channel->setDefaultValue(4);
+        // The default is the alpha channel, also when the menu is not that one: refreshChannelSelectors() selects
+        // the entry with this ID, e.g. the second entry of None, Color.A for an alpha-only input, where the 5th
+        // entry does not exist and the mask selected nothing (#1685).
+        channel->setActiveEntry( ImagePlaneDesc::getRGBAComponents().getChannelOption(3) );
         channel->setAnimationEnabled(false);
         channel->setHintToolTip( tr("Use this channel from the original input to mix the output with the original input. "
                                     "Setting this to None is the same as disconnecting the input.") );
