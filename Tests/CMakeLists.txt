@@ -40,6 +40,7 @@ set(Tests_SOURCES
     KnobInvalidExpression_Test.cpp
     KnobLockOrder_Test.cpp
     KnobFile_Test.cpp
+    KnobHolderCreateKnob_Test.cpp
     KnobHolderPanel_Test.cpp
     KnobSlave_Test.cpp
     KnobStringAnimation_Test.cpp
