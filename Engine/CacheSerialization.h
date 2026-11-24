@@ -38,6 +38,7 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QSaveFile>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
@@ -56,8 +57,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 // clang-format on
 #endif
-
-#include "Global/FStreamsSupport.h"
 
 #include "Engine/Cache.h"
 #include "Engine/ImageSerialization.h"
@@ -115,27 +114,35 @@ Cache<EntryType>::save(CacheTOC* tableOfContents)
     }
 }
 
-/* Writes the table of contents to the restore file, in place. */
+/* The restore file is written to a temporary file that replaces it only once it is complete (QSaveFile), so a crash,
+   a full disk or another Natron process that writes or reads the same file at the same time (a NatronRenderer next to
+   the GUI, see AppManager::isDiskCacheUsedByAnotherProcess()) never sees a truncated or interleaved file. Two
+   processes that share the cache still each write their own entries: the last one wins. */
 template<typename EntryType>
 bool
 Cache<EntryType>::writeRestoreFile()
 {
-    FStreamsSupport::ofstream ofile;
-    FStreamsSupport::open( &ofile, getRestoreFilePath() );
-    if (!ofile) {
-        std::cerr << "Failed to save cache to " << getRestoreFilePath() << std::endl;
-
-        return false;
-    }
     CacheTOC tableOfContents;
     save(&tableOfContents);
-    const unsigned int version = cacheVersion();
+
+    std::ostringstream data;
     try {
-        boost::archive::binary_oarchive oArchive(ofile);
+        boost::archive::binary_oarchive oArchive(data);
+        const unsigned int version = cacheVersion();
         oArchive << version;
         oArchive << tableOfContents;
     } catch (const std::exception & e) {
-        std::cerr << "Failed to serialize the cache table of contents: " << e.what() << std::endl;
+        std::cerr << "Failed to serialize the table of contents of the cache " << cacheName() << ": " << e.what() << std::endl;
+
+        return false;
+    }
+    const std::string bytes = data.str();
+
+    QSaveFile file( QString::fromUtf8( getRestoreFilePath().c_str() ) );
+    if ( !file.open(QIODevice::WriteOnly) ||
+         ( file.write( bytes.data(), static_cast<qint64>( bytes.size() ) ) != static_cast<qint64>( bytes.size() ) ) ||
+         !file.commit() ) {
+        std::cerr << "Failed to write " << getRestoreFilePath() << ": " << file.errorString().toStdString() << std::endl;
 
         return false;
     }

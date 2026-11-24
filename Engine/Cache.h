@@ -1731,7 +1731,8 @@ public:
      */
     void save(CacheTOC* tableOfContents);
 
-    /* Writes the table of contents to getRestoreFilePath(). Returns false if it could not be written. */
+    /* Writes the table of contents to getRestoreFilePath(), atomically (#1594, see CacheSerialization.h).
+       Returns false, leaving the previous file untouched, if it could not be written. */
     bool writeRestoreFile();
 
 
