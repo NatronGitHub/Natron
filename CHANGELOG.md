@@ -17,6 +17,7 @@
 
 ### Changes
 
+- Python: saving a copy of the project (`app.saveTempProject()`) no longer deletes the project's last auto-save, nor cancels its next one: the unsaved changes stay recoverable after a crash. #1751
 - Node graph: "Duplicate Nodes" and "Paste Nodes" in the right-click menu no longer make clones of the selected nodes: Duplicate makes independent copies, and Paste pastes the copied nodes, as their keyboard shortcuts do. #1512
 - Group from selection (Ctrl+G) no longer disconnects a selected node from another selected node that feeds several selected nodes (e.g. A feeding both B and C): the link is kept inside the Group, instead of going through a new Input of the Group connected to the deleted original. #1462
 - PyPlugs: a PyPlug whose `getVersion()` doesn't return a valid version number (e.g. a string or a negative number) is loaded as version 1, with a message in the error log, instead of version 4294967295 (or close to it), which took precedence over every other version of that PyPlug. #1743
