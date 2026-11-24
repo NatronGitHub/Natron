@@ -99,6 +99,10 @@ struct PluginTreeNode
         , mtCheckbox(NULL)
         , glCheckbox(NULL)
         , plugin(NULL)
+        , shownActivated(false)
+        , shownRenderScaleEnabled(false)
+        , shownMultiThreadingEnabled(false)
+        , shownOpenGLEnabled(false)
     {
     }
 
@@ -108,6 +112,11 @@ struct PluginTreeNode
     AnimatedCheckBox* mtCheckbox;
     AnimatedCheckBox* glCheckbox;
     Plugin* plugin;
+    // The plug-in's flags when the panel was shown, restored by Cancel (#1538)
+    bool shownActivated;
+    bool shownRenderScaleEnabled;
+    bool shownMultiThreadingEnabled;
+    bool shownOpenGLEnabled;
 };
 
 typedef std::list<PluginTreeNode> PluginTreeNodeList;
@@ -1216,6 +1225,14 @@ PreferencesPanel::showEvent(QShowEvent* /*e*/)
 
     _imp->changedKnobs.clear();
     _imp->pluginSettingsChanged = false;
+    for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
+        if (it->plugin) {
+            it->shownActivated = it->plugin->isActivated();
+            it->shownRenderScaleEnabled = it->plugin->isRenderScaleEnabled();
+            it->shownMultiThreadingEnabled = it->plugin->isMultiThreadingEnabled();
+            it->shownOpenGLEnabled = it->plugin->isOpenGLEnabled();
+        }
+    }
 }
 
 void
@@ -1229,7 +1246,30 @@ PreferencesPanel::closeEvent(QCloseEvent*)
             settings->endChanges();
         }
         if (_imp->pluginSettingsChanged) {
-            settings->restorePluginSettings();
+            // Restore the flags the plug-ins had when the panel was shown, and their checkboxes. Not
+            // Settings::restorePluginSettings(): with --no-settings it reads nothing (#1538), and the
+            // saved settings may differ from the session's state (e.g. "Save settings" unchecked)
+            for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
+                if (!it->plugin) {
+                    continue;
+                }
+                it->plugin->setActivated(it->shownActivated);
+                it->plugin->setRenderScaleEnabled(it->shownRenderScaleEnabled);
+                it->plugin->setMultiThreadingEnabled(it->shownMultiThreadingEnabled);
+                it->plugin->setOpenGLEnabled(it->shownOpenGLEnabled);
+                if (it->enabledCheckbox) {
+                    it->enabledCheckbox->setChecked(it->shownActivated);
+                }
+                if (it->rsCheckbox) {
+                    it->rsCheckbox->setChecked(it->shownRenderScaleEnabled);
+                }
+                if (it->mtCheckbox) {
+                    it->mtCheckbox->setChecked(it->shownMultiThreadingEnabled);
+                }
+                if ( it->glCheckbox && (it->plugin->getPluginOpenGLRenderSupport() != ePluginOpenGLRenderSupportNone) ) {
+                    it->glCheckbox->setChecked(it->shownOpenGLEnabled);
+                }
+            }
         }
     }
 }
