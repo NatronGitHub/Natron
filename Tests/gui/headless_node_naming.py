@@ -15,9 +15,10 @@ try:
     names = [n.getScriptName() for n in nodes]
     assert names == ["Dot%d" % (i + 1) for i in range(count)], names[:10]
 
-    # a freed name is reused, the smallest first
-    nodes[9].destroy()
-    nodes[6].destroy()
+    # a freed name is reused, the smallest first. The names are freed by renaming the nodes: in background
+    # mode, Effect.destroy() only removes a node once the event loop runs, after this script.
+    assert nodes[9].setScriptName("Renamed10")
+    assert nodes[6].setScriptName("Renamed7")
     assert app.createNode("fr.inria.built-in.Dot").getScriptName() == "Dot7"
     assert app.createNode("fr.inria.built-in.Dot").getScriptName() == "Dot10"
     assert app.createNode("fr.inria.built-in.Dot").getScriptName() == "Dot%d" % (count + 1)
