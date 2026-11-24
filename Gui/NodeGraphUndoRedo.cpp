@@ -1648,6 +1648,11 @@ GroupFromSelectionCommand::redo()
             internalNewNodes.push_back( it->second->getNode() );
         }
 
+        const auto isOriginalNode = [&originalNodes](const NodePtr& node) {
+            return std::any_of( originalNodes.begin(), originalNodes.end(),
+                                [&node](const NodeGuiPtr& n) { return n->getNode() == node; } );
+        };
+
         // Extract all trees from these new nodes
         std::list<Project::NodesTree> trees;
         Project::extractTreesFromNodes(internalNewNodes, trees);
@@ -1708,7 +1713,17 @@ GroupFromSelectionCommand::redo()
                             // do not create an Input node for an invisible input (example: Shadertoy node, which hides its inputs)
                             continue;
                         }
-                        if ( originalNodeInputs[i].lock() || !originalEffect->isInputOptional(i) ) {
+                        NodePtr originalInput = originalNodeInputs[i].lock();
+                        if ( originalInput && isOriginalNode(originalInput) ) {
+                            // The copy of that input is in the group, and the copy of this node is already
+                            // connected to it: a node that feeds several selected nodes is in the tree of
+                            // only one of them (#1462). That connection also counts as an input for the
+                            // fallback below, which must not add an Input node to this node.
+                            assert( it2->node->getInput(i) );
+                            hasInput = true;
+                            continue;
+                        }
+                        if ( originalInput || !originalEffect->isInputOptional(i) ) {
                             mustCreateInput[i] = true;
                             hasInput = true;
                         } else if ( (firstNonMaskInput == -1) && !originalEffect->isInputMask(i) ) {
