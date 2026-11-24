@@ -164,6 +164,7 @@ public:
         , label()
         , cacheID()
         , deactivatedState()
+        , nodesDeactivatedWithGroup()
         , activatedMutex()
         , activated(true)
         , plugin(plugin_)
@@ -351,6 +352,9 @@ public:
     ///and 2 nodes cannot have the same cacheID.
     std::string cacheID;
     DeactivatedState deactivatedState;
+    // For a group: the nodes in it that were active when deactivate() deactivated them with the
+    // group, i.e. the nodes that activate() activates again. Main thread only.
+    NodesWList nodesDeactivatedWithGroup;
     mutable QMutex activatedMutex;
     bool activated;
     Plugin* plugin; //< the plugin which stores the function to instantiate the effect
