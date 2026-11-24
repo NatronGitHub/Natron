@@ -10,8 +10,9 @@ FFMPEG_SHA256=8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
 FFMPEG_SITE="https://ffmpeg.org/releases"
 # 9.0.2 + the 10-bit simple IDCT saturation patch (openfx-io#266, "+idct10sat") and the dnxhd
 # encoder mb_qscale patch (openfx-io#267, "+dnxqscale"), as on macOS (tools/MacPorts/multimedia/ffmpeg).
-# Drop each patch, and its suffix, with the first release that contains the fix.
-FFMPEG_SDK_VERSION="${FFMPEG_VERSION}+idct10sat+dnxqscale"
+# Drop each patch, and its suffix, with the first release that contains the fix. "+natronmini": the
+# feature set of the macOS +natronmini variant (#1531); the suffix makes existing SDKs rebuild FFmpeg.
+FFMPEG_SDK_VERSION="${FFMPEG_VERSION}+idct10sat+dnxqscale+natronmini"
 if download_step; then
     download "$FFMPEG_SITE" "$FFMPEG_TAR" "$FFMPEG_SHA256"
 fi
@@ -35,10 +36,13 @@ if build_step && { force_build || { [ ! -d "$SDK_HOME/ffmpeg-gpl2" ] || [ ! -d "
         "--enable-libmp3lame" "--enable-libvorbis" "--enable-libopus" "--enable-librsvg"
         "--enable-libtheora" "--enable-libopenh264" "--enable-libopenjpeg"
         "--enable-libsnappy" "--enable-libmodplug" "--enable-libvpx" "--enable-libsoxr"
-        "--enable-libspeex" "--enable-libass" "--enable-libbluray" "--enable-lzma"
+        "--enable-libspeex" "--enable-lzma"
         "--enable-libaom" "--enable-libdav1d"
         "--enable-lcms2" "--enable-libharfbuzz" "--enable-libwebp"
-        "--enable-gnutls" "--enable-fontconfig" "--enable-libfreetype" "--enable-libfribidi"
+        # As the macOS +natronmini variant and Windows: no subtitles (libass, fontconfig, freetype,
+        # fribidi), Blu-ray (libbluray) or network (gnutls) support (#1531)
+        "--disable-libass" "--disable-libbluray" "--disable-gnutls"
+        "--disable-fontconfig" "--disable-libfreetype" "--disable-libfribidi"
         "--disable-libxcb" "--disable-libxcb-shm" "--disable-libxcb-xfixes" "--disable-libxcb-shape"
         "--disable-indev=jack" "--disable-outdev=xv" "--disable-xlib" "--disable-debug" )
     if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then
