@@ -35,6 +35,9 @@
 
 #include <gtest/gtest.h>
 
+#include <QtCore/QFile>
+#include <QtCore/QTemporaryDir>
+
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Global/PythonUtils.h"
@@ -253,4 +256,44 @@ TEST_F(PythonScriptTest, NestedCall)
                                                         "natronTestNode1436.destroy()\n"
                                                         "del natronTestNode1436, natronTestNested1436\n", &err, 0);
     EXPECT_TRUE(ok) << err;
+}
+
+// A PyPlug whose getVersion() doesn't return an int: getGroupInfos() left the Python error of
+// PyLong_AsLong() pending and used (unsigned int)-1 as the version (#1743).
+TEST(PyPlugInfos, NonIntegerVersion)
+{
+    QTemporaryDir dir;
+    ASSERT_TRUE( dir.isValid() );
+    const std::string moduleName = "NatronTestPyPlugBadVersion";
+    {
+        QFile f( dir.path() + QString::fromUtf8("/%1.py").arg( QString::fromUtf8( moduleName.c_str() ) ) );
+        ASSERT_TRUE( f.open(QIODevice::WriteOnly) );
+        f.write("def getLabel():\n"
+                "    return 'BadVersion'\n"
+                "def getPluginID():\n"
+                "    return 'fr.inria.test.BadVersion'\n"
+                "def getVersion():\n"
+                "    return '2'\n"
+                "def createInstance(app, group):\n"
+                "    pass\n");
+    }
+    const std::string dirPath = dir.path().toStdString();
+    std::string err;
+    ASSERT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nsys.path.insert(0, r'" + dirPath + "')\n", &err, 0) ) << err;
+
+    std::string pluginID, pluginLabel, iconFilePath, grouping, description;
+    bool isToolset = false;
+    unsigned int version = 0;
+    EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::getGroupInfos(dirPath + '/', moduleName, &pluginID, &pluginLabel, &iconFilePath, &grouping,
+                                                                           &description, &isToolset, &version) );
+    EXPECT_EQ( pluginID, std::string("fr.inria.test.BadVersion") );
+    EXPECT_EQ( version, 1u );
+    {
+        PythonGILLocker pgl;
+        EXPECT_FALSE( PyErr_Occurred() );
+        PyErr_Clear();
+    }
+
+    EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("sys.path.remove(r'" + dirPath + "')\n"
+                                                                                   "sys.modules.pop('" + moduleName + "', None)\n", &err, 0) ) << err;
 }

@@ -5146,7 +5146,15 @@ getGroupInfosInternal(const std::string& modulePath,
     }
 
     if (versionObj) {
-        *version = (unsigned int)PyLong_AsLong(versionObj);
+        long versionValue = PyLong_AsLong(versionObj);
+        if ( (versionValue == -1) && PyErr_Occurred() ) {
+            // getVersion() returned something else than an int: PyLong_AsLong() set a Python error
+            PyErr_Clear();
+            QString logStr = QCoreApplication::translate("AppManager", "getVersion() does not return a valid integer: version 1 is used.");
+            appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( pythonModule.c_str() ), QDateTime::currentDateTime(), logStr);
+            versionValue = 1;
+        }
+        *version = (unsigned int)versionValue;
         deleteScript.append("del version\n");
         Py_XDECREF(versionObj);
     }
