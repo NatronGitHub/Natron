@@ -17,6 +17,7 @@
 
 ### Changes
 
+- A deprecated plug-in is disabled by default, but can now be enabled in Preferences > Plug-ins (then restart Natron) to create new nodes with it. A plug-in that becomes deprecated is disabled even if it was enabled before. #171
 - Python: `PyViewer.setChannels()` sets the R, G, B, A and Matte channels; it only worked for RGB and Luminance. A viewer saved in a project with one of these channels opens with it again instead of RGB. #1550
 - PyPlugs: when a PyPlug's `getIsToolset()` returns a value other than `True` or `False`, its truth value decides whether the PyPlug is a toolset (`1` is a toolset, `None` is not). It used to be a toolset or a regular PyPlug at random. #1528
 - Preferences > Plug-ins: Discard now reverts the plug-in checkboxes (Enabled, Render scale, Multi-threading, OpenGL) also with `--no-settings`, and reopening the Preferences shows the reverted state. Closing the Preferences window without Save discards the changes, also after a Save earlier in the session. #1538
