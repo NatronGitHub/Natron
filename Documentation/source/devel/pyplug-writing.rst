@@ -338,13 +338,12 @@ don't run.
 
 .. note::
 
-    In Natron 2.6, the *Load PyPlugs in projects from .py if possible* preference (*Python* tab)
-    has the opposite effect of its name (`#1524
-    <https://github.com/NatronGitHub/Natron/issues/1524>`_). When it is checked (the default),
-    Natron loads each PyPlug node from the content saved in the project, even if a newer version
-    of the PyPlug is installed. When it is unchecked, Natron runs the installed PyPlug file
-    again, and asks whether to use it when its version differs from the one saved in the
-    project.
+    With the *Load PyPlugs in projects from .py if possible* preference (*Python* tab) checked
+    (the default), Natron runs the installed PyPlug file again for each PyPlug node of a project,
+    and asks whether to use it when its version differs from the one saved in the project. When it
+    is unchecked, or when the PyPlug file isn't found, Natron loads each PyPlug node from the
+    content saved in the project. From Natron 2.2 to the 2.6 betas, the preference had the opposite
+    effect (`#1646 <https://github.com/NatronGitHub/Natron/issues/1646>`_).
 
 .. _pyplugWriting-menus:
 
