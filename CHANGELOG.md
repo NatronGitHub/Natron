@@ -17,6 +17,7 @@
 
 ### Changes
 
+- Python: `NatronEngine.ExprUtils.cellnoise()`, `ccellnoise()` and `hash()`, which parameter expressions can use, now give the same results on arm64 (Apple Silicon, Linux aarch64, Windows on ARM64) as on x86_64 and in Natron 2.5 on Intel. On arm64 a negative cell coordinate was treated as 0, so `cellnoise()` repeated the cells at 0 for all negative coordinates, and `hash()` gave the same value for many different negative arguments, because a negative number was converted to an unsigned integer, which is undefined in C++. Projects made on arm64 that use these functions with negative arguments may animate differently. #1678
 - Robustness (preventive, no known crash): a node or the project no longer keeps a dangling pointer to its settings panel after the Gui deletes the panel, e.g. when the node is destroyed from Python. #1618
 - The color is no longer black after a Shuffle whose Output Layer is not Color, and Premult/Unpremult on a layer other than Color no longer fail to render: the color now comes through from the input, like the other layers. #1660
 - Python: `NatronEngine.ExprUtils.cnoise()`, which parameter expressions can use, now returns color noise (`0.5 * vnoise(p) + 0.5`, as in SeExpr) instead of `p * 0.5 + 0.5`, a remap of its input; and the y and z of `ccellnoise()` are now cell noise, as in SeExpr, instead of always 0. Expressions that use `cnoise()`, or the y or z of `ccellnoise()`, give different (correct) values. #1683 #1684
@@ -73,6 +74,10 @@
 - Natron no longer crashes when it quits after `app.closeProject()` was called on a project with unsaved changes and an open settings panel, e.g. at the end of a `Natron --test` script, or with `natron.quit()` after `app.closeProject()`: the project was closed a second time while it was being closed. A second `app.closeProject()` (or File > Close Project, or `app.resetProject()`) before the window closes no longer asks again whether to save the changes. #1567
 - The bundled Eigen (libs/Eigen3), used by the tracker (libmv, openMVG, Ceres), is updated from 3.4.0 to 3.4.1, a bug-fix release: fixes in the SVD and eigenvalue solvers, undefined-behaviour fixes, ARM (NEON) fixes and fewer compiler warnings. #1593
 - A render or a playback no longer stalls when its last frame, or an abort, comes just before the render scheduler starts waiting for it. #1607
+
+### Plugins
+
+- WriteFFmpeg: libaom-av1 now encodes with Output Quality (CRF 23) by default instead of a bit rate, also in existing projects; set Output Quality to None to use Bitrate (openfx-io#343).
 
 
 ## Version 2.5.0
