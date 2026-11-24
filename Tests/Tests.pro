@@ -36,7 +36,8 @@ INCLUDEPATH += google-mock/include
 INCLUDEPATH += google-mock
 
 
-QMAKE_CLEAN += ofxTestLog.txt test_dot_generator0.jpg
+# ofxPluginLog.txt: the debug log of the OpenFX Support library; ofxTestLog.txt: its name before openfx 47634333
+QMAKE_CLEAN += ofxPluginLog.txt ofxTestLog.txt test_dot_generator0.jpg
 
 include(../global.pri)
 
@@ -81,6 +82,7 @@ SOURCES += \
     LoadPythonScript_Test.cpp \
     Lut_Test.cpp \
     Markdown_Test.cpp \
+    MaskChannel_Test.cpp \
     MultiInputLinks_Test.cpp \
     NaNGuards_FastMath.cpp \
     NaNGuards_Test.cpp \
@@ -91,6 +93,7 @@ SOURCES += \
     OfxBytesParam_Test.cpp \
     OfxContexts_Test.cpp \
     OfxCPURenderSupport_Test.cpp \
+    OfxClipComponentsView_Test.cpp \
     OfxClipGetImage_Test.cpp \
     OfxCustomParamInterp_Test.cpp \
     OfxDrawSuite_Test.cpp \
@@ -133,6 +136,7 @@ SOURCES += \
     ProjectFileFormat_Test.cpp \
     PythonExpressionScope_Test.cpp \
     ReadNodeOverlay_Test.cpp \
+    ReadWriteVersion_Test.cpp \
     RenderThreadSafety_Test.cpp \
     RenderThreads_Test.cpp \
     RotoPaint_Test.cpp \

@@ -497,9 +497,7 @@ NodeCollection::checkNodeName(const Node* node,
             }
         }
     }
-    bool foundNodeWithName = false;
     int no = 1;
-
     {
         std::stringstream ss;
         ss << cpy;
@@ -508,29 +506,35 @@ NodeCollection::checkNodeName(const Node* node,
         }
         *nodeName = ss.str();
     }
-    do {
-        foundNodeWithName = false;
+    if (errorIfExists || !appendDigit) {
+        // only this name is checked
         QMutexLocker l(&_imp->nodesMutex);
         for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
             if ( (it->get() != node) && (*it)->isActivated() && ( (*it)->getScriptName_mt_safe() == *nodeName ) ) {
-                foundNodeWithName = true;
-                break;
-            }
-        }
-        if (foundNodeWithName) {
-            if (errorIfExists || !appendDigit) {
                 throw std::runtime_error( tr("A node with the script-name %1 already exists.").arg( QString::fromUtf8( nodeName->c_str() ) ).toStdString() );
-
-                return;
-            }
-            ++no;
-            {
-                std::stringstream ss;
-                ss << cpy << no;
-                *nodeName = ss.str();
             }
         }
-    } while (foundNodeWithName);
+
+        return;
+    }
+
+    // The script-names of the other active nodes, read once: looking each candidate name up in the list of
+    // nodes made the default naming quadratic per node, cubic for a script creating thousands of nodes (#1565)
+    std::set<std::string> usedNames;
+    {
+        QMutexLocker l(&_imp->nodesMutex);
+        for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+            if ( (it->get() != node) && (*it)->isActivated() ) {
+                usedNames.insert( (*it)->getScriptName_mt_safe() );
+            }
+        }
+    }
+    while ( usedNames.count(*nodeName) ) {
+        ++no;
+        std::stringstream ss;
+        ss << cpy << no;
+        *nodeName = ss.str();
+    }
 } // NodeCollection::checkNodeName
 
 void
