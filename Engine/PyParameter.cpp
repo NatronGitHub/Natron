@@ -561,8 +561,8 @@ AnimatedParam::getDerivativeAtTime(double time,
 {
     KnobIPtr knob = getInternalKnob();
 
-    if (!knob) {
-        return 0.;
+    if ( !knob || (dimension < 0) || ( dimension >= knob->getDimension() ) ) {
+        return 0.; // as getValue(dimension): the std::invalid_argument of the knob can't go through Python
     }
     return knob->getDerivativeAtTime(time, ViewSpec::current(), dimension);
 }
@@ -574,8 +574,8 @@ AnimatedParam::getIntegrateFromTimeToTime(double time1,
 {
     KnobIPtr knob = getInternalKnob();
 
-    if (!knob) {
-        return 0.;
+    if ( !knob || (dimension < 0) || ( dimension >= knob->getDimension() ) ) {
+        return 0.; // as getValue(dimension): the std::invalid_argument of the knob can't go through Python
     }
     return knob->getIntegrateFromTimeToTime(time1, time2, ViewSpec::current(), dimension);
 }

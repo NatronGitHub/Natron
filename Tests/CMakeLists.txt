@@ -35,6 +35,7 @@ set(Tests_SOURCES
     Hash64_Test.cpp
     ImageCache_Test.cpp
     Image_Test.cpp
+    KnobDimensionRange_Test.cpp
     KnobDuplicate_Test.cpp
     KnobExpressionCache_Test.cpp
     KnobInvalidExpression_Test.cpp
