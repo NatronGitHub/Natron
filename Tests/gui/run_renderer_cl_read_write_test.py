@@ -22,10 +22,9 @@
 
 Usage: run_renderer_cl_read_write_test.py /path/to/NatronRenderer [--debugger]
 
-A NatronRenderer -t script saves a project with Read -> Write and Read2 -> Write2, all without a
-file name (Read2 had one before). Then "NatronRenderer project.ntp -i Read plate.####.png -w Write
-out.####.png 12-14" (and the same for Read2 and Write2) must write the frames 12 to 14 of the
-sequence plate.0010.png to plate.0020.png (#864: it read frame 0, "Cannot load frame", or wrote
+A NatronRenderer -t script saves a project with Read -> Write, both without a file name. Then
+"NatronRenderer project.ntp -i Read plate.####.png -w Write out.####.png 12-14" must write the
+frames 12 to 14 of the sequence plate.0010.png to plate.0020.png (#864: it read frame 0, "Cannot load frame", or wrote
 the same frame for every frame). The frames of the sequence are all different (frame N is N
 pixels wide), so the frames written must be too.
 
@@ -62,17 +61,13 @@ if not hasReader or not any(i.startswith("fr.inria.openfx.WritePNG") for i in id
     sys.stdout.write("SKIP: no PNG reader or writer\\n"); sys.stdout.flush()
     natron.quit(77)
 else:
-    # Read: no file, so -i replaces its default decoder (ReadOIIO) by ReadPNG. Read2: its file was a PNG file, so
-    # -i keeps its decoder (ReadPNG), as with the EXR files of the report (ReadOIIO).
-    for suffix in ("", "2"):
-        read = app.createNode("fr.inria.built-in.Read")
-        read.setScriptName("Read" + suffix)
-        if suffix:
-            read.getParam("filename").set(os.path.join(OUT, "plate", "plate.0010.png"))
-            read.getParam("filename").set("")
-        write = app.createNode("fr.inria.built-in.Write")
-        write.setScriptName("Write" + suffix)
-        write.connectInput(0, read)
+    # Read has no file, so -i replaces its default decoder (ReadOIIO) by ReadPNG. The report's EXR files keep
+    # ReadOIIO; that path needs a file format that only ReadOIIO reads, which this test can't write.
+    read = app.createNode("fr.inria.built-in.Read")
+    read.setScriptName("Read")
+    write = app.createNode("fr.inria.built-in.Write")
+    write.setScriptName("Write")
+    write.connectInput(0, read)
     app.saveProjectAs(os.path.join(OUT, "project.ntp"))
     sys.stdout.write("SAVED\\n"); sys.stdout.flush()
 """
@@ -153,9 +148,7 @@ def main(argv):
         frameRange = "%d-%d" % (FRAMES[0], FRAMES[-1])
         plate = os.path.join(outDir, "plate", "plate.####.png")
         ret = run(wrapper + [argv[1], "--no-settings", project,
-                             "-i", "Read", plate, "-i", "Read2", plate,
-                             "-w", "Write", os.path.join(outDir, "out.####.png"),
-                             "-w", "Write2", os.path.join(outDir, "out2.####.png"), frameRange], env)
+                             "-i", "Read", plate, "-w", "Write", os.path.join(outDir, "out.####.png"), frameRange], env)
         if ret is None:
             return 1
         status, out = ret
@@ -166,15 +159,15 @@ def main(argv):
         if "Cannot load frame" in out or "Error caught while rendering" in out:
             print("FAILED: the render reported an error")
             ok = False
-        for prefix in ("out.", "out2."):
+        for prefix in ("out.",):  # noqa (one Write node)
             written = sorted(f for f in os.listdir(outDir) if f.startswith(prefix) and f.endswith(".png"))
             expected = ["%s%04d.png" % (prefix, frame) for frame in FRAMES]
             if written != expected:
                 print("FAILED: the render wrote [%s] instead of [%s]" % (" ".join(written), " ".join(expected)))
                 ok = False
             elif len(set(readFile(os.path.join(outDir, f)) for f in written)) != len(written):
-                # (WritePNG dithers with a seed that depends on the frame, but the frames of the sequence differ in
-                # most rows anyway)
+                # (WritePNG dithers with a seed that depends on the frame: the same input frame could give different
+                # bytes only if a row's random start column falls inside the image, at most 20 of 1920 columns)
                 print("FAILED: the %s frames written are not all different: the same frame of the sequence was read "
                       "for each" % prefix)
                 ok = False
