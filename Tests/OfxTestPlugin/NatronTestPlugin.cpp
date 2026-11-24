@@ -95,8 +95,8 @@
 #include <vector>
 
 #include <ofxCore.h>
-#include <ofxDialog.h>
 #include <ofxImageEffect.h>
+#include <ofxDialog.h> // after ofxImageEffect.h, which declares OfxImageEffectHandle
 #include <ofxGPURender.h>
 #include <ofxInteract.h>
 #include <ofxMessage.h>
