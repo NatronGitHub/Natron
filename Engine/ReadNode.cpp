@@ -25,7 +25,6 @@
 
 #include "ReadNode.h"
 
-#include <algorithm> // std::any_of
 #include <sstream> // stringstream
 
 #include "Global/QtCompat.h"
@@ -280,8 +279,13 @@ public:
     void destroyReadNode();
 
     // Sets the version knob to the version of the decoder if it is the plug-in of the plug-in ID
-    // knob, else to -1 (unknown): the project saves it, and loads that version (#1681)
+    // knob: the project saves it, and loads that version (#1681). Else (e.g. the decoder saved in
+    // the project is not installed) the version is kept, so that the project still saves it.
     void syncVersionKnob();
+
+    // Sets the version knob to -1 (unknown), before the user's choice of a file or decoder creates
+    // another decoder (#1681)
+    void resetVersionKnob();
 
     void cloneGenericKnobs();
 
@@ -655,18 +659,6 @@ getFileNameFromSerialization(const std::list<KnobSerializationPtr>& serializatio
     return filePattern;
 }
 
-// Whether the node was saved with that knob: projects saved before the knob existed don't have it
-static bool
-serializationHasKnob(const NodeSerialization& serialization,
-                     const std::string& knobName)
-{
-    const NodeSerialization::KnobValues& knobs = serialization.getKnobsValues();
-
-    return std::any_of( knobs.begin(), knobs.end(), [&knobName](const KnobSerializationPtr& knob) {
-        return knob->getName() == knobName;
-    } );
-}
-
 void
 ReadNodePrivate::syncVersionKnob()
 {
@@ -682,10 +674,26 @@ ReadNodePrivate::syncVersionKnob()
         decoder = embeddedPlugin;
     }
     const Plugin* plugin = decoder ? decoder->getPlugin() : 0;
-    const bool known = plugin && ( decoder->getPluginID() == pluginIDKnob->getValue() );
+    if ( !plugin || ( decoder->getPluginID() != pluginIDKnob->getValue() ) ) {
+        return;
+    }
     versionKnob->blockValueChanges();
-    versionKnob->setValue(known ? plugin->getMajorVersion() : -1, ViewSpec(0), 0);
-    versionKnob->setValue(known ? plugin->getMinorVersion() : -1, ViewSpec(0), 1);
+    versionKnob->setValue(plugin->getMajorVersion(), ViewSpec(0), 0);
+    versionKnob->setValue(plugin->getMinorVersion(), ViewSpec(0), 1);
+    versionKnob->unblockValueChanges();
+}
+
+void
+ReadNodePrivate::resetVersionKnob()
+{
+    KnobIntPtr versionKnob = pluginVersionKnob.lock();
+
+    if (!versionKnob) {
+        return;
+    }
+    versionKnob->blockValueChanges();
+    versionKnob->setValue(-1, ViewSpec(0), 0);
+    versionKnob->setValue(-1, ViewSpec(0), 1);
     versionKnob->unblockValueChanges();
 }
 
@@ -787,15 +795,18 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         // Unless the user chose another file or decoder, create the version of the decoder that was
         // saved in the project (or given to createNode()), not the newest one: getPluginBinary() falls
         // back to the closest major above, else the newest, if that major is not installed (#1681).
-        // A project saved without the version (by Natron 2.5 or older) gets the lowest major, the
-        // closest above 0: these Natron versions created the decoders they had, e.g. ReadSVG 3, not
-        // ReadSVG 4 (openfx-arena#224). A new node gets the newest major.
+        // A node saved without the version, i.e. by a Natron older than 2.6 (a 2.6 node always has
+        // one once a decoder was created, see syncVersionKnob()), gets the lowest major, the closest
+        // above 0: e.g. ReadSVG 3, not ReadSVG 4 (openfx-arena#224). This assumes that a decoder
+        // never adds a major below the one that Natron 2.5 had. A new node gets the newest major.
         KnobIntPtr versionKnob = pluginVersionKnob.lock();
-        if (!userEdited && versionKnob) {
+        if (userEdited) {
+            resetVersionKnob(); // the newest, and -1 if it cannot be created
+        } else if (versionKnob) {
             if (versionKnob->getValue(0) >= 0) {
                 args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(0), 0);
                 args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(1), 1);
-            } else if ( serialization && !serializationHasKnob(*serialization, kNatronReadNodeParamDecodingPluginVersion) ) {
+            } else if ( serialization && !serialization->hasKnob(kNatronReadNodeParamDecodingPluginVersion) ) {
                 args.setProperty<int>(kCreateNodeArgsPropPluginVersion, 0, 0);
                 args.setProperty<int>(kCreateNodeArgsPropPluginVersion, 0, 1);
             }
@@ -1398,8 +1409,8 @@ ReadNode::knobChanged(KnobI* k,
         _imp->refreshFileInfoVisibility(entry);
     } else if ( k == _imp->pluginVersionKnob.lock().get() ) {
         // e.g. set by a PyPlug script after the decoder was created: the version is always the one
-        // of the decoder (#1681). Without a decoder (it could not be created), the value is kept,
-        // and the next load asks for that version.
+        // of the decoder (#1681). Without the decoder of the plug-in ID (it could not be created), the
+        // value is kept, and the next load asks for that version.
         if ( !_imp->creatingReadNode && getEmbeddedReader() ) {
             _imp->syncVersionKnob();
         }

@@ -19,7 +19,7 @@
 // A project loads the major version of the decoder of a Read node, and of the encoder of a Write node,
 // that it was saved with, not the newest one (#1681). The test plug-ins of
 // Tests/OfxTestPlugin/NatronTestPluginVersions.cpp are a reader and a writer in versions 90.0 and 91.0.
-// A project saved without the versions (by Natron 2.5 or older) loads the lowest major.
+// A project saved without the versions (by a Natron older than 2.6) loads the lowest major.
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -31,6 +31,7 @@
 
 #include <string>
 
+#include <QtCore/QFile>
 #include <QtCore/QTemporaryDir>
 
 #include <gtest/gtest.h>
@@ -99,6 +100,44 @@ createIONode(const char* pluginID,
     args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
 
     return app->createNode(args);
+}
+
+// the lowest registered major of a plug-in, or -1: e.g. 1 for WritePFM when openfx-io is loaded, as on CI
+int
+lowestMajor(const char* pluginID)
+{
+    const PluginsMap& plugins = appPTR->getPluginsList();
+    PluginsMap::const_iterator found = plugins.find(pluginID);
+
+    if ( ( found == plugins.end() ) || found->second.empty() ) {
+        return -1;
+    }
+
+    return ( *found->second.begin() )->getMajorVersion(); // ordered by increasing version
+}
+
+// Replaces every occurrence of a text in a file
+bool
+replaceInFile(const QString& filePath,
+              const QByteArray& before,
+              const QByteArray& after)
+{
+    QFile file(filePath);
+
+    if ( !file.open(QIODevice::ReadOnly) ) {
+        return false;
+    }
+    QByteArray contents = file.readAll();
+    file.close();
+    if ( !contents.contains(before) ) {
+        return false;
+    }
+    contents.replace(before, after);
+    if ( !file.open(QIODevice::WriteOnly | QIODevice::Truncate) ) {
+        return false;
+    }
+
+    return file.write(contents) == contents.size();
 }
 
 // the major version of the decoder or encoder of a Read or Write node, or -1
@@ -186,14 +225,19 @@ TEST(ReadWriteVersion, ProjectLoadsSavedVersion)
     EXPECT_EQ( kNewestMajor, embeddedMajor( project->getNodeByName(newestWriteName) ) );
 }
 
-// A project saved by Natron 2.5 or older has no version parameter: it loads the lowest major of the
-// decoder and encoder, which is the one those versions created (e.g. ReadSVG 3, openfx-arena#224),
+// A project saved by a Natron older than 2.6 has no version parameter: it loads the lowest major of
+// the decoder and encoder, which is the one those versions created (e.g. ReadSVG 3, openfx-arena#224),
 // while a new node still gets the newest.
 TEST(ReadWriteVersion, ProjectWithoutVersionLoadsLowestMajor)
 {
     if ( !versionsAvailable() ) {
         return;
     }
+    // 90, or the major of the real plug-in with that ID if it is loaded (e.g. openfx-io's WritePFM 1)
+    const int readLowest = lowestMajor(PLUGINID_OFX_READCDR);
+    const int writeLowest = lowestMajor(PLUGINID_OFX_WRITEPFM);
+    ASSERT_TRUE( (0 <= readLowest) && (readLowest <= kOldMajor) );
+    ASSERT_TRUE( (0 <= writeLowest) && (writeLowest <= kOldMajor) );
     QTemporaryDir tmpDir;
     ASSERT_TRUE( tmpDir.isValid() );
     const ResetProjectOnExit resetProject; // destroyed before tmpDir
@@ -223,10 +267,55 @@ TEST(ReadWriteVersion, ProjectWithoutVersionLoadsLowestMajor)
     write.reset();
 
     ASSERT_TRUE( project->loadProject( dir, QString::fromUtf8("ReadWriteNoVersion.ntp") ) );
-    EXPECT_EQ( kOldMajor, embeddedMajor( project->getNodeByName(readName) ) );
-    EXPECT_EQ( kOldMajor, embeddedMajor( project->getNodeByName(writeName) ) );
+    EXPECT_EQ( readLowest, embeddedMajor( project->getNodeByName(readName) ) );
+    EXPECT_EQ( writeLowest, embeddedMajor( project->getNodeByName(writeName) ) );
 
     // a new node in the loaded project gets the newest major
     EXPECT_EQ( kNewestMajor, embeddedMajor( createIONode(PLUGINID_OFX_READCDR, -1, filename) ) );
     EXPECT_EQ( kNewestMajor, embeddedMajor( createIONode(PLUGINID_OFX_WRITEPFM, -1, filename) ) );
+}
+
+// A project loaded where its decoder and encoder are not installed keeps their version: saved there and
+// loaded again where they are installed, it gets the version it had, not the lowest one.
+TEST(ReadWriteVersion, MissingPluginKeepsVersion)
+{
+    if ( !versionsAvailable() ) {
+        return;
+    }
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    const ResetProjectOnExit resetProject; // destroyed before tmpDir
+    ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const QString projectName = QString::fromUtf8("ReadWriteMissing.ntp");
+    const QString projectPath = dir + projectName;
+    const std::string filename = dir.toStdString() + "image.natrontestversion";
+    // the IDs as they appear in the XML text of the project, and IDs of plug-ins that are not installed
+    const QByteArray readID(PLUGINID_OFX_READCDR), writeID(PLUGINID_OFX_WRITEPFM);
+    const QByteArray missingReadID = readID + "Missing", missingWriteID = writeID + "Missing";
+
+    NodePtr read = createIONode(PLUGINID_OFX_READCDR, -1, filename);
+    NodePtr write = createIONode(PLUGINID_OFX_WRITEPFM, -1, filename);
+    ASSERT_TRUE(read && write);
+    EXPECT_EQ( kNewestMajor, embeddedMajor(read) );
+    EXPECT_EQ( kNewestMajor, embeddedMajor(write) );
+    const std::string readName = read->getScriptName();
+    const std::string writeName = write->getScriptName();
+    read.reset();
+    write.reset();
+    QString savedPath;
+    ASSERT_TRUE( project->saveProject( dir, projectName, &savedPath, eProjectFileFormatText ) );
+
+    // where the decoder and encoder are not installed: load and save
+    ASSERT_TRUE( replaceInFile(projectPath, readID, missingReadID) );
+    ASSERT_TRUE( replaceInFile(projectPath, writeID, missingWriteID) );
+    ASSERT_TRUE( project->loadProject(dir, projectName) );
+    ASSERT_TRUE( project->saveProject( dir, projectName, &savedPath, eProjectFileFormatText ) );
+
+    // where they are installed again
+    ASSERT_TRUE( replaceInFile(projectPath, missingReadID, readID) );
+    ASSERT_TRUE( replaceInFile(projectPath, missingWriteID, writeID) );
+    ASSERT_TRUE( project->loadProject(dir, projectName) );
+    EXPECT_EQ( kNewestMajor, embeddedMajor( project->getNodeByName(readName) ) );
+    EXPECT_EQ( kNewestMajor, embeddedMajor( project->getNodeByName(writeName) ) );
 }

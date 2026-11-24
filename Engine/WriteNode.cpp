@@ -25,7 +25,6 @@
 
 #include "WriteNode.h"
 
-#include <algorithm> // std::any_of
 #include <sstream> // stringstream
 
 #include "Global/QtCompat.h"
@@ -249,8 +248,9 @@ public:
     void createWriteNode(bool throwErrors, const std::string& filename, const NodeSerializationPtr& serialization,
                          bool userEdited = false);
 
-    // As ReadNodePrivate::syncVersionKnob(), for the encoder (#1681)
+    // As ReadNodePrivate::syncVersionKnob() and resetVersionKnob(), for the encoder (#1681)
     void syncVersionKnob();
+    void resetVersionKnob();
 
     void destroyWriteNode();
 
@@ -718,18 +718,6 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
 
 } // WriteNodePrivate::createReadNodeAndConnectGraph
 
-// as in ReadNode.cpp
-static bool
-serializationHasKnob(const NodeSerialization& serialization,
-                     const std::string& knobName)
-{
-    const NodeSerialization::KnobValues& knobs = serialization.getKnobsValues();
-
-    return std::any_of( knobs.begin(), knobs.end(), [&knobName](const KnobSerializationPtr& knob) {
-        return knob->getName() == knobName;
-    } );
-}
-
 void
 WriteNodePrivate::syncVersionKnob()
 {
@@ -741,10 +729,26 @@ WriteNodePrivate::syncVersionKnob()
     }
     NodePtr encoder = embeddedPlugin.lock();
     const Plugin* plugin = encoder ? encoder->getPlugin() : 0;
-    const bool known = plugin && ( encoder->getPluginID() == pluginIDKnob->getValue() );
+    if ( !plugin || ( encoder->getPluginID() != pluginIDKnob->getValue() ) ) {
+        return;
+    }
     versionKnob->blockValueChanges();
-    versionKnob->setValue(known ? plugin->getMajorVersion() : -1, ViewSpec(0), 0);
-    versionKnob->setValue(known ? plugin->getMinorVersion() : -1, ViewSpec(0), 1);
+    versionKnob->setValue(plugin->getMajorVersion(), ViewSpec(0), 0);
+    versionKnob->setValue(plugin->getMinorVersion(), ViewSpec(0), 1);
+    versionKnob->unblockValueChanges();
+}
+
+void
+WriteNodePrivate::resetVersionKnob()
+{
+    KnobIntPtr versionKnob = pluginVersionKnob.lock();
+
+    if (!versionKnob) {
+        return;
+    }
+    versionKnob->blockValueChanges();
+    versionKnob->setValue(-1, ViewSpec(0), 0);
+    versionKnob->setValue(-1, ViewSpec(0), 1);
     versionKnob->unblockValueChanges();
 }
 
@@ -860,13 +864,15 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
         // As in ReadNodePrivate::createReadNode(): the version of the encoder saved in the project,
-        // else, in a project saved without the version (by Natron 2.5 or older), the lowest major (#1681)
+        // else, in a node saved without the version (by a Natron older than 2.6), the lowest major (#1681)
         KnobIntPtr versionKnob = pluginVersionKnob.lock();
-        if (!userEdited && versionKnob) {
+        if (userEdited) {
+            resetVersionKnob(); // the newest, and -1 if it cannot be created
+        } else if (versionKnob) {
             if (versionKnob->getValue(0) >= 0) {
                 args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(0), 0);
                 args.setProperty<int>(kCreateNodeArgsPropPluginVersion, versionKnob->getValue(1), 1);
-            } else if ( serialization && !serializationHasKnob(*serialization, kNatronWriteNodeParamEncodingPluginVersion) ) {
+            } else if ( serialization && !serialization->hasKnob(kNatronWriteNodeParamEncodingPluginVersion) ) {
                 args.setProperty<int>(kCreateNodeArgsPropPluginVersion, 0, 0);
                 args.setProperty<int>(kCreateNodeArgsPropPluginVersion, 0, 1);
             }
