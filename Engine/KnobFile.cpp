@@ -104,7 +104,7 @@ KnobFile::typeName() const
 static std::string
 fileNameFromPattern(const std::string& pattern,
                     const KnobHolder* holder,
-                    bool output,
+                    bool isVideo,
                     int time,
                     ViewSpec view)
 {
@@ -116,8 +116,7 @@ fileNameFromPattern(const std::string& pattern,
     if ( !view.isViewIdx() ) {
         view = ViewIdx(0);
     }
-    const EffectInstance* effect = dynamic_cast<const EffectInstance*>(holder);
-    if ( effect && ( output ? effect->isVideoWriter() : effect->isVideoReader() ) ) {
+    if (isVideo) {
         const int viewIndex = view.value();
         if ( (viewIndex < 0) || ( viewIndex >= (int)views.size() ) ) {
             return pattern;
@@ -142,7 +141,9 @@ KnobFile::getFileName(int time,
         return getValue(0, view);
     } else {
         ///try to interpret the pattern and generate a filename if indexes are found
-        return fileNameFromPattern(getValue( 0, ViewIdx(0) ), getHolder(), false, time, view);
+        const EffectInstance* effect = dynamic_cast<const EffectInstance*>( getHolder() );
+
+        return fileNameFromPattern(getValue( 0, ViewIdx(0) ), getHolder(), effect && effect->isVideoReader(), time, view);
     }
 }
 
@@ -194,7 +195,9 @@ QString
 KnobOutputFile::generateFileNameAtTime(SequenceTime time,
                                        ViewSpec view)
 {
-    return QString::fromUtf8( fileNameFromPattern(getValue( 0, ViewIdx(0) ), getHolder(), true, time, view).c_str() );
+    const EffectInstance* effect = dynamic_cast<const EffectInstance*>( getHolder() );
+
+    return QString::fromUtf8( fileNameFromPattern(getValue( 0, ViewIdx(0) ), getHolder(), effect && effect->isVideoWriter(), time, view).c_str() );
 }
 
 /***********************************KnobPath*****************************************/
