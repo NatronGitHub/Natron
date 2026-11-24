@@ -36,7 +36,8 @@ INCLUDEPATH += google-mock/include
 INCLUDEPATH += google-mock
 
 
-QMAKE_CLEAN += ofxTestLog.txt test_dot_generator0.jpg
+# ofxPluginLog.txt: the debug log of the OpenFX Support library; ofxTestLog.txt: its name before openfx 47634333
+QMAKE_CLEAN += ofxPluginLog.txt ofxTestLog.txt test_dot_generator0.jpg
 
 include(../global.pri)
 
@@ -91,6 +92,7 @@ SOURCES += \
     OfxBytesParam_Test.cpp \
     OfxContexts_Test.cpp \
     OfxCPURenderSupport_Test.cpp \
+    OfxClipComponentsView_Test.cpp \
     OfxClipGetImage_Test.cpp \
     OfxCustomParamInterp_Test.cpp \
     OfxDrawSuite_Test.cpp \

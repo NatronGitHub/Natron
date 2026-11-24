@@ -58,6 +58,7 @@ set(Tests_SOURCES
     OfxBytesParam_Test.cpp
     OfxContexts_Test.cpp
     OfxCPURenderSupport_Test.cpp
+    OfxClipComponentsView_Test.cpp
     OfxClipGetImage_Test.cpp
     OfxCustomParamInterp_Test.cpp
     OfxDrawSuite_Test.cpp
