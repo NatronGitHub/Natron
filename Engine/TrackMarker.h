@@ -83,7 +83,7 @@
 
 #define kTrackerParamError "errorValue"
 #define kTrackerParamErrorLabel "Error"
-#define kTrackerParamErrorHint "The error obtained after tracking each frame. This 1 minus the corss-correlation score."
+#define kTrackerParamErrorHint "The error obtained after tracking each frame. This is 1 minus the normalized cross-correlation score."
 
 #define kTrackerParamEnabled "enabled"
 #define kTrackerParamEnabledLabel "Enabled"
