@@ -124,7 +124,7 @@ TEST_F(KnobExpressionCacheTest, ResultIsNotStoredIfAnInputChangedDuringTheEvalua
     to->clearExpression(0, true);
 }
 
-// Without changes, a result is computed once per frame (the cache still works)
+// Without changes, the cached results are those of the expression; a change clears them
 TEST_F(KnobExpressionCacheTest, ResultIsStored)
 {
     if ( skipped() ) {

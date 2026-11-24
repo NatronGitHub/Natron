@@ -31,7 +31,6 @@
 
 #include "Global/Macros.h"
 
-#include <stdexcept>
 #include <list>
 #include <set>
 #include <string>
@@ -39,7 +38,7 @@
 
 #include <gtest/gtest.h>
 
-#include "Engine/AppManager.h" // NATRON_PYTHON_NAMESPACE::interpretPythonScript
+#include "Engine/AppManager.h" // NATRON_PYTHON_NAMESPACE::interpretPythonScript, getMainModule(), PythonGILLocker
 #include "Engine/Curve.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/NodeGroup.h"
@@ -562,18 +561,13 @@ TEST_F(ExpressionDepsRenderArgsTest, ExpressionResultIsCachedPerContext)
     ASSERT_FALSE( aTo->getExpression(0).empty() );
     // setExpression() evaluated it once to check it (directly, without the cache)
     ASSERT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("natronTest1578Count = 0\n", &err, 0) ) << err;
+    // the value of the counter in __main__, where the expression's function has its globals
     const auto evaluations = []() {
-        std::string error;
-        std::string output;
-        EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("print(natronTest1578Count)\n", &error, &output) ) << error;
+        PythonGILLocker pgl;
+        PyObject* mainDict = PyModule_GetDict( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::getMainModule() );
+        PyObject* count = mainDict ? PyDict_GetItemString(mainDict, "natronTest1578Count") : NULL; // borrowed
 
-        try {
-            return std::stoi(output);
-        } catch (const std::exception&) {
-            ADD_FAILURE() << "not a number of evaluations: " << output;
-
-            return -1;
-        }
+        return ( count && PyLong_Check(count) ) ? (int)PyLong_AsLong(count) : -1;
     };
 
     EXPECT_EQ( 10., aTo->getValue() );
