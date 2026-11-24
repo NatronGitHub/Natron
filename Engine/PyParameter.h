@@ -273,6 +273,13 @@ public:
     QString getExpression(int dimension, bool* hasRetVariable) const;
 
     bool setInterpolationAtTime(double time, Natron::KeyframeTypeEnum interpolation, int dimension = 0);
+
+    /**
+     * @brief Sets the left and right derivatives (tangents) of the keyframe at time, which becomes free
+     * (eKeyframeTypeFree), as when its tangents are moved in the Curve Editor.
+     * @returns false if there is no keyframe at time.
+     **/
+    bool setDerivativesAtTime(double time, double left, double right, int dimension = 0);
 };
 
 /**

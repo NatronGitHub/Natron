@@ -1208,9 +1208,19 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     if (!argsIOContainer) {
         if ( ReadNode::isBundledReader( argsPluginID.toStdString(), wasProjectCreatedWithLowerCaseIDs() ) ) {
             args.addParamDefaultValue(kNatronReadNodeParamDecodingPluginID, argsPluginID.toStdString());
+            if (versionMajor != -1) {
+                // the version is that of the decoder, not of the Read node (#1681)
+                args.addParamDefaultValueN<int>( kNatronReadNodeParamDecodingPluginVersion, std::vector<int>{versionMajor, versionMinor} );
+                versionMajor = versionMinor = -1;
+            }
             findId = QString::fromUtf8(PLUGINID_NATRON_READ);
         } else if ( WriteNode::isBundledWriter( argsPluginID.toStdString(), wasProjectCreatedWithLowerCaseIDs() ) ) {
             args.addParamDefaultValue(kNatronWriteNodeParamEncodingPluginID, argsPluginID.toStdString());
+            if (versionMajor != -1) {
+                // the version is that of the encoder, not of the Write node (#1681)
+                args.addParamDefaultValueN<int>( kNatronWriteNodeParamEncodingPluginVersion, std::vector<int>{versionMajor, versionMinor} );
+                versionMajor = versionMinor = -1;
+            }
             findId = QString::fromUtf8(PLUGINID_NATRON_WRITE);
         }
     }
@@ -2685,16 +2695,25 @@ AppInstance::recheckInvalidExpressions()
             }
         }
     }
-    std::list<KnobIWPtr> newInvalidKnobs;
+    std::set<KnobIPtr> validKnobs;
 
     for (std::list<KnobIPtr>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if ( !(*it)->checkInvalidExpressions() ) {
-            newInvalidKnobs.push_back(*it);
+        if ( (*it)->checkInvalidExpressions() ) {
+            validKnobs.insert(*it);
         }
     }
     {
+        // Remove only the knobs that became valid (and the deleted ones): a knob may have been added
+        // while the expressions were re-checked, e.g. by an expression that failed meanwhile (#1542)
         QMutexLocker k(&_imp->invalidExprKnobsMutex);
-        _imp->invalidExprKnobs = newInvalidKnobs;
+        for (std::list<KnobIWPtr>::iterator it = _imp->invalidExprKnobs.begin(); it != _imp->invalidExprKnobs.end();) {
+            KnobIPtr knob = it->lock();
+            if ( !knob || validKnobs.count(knob) ) {
+                it = _imp->invalidExprKnobs.erase(it);
+            } else {
+                ++it;
+            }
+        }
     }
 }
 

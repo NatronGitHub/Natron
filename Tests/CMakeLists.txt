@@ -48,6 +48,7 @@ set(Tests_SOURCES
     LoadPythonScript_Test.cpp
     Lut_Test.cpp
     Markdown_Test.cpp
+    MaskChannel_Test.cpp
     MultiInputLinks_Test.cpp
     NaNGuards_FastMath.cpp
     NaNGuards_Test.cpp
@@ -58,6 +59,7 @@ set(Tests_SOURCES
     OfxBytesParam_Test.cpp
     OfxContexts_Test.cpp
     OfxCPURenderSupport_Test.cpp
+    OfxClipComponentsView_Test.cpp
     OfxClipGetImage_Test.cpp
     OfxCustomParamInterp_Test.cpp
     OfxDrawSuite_Test.cpp
@@ -100,6 +102,7 @@ set(Tests_SOURCES
     ProjectFileFormat_Test.cpp
     PythonExpressionScope_Test.cpp
     ReadNodeOverlay_Test.cpp
+    ReadWriteVersion_Test.cpp
     RenderThreadSafety_Test.cpp
     RenderThreads_Test.cpp
     RotoPaint_Test.cpp
@@ -364,6 +367,13 @@ add_test(NAME ConnectLadderHeadless
 set_tests_properties(ConnectLadderHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/connect-ladder-headless-cache")
 
+# Default node names are the smallest free number, and naming thousands of nodes is fast (#1565):
+# NatronRenderer runs the script, which exits with natron.quit(status).
+add_test(NAME NodeNamingHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_node_naming.py")
+set_tests_properties(NodeNamingHeadless PROPERTIES TIMEOUT 300
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/node-naming-headless-cache")
+
 # ColorParam.get(frame) returns the alpha of an RGBA color, not its blue (#1712): NatronRenderer runs the
 # script, which exits with natron.quit(status).
 add_test(NAME ColorGetFrameHeadless
@@ -378,12 +388,24 @@ add_test(NAME UndoGroupHeadless
 # the caches (OFX plug-ins) in the build tree, not in the user's cache directory (#1569)
 set_tests_properties(UndoGroupHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/undo-group-headless-cache")
+# AnimatedParam.setDerivativesAtTime() (#1745), headless
+add_test(NAME KeyframeDerivativesHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_keyframe_derivatives.py")
+set_tests_properties(KeyframeDerivativesHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/keyframe-derivatives-headless-cache")
 
 # A PyPlug is created after the script rebinds the global "app" (#1525)
 add_test(NAME PyPlugReboundAppHeadless
     COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_pyplug_rebound_app.py")
 set_tests_properties(PyPlugReboundAppHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_PLUGIN_PATH=${CMAKE_CURRENT_SOURCE_DIR}/data/pyplugs;PYTHONDONTWRITEBYTECODE=1;NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/pyplug-rebound-app-cache")
+
+# Renaming a group recompiles the expressions of its knobs and of the nodes inside it (#1686): NatronRenderer
+# runs the script, which exits with natron.quit(status).
+add_test(NAME RenameGroupExpressionsHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_rename_group_expressions.py")
+set_tests_properties(RenameGroupExpressionsHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/rename-group-expressions-headless-cache")
 
 # The color plane goes through a Shuffle that writes to another layer (it was black): NatronRenderer runs the
 # script, which exits with natron.quit(status), 77 when openfx-misc or openfx-io are not in OFX_PLUGIN_PATH.
