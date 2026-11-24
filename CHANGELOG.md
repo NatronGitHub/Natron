@@ -17,6 +17,7 @@
 
 ### Changes
 
+- Python: `PyViewer.setChannels()` sets the R, G, B, A and Matte channels; it only worked for RGB and Luminance. A viewer saved in a project with one of these channels opens with it again instead of RGB. #1550
 - PyPlugs: when a PyPlug's `getIsToolset()` returns a value other than `True` or `False`, its truth value decides whether the PyPlug is a toolset (`1` is a toolset, `None` is not). It used to be a toolset or a regular PyPlug at random. #1528
 - Preferences > Plug-ins: Discard now reverts the plug-in checkboxes (Enabled, Render scale, Multi-threading, OpenGL) also with `--no-settings`, and reopening the Preferences shows the reverted state. Closing the Preferences window without Save discards the changes, also after a Save earlier in the session. #1538
 - Color selector: the H, S and V values are always those of the linear RGB values shown in R, G and B. Picking a color in the triangle showed the HSV of its sRGB color instead, and editing H, S or V moved the triangle to a different color than the R, G, B values. #1248
