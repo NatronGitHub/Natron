@@ -17,7 +17,8 @@
  * ***** END LICENSE BLOCK ***** */
 
 // Regression tests for ExprUtils::cnoise() (#1683) and ExprUtils::ccellnoise() (#1684),
-// which must match SeExpr's cnoise and ccellnoise.
+// which must match SeExpr's cnoise and ccellnoise. The point has non-negative coordinates:
+// CellNoise of a negative coordinate is the subject of #1678.
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -38,7 +39,7 @@ NATRON_PYTHON_NAMESPACE_USING
 // SeExpr: cnoise(p) = 0.5 * vnoise(p) + 0.5, and vnoise is Noise<3, 3>.
 TEST(ExprUtilsNoise, CNoiseIsRemappedVectorNoise)
 {
-    const Double3DTuple p = {0.3, 1.7, -2.45};
+    const Double3DTuple p = {0.3, 1.7, 2.45};
     const Double3DTuple c = ExprUtils::cnoise(p);
     const Double3DTuple v = ExprUtils::vnoise(p);
 
@@ -55,11 +56,12 @@ TEST(ExprUtilsNoise, CNoiseIsRemappedVectorNoise)
 // SeExpr: ccellnoise(p) is CellNoise<3, 3>; its x is cellnoise(p).
 TEST(ExprUtilsNoise, CCellNoiseHasThreeComponents)
 {
-    const Double3DTuple p = {0.3, 1.7, -2.45};
+    const Double3DTuple p = {0.3, 1.7, 2.45};
     const Double3DTuple c = ExprUtils::ccellnoise(p);
 
+    const double in[3] = {p.x, p.y, p.z};
     double expected[3] = {0., 0., 0.};
-    CellNoise<3, 3>(&p.x, expected);
+    CellNoise<3, 3>(in, expected);
 
     // y and z used to be always 0
     EXPECT_NE(0., c.y);
