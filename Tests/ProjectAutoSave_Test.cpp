@@ -390,6 +390,7 @@ TEST(ProjectAutoSave, SaveAfterFailedAutoSave)
 
 // Saving a copy of the project (app.saveTempProject(), AppInstance::saveTemp()) deleted the project's
 // last auto-save, although the project's unsaved changes are only in that auto-save (#1751).
+// (The auto-save timer, which a copy no longer stops, never starts in the Tests binary: not tested.)
 TEST(ProjectAutoSave, SaveCopyKeepsAutoSave)
 {
     QTemporaryDir tmpDir;
