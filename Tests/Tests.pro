@@ -61,6 +61,7 @@ SOURCES += \
     DiskCache_Test.cpp \
     ExpressionDepsRenderArgs_Test.cpp \
     ExpressionSetError_Test.cpp \
+    ExprUtils_Test.cpp \
     FailedRoDRender_Test.cpp \
     FileSystemModel_Test.cpp \
     Hash64_Test.cpp \
@@ -71,6 +72,7 @@ SOURCES += \
     KnobInvalidExpression_Test.cpp \
     KnobLockOrder_Test.cpp \
     KnobFile_Test.cpp \
+    KnobHolderPanel_Test.cpp \
     KnobSlave_Test.cpp \
     KnobStringAnimation_Test.cpp \
     LibTess_Test.cpp \

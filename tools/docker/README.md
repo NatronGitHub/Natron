@@ -20,9 +20,17 @@ The image is tagged `:latest-amd64` or `:latest-arm64`. Nothing is pushed: the s
 
 The source tarballs are extracted with `tar --no-same-owner`, since some of them have owners that rootless docker/podman can't map. The arm64 image was built with a rootful podman connection (`podman --connection <machine>-root`).
 
+## The SDK image and the packages on GitHub Actions
+
+The `Linux packages` workflow (`.github/workflows/linux_packages.yml`) runs weekly (Sunday), on demand (`workflow_dispatch`) and on pre-release tags (`vX.Y.Z-alphaN`, `-betaN`, `-rcN`, also `-alpha.N`...), for x86_64 (`ubuntu-24.04` runners) and aarch64 (`ubuntu-24.04-arm`):
+
+1. **SDK image**, only when its definition changed, i.e. the hash of `tools/jenkins/include/scripts/build-Linux-sdk.sh`, `tools/jenkins/include/scripts/pkg`, `tools/jenkins/include/patches`, `tools/jenkins/common.sh`, `tools/jenkins/compiler-common.sh` and this directory, or on demand (the `rebuild_sdk` input: no layer cache, the newest `rockylinux/rockylinux:9` base image and system packages). The whole SDK takes longer than the 6 hours a GitHub-hosted job may run, so `split-stages.sh` splits the Dockerfile made by `build.sh` (`PREPARE_ONLY=1`) into stages, each built by one job (`linux_sdk_stage.yml`) and pushed as `ghcr.io/natrongithub/natron-sdk-rockylinux9:<hash>-<arch>-stage<N>`, with the layers of the previous builds of the default branch as cache (`:buildcache-<arch>-<stage>`; the stages are `STAGE_ENDS` in `split-stages.sh`). The SDK image is `:<hash>-amd64` and `:<hash>-arm64`, and the multi-arch `:<hash>` and, on the default branch, `:latest`. Rebuild it on demand before each pre-release, to get the security updates of the base image.
+2. **Package:** `launchBuildMain.sh` of the commit being built, in the SDK image (CMake builds of Natron and the plug-ins, the bundled unit tests, the portable archive and its system-library checks, `checkBundle` in `build-Linux-installer.sh`). The archives are kept 14 days as workflow artifacts, and attached to the GitHub pre-release on pre-release tags. A pre-release tag `vX.Y.Z-rcN` builds `RELEASE_TAG=X.Y.Z-rcN` (see "Launching a release build" below): the plug-in repositories must have the tag `Natron-X.Y.Z-rcN` before the Natron tag is pushed.
+3. **Tests:** `natron-test.sh` runs Natron-Tests (master, with its `known_failures/` lists) on the archive in a clean `rockylinux/rockylinux:9` container, with only the system libraries that the archive doesn't bundle (see INSTALL_LINUX.md). The results are named as in the releases: `<name>-tests.txt`, `<name>-tests-summary.txt`, `<name>-tests.log` and `<name>-unit_tests_failures.zip`. To run it locally: `tools/docker/natron-test.sh [-n Natron-Tests] Natron-...-Linux-x86_64-no-installer.tar.xz` (`DOCKER=podman` with podman).
+
 ## Downloading the pre-built Natron SDK images
 
-The `natrongithub/natron-sdk` image on [Docker Hub] is the CentOS 7 SDK of Natron 2.5 and older (an alias to `natrongithub/natron-sdk-centos7` and `natrongithub/natron-sdk-centos7-dts8`). Natron 2.6 is built with the Rocky Linux 9 image, `natrongithub/natron-sdk-rockylinux9`, once it is published (see above); the examples below use `natrongithub/natron-sdk:latest`: replace it with the image you built or pulled.
+The `natrongithub/natron-sdk` image on [Docker Hub] is the CentOS 7 SDK of Natron 2.5 and older (an alias to `natrongithub/natron-sdk-centos7` and `natrongithub/natron-sdk-centos7-dts8`). Natron 2.6 is built with the Rocky Linux 9 image, `ghcr.io/natrongithub/natron-sdk-rockylinux9:latest` (published by the workflow above, for amd64 and arm64); the examples below use `natrongithub/natron-sdk:latest`: replace it with that image, or with the one you built.
 
 ## Launching a build
 
