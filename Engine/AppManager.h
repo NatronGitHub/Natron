@@ -319,10 +319,6 @@ public:
      **/
     void quitNow(const AppInstancePtr& instance);
 
-    /*
-       @brief Calls quit() on all AppInstance's
-     */
-
     /**
      * @brief Starts the event loop and doesn't return until
      * quit() is called on all AppInstance's
