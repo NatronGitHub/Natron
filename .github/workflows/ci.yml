@@ -51,7 +51,6 @@ concurrency:
 
 jobs:
   unix_test:
-    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     timeout-minutes: 180
     name: Test ${{ matrix.os }} Python ${{ matrix.python-version }} ${{ matrix.config }}
     runs-on: ${{ matrix.os }}
@@ -188,7 +187,6 @@ jobs:
         run: exit 1
 
   win-test:
-    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     timeout-minutes: 240
     name: Test ${{ matrix.os }} UCRT64 Python ${{ matrix.python-version }} ${{ matrix.config }}
     runs-on: ${{ matrix.os }}
@@ -344,7 +342,8 @@ jobs:
     # resulting /opt/local is cached, keyed on the MacPorts version, the
     # overlay (tools/MacPorts) and MACPORTS_CACHE_VERSION (bump it when the
     # port list below changes).
-    # macOS arm64 runners are scarce: run only once Linux and Windows have passed. Merging only
+    # macOS arm64 runners are scarce: run only once Linux and Windows have passed, and not on draft
+    # pull requests (Linux and Windows do run on drafts; macOS runs when the PR is marked ready). Merging only
     # requires Linux and Windows; this job is informative. Weekly, it always runs, whatever the
     # Linux and Windows results.
     needs: [unix_test, win-test]
