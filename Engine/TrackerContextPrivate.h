@@ -114,8 +114,8 @@ GCC_DIAG_ON(maybe-uninitialized)
 
 #define kTrackerParamMaxError "maxError"
 #define kTrackerParamMaxErrorLabel "Max. Error"
-#define kTrackerParamMaxErrorHint "This is the minimum necessary error between the final tracked " \
-    "position of the patch on the destination image and the reference patch needed to declare tracking success." \
+#define kTrackerParamMaxErrorHint "This is the maximum error allowed between the final tracked " \
+    "position of the patch on the destination image and the reference patch: if the error is larger, tracking fails. " \
     "The error is 1 minus the normalized cross-correlation score."
 
 #define kTrackerParamDefaultMarkerPatternWinSize "defPatternWinSize"
@@ -153,7 +153,7 @@ GCC_DIAG_ON(maybe-uninitialized)
 #define kTrackerParamAutoKeyEnabledLabel "Animate Enabled"
 #define kTrackerParamAutoKeyEnabledHint "When checked, the \"Enabled\" parameter will be keyframed automatically when a track fails. " \
 "This is useful for example if you have a scene with a moving camera that you want to stabilize: You place track markers, and when " \
-"the tracker looses them, they get disabled automatically and you can place new ones. A disabled marker will not be taken into account"\
+"the tracker loses them, they get disabled automatically and you can place new ones. A disabled marker will not be taken into account"\
 " when computing the resulting Transform to stabilize/match-move."
 
 #define kTrackerParamPerTrackParamsSeparator "perTrackParams"
@@ -173,7 +173,7 @@ GCC_DIAG_ON(maybe-uninitialized)
 #define kTrackerParamExportButton "export"
 #define kTrackerParamExportButtonLabel "Export"
 #define kTrackerParamExportButtonHint "Creates a node referencing the tracked data. The node type depends on the node selected by the Transform Type parameter. " \
-    "The type of transformation applied by the created node depends on the Motion Type parameter. To activate this button you must select set the Motion Type to something other than None"
+    "The type of transformation applied by the created node depends on the Motion Type parameter. To activate this button you must set the Motion Type to something other than None"
 
 #define kCornerPinInvertParamName "invert"
 
@@ -190,7 +190,7 @@ GCC_DIAG_ON(maybe-uninitialized)
 #define kTrackerParamTransformTypeCornerPinHelp "The tracks motion will be used to compute a CornerPin. " \
     "A CornerPin is useful if you are tracking an image portion that has a perspective distortion. " \
     "At least 1 track is required to compute the homography transforming the \"From\" points to the \"To\" points, and 4 required to " \
-    "track a perspective transformation." \
+    "track a perspective transformation. " \
     "The more points you add, the more stable and precise the resulting CornerPin will be."
 
 #define kTrackerParamMotionType "motionType"
@@ -244,7 +244,7 @@ GCC_DIAG_ON(maybe-uninitialized)
 
 #define kTrackerParamJitterPeriod "jitterPeriod"
 #define kTrackerParamJitterPeriodLabel "Jitter Period"
-#define kTrackerParamJitterPeriodHint "Number of frames to average together to remove high frequencies for the add/remove jitter transform type"
+#define kTrackerParamJitterPeriodHint "Number of frames to average together to remove high frequencies for the add/remove jitter motion type"
 
 #define kTrackerParamSmooth "smooth"
 #define kTrackerParamSmoothLabel "Smooth"
@@ -262,7 +262,7 @@ GCC_DIAG_ON(maybe-uninitialized)
 #define kTrackerParamGenerateTransform "computeTransform"
 #define kTrackerParamGenerateTransformLabel "Compute"
 #define kTrackerParamGenerateTransformHint "Click to compute the parameters of the Transform Controls or CornerPin Controls (depending on the Transform Type) from the data acquired on the tracks during the tracking. This should be done after the tracking is finished and when you feel the results are satisfying. " \
-    "For each frame, the resulting parameter is computed from the tracks that are enabled at this frame and that have a keyframe on the center point (e.g: are valid)."
+    "For each frame, the resulting parameter is computed from the tracks that are enabled at this frame and that have a keyframe on the center point (i.e. are valid)."
 
 #define kTrackerParamTransformOutOfDate "transformOutOfDate"
 #define kTrackerParamTransformOutOfDateHint "The Transform parameters are out of date because parameters that control their generation have been changed, please click the Compute button to refresh them"

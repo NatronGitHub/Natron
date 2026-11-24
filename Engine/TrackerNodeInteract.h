@@ -142,7 +142,7 @@
 
 #define kTrackerUIParamMagWindowSize "magWindowSize"
 #define kTrackerUIParamMagWindowSizeLabel "Mag. Window Size"
-#define kTrackerUIParamMagWindowSizeHint "The size of the selected track magnification winow in pixels"
+#define kTrackerUIParamMagWindowSizeHint "The size of the selected track magnification window in pixels"
 
 // Right click menu
 #define kTrackerUIParamRightClickMenu kNatronOfxParamRightClickMenu
@@ -179,7 +179,7 @@
 
 #define kTrackerUIParamTrackRangeDialogStep "frameStep"
 #define kTrackerUIParamTrackRangeDialogStepLabel "Step"
-#define kTrackerUIParamTrackRangeDialogStepHint "The number of frames to increment on the timeline after each successful tracks. If Last Frame is lesser than First Frame, you may specify a negative frame step."
+#define kTrackerUIParamTrackRangeDialogStepHint "The number of frames to increment on the timeline after each successful track. If Last Frame is less than First Frame, you may specify a negative frame step."
 
 #define kTrackerUIParamTrackRangeDialogOkButton "okButton"
 #define kTrackerUIParamTrackRangeDialogOkButtonLabel "Ok"

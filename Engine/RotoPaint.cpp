@@ -798,7 +798,7 @@ RotoPaint::initializeKnobs()
     }
 
     {
-        KnobButtonPtr tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRemoveFeatherToolButtonAction) );
+        KnobButtonPtr tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRemoveFeatherToolButtonActionLabel) );
         tool->setName(kRotoUIParamRemoveFeatherToolButtonAction);
         tool->setHintToolTip( tr(kRotoUIParamRemoveFeatherToolButtonActionHint) );
         tool->setCheckable(true);
@@ -868,7 +868,7 @@ RotoPaint::initializeKnobs()
     {
         KnobButtonPtr tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamPencilToolButtonActionLabel) );
         tool->setName(kRotoUIParamPencilToolButtonAction);
-        tool->setHintToolTip( tr(kRotoUIParamPencilToolButtonAction) );
+        tool->setHintToolTip( tr(kRotoUIParamPencilToolButtonActionHint) );
         tool->setCheckable(true);
         tool->setDefaultValue(false);
         tool->setSecretByDefault(true);
@@ -907,7 +907,7 @@ RotoPaint::initializeKnobs()
             _imp->ui->cloneAction = tool;
         }
         {
-            KnobButtonPtr tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRevealToolButtonAction) );
+            KnobButtonPtr tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRevealToolButtonActionLabel) );
             tool->setName(kRotoUIParamRevealToolButtonAction);
             tool->setHintToolTip( tr(kRotoUIParamRevealToolButtonActionHint) );
             tool->setCheckable(true);
