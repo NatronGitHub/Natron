@@ -742,32 +742,6 @@ AppManager::queueAfterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& 
 }
 
 void
-AppManager::quitApplication()
-{
-    bool appsEmpty;
-    {
-        QMutexLocker k(&_imp->_appInstancesMutex);
-        appsEmpty = _imp->_appInstances.empty();
-    }
-
-    while (!appsEmpty) {
-        AppInstancePtr app;
-        {
-            QMutexLocker k(&_imp->_appInstancesMutex);
-            app = _imp->_appInstances.front();
-        }
-        if (app) {
-            quitNow(app);
-        }
-
-        {
-            QMutexLocker k(&_imp->_appInstancesMutex);
-            appsEmpty = _imp->_appInstances.empty();
-        }
-    }
-}
-
-void
 AppManager::setUpShutDownSignalNotifier()
 {
 #ifdef __NATRON_UNIX__

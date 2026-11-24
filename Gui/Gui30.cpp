@@ -558,7 +558,7 @@ Gui::onDoDialogWithStopAskingCheckbox(int type,
 
     dialog.setCheckBox(stopAskingCheckbox);
     dialog.setWindowFlags(dialog.windowFlags() | Qt::WindowStaysOnTopHint);
-    const bool accepted = dialog.exec();
+    const bool accepted = (dialog.exec() == QDialog::Accepted);
     // Escape when it was closed without a button, e.g. by a termination signal (#1730): not the previous answer
     _imp->_lastQuestionDialogAnswer = dialog.getReply();
     if (accepted) {

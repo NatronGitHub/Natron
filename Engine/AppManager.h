@@ -322,7 +322,6 @@ public:
     /*
        @brief Calls quit() on all AppInstance's
      */
-    void quitApplication();
 
     /**
      * @brief Starts the event loop and doesn't return until
