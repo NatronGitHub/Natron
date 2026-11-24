@@ -19,11 +19,11 @@ for i in range(1, 11):
     NatronGuiTest.penEvent("NodeGraph", "move", x0 + 6 * i, y0 + 4 * i)
 NatronGuiTest.penEvent("NodeGraph", "release", x0 + 60, y0 + 40, button="left")
 wait_idle()
-resized = bd.getSize()
+resized = tuple(bd.getSize())
 print("resized: %g x %g" % resized)
 check(resized[0] > w + 30 and resized[1] > h + 20, "the drag did not resize the backdrop: %r" % (resized,))
 
 app.undo()
 wait_idle()
-undone = bd.getSize()
+undone = tuple(bd.getSize())
 check(undone == (w, h), "undo restored %r, not the size before the resize %r" % (undone, (w, h)))
