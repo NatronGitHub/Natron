@@ -392,7 +392,7 @@ ExportGroupTemplateDialog::onOkClicked()
                                                          tr("A group plug-in with the name \"%1\" already exists "
                                                             "would you like to "
                                                             "overwrite it?").arg(pluginLabel).toStdString(), false);
-        if  (rep == eStandardButtonNo) {
+        if (rep != eStandardButtonYes) { // also when closed without an answer (#1730)
             return;
         }
     }

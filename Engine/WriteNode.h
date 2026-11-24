@@ -33,6 +33,8 @@
 
 #define kNatronWriteNodeParamEncodingPluginChoice "encodingPluginChoice"
 #define kNatronWriteNodeParamEncodingPluginID "encodingPluginID"
+// the major and minor version of the encoder, -1 if unknown (#1681)
+#define kNatronWriteNodeParamEncodingPluginVersion "encodingPluginVersion"
 
 #define kNatronWriteParamFrameStep "frameIncr"
 #define kNatronWriteParamFrameStepLabel "Frame Increment"
@@ -126,6 +128,7 @@ private:
     virtual void getFrameRange(double *first, double *last) OVERRIDE FINAL;
     virtual void initializeKnobs() OVERRIDE FINAL;
     virtual void onKnobsAboutToBeLoaded(const NodeSerializationPtr& serialization) OVERRIDE FINAL;
+    virtual void onKnobsLoaded() OVERRIDE FINAL;
     virtual bool knobChanged(KnobI* k,
                              ValueChangedReasonEnum reason,
                              ViewSpec view,

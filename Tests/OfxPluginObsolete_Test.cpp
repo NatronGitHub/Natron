@@ -18,11 +18,12 @@
 
 
 // Plug-ins that set kOfxImageEffectPluginPropObsolete (OFX, after 1.5.1) load in old projects, but
-// Natron doesn't offer them to users for new nodes: they are hidden from the menus, the node-creation
-// dialog and the documentation, and they are not registered as readers or writers. They can still be
-// created by ID with kCreateNodeArgsPropAllowNonUserCreatablePlugins, which is what project loading and
-// the Python API (app.createNode()) do. The Natron extension kNatronOfxImageEffectPropDeprecated, which
-// had the same meaning, is not read any more (#1491).
+// Natron doesn't offer them to users for new nodes: they are disabled by default, so hidden from the
+// menus and the node-creation dialog, unless the user enables them in Preferences > Plug-ins (#171);
+// they are never in the documentation, and they are not registered as readers or writers. They can
+// still be created by ID with kCreateNodeArgsPropAllowNonUserCreatablePlugins, which is what project
+// loading and the Python API (app.createNode()) do. The Natron extension
+// kNatronOfxImageEffectPropDeprecated, which had the same meaning, is not read any more (#1491).
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -135,6 +136,27 @@ TEST(OfxPluginObsolete, HiddenButCreatableByID)
     ASSERT_TRUE( bool(node) );
     EXPECT_EQ( std::string(kNatronTestPluginObsolete), node->getPluginID() );
     node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
+}
+
+// a deprecated plug-in is only disabled by default: once enabled (Preferences > Plug-ins), the user can
+// create it (#171)
+TEST(OfxPluginObsolete, EnabledDeprecatedPluginIsUserCreatable)
+{
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginObsolete) ) {
+        NatronTestPlugin::reportSkipped(kNatronTestPluginObsolete);
+
+        return;
+    }
+    Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8(kNatronTestPluginObsolete), -1, -1, false);
+    ASSERT_TRUE(plugin);
+    EXPECT_FALSE( plugin->isActivated() );
+    plugin->setActivated(true);
+    EXPECT_TRUE( plugin->getIsUserCreatable() );
+    NodePtr node = createNodeByID(kNatronTestPluginObsolete, false);
+    plugin->setActivated(false); // as the other tests expect it
+    ASSERT_TRUE( bool(node) );
+    node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
+    EXPECT_FALSE( DocumentationGroups::isDocumented(plugin) ); // still not in the documentation
 }
 
 // a plug-in that sets only the former Natron extension property is offered for new nodes (#1491)

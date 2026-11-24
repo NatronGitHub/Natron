@@ -436,7 +436,8 @@ bool
 OfxHost::isPluginObsolete(const OFX::Host::Property::Set& descriptorProps)
 {
     // kOfxImageEffectPluginPropObsolete: "available for use in old projects but not offered to users for
-    // new use", which is what Natron does with these plug-ins (see Plugin::getIsUserCreatable()).
+    // new use", which is what Natron does with these plug-ins: they are disabled by default
+    // (Plugin::isActivated(), see Plugin::getIsUserCreatable()), and the user may enable them (#171).
     // HostSupport declares it, with a default of 0, on every image effect descriptor, including the
     // ones loaded from the plug-in cache.
     return descriptorProps.getIntProperty(kOfxImageEffectPluginPropObsolete) != 0;
@@ -764,7 +765,12 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
     }
 
     if (!pluginHandle) {
-        throw std::runtime_error( tr("Error: Description (kOfxActionLoad and kOfxActionDescribe) failed while loading %1.")
+        // NULL also if the binary can't be loaded, refuses this host (OfxSetHost), or no longer has this
+        // plug-in: a stale plug-in cache (the binary's plug-ins changed, but not its mtime and size)
+        throw std::runtime_error( tr("Error: %1 could not be loaded. Its binary could not be loaded, refused this host, "
+                                     "or no longer has this plug-in (then the OpenFX plug-in cache is stale: use "
+                                     "Cache > Clear Plug-ins Load Cache and restart, or launch with --clear-openfx-cache), "
+                                     "or its description (kOfxActionLoad and kOfxActionDescribe) failed.")
                                   .arg( QString::fromUtf8( plugin->getIdentifier().c_str() ) ).toStdString() );
     }
     assert(pluginHandle->getOfxPlugin() && pluginHandle->getOfxPlugin()->mainEntry);
