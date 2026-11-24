@@ -129,26 +129,23 @@ BackdropGui::adjustSizeToContent(int *w,
                                  int *h,
                                  bool /*adjustToTextSize*/)
 {
+    // The backdrop keeps the size the user gives it, whatever its label: the label wraps to its width,
+    // and may overflow at the bottom (#626)
     NodeGui::adjustSizeToContent(w, h, false);
-    QRectF labelBbox = _imp->label->boundingRect();
-
-    *h = std::max( (double)*h, labelBbox.height() * 1.5 );
-    *w = std::max( (double)*w, _imp->label->textWidth() );
 }
 
 void
-BackdropGui::resizeExtraContent(int /*w*/,
+BackdropGui::resizeExtraContent(int w,
                                 int /*h*/,
-                                bool forceResize)
+                                bool /*forceResize*/)
 {
     QPointF p = pos();
     QPointF thisItemPos = mapFromParent(p);
     int nameHeight = getFrameNameHeight();
 
     _imp->label->setPos( thisItemPos.x(), thisItemPos.y() + nameHeight + TO_DPIY(10) );
-    if (!forceResize) {
-        _imp->label->adjustSize();
-    }
+    // wrap the label to the width of the backdrop (#626)
+    _imp->label->setTextWidth(w);
 }
 
 void
@@ -181,16 +178,10 @@ BackdropGuiPrivate::refreshLabelText(int nameHeight,
 
     label->setHtml(textLabel);
 
-
-    // getSize(), not boundingRect(), which includes the outline pen width: the backdrop would grow
-    // at each label change (#1071)
-    QSizeF bbox = _publicInterface->getSize();
-
-    //label->adjustSize();
-    int w = std::max( bbox.width(), label->textWidth() * 1.2 );
-    QRectF labelBbox = label->boundingRect();
-    int h = std::max( labelBbox.height() + nameHeight + TO_DPIX(10), bbox.height() );
-    _publicInterface->resize(w, h);
+    // The backdrop is not resized to fit the label: the label wraps to the backdrop's width (#626).
+    // getSize(), not boundingRect(), which includes the outline pen width (#1071)
+    label->setTextWidth( _publicInterface->getSize().width() );
+    label->setPos( _publicInterface->mapFromParent( _publicInterface->pos() ) + QPointF(0, nameHeight + TO_DPIY(10)) );
     _publicInterface->update();
 }
 
