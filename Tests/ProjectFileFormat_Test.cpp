@@ -1028,7 +1028,9 @@ TEST(ProjectFileFormat, PythonSaveProjectCopy)
         "    return (a.getProjectParam('projectName').getValue(), a.getProjectParam('projectPath').getValue())\n"
         "before = names()\n"
         "assert before[0] == 'main.ntp', before\n"
-        "for save, f in ((a.saveProjectCopy, 'copy.ntp'), (a.saveTempProject, 'temp.ntp')):\n"
+        // in another folder, so that a changed project path is noticed
+        "os.mkdir('" + dir + "sub')\n"
+        "for save, f in ((a.saveProjectCopy, 'sub/copy.ntp'), (a.saveTempProject, 'sub/temp.ntp')):\n"
         "    assert save('" + dir + "' + f), f\n"
         "    assert os.path.getsize('" + dir + "' + f) > 0, f\n"
         "    assert names() == before, (f, names(), before)\n";
