@@ -358,9 +358,9 @@ renders that a script starts with :func:`app.render()<NatronEngine.App.render>`:
   when a render callback calls :func:`app.closeProject()<NatronEngine.App.closeProject>` or
   :func:`app.resetProject()<NatronEngine.App.resetProject>`, or when a render run in a
   separate process is cancelled from the GUI.
-- A render that gives black frames because an input is missing (for example a Read node whose
-  file doesn't exist) is not detected yet: check the output for ``Cannot load frame``
-  (`issue #1602 <https://github.com/NatronGitHub/Natron/issues/1602>`_).
+- A render also fails when a node upstream reports an error, for example a Read node whose
+  file doesn't exist, with "On missing frame: Error" (the default). With "On missing frame:
+  Black", the missing frames are rendered black and the render succeeds.
 
 Up to Natron 2.5, a failed render exited with status 0.
 

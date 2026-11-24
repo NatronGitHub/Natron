@@ -56,7 +56,8 @@ ERROR_TEXT = "Error while rendering"
 BEGIN_ERROR_TEXT = "could not start the render of the sequence"
 
 SCRIPT = """
-import os, sys
+import os
+import sys
 from NatronEngine import natron
 OUT = os.environ["NATRON_FAILURE_TEST_DIR"]
 WRITERS = os.environ["NATRON_FAILURE_TEST_WRITERS"].split(",")
@@ -157,6 +158,7 @@ def check(what, result, status, frames, error_text, also_text=None):
 
 
 def main():
+    """Runs every case; returns 0 if all pass, 1 on failure, SKIP without plug-ins."""
     if len(sys.argv) != 2:
         sys.stderr.write(__doc__)
         return 1
