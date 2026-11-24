@@ -17,6 +17,7 @@
 
 ### Changes
 
+- Projects: a PyPlug that moved since the project was saved is found again in the PyPlug search paths (e.g. `NATRON_PLUGIN_PATH`, including their sub-directories), so its version is checked and its update offered as when it didn't move. The search never found it, and the node was only saved by `import` of its module, when the module was on the Python path. #1645
 - Python: `NatronEngine.ExprUtils.cellnoise()`, `ccellnoise()` and `hash()`, which parameter expressions can use, now give the same results on arm64 (Apple Silicon, Linux aarch64, Windows on ARM64) as on x86_64 and in Natron 2.5 on Intel. On arm64 a negative cell coordinate was treated as 0, so `cellnoise()` repeated the cells at 0 for all negative coordinates, and `hash()` gave the same value for many different negative arguments, because a negative number was converted to an unsigned integer, which is undefined in C++. Projects made on arm64 that use these functions with negative arguments may animate differently. #1678
 - Robustness (preventive, no known crash): a node or the project no longer keeps a dangling pointer to its settings panel after the Gui deletes the panel, e.g. when the node is destroyed from Python. #1618
 - The color is no longer black after a Shuffle whose Output Layer is not Color, and Premult/Unpremult on a layer other than Color no longer fail to render: the color now comes through from the input, like the other layers. #1660

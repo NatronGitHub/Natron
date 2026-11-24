@@ -39,7 +39,6 @@
 #include "Engine/RotoLayer.h"
 #include "Engine/ViewerInstance.h"
 
-#include <SequenceParsing.h> // for removePath
 
 NATRON_NAMESPACE_ENTER
 
@@ -71,7 +70,8 @@ static QString lookForFileRecursively(const QString& dirPath, const QString& fil
     }
     QStringList subDirs = d.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
     for (QStringList::const_iterator it = subDirs.begin(); it != subDirs.end(); ++it) {
-        QString ret = lookForFileRecursively(*it, filenameUnPathed);
+        // entryList() gives names: not relative to the current directory (#1645)
+        QString ret = lookForFileRecursively(d.absoluteFilePath(*it), filenameUnPathed);
         if (!ret.isEmpty()) {
             return ret;
         }
@@ -170,14 +170,13 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
             // First try with the saved path
             // Then search through all PyPlug search paths recursively for a match
             if (!QFile::exists(qPyModulePath)) {
-                std::string pythonModuleUnPathed = qPyModulePath.toStdString();
-                std::string s = SequenceParsing::removePath(pythonModuleUnPathed);
-                Q_UNUSED(s);
+                // the file name: the saved absolute path, which doesn't exist, can't be found there (#1645)
+                const QString pythonModuleFileName = QFileInfo(qPyModulePath).fileName();
 
                 qPyModulePath.clear();
                 QStringList natronPaths = appPTR->getAllNonOFXPluginsPaths();
                 for (int i = 0; i < natronPaths.size(); ++i) {
-                    qPyModulePath = lookForFileRecursively(natronPaths[i], QString::fromUtf8(pythonModuleAbsolutePath.c_str()));
+                    qPyModulePath = lookForFileRecursively(natronPaths[i], pythonModuleFileName);
                     if (!qPyModulePath.isEmpty()) {
                         break;
                     }
