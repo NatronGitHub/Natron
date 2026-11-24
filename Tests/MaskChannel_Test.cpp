@@ -136,8 +136,10 @@ TEST(MaskChannel, DefaultIsAlpha)
     EXPECT_EQ( 4, rgba->getValue() );
     EXPECT_EQ( alphaID, rgba->getActiveEntry().id );
 
-    // a channel chosen before the input is connected (e.g. by a script) is kept
-    chosen->setValue(0); // None
-    ASSERT_TRUE( connectMask(chosenMasked, alphaGenerator) );
-    EXPECT_EQ( 0, chosen->getValue() );
+    // a channel chosen before the input is connected (e.g. by a script), out of the range of the
+    // menu then, is kept
+    chosen->setValue(2); // Color.G of an RGBA input
+    ASSERT_TRUE( connectMask(chosenMasked, rgbaGenerator) );
+    EXPECT_EQ( 2, chosen->getValue() );
+    EXPECT_EQ( ImagePlaneDesc::getRGBAComponents().getChannelOption(1).id, chosen->getActiveEntry().id );
 }

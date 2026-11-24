@@ -2123,7 +2123,7 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
 
         KnobChoicePtr channel = AppManager::createKnob<KnobChoice>(_imp->effect.get(), std::string(), 1, false);
         // By default if connected it should be filled with None, Color.R, Color.G, Color.B, Color.A (@see refreshChannelSelectors)
-        // (Color.A; refreshChannelSelectors() selects Color.A by ID for other menus)
+        // (Color.A of an RGBA menu; for other menus, refreshChannelSelectors() selects Color.A by ID, #1685)
         channel->setDefaultValue(4);
         channel->setAnimationEnabled(false);
         channel->setHintToolTip( tr("Use this channel from the original input to mix the output with the original input. "
