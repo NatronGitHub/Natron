@@ -22,8 +22,8 @@
 
 Usage: run_renderer_missing_read_test.py /path/to/NatronRenderer [--debugger]
 
-NatronRenderer -b runs a script that creates Read (on a missing file, or with no filename) -> Write1
-(PNG, frames 1-3), and renders Write1:
+NatronRenderer -b runs a script that creates Read (on a missing file, or with no filename)
+-> Write1 (PNG, frames 1-3), and renders Write1:
 - "error": the Read is on its default "On missing frame: Error". The render must fail
   ("Error caught while rendering"), write no frame and exit with status 1: it wrote three black
   frames and reported a successful render;
