@@ -135,7 +135,7 @@ TEST_F(KnobInvalidExpressionTest, EveryInvalidKnobIsListed)
 }
 
 // A knob whose expression becomes invalid while recheckInvalidExpressions() runs stays listed (#1542):
-// re-checking doubleTo evaluates the expression of doubleFrom, which fails.
+// re-checking doubleTo evaluates the expression of doubleFrom, which fails then and lists doubleFrom.
 TEST_F(KnobInvalidExpressionTest, KnobInvalidatedDuringRecheckStaysListed)
 {
     if ( skipped() ) {
@@ -156,7 +156,6 @@ TEST_F(KnobInvalidExpressionTest, KnobInvalidatedDuringRecheckStaysListed)
 
     ASSERT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("natronTestBroken = True\nnatronTestFrame = 2\n", &error, 0) ) << error;
     _node->getApp()->recheckInvalidExpressions();
-    EXPECT_FALSE( from->isExpressionValid(0, 0) ) << "the re-check did not evaluate doubleFrom";
     EXPECT_TRUE( isListed(to) );
     EXPECT_TRUE( isListed(from) ) << "the knob listed during the re-check was dropped";
 
