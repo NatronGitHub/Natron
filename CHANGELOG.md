@@ -73,6 +73,10 @@
 - The bundled Eigen (libs/Eigen3), used by the tracker (libmv, openMVG, Ceres), is updated from 3.4.0 to 3.4.1, a bug-fix release: fixes in the SVD and eigenvalue solvers, undefined-behaviour fixes, ARM (NEON) fixes and fewer compiler warnings. #1593
 - A render or a playback no longer stalls when its last frame, or an abort, comes just before the render scheduler starts waiting for it. #1607
 
+### Plugins
+
+- WriteFFmpeg: libaom-av1 now encodes with Output Quality (CRF 23) by default instead of a bit rate, also in existing projects; set Output Quality to None to use Bitrate (openfx-io#343).
+
 
 ## Version 2.5.0
 
