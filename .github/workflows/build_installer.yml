@@ -254,7 +254,8 @@ jobs:
         # unconditional "Source:" of Natron.iss was installed completely (the first install goes
         # into a folder that already has a bin\keep.dll, which must survive). Then install again over
         # it (the upgrade path, [InstallDelete]): a stale DLL must be gone, the user's files must
-        # stay. Run the installed programs, then uninstall and check that everything was removed.
+        # stay. Run the installed programs (the GUI once, with GuiSmokeTest), then uninstall and check that everything
+        # was removed.
         run: |
           INSTALLER_DIR=$(cygpath -u '${{ steps.build.outputs.INSTALLER_DIR }}')/${{ steps.build.outputs.INSTALLER_NAME }}
           ISS=tools/MINGW-packages/mingw-w64-natron-setup/Natron.iss
@@ -354,6 +355,14 @@ jobs:
           export PYTHONDONTWRITEBYTECODE=1
           timeout -k 10 600 env PATH="${APP}/bin:${SYSPATH}" "${APP}/bin/NatronRenderer.exe" -v < /dev/null || { echo "::error::the installed NatronRenderer -v failed"; errors=1; }
           timeout -k 10 600 env PATH="${APP}/bin:${SYSPATH}" "${APP}/bin/natron-python.exe" -c "import sys, ssl, ${PYSIDE}.QtCore, ${PYSIDE}.QtWidgets; print('natron-python', sys.version.split()[0], ${PYSIDE}.QtCore.qVersion())" < /dev/null || { echo "::error::the installed natron-python failed"; errors=1; }
+          # Start the GUI once (#1731): GuiSmokeTest (Tests/gui/run_gui_smoke_test.py) with the installed Natron.exe and
+          # its plug-ins, run by the installed natron-python. The runner has no GPU: Natron uses the Mesa opengl32.dll
+          # of the sgl component, which only the x64 Setup.exe has (#1494). Exit status 77 (skipped) is a failure here.
+          if [ "${MSYSTEM_CARCH}" = x86_64 ]; then
+            timeout -k 10 1200 env PATH="${APP}/bin:${SYSPATH}" NATRON_GUI_TESTS=1 "${APP}/bin/natron-python.exe" "$(cygpath -w "${GITHUB_WORKSPACE}/Tests/gui/run_gui_smoke_test.py")" "${APP_W}\\bin\\Natron.exe" < /dev/null || { echo "::error::the GUI smoke test of the installed Natron.exe failed"; errors=1; }
+          else
+            echo "::warning::no software OpenGL in the ${MSYSTEM_CARCH} Setup.exe (#1494): the GUI smoke test is skipped"
+          fi
           # The uninstaller copies itself to %TEMP% and returns at once: wait for the directory to go.
           MSYS2_ARG_CONV_EXCL='*' "${APP}/unins000.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART || { echo "::error::the uninstaller failed"; errors=1; }
           for _ in $(seq 120); do
