@@ -68,7 +68,8 @@
 // - net.natron.test.Question: the "ask" and "askFromThread" push buttons post a kOfxMessageQuestion from
 //   kOfxActionInstanceChanged, on the calling thread or on a thread of the plug-in, and count the replies.
 //
-// The binary exports OfxSetHost (OFX 1.5), and counts its calls ("Binary.setHost"), whether it came
+// The binary counts the calls of OfxGetNumberOfPlugins and OfxGetPlugin ("Binary.getNumberOfPlugins",
+// "Binary.getPlugin"). It exports OfxSetHost (OFX 1.5), and counts its calls ("Binary.setHost"), whether it came
 // before OfxGetNumberOfPlugins ("Binary.setHostBeforeGetNumberOfPlugins") and the kOfxPropAPIVersion
 // of the host it gets ("Binary.setHostAPIVersion0", "Binary.setHostAPIVersion1"). ParamInteract
 // calls clipGetHandle() in kOfxImageEffectActionDescribeInContext, where it is not valid, and records
@@ -1614,6 +1615,8 @@ OfxGetNumberOfPlugins(void)
 OfxExport OfxPlugin*
 OfxGetPlugin(int nth)
 {
+    incrementCounter("Binary.getPlugin");
+
     const int nOwn = (int)( sizeof(gPlugins) / sizeof(gPlugins[0]) );
 
     // (not OfxGetNumberOfPlugins(), which counts its calls)

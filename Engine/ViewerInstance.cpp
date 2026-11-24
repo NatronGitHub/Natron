@@ -3017,6 +3017,21 @@ ViewerInstance::isInputOptional(int n) const
 }
 
 void
+ViewerInstance::refreshAfterDisplayTransformChange()
+{
+    assert(_imp->uiContext);
+    // 8-bit textures were converted with the gain, gamma and display LUT by the CPU: render again. Float
+    // textures are converted by the shader: redraw. Both the setting (the next frame) and the textures
+    // displayed now count: they differ after the setting changed, until a frame rendered with it is shown.
+    if ( ( (_imp->uiContext->getBitDepth() == eImageBitDepthByte) || _imp->uiContext->isDisplayingByteTexture() )
+         && !getApp()->getProject()->isLoadingProject() ) {
+        renderCurrentFrame(true);
+    } else {
+        _imp->uiContext->redraw();
+    }
+}
+
+void
 ViewerInstance::onGammaChanged(double value)
 {
     // always running in the main thread
@@ -3034,14 +3049,8 @@ ViewerInstance::onGammaChanged(double value)
         // Compute the LUT now rather than in the next render
         (void)_imp->getGammaLut(value);
     }
-    assert(_imp->uiContext);
     if (changed) {
-        if ( (_imp->uiContext->getBitDepth() == eImageBitDepthByte)
-             && !getApp()->getProject()->isLoadingProject() ) {
-            renderCurrentFrame(true);
-        } else {
-            _imp->uiContext->redraw();
-        }
+        refreshAfterDisplayTransformChange();
     }
 }
 
@@ -3068,13 +3077,7 @@ ViewerInstance::onGainChanged(double exp)
         }
     }
     if (changed) {
-        assert(_imp->uiContext);
-        if ( ( (_imp->uiContext->getBitDepth() == eImageBitDepthByte) )
-             && !getApp()->getProject()->isLoadingProject() ) {
-            renderCurrentFrame(true);
-        } else {
-            _imp->uiContext->redraw();
-        }
+        refreshAfterDisplayTransformChange();
     }
 }
 
@@ -3133,13 +3136,7 @@ ViewerInstance::onColorSpaceChanged(ViewerColorSpaceEnum colorspace)
         }
         _imp->viewerParamsLut = colorspace;
     }
-    assert(_imp->uiContext);
-    if ( ( (_imp->uiContext->getBitDepth() == eImageBitDepthByte) )
-         && !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame(true);
-    } else {
-        _imp->uiContext->redraw();
-    }
+    refreshAfterDisplayTransformChange();
 }
 
 void

@@ -499,7 +499,7 @@ NodeGraph::showMenu(const QPoint & pos)
     } else if (ret == duplicateAction) {
         // Duplicate at mouse click position:
         QPointF scenePos = mapToScene( mapFromGlobal(pos) );
-        cloneSelectedNodes(scenePos);
+        duplicateSelectedNodes(scenePos);
     } else if (ret == cloneAction) {
         // Clone at mouse click position:
         QPointF scenePos = mapToScene( mapFromGlobal(pos) );
@@ -507,7 +507,7 @@ NodeGraph::showMenu(const QPoint & pos)
     } else if (ret == pasteAction) {
         // Paste at mouse click position:
         QPointF scenePos = mapToScene( mapFromGlobal(pos) );
-        cloneSelectedNodes(scenePos);
+        pasteNodeClipBoards(scenePos);
     }
 } // NodeGraph::showMenu
 

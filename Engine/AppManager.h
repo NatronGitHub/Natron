@@ -319,11 +319,6 @@ public:
      **/
     void quitNow(const AppInstancePtr& instance);
 
-    /*
-       @brief Calls quit() on all AppInstance's
-     */
-    void quitApplication();
-
     /**
      * @brief Starts the event loop and doesn't return until
      * quit() is called on all AppInstance's
@@ -749,6 +744,13 @@ Q_SIGNALS:
 
 protected:
 
+    /// GUI: closes the active popup (menu) or modal dialog, one per call, as Cancel does; returns false if there is none
+    virtual bool closeModalWindows() { return false; }
+
+    /// Whether quitting now would delete the projects under code that uses them: Natron is loading, a nested event
+    /// loop runs (a modal dialog, a menu, a GUI test's waitIdle()), or a project is being saved
+    bool mustDeferQuit() const;
+
     virtual bool initGui(const CLArgs& cl);
     virtual void loadBuiltinNodePlugins(IOPluginsMap* readersMap,
                                         IOPluginsMap* writersMap);
@@ -797,6 +799,9 @@ private:
 
     /// GUI mode: calls quitInstanceNow() from the event loop, not from a nested one
     void queueAfterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args);
+
+    /// Termination signal: quits the application from the main event loop, once the modal windows are closed
+    void quitOnShutDownSignal();
 
     bool loadInternal(const CLArgs& cl);
 
@@ -904,6 +909,14 @@ PyObject* getMainModule();
  **/
 bool interpretPythonScript(const std::string& script, std::string* error, std::string* output,
                            PyObject* globals = NULL, PyObject* locals = NULL);
+
+/**
+ * @brief Runs the content of a Python script file (e.g. init.py, or a script given on the command line) in the
+ * __main__ module, as interpretPythonScript() does: the success depends on the result of the script, not on what
+ * it or other code wrote to sys.stderr. Unlike interpretPythonScript(), sys.exit() in the script exits the
+ * process with its status (as PyRun_SimpleString() does), and error does not contain the script.
+ **/
+bool runPythonScriptFile(const std::string& script, std::string* error, std::string* output);
 
 
 //void compilePyScript(const std::string& script,PyObject** code);

@@ -39,7 +39,6 @@
 #include "Engine/RotoLayer.h"
 #include "Engine/ViewerInstance.h"
 
-#include <SequenceParsing.h> // for removePath
 
 NATRON_NAMESPACE_ENTER
 
@@ -71,7 +70,8 @@ static QString lookForFileRecursively(const QString& dirPath, const QString& fil
     }
     QStringList subDirs = d.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
     for (QStringList::const_iterator it = subDirs.begin(); it != subDirs.end(); ++it) {
-        QString ret = lookForFileRecursively(*it, filenameUnPathed);
+        // entryList() gives names: not relative to the current directory (#1645)
+        QString ret = lookForFileRecursively(d.absoluteFilePath(*it), filenameUnPathed);
         if (!ret.isEmpty()) {
             return ret;
         }
@@ -170,14 +170,13 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
             // First try with the saved path
             // Then search through all PyPlug search paths recursively for a match
             if (!QFile::exists(qPyModulePath)) {
-                std::string pythonModuleUnPathed = qPyModulePath.toStdString();
-                std::string s = SequenceParsing::removePath(pythonModuleUnPathed);
-                Q_UNUSED(s);
+                // search by file name: the saved absolute path doesn't exist here (#1645)
+                const QString pythonModuleFileName = QFileInfo(qPyModulePath).fileName();
 
                 qPyModulePath.clear();
                 QStringList natronPaths = appPTR->getAllNonOFXPluginsPaths();
                 for (int i = 0; i < natronPaths.size(); ++i) {
-                    qPyModulePath = lookForFileRecursively(natronPaths[i], QString::fromUtf8(pythonModuleAbsolutePath.c_str()));
+                    qPyModulePath = lookForFileRecursively(natronPaths[i], pythonModuleFileName);
                     if (!qPyModulePath.isEmpty()) {
                         break;
                     }
@@ -187,7 +186,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
 
             //This is a python group plug-in, try to find the corresponding .py file, maybe a more recent version of the plug-in exists.
             QFileInfo pythonModuleInfo(qPyModulePath);
-            if (!pythonModuleInfo.exists() || appPTR->getCurrentSettings()->isLoadFromPyPlugsEnabled() ) {
+            // "Load PyPlugs in projects from .py if possible" off, or no .py found: load the Group saved in the project (#1646)
+            if ( !pythonModuleInfo.exists() || !appPTR->getCurrentSettings()->isLoadFromPyPlugsEnabled() ) {
                 pluginID = PLUGINID_NATRON_GROUP;
                 usingPythonModule = false;
             } else {
