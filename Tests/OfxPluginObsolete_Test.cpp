@@ -137,6 +137,27 @@ TEST(OfxPluginObsolete, HiddenButCreatableByID)
     node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
 }
 
+// a deprecated plug-in is only disabled by default: once enabled (Preferences > Plug-ins), the user can
+// create it (#171)
+TEST(OfxPluginObsolete, EnabledDeprecatedPluginIsUserCreatable)
+{
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginObsolete) ) {
+        NatronTestPlugin::reportSkipped(kNatronTestPluginObsolete);
+
+        return;
+    }
+    Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8(kNatronTestPluginObsolete), -1, -1, false);
+    ASSERT_TRUE(plugin);
+    EXPECT_FALSE( plugin->isActivated() );
+    plugin->setActivated(true);
+    EXPECT_TRUE( plugin->getIsUserCreatable() );
+    NodePtr node = createNodeByID(kNatronTestPluginObsolete, false);
+    plugin->setActivated(false); // as the other tests expect it
+    ASSERT_TRUE( bool(node) );
+    node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
+    EXPECT_FALSE( DocumentationGroups::isDocumented(plugin) ); // still not in the documentation
+}
+
 // a plug-in that sets only the former Natron extension property is offered for new nodes (#1491)
 TEST(OfxPluginObsolete, FormerNatronDeprecatedPluginIsUserCreatable)
 {

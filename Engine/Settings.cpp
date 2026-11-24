@@ -1858,6 +1858,15 @@ Settings::saveAllSettings()
     saveSettings(k, false, true);
 }
 
+// The Enabled flag of a deprecated plug-in has its own key: a plug-in that becomes deprecated is disabled
+// by default (Plugin::isActivated()), even if it was saved as enabled before, and the user may enable it (#171)
+static QString
+pluginEnabledKey(const Plugin* plugin,
+                 const QString& pluginIDKey)
+{
+    return pluginIDKey + QString::fromUtf8( plugin->getIsDeprecated() ? "_deprecated_enabled" : "_enabled" );
+}
+
 void
 Settings::restorePluginSettings()
 {
@@ -1886,7 +1895,7 @@ Settings::restorePluginSettings()
 
             {
                 QString pluginIDKey = plugin->getPluginID() + QString::fromUtf8("_") + QString::number( plugin->getMajorVersion() ) + QString::fromUtf8("_") + QString::number( plugin->getMinorVersion() );
-                QString enabledKey = pluginIDKey + QString::fromUtf8("_enabled");
+                QString enabledKey = pluginEnabledKey(plugin, pluginIDKey);
                 if ( settings.contains(enabledKey) ) {
                     bool enabled = settings.value(enabledKey).toBool();
                     plugin->setActivated(enabled);
@@ -1937,7 +1946,7 @@ Settings::savePluginsSettings()
             assert(plugin);
 
             QString pluginID = plugin->getPluginID() + QString::fromUtf8("_") + QString::number( plugin->getMajorVersion() ) + QString::fromUtf8("_") + QString::number( plugin->getMinorVersion() );
-            QString enabledKey = pluginID + QString::fromUtf8("_enabled");
+            QString enabledKey = pluginEnabledKey(plugin, pluginID);
             settings.setValue( enabledKey, plugin->isActivated() );
 
             QString rsKey = pluginID + QString::fromUtf8("_rs");
