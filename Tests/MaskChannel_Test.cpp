@@ -77,22 +77,30 @@ inputNamed(const NodePtr& node,
     return -1;
 }
 
-// connect source to the Mask input of a new Masked node, and return its mask channel menu
 KnobChoicePtr
-maskChannelWithInput(const NodePtr& source)
+maskChannel(const NodePtr& masked)
 {
-    NodePtr masked = NatronTestPlugin::createNode(kNatronTestPluginMasked);
-
-    if (!masked) {
-        return KnobChoicePtr();
-    }
-    const int mask = inputNamed(masked, "Mask");
-    if ( (mask < 0) || !masked->connectInput(source, mask) ) {
-        return KnobChoicePtr();
-    }
-
     return std::dynamic_pointer_cast<KnobChoice>( masked->getKnobByName("maskChannel_Mask") );
 }
+
+// connect source to the Mask input of masked
+bool
+connectMask(const NodePtr& masked,
+            const NodePtr& source)
+{
+    const int mask = inputNamed(masked, "Mask");
+
+    return (mask >= 0) && masked->connectInput(source, mask);
+}
+
+// Resets the shared app's project when the test ends, also when an ASSERT fails
+struct ResetProjectOnExit
+{
+    ~ResetProjectOnExit()
+    {
+        appPTR->getTopLevelInstance()->getProject()->resetProject();
+    }
+};
 } // anonymous namespace
 
 TEST(MaskChannel, DefaultIsAlpha)
@@ -100,22 +108,36 @@ TEST(MaskChannel, DefaultIsAlpha)
     if ( !pluginsAvailable() ) {
         return;
     }
+    const ResetProjectOnExit resetProject;
     const std::string alphaID = ImagePlaneDesc::getRGBAComponents().getChannelOption(3).id;
+    NodePtr alphaGenerator = NatronTestPlugin::createNode(kNatronTestPluginAlphaGenerator);
+    NodePtr rgbaGenerator = NatronTestPlugin::createNode(kNatronTestPluginGenerator);
+    NodePtr alphaMasked = NatronTestPlugin::createNode(kNatronTestPluginMasked);
+    NodePtr rgbaMasked = NatronTestPlugin::createNode(kNatronTestPluginMasked);
+    NodePtr chosenMasked = NatronTestPlugin::createNode(kNatronTestPluginMasked);
+    ASSERT_TRUE(alphaGenerator && rgbaGenerator && alphaMasked && rgbaMasked && chosenMasked);
+    KnobChoicePtr alphaOnly = maskChannel(alphaMasked);
+    KnobChoicePtr rgba = maskChannel(rgbaMasked);
+    KnobChoicePtr chosen = maskChannel(chosenMasked);
+    ASSERT_TRUE(alphaOnly && rgba && chosen);
+
+    // not connected: the menu has no Color.A, and none is selected (no "no longer exists" warning)
+    EXPECT_TRUE( alphaOnly->isActiveEntryPresentInEntries() );
 
     // alpha-only input: None, Color.A
-    KnobChoicePtr alphaOnly = maskChannelWithInput( NatronTestPlugin::createNode(kNatronTestPluginAlphaGenerator) );
-    ASSERT_TRUE( bool(alphaOnly) );
+    ASSERT_TRUE( connectMask(alphaMasked, alphaGenerator) );
     ASSERT_EQ( 2, alphaOnly->getNumEntries() );
     EXPECT_EQ( 1, alphaOnly->getValue() );
     EXPECT_EQ( alphaID, alphaOnly->getActiveEntry().id );
 
     // RGBA input: None, Color.R, Color.G, Color.B, Color.A
-    KnobChoicePtr rgba = maskChannelWithInput( NatronTestPlugin::createNode(kNatronTestPluginGenerator) );
-    ASSERT_TRUE( bool(rgba) );
+    ASSERT_TRUE( connectMask(rgbaMasked, rgbaGenerator) );
     ASSERT_EQ( 5, rgba->getNumEntries() );
     EXPECT_EQ( 4, rgba->getValue() );
     EXPECT_EQ( alphaID, rgba->getActiveEntry().id );
 
-    // leave the shared app with an untitled empty project
-    appPTR->getTopLevelInstance()->getProject()->resetProject();
+    // a channel chosen before the input is connected (e.g. by a script) is kept
+    chosen->setValue(0); // None
+    ASSERT_TRUE( connectMask(chosenMasked, alphaGenerator) );
+    EXPECT_EQ( 0, chosen->getValue() );
 }
