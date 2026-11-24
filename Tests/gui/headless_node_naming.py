@@ -20,9 +20,8 @@ try:
     renamed10 = nodes[9].setScriptName("Renamed10")
     renamed7 = nodes[6].setScriptName("Renamed7")
     assert renamed10 and renamed7
-    assert app.createNode("fr.inria.built-in.Dot").getScriptName() == "Dot7"
-    assert app.createNode("fr.inria.built-in.Dot").getScriptName() == "Dot10"
-    assert app.createNode("fr.inria.built-in.Dot").getScriptName() == "Dot%d" % (count + 1)
+    new_names = [app.createNode("fr.inria.built-in.Dot").getScriptName() for _ in range(3)]
+    assert new_names == ["Dot7", "Dot10", "Dot%d" % (count + 1)], new_names
     # an explicit name that is taken is refused
     renamed = nodes[0].setScriptName("Dot2")
     assert not renamed
