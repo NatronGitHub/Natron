@@ -87,6 +87,7 @@ set(Tests_SOURCES
     ParamRandom_Test.cpp
     PluginGrouping_Test.cpp
     PrecompLoad_Test.cpp
+    ProcessHandler_Test.cpp
     ProjectAutoSave_Test.cpp
     PyEffectEquality_Test.cpp
     PythonGILUnlocker_Test.cpp
