@@ -291,15 +291,17 @@ TEST(ViewerTexture, MatteFromSeparateImageInTile)
 }
 
 // #1110: autocontrast gives the same range on the 8-bit, 16-bit and float versions of an image, with no LUT and
-// with the sRGB LUT, and that range is the one of the texture values.
+// with the sRGB LUT, and that range is the one of the texture values. #1551: the Matte display shows the RGB
+// channels (with the matte over them), so its range is that of RGB; it was empty, which gave [-1, 0].
 TEST(ViewerTexture, AutoContrastSameForAllDepths)
 {
     const Color::Lut* luts[] = { NULL, ViewerInstance::lutFromColorspace(eViewerColorSpaceSRGB) };
-    const DisplayChannelsEnum channels[] = { eDisplayChannelsRGB, eDisplayChannelsY, eDisplayChannelsR, eDisplayChannelsA };
+    const DisplayChannelsEnum channels[] = { eDisplayChannelsRGB, eDisplayChannelsY, eDisplayChannelsR, eDisplayChannelsA, eDisplayChannelsMatte };
+    const int nChannels = sizeof(channels) / sizeof(channels[0]);
     const RectI rect(0, 0, kW, kH);
 
     for (int l = 0; l < 2; ++l) {
-        for (int c = 0; c < 4; ++c) {
+        for (int c = 0; c < nChannels; ++c) {
             const int alphaIndex = (channels[c] == eDisplayChannelsA) ? 3 : -1;
             ImagePtr ref = makeRamp(eImageBitDepthFloat);
             MinMaxVal refRange = findAutoContrastVminVmax(ref, luts[l], channels[c], alphaIndex, rect);

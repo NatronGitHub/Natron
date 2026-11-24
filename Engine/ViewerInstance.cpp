@@ -2074,6 +2074,8 @@ findAutoContrastVminVmax_generic(const ImagePtr inputImage,
             double mini, maxi;
             switch (channels) {
             case eDisplayChannelsRGB:
+            case eDisplayChannelsMatte:
+                // Matte shows the RGB channels, with the matte over them (#1551)
                 mini = std::min(std::min(r, g), b);
                 maxi = std::max(std::max(r, g), b);
                 break;
