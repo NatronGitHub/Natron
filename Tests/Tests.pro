@@ -121,6 +121,7 @@ SOURCES += \
     PrecompLoad_Test.cpp \
     ProjectAutoSave_Test.cpp \
     PyEffectEquality_Test.cpp \
+    PyExprUtilsNoise_Test.cpp \
     PythonGILUnlocker_Test.cpp \
     PythonScript_Test.cpp \
     ProjectFileFormat_Test.cpp \
