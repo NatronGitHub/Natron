@@ -1395,6 +1395,8 @@ TrackMarkerPM::initializeKnobs()
         args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
         args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
         args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "TrackerPMNode");
+        // TrackerPM is obsolete (kOfxImageEffectPluginPropObsolete): not offered to users, but used here (#1513)
+        args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
         node = getContext()->getNode()->getApp()->createNode(args);
         if (!node) {
