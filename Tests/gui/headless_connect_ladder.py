@@ -61,7 +61,7 @@ try:
     app = natron.getInstance(0)
     first = app.createNode("fr.inria.built-in.Dot")
     check(first is not None, "no Dot node")
-    start = time.time()
+    start = time.monotonic()
     previous = first
     for level in range(LEVELS):
         node = two_input_group(app)
@@ -71,7 +71,7 @@ try:
         check(connected, level)
         previous = node
         # stop as soon as the time is over: the next levels would each take twice as long
-        elapsed = time.time() - start
+        elapsed = time.monotonic() - start
         check(elapsed < MAX_SECONDS, "connecting %d levels took %.1f s" % (level + 1, elapsed))
 
     # the check still refuses a cycle, through any of the paths
