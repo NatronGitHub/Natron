@@ -1011,6 +1011,9 @@ ColorSelectorWidget::handleTriangleColorChanged(const QColor &color,
     // triangle color), so that a color shows the same HSV values however it was set (#1248)
     float h, s, v;
     Color::rgb_to_hsv(r, g, b, &h, &s, &v);
+    if (s == 0.f) {
+        h = _spinH->value(); // a grey has no hue: keep the one shown, e.g. while turning the hue ring
+    }
 
     setRedChannel(r);
     setGreenChannel(g);
