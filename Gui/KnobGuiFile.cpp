@@ -149,6 +149,7 @@ void
 KnobGuiFile::onReloadClicked()
 {
     if (_reloadButton) {
+        onTextEdited();
         KnobFilePtr knob = _knob.lock();
         if (knob) {
             knob->reloadFile();
