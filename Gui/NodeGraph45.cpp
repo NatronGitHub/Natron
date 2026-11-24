@@ -694,7 +694,7 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
         std::list<NodeSerializationPtr>::const_iterator itSerialization = clipboard.nodes.begin();
         for (std::list<std::pair<std::string, NodeGuiPtr> > ::iterator it = createdNodes.begin(); it != createdNodes.end(); ++it, ++itSerialization) {
             it->second->getNode()->storeKnobsLinks(**itSerialization, oldNewScriptNamesMapping);
-            it->second->getNode()->restoreKnobsLinks(allNodes, oldNewScriptNamesMapping, true); // may not fail
+            it->second->getNode()->restoreKnobsLinks(allNodes, oldNewScriptNamesMapping, false); // should never fail, but must not throw out of the undo stack (#1612)
         }
 
     }

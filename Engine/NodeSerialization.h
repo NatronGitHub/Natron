@@ -337,6 +337,19 @@ private:
         } else {
             _nodeScriptName = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(_nodeLabel);
         }
+        try {
+            loadAfterScriptName(ar, version);
+        } catch (const KnobSerializationError& e) {
+            // Add the node, so that the user can find the parameter; a node in a group adds its own
+            // name first: node "Group1": node "Blur1": parameter ... (#1612).
+            throw KnobSerializationError("node \"" + _nodeScriptName + "\": " + e.what());
+        }
+    } // load
+
+    template<class Archive>
+    void loadAfterScriptName(Archive & ar,
+                             const unsigned int version)
+    {
         ar & ::boost::serialization::make_nvp("Plugin_id", _pluginID);
 
         if (version >= NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE) {
@@ -432,7 +445,7 @@ private:
         if (version >= NODE_SERIALIZATION_INTRODUCES_CACHE_ID) {
             ar & ::boost::serialization::make_nvp("CacheID", _cacheID);
         }
-    } // load
+    } // loadAfterScriptName
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
