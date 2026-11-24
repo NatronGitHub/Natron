@@ -31,6 +31,7 @@ set(Tests_SOURCES
     ExprUtils_Test.cpp
     FailedRoDRender_Test.cpp
     FileSystemModel_Test.cpp
+    GenericSchedulerThread_Test.cpp
     Hash64_Test.cpp
     ImageCache_Test.cpp
     Image_Test.cpp
@@ -360,6 +361,12 @@ add_test(NAME UndoGroupHeadless
 # the caches (OFX plug-ins) in the build tree, not in the user's cache directory (#1569)
 set_tests_properties(UndoGroupHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/undo-group-headless-cache")
+
+# A PyPlug is created after the script rebinds the global "app" (#1525)
+add_test(NAME PyPlugReboundAppHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_pyplug_rebound_app.py")
+set_tests_properties(PyPlugReboundAppHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_PLUGIN_PATH=${CMAKE_CURRENT_SOURCE_DIR}/data/pyplugs;PYTHONDONTWRITEBYTECODE=1;NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/pyplug-rebound-app-cache")
 
 # The color plane goes through a Shuffle that writes to another layer (it was black): NatronRenderer runs the
 # script, which exits with natron.quit(status), 77 when openfx-misc or openfx-io are not in OFX_PLUGIN_PATH.
