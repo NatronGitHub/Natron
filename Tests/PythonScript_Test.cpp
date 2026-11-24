@@ -35,6 +35,9 @@
 
 #include <gtest/gtest.h>
 
+#include <QtCore/QFile>
+#include <QtCore/QTemporaryDir>
+
 #include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
@@ -258,6 +261,54 @@ TEST_F(PythonScriptTest, NestedCall)
                                                         "natronTestNode1436.destroy()\n"
                                                         "del natronTestNode1436, natronTestNested1436\n", &err, 0);
     EXPECT_TRUE(ok) << err;
+}
+
+// A PyPlug whose getVersion() doesn't return a valid version number (a string, a negative int):
+// getGroupInfos() cast PyLong_AsLong() to unsigned int without checking it, and the PyPlug got version
+// 4294967295 (or 4294967294...), which takes precedence over every other version of that PyPlug (#1743).
+namespace {
+unsigned int
+readPyPlugVersion(const std::string& moduleName,
+                  const char* versionExpr)
+{
+    QTemporaryDir dir;
+    EXPECT_TRUE( dir.isValid() );
+    {
+        QFile f( dir.path() + QString::fromUtf8("/%1.py").arg( QString::fromUtf8( moduleName.c_str() ) ) );
+        EXPECT_TRUE( f.open(QIODevice::WriteOnly) );
+        f.write( ( std::string("def getLabel():\n"
+                               "    return 'BadVersion'\n"
+                               "def getPluginID():\n"
+                               "    return 'fr.inria.test.") + moduleName + "'\n"
+                   "def getVersion():\n"
+                   "    return " + versionExpr + "\n"
+                   "def createInstance(app, group):\n"
+                   "    pass\n" ).c_str() );
+    }
+    const std::string dirPath = dir.path().toStdString();
+    std::string err;
+    EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nsys.path.insert(0, r'" + dirPath + "')\n", &err, 0) ) << err;
+
+    std::string pluginID, pluginLabel, iconFilePath, grouping, description;
+    bool isToolset = false;
+    unsigned int version = 0;
+    EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::getGroupInfos(dirPath + '/', moduleName, &pluginID, &pluginLabel, &iconFilePath, &grouping,
+                                                                           &description, &isToolset, &version) );
+    EXPECT_EQ( pluginID, "fr.inria.test." + moduleName );
+
+    EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("sys.path.remove(r'" + dirPath + "')\n"
+                                                                                   "sys.modules.pop('" + moduleName + "', None)\n"
+                                                                                   "del " + moduleName + "\n", &err, 0) ) << err;
+
+    return version;
+}
+} // anonymous namespace
+
+TEST(PyPlugInfos, InvalidVersion)
+{
+    EXPECT_EQ( readPyPlugVersion("NatronTestPyPlugStringVersion", "'2'"), 1u );
+    EXPECT_EQ( readPyPlugVersion("NatronTestPyPlugNegativeVersion", "-2"), 1u );
+    EXPECT_EQ( readPyPlugVersion("NatronTestPyPlugVersion3", "3"), 3u );
 }
 
 // The script files (AppInstance::loadPythonScript() for a script without createInstance(), and init.py and

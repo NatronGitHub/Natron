@@ -51,6 +51,7 @@
 #include <csignal>
 #include <cstddef>
 #include <cassert>
+#include <limits>
 #include <stdexcept>
 #include <cstring> // for std::memcpy
 #include <iostream>
@@ -5140,7 +5141,18 @@ getGroupInfosInternal(const std::string& modulePath,
     }
 
     if (versionObj) {
-        *version = (unsigned int)PyLong_AsLong(versionObj);
+        long versionValue = PyLong_AsLong(versionObj);
+        const bool notAnInt = (versionValue == -1) && PyErr_Occurred();
+        if (notAnInt) {
+            // getVersion() returned something else than an int: PyLong_AsLong() set a Python error
+            PyErr_Clear();
+        }
+        if ( notAnInt || (versionValue < 0) || ( static_cast<unsigned long>(versionValue) > std::numeric_limits<unsigned int>::max() ) ) {
+            const QString logStr = QCoreApplication::translate("AppManager", "getVersion() does not return a valid version number: version 1 is used.");
+            appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( pythonModule.c_str() ), QDateTime::currentDateTime(), logStr);
+            versionValue = 1;
+        }
+        *version = static_cast<unsigned int>(versionValue);
         deleteScript.append("del version\n");
         Py_XDECREF(versionObj);
     }
