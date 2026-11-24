@@ -4,226 +4,158 @@
 
 .. _tutorials-imagesequence:
 
-
-
-How To Convert Videos To Image Sequences
-========================================
-
-Natron works best when using image sequences as input.
-
-Video can be used (mp4, mov etc) as input but may face stability issues.
-
-**Converting the video to a sequence of images is recommended.**
-
-There are a number of solutions for converting the video to frames:
-
-
-FFmpeg
-~~~~~~
-
-`FFmpeg <https://ffmpeg.org/>`__ provides a convenient command-line solution for converting video to images.
-
-1. Open a terminal and navigate to the folder containing the video.
-2. Use this command to extract the video to a png image sequence:
-
-``ffmpeg -i input.mp4 -pix_fmt rgba output_%04d.png``
-
-Replace ``input.mp4`` with the name of your video and ``output_`` with the name your output image files.
-
-``%04d`` specifies the position of the characters representing a sequential number in each file name matched by the pattern. Using the above example the output files will be called ``output_0001.png``, ``output_0002.png``, ``output_0002.png`` and so on. For longer videos you will need to use a higher number (``%08d.png``).
-
-Here are some more options:
-
-PNG (with Alpha)
-
-for 8 bit
-
-``ffmpeg -i input.mp4 -pix_fmt rgba output_%04d.png``
-
-for 16 bit
-
-``ffmpeg -i input.mp4 -pix_fmt rgba64be output_%04d.png``
-
-PNG (without Alpha)
-
-for 8 bit
-
-``ffmpeg -i input.mp4 -pix_fmt rgb24 output_%04d.png``
-
-for 16 bit
-
-``ffmpeg -i input.mp4 -pix_fmt rgb48be output_%04d.png``
-
-To extract TIFF 16 bit image sequence:
-
-TIFF (with Alpha)
-
-for 8 bit
-
-``ffmpeg -i input.mp4 -compression_algo lzw -pix_fmt rgba output_%04d.tiff``
-
-for 16 bit
-
-``ffmpeg -i input.mp4 -compression_algo lzw -pix_fmt rgba64le output_%04d.tiff``
-
-TIFF (without Alpha)
-
-for 8 bit
-
-``ffmpeg -i input.mp4 -compression_algo lzw -pix_fmt rgb24 output_%04d.tiff``
-
-for 16 bit
-
-``ffmpeg -i input.mp4 -compression_algo lzw -pix_fmt rgb48le output_%04d.tiff``
-
-.. note:: "-compression_algo packbits or raw or lzw or deflate" - is optional. Using it for 4k/+ is recommended. For 4k/+ deflate can be used. For HD lzw can be used to lower the file size.
-
-
-.. note:: "-pix_fmt rgb24 or rgba" is a must to include convert the color space. YUV/YCRB is not ideal for many en/decoders for TIFF.
-
-
-Although if YUV colorspace is necessary to intact it is possible to do the closest RGB conversion using ``-sws_flags``. It will intact the chroma in full.
-
-Example:
-
-``ffmpeg -i "input.MXF" -compression_level 10 -pred mixed -pix_fmt rgb24 -sws_flags +accurate_rnd+full_chroma_int output_test%03d.png``
-
-``ffmpeg -i "input.MXF" -compression_algo lzw -pix_fmt rgb24 -sws_flags +accurate_rnd+full_chroma_int output_test%03d.tiff``
-
-
-For more information on support pix format and compression for TIFF in ffmpeg in the terminal type: ``ffmpeg -v error -h encoder=tiff``
-
-
-
-More information of FFmpeg's command line options https://ffmpeg.org/ffmpeg-formats.html
-
-
-Kdenlive/Shotcut
-~~~~~~~~~~~~~~~~
-https://kdenlive.org/
-https://shotcut.org/
-
-With the video(s) on the timeline go to Project > Render.
-In the render settings choose Images sequence and select the desired image format.
-
-The sequence will be output with the specified file name and format and using five digits for its numbered sequence (e.g. output_00001.png).
-
-Full instructions on how to use Kdenlive can be found here https://userbase.kde.org/Kdenlive/Manual/Project_Menu/Render
-
-Blender
-~~~~~~~
-https://www.blender.org/
-
-- Import the movie file in Blender Video Sequencer.
-- Go to render properties.
-- In Color management change view transform standard.
-- Go to output properties.
-- Select File format PNG/TIFF.
-- Select RGB/RGBA, 8/16 Color depth, and preferred compression NONE/Any.
-
-Full instructions on how to use the Blender VSE can be found here https://docs.blender.org/manual/en/latest/video_editing/index.html
-
-
-Adobe Media Encoder
-~~~~~~~~~~~~~~~~~~~
-- Open Media Encoder.
-- Add source video to the queue.
-- Set the output format to OpenEXR.
-- Set compression to "Zip".
-- If the source has an alpha channel be sure to scroll down to the bottom of the Video section of the Export Settings and check "Include Alpha Channel".
-- Close the Export Settings by clicking Ok and press the Start Queue button.
-
-
-DaVinci Resolve
-~~~~~~~~~~~~~~~~
-- In Resolve, select your videoclip.
-- Go to File => Media Management.
-- Select Clips.
-- Select Media Destination.
-- Select Video format => TIFF or EXR.
-- Click Start.
-
-
-
-
-How To Convert Image Sequences To Video Files
+Converting between videos and image sequences
 =============================================
 
-FFmpeg
-~~~~~~
-Converting your images to video follows a similar process to doing the reverse.
+Natron works best with image sequences: one file per frame, such as
+``shot_0001.png``, ``shot_0002.png``... It can read videos (MP4, MOV...), but
+decoding them is slower and less reliable, especially with codecs that
+compress across frames, such as H.264 and H.265 (see
+:ref:`compositing-projects-readers-sequences-first`). The usual workflow is:
 
-Open a terminal and navigate to the location containing the images.
-In the terminal type:
+1. convert the video to an image sequence;
+2. composite the sequence in Natron, and write the result as another image
+   sequence;
+3. encode that sequence to a video, and add the sound back.
 
-``ffmpeg -i input_%05d.png output.mp4``
+Video to image sequence
+-----------------------
 
-Change ``input_`` to match the name of the files. The number of characters in the sequence (%05d) should match the amount in your input files. For example, if the files have four characters in their sequence (e.g. input_0001.png) then it should use %04d.
+With FFmpeg
+~~~~~~~~~~~
 
-For this to work correctly all of the files need to be sequentially numbered and the sequence should start from either 0 or 1.
+`FFmpeg <https://ffmpeg.org/>`__ converts a video to images from the command
+line. Open a terminal in the folder of the video, and run:
 
-It is can also specify the framerate and the codec, here is an example for framerate 30fps:
+.. code-block:: bash
 
-``ffmpeg -framerate 30 -i input%04d.png -c:v libx264 -r 30 -pix_fmt yuv420p out.mp4``
+   ffmpeg -i input.mp4 -pix_fmt rgb24 output_%04d.png
 
-Using NLE
-==========
+Replace ``input.mp4`` with the name of the video, and ``output_`` with the
+name of the images. ``%04d`` is the frame number, padded with zeroes to four
+digits: the files are ``output_0001.png``, ``output_0002.png``,
+``output_0003.png``, and so on. Four digits are enough for 9999 frames (more
+than six minutes at 25 frames per second), and larger numbers simply get more
+digits.
 
-Kdenlive, Shotcut, Da Vinci Resolve, Adobe Premiere
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Import the image "as sequence" in the timeline (or drag'n'drop the folder) and render in your preferred video format. 
+``-pix_fmt`` chooses the pixel format, i.e. the channels and the bit depth of
+the images. Videos are usually stored as Y'CbCr (YUV), often with fewer
+chroma samples than pixels, and ``-pix_fmt`` converts them to RGB. For TIFF it
+is required: without it, FFmpeg writes a Y'CbCr 4:2:0 TIFF, which most
+applications can't read.
 
+=====================  =======================  ========================
+Format                 8 bits per channel       16 bits per channel
+=====================  =======================  ========================
+PNG, RGB               ``-pix_fmt rgb24``       ``-pix_fmt rgb48be``
+PNG, RGBA              ``-pix_fmt rgba``        ``-pix_fmt rgba64be``
+TIFF, RGB              ``-pix_fmt rgb24``       ``-pix_fmt rgb48le``
+TIFF, RGBA             ``-pix_fmt rgba``        ``-pix_fmt rgba64le``
+=====================  =======================  ========================
 
+Use 16 bits for videos with more than 8 bits per channel (10-bit or 12-bit
+ProRes, DNxHR, HEVC...). The alpha channel (RGBA) is only useful if the video
+has one, as some ProRes 4444 files do.
 
-Creating Digital Intermediate For Editing Servers
-=================================================
+PNG and TIFF are both lossless: their compression only changes the size of
+the files and the time it takes to write and read them, never the image. For
+TIFF, ``-compression_algo`` chooses the compression (``packbits``, ``raw``,
+``lzw`` or ``deflate``), for example:
 
-To encode an image sequence to a digital intermediate (ProRes, DNxHR, FFV1),
-with FFmpeg or directly from Natron, see :doc:`tutorials-ffmpeg-di`.
+.. code-block:: bash
 
-How to Render Image Sequences from Natron
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The preferred file format to render out composited frames is TIFF.(image attached):
+   ffmpeg -i input.mov -pix_fmt rgb48le -compression_algo deflate output_%04d.tif
 
-In the write node:
+For the pixel formats and options of each encoder, run
+``ffmpeg -h encoder=png`` or ``ffmpeg -h encoder=tiff``, or see the
+`FFmpeg codecs documentation <https://ffmpeg.org/ffmpeg-codecs.html>`__.
 
-- output components can be RGB(no transparency) or RGBA(with transparency)
-
-- Use filename_###.tiff (where # is the frame number and padding) ### will create yourfilename001.tiff and ## will create yourfilename01.tiff
-- Bit depth can be auto/8i/16i (Don't use float)
-- compression can be none/lzw (HD). for 4k deflate is ok.
-
-.. figure:: _images/imagesequence_1.jpg
-
-- Use filename_###.tiff (where # is the frame number and padding) 
-- ### will create yourfilename001.tiff and ## will create yourfilename01.tiff
-- Bit depth can be auto/8i/16i (Don't use float)
-- compression can be none/lzw (HD). for 4k deflate is ok.
-
-PNG is also a good format:
-
-In the write node:
-
-- output components can be RGB(no transparency) or RGBA(with transparency)
-- Use filename###.png (where # is the frame number and padding) 
-- ### will create yourfilename001.png and ## will create yourfilename01.png
-- Bit depth can be 8/16bit
-- compression can be 0 for HD, 6 for 4k is fair enough.
-
-.. figure:: _images/imagesequence_2.jpg
-
-
-Open Questions for this document:
+With an editing or 3D application
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-What format should I use for frames? (esp if the video is 10bit or 12bit) ?
 
-Suggestion:
-For muxing audio. But it is usually pointless as it goes to NLE at the end.
+Most video applications can also render image sequences. Their menus change
+from one version to the next: check the manual of your version.
+
+- **Kdenlive:** put the video on the timeline, choose **File** > **Render**,
+  then an image sequence preset, such as PNG (see the
+  `Kdenlive manual <https://docs.kdenlive.org/en/exporting/render.html>`__).
+- **Shotcut:** put the video on the timeline, open the **Export** panel, and
+  choose a preset of the **Stills** category, such as PNG or TIFF.
+- **Blender:** in the Video Sequencer, add the movie. In the **Output**
+  properties, set the output path and the **File Format** (PNG, TIFF or
+  OpenEXR), with RGB or RGBA and the color depth. In the **Render**
+  properties, set **Color Management** > **View Transform** to **Standard**,
+  so that the colors of the video are not changed (the default is AgX in
+  Blender 4, Filmic in Blender 2.8 to 3.6). Then choose **Render** >
+  **Render Animation**.
+- **DaVinci Resolve:** on the **Deliver** page, choose a custom render with
+  the TIFF, DPX or OpenEXR format, add it to the render queue, and render.
+- **Adobe Media Encoder:** add the video to the queue, set the format to
+  OpenEXR (or TIFF, PNG), and check **Include Alpha Channel** at the bottom of
+  the Video settings if the video has an alpha channel. Then start the queue.
+
+Writing image sequences from Natron
+-----------------------------------
+
+The Write node writes one file per frame when its file name contains a frame
+number pattern:
+
+- ``#`` characters give the padding: ``shot_###.tif`` writes
+  ``shot_009.tif`` for frame 9, and ``shot_####.tif`` writes
+  ``shot_0009.tif``;
+- a single ``#`` means no padding: ``shot_#.tif`` writes ``shot_9.tif``;
+- the ``printf`` syntax also works: ``shot_%04d.tif`` writes
+  ``shot_0009.tif``.
+
+TIFF and PNG are good choices for 8-bit and 16-bit images, and OpenEXR for
+floating-point images (values below 0 or above 1, linear light):
+
+- **TIFF** (:ref:`WriteOIIO <fr.inria.openfx.WriteOIIO>`): **Output
+  Components** RGB, or RGBA to keep the alpha; **Bit Depth** 8i or 16i
+  (``auto`` picks one from the input); and a lossless **Compression**:
+  ``none``, ``lzw``, ``zip`` or ``packbits``.
+- **PNG** (:ref:`WritePNG <fr.inria.openfx.WritePNG>`): **Output Components**
+  RGB or RGBA; **Depth** 8-bit or 16-bit; and a **Compression Level** from 0
+  (none, fastest) to 9 (smallest files), 6 by default. Every level gives the
+  same image.
+
+See :doc:`compositing-projects-render` for rendering from the GUI and from
+the command line.
+
+Image sequence to video
+-----------------------
+
+FFmpeg encodes an image sequence back to a video:
+
+.. code-block:: bash
+
+   ffmpeg -framerate 24 -i output_%04d.png -c:v libx264 -pix_fmt yuv420p output.mp4
+
+- ``-framerate`` gives the frame rate of the sequence; without it, FFmpeg
+  uses 25 frames per second. It must come before ``-i``.
+- The pattern after ``-i`` must match the file names, with the same number of
+  digits: ``%04d`` for ``output_0001.png``, ``%05d`` for ``output_00001.png``.
+- The frames must be numbered without gaps. FFmpeg looks for the first frame
+  between 0 and 4: for a sequence that starts at another number, such as
+  1001, add ``-start_number 1001`` before ``-i``.
+- ``-pix_fmt yuv420p`` makes an H.264 video that every player can play.
+  Without it, FFmpeg keeps the full color resolution of RGB images (4:4:4),
+  which many players can't play.
+
+To encode a digital intermediate (ProRes, DNxHR, FFV1) for editing, see
+:doc:`tutorials-ffmpeg-di`. To add the sound of the original video, see
+:doc:`tutorials-ffmpeg-audio`.
+
+Editing applications (Kdenlive, Shotcut, DaVinci Resolve, Adobe Premiere)
+can also import an image sequence as a clip, usually with an "image
+sequence" option in their import dialog, and render it to any video format.
 
 See also
-========
+--------
 
 - :doc:`thenodes-image-read`: the parameters of the Read node.
 - :ref:`compositing-projects-readers-sequences-first`: why Natron works better
   with image sequences.
 - :doc:`compositing-time`: trimming, shifting and retiming clips in Natron.
+- `FFmpeg formats documentation <https://ffmpeg.org/ffmpeg-formats.html>`__:
+  the ``image2`` demuxer and muxer, which read and write image sequences.
