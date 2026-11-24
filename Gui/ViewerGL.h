@@ -101,6 +101,7 @@ public:
 
     virtual bool isClippingImageToFormat() const OVERRIDE FINAL;
     virtual ImageBitDepthEnum getBitDepth() const OVERRIDE FINAL;
+    virtual bool isDisplayingByteTexture() const OVERRIDE FINAL;
 
     /**
      *@brief Hack to allow the resizeEvent to be publicly used elsewhere.
