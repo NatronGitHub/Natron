@@ -5471,7 +5471,7 @@ createUserKnob(KnobHolder* holder,
 
     if (existingKnob) {
         std::shared_ptr<K> ret = std::dynamic_pointer_cast<K>(existingKnob);
-        // more dimensions is fine: the caller only uses those it asked for (e.g. RGB of an RGBA color)
+        // more dimensions is harmless: the extra ones keep their values (e.g. the alpha of an RGBA color)
         if ( !ret || (ret->getDimension() < dimension) ) {
             const NamedKnobHolder* named = dynamic_cast<const NamedKnobHolder*>(holder);
             const QString holderName = QString::fromUtf8( ( named ? named->getFullyQualifiedName() : name ).c_str() );
