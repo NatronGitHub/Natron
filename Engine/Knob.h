@@ -33,6 +33,7 @@
 #include <set>
 #include <map>
 #include <mutex>
+#include <optional>
 
 #include <QReadWriteLock>
 #include <QMutex>
@@ -1764,6 +1765,32 @@ protected:
     bool hasGuiCurveChanged(ViewSpec view, int dimension) const;
     void clearExpressionsResultsIfNeeded(std::map<int, Natron::ValueChangedReasonEnum>& modifiedDimensions);
 
+    /**
+     * @brief The key of a cached expression result (#1578): the frame and view the expression is evaluated at, and
+     * the frames and views at which get() without a frame reads the parameters: the holder's current time and view,
+     * for the parameters of this node (during its render actions, the time and view of that action), and the time
+     * and view of the render, for those of the other nodes (outside a render, both are the timeline's frame and view 0).
+     **/
+    struct ExpressionResultKey
+    {
+        double time;
+        ViewIdx view;
+        double holderTime;
+        ViewIdx holderView;
+        double renderTime;
+        ViewIdx renderView;
+
+        bool operator<(const ExpressionResultKey& other) const;
+    };
+
+    /**
+     * @brief The key under which the result of the expression evaluated at time and view is cached, or nothing if it
+     * must not be cached: if the holder is not a node (it cannot tell whether this thread is rendering), and, outside
+     * a render, if time is not the timeline's frame (else the cache would grow with each frame the timeline is at,
+     * times each frame drawn, e.g. by the curve editor).
+     **/
+    std::optional<ExpressionResultKey> getExpressionResultKey(double time, ViewIdx view) const WARN_UNUSED_RETURN;
+
 
     std::shared_ptr<KnobSignalSlotHandler> _signalSlotHandler;
 
@@ -1792,11 +1819,11 @@ public:
 
 
     /*
-       For each dimension, the results of the expressions at a given pair <frame, time> is stored so
-       that we're able to get the same value again for the same render.
-       Of course, this saved in the project to retrieve the same values between 2 runs of the project.
+       For each dimension, the results of the expressions, by frame and view evaluated and by the frames and views
+       at which get() reads the parameters (see KnobHelper::ExpressionResultKey), so that we're able to get the same
+       value again for the same render. They are not saved in the project.
      */
-    typedef std::map<double, T> FrameValueMap;
+    typedef std::map<ExpressionResultKey, T> FrameValueMap;
     typedef std::vector<FrameValueMap> ExprResults;
 
 
