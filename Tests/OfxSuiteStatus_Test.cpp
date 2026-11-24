@@ -18,7 +18,8 @@
 
 // The return codes of the OFX suites that Natron implements (OFX 1.5.1, #1385): the host's kOfxPropName
 // (ofxProperty.h), the multithread suite (ofxMultiThread.h), the message suite (ofxMessage.h), the
-// progress suite (ofxProgress.h), the timeline suite (ofxTimeLine.h) and flushResources (ofxGPURender.h).
+// progress suite (ofxProgress.h), the timeline suite (ofxTimeLine.h), flushResources (ofxGPURender.h) and
+// requestDialog (ofxDialog.h).
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -32,11 +33,15 @@
 #include <cmath>
 #include <limits>
 #include <list>
+#include <thread>
 #include <vector>
+
+#include <QCoreApplication>
 
 #include <gtest/gtest.h>
 
 #include <ofxCore.h>
+#include <ofxDialog.h>
 #include <ofxGPURender.h>
 #include <ofxMessage.h>
 #include <ofxMultiThread.h>
@@ -344,6 +349,75 @@ TEST(OfxSuiteStatus, FlushResources)
 }
 
 #endif
+
+#ifdef OFX_SUPPORTS_DIALOG
+namespace {
+const OfxDialogSuiteV2*
+dialogSuite()
+{
+    return (const OfxDialogSuiteV2*)fetchSuite(kOfxDialogSuite, 2);
+}
+
+// requestDialog from another thread, as a render thread does
+OfxStatus
+requestDialogFromThread(const OfxDialogSuiteV2* suite,
+                        OfxImageEffectHandle effect)
+{
+    OfxStatus stat = kOfxStatErrUnknown;
+    std::thread t([&]() {
+        stat = suite->requestDialog(effect, 0, 0);
+    });
+
+    t.join();
+
+    return stat;
+}
+} // anonymous namespace
+
+// requestDialog: "kOfxStatOK - The host has queued the request and will send an 'OfxActionDialog'",
+// "kOfxStatFailed - The host has no provision for this or can not deal with it currently". On the main
+// thread, Natron sends it at once; from another thread, it queues it to the main thread.
+TEST_F(OfxSuiteStatusTest, RequestDialog)
+{
+    if ( skipped() ) {
+        return;
+    }
+    const OfxDialogSuiteV2* suite = dialogSuite();
+    ASSERT_TRUE(suite != 0);
+    const int dialogs = NatronTestPlugin::counter("Params.dialog");
+
+    EXPECT_EQ( kOfxStatOK, suite->requestDialog(_effect, 0, 0) );
+    EXPECT_EQ( dialogs + 1, NatronTestPlugin::counter("Params.dialog") );
+
+    EXPECT_EQ( kOfxStatOK, requestDialogFromThread(suite, _effect) );
+    QCoreApplication::processEvents();
+    EXPECT_EQ( dialogs + 2, NatronTestPlugin::counter("Params.dialog") );
+
+    // no handle, and no action of an effect running on this thread: no effect to send it to
+    EXPECT_EQ( kOfxStatFailed, suite->requestDialog(0, 0, 0) );
+    EXPECT_EQ( 0, NatronTestPlugin::counter("Params.dialogDead") );
+}
+
+// A request queued from another thread, then the node is destroyed before the main thread processes it:
+// the queued request held a raw pointer to the destroyed effect, and sent it the action (#1608).
+TEST_F(OfxSuiteStatusTest, RequestDialogEffectDestroyed)
+{
+    if ( skipped() ) {
+        return;
+    }
+    const OfxDialogSuiteV2* suite = dialogSuite();
+    ASSERT_TRUE(suite != 0);
+    const int live = NatronTestPlugin::counter("Params.live");
+
+    EXPECT_EQ( kOfxStatOK, requestDialogFromThread(suite, _effect) );
+    TearDown();
+    _effect = 0;
+    EXPECT_EQ( live - 1, NatronTestPlugin::counter("Params.live") );
+    QCoreApplication::processEvents();
+    EXPECT_EQ( 0, NatronTestPlugin::counter("Params.dialogDead") );
+}
+
+#endif // OFX_SUPPORTS_DIALOG
 
 // The parameter properties that ofxParam.h documents as "instance (read only)" are plug-in read-only on
 // instances (NatronGitHub/openfx#205), but Natron's read-only policy (ePluginReadOnlyWarn, Engine/OfxHost.cpp,
