@@ -41,6 +41,7 @@ set(Tests_SOURCES
     KnobInvalidExpression_Test.cpp
     KnobLockOrder_Test.cpp
     KnobFile_Test.cpp
+    KnobHolderCreateKnob_Test.cpp
     KnobHolderPanel_Test.cpp
     KnobSlave_Test.cpp
     KnobStringAnimation_Test.cpp
@@ -48,6 +49,7 @@ set(Tests_SOURCES
     LoadPythonScript_Test.cpp
     Lut_Test.cpp
     Markdown_Test.cpp
+    MaskChannel_Test.cpp
     MultiInputLinks_Test.cpp
     NaNGuards_FastMath.cpp
     NaNGuards_Test.cpp
@@ -58,6 +60,7 @@ set(Tests_SOURCES
     OfxBytesParam_Test.cpp
     OfxContexts_Test.cpp
     OfxCPURenderSupport_Test.cpp
+    OfxClipComponentsView_Test.cpp
     OfxClipGetImage_Test.cpp
     OfxCustomParamInterp_Test.cpp
     OfxDrawSuite_Test.cpp
@@ -100,6 +103,7 @@ set(Tests_SOURCES
     ProjectFileFormat_Test.cpp
     PythonExpressionScope_Test.cpp
     ReadNodeOverlay_Test.cpp
+    ReadWriteVersion_Test.cpp
     RenderThreadSafety_Test.cpp
     RenderThreads_Test.cpp
     RotoPaint_Test.cpp
@@ -271,6 +275,10 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME RendererMissingReadTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_missing_read_test.py $<TARGET_FILE:NatronRenderer>)
     set_tests_properties(RendererMissingReadTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
+    # NatronRenderer project.ntp -i Read <sequence> -w Write <file> <range>, on a project whose Read and Write have no file, renders the right frames (#864)
+    add_test(NAME RendererCLReadWriteTest
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_cl_read_write_test.py $<TARGET_FILE:NatronRenderer>)
+    set_tests_properties(RendererCLReadWriteTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
     # --setting options for the caches and threads, which run before the caches exist (#1571)
     add_test(NAME RendererSettingsTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_settings_test.py $<TARGET_FILE:NatronRenderer>)
@@ -359,6 +367,13 @@ add_test(NAME ConnectLadderHeadless
 set_tests_properties(ConnectLadderHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/connect-ladder-headless-cache")
 
+# Default node names are the smallest free number, and naming thousands of nodes is fast (#1565):
+# NatronRenderer runs the script, which exits with natron.quit(status).
+add_test(NAME NodeNamingHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_node_naming.py")
+set_tests_properties(NodeNamingHeadless PROPERTIES TIMEOUT 300
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/node-naming-headless-cache")
+
 # ColorParam.get(frame) returns the alpha of an RGBA color, not its blue (#1712): NatronRenderer runs the
 # script, which exits with natron.quit(status).
 add_test(NAME ColorGetFrameHeadless
@@ -373,6 +388,11 @@ add_test(NAME UndoGroupHeadless
 # the caches (OFX plug-ins) in the build tree, not in the user's cache directory (#1569)
 set_tests_properties(UndoGroupHeadless PROPERTIES TIMEOUT 120
     ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/undo-group-headless-cache")
+# AnimatedParam.setDerivativesAtTime() (#1745), headless
+add_test(NAME KeyframeDerivativesHeadless
+    COMMAND NatronRenderer -t "${CMAKE_CURRENT_SOURCE_DIR}/gui/headless_keyframe_derivatives.py")
+set_tests_properties(KeyframeDerivativesHeadless PROPERTIES TIMEOUT 120
+    ENVIRONMENT "NATRON_DISK_CACHE_PATH=${CMAKE_CURRENT_BINARY_DIR}/keyframe-derivatives-headless-cache")
 
 # A PyPlug is created after the script rebinds the global "app" (#1525)
 add_test(NAME PyPlugReboundAppHeadless

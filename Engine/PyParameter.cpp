@@ -607,6 +607,23 @@ AnimatedParam::setInterpolationAtTime(double time,
     return knob->setInterpolationAtTime(eCurveChangeReasonInternal, ViewSpec::current(), dimension, time, interpolation, &newKey);
 }
 
+bool
+AnimatedParam::setDerivativesAtTime(double time,
+                                    double left,
+                                    double right,
+                                    int dimension)
+{
+    KnobIPtr knob = getInternalKnob();
+
+    // False, not an exception, for a dimension that does not exist; int, bool and choice curves are constant
+    if ( !knob || !dynamic_cast<KnobDoubleBase*>( knob.get() ) || (dimension < 0) || ( dimension >= knob->getDimension() ) ) {
+        return false;
+    }
+    recordForUndoGroup(knob);
+
+    return knob->moveDerivativesAtTime(eCurveChangeReasonInternal, ViewSpec::current(), dimension, time, left, right);
+}
+
 void
 Param::_addAsDependencyOf(int fromExprDimension,
                           Param* param,

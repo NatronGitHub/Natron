@@ -185,6 +185,7 @@ public:
     virtual void requestQuit(int exitCode) OVERRIDE FINAL;
 
 private:
+    virtual bool closeModalWindows() OVERRIDE FINAL;
     void quitWhenIdle();
 
 public:
