@@ -275,6 +275,12 @@ public:
     bool setInterpolationAtTime(double time, Natron::KeyframeTypeEnum interpolation, int dimension = 0);
 
     /**
+     * @brief Returns the interpolation of the keyframe at the given time, or eKeyframeTypeNone if there is
+     * no keyframe at that time or the dimension does not exist.
+     **/
+    Natron::KeyframeTypeEnum getInterpolationAtTime(double time, int dimension = 0) const;
+
+    /**
      * @brief Sets the left and right derivatives (tangents) of the keyframe at time, which becomes free
      * (eKeyframeTypeFree), as when its tangents are moved in the Curve Editor.
      * @returns false if there is no keyframe at time.
