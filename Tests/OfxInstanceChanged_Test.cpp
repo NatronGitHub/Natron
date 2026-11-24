@@ -278,3 +278,33 @@ TEST_F(OfxInstanceChangedTest, RestoreDefaults)
     EXPECT_EQ( 1, delta("Params.begin." kOfxChangeUserEdited) );
     expectNoError();
 }
+
+// Setting or removing an expression from Python (Param.setExpression()) changes the value of the parameter: the
+// plug-in gets one kOfxActionInstanceChanged in one bracket, as when the expression is set in the GUI, for every
+// type of parameter, a choice parameter included (#1336).
+TEST_F(OfxInstanceChangedTest, PythonSetExpression)
+{
+    if ( skipped() ) {
+        return;
+    }
+    const char* const names[] = { "intTo", "doubleTo", "boolTo", "choiceTo" };
+    const std::string node = _node->getApp()->getAppIDString() + '.' + _node->getFullyQualifiedName();
+    for (std::size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i) {
+        const std::string name = names[i];
+        ASSERT_TRUE( bool( _node->getKnobByName(name) ) ) << name;
+        // set an expression, then remove it
+        const char* const exprs[] = { "1", "" };
+        for (std::size_t e = 0; e < sizeof(exprs) / sizeof(exprs[0]); ++e) {
+            resetCounters();
+            const int ic = NatronTestPlugin::counter("Params.instanceChanged." + name);
+            std::string error;
+            EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(
+                             "assert " + node + '.' + name + ".setExpression('" + exprs[e] + "', False)\n", &error, 0) ) << name << ": " << error;
+            EXPECT_EQ( exprs[e], _node->getKnobByName(name)->getExpression(0) ) << name;
+            EXPECT_EQ( ic + 1, NatronTestPlugin::counter("Params.instanceChanged." + name) ) << name << " expression '" << exprs[e] << "'";
+            EXPECT_EQ( 1, delta("Params.instanceChanged") ) << name << " expression '" << exprs[e] << "'";
+            EXPECT_EQ( 1, delta("Params.begin") ) << name << " expression '" << exprs[e] << "'";
+            expectNoError();
+        }
+    }
+}
