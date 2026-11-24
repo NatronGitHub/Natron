@@ -31,6 +31,7 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 #include <cctype> // isspace
+#include <cstring> // memcpy
 
 #include <QDataStream>
 #include <QDateTime>
@@ -699,7 +700,8 @@ KnobHelper::getExpressionRecursionLevel() const
 void
 KnobHelper::deleteKnob()
 {
-    KnobI::ListenerDimsMap listenersCpy = _imp->listeners;
+    KnobI::ListenerDimsMap listenersCpy;
+    getListeners(listenersCpy); // under mastersMutex, which guards the listeners
 
     for (ListenerDimsMap::iterator it = listenersCpy.begin(); it != listenersCpy.end(); ++it) {
         KnobIPtr knob = it->first.lock();
@@ -3054,43 +3056,11 @@ KnobHelper::clearExpression(int dimension,
             if (!other) {
                 continue;
             }
-            ListenerDimsMap otherListeners;
-            {
-                QReadLocker otherMastersLocker(&other->_imp->mastersMutex);
-                otherListeners = other->_imp->listeners;
-            }
-
-            for (ListenerDimsMap::iterator it = otherListeners.begin(); it != otherListeners.end(); ++it) {
-                KnobIPtr knob = it->first.lock();
-                if (knob.get() == this) {
-                    //erase from the dimensions vector
-                    assert( dimension < (int)it->second.size() );
-                    it->second[dimension].isListening = false;
-
-                    //if it has no longer has a reference to this knob, erase it
-                    bool hasReference = false;
-                    for (std::size_t d = 0; d < it->second.size(); ++d) {
-                        if (it->second[d].isListening) {
-                            hasReference = true;
-                            break;
-                        }
-                    }
-                    if (!hasReference) {
-                        otherListeners.erase(it);
-                    }
-
-                    break;
-                }
-            }
+            // in place, under the other knob's mastersMutex (#1572)
+            other->removeListener(this, dimension);
 
             if ( getHolder() ) {
                 getHolder()->onKnobSlaved(thisShared, otherKnob, dimension, false );
-            }
-
-
-            {
-                QWriteLocker otherMastersLocker(&other->_imp->mastersMutex);
-                other->_imp->listeners = otherListeners;
             }
         }
     }
@@ -4434,6 +4404,7 @@ KnobHelper::removeListener(KnobI* listener,
     QWriteLocker l(&_imp->mastersMutex);
     for (ListenerDimsMap::iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
         if (it->first.lock().get() == listener) {
+            assert( listenerDimension >= 0 && listenerDimension < (int)it->second.size() );
             it->second[listenerDimension].isListening = false;
 
             bool hasDimensionListening = false;
@@ -4515,20 +4486,6 @@ KnobHelper::randomInt(int min,
     return (int)random( (double)min, (double)max );
 }
 
-struct alias_cast_float
-{
-    alias_cast_float()
-        : raw(0)
-    {
-    };                          // initialize to 0 in case sizeof(T) < 8
-
-    union
-    {
-        U32 raw;
-        float data;
-    };
-};
-
 void
 KnobHelper::randomSeed(double time,
                        unsigned int seed) const
@@ -4545,9 +4502,12 @@ KnobHelper::randomSeed(double time,
     U32 hash32 = (U32)hash;
     hash32 += seed;
 
-    alias_cast_float ac;
-    ac.data = (float)time;
-    hash32 += ac.raw;
+    // the bits of the time as a float: with memcpy, not a union, which would be undefined behaviour in C++ (#1721)
+    const float timeF = (float)time;
+    U32 timeBits;
+    static_assert(sizeof(timeBits) == sizeof(timeF), "float is not 32 bits");
+    std::memcpy( &timeBits, &timeF, sizeof(timeBits) );
+    hash32 += timeBits;
 
     QMutexLocker k(&_imp->lastRandomHashMutex);
     _imp->lastRandomHash = hash32;

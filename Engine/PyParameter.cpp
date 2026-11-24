@@ -1459,7 +1459,7 @@ ColorParam::get(double frame) const
     ret.r = knob->getValueAtTime(frame, 0);
     ret.g = knob->getValueAtTime(frame, 1);
     ret.b = knob->getValueAtTime(frame, 2);
-    ret.a = knob->getDimension() == 4 ? knob->getValueAtTime(frame, 2) : 1.;
+    ret.a = knob->getDimension() == 4 ? knob->getValueAtTime(frame, 3) : 1.;
 
     return ret;
 }
