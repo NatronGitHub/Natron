@@ -258,42 +258,50 @@ TEST_F(PythonScriptTest, NestedCall)
     EXPECT_TRUE(ok) << err;
 }
 
-// A PyPlug whose getVersion() doesn't return an int: getGroupInfos() left the Python error of
-// PyLong_AsLong() pending and used (unsigned int)-1 as the version (#1743).
-TEST(PyPlugInfos, NonIntegerVersion)
+// A PyPlug whose getVersion() doesn't return a valid version number (a string, a negative int):
+// getGroupInfos() cast PyLong_AsLong() to unsigned int without checking it, and the PyPlug got version
+// 4294967295 (or 4294967294...), which takes precedence over every other version of that PyPlug (#1743).
+namespace {
+unsigned int
+readPyPlugVersion(const std::string& moduleName,
+                  const char* versionExpr)
 {
     QTemporaryDir dir;
-    ASSERT_TRUE( dir.isValid() );
-    const std::string moduleName = "NatronTestPyPlugBadVersion";
+    EXPECT_TRUE( dir.isValid() );
     {
         QFile f( dir.path() + QString::fromUtf8("/%1.py").arg( QString::fromUtf8( moduleName.c_str() ) ) );
-        ASSERT_TRUE( f.open(QIODevice::WriteOnly) );
-        f.write("def getLabel():\n"
-                "    return 'BadVersion'\n"
-                "def getPluginID():\n"
-                "    return 'fr.inria.test.BadVersion'\n"
-                "def getVersion():\n"
-                "    return '2'\n"
-                "def createInstance(app, group):\n"
-                "    pass\n");
+        EXPECT_TRUE( f.open(QIODevice::WriteOnly) );
+        f.write( ( std::string("def getLabel():\n"
+                               "    return 'BadVersion'\n"
+                               "def getPluginID():\n"
+                               "    return 'fr.inria.test.") + moduleName + "'\n"
+                   "def getVersion():\n"
+                   "    return " + versionExpr + "\n"
+                   "def createInstance(app, group):\n"
+                   "    pass\n" ).c_str() );
     }
     const std::string dirPath = dir.path().toStdString();
     std::string err;
-    ASSERT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nsys.path.insert(0, r'" + dirPath + "')\n", &err, 0) ) << err;
+    EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nsys.path.insert(0, r'" + dirPath + "')\n", &err, 0) ) << err;
 
     std::string pluginID, pluginLabel, iconFilePath, grouping, description;
     bool isToolset = false;
     unsigned int version = 0;
     EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::getGroupInfos(dirPath + '/', moduleName, &pluginID, &pluginLabel, &iconFilePath, &grouping,
                                                                            &description, &isToolset, &version) );
-    EXPECT_EQ( pluginID, std::string("fr.inria.test.BadVersion") );
-    EXPECT_EQ( version, 1u );
-    {
-        PythonGILLocker pgl;
-        EXPECT_FALSE( PyErr_Occurred() );
-        PyErr_Clear();
-    }
+    EXPECT_EQ( pluginID, "fr.inria.test." + moduleName );
 
     EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("sys.path.remove(r'" + dirPath + "')\n"
-                                                                                   "sys.modules.pop('" + moduleName + "', None)\n", &err, 0) ) << err;
+                                                                                   "sys.modules.pop('" + moduleName + "', None)\n"
+                                                                                   "del " + moduleName + "\n", &err, 0) ) << err;
+
+    return version;
+}
+} // anonymous namespace
+
+TEST(PyPlugInfos, InvalidVersion)
+{
+    EXPECT_EQ( readPyPlugVersion("NatronTestPyPlugStringVersion", "'2'"), 1u );
+    EXPECT_EQ( readPyPlugVersion("NatronTestPyPlugNegativeVersion", "-2"), 1u );
+    EXPECT_EQ( readPyPlugVersion("NatronTestPyPlugVersion3", "3"), 3u );
 }
