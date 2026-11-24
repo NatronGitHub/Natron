@@ -1,0 +1,160 @@
+/* ***** BEGIN LICENSE BLOCK *****
+ * This file is part of Natron <https://natrongithub.github.io/>,
+ * (C) 2018-2026 The Natron developers
+ *
+ * Natron is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Natron is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
+ * ***** END LICENSE BLOCK ***** */
+
+// A project loads the major version of the decoder of a Read node, and of the encoder of a Write node,
+// that it was saved with, not the newest one (#1681). The test plug-ins of
+// Tests/OfxTestPlugin/NatronTestPluginVersions.cpp are a reader and a writer in versions 90.0 and 91.0.
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
+
+#include <string>
+
+#include <QtCore/QTemporaryDir>
+
+#include <gtest/gtest.h>
+
+#include <ofxImageEffect.h>
+
+#include "Engine/AppInstance.h"
+#include "Engine/AppManager.h"
+#include "Engine/CreateNodeArgs.h"
+#include "Engine/EffectInstance.h"
+#include "Engine/Node.h"
+#include "Engine/Plugin.h"
+#include "Engine/Project.h"
+#include "Engine/ReadNode.h"
+#include "Engine/WriteNode.h"
+
+#include "OfxTestPlugin.h"
+
+NATRON_NAMESPACE_USING
+
+namespace {
+const int kOldMajor = 90;
+const int kNewestMajor = 91;
+
+bool
+versionsAvailable()
+{
+    const char* const ids[] = { PLUGINID_OFX_READCDR, PLUGINID_OFX_WRITEPFM };
+
+    for (int i = 0; i < 2; ++i) {
+        try {
+            Plugin* oldPlugin = appPTR->getPluginBinary(QString::fromUtf8(ids[i]), kOldMajor, 0, false);
+            Plugin* newestPlugin = appPTR->getPluginBinary(QString::fromUtf8(ids[i]), -1, -1, false);
+            if ( !oldPlugin || !newestPlugin || (oldPlugin->getMajorVersion() != kOldMajor) ||
+                 (newestPlugin->getMajorVersion() != kNewestMajor) ) {
+                NatronTestPlugin::reportSkipped(ids[i]);
+
+                return false;
+            }
+        } catch (...) {
+            NatronTestPlugin::reportSkipped(ids[i]);
+
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// a Read or Write node of the project, as app.createNode(pluginID, major) creates it (major -1: the newest)
+NodePtr
+createIONode(const char* pluginID,
+             int major,
+             const std::string& filename)
+{
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    CreateNodeArgs args( pluginID, app->getProject() );
+
+    args.setProperty<int>(kCreateNodeArgsPropPluginVersion, major, 0);
+    args.setProperty<int>(kCreateNodeArgsPropPluginVersion, major == -1 ? -1 : 0, 1);
+    args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+
+    return app->createNode(args);
+}
+
+// the major version of the decoder or encoder of a Read or Write node, or -1
+int
+embeddedMajor(const NodePtr& node)
+{
+    if (!node) {
+        return -1;
+    }
+    NodePtr embedded;
+    if ( ReadNode* read = dynamic_cast<ReadNode*>( node->getEffectInstance().get() ) ) {
+        embedded = read->getEmbeddedReader();
+    } else if ( WriteNode* write = dynamic_cast<WriteNode*>( node->getEffectInstance().get() ) ) {
+        embedded = write->getEmbeddedWriter();
+    }
+    const Plugin* plugin = embedded ? embedded->getPlugin() : 0;
+
+    return plugin ? plugin->getMajorVersion() : -1;
+}
+} // anonymous namespace
+
+TEST(ReadWriteVersion, ProjectLoadsSavedVersion)
+{
+    if ( !versionsAvailable() ) {
+        return;
+    }
+    QTemporaryDir tmpDir;
+    ASSERT_TRUE( tmpDir.isValid() );
+    ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
+    const QString dir = tmpDir.path() + QLatin1Char('/');
+    const std::string filename = dir.toStdString() + "image.natrontestversion";
+
+    NodePtr oldRead = createIONode(PLUGINID_OFX_READCDR, kOldMajor, filename);
+    NodePtr newestRead = createIONode(PLUGINID_OFX_READCDR, -1, filename);
+    NodePtr oldWrite = createIONode(PLUGINID_OFX_WRITEPFM, kOldMajor, filename);
+    NodePtr newestWrite = createIONode(PLUGINID_OFX_WRITEPFM, -1, filename);
+    ASSERT_TRUE(oldRead && newestRead && oldWrite && newestWrite);
+    EXPECT_EQ( kOldMajor, embeddedMajor(oldRead) );
+    EXPECT_EQ( kNewestMajor, embeddedMajor(newestRead) );
+    EXPECT_EQ( kOldMajor, embeddedMajor(oldWrite) );
+    EXPECT_EQ( kNewestMajor, embeddedMajor(newestWrite) );
+
+    const std::string oldReadName = oldRead->getScriptName();
+    const std::string newestReadName = newestRead->getScriptName();
+    const std::string oldWriteName = oldWrite->getScriptName();
+    const std::string newestWriteName = newestWrite->getScriptName();
+    QString savedPath;
+    ASSERT_TRUE( project->saveProject( dir, QString::fromUtf8("ReadWriteVersion.ntp"), &savedPath ) );
+    oldRead.reset();
+    newestRead.reset();
+    oldWrite.reset();
+    newestWrite.reset();
+
+    ASSERT_TRUE( project->loadProject( dir, QString::fromUtf8("ReadWriteVersion.ntp") ) );
+    EXPECT_EQ( kOldMajor, embeddedMajor( project->getNodeByName(oldReadName) ) );
+    EXPECT_EQ( kNewestMajor, embeddedMajor( project->getNodeByName(newestReadName) ) );
+    EXPECT_EQ( kOldMajor, embeddedMajor( project->getNodeByName(oldWriteName) ) );
+    EXPECT_EQ( kNewestMajor, embeddedMajor( project->getNodeByName(newestWriteName) ) );
+
+    // leave the shared app with an untitled empty project, before the directory is removed
+    project->resetProject();
+}
