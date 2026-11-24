@@ -7,6 +7,7 @@ PortGroup           github 1.0
 
 name                seexpr211
 github.setup        wdas SeExpr 2.11 v
+revision            1
 # GitHub tarballs extract to <author>-<project>-<hash>; tarball_from enables
 # extract.rename so the source is renamed to ${worksrcdir} (else patch runs in
 # the wrong directory: "No file to patch").
@@ -38,7 +39,8 @@ depends_build       port:doxygen
 patchfiles          0001-seexpr-2.11-fix-cxxflags.patch \
                     0002-seexpr-2.11-fix-inline-error.patch \
                     0004-seexpr-2.11-c++98.patch \
-                    0006-seexpr-2.11-cstylecast.patch
+                    0006-seexpr-2.11-cstylecast.patch \
+                    0007-seexpr-2.11-float-to-unsigned-cast.patch
 #patch.cmd           "git apply -v"
 patch.pre_args      -p1
 
