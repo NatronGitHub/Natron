@@ -21,6 +21,7 @@
 
 ### Changes
 
+- Python: renaming a node, e.g. a PyPlug instance with `setScriptName()`, no longer breaks the expressions of its parameters and of the nodes inside it that don't read one of its parameters (e.g. `thisGroup.getInput(1) is None` in the Glow PyPlug, or `thisNode.getScriptName()`): they kept the old name and failed with `AttributeError: 'NatronEngine.App' object has no attribute 'Glow1'`. #1686
 - File dialog: a folder typed with a project variable, e.g. `[Project]/plates`, is recognised as a folder (Enter opens it) instead of being taken for a file name. #1744
 - Node graph: undoing the resize of a backdrop restores its exact previous size, instead of a slightly larger one. #1744
 - A read-only checkbox (e.g. a disabled Boolean parameter, or one driven by an expression) can no longer be toggled with the Space key. #1744
