@@ -17,6 +17,7 @@
 
 ### Changes
 
+- Group from selection (Ctrl+G) no longer disconnects a selected node from another selected node that feeds several selected nodes (e.g. A feeding both B and C): the link is kept inside the Group, instead of going through a new Input of the Group connected to the deleted original. #1462
 - PyPlugs: a PyPlug whose `getVersion()` doesn't return a valid version number (e.g. a string or a negative number) is loaded as version 1, with a message in the error log, instead of version 4294967295 (or close to it), which took precedence over every other version of that PyPlug. #1743
 - Projects: a PyPlug that moved since the project was saved is found again in the PyPlug search paths (e.g. `NATRON_PLUGIN_PATH`, including their sub-directories), so its version is checked and its update offered as when it didn't move. The search never found it: the node kept its PyPlug only if its module could be imported from the Python path, and no update was offered. #1645
 - Python: `IntParam`, `DoubleParam` and `ColorParam` `getDefaultValue(dimension)` return 0 for a dimension out of range, as `getValue(dimension)` does, instead of reading out of bounds. #1743
