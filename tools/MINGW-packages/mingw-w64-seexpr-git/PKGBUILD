@@ -5,7 +5,7 @@ pkgbase=mingw-w64-natron_${_realname}-git
 pkgname="${MINGW_PACKAGE_PREFIX}-natron_${_realname}-git"
 gitcommit=a5f02bb #v1-2.11
 pkgver=86.a5f02bb
-pkgrel=5
+pkgrel=6
 pkgdesc="Arithmetic expression language"
 arch=('any')
 mingw_arch=('ucrt64' 'clangarm64')
@@ -23,6 +23,7 @@ source=(
         0004-seexpr-2.11-c++98.patch
         0005-seexpr-2.11-noeditordemos.patch
         0006-seexpr-2.11-cmake_version.patch
+        0007-seexpr-2.11-float-to-unsigned-cast.patch
        )
 sha256sums=(
             'SKIP'
@@ -32,6 +33,7 @@ sha256sums=(
             '534c27b14e8bfa4e840ed2e96ed37d784cad4b8640039a362a5f85aef1a1e339'
             '2c04c23ad2777c0c7dcb11696863a269984a032edd7ab10117dd7c30ef09d0ca'
             'd1953182418af85977fa906ee88986b2843c6cb0fbdba1f799d642d476658ba0'
+            'e54b42a3844b3d66e044f9c8e53192c709b90e3cf5225fa2e296759d872912d9'
            )
 
 pkgver() {
@@ -47,6 +49,7 @@ prepare() {
   patch -p1 -i ${srcdir}/0004-seexpr-2.11-c++98.patch
   patch -p1 -i ${srcdir}/0005-seexpr-2.11-noeditordemos.patch
   patch -p1 -i ${srcdir}/0006-seexpr-2.11-cmake_version.patch
+  patch -p1 -i ${srcdir}/0007-seexpr-2.11-float-to-unsigned-cast.patch
 }
 
 build() {
