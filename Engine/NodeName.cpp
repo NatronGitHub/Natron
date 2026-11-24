@@ -283,12 +283,13 @@ static void
 recompileExpressionsRecursive(Node* node,
                               const KnobI::ListenerDimsMap& recompiled)
 {
-    const KnobsVec & knobs = node->getKnobs();
+    // a copy: the expressions run Python, which may add parameters
+    const KnobsVec knobs = node->getKnobs();
 
     for (std::size_t i = 0; i < knobs.size(); ++i) {
         KnobI::ListenerDimsMap::const_iterator found = recompiled.find(knobs[i]);
         for (int d = 0; d < knobs[i]->getDimension(); ++d) {
-            if ( ( found != recompiled.end() ) && ( d < (int)found->second.size() ) &&
+            if ( ( found != recompiled.end() ) && ( d < static_cast<int>( found->second.size() ) ) &&
                  found->second[d].isListening && found->second[d].isExpr ) {
                 continue;
             }
@@ -441,6 +442,12 @@ Node::setNameInternal(const std::string& name,
             ///For all knobs that have listeners, change in the expressions of listeners this knob script-name
             KnobI::ListenerDimsMap dependencies;
             insertDependenciesRecursive(this, &dependencies);
+            // The expressions of this node and of the nodes inside it are compiled with their
+            // fully-qualified names (thisNode, thisGroup): recompile those that are not listeners
+            // (recompiled below), which read no parameter of these nodes, e.g.
+            // "thisGroup.getInput(1) is None" (#1686). First, so that the listeners that read
+            // them get their new values.
+            recompileExpressionsRecursive(this, dependencies);
             for (KnobI::ListenerDimsMap::iterator it = dependencies.begin(); it != dependencies.end(); ++it) {
                 KnobIPtr listener = it->first.lock();
                 if (!listener) {
@@ -452,10 +459,6 @@ Node::setNameInternal(const std::string& name,
                     }
                 }
             }
-            // The expressions of this node and of the nodes inside it are compiled with their
-            // fully-qualified names (thisNode, thisGroup): recompile those not done above, which read
-            // no parameter of these nodes, e.g. "thisGroup.getInput(1) is None" (#1686).
-            recompileExpressionsRecursive(this, dependencies);
         }
     }
 
