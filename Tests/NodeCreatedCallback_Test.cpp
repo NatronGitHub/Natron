@@ -17,8 +17,10 @@
  * ***** END LICENSE BLOCK ***** */
 
 // Regression tests for https://github.com/NatronGitHub/Natron/issues/488: the project's afterNodeCreated callback
-// (and beforeNodeRemoval) must be called once per node, also for a Read node, and a Group's own callbacks once for
-// each node created in (or removed from) that Group.
+// (and beforeNodeRemoval) must be called once per node. On RB-2.6 before the fix, they were called twice for a node
+// at the top level of the project that is not a Group (CalledOnceForTopLevelNode, and the Read node of the issue in
+// BaseTest.NodeCreatedCallbackCalledOnceForReadNode). CalledOnceForNodeInGroup, where a Group's own callbacks are
+// also called, passed before the fix: it checks that the fix keeps them.
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -80,7 +82,7 @@ callCount(const std::string& name,
     PythonGILLocker pgl;
     PyObject* count = PyObject_GetAttrString(NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::getMainModule(), "natronTestCount"); // new ref
     EXPECT_TRUE(count != 0);
-    int ret = count ? (int)PyLong_AsLong(count) : -1;
+    int ret = count ? static_cast<int>( PyLong_AsLong(count) ) : -1;
     Py_XDECREF(count);
     PyErr_Clear();
 
@@ -119,8 +121,33 @@ public:
         runPython("for natronTestName in [n for n in globals() if n.startswith('natronTest488')]:\n"
                   "    del globals()[natronTestName]\n"
                   "globals().pop('natronTestName', None)\n"
-                  "natronTestCount = None\n");
+                  "globals().pop('natronTestCount', None)\n");
     }
+
+    ProjectCallbacks(const ProjectCallbacks&) = delete;
+    ProjectCallbacks& operator=(const ProjectCallbacks&) = delete;
+};
+
+// Destroys the node when the test ends, also when it exits early, so that it doesn't stay in the project.
+class NodeDestroyer
+{
+    NodePtr _node;
+
+public:
+    explicit NodeDestroyer(const NodePtr& node)
+        : _node(node)
+    {
+    }
+
+    ~NodeDestroyer()
+    {
+        if (_node) {
+            _node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
+        }
+    }
+
+    NodeDestroyer(const NodeDestroyer&) = delete;
+    NodeDestroyer& operator=(const NodeDestroyer&) = delete;
 };
 
 NodePtr
@@ -138,12 +165,11 @@ createNodeIn(const AppInstancePtr& app,
     return app->createNode(args);
 }
 
-// Deletes the node as the GUI does (deactivate(), which runs beforeNodeRemoval), then destroys it.
+// Deletes the node as the GUI does: deactivate() runs beforeNodeRemoval (NodeDestroyer then destroys it).
 void
 deleteNode(const NodePtr& node)
 {
     node->deactivate(std::list<NodePtr>(), true /*disconnectAll*/, false /*reconnect*/, true /*hideGui*/, false /*triggerRender*/);
-    node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
 }
 } // anonymous namespace
 
@@ -156,11 +182,18 @@ TEST(NodeCreatedCallback, CalledOnceForTopLevelNode)
 
     NodePtr dot = createNodeIn(app, PLUGINID_NATRON_DOT, app->getProject() );
     ASSERT_TRUE( bool(dot) );
+    NodeDestroyer destroyDot(dot);
     const std::string name = dot->getScriptName();
     EXPECT_EQ( 1, callCount("Created", name) );
 
     deleteNode(dot);
     EXPECT_EQ( 1, callCount("Removed", name) );
+
+    // undoing the deletion (activate()) runs afterNodeCreated again, once
+    dot->activate(std::list<NodePtr>(), false /*restoreAll*/, false /*triggerRender*/);
+    EXPECT_EQ( 2, callCount("Created", name) );
+    deleteNode(dot);
+    EXPECT_EQ( 2, callCount("Removed", name) );
 }
 
 // A node in a Group: the project's callbacks and the Group's own callbacks are each called once.
@@ -172,6 +205,7 @@ TEST(NodeCreatedCallback, CalledOnceForNodeInGroup)
 
     NodePtr groupNode = createNodeIn(app, PLUGINID_NATRON_GROUP, app->getProject() );
     ASSERT_TRUE( bool(groupNode) );
+    NodeDestroyer destroyGroup(groupNode);
     EXPECT_EQ( 1, callCount("Created", groupNode->getScriptName() ) );
     NodeGroupPtr group = std::dynamic_pointer_cast<NodeGroup>( groupNode->getEffectInstance() );
     ASSERT_TRUE( bool(group) );
@@ -180,6 +214,7 @@ TEST(NodeCreatedCallback, CalledOnceForNodeInGroup)
 
     NodePtr dot = createNodeIn(app, PLUGINID_NATRON_DOT, group);
     ASSERT_TRUE( bool(dot) );
+    NodeDestroyer destroyDot(dot);
     const std::string name = dot->getScriptName();
     EXPECT_EQ( 1, callCount("Created", name) );
     EXPECT_EQ( 1, callCount("GroupCreated", name) );
@@ -187,8 +222,6 @@ TEST(NodeCreatedCallback, CalledOnceForNodeInGroup)
     deleteNode(dot);
     EXPECT_EQ( 1, callCount("Removed", name) );
     EXPECT_EQ( 1, callCount("GroupRemoved", name) );
-
-    groupNode->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
 }
 
 // The Read node of the issue (it needs the ReadOIIO plug-in, as all the BaseTest tests).
@@ -198,6 +231,7 @@ TEST_F(BaseTest, NodeCreatedCallbackCalledOnceForReadNode)
 
     NodePtr reader = createNodeIn(getApp(), PLUGINID_NATRON_READ, getApp()->getProject() );
     ASSERT_TRUE( bool(reader) );
+    NodeDestroyer destroyReader(reader);
     const std::string name = reader->getScriptName();
     EXPECT_EQ( 1, callCount("Created", name) );
 
