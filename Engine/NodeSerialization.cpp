@@ -25,6 +25,7 @@
 
 #include "NodeSerialization.h"
 
+#include <algorithm> // std::any_of
 #include <cassert>
 #include <stdexcept>
 
@@ -203,6 +204,14 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
 
         _isNull = false;
     }
+}
+
+bool
+NodeSerialization::hasKnob(const std::string& knobName) const
+{
+    return std::any_of( _knobsValues.begin(), _knobsValues.end(), [&knobName](const KnobSerializationPtr& knob) {
+        return knob->getName() == knobName;
+    } );
 }
 
 NATRON_NAMESPACE_EXIT

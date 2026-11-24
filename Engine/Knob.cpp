@@ -1460,8 +1460,8 @@ KnobHelper::moveDerivativesAtTime(CurveChangeReason reason,
                                   double right)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
-        throw std::invalid_argument("KnobHelper::setInterpolationAtTime(): Dimension out of range");
+    if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
+        throw std::invalid_argument("KnobHelper::moveDerivativesAtTime(): Dimension out of range");
     }
 
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
