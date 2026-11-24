@@ -43,6 +43,9 @@ enum WhiteSpaceMode {
 
 QString convertFromPlainText(const QString &plain, NATRON_NAMESPACE::WhiteSpaceMode mode);
 
+// Turns the http, https and ftp URLs of an HTML text made by convertFromPlainText() into links.
+QString convertUrlsToHtmlLinks(const QString &html);
+
 // use genHTML=true when generating markdown for md4c. false for pandoc
 QString convertFromPlainTextToMarkdown(const QString &plain, bool genHTML, bool isTableElement);
 

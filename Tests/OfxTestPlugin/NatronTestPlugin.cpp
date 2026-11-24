@@ -75,6 +75,9 @@
 // calls clipGetHandle() in kOfxImageEffectActionDescribeInContext, where it is not valid, and records
 // the status and whether the clip was set to NULL ("ParamInteract.describeClipGetHandle*").
 //
+// The plug-ins above count kOfxActionDialog ("<id>.dialog"), and those sent to a destroyed instance
+// ("<id>.dialogDead").
+//
 // The plug-ins above count kOfxActionLoad and kOfxActionUnload ("<id>.load", "<id>.unload"). If the
 // environment variable NATRON_TEST_PLUGIN_ACTION_LOG is set, they also append the lines "load <id>" and
 // "unload <id> live=<live instances>" to the file it names, for the tests that check what a Natron
@@ -94,6 +97,7 @@
 
 #include <ofxCore.h>
 #include <ofxImageEffect.h>
+#include <ofxDialog.h> // after ofxImageEffect.h, which declares OfxImageEffectHandle
 #include <ofxGPURender.h>
 #include <ofxInteract.h>
 #include <ofxMessage.h>
@@ -295,6 +299,15 @@ commonAction(const char* action,
     if (std::strcmp(action, kOfxImageEffectActionRender) == 0) {
         // the tests don't look at the images
         incrementCounter(id + ".render");
+
+        return kOfxStatOK;
+    }
+    if (std::strcmp(action, kOfxActionDialog) == 0) {
+        std::lock_guard<std::mutex> l(gMutex);
+        ++gCounters[id + ".dialog"];
+        if ( !gLiveEffects.count(effect) ) {
+            ++gCounters[id + ".dialogDead"];
+        }
 
         return kOfxStatOK;
     }
