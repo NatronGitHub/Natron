@@ -1,8 +1,9 @@
 # Regression test for #839: the edits of one overlay drag are one undo step, and two drags are two.
 # The overlay of net.natron.test.OverlayDrag (Tests/OfxTestPlugin/NatronTestPluginOverlayDrag.cpp) sets its
-# parameters x and y at each pen motion, as the Transform overlay does, but y changes only at every other
-# motion: the second motion of a drag changed a parameter that the first one did not, and started a new
-# undo step, so that Undo only went back to the first motion of the drag.
+# parameters y then x in one edit block at each pen motion, as the Transform overlay sets all its parameters,
+# but y changes only at every other motion. The first changed parameter of a block makes a new undo command,
+# which was merged into the previous one only if it changed no other parameter: the second motion of a drag,
+# where y changes first, started a new undo step, and the first motion of the next drag was merged into it.
 import NatronGuiTest
 from natrontest import *
 

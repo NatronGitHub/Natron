@@ -17,9 +17,9 @@
  * ***** END LICENSE BLOCK ***** */
 
 // net.natron.test.OverlayDrag (Tests/gui/test_overlay_drag_undo.py): a filter whose overlay interact captures
-// every drag and, at each pen motion, sets its double parameters "x" and "y" in one edit block, as the Transform
-// overlay sets all its parameters: x is the pen x, and y the number of pen motions of the drag divided by 2, so
-// that y changes only at every other motion. It is an identity: it never renders.
+// every drag and, at each pen motion, sets its double parameters "y" then "x" in one edit block, as the Transform
+// overlay sets all its parameters: y is the number of pen motions of the drag divided by 2, so that it changes only
+// at every other motion, and x is the pen x. It is an identity: it never renders.
 
 #include <cstring>
 
@@ -57,8 +57,10 @@ setParams(OfxPropertySetHandle inArgs)
         return kOfxStatFailed;
     }
     gParamSuite->paramEditBegin(paramSet, "drag");
-    gParamSuite->paramSetValue(x, pen[0]);
+    // y first: when it changes, it is the first change of the block, which starts a new undo command unless
+    // it is merged into the previous one
     gParamSuite->paramSetValue(y, (double)(gMotions / 2));
+    gParamSuite->paramSetValue(x, pen[0]);
     gParamSuite->paramEditEnd(paramSet);
 
     return kOfxStatOK;
