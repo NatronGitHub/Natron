@@ -37,7 +37,7 @@ image files.
 
 If your footage is a video, convert it to an image sequence first: DPX, EXR,
 TIFF, PNG or JPEG, depending on the quality and bit depth of the source. See the
-tutorial :doc:`How To Convert Videos To Image Sequences <tutorials-imagesequence>`.
+tutorial :doc:`tutorials-imagesequence`.
 
 
 Loading footage

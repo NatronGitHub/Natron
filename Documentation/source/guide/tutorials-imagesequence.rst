@@ -41,8 +41,8 @@ digits.
 ``-pix_fmt`` chooses the pixel format, i.e. the channels and the bit depth of
 the images. Videos are usually stored as Y'CbCr (YUV), often with fewer
 chroma samples than pixels, and ``-pix_fmt`` converts them to RGB. For TIFF it
-is required: without it, FFmpeg writes a Y'CbCr 4:2:0 TIFF, which most
-applications can't read.
+is required: without it, FFmpeg writes a Y'CbCr TIFF (4:2:0 for most videos),
+which most applications can't read.
 
 =====================  =======================  ========================
 Format                 8 bits per channel       16 bits per channel
@@ -81,8 +81,9 @@ from one version to the next: check the manual of your version.
   `Kdenlive manual <https://docs.kdenlive.org/en/exporting/render.html>`__).
 - **Shotcut:** put the video on the timeline, open the **Export** panel, and
   choose a preset of the **Stills** category, such as PNG or TIFF.
-- **Blender:** in the Video Sequencer, add the movie. In the **Output**
-  properties, set the output path and the **File Format** (PNG, TIFF or
+- **Blender:** in the Video Sequencer, add the movie, and set the frame range,
+  resolution and frame rate of the scene to those of the movie. In the
+  **Output** properties, set the output path and the **File Format** (PNG, TIFF or
   OpenEXR), with RGB or RGBA and the color depth. In the **Render**
   properties, set **Color Management** > **View Transform** to **Standard**,
   so that the colors of the video are not changed (the default is AgX in
@@ -112,8 +113,9 @@ floating-point images (values below 0 or above 1, linear light):
 
 - **TIFF** (:ref:`WriteOIIO <fr.inria.openfx.WriteOIIO>`): **Output
   Components** RGB, or RGBA to keep the alpha; **Bit Depth** 8i or 16i
-  (``auto`` picks one from the input); and a lossless **Compression**:
-  ``none``, ``lzw``, ``zip`` or ``packbits``.
+  (``auto`` writes 16 bits for TIFF); and a lossless **Compression**:
+  ``default`` (``zip``), ``none``, ``lzw`` or ``packbits``. Avoid ``jpeg``,
+  which is lossy.
 - **PNG** (:ref:`WritePNG <fr.inria.openfx.WritePNG>`): **Output Components**
   RGB or RGBA; **Depth** 8-bit or 16-bit; and a **Compression Level** from 0
   (none, fastest) to 9 (smallest files), 6 by default. Every level gives the
@@ -131,16 +133,18 @@ FFmpeg encodes an image sequence back to a video:
 
    ffmpeg -framerate 24 -i output_%04d.png -c:v libx264 -pix_fmt yuv420p output.mp4
 
-- ``-framerate`` gives the frame rate of the sequence; without it, FFmpeg
-  uses 25 frames per second. It must come before ``-i``.
+- ``-framerate`` gives the frame rate of the sequence: use that of the
+  original video (``ffprobe input.mp4`` shows it; write 23.976 as
+  ``24000/1001``), or the sound won't stay in sync. Without it, FFmpeg uses 25
+  frames per second. It must come before ``-i``.
 - The pattern after ``-i`` must match the file names, with the same number of
   digits: ``%04d`` for ``output_0001.png``, ``%05d`` for ``output_00001.png``.
 - The frames must be numbered without gaps. FFmpeg looks for the first frame
   between 0 and 4: for a sequence that starts at another number, such as
   1001, add ``-start_number 1001`` before ``-i``.
-- ``-pix_fmt yuv420p`` makes an H.264 video that every player can play.
-  Without it, FFmpeg keeps the full color resolution of RGB images (4:4:4),
-  which many players can't play.
+- ``-pix_fmt yuv420p`` makes an H.264 video that every player can play; the
+  width and height must then be even. Without it, FFmpeg keeps the full color
+  resolution of RGB images (4:4:4), which many players can't play.
 
 To encode a digital intermediate (ProRes, DNxHR, FFV1) for editing, see
 :doc:`tutorials-ffmpeg-di`. To add the sound of the original video, see
