@@ -238,6 +238,13 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
 
         return;
     }
+    if ( nodeSerialization.empty() ) {
+        // e.g. a hand-edited or truncated file with NodesCount 0 (#1636)
+        Dialogs::errorDialog( tr("Presets").toStdString(),
+                              tr("%1 is not a valid presets file: it contains no node.").arg( QString::fromUtf8( filename.c_str() ) ).toStdString() );
+
+        return;
+    }
 
     NodeGuiPtr node = getNode();
     if ( nodeSerialization.front()->getPluginID() != node->getNode()->getPluginID() ) {
