@@ -76,6 +76,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           # schedule events have no repository payload: they run on the default branch
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch || github.ref_name }}
+          # TEMPORARY (testing): resume from stage 1 of run 45252896126 (remove before ready)
+          RESUME_FROM: sdk-state-1 45252896126
         run: |
           found=$("$SDK_TOOL" find "$SDK_KEY_SHORT" "${{ inputs.mode }}")
           read -r name run what <<< "$found"
@@ -83,7 +85,7 @@ jobs:
           { echo "name=$name"; echo "run=$run"; echo "what=$what"; } >> "$GITHUB_OUTPUT"
 
       - name: Download the SDK to update
-        if: steps.find.outputs.what == 'update'
+        if: steps.find.outputs.what == 'update' || steps.find.outputs.what == 'resume'
         uses: actions/download-artifact@v4
         with:
           name: ${{ steps.find.outputs.name }}
@@ -99,7 +101,7 @@ jobs:
           path: ${{ runner.temp }}/sdk
 
       - name: Restore
-        if: steps.find.outputs.what == 'update' || inputs.stage > 1
+        if: steps.find.outputs.what == 'update' || steps.find.outputs.what == 'resume' || inputs.stage > 1
         run: |
           "$SDK_TOOL" restore "$RUNNER_TEMP/sdk/natron-sdk.tar.zst"
           echo "restored after $(( ($(date +%s) - JOB_START) / 60 )) minutes"
