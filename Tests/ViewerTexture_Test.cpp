@@ -23,7 +23,8 @@
 // - #1118: 16-bit samples are not truncated to their low byte (Linear 16-bit LUT);
 // - the alpha of 8/16-bit images is normalised to [0,1], and the A display (and its autocontrast) shows
 //   alpha without the LUT of the input bit depth;
-// - #1117: the project LUT choice "BT1886" gives eViewerColorSpaceBT1886.
+// - #1117: the project LUT choice "BT1886" gives eViewerColorSpaceBT1886;
+// - #1551: autocontrast in the Matte display uses the RGB channels, as its textures do.
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -291,15 +292,17 @@ TEST(ViewerTexture, MatteFromSeparateImageInTile)
 }
 
 // #1110: autocontrast gives the same range on the 8-bit, 16-bit and float versions of an image, with no LUT and
-// with the sRGB LUT, and that range is the one of the texture values.
+// with the sRGB LUT, and that range is the one of the texture values. #1551: the Matte display shows the RGB
+// channels (with the matte over them), so its range is that of RGB; it was empty, which gave [-1, 0].
 TEST(ViewerTexture, AutoContrastSameForAllDepths)
 {
     const Color::Lut* luts[] = { NULL, ViewerInstance::lutFromColorspace(eViewerColorSpaceSRGB) };
-    const DisplayChannelsEnum channels[] = { eDisplayChannelsRGB, eDisplayChannelsY, eDisplayChannelsR, eDisplayChannelsA };
+    const DisplayChannelsEnum channels[] = { eDisplayChannelsRGB, eDisplayChannelsY, eDisplayChannelsR, eDisplayChannelsA, eDisplayChannelsMatte };
+    const int nChannels = sizeof(channels) / sizeof(channels[0]);
     const RectI rect(0, 0, kW, kH);
 
     for (int l = 0; l < 2; ++l) {
-        for (int c = 0; c < 4; ++c) {
+        for (int c = 0; c < nChannels; ++c) {
             const int alphaIndex = (channels[c] == eDisplayChannelsA) ? 3 : -1;
             ImagePtr ref = makeRamp(eImageBitDepthFloat);
             MinMaxVal refRange = findAutoContrastVminVmax(ref, luts[l], channels[c], alphaIndex, rect);
