@@ -3054,43 +3054,12 @@ KnobHelper::clearExpression(int dimension,
             if (!other) {
                 continue;
             }
-            ListenerDimsMap otherListeners;
-            {
-                QReadLocker otherMastersLocker(&other->_imp->mastersMutex);
-                otherListeners = other->_imp->listeners;
-            }
-
-            for (ListenerDimsMap::iterator it = otherListeners.begin(); it != otherListeners.end(); ++it) {
-                KnobIPtr knob = it->first.lock();
-                if (knob.get() == this) {
-                    //erase from the dimensions vector
-                    assert( dimension < (int)it->second.size() );
-                    it->second[dimension].isListening = false;
-
-                    //if it has no longer has a reference to this knob, erase it
-                    bool hasReference = false;
-                    for (std::size_t d = 0; d < it->second.size(); ++d) {
-                        if (it->second[d].isListening) {
-                            hasReference = true;
-                            break;
-                        }
-                    }
-                    if (!hasReference) {
-                        otherListeners.erase(it);
-                    }
-
-                    break;
-                }
-            }
+            // In place, under the other knob's lock: the list used to be copied, modified and written back, which
+            // lost an addListener() or a removeListener() made on the other knob in between (#1572)
+            other->removeListener(this, dimension);
 
             if ( getHolder() ) {
                 getHolder()->onKnobSlaved(thisShared, otherKnob, dimension, false );
-            }
-
-
-            {
-                QWriteLocker otherMastersLocker(&other->_imp->mastersMutex);
-                other->_imp->listeners = otherListeners;
             }
         }
     }
