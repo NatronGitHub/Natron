@@ -17,6 +17,7 @@
 
 ### Changes
 
+- Robustness (preventive, no known crash): a node or the project no longer keeps a dangling pointer to its settings panel after the Gui deletes the panel, e.g. when the node is destroyed from Python. #1618
 - The color is no longer black after a Shuffle whose Output Layer is not Color, and Premult/Unpremult on a layer other than Color no longer fail to render: the color now comes through from the input, like the other layers. #1660
 - Connecting an input no longer takes exponential time in a graph where many paths lead to the same node (e.g. a node that feeds both inputs of a Merge, many times in a row): the check that refuses cycles visited a node once per path. Building or loading such a graph, from Python or in the GUI, could take minutes or never finish. #1648
 - A render fails when a node upstream reports an error, e.g. a Read node whose file is missing, with "On missing frame: Error" (the default), instead of rendering the nodes downstream with a black input: NatronRenderer wrote black frames and reported a successful render. In the viewer, the nodes downstream of that node show nothing, as the node itself does, and playback stops at that frame. A Switch on "automatic" no longer skips an input in error, and a Read with an empty filename is an error too. Use "On missing frame: Black" to get black frames. #1602
