@@ -939,7 +939,7 @@ KnobHelper::deleteValuesAtTime(CurveChangeReason curveChangeReason,
                                ViewSpec view,
                                int dimension, bool copyCurveValueAtTimeToInternalValue)
 {
-    if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
+    if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
         throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
     }
 
@@ -1018,7 +1018,7 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
                               ViewSpec view,
                               int dimension, bool copyCurveValueAtTimeToInternalValue)
 {
-    if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
+    if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
         throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
     }
 
@@ -1458,7 +1458,7 @@ KnobHelper::moveDerivativesAtTime(CurveChangeReason reason,
                                   double right)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
+    if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
         throw std::invalid_argument("KnobHelper::setInterpolationAtTime(): Dimension out of range");
     }
 
@@ -1518,7 +1518,7 @@ KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,
                                  bool isLeft)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
+    if ( ( dimension >= (int)_imp->curves.size() ) || (dimension < 0) ) {
         throw std::invalid_argument("KnobHelper::setInterpolationAtTime(): Dimension out of range");
     }
 

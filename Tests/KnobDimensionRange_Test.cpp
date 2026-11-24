@@ -41,8 +41,9 @@
 
 NATRON_NAMESPACE_USING
 
-// getDerivativeAtTime() and getIntegrateFromTimeToTime() accepted dimension == getDimension() (an
-// off-by-one in their range check) and then read the curve of a dimension that doesn't exist (#1743).
+// getDerivativeAtTime(), getIntegrateFromTimeToTime() and the keyframe edits (deleteValue(s)AtTime(),
+// moveDerivative(s)AtTime()) accepted dimension == getDimension() (an off-by-one in their range check)
+// and then read the curve of a dimension that doesn't exist (#1743).
 // They throw std::invalid_argument for it, as for a negative dimension.
 TEST(KnobDimensionRange, DerivativeAndIntegral)
 {
@@ -66,6 +67,10 @@ TEST(KnobDimensionRange, DerivativeAndIntegral)
         EXPECT_THROW( knob->getDerivativeAtTime( 5., ViewSpec::current(), 2 ), std::invalid_argument );
         EXPECT_THROW( knob->getIntegrateFromTimeToTime( 0., 10., ViewSpec::current(), 2 ), std::invalid_argument );
         EXPECT_THROW( knob->getDerivativeAtTime( 5., ViewSpec::current(), -1 ), std::invalid_argument );
+        EXPECT_THROW( knob->getIntegrateFromTimeToTime( 0., 10., ViewSpec::current(), -1 ), std::invalid_argument );
+        // the same off-by-one in the keyframe edits
+        EXPECT_THROW( knob->deleteValueAtTime( eCurveChangeReasonInternal, 10., ViewSpec::all(), 2, false ), std::invalid_argument );
+        EXPECT_EQ( 2, knob->getKeyFramesCount( ViewIdx(0), 1 ) );
     }
 
     node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
