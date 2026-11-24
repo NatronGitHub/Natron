@@ -982,14 +982,16 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
             setGroupLabelIDAndVersion(containerNode, modulePath, moduleName);
         }
 
-        int appID = getAppID() + 1;
+        // The variable on which the container node was declared: "app" in background mode, which a script
+        // may have rebound to another App object than app1 (#1525).
+        const std::string appID = getAppIDString();
         std::stringstream ss;
         ss << moduleName.toStdString();
-        ss << ".createInstance(app" << appID;
+        ss << ".createInstance(" << appID;
         if (istoolsetScript) {
             ss << ",\"\"";
         } else {
-            ss << ", app" << appID << "." << containerFullySpecifiedName;
+            ss << ", " << appID << "." << containerFullySpecifiedName;
         }
         ss << ")\n";
         std::string err;
