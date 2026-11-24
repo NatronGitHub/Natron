@@ -17,8 +17,9 @@
  * ***** END LICENSE BLOCK ***** */
 
 // KnobHolder::create*Knob() (the Python createXParam() functions) with the name of an existing parameter: they
-// return it if it has the requested type and dimension; otherwise they return NULL and say why in the error log,
-// instead of returning NULL silently (another type) or the parameter with the wrong dimension (#1621).
+// return it if it has the requested type and at least the requested dimensions; otherwise they return NULL and say
+// why in the error log, instead of returning NULL silently (another type) or a parameter with too few dimensions
+// (#1621).
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -91,18 +92,19 @@ protected:
         return _node->getEffectInstance().get();
     }
 
-    // whether the error log has a message about the parameter name
-    static bool errorLogMentions(const std::string& name)
+    // the number of messages of the error log about the parameter name
+    static int errorLogMentions(const std::string& name)
     {
         std::list<LogEntry> log;
         appPTR->getErrorLog_mt_safe(&log);
+        int n = 0;
         for (std::list<LogEntry>::const_iterator it = log.begin(); it != log.end(); ++it) {
             if ( it->message.contains( QString::fromUtf8( name.c_str() ) ) ) {
-                return true;
+                ++n;
             }
         }
 
-        return false;
+        return n;
     }
 };
 } // anonymous namespace
@@ -117,7 +119,12 @@ TEST_F(KnobHolderCreateKnobTest, SameTypeReturnsExisting)
     ASSERT_TRUE( bool(first) );
     KnobDoublePtr second = holder()->createDoubleKnob("userDouble", "userDouble", 2);
     EXPECT_EQ(first, second);
-    EXPECT_FALSE( errorLogMentions("userDouble") );
+    // more dimensions than requested: the existing parameter too (e.g. createColorParam() without alpha on an RGBA one)
+    KnobColorPtr rgba = holder()->createColorKnob("userColor", "userColor", 4);
+    ASSERT_TRUE( bool(rgba) );
+    EXPECT_EQ( rgba, holder()->createColorKnob("userColor", "userColor", 3) );
+    EXPECT_EQ( 0, errorLogMentions("userDouble") );
+    EXPECT_EQ( 0, errorLogMentions("userColor") );
 }
 
 // another type: NULL, and an error
@@ -129,16 +136,16 @@ TEST_F(KnobHolderCreateKnobTest, OtherTypeIsAnError)
     ASSERT_TRUE( bool( holder()->createDoubleKnob("userParam", "userParam", 1) ) );
     EXPECT_FALSE( bool( holder()->createIntKnob("userParam", "userParam", 1) ) );
     EXPECT_FALSE( bool( holder()->createStringKnob("userParam", "userParam") ) );
-    EXPECT_TRUE( errorLogMentions("userParam") );
+    EXPECT_EQ( 2, errorLogMentions("userParam") );
 }
 
-// another dimension (e.g. createInt2DParam() with the name of an IntParam): NULL, and an error
-TEST_F(KnobHolderCreateKnobTest, OtherDimensionIsAnError)
+// fewer dimensions than requested (e.g. createInt2DParam() with the name of an IntParam): NULL, and an error
+TEST_F(KnobHolderCreateKnobTest, FewerDimensionsIsAnError)
 {
     if ( skipped() ) {
         return;
     }
     ASSERT_TRUE( bool( holder()->createIntKnob("userInt", "userInt", 1) ) );
     EXPECT_FALSE( bool( holder()->createIntKnob("userInt", "userInt", 2) ) );
-    EXPECT_TRUE( errorLogMentions("userInt") );
+    EXPECT_EQ( 1, errorLogMentions("userInt") );
 }

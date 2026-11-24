@@ -5456,8 +5456,9 @@ KnobHolder::getOrCreateUserPageKnob()
 
 namespace {
 // The create*Knob() functions below: the knob of the holder with that name if there is one, else a new knob.
-// A knob with that name but of another type or dimension (e.g. a script calls createIntParam() with the name
-// of a DoubleParam) is not returned: that is reported in the error log, and NULL is returned (#1621).
+// A knob with that name but of another type, or with fewer dimensions (e.g. a script calls createIntParam() with
+// the name of a DoubleParam, or createInt2DParam() with the name of an IntParam), is not returned: NULL is
+// returned, and the reason goes to the Script Editor (or the standard output) and to the error log (#1621).
 template <class K>
 std::shared_ptr<K>
 createUserKnob(KnobHolder* holder,
@@ -5470,15 +5471,22 @@ createUserKnob(KnobHolder* holder,
 
     if (existingKnob) {
         std::shared_ptr<K> ret = std::dynamic_pointer_cast<K>(existingKnob);
-        if ( !ret || (ret->getDimension() != dimension) ) {
-            appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( name.c_str() ), QDateTime::currentDateTime(),
-                                             KnobHolder::tr("Cannot create a parameter of type %1 with %2 dimension(s) named \"%3\": "
-                                                            "a parameter of type %4 with %5 dimension(s) already has that name.")
-                                             .arg( QString::fromUtf8( K::typeNameStatic().c_str() ) )
-                                             .arg(dimension)
-                                             .arg( QString::fromUtf8( name.c_str() ) )
-                                             .arg( QString::fromUtf8( existingKnob->typeName().c_str() ) )
-                                             .arg( existingKnob->getDimension() ) );
+        // more dimensions is fine: the caller only uses those it asked for (e.g. RGB of an RGBA color)
+        if ( !ret || (ret->getDimension() < dimension) ) {
+            const NamedKnobHolder* named = dynamic_cast<const NamedKnobHolder*>(holder);
+            const QString holderName = QString::fromUtf8( ( named ? named->getFullyQualifiedName() : name ).c_str() );
+            const QString message = KnobHolder::tr("Cannot create the %1 parameter \"%2\" with %3 dimension(s): "
+                                                   "a %4 parameter with %5 dimension(s) already has that name.")
+                                    .arg( QString::fromUtf8( K::typeNameStatic().c_str() ),
+                                          QString::fromUtf8( name.c_str() ) )
+                                    .arg(dimension)
+                                    .arg( QString::fromUtf8( existingKnob->typeName().c_str() ) )
+                                    .arg( existingKnob->getDimension() );
+            appPTR->writeToErrorLog_mt_safe( holderName, QDateTime::currentDateTime(), message );
+            AppInstancePtr app = holder->getApp();
+            if (app) {
+                app->appendPlainTextToScriptEditor( ( holderName + QString::fromUtf8(": ") + message ).toStdString() );
+            }
 
             return std::shared_ptr<K>();
         }
