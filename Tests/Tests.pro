@@ -64,6 +64,7 @@ SOURCES += \
     ExprUtils_Test.cpp \
     FailedRoDRender_Test.cpp \
     FileSystemModel_Test.cpp \
+    GenericSchedulerThread_Test.cpp \
     Hash64_Test.cpp \
     ImageCache_Test.cpp \
     Image_Test.cpp \
@@ -122,6 +123,7 @@ SOURCES += \
     PrecompLoad_Test.cpp \
     ProjectAutoSave_Test.cpp \
     PyEffectEquality_Test.cpp \
+    PyExprUtilsNoise_Test.cpp \
     PythonGILUnlocker_Test.cpp \
     PythonScript_Test.cpp \
     ProjectFileFormat_Test.cpp \

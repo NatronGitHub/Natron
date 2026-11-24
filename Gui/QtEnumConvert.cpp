@@ -59,6 +59,27 @@ QtEnumConvert::superKeysAreMeta()
     return QGuiApplication::platformName().startsWith( QLatin1String("wayland") );
 }
 
+bool
+QtEnumConvert::isModifierKey(Qt::Key k)
+{
+    switch (k) {
+    case Qt::Key_Control:
+    case Qt::Key_Shift:
+    case Qt::Key_Alt:
+    case Qt::Key_Meta:
+
+        return true;
+    case Qt::Key_Super_L:
+    case Qt::Key_Super_R:
+
+        // fromQtKey() reports them as Key_Meta_L/R on Wayland (#1595)
+        return superKeysAreMeta();
+    default:
+
+        return false;
+    }
+}
+
 ///what a painful mapping!
 Key
 QtEnumConvert::fromQtKey(Qt::Key k)
