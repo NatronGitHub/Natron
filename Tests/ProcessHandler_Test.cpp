@@ -49,13 +49,13 @@ NATRON_NAMESPACE_USING
 TEST(ProcessHandler, FailedToStartFinishesTheRender)
 {
     AppInstancePtr app = appPTR->getTopLevelInstance();
-    ASSERT_TRUE(app);
+    ASSERT_TRUE( bool(app) );
     CreateNodeArgs args( PLUGINID_NATRON_DISKCACHE, app->getProject() );
     args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
     args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
     args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
     NodePtr node = app->createNode(args);
-    ASSERT_TRUE(node);
+    ASSERT_TRUE( bool(node) );
     OutputEffectInstance* writer = dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() );
     ASSERT_TRUE(writer);
 
