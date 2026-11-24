@@ -117,8 +117,8 @@ extern "C" {
 #endif
         return 1;
     } else {
-        // 0, or the exit code given to natron.quit(exitCode)
-        return manager.getRequestedExitCode();
+        // the exit code given to natron.quit(exitCode), or 1 if a render failed, or 0
+        return manager.exitStatus();
     }
 } //main
 #ifdef Q_OS_WIN
