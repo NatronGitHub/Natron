@@ -1140,9 +1140,9 @@ grabWidgetWithOpenGL(QWidget* widget)
             continue;
         }
         // The framebuffer is displayed opaque, but grabFramebuffer() returns it as Format_RGB32 with the
-        // framebuffer's alpha left in the unused byte (the viewer draws its image without blending, so this
-        // is the image's alpha), and drawImage() copies that byte into the screenshot. The conversion
-        // sets it to 255.
+        // framebuffer's alpha left in the unused byte (e.g. the viewer draws its image without blending, so
+        // there it is the image's alpha; the histogram clears with alpha 0), and drawImage() copies that
+        // byte into the screenshot. The conversion sets it to 255.
         fb = fb.convertToFormat(QImage::Format_ARGB32_Premultiplied);
         const QPoint pos = (gl == widget) ? QPoint(0, 0) : gl->mapTo( widget, QPoint(0, 0) );
         // only paint the part of the GL widget that is not hidden by its parents (e.g. a scroll area)
