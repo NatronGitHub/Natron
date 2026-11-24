@@ -30,6 +30,7 @@
 #include <QString>
 #include <QChar>
 #include <QDebug>
+#include <QRegularExpression>
 
 NATRON_NAMESPACE_ENTER
 
@@ -104,6 +105,21 @@ convertFromPlainText(const QString &plain,
 
     return rich;
 } // convertFromPlainText
+
+QString
+convertUrlsToHtmlLinks(const QString &html)
+{
+    // convertFromPlainText() escaped every & as &amp;, so a URL contains &amp; (kept, it is valid in
+    // an href), never a bare &, and stops before the &lt; or &gt; that may surround it (#1694).
+    // (UseUnicodePropertiesOption: \w is ASCII-only in PCRE, it was Unicode in QRegExp)
+    static const QRegularExpression re( QString::fromUtf8("((http|ftp|https)://([\\w_-]+(?:(?:\\.[\\w_-]+)+))((?:[\\w.,@?^=%:/~+#-]|&amp;)*[\\w@?^=%/~+#-])?)"),
+                                        QRegularExpression::UseUnicodePropertiesOption );
+    QString linked = html;
+
+    linked.replace( re, QString::fromUtf8("<a href=\"\\1\">\\1</a>") );
+
+    return linked;
+}
 
 // use genHTML=true when generating markdown for md4c. false for pandoc
 QString

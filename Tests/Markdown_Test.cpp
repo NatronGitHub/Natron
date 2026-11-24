@@ -274,3 +274,17 @@ TEST(Markdown, FixSettingsHTML)
                                                   "\n"
                                                   "Text\n") ) );
 }
+
+// The node documentation turns the URLs of a plain-text plug-in description into links after
+// escaping it: a URL with a query string was cut at the first &, which was already &amp; (#1694).
+TEST(Markdown, PlainTextUrlWithAmpersand)
+{
+    const QString html = convertUrlsToHtmlLinks( convertFromPlainText(
+        QString::fromUtf8("See https://example.org/viewtopic.php?f=28&t=7905 and <https://example.org/a>."),
+        WhiteSpaceNormal ) );
+
+    EXPECT_EQ( QString::fromUtf8("<p>See <a href=\"https://example.org/viewtopic.php?f=28&amp;t=7905\">"
+                                 "https://example.org/viewtopic.php?f=28&amp;t=7905</a> and "
+                                 "&lt;<a href=\"https://example.org/a\">https://example.org/a</a>&gt;.</p>"),
+               html );
+}

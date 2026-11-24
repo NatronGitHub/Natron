@@ -29,7 +29,6 @@
 
 #include <QTextStream>
 #include <QFile>
-#include <QRegularExpression>
 
 #include "Engine/DocumentationGroups.h"
 #include "Engine/EffectInstance.h"
@@ -411,12 +410,8 @@ Node::makeDocumentation(bool genHTML) const
     if (!pluginDescriptionIsMarkdown) {
         if (genHTML) {
             pluginDescription = NATRON_NAMESPACE::convertFromPlainText(pluginDescription, NATRON_NAMESPACE::WhiteSpaceNormal);
-
             // replace URLs with links
-            // (UseUnicodePropertiesOption: \w is ASCII-only in PCRE, it was Unicode in QRegExp)
-            QRegularExpression re( QString::fromUtf8("((http|ftp|https)://([\\w_-]+(?:(?:\\.[\\w_-]+)+))([\\w.,@?^=%&:/~+#-]*[\\w@?^=%&/~+#-])?)"),
-                                   QRegularExpression::UseUnicodePropertiesOption );
-            pluginDescription.replace( re, QString::fromUtf8("<a href=\"\\1\">\\1</a>") );
+            pluginDescription = NATRON_NAMESPACE::convertUrlsToHtmlLinks(pluginDescription);
         } else {
             pluginDescription = convertFromPlainTextToMarkdown(pluginDescription, genHTML, false);
         }
