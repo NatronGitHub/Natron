@@ -31,8 +31,12 @@ try:
         got = param.getValueAtTime(t)
         assert abs(got - expected) < 1e-9, (t, got, expected)
     assert param.getValueAtTime(5) != smooth
-    # no keyframe there
+    # no keyframe there, no such dimension, not a floating-point parameter
     assert not param.setDerivativesAtTime(5, 1, 1)
+    assert not param.setDerivativesAtTime(0, 1, 1, 1)
+    count = group.createIntParam("count", "Count")
+    count.setValueAtTime(1, 0)
+    assert not count.setDerivativesAtTime(0, 1, 1)
     # the tangents are kept when another keyframe is added: the keys are free
     param.setValueAtTime(20, 30)
     assert abs(param.getValueAtTime(5) - _hermite(5, 0, 0, 3, 10, 10, 1)) < 1e-9

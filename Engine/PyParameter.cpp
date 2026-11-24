@@ -615,7 +615,8 @@ AnimatedParam::setDerivativesAtTime(double time,
 {
     KnobIPtr knob = getInternalKnob();
 
-    if (!knob) {
+    // (KnobHelper::moveDerivativesAtTime() doesn't check the dimension; int, bool and choice curves are constant)
+    if ( !knob || !dynamic_cast<KnobDoubleBase*>( knob.get() ) || (dimension < 0) || ( dimension >= knob->getDimension() ) ) {
         return false;
     }
     recordForUndoGroup(knob);
