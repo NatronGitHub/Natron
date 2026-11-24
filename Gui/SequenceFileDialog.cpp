@@ -715,8 +715,11 @@ SequenceFileDialog::setFileExtensionOnLineEdit(const QString & ext)
         return;
     }
 
-    if ( isDirectory(str) ) {
-        QString text = _selectionLineEdit->text() + tr("Untitled");
+    if ( isDirectory( pathInCurrentDirectory(str) ) ) {
+        // a folder, of the directory shown (#1539): name a file in it
+        QString text = str;
+        StrUtils::ensureLastPathSeparator(text);
+        text += tr("Untitled");
         if ( sequenceModeEnabled() ) {
             text.append( QLatin1Char('#') );
         }
@@ -1442,7 +1445,7 @@ SequenceFileDialog::openSelectedFiles()
                 QDialog::accept();
             }
         } else {
-            setDirectory(typedPath);
+            enterTypedDirectory(typedPath);
         }
     } else {
         if ( isDirectory(typedPath) ) {
@@ -1451,6 +1454,16 @@ SequenceFileDialog::openSelectedFiles()
         }
     }
 } // openSelectedFiles
+
+void
+SequenceFileDialog::enterTypedDirectory(const QString& directory)
+{
+    // The typed text is the folder's name, not a file name that setDirectory() keeps in Save mode (#1534)
+    _selectionLineEdit->blockSignals(true);
+    _selectionLineEdit->clear();
+    _selectionLineEdit->blockSignals(false);
+    setDirectory(directory);
+}
 
 void
 SequenceFileDialog::cancelSlot()
@@ -1471,7 +1484,7 @@ SequenceFileDialog::keyPressEvent(QKeyEvent* e)
                 QDialog::accept();
             }
         } else {
-            setDirectory(typedPath);
+            enterTypedDirectory(typedPath);
         }
 
         return;

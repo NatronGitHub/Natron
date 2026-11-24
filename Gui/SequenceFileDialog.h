@@ -469,6 +469,9 @@ private:
     ///isDirectory() and setDirectory() check for a typed folder name (#1534)
     QString pathInCurrentDirectory(const QString& filePath) const;
 
+    ///Goes to directory, the folder typed in the file name field, without keeping its name as a file name
+    void enterTypedDirectory(const QString& directory);
+
     ///the filter that shows the files with any of the extensions given to the dialog, e.g. "*.exr *.png"
     QString combinedFilter() const;
 
