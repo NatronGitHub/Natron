@@ -465,11 +465,6 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
                                    KeyboardModifiers modifiers)
 {
     bool didSomething = false;
-    // the overlay drag ends with this function, once the pen up actions (which may edit too) are done
-    struct EndOverlayGesture
-    {
-        ~EndOverlayGesture() { MultipleKnobEditsUndoCommand::endOverlayGesture(); }
-    } endOverlayGesture;
 
     if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
@@ -613,6 +608,11 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
                                KeyboardModifiers modifiers)
 {
     bool didSomething = false;
+    // the overlay drag ends with this function, once the pen up actions (which may edit too) are done
+    struct EndOverlayGesture
+    {
+        ~EndOverlayGesture() { MultipleKnobEditsUndoCommand::endOverlayGesture(); }
+    } endOverlayGesture;
 
     if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
@@ -1104,6 +1104,8 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
 bool
 ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
 {
+    // a drag whose pen up may never come (#839)
+    MultipleKnobEditsUndoCommand::endOverlayGesture();
     if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
     }

@@ -541,17 +541,16 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
         return false;
     }
 
-    // The edits of one overlay drag make one undo command, whatever parameters each edit changes: e.g. the
-    // Transform overlay sets all its parameters at each pen motion, and only those that changed make an edit, so
-    // that a parameter changing later in the drag started a new undo command (#839).
-    // Two drags are two undo commands, even if they change the same parameters.
-    const bool sameOverlayGesture = (_overlayGesture != 0) && (knobCommand->_overlayGesture == _overlayGesture);
-    if ( !sameOverlayGesture && (knobCommand->_overlayGesture != 0) ) {
+    // The edits of one overlay drag make one undo command, whatever parameters each edit block changes first: e.g.
+    // the Transform overlay sets all its parameters at each pen motion, the first changed one starts a new command,
+    // which the rule below merged only if it changed no other parameter (#839). The edits of two drags, or of a drag
+    // and anything else, are never merged.
+    if (knobCommand->_overlayGesture != _overlayGesture) {
         return false;
     }
 
     // if all knobs from the new command are included in the old command, ignore the createNew flag and merge them anyway
-    if (knobCommand->createNew && !sameOverlayGesture) {
+    if ( knobCommand->createNew && (_overlayGesture == 0) ) {
         bool ignoreCreateNew = false;
         //qDebug() << "mergeWith" << knobs.size() << "with" << knobCommand->knobs.size();
         if ( knobs.size() >= knobCommand->knobs.size() ) {
