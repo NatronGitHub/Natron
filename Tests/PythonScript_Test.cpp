@@ -260,6 +260,46 @@ TEST_F(PythonScriptTest, NestedCall)
     EXPECT_TRUE(ok) << err;
 }
 
+// The script files (AppInstance::loadPythonScript() for a script without createInstance(), and init.py and
+// initGui.py, AppManager::findAndRunScriptFile()) go through runPythonScriptFile(): text that was already
+// in the captured sys.stderr, or that a successful script writes there, is not taken for an error of the
+// script (#1489).
+TEST_F(PythonScriptTest, ScriptFileStderrIsNotAnError)
+{
+    runSimple("import sys\n"
+              "sys.stderr.write('Traceback (most recent call last):\\nValueError: stale-1489\\n')\n");
+
+    std::string err, output;
+    testing::internal::CaptureStdout();
+    bool ok = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::runPythonScriptFile("import sys\n"
+                                                                           "sys.stderr.write('warning-1489\\n')\n"
+                                                                           "print('out-1489')\n", &err, &output);
+    std::string forwarded = testing::internal::GetCapturedStdout();
+
+    EXPECT_TRUE(ok) << err;
+    EXPECT_TRUE( err.empty() ) << err;
+    EXPECT_NE( std::string::npos, output.find("out-1489") ) << output;
+    EXPECT_NE( std::string::npos, output.find("warning-1489") ) << output;
+    EXPECT_EQ( std::string::npos, output.find("stale-1489") ) << output;
+    EXPECT_NE( std::string::npos, forwarded.find("stale-1489") ) << forwarded;
+    EXPECT_TRUE( caughtStderr().empty() );
+}
+
+// A failing script file is reported with its traceback, without the whole script.
+TEST_F(PythonScriptTest, ScriptFileExceptionIsAnError)
+{
+    std::string err;
+    bool ok = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::runPythonScriptFile("natronTest1489 = 'script-text-1489'\n"
+                                                                           "raise ValueError('boom-1489')\n", &err, 0);
+
+    EXPECT_FALSE(ok);
+    EXPECT_NE( std::string::npos, err.find("boom-1489") ) << err;
+    EXPECT_NE( std::string::npos, err.find("Traceback") ) << err;
+    EXPECT_EQ( std::string::npos, err.find("script-text-1489") ) << err;
+    EXPECT_TRUE( caughtStderr().empty() );
+    runSimple("del natronTest1489\n");
+}
+
 // AppInstance::loadPythonScript() with a script without createInstance(): stale text in the captured
 // sys.stderr, or a warning written by the script, is not reported as "Failed to load" (the Tests are a
 // background session: AppInstance::appendToScriptEditor() writes to stdout).

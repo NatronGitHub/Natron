@@ -907,6 +907,14 @@ PyObject* getMainModule();
 bool interpretPythonScript(const std::string& script, std::string* error, std::string* output,
                            PyObject* globals = NULL, PyObject* locals = NULL);
 
+/**
+ * @brief Runs the content of a Python script file (e.g. init.py, or a script given on the command line) in the
+ * __main__ module, as interpretPythonScript() does: the success depends on the result of the script, not on what
+ * it or other code wrote to sys.stderr. Unlike interpretPythonScript(), sys.exit() in the script exits the
+ * process with its status (as PyRun_SimpleString() does), and error does not contain the script.
+ **/
+bool runPythonScriptFile(const std::string& script, std::string* error, std::string* output);
+
 
 //void compilePyScript(const std::string& script,PyObject** code);
 

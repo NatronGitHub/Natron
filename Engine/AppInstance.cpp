@@ -853,41 +853,21 @@ AppInstance::loadPythonScript(const QFileInfo& file)
             getProject()->forceComputeInputDependentDataOnAllTrees();
         } // CreatingNodeTreeFlag_RAII createNodeTree, RefreshPreviewsOfCreatedNodes_RAII refreshPreviews
     } else {
-        PythonGILLocker pgl;
-
-        // -1 if the script raised an exception (Python printed it)
-        const bool scriptFailed = PyRun_SimpleString( content.toStdString().c_str() ) != 0;
-
-        PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
+        // Its failure is given by its result, not by what it or other code wrote to sys.stderr; its output
+        // goes to the Script Editor (#1489)
         std::string error;
-        ///Gui session, do stdout, stderr redirection
-        PyObject *errCatcher = 0;
-
-        if ( PyObject_HasAttrString(mainModule, "catchErr") ) {
-            errCatcher = PyObject_GetAttrString(mainModule, "catchErr"); //get our catchOutErr created above, new ref
-        }
-
-        PyErr_Print(); //make python print any errors
-
-        PyObject *errorObj = 0;
-        if (errCatcher) {
-            errorObj = PyObject_GetAttrString(errCatcher, "value"); //get the  stderr from our catchErr object, new ref
-            assert(errorObj);
-            error = NATRON_PYTHON_NAMESPACE::PyStringToStdString(errorObj);
-            PyObject* unicode = PyUnicode_FromString("");
-            PyObject_SetAttrString(errCatcher, "value", unicode);
-            Py_DECREF(errorObj);
-            Py_DECREF(errCatcher);
-        }
-
-        if ( !error.empty() ) {
+        if ( !NATRON_PYTHON_NAMESPACE::runPythonScriptFile(content.toStdString(), &error, 0) ) {
             QString message( QString::fromUtf8("Failed to load ") );
             message.append( file.absoluteFilePath() );
             message.append( QString::fromUtf8(": ") );
             message.append( QString::fromUtf8( error.c_str() ) );
-            appendToScriptEditor( message.toStdString() );
-        }
-        if (scriptFailed) {
+            if ( appPTR->isBackground() ) {
+                // as the traceback was printed before
+                std::cerr << message.toStdString() << std::endl;
+            } else {
+                appendToScriptEditor( message.toStdString() );
+            }
+
             return false;
         }
     }
