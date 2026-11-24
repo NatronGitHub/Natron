@@ -545,7 +545,8 @@ restoreCache(AppManagerPrivate* p,
     if ( p->checkForCacheDiskStructure( cache->getCachePath(), cache->isTileCache() ) ) {
         std::string settingsFilePath = cache->getRestoreFilePath();
         FStreamsSupport::ifstream ifile;
-        FStreamsSupport::open(&ifile, settingsFilePath);
+        // Binary: on Windows, a text-mode read would turn CR-LF into LF and stop at the first 0x1A (#1594)
+        FStreamsSupport::open(&ifile, settingsFilePath, std::ios_base::in | std::ios_base::binary);
         if (!ifile) {
             std::cerr << "Failure to open cache restore file at: " << settingsFilePath << std::endl;
 
