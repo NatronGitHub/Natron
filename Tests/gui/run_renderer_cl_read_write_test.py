@@ -159,18 +159,17 @@ def main(argv):
         if "Cannot load frame" in out or "Error caught while rendering" in out:
             print("FAILED: the render reported an error")
             ok = False
-        for prefix in ("out.",):  # noqa (one Write node)
-            written = sorted(f for f in os.listdir(outDir) if f.startswith(prefix) and f.endswith(".png"))
-            expected = ["%s%04d.png" % (prefix, frame) for frame in FRAMES]
-            if written != expected:
-                print("FAILED: the render wrote [%s] instead of [%s]" % (" ".join(written), " ".join(expected)))
-                ok = False
-            elif len(set(readFile(os.path.join(outDir, f)) for f in written)) != len(written):
-                # (WritePNG dithers with a seed that depends on the frame: the same input frame could give different
-                # bytes only if a row's random start column falls inside the image, at most 20 of 1920 columns)
-                print("FAILED: the %s frames written are not all different: the same frame of the sequence was read "
-                      "for each" % prefix)
-                ok = False
+        written = sorted(f for f in os.listdir(outDir) if f.startswith("out.") and f.endswith(".png"))
+        expected = ["out.%04d.png" % frame for frame in FRAMES]
+        if written != expected:
+            print("FAILED: the render wrote [%s] instead of [%s]" % (" ".join(written), " ".join(expected)))
+            ok = False
+        elif len(set(readFile(os.path.join(outDir, f)) for f in written)) != len(written):
+            # (WritePNG dithers with a seed that depends on the frame: the same input frame could give different
+            # bytes only if a row's random start column falls inside the image, at most 20 of 1920 columns)
+            print("FAILED: the frames written are not all different: the same frame of the sequence was read "
+                  "for each")
+            ok = False
         if ok:
             print("renderer -i/-w test passed")
         return 0 if ok else 1
