@@ -97,15 +97,41 @@ KnobFile::typeName() const
     return typeNameStatic();
 }
 
-// A video file name is not a sequence pattern: a '#' in it is part of the name, not the frame number (#693).
-// For a Read or Write node, the holder is the ReadNode or WriteNode, which knows its embedded plug-in.
-static bool
-isVideoFileName(const KnobHolder* holder,
-                bool output)
+// The file name of a file parameter at a time and view. The name of an image sequence is a pattern, whose
+// frame number ('#', "%04d") and view ("%v", "%V") variables are replaced. A video file name is not a sequence
+// pattern: only its view variables are replaced, and a '#' in it is part of the name (#693). For a Read or
+// Write node, the holder is the ReadNode or WriteNode, which knows its embedded plug-in.
+static std::string
+fileNameFromPattern(const std::string& pattern,
+                    const KnobHolder* holder,
+                    bool output,
+                    int time,
+                    ViewSpec view)
 {
-    const EffectInstance* effect = dynamic_cast<const EffectInstance*>(holder);
+    std::vector<std::string> views;
 
-    return effect && ( output ? effect->isVideoWriter() : effect->isVideoReader() );
+    if ( holder && holder->getApp() ) {
+        views = holder->getApp()->getProject()->getProjectViewNames();
+    }
+    if ( !view.isViewIdx() ) {
+        view = ViewIdx(0);
+    }
+    const EffectInstance* effect = dynamic_cast<const EffectInstance*>(holder);
+    if ( effect && ( output ? effect->isVideoWriter() : effect->isVideoReader() ) ) {
+        const int viewIndex = view.value();
+        if ( (viewIndex < 0) || ( viewIndex >= (int)views.size() ) ) {
+            return pattern;
+        }
+        // as SequenceParsing::generateFileNameFromPattern(): %V is the view name, %v its first letter in upper case
+        const QString viewName = QString::fromUtf8( views[viewIndex].c_str() );
+        QString name = QString::fromUtf8( pattern.c_str() );
+        name.replace( QString::fromUtf8("%V"), viewName );
+        name.replace( QString::fromUtf8("%v"), viewName.left(1).toUpper() );
+
+        return name.toStdString();
+    }
+
+    return SequenceParsing::generateFileNameFromPattern(pattern, views, time, view);
 }
 
 std::string
@@ -114,19 +140,9 @@ KnobFile::getFileName(int time,
 {
     if (!_isInputImage) {
         return getValue(0, view);
-    } else if ( isVideoFileName(getHolder(), false) ) {
-        return getValue( 0, ViewIdx(0) );
     } else {
         ///try to interpret the pattern and generate a filename if indexes are found
-        std::vector<std::string> views;
-        if ( getHolder() && getHolder()->getApp() ) {
-            views = getHolder()->getApp()->getProject()->getProjectViewNames();
-        }
-        if ( !view.isViewIdx() ) {
-            view = ViewIdx(0);
-        }
-
-        return SequenceParsing::generateFileNameFromPattern(getValue( 0, ViewIdx(0) ), views, time, view);
+        return fileNameFromPattern(getValue( 0, ViewIdx(0) ), getHolder(), false, time, view);
     }
 }
 
@@ -178,19 +194,7 @@ QString
 KnobOutputFile::generateFileNameAtTime(SequenceTime time,
                                        ViewSpec view)
 {
-    if ( isVideoFileName(getHolder(), true) ) {
-        return QString::fromUtf8( getValue( 0, ViewIdx(0) ).c_str() );
-    }
-    std::vector<std::string> views;
-
-    if ( getHolder() && getHolder()->getApp() ) {
-        views = getHolder()->getApp()->getProject()->getProjectViewNames();
-    }
-    if ( !view.isViewIdx() ) {
-        view = ViewIdx(0);
-    }
-
-    return QString::fromUtf8( SequenceParsing::generateFileNameFromPattern(getValue( 0, ViewIdx(0) ), views, time, view).c_str() );
+    return QString::fromUtf8( fileNameFromPattern(getValue( 0, ViewIdx(0) ), getHolder(), true, time, view).c_str() );
 }
 
 /***********************************KnobPath*****************************************/

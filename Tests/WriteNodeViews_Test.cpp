@@ -279,6 +279,15 @@ TEST_F(WriteNodeViewsTest, VideoFileNameKeepsHash)
     ASSERT_TRUE( bool(file) );
     EXPECT_EQ( video, file->generateFileNameAtTime( 5, ViewIdx(0) ).toStdString() );
 
+    // the view variables are still replaced: one video file per view
+    _app->getProject()->setupProjectForStereo();
+    const std::vector<std::string> viewNames = _app->getProject()->getProjectViewNames();
+    ASSERT_EQ( 2u, viewNames.size() );
+    setFile(_dir + "/take#1_%V.mov");
+    file = std::dynamic_pointer_cast<KnobOutputFile>( _node->getKnobByName(kOfxImageEffectFileParamName) );
+    ASSERT_TRUE( bool(file) );
+    EXPECT_EQ( _dir + "/take#1_" + viewNames[1] + ".mov", file->generateFileNameAtTime( 5, ViewIdx(1) ).toStdString() );
+
     setFile(_dir + "/shot.#.exr");
     file = std::dynamic_pointer_cast<KnobOutputFile>( _node->getKnobByName(kOfxImageEffectFileParamName) );
     ASSERT_TRUE( bool(file) );
