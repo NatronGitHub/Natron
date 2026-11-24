@@ -662,6 +662,7 @@ AnimatedParam::setExpression(const QString& expr,
     }
     const std::string oldExpression = thisKnob->getExpression(dimension);
     const bool oldHasRetVariable = thisKnob->isExpressionUsingRetVariable(dimension);
+    const bool oldIsValid = thisKnob->isExpressionValid(dimension, 0);
     bool ok = false;
     try {
         recordForUndoGroup(thisKnob);
@@ -696,11 +697,12 @@ AnimatedParam::setExpression(const QString& expr,
 
     // The value of the parameter changes with its expression: tell its holder (e.g. kOfxActionInstanceChanged for an
     // OpenFX plug-in, and the onParamChanged callback) and re-render, as the GUI does (SetExpressionCommand), with the
-    // reason of setValue() (#1336). As setValue(), only if something changed. A failed setExpression() also removes
-    // the previous expression.
+    // reason of setValue() (#1336). As setValue(), only if something changed, e.g. an invalid expression of a loaded
+    // project that the same text makes valid again. A failed setExpression() also removes the previous expression.
     const std::string newExpression = thisKnob->getExpression(dimension);
     if ( (newExpression != oldExpression) ||
-         ( !newExpression.empty() && (thisKnob->isExpressionUsingRetVariable(dimension) != oldHasRetVariable) ) ) {
+         ( !newExpression.empty() && ( (thisKnob->isExpressionUsingRetVariable(dimension) != oldHasRetVariable) ||
+                                       (thisKnob->isExpressionValid(dimension, 0) != oldIsValid) ) ) ) {
         thisKnob->evaluateValueChange(dimension, thisKnob->getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronInternalEdited);
     }
 
