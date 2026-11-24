@@ -1172,7 +1172,7 @@ PreferencesPanel::restoreDefaults()
 
         for (PluginTreeNodeList::const_iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
             if (it->enabledCheckbox) {
-                it->enabledCheckbox->setChecked(true);
+                it->enabledCheckbox->setChecked( !it->plugin->getIsDeprecated() ); // the default (#171)
             }
             if (it->rsCheckbox) {
                 it->rsCheckbox->setChecked(true);

@@ -436,7 +436,8 @@ bool
 OfxHost::isPluginObsolete(const OFX::Host::Property::Set& descriptorProps)
 {
     // kOfxImageEffectPluginPropObsolete: "available for use in old projects but not offered to users for
-    // new use", which is what Natron does with these plug-ins (see Plugin::getIsUserCreatable()).
+    // new use", which is what Natron does with these plug-ins by default: they are disabled by default
+    // (Plugin::isActivated(), see Plugin::getIsUserCreatable()), and the user may enable them (#171).
     // HostSupport declares it, with a default of 0, on every image effect descriptor, including the
     // ones loaded from the plug-in cache.
     return descriptorProps.getIntProperty(kOfxImageEffectPluginPropObsolete) != 0;
