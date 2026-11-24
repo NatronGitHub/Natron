@@ -34,6 +34,8 @@
 
 #define kNatronReadNodeParamDecodingPluginChoice "decodingPluginChoice"
 #define kNatronReadNodeParamDecodingPluginID "decodingPluginID"
+// the major and minor version of the decoder, -1 if unknown (#1681)
+#define kNatronReadNodeParamDecodingPluginVersion "decodingPluginVersion"
 
 #define kNatronReadNodeOCIOParamInputSpace "ocioInputSpace"
 
@@ -122,6 +124,7 @@ private:
     virtual void onMetadataRefreshed(const NodeMetadata& metadata) OVERRIDE FINAL;
     virtual void initializeKnobs() OVERRIDE FINAL;
     virtual void onKnobsAboutToBeLoaded(const NodeSerializationPtr& serialization) OVERRIDE FINAL;
+    virtual void onKnobsLoaded() OVERRIDE FINAL;
     virtual bool knobChanged(KnobI* k,
                              ValueChangedReasonEnum reason,
                              ViewSpec view,

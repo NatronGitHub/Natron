@@ -82,6 +82,7 @@ SOURCES += \
     LoadPythonScript_Test.cpp \
     Lut_Test.cpp \
     Markdown_Test.cpp \
+    MaskChannel_Test.cpp \
     MultiInputLinks_Test.cpp \
     NaNGuards_FastMath.cpp \
     NaNGuards_Test.cpp \
@@ -135,6 +136,7 @@ SOURCES += \
     ProjectFileFormat_Test.cpp \
     PythonExpressionScope_Test.cpp \
     ReadNodeOverlay_Test.cpp \
+    ReadWriteVersion_Test.cpp \
     RenderThreadSafety_Test.cpp \
     RenderThreads_Test.cpp \
     RotoPaint_Test.cpp \
