@@ -622,9 +622,11 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     Qt::Key key = (Qt::Key)Gui::handleNativeKeys( e->key(), e->nativeScanCode(), e->nativeVirtualKey() );
 
     const unsigned int mipmapLevel = _imp->viewer->getCurrentMipmapLevel();
-    // the overlays may change their cursor on a key event, even when they don't catch it
-    bool overlaysCaught = e->isAutoRepeat() ? notifyOverlaysKeyRepeat(RenderScale::fromMipmapLevel(mipmapLevel), e)
-                                             : notifyOverlaysKeyDown(RenderScale::fromMipmapLevel(mipmapLevel), e);
+    // the overlays may change their cursor on a key event, even when they don't catch it.
+    // A key repeat that no overlay catches is also sent as a key down, as in Natron 2.5: the overlays that only
+    // handle key downs (e.g. RotoPaint, Tracker) still act on a held key (#1595).
+    bool overlaysCaught = ( e->isAutoRepeat() && notifyOverlaysKeyRepeat(RenderScale::fromMipmapLevel(mipmapLevel), e) ) ||
+                          notifyOverlaysKeyDown(RenderScale::fromMipmapLevel(mipmapLevel), e);
     _imp->viewer->updateOverlayCursor();
     if (overlaysCaught) {
         update();
@@ -899,7 +901,9 @@ ViewerTab::keyReleaseEvent(QKeyEvent* e)
         return QWidget::keyPressEvent(e);
     }
     const unsigned int mipmapLevel = _imp->viewer->getCurrentMipmapLevel();
-    bool overlaysCaught = notifyOverlaysKeyUp(RenderScale::fromMipmapLevel(mipmapLevel), e);
+    // X11 and Wayland send a held key as auto-repeat release and press pairs: the overlays get one key up,
+    // when the key is released (#1595)
+    bool overlaysCaught = !e->isAutoRepeat() && notifyOverlaysKeyUp(RenderScale::fromMipmapLevel(mipmapLevel), e);
     _imp->viewer->updateOverlayCursor();
     if (overlaysCaught) {
         _imp->viewer->redraw();

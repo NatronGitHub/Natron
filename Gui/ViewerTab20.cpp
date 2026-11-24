@@ -1015,7 +1015,6 @@ ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
     Key natronKey = QtEnumConvert::fromQtKey( qKey);
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( qMods );
     NodesList nodes;
-    // the list was never filled: the key repeats reached no overlay (#1595)
     getGui()->getNodesEntitledForOverlays(nodes);
     _imp->beginOverlayEvent();
 
