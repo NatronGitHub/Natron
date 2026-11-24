@@ -2202,6 +2202,9 @@ scaleToTexture8bits_generic(const RectI& roi,
     if (applyMatte) {
         matteAcc = std::make_shared<Image::ReadAccess>( args.matteImage.get() );
     }
+    // The gamma applies to the display-referred values, after the display curve, as in the GL shader
+    // (Gui/Shaders.cpp) (#1337): r, g and b stay linear for the luminance and the matte.
+    const bool gammaAfterCurve = args.gamma > 0 && args.gamma != 1.;
 
     for (int y = y1; y < y2;
          ++y,
@@ -2302,16 +2305,13 @@ scaleToTexture8bits_generic(const RectI& roi,
                 r = r * args.gain + args.offset;
                 g = g * args.gain + args.offset;
                 b = b * args.gain + args.offset;
+                // gamma <= 0 can be applied before the display curve, which maps 1 to 1
                 if  (args.gamma <= 0) {
                     // the limit of pow(x, 1/gamma) when gamma -> 0 is 0 for x < 1, 1 for x = 1, and infinity for x > 1,
                     // but values above 1 are displayed as 1 (and lookupGammaLut() also clamps to 1)
                     r = (r < 1.) ? 0. : 1.;
                     g = (g < 1.) ? 0. : 1.;
                     b = (b < 1.) ? 0. : 1.;
-                } else if (args.gamma != 1.) {
-                    r = args.gammaLut->lookup(r);
-                    g = args.gammaLut->lookup(g);
-                    b = args.gammaLut->lookup(b);
                 }
 
 
@@ -2324,13 +2324,23 @@ scaleToTexture8bits_generic(const RectI& roi,
 
                 U8 uR, uG, uB;
                 if (!args.colorSpace) {
-                    uR = Color::floatToInt<256>(r);
-                    uG = Color::floatToInt<256>(g);
-                    uB = Color::floatToInt<256>(b);
+                    // no display curve
+                    uR = Color::floatToInt<256>(gammaAfterCurve ? args.gammaLut->lookup(r) : r);
+                    uG = Color::floatToInt<256>(gammaAfterCurve ? args.gammaLut->lookup(g) : g);
+                    uB = Color::floatToInt<256>(gammaAfterCurve ? args.gammaLut->lookup(b) : b);
                 } else {
-                    error_r = (error_r & 0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(r);
-                    error_g = (error_g & 0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(g);
-                    error_b = (error_b & 0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(b);
+                    int dR = args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(r);
+                    int dG = args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(g);
+                    int dB = args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(b);
+                    if (gammaAfterCurve) {
+                        // 8.8 fixed point: 0xff00 is 1
+                        dR = Color::floatToInt<0xff01>( args.gammaLut->lookup( Color::intToFloat<0xff01>(dR) ) );
+                        dG = Color::floatToInt<0xff01>( args.gammaLut->lookup( Color::intToFloat<0xff01>(dG) ) );
+                        dB = Color::floatToInt<0xff01>( args.gammaLut->lookup( Color::intToFloat<0xff01>(dB) ) );
+                    }
+                    error_r = (error_r & 0xff) + dR;
+                    error_g = (error_g & 0xff) + dG;
+                    error_b = (error_b & 0xff) + dB;
                     assert(error_r < 0x10000 && error_g < 0x10000 && error_b < 0x10000);
                     uR = (U8)(error_r >> 8);
                     uG = (U8)(error_g >> 8);
