@@ -261,8 +261,12 @@ ProcessHandler::onProcessError(QProcess::ProcessError err)
     if (err == QProcess::FailedToStart) {
         Dialogs::errorDialog( _writerScriptName, tr("The render process failed to start.").toStdString() );
         // QProcess emits finished() only for a process that started: end the render here, else it would stay
-        // active forever (app.waitForRenders(), the renders queued behind it, the Progress panel task, #1596)
-        Q_EMIT processFinished(1);
+        // active forever (app.waitForRenders(), the renders queued behind it, the Progress panel task, #1596).
+        // Queued: the slots may destroy this object (and its QProcess, which is still emitting errorOccurred()),
+        // and QProcess::start() may emit it synchronously, from inside AppInstance's render queue.
+        QMetaObject::invokeMethod(this, [this]() {
+            Q_EMIT processFinished(1);
+        }, Qt::QueuedConnection);
     } else if (err == QProcess::Crashed) {
         //@TODO: find out a way to get the backtrace
     }

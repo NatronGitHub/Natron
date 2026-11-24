@@ -32,13 +32,13 @@
 
 #include <gtest/gtest.h>
 
+#include <QtCore/QCoreApplication>
 #include <QtCore/QObject>
 #include <QtCore/QString>
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
-#include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/ProcessHandler.h"
@@ -66,14 +66,18 @@ TEST(ProcessHandler, FailedToStartFinishesTheRender)
             returnCodes.push_back(retCode);
         } );
 
-        // what QProcess::errorOccurred() calls when the process can't be started
+        // what QProcess::errorOccurred() calls when the process can't be started; the render ends from the
+        // event loop, after QProcess has returned
         handler.onProcessError(QProcess::FailedToStart);
+        EXPECT_TRUE( returnCodes.empty() );
+        QCoreApplication::processEvents();
         ASSERT_EQ( returnCodes.size(), 1u );
         EXPECT_EQ(returnCodes[0], 1);
 
         // the other errors happen while the process runs: finished() follows (or the process keeps running)
         handler.onProcessError(QProcess::Crashed);
         handler.onProcessError(QProcess::ReadError);
+        QCoreApplication::processEvents();
         EXPECT_EQ( returnCodes.size(), 1u );
     }
 
