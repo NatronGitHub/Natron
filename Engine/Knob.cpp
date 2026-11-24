@@ -3054,43 +3054,11 @@ KnobHelper::clearExpression(int dimension,
             if (!other) {
                 continue;
             }
-            ListenerDimsMap otherListeners;
-            {
-                QReadLocker otherMastersLocker(&other->_imp->mastersMutex);
-                otherListeners = other->_imp->listeners;
-            }
-
-            for (ListenerDimsMap::iterator it = otherListeners.begin(); it != otherListeners.end(); ++it) {
-                KnobIPtr knob = it->first.lock();
-                if (knob.get() == this) {
-                    //erase from the dimensions vector
-                    assert( dimension < (int)it->second.size() );
-                    it->second[dimension].isListening = false;
-
-                    //if it has no longer has a reference to this knob, erase it
-                    bool hasReference = false;
-                    for (std::size_t d = 0; d < it->second.size(); ++d) {
-                        if (it->second[d].isListening) {
-                            hasReference = true;
-                            break;
-                        }
-                    }
-                    if (!hasReference) {
-                        otherListeners.erase(it);
-                    }
-
-                    break;
-                }
-            }
+            // in place, under the other knob's mastersMutex (#1572)
+            other->removeListener(this, dimension);
 
             if ( getHolder() ) {
                 getHolder()->onKnobSlaved(thisShared, otherKnob, dimension, false );
-            }
-
-
-            {
-                QWriteLocker otherMastersLocker(&other->_imp->mastersMutex);
-                other->_imp->listeners = otherListeners;
             }
         }
     }
@@ -4434,6 +4402,7 @@ KnobHelper::removeListener(KnobI* listener,
     QWriteLocker l(&_imp->mastersMutex);
     for (ListenerDimsMap::iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
         if (it->first.lock().get() == listener) {
+            assert( listenerDimension >= 0 && listenerDimension < (int)it->second.size() );
             it->second[listenerDimension].isListening = false;
 
             bool hasDimensionListening = false;
