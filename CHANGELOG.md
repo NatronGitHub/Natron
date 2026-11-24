@@ -17,7 +17,7 @@
 
 ### Changes
 
-- Preferences: Restore defaults also resets the plug-ins of the Plug-ins page to their defaults (enabled, except the deprecated ones), with their render scale, multi-threading and OpenGL options, instead of only checking their boxes; the OpenGL boxes are reset too. #1744
+- Preferences: Restore defaults also resets the plug-ins of the Plug-ins page (enabled, except the deprecated ones; render scale, multi-threading and OpenGL on), instead of only checking their boxes. Closing the Preferences without Save undoes it. #1744
 - PyPlugs: a PyPlug whose `getVersion()` doesn't return a valid version number (e.g. a string or a negative number) is loaded as version 1, with a message in the error log, instead of version 4294967295 (or close to it), which took precedence over every other version of that PyPlug. #1743
 - Projects: a PyPlug that moved since the project was saved is found again in the PyPlug search paths (e.g. `NATRON_PLUGIN_PATH`, including their sub-directories), so its version is checked and its update offered as when it didn't move. The search never found it: the node kept its PyPlug only if its module could be imported from the Python path, and no update was offered. #1645
 - Python: `IntParam`, `DoubleParam` and `ColorParam` `getDefaultValue(dimension)` return 0 for a dimension out of range, as `getValue(dimension)` does, instead of reading out of bounds. #1743
