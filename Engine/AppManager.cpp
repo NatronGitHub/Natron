@@ -2289,8 +2289,8 @@ AppManager::loadPythonGroups()
         }
 
         std::string pluginLabel, pluginID, pluginGrouping, iconFilePath, pluginDescription;
-        unsigned int version;
-        bool isToolset;
+        unsigned int version = 1;
+        bool isToolset = false;
         bool gotInfos = NATRON_PYTHON_NAMESPACE::getGroupInfos(modulePath.toStdString(), moduleName.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &pluginDescription, &isToolset, &version);
 
 
@@ -5136,8 +5136,14 @@ getGroupInfosInternal(const std::string& modulePath,
         Py_XDECREF(versionObj);
     }
 
-    if ( isToolsetObj && PyBool_Check(isToolsetObj) ) {
-        *isToolset = (isToolsetObj == Py_True) ? true : false;
+    *isToolset = false;
+    if (isToolsetObj) {
+        // getIsToolset() may return any object, not only a bool (e.g. 1 or None): its truth value (#1528)
+        const int isTrue = PyObject_IsTrue(isToolsetObj);
+        if (isTrue < 0) {
+            PyErr_Clear();
+        }
+        *isToolset = (isTrue > 0);
         deleteScript.append("del isToolset\n");
         Py_XDECREF(isToolsetObj);
     }

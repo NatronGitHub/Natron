@@ -17,6 +17,7 @@
 
 ### Changes
 
+- PyPlugs: a PyPlug whose `getIsToolset()` returns a value other than `True` or `False` (e.g. `1` or `None`) is a toolset if that value is true. It used to be a toolset or a regular PyPlug at random. #1528
 - Python: `NatronEngine.ExprUtils.cellnoise()`, `ccellnoise()` and `hash()`, which parameter expressions can use, now give the same results on arm64 (Apple Silicon, Linux aarch64, Windows on ARM64) as on x86_64 and in Natron 2.5 on Intel. On arm64 a negative cell coordinate was treated as 0, so `cellnoise()` repeated the cells at 0 for all negative coordinates, and `hash()` gave the same value for many different negative arguments, because a negative number was converted to an unsigned integer, which is undefined in C++. Projects made on arm64 that use these functions with negative arguments may animate differently. #1678
 - Robustness (preventive, no known crash): a node or the project no longer keeps a dangling pointer to its settings panel after the Gui deletes the panel, e.g. when the node is destroyed from Python. #1618
 - The color is no longer black after a Shuffle whose Output Layer is not Color, and Premult/Unpremult on a layer other than Color no longer fail to render: the color now comes through from the input, like the other layers. #1660
