@@ -213,17 +213,19 @@ set(NATRON_SANITIZE "" CACHE STRING
     "sanitizers passed to -fsanitize=, comma-separated (e.g. address, thread, undefined, or address,undefined); use with a Debug or RelWithDebInfo build")
 option(NATRON_COVERAGE "instrument for code coverage with --coverage (GCC/Clang); use with a Debug build" OFF)
 
+# DEBUG in the Debug configuration, QT_NO_DEBUG_OUTPUT in the others. Generator expressions, so that
+# multi-configuration generators (Xcode, Ninja Multi-Config) follow the configuration being built,
+# which CMAKE_BUILD_TYPE doesn't give them (#1638).
+add_compile_definitions($<$<CONFIG:Debug>:DEBUG> $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG_OUTPUT>)
+if(WIN32)
+    # Debug builds need minimal optimizations to avoid excessive link times and link errors related to Eigen.
+    add_compile_options($<$<CONFIG:Debug>:-O>)
+endif()
+# Only for the Windows settings below, which need it at configure time: Natron is built on Windows
+# with MSYS2 (Makefiles or Ninja), single-configuration generators that set CMAKE_BUILD_TYPE.
 set(IS_DEBUG_BUILD OFF)
 if(CMAKE_BUILD_TYPE MATCHES "^(debug|Debug|DEBUG)$")
     set(IS_DEBUG_BUILD ON)
-    add_definitions(-DDEBUG)
-
-    if(WIN32)
-        # Debug builds need minimal optimizations to avoid excessive link times and link errors related to Eigen.
-        add_compile_options(-O)
-    endif()
-else()
-    add_definitions(-DQT_NO_DEBUG_OUTPUT)
 endif()
 
 if(NOT DEFINED CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
