@@ -35,6 +35,11 @@
 
 #include <gtest/gtest.h>
 
+#include <QtCore/QDir>
+#include <QtCore/QFile>
+#include <QtCore/QFileInfo>
+#include <QtCore/QTemporaryDir>
+
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Global/PythonUtils.h"
@@ -253,4 +258,40 @@ TEST_F(PythonScriptTest, NestedCall)
                                                         "natronTestNode1436.destroy()\n"
                                                         "del natronTestNode1436, natronTestNested1436\n", &err, 0);
     EXPECT_TRUE(ok) << err;
+}
+
+// AppInstance::loadPythonScript() with a script without createInstance(): stale text in the captured
+// sys.stderr, or a warning written by the script, is not reported as "Failed to load" (the Tests are a
+// background session: AppInstance::appendToScriptEditor() writes to stdout).
+TEST_F(PythonScriptTest, LoadPythonScriptStderrIsNotAnError)
+{
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ASSERT_TRUE( bool(app) );
+    QTemporaryDir dir;
+    ASSERT_TRUE( dir.isValid() );
+    QString path = QDir( dir.path() ).filePath( QString::fromUtf8("natronTest1489Warn.py") );
+    {
+        QFile f(path);
+        ASSERT_TRUE( f.open(QIODevice::WriteOnly | QIODevice::Truncate) );
+        f.write("import sys\nsys.stderr.write('warning-1489\\n')\n");
+    }
+    runSimple("import sys\n"
+              "sys.stderr.write('Traceback (most recent call last):\\nValueError: stale-1489\\n')\n");
+
+    testing::internal::CaptureStdout();
+    bool ok = app->loadPythonScript( QFileInfo(path) );
+    std::string forwarded = testing::internal::GetCapturedStdout();
+
+    EXPECT_TRUE(ok);
+    EXPECT_EQ( std::string::npos, forwarded.find("Failed to load") ) << forwarded;
+    EXPECT_NE( std::string::npos, forwarded.find("warning-1489") ) << forwarded;
+    EXPECT_TRUE( caughtStderr().empty() );
+
+    // the directory that loadPythonScript() added to sys.path
+    std::string err;
+    const std::string cleanup =
+        "import sys\n"
+        "while '" + dir.path().toStdString() + "' in sys.path:\n"
+        "    sys.path.remove('" + dir.path().toStdString() + "')\n";
+    EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(cleanup, &err, 0) ) << err;
 }
