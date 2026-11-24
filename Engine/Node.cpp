@@ -3092,13 +3092,18 @@ Node::deactivate(const std::list<NodePtr> & outputsToDisconnect,
     }
 
 
-    ///If the node is a group, deactivate all nodes within the group
+    ///If the node is a group, deactivate all nodes within the group. The nodes already deactivated
+    ///(deleted by the user, but kept for undo) are not remembered, so that activate() leaves them deactivated.
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
     if (isGrp) {
         isGrp->setIsDeactivatingGroup(true);
+        _imp->nodesDeactivatedWithGroup.clear();
         NodesList nodes = isGrp->getNodes();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->deactivate(std::list<NodePtr>(), false, false, true, false);
+            if ( (*it)->isActivated() ) {
+                _imp->nodesDeactivatedWithGroup.push_back(*it);
+                (*it)->deactivate(std::list<NodePtr>(), false, false, true, false);
+            }
         }
         isGrp->setIsDeactivatingGroup(false);
     }
@@ -3219,13 +3224,17 @@ Node::activate(const std::list<NodePtr> & outputsToRestore,
     getApp()->recheckInvalidExpressions();
 
 
-    ///If the node is a group, activate all nodes within the group first
+    ///If the node is a group, activate the nodes within the group that deactivate() deactivated with it
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
     if (isGrp) {
         isGrp->setIsActivatingGroup(true);
-        NodesList nodes = isGrp->getNodes();
-        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->activate(std::list<NodePtr>(), false, false);
+        NodesWList nodes;
+        nodes.swap(_imp->nodesDeactivatedWithGroup);
+        for (NodesWList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            NodePtr node = it->lock();
+            if (node) {
+                node->activate(std::list<NodePtr>(), false, false);
+            }
         }
         isGrp->setIsActivatingGroup(false);
     }
