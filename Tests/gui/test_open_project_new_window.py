@@ -7,10 +7,9 @@ import tempfile
 
 import __main__
 
-import NatronGuiTest
 from natrontest import *
 
-first = app  # the callbacks below set "app" to the instance they run for
+first = app
 
 events = []
 
