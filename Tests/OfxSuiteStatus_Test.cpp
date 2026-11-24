@@ -390,12 +390,12 @@ TEST_F(OfxSuiteStatusTest, RequestDialog)
     EXPECT_EQ( dialogs + 1, NatronTestPlugin::counter("Params.dialog") );
 
     EXPECT_EQ( kOfxStatOK, requestDialogFromThread(suite, _effect) );
-    QCoreApplication::processEvents();
+    EXPECT_EQ( dialogs + 1, NatronTestPlugin::counter("Params.dialog") );
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::MetaCall);
     EXPECT_EQ( dialogs + 2, NatronTestPlugin::counter("Params.dialog") );
 
     // no handle, and no action of an effect running on this thread: no effect to send it to
     EXPECT_EQ( kOfxStatFailed, suite->requestDialog(0, 0, 0) );
-    EXPECT_EQ( 0, NatronTestPlugin::counter("Params.dialogDead") );
 }
 
 // A request queued from another thread, then the node is destroyed before the main thread processes it:
@@ -408,13 +408,18 @@ TEST_F(OfxSuiteStatusTest, RequestDialogEffectDestroyed)
     const OfxDialogSuiteV2* suite = dialogSuite();
     ASSERT_TRUE(suite != 0);
     const int live = NatronTestPlugin::counter("Params.live");
+    const int dialogs = NatronTestPlugin::counter("Params.dialog");
+    const int deadDialogs = NatronTestPlugin::counter("Params.dialogDead");
 
     EXPECT_EQ( kOfxStatOK, requestDialogFromThread(suite, _effect) );
     TearDown();
     _effect = 0;
-    EXPECT_EQ( live - 1, NatronTestPlugin::counter("Params.live") );
-    QCoreApplication::processEvents();
-    EXPECT_EQ( 0, NatronTestPlugin::counter("Params.dialogDead") );
+    // the instance is destroyed, and the request is still queued
+    ASSERT_EQ( live - 1, NatronTestPlugin::counter("Params.live") );
+    ASSERT_EQ( dialogs, NatronTestPlugin::counter("Params.dialog") );
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::MetaCall);
+    EXPECT_EQ( dialogs, NatronTestPlugin::counter("Params.dialog") );
+    EXPECT_EQ( deadDialogs, NatronTestPlugin::counter("Params.dialogDead") );
 }
 
 #endif // OFX_SUPPORTS_DIALOG
