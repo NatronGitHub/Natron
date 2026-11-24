@@ -763,31 +763,38 @@ KnobGuiString::parseFont(const QString & label,
                          QFont *f,
                          QColor *color)
 {
+    // The label may not have the font tag that the GUI writes (makeFontTag()), or only part of it, e.g. when
+    // it was set from Python: the size and the family that it doesn't give are left as they are in *f
     QString toFind = QString::fromUtf8(kFontSizeTag);
     int startFontTag = label.indexOf(toFind);
-
-    assert(startFontTag != -1);
-    startFontTag += toFind.size();
-    int j = startFontTag;
-    QString sizeStr;
-    while ( j < label.size() && label.at(j).isDigit() ) {
-        sizeStr.push_back( label.at(j) );
-        ++j;
+    if (startFontTag != -1) {
+        startFontTag += toFind.size();
+        int j = startFontTag;
+        QString sizeStr;
+        while ( j < label.size() && label.at(j).isDigit() ) {
+            sizeStr.push_back( label.at(j) );
+            ++j;
+        }
+        const int size = sizeStr.toInt();
+        if (size > 0) {
+            f->setPointSize(size);
+        }
+    } else {
+        startFontTag = 0;
     }
 
     toFind = QString::fromUtf8(kFontFaceTag);
     startFontTag = label.indexOf(toFind, startFontTag);
-    assert(startFontTag != -1);
-    startFontTag += toFind.size();
-    j = startFontTag;
-    QString faceStr;
-    while ( j < label.size() && label.at(j) != QLatin1Char('"') ) {
-        faceStr.push_back( label.at(j) );
-        ++j;
+    if (startFontTag != -1) {
+        startFontTag += toFind.size();
+        int j = startFontTag;
+        QString faceStr;
+        while ( j < label.size() && label.at(j) != QLatin1Char('"') ) {
+            faceStr.push_back( label.at(j) );
+            ++j;
+        }
+        f->setFamily(faceStr);
     }
-
-    f->setPointSize( sizeStr.toInt() );
-    f->setFamily(faceStr);
 
     {
         toFind = QString::fromUtf8(kBoldStartTag);
