@@ -34,6 +34,7 @@ Functions
 - def :meth:`redo<NatronEngine.App.redo>` ()
 - def :meth:`render<NatronEngine.App.render>` (effect,firstFrame,lastFrame[,frameStep])
 - def :meth:`render<NatronEngine.App.render>` (tasks)
+- def :meth:`saveProjectCopy<NatronEngine.App.saveProjectCopy>` (filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
 - def :meth:`saveTempProject<NatronEngine.App.saveTempProject>` (filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
 - def :meth:`saveProject<NatronEngine.App.saveProject>` (filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
 - def :meth:`saveProjectAs<NatronEngine.App.saveProjectAs>` (filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
@@ -549,14 +550,24 @@ inform the user of various information, warnings or errors.
     :param format: :class:`ProjectFileFormatEnum<NatronEngine.Natron.ProjectFileFormatEnum>`
     :rtype: :class:`bool`
 
+    Same as :meth:`saveProjectCopy<NatronEngine.App.saveProjectCopy>`, kept for compatibility.
+
+    .. versionchanged:: 2.6
+       The *format* parameter.
+
+.. method:: App.saveProjectCopy(filename[, format=NatronEngine.Natron.ProjectFileFormatEnum.eProjectFileFormatNone])
+
+    :param filename: :class:`str`
+    :param format: :class:`ProjectFileFormatEnum<NatronEngine.Natron.ProjectFileFormatEnum>`
+    :rtype: :class:`bool`
+
     Saves a copy of the project to the given *filename* without updating project properties
     such as the project path, last save time etc...
     *format* is the format of the copy (*eProjectFileFormatNone*: the format of the project, or the
     preference for a project that was never saved); it doesn't change the format of the project.
     This function returns *True* if it saved successfully, *False* otherwise.
 
-    .. versionchanged:: 2.6
-       The *format* parameter.
+    .. versionadded:: 2.6
 
 .. method:: App.getProjectFormat()
 

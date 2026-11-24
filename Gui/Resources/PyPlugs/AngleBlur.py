@@ -22,7 +22,7 @@ def getLabel():
     return "AngleBlur"
 
 def getVersion():
-    return 1
+    return 2
 
 def getGrouping():
     return "Filter"
@@ -161,7 +161,7 @@ def createInstance(app,group):
     # End of node "Transform3"
 
     # Start of node "Blur2"
-    lastNode = app.createNode("net.sf.cimg.CImgBlur", 3, group)
+    lastNode = app.createNode("net.sf.cimg.CImgBlur", 4, group)
     lastNode.setScriptName("Blur2")
     lastNode.setLabel("Blur2")
     lastNode.setPosition(1000, 246)
