@@ -84,6 +84,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"
+#include "Gui/GuiTest.h"
 #include "Gui/KnobWidgetDnD.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/LogWindow.h"
@@ -91,6 +92,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/ProgressPanel.h"
+#include "Gui/QtEnumConvert.h"
 #include "Gui/RightClickableWidget.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/SpinBox.h"
@@ -514,7 +516,7 @@ Gui::keyPressEvent(QKeyEvent* e)
         return;
     }
 
-    QWidget* w = qApp->widgetAt( QCursor::pos() );
+    QWidget* w = qApp->widgetAt( GuiTest::cursorPos() );
     Qt::Key key = (Qt::Key)Gui::handleNativeKeys( e->key(), e->nativeScanCode(), e->nativeVirtualKey() );
     Qt::KeyboardModifiers modifiers = e->modifiers();
 
@@ -537,7 +539,7 @@ Gui::keyPressEvent(QKeyEvent* e)
             if ( QFile::exists(str) ) {
                 QList<QUrl> urls;
                 urls.push_back( QUrl::fromLocalFile(str) );
-                handleOpenFilesFromUrls( urls, QCursor::pos() );
+                handleOpenFilesFromUrls( urls, GuiTest::cursorPos() );
             } else {
                 std::string error, output;
                 if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(str.toStdString(), &error, &output) ) {
@@ -549,7 +551,7 @@ Gui::keyPressEvent(QKeyEvent* e)
             }
         } else if ( mimedata->hasUrls() ) {
             QList<QUrl> urls = mimedata->urls();
-            handleOpenFilesFromUrls( urls, QCursor::pos() );
+            handleOpenFilesFromUrls( urls, GuiTest::cursorPos() );
         }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
         if ( getNodeGraph()->getLastSelectedViewer() ) {
@@ -640,7 +642,7 @@ Gui::keyPressEvent(QKeyEvent* e)
          * Modifiers are always uncaught by child implementations so that we can forward them to 1 ViewerTab so that
          * plug-ins overlay interacts always get the keyDown/keyUp events to track modifiers state.
          */
-        bool isModifier = key == Qt::Key_Control || key == Qt::Key_Shift || key == Qt::Key_Alt || key == Qt::Key_Meta;
+        bool isModifier = QtEnumConvert::isModifierKey(key);
         if (isModifier) {
             const std::list<ViewerTab*>& viewers = getViewersList();
             bool viewerTabHasFocus = false;
@@ -690,7 +692,7 @@ Gui::keyReleaseEvent(QKeyEvent* e)
      * Modifiers are always uncaught by child implementations so that we can forward them to 1 ViewerTab so that
      * plug-ins overlay interacts always get the keyDown/keyUp events to track modifiers state.
      */
-    bool isModifier = key == Qt::Key_Control || key == Qt::Key_Shift || key == Qt::Key_Alt || key == Qt::Key_Meta;
+    bool isModifier = QtEnumConvert::isModifierKey(key);
     if (isModifier) {
         const std::list<ViewerTab*>& viewers = getViewersList();
         bool viewerTabHasFocus = false;

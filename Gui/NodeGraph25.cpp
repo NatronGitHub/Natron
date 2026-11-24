@@ -51,6 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // isKeyBind
 #include "Gui/GuiMacros.h"
+#include "Gui/GuiTest.h"
 #include "Gui/NodeCreationDialog.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
@@ -212,7 +213,7 @@ NodeGraph::onCreateNodeDialogFinished(bool accepted)
             const PluginsMap & allPlugins = appPTR->getPluginsList();
             PluginsMap::const_iterator found = allPlugins.find( res.toStdString() );
             if ( found != allPlugins.end() ) {
-                QPointF posHint = mapToScene( mapFromGlobal( QCursor::pos() ) );
+                QPointF posHint = mapToScene( mapFromGlobal( GuiTest::cursorPos() ) );
                 CreateNodeArgs args( res.toStdString(), getGroup() );
                 args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.x(), 0);
                 args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.y(), 1);
@@ -380,7 +381,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphAutoHideInputs, modifiers, key) ) {
         toggleAutoHideInputs(true);
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
-        popFindDialog( QCursor::pos() );
+        popFindDialog( GuiTest::cursorPos() );
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCreateNode, modifiers, key) ) {
         assert(false && "Should never be reached (caught in NodeGraph::event())");
         popCreateNodeDialog();
@@ -391,10 +392,10 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphTogglePreview, modifiers, key) ) {
         togglePreviewsForSelectedNodes();
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomIn, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
-        QWheelEvent e(mapFromGlobal( QCursor::pos() ), QCursor::pos(), QPoint(), QPoint(0, 120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+        QWheelEvent e(mapFromGlobal( GuiTest::cursorPos() ), GuiTest::cursorPos(), QPoint(), QPoint(0, 120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
         wheelEvent(&e);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
-        QWheelEvent e(mapFromGlobal( QCursor::pos() ), QCursor::pos(), QPoint(), QPoint(0, -120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+        QWheelEvent e(mapFromGlobal( GuiTest::cursorPos() ), GuiTest::cursorPos(), QPoint(), QPoint(0, -120), Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
         wheelEvent(&e);
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphOpenNodePanel, modifiers, key) ) {
         if (_imp->_selection.size() == 1) {
@@ -425,7 +426,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                         group.push_back(groupingSplit[j]);
                     }
                     if ( isKeybind(group.toStdString(), plugin->getPluginID().toStdString(), modifiers, key) ) {
-                        QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
+                        QPointF hint = mapToScene( mapFromGlobal( GuiTest::cursorPos() ) );
                         CreateNodeArgs args( plugin->getPluginID().toStdString(), getGroup() );
                         args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.x(), 0);
                         args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.y(), 1);

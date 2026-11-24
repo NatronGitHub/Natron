@@ -98,10 +98,13 @@ Notes:
   tracking is run from the Script Editor, another option is to call
   ``startTracking`` alone, and to read the result in a second script once the
   tracking is finished.
+- To track backward, pass ``forward=False`` and an *end* frame lower than
+  *start*: ``tracker.startTracking(tracks, last, first - 1, False)`` tracks
+  from *last* down to *first*.
 
 .. warning::
 
-   Up to Natron 2.6.x (see `issue #1255
+   Up to Natron 2.5 (see `issue #1255
    <https://github.com/NatronGitHub/Natron/issues/1255>`_), ``startTracking`` with
-   ``forward=False`` does not track anything. To track backward, use the *Track Backward* button of the
-   Tracker node.
+   ``forward=False`` does not track anything. To track backward with these versions, use the
+   *Track Backward* button of the Tracker node.

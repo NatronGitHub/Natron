@@ -29,7 +29,6 @@
 
 #include <QTextStream>
 #include <QFile>
-#include <QRegularExpression>
 
 #include "Engine/DocumentationGroups.h"
 #include "Engine/EffectInstance.h"
@@ -397,7 +396,7 @@ Node::makeDocumentation(bool genHTML) const
         ms << "![pluginIcon](" << pluginIconUrl << ")";
         if (!genHTML) {
             // specify image width for pandoc-generated printed doc
-            // (for hoedown-generated HTML, this handled by the CSS using the alt=pluginIcon attribute)
+            // (for md4c-generated HTML, this handled by the CSS using the alt=pluginIcon attribute)
             // see http://pandoc.org/MANUAL.html#images
             // note that only % units are understood both by pandox and sphinx
             ms << "{ width=10% }";
@@ -411,12 +410,8 @@ Node::makeDocumentation(bool genHTML) const
     if (!pluginDescriptionIsMarkdown) {
         if (genHTML) {
             pluginDescription = NATRON_NAMESPACE::convertFromPlainText(pluginDescription, NATRON_NAMESPACE::WhiteSpaceNormal);
-
             // replace URLs with links
-            // (UseUnicodePropertiesOption: \w is ASCII-only in PCRE, it was Unicode in QRegExp)
-            QRegularExpression re( QString::fromUtf8("((http|ftp|https)://([\\w_-]+(?:(?:\\.[\\w_-]+)+))([\\w.,@?^=%&:/~+#-]*[\\w@?^=%&/~+#-])?)"),
-                                   QRegularExpression::UseUnicodePropertiesOption );
-            pluginDescription.replace( re, QString::fromUtf8("<a href=\"\\1\">\\1</a>") );
+            pluginDescription = NATRON_NAMESPACE::convertUrlsToHtmlLinks(pluginDescription);
         } else {
             pluginDescription = convertFromPlainTextToMarkdown(pluginDescription, genHTML, false);
         }
@@ -428,6 +423,9 @@ Node::makeDocumentation(bool genHTML) const
     if ( !extraMarkdown.isEmpty() ) {
         ms << "\n\n";
         ms << extraMarkdown;
+        // the file may not end with a newline: without a blank line, its last line
+        // would become part of the "Inputs" header or of a table
+        ms << "\n\n";
     }
 
     // create markdown table
@@ -465,7 +463,7 @@ Node::makeDocumentation(bool genHTML) const
 OUTPUT:
     // output
     if (genHTML) {
-        // use hoedown to convert to HTML
+        // use md4c to convert to HTML
         // See Documentation/templates for how to grab header/footer from the latest Sphinx version
 
         QString groupString; // %2 in plugin_head: the node group, and its parents

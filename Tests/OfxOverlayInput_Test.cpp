@@ -23,6 +23,8 @@
 //   UTF8 encoding, in which case this is """;
 // - kOfxInteractPropPenPressure is passed through (the viewer gives 0 with no button down, see
 //   ViewerGL::mouseMoveEvent()).
+// - kNatronOfxInteractPropKeyModifiers (ofxNatron.h extension 13) and kOfxPropKeySym for the Meta
+//   key: "a host must set the bits consistently with the key symbols it reports" (#1278).
 // The overlay is driven headless, with a mock viewport, through the EffectInstance::*_public() functions
 // the viewer calls (see ViewerTab::notifyOverlaysPenDown_internal()).
 
@@ -40,6 +42,8 @@
 
 #include <QtCore/QPointF>
 #include <QtCore/QString>
+
+#include "Global/KeySymbols.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -212,6 +216,80 @@ TEST(OfxOverlayInput, ViewerOverlay)
     EXPECT_EQ( keyUpA + 1, counter("keyUp.string.a") );
     EXPECT_EQ( keyDownE + 1, counter("keyDown.string.\xc3\xa9") );
     EXPECT_EQ( keyDownNone + 1, counter("keyDown.string.") );
+
+    effect->setCurrentViewportForOverlays_public(NULL);
+    node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
+}
+
+// On Wayland, Qt reports the Super keys as Qt::Key_Super_L/R with Qt::MetaModifier, and
+// QtEnumConvert::fromQtKey() maps them to Key_Meta_L/R with keySuperAsMeta(), as Qt's xcb plug-in
+// does on X11 (#1278).
+TEST(OfxOverlayInput, KeySuperAsMeta)
+{
+    EXPECT_EQ( Key_Meta_L, keySuperAsMeta(Key_Super_L) );
+    EXPECT_EQ( Key_Meta_R, keySuperAsMeta(Key_Super_R) );
+    EXPECT_EQ( Key_Meta_L, keySuperAsMeta(Key_Meta_L) );
+    EXPECT_EQ( Key_Meta_R, keySuperAsMeta(Key_Meta_R) );
+    EXPECT_EQ( Key_Hyper_L, keySuperAsMeta(Key_Hyper_L) );
+    EXPECT_EQ( Key_Control_L, keySuperAsMeta(Key_Control_L) );
+    EXPECT_EQ( Key_a, keySuperAsMeta(Key_a) );
+}
+
+// The Meta bit follows the keys reported as kOfxKey_Meta_L/R: in the key actions of these keys, the
+// state after the event, and in the pen actions, Qt::MetaModifier.
+TEST(OfxOverlayInput, MetaKeyModifier)
+{
+    if ( !NatronTestPlugin::isAvailable(kNatronTestPluginOverlayInput) ) {
+        NatronTestPlugin::reportSkipped(kNatronTestPluginOverlayInput);
+
+        return;
+    }
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    CreateNodeArgs args( kNatronTestPluginOverlayInput, app->getProject() );
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    NodePtr node = app->createNode(args);
+    ASSERT_TRUE( bool(node) );
+    EffectInstancePtr effect = node->getEffectInstance();
+    ASSERT_TRUE( effect->hasOverlay() );
+    MockViewport viewport;
+    effect->setCurrentViewportForOverlays_public(&viewport);
+
+    const KeyboardModifiers none;
+    const KeyboardModifiers meta(eKeyboardModifierMeta);
+    const std::string metaL = "sym." + std::to_string(kOfxKey_Meta_L);
+    const std::string superL = "sym." + std::to_string(kOfxKey_Super_L);
+    const std::string mods0 = ".modifiers.0";
+    const std::string mods8 = ".modifiers." + std::to_string(kNatronOfxKeyModifierMeta);
+    const int downMeta8 = counter("keyDown." + metaL + mods8);
+    const int upMeta0 = counter("keyUp." + metaL + mods0);
+    const int repeatMeta8 = counter("keyRepeat." + metaL + mods8);
+    const int downSuper0 = counter("keyDown." + superL + mods0);
+    const int upSuper0 = counter("keyUp." + superL + mods0);
+    const int motion8 = counter("penMotion" + mods8);
+    const int motion0 = counter("penMotion" + mods0);
+
+    // a key reported as Meta: X11 Super, or Wayland Super after keySuperAsMeta(). In its key actions,
+    // the state after the event, whatever the event's modifiers.
+    ignore_result( effect->onOverlayKeyDown_public( kTime, RenderScale(), ViewIdx(0), Key_Meta_L, none, QString() ) );
+    ignore_result( effect->onOverlayKeyRepeat_public( kTime, RenderScale(), ViewIdx(0), Key_Meta_L, meta, QString() ) );
+    ignore_result( effect->onOverlayPenMotion_public( kTime, RenderScale(), ViewIdx(0), QPointF(0., 0.), QPointF(0., 0.), 0., 0., meta ) );
+    ignore_result( effect->onOverlayKeyUp_public( kTime, RenderScale(), ViewIdx(0), Key_Meta_L, meta, QString() ) );
+    ignore_result( effect->onOverlayPenMotion_public( kTime, RenderScale(), ViewIdx(0), QPointF(0., 0.), QPointF(0., 0.), 0., 0., none ) );
+    // Wayland: Qt::Key_Super_L with Qt::MetaModifier (Logo)
+    ignore_result( effect->onOverlayKeyDown_public( kTime, RenderScale(), ViewIdx(0), keySuperAsMeta(Key_Super_L), meta, QString() ) );
+    ignore_result( effect->onOverlayKeyUp_public( kTime, RenderScale(), ViewIdx(0), keySuperAsMeta(Key_Super_L), meta, QString() ) );
+    EXPECT_EQ( downMeta8 + 2, counter("keyDown." + metaL + mods8) );
+    EXPECT_EQ( repeatMeta8 + 1, counter("keyRepeat." + metaL + mods8) );
+    EXPECT_EQ( upMeta0 + 2, counter("keyUp." + metaL + mods0) );
+    EXPECT_EQ( motion8 + 1, counter("penMotion" + mods8) );
+    EXPECT_EQ( motion0 + 1, counter("penMotion" + mods0) );
+
+    // X11 with a layout where Meta is a separate modifier: Qt::Key_Super_L without Qt::MetaModifier.
+    // Super sets no bit.
+    ignore_result( effect->onOverlayKeyDown_public( kTime, RenderScale(), ViewIdx(0), Key_Super_L, none, QString() ) );
+    ignore_result( effect->onOverlayKeyUp_public( kTime, RenderScale(), ViewIdx(0), Key_Super_L, none, QString() ) );
+    EXPECT_EQ( downSuper0 + 1, counter("keyDown." + superL + mods0) );
+    EXPECT_EQ( upSuper0 + 1, counter("keyUp." + superL + mods0) );
 
     effect->setCurrentViewportForOverlays_public(NULL);
     node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);

@@ -17,7 +17,7 @@
 
 #define EIGEN_WORLD_VERSION 3
 #define EIGEN_MAJOR_VERSION 4
-#define EIGEN_MINOR_VERSION 0
+#define EIGEN_MINOR_VERSION 1
 
 #define EIGEN_VERSION_AT_LEAST(x,y,z) (EIGEN_WORLD_VERSION>x || (EIGEN_WORLD_VERSION>=x && \
                                       (EIGEN_MAJOR_VERSION>y || (EIGEN_MAJOR_VERSION>=y && \
@@ -179,6 +179,13 @@
   #define EIGEN_COMP_PGI 0
 #endif
 
+/// \internal EIGEN_COMP_NVHPC set to NVHPC version if the compiler is nvc++
+#if defined(__NVCOMPILER)
+#define EIGEN_COMP_NVHPC (__NVCOMPILER_MAJOR__ * 100 + __NVCOMPILER_MINOR__)
+#else
+#define EIGEN_COMP_NVHPC 0
+#endif
+
 /// \internal EIGEN_COMP_ARM set to 1 if the compiler is ARM Compiler
 #if defined(__CC_ARM) || defined(__ARMCC_VERSION)
   #define EIGEN_COMP_ARM 1
@@ -275,7 +282,7 @@
 
 /// \internal EIGEN_HAS_ARM64_FP16 set to 1 if the architecture provides an IEEE
 /// compliant Arm fp16 type
-#if EIGEN_ARCH_ARM64
+#if EIGEN_ARCH_ARM_OR_ARM64
   #ifndef EIGEN_HAS_ARM64_FP16
     #if defined(__ARM_FP16_FORMAT_IEEE)
       #define EIGEN_HAS_ARM64_FP16 1
@@ -287,7 +294,7 @@
 
 /// \internal EIGEN_HAS_ARM64_FP16_VECTOR_ARITHMETIC set to 1 if the architecture
 /// supports Neon vector intrinsics for fp16.
-#if EIGEN_ARCH_ARM64
+#if EIGEN_ARCH_ARM_OR_ARM64
   #ifndef EIGEN_HAS_ARM64_FP16_VECTOR_ARITHMETIC
     #if defined(__ARM_FEATURE_FP16_VECTOR_ARITHMETIC)
       #define EIGEN_HAS_ARM64_FP16_VECTOR_ARITHMETIC 1
@@ -299,7 +306,7 @@
 
 /// \internal EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC set to 1 if the architecture
 /// supports Neon scalar intrinsics for fp16.
-#if EIGEN_ARCH_ARM64
+#if EIGEN_ARCH_ARM_OR_ARM64
   #ifndef EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC
     #if defined(__ARM_FEATURE_FP16_SCALAR_ARITHMETIC)
       #define EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC 1
@@ -329,7 +336,7 @@
 #endif
 
 /// \internal EIGEN_ARCH_PPC set to 1 if the architecture is PowerPC
-#if defined(__powerpc__) || defined(__ppc__) || defined(_M_PPC)
+#if defined(__powerpc__) || defined(__ppc__) || defined(_M_PPC) || defined(__POWERPC__)
   #define EIGEN_ARCH_PPC 1
 #else
   #define EIGEN_ARCH_PPC 0
@@ -563,6 +570,32 @@
 // For cases where the tweak is specific to CUDA, the code should be guarded with
 //      #if defined(EIGEN_CUDA_ARCH)
 //
+#endif
+
+/// \internal EIGEN_HAS_ARM64_FP16_VECTOR_ARITHMETIC set to 1 if the architecture
+/// supports Neon vector intrinsics for fp16.
+#if EIGEN_ARCH_ARM64
+  #ifndef EIGEN_HAS_ARM64_FP16_VECTOR_ARITHMETIC
+    // Clang only supports FP16 on aarch64, and not all intrinsics are available
+    // on A32 anyways even in GCC (e.g. vdiv_f16, vsqrt_f16).
+    #if EIGEN_ARCH_ARM64 && defined(__ARM_FEATURE_FP16_VECTOR_ARITHMETIC) && !defined(EIGEN_GPU_COMPILE_PHASE)
+      #define EIGEN_HAS_ARM64_FP16_VECTOR_ARITHMETIC 1
+    #else
+      #define EIGEN_HAS_ARM64_FP16_VECTOR_ARITHMETIC 0
+    #endif
+  #endif
+#endif
+
+/// \internal EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC set to 1 if the architecture
+/// supports Neon scalar intrinsics for fp16.
+#if EIGEN_ARCH_ARM64
+  #ifndef EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC
+    // Clang only supports FP16 on aarch64, and not all intrinsics are available
+    // on A32 anyways, even in GCC (e.g. vceqh_f16).
+    #if EIGEN_ARCH_ARM64 && defined(__ARM_FEATURE_FP16_SCALAR_ARITHMETIC) && !defined(EIGEN_GPU_COMPILE_PHASE)
+      #define EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC 1
+    #endif
+  #endif
 #endif
 
 #if defined(EIGEN_USE_SYCL) && defined(__SYCL_DEVICE_ONLY__)
@@ -1124,14 +1157,28 @@ namespace Eigen {
     // directly for std::complex<T>, Eigen::half, Eigen::bfloat16. For these,
     // you will need to apply to the underlying POD type.
     #if EIGEN_ARCH_PPC && EIGEN_COMP_GNUC_STRICT
-      // This seems to be broken on clang.  Packet4f is loaded into a single
-      //   register rather than a vector, zeroing out some entries.  Integer
+      // This seems to be broken on clang. Packet4f is loaded into a single
+      //   register rather than a vector, zeroing out some entries. Integer
       //   types also generate a compile error.
-      // General, Altivec, VSX.
-      #define EIGEN_OPTIMIZATION_BARRIER(X)  __asm__  ("" : "+r,v,wa" (X));
+      #if EIGEN_OS_MAC
+        // General, Altivec for Apple (VSX were added in ISA v2.06):
+        #define EIGEN_OPTIMIZATION_BARRIER(X)  __asm__  ("" : "+r,v" (X));
+      #else
+        // General, Altivec, VSX otherwise:
+        #define EIGEN_OPTIMIZATION_BARRIER(X)  __asm__  ("" : "+r,v,wa" (X));
+      #endif
     #elif EIGEN_ARCH_ARM_OR_ARM64
       // General, NEON.
-      #define EIGEN_OPTIMIZATION_BARRIER(X)  __asm__  ("" : "+g,w" (X));
+      // Clang doesn't like "r",
+      //    error: non-trivial scalar-to-vector conversion, possible invalid
+      //           constraint for vector type
+      // GCC < 5 doesn't like "g",
+      //    error: 'asm' operand requires impossible reload
+      #if EIGEN_COMP_GNUC_STRICT && EIGEN_GNUC_AT_MOST(5, 0)
+        #define EIGEN_OPTIMIZATION_BARRIER(X)  __asm__  ("" : "+r,w" (X));
+      #else
+        #define EIGEN_OPTIMIZATION_BARRIER(X)  __asm__  ("" : "+g,w" (X));
+      #endif
     #elif EIGEN_ARCH_i386_OR_x86_64
       // General, SSE.
       #define EIGEN_OPTIMIZATION_BARRIER(X)  __asm__  ("" : "+g,x" (X));
@@ -1185,7 +1232,7 @@ namespace Eigen {
   #define EIGEN_USING_STD(FUNC) using std::FUNC;
 #endif
 
-#if EIGEN_COMP_MSVC_STRICT && (EIGEN_COMP_MSVC < 1900 || (EIGEN_COMP_MSVC == 1900 && EIGEN_COMP_NVCC))
+#if EIGEN_COMP_MSVC_STRICT && (EIGEN_COMP_MSVC < 1916 || (EIGEN_COMP_MSVC == 1916 && EIGEN_COMP_NVCC))
   // For older MSVC versions, as well as 1900 && CUDA 8, using the base operator is necessary,
   //   otherwise we get duplicate definition errors
   // For later MSVC versions, we require explicit operator= definition, otherwise we get
@@ -1216,7 +1263,7 @@ namespace Eigen {
  * This is necessary, because the implicit definition is deprecated if the copy-assignment is overridden.
  */
 #if EIGEN_HAS_CXX11
-#define EIGEN_DEFAULT_COPY_CONSTRUCTOR(CLASS) CLASS(const CLASS&) = default;
+#define EIGEN_DEFAULT_COPY_CONSTRUCTOR(CLASS) EIGEN_DEVICE_FUNC CLASS(const CLASS&) = default;
 #else
 #define EIGEN_DEFAULT_COPY_CONSTRUCTOR(CLASS)
 #endif
@@ -1241,12 +1288,12 @@ namespace Eigen {
  */
 #if EIGEN_HAS_CXX11
 #define EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(Derived)  \
-    Derived() = default; \
-    ~Derived() = default;
+    EIGEN_DEVICE_FUNC Derived() = default; \
+    EIGEN_DEVICE_FUNC ~Derived() = default;
 #else
 #define EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(Derived)  \
-    Derived() {}; \
-    /* ~Derived() {}; */
+    EIGEN_DEVICE_FUNC Derived() {}; \
+    /* EIGEN_DEVICE_FUNC ~Derived() {}; */
 #endif
 
 

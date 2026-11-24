@@ -28,7 +28,12 @@
 
 #include "Global/Macros.h"
 
+#include <atomic>
+#include <list>
+#include <set>
 #include <string>
+#include <thread>
+#include <utility>
 
 #include <gtest/gtest.h>
 
@@ -129,5 +134,47 @@ TEST_F(KnobExpressionCacheTest, ResultIsStored)
     // the results were cleared by the change of doubleFrom
     EXPECT_EQ( 9., to->getValueAtTime(1.) );
 
+    to->clearExpression(0, true);
+}
+
+// #1544: clearExpression() modified the dependencies of the expression under mastersMutex, while
+// getExpressionDependencies() and getAllExpressionDependenciesRecursive() (e.g. from a render thread) read
+// them under expressionMutex: a data race on the same std::list. Here the main thread sets and clears the
+// expression while another thread reads its dependencies. Run under ThreadSanitizer, the old code reports
+// a data race; without it, it may crash.
+TEST_F(KnobExpressionCacheTest, DependenciesAreReadWhileTheExpressionIsCleared)
+{
+    if ( skipped() ) {
+        return;
+    }
+    KnobDoublePtr from = knob("doubleFrom");
+    KnobDoublePtr to = knob("doubleTo");
+    ASSERT_TRUE(from && to);
+
+    std::atomic<bool> stop(false);
+    std::atomic<int> nonEmptyReads(0);
+    std::thread reader([&] {
+        while (!stop) {
+            std::list<std::pair<KnobIWPtr, int> > deps;
+            if ( to->getExpressionDependencies(0, deps) && !deps.empty() ) {
+                ++nonEmptyReads;
+            }
+            std::set<NodePtr> nodes;
+            to->getAllExpressionDependenciesRecursive(nodes);
+        }
+    });
+    for (int i = 0; i < 300; ++i) {
+        to->setExpression(0, "thisNode.doubleFrom.get() + 1", false /*hasRetVariable*/, false /*failIfInvalid*/);
+        to->clearExpression(0, true);
+    }
+    stop = true;
+    reader.join();
+
+    // the dependencies were all removed with the expression
+    std::list<std::pair<KnobIWPtr, int> > deps;
+    EXPECT_FALSE( to->getExpressionDependencies(0, deps) );
+    to->setExpression(0, "thisNode.doubleFrom.get() + 1", false, false);
+    ASSERT_TRUE( to->getExpressionDependencies(0, deps) );
+    EXPECT_FALSE( deps.empty() );
     to->clearExpression(0, true);
 }

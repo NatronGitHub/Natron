@@ -177,6 +177,7 @@ public:
 
     Layer* getBaseLayer() const;
     ItemBase* getItemByName(const QString& name) const;
+    std::list<ItemBase*> getSelectedItems() const;
     Layer* createLayer();
     BezierCurve* createBezier(double x, double y, double time);
     BezierCurve* createEllipse(double x, double y, double diameter, bool fromCenter, double time);

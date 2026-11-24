@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/AppManager.h"
 #include "Global/QtCompat.h"
 #include "Engine/Plugin.h"
+#include "Gui/GuiTest.h"
 #include "Gui/LineEdit.h"
 #include "Gui/GuiApplicationManager.h"
 
@@ -366,6 +367,9 @@ static void
 incrementPluginWeight(const QString& pluginID,
                       int majVersion)
 {
+    if ( appPTR->isTestMode() ) {
+        return; // a test does not change the user's Tab completion ranking
+    }
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
     QString propName( pluginID + QString::number(majVersion) + QString::fromUtf8("_tab_weight") );
     int curValue = settings.value( propName, QVariant(0) ).toInt();
@@ -446,11 +450,13 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
     }
 
     _imp->textEdit = new CompleterLineEdit(pluginsMap, true, this);
+    _imp->textEdit->setObjectName( QString::fromUtf8("NodeCreationDialogLineEdit") );
+
     if ( !initialFilterName.isEmpty() ) {
         _imp->textEdit->setText(initialFilterName);
     }
 
-    QPoint global = QCursor::pos();
+    QPoint global = GuiTest::cursorPos();
     QSize sizeH = sizeHint();
     global.rx() -= sizeH.width() / 2;
     global.ry() -= sizeH.height() / 2;

@@ -142,7 +142,7 @@ is compiled from the sources of ``libs/OpenFX``.
    :alt: Natron links NatronGui; NatronGui and NatronRenderer link
          NatronEngine; NatronEngine links HostSupport, which is compiled from
          the libs/OpenFX sources, embeds Python, and links the bundled ceres,
-         libmv, openMVG, hoedown and libtess; NatronGui also links qhttpserver;
+         libmv, openMVG, md4c and libtess; NatronGui also links qhttpserver;
          natron-python links only Python. NatronGui implements the interfaces
          that NatronEngine declares in its *I.h headers.
    :caption: Layers and executables. Solid arrows: "links". Dotted arrows:
@@ -161,7 +161,7 @@ is compiled from the sources of ``libs/OpenFX``.
        OpenFX["libs/OpenFX<br/>OFX headers and host support sources"]
        Python(["Python"])
        subgraph bundled ["Bundled libraries (libs/)"]
-           EngineLibs["ceres, libmv, openMVG,<br/>hoedown, libtess"]
+           EngineLibs["ceres, libmv, openMVG,<br/>md4c, libtess"]
            qhttpserver["qhttpserver"]
        end
 

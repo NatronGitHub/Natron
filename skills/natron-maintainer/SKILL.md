@@ -74,6 +74,11 @@ depth; this skill is the quick map.
 - ``std::shared_ptr``/``weak_ptr`` everywhere; parent→child is ``shared_ptr``,
   child→parent is ``weak_ptr`` (avoid cycles). Add new types to the ``Fwd``
   catalog.
+- An Engine object that keeps a pointer to a Gui object it observes (a ``*I``
+  interface) must not rely on the Gui to clear it: if the Gui object is a
+  QObject, keep a ``QPointer<QObject>`` (as ``KnobHolder`` does for its panel)
+  or clear it in the Gui object's destructor (as ``~NodeGraph`` does), and
+  check it before each use (#1618).
 - ``QT_NO_CAST_FROM_ASCII`` is set: wrap literals in ``QString::fromUtf8("…")``
   or ``tr()``.
 - Serialization and the ``Py*`` API are **backward-compatibility-critical** —
@@ -88,7 +93,7 @@ cmake -S . -B build -DNATRON_QT6=ON           # Qt6.3+PySide6+OpenGLWidgets
 cmake --build build -j
 ctest --test-dir build                        # unit tests (or -DNATRON_BUILD_TESTS=OFF)
 ```
-The qmake build (``qmake -r Project.pro && make``) is **deprecated** (#1181): it still works on RB-2.6, where the release scripts in ``tools/jenkins`` use it, and will be removed on RB-2.7 first. qmake doesn't run shiboken, so only CMake builds the Qt6 bindings. Use CMake (see ``INSTALL_*.md``).
+The qmake build (``qmake -r Project.pro && make``) is **deprecated** (#1181): it still works on RB-2.6, where the release scripts in ``tools/jenkins`` use it only with ``NATRON_BUILD_SYSTEM=qmake`` (CMake is their default), and will be removed on RB-2.7 first. qmake doesn't run shiboken, so only CMake builds the Qt6 bindings. Use CMake (see ``INSTALL_*.md``).
 
 Code style (enforced by ``.git-hooks/pre-commit``):
 ```bash
@@ -117,9 +122,10 @@ Do NOT hand-edit ``index.rst`` (except to add a whole new guide to the toctree),
   generates no bindings; ``QtCompat::MutexLock`` (QMutex or QRecursiveMutex,
   null locks nothing) and ``QtCompat::QEnterEvent`` (for ``enterEvent``
   overrides) in ``Global/QtCompat.h``.
+- **Done (#1469, #1148):** C++20 with Qt6 (C++17 with Qt5).
 - **To do:** validate PySide6 bindings and the Qt6 GUI at run time (enum/flag
-  issue #854; ``QT_API`` is ``pyside6`` with Qt6, #1262); Qt6 CI build (nightly/on demand, not
-  per PR); C++20 with Qt6 (#1148). No more Qt6 work on the deprecated qmake
+  issue #854; ``QT_API`` is ``pyside6`` with Qt6, #1262); Qt6 CI build (weekly/on demand, not
+  per PR). No more Qt6 work on the deprecated qmake
   build (CMake is the Qt6 build). Qt5-preserving Qt6 work goes to RB-2.6;
   RB-2.7 is the Qt6 branch.
 - Keep Qt 5.15 working: prefer APIs present in both; else shim in

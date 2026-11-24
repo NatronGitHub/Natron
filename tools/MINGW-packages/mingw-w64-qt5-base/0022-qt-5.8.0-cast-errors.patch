@@ -1,0 +1,11 @@
+--- a/src/plugins/platforms/direct2d/qwindowsdirect2dintegration.cpp	2019-06-12 23:59:14.000000000 +0300
++++ b/src/plugins/platforms/direct2d/qwindowsdirect2dintegration.cpp	2019-06-15 16:23:35.775510000 +0300
+@@ -78,7 +78,7 @@
+                     UINT size;
+                     DWORD *fi;
+ 
+-                    if (VerQueryValue(info.constData(), __TEXT("\\"),
++                    if (VerQueryValue(info.data(), __TEXT("\\"),
+                                       reinterpret_cast<void **>(&fi), &size) && size) {
+                         const VS_FIXEDFILEINFO *verInfo = reinterpret_cast<const VS_FIXEDFILEINFO *>(fi);
+                         return QVersionNumber{HIWORD(verInfo->dwFileVersionMS), LOWORD(verInfo->dwFileVersionMS),

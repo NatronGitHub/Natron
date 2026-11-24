@@ -15,14 +15,14 @@ Natron binaries include components from the following libraries:
 * openfx-misc (GPLv2) https://github.com/NatronGitHub/openfx-misc
 * openfx-arena (GPLv2) https://github.com/NatronGitHub/openfx-arena
 * openfx-gmic (CeCILL-C, LGPL-like) https://github.com/NatronGitHub/openfx-gmic
-* Eigen 3 (MPL 2.0) http://eigen.tuxfamily.org/
+* Eigen 3 (MPL 2.0) https://libeigen.gitlab.io/
 * Ceres Solver (New BSD) http://ceres-solver.org/
 * gflags (New BSD) http://gflags.github.io/gflags/
 * glog (New BSD) https://github.com/google/glog
 * libmv (BSD) https://developer.blender.org/project/profile/59/
 * openMVG (MPL 2.0) http://imagine.enpc.fr/~moulonp/openMVG/
 * qhttpserver (BSD) https://github.com/nikhilm/qhttpserver
-* hoedown (BSD) https://github.com/hoedown/hoedown
+* md4c (MIT) https://github.com/mity/md4c
 * libtess (SGI Free Software License B, X11-like) ftp://ftp.freedesktop.org/pub/mesa/glu/
 
 # Additional dependencies
@@ -60,6 +60,7 @@ Natron binaries include components from the following libraries:
 
 * OpenEXR & IlmBase (Modified BSD)  http://www.openexr.com/license.html (used by openfx-io via OpenImageIO) 
 * libtiff (Modified BSD) http://www.remotesensing.org/libtiff (used by openfx-io via OpenImageIO) 
+* JBIG-KIT (GPL 2.0 or later) https://www.cl.cam.ac.uk/~mgk25/jbigkit/ (Windows GPL builds only, used by libtiff; COMMERCIAL builds use a libtiff without it)
 * libpng (libpng/zlib License) http://www.libpng.org (used by openfx-io via OpenImageIO and openfx-arena via ImageMagick)
 * libjpeg (Modified BSD) http://ijg.org (used by openfx-io via OpenImageIO) 
 * openjpeg (2-clauses BSD) http://www.openjpeg.org (used by openfx-io via OpenImageIO) 
@@ -69,6 +70,9 @@ Natron binaries include components from the following libraries:
 * GIFLIB (X Consortium-like licence) http://giflib.sourceforge.net (used by openfx-io via OpenImageIO) 
 * LibRaw (LGPL 2.1 or CDDL 1.0 license; GPL builds also include LibRaw's GPL 2.0 demosaic pack, with the AHD-Mod, AFD, VCD, Mixed and LMMSE methods, which makes that LibRaw GPL 2.0 or later; the GPL 3.0 pack is not included) https://www.libraw.org (used by openfx-io directly and via OpenImageIO) 
 * JasPer (MIT) http://www.ece.uvic.ca/~frodo/jasper/ (used by openfx-io via LibRaw) 
+* libheif (LGPL 3.0; GPL builds also include its x264 and x265 encoders, which are GPL 2.0, COMMERCIAL builds a libheif without them) https://github.com/strukturag/libheif (used by openfx-io via OpenImageIO)
+* libde265 (LGPL 3.0) https://github.com/strukturag/libde265 (used by openfx-io via libheif)
+* kvazaar (3-clause BSD) https://github.com/ultravideo/kvazaar (used by openfx-io via libheif)
 
 ## openfx-arena
 
@@ -98,7 +102,7 @@ Natron binaries include components from the following libraries:
 * Expat (MITX) http://expat.sourceforge.net/ (used by openfx) 
 * Pixman (MIT) http://www.pixman.org/ (used by Natron and openfx-arena via Cairo)
 * libmng (libpng/zlib License) http://www.libpng.org/pub/mng/ (used by Qt)
-* OpenSSL (Apache 1.0 or 4-clause BSD) http://www.openssl.org (used by Qt and Python)
+* OpenSSL 3 (Apache 2.0) https://www.openssl.org (used by Qt and Python). The Apache 2.0 license is compatible with the GPL 3.0 but not with the GPL 2.0 only: since Natron and the openfx-io, openfx-misc and openfx-arena plug-ins are GPL 2.0 or later, the binaries that include OpenSSL 3 are distributed under the GPL 3.0.
 * gdk_pixbuf (LGPL 2.1) https://developer.gnome.org/gdk-pixbuf/stable/ (used by openfx-arena via librsvg)
 * Little CMS (MIT) http://www.littlecms.com/ (used by Qt and openfx-io via libmng and LibRaw)
 * libcroco (LGPL 2.1) https://github.com/GNOME/libcroco (used by openfx-arena via librsvg)
@@ -115,5 +119,6 @@ Natron binaries include components from the following libraries:
 * zlib (libpng/zlib License) http://www.zlib.net/
 * libiconv (LGPL 2.1) https://www.gnu.org/software/libiconv/
 * libintl (LGPL 2.1) https://www.gnu.org/software/gettext/
-* ncurses (LGPL 2.1) https://www.gnu.org/software/ncurses/
+* ncurses (MIT-style X11 license) https://invisible-island.net/ncurses/ (used by Python via the readline and curses modules)
+* GNU Readline (GPL 3.0 or later) https://tiswww.case.edu/php/chet/readline/rltop.html (used by Python via the readline module, Linux binaries)
 

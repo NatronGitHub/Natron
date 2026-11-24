@@ -131,10 +131,16 @@ libtess-flags {
 INCLUDEPATH += $$PWD/libs/libtess
 }
 
+# md4c: libs/md4c/CMakeLists.txt is the CMake equivalent: keep NATRON_MD4C_VERSION in sync with md4c_VERSION there.
+md4c-flags {
+INCLUDEPATH += $$PWD/libs/md4c/src
+DEFINES += NATRON_MD4C_VERSION=\\\"0.6.0-46-gf9e5eb2\\\"
+}
+
 ################
 # Gui
 static-gui {
-CONFIG += static-engine static-qhttpserver static-hoedown static-libtess
+CONFIG += static-engine static-qhttpserver static-md4c static-libtess
 win32-msvc*{
         CONFIG(64bit) {
                 CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../Gui/x64/release/ -lGui
@@ -181,7 +187,7 @@ win32-msvc*{
 # Engine
 
 static-engine {
-CONFIG += static-libmv static-openmvg static-hoedown static-libtess
+CONFIG += static-libmv static-openmvg static-md4c static-libtess
 
 win32-msvc*{
         CONFIG(64bit) {
@@ -522,47 +528,46 @@ win32-msvc*{
 } # static-qhttpserver
 
 ################
-# hoedown
+# md4c
 
-static-hoedown {
+static-md4c {
 
-INCLUDEPATH += $$PWD/libs/hoedown/src
-DEPENDPATH += $$OUT_PWD/../libs/hoedown
+DEPENDPATH += $$OUT_PWD/../libs/md4c
 
 win32-msvc*{
         CONFIG(64bit) {
-                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/hoedown/build/x64/release/ -lhoedown
-                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/hoedown/build/x64/debug/ -lhoedown
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/md4c/build/x64/release/ -lmd4c
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/md4c/build/x64/debug/ -lmd4c
         } else {
-                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/hoedown/build/win32/release/ -lhoedown
-                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/hoedown/build/win32/debug/ -lhoedown
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/md4c/build/win32/release/ -lmd4c
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/md4c/build/win32/debug/ -lmd4c
         }
 } else {
-        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/hoedown/build/ -lhoedown
-        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/hoedown/build/ -lhoedown
-        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/hoedown/build/Release/ -lhoedown
-        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/hoedown/build/Debug/ -lhoedown
-        else:unix: LIBS += -L$$OUT_PWD/../libs/hoedown/build/ -lhoedown
+        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/md4c/build/ -lmd4c
+        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/md4c/build/ -lmd4c
+        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/md4c/build/Release/ -lmd4c
+        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/md4c/build/Debug/ -lmd4c
+        else:unix: LIBS += -L$$OUT_PWD/../libs/md4c/build/ -lmd4c
 }
 
 win32-msvc*{
         CONFIG(64bit) {
-                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/x64/release/hoedown.lib
-                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/x64/debug/hoedown.lib
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/md4c/build/x64/release/md4c.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/md4c/build/x64/debug/md4c.lib
         } else {
-                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/win32/release/hoedown.lib
-                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/win32/debug/hoedown.lib
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/md4c/build/win32/release/md4c.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/md4c/build/win32/debug/md4c.lib
         }
 } else {
-        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/libhoedown.a
-        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/libhoedown.a
-        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/release/libhoedown.lib
-        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/debug/libhowdown.lib
-        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/Release/libhoedown.a
-        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/Debug/libhoedown.a
-        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/libhoedown.a
+        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/md4c/build/libmd4c.a
+        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/md4c/build/libmd4c.a
+        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/md4c/build/release/libmd4c.lib
+        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/md4c/build/debug/libmd4c.lib
+        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/md4c/build/Release/libmd4c.a
+        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/md4c/build/Debug/libmd4c.a
+        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/md4c/build/libmd4c.a
 }
-} # static-hoedown
+} # static-md4c
 
 
 ################

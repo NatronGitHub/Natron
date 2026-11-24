@@ -1,0 +1,11 @@
+--- a/configure.bat	2019-06-12 23:59:14.000000000 +0300
++++ b/configure.bat	2019-06-15 14:56:56.262777100 +0300
+@@ -147,7 +147,7 @@
+ :doneargs
+ 
+ rem Find various executables
+-for %%C in (clang-cl.exe clang.exe cl.exe icl.exe g++.exe perl.exe jom.exe) do set %%C=%%~$PATH:C
++for %%C in (g++.exe clang-cl.exe clang.exe cl.exe icl.exe perl.exe jom.exe) do set %%C=%%~$PATH:C
+ 
+ rem Determine host spec
+ 

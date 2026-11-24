@@ -1,0 +1,108 @@
+Test QMutexA-patched Allowed
+States 7
+0:X6=0; 1:X0=0; 1:X10=2; 1:X12=0;
+0:X6=0; 1:X0=0; 1:X10=2; 1:X12=1;
+0:X6=0; 1:X0=0; 1:X10=3; 1:X12=0;
+0:X6=0; 1:X0=2; 1:X10=3; 1:X12=0;
+0:X6=0; 1:X0=3; 1:X10=3; 1:X12=0;
+0:X6=1; 1:X0=0; 1:X10=0; 1:X12=0;
+0:X6=1; 1:X0=0; 1:X10=0; 1:X12=1;
+No
+Witnesses
+Positive: 0 Negative: 80
+Condition exists (0:X6=0 /\ 1:X0=3 /\ 1:X10=3 /\ 1:X12=1)
+Observation QMutexA-patched Never 0 80
+Time QMutexA-patched 3.03
+Hash=43c167bf762ecb27f3bf34ce4557052c
+
+Test QMutexA-qt5_15_19 Allowed
+States 10
+0:X6=0; 1:X0=0; 1:X10=2; 1:X12=0;
+0:X6=0; 1:X0=0; 1:X10=2; 1:X12=1;
+0:X6=0; 1:X0=0; 1:X10=3; 1:X12=0;
+0:X6=0; 1:X0=0; 1:X10=3; 1:X12=1;
+0:X6=0; 1:X0=2; 1:X10=3; 1:X12=0;
+0:X6=0; 1:X0=2; 1:X10=3; 1:X12=1;
+0:X6=0; 1:X0=3; 1:X10=3; 1:X12=0;
+0:X6=0; 1:X0=3; 1:X10=3; 1:X12=1;
+0:X6=1; 1:X0=0; 1:X10=0; 1:X12=0;
+0:X6=1; 1:X0=0; 1:X10=0; 1:X12=1;
+Ok
+Witnesses
+Positive: 8 Negative: 104
+Condition exists (0:X6=0 /\ 1:X0=3 /\ 1:X10=3 /\ 1:X12=1)
+Observation QMutexA-qt5_15_19 Sometimes 8 104
+Time QMutexA-qt5_15_19 3.06
+Hash=348a4b81a917e3358bb9ec6f5f51ea05
+
+Test QMutexA-release-only Allowed
+States 9
+0:X6=0; 1:X0=0; 1:X10=2; 1:X12=0;
+0:X6=0; 1:X0=0; 1:X10=2; 1:X12=1;
+0:X6=0; 1:X0=0; 1:X10=3; 1:X12=0;
+0:X6=0; 1:X0=0; 1:X10=3; 1:X12=1;
+0:X6=0; 1:X0=2; 1:X10=3; 1:X12=0;
+0:X6=0; 1:X0=2; 1:X10=3; 1:X12=1;
+0:X6=0; 1:X0=3; 1:X10=3; 1:X12=0;
+0:X6=1; 1:X0=0; 1:X10=0; 1:X12=0;
+0:X6=1; 1:X0=0; 1:X10=0; 1:X12=1;
+No
+Witnesses
+Positive: 0 Negative: 104
+Condition exists (0:X6=0 /\ 1:X0=3 /\ 1:X10=3 /\ 1:X12=1)
+Observation QMutexA-release-only Never 0 104
+Time QMutexA-release-only 2.85
+Hash=78576dcba580eb553dbec2bd6da2a8b4
+
+Test QMutexB-patched Allowed
+States 6
+0:X6=0; 1:X0=0; 1:X10=0; 1:X12=0; [y]=1;
+0:X6=0; 1:X0=0; 1:X10=2; 1:X12=0; [y]=0;
+0:X6=0; 1:X0=0; 1:X10=2; 1:X12=1; [y]=0;
+0:X6=0; 1:X0=2; 1:X10=0; 1:X12=0; [y]=0;
+0:X6=1; 1:X0=0; 1:X10=0; 1:X12=0; [y]=3;
+0:X6=1; 1:X0=0; 1:X10=0; 1:X12=1; [y]=3;
+No
+Witnesses
+Positive: 0 Negative: 76
+Condition exists (0:X6=0 /\ 1:X0=0 /\ 1:X10=0 /\ [y]=1 /\ 1:X12=1)
+Observation QMutexB-patched Never 0 76
+Time QMutexB-patched 4.80
+Hash=d5ad1bbea1fc9948106e02d406d55a2e
+
+Test QMutexB-qt5_15_19 Allowed
+States 8
+0:X6=0; 1:X0=0; 1:X10=0; 1:X12=0; [y]=1;
+0:X6=0; 1:X0=0; 1:X10=0; 1:X12=1; [y]=1;
+0:X6=0; 1:X0=0; 1:X10=2; 1:X12=0; [y]=0;
+0:X6=0; 1:X0=0; 1:X10=2; 1:X12=1; [y]=0;
+0:X6=0; 1:X0=2; 1:X10=0; 1:X12=0; [y]=0;
+0:X6=0; 1:X0=2; 1:X10=0; 1:X12=1; [y]=0;
+0:X6=1; 1:X0=0; 1:X10=0; 1:X12=0; [y]=3;
+0:X6=1; 1:X0=0; 1:X10=0; 1:X12=1; [y]=3;
+Ok
+Witnesses
+Positive: 16 Negative: 88
+Condition exists (0:X6=0 /\ 1:X0=0 /\ 1:X10=0 /\ [y]=1 /\ 1:X12=1)
+Observation QMutexB-qt5_15_19 Sometimes 16 88
+Time QMutexB-qt5_15_19 4.98
+Hash=5e7edba42e42288606c1f519b9f480d1
+
+Test QMutexB-release-only Allowed
+States 8
+0:X6=0; 1:X0=0; 1:X10=0; 1:X12=0; [y]=1;
+0:X6=0; 1:X0=0; 1:X10=0; 1:X12=1; [y]=1;
+0:X6=0; 1:X0=0; 1:X10=2; 1:X12=0; [y]=0;
+0:X6=0; 1:X0=0; 1:X10=2; 1:X12=1; [y]=0;
+0:X6=0; 1:X0=2; 1:X10=0; 1:X12=0; [y]=0;
+0:X6=0; 1:X0=2; 1:X10=0; 1:X12=1; [y]=0;
+0:X6=1; 1:X0=0; 1:X10=0; 1:X12=0; [y]=3;
+0:X6=1; 1:X0=0; 1:X10=0; 1:X12=1; [y]=3;
+Ok
+Witnesses
+Positive: 8 Negative: 88
+Condition exists (0:X6=0 /\ 1:X0=0 /\ 1:X10=0 /\ [y]=1 /\ 1:X12=1)
+Observation QMutexB-release-only Sometimes 8 88
+Time QMutexB-release-only 5.01
+Hash=07bed3fd46fac29c186e71e6b0cb0acf
+

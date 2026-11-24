@@ -1,0 +1,28 @@
+From 05f343a64b1fc0ecd9d7e34d5510494cbe3b3793 Mon Sep 17 00:00:00 2001
+From: Alexei Podtelezhnikov <apodtele@gmail.com>
+Date: Sat, 17 Oct 2026 04:27:55 -0400
+Subject: [PATCH] * include/freetype/internal/ftcalc.h (UABS, ULABS): Fix
+ macros.
+
+---
+ include/freetype/internal/ftcalc.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/freetype/internal/ftcalc.h b/include/freetype/internal/ftcalc.h
+index 129366f38..43cf2de78 100644
+--- a/include/freetype/internal/ftcalc.h
++++ b/include/freetype/internal/ftcalc.h
+@@ -77,8 +77,8 @@ FT_BEGIN_HEADER
+ #endif /* FT_INT64 */
+ 
+ 
+-#define ULABS( a )  ( a >= 0 ? (FT_ULong)a : 0UL - (FT_ULong)a )
+-#define  UABS( a )  ( a >= 0 ?  (FT_UInt)a : 0U  -  (FT_UInt)a )
++#define ULABS( a )  ( (a) >= 0 ? (FT_ULong)(a) : 0UL - (FT_ULong)(a) )
++#define  UABS( a )  ( (a) >= 0 ?  (FT_UInt)(a) : 0U  -  (FT_UInt)(a) )
+ 
+ 
+   /**************************************************************************
+-- 
+GitLab
+

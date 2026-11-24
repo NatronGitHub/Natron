@@ -2,11 +2,12 @@
 
 # Install glew
 # see http://www.linuxfromscratch.org/blfs/view/systemd/x/glew.html
-GLEW_VERSION=2.2.0
+GLEW_VERSION=2.3.1
 GLEW_TAR="glew-${GLEW_VERSION}.tgz"
+GLEW_SHA256=b64790f94b926acd7e8f84c5d6000a86cb43967bd1e688b03089079799c9e889
 GLEW_SITE="https://sourceforge.net/projects/glew/files/glew/${GLEW_VERSION}"
 if download_step; then
-    download "$GLEW_SITE" "$GLEW_TAR"
+    download "$GLEW_SITE" "$GLEW_TAR" "$GLEW_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/glew.pc" ] || [ "$(pkg-config --modversion glew)" != "$GLEW_VERSION" ]; }; }; then
     start_build

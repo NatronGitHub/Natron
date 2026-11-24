@@ -1,0 +1,14 @@
+--- a/src/corelib/global/qglobal.cpp
++++ b/src/corelib/global/qglobal.cpp
+@@ -61,10 +61,10 @@
+ #include <limits.h>
+ #include <stdarg.h>
+ #include <string.h>
++#include <exception>
+ 
+ #ifndef QT_NO_EXCEPTIONS
+ #  include <string>
+-#  include <exception>
+ #endif
+ 
+ #include <errno.h>

@@ -26,7 +26,8 @@
 //   associated with an effect instance, so it gets created after the effect and destroyed before the
 //   effect", ofxInteracts.rst).
 // - net.natron.test.SingleInstance: sets kOfxImageEffectPluginPropSingleInstance, and counts its live
-//   instances.
+//   instances. Its kOfxImageEffectActionGetRegionOfDefinition blocks while the counter
+//   SingleInstance.blockRoD is set.
 // - net.natron.test.SyncPrivateData: keeps the number of changes of its "value" parameter in private
 //   data, and only writes it to its "changeCount" parameter in kOfxActionSyncPrivateData.
 // - net.natron.test.Params: parameters of every type, to test the parameter suite and the parameter
@@ -40,10 +41,15 @@
 //   - "preset" (kOfxParamPropCanUndo=0) is the "preset" example of the parameter suite documentation:
 //     choosing a preset sets "presetA", "presetB" and "presetC" in a paramEditBegin/paramEditEnd block,
 //     and sets "preset" back to 0;
-//   - "uiOnly" has kOfxParamPropEvaluateOnChange=0, "noUndo" has kOfxParamPropCanUndo=0.
+//   - "uiOnly" has kOfxParamPropEvaluateOnChange=0, "noUndo" has kOfxParamPropCanUndo=0;
+//   - "double2DRanged" has a range (kOfxParamPropMin/Max 0 to 1) but no display range
+//     (Tests/OfxParamRange_Test.cpp).
 // - net.natron.test.Generator: a generator that fills its output with 0.5, with the pixel aspect ratio of
 //   its "par" parameter (it supports multiple clip PARs, so that it may set its output PAR, and "par" is a
-//   clip preferences slave parameter).
+//   clip preferences slave parameter). If its "fps" parameter (also a slave parameter) is positive, it sets
+//   the output frame rate to it in getClipPreferences (kOfxImageEffectPropSetableFrameRate). If its "fail"
+//   parameter is true, kOfxImageEffectActionGetRegionOfDefinition and kOfxImageEffectActionRender return
+//   kOfxStatFailed, as a Read node whose file is missing does with "On missing frame: Error" (#1602).
 // - net.natron.test.MultiPAR: two inputs, Source and B, and kOfxImageEffectPropSupportsMultipleClipPARs.
 //   It records the pixel aspect ratio of each input clip and image, times 1000, in render.
 // - net.natron.test.ClipGetImage: asks for a small region of Source in getRegionsOfInterest; in render,
@@ -62,15 +68,25 @@
 // - net.natron.test.Question: the "ask" and "askFromThread" push buttons post a kOfxMessageQuestion from
 //   kOfxActionInstanceChanged, on the calling thread or on a thread of the plug-in, and count the replies.
 //
-// The binary exports OfxSetHost (OFX 1.5), and counts its calls ("Binary.setHost"), whether it came
+// The binary counts the calls of OfxGetNumberOfPlugins and OfxGetPlugin ("Binary.getNumberOfPlugins",
+// "Binary.getPlugin"). It exports OfxSetHost (OFX 1.5), and counts its calls ("Binary.setHost"), whether it came
 // before OfxGetNumberOfPlugins ("Binary.setHostBeforeGetNumberOfPlugins") and the kOfxPropAPIVersion
 // of the host it gets ("Binary.setHostAPIVersion0", "Binary.setHostAPIVersion1"). ParamInteract
 // calls clipGetHandle() in kOfxImageEffectActionDescribeInContext, where it is not valid, and records
 // the status and whether the clip was set to NULL ("ParamInteract.describeClipGetHandle*").
+//
+// The plug-ins above count kOfxActionDialog ("<id>.dialog"), and those sent to a destroyed instance
+// ("<id>.dialogDead").
+//
+// The plug-ins above count kOfxActionLoad and kOfxActionUnload ("<id>.load", "<id>.unload"). If the
+// environment variable NATRON_TEST_PLUGIN_ACTION_LOG is set, they also append the lines "load <id>" and
+// "unload <id> live=<live instances>" to the file it names, for the tests that check what a Natron
+// process did before it exited (Tests/gui/run_renderer_exit_unload_test.py, #1557).
 
 #include <chrono>
 #include <climits>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <map>
 #include <mutex>
@@ -81,6 +97,7 @@
 
 #include <ofxCore.h>
 #include <ofxImageEffect.h>
+#include <ofxDialog.h> // after ofxImageEffect.h, which declares OfxImageEffectHandle
 #include <ofxGPURender.h>
 #include <ofxInteract.h>
 #include <ofxMessage.h>
@@ -228,6 +245,28 @@ onDestroyInstance(OfxImageEffectHandle effect,
     ++gCounters[id + ".destroyed"];
 }
 
+// kOfxActionLoad and kOfxActionUnload of the plug-in id: see the comment at the top
+void
+logLoadAction(const char* action,
+              const std::string& id)
+{
+    std::lock_guard<std::mutex> l(gMutex);
+    const bool load = std::strcmp(action, kOfxActionLoad) == 0;
+    ++gCounters[id + (load ? ".load" : ".unload")];
+    const char* logPath = std::getenv("NATRON_TEST_PLUGIN_ACTION_LOG");
+    if ( !logPath || !*logPath ) {
+        return;
+    }
+    if ( std::FILE* f = std::fopen(logPath, "a") ) {
+        if (load) {
+            std::fprintf(f, "load %s\n", id.c_str());
+        } else {
+            std::fprintf(f, "unload %s live=%d\n", id.c_str(), gCounters[id + ".live"]);
+        }
+        std::fclose(f);
+    }
+}
+
 // Main entry of the actions common to all the plug-ins, kOfxStatReplyDefault for the others.
 OfxStatus
 commonAction(const char* action,
@@ -235,7 +274,17 @@ commonAction(const char* action,
              const std::string& id)
 {
     if (std::strcmp(action, kOfxActionLoad) == 0) {
-        return onLoad();
+        const OfxStatus stat = onLoad();
+        if (stat == kOfxStatOK) {
+            logLoadAction(action, id);
+        }
+
+        return stat;
+    }
+    if (std::strcmp(action, kOfxActionUnload) == 0) {
+        logLoadAction(action, id);
+
+        return kOfxStatReplyDefault;
     }
     if (std::strcmp(action, kOfxActionCreateInstance) == 0) {
         onCreateInstance(effect, id);
@@ -250,6 +299,15 @@ commonAction(const char* action,
     if (std::strcmp(action, kOfxImageEffectActionRender) == 0) {
         // the tests don't look at the images
         incrementCounter(id + ".render");
+
+        return kOfxStatOK;
+    }
+    if (std::strcmp(action, kOfxActionDialog) == 0) {
+        std::lock_guard<std::mutex> l(gMutex);
+        ++gCounters[id + ".dialog"];
+        if ( !gLiveEffects.count(effect) ) {
+            ++gCounters[id + ".dialogDead"];
+        }
 
         return kOfxStatOK;
     }
@@ -358,6 +416,28 @@ singleInstancePluginMain(const char* action,
     }
     if (std::strcmp(action, kOfxImageEffectActionDescribeInContext) == 0) {
         return defineClips(effect);
+    }
+    if (std::strcmp(action, kOfxImageEffectActionGetRegionOfDefinition) == 0) {
+        // While the counter SingleInstance.blockRoD is set, the action blocks (SingleInstance.inRoD
+        // counts the threads in it): a test holds another thread inside the plug-in.
+        bool block;
+        {
+            std::lock_guard<std::mutex> l(gMutex);
+            block = gCounters["SingleInstance.blockRoD"] != 0;
+            if (block) {
+                ++gCounters["SingleInstance.inRoD"];
+            }
+        }
+        while (block) {
+            std::this_thread::sleep_for( std::chrono::milliseconds(1) );
+            std::lock_guard<std::mutex> l(gMutex);
+            block = gCounters["SingleInstance.blockRoD"] != 0;
+            if (!block) {
+                --gCounters["SingleInstance.inRoD"];
+            }
+        }
+
+        return kOfxStatReplyDefault;
     }
 
     return commonAction(action, effect, "SingleInstance");
@@ -574,6 +654,10 @@ paramsDescribeInContext(OfxImageEffectHandle effect)
          (paramsDefine(paramSet, kOfxParamTypeDouble, "presetC", &props) != kOfxStatOK) ) {
         return kOfxStatFailed;
     }
+    // a group (Tests/OfxSuiteStatus_Test.cpp: kOfxParamPropGroupOpen written on the instance)
+    if (paramsDefine(paramSet, kOfxParamTypeGroup, "group", &props) != kOfxStatOK) {
+        return kOfxStatFailed;
+    }
     if (paramsDefine(paramSet, kOfxParamTypeBoolean, "uiOnly", &props) != kOfxStatOK) {
         return kOfxStatFailed;
     }
@@ -582,6 +666,14 @@ paramsDescribeInContext(OfxImageEffectHandle effect)
         return kOfxStatFailed;
     }
     gPropSuite->propSetInt(props, kOfxParamPropCanUndo, 0, 0);
+    // a range without a display range: the display range keeps its default, -DBL_MAX to DBL_MAX
+    if (paramsDefine(paramSet, kOfxParamTypeDouble2D, "double2DRanged", &props) != kOfxStatOK) {
+        return kOfxStatFailed;
+    }
+    for (int i = 0; i < 2; ++i) {
+        gPropSuite->propSetDouble(props, kOfxParamPropMin, i, 0.);
+        gPropSuite->propSetDouble(props, kOfxParamPropMax, i, 1.);
+    }
 
     return kOfxStatOK;
 }
@@ -882,8 +974,9 @@ generatorPluginMain(const char* action,
         gEffectSuite->getPropertySet(effect, &props);
         // so that it may set its output PAR in getClipPreferences
         gPropSuite->propSetInt(props, kOfxImageEffectPropSupportsMultipleClipPARs, 0, 1);
-        // and getClipPreferences is called again when "par" changes
+        // and getClipPreferences is called again when "par" or "fps" changes
         gPropSuite->propSetString(props, kOfxImageEffectPropClipPreferencesSlaveParam, 0, "par");
+        gPropSuite->propSetString(props, kOfxImageEffectPropClipPreferencesSlaveParam, 1, "fps");
 
         return kOfxStatOK;
     }
@@ -899,8 +992,26 @@ generatorPluginMain(const char* action,
             return kOfxStatFailed;
         }
         gPropSuite->propSetDouble(props, kOfxParamPropDefault, 0, 1.);
+        if (gParamSuite->paramDefine(paramSet, kOfxParamTypeDouble, "fps", &props) != kOfxStatOK) {
+            return kOfxStatFailed;
+        }
+        gPropSuite->propSetDouble(props, kOfxParamPropDefault, 0, 0.);
+        if (gParamSuite->paramDefine(paramSet, kOfxParamTypeBoolean, "fail", &props) != kOfxStatOK) {
+            return kOfxStatFailed;
+        }
 
         return kOfxStatOK;
+    }
+    if ( (std::strcmp(action, kOfxImageEffectActionGetRegionOfDefinition) == 0) ||
+         (std::strcmp(action, kOfxImageEffectActionRender) == 0) ) {
+        int fail = 0;
+        OfxParamHandle param = getParam(effect, "fail");
+        if (param) {
+            gParamSuite->paramGetValue(param, &fail);
+        }
+        if (fail) {
+            return kOfxStatFailed;
+        }
     }
     if (std::strcmp(action, kOfxImageEffectActionGetClipPreferences) == 0) {
         double par = 1.;
@@ -909,6 +1020,14 @@ generatorPluginMain(const char* action,
             gParamSuite->paramGetValue(param, &par);
         }
         gPropSuite->propSetDouble(outArgs, "OfxImageClipPropPAR_" kOfxImageEffectOutputClipName, 0, par);
+        double fps = 0.;
+        param = getParam(effect, "fps");
+        if (param) {
+            gParamSuite->paramGetValue(param, &fps);
+        }
+        if (fps > 0.) {
+            gPropSuite->propSetDouble(outArgs, kOfxImageEffectPropFrameRate, 0, fps);
+        }
 
         return kOfxStatOK;
     }
@@ -1496,6 +1615,8 @@ OfxGetNumberOfPlugins(void)
 OfxExport OfxPlugin*
 OfxGetPlugin(int nth)
 {
+    incrementCounter("Binary.getPlugin");
+
     const int nOwn = (int)( sizeof(gPlugins) / sizeof(gPlugins[0]) );
 
     // (not OfxGetNumberOfPlugins(), which counts its calls)

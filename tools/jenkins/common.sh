@@ -55,15 +55,12 @@ case "$system" in
 Linux)
     PKGOS=${PKGOS:-Linux}
     ;;
-Msys|MINGW64_NT-*|MINGW32_NT-*)
+Msys|MSYS_NT-*|MINGW64_NT-*|MINGW32_NT-*|UCRT64_NT-*|CLANG64_NT-*|CLANGARM64_NT-*)
+    # MSYS2: uname -s is "<MSYSTEM>_NT-<Windows version>"
     PKGOS=${PKGOS:-Windows}
     ;;
 Darwin)
     PKGOS=${PKGOS:-OSX}
-    if [ "$(uname -m)" = "arm64" ]; then
-        # No Qt4 on apple Silicon
-        QT_VERSION_MAJOR=${QT_VERSION_MAJOR:-5}
-    fi
     ;;
 *)
     (>&2 echo "$system not supported!")
@@ -121,8 +118,26 @@ elif [ "$PKGOS" = "OSX" ]; then
             ARCH=$(uname -m)
             ;;
     esac;
-    # always deploy for the same version as the build system, since we use macports (for now)
-    MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion | cut -d. -f-2)
+    # Deployment target. Release builds set NATRON_MACOS_MIN to the oldest macOS supported by the
+    # release (NATRON_MACOS_RELEASE_MIN in macos-release.sh, 14.0; tools/tart/provision.sh sets it):
+    # the MacPorts libraries that are bundled must be built for it too (macosx_deployment_target
+    # in macports.conf, see INSTALL_MACOS.md), and launchBuildMain.sh checks the DMG with
+    # check-minos.sh. Otherwise (development builds), build for this Mac's macOS, so that the
+    # plug-ins, which refuse to bundle a library newer than the target (OFX_DEPLOY_STRICT_MINOS),
+    # can bundle MacPorts' ordinary binary archives. An explicit MACOSX_DEPLOYMENT_TARGET wins.
+    # shellcheck source=macos-release.sh
+    . "$(dirname "${BASH_SOURCE[0]}")/macos-release.sh"
+    if [ -z "${MACOSX_DEPLOYMENT_TARGET:-}" ]; then
+        if [ -n "${NATRON_MACOS_MIN:-}" ]; then
+            MACOSX_DEPLOYMENT_TARGET=$NATRON_MACOS_MIN
+        else
+            MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion)
+            case "$MACOSX_DEPLOYMENT_TARGET" in
+                10.*) MACOSX_DEPLOYMENT_TARGET=$(echo "$MACOSX_DEPLOYMENT_TARGET" | cut -d. -f-2) ;;
+                *) MACOSX_DEPLOYMENT_TARGET=$(echo "$MACOSX_DEPLOYMENT_TARGET" | cut -d. -f1).0 ;;
+            esac
+        fi
+    fi
     export MACOSX_DEPLOYMENT_TARGET
     MACPORTS="/opt/local"
     LOCAL="/usr/local"
@@ -156,24 +171,52 @@ elif [ "$PKGOS" = "OSX" ]; then
     # brew install coreutils
     TIMEOUT="${SDK_HOME}/bin/gtimeout"
 elif [ "$PKGOS" = "Windows" ]; then
-    if [ -z "${BITS:-}" ]; then
-        (>&2 echo "Error: You must select a value for BITS (32 or 64)")
+    # MSYS2 MinGW environment (UCRT64, CLANG64, CLANGARM64): everything comes from the environment
+    # (MINGW_PREFIX, MINGW_PACKAGE_PREFIX, MSYSTEM_CARCH), never from uname -m, which reports
+    # the x86_64 MSYS runtime when it runs emulated on ARM64 (#1494).
+    if [ -z "${MINGW_PREFIX:-}" ] || [ -z "${MSYSTEM_CARCH:-}" ]; then
+        (>&2 echo "Error: run this in an MSYS2 UCRT64, CLANG64 or CLANGARM64 shell (MINGW_PREFIX and MSYSTEM_CARCH are not set; MSYSTEM=${MSYSTEM:-})")
         exit 1
     fi
-    if [ "${BITS}" = "32" ]; then
-        SDK_HOME="/mingw32"
-        ARCH=i386
-    elif [ "$BITS" = "64" ]; then
-        SDK_HOME="/mingw64"
-        ARCH=x86_64
-    else
-        (>&2 echo "Error: Unsupported BITS=$BITS")
+    SDK_HOME="$MINGW_PREFIX"
+    ARCH="$MSYSTEM_CARCH"
+    case "$ARCH" in
+        x86_64)
+            WIN_ARCH=x86_64           # installer names (Natron-<version>-Windows-x86_64)
+            WIN_MANIFEST_ARCH=amd64   # processorArchitecture of the plug-in manifests
+            OFX_ARCHDIR=Win64         # OFX plug-in binary directory (ofxhArchDirs.h)
+            ;;
+        aarch64)
+            WIN_ARCH=arm64
+            WIN_MANIFEST_ARCH=arm64
+            OFX_ARCHDIR=Win-arm64
+            ;;
+        *)
+            (>&2 echo "Error: unsupported Windows architecture MSYSTEM_CARCH=$ARCH")
+            exit 1
+            ;;
+    esac
+    # BITS: only 64-bit Windows is supported (MSYS2 has no 32-bit UCRT or clang environment)
+    if [ -n "${BITS:-}" ] && [ "$BITS" != "64" ]; then
+        (>&2 echo "Error: Unsupported BITS=$BITS (only 64-bit Windows builds are supported)")
         exit 1
     fi
-    # define TMP, which is used by QDir::tempPath http://doc.qt.io/qt-4.8/qdir.html#tempPath
-    # so that the repogen binary uses different temp directories
-    # https://github.com/olear/qtifw/blob/d3f31b3359af8415f9347347bb62e4d4ef94cf0d/src/libs/installer/fileutils.cpp#L503
-    TMP="$TMPDIR/mingw${BITS}"
+    BITS=64
+    # the compiler of the environment: gcc on UCRT64, clang on CLANG64 and CLANGARM64
+    case "${MINGW_PACKAGE_PREFIX:-}" in
+        *-clang-*) MINGW_TOOLCHAIN=clang ;;
+        *) MINGW_TOOLCHAIN=gcc ;;
+    esac
+    # Inno Setup's Setup.exe for this environment (${MINGW_PACKAGE_PREFIX}-natron-setup, built for
+    # x64 or arm64): in the environment's prefix since pkgrel 6. Older packages, which were only
+    # built for UCRT64 (x64), installed it as /Setup.exe.
+    NATRON_SETUP_EXE="${MINGW_PREFIX}/share/natron-setup/Setup.exe"
+    if [ ! -f "$NATRON_SETUP_EXE" ] && [ "$ARCH" = "x86_64" ] && [ -f /Setup.exe ]; then
+        NATRON_SETUP_EXE=/Setup.exe
+    fi
+    # define TMP, which is used by QDir::tempPath http://doc.qt.io/qt-4.8/qdir.html#tempPath,
+    # so that the Qt programs of each MSYS2 environment use their own temporary directory
+    TMP="$TMPDIR/${MSYSTEM:-mingw64}"
     export TMP
     if [ ! -d "$TMP" ]; then
         mkdir -p "$TMP"
@@ -197,34 +240,12 @@ elif [ -x "$SDK_HOME/bin/git" ]; then
     GIT="env LD_LIBRARY_PATH=$SDK_HOME/lib $SDK_HOME/bin/git"
 fi
 
-# The version of Python used by the SDK and to build Natron
-# Python 2 or 3, NOTE! v3 is probably broken, been untested for a long while
-# To default to Python 2, move the Python 3 section below the Python 2 section
+# The version of Python used by the SDK and to build Natron (Python 3)
+PYV=3
 PYTHON_ABIFLAGS=
 if [[ $(type -P python3) ]]; then
     PY3VER="$(python3 -c "import platform; print('.'.join(platform.python_version_tuple()[:2]))")"
     PY3VERNODOT=$(echo ${PY3VER:-}| sed 's/\.//')
-    if [ -z "${PYV:-}" ]; then
-        PYV=3
-    fi
-fi
-if [[ $(type -P python2) ]]; then
-    PY2VER="$(python2 -c "import platform; print('.'.join(platform.python_version_tuple()[:2]))")"
-    PY2VERNODOT=$(echo ${PY2VER:-}| sed 's/\.//')
-    if [ -z "${PYV:-}" ]; then
-        # default to Python 2 if present
-        PYV=2
-    fi
-    case "${RELEASE_TAG:-}" in
-    1.*|2.[01234].*)
-        PYV=2
-    esac
-    case "${GIT_BRANCH:-}" in
-    RB-1|RB-1.*|RB-2.[01234])
-        PYV=2
-    esac
-fi
-if [ "${PYV:-}" = 3 ]; then
     PYVER="${PY3VER}"
     PYVERNODOT="${PY3VERNODOT}"
     case "${PYVER}" in
@@ -232,12 +253,6 @@ if [ "${PYV:-}" = 3 ]; then
         PYTHON_ABIFLAGS="m"
         ;;
     esac
-    PYTHON_HOME="$(python${PYV} -c "import sys; print(sys.prefix)")"
-fi
-if [ "${PYV:-}" = 2 ]; then
-    PYVER="${PY2VER}"
-    PYVERNODOT="${PY2VERNODOT}"
-    PYTHON_ABIFLAGS=""
     PYTHON_HOME="$(python${PYV} -c "import sys; print(sys.prefix)")"
 fi
 PY_EXE="$SDK_HOME/bin/python${PYV}"
@@ -315,6 +330,9 @@ fi
 
 FFMPEG_PATH="$CUSTOM_BUILDS_PATH"
 LIBRAW_PATH="$CUSTOM_BUILDS_PATH"
+# macOS COMMERCIAL builds only: the prefix of the libheif without x264/x265 that replaces the
+# bundled libheif (build-plugins.sh)
+LIBHEIF_PATH=""
 if [ "$PKGOS" = "Windows" ]; then
     if [ "${NATRON_LICENSE:-}" = "GPL" ]; then
         if [ -d "$CUSTOM_BUILDS_PATH/ffmpeg-gpl" ]; then
@@ -360,11 +378,45 @@ elif [ "$PKGOS" = "OSX" ]; then
             LIBRAW_PATH="$CUSTOM_BUILDS_PATH/libraw-gpl2"
         fi
     elif [ -z "${NATRON_LICENSE+x}" ] || [ "${NATRON_LICENSE:-}" = "COMMERCIAL" ]; then
-        if [ -d "$CUSTOM_BUILDS_PATH/ffmpeg-lgpl" ]; then
-            FFMPEG_PATH="$CUSTOM_BUILDS_PATH/ffmpeg-lgpl"
+        # the MacPorts overlay's subports ffmpeg-lgpl, libraw-lgpl and libheif-lgpl
+        # (tools/MacPorts), installed in $SDK_HOME/libexec next to the GPL ffmpeg and libraw
+        # and to libheif (which links the GPL x264 and x265), or a custom build (#1302, #1177)
+        for _lgpl_prefix in "$SDK_HOME/libexec/ffmpeg-lgpl" "$CUSTOM_BUILDS_PATH/ffmpeg-lgpl"; do
+            if [ -d "$_lgpl_prefix" ]; then
+                FFMPEG_PATH="$_lgpl_prefix"
+                break
+            fi
+        done
+        for _lgpl_prefix in "$SDK_HOME/libexec/libraw-lgpl" "$CUSTOM_BUILDS_PATH/libraw-lgpl"; do
+            if [ -d "$_lgpl_prefix" ]; then
+                LIBRAW_PATH="$_lgpl_prefix"
+                break
+            fi
+        done
+        for _lgpl_prefix in "$SDK_HOME/libexec/libheif-lgpl" "$CUSTOM_BUILDS_PATH/libheif-lgpl"; do
+            if [ -d "$_lgpl_prefix" ]; then
+                LIBHEIF_PATH="$_lgpl_prefix"
+                break
+            fi
+        done
+        unset _lgpl_prefix
+    fi
+fi
+
+# Windows COMMERCIAL builds: the libheif without x264/x265 and the libtiff without JBIG-KIT
+# (natron_libheif-lgpl and natron_libtiff-lgpl, #1449, #1177), whose bin/ come first in the DLL
+# search directories of genDllVersions.sh. Empty if they are not installed (genDllVersions.sh skips
+# empty entries, and fails on a COMMERCIAL build without them).
+# shellcheck disable=SC2034 # (LIBTIFF_PATH is used by build-Windows-installer.sh)
+if [ "$PKGOS" = "Windows" ]; then
+    LIBHEIF_PATH=""
+    LIBTIFF_PATH=""
+    if [ "${NATRON_LICENSE:-}" = "COMMERCIAL" ]; then
+        if [ -d "$SDK_HOME/libheif-lgpl" ]; then
+            LIBHEIF_PATH="$SDK_HOME/libheif-lgpl"
         fi
-        if [ -d "$CUSTOM_BUILDS_PATH/libraw-lgpl" ]; then
-            LIBRAW_PATH="$CUSTOM_BUILDS_PATH/libraw-lgpl"
+        if [ -d "$SDK_HOME/libtiff-lgpl" ]; then
+            LIBTIFF_PATH="$SDK_HOME/libtiff-lgpl"
         fi
     fi
 fi
@@ -406,6 +458,9 @@ fi
 
 if [ -n "${LLVM_PREFIX:-}" ]; then
     LLVM_PATH="${LLVM_PREFIX}"
+elif [ "$PKGOS" = "Windows" ] && [ -x "$SDK_HOME/bin/llvm-config.exe" ]; then
+    # MSYS2's llvm, which the osmesa package was built with
+    LLVM_PATH="$SDK_HOME"
 elif [ -d "$SDK_HOME/llvm" ]; then
     LLVM_PATH="$SDK_HOME/llvm"
 elif [ -d "/opt/llvm" ]; then

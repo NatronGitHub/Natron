@@ -56,6 +56,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h" // isKeybind
 #include "Gui/GuiAppInstance.h"
+#include "Gui/KnobUndoCommand.h" // MultipleKnobEditsUndoCommand::beginOverlayGesture()
 #include "Gui/NodeGui.h"
 #include "Gui/QtEnumConvert.h"
 #include "Gui/SpinBox.h"
@@ -226,7 +227,12 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
         EffectInstancePtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
+        // the edits of the drag, until the pen up, make one undo command (#839)
+        MultipleKnobEditsUndoCommand::beginOverlayGesture( effect.get() );
         bool didSmthing = effect->onOverlayPenDown_public(time, renderScale, view, viewportPos, transformPos, pressure, timestamp, pen, modifiers);
+        if (!didSmthing) {
+            MultipleKnobEditsUndoCommand::endOverlayGesture();
+        }
         _imp->recordOverlayEvent(node, didSmthing);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
@@ -602,6 +608,11 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
                                KeyboardModifiers modifiers)
 {
     bool didSomething = false;
+    // the overlay drag ends with this function, once the pen up actions (which may edit too) are done
+    struct EndOverlayGesture
+    {
+        ~EndOverlayGesture() { MultipleKnobEditsUndoCommand::endOverlayGesture(); }
+    } endOverlayGesture;
 
     if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
@@ -841,8 +852,7 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
        Modifiers key down/up should be passed to all active interacts always so that they can properly figure out
        whether they are up or down
      */
-    bool isModifier = e->key() == Qt::Key_Control || e->key() == Qt::Key_Shift || e->key() == Qt::Key_Alt ||
-                      e->key() == Qt::Key_Meta;
+    bool isModifier = QtEnumConvert::isModifierKey( (Qt::Key)e->key() );
     Qt::Key qKey = (Qt::Key)e->key();
     Qt::KeyboardModifiers qMods = e->modifiers();
     Key natronKey = QtEnumConvert::fromQtKey(qKey );
@@ -929,8 +939,7 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
     /*
        Do not catch the event if this is a modifier, let it propagate to the Gui
      */
-    bool isModifier = e->key() == Qt::Key_Control || e->key() == Qt::Key_Shift || e->key() == Qt::Key_Alt ||
-                      e->key() == Qt::Key_Meta;
+    bool isModifier = QtEnumConvert::isModifierKey( (Qt::Key)e->key() );
 
     if (isModifier) {
         //Modifiers may not necessarily return true for plug-ins but may require a redraw
@@ -1017,6 +1026,8 @@ ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
     Key natronKey = QtEnumConvert::fromQtKey( qKey);
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( qMods );
     NodesList nodes;
+    getGui()->getNodesEntitledForOverlays(nodes);
+    _imp->beginOverlayEvent();
 
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( notifyOverlaysKeyRepeat_internal(*it, renderScale, natronKey, natronMod, e->text(), qKey, qMods) ) {
@@ -1093,6 +1104,8 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
 bool
 ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
 {
+    // a drag whose pen up may never come (#839)
+    MultipleKnobEditsUndoCommand::endOverlayGesture();
     if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
     }

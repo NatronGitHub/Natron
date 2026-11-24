@@ -3,7 +3,13 @@ name: Build pacman repo
 # The package repository is a release artifact: built on demand, or for (pre-)release tags.
 # Run it by hand (workflow_dispatch) after changing tools/MINGW-packages.
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      msystem:
+        description: 'MSYS2 environment(s): UCRT64 (x86-64), CLANGARM64 (Windows on ARM64, #1494), or both'
+        type: choice
+        options: [UCRT64, CLANGARM64, both]
+        default: UCRT64
   push:
     tags:
     - 'v*'
@@ -20,9 +26,19 @@ env:
 
 jobs:
   build_repo:
-    name: Build pacman repo
-    runs-on: windows-2022
+    name: Build pacman repo (${{ matrix.msystem }})
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        # UCRT64 on tags (CLANGARM64 isn't released yet), else the environment(s) chosen. Only
+        # include, so that no environment is added by accident. repo_suffix: the artifact and
+        # zip names of install_natron_pacman_repo.sh (UCRT64 keeps the original name).
+        include: ${{ fromJSON(
+          (inputs.msystem == 'both' && '[{"msystem":"UCRT64","runner":"windows-2022","repo_suffix":""},{"msystem":"CLANGARM64","runner":"windows-11-arm","repo_suffix":"-clangarm64"}]') ||
+          (inputs.msystem == 'CLANGARM64' && '[{"msystem":"CLANGARM64","runner":"windows-11-arm","repo_suffix":"-clangarm64"}]') ||
+          '[{"msystem":"UCRT64","runner":"windows-2022","repo_suffix":""}]') }}
     defaults:
       run:
         shell: msys2 {0}
@@ -31,12 +47,13 @@ jobs:
         uses: actions/checkout@v4.1.1
         with:
           submodules: recursive
-      - name: Setup MSYS2 UCRT64 environment
+      - name: Setup MSYS2 ${{ matrix.msystem }} environment
         uses: msys2/setup-msys2@v2
         with:
           # UCRT64 is MSYS2's default environment; MINGW64 is legacy and no longer
           # ships some of Natron's dependencies (PySide2, OpenColorIO, OpenImageIO).
-          msystem: ucrt64
+          # CLANGARM64: native Windows on ARM64 (#1494).
+          msystem: ${{ matrix.msystem }}
           update: true
           install: git base-devel
       - name: Install Inno Setup
@@ -50,7 +67,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: natron_repo
-          key: ${{ env.cache-name }}-${{ hashFiles('mingw-package-version-list.txt', 'tools/MINGW-packages/**/PKGBUILD') }}
+          key: ${{ env.cache-name }}${{ matrix.repo_suffix }}-${{ hashFiles('mingw-package-version-list.txt', 'tools/MINGW-packages/**/PKGBUILD', 'tools/MINGW-packages/**/*.iss') }}
       - name: Build natron package repo
         id: build-package-repo
         # Allow continuing after error so cache gets updated and makes reruns faster.
@@ -67,11 +84,13 @@ jobs:
         if: always()
         with:
           path: natron_repo
-          key: ${{ env.cache-name }}-${{ hashFiles('mingw-package-version-list.txt', 'tools/MINGW-packages/**/PKGBUILD') }}
+          key: ${{ env.cache-name }}${{ matrix.repo_suffix }}-${{ hashFiles('mingw-package-version-list.txt', 'tools/MINGW-packages/**/PKGBUILD', 'tools/MINGW-packages/**/*.iss') }}
       - name: Upload natron_package_repo artifacts
         uses: actions/upload-artifact@v4.3.1
         with:
-          name: natron_package_repo-${{ steps.build-package-repo.outputs.REPO_VERSION }}
+          # natron_package_repo-<version> (UCRT64), natron_package_repo-clangarm64-<version>: the
+          # zip names of install_natron_pacman_repo.sh
+          name: natron_package_repo${{ matrix.repo_suffix }}-${{ steps.build-package-repo.outputs.REPO_VERSION }}
           path: natron_repo
       - name: Check on failures
         if: steps.build-package-repo.outcome != 'success'

@@ -127,6 +127,35 @@
     </object-type>
     
     <object-type name="PyViewer">
+        <modify-function signature="getImage(RectD*,std::vector&lt;float&gt;*,int,const RectD*)const">
+            <modify-argument index="return">
+                <replace-type modified-type="PyObject"/>
+            </modify-argument>
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                RectD bounds;
+                std::vector&lt;float&gt; pixels;
+                %CPPSELF.%FUNCTION_NAME(&amp;bounds, &amp;pixels, %3, %4);
+                if ( PyErr_Occurred() ) {
+                    return 0;
+                }
+                // float32 RGBA, for array.array('f', data) or numpy.frombuffer(data, numpy.float32)
+                PyObject* data = PyBytes_FromStringAndSize( pixels.empty() ? "" : (const char*)&amp;pixels[0], (Py_ssize_t)(pixels.size() * sizeof(float)) );
+                %PYARG_0 = PyTuple_New(2);
+                // RectD is an object type: a new one, owned by Python
+                RectD* boundsCopy = new RectD(bounds);
+                PyObject* pyBounds = %CONVERTTOPYTHON[RectD*](boundsCopy);
+                Shiboken::Object::getOwnership(pyBounds);
+                PyTuple_SET_ITEM(%PYARG_0, 0, pyBounds);
+                PyTuple_SET_ITEM(%PYARG_0, 1, data);
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
         <modify-function signature="getFrameRange(int*,int*)const">
             <modify-argument index="return">
                 <replace-type modified-type="PyObject"/>

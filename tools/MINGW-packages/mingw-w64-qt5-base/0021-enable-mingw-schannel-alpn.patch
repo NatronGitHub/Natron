@@ -1,0 +1,11 @@
+--- a/tests/auto/network/ssl/qsslsocket/tst_qsslsocket.cpp	2020-05-08 11:37:16.957106100 +0300
++++ b/tests/auto/network/ssl/qsslsocket/tst_qsslsocket.cpp	2020-05-08 11:37:23.967427600 +0300
+@@ -82,7 +82,7 @@
+ #define ALPN_SUPPORTED 1
+ #endif
+ 
+-#if QT_CONFIG(schannel) && !defined(Q_CC_MINGW)
++#if QT_CONFIG(schannel)
+ #define ALPN_SUPPORTED 1
+ #endif
+ 

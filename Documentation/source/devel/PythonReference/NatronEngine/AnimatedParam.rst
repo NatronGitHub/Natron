@@ -28,6 +28,7 @@ Functions
 - def :meth:`getNumKeys<NatronEngine.AnimatedParam.getNumKeys>` ([dimension=0])
 - def :meth:`removeAnimation<NatronEngine.AnimatedParam.removeAnimation>` ([dimension=0])
 - def :meth:`setExpression<NatronEngine.AnimatedParam.setExpression>` (expr, hasRetVariable[, dimension=0])
+- def :meth:`setDerivativesAtTime<NatronEngine.AnimatedParam.setDerivativesAtTime>` (time, left, right[, dimension=0])
 - def :meth:`setInterpolationAtTime<NatronEngine.AnimatedParam.setInterpolationAtTime>` (time, interpolation[, dimension=0])
 
 .. _details:
@@ -188,6 +189,29 @@ Note that this will not remove any expression set.
 Set the Python expression *expr* on the parameter at the given *dimension*
 If *hasRetVariable* is True, then *expr* is assumed to have a variable *ret* declared.
 Otherwise, Natron will declare the *ret* variable itself.
+
+Returns True on success. If the expression is invalid (a syntax error, an unknown name,
+or an exception when it is evaluated at the current frame), it is not set, and the previous
+expression of that *dimension* is removed: the method prints the error (in the Script Editor
+of the GUI, on the standard output of NatronRenderer) and returns False. Check the returned value.
+
+.. method:: AnimatedParam.setDerivativesAtTime(time, left, right[, dimension=0])
+
+    :param time: :class:`float`
+    :param left: :class:`float`
+    :param right: :class:`float`
+    :param dimension: :class:`int`
+    :rtype: :class:`bool`
+
+Sets the derivatives (the slopes of the tangents, in value units per frame) of the animation
+curve of the given *dimension* on each side of the keyframe at *time*: *left* before it, *right*
+after it. The keyframe becomes free (*eKeyframeTypeFree*), as when its tangents are moved in the
+Curve Editor: Natron no longer computes its derivatives when the curve changes.
+If the parameter is not animated or has no keyframe at *time*, if *dimension* doesn't exist, or if the parameter isn't a
+floating-point one (:doc:`DoubleParam`, :doc:`ColorParam`...: the curves of the other parameters are
+constant between keyframes), this method returns False.
+
+.. versionadded:: 2.6
 
 .. method:: AnimatedParam.setInterpolationAtTime(time, interpolation[, dimension=0])
 

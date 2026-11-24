@@ -370,7 +370,7 @@ Gui::exportLayout()
         std::string filename = dialog.filesToSave();
         QString filenameCpy( QString::fromUtf8( filename.c_str() ) );
         QString ext = QtCompat::removeFileExtension(filenameCpy);
-        if ( ext != QString::fromUtf8(NATRON_LAYOUT_FILE_EXT) ) {
+        if ( ext.compare(QString::fromUtf8(NATRON_LAYOUT_FILE_EXT), Qt::CaseInsensitive) != 0 ) {
             filename.append("." NATRON_LAYOUT_FILE_EXT);
         }
 

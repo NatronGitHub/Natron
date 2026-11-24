@@ -160,13 +160,13 @@ class IncompleteCholesky : public SparseSolverBase<IncompleteCholesky<Scalar,_Up
     }
 
     /** \returns the sparse lower triangular factor L */
-    const FactorType& matrixL() const { eigen_assert("m_factorizationIsOk"); return m_L; }
+    const FactorType& matrixL() const { eigen_assert(m_factorizationIsOk && "factorize() should be called first"); return m_L; }
 
     /** \returns a vector representing the scaling factor S */
-    const VectorRx& scalingS() const { eigen_assert("m_factorizationIsOk"); return m_scale; }
+    const VectorRx& scalingS() const { eigen_assert(m_factorizationIsOk && "factorize() should be called first"); return m_scale; }
 
     /** \returns the fill-in reducing permutation P (can be empty for a natural ordering) */
-    const PermutationType& permutationP() const { eigen_assert("m_analysisIsOk"); return m_perm; }
+    const PermutationType& permutationP() const { eigen_assert(m_analysisIsOk && "analyzePattern() should be called first"); return m_perm; }
 
   protected:
     FactorType m_L;              // The lower part stored in CSC

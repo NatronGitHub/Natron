@@ -326,12 +326,14 @@ TEST_F(OfxBytesParamTest, SetDefault)
     EXPECT_EQ( std::string("dyn"), toString(value) );
 }
 
-// A default larger than KnobBytes::maxLength() is ignored (with a warning), without reading the data.
-TEST_F(OfxBytesParamTest, SetDefaultTooLarge)
+// An invalid default ({NULL, length > 0}) is not read: HostSupport, which copies the default the plug-in sets
+// (NatronGitHub/openfx#191), makes it NULL, an empty default. (A default larger than KnobBytes::maxLength() is
+// still ignored with a warning, but HostSupport copies it first, so that needs a buffer that large.)
+TEST_F(OfxBytesParamTest, SetDefaultInvalid)
 {
     SKIP_IF_NO_PLUGIN();
     trigger(5);
-    EXPECT_EQ( toString( defaultBytes() ), _knob->getDefaultValue(0) );
+    EXPECT_EQ( std::string(), _knob->getDefaultValue(0) );
 }
 
 // The host copies the data (NUL bytes included), and gives the plug-in a pointer to its own copy.

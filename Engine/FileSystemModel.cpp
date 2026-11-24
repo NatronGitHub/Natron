@@ -25,6 +25,7 @@
 
 #include "FileSystemModel.h"
 
+#include <algorithm> // std::max
 #include <vector>
 #include <cassert>
 #include <stdexcept>
@@ -697,6 +698,96 @@ bool
 FileSystemModel::startsWithDriveName(const QString& name)
 {
     return getDriveNameSize(name) > 0;
+}
+
+QString
+FileSystemModel::absoluteFilePath(const QString& directory,
+                                  const QString& filePath,
+                                  const QStringList& variableNames)
+{
+    if ( filePath.isEmpty() ) {
+        return filePath;
+    }
+    if ( filePath.startsWith( QLatin1Char('[') ) ) {
+        // A project variable such as [Project] is expanded later, by the project
+        int end = filePath.indexOf( QLatin1Char(']') );
+        if ( (end > 1) && variableNames.contains( filePath.mid(1, end - 1) ) ) {
+            return filePath;
+        }
+    }
+    QString path = filePath;
+#ifdef Q_OS_UNIX
+    path = AppManager::qt_tildeExpansion(path);
+#endif
+    // Same rule as Project::isRelative(), plus network shares
+    bool isAbsolute = startsWithDriveName(path) || path.startsWith( QLatin1Char('/') );
+#ifdef __NATRON_WIN32__
+    isAbsolute = isAbsolute || path.startsWith( QLatin1Char('\\') ) || ( path.size() >= 2 && path.at(1) == QLatin1Char(':') );
+#endif
+    if ( isAbsolute || directory.isEmpty() ) {
+        return path;
+    }
+    QString absolutePath = directory;
+    StrUtils::ensureLastPathSeparator(absolutePath);
+    absolutePath += path;
+
+    return cleanPath(absolutePath);
+}
+
+// Position of the last path separator in a typed path ('/', and '\\' on Windows), or -1
+static int
+lastPathSeparatorPos(const QString& path)
+{
+    int pos = path.lastIndexOf( QLatin1Char('/') );
+#ifdef __NATRON_WIN32__
+    pos = std::max( pos, path.lastIndexOf( QLatin1Char('\\') ) );
+#endif
+
+    return pos;
+}
+
+QString
+FileSystemModel::removeTextAfterExtension(const QString& text)
+{
+    // A frame range such as " 1-10" or " -5--1", at the end
+    static const QRegularExpression frameRange( QString::fromUtf8("\\s+-?\\d+\\s*-\\s*-?\\d+$") );
+    QRegularExpressionMatch match = frameRange.match(text);
+    if ( !match.hasMatch() ) {
+        return text;
+    }
+    const QString ret = text.left( match.capturedStart() );
+    // Only after an extension in the last path component ("/proj/take 1-2" is a name)
+    if ( ret.lastIndexOf( QLatin1Char('.') ) <= lastPathSeparatorPos(ret) ) {
+        return text;
+    }
+
+    return ret;
+}
+
+QString
+FileSystemModel::addFileExtension(const QString& filePath,
+                                  const QString& extension,
+                                  const QStringList& acceptedExtensions)
+{
+    const int lastSepPos = lastPathSeparatorPos(filePath);
+    if ( extension.isEmpty() || ( extension == QString::fromUtf8("*") ) || ( lastSepPos == filePath.size() - 1 ) ) {
+        // no extension to add, or a directory (also an empty filePath)
+        return filePath;
+    }
+    const int lastDotPos = filePath.lastIndexOf( QLatin1Char('.') );
+    if (lastDotPos > lastSepPos) {
+        const QString suffix = filePath.mid(lastDotPos + 1);
+        if ( ( suffix.compare(extension, Qt::CaseInsensitive) == 0 ) || acceptedExtensions.contains(suffix, Qt::CaseInsensitive) ) {
+            return filePath;
+        }
+    }
+
+    if ( filePath.endsWith( QLatin1Char('.') ) ) {
+        // "comp." -> "comp.ntp"
+        return filePath + extension;
+    }
+
+    return filePath + QLatin1Char('.') + extension;
 }
 
 QString FileSystemModel::cleanPath(const QString& path) {

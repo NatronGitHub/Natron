@@ -312,8 +312,8 @@ template<typename PlainObjectType, int Options, typename StrideType> class Ref
     inline Ref(DenseBase<Derived>& expr)
     #endif
     {
-      EIGEN_STATIC_ASSERT(bool(internal::is_lvalue<Derived>::value), THIS_EXPRESSION_IS_NOT_A_LVALUE__IT_IS_READ_ONLY);
-      EIGEN_STATIC_ASSERT(bool(Traits::template match<Derived>::MatchAtCompileTime), STORAGE_LAYOUT_DOES_NOT_MATCH);
+      EIGEN_STATIC_ASSERT((static_cast<bool>(internal::is_lvalue<Derived>::value)), THIS_EXPRESSION_IS_NOT_A_LVALUE__IT_IS_READ_ONLY);
+      EIGEN_STATIC_ASSERT((static_cast<bool>(Traits::template match<Derived>::MatchAtCompileTime)), STORAGE_LAYOUT_DOES_NOT_MATCH);
       EIGEN_STATIC_ASSERT(!Derived::IsPlainObjectBase,THIS_EXPRESSION_IS_NOT_A_LVALUE__IT_IS_READ_ONLY);
       // Construction must pass since we will not create temporary storage in the non-const case.
       const bool success = Base::construct(expr.const_cast_derived());

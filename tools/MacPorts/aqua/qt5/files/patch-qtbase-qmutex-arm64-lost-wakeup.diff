@@ -1,0 +1,46 @@
+Fix a lost wake-up in the non-futex QMutex (macOS, arm64)
+
+QBasicMutex::unlockInternal() with no waiter does
+  (2) waiters.fetchAndAddRelease(-BigNumber)
+  (3) d_ptr.testAndSetRelease(d, 0)
+  (4) derefWaiters(0): waiters.testAndSetRelaxed(-BigNumber, 0)
+and a concurrent lockInternal() does
+  (1) old = waiters.loadAcquire(), (5) waiters.testAndSetRelaxed(old, old + 1),
+  (6) if (d != d_ptr.loadAcquire()) retry; else d->wait().
+If (1) or (5) reads the 0 written by (4), (6) must see the d_ptr reset of
+(3). With (4) and (5) relaxed nothing guarantees it, and on arm64 (6) can
+still read d: the locking thread then sleeps on a QMutexPrivate that no
+unlocker will ever wake (d_ptr == 0, waiters == 1).
+ - (1) reads (4): QTBUG-88247 (d08e3b6de161) made (1) an acquire, but (4)
+   is not a release, so there is no synchronization.
+ - (5) reads (4) after (1) read the 0 from before (2) (ABA): (5) is not an
+   acquire.
+Make (4) a release and (5) an acquire, so that (3) happens before (6)
+in both cases.
+
+--- src/corelib/thread/qmutex.cpp.orig
++++ src/corelib/thread/qmutex.cpp
+@@ -629,7 +629,9 @@
+                     break;
+                 }
+             }
+-        } while (!d->waiters.testAndSetRelaxed(old_waiters, old_waiters + 1));
++            // Acquire: if this reads the 0 that derefWaiters() wrote in unlockInternal(), the
++            // d_ptr check below must see that unlockInternal() reset d_ptr just before.
++        } while (!d->waiters.testAndSetAcquire(old_waiters, old_waiters + 1));
+ 
+         if (d != d_ptr.loadAcquire()) {
+             // The mutex was unlocked before we incremented waiters.
+@@ -758,7 +760,11 @@
+             new_waiters += QMutexPrivate::BigNumber;
+         }
+         new_waiters -= value;
+-    } while (!waiters.testAndSetRelaxed(old_waiters, new_waiters));
++        // Release, so that a thread in lockInternal() that reads this new value with
++        // waiters.loadAcquire() also sees the d_ptr reset that unlockInternal() did just
++        // before. With a relaxed store, on weakly-ordered CPUs (arm64), it could see
++        // waiters == 0 but the old d_ptr, and wait forever on an unlocked mutex.
++    } while (!waiters.testAndSetRelease(old_waiters, new_waiters));
+ }
+ #endif
+ 

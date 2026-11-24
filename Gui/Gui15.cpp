@@ -38,6 +38,7 @@
 #include <QAction>
 
 #include "Global/FStreamsSupport.h"
+#include "Global/QtCompat.h" // Qt::CTRL | Qt::Key_X with Qt5
 
 #include "Engine/Settings.h"
 #include "Engine/ViewIdx.h"

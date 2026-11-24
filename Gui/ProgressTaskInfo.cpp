@@ -272,9 +272,15 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
         }
         _imp->refreshButtons();
     }
+    // The node is gone if its project was closed (e.g. app.resetProject()) while the render went on in a
+    // separate process: the process finishes later, and its render is no longer queued (#1575).
     NodePtr node = getNode();
-    OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() );
-    node->getApp()->removeRenderFromQueue(effect);
+    EffectInstancePtr effectPtr = node ? node->getEffectInstance() : EffectInstancePtr();
+    OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>( effectPtr.get() );
+    AppInstancePtr app = node ? node->getApp() : AppInstancePtr();
+    if (effect && app) {
+        app->removeRenderFromQueue(effect);
+    }
     if ( ( _imp->panel->isRemoveTasksAfterFinishChecked() && (retCode == 0) ) || (!_imp->canBePaused && !calledFromRenderEngine) ) {
         _imp->panel->removeTaskFromTable( shared_from_this() );
         updateTaskBarState(TaskBar::NoProgress);
@@ -287,6 +293,16 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
 void
 ProgressTaskInfo::restartTask()
 {
+    // the node is gone if its project was closed (#1575): nothing to restart
+    NodePtr node = _imp->getNode();
+    if (!node) {
+        return;
+    }
+    EffectInstancePtr effect = node->getEffectInstance();
+    if (!effect) {
+        return;
+    }
+
     {
         QMutexLocker k(&_imp->canceledMutex);
         _imp->canceled = false;
@@ -298,15 +314,6 @@ ProgressTaskInfo::restartTask()
     _imp->pauseTasksButton->setEnabled(true);
     _imp->restartTasksButton->setEnabled(false);
 
-
-    NodePtr node = _imp->getNode();
-    if (!node) {
-        return;
-    }
-    EffectInstancePtr effect = node->getEffectInstance();
-    if (!effect) {
-        return;
-    }
     if ( effect->isOutput() ) {
         int firstFrame;
         if ( (_imp->lastRenderedFrame == _imp->lastFrame) || (_imp->lastRenderedFrame == -1) ) {
@@ -543,7 +550,8 @@ ProgressTaskInfoPrivate::createItems()
         TableItem* item = new TableItem;
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
-        if ( getNode()->getEffectInstance()->isOutput() ) {
+        EffectInstancePtr effect = node->getEffectInstance();
+        if ( effect && effect->isOutput() ) {
             QString frames;
             frames.append( QString::number(firstFrame) );
             frames.append( QChar::fromLatin1('-') );
@@ -758,9 +766,8 @@ ProgressTaskInfoPrivate::refreshButtons()
         if (node) {
             effect = node->getEffectInstance();
         }
-        if (effect) {
-            restartTasksButton->setEnabled( effect->isOutput() );
-        }
+        // not if the node is gone with its project (#1575)
+        restartTasksButton->setEnabled( effect && effect->isOutput() );
         break;
     }
     case ProgressTaskInfo::eProgressTaskStatusCanceled:
@@ -769,7 +776,8 @@ ProgressTaskInfoPrivate::refreshButtons()
         break;
     case ProgressTaskInfo::eProgressTaskStatusPaused:
         pauseTasksButton->setEnabled(false);
-        restartTasksButton->setEnabled(canBePaused);
+        // not if the node is gone with its project (#1575)
+        restartTasksButton->setEnabled( canBePaused && getNode() );
         break;
     default:
         break;

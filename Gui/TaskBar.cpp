@@ -39,7 +39,7 @@ TaskBar::TaskBar(QWidget *parent)
     , _state(NoProgress)
 {
 #ifdef Q_OS_WIN
-    // QT4 typedefs WId as an HWND, but QT5 typdefs it as a quintptr, so a cast is needed.
+    // Qt typedefs WId as a quintptr, so a cast to HWND is needed.
     _hwnd = reinterpret_cast<HWND>(parent->window()->winId());
     CoInitialize(NULL);
     HRESULT hres = CoCreateInstance(CLSID_TaskbarList,

@@ -51,8 +51,10 @@
 #include <csignal>
 #include <cstddef>
 #include <cassert>
+#include <limits>
 #include <stdexcept>
 #include <cstring> // for std::memcpy
+#include <iostream>
 #include <sstream> // stringstream
 #include <locale>
 
@@ -93,7 +95,6 @@
 
 #include <cairo/cairo.h>
 #include <boost/version.hpp>
-#include <libs/hoedown/src/version.h>
 #include <ceres/version.h>
 #include <openMVG/version.hpp>
 
@@ -104,6 +105,7 @@
 #include <QFile>
 #include <QSysInfo>
 #include <QThread>
+#include <QTimer>
 #include <QUuid>
 #include <QRegularExpression>
 #include <QSettings>
@@ -342,8 +344,6 @@ AppManager::AppManager()
     assert(!_instance);
     _instance = this;
 
-    QObject::connect( this, SIGNAL(s_requestOFXDialogOnMainThread(OfxImageEffectInstance*,void*)), this, SLOT(onOFXDialogOnMainThreadReceived(OfxImageEffectInstance*,void*)) );
-
 #ifdef __NATRON_WIN32__
     FileSystemModel::initDriveLettersToNetworkShareNamesMapping();
 #endif
@@ -383,6 +383,67 @@ AppManager::loadFromArgs(const CLArgs& cl)
         std::cout << "argv[" << i << "] = " << StrUtils::utf16_to_utf8( std::wstring(_imp->commandLineArgsWide[i]) ) << std::endl;
     }
 #endif
+
+    // Before creating qApp and before initPython(): the GUI registers the test module only in test mode.
+    _imp->testMode = !cl.getTestScript().isEmpty() && !cl.isBackgroundMode();
+    if ( _imp->testMode && !qEnvironmentVariableIsEmpty("CI") && (qgetenv("NATRON_GUI_TESTS") != "1") ) {
+        // In CI, the GUI tests only run where the job enables them (NATRON_GUI_TESTS=1, e.g. under Xvfb with
+        // Mesa): skipped here, before anything is initialized, not in the test script, which runs much later.
+        std::cout << "SKIP: GUI tests in CI need NATRON_GUI_TESTS=1" << std::endl;
+        _imp->requestedExitCode = 77;
+        _imp->quitRequested = true;
+
+        return false;
+    }
+#if defined(__NATRON_UNIX__) && !defined(__NATRON_OSX__)
+    if ( _imp->testMode && qgetenv("DISPLAY").isEmpty() && qgetenv("WAYLAND_DISPLAY").isEmpty() &&
+         qgetenv("QT_QPA_PLATFORM").isEmpty() ) {
+        // Qt would abort: a GUI test without a display is skipped, not failed
+        std::cout << "SKIP: no display (DISPLAY and WAYLAND_DISPLAY are not set): run the GUI tests under xvfb-run" << std::endl;
+        _imp->requestedExitCode = 77;
+        _imp->quitRequested = true;
+
+        return false;
+    }
+#endif
+    if (_imp->testMode) {
+        // The settings written with the default QSettings constructor (e.g. the recent files) go to a
+        // temporary directory of this run, removed at exit, not to the user's preferences. The Natron
+        // settings are not saved with --no-settings, which --test implies, and the other writers of
+        // QSettings(organization, application) skip their writes in test mode.
+        _imp->testSettingsDir.reset( new QTemporaryDir( QDir::tempPath() + QString::fromUtf8("/NatronGuiTest-settings-XXXXXX") ) );
+        if ( _imp->testSettingsDir->isValid() ) {
+            QSettings::setDefaultFormat(QSettings::IniFormat);
+            QSettings::setPath( QSettings::IniFormat, QSettings::UserScope, _imp->testSettingsDir->path() );
+        } else {
+            std::cout << "NatronGuiTest: FAIL: cannot create a temporary settings directory in "
+                      << QDir::tempPath().toStdString() << std::endl;
+            _imp->requestedExitCode = 1;
+            _imp->quitRequested = true;
+
+            return false;
+        }
+        // A GUI test that fails to start (e.g. an error while loading) fails: only the test runner (or a
+        // skip) sets another exit status (see main()).
+        _imp->requestedExitCode = 1;
+    }
+    if ( _imp->testMode && !qEnvironmentVariableIsSet("NATRON_TEST_NO_FOCUS") ) {
+        // A GUI test never takes the user's keyboard focus or activates its windows (#1464). Set before
+        // the QApplication exists. (--no-dialogs does not imply it.)
+        qputenv("NATRON_TEST_NO_FOCUS", "1");
+    }
+    if (_imp->testMode) {
+        // Before initPython(): the output of a test reaches the log even when the watchdog ends it
+        qputenv("PYTHONUNBUFFERED", "1");
+#ifdef DEBUG
+        // No trapped floating point exception, in any thread: before qApp, any OpenGL context and any
+        // thread (see AppManagerPrivate::testModeNoTrap)
+        boost_adaptbx::floating_point::trapping_disabled() = true;
+        // and in the child processes, e.g. NatronRenderer
+        qputenv("NATRON_NO_FP_TRAPS", "1");
+        _imp->testModeNoTrap.reset(new boost_adaptbx::floating_point::no_exception_trapping);
+#endif
+    }
 
     // This needs to be done BEFORE creating qApp because
     // on Linux, X11 will create a context that would corrupt
@@ -485,6 +546,8 @@ AppManager::loadW(int argc,
 
 AppManager::~AppManager()
 {
+    // The atexit hook of Python, run by Py_Finalize() in tearDownPython() below, must not clean up: this does it
+    _imp->destroying = true;
 #ifdef __NATRON_UNIX__
     disarmShutDownSignalPipe();
 #endif
@@ -575,6 +638,20 @@ typedef std::shared_ptr<QuitInstanceArgs> QuitInstanceArgsPtr;
 void
 AppManager::afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args)
 {
+    // Called by the watcher of Project::quitAnyProcessingForAllNodes() once the nodes stopped
+    // processing. In GUI mode, this may be in a nested event loop (e.g. a script that called
+    // app.closeProject() and processes events), with code under it that uses the windows that
+    // quitting deletes: quit from the event loop (#1554).
+    if ( isBackground() ) {
+        quitInstanceNow(args);
+    } else {
+        queueAfterQuitProcessingCallback(args);
+    }
+}
+
+void
+AppManager::quitInstanceNow(const GenericWatcherCallerArgsPtr& args)
+{
     QuitInstanceArgs* inArgs = dynamic_cast<QuitInstanceArgs*>( args.get() );
 
     if (!inArgs) {
@@ -582,6 +659,10 @@ AppManager::afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args)
     }
 
     AppInstancePtr instance = inArgs->instance.lock();
+    if ( !instance || (getAppInstance( instance->getAppID() ) != instance) ) {
+        // already quit: quit() may be called twice before the queued call below runs
+        return;
+    }
 
     instance->aboutToQuit();
 
@@ -612,44 +693,53 @@ AppManager::quitNow(const AppInstancePtr& instance)
     }
     QuitInstanceArgsPtr args = std::make_shared<QuitInstanceArgs>();
     args->instance = instance;
-    afterQuitProcessingCallback(args);
+    quitInstanceNow(args);
 }
 
 void
 AppManager::quit(const AppInstancePtr& instance)
 {
+    if ( instance->isQuitPending() ) {
+        // already quitting (e.g. app.closeProject(), then natron.quit() or the end of a GUI test): a second
+        // quit would run aboutToQuit() again, possibly from the events that the first one processes, and
+        // delete the settings panels twice (#1567)
+        return;
+    }
     QuitInstanceArgsPtr args = std::make_shared<QuitInstanceArgs>();
 
     args->instance = instance;
-    if ( !instance->getProject()->quitAnyProcessingForAllNodes(this, args) ) {
-        afterQuitProcessingCallback(args);
+    instance->setQuitPending();
+    if ( instance->getProject()->quitAnyProcessingForAllNodes(this, args) ) {
+        // afterQuitProcessingCallback() is called once the processing is over, and quits from the
+        // event loop in GUI mode
+        return;
+    }
+    if ( isBackground() ) {
+        quitInstanceNow(args);
+    } else {
+        // GUI: quit() is called from event handlers of the widgets that aboutToQuit() deletes (the
+        // window's close button, File > Close Project and Quit, a script run from the Script Editor,
+        // Gui::abortProject() itself), which use them after quit() returns: quit from the event
+        // loop, as when nodes are still processing (#1554).
+        queueAfterQuitProcessingCallback(args);
     }
 }
 
 void
-AppManager::quitApplication()
+AppManager::queueAfterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args)
 {
-    bool appsEmpty;
-    {
-        QMutexLocker k(&_imp->_appInstancesMutex);
-        appsEmpty = _imp->_appInstances.empty();
-    }
+    QMetaObject::invokeMethod( this, [this, args]() {
+        if (getNestedEventLoopsCount() > 0) {
+            // a nested event loop runs (e.g. a GUI test's waitIdle()): the code under it may use
+            // the windows of the instance, try again once it is over
+            QTimer::singleShot( 50, this, [this, args]() {
+                queueAfterQuitProcessingCallback(args);
+            } );
 
-    while (!appsEmpty) {
-        AppInstancePtr app;
-        {
-            QMutexLocker k(&_imp->_appInstancesMutex);
-            app = _imp->_appInstances.front();
+            return;
         }
-        if (app) {
-            quitNow(app);
-        }
-
-        {
-            QMutexLocker k(&_imp->_appInstancesMutex);
-            appsEmpty = _imp->_appInstances.empty();
-        }
-    }
+        quitInstanceNow(args);
+    }, Qt::QueuedConnection );
 }
 
 void
@@ -686,8 +776,51 @@ AppManager::onShutDownSignalReceived()
     char c;
     while (::read(shutDownSignalPipe[0], &c, 1) > 0) {
     }
-    quitApplication();
+    quitOnShutDownSignal();
 #endif
+}
+
+bool
+AppManager::mustDeferQuit() const
+{
+    // The main event loop is the only one: not before or after qApp->exec() (e.g. a question shown while the
+    // project loads), not in a QDialog::exec() or QMenu::exec(). Natron's own nested loops (NestedEventLoopRAII)
+    // also count those that only process the events. Project::saveProject_imp() processes the events while it
+    // waits for the auto-save (#825).
+    if ( !isLoaded() || (QThread::currentThread()->loopLevel() != 1) || (getNestedEventLoopsCount() > 0) ) {
+        return true;
+    }
+    const AppInstanceVec instances = getAppInstances();
+    for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        ProjectPtr project = (*it)->getProject();
+        if ( project && project->isSaveInProgress() ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void
+AppManager::quitOnShutDownSignal()
+{
+    // The signal may come in a nested event loop: a modal dialog's or a menu's exec(), or a GUI test's
+    // waitIdle(). Quitting there deleted the windows under the code that runs it, e.g. the dialog of
+    // Gui::onDoDialog(), which is on the stack (#1730). Close the modal windows first, and quit from the
+    // main event loop once they are closed. If this never happens, a second signal terminates.
+    const bool closedOne = closeModalWindows();
+    if ( closedOne || mustDeferQuit() ) {
+        QTimer::singleShot( 50, this, [this]() {
+            quitOnShutDownSignal();
+        } );
+
+        return;
+    }
+    // quit() does nothing for an instance that is already quitting (e.g. natron.quit() was called, #1567)
+    const AppInstanceVec instances = getAppInstances();
+    for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        quit(*it);
+    }
 }
 
 void
@@ -955,6 +1088,12 @@ AppManager::hasOpenGLForRequirements(OpenGLRequirementsTypeEnum type, QString* m
 bool
 AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
 {
+#ifdef DEBUG
+    // The floating point exceptions that main() traps in debug builds must not be trapped in the OpenGL
+    // driver: Mesa's llvmpipe raises them while it creates a context (SIGFPE in driCreateContextAttribs()
+    // under Xvfb). This runs before the event loop, which does not trap them (see exec()).
+    boost_adaptbx::floating_point::no_exception_trapping noTrap;
+#endif
     QMutexLocker k(&_imp->openGLFunctionsMutex);
 
     if (!_imp->hasInitializedOpenGLFunctions) {
@@ -1090,7 +1229,11 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
     }
 
     int oldCacheVersion = 0;
-    {
+    if ( isTestMode() ) {
+        // a test does not record its cache version in the user's preferences (the next launch of an
+        // installed Natron would clear the user's caches)
+        oldCacheVersion = NATRON_CACHE_VERSION;
+    } else {
         QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
         if ( settings.contains( QString::fromUtf8(kNatronCacheVersionSettingsKey) ) ) {
@@ -1251,9 +1394,16 @@ AppManager::newAppInstanceInternal(const CLArgs& cl,
     {
         QMutexLocker k(&_imp->_appInstancesMutex);
         _imp->_appInstances.push_back(instance);
+        if (alwaysBackground) {
+            _imp->_internalInstanceIDs.insert( instance->getAppID() );
+        }
     }
 
-    setAsTopLevelInstance( instance->getAppID() );
+    // A background instance (the one a Precomp node loads its project in, see newBackgroundInstance())
+    // is internal: it never replaces the instance the user works in as the top-level one (#1501).
+    if (!alwaysBackground) {
+        setAsTopLevelInstance( instance->getAppID() );
+    }
 
     ++_imp->_availableID;
 
@@ -1261,14 +1411,16 @@ AppManager::newAppInstanceInternal(const CLArgs& cl,
         instance->load(cl, makeEmptyInstance);
     } catch (const std::exception & e) {
         Dialogs::errorDialog( NATRON_APPLICATION_NAME, e.what(), false );
-        removeInstance(_imp->_availableID);
+        // _availableID was already incremented: remove the instance that failed to load by its own ID
+        removeInstance( instance->getAppID() );
         instance.reset();
         --_imp->_availableID;
 
         return instance;
     } catch (...) {
         Dialogs::errorDialog( NATRON_APPLICATION_NAME, tr("Cannot load project").toStdString(), false );
-        removeInstance(_imp->_availableID);
+        // _availableID was already incremented: remove the instance that failed to load by its own ID
+        removeInstance( instance->getAppID() );
         instance.reset();
         --_imp->_availableID;
 
@@ -1337,9 +1489,17 @@ AppManager::removeInstance(int appID)
                 break;
             }
         }
+        _imp->_internalInstanceIDs.erase(appID);
 
-        if ( !_imp->_appInstances.empty() ) {
-            newApp = _imp->_appInstances.front()->getAppID();
+        // Only replace the top-level instance if it was removed, and never by an internal instance
+        // (a Precomp node's, #1501).
+        if (appID == _imp->_topLevelInstanceID) {
+            for (AppInstanceVec::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+                if ( _imp->_internalInstanceIDs.find( (*it)->getAppID() ) == _imp->_internalInstanceIDs.end() ) {
+                    newApp = (*it)->getAppID();
+                    break;
+                }
+            }
         }
     }
 
@@ -1521,6 +1681,11 @@ AppManager::writeToOutputPipe(const QString & longMessage,
 void
 AppManager::setApplicationsCachesMaximumMemoryPercent(double p)
 {
+    // The --setting commands are run by loadInternal() before loadInternalAfterInitGui() creates the
+    // caches (#1571), which then read their sizes from the settings: there is nothing to do yet.
+    if (!_imp->_nodeCache) {
+        return;
+    }
     size_t maxCacheRAM = p * getSystemTotalRAM_conditionnally();
 
     _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM);
@@ -1530,12 +1695,20 @@ AppManager::setApplicationsCachesMaximumMemoryPercent(double p)
 void
 AppManager::setApplicationsCachesMaximumViewerDiskSpace(unsigned long long size)
 {
+    // Not created yet when called by a --setting command: see setApplicationsCachesMaximumMemoryPercent()
+    if (!_imp->_viewerCache) {
+        return;
+    }
     _imp->_viewerCache->setMaximumCacheSize(size);
 }
 
 void
 AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size)
 {
+    // Not created yet when called by a --setting command: see setApplicationsCachesMaximumMemoryPercent()
+    if (!_imp->_diskCache) {
+        return;
+    }
     _imp->_diskCache->setMaximumCacheSize(size);
 }
 
@@ -1719,52 +1892,9 @@ AppManager::findAndRunScriptFile(const QString& path,
             if ( file.open(QIODevice::ReadOnly) ) {
                 QTextStream ts(&file);
                 QString content = ts.readAll();
-                PythonGILLocker pgl;
-
-                PyRun_SimpleString( content.toStdString().c_str() );
-
-
-                PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
+                // Its failure is given by its result, not by what it or other code wrote to sys.stderr (#1489)
                 std::string error, output;
-
-                ///Gui session, do stdout, stderr redirection
-                PyObject *errCatcher = 0;
-                PyObject *outCatcher = 0;
-
-                if ( PyObject_HasAttrString(mainModule, "catchErr") ) {
-                    errCatcher = PyObject_GetAttrString(mainModule, "catchErr"); //get our catchOutErr created above, new ref
-                }
-
-                if ( PyObject_HasAttrString(mainModule, "catchOut") ) {
-                    outCatcher = PyObject_GetAttrString(mainModule, "catchOut"); //get our catchOutErr created above, new ref
-                }
-
-                PyErr_Print(); //make python print any errors
-
-                PyObject *errorObj = 0;
-                if (errCatcher) {
-                    errorObj = PyObject_GetAttrString(errCatcher, "value"); //get the  stderr from our catchErr object, new ref
-                    assert(errorObj);
-
-                    error = NATRON_PYTHON_NAMESPACE::PyStringToStdString(errorObj);
-                    PyObject* unicode = PyUnicode_FromString("");
-                    PyObject_SetAttrString(errCatcher, "value", unicode);
-                    Py_DECREF(errorObj);
-                    Py_DECREF(errCatcher);
-                }
-                PyObject *outObj = 0;
-                if (outCatcher) {
-                    outObj = PyObject_GetAttrString(outCatcher, "value"); //get the stdout from our catchOut object, new ref
-                    assert(outObj);
-                    output = NATRON_PYTHON_NAMESPACE::PyStringToStdString(outObj);
-                    PyObject* unicode = PyUnicode_FromString("");
-                    PyObject_SetAttrString(outCatcher, "value", unicode);
-                    Py_DECREF(outObj);
-                    Py_DECREF(outCatcher);
-                }
-
-
-                if ( !error.empty() ) {
+                if ( !NATRON_PYTHON_NAMESPACE::runPythonScriptFile(content.toStdString(), &error, &output) ) {
                     QString message(tr("Failed to load %1: %2").arg(absolutePath).arg(QString::fromUtf8( error.c_str() )) );
                     appPTR->writeToErrorLog_mt_safe(tr("Python Script"), QDateTime::currentDateTime(), message, false);
                     std::cerr << message.toStdString() << std::endl;
@@ -2132,8 +2262,8 @@ AppManager::loadPythonGroups()
         }
 
         std::string pluginLabel, pluginID, pluginGrouping, iconFilePath, pluginDescription;
-        unsigned int version;
-        bool isToolset;
+        unsigned int version = 1;
+        bool isToolset = false;
         bool gotInfos = NATRON_PYTHON_NAMESPACE::getGroupInfos(modulePath.toStdString(), moduleName.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &pluginDescription, &isToolset, &version);
 
 
@@ -3022,6 +3152,26 @@ AppManager::getRequestedExitCode() const
     return _imp->requestedExitCode;
 }
 
+void
+AppManager::setBackgroundRenderFailed()
+{
+    _imp->backgroundRenderFailed = true;
+}
+
+int
+AppManager::exitStatus() const
+{
+    const int code = _imp->requestedExitCode;
+    if ( _imp->quitRequested || (code != 0) ) {
+        // natron.quit(code): its code prevails, also 0, and the renders it aborted did not fail.
+        // Without a quit, a non-zero code is the status of a failed script or interpreter.
+        return code;
+    }
+
+    // A farm manager reads the exit status: a render that failed must not report a success.
+    return _imp->backgroundRenderFailed ? 1 : 0;
+}
+
 bool
 AppManager::isPythonInterpreterRunning() const
 {
@@ -3311,37 +3461,47 @@ AppManager::setThreadAsActionCaller(OfxImageEffectInstance* instance,
     _imp->ofxHost->setThreadAsActionCaller(instance, actionCaller);
 }
 
-void
-AppManager::requestOFXDIalogOnMainThread(OfxImageEffectInstance* instance,
-                                         void* instanceData)
-{
-    if ( QThread::currentThread() == qApp->thread() ) {
-        onOFXDialogOnMainThreadReceived(instance, instanceData);
-    } else {
-        Q_EMIT s_requestOFXDialogOnMainThread(instance, instanceData);
-    }
-}
-
-void
-AppManager::onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance,
-                                            void* instanceData)
+#ifdef OFX_SUPPORTS_DIALOG
+// Runs kOfxActionDialog on the main thread. Nothing may throw out of here: on the queued path the caller
+// is the Qt event loop, on the direct path the plug-in's C code (OfxHost::requestDialog() also catches).
+static void
+runOFXDialog(const OfxEffectInstancePtr& effect,
+             void* instanceData)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if (instance == NULL) {
-        // instance may be NULL if using OfxDialogSuiteV1
-        OfxHost::OfxHostDataTLSPtr tls = _imp->ofxHost->getTLSData();
-        instance = tls->lastEffectCallingMainEntry;
-    } else {
-#ifdef DEBUG
-        OfxHost::OfxHostDataTLSPtr tls = _imp->ofxHost->getTLSData();
-        assert(instance == tls->lastEffectCallingMainEntry);
-#endif
+    OfxImageEffectInstance* instance = effect ? effect->effectInstance() : NULL;
+    if (!instance) {
+        // the effect was destroyed, or its OFX instance not created (or already deleted)
+        return;
     }
-#ifdef OFX_SUPPORTS_DIALOG
-    if (instance) {
+    try {
         instance->dialog(instanceData);
+    } catch (const std::exception& e) {
+        qDebug() << "kOfxActionDialog:" << e.what();
+    } catch (...) {
+        qDebug() << "kOfxActionDialog: unknown error.";
+    }
+}
+#endif
+
+void
+AppManager::requestOFXDIalogOnMainThread(const OfxEffectInstancePtr& effect,
+                                         void* instanceData)
+{
+#ifdef OFX_SUPPORTS_DIALOG
+    assert(effect);
+    if ( QThread::currentThread() == qApp->thread() ) {
+        runOFXDialog(effect, instanceData);
+    } else {
+        // Queue a weak reference, never a raw pointer: the node may be deleted, or the project closed,
+        // before the main thread processes the request (#1608).
+        const OfxEffectInstanceWPtr weakEffect = effect;
+        QMetaObject::invokeMethod(this, [weakEffect, instanceData]() {
+            runOFXDialog(weakEffect.lock(), instanceData);
+        }, Qt::QueuedConnection);
     }
 #else
+    Q_UNUSED(effect);
     Q_UNUSED(instanceData);
 #endif
 }
@@ -3509,6 +3669,35 @@ AppManager::initBuiltinPythonModules()
     }
 }
 
+bool
+AppManager::isTestMode() const
+{
+    return _imp->testMode;
+}
+
+bool
+AppManager::keepsOtherSessionsAutoSaves() const
+{
+    return isDialogsDisabled() || isTestMode();
+}
+
+bool
+AppManager::hasRenderInProgress() const
+{
+    AppInstanceVec instances;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        instances = _imp->_appInstances;
+    }
+    for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        if ( *it && (*it)->hasRenderInProgress() ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void
 AppManager::setProjectCreatedDuringRC2Or3(bool b)
 {
@@ -3538,7 +3727,8 @@ AppManager::toggleAutoHideGraphInputs()
 
 // Registered with atexit by registerCloseProjectsAtPythonExit() in the background modes that run
 // scripts: Py_Main() (-t), or sys.exit() in a script, finalizes Python, so close the projects while Python
-// still runs, for the onProjectClose callbacks and the removal of the node variables (#1253).
+// still runs, for the onProjectClose callbacks and the removal of the node variables (#1253), then unload the
+// OFX plug-ins (cleanUpAtPythonExit(), #1557): sys.exit() then calls exit(), and ~AppManager never runs.
 // After Py_Main(), loadInternalAfterInitGui() then quits the instances.
 static PyObject*
 closeProjectsAtPythonExit(PyObject* /*self*/,
@@ -3554,16 +3744,80 @@ closeProjectsAtPythonExit(PyObject* /*self*/,
         // Release the GIL while the nodes are deleted: they may wait for threads that need it.
         // The callbacks take it again with PythonGILLocker.
         Py_BEGIN_ALLOW_THREADS
+        bool projectsClosed = true;
         for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
             try {
                 (*it)->getProject()->reset(true /*aboutToQuit*/, true /*blocking*/);
             } catch (const std::exception& e) {
                 std::cerr << e.what() << std::endl;
+                projectsClosed = false;
             }
+        }
+        // sys.exit() leaves through exit(): ~AppManager won't unload the OFX plug-ins (#1557).
+        // Not if a project could not be closed: its OFX instances are still alive, and would be destroyed
+        // (kOfxActionDestroyInstance) after their plug-ins were unloaded.
+        if (projectsClosed) {
+            appPTR->cleanUpAtPythonExit();
         }
         Py_END_ALLOW_THREADS
     }
     Py_RETURN_NONE;
+}
+
+void
+AppManager::cleanUpAtPythonExit()
+{
+    // Python is finalized by sys.exit() or natron.quit() in a script or at the prompt of the -t option, which then
+    // call exit() (Py_Exit()), or at the end of the prompt (Py_Main()), after which ~AppManager runs. In the first
+    // case, the OFX plug-ins would never get kOfxActionUnload, and the threads that some start (e.g. the thread
+    // pool of OpenImageIO) would only be stopped by their static destructors, in exit(), which may deadlock on
+    // Windows (#1557). os._exit() runs nothing, not even this. Neither does a SystemExit raised on another thread
+    // (see closeProjectsAtPythonExit()), nor sys.exit() in a script of the GUI or of natron-python, which don't
+    // register the hook. The atexit callbacks registered before this one (e.g. by init.py) run after it, with the
+    // plug-ins unloaded and the projects closed.
+    // The callers run on the main thread, with the projects closed: their renders were aborted and waited for, and
+    // their nodes deleted. Only the tasks of the global thread pool may still run (the threads of the
+    // multi-thread suite of the OFX plug-ins, the deletion of images): wait for them, as ~AppManager does.
+    assert( QThread::currentThread() == qApp->thread() );
+    if (_imp->destroying) {
+        return;
+    }
+    // sys.exit() in an expression or a Python callback that Natron evaluates during an OFX action on the main thread:
+    // the plug-in is still in that action, its binary can't be unloaded under it
+    if ( _imp->ofxHost && _imp->ofxHost->isActionRunningInThisThread() ) {
+        std::cerr << "Warning: Python exits during an OpenFX action: the OpenFX plug-ins are not unloaded." << std::endl;
+
+        return;
+    }
+    QThreadPool::globalInstance()->waitForDone();
+    // Keep the images of the DiskCache nodes for the next process, as ~AppManager does
+    try {
+        _imp->saveCaches();
+    } catch (std::runtime_error&) {
+        // ignore errors
+    }
+    // Wait for the images that the caches gave to their cleaner and deleter threads, as ~AppManager does. The caches
+    // stay until ~AppManager (after the -t prompt) or exit().
+    if (_imp->_nodeCache) {
+        _imp->_nodeCache->waitForDeleterThread();
+    }
+    if (_imp->_diskCache) {
+        _imp->_diskCache->waitForDeleterThread();
+    }
+    if (_imp->_viewerCache) {
+        _imp->_viewerCache->waitForDeleterThread();
+    }
+    // Each loaded plug-in gets kOfxActionUnload, and its binary is unloaded, on the main thread, before exit().
+    // The plug-ins are unloaded once: ~OfxHost won't unload them again.
+    if (_imp->ofxHost) {
+        _imp->ofxHost->unloadPlugins();
+    }
+}
+
+bool
+AppManager::areOFXPluginsUnloaded() const
+{
+    return _imp->ofxHost && _imp->ofxHost->arePluginsUnloaded();
 }
 
 static PyMethodDef closeProjectsAtPythonExitDef = {
@@ -3610,9 +3864,32 @@ AppManager::launchPythonInterpreter()
     assert(PyGILState_Check()); // Not available prior to Python 3.4
 #endif
 
+#ifdef __NATRON_WIN32__
+    // On Windows, isatty() is true for every character device, the NUL device included: with stdin
+    // redirected from NUL (a render farm job, "< /dev/null" in a script), Python (3.13 and later)
+    // takes stdin for a terminal and starts its new prompt (pyrepl), which needs a console. Each
+    // read then fails with an OSError that the prompt prints before it retries, forever: the
+    // process never exits and its output grows without bound. Without a console on stdin, ask for
+    // the basic prompt, which reads the commands from stdin and exits at the end of the file.
+    {
+        HANDLE stdinHandle = GetStdHandle(STD_INPUT_HANDLE);
+        DWORD consoleMode = 0;
+        if ( !stdinHandle || (stdinHandle == INVALID_HANDLE_VALUE) || !GetConsoleMode(stdinHandle, &consoleMode) ) {
+            qputenv("PYTHON_BASIC_REPL", "1");
+        }
+    }
+#endif
+
     _imp->pythonInterpreterRunning = true;
-    Py_Main(1, &_imp->commandLineArgsWide[0]);
+    const int status = Py_Main(1, &_imp->commandLineArgsWide[0]);
     _imp->pythonInterpreterRunning = false;
+    // The exit status of the prompt, as for python: 1 if the commands read from a file or a pipe raised an
+    // exception, and, from Python 3.13 on, the status of sys.exit() at the prompt: Py_Main() returns it instead of
+    // calling exit() (_pymain_run_repl()), so Natron exited with status 0 (#1557). natron.quit(exitCode) gave its
+    // own status.
+    if ( (status != 0) && !_imp->quitRequested ) {
+        _imp->requestedExitCode = status;
+    }
 }
 
 int
@@ -3844,11 +4121,11 @@ AppManager::getCairoVersion() const
 
 
 QString
-AppManager::getHoedownVersion() const
+AppManager::getMd4cVersion() const
 {
-    int major, minor, revision;
-    hoedown_version(&major, &minor, &revision);
-    return QString::fromUtf8(HOEDOWN_VERSION) + QString::fromUtf8(" / ") + QString::fromUtf8("%1.%2.%3").arg(major).arg(minor).arg(revision);
+    // md4c has no version macro or function: NATRON_MD4C_VERSION is defined
+    // by the build system (libs/md4c/CMakeLists.txt, libs.pri)
+    return QString::fromUtf8(NATRON_MD4C_VERSION);
 }
 
 
@@ -4155,16 +4432,228 @@ NATRON_PYTHON_NAMESPACE::ensureScriptHasModuleImport(const std::string& moduleNa
 
 #endif
 
-// The number of interpretPythonScript() calls running in this thread
-static thread_local int pythonScriptDepth = 0;
+namespace {
+// The number of interpretPythonScript() calls running, in all threads. It is only read and written with
+// the GIL held, which protects it.
+// The captured sys.stdout and sys.stderr are shared by all threads, so this counter is process-wide, not
+// per thread: a call made while another script is running (nested in it, or in another thread while the
+// running script released the GIL, e.g. a render callback during app.render()) must not take the text
+// that the running script wrote so far. Interleaving between threads is still only approximate: text
+// written by one thread while another thread's script runs may be attributed to that script, but no
+// text is lost, and it never makes a script fail.
+int pythonScriptDepth = 0;
+
+// The number of interpretPythonScript() calls running in this thread, for raiseSystemExitAtPrompt().
+// It covers the whole call, not only PyRun_String(): Natron runs Python code after the script too
+// (traceback.format_exception() in takePythonException()), where a pending call may fire, and a
+// SystemExit raised there would be cleared with the exception of the script.
+thread_local int pythonScriptDepthInThread = 0;
+
+class PythonScriptDepth_RAII
+{
+    const bool _nested;
+
+public:
+    // The GIL must be held.
+    PythonScriptDepth_RAII()
+        : _nested(pythonScriptDepth > 0)
+    {
+        ++pythonScriptDepth;
+        ++pythonScriptDepthInThread;
+    }
+
+    // The GIL must still be held.
+    ~PythonScriptDepth_RAII()
+    {
+        --pythonScriptDepthInThread;
+        --pythonScriptDepth;
+    }
+
+    // Whether another interpretPythonScript() call was running when this one started
+    bool isNested() const
+    {
+        return _nested;
+    }
+};
+
+// Converts a Python str to UTF-8. Characters that cannot be encoded (lone surrogates, e.g. from a
+// non-UTF-8 file name decoded with surrogateescape) are written as backslash escapes, rather than
+// making the whole conversion fail (PyStringToStdString() returns an empty string then).
+// The GIL must be held.
+std::string
+pyUnicodeToUtf8(PyObject* str)
+{
+    std::string ret;
+    PyObject* bytes = PyUnicode_AsEncodedString(str, "utf-8", "backslashreplace"); // new ref
+
+    if (bytes) {
+        ret.assign( PyBytes_AS_STRING(bytes), (std::size_t)PyBytes_GET_SIZE(bytes) );
+        Py_DECREF(bytes);
+    } else {
+        PyErr_Clear();
+    }
+
+    return ret;
+}
+
+// In GUI sessions, sys.stdout and sys.stderr are the catchOut and catchErr StreamCatcher objects of the
+// __main__ module (see AppManager::initPython()). Returns the text in the catcher named catcherName and
+// empties it, or an empty string if there is no such catcher (background sessions).
+// The GIL must be held.
+std::string
+takeCaughtStream(PyObject* mainModule,
+                 const char* catcherName)
+{
+    std::string ret;
+
+    if ( !PyObject_HasAttrString(mainModule, catcherName) ) {
+        return ret;
+    }
+    PyObject* catcher = PyObject_GetAttrString(mainModule, catcherName); // new ref
+    if (!catcher) {
+        PyErr_Clear();
+
+        return ret;
+    }
+    PyObject* value = PyObject_GetAttrString(catcher, "value"); // new ref
+    if ( value && PyUnicode_Check(value) && (PyUnicode_GetLength(value) > 0) ) {
+        ret = pyUnicodeToUtf8(value);
+        {
+            PyObject* empty = PyUnicode_FromString("");
+            PyObject_SetAttrString(catcher, "value", empty);
+            Py_DECREF(empty);
+        }
+    }
+    Py_XDECREF(value);
+    Py_DECREF(catcher);
+    PyErr_Clear();
+
+    return ret;
+}
+
+// Sets the text in the catcher named catcherName (see takeCaughtStream()). The GIL must be held.
+void
+setCaughtStream(PyObject* mainModule,
+                const char* catcherName,
+                const std::string& text)
+{
+    if ( !PyObject_HasAttrString(mainModule, catcherName) ) {
+        return;
+    }
+    PyObject* catcher = PyObject_GetAttrString(mainModule, catcherName); // new ref
+    if (!catcher) {
+        PyErr_Clear();
+
+        return;
+    }
+    PyObject* value = PyUnicode_FromStringAndSize( text.c_str(), (Py_ssize_t)text.size() ); // new ref
+    if (value) {
+        PyObject_SetAttrString(catcher, "value", value);
+        Py_DECREF(value);
+    }
+    Py_DECREF(catcher);
+    PyErr_Clear();
+}
+
+// Shows text that Python wrote to the captured sys.stdout or sys.stderr in the Script Editor of the
+// top-level project window, or on the standard error if there is none yet. header, if not empty, is
+// shown on the line before the text.
+void
+forwardToScriptEditor(std::string text,
+                      const char* header = "")
+{
+    if ( text.empty() ) {
+        return;
+    }
+    // appendToScriptEditor() adds a newline
+    if (text[text.size() - 1] == '\n') {
+        text.erase(text.size() - 1);
+    }
+    if (*header) {
+        text = std::string(header) + '\n' + text;
+    }
+    AppInstancePtr app = appPTR ? appPTR->getTopLevelInstance() : AppInstancePtr();
+    if (app) {
+        app->appendPlainTextToScriptEditor(text);
+    } else {
+        std::cerr << text << std::endl;
+    }
+}
+
+// Returns the message and traceback of the pending Python exception, and clears it. The GIL must be held.
+std::string
+takePythonException()
+{
+    std::string ret;
+    PyObject *pyExcType;
+    PyObject *pyExcValue;
+    PyObject *pyExcTraceback;
+
+    PyErr_Fetch(&pyExcType, &pyExcValue, &pyExcTraceback); // also clears the error indicator
+    PyErr_NormalizeException(&pyExcType, &pyExcValue, &pyExcTraceback);
+
+    PyObject* pyStr = pyExcValue ? PyObject_Str(pyExcValue) : 0;
+    if (pyStr) {
+        std::string str = PyUnicode_Check(pyStr) ? pyUnicodeToUtf8(pyStr) : std::string();
+        if ( !str.empty() ) {
+            ret += std::string("Python exception: ") + str + '\n';
+        }
+        Py_DECREF(pyStr);
+    } else {
+        // str() of the exception raised: still get the traceback
+        PyErr_Clear();
+    }
+
+    // See if we can get a full traceback
+    PyObject* module_name = PyUnicode_FromString("traceback");
+    PyObject* pyth_module = PyImport_Import(module_name);
+    Py_DECREF(module_name);
+
+    if (pyth_module != NULL) {
+        PyObject* pyth_func;
+        if (!pyExcTraceback) {
+            pyth_func = PyObject_GetAttrString(pyth_module, "format_exception_only");
+        } else {
+            pyth_func = PyObject_GetAttrString(pyth_module, "format_exception");
+        }
+        Py_DECREF(pyth_module);
+        if ( pyth_func && PyCallable_Check(pyth_func) ) {
+            PyObject *pyth_val = PyObject_CallFunctionObjArgs(pyth_func, pyExcType, pyExcValue, pyExcTraceback, NULL);
+            if (pyth_val) {
+                PyObject *emptyString = PyUnicode_FromString("");
+                PyObject *strList = PyObject_CallMethod(emptyString, (char*)"join", (char*)"(O)", pyth_val);
+                Py_DECREF(emptyString);
+                Py_DECREF(pyth_val);
+                if ( strList && PyUnicode_Check(strList) ) {
+                    std::string str = pyUnicodeToUtf8(strList);
+                    if ( !str.empty() ) {
+                        ret += str + '\n';
+                    }
+                }
+                Py_XDECREF(strList);
+            }
+        }
+        Py_XDECREF(pyth_func);
+    }
+    PyErr_Clear();
+    Py_XDECREF(pyExcType);
+    Py_XDECREF(pyExcValue);
+    Py_XDECREF(pyExcTraceback);
+    PyErr_Clear(); // in case formatting the exception failed
+
+    return ret;
+}
+} // anon namespace
 
 // Raises SystemExit at the interactive prompt of the -t option, once no
-// interpretPythonScript() is running (see interpretPythonScript())
+// interpretPythonScript() is running in this thread, the main thread, where CPython runs the pending
+// calls (see interpretPythonScript())
 static int
 raiseSystemExitAtPrompt(void*)
 {
-    if (pythonScriptDepth > 0) {
-        // still in a script run by Natron (e.g. a callback): try again when it returns
+    if (pythonScriptDepthInThread > 0) {
+        // still in a script run by Natron (e.g. a callback), or in the code that handles its result:
+        // try again when it returns. This re-polls at every check of the interpreter until then.
         Py_AddPendingCall(raiseSystemExitAtPrompt, 0);
 
         return 0;
@@ -4176,10 +4665,20 @@ raiseSystemExitAtPrompt(void*)
     return -1;
 }
 
+namespace {
+enum PythonScriptKindEnum
+{
+    ePythonScriptKindCode, // interpretPythonScript()
+    ePythonScriptKindFile, // runPythonScriptFile()
+};
+
 bool
-NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
-                                               std::string* error,
-                                               std::string* output)
+interpretPythonScriptImpl(const std::string& script,
+                          std::string* error,
+                          std::string* output,
+                          PyObject* globals,
+                          PyObject* locals,
+                          PythonScriptKindEnum kind)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
 
@@ -4194,28 +4693,51 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
         return false;
     }
     PythonGILLocker pgl;
+    // Re-entrant: the script may call the Natron API, which may run other scripts through this function
+    // (e.g. app.createNode() declares the node variable).
+    // It also delays a SystemExit raised for the -t prompt until this call has returned (see
+    // raiseSystemExitAtPrompt()). It is destroyed before the GIL is released.
+    PythonScriptDepth_RAII depth;
     PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
-    int status = -1;
-#if 0 //USE_PYRUN_SIMPLESTRING
-    status = PyRun_SimpleString(script.c_str());
-#else
-    PyObject* dict = PyModule_GetDict(mainModule);
 
     PyErr_Clear();
 
+    // In GUI sessions, sys.stdout and sys.stderr are StreamCatcher objects (see AppManager::initPython()).
+    // Text that is already there was not written by this script (#1436): if another call is running
+    // (nested, or in another thread, see pythonScriptDepth), it is the output of that script so far,
+    // which is put back when this script is done; otherwise, it
+    // was written outside of this function (e.g. a traceback from a PySide slot) and it is forwarded
+    // to the Script Editor, rather than lost or taken for an error of this script.
+    const bool captured = PyObject_HasAttrString(mainModule, "catchErr");
+    const std::string previousErr = takeCaughtStream(mainModule, "catchErr");
+    const std::string previousOut = takeCaughtStream(mainModule, "catchOut");
+    if ( !depth.isNested() ) {
+        forwardToScriptEditor(previousOut + previousErr, "# Earlier output:");
+    }
+
+    int status = -1;
+    PyObject* dict = globals ? globals : PyModule_GetDict(mainModule);
+
     ///This is faster than PyRun_SimpleString since is doesn't call PyImport_AddModule("__main__")
-    ++pythonScriptDepth;
-    PyObject* v = PyRun_String(script.c_str(), Py_file_input, dict, 0);
-    --pythonScriptDepth;
+    PyObject* v = PyRun_String(script.c_str(), Py_file_input, dict, locals);
     if (v) {
         Py_DECREF(v);
         status = 0;
+    } else if ( (kind == ePythonScriptKindFile) && PyErr_ExceptionMatches(PyExc_SystemExit) ) {
+        // sys.exit() in a script file exits the process with its status, as PyRun_SimpleString() did
+        // (e.g. a NatronRenderer script, #1489): PyErr_Print() does it. What the script wrote goes to the
+        // terminal, since the Script Editor is about to close (the earlier output was already forwarded, unless
+        // it belongs to a calling script).
+        if (captured) {
+            std::cerr << ( depth.isNested() ? previousOut + previousErr : std::string() )
+                      << takeCaughtStream(mainModule, "catchOut") << takeCaughtStream(mainModule, "catchErr") << std::flush;
+        }
+        PyErr_Print();
     }
-#endif
 
-    if (error) {
-        error->clear();
-    }
+    // The success of the script is given by the result of PyRun_String(), not by what it wrote to
+    // sys.stderr (warnings, tracebacks printed and handled by the script...).
+    std::string exceptionText;
     PyObject* ex = PyErr_Occurred();
     if ( ex && PyErr_GivenExceptionMatches(ex, PyExc_SystemExit) &&
          appPTR->isQuitRequested() && appPTR->isPythonInterpreterRunning() ) {
@@ -4226,111 +4748,73 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     }
     if (ex) {
         assert(status < 0);
-        if (!error) {
-            PyErr_Clear();
-        } else {
-            PyObject *pyExcType;
-            PyObject *pyExcValue;
-            PyObject *pyExcTraceback;
-            PyErr_Fetch(&pyExcType, &pyExcValue, &pyExcTraceback); // also clears the error indicator
-            //PyErr_NormalizeException(&pyExcType, &pyExcValue, &pyExcTraceback);
+        exceptionText = takePythonException();
+    }
 
-            PyObject* pyStr = PyObject_Str(pyExcValue);
-            if (pyStr) {
-                std::string str = NATRON_PYTHON_NAMESPACE::PyStringToStdString(pyStr);
-                if ( error && !str.empty() ) {
-                    *error += std::string("Python exception: ") + str + '\n';
-                }
-                Py_DECREF(pyStr);
+    // What this script wrote to sys.stdout and sys.stderr
+    std::string scriptErr = takeCaughtStream(mainModule, "catchErr");
+    std::string scriptOut = takeCaughtStream(mainModule, "catchOut");
 
-                // See if we can get a full traceback
-                PyObject* module_name = PyUnicode_FromString("traceback");
-                PyObject* pyth_module = PyImport_Import(module_name);
-                Py_DECREF(module_name);
-
-                if (pyth_module != NULL) {
-                    PyObject* pyth_func;
-                    if (!pyExcTraceback) {
-                        pyth_func = PyObject_GetAttrString(pyth_module, "format_exception_only");
-                    } else {
-                        pyth_func = PyObject_GetAttrString(pyth_module, "format_exception");
-                    }
-                    Py_DECREF(pyth_module);
-                    if (pyth_func && PyCallable_Check(pyth_func)) {
-                        PyObject *pyth_val = PyObject_CallFunctionObjArgs(pyth_func, pyExcType, pyExcValue, pyExcTraceback, NULL);
-                        if (pyth_val) {
-                            PyObject *emptyString = PyUnicode_FromString("");
-                            PyObject *strList = PyObject_CallMethod(emptyString, (char*)"join", (char*)"(O)", pyth_val);
-                            Py_DECREF(emptyString);
-                            Py_DECREF(pyth_val);
-                            pyStr = PyObject_Str(strList);
-                            Py_DECREF(strList);
-                            if (pyStr) {
-                                str = NATRON_PYTHON_NAMESPACE::PyStringToStdString(pyStr);
-                                if ( error && !str.empty() ) {
-                                    *error += str + '\n';
-                                }
-                                Py_DECREF(pyStr);
-                            }
-                        }
-                    }
-                }
+    if (output) {
+        output->clear();
+        if (status == 0) {
+            // e.g. the Script Editor shows it with the result of the script, after the script
+            *output = scriptOut + scriptErr;
+            scriptOut.clear();
+            scriptErr.clear();
+        }
+        // else most callers only show the error: the output of the failed script is forwarded
+        // below, so that it is shown before the error
+    }
+    if (error) {
+        error->clear();
+        if (status != 0) {
+            *error = exceptionText + scriptErr;
+            scriptErr.clear();
+            if ( captured && (kind == ePythonScriptKindCode) ) {
+                *error = "While executing script:\n" + script + "Python error:\n" + *error;
             }
         }
+    } else if (status != 0) {
+        // the caller does not want the error: don't lose the traceback
+        scriptErr.insert(0, exceptionText);
     }
-    if ( !appPTR->isBackground() ) {
-        ///Gui session, do stdout, stderr redirection
-        PyObject *errCatcher = 0;
-        PyObject *outCatcher = 0;
 
-        if ( error && PyObject_HasAttrString(mainModule, "catchErr") ) {
-            errCatcher = PyObject_GetAttrString(mainModule, "catchErr"); //get our catchOutErr created above, new ref
-        }
-
-        if ( output && PyObject_HasAttrString(mainModule, "catchOut") ) {
-            outCatcher = PyObject_GetAttrString(mainModule, "catchOut"); //get our catchOutErr created above, new ref
-        }
-
-        PyErr_Print(); //make python print any errors
-
-        PyObject *errorObj = 0;
-        if (errCatcher && error) {
-            errorObj = PyObject_GetAttrString(errCatcher, "value"); //get the  stderr from our catchErr object, new ref
-            assert(errorObj);
-            *error += PyStringToStdString(errorObj);
-            PyObject* unicode = PyUnicode_FromString("");
-            PyObject_SetAttrString(errCatcher, "value", unicode);
-            Py_DECREF(errorObj);
-            Py_DECREF(errCatcher);
-        }
-        PyObject *outObj = 0;
-        if (outCatcher && output) {
-            outObj = PyObject_GetAttrString(outCatcher, "value"); //get the stdout from our catchOut object, new ref
-            assert(outObj);
-            *output = PyStringToStdString(outObj);
-            PyObject* unicode = PyUnicode_FromString("");
-            PyObject_SetAttrString(outCatcher, "value", unicode);
-            Py_DECREF(outObj);
-            Py_DECREF(outCatcher);
-        }
-
-        if ( error && !error->empty() ) {
-            *error = "While executing script:\n" + script + "Python error:\n" + *error;
-
-            return false;
-        }
-
-        return status == 0;
-    } else {
-        if (ex) {
-            PyErr_Print();
-
-            return false;
-        } else {
-            return status == 0;
-        }
+    // Text that the caller did not take (stderr of a successful script, output of a failed script or not
+    // requested by the caller) goes where the script would have written it: to the calling script in a nested call, or
+    // to the Script Editor.
+    if ( captured && depth.isNested() ) {
+        setCaughtStream(mainModule, "catchErr", previousErr + scriptErr);
+        setCaughtStream(mainModule, "catchOut", previousOut + scriptOut);
+    } else if (captured) {
+        forwardToScriptEditor(scriptOut);
+        forwardToScriptEditor(scriptErr);
+    } else if ( !scriptErr.empty() ) {
+        // background session: sys.stderr is not captured, only the exception was not printed yet
+        std::cerr << scriptErr << std::flush;
     }
-} // NATRON_PYTHON_NAMESPACE::interpretPythonScript
+
+    return status == 0;
+} // interpretPythonScriptImpl
+} // anon namespace
+
+bool
+NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
+                                               std::string* error,
+                                               std::string* output,
+                                               PyObject* globals,
+                                               PyObject* locals)
+{
+    return interpretPythonScriptImpl(script, error, output, globals, locals, ePythonScriptKindCode);
+}
+
+bool
+NATRON_PYTHON_NAMESPACE::runPythonScriptFile(const std::string& script,
+                                             std::string* error,
+                                             std::string* output)
+{
+    return interpretPythonScriptImpl(script, error, output, NULL, NULL, ePythonScriptKindFile);
+}
 
 #if 0 // dead code
 void
@@ -4511,82 +4995,43 @@ PythonGILLocker::~PythonGILLocker()
 
 PythonGILUnlocker::PythonGILUnlocker()
 {
-#ifdef DEBUG_PYTHON_GIL
-    if (!Py_IsInitialized()) {
-        throw std::runtime_error("Trying to execute python code, but Py_IsInitialized() returns false");
+    // Not PyGILState_Release(): it must be paired with the PyGILState_Ensure() that returned its argument (#1610).
+    // (PyGILState_Check() always returns 1 once a subinterpreter exists; Natron creates none.)
+    if ( !Py_IsInitialized() || !PyGILState_Check() ) {
+        return;
     }
-#endif
-    assert(Py_IsInitialized());
-
-    // Also take the Python GIL, since not doing so seems to crash Natron during recursive Natron->Python->Natron->Python calls, see https://github.com/NatronGitHub/Natron/issues/379
-    // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
-    // Take the GIL for this thread
 #ifdef DEBUG_PYTHON_GIL
     QThread* curThread = QThread::currentThread();
     QString threadname = (qApp && qApp->thread() == curThread) ? QString::fromUtf8("Main") : curThread->objectName();
     qDebug() << QString::fromUtf8("Thread '%1' is releasing the Python GIL").arg(threadname);
 #endif
-    assert(PyThreadState_Get());
-#if PY_VERSION_HEX >= 0x030400F0
-    assert(PyGILState_Check()); // Not available prior to Python 3.4
-#endif
-    PyGILState_Release(PyGILState_UNLOCKED);
-#ifdef DEBUG_PYTHON_GIL
-    qDebug() << QString::fromUtf8("Thread '%1' released the Python GIL").arg(threadname);
-#endif
-
 #ifdef USE_NATRON_GIL
-    // Take the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
-    // We do this after we got the Python GIL, to avoid deadlocks:
-    // If we do it the other way, this thread may be waiting for the Python GIL while keeping the Natron GIL
-    // locked, thus preventing other threads from getting the Python GIL.
+    // Release the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
     if (appPTR) {
-#ifdef DEBUG_PYTHON_GIL
-        qDebug() << QString::fromUtf8("Thread '%1' is releasing the Natron GIL").arg(threadname);
-#endif
         appPTR->releaseNatronGIL();
-#ifdef DEBUG_PYTHON_GIL
-        qDebug() << QString::fromUtf8("Thread '%1' released the Natron GIL").arg(threadname);
-#endif
     }
 #endif
+    _state = PyEval_SaveThread();
 }
 
 PythonGILUnlocker::~PythonGILUnlocker()
 {
-    // Take the Natron GIL https://github.com/NatronGitHub/Natron/commit/46d9d616dfebfbb931a79776734e2fa17202f7cb
-#ifdef DEBUG_PYTHON_GIL
-    QThread* curThread = QThread::currentThread();
-    QString threadname = (qApp && qApp->thread() == curThread) ? QString::fromUtf8("Main") : curThread->objectName();
-#endif
+    if (!_state) {
+        return;
+    }
+    // Take the Python GIL before the Natron GIL, as PythonGILLocker does, to avoid deadlocks.
+    PyEval_RestoreThread(_state);
 #ifdef USE_NATRON_GIL
     if (appPTR) {
-#ifdef DEBUG_PYTHON_GIL
-        qDebug() << QString::fromUtf8("Thread '%1' is asking the Natron GIL").arg(threadname);
-#endif
         appPTR->takeNatronGIL();
     }
 #endif
-
-    // We released the Python GIL too, so take it here.
-    // Follow https://web.archive.org/web/20150918224620/http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
-#if PY_VERSION_HEX >= 0x030400F0
-    assert(!PyGILState_Check());  // Not available prior to Python 3.4
-#endif
-    // Release the GIL, no thread will own it afterwards.
 #ifdef DEBUG_PYTHON_GIL
-    qDebug() << QString::fromUtf8("Thread '%1' is asking the Python GIL").arg(threadname);
-#endif
-    /* PyGILState_STATE state = */
-    PyGILState_Ensure();
-#ifdef DEBUG_PYTHON_GIL
+    QThread* curThread = QThread::currentThread();
+    QString threadname = (qApp && qApp->thread() == curThread) ? QString::fromUtf8("Main") : curThread->objectName();
     qDebug() << QString::fromUtf8("Thread '%1' got the Python GIL").arg(threadname);
 #endif
-
-    assert(PyThreadState_Get());
-#if PY_VERSION_HEX >= 0x030400F0
-    assert(PyGILState_Check()); // Not available prior to Python 3.4
-#endif
+    assert( PyGILState_Check() );
 }
 
 static bool
@@ -4713,13 +5158,30 @@ getGroupInfosInternal(const std::string& modulePath,
     }
 
     if (versionObj) {
-        *version = (unsigned int)PyLong_AsLong(versionObj);
+        long versionValue = PyLong_AsLong(versionObj);
+        const bool notAnInt = (versionValue == -1) && PyErr_Occurred();
+        if (notAnInt) {
+            // getVersion() returned something else than an int: PyLong_AsLong() set a Python error
+            PyErr_Clear();
+        }
+        if ( notAnInt || (versionValue < 0) || ( static_cast<unsigned long>(versionValue) > std::numeric_limits<unsigned int>::max() ) ) {
+            const QString logStr = QCoreApplication::translate("AppManager", "getVersion() does not return a valid version number: version 1 is used.");
+            appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( pythonModule.c_str() ), QDateTime::currentDateTime(), logStr);
+            versionValue = 1;
+        }
+        *version = static_cast<unsigned int>(versionValue);
         deleteScript.append("del version\n");
         Py_XDECREF(versionObj);
     }
 
-    if ( isToolsetObj && PyBool_Check(isToolsetObj) ) {
-        *isToolset = (isToolsetObj == Py_True) ? true : false;
+    *isToolset = false;
+    if (isToolsetObj) {
+        // getIsToolset() may return any object, not only a bool (e.g. 1 or None): its truth value (#1528)
+        const int isTrue = PyObject_IsTrue(isToolsetObj);
+        if (isTrue < 0) {
+            PyErr_Clear();
+        }
+        *isToolset = (isTrue > 0);
         deleteScript.append("del isToolset\n");
         Py_XDECREF(isToolsetObj);
     }
@@ -4835,8 +5297,8 @@ NATRON_PYTHON_NAMESPACE::getFunctionArguments(const std::string& pyFunc,
     ss << "import inspect\n";
     ss << "args_spec = inspect.getfullargspec(" << pyFunc << ")\n";
     std::string script = ss.str();
-    std::string output;
-    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, error, &output);
+    // no output: what the script writes is forwarded rather than dropped
+    bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, error, 0);
     if (!ok) {
         throw std::runtime_error("NATRON_PYTHON_NAMESPACE::getFunctionArguments(): interpretPythonScript(" + script + " failed!");
     }

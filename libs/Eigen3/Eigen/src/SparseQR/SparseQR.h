@@ -69,7 +69,7 @@ namespace internal {
   * detailed in the following paper:
   * <i>
   * Tim Davis, "Algorithm 915, SuiteSparseQR: Multifrontal Multithreaded Rank-Revealing
-  * Sparse QR Factorization, ACM Trans. on Math. Soft. 38(1), 2011.
+  * Sparse QR Factorization", ACM Trans. on Math. Soft. 38(1), 2011.
   * </i>
   * Even though it is qualified as "rank-revealing", this strategy might fail for some 
   * rank deficient problems. When this class is used to solve linear or least-square problems

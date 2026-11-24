@@ -560,6 +560,26 @@ OfxClipInstance::getContinuousSamples() const
     }
 }
 
+// see OfxClipInstance::InputRoDFailureScope
+static thread_local bool tInputRoDFailed = false;
+
+OfxClipInstance::InputRoDFailureScope::InputRoDFailureScope()
+    : _outerFailed(tInputRoDFailed)
+{
+    tInputRoDFailed = false;
+}
+
+OfxClipInstance::InputRoDFailureScope::~InputRoDFailureScope()
+{
+    tInputRoDFailed = _outerFailed;
+}
+
+bool
+OfxClipInstance::InputRoDFailureScope::failed() const
+{
+    return tInputRoDFailed;
+}
+
 void
 OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
                                                ViewIdx view,
@@ -605,6 +625,7 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
         const RenderScale scale = RenderScale::fromMipmapLevel(mipmapLevel);
         StatusEnum st = associatedNode->getRegionOfDefinition_public(nodeHash, time, scale, view, &rod, &isProjectFormat);
         if (st == eStatusFailed) {
+            tInputRoDFailed = true;
             ret->x1 = 0.;
             ret->x2 = 0.;
             ret->y1 = 0.;

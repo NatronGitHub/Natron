@@ -16,7 +16,7 @@ pkgver=0.${gitcommit}.${_osmesa}
 pkgrel=1
 pkgdesc="OSMesa, off-screen Mesa with the llvmpipe driver, and GLU (mingw-w64)"
 arch=('any')
-mingw_arch=('ucrt64')
+mingw_arch=('ucrt64' 'clangarm64')
 url="https://github.com/devernay/osmesa-install"
 license=('spdx:MIT' 'spdx:SGI-B-2.0')  # Mesa; GLU
 # OSMesa links MSYS2's static LLVM libraries, which must be the exact LLVM

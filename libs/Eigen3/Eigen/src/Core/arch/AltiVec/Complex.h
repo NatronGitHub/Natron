@@ -15,8 +15,10 @@ namespace Eigen {
 
 namespace internal {
 
-static Packet4ui  p4ui_CONJ_XOR = vec_mergeh((Packet4ui)p4i_ZERO, (Packet4ui)p4f_MZERO);//{ 0x00000000, 0x80000000, 0x00000000, 0x80000000 };
-#ifdef __VSX__
+inline Packet4ui  p4ui_CONJ_XOR() {
+  return vec_mergeh((Packet4ui)p4i_ZERO, (Packet4ui)p4f_MZERO);//{ 0x00000000, 0x80000000, 0x00000000, 0x80000000 };
+}
+#ifdef EIGEN_VECTORIZE_VSX
 #if defined(_BIG_ENDIAN)
 static Packet2ul  p2ul_CONJ_XOR1 = (Packet2ul) vec_sld((Packet4ui) p2d_MZERO, (Packet4ui) p2l_ZERO, 8);//{ 0x8000000000000000, 0x0000000000000000 };
 static Packet2ul  p2ul_CONJ_XOR2 = (Packet2ul) vec_sld((Packet4ui) p2l_ZERO,  (Packet4ui) p2d_MZERO, 8);//{ 0x8000000000000000, 0x0000000000000000 };
@@ -44,7 +46,7 @@ struct Packet2cf
     v1 = vec_madd(v1, b.v, p4f_ZERO);
     // multiply a_im * b and get the conjugate result
     v2 = vec_madd(v2, b.v, p4f_ZERO);
-    v2 = reinterpret_cast<Packet4f>(pxor(v2, reinterpret_cast<Packet4f>(p4ui_CONJ_XOR)));
+    v2 = reinterpret_cast<Packet4f>(pxor(v2, reinterpret_cast<Packet4f>(p4ui_CONJ_XOR())));
     // permute back to a proper order
     v2 = vec_perm(v2, v2, p16uc_COMPLEX32_REV);
 
@@ -100,7 +102,8 @@ template<> struct packet_traits<std::complex<float> >  : default_packet_traits
     HasAbs2   = 0,
     HasMin    = 0,
     HasMax    = 0,
-#ifdef __VSX__
+    HasSqrt   = 1,
+#ifdef EIGEN_VECTORIZE_VSX
     HasBlend  = 1,
 #endif
     HasSetLinear = 0
@@ -127,20 +130,20 @@ template<> EIGEN_STRONG_INLINE Packet2cf ploaddup<Packet2cf>(const std::complex<
 template<> EIGEN_STRONG_INLINE void pstore <std::complex<float> >(std::complex<float> *   to, const Packet2cf& from) { pstore((float*)to, from.v); }
 template<> EIGEN_STRONG_INLINE void pstoreu<std::complex<float> >(std::complex<float> *   to, const Packet2cf& from) { pstoreu((float*)to, from.v); }
 
-EIGEN_STRONG_INLINE Packet2cf pload2(const std::complex<float>* from0, const std::complex<float>* from1)
+EIGEN_STRONG_INLINE Packet2cf pload2(const std::complex<float>& from0, const std::complex<float>& from1)
 {
   Packet4f res0, res1;
-#ifdef __VSX__
-  __asm__ ("lxsdx %x0,%y1" : "=wa" (res0) : "Z" (*from0));
-  __asm__ ("lxsdx %x0,%y1" : "=wa" (res1) : "Z" (*from1));
+#ifdef EIGEN_VECTORIZE_VSX
+  __asm__ ("lxsdx %x0,%y1" : "=wa" (res0) : "Z" (from0));
+  __asm__ ("lxsdx %x0,%y1" : "=wa" (res1) : "Z" (from1));
 #ifdef _BIG_ENDIAN
   __asm__ ("xxpermdi %x0, %x1, %x2, 0" : "=wa" (res0) : "wa" (res0), "wa" (res1));
 #else
   __asm__ ("xxpermdi %x0, %x2, %x1, 0" : "=wa" (res0) : "wa" (res0), "wa" (res1));
 #endif
 #else
-  *reinterpret_cast<std::complex<float> *>(&res0) = *from0;
-  *reinterpret_cast<std::complex<float> *>(&res1) = *from1;
+  *reinterpret_cast<std::complex<float> *>(&res0) = from0;
+  *reinterpret_cast<std::complex<float> *>(&res1) = from1;
   res0 = vec_perm(res0, res1, p16uc_TRANSPOSE64_HI);
 #endif
   return Packet2cf(res0);
@@ -164,7 +167,7 @@ template<> EIGEN_DEVICE_FUNC inline void pscatter<std::complex<float>, Packet2cf
 template<> EIGEN_STRONG_INLINE Packet2cf padd<Packet2cf>(const Packet2cf& a, const Packet2cf& b) { return Packet2cf(a.v + b.v); }
 template<> EIGEN_STRONG_INLINE Packet2cf psub<Packet2cf>(const Packet2cf& a, const Packet2cf& b) { return Packet2cf(a.v - b.v); }
 template<> EIGEN_STRONG_INLINE Packet2cf pnegate(const Packet2cf& a) { return Packet2cf(pnegate(a.v)); }
-template<> EIGEN_STRONG_INLINE Packet2cf pconj(const Packet2cf& a) { return Packet2cf(pxor<Packet4f>(a.v, reinterpret_cast<Packet4f>(p4ui_CONJ_XOR))); }
+template<> EIGEN_STRONG_INLINE Packet2cf pconj(const Packet2cf& a) { return Packet2cf(pxor<Packet4f>(a.v, reinterpret_cast<Packet4f>(p4ui_CONJ_XOR()))); }
 
 template<> EIGEN_STRONG_INLINE Packet2cf pand   <Packet2cf>(const Packet2cf& a, const Packet2cf& b) { return Packet2cf(pand<Packet4f>(a.v, b.v)); }
 template<> EIGEN_STRONG_INLINE Packet2cf por    <Packet2cf>(const Packet2cf& a, const Packet2cf& b) { return Packet2cf(por<Packet4f>(a.v, b.v)); }
@@ -210,10 +213,7 @@ EIGEN_MAKE_CONJ_HELPER_CPLX_REAL(Packet2cf,Packet4f)
 
 template<> EIGEN_STRONG_INLINE Packet2cf pdiv<Packet2cf>(const Packet2cf& a, const Packet2cf& b)
 {
-  // TODO optimize it for AltiVec
-  Packet2cf res = pmul(a, pconj(b));
-  Packet4f s = pmul<Packet4f>(b.v, b.v);
-  return Packet2cf(pdiv(res.v, padd<Packet4f>(s, vec_perm(s, s, p16uc_COMPLEX32_REV))));
+  return pdiv_complex(a, b);
 }
 
 template<> EIGEN_STRONG_INLINE Packet2cf pcplxflip<Packet2cf>(const Packet2cf& x)
@@ -233,21 +233,21 @@ template<> EIGEN_STRONG_INLINE Packet2cf pcmp_eq(const Packet2cf& a, const Packe
   return Packet2cf(vec_and(eq, vec_perm(eq, eq, p16uc_COMPLEX32_REV)));
 }
 
-#ifdef __VSX__
+#ifdef EIGEN_VECTORIZE_VSX
 template<> EIGEN_STRONG_INLINE Packet2cf pblend(const Selector<2>& ifPacket, const Packet2cf& thenPacket, const Packet2cf& elsePacket) {
   Packet2cf result;
   result.v = reinterpret_cast<Packet4f>(pblend<Packet2d>(ifPacket, reinterpret_cast<Packet2d>(thenPacket.v), reinterpret_cast<Packet2d>(elsePacket.v)));
   return result;
 }
-#endif
 
 template<> EIGEN_STRONG_INLINE Packet2cf psqrt<Packet2cf>(const Packet2cf& a)
 {
   return psqrt_complex<Packet2cf>(a);
 }
+#endif
 
 //---------- double ----------
-#ifdef __VSX__
+#ifdef EIGEN_VECTORIZE_VSX
 struct Packet1cd
 {
   EIGEN_STRONG_INLINE Packet1cd() {}
@@ -320,6 +320,7 @@ template<> struct packet_traits<std::complex<double> >  : default_packet_traits
     HasAbs2   = 0,
     HasMin    = 0,
     HasMax    = 0,
+    HasSqrt   = 1,
     HasSetLinear = 0
   };
 };
@@ -375,10 +376,7 @@ EIGEN_MAKE_CONJ_HELPER_CPLX_REAL(Packet1cd,Packet2d)
 
 template<> EIGEN_STRONG_INLINE Packet1cd pdiv<Packet1cd>(const Packet1cd& a, const Packet1cd& b)
 {
-  // TODO optimize it for AltiVec
-  Packet1cd res = pmul(a,pconj(b));
-  Packet2d s = pmul<Packet2d>(b.v, b.v);
-  return Packet1cd(pdiv(res.v, padd<Packet2d>(s, vec_perm(s, s, p16uc_REVERSE64))));
+  return pdiv_complex(a, b);
 }
 
 EIGEN_STRONG_INLINE Packet1cd pcplxflip/*<Packet1cd>*/(const Packet1cd& x)
@@ -409,7 +407,7 @@ template<> EIGEN_STRONG_INLINE Packet1cd psqrt<Packet1cd>(const Packet1cd& a)
   return psqrt_complex<Packet1cd>(a);
 }
 
-#endif // __VSX__
+#endif // EIGEN_VECTORIZE_VSX
 } // end namespace internal
 
 } // end namespace Eigen

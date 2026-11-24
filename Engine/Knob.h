@@ -1771,6 +1771,9 @@ private:
 
     void expressionChanged(int dimension);
 
+    // getAllExpressionDependenciesRecursive(), following each parameter once: expressions may read each other in a cycle
+    void getAllExpressionDependenciesRecursiveInternal(std::set<NodePtr>& nodes, std::set<const KnobHelper*>& visitedKnobs) const;
+
     std::unique_ptr<KnobHelperPrivate> _imp;
 };
 
@@ -2093,7 +2096,7 @@ public:
     void getExpressionResults(int dim,
                               FrameValueMap& map)
     {
-        std::lock_guard<std::recursive_mutex> k(_valueMutex);
+        std::lock_guard<std::mutex> k(_exprResMutex);
 
         map = _exprRes[dim];
     }
@@ -2145,7 +2148,7 @@ private:
 
     virtual void clearExpressionsResults(int dimension) OVERRIDE FINAL
     {
-        std::lock_guard<std::recursive_mutex> k(_valueMutex);
+        std::lock_guard<std::mutex> k(_exprResMutex);
 
         _exprRes[dimension].clear();
         ++_exprResGeneration;
@@ -2251,8 +2254,13 @@ private:
         bool defaultValueSet;
     };
     std::vector<DefaultValue> _defaultValues;
+    // _exprRes and _exprResGeneration are protected by _exprResMutex, not _valueMutex: Curve calls
+    // clearExpressionsResults() with its own lock held, and the knob calls into its curves with
+    // _valueMutex held (e.g. dequeueValuesSet()), so taking _valueMutex there could deadlock (#1543).
+    // _exprResMutex is a leaf lock: nothing else is locked or called while it is held.
+    mutable std::mutex _exprResMutex;
     mutable ExprResults _exprRes;
-    // Incremented whenever _exprRes is cleared or replaced (protected by _valueMutex): a result computed
+    // Incremented whenever _exprRes is cleared or replaced: a result computed
     // from the values before that must not be stored (see getValueFromExpression())
     mutable unsigned int _exprResGeneration;
 
@@ -2589,6 +2597,40 @@ public:
                            ViewSpec view,
                            Natron::ValueChangedReasonEnum originalReason,
                            Natron::ValueChangedReasonEnum reason);
+
+    /**
+     * @brief The holders whose knob values changed while a ValueChangesRecorder existed.
+     **/
+    struct ValueChanges
+    {
+        // a knob that affects the render or the metadata changed (KnobI::getEvaluateOnChange(),
+        // KnobI::getIsMetadataSlave(), as in endChanges()): the node needs a new age and its metadata refreshed
+        std::set<KnobHolder*> significant;
+        // a saved knob changed (KnobI::getIsPersistent()): the values are not the ones of the project file
+        std::set<KnobHolder*> persistent;
+        // a saved knob that is animated got a static value only (no keyframe is set while a project is loading,
+        // see Knob<T>::setValue()): the effective value did not change, and the write is lost
+        std::set<KnobHolder*> animatedNotSet;
+    };
+
+    /**
+     * @brief While an object of this class exists, the holders whose knob values change on this thread
+     * (appendValueChange()) are added to the given ValueChanges. This includes the knobs that follow them
+     * through links and expressions, and the changes made while a project is loading, whose knob changed handlers
+     * are not called. NULL stops the recording until the object is destroyed, e.g. for a write that does not change
+     * the effective value of a knob. Objects nest.
+     **/
+    class ValueChangesRecorder
+    {
+        ValueChanges* _previous;
+
+    public:
+        explicit ValueChangesRecorder(ValueChanges* changes);
+        ~ValueChangesRecorder();
+
+        // the ValueChanges recorded on this thread, or NULL
+        static ValueChanges* current();
+    };
 
     bool isSetValueCurrentlyPossible() const;
 

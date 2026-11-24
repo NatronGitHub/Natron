@@ -819,7 +819,7 @@ KnobChoice::getActiveEntry()
         return _currentEntry;
     }
     int activeIndex = getValue();
-    if ( activeIndex < (int)_entries.size() ) {
+    if ( (activeIndex >= 0) && ( activeIndex < (int)_entries.size() ) ) {
         _currentEntry = _entries[activeIndex];
         return _entries[activeIndex];
     }
@@ -1110,7 +1110,7 @@ KnobChoice::choiceRestorationId(KnobChoice* knob,
     assert(knob);
 
     int serializedIndex = knob->getValue();
-    if ( ( serializedIndex < (int)_entries.size() ) && (_entries[serializedIndex].id == optionID) ) {
+    if ( (serializedIndex >= 0) && ( serializedIndex < (int)_entries.size() ) && (_entries[serializedIndex].id == optionID) ) {
         // we're lucky, entry hasn't changed
         return serializedIndex;
 
@@ -2690,6 +2690,48 @@ const std::string&
 KnobLayers::typeNameStatic()
 {
     return _typeNameStr;
+}
+
+KnobIPtr
+createKnobCopy(const KnobIPtr & originalKnob)
+{
+    const std::string & typeName = originalKnob->typeName();
+    KnobIPtr copy;
+    int dimension = originalKnob->getDimension();
+
+    if ( typeName == KnobInt::typeNameStatic() ) {
+        copy = std::make_shared<KnobInt>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobBool::typeNameStatic() ) {
+        copy = std::make_shared<KnobBool>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobDouble::typeNameStatic() ) {
+        copy = std::make_shared<KnobDouble>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobChoice::typeNameStatic() ) {
+        copy = std::make_shared<KnobChoice>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobString::typeNameStatic() ) {
+        copy = std::make_shared<KnobString>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobBytes::typeNameStatic() ) {
+        copy = std::make_shared<KnobBytes>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobParametric::typeNameStatic() ) {
+        copy = std::make_shared<KnobParametric>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobColor::typeNameStatic() ) {
+        copy = std::make_shared<KnobColor>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobPath::typeNameStatic() ) {
+        copy = std::make_shared<KnobPath>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobFile::typeNameStatic() ) {
+        copy = std::make_shared<KnobFile>((KnobHolder*)NULL, std::string(), dimension, false);
+    } else if ( typeName == KnobOutputFile::typeNameStatic() ) {
+        copy = std::make_shared<KnobOutputFile>((KnobHolder*)NULL, std::string(), dimension, false);
+    }
+
+    if (!copy) {
+        return KnobIPtr();
+    }
+    copy->populate();
+
+    ///make a clone of the original knob at that time and stash it
+    copy->clone(originalKnob);
+
+    return copy;
 }
 
 NATRON_NAMESPACE_EXIT

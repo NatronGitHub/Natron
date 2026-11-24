@@ -14,6 +14,7 @@ moc*.cpp
 # Build directories
 
 build
+/build-xcode/
 build32
 build64
 *build_*
@@ -207,6 +208,7 @@ Makefile
 *.gcno
 *.gcov
 Tests/Tests
+ofxPluginLog.txt
 ofxTestLog.txt
 test_dot_generator0.jpg
 Tests/Plugins
@@ -254,7 +256,6 @@ NatronCrashReporter.xcodeproj/
 NatronRenderer-bin.xcodeproj/
 NatronRenderer.xcodeproj/
 NatronRendererCrashReporter.xcodeproj/
-Project-xcode-breakpad.xcodeproj/
 Project.xcodeproj/
 PythonBin/natron-python
 Renderer/NatronRenderer
@@ -272,7 +273,7 @@ google-breakpad/
 libs/ceres/ceres.xcodeproj/
 libs/gflags/gflags.xcodeproj/
 libs/glog/glog.xcodeproj/
-libs/hoedown/hoedown.xcodeproj/
+libs/md4c/md4c.xcodeproj/
 libs/libmv/LibMV.xcodeproj/
 libs/libtess/libtess.xcodeproj/
 libs/libtess/tess.xcodeproj/

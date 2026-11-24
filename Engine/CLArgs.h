@@ -154,6 +154,11 @@ public:
 #endif
     const QString& getExportDocsPath() const;
 
+    /*
+     * @brief The GUI test script given with --test (empty if none).
+     */
+    const QString& getTestScript() const;
+
 private:
 
     std::unique_ptr<CLArgsPrivate> _imp;

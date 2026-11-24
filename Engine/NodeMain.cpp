@@ -766,12 +766,21 @@ Node::restoreKnobsLinks(const NodesList & allNodes,
 void
 Node::doDestroyNodeInternalEnd(bool autoReconnect)
 {
+    // The app may be gone when a destruction that waited for the renders to quit ends (see
+    // destroyNode()): the internal app of a Precomp node quits when the Precomp node is
+    // destroyed (#1501), and its project is gone with it. The node is then not removed from the
+    // project (deactivate() and the input changes it causes need the app and the project), but
+    // its renders, cache entries, Python variable and effect are still cleaned up below.
+    AppInstancePtr app = getApp();
+
     ///Remove the node from the project
-    deactivate(NodesList(),
-               true,
-               autoReconnect,
-               true,
-               false);
+    if (app) {
+        deactivate(NodesList(),
+                   true,
+                   autoReconnect,
+                   true,
+                   false);
+    }
 
 
     {
@@ -798,7 +807,6 @@ Node::doDestroyNodeInternalEnd(bool autoReconnect)
     ///This will not remove from the disk cache if the project is closing
     removeAllImagesFromCache(false);
 
-    AppInstancePtr app = getApp();
     if (app) {
         app->recheckInvalidExpressions();
     }

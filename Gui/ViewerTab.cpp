@@ -572,6 +572,10 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
     // Viewer
     _imp->viewer = new ViewerGL(this);
+    // stable names (PySide, stylesheets, GUI tests): the script name of the tab (the fully qualified
+    // name of the viewer node, with '_' for '.', as GuiApp.getTabWidget() uses it)
+    setObjectName( QString::fromUtf8( getScriptName().c_str() ) );
+    _imp->viewer->setObjectName( objectName() );
 
     // Init viewer to project format
     {
@@ -998,6 +1002,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
     /*frame seeker*/
     _imp->timeLineGui = new TimeLineGui(node, timeline, getGui(), this);
+    _imp->timeLineGui->setObjectName( QString::fromUtf8("TimeLine") );
     QObject::connect( _imp->timeLineGui, SIGNAL(boundariesChanged(SequenceTime,SequenceTime)),
                       this, SLOT(onTimelineBoundariesChanged(SequenceTime,SequenceTime)) );
     QObject::connect( gui->getApp()->getProject().get(), SIGNAL(frameRangeChanged(int,int)), _imp->timeLineGui, SLOT(onProjectFrameRangeChanged(int,int)) );

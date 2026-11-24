@@ -1,0 +1,96 @@
+--- a/mkspecs/common/g++-win32.conf
++++ b/mkspecs/common/g++-win32.conf
+@@ -61,7 +61,7 @@
+ QMAKE_EXTENSION_SHLIB   = dll
+ QMAKE_PREFIX_STATICLIB  = lib
+ QMAKE_EXTENSION_STATICLIB = a
+-QMAKE_LIB_EXTENSIONS    = a dll.a
++QMAKE_EXTENSION_IMPORTLIB = dll.a
+ 
+ PKG_CONFIG              = $${CROSS_COMPILE}pkg-config
+ QMAKE_PKG_CONFIG        = $${CROSS_COMPILE}pkg-config
+--- a/mkspecs/features/create_cmake.prf
++++ b/mkspecs/features/create_cmake.prf
+@@ -339,8 +339,14 @@ mac {
+         CMAKE_WINMAIN_FILE_LOCATION_DEBUG = libqtmain$${QT_LIBINFIX}$${debug_suffix}.a
+         CMAKE_WINMAIN_FILE_LOCATION_RELEASE = libqtmain$${QT_LIBINFIX}.a
+
+-        CMAKE_IMPLIB_FILE_LOCATION_DEBUG = lib$${CMAKE_QT_STEM}$${debug_suffix}.a
+-        CMAKE_IMPLIB_FILE_LOCATION_RELEASE = lib$${CMAKE_QT_STEM}.a
++        !isEmpty(CMAKE_STATIC_TYPE) {
++            CMAKE_IMPLIB_FILE_LOCATION_DEBUG = lib$${CMAKE_QT_STEM}$${debug_suffix}.a
++            CMAKE_IMPLIB_FILE_LOCATION_RELEASE = lib$${CMAKE_QT_STEM}.a
++        } else {
++            isEmpty(QMAKE_EXTENSION_IMPORTLIB): QMAKE_EXTENSION_IMPORTLIB = dll.a
++            CMAKE_IMPLIB_FILE_LOCATION_DEBUG = lib$${CMAKE_QT_STEM}$${debug_suffix}.$${QMAKE_EXTENSION_IMPORTLIB}
++            CMAKE_IMPLIB_FILE_LOCATION_RELEASE = lib$${CMAKE_QT_STEM}.$${QMAKE_EXTENSION_IMPORTLIB}
++        }
+     } else {
+         CMAKE_WINMAIN_FILE_LOCATION_DEBUG = qtmain$${QT_LIBINFIX}$${debug_suffix}.lib
+         CMAKE_WINMAIN_FILE_LOCATION_RELEASE = qtmain$${QT_LIBINFIX}.lib
+--- a/mkspecs/features/qt.prf
++++ b/mkspecs/features/qt.prf
+@@ -217,9 +217,13 @@
+             } else {
+                 candidates = $$MODULE_MODULE$$qtPlatformTargetSuffix()
+                 darwin: candidates *= $$MODULE_MODULE
+-                win32|contains(MODULE_CONFIG, staticlib) {
++                win32 {
+                     lib_prefix = $$MODULE_LIBS/$$QMAKE_PREFIX_STATICLIB
+-                    lib_suffix = $$QMAKE_EXTENSION_STATICLIB
++                    contains(MODULE_CONFIG, staticlib) {
++                        lib_suffix = $$QMAKE_EXTENSION_STATICLIB
++                    } else {
++                        lib_suffix = $$QMAKE_EXTENSION_IMPORTLIB
++                    }
+                     add_lib_to_pretargetdeps = true
+                 } else {
+                     lib_prefix = $$MODULE_LIBS/$$QMAKE_PREFIX_SHLIB
+--- a/qmake/generators/win32/winmakefile.cpp
++++ b/qmake/generators/win32/winmakefile.cpp
+@@ -99,10 +99,16 @@
+ bool
+ Win32MakefileGenerator::findLibraries(bool linkPrl, bool mergeLflags)
+ {
+-    ProStringList impexts = project->values("QMAKE_LIB_EXTENSIONS");
+-    if (impexts.isEmpty())
+-        impexts = project->values("QMAKE_EXTENSION_STATICLIB");
+-    QVector<LibrarySearchPath> dirs;
++    ProStringList impexts;
++    if (project->isActiveConfig("staticlib")) {
++        impexts.append(project->values("QMAKE_EXTENSION_STATICLIB"));
++    } else {
++        impexts.append(project->values("QMAKE_EXTENSION_IMPORTLIB"));
++        impexts.append(project->values("QMAKE_EXTENSION_STATICLIB"));
++    }
++    QVector<LibrarySearchPath> dirs;
++    QString qt_prefix_libs = project->propertyValue(ProKey("QT_INSTALL_LIBS")).toQString();
++    dirs.append(qt_prefix_libs);
+     int libidx = 0;
+     for (const ProString &dlib : project->values("QMAKE_DEFAULT_LIBDIRS"))
+         dirs.append(LibrarySearchPath(dlib.toQString(), true));
+@@ -283,9 +289,12 @@
+     if (!project->values("QMAKE_APP_FLAG").isEmpty()) {
+         project->values("TARGET_EXT").append(".exe");
+     } else if (project->isActiveConfig("shared")) {
++        ProString impext = project->first("QMAKE_EXTENSION_IMPORTLIB");
++        if (impext.isEmpty())
++          impext = project->first("QMAKE_PREFIX_STATICLIB");
+         project->values("LIB_TARGET").prepend(project->first("QMAKE_PREFIX_STATICLIB")
+                                               + project->first("TARGET") + project->first("TARGET_VERSION_EXT")
+-                                              + '.' + project->first("QMAKE_EXTENSION_STATICLIB"));
++                                              + '.' + impext);
+         project->values("TARGET_EXT").append(project->first("TARGET_VERSION_EXT") + "."
+                 + project->first("QMAKE_EXTENSION_SHLIB"));
+         project->values("TARGET").first() = project->first("QMAKE_PREFIX_SHLIB") + project->first("TARGET");
+--- a/src/corelib/global/qlibraryinfo.cpp
++++ b/src/corelib/global/qlibraryinfo.cpp
+@@ -598,7 +598,7 @@
+         const QLatin1Char slash('/');
+ #if defined(Q_CC_MINGW)
+         const QString implibPrefix = QStringLiteral("lib");
+-        const QString implibSuffix = QStringLiteral(".a");
++        const QString implibSuffix = QStringLiteral(".dll.a");
+ #else
+         const QString implibPrefix;
+         const QString implibSuffix = QStringLiteral(".lib");

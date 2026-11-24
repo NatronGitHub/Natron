@@ -2,11 +2,12 @@
 
 # Install libtheora
 # see http://www.linuxfromscratch.org/blfs/view/svn/multimedia/libtheora.html
-LIBTHEORA_VERSION=1.1.1
-LIBTHEORA_TAR="libtheora-${LIBTHEORA_VERSION}.tar.bz2"
-LIBTHEORA_SITE="http://downloads.xiph.org/releases/theora"
+LIBTHEORA_VERSION=1.2.0
+LIBTHEORA_TAR="libtheora-${LIBTHEORA_VERSION}.tar.xz"
+LIBTHEORA_SHA256=ebdf77a8f5c0a8f7a9e42323844fa09502b34eb1d1fece7b5f54da41fe2122ec
+LIBTHEORA_SITE="https://downloads.xiph.org/releases/theora"
 if download_step; then
-    download "$LIBTHEORA_SITE" "$LIBTHEORA_TAR"
+    download "$LIBTHEORA_SITE" "$LIBTHEORA_TAR" "$LIBTHEORA_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/theora.pc" ] || [ "$(pkg-config --modversion theora)" != "$LIBTHEORA_VERSION" ]; }; }; then
     start_build

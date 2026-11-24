@@ -2,11 +2,12 @@
 
 # Install nasm (for x264, lame, and others)
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/nasm.html
-NASM_VERSION=2.16.01
+NASM_VERSION=3.02
 NASM_TAR="nasm-${NASM_VERSION}.tar.gz"
-NASM_SITE="http://www.nasm.us/pub/nasm/releasebuilds/${NASM_VERSION}"
+NASM_SHA256=f504227b2f529e658d41629075f0503b38d67d790af345f34eba4af60c6a5998
+NASM_SITE="https://www.nasm.us/pub/nasm/releasebuilds/${NASM_VERSION}"
 if download_step; then
-    download "$NASM_SITE" "$NASM_TAR"
+    download "$NASM_SITE" "$NASM_TAR" "$NASM_SHA256"
 fi
 if build_step && { force_build || { [ ! -s "$SDK_HOME/bin/nasm" ]; }; }; then
     start_build

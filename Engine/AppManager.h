@@ -151,6 +151,24 @@ public:
 
     bool isLoaded() const;
 
+    /**
+     * @brief True when a GUI test script was given with --test: auto-saves are neither written nor
+     * restored, and the GUI test module answers the dialogs that the test expects.
+     **/
+    bool isTestMode() const;
+
+    /**
+     * @brief With --no-dialogs and in test mode (--test), the auto-saves that other sessions wrote (the
+     * user's crash recovery) are never overwritten nor removed (see Project::canRemoveAutoSave()).
+     **/
+    bool keepsOtherSessionsAutoSaves() const;
+
+
+    /**
+     * @brief True if a render of any project is running or queued (see AppInstance::hasRenderInProgress()).
+     **/
+    bool hasRenderInProgress() const;
+
     AppInstancePtr newAppInstance(const CLArgs& cl, bool makeEmptyInstance);
     AppInstancePtr newBackgroundInstance(const CLArgs& cl, bool makeEmptyInstance);
 
@@ -301,11 +319,6 @@ public:
      **/
     void quitNow(const AppInstancePtr& instance);
 
-    /*
-       @brief Calls quit() on all AppInstance's
-     */
-    void quitApplication();
-
     /**
      * @brief Starts the event loop and doesn't return until
      * quit() is called on all AppInstance's
@@ -334,6 +347,15 @@ public:
 
     /// The exit code given to requestQuit(), or 0
     int getRequestedExitCode() const;
+
+    /// Records that the render of a writer failed in background mode: see exitStatus().
+    /// The record is kept until the process exits. May be called from any thread.
+    void setBackgroundRenderFailed();
+
+    /// The exit status of a background process whose load() succeeded: getRequestedExitCode() if
+    /// requestQuit() was called or if it is not 0, else 1 if setBackgroundRenderFailed() was called,
+    /// else 0.
+    int exitStatus() const;
 
     /// True while the interactive Python interpreter of the -t option is running
     bool isPythonInterpreterRunning() const;
@@ -523,6 +545,17 @@ public:
 
     void registerCloseProjectsAtPythonExit();
 
+    /**
+     * @brief Called on the main thread at Python exit in the background modes that run scripts, once the projects
+     * are closed (see registerCloseProjectsAtPythonExit()): sys.exit() leaves through exit(), so ~AppManager never
+     * runs. Waits for the tasks of the global thread pool, saves the disk caches and unloads the OFX plug-ins
+     * (kOfxActionUnload), as ~AppManager does (#1557). Does nothing in ~AppManager.
+     **/
+    void cleanUpAtPythonExit();
+
+    /// Whether the OFX plug-ins were unloaded by cleanUpAtPythonExit(): no OFX effect may be created any more
+    bool areOFXPluginsUnloaded() const;
+
     void launchPythonInterpreter();
 
     int isProjectAlreadyOpened(const std::string& projectFilePath) const;
@@ -582,7 +615,9 @@ public:
     void setOnProjectLoadedCallback(const std::string& pythonFunc);
     void setOnProjectCreatedCallback(const std::string& pythonFunc);
 
-    void requestOFXDIalogOnMainThread(OfxImageEffectInstance* instance, void* instanceData);
+    /// Calls the effect's kOfxActionDialog on the main thread: at once on the main thread, else queued.
+    /// The queued call holds only a weak reference: it does nothing if the effect was destroyed meanwhile.
+    void requestOFXDIalogOnMainThread(const OfxEffectInstancePtr& effect, void* instanceData);
 
 
     ///Closes the application not saving any projects.
@@ -601,7 +636,7 @@ public:
 
     QString getCairoVersion() const;
 
-    QString getHoedownVersion() const;
+    QString getMd4cVersion() const;
 
     QString getCeresVersion() const;
 
@@ -700,8 +735,6 @@ public Q_SLOTS:
 
     void onCrashReporterNoLongerResponding();
 
-    void onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance, void* instanceData);
-
     void onShutDownSignalReceived();
 
 Q_SIGNALS:
@@ -709,9 +742,14 @@ Q_SIGNALS:
 
     void checkerboardSettingsChanged();
 
-    void s_requestOFXDialogOnMainThread(OfxImageEffectInstance* instance, void* instanceData);
-
 protected:
+
+    /// GUI: closes the active popup (menu) or modal dialog, one per call, as Cancel does; returns false if there is none
+    virtual bool closeModalWindows() { return false; }
+
+    /// Whether quitting now would delete the projects under code that uses them: Natron is loading, a nested event
+    /// loop runs (a modal dialog, a menu, a GUI test's waitIdle()), or a project is being saved
+    bool mustDeferQuit() const;
 
     virtual bool initGui(const CLArgs& cl);
     virtual void loadBuiltinNodePlugins(IOPluginsMap* readersMap,
@@ -755,6 +793,15 @@ private:
 
 
     virtual void afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args) OVERRIDE FINAL;
+
+    /// Quits the instance of args (QuitInstanceArgs), once its processing is over
+    void quitInstanceNow(const GenericWatcherCallerArgsPtr& args);
+
+    /// GUI mode: calls quitInstanceNow() from the event loop, not from a nested one
+    void queueAfterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args);
+
+    /// Termination signal: quits the application from the main event loop, once the modal windows are closed
+    void quitOnShutDownSignal();
 
     bool loadInternal(const CLArgs& cl);
 
@@ -855,9 +902,21 @@ PyObject* getMainModule();
  * @param error[out] If an error occurs, this will be set to the error printed by the Python interpreter. This argument may be passed NULL,
  * however in Gui sessions, the error will not be printed in the console so it will just ignore any Python error.
  * @param output[out] The string will contain any result printed by the script on stdout. This argument may be passed NULL
+ * @param globals The dictionary of the global variables of the script. If NULL, the dictionary of the __main__ module.
+ * @param locals The dictionary of the local variables of the script, where it stores the variables it assigns.
+ * If NULL, the same as globals. Pass a new dictionary to run a script that must not write into globals.
  * @returns True on success, false on failure.
  **/
-bool interpretPythonScript(const std::string& script, std::string* error, std::string* output);
+bool interpretPythonScript(const std::string& script, std::string* error, std::string* output,
+                           PyObject* globals = NULL, PyObject* locals = NULL);
+
+/**
+ * @brief Runs the content of a Python script file (e.g. init.py, or a script given on the command line) in the
+ * __main__ module, as interpretPythonScript() does: the success depends on the result of the script, not on what
+ * it or other code wrote to sys.stderr. Unlike interpretPythonScript(), sys.exit() in the script exits the
+ * process with its status (as PyRun_SimpleString() does), and error does not contain the script.
+ **/
+bool runPythonScriptFile(const std::string& script, std::string* error, std::string* output);
 
 
 //void compilePyScript(const std::string& script,PyObject** code);
@@ -908,17 +967,28 @@ public:
     PythonGILLocker();
 
     ~PythonGILLocker();
+
+    PythonGILLocker(const PythonGILLocker&) = delete;
+    PythonGILLocker& operator=(const PythonGILLocker&) = delete;
 };
 
 /**
  * @brief Small helper class to use as RAII to temporarily release the GIL (Global Interpreter Lock)
+ * while this thread waits for other threads that may run Python (renders, previews, trackers...).
+ * If this thread holds the GIL, it is released with PyEval_SaveThread() and taken again with
+ * PyEval_RestoreThread(). Otherwise (no Python, or a thread without the GIL), this does nothing.
+ * No Python API may be called while it exists, except through a PythonGILLocker.
  **/
 class PythonGILUnlocker
 {
+    PyThreadState* _state = nullptr; // nullptr if the GIL was not released
 public:
     PythonGILUnlocker();
 
     ~PythonGILUnlocker();
+
+    PythonGILUnlocker(const PythonGILUnlocker&) = delete;
+    PythonGILUnlocker& operator=(const PythonGILUnlocker&) = delete;
 };
 
 NATRON_NAMESPACE_EXIT

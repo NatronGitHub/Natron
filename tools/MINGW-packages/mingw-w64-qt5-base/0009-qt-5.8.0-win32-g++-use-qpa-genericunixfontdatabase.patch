@@ -1,0 +1,11 @@
+--- a/src/platformsupport/fontdatabases/fontdatabases.pro	2019-06-12 23:59:14.000000000 +0300
++++ b/src/platformsupport/fontdatabases/fontdatabases.pro	2019-06-15 15:14:20.763611800 +0300
+@@ -15,7 +15,7 @@
+     include($$PWD/freetype/freetype.pri)
+ }
+ 
+-unix {
++-unix|win32-g++|win32-clang-g++ {
+     include($$PWD/genericunix/genericunix.pri)
+     qtConfig(fontconfig) {
+         include($$PWD/fontconfig/fontconfig.pri)

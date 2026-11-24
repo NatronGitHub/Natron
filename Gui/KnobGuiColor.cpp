@@ -70,6 +70,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/GuiTest.h"
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/Label.h"
 #include "Gui/NewLayerDialog.h"
@@ -108,7 +109,7 @@ ColorPickerLabel::mousePressEvent(QMouseEvent*)
 void
 ColorPickerLabel::enterEvent(QtCompat::QEnterEvent*)
 {
-    QToolTip::showText( QCursor::pos(), toolTip() );
+    QToolTip::showText( GuiTest::cursorPos(), toolTip() );
 }
 
 void

@@ -2,14 +2,15 @@
 
 # Install libxml2
 # see http://www.linuxfromscratch.org/blfs/view/svn/general/libxml2.html
-LIBXML2_VERSION=2.10.4
+LIBXML2_VERSION=2.15.4
 LIBXML2_VERSION_SHORT=${LIBXML2_VERSION%.*}
 
 LIBXML2_TAR="libxml2-${LIBXML2_VERSION}.tar.xz"
+LIBXML2_SHA256=98087fd181d9070724f3fbc65c7377db03038eb92bd882374daff44940138821
 LIBXML2_SITE="https://download.gnome.org/sources/libxml2/${LIBXML2_VERSION_SHORT}"
 LIBXML2_ICU=1 # set to 1 if libxml2 should be compiled with ICU support. This implies things for Qt4 and QtWebkit.
 if download_step; then
-    download "$LIBXML2_SITE" "$LIBXML2_TAR"
+    download "$LIBXML2_SITE" "$LIBXML2_TAR" "$LIBXML2_SHA256"
 fi
 if build_step && { force_build || { [ "${REBUILD_XML:-}" = "1" ]; }; }; then
     rm -rf "$SDK_HOME"/include/libxml2 "$SDK_HOME"/lib/libxml* "$SDK_HOME"/lib/pkgconfig/libxml* || true
@@ -35,8 +36,13 @@ if build_step && { force_build || { [ ! -s "$SDK_HOME/lib/pkgconfig/libxml-2.0.p
     if [ "${ICU_VERSION:-}" = 68.1 ] || [ "${ICU_VERSION:-}" = 68.2 ]; then
         $GSED -i 's/ TRUE/ true/' encoding.c
     fi
+    # The Python bindings of libxml2 >= 2.14 are generated from the doxygen XML docs. EL9's
+    # doxygen 1.9.1 has no -q option.
+    if [ -f doc/Makefile.in ]; then
+        $GSED -i 's/$(DOXYGEN) -q /$(DOXYGEN) /' doc/Makefile.in
+    fi
     # note: python3 module is necessary for itstool
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-static --enable-shared --with-history $icu_flag PYTHON="$SDK_HOME/bin/python3" --with-lzma --with-threads
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$SDK_HOME" --disable-docs --disable-static --enable-shared --with-history $icu_flag --with-python PYTHON="$SDK_HOME/bin/python3" --with-lzma --with-threads
     make -j${MKJOBS}
     make install
     popd

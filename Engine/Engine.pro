@@ -29,7 +29,7 @@ ENGINE_WRAPPER_DIR = Qt$${QT_MAJOR_VERSION}/NatronEngine
 CONFIG += expat
 
 
-CONFIG += libmv-flags openmvg-flags glad-flags libtess-flags
+CONFIG += libmv-flags openmvg-flags glad-flags libtess-flags md4c-flags
 
 include(../global.pri)
 
@@ -55,9 +55,6 @@ DEPENDPATH  += $$PWD/../libs/OpenFX/HostSupport/include
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../Global
 INCLUDEPATH += $$PWD/../libs/SequenceParsing
-
-# hoedown
-INCLUDEPATH += $$PWD/../libs/hoedown/src
 
 #To overcome wrongly generated #include <...> by shiboken
 INCLUDEPATH += $$PWD
@@ -98,6 +95,7 @@ SOURCES += \
     GPUContextPool.cpp \
     GenericSchedulerThread.cpp \
     GenericSchedulerThreadWatcher.cpp \
+    GraphDepthGuard.cpp \
     GroupInput.cpp \
     GroupOutput.cpp \
     Hash64.cpp \
@@ -156,6 +154,7 @@ SOURCES += \
     ParallelRenderArgs.cpp \
     Plugin.cpp \
     PluginMemory.cpp \
+    PortableBinaryArchive.cpp \
     PrecompNode.cpp \
     ProcessHandler.cpp \
     Project.cpp \
@@ -168,6 +167,7 @@ SOURCES += \
     PyParameter.cpp \
     PyRoto.cpp \
     PyTracker.cpp \
+    PythonUndoGroup.cpp \
     ReadNode.cpp \
     RectD.cpp \
     RectI.cpp \
@@ -259,6 +259,7 @@ HEADERS += \
     GPUContextPool.h \
     GenericSchedulerThread.h \
     GenericSchedulerThreadWatcher.h \
+    GraphDepthGuard.h \
     GroupInput.h \
     GroupOutput.h \
     Hash64.h \
@@ -324,6 +325,7 @@ HEADERS += \
     Plugin.h \
     PluginActionShortcut.h \
     PluginMemory.h \
+    PortableBinaryArchive.h \
     PrecompNode.h \
     ProcessHandler.h \
     Project.h \
@@ -337,6 +339,7 @@ HEADERS += \
     PyParameter.h \
     PyRoto.h \
     PyTracker.h \
+    PythonUndoGroup.h \
     ReadNode.h \
     RectD.h \
     RectDSerialization.h \
@@ -479,6 +482,7 @@ ENGINE_GENERATED_SOURCES = \
     stringparambase_wrapper \
     track_wrapper \
     tracker_wrapper \
+    undogroup_wrapper \
     userparamholder_wrapper \
 
 # bundled third-party code and generated bindings: see warnings.pri

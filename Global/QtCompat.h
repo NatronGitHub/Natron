@@ -24,6 +24,7 @@
 #include <QtGlobal> // for Q_OS_*
 #include <QMutex>
 #include <QRecursiveMutex>
+#include <Qt> // Qt::Modifier, Qt::Key
 #include <QString>
 #include <QUrl>
 #include <QFileInfo>
@@ -33,6 +34,28 @@
 // Gui ever needs the definition and Engine does not link QtGui, so forward
 // declare it the way EngineFwd.h handles the rest of Qt.
 class QEnterEvent;
+
+// Key combinations such as Qt::CTRL | Qt::Key_X.
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+// Qt6 declares operator|(Qt::Modifier, Qt::Key) itself, returning a QKeyCombination.
+#elif QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+// Qt5 has no such operator, so Qt::CTRL | Qt::Key_X is a bitwise operation
+// between two different enumeration types: deprecated since C++20, ill-formed
+// in C++26 (P2864R2). This one gives the same int as the built-in operator,
+// which QKeySequence and QAction::setShortcut take. It is in namespace Qt, as
+// Qt6's is, so that argument-dependent lookup finds it from any namespace.
+// Qt::CTRL | Qt::ALT | Qt::Key_X needs nothing: Qt::CTRL | Qt::ALT is an int.
+namespace Qt {
+constexpr int
+operator|(Qt::Modifier modifier,
+          Qt::Key key) noexcept
+{
+    return int(modifier) | int(key);
+}
+} // namespace Qt
+#else
+#error "Unsupported version of QT"
+#endif
 
 NATRON_NAMESPACE_ENTER
 

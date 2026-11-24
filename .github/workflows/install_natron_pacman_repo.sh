@@ -19,7 +19,12 @@ fi
 cd ${NATRON_REPO_DIR}
 
 WINDOWS_PACMAN_REPO_VERSION=`cat ${NATRON_DIR}/tools/MINGW-packages/windows_pacman_repo_version.txt`
-ZIP_FILENAME="natron_package_repo-${WINDOWS_PACMAN_REPO_VERSION}.zip"
+# One repository per MSYS2 environment: the UCRT64 one keeps its original name.
+if [[ "${MSYSTEM}" == "UCRT64" ]]; then
+    ZIP_FILENAME="natron_package_repo-${WINDOWS_PACMAN_REPO_VERSION}.zip"
+else
+    ZIP_FILENAME="natron_package_repo-${MSYSTEM,,}-${WINDOWS_PACMAN_REPO_VERSION}.zip"
+fi
 
 # Try the repository the build is running from before upstream, so a fork that
 # has rebuilt the packages can publish them on its own release instead of being
@@ -34,6 +39,12 @@ fi
 if [[ "${REPO_URLS[0]:-}" != "${UPSTREAM_REPO_URL}" ]]; then
     REPO_URLS+=("${UPSTREAM_REPO_URL}")
 fi
+# A repository that is already there (e.g. the artifact of a "Build pacman repo" run, downloaded by
+# build_installer.yml) is used as is.
+if [[ -e "${NATRON_REPO_DIR}/natron.db.tar.gz" ]]; then
+    echo "Using the package repository already in ${NATRON_REPO_DIR}"
+    REPO_URLS=()
+fi
 for repo_url in "${REPO_URLS[@]}"; do
     echo "Trying ${repo_url}/${REPO_RELEASE_PATH}"
     # -O always writes to ${ZIP_FILENAME} (never ${ZIP_FILENAME}.1). wget leaves
@@ -46,8 +57,14 @@ for repo_url in "${REPO_URLS[@]}"; do
     rm -f "${ZIP_FILENAME}"
 done
 
-if [[ -e ${ZIP_FILENAME} ]]; then
+if [[ -e "${NATRON_REPO_DIR}/natron.db.tar.gz" && ! -e ${ZIP_FILENAME} ]]; then
+    :
+elif [[ -e ${ZIP_FILENAME} ]]; then
     unzip ${ZIP_FILENAME}
+elif [[ "${NATRON_REPO_NO_LOCAL_BUILD:-}" == "1" ]]; then
+    # (build_installer.yml: building the whole repository takes hours, and needs Inno Setup)
+    echo "::error::${ZIP_FILENAME} is not on the windows-mingw-package-repo release: publish it, or run the workflow with pacman_repo_run_id set to a \"Build pacman repo\" run of version ${WINDOWS_PACMAN_REPO_VERSION}"
+    exit 1
 else
     echo "Failed to fetch ${ZIP_FILENAME}"
 

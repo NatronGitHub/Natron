@@ -62,6 +62,7 @@
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/GuiTest.h"
 #include "Gui/Histogram.h"
 #include "Gui/KnobGui.h"
 #include "Gui/Menu.h"
@@ -2762,7 +2763,7 @@ void
 DopeSheetView::getCursorPosition(double& x,
                                  double& y) const
 {
-    QPoint p = QCursor::pos();
+    QPoint p = GuiTest::cursorPos();
 
     p = mapFromGlobal(p);
     QPointF mappedPos = _imp->zoomContext.toZoomCoordinates( p.x(), p.y() );

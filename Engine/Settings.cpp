@@ -87,6 +87,8 @@ Settings::Settings()
 {
 }
 
+// The folders where the OpenColorIO configs are searched, in order of preference: the bundled
+// ones (next to the binary) come first, so that a system-wide folder doesn't override them.
 static QStringList
 getDefaultOcioConfigPaths()
 {
@@ -95,9 +97,9 @@ getDefaultOcioConfigPaths()
 
 #ifdef __NATRON_LINUX__
     QStringList ret;
-    ret.push_back( QString::fromUtf8("/usr/share/OpenColorIO-Configs") );
-    ret.push_back( QString( binaryPath + QString::fromUtf8("../share/OpenColorIO-Configs") ) );
     ret.push_back( QString( binaryPath + QString::fromUtf8("../Resources/OpenColorIO-Configs") ) );
+    ret.push_back( QString( binaryPath + QString::fromUtf8("../share/OpenColorIO-Configs") ) );
+    ret.push_back( QString::fromUtf8("/usr/share/OpenColorIO-Configs") );
 
     return ret;
 #elif defined(__NATRON_WIN32__)
@@ -107,6 +109,21 @@ getDefaultOcioConfigPaths()
 
     return QStringList( QString( binaryPath + QString::fromUtf8("../Resources/OpenColorIO-Configs") ) );
 #endif
+}
+
+// The OpenColorIO configs folder: the first existing one of getDefaultOcioConfigPaths(), or an
+// empty string if there is none. The preference menu lists its configs, and the selected one is
+// loaded from it (#1266).
+static QString
+getDefaultOcioConfigsDir()
+{
+    Q_FOREACH(const QString &dir, getDefaultOcioConfigPaths()) {
+        if ( QDir(dir).exists() ) {
+            return dir;
+        }
+    }
+
+    return QString();
 }
 
 void
@@ -206,6 +223,16 @@ Settings::initializeKnobsGeneral()
                                       "you will have three versions of your file: *.ntp (last saved), *.ntp.~1~ (second "
                                       "last saved), *.~2~ (third last saved).") );
     _generalTab->addKnob(_saveVersions);
+
+    _saveAsBinary = AppManager::createKnob<KnobBool>( this, tr("Save projects as binary by default") );
+    _saveAsBinary->setName("saveAsBinary");
+    _saveAsBinary->setHintToolTip( tr("The format of new projects, when they are saved for the first time. "
+                                      "Binary projects are faster to save and to parse, and smaller, but can only be opened by %1 2.6 and later. "
+                                      "Text (XML) projects can also be opened by %1 2.5 and earlier, and are human-readable and diffable.\n"
+                                      "A project keeps its format: a project opened from a text file is saved as text, and a binary project as binary. "
+                                      "\"Save As...\" can change the format of a project.\n"
+                                      "Auto-saves are always binary, but a project restored from an auto-save is saved in its original format.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+    _generalTab->addKnob(_saveAsBinary);
 
     _hostName = AppManager::createKnob<KnobChoice>( this, tr("Appear to plug-ins as") );
     _hostName->setName("pluginHostName");
@@ -649,20 +676,14 @@ Settings::initializeKnobsColorManagement()
 
     std::vector<ChoiceOption> configs;
     int defaultIndex = 0;
-    QStringList defaultOcioConfigsPaths = getDefaultOcioConfigPaths();
-    Q_FOREACH(const QString &defaultOcioConfigsDir, defaultOcioConfigsPaths) {
-        QDir ocioConfigsDir(defaultOcioConfigsDir);
-
-        if ( ocioConfigsDir.exists() ) {
-            QStringList entries = ocioConfigsDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
-            for (int j = 0; j < entries.size(); ++j) {
-                if ( entries[j] == QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ) {
-                    defaultIndex = j;
-                }
-                configs.push_back(ChoiceOption( entries[j].toStdString() ));
+    const QString defaultOcioConfigsDir = getDefaultOcioConfigsDir();
+    if ( !defaultOcioConfigsDir.isEmpty() ) {
+        QStringList entries = QDir(defaultOcioConfigsDir).entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
+        for (int j = 0; j < entries.size(); ++j) {
+            if ( entries[j] == QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ) {
+                defaultIndex = j;
             }
-
-            break; //if we found 1 OpenColorIO-Configs directory, skip the next
+            configs.push_back(ChoiceOption( entries[j].toStdString() ));
         }
     }
     configs.push_back(ChoiceOption(NATRON_CUSTOM_OCIO_CONFIG_NAME));
@@ -1236,7 +1257,8 @@ Settings::initializeKnobsNodeGraph()
     _useInputAForMergeAutoConnect->setName("mergeConnectToA");
     _useInputAForMergeAutoConnect->setHintToolTip( tr("If checked, upon creation of a new Merge node, or any other node with inputs named "
                                                       "A and B, input A is be preferred "
-                                                      "for auto-connection. When the node is disabled, B is always output, whether this is checked or not.") );
+                                                      "for auto-connection. Shuffle ignores this setting: it connects the input it outputs by default (B). "
+                                                      "When the node is disabled, B is always output, whether this is checked or not.") );
     _nodegraphTab->addKnob(_useInputAForMergeAutoConnect);
 } // Settings::initializeKnobsNodeGraph
 
@@ -1492,6 +1514,7 @@ Settings::setDefaultValues()
     _autoSaveUnSavedProjects->setDefaultValue(true);
     _autoSaveDelay->setDefaultValue(5, 0);
     _saveVersions->setDefaultValue(1);
+    _saveAsBinary->setDefaultValue(true);
     _hostName->setDefaultValue(0);
     _customHostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
 
@@ -1846,9 +1869,23 @@ Settings::saveAllSettings()
     saveSettings(k, false, true);
 }
 
+// The Enabled flag of a deprecated plug-in has its own key: a plug-in that becomes deprecated is disabled
+// by default (Plugin::isActivated()), even if it was saved as enabled before, and the user may enable it (#171)
+static QString
+pluginEnabledKey(const Plugin* plugin,
+                 const QString& pluginIDKey)
+{
+    return pluginIDKey + QString::fromUtf8( plugin->getIsDeprecated() ? "_deprecated_enabled" : "_enabled" );
+}
+
 void
 Settings::restorePluginSettings()
 {
+    if ( isUsingDefaultSettings() ) {
+        // --no-settings (and --test, which implies it): the plug-ins keep their defaults, and the
+        // user's plug-in preferences are neither read nor written
+        return;
+    }
     const PluginsMap& plugins = appPTR->getPluginsList();
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
@@ -1869,7 +1906,7 @@ Settings::restorePluginSettings()
 
             {
                 QString pluginIDKey = plugin->getPluginID() + QString::fromUtf8("_") + QString::number( plugin->getMajorVersion() ) + QString::fromUtf8("_") + QString::number( plugin->getMinorVersion() );
-                QString enabledKey = pluginIDKey + QString::fromUtf8("_enabled");
+                QString enabledKey = pluginEnabledKey(plugin, pluginIDKey);
                 if ( settings.contains(enabledKey) ) {
                     bool enabled = settings.value(enabledKey).toBool();
                     plugin->setActivated(enabled);
@@ -1920,7 +1957,7 @@ Settings::savePluginsSettings()
             assert(plugin);
 
             QString pluginID = plugin->getPluginID() + QString::fromUtf8("_") + QString::number( plugin->getMajorVersion() ) + QString::fromUtf8("_") + QString::number( plugin->getMinorVersion() );
-            QString enabledKey = pluginID + QString::fromUtf8("_enabled");
+            QString enabledKey = pluginEnabledKey(plugin, pluginID);
             settings.setValue( enabledKey, plugin->isActivated() );
 
             QString rsKey = pluginID + QString::fromUtf8("_rs");
@@ -2229,15 +2266,13 @@ Settings::tryLoadOpenColorIOConfig()
             ///try to load from the combobox
             QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntry().id.c_str() );
             QString configFileName = QString( activeEntryText + QString::fromUtf8(".ocio") );
-            QStringList defaultConfigsPaths = getDefaultOcioConfigPaths();
-            Q_FOREACH(const QString &defaultConfigsDirStr, defaultConfigsPaths) {
+            // the folder whose configs the menu lists
+            const QString defaultConfigsDirStr = getDefaultOcioConfigsDir();
+            if ( defaultConfigsDirStr.isEmpty() ) {
+                qDebug() << "Attempt to read an OpenColorIO configuration but none of the configuration directories"
+                         << getDefaultOcioConfigPaths() << "exists.";
+            } else {
                 QDir defaultConfigsDir(defaultConfigsDirStr);
-
-                if ( !defaultConfigsDir.exists() ) {
-                    qDebug() << "Attempt to read an OpenColorIO configuration but the configuration directory"
-                             << defaultConfigsDirStr << "does not exist.";
-                    continue;
-                }
                 ///try to open the .ocio config file first in the defaultConfigsDir
                 ///if we can't find it, try to look in a subdirectory with the name of the config for the file config.ocio
                 if ( !defaultConfigsDir.exists(configFileName) ) {
@@ -2366,15 +2401,8 @@ Settings::onKnobValueChanged(KnobI* k,
     } else if ( k == _customOcioConfigFile.get() ) {
         if ( _customOcioConfigFile->isEnabled(0) ) {
             tryLoadOpenColorIOConfig();
-            bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
-            if ( warnOcioChanged && appPTR->getTopLevelInstance() ) {
-                bool stopAsking = false;
-                Dialogs::warningDialog(tr("OCIO config changed").toStdString(),
-                                       tr("The OpenColorIO config change requires a restart of %1 to be effective.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), &stopAsking);
-                if (stopAsking) {
-                    _warnOcioConfigKnobChanged->setValue(false);
-                }
-            }
+            // No "requires a restart" warning here: the file is not saved yet, and restarting now
+            // would lose it (#841). warnChangedKnobs() gives it when the preferences are saved.
         }
     } else if ( k == _maxUndoRedoNodeGraph.get() ) {
         appPTR->setUndoRedoStackLimit( _maxUndoRedoNodeGraph->getValue() );
@@ -2959,6 +2987,12 @@ Settings::saveVersions() const
     return _saveVersions->getValue();
 }
 
+bool
+Settings::saveAsBinary() const
+{
+    return _saveAsBinary->getValue();
+}
+
 
 bool
 Settings::isSnapToNodeEnabled() const
@@ -3442,6 +3476,9 @@ void
 Settings::appendPythonGroupsPath(const std::string& path)
 {
     _templatesPluginPaths->appendPath(path);
+    if ( isUsingDefaultSettings() ) {
+        return; // --no-settings (and --test): the path is not saved in the user's preferences
+    }
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
     settings.setValue( QString::fromUtf8( _templatesPluginPaths->getName().c_str() ), QVariant( QString::fromUtf8( _templatesPluginPaths->getValue(0).c_str() ) ) );
 }

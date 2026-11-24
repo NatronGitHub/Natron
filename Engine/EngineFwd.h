@@ -206,6 +206,7 @@ class NodeGuiI;
 class NodeMetadata;
 class NodeRenderWatcher;
 class NodeSerialization;
+struct NodesRestoreStatus;
 class NodeSettingsPanel;
 class OSGLContext;
 class OSGLContextAttacher;
@@ -229,6 +230,8 @@ class ParallelRenderArgsSetter;
 class Plugin;
 class PluginGroupNode;
 class PluginMemory;
+class PortableBinaryIArchive;
+class PortableBinaryOArchive;
 class PrecompNode;
 class ProcessHandler;
 class ProcessInputChannel;
@@ -323,6 +326,7 @@ class SeparatorParam;
 class StringParam;
 class Track;
 class Tracker;
+class UndoGroup;
 class UserParamHolder;
 
 NATRON_PYTHON_NAMESPACE_EXIT

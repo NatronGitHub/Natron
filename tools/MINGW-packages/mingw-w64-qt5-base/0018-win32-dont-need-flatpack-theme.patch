@@ -1,0 +1,10 @@
+--- a/src/plugins/platformthemes/platformthemes.pro	2019-06-12 23:59:14.000000000 +0300
++++ b/src/plugins/platformthemes/platformthemes.pro	2019-06-15 16:08:52.312758200 +0300
+@@ -1,6 +1,6 @@
+ TEMPLATE = subdirs
+ QT_FOR_CONFIG += widgets-private
+ 
+-qtConfig(dbus):qtConfig(regularexpression):qtConfig(mimetype): SUBDIRS += xdgdesktopportal
++qtConfig(dbus):qtConfig(regularexpression):qtConfig(mimetype):!win32: SUBDIRS += xdgdesktopportal
+ 
+ qtHaveModule(widgets):qtConfig(gtk3): SUBDIRS += gtk3

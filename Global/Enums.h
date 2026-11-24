@@ -70,7 +70,7 @@ enum StatusEnum
 enum StandardButtonEnum
 {
     eStandardButtonNoButton           = 0x00000000,
-    eStandardButtonEscape             = 0x00000200,            // obsolete
+    eStandardButtonEscape             = 0x00000200,            // obsolete as a button; also the reply of a question closed without a button
     eStandardButtonOk                 = 0x00000400,
     eStandardButtonSave               = 0x00000800,
     eStandardButtonSaveAll            = 0x00001000,
@@ -452,6 +452,15 @@ enum ImageBitDepthEnum
     eImageBitDepthShort,
     eImageBitDepthHalf,
     eImageBitDepthFloat
+};
+
+// The format of a project file. Both use the .ntp extension: the format is detected from the
+// first bytes of the file (see Project::detectFileFormat()).
+enum ProjectFileFormatEnum
+{
+    eProjectFileFormatNone = -1, // no format yet (a new project, never saved), or not a project file
+    eProjectFileFormatText = 0, // XML text: readable, diffable, and compatible with Natron 2.5 and earlier
+    eProjectFileFormatBinary = 1, // portable binary (see PortableBinaryArchive.h): faster and smaller, Natron 2.6 and later
 };
 
 enum SequentialPreferenceEnum

@@ -54,6 +54,7 @@
 #include "Gui/FloatingWidget.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiPrivate.h"
+#include "Gui/GuiTest.h"
 #include "Gui/Histogram.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/ProgressPanel.h"
@@ -109,7 +110,7 @@ Gui::setupUi()
     _imp->_toolBox->setMaximumWidth( TO_DPIX(NATRON_TOOL_BUTTON_SIZE) );
 
     if (_imp->leftToolBarDisplayedOnHoverOnly) {
-        _imp->refreshLeftToolBarVisibility( mapFromGlobal( QCursor::pos() ) );
+        _imp->refreshLeftToolBarVisibility( mapFromGlobal( GuiTest::cursorPos() ) );
     }
 
     _imp->_leftRightSplitter->addWidget(_imp->_toolBox);
@@ -232,7 +233,9 @@ Gui::createGroupGui(const NodePtr & group,
     QGraphicsScene* scene = new QGraphicsScene(this);
     scene->setItemIndexMethod(QGraphicsScene::NoIndex);
     NodeGraph* nodeGraph = new NodeGraph(this, collection, scene, this);
-    nodeGraph->setObjectName( QString::fromUtf8( group->getLabel().c_str() ) );
+    // stable name (PySide, stylesheets, GUI tests): the fully qualified name of the group, updated when it
+    // is renamed (NodeGui)
+    nodeGraph->setObjectName( QString::fromUtf8( group->getFullyQualifiedName().c_str() ) );
     _imp->_groups.push_back(nodeGraph);
     
     NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);

@@ -2123,6 +2123,7 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
 
         KnobChoicePtr channel = AppManager::createKnob<KnobChoice>(_imp->effect.get(), std::string(), 1, false);
         // By default if connected it should be filled with None, Color.R, Color.G, Color.B, Color.A (@see refreshChannelSelectors)
+        // (Color.A of an RGBA menu; for other menus, refreshChannelSelectors() selects Color.A by ID, #1685)
         channel->setDefaultValue(4);
         channel->setAnimationEnabled(false);
         channel->setHintToolTip( tr("Use this channel from the original input to mix the output with the original input. "
@@ -3092,13 +3093,18 @@ Node::deactivate(const std::list<NodePtr> & outputsToDisconnect,
     }
 
 
-    ///If the node is a group, deactivate all nodes within the group
+    ///If the node is a group, deactivate all nodes within the group. The nodes already deactivated
+    ///(deleted by the user, but kept for undo) are not remembered, so that activate() leaves them deactivated.
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
     if (isGrp) {
         isGrp->setIsDeactivatingGroup(true);
+        _imp->nodesDeactivatedWithGroup.clear();
         NodesList nodes = isGrp->getNodes();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->deactivate(std::list<NodePtr>(), false, false, true, false);
+            if ( (*it)->isActivated() ) {
+                _imp->nodesDeactivatedWithGroup.push_back(*it);
+                (*it)->deactivate(std::list<NodePtr>(), false, false, true, false);
+            }
         }
         isGrp->setIsDeactivatingGroup(false);
     }
@@ -3115,6 +3121,15 @@ Node::deactivate(const std::list<NodePtr> & outputsToDisconnect,
     }
 
     deleteNodeVariableToPython( getFullyQualifiedName() );
+
+    // A deleted node of a single-instance OFX plug-in doesn't keep its plug-in instance while it is
+    // in the undo history (it is created again by activate()).
+    if (!beingDestroyed) {
+        OfxEffectInstance* isOfx = dynamic_cast<OfxEffectInstance*>( _imp->effect.get() );
+        if (isOfx) {
+            isOfx->suspendSingleInstance();
+        }
+    }
 } // deactivate
 
 void
@@ -3128,6 +3143,12 @@ Node::activate(const std::list<NodePtr> & outputsToRestore,
         return;
     }
 
+    // Create the plug-in instance of a single-instance OFX plug-in again (see deactivate()), before
+    // the inputs and outputs are restored.
+    OfxEffectInstance* isOfx = dynamic_cast<OfxEffectInstance*>( _imp->effect.get() );
+    if (isOfx) {
+        isOfx->resumeSingleInstance();
+    }
 
     ///No need to lock, guiInputs is only written to by the main-thread
     NodePtr thisShared = shared_from_this();
@@ -3204,13 +3225,17 @@ Node::activate(const std::list<NodePtr> & outputsToRestore,
     getApp()->recheckInvalidExpressions();
 
 
-    ///If the node is a group, activate all nodes within the group first
+    ///If the node is a group, activate the nodes within the group that deactivate() deactivated with it
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
     if (isGrp) {
         isGrp->setIsActivatingGroup(true);
-        NodesList nodes = isGrp->getNodes();
-        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->activate(std::list<NodePtr>(), false, false);
+        NodesWList nodes;
+        nodes.swap(_imp->nodesDeactivatedWithGroup);
+        for (NodesWList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            NodePtr node = it->lock();
+            if (node) {
+                node->activate(std::list<NodePtr>(), false, false);
+            }
         }
         isGrp->setIsActivatingGroup(false);
     }
@@ -4593,24 +4618,6 @@ Node::unlock(const ImagePtr & image)
     _imp->imagesBeingRendered.erase(it);
     ///Notify all waiting threads that we're finished
     _imp->imagesBeingRenderedCond.wakeAll();
-}
-
-ImagePtr
-Node::getImageBeingRendered(double time,
-                            unsigned int mipmapLevel,
-                            ViewIdx view)
-{
-    QMutexLocker l(&_imp->imagesBeingRenderedMutex);
-
-    for (std::list<ImagePtr>::iterator it = _imp->imagesBeingRendered.begin();
-         it != _imp->imagesBeingRendered.end(); ++it) {
-        const ImageKey &key = (*it)->getKey();
-        if ( (key._view == view) && ( (*it)->getMipmapLevel() == mipmapLevel ) && (key._time == time) ) {
-            return *it;
-        }
-    }
-
-    return ImagePtr();
 }
 
 
@@ -7377,6 +7384,20 @@ Node::refreshChannelSelectors()
 
 
         KnobChoicePtr channelKnob = it->second.channel.lock();
+
+        // The default, the 5th entry, is Color.A for an RGBA input only. Until the user or a script
+        // chooses an entry, select Color.A by ID when the menu has it, e.g. the 2nd entry of
+        // None, Color.A for an alpha-only input, where the 5th entry does not exist and the mask
+        // selected nothing (#1685).
+        if ( !channelKnob->hasModifications() ) {
+            const ChoiceOption alpha = ImagePlaneDesc::getRGBAComponents().getChannelOption(3);
+            for (std::size_t c = 0; c < choices.size(); ++c) {
+                if (choices[c].id == alpha.id) {
+                    channelKnob->setActiveEntry(alpha);
+                    break;
+                }
+            }
+        }
 
         hasChanged |= channelKnob->populateChoices(choices);
 

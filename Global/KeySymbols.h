@@ -422,6 +422,28 @@ enum KeyboardModifierEnum
 
 typedef QFlags<KeyboardModifierEnum> KeyboardModifiers;
 
+/**
+ * @brief The key symbol of key when the Super keys are the Meta modifier: Key_Super_L/R become
+ * Key_Meta_L/R, and the other keys are unchanged. Qt's xcb platform plug-in does this itself when
+ * Qt::MetaModifier is the Super modifier; QtEnumConvert::fromQtKey() does it on Wayland, where Qt
+ * doesn't (NatronGitHub/Natron#1278).
+ **/
+inline Key
+keySuperAsMeta(Key key)
+{
+    switch (key) {
+    case Key_Super_L:
+
+        return Key_Meta_L;
+    case Key_Super_R:
+
+        return Key_Meta_R;
+    default:
+
+        return key;
+    }
+}
+
 NATRON_NAMESPACE_EXIT
 
 #endif // KEYSYMBOLS_H

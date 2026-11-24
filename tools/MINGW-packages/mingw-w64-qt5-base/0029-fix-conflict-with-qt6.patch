@@ -1,0 +1,83 @@
+--- a/mkspecs/features/dbuscommon.pri
++++ b/mkspecs/features/dbuscommon.pri
+@@ -10,7 +10,7 @@
+ #
+ 
+ load(moc)
+-qtPrepareTool(QMAKE_QDBUSXML2CPP, qdbusxml2cpp)
++qtPrepareTool(QMAKE_QDBUSXML2CPP, qdbusxml2cpp-qt5)
+ 
+ defineReplace(qdbusOutputBasename) {
+     return($$lower($$section($$list($$basename(1)),.,-2,-2)))
+--- a/mkspecs/features/lrelease.prf
++++ b/mkspecs/features/lrelease.prf
+@@ -7,7 +7,7 @@
+ # Otherwise, the .qm files are available in the build directory in LRELEASE_DIR.
+ # They can also be automatically installed by setting QM_FILES_INSTALL_PATH.
+ 
+-qtPrepareTool(QMAKE_LRELEASE, lrelease)
++qtPrepareTool(QMAKE_LRELEASE, lrelease-qt5)
+ 
+ isEmpty(LRELEASE_DIR): LRELEASE_DIR = .qm
+ isEmpty(QM_FILES_RESOURCE_PREFIX): QM_FILES_RESOURCE_PREFIX = i18n
+--- a/mkspecs/features/qml_plugin.prf
++++ b/mkspecs/features/qml_plugin.prf
+@@ -72,7 +72,7 @@
+ # can generate the .qmltypes files at compile time. It will do this when CONFIG += qmltypes is set.
+ # Therefore, don't try to generate the qmltypes files via qmlplugindump in that case.
+ !cross_compile:!qmltypes {
+-    qmlplugindump = qmlplugindump
++    qmlplugindump = qmlplugindump-qt5
+     importpath.name = QML2_IMPORT_PATH
+     importpath.value =
+     for(qmod, QTREPOS) {
+--- a/mkspecs/features/qmltestcase.prf
++++ b/mkspecs/features/qmltestcase.prf
+@@ -13,7 +13,7 @@
+     # Allow a project to run tests without a CPP stub
+     TEMPLATE = aux
+     QMAKE_EXTRA_TARGETS += check
+-    qtPrepareTool(QMAKE_QMLTESTRUNNER, qmltestrunner)
++    qtPrepareTool(QMAKE_QMLTESTRUNNER, qmltestrunner-qt5)
+     check.commands = $$QMAKE_QMLTESTRUNNER
+ }
+ 
+--- a/mkspecs/features/qt_docs.prf
++++ b/mkspecs/features/qt_docs.prf
+@@ -24,7 +24,7 @@
+ builddir.name = BUILDDIR
+ builddir.value = $$OUT_PWD
+ QT_TOOL_ENV = qtver qtmver qtvertag qtdocs builddir
+-qtPrepareTool(QDOC, qdoc)
++qtPrepareTool(QDOC, qdoc-qt5)
+ QT_TOOL_ENV =
+ 
+ # On Windows, put the includes into a .inc file which QDoc will read, if the project
+--- a/mkspecs/features/win32/dumpcpp.prf
++++ b/mkspecs/features/win32/dumpcpp.prf
+@@ -1,4 +1,4 @@
+-qtPrepareTool(QMAKE_DUMPCPP, dumpcpp)
++qtPrepareTool(QMAKE_DUMPCPP, dumpcpp-qt5)
+ 
+ dumpcpp_decl.depends += $$QMAKE_DUMPCPP_EXE
+ dumpcpp_decl.commands = $$QMAKE_DUMPCPP ${QMAKE_FILE_IN} -o ${QMAKE_FILE_BASE}
+--- a/mkspecs/features/win32/idcidl.prf
++++ b/mkspecs/features/win32/idcidl.prf
+@@ -9,7 +9,7 @@
+ ACTIVEQT_VERSION = $$VERSION
+ isEmpty(ACTIVEQT_VERSION):ACTIVEQT_VERSION = 1.0
+ 
+-qtPrepareTool(QMAKE_IDC, idc)
++qtPrepareTool(QMAKE_IDC, idc-qt5)
+ contains(TEMPLATE, "vc.*") {
+     ACTIVEQT_IDC = $${QMAKE_IDC}
+     ACTIVEQT_IDL = $${QMAKE_IDL}
+--- a/mkspecs/features/win32/windeployqt.prf
++++ b/mkspecs/features/win32/windeployqt.prf
+@@ -1,5 +1,5 @@
+ # Extra target for running windeployqt
+-qtPrepareTool(QMAKE_WINDEPLOYQT, windeployqt)
++qtPrepareTool(QMAKE_WINDEPLOYQT, windeployqt-qt5)
+ build_pass {
+     load(resolve_target)
+ 

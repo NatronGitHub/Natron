@@ -86,6 +86,23 @@ then :func:`disconnectInput(inputNumber)<NatronEngine.Effect.disconnectInput>` f
 
 If you need to destroy permanently the Effect, just call :func:`destroy() <NatronEngine.Effect.destroy()>`.
 
+Each function that returns a node, such as :func:`App.getNode()<NatronEngine.Group.getNode>` or
+:func:`getChildren()<NatronEngine.Group.getChildren>`, returns a new Effect object. Two Effect
+objects that refer to the same node are equal (``==``) and have the same hash, so they can be
+put in a set or used as dictionary keys::
+
+    node = app.getNode("Blur1")
+    assert node == app.getNode("Blur1")
+    assert node in app.getChildren()
+
+The hash doesn't change when the node is destroyed, and an Effect whose node was destroyed
+is only equal to itself.
+
+Up to Natron 2.5, ``==`` compared the Python objects, and was always *False* for two calls to
+:func:`getNode()<NatronEngine.Group.getNode>`
+(`issue #777 <https://github.com/NatronGitHub/Natron/issues/777>`_): compare the
+:func:`getScriptName()<NatronEngine.Effect.getScriptName>` of nodes of the same group instead.
+
 For convenience some GUI functionalities have been made accessible via the Effect class
 to control the GUI of the node (on the node graph):
 

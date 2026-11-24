@@ -1,0 +1,78 @@
+--- a/mkspecs/features/qt_functions.prf	2019-06-12 23:59:14.000000000 +0300
++++ b/mkspecs/features/qt_functions.prf	2019-06-15 15:24:17.668460200 +0300
+@@ -85,40 +85,36 @@
+ 
+ # variable, default, [suffix for variable for system() use], [prepare primary variable for system() use]
+ defineTest(qtPrepareTool) {
+-    cmd = $$eval(QT_TOOL.$${2}.binary)
+-    isEmpty(cmd) {
+-        cmd = $$[QT_HOST_BINS]/$$2
+-        exists($${cmd}.pl) {
+-            $${1}_EXE = $${cmd}.pl
+-            cmd = perl -w $$system_path($${cmd}.pl)
++    $$1 = $$eval(QT_TOOL.$${2}.binary)
++    isEmpty($$1) {
++        $$1 = $$[QT_HOST_BINS]/$$2
++        exists($$eval($$1).pl) {
++            $${1}_EXE =  $$eval($$1).pl
++            $$1 = perl -w $$eval($$1).pl
+         } else: contains(QMAKE_HOST.os, Windows) {
+-            $${1}_EXE = $${cmd}.exe
+-            cmd = $$system_path($${cmd}.exe)
++            $${1}_EXE = $$eval($$1).exe
++            $$1 = $$eval($$1).exe
+         } else:contains(QMAKE_HOST.os, Darwin) {
+-            BUNDLENAME = $${cmd}.app/Contents/MacOS/$$2
++            BUNDLENAME = $$eval($$1).app/Contents/MacOS/$$2
+             exists($$BUNDLENAME) {
+-                cmd = $$BUNDLENAME
++                $$1 = $$BUNDLENAME
+             }
+-            $${1}_EXE = $$cmd
++            $${1}_EXE = $$eval($$1).exe
+         } else {
+-            $${1}_EXE = $$cmd
++            $${1}_EXE = $$eval($$1).exe
+         }
+     } else {
+-        $${1}_EXE = $$last(cmd)
++        $${1}_EXE = $$last($$eval($$1))
+     }
+     export($${1}_EXE)
+     QT_TOOL_ENV += $$eval(QT_TOOL.$${2}.envvars)
+     QT_TOOL_NAME = $$2
+     !isEmpty(3)|!isEmpty(4) {
+-        $$1$$3 =
+-        for (arg, cmd): \
+-            $$1$$3 += $$system_quote($$arg)
++        $$1$$3 = $$system_path($$eval($$1))
+         qtAddTargetEnv($$1$$3, QT_TOOL.$${2}.depends, system)
+     }
+     isEmpty(4) {
+-        $$1 =
+-        for (arg, cmd): \
+-            $$1 += $$shell_quote($$arg)
++        $$1 = $$shell_path($$eval($$1))
+         qtAddTargetEnv($$1, QT_TOOL.$${2}.depends, )
+     }
+ }
+--- a/mkspecs/features/qt_tool.prf	2019-06-12 23:59:14.000000000 +0300
++++ b/mkspecs/features/qt_tool.prf	2019-06-15 15:24:17.668460200 +0300
+@@ -50,15 +50,14 @@
+             module_envvars =
+         }
+ 
+-        bin = $$system_path($$QMAKE_RESOLVED_TARGET)
++        bin = $$QMAKE_RESOLVED_TARGET
+     } else {
+         bin = $${HOST_QT_TOOLS}/$${TARGET}
+         equals(QMAKE_HOST.os, Windows): bin = $${bin}.exe
+-        bin = $$system_path($$bin)
+     }
+ 
+     TOOL_PRI_CONT = \
+-        "QT_TOOL.$${MODULE}.binary = $$val_escape(bin)" \
++        "QT_TOOL.$${MODULE}.binary = $$bin" \
+         "QT_TOOL.$${MODULE}.depends =$$join(MODULE_DEPENDS, " ", " ")" \
+         $$module_envvars
+     write_file($$TOOL_PRI, TOOL_PRI_CONT)|error()
