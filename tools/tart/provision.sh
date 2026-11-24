@@ -421,6 +421,16 @@ step_tools() {
     $PORT install privoxy     # HTTP->SOCKS proxy for pip in VMs without direct internet access
 }
 
+# pango without X11, like cairo and glib2 (its default +x11, which librsvg's binary archive brings
+# in, needs cairo +x11 to be built from source, and bundles libX11, libXft... in the DMG)
+pango_no_x11() {
+    if port -q installed pango 2> /dev/null | grep '(active)' | grep -q '+x11'; then
+        $PORT -n upgrade --enforce-variants pango -x11
+    elif ! port -q installed pango 2> /dev/null | grep -q '(active)'; then
+        $PORT install pango -x11
+    fi
+}
+
 step_libs() {
     $PORT install dbus
     $PORT install glib2 -x11
@@ -437,6 +447,7 @@ step_libs() {
     $PORT install opencolorio  -quartz $nopy
     $PORT install opencolorio1 -quartz $nopy
     $PORT install seexpr211
+    pango_no_x11
     $PORT install librsvg -quartz
     $PORT install poppler librevenge libcdr-0.1 sox libzip
     sudo sed -i '' -e 's/Zstd::Zstd/zstd/' /opt/local/lib/pkgconfig/libzip.pc
@@ -605,6 +616,7 @@ macho_files() { # NUL-separated paths on stdin: print the Mach-O files
     LC_ALL=C xargs -0 file -N -F $'\t' | LC_ALL=C awk -F '\t' '$2 ~ /Mach-O/ && $1 !~ / \(for architecture [^)]*\):?$/ {print $1}'
 }
 bundled_ports() {
+    { set +x; } 2> /dev/null   # one trace line per file (100k) otherwise; this runs in a subshell
     local p roots seen todo deps others
     roots=$(for p in $(bundle_roots); do port -q installed "$p" 2> /dev/null | grep -q '(active)' && echo "$p"; done | sort -u)
     # shellcheck disable=SC2086
@@ -677,8 +689,9 @@ deps_order() {
 # again when its version changes; the minos check of the DMG (check-minos.sh, natron-build.sh)
 # tells whether that matters. Never marked done: run after every update.
 step_rebuild_target() {
-    local skip=$LOGDIR/rebuild_target.skip p v bdeps todo=() failed=() n=0
+    local skip=$LOGDIR/rebuild_target.skip p v bdeps variants todo=() failed=() n=0
     touch "$skip"
+    pango_no_x11   # SDKs made before step_libs had it
     local newer
     newer=$(ports_newer_than_target)   # not in the for: a failure must stop the step
     for p in $newer; do
@@ -702,10 +715,21 @@ step_rebuild_target() {
             [ -z "${bdeps// /}" ] || $PORT install $bdeps || true   # a failure shows up in the rebuild below
         fi
         if ! $PORT -n -s upgrade --force "$p"; then
-            # the previous build stays installed: go on with the other ports, fail at the end
-            echo "ERROR: could not rebuild $p"
-            failed+=("$p")
-            continue
+            # Some ports can't be built while they are active (flite links the installed
+            # libflite.dylib: "can't link a dylib with itself"): uninstall, build, or put the
+            # binary archive back if the build fails
+            v=$(port -q installed "$p" | awk '/\(active\)/ {print $2}')
+            variants=$(echo "$v" | sed -e 's/^@[^+]*//' -e 's/+/ +/g')
+            echo "===== rebuilding $p $v again, uninstalled first"
+            # shellcheck disable=SC2086
+            if ! { $SUDO port -v -N -f uninstall "$p" "$v" && $PORT -n -s install "$p" $variants; }; then
+                # shellcheck disable=SC2086
+                port -q installed "$p" 2> /dev/null | grep -q '(active)' || $PORT install "$p" $variants || true
+                # go on with the other ports, fail at the end
+                echo "ERROR: could not rebuild $p"
+                failed+=("$p")
+                continue
+            fi
         fi
         if port -q contents "$p" | "$CHECK_MINOS" -N -t "$macos_target" -l; then :; else
             v=$(port -q installed "$p" | awk '/\(active\)/ {print $2}')

@@ -148,7 +148,8 @@ jobs:
           retention-days: 14
 
       - name: Save
-        if: steps.provision.outcome == 'success'
+        # also when provision.sh failed: a fixed provision.sh can then resume from this state
+        if: always() && (steps.provision.outcome == 'success' || steps.provision.outcome == 'failure')
         run: |
           "$SDK_TOOL" unhide-homebrew
           "$SDK_TOOL" save "$RUNNER_TEMP/out/natron-sdk.tar.zst" ${{ steps.provision.outputs.finished == 'true' && 'final' || '' }}
@@ -165,7 +166,7 @@ jobs:
           compression-level: 0
 
       - name: Upload the state for the next stage
-        if: steps.provision.outputs.finished == 'false'
+        if: always() && steps.provision.outputs.finished != 'true' && (steps.provision.outcome == 'success' || steps.provision.outcome == 'failure')
         uses: actions/upload-artifact@v4
         with:
           overwrite: true
