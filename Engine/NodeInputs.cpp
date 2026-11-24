@@ -627,24 +627,36 @@ Node::isNodeUpstream(const Node* input,
         return;
     }
 
-    ///No need to lock guiInputs is only written to by the main-thread
+    // No lock: the inputs are only written by the main thread, which this runs on.
 
-    for (U32 i = 0; i  < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i].lock().get() == input) {
-            *ok = true;
-
-            return;
-        }
-    }
+    // Each upstream node is visited once (a recursion without the set visits a node once per path to it,
+    // which is exponential on chains of diamonds).
     *ok = false;
-    for (U32 i = 0; i  < _imp->inputs.size(); ++i) {
-        NodePtr in = _imp->inputs[i].lock();
-        if (in) {
-            in->isNodeUpstream(input, ok);
-            if (*ok) {
+    std::set<const Node*> visited;
+    std::vector<NodePtr> toVisit; // the inputs to visit, kept alive until they are visited
+    NodePtr current; // keeps the visited node alive
+    const Node* node = this;
+    for (;;) {
+        for (U32 i = 0; i < node->_imp->inputs.size(); ++i) {
+            NodePtr in = node->_imp->inputs[i].lock();
+            if (!in) {
+                continue;
+            }
+            if (in.get() == input) {
+                *ok = true;
+
                 return;
             }
+            if ( visited.insert( in.get() ).second ) {
+                toVisit.push_back(in);
+            }
         }
+        if ( toVisit.empty() ) {
+            break;
+        }
+        current = toVisit.back();
+        toVisit.pop_back();
+        node = current.get();
     }
 }
 
