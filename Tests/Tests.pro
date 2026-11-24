@@ -116,6 +116,7 @@ SOURCES += \
     OfxPluginScan_Test.cpp \
     OfxProjectLoad_Test.cpp \
     OfxQuestion_Test.cpp \
+    OfxRenderClone_Test.cpp \
     OfxSequenceRenderArgs_Test.cpp \
     OfxSingleInstance_Test.cpp \
     OfxSuiteStatus_Test.cpp \
