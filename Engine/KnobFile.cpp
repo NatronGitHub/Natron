@@ -97,6 +97,43 @@ KnobFile::typeName() const
     return typeNameStatic();
 }
 
+// The file name of a file parameter at a time and view. The name of an image sequence is a pattern, whose
+// frame number ('#', "%04d") and view ("%v", "%V") variables are replaced. A video file name is not a sequence
+// pattern: only its view variables are replaced, and a '#' in it is part of the name (#693). The callers say
+// whether the holder is a video reader or writer (for a Read or Write node, the ReadNode or WriteNode knows its
+// embedded plug-in); the holder gives the project views.
+static std::string
+fileNameFromPattern(const std::string& pattern,
+                    const KnobHolder* holder,
+                    bool isVideo,
+                    int time,
+                    ViewSpec view)
+{
+    std::vector<std::string> views;
+
+    if ( holder && holder->getApp() ) {
+        views = holder->getApp()->getProject()->getProjectViewNames();
+    }
+    if ( !view.isViewIdx() ) {
+        view = ViewIdx(0);
+    }
+    if (isVideo) {
+        const int viewIndex = view.value();
+        if ( (viewIndex < 0) || ( viewIndex >= (int)views.size() ) ) {
+            return pattern;
+        }
+        // as SequenceParsing::generateFileNameFromPattern(): %V is the view name, %v its first letter in upper case
+        const QString viewName = QString::fromUtf8( views[viewIndex].c_str() );
+        QString name = QString::fromUtf8( pattern.c_str() );
+        name.replace( QString::fromUtf8("%V"), viewName );
+        name.replace( QString::fromUtf8("%v"), viewName.left(1).toUpper() );
+
+        return name.toStdString();
+    }
+
+    return SequenceParsing::generateFileNameFromPattern(pattern, views, time, view);
+}
+
 std::string
 KnobFile::getFileName(int time,
                       ViewSpec view)
@@ -105,15 +142,9 @@ KnobFile::getFileName(int time,
         return getValue(0, view);
     } else {
         ///try to interpret the pattern and generate a filename if indexes are found
-        std::vector<std::string> views;
-        if ( getHolder() && getHolder()->getApp() ) {
-            views = getHolder()->getApp()->getProject()->getProjectViewNames();
-        }
-        if ( !view.isViewIdx() ) {
-            view = ViewIdx(0);
-        }
+        const EffectInstance* effect = dynamic_cast<const EffectInstance*>( getHolder() );
 
-        return SequenceParsing::generateFileNameFromPattern(getValue( 0, ViewIdx(0) ), views, time, view);
+        return fileNameFromPattern(getValue( 0, ViewIdx(0) ), getHolder(), effect && effect->isVideoReader(), time, view);
     }
 }
 
@@ -165,16 +196,9 @@ QString
 KnobOutputFile::generateFileNameAtTime(SequenceTime time,
                                        ViewSpec view)
 {
-    std::vector<std::string> views;
+    const EffectInstance* effect = dynamic_cast<const EffectInstance*>( getHolder() );
 
-    if ( getHolder() && getHolder()->getApp() ) {
-        views = getHolder()->getApp()->getProject()->getProjectViewNames();
-    }
-    if ( !view.isViewIdx() ) {
-        view = ViewIdx(0);
-    }
-
-    return QString::fromUtf8( SequenceParsing::generateFileNameFromPattern(getValue( 0, ViewIdx(0) ), views, time, view).c_str() );
+    return QString::fromUtf8( fileNameFromPattern(getValue( 0, ViewIdx(0) ), getHolder(), effect && effect->isVideoWriter(), time, view).c_str() );
 }
 
 /***********************************KnobPath*****************************************/
