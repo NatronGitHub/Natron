@@ -173,7 +173,7 @@ jobs:
           cd build
           # the GUI tests (label gui) run in the Fast and Release builds, not twice in the weekly Debug one
           gui=(); [ "$CI_CONFIG" = Debug ] && gui=(-LE gui)
-          OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V "${gui[@]}"
+          OFX_PLUGIN_PATH=$PWD/../Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V --no-tests=error "${gui[@]}"
 
       - name: Upload ${{ matrix.os }} ${{ matrix.config }} Test Log artifacts
         if: always()
@@ -311,9 +311,13 @@ jobs:
         run: |
           cd build
 
-          mkdir Plugins && cd Plugins
+          # build/Plugins is Natron's own (natron_convert_project.py, #1586): unpack the OFX
+          # plug-ins next to it, and fail if a step fails, so that ctest never runs from the
+          # wrong directory and finds no tests (it then exits 0).
+          set -e
+          mkdir -p ofx-plugins && cd ofx-plugins
           wget https://github.com/NatronGitHub/openfx-io/releases/download/natron_testing/openfx-io-build-windows_ucrt64-testing.zip
-          unzip openfx-io-build-windows_ucrt64-testing.zip
+          unzip -q openfx-io-build-windows_ucrt64-testing.zip
           cd ..
 
           # MSYS2's Python (>= 3.11) loads extension modules with
@@ -323,7 +327,7 @@ jobs:
           # so lib-dynload/binascii.pyd (needed by zipfile, imported by shiboken2)
           # cannot find zlib1.dll (#1147). PYTHONLEGACYWINDOWSDLLLOADING=1
           # (an MSYS2 Python extension) restores the PATH search.
-          PYTHONLEGACYWINDOWSDLLLOADING=1 PYTHONHOME=${MINGW_PREFIX} OFX_PLUGIN_PATH=$PWD/Plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
+          PYTHONLEGACYWINDOWSDLLLOADING=1 PYTHONHOME=${MINGW_PREFIX} OFX_PLUGIN_PATH=$PWD/ofx-plugins OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V --no-tests=error
 
       - name: Upload ${{ matrix.os }} ${{ matrix.config }} Test Log artifacts
         if: always()
@@ -523,7 +527,7 @@ jobs:
           # jobs download one), so the tests that need the IO plug-ins
           # (BaseTest.*) are skipped.
           cd build
-          GTEST_FILTER='-BaseTest.*' OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V
+          GTEST_FILTER='-BaseTest.*' OCIO=$PWD/../OpenColorIO-Configs/blender/config.ocio ctest -V --no-tests=error
 
       - name: Upload macOS Test Log artifacts
         if: always()
