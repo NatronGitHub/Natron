@@ -260,7 +260,7 @@ if(Python3_Interpreter_FOUND)
     add_test(NAME RendererCallbacksTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_callbacks_test.py $<TARGET_FILE:NatronRenderer>)
     set_tests_properties(RendererCallbacksTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)
-    # a Read whose file is missing fails the render with "On missing frame: Error", instead of writing black (#1602)
+    # a Read whose file is missing ("On missing frame: Error") or whose filename is empty fails the render (exit status 1), instead of writing black (#1602, #1131)
     add_test(NAME RendererMissingReadTest
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/gui/run_renderer_missing_read_test.py $<TARGET_FILE:NatronRenderer>)
     set_tests_properties(RendererMissingReadTest PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 660)

@@ -18,16 +18,19 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-"""Headless test of a render whose Read node has a missing file (#1602).
+"""Headless test of a render whose Read node has a missing file (#1602) or an empty filename (#1131).
 
 Usage: run_renderer_missing_read_test.py /path/to/NatronRenderer [--debugger]
 
 NatronRenderer -b runs a script that creates Read (on a file that does not exist) -> Write1
 (PNG, frames 1-3), and renders Write1:
 - "error": the Read is on its default "On missing frame: Error". The render must fail
-  ("Error caught while rendering") and write no frame: it wrote three black frames and
-  reported a successful render;
-- "black": "On missing frame: Black". The render must write the three (black) frames;
+  ("Error caught while rendering"), write no frame and exit with status 1: it wrote three black
+  frames and reported a successful render;
+- "empty": the Read has an empty filename. The render must fail as for "error", and report
+  "Filename empty": NatronRenderer crashed (#1131), then wrote black frames;
+- "black": "On missing frame: Black". The render must write the three (black) frames and exit
+  with status 0;
 - "merge": the Read (Error) is the A input of a Merge whose B input is a Read that works. The
   render must fail and write no frame: Merge, which gets an empty region of definition for A, was
   the identity of B and wrote B (skipped without openfx-misc's Merge);
@@ -70,9 +73,12 @@ elif (MODE == "merge" and "net.sf.openfx.MergePlugin" not in ids) or (MODE == "h
     sys.stdout.write("SKIP MODE: no openfx-misc plug-in\\n"); sys.stdout.flush()
     natron.quit(0)
 else:
-    read = app.createReader(os.path.join(OUT, "seq" if MODE == "hold" else "missing", "plate.####.png"))
-    onMissingFrame = read.getParam("onMissingFrame")
-    onMissingFrame.setValue(onMissingFrame.getOptions().index("black" if MODE == "black" else "error"))
+    if MODE == "empty":
+        read = app.createNode("fr.inria.built-in.Read")
+    else:
+        read = app.createReader(os.path.join(OUT, "seq" if MODE == "hold" else "missing", "plate.####.png"))
+        onMissingFrame = read.getParam("onMissingFrame")
+        onMissingFrame.setValue(onMissingFrame.getOptions().index("black" if MODE == "black" else "error"))
     output = read
     if MODE == "merge":
         output = app.createNode("net.sf.openfx.MergePlugin")
@@ -124,17 +130,22 @@ def runMode(renderer, wrapper, outDir, script, mode):
     if "SKIP MODE: no openfx-misc plug-in" in [line.strip() for line in out.splitlines()]:
         print("skipped (%s): no openfx-misc plug-in" % mode)
         return MODE_SKIPPED
-    # the exit status is not checked: a failed render gives the status 0 (#1599)
     print("NatronRenderer -b (%s) exited with status %d" % (mode, proc.returncode))
     written = sorted(f for f in os.listdir(outDir) if f.startswith(mode + "_") and f.endswith(".png"))
     failed = "Error caught while rendering" in out
     ok = True
-    if mode in ("error", "merge"):
+    if mode in ("error", "empty", "merge"):
         if written:
             print("FAILED (%s): the render wrote %s, with an input that failed" % (mode, " ".join(written)))
             ok = False
         if not failed:
             print("FAILED (%s): the render did not report a failure" % mode)
+            ok = False
+        if proc.returncode != 1:
+            print("FAILED (%s): exit status %d instead of 1" % (mode, proc.returncode))
+            ok = False
+        if mode == "empty" and "Filename empty" not in out:
+            print("FAILED (empty): the render did not report the empty filename")
             ok = False
     else:
         expected = ["%s_%04d.png" % (mode, frame) for frame in FRAMES]
@@ -143,6 +154,9 @@ def runMode(renderer, wrapper, outDir, script, mode):
             ok = False
         if failed:
             print("FAILED (%s): the render reported a failure" % mode)
+            ok = False
+        if proc.returncode != 0:
+            print("FAILED (%s): exit status %d instead of 0" % (mode, proc.returncode))
             ok = False
     return ok
 
@@ -177,7 +191,7 @@ def main(argv):
             f.write(SCRIPT)
         ok = True
         skipped = []
-        for mode in ("error", "black", "merge", "hold"):
+        for mode in ("error", "empty", "black", "merge", "hold"):
             ret = runMode(argv[1], wrapper, outDir, script, mode)
             if ret == MODE_SKIPPED:
                 skipped.append(mode)
