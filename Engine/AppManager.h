@@ -808,7 +808,6 @@ private:
     /// Termination signal: quits the application from the main event loop, once the modal windows are closed
     void quitOnShutDownSignal();
 
-
     bool loadInternal(const CLArgs& cl);
 
     void setUpShutDownSignalNotifier();
