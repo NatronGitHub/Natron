@@ -1226,10 +1226,6 @@ PreferencesPanel::showEvent(QShowEvent* e)
     if ( e->spontaneous() ) {
         return; // e.g. restored after being minimized: the changes made so far can still be cancelled
     }
-    // closing the window without OK cancels, also after an OK in an earlier showing (#1538)
-    _imp->closeIsOK = false;
-    _imp->changedKnobs.clear();
-    _imp->pluginSettingsChanged = false;
     for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
         if (it->plugin) {
             it->shownActivated = it->plugin->isActivated();
@@ -1238,6 +1234,11 @@ PreferencesPanel::showEvent(QShowEvent* e)
             it->shownOpenGLEnabled = it->plugin->isOpenGLEnabled();
         }
     }
+
+    _imp->changedKnobs.clear();
+    _imp->pluginSettingsChanged = false;
+    // set again by Save: closing the window otherwise discards the changes, also after an earlier Save (#841)
+    _imp->closeIsOK = false;
 }
 
 void
