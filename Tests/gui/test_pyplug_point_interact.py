@@ -88,8 +88,9 @@ print("point after the drag: %r" % ((x, y),))
 check_close(x, 700.0, 10.0, "point x after the drag")
 check_close(y, 400.0, 10.0, "point y after the drag")
 
-# an unconnected instance with its panel open: nothing leads from its Output node to an image, which made the
-# viewer dereference a null node while drawing the overlays
+# an unconnected instance with its panel open: its Output node leads, through its Input node, to its unconnected
+# input (Node::getInput() follows the group redirections), which made the viewer dereference a null node while
+# drawing the overlays and on pen events
 lonely = app.createNode(GROUP, -1, None,
                         {"CreateNodeArgsPropNodeGroupDisableCreateInitialNodes": NatronEngine.BoolNodeCreationProperty(True)})
 module.createInstance(app, lonely)
@@ -97,5 +98,6 @@ app.clearSelection()
 app.selectNode(lonely, True)
 NatronGuiTest.sendKey("NodeGraph", "Return")
 fit_viewer()
+NatronGuiTest.drag("Viewer1", 100.0, 100.0, 120.0, 120.0, steps=2)
 wait_idle()
 shutil.rmtree(out_dir, ignore_errors=True)
