@@ -2123,6 +2123,7 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
 
         KnobChoicePtr channel = AppManager::createKnob<KnobChoice>(_imp->effect.get(), std::string(), 1, false);
         // By default if connected it should be filled with None, Color.R, Color.G, Color.B, Color.A (@see refreshChannelSelectors)
+        // (Color.A of an RGBA menu; for other menus, refreshChannelSelectors() selects Color.A by ID, #1685)
         channel->setDefaultValue(4);
         channel->setAnimationEnabled(false);
         channel->setHintToolTip( tr("Use this channel from the original input to mix the output with the original input. "
@@ -7383,6 +7384,20 @@ Node::refreshChannelSelectors()
 
 
         KnobChoicePtr channelKnob = it->second.channel.lock();
+
+        // The default, the 5th entry, is Color.A for an RGBA input only. Until the user or a script
+        // chooses an entry, select Color.A by ID when the menu has it, e.g. the 2nd entry of
+        // None, Color.A for an alpha-only input, where the 5th entry does not exist and the mask
+        // selected nothing (#1685).
+        if ( !channelKnob->hasModifications() ) {
+            const ChoiceOption alpha = ImagePlaneDesc::getRGBAComponents().getChannelOption(3);
+            for (std::size_t c = 0; c < choices.size(); ++c) {
+                if (choices[c].id == alpha.id) {
+                    channelKnob->setActiveEntry(alpha);
+                    break;
+                }
+            }
+        }
 
         hasChanged |= channelKnob->populateChoices(choices);
 
