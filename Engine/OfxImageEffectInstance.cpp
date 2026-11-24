@@ -770,7 +770,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         instance = ret;
         //paramShouldBePersistent = false;
     } else if (paramType == kOfxParamTypeParametric) {
-        OfxParametricInstance* ret = new OfxParametricInstance(getOfxEffectInstance(), descriptor);
+        std::unique_ptr<OfxParametricInstance> ret( new OfxParametricInstance(getOfxEffectInstance(), descriptor) );
         OfxStatus stat = ret->defaultInitializeAllCurves(descriptor);
 
         if (stat == kOfxStatFailed) {
@@ -780,13 +780,15 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         ret->onCurvesDefaultInitialized();
 
         knob = ret->getKnob();
-        instance = ret;
+        instance = ret.release();
     }
 
     assert(knob);
     if (!instance) {
         throw std::runtime_error( std::string("Parameter ") + paramName + " has unknown OFX type " + paramType );
     }
+    // owned here until it is returned to HostSupport, so that it is deleted if anything below throws (#1609)
+    std::unique_ptr<OFX::Host::Param::Instance> instanceOwner(instance);
 
 #ifdef NATRON_ENABLE_IO_META_NODES
     /**
@@ -802,7 +804,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     OfxParamToKnob* ptk = dynamic_cast<OfxParamToKnob*>(instance);
     assert(ptk);
     if (!ptk) {
-        throw std::logic_error("");
+        throw std::logic_error( std::string("Parameter ") + paramName + " of type " + paramType + " is not an OfxParamToKnob" );
     }
 
     //knob->setName(paramName);
@@ -872,7 +874,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
 
     ptk->connectDynamicProperties();
 
-    return instance;
+    return instanceOwner.release();
 } // newParam
 
 struct PageOrdered
@@ -971,7 +973,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
     }
     assert( mainPage != finalPages.end() );
     if ( mainPage == finalPages.end() ) {
-        throw std::logic_error("");
+        throw std::logic_error( getDescriptor().getPlugin()->getIdentifier() + ": no main page for the parameters" );
     }
     // In this pass we check that all parameters belong to a page.
     // For parameters that do not belong to a page, we add them "on the fly" to the page
