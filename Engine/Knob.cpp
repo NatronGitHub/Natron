@@ -31,6 +31,7 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 #include <cctype> // isspace
+#include <cstring> // memcpy
 
 #include <QDataStream>
 #include <QDateTime>
@@ -699,7 +700,8 @@ KnobHelper::getExpressionRecursionLevel() const
 void
 KnobHelper::deleteKnob()
 {
-    KnobI::ListenerDimsMap listenersCpy = _imp->listeners;
+    KnobI::ListenerDimsMap listenersCpy;
+    getListeners(listenersCpy); // under mastersMutex, which guards the listeners
 
     for (ListenerDimsMap::iterator it = listenersCpy.begin(); it != listenersCpy.end(); ++it) {
         KnobIPtr knob = it->first.lock();
@@ -4484,20 +4486,6 @@ KnobHelper::randomInt(int min,
     return (int)random( (double)min, (double)max );
 }
 
-struct alias_cast_float
-{
-    alias_cast_float()
-        : raw(0)
-    {
-    };                          // initialize to 0 in case sizeof(T) < 8
-
-    union
-    {
-        U32 raw;
-        float data;
-    };
-};
-
 void
 KnobHelper::randomSeed(double time,
                        unsigned int seed) const
@@ -4514,9 +4502,12 @@ KnobHelper::randomSeed(double time,
     U32 hash32 = (U32)hash;
     hash32 += seed;
 
-    alias_cast_float ac;
-    ac.data = (float)time;
-    hash32 += ac.raw;
+    // the bits of the time as a float: with memcpy, not a union, which would be undefined behaviour in C++ (#1721)
+    const float timeF = (float)time;
+    U32 timeBits;
+    static_assert(sizeof(timeBits) == sizeof(timeF), "float is not 32 bits");
+    std::memcpy( &timeBits, &timeF, sizeof(timeBits) );
+    hash32 += timeBits;
 
     QMutexLocker k(&_imp->lastRandomHashMutex);
     _imp->lastRandomHash = hash32;
