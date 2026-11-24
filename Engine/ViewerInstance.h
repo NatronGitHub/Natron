@@ -435,6 +435,9 @@ private:
 
 private:
 
+    /// After a change of gain, gamma or display LUT: render again or only redraw (8-bit or float textures)
+    void refreshAfterDisplayTransformChange();
+
     std::unique_ptr<ViewerInstancePrivate> _imp;
 };
 

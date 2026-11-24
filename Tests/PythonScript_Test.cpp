@@ -35,6 +35,14 @@
 
 #include <gtest/gtest.h>
 
+#include <QtCore/QFile>
+#include <QtCore/QTemporaryDir>
+
+#include <QtCore/QDir>
+#include <QtCore/QFile>
+#include <QtCore/QFileInfo>
+#include <QtCore/QTemporaryDir>
+
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Global/PythonUtils.h"
@@ -253,4 +261,162 @@ TEST_F(PythonScriptTest, NestedCall)
                                                         "natronTestNode1436.destroy()\n"
                                                         "del natronTestNode1436, natronTestNested1436\n", &err, 0);
     EXPECT_TRUE(ok) << err;
+}
+
+// A PyPlug whose getVersion() doesn't return a valid version number (a string, a negative int):
+// getGroupInfos() cast PyLong_AsLong() to unsigned int without checking it, and the PyPlug got version
+// 4294967295 (or 4294967294...), which takes precedence over every other version of that PyPlug (#1743).
+namespace {
+unsigned int
+readPyPlugVersion(const std::string& moduleName,
+                  const char* versionExpr)
+{
+    QTemporaryDir dir;
+    EXPECT_TRUE( dir.isValid() );
+    {
+        QFile f( dir.path() + QString::fromUtf8("/%1.py").arg( QString::fromUtf8( moduleName.c_str() ) ) );
+        EXPECT_TRUE( f.open(QIODevice::WriteOnly) );
+        f.write( ( std::string("def getLabel():\n"
+                               "    return 'BadVersion'\n"
+                               "def getPluginID():\n"
+                               "    return 'fr.inria.test.") + moduleName + "'\n"
+                   "def getVersion():\n"
+                   "    return " + versionExpr + "\n"
+                   "def createInstance(app, group):\n"
+                   "    pass\n" ).c_str() );
+    }
+    const std::string dirPath = dir.path().toStdString();
+    std::string err;
+    EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nsys.path.insert(0, r'" + dirPath + "')\n", &err, 0) ) << err;
+
+    std::string pluginID, pluginLabel, iconFilePath, grouping, description;
+    bool isToolset = false;
+    unsigned int version = 0;
+    EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::getGroupInfos(dirPath + '/', moduleName, &pluginID, &pluginLabel, &iconFilePath, &grouping,
+                                                                           &description, &isToolset, &version) );
+    EXPECT_EQ( pluginID, "fr.inria.test." + moduleName );
+
+    EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("sys.path.remove(r'" + dirPath + "')\n"
+                                                                                   "sys.modules.pop('" + moduleName + "', None)\n"
+                                                                                   "del " + moduleName + "\n", &err, 0) ) << err;
+
+    return version;
+}
+} // anonymous namespace
+
+TEST(PyPlugInfos, InvalidVersion)
+{
+    EXPECT_EQ( readPyPlugVersion("NatronTestPyPlugStringVersion", "'2'"), 1u );
+    EXPECT_EQ( readPyPlugVersion("NatronTestPyPlugNegativeVersion", "-2"), 1u );
+    EXPECT_EQ( readPyPlugVersion("NatronTestPyPlugVersion3", "3"), 3u );
+}
+
+// The script files (AppInstance::loadPythonScript() for a script without createInstance(), and init.py and
+// initGui.py, AppManager::findAndRunScriptFile()) go through runPythonScriptFile(): text that was already
+// in the captured sys.stderr, or that a successful script writes there, is not taken for an error of the
+// script (#1489).
+TEST_F(PythonScriptTest, ScriptFileStderrIsNotAnError)
+{
+    runSimple("import sys\n"
+              "sys.stderr.write('Traceback (most recent call last):\\nValueError: stale-1489\\n')\n");
+
+    std::string err, output;
+    testing::internal::CaptureStdout();
+    bool ok = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::runPythonScriptFile("import sys\n"
+                                                                           "sys.stderr.write('warning-1489\\n')\n"
+                                                                           "print('out-1489')\n", &err, &output);
+    std::string forwarded = testing::internal::GetCapturedStdout();
+
+    EXPECT_TRUE(ok) << err;
+    EXPECT_TRUE( err.empty() ) << err;
+    EXPECT_NE( std::string::npos, output.find("out-1489") ) << output;
+    EXPECT_NE( std::string::npos, output.find("warning-1489") ) << output;
+    EXPECT_EQ( std::string::npos, output.find("stale-1489") ) << output;
+    EXPECT_NE( std::string::npos, forwarded.find("stale-1489") ) << forwarded;
+    EXPECT_TRUE( caughtStderr().empty() );
+}
+
+// A failing script file is reported with its traceback, without the whole script.
+TEST_F(PythonScriptTest, ScriptFileExceptionIsAnError)
+{
+    std::string err;
+    bool ok = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::runPythonScriptFile("natronTest1489 = 'script-text-1489'\n"
+                                                                           "raise ValueError('boom-1489')\n", &err, 0);
+
+    EXPECT_FALSE(ok);
+    EXPECT_NE( std::string::npos, err.find("boom-1489") ) << err;
+    EXPECT_NE( std::string::npos, err.find("Traceback") ) << err;
+    EXPECT_EQ( std::string::npos, err.find("script-text-1489") ) << err;
+    EXPECT_TRUE( caughtStderr().empty() );
+    runSimple("del natronTest1489\n");
+}
+
+// AppInstance::loadPythonScript() with a script without createInstance(): stale text in the captured
+// sys.stderr, or a warning written by the script, is not reported as "Failed to load" (the Tests are a
+// background session: AppInstance::appendToScriptEditor() writes to stdout).
+TEST_F(PythonScriptTest, LoadPythonScriptStderrIsNotAnError)
+{
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ASSERT_TRUE( bool(app) );
+    QTemporaryDir dir;
+    ASSERT_TRUE( dir.isValid() );
+    QString path = QDir( dir.path() ).filePath( QString::fromUtf8("natronTest1489Warn.py") );
+    {
+        QFile f(path);
+        ASSERT_TRUE( f.open(QIODevice::WriteOnly | QIODevice::Truncate) );
+        f.write("import sys\nsys.stderr.write('warning-1489\\n')\n");
+    }
+    runSimple("import sys\n"
+              "sys.stderr.write('Traceback (most recent call last):\\nValueError: stale-1489\\n')\n");
+
+    testing::internal::CaptureStdout();
+    bool ok = app->loadPythonScript( QFileInfo(path) );
+    std::string forwarded = testing::internal::GetCapturedStdout();
+
+    EXPECT_TRUE(ok);
+    EXPECT_EQ( std::string::npos, forwarded.find("Failed to load") ) << forwarded;
+    EXPECT_NE( std::string::npos, forwarded.find("warning-1489") ) << forwarded;
+    EXPECT_TRUE( caughtStderr().empty() );
+
+    // the directory that loadPythonScript() added to sys.path
+    std::string err;
+    const std::string cleanup =
+        "import sys\n"
+        "while '" + dir.path().toStdString() + "' in sys.path:\n"
+        "    sys.path.remove('" + dir.path().toStdString() + "')\n";
+    EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(cleanup, &err, 0) ) << err;
+}
+
+// AppInstance::loadPythonScript() with a script without createInstance() that raises: it fails, and the
+// message has the exception, not the script (the Tests are a background session: on stderr).
+TEST_F(PythonScriptTest, LoadPythonScriptExceptionIsAnError)
+{
+    AppInstancePtr app = appPTR->getTopLevelInstance();
+    ASSERT_TRUE( bool(app) );
+    QTemporaryDir dir;
+    ASSERT_TRUE( dir.isValid() );
+    QString path = QDir( dir.path() ).filePath( QString::fromUtf8("natronTest1489Raise.py") );
+    {
+        QFile f(path);
+        ASSERT_TRUE( f.open(QIODevice::WriteOnly | QIODevice::Truncate) );
+        f.write("natronTest1489Text = 'script-text-1489'\nraise ValueError('boom-1489')\n");
+    }
+
+    testing::internal::CaptureStderr();
+    bool ok = app->loadPythonScript( QFileInfo(path) );
+    std::string printed = testing::internal::GetCapturedStderr();
+
+    EXPECT_FALSE(ok);
+    EXPECT_NE( std::string::npos, printed.find("Failed to load") ) << printed;
+    EXPECT_NE( std::string::npos, printed.find("boom-1489") ) << printed;
+    EXPECT_EQ( std::string::npos, printed.find("script-text-1489") ) << printed;
+    EXPECT_TRUE( caughtStderr().empty() );
+
+    std::string err;
+    const std::string cleanup =
+        "import sys, __main__\n"
+        "__main__.__dict__.pop('natronTest1489Text', None)\n"
+        "while " + std::string("r'") + dir.path().toStdString() + "' in sys.path:\n"
+        "    sys.path.remove(r'" + dir.path().toStdString() + "')\n";
+    EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(cleanup, &err, 0) ) << err;
 }

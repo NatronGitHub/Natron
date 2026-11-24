@@ -79,7 +79,8 @@ color selector. It contains:
   triangle to choose the saturation and brightness;
 - the **RGB** and **HSV** buttons, which switch the sliders between red,
   green and blue, and hue, saturation and value. The RGB sliders show the
-  linear values of the parameter;
+  linear values of the parameter, and the HSV sliders the hue, saturation and
+  value of these linear values, as the viewer's information bar does;
 - an **A** slider for the alpha channel, when the parameter has one;
 - a **Hex** field: type an HTML color such as ``#FF8000``, including the
   leading ``#``, and press :kbd:`Enter`. Like the color triangle, this value is

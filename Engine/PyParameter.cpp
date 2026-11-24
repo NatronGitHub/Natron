@@ -937,7 +937,12 @@ IntParam::getDefaultValue(int dimension) const
     if (!knob) {
         return 0;
     }
-    return knob->getDefaultValues_mt_safe()[dimension];
+    const std::vector<int> defaultValues = knob->getDefaultValues_mt_safe();
+    if ( (dimension < 0) || ( dimension >= (int)defaultValues.size() ) ) {
+        return 0; // as getValue(dimension)
+    }
+
+    return defaultValues[dimension];
 }
 
 void
@@ -1308,7 +1313,12 @@ DoubleParam::getDefaultValue(int dimension) const
     if (!knob) {
         return 0.;
     }
-    return knob->getDefaultValues_mt_safe()[dimension];
+    const std::vector<double> defaultValues = knob->getDefaultValues_mt_safe();
+    if ( (dimension < 0) || ( dimension >= (int)defaultValues.size() ) ) {
+        return 0.; // as getValue(dimension)
+    }
+
+    return defaultValues[dimension];
 }
 
 void
@@ -1459,7 +1469,7 @@ ColorParam::get(double frame) const
     ret.r = knob->getValueAtTime(frame, 0);
     ret.g = knob->getValueAtTime(frame, 1);
     ret.b = knob->getValueAtTime(frame, 2);
-    ret.a = knob->getDimension() == 4 ? knob->getValueAtTime(frame, 2) : 1.;
+    ret.a = knob->getDimension() == 4 ? knob->getValueAtTime(frame, 3) : 1.;
 
     return ret;
 }
@@ -1578,7 +1588,12 @@ ColorParam::getDefaultValue(int dimension) const
     if (!knob) {
         return 0.;
     }
-    return knob->getDefaultValues_mt_safe()[dimension];
+    const std::vector<double> defaultValues = knob->getDefaultValues_mt_safe();
+    if ( (dimension < 0) || ( dimension >= (int)defaultValues.size() ) ) {
+        return 0.; // as getValue(dimension)
+    }
+
+    return defaultValues[dimension];
 }
 
 void
