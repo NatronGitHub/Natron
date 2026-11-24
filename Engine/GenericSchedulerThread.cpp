@@ -538,8 +538,11 @@ GenericSchedulerThread::run()
 
             {
                 // An abort requested before the quit (e.g. by quitThread()) is complete: wake the threads
-                // waiting in waitForAbortToComplete_*(), which would otherwise wait forever
+                // waiting in waitForAbortToComplete_*(), which would otherwise wait forever.
+                // Like quitThread() does for enqueuedTasks, drop the tasks queued while that abort was pending.
+                QMutexLocker tasksLocker(&_imp->enqueuedTasksMutex);
                 QMutexLocker k(&_imp->abortRequestedMutex);
+                _imp->queuedTaskWhileProcessingAbort.clear();
                 if (_imp->abortRequested > 0) {
                     _imp->abortRequested = 0;
                     _imp->abortRequestedCond.wakeAll();

@@ -3889,7 +3889,7 @@ ViewerCurrentFrameRequestScheduler::~ViewerCurrentFrameRequestScheduler()
 {
     // Should've been stopped before anyway
     if (_imp->backupThread.quitThread(false)) {
-        _imp->backupThread.waitForAbortToComplete_enforce_blocking();
+        _imp->backupThread.waitForThreadToQuit_enforce_blocking();
     }
 }
 

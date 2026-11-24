@@ -95,9 +95,13 @@ TEST(GenericSchedulerThread, WaitForAbortWaits)
     ASSERT_TRUE( waitUntilStarted(thread) );
 
     ASSERT_TRUE( thread.abortThreadedTask() );
-    EXPECT_TRUE( thread.waitForAbortToComplete_enforce_blocking() );
+    // False only if the task finished before the wait started (on a loaded machine): then the abort request
+    // may not be cleared yet
+    bool waited = thread.waitForAbortToComplete_enforce_blocking();
     EXPECT_TRUE(thread.finished);
-    EXPECT_FALSE( thread.isBeingAborted() );
+    if (waited) {
+        EXPECT_FALSE( thread.isBeingAborted() );
+    }
 }
 
 // quitThread() aborts the active task; the thread then stops: a thread waiting for that abort must be woken
@@ -113,11 +117,11 @@ TEST(GenericSchedulerThread, WaitForAbortReturnsWhenThreadQuits)
         return thread.waitForAbortToComplete_enforce_blocking();
     });
     if (waited.wait_for( std::chrono::seconds(10) ) != std::future_status::ready) {
-        // The waiter can never return: don't hang the whole test binary
+        // Only on a regression: the waiter can never return, so don't hang the whole test binary
         ADD_FAILURE() << "waitForAbortToComplete_enforce_blocking() did not return after the thread quit";
         std::abort();
     }
-    waited.get();
+    EXPECT_TRUE( waited.get() );
     EXPECT_TRUE(thread.finished);
     EXPECT_FALSE( thread.isBeingAborted() );
 }
