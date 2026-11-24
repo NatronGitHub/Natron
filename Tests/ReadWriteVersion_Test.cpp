@@ -40,6 +40,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
@@ -65,6 +66,7 @@ versionsAvailable()
             Plugin* newestPlugin = appPTR->getPluginBinary(QString::fromUtf8(ids[i]), -1, -1, false);
             if ( !oldPlugin || !newestPlugin || (oldPlugin->getMajorVersion() != kOldMajor) ||
                  (newestPlugin->getMajorVersion() != kNewestMajor) ) {
+                // e.g. a real plug-in with that ID and a major of 91 or more is installed
                 NatronTestPlugin::reportSkipped(ids[i]);
 
                 return false;
@@ -115,6 +117,16 @@ embeddedMajor(const NodePtr& node)
 
     return plugin ? plugin->getMajorVersion() : -1;
 }
+
+// Resets the shared app's project when the test ends, also when an ASSERT fails, so that the next
+// tests get an untitled empty project, not one in a removed directory.
+struct ResetProjectOnExit
+{
+    ~ResetProjectOnExit()
+    {
+        appPTR->getTopLevelInstance()->getProject()->resetProject();
+    }
+};
 } // anonymous namespace
 
 TEST(ReadWriteVersion, ProjectLoadsSavedVersion)
@@ -124,6 +136,7 @@ TEST(ReadWriteVersion, ProjectLoadsSavedVersion)
     }
     QTemporaryDir tmpDir;
     ASSERT_TRUE( tmpDir.isValid() );
+    const ResetProjectOnExit resetProject; // destroyed before tmpDir
     ProjectPtr project = appPTR->getTopLevelInstance()->getProject();
     const QString dir = tmpDir.path() + QLatin1Char('/');
     const std::string filename = dir.toStdString() + "image.natrontestversion";
@@ -132,7 +145,10 @@ TEST(ReadWriteVersion, ProjectLoadsSavedVersion)
     NodePtr newestRead = createIONode(PLUGINID_OFX_READCDR, -1, filename);
     NodePtr oldWrite = createIONode(PLUGINID_OFX_WRITEPFM, kOldMajor, filename);
     NodePtr newestWrite = createIONode(PLUGINID_OFX_WRITEPFM, -1, filename);
-    ASSERT_TRUE(oldRead && newestRead && oldWrite && newestWrite);
+    // a major that is not installed: the closest one above
+    NodePtr missingRead = createIONode(PLUGINID_OFX_READCDR, kOldMajor - 1, filename);
+    ASSERT_TRUE(oldRead && newestRead && oldWrite && newestWrite && missingRead);
+    EXPECT_EQ( kOldMajor, embeddedMajor(missingRead) );
     EXPECT_EQ( kOldMajor, embeddedMajor(oldRead) );
     EXPECT_EQ( kNewestMajor, embeddedMajor(newestRead) );
     EXPECT_EQ( kOldMajor, embeddedMajor(oldWrite) );
@@ -142,19 +158,29 @@ TEST(ReadWriteVersion, ProjectLoadsSavedVersion)
     const std::string newestReadName = newestRead->getScriptName();
     const std::string oldWriteName = oldWrite->getScriptName();
     const std::string newestWriteName = newestWrite->getScriptName();
+
+    // setting the version parameter (e.g. an exported PyPlug does) does not change the decoder or
+    // encoder, so the parameter keeps its version: the project must not load another one
+    KnobIntPtr readVersion = std::dynamic_pointer_cast<KnobInt>( newestRead->getKnobByName(kNatronReadNodeParamDecodingPluginVersion) );
+    KnobIntPtr writeVersion = std::dynamic_pointer_cast<KnobInt>( newestWrite->getKnobByName(kNatronWriteNodeParamEncodingPluginVersion) );
+    ASSERT_TRUE(readVersion && writeVersion);
+    readVersion->setValue(kOldMajor);
+    writeVersion->setValue(kOldMajor);
+    EXPECT_EQ( kNewestMajor, readVersion->getValue() );
+    EXPECT_EQ( kNewestMajor, writeVersion->getValue() );
+    readVersion.reset();
+    writeVersion.reset();
     QString savedPath;
     ASSERT_TRUE( project->saveProject( dir, QString::fromUtf8("ReadWriteVersion.ntp"), &savedPath ) );
     oldRead.reset();
     newestRead.reset();
     oldWrite.reset();
     newestWrite.reset();
+    missingRead.reset();
 
     ASSERT_TRUE( project->loadProject( dir, QString::fromUtf8("ReadWriteVersion.ntp") ) );
     EXPECT_EQ( kOldMajor, embeddedMajor( project->getNodeByName(oldReadName) ) );
     EXPECT_EQ( kNewestMajor, embeddedMajor( project->getNodeByName(newestReadName) ) );
     EXPECT_EQ( kOldMajor, embeddedMajor( project->getNodeByName(oldWriteName) ) );
     EXPECT_EQ( kNewestMajor, embeddedMajor( project->getNodeByName(newestWriteName) ) );
-
-    // leave the shared app with an untitled empty project, before the directory is removed
-    project->resetProject();
 }

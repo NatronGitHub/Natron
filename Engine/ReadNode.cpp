@@ -278,8 +278,9 @@ public:
 
     void destroyReadNode();
 
-    // Sets the version knob to the version of the decoder, to save it in the project (#1681)
-    void setVersionKnob(const NodePtr& decoder);
+    // Sets the version knob to the version of the decoder if it is the plug-in of the plug-in ID
+    // knob, else to -1 (unknown): the project saves it, and loads that version (#1681)
+    void syncVersionKnob();
 
     void cloneGenericKnobs();
 
@@ -654,15 +655,25 @@ getFileNameFromSerialization(const std::list<KnobSerializationPtr>& serializatio
 }
 
 void
-ReadNodePrivate::setVersionKnob(const NodePtr& decoder)
+ReadNodePrivate::syncVersionKnob()
 {
     KnobIntPtr versionKnob = pluginVersionKnob.lock();
-    const Plugin* plugin = decoder->getPlugin();
+    KnobStringPtr pluginIDKnob = pluginIDStringKnob.lock();
 
-    if (versionKnob && plugin) {
-        versionKnob->setValue(plugin->getMajorVersion(), ViewSpec(0), 0);
-        versionKnob->setValue(plugin->getMinorVersion(), ViewSpec(0), 1);
+    if (!versionKnob || !pluginIDKnob) {
+        return;
     }
+    NodePtr decoder;
+    {
+        QMutexLocker k(&embeddedPluginMutex);
+        decoder = embeddedPlugin;
+    }
+    const Plugin* plugin = decoder ? decoder->getPlugin() : 0;
+    const bool known = plugin && ( decoder->getPluginID() == pluginIDKnob->getValue() );
+    versionKnob->blockValueChanges();
+    versionKnob->setValue(known ? plugin->getMajorVersion() : -1, ViewSpec(0), 0);
+    versionKnob->setValue(known ? plugin->getMinorVersion() : -1, ViewSpec(0), 1);
+    versionKnob->unblockValueChanges();
 }
 
 void
@@ -804,9 +815,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         if (pluginIDKnob) {
             pluginIDKnob->setValue(readerPluginID);
         }
-        if (node) {
-            setVersionKnob(node);
-        }
+        syncVersionKnob();
         placeReadNodeKnobsInPage();
 
         //We need to explcitly refresh the Python knobs since we attached the embedded node knobs into this node.
@@ -924,6 +933,7 @@ ReadNodePrivate::refreshPluginSelectorKnob()
     pluginIDKnob->blockValueChanges();
     pluginIDKnob->setValue(pluginID);
     pluginIDKnob->unblockValueChanges();
+    syncVersionKnob();
 
     refreshFileInfoVisibility(pluginID);
 
@@ -1228,7 +1238,7 @@ ReadNode::onEffectCreated(bool mayCreateFileDialog,
         if (pluginIDKnob) {
             pluginIDKnob->setValue(p->getPluginID());
         }
-        _imp->setVersionKnob(p);
+        _imp->syncVersionKnob();
         return;
     }
 
@@ -1355,6 +1365,12 @@ ReadNode::knobChanged(KnobI* k,
         
 
         _imp->refreshFileInfoVisibility(entry);
+    } else if ( k == _imp->pluginVersionKnob.lock().get() ) {
+        // e.g. loaded from a project or set by a PyPlug script after the decoder was created: the
+        // version is always the one of the decoder (#1681)
+        if ( !_imp->creatingReadNode && getEmbeddedReader() ) {
+            _imp->syncVersionKnob();
+        }
     } else if ( k == _imp->fileInfosKnob.lock().get() ) {
         NodePtr p = getEmbeddedReader();
         if (!p) {

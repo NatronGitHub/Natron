@@ -21,8 +21,10 @@
 // not the newest one. They read and write nothing.
 // The Read and Write nodes only wrap the bundled readers and writers (ReadNode::isBundledReader(),
 // WriteNode::isBundledWriter()), so they use the IDs of ReadCDR (openfx-arena) and WritePFM (openfx-io),
-// with majors above those of the real plug-ins, and only the "natrontestversion" file extension: in the
-// Tests binary, which loads this bundle, a Read or Write of another extension is unchanged.
+// with majors above those of the real plug-ins, and only the "natrontestversion" file extension.
+// Warning: in the processes that load this bundle (the Tests binary and the GUI tests, see
+// Tests/CMakeLists.txt), these are the newest ReadCDR and WritePFM, which read and write nothing: a
+// test that reads .cdr or writes .pfm files through a Read or Write node must use another format.
 
 #include <cstring>
 

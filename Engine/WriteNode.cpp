@@ -248,8 +248,8 @@ public:
     void createWriteNode(bool throwErrors, const std::string& filename, const NodeSerializationPtr& serialization,
                          bool userEdited = false);
 
-    // Sets the version knob to the version of the encoder, to save it in the project (#1681)
-    void setVersionKnob(const NodePtr& encoder);
+    // As ReadNodePrivate::syncVersionKnob(), for the encoder (#1681)
+    void syncVersionKnob();
 
     void destroyWriteNode();
 
@@ -718,15 +718,21 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
 } // WriteNodePrivate::createReadNodeAndConnectGraph
 
 void
-WriteNodePrivate::setVersionKnob(const NodePtr& encoder)
+WriteNodePrivate::syncVersionKnob()
 {
     KnobIntPtr versionKnob = pluginVersionKnob.lock();
-    const Plugin* plugin = encoder->getPlugin();
+    KnobStringPtr pluginIDKnob = pluginIDStringKnob.lock();
 
-    if (versionKnob && plugin) {
-        versionKnob->setValue(plugin->getMajorVersion(), ViewSpec(0), 0);
-        versionKnob->setValue(plugin->getMinorVersion(), ViewSpec(0), 1);
+    if (!versionKnob || !pluginIDKnob) {
+        return;
     }
+    NodePtr encoder = embeddedPlugin.lock();
+    const Plugin* plugin = encoder ? encoder->getPlugin() : 0;
+    const bool known = plugin && ( encoder->getPluginID() == pluginIDKnob->getValue() );
+    versionKnob->blockValueChanges();
+    versionKnob->setValue(known ? plugin->getMajorVersion() : -1, ViewSpec(0), 0);
+    versionKnob->setValue(known ? plugin->getMinorVersion() : -1, ViewSpec(0), 1);
+    versionKnob->unblockValueChanges();
 }
 
 void
@@ -857,9 +863,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         if (pluginIDKnob) {
             pluginIDKnob->setValue(writerPluginID);
         }
-        if (writeNode) {
-            setVersionKnob(writeNode);
-        }
+        syncVersionKnob();
 
         // Set the filename value
         if (writeNode) {
@@ -982,6 +986,7 @@ WriteNodePrivate::refreshPluginSelectorKnob()
     pluginIDKnob->blockValueChanges();
     pluginIDKnob->setValue(pluginID);
     pluginIDKnob->unblockValueChanges();
+    syncVersionKnob();
 }
 
 bool
@@ -1165,7 +1170,7 @@ WriteNode::onEffectCreated(bool mayCreateFileDialog,
         if (pluginIDKnob) {
             pluginIDKnob->setValue(_imp->embeddedPlugin.lock()->getPluginID());
         }
-        _imp->setVersionKnob( _imp->embeddedPlugin.lock() );
+        _imp->syncVersionKnob();
         return;
     }
     bool throwErrors = false;
@@ -1281,6 +1286,11 @@ WriteNode::knobChanged(KnobI* k,
             _imp->createWriteNode( false, filename, NodeSerializationPtr(), true /*userEdited*/ );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
+        }
+    } else if ( k == _imp->pluginVersionKnob.lock().get() ) {
+        // as in ReadNode::knobChanged(): the version is always the one of the encoder (#1681)
+        if ( !_imp->creatingWriteNode && writer ) {
+            _imp->syncVersionKnob();
         }
     } else if ( k == _imp->readBackKnob.lock().get() ) {
         clearPersistentMessage(false);
