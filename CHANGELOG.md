@@ -21,6 +21,7 @@
 
 ### Changes
 
+- File dialog: a folder typed with a project variable, e.g. `[Project]/plates`, is recognised as a folder (Enter opens it) instead of being taken for a file name. #1744
 - Node graph: undoing the resize of a backdrop restores its exact previous size, instead of a slightly larger one. #1744
 - A read-only checkbox (e.g. a disabled Boolean parameter, or one driven by an expression) can no longer be toggled with the Space key. #1744
 - Preferences: Restore defaults also resets the plug-ins of the Plug-ins page (enabled, except the deprecated ones; render scale, multi-threading and OpenGL on), instead of only checking their boxes. Closing the Preferences without Save keeps the plug-ins as they were for the rest of the session. #1744
