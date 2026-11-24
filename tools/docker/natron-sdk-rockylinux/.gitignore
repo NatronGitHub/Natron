@@ -26,3 +26,7 @@ builds
 artifacts
 fixMacPortsDeps.sh
 zip-python-mingw.sh
+Dockerfile.stage*
+Dockerfile.final
+check-commercial-bundle.sh
+macos-release.sh

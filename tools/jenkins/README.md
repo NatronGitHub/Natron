@@ -8,7 +8,7 @@ Build environments
 
 The Natron 2.6 releases are built in clean environments, not on long-lived build machines:
 
- * **Linux:** the Rocky Linux 9 Docker image with the Natron SDK, built by `include/scripts/build-Linux-sdk.sh`. See [tools/docker/README.md](../docker/README.md) to build the image and to launch a build in it.
+ * **Linux:** the Rocky Linux 9 Docker image with the Natron SDK, built by `include/scripts/build-Linux-sdk.sh`. See [tools/docker/README.md](../docker/README.md) to build the image and to launch a build in it. On GitHub Actions, `.github/workflows/linux_packages.yml` builds the image and the x86_64 and aarch64 portable archives, and tests them with Natron-Tests.
  * **Windows:** an MSYS2 UCRT64 (or CLANGARM64) environment with the packages of [tools/MINGW-packages](../MINGW-packages/README.md) (`build_installer.yml` sets it up on GitHub Actions).
  * **macOS:** MacPorts with the ports of `tools/MacPorts`, as described in `INSTALL_MACOS.md`, or a clean macOS 14 virtual machine made by [tools/tart](../tart/README.md).
 
