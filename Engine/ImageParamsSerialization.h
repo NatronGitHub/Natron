@@ -51,6 +51,7 @@ GCC_DIAG_ON(unused-parameter)
 #endif
 
 #include "Engine/EngineFwd.h"
+#include "Engine/RectDSerialization.h" // ImageParams::_rod
 
 
 
