@@ -58,22 +58,27 @@ The layers available in a project are those of its images, plus the
 *default layers* listed in **Project Settings** > **Layers** >
 **Default Layers**: ``Color.RGBA``, the motion vectors (``Backward``,
 ``Forward``) and the disparity (``DisparityLeft``, ``DisparityRight``). Add a
-layer to this list to have it in the layer menus of every node.
+layer to this list to have it in the **Output Layer** menu of every node.
 
-Most nodes process one layer at a time. Next to their **R**, **G**, **B** and
-**A** checkboxes, they have:
+Most nodes process one layer at a time. At the bottom of their main tab, with
+the mask and **Mix** controls, they have:
 
 **Output Layer**
    The layer that the node processes and writes, ``Color.RGBA`` by default.
-   The menu lists the layers that come from the node's inputs, the layers
-   the node produces, and the default layers. **New**, at the bottom of the
-   menu, creates a layer: give it a name and one to four channels. The other
-   layers go through the node unchanged.
+   The menu lists the layers of the node's main input (for example **B** for
+   Merge), the layers the node produces, and the default layers. **New**, at
+   the bottom of the menu, creates a layer: give it a name and one to four
+   channels. The other layers of the main input go through the node
+   unchanged.
 
 **All Planes**
    Process every layer of the input, each one into the same layer of the
    output: for example, a Transform applied to an image and all its render
-   passes.
+   passes. It is checked by default on Transform, Crop and similar nodes.
+   While it is checked, the **R**, **G**, **B** and **A** checkboxes are
+   hidden.
+   Otherwise, they take the names of the channels of the **Output Layer**,
+   and only those it has are shown.
 
 **<input> Layer**
    For each connected input (for example **Source Layer**), the layer that
@@ -91,13 +96,12 @@ Nodes that handle several layers themselves, such as Read, Write and
 Shuffle, have their own layer parameters instead:
 
 - the :ref:`Read node <fr.inria.openfx.ReadOIIO>` outputs all the layers of
-  a multi-layer file, such as an OpenEXR file from a 3D renderer, and the
-  Viewer's **Layer** menu shows each of them;
+  a multi-layer file, such as an OpenEXR file from a 3D renderer. Its own
+  **Output Layer** parameter selects the layer of the file that goes to the
+  color channels (see :doc:`compositing-projects-readers`);
 - the :ref:`Write node <fr.inria.openfx.WriteOIIO>` writes the layer
-  selected by **Layer(s)**, or all the layers of its input when **All
-  Planes** is checked (only formats such as OpenEXR can hold several
-  layers); for OpenEXR, **Parts** decides whether the layers and views go in
-  separate parts of the file (see :doc:`compositing-stereo`);
+  selected by **Layer(s)**, or all of them with **All Planes** (see
+  :doc:`compositing-stereo`);
 - Shuffle builds a layer from channels of its inputs (below).
 
 Moving channels with Shuffle
