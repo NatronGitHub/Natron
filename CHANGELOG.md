@@ -22,6 +22,11 @@
 ### Changes
 
 - Auto-save restore: when several auto-saves are restored at startup and one of the later windows fails to load, the first window keeps its restored project, without an extra Viewer or a second `onProjectCreated` callback. #1743
+- Python: `getDerivativeAtTime()` and `getIntegrateFromTimeToTime()` return 0 for a dimension out of range, as `getValue()` does, instead of crashing Natron. #1743
+- Preferences: Restore defaults no longer deletes the user's settings file when Natron runs with `--no-settings`, `--test` or `--setting`, and no longer turns saving the settings back on for the rest of the session. #1728
+- Python: renaming a node, e.g. a PyPlug instance with `setScriptName()`, no longer breaks the expressions of its parameters and of the nodes inside it that don't read one of its parameters (e.g. `thisGroup.getInput(1) is None` in the Glow PyPlug, or `thisNode.getScriptName()`): they kept the old name and failed with `AttributeError: 'NatronEngine.App' object has no attribute 'Glow1'`. #1686
+- File dialog: a folder typed with a project variable, e.g. `[Project]/plates`, is recognised as a folder (Enter opens it) instead of being taken for a file name. #1744
+- Node graph: undoing the resize of a backdrop restores its exact previous size, instead of a slightly larger one. #1744
 - A read-only checkbox (e.g. a disabled Boolean parameter, or one driven by an expression) can no longer be toggled with the Space key. #1744
 - Preferences: Restore defaults also resets the plug-ins of the Plug-ins page (enabled, except the deprecated ones; render scale, multi-threading and OpenGL on), instead of only checking their boxes. Closing the Preferences without Save keeps the plug-ins as they were for the rest of the session. #1744
 - Creating many nodes with default names (e.g. from a Python script) is much faster: finding a free name (`Blur1`, `Blur2`...) compared every candidate name with every node of the group, which made building a chain of thousands of nodes take minutes. #1565
