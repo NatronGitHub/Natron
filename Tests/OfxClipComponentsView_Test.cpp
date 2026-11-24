@@ -51,24 +51,52 @@
 
 NATRON_NAMESPACE_USING
 
-TEST(OfxClipComponentsView, ViewOfGetClipComponents)
+// a stereo project, and back to the views the other tests expect (a single view) at the end, also
+// if an assertion fails
+class OfxClipComponentsView
+    : public testing::Test
+{
+protected:
+
+    virtual void SetUp() OVERRIDE FINAL
+    {
+        _app = appPTR->getTopLevelInstance();
+        ASSERT_TRUE( bool(_app) );
+        _viewsList = std::dynamic_pointer_cast<KnobPath>( _app->getProject()->getKnobByName("viewsList") );
+        ASSERT_TRUE( bool(_viewsList) );
+        _savedViewsList = _viewsList->getValue();
+        _app->getProject()->setupProjectForStereo();
+    }
+
+    virtual void TearDown() OVERRIDE FINAL
+    {
+        if (_node) {
+            _node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
+            _node.reset();
+        }
+        if (_viewsList) {
+            _viewsList->setValue(_savedViewsList);
+        }
+    }
+
+    AppInstancePtr _app;
+    KnobPathPtr _viewsList;
+    std::string _savedViewsList;
+    NodePtr _node;
+};
+
+TEST_F(OfxClipComponentsView, ViewOfGetClipComponents)
 {
     if ( !NatronTestPlugin::isAvailable(kClipComponentsViewPluginID) ) {
         NatronTestPlugin::reportSkipped(kClipComponentsViewPluginID);
 
         return;
     }
-    AppInstancePtr app = appPTR->getTopLevelInstance();
-    ASSERT_TRUE( bool(app) );
-    KnobPathPtr viewsList = std::dynamic_pointer_cast<KnobPath>( app->getProject()->getKnobByName("viewsList") );
-    ASSERT_TRUE( bool(viewsList) );
-    const std::string savedViewsList = viewsList->getValue();
-    app->getProject()->setupProjectForStereo();
-    ASSERT_EQ(app->getProject()->getProjectViewsCount(), 2);
+    ASSERT_EQ(_app->getProject()->getProjectViewsCount(), 2);
 
-    NodePtr node = NatronTestPlugin::createNode(kClipComponentsViewPluginID);
-    ASSERT_TRUE(node != 0);
-    EffectInstancePtr effect = node->getEffectInstance();
+    _node = NatronTestPlugin::createNode(kClipComponentsViewPluginID);
+    ASSERT_TRUE(_node != 0);
+    EffectInstancePtr effect = _node->getEffectInstance();
     ASSERT_TRUE( effect && effect->isMultiPlanar() );
     for (int view = 0; view < 2; ++view) {
         NatronTestPlugin::setCounter("ClipComponentsView.view" + std::to_string(view), 0);
@@ -89,8 +117,4 @@ TEST(OfxClipComponentsView, ViewOfGetClipComponents)
         EXPECT_EQ(0, passThroughInputNb);
     }
     EXPECT_EQ( 0, NatronTestPlugin::counter("ClipComponentsView.view-1") );
-
-    node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
-    // back to the views the other tests expect (a single view)
-    viewsList->setValue(savedViewsList);
 }
