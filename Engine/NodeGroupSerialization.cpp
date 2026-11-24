@@ -187,7 +187,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list<NodeSerial
 
             //This is a python group plug-in, try to find the corresponding .py file, maybe a more recent version of the plug-in exists.
             QFileInfo pythonModuleInfo(qPyModulePath);
-            if (!pythonModuleInfo.exists() || appPTR->getCurrentSettings()->isLoadFromPyPlugsEnabled() ) {
+            // "Load PyPlugs in projects from .py if possible" off, or no .py found: load the Group saved in the project (#1646)
+            if ( !pythonModuleInfo.exists() || !appPTR->getCurrentSettings()->isLoadFromPyPlugsEnabled() ) {
                 pluginID = PLUGINID_NATRON_GROUP;
                 usingPythonModule = false;
             } else {
