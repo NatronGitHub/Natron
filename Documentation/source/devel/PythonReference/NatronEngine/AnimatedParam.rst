@@ -207,7 +207,7 @@ Sets the derivatives (the slopes of the tangents, in value units per frame) of t
 curve of the given *dimension* on each side of the keyframe at *time*: *left* before it, *right*
 after it. The keyframe becomes free (*eKeyframeTypeFree*), as when its tangents are moved in the
 Curve Editor: Natron no longer computes its derivatives when the curve changes.
-If there is no keyframe at *time*, if *dimension* doesn't exist, or if the parameter isn't a
+If the parameter is not animated or has no keyframe at *time*, if *dimension* doesn't exist, or if the parameter isn't a
 floating-point one (:doc:`DoubleParam`, :doc:`ColorParam`...: the curves of the other parameters are
 constant between keyframes), this method returns False.
 
