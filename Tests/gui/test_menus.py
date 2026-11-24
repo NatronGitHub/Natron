@@ -41,6 +41,35 @@ check(len(log) == 1 and log[0]["type"] == "menu" and log[0]["answer"] == "Duplic
 check(len(nodes_of(GENERATOR)) == before + 1,
       "Duplicate Nodes did not duplicate %s: %d nodes" % (gen.getScriptName(), len(nodes_of(GENERATOR))))
 
+
+def check_not_a_clone(copy, what):
+    # A clone's parameters follow the original's (#1512: the menu's Duplicate and Paste used to clone).
+    gen.getParam("par").setValue(2.0)
+    wait_idle()
+    par = copy.getParam("par").getValue()
+    gen.getParam("par").setValue(1.0)
+    wait_idle()
+    check(par == 1.0, "%s made a clone of %s: its par follows the original's (%r)" % (what, gen.getScriptName(), par))
+
+
+new_gens = [n for n in nodes_of(GENERATOR) if not same_node(n, gen)]
+check_not_a_clone(new_gens[0], "Duplicate Nodes")
+
+# "Paste Nodes" pastes the clipboard (a copy, not a clone), also with nothing selected
+app.clearSelection()
+app.selectNode(gen, True)
+app.copySelectedNodes()
+app.clearSelection()
+known = nodes_of(GENERATOR)
+NatronGuiTest.clearDialogLog()
+NatronGuiTest.setDialogAnswers(["Paste Nodes"])
+right_click("NodeGraph", x + 300, y + 300)  # empty area
+log = NatronGuiTest.getDialogLog()
+check(len(log) == 1 and log[0]["answer"] == "Paste Nodes", "dialog log: %r" % log)
+pasted = [n for n in nodes_of(GENERATOR) if not any(same_node(n, k) for k in known)]
+check(len(pasted) == 1, "Paste Nodes did not paste the copied %s: %d new nodes" % (gen.getScriptName(), len(pasted)))
+check_not_a_clone(pasted[0], "Paste Nodes")
+
 # an item given by its path: Other > Dot (the submenus are opened on the way, and are not answered again)
 DOT = "fr.inria.built-in.Dot"
 before = len(nodes_of(DOT))
