@@ -1875,52 +1875,9 @@ AppManager::findAndRunScriptFile(const QString& path,
             if ( file.open(QIODevice::ReadOnly) ) {
                 QTextStream ts(&file);
                 QString content = ts.readAll();
-                PythonGILLocker pgl;
-
-                PyRun_SimpleString( content.toStdString().c_str() );
-
-
-                PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
+                // Its failure is given by its result, not by what it or other code wrote to sys.stderr (#1489)
                 std::string error, output;
-
-                ///Gui session, do stdout, stderr redirection
-                PyObject *errCatcher = 0;
-                PyObject *outCatcher = 0;
-
-                if ( PyObject_HasAttrString(mainModule, "catchErr") ) {
-                    errCatcher = PyObject_GetAttrString(mainModule, "catchErr"); //get our catchOutErr created above, new ref
-                }
-
-                if ( PyObject_HasAttrString(mainModule, "catchOut") ) {
-                    outCatcher = PyObject_GetAttrString(mainModule, "catchOut"); //get our catchOutErr created above, new ref
-                }
-
-                PyErr_Print(); //make python print any errors
-
-                PyObject *errorObj = 0;
-                if (errCatcher) {
-                    errorObj = PyObject_GetAttrString(errCatcher, "value"); //get the  stderr from our catchErr object, new ref
-                    assert(errorObj);
-
-                    error = NATRON_PYTHON_NAMESPACE::PyStringToStdString(errorObj);
-                    PyObject* unicode = PyUnicode_FromString("");
-                    PyObject_SetAttrString(errCatcher, "value", unicode);
-                    Py_DECREF(errorObj);
-                    Py_DECREF(errCatcher);
-                }
-                PyObject *outObj = 0;
-                if (outCatcher) {
-                    outObj = PyObject_GetAttrString(outCatcher, "value"); //get the stdout from our catchOut object, new ref
-                    assert(outObj);
-                    output = NATRON_PYTHON_NAMESPACE::PyStringToStdString(outObj);
-                    PyObject* unicode = PyUnicode_FromString("");
-                    PyObject_SetAttrString(outCatcher, "value", unicode);
-                    Py_DECREF(outObj);
-                    Py_DECREF(outCatcher);
-                }
-
-
-                if ( !error.empty() ) {
+                if ( !NATRON_PYTHON_NAMESPACE::runPythonScriptFile(content.toStdString(), &error, &output) ) {
                     QString message(tr("Failed to load %1: %2").arg(absolutePath).arg(QString::fromUtf8( error.c_str() )) );
                     appPTR->writeToErrorLog_mt_safe(tr("Python Script"), QDateTime::currentDateTime(), message, false);
                     std::cerr << message.toStdString() << std::endl;
@@ -2288,8 +2245,8 @@ AppManager::loadPythonGroups()
         }
 
         std::string pluginLabel, pluginID, pluginGrouping, iconFilePath, pluginDescription;
-        unsigned int version;
-        bool isToolset;
+        unsigned int version = 1;
+        bool isToolset = false;
         bool gotInfos = NATRON_PYTHON_NAMESPACE::getGroupInfos(modulePath.toStdString(), moduleName.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &pluginDescription, &isToolset, &version);
 
 
@@ -4691,12 +4648,20 @@ raiseSystemExitAtPrompt(void*)
     return -1;
 }
 
+namespace {
+enum PythonScriptKindEnum
+{
+    ePythonScriptKindCode, // interpretPythonScript()
+    ePythonScriptKindFile, // runPythonScriptFile()
+};
+
 bool
-NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
-                                               std::string* error,
-                                               std::string* output,
-                                               PyObject* globals,
-                                               PyObject* locals)
+interpretPythonScriptImpl(const std::string& script,
+                          std::string* error,
+                          std::string* output,
+                          PyObject* globals,
+                          PyObject* locals,
+                          PythonScriptKindEnum kind)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
 
@@ -4741,6 +4706,16 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     if (v) {
         Py_DECREF(v);
         status = 0;
+    } else if ( (kind == ePythonScriptKindFile) && PyErr_ExceptionMatches(PyExc_SystemExit) ) {
+        // sys.exit() in a script file exits the process with its status, as PyRun_SimpleString() did
+        // (e.g. a NatronRenderer script, #1489): PyErr_Print() does it. What the script wrote goes to the
+        // terminal, since the Script Editor is about to close (the earlier output was already forwarded, unless
+        // it belongs to a calling script).
+        if (captured) {
+            std::cerr << ( depth.isNested() ? previousOut + previousErr : std::string() )
+                      << takeCaughtStream(mainModule, "catchOut") << takeCaughtStream(mainModule, "catchErr") << std::flush;
+        }
+        PyErr_Print();
     }
 
     // The success of the script is given by the result of PyRun_String(), not by what it wrote to
@@ -4779,7 +4754,7 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
         if (status != 0) {
             *error = exceptionText + scriptErr;
             scriptErr.clear();
-            if (captured) {
+            if ( captured && (kind == ePythonScriptKindCode) ) {
                 *error = "While executing script:\n" + script + "Python error:\n" + *error;
             }
         }
@@ -4803,7 +4778,26 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     }
 
     return status == 0;
-} // NATRON_PYTHON_NAMESPACE::interpretPythonScript
+} // interpretPythonScriptImpl
+} // anon namespace
+
+bool
+NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
+                                               std::string* error,
+                                               std::string* output,
+                                               PyObject* globals,
+                                               PyObject* locals)
+{
+    return interpretPythonScriptImpl(script, error, output, globals, locals, ePythonScriptKindCode);
+}
+
+bool
+NATRON_PYTHON_NAMESPACE::runPythonScriptFile(const std::string& script,
+                                             std::string* error,
+                                             std::string* output)
+{
+    return interpretPythonScriptImpl(script, error, output, NULL, NULL, ePythonScriptKindFile);
+}
 
 #if 0 // dead code
 void
@@ -5163,8 +5157,14 @@ getGroupInfosInternal(const std::string& modulePath,
         Py_XDECREF(versionObj);
     }
 
-    if ( isToolsetObj && PyBool_Check(isToolsetObj) ) {
-        *isToolset = (isToolsetObj == Py_True) ? true : false;
+    *isToolset = false;
+    if (isToolsetObj) {
+        // getIsToolset() may return any object, not only a bool (e.g. 1 or None): its truth value (#1528)
+        const int isTrue = PyObject_IsTrue(isToolsetObj);
+        if (isTrue < 0) {
+            PyErr_Clear();
+        }
+        *isToolset = (isTrue > 0);
         deleteScript.append("del isToolset\n");
         Py_XDECREF(isToolsetObj);
     }
