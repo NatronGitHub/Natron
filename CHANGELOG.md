@@ -21,6 +21,7 @@
 
 ### Changes
 
+- Preferences: Restore defaults also resets the plug-ins of the Plug-ins page (enabled, except the deprecated ones; render scale, multi-threading and OpenGL on), instead of only checking their boxes. Closing the Preferences without Save keeps the plug-ins as they were for the rest of the session. #1744
 - Creating many nodes with default names (e.g. from a Python script) is much faster: finding a free name (`Blur1`, `Blur2`...) compared every candidate name with every node of the group, which made building a chain of thousands of nodes take minutes. #1565
 - Node graph: a backdrop keeps its size when its label changes, and can be made smaller than its label; the label wraps to the backdrop's width. A node or backdrop label set from Python with only part of a `<font>` tag (e.g. only a size) no longer gets a wrong font family. #626
 - The Mask Channel of a mask input now selects the alpha channel by default also when the mask is alpha-only: its menu is then "None, A", where the default selected nothing, so the mask had no effect. This made the EdgeBlur PyPlug output its input unchanged unless External Matte was used. Projects where such a mask was ignored, with its Mask Channel left at the default, now render with the mask. #1685
