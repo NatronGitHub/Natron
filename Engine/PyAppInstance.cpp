@@ -228,6 +228,12 @@ App::timelineGetTime() const
     return getInternalApp()->getTimeLine()->currentFrame();
 }
 
+void
+App::timelineSetTime(int frame)
+{
+    getInternalApp()->getTimeLine()->seekFrame(frame, false, NULL, eTimelineChangeReasonOtherSeek);
+}
+
 int
 App::timelineGetLeftBound() const
 {

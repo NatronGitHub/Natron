@@ -49,6 +49,7 @@ Functions
 - def :meth:`timelineGetLeftBound<NatronEngine.App.timelineGetLeftBound>` ()
 - def :meth:`timelineGetRightBound<NatronEngine.App.timelineGetRightBound>` ()
 - def :meth:`timelineGetTime<NatronEngine.App.timelineGetTime>` ()
+- def :meth:`timelineSetTime<NatronEngine.App.timelineSetTime>` (frame)
 - def :meth:`undo<NatronEngine.App.undo>` ()
 - def :meth:`undoGroup<NatronEngine.App.undoGroup>` (text)
 - def :meth:`waitForRenders<NatronEngine.App.waitForRenders>` ([timeout=-1.0])
@@ -471,7 +472,8 @@ This is a blocking call only in background mode.
 
     :rtype: :class:`int`
 
-Returns the *left bound* of the timeline, that is, the first member of the project's frame-range parameter
+Returns the *left bound* of the timeline, that is, the first member of the project's frame-range parameter.
+To change it, set the project's frame-range parameter: ``app.getProjectParam("frameRange").set(first, last)``.
 
 
 
@@ -482,7 +484,8 @@ Returns the *left bound* of the timeline, that is, the first member of the proje
     :rtype: :class:`int`
 
 
-Returns the *right bound* of the timeline, that is, the second member of the project's frame-range parameter
+Returns the *right bound* of the timeline, that is, the second member of the project's frame-range parameter.
+To change it, set the project's frame-range parameter: ``app.getProjectParam("frameRange").set(first, last)``.
 
 
 
@@ -494,6 +497,25 @@ Returns the *right bound* of the timeline, that is, the second member of the pro
 Get the timeline's current time.
 In Natron there's only a single internal timeline and all Viewers are synchronised on that
 timeline. If the user seeks a specific frames, then all Viewers will render that frame.
+
+
+.. method:: App.timelineSetTime(frame)
+
+    :param frame: :class:`int`
+
+Moves the current time of the timeline to *frame*, as a seek in the timeline does: in the GUI,
+the Viewers render that frame. This also works in background mode, e.g. before reading
+parameter values or evaluating expressions at the current time.
+The frame may be outside the timeline bounds (see :meth:`timelineGetLeftBound<NatronEngine.App.timelineGetLeftBound>`).
+
+Example::
+
+    app.timelineSetTime(10)
+    print(app.timelineGetTime())  # 10
+    print(app.Blur1.size.get())   # the value at frame 10
+
+    .. versionadded:: 2.6
+
 
 
 .. method:: App.writeToScriptEditor(message)

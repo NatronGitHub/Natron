@@ -321,6 +321,11 @@ public:
 
     int timelineGetTime() const;
 
+    /**
+     * @brief Moves the current frame of the timeline to frame, as a seek in the timeline does.
+     **/
+    void timelineSetTime(int frame);
+
     int timelineGetLeftBound() const;
 
     int timelineGetRightBound() const;
