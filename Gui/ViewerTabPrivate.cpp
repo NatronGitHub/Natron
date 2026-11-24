@@ -169,6 +169,11 @@ ViewerTabPrivate::getOverlayTransform(double time,
     NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(targetNode);
     if (isGroupNode) {
         NodePtr output = isGroupNode->getOutputNodeInput(false);
+        if (!output) {
+            // nothing is connected to the Output node, or to the group input it leads to: the group is not
+            // on the path of this viewer (e.g. an unconnected Group with a point interact, #1526)
+            return false;
+        }
         return getOverlayTransform(time, view, output, currentNode, transform);
     }
     if ( currentNode == targetNode  ) {
@@ -293,6 +298,11 @@ ViewerTabPrivate::getTimeTransform(double time,
     NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(targetNode);
     if (isGroupNode) {
         NodePtr output = isGroupNode->getOutputNodeInput(false);
+        if (!output) {
+            // nothing is connected to the Output node, or to the group input it leads to: the group is not
+            // on the path of this viewer (e.g. an unconnected Group with a point interact, #1526)
+            return false;
+        }
         return getTimeTransform(time, view, output, currentNode, newTime);
     }
     if ( currentNode == targetNode  ) {

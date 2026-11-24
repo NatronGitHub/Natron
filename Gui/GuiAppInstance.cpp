@@ -326,8 +326,10 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
                 Dialogs::printDismissedDialog(title, question);
             } else {
                 StandardButtonEnum reply = Dialogs::questionDialog(title, question, false);
-                bool checkForUpdates = reply == eStandardButtonYes;
-                nSettings->setCheckUpdatesEnabled(checkForUpdates);
+                // not answered (closed by a termination signal, #1730): ask again on the next launch
+                if ( (reply == eStandardButtonYes) || (reply == eStandardButtonNo) ) {
+                    nSettings->setCheckUpdatesEnabled(reply == eStandardButtonYes);
+                }
             }
         }
 
@@ -498,9 +500,16 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
             }
         } else {
             CLArgs cl;
-            AppInstancePtr newApp = appPTR->newAppInstance(cl, false);
+            // An empty instance: onProjectCreated runs only if the load fails, see Gui::openProjectInternal() (#1463)
+            AppInstancePtr newApp = appPTR->newAppInstance(cl, true);
             // newAppInstance() returns NULL, after showing an error dialog, if the new window could not be loaded
-            if ( !newApp || !newApp->getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true) ) {
+            if (!newApp) {
+                // this window already restored the first auto-save: it must not also create a new project
+                return true;
+            }
+            if ( !newApp->getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true) ) {
+                newApp->execOnProjectCreatedCallback();
+
                 // this window already restored the first auto-save: it must not also create a new project
                 return true;
             }
