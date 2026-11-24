@@ -103,9 +103,14 @@ TEST(PyPlugToolset, GetIsToolsetTruthValue)
         { "natronTest1528None", "None", false },
         { "natronTest1528String", "'yes'", true },
     };
-    for (std::size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); ++i) {
-        writePyPlug(dir, cases[i].name, cases[i].expr);
-        EXPECT_EQ( cases[i].expected, isToolset(dir, cases[i].name, !cases[i].expected) ) << cases[i].expr;
+    // all the files first: the import system caches the directory listing, which a file written in the same
+    // clock tick as the previous import may not be in
+    for (const auto& c : cases) {
+        writePyPlug(dir, c.name, c.expr);
+    }
+    ASSERT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript("import importlib\nimportlib.invalidate_caches()\n", &err, 0) ) << err;
+    for (const auto& c : cases) {
+        EXPECT_EQ( c.expected, isToolset(dir, c.name, !c.expected) ) << c.expr;
     }
 
     // Clean up what the PyPlugs left in Python: the directory added to sys.path, the imported modules
