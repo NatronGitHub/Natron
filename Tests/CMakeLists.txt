@@ -107,6 +107,7 @@ set(Tests_SOURCES
     RenderThreads_Test.cpp
     RotoPaint_Test.cpp
     SequentialRender_Test.cpp
+    Settings_Test.cpp
     ShuffleAutoConnect_Test.cpp
     StrUtilsFormat_Test.cpp
     Tracker_Test.cpp
