@@ -658,6 +658,22 @@ KnobGuiString::addHtmlTags(QString text) const
     return text;
 }
 
+// The position of the tag (kBoldStartTag or kItalicStartTag) that the editor adds: before the font tag, or at
+// the start of a label without one; -1 if there is none. A <b> or <i> in the text itself is not one.
+static int
+autoAddedTagPosition(const QString& text,
+                     const char* tag)
+{
+    const QString toFind = QString::fromUtf8(tag);
+    const int fontTagStart = text.indexOf( QString::fromUtf8(kFontSizeTag) );
+
+    if (fontTagStart == -1) {
+        return text.startsWith(toFind) ? 0 : -1;
+    }
+
+    return text.lastIndexOf(toFind, fontTagStart);
+}
+
 // If text is startTag...endTag around the whole text (no other such tag inside), removes them and returns true
 static bool
 unwrapTag(QString& text,
@@ -727,8 +743,8 @@ KnobGuiString::restoreTextInfoFromString()
         _fontSizeSpinBox->setValue(_fontSize);
 
         _fontColor = color;
-        _italicActivated = text.contains( QString::fromUtf8(kItalicStartTag) );
-        _boldActivated = text.contains( QString::fromUtf8(kBoldStartTag) );
+        _italicActivated = autoAddedTagPosition(text, kItalicStartTag) != -1;
+        _boldActivated = autoAddedTagPosition(text, kBoldStartTag) != -1;
     }
     _setItalicButton->setChecked(_italicActivated);
     _setItalicButton->setDown(_italicActivated);
@@ -906,7 +922,7 @@ KnobGuiString::boldChanged(bool toggled)
     KnobStringPtr knob = _knob.lock();
     QString text = QString::fromUtf8( knob->getValue(0).c_str() );
     QString toFind = QString::fromUtf8(kBoldStartTag);
-    int i = text.indexOf(toFind);
+    int i = autoAddedTagPosition(text, kBoldStartTag);
 
     assert( (toggled && i == -1) || (!toggled && i != -1) );
 
