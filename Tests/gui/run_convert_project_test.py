@@ -38,29 +38,25 @@ and a copy with a node whose plug-in is missing is not converted (exit status
 run_project_load_info_test.py.
 
 Exit status: 0 on success, 1 on failure, 2 on a usage error.
---debugger runs NatronRenderer under natron-lldb.sh (see
-run_gui_smoke_test.py), or set NATRON_TEST_WRAPPER.
+--debugger runs NatronRenderer under natron-lldb.sh, or set
+NATRON_TEST_WRAPPER (see natronrunner.py).
 """
 
 import json
 import os
-import shlex
 import shutil
-import subprocess
 import sys
 import tempfile
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-PROJECT = os.path.join(os.path.dirname(HERE), "data",
-                       "ProjectFileFormat-2.5.ntp")
+from natronrunner import (BACKGROUND_TAG, DOT_PLUGIN_TAG, GUI_TAG,
+                          MISSING_PLUGIN_TAG, TEST_PROJECT, natron_env,
+                          replace_first, run, wrapper)
+
 BINARY_MAGIC = b"\x01\x16serialization::archive"
 # Given to the -t prompt, which must not start after convert_and_quit()
 PROMPT_STDIN = 'import sys; sys.stdout.write("PROMPT STARTED\\n")\n'
 PROMPT_MARKER = "PROMPT STARTED"
 TIMEOUT = 60  # seconds, for each run of NatronRenderer (about 2 s here)
-BACKGROUND_TAG = b"<Background_project>1</Background_project>"
-DOT_PLUGIN_TAG = b"<Plugin_id>fr.inria.built-in.Dot</Plugin_id>"
-MISSING_PLUGIN_TAG = b"<Plugin_id>fr.inria.built-in.NoSuchPlugin</Plugin_id>"
 
 # Loads NATRON_DUMP_INPUT and writes a description of its nodes and
 # parameters to NATRON_DUMP_OUTPUT (JSON).
@@ -131,55 +127,34 @@ natron.quit(status)
 class Runner:
     """Runs NatronRenderer with a private cache and environment."""
 
-    def __init__(self, renderer, wrapper, tmp_dir):
+    def __init__(self, renderer, cmd_wrapper, tmp_dir):
         self.renderer = renderer
-        self.wrapper = wrapper
-        self.env = dict(os.environ)
-        # no image cache in the user's directory
-        self.env["NATRON_DISK_CACHE_PATH"] = os.path.join(tmp_dir, "cache")
-        # Debug builds: no trapped floating point exception (#1537)
-        self.env["NATRON_NO_FP_TRAPS"] = "1"
+        self.wrapper = cmd_wrapper
+        self.env = natron_env(tmp_dir)
         self.stdin = os.path.join(tmp_dir, "prompt_stdin.py")
         with open(self.stdin, "w") as f:
             f.write(PROMPT_STDIN)
-        # natron-lldb.sh reads the standard input of the program from there
-        self.env["NATRON_LLDB_STDIN"] = self.stdin
 
     def run(self, args, extra_env=None):
         """Runs NatronRenderer --no-settings args; returns (status, output).
 
-        The standard input is PROMPT_STDIN.
+        The standard input is PROMPT_STDIN. The status is -1 after a timeout.
         """
         extra_env = extra_env or {}
-        env = dict(self.env)
-        env.update(extra_env)
+        if extra_env:
+            print("With %s:" % " ".join("%s=%s" % kv
+                                        for kv in sorted(extra_env.items())))
         cmd = self.wrapper + [self.renderer, "--no-settings"] + args
-        print("Running: %s %s" % (
-            " ".join("%s=%s" % kv for kv in sorted(extra_env.items())),
-            " ".join(shlex.quote(a) for a in cmd)))
-        sys.stdout.flush()
-        with open(self.stdin, "rb") as stdin:
-            proc = subprocess.Popen(cmd, env=env, stdin=stdin,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT)
-            try:
-                out, _ = proc.communicate(timeout=TIMEOUT)
-            except subprocess.TimeoutExpired:
-                # SIGTERM first: natron-lldb.sh then kills the program too
-                proc.terminate()
-                try:
-                    proc.communicate(timeout=20)
-                except subprocess.TimeoutExpired:
-                    proc.kill()
-                    proc.communicate()
-                print("FAILED: timeout")
-                return -1, ""
-        out = out.decode(errors="replace")
+        status, out = run(cmd, dict(self.env, **extra_env), TIMEOUT,
+                          stdin=self.stdin)
         # the plug-in loading messages are not interesting
         sys.stdout.write("".join(line for line in out.splitlines(True)
                                  if not line.startswith("OpenFX: loading")))
-        print("exit status %d" % proc.returncode)
-        return proc.returncode, out
+        if status is None:
+            print("FAILED: timeout")
+            return -1, out
+        print("exit status %d" % status)
+        return status, out
 
     def convert(self, *args, **kwargs):
         """Runs natron_convert_project.convert_and_quit(*args, **kwargs)."""
@@ -202,10 +177,8 @@ def file_format(path):
 
 def write_variant(data, old, new, path):
     """Writes data, with its first old replaced by new, to path."""
-    if old not in data:
-        raise ValueError("%r is not in the test project" % (old,))
     with open(path, "wb") as f:
-        f.write(data.replace(old, new, 1))
+        f.write(replace_first(data, old, new))
 
 
 class ConvertProjectTest:
@@ -219,7 +192,7 @@ class ConvertProjectTest:
         with open(self.dump_script, "w") as f:
             f.write(DUMP_SCRIPT)
         self.src = self.path("original.ntp")
-        shutil.copyfile(PROJECT, self.src)
+        shutil.copyfile(TEST_PROJECT, self.src)
         with open(self.src, "rb") as f:
             self.data = f.read()
 
@@ -291,8 +264,7 @@ class ConvertProjectTest:
         """A project with GUI data is converted only with discard_gui."""
         # Only the flag: NatronRenderer does not read the GUI part
         with_gui = self.path("withgui.ntp")
-        write_variant(self.data, BACKGROUND_TAG,
-                      b"<Background_project>0</Background_project>", with_gui)
+        write_variant(self.data, BACKGROUND_TAG, GUI_TAG, with_gui)
         dst = self.path("withgui.bin.ntp")
         self.check_refused(self.runner.convert(with_gui, dst, "binary"), dst,
                            "RuntimeError: %s has GUI data" % with_gui,
@@ -317,14 +289,11 @@ def main(argv):
     if len(argv) < 2:
         sys.stderr.write(__doc__)
         return 2
-    wrapper = []
-    if "--debugger" in argv[2:]:
-        wrapper = [os.path.join(HERE, "natron-lldb.sh")]
-    elif os.environ.get("NATRON_TEST_WRAPPER"):
-        wrapper = shlex.split(os.environ["NATRON_TEST_WRAPPER"])
+    cmd_wrapper = wrapper(argv[2:])
     tmp_dir = tempfile.mkdtemp(prefix="natron-convert-project-test-")
     try:
-        test = ConvertProjectTest(Runner(argv[1], wrapper, tmp_dir), tmp_dir)
+        runner = Runner(argv[1], cmd_wrapper, tmp_dir)
+        test = ConvertProjectTest(runner, tmp_dir)
         test.test_chain()
         test.test_gui_data()
         test.test_load_error()

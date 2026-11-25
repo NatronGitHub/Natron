@@ -8,7 +8,7 @@ import tempfile
 
 from natrontest import *
 
-from run_gui_smoke_test import writePNG
+from natronrunner import write_png
 
 require_ocio()
 require_plugin("fr.inria.openfx.ReadPNG")
@@ -34,7 +34,7 @@ try:
     # The project frame range is not the one of the Write node: the Render button renders the Manual
     # frame range of the Write node, set before its file name (#1574).
     app.getProjectParam("frameRange").set(1, 5)
-    writePNG(os.path.join(outDir, "input.png"), 64, 48)
+    write_png(os.path.join(outDir, "input.png"), 64, 48)
     read = app.createNode("fr.inria.built-in.Read")
     read.getParam("filename").set(os.path.join(outDir, "input.png"))
     write = app.createNode("fr.inria.built-in.Write")

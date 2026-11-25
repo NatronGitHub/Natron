@@ -36,24 +36,18 @@ Each run must finish under a timeout, run the callbacks (beforeRender once, afte
 for each frame) or the expression, write the 3 frames, and run the rest of the script after the render.
 
 Exit status: 0 on success, 77 if skipped (without OCIO, or if the Read/Write PNG plug-ins of
-openfx-io are not available: set OFX_PLUGIN_PATH), 1 on failure.
---debugger runs NatronRenderer under natron-lldb.sh (see run_gui_smoke_test.py), or set
-NATRON_TEST_WRAPPER.
+openfx-io are not available: set OFX_PLUGIN_PATH), 1 on failure. --debugger runs NatronRenderer
+under natron-lldb.sh, or set NATRON_TEST_WRAPPER (see natronrunner.py).
 """
 
 import os
-import shlex
 import shutil
-import subprocess
 import sys
 import tempfile
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
-from run_gui_smoke_test import killTree, writePNG  # noqa: E402
+from natronrunner import SKIP, natron_env, run, wrapper, write_png
 
-SKIP = 77
-TIMEOUT = 300  # seconds per run; a deadlock never ends
+TIMEOUT = 120  # seconds per run (a few seconds; a deadlock never ends), 5 runs within the ctest TIMEOUT
 FRAMES = [1, 2, 3]
 
 SCRIPT = """
@@ -138,42 +132,25 @@ else:
 """.replace("@FIRST@", str(FRAMES[0])).replace("@LAST@", str(FRAMES[-1]))
 
 
-def runMode(renderer, wrapper, outDir, script, mode):
+def run_mode(renderer, cmd_wrapper, out_dir, script, mode):
     """Runs the script with the given mode: returns True on success, SKIP if skipped, False on failure."""
-    env = dict(os.environ)
-    env["NATRON_CALLBACKS_TEST_DIR"] = outDir
-    env["NATRON_CALLBACKS_TEST_MODE"] = mode
-    # Debug builds: no trapped floating point exception (#1537), as with Natron --test
-    env["NATRON_NO_FP_TRAPS"] = "1"
+    env = natron_env(out_dir, NATRON_CALLBACKS_TEST_DIR=out_dir, NATRON_CALLBACKS_TEST_MODE=mode)
     # the -t prompt reads its commands from stdin after the script: none
-    stdinPath = os.path.join(outDir, "empty_stdin.py")
-    with open(stdinPath, "w") as f:
+    stdin_path = os.path.join(out_dir, "empty_stdin.py")
+    with open(stdin_path, "w") as f:
         f.write("")
-    env["NATRON_LLDB_STDIN"] = stdinPath  # natron-lldb.sh reads stdin from there
-    cmd = wrapper + [renderer, "--no-settings", "-t", script]
-    print("Running (%s): %s" % (mode, " ".join(cmd)))
-    sys.stdout.flush()
-    with open(stdinPath, "rb") as stdin:
-        # in its own process group, for killTree()
-        proc = subprocess.Popen(cmd, env=env, stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                start_new_session=(os.name == "posix"))
-        try:
-            outBytes, _ = proc.communicate(timeout=TIMEOUT)
-        except subprocess.TimeoutExpired:
-            # also kills NatronRenderer under natron-lldb.sh, which runs it in another process group
-            killTree(proc)
-            outBytes, _ = proc.communicate()
-            sys.stdout.write(outBytes.decode(errors="replace"))
-            print("FAILED (%s): timeout after %d s: deadlock?" % (mode, TIMEOUT))
-            return False
-    out = outBytes.decode(errors="replace")
+    print("Mode %s:" % mode)
+    status, out = run(cmd_wrapper + [renderer, "--no-settings", "-t", script], env, TIMEOUT, stdin=stdin_path)
     sys.stdout.write(out)
+    if status is None:
+        print("FAILED (%s): timeout after %d s: deadlock?" % (mode, TIMEOUT))
+        return False
     if "SKIP:" in out:
         return SKIP
-    print("NatronRenderer -t (%s) exited with status %d" % (mode, proc.returncode))
-    lines = [line.strip() for line in out.splitlines()]  # "\r\n" under a debugger
+    print("NatronRenderer -t (%s) exited with status %d" % (mode, status))
+    lines = [line.strip() for line in out.splitlines()]
     ok = True
-    if proc.returncode != 0:
+    if status != 0:
         print("FAILED (%s): the exit status should be 0" % mode)
         ok = False
     if mode == "precompsave":
@@ -208,24 +185,16 @@ def main(argv):
         # the Write node fails without an OCIO config ("Invalid OCIO config"), as for the Tests binary
         print("renderer callbacks test skipped: set OCIO to an OpenColorIO config")
         return SKIP
-    wrapper = []
-    if "--debugger" in argv[2:]:
-        wrapper = [os.path.join(HERE, "natron-lldb.sh")]
-    elif os.environ.get("NATRON_TEST_WRAPPER"):
-        wrapper = shlex.split(os.environ["NATRON_TEST_WRAPPER"])
-    outDir = tempfile.mkdtemp(prefix="natron-callbacks-test-")
-    # a private disk cache (and OFX plug-in cache), removed with outDir, unless NATRON_DISK_CACHE_PATH is set:
-    # the user's one is shared by every Natron of this version, e.g. a concurrent test run (#1569)
-    if not os.environ.get("NATRON_DISK_CACHE_PATH"):
-        os.environ["NATRON_DISK_CACHE_PATH"] = os.path.join(outDir, "cache")
+    cmd_wrapper = wrapper(argv[2:])
+    out_dir = tempfile.mkdtemp(prefix="natron-callbacks-test-")
     try:
-        writePNG(os.path.join(outDir, "input.png"), 64, 48)
-        script = os.path.join(outDir, "callbacks_test.py")
+        write_png(os.path.join(out_dir, "input.png"), 64, 48)
+        script = os.path.join(out_dir, "callbacks_test.py")
         with open(script, "w") as f:
             f.write(SCRIPT)
         ok = True
         for mode in ("button", "apprender", "expression", "precompsave", "precomp"):
-            ret = runMode(argv[1], wrapper, outDir, script, mode)
+            ret = run_mode(argv[1], cmd_wrapper, out_dir, script, mode)
             if ret == SKIP:
                 print("skipped: the PNG Read/Write plug-ins are not available (set OFX_PLUGIN_PATH to openfx-io)")
                 return SKIP
@@ -235,7 +204,7 @@ def main(argv):
             print("renderer callbacks test passed")
         return 0 if ok else 1
     finally:
-        shutil.rmtree(outDir, ignore_errors=True)
+        shutil.rmtree(out_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":
