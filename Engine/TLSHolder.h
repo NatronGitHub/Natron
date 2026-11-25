@@ -69,11 +69,19 @@ protected:
      **/
     virtual bool canCleanupPerThreadData(const QThread* curThread) const = 0;
 
+    struct CleanupResult
+    {
+        // The data of the thread, removed from this object. The caller destroys it after it has released its
+        // locks: it may hold the last references to effects, whose destruction runs plug-in actions that use
+        // the thread-local storage again (AppTLS::registerTLSHolder()).
+        std::shared_ptr<const void> removedData;
+        bool holderEmpty = false; // this object no longer holds any per-thread data
+    };
+
     /**
      * @brief Must clean-up any data stored for the given thread 'curThread'
-     * @returns True if this object no longer holds any per-thread data
      **/
-    virtual bool cleanupPerThreadData(const QThread* curThread) const = 0;
+    virtual CleanupResult cleanupPerThreadData(const QThread* curThread) const = 0;
 
     /**
      * @brief Copy all the TLS from fromThread to toThread
@@ -148,7 +156,8 @@ public:
 private:
 
     template <typename T>
-    std::shared_ptr<T> copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
+    std::shared_ptr<T> copyTLSFromSpawnerThreadInternal(const std::vector<TLSHolderBaseConstPtr>& holders,
+                                                          const TLSHolderBase* holder,
                                                           const QThread* curThread,
                                                           const QThread* spawnerThread);
 
@@ -197,7 +206,7 @@ public:
 private:
 
     virtual bool canCleanupPerThreadData(const QThread* curThread) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool cleanupPerThreadData(const QThread* curThread) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual CleanupResult cleanupPerThreadData(const QThread* curThread) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void copyTLS(const QThread* fromThread, const QThread* toThread) const OVERRIDE FINAL;
     std::shared_ptr<T> copyAndReturnNewTLS(const QThread* fromThread, const QThread* toThread) const WARN_UNUSED_RETURN;
 
