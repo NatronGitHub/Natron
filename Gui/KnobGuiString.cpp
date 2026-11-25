@@ -664,74 +664,38 @@ KnobGuiString::restoreTextInfoFromString()
     KnobStringPtr knob = _knob.lock();
     QString text = QString::fromUtf8( knob->getValue(0).c_str() );
 
-    if ( text.isEmpty() ) {
+    // the bold and italic buttons, also for a label without the font tag
+    _italicActivated = text.contains( QString::fromUtf8(kItalicStartTag) );
+    _setItalicButton->setChecked(_italicActivated);
+    _setItalicButton->setDown(_italicActivated);
+    _boldActivated = text.contains( QString::fromUtf8(kBoldStartTag) );
+    _setBoldButton->setChecked(_boldActivated);
+    _setBoldButton->setDown(_boldActivated);
+
+    if ( !text.contains( QString::fromUtf8(kFontSizeTag) ) ) {
+        // an empty label, or one without Natron's font tag (e.g. set from Python, #1807): give it the font shown
         _fontSize = _fontSizeSpinBox->value();
         _fontColor = Qt::black;
         _fontFamily = _fontCombo->currentFont().family();
-        _boldActivated = false;
-        _italicActivated = false;
-        QString fontTag = makeFontTag(_fontFamily, _fontSize, _fontColor);
-        text.prepend(fontTag);
-        text.append( QString::fromUtf8(kFontEndTag) );
-
-
+        text = decorateTextWithFontTag(_fontFamily, _fontSize, _fontColor, text);
         knob->setValue( text.toStdString() );
     } else {
-        QString toFind = QString::fromUtf8(kItalicStartTag);
-        int i = text.indexOf(toFind);
-        if (i != -1) {
-            _italicActivated = true;
-        } else {
-            _italicActivated = false;
-        }
+        // The tag may lack the color or the face, e.g. when the label was set from Python (#1807): these
+        // keep their default
+        QFont font( _fontCombo->currentFont() );
+        font.setPointSize( static_cast<int>( _fontSizeSpinBox->value() ) );
+        QColor color(Qt::black);
+        parseFont(text, &font, &color);
+        _fontFamily = font.family();
+        _fontCombo->setCurrentFont( QFont(_fontFamily) );
 
-        _setItalicButton->setChecked(_italicActivated);
-        _setItalicButton->setDown(_italicActivated);
+        _fontSize = font.pointSize();
 
-        toFind = QString::fromUtf8(kBoldStartTag);
-        i = text.indexOf(toFind);
-        if (i != -1) {
-            _boldActivated = true;
-        } else {
-            _boldActivated = false;
-        }
+        _fontSizeSpinBox->setValue(_fontSize);
 
-        _setBoldButton->setChecked(_boldActivated);
-        _setBoldButton->setDown(_boldActivated);
-
-        toFind = QString::fromUtf8(kFontSizeTag);
-        const bool foundFontTag = text.indexOf(toFind) != -1;
-
-        if (!foundFontTag) {
-            _fontSize = _fontSizeSpinBox->value();
-            _fontColor = Qt::black;
-            _fontFamily = _fontCombo->currentFont().family();
-            _boldActivated = false;
-            _italicActivated = false;
-            QString fontTag = makeFontTag(_fontFamily, _fontSize, _fontColor);
-            text.prepend(fontTag);
-            text.append( QString::fromUtf8(kFontEndTag) );
-            knob->setValue( text.toStdString() );
-        } else {
-            // The tag may lack the color or the face, e.g. when the label was set from Python (#1807): these
-            // keep their default
-            QFont font( _fontCombo->currentFont() );
-            font.setPointSize( static_cast<int>( _fontSizeSpinBox->value() ) );
-            QColor color(Qt::black);
-            parseFont(text, &font, &color);
-            _fontFamily = font.family();
-            _fontCombo->setCurrentFont( QFont(_fontFamily) );
-
-            _fontSize = font.pointSize();
-
-            _fontSizeSpinBox->setValue(_fontSize);
-
-            _fontColor = color;
-        }
-
-
-        updateFontColorIcon(_fontColor);
+        _fontColor = color;
     }
+    updateFontColorIcon(_fontColor);
 } // restoreTextInfoFromString
 
 void
@@ -812,7 +776,7 @@ KnobGuiString::updateFontColorIcon(const QColor & color)
     _fontColorButton->setIcon( QIcon(p) );
 }
 
-// Sets the attribute (kFontFaceTag or kFontColorTag) of the font tag that starts at fontTagStart, and adds it
+// Sets the attribute (kFontSizeTag, kFontFaceTag or kFontColorTag) of the font tag that starts at fontTagStart, and adds it
 // before the end of the tag if the tag doesn't have it, e.g. a label set from Python (#1807): the tag keeps
 // starting with kFontSizeTag, which the other edits look for.
 static void
@@ -851,9 +815,8 @@ KnobGuiString::onCurrentFontChanged(const QFont & font)
     if (i != -1) {
         setFontTagAttribute(text, i, kFontFaceTag, font.family());
     } else {
-        QString fontTag = makeFontTag(_fontFamily, _fontSize, _fontColor);
-        text.prepend(fontTag);
-        text.append( QString::fromUtf8(kFontEndTag) );
+        // a label without Natron's font tag, e.g. set from Python (#1807)
+        text = decorateTextWithFontTag(_fontFamily, _fontSize, _fontColor, text);
     }
     pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(), knob->getValue(0), text.toStdString() ) );
 }
@@ -892,16 +855,7 @@ KnobGuiString::onFontSizeChanged(double size)
         // a label without Natron's font tag, e.g. set from Python (#1807)
         text = decorateTextWithFontTag(_fontFamily, _fontSize, _fontColor, text);
     } else {
-        i += toFind.size();
-        ///erase the current font size
-        QString currentSize;
-        int j = i;
-        while ( j < text.size() && text.at(j).isDigit() ) {
-            currentSize.push_back( text.at(j) );
-            ++j;
-        }
-        text.remove( i, currentSize.size() );
-        text.insert( i, QString::number(size) );
+        setFontTagAttribute( text, i, kFontSizeTag, QString::number(size) );
     }
     pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(), knob->getValue(0), text.toStdString() ) );
 }
