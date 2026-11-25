@@ -57,6 +57,7 @@ class PythonExpressionScopeTest
 {
 protected:
     NodePtr _node;
+    bool _variablesSet = false;
 
     virtual void SetUp() OVERRIDE
     {
@@ -80,25 +81,29 @@ protected:
         script += "def natronTestTwice(x):\n    return 2 * x\n";
         script += "natronTestAppId = id(app)\n";
         std::string error;
-        EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, 0) ) << error;
+        _variablesSet = NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, 0);
+        EXPECT_TRUE(_variablesSet) << error;
     }
 
     virtual void TearDown() OVERRIDE
     {
-        if (_node) {
-            _node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
-            _node.reset();
+        if (!_variablesSet) {
+            return;
         }
         std::string script;
         for (std::size_t i = 0; i < sizeof(kUserVariables) / sizeof(kUserVariables[0]); ++i) {
             script += std::string("del ") + kUserVariables[i] + "\n";
         }
         if (_node) {
-            script += "del " + _node->getScriptName_mt_safe() + "\n";
+            script += "globals().pop('" + _node->getScriptName_mt_safe() + "', None)\n";
+            _node->destroyNode(true /*blockingDestroy*/, false /*autoReconnect*/);
+            _node.reset();
         }
         script += "del natronTestTwice\ndel natronTestAppId\n";
+        // the variables of SetUp are all removed, so that they don't stay in __main__ for the next tests
+        script += "assert 'user node' not in globals().values(), 'a variable of the test is left in __main__'\n";
         std::string error;
-        NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, 0);
+        EXPECT_TRUE( NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, 0) ) << error;
     }
 
     bool skipped()
