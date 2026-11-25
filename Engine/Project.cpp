@@ -743,12 +743,16 @@ Project::loadProjectInternal(const QString & path,
         Q_EMIT projectNameChanged( path + name, !isSaveUpToDate() );
     }
 
-    ///Try to take the project lock by creating a lock file
-    if (!isAutoSave) {
-        QString lockFilePath = getLockAbsoluteFilePath();
-        if ( !QFile::exists(lockFilePath) ) {
-            createLockFile();
-        }
+    finishLoad(isAutoSave);
+
+    return ret;
+} // Project::loadProjectInternal
+
+void
+Project::finishLoad(bool isAutoSave)
+{
+    if ( !isAutoSave && !QFile::exists( getLockAbsoluteFilePath() ) ) {
+        createLockFile();
     }
 
     _imp->runOnProjectLoadCallback();
@@ -761,9 +765,7 @@ Project::loadProjectInternal(const QString & path,
 #endif
         QCoreApplication::processEvents();
     }
-
-    return ret;
-} // Project::loadProjectInternal
+}
 
 void
 Project::loadPythonProjectInternal(const QString & path,
@@ -815,18 +817,7 @@ Project::loadPythonProjectInternal(const QString & path,
     Q_EMIT formatChanged(f);
     Q_EMIT projectNameChanged(filePath, false);
 
-    if ( !QFile::exists( getLockAbsoluteFilePath() ) ) {
-        createLockFile();
-    }
-
-    _imp->runOnProjectLoadCallback();
-
-    {
-#ifdef DEBUG
-        boost_adaptbx::floating_point::exception_trapping trap(0);
-#endif
-        QCoreApplication::processEvents();
-    }
+    finishLoad(false);
 } // Project::loadPythonProjectInternal
 
 bool
