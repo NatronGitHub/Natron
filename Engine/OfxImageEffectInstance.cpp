@@ -603,6 +603,36 @@ OfxImageEffectInstance::getOfxParamOverlayInteractDescProps()
     return interactDescProps;
 }
 
+// the parameter types that never animate in Natron (see newParam())
+static bool
+neverAnimates(const std::string& paramType)
+{
+    return (paramType == kOfxParamTypeBytes) || (paramType == kOfxParamTypeStrChoice);
+}
+
+void
+OfxImageEffectInstance::warnIfAnimates(const std::string& paramName,
+                                       const OFX::Host::Param::Descriptor& descriptor) const
+{
+    if ( !descriptor.getCanAnimate() || !neverAnimates( descriptor.getType() ) ) {
+        return;
+    }
+    // once per plug-in and parameter: newParam() is called for each instance
+    static QMutex warnedMutex;
+    static std::set<std::string> warned;
+    const std::string key = getOfxEffectInstance()->getPluginID() + '/' + paramName;
+    bool warn;
+    {
+        QMutexLocker l(&warnedMutex);
+        warn = warned.insert(key).second;
+    }
+    if (warn) {
+        const char* typeName = (descriptor.getType() == kOfxParamTypeBytes) ? "Bytes" : "StrChoice";
+        std::cerr << getOfxEffectInstance()->getPluginID() << ": Warning: the " << typeName << " parameter " << paramName
+                  << " sets kOfxParamPropAnimates to 1, but Natron doesn't animate " << typeName << " parameters" << std::endl;
+    }
+}
+
 // make a parameter instance
 OFX::Host::Param::Instance *
 OfxImageEffectInstance::newParam(const std::string &paramName,
@@ -638,6 +668,13 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         instance = ret;
     } else if (paramType == kOfxParamTypeChoice) {
         OfxChoiceInstance *ret = new OfxChoiceInstance(getOfxEffectInstance(), descriptor);
+        knob = ret->getKnob();
+        instance = ret;
+    } else if (paramType == kOfxParamTypeStrChoice) {
+        // OFX 1.5 (kOfxParamHostPropSupportsStrChoice): a menu whose value is the enum of the option. It
+        // doesn't animate (kOfxParamHostPropSupportsStrChoiceAnimation is 0, forced below).
+        warnIfAnimates(paramName, descriptor);
+        OfxStrChoiceInstance *ret = new OfxStrChoiceInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         instance = ret;
     } else if (paramType == kOfxParamTypeRGBA) {
@@ -694,21 +731,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         // no user interface; it doesn't animate (forced below).
         secretByDefault = true;
         enabledByDefault = false;
-        if ( descriptor.getCanAnimate() ) {
-            // once per plug-in and parameter: newParam() is called for each instance
-            static QMutex warnedMutex;
-            static std::set<std::string> warned;
-            const std::string key = getOfxEffectInstance()->getPluginID() + '/' + paramName;
-            bool warn;
-            {
-                QMutexLocker l(&warnedMutex);
-                warn = warned.insert(key).second;
-            }
-            if (warn) {
-                std::cerr << getOfxEffectInstance()->getPluginID() << ": Warning: the Bytes parameter " << paramName
-                          << " sets kOfxParamPropAnimates to 1, but Natron doesn't animate Bytes parameters" << std::endl;
-            }
-        }
+        warnIfAnimates(paramName, descriptor);
         OfxBytesInstance *ret = new OfxBytesInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         instance = ret;
@@ -825,9 +848,10 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
 
     knob->setIsMetadataSlave( isClipPreferencesSlaveParam(paramName) );
     knob->setIsPersistent(persistent);
-    // Bytes params are opaque data, which can't be interpolated: they never animate in Natron, even if the
-    // plug-in sets kOfxParamPropAnimates (HostSupport's default is 0 for them)
-    knob->setAnimationEnabled( descriptor.getCanAnimate() && paramType != kOfxParamTypeBytes );
+    // Bytes params are opaque data, which can't be interpolated, and the keyframes of StrChoice params would
+    // hold option indices: they never animate in Natron, even if the plug-in sets kOfxParamPropAnimates
+    // (HostSupport's default is 0 for them)
+    knob->setAnimationEnabled( descriptor.getCanAnimate() && !neverAnimates(paramType) );
     knob->setSecretByDefault(secretByDefault);
     knob->setDefaultAllDimensionsEnabled(enabledByDefault);
     knob->setHintToolTip( descriptor.getHint() );

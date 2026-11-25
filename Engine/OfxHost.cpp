@@ -313,9 +313,10 @@ OfxHost::setProperties()
     _properties.setStringProperty(kOfxPropLabel, NATRON_APPLICATION_NAME); // "nuke" //< use this to pass for nuke
     // OpenFX API v1.5 (1.5.1). The 1.5 features are opt-ins that each have their own host property or
     // suite, so plug-ins must not rely on the version number alone. Natron supports the DrawSuite
-    // (supportsDrawSuite()) and Bytes params (kOfxHostSupportHostPropSupportsBytes, below); HostSupport
-    // declares the others (colour management, StrChoice params, CUDA/Metal/OpenCL render...) as
-    // "not supported" until Natron implements them.
+    // (supportsDrawSuite()), Bytes params (kOfxHostSupportHostPropSupportsBytes, below), StrChoice params
+    // (kOfxParamHostPropSupportsStrChoice, below) and the display order of choices (kOfxParamPropChoiceOrder,
+    // which has no host property); HostSupport declares the others (colour management, CUDA/Metal/OpenCL
+    // render...) as "not supported" until Natron implements them.
     _properties.setIntProperty(kOfxPropAPIVersion, 1, 0);
     _properties.setIntProperty(kOfxPropAPIVersion, 5, 1);
     _properties.setIntProperty(kOfxPropVersion, NATRON_VERSION_MAJOR, 0);
@@ -368,6 +369,10 @@ OfxHost::setProperties()
     // OFX 1.5 Bytes params (OfxBytesInstance). The standard has no host property for them (plug-ins learn
     // that a host doesn't support them from paramDefine): this HostSupport property lets paramDefine accept them.
     _properties.setIntProperty(kOfxHostSupportHostPropSupportsBytes, 1);
+    // OFX 1.5 StrChoice params (OfxStrChoiceInstance, a KnobChoice whose value is the enum of the option). They
+    // don't animate: their keyframes would hold option indices, which change when the plug-in reorders them.
+    _properties.setIntProperty(kOfxParamHostPropSupportsStrChoice, 1);
+    _properties.setIntProperty(kOfxParamHostPropSupportsStrChoiceAnimation, 0);
     _properties.setPointerProperty(kOfxPropHostOSHandle, NULL);
     _properties.setIntProperty(kOfxParamHostPropSupportsParametricAnimation, 0);
 

@@ -124,6 +124,7 @@ SOURCES += \
     OfxRenderClone_Test.cpp \
     OfxSequenceRenderArgs_Test.cpp \
     OfxSingleInstance_Test.cpp \
+    OfxStrChoiceParam_Test.cpp \
     OfxSuiteStatus_Test.cpp \
     OfxSyncPrivateData_Test.cpp \
     OfxTestPlugin_Test.cpp \

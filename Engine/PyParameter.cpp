@@ -1833,10 +1833,12 @@ ChoiceParam::set(const QString& label)
 
     Q_UNUSED(s);
     if ( app && app->isCreatingPythonGroup() &&
+         (knob->getOptionRestoration() == KnobChoice::eOptionRestorationMatch) &&
          ( KnobChoice::choiceMatch(choiceID, knob->getEntries_mt_safe(), 0) < 0 ) ) {
         // A PyPlug or a Python project file: the option may not exist yet, e.g. a layer of an input that is
         // connected later. Keep it, as the .ntp loader does (KnobChoice::choiceRestoration()): it is
-        // selected when the options are refreshed (KnobChoice::findAndSetOldChoice()).
+        // selected when the options are refreshed (KnobChoice::findAndSetOldChoice()). The options of a
+        // StrChoice param are fixed by the plug-in: an option that it removed leaves the value unchanged.
         knob->setActiveEntry( ChoiceOption(choiceID) );
     }
 }

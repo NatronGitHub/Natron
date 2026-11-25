@@ -1297,7 +1297,11 @@ Node::loadKnob(const KnobIPtr & knob,
         const bool keepSecret = _imp->effect->isWriter() && (knob->getName() == kWriteOIIOParamViewsSelector);
         const bool wasSecret = knob->getIsSecret();
 
-        knob->cloneDefaultValues( serializedKnob.get() );
+        // The default of a StrChoice param is an option index: the options may have changed since the project
+        // was saved, so it stays the plug-in's default.
+        if ( !isChoice || (isChoice->getOptionRestoration() != KnobChoice::eOptionRestorationExactIDOrDefault) ) {
+            knob->cloneDefaultValues( serializedKnob.get() );
+        }
 
         if (isChoice) {
             const TypeExtraData* extraData = (*it)->getExtraData();

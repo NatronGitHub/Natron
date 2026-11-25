@@ -4709,6 +4709,9 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
         if (!makeAlias) {
             newKnob->populateChoices( isChoice->getEntries_mt_safe(), isChoice->getExplicitDisplayOrder_mt_safe() );
         }
+        // e.g. a StrChoice param exported to a group: found again by exact ID (the mode is not saved with user
+        // knobs, so a reloaded group uses the default matching)
+        newKnob->setOptionRestoration( isChoice->getOptionRestoration() );
         output = newKnob;
     } else if (isColor) {
         KnobColorPtr newKnob = otherHolder->createColorKnob(newScriptName, newLabel, getDimension(), isUserKnob);

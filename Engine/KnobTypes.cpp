@@ -508,6 +508,7 @@ KnobChoice::KnobChoice(KnobHolder* holder,
     , _currentEntry()
     , _addNewChoice(false)
     , _isCascading(false)
+    , _optionRestoration(eOptionRestorationMatch)
 {
 }
 
@@ -520,6 +521,7 @@ KnobChoice::KnobChoice(KnobHolder* holder,
     , _currentEntry()
     , _addNewChoice(false)
     , _isCascading(false)
+    , _optionRestoration(eOptionRestorationMatch)
 {
 }
 
@@ -657,15 +659,26 @@ KnobChoice::findAndSetOldChoice()
 {
 
     int found = -1;
+    // read the default before locking _entriesMutex (it locks the values)
+    const int defaultIndex = (_optionRestoration == eOptionRestorationExactIDOrDefault) ? getDefaultValue(0) : -1;
+    // the missing option that stays the active entry, if the value becomes the default
+    ChoiceOption missing;
 
     {
         QMutexLocker k(&_entriesMutex);
 
         if ( !_currentEntry.id.empty() ) {
             ChoiceOption matched;
-            found = choiceMatch(_currentEntry.id, _entries, &matched);
+            found = matchOption_locked(_currentEntry.id, &matched);
             if (found != -1) {
                 _currentEntry = matched;
+            } else if ( (_optionRestoration == eOptionRestorationExactIDOrDefault) &&
+                        (defaultIndex >= 0) && ( defaultIndex < (int)_entries.size() ) ) {
+                // The selected option is not in the new options: the value is the default, but the option
+                // stays the active entry, so that it is selected again if the plug-in adds it (e.g. while it
+                // rebuilds its options one at a time) and the menu shows it as missing otherwise.
+                found = defaultIndex;
+                missing = _currentEntry;
             }
         }
     }
@@ -676,6 +689,11 @@ KnobChoice::findAndSetOldChoice()
         setValue(found);
         unblockValueChanges();
         endChanges();
+    }
+    if ( !missing.id.empty() ) {
+        // setValue() made the default the active entry (onInternalValueChanged())
+        QMutexLocker k(&_entriesMutex);
+        _currentEntry = missing;
     }
 }
 
@@ -1000,7 +1018,7 @@ KnobChoice::setValueFromID(const std::string & value,
     int i;
     {
         QMutexLocker k(&_entriesMutex);
-        i = choiceMatch(value, _entries, &_currentEntry);
+        i = matchOption_locked(value, &_currentEntry);
     }
     if (i >= 0) {
         return setValue(i, ViewIdx(0), dimension, turnOffAutoKeying);
@@ -1017,7 +1035,11 @@ void
 KnobChoice::setDefaultValueFromIDWithoutApplying(const std::string & value,
                                                     int dimension)
 {
-    int i = choiceMatch(value, _entries, 0);
+    int i;
+    {
+        QMutexLocker k(&_entriesMutex);
+        i = matchOption_locked(value, 0);
+    }
     if (i >= 0) {
         return setDefaultValueWithoutApplying(i, dimension);
     }
@@ -1028,11 +1050,43 @@ void
 KnobChoice::setDefaultValueFromID(const std::string & value,
                                      int dimension)
 {
-    int i = choiceMatch(value, _entries, 0);
+    int i;
+    {
+        QMutexLocker k(&_entriesMutex);
+        i = matchOption_locked(value, 0);
+    }
     if (i >= 0) {
         return setDefaultValue(i, dimension);
     }
     throw std::runtime_error(std::string("KnobChoice::setDefaultValueFromLabel: unknown label ") + value);
+}
+
+int
+KnobChoice::matchOption_locked(const std::string& optionID,
+                               ChoiceOption* matchedEntry) const
+{
+    if (_optionRestoration == eOptionRestorationMatch) {
+        return choiceMatch(optionID, _entries, matchedEntry);
+    }
+    for (std::size_t i = 0; i < _entries.size(); ++i) {
+        if (_entries[i].id == optionID) {
+            if (matchedEntry) {
+                *matchedEntry = _entries[i];
+            }
+
+            return (int)i;
+        }
+    }
+
+    return -1;
+}
+
+std::string
+KnobChoice::getEntryID_mt_safe(int index) const
+{
+    QMutexLocker l(&_entriesMutex);
+
+    return ( (index >= 0) && ( index < (int)_entries.size() ) ) ? _entries[index].id : std::string();
 }
 
 // try to match entry id first, then label
@@ -1195,7 +1249,7 @@ KnobChoice::choiceRestorationId(KnobChoice* knob,
     int i;
     {
         QMutexLocker k(&_entriesMutex);
-        i = choiceMatch(optionID, _entries, &_currentEntry);
+        i = matchOption_locked(optionID, &_currentEntry);
     }
 
     if (i >= 0) {
@@ -1222,9 +1276,16 @@ KnobChoice::choiceRestoration(KnobChoice* knob,
     }
     
 
+    // read the default before locking _entriesMutex (it locks the values)
+    const int defaultIndex = getDefaultValue(0);
     {
         QMutexLocker k(&_entriesMutex);
-        if (id >= 0) {
+        if ( (id < 0) && (_optionRestoration == eOptionRestorationExactIDOrDefault) &&
+             (defaultIndex >= 0) && ( defaultIndex < (int)_entries.size() ) ) {
+            // the option was removed: "it is recommended that the host use the default value"
+            id = defaultIndex;
+        }
+        if ( (id >= 0) && ( id < (int)_entries.size() ) ) {
             // we found a reasonable id
             _currentEntry = _entries[id]; // avoid numerous warnings in the GUI
         } else {
