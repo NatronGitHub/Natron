@@ -1313,7 +1313,7 @@ TEST(ProjectSave, FailedSaveKeepsThePreviousFile)
     const QFileDevice::Permissions permissions = QFile::permissions(path);
     ASSERT_TRUE( QFile::setPermissions(path, QFileDevice::ReadOwner | QFileDevice::ReadUser | QFileDevice::ReadGroup | QFileDevice::ReadOther) );
     if ( canWriteReadOnly(path) ) {
-        NatronTest::skip("the read-only file is writable (root?)");
+        NatronTest::skipPart("the read-only file is writable (root?)");
     } else {
         failedSave("read-only file");
     }
@@ -1324,7 +1324,7 @@ TEST(ProjectSave, FailedSaveKeepsThePreviousFile)
     const QFileDevice::Permissions dirPermissions = QFile::permissions(tmpDir.path());
     ASSERT_TRUE( QFile::setPermissions(tmpDir.path(), QFileDevice::ReadOwner | QFileDevice::ExeOwner | QFileDevice::ReadUser | QFileDevice::ExeUser) );
     if ( canWriteReadOnly( tmpDir.path() ) ) {
-        NatronTest::skip("the read-only directory is writable (root?)");
+        NatronTest::skipPart("the read-only directory is writable (root?)");
     } else {
         failedSave("read-only directory");
     }
