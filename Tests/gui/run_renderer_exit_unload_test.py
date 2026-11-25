@@ -37,7 +37,7 @@ left, and the exit status must be the one of the script:
 The commands of the prompt print "prompt ran", which the test checks, so that a prompt that reads nothing
 from its redirected stdin is not taken for a success.
 
-Exit status: 0 on success, 77 if skipped (the test plug-in was not built), 1 on failure.
+Exit status: 0 on success, 1 on failure (also when the test plug-in is not in /path/to/test/OfxPlugins).
 --debugger runs NatronRenderer under natron-lldb.sh, or set NATRON_TEST_WRAPPER (see natronrunner.py).
 """
 
@@ -46,7 +46,7 @@ import shutil
 import sys
 import tempfile
 
-from natronrunner import SKIP, natron_env, run, wrapper
+from natronrunner import natron_env, run, wrapper
 
 PLUGIN_ID = "net.natron.test.Sequential"
 CASE_TIMEOUT = 100  # seconds per NatronRenderer run: the 5 runs (plus 10 s grace each) must fit in the ctest TIMEOUT (660 s)
@@ -142,8 +142,9 @@ def main(argv):
     renderer = argv[1]
     plugin_dir = argv[2]
     if not os.path.isdir(os.path.join(plugin_dir, "NatronTestPlugin.ofx.bundle")):
-        print("skipped: the test plug-in is not in %s" % plugin_dir)
-        return SKIP
+        # it is built with the Tests: missing, it is a broken build, not a reason to skip
+        print("FAILED: the test plug-in is not in %s" % plugin_dir)
+        return 1
     cmd_wrapper = wrapper(argv[3:])
     out_dir = tempfile.mkdtemp(prefix="natron-exit-unload-test-")
     try:

@@ -17,8 +17,13 @@ GENERATOR = "net.natron.test.Generator"  # fills its output with 0.5 (Tests/OfxT
 
 
 def require_plugin(pluginID):
-    """Skip the test if the plug-in is not available (e.g. openfx-misc is not on OFX_PLUGIN_PATH)."""
+    """Skip the test if the plug-in is not available (e.g. openfx-misc is not on OFX_PLUGIN_PATH).
+
+    A missing test plug-in (net.natron.test.*) fails the test under ctest, which puts them on OFX_PLUGIN_PATH.
+    """
     if pluginID not in natron.getPluginIDs():
+        check(not (pluginID.startswith("net.natron.test.") and os.environ.get("NATRON_TESTS_OFX_PLUGIN_BINARY")),
+              "test plug-in %s not found: the build of Tests/OfxTestPlugin is broken" % pluginID)
         NatronGuiTest.skip("plug-in %s not found (OFX_PLUGIN_PATH=%s)" % (pluginID, os.environ.get("OFX_PLUGIN_PATH", "")))
 
 
