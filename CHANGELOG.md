@@ -1,3 +1,9 @@
+<!--
+Pull requests don't edit this file: their descriptions end with a "### CHANGELOG"
+section, which tools/utils/collect-changelog.py collects here, weekly and before
+each pre-release tag (see "CHANGELOG" in
+Documentation/source/maintainers/contributing.rst).
+-->
 # Known Bugs
 
 - https://github.com/NatronGitHub/Natron/issues/504

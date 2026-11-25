@@ -85,7 +85,23 @@ or discuss in email/forum. Reviewers may ask for changes, explain problems they
 found, congratulate the author on a clever solution, etc. Please don't take it hard if your
 first try is not accepted. It happens to all of us.
 
-7. After approval, one of the senior developers (with commit approval to the official main repository) will merge your fixes into the "master" branch.
+7. Don't edit `CHANGELOG.md`. End the description of the pull request with a
+`### CHANGELOG` section that lists its lines for `CHANGELOG.md`, each under
+its heading (`New features:`, `Known issues:`, `Changes:` or `Plugins:`), or
+says `none` if users won't notice the change (refactoring, tests, CI,
+documentation only). Start each line with the component it is about, and write
+it for users:
+
+       ### CHANGELOG
+
+       Changes:
+       - Viewer: autocontrast works in the Matte display mode.
+
+   The maintainers collect these lines into `CHANGELOG.md` after the merge
+   (see "CHANGELOG" in the maintainer guide,
+   `Documentation/source/maintainers/contributing.rst`).
+
+8. After approval, one of the senior developers (with commit approval to the official main repository) will merge your fixes into the "master" branch.
 
 
 Coding Style
