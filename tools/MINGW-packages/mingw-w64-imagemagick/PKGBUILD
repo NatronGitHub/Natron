@@ -119,6 +119,6 @@ package() {
   done
   # The URL coder calls URLDownloadToFileA, but ImageMagick links urlmon only into its
   # URL module: without modules, the coder is in the static MagickCore, whose users
-  # (openfx-arena) need -lurlmon (#1863).
-  sed -e '/^Libs.private:/ s/$/ -lurlmon/' -i "${pkgdir}${MINGW_PREFIX}"/lib/pkgconfig/MagickCore*.pc
+  # (openfx-arena) need -lurlmon (#1863). ImageMagick*.pc have the same Libs.private.
+  sed -e '/^Libs.private:/ s/$/ -lurlmon/' -i "${pkgdir}${MINGW_PREFIX}"/lib/pkgconfig/{MagickCore,ImageMagick}*.pc
 }
