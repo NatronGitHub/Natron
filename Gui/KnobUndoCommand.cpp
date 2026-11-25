@@ -707,7 +707,7 @@ RestoreDefaultsCommand::undo()
 void
 RestoreDefaultsCommand::redo()
 {
-    std::list<SequenceTime> times;
+    std::list<SequenceTime> times; // the keyframes that are removed
     KnobIPtr first = _knobs.front().lock();
     AppInstancePtr app;
     KnobHolder* holder = first ? first->getHolder() : nullptr;
@@ -718,8 +718,6 @@ RestoreDefaultsCommand::redo()
         holder->beginChanges();
     }
 
-
-    // the keyframes that are removed
     std::list<KnobIPtr> knobs;
     for (std::list<KnobIWPtr>::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
         KnobIPtr itKnob = it->lock();
